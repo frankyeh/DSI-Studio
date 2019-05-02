@@ -697,6 +697,7 @@
      <addaction name="actionNegate"/>
      <addaction name="actionDefragment"/>
      <addaction name="actionSeparate"/>
+     <addaction name="actionThreshold_2"/>
      <addaction name="actionSet_Opacity"/>
     </widget>
     <widget class="QMenu" name="menuMove_Region">
@@ -760,8 +761,8 @@
     <addaction name="menuModify_Checked_Regions"/>
     <addaction name="menuSort"/>
     <addaction name="separator"/>
-    <addaction name="actionThreshold"/>
     <addaction name="actionWhole_brain_seeding"/>
+    <addaction name="actionThreshold"/>
     <addaction name="actionNew_Super_Resolution_Region"/>
     <addaction name="separator"/>
     <addaction name="actionRegion_statistics"/>
@@ -2724,7 +2725,7 @@ Tracking</string>
   </action>
   <action name="actionThreshold">
    <property name="text">
-    <string>Threshold</string>
+    <string>New Region From Thresholding</string>
    </property>
   </action>
   <action name="actionRedo">
@@ -3416,6 +3417,11 @@ Tracking</string>
    </property>
    <property name="shortcut">
     <string>Ctrl+Shift+M</string>
+   </property>
+  </action>
+  <action name="actionThreshold_2">
+   <property name="text">
+    <string>Threshold</string>
    </property>
   </action>
  </widget>

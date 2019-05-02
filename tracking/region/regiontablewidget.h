@@ -142,6 +142,7 @@ public slots:
     void action_shiftz(void){do_action("shiftz");}
     void action_shiftnz(void){do_action("shiftnz");}
     void action_threshold(void){new_region();do_action("threshold");}
+    void action_threshold_current(void){do_action("threshold_current");}
     void action_separate(void){do_action("separate");}
     void action_A_B(void){do_action("A-B");}
     void action_B_A(void){do_action("B-A");}

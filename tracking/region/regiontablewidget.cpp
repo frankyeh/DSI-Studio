@@ -233,13 +233,13 @@ void RegionTableWidget::move_slice_to_current_region(void)
     auto current_region = regions[currentRow()];
     if(current_region->region.empty())
         return;
-
-    float r = current_region->resolution_ratio;
-    tipl::vector<3,float> p(current_region->region[current_region->region.size()/2]);
-    if(r != 1.0)
-        p /= r;
+    tipl::vector<3,float> p(current_region->get_center());
     if(!current_slice->is_diffusion_space)
-        p.to(current_slice->T);
+    {
+        auto iT = current_slice->T;
+        iT.inv();
+        p.to(iT);
+    }
     cur_tracking_window.move_slice_to(p);
 }
 
@@ -1271,6 +1271,61 @@ void RegionTableWidget::do_action(QString action,size_t roi_index)
                 cur_region.LoadFromBuffer(mask,iT);
             }
 
+        }
+        if(action == "threshold_current")
+        {
+            tipl::const_pointer_image<float,3> I = cur_tracking_window.current_slice->get_source();
+            if(I.empty())
+                return;
+            auto m = std::minmax_element(I.begin(),I.end());
+            bool ok;
+            float threshold = float(QInputDialog::getDouble(this,
+                "DSI Studio","Threshold:",
+                double(tipl::segmentation::otsu_threshold(I)),
+                double(*m.first),
+                double(*m.second),
+                4, &ok));
+            if(!ok)
+                return;
+            const std::vector<tipl::vector<3,short> >& region = cur_region.get_region_voxels_raw();
+            std::vector<tipl::vector<3,short> > new_region;
+            if(cur_tracking_window.current_slice->is_diffusion_space)
+            {
+                if(cur_region.resolution_ratio != 1.0f)
+                {
+                    for(size_t i = 0;i < region.size();++i)
+                    {
+                        tipl::vector<3,float> pos(region[i]);
+                        pos /= cur_region.resolution_ratio;
+                        if(I.geometry().is_valid(pos[0],pos[1],pos[2]) &&
+                            I.at(pos[0],pos[1],pos[2]) > threshold)
+                                   new_region.push_back(region[i]);
+                    }
+                }
+                else
+                for(size_t i = 0;i < region.size();++i)
+                {
+                    if(I.geometry().is_valid(region[i][0],region[i][1],region[i][2]) &&
+                        I.at(region[i][0],region[i][1],region[i][2]) > threshold)
+                               new_region.push_back(region[i]);
+                }
+            }
+            else
+            {
+                auto iT = cur_tracking_window.current_slice->T;
+                iT.inv();
+                for(size_t i = 0;i < region.size();++i)
+                {
+                    tipl::vector<3,float> pos(region[i]);
+                    if(cur_region.resolution_ratio != 1.0f)
+                        pos /= cur_region.resolution_ratio;
+                    pos.to(iT);
+                    if(I.geometry().is_valid(pos[0],pos[1],pos[2]) &&
+                        I.at(pos[0],pos[1],pos[2]) > threshold)
+                               new_region.push_back(region[i]);
+                }
+            }
+            cur_region.assign(new_region,cur_region.resolution_ratio);
         }
         if(action == "separate")
         {
