@@ -698,9 +698,6 @@
      <addaction name="actionDefragment"/>
      <addaction name="actionThreshold"/>
      <addaction name="actionSeparate"/>
-     <addaction name="actionA_B"/>
-     <addaction name="actionB_A"/>
-     <addaction name="actionAB"/>
      <addaction name="actionSet_Opacity"/>
     </widget>
     <widget class="QMenu" name="menuMove_Region">
@@ -734,6 +731,9 @@
      <addaction name="actionSmooth_All"/>
      <addaction name="actionDefragment_All"/>
      <addaction name="actionDilate_All"/>
+     <addaction name="actionAB"/>
+     <addaction name="actionB_A"/>
+     <addaction name="actionA_B"/>
     </widget>
     <addaction name="actionNewRegion"/>
     <addaction name="actionOpenRegion"/>
@@ -3337,17 +3337,17 @@ Tracking</string>
   </action>
   <action name="actionA_B">
    <property name="text">
-    <string>A-B</string>
+    <string>First Excludes All</string>
    </property>
   </action>
   <action name="actionB_A">
    <property name="text">
-    <string>B-A</string>
+    <string>All Excludes First</string>
    </property>
   </action>
   <action name="actionAB">
    <property name="text">
-    <string>A*B</string>
+    <string>All Intersects First</string>
    </property>
   </action>
   <action name="actionPPV_analysis">
