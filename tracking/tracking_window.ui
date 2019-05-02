@@ -696,7 +696,6 @@
      <addaction name="actionSmoothing"/>
      <addaction name="actionNegate"/>
      <addaction name="actionDefragment"/>
-     <addaction name="actionThreshold"/>
      <addaction name="actionSeparate"/>
      <addaction name="actionSet_Opacity"/>
     </widget>
@@ -716,7 +715,7 @@
     </widget>
     <widget class="QMenu" name="menuSort">
      <property name="title">
-      <string>Sort</string>
+      <string>Sort All Regions</string>
      </property>
      <addaction name="actionBy_Name"/>
      <addaction name="actionBy_Size"/>
@@ -755,12 +754,13 @@
     <addaction name="actionUndo_Edit"/>
     <addaction name="actionRedo_Edit"/>
     <addaction name="separator"/>
+    <addaction name="actionMove_Slices_To_Current_Region"/>
     <addaction name="menuMove_Region"/>
     <addaction name="menuModify"/>
     <addaction name="menuModify_Checked_Regions"/>
     <addaction name="menuSort"/>
-    <addaction name="actionMove_Slices_To_Current_Region"/>
     <addaction name="separator"/>
+    <addaction name="actionThreshold"/>
     <addaction name="actionWhole_brain_seeding"/>
     <addaction name="actionNew_Super_Resolution_Region"/>
     <addaction name="separator"/>
