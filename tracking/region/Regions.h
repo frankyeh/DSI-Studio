@@ -219,7 +219,7 @@ public:
         {
             modified = true;
             if(!region.empty())
-                undo_backup.push_back(region);
+                undo_backup.push_back(std::move(region));
             region.clear();
             std::vector<tipl::vector<3,short> > points;
             for (tipl::pixel_index<3>index(mask.geometry());index < mask.size();++index)
