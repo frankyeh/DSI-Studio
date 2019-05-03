@@ -1253,19 +1253,22 @@ void RegionTableWidget::do_action(QString action,size_t roi_index)
             if(I.empty())
                 return;
             mask.resize(I.geometry());
-            auto m = std::minmax_element(I.begin(),I.end());
+            double m = *std::max_element(I.begin(),I.end());
             bool ok;
+            bool flip = false;
             float threshold = float(QInputDialog::getDouble(this,
-                "DSI Studio","Threshold:",
-                double(tipl::segmentation::otsu_threshold(I)),
-                double(*m.first),
-                double(*m.second),
-                4, &ok));
+                "DSI Studio","Threshold (assign negative value to get low pass):",
+                double(tipl::segmentation::otsu_threshold(I)),-m,m,4, &ok));
             if(!ok)
                 return;
+            if(threshold < 0)
+            {
+                flip = true;
+                threshold = -threshold;
+            }
 
             for(unsigned int i = 0;i < mask.size();++i)
-                mask[i]  = I[i] > threshold ? 1:0;
+                mask[i]  = (I[i] > threshold ^ flip )? 1:0;
 
             if(cur_tracking_window.current_slice->is_diffusion_space)
                 cur_region.LoadFromBuffer(mask);
@@ -1282,16 +1285,19 @@ void RegionTableWidget::do_action(QString action,size_t roi_index)
             tipl::const_pointer_image<float,3> I = cur_tracking_window.current_slice->get_source();
             if(I.empty())
                 return;
-            auto m = std::minmax_element(I.begin(),I.end());
+            double m = *std::max_element(I.begin(),I.end());
             bool ok;
+            bool flip = false;
             float threshold = float(QInputDialog::getDouble(this,
-                "DSI Studio","Threshold:",
-                double(tipl::segmentation::otsu_threshold(I)),
-                double(*m.first),
-                double(*m.second),
-                4, &ok));
+                "DSI Studio","Threshold (assign negative value to get low pass):",
+                double(tipl::segmentation::otsu_threshold(I)),-m,m,4, &ok));
             if(!ok)
                 return;
+            if(threshold < 0)
+            {
+                flip = true;
+                threshold = -threshold;
+            }
             const std::vector<tipl::vector<3,short> >& region = cur_region.get_region_voxels_raw();
             std::vector<tipl::vector<3,short> > new_region;
             if(cur_tracking_window.current_slice->is_diffusion_space)
@@ -1303,7 +1309,7 @@ void RegionTableWidget::do_action(QString action,size_t roi_index)
                         tipl::vector<3,float> pos(region[i]);
                         pos /= cur_region.resolution_ratio;
                         if(I.geometry().is_valid(pos[0],pos[1],pos[2]) &&
-                            I.at(pos[0],pos[1],pos[2]) > threshold)
+                            I.at(pos[0],pos[1],pos[2]) > threshold ^ flip)
                                    new_region.push_back(region[i]);
                     }
                 }
@@ -1311,7 +1317,7 @@ void RegionTableWidget::do_action(QString action,size_t roi_index)
                 for(size_t i = 0;i < region.size();++i)
                 {
                     if(I.geometry().is_valid(region[i][0],region[i][1],region[i][2]) &&
-                        I.at(region[i][0],region[i][1],region[i][2]) > threshold)
+                        I.at(region[i][0],region[i][1],region[i][2]) > threshold ^ flip)
                                new_region.push_back(region[i]);
                 }
             }
@@ -1326,7 +1332,7 @@ void RegionTableWidget::do_action(QString action,size_t roi_index)
                         pos /= cur_region.resolution_ratio;
                     pos.to(iT);
                     if(I.geometry().is_valid(pos[0],pos[1],pos[2]) &&
-                        I.at(pos[0],pos[1],pos[2]) > threshold)
+                        I.at(pos[0],pos[1],pos[2]) > threshold ^ flip)
                                new_region.push_back(region[i]);
                 }
             }
