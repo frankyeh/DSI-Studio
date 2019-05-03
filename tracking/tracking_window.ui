@@ -3423,6 +3423,9 @@ Tracking</string>
    <property name="text">
     <string>Threshold</string>
    </property>
+   <property name="shortcut">
+    <string>Ctrl+Shift+T</string>
+   </property>
   </action>
  </widget>
  <customwidgets>

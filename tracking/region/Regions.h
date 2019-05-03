@@ -182,16 +182,16 @@ public:
             modified = true;
 
         }
-        void redo(void)
+        bool redo(void)
         {
             if(redo_backup.empty())
-                return;
+                return false;
             undo_backup.push_back(std::vector<tipl::vector<3,short> >());
             undo_backup.back().swap(region);
             region.swap(redo_backup.back());
             redo_backup.pop_back();
             modified = true;
-
+            return true;
         }
         void SaveToFile(const char* FileName);
         bool LoadFromFile(const char* FileName);

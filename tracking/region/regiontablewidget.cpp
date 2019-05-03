@@ -1161,7 +1161,8 @@ void RegionTableWidget::redo(void)
 {
     if(currentRow() < 0)
         return;
-    regions[size_t(currentRow())]->redo();
+    if(!regions[size_t(currentRow())]->redo() && !last_action.isEmpty())
+        do_action(last_action);
     emit need_update();
 }
 
@@ -1169,6 +1170,7 @@ void RegionTableWidget::do_action(QString action)
 {
     if(regions.empty())
         return;
+    last_action = action;
     if(action.contains("_all"))
     {
         action.chop(4);
