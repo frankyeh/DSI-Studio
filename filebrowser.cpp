@@ -186,7 +186,7 @@ void FileBrowser::on_subject_list_currentCellChanged(int currentRow, int , int p
                 ui->tableWidget->setRowCount(row+1);
                 QStringList item_list;
                 item_list << sub_dir_list[i] + "(DICOM)";
-                item_list << QString("%1/%2/%3").arg(dcm.width()).arg(dcm.height()).arg(dcm.depth());
+                item_list << QString("%1/%2/%3").arg(dcm.geo().width()).arg(dcm.geo().height()).arg(dcm.geo().depth());
                 tipl::vector<3,float> vs;
                 dcm.get_voxel_size(vs);
                 item_list << QString("%1/%2/%3").arg(vs[0]).arg(vs[1]).arg(vs[2]);

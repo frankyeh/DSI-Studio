@@ -192,7 +192,7 @@ void load_bval(const char* file_name,std::vector<double>& bval)
               std::back_inserter(bval));
 }
 
-bool    find_bval_bvec(const char* file_name,QString& bval,QString& bvec)
+bool find_bval_bvec(const char* file_name,QString& bval,QString& bvec)
 {
     std::vector<QString> bval_name(4),bvec_name(4);
     QString path = QFileInfo(file_name).absolutePath() + "/";
@@ -235,13 +235,14 @@ bool    find_bval_bvec(const char* file_name,QString& bval,QString& bvec)
 bool load_4d_nii(const char* file_name,std::vector<std::shared_ptr<DwiHeader> >& dwi_files)
 {
     gz_nifti analyze_header;
+    std::cout << "loading 4d nifti" << std::endl;
     if(!analyze_header.load_from_file(file_name))
     {
         std::cout << analyze_header.error << std::endl;
         return false;
     }
-    std::cout << "loading 4d nifti" << std::endl;
-
+    if(analyze_header.dim(4) <= 1)
+        return false;
     std::vector<double> bvals,bvecs;
     {
         QString bval_name,bvec_name;

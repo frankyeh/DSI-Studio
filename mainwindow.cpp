@@ -549,52 +549,27 @@ void MainWindow::on_batch_src_clicked()
             for(unsigned int index = 0;index < new_list.size();++index)
                 dir_list << cur_dir.absolutePath() + "/" + new_list[index];
 
-
-            // 4D nifti as data.nii.gz + bvals and bvecs
-            {
-                std::vector<std::shared_ptr<DwiHeader> > dwi_files;
-                if(QFileInfo(dir_list[i] + "/data.nii.gz").exists() &&
-                   QFileInfo(dir_list[i] + "/bvals").exists() &&
-                   QFileInfo(dir_list[i] + "/bvecs").exists() &&
-                   load_4d_nii(QString(dir_list[i] + "/data.nii.gz").toLocal8Bit().begin(),dwi_files))
-                {
-                    if(!DwiHeader::has_b_table(dwi_files))
-                    {
-                        std::ofstream(QString(dir_list[i] + "/data.nii.gz.invalid_b_table.txt").toLocal8Bit().begin());
-                        continue;
-                    }
-                    DwiHeader::output_src(QString(dir_list[i] + "/data.src.gz").toLocal8Bit().begin(),dwi_files,0,false);
-                    continue;
-                }
-            }
-
             // 4D nifti with same base name bvals and bvecs
             QStringList nifti_file_list = cur_dir.entryList(QStringList("*.nii.gz") << "*.nii",QDir::Files|QDir::NoSymLinks);
             for (unsigned int index = 0;index < nifti_file_list.size();++index)
             {
                 std::vector<std::shared_ptr<DwiHeader> > dwi_files;
-                QString bval,bvec;
-                if(find_bval_bvec(QString(dir_list[i] + "/" + nifti_file_list[index]).toLocal8Bit().begin(),bval,bvec))
-                {
-                    if(!load_4d_nii(QString(dir_list[i] + "/" + nifti_file_list[index]).toLocal8Bit().begin(),dwi_files))
-                    {
-                        std::ofstream(QString(dir_list[i] + "/" + nifti_file_list[index] + ".invalid_format.txt").toLocal8Bit().begin());
-                        continue;
-                    }
-                    if(!DwiHeader::has_b_table(dwi_files))
-                    {
-                        std::ofstream(QString(dir_list[i] + "/" + nifti_file_list[index] + ".invalid_b_table.txt").toLocal8Bit().begin());
-                        continue;
-                    }
-                    DwiHeader::output_src(QString(dir_list[i] + "/" +
-                        QFileInfo(nifti_file_list[index]).baseName() + ".src.gz").toLocal8Bit().begin(),dwi_files,0,false);
-                    dwi_files.clear();
+                if(!load_4d_nii(QString(dir_list[i] + "/" + nifti_file_list[index]).toLocal8Bit().begin(),dwi_files))
                     continue;
-                }
-                else
+                QString bval,bvec;
+                if(!find_bval_bvec(QString(dir_list[i] + "/" + nifti_file_list[index]).toLocal8Bit().begin(),bval,bvec))
                 {
                     std::ofstream(QString(dir_list[i] + "/bvals_bvec_not_found.txt").toLocal8Bit().begin());
+                    continue;
                 }
+                if(!DwiHeader::has_b_table(dwi_files))
+                {
+                    std::ofstream(QString(dir_list[i] + "/" + nifti_file_list[index] + ".invalid_b_table.txt").toLocal8Bit().begin());
+                    continue;
+                }
+                DwiHeader::output_src(QString(dir_list[i] + "/" +
+                        QFileInfo(nifti_file_list[index]).baseName() + ".src.gz").toLocal8Bit().begin(),dwi_files,0,false);
+
             }
 
             QStringList dicom_file_list = cur_dir.entryList(QStringList("*.dcm"),QDir::Files|QDir::NoSymLinks);
