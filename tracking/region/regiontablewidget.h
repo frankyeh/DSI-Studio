@@ -36,7 +36,6 @@ protected:
     void contextMenuEvent ( QContextMenuEvent * event );
 private:
     tracking_window& cur_tracking_window;
-    QString last_action;
     void do_action(QString action);
     void do_action(QString action,size_t roi_index);
     void whole_brain_points(std::vector<tipl::vector<3,short> >& points);

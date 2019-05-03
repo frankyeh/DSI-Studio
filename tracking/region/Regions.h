@@ -172,11 +172,10 @@ public:
         {
             if(region.empty() && undo_backup.empty())
                 return;
-            redo_backup.push_back(std::vector<tipl::vector<3,short> >());
-            redo_backup.back().swap(region);
+            redo_backup.push_back(std::move(region));
             if(!undo_backup.empty())
             {
-                region.swap(undo_backup.back());
+                region = std::move(undo_backup.back());
                 undo_backup.pop_back();
             }
             modified = true;
