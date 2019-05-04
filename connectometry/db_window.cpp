@@ -383,18 +383,18 @@ void db_window::on_calculate_dif_clicked()
     on_fp_zoom_valueChanged(ui->fp_zoom->value());
 
 }
-
+QPixmap fromImage(const QImage &I);
 void db_window::on_fp_zoom_valueChanged(double)
 {
     QImage qimage((unsigned char*)&*fp_dif_map.begin(),fp_dif_map.width(),fp_dif_map.height(),QImage::Format_RGB32);
     fp_dif_image = qimage.scaled(fp_dif_map.width()*ui->fp_zoom->value(),fp_dif_map.height()*ui->fp_zoom->value());
     fp_dif_scene.setSceneRect(0, 0, fp_dif_image.width()+80,fp_dif_image.height()+10);
     fp_dif_scene.clear();
-    fp_dif_scene.addPixmap(QPixmap::fromImage(fp_dif_image));
+    fp_dif_scene.addPixmap(fromImage(fp_dif_image));
 
     QImage qbar((unsigned char*)&*color_bar.begin(),color_bar.width(),color_bar.height(),QImage::Format_RGB32);
     qbar = qbar.scaledToHeight(fp_dif_image.height());
-    fp_dif_scene.addPixmap(QPixmap::fromImage(qbar))->moveBy(fp_dif_image.width()+10,0);
+    fp_dif_scene.addPixmap(fromImage(qbar))->moveBy(fp_dif_image.width()+10,0);
     fp_dif_scene.addText(QString::number(fp_max_value))->moveBy(fp_dif_image.width()+qbar.width()+10,-10);
     fp_dif_scene.addText(QString("0"))->moveBy(fp_dif_image.width()+qbar.width()+10,(int)fp_dif_image.height()-10);
 }

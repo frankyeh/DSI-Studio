@@ -99,7 +99,7 @@ void color_bar_dialog::on_tract_color_index_currentIndexChanged(int index)
 
 
 
-
+QPixmap fromImage(const QImage &I);
 void color_bar_dialog::update_color_map(void)
 {
     color_r = ui->tract_color_max_value->value()-ui->tract_color_min_value->value();
@@ -129,7 +129,7 @@ void color_bar_dialog::update_color_map(void)
     color_bar.clear();
     QGraphicsTextItem *max_text = color_bar.addText(QString::number(ui->tract_color_max_value->value()));
     QGraphicsTextItem *min_text = color_bar.addText(QString::number(ui->tract_color_min_value->value()));
-    QGraphicsPixmapItem *map = color_bar.addPixmap(QPixmap::fromImage(
+    QGraphicsPixmapItem *map = color_bar.addPixmap(fromImage(
             QImage((unsigned char*)&*bar.begin(),bar.width(),bar.height(),QImage::Format_RGB32)));
     max_text->moveBy(10,-128-10);
     min_text->moveBy(10,128-10);

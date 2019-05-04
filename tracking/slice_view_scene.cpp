@@ -11,16 +11,22 @@
 #include "region/regiontablewidget.h"
 #include "libs/gzip_interface.hpp"
 #include "libs/tracking/fib_data.hpp"
+
+QPixmap fromImage(const QImage &I)
+{
+    #ifdef WIN32
+        return QPixmap::fromImage(I);
+    #else
+        //For Mac, the endian system is BGRA and all QImage needs to be converted.
+        return QPixmap::fromImage(I.convertToFormat(QImage::Format_ARGB32));
+    #endif
+}
+
 void show_view(QGraphicsScene& scene,QImage I)
 {
     scene.setSceneRect(0, 0, I.width(),I.height());
     scene.clear();
-    #ifdef WIN32
-        scene.addPixmap(QPixmap::fromImage(I));
-    #else
-        //For Mac, the endian system is BGRA and all QImage needs to be converted.
-        scene.addPixmap(QPixmap::fromImage(I.convertToFormat(QImage::Format_ARGB32)));
-    #endif
+    scene.addPixmap(fromImage(I));
 }
 
 void slice_view_scene::show_ruler(QPainter& paint)
@@ -783,10 +789,10 @@ void slice_view_scene::mouseMoveEvent ( QGraphicsSceneMouseEvent * mouseEvent )
                         (cur_tracking_window.cur_dim != 0 ? 0:geo[0]*display_ratio):
                         (cur_tracking_window.cur_dim == 0 ? 0:geo[1]*display_ratio),
                         cur_tracking_window.cur_dim != 2 ? 0:geo[2]*display_ratio,annotated_image);
-        addPixmap(QPixmap::fromImage(temp));
+        addPixmap(fromImage(temp));
     }
     else
-        addPixmap(QPixmap::fromImage(annotated_image));
+        addPixmap(fromImage(annotated_image));
 
 }
 
@@ -928,10 +934,10 @@ void slice_view_scene::mouseReleaseEvent ( QGraphicsSceneMouseEvent * mouseEvent
                                 (cur_tracking_window.cur_dim == 0 ? 0:geo[1]*display_ratio),
                             cur_tracking_window.cur_dim != 2 ? 0:geo[2]*display_ratio,annotated_image);
 
-            addPixmap(QPixmap::fromImage(temp));
+            addPixmap(fromImage(temp));
         }
         else
-            addPixmap(QPixmap::fromImage(annotated_image));
+            addPixmap(fromImage(annotated_image));
         return;
     }
     case 6:
