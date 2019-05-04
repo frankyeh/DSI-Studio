@@ -225,6 +225,7 @@ void MainWindow::loadFib(QString filename)
     new_mdi->setAttribute(Qt::WA_DeleteOnClose);
     new_mdi->setWindowTitle(filename);
     new_mdi->showNormal();
+    new_mdi->resize(1200,700);
     addFib(filename);
     add_work_dir(QFileInfo(filename).absolutePath());
     QDir::setCurrent(QFileInfo(filename).absolutePath());
