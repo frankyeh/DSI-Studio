@@ -183,6 +183,7 @@ private slots:
     void on_SlicePos_valueChanged(int value);
     void on_actionKeep_Current_Slice_triggered();
     void on_show_3view_toggled(bool checked);
+    void on_show_edge_toggled(bool checked);
 };
 
 #endif // TRACKING_WINDOW_H

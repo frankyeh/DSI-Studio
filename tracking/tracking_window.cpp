@@ -336,6 +336,7 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         ui->renderingWidgetHolder->show();
         ui->ROIdockWidget->show();
         ui->regionDockWidget->show();
+        ui->show_edge->setChecked((*this)["roi_edge"].toBool());
         ui->show_3view->setChecked((*this)["roi_layout"].toBool());
         ui->show_r->setChecked((*this)["roi_label"].toBool());
         ui->show_position->setChecked((*this)["roi_position"].toBool());
@@ -1592,7 +1593,14 @@ void tracking_window::on_show_fiber_toggled(bool checked)
         set_data("roi_fiber",ui->show_fiber->isChecked());
     scene.show_slice();
 }
+void tracking_window::on_show_edge_toggled(bool checked)
+{
+    ui->show_edge->setChecked(checked);
+    if(ui->show_edge->isChecked() ^ (*this)["roi_edge"].toBool())
+        set_data("roi_edge",ui->show_edge->isChecked());
+    scene.show_slice();
 
+}
 void tracking_window::on_show_r_toggled(bool checked)
 {
     ui->show_r->setChecked(checked);
@@ -2103,6 +2111,8 @@ float tracking_window::get_fa_threshold(void)
                         *tipl::segmentation::otsu_threshold(tipl::make_image(handle->dir.fa[0],handle->dim));
     return threshold;
 }
+
+
 
 
 
