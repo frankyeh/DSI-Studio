@@ -124,9 +124,6 @@ public slots:
     void redo(void);
     void move_slice_to_current_region(void);
     // actions
-    void action_smoothing_all(void){do_action("smoothing_all");}
-    void action_defragment_all(void){do_action("defragment_all");}
-    void action_dilate_all(void){do_action("dilation_all");}
     void action_smoothing(void){do_action("smoothing");}
     void action_erosion(void){do_action("erosion");}
     void action_dilation(void){do_action("dilation");}

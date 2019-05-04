@@ -1167,32 +1167,9 @@ void RegionTableWidget::redo(void)
 
 void RegionTableWidget::do_action(QString action)
 {
-    if(regions.empty())
+    if(regions.empty() || currentRow() < 0)
         return;
-    if(action.contains("_all"))
-    {
-        action.chop(4);
-        auto checked_regions = get_checked_regions();
-        tipl::par_for2(checked_regions.size(),[&](int i,int id){
-            if(id == 0)
-                check_prog(i,checked_regions.size());
-            if(prog_aborted())
-                return;
-            checked_regions[i]->perform(action.toStdString());
-        });
-        check_prog(0,0);
-        emit need_update();
-        return;
-    }
-    if(currentRow() < 0)
-        return;
-    do_action(action,currentRow());
-    emit need_update();
-}
-void RegionTableWidget::do_action(QString action,size_t roi_index)
-{
-    if(regions.empty())
-        return;
+    size_t roi_index = currentRow();
 
     {
         ROIRegion& cur_region = *regions[size_t(roi_index)];
@@ -1428,5 +1405,6 @@ void RegionTableWidget::do_action(QString action,size_t roi_index)
                 openPersistentEditor(item(i,2));
             }
         }
-        }
+    }
+    emit need_update();
 }

@@ -507,6 +507,7 @@ bool fib_data::load_from_file(const char* file_name)
             view_item.back().name =  "fiber";
             view_item.back().image_data = tipl::make_image(dir.fa[0],dim);
             view_item.back().set_scale(dir.fa[0],dir.fa[0]+dim.size());
+            trackable = false;
             return true;
         }
         else
@@ -535,6 +536,7 @@ bool fib_data::load_from_file(const char* file_name)
         load_from_mat();
         dir.index_name[0] = "image";
         view_item[0].name = "image";
+        trackable = false;
         return true;
     }
     if (!mat_reader.load_from_file(file_name) || prog_aborted())

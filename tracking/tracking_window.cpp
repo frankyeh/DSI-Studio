@@ -217,10 +217,6 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         connect(ui->actionThreshold,SIGNAL(triggered()),regionWidget,SLOT(action_threshold()));
         connect(ui->actionThreshold_2,SIGNAL(triggered()),regionWidget,SLOT(action_threshold_current()));
 
-        connect(ui->actionSmooth_All,SIGNAL(triggered()),regionWidget,SLOT(action_smoothing_all()));
-        connect(ui->actionDefragment_All,SIGNAL(triggered()),regionWidget,SLOT(action_defragment_all()));
-        connect(ui->actionDilate_All,SIGNAL(triggered()),regionWidget,SLOT(action_dilate_all()));
-
         connect(ui->actionSmoothing,SIGNAL(triggered()),regionWidget,SLOT(action_smoothing()));
         connect(ui->actionErosion,SIGNAL(triggered()),regionWidget,SLOT(action_erosion()));
         connect(ui->actionDilation,SIGNAL(triggered()),regionWidget,SLOT(action_dilation()));
@@ -340,6 +336,7 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         ui->renderingWidgetHolder->show();
         ui->ROIdockWidget->show();
         ui->regionDockWidget->show();
+        ui->show_3view->setChecked((*this)["roi_layout"].toBool());
         ui->show_r->setChecked((*this)["roi_label"].toBool());
         ui->show_position->setChecked((*this)["roi_position"].toBool());
         ui->show_fiber->setChecked((*this)["roi_fiber"].toBool());
@@ -420,6 +417,14 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
                          SIGNAL(activated()), a, SLOT(trigger()));
     }
     #endif
+
+    if(!handle->trackable)
+    {
+        ui->perform_tracking->hide();
+        ui->show_fiber->setChecked(false);
+        ui->show_fiber->hide();
+        ui->enable_auto_track->hide();
+    }
 
     on_glAxiView_clicked();
     if((*this)["orientation_convention"].toInt() == 1)
@@ -1595,6 +1600,12 @@ void tracking_window::on_show_r_toggled(bool checked)
         set_data("roi_label",ui->show_r->isChecked());
     scene.show_slice();
 }
+void tracking_window::on_show_3view_toggled(bool checked)
+{
+    ui->show_3view->setChecked(checked);
+    set_data("roi_layout",checked ? 1:0);
+    scene.show_slice();
+}
 
 void tracking_window::on_show_position_toggled(bool checked)
 {
@@ -2092,3 +2103,6 @@ float tracking_window::get_fa_threshold(void)
                         *tipl::segmentation::otsu_threshold(tipl::make_image(handle->dir.fa[0],handle->dim));
     return threshold;
 }
+
+
+

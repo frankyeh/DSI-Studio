@@ -149,6 +149,7 @@ public:
     tipl::vector<3> vs;
     bool is_human_data = true;
     bool is_qsdr = false;
+    bool trackable = true;
 public:
     fiber_directions dir;
     odf_data odf;
