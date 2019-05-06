@@ -1218,7 +1218,7 @@ void RegionTableWidget::do_action(QString action)
                 "DSI Studio","Set opacity (between 0 and 1)",
                     double(cur_region.opacity < 0.0f ?
                     cur_tracking_window["region_alpha"].toFloat() : cur_region.opacity),
-                    0.0,1.0,1,&ok,Qt::WindowFlags(),0.1);
+                    0.0,1.0,1,&ok);
             if(!ok)
                 return;
             cur_region.opacity = float(threshold);
