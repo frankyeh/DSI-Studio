@@ -1371,10 +1371,11 @@ void tracking_window::on_actionImprove_Quality_triggered()
             std::copy(handle->dir.findex[i],handle->dir.findex[i]+size,new_index[i].begin());
         }
 
-        for(tipl::pixel_index<3> index(handle->dim);index < handle->dim.size();++index)
+        auto I = tipl::make_image(handle->dir.fa[0],handle->dim);
+        I.for_each_mt([&](float value,tipl::pixel_index<3> index)
         {
-            if(handle->dir.fa[0][index.index()] < threshold)
-                continue;
+            if(value < threshold)
+                return;
             std::vector<tipl::pixel_index<3> > neighbors;
             tipl::get_neighbors(index,handle->dim,neighbors);
 
@@ -1451,7 +1452,8 @@ void tracking_window::on_actionImprove_Quality_triggered()
                     }
                 }
             }
-        }
+
+        });
         for(unsigned int i = 0 ;i < new_fa.size();++i)
         {
             std::copy(new_fa[i].begin(),new_fa[i].begin()+size,(float*)handle->dir.fa[i]);
