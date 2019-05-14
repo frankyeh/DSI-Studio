@@ -39,7 +39,7 @@ bool reconstruction_window::load_src(int index)
     ui->min_value->setMinimum(0.0f);
     ui->min_value->setSingleStep(m*0.05f);
     ui->min_value->setValue(0.0f);
-    update_image();
+    load_b_table();
     return true;
 }
 
@@ -142,10 +142,16 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
 }
 void reconstruction_window::update_dimension(void)
 {
-    ui->SlicePos->setRange(0,handle->voxel.dim[2]-1);
-    ui->SlicePos->setValue((handle->voxel.dim[2]-1) >> 1);
-    ui->z_pos->setRange(0,handle->voxel.dim[view_orientation]-1);
-    ui->z_pos->setValue((handle->voxel.dim[view_orientation]-1) >> 1);
+    if(ui->SlicePos->maximum() != handle->voxel.dim[2]-1)
+    {
+        ui->SlicePos->setRange(0,handle->voxel.dim[2]-1);
+        ui->SlicePos->setValue((handle->voxel.dim[2]-1) >> 1);
+    }
+    if(ui->z_pos->maximum() != handle->voxel.dim[view_orientation]-1)
+    {
+        ui->z_pos->setRange(0,handle->voxel.dim[view_orientation]-1);
+        ui->z_pos->setValue((handle->voxel.dim[view_orientation]-1) >> 1);
+    }
     source_ratio = std::max(1.0,500/(double)handle->voxel.dim.height());
 }
 
@@ -161,6 +167,14 @@ void reconstruction_window::load_b_table(void)
         ui->b_table->setItem(index,3, new QTableWidgetItem(QString::number(handle->src_bvectors[index][2])));
     }
     ui->b_table->selectRow(0);
+}
+void reconstruction_window::command(QString cmd)
+{
+    handle->command(cmd.toStdString(),"");
+    update_dimension();
+    load_b_table();
+    on_SlicePos_valueChanged(ui->SlicePos->value());
+    steps.push_back(cmd.toStdString());
 }
 void reconstruction_window::on_b_table_itemSelectionChanged()
 {
@@ -248,7 +262,7 @@ void reconstruction_window::doReconstruction(unsigned char method_id,bool prompt
     handle->voxel.csf_calibration = (ui->csf_calibration->isVisible() && ui->csf_calibration->isChecked()) ? 1: 0;
     handle->voxel.max_fiber_number = ui->NumOfFibers->value();
     handle->voxel.r2_weighted = ui->ODFDef->currentIndex();
-    handle->voxel.need_odf = ui->RecordODF->isChecked();
+    handle->voxel.output_odf = ui->RecordODF->isChecked();
     handle->voxel.check_btable = ui->check_btable->isChecked();
     handle->voxel.output_jacobian = ui->output_jacobian->isChecked();
     handle->voxel.output_mapping = ui->output_mapping->isChecked();
@@ -289,50 +303,6 @@ void reconstruction_window::doReconstruction(unsigned char method_id,bool prompt
         ((MainWindow*)parent())->addFib(msg);
 }
 
-
-void reconstruction_window::on_erosion_clicked()
-{
-    tipl::morphology::erosion(handle->voxel.mask);
-    on_SlicePos_valueChanged(ui->SlicePos->value());
-}
-
-void reconstruction_window::on_dilation_clicked()
-{
-    tipl::morphology::dilation(handle->voxel.mask);
-    on_SlicePos_valueChanged(ui->SlicePos->value());
-}
-
-void reconstruction_window::on_defragment_clicked()
-{
-    tipl::morphology::defragment(handle->voxel.mask);
-    on_SlicePos_valueChanged(ui->SlicePos->value());
-}
-
-void reconstruction_window::on_smoothing_clicked()
-{
-    tipl::morphology::smoothing(handle->voxel.mask);
-    on_SlicePos_valueChanged(ui->SlicePos->value());
-}
-void reconstruction_window::on_negate_clicked()
-{
-    tipl::morphology::negate(handle->voxel.mask);
-    on_SlicePos_valueChanged(ui->SlicePos->value());
-}
-
-
-void reconstruction_window::on_thresholding_clicked()
-{
-    bool ok;
-    int threshold = QInputDialog::getInt(this,"DSI Studio","Please assign the threshold",
-                                         (int)tipl::segmentation::otsu_threshold(dwi),
-                                         (int)*std::min_element(dwi.begin(),dwi.end()),
-                                         (int)*std::max_element(dwi.begin(),dwi.end())+1,1,&ok);
-    if (!ok)
-        return;
-    tipl::threshold(dwi,handle->voxel.mask,threshold);
-    on_SlicePos_valueChanged(ui->SlicePos->value());
-}
-
 void reconstruction_window::on_load_mask_clicked()
 {
     QString filename = QFileDialog::getOpenFileName(
@@ -342,7 +312,7 @@ void reconstruction_window::on_load_mask_clicked()
             "Mask files (*.txt *.nii *nii.gz *.hdr);;All files (*)" );
     if(filename.isEmpty())
         return;
-    ROIRegion region(std::make_shared<fib_data>(dwi.geometry(),handle->voxel.vs));
+    ROIRegion region(std::make_shared<fib_data>(handle->dwi.geometry(),handle->voxel.vs));
     region.LoadFromFile(filename.toLocal8Bit().begin());
     region.SaveToBuffer(handle->voxel.mask);
     on_SlicePos_valueChanged(ui->SlicePos->value());
@@ -360,20 +330,25 @@ void reconstruction_window::on_save_mask_clicked()
         return;
     if(QFileInfo(filename.toLower()).completeSuffix() != "txt")
         filename = QFileInfo(filename).absolutePath() + "/" + QFileInfo(filename).baseName() + ".nii.gz";
-    ROIRegion region(std::make_shared<fib_data>(dwi.geometry(),handle->voxel.vs));
+    ROIRegion region(std::make_shared<fib_data>(handle->dwi.geometry(),handle->voxel.vs));
     region.LoadFromBuffer(handle->voxel.mask);
     region.SaveToFile(filename.toLocal8Bit().begin());
 }
 
 void reconstruction_window::on_doDTI_clicked()
 {
+    std::vector<std::string> prior_steps(steps);
     for(int index = 0;index < filenames.size();++index)
     {
         if(index)
         {
             begin_prog("load src");
             if(!load_src(index))
-                return;
+                break;
+            // apply the previous steps
+            steps.clear();
+            for(int j = 0;j < prior_steps.size();++j)
+                command(prior_steps[j].c_str());
         }
         std::fill(handle->voxel.param.begin(),handle->voxel.param.end(),0.0);
         if(ui->DTI->isChecked())
@@ -391,6 +366,7 @@ void reconstruction_window::on_doDTI_clicked()
         if(prog_aborted())
             break;
     }
+
 }
 
 void reconstruction_window::on_DTI_toggled(bool checked)
@@ -461,24 +437,6 @@ void reconstruction_window::on_QSDR_toggled(bool checked)
 
     ui->csf_calibration->setVisible(false);
 }
-
-
-void reconstruction_window::on_remove_background_clicked()
-{
-    for(int index = 0;index < handle->voxel.mask.size();++index)
-        if(handle->voxel.mask[index] == 0)
-            dwi[index] = 0;
-
-    for(int index = 0;index < handle->src_dwi_data.size();++index)
-    {
-        unsigned short* buf = (unsigned short*)handle->src_dwi_data[index];
-        for(int i = 0;i < handle->voxel.mask.size();++i)
-            if(handle->voxel.mask[i] == 0)
-                buf[i] = 0;
-    }
-    on_SlicePos_valueChanged(ui->SlicePos->value());
-}
-
 
 void reconstruction_window::on_zoom_in_clicked()
 {
@@ -595,64 +553,6 @@ void reconstruction_window::on_actionSave_bvecs_triggered()
     handle->save_bvec(filename.toLocal8Bit().begin());
 }
 
-void reconstruction_window::update_image(void)
-{
-    dwi.resize(handle->voxel.dim);
-    float min = tipl::minimum(handle->dwi_sum);
-    float range = tipl::maximum(handle->dwi_sum)-min;
-    float r = range > 0.0 ? 255.9f/range:1.0f;
-    for(unsigned int index = 0;index < dwi.size();++index)
-        dwi[index] = (handle->dwi_sum[index]-min)*r;
-    load_b_table();
-}
-
-void reconstruction_window::on_actionFlip_x_triggered()
-{
-    handle->flip_dwi(0);
-    update_image();
-    on_SlicePos_valueChanged(ui->SlicePos->value());
-}
-
-void reconstruction_window::on_actionFlip_y_triggered()
-{
-    handle->flip_dwi(1);
-    update_image();
-    on_SlicePos_valueChanged(ui->SlicePos->value());
-}
-
-void reconstruction_window::on_actionFlip_z_triggered()
-{
-    handle->flip_dwi(2);
-    update_image();
-    on_SlicePos_valueChanged(ui->SlicePos->value());
-}
-
-void reconstruction_window::on_actionFlip_xy_triggered()
-{
-    begin_prog("rotating");
-    handle->flip_dwi(3);
-    update_image();
-    update_dimension();
-    on_SlicePos_valueChanged(ui->SlicePos->value());
-}
-void reconstruction_window::on_actionFlip_yz_triggered()
-{
-    begin_prog("rotating");
-    handle->flip_dwi(4);
-    update_image();
-    update_dimension();
-    on_SlicePos_valueChanged(ui->SlicePos->value());
-}
-void reconstruction_window::on_actionFlip_xz_triggered()
-{
-    begin_prog("rotating");
-    handle->flip_dwi(5);
-    update_image();
-    update_dimension();
-    on_SlicePos_valueChanged(ui->SlicePos->value());
-}
-
-
 
 bool load_image_from_files(QStringList filenames,tipl::image<float,3>& ref,tipl::vector<3>& vs,std::vector<float>&);
 void reconstruction_window::on_actionRotate_triggered()
@@ -669,7 +569,7 @@ void reconstruction_window::on_actionRotate_triggered()
     if(!load_image_from_files(filenames,ref,vs,t))
         return;
     std::shared_ptr<manual_alignment> manual(new manual_alignment(this,
-                                                                dwi,handle->voxel.vs,ref,vs,
+                                                                handle->dwi,handle->voxel.vs,ref,vs,
                                                                 tipl::reg::rigid_body,
                                                                 tipl::reg::cost_type::mutual_info));
     manual->on_rerun_clicked();
@@ -686,7 +586,7 @@ void reconstruction_window::on_actionRotate_triggered()
     handle->voxel.report += QFileInfo(filenames[0]).baseName().toStdString();
     handle->voxel.report += ". The b-table was also rotated accordingly.";
     ui->report->setText(handle->voxel.report.c_str());
-    update_image();
+    load_b_table();
     update_dimension();
     on_SlicePos_valueChanged(ui->SlicePos->value());
 
@@ -703,38 +603,9 @@ void reconstruction_window::on_delete_2_clicked()
 
 }
 
-void reconstruction_window::on_actionTrim_image_triggered()
-{
-    begin_prog("trimming");
-    handle->trim();
-    update_image();
-    update_dimension();
-    on_SlicePos_valueChanged(ui->SlicePos->value());
-}
-
 void reconstruction_window::on_SlicePos_valueChanged(int position)
 {
-    if (!dwi.size())
-        return;
-    buffer.resize(tipl::geometry<2>(dwi.width(),dwi.height()));
-    unsigned int offset = position*buffer.size();
-    std::copy(dwi.begin() + offset,dwi.begin()+ offset + buffer.size(),buffer.begin());
-
-    unsigned char* slice_image_ptr = &*dwi.begin() + buffer.size()* position;
-    unsigned char* slice_mask = &*handle->voxel.mask.begin() + buffer.size()* position;
-
-    tipl::color_image buffer2(tipl::geometry<2>(dwi.width()*2,dwi.height()));
-    tipl::draw(buffer,buffer2,tipl::vector<2,int>());
-    for (unsigned int index = 0; index < buffer.size(); ++index)
-    {
-        unsigned char value = slice_image_ptr[index];
-        if (slice_mask[index])
-            buffer[index] = tipl::rgb(255, value, value);
-        else
-            buffer[index] = tipl::rgb(value, value, value);
-    }
-    tipl::draw(buffer,buffer2,tipl::vector<2,int>(dwi.width(),0));
-    buffer2.swap(buffer);
+    handle->draw_mask(buffer,position);
     double ratio = std::max(1.0,
         std::min(((double)ui->graphicsView->width()-5)/(double)buffer.width(),
                  ((double)ui->graphicsView->height()-5)/(double)buffer.height()));
@@ -771,7 +642,7 @@ void reconstruction_window::on_motion_correction_clicked()
     {
         handle->calculate_dwi_sum();
         handle->voxel.calculate_mask(handle->dwi_sum);
-        update_image();
+        load_b_table();
     }
 }
 
@@ -855,12 +726,12 @@ void reconstruction_window::on_add_t1t2_clicked()
 void reconstruction_window::on_actionManual_Rotation_triggered()
 {
     std::shared_ptr<manual_alignment> manual(
-                new manual_alignment(this,dwi,handle->voxel.vs,dwi,handle->voxel.vs,tipl::reg::rigid_body,tipl::reg::cost_type::mutual_info));
+                new manual_alignment(this,handle->dwi,handle->voxel.vs,handle->dwi,handle->voxel.vs,tipl::reg::rigid_body,tipl::reg::cost_type::mutual_info));
     if(manual->exec() != QDialog::Accepted)
         return;
     begin_prog("rotating");
-    handle->rotate(dwi,manual->iT);
-    update_image();
+    handle->rotate(handle->dwi,manual->iT);
+    load_b_table();
     update_dimension();
     on_SlicePos_valueChanged(ui->SlicePos->value());
 }
@@ -883,7 +754,7 @@ void reconstruction_window::on_actionReplace_b0_by_T2W_image_triggered()
         return;
     }
     in.get_voxel_size(vs);
-    std::shared_ptr<manual_alignment> manual(new manual_alignment(this,dwi,handle->voxel.vs,ref,vs,tipl::reg::rigid_body,tipl::reg::cost_type::corr));
+    std::shared_ptr<manual_alignment> manual(new manual_alignment(this,handle->dwi,handle->voxel.vs,ref,vs,tipl::reg::rigid_body,tipl::reg::cost_type::corr));
     manual->on_rerun_clicked();
     if(manual->exec() != QDialog::Accepted)
         return;
@@ -894,7 +765,6 @@ void reconstruction_window::on_actionReplace_b0_by_T2W_image_triggered()
     tipl::pointer_image<unsigned short,3> I = tipl::make_image((unsigned short*)handle->src_dwi_data[0],handle->voxel.dim);
     ref *= (float)(*std::max_element(I.begin(),I.end()))/(*std::max_element(ref.begin(),ref.end()));
     std::copy(ref.begin(),ref.end(),I.begin());
-    update_image();
     update_dimension();
     on_SlicePos_valueChanged(ui->SlicePos->value());
 }
@@ -929,7 +799,6 @@ void reconstruction_window::on_actionCorrect_AP_PA_scans_triggered()
         return;
     }
     handle->distortion_correction(src2);
-    update_image();
     on_SlicePos_valueChanged(ui->SlicePos->value());
 }
 
@@ -954,7 +823,7 @@ void reconstruction_window::on_actionImage_upsample_to_T1W_TESTING_triggered()
     if(!load_image_from_files(filenames,ref,vs,t))
         return;
     std::shared_ptr<manual_alignment> manual(new manual_alignment(this,
-                                                                dwi,handle->voxel.vs,ref,vs,
+                                                                handle->dwi,handle->voxel.vs,ref,vs,
                                                                 tipl::reg::rigid_body,
                                                                 tipl::reg::cost_type::mutual_info));
     manual->on_rerun_clicked();
@@ -974,8 +843,9 @@ void reconstruction_window::on_actionImage_upsample_to_T1W_TESTING_triggered()
     handle->voxel.report += QFileInfo(filenames[0]).baseName().toStdString();
     handle->voxel.report += ". The b-table was also rotated accordingly.";
     ui->report->setText(handle->voxel.report.c_str());
-    update_image();
+
     update_dimension();
+    load_b_table();
     on_SlicePos_valueChanged(ui->SlicePos->value());
 }
 
@@ -989,15 +859,6 @@ void reconstruction_window::on_open_ddi_study_src_clicked()
         return;
     handle->voxel.study_src_file_path = filename.toStdString();
     ui->ddi_file->setText(QFileInfo(filename).baseName());
-}
-
-void reconstruction_window::on_actionRotate_to_MNI_triggered()
-{
-    begin_prog("rotating");
-    handle->rotate_to_mni();
-    update_image();
-    update_dimension();
-    on_SlicePos_valueChanged(ui->SlicePos->value());
 }
 
 void reconstruction_window::on_SagView_clicked()
@@ -1022,27 +883,4 @@ void reconstruction_window::on_AxiView_clicked()
     ui->z_pos->setRange(0,handle->voxel.dim[view_orientation]-1);
     ui->z_pos->setValue((handle->voxel.dim[view_orientation]-1) >> 1);
     on_b_table_itemSelectionChanged();
-}
-
-
-
-void reconstruction_window::on_actionFlip_bx_triggered()
-{
-    for(int i = 0;i < handle->src_bvectors.size();++i)
-        handle->src_bvectors[i][0] = -handle->src_bvectors[i][0];
-    QMessageBox::information(this,"DSI Studio","B-table flipped",0);
-}
-
-void reconstruction_window::on_actionFlip_by_triggered()
-{
-    for(int i = 0;i < handle->src_bvectors.size();++i)
-        handle->src_bvectors[i][1] = -handle->src_bvectors[i][1];
-    QMessageBox::information(this,"DSI Studio","B-table flipped",0);
-}
-
-void reconstruction_window::on_actionFlip_bz_triggered()
-{
-    for(int i = 0;i < handle->src_bvectors.size();++i)
-        handle->src_bvectors[i][2] = -handle->src_bvectors[i][2];
-    QMessageBox::information(this,"DSI Studio","B-table flipped",0);
 }

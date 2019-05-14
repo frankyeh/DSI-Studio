@@ -58,30 +58,17 @@ int rec(void)
         handle->distortion_correction(*handle2.get());
         std::cout << "Phase correction done with " << file_name2 << std::endl;
     }
-
-
-    if (po.has("flip"))
+    if (po.has("cmd"))
     {
-        std::string flip_seq = po.get("flip");
-        for(unsigned int index = 0;index < flip_seq.length();++index)
-            if(flip_seq[index] >= '0' && flip_seq[index] <= '5')
-            {
-                handle->flip_dwi(flip_seq[index]-'0');
-                std::cout << "Flip image volume:" << (int)flip_seq[index]-'0' << std::endl;
-            }
+        QStringList cmd_list = QString(po.get("cmd").c_str()).split(",");
+        for(int i = 0;i < cmd_list.size();++i)
+        {
+            std::cout << "Run " << cmd_list[i].toStdString() << std::endl;
+            if(!handle->command(cmd_list[i].toStdString()))
+                return 1;
+        }
     }
-    if (po.has("bflip"))
-    {
-        std::string flip_seq = po.get("bflip");
-        for(unsigned int index = 0;index < flip_seq.length();++index)
-            if(flip_seq[index] >= '0' && flip_seq[index] <= '2')
-            {
-                char dim = flip_seq[index]-'0';
-                std::cout << "Flip b-table:" << (int)dim << std::endl;
-                for(int i = 0;i < handle->src_bvectors.size();++i)
-                    handle->src_bvectors[i][dim] = -handle->src_bvectors[i][dim];
-            }
-    }
+
     // apply affine transformation
     if (po.has("affine"))
     {
@@ -183,7 +170,7 @@ int rec(void)
 
     handle->voxel.method_id = method_index;
     handle->voxel.ti.init(po.get("odf_order",int(8)));
-    handle->voxel.need_odf = po.get("record_odf",int(0));
+    handle->voxel.output_odf = po.get("record_odf",int(0));
     handle->voxel.check_btable = po.get("check_btable",int(1));
     handle->voxel.output_jacobian = po.get("output_jac",int(0));
     handle->voxel.output_mapping = po.get("output_map",int(0));
@@ -211,7 +198,7 @@ int rec(void)
 
 
     {
-        if(handle->voxel.need_odf)
+        if(handle->voxel.output_odf)
             std::cout << "record ODF in the fib file" << std::endl;
         if(handle->voxel.odf_deconvolusion)
             std::cout << "apply deconvolution" << std::endl;

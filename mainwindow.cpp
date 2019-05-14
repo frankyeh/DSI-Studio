@@ -848,7 +848,7 @@ void MainWindow::on_ReconstructSRC_clicked()
         handle->voxel.csf_calibration = 0;
         handle->voxel.max_fiber_number = 5;
         handle->voxel.r2_weighted = 0;
-        handle->voxel.need_odf = true; // output ODF
+        handle->voxel.output_odf = true; // output ODF
         handle->voxel.check_btable = true;
         handle->voxel.output_jacobian = false;
         handle->voxel.output_mapping = false;

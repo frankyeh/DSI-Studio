@@ -1,5 +1,6 @@
 #ifndef MNI_RECONSTRUCTION_HPP
 #define MNI_RECONSTRUCTION_HPP
+#include <QFileInfo>
 #include <chrono>
 #include "basic_voxel.hpp"
 #include "basic_process.hpp"
@@ -41,6 +42,8 @@ public:
         if(voxel.primary_template.empty())
             throw std::runtime_error("Invalid external template");
         {
+            voxel.step_report << "[Step T2b(1)][Template]=" <<
+                                 QFileInfo(voxel.primary_template.c_str()).baseName().toStdString() << std::endl;
             gz_nifti read;
             if(read.load_from_file(voxel.primary_template.c_str()))
             {

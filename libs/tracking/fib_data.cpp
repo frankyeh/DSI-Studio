@@ -552,6 +552,8 @@ bool fib_data::load_from_mat(void)
         const char* report_buf = 0;
         if(mat_reader.read("report",row,col,report_buf))
             report = std::string(report_buf,report_buf+row*col);
+        if(mat_reader.read("steps",row,col,report_buf))
+            steps = std::string(report_buf,report_buf+row*col);
 
         const unsigned short* dim_buf = 0;
         if (!mat_reader.read("dimension",row,col,dim_buf))

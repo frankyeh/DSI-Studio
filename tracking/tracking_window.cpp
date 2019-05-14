@@ -2100,7 +2100,21 @@ float tracking_window::get_fa_threshold(void)
     return threshold;
 }
 
-
-
-
-
+void tracking_window::on_actionFIB_protocol_triggered()
+{
+    std::istringstream in(handle->steps);
+    std::ostringstream out;
+    std::string line;
+    for(int i = 1;std::getline(in,line);++i)
+    {
+        if(line.find('=') != std::string::npos)
+            line = std::string("Set ") + line;
+        else
+        if(std::count(line.begin(),line.end(),']') >= 3)
+            line = std::string("At the top menu, select ") + line;
+        else
+            line = std::string("Click ") + line;
+        out << "(" << i << ") " << line << std::endl;
+    }
+    show_info_dialog("FIB",out.str());
+}

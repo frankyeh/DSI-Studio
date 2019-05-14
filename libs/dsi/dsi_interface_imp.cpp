@@ -158,12 +158,14 @@ const char* ImageModel::reconstruction(void)
             voxel.csf_calibration = false;
         voxel.recon_report.clear();
         voxel.recon_report.str("");
+        voxel.step_report.clear();
+        voxel.step_report.str("");
         std::ostringstream out;
         if(voxel.method_id != 4 && voxel.method_id != 7)
             voxel.output_rdi = 0;
         if(voxel.method_id == 1) // DTI
         {
-            voxel.need_odf = 0;
+            voxel.output_odf = 0;
             voxel.output_jacobian = 0;
             voxel.output_mapping = 0;
             voxel.scheme_balance = 0;
@@ -181,7 +183,7 @@ const char* ImageModel::reconstruction(void)
             }
             out << ".odf" << voxel.ti.fold;// odf_order
             out << ".f" << voxel.max_fiber_number;
-            if (voxel.need_odf)
+            if (voxel.output_odf)
                 out << "rec";
             if (voxel.scheme_balance)
                 out << ".bal";
@@ -226,6 +228,7 @@ const char* ImageModel::reconstruction(void)
         switch (voxel.method_id)
         {
         case 0: //DSI local max
+            voxel.step_report << "[Step T2b(1)]=DSI" << std::endl;
             voxel.recon_report <<
             " The diffusion data were reconstructed using diffusion spectrum imaging (Wedeen et al. MRM, 2005) with a Hanning filter of " << (int)voxel.param[0] << ".";
             if (voxel.odf_deconvolusion || voxel.odf_decomposition)
@@ -238,6 +241,7 @@ const char* ImageModel::reconstruction(void)
                 return "reconstruction canceled";
             break;
         case 1://DTI
+            voxel.step_report << "[Step T2b(1)]=DTI" << std::endl;
             voxel.recon_report << " The diffusion tensor was calculated.";
             out << ".dti.fib.gz";
             voxel.max_fiber_number = 1;
@@ -269,6 +273,8 @@ const char* ImageModel::reconstruction(void)
             break;
 
         case 4://GQI
+            voxel.step_report << "[Step T2b(1)]=GQI" << std::endl;
+            voxel.step_report << "[Step T2b(1)][Diffusion sampling length ratio]=" << (float)voxel.param[0] << std::endl;
             if(voxel.param[0] == 0.0) // spectral analysis
             {
                 voxel.recon_report <<
@@ -286,10 +292,10 @@ const char* ImageModel::reconstruction(void)
 
             if(!voxel.study_src_file_path.empty())
             {
-               rotate_to_mni();
-               if(!compare_src(voxel.study_src_file_path.c_str()))
+                rotate_to_mni();
+                if(!compare_src(voxel.study_src_file_path.c_str()))
                     return "Failed to load DDI study SRC file.";
-
+                voxel.step_report << "[Step T2b(1)][Compare SRC]=" << QFileInfo(voxel.study_src_file_path.c_str()).baseName().toStdString() << std::endl;
                 voxel.recon_report <<
                 " The diffusion data were compared with baseline scan using differential tractography with a diffusion sampling length ratio of "
                 << (float)voxel.param[0] << " to study neuronal change.";
@@ -331,7 +337,8 @@ const char* ImageModel::reconstruction(void)
                 return "reconstruction canceled";
             break;
         case 7:
-
+            voxel.step_report << "[Step T2b(1)]=QSDR" << std::endl;
+            voxel.step_report << "[Step T2b(1)][Diffusion sampling length ratio]=" << (float)voxel.param[0] << std::endl;
             voxel.recon_report
             << " The diffusion data were reconstructed in the MNI space using q-space diffeomorphic reconstruction (Yeh et al., Neuroimage, 58(1):91-9, 2011) to obtain the spin distribution function (Yeh et al., IEEE TMI, ;29(9):1626-35, 2010). "
             << " A diffusion sampling length ratio of "
@@ -402,7 +409,7 @@ bool output_odfs(const tipl::image<unsigned char,3>& mni_mask,
     image_model.voxel.dim = mni_mask.geometry();
     image_model.voxel.ti = ti;
     image_model.voxel.max_fiber_number = 5;
-    image_model.voxel.need_odf = record_odf;
+    image_model.voxel.output_odf = record_odf;
     image_model.voxel.template_odfs.swap(odfs);
     image_model.file_name = out_name;
     image_model.voxel.mask = mni_mask;

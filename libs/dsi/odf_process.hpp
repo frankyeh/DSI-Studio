@@ -162,8 +162,9 @@ public:
     virtual void init(Voxel& voxel)
     {
         odf_data.clear();
-        if (voxel.need_odf)
+        if (voxel.output_odf)
         {
+            voxel.step_report << "[Step T2b(2)][ODFs]=checked" << std::endl;
             unsigned int total_count = 0;
             odf_index_map.resize(voxel.mask.size());
             for (unsigned int index = 0;index < voxel.mask.size();++index)
@@ -204,7 +205,7 @@ public:
     virtual void run(Voxel& voxel,VoxelData& data)
     {
 
-        if (voxel.need_odf && data.fa[0] + 1.0 != 1.0)
+        if (voxel.output_odf && data.fa[0] + 1.0 != 1.0)
         {
             unsigned int odf_index = odf_index_map[data.voxel_index];
             std::copy(data.odf.begin(),data.odf.end(),
@@ -215,7 +216,7 @@ public:
     virtual void end(Voxel& voxel,gz_mat_write& mat_writer)
     {
 
-        if (!voxel.need_odf)
+        if (!voxel.output_odf)
             return;
         {
             set_title("output odfs");
@@ -283,7 +284,7 @@ public:
     }
     virtual void end(Voxel& voxel,gz_mat_write& mat_writer)
     {
-        if (voxel.need_odf)
+        if (voxel.output_odf)
         {
             set_title("output odfs");
             for (unsigned int index = 0;index < voxel.template_odfs.size();++index)

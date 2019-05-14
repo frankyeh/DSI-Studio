@@ -62,8 +62,8 @@ public:
     std::vector<tipl::vector<3,float> > bvectors;
     std::vector<float> bvalues;
 
-    std::string report;
-    std::ostringstream recon_report;
+    std::string report,steps;
+    std::ostringstream recon_report, step_report;
     unsigned int thread_count = 1;
     void load_from_src(ImageModel& image_model);
 public:
@@ -72,7 +72,7 @@ public:
     tessellated_icosahedron ti;
 public:
     std::string file_name;
-    bool need_odf = false;
+    bool output_odf = false;
     bool check_btable = true;
     unsigned int max_fiber_number = 5;
     std::vector<std::string> file_list;

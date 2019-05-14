@@ -1,8 +1,36 @@
 #include <QFileInfo>
+#include <QInputDialog>
 #include "image_model.hpp"
 #include "odf_process.hpp"
 #include "dti_process.hpp"
 #include "fib_data.hpp"
+
+void ImageModel::draw_mask(tipl::color_image& buffer,int position)
+{
+    if (!dwi.size())
+        return;
+    buffer.resize(tipl::geometry<2>(dwi.width(),dwi.height()));
+    unsigned int offset = position*buffer.size();
+    std::copy(dwi.begin() + offset,
+              dwi.begin()+ offset + buffer.size(),buffer.begin());
+
+    unsigned char* slice_image_ptr = &*dwi.begin() + buffer.size()* position;
+    unsigned char* slice_mask = &*voxel.mask.begin() + buffer.size()* position;
+
+    tipl::color_image buffer2(tipl::geometry<2>(dwi.width()*2,dwi.height()));
+    tipl::draw(buffer,buffer2,tipl::vector<2,int>());
+    for (unsigned int index = 0; index < buffer.size(); ++index)
+    {
+        unsigned char value = slice_image_ptr[index];
+        if (slice_mask[index])
+            buffer[index] = tipl::rgb(255, value, value);
+        else
+            buffer[index] = tipl::rgb(value, value, value);
+    }
+    tipl::draw(buffer,buffer2,tipl::vector<2,int>(dwi.width(),0));
+    buffer2.swap(buffer);
+}
+
 void ImageModel::calculate_dwi_sum(void)
 {
     dwi_sum.clear();
@@ -25,6 +53,14 @@ void ImageModel::calculate_dwi_sum(void)
     float t = tipl::segmentation::otsu_threshold(dwi_sum);
     tipl::upper_threshold(dwi_sum,t*3.0f);
     tipl::normalize(dwi_sum,1.0);
+
+    // update dwi
+    dwi.resize(voxel.dim);
+    float min = tipl::minimum(dwi_sum);
+    float range = tipl::maximum(dwi_sum)-min;
+    float r = range > 0.0 ? 255.9f/range:1.0f;
+    for(unsigned int index = 0;index < dwi.size();++index)
+        dwi[index] = (dwi_sum[index]-min)*r;
 }
 
 void ImageModel::remove(unsigned int index)
@@ -281,6 +317,147 @@ bool ImageModel::is_human_data(void) const
     return voxel.dim[0]*voxel.vs[0] > 150 && voxel.dim[1]*voxel.vs[1] > 150;
 }
 
+bool ImageModel::command(std::string cmd,std::string param)
+{
+    if(cmd == "[Step T2a][Erosion]")
+    {
+        tipl::morphology::erosion(voxel.mask);
+        voxel.steps += cmd+"\n";
+        return true;
+    }
+    if(cmd == "[Step T2a][Dilation]")
+    {
+        tipl::morphology::dilation(voxel.mask);
+        voxel.steps += cmd+"\n";
+        return true;
+    }
+    if(cmd == "[Step T2a][Defragment]")
+    {
+        tipl::morphology::defragment(voxel.mask);
+        voxel.steps += cmd+"\n";
+        return true;
+    }
+    if(cmd == "[Step T2a][Smoothing]")
+    {
+        tipl::morphology::smoothing(voxel.mask);
+        voxel.steps += cmd+"\n";
+        return true;
+    }
+    if(cmd == "[Step T2a][Negate]")
+    {
+        tipl::morphology::negate(voxel.mask);
+        voxel.steps += cmd+"\n";
+        return true;
+    }
+    if(cmd == "[Step T2a][Threshold]")
+    {
+        int threshold;
+        if(param.empty())
+        {
+            bool ok;
+            int threshold = QInputDialog::getInt(0,"DSI Studio","Please assign the threshold",
+                                                 (int)tipl::segmentation::otsu_threshold(dwi),
+                                                 (int)*std::min_element(dwi.begin(),dwi.end()),
+                                                 (int)*std::max_element(dwi.begin(),dwi.end())+1,1,&ok);
+            if (!ok)
+                return true;
+        }
+        else
+            threshold = std::stoi(param);
+        tipl::threshold(dwi,voxel.mask,threshold);
+        voxel.steps += cmd + "=" + std::to_string(threshold) + "\n";
+        return true;
+    }
+    if(cmd == "[Step T2a][Remove Background]")
+    {
+        for(int index = 0;index < voxel.mask.size();++index)
+            if(voxel.mask[index] == 0)
+                dwi[index] = 0;
+
+        for(int index = 0;index < src_dwi_data.size();++index)
+        {
+            unsigned short* buf = (unsigned short*)src_dwi_data[index];
+            for(int i = 0;i < voxel.mask.size();++i)
+                if(voxel.mask[i] == 0)
+                    buf[i] = 0;
+        }
+        voxel.steps += cmd+"\n";
+        return true;
+    }
+    if(cmd == "[Step T2][Edit][Trim]")
+    {
+        trim();
+        voxel.steps += cmd+"\n";
+        return true;
+    }
+    if(cmd == "[Step T2][Edit][Image flip x]")
+    {
+        flip_dwi(0);
+        voxel.steps += cmd+"\n";
+        return true;
+    }
+    if(cmd == "[Step T2][Edit][Image flip y]")
+    {
+        flip_dwi(1);
+        voxel.steps += cmd+"\n";
+        return true;
+    }
+    if(cmd == "[Step T2][Edit][Image flip z]")
+    {
+        flip_dwi(2);
+        voxel.steps += cmd+"\n";
+        return true;
+    }
+    if(cmd == "[Step T2][Edit][Image swap xy]")
+    {
+        flip_dwi(3);
+        voxel.steps += cmd+"\n";
+        return true;
+    }
+    if(cmd == "[Step T2][Edit][Image swap yz]")
+    {
+        flip_dwi(4);
+        voxel.steps += cmd+"\n";
+        return true;
+    }
+    if(cmd == "[Step T2][Edit][Image swap xz]")
+    {
+        flip_dwi(5);
+        voxel.steps += cmd+"\n";
+        return true;
+    }
+    if(cmd == "[Step T2][Edit][Rotate to MNI]")
+    {
+        begin_prog("rotating");
+        rotate_to_mni();
+        check_prog(0,0);
+        voxel.steps += cmd+"\n";
+        return true;
+    }
+    if(cmd == "[Step T2][Edit][Change b-table:flip bx]")
+    {
+        for(int i = 0;i < src_bvectors.size();++i)
+            src_bvectors[i][0] = -src_bvectors[i][0];
+        voxel.steps += cmd+"\n";
+        return true;
+    }
+    if(cmd == "[Step T2][Edit][Change b-table:flip by]")
+    {
+        for(int i = 0;i < src_bvectors.size();++i)
+            src_bvectors[i][1] = -src_bvectors[i][1];
+        voxel.steps += cmd+"\n";
+        return true;
+    }
+    if(cmd == "[Step T2][Edit][Change b-table:flip bz]")
+    {
+        for(int i = 0;i < src_bvectors.size();++i)
+            src_bvectors[i][2] = -src_bvectors[i][2];
+        voxel.steps += cmd+"\n";
+        return true;
+    }
+    std::cout << "Unknown command:" << cmd << std::endl;
+    return false;
+}
 void ImageModel::flip_b_table(unsigned char dim)
 {
     for(unsigned int index = 0;index < src_bvectors.size();++index)
@@ -330,6 +507,7 @@ void ImageModel::flip_dwi(unsigned char type)
     else
         swap_b_table(type-3);
     tipl::flip(dwi_sum,type);
+    tipl::flip(dwi,type);
     tipl::flip(voxel.mask,type);
     for(unsigned int i = 0;i < voxel.grad_dev.size();++i)
     {
@@ -902,6 +1080,9 @@ bool ImageModel::load_from_file(const char* dwi_file_name)
     }
     else
         voxel.calculate_mask(dwi_sum);
+    voxel.steps += "[Step T2][Reconstruction] open";
+    voxel.steps += QFileInfo(dwi_file_name).fileName().toStdString();
+    voxel.steps += "\n";
     return true;
 }
 
@@ -937,9 +1118,13 @@ void ImageModel::save_fib(const std::string& ext)
     gz_mat_write mat_writer(output_name.c_str());
     save_to_file(mat_writer);
     voxel.end(mat_writer);
-    std::string final_report = voxel.report.c_str();
+    std::string final_report = voxel.report;
     final_report += voxel.recon_report.str();
     mat_writer.write("report",final_report.c_str(),1,final_report.length());
+    std::string final_steps = voxel.steps;
+    final_steps += voxel.step_report.str();
+    final_steps += "[Step T2B][Run reconstruction]\n";
+    mat_writer.write("steps",final_steps.c_str(),1,final_steps.length());
 }
 bool ImageModel::save_to_nii(const char* nifti_file_name) const
 {

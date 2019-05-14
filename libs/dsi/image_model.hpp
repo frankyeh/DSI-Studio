@@ -244,7 +244,9 @@ public:
     std::vector<float> src_bvalues;
     std::vector<const unsigned short*> src_dwi_data;
     tipl::image<float,3> dwi_sum;
+    tipl::image<unsigned char, 3>dwi;
     std::shared_ptr<ImageModel> study_src;
+    void draw_mask(tipl::color_image& buffer,int position);
     void calculate_dwi_sum(void);
     void remove(unsigned int index);
     void pre_dti(void);
@@ -261,6 +263,7 @@ public:
     std::vector<std::pair<int,int> > get_bad_slices(void);
     float quality_control_neighboring_dwi_corr(void);
     bool is_human_data(void) const;
+
     void flip_b_table(const unsigned char* order);
     void flip_b_table(unsigned char dim);
     void swap_b_table(unsigned char dim);
@@ -275,8 +278,7 @@ public:
     void distortion_correction(const ImageModel& rhs);
     bool compare_src(const char* file_name);
 public:
-
-
+    bool command(std::string cmd,std::string param = "");
 public:
     bool load_from_file(const char* dwi_file_name);
     void save_fib(const std::string& ext);
