@@ -297,14 +297,23 @@ public:
     }
 
     template<class ProcessType>
-    bool reconstruct(void)
+    bool reconstruct(const char* prog)
     {
-        begin_prog("reconstruction");
-        // Copy SRC b-table to voxel b-table and sort it
-        voxel.load_from_src(*this);
-        voxel.CreateProcesses<ProcessType>();
-        voxel.init();
-        voxel.run();
+        // initialization
+        {
+            begin_prog("Initialization");
+            // Copy SRC b-table to voxel b-table and sort it
+            voxel.load_from_src(*this);
+            voxel.CreateProcesses<ProcessType>();
+            voxel.init();
+            if(prog_aborted())
+                return false;
+        }
+        // reconstruction
+        {
+            begin_prog(prog);
+            voxel.run();
+        }
         return !prog_aborted();
     }
     const char* reconstruction(void);

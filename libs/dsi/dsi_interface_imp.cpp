@@ -4,8 +4,6 @@
 #include "tessellated_icosahedron.hpp"
 #include "prog_interface_static_link.h"
 #include "basic_voxel.hpp"
-#include "image_model.hpp"
-#include "odf_decomposition.hpp"
 #include "odf_process.hpp"
 
 #include "sample_model.hpp"
@@ -18,9 +16,8 @@
 #include "gqi_process.hpp"
 #include "gqi_mni_reconstruction.hpp"
 
-#include "odf_deconvolusion.hpp"
-#include "odf_decomposition.hpp"
 #include "image_model.hpp"
+
 
 
 typedef boost::mpl::vector<
@@ -41,25 +38,12 @@ typedef boost::mpl::vector<
 template<class reco_type>
 struct odf_reco_type{
     typedef boost::mpl::vector<
-        ODFDeconvolusion,
-        ODFDecomposition,
         DetermineFiberDirections,
         SaveMetrics,
         SaveDirIndex,
         OutputODF
     > common_odf_process;
     typedef typename boost::mpl::insert_range<common_odf_process,boost::mpl::begin<common_odf_process>::type,reco_type>::type type0;
-    typedef typename boost::mpl::push_front<type0,ReadDWIData>::type type; // add ReadDWIData to the front
-};
-
-template<class reco_type>
-struct estimation_type{
-    typedef boost::mpl::vector<
-        DetermineFiberDirections,
-        EstimateResponseFunction
-    > common_estimation_process;
-
-    typedef typename boost::mpl::insert_range<common_estimation_process,boost::mpl::begin<common_estimation_process>::type,reco_type>::type type0;
     typedef typename boost::mpl::push_front<type0,ReadDWIData>::type type; // add ReadDWIData to the front
 };
 
@@ -84,8 +68,6 @@ typedef boost::mpl::vector<
     GQI_Recon,
     RDI_Recon,
     Dwi2Tensor,
-    ODFDeconvolusion,
-    ODFDecomposition,
     EstimateZ0_MNI,
     DetermineFiberDirections,
     SaveMetrics,
@@ -111,33 +93,14 @@ typedef boost::mpl::vector<
     SchemeConverter
 > hardi_convert_process;
 
-// for ODF deconvolution
-typedef estimation_type<boost::mpl::vector<
-    QSpace2Pdf,
-    Pdf2Odf
-> >::type dsi_estimate_response_function;
 
-// for ODF deconvolution
-typedef estimation_type<boost::mpl::vector<
-    QBIReconstruction<equator_sample_count>
-> >::type qbi_estimate_response_function;
-
-// for ODF deconvolution
-typedef estimation_type<boost::mpl::vector<
-    SHDecomposition
-> >::type qbi_sh_estimate_response_function;
-
-
-// for ODF deconvolution
 typedef boost::mpl::vector<
     ReadDWIData,
     BalanceScheme,
     GQI_Recon,
     DetermineFiberDirections,
-    RecordQA,
-    EstimateResponseFunction
-
-> gqi_estimate_response_function;
+    RecordQA
+> qa_map;
 
 
 
@@ -170,17 +133,11 @@ const char* ImageModel::reconstruction(void)
             voxel.output_mapping = 0;
             voxel.scheme_balance = 0;
             voxel.half_sphere = 0;
-            voxel.odf_deconvolusion = 0;
-            voxel.odf_decomposition = 0;
         }
         else
         {
             if(!voxel.study_src_file_path.empty()) // DDI
-            {
-                voxel.odf_deconvolusion = 0;
-                voxel.odf_decomposition = 0;
                 voxel.csf_calibration = false;
-            }
             out << ".odf" << voxel.ti.fold;// odf_order
             out << ".f" << voxel.max_fiber_number;
             if (voxel.output_odf)
@@ -193,26 +150,6 @@ const char* ImageModel::reconstruction(void)
                 out << ".csfc";
             else
                 voxel.csf_calibration = false;
-            if (voxel.odf_deconvolusion)
-            {
-                out << ".de" << voxel.param[2];
-                if(voxel.odf_xyz[0] != 0 ||
-                   voxel.odf_xyz[1] != 0 ||
-                   voxel.odf_xyz[2] != 0)
-                    out << ".at_" << voxel.odf_xyz[0]
-                        << "_" << voxel.odf_xyz[1]
-                        << "_" << voxel.odf_xyz[2];
-            }
-            if (voxel.odf_decomposition)
-            {
-                out << ".dec" << voxel.param[3] << "m" << (int)voxel.param[4];
-                if(voxel.odf_xyz[0] != 0 ||
-                   voxel.odf_xyz[1] != 0 ||
-                   voxel.odf_xyz[2] != 0)
-                    out << ".at_" << voxel.odf_xyz[0]
-                        << "_" << voxel.odf_xyz[1]
-                        << "_" << voxel.odf_xyz[2];
-            }
         }
 
 
@@ -231,13 +168,8 @@ const char* ImageModel::reconstruction(void)
             voxel.step_report << "[Step T2b(1)]=DSI" << std::endl;
             voxel.recon_report <<
             " The diffusion data were reconstructed using diffusion spectrum imaging (Wedeen et al. MRM, 2005) with a Hanning filter of " << (int)voxel.param[0] << ".";
-            if (voxel.odf_deconvolusion || voxel.odf_decomposition)
-            {
-                if (!reconstruct<dsi_estimate_response_function>())
-                    return "reconstruction canceled";
-            }
             out << ".dsi."<< (int)voxel.param[0] << ".fib.gz";
-            if (!reconstruct<dsi_process>())
+            if (!reconstruct<dsi_process>("DSI reconstruction"))
                 return "reconstruction canceled";
             break;
         case 1://DTI
@@ -245,30 +177,20 @@ const char* ImageModel::reconstruction(void)
             voxel.recon_report << " The diffusion tensor was calculated.";
             out << ".dti.fib.gz";
             voxel.max_fiber_number = 1;
-            if (!reconstruct<dti_process>())
+            if (!reconstruct<dti_process>("DTI reconstruction"))
                 return "reconstruction canceled";
             break;
 
         case 2://QBI
             voxel.recon_report << " The diffusion data was reconstructed using q-ball imaging (Tuch, MRM 2004).";
-            if (voxel.odf_deconvolusion || voxel.odf_decomposition)
-            {
-                if (!reconstruct<qbi_estimate_response_function>())
-                    return "reconstruction canceled";
-            }
             out << ".qbi."<< voxel.param[0] << "_" << voxel.param[1] << ".fib.gz";
-            if (!reconstruct<qbi_process>())
+            if (!reconstruct<qbi_process>("QBI reconstruction"))
                 return "reconstruction canceled";
             break;
         case 3://QBI
             voxel.recon_report << " The diffusion data was reconstructed using spherical-harmonic-based q-ball imaging (Descoteaux et al., MRM 2007).";
-            if (voxel.odf_deconvolusion || voxel.odf_decomposition)
-            {
-                if (!reconstruct<qbi_sh_estimate_response_function>())
-                    return "reconstruction canceled";
-            }
             out << ".qbi.sh"<< (int) voxel.param[1] << "." << voxel.param[0] << ".fib.gz";
-            if (!reconstruct<qbi_sh_process>())
+            if (!reconstruct<qbi_sh_process>("QBI SH reconstruction"))
                 return "reconstruction canceled";
             break;
 
@@ -280,7 +202,7 @@ const char* ImageModel::reconstruction(void)
                 voxel.recon_report <<
                 " The diffusion data were reconstructed using generalized q-sampling imaging (Yeh et al., IEEE TMI, ;29(9):1626-35, 2010).";
                 out << (voxel.r2_weighted ? ".gqi2.spec.fib.gz":".gqi.spec.fib.gz");
-                if (!reconstruct<gqi_spectral_process>())
+                if (!reconstruct<gqi_spectral_process>("GQI spectral reconstruction"))
                     return "reconstruction canceled";
                 break;
             }
@@ -306,11 +228,6 @@ const char* ImageModel::reconstruction(void)
                 voxel.recon_report <<
                 " The diffusion data were reconstructed using generalized q-sampling imaging (Yeh et al., IEEE TMI, ;29(9):1626-35, 2010) with a diffusion sampling length ratio of " << (float)voxel.param[0] << ".";
 
-            if (voxel.odf_deconvolusion || voxel.odf_decomposition)
-            {
-                if (!reconstruct<gqi_estimate_response_function>())
-                    return "reconstruction canceled";
-            }
             if(voxel.r2_weighted)
                 voxel.recon_report << " The ODF calculation was weighted by the square of the diffuion displacement.";
             if (voxel.output_rdi)
@@ -319,12 +236,12 @@ const char* ImageModel::reconstruction(void)
 
             if(src_dwi_data.size() == 1)
             {
-                if (!reconstruct<hgqi_process>())
+                if (!reconstruct<hgqi_process>("Reconstruction"))
                     return "reconstruction canceled";
                 break;
             }
 
-            if (!reconstruct<gqi_process>())
+            if (!reconstruct<gqi_process>("GQI reconstruction"))
                 return "reconstruction canceled";
             break;
         case 6:
@@ -333,7 +250,7 @@ const char* ImageModel::reconstruction(void)
             out << ".hardi."<< voxel.param[0]
                 << ".b" << voxel.param[1]
                 << ".reg" << voxel.param[2] << ".src.gz";
-            if (!reconstruct<hardi_convert_process>())
+            if (!reconstruct<hardi_convert_process>("HARDI reconstruction"))
                 return "reconstruction canceled";
             break;
         case 7:
@@ -345,13 +262,13 @@ const char* ImageModel::reconstruction(void)
             << (float)voxel.param[0] << " was used";
             // run gqi to get the spin quantity
 
-
+            // obtain QA map for normalization
             {
                 std::vector<tipl::pointer_image<float,3> > tmp;
                 tmp.swap(voxel.grad_dev);
                 // clear mask to create whole volume QA map
                 std::fill(voxel.mask.begin(),voxel.mask.end(),1.0);
-                if (!reconstruct<gqi_estimate_response_function>())
+                if (!reconstruct<qa_map>("Calculating QA Map"))
                     return "reconstruction canceled";
                 tmp.swap(voxel.grad_dev);
             }
@@ -362,7 +279,7 @@ const char* ImageModel::reconstruction(void)
                 out << ".jac";
             if(voxel.output_mapping)
                 out << ".map";
-            if (!reconstruct<qsdr_process>())
+            if (!reconstruct<qsdr_process>("QSDR reconstruction"))
                 return "reconstruction canceled";
 
             voxel.recon_report
@@ -415,7 +332,7 @@ bool output_odfs(const tipl::image<unsigned char,3>& mni_mask,
     image_model.voxel.mask = mni_mask;
     std::copy(mni,mni+16,image_model.voxel.trans_to_mni);
     std::copy(vs,vs+3,image_model.voxel.vs.begin());
-    if (prog_aborted() || !image_model.reconstruct<reprocess_odf>())
+    if (prog_aborted() || !image_model.reconstruct<reprocess_odf>("Template reconstruction"))
         return false;
     image_model.save_fib(ext);
     image_model.voxel.template_odfs.swap(odfs);
@@ -595,7 +512,7 @@ const char* odf_average(const char* out_name,std::vector<std::string>& file_name
     if (prog_aborted())
         return 0;
 
-    set_title("averaging odfs");
+    set_title("Averaging ODFs");
     for (unsigned int odf_index = 0;odf_index < odfs.size();++odf_index)
         for (unsigned int j = 0;j < odfs[odf_index].size();++j)
             odfs[odf_index][j] /= (double)file_names.size();
@@ -603,7 +520,7 @@ const char* odf_average(const char* out_name,std::vector<std::string>& file_name
     std::ostringstream out;
     out << "A group average template was constructed from a total of " << file_names.size() << " subjects." << report.c_str();
     report = out.str();
-    set_title("output files");
+    set_title("Output Files");
     output_odfs(mask,out_name,".mean.odf.fib.gz",odfs,ti,vs,mni,report);
     output_odfs(mask,out_name,".mean.fib.gz",odfs,ti,vs,mni,report,false);
     return 0;

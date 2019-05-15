@@ -840,8 +840,6 @@ void MainWindow::on_ReconstructSRC_clicked()
         handle->voxel.method_id = 7; // QSDR
         handle->voxel.param[0] = 1.25f;
         handle->voxel.ti.init(8); // odf order of 8
-        handle->voxel.odf_deconvolusion = 0;//ui->odf_sharpening->currentIndex() == 1 ? 1 : 0;
-        handle->voxel.odf_decomposition = 0;//ui->odf_sharpening->currentIndex() == 2 ? 1 : 0;
         handle->voxel.odf_xyz[0] = 0;
         handle->voxel.odf_xyz[1] = 0;
         handle->voxel.odf_xyz[2] = 0;

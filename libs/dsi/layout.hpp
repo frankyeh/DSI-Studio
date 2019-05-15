@@ -168,7 +168,7 @@ public:
                     }
                 }
 
-        set_title("Generating images");
+        set_title("Generating Images");
 
         std::string fib_file_name(file_name);
         fib_file_name += ".layout.fib";

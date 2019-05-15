@@ -49,8 +49,6 @@ HEADERS += mainwindow.h \
     libs/dsi/racian_noise.hpp \
     libs/dsi/qbi_process.hpp \
     libs/dsi/odf_process.hpp \
-    libs/dsi/odf_deconvolusion.hpp \
-    libs/dsi/odf_decomposition.hpp \
     libs/dsi/mix_gaussian_model.hpp \
     libs/dsi/layout.hpp \
     libs/dsi/image_model.hpp \

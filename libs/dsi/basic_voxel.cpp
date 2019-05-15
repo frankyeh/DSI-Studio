@@ -128,12 +128,11 @@ void Voxel::run(void)
 
     size_t total_voxel = 0;
     bool terminated = false;
-    begin_prog("reconstructing");
     for(size_t index = 0;index < mask.size();++index)
         if (mask[index])
             ++total_voxel;
 
-    unsigned int total = 0;
+    size_t total = 0;
     tipl::par_for2(mask.size(),
                     [&](int voxel_index,int thread_id)
     {
@@ -147,7 +146,7 @@ void Voxel::run(void)
                 terminated = true;
                 return;
             }
-            check_prog(total,mask.size());
+            check_prog(total*100/mask.size(),100);
         }
         voxel_data[thread_id].init();
         voxel_data[thread_id].voxel_index = voxel_index;
@@ -170,7 +169,7 @@ void Voxel::run(void)
 
 void Voxel::end(gz_mat_write& writer)
 {
-    begin_prog("output data");
+    begin_prog("Output Data");
     for (unsigned int index = 0; check_prog(index,process_list.size()); ++index)
         process_list[index]->end(*this,writer);
 }

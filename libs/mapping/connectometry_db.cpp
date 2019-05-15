@@ -217,7 +217,7 @@ bool connectometry_db::sample_odf(gz_mat_read& m,std::vector<float>& data)
     odf_data subject_odf;
     if(!subject_odf.read(m))
         return false;
-    set_title("load data");
+    set_title("Loading Data");
     for(unsigned int index = 0;index < si2vi.size();++index)
     {
         unsigned int cur_index = si2vi[index];

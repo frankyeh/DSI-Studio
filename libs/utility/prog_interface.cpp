@@ -24,6 +24,7 @@ void check_create(void)
     {
         progressDialog.reset(new QProgressDialog(current_title.c_str(),"Cancel",0,100,0));
         progressDialog->show();
+        QApplication::processEvents();
     }
 }
 void begin_prog(const char* title,bool lock)
@@ -33,7 +34,8 @@ void begin_prog(const char* title,bool lock)
         std::cout << title << std::endl;
         return;
     }
-    current_title = title;
+    if(title)
+        current_title = title;
     start_time = std::chrono::high_resolution_clock::now();
     lock_dialog = lock;
     QApplication::processEvents();
@@ -56,13 +58,20 @@ void set_title(const char* title)
         std::cout << title << std::endl;
         return;
     }
+    current_title = title;
     check_create();
     if(progressDialog.get())
     {
         progressDialog->setLabelText(title);
-        current_title = title;
         QApplication::processEvents();
     }
+}
+void close_prog(void)
+{
+    start_time = std::chrono::high_resolution_clock::now();
+    prog_aborted_ = progressDialog->wasCanceled();
+    progressDialog.reset();
+    QApplication::processEvents();
 }
 bool check_prog(unsigned int now,unsigned int total)
 {
@@ -74,10 +83,7 @@ bool check_prog(unsigned int now,unsigned int total)
         return now < total;
     if((now >= total && !lock_dialog) || progressDialog->wasCanceled())
     {
-        start_time = std::chrono::high_resolution_clock::now();
-        prog_aborted_ = progressDialog->wasCanceled();
-        progressDialog.reset();
-        QApplication::processEvents();
+        close_prog();
         return false;
     }
     if(now == 0 || now == total)

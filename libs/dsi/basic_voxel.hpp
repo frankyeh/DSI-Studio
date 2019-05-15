@@ -89,9 +89,6 @@ public://used in GQI
 public://used in GQI
     bool scheme_balance = false;
     bool csf_calibration = false;
-public:// odf sharpening
-    bool odf_deconvolusion = false;
-    bool odf_decomposition = false;
     tipl::vector<3,short> odf_xyz;
 public:// gradient deviation
     std::vector<tipl::image<float,3> > new_grad_dev;
@@ -151,21 +148,6 @@ public:
     BaseProcess* get(unsigned int index);
 };
 
-struct terminated_class {
-    unsigned int total;
-    mutable unsigned int now;
-    mutable bool terminated;
-    terminated_class(int total_):total(total_),now(0),terminated(false){}
-    bool operator!() const
-    {
-        terminated = prog_aborted();
-        return check_prog(std::min(now++,total-1),total);
-    }
-    ~terminated_class()
-    {
-        check_prog(total,total);
-    }
-};
 
 
 

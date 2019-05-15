@@ -133,15 +133,6 @@ int rec(void)
         handle->voxel.study_src_file_path = po.get("study_src");
         std::cout << "Comparison src=" << handle->voxel.study_src_file_path << std::endl;
     }
-    if(po.get("deconvolution",int(0)))
-    {
-        handle->voxel.param[2] = 7.0f;
-    }
-    if(po.get("decomposition",int(0)))
-    {
-        handle->voxel.param[3] = 0.05f;
-        handle->voxel.param[4] = 10.0f;
-    }
     if (po.has("param0"))
     {
         handle->voxel.param[0] = po.get("param0",float(0));
@@ -177,8 +168,6 @@ int rec(void)
     handle->voxel.output_diffusivity = po.get("output_dif",int(1));
     handle->voxel.output_tensor = po.get("output_tensor",int(0));
     handle->voxel.output_rdi = po.get("output_rdi",int(1)) && (method_index == 4 || method_index == 7);
-    handle->voxel.odf_deconvolusion = po.get("deconvolution",int(0));
-    handle->voxel.odf_decomposition = po.get("decomposition",int(0));
     handle->voxel.max_fiber_number = po.get("num_fiber",int(5));
     handle->voxel.r2_weighted = po.get("r2_weighted",int(0));
     handle->voxel.csf_calibration = po.get("csf_calibration",int(0)) && method_index == 4;
@@ -200,10 +189,6 @@ int rec(void)
     {
         if(handle->voxel.output_odf)
             std::cout << "record ODF in the fib file" << std::endl;
-        if(handle->voxel.odf_deconvolusion)
-            std::cout << "apply deconvolution" << std::endl;
-        if(handle->voxel.odf_decomposition)
-            std::cout << "apply decomposition" << std::endl;
         if(handle->voxel.r2_weighted && method_index == 4)
             std::cout << "r2 weighted is used for GQI" << std::endl;
     }

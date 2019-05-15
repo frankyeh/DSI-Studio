@@ -969,7 +969,7 @@ void fib_data::run_normalization(bool background)
         tipl::image<tipl::vector<3>,3> dis,inv_dis;
         if(Iss2.geometry() == Iss.geometry())
         {
-            set_title("dual normalization using two templates");
+            set_title("Dual Normalization");
             tipl::reg::cdm2(It,It2,Iss,Iss2,dis,thread.terminated);
         }
         else

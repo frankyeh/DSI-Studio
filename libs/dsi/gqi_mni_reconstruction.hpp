@@ -4,8 +4,6 @@
 #include <chrono>
 #include "basic_voxel.hpp"
 #include "basic_process.hpp"
-#include "odf_decomposition.hpp"
-#include "odf_deconvolusion.hpp"
 #include "gqi_process.hpp"
 
 class DWINormalization  : public BaseProcess
@@ -97,7 +95,6 @@ public:
         }
 
         bool export_intermediate = false;
-        begin_prog("normalization");
         src_geo = voxel.dim;
 
         affine_volume_scale = (voxel.vs[0]*voxel.vs[1]*voxel.vs[2]/VGvs[0]/VGvs[1]/VGvs[2]);
@@ -111,8 +108,6 @@ public:
 
             tipl::image<float,3> VFF,VFF2;
             {
-                begin_prog("linear registration");
-
                 // VG: FA TEMPLATE
                 // VF: SUBJECT QA
                 // VF2: SUBJECT ISO
@@ -129,8 +124,11 @@ public:
                 else
                 {
                     bool terminated = false;
-                    tipl::reg::two_way_linear_mr(VG,VGvs,VF,voxel.vs,affine,
-                        tipl::reg::affine,tipl::reg::correlation(),terminated,voxel.thread_count);
+                    if(!run_prog("Linear Registration",[&](){
+                        tipl::reg::two_way_linear_mr(VG,VGvs,VF,voxel.vs,affine,
+                            tipl::reg::affine,tipl::reg::correlation(),terminated,voxel.thread_count);
+                    },terminated))
+                        throw std::runtime_error("Reconstruction canceled");
                 }
                 VFF.resize(VG.geometry());
                 tipl::resample(VF,VFF,affine,tipl::cubic);
@@ -139,8 +137,7 @@ public:
                     VFF2.resize(VG.geometry());
                     tipl::resample(VF2,VFF2,affine,tipl::cubic);
                 }
-                if(prog_aborted())
-                    throw std::runtime_error("Reconstruction canceled");
+
 
             }
             //linear regression
@@ -151,16 +148,18 @@ public:
             if(export_intermediate)
                 VFF.save_to_file<gz_nifti>("Subject_QA_linear_reg.nii.gz");
 
-
-            begin_prog("normalization");
             bool terminated = false;
-            if(!VFF2.empty())
-            {
-                std::cout << "Normalization using dual QA/ISO templates" << std::endl;
-                tipl::reg::cdm2(VG,VG2,VFF,VFF2,cdm_dis,terminated,2.0*resolution_ratio);
-            }
-            else
-                tipl::reg::cdm(VG,VFF,cdm_dis,terminated,2.0*resolution_ratio);
+            if(!run_prog("Normalization",[&]()
+                {
+                    if(!VFF2.empty())
+                    {
+                        std::cout << "Normalization using dual QA/ISO templates" << std::endl;
+                        tipl::reg::cdm2(VG,VG2,VFF,VFF2,cdm_dis,terminated,2.0*resolution_ratio);
+                    }
+                    else
+                        tipl::reg::cdm(VG,VFF,cdm_dis,terminated,2.0*resolution_ratio);
+                },terminated))
+                throw std::runtime_error("Reconstruction canceled");
 
             {
                 tipl::image<float,3> VFFF;

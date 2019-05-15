@@ -116,14 +116,14 @@ void ImageModel::pre_dti(void)
     bool output_tensor = voxel.output_tensor;
     voxel.output_diffusivity = true;
     voxel.output_tensor = false;
-    reconstruct<check_btable_process>();
+    reconstruct<check_btable_process>("Checking b-table");
     voxel.output_diffusivity = output_dif;
     voxel.output_tensor = output_tensor;
 }
 
 std::string ImageModel::check_b_table(void)
 {
-    set_title("checking b-table");
+    set_title("Checking B-table");
     pre_dti();
     std::vector<tipl::image<float,3> > fib_fa(1);
     std::vector<std::vector<tipl::vector<3> > > fib_dir(1);
@@ -1089,7 +1089,7 @@ bool ImageModel::load_from_file(const char* dwi_file_name)
 void ImageModel::save_to_file(gz_mat_write& mat_writer)
 {
 
-    set_title("saving");
+    set_title("Saving");
 
     // dimension
     {
@@ -1114,7 +1114,6 @@ void ImageModel::save_fib(const std::string& ext)
 {
     std::string output_name = file_name;
     output_name += ext;
-    begin_prog("saving data");
     gz_mat_write mat_writer(output_name.c_str());
     save_to_file(mat_writer);
     voxel.end(mat_writer);

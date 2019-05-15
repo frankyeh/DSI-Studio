@@ -219,11 +219,10 @@ public:
         if (!voxel.output_odf)
             return;
         {
-            set_title("output odfs");
+            set_title("Output ODFs");
             for (unsigned int index = 0;index < odf_data.size();++index)
             {
-                if (!voxel.odf_deconvolusion)
-                    tipl::divide_constant(odf_data[index],voxel.z0);
+                tipl::divide_constant(odf_data[index],voxel.z0);
                 std::ostringstream out;
                 out << "odf" << index;
                 mat_writer.write(out.str().c_str(),&*odf_data[index].begin(),
@@ -286,7 +285,7 @@ public:
     {
         if (voxel.output_odf)
         {
-            set_title("output odfs");
+            set_title("Output ODFs");
             for (unsigned int index = 0;index < voxel.template_odfs.size();++index)
             {
                 std::ostringstream out;
