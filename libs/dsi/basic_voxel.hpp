@@ -81,6 +81,7 @@ public:// DTI
     bool output_tensor = false;
     bool output_helix_angle = false;
 public://used in GQI
+    bool odf_resolving = false;
     bool r2_weighted = false;// used in GQI only
     bool half_sphere = false;
     int b0_index = -1;

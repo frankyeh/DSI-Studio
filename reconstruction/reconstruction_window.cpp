@@ -105,6 +105,7 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
     ui->diffusion_sampling->setValue(settings.value("rec_gqi_sampling",1.25).toDouble());
     ui->csf_calibration->setChecked(settings.value("csf_calibration",1).toInt());
 
+    ui->odf_resolving->setChecked(settings.value("odf_resolving",0).toInt());
     ui->ODFDim->setCurrentIndex(settings.value("odf_order",3).toInt());
 
     ui->RecordODF->setChecked(settings.value("rec_record_odf",0).toInt());
@@ -244,7 +245,10 @@ void reconstruction_window::doReconstruction(unsigned char method_id,bool prompt
     settings.setValue("csf_calibration",ui->csf_calibration->isChecked() ? 1 : 0);
 
 
+
     settings.setValue("odf_order",ui->ODFDim->currentIndex());
+
+    settings.setValue("odf_resolving",ui->odf_resolving->isChecked() ? 1 : 0);
     settings.setValue("rec_record_odf",ui->RecordODF->isChecked() ? 1 : 0);
     settings.setValue("output_jacobian",ui->output_jacobian->isChecked() ? 1 : 0);
     settings.setValue("output_mapping",ui->output_mapping->isChecked() ? 1 : 0);
@@ -259,6 +263,7 @@ void reconstruction_window::doReconstruction(unsigned char method_id,bool prompt
     int odf_order[8] = {4, 5, 6, 8, 10, 12, 16, 20};
     handle->voxel.method_id = method_id;
     handle->voxel.ti.init(odf_order[ui->ODFDim->currentIndex()]);
+    handle->voxel.odf_resolving = ui->odf_resolving->isChecked();
     handle->voxel.csf_calibration = (ui->csf_calibration->isVisible() && ui->csf_calibration->isChecked()) ? 1: 0;
     handle->voxel.max_fiber_number = ui->NumOfFibers->value();
     handle->voxel.r2_weighted = ui->ODFDef->currentIndex();

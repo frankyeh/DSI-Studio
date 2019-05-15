@@ -161,6 +161,7 @@ int rec(void)
 
     handle->voxel.method_id = method_index;
     handle->voxel.ti.init(po.get("odf_order",int(8)));
+    handle->voxel.odf_resolving = po.get("odf_resolving",int(0));
     handle->voxel.output_odf = po.get("record_odf",int(0));
     handle->voxel.check_btable = po.get("check_btable",int(1));
     handle->voxel.output_jacobian = po.get("output_jac",int(0));

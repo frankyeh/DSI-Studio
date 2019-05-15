@@ -133,12 +133,15 @@ const char* ImageModel::reconstruction(void)
             voxel.output_mapping = 0;
             voxel.scheme_balance = 0;
             voxel.half_sphere = 0;
+            voxel.odf_resolving = 0;
         }
         else
         {
             if(!voxel.study_src_file_path.empty()) // DDI
                 voxel.csf_calibration = false;
             out << ".odf" << voxel.ti.fold;// odf_order
+            if (voxel.odf_resolving)
+                out << "r";
             out << ".f" << voxel.max_fiber_number;
             if (voxel.output_odf)
                 out << "rec";
@@ -326,6 +329,7 @@ bool output_odfs(const tipl::image<unsigned char,3>& mni_mask,
     image_model.voxel.dim = mni_mask.geometry();
     image_model.voxel.ti = ti;
     image_model.voxel.max_fiber_number = 5;
+    image_model.voxel.odf_resolving = true;
     image_model.voxel.output_odf = record_odf;
     image_model.voxel.template_odfs.swap(odfs);
     image_model.file_name = out_name;

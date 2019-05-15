@@ -594,6 +594,16 @@
                <number>3</number>
               </property>
               <item>
+               <widget class="QCheckBox" name="odf_resolving">
+                <property name="text">
+                 <string>Adv Resolving</string>
+                </property>
+                <property name="checked">
+                 <bool>true</bool>
+                </property>
+               </widget>
+              </item>
+              <item>
                <widget class="QCheckBox" name="csf_calibration">
                 <property name="text">
                  <string>CSF calibration</string>
