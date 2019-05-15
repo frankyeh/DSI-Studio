@@ -596,7 +596,7 @@
               <item>
                <widget class="QCheckBox" name="odf_resolving">
                 <property name="text">
-                 <string>Adv Resolving</string>
+                 <string>Fiber+</string>
                 </property>
                 <property name="checked">
                  <bool>true</bool>

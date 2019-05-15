@@ -97,6 +97,7 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
     }
 
     ui->DT_Option->setVisible(false);
+    ui->odf_resolving->setVisible(false);
 
     ui->AdvancedWidget->setVisible(false);
     ui->ThreadCount->setValue(settings.value("rec_thread_count",std::thread::hardware_concurrency()).toInt());
@@ -812,6 +813,7 @@ void reconstruction_window::on_actionCorrect_AP_PA_scans_triggered()
 void reconstruction_window::on_actionEnable_TEST_features_triggered()
 {
     ui->DT_Option->setVisible(true);
+    ui->odf_resolving->setVisible(true);
 }
 
 void reconstruction_window::on_actionImage_upsample_to_T1W_TESTING_triggered()
