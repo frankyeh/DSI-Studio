@@ -1080,7 +1080,7 @@ bool ImageModel::load_from_file(const char* dwi_file_name)
     }
     else
         voxel.calculate_mask(dwi_sum);
-    voxel.steps += "[Step T2][Reconstruction] open";
+    voxel.steps += "[Step T2][Reconstruction] open ";
     voxel.steps += QFileInfo(dwi_file_name).fileName().toStdString();
     voxel.steps += "\n";
     return true;
@@ -1123,7 +1123,7 @@ void ImageModel::save_fib(const std::string& ext)
     mat_writer.write("report",final_report.c_str(),1,final_report.length());
     std::string final_steps = voxel.steps;
     final_steps += voxel.step_report.str();
-    final_steps += "[Step T2B][Run reconstruction]\n";
+    final_steps += "[Step T2b][Run reconstruction]\n";
     mat_writer.write("steps",final_steps.c_str(),1,final_steps.length());
 }
 bool ImageModel::save_to_nii(const char* nifti_file_name) const
