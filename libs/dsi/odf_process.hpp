@@ -605,7 +605,6 @@ struct ODFShaping
 struct SearchLocalMaximum
 {
     std::vector<std::vector<unsigned short> > neighbor;
-    std::map<float,unsigned short,std::greater<float> > max_table;
     void init(Voxel& voxel)
     {
         unsigned int half_odf_size = voxel.ti.half_vertices_count;
@@ -630,7 +629,7 @@ struct SearchLocalMaximum
             neighbor[i3].push_back(i2);
         }
     }
-    void search(const std::vector<float>& old_odf)
+    void search(const std::vector<float>& old_odf,std::map<float,unsigned short,std::greater<float> >& max_table)
     {
         max_table.clear();
         for (unsigned int index = 0;index < neighbor.size();++index)
@@ -663,37 +662,33 @@ public:
     {
         if(voxel.odf_resolving)
             shaping.init(voxel);
-        else
-            lm.init(voxel);
+        lm.init(voxel);
     }
 
     virtual void run(Voxel& voxel,VoxelData& data)
     {
         data.min_odf = *std::min_element(data.odf.begin(),data.odf.end());
+        std::map<float,unsigned short,std::greater<float> > max_table;
+        lm.search(data.odf,max_table);
         if(voxel.odf_resolving)
         {
-            tipl::minus_constant(data.odf,data.min_odf);
-            for (unsigned int index = 0;index < voxel.max_fiber_number;++index)
+            std::vector<float> odf(data.odf);
+            for (unsigned int index = 0;index < 3;++index)
             {
-                unsigned int max_dir = std::max_element(data.odf.begin(),data.odf.end())-data.odf.begin();
-                if(data.odf[max_dir] == 0.0f)
+                unsigned int max_dir = std::max_element(odf.begin(),odf.end())-odf.begin();
+                if(odf[max_dir] == 0.0f)
                     break;
-                data.dir_index[index] = max_dir;
-                data.fa[index] = data.odf[max_dir];
-                shaping.shape(data.odf,max_dir);
+                if(index)
+                    max_table[data.odf[max_dir]] = (unsigned short)max_dir;
+                shaping.shape(odf,max_dir);
             }
         }
-        else
+        auto iter = max_table.begin();
+        auto end = max_table.end();
+        for (unsigned int index = 0;iter != end && index < voxel.max_fiber_number;++index,++iter)
         {
-            std::lock_guard<std::mutex> lock(mutex);
-            lm.search(data.odf);
-            std::map<float,unsigned short,std::greater<float> >::const_iterator iter = lm.max_table.begin();
-            std::map<float,unsigned short,std::greater<float> >::const_iterator end = lm.max_table.end();
-            for (unsigned int index = 0;iter != end && index < voxel.max_fiber_number;++index,++iter)
-            {
-                data.dir_index[index] = iter->second;
-                data.fa[index] = iter->first - data.min_odf;
-            }
+            data.dir_index[index] = iter->second;
+            data.fa[index] = iter->first - data.min_odf;
         }
     }
 };
