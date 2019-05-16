@@ -296,7 +296,7 @@ extern const float reg_bound2[6] = {0.25f,-0.25f,4.0f,0.2f,0.5f,-0.5f};
 void RegToolBox::linear_reg(tipl::reg::reg_type reg_type)
 {
     status = "linear registration";
-    tipl::transformation_matrix<double> T;
+
     tipl::reg::two_way_linear_mr(It,Itvs,I,Ivs,T,reg_type,tipl::reg::mutual_information(),thread.terminated,
                                   std::thread::hardware_concurrency(),&arg,reg_bound2);
     tipl::image<float,3> J_(It.geometry());
@@ -423,6 +423,53 @@ void RegToolBox::on_action_Save_Warpped_Image_triggered()
 }
 
 
+void RegToolBox::on_actionApply_Warpping_triggered()
+{
+    QString filename = QFileDialog::getOpenFileName(
+            this,"Open Subject Image","",
+            "Images (*.nii *nii.gz);;All files (*)" );
+    if(filename.isEmpty())
+        return;
+    tipl::image<float,3> I3,J3(It.geometry());
+    {
+        gz_nifti nifti;
+        if(!nifti.load_from_file(filename.toStdString()))
+        {
+            QMessageBox::information(this,"Error","Invalid file format");
+            return;
+        }
+        nifti.toLPS(I3);
+        if(I3.geometry() != I.geometry())
+        {
+            QMessageBox::information(this,"Error","Please transform image to the subject space first",0);
+            return;
+        }
+    }
+    filename = QFileDialog::getSaveFileName(
+            this,"Save Warpped Image",filename,
+            "Images (*.nii *nii.gz);;All files (*)" );
+    if(filename.isEmpty())
+        return;
+
+    bool is_label = true;
+    for(int i = 0;i < I3.size();++i)
+        if(std::floor(I3[i]) != I3[i])
+        {
+            is_label = false;
+            break;
+        }
+    tipl::compose_displacement(I3,J3,T,dis,is_label ? tipl::nearest : tipl::cubic);
+    {
+        gz_nifti nii;
+        nii.set_voxel_size(Itvs);
+        nii.set_LPS_transformation(ItR,J3.geometry());
+        tipl::flip_xy(J3);
+        nii << J3;
+        nii.save_to_file(filename.toStdString().c_str());
+    }
+}
+
+
 void RegToolBox::on_reg_type_currentIndexChanged(int index)
 {
     if(index)
@@ -477,4 +524,5 @@ void RegToolBox::on_actionRemove_Background_triggered()
         show_image();
     }
 }
+
 

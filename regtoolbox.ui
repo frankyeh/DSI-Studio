@@ -705,6 +705,7 @@
      <string>&amp;File</string>
     </property>
     <addaction name="action_Save_Warpped_Image"/>
+    <addaction name="actionApply_Warpping"/>
    </widget>
    <widget class="QMenu" name="menuEdit">
     <property name="title">
@@ -741,6 +742,11 @@
   <action name="actionTOPUP">
    <property name="text">
     <string>TOPUP</string>
+   </property>
+  </action>
+  <action name="actionApply_Warpping">
+   <property name="text">
+    <string>Apply Warpping...</string>
    </property>
   </action>
  </widget>

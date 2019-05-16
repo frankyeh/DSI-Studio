@@ -21,6 +21,7 @@ public:
     tipl::vector<3> Itvs,Ivs;
     float ItR[12];
 public:
+    tipl::transformation_matrix<double> T;
     tipl::image<float,3> J_view,J_view2;
     tipl::image<tipl::vector<3>,3> dis_view;
 public:
@@ -66,6 +67,8 @@ private slots:
     void on_OpenSubject2_clicked();
 
     void on_OpenTemplate2_clicked();
+
+    void on_actionApply_Warpping_triggered();
 
 private:
     Ui::RegToolBox *ui;
