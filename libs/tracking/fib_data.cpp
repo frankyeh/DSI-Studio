@@ -2,7 +2,7 @@
 #include <QFileInfo>
 #include "fib_data.hpp"
 #include "tessellated_icosahedron.hpp"
-
+extern std::vector<std::string> fa_template_list;
 bool odf_data::read(gz_mat_read& mat_reader)
 {
     unsigned int row,col;
@@ -543,6 +543,16 @@ bool fib_data::load_from_file(const char* file_name)
         error_msg = prog_aborted() ? "Loading process aborted" : "Invalid file format";
         return false;
     }
+
+    for(int index = 0;index < fa_template_list.size();++index)
+    {
+        if(QFileInfo(file_name).fileName().
+                contains(QFileInfo(fa_template_list[index].c_str()).baseName().toLower()))
+        {
+            template_id = index;
+            break;
+        }
+    }
     return load_from_mat();
 }
 bool fib_data::load_from_mat(void)
@@ -820,60 +830,55 @@ void fib_data::get_index_titles(std::vector<std::string>& titles)
 }
 extern std::vector<std::string> fa_template_list,iso_template_list;
 extern std::vector<std::shared_ptr<atlas> > atlas_buffer;
-bool fib_data::has_template(void)
+bool fib_data::load_template(void)
 {
     if(!template_I.empty())
         return true;
-    float brain_size = vs[0]*vs[1]*vs[2]*tipl::segmentation::otsu_count(tipl::make_image(dir.fa[0],dim));
-    for(int i = 0;i < fa_template_list.size();++i)
+    gz_nifti read;
+    tipl::image<float,3> I;
+    tipl::vector<3> I_vs;
+    if(!read.load_from_file(fa_template_list[template_id].c_str()))
+        return false;
+
+    float tran[16];
+    read.toLPS(I);
+    read.get_voxel_size(I_vs);
+    read.get_image_transformation(tran);
+    float ratio = float(I.width()*I_vs[0])/float(dim[0]*vs[0]);
+    if(ratio < 0.25f || ratio > 4.0f)
+        return false;
+    template_shift[0] = tran[3];
+    template_shift[1] = tran[7];
+    template_shift[2] = tran[11];
+    template_I.swap(I);
+    template_vs = I_vs;
+    // load iso template if exists
     {
-        gz_nifti read;
-        tipl::image<float,3> I;
-        tipl::vector<3> I_vs;
-        if(read.load_from_file(fa_template_list[i].c_str()))
-        {
-            read.toLPS(I);
-            read.get_voxel_size(I_vs);
-            float template_brain_size = I_vs[0]*I_vs[1]*I_vs[2]*tipl::segmentation::otsu_count(I);
-            float ratio = brain_size/template_brain_size;
-            if(ratio > 0.5 && ratio < 2.0)
-            {
-                float tran[16];
-                read.get_image_transformation(tran);
-                template_shift[0] = tran[3];
-                template_shift[1] = tran[7];
-                template_shift[2] = tran[11];
-                template_I.swap(I);
-                template_vs = I_vs;
-
-                std::string atlas_file = fa_template_list[i] + ".atlas.txt";
-                std::ifstream in(atlas_file);
-                std::string line;
-                while(in >> line)
-                {
-                    for(int j = 0;j < atlas_buffer.size();++j)
-                        if(atlas_buffer[j]->name == line)
-                            atlas_list.push_back(atlas_buffer[j]);
-                }
-
-                {
-                    gz_nifti read2;
-                    if(read2.load_from_file(iso_template_list[i].c_str()))
-                        read2.toLPS(template_I2);
-                }
-                tipl::normalize(template_I,1.0f);
-                if(!template_I2.empty())
-                    tipl::normalize(template_I2,1.0f);
-                return true;
-            }
-        }
+        gz_nifti read2;
+        if(!iso_template_list[template_id].empty() &&
+           read2.load_from_file(iso_template_list[template_id].c_str()))
+            read2.toLPS(template_I2);
     }
-    return false;
+    tipl::normalize(template_I,1.0f);
+    if(!template_I2.empty())
+        tipl::normalize(template_I2,1.0f);
+
+    // populate atlas list
+    std::string atlas_file = fa_template_list[template_id] + ".atlas.txt";
+    std::ifstream in(atlas_file);
+    std::string line;
+    while(in >> line)
+    {
+        for(int j = 0;j < atlas_buffer.size();++j)
+            if(atlas_buffer[j]->name == line)
+                atlas_list.push_back(atlas_buffer[j]);
+    }
+    return true;
 }
 
-bool fib_data::has_atlas(void)
+bool fib_data::load_atlas(void)
 {
-    return has_template() && !atlas_list.empty();
+    return load_template() && !atlas_list.empty();
 }
 
 void fib_data::to_mni(tipl::vector<3>& p)
@@ -1031,7 +1036,7 @@ void fib_data::run_normalization(bool background)
 
 bool fib_data::can_map_to_mni(void)
 {
-    if(!has_template())
+    if(!load_template())
         return false;
     if(is_qsdr || !mni_position.empty())
         return true;
@@ -1127,7 +1132,7 @@ const tipl::image<tipl::vector<3,float>,3 >& fib_data::get_mni_mapping(void)
         });
         return mni_position;
     }
-    if(has_template())
+    if(load_template())
         run_normalization(false);
     return mni_position;
 }

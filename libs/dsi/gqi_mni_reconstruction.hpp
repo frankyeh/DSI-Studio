@@ -130,6 +130,7 @@ public:
                     },terminated))
                         throw std::runtime_error("Reconstruction canceled");
                 }
+                begin_prog("Reconstruction");
                 VFF.resize(VG.geometry());
                 tipl::resample(VF,VFF,affine,tipl::cubic);
                 if(!VF2.empty())

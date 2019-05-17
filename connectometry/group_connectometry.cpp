@@ -636,7 +636,7 @@ bool load_region(std::shared_ptr<fib_data> handle,
                  ROIRegion& roi,const std::string& region_text);
 void group_connectometry::on_load_roi_from_atlas_clicked()
 {
-    if(!vbc->handle->has_atlas())
+    if(!vbc->handle->load_atlas())
         return;
     std::shared_ptr<AtlasDialog> atlas_dialog(new AtlasDialog(this,vbc->handle));
     if(atlas_dialog->exec() == QDialog::Accepted)

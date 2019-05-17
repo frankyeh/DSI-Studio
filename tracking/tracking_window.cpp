@@ -30,6 +30,7 @@
 
 extern std::vector<std::string> tractography_name_list;
 extern std::string t1w_template_file_name,wm_template_file_name;
+extern std::vector<std::string> fa_template_list;
 QByteArray default_geo,default_state;
 
 
@@ -54,6 +55,15 @@ void show_info_dialog(const std::string& title,const std::string& result)
         QApplication::clipboard()->setText(result.c_str());
 }
 
+void populate_templates(QComboBox* combo)
+{
+    if(!fa_template_list.empty())
+    {
+        for(int index = 0;index < fa_template_list.size();++index)
+            combo->addItem(QFileInfo(fa_template_list[index].c_str()).baseName());
+        combo->setCurrentIndex(0);
+    }
+}
 
 void tracking_window::closeEvent(QCloseEvent *event)
 {
@@ -124,6 +134,13 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
     ui->SliceModality->setCurrentIndex(0);
     if(!handle->is_human_data || handle->is_qsdr)
         ui->actionManual_Registration->setEnabled(false);
+
+
+    // handle template and atlases
+    {
+        populate_templates(ui->template_box);
+        ui->template_box->setCurrentIndex(handle->template_id);
+    }
 
     updateSlicesMenu();
 
@@ -343,20 +360,8 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         ui->show_fiber->setChecked((*this)["roi_fiber"].toBool());
     }
 
-    if(handle->has_atlas())
-    {
-        QStringList items;
-        for(int i = 0;i < handle->atlas_list.size();++i)
-        {
-            const std::vector<std::string>& label = handle->atlas_list[i]->get_list();
-            for(auto str : label)
-                items << QString(str.c_str()) + ":" + handle->atlas_list[i]->name.c_str();
-        }
-        ui->search_atlas->setList(items);
-        connect(ui->search_atlas,SIGNAL(selected()),this,SLOT(add_roi_from_atlas()));
-    }
 
-
+    // provide automatic tractography
     {
         ui->target->setVisible(false);
         ui->target_label->setVisible(false);
@@ -412,7 +417,7 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         ui->show_fiber->hide();
         ui->enable_auto_track->hide();
     }
-
+    on_SliceModality_activated(0);
     on_glAxiView_clicked();
     if((*this)["orientation_convention"].toInt() == 1)
         glWidget->set_view(2);
@@ -775,56 +780,6 @@ void tracking_window::move_slice_to(tipl::vector<3,float> slice_position)
     glWidget->updateGL();
     scene.show_slice();
 }
-void tracking_window::on_SliceModality_currentIndexChanged(int index)
-{
-    if(index == -1 || !current_slice.get())
-        return;
-    no_update = true;
-    tipl::vector<3,float> slice_position(current_slice->slice_pos);
-    if(!current_slice->is_diffusion_space)
-        slice_position.to(current_slice->T);
-
-    current_slice = slices[index];
-    ui->is_overlay->setChecked(current_slice == overlay_slice);
-    ui->glSagSlider->setRange(0,current_slice->geometry[0]-1);
-    ui->glCorSlider->setRange(0,current_slice->geometry[1]-1);
-    ui->glAxiSlider->setRange(0,current_slice->geometry[2]-1);
-    ui->glSagBox->setRange(0,current_slice->geometry[0]-1);
-    ui->glCorBox->setRange(0,current_slice->geometry[1]-1);
-    ui->glAxiBox->setRange(0,current_slice->geometry[2]-1);
-
-
-    std::pair<float,float> range = current_slice->get_value_range();
-    std::pair<float,float> contrast_range = current_slice->get_contrast_range();
-    std::pair<unsigned int,unsigned int> contrast_color = current_slice->get_contrast_color();
-    float r = range.second-range.first;
-    if(r == 0.0)
-        r = 1;
-    float step = r/20.0;
-    ui->min_value_gl->setMinimum(range.first-r);
-    ui->min_value_gl->setMaximum(range.second+r);
-    ui->min_value_gl->setSingleStep(step);
-    ui->min_color_gl->setColor(contrast_color.first);
-
-    ui->max_value_gl->setMinimum(range.first-r);
-    ui->max_value_gl->setMaximum(range.second+r);
-    ui->max_value_gl->setSingleStep(step);
-    ui->max_color_gl->setColor(contrast_color.second);
-
-    ui->min_value_gl->setValue(contrast_range.first);
-    ui->max_value_gl->setValue(contrast_range.second);
-
-
-    v2c.set_range(ui->min_value_gl->value(),ui->max_value_gl->value());
-    v2c.two_color(ui->min_color_gl->color().rgb(),ui->max_color_gl->color().rgb());
-
-    if(!current_slice->is_diffusion_space)
-        slice_position.to(current_slice->invT);
-
-    move_slice_to(slice_position);
-    no_update = false;
-
-}
 void tracking_window::change_contrast()
 {
     if(no_update)
@@ -1093,7 +1048,7 @@ void tracking_window::keyPressEvent ( QKeyEvent * event )
 
 void tracking_window::on_actionManual_Registration_triggered()
 {
-    if(!handle->has_template())
+    if(!handle->load_template())
     {
         QMessageBox::information(this,"Error","No template image loaded.",0);
         return;
@@ -1128,7 +1083,7 @@ void tracking_window::on_actionConnectivity_matrix_triggered()
         QMessageBox::information(this,"DSI Studio","Run fiber tracking first",0);
         return;
     }
-    if(!handle->has_atlas() && regionWidget->regions.empty())
+    if(!handle->load_atlas() && regionWidget->regions.empty())
     {
         QMessageBox::information(this,"Error","Please add regions as the node for connectivity matrix",0);
         return;
@@ -1255,7 +1210,7 @@ void tracking_window::on_addRegionFromAtlas_clicked()
         QMessageBox::information(this,"Error","Atlas is not supported for the current image resolution.",0);
         return;
     }
-    if(!handle->has_atlas())
+    if(!handle->load_atlas())
     {
         QMessageBox::information(0,"Error",QString("DSI Studio cannot find atlas files in ")+QCoreApplication::applicationDirPath()+ "/atlas",0);
         return;
@@ -1273,27 +1228,7 @@ void tracking_window::on_addRegionFromAtlas_clicked()
         scene.show_slice();
     }
 }
-void tracking_window::add_roi_from_atlas()
-{
-    if(!handle->has_atlas())
-        return;
-    QStringList name_value = ui->search_atlas->text().split(":");
-    if(name_value.size() != 2)
-        return;
-    for(int i = 0;i < handle->atlas_list.size();++i)
-        if(name_value[1].toStdString() == handle->atlas_list[i]->name)
-        {
-            for(int j = 0;j < handle->atlas_list[i]->get_list().size();++j)
-            if(handle->atlas_list[i]->get_list()[j] == name_value[0].toStdString())
-            {
-                regionWidget->add_region_from_atlas(handle->atlas_list[i],j);
-                ui->search_atlas->setText("");
-                glWidget->updateGL();
-                scene.show_slice();
-                return;
-            }
-        }
-}
+
 
 void tracking_window::on_actionRestore_Settings_triggered()
 {
@@ -2030,7 +1965,7 @@ void tracking_window::on_actionOpen_Connectivity_Matrix_triggered()
     {
         regionWidget->delete_all_region();
         regionWidget->begin_update();
-        if(handle->has_atlas())
+        if(handle->load_atlas())
         for(int i = 0;i < handle->atlas_list.size();++i)
             if(atlas == handle->atlas_list[i]->name)
             {
@@ -2117,4 +2052,62 @@ void tracking_window::on_actionFIB_protocol_triggered()
         out << "(" << i << ") " << line << std::endl;
     }
     show_info_dialog("FIB",out.str());
+}
+
+void tracking_window::on_template_box_activated(int index)
+{
+    if(index != handle->template_id)
+    {
+        handle->template_id = index;
+        handle->template_I.clear();
+        handle->atlas_list.clear();
+    }
+}
+
+void tracking_window::on_SliceModality_activated(int index)
+{
+    no_update = true;
+    tipl::vector<3,float> slice_position(current_slice->slice_pos);
+    if(!current_slice->is_diffusion_space)
+        slice_position.to(current_slice->T);
+
+    current_slice = slices[index];
+    ui->is_overlay->setChecked(current_slice == overlay_slice);
+    ui->glSagSlider->setRange(0,current_slice->geometry[0]-1);
+    ui->glCorSlider->setRange(0,current_slice->geometry[1]-1);
+    ui->glAxiSlider->setRange(0,current_slice->geometry[2]-1);
+    ui->glSagBox->setRange(0,current_slice->geometry[0]-1);
+    ui->glCorBox->setRange(0,current_slice->geometry[1]-1);
+    ui->glAxiBox->setRange(0,current_slice->geometry[2]-1);
+
+
+    std::pair<float,float> range = current_slice->get_value_range();
+    std::pair<float,float> contrast_range = current_slice->get_contrast_range();
+    std::pair<unsigned int,unsigned int> contrast_color = current_slice->get_contrast_color();
+    float r = range.second-range.first;
+    if(r == 0.0)
+        r = 1;
+    float step = r/20.0;
+    ui->min_value_gl->setMinimum(range.first-r);
+    ui->min_value_gl->setMaximum(range.second+r);
+    ui->min_value_gl->setSingleStep(step);
+    ui->min_color_gl->setColor(contrast_color.first);
+
+    ui->max_value_gl->setMinimum(range.first-r);
+    ui->max_value_gl->setMaximum(range.second+r);
+    ui->max_value_gl->setSingleStep(step);
+    ui->max_color_gl->setColor(contrast_color.second);
+
+    ui->min_value_gl->setValue(contrast_range.first);
+    ui->max_value_gl->setValue(contrast_range.second);
+
+
+    v2c.set_range(ui->min_value_gl->value(),ui->max_value_gl->value());
+    v2c.two_color(ui->min_color_gl->color().rgb(),ui->max_color_gl->color().rgb());
+
+    if(!current_slice->is_diffusion_space)
+        slice_position.to(current_slice->invT);
+
+    move_slice_to(slice_position);
+    no_update = false;
 }

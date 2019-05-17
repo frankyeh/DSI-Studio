@@ -162,12 +162,12 @@ public:
     tipl::image<tipl::vector<3,float>,3 > mni_position,inv_mni_position;
     tipl::image<tipl::vector<3,float>,3 > native_position;
 public:
-    std::string template_file_name;
+    int template_id = 0;
     tipl::vector<3> template_vs,template_shift;
     tipl::image<float,3> template_I,template_I2;
     std::vector<std::shared_ptr<atlas> > atlas_list;
-    bool has_template(void);
-    bool has_atlas(void);
+    bool load_template(void);
+    bool load_atlas(void);
     void to_mni(tipl::vector<3>& p);
     void from_mni(tipl::vector<3>& p);
 

@@ -15,6 +15,15 @@ AtlasDialog::AtlasDialog(QWidget *parent,std::shared_ptr<fib_data> handle_) :
     for(int index = 0; index < handle->atlas_list.size(); ++index)
         ui->atlasListBox->addItem(handle->atlas_list[index]->name.c_str());
     on_atlasListBox_currentIndexChanged(0);
+
+    QStringList items;
+    for(int i = 0;i < handle->atlas_list.size();++i)
+    {
+        const std::vector<std::string>& label = handle->atlas_list[i]->get_list();
+        for(auto str : label)
+        items << QString(str.c_str()) + ":" + handle->atlas_list[i]->name.c_str();
+    }
+    ui->search_atlas->setList(items);
 }
 
 AtlasDialog::~AtlasDialog()
@@ -51,4 +60,23 @@ void AtlasDialog::on_atlasListBox_currentIndexChanged(int i)
 void AtlasDialog::on_pushButton_clicked()
 {
     reject();
+}
+
+void AtlasDialog::on_search_atlas_textChanged(const QString &arg1)
+{
+    QStringList name_value = ui->search_atlas->text().split(":");
+    if(name_value.size() != 2)
+        return;
+    for(int i = 0;i < handle->atlas_list.size();++i)
+        if(name_value[1].toStdString() == handle->atlas_list[i]->name)
+        {
+            ui->atlasListBox->setCurrentIndex(i);
+            for(int j = 0;j < handle->atlas_list[i]->get_list().size();++j)
+            if(handle->atlas_list[i]->get_list()[j] == name_value[0].toStdString())
+            {
+                ui->region_list->setCurrentIndex(ui->region_list->model()->index(j,0));
+                ui->search_atlas->setText("");
+                return;
+            }
+        }
 }

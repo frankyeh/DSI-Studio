@@ -17,6 +17,7 @@
 
 extern std::vector<std::string> fa_template_list,iso_template_list;
 void show_view(QGraphicsScene& scene,QImage I);
+void populate_templates(QComboBox* combo);
 bool reconstruction_window::load_src(int index)
 {
     begin_prog("load src");
@@ -66,13 +67,8 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
     ui->b_table->setColumnWidth(3,80);
     ui->b_table->setHorizontalHeaderLabels(QStringList() << "b value" << "bx" << "by" << "bz");
 
-
-    if(!fa_template_list.empty())
-    {
-        for(int index = 0;index < fa_template_list.size();++index)
-            ui->primary_template->addItem(QFileInfo(fa_template_list[index].c_str()).baseName());
-        ui->primary_template->setCurrentIndex(0);
-    }
+    populate_templates(ui->primary_template);
+    ui->primary_template->setCurrentIndex(0);
 
     v2c.two_color(tipl::rgb(0,0,0),tipl::rgb(255,255,255));
     update_dimension();

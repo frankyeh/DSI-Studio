@@ -154,7 +154,7 @@ public:
         std::vector<tipl::vector<3,short> > seed;
         std::string name = "whole brain";
         // if auto track
-        if(atlas.get() && handle->has_atlas())
+        if(atlas.get() && handle->load_atlas())
         {
             float r = 1.0f;
             handle->get_atlas_roi(handle->atlas_list[0],track_id,seed,r);

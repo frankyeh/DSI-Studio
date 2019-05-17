@@ -27,6 +27,8 @@ private slots:
 
     void on_pushButton_clicked();
 
+    void on_search_atlas_textChanged(const QString &arg1);
+
 private:
     Ui::AtlasDialog *ui;
 };

@@ -276,6 +276,7 @@ const char* ImageModel::reconstruction(void)
                 tmp.swap(voxel.grad_dev);
             }
 
+            out << "." << QFileInfo(voxel.primary_template.c_str()).baseName().toLower().toStdString();
             out << (voxel.r2_weighted ? ".qsdr2.":".qsdr.");
             out << voxel.param[0];
             if(voxel.output_jacobian)

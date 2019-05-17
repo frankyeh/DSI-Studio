@@ -116,7 +116,6 @@ private slots:
     void on_actionTracts_to_seeds_triggered();
     void on_actionEndpoints_to_seeding_triggered();
     void on_tool4_clicked();
-    void on_SliceModality_currentIndexChanged(int index);
     void on_glAxiView_clicked();
     void on_glCorView_clicked();
     void on_glSagView_clicked();
@@ -165,7 +164,6 @@ private slots:
     void on_actionStrip_skull_for_T1w_image_triggered();
     void on_actionImprove_Quality_triggered();
     void on_actionRestore_Tracking_Settings_triggered();
-    void add_roi_from_atlas();
     void on_actionAdjust_Mapping_triggered();
     void on_actionSave_mapping_triggered();
     void on_actionLoad_mapping_triggered();
@@ -185,6 +183,8 @@ private slots:
     void on_show_3view_toggled(bool checked);
     void on_show_edge_toggled(bool checked);
     void on_actionFIB_protocol_triggered();
+    void on_template_box_activated(int index);
+    void on_SliceModality_activated(int index);
 };
 
 #endif // TRACKING_WINDOW_H

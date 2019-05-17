@@ -287,7 +287,7 @@ bool TractModel::load_from_file(const char* file_name_,bool append)
             TrackVis trk;
             if(!trk.load_from_file(file_name_,loaded_tract_data,loaded_tract_cluster,vs))
                 return false;
-            if(handle->has_template() &&
+            if(handle->load_template() &&
                tipl::geometry<3>(trk.dim) == handle->template_I.geometry() &&
                tipl::geometry<3>(trk.dim) != handle->dim &&
                handle->can_map_to_mni())
