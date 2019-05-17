@@ -369,7 +369,7 @@ void RegionTableWidget::draw_region(tipl::color_image& I)
 void RegionTableWidget::draw_edge(QImage& qimage,QImage& scaled_image,bool draw_all)
 {
     auto current_slice = cur_tracking_window.current_slice;
-    if(regions.empty())
+    if(regions.empty() || currentRow() >= regions.size() || currentRow() == -1)
         return;
     std::vector<std::shared_ptr<ROIRegion> > checked_regions;
     int cur_roi_index = -1;

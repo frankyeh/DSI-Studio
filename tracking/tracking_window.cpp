@@ -198,9 +198,8 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
     {
 
         connect(regionWidget,SIGNAL(need_update()),&scene,SLOT(show_slice()));
-        connect(regionWidget,SIGNAL(currentCellChanged(int,int,int,int)),&scene,SLOT(show_slice()));
+        connect(regionWidget,SIGNAL(itemSelectionChanged()),&scene,SLOT(show_slice()));
         connect(regionWidget,SIGNAL(need_update()),glWidget,SLOT(updateGL()));
-        connect(regionWidget,SIGNAL(cellChanged(int,int)),glWidget,SLOT(updateGL()));
         connect(ui->whole_brain,SIGNAL(clicked()),regionWidget,SLOT(whole_brain()));
 
         connect(ui->actionNewRegion,SIGNAL(triggered()),regionWidget,SLOT(new_region()));
