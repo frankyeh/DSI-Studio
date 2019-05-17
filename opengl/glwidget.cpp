@@ -1156,7 +1156,7 @@ void GLWidget::makeTracts(void)
     glNewList(tracts, GL_COMPILE);
     float alpha = (tract_alpha_style == 0)? tract_alpha/2.0f:tract_alpha;
     const float detail_option[] = {1.0f,0.5f,0.25f,0.0f,0.0f};
-    bool show_end_points = tract_style == 2;
+    bool show_end_points = tract_style >= 2;
     const float variant_prob_option[] = {0.1f,0.2f,0.4f,0.95f,2.0f};
     float variant_prob = variant_prob_option[tract_tube_detail];
     float tube_detail = tube_diameter*detail_option[tract_tube_detail]*4.0f;
@@ -1403,15 +1403,18 @@ void GLWidget::makeTracts(void)
                     glEnd();*/
                 if(show_end_points)
                 {
-                    myglColor(cur_color,alpha);
-                    glNormal3f(-vec_n[0],-vec_n[1],-vec_n[2]);
-                    tipl::vector<3,float> shift(vec_n);
-                    shift *= -(int)end_point_shift;
-                    for (unsigned int k = 0;k < 8;++k)
+                    if(tract_style != 3)
                     {
-                        tipl::vector<3,float> cur_point = points[end_sequence[k]];
-                        cur_point += shift;
-                        glVertex3fv(cur_point.begin());
+                        myglColor(cur_color,alpha);
+                        glNormal3f(-vec_n[0],-vec_n[1],-vec_n[2]);
+                        tipl::vector<3,float> shift(vec_n);
+                        shift *= -(int)end_point_shift;
+                        for (unsigned int k = 0;k < 8;++k)
+                        {
+                            tipl::vector<3,float> cur_point = points[end_sequence[k]];
+                            cur_point += shift;
+                            glVertex3fv(cur_point.begin());
+                        }
                     }
                     glEnd();
                 }
@@ -1451,15 +1454,18 @@ void GLWidget::makeTracts(void)
                     if(show_end_points)
                     {
                         glBegin((tract_style) ? GL_TRIANGLE_STRIP : GL_LINE_STRIP);
-                        myglColor(cur_color,alpha);
-                        glNormal3fv(vec_n.begin());
-                        tipl::vector<3,float> shift(vec_n);
-                        shift *= (int)end_point_shift;
-                        for (int k = 7;k >= 0;--k)
+                        if(tract_style != 4)
                         {
-                            tipl::vector<3,float> cur_point = points[end_sequence[k]];
-                            cur_point += shift;
-                            glVertex3fv(cur_point.begin());
+                            myglColor(cur_color,alpha);
+                            glNormal3fv(vec_n.begin());
+                            tipl::vector<3,float> shift(vec_n);
+                            shift *= (int)end_point_shift;
+                            for (int k = 7;k >= 0;--k)
+                            {
+                                tipl::vector<3,float> cur_point = points[end_sequence[k]];
+                                cur_point += shift;
+                                glVertex3fv(cur_point.begin());
+                            }
                         }
                     }
                     else
