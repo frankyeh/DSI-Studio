@@ -111,27 +111,7 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         color_bar.reset(new color_bar_dialog(this));
     }
 
-    {
-        for (unsigned int index = 0;index < fib.view_item.size(); ++index)
-            slices.push_back(std::make_shared<SliceModel>(handle,index));
-        current_slice = slices[0];
-    }
-    {
-        ui->SliceModality->clear();
-        for (unsigned int index = 0;index < fib.view_item.size(); ++index)
-            ui->SliceModality->addItem(fib.view_item[index].name.c_str());
 
-    }
-
-    if(handle->is_qsdr && handle->is_human_data)
-    {
-        if(QFileInfo(QString(t1w_template_file_name.c_str())).exists())
-            addSlices(QStringList() << QString(t1w_template_file_name.c_str()),"icbm_t1w",false,false);
-
-        if(QFileInfo(QString(wm_template_file_name.c_str())).exists())
-            addSlices(QStringList() << QString(wm_template_file_name.c_str()),"icbm_wm",false,false);
-    }
-    ui->SliceModality->setCurrentIndex(0);
     if(!handle->is_human_data || handle->is_qsdr)
         ui->actionManual_Registration->setEnabled(false);
 
@@ -358,6 +338,25 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         ui->show_position->setChecked((*this)["roi_position"].toBool());
         ui->show_fiber->setChecked((*this)["roi_fiber"].toBool());
     }
+    {
+        ui->SliceModality->clear();
+        for (unsigned int index = 0;index < fib.view_item.size(); ++index)
+        {
+            ui->SliceModality->addItem(fib.view_item[index].name.c_str());
+            slices.push_back(std::make_shared<SliceModel>(handle,index));
+        }
+        current_slice = slices[0];
+        ui->SliceModality->setCurrentIndex(-1);
+        if(handle->is_qsdr && handle->is_human_data)
+        {
+            if(QFileInfo(QString(t1w_template_file_name.c_str())).exists())
+                addSlices(QStringList() << QString(t1w_template_file_name.c_str()),"icbm_t1w",false,false);
+
+            if(QFileInfo(QString(wm_template_file_name.c_str())).exists())
+                addSlices(QStringList() << QString(wm_template_file_name.c_str()),"icbm_wm",false,false);
+        }
+        ui->SliceModality->setCurrentIndex(0);
+    }
 
 
     // provide automatic tractography
@@ -416,7 +415,6 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         ui->show_fiber->hide();
         ui->enable_auto_track->hide();
     }
-    on_SliceModality_activated(0);
     on_glAxiView_clicked();
     if((*this)["orientation_convention"].toInt() == 1)
         glWidget->set_view(2);
@@ -2063,14 +2061,17 @@ void tracking_window::on_template_box_activated(int index)
     }
 }
 
-void tracking_window::on_SliceModality_activated(int index)
+void tracking_window::on_SliceModality_currentIndexChanged(int index)
 {
+    if(index == -1 || !current_slice.get())
+        return;
     no_update = true;
     tipl::vector<3,float> slice_position(current_slice->slice_pos);
     if(!current_slice->is_diffusion_space)
         slice_position.to(current_slice->T);
-
     current_slice = slices[index];
+
+
     ui->is_overlay->setChecked(current_slice == overlay_slice);
     ui->glSagSlider->setRange(0,current_slice->geometry[0]-1);
     ui->glCorSlider->setRange(0,current_slice->geometry[1]-1);

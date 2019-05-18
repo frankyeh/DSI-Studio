@@ -184,7 +184,7 @@ private slots:
     void on_show_edge_toggled(bool checked);
     void on_actionFIB_protocol_triggered();
     void on_template_box_activated(int index);
-    void on_SliceModality_activated(int index);
+    void on_SliceModality_currentIndexChanged(int index);
 };
 
 #endif // TRACKING_WINDOW_H
