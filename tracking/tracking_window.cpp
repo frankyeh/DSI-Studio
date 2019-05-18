@@ -87,7 +87,7 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
 
 {
     fib_data& fib = *new_handle;
-
+    scene.no_show = true;
     odf_size = fib.dir.odf_table.size();
     odf_face_size = fib.dir.odf_faces.size();
 
@@ -110,7 +110,25 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         scene.statusbar = ui->statusbar;
         color_bar.reset(new color_bar_dialog(this));
     }
+    // initialize slice information
+    {
+        ui->SliceModality->clear();
+        for (unsigned int index = 0;index < fib.view_item.size(); ++index)
+        {
+            ui->SliceModality->addItem(fib.view_item[index].name.c_str());
+            slices.push_back(std::make_shared<SliceModel>(handle,index));
+        }
+        current_slice = slices[0];
+        ui->SliceModality->setCurrentIndex(-1);
+        if(handle->is_qsdr && handle->is_human_data)
+        {
+            if(QFileInfo(QString(t1w_template_file_name.c_str())).exists())
+                addSlices(QStringList() << QString(t1w_template_file_name.c_str()),"icbm_t1w",false,false);
 
+            if(QFileInfo(QString(wm_template_file_name.c_str())).exists())
+                addSlices(QStringList() << QString(wm_template_file_name.c_str()),"icbm_wm",false,false);
+        }
+    }
 
     if(!handle->is_human_data || handle->is_qsdr)
         ui->actionManual_Registration->setEnabled(false);
@@ -338,25 +356,7 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         ui->show_position->setChecked((*this)["roi_position"].toBool());
         ui->show_fiber->setChecked((*this)["roi_fiber"].toBool());
     }
-    {
-        ui->SliceModality->clear();
-        for (unsigned int index = 0;index < fib.view_item.size(); ++index)
-        {
-            ui->SliceModality->addItem(fib.view_item[index].name.c_str());
-            slices.push_back(std::make_shared<SliceModel>(handle,index));
-        }
-        current_slice = slices[0];
-        ui->SliceModality->setCurrentIndex(-1);
-        if(handle->is_qsdr && handle->is_human_data)
-        {
-            if(QFileInfo(QString(t1w_template_file_name.c_str())).exists())
-                addSlices(QStringList() << QString(t1w_template_file_name.c_str()),"icbm_t1w",false,false);
 
-            if(QFileInfo(QString(wm_template_file_name.c_str())).exists())
-                addSlices(QStringList() << QString(wm_template_file_name.c_str()),"icbm_wm",false,false);
-        }
-        ui->SliceModality->setCurrentIndex(0);
-    }
 
 
     // provide automatic tractography
@@ -419,6 +419,9 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
     if((*this)["orientation_convention"].toInt() == 1)
         glWidget->set_view(2);
     glWidget->updateGL();
+    scene.no_show = false;
+    ui->SliceModality->setCurrentIndex(0);
+
 }
 
 tracking_window::~tracking_window()
