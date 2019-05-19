@@ -90,57 +90,112 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
     scene.no_show = true;
     odf_size = fib.dir.odf_table.size();
     odf_face_size = fib.dir.odf_faces.size();
+    for (unsigned int index = 0;index < fib.view_item.size(); ++index)
+        slices.push_back(std::make_shared<SliceModel>(handle,index));
+    current_slice = slices[0];
 
     ui->setupUi(this);
-    {
-        QSettings settings;
-        ui->rendering_efficiency->setCurrentIndex(settings.value("rendering_quality",1).toInt());
-    }
-    {
-        setGeometry(10,10,800,600);
 
-        ui->regionDockWidget->setMinimumWidth(0);
-        ui->ROIdockWidget->setMinimumWidth(0);
-        ui->renderingLayout->addWidget(renderWidget = new RenderingTableWidget(*this,ui->renderingWidgetHolder));
-        ui->glLayout->addWidget(glWidget = new GLWidget(renderWidget->getData("anti_aliasing").toInt(),*this,renderWidget));
-        ui->verticalLayout_3->addWidget(regionWidget = new RegionTableWidget(*this,ui->regionDockWidget));
-        ui->track_verticalLayout->addWidget(tractWidget = new TractTableWidget(*this,ui->TractWidgetHolder));
-        ui->graphicsView->setScene(&scene);
-        ui->graphicsView->setCursor(Qt::CrossCursor);
-        scene.statusbar = ui->statusbar;
-        color_bar.reset(new color_bar_dialog(this));
-    }
-    // initialize slice information
+    // setup GUI
     {
-        ui->SliceModality->clear();
-        for (unsigned int index = 0;index < fib.view_item.size(); ++index)
+        // create objects
         {
-            ui->SliceModality->addItem(fib.view_item[index].name.c_str());
-            slices.push_back(std::make_shared<SliceModel>(handle,index));
+            setGeometry(10,10,800,600);
+            ui->regionDockWidget->setMinimumWidth(0);
+            ui->ROIdockWidget->setMinimumWidth(0);
+            ui->renderingLayout->addWidget(renderWidget = new RenderingTableWidget(*this,ui->renderingWidgetHolder));
+            ui->glLayout->addWidget(glWidget = new GLWidget(renderWidget->getData("anti_aliasing").toInt(),*this,renderWidget));
+            ui->verticalLayout_3->addWidget(regionWidget = new RegionTableWidget(*this,ui->regionDockWidget));
+            ui->track_verticalLayout->addWidget(tractWidget = new TractTableWidget(*this,ui->TractWidgetHolder));
+            ui->graphicsView->setScene(&scene);
+            ui->graphicsView->setCursor(Qt::CrossCursor);
+            scene.statusbar = ui->statusbar;
+            color_bar.reset(new color_bar_dialog(this));
+
         }
-        current_slice = slices[0];
-        ui->SliceModality->setCurrentIndex(-1);
-        if(handle->is_qsdr && handle->is_human_data)
+        // recall the setting
         {
-            if(QFileInfo(QString(t1w_template_file_name.c_str())).exists())
-                addSlices(QStringList() << QString(t1w_template_file_name.c_str()),"icbm_t1w",false,false);
+            QSettings settings;
+            if(!default_geo.size())
+                default_geo = saveGeometry();
+            if(!default_state.size())
+                default_state = saveState();
+            restoreGeometry(settings.value("geometry").toByteArray());
+            restoreState(settings.value("state").toByteArray());
+            ui->rendering_efficiency->setCurrentIndex(settings.value("rendering_quality",1).toInt());
+            ui->TractWidgetHolder->show();
+            ui->renderingWidgetHolder->show();
+            ui->ROIdockWidget->show();
+            ui->regionDockWidget->show();
+        }
+        // update GUI values
+        {
+            ui->show_edge->setChecked((*this)["roi_edge"].toBool());
+            ui->show_3view->setChecked((*this)["roi_layout"].toBool());
+            ui->show_r->setChecked((*this)["roi_label"].toBool());
+            ui->show_position->setChecked((*this)["roi_position"].toBool());
+            ui->show_fiber->setChecked((*this)["roi_fiber"].toBool());
+            if(handle->dim[0] > 80)
+                ui->zoom_3d->setValue(80.0/(float)std::max<int>(std::max<int>(handle->dim[0],handle->dim[1]),handle->dim[2]));
+        }
+        // Enabled/disable GUIs
+        {
+            if(!handle->is_human_data || handle->is_qsdr)
+                ui->actionManual_Registration->setEnabled(false);
+            if(!handle->trackable)
+            {
+                ui->perform_tracking->hide();
+                ui->show_fiber->setChecked(false);
+                ui->show_fiber->hide();
+                ui->enable_auto_track->hide();
+            }
+        }
+        // Initialize slices
+        {
+            ui->SliceModality->clear();
+            for (unsigned int index = 0;index < fib.view_item.size(); ++index)
+                ui->SliceModality->addItem(fib.view_item[index].name.c_str());
+            ui->SliceModality->setCurrentIndex(-1);
+            updateSlicesMenu();
+        }
+        // Handle template and atlases
+        {
+            if(handle->is_qsdr && handle->is_human_data)
+            {
+                if(QFileInfo(QString(t1w_template_file_name.c_str())).exists())
+                    addSlices(QStringList() << QString(t1w_template_file_name.c_str()),"icbm_t1w",false,false);
+                if(QFileInfo(QString(wm_template_file_name.c_str())).exists())
+                    addSlices(QStringList() << QString(wm_template_file_name.c_str()),"icbm_wm",false,false);
+            }
+            populate_templates(ui->template_box);
+            ui->template_box->setCurrentIndex(handle->template_id);
+        }
 
-            if(QFileInfo(QString(wm_template_file_name.c_str())).exists())
-                addSlices(QStringList() << QString(wm_template_file_name.c_str()),"icbm_wm",false,false);
+        // setup fa threshold
+        initialize_tracking_index(0);
+
+        report(handle->report.c_str());
+
+        // provide automatic tractography
+        {
+            ui->target->setVisible(false);
+            ui->target_label->setVisible(false);
+            ui->enable_auto_track->setVisible(false);
+            if(handle->is_human_data && !tractography_name_list.empty())
+            {
+                ui->target->addItem("All");
+                for(size_t i = 0;i < tractography_name_list.size();++i)
+                    ui->target->addItem(tractography_name_list[i].c_str());
+                int pos[7] = {1,21,43,46,53,67,81};
+                unsigned char rgb[6][3]={{40,40,160},{40,160,40},{160,40,40},{20,20,80},{20,20,60},{20,80,20}};               // projection
+                for(int i = 0;i < 6;++i)
+                for(int j = pos[i];j < pos[i+1];++j)
+                        ui->target->setItemData(j, QBrush(QColor(rgb[i][0],rgb[i][1],rgb[i][2])), Qt::TextColorRole);
+                ui->target->setCurrentIndex(0);
+                ui->enable_auto_track->setVisible(true);
+            }
         }
     }
-
-    if(!handle->is_human_data || handle->is_qsdr)
-        ui->actionManual_Registration->setEnabled(false);
-
-
-    // handle template and atlases
-    {
-        populate_templates(ui->template_box);
-        ui->template_box->setCurrentIndex(handle->template_id);
-    }
-
-    updateSlicesMenu();
 
     // opengl
     {
@@ -333,95 +388,18 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         connect(ui->actionPPV_analysis,SIGNAL(triggered()),tractWidget,SLOT(ppv_analysis()));
 
 
-    }
-
-
-    // recall the setting
-    {
-
-        QSettings settings;
-        if(!default_geo.size())
-            default_geo = saveGeometry();
-        if(!default_state.size())
-            default_state = saveState();
-        restoreGeometry(settings.value("geometry").toByteArray());
-        restoreState(settings.value("state").toByteArray());
-        ui->TractWidgetHolder->show();
-        ui->renderingWidgetHolder->show();
-        ui->ROIdockWidget->show();
-        ui->regionDockWidget->show();
-        ui->show_edge->setChecked((*this)["roi_edge"].toBool());
-        ui->show_3view->setChecked((*this)["roi_layout"].toBool());
-        ui->show_r->setChecked((*this)["roi_label"].toBool());
-        ui->show_position->setChecked((*this)["roi_position"].toBool());
-        ui->show_fiber->setChecked((*this)["roi_fiber"].toBool());
-    }
-
-
-
-    // provide automatic tractography
-    {
-        ui->target->setVisible(false);
-        ui->target_label->setVisible(false);
-        ui->enable_auto_track->setVisible(false);
-        if(handle->is_human_data && !tractography_name_list.empty())
-        {
-            ui->target->addItem("All");
-            for(int i = 0;i < tractography_name_list.size();++i)
-                ui->target->addItem(tractography_name_list[i].c_str());
-
-            // projection
-            for(int i = 1;i < 21;++i)
-                ui->target->setItemData(i, QBrush(QColor(40,40,160)), Qt::TextColorRole);
-            // association
-            for(int i = 21;i < 43;++i)
-                ui->target->setItemData(i, QBrush(QColor(40,160,40)), Qt::TextColorRole);
-            // commissural
-            for(int i = 43;i < 46;++i)
-                ui->target->setItemData(i, QBrush(QColor(160,40,40)), Qt::TextColorRole);
-            // CB
-            for(int i = 46;i < 53;++i)
-                ui->target->setItemData(i, QBrush(QColor(20,20,80)), Qt::TextColorRole);
-            // BS
-            for(int i = 53;i < 67;++i)
-                ui->target->setItemData(i, QBrush(QColor(20,20,60)), Qt::TextColorRole);
-            // CN
-            for(int i = 67;i < 81;++i)
-                ui->target->setItemData(i, QBrush(QColor(20,80,20)), Qt::TextColorRole);
-
-
-            ui->target->setCurrentIndex(0);
-            ui->enable_auto_track->setVisible(true);
-        }
-    }
-
-    // setup fa threshold
-    {
-        initialize_tracking_index(0);
-    }
-
-    report(handle->report.c_str());
-
-
-    if(handle->dim[0] > 80)
-        ui->zoom_3d->setValue(80.0/(float)std::max<int>(std::max<int>(handle->dim[0],handle->dim[1]),handle->dim[2]));
+    } 
 
     qApp->installEventFilter(this);
 
-    if(!handle->trackable)
+    // now begin visualization
     {
-        ui->perform_tracking->hide();
-        ui->show_fiber->setChecked(false);
-        ui->show_fiber->hide();
-        ui->enable_auto_track->hide();
+        scene.no_show = false;
+        ui->SliceModality->setCurrentIndex(0);
+        on_glAxiView_clicked();
+        if((*this)["orientation_convention"].toInt() == 1)
+            glWidget->set_view(2);
     }
-    on_glAxiView_clicked();
-    if((*this)["orientation_convention"].toInt() == 1)
-        glWidget->set_view(2);
-    glWidget->updateGL();
-    scene.no_show = false;
-    ui->SliceModality->setCurrentIndex(0);
-
 }
 
 tracking_window::~tracking_window()
