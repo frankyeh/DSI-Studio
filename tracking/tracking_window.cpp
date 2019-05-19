@@ -1628,11 +1628,10 @@ void tracking_window::on_actionInsert_MNI_images_triggered()
     reg_slice_ptr->T.identity();
     reg_slice_ptr->invT.identity();
     reg_slice_ptr->is_diffusion_space = true;
-    handle->view_item.back().name = name.toStdString();
+    reg_slice_ptr->initialize();
     slices.push_back(new_slice);
     ui->SliceModality->addItem(name);
     ui->SliceModality->setCurrentIndex(handle->view_item.size()-1);
-
 }
 void tracking_window::updateSlicesMenu(void)
 {

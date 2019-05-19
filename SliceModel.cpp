@@ -92,7 +92,20 @@ CustomSliceModel::CustomSliceModel(std::shared_ptr<fib_data> new_handle):
 {
     new_handle->view_item.push_back(item());
 }
-
+// ---------------------------------------------------------------------------
+void CustomSliceModel::initialize(void)
+{
+    geometry = source_images.geometry();
+    handle->view_item.back().image_data = tipl::make_image(&*source_images.begin(),source_images.geometry());
+    handle->view_item.back().set_scale(source_images.begin(),source_images.end());
+    handle->view_item.back().name = name;
+    handle->view_item.back().T = T;
+    handle->view_item.back().iT = invT;
+    slice_pos[0] = geometry.width() >> 1;
+    slice_pos[1] = geometry.height() >> 1;
+    slice_pos[2] = geometry.depth() >> 1;
+}
+// ---------------------------------------------------------------------------
 bool CustomSliceModel::initialize(const std::vector<std::string>& files,
                                   bool correct_intensity)
 {
@@ -355,15 +368,7 @@ bool CustomSliceModel::initialize(const std::vector<std::string>& files,
                              std::async(std::launch::async,[this](){argmin(tipl::reg::rigid_body);})));
         }
     }
-    geometry = source_images.geometry();
-    handle->view_item.back().image_data = tipl::make_image(&*source_images.begin(),source_images.geometry());
-    handle->view_item.back().set_scale(source_images.begin(),source_images.end());
-    handle->view_item.back().name = name;
-    slice_pos[0] = geometry.width() >> 1;
-    slice_pos[1] = geometry.height() >> 1;
-    slice_pos[2] = geometry.depth() >> 1;
-    handle->view_item.back().T = T;
-    handle->view_item.back().iT = invT;
+    initialize();
     return true;
 }
 
