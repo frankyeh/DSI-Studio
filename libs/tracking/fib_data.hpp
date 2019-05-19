@@ -166,6 +166,8 @@ public:
     tipl::vector<3> template_vs,template_shift;
     tipl::image<float,3> template_I,template_I2;
     std::vector<std::shared_ptr<atlas> > atlas_list;
+public:
+    void set_template_id(int new_id);
     bool load_template(void);
     bool load_atlas(void);
     void template_to_mni(tipl::vector<3>& p);

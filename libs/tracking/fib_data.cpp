@@ -828,6 +828,16 @@ void fib_data::get_index_titles(std::vector<std::string>& titles)
         titles.push_back(index_list[index]+" sd");
     }
 }
+void fib_data::set_template_id(int new_id)
+{
+    if(new_id != template_id)
+    {
+        template_id = new_id;
+        template_I.clear();
+        mni_position.clear();
+        atlas_list.clear();
+    }
+}
 extern std::vector<std::string> fa_template_list,iso_template_list,atlas_file_list;
 bool fib_data::load_template(void)
 {
@@ -873,11 +883,13 @@ bool fib_data::load_template(void)
         {
             std::string other_template = line.substr(0,pos);
             for(int i = 0;i < fa_template_list.size();++i)
-                if(QFileInfo(fa_template_list[template_id].c_str()).baseName().toStdString() == other_template)
+            {
+                if(QFileInfo(fa_template_list[i].c_str()).baseName().toStdString() == other_template)
                 {
                     other_template_id = i;
                     line = line.substr(pos+1,line.length()-pos-1);
                 }
+            }
             if(other_template_id == -1)
                 continue;
         }
@@ -1147,7 +1159,8 @@ void fib_data::get_atlas_roi(std::shared_ptr<atlas> at,int roi_index,std::vector
     if(get_mni_mapping().empty())
         return;
     // this will load the files from storage to prevent GUI multishread crash
-    at->is_labeled_as(tipl::vector<3>(0,0,0), roi_index);
+    if(!at->load_from_file())
+        return;
     unsigned int thread_count = std::thread::hardware_concurrency();
     std::vector<std::vector<tipl::vector<3,short> > > buf(thread_count);
     r = 1.0;

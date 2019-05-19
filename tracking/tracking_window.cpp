@@ -181,7 +181,7 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
             ui->target->setVisible(false);
             ui->target_label->setVisible(false);
             ui->enable_auto_track->setVisible(false);
-            if(handle->is_human_data && !tractography_name_list.empty())
+            if(!tractography_name_list.empty())
             {
                 ui->target->addItem("All");
                 for(size_t i = 0;i < tractography_name_list.size();++i)
@@ -1196,7 +1196,11 @@ void tracking_window::on_addRegionFromAtlas_clicked()
     std::shared_ptr<AtlasDialog> atlas_dialog(new AtlasDialog(this,handle));
     if(atlas_dialog->exec() == QDialog::Accepted)
     {
-        handle->atlas_list[atlas_dialog->atlas_index]->load_from_file();
+        if(!handle->atlas_list[atlas_dialog->atlas_index]->load_from_file())
+        {
+            QMessageBox::information(0,"Error",handle->atlas_list[atlas_dialog->atlas_index]->error_msg.c_str(),0);
+            return;
+        }
         begin_prog("adding regions");
         regionWidget->begin_update();
         for(unsigned int i = 0;check_prog(i,atlas_dialog->roi_list.size());++i)
@@ -1987,7 +1991,12 @@ void tracking_window::on_enable_auto_track_clicked()
 {
     if(!can_map_to_mni())
     {
-        QMessageBox::information(this,"DSI Studio","Cannot complete normalization to a standard space",0);
+        QMessageBox::information(this,"Error","Atlas is not supported for the current image resolution.",0);
+        return;
+    }
+    if(!handle->load_atlas() || handle->atlas_list[0]->name != "HCP842_tractography")
+    {
+        QMessageBox::information(0,"Error","No tractography atlas exists",0);
         return;
     }
     auto trk = std::make_shared<TractModel>(handle);
@@ -2033,12 +2042,10 @@ void tracking_window::on_actionFIB_protocol_triggered()
 
 void tracking_window::on_template_box_activated(int index)
 {
-    if(index != handle->template_id)
-    {
-        handle->template_id = index;
-        handle->template_I.clear();
-        handle->atlas_list.clear();
-    }
+    handle->set_template_id(index);
+    ui->target->setCurrentIndex(0);
+    ui->target->setVisible(index == 0);
+    ui->target_label->setVisible(index == 0);
 }
 
 void tracking_window::on_SliceModality_currentIndexChanged(int index)

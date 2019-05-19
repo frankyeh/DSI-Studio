@@ -22,11 +22,11 @@ private:// for track atlas only
     std::vector<unsigned int> track_base_pos;
     bool is_track;
 public:
-    std::string name,filename;
+    std::string name,filename,error_msg;
     int template_from = -1;
     int template_to = -1;
 public:
-    void load_from_file(void);
+    bool load_from_file(void);
     const std::vector<std::string>& get_list(void)
     {
         if(labels.empty())
