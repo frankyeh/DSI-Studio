@@ -9,7 +9,7 @@
 #include "fib_data.hpp"
 #include "connectometry/group_connectometry_analysis.h"
 
-extern std::string fib_template_file_name_1mm,fib_template_file_name_2mm;
+extern std::string fib_template_file_name_2mm;
 const char* odf_average(const char* out_name,std::vector<std::string>& file_names);
 bool atl_load_atlas(std::string atlas_name,std::vector<std::shared_ptr<atlas> >& atlas_list)
 {
@@ -168,19 +168,8 @@ int atl(void)
         std::string tm;
         if(po.has("template"))
             tm = po.get("template");
-        {
-            fib_data fib;
-            if(!fib.load_from_file(name_list[0].c_str()))
-            {
-                std::cout << "Invalid FIB file format:" << name_list[0] << std::endl;
-                return 1;
-            }
-            if(fib.vs[0] < 1.5f)
-                tm = fib_template_file_name_1mm.c_str();
-            else
-                tm = fib_template_file_name_2mm.c_str();
-
-        }
+        else
+            tm = fib_template_file_name_2mm.c_str();
         // Initialize the DB
         std::cout << "Loading template" << tm << std::endl;
         std::shared_ptr<group_connectometry_analysis> data(new group_connectometry_analysis);

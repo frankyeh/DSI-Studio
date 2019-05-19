@@ -15,7 +15,7 @@
 #include "cmd/cnt.cpp" // Qt project cannot build cnt.cpp without adding this.
 
 std::string
-        fib_template_file_name_1mm,fib_template_file_name_2mm,
+        fib_template_file_name_2mm,
         t1w_template_file_name,wm_template_file_name,
         t1w_mask_template_file_name,tractography_atlas_file_name;
 std::vector<std::string> fa_template_list,iso_template_list,tractography_name_list;
@@ -68,7 +68,6 @@ extern std::vector<std::shared_ptr<atlas> > atlas_buffer;
 
 void load_file_name(void)
 {
-    fib_template_file_name_1mm = find_full_path("/HCP1021.1mm.fib.gz");
     fib_template_file_name_2mm = find_full_path("/HCP1021.2mm.fib.gz");
     t1w_template_file_name = find_full_path("/mni_icbm152_t1_tal_nlin_asym_09c.nii.gz");
     wm_template_file_name = find_full_path("/mni_icbm152_wm_tal_nlin_asym_09c.nii.gz");

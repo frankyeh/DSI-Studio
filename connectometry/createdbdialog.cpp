@@ -9,7 +9,7 @@
 #include "prog_interface_static_link.h"
 #include "image_model.hpp"
 
-extern std::string fib_template_file_name_1mm,fib_template_file_name_2mm;
+extern std::string fib_template_file_name_2mm;
 CreateDBDialog::CreateDBDialog(QWidget *parent,bool create_db_) :
     QDialog(parent),
     create_db(create_db_),
@@ -29,8 +29,6 @@ CreateDBDialog::CreateDBDialog(QWidget *parent,bool create_db_) :
         ui->create_data_base->setText("Create skeleton");
         ui->index_label->hide();
     }
-
-
 }
 
 CreateDBDialog::~CreateDBDialog()
@@ -105,10 +103,6 @@ void CreateDBDialog::on_group1open_clicked()
             QMessageBox::information(this,"Error","The FIB file was not reconstructed by QSDR.",0);
             return;
         }
-        if(fib.vs[0] < 1.5f)
-            ui->skeleton->setText(fib_template_file_name_1mm.c_str());
-        else
-            ui->skeleton->setText(fib_template_file_name_2mm.c_str());
         ui->index_of_interest->clear();
         if(fib.has_odfs())
             ui->index_of_interest->addItem("sdf");

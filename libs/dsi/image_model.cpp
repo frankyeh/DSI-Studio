@@ -610,15 +610,10 @@ void ImageModel::rotate(const tipl::image<float,3>& ref,
     voxel.dwi_data.clear();
     calculate_dwi_sum();
 }
-extern std::string fib_template_file_name_1mm,fib_template_file_name_2mm;
+extern std::string fib_template_file_name_2mm;
 bool ImageModel::rotate_to_mni(void)
 {
-    std::string file_name;
-    if(voxel.vs[0]+voxel.vs[0]+voxel.vs[0] < 6.0)
-        file_name = fib_template_file_name_1mm;
-    else
-        file_name = fib_template_file_name_2mm;
-
+    std::string file_name = fib_template_file_name_2mm;
     gz_mat_read read;
     if(!read.load_from_file(file_name.c_str()))
     {
