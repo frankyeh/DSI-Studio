@@ -529,8 +529,10 @@ void RegToolBox::on_actionRemove_Background_triggered()
 
 void RegToolBox::on_actionSave_Warpping_triggered()
 {
+    if(dis.empty())
+        return;
     QString filename = QFileDialog::getSaveFileName(
-            this,"Save Warpping",filename,
+            this,"Save Warpping","",
             "Images (*.map.gz);;All files (*)" );
     if(filename.isEmpty())
         return;
