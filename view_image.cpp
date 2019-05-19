@@ -467,8 +467,8 @@ void view_image::on_actionTranslocate_triggered()
     tipl::draw(data,new_data,tipl::vector<3>(dx,dy,dz));
     data.swap(new_data);
     T[3] -= T[0]*dx;
-    T[7] -= T[5]*dx;
-    T[11] -= T[10]*dx;
+    T[7] -= T[5]*dy;
+    T[11] -= T[10]*dz;
     init_image();
     update_image();
 }
