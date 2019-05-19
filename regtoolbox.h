@@ -70,6 +70,8 @@ private slots:
 
     void on_actionApply_Warpping_triggered();
 
+    void on_actionSave_Warpping_triggered();
+
 private:
     Ui::RegToolBox *ui;
     QGraphicsScene It_scene,I_scene;

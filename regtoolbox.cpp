@@ -526,3 +526,17 @@ void RegToolBox::on_actionRemove_Background_triggered()
 }
 
 
+
+void RegToolBox::on_actionSave_Warpping_triggered()
+{
+    QString filename = QFileDialog::getSaveFileName(
+            this,"Save Warpping",filename,
+            "Images (*.map.gz);;All files (*)" );
+    if(filename.isEmpty())
+        return;
+    tipl::image<tipl::vector<3>,3> mapping(dis);
+    tipl::displacement_to_mapping(mapping,T);
+    gz_mat_write out(filename.toStdString().c_str());
+    if(out)
+        out.write("mapping",&mapping[0][0],3,mapping.size());
+}
