@@ -33,6 +33,7 @@ bool run_prog(const char* msg,fun_type fun,terminated_class& terminated)
             }
         }
     });
+    close_prog();
     return !prog_aborted();
 }
 #endif
