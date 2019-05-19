@@ -8,10 +8,12 @@ private:
     tipl::image<int,3> I;
     std::vector<int> label_num;
     std::vector<std::string> labels;
-    tipl::vector<3> t_scale;
-    tipl::vector<3> t_shift;
+    float T[12];
     void load_label(void);
     int get_index(tipl::vector<3,float> atlas_space);
+private:
+    tipl::image<tipl::vector<3,float>,3 > mapping; // between template mapping
+    float T1[12],T2[12]; // template trans matrix
 private:// for talairach only
     std::vector<std::vector<unsigned int> > index2label;
     std::vector<std::vector<unsigned int> > label2index;
@@ -21,6 +23,8 @@ private:// for track atlas only
     bool is_track;
 public:
     std::string name,filename;
+    int template_from = -1;
+    int template_to = -1;
 public:
     void load_from_file(void);
     const std::vector<std::string>& get_list(void)

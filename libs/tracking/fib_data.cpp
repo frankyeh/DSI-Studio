@@ -828,8 +828,7 @@ void fib_data::get_index_titles(std::vector<std::string>& titles)
         titles.push_back(index_list[index]+" sd");
     }
 }
-extern std::vector<std::string> fa_template_list,iso_template_list;
-extern std::vector<std::shared_ptr<atlas> > atlas_buffer;
+extern std::vector<std::string> fa_template_list,iso_template_list,atlas_file_list;
 bool fib_data::load_template(void)
 {
     if(!template_I.empty())
@@ -839,7 +838,6 @@ bool fib_data::load_template(void)
     tipl::vector<3> I_vs;
     if(!read.load_from_file(fa_template_list[template_id].c_str()))
         return false;
-
     float tran[16];
     read.toLPS(I);
     read.get_voxel_size(I_vs);
@@ -869,9 +867,33 @@ bool fib_data::load_template(void)
     std::string line;
     while(in >> line)
     {
-        for(int j = 0;j < atlas_buffer.size();++j)
-            if(atlas_buffer[j]->name == line)
-                atlas_list.push_back(atlas_buffer[j]);
+        int other_template_id = -1;
+        size_t pos;
+        if((pos = line.find(':')) != std::string::npos)
+        {
+            std::string other_template = line.substr(0,pos);
+            for(int i = 0;i < fa_template_list.size();++i)
+                if(QFileInfo(fa_template_list[template_id].c_str()).baseName().toStdString() == other_template)
+                {
+                    other_template_id = i;
+                    line = line.substr(pos+1,line.length()-pos-1);
+                }
+            if(other_template_id == -1)
+                continue;
+        }
+        for(int j = 0;j < atlas_file_list.size();++j)
+            if(QFileInfo(atlas_file_list[j].c_str()).baseName().toStdString() == line)
+            {
+                atlas_list.push_back(std::make_shared<atlas>());
+                atlas_list.back()->name = line;
+                atlas_list.back()->filename = atlas_file_list[j];
+                if(other_template_id != -1)
+                {
+                    atlas_list.back()->template_from = template_id;
+                    atlas_list.back()->template_to = other_template_id;
+                }
+                break;
+            }
     }
     return true;
 }
@@ -881,7 +903,7 @@ bool fib_data::load_atlas(void)
     return load_template() && !atlas_list.empty();
 }
 
-void fib_data::to_mni(tipl::vector<3>& p)
+void fib_data::template_to_mni(tipl::vector<3>& p)
 {
     p[0] = -p[0];
     if(template_vs[0] != 1.0f)
@@ -894,7 +916,7 @@ void fib_data::to_mni(tipl::vector<3>& p)
     p += template_shift;
 }
 
-void fib_data::from_mni(tipl::vector<3>& p)
+void fib_data::template_from_mni(tipl::vector<3>& p)
 {
     p -= template_shift;
     if(template_vs[2] != 1.0f)
@@ -912,7 +934,9 @@ void fib_data::from_mni(tipl::vector<3>& p)
 void fib_data::run_normalization(bool background)
 {
     std::string output_file_name(fib_file_name);
-    output_file_name += ".mni.gz";
+    output_file_name += ".";
+    output_file_name += QFileInfo(fa_template_list[template_id].c_str()).baseName().toLower().toStdString();
+    output_file_name += ".map.gz";
     gz_mat_read in;
     if(in.load_from_file(output_file_name.c_str()))
     {
@@ -925,8 +949,8 @@ void fib_data::run_normalization(bool background)
         const float* ptr2 = 0;
         unsigned int row1,col1;
         unsigned int row2,col2;
-        in.read("mni_position",row1,col1,ptr1);
-        in.read("inv_mni_position",row2,col2,ptr2);
+        in.read("mapping",row1,col1,ptr1);
+        in.read("inv_mapping",row2,col2,ptr2);
         if(row1 == 3 && col1 == mni.size() && ptr1 &&
            row2 == 3 && col2 == inv_mni.size() && ptr2)
         {
@@ -941,7 +965,7 @@ void fib_data::run_normalization(bool background)
     if(background)
         begin_prog("running normalization");
     prog = 0;
-    auto lambda = [this]()
+    auto lambda = [this,output_file_name]()
     {
 
         auto& It = template_I;
@@ -1005,20 +1029,18 @@ void fib_data::run_normalization(bool background)
             v = p;
             tipl::estimate(dis,v,d,tipl::linear);
             v += d;
-            to_mni(v);
+            template_to_mni(v);
         });
         if(thread.terminated)
             return;
         mni_position.swap(mni);
         inv_mni_position.swap(inv_mni);
 
-        std::string output_file_name(fib_file_name);
-        output_file_name += ".mni.gz";
         gz_mat_write out(output_file_name.c_str());
         if(out)
         {
-            out.write("mni_position",&mni_position[0][0],3,mni_position.size());
-            out.write("inv_mni_position",&inv_mni_position[0][0],3,inv_mni_position.size());
+            out.write("mapping",&mni_position[0][0],3,mni_position.size());
+            out.write("inv_mapping",&inv_mni_position[0][0],3,inv_mni_position.size());
         }
         prog = 5;
     };
@@ -1051,6 +1073,31 @@ bool fib_data::can_map_to_mni(void)
     return true;
 }
 
+void sub2mni(tipl::vector<3>& pos,const float* trans)
+{
+    if(trans[0] != 1.0f)
+        pos[0] *= trans[0];
+    if(trans[5] != 1.0f)
+        pos[1] *= trans[5];
+    if(trans[10] != 1.0f)
+        pos[2] *= trans[10];
+    pos[0] += trans[3];
+    pos[1] += trans[7];
+    pos[2] += trans[11];
+}
+void mni2sub(tipl::vector<3>& pos,const float* trans)
+{
+    pos[0] -= trans[3];
+    pos[1] -= trans[7];
+    pos[2] -= trans[11];
+    if(trans[0] != 1.0f)
+        pos[0] /= trans[0];
+    if(trans[5] != 1.0f)
+        pos[1] /= trans[5];
+    if(trans[10] != 1.0f)
+        pos[2] /= trans[10];
+}
+
 
 void fib_data::mni2subject(tipl::vector<3>& pos)
 {
@@ -1058,13 +1105,10 @@ void fib_data::mni2subject(tipl::vector<3>& pos)
         return;
     if(is_qsdr)
     {
-        pos -= tipl::vector<3>(trans_to_mni[3],trans_to_mni[7],trans_to_mni[11]);
-        pos[0] /= trans_to_mni[0];
-        pos[1] /= trans_to_mni[5];
-        pos[2] /= trans_to_mni[10];
+        mni2sub(pos,&trans_to_mni[0]);
         return;
     }
-    from_mni(pos);
+    template_from_mni(pos);
     tipl::vector<3> p;
     pos *= 0.5f;
     tipl::estimate(inv_mni_position,pos,p);
@@ -1075,7 +1119,7 @@ void fib_data::subject2mni(tipl::vector<3>& pos)
 {
     if(is_qsdr)
     {
-        pos.to(trans_to_mni);
+        sub2mni(pos,&trans_to_mni[0]);
         return;
     }
     if(!mni_position.empty())
@@ -1090,7 +1134,7 @@ void fib_data::subject2mni(tipl::pixel_index<3>& index,tipl::vector<3>& pos)
     if(is_qsdr)
     {
         pos = index;
-        pos.to(trans_to_mni);
+        mni2sub(pos,&trans_to_mni[0]);
         return;
     }
     if(!mni_position.empty())
@@ -1125,10 +1169,11 @@ const tipl::image<tipl::vector<3,float>,3 >& fib_data::get_mni_mapping(void)
     if(is_qsdr)
     {
         mni_position.resize(dim);
+        const float* t = &trans_to_mni[0];
         mni_position.for_each_mt([&](tipl::vector<3>& mni,const tipl::pixel_index<3>& index)
         {
             mni = index.begin();
-            mni.to(trans_to_mni);
+            sub2mni(mni,t);
         });
         return mni_position;
     }

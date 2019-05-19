@@ -18,7 +18,7 @@ std::string
         fib_template_file_name_2mm,
         t1w_template_file_name,wm_template_file_name,
         t1w_mask_template_file_name,tractography_atlas_file_name;
-std::vector<std::string> fa_template_list,iso_template_list,tractography_name_list;
+std::vector<std::string> fa_template_list,iso_template_list,atlas_file_list,tractography_name_list;
 void load_atlas(void);
 int rec(void);
 int trk(void);
@@ -64,7 +64,6 @@ std::string find_full_path(QString name)
     throw error_msg;
 }
 
-extern std::vector<std::shared_ptr<atlas> > atlas_buffer;
 
 void load_file_name(void)
 {
@@ -141,11 +140,7 @@ void load_file_name(void)
             name_list.insert(0,str);
         }
     for(int index = 0;index < name_list.size();++index)
-    {
-        atlas_buffer.push_back(std::make_shared<atlas>());
-        atlas_buffer.back()->name = QFileInfo(name_list[index]).baseName().toLocal8Bit().begin();
-        atlas_buffer.back()->filename = (dir.absolutePath() + "/" + name_list[index]).toStdString();
-    }
+        atlas_file_list.push_back((dir.absolutePath() + "/" + name_list[index]).toStdString());
 }
 
 void init_application(void)

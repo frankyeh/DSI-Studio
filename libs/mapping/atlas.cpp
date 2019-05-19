@@ -5,7 +5,8 @@
 #include <QCoreApplication>
 #include <QDir>
 
-std::vector<std::shared_ptr<atlas> > atlas_buffer;
+void sub2mni(tipl::vector<3>& pos,const float* trans);
+void mni2sub(tipl::vector<3>& pos,const float* trans);
 
 void atlas::load_label(void)
 {
@@ -73,12 +74,13 @@ void atlas::load_label(void)
 
     }
 }
-
+extern std::vector<std::string> fa_template_list;
 void atlas::load_from_file(void)
 {
     gz_nifti nii;
     if(!nii.load_from_file(filename.c_str()))
         throw std::runtime_error("Cannot load atlas file");
+
     if(name.empty())
         name = QFileInfo(filename.c_str()).baseName().toStdString();
     is_track = (nii.dim(4) > 1); // 4d nifti as track files
@@ -91,15 +93,7 @@ void atlas::load_from_file(void)
     }
     else
         nii.toLPS(I);
-
-    float trans[12];
-    nii.get_image_transformation(trans);
-    t_shift[0] = trans[3];
-    t_shift[1] = trans[7];
-    t_shift[2] = trans[11];
-    t_scale[0] = std::fabs(trans[0]);
-    t_scale[1] = std::fabs(trans[5]);
-    t_scale[2] = std::fabs(trans[10]);
+    nii.get_image_transformation(T);
 
     if(labels.empty())
         load_label();
@@ -152,58 +146,60 @@ void atlas::load_from_file(void)
             }*/
         }
     }
-}
 
 
-void mni_to_tal(float& x,float &y, float &z)
-{
-    x *= 0.9900f;
-    float ty = 0.9688f*y + ((z >= 0) ? 0.0460f*z : 0.0420f*z) ;
-    float tz = -0.0485f*y + ((z >= 0) ? 0.9189f*z : 0.8390f*z) ;
-    y = ty;
-    z = tz;
-}
-
-
-/*
-std::string atlas::get_label_name_at(const tipl::vector<3,float>& mni_space)
-{
-    if(I.empty())
-        load_from_file();
-    int l = get_label_at(mni_space);
-    if(!l)
-        return std::string();
-    if(index2label.empty())
+    if(template_from != -1 && template_to != -1)
     {
-        unsigned int pos = std::find(label_num.begin(),label_num.end(),l)-label_num.begin();
-        return pos >= labels.size() ? std::string() : labels[pos];
+        tipl::geometry<3> dim;
+        // get trans matrix of the from template
+        {
+            gz_nifti read;
+            if(!read.load_from_file(fa_template_list[template_from].c_str()))
+                throw std::runtime_error("Cannot load template file for atlas conversion");
+            tipl::image<float,3> dummy;
+            read.toLPS(dummy,true,false);
+            read.get_image_transformation(T1);
+            dim = tipl::geometry<3>(read.nif_header2.dim+1);
+        }
+        // get trans matrix of the from template
+        {
+            gz_nifti read;
+            if(!read.load_from_file(fa_template_list[template_to].c_str()))
+                throw std::runtime_error("Cannot load template file for atlas conversion");
+            tipl::image<float,3> dummy;
+            read.toLPS(dummy,true,false);
+            read.get_image_transformation(T2);
+        }
+        // get mapping matrix
+        {
+            QString mapping_file_name =
+                    QFileInfo(fa_template_list[template_from].c_str()).filePath() + "/" +
+                    QFileInfo(fa_template_list[template_from].c_str()).baseName() + "." +
+                    QFileInfo(fa_template_list[template_to].c_str()).baseName() + ".map.gz";
+
+            gz_mat_read in;
+            if(!in.load_from_file(mapping_file_name.toStdString().c_str()))
+                throw std::runtime_error("Cannot load template mapping file");
+
+            // read mapping
+            mapping.resize(dim);
+            const float* ptr = 0;
+            unsigned int row,col;
+            in.read("mapping",row,col,ptr);
+            if(row != 3 || col != mapping.size() || !ptr)
+                throw std::runtime_error("Invalid mapping file");
+            std::copy(ptr,ptr+col*row,&mapping[0][0]);
+        }
     }
-    if(l >= index2label.size())
-        return std::string();
-    std::string result;
-    for(int i = 0;i < index2label[l].size();++i)
-    {
-        result += labels[index2label[l][i]];
-        result += " ";
-    }
-    return result;
 }
-*/
+
 int atlas::get_index(tipl::vector<3,float> p)
 {
-    p -= t_shift;
-    if(t_scale[2] != 1.0f)
-        p[2] /= t_scale[2];
-    if(t_scale[1] != 1.0f)
-        p[1] /= t_scale[1];
-    p[1] = -p[1];
-    if(t_scale[0] != 1.0f)
-        p[0] /= t_scale[0];
-    p[0] = -p[0];
+    mni2sub(p,T);
     p.round();
     if(!I.geometry().is_valid(p))
         return 0;
-    return ((int)p[2]*I.height()+(int)p[1])*I.width()+(int)p[0];
+    return (int(p[2])*I.height()+int(p[1]))*I.width()+int(p[0]);
 }
 
 bool atlas::is_labeled_as(const tipl::vector<3,float>& mni_space,unsigned int label_name_index)
@@ -212,7 +208,10 @@ bool atlas::is_labeled_as(const tipl::vector<3,float>& mni_space,unsigned int la
         load_from_file();
     if(label_name_index >= label_num.size())
         return false;
+    if(!mapping.empty())
+    {
 
+    }
     int offset = get_index(mni_space);
     if(!offset || offset >= I.size())
         return false;

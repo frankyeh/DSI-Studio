@@ -287,7 +287,8 @@ bool TractModel::load_from_file(const char* file_name_,bool append)
             TrackVis trk;
             if(!trk.load_from_file(file_name_,loaded_tract_data,loaded_tract_cluster,vs))
                 return false;
-            if(handle->load_template() &&
+            if(handle->template_id == 0 &&
+               handle->load_template() &&
                tipl::geometry<3>(trk.dim) == handle->template_I.geometry() &&
                tipl::geometry<3>(trk.dim) != handle->dim &&
                handle->can_map_to_mni())
@@ -300,7 +301,7 @@ bool TractModel::load_from_file(const char* file_name_,bool append)
                         tipl::vector<3> p(loaded_tract_data[i][j]*vs[0],
                                           loaded_tract_data[i][j+1]*vs[1],
                                           loaded_tract_data[i][j+2]*vs[2]);
-                        handle->to_mni(p);
+                        handle->template_to_mni(p);
                         handle->mni2subject(p);
                         loaded_tract_data[i][j] = p[0];
                         loaded_tract_data[i][j+1] = p[1];

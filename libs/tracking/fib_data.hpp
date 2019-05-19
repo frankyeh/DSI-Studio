@@ -168,8 +168,8 @@ public:
     std::vector<std::shared_ptr<atlas> > atlas_list;
     bool load_template(void);
     bool load_atlas(void);
-    void to_mni(tipl::vector<3>& p);
-    void from_mni(tipl::vector<3>& p);
+    void template_to_mni(tipl::vector<3>& p);
+    void template_from_mni(tipl::vector<3>& p);
 
 public:
     void run_normalization(bool background);
