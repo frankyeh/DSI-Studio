@@ -14,6 +14,7 @@ class view_image : public QMainWindow
     Q_OBJECT
     
 public:
+    QString file_name;
     explicit view_image(QWidget *parent = 0);
     ~view_image();
     bool open(QStringList file_name);

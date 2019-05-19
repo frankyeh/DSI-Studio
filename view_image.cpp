@@ -127,7 +127,7 @@ bool view_image::open(QStringList file_names)
     T.identity();
 
     QString info;
-    QString file_name = file_names[0];
+    file_name = file_names[0];
     setWindowTitle(QFileInfo(file_name).fileName());
     begin_prog("loading...");
     check_prog(0,1);
@@ -396,7 +396,7 @@ void view_image::on_actionResample_triggered()
 void view_image::on_action_Save_as_triggered()
 {
     QString filename = QFileDialog::getSaveFileName(
-                           this,"Save image",windowTitle(),"NIFTI file(*nii.gz *.nii)" );
+                           this,"Save image",file_name,"NIFTI file(*nii.gz *.nii)" );
     if (filename.isEmpty())
         return;
     gz_nifti nii;
@@ -409,7 +409,7 @@ void view_image::on_action_Save_as_triggered()
 void view_image::on_actionMasking_triggered()
 {
     QString filename = QFileDialog::getOpenFileName(
-                           this,"Open mask",QFileInfo(windowTitle()).absolutePath(),"NIFTI file(*nii.gz *.nii)" );
+                           this,"Open mask",QFileInfo(file_name).absolutePath(),"NIFTI file(*nii.gz *.nii)" );
     if (filename.isEmpty())
         return;
     gz_nifti nii;
