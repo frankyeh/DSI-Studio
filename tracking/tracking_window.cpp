@@ -1614,8 +1614,7 @@ void tracking_window::on_actionInsert_MNI_images_triggered()
     tipl::image<float,3> I,J(mapping.geometry());
     tipl::matrix<4,4,float> T;
     reader.toLPS(I);
-    T.identity();
-    reader.get_image_transformation(T.begin());
+    reader.get_image_transformation(T);
     T.inv();
     J.for_each_mt([&](float& v,const tipl::pixel_index<3>& pos)
     {

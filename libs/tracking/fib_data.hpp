@@ -158,7 +158,7 @@ public:
 public:
     tipl::thread thread;
     int prog;
-    std::vector<float> trans_to_mni;
+    tipl::matrix<4,4,float> trans_to_mni;
     tipl::image<tipl::vector<3,float>,3 > mni_position,inv_mni_position;
     tipl::image<tipl::vector<3,float>,3 > native_position;
 public:
@@ -186,6 +186,7 @@ public:
     fib_data(void)
     {
         vs[0] = vs[1] = vs[2] = 1.0;
+        trans_to_mni.identity();
     }
     fib_data(tipl::geometry<3> dim_,tipl::vector<3> vs_):dim(dim_),vs(vs_){}
 public:

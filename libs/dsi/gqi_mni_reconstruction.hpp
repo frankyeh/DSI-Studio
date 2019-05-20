@@ -47,7 +47,7 @@ public:
             {
                 read.toLPS(VG);
                 read.get_voxel_size(VGvs);
-                float tran[16];
+                tipl::matrix<4,4,float> tran;
                 read.get_image_transformation(tran);
                 VGshift[0] = tran[3];
                 VGshift[1] = tran[7];

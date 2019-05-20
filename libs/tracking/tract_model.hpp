@@ -120,7 +120,7 @@ public:
              const tipl::matrix<4,4,float>& transformation,bool endpoint);
         void get_density_map(tipl::image<tipl::rgb,3>& mapping,
              const tipl::matrix<4,4,float>& transformation,bool endpoint);
-        void save_tdi(const char* file_name,bool sub_voxel,bool endpoint,const std::vector<float>& tran);
+        void save_tdi(const char* file_name,bool sub_voxel,bool endpoint,const tipl::matrix<4,4,float>& tran);
 
         void get_quantitative_data(std::vector<float>& data);
         void get_quantitative_info(std::string& result);

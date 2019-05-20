@@ -19,7 +19,7 @@ public:
     tipl::image<float,3> It,I,J,JJ,I2,It2,J2;
     tipl::image<tipl::vector<3>,3> dis;
     tipl::vector<3> Itvs,Ivs;
-    float ItR[12];
+    tipl::matrix<4,4,float> ItR;
 public:
     tipl::transformation_matrix<double> T;
     tipl::image<float,3> J_view,J_view2;

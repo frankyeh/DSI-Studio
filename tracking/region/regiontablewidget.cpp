@@ -645,8 +645,7 @@ bool RegionTableWidget::load_multiple_roi_nii(QString file_name)
             if(new_from.empty())
             {
                 QMessageBox::information(this,"Warning","The nii file has different image dimension. Transformation will be applied to load the region",0);
-                convert.identity();
-                header.get_image_transformation(convert.begin());
+                header.get_image_transformation(convert);
                 convert.inv();
                 convert *= cur_tracking_window.handle->trans_to_mni;
                 has_transform = true;
@@ -967,7 +966,7 @@ void RegionTableWidget::save_all_regions(void)
     header.set_voxel_size(cur_tracking_window.current_slice->voxel_size);
     if(cur_tracking_window.handle->is_qsdr)
         header.set_LPS_transformation(
-                    cur_tracking_window.handle->trans_to_mni.begin(),
+                    cur_tracking_window.handle->trans_to_mni,
                     mask.geometry());
     tipl::flip_xy(mask);
     header << mask;

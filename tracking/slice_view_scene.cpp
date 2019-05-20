@@ -274,7 +274,7 @@ bool slice_view_scene::command(QString cmd,QString param,QString param2)
             gz_nifti file;
             file.set_voxel_size(cur_tracking_window.handle->vs);
             if(cur_tracking_window.handle->is_qsdr) //QSDR condition
-                file.set_LPS_transformation(cur_tracking_window.handle->trans_to_mni.begin(),buf.geometry());
+                file.set_LPS_transformation(cur_tracking_window.handle->trans_to_mni,buf.geometry());
             tipl::flip_xy(buf);
             file << buf;
             file.save_to_file(param.toLocal8Bit().begin());
@@ -299,7 +299,7 @@ bool slice_view_scene::command(QString cmd,QString param,QString param2)
                 new_buf.swap(buf);
             }
             if(cur_tracking_window.handle->is_qsdr) //QSDR condition
-                file.set_LPS_transformation(cur_tracking_window.handle->trans_to_mni.begin(),buf.geometry());
+                file.set_LPS_transformation(cur_tracking_window.handle->trans_to_mni,buf.geometry());
             tipl::flip_xy(buf);
             file << buf;
             file.save_to_file(param.toLocal8Bit().begin());

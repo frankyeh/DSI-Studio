@@ -5,8 +5,8 @@
 #include <QCoreApplication>
 #include <QDir>
 
-void sub2mni(tipl::vector<3>& pos,const float* trans);
-void mni2sub(tipl::vector<3>& pos,const float* trans);
+void sub2mni(tipl::vector<3>& pos,const tipl::matrix<4,4,float>& trans);
+void mni2sub(tipl::vector<3>& pos,const tipl::matrix<4,4,float>& trans);
 
 void atlas::load_label(void)
 {

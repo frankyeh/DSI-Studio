@@ -62,10 +62,17 @@ int exp(void)
         std::cout << "Cannot find voxel_size matrix in the file" << file_name.c_str() <<std::endl;
         return 1;
     }
-    const float* trans = 0;
-    if(mat_reader.read("trans",row,col,trans))
-        std::cout << "Transformation matrix found." << std::endl;
-
+    tipl::matrix<4,4,float> trans;
+    {
+        const float* p = 0;
+        if(mat_reader.read("trans",row,col,p))
+        {
+            std::cout << "Transformation matrix found." << std::endl;
+            std::copy(p,p+16,trans.begin());
+        }
+        else
+            trans.identity();
+    }
     tipl::geometry<3> geo(dim_buf[0],dim_buf[1],dim_buf[2]);
     std::string export_option = po.get("export");
     std::replace(export_option.begin(),export_option.end(),',',' ');
@@ -113,8 +120,7 @@ int exp(void)
                         fibers[ptr] = dir.get_dir(index,dir_index)[j];
             }
             gz_nifti nifti_header;
-            if(trans) //QSDR condition
-                nifti_header.set_LPS_transformation(trans,fibers.geometry());
+            nifti_header.set_LPS_transformation(trans,fibers.geometry());
             tipl::flip_xy(fibers);
             nifti_header << fibers;
             nifti_header.set_voxel_size(tipl::vector<3>(vs));
@@ -137,8 +143,7 @@ int exp(void)
             std::copy(volume,volume+geo.size(),data.begin());
             gz_nifti nifti_header;
 
-            if(trans) //QSDR condition
-                nifti_header.set_LPS_transformation(trans,data.geometry());
+            nifti_header.set_LPS_transformation(trans,data.geometry());
             tipl::flip_xy(data);
             nifti_header << data;
             nifti_header.set_voxel_size(tipl::vector<3>(vs));

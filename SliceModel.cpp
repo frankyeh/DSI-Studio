@@ -228,12 +228,11 @@ bool CustomSliceModel::initialize(const std::vector<std::string>& files,
         tipl::io::nifti nii;
         nii.set_dim(geo);
         nii.set_voxel_size(voxel_size);
-        nii.set_image_transformation(T.begin());
+        nii.set_image_transformation(T);
         nii << source_images;
         nii.toLPS(source_images);
         nii.get_voxel_size(voxel_size);
-        T.identity();
-        nii.get_image_transformation(T.begin());
+        nii.get_image_transformation(T);
         // LPS matrix switched to RAS
 
         T[0] = -T[0];
@@ -255,8 +254,7 @@ bool CustomSliceModel::initialize(const std::vector<std::string>& files,
                 nifti.get_voxel_size(voxel_size);
                 if(handle->is_qsdr)
                 {
-                    invT.identity();
-                    nifti.get_image_transformation(invT.begin());
+                    nifti.get_image_transformation(invT);
                     invT.inv();
                     invT *= handle->trans_to_mni;
                     T = tipl::inverse(invT);

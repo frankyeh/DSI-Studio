@@ -676,7 +676,7 @@ void TractTableWidget::deep_learning_train(void)
             QString track_file_name = QFileInfo(filename).absolutePath() + "/" + item(index,0)->text() + ".nii.gz";
             gz_nifti nifti2;
             nifti2.set_voxel_size(cur_tracking_window.current_slice->voxel_size);
-            nifti2.set_image_transformation(cur_tracking_window.handle->trans_to_mni.begin());
+            nifti2.set_image_transformation(cur_tracking_window.handle->trans_to_mni);
             nifti2 << track_map;
             nifti2.save_to_file(track_file_name.toLocal8Bit().begin());
 
@@ -687,7 +687,7 @@ void TractTableWidget::deep_learning_train(void)
                 filename = QFileInfo(filename).absolutePath() + "/tracks.nii.gz";
                 gz_nifti nifti;
                 nifti.set_voxel_size(cur_tracking_window.current_slice->voxel_size);
-                nifti.set_image_transformation(cur_tracking_window.handle->trans_to_mni.begin());
+                nifti.set_image_transformation(cur_tracking_window.handle->trans_to_mni);
                 nifti << atlas;
                 nifti.save_to_file(filename.toLocal8Bit().begin());
             }
@@ -1327,10 +1327,10 @@ void TractTableWidget::export_tract_density(tipl::geometry<3>& dim,
             nii_header.set_voxel_size(vs);
             if(cur_tracking_window.handle->is_qsdr)
             {
-                tipl::matrix<4,4,float> new_trans(transformation),trans(cur_tracking_window.handle->trans_to_mni.begin());
+                tipl::matrix<4,4,float> new_trans(transformation),trans(cur_tracking_window.handle->trans_to_mni);
                 new_trans.inv();
                 trans *= new_trans;
-                nii_header.set_LPS_transformation(trans.begin(),tdi.geometry());
+                nii_header.set_LPS_transformation(trans,tdi.geometry());
             }
             tipl::flip_xy(tdi);
             nii_header << tdi;

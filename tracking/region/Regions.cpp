@@ -152,7 +152,7 @@ void ROIRegion::add_points(std::vector<tipl::vector<3,short> >& points, bool del
 // ---------------------------------------------------------------------------
 void ROIRegion::SaveToFile(const char* FileName)
 {
-    std::vector<float> trans;
+    tipl::matrix<4,4,float> trans;
     if(handle->is_qsdr)
         trans = handle->trans_to_mni;
     std::string file_name(FileName);
@@ -204,18 +204,18 @@ void ROIRegion::SaveToFile(const char* FileName)
         if(tmp.size() < 80)
             tmp.resize(80);
         header.set_descrip(tmp.c_str());
-        if(!trans.empty())
+        if(handle->is_qsdr)
         {
             if(resolution_ratio != 1.0)
             {
-                std::vector<float> T(trans);
+                tipl::matrix<4,4,float> T(trans);
                 tipl::multiply_constant(&T[0],&T[0]+3,1.0/resolution_ratio);
                 tipl::multiply_constant(&T[4],&T[0]+3,1.0/resolution_ratio);
                 tipl::multiply_constant(&T[8],&T[0]+3,1.0/resolution_ratio);
-                header.set_LPS_transformation(T.begin(),mask.geometry());
+                header.set_LPS_transformation(T,mask.geometry());
             }
             else
-                header.set_LPS_transformation(trans.begin(),mask.geometry());
+                header.set_LPS_transformation(trans,mask.geometry());
         }
         tipl::flip_xy(mask);
         header << mask;
@@ -227,7 +227,7 @@ void ROIRegion::SaveToFile(const char* FileName)
 
 bool ROIRegion::LoadFromFile(const char* FileName) {
 
-    std::vector<float> trans;
+    tipl::matrix<4,4,float> trans;
     if(handle->is_qsdr)
         trans = handle->trans_to_mni;
     std::string file_name(FileName);
@@ -304,12 +304,11 @@ bool ROIRegion::LoadFromFile(const char* FileName) {
                 }
             }
 
-            if(trans.empty())
+            if(!handle->is_qsdr)
                 return false;
             header >> from;
             tipl::matrix<4,4,float> t;
-            t.identity();
-            header.get_image_transformation(t.begin());
+            header.get_image_transformation(t);
             t.inv();
             t *= trans;
             LoadFromBuffer(from,t);

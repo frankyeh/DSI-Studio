@@ -676,8 +676,7 @@ void group_connectometry::on_load_roi_from_file_clicked()
         return;
     }
     nii >> I;
-    transform.identity();
-    nii.get_image_transformation(transform.begin());
+    nii.get_image_transformation(transform);
     transform.inv();
     std::vector<tipl::vector<3,short> > new_roi;
     for (tipl::pixel_index<3> index(vbc->handle->dim);index < vbc->handle->dim.size();++index)

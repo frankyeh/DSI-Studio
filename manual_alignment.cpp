@@ -330,8 +330,7 @@ void manual_alignment::on_save_warpped_clicked()
     nii.set_voxel_size(to_vs);
     tipl::flip_xy(I);
     nii << I;
-    if(!nifti_srow.empty())
-        nii.set_LPS_transformation(nifti_srow.begin(),I.geometry());
+    nii.set_LPS_transformation(nifti_srow,I.geometry());
     nii.save_to_file(filename.toStdString().c_str());
 }
 

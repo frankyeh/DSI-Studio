@@ -17,7 +17,7 @@ class manual_alignment : public QDialog
 public:
     tipl::image<float,3> from_original;
     tipl::image<float,3> from,to,warped_from;
-    std::vector<float> nifti_srow;
+    tipl::matrix<4,4,float> nifti_srow;
     tipl::affine_transform<double> arg,b_upper,b_lower;
     tipl::vector<3> from_vs,to_vs;
     QGraphicsScene scene[3];

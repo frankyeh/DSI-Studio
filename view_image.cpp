@@ -15,7 +15,7 @@
 std::map<std::string,std::string> dicom_dictionary;
 
 void show_view(QGraphicsScene& scene,QImage I);
-bool load_image_from_files(QStringList filenames,tipl::image<float,3>& ref,tipl::vector<3>& vs,std::vector<float>& trans)
+bool load_image_from_files(QStringList filenames,tipl::image<float,3>& ref,tipl::vector<3>& vs,tipl::matrix<4,4,float>& trans)
 {
     if(filenames.size() == 1 && filenames[0].toLower().contains("nii"))
     {
@@ -26,8 +26,7 @@ bool load_image_from_files(QStringList filenames,tipl::image<float,3>& ref,tipl:
             return false;
         }
         in.get_voxel_size(vs);
-        trans.resize(12);
-        in.get_image_transformation(trans.begin());
+        in.get_image_transformation(trans);
         return true;
     }
     else
@@ -152,7 +151,7 @@ bool view_image::open(QStringList file_names)
     {
         nifti >> data;
         nifti.get_voxel_size(vs);
-        nifti.get_image_transformation(T.begin());
+        nifti.get_image_transformation(T);
         info = QString("sizeof_hdr=%1\ndim_info=%2\n").
                 arg(nifti.nif_header2.sizeof_hdr).
                 arg((int)nifti.nif_header2.dim_info);
@@ -400,7 +399,7 @@ void view_image::on_action_Save_as_triggered()
     if (filename.isEmpty())
         return;
     gz_nifti nii;
-    nii.set_image_transformation(T.begin());
+    nii.set_image_transformation(T);
     nii.set_voxel_size(vs);
     nii << data;
     nii.save_to_file(filename.toStdString().c_str());

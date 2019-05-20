@@ -647,7 +647,6 @@ bool fib_data::load_from_mat(void)
         {
             const float* trans = 0;
             mat_reader.read(index,row,col,trans);
-            trans_to_mni.resize(16);
             std::copy(trans,trans+16,trans_to_mni.begin());
             is_qsdr = true;
             continue;
@@ -875,7 +874,7 @@ bool fib_data::load_template(void)
     tipl::vector<3> I_vs;
     if(!read.load_from_file(fa_template_list[template_id].c_str()))
         return false;
-    float tran[16];
+    tipl::matrix<4,4,float> tran;
     read.toLPS(I);
     read.get_voxel_size(I_vs);
     read.get_image_transformation(tran);
@@ -1104,7 +1103,7 @@ bool fib_data::can_map_to_mni(void)
     return true;
 }
 
-void sub2mni(tipl::vector<3>& pos,const float* trans)
+void sub2mni(tipl::vector<3>& pos,const tipl::matrix<4,4,float>& trans)
 {
     if(trans[0] != 1.0f)
         pos[0] *= trans[0];
@@ -1116,7 +1115,7 @@ void sub2mni(tipl::vector<3>& pos,const float* trans)
     pos[1] += trans[7];
     pos[2] += trans[11];
 }
-void mni2sub(tipl::vector<3>& pos,const float* trans)
+void mni2sub(tipl::vector<3>& pos,const tipl::matrix<4,4,float>& trans)
 {
     pos[0] -= trans[3];
     pos[1] -= trans[7];
@@ -1136,7 +1135,7 @@ void fib_data::mni2subject(tipl::vector<3>& pos)
         return;
     if(is_qsdr && inv_mni_position.empty())
     {
-        mni2sub(pos,&trans_to_mni[0]);
+        mni2sub(pos,trans_to_mni);
         return;
     }
     template_from_mni(pos);
@@ -1150,7 +1149,7 @@ void fib_data::subject2mni(tipl::vector<3>& pos)
 {
     if(is_qsdr && mni_position.empty())
     {
-        sub2mni(pos,&trans_to_mni[0]);
+        sub2mni(pos,trans_to_mni);
         return;
     }
     if(!mni_position.empty())
@@ -1165,7 +1164,7 @@ void fib_data::subject2mni(tipl::pixel_index<3>& index,tipl::vector<3>& pos)
     if(is_qsdr && mni_position.empty())
     {
         pos = index;
-        mni2sub(pos,&trans_to_mni[0]);
+        mni2sub(pos,trans_to_mni);
         return;
     }
     if(!mni_position.empty())
@@ -1198,11 +1197,10 @@ const tipl::image<tipl::vector<3,float>,3 >& fib_data::get_mni_mapping(void)
     if(is_qsdr)
     {
         mni_position.resize(dim);
-        const float* t = &trans_to_mni[0];
         mni_position.for_each_mt([&](tipl::vector<3>& mni,const tipl::pixel_index<3>& index)
         {
             mni = index.begin();
-            sub2mni(mni,t);
+            sub2mni(mni,trans_to_mni);
         });
         return mni_position;
     }

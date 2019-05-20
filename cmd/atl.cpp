@@ -64,7 +64,7 @@ bool atl_load_atlas(std::string atlas_name,std::vector<std::shared_ptr<atlas> >&
 void atl_save_mapping(std::vector<std::shared_ptr<atlas> >& atlas_list,
                       const std::string& file_name,const tipl::geometry<3>& geo,
                       const tipl::image<tipl::vector<3>,3>& mapping,
-                      const std::vector<float>& trans,
+                      const tipl::matrix<4,4,float>& trans,
                       const tipl::vector<3>& vs,
                       bool multiple)
 {
@@ -88,8 +88,7 @@ void atl_save_mapping(std::vector<std::shared_ptr<atlas> >& atlas_list,
             {
                 tipl::io::nifti out;
                 out.set_voxel_size(vs);
-                if(!trans.empty())
-                    out.set_LPS_transformation(trans.begin(),roi.geometry());
+                out.set_LPS_transformation(trans,roi.geometry());
                 tipl::flip_xy(roi);
                 out << roi;
                 out.save_to_file(output.c_str());
