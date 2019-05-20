@@ -621,7 +621,7 @@ void TractTableWidget::save_end_point_in_mni(void)
         tipl::io::mat_write out(filename.toLocal8Bit().begin());
         if(!out)
             return;
-        out.write("end_points",(const float*)&*buffer.begin(),3,buffer.size()/3);
+        out.write("end_points",buffer,3);
     }
 }
 

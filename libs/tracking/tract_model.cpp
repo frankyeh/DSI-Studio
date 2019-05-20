@@ -523,7 +523,7 @@ bool TractModel::save_tracts_to_file(const char* file_name_)
             length.push_back((unsigned int)tract_data[index].size()/3);
             std::copy(tract_data[index].begin(),tract_data[index].end(),std::back_inserter(buf));
         }
-        out.write("tracts",&*buf.begin(),3,(unsigned int)buf.size()/3);
+        out.write("tracts",buf,3);
         out.write("length",length);
         return true;
     }
@@ -831,7 +831,7 @@ bool TractModel::save_all(const char* file_name_,const std::vector<std::shared_p
             length.push_back(all[index]->tract_data[i].size()/3);
             std::copy(all[index]->tract_data[i].begin(),all[index]->tract_data[i].end(),std::back_inserter(buf));
         }
-        out.write("tracts",&*buf.begin(),3,buf.size()/3);
+        out.write("tracts",buf,3);
         out.write("length",length);
         out.write("cluster",cluster);
         return true;
@@ -2206,12 +2206,12 @@ void ConnectivityMatrix::save_to_image(tipl::color_image& cm)
 void ConnectivityMatrix::save_to_file(const char* file_name)
 {
     tipl::io::mat_write mat_header(file_name);
-    mat_header.write("connectivity",&*matrix_value.begin(),matrix_value.width(),matrix_value.height());
+    mat_header.write("connectivity",matrix_value,matrix_value.width());
     std::ostringstream out;
     std::copy(region_name.begin(),region_name.end(),std::ostream_iterator<std::string>(out,"\n"));
     std::string result(out.str());
-    mat_header.write("name",result.c_str(),1,result.length()+1);
-    mat_header.write("atlas",atlas_name.c_str(),1,atlas_name.length()+1);
+    mat_header.write("name",result);
+    mat_header.write("atlas",atlas_name);
 }
 
 void ConnectivityMatrix::save_to_text(std::string& text)

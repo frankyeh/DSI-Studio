@@ -497,7 +497,7 @@ void connectometry_db::save_subject_vector(const char* output_name,
             name_string += subject_names[index];
             name_string += "\n";
         }
-        matfile.write("subject_names",name_string.c_str(),1,(unsigned int)name_string.size());
+        matfile.write("subject_names",name_string);
         for(unsigned int index = from,i = 0;index < to;++index,++i)
         {
             check_prog(from,num_subjects);
@@ -506,7 +506,7 @@ void connectometry_db::save_subject_vector(const char* output_name,
 
             std::ostringstream out;
             out << "subject" << index;
-            matfile.write(out.str().c_str(),&subject_vector[0],1,(unsigned int)subject_vector.size());
+            matfile.write(out.str().c_str(),subject_vector);
         }
 
         if(iter == 0)
@@ -539,9 +539,9 @@ void connectometry_db::save_subject_vector(const char* output_name,
                     fiber_direction.push_back(dir[2]);
                 }
             }
-            matfile.write("voxel_location",&voxel_location[0],1,voxel_location.size());
-            matfile.write("mni_location",&mni_location[0],3,voxel_location.size());
-            matfile.write("fiber_direction",&fiber_direction[0],3,voxel_location.size());
+            matfile.write("voxel_location",voxel_location);
+            matfile.write("mni_location",mni_location,3);
+            matfile.write("fiber_direction",fiber_direction,3);
         }
     }
     check_prog(0,0);
@@ -571,8 +571,8 @@ bool connectometry_db::save_subject_data(const char* output_name)
         name_string += subject_names[index];
         name_string += "\n";
     }
-    matfile.write("subject_names",name_string.c_str(),1,(unsigned int)name_string.size());
-    matfile.write("index_name",index_name.c_str(),1,(unsigned int)index_name.size());
+    matfile.write("subject_names",name_string);
+    matfile.write("index_name",index_name);
     matfile.write("R2",R2);
 
     {
@@ -580,8 +580,8 @@ bool connectometry_db::save_subject_data(const char* output_name)
         out << "A total of " << num_subjects << " diffusion MRI scans were included in the connectometry database." << subject_report.c_str();
         out << " The " << index_name << " values were used in the connectometry analysis.";
         std::string report = out.str();
-        matfile.write("subject_report",&*subject_report.c_str(),1,(unsigned int)subject_report.length());
-        matfile.write("report",&*report.c_str(),1,(unsigned int)report.length());
+        matfile.write("subject_report",subject_report);
+        matfile.write("report",report);
     }
     modified = false;
     return true;

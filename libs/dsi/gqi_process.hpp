@@ -281,18 +281,18 @@ public:
             b_table.push_back(bvalues.front());
             std::copy(bvectors[index].begin(),bvectors[index].end(),std::back_inserter(b_table));
         }
-        mat_writer.write("b_table",&b_table[0],4,b_table.size()/4);
+        mat_writer.write("b_table",b_table,4);
         unsigned int image_num = 0;
         if(!b0.empty())
         {
-            mat_writer.write("image0",&b0[0],1,b0.size());
+            mat_writer.write("image0",b0);
             ++image_num;
         }
         for (unsigned int index = 0;index < dwi.size();++index)
         {
             std::ostringstream out;
             out << "image" << image_num;
-            mat_writer.write(out.str().c_str(),&(dwi[index][0]),1,dwi[index].size());
+            mat_writer.write(out.str().c_str(),dwi[index]);
             ++image_num;
         }
     }

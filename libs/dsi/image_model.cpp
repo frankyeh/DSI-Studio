@@ -1101,8 +1101,8 @@ void ImageModel::save_to_file(gz_mat_write& mat_writer)
     std::vector<float> float_data;
     std::vector<short> short_data;
     voxel.ti.save_to_buffer(float_data,short_data);
-    mat_writer.write("odf_vertices",&*float_data.begin(),3,voxel.ti.vertices_count);
-    mat_writer.write("odf_faces",&*short_data.begin(),3,voxel.ti.faces.size());
+    mat_writer.write("odf_vertices",float_data,3);
+    mat_writer.write("odf_faces",short_data,3);
 
 }
 void ImageModel::save_fib(const std::string& ext)
@@ -1114,11 +1114,11 @@ void ImageModel::save_fib(const std::string& ext)
     voxel.end(mat_writer);
     std::string final_report = voxel.report;
     final_report += voxel.recon_report.str();
-    mat_writer.write("report",final_report.c_str(),1,final_report.length());
+    mat_writer.write("report",final_report);
     std::string final_steps = voxel.steps;
     final_steps += voxel.step_report.str();
     final_steps += "[Step T2b][Run reconstruction]\n";
-    mat_writer.write("steps",final_steps.c_str(),1,final_steps.length());
+    mat_writer.write("steps",final_steps);
 }
 bool ImageModel::save_to_nii(const char* nifti_file_name) const
 {

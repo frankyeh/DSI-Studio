@@ -518,10 +518,10 @@ bool DwiHeader::output_src(const char* di_file,std::vector<std::shared_ptr<DwiHe
             b_table.push_back(dwi_files[index]->bvalue);
             std::copy(dwi_files[index]->bvec.begin(),dwi_files[index]->bvec.end(),std::back_inserter(b_table));
         }
-        write_mat.write("b_table",&b_table[0],4,b_table.size()/4);
+        write_mat.write("b_table",b_table,4);
     }
     if(!dwi_files[0]->grad_dev.empty())
-        write_mat.write("grad_dev",&*dwi_files[0]->grad_dev.begin(),(unsigned int)(dwi_files[0]->grad_dev.size()/9),9);
+        write_mat.write("grad_dev",dwi_files[0]->grad_dev,uint32_t(dwi_files[0]->grad_dev.size()/9));
     if(!dwi_files[0]->mask.empty())
         write_mat.write("mask",dwi_files[0]->mask);
 
@@ -570,6 +570,6 @@ bool DwiHeader::output_src(const char* di_file,std::vector<std::shared_ptr<DwiHe
         image_model.get_report(report2);
     }
     report1 += report2;
-    write_mat.write("report",report1.c_str(),1,(unsigned int)report1.length());
+    write_mat.write("report",report1);
     return true;
 }
