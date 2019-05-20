@@ -35,6 +35,10 @@ private slots:
 
     void on_actionTranslocate_triggered();
 
+    void on_actionTrim_triggered();
+
+    void on_actionSet_Translocation_triggered();
+
 private:
     Ui::view_image *ui;
     tipl::image<float,3> data;

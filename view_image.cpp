@@ -85,13 +85,17 @@ bool view_image::eventFilter(QObject *obj, QEvent *event)
         return false;
     QMouseEvent *mouseEvent = static_cast<QMouseEvent*>(event);
     QPointF point = ui->view->mapToScene(mouseEvent->pos().x(),mouseEvent->pos().y());
-    tipl::vector<3,float> pos;
-    pos[0] =  ((float)point.x()) / source_ratio - 0.5;
-    pos[1] =  ((float)point.y()) / source_ratio - 0.5;
+    tipl::vector<3,float> pos,mni;
+    pos[0] = std::round(((float)point.x()) / source_ratio);
+    pos[1] = std::round(((float)point.y()) / source_ratio);
     pos[2] = ui->slice_pos->value();
     if(!data.geometry().is_valid(pos))
         return true;
-    ui->info_label->setText(QString("(%1,%2,%3) = %4").arg(pos[0]).arg(pos[1]).arg(pos[2]).arg(data.at(pos[0],pos[1],pos[2])));
+    mni = pos;
+    mni.to(T);
+    ui->info_label->setText(QString("(%1,%2,%3) MNI(%4,%5,%6) = %7").arg(pos[0]).arg(pos[1]).arg(pos[2])
+                                                                    .arg(mni[0]).arg(mni[1]).arg(mni[2])
+                                                                    .arg(data.at(pos[0],pos[1],pos[2])));
     return true;
 }
 
@@ -468,6 +472,45 @@ void view_image::on_actionTranslocate_triggered()
     T[3] -= T[0]*dx;
     T[7] -= T[5]*dy;
     T[11] -= T[10]*dz;
+    init_image();
+    update_image();
+}
+
+void view_image::on_actionTrim_triggered()
+{
+    tipl::vector<3,int> range_min,range_max;
+    tipl::bounding_box(data,range_min,range_max,0);
+    int margin = (range_max[0]-range_min[0])/10;
+    tipl::vector<3,int> translocate(margin,margin,0);
+    range_min[2] += 1;
+    range_max[2] -= 1;
+    translocate -= range_min;
+    range_max -= range_min;
+    range_max[0] += margin+margin;
+    range_max[1] += margin+margin;
+    tipl::image<float,3> new_data(tipl::geometry<3>(range_max[0],range_max[1],range_max[2]));
+    tipl::draw(data,new_data,translocate);
+    data.swap(new_data);
+    T[3] -= T[0]*translocate[0];
+    T[7] -= T[5]*translocate[1];
+    T[11] -= T[10]*translocate[2];
+    init_image();
+    update_image();
+}
+
+void view_image::on_actionSet_Translocation_triggered()
+{
+    std::ostringstream out;
+    out << T[3] << " " << T[7] << " " << T[11];
+    bool ok;
+    QString result = QInputDialog::getText(this,"DSI Studio","Assign the translocation vector translocation (x y z)",QLineEdit::Normal,
+                                           out.str().c_str(),&ok);
+
+    if(!ok)
+        return;
+    std::istringstream in(result.toStdString());
+    int dx,dy,dz;
+    in >> T[3] >> T[7] >> T[11];
     init_image();
     update_image();
 }

@@ -186,18 +186,14 @@
      <string>&amp;Edit</string>
     </property>
     <addaction name="actionMasking"/>
+    <addaction name="actionResample"/>
     <addaction name="actionResize"/>
     <addaction name="actionTranslocate"/>
-   </widget>
-   <widget class="QMenu" name="menuTools">
-    <property name="title">
-     <string>&amp;Tools</string>
-    </property>
-    <addaction name="actionResample"/>
+    <addaction name="actionTrim"/>
+    <addaction name="actionSet_Translocation"/>
    </widget>
    <addaction name="menu_File"/>
    <addaction name="menu_Edit"/>
-   <addaction name="menuTools"/>
   </widget>
   <action name="action_Save_as">
    <property name="text">
@@ -222,6 +218,16 @@
   <action name="actionTranslocate">
    <property name="text">
     <string>Translocate...</string>
+   </property>
+  </action>
+  <action name="actionTrim">
+   <property name="text">
+    <string>Trim...</string>
+   </property>
+  </action>
+  <action name="actionSet_Translocation">
+   <property name="text">
+    <string>Set Trans Vector...</string>
    </property>
   </action>
  </widget>
