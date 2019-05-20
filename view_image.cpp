@@ -509,7 +509,6 @@ void view_image::on_actionSet_Translocation_triggered()
     if(!ok)
         return;
     std::istringstream in(result.toStdString());
-    int dx,dy,dz;
     in >> T[3] >> T[7] >> T[11];
     init_image();
     update_image();
