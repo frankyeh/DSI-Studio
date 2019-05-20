@@ -140,7 +140,7 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         }
         // Enabled/disable GUIs
         {
-            if(!handle->is_human_data || handle->is_qsdr)
+            if(!handle->is_qsdr)
                 ui->actionManual_Registration->setEnabled(false);
             if(!handle->trackable)
             {

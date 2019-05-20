@@ -543,17 +543,36 @@ bool fib_data::load_from_file(const char* file_name)
         error_msg = prog_aborted() ? "Loading process aborted" : "Invalid file format";
         return false;
     }
+    if(!load_from_mat())
+        return false;
 
+    // tempalte matching
     for(int index = 0;index < fa_template_list.size();++index)
     {
         if(QFileInfo(file_name).fileName().
                 contains(QFileInfo(fa_template_list[index].c_str()).baseName().toLower()))
         {
             template_id = index;
-            break;
+            return true;
         }
     }
-    return load_from_mat();
+    if(is_qsdr)
+    for(int index = 0;index < fa_template_list.size();++index)
+    {
+        gz_nifti read;
+        if(!read.load_from_file(fa_template_list[index]))
+            continue;
+        tipl::vector<3> Itvs;
+        tipl::image<float,3> dummy;
+        read.toLPS(I,true,false);
+        read.get_voxel_size(Itvs);
+        if(std::abs(dim[0]-read.nif_header2.dim[1]*Itvs[0]/vs[0]) < 2.0f)
+        {
+            template_id = index;
+            return true;
+        }
+    }
+    return true;
 }
 bool fib_data::load_from_mat(void)
 {
@@ -986,6 +1005,8 @@ void fib_data::run_normalization(bool background)
         tipl::image<float,3> Is(dir.fa[0],dim);
         tipl::filter::gaussian(Is);
         prog = 1;
+        vs *= std::sqrt((It.plane_size()*template_vs[0]*template_vs[1])/
+                (Is.plane_size()*vs[0]*vs[1]));
         tipl::reg::two_way_linear_mr(It,template_vs,Is,vs,T,tipl::reg::affine,
                                      tipl::reg::mutual_information(),thread.terminated);
         prog = 2;
@@ -1072,7 +1093,9 @@ bool fib_data::can_map_to_mni(void)
 {
     if(!load_template())
         return false;
-    if(is_qsdr || !mni_position.empty())
+    if(is_qsdr && std::abs(float(dim[0])-template_I.width()*template_vs[0]/vs[0]) < 2)
+        return true;
+    if(!mni_position.empty())
         return true;
     run_normalization(true);
     while(check_prog(prog,5) && mni_position.empty())
@@ -1115,7 +1138,7 @@ void fib_data::mni2subject(tipl::vector<3>& pos)
 {
     if(!can_map_to_mni())
         return;
-    if(is_qsdr)
+    if(is_qsdr && inv_mni_position.empty())
     {
         mni2sub(pos,&trans_to_mni[0]);
         return;
@@ -1129,7 +1152,7 @@ void fib_data::mni2subject(tipl::vector<3>& pos)
 
 void fib_data::subject2mni(tipl::vector<3>& pos)
 {
-    if(is_qsdr)
+    if(is_qsdr && mni_position.empty())
     {
         sub2mni(pos,&trans_to_mni[0]);
         return;
@@ -1143,7 +1166,7 @@ void fib_data::subject2mni(tipl::vector<3>& pos)
 }
 void fib_data::subject2mni(tipl::pixel_index<3>& index,tipl::vector<3>& pos)
 {
-    if(is_qsdr)
+    if(is_qsdr && mni_position.empty())
     {
         pos = index;
         mni2sub(pos,&trans_to_mni[0]);

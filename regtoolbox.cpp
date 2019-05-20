@@ -372,7 +372,12 @@ void RegToolBox::on_run_reg_clicked()
             if(ui->linear_method->currentIndex() == 1) // rigid body
                 linear_reg(tipl::reg::rigid_body);
             else
+            {
+                // adjust Ivs for affine
+                Ivs *= std::sqrt((It.plane_size()*Itvs[0]*Itvs[1])/
+                        (I.plane_size()*Ivs[0]*Ivs[1]));
                 linear_reg(tipl::reg::affine);
+            }
         }
         else
         {
