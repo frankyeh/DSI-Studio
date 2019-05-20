@@ -74,7 +74,6 @@ public slots:
     void save_all_tracts_to_dir(void);
     void save_end_point_as(void);
     void save_end_point_in_mni(void);
-    void save_profile(void);
     void deep_learning_train(void);
     void merge_all(void);
     void copy_track(void);

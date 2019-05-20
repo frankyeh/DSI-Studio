@@ -626,31 +626,6 @@ void TractTableWidget::save_end_point_in_mni(void)
 }
 
 
-void TractTableWidget::save_profile(void)
-{
-    if(currentRow() >= tract_models.size())
-        return;
-    if(!cur_tracking_window.can_map_to_mni())
-        return;
-    QString filename;
-    filename = QFileDialog::getSaveFileName(
-                this,
-                "Save profile as",item(currentRow(),0)->text().replace(':','_') + "profile.mat",
-                "MAT files (*.mat);;All files (*)");
-    if(filename.isEmpty())
-        return;
-
-    gz_mat_write out(filename.toLocal8Bit().begin());
-    std::vector<float> profile;
-    begin_prog("converting coordinates");
-    for(unsigned int i = 0;check_prog(i,tract_models[currentRow()]->get_tracts().size());++i)
-    {
-        if(!cur_tracking_window.handle->get_profile(tract_models[currentRow()]->get_tracts()[i],profile))
-            continue;
-        out.write(QString("image%1").arg(i).toLocal8Bit().begin(),&profile[0],1,profile.size());
-    }
-    //out.write("dimension",&*profile.geometry().begin(),1,3);
-}
 
 void TractTableWidget::deep_learning_train(void)
 {

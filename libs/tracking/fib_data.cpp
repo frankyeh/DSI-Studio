@@ -1167,10 +1167,7 @@ void fib_data::subject2mni(tipl::pixel_index<3>& index,tipl::vector<3>& pos)
 
 void fib_data::get_atlas_roi(std::shared_ptr<atlas> at,int roi_index,std::vector<tipl::vector<3,short> >& points,float& r)
 {
-    if(get_mni_mapping().empty())
-        return;
-    // this will load the files from storage to prevent GUI multishread crash
-    if(!at->load_from_file())
+    if(get_mni_mapping().empty() || !at->load_from_file())
         return;
     unsigned int thread_count = std::thread::hardware_concurrency();
     std::vector<std::vector<tipl::vector<3,short> > > buf(thread_count);
@@ -1205,54 +1202,3 @@ const tipl::image<tipl::vector<3,float>,3 >& fib_data::get_mni_mapping(void)
         run_normalization(false);
     return mni_position;
 }
-void smoothed_tracks(const std::vector<float>& track,std::vector<float>& smoothed);
-void resample_tracks(const std::vector<float>& track,std::vector<float>& new_track,float interval);
-bool fib_data::get_profile(const std::vector<float>& tract,
-                 std::vector<float>& profile_)
-{
-    if(tract.size() < 6)
-        return false;
-    std::vector<float> tract_data;
-
-    {
-        std::vector<float> smoothed_track_in_mni;
-        std::vector<float> tract_in_mni;
-        for(int j = 0;j < tract.size();j += 3)
-        {
-            tipl::vector<3> v(&(tract[j]));
-            subject2mni(v);
-            tract_in_mni.push_back(v[0]);
-            tract_in_mni.push_back(v[1]);
-            tract_in_mni.push_back(v[2]);
-        }
-        smoothed_tracks(tract_in_mni,smoothed_track_in_mni);
-        resample_tracks(smoothed_track_in_mni,tract_data,0.5);
-    }
-
-    tipl::geometry<3> dim(60,75,3);
-    profile_.resize(dim.size());
-    auto profile = tipl::make_image(&profile_[0],dim);
-    std::fill(profile.begin(),profile.end(),0);
-    float length_2 = tract_data.size() >> 1;
-    bool has_point = false;
-    for(int j = 0;j < tract_data.size();j += 3)
-    {
-        tipl::vector<3> v(&(tract_data[j]));
-        // x = -60 ~ 60    total  120
-        // y = -90 ~ 60    total  150
-        // z = -50 ~ 70    total  120
-        int x = std::floor((v[0]+60)*0.5+0.5);
-        int y = std::floor((v[1]+90)*0.5+0.5);
-        int z = std::floor((v[2]+50)*0.5+0.5);
-        if(x < 0 || y < 0 || z < 0 ||
-           x >= 60 || y >= 75 || z >= 60)
-            continue;
-        float w = std::fabs(j-length_2)*0.5f/(float)length_2+0.5;
-        profile.at(x,y,0) = w;
-        profile.at(x,z,1) = w;
-        profile.at(z,y,2) = w;
-        has_point = true;
-    }
-    return has_point;
-}
-

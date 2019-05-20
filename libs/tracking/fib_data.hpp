@@ -182,9 +182,6 @@ public:
     void get_atlas_roi(std::shared_ptr<atlas> at,int roi_index,std::vector<tipl::vector<3,short> >& points,float& r);
     const tipl::image<tipl::vector<3,float>,3 >& get_mni_mapping(void);
     bool has_reg(void)const{return thread.has_started();}
-    bool get_profile(const std::vector<float>& tract_data,
-                     std::vector<float>& profile);
-
 public:
     fib_data(void)
     {

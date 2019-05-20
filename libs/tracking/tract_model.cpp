@@ -38,57 +38,6 @@ void smoothed_tracks(const std::vector<float>& track,std::vector<float>& smoothe
     }
 }
 
-void resample_tracks(const std::vector<float>& track,std::vector<float>& new_track,float interval)
-{
-    if(track.size() < 6)
-        return;
-    float step_size = tipl::vector<3>(track[0]-track[3],track[1]-track[4],track[2]-track[5]).length();
-    if(std::fabs(step_size - interval)/interval < 0.1)
-        return;
-    float dis = interval;
-    tipl::vector<3> v1(&track[0]),v2,v3;
-    new_track.push_back(track[0]);
-    new_track.push_back(track[1]);
-    new_track.push_back(track[2]);
-    bool new_step = true;
-    float now_dis = step_size;
-    for(int i = 3;i < track.size();)
-    {
-        if(new_step)
-        {
-            v2 = tipl::vector<3>(&(track[i]));
-            v3[0] = v2[0]-v1[0];
-            v3[1] = v2[1]-v1[1];
-            v3[2] = v2[2]-v1[2];
-            v3 *= 1.0f/step_size;
-            new_step = false;
-        }
-        if(dis > now_dis)
-        {
-            dis -= now_dis;
-            v1 = v2;
-            i += 3;
-            now_dis = step_size;
-            new_step = true;
-            continue;
-        }
-        now_dis -= dis;
-        v1[0] += v3[0]*dis;
-        v1[1] += v3[1]*dis;
-        v1[2] += v3[2]*dis;
-        dis = interval;
-        new_track.push_back(v1[0]);
-        new_track.push_back(v1[1]);
-        new_track.push_back(v1[2]);
-    }
-    if(dis < interval*0.1f)
-    {
-        new_track.push_back(track[track.size()-3]);
-        new_track.push_back(track[track.size()-2]);
-        new_track.push_back(track[track.size()-1]);
-    }
-}
-
 
 struct TrackVis
 {
