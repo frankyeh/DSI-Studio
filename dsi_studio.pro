@@ -43,10 +43,7 @@ HEADERS += mainwindow.h \
     dicom/dicom_parser.h \
     dicom/dwi_header.hpp \
     libs/dsi/tessellated_icosahedron.hpp \
-    libs/dsi/racian_noise.hpp \
     libs/dsi/odf_process.hpp \
-    libs/dsi/mix_gaussian_model.hpp \
-    libs/dsi/layout.hpp \
     libs/dsi/image_model.hpp \
     libs/dsi/gqi_process.hpp \
     libs/dsi/gqi_mni_reconstruction.hpp \
@@ -72,13 +69,9 @@ HEADERS += mainwindow.h \
     qcolorcombobox.h \
     libs/tracking/tracking_thread.hpp \
     libs/prog_interface_static_link.h \
-    simulation.h \
     libs/mapping/atlas.hpp \
     view_image.h \
     libs/gzip_interface.hpp \
-    libs/dsi/racian_noise.hpp \
-    libs/dsi/mix_gaussian_model.hpp \
-    libs/dsi/layout.hpp \
     manual_alignment.h \
     tracking/tract_report.hpp \
     tracking/color_bar_dialog.hpp \
@@ -102,7 +95,6 @@ FORMS += mainwindow.ui \
     tracking/tracking_window.ui \
     reconstruction/reconstruction_window.ui \
     dicom/dicom_parser.ui \
-    simulation.ui \
     view_image.ui \
     manual_alignment.ui \
     tracking/tract_report.ui \
@@ -141,7 +133,6 @@ SOURCES += main.cpp \
     qcolorcombobox.cpp \
     cmd/trk.cpp \
     cmd/rec.cpp \
-    simulation.cpp \
     cmd/src.cpp \
     libs/mapping/atlas.cpp \
     cmd/ana.cpp \

@@ -5,13 +5,10 @@
 #include "prog_interface_static_link.h"
 #include "basic_voxel.hpp"
 #include "odf_process.hpp"
-
 #include "dti_process.hpp"
 #include "gqi_process.hpp"
 #include "gqi_mni_reconstruction.hpp"
-
 #include "image_model.hpp"
-
 
 
 typedef boost::mpl::vector<

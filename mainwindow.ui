@@ -54,7 +54,7 @@
        </size>
       </property>
       <property name="currentIndex">
-       <number>2</number>
+       <number>1</number>
       </property>
       <property name="tabSpacing">
        <number>0</number>
@@ -223,8 +223,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>383</width>
-         <height>548</height>
+         <width>400</width>
+         <height>534</height>
         </rect>
        </property>
        <attribute name="label">
@@ -388,16 +388,6 @@
           </property>
           <property name="description">
            <string>Average the ODFs to create a template</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QCommandLinkButton" name="simulateMRI">
-          <property name="text">
-           <string>O9: Diffusion MRI Simulation</string>
-          </property>
-          <property name="description">
-           <string>Simulate diffusion images using the given b-table</string>
           </property>
          </widget>
         </item>

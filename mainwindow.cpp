@@ -18,7 +18,6 @@
 #include "mainwindow.h"
 #include "dicom/dicom_parser.h"
 #include "ui_mainwindow.h"
-#include "simulation.h"
 #include "view_image.h"
 #include "mapping/atlas.hpp"
 #include "libs/gzip_interface.hpp"
@@ -469,10 +468,6 @@ void MainWindow::on_browseDir_clicked()
     add_work_dir(filename);
 }
 
-void MainWindow::on_simulateMRI_clicked()
-{
-    (new Simulation(this,ui->workDir->currentText()))->show();
-}
 
 QStringList GetSubDir(QString Dir)
 {

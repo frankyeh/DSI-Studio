@@ -32,7 +32,6 @@ private slots:
     void on_averagefib_clicked();
     void on_vbc_clicked();
     void on_RenameDICOMDir_clicked();
-    void on_simulateMRI_clicked();
     void on_browseDir_clicked();
     void on_FiberTracking_clicked();
     void on_Reconstruction_clicked();
