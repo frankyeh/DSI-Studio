@@ -5,12 +5,8 @@
 #include "prog_interface_static_link.h"
 #include "basic_voxel.hpp"
 #include "odf_process.hpp"
-#include "space_mapping.hpp"
 
 #include "dti_process.hpp"
-#include "dsi_process.hpp"
-#include "qbi_process.hpp"
-#include "sh_process.hpp"
 #include "gqi_process.hpp"
 #include "gqi_mni_reconstruction.hpp"
 
@@ -45,20 +41,6 @@ struct odf_reco_type{
     typedef typename boost::mpl::push_front<type0,ReadDWIData>::type type; // add ReadDWIData to the front
 };
 
-
-typedef odf_reco_type<boost::mpl::vector<
-    QSpace2Pdf,
-    Pdf2Odf
-> >::type dsi_process;
-
-const unsigned int equator_sample_count = 40;
-typedef odf_reco_type<boost::mpl::vector<
-    QBIReconstruction<equator_sample_count>
-> >::type qbi_process;
-
-typedef odf_reco_type<boost::mpl::vector<
-    SHDecomposition
-> >::type qbi_sh_process;
 
 typedef boost::mpl::vector<
     DWINormalization,
@@ -165,33 +147,12 @@ const char* ImageModel::reconstruction(void)
 
         switch (voxel.method_id)
         {
-        case 0: //DSI local max
-            voxel.step_report << "[Step T2b(1)]=DSI" << std::endl;
-            voxel.recon_report <<
-            " The diffusion data were reconstructed using diffusion spectrum imaging (Wedeen et al. MRM, 2005) with a Hanning filter of " << (int)voxel.param[0] << ".";
-            out << ".dsi."<< (int)voxel.param[0] << ".fib.gz";
-            if (!reconstruct<dsi_process>("DSI reconstruction"))
-                return "reconstruction canceled";
-            break;
         case 1://DTI
             voxel.step_report << "[Step T2b(1)]=DTI" << std::endl;
             voxel.recon_report << " The diffusion tensor was calculated.";
             out << ".dti.fib.gz";
             voxel.max_fiber_number = 1;
             if (!reconstruct<dti_process>("DTI reconstruction"))
-                return "reconstruction canceled";
-            break;
-
-        case 2://QBI
-            voxel.recon_report << " The diffusion data was reconstructed using q-ball imaging (Tuch, MRM 2004).";
-            out << ".qbi."<< voxel.param[0] << "_" << voxel.param[1] << ".fib.gz";
-            if (!reconstruct<qbi_process>("QBI reconstruction"))
-                return "reconstruction canceled";
-            break;
-        case 3://QBI
-            voxel.recon_report << " The diffusion data was reconstructed using spherical-harmonic-based q-ball imaging (Descoteaux et al., MRM 2007).";
-            out << ".qbi.sh"<< (int) voxel.param[1] << "." << voxel.param[0] << ".fib.gz";
-            if (!reconstruct<qbi_sh_process>("QBI SH reconstruction"))
                 return "reconstruction canceled";
             break;
 

@@ -43,10 +43,7 @@ HEADERS += mainwindow.h \
     dicom/dicom_parser.h \
     dicom/dwi_header.hpp \
     libs/dsi/tessellated_icosahedron.hpp \
-    libs/dsi/space_mapping.hpp \
-    libs/dsi/sh_process.hpp \
     libs/dsi/racian_noise.hpp \
-    libs/dsi/qbi_process.hpp \
     libs/dsi/odf_process.hpp \
     libs/dsi/mix_gaussian_model.hpp \
     libs/dsi/layout.hpp \
@@ -54,7 +51,6 @@ HEADERS += mainwindow.h \
     libs/dsi/gqi_process.hpp \
     libs/dsi/gqi_mni_reconstruction.hpp \
     libs/dsi/dti_process.hpp \
-    libs/dsi/dsi_process.hpp \
     libs/dsi/basic_voxel.hpp \
     SliceModel.h \
     tracking/tracking_window.h \
@@ -93,7 +89,6 @@ HEADERS += mainwindow.h \
     qcompletelineedit.h \
     libs/mapping/connectometry_db.hpp \
     connectometry/createdbdialog.h \
-    libs/dsi/qbi_voxel.hpp \
     connectometry/individual_connectometry.hpp \
     connectometry/match_db.h \
     connectometry/db_window.h \
@@ -129,7 +124,6 @@ SOURCES += main.cpp \
     dicom/dicom_parser.cpp \
     dicom/dwi_header.cpp \
     libs/utility/prog_interface.cpp \
-    libs/dsi/sample_model.cpp \
     libs/dsi/dsi_interface_imp.cpp \
     libs/tracking/interpolation_process.cpp \
     libs/tracking/tract_cluster.cpp \
