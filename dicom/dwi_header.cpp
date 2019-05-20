@@ -512,7 +512,7 @@ bool DwiHeader::output_src(const char* di_file,std::vector<std::shared_ptr<DwiHe
             voxel_size /= 4.0;
         if(upsampling == 4) // downsampling 4
             voxel_size *= 4.0;
-        write_mat.write("voxel_size",&*voxel_size.begin(),1,3);
+        write_mat.write("voxel_size",voxel_size);
     }
     // store bvec file
     {
