@@ -1183,14 +1183,14 @@ void tracking_window::on_actionLoad_Rendering_Parameters_triggered()
 
 void tracking_window::on_addRegionFromAtlas_clicked()
 {
-    if(!can_map_to_mni())
+    if(!handle->load_atlas())
     {
         QMessageBox::information(this,"Error","Atlas is not supported for the current image resolution.",0);
         return;
     }
-    if(!handle->load_atlas())
+    if(!can_map_to_mni())
     {
-        QMessageBox::information(0,"Error",QString("DSI Studio cannot find atlas files in ")+QCoreApplication::applicationDirPath()+ "/atlas",0);
+        QMessageBox::information(this,"Error",QString("Subject/Template mistch:") + ui->template_box->currentText(),0);
         return;
     }
     std::shared_ptr<AtlasDialog> atlas_dialog(new AtlasDialog(this,handle));
@@ -2043,11 +2043,15 @@ void tracking_window::on_actionFIB_protocol_triggered()
 void tracking_window::on_template_box_activated(int index)
 {
     handle->set_template_id(index);
-    ui->target->setCurrentIndex(0);
-    ui->target->setVisible(index == 0);
-    ui->target_label->setVisible(index == 0);
+    if(tractography_atlas.get())
+    {
+        ui->target->setCurrentIndex(0);
+        ui->target->setVisible(index == 0);
+        ui->target_label->setVisible(index == 0);
+    }
+    else
+        ui->enable_auto_track->setVisible(index == 0);
 }
-
 void tracking_window::on_SliceModality_currentIndexChanged(int index)
 {
     if(index == -1 || !current_slice.get())

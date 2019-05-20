@@ -896,33 +896,12 @@ bool fib_data::load_template(void)
     std::string line;
     while(in >> line)
     {
-        int other_template_id = -1;
-        size_t pos;
-        if((pos = line.find(':')) != std::string::npos)
-        {
-            std::string other_template = line.substr(0,pos);
-            for(int i = 0;i < fa_template_list.size();++i)
-            {
-                if(QFileInfo(fa_template_list[i].c_str()).baseName().toStdString() == other_template)
-                {
-                    other_template_id = i;
-                    line = line.substr(pos+1,line.length()-pos-1);
-                }
-            }
-            if(other_template_id == -1)
-                continue;
-        }
         for(int j = 0;j < atlas_file_list.size();++j)
             if(QFileInfo(atlas_file_list[j].c_str()).baseName().toStdString() == line)
             {
                 atlas_list.push_back(std::make_shared<atlas>());
                 atlas_list.back()->name = line;
                 atlas_list.back()->filename = atlas_file_list[j];
-                if(other_template_id != -1)
-                {
-                    atlas_list.back()->template_from = template_id;
-                    atlas_list.back()->template_to = other_template_id;
-                }
                 break;
             }
     }
@@ -1004,6 +983,11 @@ void fib_data::run_normalization(bool background)
         tipl::transformation_matrix<float> T;
         tipl::image<float,3> Is(dir.fa[0],dim);
         tipl::filter::gaussian(Is);
+
+        tipl::geometry<3> range_min,range_max;
+        tipl::bounding_box(Is,range_min,range_max,0);
+        tipl::crop(Is,range_min,range_max);
+
         prog = 1;
         vs *= std::sqrt((It.plane_size()*template_vs[0]*template_vs[1])/
                 (Is.plane_size()*vs[0]*vs[1]));
@@ -1014,6 +998,10 @@ void fib_data::run_normalization(bool background)
             return;
         tipl::image<float,3> Iss(It.geometry());
         tipl::resample_mt(Is,Iss,T,tipl::linear);
+        T.shift[0] += range_min[0];
+        T.shift[1] += range_min[1];
+        T.shift[2] += range_min[2];
+
         tipl::match_signal(It,Iss);
         prog = 3;
         tipl::image<float,3> Iss2;
@@ -1040,7 +1028,7 @@ void fib_data::run_normalization(bool background)
         if(thread.terminated)
             return;
         prog = 4;
-        tipl::image<tipl::vector<3,float>,3 > mni(Is.geometry());
+        tipl::image<tipl::vector<3,float>,3 > mni(dim);
         tipl::image<tipl::vector<3,float>,3 > inv_mni(tipl::geometry<3>(It.width()/2,It.height()/2,It.depth()/2));
         if(thread.terminated)
             return;
