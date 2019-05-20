@@ -1599,12 +1599,11 @@ void tracking_window::on_actionLoad_mapping_triggered()
 
 void tracking_window::on_actionInsert_MNI_images_triggered()
 {
-    if(!can_map_to_mni())
-        return;
     QString filename = QFileDialog::getOpenFileName(
         this,"Open MNI Image",QFileInfo(windowTitle()).absolutePath(),"Image files (*.hdr *.nii *nii.gz);;All files (*)" );
-    if( filename.isEmpty())
+    if( filename.isEmpty() || !can_map_to_mni() || handle->get_mni_mapping().empty())
         return;
+
     gz_nifti reader;
     if(!reader.load_from_file(filename.toStdString()))
     {
@@ -1615,8 +1614,8 @@ void tracking_window::on_actionInsert_MNI_images_triggered()
     tipl::image<float,3> I,J(mapping.geometry());
     tipl::matrix<4,4,float> T;
     reader.toLPS(I);
+    T.identity();
     reader.get_image_transformation(T.begin());
-    T[15] = 1.0;
     T.inv();
     J.for_each_mt([&](float& v,const tipl::pixel_index<3>& pos)
     {
