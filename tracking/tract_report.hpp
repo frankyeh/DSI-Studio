@@ -16,7 +16,7 @@ private:
     QChartView* report_chart_view;
 public:
     tracking_window* cur_tracking_window;
-    explicit tract_report(QWidget *parent = 0);
+    explicit tract_report(QWidget *parent = nullptr);
     ~tract_report();
 public slots:
     void on_refresh_report_clicked();

@@ -16,7 +16,7 @@ class TractTableWidget : public QTableWidget
 protected:
     void contextMenuEvent ( QContextMenuEvent * event );
 public:
-    explicit TractTableWidget(tracking_window& cur_tracking_window_,QWidget *parent = 0);
+    explicit TractTableWidget(tracking_window& cur_tracking_window_,QWidget *parent = nullptr);
     ~TractTableWidget(void);
 
 private:

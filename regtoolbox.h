@@ -38,7 +38,7 @@ private:
     void nonlinear_reg(void);
 
 public:
-    explicit RegToolBox(QWidget *parent = 0);
+    explicit RegToolBox(QWidget *parent = nullptr);
     ~RegToolBox();
 
 private slots:

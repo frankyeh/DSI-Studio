@@ -20,7 +20,7 @@ class dicom_parser : public QMainWindow
     Q_OBJECT
 
 public:
-    explicit dicom_parser(QStringList file_list,QWidget *parent = 0);
+    explicit dicom_parser(QStringList file_list,QWidget *parent = nullptr);
     ~dicom_parser();
     void set_name(QString name);
     void update_b_table(void);

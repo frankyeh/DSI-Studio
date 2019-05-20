@@ -37,7 +37,7 @@ Q_OBJECT
      GLWidget(bool samplebuffer,
               tracking_window& cur_tracking_window_,
               RenderingTableWidget* renderWidget_,
-              QWidget *parent = 0);
+              QWidget *parent = nullptr);
      ~GLWidget();
      void clean_up(void);
 public:

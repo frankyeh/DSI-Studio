@@ -37,7 +37,7 @@ private slots:
 class RenderingItem
  {
  public:
-    RenderingItem(QVariant title_, QVariant type_, QString id_,QVariant value_, RenderingItem *parent = 0):
+    RenderingItem(QVariant title_, QVariant type_, QString id_,QVariant value_, RenderingItem *parent = nullptr):
         parentItem(parent),title(title_),type(type_),id(id_),value(value_),GUI(0)
     {
         if(parent)

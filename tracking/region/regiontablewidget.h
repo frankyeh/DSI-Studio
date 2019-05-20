@@ -67,7 +67,7 @@ public:
     std::vector<std::shared_ptr<ROIRegion> > regions;
     int color_gen = 10;
 public:
-    explicit RegionTableWidget(tracking_window& cur_tracking_window,QWidget *parent = 0);
+    explicit RegionTableWidget(tracking_window& cur_tracking_window,QWidget *parent = nullptr);
     ~RegionTableWidget();
 
     QColor currentRowColor(void);

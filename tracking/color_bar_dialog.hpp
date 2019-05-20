@@ -22,7 +22,7 @@ public:// color_bar
 public:
     tracking_window* cur_tracking_window;
     Ui::color_bar_dialog *ui;
-    explicit color_bar_dialog(QWidget *parent = 0);
+    explicit color_bar_dialog(QWidget *parent = nullptr);
     ~color_bar_dialog();    
 public:
     const tipl::vector<3,float>& get_color(float value) const

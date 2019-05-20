@@ -20,7 +20,7 @@ class reconstruction_window : public QMainWindow
 public:
     QString absolute_path;
     QStringList filenames;
-    explicit reconstruction_window(QStringList filenames_,QWidget *parent = 0);
+    explicit reconstruction_window(QStringList filenames_,QWidget *parent = nullptr);
     ~reconstruction_window();
     std::vector<std::string> steps;
     void command(QString cmd);

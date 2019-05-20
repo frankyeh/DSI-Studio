@@ -16,7 +16,7 @@ class MainWindow : public QMainWindow
     void updateRecentList(void);
     QSettings settings;
 public:
-    explicit MainWindow(QWidget *parent = 0);
+    explicit MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
     Ui::MainWindow *ui;
     void addFib(QString Filename);

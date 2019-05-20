@@ -27,7 +27,7 @@ class QGLDockWidget : public QDockWidget
 {
     Q_OBJECT
 public:
-    explicit QGLDockWidget(QWidget *parent = 0, Qt::WindowFlags flags = 0):QDockWidget(parent,flags){;}
+    explicit QGLDockWidget(QWidget *parent = nullptr, Qt::WindowFlags flags = 0):QDockWidget(parent,flags){;}
 protected:
     void closeEvent(QCloseEvent *e)
     {
