@@ -415,7 +415,7 @@ public:
     virtual void end(Voxel& voxel,gz_mat_write& mat_writer)
     {
         set_title("output data");
-        mat_writer.write("gfa",&*gfa.begin(),1,gfa.size());
+        mat_writer.write("gfa",gfa);
         if(voxel.csf_calibration)
             voxel.z0 = z0;
         if(voxel.z0 + 1.0 == 1.0)
@@ -429,7 +429,7 @@ public:
         output_anisotropy(mat_writer,"fa",fa);
 
         tipl::divide_constant(iso,voxel.z0);
-        mat_writer.write("iso",&*iso.begin(),1,iso.size());
+        mat_writer.write("iso",iso);
 
 
         // output normalized qa
@@ -449,8 +449,8 @@ public:
                 output_anisotropy(mat_writer,"inc_qa",qa_inc);
                 output_anisotropy(mat_writer,"dec_qa",qa_dec);
 
-                mat_writer.write("base_fa",&*voxel.fib_fa.begin(),1,voxel.fib_fa.size());
-                mat_writer.write("study_fa",&*voxel.compare_voxel->fib_fa.begin(),1,voxel.compare_voxel->fib_fa.size());
+                mat_writer.write("base_fa",voxel.fib_fa);
+                mat_writer.write("study_fa",voxel.compare_voxel->fib_fa);
                 for(int i = 0;i < voxel.dim.size();++i)
                     if(voxel.compare_voxel->fib_fa[i] > voxel.fib_fa[i])
                     {

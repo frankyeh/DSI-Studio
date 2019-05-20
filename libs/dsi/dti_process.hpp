@@ -200,15 +200,6 @@ public:
             mat_writer.write("rd2",d3);
             if(voxel.output_helix_angle)
                 mat_writer.write("ha",ha);
-            /*
-            std::vector<float> cl(d0.size()),cp(d0.size());
-            for(int i = 0;i < cl.size();++i)
-                cl[i] = (md[i] == 0 ? 0 : (d0[i]-d1[i])/md[i]);
-            mat_writer.write("cl",&*cl.begin(),1,cl.size());
-            for(int i = 0;i < cp.size();++i)
-                cp[i] = (md[i] == 0 ? 0 : (d2[i]-d3[i])/md[i]*2.0);
-            mat_writer.write("cp",&*cp.begin(),1,cp.size());
-            */
         }
 
     }

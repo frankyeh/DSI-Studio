@@ -426,8 +426,8 @@ bool TractModel::save_data_to_file(const char* file_name,const std::string& inde
             length.push_back((unsigned int)data[index].size());
             std::copy(data[index].begin(),data[index].end(),std::back_inserter(buf));
         }
-        out.write("data",&*buf.begin(),1,(unsigned int)buf.size());
-        out.write("length",&*length.begin(),1,(unsigned int)length.size());
+        out.write("data",buf);
+        out.write("length",length);
         return true;
     }
 
@@ -524,7 +524,7 @@ bool TractModel::save_tracts_to_file(const char* file_name_)
             std::copy(tract_data[index].begin(),tract_data[index].end(),std::back_inserter(buf));
         }
         out.write("tracts",&*buf.begin(),3,(unsigned int)buf.size()/3);
-        out.write("length",&*length.begin(),1,(unsigned int)length.size());
+        out.write("length",length);
         return true;
     }
     if (ext == std::string(".nii") || ext == std::string("i.gz"))
@@ -832,8 +832,8 @@ bool TractModel::save_all(const char* file_name_,const std::vector<std::shared_p
             std::copy(all[index]->tract_data[i].begin(),all[index]->tract_data[i].end(),std::back_inserter(buf));
         }
         out.write("tracts",&*buf.begin(),3,buf.size()/3);
-        out.write("length",&*length.begin(),1,length.size());
-        out.write("cluster",&*cluster.begin(),1,cluster.size());
+        out.write("length",length);
+        out.write("cluster",cluster);
         return true;
     }
     return false;

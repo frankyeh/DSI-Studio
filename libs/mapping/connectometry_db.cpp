@@ -573,7 +573,7 @@ bool connectometry_db::save_subject_data(const char* output_name)
     }
     matfile.write("subject_names",name_string.c_str(),1,(unsigned int)name_string.size());
     matfile.write("index_name",index_name.c_str(),1,(unsigned int)index_name.size());
-    matfile.write("R2",&*R2.begin(),1,(unsigned int)R2.size());
+    matfile.write("R2",R2);
 
     {
         std::ostringstream out;

@@ -1096,7 +1096,7 @@ void ImageModel::save_to_file(gz_mat_write& mat_writer)
     }
 
     // voxel size
-    mat_writer.write("voxel_size",&*voxel.vs.begin(),1,3);
+    mat_writer.write("voxel_size",voxel.vs);
 
     std::vector<float> float_data;
     std::vector<short> short_data;

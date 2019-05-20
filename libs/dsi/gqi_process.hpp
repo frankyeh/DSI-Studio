@@ -441,9 +441,9 @@ public:
             out << "cdf_" << index << "um";
             mat_writer.write(out.str().c_str(),&*cdf[index].begin(),1,cdf[index].size());
         }
-        mat_writer.write("fa0",&*dis[0].begin(),1,dis[0].size());
+        mat_writer.write("fa0",dis[0]);
         std::vector<short> index0(voxel.dim.size());
-        mat_writer.write("index0",&*index0.begin(),1,index0.size());
+        mat_writer.write("index0",index0);
     }
 };
 

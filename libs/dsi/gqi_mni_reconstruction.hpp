@@ -333,7 +333,7 @@ public:
         voxel.mask.resize(src_geo);
         voxel.dim = src_geo;
         if(voxel.output_jacobian)
-            mat_writer.write("jdet",&*jdet.begin(),1,jdet.size());
+            mat_writer.write("jdet",jdet);
         if(voxel.output_mapping)
         {
             short dimension[3];
@@ -344,12 +344,12 @@ public:
 
             if(!mx.empty())
             {
-                mat_writer.write("native_x",&*mx.begin(),1,mx.size());
-                mat_writer.write("native_y",&*my.begin(),1,my.size());
-                mat_writer.write("native_z",&*mz.begin(),1,mz.size());
+                mat_writer.write("native_x",mx);
+                mat_writer.write("native_y",my);
+                mat_writer.write("native_z",mz);
             }
             if(!voxel.qa_map.empty())
-                mat_writer.write("native_fa0",&*voxel.qa_map.begin(),1,voxel.qa_map.size());
+                mat_writer.write("native_fa0",voxel.qa_map);
         }
         for(unsigned int index = 0;index < other_image.size();++index)
         {

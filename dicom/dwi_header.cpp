@@ -440,10 +440,6 @@ void correct_t2(std::vector<std::shared_ptr<DwiHeader> >& dwi_files)
             else
                 neg_inv_T2[index] = 2000;
         }
-
-        //write_mat.write("spin_density",&*spin_density.begin(),1,total_size);
-        //write_mat.write("T2",&*neg_inv_T2.begin(),1,total_size);
-
     }
 
     // replace b0 with spin density map
@@ -527,7 +523,7 @@ bool DwiHeader::output_src(const char* di_file,std::vector<std::shared_ptr<DwiHe
     if(!dwi_files[0]->grad_dev.empty())
         write_mat.write("grad_dev",&*dwi_files[0]->grad_dev.begin(),(unsigned int)(dwi_files[0]->grad_dev.size()/9),9);
     if(!dwi_files[0]->mask.empty())
-        write_mat.write("mask",&*dwi_files[0]->mask.begin(),1,(unsigned int)(dwi_files[0]->mask.size()));
+        write_mat.write("mask",dwi_files[0]->mask);
 
     //store images
     begin_prog("Save Files");
