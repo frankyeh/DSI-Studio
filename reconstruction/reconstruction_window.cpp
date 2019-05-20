@@ -49,7 +49,7 @@ bool is_dsi_half_sphere(const std::vector<unsigned int>& shell);
 bool is_dsi(const std::vector<unsigned int>& shell);
 bool is_multishell(const std::vector<unsigned int>& shell);
 bool need_scheme_balance(const std::vector<unsigned int>& shell);
-
+extern std::vector<std::string> fa_template_list;
 reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *parent) :
     QMainWindow(parent),filenames(filenames_),ui(new Ui::reconstruction_window)
 {
@@ -68,6 +68,7 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
     ui->b_table->setHorizontalHeaderLabels(QStringList() << "b value" << "bx" << "by" << "bz");
 
     populate_templates(ui->primary_template);
+
     ui->primary_template->setCurrentIndex(0);
 
     v2c.two_color(tipl::rgb(0,0,0),tipl::rgb(255,255,255));
@@ -416,7 +417,7 @@ void reconstruction_window::on_GQI_toggled(bool checked)
         ui->rdi->setChecked(true);
     ui->csf_calibration->setVisible(handle->is_human_data());
 }
-
+int match_template(float volume);
 void reconstruction_window::on_QSDR_toggled(bool checked)
 {
     ui->ResolutionBox->setVisible(checked);
@@ -438,6 +439,11 @@ void reconstruction_window::on_QSDR_toggled(bool checked)
         ui->rdi->setChecked(true);
 
     ui->csf_calibration->setVisible(false);
+    if(checked)
+    {
+        ui->primary_template->setCurrentIndex(match_template(
+            handle->voxel.vs[0]*handle->voxel.vs[1]*handle->voxel.vs[2]*handle->voxel.dim.size()));
+    }
 }
 
 void reconstruction_window::on_zoom_in_clicked()

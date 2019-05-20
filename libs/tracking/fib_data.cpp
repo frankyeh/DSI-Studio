@@ -454,7 +454,7 @@ bool tracking_data::is_white_matter(const tipl::vector<3,float>& pos,float t) co
     return tipl::estimate(tipl::make_image(fa[0],dim),pos) > t && pos[2] > 0.5;
 }
 
-
+int match_template(float volume);
 bool fib_data::load_from_file(const char* file_name)
 {
     tipl::image<float,3> I;
@@ -571,6 +571,14 @@ bool fib_data::load_from_file(const char* file_name)
             template_id = index;
             return true;
         }
+    }
+    if(!is_human_data)
+    {
+        size_t count = 0;
+        for(int i = 0;i < dim.size();++i)
+            if(dir.fa[0][i] > 0.0f)
+                ++count;
+        template_id = match_template(count*2.0*vs[0]*vs[1]*vs[2]);
     }
     return true;
 }

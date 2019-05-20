@@ -34,6 +34,27 @@ int cnn(void);
 int qc(void);
 
 
+int match_template(float volume)
+{
+    float min_dif = volume;
+    int matched_index = 0;
+    for(int i = 0;i < fa_template_list.size();++i)
+    {
+        gz_nifti read;
+        if(!read.load_from_file(fa_template_list[i].c_str()))
+            continue;
+        float v = float(read.nif_header2.dim[1]*read.nif_header2.dim[2]*read.nif_header2.dim[3])*
+                read.nif_header2.pixdim[1]*read.nif_header2.pixdim[2]*read.nif_header2.pixdim[3];
+        v = std::fabs(v-volume);
+        if(v < min_dif)
+        {
+            min_dif = v;
+            matched_index = i;
+        }
+    }
+    return matched_index;
+}
+
 QStringList search_files(QString dir,QString filter)
 {
     QStringList dir_list,src_list;
