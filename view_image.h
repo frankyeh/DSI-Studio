@@ -15,7 +15,7 @@ class view_image : public QMainWindow
     
 public:
     QString file_name;
-    explicit view_image(QWidget *parent = 0);
+    explicit view_image(QWidget *parent = nullptr);
     ~view_image();
     bool open(QStringList file_name);
     bool eventFilter(QObject *obj, QEvent *event);

@@ -113,7 +113,7 @@ public: // for fib evaluation
     tipl::image<float,3> fib_fa;
     std::vector<tipl::vector<3> > fib_dir;
 public: // for DDI
-    Voxel* compare_voxel = 0;
+    Voxel* compare_voxel = nullptr;
     std::string study_name;
     std::string study_src_file_path;
     bool dt_deform = false;

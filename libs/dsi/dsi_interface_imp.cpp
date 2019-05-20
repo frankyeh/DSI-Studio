@@ -5,8 +5,6 @@
 #include "prog_interface_static_link.h"
 #include "basic_voxel.hpp"
 #include "odf_process.hpp"
-
-#include "sample_model.hpp"
 #include "space_mapping.hpp"
 
 #include "dti_process.hpp"

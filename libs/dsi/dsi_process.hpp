@@ -16,7 +16,7 @@ class QSpace2Pdf  : public BaseProcess
     std::vector<float> hanning_filter;
     std::auto_ptr<tipl::fftn<3> > fft;
 public:
-    static double get_min_b(const Voxel& voxel)
+    static float get_min_b(const Voxel& voxel)
     {
         float b_min;
         {
@@ -24,7 +24,7 @@ public:
             do
             {
                 b_min = *std::min_element(bvalues.begin(),bvalues.end());
-                if (b_min != 0)
+                if (int(b_min) != 0)
                     return b_min;
                 bvalues.erase(std::min_element(bvalues.begin(),bvalues.end()));
             }
@@ -43,7 +43,7 @@ public:
             bvec[0] = std::round(bvec[0]);
             bvec[1] = std::round(bvec[1]);
             bvec[2] = std::round(bvec[2]);
-            q_table.push_back(tipl::vector<3,int>(bvec[0],bvec[1],bvec[2]));
+            q_table.push_back(tipl::vector<3,int>(int(bvec[0]),int(bvec[1]),int(bvec[2])));
         }
 
     }
@@ -66,8 +66,8 @@ public:
 
             qspace_mapping1[index] = SpaceMapping<dsi_range>::getIndex(x,y,z);
             qspace_mapping2[index] = SpaceMapping<dsi_range>::getIndex(-x,-y,-z);
-            float r = (float)std::sqrt((float)(x*x+y*y+z*z));
-            hanning_filter[index] = 0.5 * (1.0+std::cos(2.0*r*M_PI/((float)filter_width)));
+            float r = float(std::sqrt(float(x*x+y*y+z*z)));
+            hanning_filter[index] = 0.5f * (1.0f+std::cosf(2.0f*r*float(M_PI)/filter_width));
         }
         fft.reset(new tipl::fftn<3>(tipl::geometry<3>(space_length,space_length,space_length)));
     }
@@ -88,8 +88,20 @@ public:
 
 };
 
-/** Perform integration over r
- */
+
+class SamplePoint
+{
+private:
+    std::vector<float> ratio;
+    std::vector<unsigned int> sample_index;
+    unsigned int odf_index;
+public:
+    SamplePoint(void):ratio(8),sample_index(8),odf_index(0) {}
+    SamplePoint(unsigned int odf_index_,float x,float y,float z,float weighting);
+    void sampleODFValueWeighted(const std::vector<float>& pdf,std::vector<float>& odf) const;
+
+};
+
 struct Pdf2Odf : public BaseProcess
 {
     std::vector<SamplePoint> sample_group;
