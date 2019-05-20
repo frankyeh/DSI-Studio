@@ -668,10 +668,10 @@ void MainWindow::on_batch_src_clicked()
             else
             {
                 for(unsigned int index = 0;index < dwi_files.size();++index)
-                    if(dwi_files[index]->get_bvalue() < 100)
+                    if(dwi_files[index]->bvalue < 100.0f)
                     {
-                        dwi_files[index]->set_bvalue(0);
-                        dwi_files[index]->set_bvec(0,0,0);
+                        dwi_files[index]->bvalue = 0.0f;
+                        dwi_files[index]->bvec = tipl::vector<3>(0.0f,0.0f,0.0f);
                     }
                 DwiHeader::output_src(output.toLocal8Bit().begin(),dwi_files,0,false);
             }

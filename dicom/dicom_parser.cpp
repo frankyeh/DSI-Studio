@@ -746,14 +746,14 @@ void dicom_parser::load_table(void)
     double max_b = 0;
     for(unsigned int index = last_index;index < dwi_files.size();++index)
     {
-        if(dwi_files[index]->get_bvalue() < 100)
-            dwi_files[index]->set_bvalue(0);
+        if(dwi_files[index]->bvalue < 100)
+            dwi_files[index]->bvalue = 0.0f;
         ui->tableWidget->setItem(index, 0, new QTableWidgetItem(QFileInfo(dwi_files[index]->file_name.data()).fileName()));
-        ui->tableWidget->setItem(index, 1, new QTableWidgetItem(QString::number(dwi_files[index]->get_bvalue())));
-        ui->tableWidget->setItem(index, 2, new QTableWidgetItem(QString::number(dwi_files[index]->get_bvec()[0])));
-        ui->tableWidget->setItem(index, 3, new QTableWidgetItem(QString::number(dwi_files[index]->get_bvec()[1])));
-        ui->tableWidget->setItem(index, 4, new QTableWidgetItem(QString::number(dwi_files[index]->get_bvec()[2])));
-        max_b = std::max(max_b,(double)dwi_files[index]->get_bvalue());
+        ui->tableWidget->setItem(index, 1, new QTableWidgetItem(QString::number(dwi_files[index]->bvalue)));
+        ui->tableWidget->setItem(index, 2, new QTableWidgetItem(QString::number(dwi_files[index]->bvec[0])));
+        ui->tableWidget->setItem(index, 3, new QTableWidgetItem(QString::number(dwi_files[index]->bvec[1])));
+        ui->tableWidget->setItem(index, 4, new QTableWidgetItem(QString::number(dwi_files[index]->bvec[2])));
+        max_b = std::max(max_b,(double)dwi_files[index]->bvalue);
     }
     if(max_b == 0.0)
         QMessageBox::information(this,"DSI Studio","Cannot find b-table from the header. You may need to load an external b-table",0);
@@ -784,12 +784,12 @@ void dicom_parser::on_buttonBox_accepted()
     // save b table info to dwi header
     for (unsigned int index = 0;index < dwi_files.size();++index)
     {
-        if(QString::number(dwi_files[index]->get_bvalue()) != ui->tableWidget->item(index,1)->text())
-            dwi_files[index]->set_bvalue(ui->tableWidget->item(index,1)->text().toFloat());
-        if(QString::number(dwi_files[index]->get_bvec()[0]) != ui->tableWidget->item(index,2)->text() ||
-           QString::number(dwi_files[index]->get_bvec()[1]) != ui->tableWidget->item(index,3)->text() ||
-           QString::number(dwi_files[index]->get_bvec()[2]) != ui->tableWidget->item(index,4)->text())
-            dwi_files[index]->set_bvec(
+        if(QString::number(dwi_files[index]->bvalue) != ui->tableWidget->item(index,1)->text())
+            dwi_files[index]->bvalue = ui->tableWidget->item(index,1)->text().toFloat();
+        if(QString::number(dwi_files[index]->bvec[0]) != ui->tableWidget->item(index,2)->text() ||
+           QString::number(dwi_files[index]->bvec[1]) != ui->tableWidget->item(index,3)->text() ||
+           QString::number(dwi_files[index]->bvec[2]) != ui->tableWidget->item(index,4)->text())
+            dwi_files[index]->bvec = tipl::vector<3>(
                     ui->tableWidget->item(index,2)->text().toFloat(),
                     ui->tableWidget->item(index,3)->text().toFloat(),
                     ui->tableWidget->item(index,4)->text().toFloat());

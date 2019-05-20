@@ -11,16 +11,15 @@ class DwiHeader
 public:
     std::string file_name, report;
     tipl::image<unsigned short, 3> image;
-	float te;
 public:// for HCP dataset
     tipl::image<float, 4> grad_dev;
     tipl::image<unsigned char, 3> mask;
 public:
     tipl::vector<3,float> bvec;
-    float bvalue;
+    float bvalue,te;
     tipl::vector<3,float> voxel_size;
 public:
-    DwiHeader(void): bvalue(0.0), te(0.0) {}
+    DwiHeader(void): bvalue(0.0f), te(0.0f) {}
     bool open(const char* filename);
 public:
     const unsigned short* begin(void) const
@@ -52,42 +51,13 @@ public:
 	}
 
 public:
-
-    const float* get_bvec(void) const
-    {
-        return &*bvec.begin();
-    }
-    float get_bvalue(void) const
-    {
-        return bvalue;
-    }
-    void set_bvec(float bx, float by, float bz)
-	{
-		bvec[0] = bx;
-		bvec[1] = by;
-		bvec[2] = bz;
-	}
-    void set_bvalue(float b)
-    {
-        bvalue = b;
-    }
 	bool operator<(const DwiHeader& rhs) const
 	{
-		if(bvalue != rhs.bvalue)
+        if(int(bvalue) != int(rhs.bvalue))
 			return bvalue < rhs.bvalue;
-		if(bvec[0] != rhs.bvec[0])
-			return bvec[0] < rhs.bvec[0];
-        if(bvec[1] != rhs.bvec[1])
-			return bvec[1] < rhs.bvec[1];
-        return bvec[2] < rhs.bvec[2];
+        return bvec < rhs.bvec;
 	}
-	bool operator==(const DwiHeader& rhs) const
-	{
-        return bvec[0] == rhs.bvec[0] &&
-               bvec[1] == rhs.bvec[1] &&
-               bvec[2] == rhs.bvec[2] &&
-               bvalue == rhs.bvalue;
-	}
+
 public:
     static bool output_src(const char* file_name, std::vector<std::shared_ptr<DwiHeader> >& dwi_files, int upsampling,bool sort_btable);
     static bool has_b_table(std::vector<std::shared_ptr<DwiHeader> >& dwi_files);

@@ -97,8 +97,8 @@ int src(void)
         }
         for(unsigned int index = 0,b_index = 0;index < dwi_files.size();++index,b_index += 4)
         {
-            dwi_files[index]->set_bvalue(b_table[b_index]);
-            dwi_files[index]->set_bvec(b_table[b_index+1],b_table[b_index+2],b_table[b_index+3]);
+            dwi_files[index]->bvalue = b_table[b_index];
+            dwi_files[index]->bvec = tipl::vector<3>(b_table[b_index+1],b_table[b_index+2],b_table[b_index+3]);
         }
         std::cout << "B-table " << table_file_name << " loaded" << std::endl;
     }
@@ -121,8 +121,8 @@ int src(void)
         }
         for(unsigned int index = 0;index < dwi_files.size();++index)
         {
-            dwi_files[index]->set_bvalue(bval[index]);
-            dwi_files[index]->set_bvec(bvec[index*3],bvec[index*3+1],bvec[index*3+2]);
+            dwi_files[index]->bvalue = bval[index];
+            dwi_files[index]->bvec = tipl::vector<3>(bvec[index*3],bvec[index*3+1],bvec[index*3+2]);
         }
     }
     if(dwi_files.empty())
@@ -134,9 +134,9 @@ int src(void)
     double max_b = 0;
     for(unsigned int index = 0;index < dwi_files.size();++index)
     {
-        if(dwi_files[index]->get_bvalue() < 100)
-            dwi_files[index]->set_bvalue(0);
-        max_b = std::max(max_b,(double)dwi_files[index]->get_bvalue());
+        if(dwi_files[index]->bvalue < 100.0f)
+            dwi_files[index]->bvalue = 0.0f;
+        max_b = std::max(max_b,(double)dwi_files[index]->bvalue);
     }
     if(max_b == 0.0)
     {

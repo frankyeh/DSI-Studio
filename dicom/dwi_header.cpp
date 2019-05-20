@@ -519,10 +519,10 @@ bool DwiHeader::output_src(const char* di_file,std::vector<std::shared_ptr<DwiHe
         std::vector<float> b_table;
         for (unsigned int index = 0;index < dwi_files.size();++index)
         {
-            b_table.push_back(dwi_files[index]->get_bvalue());
-            std::copy(dwi_files[index]->get_bvec(),dwi_files[index]->get_bvec()+3,std::back_inserter(b_table));
+            b_table.push_back(dwi_files[index]->bvalue);
+            std::copy(dwi_files[index]->bvec.begin(),dwi_files[index]->bvec.end(),std::back_inserter(b_table));
         }
-        write_mat.write("b_table",&b_table[0],4,(unsigned int)(b_table.size()/4));
+        write_mat.write("b_table",&b_table[0],4,b_table.size()/4);
     }
     if(!dwi_files[0]->grad_dev.empty())
         write_mat.write("grad_dev",&*dwi_files[0]->grad_dev.begin(),(unsigned int)(dwi_files[0]->grad_dev.size()/9),9);
@@ -569,7 +569,7 @@ bool DwiHeader::output_src(const char* di_file,std::vector<std::shared_ptr<DwiHe
     {
         ImageModel image_model;
         for (unsigned int index = 0;index < dwi_files.size();++index)
-            image_model.src_bvalues.push_back(dwi_files[index]->get_bvalue());
+            image_model.src_bvalues.push_back(dwi_files[index]->bvalue);
         image_model.voxel.vs = tipl::vector<3>(dwi_files.front()->voxel_size);
         image_model.get_report(report2);
     }
