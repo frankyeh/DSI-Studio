@@ -8,7 +8,7 @@
 #include "image_model.hpp"
 #include "odf_process.hpp"
 
-double base_function(double theta);
+float base_function(float theta);
 class GQI_Recon  : public BaseProcess
 {
 public:// recorded for scheme balanced
@@ -26,7 +26,7 @@ public:
     virtual void run(Voxel& voxel, VoxelData& data)
     {
         if(voxel.b0_index == 0 && voxel.half_sphere)
-            data.space[0] *= 0.5;
+            data.space[0] *= 0.5f;
         // add rotation from QSDR or gradient nonlinearity
         if(voxel.qsdr || !voxel.grad_dev.empty())
         {
@@ -53,11 +53,11 @@ public:
 
             }
             tipl::mat::vector_product(&*sinc_ql_.begin(),&*data.space.begin(),&*data.odf.begin(),
-                                          tipl::dyndim(data.odf.size(),data.space.size()));
+                                          tipl::dyndim(uint32_t(data.odf.size()),uint32_t(data.space.size())));
         }
         else
             tipl::mat::vector_product(&*sinc_ql.begin(),&*data.space.begin(),&*data.odf.begin(),
-                                    tipl::dyndim(data.odf.size(),data.space.size()));
+                                    tipl::dyndim(uint32_t(data.odf.size()),uint32_t(data.space.size())));
     }
 };
 
@@ -140,7 +140,7 @@ public:
                     dir.normalize();
                     voxel.bvectors.push_back(dir);
                     offset.push_back(dx + dy*voxel.dim.width() + dz*voxel.dim.plane_size());
-                    scaling.push_back(std::exp(-r2));
+                    scaling.push_back(std::expf(-r2));
                 }
         voxel.calculate_sinc_ql(sinc_ql);
     }
@@ -148,7 +148,7 @@ public:
     {
         if(!hgqi)
             return;
-        if(data.space[0] == 0)
+        if(int(data.space[0]) == 0)
         {
             hraw[data.voxel_index] = 0;
             std::fill(data.odf.begin(),data.odf.end(),0.0f);
@@ -157,15 +157,15 @@ public:
         hraw[data.voxel_index] = data.space[0];
         auto I = tipl::make_image(voxel.dwi_data[0],voxel.dim);
         data.space.resize(voxel.bvalues.size());
-        for(int i = 1;i < voxel.bvalues.size();++i)
+        for(size_t i = 1;i < voxel.bvalues.size();++i)
         {
-            int pos1 = data.voxel_index;
-            int pos2 = data.voxel_index;
-            pos1 += offset[i-1];
-            pos2 -= offset[i-1];
-            if(pos1 < 0 || pos1 >= voxel.dim.size())
+            int pos1 = int(data.voxel_index);
+            int pos2 = int(data.voxel_index);
+            pos1 += int(offset[i-1]);
+            pos2 -= int(offset[i-1]);
+            if(pos1 < 0 || pos1 >= int(voxel.dim.size()))
                 pos1 = pos2;
-            if(pos2 < 0 || pos2 >= voxel.dim.size())
+            if(pos2 < 0 || pos2 >= int(voxel.dim.size()))
                 pos2 = pos1;
             data.space[i] = std::fabs(data.space[0]-(I[pos1]+I[pos2])/2.0f)*scaling[i-1];
         }

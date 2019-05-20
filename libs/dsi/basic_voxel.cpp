@@ -1,11 +1,11 @@
 #include <boost/math/special_functions/sinc.hpp>
 #include "basic_voxel.hpp"
 #include "image_model.hpp"
-double base_function(double theta)
+float base_function(float theta)
 {
-    if(std::abs(theta) < 0.000001)
-        return 1.0/3.0;
-    return (2*std::cos(theta)+(theta-2.0/theta)*std::sin(theta))/theta/theta;
+    if(std::fabs(theta) < 0.000001f)
+        return 1.0f/3.0f;
+    return (2.0f*std::cosf(theta)+(theta-2.0f/theta)*std::sin(theta))/theta/theta;
 }
 
 void Voxel::init(void)
@@ -32,7 +32,7 @@ void Voxel::calculate_sinc_ql(std::vector<float>& sinc_ql)
         for (unsigned int i = 0; i < bvalues.size(); ++i,++index)
             sinc_ql[index] = bvectors[i]*
                          tipl::vector<3,float>(ti.vertices[j])*
-                           std::sqrt(bvalues[i]*0.01506);
+                           std::sqrtf(bvalues[i]*0.01506f);
 
     for (unsigned int index = 0; index < sinc_ql.size(); ++index)
         sinc_ql[index] = r2_weighted ?
@@ -55,13 +55,13 @@ void Voxel::load_from_src(ImageModel& image_model)
 {
     if(image_model.src_bvalues.empty()) // e.g. template recon
         return;
-    std::vector<int> sorted_index(image_model.src_bvalues.size());
+    std::vector<size_t> sorted_index(image_model.src_bvalues.size());
     std::iota(sorted_index.begin(),sorted_index.end(),0);
 
     std::sort(sorted_index.begin(),sorted_index.end(),
-              [&image_model](int left,int right)
+              [&image_model](size_t left,size_t right)
     {
-        if((int)image_model.src_bvalues[left]/400 == (int)image_model.src_bvalues[right]/400)
+        if(int(image_model.src_bvalues[left])/400 == int(image_model.src_bvalues[right])/400)
             return image_model.src_bvectors[left] < image_model.src_bvectors[right];
         return image_model.src_bvalues[left] < image_model.src_bvalues[right];
     }
@@ -79,7 +79,7 @@ void Voxel::load_from_src(ImageModel& image_model)
         dwi_data.push_back(image_model.src_dwi_data[sorted_index[0]]);
         b0_index = 0;
     }
-    for(int i = 0;i < sorted_index.size();++i)
+    for(size_t i = 0;i < sorted_index.size();++i)
         if(image_model.src_bvalues[sorted_index[i]] != 0.0f)
         {
             bvalues.push_back(image_model.src_bvalues[sorted_index[i]]);
@@ -104,9 +104,9 @@ void Voxel::calculate_mask(const tipl::image<float,3>& dwi_sum)
     tipl::threshold(dwi_sum,mask,0.2f,1,0);
     if(dwi_sum.depth() < 10)
     {
-        for(unsigned int i = 0;i < mask.depth();++i)
+        for(int i = 0;i < mask.depth();++i)
         {
-            tipl::pointer_image<unsigned char,2> I(&mask[0]+i*mask.plane_size(),
+            tipl::pointer_image<unsigned char,2> I(&mask[0]+size_t(i)*mask.plane_size(),
                     tipl::geometry<2>(mask.width(),mask.height()));
             tipl::morphology::defragment(I);
             tipl::morphology::recursive_smoothing(I,10);
@@ -134,7 +134,7 @@ void Voxel::run(void)
 
     size_t total = 0;
     tipl::par_for2(mask.size(),
-                    [&](int voxel_index,int thread_id)
+                    [&](size_t voxel_index,size_t thread_id)
     {
         ++total;
         if(terminated || !mask[voxel_index])
@@ -146,11 +146,11 @@ void Voxel::run(void)
                 terminated = true;
                 return;
             }
-            check_prog(total*100/mask.size(),100);
+            check_prog(uint32_t(total*100/mask.size()),100);
         }
         voxel_data[thread_id].init();
         voxel_data[thread_id].voxel_index = voxel_index;
-        for (int index = 0; index < process_list.size(); ++index)
+        for (size_t index = 0; index < process_list.size(); ++index)
             process_list[index]->run(*this,voxel_data[thread_id]);
     },thread_count);
     check_prog(1,1);
@@ -170,7 +170,7 @@ void Voxel::run(void)
 void Voxel::end(gz_mat_write& writer)
 {
     begin_prog("Output Data");
-    for (unsigned int index = 0; check_prog(index,process_list.size()); ++index)
+    for (size_t index = 0; check_prog(uint32_t(index),uint32_t(process_list.size())); ++index)
         process_list[index]->end(*this,writer);
 }
 

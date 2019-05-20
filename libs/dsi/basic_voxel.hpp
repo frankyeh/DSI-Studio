@@ -26,7 +26,7 @@ public:
 
 struct VoxelData
 {
-    unsigned int voxel_index;
+    size_t voxel_index;
     std::vector<float> space;
     std::vector<float> odf;
     std::vector<float> odf1,odf2;
