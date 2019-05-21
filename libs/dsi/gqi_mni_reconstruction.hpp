@@ -29,9 +29,9 @@ protected:
 public:
     virtual void init(Voxel& voxel)
     {
-        if(voxel.vs[0] == 0.0 ||
-                voxel.vs[1] == 0.0 ||
-                voxel.vs[2] == 0.0)
+        if(voxel.vs[0] == 0.0f ||
+           voxel.vs[1] == 0.0f ||
+           voxel.vs[2] == 0.0f)
             throw std::runtime_error("No spatial information found in src file. Recreate src file or contact developer for assistance");
 
         tipl::image<float,3> VG,VF(voxel.qa_map),VG2,VF2;
@@ -80,9 +80,9 @@ public:
         }
         // setup output bounding box
         {
-            des_geo[0] = std::ceil((VG.width()-1)/resolution_ratio+1);
-            des_geo[1] = std::ceil((VG.height()-1)/resolution_ratio+1);
-            des_geo[2] = std::ceil((VG.depth()-1)/resolution_ratio+1);
+            des_geo[0] = int(std::ceil((VG.width()-1)/resolution_ratio+1.0f));
+            des_geo[1] = int(std::ceil((VG.height()-1)/resolution_ratio+1.0f));
+            des_geo[2] = int(std::ceil((VG.depth()-1)/resolution_ratio+1.0f));
             // setup transformation matrix
             std::fill(voxel.trans_to_mni,voxel.trans_to_mni+16,0.0);
             voxel.trans_to_mni[15] = 1.0;
@@ -154,17 +154,17 @@ public:
                     if(!VFF2.empty())
                     {
                         std::cout << "Normalization using dual QA/ISO templates" << std::endl;
-                        tipl::reg::cdm2(VG,VG2,VFF,VFF2,cdm_dis,terminated,2.0*resolution_ratio);
+                        tipl::reg::cdm2(VG,VG2,VFF,VFF2,cdm_dis,terminated,2.0f*resolution_ratio);
                     }
                     else
-                        tipl::reg::cdm(VG,VFF,cdm_dis,terminated,2.0*resolution_ratio);
+                        tipl::reg::cdm(VG,VFF,cdm_dis,terminated,2.0f*resolution_ratio);
                 },terminated))
                 throw std::runtime_error("Reconstruction canceled");
 
             {
                 tipl::image<float,3> VFFF;
                 tipl::compose_displacement(VFF,cdm_dis,VFFF);
-                float r = tipl::correlation(VG.begin(),VG.end(),VFFF.begin());
+                float r = float(tipl::correlation(VG.begin(),VG.end(),VFFF.begin()));
                 voxel.R2 = r*r;
                 std::cout << "R2=" << voxel.R2 << std::endl;
             }
@@ -179,7 +179,7 @@ public:
             mni_pos *= resolution_ratio;
             mni_pos.round();
             if(VG.geometry().is_valid(mni_pos) &&
-                    VG.at(mni_pos[0],mni_pos[1],mni_pos[2]) > 0.0)
+                    VG.at(uint32_t(mni_pos[0]),uint32_t(mni_pos[1]),uint32_t(mni_pos[2])) > 0.0f)
                 voxel.mask[index.index()] = 1;
         }
 
@@ -238,16 +238,16 @@ public:
 
     tipl::vector<3,int> mni_to_voxel_index(Voxel& voxel,int x,int y,int z) const
     {               
-        x = voxel.trans_to_mni[3]-x;
-        y = voxel.trans_to_mni[7]-y;
-        z -= voxel.trans_to_mni[11];
+        x = int(voxel.trans_to_mni[3])-x;
+        y = int(voxel.trans_to_mni[7])-y;
+        z -= int(voxel.trans_to_mni[11]);
         x /= resolution_ratio;
         y /= resolution_ratio;
         z /= resolution_ratio;
         return tipl::vector<3,int>(x,y,z);
     }
     template<class interpolation_type>
-    void interpolate_dwi(Voxel& voxel, VoxelData& data,const tipl::vector<3,double>& Jpos,interpolation_type)
+    void interpolate_dwi(Voxel& voxel, VoxelData& data,const tipl::vector<3,float>& Jpos,interpolation_type)
     {
         interpolation_type interpolation;
 
@@ -284,7 +284,7 @@ public:
         {
             if(voxel.other_image[index].geometry() != src_geo)
             {
-                tipl::vector<3,double> Opos;
+                tipl::vector<3,float> Opos;
                 voxel.other_image_affine[index](Jpos,Opos);
                 if(voxel.output_mapping)
                 {
@@ -301,12 +301,12 @@ public:
 
     virtual void run(Voxel& voxel, VoxelData& data)
     {
-        tipl::vector<3,double> pos(tipl::pixel_index<3>(data.voxel_index,voxel.dim)),Jpos;
+        tipl::vector<3,float> pos(tipl::pixel_index<3>(data.voxel_index,voxel.dim)),Jpos;
         pos[0] *= resolution_ratio;
         pos[1] *= resolution_ratio;
         pos[2] *= resolution_ratio;
         pos.round();
-        tipl::vector<3,int> ipos(pos[0],pos[1],pos[2]);
+        tipl::vector<3,int> ipos(pos);
         std::copy(affine.get(),affine.get()+9,data.jacobian.begin());
 
         {
@@ -336,12 +336,7 @@ public:
             mat_writer.write("jdet",jdet);
         if(voxel.output_mapping)
         {
-            short dimension[3];
-            dimension[0] = src_geo.width();
-            dimension[1] = src_geo.height();
-            dimension[2] = src_geo.depth();
-            mat_writer.write("native_d",dimension,1,3);
-
+            mat_writer.write("native_d",&src_geo[0],1,3);
             if(!mx.empty())
             {
                 mat_writer.write("native_x",mx);
@@ -353,19 +348,15 @@ public:
         }
         for(unsigned int index = 0;index < other_image.size();++index)
         {
-            mat_writer.write(voxel.other_image_name[index].c_str(),&*other_image[index].begin(),1,other_image[index].size());
+            mat_writer.write(voxel.other_image_name[index].c_str(),other_image[index]);
             if(voxel.other_image[index].geometry() == src_geo)
                 continue;
-            short dimension[3];
-            dimension[0] = voxel.other_image[index].width();
-            dimension[1] = voxel.other_image[index].height();
-            dimension[2] = voxel.other_image[index].depth();
-            mat_writer.write((voxel.other_image_name[index]+"_d").c_str(),dimension,1,3);
+            mat_writer.write((voxel.other_image_name[index]+"_d").c_str(),voxel.other_image[index].geometry().begin(),1,3);
             if(voxel.output_mapping)
             {
-                mat_writer.write((voxel.other_image_name[index]+"_x").c_str(),&*other_image_x[index].begin(),1,other_image_x[index].size());
-                mat_writer.write((voxel.other_image_name[index]+"_y").c_str(),&*other_image_y[index].begin(),1,other_image_y[index].size());
-                mat_writer.write((voxel.other_image_name[index]+"_z").c_str(),&*other_image_z[index].begin(),1,other_image_z[index].size());
+                mat_writer.write((voxel.other_image_name[index]+"_x").c_str(),other_image_x[index]);
+                mat_writer.write((voxel.other_image_name[index]+"_y").c_str(),other_image_y[index]);
+                mat_writer.write((voxel.other_image_name[index]+"_z").c_str(),other_image_z[index]);
             }
         }
 
@@ -411,8 +402,8 @@ public:
     {
         if(!samples.empty())
             voxel.z0 = tipl::median(samples.begin(),samples.end());
-        if(voxel.z0 == 0.0)
-            voxel.z0 = 1.0;
+        if(voxel.z0 == 0.0f)
+            voxel.z0 = 1.0f;
     }
 
 };
