@@ -16,50 +16,50 @@ private:
 public:
     Roi(const tipl::geometry<3>& geo,float r):ratio(r)
     {
-        if(r == 1.0)
+        if(r == 1.0f)
             dim = geo;
         else
-            dim = tipl::geometry<3>(geo[0]*r,geo[1]*r,geo[2]*r);
-        roi_filter.resize(dim[0]);
+            dim = tipl::geometry<3>(int(geo[0]*r),int(geo[1]*r),int(geo[2]*r));
+        roi_filter.resize(uint16_t(dim[0]));
     }
     void clear(void)
     {
         roi_filter.clear();
-        roi_filter.resize(dim[0]);
+        roi_filter.resize(uint16_t(dim[0]));
     }
     void addPoint(const tipl::vector<3,short>& new_point)
     {
         if(in_range(new_point.x(),new_point.y(),new_point.z()))
         {
-            if(roi_filter[new_point.x()].empty())
-                roi_filter[new_point.x()].resize(dim[1]);
-            if(roi_filter[new_point.x()][new_point.y()].empty())
-                roi_filter[new_point.x()][new_point.y()].resize(dim[2]);
-            roi_filter[new_point.x()][new_point.y()][new_point.z()] = 1;
+            if(roi_filter[uint16_t(new_point.x())].empty())
+                roi_filter[uint16_t(new_point.x())].resize(uint16_t(dim[1]));
+            if(roi_filter[uint16_t(new_point.x())][uint16_t(new_point.y())].empty())
+                roi_filter[uint16_t(new_point.x())][uint16_t(new_point.y())].resize(uint16_t(dim[2]));
+            roi_filter[uint16_t(new_point.x())][uint16_t(new_point.y())][uint16_t(new_point.z())] = 1;
         }
     }
     bool havePoint(float dx,float dy,float dz) const
     {
         short x,y,z;
-        if(ratio != 1.0)
+        if(ratio != 1.0f)
         {
-            x = std::round(dx*ratio);
-            y = std::round(dy*ratio);
-            z = std::round(dz*ratio);
+            x = short(std::round(dx*ratio));
+            y = short(std::round(dy*ratio));
+            z = short(std::round(dz*ratio));
         }
         else
         {
-            x = std::round(dx);
-            y = std::round(dy);
-            z = std::round(dz);
+            x = short(std::round(dx));
+            y = short(std::round(dy));
+            z = short(std::round(dz));
         }
         if(!in_range(x,y,z))
             return false;
-        if(roi_filter[x].empty())
+        if(roi_filter[uint16_t(x)].empty())
             return false;
-        if(roi_filter[x][y].empty())
+        if(roi_filter[uint16_t(x)][uint16_t(y)].empty())
             return false;
-        return roi_filter[x][y][z] != 0;
+        return roi_filter[uint16_t(x)][uint16_t(y)][uint16_t(z)] != 0;
     }
     bool havePoint(const tipl::vector<3,float>& point) const
     {
@@ -86,7 +86,7 @@ public:
     std::vector<std::shared_ptr<Roi> > terminate;
 public:
     std::shared_ptr<TractModel> atlas;
-    int track_id = 0;
+    unsigned int track_id = 0;
 public:
     bool is_excluded_point(const tipl::vector<3,float>& point) const
     {
@@ -138,7 +138,7 @@ public:
             return atlas->find_nearest(track,buffer_size) == track_id;
         return true;
     }
-    void setAtlas(std::shared_ptr<TractModel> atlas_,int track_id_)
+    void setAtlas(std::shared_ptr<TractModel> atlas_,unsigned int track_id_)
     {
         atlas = atlas_;
         track_id = track_id_;
@@ -176,7 +176,7 @@ public:
                     tipl::vector<3> voxel_size)
     {
         tipl::vector<3,float> center;
-        for(int i = 0;i < points.size();++i)
+        for(size_t i = 0;i < points.size();++i)
             center += points[i];
         center /= points.size();
         center /= r;
@@ -221,11 +221,9 @@ public:
         {
             std::ostringstream out;
             out << std::setprecision(2) << " (" << center[0] << "," << center[1] << "," << center[2]
-                << ") with a volume size of " << (float)points.size()*voxel_size[0]*voxel_size[1]*voxel_size[2]/r/r/r << " mm cubic";
+                << ") with a volume size of " << float(points.size())*voxel_size[0]*voxel_size[1]*voxel_size[2]/r/r/r << " mm cubic";
             if(r != 1.0f)
-            {
                 out << " and a super resolution factor of " << r;
-            }
             report += out.str();
         }
         report += ".";

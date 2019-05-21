@@ -1172,7 +1172,7 @@ void fib_data::subject2mni(tipl::pixel_index<3>& index,tipl::vector<3>& pos)
     return;
 }
 
-void fib_data::get_atlas_roi(std::shared_ptr<atlas> at,int roi_index,std::vector<tipl::vector<3,short> >& points,float& r)
+void fib_data::get_atlas_roi(std::shared_ptr<atlas> at,unsigned int roi_index,std::vector<tipl::vector<3,short> >& points,float& r)
 {
     if(get_mni_mapping().empty() || !at->load_from_file())
         return;

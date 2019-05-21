@@ -179,7 +179,7 @@ public:
     void mni2subject(tipl::vector<3>& pos);
     void subject2mni(tipl::vector<3>& pos);
     void subject2mni(tipl::pixel_index<3>& index,tipl::vector<3>& pos);
-    void get_atlas_roi(std::shared_ptr<atlas> at,int roi_index,std::vector<tipl::vector<3,short> >& points,float& r);
+    void get_atlas_roi(std::shared_ptr<atlas> at,unsigned int roi_index,std::vector<tipl::vector<3,short> >& points,float& r);
     const tipl::image<tipl::vector<3,float>,3 >& get_mni_mapping(void);
     bool has_reg(void)const{return thread.has_started();}
 public:

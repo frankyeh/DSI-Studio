@@ -6,6 +6,7 @@ class tracking_data;
 class basic_interpolation
 {
 public:
+    virtual ~basic_interpolation(){}
     virtual bool evaluate(const tracking_data& fib,
                           const tipl::vector<3,float>& position,
                           const tipl::vector<3,float>& ref_dir,
