@@ -33,7 +33,7 @@ struct VoxelData
     std::vector<float> fa;
     std::vector<float> rdi;
     std::vector<tipl::vector<3,float> > dir;
-    std::vector<short> dir_index;
+    std::vector<unsigned short> dir_index;
     float min_odf;
     tipl::matrix<3,3,float> jacobian;
 

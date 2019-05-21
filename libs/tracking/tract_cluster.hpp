@@ -17,6 +17,7 @@ protected:
     std::vector<std::shared_ptr<Cluster> > clusters;
     void sort_cluster(void);
 public:
+    virtual ~BasicCluster(void){}
     virtual void add_tracts(const std::vector<std::vector<float> >& tracks) = 0;
     virtual void run_clustering(void) = 0;
 public:

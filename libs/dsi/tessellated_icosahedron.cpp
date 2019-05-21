@@ -1015,7 +1015,7 @@ float odf8_vec[642][3]=
 
 
 
-short odf8_face[1280][3]={
+unsigned short odf8_face[1280][3]={
 
 {2,0,1},
 {6,2,1},
@@ -2301,7 +2301,7 @@ short odf8_face[1280][3]={
 
 
 
-short odf6_face[720][3]=
+unsigned short odf6_face[720][3]=
 {
 {2,0,1},
 {6,2,1},

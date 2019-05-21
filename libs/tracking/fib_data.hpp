@@ -50,7 +50,7 @@ public:
     std::vector<const float*> fa;
     std::vector<const float*> dt_fa;
     std::vector<tipl::vector<3,float> > odf_table;
-    std::vector<tipl::vector<3,short> > odf_faces;
+    std::vector<tipl::vector<3,unsigned short> > odf_faces;
     unsigned int num_fiber;
     unsigned int half_odf_size;
     std::string error_msg;

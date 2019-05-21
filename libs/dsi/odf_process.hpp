@@ -28,7 +28,7 @@ private:
     std::vector<tipl::vector<3,float> > old_bvectors;
     std::vector<float> old_bvalues;
 public:
-    BalanceScheme(void):stored_voxel(0){}
+    BalanceScheme(void):stored_voxel(nullptr){}
 
     virtual void init(Voxel& voxel)
     {
@@ -36,7 +36,7 @@ public:
             return;
         std::vector<unsigned int> shell;
         calculate_shell(voxel.bvalues,shell);
-        unsigned int b_count = voxel.bvalues.size();
+        unsigned int b_count = uint32_t(voxel.bvalues.size());
         unsigned int total_signals = 0;
 
         tessellated_icosahedron new_dir;
@@ -46,7 +46,7 @@ public:
         std::vector<float> new_bvalues;
 
         // if b0
-        if(voxel.bvalues.front() == 0.0)
+        if(voxel.bvalues.front() == 0.0f)
         {
             trans.resize(b_count);
             trans[0] = 1;
@@ -63,40 +63,40 @@ public:
 
 
             //calculate averaged angle distance
-            double averaged_angle = 0.0;
+            float averaged_angle = 0.0;
             for(unsigned int i = from;i < to;++i)
             {
-                double max_cos = 0.0;
+                float max_cos = 0.0;
                 for(unsigned int j = from;j < to;++j)
                 {
                     if(i == j)
                         continue;
-                    double cur_cos = std::fabs(std::cos(voxel.bvectors[i]*voxel.bvectors[j]));
-                    if(cur_cos > 0.998)
+                    float cur_cos = std::fabs(std::cosf(voxel.bvectors[i]*voxel.bvectors[j]));
+                    if(cur_cos > 0.998f)
                         continue;
-                    max_cos = std::max<double>(max_cos,cur_cos);
+                    max_cos = std::max<float>(max_cos,cur_cos);
                 }
-                averaged_angle += std::acos(max_cos);
+                averaged_angle += std::acosf(max_cos);
             }
             averaged_angle /= num;
 
             //calculate averaged b_value
-            double avg_b = tipl::mean(voxel.bvalues.begin()+from,voxel.bvalues.begin()+to);
-            unsigned int trans_old_size = trans.size();
+            float avg_b = float(tipl::mean(voxel.bvalues.begin()+from,voxel.bvalues.begin()+to));
+            unsigned int trans_old_size = uint32_t(trans.size());
             trans.resize(trans.size() + new_dir.half_vertices_count*b_count);
             for(unsigned int i = 0; i < new_dir.half_vertices_count;++i)
             {
-                std::vector<double> t(b_count);
-                double effective_b = 0.0;
+                std::vector<float> t(b_count);
+                float effective_b = 0.0;
                 for(unsigned int j = from;j < to;++j)
                 {
-                    double angle = std::acos(std::min<double>(1.0,std::fabs(new_dir.vertices[i]*voxel.bvectors[j])));
+                    float angle = std::acosf(std::min<float>(1.0f,std::fabs(new_dir.vertices[i]*voxel.bvectors[j])));
                     angle/=averaged_angle;
-                    t[j] = std::exp(-2.0*angle*angle); // if the angle == 1, then weighting = 0.135
+                    t[j] = std::expf(-2.0f*angle*angle); // if the angle == 1, then weighting = 0.135
                     effective_b += t[j]*voxel.bvalues[j];
                 }
-                double sum_t = std::accumulate(t.begin(),t.end(),0.0);
-                tipl::multiply_constant(t,avg_b/1000.0/sum_t);
+                float sum_t = std::accumulate(t.begin(),t.end(),0.0f);
+                tipl::multiply_constant(t,avg_b/1000.0f/sum_t);
                 std::copy(t.begin(),t.end(),trans.begin() + trans_old_size + i * b_count);
                 new_bvalues.push_back(effective_b/sum_t);
                 new_bvectors.push_back(new_dir.vertices[i]);
@@ -104,7 +104,7 @@ public:
             total_signals += new_dir.half_vertices_count;
         }
 
-        old_q_count = voxel.bvalues.size();
+        old_q_count = uint32_t(voxel.bvalues.size());
         new_q_count = total_signals;
         voxel.bvalues.swap(new_bvalues);
         voxel.bvectors.swap(new_bvectors);
@@ -120,7 +120,7 @@ public:
             return;
         if(stored_voxel)// restored btalbe here in case user terminate the recon
         {
-            stored_voxel = 0;
+            stored_voxel = nullptr;
             voxel.bvalues = old_bvalues;
             voxel.bvectors = old_bvectors;
         }
@@ -145,10 +145,10 @@ struct GeneralizedFA
             m2 += t*t;
         }
         m1 *= m1;
-        m1 /= ((float)odf.size());
-        if (m2 == 0.0)
-            return 0.0;
-        return std::sqrt(((float)odf.size())/((float)odf.size()-1.0)*(m2-m1)/m2);
+        m1 /= float(odf.size());
+        if (m2 == 0.0f)
+            return 0.0f;
+        return std::sqrtf((float(odf.size()))/(float(odf.size())-1.0f)*(m2-m1)/m2);
     }
 };
 
@@ -205,7 +205,7 @@ public:
     virtual void run(Voxel& voxel,VoxelData& data)
     {
 
-        if (voxel.output_odf && data.fa[0] + 1.0 != 1.0)
+        if (voxel.output_odf && data.fa[0] + 1.0f != 1.0f)
         {
             unsigned int odf_index = odf_index_map[data.voxel_index];
             std::copy(data.odf.begin(),data.odf.end(),
@@ -225,9 +225,7 @@ public:
                 tipl::divide_constant(odf_data[index],voxel.z0);
                 std::ostringstream out;
                 out << "odf" << index;
-                mat_writer.write(out.str().c_str(),&*odf_data[index].begin(),
-                                      voxel.ti.half_vertices_count,
-                                      odf_data[index].size()/(voxel.ti.half_vertices_count));
+                mat_writer.write(out.str().c_str(),odf_data[index],voxel.ti.half_vertices_count);
             }
             odf_data.clear();
         }
@@ -238,8 +236,8 @@ public:
 
 struct ODFLoader : public BaseProcess
 {
-    std::vector<unsigned int> index_mapping1;
-    std::vector<unsigned int> index_mapping2;
+    std::vector<size_t> index_mapping1;
+    std::vector<size_t> index_mapping2;
 public:
     virtual void init(Voxel& voxel)
     {
@@ -247,22 +245,22 @@ public:
         voxel.z0 = 0.0;
         index_mapping1.resize(voxel.mask.size());
         index_mapping2.resize(voxel.mask.size());
-        int voxel_index = 0;
-        for(unsigned int i = 0;i < voxel.template_odfs.size();++i)
+        size_t voxel_index = 0;
+        for(size_t i = 0;i < voxel.template_odfs.size();++i)
         {
-            for(unsigned int j = 0;j < voxel.template_odfs[i].size();j += voxel.ti.half_vertices_count)
+            for(size_t j = 0;j < voxel.template_odfs[i].size();j += voxel.ti.half_vertices_count)
             {
-                int k_end = j + voxel.ti.half_vertices_count;
+                size_t k_end = j + voxel.ti.half_vertices_count;
                 bool is_odf_zero = true;
-                for(int k = j;k < k_end;++k)
-                    if(voxel.template_odfs[i][k] != 0.0)
+                for(size_t k = j;k < k_end;++k)
+                    if(voxel.template_odfs[i][k] != 0.0f)
                     {
                         is_odf_zero = false;
                         break;
                     }
                 if(!is_odf_zero)
                     for(;voxel_index < index_mapping1.size();++voxel_index)
-                        if(voxel.mask[voxel_index] != 0)
+                        if(voxel.mask[voxel_index])
                             break;
                 if(voxel_index >= index_mapping1.size())
                     break;
@@ -274,11 +272,12 @@ public:
     }
     virtual void run(Voxel& voxel, VoxelData& data)
     {
-        int cur_index = data.voxel_index;
+        size_t cur_index = data.voxel_index;
         std::copy(voxel.template_odfs[index_mapping1[cur_index]].begin() +
-                  index_mapping2[cur_index],
+                  int64_t(index_mapping2[cur_index]),
                   voxel.template_odfs[index_mapping1[cur_index]].begin() +
-                  index_mapping2[cur_index]+data.odf.size(),data.odf.begin());
+                  int64_t(index_mapping2[cur_index])+int64_t(data.odf.size()),
+                  data.odf.begin());
 
     }
     virtual void end(Voxel& voxel,gz_mat_write& mat_writer)
@@ -290,9 +289,7 @@ public:
             {
                 std::ostringstream out;
                 out << "odf" << index;
-                mat_writer.write(out.str().c_str(),&*voxel.template_odfs[index].begin(),
-                                      voxel.ti.half_vertices_count,
-                                      voxel.template_odfs[index].size()/(voxel.ti.half_vertices_count));
+                mat_writer.write(out.str().c_str(),voxel.template_odfs[index],voxel.ti.half_vertices_count);
             }
         }
         mat_writer.write("trans",voxel.trans_to_mni,4,4);
@@ -338,7 +335,7 @@ protected:
             std::string num = out.str();
             std::string str = name + num;
             set_title(str.c_str());
-            mat_writer.write(str.c_str(),&*metrics[index].begin(),1,metrics[index].size());
+            mat_writer.write(str.c_str(),metrics[index]);
         }
     }
 
@@ -347,19 +344,19 @@ protected:
 public:
     virtual void init(Voxel& voxel)
     {
-        fa = std::move(std::vector<std::vector<float> >(voxel.max_fiber_number,std::vector<float>(voxel.dim.size())));
-        gfa = std::move(std::vector<float>(voxel.dim.size()));
-        iso= std::move(std::vector<float>(voxel.dim.size()));
+        fa = std::vector<std::vector<float> >(voxel.max_fiber_number,std::vector<float>(voxel.dim.size()));
+        gfa = std::vector<float>(voxel.dim.size());
+        iso= std::vector<float>(voxel.dim.size());
         if(voxel.compare_voxel) // DDI
         {
-            qa_inc = std::move(std::vector<std::vector<float> >(voxel.max_fiber_number,std::vector<float>(voxel.dim.size())));;
-            qa_dec = std::move(std::vector<std::vector<float> >(voxel.max_fiber_number,std::vector<float>(voxel.dim.size())));;
+            qa_inc = std::vector<std::vector<float> >(voxel.max_fiber_number,std::vector<float>(voxel.dim.size()));
+            qa_dec = std::vector<std::vector<float> >(voxel.max_fiber_number,std::vector<float>(voxel.dim.size()));
         }
         if(voxel.output_rdi)
         {
             float sigma = voxel.param[0]; //optimal 1.24
             for(float L = 0.2f;L <= sigma;L+= 0.2f)
-                rdi.push_back(std::move(std::vector<float>(voxel.dim.size())));
+                rdi.push_back(std::vector<float>(voxel.dim.size()));
         }
 
         if(voxel.csf_calibration)
@@ -367,19 +364,19 @@ public:
             std::vector<unsigned short> data(voxel.dwi_data[0],voxel.dwi_data[0]+voxel.dim.size());
             std::sort(data.begin(),data.end());
             // CSF selected at 125,000 mm^3
-            int size = 125000.0f/(voxel.vs[0]*voxel.vs[1]*voxel.vs[2]);
+            int size = int(125000.0f/(voxel.vs[0]*voxel.vs[1]*voxel.vs[2]));
             float water_b0 = *(data.end()-size);
 
             // numerically estimate free water ODF
             unsigned int odf_size = voxel.ti.half_vertices_count;
             std::vector<float> dwi(voxel.bvalues.size()),odf(odf_size);
-            for(int i = 0;i < dwi.size();++i)
+            for(size_t i = 0;i < dwi.size();++i)
                 dwi[i] = water_b0*std::exp(-voxel.bvalues[i]*0.003f); // free water diffusivity
             std::vector<float> sinc_ql;
             voxel.calculate_sinc_ql(sinc_ql);
             tipl::mat::vector_product(&*sinc_ql.begin(),&*dwi.begin(),&*odf.begin(),
-                                    tipl::dyndim(odf.size(),dwi.size()));
-            z0 = tipl::mean(odf.begin(),odf.end());
+                                    tipl::dyndim(uint32_t(odf.size()),uint32_t(dwi.size())));
+            z0 = float(tipl::mean(odf.begin(),odf.end()));
         }
 
         voxel.z0 = 0.0;
@@ -418,8 +415,8 @@ public:
         mat_writer.write("gfa",gfa);
         if(voxel.csf_calibration)
             voxel.z0 = z0;
-        if(voxel.z0 + 1.0 == 1.0)
-            voxel.z0 = 1.0;
+        if(voxel.z0 + 1.0f == 1.0f)
+            voxel.z0 = 1.0f;
         mat_writer.write("z0",&voxel.z0,1,1);
 
 
@@ -438,7 +435,7 @@ public:
             for (unsigned int i = 0;i < voxel.max_fiber_number;++i)
                 max_qa = std::max<float>(*std::max_element(fa[i].begin(),fa[i].end()),max_qa);
 
-            if(max_qa != 0.0)
+            if(max_qa != 0.0f)
             {
                 for (unsigned int index = 0;index < voxel.max_fiber_number;++index)
                     tipl::divide_constant(fa[index],max_qa);
@@ -451,7 +448,7 @@ public:
 
                 mat_writer.write("base_fa",voxel.fib_fa);
                 mat_writer.write("study_fa",voxel.compare_voxel->fib_fa);
-                for(int i = 0;i < voxel.dim.size();++i)
+                for(size_t i = 0;i < voxel.dim.size();++i)
                     if(voxel.compare_voxel->fib_fa[i] > voxel.fib_fa[i])
                     {
                         qa_inc[0][i] = voxel.compare_voxel->fib_fa[i] - voxel.fib_fa[i];
@@ -485,7 +482,7 @@ public:
                 std::ostringstream out;
                 out.precision(2);
                 out << "rdi" << std::setfill('0') << std::setw(2) << int(L*10) << "L";
-                mat_writer.write(out.str().c_str(),&*rdi[i].begin(),1,rdi[i].size());
+                mat_writer.write(out.str().c_str(),rdi[i]);
             }
             for(unsigned int i = 0;i < rdi[0].size();++i)
             for(unsigned int j = 0;j < rdi.size();++j)
@@ -496,7 +493,7 @@ public:
                 std::ostringstream out2;
                 out2.precision(2);
                 out2 << "nrdi" << std::setfill('0') << std::setw(2) << int(L*10) << "L";
-                mat_writer.write(out2.str().c_str(),&*rdi[i].begin(),1,rdi[i].size());
+                mat_writer.write(out2.str().c_str(),rdi[i]);
             }
         }
     }
@@ -532,7 +529,7 @@ public:
             std::string index_str = "index";
             index_str += num;
             set_title(index_str.c_str());
-            mat_writer.write(index_str.c_str(),&*findex[index].begin(),1,findex[index].size());
+            mat_writer.write(index_str.c_str(),findex[index]);
         }
     }
 };
@@ -552,10 +549,10 @@ public:
     }
     virtual void run(Voxel& voxel, VoxelData& data)
     {
-
-        unsigned int dir_index = data.voxel_index;
-        for (unsigned int index = 0;index < voxel.max_fiber_number;++index)
-            std::copy(data.dir[index].begin(),data.dir[index].end(),dir[index].begin() + dir_index + dir_index + dir_index);
+        int64_t dir_index = int64_t(data.voxel_index);
+        for (size_t index = 0;index < voxel.max_fiber_number;++index)
+            std::copy(data.dir[index].begin(),data.dir[index].end(),dir[index].begin() +
+                      dir_index + dir_index + dir_index);
     }
     virtual void end(Voxel& voxel,gz_mat_write& mat_writer)
     {
@@ -567,7 +564,7 @@ public:
             std::string index_str = "dir";
             index_str += num;
             set_title(index_str.c_str());
-            mat_writer.write(index_str.c_str(),&*dir[index].begin(),1,dir[index].size());
+            mat_writer.write(index_str.c_str(),dir[index]);
         }
     }
 };
@@ -589,7 +586,7 @@ struct ODFShaping
             shape_list.push_back(tipl::arg_sort(cos_value,std::greater<float>()));
         }
     }
-    void shape(std::vector<float>& odf,unsigned int dir)
+    void shape(std::vector<float>& odf,uint16_t dir)
     {
         float cur_max = odf[dir];
         odf[dir] = 0.0f;
@@ -608,13 +605,13 @@ struct SearchLocalMaximum
     void init(Voxel& voxel)
     {
         unsigned int half_odf_size = voxel.ti.half_vertices_count;
-        unsigned int faces_count = voxel.ti.faces.size();
+        unsigned int faces_count = uint32_t(voxel.ti.faces.size());
         neighbor.resize(voxel.ti.half_vertices_count);
         for (unsigned int index = 0;index < faces_count;++index)
         {
-            short i1 = voxel.ti.faces[index][0];
-            short i2 = voxel.ti.faces[index][1];
-            short i3 = voxel.ti.faces[index][2];
+            unsigned short i1 = voxel.ti.faces[index][0];
+            unsigned short i2 = voxel.ti.faces[index][1];
+            unsigned short i3 = voxel.ti.faces[index][2];
             if (i1 >= half_odf_size)
                 i1 -= half_odf_size;
             if (i2 >= half_odf_size)
@@ -632,11 +629,11 @@ struct SearchLocalMaximum
     void search(const std::vector<float>& old_odf,std::map<float,unsigned short,std::greater<float> >& max_table)
     {
         max_table.clear();
-        for (unsigned int index = 0;index < neighbor.size();++index)
+        for (uint16_t index = 0;index < neighbor.size();++index)
         {
             float value = old_odf[index];
             bool is_max = true;
-            std::vector<unsigned short>& nei = neighbor[index];
+            std::vector<uint16_t>& nei = neighbor[index];
             for (unsigned int j = 0;j < nei.size();++j)
             {
                 if (value < old_odf[nei[j]])
@@ -646,7 +643,7 @@ struct SearchLocalMaximum
                 }
             }
             if (is_max)
-                max_table[value] = (unsigned short)index;
+                max_table[value] = index;
         }
     }
 };
@@ -675,11 +672,11 @@ public:
             std::vector<float> odf(data.odf);
             for (unsigned int index = 0;index < 3;++index)
             {
-                unsigned int max_dir = std::max_element(odf.begin(),odf.end())-odf.begin();
+                uint16_t max_dir = uint16_t(std::max_element(odf.begin(),odf.end())-odf.begin());
                 if(odf[max_dir] == 0.0f)
                     break;
                 if(index)
-                    max_table[data.odf[max_dir]] = (unsigned short)max_dir;
+                    max_table[data.odf[max_dir]] = max_dir;
                 shaping.shape(odf,max_dir);
             }
         }
