@@ -21,11 +21,11 @@ private:
     tipl::image<unsigned int,3> odf_block_map2;
     unsigned int half_odf_size;
 public:
-    odf_data(void):odfs(0){}
+    odf_data(void):odfs(nullptr){}
     bool read(gz_mat_read& mat_reader);
     bool has_odfs(void) const
     {
-        return odfs != 0 || !odf_blocks.empty();
+        return odfs != nullptr || !odf_blocks.empty();
     }
     const float* get_odf_data(unsigned int index) const;
 };
@@ -129,10 +129,10 @@ struct item
     {
         contrast_max = max_value = *std::max_element(from,to);
         contrast_min = min_value = *std::min_element(from,to);
-        if(max_value == min_value)
+        if(max_value <= min_value)
         {
-            min_value = 0;
-            max_value = 1;
+            min_value = 0.0f;
+            max_value = 1.0f;
         }
 
     }
@@ -281,7 +281,7 @@ std::pair<float,float> evaluate_fib(
         for(unsigned int index = 0;index < connected.size();++index)
             connected[index].resize(dim.size());
 
-    evaluate_connection(dim,otsu,fib_fa,dir,[&](unsigned int pos1,char fib1,unsigned int pos2,char fib2)
+    evaluate_connection(dim,otsu,fib_fa,dir,[&](unsigned int pos1,unsigned char fib1,unsigned int pos2,unsigned char fib2)
     {
         connected[fib1][pos1] = 1;
         connected[fib2][pos2] = 1;

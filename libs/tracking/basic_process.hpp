@@ -39,12 +39,12 @@ public:
             voxel_angle.push_back(angle_cos);
         }
 
-        char max_i;
-        char max_j;
+        unsigned char max_i;
+        unsigned char max_j;
         float max_angle_cos = 0;
-        for(char i = 0;i < next_voxels_index.size();++i)
+        for(unsigned char i = 0;i < next_voxels_index.size();++i)
         {
-            for (char j = 0;j < info.trk.fib_num;++j)
+            for (unsigned char j = 0;j < info.trk.fib_num;++j)
             {
                 float fa_value = info.trk.fa[j][next_voxels_index[i]];
                 if (fa_value <= info.current_fa_threshold)
@@ -60,7 +60,7 @@ public:
                 }
             }
         }
-        if(max_angle_cos == 0)
+        if(max_angle_cos == 0.0f)
         {
             info.terminated = true;
             return;

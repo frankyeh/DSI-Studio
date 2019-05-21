@@ -370,14 +370,14 @@ void connectometry_db::get_subject_vector_pairs(std::vector<std::pair<int,int> >
         int fp_pos = 0;
         for(auto cur_index : si2vi)
             if(fp_mask[cur_index])
-                for(int j = 0;j < handle->dir.num_fiber && handle->dir.fa[j][cur_index] > fiber_threshold;++j)
+                for(unsigned char j = 0;j < handle->dir.num_fiber && handle->dir.fa[j][cur_index] > fiber_threshold;++j)
                     fp_index[j][cur_index] = fp_pos++;
     }
 
 
     evaluate_connection(handle->dim,fiber_threshold,handle->dir.fa,
-                        [this](int pos,char fib){return tipl::vector<3>(handle->dir.get_dir(pos,fib));},
-                        [&](int pos1,char fib1,int pos2,char fib2)
+                        [this](unsigned int pos,unsigned char fib){return tipl::vector<3>(handle->dir.get_dir(pos,fib));},
+                        [&](unsigned int pos1,unsigned char fib1,unsigned int pos2,unsigned char fib2)
                         {
                             if(fp_index[fib1][pos1] && fp_index[fib2][pos2])
                                 pairs.push_back(std::make_pair(fp_index[fib1][pos1],fp_index[fib2][pos2]));

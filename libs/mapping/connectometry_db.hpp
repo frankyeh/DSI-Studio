@@ -101,7 +101,7 @@ public: // individual
     const float* individual_data;
     float individual_data_sd;
 public:
-    stat_model(void):individual_data(0),threshold_type(t){}
+    stat_model(void):threshold_type(t),individual_data(nullptr){}
 public:
     void read_demo(const connectometry_db& db);
     void remove_subject(unsigned int index);
