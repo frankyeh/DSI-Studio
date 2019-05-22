@@ -9,6 +9,7 @@
 class DWINormalization  : public BaseProcess
 {
 protected:
+    tipl::image<unsigned char,3> src_mask;
     tipl::geometry<3> src_geo;
     tipl::geometry<3> des_geo;
 protected:
@@ -95,7 +96,9 @@ public:
         }
 
         bool export_intermediate = false;
+        // bookkepping for restoration
         src_geo = voxel.dim;
+        src_mask = std::move(voxel.mask);
 
         affine_volume_scale = (voxel.vs[0]*voxel.vs[1]*voxel.vs[2]/VGvs[0]/VGvs[1]/VGvs[2]);
 
@@ -330,7 +333,7 @@ public:
     }
     virtual void end(Voxel& voxel,gz_mat_write& mat_writer)
     {
-        voxel.mask.resize(src_geo);
+        voxel.mask = std::move(src_mask);
         voxel.dim = src_geo;
         if(voxel.output_jacobian)
             mat_writer.write("jdet",jdet);
