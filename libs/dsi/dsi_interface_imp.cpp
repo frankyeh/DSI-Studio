@@ -40,8 +40,8 @@ struct odf_reco_type{
 
 
 typedef boost::mpl::vector<
-    Dwi2Tensor,
     DWINormalization,
+    Dwi2Tensor,
     BalanceScheme,
     GQI_Recon,
     RDI_Recon,
