@@ -367,6 +367,7 @@ void view_image::on_zoom_out_clicked()
     update_image();
 }
 
+bool is_label_image(const tipl::image<float,3>& I);
 void view_image::on_actionResample_triggered()
 {
     bool ok;
@@ -387,7 +388,7 @@ void view_image::on_actionResample_triggered()
     nT[0] = T1.sr[0] = new_vs[0]/vs[0];
     nT[5] = T1.sr[4] = new_vs[1]/vs[1];
     nT[10] = T1.sr[8] = new_vs[2]/vs[2];
-    tipl::resample_mt(data,J,T1,tipl::cubic);
+    tipl::resample_mt(data,J,T1,is_label_image(data) ? tipl::nearest : tipl::cubic);
     data.swap(J);
     vs = new_vs;
     T = T*nT;

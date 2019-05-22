@@ -10,11 +10,11 @@
 // ---------------------------------------------------------------------------
 class SliceModel;
 // region_feature
-const unsigned int roi_id = 0;
-const unsigned int roa_id = 1;
-const unsigned int end_id = 2;
-const unsigned int seed_id = 3;
-const unsigned int terminate_id = 4;
+const unsigned char roi_id = 0;
+const unsigned char roa_id = 1;
+const unsigned char end_id = 2;
+const unsigned char seed_id = 3;
+const unsigned char terminate_id = 4;
 
 class ROIRegion {
 public:

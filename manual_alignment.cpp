@@ -4,7 +4,13 @@
 #include "tracking/tracking_window.h"
 
 void show_view(QGraphicsScene& scene,QImage I);
-
+bool is_label_image(const tipl::image<float,3>& I)
+{
+    for(size_t i = 0;i < I.size();++i)
+        if(std::floor(I[i]) < I[i])
+            return false;
+    return true;
+}
 const float reg_bound2[6] = {0.25f,-0.25f,4.0f,0.2f,0.5f,-0.5f};
 manual_alignment::manual_alignment(QWidget *parent,
                                    tipl::image<float,3> from_,
@@ -317,15 +323,7 @@ void manual_alignment::on_save_warpped_clicked()
         return;
 
     tipl::image<float,3> I(to.geometry());
-    bool is_label = true;
-    for(int i = 0;i < from_original.size();++i)
-        if(std::floor(from_original[i]) != from_original[i])
-        {
-            is_label = false;
-            break;
-        }
-
-    tipl::resample(from_original,I,iT,is_label ? tipl::nearest : tipl::cubic);
+    tipl::resample(from_original,I,iT,is_label_image(from_original) ? tipl::nearest : tipl::cubic);
     gz_nifti nii;
     nii.set_voxel_size(to_vs);
     tipl::flip_xy(I);

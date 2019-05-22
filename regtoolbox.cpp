@@ -428,6 +428,7 @@ void RegToolBox::on_action_Save_Warpped_Image_triggered()
 }
 
 
+bool is_label_image(const tipl::image<float,3>& I);
 void RegToolBox::on_actionApply_Warpping_triggered()
 {
     QString filename = QFileDialog::getOpenFileName(
@@ -456,14 +457,7 @@ void RegToolBox::on_actionApply_Warpping_triggered()
     if(filename.isEmpty())
         return;
 
-    bool is_label = true;
-    for(int i = 0;i < I3.size();++i)
-        if(std::floor(I3[i]) != I3[i])
-        {
-            is_label = false;
-            break;
-        }
-    tipl::compose_displacement(I3,J3,T,dis,is_label ? tipl::nearest : tipl::cubic);
+    tipl::compose_displacement(I3,J3,T,dis,is_label_image(I3) ? tipl::nearest : tipl::cubic);
     {
         gz_nifti nii;
         nii.set_voxel_size(Itvs);

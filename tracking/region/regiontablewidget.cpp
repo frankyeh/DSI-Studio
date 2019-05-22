@@ -544,7 +544,7 @@ void get_roi_label(QString file_name,std::map<int,std::string>& label_map,
     if(!mute_cmd)
         std::cout << "No label file found. Use default ROI numbering." << std::endl;
 }
-
+bool is_label_image(const tipl::image<float,3>& I);
 bool RegionTableWidget::load_multiple_roi_nii(QString file_name)
 {
     gz_nifti header;
@@ -553,21 +553,14 @@ bool RegionTableWidget::load_multiple_roi_nii(QString file_name)
 
     tipl::image<unsigned int, 3> from;
     {
-        bool is_label = true;
         tipl::image<float, 3> tmp;
         header.toLPS(tmp);
-        for(int i = 0;i < tmp.size();++i)
-            if(tmp[i] != std::floor(tmp[i]))
-            {
-                is_label = false;
-                break;
-            }
-        if(is_label)
+        if(is_label_image(tmp))
             from = tmp;
         else
         {
             from.resize(tmp.geometry());
-            for(int i = 0;i < from.size();++i)
+            for(size_t i = 0;i < from.size();++i)
                 from[i] = (tmp[i] == 0.0f ? 0:1);
         }
     }
@@ -576,16 +569,16 @@ bool RegionTableWidget::load_multiple_roi_nii(QString file_name)
     std::vector<unsigned short> value_map(std::numeric_limits<unsigned short>::max()+1);
 
     {
-        int max_value = 0;
+        unsigned short max_value = 0;
         for (tipl::pixel_index<3>index(from.geometry());index < from.size();++index)
         {
-            value_map[(unsigned short)from[index.index()]] = 1;
-            max_value = std::max<unsigned short>(from[index.index()],max_value);
+            value_map[uint16_t(from[index.index()])] = 1;
+            max_value = std::max<unsigned short>(uint16_t(from[index.index()]),max_value);
         }
-        for(int value = 1;value <= max_value;++value)
+        for(unsigned short value = 1;value <= max_value;++value)
             if(value_map[value])
             {
-                value_map[value] = value_list.size();
+                value_map[value] = uint16_t(value_list.size());
                 value_list.push_back(value);
             }
     }
@@ -617,10 +610,10 @@ bool RegionTableWidget::load_multiple_roi_nii(QString file_name)
 
     if(from.geometry() != cur_tracking_window.handle->dim)
     {
-        float r1 = (float)from.width()/(float)cur_tracking_window.handle->dim[0];
-        float r2 = (float)from.height()/(float)cur_tracking_window.handle->dim[1];
-        float r3 = (float)from.depth()/(float)cur_tracking_window.handle->dim[2];
-        if(r1 == r2 && r1 == r3)
+        float r1 = float(from.width())/float(cur_tracking_window.handle->dim[0]);
+        float r2 = float(from.height())/float(cur_tracking_window.handle->dim[1]);
+        float r3 = float(from.depth())/float(cur_tracking_window.handle->dim[2]);
+        if(std::fabs(r1-r2) < 0.01f && std::fabs(r1-r3) < 0.01f)
             has_transform = false;
         else
         if(cur_tracking_window.handle->is_qsdr && !has_transform)// use transformation information
@@ -637,7 +630,7 @@ bool RegionTableWidget::load_multiple_roi_nii(QString file_name)
                                                  cur_tracking_window.handle->view_item[index].my[pos.index()],
                                                  cur_tracking_window.handle->view_item[index].mz[pos.index()]);
                         new_pos.round();
-                        new_from[pos.index()] = from.at(new_pos[0],new_pos[1],new_pos[2]);
+                        new_from[pos.index()] = from.at(uint32_t(new_pos[0]),uint32_t(new_pos[1]),uint32_t(new_pos[2]));
                     }
                     break;
                 }
@@ -664,8 +657,8 @@ bool RegionTableWidget::load_multiple_roi_nii(QString file_name)
         else
             region.LoadFromBuffer(from);
 
-        int color = 0;
-        int type = roi_id;
+        unsigned int color = 0;
+        unsigned char type = roi_id;
 
         try{
             std::vector<std::string> info;
@@ -720,7 +713,7 @@ bool RegionTableWidget::load_multiple_roi_nii(QString file_name)
         {
             unsigned short value = value_list[i];
             QString name = (label_map.find(value) == label_map.end() ?
-                                    QString("roi_") + QString::number(value):QString(label_map[value].c_str()));
+                 QFileInfo(file_name).baseName() + "_" + QString::number(value):QString(label_map[value].c_str()));
             add_region(name,roi_id,label_color.empty() ? 0x00FFFFFF : label_color[value].color);
             regions.back()->add_points(region_points[i],false,1.0f);
             item(currentRow(),0)->setCheckState(Qt::Unchecked);
