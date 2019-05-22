@@ -25,20 +25,6 @@ typedef boost::mpl::vector<
     OutputODF
 > hgqi_process;
 
-
-template<class reco_type>
-struct odf_reco_type{
-    typedef boost::mpl::vector<
-        DetermineFiberDirections,
-        SaveMetrics,
-        SaveDirIndex,
-        OutputODF
-    > common_odf_process;
-    typedef typename boost::mpl::insert_range<common_odf_process,boost::mpl::begin<common_odf_process>::type,reco_type>::type type0;
-    typedef typename boost::mpl::push_front<type0,ReadDWIData>::type type; // add ReadDWIData to the front
-};
-
-
 typedef boost::mpl::vector<
     DWINormalization,
     Dwi2Tensor,
@@ -52,13 +38,18 @@ typedef boost::mpl::vector<
     OutputODF
 > qsdr_process;
 
-typedef odf_reco_type<boost::mpl::vector<
+typedef boost::mpl::vector<
+    ReadDWIData,
     Dwi2Tensor,
     BalanceScheme,
     GQI_Recon,
     RDI_Recon,
-    dGQI_Recon
-> >::type gqi_process;
+    dGQI_Recon,
+    DetermineFiberDirections,
+    SaveMetrics,
+    SaveDirIndex,
+    OutputODF
+> gqi_process;
 
 typedef boost::mpl::vector<
     ReadDWIData,
