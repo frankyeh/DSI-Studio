@@ -565,7 +565,7 @@ bool RegionTableWidget::load_multiple_roi_nii(QString file_name)
         }
     }
 
-    std::vector<int> value_list;
+    std::vector<unsigned short> value_list;
     std::vector<unsigned short> value_map(std::numeric_limits<unsigned short>::max()+1);
 
     {
@@ -613,7 +613,7 @@ bool RegionTableWidget::load_multiple_roi_nii(QString file_name)
         float r1 = float(from.width())/float(cur_tracking_window.handle->dim[0]);
         float r2 = float(from.height())/float(cur_tracking_window.handle->dim[1]);
         float r3 = float(from.depth())/float(cur_tracking_window.handle->dim[2]);
-        if(std::fabs(r1-r2) < 0.01f && std::fabs(r1-r3) < 0.01f)
+        if(std::fabs(r1-r2) < 0.02f && std::fabs(r1-r3) < 0.02f)
             has_transform = false;
         else
         if(cur_tracking_window.handle->is_qsdr && !has_transform)// use transformation information
@@ -702,13 +702,24 @@ bool RegionTableWidget::load_multiple_roi_nii(QString file_name)
     }
     else
     {
-        for (tipl::pixel_index<3>index(from.geometry());index < from.size();++index)
-            if(from[index.index()])
-                region_points[value_map[(unsigned short)from[index.index()]]].push_back(tipl::vector<3,short>(index.x(), index.y(),index.z()));
+        if(from.geometry() == cur_tracking_window.handle->dim)
+        {
+            for (tipl::pixel_index<3>index(from.geometry());index < from.size();++index)
+                if(from[index.index()])
+                    region_points[value_map[uint16_t(from[index.index()])]].push_back(tipl::vector<3,short>(index.x(), index.y(),index.z()));
+        }
+        else
+        {
+            float r = float(cur_tracking_window.handle->dim[0])/float(from.width());
+            for (tipl::pixel_index<3>index(from.geometry());index < from.size();++index)
+                if(from[index.index()])
+                    region_points[value_map[uint16_t(from[index.index()])]].
+                            push_back(tipl::vector<3,short>(r*index.x(), r*index.y(),r*index.z()));
+        }
     }
     begin_prog("loading ROIs");
     begin_update();
-    for(int i = 0;check_prog(i,region_points.size());++i)
+    for(uint32_t i = 0;check_prog(i,region_points.size());++i)
         if(!region_points[i].empty())
         {
             unsigned short value = value_list[i];
