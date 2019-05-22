@@ -358,17 +358,17 @@ void ROIRegion::perform(const std::string& action)
     if(action == "flipz")
         Flip(2);
     if(action == "shiftx")
-        shift(tipl::vector<3,float>(1.0, 0, 0));
+        shift(tipl::vector<3,float>(1.0, 0.0, 0.0));
     if(action == "shiftnx")
-        shift(tipl::vector<3,float>(-1.0, 0, 0));
+        shift(tipl::vector<3,float>(-1.0, 0.0, 0.0));
     if(action == "shifty")
-        shift(tipl::vector<3,float>(0, 1.0, 0));
+        shift(tipl::vector<3,float>(0.0, 1.0, 0.0));
     if(action == "shiftny")
-        shift(tipl::vector<3,float>(0, -1.0, 0));
+        shift(tipl::vector<3,float>(0.0, -1.0, 0.0));
     if(action == "shiftz")
-        shift(tipl::vector<3,float>(0, 0, 1.0));
+        shift(tipl::vector<3,float>(0.0, 0.0, 1.0));
     if(action == "shiftnz")
-        shift(tipl::vector<3,float>(0, 0, -1.0));
+        shift(tipl::vector<3,float>(0.0, 0.0, -1.0));
 
 
     if(resolution_ratio > 8)

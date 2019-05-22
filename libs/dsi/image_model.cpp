@@ -23,7 +23,7 @@ void ImageModel::draw_mask(tipl::color_image& buffer,int position)
     {
         unsigned char value = slice_image_ptr[index];
         if (slice_mask[index])
-            buffer[index] = tipl::rgb(255, value, value);
+            buffer[index] = tipl::rgb(uint8_t(255), value, value);
         else
             buffer[index] = tipl::rgb(value, value, value);
     }

@@ -529,7 +529,7 @@ void get_roi_label(QString file_name,std::map<int,std::string>& label_map,
                 std::string name;
                 in >> value >> name >> r >> g >> b;
                 label_map[value] = name;
-                label_color[value] = tipl::rgb(r,g,b);
+                label_color[value] = tipl::rgb(uint8_t(r),uint8_t(g),uint8_t(b));
             }
             return;
         }
@@ -691,12 +691,12 @@ bool RegionTableWidget::load_multiple_roi_nii(QString file_name)
         {
             tipl::vector<3> p(index.begin()); // point in subject space
             p.to(convert); // point in "from" space
-            p += 0.5;
+            p += 0.5f;
             if (from.geometry().is_valid(p))
             {
-                int value = from.at(p[0],p[1],p[2]);
+                unsigned int value = from.at(uint32_t(p[0]),uint32_t(p[1]),uint32_t(p[2]));
                 if(value)
-                    region_points[value_map[value]].push_back(tipl::vector<3,short>(index.x(), index.y(),index.z()));
+                    region_points[value_map[value]].push_back(tipl::vector<3,short>(index.x(),index.y(),index.z()));
             }
         }
     }
@@ -706,14 +706,14 @@ bool RegionTableWidget::load_multiple_roi_nii(QString file_name)
         {
             for (tipl::pixel_index<3>index(from.geometry());index < from.size();++index)
                 if(from[index.index()])
-                    region_points[value_map[uint16_t(from[index.index()])]].push_back(tipl::vector<3,short>(index.x(), index.y(),index.z()));
+                    region_points[value_map[from[index.index()]]].push_back(tipl::vector<3,short>(index.x(), index.y(),index.z()));
         }
         else
         {
             float r = float(cur_tracking_window.handle->dim[0])/float(from.width());
             for (tipl::pixel_index<3>index(from.geometry());index < from.size();++index)
                 if(from[index.index()])
-                    region_points[value_map[uint16_t(from[index.index()])]].
+                    region_points[value_map[from[index.index()]]].
                             push_back(tipl::vector<3,short>(r*index.x(), r*index.y(),r*index.z()));
         }
     }

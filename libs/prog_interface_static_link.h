@@ -4,6 +4,12 @@
 void begin_prog(const char* title = 0,bool lock = false);
 void set_title(const char* title);
 bool check_prog(unsigned int now,unsigned int total);
+template<typename value_type1,typename value_type2>
+bool check_prog(value_type1 now,value_type2 total)
+{
+    return check_prog(uint32_t(now),uint32_t(total));
+}
+
 void close_prog();
 bool prog_aborted(void);
 bool is_running(void);

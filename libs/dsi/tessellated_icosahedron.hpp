@@ -289,7 +289,7 @@ public:
     void build_icosahedron()
     {
         // the top vertex
-        add_vertex(tipl::vector<3,float>(0,0,1.0));
+        add_vertex(tipl::vector<3,float>(0.0f,0.0f,1.0f));
         //central vertices around the upper staggered circles
         float sqrt5 = std::sqrtf(5.0f);
         float height = 1.0f/sqrt5;
