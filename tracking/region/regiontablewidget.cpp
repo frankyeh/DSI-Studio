@@ -57,12 +57,12 @@ void ImageDelegate::setEditorData(QWidget *editor,
 {
 
     if (index.column() == 1)
-        ((QComboBox*)editor)->setCurrentIndex(index.model()->data(index).toString().toInt());
+        dynamic_cast<QComboBox*>(editor)->setCurrentIndex(index.model()->data(index).toString().toInt());
     else
         if (index.column() == 2)
         {
-            tipl::rgb color((unsigned int)(index.data(Qt::UserRole).toInt()));
-            ((QColorToolButton*)editor)->setColor(
+            tipl::rgb color(uint32_t(index.data(Qt::UserRole).toInt()));
+            dynamic_cast<QColorToolButton*>(editor)->setColor(
                 QColor(color.r,color.g,color.b));
         }
         else
@@ -73,10 +73,10 @@ void ImageDelegate::setModelData(QWidget *editor, QAbstractItemModel *model,
                                  const QModelIndex &index) const
 {
     if (index.column() == 1)
-        model->setData(index,QString::number(((QComboBox*)editor)->currentIndex()));
+        model->setData(index,QString::number(dynamic_cast<QComboBox*>(editor)->currentIndex()));
     else
         if (index.column() == 2)
-            model->setData(index,(int)(((QColorToolButton*)editor)->color().rgba()),Qt::UserRole);
+            model->setData(index,int((dynamic_cast<QColorToolButton*>(editor)->color().rgba())),Qt::UserRole);
         else
             QItemDelegate::setModelData(editor,model,index);
 }
@@ -127,18 +127,18 @@ void RegionTableWidget::contextMenuEvent ( QContextMenuEvent * event )
 void RegionTableWidget::updateRegions(QTableWidgetItem* item)
 {
     if (item->column() == 1)
-        regions[item->row()]->regions_feature = item->text().toInt();
+        regions[uint32_t(item->row())]->regions_feature = uint8_t(item->text().toInt());
     else
         if (item->column() == 2)
         {
-            regions[item->row()]->show_region.color = item->data(Qt::UserRole).toInt();
+            regions[uint32_t(item->row())]->show_region.color = uint32_t(item->data(Qt::UserRole).toInt());
             emit need_update();
         }
 }
 
 QColor RegionTableWidget::currentRowColor(void)
 {
-    return (unsigned int)regions[currentRow()]->show_region.color;
+    return uint32_t(regions[uint32_t(currentRow())]->show_region.color);
 }
 void RegionTableWidget::add_region_from_atlas(std::shared_ptr<atlas> at,unsigned int label)
 {
@@ -1393,18 +1393,18 @@ void RegionTableWidget::do_action(QString action)
             for(size_t i = 0;i < arg.size();++i)
             {
                 new_region[i] = regions[arg[i]];
-                new_region_checked[i] = item(arg[i],0)->checkState() == Qt::Checked ? 1:0;
-                new_region_names[i] = item(arg[i],0)->text().toStdString();
+                new_region_checked[i] = item(int(arg[i]),0)->checkState() == Qt::Checked ? 1:0;
+                new_region_names[i] = item(int(arg[i]),0)->text().toStdString();
             }
             regions.swap(new_region);
-            for(size_t i = 0;i < arg.size();++i)
+            for(int i = 0;i < int(arg.size());++i)
             {
-                item(i,0)->setCheckState(new_region_checked[i] ? Qt::Checked : Qt::Unchecked);
-                item(i,0)->setText(new_region_names[i].c_str());
+                item(i,0)->setCheckState(new_region_checked[uint32_t(i)] ? Qt::Checked : Qt::Unchecked);
+                item(i,0)->setText(new_region_names[uint32_t(i)].c_str());
                 closePersistentEditor(item(i,1));
                 closePersistentEditor(item(i,2));
-                item(i,1)->setData(Qt::DisplayRole,regions[i]->regions_feature);
-                item(i,2)->setData(Qt::UserRole,regions[i]->show_region.color.color);
+                item(i,1)->setData(Qt::DisplayRole,regions[uint32_t(i)]->regions_feature);
+                item(i,2)->setData(Qt::UserRole,regions[uint32_t(i)]->show_region.color.color);
                 openPersistentEditor(item(i,1));
                 openPersistentEditor(item(i,2));
             }
