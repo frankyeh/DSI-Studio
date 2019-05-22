@@ -6,8 +6,8 @@
 #include "fib_data.hpp"
 AtlasDialog::AtlasDialog(QWidget *parent,std::shared_ptr<fib_data> handle_) :
     QDialog(parent),
-    ui(new Ui::AtlasDialog),
-    handle(handle_)
+    handle(handle_),
+    ui(new Ui::AtlasDialog)
 {
     ui->setupUi(this);
     ui->region_list->setModel(new QStringListModel);
@@ -62,7 +62,7 @@ void AtlasDialog::on_pushButton_clicked()
     reject();
 }
 
-void AtlasDialog::on_search_atlas_textChanged(const QString &arg1)
+void AtlasDialog::on_search_atlas_textChanged(const QString &)
 {
     QStringList name_value = ui->search_atlas->text().split(":");
     if(name_value.size() != 2)

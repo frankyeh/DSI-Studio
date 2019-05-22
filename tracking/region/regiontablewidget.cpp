@@ -179,7 +179,7 @@ void RegionTableWidget::add_region(QString name,unsigned char feature,unsigned i
 
     insertRow(regions.size()-1);
     QTableWidgetItem *item0 = new QTableWidgetItem(name);
-    QTableWidgetItem *item1 = new QTableWidgetItem(QString::number((int)feature));
+    QTableWidgetItem *item1 = new QTableWidgetItem(QString::number(int(feature)));
     QTableWidgetItem *item2 = new QTableWidgetItem();
 
     item1->setData(Qt::ForegroundRole,QBrush(Qt::white));
@@ -1249,7 +1249,7 @@ void RegionTableWidget::do_action(QString action)
             }
 
             for(unsigned int i = 0;i < mask.size();++i)
-                mask[i]  = (I[i] > threshold ^ flip )? 1:0;
+                mask[i]  = ((I[i] > threshold) ^ flip) ? 1:0;
 
             if(cur_tracking_window.current_slice->is_diffusion_space)
                 cur_region.LoadFromBuffer(mask);
@@ -1290,7 +1290,7 @@ void RegionTableWidget::do_action(QString action)
                         tipl::vector<3,float> pos(region[i]);
                         pos /= cur_region.resolution_ratio;
                         if(I.geometry().is_valid(pos[0],pos[1],pos[2]) &&
-                            I.at(pos[0],pos[1],pos[2]) > threshold ^ flip)
+                            ((I.at(pos[0],pos[1],pos[2]) > threshold) ^ flip))
                                    new_region.push_back(region[i]);
                     }
                 }
@@ -1298,7 +1298,7 @@ void RegionTableWidget::do_action(QString action)
                 for(size_t i = 0;i < region.size();++i)
                 {
                     if(I.geometry().is_valid(region[i][0],region[i][1],region[i][2]) &&
-                        I.at(region[i][0],region[i][1],region[i][2]) > threshold ^ flip)
+                        ((I.at(region[i][0],region[i][1],region[i][2]) > threshold) ^ flip))
                                new_region.push_back(region[i]);
                 }
             }
@@ -1313,7 +1313,7 @@ void RegionTableWidget::do_action(QString action)
                         pos /= cur_region.resolution_ratio;
                     pos.to(iT);
                     if(I.geometry().is_valid(pos[0],pos[1],pos[2]) &&
-                        I.at(pos[0],pos[1],pos[2]) > threshold ^ flip)
+                        ((I.at(pos[0],pos[1],pos[2]) > threshold) ^ flip))
                                new_region.push_back(region[i]);
                 }
             }

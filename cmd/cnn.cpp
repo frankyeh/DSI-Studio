@@ -8,7 +8,7 @@ bool train_cnn(std::string network,
                tipl::ml::network& nn,
                tipl::ml::network_data<unsigned char>& nn_data_,
                tipl::ml::network_data<unsigned char>& nn_test_,
-               float& test_error,
+               float&,
                float& train_error)
 {
     tipl::ml::network_data_proxy<unsigned char> nn_data = nn_data_;

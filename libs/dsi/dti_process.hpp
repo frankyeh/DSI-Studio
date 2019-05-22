@@ -33,32 +33,20 @@ public:
         voxel.fib_dir.resize(voxel.dim.size());
         if(voxel.output_diffusivity || voxel.method_id == 1)
         {
-            md.clear();
             md.resize(voxel.dim.size());
-            d0.clear();
             d0.resize(voxel.dim.size());
-            d1.clear();
             d1.resize(voxel.dim.size());
-            d2.clear();
             d2.resize(voxel.dim.size());
-            d3.clear();
             d3.resize(voxel.dim.size());
-            ha.clear();
             ha.resize(voxel.dim.size());
         }
         if(voxel.output_tensor && voxel.method_id == 1)
         {
-            txx.clear();
             txx.resize(voxel.dim.size());
-            txy.clear();
             txy.resize(voxel.dim.size());
-            txz.clear();
             txz.resize(voxel.dim.size());
-            tyy.clear();
             tyy.resize(voxel.dim.size());
-            tyz.clear();
             tyz.resize(voxel.dim.size());
-            tzz.clear();
             tzz.resize(voxel.dim.size());
         }
 
