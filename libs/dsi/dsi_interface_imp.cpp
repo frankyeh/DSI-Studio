@@ -40,11 +40,11 @@ struct odf_reco_type{
 
 
 typedef boost::mpl::vector<
+    Dwi2Tensor,
     DWINormalization,
     BalanceScheme,
     GQI_Recon,
     RDI_Recon,
-    Dwi2Tensor,
     EstimateZ0_MNI,
     DetermineFiberDirections,
     SaveMetrics,
@@ -53,10 +53,10 @@ typedef boost::mpl::vector<
 > qsdr_process;
 
 typedef odf_reco_type<boost::mpl::vector<
+    Dwi2Tensor,
     BalanceScheme,
     GQI_Recon,
     RDI_Recon,
-    Dwi2Tensor,
     dGQI_Recon
 > >::type gqi_process;
 
