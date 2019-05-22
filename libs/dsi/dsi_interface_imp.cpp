@@ -212,16 +212,8 @@ const char* ImageModel::reconstruction(void)
             << (float)voxel.param[0] << " was used";
             // run gqi to get the spin quantity
 
-            // obtain QA map for normalization
-            {
-                std::vector<tipl::pointer_image<float,3> > tmp;
-                tmp.swap(voxel.grad_dev);
-                // clear mask to create whole volume QA map
-                std::fill(voxel.mask.begin(),voxel.mask.end(),1.0);
-                if (!reconstruct<qa_map>("Calculating QA Map"))
-                    return "reconstruction canceled";
-                tmp.swap(voxel.grad_dev);
-            }
+
+
 
             out << "." << QFileInfo(voxel.primary_template.c_str()).baseName().toLower().toStdString();
             out << (voxel.r2_weighted ? ".qsdr2.":".qsdr.");
@@ -230,8 +222,20 @@ const char* ImageModel::reconstruction(void)
                 out << ".jac";
             if(voxel.output_mapping)
                 out << ".map";
-            if (!reconstruct<qsdr_process>("QSDR reconstruction"))
-                return "reconstruction canceled";
+            // obtain QA map for normalization
+            {
+                std::vector<tipl::pointer_image<float,3> > tmp;
+                tmp.swap(voxel.grad_dev);
+                auto mask = voxel.mask;
+                // clear mask to create whole volume QA map
+                std::fill(voxel.mask.begin(),voxel.mask.end(),1.0);
+                if (!reconstruct<qa_map>("Calculating QA Map"))
+                    return "reconstruction canceled";
+                tmp.swap(voxel.grad_dev);
+                if (!reconstruct<qsdr_process>("QSDR reconstruction"))
+                    return "reconstruction canceled";
+                voxel.mask = mask;
+            }
 
             voxel.recon_report
             << " The output resolution of is " << voxel.vs[0] << " mm isotorpic.";
