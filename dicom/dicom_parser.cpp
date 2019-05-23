@@ -290,6 +290,7 @@ bool load_4d_nii(const char* file_name,std::vector<std::shared_ptr<DwiHeader> >&
     // check data range
     tipl::vector<3,float> vs;
     float max_value = 0.0;
+    float m = float(std::numeric_limits<short>::max()-1);
     for(unsigned int index = 0;index < analyze_header.dim(4);++index)
     {
         std::auto_ptr<DwiHeader> new_file(new DwiHeader);
@@ -315,8 +316,11 @@ bool load_4d_nii(const char* file_name,std::vector<std::shared_ptr<DwiHeader> >&
             if(!analyze_header.toLPS(data,false))
                 break;
             tipl::lower_threshold(data,0.0);
-            if(max_value > 32767.0)
-                data *= 32767.0/max_value;
+            if(max_value > m)
+            {
+                data *= m/max_value;
+                tipl::upper_threshold(data,m);
+            }
             new_file->image = data;
             new_file->file_name = file_name;
             std::ostringstream out;
