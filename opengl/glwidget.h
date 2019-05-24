@@ -158,6 +158,7 @@ public:
 
      bool set_view_flip = false;
      void get3View(QImage& I,unsigned int type);
+     QImage grab_image(void){updateGL();paintGL();paintGL();return grabFrameBuffer();}
      bool command(QString cmd,QString param = "",QString param2 = "");
  };
 

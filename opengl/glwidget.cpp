@@ -2053,8 +2053,7 @@ void GLWidget::addSurface(void)
 
 void GLWidget::copyToClipboard(void)
 {
-    paintGL();
-    QApplication::clipboard()->setImage(grabFrameBuffer());
+    QApplication::clipboard()->setImage(grab_image());
 }
 
 
@@ -2064,23 +2063,19 @@ void GLWidget::get3View(QImage& I,unsigned int type)
     makeCurrent();
     set_view_flip = false;
     set_view(0);
-    paintGL();
-    QImage image0 = grabFrameBuffer();
+    QImage image0 = grab_image();
     set_view_flip = true;
     set_view(0);
-    paintGL();
-    QImage image00 = grabFrameBuffer();
+    QImage image00 = grab_image();
     set_view_flip = true;
     set_view(1);
-    paintGL();
-    QImage image1 = grabFrameBuffer();
+    QImage image1 = grab_image();
     set_view_flip = true;
     set_view(2);
-    paintGL();
-    QImage image2 = grabFrameBuffer();
-    QImage image3 = cur_tracking_window.scene.view_image.scaledToWidth(image0.width()).convertToFormat(QImage::Format_RGB32);
+    QImage image2 = grab_image();
     if(type == 0)
     {
+        QImage image3 = cur_tracking_window.scene.view_image.scaledToWidth(image0.width()).convertToFormat(QImage::Format_RGB32);
         QImage all(image0.width()*2,image0.height()*2,QImage::Format_RGB32);
         QPainter painter(&all);
         painter.drawImage(0,0,image0);
@@ -2307,12 +2302,11 @@ bool GLWidget::command(QString cmd,QString param,QString param2)
             int ow = width(),oh = height();
             in >> w >> h;
             resize(w,h);
-            updateGL();
-            grabFrameBuffer().save(param);
+            grab_image().save(param);
             resize(ow,oh);
         }
         else
-            grabFrameBuffer().save(param);
+            grab_image().save(param);
         return true;
     }
     if(cmd == "save_3view_image")
@@ -2360,8 +2354,7 @@ bool GLWidget::command(QString cmd,QString param,QString param2)
                 rotate_angle(angle,0,1.0,0.0);
                 QBuffer buffer;
                 QImageWriter writer(&buffer, "JPG");
-                updateGL();
-                QImage I = grabFrameBuffer();
+                QImage I = grab_image();
                 writer.write(I);
                 if(index == 0.0)
                     avi.open(param.toLocal8Bit().begin(),I.width(),I.height(), "MJPG", 30/*fps*/);
@@ -2382,7 +2375,7 @@ bool GLWidget::command(QString cmd,QString param,QString param2)
                         QFileInfo(param).suffix();
                 std::cout << file_name.toStdString() << std::endl;
                 rotate_angle(angle,0,1.0,0.0);
-                QImage I = grabFrameBuffer();
+                QImage I = grab_image();
                 I.save(file_name);
             }
         }
