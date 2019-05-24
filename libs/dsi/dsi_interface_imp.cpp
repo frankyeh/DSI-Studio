@@ -112,7 +112,10 @@ const char* ImageModel::reconstruction(void)
                 out << "r";
             out << ".f" << voxel.max_fiber_number;
             if (voxel.output_odf)
+            {
+                voxel.step_report << "[Step T2b(2)][ODFs]=checked" << std::endl;
                 out << "rec";
+            }
             if (voxel.scheme_balance)
                 out << ".bal";
             if (voxel.half_sphere)
@@ -132,6 +135,8 @@ const char* ImageModel::reconstruction(void)
             " The b-table was checked by an automatic quality control routine to ensure its accuracy (Schilling et al. MRI, 2019) .";
             out << check_b_table();
         }
+        else
+            voxel.step_report << "[Step T2b][Check b-table]=unchecked" << std::endl;
 
         switch (voxel.method_id)
         {
