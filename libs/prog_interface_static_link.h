@@ -19,6 +19,7 @@ bool run_prog(const char* msg,fun_type fun,terminated_class& terminated)
 {
     if(!has_gui)
     {
+        std::cout << msg << std::endl;
         fun();
         return true;
     }
