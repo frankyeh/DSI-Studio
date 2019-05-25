@@ -90,7 +90,7 @@ int rec(void)
     }
 
     unsigned char method_index = uint8_t(po.get("method",4));
-    std::cout << "method=" << method_index << std::endl;
+    std::cout << "method=" << int(method_index) << std::endl;
 
     if(method_index == 4)
         handle->voxel.param[0] = 1.25f;
