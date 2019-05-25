@@ -123,7 +123,6 @@ void ImageModel::pre_dti(void)
 
 std::string ImageModel::check_b_table(void)
 {
-    set_title("Checking B-table");
     pre_dti();
     std::vector<tipl::image<float,3> > fib_fa(1);
     std::vector<std::vector<tipl::vector<3> > > fib_dir(1);

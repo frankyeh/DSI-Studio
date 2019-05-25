@@ -145,7 +145,7 @@ const char* ImageModel::reconstruction(void)
             voxel.recon_report << " The diffusion tensor was calculated.";
             out << ".dti.fib.gz";
             voxel.max_fiber_number = 1;
-            if (!reconstruct<dti_process>("DTI reconstruction"))
+            if (!reconstruct<dti_process>("DTI"))
                 return "reconstruction canceled";
             break;
 
@@ -157,7 +157,7 @@ const char* ImageModel::reconstruction(void)
                 voxel.recon_report <<
                 " The diffusion data were reconstructed using generalized q-sampling imaging (Yeh et al., IEEE TMI, ;29(9):1626-35, 2010).";
                 out << (voxel.r2_weighted ? ".gqi2.spec.fib.gz":".gqi.spec.fib.gz");
-                if (!reconstruct<gqi_spectral_process>("GQI spectral reconstruction"))
+                if (!reconstruct<gqi_spectral_process>("Spectral GQI"))
                     return "reconstruction canceled";
                 break;
             }
@@ -196,7 +196,7 @@ const char* ImageModel::reconstruction(void)
                 break;
             }
 
-            if (!reconstruct<gqi_process>("GQI reconstruction"))
+            if (!reconstruct<gqi_process>("GQI"))
                 return "reconstruction canceled";
             break;
         case 6:
@@ -234,10 +234,10 @@ const char* ImageModel::reconstruction(void)
                 auto mask = voxel.mask;
                 // clear mask to create whole volume QA map
                 std::fill(voxel.mask.begin(),voxel.mask.end(),1.0);
-                if (!reconstruct<qa_map>("Calculating QA Map"))
+                if (!reconstruct<qa_map>("GQI for QSDR"))
                     return "reconstruction canceled";
                 tmp.swap(voxel.grad_dev);
-                if (!reconstruct<qsdr_process>("QSDR reconstruction"))
+                if (!reconstruct<qsdr_process>("QSDR"))
                     return "reconstruction canceled";
                 voxel.mask = mask;
             }

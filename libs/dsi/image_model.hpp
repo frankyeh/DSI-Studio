@@ -302,7 +302,9 @@ public:
     {
         // initialization
         {
-            begin_prog("Initialization");
+            std::string msg(prog);
+            msg += " initialization";
+            begin_prog(msg.c_str());
             // Copy SRC b-table to voxel b-table and sort it
             voxel.load_from_src(*this);
             voxel.CreateProcesses<ProcessType>();
@@ -312,6 +314,8 @@ public:
         }
         // reconstruction
         {
+            std::string msg(prog);
+            msg += " reconstruction";
             begin_prog(prog);
             voxel.run();
         }
