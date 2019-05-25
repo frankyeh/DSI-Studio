@@ -13,10 +13,15 @@ bool check_prog(value_type1 now,value_type2 total)
 void close_prog();
 bool prog_aborted(void);
 bool is_running(void);
-
+extern bool has_gui;
 template<typename fun_type,typename terminated_class>
 bool run_prog(const char* msg,fun_type fun,terminated_class& terminated)
 {
+    if(!has_gui)
+    {
+        fun();
+        return true;
+    }
     begin_prog(msg);
     bool ended = false;
     tipl::par_for(2,[&](int i)
