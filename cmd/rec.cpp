@@ -89,7 +89,7 @@ int rec(void)
         handle->rotate(handle->voxel.dim,affine);
     }
 
-    int method_index = po.get("method",4);
+    unsigned char method_index = uint8_t(po.get("method",4));
     std::cout << "method=" << method_index << std::endl;
 
     if(method_index == 0) // DSI
@@ -115,8 +115,8 @@ int rec(void)
     if(method_index == 7) // QSDR
     {
         handle->voxel.param[0] = 1.25f;
-        handle->voxel.primary_template = fa_template_list[po.get("template",0)];
-        handle->voxel.secondary_template = iso_template_list[po.get("template",0)];
+        handle->voxel.primary_template = fa_template_list[size_t(po.get("template",0))];
+        handle->voxel.secondary_template = iso_template_list[size_t(po.get("template",0))];
         std::cout << "template = " << handle->voxel.primary_template << std::endl;
         std::cout << "template2 = " << handle->voxel.secondary_template << std::endl;
     }
@@ -152,7 +152,7 @@ int rec(void)
     }
 
     handle->voxel.method_id = method_index;
-    handle->voxel.ti.init(po.get("odf_order",int(8)));
+    handle->voxel.ti.init(uint16_t(po.get("odf_order",int(8))));
     handle->voxel.odf_resolving = po.get("odf_resolving",int(0));
     handle->voxel.output_odf = po.get("record_odf",int(0));
     handle->voxel.check_btable = po.get("check_btable",int(1));
@@ -161,10 +161,10 @@ int rec(void)
     handle->voxel.output_diffusivity = po.get("output_dif",int(1));
     handle->voxel.output_tensor = po.get("output_tensor",int(0));
     handle->voxel.output_rdi = po.get("output_rdi",int(1)) && (method_index == 4 || method_index == 7);
-    handle->voxel.max_fiber_number = po.get("num_fiber",int(5));
+    handle->voxel.max_fiber_number = uint32_t(po.get("num_fiber",int(5)));
     handle->voxel.r2_weighted = po.get("r2_weighted",int(0));
     handle->voxel.csf_calibration = po.get("csf_calibration",int(0)) && method_index == 4;
-    handle->voxel.thread_count = po.get("thread_count",int(std::thread::hardware_concurrency()));
+    handle->voxel.thread_count = po.get("thread_count",uint32_t(std::thread::hardware_concurrency()));
 
 
 
@@ -189,7 +189,7 @@ int rec(void)
     if(po.has("other_image"))
     {
         QStringList file_list = QString(po.get("other_image").c_str()).split(":");
-        for(unsigned int i = 0;i < file_list.size();++i)
+        for(int i = 0;i < file_list.size();++i)
         {
             QStringList name_value = file_list[i].split(",");
             if(name_value.size() != 2)
