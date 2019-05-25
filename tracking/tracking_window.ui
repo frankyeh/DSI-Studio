@@ -288,8 +288,8 @@
    </property>
    <property name="minimumSize">
     <size>
-     <width>345</width>
-     <height>74</height>
+     <width>0</width>
+     <height>0</height>
     </size>
    </property>
    <property name="maximumSize">
@@ -528,6 +528,13 @@
         </spacer>
        </item>
        <item>
+        <widget class="QLabel" name="label_3">
+         <property name="text">
+          <string>Template:</string>
+         </property>
+        </widget>
+       </item>
+       <item>
         <widget class="QComboBox" name="template_box"/>
        </item>
        <item>
@@ -577,8 +584,8 @@
    </property>
    <property name="minimumSize">
     <size>
-     <width>267</width>
-     <height>47</height>
+     <width>0</width>
+     <height>0</height>
     </size>
    </property>
    <property name="windowTitle">
@@ -1438,8 +1445,8 @@ Tracking</string>
    </property>
    <property name="minimumSize">
     <size>
-     <width>356</width>
-     <height>173</height>
+     <width>0</width>
+     <height>0</height>
     </size>
    </property>
    <property name="floating">
