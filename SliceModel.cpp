@@ -137,7 +137,7 @@ bool CustomSliceModel::initialize(const std::vector<std::string>& files,
         in >> voxel_size[2];
         std::copy(std::istream_iterator<float>(in),
                   std::istream_iterator<float>(),T.begin());
-        if(geometry[2] != files.size())
+        if(geometry[2] != int(files.size()))
         {
             error_msg = "Invalid BMP info text: file count does not match.";
             return false;
@@ -151,20 +151,19 @@ bool CustomSliceModel::initialize(const std::vector<std::string>& files,
             ++in_plane_subsample;
             geometry[0] = geometry[0] >> 1;
             geometry[1] = geometry[1] >> 1;
-            voxel_size[0] *= 2.0;
-            voxel_size[1] *= 2.0;
-            T[0] *= 2.0;
-            T[1] *= 2.0;
-            T[4] *= 2.0;
-            T[5] *= 2.0;
-            T[8] *= 2.0;
-            T[9] *= 2.0;
+            voxel_size[0] *= 2.0f;
+            voxel_size[1] *= 2.0f;
+            T[0] *= 2.0f;
+            T[1] *= 2.0f;
+            T[4] *= 2.0f;
+            T[5] *= 2.0f;
+            T[8] *= 2.0f;
+            T[9] *= 2.0f;
         }
         tipl::geometry<3> geo(geometry);
 
         bool ok = true;
-        int down_size = (geo[2] > 1 ? QInputDialog::getInt(0,
-                "DSI Studio",
+        int down_size = (geo[2] > 1 ? QInputDialog::getInt(nullptr,"DSI Studio",
                 "Downsampling count (0:no downsampling)",1,0,4,1,&ok) : 0);
         if(!ok)
         {
@@ -186,7 +185,7 @@ bool CustomSliceModel::initialize(const std::vector<std::string>& files,
 
 
         try{
-            source_images = std::move(tipl::image<float, 3>(geo));
+            source_images.resize(geo);
         }
         catch(...)
         {
@@ -212,10 +211,10 @@ bool CustomSliceModel::initialize(const std::vector<std::string>& files,
             QImage buf = in.convertToFormat(QImage::Format_RGB32).mirrored();
             I.resize(tipl::geometry<2>(in.width(),in.height()));
             const uchar* ptr = buf.bits();
-            for(int j = 0;j < I.size();++j,ptr += 4)
+            for(size_t j = 0;j < I.size();++j,ptr += 4)
                 I[j] = *ptr;
 
-            for(int j = 1;j < in_plane_subsample;++j)
+            for(size_t j = 1;j < in_plane_subsample;++j)
                 tipl::downsampling(I);
             if(I.size() != source_images.plane_size())
             {
@@ -223,8 +222,10 @@ bool CustomSliceModel::initialize(const std::vector<std::string>& files,
                 error_msg += files[file_index];
                 return false;
             }
-            std::copy(I.begin(),I.end(),source_images.begin() + i*source_images.plane_size());
+            std::copy(I.begin(),I.end(),source_images.begin() + size_t(i)*source_images.plane_size());
         }
+        if(prog_aborted())
+            return false;
         tipl::io::nifti nii;
         nii.set_dim(geo);
         nii.set_voxel_size(voxel_size);
