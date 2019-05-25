@@ -60,7 +60,7 @@ int rec(void)
     }
     if (po.has("cmd"))
     {
-        QStringList cmd_list = QString(po.get("cmd").c_str()).split(",");
+        QStringList cmd_list = QString(po.get("cmd").c_str()).split("+");
         for(int i = 0;i < cmd_list.size();++i)
         {
             QStringList run_list = QString(cmd_list[i]).split("=");
