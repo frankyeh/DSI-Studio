@@ -546,11 +546,12 @@ bool fib_data::load_from_file(const char* file_name)
     if(!load_from_mat())
         return false;
 
-    // tempalte matching
+    // template matching
     for(int index = 0;index < fa_template_list.size();++index)
     {
-        if(QFileInfo(file_name).fileName().
-                contains(QFileInfo(fa_template_list[index].c_str()).baseName().toLower()))
+        QString name = QFileInfo(fa_template_list[index].c_str()).baseName().toLower();
+        if(QFileInfo(file_name).fileName().contains(name) ||
+           QFileInfo(QString(file_name)+"."+name+".map.gz").exists())
         {
             template_id = index;
             return true;
