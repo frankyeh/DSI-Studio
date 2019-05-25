@@ -319,6 +319,7 @@ void reconstruction_window::on_load_mask_clicked()
     region.LoadFromFile(filename.toLocal8Bit().begin());
     region.SaveToBuffer(handle->voxel.mask);
     on_SlicePos_valueChanged(ui->SlicePos->value());
+    handle->voxel.steps += std::string("[Step T2a][Open...]=") + QFileInfo(filename).fileName().toStdString()+"\n";
 }
 
 
