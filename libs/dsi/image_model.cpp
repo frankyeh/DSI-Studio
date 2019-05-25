@@ -426,12 +426,21 @@ bool ImageModel::command(std::string cmd,std::string param)
         voxel.steps += cmd+"\n";
         return true;
     }
+    if(cmd == "[Step T2][Edit][Resample]")
+    {
+        resample(std::stof(param));
+        voxel.steps += cmd+"="+param+"\n";
+        voxel.report += std::string(" The diffusion weighted images were resampled at ")+
+                        param+std::string(" mm isotropic.");
+        return true;
+    }
     if(cmd == "[Step T2][Edit][Rotate to MNI]")
     {
         begin_prog("rotating");
         rotate_to_mni();
         check_prog(0,0);
         voxel.steps += cmd+"\n";
+        voxel.report += std::string(" The diffusion weighted images were rotated to the MNI space.");
         return true;
     }
     if(cmd == "[Step T2][Edit][Change b-table:flip bx]")
@@ -538,12 +547,11 @@ void ImageModel::rotate_one_dwi(unsigned int dwi_index,const tipl::transformatio
     src_bvectors[dwi_index] = v;
 }
 
-void ImageModel::rotate(const tipl::image<float,3>& ref,
+void ImageModel::rotate(const tipl::geometry<3>& new_geo,
                         const tipl::transformation_matrix<double>& affine,
                         const tipl::image<tipl::vector<3>,3>& cdm_dis,
-                        bool super_resolution)
+                        const tipl::image<float,3>& super_reso_ref)
 {
-    tipl::geometry<3> new_geo = ref.geometry();
     std::vector<tipl::image<unsigned short,3> > dwi(src_dwi_data.size());
     tipl::par_for2(src_dwi_data.size(),[&](unsigned int index,unsigned int id)
     {
@@ -551,8 +559,8 @@ void ImageModel::rotate(const tipl::image<float,3>& ref,
             check_prog(index,src_dwi_data.size());
         dwi[index].resize(new_geo);
         auto I = tipl::make_image((unsigned short*)src_dwi_data[index],voxel.dim);
-        if(super_resolution)
-            tipl::resample_with_ref(I,ref,dwi[index],affine);
+        if(!super_reso_ref.empty())
+            tipl::resample_with_ref(I,super_reso_ref,dwi[index],affine);
         else
         {
             if(cdm_dis.empty())
@@ -610,6 +618,23 @@ void ImageModel::rotate(const tipl::image<float,3>& ref,
     voxel.dwi_data.clear();
     calculate_dwi_sum();
 }
+void ImageModel::resample(float nv)
+{
+    tipl::vector<3,float> new_vs(nv,nv,nv);
+    tipl::geometry<3> new_geo(int(std::ceil(float(voxel.dim.width())*voxel.vs[0]/new_vs[0])),
+                              int(std::ceil(float(voxel.dim.height())*voxel.vs[1]/new_vs[1])),
+                              int(std::ceil(float(voxel.dim.depth())*voxel.vs[2]/new_vs[2])));
+    tipl::image<float,3> J(new_geo);
+    if(J.empty())
+        return;
+    tipl::transformation_matrix<double> T;
+    T.sr[0] = new_vs[0]/voxel.vs[0];
+    T.sr[4] = new_vs[1]/voxel.vs[1];
+    T.sr[8] = new_vs[2]/voxel.vs[2];
+    rotate(new_geo,T);
+    voxel.vs = new_vs;
+    calculate_dwi_sum();
+}
 extern std::string fib_template_file_name_2mm;
 bool ImageModel::rotate_to_mni(void)
 {
@@ -640,7 +665,7 @@ bool ImageModel::rotate_to_mni(void)
     tipl::reg::two_way_linear_mr(I,vs,dwi_sum,voxel.vs,
                     arg,tipl::reg::rigid_body,tipl::reg::mutual_information(),terminated);
     begin_prog("rotating to the MNI space");
-    rotate(I,arg);
+    rotate(I.geometry(),arg);
     voxel.vs = vs;
     check_prog(1,1);
     return true;
@@ -1248,7 +1273,7 @@ bool ImageModel::compare_src(const char* file_name)
                 o3.save_to_file("d:/3.nii.gz");
             }*/
         }
-        study_src->rotate(dwi_sum,arg,cdm_dis);
+        study_src->rotate(dwi_sum.geometry(),arg,cdm_dis);
         study_src->voxel.vs = voxel.vs;
         study_src->voxel.mask = voxel.mask;
         check_prog(1,1);

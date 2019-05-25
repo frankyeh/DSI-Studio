@@ -1192,6 +1192,7 @@
     <addaction name="actionFlip_xz"/>
     <addaction name="actionFlip_yz"/>
     <addaction name="separator"/>
+    <addaction name="actionResample"/>
     <addaction name="actionRotate_to_MNI"/>
     <addaction name="actionRotate"/>
     <addaction name="actionTrim_image"/>
@@ -1355,6 +1356,11 @@
   <action name="actionFlip_bz">
    <property name="text">
     <string>flip bz</string>
+   </property>
+  </action>
+  <action name="actionResample">
+   <property name="text">
+    <string>Resample...</string>
    </property>
   </action>
  </widget>

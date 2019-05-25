@@ -589,7 +589,7 @@ void reconstruction_window::on_actionRotate_triggered()
     tipl::image<float,3> ref2(ref);
     float m = tipl::median(ref2.begin(),ref2.end());
     tipl::multiply_constant_mt(ref,0.5f/m);
-    handle->rotate(ref,manual->iT);
+    handle->rotate(ref.geometry(),manual->iT);
     handle->voxel.vs = vs;
     handle->voxel.report += " The diffusion images were rotated and scaled to the space of ";
     handle->voxel.report += QFileInfo(filenames[0]).baseName().toStdString();
@@ -739,7 +739,7 @@ void reconstruction_window::on_actionManual_Rotation_triggered()
     if(manual->exec() != QDialog::Accepted)
         return;
     begin_prog("rotating");
-    handle->rotate(handle->dwi,manual->iT);
+    handle->rotate(handle->dwi.geometry(),manual->iT);
     load_b_table();
     update_dimension();
     on_SlicePos_valueChanged(ui->SlicePos->value());
@@ -769,7 +769,7 @@ void reconstruction_window::on_actionReplace_b0_by_T2W_image_triggered()
         return;
 
     begin_prog("rotating");
-    handle->rotate(ref,manual->iT);
+    handle->rotate(ref.geometry(),manual->iT);
     handle->voxel.vs = vs;
     tipl::pointer_image<unsigned short,3> I = tipl::make_image((unsigned short*)handle->src_dwi_data[0],handle->voxel.dim);
     ref *= (float)(*std::max_element(I.begin(),I.end()))/(*std::max_element(ref.begin(),ref.end()));
@@ -845,9 +845,7 @@ void reconstruction_window::on_actionImage_upsample_to_T1W_TESTING_triggered()
     float m = tipl::median(ref2.begin(),ref2.end());
     tipl::multiply_constant_mt(ref,0.5f/m);
 
-
-    tipl::image<tipl::vector<3>,3> dummy;
-    handle->rotate(ref,manual->iT,dummy,true);
+    handle->rotate(ref.geometry(),manual->iT);
     handle->voxel.vs = vs;
     handle->voxel.report += " The diffusion images were rotated and scaled to the space of ";
     handle->voxel.report += QFileInfo(filenames[0]).baseName().toStdString();
@@ -893,4 +891,18 @@ void reconstruction_window::on_AxiView_clicked()
     ui->z_pos->setRange(0,handle->voxel.dim[view_orientation]-1);
     ui->z_pos->setValue((handle->voxel.dim[view_orientation]-1) >> 1);
     on_b_table_itemSelectionChanged();
+}
+
+void reconstruction_window::on_actionResample_triggered()
+{
+    bool ok;
+    float nv = float(QInputDialog::getDouble(this,
+        "DSI Studio","Assign output resolution in (mm):", double(handle->voxel.vs[0]),0.0,3.0,4, &ok));
+    if (!ok || nv == 0.0f)
+        return;
+
+    handle->command("[Step T2][Edit][Resample]",QString::number(nv).toStdString());
+    update_dimension();
+    load_b_table();
+    on_SlicePos_valueChanged(ui->SlicePos->value());
 }

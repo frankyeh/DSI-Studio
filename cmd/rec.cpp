@@ -63,8 +63,10 @@ int rec(void)
         QStringList cmd_list = QString(po.get("cmd").c_str()).split(",");
         for(int i = 0;i < cmd_list.size();++i)
         {
+            QStringList run_list = QString(cmd_list[i]).split("=");
             std::cout << "Run " << cmd_list[i].toStdString() << std::endl;
-            if(!handle->command(cmd_list[i].toStdString()))
+            if(!handle->command(run_list[0].toStdString(),
+                                run_list.count() > 1 ? run_list[1].toStdString():std::string()))
                 return 1;
         }
     }
@@ -113,18 +115,8 @@ int rec(void)
     if(method_index == 7) // QSDR
     {
         handle->voxel.param[0] = 1.25f;
-
-        if (po.has("template"))
-        {
-            handle->voxel.primary_template = po.get("template");
-            handle->voxel.secondary_template = po.get("template2");
-        }
-        else
-        {
-            handle->voxel.primary_template = fa_template_list[0];
-            handle->voxel.secondary_template = iso_template_list[0];
-        }
-
+        handle->voxel.primary_template = fa_template_list[po.get("template",0)];
+        handle->voxel.secondary_template = iso_template_list[po.get("template",0)];
         std::cout << "template = " << handle->voxel.primary_template << std::endl;
         std::cout << "template2 = " << handle->voxel.secondary_template << std::endl;
     }
@@ -253,7 +245,7 @@ int rec(void)
                        T,tipl::reg::rigid_body,tipl::reg::mutual_information(),
                         terminated,handle->voxel.thread_count);
         std::cout << "DWI rotated." << std::endl;
-        handle->rotate(I,T);
+        handle->rotate(I.geometry(),T);
     }
 
     if(po.get("motion_correction",int(0)))

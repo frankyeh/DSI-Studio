@@ -103,6 +103,7 @@ private slots:
     void on_AxiView_clicked();
     void on_actionSave_DWI_sum_triggered();
 
+    void on_actionResample_triggered();
 };
 
 #endif // RECONSTRUCTION_WINDOW_H
