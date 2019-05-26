@@ -183,6 +183,8 @@ public:
                     VG.at(uint32_t(mni_pos[0]),uint32_t(mni_pos[1]),uint32_t(mni_pos[2])) > 0.0f)
                 voxel.mask[index.index()] = 1;
         }
+        for(int i = 0;i < 5;++i)
+            tipl::morphology::smoothing_fill(voxel.mask);
 
         // other image
         if(!voxel.other_image.empty())
