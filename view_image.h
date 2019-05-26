@@ -39,6 +39,8 @@ private slots:
 
     void on_actionSet_Translocation_triggered();
 
+    void on_actionLower_threshold_triggered();
+
 private:
     Ui::view_image *ui;
     tipl::image<float,3> data;

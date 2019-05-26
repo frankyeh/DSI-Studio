@@ -514,3 +514,17 @@ void view_image::on_actionSet_Translocation_triggered()
     init_image();
     update_image();
 }
+
+void view_image::on_actionLower_threshold_triggered()
+{
+    bool ok;
+    QString result = QInputDialog::getText(this,"DSI Studio","Assign lower threshold value ",QLineEdit::Normal,
+                                           "0",&ok);
+    if(!ok)
+        return;
+    float value = result.toFloat(&ok);
+    if(!ok)
+        return;
+    tipl::lower_threshold(data,value);
+    update_image();
+}

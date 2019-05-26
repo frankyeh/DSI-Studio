@@ -191,6 +191,7 @@
     <addaction name="actionTranslocate"/>
     <addaction name="actionTrim"/>
     <addaction name="actionSet_Translocation"/>
+    <addaction name="actionLower_threshold"/>
    </widget>
    <addaction name="menu_File"/>
    <addaction name="menu_Edit"/>
@@ -202,7 +203,7 @@
   </action>
   <action name="actionResample">
    <property name="text">
-    <string>Resample...</string>
+    <string>Make Isotropic...</string>
    </property>
   </action>
   <action name="actionMasking">
@@ -212,7 +213,7 @@
   </action>
   <action name="actionResize">
    <property name="text">
-    <string>Resize...</string>
+    <string>Change Dimension...</string>
    </property>
   </action>
   <action name="actionTranslocate">
@@ -228,6 +229,11 @@
   <action name="actionSet_Translocation">
    <property name="text">
     <string>Set Trans Vector...</string>
+   </property>
+  </action>
+  <action name="actionLower_threshold">
+   <property name="text">
+    <string>Lower threshold...</string>
    </property>
   </action>
  </widget>
