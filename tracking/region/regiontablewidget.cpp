@@ -399,7 +399,7 @@ void RegionTableWidget::draw_edge(QImage& qimage,QImage& scaled_image,bool draw_
     int slice_pos = current_slice->slice_pos[cur_tracking_window.cur_dim];
 
     //if(display_ratio >= 1.0f)
-    for (int roi_index = 0;roi_index < checked_regions.size();++roi_index)
+    for (size_t roi_index = 0;roi_index < checked_regions.size();++roi_index)
     {
         tipl::image<unsigned char,2> cur_image_mask;
         cur_image_mask.resize(tipl::geometry<2>(qimage.width(),qimage.height()));
@@ -411,7 +411,7 @@ void RegionTableWidget::draw_edge(QImage& qimage,QImage& scaled_image,bool draw_
         tipl::par_for(checked_regions[roi_index]->size(),[&](unsigned int index)
         {
             tipl::vector<3,float> p(checked_regions[roi_index]->region[index]);
-            if(r != 1.0)
+            if(r != 1.0f)
                 p /= r;
             if(!current_slice->is_diffusion_space)
                 p.to(iT);
@@ -420,7 +420,7 @@ void RegionTableWidget::draw_edge(QImage& qimage,QImage& scaled_image,bool draw_
             tipl::space2slice(cur_tracking_window.cur_dim,p[0],p[1],p[2],X,Y,Z);
             if (slice_pos != Z || X < 0 || Y < 0 || X >= cur_image_mask.width() || Y >= cur_image_mask.height())
                 return;
-            cur_image_mask.at(X,Y) = 1;
+            cur_image_mask.at(uint32_t(X),uint32_t(Y)) = 1;
         });
 
         unsigned int cur_color = 0xFFFFFFFF;
@@ -429,17 +429,17 @@ void RegionTableWidget::draw_edge(QImage& qimage,QImage& scaled_image,bool draw_
 
         QPainter paint(&scaled_image);
         paint.setBrush(Qt::NoBrush);
-        QPen pen(QColor(cur_color), cur_roi_index == roi_index ? display_ratio*0.2f : display_ratio*0.3f, Qt::DashDotLine, Qt::RoundCap, Qt::RoundJoin);
+        QPen pen(QColor(cur_color),double(cur_roi_index == int(roi_index) ? display_ratio*0.2f : display_ratio*0.3f), Qt::DashDotLine, Qt::RoundCap, Qt::RoundJoin);
         paint.setPen(pen);
         for(int y = 1,cur_index = qimage.width();y < qimage.height()-1;++y)
         for(int x = 0;x < qimage.width();++x,++cur_index)
         {
             if(x == 0 || x+1 >= qimage.width() || !cur_image_mask[cur_index])
                 continue;
-            float xd = x*display_ratio;
-            float xd_1 = xd+display_ratio;
-            float yd = y*display_ratio;
-            float yd_1 = yd+display_ratio;
+            int xd = int(x*display_ratio);
+            int xd_1 = int(xd+display_ratio);
+            int yd = int(y*display_ratio);
+            int yd_1 = int(yd+display_ratio);
             if(!(cur_image_mask[cur_index-qimage.width()]))
                 paint.drawLine(xd,yd,xd_1,yd);
             if(!(cur_image_mask[cur_index+qimage.width()]))
