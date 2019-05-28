@@ -884,19 +884,14 @@ void ImageModel::distortion_correction(const ImageModel& rhs)
 void calculate_shell(const std::vector<float>& sorted_bvalues,
                      std::vector<unsigned int>& shell)
 {
-    if(sorted_bvalues.front() != 0.0f)
-        shell.push_back(0);
-    else
-    {
-        for(int i = 1;i < sorted_bvalues.size();++i)
-            if(sorted_bvalues[i] != 0)
+    for(uint32_t i = 0;i < sorted_bvalues.size();++i)
+        if(sorted_bvalues[i] > 100.0f)
             {
                 shell.push_back(i);
                 break;
             }
-    }
-    for(unsigned int index = shell.back()+1;index < sorted_bvalues.size();++index)
-        if(std::abs(sorted_bvalues[index]-sorted_bvalues[index-1]) > 100)
+    for(uint32_t index = shell.back()+1;index < sorted_bvalues.size();++index)
+        if(std::abs(sorted_bvalues[index]-sorted_bvalues[index-1]) > 100.0f)
             shell.push_back(index);
 }
 
