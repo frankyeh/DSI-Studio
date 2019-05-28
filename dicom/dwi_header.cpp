@@ -515,8 +515,18 @@ bool DwiHeader::output_src(const char* di_file,std::vector<std::shared_ptr<DwiHe
         std::vector<float> b_table;
         for (unsigned int index = 0;index < dwi_files.size();++index)
         {
-            b_table.push_back(dwi_files[index]->bvalue);
-            std::copy(dwi_files[index]->bvec.begin(),dwi_files[index]->bvec.end(),std::back_inserter(b_table));
+            if(dwi_files[index]->bvalue < 100.0f)
+            {
+                b_table.push_back(0.0f);
+                b_table.push_back(0.0f);
+                b_table.push_back(0.0f);
+                b_table.push_back(0.0f);
+            }
+            else
+            {
+                b_table.push_back(dwi_files[index]->bvalue);
+                std::copy(dwi_files[index]->bvec.begin(),dwi_files[index]->bvec.end(),std::back_inserter(b_table));
+            }
         }
         write_mat.write("b_table",b_table,4);
     }
