@@ -522,11 +522,14 @@ void ImageModel::flip_dwi(unsigned char type)
         auto I = tipl::make_image((float*)&*(voxel.grad_dev[i].begin()),voxel.dim);
         tipl::flip(I,type);
     }
-    for (unsigned int index = 0;check_prog(index,src_dwi_data.size());++index)
+    tipl::par_for2(src_dwi_data.size(),[&](unsigned int index,unsigned id)
     {
+        if(id == 0)
+            check_prog(index,src_dwi_data.size());
         auto I = tipl::make_image((unsigned short*)src_dwi_data[index],voxel.dim);
         tipl::flip(I,type);
-    }
+    });
+    check_prog(0,0);
     voxel.dim = dwi_sum.geometry();
     voxel.dwi_data.clear();
 }
