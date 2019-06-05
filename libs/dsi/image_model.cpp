@@ -371,8 +371,10 @@ bool ImageModel::command(std::string cmd,std::string param)
     {
         for(int index = 0;index < voxel.mask.size();++index)
             if(voxel.mask[index] == 0)
+            {
                 dwi[index] = 0;
-
+                dwi_sum[index] = 0;
+            }
         for(int index = 0;index < src_dwi_data.size();++index)
         {
             unsigned short* buf = (unsigned short*)src_dwi_data[index];
