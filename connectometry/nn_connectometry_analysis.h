@@ -69,6 +69,9 @@ public:
     float no_data = 9999.0f;
     size_t cv_fold = 10;
     bool normalize_value = false;
+    double weight_decay = 0.0;
+    double fiber_smoothing = 0.001;
+    double bn_norm = 0.0f;
 public:
     int cur_progress = 0;
     int cur_fold = 0;

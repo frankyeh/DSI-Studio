@@ -76,10 +76,13 @@ void nn_connectometry::on_run_clicked()
 
     nna.t.learning_rate = ui->learning_rate->value()*0.01f;
     nna.t.momentum = ui->momentum->value();
-    nna.t.batch_size = 64;
+    nna.t.batch_size = ui->batch_size->value();
     nna.t.epoch = ui->epoch->value();
     nna.foi_index = ui->foi->currentIndex();
     nna.is_regression = ui->nn_regression->isChecked();
+    nna.weight_decay = ui->decay->value();
+    nna.fiber_smoothing = ui->fiber_smoothing->value();
+    nna.bn_norm = ui->bn_norm->value();
     nna.seed_search = 0;
     nna.otsu = ui->otsu->value();
     nna.cv_fold = ui->cv->value();

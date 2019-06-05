@@ -202,6 +202,10 @@ bool nn_connectometry_analysis::run(const std::string& net_string_)
     cur_fold = 0;
     terminated = false;
 
+    for(int i = 0;i < nn.layers.size()-1;++i)
+        if(dynamic_cast<tipl::ml::fully_connected_layer*>(nn.layers[i].get()))
+                dynamic_cast<tipl::ml::fully_connected_layer*>(nn.layers[i].get())->bn_ratio = bn_norm;
+
     future = std::async(std::launch::async, [this,net_string]
     {
         for(size_t fold = 0;fold < cv_fold && !terminated;++fold)
@@ -232,23 +236,42 @@ bool nn_connectometry_analysis::run(const std::string& net_string_)
             t.train(nn,train_data[fold],terminated, [&]()
             {
                 nn.set_test_mode(true);
-                //nn.sort_fully_layer();
 
                 // fiber convolution
+                if(fiber_smoothing != 0.0)
                 {
-                    const double rr = 0.0001;
-                    float* w = &(nn.layers[0]->weight[0]);
-                    for(int i = 0;i < nn.layers[0]->output_size;++i,w += nn.layers[0]->input_size)
+                    std::vector<float> new_weight(nn.layers[0]->weight.size());
+                    std::vector<float> new_r(nn.layers[0]->weight.size());
+                    tipl::par_for(nn.layers[0]->output_size,[&](int i)
                     {
-                        for(size_t j = 0;j < fib_pairs.size();++j)
+                        float* w = &(nn.layers[0]->weight[0])+nn.layers[0]->input_size*i;
+                        float* nw = &new_weight[0]+nn.layers[0]->input_size*i;
+                        float* nr = &new_r[0]+nn.layers[0]->input_size*i;
+                        for(uint32_t j = 0;j < fib_pairs.size();++j)
                         {
-                            float& a = w[fib_pairs[j].first];
-                            float& b = w[fib_pairs[j].second];
-                            double m = (double)(a+b)* rr * 0.5;
-                            a = (double)a*(1.0-rr) + m;
-                            b = (double)b*(1.0-rr) + m;
+                            uint32_t j1 = fib_pairs[j].first;
+                            uint32_t j2 = fib_pairs[j].second;
+                            float m = (w[j1]+ w[j2])* fiber_smoothing * 0.5f;
+                            nw[j1] += m;
+                            nw[j2] += m;
+                            nr[j1] += fiber_smoothing;
+                            nr[j2] += fiber_smoothing;
                         }
-                    }
+                        for(uint32_t j = 0;j < nn.layers[0]->input_size;++j)
+                            if(nr[j] != 0.0f)
+                            {
+                                w[j] *= 1.0f-nr[j];
+                                w[j] += nw[j];
+                            }
+                    });
+                }
+                if(weight_decay != 0.0f)
+                {
+                    for(int i = 1;i < nn.layers.size();++i)
+                        if(!nn.layers[i]->weight.empty())
+                            tipl::multiply_constant(nn.layers[i]->weight.begin(),
+                                                nn.layers[i]->weight.end(),
+                                                1.0f-weight_decay);
                 }
 
                 std::cout << "[" << round << "]";
@@ -278,6 +301,8 @@ bool nn_connectometry_analysis::run(const std::string& net_string_)
                 std::cout << " error=" << std::setprecision(3) << result_train_error.back()
                 << " rate= " << std::setprecision(3) << t.rate_decay << std::endl;
 
+                //nn.sort_fully_layer();
+                //t.initialize_training(nn);
 
                 ++round;
             });
