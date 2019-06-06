@@ -546,17 +546,6 @@ bool fib_data::load_from_file(const char* file_name)
     if(!load_from_mat())
         return false;
 
-    // template matching
-    for(int index = 0;index < fa_template_list.size();++index)
-    {
-        QString name = QFileInfo(fa_template_list[index].c_str()).baseName().toLower();
-        if(QFileInfo(file_name).fileName().contains(name) ||
-           QFileInfo(QString(file_name)+"."+name+".map.gz").exists())
-        {
-            template_id = index;
-            return true;
-        }
-    }
     if(is_qsdr)
     for(int index = 0;index < fa_template_list.size();++index)
     {
@@ -568,6 +557,17 @@ bool fib_data::load_from_file(const char* file_name)
         read.toLPS(I,true,false);
         read.get_voxel_size(Itvs);
         if(std::abs(dim[0]-read.nif_header2.dim[1]*Itvs[0]/vs[0]) < 2.0f)
+        {
+            template_id = index;
+            return true;
+        }
+    }
+    // template matching
+    for(int index = 0;index < fa_template_list.size();++index)
+    {
+        QString name = QFileInfo(fa_template_list[index].c_str()).baseName().toLower();
+        if(QFileInfo(file_name).fileName().contains(name) ||
+           QFileInfo(QString(file_name)+"."+name+".map.gz").exists())
         {
             template_id = index;
             return true;
