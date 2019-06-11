@@ -317,10 +317,11 @@ bool load_region(std::shared_ptr<fib_data> handle,
                 std::cout << "Loading " << file_name << "as a native space region" << std::endl;
                 roi.LoadFromBuffer(from);
             }
-            // MNI space ROI
-
-            std::cout << "Loading " << file_name << "as an MNI space region" << std::endl;
-            goto LOAD_MNI;
+            else
+            {
+                std::cout << "Loading " << file_name << "as an MNI space region" << std::endl;
+                goto LOAD_MNI;
+            }
         }
     }
     // now perform actions

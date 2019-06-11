@@ -295,7 +295,7 @@ bool ROIRegion::LoadFromFile(const char* FileName) {
                 float r1 = (float)nii_geo[0]/(float)handle->dim[0];
                 float r2 = (float)nii_geo[1]/(float)handle->dim[1];
                 float r3 = (float)nii_geo[2]/(float)handle->dim[2];
-                if(r1 == r2 || r1 == r3)
+                if(r1 == r2 && r1 == r3)
                 {
                     resolution_ratio = r1;
                     header.toLPS(from);
