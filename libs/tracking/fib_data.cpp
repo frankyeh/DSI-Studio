@@ -997,9 +997,10 @@ void fib_data::run_normalization(bool background)
         tipl::crop(Is,range_min,range_max);
 
         prog = 1;
-        vs *= std::sqrt((It.plane_size()*template_vs[0]*template_vs[1])/
+        auto tvs = vs;
+        tvs *= std::sqrt((It.plane_size()*template_vs[0]*template_vs[1])/
                 (Is.plane_size()*vs[0]*vs[1]));
-        tipl::reg::two_way_linear_mr(It,template_vs,Is,vs,T,tipl::reg::affine,
+        tipl::reg::two_way_linear_mr(It,template_vs,Is,tvs,T,tipl::reg::affine,
                                      tipl::reg::mutual_information(),thread.terminated);
         prog = 2;
         if(thread.terminated)
