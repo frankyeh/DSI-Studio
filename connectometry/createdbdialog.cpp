@@ -71,7 +71,28 @@ void CreateDBDialog::update_list(void)
             }
         }
     }    
-
+    if(!group.empty() && sample_fib != group[0])
+    {
+        sample_fib = group[0];
+        fib_data fib;
+        if(!fib.load_from_file(sample_fib.toLocal8Bit().begin()))
+        {
+            QMessageBox::information(this,"Error","Invalid FIB file format",0);
+            return;
+        }
+        if(!fib.is_qsdr)
+        {
+            QMessageBox::information(this,"Error","The FIB file was not reconstructed by QSDR.",0);
+            return;
+        }
+        ui->index_of_interest->clear();
+        if(fib.has_odfs())
+            ui->index_of_interest->addItem("sdf");
+        std::vector<std::string> item_list;
+        fib.get_index_list(item_list);
+        for(unsigned int i = fib.dir.index_name.size();i < item_list.size();++i)
+            ui->index_of_interest->addItem(item_list[i].c_str());
+    }
     if(ui->output_file_name->text().isEmpty())
         on_index_of_interest_currentIndexChanged(QString());
 
@@ -90,27 +111,6 @@ void CreateDBDialog::on_group1open_clicked()
                                      "Fib files (*fib.gz);;All files (*)" );
     if (filenames.isEmpty())
         return;
-    if(group.empty())
-    {
-        fib_data fib;
-        if(!fib.load_from_file(filenames[0].toLocal8Bit().begin()))
-        {
-            QMessageBox::information(this,"Error","Invalid FIB file format",0);
-            return;
-        }
-        if(!fib.is_qsdr)
-        {
-            QMessageBox::information(this,"Error","The FIB file was not reconstructed by QSDR.",0);
-            return;
-        }
-        ui->index_of_interest->clear();
-        if(fib.has_odfs())
-            ui->index_of_interest->addItem("sdf");
-        std::vector<std::string> item_list;
-        fib.get_index_list(item_list);
-        for(unsigned int i = fib.dir.index_name.size();i < item_list.size();++i)
-            ui->index_of_interest->addItem(item_list[i].c_str());
-    }
     group << filenames;
     update_list();
     on_index_of_interest_currentIndexChanged(QString());
@@ -324,4 +324,10 @@ void CreateDBDialog::on_index_of_interest_currentIndexChanged(const QString &)
         else
             ui->output_file_name->setText(path + "/template.fib.gz");
     }
+}
+
+void CreateDBDialog::on_update_ioi_clicked()
+{
+
+
 }

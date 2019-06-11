@@ -217,6 +217,9 @@
    <item>
     <widget class="QWidget" name="skeleton_widget" native="true">
      <layout class="QHBoxLayout" name="horizontalLayout">
+      <property name="spacing">
+       <number>0</number>
+      </property>
       <property name="leftMargin">
        <number>0</number>
       </property>
@@ -232,7 +235,7 @@
       <item>
        <widget class="QLabel" name="label">
         <property name="text">
-         <string>Atlas</string>
+         <string>Template:</string>
         </property>
        </widget>
       </item>
@@ -255,6 +258,9 @@
    </item>
    <item>
     <layout class="QHBoxLayout" name="horizontalLayout_4">
+     <property name="spacing">
+      <number>0</number>
+     </property>
      <item>
       <widget class="QLabel" name="index_label">
        <property name="text">
@@ -264,6 +270,12 @@
      </item>
      <item>
       <widget class="QComboBox" name="index_of_interest">
+       <property name="minimumSize">
+        <size>
+         <width>70</width>
+         <height>0</height>
+        </size>
+       </property>
        <item>
         <property name="text">
          <string>sdf</string>

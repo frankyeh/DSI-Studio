@@ -14,6 +14,7 @@ class CreateDBDialog : public QDialog
     Q_OBJECT
 private:
     bool create_db;
+    QString sample_fib;
 public:
     QStringList group;
     unsigned int dir_length;
@@ -39,6 +40,7 @@ private slots:
     void on_open_skeleton_clicked();
     void on_sort_clicked();
     void on_index_of_interest_currentIndexChanged(const QString &arg1);
+    void on_update_ioi_clicked();
 };
 
 #endif // VBCDIALOG_H
