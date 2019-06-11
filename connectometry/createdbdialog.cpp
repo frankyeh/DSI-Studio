@@ -325,9 +325,3 @@ void CreateDBDialog::on_index_of_interest_currentIndexChanged(const QString &)
             ui->output_file_name->setText(path + "/template.fib.gz");
     }
 }
-
-void CreateDBDialog::on_update_ioi_clicked()
-{
-
-
-}

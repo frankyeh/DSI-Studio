@@ -40,7 +40,6 @@ private slots:
     void on_open_skeleton_clicked();
     void on_sort_clicked();
     void on_index_of_interest_currentIndexChanged(const QString &arg1);
-    void on_update_ioi_clicked();
 };
 
 #endif // VBCDIALOG_H
