@@ -583,6 +583,75 @@ bool fib_data::load_from_file(const char* file_name)
     }
     return true;
 }
+bool fib_data::save_mapping(const std::string& index_name,const std::string& file_name,const tipl::value_to_color<float>& v2c)
+{
+    if(index_name == "fiber")
+    {
+        gz_nifti file;
+        file.set_voxel_size(vs);
+        tipl::image<float,4> buf(tipl::geometry<4>(
+                                 dim.width(),
+                                 dim.height(),
+                                 dim.depth(),3*int(dir.num_fiber)));
+
+        for(unsigned int j = 0,index = 0;j < dir.num_fiber;++j)
+        for(int k = 0;k < 3;++k)
+        for(unsigned int i = 0;i < dim.size();++i,++index)
+            buf[index] = dir.get_dir(i,j)[k];
+
+        tipl::flip_xy(buf);
+        file << buf;
+        return file.save_to_file(file_name.c_str());
+    }
+
+    size_t index = get_name_index(index_name);
+    if(index >= view_item.size())
+        return false;
+
+    if(index_name == "color")
+    {
+        tipl::image<tipl::rgb,3> buf(dim);
+        for(int z = 0;z < buf.depth();++z)
+        {
+            tipl::color_image I;
+            get_slice(uint32_t(index),uint8_t(2),uint32_t(z),I,v2c);
+            std::copy(I.begin(),I.end(),buf.begin()+size_t(z)*buf.plane_size());
+        }
+        gz_nifti file;
+        file.set_voxel_size(vs);
+        if(is_qsdr) //QSDR condition
+            file.set_LPS_transformation(trans_to_mni,buf.geometry());
+        tipl::flip_xy(buf);
+        file << buf;
+        file.save_to_file(file_name.c_str());
+        return true;
+    }
+
+
+    if(QFileInfo(QString(file_name.c_str())).completeSuffix().toLower() == "mat")
+    {
+        tipl::io::mat_write file(file_name.c_str());
+        file << view_item[index].image_data;
+        return true;
+    }
+    else
+    {
+        tipl::image<float,3> buf(view_item[index].image_data);
+        gz_nifti file;
+        file.set_voxel_size(vs);
+        if(view_item[index].image_data.geometry() != dim)
+        {
+            tipl::image<float,3> new_buf(dim);
+            tipl::resample(buf,new_buf,view_item[index].iT,tipl::cubic);
+            new_buf.swap(buf);
+        }
+        if(is_qsdr) //QSDR condition
+            file.set_LPS_transformation(trans_to_mni,buf.geometry());
+        tipl::flip_xy(buf);
+        file << buf;
+        return file.save_to_file(file_name.c_str());
+    }
+}
 bool fib_data::load_from_mat(void)
 {
     {

@@ -232,79 +232,9 @@ bool slice_view_scene::command(QString cmd,QString param,QString param2)
     }
     if(cmd == "save_mapping")
     {
-
         if(param.isEmpty())
-            param = QFileInfo(cur_tracking_window.windowTitle()).baseName()+"_"+
-                    param2+".nii.gz";
-
-        if(param2 == "fiber")
-        {
-            gz_nifti file;
-            file.set_voxel_size(cur_tracking_window.handle->vs);
-            auto dim = cur_tracking_window.handle->dim;
-            tipl::image<float,4> buf(tipl::geometry<4>(
-                                     dim.width(),
-                                     dim.height(),
-                                     dim.depth(),3*int(cur_tracking_window.handle->dir.num_fiber)));
-
-            for(unsigned int j = 0,index = 0;j < cur_tracking_window.handle->dir.num_fiber;++j)
-            for(int k = 0;k < 3;++k)
-            for(size_t i = 0;i < dim.size();++i,++index)
-                buf[index] = cur_tracking_window.handle->dir.get_dir(i,j)[k];
-
-            tipl::flip_xy(buf);
-            file << buf;
-            file.save_to_file(param.toLocal8Bit().begin());
-            return true;
-        }
-
-        int index = cur_tracking_window.handle->get_name_index(param2.toStdString());
-        if(index >= cur_tracking_window.handle->view_item.size())
-            return true;
-
-        if(param2 == "color")
-        {
-            tipl::image<tipl::rgb,3> buf(cur_tracking_window.handle->dim);
-            for(int z = 0;z < buf.depth();++z)
-            {
-                tipl::color_image I;
-                cur_tracking_window.handle->get_slice(index,2,z,I,cur_tracking_window.v2c);
-                std::copy(I.begin(),I.end(),buf.begin()+z*buf.plane_size());
-            }
-            gz_nifti file;
-            file.set_voxel_size(cur_tracking_window.handle->vs);
-            if(cur_tracking_window.handle->is_qsdr) //QSDR condition
-                file.set_LPS_transformation(cur_tracking_window.handle->trans_to_mni,buf.geometry());
-            tipl::flip_xy(buf);
-            file << buf;
-            file.save_to_file(param.toLocal8Bit().begin());
-            return true;
-        }
-
-
-        if(QFileInfo(param).completeSuffix().toLower() == "mat")
-        {
-            tipl::io::mat_write file(param.toLocal8Bit().begin());
-            file << cur_tracking_window.handle->view_item[index].image_data;
-        }
-        else
-        {
-            tipl::image<float,3> buf(cur_tracking_window.handle->view_item[index].image_data);
-            gz_nifti file;
-            file.set_voxel_size(cur_tracking_window.handle->vs);
-            if(cur_tracking_window.handle->view_item[index].image_data.geometry() != cur_tracking_window.handle->dim)
-            {
-                tipl::image<float,3> new_buf(cur_tracking_window.handle->dim);
-                tipl::resample(buf,new_buf,cur_tracking_window.handle->view_item[index].iT,tipl::cubic);
-                new_buf.swap(buf);
-            }
-            if(cur_tracking_window.handle->is_qsdr) //QSDR condition
-                file.set_LPS_transformation(cur_tracking_window.handle->trans_to_mni,buf.geometry());
-            tipl::flip_xy(buf);
-            file << buf;
-            file.save_to_file(param.toLocal8Bit().begin());
-        }
-        return true;
+            param = QFileInfo(cur_tracking_window.windowTitle()).baseName()+"_"+param2+".nii.gz";
+        return cur_tracking_window.handle->save_mapping(param2.toStdString(),param.toStdString(),cur_tracking_window.v2c);
     }
     return false;
 }

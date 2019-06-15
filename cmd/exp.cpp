@@ -12,7 +12,7 @@
 #include "program_option.hpp"
 
 // test example
-
+std::shared_ptr<fib_data> cmd_load_fib(const std::string file_name);
 int exp(void)
 {
     if(po.get("export") == "4dnii")
@@ -73,6 +73,7 @@ int exp(void)
         else
             trans.identity();
     }
+    std::shared_ptr<fib_data> handle;
     tipl::geometry<3> geo(dim_buf[0],dim_buf[1],dim_buf[2]);
     std::string export_option = po.get("export");
     std::replace(export_option.begin(),export_option.end(),',',' ');
@@ -150,6 +151,20 @@ int exp(void)
             nifti_header.save_to_file(file_name_stat.c_str());
             std::cout << "write to file " << file_name_stat << std::endl;
             continue;
+        }
+
+        if(!handle.get())
+            handle = cmd_load_fib(po.get("source"));
+        if(handle.get())
+        {
+            tipl::value_to_color<float> v2c;// used if "color" is wanted
+            v2c.set_range(handle->view_item[0].contrast_min,handle->view_item[0].contrast_max);
+            v2c.two_color(tipl::rgb(0,0,0),tipl::rgb(255,255,255));
+            if(handle->save_mapping(cmd,file_name_stat,v2c))
+            {
+                std::cout << cmd << " saved to " << file_name_stat << std::endl;
+                continue;
+            }
         }
         std::cout << "Cannot find matrix "<< cmd.c_str() <<" in the file" << file_name.c_str() <<std::endl;
         continue;

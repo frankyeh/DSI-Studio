@@ -192,6 +192,7 @@ public:
 public:
     bool load_from_file(const char* file_name);
     bool load_from_mat(void);
+    bool save_mapping(const std::string& index_name,const std::string& file_name,const tipl::value_to_color<float>& v2c);
 public:
     bool has_odfs(void) const{return odf.has_odfs();}
     const float* get_odf_data(unsigned int index) const{return odf.get_odf_data(index);}
