@@ -515,6 +515,24 @@ void view_image::on_actionSet_Translocation_triggered()
     update_image();
 }
 
+void view_image::on_actionSet_Transformation_triggered()
+{
+    std::ostringstream out;
+    for(int i = 0;i < 16;++i)
+        out << T[i] << " ";
+    bool ok;
+    QString result = QInputDialog::getText(this,"DSI Studio","Assign the transformation matrix",QLineEdit::Normal,
+                                           out.str().c_str(),&ok);
+
+    if(!ok)
+        return;
+    std::istringstream in(result.toStdString());
+    for(int i = 0;i < 16;++i)
+        in >> T[i];
+    init_image();
+    update_image();
+}
+
 void view_image::on_actionLower_threshold_triggered()
 {
     bool ok;
@@ -528,3 +546,21 @@ void view_image::on_actionLower_threshold_triggered()
     tipl::lower_threshold(data,value);
     update_image();
 }
+
+void view_image::on_actionLPS_RAS_swap_triggered()
+{
+    if(data.empty())
+        return;
+    tipl::matrix<4,4,float> T2;
+    T2.identity();
+    T2[0] = -1.0f;
+    T2[3] = data.width();
+    T2[5] = -1.0f;
+    T2[7] = data.height();
+    T = T2*T;
+    tipl::flip_x(data);
+    tipl::flip_y(data);
+    init_image();
+    update_image();
+}
+

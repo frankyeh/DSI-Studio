@@ -41,6 +41,10 @@ private slots:
 
     void on_actionLower_threshold_triggered();
 
+    void on_actionLPS_RAS_swap_triggered();
+
+    void on_actionSet_Transformation_triggered();
+
 private:
     Ui::view_image *ui;
     tipl::image<float,3> data;

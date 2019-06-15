@@ -908,7 +908,7 @@ void RegionTableWidget::save_region(void)
 }
 QString RegionTableWidget::output_format(void)
 {
-    switch(cur_tracking_window["region_format"].toInt())
+    switch(cur_tracking_window["roi_format"].toInt())
     {
     case 0:
         return ".nii.gz";

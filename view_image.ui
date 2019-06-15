@@ -181,20 +181,40 @@
     </property>
     <addaction name="action_Save_as"/>
    </widget>
-   <widget class="QMenu" name="menu_Edit">
+   <widget class="QMenu" name="menuResize">
     <property name="title">
-     <string>&amp;Edit</string>
+     <string>&amp;Resize</string>
     </property>
-    <addaction name="actionMasking"/>
     <addaction name="actionResample"/>
     <addaction name="actionResize"/>
-    <addaction name="actionTranslocate"/>
     <addaction name="actionTrim"/>
+   </widget>
+   <widget class="QMenu" name="menu_Header">
+    <property name="title">
+     <string>&amp;Header</string>
+    </property>
+    <addaction name="actionSet_Transformation"/>
     <addaction name="actionSet_Translocation"/>
+   </widget>
+   <widget class="QMenu" name="menu_Intensity">
+    <property name="title">
+     <string>&amp;Intensity</string>
+    </property>
     <addaction name="actionLower_threshold"/>
+    <addaction name="actionMasking"/>
+   </widget>
+   <widget class="QMenu" name="menu_Spatial_transform">
+    <property name="title">
+     <string>&amp;Spatial transform</string>
+    </property>
+    <addaction name="actionTranslocate"/>
+    <addaction name="actionLPS_RAS_swap"/>
    </widget>
    <addaction name="menu_File"/>
-   <addaction name="menu_Edit"/>
+   <addaction name="menuResize"/>
+   <addaction name="menu_Header"/>
+   <addaction name="menu_Intensity"/>
+   <addaction name="menu_Spatial_transform"/>
   </widget>
   <action name="action_Save_as">
    <property name="text">
@@ -208,7 +228,7 @@
   </action>
   <action name="actionMasking">
    <property name="text">
-    <string>Masking...</string>
+    <string>Apply Mask...</string>
    </property>
   </action>
   <action name="actionResize">
@@ -223,17 +243,27 @@
   </action>
   <action name="actionTrim">
    <property name="text">
-    <string>Trim...</string>
+    <string>Remove Background...</string>
    </property>
   </action>
   <action name="actionSet_Translocation">
    <property name="text">
-    <string>Set Trans Vector...</string>
+    <string>Set Translocation...</string>
    </property>
   </action>
   <action name="actionLower_threshold">
    <property name="text">
-    <string>Lower threshold...</string>
+    <string>Lower Threshold...</string>
+   </property>
+  </action>
+  <action name="actionLPS_RAS_swap">
+   <property name="text">
+    <string>LPS/RAS swap</string>
+   </property>
+  </action>
+  <action name="actionSet_Transformation">
+   <property name="text">
+    <string>Set Transformation...</string>
    </property>
   </action>
  </widget>
