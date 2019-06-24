@@ -62,6 +62,7 @@ int exp(void)
         std::cout << "Cannot find voxel_size matrix in the file" << file_name.c_str() <<std::endl;
         return 1;
     }
+    bool has_trans = false;
     tipl::matrix<4,4,float> trans;
     {
         const float* p = 0;
@@ -69,6 +70,7 @@ int exp(void)
         {
             std::cout << "Transformation matrix found." << std::endl;
             std::copy(p,p+16,trans.begin());
+            has_trans = true;
         }
         else
             trans.identity();
@@ -120,13 +122,9 @@ int exp(void)
                     if(dir.get_fa(index,dir_index))
                         fibers[ptr] = dir.get_dir(index,dir_index)[j];
             }
-            gz_nifti nifti_header;
-            nifti_header.set_LPS_transformation(trans,fibers.geometry());
-            tipl::flip_xy(fibers);
-            nifti_header << fibers;
-            nifti_header.set_voxel_size(tipl::vector<3>(vs));
-            nifti_header.save_to_file(file_name_stat.c_str());
             std::cout << "write to file " << file_name_stat << std::endl;
+            if(!gz_nifti::save_to_file(file_name_stat.c_str(),fibers,tipl::vector<3>(vs),trans,has_trans))
+                std::cout << "cannot write output to file:" << file_name_stat << std::endl;
             continue;
         }
         const float* volume = 0;
@@ -142,14 +140,9 @@ int exp(void)
             }
             tipl::image<float,3> data(geo);
             std::copy(volume,volume+geo.size(),data.begin());
-            gz_nifti nifti_header;
-
-            nifti_header.set_LPS_transformation(trans,data.geometry());
-            tipl::flip_xy(data);
-            nifti_header << data;
-            nifti_header.set_voxel_size(tipl::vector<3>(vs));
-            nifti_header.save_to_file(file_name_stat.c_str());
             std::cout << "write to file " << file_name_stat << std::endl;
+            if(!gz_nifti::save_to_file(file_name_stat.c_str(),data,tipl::vector<3>(vs),trans,has_trans))
+                std::cout << "cannot write output to file:" << file_name_stat << std::endl;
             continue;
         }
 

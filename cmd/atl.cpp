@@ -86,13 +86,10 @@ void atl_save_mapping(std::vector<std::shared_ptr<atlas> >& atlas_list,
                     roi[k] = 1;
             if(multiple)
             {
-                tipl::io::nifti out;
-                out.set_voxel_size(vs);
-                out.set_LPS_transformation(trans,roi.geometry());
-                tipl::flip_xy(roi);
-                out << roi;
-                out.save_to_file(output.c_str());
                 std::cout << "save " << output << std::endl;
+                if(!gz_nifti::save_to_file(output.c_str(),roi,vs,trans,true))
+                    std::cout << "cannot write output to file:" << output << std::endl;
+
             }
         }
         {

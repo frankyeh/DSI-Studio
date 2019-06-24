@@ -188,38 +188,23 @@ void ROIRegion::SaveToFile(const char* FileName)
         unsigned int color = show_region.color.color & 0x00FFFFFF;
         tipl::image<unsigned char, 3>mask;
         SaveToBuffer(mask,1);
-        gz_nifti header;
-        if(resolution_ratio == 1.0)
-            header.set_voxel_size(handle->vs);
-        else
+        tipl::vector<3,float> rvs(handle->vs);
+        tipl::matrix<4,4,float> T(trans);
+        if(resolution_ratio != 1.0f)
         {
-            tipl::vector<3,float> rvs = handle->vs;
             rvs /= resolution_ratio;
-            header.set_voxel_size(rvs);
+            tipl::multiply_constant(&T[0],&T[0]+3,1.0/resolution_ratio);
+            tipl::multiply_constant(&T[4],&T[0]+3,1.0/resolution_ratio);
+            tipl::multiply_constant(&T[8],&T[0]+3,1.0/resolution_ratio);
         }
-        // output color information and roi information
         std::ostringstream out;
         out << "color=" << color << ";roi=" << (int)regions_feature;
         std::string tmp = out.str();
         if(tmp.size() < 80)
             tmp.resize(80);
-        header.set_descrip(tmp.c_str());
-        if(handle->is_qsdr)
-        {
-            if(resolution_ratio != 1.0)
-            {
-                tipl::matrix<4,4,float> T(trans);
-                tipl::multiply_constant(&T[0],&T[0]+3,1.0/resolution_ratio);
-                tipl::multiply_constant(&T[4],&T[0]+3,1.0/resolution_ratio);
-                tipl::multiply_constant(&T[8],&T[0]+3,1.0/resolution_ratio);
-                header.set_LPS_transformation(T,mask.geometry());
-            }
-            else
-                header.set_LPS_transformation(trans,mask.geometry());
-        }
-        tipl::flip_xy(mask);
-        header << mask;
-        header.save_to_file(FileName);
+
+        gz_nifti::save_to_file(FileName,mask,rvs,T,handle->is_qsdr,tmp.c_str());
+
     }
 }
 

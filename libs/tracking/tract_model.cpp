@@ -1694,22 +1694,14 @@ void TractModel::save_tdi(const char* file_name,bool sub_voxel,bool endpoint,con
         tdi.resize(geometry);
 
     get_density_map(tdi,tr,endpoint);
-    gz_nifti nii_header;
-    nii_header.set_voxel_size(new_vs);
+    tipl::matrix<4,4,float> new_trans(trans);
     if(sub_voxel)
     {
-        tipl::matrix<4,4,float> new_trans(trans);
-        new_trans[0] /= 4.0;
-        new_trans[4] /= 4.0;
-        new_trans[8] /= 4.0;
-        nii_header.set_LPS_transformation(new_trans,tdi.geometry());
+        new_trans[0] /= 4.0f;
+        new_trans[4] /= 4.0f;
+        new_trans[8] /= 4.0f;
     }
-    else
-        nii_header.set_LPS_transformation(trans,tdi.geometry());
-    tipl::flip_xy(tdi);
-    nii_header << tdi;
-    nii_header.save_to_file(file_name);
-
+    gz_nifti::save_to_file(file_name,tdi,new_vs,new_trans,true);
 }
 
 

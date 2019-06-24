@@ -405,25 +405,10 @@ void RegToolBox::on_action_Save_Warpped_Image_triggered()
     if(filename.isEmpty())
         return;
     if(!JJ.empty())
-    {
-        gz_nifti nii;
-        nii.set_voxel_size(Itvs);
-        nii.set_LPS_transformation(ItR,JJ.geometry());
-        tipl::flip_xy(JJ);
-        nii << JJ;
-        nii.save_to_file(filename.toStdString().c_str());
-        return;
-    }
+        gz_nifti::save_to_file(filename.toStdString().c_str(),JJ,Itvs,ItR,true);
+    else
     if(!J.empty())
-    {
-        gz_nifti nii;
-        nii.set_voxel_size(Itvs);
-        nii.set_LPS_transformation(ItR,J.geometry());
-        tipl::flip_xy(J);
-        nii << J;
-        nii.save_to_file(filename.toStdString().c_str());
-
-    }
+        gz_nifti::save_to_file(filename.toStdString().c_str(),J,Itvs,ItR,true);
 
 }
 
@@ -458,14 +443,7 @@ void RegToolBox::on_actionApply_Warpping_triggered()
         return;
 
     tipl::compose_displacement(I3,J3,T,dis,is_label_image(I3) ? tipl::nearest : tipl::cubic);
-    {
-        gz_nifti nii;
-        nii.set_voxel_size(Itvs);
-        nii.set_LPS_transformation(ItR,J3.geometry());
-        tipl::flip_xy(J3);
-        nii << J3;
-        nii.save_to_file(filename.toStdString().c_str());
-    }
+    gz_nifti::save_to_file(filename.toStdString().c_str(),J3,Itvs,ItR,true);
 }
 
 

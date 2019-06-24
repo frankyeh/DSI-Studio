@@ -1323,18 +1323,13 @@ void TractTableWidget::export_tract_density(tipl::geometry<3>& dim,
         }
         else
         {
-            gz_nifti nii_header;
-            nii_header.set_voxel_size(vs);
+            tipl::matrix<4,4,float> new_trans(transformation),trans(cur_tracking_window.handle->trans_to_mni);
             if(cur_tracking_window.handle->is_qsdr)
             {
-                tipl::matrix<4,4,float> new_trans(transformation),trans(cur_tracking_window.handle->trans_to_mni);
                 new_trans.inv();
                 trans *= new_trans;
-                nii_header.set_LPS_transformation(trans,tdi.geometry());
             }
-            tipl::flip_xy(tdi);
-            nii_header << tdi;
-            nii_header.save_to_file(filename.toLocal8Bit().begin());
+            gz_nifti::save_to_file(filename.toStdString().c_str(),tdi,vs,trans,cur_tracking_window.handle->is_qsdr);
         }
     }
 }

@@ -966,17 +966,10 @@ void RegionTableWidget::save_all_regions(void)
             }
             out << i+1 << " " << item(i,0)->text().toStdString() << std::endl;
         }
-    gz_nifti header;
-    header.set_voxel_size(cur_tracking_window.current_slice->voxel_size);
-    if(cur_tracking_window.handle->is_qsdr)
-        header.set_LPS_transformation(
-                    cur_tracking_window.handle->trans_to_mni,
-                    mask.geometry());
-    tipl::flip_xy(mask);
-    header << mask;
-    header.save_to_file(filename.toLocal8Bit().begin());
-
-
+    gz_nifti::save_to_file(filename.toStdString().c_str(),mask,
+                           cur_tracking_window.current_slice->voxel_size,
+                           cur_tracking_window.handle->trans_to_mni,
+                           cur_tracking_window.handle->is_qsdr);
 }
 
 void RegionTableWidget::save_region_info(void)

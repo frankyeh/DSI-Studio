@@ -324,11 +324,6 @@ void manual_alignment::on_save_warpped_clicked()
 
     tipl::image<float,3> I(to.geometry());
     tipl::resample(from_original,I,iT,is_label_image(from_original) ? tipl::nearest : tipl::cubic);
-    gz_nifti nii;
-    nii.set_voxel_size(to_vs);
-    tipl::flip_xy(I);
-    nii << I;
-    nii.set_LPS_transformation(nifti_srow,I.geometry());
-    nii.save_to_file(filename.toStdString().c_str());
+    gz_nifti::save_to_file(filename.toStdString().c_str(),I,to_vs,nifti_srow,true);
 }
 

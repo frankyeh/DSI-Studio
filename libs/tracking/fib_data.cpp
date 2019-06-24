@@ -617,14 +617,7 @@ bool fib_data::save_mapping(const std::string& index_name,const std::string& fil
             get_slice(uint32_t(index),uint8_t(2),uint32_t(z),I,v2c);
             std::copy(I.begin(),I.end(),buf.begin()+size_t(z)*buf.plane_size());
         }
-        gz_nifti file;
-        file.set_voxel_size(vs);
-        if(is_qsdr) //QSDR condition
-            file.set_LPS_transformation(trans_to_mni,buf.geometry());
-        tipl::flip_xy(buf);
-        file << buf;
-        file.save_to_file(file_name.c_str());
-        return true;
+        return gz_nifti::save_to_file(file_name.c_str(),buf,vs,trans_to_mni,is_qsdr);
     }
 
 
@@ -637,19 +630,13 @@ bool fib_data::save_mapping(const std::string& index_name,const std::string& fil
     else
     {
         tipl::image<float,3> buf(view_item[index].image_data);
-        gz_nifti file;
-        file.set_voxel_size(vs);
         if(view_item[index].image_data.geometry() != dim)
         {
             tipl::image<float,3> new_buf(dim);
             tipl::resample(buf,new_buf,view_item[index].iT,tipl::cubic);
             new_buf.swap(buf);
         }
-        if(is_qsdr) //QSDR condition
-            file.set_LPS_transformation(trans_to_mni,buf.geometry());
-        tipl::flip_xy(buf);
-        file << buf;
-        return file.save_to_file(file_name.c_str());
+        return gz_nifti::save_to_file(file_name.c_str(),buf,vs,trans_to_mni,is_qsdr);
     }
 }
 bool fib_data::load_from_mat(void)
