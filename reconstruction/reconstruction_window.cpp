@@ -606,11 +606,27 @@ void reconstruction_window::on_delete_2_clicked()
 {
     if(handle->src_dwi_data.size() == 1)
         return;
-    unsigned int index = ui->b_table->currentRow();
+    int index = ui->b_table->currentRow();
+    if(index <= 0)
+        return;
     ui->b_table->removeRow(index);
-    handle->remove(index);
-
+    handle->remove(uint32_t(index));
 }
+
+void reconstruction_window::on_remove_below_clicked()
+{
+    if(handle->src_dwi_data.size() == 1)
+        return;
+    int index = ui->b_table->currentRow();
+    if(index <= 0)
+        return;
+    while(ui->b_table->rowCount() > index)
+    {
+        ui->b_table->removeRow(index);
+        handle->remove(uint32_t(index));
+    }
+}
+
 
 void reconstruction_window::on_SlicePos_valueChanged(int position)
 {
@@ -918,3 +934,4 @@ void reconstruction_window::on_actionSave_SRC_file_as_triggered()
     handle->save_to_file(filename.toStdString().c_str());
     check_prog(0,0);
 }
+

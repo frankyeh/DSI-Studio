@@ -115,7 +115,18 @@
                    </size>
                   </property>
                   <property name="text">
-                   <string>Remove selected DWI</string>
+                   <string>Remove row</string>
+                  </property>
+                  <property name="icon">
+                   <iconset resource="../icons.qrc">
+                    <normaloff>:/icons/icons/delete.xpm</normaloff>:/icons/icons/delete.xpm</iconset>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QPushButton" name="remove_below">
+                  <property name="text">
+                   <string>Remove below</string>
                   </property>
                   <property name="icon">
                    <iconset resource="../icons.qrc">
@@ -1195,18 +1206,18 @@
     <addaction name="actionFlip_xz"/>
     <addaction name="actionFlip_yz"/>
     <addaction name="separator"/>
-    <addaction name="actionResample"/>
-    <addaction name="actionRotate_to_MNI"/>
-    <addaction name="actionRotate"/>
-    <addaction name="actionTrim_image"/>
     <addaction name="actionManual_Rotation"/>
-    <addaction name="actionReplace_b0_by_T2W_image"/>
-    <addaction name="actionCorrect_AP_PA_scans"/>
+    <addaction name="actionRotate_to_MNI"/>
     <addaction name="separator"/>
-    <addaction name="actionEnable_TEST_features"/>
+    <addaction name="actionRotate"/>
+    <addaction name="actionResample"/>
     <addaction name="actionImage_upsample_to_T1W_TESTING"/>
     <addaction name="separator"/>
+    <addaction name="actionTrim_image"/>
+    <addaction name="actionCorrect_AP_PA_scans"/>
+    <addaction name="separator"/>
     <addaction name="menuChange_B_table"/>
+    <addaction name="actionEnable_TEST_features"/>
    </widget>
    <widget class="QMenu" name="menuFile">
     <property name="title">
@@ -1291,17 +1302,17 @@
   </action>
   <action name="actionRotate">
    <property name="text">
-    <string>Image register to T1w/T2w...</string>
+    <string>Resample to T1w/T2w...</string>
    </property>
   </action>
   <action name="actionTrim_image">
    <property name="text">
-    <string>Trim Image</string>
+    <string>Trim</string>
    </property>
   </action>
   <action name="actionManual_Rotation">
    <property name="text">
-    <string>Manual Rotation...</string>
+    <string>Rotate...</string>
    </property>
   </action>
   <action name="actionReplace_b0_by_T2W_image">
@@ -1364,7 +1375,7 @@
   </action>
   <action name="actionResample">
    <property name="text">
-    <string>Resample...</string>
+    <string>Resample to isotropic</string>
    </property>
   </action>
   <action name="actionSave_SRC_file_as">

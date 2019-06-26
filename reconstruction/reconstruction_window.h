@@ -105,6 +105,7 @@ private slots:
 
     void on_actionResample_triggered();
     void on_actionSave_SRC_file_as_triggered();
+    void on_remove_below_clicked();
 };
 
 #endif // RECONSTRUCTION_WINDOW_H
