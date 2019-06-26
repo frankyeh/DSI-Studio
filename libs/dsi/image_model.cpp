@@ -997,7 +997,39 @@ void ImageModel::get_report(std::string& report)
         << " The slice thickness was " << voxel.vs[2] << " mm.";
     report = out.str();
 }
-
+bool ImageModel::save_to_file(const char* dwi_file_name)
+{
+    gz_mat_write mat_writer(dwi_file_name);
+    if(!mat_writer)
+        return false;
+    {
+        uint16_t dim[3];
+        dim[0] = uint16_t(voxel.dim[0]);
+        dim[1] = uint16_t(voxel.dim[1]);
+        dim[2] = uint16_t(voxel.dim[2]);
+        mat_writer.write("dimension",dim,1,3);
+        mat_writer.write("voxel_size",voxel.vs);
+    }
+    {
+        std::vector<float> b_table;
+        for (unsigned int index = 0;index < src_bvalues.size();++index)
+        {
+            b_table.push_back(src_bvalues[index]);
+            b_table.push_back(src_bvectors[index][0]);
+            b_table.push_back(src_bvectors[index][1]);
+            b_table.push_back(src_bvectors[index][2]);
+        }
+        mat_writer.write("b_table",b_table,4);
+    }
+    for (unsigned int index = 0;index < src_bvalues.size();++index)
+    {
+        std::ostringstream out;
+        out << "image" << index;
+        mat_writer.write(out.str().c_str(),src_dwi_data[index],1,voxel.dim.size());
+    }
+    mat_writer.write("mask",voxel.mask);
+    return true;
+}
 bool ImageModel::load_from_file(const char* dwi_file_name)
 {
     file_name = dwi_file_name;
@@ -1105,22 +1137,20 @@ bool ImageModel::load_from_file(const char* dwi_file_name)
     return true;
 }
 
-void ImageModel::save_to_file(gz_mat_write& mat_writer)
+void ImageModel::save_fib(const std::string& ext)
 {
+    std::string output_name = file_name;
+    output_name += ext;
+    gz_mat_write mat_writer(output_name.c_str());
 
-    set_title("Saving");
-
-    // dimension
     {
-        short dim[3];
-        dim[0] = voxel.dim[0];
-        dim[1] = voxel.dim[1];
-        dim[2] = voxel.dim[2];
+        uint16_t dim[3];
+        dim[0] = uint16_t(voxel.dim[0]);
+        dim[1] = uint16_t(voxel.dim[1]);
+        dim[2] = uint16_t(voxel.dim[2]);
         mat_writer.write("dimension",dim,1,3);
+        mat_writer.write("voxel_size",voxel.vs);
     }
-
-    // voxel size
-    mat_writer.write("voxel_size",voxel.vs);
 
     std::vector<float> float_data;
     std::vector<short> short_data;
@@ -1128,13 +1158,6 @@ void ImageModel::save_to_file(gz_mat_write& mat_writer)
     mat_writer.write("odf_vertices",float_data,3);
     mat_writer.write("odf_faces",short_data,3);
 
-}
-void ImageModel::save_fib(const std::string& ext)
-{
-    std::string output_name = file_name;
-    output_name += ext;
-    gz_mat_write mat_writer(output_name.c_str());
-    save_to_file(mat_writer);
     voxel.end(mat_writer);
     std::string final_report = voxel.report;
     final_report += voxel.recon_report.str();

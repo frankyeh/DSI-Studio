@@ -282,8 +282,8 @@ public:
     bool command(std::string cmd,std::string param = "");
 public:
     bool load_from_file(const char* dwi_file_name);
+    bool save_to_file(const char* dwi_file_name);
     void save_fib(const std::string& ext);
-    void save_to_file(gz_mat_write& mat_writer);
     bool save_to_nii(const char* nifti_file_name) const;
     bool save_b0_to_nii(const char* nifti_file_name) const;
     bool save_dwi_sum_to_nii(const char* nifti_file_name) const;

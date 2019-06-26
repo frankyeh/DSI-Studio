@@ -906,3 +906,15 @@ void reconstruction_window::on_actionResample_triggered()
     load_b_table();
     on_SlicePos_valueChanged(ui->SlicePos->value());
 }
+
+void reconstruction_window::on_actionSave_SRC_file_as_triggered()
+{
+    QString filename = QFileDialog::getSaveFileName(
+            this,"Save SRC file",absolute_path,
+            "SRC files (*src.gz);;All files (*)" );
+    if(filename.isEmpty())
+        return;
+    begin_prog("save file");
+    handle->save_to_file(filename.toStdString().c_str());
+    check_prog(0,0);
+}

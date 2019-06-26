@@ -104,6 +104,7 @@ private slots:
     void on_actionSave_DWI_sum_triggered();
 
     void on_actionResample_triggered();
+    void on_actionSave_SRC_file_as_triggered();
 };
 
 #endif // RECONSTRUCTION_WINDOW_H

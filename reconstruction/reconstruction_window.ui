@@ -50,7 +50,7 @@
     <item>
      <widget class="QToolBox" name="toolBox">
       <property name="currentIndex">
-       <number>2</number>
+       <number>0</number>
       </property>
       <property name="tabSpacing">
        <number>0</number>
@@ -187,8 +187,11 @@
                     <enum>Qt::Vertical</enum>
                    </property>
                    <widget class="QTableWidget" name="b_table">
+                    <property name="alternatingRowColors">
+                     <bool>true</bool>
+                    </property>
                     <property name="selectionMode">
-                     <enum>QAbstractItemView::SingleSelection</enum>
+                     <enum>QAbstractItemView::MultiSelection</enum>
                     </property>
                     <property name="selectionBehavior">
                      <enum>QAbstractItemView::SelectRows</enum>
@@ -1209,6 +1212,7 @@
     <property name="title">
      <string>File</string>
     </property>
+    <addaction name="actionSave_SRC_file_as"/>
     <addaction name="actionSave_4D_nifti"/>
     <addaction name="actionSave_b0"/>
     <addaction name="actionSave_DWI_sum"/>
@@ -1361,6 +1365,15 @@
   <action name="actionResample">
    <property name="text">
     <string>Resample...</string>
+   </property>
+  </action>
+  <action name="actionSave_SRC_file_as">
+   <property name="icon">
+    <iconset resource="../icons.qrc">
+     <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
+   </property>
+   <property name="text">
+    <string>Save SRC file as...</string>
    </property>
   </action>
  </widget>

@@ -484,31 +484,35 @@ bool DwiHeader::output_src(const char* di_file,std::vector<std::shared_ptr<DwiHe
     //store dimension
     unsigned int output_size = 0;
     {
-        short dimension[3];
+        uint16_t dimension[3];
         std::copy(geo.begin(),geo.end(),dimension);
-        if(upsampling == 1) // upsampling 2
-            std::for_each(dimension,dimension+3,[](short& i){i <<= 1;});
-        if(upsampling == 2) // downsampling 2
-            std::for_each(dimension,dimension+3,[](short& i){i >>= 1;});
-        if(upsampling == 3) // upsampling 4
-            std::for_each(dimension,dimension+3,[](short& i){i <<= 2;});
-        if(upsampling == 4) // downsampling 4
-            std::for_each(dimension,dimension+3,[](short& i){i >>= 2;});
-        output_size = dimension[0]*dimension[1]*dimension[2];
-        write_mat.write("dimension",dimension,1,3);
-    }
-    //store voxel size
-    {
         tipl::vector<3> voxel_size(dwi_files.front()->voxel_size);
+
         if(upsampling == 1) // upsampling 2
+        {
             voxel_size /= 2.0;
+            std::for_each(dimension,dimension+3,[](uint16_t& i){i <<= 1;});
+        }
         if(upsampling == 2) // downsampling 2
+        {
             voxel_size *= 2.0;
+            std::for_each(dimension,dimension+3,[](uint16_t& i){i >>= 1;});
+        }
         if(upsampling == 3) // upsampling 4
+        {
             voxel_size /= 4.0;
+            std::for_each(dimension,dimension+3,[](uint16_t& i){i <<= 2;});
+        }
         if(upsampling == 4) // downsampling 4
+        {
             voxel_size *= 4.0;
+            std::for_each(dimension,dimension+3,[](uint16_t& i){i >>= 2;});
+        }
+        output_size = dimension[0]*dimension[1]*dimension[2];
+
+        write_mat.write("dimension",dimension,1,3);
         write_mat.write("voxel_size",voxel_size);
+
     }
     // store bvec file
     {
