@@ -1021,7 +1021,7 @@ bool ImageModel::save_to_file(const char* dwi_file_name)
         }
         mat_writer.write("b_table",b_table,4);
     }
-    for (unsigned int index = 0;index < src_bvalues.size();++index)
+    for (unsigned int index = 0;check_prog(index,src_bvalues.size());++index)
     {
         std::ostringstream out;
         out << "image" << index;

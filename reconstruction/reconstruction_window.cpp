@@ -926,7 +926,7 @@ void reconstruction_window::on_actionResample_triggered()
 void reconstruction_window::on_actionSave_SRC_file_as_triggered()
 {
     QString filename = QFileDialog::getSaveFileName(
-            this,"Save SRC file",absolute_path,
+            this,"Save SRC file",filenames[0],
             "SRC files (*src.gz);;All files (*)" );
     if(filename.isEmpty())
         return;
