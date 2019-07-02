@@ -956,7 +956,7 @@ void ImageModel::get_report(std::string& report)
     {
         out << " A diffusion spectrum imaging scheme was used, and a total of " << num_dir
             << " diffusion sampling were acquired."
-            << " The maximum b-value was " << (int)std::round(src_bvalues.back()) << " s/mm2.";
+            << " The maximum b-value was " << (int)std::round(sorted_bvalues.back()) << " s/mm2.";
     }
     else
     if(is_multishell())
