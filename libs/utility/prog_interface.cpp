@@ -4,6 +4,7 @@
 #include <memory>
 #include <ctime>
 #include <iostream>
+#include <chrono>
 #include <QTime>
 
 bool has_gui = false;
