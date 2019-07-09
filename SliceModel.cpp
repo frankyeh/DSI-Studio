@@ -425,7 +425,7 @@ bool CustomSliceModel::stripskull(void)
         bool terminated = false;
         tipl::transformation_matrix<double> T,iT;
         tipl::reg::two_way_linear_mr(It,Itvs,source_images,voxel_size,T,
-                                     tipl::reg::affine,tipl::reg::mutual_information());
+                                     tipl::reg::affine,tipl::reg::mutual_information(),terminated);
         iT = T;
         iT.inverse();
         tipl::image<float,3> J(It.geometry());
