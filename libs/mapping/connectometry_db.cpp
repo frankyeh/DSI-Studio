@@ -989,9 +989,9 @@ inline void calculate_dif(float& greater,
     if(mean == 0.0f)
         return;
     if(f1 > f2)
-        lesser = (f1-f2)/mean;  // subject decreased connectivity
+        lesser = (f1-f2)/mean;  // subject decreased study index
     else
-        greater = (f2-f1)/mean; // subject increased connectivity
+        greater = (f2-f1)/mean; // subject increased study index
 }
 bool connectometry_result::compare(std::shared_ptr<fib_data> handle,const std::vector<const float*>& fa1,
                                         const std::vector<const float*>& fa2,unsigned char normalization)
