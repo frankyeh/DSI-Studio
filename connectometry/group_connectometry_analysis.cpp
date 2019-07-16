@@ -468,24 +468,25 @@ void group_connectometry_analysis::generate_report(std::string& output)
 
 
     std::ostringstream out_pos_corr,out_neg_corr;
+    std::string index_name = QString(handle->db.index_name.c_str()).toUpper().toStdString();
     if(fdr_threshold == 0.0) // using length threshold
     {
         out_pos_corr << " The connectometry analysis found "
         << (fdr_pos_corr[length_threshold]>0.5 || !has_pos_corr_result ? "no track": pos_corr_tracks_result.c_str());
 
         if(model->type == 1) // regression
-            out_pos_corr << " showing " << handle->db.index_name << " positively correlated with " << foi_str;
+            out_pos_corr << " showing " << index_name << " positively correlated with " << foi_str;
         else
-            out_pos_corr << " showing increased " << handle->db.index_name;
+            out_pos_corr << " showing increased " << index_name;
 
         out_pos_corr << " (FDR=" << fdr_pos_corr[length_threshold] << ").";
 
         out_neg_corr << " The connectometry analysis found "
         << (fdr_neg_corr[length_threshold]>0.5 || !has_neg_corr_result ? "no track": neg_corr_tracks_result.c_str());
         if(model->type == 1) // regression
-            out_neg_corr << " showing " << handle->db.index_name << " negatively correlated with " << foi_str;
+            out_neg_corr << " showing " << index_name << " negatively correlated with " << foi_str;
         else
-            out_neg_corr << " showing decreased " << handle->db.index_name;
+            out_neg_corr << " showing decreased " << index_name;
         out_neg_corr << " (FDR=" << fdr_neg_corr[length_threshold] << ").";
     }
     else
@@ -493,18 +494,18 @@ void group_connectometry_analysis::generate_report(std::string& output)
         out_pos_corr << " The connectometry analysis found "
         << (!has_pos_corr_result ? "no track": pos_corr_tracks_result.c_str());
         if(model->type == 1) // regression
-            out_pos_corr << " showing " << handle->db.index_name << " positively correlated with " << foi_str;
+            out_pos_corr << " showing " << index_name << " positively correlated with " << foi_str;
         else
-            out_pos_corr << " showing increased " << handle->db.index_name;
+            out_pos_corr << " showing increased " << index_name;
         out_pos_corr << ".";
 
 
         out_neg_corr << " The connectometry analysis found "
         << (!has_neg_corr_result ? "no track": neg_corr_tracks_result.c_str());
         if(model->type == 1) // regression
-            out_neg_corr << " showing " << handle->db.index_name << " negatively correlated with " << foi_str;
+            out_neg_corr << " showing " << index_name << " negatively correlated with " << foi_str;
         else
-            out_neg_corr << " showing decreased " << handle->db.index_name;
+            out_neg_corr << " showing decreased " << index_name;
         out_neg_corr << ".";
     }
 
@@ -516,17 +517,17 @@ void group_connectometry_analysis::generate_report(std::string& output)
         html_report << "<p><b>Fig.</b> The False discovery rate (FDR) at different track length </p>";
     }
     if(model->type == 1) // regression
-        html_report << "<h3>Positive correlation between " << handle->db.index_name << " and " << foi_str << "</h3>" << std::endl;
+        html_report << "<h3>Positive correlation between " << index_name << " and " << foi_str << "</h3>" << std::endl;
     if(model->type == 3)
-        html_report << "<h3>Increased " << handle->db.index_name << "</h3>" << std::endl;
+        html_report << "<h3>Increased " << index_name << "</h3>" << std::endl;
 
     if(progress == 100)
     {
         html_report << "<img src = \""<< QFileInfo(QString(output_file_name.c_str())+".pos_corr.jpg").fileName().toStdString() << "\" width=\"1200\"/>" << std::endl;
         if(model->type == 1) // regression
-            html_report << "<p><b>Fig.</b> Tracks with " << handle->db.index_name << " positively correlated with "<< foi_str << "</p>";
+            html_report << "<p><b>Fig.</b> Tracks with " << index_name << " positively correlated with "<< foi_str << "</p>";
         if(model->type == 3)
-            html_report << "<p><b>Fig.</b> Tracks with increased " << handle->db.index_name << "</p>";
+            html_report << "<p><b>Fig.</b> Tracks with increased " << index_name << "</p>";
         html_report << "<img src = \""<< QFileInfo(QString(output_file_name.c_str())+".pos_corr.dist.jpg").fileName().toStdString() << "\" width=\"320\"/>" << std::endl;
         html_report << "<p><b>Fig.</b> Permuted versus non permuted results showing the differences against null distribution in tracks with positive correlation</p>";
 
@@ -534,17 +535,17 @@ void group_connectometry_analysis::generate_report(std::string& output)
     html_report << "<p>" << out_pos_corr.str().c_str() << "</p>" << std::endl;
 
     if(model->type == 1) // regression
-        html_report << "<h3>Negatively correlation between " << handle->db.index_name << " and " << foi_str << "</h3>" << std::endl;
+        html_report << "<h3>Negatively correlation between " << index_name << " and " << foi_str << "</h3>" << std::endl;
     if(model->type == 3) // longitudinal
-        html_report << "<h3>Decreased " << handle->db.index_name << "</h3>" << std::endl;
+        html_report << "<h3>Decreased " << index_name << "</h3>" << std::endl;
 
     if(progress == 100)
     {
         html_report << "<img src = \""<< QFileInfo(QString(output_file_name.c_str())+".neg_corr.jpg").fileName().toStdString() << "\" width=\"1200\"/>" << std::endl;
         if(model->type == 1) // regression
-            html_report << "<p><b>Fig.</b> Tracks with " << handle->db.index_name << " negatively correlated with "<< foi_str << "</p>";
+            html_report << "<p><b>Fig.</b> Tracks with " << index_name << " negatively correlated with "<< foi_str << "</p>";
         if(model->type == 3)
-            html_report << "<p><b>Fig.</b> Tracks with decreased " << handle->db.index_name << ".</p>";
+            html_report << "<p><b>Fig.</b> Tracks with decreased " << index_name << ".</p>";
         html_report << "<img src = \""<< QFileInfo(QString(output_file_name.c_str())+".neg_corr.dist.jpg").fileName().toStdString() << "\" width=\"320\"/>" << std::endl;
         html_report << "<p><b>Fig.</b> Permuted versus non permuted results showing the differences against null distribution in tracks with negative correlation</p>";
     }
