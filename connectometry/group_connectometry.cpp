@@ -667,7 +667,7 @@ void group_connectometry::on_load_roi_from_file_clicked()
                                 "Report file (*.txt *.nii *nii.gz);;All files (*)");
     if(file.isEmpty())
         return;
-    tipl::image<short,3> I;
+    tipl::image<float,3> I;
     tipl::matrix<4,4,float> transform;
     gz_nifti nii;
     if(!nii.load_from_file(file.toLocal8Bit().begin()))
@@ -675,14 +675,14 @@ void group_connectometry::on_load_roi_from_file_clicked()
         QMessageBox::information(this,"Error","Invalid nifti file format",0);
         return;
     }
-    nii >> I;
+    nii.toLPS(I);
     nii.get_image_transformation(transform);
     transform.inv();
+    transform *= vbc->handle->trans_to_mni;
     std::vector<tipl::vector<3,short> > new_roi;
     for (tipl::pixel_index<3> index(vbc->handle->dim);index < vbc->handle->dim.size();++index)
     {
-        tipl::vector<3> pos;
-        vbc->handle->subject2mni(index,pos);
+        tipl::vector<3> pos(index);
         pos.to(transform);
         pos.round();
         if(!I.geometry().is_valid(pos) || I.at(pos[0],pos[1],pos[2]) == 0)
