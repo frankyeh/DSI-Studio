@@ -169,7 +169,9 @@ void reconstruction_window::load_b_table(void)
 }
 void reconstruction_window::command(QString cmd)
 {
-    handle->command(cmd.toStdString(),"");
+    QStringList cmd_list = cmd.split("=");
+    std::string param = cmd_list.size() > 1 ? cmd_list[1].toStdString():std::string();
+    handle->command(cmd_list[0].toStdString(),param);
     update_dimension();
     load_b_table();
     on_SlicePos_valueChanged(ui->SlicePos->value());
