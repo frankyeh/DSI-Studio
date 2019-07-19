@@ -291,7 +291,7 @@ public:
         // the top vertex
         add_vertex(tipl::vector<3,float>(0.0f,0.0f,1.0f));
         //central vertices around the upper staggered circles
-        float sqrt5 = std::sqrtf(5.0f);
+        float sqrt5 = std::sqrt(5.0f);
         float height = 1.0f/sqrt5;
         float radius = 2.0f/sqrt5;
         for (unsigned int index = 0;index < 5;++index)

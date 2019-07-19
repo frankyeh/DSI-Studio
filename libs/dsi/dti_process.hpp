@@ -16,7 +16,7 @@ class Dwi2Tensor : public BaseProcess
         float avg = (l1*l1+l2*l2+l3*l3);
         if(avg == 0.0f)
             avg = 1.0f;
-        return std::min<float>(1.0f,std::sqrtf(1.5f*(ll1*ll1+ll2*ll2+ll3*ll3)/avg));
+        return std::min<float>(1.0f,std::sqrt(1.5f*(ll1*ll1+ll2*ll2+ll3*ll3)/avg));
     }
 private:
     //math::dynamic_matrix<float> iKtKKt;

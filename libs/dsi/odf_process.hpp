@@ -71,12 +71,12 @@ public:
                 {
                     if(i == j)
                         continue;
-                    float cur_cos = std::fabs(std::cosf(voxel.bvectors[i]*voxel.bvectors[j]));
+                    float cur_cos = std::fabs(std::cos(voxel.bvectors[i]*voxel.bvectors[j]));
                     if(cur_cos > 0.998f)
                         continue;
                     max_cos = std::max<float>(max_cos,cur_cos);
                 }
-                averaged_angle += std::acosf(max_cos);
+                averaged_angle += std::acos(max_cos);
             }
             averaged_angle /= num;
 
@@ -90,9 +90,9 @@ public:
                 float effective_b = 0.0;
                 for(unsigned int j = from;j < to;++j)
                 {
-                    float angle = std::acosf(std::min<float>(1.0f,std::fabs(new_dir.vertices[i]*voxel.bvectors[j])));
+                    float angle = std::acos(std::min<float>(1.0f,std::fabs(new_dir.vertices[i]*voxel.bvectors[j])));
                     angle/=averaged_angle;
-                    t[j] = std::expf(-2.0f*angle*angle); // if the angle == 1, then weighting = 0.135
+                    t[j] = std::exp(-2.0f*angle*angle); // if the angle == 1, then weighting = 0.135
                     effective_b += t[j]*voxel.bvalues[j];
                 }
                 float sum_t = std::accumulate(t.begin(),t.end(),0.0f);
@@ -148,7 +148,7 @@ struct GeneralizedFA
         m1 /= float(odf.size());
         if (m2 == 0.0f)
             return 0.0f;
-        return std::sqrtf((float(odf.size()))/(float(odf.size())-1.0f)*(m2-m1)/m2);
+        return std::sqrt((float(odf.size()))/(float(odf.size())-1.0f)*(m2-m1)/m2);
     }
 };
 

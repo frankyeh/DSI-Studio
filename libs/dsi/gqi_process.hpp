@@ -140,7 +140,7 @@ public:
                     dir.normalize();
                     voxel.bvectors.push_back(dir);
                     offset.push_back(dx + dy*voxel.dim.width() + dz*voxel.dim.plane_size());
-                    scaling.push_back(std::expf(-r2));
+                    scaling.push_back(std::exp(-r2));
                 }
         voxel.calculate_sinc_ql(sinc_ql);
     }

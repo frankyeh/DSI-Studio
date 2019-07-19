@@ -5,7 +5,7 @@ float base_function(float theta)
 {
     if(std::fabs(theta) < 0.000001f)
         return 1.0f/3.0f;
-    return (2.0f*std::cosf(theta)+(theta-2.0f/theta)*std::sin(theta))/theta/theta;
+    return (2.0f*std::cos(theta)+(theta-2.0f/theta)*std::sin(theta))/theta/theta;
 }
 
 void Voxel::init(void)
@@ -32,7 +32,7 @@ void Voxel::calculate_sinc_ql(std::vector<float>& sinc_ql)
         for (unsigned int i = 0; i < bvalues.size(); ++i,++index)
             sinc_ql[index] = bvectors[i]*
                          tipl::vector<3,float>(ti.vertices[j])*
-                           std::sqrtf(bvalues[i]*0.01506f);
+                           std::sqrt(bvalues[i]*0.01506f);
 
     for (unsigned int index = 0; index < sinc_ql.size(); ++index)
         sinc_ql[index] = r2_weighted ?
