@@ -167,16 +167,7 @@ void reconstruction_window::load_b_table(void)
     }
     ui->b_table->selectRow(0);
 }
-void reconstruction_window::command(QString cmd)
-{
-    QStringList cmd_list = cmd.split("=");
-    std::string param = cmd_list.size() > 1 ? cmd_list[1].toStdString():std::string();
-    handle->command(cmd_list[0].toStdString(),param);
-    update_dimension();
-    load_b_table();
-    on_SlicePos_valueChanged(ui->SlicePos->value());
-    steps.push_back(cmd.toStdString());
-}
+
 void reconstruction_window::on_b_table_itemSelectionChanged()
 {
     v2c.set_range(ui->min_value->value(),ui->max_value->value());
@@ -340,21 +331,33 @@ void reconstruction_window::on_save_mask_clicked()
     region.LoadFromBuffer(handle->voxel.mask);
     region.SaveToFile(filename.toLocal8Bit().begin());
 }
-
+void reconstruction_window::command(std::string cmd,std::string param)
+{
+    handle->command(cmd,param);
+    update_dimension();
+    load_b_table();
+    on_SlicePos_valueChanged(ui->SlicePos->value());
+}
 void reconstruction_window::on_doDTI_clicked()
 {
-    std::vector<std::string> prior_steps(steps);
+
     for(int index = 0;index < filenames.size();++index)
     {
         if(index)
         {
+            std::istringstream in(handle->voxel.steps);
             begin_prog("load src");
             if(!load_src(index))
                 break;
-            // apply the previous steps
-            steps.clear();
-            for(int j = 0;j < prior_steps.size();++j)
-                command(prior_steps[j].c_str());
+            std::string step;
+            while(std::getline(in,step))
+            {
+                size_t pos = step.find('=');
+                if(pos == std::string::npos)
+                    command(step);
+                else
+                    command(step.substr(0,pos),step.substr(pos+1,step.size()-pos-1));
+            }
         }
         std::fill(handle->voxel.param.begin(),handle->voxel.param.end(),0.0);
         if(ui->DTI->isChecked())
@@ -918,11 +921,7 @@ void reconstruction_window::on_actionResample_triggered()
         "DSI Studio","Assign output resolution in (mm):", double(handle->voxel.vs[0]),0.0,3.0,4, &ok));
     if (!ok || nv == 0.0f)
         return;
-
-    handle->command("[Step T2][Edit][Resample]",QString::number(nv).toStdString());
-    update_dimension();
-    load_b_table();
-    on_SlicePos_valueChanged(ui->SlicePos->value());
+    command("[Step T2][Edit][Resample]",QString::number(nv).toStdString());
 }
 
 void reconstruction_window::on_actionSave_SRC_file_as_triggered()

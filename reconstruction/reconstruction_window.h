@@ -22,8 +22,7 @@ public:
     QStringList filenames;
     explicit reconstruction_window(QStringList filenames_,QWidget *parent = nullptr);
     ~reconstruction_window();
-    std::vector<std::string> steps;
-    void command(QString cmd);
+    void command(std::string cmd,std::string param=std::string());
 protected:
     void resizeEvent ( QResizeEvent * event );
     void showEvent ( QShowEvent * event );
