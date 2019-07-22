@@ -22,7 +22,7 @@
      <item>
       <widget class="QLabel" name="label_2">
        <property name="text">
-        <string>Regioins:</string>
+        <string>Parcellation Atlas:</string>
        </property>
       </widget>
      </item>
@@ -39,7 +39,7 @@
      <item>
       <widget class="QComboBox" name="end_only">
        <property name="currentIndex">
-        <number>1</number>
+        <number>0</number>
        </property>
        <item>
         <property name="text">
