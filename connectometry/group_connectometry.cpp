@@ -664,7 +664,7 @@ void group_connectometry::on_load_roi_from_file_clicked()
                                 this,
                                 "Load ROI from file",
                                 work_dir + "/roi.nii.gz",
-                                "Report file (*.txt *.nii *nii.gz);;All files (*)");
+                                "Report file (*.nii *nii.gz);;Text files (*.txt);;All files (*)");
     if(file.isEmpty())
         return;
     tipl::image<float,3> I;

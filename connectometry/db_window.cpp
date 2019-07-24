@@ -315,7 +315,7 @@ void db_window::on_actionLoad_mask_triggered()
                                 this,
                                 "Load fingerprint mask from file",
                                 QFileInfo(windowTitle()).absoluteDir().absolutePath(),
-                                "Report file (*.txt *.nii *nii.gz);;All files (*)");
+                                "Report file (*.nii *nii.gz);;Text files (*.txt);;All files (*)");
     if(file.isEmpty())
         return;
     tipl::image<float,3> I;
@@ -345,7 +345,7 @@ void db_window::on_actionSave_mask_triggered()
                                 this,
                                 "Save fingerprint mask",
                                 QFileInfo(windowTitle()).absoluteDir().absolutePath() + "/mask.nii.gz",
-                                "Report file (*.txt *.nii *nii.gz);;All files (*)");
+                                "Report file (*.nii *nii.gz);;Text files (*.txt);;All files (*)");
     if(FileName.isEmpty())
         return;
     float fiber_threshold = ui->fp_coverage->value()*tipl::segmentation::otsu_threshold(

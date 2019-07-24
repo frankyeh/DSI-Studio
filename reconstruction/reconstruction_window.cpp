@@ -305,7 +305,7 @@ void reconstruction_window::on_load_mask_clicked()
             this,
             "Open region",
             absolute_path,
-            "Mask files (*.txt *.nii *nii.gz *.hdr);;All files (*)" );
+            "Mask files (*.nii *nii.gz *.hdr);;Text files (*.txt);;All files (*)" );
     if(filename.isEmpty())
         return;
     ROIRegion region(std::make_shared<fib_data>(handle->dwi.geometry(),handle->voxel.vs));
@@ -322,7 +322,7 @@ void reconstruction_window::on_save_mask_clicked()
             this,
             "Save region",
             absolute_path+"/mask.txt",
-            "Text files (*.txt);;Nifti file(*nii.gz *.nii);;All files (*)" );
+            "Nifti file(*nii.gz *.nii);;Text files (*.txt);;All files (*)" );
     if(filename.isEmpty())
         return;
     if(QFileInfo(filename.toLower()).completeSuffix() != "txt")
