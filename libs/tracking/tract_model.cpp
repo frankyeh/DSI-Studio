@@ -14,6 +14,7 @@
 #include "gzip_interface.hpp"
 #include "tract_cluster.hpp"
 #include "../../tracking/region/Regions.h"
+#include "tracking_method.hpp"
 
 void smoothed_tracks(const std::vector<float>& track,std::vector<float>& smoothed)
 {
@@ -101,6 +102,7 @@ struct TrackVis
     bool load_from_file(const char* file_name_,
                 std::vector<std::vector<float> >& loaded_tract_data,
                 std::vector<unsigned int>& loaded_tract_cluster,
+                        std::string& info,
                                tipl::vector<3> vs)
     {
         gz_istream in;
@@ -108,6 +110,9 @@ struct TrackVis
             return false;
         in.read((char*)this,1000);
         unsigned int track_number = n_count;
+        info = reserved;
+        if(info.find(' ') != std::string::npos)
+            info.clear();
         if(!track_number) // number is not stored
             track_number = 100000000;
         begin_prog("loading");
@@ -150,7 +155,8 @@ struct TrackVis
                              tipl::geometry<3> geo,
                              tipl::vector<3> vs,
                              const std::vector<std::vector<float> >& tract_data,
-                             const std::vector<std::vector<float> >& scalar)
+                             const std::vector<std::vector<float> >& scalar,
+                             const std::string& info)
     {
         gz_ostream out;
         if (!out.open(file_name))
@@ -160,8 +166,9 @@ struct TrackVis
         trk.n_count = tract_data.size();
         if(!scalar.empty())
             trk.n_scalars = 1;
+        if(info.length())
+            std::copy(info.begin(),info.begin()+std::min<int>(443,info.length()),trk.reserved);
         out.write((const char*)&trk,1000);
-
         begin_prog("saving");
         for (unsigned int i = 0;check_prog(i,tract_data.size());++i)
         {
@@ -234,8 +241,16 @@ bool TractModel::load_from_file(const char* file_name_,bool append)
     if(ext == std::string(".trk") || ext == std::string("k.gz"))
         {
             TrackVis trk;
-            if(!trk.load_from_file(file_name_,loaded_tract_data,loaded_tract_cluster,vs))
+            if(!trk.load_from_file(file_name_,loaded_tract_data,loaded_tract_cluster,parameter_id,vs))
                 return false;
+            if(!parameter_id.empty())
+            {
+                report = handle->report;
+                report += "\nThis tractography was generated using the following parameters: ";
+                TrackingParam param;
+                if(param.set_code(parameter_id))
+                    report += param.get_report();
+            }
             // used in autotrack
             if(handle->load_template() &&
                tipl::geometry<3>(trk.dim) == handle->template_I.geometry() &&
@@ -399,7 +414,7 @@ bool TractModel::save_data_to_file(const char* file_name,const std::string& inde
     {
         if(ext == std::string(".trk"))
             file_name_s += ".gz";
-        return TrackVis::save_to_file(file_name_s.c_str(),geometry,vs,tract_data,data);
+        return TrackVis::save_to_file(file_name_s.c_str(),geometry,vs,tract_data,data,parameter_id);
     }
     if (ext == std::string(".txt"))
     {
@@ -464,7 +479,7 @@ bool TractModel::save_tracts_to_file(const char* file_name_)
         if(ext == std::string(".trk"))
             file_name += ".gz";
         std::vector<std::vector<float> > empty_scalar;
-        return TrackVis::save_to_file(file_name.c_str(),geometry,vs,tract_data,empty_scalar);
+        return TrackVis::save_to_file(file_name.c_str(),geometry,vs,tract_data,empty_scalar,parameter_id);
     }
     if(ext == std::string(".tck"))
     {
@@ -750,7 +765,9 @@ void TractModel::save_vrml(const char* file_name,
 }
 
 //---------------------------------------------------------------------------
-bool TractModel::save_all(const char* file_name_,const std::vector<std::shared_ptr<TractModel> >& all)
+bool TractModel::save_all(const char* file_name_,
+                          const std::vector<std::shared_ptr<TractModel> >& all,
+                          const std::vector<std::string>& name_list)
 {
     if(all.empty())
         return false;
@@ -813,7 +830,6 @@ bool TractModel::save_all(const char* file_name_,const std::vector<std::shared_p
             out.write((const char*)&n_point,sizeof(int));
             out.write((const char*)&*buffer.begin(),sizeof(float)*buffer.size());
         }
-        return true;
     }
 
     if (ext == std::string(".mat"))
@@ -836,7 +852,11 @@ bool TractModel::save_all(const char* file_name_,const std::vector<std::shared_p
         out.write("cluster",cluster);
         return true;
     }
-    return false;
+    // output label file
+    std::ofstream out((file_name+".txt").c_str());
+    for(int i = 0;i < name_list.size();++i)
+        out << name_list[i] << std::endl;
+    return true;
 }
 //---------------------------------------------------------------------------
 bool TractModel::save_transformed_tracts_to_file(const char* file_name,const float* transform,bool end_point)

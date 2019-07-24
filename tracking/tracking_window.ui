@@ -288,8 +288,8 @@
    </property>
    <property name="minimumSize">
     <size>
-     <width>0</width>
-     <height>0</height>
+     <width>390</width>
+     <height>48</height>
     </size>
    </property>
    <property name="maximumSize">
@@ -584,8 +584,8 @@
    </property>
    <property name="minimumSize">
     <size>
-     <width>0</width>
-     <height>0</height>
+     <width>267</width>
+     <height>47</height>
     </size>
    </property>
    <property name="windowTitle">
@@ -720,10 +720,30 @@
      <addaction name="actionThreshold_2"/>
      <addaction name="actionSet_Opacity"/>
     </widget>
-    <widget class="QMenu" name="menuMove_Region">
+    <widget class="QMenu" name="menuMiscellaneous">
      <property name="title">
-      <string>Move Region</string>
+      <string>Miscellaneous</string>
      </property>
+     <widget class="QMenu" name="menuSort_Regions">
+      <property name="title">
+       <string>Sort Regions</string>
+      </property>
+      <addaction name="actionBy_Name"/>
+      <addaction name="actionBy_Size"/>
+      <addaction name="actionBy_X"/>
+      <addaction name="actionBy_Y"/>
+      <addaction name="actionBy_Z"/>
+     </widget>
+     <addaction name="actionNew_Super_Resolution_Region"/>
+     <addaction name="actionThreshold"/>
+     <addaction name="separator"/>
+     <addaction name="actionSave_All_Regions_As_Multiple_Files"/>
+     <addaction name="actionSave_Voxel_Data_As"/>
+     <addaction name="separator"/>
+     <addaction name="actionWhole_brain_seeding"/>
+     <addaction name="actionMove_Slices_To_Current_Region"/>
+     <addaction name="menuSort_Regions"/>
+     <addaction name="separator"/>
      <addaction name="actionShift_X"/>
      <addaction name="actionShift_X_2"/>
      <addaction name="actionShift_Y"/>
@@ -733,33 +753,17 @@
      <addaction name="actionFlip_X"/>
      <addaction name="actionFlip_Y"/>
      <addaction name="actionFlip_Z"/>
-    </widget>
-    <widget class="QMenu" name="menuSort">
-     <property name="title">
-      <string>Sort All Regions</string>
-     </property>
-     <addaction name="actionBy_Name"/>
-     <addaction name="actionBy_Size"/>
-     <addaction name="actionBy_X"/>
-     <addaction name="actionBy_Y"/>
-     <addaction name="actionBy_Z"/>
-    </widget>
-    <widget class="QMenu" name="menuModify_Checked_Regions">
-     <property name="title">
-      <string>Modify Checked Regions</string>
-     </property>
-     <addaction name="actionAB"/>
+     <addaction name="separator"/>
      <addaction name="actionB_A"/>
+     <addaction name="actionAB"/>
      <addaction name="actionA_B"/>
     </widget>
     <addaction name="actionNewRegion"/>
     <addaction name="actionOpenRegion"/>
     <addaction name="actionOpen_MNI_Region"/>
-    <addaction name="actionLoad_From_Atlas"/>
     <addaction name="separator"/>
     <addaction name="actionSaveRegionAs"/>
     <addaction name="actionSave_All_Regions_As"/>
-    <addaction name="actionSave_All_Regions_As_Multiple_Files"/>
     <addaction name="separator"/>
     <addaction name="actionCheck_all_regions"/>
     <addaction name="actionUnckech_all_regions"/>
@@ -771,20 +775,10 @@
     <addaction name="separator"/>
     <addaction name="actionUndo_Edit"/>
     <addaction name="actionRedo_Edit"/>
-    <addaction name="separator"/>
-    <addaction name="actionMove_Slices_To_Current_Region"/>
-    <addaction name="menuMove_Region"/>
     <addaction name="menuModify"/>
-    <addaction name="menuModify_Checked_Regions"/>
-    <addaction name="menuSort"/>
-    <addaction name="separator"/>
-    <addaction name="actionWhole_brain_seeding"/>
-    <addaction name="actionThreshold"/>
-    <addaction name="actionNew_Super_Resolution_Region"/>
     <addaction name="separator"/>
     <addaction name="actionRegion_statistics"/>
-    <addaction name="actionSave_Voxel_Data_As"/>
-    <addaction name="separator"/>
+    <addaction name="menuMiscellaneous"/>
    </widget>
    <widget class="QMenu" name="menuTracts">
     <property name="title">
@@ -799,16 +793,6 @@
        <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
      </property>
     </widget>
-    <widget class="QMenu" name="menuClustering">
-     <property name="title">
-      <string>Clustering</string>
-     </property>
-     <addaction name="actionOpen_Cluster_Labels"/>
-     <addaction name="actionHierarchical"/>
-     <addaction name="actionK_means_Clustering"/>
-     <addaction name="actionEM_Clustering"/>
-     <addaction name="actionDeep_Learning_Train"/>
-    </widget>
     <widget class="QMenu" name="menuExport_Tract_Density">
      <property name="title">
       <string>Save Tract Density</string>
@@ -820,15 +804,6 @@
      <addaction name="actionTDI_Diffusion_Space"/>
      <addaction name="actionTDI_Subvoxel_Diffusion_Space"/>
      <addaction name="actionTDI_Import_Slice_Space"/>
-    </widget>
-    <widget class="QMenu" name="menuTract_Color">
-     <property name="title">
-      <string>Tract Color</string>
-     </property>
-     <addaction name="actionSet_Color"/>
-     <addaction name="actionOpen_Colors"/>
-     <addaction name="actionOpen_Tract_Property"/>
-     <addaction name="actionSave_Tracts_Colors_As"/>
     </widget>
     <widget class="QMenu" name="menuSave_Tracts">
      <property name="title">
@@ -853,17 +828,34 @@
      <addaction name="separator"/>
      <addaction name="actionSave_VMRL"/>
     </widget>
-    <widget class="QMenu" name="menuDelete_Tracts">
+    <widget class="QMenu" name="menuOthers">
      <property name="title">
-      <string>Delete Tracts</string>
+      <string>Miscellaneous...</string>
      </property>
-     <addaction name="actionDeleteTract"/>
-     <addaction name="actionDeleteTractAll"/>
+     <addaction name="actionOpen_Tracts_Label"/>
+     <addaction name="actionSort_Tracts_By_Names"/>
+     <addaction name="separator"/>
+     <addaction name="actionMerge_Tracts_by_Name"/>
      <addaction name="actionDelete_By_Length"/>
      <addaction name="actionRemove_Repeated_Tracks"/>
+     <addaction name="actionSeparate_Deleted"/>
+     <addaction name="separator"/>
+     <addaction name="actionSet_Color"/>
+     <addaction name="actionOpen_Colors"/>
+     <addaction name="actionOpen_Tract_Property"/>
+     <addaction name="actionSave_Tracts_Colors_As"/>
+     <addaction name="separator"/>
+     <addaction name="actionRecognize_Current_Tract"/>
+     <addaction name="actionRecognize_Clustering"/>
+     <addaction name="separator"/>
+     <addaction name="actionOpen_Cluster_Labels"/>
+     <addaction name="actionHierarchical"/>
+     <addaction name="actionK_means_Clustering"/>
+     <addaction name="actionEM_Clustering"/>
+     <addaction name="actionDeep_Learning_Train"/>
+     <addaction name="separator"/>
     </widget>
     <addaction name="actionOpenTract"/>
-    <addaction name="actionOpen_Tracts_Label"/>
     <addaction name="separator"/>
     <addaction name="menuSave_Tracts"/>
     <addaction name="menuSave"/>
@@ -871,27 +863,21 @@
     <addaction name="separator"/>
     <addaction name="actionCheck_all_tracts"/>
     <addaction name="actionUncheck_all_tracts"/>
-    <addaction name="actionSort_Tracts_By_Names"/>
     <addaction name="separator"/>
     <addaction name="actionMerge_All"/>
-    <addaction name="actionMerge_Tracts_by_Name"/>
     <addaction name="actionCopyTrack"/>
-    <addaction name="separator"/>
-    <addaction name="menuDelete_Tracts"/>
-    <addaction name="actionSeparate_Deleted"/>
+    <addaction name="actionDeleteTract"/>
+    <addaction name="actionDeleteTractAll"/>
     <addaction name="separator"/>
     <addaction name="actionEndpoints_to_seeding"/>
     <addaction name="actionTracts_to_seeds"/>
     <addaction name="actionFilter_by_ROI"/>
     <addaction name="separator"/>
-    <addaction name="menuTract_Color"/>
-    <addaction name="menuClustering"/>
-    <addaction name="separator"/>
-    <addaction name="actionRecognize_Current_Tract"/>
-    <addaction name="actionRecognize_Clustering"/>
     <addaction name="actionTract_Analysis_Report"/>
     <addaction name="actionConnectivity_matrix"/>
     <addaction name="actionStatistics"/>
+    <addaction name="separator"/>
+    <addaction name="menuOthers"/>
    </widget>
    <widget class="QMenu" name="menu_Edit">
     <property name="title">
@@ -998,10 +984,12 @@
      <string>Analysis</string>
     </property>
     <addaction name="actionManual_Registration"/>
+    <addaction name="separator"/>
     <addaction name="actionQuality_Assessment"/>
     <addaction name="actionImprove_Quality"/>
-    <addaction name="actionPPV_analysis"/>
     <addaction name="actionFIB_protocol"/>
+    <addaction name="separator"/>
+    <addaction name="actionPPV_analysis"/>
    </widget>
    <widget class="QMenu" name="menuLayout">
     <property name="title">
@@ -1445,8 +1433,8 @@ Tracking</string>
    </property>
    <property name="minimumSize">
     <size>
-     <width>0</width>
-     <height>0</height>
+     <width>356</width>
+     <height>173</height>
     </size>
    </property>
    <property name="floating">
@@ -3051,7 +3039,7 @@ Tracking</string>
   </action>
   <action name="actionQuality_Assessment">
    <property name="text">
-    <string>Quality Assessment...</string>
+    <string>FIB Quality Assessment...</string>
    </property>
   </action>
   <action name="actionSave_3D_screen_in_3_views">
@@ -3219,15 +3207,6 @@ Tracking</string>
     <string>Save VRML...</string>
    </property>
   </action>
-  <action name="actionLoad_From_Atlas">
-   <property name="icon">
-    <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/atlas.xpm</normaloff>:/icons/icons/atlas.xpm</iconset>
-   </property>
-   <property name="text">
-    <string>Load From Atlas...</string>
-   </property>
-  </action>
   <action name="actionSeparate_Deleted">
    <property name="text">
     <string>Separate Deleted Tracts</string>
@@ -3374,11 +3353,6 @@ Tracking</string>
     <string>New Super Resolution Region</string>
    </property>
   </action>
-  <action name="actionTracks_distanced_at_voxel_size">
-   <property name="text">
-    <string>Tracks Regrid at Voxel Size</string>
-   </property>
-  </action>
   <action name="actionRecognize_Clustering">
    <property name="text">
     <string>Recognize and Clustering</string>
@@ -3476,21 +3450,6 @@ Tracking</string>
     <string>By Name</string>
    </property>
   </action>
-  <action name="actionSmooth_All">
-   <property name="text">
-    <string>Smooth All</string>
-   </property>
-  </action>
-  <action name="actionDefragment_All">
-   <property name="text">
-    <string>Defragment All</string>
-   </property>
-  </action>
-  <action name="actionDilate_All">
-   <property name="text">
-    <string>Dilate All</string>
-   </property>
-  </action>
   <action name="actionMove_Slices_To_Current_Region">
    <property name="text">
     <string>Move Slices To Current Region</string>
@@ -3509,7 +3468,7 @@ Tracking</string>
   </action>
   <action name="actionFIB_protocol">
    <property name="text">
-    <string>FIB protocol</string>
+    <string>FIB Protocol</string>
    </property>
   </action>
  </widget>

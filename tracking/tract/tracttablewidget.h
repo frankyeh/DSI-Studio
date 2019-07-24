@@ -27,6 +27,9 @@ private:
 public:
     std::vector<std::shared_ptr<ThreadData> > thread_data;
     std::vector<std::shared_ptr<TractModel> > tract_models;
+public:
+    std::vector<std::shared_ptr<TractModel> > get_checked_tracks(void) const;
+    std::vector<std::string> get_checked_tracks_name(void) const;
     enum {none = 0,select = 1,del = 2,cut = 3,paint = 4}edit_option;
     void addNewTracts(QString tract_name,bool checked = true);
     void addConnectometryResults(std::vector<std::vector<std::vector<float> > >& greater,
@@ -48,6 +51,7 @@ private:
     void delete_row(int row);
     void clustering(int method_id);
     void load_cluster_label(const std::vector<unsigned int>& labels,QStringList Names = QStringList());
+    void load_tract_label(QString FileName);
 public slots:
     void clustering_EM(void){clustering(2);}
     void clustering_kmeans(void){clustering(1);}
@@ -95,6 +99,7 @@ public slots:
     void show_tracts_statistics(void);
     void recog_tracks(void);
     void ppv_analysis(void);
+    void show_report(void);
 };
 
 #endif // TRACTTABLEWIDGET_H

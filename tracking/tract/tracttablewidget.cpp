@@ -115,8 +115,16 @@ void TractTableWidget::start_tracking(void)
                             cur_tracking_window["thread_count"].toInt(),
                             false);
     tract_models.back()->report += thread_data.back()->report.str();
-    cur_tracking_window.report(tract_models.back()->report.c_str());
+    tract_models.back()->parameter_id = thread_data.back()->param.get_code();
+    show_report();
     timer->start(1000);
+}
+
+void TractTableWidget::show_report(void)
+{
+    if(currentRow() >= tract_models.size())
+        return;
+    cur_tracking_window.report(tract_models[currentRow()]->report.c_str());
 }
 
 void TractTableWidget::ppv_analysis(void)
@@ -284,6 +292,8 @@ void TractTableWidget::load_tracts(QStringList filenames)
             std::vector<unsigned int> labels;
             labels.swap(tract_models.back()->get_cluster_info());
             load_cluster_label(labels);
+            if(QFileInfo(filename+".txt").exists())
+                load_tract_label(filename+".txt");
         }
     }
     emit need_update();
@@ -293,8 +303,8 @@ void TractTableWidget::load_tracts(void)
 {
     load_tracts(QFileDialog::getOpenFileNames(
             this,"Load tracts as",QFileInfo(cur_tracking_window.windowTitle()).absolutePath(),
-            "Tract files (*.txt *.trk *trk.gz *.tck);;All files (*)"));
-
+            "Tract files (*.trk *trk.gz *.tck);;Text files (*.txt);;All files (*)"));
+    show_report();
 }
 void TractTableWidget::load_tract_label(void)
 {
@@ -303,6 +313,10 @@ void TractTableWidget::load_tract_label(void)
                 "Tract files (*.txt);;All files (*)");
     if(filename.isEmpty())
         return;
+    load_tract_label(filename);
+}
+void TractTableWidget::load_tract_label(QString filename)
+{
     std::ifstream in(filename.toStdString().c_str());
     std::string line;
     for(int i = 0;in >> line && i < rowCount();++i)
@@ -370,8 +384,7 @@ void TractTableWidget::save_all_tracts_as(void)
                 "Tract files (*.trk *trk.gz);;Text File (*.txt);;MAT files (*.mat);;All files (*)");
     if(filename.isEmpty())
         return;
-    std::string sfilename = filename.toLocal8Bit().begin();
-    TractModel::save_all(&*sfilename.begin(),tract_models);
+    command("save_tracks",filename);
 }
 
 void TractTableWidget::set_color(void)
@@ -398,6 +411,7 @@ void TractTableWidget::assign_colors(void)
 }
 void TractTableWidget::load_cluster_label(const std::vector<unsigned int>& labels,QStringList Names)
 {
+    std::string report = tract_models[currentRow()]->report;
     std::vector<std::vector<float> > tracts;
     tract_models[currentRow()]->release_tracts(tracts);
     delete_row(currentRow());
@@ -419,6 +433,7 @@ void TractTableWidget::load_cluster_label(const std::vector<unsigned int>& label
         else
             addNewTracts(QString("cluster")+QString::number(cluster_index),false);
         tract_models.back()->add_tracts(add_tracts);
+        tract_models.back()->report = report;
         item(tract_models.size()-1,1)->setText(QString::number(tract_models.back()->get_visible_track_count()));
     }
 }
@@ -846,6 +861,8 @@ void get_track_statistics(const std::vector<std::shared_ptr<TractModel> >& tract
                           const std::vector<std::string>& track_name,
                           std::string& result)
 {
+    if(tract_models.empty())
+        return;
     std::vector<std::vector<std::string> > track_results(tract_models.size());
     tipl::par_for(tract_models.size(),[&](unsigned int index)
     {
@@ -874,24 +891,30 @@ void get_track_statistics(const std::vector<std::shared_ptr<TractModel> >& tract
     }
     result = out.str();
 }
-
+std::vector<std::shared_ptr<TractModel> > TractTableWidget::get_checked_tracks(void) const
+{
+    std::vector<std::shared_ptr<TractModel> > active_tracks;
+    for(unsigned int index = 0;index < tract_models.size();++index)
+        if(item(index,0)->checkState() == Qt::Checked)
+            active_tracks.push_back(tract_models[index]);
+    return active_tracks;
+}
+std::vector<std::string> TractTableWidget::get_checked_tracks_name(void) const
+{
+    std::vector<std::string> track_name;
+    for(unsigned int index = 0;index < tract_models.size();++index)
+        if(item(index,0)->checkState() == Qt::Checked)
+            track_name.push_back(item(index,0)->text().toStdString());
+    return track_name;
+}
 void TractTableWidget::show_tracts_statistics(void)
 {
     if(tract_models.empty())
         return;
     std::string result;
-    {
-        std::vector<std::shared_ptr<TractModel> > active_tracks;
-        std::vector<std::string> track_name;
-        for(unsigned int index = 0;index < tract_models.size();++index)
-            if(item(index,0)->checkState() == Qt::Checked)
-            {
-                active_tracks.push_back(tract_models[index]);
-                track_name.push_back(item(index,0)->text().toStdString());
-            }
-        get_track_statistics(active_tracks,track_name,result);
-    }
-    show_info_dialog("Tract Statistics",result);
+    get_track_statistics(get_checked_tracks(),get_checked_tracks_name(),result);
+    if(!result.empty())
+        show_info_dialog("Tract Statistics",result);
 
 }
 
@@ -930,8 +953,8 @@ bool TractTableWidget::command(QString cmd,QString param,QString param2)
     }
     if(cmd == "save_tracks")
     {
-        TractModel::save_all(param.toStdString().c_str(),tract_models);
-        return true;
+        return TractModel::save_all(param.toStdString().c_str(),
+                             get_checked_tracks(),get_checked_tracks_name());
     }
     if(cmd == "load_track_color")
     {

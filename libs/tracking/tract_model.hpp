@@ -9,6 +9,7 @@ class RoiMgr;
 class TractModel{
 public:
         std::string report;
+        std::string parameter_id;
 private:
         std::shared_ptr<fib_data> handle;
         tipl::geometry<3> geometry;
@@ -31,7 +32,9 @@ private:
         // for loading multiple clusters
         std::vector<unsigned int> tract_cluster;
 public:
-        static bool save_all(const char* file_name,const std::vector<std::shared_ptr<TractModel> >& all);
+        static bool save_all(const char* file_name,
+                             const std::vector<std::shared_ptr<TractModel> >& all,
+                             const std::vector<std::string>& name_list);
         const std::vector<unsigned int>& get_cluster_info(void) const{return tract_cluster;}
         std::vector<unsigned int>& get_cluster_info(void) {return tract_cluster;}
         void select(float select_angle,

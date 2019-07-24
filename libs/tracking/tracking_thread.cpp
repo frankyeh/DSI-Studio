@@ -199,35 +199,20 @@ void ThreadData::run(const tracking_data& trk,
 
     report.clear();
     report.str("");
-    report << " A deterministic fiber tracking algorithm (Yeh et al., PLoS ONE 8(11): e80713) was used."
-           << roi_mgr->report;
-
     if(!trk.dt_threshold_name.empty())
     {
-        report << " The pathways with " << trk.dt_threshold_name.substr(4,std::string::npos);
+        report << " Differential tractography (Yeh et al., 2019) was applied to map pathways with ";
         if(trk.dt_threshold_name.substr(0,4) == "inc_")
-            report << " increase";
+            report << "an increase";
         else
-            report << " decrease";
-        report << " greater than " << int(param.dt_threshold * 100) << "% were tracked.";
-        goto next;
+            report << "a decrease";
+        report << " in " << trk.dt_threshold_name.substr(4,std::string::npos) << ".";
     }
-    if(trk.threshold_name == "+t")
-    {
-        report << " The regions with positive correlation greater than " << param.threshold << " t-score were tracked.";
-        goto next;
+    else {
+        param.dt_threshold = 0.0f;
+        report << " A deterministic fiber tracking algorithm (Yeh et al., PLoS ONE 8(11): e80713, 2013) was used.";
     }
-    if(trk.threshold_name == "-t")
-    {
-        report << " The regions with negative correlation greater than " << param.threshold << " t-score were tracked.";
-        goto next;
-    }
-    if(param.threshold == 0.0)
-        report << " The " << trk.threshold_name << " threshold was randomly selected.";
-    else
-        report << " The " << trk.threshold_name << " threshold was " << param.threshold << ".";
-
-    next:
+    report << roi_mgr->report;
     report << param.get_report();
     // to ensure consistency, seed initialization with all orientation only fits with single thread
     if(param.initial_direction == 2)

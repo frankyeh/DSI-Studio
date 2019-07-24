@@ -259,7 +259,6 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         connect(ui->actionNew_Super_Resolution_Region,SIGNAL(triggered()),regionWidget,SLOT(new_high_resolution_region()));
         connect(ui->actionOpenRegion,SIGNAL(triggered()),regionWidget,SLOT(load_region()));
         connect(ui->actionOpen_MNI_Region,SIGNAL(triggered()),regionWidget,SLOT(load_mni_region()));
-        connect(ui->actionLoad_From_Atlas,SIGNAL(triggered()),this,SLOT(on_addRegionFromAtlas_clicked()));
         connect(ui->actionSaveRegionAs,SIGNAL(triggered()),regionWidget,SLOT(save_region()));
         connect(ui->actionSave_All_Regions_As,SIGNAL(triggered()),regionWidget,SLOT(save_all_regions()));
         connect(ui->actionSave_All_Regions_As_Multiple_Files,SIGNAL(triggered()),regionWidget,SLOT(save_all_regions_to_dir()));
@@ -325,6 +324,7 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         connect(tractWidget,SIGNAL(need_update()),glWidget,SLOT(makeTracts()));
         connect(tractWidget,SIGNAL(need_update()),glWidget,SLOT(updateGL()));
         connect(tractWidget,SIGNAL(cellChanged(int,int)),glWidget,SLOT(updateGL())); //update label
+        connect(tractWidget,SIGNAL(itemSelectionChanged()),tractWidget,SLOT(show_report()));
         connect(glWidget,SIGNAL(edited()),tractWidget,SLOT(edit_tracts()));
         connect(glWidget,SIGNAL(region_edited()),glWidget,SLOT(updateGL()));
         connect(glWidget,SIGNAL(region_edited()),&scene,SLOT(show_slice()));
@@ -385,6 +385,7 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         connect(ui->track_down,SIGNAL(clicked()),tractWidget,SLOT(move_down()));
 
         connect(ui->actionPPV_analysis,SIGNAL(triggered()),tractWidget,SLOT(ppv_analysis()));
+
 
 
     } 
@@ -2099,3 +2100,4 @@ void tracking_window::on_SliceModality_currentIndexChanged(int index)
     move_slice_to(slice_position);
     no_update = false;
 }
+
