@@ -58,7 +58,7 @@ private slots:
     void on_dilation_clicked(){command("[Step T2a][Dilation]");}
     void on_erosion_clicked(){command("[Step T2a][Erosion]");}
     void on_negate_clicked(){command("[Step T2a][Negate]");}
-    void on_remove_background_clicked(){command("[Step T2a][Remove Background]");}
+    void on_actionErase_Background_Signals_triggered(){command("[Step T2a][Remove Background]");}
     void on_thresholding_clicked(){command("[Step T2a][Threshold]");}
 
     void on_actionFlip_x_triggered(){command("[Step T2][Edit][Image flip x]");}

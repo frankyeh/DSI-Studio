@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>599</width>
+    <width>625</width>
     <height>503</height>
    </rect>
   </property>
@@ -50,7 +50,7 @@
     <item>
      <widget class="QToolBox" name="toolBox">
       <property name="currentIndex">
-       <number>0</number>
+       <number>1</number>
       </property>
       <property name="tabSpacing">
        <number>0</number>
@@ -60,7 +60,7 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>599</width>
+         <width>625</width>
          <height>416</height>
         </rect>
        </property>
@@ -390,7 +390,7 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>599</width>
+         <width>625</width>
          <height>416</height>
         </rect>
        </property>
@@ -407,14 +407,14 @@
               <property name="spacing">
                <number>0</number>
               </property>
-              <item row="0" column="3">
-               <widget class="QPushButton" name="dilation">
+              <item row="0" column="6">
+               <widget class="QPushButton" name="erosion">
                 <property name="text">
-                 <string>Dilation</string>
+                 <string>Erosion</string>
                 </property>
                </widget>
               </item>
-              <item row="0" column="8">
+              <item row="0" column="9">
                <spacer name="horizontalSpacer_2">
                 <property name="orientation">
                  <enum>Qt::Horizontal</enum>
@@ -426,6 +426,20 @@
                  </size>
                 </property>
                </spacer>
+              </item>
+              <item row="0" column="5">
+               <widget class="QPushButton" name="negate">
+                <property name="text">
+                 <string>Negate</string>
+                </property>
+               </widget>
+              </item>
+              <item row="0" column="7">
+               <widget class="QPushButton" name="defragment">
+                <property name="text">
+                 <string>Defragment</string>
+                </property>
+               </widget>
               </item>
               <item row="0" column="0">
                <widget class="QPushButton" name="load_mask">
@@ -439,34 +453,27 @@
                </widget>
               </item>
               <item row="0" column="2">
-               <widget class="QPushButton" name="thresholding">
-                <property name="text">
-                 <string>Thresholding</string>
-                </property>
-               </widget>
-              </item>
-              <item row="1" column="1">
-               <widget class="QPushButton" name="defragment">
-                <property name="text">
-                 <string>Defragment</string>
-                </property>
-               </widget>
-              </item>
-              <item row="1" column="2">
-               <widget class="QPushButton" name="remove_background">
-                <property name="text">
-                 <string>Remove background</string>
-                </property>
-               </widget>
-              </item>
-              <item row="0" column="1">
                <widget class="QPushButton" name="smoothing">
                 <property name="text">
                  <string>Smoothing</string>
                 </property>
                </widget>
               </item>
-              <item row="1" column="0">
+              <item row="0" column="3">
+               <widget class="QPushButton" name="thresholding">
+                <property name="text">
+                 <string>Thresholding</string>
+                </property>
+               </widget>
+              </item>
+              <item row="0" column="4">
+               <widget class="QPushButton" name="dilation">
+                <property name="text">
+                 <string>Dilation</string>
+                </property>
+               </widget>
+              </item>
+              <item row="0" column="1">
                <widget class="QPushButton" name="save_mask">
                 <property name="text">
                  <string>Save...</string>
@@ -474,20 +481,6 @@
                 <property name="icon">
                  <iconset resource="../icons.qrc">
                   <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
-                </property>
-               </widget>
-              </item>
-              <item row="1" column="3">
-               <widget class="QPushButton" name="erosion">
-                <property name="text">
-                 <string>Erosion</string>
-                </property>
-               </widget>
-              </item>
-              <item row="0" column="4">
-               <widget class="QPushButton" name="negate">
-                <property name="text">
-                 <string>Negate</string>
                 </property>
                </widget>
               </item>
@@ -514,7 +507,7 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>599</width>
+         <width>625</width>
          <height>416</height>
         </rect>
        </property>
@@ -1182,7 +1175,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>599</width>
+     <width>625</width>
      <height>21</height>
     </rect>
    </property>
@@ -1213,9 +1206,10 @@
     <addaction name="actionResample"/>
     <addaction name="actionImage_upsample_to_T1W_TESTING"/>
     <addaction name="separator"/>
+    <addaction name="actionErase_Background_Signals"/>
     <addaction name="actionTrim_image"/>
-    <addaction name="actionCorrect_AP_PA_scans"/>
     <addaction name="separator"/>
+    <addaction name="actionCorrect_AP_PA_scans"/>
     <addaction name="menuChange_B_table"/>
     <addaction name="actionEnable_TEST_features"/>
    </widget>
@@ -1249,7 +1243,7 @@
      <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
    </property>
    <property name="text">
-    <string>Save b-table...</string>
+    <string>Save B-table...</string>
    </property>
   </action>
   <action name="actionSave_bvals">
@@ -1258,7 +1252,7 @@
      <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
    </property>
    <property name="text">
-    <string>Save bvals...</string>
+    <string>Save Bvals...</string>
    </property>
   </action>
   <action name="actionSave_bvecs">
@@ -1267,37 +1261,37 @@
      <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
    </property>
    <property name="text">
-    <string>Save bvecs...</string>
+    <string>Save Bvecs...</string>
    </property>
   </action>
   <action name="actionFlip_x">
    <property name="text">
-    <string>Image flip x</string>
+    <string>Image Flip X</string>
    </property>
   </action>
   <action name="actionFlip_y">
    <property name="text">
-    <string>Image flip y</string>
+    <string>Image Flip Y</string>
    </property>
   </action>
   <action name="actionFlip_z">
    <property name="text">
-    <string>Image flip z</string>
+    <string>Image Flip Z</string>
    </property>
   </action>
   <action name="actionFlip_xy">
    <property name="text">
-    <string>Image swap x y</string>
+    <string>Image Swap XY</string>
    </property>
   </action>
   <action name="actionFlip_xz">
    <property name="text">
-    <string>Image swap x z</string>
+    <string>Image Swap XZ</string>
    </property>
   </action>
   <action name="actionFlip_yz">
    <property name="text">
-    <string>Image swap y z</string>
+    <string>Image Swap YZ</string>
    </property>
   </action>
   <action name="actionRotate">
@@ -1307,7 +1301,7 @@
   </action>
   <action name="actionTrim_image">
    <property name="text">
-    <string>Trim</string>
+    <string>Crop Background</string>
    </property>
   </action>
   <action name="actionManual_Rotation">
@@ -1331,7 +1325,7 @@
      <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
    </property>
    <property name="text">
-    <string>Save b0...</string>
+    <string>Save B0...</string>
    </property>
   </action>
   <action name="actionEnable_TEST_features">
@@ -1341,7 +1335,7 @@
   </action>
   <action name="actionImage_upsample_to_T1W_TESTING">
    <property name="text">
-    <string>Image upsample to T1W (TESTING)...</string>
+    <string>Image Upsample to T1W (TESTING)...</string>
    </property>
   </action>
   <action name="actionRotate_to_MNI">
@@ -1375,7 +1369,7 @@
   </action>
   <action name="actionResample">
    <property name="text">
-    <string>Resample to isotropic</string>
+    <string>Resample to Isotropic</string>
    </property>
   </action>
   <action name="actionSave_SRC_file_as">
@@ -1385,6 +1379,11 @@
    </property>
    <property name="text">
     <string>Save SRC file as...</string>
+   </property>
+  </action>
+  <action name="actionErase_Background_Signals">
+   <property name="text">
+    <string>Erase Background Signals</string>
    </property>
   </action>
  </widget>
