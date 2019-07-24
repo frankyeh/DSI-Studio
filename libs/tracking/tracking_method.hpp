@@ -97,7 +97,7 @@ struct TrackingParam
         }
         return code;
     }
-    void set_code(std::string code)
+    bool set_code(std::string code)
     {
         char rep[8] = {'0','a','b','c','d','e','f','g'};
         for(int i = 7;i > 0;--i)
@@ -109,14 +109,24 @@ struct TrackingParam
                     code.insert(code.begin()+j,rep[i-1]);
                 }
         }
+        if(code.size()/2 >= sizeof(*this))
+            return false;
         unsigned char* p = (unsigned char*)this;
         for(int i = 0;i < code.size();i += 2,++p)
             *p = index2char(code[i],code[i+1]);
+        return true;
     }
 
     std::string get_report(void)
     {
         std::ostringstream report;
+        if(threshold == 0.0)
+            report << " The anisotropy threshold was randomly selected.";
+        else
+            report << " The anisotropy threshold was " << threshold << ".";
+        if(dt_threshold != 0.0)
+            report << " The change threshold was " << int(dt_threshold * 100) << "%.";
+
         if(cull_cos_angle != 1.0)
             report << " The angular threshold was " << (int)std::round(std::acos(cull_cos_angle)*180.0/3.14159265358979323846) << " degrees.";
         else
