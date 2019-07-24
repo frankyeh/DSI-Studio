@@ -494,6 +494,8 @@ void reconstruction_window::on_actionSave_4D_nifti_triggered()
                 return;
             }
             model.save_to_nii((filenames[index]+".nii.gz").toLocal8Bit().begin());
+            model.save_bval((filenames[index]+".bval").toLocal8Bit().begin());
+            model.save_bvec((filenames[index]+".bvec").toLocal8Bit().begin());
         }
         return;
     }
@@ -505,6 +507,10 @@ void reconstruction_window::on_actionSave_4D_nifti_triggered()
     if ( filename.isEmpty() )
         return;
     handle->save_to_nii(filename.toLocal8Bit().begin());
+    QString basename = filename;
+    basename.chop(7);
+    handle->save_bval((basename+".bval").toLocal8Bit().begin());
+    handle->save_bvec((basename+".bvec").toLocal8Bit().begin());
 }
 
 void reconstruction_window::on_actionSave_b0_triggered()

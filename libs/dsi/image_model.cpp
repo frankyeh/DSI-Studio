@@ -1238,7 +1238,7 @@ bool ImageModel::save_bvec(const char* file_name) const
     {
         out << src_bvectors[index][0] << " "
             << src_bvectors[index][1] << " "
-            << src_bvectors[index][2] << std::endl;
+            << src_bvectors[index][2] << "\n";
     }
     return out.good();
 }
