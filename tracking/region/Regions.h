@@ -228,7 +228,8 @@ public:
                 resolution_ratio = (float)mask.width()/(float)handle->dim[0];
             region.swap(points);
         }
-        void SaveToBuffer(tipl::image<unsigned char, 3>& mask,unsigned char value=255);
+        void SaveToBuffer(tipl::image<unsigned char, 3>& mask,float target_resolution);
+        void SaveToBuffer(tipl::image<unsigned char, 3>& mask){SaveToBuffer(mask,resolution_ratio);}
         void perform(const std::string& action);
         void makeMeshes(unsigned char smooth);
         template<typename value_type>

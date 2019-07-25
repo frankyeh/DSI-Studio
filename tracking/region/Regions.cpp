@@ -163,14 +163,14 @@ void ROIRegion::SaveToFile(const char* FileName)
     if (ext == std::string(".txt")) {
         std::ofstream out(FileName);
         std::copy(region.begin(), region.end(),std::ostream_iterator<tipl::vector<3,short> >(out, "\n"));
-        if(resolution_ratio != 1.0)
+        if(resolution_ratio != 1.0f)
             out << resolution_ratio << " -1 -1" << std::endl;
     }
     else if (ext == std::string(".mat")) {
         if(resolution_ratio > 8.0f)
             return;
         tipl::image<unsigned char, 3> mask(handle->dim);
-        if(resolution_ratio != 1.0)
+        if(resolution_ratio != 1.0f)
             mask.resize(get_buffer_dim());
         for (unsigned int index = 0; index < region.size(); ++index) {
             if (handle->dim.is_valid(region[index][0], region[index][1],
@@ -187,7 +187,7 @@ void ROIRegion::SaveToFile(const char* FileName)
             return;
         unsigned int color = show_region.color.color & 0x00FFFFFF;
         tipl::image<unsigned char, 3>mask;
-        SaveToBuffer(mask,1);
+        SaveToBuffer(mask);
         tipl::vector<3,float> rvs(handle->vs);
         tipl::matrix<4,4,float> T(trans);
         if(resolution_ratio != 1.0f)
@@ -321,17 +321,35 @@ void ROIRegion::makeMeshes(unsigned char smooth)
 }
 // ---------------------------------------------------------------------------
 void ROIRegion::SaveToBuffer(tipl::image<unsigned char, 3>& mask,
-                             unsigned char value) {
-    if(resolution_ratio != 1.0)
-        mask.resize(get_buffer_dim());
+                             float target_resolution)
+{
+    if(target_resolution != 1.0f)
+        mask.resize(tipl::geometry<3>(
+                    handle->dim[0]*target_resolution,
+                    handle->dim[1]*target_resolution,
+                    handle->dim[2]*target_resolution));
     else
         mask.resize(handle->dim);
     std::fill(mask.begin(), mask.end(), 0);
-    tipl::par_for (region.size(),[&](unsigned int index)
+    if(target_resolution == resolution_ratio)
+        tipl::par_for (region.size(),[&](unsigned int index)
+        {
+            if (mask.geometry().is_valid(region[index]))
+                mask.at(region[index][0], region[index][1],region[index][2]) = 1;
+        });
+    else
     {
-        if (mask.geometry().is_valid(region[index]))
-            mask.at(region[index][0], region[index][1],region[index][2]) = value;
-    });
+        float r = target_resolution/resolution_ratio;
+        tipl::par_for (region.size(),[&](unsigned int index)
+        {
+            tipl::vector<3,float> p(region[index]);
+            p *= r;
+            p.round();
+            tipl::vector<3,short> pp(p);
+            if (mask.geometry().is_valid(pp))
+                mask.at(pp[0],pp[1],pp[2]) = 1;
+        });
+    }
 }
 // ---------------------------------------------------------------------------
 void ROIRegion::perform(const std::string& action)
@@ -361,31 +379,31 @@ void ROIRegion::perform(const std::string& action)
     tipl::image<unsigned char, 3>mask;
     if(action == "smoothing")
     {
-        SaveToBuffer(mask, 1);
+        SaveToBuffer(mask);
         tipl::morphology::smoothing(mask);
         LoadFromBuffer(mask);
     }
     if(action == "erosion")
     {
-        SaveToBuffer(mask, 1);
+        SaveToBuffer(mask);
         tipl::morphology::erosion(mask);
         LoadFromBuffer(mask);
     }
     if(action == "dilation")
     {
-        SaveToBuffer(mask, 1);
+        SaveToBuffer(mask);
         tipl::morphology::dilation(mask);
         LoadFromBuffer(mask);
     }
     if(action == "defragment")
     {
-        SaveToBuffer(mask, 1);
+        SaveToBuffer(mask);
         tipl::morphology::defragment(mask);
         LoadFromBuffer(mask);
     }
     if(action == "negate")
     {
-        SaveToBuffer(mask, 1);
+        SaveToBuffer(mask);
         tipl::morphology::negate(mask);
         LoadFromBuffer(mask);
     }

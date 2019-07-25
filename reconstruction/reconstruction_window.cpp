@@ -310,7 +310,7 @@ void reconstruction_window::on_load_mask_clicked()
         return;
     ROIRegion region(std::make_shared<fib_data>(handle->dwi.geometry(),handle->voxel.vs));
     region.LoadFromFile(filename.toLocal8Bit().begin());
-    region.SaveToBuffer(handle->voxel.mask);
+    region.SaveToBuffer(handle->voxel.mask,1.0f);
     on_SlicePos_valueChanged(ui->SlicePos->value());
     handle->voxel.steps += std::string("[Step T2a][Open...]=") + QFileInfo(filename).fileName().toStdString()+"\n";
 }

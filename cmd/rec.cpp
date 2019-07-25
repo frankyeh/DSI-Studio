@@ -197,7 +197,7 @@ int rec(void)
             if(!load_region(fib_handle,roi,mask_file))
                 return 1;
             tipl::image<unsigned char,3> external_mask;
-            roi.SaveToBuffer(external_mask);
+            roi.SaveToBuffer(external_mask,1.0f);
             if(external_mask.geometry() != handle->voxel.dim)
                 std::cout << "In consistent the mask dimension...using default mask" << std::endl;
             else
