@@ -1181,32 +1181,44 @@ void RegionTableWidget::do_action(QString action)
             auto checked_regions = get_checked_regions();
             if(checked_regions.size() < 2)
                 return;
-            tipl::image<unsigned char, 3> A,B;
-            checked_regions[0]->SaveToBuffer(A, 1);
-            for(size_t r = 1;r < checked_regions.size();++r)
+            if(action == "A-B")
             {
-                checked_regions[r]->SaveToBuffer(B, 1);
-                if(action == "A-B")
+                tipl::image<unsigned char, 3> A,B;
+                checked_regions[0]->SaveToBuffer(A);
+                for(size_t r = 1;r < checked_regions.size();++r)
                 {
+                    checked_regions[r]->SaveToBuffer(B,checked_regions[0]->resolution_ratio);
                     for(size_t i = 0;i < A.size();++i)
                         if(B[i])
                             A[i] = 0;
-                    checked_regions[0]->LoadFromBuffer(A);
                 }
-                if(action == "B-A")
+                checked_regions[0]->LoadFromBuffer(A);
+            }
+            else
+            {
+                tipl::image<unsigned char, 3> A,B;
+                for(size_t r = 1;r < checked_regions.size();++r)
                 {
-                    for(size_t i = 0;i < A.size();++i)
-                        if(A[i])
-                            B[i] = 0;
-                    checked_regions[r]->LoadFromBuffer(B);
-                }
-                if(action == "A*B")
-                {
-                    for(size_t i = 0;i < A.size();++i)
-                        B[i] = (A[i] & B[i]);
-                    checked_regions[r]->LoadFromBuffer(B);
+                    checked_regions[r]->SaveToBuffer(B);
+                    if(B.geometry() != A.geometry())
+                        checked_regions[0]->SaveToBuffer(A,checked_regions[r]->resolution_ratio);
+
+                    if(action == "B-A")
+                    {
+                        for(size_t i = 0;i < B.size();++i)
+                            if(A[i])
+                                B[i] = 0;
+                        checked_regions[r]->LoadFromBuffer(B);
+                    }
+                    if(action == "A*B")
+                    {
+                        for(size_t i = 0;i < B.size();++i)
+                            B[i] = (A[i] & B[i]);
+                        checked_regions[r]->LoadFromBuffer(B);
+                    }
                 }
             }
+
         }
         if(action == "set_opacity")
         {
@@ -1315,7 +1327,7 @@ void RegionTableWidget::do_action(QString action)
         if(action == "separate")
         {
             tipl::image<unsigned char, 3>mask;
-            cur_region.SaveToBuffer(mask, 1);
+            cur_region.SaveToBuffer(mask);
             QString name = item(roi_index,0)->text();
             tipl::image<unsigned int,3> labels;
             std::vector<std::vector<unsigned int> > r;
