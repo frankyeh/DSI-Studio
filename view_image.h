@@ -45,6 +45,16 @@ private slots:
 
     void on_actionSet_Transformation_triggered();
 
+    void on_actionIntensity_shift_triggered();
+
+    void on_actionIntensity_scale_triggered();
+
+    void on_actionSave_as_Int8_triggered();
+
+    void on_actionSave_as_Int16_triggered();
+
+    void on_actionUpper_Threshold_triggered();
+
 private:
     Ui::view_image *ui;
     tipl::image<float,3> data;

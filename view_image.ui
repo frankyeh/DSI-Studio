@@ -180,6 +180,8 @@
      <string>&amp;File</string>
     </property>
     <addaction name="action_Save_as"/>
+    <addaction name="actionSave_as_Int8"/>
+    <addaction name="actionSave_as_Int16"/>
    </widget>
    <widget class="QMenu" name="menuResize">
     <property name="title">
@@ -198,9 +200,12 @@
    </widget>
    <widget class="QMenu" name="menu_Intensity">
     <property name="title">
-     <string>&amp;Intensity</string>
+     <string>&amp;Signals</string>
     </property>
+    <addaction name="actionUpper_Threshold"/>
     <addaction name="actionLower_threshold"/>
+    <addaction name="actionIntensity_shift"/>
+    <addaction name="actionIntensity_scale"/>
     <addaction name="actionMasking"/>
    </widget>
    <widget class="QMenu" name="menu_Spatial_transform">
@@ -264,6 +269,31 @@
   <action name="actionSet_Transformation">
    <property name="text">
     <string>Set Transformation...</string>
+   </property>
+  </action>
+  <action name="actionIntensity_shift">
+   <property name="text">
+    <string>Intensity Shift...</string>
+   </property>
+  </action>
+  <action name="actionIntensity_scale">
+   <property name="text">
+    <string>Intensity Scale...</string>
+   </property>
+  </action>
+  <action name="actionSave_as_Int16">
+   <property name="text">
+    <string>Save as Int16...</string>
+   </property>
+  </action>
+  <action name="actionSave_as_Int8">
+   <property name="text">
+    <string>Save as Int8...</string>
+   </property>
+  </action>
+  <action name="actionUpper_Threshold">
+   <property name="text">
+    <string>Upper Threshold...</string>
    </property>
   </action>
  </widget>

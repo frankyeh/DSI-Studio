@@ -564,3 +564,73 @@ void view_image::on_actionLPS_RAS_swap_triggered()
     update_image();
 }
 
+
+void view_image::on_actionIntensity_shift_triggered()
+{
+    bool ok;
+    QString result = QInputDialog::getText(this,"DSI Studio","Assign shift value",QLineEdit::Normal,
+                                           "0",&ok);
+    if(!ok)
+        return;
+    float value = result.toFloat(&ok);
+    if(!ok)
+        return;
+    tipl::add_constant(data,value);
+    update_image();
+}
+
+void view_image::on_actionIntensity_scale_triggered()
+{
+    bool ok;
+    QString result = QInputDialog::getText(this,"DSI Studio","Assign scale value",QLineEdit::Normal,
+                                           "0",&ok);
+    if(!ok)
+        return;
+    float value = result.toFloat(&ok);
+    if(!ok)
+        return;
+    tipl::multiply_constant(data,value);
+    update_image();
+}
+
+void view_image::on_actionSave_as_Int8_triggered()
+{
+    QString filename = QFileDialog::getSaveFileName(
+                           this,"Save image",file_name,"NIFTI file(*nii.gz *.nii)" );
+    if (filename.isEmpty())
+        return;
+    tipl::image<uint8_t,3> new_data = data;
+    gz_nifti nii;
+    nii.set_image_transformation(T);
+    nii.set_voxel_size(vs);
+    nii << new_data;
+    nii.save_to_file(filename.toStdString().c_str());
+}
+
+void view_image::on_actionSave_as_Int16_triggered()
+{
+    QString filename = QFileDialog::getSaveFileName(
+                           this,"Save image",file_name,"NIFTI file(*nii.gz *.nii)" );
+    if (filename.isEmpty())
+        return;
+    tipl::image<uint16_t,3> new_data = data;
+    gz_nifti nii;
+    nii.set_image_transformation(T);
+    nii.set_voxel_size(vs);
+    nii << new_data;
+    nii.save_to_file(filename.toStdString().c_str());
+}
+
+void view_image::on_actionUpper_Threshold_triggered()
+{
+    bool ok;
+    QString result = QInputDialog::getText(this,"DSI Studio","Assign upper threshold value ",QLineEdit::Normal,
+                                           "0",&ok);
+    if(!ok)
+        return;
+    float value = result.toFloat(&ok);
+    if(!ok)
+        return;
+    tipl::upper_threshold(data,value);
+    update_image();
+}
