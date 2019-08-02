@@ -87,7 +87,7 @@ void CreateDBDialog::update_list(void)
         }
         ui->index_of_interest->clear();
         if(fib.has_odfs())
-            ui->index_of_interest->addItem("sdf");
+            ui->index_of_interest->addItem("lcf/sdf");
         std::vector<std::string> item_list;
         fib.get_index_list(item_list);
         for(unsigned int i = fib.dir.index_name.size();i < item_list.size();++i)

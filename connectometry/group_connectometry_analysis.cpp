@@ -458,7 +458,7 @@ void group_connectometry_analysis::generate_report(std::string& output)
     if(!handle->report.empty())
     {
         html_report << "<h2>MRI Acquisition</h2>" << std::endl;
-        html_report << "<p>" << handle->report << "</p>" << std::endl;
+        html_report << "<p>" << handle->db.report << "</p>" << std::endl;
     }
     if(!report.empty())
     {
@@ -469,6 +469,8 @@ void group_connectometry_analysis::generate_report(std::string& output)
 
     std::ostringstream out_pos_corr,out_neg_corr;
     std::string index_name = QString(handle->db.index_name.c_str()).toUpper().toStdString();
+    if(index_name.find("SDF") != std::string::npos)
+        index_name = "LCF";
     if(fdr_threshold == 0.0) // using length threshold
     {
         out_pos_corr << " The connectometry analysis found "

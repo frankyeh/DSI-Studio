@@ -38,7 +38,14 @@ void connectometry_db::read_db(fib_data* handle_)
     {
         const char* report_buf = 0;
         if(handle->mat_reader.read("report",row,col,report_buf))
+        {
             report = std::string(report_buf,report_buf+row*col);
+            if(report.find(" sdf ") != std::string::npos)
+            {
+                report.resize(report.find(" sdf "));
+                report += " local connectome fingerprint (LCF, Yeh et al. PLoS Comput Biol 12(11): e1005203) values were extracted from the data and used in the connectometry analysis.";
+            }
+        }
         if(handle->mat_reader.read("subject_report",row,col,report_buf))
             subject_report = std::string(report_buf,report_buf+row*col);
 
@@ -54,7 +61,7 @@ void connectometry_db::read_db(fib_data* handle_)
         if(str)
             index_name = std::string(str,str+row*col);
         else
-            index_name = "sdf";
+            index_name = "lcf/sdf";
         const float* r2_values = 0;
         handle->mat_reader.read("R2",row,col,r2_values);
         if(r2_values == 0)
@@ -307,7 +314,7 @@ bool connectometry_db::add_subject_file(const std::string& file_name,
         return false;
     }
     std::vector<float> new_subject_qa(subject_qa_length);
-    if(index_name == "sdf" || index_name.empty())
+    if(index_name.find("sdf") !=std::string::npos || index_name.empty())
     {
         if(!is_consistent(m))
         {
@@ -578,7 +585,10 @@ bool connectometry_db::save_subject_data(const char* output_name)
     {
         std::ostringstream out;
         out << "A total of " << num_subjects << " diffusion MRI scans were included in the connectometry database." << subject_report.c_str();
-        out << " The " << index_name << " values were used in the connectometry analysis.";
+        if(index_name == "lcf/sdf")
+            out << " The local connectome fingerprint (LCF, Yeh et al. PLoS Comput Biol 12(11): e1005203) values were extracted from the data and used in the connectometry analysis.";
+        else
+            out << " The " << index_name << " values were used in the connectometry analysis.";
         std::string report = out.str();
         matfile.write("subject_report",subject_report);
         matfile.write("report",report);
