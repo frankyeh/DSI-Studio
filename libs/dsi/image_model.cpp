@@ -895,6 +895,8 @@ void calculate_shell(const std::vector<float>& sorted_bvalues,
                 shell.push_back(i);
                 break;
             }
+    if(shell.empty())
+        return;
     for(uint32_t index = shell.back()+1;index < sorted_bvalues.size();++index)
         if(std::abs(sorted_bvalues[index]-sorted_bvalues[index-1]) > 100.0f)
             shell.push_back(index);
@@ -910,14 +912,14 @@ bool ImageModel::is_dsi_half_sphere(void)
 {
     if(shell.empty())
         calculate_shell();
-    return is_dsi() && (shell[1] - shell[0] <= 3);
+    return is_dsi() && (!shell.empty() && shell[1] - shell[0] <= 3);
 }
 
 bool ImageModel::is_dsi(void)
 {
     if(shell.empty())
         calculate_shell();
-    return shell.size() > 4 && (shell[1] - shell[0] <= 6);
+    return shell.size() > 4 && (!shell.empty() && shell[1] - shell[0] <= 6);
 }
 bool ImageModel::need_scheme_balance(void)
 {
@@ -1035,6 +1037,30 @@ bool ImageModel::load_from_file(const char* dwi_file_name)
     file_name = dwi_file_name;
     if (!mat_reader.load_from_file(dwi_file_name))
     {
+        gz_nifti nii;
+        if(nii.load_from_file(dwi_file_name))
+        {
+            for(unsigned int index = 0;index < nii.dim(4);++index)
+            {
+                tipl::image<float,3> data;
+                if(!nii.toLPS(data,index == 0))
+                    break;
+                tipl::lower_threshold(data,0.0f);
+                tipl::image<unsigned short,3> buf = data;
+                new_dwi.push_back(std::move(buf));
+                src_dwi_data.push_back(&new_dwi.back()[0]);
+                src_bvalues.push_back(0.0f);
+                src_bvectors.push_back(tipl::vector<3>(0.0f,0.0f,0.0f));
+                if(index == 0)
+                {
+                    nii.get_voxel_size(voxel.vs);
+                    voxel.dim = new_dwi.front().geometry();
+                }
+            }
+            calculate_dwi_sum();
+            voxel.calculate_mask(dwi_sum);
+            return !new_dwi.empty();
+        }
         error_msg = "Cannot open file";
         return false;
     }
