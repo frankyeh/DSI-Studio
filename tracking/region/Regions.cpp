@@ -152,9 +152,6 @@ void ROIRegion::add_points(std::vector<tipl::vector<3,short> >& points, bool del
 // ---------------------------------------------------------------------------
 void ROIRegion::SaveToFile(const char* FileName)
 {
-    tipl::matrix<4,4,float> trans;
-    if(handle->is_qsdr)
-        trans = handle->trans_to_mni;
     std::string file_name(FileName);
     std::string ext;
     if(file_name.length() > 4)
@@ -189,7 +186,7 @@ void ROIRegion::SaveToFile(const char* FileName)
         tipl::image<unsigned char, 3>mask;
         SaveToBuffer(mask);
         tipl::vector<3,float> rvs(handle->vs);
-        tipl::matrix<4,4,float> T(trans);
+        tipl::matrix<4,4,float> T(handle->trans_to_mni);
         if(resolution_ratio != 1.0f)
         {
             rvs /= resolution_ratio;
@@ -203,7 +200,7 @@ void ROIRegion::SaveToFile(const char* FileName)
         if(tmp.size() < 80)
             tmp.resize(80);
 
-        gz_nifti::save_to_file(FileName,mask,rvs,T,handle->is_qsdr,tmp.c_str());
+        gz_nifti::save_to_file(FileName,mask,rvs,T,tmp.c_str());
 
     }
 }
@@ -211,10 +208,6 @@ void ROIRegion::SaveToFile(const char* FileName)
 // ---------------------------------------------------------------------------
 
 bool ROIRegion::LoadFromFile(const char* FileName) {
-
-    tipl::matrix<4,4,float> trans;
-    if(handle->is_qsdr)
-        trans = handle->trans_to_mni;
     std::string file_name(FileName);
     std::string ext;
     if(file_name.length() > 4)
@@ -295,7 +288,7 @@ bool ROIRegion::LoadFromFile(const char* FileName) {
             tipl::matrix<4,4,float> t;
             header.get_image_transformation(t);
             t.inv();
-            t *= trans;
+            t *= handle->trans_to_mni;
             LoadFromBuffer(from,t);
             return true;
         }

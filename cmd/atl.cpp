@@ -87,7 +87,7 @@ void atl_save_mapping(std::vector<std::shared_ptr<atlas> >& atlas_list,
             if(multiple)
             {
                 std::cout << "save " << output << std::endl;
-                if(!gz_nifti::save_to_file(output.c_str(),roi,vs,trans,true))
+                if(!gz_nifti::save_to_file(output.c_str(),roi,vs,trans))
                     std::cout << "cannot write output to file:" << output << std::endl;
 
             }

@@ -50,7 +50,7 @@ int exp(void)
     }
 
     unsigned int col,row;
-    const unsigned short* dim_buf = 0;
+    const unsigned short* dim_buf = nullptr;
     if(!mat_reader.read("dimension",row,col,dim_buf))
     {
         std::cout << "Cannot find dimension matrix in the file" << file_name.c_str() <<std::endl;
@@ -62,18 +62,21 @@ int exp(void)
         std::cout << "Cannot find voxel_size matrix in the file" << file_name.c_str() <<std::endl;
         return 1;
     }
-    bool has_trans = false;
     tipl::matrix<4,4,float> trans;
     {
-        const float* p = 0;
+        const float* p = nullptr;
         if(mat_reader.read("trans",row,col,p))
         {
             std::cout << "Transformation matrix found." << std::endl;
             std::copy(p,p+16,trans.begin());
-            has_trans = true;
         }
         else
-            trans.identity();
+        {
+            trans[0] = vs[0];
+            trans[5] = vs[1];
+            trans[10] = vs[2];
+            trans[15] = 1.0f;
+        }
     }
     std::shared_ptr<fib_data> handle;
     tipl::geometry<3> geo(dim_buf[0],dim_buf[1],dim_buf[2]);
@@ -123,7 +126,7 @@ int exp(void)
                         fibers[ptr] = dir.get_dir(index,dir_index)[j];
             }
             std::cout << "write to file " << file_name_stat << std::endl;
-            if(!gz_nifti::save_to_file(file_name_stat.c_str(),fibers,tipl::vector<3>(vs),trans,has_trans))
+            if(!gz_nifti::save_to_file(file_name_stat.c_str(),fibers,tipl::vector<3>(vs),trans))
                 std::cout << "cannot write output to file:" << file_name_stat << std::endl;
             continue;
         }
@@ -141,7 +144,7 @@ int exp(void)
             tipl::image<float,3> data(geo);
             std::copy(volume,volume+geo.size(),data.begin());
             std::cout << "write to file " << file_name_stat << std::endl;
-            if(!gz_nifti::save_to_file(file_name_stat.c_str(),data,tipl::vector<3>(vs),trans,has_trans))
+            if(!gz_nifti::save_to_file(file_name_stat.c_str(),data,tipl::vector<3>(vs),trans))
                 std::cout << "cannot write output to file:" << file_name_stat << std::endl;
             continue;
         }

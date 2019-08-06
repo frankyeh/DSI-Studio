@@ -354,7 +354,7 @@ void db_window::on_actionSave_mask_triggered()
     for(unsigned int index = 0;index < mask.size();++index)
         if(vbc->handle->dir.fa[0][index] < fiber_threshold)
             mask[index] = 0;
-    gz_nifti::save_to_file(FileName.toStdString().c_str(),mask,vbc->handle->vs,vbc->handle->trans_to_mni,true);
+    gz_nifti::save_to_file(FileName.toStdString().c_str(),mask,vbc->handle->vs,vbc->handle->trans_to_mni);
 }
 void db_window::update_db(void)
 {

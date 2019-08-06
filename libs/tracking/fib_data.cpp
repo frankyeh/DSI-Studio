@@ -513,6 +513,7 @@ bool fib_data::load_from_file(const char* file_name)
         {
             header.toLPS(I);
             header.get_voxel_size(vs_);
+            header.get_image_transformation(trans_to_mni);
         }
     }
     else
@@ -561,6 +562,13 @@ bool fib_data::load_from_file(const char* file_name)
             template_id = index;
             return true;
         }
+    }
+    else
+    {
+        trans_to_mni[0] = vs[0];
+        trans_to_mni[5] = vs[1];
+        trans_to_mni[10] = vs[2];
+        trans_to_mni[15] = 1.0f;
     }
     // template matching
     for(int index = 0;index < fa_template_list.size();++index)
@@ -617,7 +625,7 @@ bool fib_data::save_mapping(const std::string& index_name,const std::string& fil
             get_slice(uint32_t(index),uint8_t(2),uint32_t(z),I,v2c);
             std::copy(I.begin(),I.end(),buf.begin()+size_t(z)*buf.plane_size());
         }
-        return gz_nifti::save_to_file(file_name.c_str(),buf,vs,trans_to_mni,is_qsdr);
+        return gz_nifti::save_to_file(file_name.c_str(),buf,vs,trans_to_mni);
     }
 
 
@@ -636,7 +644,7 @@ bool fib_data::save_mapping(const std::string& index_name,const std::string& fil
             tipl::resample(buf,new_buf,view_item[index].iT,tipl::cubic);
             new_buf.swap(buf);
         }
-        return gz_nifti::save_to_file(file_name.c_str(),buf,vs,trans_to_mni,is_qsdr);
+        return gz_nifti::save_to_file(file_name.c_str(),buf,vs,trans_to_mni);
     }
 }
 bool fib_data::load_from_mat(void)

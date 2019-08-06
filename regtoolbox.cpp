@@ -405,10 +405,10 @@ void RegToolBox::on_action_Save_Warpped_Image_triggered()
     if(filename.isEmpty())
         return;
     if(!JJ.empty())
-        gz_nifti::save_to_file(filename.toStdString().c_str(),JJ,Itvs,ItR,true);
+        gz_nifti::save_to_file(filename.toStdString().c_str(),JJ,Itvs,ItR);
     else
     if(!J.empty())
-        gz_nifti::save_to_file(filename.toStdString().c_str(),J,Itvs,ItR,true);
+        gz_nifti::save_to_file(filename.toStdString().c_str(),J,Itvs,ItR);
 
 }
 
@@ -443,7 +443,7 @@ void RegToolBox::on_actionApply_Warpping_triggered()
         return;
 
     tipl::compose_displacement(I3,J3,T,dis,is_label_image(I3) ? tipl::nearest : tipl::cubic);
-    gz_nifti::save_to_file(filename.toStdString().c_str(),J3,Itvs,ItR,true);
+    gz_nifti::save_to_file(filename.toStdString().c_str(),J3,Itvs,ItR);
 }
 
 

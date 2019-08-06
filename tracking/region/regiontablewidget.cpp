@@ -968,8 +968,7 @@ void RegionTableWidget::save_all_regions(void)
         }
     gz_nifti::save_to_file(filename.toStdString().c_str(),mask,
                            cur_tracking_window.current_slice->voxel_size,
-                           cur_tracking_window.handle->trans_to_mni,
-                           cur_tracking_window.handle->is_qsdr);
+                           cur_tracking_window.handle->trans_to_mni);
 }
 
 void RegionTableWidget::save_region_info(void)

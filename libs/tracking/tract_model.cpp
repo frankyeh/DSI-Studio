@@ -1721,7 +1721,7 @@ void TractModel::save_tdi(const char* file_name,bool sub_voxel,bool endpoint,con
         new_trans[4] /= 4.0f;
         new_trans[8] /= 4.0f;
     }
-    gz_nifti::save_to_file(file_name,tdi,new_vs,new_trans,true);
+    gz_nifti::save_to_file(file_name,tdi,new_vs,new_trans);
 }
 
 

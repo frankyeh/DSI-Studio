@@ -1352,7 +1352,7 @@ void TractTableWidget::export_tract_density(tipl::geometry<3>& dim,
                 new_trans.inv();
                 trans *= new_trans;
             }
-            gz_nifti::save_to_file(filename.toStdString().c_str(),tdi,vs,trans,cur_tracking_window.handle->is_qsdr);
+            gz_nifti::save_to_file(filename.toStdString().c_str(),tdi,vs,trans);
         }
     }
 }
