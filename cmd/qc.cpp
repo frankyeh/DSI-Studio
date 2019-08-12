@@ -12,9 +12,9 @@ std::string quality_check_src_files(QString dir)
 {
     std::ostringstream out;
     QStringList filenames = search_files(dir,"*src.gz");
+    out << "Directory:" << dir.toStdString() << std::endl;
     if(filenames.empty())
         return "No SRC file found in the directory";
-    out << "Directory:" << dir.toStdString() << std::endl;
     out << "FileName\tImage dimension\tResolution\tDWI count\tMax b-value\tB-table matched\tNeighboring DWI correlation\t# Bad Slices" << std::endl;
     size_t dwi_count = 0;
     float max_b = 0;
