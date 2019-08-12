@@ -565,9 +565,11 @@ bool fib_data::load_from_file(const char* file_name)
     }
     else
     {
-        trans_to_mni[0] = vs[0];
-        trans_to_mni[5] = vs[1];
+        trans_to_mni[0] = -vs[0];
+        trans_to_mni[5] = -vs[1];
         trans_to_mni[10] = vs[2];
+        trans_to_mni[3] = vs[0]*(dim[0]-1);
+        trans_to_mni[7] = vs[1]*(dim[1]-1);
         trans_to_mni[15] = 1.0f;
     }
     // template matching
