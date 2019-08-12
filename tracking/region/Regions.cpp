@@ -191,8 +191,8 @@ void ROIRegion::SaveToFile(const char* FileName)
         {
             rvs /= resolution_ratio;
             tipl::multiply_constant(&T[0],&T[0]+3,1.0/resolution_ratio);
-            tipl::multiply_constant(&T[4],&T[0]+3,1.0/resolution_ratio);
-            tipl::multiply_constant(&T[8],&T[0]+3,1.0/resolution_ratio);
+            tipl::multiply_constant(&T[4],&T[4]+3,1.0/resolution_ratio);
+            tipl::multiply_constant(&T[8],&T[8]+3,1.0/resolution_ratio);
         }
         std::ostringstream out;
         out << "color=" << color << ";roi=" << (int)regions_feature;
