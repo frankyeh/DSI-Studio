@@ -798,7 +798,9 @@ void tracking_window::on_actionTracts_to_seeds_triggered()
         return;
     regionWidget->add_region(
             tractWidget->item(tractWidget->currentRow(),0)->text(),roi_id);
-    regionWidget->add_points(points,false,false,1.0);
+    for(size_t i = 0;i < points.size();++i)
+        points[i] *= 4.0;
+    regionWidget->add_points(points,false,false,4.0);
     scene.show_slice();
     glWidget->updateGL();
 }
@@ -2100,4 +2102,5 @@ void tracking_window::on_SliceModality_currentIndexChanged(int index)
     move_slice_to(slice_position);
     no_update = false;
 }
+
 
