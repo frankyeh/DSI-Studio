@@ -91,6 +91,7 @@ void slice_view_scene::show_ruler(QPainter& paint)
 }
 void slice_view_scene::show_fiber(QPainter& painter)
 {
+    int roi_fiber = cur_tracking_window["roi_fiber"].toInt();
     float threshold = cur_tracking_window.get_fa_threshold();
     float threshold2 = cur_tracking_window["dt_index"].toInt() ? cur_tracking_window["dt_threshold"].toFloat() : 0.0f;
     if (threshold == 0.0f)
@@ -131,6 +132,9 @@ void slice_view_scene::show_fiber(QPainter& painter)
                     if(fib.dir.get_fa(pos.index(),fiber) > threshold)
                     {
                         if(threshold2 != 0.0f && fib.dir.get_dt_fa(pos.index(),fiber) < threshold2)
+                            continue;
+                        if((roi_fiber == 2 && fiber != 0) ||
+                           (roi_fiber == 3 && fiber != 1))
                             continue;
                         const float* dir_ptr = fib.dir.get_dir(pos.index(),fiber);
                         if(!fiber_color)

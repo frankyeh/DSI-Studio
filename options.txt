@@ -1,7 +1,7 @@
 ROI/Orientation Convention/orientation_convention/Radiology:Neurology/0
 ROI/Zoom/roi_zoom/int:1:50:1/8
 ROI/Draw Edge/roi_edge/Off:On/0
-ROI/Fiber Direction/roi_fiber/Off:On/1
+ROI/Fiber Direction/roi_fiber/Off:On:1st:2nd/1
 ROI/Fiber Color/roi_fiber_color/RGB:red:green:blue/0
 ROI/Fiber Width/roi_fiber_width/float:0.1:1:0.1:2/0.2
 ROI/Fiber Length/roi_fiber_length/float:0.1:1:0.1:2/0.3
