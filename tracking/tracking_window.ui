@@ -2712,7 +2712,7 @@ Tracking</string>
      <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
    </property>
    <property name="text">
-    <string>Save Mapping...</string>
+    <string>Save Registration...</string>
    </property>
   </action>
   <action name="actionLoad_mapping">
@@ -2721,7 +2721,7 @@ Tracking</string>
      <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
    </property>
    <property name="text">
-    <string>Load Mapping...</string>
+    <string>Load Registration...</string>
    </property>
   </action>
   <action name="actionStatistics">
@@ -3114,7 +3114,7 @@ Tracking</string>
      <normaloff>:/icons/icons/preferences.xpm</normaloff>:/icons/icons/preferences.xpm</iconset>
    </property>
    <property name="text">
-    <string>Adjust Mapping...</string>
+    <string>Adjust Registration...</string>
    </property>
   </action>
   <action name="actionSeparate">

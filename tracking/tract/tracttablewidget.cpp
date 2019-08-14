@@ -1198,6 +1198,9 @@ void TractTableWidget::delete_by_length(void)
 }
 void TractTableWidget::edit_tracts(void)
 {
+    QRgb color;
+    if(edit_option == paint)
+        color = QColorDialog::getColor(Qt::red,this,"Select color",QColorDialog::ShowAlphaChannel).rgb();
     for(unsigned int index = 0;index < tract_models.size();++index)
     {
         if(item(index,0)->checkState() != Qt::Checked)
@@ -1224,7 +1227,7 @@ void TractTableWidget::edit_tracts(void)
                         cur_tracking_window.glWidget->angular_selection ?
                         cur_tracking_window["tract_sel_angle"].toFloat():0.0,
                              cur_tracking_window.glWidget->dirs,
-                             cur_tracking_window.glWidget->pos,QColorDialog::getColor(Qt::red,this,"Select color",QColorDialog::ShowAlphaChannel).rgb());
+                             cur_tracking_window.glWidget->pos,color);
             cur_tracking_window.set_data("tract_color_style",1);//manual assigned
             break;
         }
