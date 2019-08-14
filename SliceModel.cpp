@@ -106,6 +106,7 @@ void CustomSliceModel::initialize(void)
     slice_pos[2] = geometry.depth() >> 1;
 }
 // ---------------------------------------------------------------------------
+void initial_LPS_nifti_srow(tipl::matrix<4,4,float>& T,const tipl::geometry<3>& geo,const tipl::vector<3>& vs);
 bool CustomSliceModel::initialize(const std::vector<std::string>& files,
                                   bool correct_intensity)
 {
@@ -118,7 +119,8 @@ bool CustomSliceModel::initialize(const std::vector<std::string>& files,
     bool has_transform = false;
     from = tipl::make_image(handle->dir.fa[0],handle->dim);
     from_vs = handle->vs;
-    name = QFileInfo(files[0].c_str()).completeBaseName().toStdString();
+    name = QFileInfo(files[0].c_str()).completeBaseName().remove(".nii").toStdString();
+
     if(QFileInfo(files[0].c_str()).suffix() == "bmp" ||
             QFileInfo(files[0].c_str()).suffix() == "jpg")
 
@@ -245,6 +247,7 @@ bool CustomSliceModel::initialize(const std::vector<std::string>& files,
         T[8] = -T[8];
         T[9] = -T[9];
         invT = tipl::inverse(T);
+        initial_LPS_nifti_srow(trans,source_images.geometry(),voxel_size);
         has_transform = true;
     }
     else
@@ -255,6 +258,7 @@ bool CustomSliceModel::initialize(const std::vector<std::string>& files,
             {
                 nifti.toLPS(source_images);
                 nifti.get_voxel_size(voxel_size);
+                nifti.get_image_transformation(trans);
                 if(handle->is_qsdr)
                 {
                     nifti.get_image_transformation(invT);
@@ -271,6 +275,7 @@ bool CustomSliceModel::initialize(const std::vector<std::string>& files,
                 {
                     bruker.get_voxel_size(voxel_size);
                     source_images = std::move(bruker.get_image());
+                    initial_LPS_nifti_srow(trans,source_images.geometry(),voxel_size);
                     QDir d = QFileInfo(files[0].c_str()).dir();
                     if(d.cdUp() && d.cdUp())
                     {
@@ -289,6 +294,7 @@ bool CustomSliceModel::initialize(const std::vector<std::string>& files,
             {
                 volume.get_voxel_size(voxel_size);
                 volume >> source_images;
+                initial_LPS_nifti_srow(trans,source_images.geometry(),voxel_size);
             }
         }
     }

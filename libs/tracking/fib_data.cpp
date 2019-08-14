@@ -455,6 +455,15 @@ bool tracking_data::is_white_matter(const tipl::vector<3,float>& pos,float t) co
 }
 
 int match_template(float volume);
+void initial_LPS_nifti_srow(tipl::matrix<4,4,float>& T,const tipl::geometry<3>& geo,const tipl::vector<3>& vs)
+{
+    T[0] = -vs[0];
+    T[5] = -vs[1];
+    T[10] = vs[2];
+    T[3] = vs[0]*(geo[0]-1);
+    T[7] = vs[1]*(geo[1]-1);
+    T[15] = 1.0f;
+}
 bool fib_data::load_from_file(const char* file_name)
 {
     tipl::image<float,3> I;
@@ -565,12 +574,7 @@ bool fib_data::load_from_file(const char* file_name)
     }
     else
     {
-        trans_to_mni[0] = -vs[0];
-        trans_to_mni[5] = -vs[1];
-        trans_to_mni[10] = vs[2];
-        trans_to_mni[3] = vs[0]*(dim[0]-1);
-        trans_to_mni[7] = vs[1]*(dim[1]-1);
-        trans_to_mni[15] = 1.0f;
+        initial_LPS_nifti_srow(trans_to_mni,dim,vs);
     }
     // template matching
     for(int index = 0;index < fa_template_list.size();++index)

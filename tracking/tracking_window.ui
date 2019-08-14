@@ -957,6 +957,11 @@
     </widget>
     <addaction name="actionInsert_T1_T2"/>
     <addaction name="actionInsert_MNI_images"/>
+    <addaction name="separator"/>
+    <addaction name="actionSave_T1W_T2W_images"/>
+    <addaction name="actionMark_Tracts_on_T1W_T2W"/>
+    <addaction name="actionMark_Region_on_T1W_T2W"/>
+    <addaction name="separator"/>
     <addaction name="menuAdd_Isosurface"/>
     <addaction name="actionStrip_skull_for_T1w_image"/>
     <addaction name="separator"/>
@@ -966,6 +971,7 @@
     <addaction name="separator"/>
     <addaction name="actionLoad_Color_Map"/>
     <addaction name="actionKeep_Current_Slice"/>
+    <addaction name="actionUpsample_Slices_by_2"/>
    </widget>
    <widget class="QMenu" name="menuTools">
     <property name="title">
@@ -2697,7 +2703,7 @@ Tracking</string>
      <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
    </property>
    <property name="text">
-    <string>Insert T1w/T2w images...</string>
+    <string>Insert T1W/T2W images...</string>
    </property>
   </action>
   <action name="actionSave_mapping">
@@ -3469,6 +3475,26 @@ Tracking</string>
   <action name="actionFIB_protocol">
    <property name="text">
     <string>FIB Protocol</string>
+   </property>
+  </action>
+  <action name="actionMark_Region_on_T1W_T2W">
+   <property name="text">
+    <string>Mark Region on T1W/T2W</string>
+   </property>
+  </action>
+  <action name="actionMark_Tracts_on_T1W_T2W">
+   <property name="text">
+    <string>Mark Tracts on T1W/T2W</string>
+   </property>
+  </action>
+  <action name="actionSave_T1W_T2W_images">
+   <property name="text">
+    <string>Save T1W/T2W images...</string>
+   </property>
+  </action>
+  <action name="actionUpsample_Slices_by_2">
+   <property name="text">
+    <string>Upsample Slices by 2</string>
    </property>
   </action>
  </widget>

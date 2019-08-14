@@ -640,7 +640,26 @@ void TractTableWidget::save_end_point_in_mni(void)
     }
 }
 
-
+void paint_track_on_volume(tipl::image<unsigned char,3>& track_map,const std::vector<float>& tracks)
+{
+    for(int j = 0;j < tracks.size();j += 3)
+    {
+        tipl::pixel_index<3> p(std::round(tracks[j]),std::round(tracks[j+1]),std::round(tracks[j+2]),track_map.geometry());
+        if(track_map.geometry().is_valid(p))
+            track_map[p.index()] = 1;
+        if(j)
+        {
+            for(float r = 0.2f;r < 1.0f;r += 0.2f)
+            {
+                tipl::pixel_index<3> p2(std::round(tracks[j]*r+tracks[j-3]*(1-r)),
+                                         std::round(tracks[j+1]*r+tracks[j-2]*(1-r)),
+                                         std::round(tracks[j+2]*r+tracks[j-1]*(1-r)),track_map.geometry());
+                if(track_map.geometry().is_valid(p2))
+                    track_map[p2.index()] = 1;
+            }
+        }
+    }
+}
 
 void TractTableWidget::deep_learning_train(void)
 {
@@ -664,26 +683,7 @@ void TractTableWidget::deep_learning_train(void)
         {
             tipl::image<unsigned char,3> track_map(cur_tracking_window.handle->dim);
             for(unsigned int i = 0;i < tract_models[index]->get_tracts().size();++i)
-            {
-                const std::vector<float>& tracks = tract_models[index]->get_tracts()[i];
-                for(int j = 0;j < tracks.size();j += 3)
-                {
-                    tipl::pixel_index<3> p(std::round(tracks[j]),std::round(tracks[j+1]),std::round(tracks[j+2]),track_map.geometry());
-                    if(track_map.geometry().is_valid(p))
-                        track_map[p.index()] = 1;
-                    if(j)
-                    {
-                        for(float r = 0.2f;r < 1.0f;r += 0.2f)
-                        {
-                            tipl::pixel_index<3> p2(std::round(tracks[j]*r+tracks[j-3]*(1-r)),
-                                                     std::round(tracks[j+1]*r+tracks[j-2]*(1-r)),
-                                                     std::round(tracks[j+2]*r+tracks[j-1]*(1-r)),track_map.geometry());
-                            if(track_map.geometry().is_valid(p2))
-                                track_map[p2.index()] = 1;
-                        }
-                    }
-                }
-            }
+                paint_track_on_volume(track_map,tract_models[index]->get_tracts()[i]);
             while(tipl::morphology::smoothing_fill(track_map))
                 ;
             tipl::morphology::defragment(track_map);

@@ -135,7 +135,6 @@ public:
     std::string name,error_msg = "unknown error";
 public:
     std::shared_ptr<std::future<void> > thread;
-
     tipl::const_pointer_image<float,3> from;
     tipl::vector<3> from_vs;
     tipl::affine_transform<double> arg_min;
@@ -152,6 +151,7 @@ public:
     void update(void);
 
 public:
+    tipl::matrix<4,4,float> trans;
     tipl::image<float, 3> source_images;
 public:
     bool initialize(const std::vector<std::string>& files,bool correct_intensity);

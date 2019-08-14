@@ -303,6 +303,8 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
 
 
 
+
+
         connect(ui->actionSet_Opacity,SIGNAL(triggered()),regionWidget,SLOT(action_set_opa()));
 
         connect(ui->actionMerge_All_2,SIGNAL(triggered()),regionWidget,SLOT(merge_all()));
@@ -389,6 +391,7 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
 
 
     } 
+
 
     qApp->installEventFilter(this);
 
@@ -2104,3 +2107,92 @@ void tracking_window::on_SliceModality_currentIndexChanged(int index)
 }
 
 
+
+void tracking_window::on_actionSave_T1W_T2W_images_triggered()
+{
+    CustomSliceModel* slice = dynamic_cast<CustomSliceModel*>(current_slice.get());
+    if(!current_slice)
+        return;
+    QString filename = QFileDialog::getSaveFileName(
+        this,"Save T1W/T2W Image",QFileInfo(windowTitle()).absolutePath()+"//"+slice->name.c_str()+"_modified.nii.gz","Image files (*nii.gz);;All files (*)" );
+    if( filename.isEmpty())
+        return;
+    gz_nifti::save_to_file(filename.toStdString().c_str(),slice->source_images,slice->voxel_size,slice->trans);
+}
+
+void tracking_window::on_actionMark_Region_on_T1W_T2W_triggered()
+{
+    CustomSliceModel* slice = dynamic_cast<CustomSliceModel*>(current_slice.get());
+    if(!slice || slice->source_images.empty())
+        return;
+    auto current_region = regionWidget->regions[uint32_t(regionWidget->currentRow())];
+    float mark_value = slice->get_value_range().second*1.1f;
+    tipl::image<unsigned char, 3> mask;
+    current_region->SaveToBuffer(mask);
+    float resolution_ratio = current_region->resolution_ratio;
+    tipl::matrix<4,4,float> T(slice->T);
+    tipl::multiply_constant(&T[0],&T[0]+12,resolution_ratio);
+    tipl::image<unsigned char, 3> t_mask(slice->source_images.geometry());
+    tipl::resample(mask,t_mask,T,tipl::nearest);
+    for(size_t i = 0;i < t_mask.size();++i)
+        if(t_mask[i])
+            slice->source_images[i] = mark_value;
+    scene.show_slice();
+    glWidget->updateGL();
+}
+
+void paint_track_on_volume(tipl::image<unsigned char,3>& track_map,const std::vector<float>& tracks);
+void tracking_window::on_actionMark_Tracts_on_T1W_T2W_triggered()
+{
+    CustomSliceModel* slice = dynamic_cast<CustomSliceModel*>(current_slice.get());
+    if(!slice || slice->source_images.empty())
+        return;
+    if(tractWidget->tract_models.empty())
+        return;
+    tipl::image<unsigned char, 3> t_mask(slice->source_images.geometry());
+    auto checked_tracks = tractWidget->get_checked_tracks();
+    tipl::par_for(checked_tracks.size(),[&](size_t i){
+        for(size_t j = 0;j < checked_tracks[i]->get_visible_track_count();++j)
+        {
+            std::vector<float> tracks = checked_tracks[i]->get_tract(j);
+            for(size_t k = 0;k < tracks.size();k +=3)
+            {
+                tipl::vector<3> p(&tracks[0] + k);
+                p.to(slice->invT);
+                tracks[k] = p[0];
+                tracks[k+1] = p[1];
+                tracks[k+2] = p[2];
+            }
+            paint_track_on_volume(t_mask,tracks);
+        }
+    });
+    float mark_value = slice->get_value_range().second*1.1f;
+    for(size_t i = 0;i < t_mask.size();++i)
+        if(t_mask[i])
+            slice->source_images[i] = mark_value;
+    scene.show_slice();
+    glWidget->updateGL();
+}
+
+void tracking_window::on_actionUpsample_Slices_by_2_triggered()
+{
+    CustomSliceModel* slice = dynamic_cast<CustomSliceModel*>(current_slice.get());
+    if(!slice || slice->source_images.empty())
+        return;
+    if (QMessageBox::question( this, "DSI Studio",
+                               "This will strop registration. Proceed?",
+                               QMessageBox::No | QMessageBox::Yes,QMessageBox::Yes) == QMessageBox::No)
+        return;
+    slice->terminate();
+    slice->voxel_size *= 0.5;
+    tipl::matrix<4,4,float> nT;
+    nT.identity();
+    nT[0] = nT[5] = nT[10] = 0.5f;
+    slice->T = slice->T*nT;
+    slice->invT = tipl::inverse(slice->T);
+    tipl::image<float,3> J(tipl::geometry<3>(slice->source_images.width()*2,slice->source_images.height()*2,slice->source_images.depth()*2));
+    tipl::resample_mt(slice->source_images,J,nT,tipl::cubic);
+    slice->source_images.swap(J);
+    slice->initialize();
+    on_SliceModality_currentIndexChanged(ui->SliceModality->currentIndex());
+}

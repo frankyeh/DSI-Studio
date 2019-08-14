@@ -242,7 +242,6 @@ void RegionTableWidget::move_slice_to_current_region(void)
     }
     cur_tracking_window.move_slice_to(p);
 }
-
 void RegionTableWidget::draw_region(tipl::color_image& I)
 {
     auto current_slice = cur_tracking_window.current_slice;

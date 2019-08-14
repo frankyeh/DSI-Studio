@@ -96,8 +96,8 @@ public:
     }
 
     QString output_format(void);
-public slots:
     void draw_region(tipl::color_image& I);
+public slots:
     void draw_edge(QImage& image,QImage& scaledimage,bool draw_all);
     void updateRegions(QTableWidgetItem* item);
     void new_region(void);
