@@ -368,7 +368,7 @@ void MainWindow::on_FiberTracking_clicked()
                            this,
                            "Open Fib files",
                            ui->workDir->currentText(),
-                           "Fib files (*fib.gz *.fib *nii.gz *.nii 2dseq);;All files (*)");
+                           "Fib files (*fib.gz *.fib);;Image files (*nii.gz *.nii 2dseq);;All files (*)");
     if (filename.isEmpty())
         return;
     loadFib(filename);
