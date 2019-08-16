@@ -2117,7 +2117,8 @@ void tracking_window::on_actionSave_T1W_T2W_images_triggered()
         this,"Save T1W/T2W Image",QFileInfo(windowTitle()).absolutePath()+"//"+slice->name.c_str()+"_modified.nii.gz","Image files (*nii.gz);;All files (*)" );
     if( filename.isEmpty())
         return;
-    gz_nifti::save_to_file(filename.toStdString().c_str(),slice->source_images,slice->voxel_size,slice->trans);
+    auto I = slice->source_images;
+    gz_nifti::save_to_file(filename.toStdString().c_str(),I,slice->voxel_size,slice->trans);
 }
 
 void tracking_window::on_actionMark_Region_on_T1W_T2W_triggered()
