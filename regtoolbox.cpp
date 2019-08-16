@@ -405,11 +405,16 @@ void RegToolBox::on_action_Save_Warpped_Image_triggered()
     if(filename.isEmpty())
         return;
     if(!JJ.empty())
-        gz_nifti::save_to_file(filename.toStdString().c_str(),JJ,Itvs,ItR);
+    {
+        auto JJ_ = JJ;
+        gz_nifti::save_to_file(filename.toStdString().c_str(),JJ_,Itvs,ItR);
+    }
     else
     if(!J.empty())
-        gz_nifti::save_to_file(filename.toStdString().c_str(),J,Itvs,ItR);
-
+    {
+        auto J_ = J;
+        gz_nifti::save_to_file(filename.toStdString().c_str(),J_,Itvs,ItR);
+    }
 }
 
 
