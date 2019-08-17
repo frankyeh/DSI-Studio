@@ -29,7 +29,7 @@ manual_alignment::manual_alignment(QWidget *parent,
     tipl::reg::get_bound(from,to,arg,b_upper,b_lower,reg_type,reg_bound2);
 
     ui->setupUi(this);
-    ui->reg_type->setCurrentIndex(reg_type == tipl::reg::rigid_body? 0: 1);
+    ui->reg_type->setCurrentIndex(reg_type == tipl::reg::rigid_body? 1: 2);
     ui->cost_type->setCurrentIndex(cost_function == tipl::reg::mutual_info ? 1 : 0);
 
 
@@ -174,7 +174,7 @@ void manual_alignment::param_changed()
     arg.rotation[1] = ui->ry->value();
     arg.rotation[2] = ui->rz->value();
 
-    if(reg_type != tipl::reg::rigid_body) // not rigid body
+    if(reg_type == tipl::reg::affine) // not rigid body
     {
         arg.scaling[0] = ui->sx->value();
         arg.scaling[1] = ui->sy->value();
@@ -275,10 +275,16 @@ void manual_alignment::on_buttonBox_rejected()
 void manual_alignment::on_rerun_clicked()
 {
     auto cost = ui->cost_type->currentIndex() == 0 ? tipl::reg::corr : tipl::reg::mutual_info;
-    reg_type = ui->reg_type->currentIndex() == 0 ? tipl::reg::rigid_body : tipl::reg::affine;
+    if(ui->reg_type->currentIndex() == 0)
+        reg_type = tipl::reg::translocation;
+    if(ui->reg_type->currentIndex() == 1)
+        reg_type = tipl::reg::rigid_body;
+    if(ui->reg_type->currentIndex() == 2)
+        reg_type = tipl::reg::affine;
     tipl::reg::get_bound(from,to,arg,b_upper,b_lower,reg_type,reg_bound2);
-    if(reg_type == tipl::reg::rigid_body)
+    if(ui->reg_type->currentIndex() <= 1) // translocation or rigid
     {
+        ui->rotation_group->setEnabled(reg_type == tipl::reg::rigid_body);
         ui->scaling_group->setEnabled(false);
         ui->tilting_group->setEnabled(false);
         arg.scaling[0] = arg.scaling[1] = arg.scaling[2] = 1.0f;
@@ -286,22 +292,22 @@ void manual_alignment::on_rerun_clicked()
     }
     else
     {
+        ui->rotation_group->setEnabled(true);
         ui->scaling_group->setEnabled(true);
         ui->tilting_group->setEnabled(true);
     }
-
 
     thread.run([this,cost]()
     {
         if(cost == tipl::reg::mutual_info)
         {
-            tipl::reg::linear_mr(from,from_vs,to,to_vs,arg,reg_type,tipl::reg::mutual_information(),thread.terminated,0.01,reg_bound2);
-            tipl::reg::linear_mr(from,from_vs,to,to_vs,arg,reg_type,tipl::reg::mutual_information(),thread.terminated,0.001,reg_bound2);
+            tipl::reg::linear(from,from_vs,to,to_vs,arg,reg_type,tipl::reg::mutual_information(),thread.terminated,0.01,0,reg_bound2);
+            tipl::reg::linear(from,from_vs,to,to_vs,arg,reg_type,tipl::reg::mutual_information(),thread.terminated,0.001,0,reg_bound2);
         }
         else
         {
-            tipl::reg::linear_mr(from,from_vs,to,to_vs,arg,reg_type,tipl::reg::correlation(),thread.terminated,0.01,reg_bound2);
-            tipl::reg::linear_mr(from,from_vs,to,to_vs,arg,reg_type,tipl::reg::correlation(),thread.terminated,0.001,reg_bound2);
+            tipl::reg::linear(from,from_vs,to,to_vs,arg,reg_type,tipl::reg::correlation(),thread.terminated,0.01,0,reg_bound2);
+            tipl::reg::linear(from,from_vs,to,to_vs,arg,reg_type,tipl::reg::correlation(),thread.terminated,0.001,0,reg_bound2);
         }
 
     });

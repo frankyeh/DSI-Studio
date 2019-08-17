@@ -297,7 +297,7 @@
             <item>
              <widget class="QGroupBox" name="tilting_group">
               <property name="title">
-               <string>Tilting</string>
+               <string>Shearing</string>
               </property>
               <layout class="QHBoxLayout" name="horizontalLayout_4">
                <property name="spacing">
@@ -370,7 +370,7 @@
              </widget>
             </item>
             <item>
-             <widget class="QGroupBox" name="groupBox_4">
+             <widget class="QGroupBox" name="rotation_group">
               <property name="title">
                <string>Rotation</string>
               </property>
@@ -512,6 +512,11 @@
               </item>
               <item>
                <widget class="QComboBox" name="reg_type">
+                <item>
+                 <property name="text">
+                  <string>translocation</string>
+                 </property>
+                </item>
                 <item>
                  <property name="text">
                   <string>rigid body</string>
