@@ -103,9 +103,13 @@ public: // individual
 public:
     stat_model(void):threshold_type(t),individual_data(nullptr){}
 public:
+    std::string cohort_text;
+    void get_missing_list(double missing_value,std::set<size_t,std::greater<size_t> >& remove_list);
+    void remove_data(const std::set<size_t,std::greater<size_t> > remove_list);
+
+public:
     void read_demo(const connectometry_db& db);
-    void remove_subject(unsigned int index);
-    void remove_missing_data(double missing_value);
+    void remove_subject(unsigned int index);    
     bool resample(stat_model& rhs,bool null,bool bootstrap);
     bool pre_process(void);
     double operator()(const std::vector<double>& population,unsigned int pos) const;

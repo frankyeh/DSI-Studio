@@ -84,7 +84,6 @@ group_connectometry::group_connectometry(QWidget *parent,std::shared_ptr<group_c
 
 
     ui->multithread->setValue(std::thread::hardware_concurrency());
-    ui->advanced_options->hide();
 
 
     ui->dist_table->setColumnCount(7);
@@ -294,9 +293,18 @@ bool group_connectometry::load_demographic_file(QString filename,std::string& er
             ui->variable_list->item(i)->setFlags(ui->variable_list->item(i)->flags() | Qt::ItemIsUserCheckable); // set checkable flag
             ui->variable_list->item(i)->setCheckState(i == 0 ? Qt::Checked : Qt::Unchecked);
         }
+        ui->cohort_index->clear();
+        ui->cohort_index->addItems(t);
+        ui->cohort_index->setCurrentIndex(0);
+        ui->cohort_index2->clear();
+        ui->cohort_index2->addItems(t);
+        ui->cohort_index2->setCurrentIndex(0);
+        ui->select_cohort->setChecked(false);
+        ui->exclude_cohort->setChecked(false);
         ui->foi->clear();
         ui->foi->addItem(t[0]);
         ui->foi->setCurrentIndex(0);
+
         ui->foi_widget->show();
         ui->missing_data_checked->setChecked(std::find(model->X.begin(),model->X.end(),ui->missing_value->value()) != model->X.end());
     }
@@ -304,7 +312,64 @@ bool group_connectometry::load_demographic_file(QString filename,std::string& er
     fill_demo_table(db,ui->subject_demo);
     return true;
 }
+std::string group_connectometry::get_cohort_list(std::set<size_t,std::greater<size_t> >& remove_list)
+{
+    std::string cohort_text;
+    // select cohort
+    if(ui->select_cohort->isChecked())
+    {
+        float threshold = ui->cohort_value->text().toFloat();
+        for(size_t i = 0,pos = 0;pos < model->X.size();++i,pos += model->feature_count)
+        {
+            float value = model->X[pos+ui->cohort_index->currentIndex()+1];
+            if(ui->cohort_operator->currentIndex() == 0 && int(value*1000.0f) == int(threshold*1000.0f)) // equal
+                continue;
+            if(ui->cohort_operator->currentIndex() == 1 && value > threshold) // greater
+                continue;
+            if(ui->cohort_operator->currentIndex() == 2 && value < threshold) // less
+                continue;
+            remove_list.insert(i);
+        }
+        std::ostringstream out;
+        out << "Subjects with "<< ui->cohort_index->currentText().toStdString() << " "
+            << ui->cohort_operator->currentText().toStdString() << " "
+            << ui->cohort_value->text().toStdString() << " were selected. ";
+        cohort_text += out.str();
+    }
 
+    // exclude cohort
+    if(ui->exclude_cohort->isChecked())
+    {
+        float threshold = ui->cohort_value2->text().toFloat();
+        for(size_t i = 0,pos = 0;pos < model->X.size();++i,pos += model->feature_count)
+        {
+            float value = model->X[pos+ui->cohort_index2->currentIndex()+1];
+            if(ui->cohort_operator2->currentIndex() == 0 && int(value*1000.0f) == int(threshold*1000.0f)) // equal
+                remove_list.insert(i);
+            if(ui->cohort_operator2->currentIndex() == 1 && value > threshold) // greater
+                remove_list.insert(i);
+            if(ui->cohort_operator2->currentIndex() == 2 && value < threshold) // less
+                remove_list.insert(i);
+        }
+        std::ostringstream out;
+        out << "Subjects with "<< ui->cohort_index2->currentText().toStdString() << " "
+            << ui->cohort_operator2->currentText().toStdString() << " "
+            << ui->cohort_value2->text().toStdString() << " were excluded. ";
+        cohort_text += out.str();
+    }
+
+    // visualize
+    std::vector<char> excluded(ui->subject_demo->rowCount());
+    for(auto i:remove_list)
+        excluded[i] = true;
+    ui->subject_demo->setUpdatesEnabled(false);
+    for(size_t i = 0;i < excluded.size();++i)
+        for(size_t j = 0;j < ui->subject_demo->columnCount();++j)
+            ui->subject_demo->item(i,j)->setBackgroundColor(excluded[i] ? Qt::white : Qt::blue);
+    ui->subject_demo->setUpdatesEnabled(true);
+    ui->cohort_text->setText(QString("%1 subjects selected").arg(excluded.size()-remove_list.size()));
+    return cohort_text;
+}
 bool group_connectometry::setup_model(stat_model& m)
 {
     if(ui->rb_regression->isChecked())
@@ -324,8 +389,13 @@ bool group_connectometry::setup_model(stat_model& m)
             }
         m.select_variables(sel);
         m.threshold_type = stat_model::t;
+
+        std::set<size_t,std::greater<size_t> > remove_list;
+        m.cohort_text = get_cohort_list(remove_list);
+        // exclude subjects with missing values
         if(ui->missing_data_checked->isChecked())
-            m.remove_missing_data(ui->missing_value->value());
+            m.get_missing_list(ui->missing_value->value(),remove_list);
+        m.remove_data(remove_list);
     }
     if(ui->rb_longitudina_dif->isChecked())
     {
@@ -443,7 +513,6 @@ void group_connectometry::on_run_clicked()
         ui->run->setText("Run");
         return;
     }
-    ui->run->setText("Stop");
     vbc->seed_count = ui->seed_count->value();
     vbc->normalize_qa = ui->normalize_qa->isChecked();
     vbc->output_resampling = ui->output_resampling->isChecked();
@@ -464,11 +533,13 @@ void group_connectometry::on_run_clicked()
     if(!setup_model(*vbc->model.get()))
     {
         if(gui)
-            QMessageBox::information(this,"Error","Cannot run the statistics. Subject number not enough?",0);
+            QMessageBox::information(this,"Error","Cannot fit a regression model (invalid variable values or not enough subjects).",0);
         else
             std::cout << "setup model failed" << std::endl;
         return;
     }
+
+    ui->run->setText("Stop");
     if(vbc->model->type == 1) // regression
         vbc->output_file_name = demo_file_name;
     if(vbc->model->type == 3) // longitudinal change
@@ -608,14 +679,6 @@ void group_connectometry::on_roi_whole_brain_toggled(bool checked)
     ui->load_roi_from_file->setEnabled(!checked);
 }
 
-void group_connectometry::on_show_advanced_clicked()
-{
-    if(ui->advanced_options->isVisible())
-        ui->advanced_options->hide();
-    else
-        ui->advanced_options->show();
-}
-
 void group_connectometry::on_missing_data_checked_toggled(bool checked)
 {
     ui->missing_value->setEnabled(checked);
@@ -697,13 +760,6 @@ void group_connectometry::on_load_roi_from_file_clicked()
     add_new_roi(QFileInfo(file).baseName(),"Local File",new_roi);
 }
 
-
-
-
-
-
-
-
 void group_connectometry::on_variable_list_clicked(const QModelIndex &)
 {
     ui->foi->clear();
@@ -727,4 +783,10 @@ void group_connectometry::on_rb_longitudina_dif_clicked()
 void group_connectometry::on_rb_regression_clicked()
 {
     ui->gb_regression->setEnabled(true);
+}
+
+void group_connectometry::on_show_cohort_clicked()
+{
+    std::set<size_t,std::greater<size_t> > remove_list;
+    get_cohort_list(remove_list);
 }

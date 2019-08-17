@@ -1142,6 +1142,8 @@ void stat_model::select_variables(const std::vector<char>& sel)
 
 bool stat_model::pre_process(void)
 {
+    if(X.empty())
+        return false;
     switch(type)
     {
     case 0: // group
@@ -1155,6 +1157,8 @@ bool stat_model::pre_process(void)
         {
             X_min = X_max = std::vector<double>(X.begin(),X.begin()+feature_count);
             unsigned int subject_count = X.size()/feature_count;
+            if(subject_count <= feature_count)
+                return false;
             for(unsigned int i = 1,index = feature_count;i < subject_count;++i)
                 for(unsigned int j = 0;j < feature_count;++j,++index)
                 {
@@ -1184,17 +1188,15 @@ void stat_model::remove_subject(unsigned int index)
         X.erase(X.begin()+index*feature_count,X.begin()+(index+1)*feature_count);
     subject_index.erase(subject_index.begin()+index);
 }
-
-void stat_model::remove_missing_data(double missing_value)
+void stat_model::get_missing_list(double missing_value,std::set<size_t,std::greater<size_t> >& remove_list)
 {
-    std::vector<unsigned int> remove_list;
     switch(type)
     {
         case 0:  // group
             for(unsigned int index = 0;index < label.size();++index)
             {
                 if(label[index] == missing_value)
-                    remove_list.push_back(index);
+                    remove_list.insert(index);
             }
             break;
 
@@ -1205,25 +1207,23 @@ void stat_model::remove_missing_data(double missing_value)
                 {
                     if(X[index*feature_count + j] == missing_value)
                     {
-                        remove_list.push_back(index);
+                        remove_list.insert(index);
                         break;
                     }
                 }
             }
             break;
     }
-
-    if(remove_list.empty())
-        return;
-    while(!remove_list.empty())
+}
+void stat_model::remove_data(const std::set<size_t,std::greater<size_t> > remove_list)
+{
+    for(auto index: remove_list)
     {
-        unsigned int index = remove_list.back();
         if(!label.empty())
             label.erase(label.begin()+index);
         if(!X.empty())
             X.erase(X.begin()+index*feature_count,X.begin()+(index+1)*feature_count);
         subject_index.erase(subject_index.begin()+index);
-        remove_list.pop_back();
     }
 }
 

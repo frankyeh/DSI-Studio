@@ -59,6 +59,8 @@ public:
     std::shared_ptr<group_connectometry_analysis> vbc;
     std::auto_ptr<stat_model> model;
     std::auto_ptr<QTimer> timer;
+
+    std::string get_cohort_list(std::set<size_t,std::greater<size_t> >& remove_list);
     bool setup_model(stat_model& model);
 
     explicit group_connectometry(QWidget *parent,std::shared_ptr<group_connectometry_analysis> vbc_ptr,QString db_file_name_,bool gui_);
@@ -80,8 +82,6 @@ public slots:
 
     void on_roi_whole_brain_toggled(bool checked);
 
-    void on_show_advanced_clicked();
-
     void on_missing_data_checked_toggled(bool checked);
 
 public slots:
@@ -95,6 +95,7 @@ private slots:
     void on_load_roi_from_file_clicked();
     void on_rb_longitudina_dif_clicked();
     void on_rb_regression_clicked();
+    void on_show_cohort_clicked();
 };
 
 #endif // VBC_DIALOG_HPP

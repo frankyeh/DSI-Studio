@@ -318,7 +318,7 @@ void group_connectometry_analysis::run_permutation(unsigned int thread_count,uns
         {
             out << "\nDiffusion MRI connectometry (Yeh et al. NeuroImage 125 (2016): 162-171) was used to study the effect of "
                 << foi_str
-                << ". A multiple regression model was used to consider ";
+                << ". " << model->cohort_text << "A multiple regression model was used to consider ";
             for(unsigned int index = 1;index < model->variables.size();++index)
             {
                 if(index && model->variables.size() > 3)
