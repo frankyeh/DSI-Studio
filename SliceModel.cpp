@@ -385,6 +385,11 @@ void CustomSliceModel::argmin(tipl::reg::reg_type reg_type)
     ended = false;
     tipl::const_pointer_image<float,3> to = source_images;
     tipl::transformation_matrix<double> M;
+
+    // assume brain top
+    float z_shift = (float(from.geometry()[2])*from_vs[2]-float(to.geometry()[2])*voxel_size[2])*0.1f;
+    arg_min.translocation[2] = -z_shift*voxel_size[2];
+
     tipl::reg::two_way_linear_mr(from,from_vs,to,voxel_size,M,reg_type,tipl::reg::mutual_information(),terminated,
                                   std::thread::hardware_concurrency(),&arg_min);
     ended = true;
