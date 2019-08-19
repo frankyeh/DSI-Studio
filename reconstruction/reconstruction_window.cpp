@@ -807,31 +807,56 @@ void reconstruction_window::on_actionReplace_b0_by_T2W_image_triggered()
 
 void reconstruction_window::on_actionCorrect_AP_PA_scans_triggered()
 {
-    QMessageBox::information(this,"DSI Studio","Please assign another SRC file with phase encoding flipped",0);
+    QMessageBox::information(this,"DSI Studio","Please assign another SRC/DICOM/NIFTI file with an opposite phase encoding",0);
     QString filename = QFileDialog::getOpenFileName(
             this,"Open SRC file",absolute_path,
-            "Images (*src.gz);;All files (*)" );
+            "Images (*src.gz);;DICOM image (*.dcm);;NIFTI image (*.nii *nii.gz);;All files (*)" );
     if( filename.isEmpty())
         return;
 
     begin_prog("load src");
     ImageModel src2;
-    if (!src2.load_from_file(filename.toLocal8Bit().begin()))
+    tipl::image<unsigned short,3> I;
+    if(QFileInfo(filename).suffix().toLower() == "dcm")
     {
-        QMessageBox::information(this,"error",QString("Cannot open ") +
-           filename + " : " +src2.error_msg.c_str(),0);
-        check_prog(0,0);
-        return;
+        tipl::io::dicom in;
+        if(!in.load_from_file(filename.toStdString().c_str()))
+        {
+            QMessageBox::information(this,"error","Invalid dicom format",0);
+            return;
+        }
+        in >> I;
+        src2.voxel.dim = I.geometry();
+        src2.src_dwi_data.push_back(&I[0]);
     }
-    check_prog(0,0);
+    else
+    if(QFileInfo(filename).suffix().toLower() == "nii" ||
+            QFileInfo(filename).completeSuffix().toLower() == "nii.gz")
+    {
+        gz_nifti in;
+        if(!in.load_from_file(filename.toStdString().c_str()))
+        {
+            QMessageBox::information(this,"error","Invalid NIFTI format",0);
+            return;
+        }
+        in >> I;
+        src2.voxel.dim = I.geometry();
+        src2.src_dwi_data.push_back(&I[0]);
+    }
+    else {
+        if (!src2.load_from_file(filename.toLocal8Bit().begin()))
+        {
+            QMessageBox::information(this,"error",QString("Cannot open ") +
+               filename + " : " +src2.error_msg.c_str(),0);
+            check_prog(0,0);
+            return;
+        }
+        check_prog(0,0);
+    }
+
     if(handle->voxel.dim != src2.voxel.dim)
     {
         QMessageBox::information(this,"error","The image dimension is different.",0);
-        return;
-    }
-    if(handle->src_dwi_data.size() != src2.src_dwi_data.size())
-    {
-        QMessageBox::information(this,"error","The DWI number is different.",0);
         return;
     }
     handle->distortion_correction(src2);

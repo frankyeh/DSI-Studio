@@ -798,8 +798,6 @@ void apply_distortion_map2(const image_type& v1,
 void ImageModel::distortion_correction(const ImageModel& rhs)
 {
     tipl::image<float,3> v1,v2,vv1,vv2;
-    //v1 = dwi_sum;
-    //v2 = rhs.dwi_sum;
     v1 = tipl::make_image(src_dwi_data[0],voxel.dim);
     v2 = tipl::make_image(rhs.src_dwi_data[0],voxel.dim);
 
@@ -854,28 +852,19 @@ void ImageModel::distortion_correction(const ImageModel& rhs)
         dis_map += gx;
     }
 
-
-    //dwi_sum = dis_map;
-    //return;
-
-
     std::vector<tipl::image<unsigned short,3> > dwi(src_dwi_data.size());
     for(int i = 0;i < src_dwi_data.size();++i)
     {
         v1 = tipl::make_image(src_dwi_data[i],voxel.dim);
-        v2 = tipl::make_image(rhs.src_dwi_data[i],rhs.voxel.dim);
         if(swap_xy)
         {
             tipl::swap_xy(v1);
-            tipl::swap_xy(v2);
         }
         apply_distortion_map2(v1,dis_map,vv1,true);
-        apply_distortion_map2(v2,dis_map,vv2,false);
         dwi[i] = vv1;
         if(swap_xy)
             tipl::swap_xy(dwi[i]);
     }
-
 
     new_dwi.swap(dwi);
     for(int i = 0;i < new_dwi.size();++i)
