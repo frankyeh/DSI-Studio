@@ -93,7 +93,6 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
         break;
     }
 
-    ui->DT_Option->setVisible(false);
     ui->odf_resolving->setVisible(false);
 
     ui->AdvancedWidget->setVisible(false);
@@ -395,7 +394,7 @@ void reconstruction_window::on_DTI_toggled(bool checked)
     ui->RecordODF->setVisible(!checked);
     ui->rdi->setVisible(!checked);
 
-
+    ui->DT_Option->setVisible(!checked);
 
 }
 
@@ -422,6 +421,9 @@ void reconstruction_window::on_GQI_toggled(bool checked)
     if(checked)
         ui->rdi->setChecked(true);
     ui->csf_calibration->setVisible(handle->is_human_data());
+
+
+    ui->DT_Option->setVisible(checked);
 }
 int match_template(float volume);
 void reconstruction_window::on_QSDR_toggled(bool checked)
@@ -450,6 +452,9 @@ void reconstruction_window::on_QSDR_toggled(bool checked)
         ui->primary_template->setCurrentIndex(match_template(
             handle->voxel.vs[0]*handle->voxel.vs[1]*handle->voxel.vs[2]*handle->voxel.dim.size()));
     }
+
+
+    ui->DT_Option->setVisible(!checked);
 }
 
 void reconstruction_window::on_zoom_in_clicked()
@@ -867,7 +872,6 @@ void reconstruction_window::on_actionCorrect_AP_PA_scans_triggered()
 
 void reconstruction_window::on_actionEnable_TEST_features_triggered()
 {
-    ui->DT_Option->setVisible(true);
     ui->odf_resolving->setVisible(true);
 }
 

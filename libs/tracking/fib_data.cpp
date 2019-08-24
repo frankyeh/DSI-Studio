@@ -198,7 +198,7 @@ bool fiber_directions::add_data(gz_mat_read& mat_reader)
 
         // prefix started here
         std::string prefix_name(matrix_name.begin(),matrix_name.end()-1);
-        int store_index  = matrix_name[matrix_name.length()-1]-'0';
+        int store_index = matrix_name[matrix_name.length()-1]-'0';
         if (store_index < 0 || store_index > 9)
             continue;
 

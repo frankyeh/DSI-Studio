@@ -50,7 +50,7 @@
     <item>
      <widget class="QToolBox" name="toolBox">
       <property name="currentIndex">
-       <number>1</number>
+       <number>2</number>
       </property>
       <property name="tabSpacing">
        <number>0</number>
@@ -689,55 +689,6 @@
             </widget>
            </item>
            <item>
-            <widget class="QGroupBox" name="DT_Option">
-             <property name="title">
-              <string/>
-             </property>
-             <layout class="QHBoxLayout" name="horizontalLayout">
-              <property name="topMargin">
-               <number>3</number>
-              </property>
-              <property name="bottomMargin">
-               <number>3</number>
-              </property>
-              <item>
-               <widget class="QPushButton" name="open_ddi_study_src">
-                <property name="text">
-                 <string>Compare SRC...</string>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <widget class="QLabel" name="ddi_file">
-                <property name="text">
-                 <string>...</string>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <spacer name="horizontalSpacer_3">
-                <property name="orientation">
-                 <enum>Qt::Horizontal</enum>
-                </property>
-                <property name="sizeHint" stdset="0">
-                 <size>
-                  <width>40</width>
-                  <height>20</height>
-                 </size>
-                </property>
-               </spacer>
-              </item>
-              <item>
-               <widget class="QCheckBox" name="dt_deform">
-                <property name="text">
-                 <string>Possible tissue deformation</string>
-                </property>
-               </widget>
-              </item>
-             </layout>
-            </widget>
-           </item>
-           <item>
             <widget class="QGroupBox" name="ResolutionBox">
              <property name="title">
               <string/>
@@ -813,6 +764,23 @@
            <property name="bottomMargin">
             <number>6</number>
            </property>
+           <item row="3" column="1">
+            <widget class="QCheckBox" name="output_jacobian">
+             <property name="text">
+              <string>Jacobian determinant</string>
+             </property>
+            </widget>
+           </item>
+           <item row="4" column="1">
+            <widget class="QCheckBox" name="output_diffusivity">
+             <property name="text">
+              <string>DTI measures</string>
+             </property>
+             <property name="checked">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
            <item row="1" column="0">
             <widget class="QCheckBox" name="RecordODF">
              <property name="text">
@@ -834,13 +802,6 @@
              </property>
             </widget>
            </item>
-           <item row="3" column="1">
-            <widget class="QCheckBox" name="output_jacobian">
-             <property name="text">
-              <string>Jacobian determinant</string>
-             </property>
-            </widget>
-           </item>
            <item row="1" column="1">
             <widget class="QCheckBox" name="rdi">
              <property name="text">
@@ -858,14 +819,49 @@
              </property>
             </widget>
            </item>
-           <item row="4" column="1">
-            <widget class="QCheckBox" name="output_diffusivity">
-             <property name="text">
-              <string>DTI measures</string>
+           <item row="6" column="0">
+            <widget class="QGroupBox" name="DT_Option">
+             <property name="title">
+              <string/>
              </property>
-             <property name="checked">
-              <bool>true</bool>
-             </property>
+             <layout class="QHBoxLayout" name="horizontalLayout">
+              <property name="spacing">
+               <number>0</number>
+              </property>
+              <property name="leftMargin">
+               <number>0</number>
+              </property>
+              <property name="topMargin">
+               <number>0</number>
+              </property>
+              <property name="rightMargin">
+               <number>0</number>
+              </property>
+              <property name="bottomMargin">
+               <number>0</number>
+              </property>
+              <item>
+               <widget class="QPushButton" name="open_ddi_study_src">
+                <property name="text">
+                 <string>Compare SRC...</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QCheckBox" name="dt_deform">
+                <property name="text">
+                 <string>Deformed</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QLabel" name="ddi_file">
+                <property name="text">
+                 <string>...</string>
+                </property>
+               </widget>
+              </item>
+             </layout>
             </widget>
            </item>
           </layout>
