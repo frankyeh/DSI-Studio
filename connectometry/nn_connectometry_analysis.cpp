@@ -325,6 +325,7 @@ bool nn_connectometry_analysis::run(const std::string& net_string_)
                 << ", accuracy = " << (int)all_accuracy << "/" << y.size() << " = " << 100.0f*(float)all_accuracy/(float)y.size() << "%.";
             all_result = out.str();
         }
+        cur_progress = 100;
         terminated = true;
     });
     return true;

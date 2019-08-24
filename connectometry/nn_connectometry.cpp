@@ -146,11 +146,19 @@ void nn_connectometry::on_view_tab_currentChanged(int)
             series->setMarkerShape(QScatterSeries::MarkerShapeRectangle);
             series->setPen(Qt::NoPen);
             series->setBrush(Qt::black);
+            std::mt19937 gen;
+            std::normal_distribution<float> d(0.0f,0.05f);
             for(int row = 0;row < nna.test_result.size();++row)
             {
                 float x,y;
-                series->append(x = nna.test_result[row]/nna.sl_scale+nna.sl_mean,
-                               y = nna.fp_data.data_label[nna.test_seq[row]]/nna.sl_scale+nna.sl_mean);
+                float dx = 0.0,dy = 0.0f;
+                if(!nna.is_regression)
+                {
+                    dx = d(gen);
+                    dy = d(gen);
+                }
+                series->append(x = dx + nna.test_result[row]/nna.sl_scale+nna.sl_mean,
+                               y = dy + nna.fp_data.data_label[nna.test_seq[row]]/nna.sl_scale+nna.sl_mean);
             }
             chart1->removeAllSeries();
             chart1->addSeries(series);
@@ -165,7 +173,7 @@ void nn_connectometry::on_view_tab_currentChanged(int)
             chart1->axes(Qt::Horizontal).back()->setGridLineVisible(false);
             chart1->axes(Qt::Vertical).back()->setGridLineVisible(false);
 
-            chart1->setTitle("Predicted versus True Vlues");
+            chart1->setTitle("Predicted versus True Values");
 
         }
         if(cur_fold == nna.cur_fold && s2 && s3 && s4)
