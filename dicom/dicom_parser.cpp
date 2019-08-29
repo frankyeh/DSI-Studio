@@ -632,8 +632,10 @@ bool load_nhdr(QStringList file_list,std::vector<std::shared_ptr<DwiHeader> >& d
     for(int i = 0;i < image_buf.size();++i)
         max_value = std::max<float>(max_value,tipl::maximum(image_buf[i]));
     for(int i = 0;i < image_buf.size();++i)
+    {
         tipl::multiply_constant(image_buf[i],32768.0f/max_value);
-
+        tipl::lower_threshold(image_buf[i],0.0f);
+    }
     set_title("Converting data");
     for(size_t i = 0;check_prog(i,image_buf.size());++i)
     {
