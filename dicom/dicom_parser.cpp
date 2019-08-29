@@ -571,6 +571,81 @@ bool load_multiple_slice_dicom(QStringList file_list,std::vector<std::shared_ptr
     }
     return true;
 }
+bool load_nhdr(QStringList file_list,std::vector<std::shared_ptr<DwiHeader> >& dwi_files)
+{
+    std::vector<tipl::image<float,3> > image_buf;
+    tipl::geometry<3> dim;
+    tipl::vector<3> vs;
+    image_buf.resize(file_list.size());
+    set_title("Reading raw data");
+    for (size_t i = 0;check_prog(i,file_list.size());++i)
+    {
+        std::map<std::string,std::string> value_list;
+        {
+            std::ifstream in(file_list[i].toStdString().c_str());
+            std::string line;
+            while(std::getline(in,line))
+            {
+                std::string::size_type pos = 0;
+                if(line.empty() || line[0] == '#' || (pos = line.find(':')) == std::string::npos)
+                    continue;
+                std::istringstream read_line(line);
+                std::string name,value;
+                name = line.substr(0,pos);
+                value = line.substr(line[pos+1] == ' ' ? pos+2:pos+1);
+                std::replace(value.begin(),value.end(),',',' ');
+                value.erase(std::remove(value.begin(),value.end(),'('),value.end());
+                value.erase(std::remove(value.begin(),value.end(),')'),value.end());
+                value_list[name] = value;
+            }
+        }
+        if(value_list["type"].find("float") == std::string::npos)
+            return false;
+        // allocate all space
+        if(i == 0)
+        {
+            float d;
+            if(!(std::istringstream(value_list["sizes"]) >> dim[0] >> dim[1] >> dim[2])||
+               !(std::istringstream(value_list["space directions"]) >> vs[0] >> d >> d >> d >> vs[1] >> d >> d >> d >> vs[2]))
+                return false;
+        }
+
+        try{
+            image_buf[i].resize(dim);
+        }
+        catch(...)
+        {
+            return false;
+        }
+        std::string raw_file_name = file_list[i].toStdString();
+        raw_file_name = raw_file_name.substr(0,raw_file_name.length()-4);
+        raw_file_name += "raw";
+        std::ifstream in(raw_file_name,std::ifstream::binary);
+        std::cout << "reading" << raw_file_name << std::endl;
+        if(!in.read((char*)&image_buf[i][0],image_buf[i].size()*sizeof(float)))
+            return false;
+    }
+
+
+
+    float max_value = 0.0f;
+    for(int i = 0;i < image_buf.size();++i)
+        max_value = std::max<float>(max_value,tipl::maximum(image_buf[i]));
+    for(int i = 0;i < image_buf.size();++i)
+        tipl::multiply_constant(image_buf[i],32768.0f/max_value);
+
+    set_title("Converting data");
+    for(size_t i = 0;check_prog(i,image_buf.size());++i)
+    {
+        dwi_files.push_back(std::make_shared<DwiHeader>());
+        dwi_files.back()->voxel_size = vs;
+        dwi_files.back()->file_name = file_list[i].toStdString();
+        dwi_files.back()->report = " The diffusion images were acquired on an Agilent scanner.";
+        dwi_files.back()->image = image_buf[i];
+        image_buf[i].empty();
+    }
+    return true;
+}
 bool load_4d_fdf(QStringList file_list,std::vector<std::shared_ptr<DwiHeader> >& dwi_files)
 {
     std::vector<tipl::image<float,3> > image_buf;
@@ -695,7 +770,10 @@ bool load_all_files(QStringList file_list,std::vector<std::shared_ptr<DwiHeader>
     {
         return load_4d_fdf(file_list,dwi_files);
     }
-
+    if(QFileInfo(file_list[0]).suffix() == "nhdr")
+    {
+        return load_nhdr(file_list,dwi_files);
+    }
     if(file_list.size() == 1 && QFileInfo(file_list[0]).isDir()) // single folder with DICOM files
     {
         QDir cur_dir = file_list[0];
