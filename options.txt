@@ -9,27 +9,27 @@ ROI/"R" label/roi_label/Off:On/1
 ROI/Position Line/roi_position/Off:On/1
 ROI/Slice Layout/roi_layout/Single Slice:3 Slices:Mosaic:Mosaic 2:Mosaic 3/0
 ROI/Output Format/roi_format/nii.gz:mat:txt/0
-Tracking/Termination Index/tracking_index/fa:adc/0
-Tracking/Threshold (0=random)/fa_threshold/float:0:2:0.01:5/0.1
+Tracking/Tracking Index/tracking_index/fa:adc/0
+Tracking/Tracking Threshold (0=random)/fa_threshold/float:0:2:0.01:5/0.1
+Tracking/Differential Tracking Index/dt_index/none:adc/0
+Tracking/Differential Tracking Threshold/dt_threshold/float:0.0:1.0:0.05:2/0.2
 Tracking/Angular Threshold (0=random)/turning_angle/int:0:90:5/0
 Tracking/Step Size(mm)(0=random)/step_size/float:0.00:10:0.1:2/0
 Tracking/Smoothing (1=random)/smoothing/float:-1.5:1:0.1:2/0
 Tracking/Min Length(mm)/min_length/float:0:800:10:1/30
 Tracking/Max Length(mm)/max_length/float:0:10000:10:1/300
 Tracking/Topology-Informed Pruning (iteration)/tip_iteration/int:0:10:1/0
+Tracking/Terminate if/track_count/int:1:100000000:1000/50000
+Tracking/ /tracking_plan/Seeds:Tracts/0
 Tracking/Seed Orientation/initial_direction/Primary:Random:All/0
 Tracking/Seed Position/seed_plan/Subvoxel:Voxel Center/0
 Tracking/Randomize Seeding/random_seed/Off:On/0
 Tracking/Check Ending/check_ending/Off:On/0
 Tracking/Direction Interpoation/interpolation/Trilinear:Gaussian radial basis:nearest/0
 Tracking/Tracking Algorithm/tracking_method/Stremline(Euler):RK4:Voxel tracking/0
-Tracking/Terminate if/track_count/int:1:100000000:1000/50000
-Tracking/ /tracking_plan/Seeds:Tracts/0
 Tracking/Thread Count/thread_count/int:1:12:1/1
 Tracking/Output Format/track_format/trk.gz:trk:txt/0
 Tracking/Default Otsu/otsu_threshold/float:0.1:1:0.1:2/0.6
-Tracking/Differential Tracking Index/dt_index/none:adc/0
-Tracking/Differential Tracking Threshold/dt_threshold/float:0.0:1.0:0.05:2/0.2
 Rendering/Scale with voxel size/scale_voxel/Off:On/1
 Rendering/Perspective/pespective/int/5
 Rendering/3D Perspective/3d_perspective/float:0.5:3:0.5:1/1.0
