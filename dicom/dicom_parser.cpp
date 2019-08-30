@@ -290,14 +290,14 @@ bool load_4d_nii(const char* file_name,std::vector<std::shared_ptr<DwiHeader> >&
     // check data range
     tipl::vector<3,float> vs;
     float max_value = 0.0;
-    float m = float(std::numeric_limits<short>::max()-1);
+    float m = float(std::numeric_limits<unsigned short>::max()-1);
     for(unsigned int index = 0;index < analyze_header.dim(4);++index)
     {
         std::auto_ptr<DwiHeader> new_file(new DwiHeader);
         tipl::image<float,3> data;
         if(!analyze_header.toLPS(data,index == 0))
             break;
-        for(int i = 0;i < data.size();++i)
+        for(size_t i = 0;i < data.size();++i)
             if(std::isnan(data[i]) || std::isinf(data[i]))
             {
                 std::cout << "NAN or INF found in the data" << std::endl;
@@ -571,13 +571,24 @@ bool load_multiple_slice_dicom(QStringList file_list,std::vector<std::shared_ptr
     }
     return true;
 }
+void scale_image_buf_to_uint16(std::vector<tipl::image<float,3> >& image_buf)
+{
+    float max_value = 0.0f;
+    for(size_t i = 0;i < image_buf.size();++i)
+        max_value = std::max<float>(max_value,tipl::maximum(image_buf[i]));
+    tipl::par_for(image_buf.size(),[&](int i)
+    {
+        tipl::multiply_constant(image_buf[i],float(std::numeric_limits<unsigned short>::max()-1)/max_value);
+        tipl::lower_threshold(image_buf[i],0.0f);
+    });
+}
 bool load_nhdr(QStringList file_list,std::vector<std::shared_ptr<DwiHeader> >& dwi_files)
 {
     std::vector<tipl::image<float,3> > image_buf;
     tipl::geometry<3> dim;
     tipl::vector<3> vs;
     image_buf.resize(file_list.size());
-    set_title("Reading raw data");
+    begin_prog("Reading raw data");
     for (size_t i = 0;check_prog(i,file_list.size());++i)
     {
         std::map<std::string,std::string> value_list;
@@ -626,17 +637,9 @@ bool load_nhdr(QStringList file_list,std::vector<std::shared_ptr<DwiHeader> >& d
             return false;
     }
 
+    scale_image_buf_to_uint16(image_buf);
 
-
-    float max_value = 0.0f;
-    for(int i = 0;i < image_buf.size();++i)
-        max_value = std::max<float>(max_value,tipl::maximum(image_buf[i]));
-    for(int i = 0;i < image_buf.size();++i)
-    {
-        tipl::multiply_constant(image_buf[i],32768.0f/max_value);
-        tipl::lower_threshold(image_buf[i],0.0f);
-    }
-    set_title("Converting data");
+    begin_prog("Converting data");
     for(size_t i = 0;check_prog(i,image_buf.size());++i)
     {
         dwi_files.push_back(std::make_shared<DwiHeader>());
@@ -644,7 +647,7 @@ bool load_nhdr(QStringList file_list,std::vector<std::shared_ptr<DwiHeader> >& d
         dwi_files.back()->file_name = file_list[i].toStdString();
         dwi_files.back()->report = " The diffusion images were acquired on an Agilent scanner.";
         dwi_files.back()->image = image_buf[i];
-        image_buf[i].empty();
+        image_buf[i] = tipl::image<float,3>();
     }
     return true;
 }
@@ -732,15 +735,8 @@ bool load_4d_fdf(QStringList file_list,std::vector<std::shared_ptr<DwiHeader> >&
             return false;
     }
 
-    float max_value = 0.0f;
-    for(int i = 0;i < image_buf.size();++i)
-        max_value = std::max<float>(max_value,tipl::maximum(image_buf[i]));
-    if(max_value > 36728.0f)
-    {
-        float ratio = 32768.0f/max_value;
-        for(int i = 0;i < image_buf.size();++i)
-            tipl::multiply_constant(image_buf[i],ratio);
-    }
+
+    scale_image_buf_to_uint16(image_buf);
     for(int i = 0;i < image_buf.size();++i)
         dwi_files[i]->image = image_buf[i];
     return true;
