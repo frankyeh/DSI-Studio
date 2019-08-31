@@ -345,10 +345,7 @@ bool ImageModel::command(std::string cmd,std::string param)
         if(param.empty())
         {
             bool ok;
-            threshold = QInputDialog::getInt(0,"DSI Studio","Please assign the threshold",
-                                                 (int)tipl::segmentation::otsu_threshold(dwi),
-                                                 (int)*std::min_element(dwi.begin(),dwi.end()),
-                                                 (int)*std::max_element(dwi.begin(),dwi.end())+1,1,&ok);
+            threshold = QInputDialog::getInt(0,"DSI Studio","Please assign the threshold");
             if (!ok)
                 return true;
         }
