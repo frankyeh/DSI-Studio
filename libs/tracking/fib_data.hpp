@@ -229,10 +229,11 @@ void evaluate_connection(
         dis[i] = tipl::vector<3>(dx[i],dy[i],dz[i]);
         dis[i].normalize();
     }
-    for(tipl::pixel_index<3> index(dim);index < dim.size();++index)
+    auto I = tipl::make_image(&fib_fa[0][0],dim);
+    I.for_each_mt([&](float fa_value,tipl::pixel_index<3> index)
     {
-        if(fib_fa[0][index.index()] <= otsu)
-            continue;
+        if(fa_value <= otsu)
+            return;
         for(unsigned char fib1 = 0;fib1 < num_fib;++fib1)
         {
             if(fib_fa[fib1][index.index()] <= otsu)
@@ -265,7 +266,7 @@ void evaluate_connection(
 
             }
         }
-    }
+    });
 }
 
 
