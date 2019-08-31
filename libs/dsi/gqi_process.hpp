@@ -173,10 +173,10 @@ public:
         tipl::mat::vector_product(&*sinc_ql.begin(),&*data.space.begin(),&*data.odf.begin(),
                                     tipl::dyndim(data.odf.size(),data.space.size()));
     }
-    virtual void end(Voxel&,gz_mat_write& mat_writer)
+    virtual void end(Voxel& voxel,gz_mat_write& mat_writer)
     {
         if(hgqi)
-            mat_writer.write("hraw",&hraw[0],1,hraw.size());
+            mat_writer.write("hraw",&hraw[0],voxel.dim.plane_size(),voxel.dim.depth());
     }
 };
 
@@ -285,14 +285,14 @@ public:
         unsigned int image_num = 0;
         if(!b0.empty())
         {
-            mat_writer.write("image0",b0);
+            mat_writer.write("image0",b0,uint32_t(voxel.dim.plane_size()));
             ++image_num;
         }
         for (unsigned int index = 0;index < dwi.size();++index)
         {
             std::ostringstream out;
             out << "image" << image_num;
-            mat_writer.write(out.str().c_str(),dwi[index]);
+            mat_writer.write(out.str().c_str(),dwi[index],uint32_t(voxel.dim.plane_size()));
             ++image_num;
         }
     }
@@ -432,18 +432,18 @@ public:
         {
             std::ostringstream out;
             out << "pdf_" << index << "um";
-            mat_writer.write(out.str().c_str(),&*dis[index].begin(),1,dis[index].size());
+            mat_writer.write(out.str().c_str(),dis[index],uint32_t(voxel.dim.plane_size()));
 
         }
         for(unsigned int index = 0;index < max_length;++index)
         {
             std::ostringstream out;
             out << "cdf_" << index << "um";
-            mat_writer.write(out.str().c_str(),&*cdf[index].begin(),1,cdf[index].size());
+            mat_writer.write(out.str().c_str(),cdf[index],uint32_t(voxel.dim.plane_size()));
         }
-        mat_writer.write("fa0",dis[0]);
+        mat_writer.write("fa0",dis[0],uint32_t(voxel.dim.plane_size()));
         std::vector<short> index0(voxel.dim.size());
-        mat_writer.write("index0",index0);
+        mat_writer.write("index0",index0,uint32_t(voxel.dim.plane_size()));
     }
 };
 

@@ -114,6 +114,7 @@ void Voxel::calculate_mask(const tipl::image<float,3>& dwi_sum)
         }
     }
     else
+    if(dwi_sum.depth() < 200)
     {
         tipl::morphology::recursive_smoothing(mask,10);
         tipl::morphology::defragment(mask);

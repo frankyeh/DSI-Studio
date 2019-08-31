@@ -282,7 +282,10 @@ void reconstruction_window::doReconstruction(unsigned char method_id,bool prompt
 
     if(!handle->voxel.study_src_file_path.empty())
         handle->voxel.dt_deform = ui->dt_deform->isChecked();
+
+    tipl::geometry<3> dim_backup = handle->voxel.dim; // for QSDR
     const char* msg = handle->reconstruction();
+    handle->voxel.dim = dim_backup;
     if (!QFileInfo(msg).exists())
     {
         QMessageBox::information(this,"error",msg,0);

@@ -41,26 +41,17 @@ void ImageModel::calculate_dwi_sum(void)
             dwi_sum[pos] += src_dwi_data[index][pos];
     });
 
-    float max_value = *std::max_element(dwi_sum.begin(),dwi_sum.end());
-    float min_value = max_value;
-    for (unsigned int index = 0;index < dwi_sum.size();++index)
-        if (dwi_sum[index] < min_value && dwi_sum[index] > 0)
-            min_value = dwi_sum[index];
-
-
-    tipl::minus_constant(dwi_sum,min_value);
-    tipl::lower_threshold(dwi_sum,0.0f);
     float t = tipl::segmentation::otsu_threshold(dwi_sum);
     tipl::upper_threshold(dwi_sum,t*3.0f);
     tipl::normalize(dwi_sum,1.0);
 
     // update dwi
     dwi.resize(voxel.dim);
-    float min = tipl::minimum(dwi_sum);
-    float range = tipl::maximum(dwi_sum)-min;
+    auto min_max = tipl::min_max_value(dwi_sum.begin(),dwi_sum.end());
+    float range = min_max.second-min_max.first;
     float r = range > 0.0 ? 255.9f/range:1.0f;
-    for(unsigned int index = 0;index < dwi.size();++index)
-        dwi[index] = (dwi_sum[index]-min)*r;
+    for(size_t index = 0;index < dwi.size();++index)
+        dwi[index] = (dwi_sum[index]-min_max.first)*r;
 }
 
 void ImageModel::remove(unsigned int index)
@@ -1016,9 +1007,9 @@ bool ImageModel::save_to_file(const char* dwi_file_name)
     {
         std::ostringstream out;
         out << "image" << index;
-        mat_writer.write(out.str().c_str(),src_dwi_data[index],1,voxel.dim.size());
+        mat_writer.write(out.str().c_str(),src_dwi_data[index],uint32_t(voxel.dim.plane_size()),voxel.dim.depth());
     }
-    mat_writer.write("mask",voxel.mask);
+    mat_writer.write("mask",voxel.mask,uint32_t(voxel.dim.plane_size()));
     return true;
 }
 bool ImageModel::load_from_file(const char* dwi_file_name)
@@ -1120,7 +1111,7 @@ bool ImageModel::load_from_file(const char* dwi_file_name)
 
     {
         const float* grad_dev = 0;
-        if(mat_reader.read("grad_dev",row,col,grad_dev) && row*col == voxel.dim.size()*9)
+        if(mat_reader.read("grad_dev",row,col,grad_dev) && size_t(row)*size_t(col) == voxel.dim.size()*9)
         {
             for(unsigned int index = 0;index < 9;index++)
                 voxel.grad_dev.push_back(tipl::make_image((float*)grad_dev+index*voxel.dim.size(),voxel.dim));
@@ -1141,8 +1132,8 @@ bool ImageModel::load_from_file(const char* dwi_file_name)
     if(mat_reader.read("mask",row,col,mask_ptr))
     {
         voxel.mask.resize(voxel.dim);
-        if(row*col == voxel.dim.size())
-            std::copy(mask_ptr,mask_ptr+row*col,voxel.mask.begin());
+        if(size_t(row)*size_t(col) == voxel.dim.size())
+            std::copy(mask_ptr,mask_ptr+size_t(row)*size_t(col),voxel.mask.begin());
     }
     else
         voxel.calculate_mask(dwi_sum);

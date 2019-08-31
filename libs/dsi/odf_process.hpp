@@ -324,6 +324,7 @@ struct SaveMetrics : public BaseProcess
 protected:
     std::vector<float> iso,gfa;
     std::vector<std::vector<float> > fa,rdi,qa_inc,qa_dec;
+    tipl::geometry<3> dim;
 
     void output_anisotropy(gz_mat_write& mat_writer,
                            const char* name,const std::vector<std::vector<float> >& metrics)
@@ -335,7 +336,7 @@ protected:
             std::string num = out.str();
             std::string str = name + num;
             set_title(str.c_str());
-            mat_writer.write(str.c_str(),metrics[index]);
+            mat_writer.write(str.c_str(),metrics[index],uint32_t(dim.plane_size()));
         }
     }
 
@@ -344,24 +345,25 @@ protected:
 public:
     virtual void init(Voxel& voxel)
     {
-        fa = std::vector<std::vector<float> >(voxel.max_fiber_number,std::vector<float>(voxel.dim.size()));
-        gfa = std::vector<float>(voxel.dim.size());
-        iso= std::vector<float>(voxel.dim.size());
+        dim = voxel.dim;
+        fa = std::vector<std::vector<float> >(voxel.max_fiber_number,std::vector<float>(dim.size()));
+        gfa = std::vector<float>(dim.size());
+        iso= std::vector<float>(dim.size());
         if(voxel.compare_voxel) // DDI
         {
-            qa_inc = std::vector<std::vector<float> >(voxel.max_fiber_number,std::vector<float>(voxel.dim.size()));
-            qa_dec = std::vector<std::vector<float> >(voxel.max_fiber_number,std::vector<float>(voxel.dim.size()));
+            qa_inc = std::vector<std::vector<float> >(voxel.max_fiber_number,std::vector<float>(dim.size()));
+            qa_dec = std::vector<std::vector<float> >(voxel.max_fiber_number,std::vector<float>(dim.size()));
         }
         if(voxel.output_rdi)
         {
             float sigma = voxel.param[0]; //optimal 1.24
             for(float L = 0.2f;L <= sigma;L+= 0.2f)
-                rdi.push_back(std::vector<float>(voxel.dim.size()));
+                rdi.push_back(std::vector<float>(dim.size()));
         }
 
         if(voxel.csf_calibration)
         {
-            std::vector<unsigned short> data(voxel.dwi_data[0],voxel.dwi_data[0]+voxel.dim.size());
+            std::vector<unsigned short> data(voxel.dwi_data[0],voxel.dwi_data[0]+dim.size());
             std::sort(data.begin(),data.end());
             // CSF selected at 125,000 mm^3
             int size = int(125000.0f/(voxel.vs[0]*voxel.vs[1]*voxel.vs[2]));
@@ -412,7 +414,7 @@ public:
     virtual void end(Voxel& voxel,gz_mat_write& mat_writer)
     {
         set_title("output data");
-        mat_writer.write("gfa",gfa);
+        mat_writer.write("gfa",gfa,uint32_t(voxel.dim.plane_size()));
         if(voxel.csf_calibration)
             voxel.z0 = z0;
         if(voxel.z0 + 1.0f == 1.0f)
@@ -426,7 +428,7 @@ public:
         output_anisotropy(mat_writer,"fa",fa);
 
         tipl::divide_constant(iso,voxel.z0);
-        mat_writer.write("iso",iso);
+        mat_writer.write("iso",iso,uint32_t(voxel.dim.plane_size()));
 
 
         // output normalized qa
@@ -446,8 +448,8 @@ public:
                 output_anisotropy(mat_writer,"inc_qa",qa_inc);
                 output_anisotropy(mat_writer,"dec_qa",qa_dec);
 
-                mat_writer.write("base_fa",voxel.fib_fa);
-                mat_writer.write("study_fa",voxel.compare_voxel->fib_fa);
+                mat_writer.write("base_fa",voxel.fib_fa,uint32_t(voxel.dim.plane_size()));
+                mat_writer.write("study_fa",voxel.compare_voxel->fib_fa,uint32_t(voxel.dim.plane_size()));
                 for(size_t i = 0;i < voxel.dim.size();++i)
                     if(voxel.compare_voxel->fib_fa[i] > voxel.fib_fa[i])
                     {
@@ -482,7 +484,7 @@ public:
                 std::ostringstream out;
                 out.precision(2);
                 out << "rdi" << std::setfill('0') << std::setw(2) << int(L*10) << "L";
-                mat_writer.write(out.str().c_str(),rdi[i]);
+                mat_writer.write(out.str().c_str(),rdi[i],uint32_t(voxel.dim.plane_size()));
             }
             for(unsigned int i = 0;i < rdi[0].size();++i)
             for(unsigned int j = 0;j < rdi.size();++j)
@@ -493,7 +495,7 @@ public:
                 std::ostringstream out2;
                 out2.precision(2);
                 out2 << "nrdi" << std::setfill('0') << std::setw(2) << int(L*10) << "L";
-                mat_writer.write(out2.str().c_str(),rdi[i]);
+                mat_writer.write(out2.str().c_str(),rdi[i],uint32_t(voxel.dim.plane_size()));
             }
         }
     }

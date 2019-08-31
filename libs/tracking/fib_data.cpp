@@ -188,7 +188,7 @@ bool fiber_directions::add_data(gz_mat_read& mat_reader)
             check_index(0);
             mat_reader.read(index,row,col,fa[0]);
             findex_buf.resize(1);
-            findex_buf[0].resize(row*col);
+            findex_buf[0].resize(size_t(row)*size_t(col));
             findex[0] = &*(findex_buf[0].begin());
             odf_table.resize(2);
             half_odf_size = 1;
@@ -729,7 +729,7 @@ bool fib_data::load_from_mat(void)
             continue;
         const float* buf = 0;
         mat_reader.read(index,row,col,buf);
-        if (row*col != dim.size() || !buf)
+        if (size_t(row)*size_t(col) != dim.size() || !buf)
             continue;
         if(matrix_name.length() >= 2 && matrix_name[matrix_name.length()-2] == '_' &&
            (matrix_name[matrix_name.length()-1] == 'x' ||

@@ -333,9 +333,8 @@ public:
     }
     virtual void end(Voxel& voxel,gz_mat_write& mat_writer)
     {
-        voxel.dim = src_geo;
         if(voxel.output_jacobian)
-            mat_writer.write("jdet",jdet);
+            mat_writer.write("jdet",jdet,uint32_t(voxel.dim.plane_size()));
         if(voxel.output_mapping)
         {
             mat_writer.write("native_d",&src_geo[0],1,3);

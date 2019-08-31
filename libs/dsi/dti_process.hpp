@@ -165,29 +165,29 @@ public:
     {
         if(voxel.method_id == 1) // DTI
         {
-            mat_writer.write("fa0",voxel.fib_fa);
-            mat_writer.write("dir0",&voxel.fib_dir[0][0],1,uint32_t(voxel.fib_dir.size()*3));
+            mat_writer.write("fa0",voxel.fib_fa,uint32_t(voxel.dim.plane_size()));
+            mat_writer.write("dir0",&voxel.fib_dir[0][0],uint32_t(3*voxel.dim.plane_size()),uint32_t(voxel.dim.depth()));
             if(voxel.output_tensor)
             {
-                mat_writer.write("txx",txx);
-                mat_writer.write("txy",txy);
-                mat_writer.write("txz",txz);
-                mat_writer.write("tyy",tyy);
-                mat_writer.write("tyz",tyz);
-                mat_writer.write("tzz",tzz);
+                mat_writer.write("txx",txx,uint32_t(voxel.dim.plane_size()));
+                mat_writer.write("txy",txy,uint32_t(voxel.dim.plane_size()));
+                mat_writer.write("txz",txz,uint32_t(voxel.dim.plane_size()));
+                mat_writer.write("tyy",tyy,uint32_t(voxel.dim.plane_size()));
+                mat_writer.write("tyz",tyz,uint32_t(voxel.dim.plane_size()));
+                mat_writer.write("tzz",tzz,uint32_t(voxel.dim.plane_size()));
             }
         }
         if(voxel.output_diffusivity || voxel.method_id == 1)
         {
             if(voxel.method_id != 1) // DTI
-                mat_writer.write("dti_fa",voxel.fib_fa);
-            mat_writer.write("md",md);
-            mat_writer.write("ad",d0);
-            mat_writer.write("rd",d1);
-            mat_writer.write("rd1",d2);
-            mat_writer.write("rd2",d3);
+                mat_writer.write("dti_fa",voxel.fib_fa,uint32_t(voxel.dim.plane_size()));
+            mat_writer.write("md",md,uint32_t(voxel.dim.plane_size()));
+            mat_writer.write("ad",d0,uint32_t(voxel.dim.plane_size()));
+            mat_writer.write("rd",d1,uint32_t(voxel.dim.plane_size()));
+            mat_writer.write("rd1",d2,uint32_t(voxel.dim.plane_size()));
+            mat_writer.write("rd2",d3,uint32_t(voxel.dim.plane_size()));
             if(voxel.output_helix_angle)
-                mat_writer.write("ha",ha);
+                mat_writer.write("ha",ha,uint32_t(voxel.dim.plane_size()));
         }
 
     }

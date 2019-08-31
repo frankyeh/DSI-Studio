@@ -482,7 +482,7 @@ bool DwiHeader::output_src(const char* di_file,std::vector<std::shared_ptr<DwiHe
     tipl::geometry<3> geo = dwi_files.front()->image.geometry();
 
     //store dimension
-    unsigned int output_size = 0;
+    tipl::geometry<3> output_dim(geo);
     {
         uint16_t dimension[3];
         std::copy(geo.begin(),geo.end(),dimension);
@@ -508,7 +508,9 @@ bool DwiHeader::output_src(const char* di_file,std::vector<std::shared_ptr<DwiHe
             voxel_size *= 4.0;
             std::for_each(dimension,dimension+3,[](uint16_t& i){i >>= 2;});
         }
-        output_size = dimension[0]*dimension[1]*dimension[2];
+        output_dim[0] = dimension[0];
+        output_dim[1] = dimension[1];
+        output_dim[2] = dimension[2];
 
         write_mat.write("dimension",dimension,1,3);
         write_mat.write("voxel_size",voxel_size);
@@ -537,7 +539,7 @@ bool DwiHeader::output_src(const char* di_file,std::vector<std::shared_ptr<DwiHe
     if(!dwi_files[0]->grad_dev.empty())
         write_mat.write("grad_dev",dwi_files[0]->grad_dev,uint32_t(dwi_files[0]->grad_dev.size()/9));
     if(!dwi_files[0]->mask.empty())
-        write_mat.write("mask",dwi_files[0]->mask);
+        write_mat.write("mask",dwi_files[0]->mask,uint32_t(dwi_files[0]->mask.plane_size()));
 
     //store images
     begin_prog("Save Files");
@@ -568,7 +570,7 @@ bool DwiHeader::output_src(const char* di_file,std::vector<std::shared_ptr<DwiHe
             }
             ptr = (const unsigned short*)&*buffer.begin();
         }
-        write_mat.write(name.str().c_str(),ptr,1,output_size);
+        write_mat.write(name.str().c_str(),ptr,output_dim.plane_size(),output_dim.depth());
     }
 
 
