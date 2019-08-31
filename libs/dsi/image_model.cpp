@@ -35,9 +35,9 @@ void ImageModel::calculate_dwi_sum(void)
 {
     dwi_sum.clear();
     dwi_sum.resize(voxel.dim);
-    tipl::par_for(dwi_sum.size(),[&](unsigned int pos)
+    tipl::par_for(src_dwi_data.size(),[&](unsigned int index)
     {
-        for (unsigned int index = 0;index < src_dwi_data.size();++index)
+        for (size_t pos = 0;pos < dwi_sum.size();++pos)
             dwi_sum[pos] += src_dwi_data[index][pos];
     });
 
@@ -685,9 +685,10 @@ void ImageModel::trim(void)
     });
     check_prog(0,0);
     tipl::crop(voxel.mask,range_min,range_max);
+    tipl::crop(dwi_sum,range_min,range_max);
+    tipl::crop(dwi,range_min,range_max);
     voxel.dim = voxel.mask.geometry();
     voxel.dwi_data.clear();
-    calculate_dwi_sum();
     voxel.calculate_mask(dwi_sum);
 }
 
