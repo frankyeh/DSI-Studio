@@ -43,15 +43,12 @@ void ImageModel::calculate_dwi_sum(void)
 
     float t = tipl::segmentation::otsu_threshold(dwi_sum);
     tipl::upper_threshold(dwi_sum,t*3.0f);
-    tipl::normalize(dwi_sum,1.0);
+    tipl::normalize(dwi_sum,1.0f);
 
     // update dwi
     dwi.resize(voxel.dim);
-    auto min_max = tipl::min_max_value(dwi_sum.begin(),dwi_sum.end());
-    float range = min_max.second-min_max.first;
-    float r = range > 0.0 ? 255.9f/range:1.0f;
     for(size_t index = 0;index < dwi.size();++index)
-        dwi[index] = (dwi_sum[index]-min_max.first)*r;
+        dwi[index] = uint8_t(std::floor(dwi_sum[index]*255.9f));
 }
 
 void ImageModel::remove(unsigned int index)
