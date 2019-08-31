@@ -515,9 +515,10 @@ void ImageModel::flip_dwi(unsigned char type)
         auto I = tipl::make_image((float*)&*(voxel.grad_dev[i].begin()),voxel.dim);
         tipl::flip(I,type);
     }
+    begin_prog("Processing");
     tipl::par_for2(src_dwi_data.size(),[&](unsigned int index,unsigned id)
     {
-        if(id == 0)
+        if(!id)
             check_prog(index,src_dwi_data.size());
         auto I = tipl::make_image((unsigned short*)src_dwi_data[index],voxel.dim);
         tipl::flip(I,type);
@@ -548,6 +549,7 @@ void ImageModel::rotate(const tipl::geometry<3>& new_geo,
                         const tipl::image<float,3>& super_reso_ref)
 {
     std::vector<tipl::image<unsigned short,3> > dwi(src_dwi_data.size());
+    begin_prog("rotating");
     tipl::par_for2(src_dwi_data.size(),[&](unsigned int index,unsigned int id)
     {
         if(!id)
@@ -670,14 +672,18 @@ void ImageModel::trim(void)
 {
     tipl::geometry<3> range_min,range_max;
     tipl::bounding_box(voxel.mask,range_min,range_max,0);
-    for (unsigned int index = 0;check_prog(index,src_dwi_data.size());++index)
+    begin_prog("Removing background region");
+    tipl::par_for2(src_dwi_data.size(),[&](unsigned int index,unsigned int id)
     {
+        if(!id)
+            check_prog(index,src_dwi_data.size());
         auto I = tipl::make_image((unsigned short*)src_dwi_data[index],voxel.dim);
         tipl::image<unsigned short,3> I0 = I;
         tipl::crop(I0,range_min,range_max);
         std::fill(I.begin(),I.end(),0);
         std::copy(I0.begin(),I0.end(),I.begin());
-    }
+    });
+    check_prog(0,0);
     tipl::crop(voxel.mask,range_min,range_max);
     voxel.dim = voxel.mask.geometry();
     voxel.dwi_data.clear();
@@ -1003,12 +1009,14 @@ bool ImageModel::save_to_file(const char* dwi_file_name)
         }
         mat_writer.write("b_table",b_table,4);
     }
+    begin_prog("Saving");
     for (unsigned int index = 0;check_prog(index,src_bvalues.size());++index)
     {
         std::ostringstream out;
         out << "image" << index;
         mat_writer.write(out.str().c_str(),src_dwi_data[index],uint32_t(voxel.dim.plane_size()),voxel.dim.depth());
     }
+    check_prog(0,0);
     mat_writer.write("mask",voxel.mask,uint32_t(voxel.dim.plane_size()));
     return true;
 }
