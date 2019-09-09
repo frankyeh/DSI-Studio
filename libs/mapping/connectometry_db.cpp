@@ -60,8 +60,8 @@ void connectometry_db::read_db(fib_data* handle_)
         handle->mat_reader.read("index_name",row,col,str);
         if(str)
             index_name = std::string(str,str+row*col);
-        else
-            index_name = "lcf/sdf";
+        if(index_name.empty() || index_name.find("sdf") != std::string::npos)
+            index_name = "qa";
         const float* r2_values = 0;
         handle->mat_reader.read("R2",row,col,r2_values);
         if(r2_values == 0)
@@ -314,7 +314,7 @@ bool connectometry_db::add_subject_file(const std::string& file_name,
         return false;
     }
     std::vector<float> new_subject_qa(subject_qa_length);
-    if(index_name.find("sdf") !=std::string::npos || index_name.empty())
+    if(index_name == "qa" || index_name.empty())
     {
         if(!is_consistent(m))
         {
@@ -587,8 +587,8 @@ bool connectometry_db::save_subject_data(const char* output_name)
     {
         std::ostringstream out;
         out << "A total of " << num_subjects << " diffusion MRI scans were included in the connectometry database." << subject_report.c_str();
-        if(index_name == "lcf/sdf")
-            out << " The local connectome fingerprint (LCF, Yeh et al. PLoS Comput Biol 12(11): e1005203) values were extracted from the data and used in the connectometry analysis.";
+        if(index_name.find("sdf") != std::string::npos || index_name.find("qa") != std::string::npos)
+            out << " The quantitative anisotropy was extracted as the local connectome fingerprint (LCF, Yeh et al. PLoS Comput Biol 12(11): e1005203) and used in the connectometry analysis.";
         else
             out << " The " << index_name << " values were used in the connectometry analysis.";
         std::string report = out.str();

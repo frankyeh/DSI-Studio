@@ -175,7 +175,7 @@ int atl(void)
             return 1;
         }
         // Extracting metrics
-        std::string index_name = po.get("index_name","sdf");
+        std::string index_name = po.get("index_name","qa");
         std::cout << "Extracting index:" << index_name << std::endl;
         data->handle->db.index_name = index_name;
         for (unsigned int index = 0;index < name_list.size();++index)
