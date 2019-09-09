@@ -952,7 +952,7 @@ void RegionTableWidget::save_all_regions(void)
     QString label_file = QFileInfo(filename).absolutePath()+"/"+base_name+".txt";
     std::ofstream out(label_file.toLocal8Bit().begin());
     tipl::geometry<3> geo = cur_tracking_window.handle->dim;
-    tipl::image<unsigned int, 3> mask(geo);
+    tipl::image<unsigned short, 3> mask(geo);
     for (unsigned int i = 0; i < regions.size(); ++i)
         if (item(i,0)->checkState() == Qt::Checked)
         {
