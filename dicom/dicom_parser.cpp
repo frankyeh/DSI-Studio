@@ -392,10 +392,15 @@ bool load_4d_2dseq(const char* file_name,std::vector<std::shared_ptr<DwiHeader> 
             bvecs[index][2] = bvec_temp[pos+2];
             bvecs[index].normalize();
         }
-        float slice_thickness;
-        std::istringstream(method_file["PVM_SliceThick"]) >> slice_thickness;
-        if(slice_thickness != 0.0f)
-            vs[2] = slice_thickness;
+        if(vs[2] == 0.0f)
+        {
+            float slice_thickness;
+            std::istringstream(method_file["PVM_SliceThick"]) >> slice_thickness;
+            if(slice_thickness != 0.0f)
+                vs[2] = slice_thickness;
+            else
+                vs[2] = vs[0];
+        }
         get_report_from_bruker(method_file,report);
     }
     else
