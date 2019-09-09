@@ -381,14 +381,16 @@ void connectometry_db::get_subject_vector_pairs(std::vector<std::pair<int,int> >
                     fp_index[j][cur_index] = fp_pos++;
     }
 
-
+    std::mutex m;
     evaluate_connection(handle->dim,fiber_threshold,handle->dir.fa,
                         [this](unsigned int pos,unsigned char fib){return tipl::vector<3>(handle->dir.get_dir(pos,fib));},
                         [&](unsigned int pos1,unsigned char fib1,unsigned int pos2,unsigned char fib2)
                         {
                             if(fp_index[fib1][pos1] && fp_index[fib2][pos2])
+                            {
+                                std::lock_guard<std::mutex> guard(m);
                                 pairs.push_back(std::make_pair(fp_index[fib1][pos1],fp_index[fib2][pos2]));
-
+                            }
                         },false);
 
 
