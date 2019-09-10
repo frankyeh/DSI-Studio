@@ -155,10 +155,10 @@ public:
                     if(!VFF2.empty())
                     {
                         std::cout << "Normalization using dual QA/ISO templates" << std::endl;
-                        tipl::reg::cdm2(VG,VG2,VFF,VFF2,cdm_dis,terminated,2.0f*resolution_ratio);
+                        tipl::reg::cdm2(VG,VG2,VFF,VFF2,cdm_dis,terminated,resolution_ratio);
                     }
                     else
-                        tipl::reg::cdm(VG,VFF,cdm_dis,terminated,2.0f*resolution_ratio);
+                        tipl::reg::cdm(VG,VFF,cdm_dis,terminated,resolution_ratio);
                 },terminated))
                 throw std::runtime_error("Reconstruction canceled");
 

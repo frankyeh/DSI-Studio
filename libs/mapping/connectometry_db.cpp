@@ -625,21 +625,6 @@ void connectometry_db::get_subject_fa(unsigned int subject_index,std::vector<std
         }
     }
 }
-void connectometry_db::get_data_at(unsigned int index,unsigned int fib_index,std::vector<double>& data,bool normalize_qa) const
-{
-    data.clear();
-    if((int)index >= handle->dim.size() || handle->dir.fa[0][index] == 0.0)
-        return;
-    unsigned int s_index = vi2si[index];
-    unsigned int fib_offset = fib_index*(unsigned int)si2vi.size();
-    data.resize(num_subjects);
-    if(normalize_qa)
-        for(unsigned int index = 0;index < num_subjects;++index)
-            data[index] = subject_qa[index][s_index+fib_offset]*subject_qa_sd[index];
-    else
-    for(unsigned int index = 0;index < num_subjects;++index)
-        data[index] = subject_qa[index][s_index+fib_offset];
-}
 bool connectometry_db::get_odf_profile(const char* file_name,std::vector<float>& cur_subject_data)
 {
     gz_mat_read single_subject;
