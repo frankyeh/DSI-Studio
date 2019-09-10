@@ -806,6 +806,7 @@ bool fib_data::load_from_mat(void)
                 view_item[i].native_geo = tipl::geometry<3>(native_geo[0],native_geo[1],native_geo[2]);
             }
         }
+        is_human_mni = std::abs(float(dim[0])-template_I.width()*template_vs[0]/vs[0]) < 2;
     }
 
     is_human_data = dim[0]*vs[0] > 150 && dim[1]*vs[1] > 150;
@@ -964,9 +965,9 @@ bool fib_data::load_template(void)
            read2.load_from_file(iso_template_list[template_id].c_str()))
             read2.toLPS(template_I2);
     }
-    tipl::normalize(template_I,1.0f);
+    template_I *= 1.0f/tipl::mean(template_I);
     if(!template_I2.empty())
-        tipl::normalize(template_I2,1.0f);
+        template_I2 *= 1.0f/tipl::mean(template_I2);
 
     // populate atlas list
     std::string atlas_file = fa_template_list[template_id] + ".atlas.txt";
@@ -1019,33 +1020,26 @@ void fib_data::template_from_mni(tipl::vector<3>& p)
 
 }
 
-void fib_data::run_normalization(bool background)
+void fib_data::run_normalization(bool background,bool inv)
 {
     std::string output_file_name(fib_file_name);
     output_file_name += ".";
     output_file_name += QFileInfo(fa_template_list[template_id].c_str()).baseName().toLower().toStdString();
-    output_file_name += ".map.gz";
+    output_file_name += inv ? ".inv.mapping.gz" : ".mapping.gz";
     gz_mat_read in;
     if(in.load_from_file(output_file_name.c_str()))
     {
-        tipl::image<tipl::vector<3,float>,3 > mni(dim);
-        tipl::image<tipl::vector<3,float>,3 > inv_mni(
-                    tipl::geometry<3>(template_I.width()/2,
-                                      template_I.height()/2,
-                                      template_I.depth()/2));
-        const float* ptr1 = 0;
-        const float* ptr2 = 0;
-        unsigned int row1,col1;
-        unsigned int row2,col2;
-        in.read("mapping",row1,col1,ptr1);
-        in.read("inv_mapping",row2,col2,ptr2);
-        if(row1 == 3 && col1 == mni.size() && ptr1 &&
-           row2 == 3 && col2 == inv_mni.size() && ptr2)
+        tipl::image<tipl::vector<3,float>,3 > mni(inv ? template_I.geometry() : dim);
+        const float* ptr = nullptr;
+        unsigned int row,col;
+        in.read("mapping",row,col,ptr);
+        if(row == 3 && col == mni.size() && ptr)
         {
-            std::copy(ptr1,ptr1+col1*row1,&mni[0][0]);
-            std::copy(ptr2,ptr2+col2*row2,&inv_mni[0][0]);
-            mni_position.swap(mni);
-            inv_mni_position.swap(inv_mni);
+            std::copy(ptr,ptr+col*row,&mni[0][0]);
+            if(inv)
+                inv_mni_position.swap(mni);
+            else
+                mni_position.swap(mni);
             prog = 5;
             return;
         }
@@ -1053,7 +1047,8 @@ void fib_data::run_normalization(bool background)
     if(background)
         begin_prog("running normalization");
     prog = 0;
-    auto lambda = [this,output_file_name]()
+    bool terminated = false;
+    auto lambda = [this,output_file_name,inv,&terminated]()
     {
 
         auto& It = template_I;
@@ -1062,26 +1057,18 @@ void fib_data::run_normalization(bool background)
         tipl::image<float,3> Is(dir.fa[0],dim);
         tipl::filter::gaussian(Is);
 
-        tipl::geometry<3> range_min,range_max;
-        tipl::bounding_box(Is,range_min,range_max,0);
-        tipl::crop(Is,range_min,range_max);
 
         prog = 1;
         auto tvs = vs;
         tvs *= std::sqrt((It.plane_size()*template_vs[0]*template_vs[1])/
                 (Is.plane_size()*vs[0]*vs[1]));
         tipl::reg::two_way_linear_mr(It,template_vs,Is,tvs,T,tipl::reg::affine,
-                                     tipl::reg::mutual_information(),thread.terminated);
+                                     tipl::reg::mutual_information(),terminated);
         prog = 2;
-        if(thread.terminated)
+        if(terminated)
             return;
         tipl::image<float,3> Iss(It.geometry());
         tipl::resample_mt(Is,Iss,T,tipl::linear);
-        T.shift[0] += range_min[0];
-        T.shift[1] += range_min[1];
-        T.shift[2] += range_min[2];
-
-        tipl::match_signal(It,Iss);
         prog = 3;
         tipl::image<float,3> Iss2;
         if(It2.geometry() == It.geometry())
@@ -1091,7 +1078,6 @@ void fib_data::run_normalization(bool background)
                 {
                     Iss2.resize(It.geometry());
                     tipl::resample_mt(view_item[i].image_data,Iss2,T,tipl::linear);
-                    tipl::match_signal(It2,Iss2);
                 }
         }
 
@@ -1099,55 +1085,94 @@ void fib_data::run_normalization(bool background)
         if(Iss2.geometry() == Iss.geometry())
         {
             set_title("Dual Normalization");
-            tipl::reg::cdm2(It,It2,Iss,Iss2,dis,thread.terminated);
+            float mIss = tipl::mean(Iss);
+            float mIss2 = tipl::mean(Iss2);
+            if(mIss != 0.0f)
+                Iss *= 1.0f/mIss;
+            if(mIss2 != 0.0f)
+                Iss2 *= 1.0f/mIss2;
+            if(inv)
+                tipl::reg::cdm2(It,It2,Iss,Iss2,dis,terminated);
+            else
+                tipl::reg::cdm2(Iss,Iss2,It,It2,inv_dis,terminated);
         }
         else
-            tipl::reg::cdm(It,Iss,dis,thread.terminated);
-        tipl::invert_displacement(dis,inv_dis);
-        if(thread.terminated)
+        {
+            if(inv)
+                tipl::reg::cdm(It,Iss,dis,terminated);
+            else
+                tipl::reg::cdm(Iss,It,inv_dis,terminated);
+
+        }
+
+        if(terminated)
             return;
         prog = 4;
-        tipl::image<tipl::vector<3,float>,3 > mni(dim);
-        tipl::image<tipl::vector<3,float>,3 > inv_mni(tipl::geometry<3>(It.width()/2,It.height()/2,It.depth()/2));
-        if(thread.terminated)
-            return;
+        tipl::image<tipl::vector<3,float>,3 > mni(inv ? template_I.geometry() : dim);
 
-        inv_mni.for_each_mt([&](tipl::vector<3,float>& v,const tipl::pixel_index<3>& pos)
-        {
-            tipl::vector<3> p(pos);
-            v = p;
-            v += p;
-            v += inv_dis[pos.index()];
-            T(v);
-        });
-
-        T.inverse();
-        mni.for_each_mt([&](tipl::vector<3,float>& v,const tipl::pixel_index<3>& pos)
-        {
-            tipl::vector<3> p(pos),d;
-            T(p);
-            v = p;
-            tipl::estimate(dis,v,d,tipl::linear);
-            v += d;
-            template_to_mni(v);
-        });
-        if(thread.terminated)
+        if(terminated)
             return;
-        mni_position.swap(mni);
-        inv_mni_position.swap(inv_mni);
+        if(inv)
+        {
+            mni.for_each_mt([&](tipl::vector<3,float>& v,const tipl::pixel_index<3>& pos)
+            {
+                tipl::vector<3> p(pos);
+                v = p;
+                v += dis[pos.index()];
+                T(v);
+            });
+            inv_mni_position.swap(mni);
+        }
+        else {
+            T.inverse();
+            mni.for_each_mt([&](tipl::vector<3,float>& v,const tipl::pixel_index<3>& pos)
+            {
+                tipl::vector<3> p(pos),d;
+                T(p);
+                v = p;
+                tipl::estimate(inv_dis,v,d,tipl::linear);
+                v += d;
+                template_to_mni(v);
+            });
+            mni_position.swap(mni);
+        }
 
         gz_mat_write out(output_file_name.c_str());
         if(out)
         {
-            out.write("mapping",&mni_position[0][0],3,mni_position.size());
-            out.write("inv_mapping",&inv_mni_position[0][0],3,inv_mni_position.size());
+            if(inv)
+                out.write("mapping",&inv_mni_position[0][0],3,inv_mni_position.size());
+            else
+                out.write("mapping",&mni_position[0][0],3,mni_position.size());
+
         }
         prog = 5;
     };
 
     if(background)
     {
-        thread.run(lambda);
+        std::thread t(lambda);
+        while(check_prog(prog,5))
+        {
+            if(prog_aborted())
+            {
+                terminated = true;
+                t.join();
+                return;
+            }
+            if(inv)
+            {
+                if(!inv_mni_position.empty())
+                    break;
+            }
+            else
+            {
+                if(!mni_position.empty())
+                    break;
+            }
+        }
+        check_prog(0,0);
+        t.join();
     }
     else
     {
@@ -1160,18 +1185,11 @@ bool fib_data::can_map_to_mni(void)
 {
     if(!load_template())
         return false;
-    if(is_qsdr && std::abs(float(dim[0])-template_I.width()*template_vs[0]/vs[0]) < 2)
+    if(is_human_mni || !mni_position.empty())
         return true;
-    if(!mni_position.empty())
-        return true;
-    run_normalization(true);
-    while(check_prog(prog,5) && mni_position.empty())
-        if(prog_aborted())
-        {
-            thread.clear();
-            return false;
-        }
-    check_prog(0,0);
+    run_normalization(true,false);
+    if(prog_aborted())
+        return false;
     return true;
 }
 
@@ -1205,21 +1223,24 @@ void fib_data::mni2subject(tipl::vector<3>& pos)
 {
     if(!can_map_to_mni())
         return;
-    if(is_qsdr && inv_mni_position.empty())
+    if(is_human_mni)
     {
         mni2sub(pos,trans_to_mni);
         return;
     }
+    if(inv_mni_position.empty())
+        return;
     template_from_mni(pos);
     tipl::vector<3> p;
-    pos *= 0.5f;
+    if(pos[2] < 0.0f)
+        pos[2] = 0.0f;
     tipl::estimate(inv_mni_position,pos,p);
     pos = p;
 }
 
 void fib_data::subject2mni(tipl::vector<3>& pos)
 {
-    if(is_qsdr && mni_position.empty())
+    if(is_human_mni)
     {
         sub2mni(pos,trans_to_mni);
         return;
@@ -1227,6 +1248,8 @@ void fib_data::subject2mni(tipl::vector<3>& pos)
     if(!mni_position.empty())
     {
         tipl::vector<3> p;
+        if(pos[2] < 0.0f)
+            pos[2] = 0.0f;
         tipl::estimate(mni_position,pos,p);
         pos = p;
     }
@@ -1239,7 +1262,7 @@ void fib_data::subject2mni(tipl::pixel_index<3>& index,tipl::vector<3>& pos)
         mni2sub(pos,trans_to_mni);
         return;
     }
-    if(!mni_position.empty())
+    if(mni_position.empty())
         mni_position[index.index()];
     return;
 }
@@ -1266,7 +1289,7 @@ const tipl::image<tipl::vector<3,float>,3 >& fib_data::get_mni_mapping(void)
 {
     if(!mni_position.empty())
         return mni_position;
-    if(is_qsdr)
+    if(is_human_mni)
     {
         mni_position.resize(dim);
         mni_position.for_each_mt([&](tipl::vector<3>& mni,const tipl::pixel_index<3>& index)
@@ -1277,6 +1300,6 @@ const tipl::image<tipl::vector<3,float>,3 >& fib_data::get_mni_mapping(void)
         return mni_position;
     }
     if(load_template())
-        run_normalization(false);
+        run_normalization(false,false);
     return mni_position;
 }

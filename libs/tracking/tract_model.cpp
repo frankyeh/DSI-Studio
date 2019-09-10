@@ -257,6 +257,7 @@ bool TractModel::load_from_file(const char* file_name_,bool append)
                tipl::geometry<3>(trk.dim) != handle->dim &&
                handle->can_map_to_mni())
             {
+                handle->run_normalization(true,true);
                 tipl::par_for(loaded_tract_data.size(),[&](int i)
                 {
                     for(int j = 0;j < loaded_tract_data[i].size();j += 3)

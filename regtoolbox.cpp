@@ -332,18 +332,18 @@ void RegToolBox::nonlinear_reg(void)
             tipl::image<float,3> sIt(It),sJ(J);
             tipl::filter::sobel(sIt);
             tipl::filter::sobel(sJ);
-            tipl::reg::cdm(sIt,sJ,dis,thread.terminated,ui->resolution->value(),ui->smoothness->value(),60);
+            tipl::reg::cdm(sIt,sJ,dis,thread.terminated,ui->resolution->value(),ui->smoothness->value(),ui->steps->value());
         }
         else
         {
             if(It2.geometry() == It.geometry() && J2.geometry() == J.geometry())
             {
                 std::cout << "cdm2" << std::endl;
-                tipl::reg::cdm2(It,It2,J,J2,dis,thread.terminated,ui->resolution->value(),ui->smoothness->value(),60);
+                tipl::reg::cdm2(It,It2,J,J2,dis,thread.terminated,ui->resolution->value(),ui->smoothness->value(),ui->steps->value());
 
             }
             else
-                tipl::reg::cdm(It,J,dis,thread.terminated,ui->resolution->value(),ui->smoothness->value(),60);
+                tipl::reg::cdm(It,J,dis,thread.terminated,ui->resolution->value(),ui->smoothness->value(),ui->steps->value());
         }
     }
     tipl::compose_displacement(J,dis,JJ);

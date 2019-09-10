@@ -308,7 +308,7 @@
                    <double>0.500000000000000</double>
                   </property>
                   <property name="value">
-                   <double>0.500000000000000</double>
+                   <double>0.300000000000000</double>
                   </property>
                  </widget>
                 </item>
@@ -319,11 +319,38 @@
            </widget>
           </item>
           <item>
-           <widget class="QCheckBox" name="edge">
-            <property name="text">
-             <string>Edge Only</string>
+           <layout class="QHBoxLayout" name="horizontalLayout">
+            <property name="topMargin">
+             <number>0</number>
             </property>
-           </widget>
+            <item>
+             <widget class="QCheckBox" name="edge">
+              <property name="text">
+               <string>Edge Only</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QLabel" name="label_6">
+              <property name="text">
+               <string>Steps:</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QSpinBox" name="steps">
+              <property name="minimum">
+               <number>1</number>
+              </property>
+              <property name="maximum">
+               <number>500</number>
+              </property>
+              <property name="value">
+               <number>60</number>
+              </property>
+             </widget>
+            </item>
+           </layout>
           </item>
          </layout>
         </widget>

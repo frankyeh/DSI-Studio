@@ -149,6 +149,7 @@ public:
     tipl::vector<3> vs;
     bool is_human_data = true;
     bool is_qsdr = false;
+    bool is_human_mni = false;
     bool trackable = true;
 public:
     fiber_directions dir;
@@ -156,7 +157,6 @@ public:
     connectometry_db db;
     std::vector<item> view_item;
 public:
-    tipl::thread thread;
     int prog;
     tipl::matrix<4,4,float> trans_to_mni;
     tipl::image<tipl::vector<3,float>,3 > mni_position,inv_mni_position;
@@ -174,14 +174,13 @@ public:
     void template_from_mni(tipl::vector<3>& p);
 
 public:
-    void run_normalization(bool background);
+    void run_normalization(bool background,bool inv);
     bool can_map_to_mni(void);
     void mni2subject(tipl::vector<3>& pos);
     void subject2mni(tipl::vector<3>& pos);
     void subject2mni(tipl::pixel_index<3>& index,tipl::vector<3>& pos);
     void get_atlas_roi(std::shared_ptr<atlas> at,unsigned int roi_index,std::vector<tipl::vector<3,short> >& points,float& r);
     const tipl::image<tipl::vector<3,float>,3 >& get_mni_mapping(void);
-    bool has_reg(void)const{return thread.has_started();}
 public:
     fib_data(void)
     {

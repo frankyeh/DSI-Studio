@@ -546,7 +546,7 @@ bool tracking_window::eventFilter(QObject *obj, QEvent *event)
                 .arg(std::round(pos[2]*10.0)/10.0);
     }
 
-    if(handle->is_qsdr || !handle->mni_position.empty())
+    if(handle->is_human_mni || !handle->mni_position.empty())
     {
         tipl::vector<3,float> mni(pos);
         handle->subject2mni(mni);
@@ -1616,15 +1616,14 @@ void tracking_window::on_actionInsert_MNI_images_triggered()
         QMessageBox::information(this,"Error","Cannot open the nifti file",0);
         return;
     }
-    const tipl::image<tipl::vector<3,float>,3 >& mapping = handle->get_mni_mapping();
-    tipl::image<float,3> I,J(mapping.geometry());
+    tipl::image<float,3> I,J(handle->mni_position.geometry());
     tipl::matrix<4,4,float> T;
     reader.toLPS(I);
     reader.get_image_transformation(T);
     T.inv();
     J.for_each_mt([&](float& v,const tipl::pixel_index<3>& pos)
     {
-        tipl::vector<3> mni(mapping[pos.index()]);
+        tipl::vector<3> mni(handle->mni_position[pos.index()]);
         mni.to(T);
         tipl::estimate(I,mni,v);
     });
