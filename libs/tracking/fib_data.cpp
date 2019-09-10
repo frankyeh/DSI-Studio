@@ -1059,17 +1059,17 @@ void fib_data::run_normalization(bool background,bool inv)
 
 
         prog = 1;
+        set_title("Initial Registration");
         auto tvs = vs;
         tvs *= std::sqrt((It.plane_size()*template_vs[0]*template_vs[1])/
                 (Is.plane_size()*vs[0]*vs[1]));
         tipl::reg::two_way_linear_mr(It,template_vs,Is,tvs,T,tipl::reg::affine,
                                      tipl::reg::mutual_information(),terminated);
-        prog = 2;
         if(terminated)
             return;
         tipl::image<float,3> Iss(It.geometry());
         tipl::resample_mt(Is,Iss,T,tipl::linear);
-        prog = 3;
+        prog = 2;
         tipl::image<float,3> Iss2;
         if(It2.geometry() == It.geometry())
         {
@@ -1080,7 +1080,7 @@ void fib_data::run_normalization(bool background,bool inv)
                     tipl::resample_mt(view_item[i].image_data,Iss2,T,tipl::linear);
                 }
         }
-
+        prog = 3;
         tipl::image<tipl::vector<3>,3> dis,inv_dis;
         if(Iss2.geometry() == Iss.geometry())
         {
