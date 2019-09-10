@@ -546,7 +546,7 @@ bool tracking_window::eventFilter(QObject *obj, QEvent *event)
                 .arg(std::round(pos[2]*10.0)/10.0);
     }
 
-    if(handle->is_human_mni || !handle->mni_position.empty())
+    if(!handle->need_normalization || !handle->mni_position.empty())
     {
         tipl::vector<3,float> mni(pos);
         handle->subject2mni(mni);

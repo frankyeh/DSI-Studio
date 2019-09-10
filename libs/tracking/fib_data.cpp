@@ -806,9 +806,7 @@ bool fib_data::load_from_mat(void)
                 view_item[i].native_geo = tipl::geometry<3>(native_geo[0],native_geo[1],native_geo[2]);
             }
         }
-        is_human_mni = std::abs(float(dim[0])-template_I.width()*template_vs[0]/vs[0]) < 2;
     }
-
     is_human_data = dim[0]*vs[0] > 150 && dim[1]*vs[1] > 150;
     db.read_db(this);
     return true;
@@ -984,6 +982,7 @@ bool fib_data::load_template(void)
                 break;
             }
     }
+    need_normalization = is_qsdr && std::abs(float(dim[0])-template_I.width()*template_vs[0]/vs[0]) > 2;
     return true;
 }
 
@@ -1185,7 +1184,7 @@ bool fib_data::can_map_to_mni(void)
 {
     if(!load_template())
         return false;
-    if(is_human_mni || !mni_position.empty())
+    if(!need_normalization || !mni_position.empty())
         return true;
     run_normalization(true,false);
     if(prog_aborted())
@@ -1223,7 +1222,7 @@ void fib_data::mni2subject(tipl::vector<3>& pos)
 {
     if(!can_map_to_mni())
         return;
-    if(is_human_mni)
+    if(!need_normalization)
     {
         mni2sub(pos,trans_to_mni);
         return;
@@ -1240,7 +1239,7 @@ void fib_data::mni2subject(tipl::vector<3>& pos)
 
 void fib_data::subject2mni(tipl::vector<3>& pos)
 {
-    if(is_human_mni)
+    if(!need_normalization)
     {
         sub2mni(pos,trans_to_mni);
         return;
@@ -1289,7 +1288,7 @@ const tipl::image<tipl::vector<3,float>,3 >& fib_data::get_mni_mapping(void)
 {
     if(!mni_position.empty())
         return mni_position;
-    if(is_human_mni)
+    if(!need_normalization)
     {
         mni_position.resize(dim);
         mni_position.for_each_mt([&](tipl::vector<3>& mni,const tipl::pixel_index<3>& index)
