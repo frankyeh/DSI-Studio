@@ -142,10 +142,19 @@ public:
 
             }
             //linear regression
-            tipl::match_signal(VG,VFF);
-            if(!VFF2.empty())
-                tipl::match_signal(VG2,VFF2);
-
+            {
+                std::thread t1([&](){VG *= 1.0f/tipl::mean(VG);});
+                std::thread t2([&](){VFF *= 1.0f/tipl::mean(VG);});
+                if(!VFF2.empty())
+                {
+                    std::thread t3([&](){VG2 *= 1.0f/tipl::mean(VG);});
+                    std::thread t4([&](){VFF2 *= 1.0f/tipl::mean(VG);});
+                    t4.join();
+                    t3.join();
+                }
+                t2.join();
+                t1.join();
+            }
             if(export_intermediate)
                 VFF.save_to_file<gz_nifti>("Subject_QA_linear_reg.nii.gz");
 
