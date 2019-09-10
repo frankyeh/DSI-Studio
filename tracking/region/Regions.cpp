@@ -477,6 +477,16 @@ void ROIRegion::get_quantitative_data(std::shared_ptr<fib_data> handle,std::vect
     titles.push_back("center z");
     std::copy(cm.begin(),cm.end(),std::back_inserter(data)); // center of the mass
 
+    if(!handle->mni_position.empty())
+    {
+        tipl::vector<3> mni;
+        tipl::estimate(handle->mni_position,cm,mni);
+        titles.push_back("center mni x");
+        titles.push_back("center mni y");
+        titles.push_back("center mni z");
+        std::copy(mni.begin(),mni.end(),std::back_inserter(data)); // center of the mass
+    }
+
     titles.push_back("bounding box x");
     titles.push_back("bounding box y");
     titles.push_back("bounding box z");
