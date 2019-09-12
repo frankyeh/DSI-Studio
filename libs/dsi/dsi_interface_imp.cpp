@@ -253,7 +253,8 @@ const char* ImageModel::reconstruction(void)
         default:
             return "Unknown method";
         }
-        save_fib(out.str());
+        file_ext = out.str();
+        save_fib();
         output_name = file_name + out.str();
     }
     catch (std::exception& e)
@@ -290,12 +291,13 @@ bool output_odfs(const tipl::image<unsigned char,3>& mni_mask,
     image_model.voxel.output_odf = record_odf;
     image_model.voxel.template_odfs.swap(odfs);
     image_model.file_name = out_name;
+    image_model.file_ext = ext;
     image_model.voxel.mask = mni_mask;
     std::copy(mni,mni+16,image_model.voxel.trans_to_mni);
     std::copy(vs,vs+3,image_model.voxel.vs.begin());
     if (prog_aborted() || !image_model.reconstruct<reprocess_odf>("Template reconstruction"))
         return false;
-    image_model.save_fib(ext);
+    image_model.save_fib();
     image_model.voxel.template_odfs.swap(odfs);
     return true;
 }

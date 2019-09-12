@@ -653,6 +653,10 @@ bool fib_data::save_mapping(const std::string& index_name,const std::string& fil
         return gz_nifti::save_to_file(file_name.c_str(),buf,vs,trans_to_mni);
     }
 }
+bool is_human_size(tipl::geometry<3> dim,tipl::vector<3> vs)
+{
+    return dim[0]*vs[0] > 130 && dim[1]*vs[1] > 180;
+}
 bool fib_data::load_from_mat(void)
 {
     {
@@ -807,7 +811,7 @@ bool fib_data::load_from_mat(void)
             }
         }
     }
-    is_human_data = dim[0]*vs[0] > 150 && dim[1]*vs[1] > 150;
+    is_human_data = is_human_size(dim,vs); // 1 percentile head size in mm
     db.read_db(this);
     return true;
 }

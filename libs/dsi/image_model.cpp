@@ -299,9 +299,10 @@ float ImageModel::quality_control_neighboring_dwi_corr(void)
     self_cor/= (float)count;
     return self_cor;
 }
+bool is_human_size(tipl::geometry<3> dim,tipl::vector<3> vs);
 bool ImageModel::is_human_data(void) const
 {
-    return voxel.dim[0]*voxel.vs[0] > 150 && voxel.dim[1]*voxel.vs[1] > 150;
+    return is_human_size(voxel.dim,voxel.vs);
 }
 
 bool ImageModel::command(std::string cmd,std::string param)
@@ -1146,10 +1147,9 @@ bool ImageModel::load_from_file(const char* dwi_file_name)
     return true;
 }
 
-void ImageModel::save_fib(const std::string& ext)
+void ImageModel::save_fib(void)
 {
-    std::string output_name = file_name;
-    output_name += ext;
+    std::string output_name = file_name + file_ext;
     gz_mat_write mat_writer(output_name.c_str());
 
     {
