@@ -13,7 +13,7 @@ bool odf_data::read(gz_mat_read& mat_reader)
         {
             for(unsigned int index = 0;1;++index)
             {
-                const float* odf = 0;
+                const float* odf = nullptr;
                 std::ostringstream out;
                 out << "odf" << index;
                 std::string name = out.str();
@@ -35,7 +35,7 @@ bool odf_data::read(gz_mat_read& mat_reader)
     // dimension
     tipl::geometry<3> dim;
     {
-        const unsigned short* dim_buf = 0;
+        const unsigned short* dim_buf = nullptr;
         if (!mat_reader.read("dimension",row,col,dim_buf))
             return false;
         std::copy(dim_buf,dim_buf+3,dim.begin());
@@ -47,7 +47,7 @@ bool odf_data::read(gz_mat_read& mat_reader)
             return false;
         half_odf_size = col / 2;
     }
-    const float* fa0 = 0;
+    const float* fa0 = nullptr;
     if (!mat_reader.read("fa0",row,col,fa0))
         return false;
 
@@ -111,20 +111,20 @@ bool odf_data::read(gz_mat_read& mat_reader)
 
 const float* odf_data::get_odf_data(unsigned int index) const
 {
-    if (odfs != 0)
+    if (odfs != nullptr)
     {
         if (index >= voxel_index_map.size() || voxel_index_map[index] == 0)
-            return 0;
+            return nullptr;
         return odfs+(voxel_index_map[index]-1)*half_odf_size;
     }
 
     if (!odf_blocks.empty())
     {
         if (index >= odf_block_map2.size())
-            return 0;
+            return nullptr;
         return odf_blocks[odf_block_map1[index]] + odf_block_map2[index];
     }
-    return 0;
+    return nullptr;
 }
 
 
@@ -340,8 +340,8 @@ bool tracking_data::get_nearest_dir_fib(unsigned int space_index,
     if(space_index >= dim.size())
         return false;
     float max_value = cull_cos_angle;
-    unsigned char fib_order;
-    unsigned char reverse;
+    unsigned char fib_order = 0;
+    unsigned char reverse = 0;
     for (unsigned char index = 0;index < fib_num;++index)
     {
         if (fa[index][space_index] <= threshold)
@@ -751,9 +751,9 @@ bool fib_data::load_from_mat(void)
     }
 
     {
-        const float* mx = 0;
-        const float* my = 0;
-        const float* mz = 0;
+        const float* mx = nullptr;
+        const float* my = nullptr;
+        const float* mz = nullptr;
         if(!is_qsdr &&
            mat_reader.read("mni_x",row,col,mx) &&
            mat_reader.read("mni_y",row,col,my) &&
@@ -786,9 +786,9 @@ bool fib_data::load_from_mat(void)
     if(is_qsdr && !view_item.empty())
     {
         unsigned int row,col;
-        const float* mx = 0;
-        const float* my = 0;
-        const float* mz = 0;
+        const float* mx = nullptr;
+        const float* my = nullptr;
+        const float* mz = nullptr;
         const short* native_geo = 0;
         for(unsigned int i = 0; i < view_item.size();++i)
         {
@@ -982,7 +982,7 @@ bool fib_data::load_template(void)
                 break;
             }
     }
-    need_normalization = is_qsdr && std::abs(float(dim[0])-template_I.width()*template_vs[0]/vs[0]) > 2;
+    need_normalization = !(is_qsdr && std::abs(float(dim[0])-template_I.width()*template_vs[0]/vs[0]) < 2);
     return true;
 }
 
