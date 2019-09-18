@@ -217,6 +217,9 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         connect(ui->actionSave_Camera,SIGNAL(triggered()),glWidget,SLOT(saveCamera()));
         connect(ui->actionSave_Rotation_Images,SIGNAL(triggered()),glWidget,SLOT(saveRotationSeries()));
         connect(ui->actionSave_3D_screen_in_3_views,SIGNAL(triggered()),glWidget,SLOT(save3ViewImage()));
+        connect(ui->action3D_Screen,SIGNAL(triggered()),glWidget,SLOT(copyToClipboard()));
+        connect(ui->actionRecord_Video,SIGNAL(triggered()),glWidget,SLOT(record_video()));
+
 
         connect(ui->reset_rendering,SIGNAL(clicked()),this,SLOT(on_actionRestore_Settings_triggered()));
         connect(ui->reset_rendering,SIGNAL(clicked()),this,SLOT(on_actionRestore_Tracking_Settings_triggered()));
@@ -228,6 +231,7 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         connect(ui->actionUpper,SIGNAL(triggered()),glWidget,SLOT(addSurface()));
         connect(ui->actionAnterior,SIGNAL(triggered()),glWidget,SLOT(addSurface()));
         connect(ui->actionPosterior,SIGNAL(triggered()),glWidget,SLOT(addSurface()));
+
 
         connect(ui->actionInsert_T1_T2,SIGNAL(triggered()),this,SLOT(on_addSlices_clicked()));
 
@@ -1384,11 +1388,6 @@ void tracking_window::on_actionAuto_Rotate_triggered(bool checked)
         }
     else
         timer->stop();
-}
-
-void tracking_window::on_action3D_Screen_triggered()
-{
-    glWidget->copyToClipboard();
 }
 
 void tracking_window::on_action3D_Screen_3_Views_triggered()

@@ -149,7 +149,6 @@ private slots:
     void on_zoom_out_clicked();
     void on_actionQuality_Assessment_triggered();
     void on_actionAuto_Rotate_triggered(bool checked);
-    void on_action3D_Screen_triggered();
     void on_action3D_Screen_3_Views_triggered();
     void on_action3D_Screen_3_Views_Horizontal_triggered();
     void on_action3D_Screen_3_Views_Vertical_triggered();

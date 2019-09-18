@@ -77,7 +77,10 @@ public:
 
  public://surface
      std::auto_ptr<RegionModel> surface;
-
+private:
+     std::shared_ptr<tipl::io::avi> video_handle;
+     bool video_capturing = false;
+     size_t video_frames = 0;
  private://odf
      std::vector<tipl::vector<3,float> >odf_points;
      std::vector<tipl::vector<3,float> >odf_norm;
@@ -102,6 +105,7 @@ public:
      void save3ViewImage(void);
      void copyToClipboard(void);
      void rotate(void);
+     void record_video(void);
  signals:
      void edited();
      void region_edited();

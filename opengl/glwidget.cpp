@@ -1021,6 +1021,20 @@ void GLWidget::renderLR()
         glMatrixMode(GL_MODELVIEW);
         check_error("axis");
     }
+
+    if(!video_capturing && video_handle.get())
+    {
+        video_capturing = true;
+        QBuffer buffer;
+        QImageWriter writer(&buffer, "JPG");
+        QImage I = grab_image();
+        writer.write(I);
+        QByteArray data = buffer.data();
+        video_handle->add_frame((unsigned char*)&*data.begin(),data.size(),true);
+        video_capturing = false;
+        if(video_frames > 10000)
+            record_video();
+    }
 }
 
 
@@ -2477,6 +2491,30 @@ void GLWidget::rotate(void)
     rotate_angle((now_time-last_time)/100.0,0,1.0,0.0);
     last_time = now_time;
     updateGL();
+}
+void GLWidget::record_video(void)
+{
+    if(video_handle.get())
+    {
+        video_handle->close();
+        QMessageBox::information(this,"DSI Studio","Video saved");
+        video_handle.reset();
+    }
+    else
+    {
+        QString file = QFileDialog::getSaveFileName(
+                                    this,
+                                    "Save video",
+                                    QFileInfo(cur_tracking_window.windowTitle()).completeBaseName()+".avi",
+                                    "Report file (*.avi);;All files (*)");
+        if(file.isEmpty())
+            return;
+        QMessageBox::information(this,"DSI Studio","Press Ctrl+Shift+R again to stop recoding.");
+        QImage I = grab_image();
+        video_handle = std::make_shared<tipl::io::avi>();
+        video_handle->open(file.toStdString().c_str(),I.width(),I.height(), "MJPG", 10/*fps*/);
+        video_frames = 0;
+    }
 }
 
 

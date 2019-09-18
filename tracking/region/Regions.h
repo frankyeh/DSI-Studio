@@ -103,6 +103,8 @@ public: // rendering options
         const std::vector<tipl::vector<3,short> >& get_region_voxels_raw(void) const {return region;}
         void assign(const std::vector<tipl::vector<3,short> >& region_,float r)
         {
+            if(!region.empty())
+                undo_backup.push_back(region);
             region = region_;
             resolution_ratio = r;
             modified = true;
