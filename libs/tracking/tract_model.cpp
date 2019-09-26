@@ -1807,6 +1807,7 @@ void TractModel::get_quantitative_info(std::string& result)
     if(handle->db.has_db()) // connectometry database
     {
         std::vector<const float*> old_index_data(fib->other_index[0]);
+        std::vector<float> data_sd;
         for(int i = 0;i < handle->db.num_subjects;++i)
         {
             std::vector<std::vector<float> > fa_data;
@@ -1815,8 +1816,12 @@ void TractModel::get_quantitative_info(std::string& result)
                 fib->other_index[0][j] = &fa_data[j][0];
             float mean,sd;
             get_tracts_data(0,mean,sd);
-            out << handle->db.subject_names[i] << " " << handle->db.index_name << " mean\t" << mean << std::endl;
-            out << handle->db.subject_names[i] << " " << handle->db.index_name << " sd\t" << sd << std::endl;
+            data_sd.push_back(sd);
+            out << handle->db.subject_names[i] << " mean_" << handle->db.index_name << "\t" << mean << std::endl;
+        }
+        for(int i = 0;i < handle->db.num_subjects;++i)
+        {
+            out << handle->db.subject_names[i] << " standard_deviation_" << handle->db.index_name << "\t" << data_sd[i] << std::endl;
         }
         fib->other_index[0] = old_index_data;
     }

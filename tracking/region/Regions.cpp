@@ -520,6 +520,7 @@ void ROIRegion::get_quantitative_data(std::shared_ptr<fib_data> handle,std::vect
 
     if(handle->db.has_db()) // connectometry database
     {
+        std::vector<float> data_sd;
         for(unsigned int subject_index = 0;subject_index < handle->db.num_subjects;++subject_index)
         {
             std::vector<std::vector<float> > fa_data;
@@ -528,14 +529,18 @@ void ROIRegion::get_quantitative_data(std::shared_ptr<fib_data> handle,std::vect
             tipl::const_pointer_image<float, 3> I(&fa_data[0][0],handle->dim);
             calculate_region_stat(I,points,mean,sd);
             data.push_back(mean);
-            data.push_back(sd);
+            data_sd.push_back(sd);
+            std::ostringstream out;
+            out << handle->db.subject_names[subject_index] << " mean_" << handle->db.index_name;
+            titles.push_back(out.str());
+        }
 
-            std::ostringstream out1,out2;
-            out1 << handle->db.subject_names[subject_index] << " " << handle->db.index_name << " mean";
-            out2 << handle->db.subject_names[subject_index] << " " << handle->db.index_name << " sd";
-            titles.push_back(out1.str());
-            titles.push_back(out2.str());
-
+        for(unsigned int subject_index = 0;subject_index < handle->db.num_subjects;++subject_index)
+        {
+            data.push_back(data_sd[subject_index]);
+            std::ostringstream out;
+            out << handle->db.subject_names[subject_index] << " standard_deviation_" << handle->db.index_name;
+            titles.push_back(out.str());
         }
     }
 }
