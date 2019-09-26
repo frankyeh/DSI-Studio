@@ -400,7 +400,7 @@
              </size>
             </property>
             <property name="currentIndex">
-             <number>0</number>
+             <number>3</number>
             </property>
             <widget class="QWidget" name="tab_6">
              <attribute name="title">
@@ -727,7 +727,7 @@
                   <item>
                    <widget class="QLabel" name="cohort_text">
                     <property name="text">
-                     <string> </string>
+                     <string/>
                     </property>
                    </widget>
                   </item>
@@ -951,7 +951,7 @@
                    <number>100</number>
                   </property>
                   <property name="maximum">
-                   <number>10000</number>
+                   <number>50000</number>
                   </property>
                   <property name="singleStep">
                    <number>500</number>
@@ -1016,10 +1016,10 @@
                    <number>100</number>
                   </property>
                   <property name="maximum">
-                   <number>100000</number>
+                   <number>500000</number>
                   </property>
                   <property name="value">
-                   <number>10000</number>
+                   <number>50000</number>
                   </property>
                  </widget>
                 </item>
