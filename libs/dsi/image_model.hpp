@@ -263,7 +263,7 @@ public:
     std::vector<std::pair<int,int> > get_bad_slices(void);
     float quality_control_neighboring_dwi_corr(void);
     bool is_human_data(void) const;
-
+    std::vector<size_t> get_sorted_dwi_index(void);
     void flip_b_table(const unsigned char* order);
     void flip_b_table(unsigned char dim);
     void swap_b_table(unsigned char dim);

@@ -79,6 +79,21 @@ void flip_fib_dir(std::vector<tipl::vector<3> >& fib_dir,const unsigned char* or
             fib_dir[j][2] = -fib_dir[j][2];
     }
 }
+std::vector<size_t> ImageModel::get_sorted_dwi_index(void)
+{
+    std::vector<size_t> sorted_index(src_bvalues.size());
+    std::iota(sorted_index.begin(),sorted_index.end(),0);
+
+    std::sort(sorted_index.begin(),sorted_index.end(),
+              [&](size_t left,size_t right)
+    {
+        if(int(src_bvalues[left])/400 == int(src_bvalues[right])/400)
+            return src_bvectors[left] < src_bvectors[right];
+        return src_bvalues[left] < src_bvalues[right];
+    }
+    );
+    return sorted_index;
+}
 void ImageModel::flip_b_table(const unsigned char* order)
 {
     for(unsigned int index = 0;index < src_bvectors.size();++index)
@@ -176,6 +191,11 @@ std::string ImageModel::check_b_table(void)
 std::vector<std::pair<int,int> > ImageModel::get_bad_slices(void)
 {
     voxel.load_from_src(*this);
+    std::vector<size_t> sorted_index(get_sorted_dwi_index()),index_mapping;
+    for(size_t i = 0;i < sorted_index.size();++i)
+        if(i == 0 || src_bvalues[sorted_index[i]] != 0.0f)
+            index_mapping.push_back(sorted_index[i]);
+
     std::vector<char> skip_slice(voxel.dim.depth());
     for(int i = 0,pos = 0;i < skip_slice.size();++i,pos += voxel.dim.plane_size())
         if(std::accumulate(voxel.mask.begin()+pos,voxel.mask.begin()+pos+voxel.dim.plane_size(),(int)0) < voxel.dim.plane_size()/16)
@@ -234,7 +254,7 @@ std::vector<std::pair<int,int> > ImageModel::get_bad_slices(void)
             s = v[0]+v[1]+v[2]+v[3];
             if(s > 0.4f)
             {
-                bad_i.push_back(i);
+                bad_i.push_back(index_mapping[i]);
                 bad_z.push_back(z);
                 sum.push_back(s);
             }
