@@ -2,7 +2,7 @@
 #include <QDir>
 #include "program_option.hpp"
 bool RenameDICOMToDir(QString FileName, QString ToDir);
-QStringList GetSubDir(QString Dir);
+QStringList GetSubDir(QString Dir,bool recursive = true);
 int ren(void)
 {
     QString output;

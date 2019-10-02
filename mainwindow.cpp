@@ -469,16 +469,20 @@ void MainWindow::on_browseDir_clicked()
 }
 
 
-QStringList GetSubDir(QString Dir)
+QStringList GetSubDir(QString Dir,bool recursive = true)
 {
     QStringList sub_dirs;
     QStringList dirs = QDir(Dir).entryList(QStringList("*"),
                                             QDir::Dirs | QDir::NoSymLinks | QDir::NoDotAndDotDot);
-    sub_dirs << Dir;
+    if(recursive)
+        sub_dirs << Dir;
     for(int index = 0;index < dirs.size();++index)
     {
         QString new_dir = Dir + "/" + dirs[index];
-        sub_dirs << GetSubDir(new_dir);
+        if(recursive)
+            sub_dirs << GetSubDir(new_dir,recursive);
+        else
+            sub_dirs << new_dir;
     }
     return sub_dirs;
 }
@@ -520,7 +524,7 @@ void MainWindow::on_averagefib_clicked()
 bool load_all_files(QStringList file_list,std::vector<std::shared_ptr<DwiHeader> >& dwi_files);
 bool find_bval_bvec(const char* file_name,QString& bval,QString& bvec);
 bool load_4d_nii(const char* file_name,std::vector<std::shared_ptr<DwiHeader> >& dwi_files);
-QString get_dicom_output_name(QString file_name,QString file_extension);
+QString get_dicom_output_name(QString file_name,QString file_extension,bool add_path);
 
 void MainWindow::on_batch_src_clicked()
 {
@@ -532,80 +536,74 @@ void MainWindow::on_batch_src_clicked()
         return;
     add_work_dir(dir);
 
+
+    QString src_dir = dir + "/src";
+    QString t1wt2w_dir = dir + "/t1wt2w";
+    if((!QDir(src_dir).exists() && !QDir(src_dir).mkdir(src_dir)) ||
+       (!QDir(t1wt2w_dir).exists() && !QDir(t1wt2w_dir).mkdir(t1wt2w_dir)))
     {
-        QStringList dir_list;
-        dir_list << dir;
-        bool all = false;
-        bool choice = false;
-        begin_prog("batch creating src");
-        for(unsigned int i = 0;check_prog(i,dir_list.size()) && !prog_aborted();++i)
+        QMessageBox::information(this,"Error","Cannot create folder",0);
+        return;
+    }
+
+    QStringList sub_dir = QDir(dir).entryList(QStringList("*"),
+                                            QDir::Dirs | QDir::NoSymLinks | QDir::NoDotAndDotDot);
+
+    begin_prog("batch creating src");
+    std::ofstream out((dir+"/log.txt").toStdString().c_str());
+    for(int j = 0;check_prog(j,sub_dir.size()) && !prog_aborted();++j)
+    {
+        if(sub_dir[j] == "src" || sub_dir[j] == "t1wt2w")
+            continue;
+        out << "Processing " << sub_dir[j].toStdString() << std::endl;
+        QString src_output_prefix = src_dir + "/" + sub_dir[j];
+        QString t1wt2w_output_prefix = t1wt2w_dir + "/" + sub_dir[j];
+
+        QStringList dir_list = GetSubDir(sub_dir[j],true);
+        std::vector<std::shared_ptr<DwiHeader> > dicom_dwi_files;
+        QString dicom_output;
+        for(unsigned int i = 0;i < dir_list.size();++i)
         {
             QDir cur_dir = dir_list[i];
-            QStringList new_list = cur_dir.entryList(QStringList(""),QDir::AllDirs|QDir::NoDotAndDotDot);
-            for(unsigned int index = 0;index < new_list.size();++index)
-                dir_list << cur_dir.absolutePath() + "/" + new_list[index];
-
             // 4D nifti with same base name bvals and bvecs
             QStringList nifti_file_list = cur_dir.entryList(QStringList("*.nii.gz") << "*.nii",QDir::Files|QDir::NoSymLinks);
             for (unsigned int index = 0;index < nifti_file_list.size();++index)
             {
+                out << "\tNIFTI file found at " << nifti_file_list[index].toStdString() << std::endl;
                 std::vector<std::shared_ptr<DwiHeader> > dwi_files;
                 if(!load_4d_nii(QString(dir_list[i] + "/" + nifti_file_list[index]).toLocal8Bit().begin(),dwi_files))
+                {
+                    out << "\t\tNot a 4D nifti. Skipping." << std::endl;
                     continue;
+                }
                 QString bval,bvec;
                 if(!find_bval_bvec(QString(dir_list[i] + "/" + nifti_file_list[index]).toLocal8Bit().begin(),bval,bvec))
                 {
-                    std::ofstream(QString(dir_list[i] + "/bvals_bvec_not_found.txt").toLocal8Bit().begin());
+                    out << "\t\tCannot find bval/bvec. Skipping." << std::endl;
                     continue;
                 }
                 if(!DwiHeader::has_b_table(dwi_files))
                 {
-                    std::ofstream(QString(dir_list[i] + "/" + nifti_file_list[index] + ".invalid_b_table.txt").toLocal8Bit().begin());
+                    out << "\t\tInvalid b-table. Skipping." << std::endl;
                     continue;
                 }
-                DwiHeader::output_src(QString(dir_list[i] + "/" +
-                        QFileInfo(nifti_file_list[index]).baseName() + ".src.gz").toLocal8Bit().begin(),dwi_files,0,false);
-
+                out << "\t\tSaving " << (src_output_prefix + ".src.gz").toStdString() << std::endl;
+                DwiHeader::output_src(QString(src_output_prefix + ".src.gz").toLocal8Bit().begin(),dwi_files,0,false);
             }
 
             QStringList dicom_file_list = cur_dir.entryList(QStringList("*.dcm"),QDir::Files|QDir::NoSymLinks);
             if(dicom_file_list.empty())
                 continue;
+            out << "\tDICOM files found at " << dir_list[i].toStdString() << std::endl;
             for (unsigned int index = 0;index < dicom_file_list.size();++index)
                 dicom_file_list[index] = dir_list[i] + "/" + dicom_file_list[index];
-            QString output = get_dicom_output_name(dicom_file_list[0],".src.gz");
-            if(QFileInfo(output).exists())
-            {
-                if(!all)
-                {
-                    QMessageBox msgBox;
-                    msgBox.setText(QString("Existing SRC file ") + output);
-                    msgBox.setInformativeText("Overwrite?");
-                    msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::YesToAll | QMessageBox::No | QMessageBox::NoAll);
-                    msgBox.setDefaultButton(QMessageBox::Save);
-                    switch(msgBox.exec())
-                    {
-                    case QMessageBox::YesToAll:
-                        all = true;
-                    case QMessageBox::Yes:
-                        choice = true;
-                        break;
-                    case QMessageBox::NoAll:
-                        all = true;
-                    case QMessageBox::No:
-                        choice = false;
-                        break;
-                    }
-                }
-                if(!choice)
-                    continue;
-            }
 
-            std::vector<std::shared_ptr<DwiHeader> > dwi_files;
-            if(!load_all_files(dicom_file_list,dwi_files) || prog_aborted())
+            std::vector<std::shared_ptr<DwiHeader> > dicom_files;
+            if(!load_all_files(dicom_file_list,dicom_files) || prog_aborted())
                 continue;
-            if(dwi_files.size() == 1) //MPRAGE or T2W
+            if(dicom_files.size() == 1) //MPRAGE or T2W
             {
+                out << "\t\tNot 4D DWI files." << std::endl;
                 std::sort(dicom_file_list.begin(),dicom_file_list.end(),compare_qstring());
                 tipl::io::volume v;
                 tipl::io::dicom header;
@@ -650,27 +648,54 @@ void MainWindow::on_batch_src_clicked()
                 header.get_text(0x0008,0x1090,make);
                 std::replace(manu.begin(),manu.end(),' ',(char)0);
                 make.erase(std::remove(make.begin(),make.end(),' '),make.end());
-                std::ostringstream out;
-                out << manu.c_str() << " " << make.c_str() << " " << sequence
+                std::ostringstream info;
+                info << manu.c_str() << " " << make.c_str() << " " << sequence
                     << ".TE=" << header.get_float(0x0018,0x0081) << ".TR=" << header.get_float(0x0018,0x0080)  << ".";
-                report = out.str();
+                report = info.str();
                 if(report.size() < 80)
                     report.resize(80);
                 nii_out.set_descrip(report.c_str());
-                QString output = get_dicom_output_name(dicom_file_list[0],"")+"_"+sequence.c_str() + ".nii.gz";
+
+                QString output = t1wt2w_output_prefix + "."+get_dicom_output_name(dicom_file_list[0],"",false)+"_"+sequence.c_str() + ".nii.gz";
+                out << "\t\tConvert to NIFTI at " << output.toStdString() << std::endl;
                 nii_out.save_to_file(output.toStdString().c_str());
             }
             else
             {
-                for(unsigned int index = 0;index < dwi_files.size();++index)
-                    if(dwi_files[index]->bvalue < 100.0f)
-                    {
-                        dwi_files[index]->bvalue = 0.0f;
-                        dwi_files[index]->bvec = tipl::vector<3>(0.0f,0.0f,0.0f);
-                    }
-                DwiHeader::output_src(output.toLocal8Bit().begin(),dwi_files,0,false);
+                out << "\t\t4D DWI files." << std::endl;
+                if(dicom_dwi_files.empty() || dicom_dwi_files.front()->image.geometry() == dicom_files.front()->image.geometry())
+                {
+                    if(dicom_dwi_files.empty())
+                        dicom_output = src_output_prefix + "." + get_dicom_output_name(dicom_file_list[0],".src.gz",false);
+                    dicom_dwi_files.insert(dicom_dwi_files.end(),dicom_files.begin(),dicom_files.end());
+                }
+                else
+                {
+                    out << "[Warning] Two different DWI datasets are found: (" <<
+                           dicom_dwi_files.front()->image.width() << "," <<
+                           dicom_dwi_files.front()->image.height() << "," <<
+                           dicom_dwi_files.front()->image.depth() << ") and (" <<
+                           dicom_files.front()->image.width() << "," <<
+                           dicom_files.front()->image.height() << "," <<
+                           dicom_files.front()->image.depth() << "). Only the first one is used to generate SRC file." << std::endl;
+                }
             }
+
         }
+
+        if(dicom_dwi_files.size() > 1)
+        {
+            for(unsigned int index = 0;index < dicom_dwi_files.size();++index)
+                if(dicom_dwi_files[index]->bvalue < 100.0f)
+                {
+                    dicom_dwi_files[index]->bvalue = 0.0f;
+                    dicom_dwi_files[index]->bvec = tipl::vector<3>(0.0f,0.0f,0.0f);
+                }
+            out << "\tOutput DWI files to " << dicom_output.toStdString() << std::endl;
+            DwiHeader::output_src(dicom_output.toLocal8Bit().begin(),dicom_dwi_files,0,false);
+        }
+        else
+            out << "[Warning] No DWI data in this subject's folder. " << dicom_output.toStdString() << std::endl;
     }
 }
 
