@@ -39,6 +39,9 @@ private:
     QImage slice_image;
     tipl::value_to_color<float> v2c;
     char view_orientation = 2;
+private: //bad slices
+    bool bad_slice_analzed = false;
+    std::vector<std::pair<int,int> > bad_slices;
 private:
     Ui::reconstruction_window *ui;
     std::auto_ptr<ImageModel> handle;
@@ -86,7 +89,6 @@ private slots:
     void on_actionRotate_triggered();
     void on_delete_2_clicked();
     void on_SlicePos_valueChanged(int value);
-    void on_motion_correction_clicked();
     void on_scheme_balance_toggled(bool checked);
     void on_half_sphere_toggled(bool checked);
     void on_add_t1t2_clicked();
@@ -105,6 +107,8 @@ private slots:
     void on_actionResample_triggered();
     void on_actionSave_SRC_file_as_triggered();
     void on_remove_below_clicked();
+    void on_actionEddy_Motion_Correction_triggered();
+    void on_show_bad_slice_clicked();
 };
 
 #endif // RECONSTRUCTION_WINDOW_H

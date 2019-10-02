@@ -175,8 +175,35 @@ void reconstruction_window::on_b_table_itemSelectionChanged()
     buffer_source.resize(tmp.geometry());
     for(int i = 0;i < tmp.size();++i)
         buffer_source[i] = v2c[tmp[i]];
+
+    // show bad_slices
+    if(view_orientation != 2 && bad_slice_analzed)
+    {
+        std::vector<size_t> mark_slices;
+        for(size_t index = 0;index < bad_slices.size();++index)
+            if(bad_slices[index].first == ui->b_table->currentRow())
+                mark_slices.push_back(bad_slices[index].second);
+        for(size_t index = 0;index < mark_slices.size();++index)
+        {
+            for(size_t x = 0,pos = mark_slices[index]*buffer_source.width();x < buffer_source.width();++x,++pos)
+                buffer_source[pos].r |= 64;
+        }
+    }
+    if(view_orientation == 2 && bad_slice_analzed)
+    {
+        std::vector<size_t> mark_slices;
+        for(size_t index = 0;index < bad_slices.size();++index)
+            if(bad_slices[index].first == ui->b_table->currentRow() && ui->z_pos->value() == bad_slices[index].second)
+            {
+                for(size_t i = 0;i < buffer_source.size();++i)
+                    buffer_source[i].r |= 64;
+                break;
+            }
+    }
+
     source_image = QImage((unsigned char*)&*buffer_source.begin(),tmp.width(),tmp.height(),QImage::Format_RGB32).
                     scaled(tmp.width()*source_ratio,tmp.height()*source_ratio);
+
     if(view_orientation != 2)
         source_image = source_image.mirrored();
     show_view(source,source_image);
@@ -628,8 +655,10 @@ void reconstruction_window::on_delete_2_clicked()
     int index = ui->b_table->currentRow();
     if(index <= 0)
         return;
+    bad_slice_analzed = false;
     ui->b_table->removeRow(index);
     handle->remove(uint32_t(index));
+
 }
 
 void reconstruction_window::on_remove_below_clicked()
@@ -639,6 +668,7 @@ void reconstruction_window::on_remove_below_clicked()
     int index = ui->b_table->currentRow();
     if(index <= 0)
         return;
+    bad_slice_analzed = false;
     while(ui->b_table->rowCount() > index)
     {
         ui->b_table->removeRow(index);
@@ -679,16 +709,6 @@ void rec_motion_correction(ImageModel* handle)
 
 }
 
-void reconstruction_window::on_motion_correction_clicked()
-{
-    rec_motion_correction(handle.get());
-    if(!prog_aborted())
-    {
-        handle->calculate_dwi_sum();
-        handle->voxel.calculate_mask(handle->dwi_sum);
-        load_b_table();
-    }
-}
 
 void reconstruction_window::on_scheme_balance_toggled(bool checked)
 {
@@ -974,3 +994,39 @@ void reconstruction_window::on_actionSave_SRC_file_as_triggered()
     check_prog(0,0);
 }
 
+
+void reconstruction_window::on_actionEddy_Motion_Correction_triggered()
+{
+    rec_motion_correction(handle.get());
+    if(!prog_aborted())
+    {
+        handle->calculate_dwi_sum();
+        handle->voxel.calculate_mask(handle->dwi_sum);
+        load_b_table();
+    }
+}
+
+void reconstruction_window::on_show_bad_slice_clicked()
+{
+    if(!bad_slice_analzed)
+    {
+        bad_slices = handle->get_bad_slices();
+        bad_slice_analzed = true;
+        std::vector<char> is_bad(ui->b_table->rowCount());
+        for(int i = 0;i < bad_slices.size();++i)
+            if(bad_slices[i].first < is_bad.size())
+                is_bad[bad_slices[i].first] = 1;
+
+        for(int i = 0;i < ui->b_table->rowCount();++i)
+            for(int j = 0;j < ui->b_table->columnCount();++j)
+                ui->b_table->item(i, j)->setData(Qt::BackgroundRole,is_bad[i] ?  QColor (255,200,200): QColor (255,255,255));
+    }
+    if(bad_slices.size() == 0)
+    {
+        QMessageBox::information(this,"DSI Studio","No bad slice found in this data");
+        return;
+    }
+    on_b_table_itemSelectionChanged();
+    ui->bad_slice_label->setText(QString("A total %1 bad slices marked by red").arg(bad_slices.size()));
+
+}
