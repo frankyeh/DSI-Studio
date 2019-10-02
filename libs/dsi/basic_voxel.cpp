@@ -55,19 +55,7 @@ void Voxel::load_from_src(ImageModel& image_model)
 {
     if(image_model.src_bvalues.empty()) // e.g. template recon
         return;
-    std::vector<size_t> sorted_index(image_model.src_bvalues.size());
-    std::iota(sorted_index.begin(),sorted_index.end(),0);
-
-    std::sort(sorted_index.begin(),sorted_index.end(),
-              [&image_model](size_t left,size_t right)
-    {
-        if(int(image_model.src_bvalues[left])/400 == int(image_model.src_bvalues[right])/400)
-            return image_model.src_bvectors[left] < image_model.src_bvectors[right];
-        return image_model.src_bvalues[left] < image_model.src_bvalues[right];
-    }
-    );
-
-
+    std::vector<size_t> sorted_index(image_model.get_sorted_dwi_index());
     bvalues.clear();
     bvectors.clear();
     dwi_data.clear();
