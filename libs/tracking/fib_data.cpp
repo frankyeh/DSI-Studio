@@ -1025,6 +1025,10 @@ void fib_data::template_from_mni(tipl::vector<3>& p)
 
 void fib_data::run_normalization(bool background,bool inv)
 {
+    if(!need_normalization ||
+       (!inv && !mni_position.empty()) ||
+       (inv && !inv_mni_position.empty()))
+        return;
     std::string output_file_name(fib_file_name);
     output_file_name += ".";
     output_file_name += QFileInfo(fa_template_list[template_id].c_str()).baseName().toLower().toStdString();
@@ -1188,8 +1192,6 @@ bool fib_data::can_map_to_mni(void)
 {
     if(!load_template())
         return false;
-    if(!need_normalization || !mni_position.empty())
-        return true;
     run_normalization(true,false);
     if(prog_aborted())
         return false;
@@ -1224,21 +1226,20 @@ void mni2sub(tipl::vector<3>& pos,const tipl::matrix<4,4,float>& trans)
 
 void fib_data::mni2subject(tipl::vector<3>& pos)
 {
-    if(!can_map_to_mni())
-        return;
     if(!need_normalization)
     {
         mni2sub(pos,trans_to_mni);
         return;
     }
-    if(inv_mni_position.empty())
-        return;
-    template_from_mni(pos);
-    tipl::vector<3> p;
-    if(pos[2] < 0.0f)
-        pos[2] = 0.0f;
-    tipl::estimate(inv_mni_position,pos,p);
-    pos = p;
+    if(!inv_mni_position.empty())
+    {
+        template_from_mni(pos);
+        tipl::vector<3> p;
+        if(pos[2] < 0.0f)
+            pos[2] = 0.0f;
+        tipl::estimate(inv_mni_position,pos,p);
+        pos = p;
+    }
 }
 
 void fib_data::subject2mni(tipl::vector<3>& pos)

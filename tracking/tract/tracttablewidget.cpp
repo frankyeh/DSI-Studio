@@ -744,6 +744,8 @@ void TractTableWidget::saveTransformedTracts(const float* transform)
                  "Tract files (*.trk *trk.gz);;Text File (*.txt);;MAT files (*.mat);;NIFTI files (*.nii *nii.gz);;All files (*)");
     if(filename.isEmpty())
         return;
+    if(!cur_tracking_window.can_map_to_mni())
+        return;
     std::string sfilename = filename.toLocal8Bit().begin();
     if(transform)
         tract_models[currentRow()]->save_transformed_tracts_to_file(&*sfilename.begin(),transform,false);
