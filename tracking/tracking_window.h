@@ -60,10 +60,7 @@ public:
     float get_scene_zoom(void);
 public:
     unsigned char cur_dim;
-    tipl::value_to_color<float> v2c;
-public:
-    std::shared_ptr<SliceModel> overlay_slice;
-    tipl::value_to_color<float> overlay_v2c;
+    std::vector<std::shared_ptr<SliceModel> > overlay_slices;
 public:
     std::shared_ptr<TractModel> tractography_atlas;
 public:

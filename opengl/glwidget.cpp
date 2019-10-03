@@ -733,8 +733,18 @@ void GLWidget::renderLR()
             if(dim < 3 && slice_pos[dim] != current_slice->slice_pos[dim])
             {
                 tipl::color_image texture;
-                current_slice->get_texture(dim,texture,cur_tracking_window.v2c,
-                                           cur_tracking_window.overlay_slice.get(),cur_tracking_window.overlay_v2c);
+                current_slice->get_slice(texture,dim,
+                                         cur_tracking_window.overlay_slices);
+
+                for(unsigned int index = 0;index < texture.size();++index)
+                {
+                    unsigned char value =
+                    255-texture[index].data[0];
+                    if(value >= 230)
+                        value -= (value-230)*10;
+                    texture[index].data[3] = value;
+                }
+
                 slice_texture[dim] = std::make_shared<QOpenGLTexture>(
                                         QImage((unsigned char*)&*texture.begin(),
                                             texture.width(),texture.height(),QImage::Format_RGB32).mirrored());

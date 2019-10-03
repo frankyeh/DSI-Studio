@@ -15,6 +15,9 @@ public:
     tipl::geometry<3>geometry;
     tipl::vector<3,float> voxel_size;
 public:
+    bool is_overlay = false;
+    tipl::value_to_color<float> v2c;
+public:
     // for directx
     tipl::vector<3,int> slice_pos;
     bool slice_visible[3];
@@ -29,9 +32,8 @@ public:
     void set_contrast_range(float min_v,float max_v);
     void set_contrast_color(unsigned int min_c,unsigned int max_c);
     void get_slice(tipl::color_image& image,
-                           unsigned char,const tipl::value_to_color<float>& v2c,
-                           const SliceModel* overlay,
-                           const tipl::value_to_color<float>& overlay_v2c) const;
+                           unsigned char,
+                           const std::vector<std::shared_ptr<SliceModel> >& overlay_slices) const;
     tipl::const_pointer_image<float, 3> get_source(void) const;
 
 public:
@@ -52,7 +54,7 @@ public:
         else
             tipl::slice2space(cur_dim, x, y, slice_pos[cur_dim], px, py, pz);
     }
-    void toOtherSlice(const SliceModel* other_slice,
+    void toOtherSlice(std::shared_ptr<SliceModel> other_slice,
                       unsigned char cur_dim,float x,float y,
                       tipl::vector<3,float>& v) const
     {
@@ -72,21 +74,6 @@ public:
 
 
 public:
-    void get_texture(unsigned char dim,tipl::color_image& cur_rendering_image,
-                     const tipl::value_to_color<float>& v2c,
-                     const SliceModel* overlay,
-                     const tipl::value_to_color<float>& overlay_v2c)
-    {
-        get_slice(cur_rendering_image,dim,v2c,overlay,overlay_v2c);
-        for(unsigned int index = 0;index < cur_rendering_image.size();++index)
-        {
-            unsigned char value =
-            255-cur_rendering_image[index].data[0];
-            if(value >= 230)
-                value -= (value-230)*10;
-            cur_rendering_image[index].data[3] = value;
-        }
-    }
 
     void get_other_slice_pos(unsigned char cur_dim,int& x, int& y) const {
             x = slice_pos[(cur_dim + 1) % 3];
@@ -126,8 +113,7 @@ public:
     }
     void apply_overlay(tipl::color_image& show_image,
                        unsigned char dim,
-                       const SliceModel* other_slice,
-                       const tipl::value_to_color<float>& overlay_v2c) const;
+                       std::shared_ptr<SliceModel> other_slice) const;
 };
 
 class CustomSliceModel : public SliceModel {

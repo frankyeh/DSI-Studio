@@ -21,12 +21,13 @@ SliceModel::SliceModel(std::shared_ptr<fib_data> handle_,int view_id_):handle(ha
     slice_pos[0] = geometry.width() >> 1;
     slice_pos[1] = geometry.height() >> 1;
     slice_pos[2] = geometry.depth() >> 1;
+    v2c.set_range(handle->view_item[view_id].contrast_min,handle->view_item[view_id].contrast_max);
+    v2c.two_color(handle->view_item[view_id].min_color,handle->view_item[view_id].max_color);
 }
 // ---------------------------------------------------------------------------
 void SliceModel::apply_overlay(tipl::color_image& show_image,
                     unsigned char cur_dim,
-                    const SliceModel* other_slice,
-                    const tipl::value_to_color<float>& overlay_v2c) const
+                    std::shared_ptr<SliceModel> other_slice) const
 {
     std::pair<float,float> range = other_slice->get_contrast_range();
     for(int y = 0,pos = 0;y < show_image.height();++y)
@@ -37,8 +38,8 @@ void SliceModel::apply_overlay(tipl::color_image& show_image,
             float value = 0;
             if(!tipl::estimate(other_slice->get_source(),v,value))
                 continue;
-            if(value > range.first)
-                show_image[pos] = overlay_v2c[value];
+            if(value > range.first && value <= range.second)
+                show_image[pos] = other_slice->v2c[value];
         }
 }
 
@@ -63,22 +64,23 @@ void SliceModel::set_contrast_range(float min_v,float max_v)
 {
     handle->view_item[view_id].contrast_min = min_v;
     handle->view_item[view_id].contrast_max = max_v;
+    v2c.set_range(min_v,max_v);
 }
 // ---------------------------------------------------------------------------
 void SliceModel::set_contrast_color(unsigned int min_c,unsigned int max_c)
 {
     handle->view_item[view_id].min_color = min_c;
     handle->view_item[view_id].max_color = max_c;
+    v2c.two_color(min_c,max_c);
 }
 // ---------------------------------------------------------------------------
 void SliceModel::get_slice(tipl::color_image& show_image,unsigned char cur_dim,
-                              const tipl::value_to_color<float>& v2c,
-                              const SliceModel* overlay,
-                              const tipl::value_to_color<float>& overlay_v2c) const
+                           const std::vector<std::shared_ptr<SliceModel> >& overlay_slices) const
 {
     handle->get_slice(view_id,cur_dim, slice_pos[cur_dim],show_image,v2c);
-    if(overlay && this != overlay)
-        apply_overlay(show_image,cur_dim,overlay,overlay_v2c);
+    for(auto overlay_slice : overlay_slices)
+        if(this != overlay_slice.get())
+            apply_overlay(show_image,cur_dim,overlay_slice);
 }
 // ---------------------------------------------------------------------------
 tipl::const_pointer_image<float, 3> SliceModel::get_source(void) const
@@ -88,13 +90,14 @@ tipl::const_pointer_image<float, 3> SliceModel::get_source(void) const
 
 // ---------------------------------------------------------------------------
 CustomSliceModel::CustomSliceModel(std::shared_ptr<fib_data> new_handle):
-    SliceModel(new_handle,new_handle->view_item.size())
+    SliceModel(new_handle,0)
 {
     new_handle->view_item.push_back(item());
 }
 // ---------------------------------------------------------------------------
 void CustomSliceModel::initialize(void)
 {
+    view_id = handle->view_item.size()-1;
     geometry = source_images.geometry();
     handle->view_item.back().image_data = tipl::make_image(&*source_images.begin(),source_images.geometry());
     handle->view_item.back().set_scale(source_images.begin(),source_images.end());
@@ -104,6 +107,8 @@ void CustomSliceModel::initialize(void)
     slice_pos[0] = geometry.width() >> 1;
     slice_pos[1] = geometry.height() >> 1;
     slice_pos[2] = geometry.depth() >> 1;
+    v2c.set_range(handle->view_item[view_id].contrast_min,handle->view_item[view_id].contrast_max);
+    v2c.two_color(handle->view_item[view_id].min_color,handle->view_item[view_id].max_color);
 }
 // ---------------------------------------------------------------------------
 void initial_LPS_nifti_srow(tipl::matrix<4,4,float>& T,const tipl::geometry<3>& geo,const tipl::vector<3>& vs);

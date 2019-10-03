@@ -171,8 +171,8 @@ void slice_view_scene::get_view_image(QImage& new_view_image)
 {
     float display_ratio = cur_tracking_window.get_scene_zoom();
     cur_tracking_window.current_slice->get_slice(slice_image,
-                                                 cur_tracking_window.cur_dim,cur_tracking_window.v2c,
-                                                 cur_tracking_window.overlay_slice.get(),cur_tracking_window.overlay_v2c);
+                                                 cur_tracking_window.cur_dim,
+                                                 cur_tracking_window.overlay_slices);
     // draw region colors on the image
     tipl::color_image slice_image_with_region(slice_image);
     if(!cur_tracking_window["roi_edge"].toInt())
@@ -238,7 +238,7 @@ bool slice_view_scene::command(QString cmd,QString param,QString param2)
     {
         if(param.isEmpty())
             param = QFileInfo(cur_tracking_window.windowTitle()).baseName()+"_"+param2+".nii.gz";
-        return cur_tracking_window.handle->save_mapping(param2.toStdString(),param.toStdString(),cur_tracking_window.v2c);
+        return cur_tracking_window.handle->save_mapping(param2.toStdString(),param.toStdString(),cur_tracking_window.current_slice->v2c);
     }
     return false;
 }
@@ -397,8 +397,7 @@ void slice_view_scene::show_slice(void)
             {
                 cur_tracking_window.current_slice->slice_pos[2] = z*skip;
                 tipl::color_image slice_image;
-                cur_tracking_window.current_slice->get_slice(slice_image,2,
-                        cur_tracking_window.v2c,cur_tracking_window.overlay_slice.get(),cur_tracking_window.overlay_v2c);
+                cur_tracking_window.current_slice->get_slice(slice_image,2,cur_tracking_window.overlay_slices);
 
                 cur_tracking_window.regionWidget->draw_region(slice_image);
                 tipl::vector<2,int> pos(geometry[0]*(z%mosaic_size),

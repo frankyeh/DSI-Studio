@@ -771,10 +771,6 @@ void tracking_window::change_contrast()
         return;
     current_slice->set_contrast_range(ui->min_value_gl->value(),ui->max_value_gl->value());
     current_slice->set_contrast_color(ui->min_color_gl->color().rgb(),ui->max_color_gl->color().rgb());
-    v2c.set_range(ui->min_value_gl->value(),ui->max_value_gl->value());
-    v2c.two_color(ui->min_color_gl->color().rgb(),ui->max_color_gl->color().rgb());
-    if(current_slice == overlay_slice)
-        overlay_v2c = v2c;
     glWidget->slice_pos[0] = glWidget->slice_pos[1] = glWidget->slice_pos[2] = -1;
     glWidget->updateGL();
     scene.show_slice();
@@ -1748,9 +1744,7 @@ void tracking_window::on_actionLoad_Color_Map_triggered()
           QMessageBox::information(this,"Error","Invalid color map format");
           return;
     }
-    v2c.set_color_map(new_color_map);
-    if(current_slice == overlay_slice)
-        overlay_v2c = v2c;
+    current_slice->v2c.set_color_map(new_color_map);
     glWidget->slice_pos[0] = glWidget->slice_pos[1] = glWidget->slice_pos[2] = -1;
     glWidget->updateGL();
     scene.show_slice();
@@ -1872,13 +1866,15 @@ void tracking_window::on_actionStereoscopic_triggered()
 
 void tracking_window::on_is_overlay_clicked()
 {
-    if(ui->is_overlay->isChecked())
-    {
-        overlay_slice = current_slice;
-        overlay_v2c = v2c;
-    }
+    current_slice->is_overlay = (ui->is_overlay->isChecked());
+    if(current_slice->is_overlay)
+        overlay_slices.push_back(current_slice);
     else
-        overlay_slice.reset();
+    {
+        for(size_t index = 0;index < overlay_slices.size();++index)
+            if(current_slice == overlay_slices[index])
+                overlay_slices.erase(overlay_slices.begin()+int64_t(index));
+    }
 }
 
 
@@ -2064,7 +2060,7 @@ void tracking_window::on_SliceModality_currentIndexChanged(int index)
     current_slice = slices[index];
 
 
-    ui->is_overlay->setChecked(current_slice == overlay_slice);
+    ui->is_overlay->setChecked(current_slice->is_overlay);
     ui->glSagSlider->setRange(0,current_slice->geometry[0]-1);
     ui->glCorSlider->setRange(0,current_slice->geometry[1]-1);
     ui->glAxiSlider->setRange(0,current_slice->geometry[2]-1);
@@ -2092,10 +2088,6 @@ void tracking_window::on_SliceModality_currentIndexChanged(int index)
 
     ui->min_value_gl->setValue(contrast_range.first);
     ui->max_value_gl->setValue(contrast_range.second);
-
-
-    v2c.set_range(ui->min_value_gl->value(),ui->max_value_gl->value());
-    v2c.two_color(ui->min_color_gl->color().rgb(),ui->max_color_gl->color().rgb());
 
     if(!current_slice->is_diffusion_space)
         slice_position.to(current_slice->invT);
