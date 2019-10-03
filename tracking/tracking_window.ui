@@ -3471,17 +3471,17 @@ Tracking</string>
   </action>
   <action name="actionMark_Region_on_T1W_T2W">
    <property name="text">
-    <string>Mark Region on T1W/T2W</string>
+    <string>Mark Region on Slices</string>
    </property>
   </action>
   <action name="actionMark_Tracts_on_T1W_T2W">
    <property name="text">
-    <string>Mark Tracts on T1W/T2W</string>
+    <string>Mark Tracts on Slices</string>
    </property>
   </action>
   <action name="actionSave_T1W_T2W_images">
    <property name="text">
-    <string>Save T1W/T2W images...</string>
+    <string>Save Slices as...</string>
    </property>
   </action>
   <action name="actionUpsample_Slices_by_2">

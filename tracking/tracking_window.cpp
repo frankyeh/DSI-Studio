@@ -2195,3 +2195,4 @@ void tracking_window::on_actionUpsample_Slices_by_2_triggered()
     slice->initialize();
     on_SliceModality_currentIndexChanged(ui->SliceModality->currentIndex());
 }
+
