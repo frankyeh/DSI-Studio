@@ -224,7 +224,7 @@ void group_connectometry_analysis::save_tracks_files(void)
                         break;
                     }
             }
-            for(int dis = 1;pos_corr_track->get_visible_track_count() > 10000;++dis)
+            for(double dis = 1.0;pos_corr_track->get_visible_track_count() > seed_count;dis+=0.5)
                 pos_corr_track->delete_repeated(dis);
             std::ostringstream out1;
             out1 << output_file_name << ".pos_corr.trk.gz";
@@ -256,9 +256,8 @@ void group_connectometry_analysis::save_tracks_files(void)
                         break;
                     }
             }
-            for(int dis = 1;neg_corr_track->get_visible_track_count() > 10000;++dis)
+            for(double dis = 1.0;neg_corr_track->get_visible_track_count() > seed_count;dis+=0.5)
                 neg_corr_track->delete_repeated(dis);
-
             std::ostringstream out1;
             out1 << output_file_name << ".neg_corr.trk.gz";
             neg_corr_track->save_tracts_to_file(out1.str().c_str());
@@ -330,7 +329,7 @@ void group_connectometry_analysis::run_permutation(unsigned int thread_count,uns
             }
             out << " in a total of " << model->subject_index.size() << " subjects. ";
             out << " A T-score threshold of " << tracking_threshold;
-            out << " was assigned to select local connectomes, and the local connectomes were tracked using a deterministic fiber tracking algorithm (Yeh et al. PLoS ONE 8(11): e80713, 2013).";
+            out << " was assigned and tracked using a deterministic fiber tracking algorithm (Yeh et al. PLoS ONE 8(11): e80713, 2013) to obtain correlation tractography.";
         }
 
         if(normalize_qa)

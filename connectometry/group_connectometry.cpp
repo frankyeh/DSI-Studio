@@ -129,6 +129,8 @@ group_connectometry::group_connectometry(QWidget *parent,std::shared_ptr<group_c
     ui->subject_demo->setRowCount(vbc->handle->db.num_subjects);
     for(unsigned int row = 0;row < ui->subject_demo->rowCount();++row)
         ui->subject_demo->setItem(row,0,new QTableWidgetItem(QString(vbc->handle->db.subject_names[row].c_str())));
+
+    ui->advanced_options->setCurrentIndex(0);
 }
 
 group_connectometry::~group_connectometry()
@@ -365,7 +367,7 @@ std::string group_connectometry::get_cohort_list(std::set<size_t,std::greater<si
     ui->subject_demo->setUpdatesEnabled(false);
     for(size_t i = 0;i < excluded.size();++i)
         for(size_t j = 0;j < ui->subject_demo->columnCount();++j)
-            ui->subject_demo->item(i,j)->setBackgroundColor(excluded[i] ? Qt::white : Qt::blue);
+            ui->subject_demo->item(i,j)->setBackgroundColor(excluded[i] ? Qt::white : QColor(255,255,200));
     ui->subject_demo->setUpdatesEnabled(true);
     ui->cohort_text->setText(QString("%1 subjects selected").arg(excluded.size()-remove_list.size()));
     return cohort_text;
