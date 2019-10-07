@@ -657,7 +657,7 @@ bool RegionTableWidget::load_multiple_roi_nii(QString file_name)
             region.LoadFromBuffer(from);
 
         unsigned int color = 0;
-        unsigned char type = roi_id;
+        unsigned int type = roi_id;
 
         try{
             std::vector<std::string> info;

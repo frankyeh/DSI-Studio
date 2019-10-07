@@ -195,11 +195,10 @@ void ROIRegion::SaveToFile(const char* FileName)
             tipl::multiply_constant(&T[8],&T[8]+3,1.0/resolution_ratio);
         }
         std::ostringstream out;
-        out << "color=" << color << ";roi=" << (int)regions_feature;
+        out << "color=" << (int)color << ";roi=" << (int)regions_feature;
         std::string tmp = out.str();
         if(tmp.size() < 80)
             tmp.resize(80);
-
         gz_nifti::save_to_file(FileName,mask,rvs,T,tmp.c_str());
 
     }
