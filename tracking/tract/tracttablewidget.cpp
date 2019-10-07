@@ -473,6 +473,23 @@ void TractTableWidget::auto_recognition(void)
     load_cluster_label(c,Names);
     assign_colors();
 }
+void TractTableWidget::recognize_rename(void)
+{
+    if(!cur_tracking_window.tractography_atlas.get() && cur_tracking_window.ui->enable_auto_track->isVisible())
+        cur_tracking_window.on_enable_auto_track_clicked();
+    if(!cur_tracking_window.tractography_atlas.get())
+        return;
+
+    begin_prog("Recognize and rename");
+    for(unsigned int index = 0;check_prog(index,tract_models.size());++index)
+        if(item(index,0)->checkState() == Qt::Checked)
+        {
+            std::map<float,std::string,std::greater<float> > sorted_list;
+            if(!tract_models[index]->recognize(sorted_list,cur_tracking_window.tractography_atlas))
+                return;
+            item(index,0)->setText(sorted_list.begin()->second.c_str());
+        }
+}
 
 void TractTableWidget::clustering(int method_id)
 {
