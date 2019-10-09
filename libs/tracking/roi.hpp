@@ -84,6 +84,7 @@ public:
     std::vector<std::shared_ptr<Roi> > end;
     std::vector<std::shared_ptr<Roi> > exclusive;
     std::vector<std::shared_ptr<Roi> > terminate;
+    std::vector<std::shared_ptr<Roi> > no_end;
 public:
     std::shared_ptr<TractModel> atlas;
     unsigned int track_id = 0;
@@ -107,6 +108,10 @@ public:
     bool fulfill_end_point(const tipl::vector<3,float>& point1,
                            const tipl::vector<3,float>& point2) const
     {
+        for(unsigned int index = 0; index < no_end.size(); ++index)
+            if(no_end[index]->havePoint(point1) ||
+               no_end[index]->havePoint(point2))
+                return false;
         if(end.empty())
             return true;
         if(end.size() == 1)
@@ -206,6 +211,12 @@ public:
             for(unsigned int index = 0; index < points.size(); ++index)
                 terminate.back()->addPoint(points[index]);
             report += " A terminative region was placed at ";
+            break;
+        case 5: //No ending region
+            no_end.push_back(std::make_shared<Roi>(geo,r));
+            for(unsigned int index = 0; index < points.size(); ++index)
+                no_end.back()->addPoint(points[index]);
+            report += " A no ending region was placed at ";
             break;
         case 3: //seed
             for (unsigned int index = 0;index < points.size();++index)

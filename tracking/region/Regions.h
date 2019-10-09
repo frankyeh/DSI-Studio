@@ -15,6 +15,7 @@ const unsigned char roa_id = 1;
 const unsigned char end_id = 2;
 const unsigned char seed_id = 3;
 const unsigned char terminate_id = 4;
+const unsigned char not_ending_id = 5;
 
 class ROIRegion {
 public:
