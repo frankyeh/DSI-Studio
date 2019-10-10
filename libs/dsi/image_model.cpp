@@ -115,12 +115,9 @@ void ImageModel::flip_b_table(const unsigned char* order)
 }
 void ImageModel::pre_dti(void)
 {
-    bool output_dif = voxel.output_diffusivity;
     bool output_tensor = voxel.output_tensor;
-    voxel.output_diffusivity = true;
     voxel.output_tensor = false;
     reconstruct<check_btable_process>("Checking b-table");
-    voxel.output_diffusivity = output_dif;
     voxel.output_tensor = output_tensor;
 }
 

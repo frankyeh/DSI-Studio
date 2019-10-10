@@ -42,9 +42,8 @@ public:
     void read_db(fib_data* handle);
     void remove_subject(unsigned int index);
     void calculate_si2vi(void);
-    bool sample_odf(gz_mat_read& m,std::vector<float>& data);
-    bool sample_index(gz_mat_read& m,std::vector<float>& data,const char* index_name);
-    bool is_consistent(gz_mat_read& m);
+    bool sample_subject_profile(gz_mat_read& m,std::vector<float>& data);
+    bool is_odf_consistent(gz_mat_read& m);
     bool add_subject_file(const std::string& file_name,
                             const std::string& subject_name);
     void get_subject_vector_pos(std::vector<int>& subject_vector_pos,

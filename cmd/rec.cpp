@@ -136,9 +136,6 @@ int rec(void)
     handle->voxel.odf_resolving = po.get("odf_resolving",int(0));
     handle->voxel.output_odf = po.get("record_odf",int(0));
     handle->voxel.check_btable = po.get("check_btable",int(1));
-    handle->voxel.output_jacobian = po.get("output_jac",int(0));
-    handle->voxel.output_mapping = po.get("output_map",int(0));
-    handle->voxel.output_diffusivity = po.get("output_dif",int(1));
     handle->voxel.output_tensor = po.get("output_tensor",int(0));
     handle->voxel.output_rdi = po.get("output_rdi",int(1)) && (method_index == 4 || method_index == 7);
     handle->voxel.max_fiber_number = uint32_t(po.get("num_fiber",int(5)));
@@ -177,7 +174,7 @@ int rec(void)
                 std::cout << "Invalid command: " << file_list[i].toStdString() << std::endl;
                 return 1;
             }
-            if(!add_other_image(handle.get(),name_value[0],name_value[1],true))
+            if(!add_other_image(handle.get(),name_value[0],name_value[1]))
                 return 1;
         }
     }

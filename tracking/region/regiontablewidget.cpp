@@ -545,6 +545,33 @@ void get_roi_label(QString file_name,std::map<int,std::string>& label_map,
         std::cout << "No label file found. Use default ROI numbering." << std::endl;
 }
 bool is_label_image(const tipl::image<float,3>& I);
+bool qsdr_convert_native(std::shared_ptr<fib_data> handle,tipl::image<unsigned int, 3>& from)
+{
+    if(from.geometry() != handle->dim && handle->is_qsdr)// use transformation information
+    {
+        tipl::image<unsigned int, 3> new_from;
+        if(!handle->native_position.empty())
+        for(unsigned int index = 0;index < handle->view_item.size();++index)
+            if(handle->view_item[index].native_geo == from.geometry())
+            {
+                auto T = handle->view_item[index].native_trans;
+                new_from.resize(handle->dim);
+                for(size_t i = 0;i < new_from.size();++i)
+                {
+                    auto pos = handle->native_position[i];
+                    T(pos);
+                    tipl::estimate(from,pos,new_from[i],tipl::nearest);
+                }
+                break;
+            }
+            if(!new_from.empty())
+            {
+                new_from.swap(from);
+                return true;
+            }
+    }
+    return false;
+}
 bool RegionTableWidget::load_multiple_roi_nii(QString file_name)
 {
     gz_nifti header;
@@ -608,6 +635,8 @@ bool RegionTableWidget::load_multiple_roi_nii(QString file_name)
         }
     }
 
+    qsdr_convert_native(cur_tracking_window.handle,from);
+
     if(from.geometry() != cur_tracking_window.handle->dim)
     {
         float r1 = float(from.width())/float(cur_tracking_window.handle->dim[0]);
@@ -616,35 +645,13 @@ bool RegionTableWidget::load_multiple_roi_nii(QString file_name)
         if(std::fabs(r1-r2) < 0.02f && std::fabs(r1-r3) < 0.02f)
             has_transform = false;
         else
-        if(cur_tracking_window.handle->is_qsdr && !has_transform)// use transformation information
+        if(cur_tracking_window.handle->is_qsdr)// use transformation information
         {
-            // searching QSDR mappings
-            tipl::image<unsigned int, 3> new_from;
-            for(unsigned int index = 0;index < cur_tracking_window.handle->view_item.size();++index)
-                if(cur_tracking_window.handle->view_item[index].native_geo == from.geometry())
-                {
-                    new_from.resize(cur_tracking_window.handle->dim);
-                    for(tipl::pixel_index<3> pos(new_from.geometry());pos < new_from.size();++pos)
-                    {
-                        tipl::vector<3> new_pos(cur_tracking_window.handle->view_item[index].mx[pos.index()],
-                                                 cur_tracking_window.handle->view_item[index].my[pos.index()],
-                                                 cur_tracking_window.handle->view_item[index].mz[pos.index()]);
-                        new_pos.round();
-                        new_from[pos.index()] = from.at(uint32_t(new_pos[0]),uint32_t(new_pos[1]),uint32_t(new_pos[2]));
-                    }
-                    break;
-                }
-
-            if(new_from.empty())
-            {
-                QMessageBox::information(this,"Warning","The nii file has different image dimension. Transformation will be applied to load the region",0);
-                header.get_image_transformation(convert);
-                convert.inv();
-                convert *= cur_tracking_window.handle->trans_to_mni;
-                has_transform = true;
-            }
-            else
-                new_from.swap(from);
+            QMessageBox::information(this,"Warning","The nii file has different image dimension. Transformation will be applied to load the region",0);
+            header.get_image_transformation(convert);
+            convert.inv();
+            convert *= cur_tracking_window.handle->trans_to_mni;
+            has_transform = true;
         }
     }
 

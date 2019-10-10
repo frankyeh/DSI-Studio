@@ -120,8 +120,8 @@ struct item
     unsigned int min_color = 0;
     // used in QSDR
     tipl::image<unsigned int,3> color_map_buf;
-    tipl::const_pointer_image<float,3> mx,my,mz;
     tipl::geometry<3> native_geo;
+    tipl::transformation_matrix<double> native_trans;
 
 
     template<class input_iterator>
@@ -160,6 +160,8 @@ public:
     int prog;
     tipl::matrix<4,4,float> trans_to_mni;
     tipl::image<tipl::vector<3,float>,3 > mni_position,inv_mni_position;
+public:
+    tipl::geometry<3> native_geo;
     tipl::image<tipl::vector<3,float>,3 > native_position;
 public:
     int template_id = 0;

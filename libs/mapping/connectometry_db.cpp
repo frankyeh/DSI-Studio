@@ -219,53 +219,131 @@ void connectometry_db::calculate_si2vi(void)
     }
     subject_qa_length = handle->dir.num_fiber*si2vi.size();
 }
-bool connectometry_db::sample_odf(gz_mat_read& m,std::vector<float>& data)
+
+size_t convert_index(size_t old_index,
+                     const tipl::geometry<3>& from_geo,
+                     const tipl::geometry<3>& to_geo,
+                     float ratio,
+                     const tipl::vector<3>& shift)
 {
-    odf_data subject_odf;
-    if(!subject_odf.read(m))
-        return false;
-    set_title("Loading Data");
-    for(unsigned int index = 0;index < si2vi.size();++index)
+    tipl::pixel_index<3> pos(old_index,from_geo);
+    tipl::vector<3> v(pos);
+    if(ratio != 1.0f)
+        v *= ratio;
+    v += shift;
+    v.round();
+    tipl::pixel_index<3> new_pos(v[0],v[1],v[2],to_geo);
+    return new_pos.index();
+}
+
+bool connectometry_db::sample_subject_profile(gz_mat_read& m,std::vector<float>& data)
+{
+    bool trans_consistent = true;
+    float ratio = 1.0f;
+    tipl::vector<3> shift;
+    tipl::geometry<3> subject_dim;
     {
-        unsigned int cur_index = si2vi[index];
-        const float* odf = subject_odf.get_odf_data(cur_index);
-        if(odf == 0)
-            continue;
-        float min_value = *std::min_element(odf, odf + handle->dir.half_odf_size);
-        unsigned int pos = index;
-        for(unsigned char i = 0;i < handle->dir.num_fiber;++i,pos += (unsigned int)si2vi.size())
+        tipl::matrix<4,4,float> subject_trans;
+        const float* trans = nullptr;
+        unsigned int row,col;
+        if(!m.read("trans",row,col,trans))
         {
-            if(handle->dir.fa[i][cur_index] == 0.0)
-                break;
-            // 0: subject index 1:findex by s_index (fa > 0)
-            data[pos] = odf[handle->dir.findex[i][cur_index]]-min_value;
+            handle->error_msg = "Not a QSDR reconstructed file: ";
+            return false;
+        }
+        std::copy(trans,trans+16,subject_trans.begin());
+        const unsigned short* dim = nullptr;
+        if(!m.read("dimension",row,col,dim))
+        {
+            handle->error_msg = "Invalid FIB format: ";
+            return false;
+        }
+        std::copy(dim,dim+3,subject_dim.begin());
+        if(subject_dim != handle->dim)
+            trans_consistent = false;
+        for(int i = 0; i < 16;++i)
+            if(subject_trans[i] != handle->trans_to_mni[i])
+                trans_consistent = false;
+        if(!trans_consistent)
+        {
+            ratio = std::fabs(handle->trans_to_mni[0])/std::fabs(subject_trans[0]);
+            shift = tipl::vector<3>(handle->trans_to_mni[3]-subject_trans[3],
+                                    handle->trans_to_mni[7]-subject_trans[7],
+                                    handle->trans_to_mni[11]-subject_trans[11]);
+            shift /= std::fabs(subject_trans[0]);
         }
     }
-    return true;
-}
-bool connectometry_db::sample_index(gz_mat_read& m,std::vector<float>& data,const char* index_name)
-{
-    const float* index_of_interest = 0;
-    unsigned int row,col;
-    if(!m.read(index_name,row,col,index_of_interest))
-        return false;
-    for(unsigned int index = 0;index < si2vi.size();++index)
+
+
+    if(index_name == "qa" || index_name.empty())
     {
-        unsigned int cur_index = si2vi[index];
-        unsigned int pos = index;
-        for(unsigned char i = 0;i < handle->dir.num_fiber;++i,pos += (unsigned int)si2vi.size())
+        if(!is_odf_consistent(m))
+            return false;
+        odf_data subject_odf;
+        if(!subject_odf.read(m))
         {
-            if(handle->dir.fa[i][cur_index] == 0.0)
-                break;
-            data[pos] = index_of_interest[cur_index];
+            handle->error_msg = "Failed to read odf at ";
+            return false;
         }
+        set_title("Loading Data");
+        tipl::par_for(si2vi.size(),[&](unsigned int index)
+        {
+            unsigned int cur_index = si2vi[index];
+            unsigned int subject_index = trans_consistent ? cur_index:
+                                                            convert_index(cur_index,handle->dim,subject_dim,ratio,shift);
+
+            if(subject_index >= subject_dim.size())
+                return;
+            const float* odf = subject_odf.get_odf_data(subject_index);
+            if(odf == nullptr)
+                return;
+            float min_value = *std::min_element(odf, odf + handle->dir.half_odf_size);
+            unsigned int pos = index;
+            for(unsigned char i = 0;i < handle->dir.num_fiber;++i,pos += uint32_t(si2vi.size()))
+            {
+                if(handle->dir.fa[i][cur_index] == 0.0f)
+                    break;
+                // 0: subject index 1:findex by s_index (fa > 0)
+                data[pos] = odf[handle->dir.findex[i][cur_index]]-min_value;
+            }
+        });
+        return true;
     }
-    return true;
+    else
+    {
+        const float* index_of_interest = nullptr;
+        unsigned int row,col;
+        if(!m.read(index_name.c_str(),row,col,index_of_interest))
+        {
+            handle->error_msg = "Failed to sample ";
+            handle->error_msg += index_name;
+            handle->error_msg += " at ";
+            return false;
+        }
+        tipl::par_for(si2vi.size(),[&](unsigned int index)
+        {
+            unsigned int cur_index = si2vi[index];
+            if(handle->dir.fa[0][cur_index] == 0.0f)
+                return;
+            unsigned int subject_index = trans_consistent ? cur_index:
+                                                            convert_index(cur_index,handle->dim,subject_dim,ratio,shift);
+            if(subject_index >= subject_dim.size())
+                return;
+            unsigned int pos = index;
+            for(unsigned char i = 0;i < handle->dir.num_fiber;++i,pos += uint32_t(si2vi.size()))
+            {
+                if(handle->dir.fa[i][cur_index] == 0.0f)
+                    break;
+                data[pos] = index_of_interest[subject_index];
+            }
+        });
+        return true;
+    }
 }
-bool connectometry_db::is_consistent(gz_mat_read& m)
+bool connectometry_db::is_odf_consistent(gz_mat_read& m)
 {
     unsigned int row,col;
-    const float* odf_buffer = 0;
+    const float* odf_buffer = nullptr;
     m.read("odf_vertices",row,col,odf_buffer);
     if (!odf_buffer)
     {
@@ -287,6 +365,7 @@ bool connectometry_db::is_consistent(gz_mat_read& m)
             return false;
         }
     }
+    /*
     const float* voxel_size = 0;
     m.read("voxel_size",row,col,voxel_size);
     if(!voxel_size)
@@ -300,7 +379,7 @@ bool connectometry_db::is_consistent(gz_mat_read& m)
         out << "Inconsistency in image resolution. Please use a correct atlas. The atlas resolution (" << handle->vs[0] << " mm) is different from that in ";
         handle->error_msg = out.str();
         return false;
-    }
+    }*/
     return true;
 }
 bool connectometry_db::add_subject_file(const std::string& file_name,
@@ -314,33 +393,13 @@ bool connectometry_db::add_subject_file(const std::string& file_name,
         return false;
     }
     std::vector<float> new_subject_qa(subject_qa_length);
-    if(index_name == "qa" || index_name.empty())
+    if(!sample_subject_profile(m,new_subject_qa))
     {
-        if(!is_consistent(m))
-        {
-            handle->error_msg += file_name;
-            return false;
-        }
-        if(!sample_odf(m,new_subject_qa))
-        {
-            handle->error_msg = "Failed to read odf ";
-            handle->error_msg += file_name;
-            return false;
-        }
-    }
-    else
-    {
-        if(!sample_index(m,new_subject_qa,index_name.c_str()))
-        {
-            handle->error_msg = "Failed to sample ";
-            handle->error_msg += index_name;
-            handle->error_msg += " in ";
-            handle->error_msg += file_name;
-            return false;
-        }
+        handle->error_msg += file_name;
+        return false;
     }
     // load R2
-    const float* value= 0;
+    const float* value= nullptr;
     unsigned int row,col;
     m.read("R2",row,col,value);
     if(!value || *value != *value)
@@ -633,16 +692,14 @@ bool connectometry_db::get_odf_profile(const char* file_name,std::vector<float>&
         handle->error_msg = "fail to load the fib file";
         return false;
     }
-    if(!is_consistent(single_subject))
-        return false;
     cur_subject_data.clear();
     cur_subject_data.resize(handle->dir.num_fiber*si2vi.size());
-    if(!sample_odf(single_subject,cur_subject_data))
+    if(!sample_subject_profile(single_subject,cur_subject_data))
     {
         handle->error_msg += file_name;
         return false;
     }
-    const char* report_buf = 0;
+    const char* report_buf = nullptr;
     unsigned int row,col;
     if(single_subject.read("report",row,col,report_buf))
         subject_report = std::string(report_buf,report_buf+row*col);
@@ -656,7 +713,7 @@ bool connectometry_db::get_qa_profile(const char* file_name,std::vector<std::vec
         handle->error_msg = "fail to load the fib file";
         return false;
     }
-    if(!is_consistent(single_subject))
+    if(!is_odf_consistent(single_subject))
         return false;
     odf_data subject_odf;
     if(!subject_odf.read(single_subject))

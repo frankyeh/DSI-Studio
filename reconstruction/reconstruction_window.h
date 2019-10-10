@@ -12,7 +12,7 @@ namespace Ui {
 }
 
 struct ImageModel;
-bool add_other_image(ImageModel* handle,QString name,QString filename,bool full_auto);
+bool add_other_image(ImageModel* handle,QString name,QString filename);
 class reconstruction_window : public QMainWindow
 {
     Q_OBJECT

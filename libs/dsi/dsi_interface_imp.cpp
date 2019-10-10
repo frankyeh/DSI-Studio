@@ -97,8 +97,6 @@ const char* ImageModel::reconstruction(void)
         if(voxel.method_id == 1) // DTI
         {
             voxel.output_odf = 0;
-            voxel.output_jacobian = 0;
-            voxel.output_mapping = 0;
             voxel.scheme_balance = 0;
             voxel.half_sphere = 0;
             voxel.odf_resolving = 0;
@@ -223,10 +221,6 @@ const char* ImageModel::reconstruction(void)
             out << "." << QFileInfo(voxel.primary_template.c_str()).baseName().toLower().toStdString();
             out << (voxel.r2_weighted ? ".qsdr2.":".qsdr.");
             out << voxel.param[0];
-            if(voxel.output_jacobian)
-                out << ".jac";
-            if(voxel.output_mapping)
-                out << ".map";
             // obtain QA map for normalization
             {
                 std::vector<tipl::pointer_image<float,3> > tmp;

@@ -31,25 +31,25 @@ public:
         voxel.fib_fa.resize(voxel.dim);
         voxel.fib_dir.clear();
         voxel.fib_dir.resize(voxel.dim.size());
-        if(voxel.output_diffusivity || voxel.method_id == 1)
+        md.resize(voxel.dim.size());
+        d0.resize(voxel.dim.size());
+        d1.resize(voxel.dim.size());
+        d2.resize(voxel.dim.size());
+        d3.resize(voxel.dim.size());
+        if(voxel.method_id == 1)
         {
-            md.resize(voxel.dim.size());
-            d0.resize(voxel.dim.size());
-            d1.resize(voxel.dim.size());
-            d2.resize(voxel.dim.size());
-            d3.resize(voxel.dim.size());
-            ha.resize(voxel.dim.size());
+            if(voxel.output_helix_angle)
+                ha.resize(voxel.dim.size());
+            if(voxel.output_tensor)
+            {
+                txx.resize(voxel.dim.size());
+                txy.resize(voxel.dim.size());
+                txz.resize(voxel.dim.size());
+                tyy.resize(voxel.dim.size());
+                tyz.resize(voxel.dim.size());
+                tzz.resize(voxel.dim.size());
+            }
         }
-        if(voxel.output_tensor && voxel.method_id == 1)
-        {
-            txx.resize(voxel.dim.size());
-            txy.resize(voxel.dim.size());
-            txz.resize(voxel.dim.size());
-            tyy.resize(voxel.dim.size());
-            tyz.resize(voxel.dim.size());
-            tzz.resize(voxel.dim.size());
-        }
-
         b_count = uint32_t(voxel.bvalues.size()-1);
         std::vector<tipl::vector<3> > b_data(b_count);
         //skip b0
@@ -98,8 +98,6 @@ public:
 public:
     virtual void run(Voxel& voxel, VoxelData& data)
     {
-        if(!voxel.output_diffusivity && voxel.method_id != 1)
-            return;
         std::vector<float> signal(data.space.size());
         if (data.space.front() != 0.0f)
         {
@@ -140,24 +138,27 @@ public:
         }
         std::copy(V,V+3,voxel.fib_dir[data.voxel_index].begin());
         data.fa[0] = voxel.fib_fa[data.voxel_index] = get_fa(float(d[0]),float(d[1]),float(d[2]));
-        if(voxel.output_diffusivity || voxel.method_id == 1)
         {
             md[data.voxel_index] = 1000.0f*float(d[0]+d[1]+d[2])/3.0f;
             d0[data.voxel_index] = 1000.0f*float(d[0]);
             d2[data.voxel_index] = 1000.0f*float(d[1]);
             d3[data.voxel_index] = 1000.0f*float(d[2]);
             d1[data.voxel_index] = 1000.0f*float(d[1]+d[2])/2.0f;
+
+        }
+        if(voxel.method_id == 1) // DTI
+        {
             if(voxel.output_helix_angle)
                 ha[data.voxel_index] = float(std::acos(std::sqrt(V[0]*V[0]+V[1]*V[1]))*180.0/3.14159265358979323846);
-        }
-        if(voxel.output_tensor && voxel.method_id == 1)
-        {
-            txx[data.voxel_index] = float(tensor[0]);
-            txy[data.voxel_index] = float(tensor[1]);
-            txz[data.voxel_index] = float(tensor[2]);
-            tyy[data.voxel_index] = float(tensor[4]);
-            tyz[data.voxel_index] = float(tensor[5]);
-            tzz[data.voxel_index] = float(tensor[8]);
+            if(voxel.output_tensor)
+            {
+                txx[data.voxel_index] = float(tensor[0]);
+                txy[data.voxel_index] = float(tensor[1]);
+                txz[data.voxel_index] = float(tensor[2]);
+                tyy[data.voxel_index] = float(tensor[4]);
+                tyz[data.voxel_index] = float(tensor[5]);
+                tzz[data.voxel_index] = float(tensor[8]);
+            }
         }
 
     }
@@ -175,19 +176,18 @@ public:
                 mat_writer.write("tyy",tyy,uint32_t(voxel.dim.plane_size()));
                 mat_writer.write("tyz",tyz,uint32_t(voxel.dim.plane_size()));
                 mat_writer.write("tzz",tzz,uint32_t(voxel.dim.plane_size()));
+                mat_writer.write("rd1",d2,uint32_t(voxel.dim.plane_size()));
+                mat_writer.write("rd2",d3,uint32_t(voxel.dim.plane_size()));
             }
+            if(voxel.output_helix_angle)
+                mat_writer.write("ha",ha,uint32_t(voxel.dim.plane_size()));
         }
-        if(voxel.output_diffusivity || voxel.method_id == 1)
         {
             if(voxel.method_id != 1) // DTI
                 mat_writer.write("dti_fa",voxel.fib_fa,uint32_t(voxel.dim.plane_size()));
             mat_writer.write("md",md,uint32_t(voxel.dim.plane_size()));
             mat_writer.write("ad",d0,uint32_t(voxel.dim.plane_size()));
             mat_writer.write("rd",d1,uint32_t(voxel.dim.plane_size()));
-            mat_writer.write("rd1",d2,uint32_t(voxel.dim.plane_size()));
-            mat_writer.write("rd2",d3,uint32_t(voxel.dim.plane_size()));
-            if(voxel.output_helix_angle)
-                mat_writer.write("ha",ha,uint32_t(voxel.dim.plane_size()));
         }
 
     }

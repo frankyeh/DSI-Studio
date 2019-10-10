@@ -755,33 +755,22 @@ bool fib_data::load_from_mat(void)
     }
 
     {
-        const float* mx = nullptr;
-        const float* my = nullptr;
-        const float* mz = nullptr;
-        if(!is_qsdr &&
-           mat_reader.read("mni_x",row,col,mx) &&
-           mat_reader.read("mni_y",row,col,my) &&
-           mat_reader.read("mni_z",row,col,mz))
+        const float* mapping = nullptr;
+        if(!is_qsdr && mat_reader.read("mapping",row,col,mapping))
         {
             mni_position.resize(dim);
-            for(int i = 0;i < dim.size();++i)
-            {
-                mni_position[i][0] = mx[i];
-                mni_position[i][1] = my[i];
-                mni_position[i][2] = mz[i];
-            }
+            std::copy(mapping,mapping+col*row,&mni_position[0][0]);
         }
-        if(is_qsdr &&
-           mat_reader.read("native_x",row,col,mx) &&
-           mat_reader.read("native_y",row,col,my) &&
-           mat_reader.read("native_z",row,col,mz))
+        if(is_qsdr && mat_reader.read("mapping",row,col,mapping))
         {
             native_position.resize(dim);
-            for(int i = 0;i < dim.size();++i)
+            std::copy(mapping,mapping+col*row,&native_position[0][0]);
+            const unsigned short* native_dim = nullptr;
+            if(mat_reader.read("native_dimension",row,col,native_dim))
             {
-                native_position[i][0] = mx[i];
-                native_position[i][1] = my[i];
-                native_position[i][2] = mz[i];
+                native_geo[0] = native_dim[0];
+                native_geo[1] = native_dim[1];
+                native_geo[2] = native_dim[2];
             }
         }
     }
@@ -790,25 +779,21 @@ bool fib_data::load_from_mat(void)
     if(is_qsdr && !view_item.empty())
     {
         unsigned int row,col;
-        const float* mx = nullptr;
-        const float* my = nullptr;
-        const float* mz = nullptr;
-        const short* native_geo = 0;
+        const short* dim = nullptr;
+        const float* native_trans = nullptr;
         for(unsigned int i = 0; i < view_item.size();++i)
         {
             std::string name;
             if(i)
                 name = view_item[i].name;
-            if(mat_reader.read((name+"_x").c_str(),row,col,mx) &&
-               mat_reader.read((name+"_y").c_str(),row,col,my) &&
-               mat_reader.read((name+"_z").c_str(),row,col,mz) &&
-                 mat_reader.read((name+"_d").c_str(),row,col,native_geo))
-            {
-                view_item[i].mx = tipl::make_image(mx,dim);
-                view_item[i].my = tipl::make_image(my,dim);
-                view_item[i].mz = tipl::make_image(mz,dim);
-                view_item[i].native_geo = tipl::geometry<3>(native_geo[0],native_geo[1],native_geo[2]);
-            }
+            if(mat_reader.read((name+"_dimension").c_str(),row,col,dim))
+                view_item[i].native_geo = tipl::geometry<3>(dim[0],dim[1],dim[2]);
+            else
+                view_item[i].native_geo = this->native_geo;
+            if(mat_reader.read((name+"_trans").c_str(),row,col,native_trans))
+                std::copy(native_trans,native_trans+12,view_item[i].native_trans.get());
+            else
+                view_item[i].native_trans.sr[0] = view_item[i].native_trans.sr[4] = view_item[i].native_trans.sr[8] = 1.0f;
         }
     }
     is_human_data = is_human_size(dim,vs); // 1 percentile head size in mm

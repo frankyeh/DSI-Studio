@@ -30,16 +30,16 @@ bool reconstruction_window::load_src(int index)
         check_prog(0,0);
         return false;
     }
-    float m = (float)*std::max_element(handle->src_dwi_data[0],handle->src_dwi_data[0]+handle->voxel.dim.size());
-    float otsu = tipl::segmentation::otsu_threshold(tipl::make_image(handle->src_dwi_data[0],handle->voxel.dim));
-    ui->max_value->setMaximum(m*1.5f);
-    ui->max_value->setMinimum(0.0f);
-    ui->max_value->setSingleStep(m*0.05f);
-    ui->max_value->setValue(otsu*3.0f);
-    ui->min_value->setMaximum(m*1.5f);
-    ui->min_value->setMinimum(0.0f);
-    ui->min_value->setSingleStep(m*0.05f);
-    ui->min_value->setValue(0.0f);
+    double m = double(*std::max_element(handle->src_dwi_data[0],handle->src_dwi_data[0]+handle->voxel.dim.size()));
+    double otsu = double(tipl::segmentation::otsu_threshold(tipl::make_image(handle->src_dwi_data[0],handle->voxel.dim)));
+    ui->max_value->setMaximum(m*1.5);
+    ui->max_value->setMinimum(0.0);
+    ui->max_value->setSingleStep(m*0.05);
+    ui->max_value->setValue(otsu*3.0);
+    ui->min_value->setMaximum(m*1.5);
+    ui->min_value->setMinimum(0.0);
+    ui->min_value->setSingleStep(m*0.05);
+    ui->min_value->setValue(0.0);
     load_b_table();
     return true;
 }
@@ -106,9 +106,6 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
     ui->ODFDim->setCurrentIndex(settings.value("odf_order",3).toInt());
 
     ui->RecordODF->setChecked(settings.value("rec_record_odf",0).toInt());
-    ui->output_jacobian->setChecked(settings.value("output_jacobian",0).toInt());
-    ui->output_mapping->setChecked(settings.value("output_mapping",0).toInt());
-    ui->output_diffusivity->setChecked(settings.value("output_diffusivity",1).toInt());
     ui->output_tensor->setChecked(settings.value("output_tensor",0).toInt());
     ui->output_helix_angle->setChecked(settings.value("output_helix_angle",0).toInt());
     ui->rdi->setChecked(settings.value("output_rdi",1).toInt());
@@ -267,9 +264,6 @@ void reconstruction_window::doReconstruction(unsigned char method_id,bool prompt
 
     settings.setValue("odf_resolving",ui->odf_resolving->isChecked() ? 1 : 0);
     settings.setValue("rec_record_odf",ui->RecordODF->isChecked() ? 1 : 0);
-    settings.setValue("output_jacobian",ui->output_jacobian->isChecked() ? 1 : 0);
-    settings.setValue("output_mapping",ui->output_mapping->isChecked() ? 1 : 0);
-    settings.setValue("output_diffusivity",ui->output_diffusivity->isChecked() ? 1 : 0);
     settings.setValue("output_tensor",ui->output_tensor->isChecked() ? 1 : 0);
     settings.setValue("output_helix_angle",ui->output_helix_angle->isChecked() ? 1 : 0);
 
@@ -286,9 +280,6 @@ void reconstruction_window::doReconstruction(unsigned char method_id,bool prompt
     handle->voxel.r2_weighted = ui->ODFDef->currentIndex();
     handle->voxel.output_odf = ui->RecordODF->isChecked();
     handle->voxel.check_btable = ui->check_btable->isChecked();
-    handle->voxel.output_jacobian = ui->output_jacobian->isChecked();
-    handle->voxel.output_mapping = ui->output_mapping->isChecked();
-    handle->voxel.output_diffusivity = ui->output_diffusivity->isChecked();
     handle->voxel.output_tensor = ui->output_tensor->isChecked();
     handle->voxel.output_helix_angle = ui->output_helix_angle->isChecked();
 
@@ -310,9 +301,13 @@ void reconstruction_window::doReconstruction(unsigned char method_id,bool prompt
     if(!handle->voxel.study_src_file_path.empty())
         handle->voxel.dt_deform = ui->dt_deform->isChecked();
 
-    tipl::geometry<3> dim_backup = handle->voxel.dim; // for QSDR
+    auto dim_backup = handle->voxel.dim; // for QSDR
+    auto vs = handle->voxel.vs; // for QSDR
     const char* msg = handle->reconstruction();
     handle->voxel.dim = dim_backup;
+    handle->voxel.vs = vs;
+    if(method_id == 7) // QSDR
+        handle->voxel.calculate_mask(handle->dwi_sum);
     if (!QFileInfo(msg).exists())
     {
         QMessageBox::information(this,"error",msg,0);
@@ -414,12 +409,8 @@ void reconstruction_window::on_DTI_toggled(bool checked)
 
     ui->AdvancedOptions->setVisible(checked);
     ui->ODFOption->setVisible(!checked);
-    ui->output_mapping->setVisible(!checked);
-    ui->output_jacobian->setVisible(!checked);
     ui->output_tensor->setVisible(checked);
     ui->output_helix_angle->setVisible(checked);
-
-    ui->output_diffusivity->setVisible(!checked);
 
     ui->RecordODF->setVisible(!checked);
     ui->rdi->setVisible(!checked);
@@ -439,11 +430,8 @@ void reconstruction_window::on_GQI_toggled(bool checked)
     ui->AdvancedOptions->setVisible(checked);
     ui->ODFOption->setVisible(checked);
 
-    ui->output_mapping->setVisible(!checked);
-    ui->output_jacobian->setVisible(!checked);
     ui->output_tensor->setVisible(!checked);
     ui->output_helix_angle->setVisible(!checked);
-    ui->output_diffusivity->setVisible(checked);
 
     ui->RecordODF->setVisible(checked);
 
@@ -464,12 +452,8 @@ void reconstruction_window::on_QSDR_toggled(bool checked)
     ui->AdvancedOptions->setVisible(checked);
     ui->ODFOption->setVisible(checked);
 
-    ui->output_mapping->setVisible(checked);
-    ui->output_jacobian->setVisible(checked);
     ui->output_tensor->setVisible(!checked);
     ui->output_helix_angle->setVisible(!checked);
-
-    ui->output_diffusivity->setVisible(checked);
 
     ui->RecordODF->setVisible(checked);
     ui->rdi->setVisible(checked);
@@ -724,17 +708,14 @@ void reconstruction_window::on_half_sphere_toggled(bool checked)
         ui->scheme_balance->setChecked(false);
 }
 
-bool add_other_image(ImageModel* handle,QString name,QString filename,bool full_auto)
+bool add_other_image(ImageModel* handle,QString name,QString filename)
 {
     tipl::image<float,3> ref;
     tipl::vector<3> vs;
     gz_nifti in;
     if(!in.load_from_file(filename.toLocal8Bit().begin()) || !in.toLPS(ref))
     {
-        if(full_auto)
-            std::cout << "Not a valid nifti file:" << filename.toStdString() << std::endl;
-        else
-            QMessageBox::information(0,"Error","Not a valid nifti file",0);
+        std::cout << "Not a valid nifti file:" << filename.toStdString() << std::endl;
         return false;
     }
     tipl::transformation_matrix<double> affine;
@@ -742,38 +723,25 @@ bool add_other_image(ImageModel* handle,QString name,QString filename,bool full_
     for(unsigned int index = 0;index < handle->voxel.other_image.size();++index)
         if(ref.geometry() == handle->voxel.other_image[index].geometry())
         {
-            affine = handle->voxel.other_image_affine[index];
+            affine = handle->voxel.other_image_trans[index];
             has_registered = true;
         }
     if(!has_registered && ref.geometry() != handle->voxel.dim)
     {
         in.get_voxel_size(vs);
-        if(full_auto)
-        {
-            std::cout << "add " << filename.toStdString() << " as " << name.toStdString() << std::endl;
-            tipl::image<float,3> from(handle->dwi_sum),to(ref);
-            tipl::normalize(from,1.0);
-            tipl::normalize(to,1.0);
-            bool terminated = false;
-            tipl::affine_transform<float> arg;
-            tipl::reg::linear_mr(from,handle->voxel.vs,to,vs,arg,tipl::reg::rigid_body,tipl::reg::mutual_information(),terminated,0.1);
-            tipl::reg::linear_mr(from,handle->voxel.vs,to,vs,arg,tipl::reg::rigid_body,tipl::reg::mutual_information(),terminated,0.01);
-            affine = tipl::transformation_matrix<float>(arg,handle->voxel.dim,handle->voxel.vs,to.geometry(),vs);
-        }
-        else
-        {
-            std::shared_ptr<manual_alignment> manual(new manual_alignment(0,
-                        handle->dwi_sum,handle->voxel.vs,ref,vs,tipl::reg::rigid_body,tipl::reg::cost_type::mutual_info));
-            manual->on_rerun_clicked();
-            if(manual->exec() != QDialog::Accepted)
-                return false;
-            affine = manual->T;
-        }
-
+        std::cout << "add " << filename.toStdString() << " as " << name.toStdString() << std::endl;
+        tipl::image<float,3> from(handle->dwi_sum),to(ref);
+        tipl::normalize(from,1.0);
+        tipl::normalize(to,1.0);
+        bool terminated = false;
+        tipl::affine_transform<float> arg;
+        tipl::reg::linear_mr(from,handle->voxel.vs,to,vs,arg,tipl::reg::rigid_body,tipl::reg::mutual_information(),terminated,0.1);
+        tipl::reg::linear_mr(from,handle->voxel.vs,to,vs,arg,tipl::reg::rigid_body,tipl::reg::mutual_information(),terminated,0.01);
+        affine = tipl::transformation_matrix<float>(arg,handle->voxel.dim,handle->voxel.vs,to.geometry(),vs);
     }
     handle->voxel.other_image.push_back(ref);
     handle->voxel.other_image_name.push_back(name.toLocal8Bit().begin());
-    handle->voxel.other_image_affine.push_back(affine);
+    handle->voxel.other_image_trans.push_back(affine);
     return true;
 }
 
@@ -784,7 +752,11 @@ void reconstruction_window::on_add_t1t2_clicked()
             "Images (*.nii *nii.gz);;All files (*)" );
     if( filename.isEmpty())
         return;
-    add_other_image(handle.get(),QFileInfo(filename).baseName(),filename,false);
+    if(add_other_image(handle.get(),QFileInfo(filename).baseName(),filename))
+        QMessageBox::information(this,"DSI Studio","File added");
+    else
+        QMessageBox::information(this,"Error","Not a valid nifti file");
+
 }
 
 void reconstruction_window::on_actionManual_Rotation_triggered()

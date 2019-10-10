@@ -77,7 +77,6 @@ public:
     unsigned int max_fiber_number = 5;
     std::vector<std::string> file_list;
 public:// DTI
-    bool output_diffusivity = false;
     bool output_tensor = false;
     bool output_helix_angle = false;
 public://used in GQI
@@ -98,8 +97,6 @@ public:// used in QSDR
     float trans_to_mni[16];
     std::string primary_template,secondary_template;
     tipl::transformation_matrix<double> qsdr_trans;
-    bool output_jacobian = false;
-    bool output_mapping = false;
     bool output_rdi = false;
     bool qsdr = false;
     tipl::vector<3,int> csf_pos1,csf_pos2,csf_pos3,csf_pos4;
@@ -107,7 +104,7 @@ public:// used in QSDR
 public: // for QSDR associated T1WT2W
     std::vector<tipl::image<float,3> > other_image;
     std::vector<std::string> other_image_name;
-    std::vector<tipl::transformation_matrix<double> > other_image_affine;
+    std::vector<tipl::transformation_matrix<double> > other_image_trans;
 
 public: // for fib evaluation
     tipl::image<float,3> fib_fa;

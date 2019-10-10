@@ -65,6 +65,8 @@ void save_connectivity_matrix(TractModel& tract_model,
 }
 void get_roi_label(QString file_name,std::map<int,std::string>& label_map,
                           std::map<int,tipl::rgb>& label_color,bool is_freesurfer,bool mute_cmd);
+bool qsdr_convert_native(std::shared_ptr<fib_data> handle,
+                         tipl::image<unsigned int, 3>& from);
 void get_connectivity_matrix(std::shared_ptr<fib_data> handle,
                              TractModel& tract_model)
 {
@@ -116,6 +118,8 @@ void get_connectivity_matrix(std::shared_ptr<fib_data> handle,
             // if an ROI file is assigned, load it
             if (header.load_from_file(roi_file_name))
                 header.toLPS(from);
+            if(!from.empty() && qsdr_convert_native(handle,from))
+                std::cout << roi_file_name << " converted from native space to QSDR space." << std::endl;
             // if atlas or MNI space ROI is used
             if(from.geometry() != handle->dim &&
                (from.empty() || QFileInfo(roi_file_name.c_str()).baseName() != "aparc+aseg"))
@@ -137,7 +141,10 @@ void get_connectivity_matrix(std::shared_ptr<fib_data> handle,
             }
             else
             {
-                std::cout << roi_file_name << " is used as a native space ROI." << std::endl;
+                if(handle->is_qsdr)
+                    std::cout << roi_file_name << " is used as a QSDR space ROI." << std::endl;
+                else
+                    std::cout << roi_file_name << " is used as a native space ROI." << std::endl;
                 std::vector<unsigned char> value_map(std::numeric_limits<unsigned short>::max());
                 unsigned int max_value = 0;
                 for (tipl::pixel_index<3>index(from.geometry()); index < from.size();++index)

@@ -160,6 +160,8 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         }
         // Handle template and atlases
         {
+            if(handle->is_qsdr)
+                ui->actionOpen_MNI_Region->setVisible(false);
             if(handle->is_qsdr && handle->is_human_data)
             {
                 if(QFileInfo(QString(t1w_template_file_name.c_str())).exists())
