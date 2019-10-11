@@ -513,12 +513,12 @@ int trk(std::shared_ptr<fib_data> handle)
     ThreadData tracking_thread;
     tracking_thread.param.default_otsu = po.get("otsu_threshold",0.6f);
     tracking_thread.param.threshold = po.get("fa_threshold",tracking_thread.param.default_otsu*otsu);
-    tracking_thread.param.dt_threshold = po.get("dt_threshold",0.0f);
+    tracking_thread.param.dt_threshold = po.get("dt_threshold",0.2f);
     tracking_thread.param.cull_cos_angle = std::cos(po.get("turning_angle",0.0)*3.14159265358979323846/180.0);
     tracking_thread.param.step_size = po.get("step_size",0.0f);
     tracking_thread.param.smooth_fraction = po.get("smoothing",0.0f);
-    tracking_thread.param.min_length = po.get("min_length",0.0f);
-    tracking_thread.param.max_length = std::max<float>(tracking_thread.param.min_length,po.get("max_length",400.0f));
+    tracking_thread.param.min_length = po.get("min_length",30.0f);
+    tracking_thread.param.max_length = std::max<float>(tracking_thread.param.min_length,po.get("max_length",300.0f));
 
     tracking_thread.param.tracking_method = po.get("method",int(0));
     tracking_thread.param.initial_direction  = po.get("initial_dir",int(0));
@@ -526,7 +526,7 @@ int trk(std::shared_ptr<fib_data> handle)
     tracking_thread.param.center_seed = po.get("seed_plan",int(0));
     tracking_thread.param.random_seed = po.get("random_seed",int(0));
     tracking_thread.param.check_ending = po.get("check_ending",int(0));
-    tracking_thread.param.tip_iteration = po.get("tip_iteration",int(1));
+    tracking_thread.param.tip_iteration = po.get("tip_iteration",int(0));
 
     if(po.has("otsu_threshold"))
     {
