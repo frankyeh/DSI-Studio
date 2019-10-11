@@ -228,10 +228,11 @@ bool load_region(std::shared_ptr<fib_data> handle,
     std::string region_name;
 
     // --roi=file_name:value
-    if(file_name.find(':') != std::string::npos)
+    if(file_name.find_last_of(':') != std::string::npos &&
+       file_name.at(file_name.find_last_of(':')+1) != '\\')
     {
-        region_name = file_name.substr(file_name.find(':')+1);
-        file_name = file_name.substr(0,file_name.find(':'));
+        region_name = file_name.substr(file_name.find_last_of(':')+1);
+        file_name = file_name.substr(0,file_name.find_last_of(':'));
     }
 
     if(!QFileInfo(file_name.c_str()).exists())
