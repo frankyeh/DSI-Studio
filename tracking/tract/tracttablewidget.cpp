@@ -498,7 +498,7 @@ void TractTableWidget::clustering(int method_id)
     bool ok = false;
     int n = QInputDialog::getInt(this,
             "DSI Studio",
-            "Assign the maximum number of groups",50,1,1000,10,&ok);
+            "Assign the maximum number of groups",50,1,5000,10,&ok);
     if(!ok)
         return;
     ok = true;
