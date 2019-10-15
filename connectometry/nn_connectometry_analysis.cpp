@@ -112,8 +112,6 @@ bool nn_connectometry_analysis::run(const std::string& net_string_)
             else
                 fp_mask[i] = 0;
 
-        handle->db.get_subject_vector_pairs(fib_pairs,fp_mask,fp_threshold);
-
         // prepare fp_index for salient map
         {
             std::vector<int> pos;
@@ -122,7 +120,25 @@ bool nn_connectometry_analysis::run(const std::string& net_string_)
             for(int i = 0;i < pos.size();++i)
                 fp_index[i] = tipl::pixel_index<3>(pos[i],handle->dim);
         }
-
+        // for smoothing
+        if(fiber_smoothing != 0.0)
+        {
+            fib_pairs.clear();
+            std::mutex m;
+            tipl::par_for(fp_index.size(),[&](size_t i)
+            {
+                for(size_t j = i+1 ; j < fp_index.size();++j)
+                {
+                    if(std::abs(fp_index[i][0]-fp_index[j][0])+
+                       std::abs(fp_index[i][1]-fp_index[j][1])+
+                       std::abs(fp_index[i][2]-fp_index[j][2]) <= 1)
+                    {
+                        std::lock_guard<std::mutex> guard(m);
+                        fib_pairs.push_back(std::make_pair(i,j));
+                    }
+                }
+            });
+        }
         sl_mean = 0.0f;
         sl_scale = 1.0f;
         // normalize values
@@ -185,7 +201,7 @@ bool nn_connectometry_analysis::run(const std::string& net_string_)
 
     {
         out_report << " The performance was evaluated using " << cv_fold << " fold cross validation.";
-        tipl::ml::data_fold_for_cv(fp_data,train_data,test_data,cv_fold);
+        tipl::ml::data_fold_for_cv(fp_data,train_data,test_data,cv_fold,stratified_fold);
         if(!is_regression)
             for(int i = 0;i < train_data.size();++i)
                 train_data[i].homogenize();
@@ -251,17 +267,16 @@ bool nn_connectometry_analysis::run(const std::string& net_string_)
                         {
                             uint32_t j1 = fib_pairs[j].first;
                             uint32_t j2 = fib_pairs[j].second;
-                            float m = (w[j1]+ w[j2])* fiber_smoothing * 0.5f;
-                            nw[j1] += m;
-                            nw[j2] += m;
-                            nr[j1] += fiber_smoothing;
-                            nr[j2] += fiber_smoothing;
+                            nw[j1] += w[j2];
+                            nw[j2] += w[j1];
+                            nr[j1] += 1.0f;
+                            nr[j2] += 1.0f;
                         }
                         for(uint32_t j = 0;j < nn.layers[0]->input_size;++j)
                             if(nr[j] != 0.0f)
                             {
-                                w[j] *= 1.0f-nr[j];
-                                w[j] += nw[j];
+                                w[j] *= 1.0f-fiber_smoothing;
+                                w[j] += fiber_smoothing*nw[j]/nr[j];
                             }
                     });
                 }

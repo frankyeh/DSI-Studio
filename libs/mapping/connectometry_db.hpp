@@ -48,8 +48,6 @@ public:
                             const std::string& subject_name);
     void get_subject_vector_pos(std::vector<int>& subject_vector_pos,
                                 const tipl::image<int,3>& fp_mask,float fiber_threshold) const;
-    void get_subject_vector_pairs(std::vector<std::pair<int,int> >& pairs,
-                            const tipl::image<int,3>& fp_mask,float fiber_threshold) const;
     void get_subject_vector(unsigned int from,unsigned int to,
                             std::vector<std::vector<float> >& subject_vector,
                             const tipl::image<int,3>& fp_mask,float fiber_threshold,bool normalize_fp) const;

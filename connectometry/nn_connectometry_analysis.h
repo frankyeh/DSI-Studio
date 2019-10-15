@@ -67,7 +67,9 @@ public:
     int seed_search = 10;
     float otsu = 0.6f;
     float no_data = 9999.0f;
+public:
     size_t cv_fold = 10;
+    bool stratified_fold = true;
     bool normalize_value = false;
     double weight_decay = 0.0;
     double fiber_smoothing = 0.001;

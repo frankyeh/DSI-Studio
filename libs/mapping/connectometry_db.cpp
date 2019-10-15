@@ -425,35 +425,7 @@ bool connectometry_db::add_subject_file(const std::string& file_name,
     modified = true;
     return true;
 }
-void connectometry_db::get_subject_vector_pairs(std::vector<std::pair<int,int> >& pairs,
-                        const tipl::image<int,3>& fp_mask,float fiber_threshold) const
-{
-    std::vector<std::vector<int> > fp_index(handle->dir.num_fiber);
-    for(auto& i : fp_index)
-        i.resize(handle->dim.size());
-    // build a fiber index map
-    {
-        int fp_pos = 0;
-        for(auto cur_index : si2vi)
-            if(fp_mask[cur_index])
-                for(unsigned char j = 0;j < handle->dir.num_fiber && handle->dir.fa[j][cur_index] > fiber_threshold;++j)
-                    fp_index[j][cur_index] = fp_pos++;
-    }
 
-    std::mutex m;
-    evaluate_connection(handle->dim,fiber_threshold,handle->dir.fa,
-                        [this](unsigned int pos,unsigned char fib){return tipl::vector<3>(handle->dir.get_dir(pos,fib));},
-                        [&](unsigned int pos1,unsigned char fib1,unsigned int pos2,unsigned char fib2)
-                        {
-                            if(fp_index[fib1][pos1] && fp_index[fib2][pos2])
-                            {
-                                std::lock_guard<std::mutex> guard(m);
-                                pairs.push_back(std::make_pair(fp_index[fib1][pos1],fp_index[fib2][pos2]));
-                            }
-                        },false);
-
-
-}
 void connectometry_db::get_subject_vector(unsigned int from,unsigned int to,
                                           std::vector<std::vector<float> >& subject_vector,
                         const tipl::image<int,3>& fp_mask,float fiber_threshold,bool normalize_fp) const

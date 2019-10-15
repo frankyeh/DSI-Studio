@@ -86,6 +86,7 @@ void nn_connectometry::on_run_clicked()
     nna.seed_search = 0;
     nna.otsu = ui->otsu->value();
     nna.cv_fold = ui->cv->value();
+    nna.stratified_fold = ui->stratified_fold->isChecked();
     nna.normalize_value = ui->norm_output->isEnabled() && ui->norm_output->isChecked();
     //nna.t.error_table.resize(nna.nn.get_output_size()*nna.nn.get_output_size());
     if(!nna.run(ui->network_text->text().toStdString()))
