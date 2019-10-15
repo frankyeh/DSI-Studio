@@ -485,7 +485,7 @@ void TractTableWidget::recognize_rename(void)
         if(item(index,0)->checkState() == Qt::Checked)
         {
             std::map<float,std::string,std::greater<float> > sorted_list;
-            if(!tract_models[index]->recognize(sorted_list,cur_tracking_window.tractography_atlas))
+            if(!tract_models[index]->recognize(sorted_list,cur_tracking_window.tractography_atlas,true))
                 return;
             item(index,0)->setText(sorted_list.begin()->second.c_str());
         }
