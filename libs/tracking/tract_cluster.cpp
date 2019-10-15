@@ -115,98 +115,79 @@ void TractCluster::merge_tract(unsigned int tract_index1,unsigned int tract_inde
 void TractCluster::add_tracts(const std::vector<std::vector<float> >& tracks)
 {
     tract_labels.clear();
-    tract_passed_voxels.clear();
-    tract_ranged_voxels.clear();
+    tract_mid_voxels.clear();
+    tract_end1.clear();
+    tract_end2.clear();
     tract_labels.resize(tracks.size());
     tract_length.resize(tracks.size());
-    tract_passed_voxels.resize(tracks.size());
-    tract_ranged_voxels.resize(tracks.size());
-    for(unsigned int tract_index = 0;tract_index < tracks.size();++tract_index)
-        tract_length[tract_index] = tracks[tract_index].size();
+    tract_mid_voxels.resize(tracks.size());
+    tract_end1.resize(tracks.size());
+    tract_end2.resize(tracks.size());
+    tipl::par_for(tracks.size(),[&](unsigned int tract_index)
+    {
+        if(tracks[tract_index].size() >= 6)
+            tract_length[tract_index] = float(tracks[tract_index].size())*
+                    float((tipl::vector<3>(&tracks[tract_index][0])-tipl::vector<3>(&tracks[tract_index][3])).length());
+    });
 
     // build passing points and ranged points
     tipl::par_for(tracks.size(),[&](unsigned int tract_index)
     {
         if(tracks[tract_index].empty())
             return;
-        unsigned int count = tracks[tract_index].size();
-        const float* points = &tracks[tract_index][0];
-        const float* points_end = points + count;
-        std::vector<unsigned short>& passed_points = tract_passed_voxels[tract_index];
-        std::vector<unsigned short>& ranged_points = tract_ranged_voxels[tract_index];
+        tipl::vector<3,float> p_end1(&tracks[tract_index][0]);
+        tipl::vector<3,float> p_end2(&tracks[tract_index][tracks[tract_index].size()-3]);
+        if(p_end1 > p_end2)
+            std::swap(p_end1,p_end2);
+        tract_end1[tract_index] = p_end1;
+        tract_end2[tract_index] = p_end2;
 
-        for (;points_end != points;points += 3)
-        {
-            tipl::vector<3,float> cur_point(points);
-            cur_point /= error_distance;
-            cur_point.round();
-            if(!dim.is_valid(cur_point))
-                continue;
-            tipl::pixel_index<3> center(cur_point[0],cur_point[1],cur_point[2],dim);
-            passed_points.push_back(center.index() & 0xFFFF);
-            std::vector<tipl::pixel_index<3> > iterations;
-            tipl::get_neighbors(center,dim,iterations);
-            for(unsigned int index = 0;index < iterations.size();++index)
-                if (dim.is_valid(iterations[index]))
-                    ranged_points.push_back(iterations[index].index() & 0xFFFF);
-        }
+        // get mid point in reduced space
+        tipl::vector<3,float> p_mid(&tracks[tract_index][(tracks[tract_index].size()/6)*3]);
+        p_mid /= error_distance;
+        p_mid.round();
+        if(!dim.is_valid(p_mid))
+            return;
+        tract_mid_voxels[tract_index] = tipl::pixel_index<3>(p_mid[0],p_mid[1],p_mid[2],dim).index();
 
-        // delete repeated points
-        {
-            std::set<unsigned short> unique_passed_points(passed_points.begin(),passed_points.end());
-            passed_points = std::vector<unsigned short>(unique_passed_points.begin(),unique_passed_points.end());
-
-            std::set<unsigned short> unique_ranged_points(ranged_points.begin(),ranged_points.end());
-            ranged_points = std::vector<unsigned short>(unique_ranged_points.begin(),unique_ranged_points.end());
-        }
     });
     // book keeping passing points
     for(unsigned int tract_index = 0;tract_index < tracks.size();++tract_index)
     {
-        voxel_connection[tract_passed_voxels[tract_index].front()].push_back(tract_index);
-        voxel_connection[tract_passed_voxels[tract_index].back()].push_back(tract_index);
+        voxel_connection[tract_mid_voxels[tract_index]].push_back(tract_index);
+        std::vector<tipl::pixel_index<3> > iterations;
+        tipl::get_connected_neighbors(tipl::pixel_index<3>(tract_mid_voxels[tract_index],dim),dim,iterations);
+        for(unsigned int i = 0;i < iterations.size();++i)
+            voxel_connection[iterations[i].index()].push_back(tract_index);
     }
-
+    tipl::par_for(voxel_connection.size(),[&](unsigned int pos)
+    {
+        std::set<unsigned int> tmp(voxel_connection[pos].begin(),voxel_connection[pos].end());
+        voxel_connection[pos] = std::vector<unsigned int>(tmp.begin(),tmp.end());
+    });
     tipl::par_for(tracks.size(),[&](unsigned int tract_index)
     {
         if(tracks[tract_index].empty())
             return;
-        unsigned int count = tracks[tract_index].size();
-        std::vector<unsigned short>& passed_points = tract_passed_voxels[tract_index];
-        std::vector<unsigned short>& ranged_points = tract_ranged_voxels[tract_index];
-        if(passed_points.empty() || ranged_points.empty())
-            return;
-
-        // get the eligible fibers for merging, and also register the ending points
-        std::vector<unsigned int> passing_tracts;
-        {
-            std::vector<unsigned int> p1(voxel_connection[tract_passed_voxels[tract_index].front()]);
-            std::vector<unsigned int> p2(voxel_connection[tract_passed_voxels[tract_index].back()]);
-            p1.insert(p1.end(),p2.begin(),p2.end());
-            p1.erase(std::remove(p1.begin(),p1.end(),tract_index),p1.end());
-            std::set<unsigned int> unique_tracts(p1.begin(),p1.end());
-            passing_tracts = std::vector<unsigned int>(unique_tracts.begin(),unique_tracts.end());
-        }
-
+        auto& passing_tracts = voxel_connection[tract_mid_voxels[tract_index]];
         // check each tract to see if anyone is included in the error range
-        for (int i = 0;i < passing_tracts.size();++i)
+        for (size_t i = 0;i < passing_tracts.size();++i)
         {
             unsigned int cur_index = passing_tracts[i];
+            if(cur_index <= tract_index)
+                continue;
             Cluster* label1 = tract_labels[tract_index];
             Cluster* label2 = tract_labels[cur_index];
-            if (label1 != 0 && label1 == label2)
+            if (label1 != nullptr && label1 == label2)
                 continue;
-            unsigned int cur_count = tract_length[cur_index];
-            float dif = cur_count;
-            dif -= (float) count;
-            dif /= (float)std::max(cur_count,count);
-            if (std::abs(dif) > 0.2)
+
+            if(std::fabs(tract_end1[tract_index][0]-tract_end1[cur_index][0]) > error_distance ||
+               (tract_end1[tract_index]-tract_end1[cur_index]).length() > double(error_distance) ||
+               (tract_end2[tract_index]-tract_end2[cur_index]).length() > double(error_distance))
                 continue;
-            if (std::includes(ranged_points.begin(),ranged_points.end(),
-                              tract_passed_voxels[cur_index].begin(),tract_passed_voxels[cur_index].end()) &&
-                std::includes(tract_ranged_voxels[cur_index].begin(),tract_ranged_voxels[cur_index].end(),
-                                  passed_points.begin(),passed_points.end()))
-                merge_tract(tract_index,cur_index);
+            if (std::fabs((tract_length[cur_index]-tract_length[tract_index])) > double(error_distance)*2.0)
+                continue;
+            merge_tract(tract_index,cur_index);
         }
     });
 }

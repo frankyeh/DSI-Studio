@@ -101,9 +101,10 @@ private:
     std::vector<std::vector<unsigned int> > voxel_connection;
 private:
     std::vector<Cluster*> tract_labels;// 0 is no cluster
-    std::vector<std::vector<unsigned short> > tract_passed_voxels;
-    std::vector<std::vector<unsigned short> > tract_ranged_voxels;
-    std::vector<unsigned int>							 tract_length;
+    std::vector<unsigned int> tract_mid_voxels;
+    std::vector<tipl::vector<3> > tract_end1;
+    std::vector<tipl::vector<3> > tract_end2;
+    std::vector<float> tract_length;
 
 
 

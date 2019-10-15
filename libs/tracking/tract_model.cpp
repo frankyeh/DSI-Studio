@@ -1145,27 +1145,44 @@ unsigned int TractModel::find_nearest(const float* trk,unsigned int length,bool 
     return tract_cluster[best_index];
 }
 //---------------------------------------------------------------------------
-void TractModel::delete_repeated(double d)
-{
+void TractModel::delete_repeated(float d)
+{   
+    std::vector<std::vector<size_t> > x_reg(size_t(geometry.plane_size()));
+    std::vector<size_t> track_reg(tract_data.size());
+    for(size_t i = 0; i < tract_data.size();++i)
+    {
+        int x = int(std::round(tract_data[i][0]));
+        int y = int(std::round(tract_data[i][1]));
+        if(x < 0)
+            x = 0;
+        if(y < 0)
+            y = 0;
+        if(x >= geometry[0])
+            x = geometry[0]-1;
+        if(y >= geometry[1])
+            y = geometry[1]-1;
+        x_reg[track_reg[i] = size_t(x + y*geometry[0])].push_back(i);
+    }
     auto norm1 = [](const float* v1,const float* v2){return std::fabs(v1[0]-v2[0])+std::fabs(v1[1]-v2[1])+std::fabs(v1[2]-v2[2]);};
     std::vector<bool> repeated(tract_data.size());
-    tipl::par_for(tract_data.size(),[&](int i)
+    tipl::par_for(tract_data.size(),[&](size_t i)
     {
         if(!repeated[i])
         {
-        for(int j = i+1;j < tract_data.size();++j)
-            if(!repeated[j])
+            for(size_t k = 0;k < x_reg[track_reg[i]].size();++k)
             {
-                // check endpoints
-                if(norm1(&tract_data[i][0],&tract_data[j][0]) > d ||
+                size_t j = x_reg[track_reg[i]][k];
+                if(j == i || repeated[j] ||
+                   std::fabs(tract_data[i][0]-tract_data[j][0]) > d ||
+                   norm1(&tract_data[i][0],&tract_data[j][0]) > d ||
                    norm1(&tract_data[i][tract_data[i].size()-3],&tract_data[j][tract_data[j].size()-3]) > d)
                     continue;
 
                 bool not_repeated = false;
-                for(int m = 0;m < tract_data[i].size();m += 3)
+                for(size_t m = 0;m < tract_data[i].size();m += 3)
                 {
                     float min_dis = norm1(&tract_data[i][m],&tract_data[j][0]);
-                    for(int n = 3;n < tract_data[j].size();n += 3)
+                    for(size_t n = 3;n < tract_data[j].size();n += 3)
                         min_dis = std::min<float>(min_dis,norm1(&tract_data[i][m],&tract_data[j][n]));
                     if(min_dis > d)
                     {
@@ -1174,10 +1191,10 @@ void TractModel::delete_repeated(double d)
                     }
                 }
                 if(!not_repeated)
-                for(int m = 0;m < tract_data[j].size();m += 3)
+                for(size_t m = 0;m < tract_data[j].size();m += 3)
                 {
                     float min_dis = norm1(&tract_data[j][m],&tract_data[i][0]);
-                    for(int n = 0;n < tract_data[i].size();n += 3)
+                    for(size_t n = 0;n < tract_data[i].size();n += 3)
                         min_dis = std::min<float>(min_dis,norm1(&tract_data[j][m],&tract_data[i][n]));
                     if(min_dis > d)
                     {
@@ -1191,9 +1208,9 @@ void TractModel::delete_repeated(double d)
         }
     });
     std::vector<unsigned int> track_to_delete;
-    for(unsigned int i = 0;i < tract_data.size();++i)
+    for(size_t i = 0;i < tract_data.size();++i)
         if(repeated[i])
-            track_to_delete.push_back(i);
+            track_to_delete.push_back(uint32_t(i));
     delete_tracts(track_to_delete);
 }
 //---------------------------------------------------------------------------
@@ -1839,6 +1856,7 @@ bool TractModel::recognize(std::vector<unsigned int>& result,std::shared_ptr<Tra
         if(tract_data[i].empty())
             return;
         result[i] = atlas->find_nearest(&tract_data[i][0],tract_data[i].size());
+        std::cout << result[i] << std::endl;
     });
     return true;
 }
@@ -1848,7 +1866,7 @@ bool TractModel::recognize(std::map<float,std::string,std::greater<float> >& res
 {
     if(tractography_name_list.empty())
         return false;
-    std::vector<float> count(tractography_name_list.size());
+    std::vector<float> count(tractography_name_list.size()+1);
     tipl::par_for(tract_data.size(),[&](int i)
     {
         if(tract_data[i].empty())
@@ -1862,7 +1880,7 @@ bool TractModel::recognize(std::map<float,std::string,std::greater<float> >& res
         tipl::multiply_constant(count,1.0f/sum);
     result.clear();
     for(int i = 0;i < count.size();++i)
-        result[count[i]] = tractography_name_list[i];
+        result[count[i]] = (i < tractography_name_list.size()) ? tractography_name_list[i]:std::string("False");
     return true;
 }
 void TractModel::recognize_report(std::string& report,
