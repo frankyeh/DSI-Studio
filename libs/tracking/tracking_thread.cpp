@@ -45,8 +45,7 @@ void ThreadData::run_thread(TrackingMethod* method_ptr,
         while(!joinning &&
               !(param.stop_by_tract == 1 && tract_count[thread_id] >= max_count) &&
               !(param.stop_by_tract == 0 && seed_count[thread_id] >= max_count) &&
-              !(param.max_seed_count > 0 && seed_count[thread_id] >= param.max_seed_count) &&
-              !(param.center_seed && iteration >= roi_mgr->seeds.size()))
+              !(param.max_seed_count > 0 && seed_count[thread_id] >= param.max_seed_count))
         {
 
             if(!pushing_data && (iteration & 0x00000FFF) == 0x00000FFF && !local_track_buffer.empty())
