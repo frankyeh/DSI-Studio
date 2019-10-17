@@ -149,7 +149,14 @@ public:
         if(voxel.method_id == 1) // DTI
         {
             if(voxel.output_helix_angle)
+            {
                 ha[data.voxel_index] = float(std::acos(std::sqrt(V[0]*V[0]+V[1]*V[1]))*180.0/3.14159265358979323846);
+                tipl::vector<3> center(float(voxel.dim[0])*0.5f,float(voxel.dim[1])*0.5f,float(voxel.dim[2])*0.5f);
+                center -= tipl::vector<3>(tipl::pixel_index<3>(data.voxel_index,voxel.dim));
+                if(center.cross_product(tipl::vector<3>(0.0f,0.0f,1.0f))*tipl::vector<3>(V) < 0 ^
+                        V[2] < 0.0f)
+                    ha[data.voxel_index] = -ha[data.voxel_index];
+            }
             if(voxel.output_tensor)
             {
                 txx[data.voxel_index] = float(tensor[0]);
