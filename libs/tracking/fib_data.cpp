@@ -467,7 +467,6 @@ void initial_LPS_nifti_srow(tipl::matrix<4,4,float>& T,const tipl::geometry<3>& 
 bool fib_data::load_from_file(const char* file_name)
 {
     tipl::image<float,3> I;
-    tipl::vector<3,float> vs_;
     gz_nifti header;
     fib_file_name = file_name;
     if((QFileInfo(file_name).fileName().endsWith(".nii") ||
@@ -477,14 +476,11 @@ bool fib_data::load_from_file(const char* file_name)
         if(header.dim(4) == 3)
         {
             tipl::image<float,3> x,y,z;
-            header.get_voxel_size(vs_);
+            header.get_voxel_size(vs);
             header.toLPS(x,false);
             header.toLPS(y,false);
             header.toLPS(z,false);
-
             dim = x.geometry();
-            vs = vs_;
-
             dir.check_index(0);
             dir.num_fiber = 1;
             dir.findex_buf.resize(1);
@@ -521,7 +517,7 @@ bool fib_data::load_from_file(const char* file_name)
         else
         {
             header.toLPS(I);
-            header.get_voxel_size(vs_);
+            header.get_voxel_size(vs);
             header.get_image_transformation(trans_to_mni);
         }
     }
@@ -535,12 +531,17 @@ bool fib_data::load_from_file(const char* file_name)
             return false;
         }
         bruker_header.get_image().swap(I);
-        bruker_header.get_voxel_size(vs_);
+        bruker_header.get_voxel_size(vs);
+
+        std::ostringstream out;
+        out << "Image resolution is (" << vs[0] << "," << vs[1] << "," << vs[2] << ")." << std::endl;
+        report = out.str();
+
     }
     if(!I.empty())
     {
         mat_reader.add("dimension",I.geometry().begin(),3,1);
-        mat_reader.add("voxel_size",&*vs_.begin(),3,1);
+        mat_reader.add("voxel_size",&*vs.begin(),3,1);
         mat_reader.add("image",&*I.begin(),I.size(),1);
         load_from_mat();
         dir.index_name[0] = "image";
