@@ -70,30 +70,19 @@ void ThreadData::run_thread(TrackingMethod* method_ptr,
                 method->current_min_steps3 = std::round(3.0f*param.min_length/step_size_in_mm);
             }
             ++seed_count[thread_id];
-            if(param.center_seed)
-            {
-                if(!method->init(param.initial_direction,
-                    tipl::vector<3,float>(roi_mgr->seeds[iteration].x()/roi_mgr->seeds_r[iteration],
-                                           roi_mgr->seeds[iteration].y()/roi_mgr->seeds_r[iteration],
-                                           roi_mgr->seeds[iteration].z()/roi_mgr->seeds_r[iteration]),
-                                 seed))
-                {
-                    iteration+=thread_count;
-                    continue;
-                }
-                if(param.initial_direction == 0)// primary direction
-                    iteration+=thread_count;
-            }
-            else
             {
                 // this ensure consistency
                 std::lock_guard<std::mutex> lock(lock_seed_function);
                 iteration+=thread_count;
-                unsigned int i = rand_gen(seed)*((float)roi_mgr->seeds.size()-1.0f);
-                tipl::vector<3,float> pos;
-                pos[0] = (float)roi_mgr->seeds[i].x() + rand_gen(seed)-0.5f;
-                pos[1] = (float)roi_mgr->seeds[i].y() + rand_gen(seed)-0.5f;
-                pos[2] = (float)roi_mgr->seeds[i].z() + rand_gen(seed)-0.5f;
+                unsigned int i = uint32_t(rand_gen(seed)*(float(roi_mgr->seeds.size())-1.0f));
+                tipl::vector<3,float> pos(roi_mgr->seeds[i]);
+                if(!param.center_seed)
+                {
+                    pos[0] += rand_gen(seed);
+                    pos[1] += rand_gen(seed);
+                    pos[2] += rand_gen(seed);
+                    pos -= 0.5f;
+                }
                 if(roi_mgr->seeds_r[i] != 1.0f)
                     pos /= roi_mgr->seeds_r[i];
                 if(!method->init(param.initial_direction,pos,seed))
