@@ -478,8 +478,10 @@ void TractTableWidget::recognize_rename(void)
     if(!cur_tracking_window.tractography_atlas.get() && cur_tracking_window.ui->enable_auto_track->isVisible())
         cur_tracking_window.on_enable_auto_track_clicked();
     if(!cur_tracking_window.tractography_atlas.get())
+    {
+        QMessageBox::information(this,"Error","Recognition is only available with [Step T3a][Template]=HCP1021");
         return;
-
+    }
     begin_prog("Recognize and rename");
     for(unsigned int index = 0;check_prog(index,tract_models.size());++index)
         if(item(index,0)->checkState() == Qt::Checked)
