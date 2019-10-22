@@ -20,6 +20,7 @@ RegToolBox::RegToolBox(QWidget *parent) :
     connect(ui->main_zoom, SIGNAL(sliderMoved(int)), this, SLOT(show_image()));
     connect(ui->show_warp, SIGNAL(clicked()), this, SLOT(show_image()));
     connect(ui->dis_map, SIGNAL(clicked()), this, SLOT(show_image()));
+    connect(ui->mosaic, SIGNAL(clicked()), this, SLOT(show_image()));
 
     timer.reset(new QTimer());
     connect(timer.get(), SIGNAL(timeout()), this, SLOT(on_timer()));
@@ -66,7 +67,7 @@ void RegToolBox::on_OpenTemplate_clicked()
     nifti.toLPS(It);
     //tipl::swap_xy(It);
     nifti.get_image_transformation(ItR);
-    It *= 1.0f/tipl::mean(It);
+    tipl::normalize(It,1.0f);
     nifti.get_voxel_size(Itvs);
     ui->slice_pos->setMaximum(It.depth()-1);
     ui->slice_pos->setValue(It.depth()/2);
@@ -89,8 +90,7 @@ void RegToolBox::on_OpenSubject_clicked()
         return;
     }
     nifti.toLPS(I);
-    //tipl::swap_xy(I);
-    I *= 1.0f/tipl::mean(I);
+    tipl::normalize(I,1.0f);
     nifti.get_voxel_size(Ivs);
     clear();
     show_image();
@@ -150,33 +150,63 @@ void show_slice_at(QGraphicsScene& scene,tipl::image<float,2>& tmp,tipl::color_i
 }
 
 
-void show_slice_at(QGraphicsScene& scene,const tipl::image<float,3>& source,tipl::color_image& buf,int slice_pos,float ratio,float contrast)
+void show_slice_at(QGraphicsScene& scene,const tipl::image<float,3>& source,
+                   tipl::color_image& buf,size_t slice_pos,float ratio,float contrast)
 {
     tipl::image<float,2> tmp;
     tipl::volume2slice(source,tmp,2,slice_pos);
+    show_slice_at(scene,tmp,buf,ratio,contrast);
+}
+void show_mosaic_slice_at(QGraphicsScene& scene,
+                          const tipl::image<float,3>& source1,
+                          const tipl::image<float,3>& source2,
+                          tipl::color_image& buf,size_t slice_pos,float ratio,float contrast,bool mosaic)
+{
+    if(!mosaic)
+    {
+        show_slice_at(scene,source1,buf,slice_pos,ratio,contrast);
+        return;
+    }
+    tipl::image<float,2> tmp1,tmp2,tmp;
+    tipl::volume2slice(source1,tmp1,2,slice_pos);
+    tipl::volume2slice(source2,tmp2,2,slice_pos);
+    if(tmp1.geometry() != tmp2.geometry())
+        return;
+    tmp.resize(tmp1.geometry());
+    tmp.for_each([&](float& v,tipl::pixel_index<2>& index)
+    {
+        if(!(index[0] & 31) || !(index[1] & 31))
+        {
+            v = 0;
+            return;
+        }
+        int x = index[0] >> 5;
+        int y = index[1] >> 5;
+        v = (x&1 ^ y&1) ? tmp1[index.index()] : tmp2[index.index()];
+    });
     show_slice_at(scene,tmp,buf,ratio,contrast);
 }
 
 void RegToolBox::show_image(void)
 {
     float ratio = ui->main_zoom->value()/10.0;
-    float contrast = ui->contrast->value()+10;
+    float contrast = ui->contrast->value()*20;
     if(!It.empty())
     {
+        const auto& I = (ui->show_second->isChecked() && It2.geometry() == It.geometry() ? It2 : It);
         if(ui->show_warp->isChecked())
         {
             if(!J_view2.empty())
-                show_slice_at(It_scene,J_view2,cIt,ui->slice_pos->value(),ratio,contrast);
+                show_mosaic_slice_at(It_scene,J_view2,I,cIt,ui->slice_pos->value(),ratio,contrast,ui->mosaic->isChecked());
             else
                 if(!J_view.empty())
-                    show_slice_at(It_scene,J_view,cIt,ui->slice_pos->value(),ratio,contrast);
+                    show_mosaic_slice_at(It_scene,J_view,I,cIt,ui->slice_pos->value(),ratio,contrast,ui->mosaic->isChecked());
                 else
-                    show_slice_at(It_scene,(ui->show_second->isChecked() && It2.geometry() == It.geometry() ? It2 : It),
-                                            cIt,ui->slice_pos->value(),ratio,contrast);
+                    show_slice_at(It_scene,I,cIt,ui->slice_pos->value(),ratio,contrast);
         }
         else
-            show_slice_at(It_scene,(ui->show_second->isChecked() && It2.geometry() == It.geometry() ? It2 : It),
-                          cIt,ui->slice_pos->value(),ratio,contrast);
+            show_slice_at(It_scene,I,cIt,ui->slice_pos->value(),ratio,contrast);
+
     }
     if(!J_view2.empty())
     {

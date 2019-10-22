@@ -565,7 +565,14 @@
             <item>
              <widget class="QCheckBox" name="show_warp">
               <property name="text">
-               <string>Compare warpped image</string>
+               <string>Compare </string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QCheckBox" name="mosaic">
+              <property name="text">
+               <string>Mosaic</string>
               </property>
              </widget>
             </item>
@@ -688,6 +695,9 @@
           <width>100</width>
           <height>16777215</height>
          </size>
+        </property>
+        <property name="minimum">
+         <number>1</number>
         </property>
         <property name="maximum">
          <number>20</number>
