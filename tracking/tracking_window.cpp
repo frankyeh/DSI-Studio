@@ -2168,26 +2168,33 @@ void tracking_window::on_actionMark_Tracts_on_T1W_T2W_triggered()
     glWidget->updateGL();
 }
 
-void tracking_window::on_actionUpsample_Slices_by_2_triggered()
+
+void tracking_window::on_actionApply_Operation_triggered()
 {
     CustomSliceModel* slice = dynamic_cast<CustomSliceModel*>(current_slice.get());
     if(!slice || slice->source_images.empty())
         return;
-    if (QMessageBox::question( this, "DSI Studio",
-                               "This will strop registration. Proceed?",
-                               QMessageBox::No | QMessageBox::Yes,QMessageBox::Yes) == QMessageBox::No)
+    QString cmd = QInputDialog::getText(this,"Apply Operation","Please specify command");
+    if(cmd == "upsample2")
+    {
+        slice->terminate();
+        slice->voxel_size *= 0.5;
+        tipl::matrix<4,4,float> nT;
+        nT.identity();
+        nT[0] = nT[5] = nT[10] = 0.5f;
+        slice->T = slice->T*nT;
+        slice->invT = tipl::inverse(slice->T);
+        tipl::image<float,3> J(tipl::geometry<3>(slice->source_images.width()*2,slice->source_images.height()*2,slice->source_images.depth()*2));
+        tipl::resample_mt(slice->source_images,J,nT,tipl::cubic);
+        slice->source_images.swap(J);
+        slice->initialize();
+        on_SliceModality_currentIndexChanged(ui->SliceModality->currentIndex());
         return;
-    slice->terminate();
-    slice->voxel_size *= 0.5;
-    tipl::matrix<4,4,float> nT;
-    nT.identity();
-    nT[0] = nT[5] = nT[10] = 0.5f;
-    slice->T = slice->T*nT;
-    slice->invT = tipl::inverse(slice->T);
-    tipl::image<float,3> J(tipl::geometry<3>(slice->source_images.width()*2,slice->source_images.height()*2,slice->source_images.depth()*2));
-    tipl::resample_mt(slice->source_images,J,nT,tipl::cubic);
-    slice->source_images.swap(J);
-    slice->initialize();
-    on_SliceModality_currentIndexChanged(ui->SliceModality->currentIndex());
+    }
+    if(cmd == "smoothing")
+    {
+        tipl::filter::mean(slice->source_images);
+        on_SliceModality_currentIndexChanged(ui->SliceModality->currentIndex());
+        return;
+    }
 }
-

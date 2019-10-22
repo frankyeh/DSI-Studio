@@ -973,7 +973,8 @@
     <addaction name="separator"/>
     <addaction name="actionLoad_Color_Map"/>
     <addaction name="actionKeep_Current_Slice"/>
-    <addaction name="actionUpsample_Slices_by_2"/>
+    <addaction name="separator"/>
+    <addaction name="actionApply_Operation"/>
    </widget>
    <widget class="QMenu" name="menuTools">
     <property name="title">
@@ -3485,11 +3486,6 @@ Tracking</string>
     <string>Save Slices as...</string>
    </property>
   </action>
-  <action name="actionUpsample_Slices_by_2">
-   <property name="text">
-    <string>Upsample Slices by 2</string>
-   </property>
-  </action>
   <action name="actionRecord_Video">
    <property name="text">
     <string>Record Video...</string>
@@ -3501,6 +3497,11 @@ Tracking</string>
   <action name="actionRecognize_and_Rename">
    <property name="text">
     <string>Recognize and Rename</string>
+   </property>
+  </action>
+  <action name="actionApply_Operation">
+   <property name="text">
+    <string>Apply Operation...</string>
    </property>
   </action>
  </widget>
