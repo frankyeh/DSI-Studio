@@ -38,7 +38,8 @@ void SliceModel::apply_overlay(tipl::color_image& show_image,
             float value = 0;
             if(!tipl::estimate(other_slice->get_source(),v,value))
                 continue;
-            if(value > range.first && value <= range.second)
+            if((value > 0.0f && value > range.first) ||
+               (value < 0.0f && value < range.second))
                 show_image[pos] = other_slice->v2c[value];
         }
 }
