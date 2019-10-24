@@ -4,10 +4,10 @@ ROI/Draw Edge/roi_edge/Off:On/0
 ROI/Fiber Direction/roi_fiber/Off:On:1st:2nd/1
 ROI/Fiber Color/roi_fiber_color/RGB:red:green:blue/0
 ROI/Fiber Width/roi_fiber_width/float:0.1:1:0.1:2/0.2
-ROI/Fiber Length/roi_fiber_length/float:0.1:1:0.1:2/0.3
+ROI/Fiber Length/roi_fiber_length/float:0.1:2:0.1:2/0.3
 ROI/"R" label/roi_label/Off:On/1
 ROI/Position Line/roi_position/Off:On/1
-ROI/Slice Layout/roi_layout/Single Slice:3 Slices:Mosaic:Mosaic 2:Mosaic 3/0
+ROI/Slice Layout/roi_layout/Single Slice:3 Slices:Mosaic:Mosaic 2:Mosaic 4:Mosaic 8:Mosaic 16/0
 ROI/Output Format/roi_format/nii.gz:mat:txt/0
 Tracking/Tracking Index/tracking_index/fa:adc/0
 Tracking/Tracking Threshold (0=random)/fa_threshold/float:0:2:0.01:5/0.1

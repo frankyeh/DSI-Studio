@@ -383,28 +383,32 @@ void slice_view_scene::show_slice(void)
     }
     else
     {
-        unsigned int skip = cur_tracking_window["roi_layout"].toInt()-1;
-        mosaic_size = std::max((int)1,(int)std::ceil(std::sqrt((float)(cur_tracking_window.current_slice->geometry[2] / skip))));
-
+        unsigned int skip = std::pow(2,cur_tracking_window["roi_layout"].toInt()-2);
+        char cur_dim = cur_tracking_window.cur_dim;
+        mosaic_size = std::max((int)1,(int)std::ceil(
+                                   std::sqrt((float)(cur_tracking_window.current_slice->geometry[cur_dim] / skip))));
 
         {
-            auto geometry = cur_tracking_window.current_slice->geometry;
-            unsigned slice_num = geometry[2] / skip;
-            mosaic_image = std::move(tipl::color_image(tipl::geometry<2>(geometry[0]*mosaic_size,
-                                                  geometry[1]*(std::ceil((float)slice_num/(float)mosaic_size)))));
-            int old_z = cur_tracking_window.current_slice->slice_pos[2];
+            char dim_order[3][2]= {{1,2},{0,2},{0,1}};
+            auto dim = cur_tracking_window.current_slice->geometry;
+            unsigned slice_num = dim[cur_dim] / skip;
+            mosaic_image = std::move(tipl::color_image(tipl::geometry<2>(dim[dim_order[cur_dim][0]]*mosaic_size,
+                                                  dim[dim_order[cur_dim][1]]*(std::ceil((float)slice_num/(float)mosaic_size)))));
+            int old_z = cur_tracking_window.current_slice->slice_pos[cur_tracking_window.cur_dim];
             for(unsigned int z = 0;z < slice_num;++z)
             {
-                cur_tracking_window.current_slice->slice_pos[2] = z*skip;
+                cur_tracking_window.current_slice->slice_pos[cur_tracking_window.cur_dim] = z*skip;
                 tipl::color_image slice_image;
-                cur_tracking_window.current_slice->get_slice(slice_image,2,cur_tracking_window.overlay_slices);
+                cur_tracking_window.current_slice->get_slice(slice_image,cur_tracking_window.cur_dim,cur_tracking_window.overlay_slices);
 
                 cur_tracking_window.regionWidget->draw_region(slice_image);
-                tipl::vector<2,int> pos(geometry[0]*(z%mosaic_size),
-                                         geometry[1]*(z/mosaic_size));
+                if(cur_dim != 2)
+                    tipl::flip_y(slice_image);
+                tipl::vector<2,int> pos(dim[dim_order[cur_dim][0]]*(z%mosaic_size),
+                                         dim[dim_order[cur_dim][1]]*(z/mosaic_size));
                 tipl::draw(slice_image,mosaic_image,pos);
             }
-            cur_tracking_window.current_slice->slice_pos[2] = old_z;
+            cur_tracking_window.current_slice->slice_pos[cur_tracking_window.cur_dim] = old_z;
         }
 
         QImage qimage((unsigned char*)&*mosaic_image.begin(),mosaic_image.width(),mosaic_image.height(),QImage::Format_RGB32);
