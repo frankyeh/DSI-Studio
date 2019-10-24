@@ -110,7 +110,8 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
     ui->output_helix_angle->setChecked(settings.value("output_helix_angle",0).toInt());
     ui->rdi->setChecked(settings.value("output_rdi",1).toInt());
     ui->check_btable->setChecked(settings.value("check_btable",1).toInt());
-
+    if(handle->voxel.vs[2] > handle->voxel.vs[0]*2.0f)
+        ui->check_btable->setChecked(false);
     ui->report->setText(handle->voxel.report.c_str());
 
     max_source_value = *std::max_element(handle->src_dwi_data.back(),
@@ -307,7 +308,7 @@ void reconstruction_window::doReconstruction(unsigned char method_id,bool prompt
     handle->voxel.dim = dim_backup;
     handle->voxel.vs = vs;
     if(method_id == 7) // QSDR
-        handle->voxel.calculate_mask(handle->dwi_sum);
+        handle->calculate_dwi_sum();
     if (!QFileInfo(msg).exists())
     {
         QMessageBox::information(this,"error",msg,0);
@@ -355,6 +356,25 @@ void reconstruction_window::on_save_mask_clicked()
     region.LoadFromBuffer(handle->voxel.mask);
     region.SaveToFile(filename.toLocal8Bit().begin());
 }
+void reconstruction_window::on_actionFlip_bx_triggered()
+{
+    command("[Step T2][Edit][Change b-table:flip bx]");
+    ui->check_btable->setChecked(false);
+    QMessageBox::information(this,"DSI Studio","B-table flipped",0);
+}
+void reconstruction_window::on_actionFlip_by_triggered()
+{
+    command("[Step T2][Edit][Change b-table:flip by]");
+    ui->check_btable->setChecked(false);
+    QMessageBox::information(this,"DSI Studio","B-table flipped",0);
+}
+void reconstruction_window::on_actionFlip_bz_triggered()
+{
+    command("[Step T2][Edit][Change b-table:flip bz]");
+    ui->check_btable->setChecked(false);
+    QMessageBox::information(this,"DSI Studio","B-table flipped",0);
+}
+
 void reconstruction_window::command(std::string cmd,std::string param)
 {
     handle->command(cmd,param);
@@ -973,7 +993,6 @@ void reconstruction_window::on_actionEddy_Motion_Correction_triggered()
     if(!prog_aborted())
     {
         handle->calculate_dwi_sum();
-        handle->voxel.calculate_mask(handle->dwi_sum);
         load_b_table();
     }
 }

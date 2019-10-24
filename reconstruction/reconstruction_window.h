@@ -73,9 +73,9 @@ private slots:
     void on_actionRotate_to_MNI_triggered(){command("[Step T2][Edit][Rotate to MNI]");}
 
     void on_actionTrim_image_triggered(){command("[Step T2][Edit][Trim]");}
-    void on_actionFlip_bx_triggered(){command("[Step T2][Edit][Change b-table:flip bx]");QMessageBox::information(this,"DSI Studio","B-table flipped",0);}
-    void on_actionFlip_by_triggered(){command("[Step T2][Edit][Change b-table:flip by]");QMessageBox::information(this,"DSI Studio","B-table flipped",0);}
-    void on_actionFlip_bz_triggered(){command("[Step T2][Edit][Change b-table:flip bz]");QMessageBox::information(this,"DSI Studio","B-table flipped",0);}
+    void on_actionFlip_bx_triggered();
+    void on_actionFlip_by_triggered();
+    void on_actionFlip_bz_triggered();
 
     void on_b_table_itemSelectionChanged();
     void on_zoom_in_clicked();

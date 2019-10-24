@@ -41,14 +41,41 @@ void ImageModel::calculate_dwi_sum(void)
             dwi_sum[pos] += src_dwi_data[index][pos];
     });
 
-    float t = tipl::segmentation::otsu_threshold(dwi_sum);
-    tipl::upper_threshold(dwi_sum,t*3.0f);
-    tipl::normalize(dwi_sum,1.0f);
-
+    float max_value = std::min<float>(*std::max_element(dwi_sum.begin(),dwi_sum.end()),
+                                     tipl::segmentation::otsu_threshold(dwi_sum)*3.0f);
+    float min_value = max_value;
+    // handle 0 strip with background value condition
+    if(dwi_sum.depth() < 200)
+    {
+        for (unsigned int index = 0;index < dwi_sum.size();++index)
+            if (dwi_sum[index] < min_value && dwi_sum[index] > 0)
+                min_value = dwi_sum[index];
+        tipl::minus_constant(dwi_sum,min_value);
+    }
+    float r = max_value-min_value;
+    if(r != 0.0f)
+        r = 255.9f/r;
     // update dwi
     dwi.resize(voxel.dim);
     for(size_t index = 0;index < dwi.size();++index)
-        dwi[index] = uint8_t(std::floor(dwi_sum[index]*255.9f));
+        dwi[index] = uint8_t(std::max<float>(0.0f,std::min<float>(255.0f,std::floor((dwi_sum[index]-min_value)*r))));
+
+    // update mask
+    tipl::threshold(dwi_sum,voxel.mask,min_value + (max_value-min_value)*0.2f,1,0);
+    if(dwi_sum.depth() < 200)
+    {
+        tipl::par_for(voxel.mask.depth(),[&](int i)
+        {
+            tipl::pointer_image<unsigned char,2> I(&voxel.mask[0]+size_t(i)*voxel.mask.plane_size(),
+                    tipl::geometry<2>(voxel.mask.width(),voxel.mask.height()));
+            tipl::morphology::defragment(I);
+            tipl::morphology::recursive_smoothing(I,10);
+            tipl::morphology::defragment(I);
+        });
+        tipl::morphology::recursive_smoothing(voxel.mask,10);
+        tipl::morphology::defragment(voxel.mask);
+        tipl::morphology::recursive_smoothing(voxel.mask,10);
+    }
 }
 
 void ImageModel::remove(unsigned int index)
@@ -359,8 +386,13 @@ bool ImageModel::command(std::string cmd,std::string param)
         int threshold;
         if(param.empty())
         {
-            bool ok;
-            threshold = QInputDialog::getInt(0,"DSI Studio","Please assign the threshold");
+            bool ok = true;
+            threshold = (voxel.dim[2] < 200) ?
+                    QInputDialog::getInt(nullptr,"DSI Studio","Please assign the threshold",
+                                                         int(tipl::segmentation::otsu_threshold(dwi)),
+                                                         int(*std::min_element(dwi.begin(),dwi.end())),
+                                                         int(*std::max_element(dwi.begin(),dwi.end()))+1,1,&ok)
+                    :QInputDialog::getInt(nullptr,"DSI Studio","Please assign the threshold");
             if (!ok)
                 return true;
         }
@@ -701,7 +733,6 @@ void ImageModel::trim(void)
     tipl::crop(dwi,range_min,range_max);
     voxel.dim = voxel.mask.geometry();
     voxel.dwi_data.clear();
-    voxel.calculate_mask(dwi_sum);
 }
 
 float interpo_pos(float v1,float v2,float u1,float u2)
@@ -881,7 +912,6 @@ void ImageModel::distortion_correction(const ImageModel& rhs)
         src_dwi_data[i] = &(new_dwi[i][0]);
 
     calculate_dwi_sum();
-    voxel.calculate_mask(dwi_sum);
 
 }
 
@@ -1059,7 +1089,6 @@ bool ImageModel::load_from_file(const char* dwi_file_name)
                 }
             }
             calculate_dwi_sum();
-            voxel.calculate_mask(dwi_sum);
             return !new_dwi.empty();
         }
         error_msg = "Cannot open file";
@@ -1156,8 +1185,6 @@ bool ImageModel::load_from_file(const char* dwi_file_name)
         if(size_t(row)*size_t(col) == voxel.dim.size())
             std::copy(mask_ptr,mask_ptr+size_t(row)*size_t(col),voxel.mask.begin());
     }
-    else
-        voxel.calculate_mask(dwi_sum);
     voxel.steps += "[Step T2][Reconstruction] open ";
     voxel.steps += QFileInfo(dwi_file_name).fileName().toStdString();
     voxel.steps += "\n";

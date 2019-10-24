@@ -86,31 +86,6 @@ void Voxel::load_from_src(ImageModel& image_model)
 
 }
 
-
-void Voxel::calculate_mask(const tipl::image<float,3>& dwi_sum)
-{
-    tipl::threshold(dwi_sum,mask,0.2f,1,0);
-    if(dwi_sum.depth() < 10)
-    {
-        for(int i = 0;i < mask.depth();++i)
-        {
-            tipl::pointer_image<unsigned char,2> I(&mask[0]+size_t(i)*mask.plane_size(),
-                    tipl::geometry<2>(mask.width(),mask.height()));
-            tipl::morphology::defragment(I);
-            tipl::morphology::recursive_smoothing(I,10);
-            tipl::morphology::defragment(I);
-        }
-    }
-    else
-    if(dwi_sum.depth() < 200)
-    {
-        tipl::morphology::recursive_smoothing(mask,10);
-        tipl::morphology::defragment(mask);
-        tipl::morphology::recursive_smoothing(mask,10);
-    }
-}
-
-
 void Voxel::run(void)
 {
     try{

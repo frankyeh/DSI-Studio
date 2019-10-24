@@ -56,7 +56,6 @@ public:
 public:
 
     tipl::image<unsigned char,3> mask;
-    void calculate_mask(const tipl::image<float,3>& dwi_sum);
 public:
     std::vector<const unsigned short*> dwi_data;
     std::vector<tipl::vector<3,float> > bvectors;
