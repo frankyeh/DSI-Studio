@@ -135,14 +135,13 @@ int rec(void)
     handle->voxel.ti.init(uint16_t(po.get("odf_order",int(8))));
     handle->voxel.odf_resolving = po.get("odf_resolving",int(0));
     handle->voxel.output_odf = po.get("record_odf",int(0));
-    handle->voxel.check_btable = po.get("check_btable",int(1));
+    handle->voxel.check_btable = po.get("check_btable",int(handle->voxel.dim[2] < handle->voxel.dim[0]*2.0 ? 1:0));
     handle->voxel.output_tensor = po.get("output_tensor",int(0));
     handle->voxel.output_rdi = po.get("output_rdi",int(1)) && (method_index == 4 || method_index == 7);
     handle->voxel.max_fiber_number = uint32_t(po.get("num_fiber",int(5)));
     handle->voxel.r2_weighted = po.get("r2_weighted",int(0));
     handle->voxel.csf_calibration = po.get("csf_calibration",int(0)) && method_index == 4;
     handle->voxel.thread_count = po.get("thread_count",uint32_t(std::thread::hardware_concurrency()));
-
 
 
 
