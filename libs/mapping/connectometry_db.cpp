@@ -641,7 +641,7 @@ void connectometry_db::get_subject_slice(unsigned int subject_index,unsigned cha
         if(tmp[index])
             slice[index] = subject_qa[subject_index][tmp[index]];
 }
-void connectometry_db::get_subject_fa(unsigned int subject_index,std::vector<std::vector<float> >& fa_data) const
+void connectometry_db::get_subject_fa(unsigned int subject_index,std::vector<std::vector<float> >& fa_data,bool normalize_qa) const
 {
     fa_data.resize(handle->dir.num_fiber);
     for(unsigned int index = 0;index < handle->dir.num_fiber;++index)
@@ -653,6 +653,8 @@ void connectometry_db::get_subject_fa(unsigned int subject_index,std::vector<std
         {
             unsigned int pos = s_index + fib_offset;
             fa_data[i][cur_index] = subject_qa[subject_index][pos];
+            if(normalize_qa)
+                fa_data[i][cur_index] *= subject_qa_sd[subject_index];
         }
     }
 }
