@@ -1206,43 +1206,18 @@ void stat_model::remove_subject(unsigned int index)
         X.erase(X.begin()+index*feature_count,X.begin()+(index+1)*feature_count);
     subject_index.erase(subject_index.begin()+index);
 }
-void stat_model::get_missing_list(double missing_value,std::set<size_t,std::greater<size_t> >& remove_list)
-{
-    switch(type)
-    {
-        case 0:  // group
-            for(unsigned int index = 0;index < label.size();++index)
-            {
-                if(label[index] == missing_value)
-                    remove_list.insert(index);
-            }
-            break;
 
-        case 1: // multiple regression
-            for(unsigned int index = 0;index < subject_index.size();++index)
-            {
-                for(unsigned int j = 1;j < feature_count;++j)
-                {
-                    if(X[index*feature_count + j] == missing_value)
-                    {
-                        remove_list.insert(index);
-                        break;
-                    }
-                }
-            }
-            break;
-    }
-}
-void stat_model::remove_data(const std::set<size_t,std::greater<size_t> > remove_list)
+void stat_model::remove_data(const std::vector<char>& remove_list)
 {
-    for(auto index: remove_list)
-    {
-        if(!label.empty())
-            label.erase(label.begin()+index);
-        if(!X.empty())
-            X.erase(X.begin()+index*feature_count,X.begin()+(index+1)*feature_count);
-        subject_index.erase(subject_index.begin()+index);
-    }
+    for(int index = int(remove_list.size())-1;index >= 0;--index)
+        if(remove_list[uint32_t(index)])
+        {
+            if(!label.empty())
+                label.erase(label.begin()+index);
+            if(!X.empty())
+                X.erase(X.begin()+index*feature_count,X.begin()+(index+1)*feature_count);
+            subject_index.erase(subject_index.begin()+index);
+        }
 }
 
 bool stat_model::resample(stat_model& rhs,bool null,bool bootstrap)

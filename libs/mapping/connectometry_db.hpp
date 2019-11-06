@@ -87,8 +87,8 @@ public: // group
     unsigned int group1_count,group2_count;
 public: // multiple regression
     std::vector<double> X,X_min,X_max,X_range;
-    unsigned int feature_count;
-    unsigned int study_feature;
+    unsigned int feature_count = 0;
+    unsigned int study_feature = 0;
     std::vector<std::string> variables;
     enum {percentage = 0,t = 1,beta = 2,percentile = 3,mean_dif = 4} threshold_type;
     tipl::multiple_regression<double> mr;
@@ -100,9 +100,7 @@ public:
     stat_model(void):threshold_type(t),individual_data(nullptr){}
 public:
     std::string cohort_text;
-    void get_missing_list(double missing_value,std::set<size_t,std::greater<size_t> >& remove_list);
-    void remove_data(const std::set<size_t,std::greater<size_t> > remove_list);
-
+    void remove_data(const std::vector<char>& remove_list);
 public:
     void read_demo(const connectometry_db& db);
     void remove_subject(unsigned int index);    
