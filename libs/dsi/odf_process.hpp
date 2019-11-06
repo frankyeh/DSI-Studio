@@ -63,42 +63,44 @@ public:
 
 
             //calculate averaged angle distance
-            float averaged_angle = 0.0;
+            double averaged_angle = 0.0;
             for(unsigned int i = from;i < to;++i)
             {
-                float max_cos = 0.0;
+                double max_cos = 0.0;
                 for(unsigned int j = from;j < to;++j)
                 {
                     if(i == j)
                         continue;
-                    float cur_cos = std::fabs(std::cos(voxel.bvectors[i]*voxel.bvectors[j]));
-                    if(cur_cos > 0.998f)
+                    double cur_cos = std::abs(std::cos(voxel.bvectors[i]*voxel.bvectors[j]));
+                    if(cur_cos > 0.998)
                         continue;
-                    max_cos = std::max<float>(max_cos,cur_cos);
+                    max_cos = std::max<double>(max_cos,cur_cos);
                 }
                 averaged_angle += std::acos(max_cos);
             }
             averaged_angle /= num;
 
             //calculate averaged b_value
-            float avg_b = float(tipl::mean(voxel.bvalues.begin()+from,voxel.bvalues.begin()+to));
+            double avg_b = tipl::mean(voxel.bvalues.begin()+from,voxel.bvalues.begin()+to);
             unsigned int trans_old_size = uint32_t(trans.size());
             trans.resize(trans.size() + new_dir.half_vertices_count*b_count);
             for(unsigned int i = 0; i < new_dir.half_vertices_count;++i)
             {
-                std::vector<float> t(b_count);
-                float effective_b = 0.0;
+                std::vector<double> t(b_count);
+                double effective_b = 0.0;
                 for(unsigned int j = from;j < to;++j)
                 {
-                    float angle = std::acos(std::min<float>(1.0f,std::fabs(new_dir.vertices[i]*voxel.bvectors[j])));
+                    double angle = std::acos(std::min<double>(1.0,std::abs(double(new_dir.vertices[i]*voxel.bvectors[j]))));
                     angle/=averaged_angle;
-                    t[j] = std::exp(-2.0f*angle*angle); // if the angle == 1, then weighting = 0.135
-                    effective_b += t[j]*voxel.bvalues[j];
+                    t[j] = std::exp(-2.0*angle*angle); // if the angle == 1, then weighting = 0.135
+                    effective_b += t[j]*double(voxel.bvalues[j]);
                 }
-                float sum_t = std::accumulate(t.begin(),t.end(),0.0f);
-                tipl::multiply_constant(t,avg_b/1000.0f/sum_t);
+                double sum_t = std::accumulate(t.begin(),t.end(),0.0);
+                tipl::multiply_constant(t,avg_b/1000.0/sum_t);
+                if(std::isnan(t[0])) // the sampling is too sparse
+                    throw "Scheme balance failed due to insufficient sampling";
                 std::copy(t.begin(),t.end(),trans.begin() + trans_old_size + i * b_count);
-                new_bvalues.push_back(effective_b/sum_t);
+                new_bvalues.push_back(float(effective_b/sum_t));
                 new_bvectors.push_back(new_dir.vertices[i]);
             }
             total_signals += new_dir.half_vertices_count;
