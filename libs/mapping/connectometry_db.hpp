@@ -90,14 +90,13 @@ public: // multiple regression
     unsigned int feature_count = 0;
     unsigned int study_feature = 0;
     std::vector<std::string> variables;
-    enum {percentage = 0,t = 1,beta = 2,percentile = 3,mean_dif = 4} threshold_type;
     tipl::multiple_regression<double> mr;
     void select_variables(const std::vector<char>& sel);
 public: // individual
     const float* individual_data;
     float individual_data_sd;
 public:
-    stat_model(void):threshold_type(t),individual_data(nullptr){}
+    stat_model(void):individual_data(nullptr){}
 public:
     std::string cohort_text;
     void remove_data(const std::vector<char>& remove_list);
@@ -125,7 +124,6 @@ public:
         X_range = rhs.X_range;
         feature_count = rhs.feature_count;
         study_feature = rhs.study_feature;
-        threshold_type = rhs.threshold_type;
         mr = rhs.mr;
         individual_data = rhs.individual_data;
         return *this;

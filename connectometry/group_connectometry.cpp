@@ -436,7 +436,6 @@ bool group_connectometry::setup_model(stat_model& m)
                 goto error;
         }
         m.select_variables(sel);
-        m.threshold_type = stat_model::t;
         m.remove_data(remove_list);
 
     }
