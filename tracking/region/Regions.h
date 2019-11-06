@@ -224,11 +224,27 @@ public:
                 undo_backup.push_back(std::move(region));
             region.clear();
             std::vector<tipl::vector<3,short> > points;
-            for (tipl::pixel_index<3>index(mask.geometry());index < mask.size();++index)
-                if (mask[index.index()] != 0)
-                    points.push_back(tipl::vector<3,short>(index.x(), index.y(),index.z()));
+
             if(mask.width() != handle->dim[0])
                 resolution_ratio = (float)mask.width()/(float)handle->dim[0];
+            if(resolution_ratio < 1.0f)
+            {
+                for (tipl::pixel_index<3>index(handle->dim);index < handle->dim.size();++index)
+                {
+                    tipl::vector<3> pos(index);
+                    pos *= resolution_ratio;
+                    pos.round();
+                    if(mask.geometry().is_valid(pos[0],pos[1],pos[2]) &&
+                       mask.at(pos[0],pos[1],pos[2]))
+                        points.push_back(tipl::vector<3,short>(index.x(), index.y(),index.z()));
+                }
+                resolution_ratio = 1.0f;
+            }
+            else {
+                for (tipl::pixel_index<3>index(mask.geometry());index < mask.size();++index)
+                    if (mask[index.index()] != 0)
+                        points.push_back(tipl::vector<3,short>(index.x(), index.y(),index.z()));
+            }
             region.swap(points);
         }
         void SaveToBuffer(tipl::image<unsigned char, 3>& mask,float target_resolution);

@@ -718,10 +718,28 @@ bool RegionTableWidget::load_multiple_roi_nii(QString file_name)
         else
         {
             float r = float(cur_tracking_window.handle->dim[0])/float(from.width());
-            for (tipl::pixel_index<3>index(from.geometry());index < from.size();++index)
+            if(r <= 1.0f)
+            {
+                for (tipl::pixel_index<3>index(from.geometry());index < from.size();++index)
                 if(from[index.index()])
                     region_points[value_map[from[index.index()]]].
                             push_back(tipl::vector<3,short>(r*index.x(), r*index.y(),r*index.z()));
+            }
+            else
+            {
+                for (tipl::pixel_index<3>index(cur_tracking_window.handle->dim);
+                            index < cur_tracking_window.handle->dim.size();++index)
+                {
+                    tipl::vector<3> pos(index);
+                    pos /= r;
+                    pos.round();
+                    if(!from.geometry().is_valid(pos))
+                        continue;
+                    tipl::pixel_index<3> new_index(pos[0],pos[1],pos[2],from.geometry());
+                    region_points[value_map[from[new_index.index()]]].push_back(
+                                tipl::vector<3,short>(index));
+                }
+            }
         }
     }
     begin_prog("loading ROIs");
