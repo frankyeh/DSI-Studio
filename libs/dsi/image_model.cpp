@@ -37,6 +37,8 @@ void ImageModel::calculate_dwi_sum(void)
     dwi_sum.resize(voxel.dim);
     tipl::par_for(src_dwi_data.size(),[&](unsigned int index)
     {
+        if(index > 0 && src_bvalues[index] == 0)
+            return;
         for (size_t pos = 0;pos < dwi_sum.size();++pos)
             dwi_sum[pos] += src_dwi_data[index][pos];
     });
