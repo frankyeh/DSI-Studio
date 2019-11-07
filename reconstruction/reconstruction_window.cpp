@@ -110,7 +110,7 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
     ui->output_helix_angle->setChecked(settings.value("output_helix_angle",0).toInt());
     ui->rdi->setChecked(settings.value("output_rdi",1).toInt());
     ui->check_btable->setChecked(settings.value("check_btable",1).toInt());
-    if(handle->voxel.vs[2] > handle->voxel.vs[0]*2.0f)
+    if(handle->voxel.vs[2] > handle->voxel.vs[0]*2.0f || handle->voxel.vs[0] < 0.5f)
         ui->check_btable->setChecked(false);
     ui->report->setText(handle->voxel.report.c_str());
 
