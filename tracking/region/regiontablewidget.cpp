@@ -698,7 +698,7 @@ bool RegionTableWidget::load_multiple_roi_nii(QString file_name)
         {
             tipl::vector<3> p(index.begin()); // point in subject space
             p.to(convert); // point in "from" space
-            p += 0.5f;
+            p.round();
             if (from.geometry().is_valid(p))
             {
                 unsigned int value = from.at(uint32_t(p[0]),uint32_t(p[1]),uint32_t(p[2]));
