@@ -2130,8 +2130,13 @@ void tracking_window::on_actionMark_Region_on_T1W_T2W_triggered()
     CustomSliceModel* slice = dynamic_cast<CustomSliceModel*>(current_slice.get());
     if(!slice || slice->source_images.empty())
         return;
+    bool ok = true;
+    double ratio = QInputDialog::getDouble(this,"DSI Studio",
+            "Aissgn intensity (ratio to the maximum, e.g., 1.2 = 1.2*max)",1.0,0.0,10.0,1,&ok);
+    if(!ok)
+        return;
     auto current_region = regionWidget->regions[uint32_t(regionWidget->currentRow())];
-    float mark_value = slice->get_value_range().second*1.1f;
+    float mark_value = slice->get_value_range().second*float(ratio);
     tipl::image<unsigned char, 3> mask;
     current_region->SaveToBuffer(mask);
     float resolution_ratio = current_region->resolution_ratio;
@@ -2154,6 +2159,11 @@ void tracking_window::on_actionMark_Tracts_on_T1W_T2W_triggered()
         return;
     if(tractWidget->tract_models.empty())
         return;
+    bool ok = true;
+    double ratio = QInputDialog::getDouble(this,"DSI Studio",
+            "Aissgn intensity (ratio to the maximum, e.g., 1.2 = 1.2*max)",1.0,0.0,10.0,1,&ok);
+    if(!ok)
+        return;
     tipl::image<unsigned char, 3> t_mask(slice->source_images.geometry());
     auto checked_tracks = tractWidget->get_checked_tracks();
     tipl::par_for(checked_tracks.size(),[&](size_t i){
@@ -2171,7 +2181,7 @@ void tracking_window::on_actionMark_Tracts_on_T1W_T2W_triggered()
             paint_track_on_volume(t_mask,tracks);
         }
     });
-    float mark_value = slice->get_value_range().second*1.1f;
+    float mark_value = slice->get_value_range().second*float(ratio);
     for(size_t i = 0;i < t_mask.size();++i)
         if(t_mask[i])
             slice->source_images[i] = mark_value;
