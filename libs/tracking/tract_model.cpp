@@ -473,6 +473,7 @@ bool TractModel::save_tracts_to_file(const char* file_name_)
 {
     std::string file_name(file_name_);
     std::string ext;
+    saved = true;
     if(file_name.length() > 4)
         ext = std::string(file_name.end()-4,file_name.end());
     if (ext == std::string(".trk") || ext == std::string("k.gz"))
@@ -772,6 +773,8 @@ bool TractModel::save_all(const char* file_name_,
 {
     if(all.empty())
         return false;
+    for(unsigned int index = 0;index < all.size();++index)
+        all[index]->saved = true;
     std::string file_name(file_name_);
     std::string ext;
     if(file_name.length() > 4)
@@ -1075,6 +1078,7 @@ void TractModel::delete_tracts(const std::vector<unsigned int>& tracts_to_delete
     is_cut.push_back(0);
     // no redo once track deleted
     redo_size.clear();
+    saved = tract_data.empty();
 }
 //---------------------------------------------------------------------------
 void TractModel::select_tracts(const std::vector<unsigned int>& tracts_to_select)
@@ -1619,6 +1623,7 @@ void TractModel::add_tracts(std::vector<std::vector<float> >& new_tract,tipl::rg
         tract_color.push_back(color);
         tract_tag.push_back(0);
     }
+    saved = false;
 }
 
 void TractModel::add_tracts(std::vector<std::vector<float> >& new_tract, unsigned int length_threshold)
@@ -1633,6 +1638,7 @@ void TractModel::add_tracts(std::vector<std::vector<float> >& new_tract, unsigne
         tract_color.push_back(def_color);
         tract_tag.push_back(0);
     }
+    saved = false;
 }
 //---------------------------------------------------------------------------
 void TractModel::get_density_map(tipl::image<unsigned int,3>& mapping,

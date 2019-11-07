@@ -10,6 +10,7 @@ class TractModel{
 public:
         std::string report;
         std::string parameter_id;
+        bool saved = true;
 private:
         std::shared_ptr<fib_data> handle;
         tipl::geometry<3> geometry;
@@ -58,6 +59,7 @@ public:
             tract_color = rhs.tract_color;
             tract_tag = rhs.tract_tag;
             report = rhs.report;
+            saved = true;
             return *this;
         }
         std::shared_ptr<fib_data> get_handle(void){return handle;}
