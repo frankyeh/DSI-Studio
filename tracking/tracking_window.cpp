@@ -67,6 +67,17 @@ void populate_templates(QComboBox* combo)
 
 void tracking_window::closeEvent(QCloseEvent *event)
 {
+    for(size_t index = 0;index < tractWidget->tract_models.size();++index)
+        if(!tractWidget->tract_models[index]->saved)
+        {
+            if (QMessageBox::question( this, "DSI Studio",
+                "Tractography not saved. Close?\n",QMessageBox::No | QMessageBox::Yes,QMessageBox::No) == QMessageBox::No)
+            {
+                event->ignore();
+                return;
+            }
+            break;
+        }
     QMainWindow::closeEvent(event);
     // clean up texture here when makeCurrent is still working
     glWidget->clean_up();
@@ -2104,7 +2115,7 @@ void tracking_window::on_SliceModality_currentIndexChanged(int index)
 void tracking_window::on_actionSave_T1W_T2W_images_triggered()
 {
     CustomSliceModel* slice = dynamic_cast<CustomSliceModel*>(current_slice.get());
-    if(!current_slice)
+    if(!slice)
         return;
     QString filename = QFileDialog::getSaveFileName(
         this,"Save T1W/T2W Image",QFileInfo(windowTitle()).absolutePath()+"//"+slice->name.c_str()+"_modified.nii.gz","Image files (*nii.gz);;All files (*)" );
@@ -2197,4 +2208,89 @@ void tracking_window::on_actionApply_Operation_triggered()
         on_SliceModality_currentIndexChanged(ui->SliceModality->currentIndex());
         return;
     }
+}
+
+void tracking_window::on_actionSave_Slices_to_DICOM_triggered()
+{
+    CustomSliceModel* slice = dynamic_cast<CustomSliceModel*>(current_slice.get());
+    if(!slice || slice->source_images.empty())
+        return;
+
+    QMessageBox::information(this,"DSI Studio","Please assign the original DICOM files");
+    QStringList files = QFileDialog::getOpenFileNames(this,"Assign DICOM files",
+                                                      QFileInfo(windowTitle()).absolutePath(),"DICOM files (*.dcm);;All files (*)");
+    if(files.isEmpty())
+        return;
+    tipl::io::dicom header;
+    tipl::vector<3> row_orientation;
+    if(!header.load_from_file(files[0].toStdString().c_str()) ||
+       !header.get_image_row_orientation(row_orientation.begin()))
+    {
+        QMessageBox::information(this,"DSI Studio","Invalid DICOM files");
+        return;
+    }
+    auto I = slice->source_images;
+    bool is_axial = row_orientation[0] > row_orientation[1];
+    size_t read_size = is_axial ? I.plane_size():size_t(I.height()*I.depth());
+    int failcode= 0;
+    std::vector<char> slice_matched(size_t(is_axial ? I.depth():I.width()));
+    begin_prog("Writing data");
+    tipl::par_for2(files.size(),[&](int i,int id)
+    {
+        if(id == 0)
+            check_prog(i,files.size());
+        std::vector<char> buf;
+        std::ifstream in(files[i].toStdString().c_str(),std::ios::binary);
+        in.seekg(0,in.end);
+        buf.resize(size_t(in.tellg()));
+        in.seekg(0,in.beg);
+        if(read_size*sizeof(short) > buf.size() || !in.read(&buf[0],uint64_t(buf.size())))
+        {
+            failcode = 1;
+            return;
+        }
+        std::vector<short> image_buf(read_size);
+        std::copy(buf.end()-read_size*sizeof(short),buf.end(),(char*)&image_buf[0]);
+        for(size_t j = 0;j < slice_matched.size();++j)
+        {
+            if(slice_matched[j])
+                continue;
+            tipl::image<short,2> slice;
+            tipl::volume2slice(I, slice, is_axial ? 2 : 0, j);
+            if(!is_axial)
+                tipl::flip_y(slice);
+            size_t mismatched_count = 0;
+            size_t check_count = slice.size()/3;
+            size_t max_mismatch_count = check_count/2;
+            for(size_t k = 0;k < check_count && mismatched_count < max_mismatch_count;++k)
+                if(image_buf[k+check_count] != slice[k+check_count])
+                    ++mismatched_count;
+            if(mismatched_count < max_mismatch_count) // found a match
+            {
+                std::copy(slice.begin(),slice.end(),(short*)&(char&)*(buf.end()-read_size*sizeof(short)));
+                QFileInfo info(files[i]);
+                QString output_name = info.path() + "/mod_" + info.completeBaseName() + ".dcm";
+                std::ofstream out(output_name.toStdString().c_str(),std::ios::binary);
+                if(!out)
+                {
+                    failcode = 3;
+                    return;
+                }
+                out.write(&buf[0],int64_t(buf.size()));
+                slice_matched[j] = 1;
+                return;
+            }
+        }
+        failcode = 2;
+    });
+    check_prog(0,0);
+    if(failcode == 0)
+        QMessageBox::information(this,"DSI Studio","File saved");
+    if(failcode == 1)
+        QMessageBox::information(this,"DSI Studio","Invalid DICOM format");
+    if(failcode == 2)
+        QMessageBox::information(this,"DSI Studio","Subject DICOM mismatch");
+    if(failcode == 3)
+        QMessageBox::information(this,"DSI Studio","Cannot output DICOM");
+
 }

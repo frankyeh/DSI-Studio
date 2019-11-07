@@ -961,6 +961,7 @@
     <addaction name="actionInsert_MNI_images"/>
     <addaction name="separator"/>
     <addaction name="actionSave_T1W_T2W_images"/>
+    <addaction name="actionSave_Slices_to_DICOM"/>
     <addaction name="actionMark_Tracts_on_T1W_T2W"/>
     <addaction name="actionMark_Region_on_T1W_T2W"/>
     <addaction name="separator"/>
@@ -3502,6 +3503,11 @@ Tracking</string>
   <action name="actionApply_Operation">
    <property name="text">
     <string>Apply Operation...</string>
+   </property>
+  </action>
+  <action name="actionSave_Slices_to_DICOM">
+   <property name="text">
+    <string>Save Slices to DICOM...</string>
    </property>
   </action>
  </widget>

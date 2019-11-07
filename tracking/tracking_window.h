@@ -185,6 +185,7 @@ private slots:
     void on_actionMark_Region_on_T1W_T2W_triggered();
     void on_actionMark_Tracts_on_T1W_T2W_triggered();
     void on_actionApply_Operation_triggered();
+    void on_actionSave_Slices_to_DICOM_triggered();
 };
 
 #endif // TRACKING_WINDOW_H
