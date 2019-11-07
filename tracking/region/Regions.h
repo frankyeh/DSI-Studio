@@ -234,7 +234,7 @@ public:
                     tipl::vector<3> pos(index);
                     pos *= resolution_ratio;
                     pos.round();
-                    if(mask.geometry().is_valid(pos[0],pos[1],pos[2]) &&
+                    if(mask.geometry().is_valid(pos) &&
                        mask.at(pos[0],pos[1],pos[2]))
                         points.push_back(tipl::vector<3,short>(index.x(), index.y(),index.z()));
                 }
