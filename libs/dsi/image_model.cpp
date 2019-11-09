@@ -753,15 +753,33 @@ void get_distortion_map(const image_type& v1,
     tipl::par_for(v1.depth()*h,[&](int z)
     {
         int base_pos = z*w;
-        std::vector<float> cdf_x1(w),cdf_x2(w);//,cdf(h);
-        tipl::pdf2cdf(v1.begin()+base_pos,v1.begin()+base_pos+w,&cdf_x1[0]);
-        tipl::pdf2cdf(v2.begin()+base_pos,v2.begin()+base_pos+w,&cdf_x2[0]);
-        if(cdf_x1.back() == 0.0 || cdf_x2.back() == 0.0)
+        std::vector<float> line1(v1.begin()+base_pos,v1.begin()+base_pos+w),
+                           line2(v2.begin()+base_pos,v2.begin()+base_pos+w);
+        float sum1 = std::accumulate(line1.begin(),line1.end(),0.0f);
+        float sum2 = std::accumulate(line1.begin(),line1.end(),0.0f);
+        if(sum1 == 0.0f || sum2 == 0.0f)
             return;
+        bool swap12 = sum2 > sum1;
+        if(swap12)
+            std::swap(line1,line2);
+        // now line1 > line2
+        std::vector<float> dif(line1);
+        tipl::minus(dif,line2);
+        tipl::lower_threshold(dif,0.0f);
+        float sum_dif = std::accumulate(dif.begin(),dif.end(),0.0f);
+        if(sum_dif == 0.0f)
+            return;
+        tipl::multiply_constant(dif,std::abs(sum1-sum2)/sum_dif);
+        tipl::minus(line1,dif);
+        tipl::lower_threshold(line1,0.0f);
+        if(swap12)
+            std::swap(line1,line2);
 
+        std::vector<float> cdf_x1(w),cdf_x2(w);//,cdf(h);
+        tipl::pdf2cdf(line1.begin(),line1.end(),&cdf_x1[0]);
+        tipl::pdf2cdf(line2.begin(),line2.end(),&cdf_x2[0]);
         tipl::multiply_constant(cdf_x2,(cdf_x1.back()+cdf_x2.back())*0.5f/cdf_x2.back());
         tipl::add_constant(cdf_x2,(cdf_x1.back()-cdf_x2.back())*0.5f);
-
         for(int x = 0,pos = base_pos;x < w;++x,++pos)
         {
             if(cdf_x1[x] == cdf_x2[x])
