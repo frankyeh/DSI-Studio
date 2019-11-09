@@ -979,9 +979,7 @@ void GLWidget::renderLR()
 
     if (get_param("show_axis"))
     {
-        float L = get_param_float("axis_line_length");
-        float L2 = L*0.75f;
-
+        float L2 = get_param_float("axis_line_length")*0.75f;
 
         glEnable(GL_COLOR_MATERIAL);
         glDisable(GL_LIGHTING);
@@ -996,7 +994,7 @@ void GLWidget::renderLR()
         GLfloat aspect = float(view_mode == view_mode_type::two ? cur_width/2:cur_width)/float(cur_height);
         GLfloat fH = 0.25f;
         GLfloat fW = fH * aspect;
-        glFrustum( -fW, L2*0.01f,L2*-0.01f, fH, zNear*perspective, zFar*perspective);
+        glFrustum( -fW, std::sqrt(L2)*0.015f,std::sqrt(L2)*-0.015f, fH, zNear*perspective, zFar*perspective);
 
 
         glDisable(GL_DEPTH_TEST);
@@ -1007,20 +1005,21 @@ void GLWidget::renderLR()
         glMultMatrixf(rotation_matrix.begin());
         glLineWidth (get_param_float("axis_line_thickness"));
         glBegin (GL_LINES);
-        glColor3f (1.0f,0.3f,0.3f);  glVertex3f(0,0,0);  glVertex3f(L2,0,0);    // X axis is red.
-        glColor3f (0.3f,1.0f,0.3f);  glVertex3f(0,0,0);  glVertex3f(0,L2,0);    // Y axis is green.
-        glColor3f (0.3f,0.3f,1.0f);  glVertex3f(0,0,0);  glVertex3f(0,0,L2);    // z axis is blue.
+        glColor3f (0.8f,0.5f,0.5f);  glVertex3f(0,0,0);  glVertex3f(L2,0,0);    // X axis is red.
+        glColor3f (0.5f,0.8f,0.5f);  glVertex3f(0,0,0);  glVertex3f(0,L2,0);    // Y axis is green.
+        glColor3f (0.5f,0.5f,0.8f);  glVertex3f(0,0,0);  glVertex3f(0,0,L2);    // z axis is blue.
         glEnd();
         if(get_param("show_axis_label"))
         {
             QFont font;
             font.setPointSize(get_param("axis_label_size"));
             font.setBold(get_param("axis_label_bold"));
-            renderText(0,0,L,"S",font);
+            glColor3f (0.3f,0.3f,1.0f);
+            renderText(0,0,L2,"S",font);
             glColor3f (1.0f,0.3f,0.3f);
-            renderText(L,0,0,"L",font);
+            renderText(L2,0,0,"L",font);
             glColor3f (0.3f,1.0f,0.3f);
-            renderText(0,L,0,"P",font);
+            renderText(0,L2,0,"P",font);
         }
         // This keep shade on other regions black
         glColor3f (0.0f,0.0f,0.0f);
