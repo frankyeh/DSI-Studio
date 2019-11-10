@@ -11,6 +11,7 @@
 #include "region/regiontablewidget.h"
 #include "libs/gzip_interface.hpp"
 #include "libs/tracking/fib_data.hpp"
+#include "opengl/glwidget.h"
 
 QPixmap fromImage(const QImage &I)
 {
@@ -28,64 +29,114 @@ void show_view(QGraphicsScene& scene,QImage I)
     scene.clear();
     scene.addPixmap(fromImage(I));
 }
+void slice_view_scene::show_ruler2(QPainter& paint)
+{
+    int zoom = int(cur_tracking_window.get_scene_zoom());
+    if(sel_mode == 6 && sel_point.size() >= 2)
+    {
+        QPen pen;  // creates a default pen
+        pen.setWidth(2);
+        pen.setCapStyle(Qt::RoundCap);
+        pen.setJoinStyle(Qt::RoundJoin);
+        pen.setColor(Qt::white);
+        paint.setPen(pen);
 
+        short tX = sel_point[0][0];
+        short tY = sel_point[0][1];
+        short X = sel_point[1][0];
+        short Y = sel_point[1][1];
+        paint.drawLine(X,Y,tX,tY);
+        tipl::vector<2,float> from(X,Y);
+        tipl::vector<2,float> to(tX,tY);
+        from -= to;
+        float pixel_length = float(from.length());
+        from /= zoom;
+        from[0] *= cur_tracking_window.current_slice->voxel_size[0];
+        from[1] *= cur_tracking_window.current_slice->voxel_size[1];
+        from[2] *= cur_tracking_window.current_slice->voxel_size[2];
+        float length = float(from.length());
+        float precision = float(std::pow(10.0,std::floor(std::log10(double(length)))-1));
+        float tic_dis = float(std::pow(10.0,std::floor(std::log10(50.0*double(length/pixel_length)))));
+        if(tic_dis*pixel_length/length < 10)
+            tic_dis *= 5.0f;
+        tipl::vector<2,float> tic_dir(Y-tY,tX-X);
+        tic_dir.normalize();
+        tic_dir *= 5.0f;
+        for(float L = 0.0;L < length;L+=tic_dis)
+        {
+            tipl::vector<2,float> npos(tX+(X-tX)*L/length,
+                                       tY+(Y-tY)*L/length);
+            paint.drawLine(int(npos[0]),int(npos[1]),
+                           int(npos[0]+tic_dir[0]),
+                           int(npos[1]+tic_dir[1]));
+            npos += tic_dir*3;
+            paint.drawText(int(npos[0])-40,int(npos[1])-40,80,80,
+                               Qt::AlignHCenter|Qt::AlignVCenter,
+                               QString::number(double(L)));
+        }
+        paint.drawText(X-40,Y-40,80,80,
+                       Qt::AlignHCenter|Qt::AlignVCenter,
+                       QString::number(std::round(double(length)*10.0/double(precision))*double(precision)/10.0)+" mm");
+
+    }
+}
 void slice_view_scene::show_ruler(QPainter& paint)
 {
-    if(sel_mode != 6 || sel_point.size() < 2)
-        return;
+    float zoom = cur_tracking_window.get_scene_zoom();
+    float zoom_2 = zoom/2;
+    int tic_dis = 10;
+    while(zoom*float(tic_dis) < 20.0f)
+        tic_dis *= 2;
+    int tic_length = int(zoom*float(tic_dis));
+
     QPen pen;  // creates a default pen
-    pen.setWidth(2);
+    pen.setWidth(zoom_2);
     pen.setCapStyle(Qt::RoundCap);
     pen.setJoinStyle(Qt::RoundJoin);
     pen.setColor(Qt::white);
     paint.setPen(pen);
-    for(unsigned int index = 1;index < sel_point.size();index += 2)
+
+    QFont f = font();
+    f.setPointSize(tic_length/3);
+    paint.setFont(f);
+    const char dir_x[3] = {1,0,0};
+    const uint8_t cur_dim = cur_tracking_window.cur_dim;
+    // horizontal direction
+    bool flip_x = cur_tracking_window["orientation_convention"].toInt();
     {
-        float tX = sel_point[index-1][0];
-        float tY = sel_point[index-1][1];
-        float X = sel_point[index][0];
-        float Y = sel_point[index][1];
-        paint.drawLine(X, Y, tX, tY);
-        tipl::vector<2,float> from(X,Y);
-        tipl::vector<2,float> to(tX,tY);
-        from -= to;
-        float pixel_length = from.length();
-        from /= cur_tracking_window.get_scene_zoom();
-        from[0] *= cur_tracking_window.current_slice->voxel_size[0];
-        from[1] *= cur_tracking_window.current_slice->voxel_size[1];
-        from[2] *= cur_tracking_window.current_slice->voxel_size[2];
-        float length = from.length();
-        float precision = std::pow(10.0,std::floor(std::log10((double)length))-1);
-        float tic_dis = std::pow(10.0,std::floor(std::log10((double)50.0*length/pixel_length)));
-        if(tic_dis*pixel_length/length < 10)
-            tic_dis *= 5.0;
-
-        tipl::vector<2,float> tic_dir(Y-tY,tX-X);
-        tic_dir.normalize();
-        tic_dir *= 5.0;
-        for(double L = 0.0;1;L+=tic_dis)
+        int length = (cur_tracking_window.current_slice->geometry[dir_x[cur_dim]]-tic_dis)
+                        /tic_dis*tic_dis-tic_dis;
+        int Y = paint.window().height()-tic_length;
+        for(int tic = 0;tic <= length;tic += tic_dis)
         {
-            if(L+tic_dis > length)
-                L = length;
-            tipl::vector<2,float> npos(tX,tY);
-            npos[0] += ((float)X-npos[0])*L/length;
-            npos[1] += ((float)Y-npos[1])*L/length;
-            paint.drawLine(npos[0],npos[1],npos[0]+tic_dir[0],npos[1]+tic_dir[1]);
-            npos += tic_dir;
-            npos += tic_dir;
-            npos += tic_dir;
-            if(L < length)
-                paint.drawText(npos[0]-40,npos[1]-40,80,80,
+            int X = int(float(tic_dis+tic)*zoom+zoom_2);
+            if(flip_x)
+                X = paint.window().width()-X;
+            if(tic+tic_dis <= length)
+                paint.drawLine(X,Y,X+(flip_x ? -tic_length:tic_length),Y);
+            paint.drawLine(X,Y,X,Y+zoom);
+            paint.drawText(X-40,Y+tic_length/2-40,80,80,
                                Qt::AlignHCenter|Qt::AlignVCenter,
-                               QString::number(L));
-            else
-            {
-                paint.drawText(npos[0]-40,npos[1]-40,80,80,
+                               QString::number(double(tic+tic_dis)));
+        }
+    }
+    const char dir_y[3] = {2,2,1};
+    bool flip_y = dir_y[cur_dim] == 2;
+    {
+        int length = (cur_tracking_window.current_slice->geometry[dir_y[cur_dim]]-tic_dis)
+                        /tic_dis*tic_dis-tic_dis;
+        int X = paint.window().width()-tic_length+zoom_2;
+        for(int tic = 0;tic <= length;tic += tic_dis)
+        {
+            int Y = int(float(tic_dis+tic)*zoom+zoom_2);
+            if(flip_y)
+                Y = paint.window().height()-Y;
+            if(tic+tic_dis <= length)
+                paint.drawLine(X,Y,X,Y+(flip_y ? -tic_length: tic_length));
+            paint.drawLine(X,Y,X+zoom,Y);
+            paint.drawText(X+tic_length/2-40,Y-40,80,80,
                                Qt::AlignHCenter|Qt::AlignVCenter,
-                               QString::number(std::round(L*10.0/precision)*precision/10.0)+" mm");
-                break;
-            }
-
+                               QString::number(double(tic+tic_dis)));
         }
     }
 }
@@ -191,25 +242,24 @@ void slice_view_scene::get_view_image(QImage& new_view_image)
     if(cur_tracking_window["roi_position"].toInt())
         show_pos(painter);
 
-
-
     bool flip_x = false;
     bool flip_y = false;
     if(cur_tracking_window.cur_dim != 2)
         flip_y = true;
     if(cur_tracking_window["orientation_convention"].toInt())
         flip_x = true;
-
     new_view_image = (!flip_x && !flip_y ? scaled_image : scaled_image.mirrored(flip_x,flip_y));
+    QPainter painter2(&new_view_image);
 
+    if(cur_tracking_window["roi_ruler"].toInt())
+        show_ruler(painter2);
     if(cur_tracking_window.cur_dim && cur_tracking_window["roi_label"].toInt())
     {
-        QPainter painter(&new_view_image);
-        painter.setPen(QPen(QColor(255,255,255)));
+        painter2.setPen(QPen(QColor(255,255,255)));
         QFont f = font();  // start out with MainWindow's font..
         f.setPointSize(cur_tracking_window.get_scene_zoom()+10); // and make a bit smaller for legend
-        painter.setFont(f);
-        painter.drawText(5,5,new_view_image.width()-10,new_view_image.height()-10,
+        painter2.setFont(f);
+        painter2.drawText(5,5,new_view_image.width()-10,new_view_image.height()-10,
                          cur_tracking_window["orientation_convention"].toInt() ? Qt::AlignTop|Qt::AlignRight: Qt::AlignTop|Qt::AlignLeft,"R");
     }
 }
@@ -229,8 +279,6 @@ bool slice_view_scene::command(QString cmd,QString param,QString param2)
             return true;
         }
         QImage output = view_image;
-        QPainter paint(&output);
-        show_ruler(paint);
         output.save(param);
         return true;
     }
@@ -362,17 +410,25 @@ void slice_view_scene::show_slice(void)
         view_image = QImage(QSize(view1.width()+view2.width(),view1.height()+view3.height()),QImage::Format_RGB32);
         QPainter painter(&view_image);
         painter.fillRect(0,0,view_image.width(),view_image.height(),QColor(0,0,0));
+
+        QImage I = cur_tracking_window.glWidget->captured_image.scaledToWidth(view1.width());
+        int dif = (I.height()-view3.height())/2;
+        QImage view4 = I.copy(QRect(0, dif, view1.width(), dif+view3.height()));
+
         if(cur_tracking_window["orientation_convention"].toInt())
         {
             painter.drawImage(view2.width(),0,view1);
             painter.drawImage(0,0,view2);
             painter.drawImage(0,view2.height(),view3);
+            painter.drawImage(view2.width(),view2.height(),view4);
+
         }
         else
         {
             painter.drawImage(0,0,view1);
             painter.drawImage(view1.width(),0,view2);
             painter.drawImage(view1.width(),view1.height(),view3);
+            painter.drawImage(0,view1.height(),view4);
         }
         QPen pen(QColor(255,255,255));
         pen.setWidthF(std::max(1.0,display_ratio/4.0));
@@ -461,8 +517,6 @@ void slice_view_scene::copyClipBoard()
         return;
     }
     QImage output = view_image;
-    QPainter paint(&output);
-    show_ruler(paint);
     QApplication::clipboard()->setImage(output);
 }
 
@@ -668,10 +722,8 @@ void slice_view_scene::mouseMoveEvent ( QGraphicsSceneMouseEvent * mouseEvent )
         sel_coord.back() = pos;
         sel_point.back() = tipl::vector<2,short>(X, Y);
         QPainter paint(&annotated_image);
-        show_ruler(paint);
+        show_ruler2(paint);
     }
-
-
 
     QPainter paint(&annotated_image);
     paint.setPen(cur_tracking_window.regionWidget->currentRowColor());
@@ -902,7 +954,7 @@ void slice_view_scene::mouseReleaseEvent ( QGraphicsSceneMouseEvent * mouseEvent
         });
     }
 
-    cur_tracking_window.regionWidget->add_points(points,mouseEvent->button() == Qt::RightButton,cur_tracking_window.ui->all_edit->isChecked(),resolution);
+    cur_tracking_window.regionWidget->add_points(points,mouseEvent->button() == Qt::RightButton,false,resolution);
     need_update();
 }
 

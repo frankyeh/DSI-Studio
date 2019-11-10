@@ -7,6 +7,7 @@ ROI/Fiber Width/roi_fiber_width/float:0.1:1:0.1:2/0.2
 ROI/Fiber Length/roi_fiber_length/float:0.1:2:0.1:2/0.3
 ROI/"R" label/roi_label/Off:On/1
 ROI/Position Line/roi_position/Off:On/1
+ROI/Ruler/roi_ruler/Off:On/1
 ROI/Slice Layout/roi_layout/Single Slice:3 Slices:Mosaic:Mosaic 2:Mosaic 4:Mosaic 8:Mosaic 16/0
 ROI/Output Format/roi_format/nii.gz:mat:txt/0
 Tracking/Tracking Index/tracking_index/fa:adc/0

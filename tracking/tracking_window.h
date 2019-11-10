@@ -100,6 +100,7 @@ public slots:
     void on_show_fiber_toggled(bool checked);
     void on_show_r_toggled(bool checked);
     void on_show_position_toggled(bool checked);
+    void on_show_ruler_toggled(bool checked);
     void check_reg(void);
     void change_contrast();
     void on_enable_auto_track_clicked();

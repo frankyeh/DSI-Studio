@@ -709,8 +709,10 @@
     </property>
     <widget class="QMenu" name="menuModify">
      <property name="title">
-      <string>Modify Current Region</string>
+      <string>Modify Region</string>
      </property>
+     <addaction name="actionModify_All"/>
+     <addaction name="separator"/>
      <addaction name="actionDilation"/>
      <addaction name="actionErosion"/>
      <addaction name="actionSmoothing"/>
@@ -719,6 +721,10 @@
      <addaction name="actionSeparate"/>
      <addaction name="actionThreshold_2"/>
      <addaction name="actionSet_Opacity"/>
+     <addaction name="separator"/>
+     <addaction name="actionB_A"/>
+     <addaction name="actionAB"/>
+     <addaction name="actionA_B"/>
     </widget>
     <widget class="QMenu" name="menuMiscellaneous">
      <property name="title">
@@ -741,9 +747,12 @@
      <addaction name="actionSave_Voxel_Data_As"/>
      <addaction name="separator"/>
      <addaction name="actionWhole_brain_seeding"/>
-     <addaction name="actionMove_Slices_To_Current_Region"/>
      <addaction name="menuSort_Regions"/>
-     <addaction name="separator"/>
+    </widget>
+    <widget class="QMenu" name="menuMove_Current_Region">
+     <property name="title">
+      <string>Move Region</string>
+     </property>
      <addaction name="actionShift_X"/>
      <addaction name="actionShift_X_2"/>
      <addaction name="actionShift_Y"/>
@@ -753,10 +762,6 @@
      <addaction name="actionFlip_X"/>
      <addaction name="actionFlip_Y"/>
      <addaction name="actionFlip_Z"/>
-     <addaction name="separator"/>
-     <addaction name="actionB_A"/>
-     <addaction name="actionAB"/>
-     <addaction name="actionA_B"/>
     </widget>
     <addaction name="actionNewRegion"/>
     <addaction name="actionOpenRegion"/>
@@ -775,6 +780,7 @@
     <addaction name="separator"/>
     <addaction name="actionUndo_Edit"/>
     <addaction name="actionRedo_Edit"/>
+    <addaction name="menuMove_Current_Region"/>
     <addaction name="menuModify"/>
     <addaction name="separator"/>
     <addaction name="actionRegion_statistics"/>
@@ -836,9 +842,9 @@
      <addaction name="actionSort_Tracts_By_Names"/>
      <addaction name="separator"/>
      <addaction name="actionMerge_Tracts_by_Name"/>
-     <addaction name="actionDelete_By_Length"/>
      <addaction name="actionRemove_Repeated_Tracks"/>
-     <addaction name="actionSeparate_Deleted"/>
+     <addaction name="actionDelete_By_Length"/>
+     <addaction name="actionReconnect_Tracts"/>
      <addaction name="separator"/>
      <addaction name="actionSet_Color"/>
      <addaction name="actionOpen_Colors"/>
@@ -869,6 +875,7 @@
     <addaction name="actionCopyTrack"/>
     <addaction name="actionDeleteTract"/>
     <addaction name="actionDeleteTractAll"/>
+    <addaction name="actionSeparate_Deleted"/>
     <addaction name="separator"/>
     <addaction name="actionEndpoints_to_seeding"/>
     <addaction name="actionTracts_to_seeds"/>
@@ -976,6 +983,7 @@
     <addaction name="actionKeep_Current_Slice"/>
     <addaction name="separator"/>
     <addaction name="actionApply_Operation"/>
+    <addaction name="actionMove_Slices_To_Current_Region"/>
    </widget>
    <widget class="QMenu" name="menuTools">
     <property name="title">
@@ -1556,25 +1564,6 @@ Tracking</string>
         </widget>
        </item>
        <item>
-        <widget class="QToolButton" name="all_edit">
-         <property name="minimumSize">
-          <size>
-           <width>28</width>
-           <height>24</height>
-          </size>
-         </property>
-         <property name="toolTip">
-          <string>Modify all regions</string>
-         </property>
-         <property name="text">
-          <string>All</string>
-         </property>
-         <property name="checkable">
-          <bool>true</bool>
-         </property>
-        </widget>
-       </item>
-       <item>
         <widget class="QPushButton" name="tool0">
          <property name="sizePolicy">
           <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
@@ -2086,6 +2075,38 @@ Tracking</string>
          </property>
          <property name="autoRaise">
           <bool>false</bool>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QToolButton" name="show_ruler">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="minimumSize">
+          <size>
+           <width>24</width>
+           <height>0</height>
+          </size>
+         </property>
+         <property name="toolTip">
+          <string>Show rulers</string>
+         </property>
+         <property name="text">
+          <string>...</string>
+         </property>
+         <property name="icon">
+          <iconset resource="../icons.qrc">
+           <normaloff>:/icons/icons/ruler.xpm</normaloff>:/icons/icons/ruler.xpm</iconset>
+         </property>
+         <property name="checkable">
+          <bool>true</bool>
+         </property>
+         <property name="checked">
+          <bool>true</bool>
          </property>
         </widget>
        </item>
@@ -3261,7 +3282,7 @@ Tracking</string>
      <normaloff>:/icons/icons/delete.xpm</normaloff>:/icons/icons/delete.xpm</iconset>
    </property>
    <property name="text">
-    <string>Delete Short Tracks</string>
+    <string>Delete Short Tracts</string>
    </property>
   </action>
   <action name="actionOpen_Tract_Property">
@@ -3508,6 +3529,19 @@ Tracking</string>
   <action name="actionSave_Slices_to_DICOM">
    <property name="text">
     <string>Save Slices to DICOM...</string>
+   </property>
+  </action>
+  <action name="actionReconnect_Tracts">
+   <property name="text">
+    <string>Reconnect Tracts</string>
+   </property>
+  </action>
+  <action name="actionModify_All">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Modify All</string>
    </property>
   </action>
  </widget>

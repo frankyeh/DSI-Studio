@@ -145,6 +145,7 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
             ui->show_3view->setChecked((*this)["roi_layout"].toBool());
             ui->show_r->setChecked((*this)["roi_label"].toBool());
             ui->show_position->setChecked((*this)["roi_position"].toBool());
+            ui->show_ruler->setChecked((*this)["roi_ruler"].toBool());
             ui->show_fiber->setChecked((*this)["roi_fiber"].toBool());
             if(handle->dim[0] > 80)
                 ui->zoom_3d->setValue(80.0/(float)std::max<int>(std::max<int>(handle->dim[0],handle->dim[1]),handle->dim[2]));
@@ -182,6 +183,8 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
             }
             populate_templates(ui->template_box);
             ui->template_box->setCurrentIndex(handle->template_id);
+            if(handle->is_qsdr)
+                handle->load_template();
         }
 
         // setup fa threshold
@@ -1541,6 +1544,14 @@ void tracking_window::on_show_position_toggled(bool checked)
         set_data("roi_position",ui->show_position->isChecked());
     scene.show_slice();
 }
+void tracking_window::on_show_ruler_toggled(bool checked)
+{
+    ui->show_ruler->setChecked(checked);
+    if(ui->show_ruler->isChecked() ^ (*this)["roi_ruler"].toBool())
+        set_data("roi_ruler",ui->show_ruler->isChecked());
+    scene.show_slice();
+}
+
 
 
 void tracking_window::on_actionAdjust_Mapping_triggered()
@@ -2304,3 +2315,4 @@ void tracking_window::on_actionSave_Slices_to_DICOM_triggered()
         QMessageBox::information(this,"DSI Studio","Cannot output DICOM");
 
 }
+

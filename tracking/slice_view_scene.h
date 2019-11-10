@@ -40,6 +40,7 @@ public:    // record the mouse press points
 
     QImage view_image,annotated_image;
     void new_annotated_image(void);
+    void show_ruler2(QPainter& painter);
     void show_ruler(QPainter& painter);
     void show_pos(QPainter& painter);
     void show_fiber(QPainter& painter);

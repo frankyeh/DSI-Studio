@@ -1194,7 +1194,7 @@ void RegionTableWidget::do_action(QString action)
 
     {
         ROIRegion& cur_region = *regions[size_t(roi_index)];
-        if(cur_tracking_window.ui->all_edit->isChecked())
+        if(cur_tracking_window.ui->actionModify_All->isChecked())
             for_each_checked_region([&](std::shared_ptr<ROIRegion> region){region->perform(action.toStdString());});
         else
             cur_region.perform(action.toStdString());

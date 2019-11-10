@@ -491,6 +491,11 @@ void RenderingTableWidget::dataChanged(const QModelIndex &, const QModelIndex &b
         cur_tracking_window.on_show_position_toggled(((RenderingItem*)bottomRight.internalPointer())->value.toBool());
         return;
     }
+    if(((RenderingItem*)bottomRight.internalPointer())->id == "roi_ruler")
+    {
+        cur_tracking_window.on_show_ruler_toggled(((RenderingItem*)bottomRight.internalPointer())->value.toBool());
+        return;
+    }
     if(((RenderingItem*)bottomRight.internalPointer())->id == "roi_label")
     {
         cur_tracking_window.on_show_r_toggled(((RenderingItem*)bottomRight.internalPointer())->value.toBool());
