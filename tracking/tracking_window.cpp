@@ -141,6 +141,7 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         }
         // update GUI values
         {
+            ui->zoom->setValue((*this)["roi_zoom"].toInt());
             ui->show_edge->setChecked((*this)["roi_edge"].toBool());
             ui->show_3view->setChecked((*this)["roi_layout"].toBool());
             ui->show_r->setChecked((*this)["roi_label"].toBool());
@@ -1246,19 +1247,18 @@ void tracking_window::on_actionRestore_Tracking_Settings_triggered()
     on_tracking_index_currentIndexChanged((*this)["tracking_index"].toInt());
     glWidget->updateGL();
 }
-
-void tracking_window::on_zoom_in_clicked()
+void tracking_window::on_zoom_valueChanged(int arg1)
 {
-    set_data("roi_zoom",renderWidget->getData("roi_zoom").toInt()+1);
+    if(arg1 == (*this)["roi_zoom"].toInt())
+        return;
+    set_data("roi_zoom",arg1);
     scene.center();
     scene.show_slice();
 }
 
-void tracking_window::on_zoom_out_clicked()
+void tracking_window::set_roi_zoom(int zoom)
 {
-    set_data("roi_zoom",std::max<int>(1,renderWidget->getData("roi_zoom").toInt()-1));
-    scene.center();
-    scene.show_slice();
+    ui->zoom->setValue(zoom);
 }
 
 void tracking_window::on_actionQuality_Assessment_triggered()
@@ -2317,4 +2317,5 @@ void tracking_window::on_actionSave_Slices_to_DICOM_triggered()
         QMessageBox::information(this,"DSI Studio","Cannot output DICOM");
 
 }
+
 

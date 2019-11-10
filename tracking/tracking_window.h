@@ -94,6 +94,7 @@ public:
     void report(QString string);
     void move_slice_to(tipl::vector<3,float> pos);
     bool can_map_to_mni(void);
+    void set_roi_zoom(int zoom);
     bool command(QString cmd,QString param = "",QString param2 = "");
 public slots:
     void restore_3D_window();
@@ -104,8 +105,6 @@ public slots:
     void check_reg(void);
     void change_contrast();
     void on_enable_auto_track_clicked();
-    void on_zoom_in_clicked();
-    void on_zoom_out_clicked();
 private slots:
     void on_actionRestore_window_layout_triggered();
     void on_actionSave_Tracts_in_Current_Mapping_triggered();
@@ -187,6 +186,7 @@ private slots:
     void on_actionMark_Tracts_on_T1W_T2W_triggered();
     void on_actionApply_Operation_triggered();
     void on_actionSave_Slices_to_DICOM_triggered();
+    void on_zoom_valueChanged(int arg1);
 };
 
 #endif // TRACKING_WINDOW_H

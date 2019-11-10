@@ -486,6 +486,12 @@ void RenderingTableWidget::dataChanged(const QModelIndex &, const QModelIndex &b
         cur_tracking_window.on_dt_index_currentIndexChanged(((RenderingItem*)bottomRight.internalPointer())->value.toInt());
         return;
     }
+    if(((RenderingItem*)bottomRight.internalPointer())->id == "roi_zoom")
+    {
+        cur_tracking_window.set_roi_zoom(((RenderingItem*)bottomRight.internalPointer())->value.toInt());
+        cur_tracking_window.scene.show_slice();
+        return;
+    }
     if(((RenderingItem*)bottomRight.internalPointer())->id == "roi_position")
     {
         cur_tracking_window.on_show_position_toggled(((RenderingItem*)bottomRight.internalPointer())->value.toBool());

@@ -533,9 +533,9 @@ void slice_view_scene::wheelEvent(QGraphicsSceneWheelEvent *wheelEvent)
         return;
     }
     if(wheelEvent->delta() < 0)
-        cur_tracking_window.on_zoom_out_clicked();
+        cur_tracking_window.set_roi_zoom(cur_tracking_window["roi_zoom"].toInt()-1);
     else
-        cur_tracking_window.on_zoom_in_clicked();
+        cur_tracking_window.set_roi_zoom(cur_tracking_window["roi_zoom"].toInt()+1);
 }
 void slice_view_scene::mouseDoubleClickEvent ( QGraphicsSceneMouseEvent * mouseEvent )
 {
