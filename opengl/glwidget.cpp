@@ -1030,7 +1030,16 @@ void GLWidget::renderLR()
         glMatrixMode(GL_MODELVIEW);
         check_error("axis");
     }
-
+    if(cur_tracking_window["roi_layout"].toInt() == 1)// 3 slice
+    {
+        if(!video_capturing)
+        {
+            video_capturing = true;
+            captured_image = grab_image();
+            cur_tracking_window.scene.show_slice();
+            video_capturing = false;
+        }
+    }
     if(!video_capturing && video_handle.get())
     {
         video_capturing = true;
