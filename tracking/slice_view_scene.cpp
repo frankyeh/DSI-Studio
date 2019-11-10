@@ -6,6 +6,7 @@
 #include <QFileDialog>
 #include <QClipboard>
 #include <QMessageBox>
+#include <QMouseEvent>
 #include "tracking_window.h"
 #include "ui_tracking_window.h"
 #include "region/regiontablewidget.h"
@@ -211,7 +212,7 @@ void slice_view_scene::show_pos(QPainter& painter)
     cur_tracking_window.current_slice->get_other_slice_pos(cur_tracking_window.cur_dim,x_pos, y_pos);
     x_pos = ((double)x_pos + 0.5)*display_ratio;
     y_pos = ((double)y_pos + 0.5)*display_ratio;
-    painter.setPen(QColor(255,0,0));
+    painter.setPen(QColor(255,move_slice?255:0,move_slice ? 255:0));
     painter.drawLine(x_pos,0,x_pos,std::max<int>(0,y_pos-20));
     painter.drawLine(x_pos,std::min<int>(y_pos+20,slice_image.height()*display_ratio),x_pos,slice_image.height()*display_ratio);
     painter.drawLine(0,y_pos,std::max<int>(0,x_pos-20),y_pos);
@@ -520,9 +521,30 @@ void slice_view_scene::copyClipBoard()
     QApplication::clipboard()->setImage(output);
 }
 
-
+void slice_view_scene::wheelEvent(QGraphicsSceneWheelEvent *wheelEvent)
+{
+    tipl::vector<3,float> pos;
+    float Y = wheelEvent->scenePos().y();
+    float X = wheelEvent->scenePos().x();
+    if(click_on_3D(X,Y))
+    {
+        QWheelEvent we(wheelEvent->pos(),wheelEvent->delta(),wheelEvent->buttons(),wheelEvent->modifiers());
+        cur_tracking_window.glWidget->wheelEvent(&we);
+        return;
+    }
+    if(wheelEvent->delta() < 0)
+        cur_tracking_window.on_zoom_out_clicked();
+    else
+        cur_tracking_window.on_zoom_in_clicked();
+}
 void slice_view_scene::mouseDoubleClickEvent ( QGraphicsSceneMouseEvent * mouseEvent )
 {
+    if(clicked_3d)
+    {
+        send_event_to_3D(QEvent::MouseButtonDblClick,mouseEvent);
+        return;
+    }
+
     if (mouseEvent->button() == Qt::MidButton)
         return;
     if(sel_mode == 4)
@@ -569,7 +591,61 @@ void slice_view_scene::adjust_xy_to_layout(float& X,float& Y)
             Y -= geo[2]*display_ratio;
     }
 }
+void slice_view_scene::send_event_to_3D(QEvent::Type type,
+                                        QGraphicsSceneMouseEvent * mouseEvent)
+{
+    float y = mouseEvent->scenePos().y();
+    float x = mouseEvent->scenePos().x();
+    float display_ratio = cur_tracking_window.get_scene_zoom();
+    auto dim = cur_tracking_window.current_slice->geometry;
+    y -= dim[2]*display_ratio;
+    if(cur_tracking_window["orientation_convention"].toInt())
+        x -= dim[1]*display_ratio;
 
+    float view_scale = cur_tracking_window.glWidget->width()/(dim[1]*display_ratio);
+    x *= view_scale;
+    y *= view_scale;
+    y += (cur_tracking_window.glWidget->height()-dim[1]*display_ratio*view_scale)*0.5;
+
+    if(type == QEvent::MouseMove)
+    {
+        QMouseEvent me(QEvent::MouseMove, QPointF(x,y),
+            mouseEvent->button(),mouseEvent->buttons(),mouseEvent->modifiers());
+        cur_tracking_window.glWidget->mouseMoveEvent(&me);
+    }
+    if(type == QEvent::MouseButtonPress)
+    {
+        QMouseEvent me(QEvent::MouseButtonPress, QPointF(x,y),
+            mouseEvent->button(),mouseEvent->buttons(),mouseEvent->modifiers());
+        cur_tracking_window.glWidget->mousePressEvent(&me);
+    }
+
+    if(type == QEvent::MouseButtonRelease)
+    {
+        QMouseEvent me(QEvent::MouseButtonRelease, QPointF(x,y),
+            mouseEvent->button(),mouseEvent->buttons(),mouseEvent->modifiers());
+        cur_tracking_window.glWidget->mouseReleaseEvent(&me);
+
+    }
+    if(type == QEvent::MouseButtonDblClick)
+    {
+        QMouseEvent me(QEvent::MouseButtonDblClick, QPointF(x,y),
+            mouseEvent->button(),mouseEvent->buttons(),mouseEvent->modifiers());
+        cur_tracking_window.glWidget->mouseDoubleClickEvent(&me);
+
+    }
+
+}
+bool slice_view_scene::click_on_3D(float x,float y)
+{
+    float display_ratio = cur_tracking_window.get_scene_zoom();
+    x /= display_ratio;
+    y /= display_ratio;
+    auto dim = cur_tracking_window.current_slice->geometry;
+    return cur_tracking_window["roi_layout"].toInt() == 1 &&
+           y > dim[2] &&
+           (x < dim[1] ^ cur_tracking_window["orientation_convention"].toInt());
+}
 void slice_view_scene::mousePressEvent ( QGraphicsSceneMouseEvent * mouseEvent )
 {
     if(cur_tracking_window["roi_layout"].toInt() > 1)// mosaic
@@ -598,28 +674,51 @@ void slice_view_scene::mousePressEvent ( QGraphicsSceneMouseEvent * mouseEvent )
     tipl::vector<3,float> pos;
     float Y = mouseEvent->scenePos().y();
     float X = mouseEvent->scenePos().x();
+
+    if(click_on_3D(X,Y))
+    {
+        clicked_3d = true;
+        send_event_to_3D(QEvent::MouseButtonPress,mouseEvent);
+        return;
+    }
+
     if(!to_3d_space(X,Y,pos))
         return;
     adjust_xy_to_layout(X,Y);
     if(sel_mode == 5)// move object
     {
-        bool find_region = false;
+        auto slice = cur_tracking_window.current_slice;
         tipl::vector<3,float> p(pos);
-        if(!cur_tracking_window.current_slice->is_diffusion_space)
-            p.to(cur_tracking_window.current_slice->T);
-        for(unsigned int index = 0;index <
-            cur_tracking_window.regionWidget->regions.size();++index)
-            if(cur_tracking_window.regionWidget->item(index,0)->checkState() == Qt::Checked &&
-               cur_tracking_window.regionWidget->regions[index]->has_point(p))
-            {
-                find_region = true;
-                cur_tracking_window.regionWidget->selectRow(index);
-                std::vector<tipl::vector<3,float> > dummy;
-                cur_tracking_window.regionWidget->add_points(dummy,true,false); // create a undo point
-                break;
-            }
-        if(!find_region)
-            return;
+        if(!slice->is_diffusion_space)
+            p.to(slice->T);
+        // select slice focus?
+        if(cur_tracking_window["roi_position"].toInt() &&
+           std::abs(p[0]-slice->slice_pos[0]) < 10 &&
+           std::abs(p[1]-slice->slice_pos[1]) < 10 &&
+           std::abs(p[2]-slice->slice_pos[2]) < 10)
+        {
+            move_slice = true;
+            show_slice();
+        }
+        else
+        // select region
+        {
+            move_slice = false;
+            bool find_region = false;
+            for(unsigned int index = 0;index <
+                cur_tracking_window.regionWidget->regions.size();++index)
+                if(cur_tracking_window.regionWidget->item(index,0)->checkState() == Qt::Checked &&
+                   cur_tracking_window.regionWidget->regions[index]->has_point(p))
+                {
+                    find_region = true;
+                    cur_tracking_window.regionWidget->selectRow(index);
+                    std::vector<tipl::vector<3,float> > dummy;
+                    cur_tracking_window.regionWidget->add_points(dummy,true,false); // create a undo point
+                    break;
+                }
+            if(!find_region)
+                return;
+        }
     }
 
     if(sel_mode != 4)
@@ -665,6 +764,12 @@ void slice_view_scene::new_annotated_image(void)
 
 void slice_view_scene::mouseMoveEvent ( QGraphicsSceneMouseEvent * mouseEvent )
 {
+    if(clicked_3d)
+    {
+        send_event_to_3D(QEvent::MouseMove,mouseEvent);
+        return;
+    }
+
     if(cur_tracking_window["roi_layout"].toInt() > 1)// single slice
         return;
 
@@ -688,28 +793,42 @@ void slice_view_scene::mouseMoveEvent ( QGraphicsSceneMouseEvent * mouseEvent )
     to_3d_space(cX,cY,pos);
     adjust_xy_to_layout(X,Y);
 
-    if(sel_mode == 5 && !cur_tracking_window.regionWidget->regions.empty()) // move object
+    if(sel_mode == 5)
     {
-        if(!sel_coord.empty() && pos != sel_coord.back())
+        auto slice = cur_tracking_window.current_slice;
+        if(move_slice)
         {
-            tipl::vector<3,float> p1(pos),p2(sel_coord.back());
-            if(!cur_tracking_window.current_slice->is_diffusion_space)
-            {
-                p1.to(cur_tracking_window.current_slice->T);
-                p2.to(cur_tracking_window.current_slice->T);
-            }
-            p1 -= p2;
-            p1.round();
-            if(p1.length() != 0)
-            {
-                cur_tracking_window.regionWidget->regions[cur_tracking_window.regionWidget->currentRow()]->shift(p1);
-                p1.to(cur_tracking_window.current_slice->invT);
-                tipl::vector<3> zero;
-                zero.to(cur_tracking_window.current_slice->invT);
-                sel_coord.back() += p1-zero;
-                emit need_update();
-            }
+            tipl::vector<3,float> p(pos);
+            if(!slice->is_diffusion_space)
+                p.to(slice->T);
+            cur_tracking_window.ui->glSagBox->setValue(p[0]);
+            cur_tracking_window.ui->glCorBox->setValue(p[1]);
+            cur_tracking_window.ui->glAxiBox->setValue(p[2]);
+            return;
         }
+        else
+        if(!cur_tracking_window.regionWidget->regions.empty() &&
+                !sel_coord.empty() && pos != sel_coord.back())
+            {
+                tipl::vector<3,float> p1(pos),p2(sel_coord.back());
+                if(!slice->is_diffusion_space)
+                {
+                    p1.to(slice->T);
+                    p2.to(slice->T);
+                }
+                p1 -= p2;
+                p1.round();
+                if(p1.length() != 0)
+                {
+                    cur_tracking_window.regionWidget->regions[cur_tracking_window.regionWidget->currentRow()]->shift(p1);
+                    p1.to(slice->invT);
+                    tipl::vector<3> zero;
+                    zero.to(slice->invT);
+                    sel_coord.back() += p1-zero;
+                    emit need_update();
+                }
+            }
+
         return;
     }
 
@@ -788,6 +907,13 @@ void slice_view_scene::mouseMoveEvent ( QGraphicsSceneMouseEvent * mouseEvent )
 
 void slice_view_scene::mouseReleaseEvent ( QGraphicsSceneMouseEvent * mouseEvent )
 {
+    if(clicked_3d)
+    {
+        clicked_3d = false;
+        send_event_to_3D(QEvent::MouseButtonRelease,mouseEvent);
+        return;
+    }
+
     if (!mouse_down && !mid_down)
         return;
     mouse_down = false;
@@ -796,6 +922,11 @@ void slice_view_scene::mouseReleaseEvent ( QGraphicsSceneMouseEvent * mouseEvent
         sel_point.clear();
         sel_coord.clear();
         mid_down = false;
+        if(move_slice)
+        {
+            move_slice = false;
+            need_update();
+        }
         return;
     }
 

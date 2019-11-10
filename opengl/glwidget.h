@@ -115,7 +115,7 @@ public:
      void resizeGL(int width, int height);
      void setFrustum(void);
      void renderLR(void);
-protected:
+ public:
      bool edit_right;
      QPoint convert_pos(QMouseEvent *event);
      void mousePressEvent(QMouseEvent *event);

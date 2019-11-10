@@ -1534,6 +1534,8 @@ void tracking_window::on_show_3view_toggled(bool checked)
 {
     ui->show_3view->setChecked(checked);
     set_data("roi_layout",checked ? 1:0);
+    if(checked)
+        glWidget->updateGL();
     scene.show_slice();
 }
 
