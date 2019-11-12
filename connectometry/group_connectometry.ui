@@ -50,36 +50,6 @@
         <number>0</number>
        </property>
        <item>
-        <widget class="QGroupBox" name="groupBox_4">
-         <property name="title">
-          <string>Step C3a: Select analysis type</string>
-         </property>
-         <layout class="QHBoxLayout" name="horizontalLayout_5">
-          <item>
-           <layout class="QHBoxLayout" name="horizontalLayout_11">
-            <item>
-             <widget class="QRadioButton" name="rb_regression">
-              <property name="text">
-               <string>Multiple Regression</string>
-              </property>
-              <property name="checked">
-               <bool>true</bool>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QRadioButton" name="rb_longitudina_dif">
-              <property name="text">
-               <string>Paired Longitudinal Change</string>
-              </property>
-             </widget>
-            </item>
-           </layout>
-          </item>
-         </layout>
-        </widget>
-       </item>
-       <item>
         <widget class="QGroupBox" name="gb_regression">
          <property name="sizePolicy">
           <sizepolicy hsizetype="Preferred" vsizetype="MinimumExpanding">
@@ -88,7 +58,7 @@
           </sizepolicy>
          </property>
          <property name="title">
-          <string>Step C3b: Load demographics</string>
+          <string/>
          </property>
          <layout class="QVBoxLayout" name="verticalLayout_2">
           <property name="spacing">
@@ -132,7 +102,7 @@
                <item>
                 <widget class="QLabel" name="open_instruction_2">
                  <property name="text">
-                  <string>Open demographics.</string>
+                  <string>Step C3a: Open demographics.</string>
                  </property>
                 </widget>
                </item>
@@ -260,7 +230,7 @@
              </sizepolicy>
             </property>
             <property name="text">
-             <string>Check variables to be included in regression</string>
+             <string>Step C3b: Select variables to be included in regression</string>
             </property>
            </widget>
           </item>
@@ -316,7 +286,7 @@
                </size>
               </property>
               <property name="text">
-               <string>Study variable:</string>
+               <string>Step C3c: Study variable:</string>
               </property>
              </widget>
             </item>
@@ -376,7 +346,7 @@
           </sizepolicy>
          </property>
          <property name="title">
-          <string>Step C3c: Setup parameters</string>
+          <string>Step C3d: Parameters</string>
          </property>
          <layout class="QVBoxLayout" name="verticalLayout_4">
           <item>
@@ -400,7 +370,7 @@
              </size>
             </property>
             <property name="currentIndex">
-             <number>3</number>
+             <number>0</number>
             </property>
             <widget class="QWidget" name="tab_6">
              <attribute name="title">
@@ -583,7 +553,7 @@
               </item>
              </layout>
             </widget>
-            <widget class="QWidget" name="tab_4">
+            <widget class="QWidget" name="cohort_tab">
              <attribute name="title">
               <string>Cohort</string>
              </attribute>
@@ -1119,7 +1089,7 @@
             <bool>true</bool>
            </property>
            <property name="text">
-            <string>Step C3d: Run connectometry</string>
+            <string>Step C3e: Run connectometry</string>
            </property>
            <property name="icon">
             <iconset resource="../icons.qrc">
@@ -1154,7 +1124,7 @@
              <bool>true</bool>
             </property>
             <property name="text">
-             <string>Step C3e: View Results in 3D</string>
+             <string>Step C3f: View Results in 3D</string>
             </property>
            </widget>
           </item>

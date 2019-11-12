@@ -92,8 +92,6 @@ private slots:
     void on_load_roi_from_atlas_clicked();
     void on_clear_all_roi_clicked();
     void on_load_roi_from_file_clicked();
-    void on_rb_longitudina_dif_clicked();
-    void on_rb_regression_clicked();
     void on_show_cohort_clicked();
 };
 

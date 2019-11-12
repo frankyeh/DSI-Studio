@@ -303,14 +303,10 @@ bool group_connectometry::load_demographic_file(QString filename,std::string& er
         ui->cohort_index2->setCurrentIndex(0);
         ui->select_cohort->setChecked(false);
         ui->exclude_cohort->setChecked(false);
-        ui->foi->clear();
-        ui->foi->addItem(t[0]);
-        ui->foi->setCurrentIndex(0);
-
         ui->foi_widget->show();
         ui->missing_data_checked->setChecked(std::find(model->X.begin(),model->X.end(),ui->missing_value->value()) != model->X.end());
     }
-
+    on_variable_list_clicked(QModelIndex());
     fill_demo_table(db,ui->subject_demo);
     return true;
 }
@@ -346,9 +342,9 @@ std::string group_connectometry::get_cohort_list(std::vector<char>& remove_list_
             remove_list[i] = 1;
         }
         std::ostringstream out;
-        out << "Subjects with "<< ui->cohort_index->currentText().toStdString() << " "
+        out << " Subjects with "<< ui->cohort_index->currentText().toStdString() << " "
             << ui->cohort_operator->currentText().toStdString() << " "
-            << ui->cohort_value->text().toStdString() << " were selected. ";
+            << ui->cohort_value->text().toStdString() << " were selected.";
         cohort_text += out.str();
     }
 
@@ -367,9 +363,9 @@ std::string group_connectometry::get_cohort_list(std::vector<char>& remove_list_
                 remove_list[i] = 1;
         }
         std::ostringstream out;
-        out << "Subjects with "<< ui->cohort_index2->currentText().toStdString() << " "
+        out << " Subjects with "<< ui->cohort_index2->currentText().toStdString() << " "
             << ui->cohort_operator2->currentText().toStdString() << " "
-            << ui->cohort_value2->text().toStdString() << " were excluded. ";
+            << ui->cohort_value2->text().toStdString() << " were excluded.";
         cohort_text += out.str();
     }
 
@@ -391,63 +387,77 @@ std::string group_connectometry::get_cohort_list(std::vector<char>& remove_list_
 
 bool group_connectometry::setup_model(stat_model& m)
 {
-    const char* msg = "The variables selected cannot be regressed. Please check values and selected cohort.";
-    if(ui->rb_regression->isChecked())
+    if(!vbc->handle->db.is_longitudinal && !model.get())
     {
-        m = *(model.get());
-        std::vector<char> remove_list(m.X.size()/m.feature_count);
-        m.cohort_text = get_cohort_list(remove_list);
-        m.type = 1;
-        m.variables.clear();
-        std::vector<char> sel(uint32_t(ui->variable_list->count()+1));
-        sel[0] = 1; // intercept
-        m.variables.push_back("intercept");
-        bool has_variable = false;
-        for(size_t i = 1;i < sel.size();++i)
-            if(ui->variable_list->item(int32_t(i)-1)->checkState() == Qt::Checked)
-            {
-                std::set<double> unique_values;
-                for(size_t j = 0,pos = 0;pos < model->X.size();++j,pos += model->feature_count)
-                    if(!remove_list[j])
-                    {
-                        unique_values.insert(model->X[pos+i]);
-                        if(unique_values.size() > 1)
-                        {
-                            sel[i] = 1;
-                            m.variables.push_back(ui->variable_list->item(int32_t(i)-1)->text().toStdString());
-                            has_variable = true;
-                            break;
-                        }
-                    }
-            }
-        if(!has_variable)
-            goto error;
-        {
-            bool find_study_feature = false;
-            // variables[0] = "intercept"
-            for(size_t i = 1;i < m.variables.size();++i)
-                if(m.variables[i] == ui->foi->currentText().toStdString())
-                {
-                    m.study_feature = i;
-                    find_study_feature = true;
-                    break;
-                }
-            if(!find_study_feature)
-                goto error;
-        }
-        m.select_variables(sel);
-        m.remove_data(remove_list);
+        QMessageBox::information(this,"Error","Please load demographic information",0);
+        return false;
+    }
+    if(!model.get())
+    {
+        model.reset(new stat_model);
+        model->read_demo(vbc->handle->db);
+    }
 
-    }
-    if(ui->rb_longitudina_dif->isChecked())
+    m = *(model.get());
+    std::vector<char> remove_list(m.X.size()/m.feature_count);
+    m.cohort_text = get_cohort_list(remove_list);
+    m.type = 1;
+    m.variables.clear();
+    std::vector<char> sel(uint32_t(ui->variable_list->count()+1));
+    sel[0] = 1; // intercept
+    m.variables.push_back("Intercept");
+    bool has_variable = false;
+    for(size_t i = 1;i < sel.size();++i)
+        if(ui->variable_list->item(int32_t(i)-1)->checkState() == Qt::Checked)
+        {
+            std::set<double> unique_values;
+            for(size_t j = 0,pos = 0;pos < model->X.size();++j,pos += model->feature_count)
+                if(!remove_list[j])
+                {
+                    unique_values.insert(model->X[pos+i]);
+                    if(unique_values.size() > 1)
+                    {
+                        sel[i] = 1;
+                        m.variables.push_back(ui->variable_list->item(int32_t(i)-1)->text().toStdString());
+                        has_variable = true;
+                        break;
+                    }
+                }
+        }
+    if(!has_variable)
     {
-        m.type = 3;
-        m.read_demo(vbc->handle->db);
-        m.X.clear();
+        // look at longitudinal change without considering any demographics
+        if(vbc->handle->db.is_longitudinal)
+        {
+            model->type = 3;
+            m.type = 3;
+            m.read_demo(vbc->handle->db);
+            m.X.clear();
+            return true;
+        }
+        else
+            goto error;
     }
+
+    {
+        bool find_study_feature = false;
+        // variables[0] = "intercept"
+        for(size_t i = 0;i < m.variables.size();++i)
+            if(m.variables[i] == ui->foi->currentText().toStdString())
+            {
+                m.study_feature = i;
+                find_study_feature = true;
+                break;
+            }
+        if(!find_study_feature)
+            goto error;
+    }
+    m.select_variables(sel);
+    m.remove_data(remove_list);
     if(!m.pre_process())
     {
         error:
+        const char* msg = "No valid variable selected for regression. Please check selected variables and cohort.";
         if(gui)
             QMessageBox::information(this,"Error",msg,0);
         else
@@ -564,6 +574,9 @@ void group_connectometry::on_run_clicked()
         ui->run->setText("Run");
         return;
     }
+    vbc->model.reset(new stat_model);
+    if(!setup_model(*vbc->model.get()))
+        return;
     vbc->seed_count = ui->seed_count->value();
     vbc->normalize_qa = ui->normalize_qa->isChecked();
     vbc->output_resampling = ui->output_resampling->isChecked();
@@ -580,9 +593,7 @@ void group_connectometry::on_run_clicked()
     }
     vbc->track_trimming = ui->track_trimming->value();
     vbc->tracking_threshold = ui->threshold->value();
-    vbc->model.reset(new stat_model);
-    if(!setup_model(*vbc->model.get()))
-        return;
+
 
     ui->run->setText("Stop");
     if(vbc->model->type == 1) // regression
@@ -808,27 +819,16 @@ void group_connectometry::on_variable_list_clicked(const QModelIndex &)
     for(int i =0;i < ui->variable_list->count();++i)
         if(ui->variable_list->item(i)->checkState() == Qt::Checked)
             ui->foi->addItem(ui->variable_list->item(i)->text());
-    if(ui->foi->count() == 0)
-    {
-        QMessageBox::information(this,"Error","At least one variable needs to be selected");
-        ui->variable_list->item(0)->setCheckState(Qt::Checked);
-        ui->foi->addItem(ui->variable_list->item(0)->text());
-    }
-    ui->foi->setCurrentIndex(ui->foi->count()-1);
-}
-
-void group_connectometry::on_rb_longitudina_dif_clicked()
-{
-    ui->gb_regression->setEnabled(false);
-}
-
-void group_connectometry::on_rb_regression_clicked()
-{
-    ui->gb_regression->setEnabled(true);
+    if(vbc->handle->db.is_longitudinal)
+        ui->foi->addItem(QString("Intercept"));
+    if(ui->foi->count() != 0)
+        ui->foi->setCurrentIndex(ui->foi->count()-1);
 }
 
 void group_connectometry::on_show_cohort_clicked()
 {
+    if(!model.get())
+        return;
     std::vector<char> remove_list;
     get_cohort_list(remove_list);
 }

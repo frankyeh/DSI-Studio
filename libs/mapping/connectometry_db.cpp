@@ -16,12 +16,23 @@ void connectometry_db::read_db(fib_data* handle_)
         if (!buf)
             break;
         if(!index)
+        {
             subject_qa_length = row*col;
+            is_longitudinal = false;
+            for(size_t i = 0;i < subject_qa_length;++i)
+                if(buf[i] < 0.0f)
+                {
+                    is_longitudinal = true;
+                    break;
+                }
+        }
         subject_qa.push_back(buf);
-        subject_qa_sd.push_back(0);
+        subject_qa_sd.push_back(1.0);
     }
 
+    if(!is_longitudinal)
     tipl::par_for(subject_qa.size(),[&](int i){
+
         subject_qa_sd[i] = tipl::standard_deviation(subject_qa[i],subject_qa[i]+subject_qa_length);
         if(subject_qa_sd[i] == 0.0)
             subject_qa_sd[i] = 1.0;
@@ -1160,11 +1171,12 @@ void stat_model::select_variables(const std::vector<char>& sel)
 
 bool stat_model::pre_process(void)
 {
-    if(X.empty())
-        return false;
+
     switch(type)
     {
     case 0: // group
+        if(X.empty())
+            return false;
         group2_count = 0;
         for(unsigned int index = 0;index < label.size();++index)
             if(label[index])
@@ -1173,6 +1185,8 @@ bool stat_model::pre_process(void)
         return group2_count > 3 && group1_count > 3;
     case 1: // multiple regression
         {
+            if(X.empty())
+                return false;
             X_min = X_max = std::vector<double>(X.begin(),X.begin()+feature_count);
             unsigned int subject_count = X.size()/feature_count;
             if(subject_count <= feature_count)

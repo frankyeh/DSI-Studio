@@ -313,11 +313,16 @@ void group_connectometry_analysis::run_permutation(unsigned int thread_count,uns
     {
         std::ostringstream out;
 
-        if(model->type == 1) // run regression model
+        out << "\nDiffusion MRI connectometry (Yeh et al. NeuroImage 125 (2016): 162-171) was used to study ";
+        if(model->type == 1 && foi_str != "Intercept")
+            out << "the effect of " << foi_str << " on ";
+        if(handle->db.is_longitudinal)
+            out << "the longitudinal change of ";
+        out << handle->db.index_name << ".";
+
+        if(model->type == 1) // regression model
         {
-            out << "\nDiffusion MRI connectometry (Yeh et al. NeuroImage 125 (2016): 162-171) was used to study the effect of "
-                << foi_str
-                << ". " << model->cohort_text << "A multiple regression model was used to consider ";
+            out << " A multiple regression model was used to consider ";
             for(unsigned int index = 1;index < model->variables.size();++index)
             {
                 if(index && model->variables.size() > 3)
@@ -327,13 +332,19 @@ void group_connectometry_analysis::run_permutation(unsigned int thread_count,uns
                     out << "and ";
                 out << model->variables[index];
             }
-            out << " in a total of " << model->subject_index.size() << " subjects. ";
-            out << " A T-score threshold of " << tracking_threshold;
-            out << " was assigned and tracked using a deterministic fiber tracking algorithm (Yeh et al. PLoS ONE 8(11): e80713, 2013) to obtain correlation tractography.";
+            out << ".";
         }
 
+        // report subject cohort
+        out << model->cohort_text;
+        out << " A total of " << model->subject_index.size() << " subjects were included in the analysis.";
+
+        // report other parameters
+        out << " A T-score threshold of " << tracking_threshold;
+        out << " was assigned and tracked using a deterministic fiber tracking algorithm (Yeh et al. PLoS ONE 8(11): e80713, 2013) to obtain correlation tractography.";
+
         if(normalize_qa)
-            out << " The SDF was normalized.";
+            out << " The QA values were normalized.";
         if(track_trimming)
             out << " Topology-informed pruning (Yeh et al. Neurotherapeutics, 16(1), 52-58, 2019) was conducted with " << track_trimming << " iterations to remove false connections.";
 

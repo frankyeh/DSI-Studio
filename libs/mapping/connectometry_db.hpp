@@ -26,6 +26,7 @@ public:// subject specific data
     std::vector<float> R2;
     std::vector<const float*> subject_qa;
     std::vector<float> subject_qa_sd;
+    bool is_longitudinal = false;
 public:
     std::list<std::vector<float> > subject_qa_buf;// merged from other db
     unsigned int subject_qa_length;
