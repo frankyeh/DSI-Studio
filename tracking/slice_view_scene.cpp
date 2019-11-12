@@ -462,7 +462,7 @@ void slice_view_scene::show_slice(void)
                 if(cur_dim != 2)
                     tipl::flip_y(slice_image);
                 tipl::vector<2,int> pos(dim[dim_order[cur_dim][0]]*(z%mosaic_size),
-                                         dim[dim_order[cur_dim][1]]*(z/mosaic_size));
+                                        dim[dim_order[cur_dim][1]]*(z/mosaic_size));
                 tipl::draw(slice_image,mosaic_image,pos);
             }
             cur_tracking_window.current_slice->slice_pos[cur_tracking_window.cur_dim] = old_z;
