@@ -305,13 +305,13 @@ bool fiber_directions::set_dt_index(const std::string& name)
     return set_dt_index(std::find(dt_index_name.begin(),dt_index_name.end(),name)-dt_index_name.begin());
 }
 
-float fiber_directions::get_fa(unsigned int index,unsigned char order) const
+float fiber_directions::get_fa(size_t index,unsigned char order) const
 {
     if(order >= fa.size())
         return 0.0;
     return fa[order][index];
 }
-float fiber_directions::get_dt_fa(unsigned int index,unsigned char order) const
+float fiber_directions::get_dt_fa(size_t index,unsigned char order) const
 {
     if(order >= dt_fa.size())
         return 0.0;
@@ -319,7 +319,7 @@ float fiber_directions::get_dt_fa(unsigned int index,unsigned char order) const
 }
 
 
-const float* fiber_directions::get_dir(unsigned int index,unsigned int order) const
+const float* fiber_directions::get_dir(size_t index,unsigned int order) const
 {
     if(!dir.empty())
         return dir[order] + index + (index << 1);
