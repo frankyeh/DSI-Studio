@@ -83,6 +83,7 @@ public slots:
     void merge_all(void);
     void copy_track(void);
     void separate_deleted_track(void);
+    void reconnect_track(void);
     void sort_track_by_name(void);
     void merge_track_by_name(void);
     void delete_tract(void);

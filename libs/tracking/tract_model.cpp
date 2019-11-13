@@ -3,6 +3,7 @@
 #include <fstream>
 #include <sstream>
 #include <iterator>
+#include <tuple>
 #include <set>
 #include <map>
 #include "roi.hpp"
@@ -1342,6 +1343,123 @@ void TractModel::filter_by_roi(std::shared_ptr<RoiMgr> roi_mgr)
     delete_tracts(tracts_to_delete);
 }
 //---------------------------------------------------------------------------
+void TractModel::reconnect_track(float distance,float angular_threshold)
+{
+    if(distance >= 2.0f)
+        reconnect_track(distance*0.5f,angular_threshold);
+    std::vector<std::vector<uint32_t> > endpoint_map(handle->dim.size());
+    for (unsigned int index = 0;index < tract_data.size();++index)
+        if(tract_data[index].size() > 6)
+        {
+            tipl::vector<3,float> end1(&tract_data[index][0]);
+            tipl::vector<3,float> end2(&tract_data[index][tract_data[index].size()-3]);
+            end1 /= distance;
+            end2 /= distance;
+            end1.round();
+            end2.round();
+            if(handle->dim.is_valid(end1))
+                endpoint_map[tipl::pixel_index<3>(end1[0],end1[1],end1[2],handle->dim).index()].push_back(index);
+            if(handle->dim.is_valid(end2))
+                endpoint_map[tipl::pixel_index<3>(end2[0],end2[1],end2[2],handle->dim).index()].push_back(index);
+        }
+    tipl::par_for(endpoint_map.size(),[&](size_t index)
+    {
+        if(endpoint_map[index].size() <= 1)
+            return;
+        std::set<uint32_t> sorted_list(endpoint_map[index].begin(),endpoint_map[index].end());
+        endpoint_map[index] = std::vector<uint32_t>(sorted_list.begin(),sorted_list.end());
+    });
+    // 0: track1 beg
+    // 1: track1 end
+    // 2: track2 beg
+    // 3: track2 end
+    const int compare_pair[4][2] = {{0,2},{0,3},{1,2},{1,3}}; // for checking which end to connect
+    for (size_t pos = 0;pos < handle->dim.size();++pos)
+        if(endpoint_map[pos].size() >= 2)
+        {
+            std::vector<uint32_t>& track_list = endpoint_map[pos];
+            std::map<float,std::tuple<uint32_t,uint32_t,uint32_t> > merge_list;
+            for(uint32_t i = 0;i < track_list.size();++i)
+                for(uint32_t j = i+1;j < track_list.size();++j)
+                {
+                    uint32_t t1 = track_list[i];
+                    uint32_t t2 = track_list[j];
+                    if(tract_data[t1].size() <= 6 || tract_data[t2].size() <= 6)
+                        continue;
+                    tipl::vector<3,float> end[4],dir[4];
+                    end[0] = &tract_data[t1][0];  // 0: track1 beg
+                    end[1] = &tract_data[t1][tract_data[t1].size()-3]; // 1: track1 end
+                    end[2] = &tract_data[t2][0];  // 2: track2 beg
+                    end[3] = &tract_data[t2][tract_data[t2].size()-3]; // 3: track2 end
+                    dir[0] = &tract_data[t1][3];
+                    dir[1] = &tract_data[t1][tract_data[t1].size()-6];
+                    dir[2] = &tract_data[t2][3];
+                    dir[3] = &tract_data[t2][tract_data[t2].size()-6];
+                    for(uint32_t k = 0;k < 4;++k)
+                    {
+                        dir[k] -= end[k];
+                        dir[k].normalize();
+                    }
+                    for(uint32_t k = 0;k < 4;++k)
+                    {
+                        int p1 = compare_pair[k][0];
+                        int p2 = compare_pair[k][1];
+                        if(std::fabs(end[p1][0]-end[p2][0]) > distance)
+                            continue;
+                        float dis = float((end[p1]-end[p2]).length());
+                        if(dis > distance)
+                            continue;
+                        float angle = dir[p1]*dir[p2];
+                        if(angle >= 0 || std::fabs(angle) < angular_threshold)
+                            continue;
+                        merge_list[dis*angular_threshold] = std::make_tuple(i,j,k);
+                        break;
+                    }
+                }
+            std::vector<char> merged(track_list.size());
+            for(auto& iter : merge_list)
+            {
+                uint32_t i = std::get<0>(iter.second);
+                uint32_t j = std::get<1>(iter.second);
+                uint32_t k = std::get<2>(iter.second);
+                if(merged[i] || merged[j])
+                    continue;
+                merged[i] = 1;
+                merged[j] = 1;
+                uint32_t t1 = track_list[i];
+                uint32_t t2 = track_list[j];
+                // reverse track
+                if(k == 1)// k = 1: track1 beg connects tract2 end
+                {
+                    tract_data[t2].insert(tract_data[t2].end(),tract_data[t1].begin(),tract_data[t1].end());
+                    tract_data[t1].clear();
+                    continue;
+                }
+
+                if(k == 0 || k == 3)
+                {
+                    auto rt = ((k == 0) ? t1 : t2);
+                    float* beg1 = &tract_data[rt][0];
+                    float* end1 = &tract_data[rt][tract_data[rt].size()-3];
+                    while(beg1 < end1)
+                    {
+                        std::swap(beg1[0],end1[0]);
+                        std::swap(beg1[1],end1[1]);
+                        std::swap(beg1[2],end1[2]);
+                        beg1 += 3;
+                        end1 -= 3;
+                    }
+                }
+                // k = 0: track1 beg connects tract2 beg (track1 reversed)
+                // k = 2: track1 end connects tract2 beg
+                // k = 3: track1 end connects tract2 end (track2 reversed)
+                tract_data[t1].insert(tract_data[t1].end(),tract_data[t2].begin(),tract_data[t2].end());
+                tract_data[t2].clear();
+            }
+        }
+    erase_empty();
+}
+//---------------------------------------------------------------------------
 void TractModel::cull(float select_angle,
                       const std::vector<tipl::vector<3,float> >& dirs,
                       const tipl::vector<3,float>& from_pos,
@@ -1587,6 +1705,7 @@ void TractModel::undo(void)
     }
     is_cut.pop_back();
     deleted_count.pop_back();
+    saved = false;
 }
 
 

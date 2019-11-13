@@ -1061,6 +1061,7 @@ void TractTableWidget::copy_track(void)
     item(currentRow(),1)->setText(QString::number(tract_models.back()->get_visible_track_count()));
     emit need_update();
 }
+
 void TractTableWidget::separate_deleted_track(void)
 {
     unsigned int cur_row = currentRow();
@@ -1215,6 +1216,26 @@ void TractTableWidget::delete_by_length(void)
         item(i,1)->setText(QString::number(tract_models[i]->get_visible_track_count()));
         item(i,2)->setText(QString::number(tract_models[i]->get_deleted_track_count()));
     }
+    emit need_update();
+}
+void TractTableWidget::reconnect_track(void)
+{
+    int cur_row = currentRow();
+    if(cur_row < 0 || item(cur_row,0)->checkState() != Qt::Checked)
+        return;
+    bool ok;
+    QString result = QInputDialog::getText(this,"DSI Studio","Assign maximum bridging distance (in voxels) and angles (degrees)",
+                                           QLineEdit::Normal,"4 30",&ok);
+
+    if(!ok)
+        return;
+    std::istringstream in(result.toStdString());
+    float dis,angle;
+    in >> dis >> angle;
+    if(dis <= 2.0f || angle <= 0.0f)
+        return;
+    tract_models[uint32_t(cur_row)]->reconnect_track(dis,std::cos(angle*3.14159265358979323846f/180.0f));
+    item(cur_row,1)->setText(QString::number(tract_models[cur_row]->get_visible_track_count()));
     emit need_update();
 }
 void TractTableWidget::edit_tracts(void)

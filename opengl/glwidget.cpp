@@ -514,7 +514,7 @@ void GLWidget::renderLR()
     if (cur_tracking_window.handle->has_odfs() &&
         get_param("show_odf"))
     {
-        float fa_threshold = cur_tracking_window["fa_threshold"].toFloat();
+        float fa_threshold = cur_tracking_window.get_fa_threshold();
         if(odf_position != get_param("odf_position") ||
            odf_skip != get_param("odf_skip") ||
            odf_scale != get_param("odf_scale") ||
