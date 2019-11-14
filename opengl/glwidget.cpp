@@ -643,11 +643,6 @@ void GLWidget::renderLR()
                    (float)(get_param("tract_light_shading"))*3.1415926/20.0,
                    get_param("tract_light_option"));
 
-        glPushMatrix();
-        glMultMatrixf(transformation_matrix.begin());
-        setupMaterial((float)(get_param("tract_emission"))/10.0,
-                      (float)(get_param("tract_specular"))/10.0,
-                      get_param("tract_shininess")*10);
 
         if(get_param("tract_shader") && get_param("tract_light_option"))
         {
@@ -660,9 +655,17 @@ void GLWidget::renderLR()
             glLightfv(GL_LIGHT2, GL_AMBIENT, light);
             std::fill(light,light+3,0.0f);
             glLightfv(GL_LIGHT2, GL_SPECULAR, light);
-            GLfloat lightDir[4] = { 0.0f, 0.0f, 1.0f, 0.0f};
+            GLfloat lightDir[4] = { 0.0f, 0.0f, -1.0f, 0.0f};
             glLightfv(GL_LIGHT2, GL_POSITION, lightDir);
         }
+
+        glPushMatrix();
+        glMultMatrixf(transformation_matrix.begin());
+        setupMaterial((float)(get_param("tract_emission"))/10.0,
+                      (float)(get_param("tract_specular"))/10.0,
+                      get_param("tract_shininess")*10);
+
+
 
         if(get_param("tract_color_style") != tract_color_style)
         {
@@ -1192,7 +1195,7 @@ void GLWidget::makeTracts(void)
     const float variant_prob_option[] = {0.1f,0.2f,0.4f,0.95f,2.0f};
     float variant_prob = variant_prob_option[tract_tube_detail];
     float tube_detail = tube_diameter*detail_option[tract_tube_detail]*4.0f;
-    float tract_shaderf = 0.02f*float(tract_shader);
+    float tract_shaderf = 0.01f*float(tract_shader);
     std::vector<float> mean_fa;
     unsigned int mean_fa_index = 0;
     unsigned int track_num_index = cur_tracking_window.handle->get_name_index(cur_tracking_window.color_bar->get_tract_color_name().toStdString());
@@ -1235,11 +1238,24 @@ void GLWidget::makeTracts(void)
         }
     }
 
-    tipl::image<float,2> depth_map;
+    tipl::image<float,2> max_z_map, min_z_map, max_x_map, min_x_map, min_y_map, max_y_map;
 
     if(tract_shader)
     {
-        depth_map.resize(tipl::geometry<2>(cur_tracking_window.handle->dim.width() * 4,cur_tracking_window.handle->dim.height() * 4));
+        float ratio = 4.0f;
+        max_x_map.resize(tipl::geometry<2>(cur_tracking_window.handle->dim.height() * int(ratio),
+                                           cur_tracking_window.handle->dim.depth() * int(ratio)));
+        max_y_map.resize(tipl::geometry<2>(cur_tracking_window.handle->dim.width() * int(ratio),
+                                           cur_tracking_window.handle->dim.depth() * int(ratio)));
+        max_z_map.resize(tipl::geometry<2>(cur_tracking_window.handle->dim.width() * int(ratio),
+                                           cur_tracking_window.handle->dim.height() * int(ratio)));
+        min_x_map.resize(max_x_map.geometry());
+        min_y_map.resize(max_y_map.geometry());
+        min_z_map.resize(max_z_map.geometry());
+
+        std::fill(min_x_map.begin(),min_x_map.end(),cur_tracking_window.handle->dim.width());
+        std::fill(min_y_map.begin(),min_y_map.end(),cur_tracking_window.handle->dim.height());
+        std::fill(min_z_map.begin(),min_z_map.end(),cur_tracking_window.handle->dim.depth());
         tipl::uniform_dist<float> uniform_gen(0.0f,1.0f);
         for_each_track(trackWidget,[&](std::shared_ptr<TractModel>& active_tract_model,unsigned int data_index)
         {
@@ -1252,18 +1268,38 @@ void GLWidget::makeTracts(void)
             const float* data_iter = &*(active_tract_model->get_tract(data_index).begin());
             for (unsigned int j = 0, index = 0; index < vertex_count;j += 3, data_iter += 3, ++index)
             {
-                int x = int(data_iter[0]*4);
-                int y = int(data_iter[1]*4);
-                if(depth_map.geometry().is_valid(x,y))
+                int x = int(data_iter[0]*ratio);
+                int y = int(data_iter[1]*ratio);
+                int z = int(data_iter[2]*ratio);
+                if(max_x_map.geometry().is_valid(y,z))
                 {
-                    size_t pos = size_t(x + y*depth_map.width());
-                    depth_map[pos] = std::max<float>(depth_map[pos],data_iter[2]);
+                    size_t pos = size_t(y + z*max_x_map.width());
+                    max_x_map[pos] = std::max<float>(max_x_map[pos],data_iter[0]);
+                    min_x_map[pos] = std::min<float>(min_x_map[pos],data_iter[0]);
+                }
+                if(max_y_map.geometry().is_valid(x,z))
+                {
+                    size_t pos = size_t(x + z*max_y_map.width());
+                    max_y_map[pos] = std::max<float>(max_y_map[pos],data_iter[1]);
+                    min_y_map[pos] = std::min<float>(min_y_map[pos],data_iter[1]);
+                }
+                if(max_z_map.geometry().is_valid(x,y))
+                {
+                    size_t pos = size_t(x + y*max_z_map.width());
+                    max_z_map[pos] = std::max<float>(max_z_map[pos],data_iter[2]);
+                    min_z_map[pos] = std::min<float>(min_z_map[pos],data_iter[2]);
                 }
             }
         });
-        tipl::filter::gaussian(depth_map);
-        tipl::filter::gaussian(depth_map);
-        tipl::filter::gaussian(depth_map);
+        for(int i = 0;i < 3; ++i)
+        {
+            tipl::filter::gaussian(max_x_map);
+            tipl::filter::gaussian(min_x_map);
+            tipl::filter::gaussian(max_y_map);
+            tipl::filter::gaussian(min_y_map);
+            tipl::filter::gaussian(max_z_map);
+            tipl::filter::gaussian(min_z_map);
+        }
     }
 
     std::vector<tipl::vector<3,float> > points(8),previous_points(8),
@@ -1346,12 +1382,31 @@ void GLWidget::makeTracts(void)
 
             if(tract_shader)
             {
-                int x = int(data_iter[0]*4);
-                int y = int(data_iter[1]*4);
-                if(depth_map.geometry().is_valid(x,y))
+                int x = int(data_iter[0]*4.0f);
+                int y = int(data_iter[1]*4.0f);
+                int z = int(data_iter[2]*4.0f);
+                if(max_x_map.geometry().is_valid(y,z))
                 {
-                    size_t pos = size_t(x + y*depth_map.width());
-                    float d = 1.0f-std::max<float>(0.0f,std::min<float>(5.0f,depth_map[pos]-data_iter[2]))*tract_shaderf;
+                    size_t pos = size_t(y + z*max_x_map.width());
+                    float d = 1.0f-std::min<float>(12,
+                                    std::min<float>(std::max<float>(0.0f,max_x_map[pos]-data_iter[0]),
+                                                    std::max<float>(0.0f,data_iter[0]-min_x_map[pos])))*tract_shaderf;
+                    cur_color *= d;
+                }
+                if(max_y_map.geometry().is_valid(x,z))
+                {
+                    size_t pos = size_t(x + z*max_y_map.width());
+                    float d = 1.0f-std::min<float>(12.0f,
+                                    std::min<float>(std::max<float>(0.0f,max_y_map[pos]-data_iter[1]),
+                                                    std::max<float>(0.0f,data_iter[1]-min_y_map[pos])))*tract_shaderf;
+                    cur_color *= d;
+                }
+                if(max_z_map.geometry().is_valid(x,y))
+                {
+                    size_t pos = size_t(x + y*max_z_map.width());
+                    float d = 1.0f-std::min<float>(12.0f,
+                                    std::min<float>(std::max<float>(0.0f,max_z_map[pos]-data_iter[2]),
+                                                    std::max<float>(0.0f,data_iter[2]-min_z_map[pos])))*tract_shaderf;
                     cur_color *= d;
                 }
             }
