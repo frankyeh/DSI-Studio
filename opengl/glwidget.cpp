@@ -1701,24 +1701,6 @@ void GLWidget::mouseDoubleClickEvent(QMouseEvent *event)
     select_slice();
     if(!object_selected && !slice_selected)
         return;
-    // if only slice is selected or slice is at the front, then move slice
-    if(!object_selected || object_distance > slice_distance)
-    {
-        switch(moving_at_slice_index)
-        {
-        case 0:
-            cur_tracking_window.ui->glSagCheck->setChecked(false);
-            break;
-        case 1:
-            cur_tracking_window.ui->glCorCheck->setChecked(false);
-            break;
-        case 2:
-            cur_tracking_window.ui->glAxiCheck->setChecked(false);
-            break;
-        }
-        return;
-    }
-
     if(object_selected)
     {
         cur_tracking_window.regionWidget->setCurrentCell(selected_index,0);
