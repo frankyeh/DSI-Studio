@@ -130,8 +130,6 @@ private slots:
 
     void on_actionSave_Endpoints_in_Current_Mapping_triggered();
     void on_deleteSlice_clicked();
-    void on_tool5_pressed();
-    void on_actionMove_Object_triggered();
     void on_actionSave_Tracts_in_MNI_space_triggered();
     void on_tool6_pressed();
     void on_actionManual_Registration_triggered();

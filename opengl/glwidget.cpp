@@ -1789,8 +1789,9 @@ void GLWidget::mousePressEvent(QMouseEvent *event)
         dirs.push_back(tipl::vector<3,float>());
         get_view_dir(last_select_point,dirs.back());
     }
-    if(editing_option == moving)
+    if(event->button() == Qt::MidButton)
     {
+        editing_option = moving;
         get_view_dir(lastPos,dir1);
         dir1.normalize();
 

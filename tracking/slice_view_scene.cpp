@@ -85,13 +85,13 @@ void slice_view_scene::show_ruler(QPainter& paint)
 {
     float zoom = cur_tracking_window.get_scene_zoom();
     float zoom_2 = zoom/2;
-    int tic_dis = 10;
+    int tic_dis = 5;
     while(zoom*float(tic_dis) < 20.0f)
         tic_dis *= 2;
     int tic_length = int(zoom*float(tic_dis));
 
     QPen pen;  // creates a default pen
-    pen.setWidth(zoom_2);
+    pen.setWidth(int(zoom_2));
     pen.setCapStyle(Qt::RoundCap);
     pen.setJoinStyle(Qt::RoundJoin);
     pen.setColor(Qt::white);
@@ -100,44 +100,66 @@ void slice_view_scene::show_ruler(QPainter& paint)
     QFont f = font();
     f.setPointSize(tic_length/3);
     paint.setFont(f);
-    const char dir_x[3] = {1,0,0};
+    // for qsdr
+    bool is_qsdr = cur_tracking_window.handle->is_qsdr;
+    const auto& trans = cur_tracking_window.handle->trans_to_mni;
+    tipl::vector<3,int> qsdr_origin;
+    tipl::vector<3> qsdr_scale(trans[0],trans[5],trans[10]);
+    tipl::vector<3> qsdr_shift(trans[3],trans[7],trans[11]);
+
     const uint8_t cur_dim = cur_tracking_window.cur_dim;
-    // horizontal direction
-    bool flip_x = cur_tracking_window["orientation_convention"].toInt();
+    if(is_qsdr)
     {
-        int length = (cur_tracking_window.current_slice->geometry[dir_x[cur_dim]]-tic_dis)
-                        /tic_dis*tic_dis-tic_dis;
+        qsdr_origin[0] = int(std::round(-trans[3]/trans[0]));
+        qsdr_origin[1] = int(std::round(-trans[7]/trans[5]));
+        qsdr_origin[2] = int(std::round(-trans[11]/trans[10]));
+    }
+    // horizontal direction
+    {
+        bool flip_x = cur_tracking_window["orientation_convention"].toInt();
+        uint8_t dim = (cur_dim == 0 ? 1:0);
         int Y = paint.window().height()-tic_length;
+        int pad_x = tic_dis + (is_qsdr ? qsdr_origin[dim]%tic_dis:0);
+        int length = (cur_tracking_window.current_slice->geometry[dim]-pad_x-pad_x)
+                        /tic_dis*tic_dis;
         for(int tic = 0;tic <= length;tic += tic_dis)
         {
-            int X = int(float(tic_dis+tic)*zoom+zoom_2);
+            int X = int(float(pad_x+tic)*zoom+zoom_2);
             if(flip_x)
                 X = paint.window().width()-X;
             if(tic+tic_dis <= length)
                 paint.drawLine(X,Y,X+(flip_x ? -tic_length:tic_length),Y);
-            paint.drawLine(X,Y,X,Y+zoom);
+            paint.drawLine(X,Y,X,Y+int(zoom));
+
+            float axis_label = tic+pad_x;
+            if(is_qsdr)
+                axis_label = axis_label*qsdr_scale[dim]+qsdr_shift[dim];
             paint.drawText(X-40,Y+tic_length/2-40,80,80,
                                Qt::AlignHCenter|Qt::AlignVCenter,
-                               QString::number(double(tic+tic_dis)));
+                               QString::number(double(axis_label)));
         }
     }
-    const char dir_y[3] = {2,2,1};
-    bool flip_y = dir_y[cur_dim] == 2;
     {
-        int length = (cur_tracking_window.current_slice->geometry[dir_y[cur_dim]]-tic_dis)
-                        /tic_dis*tic_dis-tic_dis;
-        int X = paint.window().width()-tic_length+zoom_2;
+        bool flip_y = cur_dim != 2;
+        uint8_t  dim = (cur_dim == 2 ? 1:2);
+        int X = paint.window().width()-tic_length+int(zoom_2);
+        int pad_y = tic_dis + (is_qsdr ? int(qsdr_origin[dim]%tic_dis):0);
+        int length = (cur_tracking_window.current_slice->geometry[dim]-pad_y-pad_y)
+                        /tic_dis*tic_dis;
         for(int tic = 0;tic <= length;tic += tic_dis)
         {
-            int Y = int(float(tic_dis+tic)*zoom+zoom_2);
+            int Y = int(float(pad_y+tic)*zoom+zoom_2);
             if(flip_y)
                 Y = paint.window().height()-Y;
             if(tic+tic_dis <= length)
                 paint.drawLine(X,Y,X,Y+(flip_y ? -tic_length: tic_length));
-            paint.drawLine(X,Y,X+zoom,Y);
+            paint.drawLine(X,Y,X+int(zoom),Y);
+            float axis_label = tic+pad_y;
+            if(is_qsdr)
+                axis_label = axis_label*qsdr_scale[dim]+qsdr_shift[dim];
             paint.drawText(X+tic_length/2-40,Y-40,80,80,
                                Qt::AlignHCenter|Qt::AlignVCenter,
-                               QString::number(double(tic+tic_dis)));
+                               QString::number(double(axis_label)));
         }
     }
 }
@@ -653,11 +675,6 @@ void slice_view_scene::mousePressEvent ( QGraphicsSceneMouseEvent * mouseEvent )
         QMessageBox::information(0,"Error","Switch to regular view to edit ROI. (Right side under Options, change [Region Window][Slice Layout] to Single Slice) ");
         return;
     }
-    if(mouseEvent->button() == Qt::MidButton)
-    {
-        mid_down = true;
-        return;
-    }
     if(cur_tracking_window.regionWidget->regions.empty())
     {
         cur_tracking_window.regionWidget->new_region();
@@ -685,17 +702,18 @@ void slice_view_scene::mousePressEvent ( QGraphicsSceneMouseEvent * mouseEvent )
     if(!to_3d_space(X,Y,pos))
         return;
     adjust_xy_to_layout(X,Y);
-    if(sel_mode == 5)// move object
+    if(mouseEvent->button() == Qt::MidButton)// move object
     {
         auto slice = cur_tracking_window.current_slice;
         tipl::vector<3,float> p(pos);
         if(!slice->is_diffusion_space)
             p.to(slice->T);
         // select slice focus?
+        float display_ratio = cur_tracking_window.get_scene_zoom();
         if(cur_tracking_window["roi_position"].toInt() &&
-           std::abs(p[0]-slice->slice_pos[0]) < 10 &&
-           std::abs(p[1]-slice->slice_pos[1]) < 10 &&
-           std::abs(p[2]-slice->slice_pos[2]) < 10)
+           std::abs(p[0]-slice->slice_pos[0]) < 10.0f/display_ratio &&
+           std::abs(p[1]-slice->slice_pos[1]) < 10.0f/display_ratio &&
+           std::abs(p[2]-slice->slice_pos[2]) < 10.0f/display_ratio)
         {
             move_slice = true;
             show_slice();
@@ -719,6 +737,7 @@ void slice_view_scene::mousePressEvent ( QGraphicsSceneMouseEvent * mouseEvent )
             if(!find_region)
                 return;
         }
+        mid_down = true;
     }
 
     if(sel_mode != 4)
@@ -769,16 +788,10 @@ void slice_view_scene::mouseMoveEvent ( QGraphicsSceneMouseEvent * mouseEvent )
         send_event_to_3D(QEvent::MouseMove,mouseEvent);
         return;
     }
-
     if(cur_tracking_window["roi_layout"].toInt() > 1)// single slice
         return;
-
-    if (!mouse_down && !mid_down)
+    if (!mouse_down)
         return;
-    if(mid_down)
-    {
-        return;
-    }
     tipl::geometry<3> geo(cur_tracking_window.current_slice->geometry);
     float Y = mouseEvent->scenePos().y();
     float X = mouseEvent->scenePos().x();
@@ -793,7 +806,7 @@ void slice_view_scene::mouseMoveEvent ( QGraphicsSceneMouseEvent * mouseEvent )
     to_3d_space(cX,cY,pos);
     adjust_xy_to_layout(X,Y);
 
-    if(sel_mode == 5)
+    if(mid_down) // move object
     {
         auto slice = cur_tracking_window.current_slice;
         if(move_slice)
@@ -913,11 +926,10 @@ void slice_view_scene::mouseReleaseEvent ( QGraphicsSceneMouseEvent * mouseEvent
         send_event_to_3D(QEvent::MouseButtonRelease,mouseEvent);
         return;
     }
-
-    if (!mouse_down && !mid_down)
+    if (!mouse_down)
         return;
     mouse_down = false;
-    if(mid_down || sel_mode == 5)
+    if(mid_down)
     {
         sel_point.clear();
         sel_coord.clear();

@@ -886,7 +886,6 @@
     <addaction name="actionCut"/>
     <addaction name="menuCut_by_slice"/>
     <addaction name="separator"/>
-    <addaction name="actionMove_Object"/>
    </widget>
    <widget class="QMenu" name="menu_View">
     <property name="title">
@@ -1671,38 +1670,6 @@ Tracking</string>
            <width>16</width>
            <height>16</height>
           </size>
-         </property>
-         <property name="checkable">
-          <bool>true</bool>
-         </property>
-         <property name="autoExclusive">
-          <bool>true</bool>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QPushButton" name="tool5">
-         <property name="sizePolicy">
-          <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-           <horstretch>0</horstretch>
-           <verstretch>0</verstretch>
-          </sizepolicy>
-         </property>
-         <property name="maximumSize">
-          <size>
-           <width>16777215</width>
-           <height>16777215</height>
-          </size>
-         </property>
-         <property name="toolTip">
-          <string>Click on a region to move it</string>
-         </property>
-         <property name="text">
-          <string/>
-         </property>
-         <property name="icon">
-          <iconset resource="../icons.qrc">
-           <normaloff>:/icons/icons/move.xpm</normaloff>:/icons/icons/move.xpm</iconset>
          </property>
          <property name="checkable">
           <bool>true</bool>
@@ -2783,18 +2750,6 @@ Tracking</string>
    </property>
    <property name="text">
     <string>Save Endpoints InT1/T2 space...</string>
-   </property>
-  </action>
-  <action name="actionMove_Object">
-   <property name="icon">
-    <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/move.xpm</normaloff>:/icons/icons/move.xpm</iconset>
-   </property>
-   <property name="text">
-    <string>Move Object</string>
-   </property>
-   <property name="shortcut">
-    <string>Ctrl+A</string>
    </property>
   </action>
   <action name="actionSave_Tracts_in_MNI_space">

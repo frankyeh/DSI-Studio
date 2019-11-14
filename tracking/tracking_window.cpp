@@ -669,12 +669,6 @@ void tracking_window::on_tool4_clicked()
     scene.setFocus();
 }
 
-void tracking_window::on_tool5_pressed()
-{
-    scene.sel_mode = 5;
-    scene.setFocus();
-
-}
 void tracking_window::on_tool6_pressed()
 {
     scene.sel_mode = 6;
@@ -712,13 +706,6 @@ void tracking_window::on_actionPaint_triggered()
     glWidget->editing_option = GLWidget::selecting;
     tractWidget->edit_option = TractTableWidget::paint;
 }
-
-void tracking_window::on_actionMove_Object_triggered()
-{
-    glWidget->setCursor(Qt::CrossCursor);
-    glWidget->editing_option = GLWidget::moving;
-}
-
 
 void tracking_window::on_glSagView_clicked()
 {
