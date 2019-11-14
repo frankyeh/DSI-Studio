@@ -633,8 +633,12 @@ void GLWidget::renderLR()
     {
         glLineWidth (1.0F);
         glEnable(GL_COLOR_MATERIAL);
-        if(get_param("tract_style") != 1)// 1 = tube
+        if(get_param("tract_style") != 1 ||  // 1 = tube
+           get_param("tract_light_option") == 2)
+        {
             glDisable(GL_LIGHTING);
+            glLineWidth(get_param("tract_line_width"));
+        }
         else
             setupLight((float)(get_param("tract_light_ambient"))/10.0,
                    (float)(get_param("tract_light_diffuse"))/10.0,
@@ -1683,40 +1687,39 @@ tipl::vector<3,float> get_norm(const std::vector<tipl::vector<3,float> >& slice_
     norm.normalize();
     return norm;
 }
-void GLWidget::select_object(void)
+bool GLWidget::select_object(void)
 {
     object_selected = false;
-    if(cur_tracking_window.regionWidget->regions.empty())
-        return;
-    // select object
-    for(object_distance = 0;object_distance < 5000 && !object_selected;object_distance += 1.0)
+    slice_selected = false;
+    // select region to move
+    if(get_param("show_region") && !cur_tracking_window.regionWidget->regions.empty())
     {
-    tipl::vector<3,float> cur_pos(dir1);
-    cur_pos *= object_distance;
-    cur_pos += pos;
-    tipl::vector<3,short> voxel(cur_pos);
-    if(!cur_tracking_window.handle->dim.is_valid(voxel))
-        continue;
-    for(int index = 0;index < cur_tracking_window.regionWidget->regions.size();++index)
-        if(cur_tracking_window.regionWidget->regions[index]->has_point(voxel) &&
-           cur_tracking_window.regionWidget->item(index,0)->checkState() == Qt::Checked)
+        // select object
+        for(object_distance = 0;object_distance < 5000 && !object_selected;object_distance += 1.0)
         {
-            selected_index = index;
-            object_selected = true;
-            break;
+        tipl::vector<3,float> cur_pos(dir1);
+        cur_pos *= object_distance;
+        cur_pos += pos;
+        tipl::vector<3,short> voxel(cur_pos);
+        if(!cur_tracking_window.handle->dim.is_valid(voxel))
+            continue;
+        for(int index = 0;index < cur_tracking_window.regionWidget->regions.size();++index)
+            if(cur_tracking_window.regionWidget->regions[index]->has_point(voxel) &&
+               cur_tracking_window.regionWidget->item(index,0)->checkState() == Qt::Checked)
+            {
+                selected_index = index;
+                object_selected = true;
+                break;
+            }
         }
     }
-}
-
-void GLWidget::select_slice(void)
-{
-    bool show_slice[3];
-    show_slice[0] = cur_tracking_window.ui->glSagCheck->checkState();
-    show_slice[1] = cur_tracking_window.ui->glCorCheck->checkState();
-    show_slice[2] = cur_tracking_window.ui->glAxiCheck->checkState();
-    // select slice
-    slice_selected = false;
+    // select slices to move
+    if(get_param("show_slice"))
     {
+        bool show_slice[3];
+        show_slice[0] = cur_tracking_window.ui->glSagCheck->checkState();
+        show_slice[1] = cur_tracking_window.ui->glCorCheck->checkState();
+        show_slice[2] = cur_tracking_window.ui->glAxiCheck->checkState();
         // now check whether the slices are selected
         slice_distance = std::numeric_limits<float>::max();
         for(unsigned char dim = 0;dim < 3;++dim)
@@ -1734,7 +1737,10 @@ void GLWidget::select_slice(void)
             }
         }
     }
+    return object_selected || slice_selected;
 }
+
+
 void GLWidget::get_pos(void)
 {
     //glMultMatrixf(transformation_matrix);
@@ -1752,9 +1758,7 @@ void GLWidget::mouseDoubleClickEvent(QMouseEvent *event)
     QPoint cur_pos = convert_pos(event);
     get_pos();
     get_view_dir(cur_pos,dir1);
-    select_object();
-    select_slice();
-    if(!object_selected && !slice_selected)
+    if(!select_object())
         return;
     if(object_selected)
     {
@@ -1763,6 +1767,7 @@ void GLWidget::mouseDoubleClickEvent(QMouseEvent *event)
         emit region_edited();
     }
 }
+
 bool GLWidget::get_mouse_pos(QMouseEvent *event,tipl::vector<3,float>& position)
 {
     QPoint cur_pos = event->pos();
@@ -1819,24 +1824,13 @@ void GLWidget::mousePressEvent(QMouseEvent *event)
     lastPos = convert_pos(event);
     if(editing_option != none)
         get_pos();
-    if(editing_option == selecting)
-    {
-        dirs.clear();
-        last_select_point = lastPos;
-        dirs.push_back(tipl::vector<3,float>());
-        get_view_dir(last_select_point,dirs.back());
-    }
+    // moving objects
     if(event->button() == Qt::MidButton)
     {
         editing_option = moving;
         get_view_dir(lastPos,dir1);
         dir1.normalize();
-
-        // nothing selected
-        select_object();
-        select_slice();
-
-        if(!object_selected && !slice_selected)
+        if(!select_object())
         {
             editing_option = none;
             setCursor(Qt::ArrowCursor);
@@ -1871,6 +1865,14 @@ void GLWidget::mousePressEvent(QMouseEvent *event)
         }
         accumulated_dis = tipl::zero<float>();
     }
+    else
+        if(editing_option == selecting)
+        {
+            dirs.clear();
+            last_select_point = lastPos;
+            dirs.push_back(tipl::vector<3,float>());
+            get_view_dir(last_select_point,dirs.back());
+        }
 }
 void GLWidget::mouseReleaseEvent(QMouseEvent *event)
 {

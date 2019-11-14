@@ -54,7 +54,7 @@ public:
      void scale_by(float scale);
      void move_by(int x,int y);
  private:
-     bool object_selected,slice_selected;
+
      tipl::vector<3,float> accumulated_dis;
      float slice_distance;
      unsigned char moving_at_slice_index;
@@ -64,11 +64,12 @@ public:
                                       const tipl::vector<3,float>& pos,const tipl::vector<3,float>& dir,
                                       float& dx,float& dy);
      void get_view_dir(QPoint p,tipl::vector<3,float>& dir);
-     void select_slice(void);
+
  private:
+     bool object_selected,slice_selected;
      int selected_index;
      float object_distance;
-     void select_object(void);
+     bool select_object(void);
  public:// other slices
      QTime time;
      int last_time;
