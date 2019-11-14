@@ -115,13 +115,17 @@ void slice_view_scene::show_ruler(QPainter& paint)
         qsdr_origin[2] = int(std::round(-trans[11]/trans[10]));
     }
     // horizontal direction
+    int space_x = 0;
     {
         bool flip_x = cur_tracking_window["orientation_convention"].toInt();
         uint8_t dim = (cur_dim == 0 ? 1:0);
         int Y = paint.window().height()-tic_length;
-        int pad_x = tic_dis + (is_qsdr ? qsdr_origin[dim]%tic_dis:0);
+        int pad_x =  (is_qsdr ? qsdr_origin[dim]%tic_dis:0);
+        if(pad_x == 0)
+            pad_x = tic_dis;
         int length = (cur_tracking_window.current_slice->geometry[dim]-pad_x-pad_x)
                         /tic_dis*tic_dis;
+        space_x = int(float(pad_x)*zoom+zoom_2);
         for(int tic = 0;tic <= length;tic += tic_dis)
         {
             int X = int(float(pad_x+tic)*zoom+zoom_2);
@@ -142,23 +146,28 @@ void slice_view_scene::show_ruler(QPainter& paint)
     {
         bool flip_y = cur_dim != 2;
         uint8_t  dim = (cur_dim == 2 ? 1:2);
-        int X = paint.window().width()-tic_length+int(zoom_2);
-        int pad_y = tic_dis + (is_qsdr ? int(qsdr_origin[dim]%tic_dis):0);
-        int length = (cur_tracking_window.current_slice->geometry[dim]-pad_y-pad_y)
+        int X = space_x;
+        int pad_y = (is_qsdr ? int(qsdr_origin[dim]%tic_dis):0);
+        if(pad_y == 0)
+            pad_y = tic_dis;
+        int length = (cur_tracking_window.current_slice->geometry[dim]-pad_y-tic_dis)
                         /tic_dis*tic_dis;
         for(int tic = 0;tic <= length;tic += tic_dis)
         {
             int Y = int(float(pad_y+tic)*zoom+zoom_2);
             if(flip_y)
                 Y = paint.window().height()-Y;
+            else
+                if(tic == 0 && cur_tracking_window["roi_label"].toInt())
+                    continue;
             if(tic+tic_dis <= length)
                 paint.drawLine(X,Y,X,Y+(flip_y ? -tic_length: tic_length));
-            paint.drawLine(X,Y,X+int(zoom),Y);
+            paint.drawLine(X,Y,X-int(zoom),Y);
             float axis_label = tic+pad_y;
             if(is_qsdr)
                 axis_label = axis_label*qsdr_scale[dim]+qsdr_shift[dim];
-            paint.drawText(X+tic_length/2-40,Y-40,80,80,
-                               Qt::AlignHCenter|Qt::AlignVCenter,
+            paint.drawText(2,Y-40,X-int(zoom)-2,80,
+                               Qt::AlignRight|Qt::AlignVCenter,
                                QString::number(double(axis_label)));
         }
     }
