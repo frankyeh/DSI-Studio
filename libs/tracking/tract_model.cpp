@@ -1406,13 +1406,21 @@ void TractModel::reconnect_track(float distance,float angular_threshold)
                         int p2 = compare_pair[k][1];
                         if(std::fabs(end[p1][0]-end[p2][0]) > distance)
                             continue;
-                        float dis = float((end[p1]-end[p2]).length());
+                        tipl::vector<3> dis_end = end[p1]-end[p2];
+                        float dis = float(dis_end.length());
                         if(dis > distance)
                             continue;
-                        float angle = dir[p1]*dir[p2];
-                        if(angle >= 0 || std::fabs(angle) < angular_threshold)
+                        float angle = -(dir[p1]*dir[p2]);
+                        if(angle < angular_threshold)
                             continue;
-                        merge_list[dis*angular_threshold] = std::make_tuple(i,j,k);
+                        dis_end.normalize();
+                        float angle1 = dis_end*dir[p1];
+                        if(angle1 < angular_threshold)
+                            continue;
+                        float angle2 = -dis_end*dir[p2];
+                        if(angle2 < angular_threshold)
+                            continue;
+                        merge_list[dis*angle*angle1*angle2] = std::make_tuple(i,j,k);
                         break;
                     }
                 }
