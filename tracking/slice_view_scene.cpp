@@ -269,7 +269,8 @@ void slice_view_scene::get_view_image(QImage& new_view_image)
                             cur_tracking_window["roi_edge"].toInt());
 
     QPainter painter(&scaled_image);
-    if(cur_tracking_window["roi_fiber"].toInt())
+    if(cur_tracking_window.get_scene_zoom() > 6 &&
+       cur_tracking_window["roi_fiber"].toInt())
         show_fiber(painter);
     if(cur_tracking_window["roi_position"].toInt())
         show_pos(painter);
