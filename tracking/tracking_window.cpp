@@ -141,7 +141,7 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         }
         // update GUI values
         {
-            ui->zoom->setValue((*this)["roi_zoom"].toInt());
+            ui->zoom->setValue((*this)["roi_zoom"].toFloat());
             ui->show_edge->setChecked((*this)["roi_edge"].toBool());
             ui->show_3view->setChecked((*this)["roi_layout"].toBool());
             ui->show_r->setChecked((*this)["roi_label"].toBool());
@@ -615,7 +615,7 @@ void tracking_window::set_tracking_param(ThreadData& tracking_thread)
 }
 float tracking_window::get_scene_zoom(void)
 {
-    float display_ratio = (*this)["roi_zoom"].toInt();
+    float display_ratio = (*this)["roi_zoom"].toFloat();
     if(!current_slice->is_diffusion_space)
         display_ratio *= current_slice->voxel_size[0]/handle->vs[0];
     display_ratio = std::min<float>(display_ratio,4096.0/handle->dim[0]);
@@ -1232,16 +1232,8 @@ void tracking_window::on_actionRestore_Tracking_Settings_triggered()
     on_tracking_index_currentIndexChanged((*this)["tracking_index"].toInt());
     glWidget->updateGL();
 }
-void tracking_window::on_zoom_valueChanged(int arg1)
-{
-    if(arg1 == (*this)["roi_zoom"].toInt())
-        return;
-    set_data("roi_zoom",arg1);
-    scene.center();
-    scene.show_slice();
-}
 
-void tracking_window::set_roi_zoom(int zoom)
+void tracking_window::set_roi_zoom(float zoom)
 {
     ui->zoom->setValue(zoom);
 }
@@ -2303,4 +2295,11 @@ void tracking_window::on_actionSave_Slices_to_DICOM_triggered()
 
 }
 
-
+void tracking_window::on_zoom_valueChanged(double arg1)
+{
+    if(float(arg1) == (*this)["roi_zoom"].toFloat())
+        return;
+    set_data("roi_zoom",arg1);
+    scene.center();
+    scene.show_slice();
+}

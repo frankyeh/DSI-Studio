@@ -32,7 +32,7 @@ void show_view(QGraphicsScene& scene,QImage I)
 }
 void slice_view_scene::show_ruler2(QPainter& paint)
 {
-    int zoom = int(cur_tracking_window.get_scene_zoom());
+    float zoom = cur_tracking_window.get_scene_zoom();
     if(sel_mode == 6 && sel_point.size() >= 2)
     {
         QPen pen;  // creates a default pen
@@ -555,9 +555,9 @@ void slice_view_scene::wheelEvent(QGraphicsSceneWheelEvent *wheelEvent)
         return;
     }
     if(wheelEvent->delta() < 0)
-        cur_tracking_window.set_roi_zoom(cur_tracking_window["roi_zoom"].toInt()-1);
+        cur_tracking_window.set_roi_zoom(cur_tracking_window["roi_zoom"].toFloat()-0.5f);
     else
-        cur_tracking_window.set_roi_zoom(cur_tracking_window["roi_zoom"].toInt()+1);
+        cur_tracking_window.set_roi_zoom(cur_tracking_window["roi_zoom"].toFloat()+0.5f);
 }
 void slice_view_scene::mouseDoubleClickEvent ( QGraphicsSceneMouseEvent * mouseEvent )
 {
@@ -579,7 +579,6 @@ void slice_view_scene::mouseDoubleClickEvent ( QGraphicsSceneMouseEvent * mouseE
         sel_coord.clear();
     }
     else
-    if (mouseEvent->button() == Qt::RightButton) // move to slice
     {
         if(cur_tracking_window["roi_layout"].toInt() > 1)// single slice or 3 slices
             return;
@@ -675,18 +674,6 @@ void slice_view_scene::mousePressEvent ( QGraphicsSceneMouseEvent * mouseEvent )
         QMessageBox::information(0,"Error","Switch to regular view to edit ROI. (Right side under Options, change [Region Window][Slice Layout] to Single Slice) ");
         return;
     }
-    if(cur_tracking_window.regionWidget->regions.empty())
-    {
-        cur_tracking_window.regionWidget->new_region();
-        cur_region = -1;
-    }
-
-    if(cur_tracking_window.regionWidget->currentRow() != cur_region)
-    {
-        cur_region = cur_tracking_window.regionWidget->currentRow();
-        sel_point.clear();
-        sel_coord.clear();
-    }
 
     tipl::vector<3,float> pos;
     float Y = mouseEvent->scenePos().y();
@@ -698,7 +685,6 @@ void slice_view_scene::mousePressEvent ( QGraphicsSceneMouseEvent * mouseEvent )
         send_event_to_3D(QEvent::MouseButtonPress,mouseEvent);
         return;
     }
-
     if(!to_3d_space(X,Y,pos))
         return;
     adjust_xy_to_layout(X,Y);
@@ -708,6 +694,7 @@ void slice_view_scene::mousePressEvent ( QGraphicsSceneMouseEvent * mouseEvent )
         tipl::vector<3,float> p(pos);
         if(!slice->is_diffusion_space)
             p.to(slice->T);
+        move_viewing_slice = false;
         // select slice focus?
         float display_ratio = cur_tracking_window.get_scene_zoom();
         if(cur_tracking_window["roi_position"].toInt() &&
@@ -735,9 +722,24 @@ void slice_view_scene::mousePressEvent ( QGraphicsSceneMouseEvent * mouseEvent )
                     break;
                 }
             if(!find_region)
-                return;
+                move_viewing_slice = true;
         }
         mid_down = true;
+    }
+    else
+    {
+        if(cur_tracking_window.regionWidget->regions.empty())
+        {
+            cur_tracking_window.regionWidget->new_region();
+            cur_region = -1;
+        }
+
+        if(cur_tracking_window.regionWidget->currentRow() != cur_region)
+        {
+            cur_region = cur_tracking_window.regionWidget->currentRow();
+            sel_point.clear();
+            sel_coord.clear();
+        }
     }
 
     if(sel_mode != 4)
@@ -817,6 +819,16 @@ void slice_view_scene::mouseMoveEvent ( QGraphicsSceneMouseEvent * mouseEvent )
             cur_tracking_window.ui->glSagBox->setValue(p[0]);
             cur_tracking_window.ui->glCorBox->setValue(p[1]);
             cur_tracking_window.ui->glAxiBox->setValue(p[2]);
+            return;
+        }
+        else
+        if(move_viewing_slice && !sel_point.empty())
+        {
+            if(sel_point.back()[0] < X)
+                cur_tracking_window.ui->SlicePos->setValue(cur_tracking_window.ui->SlicePos->value()+1);
+            else
+                cur_tracking_window.ui->SlicePos->setValue(cur_tracking_window.ui->SlicePos->value()-1);
+            sel_point.back() = tipl::vector<2,short>(X, Y);
             return;
         }
         else

@@ -43,6 +43,7 @@ public:    // record the mouse press points
     bool mouse_down;
     bool mid_down;
     bool move_slice = false;
+    bool move_viewing_slice = false;
     int cX, cY;
 
     QImage view_image,annotated_image;
