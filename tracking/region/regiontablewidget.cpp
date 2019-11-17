@@ -395,7 +395,7 @@ void RegionTableWidget::draw_edge(QImage& qimage,QImage& scaled_image,bool draw_
     }
     if(checked_regions.empty())
         return;
-    float display_ratio = (float)scaled_image.width()/(float)qimage.width();
+    float display_ratio = cur_tracking_window.get_scene_zoom();
     int slice_pos = current_slice->slice_pos[cur_tracking_window.cur_dim];
 
     //if(display_ratio >= 1.0f)
@@ -429,7 +429,8 @@ void RegionTableWidget::draw_edge(QImage& qimage,QImage& scaled_image,bool draw_
 
         QPainter paint(&scaled_image);
         paint.setBrush(Qt::NoBrush);
-        QPen pen(QColor(cur_color),double(cur_roi_index == int(roi_index) ? 2 : 1), Qt::DashDotLine, Qt::RoundCap, Qt::RoundJoin);
+        QPen pen(QColor(cur_color),
+                 double(int(display_ratio)+1)*0.2*double(cur_roi_index == int(roi_index) ? 2 : 1), Qt::DashDotLine, Qt::RoundCap, Qt::RoundJoin);
         paint.setPen(pen);
         for(int y = 1,cur_index = qimage.width();y < qimage.height()-1;++y)
         for(int x = 0;x < qimage.width();++x,++cur_index)
