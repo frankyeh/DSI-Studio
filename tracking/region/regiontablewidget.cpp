@@ -430,7 +430,7 @@ void RegionTableWidget::draw_edge(QImage& qimage,QImage& scaled_image,bool draw_
         QPainter paint(&scaled_image);
         paint.setBrush(Qt::NoBrush);
         QPen pen(QColor(cur_color),
-                 double(int(display_ratio)+1)*0.2*double(cur_roi_index == int(roi_index) ? 2 : 1), Qt::DashDotLine, Qt::RoundCap, Qt::RoundJoin);
+                 double(int(display_ratio)+1)*(cur_roi_index == int(roi_index) ? 0.25 : 0.2), Qt::DashDotLine, Qt::RoundCap, Qt::RoundJoin);
         paint.setPen(pen);
         for(int y = 1,cur_index = qimage.width();y < qimage.height()-1;++y)
         for(int x = 0;x < qimage.width();++x,++cur_index)
