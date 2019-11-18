@@ -109,7 +109,7 @@ struct TrackingParam
                     code.insert(code.begin()+j,rep[i-1]);
                 }
         }
-        if(code.size()/2 >= sizeof(*this))
+        if(code.size()/2 > sizeof(*this))
             return false;
         unsigned char* p = (unsigned char*)this;
         for(int i = 0;i < code.size();i += 2,++p)
