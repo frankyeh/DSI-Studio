@@ -283,9 +283,6 @@ void TractTableWidget::load_tracts(QStringList filenames)
         if(tract_models.back()->get_cluster_info().empty()) // not multiple cluster file
         {
             item(tract_models.size()-1,1)->setText(QString::number(tract_models.back()->get_visible_track_count()));
-            tipl::rgb c;
-            c.from_hsl(((color_gen++)*1.1-std::floor((color_gen++)*1.1/6)*6)*3.14159265358979323846/3.0,0.85,0.7);
-            tract_models.back()->set_color(c.color);
         }
         else
         {
@@ -452,7 +449,6 @@ void TractTableWidget::open_cluster_label(void)
     std::vector<unsigned int> labels(tract_models[currentRow()]->get_visible_track_count());
     std::copy(std::istream_iterator<unsigned int>(in),
               std::istream_iterator<unsigned int>(),labels.begin());
-
     load_cluster_label(labels);
     assign_colors();
 }

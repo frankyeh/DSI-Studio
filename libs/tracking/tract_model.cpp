@@ -17,6 +17,7 @@
 #include "../../tracking/region/Regions.h"
 #include "tracking_method.hpp"
 
+const tipl::rgb default_tract_color(255,160,60);
 void smoothed_tracks(const std::vector<float>& track,std::vector<float>& smoothed)
 {
     smoothed.clear();
@@ -157,7 +158,8 @@ struct TrackVis
                              tipl::vector<3> vs,
                              const std::vector<std::vector<float> >& tract_data,
                              const std::vector<std::vector<float> >& scalar,
-                             const std::string& info)
+                             const std::string& info,
+                             unsigned int color)
     {
         gz_ostream out;
         if (!out.open(file_name))
@@ -165,10 +167,11 @@ struct TrackVis
         TrackVis trk;
         trk.init(geo,vs);
         trk.n_count = tract_data.size();
+        *(uint32_t*)(trk.reserved+440) = color;
         if(!scalar.empty())
             trk.n_scalars = 1;
         if(info.length())
-            std::copy(info.begin(),info.begin()+std::min<int>(443,info.length()),trk.reserved);
+            std::copy(info.begin(),info.begin()+std::min<int>(439,info.length()),trk.reserved);
         out.write((const char*)&trk,1000);
         begin_prog("saving");
         for (unsigned int i = 0;check_prog(i,tract_data.size());++i)
@@ -234,7 +237,7 @@ bool TractModel::load_from_file(const char* file_name_,bool append)
     std::string file_name(file_name_);
     std::vector<std::vector<float> > loaded_tract_data;
     std::vector<unsigned int> loaded_tract_cluster;
-
+    unsigned int color = default_tract_color;
     std::string ext;
     if(file_name.length() > 4)
         ext = std::string(file_name.end()-4,file_name.end());
@@ -244,6 +247,9 @@ bool TractModel::load_from_file(const char* file_name_,bool append)
             TrackVis trk;
             if(!trk.load_from_file(file_name_,loaded_tract_data,loaded_tract_cluster,parameter_id,vs))
                 return false;
+            color = *(uint32_t*)(trk.reserved+440);
+            if(color == 0)
+                color = default_tract_color;
             if(!parameter_id.empty())
             {
                 report = handle->report;
@@ -389,6 +395,8 @@ bool TractModel::load_from_file(const char* file_name_,bool append)
     loaded_tract_data.swap(tract_data);
     tract_color.clear();
     tract_color.resize(tract_data.size());
+    if(color)
+        std::fill(tract_color.begin(),tract_color.end(),color);
     tract_tag.clear();
     tract_tag.resize(tract_data.size());
     deleted_tract_data.clear();
@@ -416,7 +424,7 @@ bool TractModel::save_data_to_file(const char* file_name,const std::string& inde
     {
         if(ext == std::string(".trk"))
             file_name_s += ".gz";
-        return TrackVis::save_to_file(file_name_s.c_str(),geometry,vs,tract_data,data,parameter_id);
+        return TrackVis::save_to_file(file_name_s.c_str(),geometry,vs,tract_data,data,parameter_id,tract_color.front());
     }
     if (ext == std::string(".txt"))
     {
@@ -482,7 +490,7 @@ bool TractModel::save_tracts_to_file(const char* file_name_)
         if(ext == std::string(".trk"))
             file_name += ".gz";
         std::vector<std::vector<float> > empty_scalar;
-        return TrackVis::save_to_file(file_name.c_str(),geometry,vs,tract_data,empty_scalar,parameter_id);
+        return TrackVis::save_to_file(file_name.c_str(),geometry,vs,tract_data,empty_scalar,parameter_id,tract_color.front());
     }
     if(ext == std::string(".tck"))
     {
@@ -810,7 +818,8 @@ bool TractModel::save_all(const char* file_name_,
             trk.init(all[0]->geometry,all[0]->vs);
             trk.n_count = 0;
             trk.n_properties = 1;
-            std::copy(all[0]->report.begin(),all[0]->report.begin()+std::min<int>(444,all[0]->report.length()),trk.reserved);
+            std::copy(all[0]->report.begin(),all[0]->report.begin()+
+                    std::min<int>(439,all[0]->report.length()),trk.reserved);
             for(unsigned int index = 0;index < all.size();++index)
                 trk.n_count += all[index]->tract_data.size();
             out.write((const char*)&trk,1000);
@@ -1735,7 +1744,7 @@ void TractModel::redo(void)
 //---------------------------------------------------------------------------
 void TractModel::add_tracts(std::vector<std::vector<float> >& new_tracks)
 {
-    add_tracts(new_tracks,tract_color.empty() ? tipl::rgb(255,160,60) : tipl::rgb(tract_color.back()));
+    add_tracts(new_tracks,tract_color.empty() ? default_tract_color : tipl::rgb(tract_color.back()));
 }
 //---------------------------------------------------------------------------
 void TractModel::add_tracts(std::vector<std::vector<float> >& new_tract,tipl::rgb color)
