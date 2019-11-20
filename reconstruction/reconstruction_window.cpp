@@ -308,7 +308,7 @@ void reconstruction_window::doReconstruction(unsigned char method_id,bool prompt
     handle->voxel.dim = dim_backup;
     handle->voxel.vs = vs;
     if(method_id == 7) // QSDR
-        handle->calculate_dwi_sum();
+        handle->calculate_dwi_sum(true);
     if (!QFileInfo(msg).exists())
     {
         QMessageBox::information(this,"error",msg,0);
@@ -992,7 +992,7 @@ void reconstruction_window::on_actionEddy_Motion_Correction_triggered()
     rec_motion_correction(handle.get());
     if(!prog_aborted())
     {
-        handle->calculate_dwi_sum();
+        handle->calculate_dwi_sum(true);
         load_b_table();
     }
 }

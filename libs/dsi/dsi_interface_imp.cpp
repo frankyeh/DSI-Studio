@@ -167,7 +167,6 @@ const char* ImageModel::reconstruction(void)
 
             if(!voxel.study_src_file_path.empty())
             {
-                rotate_to_mni();
                 if(!compare_src(voxel.study_src_file_path.c_str()))
                     return "Failed to load DDI study SRC file.";
                 voxel.step_report << "[Step T2b(1)][Compare SRC]=" << QFileInfo(voxel.study_src_file_path.c_str()).baseName().toStdString() << std::endl;

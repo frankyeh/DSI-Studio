@@ -31,7 +31,7 @@ void ImageModel::draw_mask(tipl::color_image& buffer,int position)
     buffer2.swap(buffer);
 }
 
-void ImageModel::calculate_dwi_sum(void)
+void ImageModel::calculate_dwi_sum(bool update_mask)
 {
     dwi_sum.clear();
     dwi_sum.resize(voxel.dim);
@@ -43,8 +43,8 @@ void ImageModel::calculate_dwi_sum(void)
             dwi_sum[pos] += src_dwi_data[index][pos];
     });
 
-    float max_value = std::min<float>(*std::max_element(dwi_sum.begin(),dwi_sum.end()),
-                                     tipl::segmentation::otsu_threshold(dwi_sum)*3.0f);
+    float otsu = tipl::segmentation::otsu_threshold(dwi_sum);
+    float max_value = std::min<float>(*std::max_element(dwi_sum.begin(),dwi_sum.end()),otsu*3.0f);
     float min_value = max_value;
     // handle 0 strip with background value condition
     if(dwi_sum.depth() < 200)
@@ -62,21 +62,23 @@ void ImageModel::calculate_dwi_sum(void)
     for(size_t index = 0;index < dwi.size();++index)
         dwi[index] = uint8_t(std::max<float>(0.0f,std::min<float>(255.0f,std::floor((dwi_sum[index]-min_value)*r))));
 
-    // update mask
-    tipl::threshold(dwi_sum,voxel.mask,min_value + (max_value-min_value)*0.2f,1,0);
-    if(dwi_sum.depth() < 200)
+    if(update_mask)
     {
-        tipl::par_for(voxel.mask.depth(),[&](int i)
+        tipl::threshold(dwi_sum,voxel.mask,(min_value + (max_value-min_value)*0.2f),1,0);
+        if(dwi_sum.depth() < 200)
         {
-            tipl::pointer_image<unsigned char,2> I(&voxel.mask[0]+size_t(i)*voxel.mask.plane_size(),
-                    tipl::geometry<2>(voxel.mask.width(),voxel.mask.height()));
-            tipl::morphology::defragment(I);
-            tipl::morphology::recursive_smoothing(I,10);
-            tipl::morphology::defragment(I);
-        });
-        tipl::morphology::recursive_smoothing(voxel.mask,10);
-        tipl::morphology::defragment(voxel.mask);
-        tipl::morphology::recursive_smoothing(voxel.mask,10);
+            tipl::par_for(voxel.mask.depth(),[&](int i)
+            {
+                tipl::pointer_image<unsigned char,2> I(&voxel.mask[0]+size_t(i)*voxel.mask.plane_size(),
+                        tipl::geometry<2>(voxel.mask.width(),voxel.mask.height()));
+                tipl::morphology::defragment(I);
+                tipl::morphology::recursive_smoothing(I,10);
+                tipl::morphology::defragment(I);
+            });
+            tipl::morphology::recursive_smoothing(voxel.mask,10);
+            tipl::morphology::defragment(voxel.mask);
+            tipl::morphology::recursive_smoothing(voxel.mask,10);
+        }
     }
 }
 
@@ -614,10 +616,10 @@ void ImageModel::rotate(const tipl::geometry<3>& new_geo,
         src_dwi_data[index] = &(dwi[index][0]);
     });
     check_prog(0,0);
+
     tipl::image<unsigned char,3> new_mask(new_geo);
     tipl::resample(voxel.mask,new_mask,affine,tipl::linear);
-    voxel.mask.swap(new_mask);
-    tipl::morphology::smoothing(voxel.mask);
+    tipl::morphology::smoothing(new_mask);
 
     dwi.swap(new_dwi);
     // rotate b-table
@@ -659,7 +661,8 @@ void ImageModel::rotate(const tipl::geometry<3>& new_geo,
     }
     voxel.dim = new_geo;
     voxel.dwi_data.clear();
-    calculate_dwi_sum();
+    calculate_dwi_sum(false);
+    voxel.mask.swap(new_mask);
 }
 void ImageModel::resample(float nv)
 {
@@ -676,7 +679,6 @@ void ImageModel::resample(float nv)
     T.sr[8] = new_vs[2]/voxel.vs[2];
     rotate(new_geo,T);
     voxel.vs = new_vs;
-    calculate_dwi_sum();
 }
 extern std::string fib_template_file_name_2mm;
 bool ImageModel::rotate_to_mni(void)
@@ -931,7 +933,7 @@ void ImageModel::distortion_correction(const ImageModel& rhs)
     for(int i = 0;i < new_dwi.size();++i)
         src_dwi_data[i] = &(new_dwi[i][0]);
 
-    calculate_dwi_sum();
+    calculate_dwi_sum(false);
 
 }
 
@@ -1108,7 +1110,7 @@ bool ImageModel::load_from_file(const char* dwi_file_name)
                     voxel.dim = new_dwi.front().geometry();
                 }
             }
-            calculate_dwi_sum();
+            calculate_dwi_sum(true);
             return !new_dwi.empty();
         }
         error_msg = "Cannot open file";
@@ -1196,9 +1198,9 @@ bool ImageModel::load_from_file(const char* dwi_file_name)
     }
 
     // create mask;
-    calculate_dwi_sum();
+    calculate_dwi_sum(true);
 
-    const unsigned char* mask_ptr = 0;
+    const unsigned char* mask_ptr = nullptr;
     if(mat_reader.read("mask",row,col,mask_ptr))
     {
         voxel.mask.resize(voxel.dim);
@@ -1317,6 +1319,7 @@ bool ImageModel::save_bvec(const char* file_name) const
 }
 bool ImageModel::compare_src(const char* file_name)
 {
+    rotate_to_mni();
     std::shared_ptr<ImageModel> bl(new ImageModel);
     begin_prog("reading");
     if(!bl->load_from_file(file_name))
@@ -1402,7 +1405,7 @@ bool ImageModel::compare_src(const char* file_name)
         {
             tipl::multiply_constant(study_src->new_dwi[i].begin(),study_src->new_dwi[i].end(),median_r);
         });
-        study_src->calculate_dwi_sum();
+        study_src->calculate_dwi_sum(false);
     }
     pre_dti();
     study_src->pre_dti();

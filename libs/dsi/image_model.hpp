@@ -247,7 +247,7 @@ public:
     tipl::image<unsigned char, 3>dwi;
     std::shared_ptr<ImageModel> study_src;
     void draw_mask(tipl::color_image& buffer,int position);
-    void calculate_dwi_sum(void);
+    void calculate_dwi_sum(bool update_mask);
     void remove(unsigned int index);
     void pre_dti(void);
     std::string check_b_table(void);
