@@ -58,8 +58,6 @@ private slots:
 
     void on_stop_clicked();
 
-    void on_reg_method_currentIndexChanged(int index);
-
     void on_actionMatch_Intensity_triggered();
 
     void on_actionRemove_Background_triggered();

@@ -322,7 +322,7 @@ void RegToolBox::on_timer()
     }
 }
 
-extern const float reg_bound2[6] = {0.25f,-0.25f,4.0f,0.2f,0.5f,-0.5f};
+extern const float reg_bound2[6] = {1.0f,-1.0f,4.0f,0.2f,0.5f,-0.5f};
 void RegToolBox::linear_reg(tipl::reg::reg_type reg_type)
 {
     status = "linear registration";
@@ -501,21 +501,6 @@ void RegToolBox::on_stop_clicked()
     thread.clear();
     show_image();
 }
-
-void RegToolBox::on_reg_method_currentIndexChanged(int index)
-{
-    if(index) // diffe
-    {
-        ui->order_widget->hide();
-        ui->smoothness_widget->show();
-    }
-    else
-    {
-        ui->order_widget->show();
-        ui->smoothness_widget->hide();
-    }
-}
-
 
 void RegToolBox::on_actionMatch_Intensity_triggered()
 {
