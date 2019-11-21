@@ -698,7 +698,7 @@ void slice_view_scene::mousePressEvent ( QGraphicsSceneMouseEvent * mouseEvent )
     if(!to_3d_space(X,Y,pos))
         return;
     adjust_xy_to_layout(X,Y);
-    if(mouseEvent->button() == Qt::MidButton)// move object
+    if(mouseEvent->button() == Qt::MidButton | sel_mode == 5)// move object
     {
         auto slice = cur_tracking_window.current_slice;
         tipl::vector<3,float> p(pos);

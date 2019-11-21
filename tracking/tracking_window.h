@@ -125,13 +125,14 @@ private slots:
     void on_tool2_pressed();
     void on_tool1_pressed();
     void on_tool0_pressed();
-
+    void on_tool5_pressed();
+    void on_tool6_pressed();
     void SliderValueChanged(void);
 
     void on_actionSave_Endpoints_in_Current_Mapping_triggered();
     void on_deleteSlice_clicked();
     void on_actionSave_Tracts_in_MNI_space_triggered();
-    void on_tool6_pressed();
+
     void on_actionManual_Registration_triggered();
     void on_actionTract_Analysis_Report_triggered();
     void on_actionConnectivity_matrix_triggered();

@@ -675,6 +675,11 @@ void tracking_window::on_tool4_clicked()
     scene.sel_mode = 4;
     scene.setFocus();
 }
+void tracking_window::on_tool5_pressed()
+{
+    scene.sel_mode = 5;
+    scene.setFocus();
+}
 
 void tracking_window::on_tool6_pressed()
 {
