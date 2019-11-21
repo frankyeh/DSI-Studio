@@ -11,7 +11,6 @@ bool is_label_image(const tipl::image<float,3>& I)
             return false;
     return true;
 }
-const float reg_bound2[6] = {0.25f,-0.25f,4.0f,0.2f,0.5f,-0.5f};
 manual_alignment::manual_alignment(QWidget *parent,
                                    tipl::image<float,3> from_,
                                    const tipl::vector<3>& from_vs_,
@@ -26,7 +25,7 @@ manual_alignment::manual_alignment(QWidget *parent,
     to.swap(to_);
     tipl::normalize(from,1.0);
     tipl::normalize(to,1.0);
-    tipl::reg::get_bound(from,to,arg,b_upper,b_lower,reg_type,reg_bound2);
+    tipl::reg::get_bound(from,to,arg,b_upper,b_lower,reg_type,tipl::reg::reg_bound2);
 
     ui->setupUi(this);
     ui->reg_type->setCurrentIndex(reg_type == tipl::reg::rigid_body? 1: 2);
@@ -281,7 +280,7 @@ void manual_alignment::on_rerun_clicked()
         reg_type = tipl::reg::rigid_body;
     if(ui->reg_type->currentIndex() == 2)
         reg_type = tipl::reg::affine;
-    tipl::reg::get_bound(from,to,arg,b_upper,b_lower,reg_type,reg_bound2);
+    tipl::reg::get_bound(from,to,arg,b_upper,b_lower,reg_type,tipl::reg::reg_bound2);
     if(ui->reg_type->currentIndex() <= 1) // translocation or rigid
     {
         ui->rotation_group->setEnabled(reg_type == tipl::reg::rigid_body);
@@ -301,13 +300,13 @@ void manual_alignment::on_rerun_clicked()
     {
         if(cost == tipl::reg::mutual_info)
         {
-            tipl::reg::linear(from,from_vs,to,to_vs,arg,reg_type,tipl::reg::mutual_information(),thread.terminated,0.01,0,reg_bound2);
-            tipl::reg::linear(from,from_vs,to,to_vs,arg,reg_type,tipl::reg::mutual_information(),thread.terminated,0.001,0,reg_bound2);
+            tipl::reg::linear(from,from_vs,to,to_vs,arg,reg_type,tipl::reg::mutual_information(),thread.terminated,0.01,0,tipl::reg::reg_bound2);
+            tipl::reg::linear(from,from_vs,to,to_vs,arg,reg_type,tipl::reg::mutual_information(),thread.terminated,0.001,0,tipl::reg::reg_bound2);
         }
         else
         {
-            tipl::reg::linear(from,from_vs,to,to_vs,arg,reg_type,tipl::reg::correlation(),thread.terminated,0.01,0,reg_bound2);
-            tipl::reg::linear(from,from_vs,to,to_vs,arg,reg_type,tipl::reg::correlation(),thread.terminated,0.001,0,reg_bound2);
+            tipl::reg::linear(from,from_vs,to,to_vs,arg,reg_type,tipl::reg::correlation(),thread.terminated,0.01,0,tipl::reg::reg_bound2);
+            tipl::reg::linear(from,from_vs,to,to_vs,arg,reg_type,tipl::reg::correlation(),thread.terminated,0.001,0,tipl::reg::reg_bound2);
         }
 
     });
