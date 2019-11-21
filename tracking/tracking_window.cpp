@@ -30,7 +30,7 @@
 extern std::vector<std::string> tractography_name_list;
 extern std::string t1w_template_file_name,wm_template_file_name;
 extern std::vector<std::string> fa_template_list;
-extern std::vector<std::shared_ptr<tracking_window> > tracking_windows;
+extern std::vector<tracking_window*> tracking_windows;
 QByteArray default_geo,default_state;
 
 
@@ -65,29 +65,7 @@ void populate_templates(QComboBox* combo)
     }
 }
 
-void tracking_window::closeEvent(QCloseEvent *event)
-{
-    for(size_t index = 0;index < tractWidget->tract_models.size();++index)
-        if(!tractWidget->tract_models[index]->saved)
-        {
-            if (QMessageBox::question( this, "DSI Studio",
-                "Tractography not saved. Close?\n",QMessageBox::No | QMessageBox::Yes,QMessageBox::No) == QMessageBox::No)
-            {
-                event->ignore();
-                return;
-            }
-            break;
-        }
-    QMainWindow::closeEvent(event);
-    // clean up texture here when makeCurrent is still working
-    glWidget->clean_up();
-    for(size_t index = 0;index < tracking_windows.size();++index)
-        if(tracking_windows[index].get() == this)
-        {
-            tracking_windows.erase(tracking_windows.begin()+index);
-            break;
-        }
-}
+
 
 QVariant tracking_window::operator[](QString name) const
 {
@@ -431,8 +409,32 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
     }
 }
 
+void tracking_window::closeEvent(QCloseEvent *event)
+{
+    for(size_t index = 0;index < tractWidget->tract_models.size();++index)
+        if(!tractWidget->tract_models[index]->saved)
+        {
+            if (QMessageBox::question( this, "DSI Studio",
+                "Tractography not saved. Close?\n",QMessageBox::No | QMessageBox::Yes,QMessageBox::No) == QMessageBox::No)
+            {
+                event->ignore();
+                return;
+            }
+            break;
+        }
+    QMainWindow::closeEvent(event);
+    // clean up texture here when makeCurrent is still working
+    glWidget->clean_up();
+
+}
 tracking_window::~tracking_window()
 {
+    for(size_t index = 0;index < tracking_windows.size();++index)
+        if(tracking_windows[index] == this)
+        {
+            tracking_windows[index] = 0;
+            break;
+        }
     tractWidget->stop_tracking();
     tractWidget->delete_all_tract();
     qApp->removeEventFilter(this);

@@ -41,7 +41,7 @@ int atl(void);
 int cnt(void);
 int vis(void);
 int ren(void);
-std::vector<std::shared_ptr<tracking_window> > tracking_windows;
+std::vector<tracking_window*> tracking_windows;
 MainWindow::MainWindow(QWidget *parent) :
         QMainWindow(parent),
         ui(new Ui::MainWindow)
@@ -125,13 +125,14 @@ void MainWindow::open_src_at(int row,int)
 
 void MainWindow::closeEvent(QCloseEvent *event)
 {
-    auto windows_to_check = tracking_windows; // some windows may be removed
-    for(size_t index = 0;index < windows_to_check.size();++index)
-    {
-        windows_to_check[index]->closeEvent(event);
-        if(!event->isAccepted())
-            return;
-    }
+    for(size_t index = 0;index < tracking_windows.size();++index)
+    if(tracking_windows[index])
+        {
+            tracking_windows[index]->closeEvent(event);
+            if(!event->isAccepted())
+                return;
+            delete tracking_windows[index];
+        }
     QMainWindow::closeEvent(event);
 }
 MainWindow::~MainWindow()
@@ -231,7 +232,7 @@ void MainWindow::loadFib(QString filename)
             QMessageBox::information(this,"error",new_handle->error_msg.c_str(),0);
         return;
     }
-    tracking_windows.push_back(std::make_shared<tracking_window>(this,new_handle));
+    tracking_windows.push_back(new tracking_window(this,new_handle));
     tracking_windows.back()->setAttribute(Qt::WA_DeleteOnClose);
     tracking_windows.back()->setWindowTitle(filename);
     tracking_windows.back()->showNormal();
