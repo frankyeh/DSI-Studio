@@ -36,7 +36,7 @@ int qc(void);
 
 int match_template(float volume)
 {
-    float min_dif = volume;
+    float min_dif = std::numeric_limits<float>::max();
     int matched_index = 0;
     for(int i = 0;i < fa_template_list.size();++i)
     {
