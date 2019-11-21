@@ -64,15 +64,18 @@ void AtlasDialog::on_pushButton_clicked()
 
 void AtlasDialog::on_search_atlas_textChanged(const QString &)
 {
-    QStringList name_value = ui->search_atlas->text().split(":");
-    if(name_value.size() != 2)
+    std::string name_value = ui->search_atlas->text().toStdString();
+    size_t pos = name_value.find_last_of(':');
+    if(pos == std::string::npos)
         return;
+    std::string atlas_name = name_value.substr(pos+1);
+    std::string region_name = name_value.substr(0,pos);
     for(int i = 0;i < handle->atlas_list.size();++i)
-        if(name_value[1].toStdString() == handle->atlas_list[i]->name)
+        if(atlas_name == handle->atlas_list[i]->name)
         {
             ui->atlasListBox->setCurrentIndex(i);
             for(int j = 0;j < handle->atlas_list[i]->get_list().size();++j)
-            if(handle->atlas_list[i]->get_list()[j] == name_value[0].toStdString())
+            if(handle->atlas_list[i]->get_list()[j] == region_name)
             {
                 ui->region_list->setCurrentIndex(ui->region_list->model()->index(j,0));
                 ui->search_atlas->setText("");
