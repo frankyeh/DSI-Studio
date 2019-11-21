@@ -13,7 +13,6 @@
 #include "opengl/renderingtablewidget.h"
 #include "region/regiontablewidget.h"
 #include <QApplication>
-#include <QScrollBar>
 #include <QMouseEvent>
 #include <QMessageBox>
 #include "fib_data.hpp"

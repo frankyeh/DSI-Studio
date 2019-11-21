@@ -13,6 +13,7 @@
 #include "libs/gzip_interface.hpp"
 #include "libs/tracking/fib_data.hpp"
 #include "opengl/glwidget.h"
+#include <QScrollBar>
 
 QPixmap fromImage(const QImage &I)
 {
@@ -555,6 +556,18 @@ void slice_view_scene::copyClipBoard()
 
 void slice_view_scene::wheelEvent(QGraphicsSceneWheelEvent *wheelEvent)
 {
+    if(views().size() == 0)
+        return;
+    bool vb_visible = views()[0]->verticalScrollBar()->isVisible();
+    bool hb_visible = views()[0]->horizontalScrollBar()->isVisible();
+    auto* vb = views()[0]->verticalScrollBar();
+    auto* hb = views()[0]->horizontalScrollBar();
+    if(vb_visible)
+    {
+        if((wheelEvent->delta() < 0 && vb->maximum() != vb->value()) ||
+            (wheelEvent->delta() > 0 && vb->value() > 0))
+            return;
+    }
     tipl::vector<3,float> pos;
     float Y = wheelEvent->scenePos().y();
     float X = wheelEvent->scenePos().x();
@@ -562,12 +575,25 @@ void slice_view_scene::wheelEvent(QGraphicsSceneWheelEvent *wheelEvent)
     {
         QWheelEvent we(wheelEvent->pos(),wheelEvent->delta(),wheelEvent->buttons(),wheelEvent->modifiers());
         cur_tracking_window.glWidget->wheelEvent(&we);
-        return;
     }
+
+    float hb_ratio = 0.0f;
+    if(hb_visible)
+        hb_ratio = float(hb->value())/(hb->maximum());
     if(wheelEvent->delta() < 0)
+    {
         cur_tracking_window.set_roi_zoom(cur_tracking_window["roi_zoom"].toFloat()-0.5f);
+        if(views().size() > 0 && views()[0]->verticalScrollBar()->isVisible())
+            views()[0]->verticalScrollBar()->setValue(views()[0]->verticalScrollBar()->maximum());
+    }
     else
+    {
         cur_tracking_window.set_roi_zoom(cur_tracking_window["roi_zoom"].toFloat()+0.5f);
+        if(views().size() > 0 && views()[0]->verticalScrollBar()->isVisible())
+            views()[0]->verticalScrollBar()->setValue(0);
+    }
+    if(hb_visible)
+        hb->setValue(hb->maximum()*hb_ratio);
 }
 void slice_view_scene::mouseDoubleClickEvent ( QGraphicsSceneMouseEvent * mouseEvent )
 {

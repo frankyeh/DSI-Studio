@@ -2,7 +2,6 @@
 #include <QDir>
 #include <QFileDialog>
 #include <QMessageBox>
-#include <QScrollBar>
 #include "nn_connectometry.h"
 #include "ui_nn_connectometry.h"
 nn_connectometry::nn_connectometry(QWidget *parent,std::shared_ptr<fib_data> handle,QString db_file_name_,bool gui_) :

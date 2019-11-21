@@ -2,7 +2,6 @@
 #include <QFileDialog>
 #include <QInputDialog>
 #include <QStringListModel>
-#include <QScrollBar>
 #include "tracking/region/Regions.h"
 #include "group_connectometry.hpp"
 #include "ui_group_connectometry.h"
