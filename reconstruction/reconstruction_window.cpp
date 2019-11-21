@@ -485,6 +485,8 @@ void reconstruction_window::on_QSDR_toggled(bool checked)
     {
         ui->primary_template->setCurrentIndex(match_template(
             handle->voxel.vs[0]*handle->voxel.vs[1]*handle->voxel.vs[2]*handle->voxel.dim.size()));
+        if(ui->primary_template->currentIndex() != 0)
+            QMessageBox::information(this,"DSI Studio","Please check whether image orienation matches that of the template. Use [Edit][Flip] or [Edit][Swap] to correct if necessary.");
     }
 
 
