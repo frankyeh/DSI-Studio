@@ -18,6 +18,7 @@ class MainWindow : public QMainWindow
 public:
     explicit MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
+    void closeEvent(QCloseEvent *event);
     Ui::MainWindow *ui;
     void addFib(QString Filename);
     void addSrc(QString Filename);

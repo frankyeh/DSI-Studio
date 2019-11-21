@@ -31,6 +31,7 @@
 extern std::vector<std::string> tractography_name_list;
 extern std::string t1w_template_file_name,wm_template_file_name;
 extern std::vector<std::string> fa_template_list;
+extern std::vector<std::shared_ptr<tracking_window> > tracking_windows;
 QByteArray default_geo,default_state;
 
 
@@ -81,6 +82,12 @@ void tracking_window::closeEvent(QCloseEvent *event)
     QMainWindow::closeEvent(event);
     // clean up texture here when makeCurrent is still working
     glWidget->clean_up();
+    for(size_t index = 0;index < tracking_windows.size();++index)
+        if(tracking_windows[index].get() == this)
+        {
+            tracking_windows.erase(tracking_windows.begin()+index);
+            break;
+        }
 }
 
 QVariant tracking_window::operator[](QString name) const

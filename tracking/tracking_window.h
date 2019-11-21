@@ -41,7 +41,7 @@ signals:
 class tracking_window : public QMainWindow
 {
     Q_OBJECT
-protected:
+public:
     void closeEvent(QCloseEvent *event);
     void keyPressEvent ( QKeyEvent * event );
 

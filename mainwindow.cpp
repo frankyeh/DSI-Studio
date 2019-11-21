@@ -41,7 +41,7 @@ int atl(void);
 int cnt(void);
 int vis(void);
 int ren(void);
-
+std::vector<std::shared_ptr<tracking_window> > tracking_windows;
 MainWindow::MainWindow(QWidget *parent) :
         QMainWindow(parent),
         ui(new Ui::MainWindow)
@@ -123,6 +123,17 @@ void MainWindow::open_src_at(int row,int)
 }
 
 
+void MainWindow::closeEvent(QCloseEvent *event)
+{
+    auto windows_to_check = tracking_windows; // some windows may be removed
+    for(size_t index = 0;index < windows_to_check.size();++index)
+    {
+        windows_to_check[index]->closeEvent(event);
+        if(!event->isAccepted())
+            return;
+    }
+    QMainWindow::closeEvent(event);
+}
 MainWindow::~MainWindow()
 {
     QStringList workdir_list;
@@ -220,11 +231,11 @@ void MainWindow::loadFib(QString filename)
             QMessageBox::information(this,"error",new_handle->error_msg.c_str(),0);
         return;
     }
-    tracking_window* new_mdi = new tracking_window(this,new_handle);
-    new_mdi->setAttribute(Qt::WA_DeleteOnClose);
-    new_mdi->setWindowTitle(filename);
-    new_mdi->showNormal();
-    new_mdi->resize(1200,700);
+    tracking_windows.push_back(std::make_shared<tracking_window>(this,new_handle));
+    tracking_windows.back()->setAttribute(Qt::WA_DeleteOnClose);
+    tracking_windows.back()->setWindowTitle(filename);
+    tracking_windows.back()->showNormal();
+    tracking_windows.back()->resize(1200,700);
     addFib(filename);
     add_work_dir(QFileInfo(filename).absolutePath());
     QDir::setCurrent(QFileInfo(filename).absolutePath());
