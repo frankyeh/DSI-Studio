@@ -339,7 +339,7 @@ public:
                     samples.push_back(data.space[0]);
                 else
                     samples.push_back(*std::min_element(data.odf.begin(),data.odf.end()));
-                std::fill(data.odf.begin(),data.odf.end(),0.0f);
+                //std::fill(data.odf.begin(),data.odf.end(),0.0f);
             }
         }
         else
