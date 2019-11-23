@@ -1009,6 +1009,33 @@ void fib_data::template_from_mni(tipl::vector<3>& p)
 
 }
 
+void animal_reg(const tipl::image<float,3>& from,tipl::vector<3> from_vs,
+          const tipl::image<float,3>& to,tipl::vector<3> to_vs,
+          tipl::transformation_matrix<double>& T,bool& terminated)
+{
+    float PI = 3.14159265358979323846f;
+    float directions[4][3]={
+        {PI*0.5f,0.0f,0.0f},
+        {PI*-0.5f,0.0f,0.0f},
+        {PI*0.5f,0.0f,PI},
+        {PI*-0.5f,0.0f,PI}
+    };
+    float cost = 0.0f;
+    float new_cost[4] = {0};
+    tipl::par_for(4,[&](int i)
+    {
+         tipl::affine_transform<double> arg;
+         std::copy(directions[i],directions[i]+3,arg.rotation);
+         new_cost[i] = tipl::reg::linear_mr(from,from_vs,to,to_vs,arg,
+            tipl::reg::affine,tipl::reg::mutual_information(),terminated,0.01,tipl::reg::reg_bound2);
+         if(cost == 0.0f || new_cost[i] < cost)
+         {
+             cost = new_cost[i];
+             T = tipl::transformation_matrix<double>(arg,from.geometry(),from_vs,to.geometry(),to_vs);
+         }
+    });
+}
+
 void fib_data::run_normalization(bool background,bool inv)
 {
     if(!need_normalization ||
@@ -1046,7 +1073,7 @@ void fib_data::run_normalization(bool background,bool inv)
 
         auto& It = template_I;
         auto& It2 = template_I2;
-        tipl::transformation_matrix<float> T;
+        tipl::transformation_matrix<double> T;
         tipl::image<float,3> Is(dir.fa[0],dim);
         tipl::filter::gaussian(Is);
 
@@ -1056,8 +1083,11 @@ void fib_data::run_normalization(bool background,bool inv)
         auto tvs = vs;
         tvs *= std::sqrt((It.plane_size()*template_vs[0]*template_vs[1])/
                 (Is.plane_size()*vs[0]*vs[1]));
-        tipl::reg::two_way_linear_mr(It,template_vs,Is,tvs,T,tipl::reg::affine,
-                                     tipl::reg::mutual_information(),terminated);
+        if(template_vs[0] < 1.0f) // animal
+            animal_reg(It,template_vs,Is,tvs,T,terminated);
+        else
+            tipl::reg::two_way_linear_mr(It,template_vs,Is,tvs,T,tipl::reg::affine,
+                                         tipl::reg::mutual_information(),terminated);
         if(terminated)
             return;
         tipl::image<float,3> Iss(It.geometry());

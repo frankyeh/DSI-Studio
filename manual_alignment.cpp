@@ -122,14 +122,14 @@ void manual_alignment::load_param(void)
     ui->tz->setMinimum(b_lower.translocation[2]);
     ui->tz->setValue(arg.translocation[2]);
     // rotation
-    ui->rx->setMaximum(3.14159265358);
-    ui->rx->setMinimum(-3.14159265358);
+    ui->rx->setMaximum(3.14159265358*1.2);
+    ui->rx->setMinimum(-3.14159265358*1.2);
     ui->rx->setValue(arg.rotation[0]);
-    ui->ry->setMaximum(3.14159265358);
-    ui->ry->setMinimum(-3.14159265358);
+    ui->ry->setMaximum(3.14159265358*1.2);
+    ui->ry->setMinimum(-3.14159265358*1.2);
     ui->ry->setValue(arg.rotation[1]);
-    ui->rz->setMaximum(3.14159265358);
-    ui->rz->setMinimum(-3.14159265358);
+    ui->rz->setMaximum(3.14159265358*1.2);
+    ui->rz->setMinimum(-3.14159265358*1.2);
     ui->rz->setValue(arg.rotation[2]);
     //scaling
     ui->sx->setMaximum(b_upper.scaling[0]);
@@ -300,13 +300,13 @@ void manual_alignment::on_rerun_clicked()
     {
         if(cost == tipl::reg::mutual_info)
         {
-            tipl::reg::linear(from,from_vs,to,to_vs,arg,reg_type,tipl::reg::mutual_information(),thread.terminated,0.01,0,tipl::reg::reg_bound2);
-            tipl::reg::linear(from,from_vs,to,to_vs,arg,reg_type,tipl::reg::mutual_information(),thread.terminated,0.001,0,tipl::reg::reg_bound2);
+            tipl::reg::linear(from,from_vs,to,to_vs,arg,reg_type,tipl::reg::mutual_information(),thread.terminated,0.01,500,tipl::reg::reg_bound2);
+            tipl::reg::linear(from,from_vs,to,to_vs,arg,reg_type,tipl::reg::mutual_information(),thread.terminated,0.001,500,tipl::reg::reg_bound2);
         }
         else
         {
-            tipl::reg::linear(from,from_vs,to,to_vs,arg,reg_type,tipl::reg::correlation(),thread.terminated,0.01,0,tipl::reg::reg_bound2);
-            tipl::reg::linear(from,from_vs,to,to_vs,arg,reg_type,tipl::reg::correlation(),thread.terminated,0.001,0,tipl::reg::reg_bound2);
+            tipl::reg::linear(from,from_vs,to,to_vs,arg,reg_type,tipl::reg::correlation(),thread.terminated,0.01,500,tipl::reg::reg_bound2);
+            tipl::reg::linear(from,from_vs,to,to_vs,arg,reg_type,tipl::reg::correlation(),thread.terminated,0.001,500,tipl::reg::reg_bound2);
         }
 
     });

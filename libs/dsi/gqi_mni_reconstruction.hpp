@@ -5,7 +5,9 @@
 #include "basic_voxel.hpp"
 #include "basic_process.hpp"
 #include "gqi_process.hpp"
-
+void animal_reg(const tipl::image<float,3>& from,tipl::vector<3> from_vs,
+          const tipl::image<float,3>& to,tipl::vector<3> to_vs,
+          tipl::transformation_matrix<double>& T,bool& terminated);
 class DWINormalization  : public BaseProcess
 {
 protected:
@@ -125,8 +127,11 @@ public:
                 {
                     bool terminated = false;
                     if(!run_prog("Linear Registration",[&](){
-                        tipl::reg::two_way_linear_mr(VG,VGvs,VF,voxel.vs,affine,
-                            tipl::reg::affine,tipl::reg::correlation(),terminated,voxel.thread_count);
+                        if(VGvs[0] < 1.0f) // animal recon
+                            animal_reg(VG,VGvs,VF,voxel.vs,affine,terminated);
+                        else
+                            tipl::reg::two_way_linear_mr(VG,VGvs,VF,voxel.vs,affine,
+                                    tipl::reg::affine,tipl::reg::correlation(),terminated,voxel.thread_count);
                     },terminated))
                         throw std::runtime_error("Reconstruction canceled");
                 }
@@ -137,8 +142,6 @@ public:
                     VFF2.resize(VG.geometry());
                     tipl::resample(VF2,VFF2,affine,tipl::cubic);
                 }
-
-
             }
             //linear regression
             {
