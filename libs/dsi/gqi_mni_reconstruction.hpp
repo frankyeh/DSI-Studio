@@ -67,16 +67,22 @@ public:
 
 
         {
-            float resolution_ratio = std::round((voxel.vs[0]+voxel.vs[1]+voxel.vs[2])/3.0f/VGvs[0]);
-            if(resolution_ratio < 1.0f)
-                resolution_ratio = 1.0f;
-            while(resolution_ratio > 1.0f)
+            float best_reso = *std::min_element(voxel.vs.begin(),voxel.vs.end());
+            // upsample template
+            while(best_reso < VGvs[0]*0.5f)
+            {
+                tipl::upsampling(VG);
+                if(!VG2.empty())
+                    tipl::upsampling(VG2);
+                VGvs *= 0.5f;
+            }
+            // downsample template
+            while(best_reso > VGvs[0]*1.5f)
             {
                 tipl::downsampling(VG);
                 if(!VG2.empty())
                     tipl::downsampling(VG2);
                 VGvs *= 2.0f;
-                resolution_ratio *= 0.5f;
             }
             // setup output bounding box
             {

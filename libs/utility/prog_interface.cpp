@@ -71,6 +71,8 @@ void set_title(const char* title)
 }
 void close_prog(void)
 {
+    if(!progressDialog.get())
+        return;
     start_time = std::chrono::high_resolution_clock::now();
     prog_aborted_ = progressDialog->wasCanceled();
     progressDialog.reset();
