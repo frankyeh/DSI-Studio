@@ -99,7 +99,7 @@ void slice_view_scene::show_ruler(QPainter& paint)
     paint.setPen(pen);
 
     QFont f = font();
-    f.setPointSize(tic_length/3);
+    f.setPointSize(tic_length/4);
     paint.setFont(f);
     // for qsdr
     bool is_qsdr = cur_tracking_window.handle->is_qsdr;
@@ -143,16 +143,18 @@ void slice_view_scene::show_ruler(QPainter& paint)
                 axis_label = axis_label*qsdr_scale[dim]+qsdr_shift[dim];
             paint.drawText(X-40,Y+tic_length/2-40,80,80,
                                Qt::AlignHCenter|Qt::AlignVCenter,
-                               QString::number(double(std::round(axis_label*100.0f)/100.0)));
+                               QString::number(double(std::round(axis_label*100.0f)/100.0f)));
         }
     }
     {
         bool flip_y = cur_dim != 2;
-        uint8_t  dim = (cur_dim == 2 ? 1:2);
+        uint8_t dim = (cur_dim == 2 ? 1:2);
         int X = space_x;
         int pad_y = (is_qsdr ? int(qsdr_origin[dim]%tic_dis):0);
         if(pad_y == 0)
             pad_y = tic_dis;
+        if(flip_y && pad_y < tic_dis)
+            pad_y += tic_dis;
         int length = (cur_tracking_window.current_slice->geometry[dim]-pad_y-tic_dis)
                         /tic_dis*tic_dis;
         for(int tic = 0;tic <= length;tic += tic_dis)
@@ -171,7 +173,7 @@ void slice_view_scene::show_ruler(QPainter& paint)
                 axis_label = axis_label*qsdr_scale[dim]+qsdr_shift[dim];
             paint.drawText(2,Y-40,X-int(zoom)-2,80,
                                Qt::AlignRight|Qt::AlignVCenter,
-                               QString::number(double(std::round(axis_label*100.0f)/100.0)));
+                               QString::number(double(std::round(axis_label*100.0f)/100.0f)));
         }
     }
 }
