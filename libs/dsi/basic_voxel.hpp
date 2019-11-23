@@ -113,6 +113,7 @@ public: // for DDI
     std::string study_name;
     std::string study_src_file_path;
     bool dt_deform = false;
+    bool not_human_brain = false;
 public:
     float z0 = 0.0;
     // other information for second pass processing

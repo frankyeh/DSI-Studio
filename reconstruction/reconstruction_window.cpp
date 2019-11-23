@@ -109,6 +109,7 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
     ui->output_tensor->setChecked(settings.value("output_tensor",0).toInt());
     ui->output_helix_angle->setChecked(settings.value("output_helix_angle",0).toInt());
     ui->rdi->setChecked(settings.value("output_rdi",1).toInt());
+    ui->not_human_brain->setChecked(settings.value("not_human_brain",0).toInt());
     ui->check_btable->setChecked(settings.value("check_btable",1).toInt());
     if(handle->voxel.vs[2] > handle->voxel.vs[0]*2.0f || handle->voxel.vs[0] < 0.5f)
         ui->check_btable->setChecked(false);
@@ -269,6 +270,8 @@ void reconstruction_window::doReconstruction(unsigned char method_id,bool prompt
     settings.setValue("output_helix_angle",ui->output_helix_angle->isChecked() ? 1 : 0);
 
     settings.setValue("output_rdi",(ui->rdi->isChecked() && (method_id == 4 || method_id == 7)) ? 1 : 0); // only for GQI
+
+    settings.setValue("not_human_brain",ui->not_human_brain->isChecked() ? 1 : 0);
     settings.setValue("check_btable",ui->check_btable->isChecked() ? 1 : 0);
 
     begin_prog("reconstruction",true);
@@ -280,6 +283,7 @@ void reconstruction_window::doReconstruction(unsigned char method_id,bool prompt
     handle->voxel.max_fiber_number = ui->NumOfFibers->value();
     handle->voxel.r2_weighted = ui->ODFDef->currentIndex();
     handle->voxel.output_odf = ui->RecordODF->isChecked();
+    handle->voxel.not_human_brain = ui->not_human_brain->isChecked();
     handle->voxel.check_btable = ui->check_btable->isChecked();
     handle->voxel.output_tensor = ui->output_tensor->isChecked();
     handle->voxel.output_helix_angle = ui->output_helix_angle->isChecked();

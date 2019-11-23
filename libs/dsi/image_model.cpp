@@ -1319,7 +1319,6 @@ bool ImageModel::save_bvec(const char* file_name) const
 }
 bool ImageModel::compare_src(const char* file_name)
 {
-    rotate_to_mni();
     std::shared_ptr<ImageModel> bl(new ImageModel);
     begin_prog("reading");
     if(!bl->load_from_file(file_name))
