@@ -103,7 +103,9 @@ void slice_view_scene::show_ruler(QPainter& paint)
     paint.setFont(f);
     // for qsdr
     bool is_qsdr = cur_tracking_window.handle->is_qsdr;
-    const auto& trans = cur_tracking_window.handle->trans_to_mni;
+    auto trans = cur_tracking_window.handle->trans_to_mni;
+    if(!cur_tracking_window.current_slice->is_diffusion_space)
+        trans *= cur_tracking_window.current_slice->T;
     tipl::vector<3,int> qsdr_origin;
     tipl::vector<3> qsdr_scale(trans[0],trans[5],trans[10]);
     tipl::vector<3> qsdr_shift(trans[3],trans[7],trans[11]);
@@ -141,7 +143,7 @@ void slice_view_scene::show_ruler(QPainter& paint)
                 axis_label = axis_label*qsdr_scale[dim]+qsdr_shift[dim];
             paint.drawText(X-40,Y+tic_length/2-40,80,80,
                                Qt::AlignHCenter|Qt::AlignVCenter,
-                               QString::number(double(axis_label)));
+                               QString::number(double(std::round(axis_label*100.0f)/100.0)));
         }
     }
     {
@@ -169,7 +171,7 @@ void slice_view_scene::show_ruler(QPainter& paint)
                 axis_label = axis_label*qsdr_scale[dim]+qsdr_shift[dim];
             paint.drawText(2,Y-40,X-int(zoom)-2,80,
                                Qt::AlignRight|Qt::AlignVCenter,
-                               QString::number(double(axis_label)));
+                               QString::number(double(std::round(axis_label*100.0f)/100.0)));
         }
     }
 }
