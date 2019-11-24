@@ -23,7 +23,7 @@ void check_create(void)
     if(!progressDialog.get() &&
        std::chrono::duration_cast<std::chrono::milliseconds>(cur - start_time).count() > 500)
     {
-        progressDialog.reset(new QProgressDialog(current_title.c_str(),"Cancel",0,100,0));
+        progressDialog.reset(new QProgressDialog(current_title.c_str(),"Cancel",0,100));
         progressDialog->show();
         QApplication::processEvents();
     }
