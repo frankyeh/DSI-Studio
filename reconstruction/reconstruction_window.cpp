@@ -321,7 +321,8 @@ void reconstruction_window::doReconstruction(unsigned char method_id,bool prompt
     if(!prompt)
         return;
 
-    QMessageBox::information(this,"DSI Studio","FIB file created.",0);
+    QMessageBox::information(this,"DSI Studio","FIB file created.");
+    setFocus();
     if(method_id == 6)
         ((MainWindow*)parent())->addSrc(msg);
     else
