@@ -254,11 +254,7 @@ void MainWindow::loadSrc(QStringList filenames)
 
         reconstruction_window* new_mdi = new reconstruction_window(filenames,this);
         new_mdi->setAttribute(Qt::WA_DeleteOnClose);
-        #ifdef WIN32
-            new_mdi->show();
-        #else
-            new_mdi->open();
-        #endif
+        new_mdi->show();
         QDir::setCurrent(QFileInfo(filenames[0]).absolutePath());
         if(filenames.size() == 1)
         {
@@ -527,14 +523,14 @@ void MainWindow::on_vbc_clicked()
 {
     CreateDBDialog* new_mdi = new CreateDBDialog(this,true);
     new_mdi->setAttribute(Qt::WA_DeleteOnClose);
-    new_mdi->open();
+    new_mdi->show();
 }
 
 void MainWindow::on_averagefib_clicked()
 {
     CreateDBDialog* new_mdi = new CreateDBDialog(this,false);
     new_mdi->setAttribute(Qt::WA_DeleteOnClose);
-    new_mdi->open();
+    new_mdi->show();
 }
 
 bool load_all_files(QStringList file_list,std::vector<std::shared_ptr<DwiHeader> >& dwi_files);
@@ -744,12 +740,7 @@ void MainWindow::on_view_image_clicked()
         delete dialog;
         return;
     }
-#ifdef WIN32
     dialog->show();
-#else
-    dialog->open();
-#endif
-
 }
 
 void MainWindow::on_workDir_currentTextChanged(const QString &arg1)
@@ -802,11 +793,7 @@ void MainWindow::on_open_db_clicked()
     db_window* db = new db_window(this,database);
     db->setWindowTitle(filename);
     db->setAttribute(Qt::WA_DeleteOnClose);
-#ifdef WIN32
     db->show();
-#else
-    db->open();
-#endif
 }
 
 void MainWindow::on_group_connectometry_clicked()
@@ -817,12 +804,7 @@ void MainWindow::on_group_connectometry_clicked()
         return;
     group_connectometry* group_cnt = new group_connectometry(this,database,filename,true);
     group_cnt->setAttribute(Qt::WA_DeleteOnClose);
-#ifdef WIN32
     group_cnt->show();
-#else
-    group_cnt->open();
-#endif
-
 }
 
 
@@ -1058,9 +1040,5 @@ void MainWindow::on_connectometry_nn_clicked()
         return;
     nn_connectometry* nn_cnt = new nn_connectometry(this,database->handle,filename,true);
     nn_cnt->setAttribute(Qt::WA_DeleteOnClose);
-#ifdef WIN32
     nn_cnt->show();
-#else
-    nn_cnt->open();
-#endif
 }
