@@ -595,10 +595,9 @@ void group_connectometry::on_run_clicked()
 
 
     ui->run->setText("Stop");
+    vbc->output_file_name = db_file_name.toStdString();
     if(vbc->model->type == 1) // regression
-        vbc->output_file_name = demo_file_name;
-    if(vbc->model->type == 3) // longitudinal change
-        vbc->output_file_name = db_file_name.toStdString();
+        vbc->output_file_name = demo_file_name.substr(0,demo_file_name.find_last_of('.'));
 
     if(ui->roi_whole_brain->isChecked())
         roi_list.clear();
