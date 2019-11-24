@@ -152,11 +152,11 @@ public:
             //linear regression
             {
                 std::thread t1([&](){VG *= 1.0f/tipl::mean(VG);});
-                std::thread t2([&](){VFF *= 1.0f/tipl::mean(VG);});
+                std::thread t2([&](){VFF *= 1.0f/tipl::mean(VFF);});
                 if(!VFF2.empty())
                 {
                     std::thread t3([&](){VG2 *= 1.0f/tipl::mean(VG);});
-                    std::thread t4([&](){VFF2 *= 1.0f/tipl::mean(VG);});
+                    std::thread t4([&](){VFF2 *= 1.0f/tipl::mean(VFF2);});
                     t4.join();
                     t3.join();
                 }
