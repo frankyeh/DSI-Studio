@@ -1222,19 +1222,20 @@ void tracking_window::on_addRegionFromAtlas_clicked()
         if(!handle->atlas_list[atlas_dialog->atlas_index]->load_from_file())
         {
             QMessageBox::information(this,"Error",handle->atlas_list[atlas_dialog->atlas_index]->error_msg.c_str());
-            raise();
             return;
         }
         begin_prog("adding regions");
         regionWidget->begin_update();
         for(unsigned int i = 0;check_prog(i,atlas_dialog->roi_list.size());++i)
+        {
             regionWidget->add_region_from_atlas(handle->atlas_list[atlas_dialog->atlas_index],atlas_dialog->roi_list[i]);
+            raise();
+        }
         regionWidget->end_update();
         glWidget->updateGL();
         scene.show_slice();
     }
-    raise();
-}
+    }
 
 
 void tracking_window::on_actionRestore_Settings_triggered()
