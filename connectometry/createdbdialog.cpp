@@ -78,11 +78,13 @@ void CreateDBDialog::update_list(void)
         if(!fib.load_from_file(sample_fib.toLocal8Bit().begin()))
         {
             QMessageBox::information(this,"Error","Invalid FIB file format",0);
+            raise(); // for Mac
             return;
         }
         if(!fib.is_qsdr)
         {
             QMessageBox::information(this,"Error","The FIB file was not reconstructed by QSDR.",0);
+            raise(); // for Mac
             return;
         }
         ui->index_of_interest->clear();
@@ -100,6 +102,8 @@ void CreateDBDialog::update_list(void)
     for(unsigned int index = 0;index < group.size();++index)
         filenames << get_file_name(group[index]);
     ((QStringListModel*)ui->group_list->model())->setStringList(filenames);
+
+    raise(); // for Mac
 }
 
 void CreateDBDialog::on_group1open_clicked()
@@ -283,11 +287,13 @@ void CreateDBDialog::on_create_data_base_clicked()
             {
                 QMessageBox::information(this,"error in loading subject fib files",data->handle->error_msg.c_str(),0);
                 check_prog(0,0);
+                raise(); // for Mac
                 return;
             }
             if(prog_aborted())
             {
                 check_prog(0,0);
+                raise(); // for Mac
                 return;
             }
         }
@@ -301,12 +307,11 @@ void CreateDBDialog::on_create_data_base_clicked()
             name_list[index] = group[index].toLocal8Bit().begin();
         const char* error_msg = odf_average(ui->output_file_name->text().toLocal8Bit().begin(),name_list);
         if(error_msg)
-            QMessageBox::information(this,"error",error_msg,0);
+            QMessageBox::information(this,"error",error_msg);
         else
-            QMessageBox::information(this,"completed","File created",0);
+            QMessageBox::information(this,"completed","File created");
     }
-
-
+    raise(); // for Mac
 }
 
 

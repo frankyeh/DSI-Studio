@@ -322,7 +322,7 @@ void reconstruction_window::doReconstruction(unsigned char method_id,bool prompt
         return;
 
     QMessageBox::information(this,"DSI Studio","FIB file created.");
-    raise();
+    raise(); // for Mac
     if(method_id == 6)
         ((MainWindow*)parent())->addSrc(msg);
     else

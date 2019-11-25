@@ -1206,12 +1206,14 @@ void tracking_window::on_addRegionFromAtlas_clicked()
 {
     if(!handle->load_atlas())
     {
-        QMessageBox::information(this,"Error","Atlas is not supported for the current image resolution.",0);
+        QMessageBox::information(this,"Error","Atlas is not supported for the current image resolution.");
+        raise();
         return;
     }
     if(!can_map_to_mni())
     {
-        QMessageBox::information(this,"Error",QString("Subject/Template mistch:") + ui->template_box->currentText(),0);
+        QMessageBox::information(this,"Error",QString("Subject/Template mistch:") + ui->template_box->currentText());
+        raise();
         return;
     }
     std::shared_ptr<AtlasDialog> atlas_dialog(new AtlasDialog(this,handle));
@@ -1219,7 +1221,8 @@ void tracking_window::on_addRegionFromAtlas_clicked()
     {
         if(!handle->atlas_list[atlas_dialog->atlas_index]->load_from_file())
         {
-            QMessageBox::information(0,"Error",handle->atlas_list[atlas_dialog->atlas_index]->error_msg.c_str(),0);
+            QMessageBox::information(this,"Error",handle->atlas_list[atlas_dialog->atlas_index]->error_msg.c_str());
+            raise();
             return;
         }
         begin_prog("adding regions");
@@ -1230,6 +1233,7 @@ void tracking_window::on_addRegionFromAtlas_clicked()
         glWidget->updateGL();
         scene.show_slice();
     }
+    raise();
 }
 
 
@@ -2004,19 +2008,21 @@ void tracking_window::on_actionKeep_Current_Slice_triggered()
 {
     glWidget->keep_slice = true;
     glWidget->updateGL();
-    QMessageBox::information(this,"DSI Studio","Current viewing slice will reamin in the 3D window",0);
+    QMessageBox::information(this,"DSI Studio","Current viewing slice will reamin in the 3D window");
 }
 extern std::string tractography_atlas_file_name;
 void tracking_window::on_enable_auto_track_clicked()
 {
     if(!can_map_to_mni())
     {
-        QMessageBox::information(this,"Error","Atlas is not supported for the current image resolution.",0);
+        QMessageBox::information(this,"Error","Atlas is not supported for the current image resolution.");
+        raise();
         return;
     }
     if(!handle->load_atlas() || handle->atlas_list[0]->name != "HCP842_tractography")
     {
         QMessageBox::information(0,"Error","No tractography atlas exists",0);
+        raise();
         return;
     }
     auto trk = std::make_shared<TractModel>(handle);
@@ -2028,8 +2034,8 @@ void tracking_window::on_enable_auto_track_clicked()
         ui->target_label->setVisible(true);
     }
     else
-        QMessageBox::information(this,"DSI Studio",QString("Fail to find the HCP842 tractography atlas at %1").arg(tractography_atlas_file_name.c_str()),0);
-
+        QMessageBox::information(this,"DSI Studio",QString("Fail to find the HCP842 tractography atlas at %1").arg(tractography_atlas_file_name.c_str()));
+    raise();
 }
 
 float tracking_window::get_fa_threshold(void)
