@@ -365,12 +365,9 @@ void RegToolBox::nonlinear_reg(void)
         }
         else
         {
+            tipl::reg::cdm_pre(It,It2,J,J2);
             if(It2.geometry() == It.geometry() && J2.geometry() == J.geometry())
-            {
-                std::cout << "cdm2" << std::endl;
                 tipl::reg::cdm2(It,It2,J,J2,dis,thread.terminated,ui->resolution->value(),ui->smoothness->value(),ui->steps->value());
-
-            }
             else
                 tipl::reg::cdm(It,J,dis,thread.terminated,ui->resolution->value(),ui->smoothness->value(),ui->steps->value());
         }

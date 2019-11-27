@@ -1070,8 +1070,8 @@ void fib_data::run_normalization(bool background,bool inv)
     auto lambda = [this,output_file_name,inv,&terminated]()
     {
 
-        auto& It = template_I;
-        auto& It2 = template_I2;
+        auto It = template_I;
+        auto It2 = template_I2;
         tipl::transformation_matrix<double> T;
         tipl::image<float,3> Is(dir.fa[0],dim);
         tipl::filter::gaussian(Is);
@@ -1104,15 +1104,10 @@ void fib_data::run_normalization(bool background,bool inv)
         }
         prog = 3;
         tipl::image<tipl::vector<3>,3> dis,inv_dis;
+        tipl::reg::cdm_pre(It,It2,Iss,Iss2);
         if(Iss2.geometry() == Iss.geometry())
         {
             set_title("Dual Normalization");
-            float mIss = tipl::mean(Iss);
-            float mIss2 = tipl::mean(Iss2);
-            if(mIss != 0.0f)
-                Iss *= 1.0f/mIss;
-            if(mIss2 != 0.0f)
-                Iss2 *= 1.0f/mIss2;
             if(inv)
                 tipl::reg::cdm2(It,It2,Iss,Iss2,dis,terminated);
             else
@@ -1124,11 +1119,11 @@ void fib_data::run_normalization(bool background,bool inv)
                 tipl::reg::cdm(It,Iss,dis,terminated);
             else
                 tipl::reg::cdm(Iss,It,inv_dis,terminated);
-
         }
 
         if(terminated)
             return;
+        set_title("Warpping");
         prog = 4;
         tipl::image<tipl::vector<3,float>,3 > mni(inv ? template_I.geometry() : dim);
 

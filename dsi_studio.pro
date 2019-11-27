@@ -165,7 +165,8 @@ SOURCES += main.cpp \
     libs/dsi/basic_voxel.cpp \
     libs/dsi/image_model.cpp \
     connectometry/nn_connectometry.cpp \
-    connectometry/nn_connectometry_analysis.cpp
+    connectometry/nn_connectometry_analysis.cpp \
+    cmd/reg.cpp
 
 OTHER_FILES += \
     options.txt \

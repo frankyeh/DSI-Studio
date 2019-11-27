@@ -149,24 +149,14 @@ public:
                     tipl::resample(VF2,VFF2,affine,tipl::cubic);
                 }
             }
-            //linear regression
-            {
-                std::thread t1([&](){VG *= 1.0f/tipl::mean(VG);});
-                std::thread t2([&](){VFF *= 1.0f/tipl::mean(VFF);});
-                if(!VFF2.empty())
-                {
-                    std::thread t3([&](){VG2 *= 1.0f/tipl::mean(VG2);});
-                    std::thread t4([&](){VFF2 *= 1.0f/tipl::mean(VFF2);});
-                    t4.join();
-                    t3.join();
-                }
-                t2.join();
-                t1.join();
-            }
+
             if(export_intermediate)
                 VFF.save_to_file<gz_nifti>("Subject_QA_linear_reg.nii.gz");
 
+            tipl::reg::cdm_pre(VG,VG2,VFF,VFF2);
+
             bool terminated = false;
+
             if(!run_prog("Normalization",[&]()
                 {
                     if(!VFF2.empty())
