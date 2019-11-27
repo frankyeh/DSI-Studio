@@ -459,11 +459,11 @@ public:
             return;
         for(float L = 0.2f;L <= sigma;L+= 0.2f)
         {
-            rdi.push_back(std::move(std::vector<float>(voxel.bvalues.size())));
+            rdi.push_back(std::vector<float>(voxel.bvalues.size()));
             for(unsigned int index = 0;index < voxel.bvalues.size();++index)
             {
-                float q = std::sqrt(voxel.bvalues[index]*0.018);
-                rdi.back()[index] = (q > 0)? sinint(L*q)/q: L;
+                float q = std::sqrt(voxel.bvalues[index]*0.018f);
+                rdi.back()[index] = (q > 0)? sinint(L*q)/q:L;
             }
         }
     }
