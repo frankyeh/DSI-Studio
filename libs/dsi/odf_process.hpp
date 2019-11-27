@@ -481,18 +481,12 @@ public:
             for(unsigned int i = 0;i < rdi.size();++i)
                 tipl::divide_constant(rdi[i],voxel.z0);
             float L = 0.2f;
-            for(unsigned int i = 0;i < rdi.size();++i,L += 0.2f)
-            {
-                std::ostringstream out;
-                out.precision(2);
-                out << "rdi" << std::setfill('0') << std::setw(2) << int(L*10) << "L";
-                mat_writer.write(out.str().c_str(),rdi[i],uint32_t(voxel.dim.plane_size()));
-            }
+            mat_writer.write("rdi",rdi[0],uint32_t(voxel.dim.plane_size()));
             for(unsigned int i = 0;i < rdi[0].size();++i)
             for(unsigned int j = 0;j < rdi.size();++j)
-                rdi[j][i] = rdi[rdi.size()-1][i]-rdi[j][i];
+                rdi[j][i] = rdi.back()[i]-rdi[j][i];
             L = 0.2f;
-            for(unsigned int i = 0;i < rdi.size();++i,L += 0.2f)
+            for(unsigned int i = 0;i < rdi.size() && L < 0.8f;++i,L += 0.2f)
             {
                 std::ostringstream out2;
                 out2.precision(2);
