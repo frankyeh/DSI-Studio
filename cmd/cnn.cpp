@@ -16,7 +16,7 @@ bool train_cnn(std::string network,
 
     if(!(nn << network))
     {
-        std::cout << "Invalid network: " << nn.error_msg << std::endl;
+        std::cout << "invalid network: " << nn.error_msg << std::endl;
         return false;
     }
     std::cout << "training network=" << network << std::endl;
@@ -67,20 +67,20 @@ int cnn(void)
     tipl::ml::network_data<unsigned char> nn_data,nn_test;
     if(!nn_data.load_from_file<gz_istream>(train_file_name.c_str()))
     {
-        std::cout << "Cannot load training data at " << train_file_name << std::endl;
+        std::cout << "cannot load training data at " << train_file_name << std::endl;
         return 1;
     }
-    std::cout << "A total of "<< nn_data.size() << " training data are loaded." << std::endl;
+    std::cout << "a total of "<< nn_data.size() << " training data are loaded." << std::endl;
     if(po.has("test"))
     {
         std::string test_file_name = po.get("test");
         if(!nn_test.load_from_file<gz_istream>(test_file_name.c_str()))
         {
-            std::cout << "Cannot load testing data at " << test_file_name << std::endl;
+            std::cout << "cannot load testing data at " << test_file_name << std::endl;
             return 1;
         }
     }
-    std::cout << "A total of "<< nn_test.size() << " testing data are loaded." << std::endl;
+    std::cout << "a total of "<< nn_test.size() << " testing data are loaded." << std::endl;
 
     std::vector<std::string> network_list;
     {
@@ -88,7 +88,7 @@ int cnn(void)
         std::ifstream in(network.c_str());
         if(!in)
         {
-            std::cout << "Cannot open " << network << std::endl;
+            std::cout << "cannot open " << network << std::endl;
             return 1;
         }
         std::string line;
@@ -96,7 +96,7 @@ int cnn(void)
         if(line.size() > 5)
             network_list.push_back(line);
     }
-    std::cout << "A network list is loaded with " << network_list.size() << " networks." << std::endl;
+    std::cout << "a network list is loaded with " << network_list.size() << " networks." << std::endl;
 
     // run network list
     if(network_list.size() > 1)
@@ -116,7 +116,7 @@ int cnn(void)
             {
                 if(start_count)
                 {
-                    std::cout << "Skipping network:" << network_list[i] << std::endl;
+                    std::cout << "skipping network:" << network_list[i] << std::endl;
                     --start_count;
                     continue;
                 }
@@ -124,7 +124,7 @@ int cnn(void)
                 tipl::ml::network nn;
                 if(!train_cnn(network_list[i],nn,nn_data,nn_test,test_error,train_error))
                     continue;
-                std::cout << "Training finished" << std::endl;
+                std::cout << "training finished" << std::endl;
                 std::cout << test_error << "\t" << train_error << "\t" << network_list[i] << std::endl;
                 out << test_error << "\t" << train_error << "\t" << network_list[i] << std::endl;
             }
@@ -135,7 +135,7 @@ int cnn(void)
     tipl::ml::network nn;
     if(!train_cnn(network_list[0],nn,nn_data,nn_test,test_error,train_error))
         return 1;
-    std::cout << "Training finished" << std::endl;
+    std::cout << "training finished" << std::endl;
     std::cout << test_error << "," << train_error << "," << network_list[0] << std::endl;
 
     if(po.has("output_nn"))

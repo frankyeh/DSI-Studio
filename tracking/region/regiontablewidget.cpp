@@ -539,11 +539,11 @@ void get_roi_label(QString file_name,std::map<int,std::string>& label_map,
     if(QFileInfo(label_file).exists())
     {
         load_nii_label(label_file.toLocal8Bit().begin(),label_map);
-        std::cout << "Load label file:" << label_file.toStdString() << std::endl;
+        std::cout << "load label file:" << label_file.toStdString() << std::endl;
         return;
     }
     if(!mute_cmd)
-        std::cout << "No label file found. Use default ROI numbering." << std::endl;
+        std::cout << "no label file found. Use default ROI numbering." << std::endl;
 }
 bool is_label_image(const tipl::image<float,3>& I);
 bool qsdr_convert_native(std::shared_ptr<fib_data> handle,tipl::image<unsigned int, 3>& from)

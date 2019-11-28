@@ -738,7 +738,7 @@ bool add_other_image(ImageModel* handle,QString name,QString filename)
     gz_nifti in;
     if(!in.load_from_file(filename.toLocal8Bit().begin()) || !in.toLPS(ref))
     {
-        std::cout << "Not a valid nifti file:" << filename.toStdString() << std::endl;
+        std::cout << "not a valid nifti file:" << filename.toStdString() << std::endl;
         return false;
     }
     tipl::transformation_matrix<double> affine;

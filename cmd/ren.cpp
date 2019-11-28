@@ -19,7 +19,7 @@ int ren(void)
         {
             std::cout << "renaming " << dirs[i].toStdString() << "/" << files[j].toStdString() << std::endl;
             if(!RenameDICOMToDir(dirs[i] + "/" + files[j],output))
-                std::cout << "Cannot rename the file." << std::endl;
+                std::cout << "cannot rename the file." << std::endl;
         }
     }
     return 0;

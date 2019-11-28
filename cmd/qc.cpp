@@ -15,16 +15,16 @@ std::string quality_check_src_files(QString dir)
     out << "Directory:" << dir.toStdString() << std::endl;
     if(filenames.empty())
     {
-        std::cout << "No SRC file found in the directory" << std::endl;
-        return "No SRC file found in the directory";
+        std::cout << "no SRC file found in the directory" << std::endl;
+        return "no SRC file found in the directory";
     }
     out << "FileName\tImage dimension\tResolution\tDWI count\tMax b-value\tB-table matched\tNeighboring DWI correlation\t# Bad Slices" << std::endl;
     size_t dwi_count = 0;
     float max_b = 0;
-    std::cout << "A total of " << filenames.size() << " SRC file(s) were found."<< std::endl;
+    std::cout << "a total of " << filenames.size() << " SRC file(s) were found."<< std::endl;
     for(int i = 0;check_prog(i,filenames.size());++i)
     {
-        std::cout << "Checking " << QFileInfo(filenames[i]).baseName().toStdString() << std::endl;
+        std::cout << "checking " << QFileInfo(filenames[i]).baseName().toStdString() << std::endl;
         out << QFileInfo(filenames[i]).baseName().toStdString() << "\t";
         ImageModel handle;
         bool restore_gui = false;
@@ -35,8 +35,8 @@ std::string quality_check_src_files(QString dir)
         }
         if (!handle.load_from_file(filenames[i].toStdString().c_str()))
         {
-            std::cout << "Cannot read SRC file" << std::endl;
-            out << "Cannot load SRC file"  << std::endl;
+            std::cout << "cannot read SRC file" << std::endl;
+            out << "cannot load SRC file"  << std::endl;
             continue;
         }
         if(restore_gui)
@@ -77,11 +77,11 @@ int qc(void)
     std::string file_name = po.get("source");
     if(QFileInfo(file_name.c_str()).isDir())
     {
-        std::cout << "Quality control checking src files in " << file_name << std::endl;
+        std::cout << "quality control checking src files in " << file_name << std::endl;
         std::string report_file_name = file_name + "/src_report.txt";
         std::ofstream out(report_file_name.c_str());
         out << quality_check_src_files(file_name.c_str());
-        std::cout << "Report saved to " << report_file_name << std::endl;
+        std::cout << "report saved to " << report_file_name << std::endl;
     }
     else {
         std::cout << file_name << " is not a file folder." << std::endl;

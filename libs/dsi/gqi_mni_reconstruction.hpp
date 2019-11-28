@@ -161,7 +161,7 @@ public:
                 {
                     if(!VFF2.empty())
                     {
-                        std::cout << "Normalization using dual QA/ISO templates" << std::endl;
+                        std::cout << "normalization using dual QA/ISO templates" << std::endl;
                         tipl::reg::cdm2(VG,VG2,VFF,VFF2,cdm_dis,terminated);
                     }
                     else

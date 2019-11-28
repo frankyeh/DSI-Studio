@@ -56,20 +56,20 @@ int src(void)
             for (unsigned int index = 0;index < file_list.size();++index)
                 file_list[index] = QString(source.c_str()) + "/" + file_list[index];
         }
-        std::cout << "A total of " << file_list.size() <<" files found in the directory" << std::endl;
+        std::cout << "a total of " << file_list.size() <<" files found in the directory" << std::endl;
         if(!po.has("output"))
             output = source + ".src.gz";
     }
 
     if(file_list.empty())
     {
-        std::cout << "No file found for creating src" << std::endl;
+        std::cout << "no file found for creating src" << std::endl;
         return 1;
     }
 
     if(!load_all_files(file_list,dwi_files))
     {
-        std::cout << "Invalid file format" << std::endl;
+        std::cout << "invalid file format" << std::endl;
         return 1;
     }
     if(po.has("b_table"))
@@ -78,7 +78,7 @@ int src(void)
         std::ifstream in(table_file_name.c_str());
         if(!in)
         {
-            std::cout << "Failed to open b-table" <<std::endl;
+            std::cout << "failed to open b-table" <<std::endl;
             return 1;
         }
         std::string line;
@@ -92,7 +92,7 @@ int src(void)
         }
         if(b_table.size() != dwi_files.size()*4)
         {
-            std::cout << "Mismatch between b-table and the loaded images" << std::endl;
+            std::cout << "mismatch between b-table and the loaded images" << std::endl;
             return 1;
         }
         for(unsigned int index = 0,b_index = 0;index < dwi_files.size();++index,b_index += 4)
@@ -100,7 +100,7 @@ int src(void)
             dwi_files[index]->bvalue = b_table[b_index];
             dwi_files[index]->bvec = tipl::vector<3>(b_table[b_index+1],b_table[b_index+2],b_table[b_index+3]);
         }
-        std::cout << "B-table " << table_file_name << " loaded" << std::endl;
+        std::cout << "b-table " << table_file_name << " loaded" << std::endl;
     }
     if(po.has("bval") && po.has("bvec"))
     {
@@ -109,12 +109,12 @@ int src(void)
         load_bvec(po.get("bvec").c_str(),bvec);
         if(bval.size() != dwi_files.size())
         {
-            std::cout << "Mismatch between bval file and the loaded images" << std::endl;
+            std::cout << "mismatch between bval file and the loaded images" << std::endl;
             return 1;
         }
         if(bvec.size() != dwi_files.size()*3)
         {
-            std::cout << "Mismatch between bvec file and the loaded images" << std::endl;
+            std::cout << "mismatch between bvec file and the loaded images" << std::endl;
             return 1;
         }
         for(unsigned int index = 0;index < dwi_files.size();++index)
@@ -125,7 +125,7 @@ int src(void)
     }
     if(dwi_files.empty())
     {
-        std::cout << "No file readed. Abort." << std::endl;
+        std::cout << "no file readed. Abort." << std::endl;
         return 1;
     }
 
@@ -138,10 +138,10 @@ int src(void)
     }
     if(max_b == 0.0)
     {
-        std::cout << "Cannot find b-table from the header. You may need to load an external b-table using--b_table or --bval and --bvec." << std::endl;
+        std::cout << "cannot find b-table from the header. You may need to load an external b-table using--b_table or --bval and --bvec." << std::endl;
         return 1;
     }
-    std::cout << "Output src to " << output << std::endl;
+    std::cout << "output src to " << output << std::endl;
     DwiHeader::output_src(output.c_str(),dwi_files,
                           po.get<int>("up_sampling",0),
                           po.get<int>("sort_b_table",0));

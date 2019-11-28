@@ -32,12 +32,12 @@ void save_connectivity_matrix(TractModel& tract_model,
     std::cout << "calculate matrix using " << connectivity_value << std::endl;
     if(!data.calculate(tract_model,connectivity_value,use_end_only,t))
     {
-        std::cout << "Connectivity calculation error:" << data.error_msg << std::endl;
+        std::cout << "connectivity calculation error:" << data.error_msg << std::endl;
         return;
     }
     if(data.overlap_ratio > 0.5)
     {
-        std::cout << "The ROIs have a large overlapping area (ratio="
+        std::cout << "the ROIs have a large overlapping area (ratio="
                   << data.overlap_ratio << "). The network measure calculated may not be reliable" << std::endl;
     }
     if(connectivity_value == "trk")
@@ -101,7 +101,7 @@ void get_connectivity_matrix(std::shared_ptr<fib_data> handle,
                     fn = dir + line;
                 if(!region.LoadFromFile(fn.c_str()))
                 {
-                    std::cout << "Failed to open file as a region:" << fn << std::endl;
+                    std::cout << "failed to open file as a region:" << fn << std::endl;
                     return;
                 }
                 regions.push_back(std::vector<tipl::vector<3,short> >());
@@ -109,7 +109,7 @@ void get_connectivity_matrix(std::shared_ptr<fib_data> handle,
                 data.region_name.push_back(QFileInfo(line.c_str()).baseName().toStdString());
             }
             data.set_regions(handle->dim,regions);
-            std::cout << "A total of " << data.region_count << " regions are loaded." << std::endl;
+            std::cout << "a total of " << data.region_count << " regions are loaded." << std::endl;
         }
         else
         {
@@ -127,7 +127,7 @@ void get_connectivity_matrix(std::shared_ptr<fib_data> handle,
                 std::cout << roi_file_name << " is used as an MNI space ROI." << std::endl;
                 if(!handle->can_map_to_mni())
                 {
-                    std::cout << "Cannot output connectivity: no mni mapping" << std::endl;
+                    std::cout << "cannot output connectivity: no mni mapping" << std::endl;
                     continue;
                 }
                 std::vector<std::shared_ptr<atlas> > atlas_list;
@@ -135,7 +135,7 @@ void get_connectivity_matrix(std::shared_ptr<fib_data> handle,
                     data.set_atlas(atlas_list[0],handle->get_mni_mapping());
                 else
                 {
-                    std::cout << "File or atlas does not exist:" << roi_file_name << std::endl;
+                    std::cout << "file or atlas does not exist:" << roi_file_name << std::endl;
                     continue;
                 }
             }
@@ -156,7 +156,7 @@ void get_connectivity_matrix(std::shared_ptr<fib_data> handle,
                 unsigned short region_count = std::accumulate(value_map.begin(),value_map.end(),(unsigned short)0);
                 if(region_count < 2)
                 {
-                    std::cout << "The ROI file should contain at least two regions to calculate the connectivity matrix." << std::endl;
+                    std::cout << "the ROI file should contain at least two regions to calculate the connectivity matrix." << std::endl;
                     continue;
                 }
                 std::cout << "total number of regions=" << region_count << std::endl;
@@ -212,7 +212,7 @@ std::shared_ptr<fib_data> cmd_load_fib(const std::string file_name)
     }
     if (!handle->load_from_file(file_name.c_str()))
     {
-        std::cout << "Open file " << file_name << " failed" << std::endl;
+        std::cout << "open file " << file_name << " failed" << std::endl;
         std::cout << "msg:" << handle->error_msg << std::endl;
         return std::shared_ptr<fib_data>();
     }
@@ -238,7 +238,7 @@ bool load_region(std::shared_ptr<fib_data> handle,
     if(!QFileInfo(file_name.c_str()).exists())
     {
         LOAD_MNI:
-        std::cout << "Searching " << file_name << " from the atlas pool..." << std::endl;
+        std::cout << "searching " << file_name << " from the atlas pool..." << std::endl;
         std::vector<std::shared_ptr<atlas> > atlas_list;
         if(!atl_load_atlas(file_name,atlas_list))
         {
@@ -248,16 +248,16 @@ bool load_region(std::shared_ptr<fib_data> handle,
 
         if(!handle->can_map_to_mni())
         {
-            std::cout << "Cannot output connectivity: no mni mapping." << std::endl;
+            std::cout << "cannot output connectivity: no mni mapping." << std::endl;
             return false;
         }
         if(region_name.empty())
         {
-            std::cout << "Please assign region name of an atlas." << std::endl;
+            std::cout << "please assign region name of an atlas." << std::endl;
             return false;
         }
         const tipl::image<tipl::vector<3,float>,3 >& mapping = handle->get_mni_mapping();
-        std::cout << "Loading " << region_name << " from " << file_name << " atlas" << std::endl;
+        std::cout << "loading " << region_name << " from " << file_name << " atlas" << std::endl;
         tipl::vector<3> null;
         std::vector<tipl::vector<3,short> > cur_region;
         for(unsigned int i = 0;i < atlas_list.size();++i)
@@ -283,7 +283,7 @@ bool load_region(std::shared_ptr<fib_data> handle,
             files.push_back(po.get("t1t2"));
             if(!other_slice->initialize(files,true))
             {
-                std::cout << "Fail to insert T1T2" << std::endl;
+                std::cout << "fail to insert T1T2" << std::endl;
                 return false;
             }
             handle->view_item.pop_back(); // remove the new item added by initialize
@@ -291,7 +291,7 @@ bool load_region(std::shared_ptr<fib_data> handle,
                 other_slice->thread->wait();
             t1t2_geo = other_slice->source_images.geometry();
             convert = other_slice->invT;
-            std::cout << "Registeration complete" << std::endl;
+            std::cout << "registeration complete" << std::endl;
             std::cout << convert[0] << " " << convert[1] << " " << convert[2] << " " << convert[3] << std::endl;
             std::cout << convert[4] << " " << convert[5] << " " << convert[6] << " " << convert[7] << std::endl;
             std::cout << convert[8] << " " << convert[9] << " " << convert[10] << " " << convert[11] << std::endl;
@@ -301,7 +301,7 @@ bool load_region(std::shared_ptr<fib_data> handle,
             gz_nifti header;
             if (!header.load_from_file(file_name.c_str()))
             {
-                std::cout << "Not a valid nifti file:" << file_name << std::endl;
+                std::cout << "not a valid nifti file:" << file_name << std::endl;
                 return false;
             }
             tipl::image<int, 3> from;
@@ -309,25 +309,25 @@ bool load_region(std::shared_ptr<fib_data> handle,
             if(!region_name.empty())
             {
                 int region_value = std::stoi(region_name);
-                std::cout << "Select region with value=" << region_value << std::endl;
+                std::cout << "select region with value=" << region_value << std::endl;
                 for(int i = 0 ;i < from.size();++i)
                     from[i] = (from[i] == region_value ? 1:0);
             }
 
             if(t1t2_geo == from.geometry())
             {
-                std::cout << "Using t1t2 as the reference to load " << file_name << std::endl;
+                std::cout << "using t1t2 as the reference to load " << file_name << std::endl;
                 roi.LoadFromBuffer(from,convert);
             }
             else
             if(from.geometry() == handle->dim)
             {
-                std::cout << "Loading " << file_name << "as a native space region" << std::endl;
+                std::cout << "loading " << file_name << "as a native space region" << std::endl;
                 roi.LoadFromBuffer(from);
             }
             else
             {
-                std::cout << "Loading " << file_name << "as an MNI space region" << std::endl;
+                std::cout << "loading " << file_name << "as an MNI space region" << std::endl;
                 goto LOAD_MNI;
             }
         }
@@ -339,7 +339,7 @@ bool load_region(std::shared_ptr<fib_data> handle,
         roi.perform(str_list[i].toStdString());
     }
     if(roi.empty())
-        std::cout << "Warning: " << file_name << " is an empty region file" << std::endl;
+        std::cout << "warning: " << file_name << " is an empty region file" << std::endl;
     return true;
 }
 
@@ -350,14 +350,14 @@ int trk_post(std::shared_ptr<fib_data> handle,
 {
     if (po.has("delete_repeat"))
     {
-        std::cout << "Deleting repeat tracks..." << std::endl;
+        std::cout << "deleting repeat tracks..." << std::endl;
         float distance = po.get("delete_repeat",float(1));
         tract_model.delete_repeated(distance);
-        std::cout << "Repeat tracks with distance smaller than " << distance <<" voxel distance are deleted" << std::endl;
+        std::cout << "repeat tracks with distance smaller than " << distance <<" voxel distance are deleted" << std::endl;
     }
     if(po.has("trim"))
     {
-        std::cout << "Trimming tracks..." << std::endl;
+        std::cout << "trimming tracks..." << std::endl;
         int trim = po.get("trim",int(1));
         for(int i = 0;i < trim;++i)
             tract_model.trim();
@@ -377,12 +377,12 @@ int trk_post(std::shared_ptr<fib_data> handle,
                 CustomSliceModel new_slice(handle);
                 if(!new_slice.initialize(files,false))
                 {
-                    std::cout << "Error reading ref image file" << std::endl;
+                    std::cout << "error reading ref image file" << std::endl;
                     return 1;
                 }
                 new_slice.thread->wait();
                 new_slice.update();
-                std::cout << "Applying linear registration." << std::endl;
+                std::cout << "applying linear registration." << std::endl;
                 std::cout << new_slice.T[0] << " " << new_slice.T[1] << " " << new_slice.T[2] << " " << new_slice.T[3] << std::endl;
                 std::cout << new_slice.T[4] << " " << new_slice.T[5] << " " << new_slice.T[6] << " " << new_slice.T[7] << std::endl;
                 std::cout << new_slice.T[8] << " " << new_slice.T[9] << " " << new_slice.T[10] << " " << new_slice.T[11] << std::endl;
@@ -394,10 +394,10 @@ int trk_post(std::shared_ptr<fib_data> handle,
                 std::cout << "output file:" << f << std::endl;
                 if (!tract_model.save_tracts_to_file(f.c_str()))
                 {
-                    std::cout << "Cannot save tracks as " << f << ". Please check write permission, directory, and disk space." << std::endl;
+                    std::cout << "cannot save tracks as " << f << ". Please check write permission, directory, and disk space." << std::endl;
                 }
                 if(QFileInfo(f.c_str()).exists())
-                    std::cout << "File saved to " << f << std::endl;
+                    std::cout << "file saved to " << f << std::endl;
             }
         }
     }
@@ -409,13 +409,13 @@ int trk_post(std::shared_ptr<fib_data> handle,
         int method = 0,count = 0,detail = 0;
         std::string name;
         in >> method >> count >> detail >> name;
-        std::cout << "Cluster method=" << method << std::endl;
-        std::cout << "Cluster count=" << count << std::endl;
-        std::cout << "Cluster resolution (if method is 0) = " << detail << " mm" << std::endl;
-        std::cout << "Run clustering." << std::endl;
+        std::cout << "cluster method=" << method << std::endl;
+        std::cout << "cluster count=" << count << std::endl;
+        std::cout << "cluster resolution (if method is 0) = " << detail << " mm" << std::endl;
+        std::cout << "run clustering." << std::endl;
         tract_model.run_clustering(method,count,detail);
         std::ofstream out(name);
-        std::cout << "Cluster label saved to " << name << std::endl;
+        std::cout << "cluster label saved to " << name << std::endl;
         std::copy(tract_model.get_cluster_info().begin(),tract_model.get_cluster_info().end(),std::ostream_iterator<int>(out," "));
     }
 
@@ -453,10 +453,10 @@ bool load_roi(std::shared_ptr<fib_data> handle,std::shared_ptr<RoiMgr> roi_mgr)
         {
             if(po.get("track_id",0) >= tractography_name_list.size())
             {
-                std::cout << "Invalid track_id value" << std::endl;
+                std::cout << "invalid track_id value" << std::endl;
                 return false;
             }
-            std::cout << "Setting target track=" << tractography_name_list[po.get("track_id",0)] << std::endl;
+            std::cout << "setting target track=" << tractography_name_list[po.get("track_id",0)] << std::endl;
             roi_mgr->setAtlas(tractography_atlas,po.get("track_id",0));
         }
     }
@@ -550,7 +550,7 @@ int trk(std::shared_ptr<fib_data> handle)
         cnt_file_name = QString(names.c_str()).split(",");
         if(!po.has("connectometry_type"))
         {
-            std::cout << "Please assign the connectometry analysis type." << std::endl;
+            std::cout << "please assign the connectometry analysis type." << std::endl;
             return 1;
         }
         cnt_type = po.get("connectometry_type").c_str();
@@ -559,7 +559,7 @@ int trk(std::shared_ptr<fib_data> handle)
 
     if(po.get("thread_count",int(std::thread::hardware_concurrency())) < 1)
     {
-        std::cout << "Invalid thread_count number" << std::endl;
+        std::cout << "invalid thread_count number" << std::endl;
         return 1;
     }
     if(po.has("parameter_id"))
@@ -584,7 +584,7 @@ int trk(std::shared_ptr<fib_data> handle)
         QStringList connectometry_threshold;
         if(!po.has("connectometry_threshold"))
         {
-            std::cout << "Please assign the connectometry threshold." << std::endl;
+            std::cout << "please assign the connectometry threshold." << std::endl;
             return 1;
         }
         connectometry_threshold = QString(po.get("connectometry_threshold").c_str()).split(",");
@@ -594,12 +594,12 @@ int trk(std::shared_ptr<fib_data> handle)
             std::cout << "loading individual file:" << cnt_file_name[i].toStdString() << std::endl;
             if(cnt_type == "iva" && !cnt.individual_vs_atlas(handle,cnt_file_name[i].toLocal8Bit().begin(),0))
             {
-                std::cout << "Error loading connectometry file:" << cnt.error_msg <<std::endl;
+                std::cout << "error loading connectometry file:" << cnt.error_msg <<std::endl;
                 return 1;
             }
             if(cnt_type == "ivp" && !cnt.individual_vs_db(handle,cnt_file_name[i].toLocal8Bit().begin()))
             {
-                std::cout << "Error loading connectometry file:" << cnt.error_msg <<std::endl;
+                std::cout << "error loading connectometry file:" << cnt.error_msg <<std::endl;
                 return 1;
             }
             if(cnt_type == "ivi")
@@ -608,7 +608,7 @@ int trk(std::shared_ptr<fib_data> handle)
                 if(!cnt.individual_vs_individual(handle,cnt_file_name[i].toLocal8Bit().begin(),
                                                               cnt_file_name[i+1].toLocal8Bit().begin(),0))
                 {
-                    std::cout << "Error loading connectometry file:" << cnt.error_msg <<std::endl;
+                    std::cout << "error loading connectometry file:" << cnt.error_msg <<std::endl;
                     return 1;
                 }
                 ++i;
@@ -627,7 +627,7 @@ int trk(std::shared_ptr<fib_data> handle)
                         << ((t > 0) ? "inc":"dec") << std::fabs(t) << ".trk.gz" << std::endl;
                 if(!tract_model.save_tracts_to_file(out.str().c_str()))
                 {
-                    std::cout << "Cannot save file to " << out.str()
+                    std::cout << "cannot save file to " << out.str()
                               << ". Please check write permission, directory, and disk space." << std::endl;
                     return 1;
                 }
@@ -653,7 +653,7 @@ int trk(std::shared_ptr<fib_data> handle)
 
     if(tract_model.get_visible_track_count() == 0)
     {
-        std::cout << "No tract generated. Terminating..." << std::endl;
+        std::cout << "no tract generated. Terminating..." << std::endl;
         return 0;
     }
     std::cout << "a total of " << tract_model.get_visible_track_count() << " tracts are generated" << std::endl;

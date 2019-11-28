@@ -988,7 +988,7 @@ bool TractTableWidget::command(QString cmd,QString param,QString param2)
         std::string sfilename = param.toStdString().c_str();
         if(!tract_models[index]->load_tracts_color_from_file(&*sfilename.begin()))
         {
-            std::cout << "Cannot find or open " << sfilename << std::endl;
+            std::cout << "cannot find or open " << sfilename << std::endl;
             return false;
         }
         cur_tracking_window.set_data("tract_color_style",1);//manual assigned

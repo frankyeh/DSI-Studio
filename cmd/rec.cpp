@@ -29,7 +29,7 @@ int rec(void)
     std::auto_ptr<ImageModel> handle(new ImageModel);
     if (!handle->load_from_file(file_name.c_str()))
     {
-        std::cout << "Load src file failed:" << handle->error_msg << std::endl;
+        std::cout << "load src file failed:" << handle->error_msg << std::endl;
         return 1;
     }
     std::cout << "src loaded" <<std::endl;
@@ -39,16 +39,16 @@ int rec(void)
         std::auto_ptr<ImageModel> handle2(new ImageModel);
         if (!handle2->load_from_file(file_name2.c_str()))
         {
-            std::cout << "Load other src file failed:" << handle2->error_msg << std::endl;
+            std::cout << "load other src file failed:" << handle2->error_msg << std::endl;
             return 1;
         }
         if(handle->voxel.dim != handle2->voxel.dim)
         {
-            std::cout << "The image dimension is different." << std::endl;
+            std::cout << "the image dimension is different." << std::endl;
             return 1;
         }
         handle->distortion_correction(*handle2.get());
-        std::cout << "Phase correction done with " << file_name2 << std::endl;
+        std::cout << "phase correction done with " << file_name2 << std::endl;
     }
     if (po.has("cmd"))
     {
@@ -56,7 +56,7 @@ int rec(void)
         for(int i = 0;i < cmd_list.size();++i)
         {
             QStringList run_list = QString(cmd_list[i]).split("=");
-            std::cout << "Run " << cmd_list[i].toStdString() << std::endl;
+            std::cout << "run " << cmd_list[i].toStdString() << std::endl;
             if(!handle->command(run_list[0].toStdString(),
                                 run_list.count() > 1 ? run_list[1].toStdString():std::string()))
                 return 1;
@@ -72,7 +72,7 @@ int rec(void)
                              (std::istream_iterator<float>()));
         if(T.size() != 12)
         {
-            std::cout << "Invalid transfformation matrix." <<std::endl;
+            std::cout << "invalid transfformation matrix." <<std::endl;
             return 1;
         }
         tipl::transformation_matrix<double> affine;
@@ -103,7 +103,7 @@ int rec(void)
     if(po.has("study_src")) // DDI
     {
         handle->voxel.study_src_file_path = po.get("study_src");
-        std::cout << "Comparison src=" << handle->voxel.study_src_file_path << std::endl;
+        std::cout << "comparison src=" << handle->voxel.study_src_file_path << std::endl;
     }
     if (po.has("param0"))
     {
@@ -147,7 +147,7 @@ int rec(void)
 
     if(handle->voxel.csf_calibration && !handle->is_human_data())
     {
-        std::cout << "Not a human brain data set. Disable CSF calibratoin" << std::endl;
+        std::cout << "not a human brain data set. Disable CSF calibratoin" << std::endl;
         handle->voxel.csf_calibration = 0;
     }
 
@@ -170,7 +170,7 @@ int rec(void)
             QStringList name_value = file_list[i].split(",");
             if(name_value.size() != 2)
             {
-                std::cout << "Invalid command: " << file_list[i].toStdString() << std::endl;
+                std::cout << "invalid command: " << file_list[i].toStdString() << std::endl;
                 return 1;
             }
             if(!add_other_image(handle.get(),name_value[0],name_value[1]))
@@ -195,7 +195,7 @@ int rec(void)
             tipl::image<unsigned char,3> external_mask;
             roi.SaveToBuffer(external_mask,1.0f);
             if(external_mask.geometry() != handle->voxel.dim)
-                std::cout << "In consistent the mask dimension...using default mask" << std::endl;
+                std::cout << "inconsistent the mask dimension...using default mask" << std::endl;
             else
                 handle->voxel.mask = external_mask;
         }
@@ -207,14 +207,14 @@ int rec(void)
         gz_nifti in;
         if(!in.load_from_file(file_name.c_str()))
         {
-            std::cout << "Failed to read " << file_name << std::endl;
+            std::cout << "failed to read " << file_name << std::endl;
             return 0;
         }
         tipl::image<float,3> I;
         tipl::vector<3> vs;
         in.get_voxel_size(vs);
         in.toLPS(I);
-        std::cout << "Running rigid body transformation" << std::endl;
+        std::cout << "running rigid body transformation" << std::endl;
         tipl::transformation_matrix<double> T;
         bool terminated = false;
         tipl::reg::two_way_linear_mr(I,vs,handle->dwi_sum,handle->voxel.vs,
@@ -228,12 +228,12 @@ int rec(void)
     {
         std::cout << "correct for motion and eddy current..." << std::endl;
         rec_motion_correction(handle.get());
-        std::cout << "Done." <<std::endl;
+        std::cout << "done." <<std::endl;
     }
     std::cout << "start reconstruction..." <<std::endl;
     const char* msg = handle->reconstruction();
     if (!msg)
-        std::cout << "Reconstruction finished." << std::endl;
+        std::cout << "reconstruction finished." << std::endl;
     else
         std::cout << msg << std::endl;
     return 0;

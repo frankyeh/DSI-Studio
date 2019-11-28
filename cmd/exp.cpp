@@ -46,7 +46,7 @@ int exp(void)
     }
     if (!mat_reader.load_from_file(file_name.c_str()))
     {
-        std::cout << "Invalid file format" << std::endl;
+        std::cout << "invalid file format" << std::endl;
         return 1;
     }
 
@@ -54,13 +54,13 @@ int exp(void)
     const unsigned short* dim_buf = nullptr;
     if(!mat_reader.read("dimension",row,col,dim_buf))
     {
-        std::cout << "Cannot find dimension matrix in the file" << file_name.c_str() <<std::endl;
+        std::cout << "cannot find dimension matrix in the file" << file_name.c_str() <<std::endl;
         return 1;
     }
     const float* vs = 0;
     if(!mat_reader.read("voxel_size",row,col,vs))
     {
-        std::cout << "Cannot find voxel_size matrix in the file" << file_name.c_str() <<std::endl;
+        std::cout << "cannot find voxel_size matrix in the file" << file_name.c_str() <<std::endl;
         return 1;
     }
     tipl::matrix<4,4,float> trans;
@@ -68,7 +68,7 @@ int exp(void)
         const float* p = nullptr;
         if(mat_reader.read("trans",row,col,p))
         {
-            std::cout << "Transformation matrix found." << std::endl;
+            std::cout << "transformation matrix found." << std::endl;
             std::copy(p,p+16,trans.begin());
         }
         else
@@ -98,7 +98,7 @@ int exp(void)
             fiber_directions dir;
             if(!dir.add_data(mat_reader))
             {
-                std::cout << "Invalid file for exporting fiber orientations." << std::endl;
+                std::cout << "invalid file for exporting fiber orientations." << std::endl;
                 continue;
             }
 
@@ -117,7 +117,7 @@ int exp(void)
                 unsigned char dir_index = cmd[3] - '0';
                 if(dir_index < 0 || dir_index >= dir.num_fiber)
                 {
-                    std::cout << "Invalid fiber index. The maximum fiber per voxel is " << (int) dir.num_fiber << std::endl;
+                    std::cout << "invalid fiber index. The maximum fiber per voxel is " << (int) dir.num_fiber << std::endl;
                     continue;
                 }
                 fibers.resize(tipl::geometry<4>(geo[0],geo[1],geo[2],3));
@@ -163,7 +163,7 @@ int exp(void)
                 continue;
             }
         }
-        std::cout << "Cannot find matrix "<< cmd.c_str() <<" in the file" << file_name.c_str() <<std::endl;
+        std::cout << "cannot find matrix "<< cmd.c_str() <<" in the file" << file_name.c_str() <<std::endl;
         continue;
 
     }

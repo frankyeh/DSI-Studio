@@ -195,7 +195,7 @@ bool connectometry_db::parse_demo(const std::string& filename,float missing_valu
             catch(...)
             {
                 std::ostringstream out;
-                out << "Cannot parse '" << items[item_pos] << "' at " << subject_names[i] << "'s " << titles[feature_location[j]] << ".";
+                out << "cannot parse '" << items[item_pos] << "' at " << subject_names[i] << "'s " << titles[feature_location[j]] << ".";
                 error_msg = out.str();
                 X.clear();
                 return false;

@@ -481,7 +481,7 @@ bool tracking_window::command(QString cmd,QString param,QString param2)
         index = ui->SliceModality->findText(param);
         if(index == -1)
         {
-            std::cout << "Cannot find index:" << param.toStdString() << std::endl;
+            std::cout << "cannot find index:" << param.toStdString() << std::endl;
             return false;
         }
         ui->SliceModality->setCurrentIndex(index);

@@ -421,7 +421,7 @@ bool RenameDICOMToDir(QString FileName, QString ToDir)
     {
         if(!QDir(ToDir).mkdir(ToDir))
         {
-            std::cout << "Cannot create dir " << ToDir.toStdString() << std::endl;
+            std::cout << "cannot create dir " << ToDir.toStdString() << std::endl;
             return false;
         }
     }
@@ -433,7 +433,7 @@ bool RenameDICOMToDir(QString FileName, QString ToDir)
     {
         if(!QDir(ToDir).mkdir(ToDir))
         {
-            std::cout << "Cannot create dir " << ToDir.toStdString() << std::endl;
+            std::cout << "cannot create dir " << ToDir.toStdString() << std::endl;
             return false;
         }
     }

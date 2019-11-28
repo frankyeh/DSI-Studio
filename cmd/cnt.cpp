@@ -68,7 +68,7 @@ int cnt(void)
             int index = variable_list[i];
             if(index >= vbc->ui->variable_list->count())
             {
-                std::cout << "Invalid number in the variable_list:" << index << std::endl;
+                std::cout << "invalid number in the variable_list:" << index << std::endl;
                 return 1;
             }
             if(index == voi_index)
@@ -176,20 +176,20 @@ int cnt_ind(void)
 
     if(!po.has("study"))
     {
-        std::cout << "Please assign the study FIB file to --study." << std::endl;
+        std::cout << "please assign the study FIB file to --study." << std::endl;
         return 1;
     }
 
     if(!handle->is_qsdr)
     {
-        std::cout << "Please assign a QSDR reconstructed FIB file to --source." << std::endl;
+        std::cout << "please assign a QSDR reconstructed FIB file to --source." << std::endl;
         return 1;
     }
 
     connectometry_result cnt_result;
     if(handle->has_odfs())
     {
-        std::cout << "Individual FIB compared with individual FIB." << std::endl;
+        std::cout << "individual FIB compared with individual FIB." << std::endl;
         std::shared_ptr<fib_data> temp_handle = cmd_load_fib(po.get("template",fib_template_file_name_2mm));
         if(!temp_handle.get())
             return 1;
@@ -201,7 +201,7 @@ int cnt_ind(void)
 
     if(handle->db.has_db())
     {
-        std::cout << "Connectometry db compared with individual FIB." << std::endl;
+        std::cout << "connectometry db compared with individual FIB." << std::endl;
         if(!cnt_result.individual_vs_db(handle,po.get("study").c_str()))
             goto error;
         else
@@ -210,7 +210,7 @@ int cnt_ind(void)
 
     // versus template
     {
-        std::cout << "Individual FIB compared with a template FIB" << std::endl;
+        std::cout << "individual FIB compared with a template FIB" << std::endl;
         if(normalization == 0)
             normalization = 1;
         if(!cnt_result.individual_vs_atlas(handle,po.get("study").c_str(),normalization))

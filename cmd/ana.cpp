@@ -199,7 +199,7 @@ int ana(void)
                     region_name += atlas_list[i]->get_list()[j];
                     if(!load_region(handle,*region.get(),region_name))
                     {
-                        std::cout << "Fail to load the ROI file:" << region_name << std::endl;
+                        std::cout << "fail to load the ROI file:" << region_name << std::endl;
                         return 1;
                     }
                     region_list.push_back(atlas_list[i]->get_list()[j]);
@@ -219,7 +219,7 @@ int ana(void)
                 std::shared_ptr<ROIRegion> region(new ROIRegion(handle));
                 if(!load_region(handle,*region.get(),roi_list[i]))
                 {
-                    std::cout << "Fail to load the ROI file." << std::endl;
+                    std::cout << "fail to load the ROI file." << std::endl;
                     return 1;
                 }
                 region_list.push_back(roi_list[i]);
@@ -240,7 +240,7 @@ int ana(void)
 
     if(!po.has("tract"))
     {
-        std::cout << "No tract file or ROI file assigned." << std::endl;
+        std::cout << "no tract file or ROI file assigned." << std::endl;
         return 0;
     }
 
@@ -255,7 +255,7 @@ int ana(void)
         }
         if (!tract_model.load_from_file(file_name.c_str()))
         {
-            std::cout << "Cannot open file " << file_name << std::endl;
+            std::cout << "cannot open file " << file_name << std::endl;
             return 1;
         }
         std::cout << file_name << " loaded" << std::endl;
@@ -267,7 +267,7 @@ int ana(void)
     tract_model.filter_by_roi(roi_mgr);
     if(tract_model.get_visible_track_count() == 0)
     {
-        std::cout << "No tracks remained after ROI selection." << std::endl;
+        std::cout << "no tracks remained after ROI selection." << std::endl;
         return 1;
     }
     // --output will save tracks into a file

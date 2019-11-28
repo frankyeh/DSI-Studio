@@ -102,7 +102,6 @@ public:
                 }
                 return values[i];
             }
-        std::cout << name << "=(null)" << std::endl;
         return no_value;
     }
 
@@ -113,8 +112,11 @@ public:
         for(size_t i = 0;i < names.size();++i)
             if(names[i] == str_name)
             {
-                used[i] = 1;
-                std::cout << name << "=" << values[i] << std::endl;
+                if(!used[i])
+                {
+                    used[i] = 1;
+                    std::cout << name << "=" << values[i] << std::endl;
+                }
                 return values[i];
             }
         std::cout << name << "=" << df_value << std::endl;
@@ -128,10 +130,15 @@ public:
         for(int i = 0;i < names.size();++i)
             if(names[i] == str_name)
             {
-                used[i] = 1;
+                if(!used[i])
+                {
+                    used[i] = 1;
+                    std::cout << name << "=" << values[i] << std::endl;
+                }
                 std::istringstream(values[i]) >> df;
-                break;
+                return df;
             }
+        std::cout << name << "=" << df << std::endl;
         return df;
     }
 };

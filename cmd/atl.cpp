@@ -40,7 +40,7 @@ bool atl_load_atlas(std::string atlas_name,std::vector<std::shared_ptr<atlas> >&
                 file_path = atlas_path;
             else
             {
-                std::cout << "Load " << name_list[index].toStdString() << " failed. Cannot find file in " << atlas_path << std::endl;
+                std::cout << "load " << name_list[index].toStdString() << " failed. Cannot find file in " << atlas_path << std::endl;
                 return false;
             }
         }
@@ -52,7 +52,7 @@ bool atl_load_atlas(std::string atlas_name,std::vector<std::shared_ptr<atlas> >&
             atlas_list.back()->name = name_list[index].toStdString();
             if(atlas_list.back()->get_num().empty())
             {
-                std::cout << "Invalid file format. No ROI found in " << name_list[index].toStdString() << "." << std::endl;
+                std::cout << "invalid file format. No ROI found in " << name_list[index].toStdString() << "." << std::endl;
                 return false;
             }
             continue;
@@ -132,13 +132,13 @@ int atl(void)
     if(cmd=="template")
     {
         std::string dir = po.get("source");
-        std::cout << "Constructing a group average template" << std::endl;
-        std::cout << "Loading fib file in " << dir << std::endl;
+        std::cout << "constructing a group average template" << std::endl;
+        std::cout << "loading fib file in " << dir << std::endl;
         std::vector<std::string> name_list;
         get_files_in_folder(dir,"*.fib.gz",name_list);
         if(name_list.empty())
         {
-            std::cout << "No FIB file found in the directory." << std::endl;
+            std::cout << "no FIB file found in the directory." << std::endl;
             return 1;
         }
         dir += "/template";
@@ -149,15 +149,15 @@ int atl(void)
     }
     if(cmd=="db")
     {
-        std::cout << "Constructing a connectometry db" << std::endl;
+        std::cout << "constructing a connectometry db" << std::endl;
         // Find all the FIB files
         std::string dir = po.get("source");
-        std::cout << "Loading fib file in " << dir << std::endl;
+        std::cout << "loading fib file in " << dir << std::endl;
         std::vector<std::string> name_list;
         get_files_in_folder(dir,"*.fib.gz",name_list);
         if(name_list.empty())
         {
-            std::cout << "No FIB file found in the directory." << std::endl;
+            std::cout << "no FIB file found in the directory." << std::endl;
             return 1;
         }
         // Determine the template
@@ -167,24 +167,24 @@ int atl(void)
         else
             tm = fib_template_file_name_2mm.c_str();
         // Initialize the DB
-        std::cout << "Loading template" << tm << std::endl;
+        std::cout << "loading template" << tm << std::endl;
         std::shared_ptr<group_connectometry_analysis> data(new group_connectometry_analysis);
         if(!data->create_database(tm.c_str()))
         {
-            std::cout << "Error in initializing the database:" << data->error_msg << std::endl;
+            std::cout << "error in initializing the database:" << data->error_msg << std::endl;
             return 1;
         }
         // Extracting metrics
         std::string index_name = po.get("index_name","qa");
-        std::cout << "Extracting index:" << index_name << std::endl;
+        std::cout << "extracting index:" << index_name << std::endl;
         data->handle->db.index_name = index_name;
         for (unsigned int index = 0;index < name_list.size();++index)
         {
-            std::cout << "Reading " << name_list[index] << std::endl;
+            std::cout << "reading " << name_list[index] << std::endl;
             if(!data->handle->db.add_subject_file(name_list[index],
                 QFileInfo(name_list[index].c_str()).baseName().toStdString()))
             {
-                std::cout << "Error loading subject fib files:" << data->handle->error_msg << std::endl;
+                std::cout << "error loading subject fib files:" << data->handle->error_msg << std::endl;
                 return 1;
             }
         }
@@ -194,10 +194,10 @@ int atl(void)
         output += "connectometry.db.fib.gz";
         if(!data->handle->db.save_subject_data(output.c_str()))
         {
-            std::cout << "Error saving the db file:" << data->handle->error_msg << std::endl;
+            std::cout << "error saving the db file:" << data->handle->error_msg << std::endl;
             return 1;
         }
-        std::cout << "Connectometry db created:" << output << std::endl;
+        std::cout << "connectometry db created:" << output << std::endl;
         return 0;
     }
     if(cmd=="roi")
@@ -213,7 +213,7 @@ int atl(void)
             return 1;
         if(!handle->can_map_to_mni())
         {
-            std::cout << "Cannot output connectivity: no mni mapping" << std::endl;
+            std::cout << "cannot output connectivity: no mni mapping" << std::endl;
             return 1;
         }
         atl_save_mapping(atlas_list,
@@ -232,12 +232,12 @@ int atl(void)
         }
         if(!handle->is_qsdr)
         {
-            std::cout << "Only QSDR reconstructed FIB file is supported." << std::endl;
+            std::cout << "only QSDR reconstructed FIB file is supported." << std::endl;
             return 1;
         }
         if(handle->native_position.empty())
         {
-            std::cout << "No mapping information found. Please reconstruct QSDR with mapping checked in advanced option." << std::endl;
+            std::cout << "no mapping information found. Please reconstruct QSDR with mapping checked in advanced option." << std::endl;
             return 1;
         }
         TractModel tract_model(handle);
@@ -246,16 +246,16 @@ int atl(void)
             std::cout << "loading " << file_name << "..." <<std::endl;
             if (!tract_model.load_from_file(file_name.c_str()))
             {
-                std::cout << "Cannot open file " << file_name << std::endl;
+                std::cout << "cannot open file " << file_name << std::endl;
                 return 1;
             }
             std::cout << file_name << " loaded" << std::endl;
         }
         file_name += "native.trk.gz";
         tract_model.save_tracts_in_native_space(file_name.c_str(),handle->native_position);
-        std::cout << "Native tracks saved to " << file_name << " loaded" << std::endl;
+        std::cout << "native tracks saved to " << file_name << " loaded" << std::endl;
         return 0;
     }
-    std::cout << "Unknown command:" << cmd << std::endl;
+    std::cout << "unknown command:" << cmd << std::endl;
     return 1;
 }
