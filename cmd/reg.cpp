@@ -83,7 +83,7 @@ int reg(void)
     {
         std::cout << "nonlinear registration using dual image modalities" << std::endl;
         tipl::reg::cdm2(to,to2,from_,from2_,cdm_dis,terminated,
-                        po.get("resolution",2.0f),po.get("smoothness",0.3f),po.get("steps",64));
+                        po.get("resolution",2.0f),po.get("smoothness",0.3f),po.get("iteration",64));
     }
     else
     {
