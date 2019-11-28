@@ -44,7 +44,7 @@ int reg(void)
         return 1;
     }
 
-    std::string output_wp_image = po.get("warpped_image",po.get("from")+".wp.nii.gz");
+    std::string output_wp_image = po.get("output",po.get("from")+".wp.nii.gz");
     bool terminated = false;
     tipl::transformation_matrix<double> T;
     std::cout << "running linear registration." << std::endl;
