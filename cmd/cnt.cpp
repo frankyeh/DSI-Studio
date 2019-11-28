@@ -143,7 +143,6 @@ int cnt(void)
             vbc->add_new_roi(po.get(roi_names[index]).c_str(),
                              po.get(roi_names[index]).c_str(),
                              roi.get_region_voxels_raw(),type[index]);
-            std::cout << roi_names[index] << "=" << po.get(roi_names[index]) << std::endl;
             vbc->ui->roi_user_defined->setChecked(true);
             vbc->ui->roi_whole_brain->setChecked(false);
         }

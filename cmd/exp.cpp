@@ -15,7 +15,8 @@
 std::shared_ptr<fib_data> cmd_load_fib(const std::string file_name);
 int exp(void)
 {
-    if(po.get("export") == "4dnii")
+    std::string export_name = po.get("export");
+    if(export_name == "4dnii")
     {
         std::string file_name = po.get("source");
         ImageModel handle;
@@ -24,13 +25,13 @@ int exp(void)
             std::cout << handle.error_msg << std::endl;
             return 1;
         }
-        std::cout << "exporting " << po.get("export")+".nii.gz" << std::endl;
+        std::cout << "exporting " << file_name << ".nii.gz" << std::endl;
         handle.save_to_nii((file_name+".nii.gz").c_str());
-        std::cout << "exporting " << po.get("export")+".b_table.txt" << std::endl;
+        std::cout << "exporting " << file_name << ".b_table.txt" << std::endl;
         handle.save_b_table((file_name+".b_table.txt").c_str());
-        std::cout << "exporting " << po.get("export")+".bvec" << std::endl;
+        std::cout << "exporting " << file_name << ".bvec" << std::endl;
         handle.save_bvec((file_name+".bvec").c_str());
-        std::cout << "exporting " << po.get("export")+".bval" << std::endl;
+        std::cout << "exporting " << file_name << ".bval" << std::endl;
         handle.save_bval((file_name+".bval").c_str());
         return 1;
     }

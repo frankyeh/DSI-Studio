@@ -47,7 +47,6 @@ bool train_cnn(std::string network,
 int cnn(void)
 {
     std::shared_ptr<group_connectometry_analysis> gca(new group_connectometry_analysis);
-    std::cout << "reading connectometry db:" << po.get("source") << std::endl;
     if(!gca->load_database(po.get("source").c_str()))
     {
         std::cout << "invalid database format" << std::endl;

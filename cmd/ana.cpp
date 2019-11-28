@@ -186,7 +186,6 @@ int ana(void)
         std::vector<std::shared_ptr<ROIRegion> > regions;
         if(po.has("atlas"))
         {
-            std::cout << "export information from " << po.get("atlas") << std::endl;
             std::vector<std::shared_ptr<atlas> > atlas_list;
             if(!atl_load_atlas(po.get("atlas"),atlas_list))
                 return 1;

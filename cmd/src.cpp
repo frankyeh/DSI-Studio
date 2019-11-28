@@ -105,8 +105,6 @@ int src(void)
     if(po.has("bval") && po.has("bvec"))
     {
         std::vector<double> bval,bvec;
-        std::cout << "load bval=" << po.get("bval") << std::endl;
-        std::cout << "load bvec=" << po.get("bvec") << std::endl;
         load_bval(po.get("bval").c_str(),bval);
         load_bvec(po.get("bvec").c_str(),bvec);
         if(bval.size() != dwi_files.size())

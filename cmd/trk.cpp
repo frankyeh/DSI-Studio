@@ -316,7 +316,7 @@ bool load_region(std::shared_ptr<fib_data> handle,
 
             if(t1t2_geo == from.geometry())
             {
-                std::cout << "Using " << po.get("t1t2") << " as the reference to load " << file_name << std::endl;
+                std::cout << "Using t1t2 as the reference to load " << file_name << std::endl;
                 roi.LoadFromBuffer(from,convert);
             }
             else
@@ -375,10 +375,9 @@ int trk_post(std::shared_ptr<fib_data> handle,
                 std::vector<std::string> files;
                 files.push_back(po.get("ref"));
                 CustomSliceModel new_slice(handle);
-                std::cout << "Loading reference image:" << po.get("ref") << std::endl;
                 if(!new_slice.initialize(files,false))
                 {
-                    std::cout << "Error reading ref image file:" << po.get("ref") << std::endl;
+                    std::cout << "Error reading ref image file" << std::endl;
                     return 1;
                 }
                 new_slice.thread->wait();
@@ -446,7 +445,6 @@ bool load_roi(std::shared_ptr<fib_data> handle,std::shared_ptr<RoiMgr> roi_mgr)
         if(!load_region(handle,roi,po.get(roi_names[index])))
             return false;
         roi_mgr->setRegions(handle->dim,roi.get_region_voxels_raw(),roi.resolution_ratio,type[index],po.get(roi_names[index]).c_str(),handle->vs);
-        std::cout << roi_names[index] << "=" << po.get(roi_names[index]) << std::endl;
     }
     if(po.has("track_id"))
     {
@@ -488,7 +486,6 @@ int trk(std::shared_ptr<fib_data> handle)
 {
     if (po.has("threshold_index"))
     {
-        std::cout << "setting index to " << po.get("threshold_index") << std::endl;
         if(!handle->dir.set_tracking_index(po.get("threshold_index")))
         {
             std::cout << "failed...cannot find the index" << std::endl;
@@ -497,7 +494,6 @@ int trk(std::shared_ptr<fib_data> handle)
     }
     if (po.has("dt_threshold_index"))
     {
-        std::cout << "setting dt index to " << po.get("dt_threshold_index") << std::endl;
         if(!handle->dir.set_dt_index(po.get("dt_threshold_index")))
         {
             std::cout << "failed...cannot find the dt index" << std::endl;
@@ -527,14 +523,6 @@ int trk(std::shared_ptr<fib_data> handle)
     tracking_thread.param.random_seed = po.get("random_seed",int(0));
     tracking_thread.param.check_ending = po.get("check_ending",int(0));
     tracking_thread.param.tip_iteration = po.get("tip_iteration",int(0));
-
-    if(po.has("otsu_threshold"))
-    {
-        if(po.has("fa_threshold"))
-            std::cout << "Default Otsu is not used because fa_threshold is assigned" << std::endl;
-        else
-            std::cout << "A ratio of Otsu threshold of " << po.get("otsu_threshold") << " is used" << std::endl;
-    }
 
     if (po.has("fiber_count"))
     {
@@ -578,24 +566,6 @@ int trk(std::shared_ptr<fib_data> handle)
     {
         tracking_thread.param.set_code(po.get("parameter_id"));
         std::cout << "parameter_code=" << tracking_thread.param.get_code() << std::endl;
-    }
-    {
-        std::cout << "fa_threshold=" << tracking_thread.param.threshold << std::endl;
-        std::cout << "dt_threshold=" << tracking_thread.param.dt_threshold << std::endl;
-        std::cout << "turning_angle=" << std::acos(tracking_thread.param.cull_cos_angle)*180/3.14159265358979323846 << std::endl;
-        std::cout << "step_size=" << tracking_thread.param.step_size << std::endl;
-        std::cout << "smoothing=" << tracking_thread.param.smooth_fraction << std::endl;
-        std::cout << "min_length=" << tracking_thread.param.min_length << std::endl;
-        std::cout << "max_length=" << tracking_thread.param.max_length << std::endl;
-        std::cout << "tracking_method=" << (int)tracking_thread.param.tracking_method << std::endl;
-        std::cout << "initial direction=" << (int)tracking_thread.param.initial_direction << std::endl;
-        std::cout << "interpolation=" << (int)tracking_thread.param.interpolation_strategy << std::endl;
-        std::cout << "voxelwise=" << (int)tracking_thread.param.center_seed << std::endl;
-        std::cout << "default_otsu=" << tracking_thread.param.default_otsu << std::endl;
-        std::cout << "tip_iteration=" << (int)tracking_thread.param.tip_iteration << std::endl;
-        std::cout << (tracking_thread.param.stop_by_tract ? "fiber_count=" : "seed_count=") <<
-                tracking_thread.param.termination_count << std::endl;
-        std::cout << "thread_count=" << po.get("thread_count",int(std::thread::hardware_concurrency())) << std::endl;
     }
 
     if(!load_roi(handle,tracking_thread.roi_mgr))

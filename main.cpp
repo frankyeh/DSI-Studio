@@ -32,6 +32,7 @@ int vis(void);
 int ren(void);
 int cnn(void);
 int qc(void);
+int reg(void);
 
 
 int match_template(float volume)
@@ -188,36 +189,39 @@ void init_application(void)
 program_option po;
 int run_action(std::shared_ptr<QApplication> gui)
 {
-    if(po.get("action") == std::string("rec"))
+    std::string action = po.get("action");
+    if(action == std::string("rec"))
         return rec();
-    if(po.get("action") == std::string("trk"))
+    if(action == std::string("trk"))
         return trk();
-    if(po.get("action") == std::string("src"))
+    if(action == std::string("src"))
         return src();
-    if(po.get("action") == std::string("ana"))
+    if(action == std::string("ana"))
         return ana();
-    if(po.get("action") == std::string("exp"))
+    if(action == std::string("exp"))
         return exp();
-    if(po.get("action") == std::string("atl"))
+    if(action == std::string("atl"))
         return atl();
-    if(po.get("action") == std::string("cnt"))
+    if(action == std::string("cnt"))
         return cnt();
-    if(po.get("action") == std::string("cnt_ind"))
+    if(action == std::string("cnt_ind"))
         return cnt_ind();
-    if(po.get("action") == std::string("ren"))
+    if(action == std::string("ren"))
         return ren();
-    if(po.get("action") == std::string("cnn"))
+    if(action == std::string("cnn"))
         return cnn();
-    if(po.get("action") == std::string("qc"))
+    if(action == std::string("qc"))
         return qc();
-    if(po.get("action") == std::string("vis"))
+    if(action == std::string("reg"))
+        return reg();
+    if(action == std::string("vis"))
     {
         vis();
         if(po.get("stay_open") == std::string("1"))
             gui->exec();
         return 0;
     }
-    std::cout << "Unknown action:" << po.get("action") << std::endl;
+    std::cout << "Unknown action:" << action << std::endl;
     return 1;
 }
 

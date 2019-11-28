@@ -16,8 +16,8 @@ class program_option{
         auto pos = std::find(str.begin(),str.end(),'=');
         if(pos == str.end())
             return false;
-        names.push_back(std::move(std::string(str.begin()+2,pos)));
-        values.push_back(std::move(std::string(pos+1,str.end())));
+        names.push_back(std::string(str.begin()+2,pos));
+        values.push_back(std::string(pos+1,str.end()));
         used.push_back(0);
         return true;
     }
@@ -92,12 +92,17 @@ public:
     const std::string& get(const char* name)
     {
         std::string str_name(name);
-        for(int i = 0;i < names.size();++i)
+        for(size_t i = 0;i < names.size();++i)
             if(names[i] == str_name)
             {
-                used[i] = 1;
+                if(!used[i])
+                {
+                    used[i] = 1;
+                    std::cout << name << "=" << values[i] << std::endl;
+                }
                 return values[i];
             }
+        std::cout << name << "=(null)" << std::endl;
         return no_value;
     }
 
@@ -105,12 +110,14 @@ public:
     {
         std::string str_name(name);
         std::string df_value(df_ptr);
-        for(int i = 0;i < names.size();++i)
+        for(size_t i = 0;i < names.size();++i)
             if(names[i] == str_name)
             {
                 used[i] = 1;
+                std::cout << name << "=" << values[i] << std::endl;
                 return values[i];
             }
+        std::cout << name << "=" << df_value << std::endl;
         return df_value;
     }
 

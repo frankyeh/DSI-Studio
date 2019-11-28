@@ -22,10 +22,7 @@ int vis(void)
         new_mdi->hide();
 
     if(po.has("track"))
-    {
-        std::cout << "loading tracks" << po.get("track") << std::endl;
         new_mdi->tractWidget->load_tracts(QString(po.get("track").c_str()).split(","));
-    }
     QStringList cmd = QString(po.get("cmd").c_str()).split('+');
     for(unsigned int index = 0;index < cmd.size();++index)
     {
