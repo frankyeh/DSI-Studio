@@ -200,7 +200,7 @@ void RegionTableWidget::add_region(QString name,unsigned char feature,unsigned i
     setRowHeight(regions.size()-1,22);
     setCurrentCell(regions.size()-1,0);
 
-
+    cur_tracking_window.ui->target->setCurrentIndex(0);
 
 }
 void RegionTableWidget::check_check_status(int row, int col)
