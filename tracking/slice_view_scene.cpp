@@ -186,8 +186,8 @@ void slice_view_scene::show_fiber(QPainter& painter)
         threshold = 0.00000001f;
     int X,Y,Z;
     float display_ratio = cur_tracking_window.get_scene_zoom();
-    const char dir_x[3] = {1,0,0};
-    const char dir_y[3] = {2,2,1};
+    unsigned char dir_x[3] = {1,0,0};
+    unsigned char dir_y[3] = {2,2,1};
 
     int fiber_color = cur_tracking_window["roi_fiber_color"].toInt();
     float pen_w = display_ratio * cur_tracking_window["roi_fiber_width"].toFloat();
@@ -195,15 +195,15 @@ void slice_view_scene::show_fiber(QPainter& painter)
     if(fiber_color)
     {
         QPen pen(QColor(fiber_color == 1 ? 255:0,fiber_color == 2 ? 255:0,fiber_color == 3 ? 255:0));
-        pen.setWidthF(pen_w);
+        pen.setWidthF(double(pen_w));
         painter.setPen(pen);
     }
     const fib_data& fib = *(cur_tracking_window.handle);
-    char max_fiber = fib.dir.num_fiber-1;
+    int max_fiber = int(fib.dir.num_fiber-1);
     int steps = 1;
     if(!cur_tracking_window.current_slice->is_diffusion_space)
     {
-        steps = std::ceil(cur_tracking_window.handle->vs[0]/cur_tracking_window.current_slice->voxel_size[0]);
+        steps = int(std::ceil(cur_tracking_window.handle->vs[0]/cur_tracking_window.current_slice->voxel_size[0]));
         r *= steps;
         pen_w *= steps;
     }
@@ -214,30 +214,32 @@ void slice_view_scene::show_fiber(QPainter& painter)
                 if(!cur_tracking_window.handle->dim.is_valid(X,Y,Z))
                     continue;
                 tipl::pixel_index<3> pos(X,Y,Z,fib.dim);
-                if (pos.index() >= fib.dim.size() || fib.dir.get_fa(pos.index(),0) == 0.0)
+                if (pos.index() >= fib.dim.size() || fib.dir.get_fa(pos.index(),0) == 0.0f)
                     continue;
-                for (char fiber = max_fiber; fiber >= 0; --fiber)
-                    if(fib.dir.get_fa(pos.index(),fiber) > threshold)
+                for (int fiber = max_fiber; fiber >= 0; --fiber)
+                    if(fib.dir.get_fa(pos.index(),uint8_t(fiber)) > threshold)
                     {
-                        if(threshold2 != 0.0f && fib.dir.get_dt_fa(pos.index(),fiber) < threshold2)
+                        if(threshold2 != 0.0f && fib.dir.get_dt_fa(pos.index(),uint8_t(fiber)) < threshold2)
                             continue;
                         if((roi_fiber == 2 && fiber != 0) ||
                            (roi_fiber == 3 && fiber != 1))
                             continue;
-                        const float* dir_ptr = fib.dir.get_dir(pos.index(),fiber);
+                        const float* dir_ptr = fib.dir.get_dir(pos.index(),uint8_t(fiber));
                         if(!fiber_color)
                         {
-                            QPen pen(QColor(std::abs(dir_ptr[0]) * 255.0,std::abs(dir_ptr[1]) * 255.0, std::abs(dir_ptr[2]) * 255.0));
-                            pen.setWidthF(pen_w);
+                            QPen pen(QColor(int(std::abs(dir_ptr[0]) * 255.0f),
+                                            int(std::abs(dir_ptr[1]) * 255.0f),
+                                            int(std::abs(dir_ptr[2]) * 255.0f)));
+                            pen.setWidthF(double(pen_w));
                             painter.setPen(pen);
                         }
-                        float dx = r * dir_ptr[dir_x[cur_tracking_window.cur_dim]] + 0.5;
-                        float dy = r * dir_ptr[dir_y[cur_tracking_window.cur_dim]] + 0.5;
+                        float dx = r * dir_ptr[dir_x[cur_tracking_window.cur_dim]] + 0.5f;
+                        float dy = r * dir_ptr[dir_y[cur_tracking_window.cur_dim]] + 0.5f;
                         painter.drawLine(
-                            display_ratio*((float)x + 0.5) - dx,
-                            display_ratio*((float)y + 0.5) - dy,
-                            display_ratio*((float)x + 0.5) + dx,
-                            display_ratio*((float)y + 0.5) + dy);
+                            int(display_ratio*(float(x) + 0.5f) - dx),
+                            int(display_ratio*(float(y) + 0.5f) - dy),
+                            int(display_ratio*(float(x) + 0.5f) + dx),
+                            int(display_ratio*(float(y) + 0.5f) + dy));
                     }
             }
 }
