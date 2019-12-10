@@ -214,7 +214,7 @@ bool CustomSliceModel::initialize(const std::vector<std::string>& files,
             QString filename(files[file_index].c_str());
             if(!in.load(filename))
             {
-                error_msg = "Invalid image format: ";
+                error_msg = "invalid image format: ";
                 error_msg += files[file_index];
                 return false;
             }
@@ -310,7 +310,7 @@ bool CustomSliceModel::initialize(const std::vector<std::string>& files,
 
     if(source_images.empty())
     {
-        error_msg = "Failed to load image volume.";
+        error_msg = "failed to load image volume.";
         return false;
     }
     // same dimension, no registration required.

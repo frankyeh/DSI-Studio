@@ -19,7 +19,6 @@ std::string
         t1w_template_file_name,wm_template_file_name,
         t1w_mask_template_file_name,tractography_atlas_file_name;
 std::vector<std::string> fa_template_list,iso_template_list,atlas_file_list,tractography_name_list;
-void load_atlas(void);
 int rec(void);
 int trk(void);
 int src(void);

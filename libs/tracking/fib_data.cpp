@@ -933,14 +933,22 @@ bool fib_data::load_template(void)
     tipl::image<float,3> I;
     tipl::vector<3> I_vs;
     if(!read.load_from_file(fa_template_list[template_id].c_str()))
+    {
+        error_msg = "cannot load ";
+        error_msg += fa_template_list[template_id];
         return false;
+    }
     tipl::matrix<4,4,float> tran;
     read.toLPS(I);
     read.get_voxel_size(I_vs);
     read.get_image_transformation(tran);
     float ratio = float(I.width()*I_vs[0])/float(dim[0]*vs[0]);
     if(ratio < 0.25f || ratio > 4.0f)
+    {
+        error_msg = "image resolution mismatch: ratio=";
+        error_msg += std::to_string(ratio);
         return false;
+    }
     template_shift[0] = tran[3];
     template_shift[1] = tran[7];
     template_shift[2] = tran[11];
@@ -978,7 +986,14 @@ bool fib_data::load_template(void)
 
 bool fib_data::load_atlas(void)
 {
-    return load_template() && !atlas_list.empty();
+    if(!load_template())
+        return false;
+    if(atlas_list.empty())
+    {
+        error_msg = "cannot find atla files";
+        return false;
+    }
+    return true;
 }
 
 void fib_data::template_to_mni(tipl::vector<3>& p)
@@ -1204,7 +1219,10 @@ bool fib_data::can_map_to_mni(void)
         return false;
     run_normalization(true,false);
     if(prog_aborted())
+    {
+        error_msg = "action aborted by user";
         return false;
+    }
     return true;
 }
 

@@ -947,13 +947,13 @@ void tracking_window::on_actionSave_Tracts_in_MNI_space_triggered()
 {
     if(!can_map_to_mni())
     {
-        QMessageBox::information(this,"Error","MNI normalization is not supported for the current image resolution",0);
+        QMessageBox::information(this,"Error",handle->error_msg.c_str(),0);
         return;
     }
     if(handle->is_qsdr)
         tractWidget->saveTransformedTracts(&*(handle->trans_to_mni.begin()));
     else
-        tractWidget->saveTransformedTracts(0);
+        tractWidget->saveTransformedTracts(nullptr);
 }
 
 
@@ -1204,15 +1204,9 @@ void tracking_window::on_actionLoad_Rendering_Parameters_triggered()
 
 void tracking_window::on_addRegionFromAtlas_clicked()
 {
-    if(!handle->load_atlas())
+    if(!handle->load_atlas() || !handle->can_map_to_mni())
     {
-        QMessageBox::information(this,"Error","Atlas is not supported for the current image resolution.");
-        raise();
-        return;
-    }
-    if(!can_map_to_mni())
-    {
-        QMessageBox::information(this,"Error",QString("Subject/Template mistch:") + ui->template_box->currentText());
+        QMessageBox::information(this,"Error",handle->error_msg.c_str());
         raise();
         return;
     }
@@ -2014,15 +2008,15 @@ void tracking_window::on_actionKeep_Current_Slice_triggered()
 extern std::string tractography_atlas_file_name;
 void tracking_window::on_enable_auto_track_clicked()
 {
-    if(!can_map_to_mni())
+    if(!can_map_to_mni() || !handle->load_atlas())
     {
-        QMessageBox::information(this,"Error","Atlas is not supported for the current image resolution.");
+        QMessageBox::information(this,"Error",handle->error_msg.c_str());
         raise();
         return;
     }
-    if(!handle->load_atlas() || handle->atlas_list[0]->name != "HCP842_tractography")
+    if(handle->atlas_list[0]->name != "HCP842_tractography")
     {
-        QMessageBox::information(0,"Error","No tractography atlas exists",0);
+        QMessageBox::information(this,"Error","No tractography atlas exists",0);
         raise();
         return;
     }
