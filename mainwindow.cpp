@@ -667,9 +667,13 @@ void MainWindow::on_batch_src_clicked()
                 if(report.size() < 80)
                     report.resize(80);
                 nii_out.set_descrip(report.c_str());
-
-                QString output = t1wt2w_output_prefix + "."+get_dicom_output_name(dicom_file_list[0],"",false)+"_"+sequence.c_str() + ".nii.gz";
-                out << "\t\tConvert to NIFTI at " << output.toStdString() << std::endl;
+                if(!QDir(t1wt2w_output_prefix).exists() && !QDir().mkdir(t1wt2w_output_prefix))
+                {
+                    out << "cannot create directory:" << t1wt2w_output_prefix.toStdString() <<std::endl;
+                    continue;
+                }
+                QString output = t1wt2w_output_prefix + "/"+get_dicom_output_name(dicom_file_list[0],"",false)+"_"+sequence.c_str() + ".nii.gz";
+                out << "\t\tconvert to NIFTI at " << output.toStdString() << std::endl;
                 nii_out.save_to_file(output.toStdString().c_str());
             }
             else
@@ -677,13 +681,18 @@ void MainWindow::on_batch_src_clicked()
                 out << "\t\t4D DWI files." << std::endl;
                 if(dicom_dwi_files.empty() || dicom_dwi_files.front()->image.geometry() == dicom_files.front()->image.geometry())
                 {
+                    if(!QDir(src_output_prefix).exists() && !QDir().mkdir(src_output_prefix))
+                    {
+                        out << "cannot create directory:" << src_output_prefix.toStdString() <<std::endl;
+                        continue;
+                    }
                     if(dicom_dwi_files.empty())
-                        dicom_output = src_output_prefix + "." + get_dicom_output_name(dicom_file_list[0],".src.gz",false);
+                        dicom_output = src_output_prefix + "/" + get_dicom_output_name(dicom_file_list[0],".src.gz",false);
                     dicom_dwi_files.insert(dicom_dwi_files.end(),dicom_files.begin(),dicom_files.end());
                 }
                 else
                 {
-                    out << "[Warning] Two different DWI datasets are found: (" <<
+                    out << "[warning] Two different DWI datasets are found: (" <<
                            dicom_dwi_files.front()->image.width() << "," <<
                            dicom_dwi_files.front()->image.height() << "," <<
                            dicom_dwi_files.front()->image.depth() << ") and (" <<
