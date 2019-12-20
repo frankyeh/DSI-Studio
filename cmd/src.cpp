@@ -9,7 +9,7 @@
 QStringList search_files(QString dir,QString filter);
 void load_bval(const char* file_name,std::vector<double>& bval);
 void load_bvec(const char* file_name,std::vector<double>& b_table);
-bool load_all_files(QStringList file_list,std::vector<std::shared_ptr<DwiHeader> >& dwi_files);
+bool parse_dwi(QStringList file_list,std::vector<std::shared_ptr<DwiHeader> >& dwi_files);
 int src(void)
 {
     std::string source = po.get("source");
@@ -67,7 +67,7 @@ int src(void)
         return 1;
     }
 
-    if(!load_all_files(file_list,dwi_files))
+    if(!parse_dwi(file_list,dwi_files))
     {
         std::cout << "invalid file format" << std::endl;
         return 1;

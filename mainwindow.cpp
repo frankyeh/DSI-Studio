@@ -533,11 +533,10 @@ void MainWindow::on_averagefib_clicked()
     new_mdi->show();
 }
 
-bool load_all_files(QStringList file_list,std::vector<std::shared_ptr<DwiHeader> >& dwi_files);
+bool parse_dwi(QStringList file_list,std::vector<std::shared_ptr<DwiHeader> >& dwi_files);
 bool find_bval_bvec(const char* file_name,QString& bval,QString& bvec);
 bool load_4d_nii(const char* file_name,std::vector<std::shared_ptr<DwiHeader> >& dwi_files);
 QString get_dicom_output_name(QString file_name,QString file_extension,bool add_path);
-
 void MainWindow::on_batch_src_clicked()
 {
     QString dir = QFileDialog::getExistingDirectory(
@@ -611,7 +610,7 @@ void MainWindow::on_batch_src_clicked()
                 dicom_file_list[index] = dir_list[i] + "/" + dicom_file_list[index];
 
             std::vector<std::shared_ptr<DwiHeader> > dicom_files;
-            if(!load_all_files(dicom_file_list,dicom_files) || prog_aborted())
+            if(!parse_dwi(dicom_file_list,dicom_files) || prog_aborted())
                 continue;
             if(dicom_files.size() == 1) //MPRAGE or T2W
             {
