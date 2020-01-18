@@ -9,7 +9,7 @@
 #include "gqi_process.hpp"
 #include "gqi_mni_reconstruction.hpp"
 #include "image_model.hpp"
-
+#include "fib_data.hpp"
 
 typedef boost::mpl::vector<
     ReadDWIData,
@@ -300,34 +300,27 @@ bool output_odfs(const tipl::image<unsigned char,3>& mni_mask,
 
 const char* odf_average(const char* out_name,std::vector<std::string>& file_names)
 {
-    static std::string error_msg,report;
+    static std::string report,error_msg;
     tessellated_icosahedron ti;
     float vs[3];
-    tipl::image<unsigned char,3> mask;
+    tipl::geometry<3> dim;
     std::vector<std::vector<float> > odfs;
+    std::vector<size_t> odf_count;
+
     unsigned int half_vertex_count = 0;
     unsigned int row,col;
     float mni[16]={0};
-    begin_prog("averaging");
-    for (unsigned int index = 0;check_prog(index,file_names.size());++index)
-    {
-        const char* file_name = file_names[index].c_str();
-        gz_mat_read reader;
-        set_title(file_names[index].c_str());
-        if(!reader.load_from_file(file_name))
+    std::string file_name;
+    try {
+        begin_prog("averaging");
+        for (unsigned int index = 0;check_prog(index,file_names.size());++index)
         {
-            error_msg = "Cannot open file ";
-            error_msg += file_name;
-            check_prog(0,0);
-            return error_msg.c_str();
-        }
-        if(index == 0)
-        {
-            {
-                const char* report_buf = 0;
-                if(reader.read("report",row,col,report_buf))
-                    report = std::string(report_buf,report_buf+row*col);
-            }
+            file_name = file_names[index];
+            gz_mat_read reader;
+            set_title(file_name.c_str());
+            if(!reader.load_from_file(file_name.c_str()))
+                throw std::exception("cannot open file");
+
             const float* odf_buffer;
             const short* face_buffer;
             const unsigned short* dimension;
@@ -335,153 +328,100 @@ const char* odf_average(const char* out_name,std::vector<std::string>& file_name
             const float* fa0;
             const float* mni_ptr;
             unsigned int face_num,odf_num;
-            error_msg = "";
-            if(!reader.read("dimension",row,col,dimension))
-                error_msg = "dimension";
-            if(!reader.read("fa0",row,col,fa0))
-                error_msg = "fa0";
-            if(!reader.read("voxel_size",row,col,vs_ptr))
-                error_msg = "voxel_size";
-            if(!reader.read("odf_faces",row,face_num,face_buffer))
-                error_msg = "odf_faces";
-            if(!reader.read("odf_vertices",row,odf_num,odf_buffer))
-                error_msg = "odf_vertices";
-            if(!reader.read("trans",row,col,mni_ptr))
-                error_msg = "trans";
-            if(error_msg.length())
-            {
-                error_msg += " missing in ";
-                error_msg += file_name;
-                check_prog(0,0);
-                return error_msg.c_str();
-            }
-            mask.resize(tipl::geometry<3>(dimension));
-            for(unsigned int index = 0;index < mask.size();++index)
-                if(fa0[index] != 0.0)
-                    mask[index] = 1;
-            std::copy(vs_ptr,vs_ptr+3,vs);
-            ti.init(odf_num,odf_buffer,face_num,face_buffer);
-            half_vertex_count = odf_num >> 1;
-            std::copy(mni_ptr,mni_ptr+16,mni);
-        }
-        else
-        // check odf consistency
-        {
-            const float* odf_buffer;
-            const unsigned short* dimension;
-            unsigned int odf_num;
-            error_msg = "";
-            if(!reader.read("dimension",row,col,dimension))
-                error_msg = "dimension";
-            if(!reader.read("odf_vertices",row,odf_num,odf_buffer))
-                error_msg = "odf_vertices";
-            if(error_msg.length())
-            {
-                error_msg += " missing in ";
-                error_msg += file_name;
-                check_prog(0,0);
-                return error_msg.c_str();
-            }
+            const char* report_buf = nullptr;
 
-            if(odf_num != ti.vertices_count || dimension[0] != mask.width() ||
-                    dimension[1] != mask.height() || dimension[2] != mask.depth())
+            if(!reader.read("dimension",row,col,dimension)||
+               !reader.read("fa0",row,col,fa0) ||
+               !reader.read("voxel_size",row,col,vs_ptr) ||
+               !reader.read("odf_faces",row,face_num,face_buffer) ||
+               !reader.read("odf_vertices",row,odf_num,odf_buffer) ||
+               !reader.read("trans",row,col,mni_ptr))
+                throw std::exception("invalid FIB file format");
+
+            if(index == 0)
             {
-                error_msg = "Inconsistent dimension in ";
-                error_msg += file_name;
-                check_prog(0,0);
-                return error_msg.c_str();
+                if(reader.read("report",row,col,report_buf))
+                    report = std::string(report_buf,report_buf+row*col);
+                dim = tipl::geometry<3>(dimension);
+                std::copy(vs_ptr,vs_ptr+3,vs);
+                ti.init(uint16_t(odf_num),odf_buffer,uint16_t(face_num),face_buffer);
+                half_vertex_count = odf_num >> 1;
+                std::copy(mni_ptr,mni_ptr+16,mni);
             }
-            for (unsigned int index = 0;index < col;++index,odf_buffer += 3)
+            else
+            // check odf consistency
             {
-                if(ti.vertices[index][0] != odf_buffer[0] ||
-                   ti.vertices[index][1] != odf_buffer[1] ||
-                   ti.vertices[index][2] != odf_buffer[2])
+                if(odf_num != ti.vertices_count)
+                    throw std::exception("inconsistent ODF dimension");
+                if(dim != tipl::geometry<3>(dimension))
+                    throw std::exception("inconsistent image dimension");
+                for (unsigned int index = 0;index < col;++index,odf_buffer += 3)
                 {
-                    error_msg = "Inconsistent ODF orientations in ";
-                    error_msg += file_name;
-                    return error_msg.c_str();
+                    if(std::fabs(ti.vertices[index][0]-odf_buffer[0]) > 0.0f ||
+                       std::fabs(ti.vertices[index][1]-odf_buffer[1]) > 0.0f)
+                    throw std::exception("inconsistent ODF orientations");
                 }
             }
-        }
 
-        {
-            const float* fa0;
-            if(!reader.read("fa0",row,col,fa0))
-            {
-                error_msg = "Cannot find image information in ";
-                error_msg += file_name;
-                check_prog(0,0);
-                return error_msg.c_str();
-            }
-            for(unsigned int index = 0;index < mask.size();++index)
-                if(fa0[index] != 0.0)
-                    mask[index] = 1;
-        }
+            odf_data buf;
+            if(!buf.read(reader))
+                throw std::exception("cannot find ODF data");
 
-        std::vector<const float*> odf_bufs;
-        std::vector<unsigned int> odf_bufs_size;
-        //get_odf_bufs(reader,odf_bufs,odf_bufs_size);
-        {
-            odf_bufs.clear();
-            odf_bufs_size.clear();
-            for (unsigned int odf_index = 0;1;++odf_index)
+            if(index == 0)
             {
-                std::ostringstream out;
-                out << "odf" << odf_index;
-                const float* odf_buf = 0;
-                if (!reader.read(out.str().c_str(),row,col,odf_buf))
-                    break;
-                odf_bufs.push_back(odf_buf);
-                odf_bufs_size.push_back(row*col);
+                odfs.resize(dim.size());
+                odf_count.resize(dim.size());
             }
+
+            tipl::par_for(dim.size(),[&](unsigned int i){
+                const float* odf_data = buf.get_odf_data(i);
+                if(odf_data == nullptr)
+                    return;
+                if(odfs[i].empty())
+                    odfs[i] = std::vector<float>(odf_data,odf_data+half_vertex_count);
+                else
+                    tipl::add(odfs[i].begin(),odfs[i].end(),odf_data);
+                odf_count[i]++;
+            });
+
         }
-        if(odf_bufs.empty())
-        {
-            error_msg += "No ODF data found in ";
-            error_msg += file_name;
-            check_prog(0,0);
-            return error_msg.c_str();
-        }
-        if(index == 0)
-        {
-            odfs.resize(odf_bufs.size());
-            for(unsigned int i = 0;i < odf_bufs.size();++i)
-                odfs[i].resize(odf_bufs_size[i]);
-        }
-        else
-        {
-            bool inconsistence = false;
-            if(odfs.size() != odf_bufs.size())
-                inconsistence = true;
-            for(unsigned int i = 0;i < odf_bufs.size();++i)
-                if(odfs[i].size() != odf_bufs_size[i])
-                    inconsistence = true;
-            if(inconsistence)
-            {
-                error_msg = "Inconsistent mask coverage in ";
-                error_msg += file_name;
-                check_prog(0,0);
-                return error_msg.c_str();
-            }
-        }
-        for(unsigned int i = 0;i < odf_bufs.size();++i)
-            tipl::add(odfs[i].begin(),odfs[i].end(),odf_bufs[i]);
+        if (prog_aborted())
+            return nullptr;
+    } catch (const std::exception& e) {
+        error_msg = e.what();
+        error_msg += " at ";
+        error_msg += file_name;
+        check_prog(0,0);
+        return error_msg.c_str();
     }
-    if (prog_aborted())
-        return 0;
 
-    set_title("Averaging ODFs");
-    for (unsigned int odf_index = 0;odf_index < odfs.size();++odf_index)
-        for (unsigned int j = 0;j < odfs[odf_index].size();++j)
-            odfs[odf_index][j] /= (double)file_names.size();
+    // averaging ODFs
+    tipl::par_for(dim.size(),[&](unsigned int i){
+        if(odf_count[i] > 1)
+            tipl::divide_constant(odfs[i].begin(),odfs[i].end(),float(odf_count[i]));
+    });
+
+    // eliminate ODF if missing more than half of the population
+    tipl::image<unsigned char,3> mask(dim);
+    unsigned int odf_size = 0;
+    for(unsigned int i = 0;i < mask.size();++i)
+    {
+        if(odf_count[i] > (file_names.size() >> 1))
+        {
+            mask[i] = 1;
+            std::copy(odfs[i].begin(),odfs[i].end(),odfs[odf_size].begin());
+            ++odf_size;
+        }
+    }
+    odfs.resize(odf_size);
 
     std::ostringstream out;
     out << "A group average template was constructed from a total of " << file_names.size() << " subjects." << report.c_str();
     report = out.str();
-    set_title("Output Files");
+    set_title("output Files");
     output_odfs(mask,out_name,".mean.odf.fib.gz",odfs,ti,vs,mni,report);
     output_odfs(mask,out_name,".mean.fib.gz",odfs,ti,vs,mni,report,false);
-    return 0;
+    return nullptr;
 }
 
 

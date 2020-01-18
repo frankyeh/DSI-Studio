@@ -56,7 +56,7 @@ bool odf_data::read(gz_mat_read& mat_reader)
         voxel_index_map.resize(dim);
         for (unsigned int index = 0,j = 0;index < voxel_index_map.size();++index)
         {
-            if (fa0[index] == 0.0)
+            if (fa0[index] == 0.0f)
             {
                 unsigned int from = j*(half_odf_size);
                 unsigned int to = from + half_odf_size;
@@ -64,7 +64,7 @@ bool odf_data::read(gz_mat_read& mat_reader)
                     break;
                 bool odf_is_zero = true;
                 for (;from < to;++from)
-                    if (odfs[from] != 0.0)
+                    if (odfs[from] != 0.0f)
                     {
                         odf_is_zero = false;
                         break;
@@ -89,14 +89,14 @@ bool odf_data::read(gz_mat_read& mat_reader)
                 unsigned int k_end = j + half_odf_size;
                 bool is_odf_zero = true;
                 for(unsigned int k = j;k < k_end;++k)
-                    if(odf_blocks[i][k] != 0.0)
+                    if(odf_blocks[i][k] != 0.0f)
                     {
                         is_odf_zero = false;
                         break;
                     }
                 if(!is_odf_zero)
                     for(;voxel_index < odf_block_map1.size();++voxel_index)
-                        if(fa0[voxel_index] != 0.0)
+                        if(fa0[voxel_index] != 0.0f)
                             break;
                 if(voxel_index >= odf_block_map1.size())
                     break;
