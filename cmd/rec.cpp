@@ -188,16 +188,17 @@ int rec(void)
             std::fill(handle->voxel.mask.begin(),handle->voxel.mask.end(),1);
         else
         {
-            ROIRegion roi(fib_handle);
-            std::cout << "reading mask..." << mask_file << std::endl;
-            if(!load_region(fib_handle,roi,mask_file))
+            gz_nifti nii;
+            if(!nii.load_from_file(mask_file) || !nii.toLPS(handle->voxel.mask))
+            {
+                std::cout << "invalid or nonexisting nifti file:" << mask_file << std::endl;
                 return 1;
-            tipl::image<unsigned char,3> external_mask;
-            roi.SaveToBuffer(external_mask,1.0f);
-            if(external_mask.geometry() != handle->voxel.dim)
-                std::cout << "inconsistent the mask dimension...using default mask" << std::endl;
-            else
-                handle->voxel.mask = external_mask;
+            }
+            if(handle->voxel.mask.geometry() != handle->voxel.dim)
+            {
+                std::cout << "The mask dimension is different. terminating..." << std::endl;
+                return 1;
+            }
         }
     }
 
