@@ -57,7 +57,7 @@ int exp(void)
         std::cout << "cannot find dimension matrix in the file" << file_name.c_str() <<std::endl;
         return 1;
     }
-    const float* vs = 0;
+    const float* vs = nullptr;
     if(!mat_reader.read("voxel_size",row,col,vs))
     {
         std::cout << "cannot find voxel_size matrix in the file" << file_name.c_str() <<std::endl;
@@ -73,6 +73,7 @@ int exp(void)
         }
         else
         {
+            std::fill(trans.begin(),trans.end(),0.0f);
             trans[0] = vs[0];
             trans[5] = vs[1];
             trans[10] = vs[2];
