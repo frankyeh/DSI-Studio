@@ -327,7 +327,7 @@ void RegToolBox::linear_reg(tipl::reg::reg_type reg_type)
     status = "linear registration";
 
     tipl::reg::two_way_linear_mr(It,Itvs,I,Ivs,T,reg_type,tipl::reg::mutual_information(),thread.terminated,
-                                  std::thread::hardware_concurrency(),&arg,tipl::reg::reg_bound2);
+                                  std::thread::hardware_concurrency(),&arg,tipl::reg::large_bound);
     tipl::image<float,3> J_(It.geometry());
     tipl::resample_mt(I,J_,T,tipl::cubic);
     float r2 = tipl::correlation(J_.begin(),J_.end(),It.begin());

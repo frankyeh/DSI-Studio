@@ -700,15 +700,15 @@ void rec_motion_correction(ImageModel* handle)
     begin_prog("correcting motion...");
     tipl::par_for2(handle->src_bvalues.size(),[&](int i,int id)
     {
-        if(i == 0 || prog_aborted() || handle->src_bvalues[i] > 1500)
+        if(i == 0 || prog_aborted())
             return;
         if(id == 0)
             check_prog(i*99/handle->src_bvalues.size(),100);
         tipl::affine_transform<double> arg;
         bool terminated = false;
-        tipl::reg::linear_mr(tipl::make_image(handle->src_dwi_data[0],handle->voxel.dim),handle->voxel.vs,
-                             tipl::make_image(handle->src_dwi_data[i],handle->voxel.dim),handle->voxel.vs,
-                                  arg,tipl::reg::affine,tipl::reg::correlation(),terminated,0.0001);
+        tipl::reg::linear(tipl::make_image(handle->src_dwi_data[0],handle->voxel.dim),handle->voxel.vs,
+                          tipl::make_image(handle->src_dwi_data[i],handle->voxel.dim),handle->voxel.vs,
+                                  arg,tipl::reg::rigid_body,tipl::reg::mutual_information(),terminated,0.001,0,tipl::reg::narrow_bound);
         tipl::transformation_matrix<double> T(arg,handle->voxel.dim,handle->voxel.vs,handle->voxel.dim,handle->voxel.vs);
         handle->rotate_one_dwi(i,T);
     });
