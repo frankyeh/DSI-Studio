@@ -1766,6 +1766,21 @@ void GLWidget::mouseDoubleClickEvent(QMouseEvent *event)
         cur_tracking_window.regionWidget->move_slice_to_current_region();
         emit region_edited();
     }
+    else
+    {
+        switch(moving_at_slice_index)
+        {
+        case 0:
+            cur_tracking_window.ui->glSagCheck->setChecked(false);
+            break;
+        case 1:
+            cur_tracking_window.ui->glCorCheck->setChecked(false);
+            break;
+        case 2:
+            cur_tracking_window.ui->glAxiCheck->setChecked(false);
+            break;
+        }
+    }
 }
 
 bool GLWidget::get_mouse_pos(QMouseEvent *event,tipl::vector<3,float>& position)
