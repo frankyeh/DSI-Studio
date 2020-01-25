@@ -41,6 +41,8 @@ bool reconstruction_window::load_src(int index)
     ui->min_value->setSingleStep(m*0.05);
     ui->min_value->setValue(0.0);
     load_b_table();
+
+    ui->align_slices->setVisible(false);
     return true;
 }
 
@@ -698,7 +700,11 @@ void reconstruction_window::on_SlicePos_valueChanged(int position)
 void rec_motion_correction(ImageModel* handle)
 {
     begin_prog("correcting motion...");
-    tipl::par_for2(handle->src_bvalues.size(),[&](int i,int id)
+    tipl::image<float,3> from(handle->voxel.dim);
+    std::copy(handle->src_dwi_data[0],handle->src_dwi_data[0]+from.size(),from.begin());
+    tipl::filter::sobel(from);
+    tipl::normalize(from,1.0f);
+    tipl::par_for2(handle->src_bvalues.size(),[&](unsigned int i,int id)
     {
         if(i == 0 || prog_aborted())
             return;
@@ -706,10 +712,19 @@ void rec_motion_correction(ImageModel* handle)
             check_prog(i*99/handle->src_bvalues.size(),100);
         tipl::affine_transform<double> arg;
         bool terminated = false;
-        tipl::reg::linear(tipl::make_image(handle->src_dwi_data[0],handle->voxel.dim),handle->voxel.vs,
-                          tipl::make_image(handle->src_dwi_data[i],handle->voxel.dim),handle->voxel.vs,
-                                  arg,tipl::reg::rigid_body,tipl::reg::mutual_information(),terminated,0.001,0,tipl::reg::narrow_bound);
-        tipl::transformation_matrix<double> T(arg,handle->voxel.dim,handle->voxel.vs,handle->voxel.dim,handle->voxel.vs);
+
+        tipl::image<float,3> to(handle->voxel.dim);
+        std::copy(handle->src_dwi_data[i],
+                  handle->src_dwi_data[i]+to.size(),to.begin());
+        tipl::filter::sobel(to);
+        tipl::normalize(to,1.0f);
+        arg.translocation[0] = 0.05;
+        tipl::reg::linear(from,handle->voxel.vs,to,handle->voxel.vs,
+                                  arg,tipl::reg::affine,tipl::reg::correlation(),terminated,0.01,0,tipl::reg::narrow_bound);
+        tipl::reg::linear(from,handle->voxel.vs,to,handle->voxel.vs,
+                                  arg,tipl::reg::affine,tipl::reg::correlation(),terminated,0.001,0,tipl::reg::narrow_bound);
+        tipl::transformation_matrix<double> T(arg,handle->voxel.dim,handle->voxel.vs,
+                                                  handle->voxel.dim,handle->voxel.vs);
         handle->rotate_one_dwi(i,T);
     });
     check_prog(1,1);
@@ -891,6 +906,7 @@ void reconstruction_window::on_actionCorrect_AP_PA_scans_triggered()
 void reconstruction_window::on_actionEnable_TEST_features_triggered()
 {
     ui->odf_resolving->setVisible(true);
+    ui->align_slices->setVisible(true);
 }
 
 void reconstruction_window::on_actionImage_upsample_to_T1W_TESTING_triggered()
@@ -993,10 +1009,12 @@ void reconstruction_window::on_actionSave_SRC_file_as_triggered()
 void reconstruction_window::on_actionEddy_Motion_Correction_triggered()
 {
     rec_motion_correction(handle.get());
+
     if(!prog_aborted())
     {
         handle->calculate_dwi_sum(true);
         load_b_table();
+        on_SlicePos_valueChanged(ui->SlicePos->value());
     }
 }
 
@@ -1022,5 +1040,31 @@ void reconstruction_window::on_show_bad_slice_clicked()
     }
     on_b_table_itemSelectionChanged();
     ui->bad_slice_label->setText(QString("A total %1 bad slices marked by red").arg(bad_slices.size()));
+
+}
+
+void reconstruction_window::on_align_slices_clicked()
+{
+    tipl::image<float,3> from(handle->voxel.dim);
+    tipl::image<float,3> to(handle->voxel.dim);
+    std::copy(handle->src_dwi_data[0],handle->src_dwi_data[0]+to.size(),to.begin());
+    std::copy(handle->src_dwi_data[ui->b_table->currentRow()],
+              handle->src_dwi_data[ui->b_table->currentRow()]+from.size(),from.begin());
+    tipl::normalize(from,1.0f);
+    tipl::normalize(to,1.0f);
+    std::shared_ptr<manual_alignment> manual(new manual_alignment(this,
+                                                                from,handle->voxel.vs,
+                                                                to,handle->voxel.vs,
+                                                                tipl::reg::rigid_body,
+                                                                tipl::reg::cost_type::mutual_info));
+    manual->on_rerun_clicked();
+    if(manual->exec() != QDialog::Accepted)
+        return;
+
+    handle->rotate_one_dwi(ui->b_table->currentRow(),manual->iT);
+
+    update_dimension();
+    load_b_table();
+    on_SlicePos_valueChanged(ui->SlicePos->value());
 
 }
