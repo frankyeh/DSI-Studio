@@ -319,7 +319,7 @@ const char* odf_average(const char* out_name,std::vector<std::string>& file_name
             gz_mat_read reader;
             set_title(file_name.c_str());
             if(!reader.load_from_file(file_name.c_str()))
-                throw std::exception("cannot open file");
+                throw std::runtime_error("cannot open file");
 
             const float* odf_buffer;
             const short* face_buffer;
@@ -336,7 +336,7 @@ const char* odf_average(const char* out_name,std::vector<std::string>& file_name
                !reader.read("odf_faces",row,face_num,face_buffer) ||
                !reader.read("odf_vertices",row,odf_num,odf_buffer) ||
                !reader.read("trans",row,col,mni_ptr))
-                throw std::exception("invalid FIB file format");
+                throw std::runtime_error("invalid FIB file format");
 
             if(index == 0)
             {
@@ -352,20 +352,20 @@ const char* odf_average(const char* out_name,std::vector<std::string>& file_name
             // check odf consistency
             {
                 if(odf_num != ti.vertices_count)
-                    throw std::exception("inconsistent ODF dimension");
+                    throw std::runtime_error("inconsistent ODF dimension");
                 if(dim != tipl::geometry<3>(dimension))
-                    throw std::exception("inconsistent image dimension");
+                    throw std::runtime_error("inconsistent image dimension");
                 for (unsigned int index = 0;index < col;++index,odf_buffer += 3)
                 {
                     if(std::fabs(ti.vertices[index][0]-odf_buffer[0]) > 0.0f ||
                        std::fabs(ti.vertices[index][1]-odf_buffer[1]) > 0.0f)
-                    throw std::exception("inconsistent ODF orientations");
+                    throw std::runtime_error("inconsistent ODF orientations");
                 }
             }
 
             odf_data buf;
             if(!buf.read(reader))
-                throw std::exception("cannot find ODF data");
+                throw std::runtime_error("cannot find ODF data");
 
             if(index == 0)
             {
