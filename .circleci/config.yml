@@ -22,7 +22,7 @@ jobs:
             e=1 && for i in {1..5}; do
               docker build \
                 --rm=false \
-                -t pennbbl/dsistudio:latest
+                -t pennbbl/dsistudio:latest \
               && e=0 && break || sleep 15
             done && [ "$e" -eq "0" ]
 
