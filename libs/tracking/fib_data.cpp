@@ -1029,14 +1029,15 @@ void animal_reg(const tipl::image<float,3>& from,tipl::vector<3> from_vs,
           tipl::transformation_matrix<double>& T,bool& terminated)
 {
     float PI = 3.14159265358979323846f;
-    float directions[4][3]={
+    float directions[5][3]={
+        {0.0f,0.0f,0.0f},
         {PI*0.5f,0.0f,0.0f},
         {PI*-0.5f,0.0f,0.0f},
         {PI*0.5f,0.0f,PI},
         {PI*-0.5f,0.0f,PI}
     };
     float cost = std::numeric_limits<float>::max();
-    tipl::par_for(4,[&](int i)
+    tipl::par_for(5,[&](int i)
     {
          tipl::affine_transform<double> arg;
          std::copy(directions[i],directions[i]+3,arg.rotation);
