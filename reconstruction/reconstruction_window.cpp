@@ -700,8 +700,13 @@ void reconstruction_window::on_SlicePos_valueChanged(int position)
 void rec_motion_correction(ImageModel* handle)
 {
     begin_prog("correcting motion...");
+    int down_size = 0;
     tipl::image<float,3> from(handle->voxel.dim);
     std::copy(handle->src_dwi_data[0],handle->src_dwi_data[0]+from.size(),from.begin());
+    for(int width = from.width();width > 128;width /= 2)
+        down_size++;
+    for(int i = 0;i < down_size;++i)
+        tipl::downsampling(from);
     tipl::filter::sobel(from);
     tipl::normalize(from,1.0f);
     tipl::par_for2(handle->src_bvalues.size(),[&](unsigned int i,int id)
@@ -716,6 +721,9 @@ void rec_motion_correction(ImageModel* handle)
         tipl::image<float,3> to(handle->voxel.dim);
         std::copy(handle->src_dwi_data[i],
                   handle->src_dwi_data[i]+to.size(),to.begin());
+
+        for(int i = 0;i < down_size;++i)
+            tipl::downsampling(to);
         tipl::filter::sobel(to);
         tipl::normalize(to,1.0f);
         arg.translocation[0] = 0.05;
@@ -723,6 +731,12 @@ void rec_motion_correction(ImageModel* handle)
                                   arg,tipl::reg::affine,tipl::reg::correlation(),terminated,0.01,0,tipl::reg::narrow_bound);
         tipl::reg::linear(from,handle->voxel.vs,to,handle->voxel.vs,
                                   arg,tipl::reg::affine,tipl::reg::correlation(),terminated,0.001,0,tipl::reg::narrow_bound);
+        for(int i = 0;i < down_size;++i)
+        {
+            arg.translocation[0] *= 2.0;
+            arg.translocation[1] *= 2.0;
+            arg.translocation[2] *= 2.0;
+        }
         tipl::transformation_matrix<double> T(arg,handle->voxel.dim,handle->voxel.vs,
                                                   handle->voxel.dim,handle->voxel.vs);
         handle->rotate_one_dwi(i,T);
