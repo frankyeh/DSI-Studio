@@ -25,14 +25,15 @@ jobs:
                 -t dsistudio/dsistudio:latest . \
               && e=0 && break || sleep 15
             done && [ "$e" -eq "0" ]
-      - run
-        name: Push docker image
-        no_output_timeout: 2h
-        command : |
-          if [[ -n "$DOCKER_PASS" ]]; then
-            docker login -u $DOCKER_USER -p $DOCKER_PASS
-            docker push dsistudio/dsistudio:latest
-          fi
+      - run:
+          name: Deploy to Docker Hub
+          no_output_timeout: 40m
+          command: |
+            if [[ -n "$DOCKER_PASS" ]]; then
+              docker login -u $DOCKER_USER -p $DOCKER_PASS
+              docker push dsistudio/dsistudio:latest
+            fi
+
 
 
   build_windows:
