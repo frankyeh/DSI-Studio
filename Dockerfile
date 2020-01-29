@@ -67,9 +67,15 @@ RUN mkdir /opt/dsi-studio \
   && mkdir build && cd build \
   && /opt/qt512/bin/qmake ../src && make \
   && cd /opt/dsi-studio \
-  && curl -sSLO 'https://upenn.box.com/shared/static/01r73d4a15utl13himv4d7cjpa6etf6z.gz' \
-  && tar xvfz 01r73d4a15utl13himv4d7cjpa6etf6z.gz \
-  && rm 01r73d4a15utl13himv4d7cjpa6etf6z.gz \
+  && curl -sSLO 'https://pitt.box.com/shared/static/n3ln8k7bakr7y5p0ekm3g4s0ucdmqkia.zip' \
+  && unzip n3ln8k7bakr7y5p0ekm3g4s0ucdmqkia.zip \
+  && rm n3ln8k7bakr7y5p0ekm3g4s0ucdmqkia.zip \
   && cd dsi_studio_64 \
+  && rm *.dll \
+  && rm *.exe \
+  && rm -rf iconengines \
+  && rm -rf imageformats \
+  && rm -rf platforms \
+  && rm -rf styles \
   && mv ../build/dsi_studio . \
   && rm -rf /opt/dsi-studio/src /opt/dsi-studio/build
