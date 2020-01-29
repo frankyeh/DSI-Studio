@@ -25,7 +25,7 @@ jobs:
                 -t dsistudio/dsistudio:latest . \
               && e=0 && break || sleep 15
             done && [ "$e" -eq "0" ]
-      - run:
+      - run
         name: Push docker image
         no_output_timeout: 2h
         command : |
