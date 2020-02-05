@@ -106,9 +106,9 @@ RegionTableWidget::RegionTableWidget(tracking_window& cur_tracking_window_,QWidg
 
     setItemDelegate(new ImageDelegate(this));
 
-    QObject::connect(this,SIGNAL(cellClicked(int,int)),this,SLOT(check_check_status(int,int)));
-    QObject::connect(this,SIGNAL(itemChanged(QTableWidgetItem*)),this,SLOT(updateRegions(QTableWidgetItem*)));
-
+    connect(this,SIGNAL(cellClicked(int,int)),this,SLOT(check_check_status(int,int)));
+    connect(this,SIGNAL(itemChanged(QTableWidgetItem*)),this,SLOT(updateRegions(QTableWidgetItem*)));
+    setEditTriggers(QAbstractItemView::DoubleClicked|QAbstractItemView::EditKeyPressed);
 }
 
 
