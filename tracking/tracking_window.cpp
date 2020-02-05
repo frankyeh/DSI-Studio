@@ -1100,35 +1100,27 @@ void tracking_window::on_zoom_3d_valueChanged(double)
 void tracking_window::restore_3D_window()
 {
     ui->centralLayout->addWidget(ui->main_widget);
-    gLdock.reset(0);
-}
-
-void tracking_window::float3dwindow(int w,int h)
-{
-    if(!gLdock.get())
-    {
-        gLdock.reset(new QGLDockWidget(this));
-        gLdock->setWindowTitle("3D Window");
-        gLdock->setAllowedAreas(Qt::NoDockWidgetArea);
-        gLdock->setWidget(ui->main_widget);
-    }
-    gLdock->setFloating(true);
-    gLdock->show();
-    gLdock->resize(w,h+44);
-    connect(gLdock.get(),SIGNAL(closedSignal()),this,SLOT(restore_3D_window()));
+    gLdock = nullptr;
 }
 
 void tracking_window::on_actionFloat_3D_window_triggered()
 {
-    if(gLdock.get())
-    {
-        if(gLdock->isFullScreen())
-            gLdock->showNormal();
-        else
-            gLdock->showFullScreen();
-    }
+    if(gLdock)
+        gLdock->showMaximized();
     else
-        float3dwindow(ui->main_widget->width(),ui->main_widget->height());
+    {
+        int w = ui->main_widget->width();
+        int h = ui->main_widget->height();
+        gLdock = new QGLDockWidget(this);
+        gLdock->setWindowTitle(windowTitle());
+        gLdock->setAllowedAreas(Qt::NoDockWidgetArea);
+        gLdock->setWidget(ui->main_widget);
+        gLdock->setFloating(true);
+        gLdock->show();
+        gLdock->resize(w,h+44);
+        connect(gLdock,SIGNAL(closedSignal()),this,SLOT(restore_3D_window()));
+        QMessageBox::information(this,"DSI Studio","Float 3D window again to maximize it",0);
+    }
 }
 
 void tracking_window::on_actionSave_tracking_parameters_triggered()
