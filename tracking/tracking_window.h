@@ -186,6 +186,12 @@ private slots:
     void on_actionApply_Operation_triggered();
     void on_actionSave_Slices_to_DICOM_triggered();
     void on_zoom_valueChanged(double arg1);
+    void Move_Slice_X();
+    void Move_Slice_X2();
+    void Move_Slice_Y();
+    void Move_Slice_Y2();
+    void Move_Slice_Z();
+    void Move_Slice_Z2();
 };
 
 #endif // TRACKING_WINDOW_H

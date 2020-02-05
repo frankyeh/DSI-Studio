@@ -258,6 +258,7 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         connect(regionWidget,SIGNAL(need_update()),&scene,SLOT(show_slice()));
         connect(regionWidget,SIGNAL(itemSelectionChanged()),&scene,SLOT(show_slice()));
         connect(regionWidget,SIGNAL(need_update()),glWidget,SLOT(updateGL()));
+
         connect(ui->actionNewRegion,SIGNAL(triggered()),regionWidget,SLOT(new_region()));
         connect(ui->actionNew_Super_Resolution_Region,SIGNAL(triggered()),regionWidget,SLOT(new_high_resolution_region()));
         connect(ui->actionOpenRegion,SIGNAL(triggered()),regionWidget,SLOT(load_region()));
@@ -396,6 +397,20 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
 
     } 
 
+    {
+        auto* ShortcutQ = new QShortcut(QKeySequence(tr("Q", "X+")),this);
+        auto* ShortcutA = new QShortcut(QKeySequence(tr("A", "X+")),this);
+        auto* ShortcutW = new QShortcut(QKeySequence(tr("W", "X+")),this);
+        auto* ShortcutS = new QShortcut(QKeySequence(tr("S", "X+")),this);
+        auto* ShortcutE = new QShortcut(QKeySequence(tr("E", "X+")),this);
+        auto* ShortcutD = new QShortcut(QKeySequence(tr("D", "X+")),this);
+        connect(ShortcutQ,SIGNAL(activated()),this,SLOT(Move_Slice_X()));
+        connect(ShortcutA,SIGNAL(activated()),this,SLOT(Move_Slice_X2()));
+        connect(ShortcutW,SIGNAL(activated()),this,SLOT(Move_Slice_Y()));
+        connect(ShortcutS,SIGNAL(activated()),this,SLOT(Move_Slice_Y2()));
+        connect(ShortcutE,SIGNAL(activated()),this,SLOT(Move_Slice_Z()));
+        connect(ShortcutD,SIGNAL(activated()),this,SLOT(Move_Slice_Z2()));
+    }
 
     qApp->installEventFilter(this);
 
@@ -407,6 +422,7 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         if((*this)["orientation_convention"].toInt() == 1)
             glWidget->set_view(2);
     }
+
 }
 
 void tracking_window::closeEvent(QCloseEvent *event)
@@ -963,31 +979,6 @@ void tracking_window::keyPressEvent ( QKeyEvent * event )
 {
     switch(event->key())
     {
-        case Qt::Key_Q:
-            ui->glSagSlider->setValue(ui->glSagSlider->value()+1);
-            event->accept();
-            break;
-        case Qt::Key_A:
-            ui->glSagSlider->setValue(ui->glSagSlider->value()-1);
-            event->accept();
-            break;
-        case Qt::Key_W:
-            ui->glCorSlider->setValue(ui->glCorSlider->value()+1);
-            event->accept();
-            break;
-        case Qt::Key_S:
-            ui->glCorSlider->setValue(ui->glCorSlider->value()-1);
-            event->accept();
-            break;
-        case Qt::Key_E:
-            ui->glAxiSlider->setValue(ui->glAxiSlider->value()+1);
-            event->accept();
-            break;
-        case Qt::Key_D:
-            ui->glAxiSlider->setValue(ui->glAxiSlider->value()-1);
-            event->accept();
-            break;
-
         case Qt::Key_Left:
             glWidget->move_by(-1,0);
             break;
@@ -1000,8 +991,12 @@ void tracking_window::keyPressEvent ( QKeyEvent * event )
         case Qt::Key_Down:
             glWidget->move_by(0,1);
             break;
+        default:
+            goto next;
     }
-
+    event->accept();
+    return;
+    next:
     if(event->key() >= Qt::Key_1 && event->key() <= Qt::Key_9)
     {
         QSettings settings;
@@ -2322,4 +2317,34 @@ void tracking_window::on_zoom_valueChanged(double arg1)
     set_data("roi_zoom",arg1);
     scene.center();
     scene.show_slice();
+}
+
+void tracking_window::Move_Slice_X()
+{
+    ui->glSagSlider->setValue(ui->glSagSlider->value()+1);
+}
+
+void tracking_window::Move_Slice_X2()
+{
+    ui->glSagSlider->setValue(ui->glSagSlider->value()-1);
+}
+
+void tracking_window::Move_Slice_Y()
+{
+    ui->glCorSlider->setValue(ui->glCorSlider->value()+1);
+}
+
+void tracking_window::Move_Slice_Y2()
+{
+    ui->glCorSlider->setValue(ui->glCorSlider->value()-1);
+}
+
+void tracking_window::Move_Slice_Z()
+{
+    ui->glAxiSlider->setValue(ui->glAxiSlider->value()+1);
+}
+
+void tracking_window::Move_Slice_Z2()
+{
+    ui->glAxiSlider->setValue(ui->glAxiSlider->value()-1);
 }
