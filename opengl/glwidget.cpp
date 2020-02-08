@@ -17,6 +17,37 @@
 #include "tracking/color_bar_dialog.hpp"
 #include "libs/tracking/tract_model.hpp"
 
+void get_bounding_box(QImage& p,int margin = 5)
+{
+    int l =p.width(), r = 0, t = p.height(), b = 0;
+    QRgb first_pixel = p.pixel(0,0);
+    for (int y = 0; y < p.height(); ++y) {
+        QRgb *row = (QRgb*)p.scanLine(y);
+        bool rowFilled = false;
+        for (int x = 0; x < p.width(); ++x)
+        {
+            if (row[x] != first_pixel)
+            {
+                rowFilled = true;
+                r = std::max(r, x);
+                if (l > x) {
+                    l = x;
+                    x = r; // shortcut to only search for new right bound from here
+                }
+            }
+        }
+        if (rowFilled) {
+            t = std::min(t, y);
+            b = y;
+        }
+    }
+    l = std::max(0,l-margin);
+    r = std::min(p.width()-1,r+margin);
+    t = std::max(0,t-margin);
+    b = std::min(p.height()-1,b+margin);
+    p = p.copy(QRect(l,t,r-l,b-t));
+}
+
 GLenum BlendFunc1[] = {GL_ZERO,GL_ONE,GL_DST_COLOR,
                       GL_ONE_MINUS_DST_COLOR,GL_SRC_ALPHA,
                       GL_ONE_MINUS_SRC_ALPHA,GL_DST_ALPHA,
@@ -2140,9 +2171,10 @@ void GLWidget::addSurface(void)
 
 void GLWidget::copyToClipboard(void)
 {
-    QApplication::clipboard()->setImage(grab_image());
+    QImage I = grab_image();
+    get_bounding_box(I);
+    QApplication::clipboard()->setImage(I);
 }
-
 
 
 void GLWidget::get3View(QImage& I,unsigned int type)
@@ -2160,6 +2192,7 @@ void GLWidget::get3View(QImage& I,unsigned int type)
     set_view_flip = true;
     set_view(2);
     QImage image2 = grab_image();
+
     if(type == 0)
     {
         QImage image3 = cur_tracking_window.scene.view_image.scaledToWidth(image0.width()).convertToFormat(QImage::Format_RGB32);
@@ -2173,12 +2206,18 @@ void GLWidget::get3View(QImage& I,unsigned int type)
     }
     if(type == 1) // horizontal
     {
-        QImage all(image0.width()*4,image0.height(),QImage::Format_RGB32);
+        get_bounding_box(image0);
+        get_bounding_box(image00);
+        get_bounding_box(image1);
+        get_bounding_box(image2);
+        int height_shift = (image2.height()-image0.height())/2;
+        QImage all(image0.width()+image00.width()+image1.width()+image2.width(),image2.height(),QImage::Format_RGB32);
         QPainter painter(&all);
-        painter.drawImage(0,0,image0);
-        painter.drawImage(image0.width(),0,image00);
-        painter.drawImage(image0.width()*2,0,image1);
-        painter.drawImage(image0.width()*3,((int)image0.height()-(int)image2.height())/2,image2);
+        painter.fillRect(all.rect(),image0.pixel(0,0));
+        painter.drawImage(0,height_shift,image0);
+        painter.drawImage(image0.width(),height_shift,image00);
+        painter.drawImage(image0.width()+image00.width(),height_shift,image1);
+        painter.drawImage(image0.width()+image00.width()+image1.width(),0,image2);
         I = all;
     }
     if(type == 2)
