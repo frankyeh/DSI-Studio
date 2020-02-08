@@ -443,6 +443,8 @@ void slice_view_scene::show_slice(void)
     else
     if(cur_tracking_window["roi_layout"].toInt() == 1)// 3 slices
     {
+        if(cur_tracking_window.glWidget->captured_image.isNull())
+            return;
         unsigned char old_dim = cur_tracking_window.cur_dim;
         QImage view1,view2,view3;
         cur_tracking_window.cur_dim = 0;
