@@ -469,7 +469,8 @@ bool tracking_window::command(QString cmd,QString param,QString param2)
 {
     if(glWidget->command(cmd,param,param2) ||
        scene.command(cmd,param,param2) ||
-       tractWidget->command(cmd,param,param2))
+       tractWidget->command(cmd,param,param2) ||
+       regionWidget->command(cmd,param,param2))
         return true;
     if(cmd == "restore_rendering")
     {
@@ -503,6 +504,13 @@ bool tracking_window::command(QString cmd,QString param,QString param2)
         ui->SliceModality->setCurrentIndex(index);
         return true;
     }
+    if(cmd == "set_roi_view_contrast")
+    {
+        ui->min_value_gl->setValue(param.toDouble());
+        ui->max_value_gl->setValue(param2.toDouble());
+        change_contrast();
+        return true;
+    }
     if(cmd == "set_param")
     {
         renderWidget->setData(param,param2);
@@ -510,7 +518,11 @@ bool tracking_window::command(QString cmd,QString param,QString param2)
         scene.show_slice();
         return true;
     }
-
+    if(cmd == "tract_to_roi")
+    {
+        on_actionTracts_to_seeds_triggered();
+        return true;
+    }
     if(cmd == "add_slice")
     {
         if(!addSlices(QStringList() << param,param,renderWidget->getData("slice_smoothing").toBool(),true))

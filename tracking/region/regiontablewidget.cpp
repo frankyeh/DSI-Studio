@@ -226,6 +226,15 @@ void RegionTableWidget::check_check_status(int row, int col)
     }
 }
 
+bool RegionTableWidget::command(QString cmd,QString,QString)
+{
+    if(cmd == "detele_all_region")
+    {
+        delete_all_region();
+        return true;
+    }
+    return false;
+}
 void RegionTableWidget::move_slice_to_current_region(void)
 {
     if(currentRow() == -1)

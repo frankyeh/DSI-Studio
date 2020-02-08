@@ -477,89 +477,82 @@ void group_connectometry_analysis::generate_report(std::string& output)
     }
 
 
-    std::ostringstream out_pos_corr,out_neg_corr;
     std::string index_name = QString(handle->db.index_name.c_str()).toUpper().toStdString();
-    if(fdr_threshold == 0.0) // using length threshold
-    {
-        out_pos_corr << " The connectometry analysis found "
-        << (fdr_pos_corr[length_threshold]>0.5 || !has_pos_corr_result ? "no track": pos_corr_tracks_result.c_str());
+    std::string track_hypothesis1 =
+        (model->type == 1 ? index_name+" positively correlated with "+foi_str : std::string("increased ")+index_name);
+    std::string track_hypothesis2 =
+        (model->type == 1 ? index_name+" negatively correlated with "+foi_str : std::string("decreased ")+index_name);
+    std::string fdr_result1 = std::string("(FDR ") + (fdr_threshold == 0.0f ? "=":"<") + " " +
+                            std::to_string(fdr_threshold == 0.0f ? fdr_pos_corr[uint32_t(length_threshold)]:fdr_threshold)+ ")";
+    std::string fdr_result2 = std::string("(FDR ") + (fdr_threshold == 0.0f ? "=":"<") + " " +
+                            std::to_string(fdr_threshold == 0.0f ? fdr_neg_corr[uint32_t(length_threshold)]:fdr_threshold)+ ")";
 
-        if(model->type == 1) // regression
-            out_pos_corr << " showing " << index_name << " positively correlated with " << foi_str;
-        else
-            out_pos_corr << " showing increased " << index_name;
-
-        out_pos_corr << " (FDR=" << fdr_pos_corr[length_threshold] << ").";
-
-        out_neg_corr << " The connectometry analysis found "
-        << (fdr_neg_corr[length_threshold]>0.5 || !has_neg_corr_result ? "no track": neg_corr_tracks_result.c_str());
-        if(model->type == 1) // regression
-            out_neg_corr << " showing " << index_name << " negatively correlated with " << foi_str;
-        else
-            out_neg_corr << " showing decreased " << index_name;
-        out_neg_corr << " (FDR=" << fdr_neg_corr[length_threshold] << ").";
-    }
-    else
-    {
-        out_pos_corr << " The connectometry analysis found "
-        << (!has_pos_corr_result ? "no track": pos_corr_tracks_result.c_str());
-        if(model->type == 1) // regression
-            out_pos_corr << " showing " << index_name << " positively correlated with " << foi_str;
-        else
-            out_pos_corr << " showing increased " << index_name;
-        out_pos_corr << ".";
-
-
-        out_neg_corr << " The connectometry analysis found "
-        << (!has_neg_corr_result ? "no track": neg_corr_tracks_result.c_str());
-        if(model->type == 1) // regression
-            out_neg_corr << " showing " << index_name << " negatively correlated with " << foi_str;
-        else
-            out_neg_corr << " showing decreased " << index_name;
-        out_neg_corr << ".";
-    }
 
 
     html_report << "<h2>Results</h2>" << std::endl;
+
+    // Positive correlation results
+    html_report << "<h3>Tracks with " << track_hypothesis1 << "</h3>" << std::endl;
+
     if(progress == 100)
     {
-        html_report << "<img src = \""<< QFileInfo(QString(output_file_name.c_str())+".fdr.jpg").fileName().toStdString() << "\" width=\"320\"/>" << std::endl;
+        html_report << "<p></p><img src = \""<< QFileInfo(QString(output_file_name.c_str())+".pos_corr_map.jpg").fileName().toStdString() << "\" width=\"600\"/>" << std::endl;
+        html_report << "<p></p><img src = \""<< QFileInfo(QString(output_file_name.c_str())+".pos_corr.jpg").fileName().toStdString() << "\" width=\"1200\"/>" << std::endl;
+        html_report << "<p><b>Fig.</b> Tracks with " << track_hypothesis1 << " " << fdr_result1 << "</p>" << std::endl;
+    }
+
+    {
+        html_report << "<p>";
+        if(fdr_pos_corr[uint32_t(length_threshold)]>0.5f || !has_pos_corr_result)
+            html_report << " The connectometry analysis found no significant result in tracks with ";
+        else
+            html_report << " The connectometry analysis found " << pos_corr_tracks_result << " showing ";
+        html_report << track_hypothesis1 << " " << fdr_result1 <<  ".</p>" << std::endl;
+    }
+
+
+    // Negative correlation results
+    html_report << "<h3>Tracks with " << track_hypothesis2 << "</h3>" << std::endl;
+
+    if(progress == 100)
+    {
+        html_report << "<p></p><img src = \""<< QFileInfo(QString(output_file_name.c_str())+".neg_corr_map.jpg").fileName().toStdString() << "\" width=\"600\"/>" << std::endl;
+        html_report << "<p></p><img src = \""<< QFileInfo(QString(output_file_name.c_str())+".neg_corr.jpg").fileName().toStdString() << "\" width=\"1200\"/>" << std::endl;
+        html_report << "<p><b>Fig.</b> Tracks with " << track_hypothesis2 << " " << fdr_result2 << "</p>" << std::endl;
+    }
+
+    {
+        html_report << "<p>";
+        if(fdr_neg_corr[uint32_t(length_threshold)]>0.5f || !has_neg_corr_result)
+            html_report << " The connectometry analysis found no significant result in tracks with ";
+        else
+            html_report << " The connectometry analysis found " << neg_corr_tracks_result << " showing ";
+        html_report << track_hypothesis2 << " " << fdr_result2 <<  ".</p>" << std::endl;
+    }
+
+    if(progress == 100)
+    {
+        std::string permutation_explained =
+    " The permutation was applied to subject labels to test results against permuted condition.\
+     The histogram under permutated condition represents the result under the null hypothesis.\
+     This null result is then used to test the histogram under nonpermutated condition to compute the FDR.\
+     A smaller difference between histograms suggests that the study finding is similar to null finding and having a lower significance,\
+     whereas a larger difference suggests greater significance of the study finding.";
+
+        html_report << "<h3>False discovery rate analysis</h3>" << std::endl;
+
+        html_report << "<p></p><img src = \""<< QFileInfo(QString(output_file_name.c_str())+".pos_corr.dist.jpg").fileName().toStdString() << "\" width=\"320\"/>" << std::endl;
+        html_report << "<p><b>Fig.</b> Permutation test showing the histograms of track counts with "<< track_hypothesis1 << ".</p>";
+
+
+        html_report << "<p></p><img src = \""<< QFileInfo(QString(output_file_name.c_str())+".neg_corr.dist.jpg").fileName().toStdString() << "\" width=\"320\"/>" << std::endl;
+        html_report << "<p><b>Fig.</b> Permutation test showing the histograms of track counts with "<< track_hypothesis2 << ".</p>";
+
+        html_report << permutation_explained << std::endl;
+        html_report << "<p></p><img src = \""<< QFileInfo(QString(output_file_name.c_str())+".fdr.jpg").fileName().toStdString() << "\" width=\"320\"/>" << std::endl;
         html_report << "<p><b>Fig.</b> The False discovery rate (FDR) at different track length </p>";
     }
-    if(model->type == 1) // regression
-        html_report << "<h3>Positive correlation between " << index_name << " and " << foi_str << "</h3>" << std::endl;
-    if(model->type == 3)
-        html_report << "<h3>Increased " << index_name << "</h3>" << std::endl;
 
-    if(progress == 100)
-    {
-        html_report << "<img src = \""<< QFileInfo(QString(output_file_name.c_str())+".pos_corr.jpg").fileName().toStdString() << "\" width=\"1200\"/>" << std::endl;
-        if(model->type == 1) // regression
-            html_report << "<p><b>Fig.</b> Tracks with " << index_name << " positively correlated with "<< foi_str << "</p>";
-        if(model->type == 3)
-            html_report << "<p><b>Fig.</b> Tracks with increased " << index_name << "</p>";
-        html_report << "<img src = \""<< QFileInfo(QString(output_file_name.c_str())+".pos_corr.dist.jpg").fileName().toStdString() << "\" width=\"320\"/>" << std::endl;
-        html_report << "<p><b>Fig.</b> Permuted versus non permuted results showing the differences against null distribution in tracks with positive correlation</p>";
-
-    }
-    html_report << "<p>" << out_pos_corr.str().c_str() << "</p>" << std::endl;
-
-    if(model->type == 1) // regression
-        html_report << "<h3>Negatively correlation between " << index_name << " and " << foi_str << "</h3>" << std::endl;
-    if(model->type == 3) // longitudinal
-        html_report << "<h3>Decreased " << index_name << "</h3>" << std::endl;
-
-    if(progress == 100)
-    {
-        html_report << "<img src = \""<< QFileInfo(QString(output_file_name.c_str())+".neg_corr.jpg").fileName().toStdString() << "\" width=\"1200\"/>" << std::endl;
-        if(model->type == 1) // regression
-            html_report << "<p><b>Fig.</b> Tracks with " << index_name << " negatively correlated with "<< foi_str << "</p>";
-        if(model->type == 3)
-            html_report << "<p><b>Fig.</b> Tracks with decreased " << index_name << ".</p>";
-        html_report << "<img src = \""<< QFileInfo(QString(output_file_name.c_str())+".neg_corr.dist.jpg").fileName().toStdString() << "\" width=\"320\"/>" << std::endl;
-        html_report << "<p><b>Fig.</b> Permuted versus non permuted results showing the differences against null distribution in tracks with negative correlation</p>";
-    }
-    html_report << "<p>" << out_neg_corr.str().c_str() << "</p>" << std::endl;
     html_report << "</body></html>" << std::endl;
     output = html_report.str();
 
@@ -588,11 +581,29 @@ void group_connectometry_analysis::generate_report(std::string& output)
         new_mdi->command("save_h3view_image",(output_file_name+".pos_corr.jpg").c_str());
         // do it twice to eliminate 3D artifact
         new_mdi->command("save_h3view_image",(output_file_name+".pos_corr.jpg").c_str());
+
+        new_mdi->command("tract_to_roi");
+        new_mdi->command("set_roi_view_index","icbm_t1w");
+        new_mdi->command("set_roi_view_contrast","0.0","190.0");
+
+        new_mdi->command("set_param","roi_zoom","16");
+        new_mdi->command("set_param","roi_layout","4");
+        new_mdi->command("save_roi_image",(output_file_name+".pos_corr_map.jpg").c_str(),"260");
+        new_mdi->command("detele_all_region");
+
+
         new_mdi->command("delete_all_tract");
         new_mdi->tractWidget->addNewTracts("lesser");
         new_mdi->tractWidget->tract_models[0]->add(*neg_corr_track.get());
         new_mdi->command("update_track");
         new_mdi->command("save_h3view_image",(output_file_name+".neg_corr.jpg").c_str());
+
+        new_mdi->command("tract_to_roi");
+        new_mdi->command("save_roi_image",(output_file_name+".neg_corr_map.jpg").c_str(),"260");
+        new_mdi->command("detele_all_region");
+        // restore roi layout
+        new_mdi->command("set_param","roi_layout","0");
+
         new_mdi->close();
     }
 }

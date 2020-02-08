@@ -288,17 +288,23 @@ void slice_view_scene::get_view_image(QImage& new_view_image)
     if(cur_tracking_window["orientation_convention"].toInt())
         flip_x = true;
     new_view_image = (!flip_x && !flip_y ? scaled_image : scaled_image.mirrored(flip_x,flip_y));
-    QPainter painter2(&new_view_image);
 
+
+    QPainter painter2(&new_view_image);
     if(cur_tracking_window["roi_ruler"].toInt())
         show_ruler(painter2);
+    add_R_label(painter2);
+}
+
+void slice_view_scene::add_R_label(QPainter& painter)
+{
     if(cur_tracking_window.cur_dim && cur_tracking_window["roi_label"].toInt())
     {
-        painter2.setPen(QPen(QColor(255,255,255)));
+        painter.setPen(QPen(QColor(255,255,255)));
         QFont f = font();  // start out with MainWindow's font..
         f.setPointSize(cur_tracking_window.get_scene_zoom()+10); // and make a bit smaller for legend
-        painter2.setFont(f);
-        painter2.drawText(5,5,new_view_image.width()-10,new_view_image.height()-10,
+        painter.setFont(f);
+        painter.drawText(5,5,painter.window().width()-10,painter.window().height()-10,
                          cur_tracking_window["orientation_convention"].toInt() ? Qt::AlignTop|Qt::AlignRight: Qt::AlignTop|Qt::AlignLeft,"R");
     }
 }
@@ -312,12 +318,12 @@ bool slice_view_scene::command(QString cmd,QString param,QString param2)
                     QString(cur_tracking_window.handle->view_item[cur_tracking_window.ui->SliceModality->currentIndex()].name.c_str())+"_"+
                     QString(cur_tracking_window["roi_layout"].toString())+
                     ".jpg";
-        if(param2 != "0")// mosaic
-        {
-            view_image.save(param);
-            return true;
-        }
         QImage output = view_image;
+        if(cur_tracking_window["roi_layout"].toInt() > 2 && !param2.isEmpty()) //mosaic
+        {
+            int cut_row = param2.toInt();
+            output = output.copy(QRect(0,cut_row,output.width(),output.height()-cut_row-cut_row));
+        }
         output.save(param);
         return true;
     }
@@ -499,6 +505,8 @@ void slice_view_scene::show_slice(void)
                 cur_tracking_window.regionWidget->draw_region(slice_image);
                 if(cur_dim != 2)
                     tipl::flip_y(slice_image);
+                if(cur_tracking_window["orientation_convention"].toInt())
+                    tipl::flip_x(slice_image);
                 tipl::vector<2,int> pos(dim[dim_order[cur_dim][0]]*(z%mosaic_size),
                                         dim[dim_order[cur_dim][1]]*(z/mosaic_size));
                 tipl::draw(slice_image,mosaic_image,pos);
@@ -508,11 +516,8 @@ void slice_view_scene::show_slice(void)
 
         QImage qimage((unsigned char*)&*mosaic_image.begin(),mosaic_image.width(),mosaic_image.height(),QImage::Format_RGB32);
         view_image = qimage.scaled(mosaic_image.width()*display_ratio/(float)mosaic_size,mosaic_image.height()*display_ratio/(float)mosaic_size);
-        if(cur_tracking_window["orientation_convention"].toInt())
-        {
-            QImage I = view_image;
-            view_image = I.mirrored(true,false);
-        }
+        QPainter painter2(&view_image);
+        add_R_label(painter2);
     }
     show_view(*this,view_image);
 }
