@@ -891,7 +891,7 @@ void reconstruction_window::on_actionCorrect_AP_PA_scans_triggered()
             QMessageBox::information(this,"error","Invalid NIFTI format",0);
             return;
         }
-        in >> I;
+        in.toLPS(I);
         src2.voxel.dim = I.geometry();
         src2.src_dwi_data.push_back(&I[0]);
     }

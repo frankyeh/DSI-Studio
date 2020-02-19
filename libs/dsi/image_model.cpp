@@ -934,6 +934,7 @@ void ImageModel::distortion_correction(const ImageModel& rhs)
         src_dwi_data[i] = &(new_dwi[i][0]);
 
     calculate_dwi_sum(false);
+    voxel.report += " The phase distortion was correlated using data from an opposiate phase encoding direction.";
 
 }
 
