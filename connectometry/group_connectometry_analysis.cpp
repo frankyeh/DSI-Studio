@@ -224,8 +224,7 @@ void group_connectometry_analysis::save_tracks_files(void)
                         break;
                     }
             }
-            for(double dis = 1.0;pos_corr_track->get_visible_track_count() > seed_count;dis+=0.5)
-                pos_corr_track->delete_repeated(dis);
+            pos_corr_track->delete_repeated(1.0);
             std::ostringstream out1;
             out1 << output_file_name << ".pos_corr.trk.gz";
             pos_corr_track->save_tracts_to_file(out1.str().c_str());
@@ -256,8 +255,7 @@ void group_connectometry_analysis::save_tracks_files(void)
                         break;
                     }
             }
-            for(double dis = 1.0;neg_corr_track->get_visible_track_count() > seed_count;dis+=0.5)
-                neg_corr_track->delete_repeated(dis);
+            neg_corr_track->delete_repeated(1.0);
             std::ostringstream out1;
             out1 << output_file_name << ".neg_corr.trk.gz";
             neg_corr_track->save_tracts_to_file(out1.str().c_str());
