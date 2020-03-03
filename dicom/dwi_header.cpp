@@ -108,6 +108,8 @@ bool DwiHeader::open(const char* filename)
                 man_id = 3;
             if (name == std::string("TO"))
                 man_id = 4;
+            if (name == std::string("UI"))
+                man_id = 5;
         }
     }
     // get TE
@@ -254,6 +256,22 @@ bool DwiHeader::open(const char* filename)
             std::istringstream in(b_str);
             in >> bvalue >> bvec[0] >> bvec[1] >> bvec[2];
         }
+    }
+        break;
+    case 5://UIH
+    {
+        unsigned int gvalue_length = 0;
+        // GE header
+        const double* gvalue = (const double*)header.get_data(0x0065,0x1037,gvalue_length);// B-vector
+        if(gvalue && gvalue_length == 24)
+        {
+            bvec[0] = float(gvalue[0]);
+            bvec[1] = float(gvalue[1]);
+            bvec[2] = float(gvalue[2]);
+        }
+        gvalue = (const double*)header.get_data(0x0065,0x1009,gvalue_length);//B-Value
+        if(gvalue && gvalue_length == 8)
+            bvalue = gvalue[0];;
     }
         break;
     }
