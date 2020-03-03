@@ -302,7 +302,6 @@ bool load_4d_nii(const char* file_name,std::vector<std::shared_ptr<DwiHeader> >&
     float m = float(std::numeric_limits<unsigned short>::max()-1);
     for(unsigned int index = 0;index < analyze_header.dim(4);++index)
     {
-        std::auto_ptr<DwiHeader> new_file(new DwiHeader);
         tipl::image<float,3> data;
         if(!analyze_header.toLPS(data,index == 0))
             break;
@@ -799,7 +798,7 @@ bool parse_dwi(QStringList file_list,
     src_error_msg.clear();
     if(QFileInfo(file_list[0]).fileName() == "2dseq")
     {
-        for(unsigned int index = 0;index < file_list.size();++index)
+        for(int index = 0;index < file_list.size();++index)
             load_4d_2dseq(file_list[index].toLocal8Bit().begin(),dwi_files);
         return !dwi_files.empty();
     }
@@ -815,9 +814,15 @@ bool parse_dwi(QStringList file_list,
             QFileInfo(file_list[0]).fileName().endsWith(".nii.gz"))
     {
         begin_prog("loading");
-        for(unsigned int i = 0;i < file_list.size();++i)
+        for(int i = 0;i < file_list.size();++i)
             if(!load_4d_nii(file_list[i].toLocal8Bit().begin(),dwi_files))
-                return false;
+            {
+                std::shared_ptr<DwiHeader> new_file(new DwiHeader);
+                if(new_file->open(file_list[i].toLocal8Bit().begin()))
+                    dwi_files.push_back(new_file);
+                else
+                    return false;
+            }
         return !dwi_files.empty();
     }
     if(file_list.size() == 1 && QFileInfo(file_list[0]).isDir()) // single folder with DICOM files
@@ -826,7 +831,7 @@ bool parse_dwi(QStringList file_list,
         QStringList dicom_file_list = cur_dir.entryList(QStringList("*.dcm"),QDir::Files|QDir::NoSymLinks);
         if(dicom_file_list.empty())
             return false;
-        for (unsigned int index = 0;index < dicom_file_list.size();++index)
+        for (int index = 0;index < dicom_file_list.size();++index)
             dicom_file_list[index] = file_list[0] + "/" + dicom_file_list[index];
         return parse_dwi(dicom_file_list,dwi_files);
     }
@@ -835,7 +840,7 @@ bool parse_dwi(QStringList file_list,
     if(file_list.size() > 1 && QFileInfo(file_list[0]).isDir() &&
             QFileInfo(file_list[0]+"/pdata/1/2dseq").exists())
     {
-        for(unsigned int index = 0;index < file_list.size();++index)
+        for(int index = 0;index < file_list.size();++index)
             parse_dwi(QStringList() << (file_list[index]+"/pdata/1/2dseq"),dwi_files);
         return !dwi_files.empty();
     }
@@ -855,19 +860,19 @@ bool parse_dwi(QStringList file_list,
     if(geo[2] == 1)
         return load_multiple_slice_dicom(file_list,dwi_files);
     // multiframe DICOM
-    for(unsigned int index = 0;index < file_list.size();++index)
+    for(int index = 0;index < file_list.size();++index)
         if(!load_dicom_multi_frame(file_list[index].toLocal8Bit().begin(),dwi_files))
             return false;
     return !dwi_files.empty();
 }
 void dicom_parser::load_table(void)
 {
-    unsigned int last_index = ui->tableWidget->rowCount();
-    ui->tableWidget->setRowCount(dwi_files.size());
+    int last_index = ui->tableWidget->rowCount();
+    ui->tableWidget->setRowCount(int(dwi_files.size()));
     double max_b = 0;
-    for(unsigned int index = last_index;index < dwi_files.size();++index)
+    for(size_t index = size_t(last_index);index < dwi_files.size();++index)
     {
-        if(dwi_files[index]->bvalue < 100)
+        if(dwi_files[index]->bvalue < 100.0f)
             dwi_files[index]->bvalue = 0.0f;
         ui->tableWidget->setItem(index, 0, new QTableWidgetItem(QFileInfo(dwi_files[index]->file_name.data()).fileName()));
         ui->tableWidget->setItem(index, 1, new QTableWidgetItem(QString::number(dwi_files[index]->bvalue)));

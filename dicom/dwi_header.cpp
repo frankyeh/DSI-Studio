@@ -59,6 +59,7 @@ bool DwiHeader::open(const char* filename)
         analyze_header >> image;
         tipl::flip_xy(image);
         analyze_header.get_voxel_size(voxel_size);
+        file_name = filename;
         return true;
     }
 
