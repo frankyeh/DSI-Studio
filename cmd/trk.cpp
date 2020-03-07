@@ -83,7 +83,11 @@ bool load_t1t2_nifti(std::shared_ptr<fib_data> handle,
     }
     handle->view_item.pop_back(); // remove the new item added by initialize
     if(nifti_geo != other_slice->source_images.geometry())
+    {
+        std::cout << "T1T2 dimension=" << other_slice->source_images.geometry() << std::endl;
+        std::cout << "T1T2 not used due to a different dimension" << std::endl;
         return false;
+    }
     if(other_slice->thread.get())
         other_slice->thread->wait();
     convert = other_slice->invT;
@@ -182,6 +186,8 @@ void get_connectivity_matrix(std::shared_ptr<fib_data> handle,
             else
             {
                 std::cout << roi_file_name << " is used as a native space ROI." << std::endl;
+                std::cout << roi_file_name << " dimension=" << handle->dim << std::endl;
+                std::cout << "DWI dimension=" << handle->dim << std::endl;
                 if(from.geometry() != handle->dim && !load_t1t2_nifti(handle,from.geometry(),convert))
                 {
                     std::cout << "ERROR:" << roi_file_name << " has a different image dimension from subject's DWI" << std::endl;
