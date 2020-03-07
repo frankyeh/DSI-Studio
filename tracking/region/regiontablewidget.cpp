@@ -582,10 +582,15 @@ bool qsdr_convert_native(std::shared_ptr<fib_data> handle,tipl::image<unsigned i
     }
     return false;
 }
-bool RegionTableWidget::load_multiple_roi_nii(QString file_name)
+
+bool load_nii(std::shared_ptr<fib_data> handle,
+              const std::string& file_name,
+              std::vector<std::pair<tipl::geometry<3>,tipl::matrix<4,4,float> > >& transform_lookup,
+              std::vector<std::shared_ptr<ROIRegion> >& regions,
+              std::vector<std::string>& names)
 {
     gz_nifti header;
-    if (!header.load_from_file(file_name.toLocal8Bit().begin()))
+    if (!header.load_from_file(file_name.c_str()))
         return false;
 
     tipl::image<unsigned int, 3> from;
@@ -628,51 +633,46 @@ bool RegionTableWidget::load_multiple_roi_nii(QString file_name)
 
     std::string des(header.get_descrip());
     if(multiple_roi)
-        get_roi_label(file_name,label_map,label_color,des.find("FreeSurfer") == 0);
+        get_roi_label(file_name.c_str(),label_map,label_color,des.find("FreeSurfer") == 0);
 
     tipl::matrix<4,4,float> convert;
     bool has_transform = false;
 
-    // searching for T1/T2 mappings
-    for(unsigned int index = 0;index < cur_tracking_window.slices.size();++index)
-    {
-        CustomSliceModel* slice = dynamic_cast<CustomSliceModel*>(cur_tracking_window.slices[index].get());
-        if(slice && from.geometry() == slice->geometry)
+    for(unsigned int index = 0;index < transform_lookup.size();++index)
+        if(from.geometry() == transform_lookup[index].first )
         {
-            convert = slice->invT;
+            convert = transform_lookup[index].second;
             has_transform = true;
             break;
         }
-    }
 
-    qsdr_convert_native(cur_tracking_window.handle,from);
+    qsdr_convert_native(handle,from);
 
-    if(from.geometry() != cur_tracking_window.handle->dim)
+    if(from.geometry() != handle->dim)
     {
-        float r1 = float(from.width())/float(cur_tracking_window.handle->dim[0]);
-        float r2 = float(from.height())/float(cur_tracking_window.handle->dim[1]);
-        float r3 = float(from.depth())/float(cur_tracking_window.handle->dim[2]);
+        float r1 = float(from.width())/float(handle->dim[0]);
+        float r2 = float(from.height())/float(handle->dim[1]);
+        float r3 = float(from.depth())/float(handle->dim[2]);
         if(std::fabs(r1-r2) < 0.02f && std::fabs(r1-r3) < 0.02f)
             has_transform = false;
         else
-        if(cur_tracking_window.handle->is_qsdr)// use transformation information
+        if(handle->is_qsdr)// use transformation information
         {
-            QMessageBox::information(this,"Warning","The nii file has different image dimension. Transformation will be applied to load the region",0);
             header.get_image_transformation(convert);
             convert.inv();
-            convert *= cur_tracking_window.handle->trans_to_mni;
+            convert *= handle->trans_to_mni;
             has_transform = true;
         }
     }
-
+    // single region ROI
     if(!multiple_roi)
     {
-        ROIRegion region(cur_tracking_window.handle);
-
+        regions.push_back(std::make_shared<ROIRegion>(handle));
+        names.push_back(QFileInfo(file_name.c_str()).baseName().toStdString());
         if(has_transform)
-            region.LoadFromBuffer(from,convert);
+            regions[0]->LoadFromBuffer(from,convert);
         else
-            region.LoadFromBuffer(from);
+            regions[0]->LoadFromBuffer(from);
 
         unsigned int color = 0;
         unsigned int type = roi_id;
@@ -692,18 +692,15 @@ bool RegionTableWidget::load_multiple_roi_nii(QString file_name)
                     std::istringstream(name_value[1]) >> type;
             }
         }catch(...){}
-        add_region(QFileInfo(file_name).baseName(),type,color);
-
-        regions.back()->assign(region.get_region_voxels_raw(),region.resolution_ratio);
-        item(currentRow(),0)->setCheckState(Qt::Checked);
-        item(currentRow(),0)->setData(Qt::ForegroundRole,QBrush(Qt::black));
+        regions.back()->show_region.color = color;
+        regions.back()->regions_feature = uint8_t(type);
         return true;
     }
 
     std::vector<std::vector<tipl::vector<3,short> > > region_points(value_list.size());
     if(has_transform)
     {
-        tipl::geometry<3> geo = cur_tracking_window.handle->dim;
+        tipl::geometry<3> geo = handle->dim;
         for (tipl::pixel_index<3>index(geo);index < geo.size();++index)
         {
             tipl::vector<3> p(index.begin()); // point in subject space
@@ -719,7 +716,7 @@ bool RegionTableWidget::load_multiple_roi_nii(QString file_name)
     }
     else
     {
-        if(from.geometry() == cur_tracking_window.handle->dim)
+        if(from.geometry() == handle->dim)
         {
             for (tipl::pixel_index<3>index(from.geometry());index < from.size();++index)
                 if(from[index.index()])
@@ -727,7 +724,7 @@ bool RegionTableWidget::load_multiple_roi_nii(QString file_name)
         }
         else
         {
-            float r = float(cur_tracking_window.handle->dim[0])/float(from.width());
+            float r = float(handle->dim[0])/float(from.width());
             if(r <= 1.0f)
             {
                 for (tipl::pixel_index<3>index(from.geometry());index < from.size();++index)
@@ -737,8 +734,8 @@ bool RegionTableWidget::load_multiple_roi_nii(QString file_name)
             }
             else
             {
-                for (tipl::pixel_index<3>index(cur_tracking_window.handle->dim);
-                            index < cur_tracking_window.handle->dim.size();++index)
+                for (tipl::pixel_index<3>index(handle->dim);
+                            index < handle->dim.size();++index)
                 {
                     tipl::vector<3> pos(index);
                     pos /= r;
@@ -752,18 +749,52 @@ bool RegionTableWidget::load_multiple_roi_nii(QString file_name)
             }
         }
     }
-    begin_prog("loading ROIs");
-    begin_update();
-    for(uint32_t i = 0;check_prog(i,region_points.size());++i)
+
+    for(uint32_t i = 0;i < region_points.size();++i)
         if(!region_points[i].empty())
         {
             unsigned short value = value_list[i];
             QString name = (label_map.find(value) == label_map.end() ?
-                 QFileInfo(file_name).baseName() + "_" + QString::number(value):QString(label_map[value].c_str()));
-            add_region(name,roi_id,label_color.empty() ? 0x00FFFFFF : label_color[value].color);
+                 QFileInfo(file_name.c_str()).baseName() + "_" + QString::number(value):QString(label_map[value].c_str()));
+            regions.push_back(std::make_shared<ROIRegion>(handle));
+            names.push_back(name.toStdString());
+            regions.back()->show_region.color = label_color.empty() ? 0x00FFFFFF : label_color[value].color;
             regions.back()->add_points(region_points[i],false,1.0f);
-            item(currentRow(),0)->setCheckState(Qt::Unchecked);
-            item(currentRow(),0)->setData(Qt::ForegroundRole,QBrush(Qt::gray));
+        }
+
+    return !regions.empty();
+}
+
+bool RegionTableWidget::load_multiple_roi_nii(QString file_name)
+{
+
+    std::vector<std::pair<tipl::geometry<3>,tipl::matrix<4,4,float> > > transform_lookup;
+    // searching for T1/T2 mappings
+    for(unsigned int index = 0;index < cur_tracking_window.slices.size();++index)
+    {
+        CustomSliceModel* slice = dynamic_cast<CustomSliceModel*>(cur_tracking_window.slices[index].get());
+        if(slice)
+            transform_lookup.push_back(std::make_pair(slice->geometry,slice->invT));
+    }
+    std::vector<std::shared_ptr<ROIRegion> > loaded_regions;
+    std::vector<std::string> names;
+    if(!load_nii(cur_tracking_window.handle,
+                 file_name.toStdString(),
+                 transform_lookup,
+                 loaded_regions,
+                 names))
+        return false;
+    begin_prog("loading ROIs");
+    begin_update();
+    for(uint32_t i = 0;check_prog(i,loaded_regions.size());++i)
+        {
+            add_region(names[i].c_str(),roi_id,loaded_regions[i]->show_region.color);
+            unsigned int color = regions.back()->show_region.color;
+            regions.back()->swap(*loaded_regions[i].get());
+            regions.back()->show_region.color = color;
+            item(currentRow(),0)->setCheckState(loaded_regions.size() == 1 ? Qt::Checked : Qt::Unchecked);
+            item(currentRow(),0)->setData(Qt::ForegroundRole,
+                loaded_regions.size() == 1 ? QBrush(Qt::black) : QBrush(Qt::gray));
         }
     end_update();
     return true;
