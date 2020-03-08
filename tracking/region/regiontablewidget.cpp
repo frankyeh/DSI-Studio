@@ -639,7 +639,7 @@ bool load_nii(std::shared_ptr<fib_data> handle,
     bool has_transform = false;
 
     for(unsigned int index = 0;index < transform_lookup.size();++index)
-        if(from.geometry() == transform_lookup[index].first )
+        if(from.geometry() == transform_lookup[index].first)
         {
             convert = transform_lookup[index].second;
             has_transform = true;

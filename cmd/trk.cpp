@@ -67,34 +67,34 @@ void get_roi_label(QString file_name,std::map<int,std::string>& label_map,
                           std::map<int,tipl::rgb>& label_color,bool is_freesurfer,bool mute_cmd);
 bool qsdr_convert_native(std::shared_ptr<fib_data> handle,
                          tipl::image<unsigned int, 3>& from);
-bool load_t1t2_nifti(std::shared_ptr<fib_data> handle,
-                     const tipl::geometry<3>& nifti_geo,
-                     tipl::matrix<4,4,float>& convert)
+bool get_t1t2_nifti(std::shared_ptr<fib_data> handle,
+                    tipl::geometry<3>& nifti_geo,
+                    tipl::matrix<4,4,float>& convert)
 {
     if(!po.has("t1t2"))
         return false;
-    std::shared_ptr<CustomSliceModel> other_slice(std::make_shared<CustomSliceModel>(handle));
-    std::vector<std::string> files;
-    files.push_back(po.get("t1t2"));
-    if(!other_slice->initialize(files,true))
+    static std::shared_ptr<CustomSliceModel> other_slice;
+    if(!other_slice.get())
     {
-        std::cout << "fail to insert T1T2" << std::endl;
-        return false;
+        other_slice = std::make_shared<CustomSliceModel>(handle);
+        std::vector<std::string> files;
+        files.push_back(po.get("t1t2"));
+        if(!other_slice->initialize(files,true))
+        {
+            std::cout << "ERROR: fail to load " << files.back() << std::endl;
+            return false;
+        }
+        handle->view_item.pop_back(); // remove the new item added by initialize
+        if(other_slice->thread.get())
+            other_slice->thread->wait();
     }
-    handle->view_item.pop_back(); // remove the new item added by initialize
-    if(nifti_geo != other_slice->source_images.geometry())
-    {
-        std::cout << "T1T2 dimension=" << other_slice->source_images.geometry() << std::endl;
-        std::cout << "T1T2 not used due to a different dimension" << std::endl;
-        return false;
-    }
-    if(other_slice->thread.get())
-        other_slice->thread->wait();
+    nifti_geo = other_slice->source_images.geometry();
     convert = other_slice->invT;
     std::cout << "registeration complete" << std::endl;
     std::cout << convert[0] << " " << convert[1] << " " << convert[2] << " " << convert[3] << std::endl;
     std::cout << convert[4] << " " << convert[5] << " " << convert[6] << " " << convert[7] << std::endl;
     std::cout << convert[8] << " " << convert[9] << " " << convert[10] << " " << convert[11] << std::endl;
+    std::cout << "T1T2 dimension=" << nifti_geo << std::endl;
     return true;
 }
 bool load_atlas_from_list(std::shared_ptr<fib_data> handle,
@@ -115,6 +115,10 @@ bool load_atlas_from_list(std::shared_ptr<fib_data> handle,
     }
     return true;
 }
+bool load_nii(std::shared_ptr<fib_data> handle,
+              const std::string& file_name,
+              std::vector<std::shared_ptr<ROIRegion> >& regions,
+              std::vector<std::string>& names);
 void get_connectivity_matrix(std::shared_ptr<fib_data> handle,
                              TractModel& tract_model)
 {
@@ -126,12 +130,20 @@ void get_connectivity_matrix(std::shared_ptr<fib_data> handle,
         source = po.get("output");
     if(source == "no_file" || source.empty())
         source = po.get("source");
-    for(unsigned int i = 0;i < connectivity_list.size();++i)
+    for(int i = 0;i < connectivity_list.size();++i)
     {
         std::string roi_file_name = connectivity_list[i].toStdString();
         std::cout << "loading " << roi_file_name << std::endl;
         ConnectivityMatrix data;
-
+        // atlas name?
+        if(!QFileInfo(roi_file_name.c_str()).exists())
+        {
+            std::vector<std::shared_ptr<atlas> > atlas_list;
+            if(!load_atlas_from_list(handle,roi_file_name,atlas_list))
+                continue;
+            data.set_atlas(atlas_list[0],handle->get_mni_mapping());
+        }
+        else
         if(QFileInfo(roi_file_name.c_str()).suffix() == "txt") // a roi list
         {
             std::string dir = QFileInfo(roi_file_name.c_str()).absolutePath().toStdString();
@@ -159,91 +171,25 @@ void get_connectivity_matrix(std::shared_ptr<fib_data> handle,
             data.set_regions(handle->dim,regions);
             std::cout << "a total of " << data.region_count << " regions are loaded." << std::endl;
         }
-        else
-        {
-            gz_nifti header;
-            tipl::image<unsigned int, 3> from;
-            tipl::matrix<4,4,float> convert;
-            // if an ROI file is assigned, load it
-            if (header.load_from_file(roi_file_name))
-                header.toLPS(from);
-            else
-            // roi_file_name is an atlas name
+        else {
+            std::vector<std::shared_ptr<ROIRegion> > regions;
+            std::vector<std::string> names;
+            if(load_nii(handle,roi_file_name,regions,names))
             {
-                std::vector<std::shared_ptr<atlas> > atlas_list;
-                if(!load_atlas_from_list(handle,roi_file_name,atlas_list))
-                    continue;
-                data.set_atlas(atlas_list[0],handle->get_mni_mapping());
-                goto SAVE_MATRIX;
+                data.region_name = names;
+                std::vector<std::vector<tipl::vector<3,short> > > points(regions.size());
+                for(size_t index = 0;index < points.size();++index)
+                    regions[index]->get_region_voxels(points[index]);
+                data.set_regions(handle->dim,points);
             }
-            if(handle->is_qsdr)
-            {
-                if(qsdr_convert_native(handle,from))
-                    std::cout << roi_file_name << " converted from native space to QSDR space." << std::endl;
-                else
-                    std::cout << roi_file_name << " is used as a QSDR space ROI." << std::endl;
+            else {
+                std::cout << "ERROR: cannot load the ROI file:" << roi_file_name << std::endl;
+                return;
             }
-            else
-            {
-                std::cout << roi_file_name << " is used as a native space ROI." << std::endl;
-                std::cout << roi_file_name << " dimension=" << handle->dim << std::endl;
-                std::cout << "DWI dimension=" << handle->dim << std::endl;
-                if(from.geometry() != handle->dim && !load_t1t2_nifti(handle,from.geometry(),convert))
-                {
-                    std::cout << "ERROR:" << roi_file_name << " has a different image dimension from subject's DWI" << std::endl;
-                    continue;
-                }
-            }
-            std::vector<unsigned char> value_map(std::numeric_limits<unsigned short>::max());
-            unsigned int max_value = 0;
-            for (tipl::pixel_index<3>index(from.geometry()); index < from.size();++index)
-            {
-                value_map[(unsigned short)from[index.index()]] = 1;
-                max_value = std::max<unsigned short>(from[index.index()],max_value);
-            }
-            value_map.resize(max_value+1);
-            unsigned short region_count = std::accumulate(value_map.begin(),value_map.end(),(unsigned short)0);
-            if(region_count < 2)
-            {
-                std::cout << "the ROI file should contain at least two regions to calculate the connectivity matrix." << std::endl;
-                continue;
-            }
-            std::cout << "total number of regions=" << region_count << std::endl;
-
-            // get label file
-            std::map<int,std::string> label_map;
-            std::map<int,tipl::rgb> label_color;
-            std::string des(header.get_descrip());
-            get_roi_label(roi_file_name.c_str(),label_map,label_color,des.find("FreeSurfer") == 0,false);
-            std::vector<std::vector<tipl::vector<3,short> > > regions;
-            for(unsigned int value = 1;value < value_map.size();++value)
-                if(value_map[value])
-                {
-                    tipl::image<unsigned char,3> mask(from.geometry());
-                    for(unsigned int i = 0;i < mask.size();++i)
-                        if(from[i] == value)
-                            mask[i] = 1;
-                    ROIRegion region(handle);
-                    if(from.geometry() != handle->dim)
-                        region.LoadFromBuffer(mask,convert);
-                    else
-                        region.LoadFromBuffer(mask);
-                    regions.push_back(std::vector<tipl::vector<3,short> >());
-                    region.get_region_voxels(regions.back());
-                    if(label_map.find(value) != label_map.end())
-                        data.region_name.push_back(label_map[value]);
-                    else
-                    {
-                        std::ostringstream out;
-                        out << "region" << value;
-                        data.region_name.push_back(out.str());
-                    }
-                }
-            data.set_regions(handle->dim,regions);
         }
-        SAVE_MATRIX:
-        for(unsigned int j = 0;j < connectivity_type_list.size();++j)
-        for(unsigned int k = 0;k < connectivity_value_list.size();++k)
+
+        for(int j = 0;j < connectivity_type_list.size();++j)
+        for(int k = 0;k < connectivity_value_list.size();++k)
             save_connectivity_matrix(tract_model,data,source,roi_file_name,connectivity_value_list[k].toStdString(),
                                      po.get("connectivity_threshold",0.001),
                                      connectivity_type_list[j].toLower() == QString("end"));
@@ -330,17 +276,11 @@ bool load_region(std::shared_ptr<fib_data> handle,
             {
                 int region_value = std::stoi(region_name);
                 std::cout << "select region with value=" << region_value << std::endl;
-                for(int i = 0 ;i < from.size();++i)
+                for(size_t i = 0 ;i < from.size();++i)
                     from[i] = (from[i] == region_value ? 1:0);
             }
-
-            tipl::matrix<4,4,float> convert;
-            if(load_t1t2_nifti(handle,from.geometry(),convert))
-            {
-                std::cout << "using t1t2 as the reference to load " << file_name << std::endl;
-                roi.LoadFromBuffer(from,convert);
-            }
-            else
+            std::cout << file_name << " dimension=" << from.geometry() << std::endl;
+            std::cout << "DWI dimension=" << handle->dim << std::endl;
             if(from.geometry() == handle->dim)
             {
                 std::cout << "loading " << file_name << "as a native space region" << std::endl;
@@ -348,7 +288,25 @@ bool load_region(std::shared_ptr<fib_data> handle,
             }
             else
             {
+                std::cout << file_name << " has a different dimension from DWI" << std::endl;
+                std::cout << "checking if there is --t1t2 assigned for registration" << std::endl;
+                tipl::geometry<3> t1t2_geo;
+                tipl::matrix<4,4,float> convert;
+                if(!get_t1t2_nifti(handle,t1t2_geo,convert))
+                {
+                    std::cout << "No --t1t2 assigned to guide warping the region file to DWI." << std::endl;
+                    std::cout << "loading " << file_name << "as an MNI space region" << std::endl;
+                    goto LOAD_MNI;
+                }
+                if(t1t2_geo != from.geometry())
+                {
+                    std::cout << "--t1t2 also has a different dimension." << std::endl;
+                    std::cout << "loading " << file_name << "as an MNI space region" << std::endl;
+                    goto LOAD_MNI;
+                }
+                std::cout << "using t1t2 as the reference to load " << file_name << std::endl;
                 std::cout << "loading " << file_name << "as an MNI space region" << std::endl;
+                roi.LoadFromBuffer(from,convert);
                 goto LOAD_MNI;
             }
         }

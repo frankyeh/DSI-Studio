@@ -155,12 +155,45 @@ void export_track_info(const std::string& file_name,
         }
         std::cout << "invalid export option:" << cmd << std::endl;
         continue;
-
     }
 }
 bool load_region(std::shared_ptr<fib_data> handle,
                  ROIRegion& roi,const std::string& region_text);
-
+bool get_t1t2_nifti(std::shared_ptr<fib_data> handle,
+                    tipl::geometry<3>& nifti_geo,
+                    tipl::matrix<4,4,float>& convert);
+bool load_nii(std::shared_ptr<fib_data> handle,
+              const std::string& file_name,
+              std::vector<std::pair<tipl::geometry<3>,tipl::matrix<4,4,float> > >& transform_lookup,
+              std::vector<std::shared_ptr<ROIRegion> >& regions,
+              std::vector<std::string>& names);
+bool load_nii(std::shared_ptr<fib_data> handle,
+              const std::string& file_name,
+              std::vector<std::shared_ptr<ROIRegion> >& regions,
+              std::vector<std::string>& names)
+{
+    std::vector<std::pair<tipl::geometry<3>,tipl::matrix<4,4,float> > > transform_lookup;
+    // --t1t2 provide registration
+    {
+        tipl::geometry<3> t1t2_geo;
+        tipl::matrix<4,4,float> convert;
+        if(get_t1t2_nifti(handle,t1t2_geo,convert))
+            transform_lookup.push_back(std::make_pair(t1t2_geo,convert));
+    }
+    if(!load_nii(handle,file_name,transform_lookup,regions,names))
+    {
+        std::cout << "ERROR: fail to load multi-region NIFTI file." << std::endl;
+        return false;
+    }
+    return true;
+}
+bool load_nii(std::shared_ptr<fib_data> handle,
+              const std::string& file_name,
+              std::vector<std::shared_ptr<ROIRegion> >& regions)
+{
+    std::vector<std::string> names;
+    return load_nii(handle,file_name,regions,names);
+}
 int trk_post(std::shared_ptr<fib_data> handle,
              TractModel& tract_model,
              const std::string& file_name,
@@ -214,7 +247,7 @@ int ana(void)
             std::regex reg("[,]");
             std::sregex_token_iterator first{text.begin(), text.end(),reg, -1},last;
             std::vector<std::string> roi_list = {first, last};
-            for(int i = 0;i < roi_list.size();++i)
+            for(size_t i = 0;i < roi_list.size();++i)
             {
                 std::shared_ptr<ROIRegion> region(new ROIRegion(handle));
                 if(!load_region(handle,*region.get(),roi_list[i]))
@@ -225,6 +258,13 @@ int ana(void)
                 region_list.push_back(roi_list[i]);
                 regions.push_back(region);
             }
+        }
+        if(po.has("regions") && !load_nii(handle,po.get("regions"),regions))
+            return 1;
+        if(regions.empty())
+        {
+            std::cout << "ERROR: no region assigned" << std::endl;
+            return 1;
         }
         std::string result;
         get_regions_statistics(handle,regions,region_list,result);

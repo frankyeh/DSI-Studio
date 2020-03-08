@@ -17,8 +17,6 @@ void calculate_shell(const std::vector<float>& bvalues,std::vector<unsigned int>
 bool is_dsi_half_sphere(const std::vector<unsigned int>& shell);
 bool is_dsi(const std::vector<unsigned int>& shell);
 bool need_scheme_balance(const std::vector<unsigned int>& shell);
-bool load_region(std::shared_ptr<fib_data> handle,
-                 ROIRegion& roi,const std::string& region_text);
 /**
  perform reconstruction
  */
