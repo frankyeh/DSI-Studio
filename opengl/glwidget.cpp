@@ -1883,7 +1883,7 @@ void GLWidget::mousePressEvent(QMouseEvent *event)
             return;
         }
         // if only slice is selected or slice is at the front, then move slice
-        if(!object_selected || object_distance > slice_distance)
+        if(slice_selected && object_distance > slice_distance)
         {
             editing_option = dragging;
             return;
@@ -1996,7 +1996,6 @@ void GLWidget::mouseMoveEvent(QMouseEvent *event)
 
     if(editing_option == moving)
     {
-
         std::vector<tipl::vector<3,float> > points(4);
         slice_location(moving_at_slice_index,points);
         get_view_dir(cur_pos,dir2);
@@ -2020,7 +2019,6 @@ void GLWidget::mouseMoveEvent(QMouseEvent *event)
     // move slice
     if(editing_option == dragging)
     {
-
         std::vector<tipl::vector<3,float> > points(4);
         slice_location(moving_at_slice_index,points);
         get_view_dir(cur_pos,dir2);
