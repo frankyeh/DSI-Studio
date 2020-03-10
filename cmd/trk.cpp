@@ -63,10 +63,6 @@ void save_connectivity_matrix(TractModel& tract_model,
     std::ofstream out(network_measures.c_str());
     out << report;
 }
-void get_roi_label(QString file_name,std::map<int,std::string>& label_map,
-                          std::map<int,tipl::rgb>& label_color,bool is_freesurfer,bool mute_cmd);
-bool qsdr_convert_native(std::shared_ptr<fib_data> handle,
-                         tipl::image<unsigned int, 3>& from);
 bool get_t1t2_nifti(std::shared_ptr<fib_data> handle,
                     tipl::geometry<3>& nifti_geo,
                     tipl::matrix<4,4,float>& convert)

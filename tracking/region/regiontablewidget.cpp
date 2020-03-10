@@ -516,15 +516,17 @@ void load_nii_label(const char* filename,std::map<int,std::string>& label_map)
     }
 }
 void get_roi_label(QString file_name,std::map<int,std::string>& label_map,
-                          std::map<int,tipl::rgb>& label_color,bool is_free_surfer,bool mute_cmd = true)
+                          std::map<int,tipl::rgb>& label_color,bool is_free_surfer,bool verbose)
 {
     label_map.clear();
     label_color.clear();
     QString base_name = QFileInfo(file_name).baseName();
+    if(verbose)
+        std::cout << "looking for region label file" << std::endl;
     if(base_name.contains("aparc+aseg") || is_free_surfer) // FreeSurfer
     {
-        if(!mute_cmd)
-            std::cout << "Use freesurfer labels." << std::endl;
+        if(verbose)
+            std::cout << "using freesurfer labels." << std::endl;
         QFile data(":/data/FreeSurferColorLUT.txt");
         if (data.open(QIODevice::ReadOnly | QIODevice::Text))
         {
@@ -548,46 +550,20 @@ void get_roi_label(QString file_name,std::map<int,std::string>& label_map,
     if(QFileInfo(label_file).exists())
     {
         load_nii_label(label_file.toLocal8Bit().begin(),label_map);
-        std::cout << "load label file:" << label_file.toStdString() << std::endl;
+        if(verbose)
+            std::cout << "label file loaded:" << label_file.toStdString() << std::endl;
         return;
     }
-    if(!mute_cmd)
+    if(verbose)
         std::cout << "no label file found. Use default ROI numbering." << std::endl;
 }
 bool is_label_image(const tipl::image<float,3>& I);
-bool qsdr_convert_native(std::shared_ptr<fib_data> handle,tipl::image<unsigned int, 3>& from)
-{
-    if(from.geometry() != handle->dim && handle->is_qsdr)// use transformation information
-    {
-        tipl::image<unsigned int, 3> new_from;
-        if(!handle->native_position.empty())
-        for(unsigned int index = 0;index < handle->view_item.size();++index)
-            if(handle->view_item[index].native_geo == from.geometry())
-            {
-                auto T = handle->view_item[index].native_trans;
-                new_from.resize(handle->dim);
-                for(size_t i = 0;i < new_from.size();++i)
-                {
-                    auto pos = handle->native_position[i];
-                    T(pos);
-                    tipl::estimate(from,pos,new_from[i],tipl::nearest);
-                }
-                break;
-            }
-            if(!new_from.empty())
-            {
-                new_from.swap(from);
-                return true;
-            }
-    }
-    return false;
-}
-
 bool load_nii(std::shared_ptr<fib_data> handle,
               const std::string& file_name,
               std::vector<std::pair<tipl::geometry<3>,tipl::matrix<4,4,float> > >& transform_lookup,
               std::vector<std::shared_ptr<ROIRegion> >& regions,
-              std::vector<std::string>& names)
+              std::vector<std::string>& names,
+              bool verbose)
 {
     gz_nifti header;
     if (!header.load_from_file(file_name.c_str()))
@@ -607,6 +583,11 @@ bool load_nii(std::shared_ptr<fib_data> handle,
         }
     }
 
+    if(verbose)
+    {
+        std::cout << "DWI dimension=" << handle->dim << std::endl;
+        std::cout << "NIFTI dimension=" << from.geometry() << std::endl;
+    }
     std::vector<unsigned short> value_list;
     std::vector<unsigned short> value_map(std::numeric_limits<unsigned short>::max()+1);
 
@@ -627,43 +608,94 @@ bool load_nii(std::shared_ptr<fib_data> handle,
 
     bool multiple_roi = value_list.size() > 1;
 
+    if(verbose)
+        std::cout << (multiple_roi ? "nifti loaded as multiple ROI file":"nifti loaded as single ROI file") << std::endl;
 
     std::map<int,std::string> label_map;
     std::map<int,tipl::rgb> label_color;
 
     std::string des(header.get_descrip());
     if(multiple_roi)
-        get_roi_label(file_name.c_str(),label_map,label_color,des.find("FreeSurfer") == 0);
+        get_roi_label(file_name.c_str(),label_map,label_color,des.find("FreeSurfer") == 0,verbose);
 
     tipl::matrix<4,4,float> convert;
     bool has_transform = false;
+    bool scale_image = false;
 
-    for(unsigned int index = 0;index < transform_lookup.size();++index)
-        if(from.geometry() == transform_lookup[index].first)
-        {
-            convert = transform_lookup[index].second;
-            has_transform = true;
-            break;
-        }
-
-    qsdr_convert_native(handle,from);
 
     if(from.geometry() != handle->dim)
     {
-        float r1 = float(from.width())/float(handle->dim[0]);
-        float r2 = float(from.height())/float(handle->dim[1]);
-        float r3 = float(from.depth())/float(handle->dim[2]);
-        if(std::fabs(r1-r2) < 0.02f && std::fabs(r1-r3) < 0.02f)
-            has_transform = false;
-        else
-        if(handle->is_qsdr)// use transformation information
+        if(verbose)
+            std::cout << "NIFTI file has a different dimension from DWI." << std::endl;
+
+        if(handle->is_qsdr)
         {
+            tipl::image<unsigned int, 3> new_from;
+            if(!handle->native_position.empty())
+            for(unsigned int index = 0;index < handle->view_item.size();++index)
+                if(handle->view_item[index].native_geo == from.geometry())
+                {
+                    auto T = handle->view_item[index].native_trans;
+                    new_from.resize(handle->dim);
+                    for(size_t i = 0;i < new_from.size();++i)
+                    {
+                        auto pos = handle->native_position[i];
+                        T(pos);
+                        tipl::estimate(from,pos,new_from[i],tipl::nearest);
+                    }
+                    break;
+                }
+            if(!new_from.empty())
+            {
+                if(verbose)
+                    std::cout << "applying QSDR warpping to the native space NIFTI file" << std::endl;
+                new_from.swap(from);
+                goto end;
+            }
+        }
+
+        if(verbose)
+            std::cout << "looking for a matched dimension from loaded t1wt2w." << std::endl;
+        for(unsigned int index = 0;index < transform_lookup.size();++index)
+            if(from.geometry() == transform_lookup[index].first)
+            {
+                if(verbose)
+                    std::cout << "find a matched dimension from loaded t1wt2w." << std::endl;
+                convert = transform_lookup[index].second;
+                has_transform = true;
+                goto end;
+            }
+
+        if(handle->is_qsdr)
+        {
+            if(verbose)
+                std::cout << "loaded NIFTI file used as MNI space image." << std::endl;
             header.get_image_transformation(convert);
             convert.inv();
             convert *= handle->trans_to_mni;
             has_transform = true;
+            goto end;
+        }
+
+        float r1 = float(from.width())/float(handle->dim[0]);
+        float r2 = float(from.height())/float(handle->dim[1]);
+        float r3 = float(from.depth())/float(handle->dim[2]);
+        if(std::fabs(r1-r2) < 0.02f && std::fabs(r1-r3) < 0.02f)
+        {
+            has_transform = false;
+            scale_image = true;
+        }
+        else
+        {
+            if(verbose)
+            {
+                std::cout << "ERROR: The ROI file has a different dimension from DWI, and there is no registration strategy." << std::endl;
+                std::cout << "ERROR: use --t1t2 to load the original T1W/T2W for guiding the registration." << std::endl;
+            }
+            return false;
         }
     }
+    end:
     // single region ROI
     if(!multiple_roi)
     {
@@ -698,31 +730,32 @@ bool load_nii(std::shared_ptr<fib_data> handle,
     }
 
     std::vector<std::vector<tipl::vector<3,short> > > region_points(value_list.size());
-    if(has_transform)
+    if(from.geometry() == handle->dim)
     {
-        tipl::geometry<3> geo = handle->dim;
-        for (tipl::pixel_index<3>index(geo);index < geo.size();++index)
-        {
-            tipl::vector<3> p(index.begin()); // point in subject space
-            p.to(convert); // point in "from" space
-            p.round();
-            if (from.geometry().is_valid(p))
-            {
-                unsigned int value = from.at(uint32_t(p[0]),uint32_t(p[1]),uint32_t(p[2]));
-                if(value)
-                    region_points[value_map[value]].push_back(tipl::vector<3,short>(index.x(),index.y(),index.z()));
-            }
-        }
+        for (tipl::pixel_index<3>index(from.geometry());index < from.size();++index)
+            if(from[index.index()])
+                region_points[value_map[from[index.index()]]].push_back(tipl::vector<3,short>(index.x(), index.y(),index.z()));
     }
     else
     {
-        if(from.geometry() == handle->dim)
+        if(has_transform)
         {
-            for (tipl::pixel_index<3>index(from.geometry());index < from.size();++index)
-                if(from[index.index()])
-                    region_points[value_map[from[index.index()]]].push_back(tipl::vector<3,short>(index.x(), index.y(),index.z()));
+            tipl::geometry<3> geo = handle->dim;
+            for (tipl::pixel_index<3>index(geo);index < geo.size();++index)
+            {
+                tipl::vector<3> p(index.begin()); // point in subject space
+                p.to(convert); // point in "from" space
+                p.round();
+                if (from.geometry().is_valid(p))
+                {
+                    unsigned int value = from.at(uint32_t(p[0]),uint32_t(p[1]),uint32_t(p[2]));
+                    if(value)
+                        region_points[value_map[value]].push_back(tipl::vector<3,short>(index.x(),index.y(),index.z()));
+                }
+            }
         }
         else
+        if(scale_image)
         {
             float r = float(handle->dim[0])/float(from.width());
             if(r <= 1.0f)
@@ -732,22 +765,9 @@ bool load_nii(std::shared_ptr<fib_data> handle,
                     region_points[value_map[from[index.index()]]].
                             push_back(tipl::vector<3,short>(r*index.x(), r*index.y(),r*index.z()));
             }
-            else
-            {
-                for (tipl::pixel_index<3>index(handle->dim);
-                            index < handle->dim.size();++index)
-                {
-                    tipl::vector<3> pos(index);
-                    pos /= r;
-                    pos.round();
-                    if(!from.geometry().is_valid(pos))
-                        continue;
-                    tipl::pixel_index<3> new_index(pos[0],pos[1],pos[2],from.geometry());
-                    region_points[value_map[from[new_index.index()]]].push_back(
-                                tipl::vector<3,short>(index));
-                }
-            }
         }
+        else
+            return false;
     }
 
     for(uint32_t i = 0;i < region_points.size();++i)
@@ -761,7 +781,8 @@ bool load_nii(std::shared_ptr<fib_data> handle,
             regions.back()->show_region.color = label_color.empty() ? 0x00FFFFFF : label_color[value].color;
             regions.back()->add_points(region_points[i],false,1.0f);
         }
-
+    if(verbose)
+        std::cout << "a total of " << regions.size() << " regions are loaded." << std::endl;
     return !regions.empty();
 }
 
@@ -782,7 +803,7 @@ bool RegionTableWidget::load_multiple_roi_nii(QString file_name)
                  file_name.toStdString(),
                  transform_lookup,
                  loaded_regions,
-                 names))
+                 names,false))
         return false;
     begin_prog("loading ROIs");
     begin_update();
@@ -808,15 +829,20 @@ void RegionTableWidget::load_region(void)
     if (filenames.isEmpty())
         return;
 
-    for (unsigned int index = 0;index < filenames.size();++index)
+    for (int index = 0;index < filenames.size();++index)
     {
         // check for multiple nii
-        if((QFileInfo(filenames[index]).suffix() == "gz" ||
+        if(QFileInfo(filenames[index]).suffix() == "gz" ||
             QFileInfo(filenames[index]).suffix() == "nii" ||
-            QFileInfo(filenames[index]).suffix() == "hdr") &&
-                load_multiple_roi_nii(filenames[index]))
+            QFileInfo(filenames[index]).suffix() == "hdr")
+        {
+            if(!load_multiple_roi_nii(filenames[index]))
+            {
+                QMessageBox::information(this,"error","Image dimension mismatch. Please insert the original T1W/T2W first.",0);
+                return;
+            }
             continue;
-
+        }
         ROIRegion region(cur_tracking_window.handle);
         if(!region.LoadFromFile(filenames[index].toLocal8Bit().begin()))
         {

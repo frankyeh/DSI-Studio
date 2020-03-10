@@ -166,7 +166,7 @@ bool load_nii(std::shared_ptr<fib_data> handle,
               const std::string& file_name,
               std::vector<std::pair<tipl::geometry<3>,tipl::matrix<4,4,float> > >& transform_lookup,
               std::vector<std::shared_ptr<ROIRegion> >& regions,
-              std::vector<std::string>& names);
+              std::vector<std::string>& names,bool verbose);
 bool load_nii(std::shared_ptr<fib_data> handle,
               const std::string& file_name,
               std::vector<std::shared_ptr<ROIRegion> >& regions,
@@ -180,19 +180,12 @@ bool load_nii(std::shared_ptr<fib_data> handle,
         if(get_t1t2_nifti(handle,t1t2_geo,convert))
             transform_lookup.push_back(std::make_pair(t1t2_geo,convert));
     }
-    if(!load_nii(handle,file_name,transform_lookup,regions,names))
+    if(!load_nii(handle,file_name,transform_lookup,regions,names,true))
     {
         std::cout << "ERROR: fail to load multi-region NIFTI file." << std::endl;
         return false;
     }
     return true;
-}
-bool load_nii(std::shared_ptr<fib_data> handle,
-              const std::string& file_name,
-              std::vector<std::shared_ptr<ROIRegion> >& regions)
-{
-    std::vector<std::string> names;
-    return load_nii(handle,file_name,regions,names);
 }
 int trk_post(std::shared_ptr<fib_data> handle,
              TractModel& tract_model,
@@ -259,7 +252,7 @@ int ana(void)
                 regions.push_back(region);
             }
         }
-        if(po.has("regions") && !load_nii(handle,po.get("regions"),regions))
+        if(po.has("regions") && !load_nii(handle,po.get("regions"),regions,region_list))
             return 1;
         if(regions.empty())
         {
@@ -267,6 +260,7 @@ int ana(void)
             return 1;
         }
         std::string result;
+        std::cout << "calculating region statistics at a total of " << regions.size() << " regions" << std::endl;
         get_regions_statistics(handle,regions,region_list,result);
         std::string file_name(po.get("source"));
         file_name += ".statistics.txt";
