@@ -213,7 +213,7 @@ int ana(void)
         out << "fiber coherence index\t" << result.first << std::endl;
     }
 
-    if(po.has("atlas") || po.has("region"))
+    if(po.has("atlas") || po.has("region") || po.has("regions"))
     {
         std::vector<std::string> region_list;
         std::vector<std::shared_ptr<ROIRegion> > regions;
