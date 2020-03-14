@@ -206,11 +206,13 @@ std::string ImageModel::check_b_table(void)
     for(int i = 0;i < 24;++i)
     {
         if(i == best)
-            std::cout << (txt[i]+1) << "=BEST,";
+            std::cout << (txt[i]+1) << "=BEST";
         else
-            std::cout << (txt[i]+1) << "=-" << int(100.0f*(result[best]-result[i])/(result[best]+1.0f)) << "%,";
+            std::cout << (txt[i]+1) << "=-" << int(100.0f*(result[best]-result[i])/(result[best]+1.0f)) << "%";
         if(i % 8 == 7)
             std::cout << std::endl;
+        else
+            std::cout << ",";
     }
 
     if(result[best] > cur_score)
