@@ -164,19 +164,20 @@ public:
 
 
 class atlas;
+class ROIRegion;
 class ConnectivityMatrix{
 public:
 
     tipl::image<float,2> matrix_value;
 public:
     std::vector<std::vector<short> > region_map;
-    unsigned int region_count;
+    size_t region_count;
     std::vector<std::string> region_name;
     std::string error_msg,atlas_name;
     float overlap_ratio;
     void set_atlas(std::shared_ptr<atlas> data,const tipl::image<tipl::vector<3,float>,3 >& mni_position);
     void set_regions(const tipl::geometry<3>& geo,
-                     const std::vector<std::vector<tipl::vector<3,short> > >& regions);
+                     const std::vector<std::shared_ptr<ROIRegion> >& regions);
 public:
     void save_to_image(tipl::color_image& cm);
     void save_to_file(const char* file_name);

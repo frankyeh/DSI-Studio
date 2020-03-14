@@ -146,22 +146,21 @@ void get_connectivity_matrix(std::shared_ptr<fib_data> handle,
             dir += "/";
             std::ifstream in(roi_file_name.c_str());
             std::string line;
-            std::vector<std::vector<tipl::vector<3,short> > > regions;
+            std::vector<std::shared_ptr<ROIRegion> > regions;
             while(std::getline(in,line))
             {
-                ROIRegion region(handle);
+                std::shared_ptr<ROIRegion> region(new ROIRegion(handle));
                 std::string fn;
                 if(QFileInfo(line.c_str()).exists())
                     fn = line;
                 else
                     fn = dir + line;
-                if(!region.LoadFromFile(fn.c_str()))
+                if(!region->LoadFromFile(fn.c_str()))
                 {
                     std::cout << "failed to open file as a region:" << fn << std::endl;
                     return;
                 }
-                regions.push_back(std::vector<tipl::vector<3,short> >());
-                region.get_region_voxels(regions.back());
+                regions.push_back(region);
                 data.region_name.push_back(QFileInfo(line.c_str()).baseName().toStdString());
             }
             data.set_regions(handle->dim,regions);
@@ -173,10 +172,7 @@ void get_connectivity_matrix(std::shared_ptr<fib_data> handle,
             if(load_nii(handle,roi_file_name,regions,names))
             {
                 data.region_name = names;
-                std::vector<std::vector<tipl::vector<3,short> > > points(regions.size());
-                for(size_t index = 0;index < points.size();++index)
-                    regions[index]->get_region_voxels(points[index]);
-                data.set_regions(handle->dim,points);
+                data.set_regions(handle->dim,regions);
             }
             else {
                 std::cout << "ERROR: cannot load the ROI file:" << roi_file_name << std::endl;

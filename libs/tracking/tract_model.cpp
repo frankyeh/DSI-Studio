@@ -2430,21 +2430,22 @@ void ConnectivityMatrix::save_to_connectogram(const char* file_name)
 }
 
 void ConnectivityMatrix::set_regions(const tipl::geometry<3>& geo,
-                                     const std::vector<std::vector<tipl::vector<3,short> > >& regions)
+                                     const std::vector<std::shared_ptr<ROIRegion> >& regions)
 {
     region_count = regions.size();
-
     region_map.clear();
     region_map.resize(geo.size());
 
-    std::vector<std::set<short> > regions_set(geo.size());
-    for(unsigned int roi = 0;roi < region_count;++roi)
+    std::vector<std::set<uint16_t> > regions_set(geo.size());
+    for(size_t roi = 0;roi < regions.size();++roi)
     {
-        for(unsigned int index = 0;index < regions[roi].size();++index)
+        std::vector<tipl::vector<3,short> > points;
+        regions[roi]->get_region_voxels(points);
+        for(size_t index = 0;index < points.size();++index)
         {
-            tipl::vector<3,short> pos = regions[roi][index];
+            tipl::vector<3,short> pos = points[index];
             if(geo.is_valid(pos))
-                regions_set[tipl::pixel_index<3>(pos[0],pos[1],pos[2],geo).index()].insert(roi);
+                regions_set[tipl::pixel_index<3>(pos[0],pos[1],pos[2],geo).index()].insert(uint16_t(roi));
         }
     }
     unsigned int overlap_count = 0,total_count = 0;
