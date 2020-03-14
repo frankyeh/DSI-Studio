@@ -225,6 +225,7 @@ void evaluate_connection(
     char dy[13] = {0,1,0,1,0,1,-1, 0, 1, 1, 1,-1, 1};
     char dz[13] = {0,0,1,0,1,1, 0,-1,-1, 1, 1, 1,-1};
     std::vector<tipl::vector<3> > dis(13);
+    const double angular_threshold = 0.984;
     for(unsigned int i = 0;i < 13;++i)
     {
         dis[i] = tipl::vector<3>(dx[i],dy[i],dz[i]);
@@ -250,18 +251,18 @@ void evaluate_connection(
                 tipl::pixel_index<3> other_index(pos[0],pos[1],pos[2],dim);
                 if(check_trajectory)
                 {
-                    if(std::abs(dir(index.index(),fib1)*dis[i]) <= 0.8665)
+                    if(std::abs(dir(index.index(),fib1)*dis[i]) <= angular_threshold)
                         continue;
                     for(unsigned char fib2 = 0;fib2 < num_fib;++fib2)
                         if(fib_fa[fib2][other_index.index()] > otsu &&
-                                std::abs(dir(other_index.index(),fib2)*dis[i]) > 0.8665)
+                                std::abs(dir(other_index.index(),fib2)*dis[i]) > angular_threshold)
                             f(index.index(),fib1,other_index.index(),fib2);
                 }
                 else
                 {
                     for(unsigned char fib2 = 0;fib2 < num_fib;++fib2)
                         if(fib_fa[fib2][other_index.index()] > otsu &&
-                                std::abs(dir(other_index.index(),fib2)*dir(index.index(),fib1)) > 0.8665)
+                                std::abs(dir(other_index.index(),fib2)*dir(index.index(),fib1)) > angular_threshold)
                             f(index.index(),fib1,other_index.index(),fib2);
                 }
 
@@ -284,11 +285,14 @@ std::pair<float,float> evaluate_fib(
         for(unsigned int index = 0;index < connected.size();++index)
             connected[index].resize(dim.size());
 
+    std::mutex add_mutex;
     evaluate_connection(dim,otsu,fib_fa,dir,[&](unsigned int pos1,unsigned char fib1,unsigned int pos2,unsigned char fib2)
     {
         connected[fib1][pos1] = 1;
         connected[fib2][pos2] = 1;
-        connection_count += fib_fa[fib2][pos2];
+        auto v = fib_fa[fib2][pos2];
+        std::lock_guard<std::mutex> lock(add_mutex);
+        connection_count += v;
         // no need to add fib1 because it will be counted if fib2 becomes fib1
     },check_trajectory);
 

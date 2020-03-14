@@ -203,6 +203,15 @@ std::string ImageModel::check_b_table(void)
         result[i] = evaluate_fib(voxel.dim,otsu,fib_fa,[&](int pos,char fib){return new_dir[fib][pos];}).first;
     }
     int best = std::max_element(result,result+24)-result;
+    for(int i = 0;i < 24;++i)
+    {
+        if(i == best)
+            std::cout << (txt[i]+1) << "=BEST,";
+        else
+            std::cout << (txt[i]+1) << "=-" << int(100.0f*(result[best]-result[i])/(result[best]+1.0f)) << "%,";
+        if(i % 8 == 7)
+            std::cout << std::endl;
+    }
 
     if(result[best] > cur_score)
     {
