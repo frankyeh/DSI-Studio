@@ -191,7 +191,9 @@ int atl(void)
         // Output
         std::string output = dir;
         output += "/";
-        output += "connectometry.db.fib.gz";
+        output += "connectometry.";
+        output += index_name;
+        output += ".db.fib.gz";
         if(!data->handle->db.save_subject_data(output.c_str()))
         {
             std::cout << "error saving the db file:" << data->handle->error_msg << std::endl;
