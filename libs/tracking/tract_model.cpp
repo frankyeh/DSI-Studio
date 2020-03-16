@@ -1109,7 +1109,7 @@ void TractModel::select_tracts(const std::vector<unsigned int>& tracts_to_select
 unsigned int TractModel::find_nearest(const float* trk,unsigned int length,bool contain)
 {
     auto norm1 = [](const float* v1,const float* v2){return std::fabs(v1[0]-v2[0])+std::fabs(v1[1]-v2[1])+std::fabs(v1[2]-v2[2]);};
-    float best_distance = contain ? 100.0f : 30.0f/handle->vs[0];
+    float best_distance = contain ? 100.0f : 16.0f/handle->vs[0];
     unsigned int best_index = tract_data.size()-1;
     for(int i = 0;i < tract_data.size();++i)
     {
