@@ -692,28 +692,43 @@ void ImageModel::resample(float nv)
     voxel.vs = new_vs;
 }
 extern std::string fib_template_file_name_2mm;
+extern std::vector<std::string> iso_template_list;
 bool ImageModel::rotate_to_mni(void)
 {
-    std::string file_name = fib_template_file_name_2mm;
-    gz_mat_read read;
-    if(!read.load_from_file(file_name.c_str()))
-    {
-        error_msg = "Failed to load/find fib template.";
-        return false;
-    }
     tipl::image<float,3> I;
-    if(!read.save_to_image(I,"iso"))
-    {
-        error_msg = "Failed to read image from fib template.";
-        return false;
-    }
     tipl::vector<3> vs;
-    if(!read.get_voxel_size(vs))
-    {
-        error_msg = "Failed to get voxel size from fib template.";
-        return false;
-    }
 
+    if(voxel.vs[2] > 2.0f)
+    {
+        std::string file_name = fib_template_file_name_2mm;
+        gz_mat_read read;
+        if(!read.load_from_file(file_name.c_str()))
+        {
+            error_msg = "Failed to load/find fib template.";
+            return false;
+        }
+        if(!read.save_to_image(I,"iso"))
+        {
+            error_msg = "Failed to read image from fib template.";
+            return false;
+        }
+        if(!read.get_voxel_size(vs))
+        {
+            error_msg = "Failed to get voxel size from fib template.";
+            return false;
+        }
+    }
+    else
+    {
+        gz_nifti nii;
+        if(!nii.load_from_file(iso_template_list.front()))
+        {
+            error_msg = "Failed to load/find MNI template.";
+            return false;
+        }
+        nii.toLPS(I);
+        nii.get_voxel_size(vs);
+    }
     tipl::transformation_matrix<double> arg;
     bool terminated = false;
     begin_prog("registering to the MNI space");
