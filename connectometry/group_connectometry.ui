@@ -17,6 +17,9 @@
    <iconset resource="../icons.qrc">
     <normaloff>:/icons/icons/axial.xpm</normaloff>:/icons/icons/axial.xpm</iconset>
   </property>
+  <property name="styleSheet">
+   <string notr="true">QGroupBox { font-weight: bold; } </string>
+  </property>
   <layout class="QHBoxLayout" name="horizontalLayout">
    <item>
     <widget class="QSplitter" name="splitter">
@@ -101,6 +104,12 @@
                </property>
                <item>
                 <widget class="QLabel" name="open_instruction_2">
+                 <property name="font">
+                  <font>
+                   <weight>75</weight>
+                   <bold>true</bold>
+                  </font>
+                 </property>
                  <property name="text">
                   <string>Step C3a: Open demographics.</string>
                  </property>
@@ -229,6 +238,12 @@
               <verstretch>0</verstretch>
              </sizepolicy>
             </property>
+            <property name="font">
+             <font>
+              <weight>75</weight>
+              <bold>true</bold>
+             </font>
+            </property>
             <property name="text">
              <string>Step C3b: Select variables to be included in regression</string>
             </property>
@@ -284,6 +299,12 @@
                 <width>16777215</width>
                 <height>16777215</height>
                </size>
+              </property>
+              <property name="font">
+               <font>
+                <weight>75</weight>
+                <bold>true</bold>
+               </font>
               </property>
               <property name="text">
                <string>Step C3c: Study variable:</string>
@@ -1088,6 +1109,12 @@
            <property name="enabled">
             <bool>true</bool>
            </property>
+           <property name="font">
+            <font>
+             <weight>75</weight>
+             <bold>true</bold>
+            </font>
+           </property>
            <property name="text">
             <string>Step C3e: Run connectometry</string>
            </property>
@@ -1122,6 +1149,12 @@
            <widget class="QPushButton" name="show_result">
             <property name="enabled">
              <bool>true</bool>
+            </property>
+            <property name="font">
+             <font>
+              <weight>75</weight>
+              <bold>true</bold>
+             </font>
             </property>
             <property name="text">
              <string>Step C3f: View Results in 3D</string>

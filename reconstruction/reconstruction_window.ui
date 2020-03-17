@@ -31,8 +31,7 @@
    <string>Reconstruction</string>
   </property>
   <property name="styleSheet">
-   <string notr="true">QGroupBox { font-weight: bold; } 
-QToolBox { font-weight: bold; } </string>
+   <string notr="true">QGroupBox { font-weight: bold; }</string>
   </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QVBoxLayout" name="verticalLayout">
