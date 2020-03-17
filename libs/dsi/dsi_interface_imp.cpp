@@ -105,26 +105,16 @@ const char* ImageModel::reconstruction(void)
         {
             if(!voxel.study_src_file_path.empty()) // DDI
                 voxel.csf_calibration = false;
-            out << ".odf" << voxel.ti.fold;// odf_order
-            if (voxel.odf_resolving)
-                out << "r";
-            out << ".f" << voxel.max_fiber_number;
             if (voxel.output_odf)
             {
-                voxel.step_report << "[Step T2b(2)][ODFs]=checked" << std::endl;
-                out << "rec";
+                voxel.step_report << "[Step T2b(2)][ODFs]=1" << std::endl;
+                out << ".odf";
             }
-            if (voxel.scheme_balance)
-                out << ".bal";
-            if (voxel.half_sphere)
-                out << ".hs";
             if (voxel.csf_calibration && voxel.method_id == 4) // GQI
                 out << ".csfc";
             else
                 voxel.csf_calibration = false;
         }
-
-
 
         // correct for b-table orientation
         if(voxel.check_btable)
@@ -184,8 +174,6 @@ const char* ImageModel::reconstruction(void)
 
             if(voxel.r2_weighted)
                 voxel.recon_report << " The ODF calculation was weighted by the square of the diffuion displacement.";
-            if (voxel.output_rdi)
-                out << ".rdi";
             out << (voxel.r2_weighted ? ".gqi2.":".gqi.") << voxel.param[0] << ".fib.gz";
 
             if(src_dwi_data.size() == 1)
