@@ -1989,7 +1989,11 @@ void TractModel::to_end_point_voxels(std::vector<tipl::vector<3,short> >& points
         if(!swap_count)
             break;
     }
-    std::set<tipl::vector<3,short> > ss1(s1.begin(),s1.end()),ss2(s2.begin(),s2.end());
+    std::set<tipl::vector<3,short> > ss1,ss2;
+    for(auto& p : s1)
+        ss1.insert(tipl::vector<3,short>(p));
+    for(auto& p : s2)
+        ss2.insert(tipl::vector<3,short>(p));
     points1 = std::vector<tipl::vector<3,short> >(ss1.begin(),ss1.end());
     points2 = std::vector<tipl::vector<3,short> >(ss2.begin(),ss2.end());
 }
