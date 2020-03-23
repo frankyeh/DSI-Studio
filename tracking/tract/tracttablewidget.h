@@ -90,6 +90,7 @@ public slots:
     void delete_all_tract(void);
     void delete_repeated(void);
     void delete_by_length(void);
+    void delete_branches(void);
     void edit_tracts(void);
     void undo_tracts(void);
     void redo_tracts(void);

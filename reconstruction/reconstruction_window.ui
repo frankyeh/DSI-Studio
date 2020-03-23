@@ -419,14 +419,7 @@
                <property name="spacing">
                 <number>0</number>
                </property>
-               <item row="0" column="6">
-                <widget class="QPushButton" name="erosion">
-                 <property name="text">
-                  <string>Erosion</string>
-                 </property>
-                </widget>
-               </item>
-               <item row="0" column="9">
+               <item row="0" column="8">
                 <spacer name="horizontalSpacer_2">
                  <property name="orientation">
                   <enum>Qt::Horizontal</enum>
@@ -439,60 +432,101 @@
                  </property>
                 </spacer>
                </item>
-               <item row="0" column="5">
-                <widget class="QPushButton" name="negate">
-                 <property name="text">
-                  <string>Negate</string>
-                 </property>
-                </widget>
-               </item>
-               <item row="0" column="7">
-                <widget class="QPushButton" name="defragment">
-                 <property name="text">
-                  <string>Defragment</string>
-                 </property>
-                </widget>
-               </item>
                <item row="0" column="0">
-                <widget class="QPushButton" name="load_mask">
-                 <property name="text">
-                  <string>Open...</string>
+                <widget class="QWidget" name="mask_edit" native="true">
+                 <property name="minimumSize">
+                  <size>
+                   <width>10</width>
+                   <height>0</height>
+                  </size>
                  </property>
-                 <property name="icon">
-                  <iconset resource="../icons.qrc">
-                   <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
-                 </property>
+                 <layout class="QHBoxLayout" name="horizontalLayout_9">
+                  <property name="spacing">
+                   <number>0</number>
+                  </property>
+                  <property name="leftMargin">
+                   <number>0</number>
+                  </property>
+                  <property name="topMargin">
+                   <number>0</number>
+                  </property>
+                  <property name="rightMargin">
+                   <number>0</number>
+                  </property>
+                  <property name="bottomMargin">
+                   <number>0</number>
+                  </property>
+                  <item>
+                   <widget class="QPushButton" name="load_mask">
+                    <property name="text">
+                     <string>Open...</string>
+                    </property>
+                    <property name="icon">
+                     <iconset resource="../icons.qrc">
+                      <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+                    </property>
+                   </widget>
+                  </item>
+                  <item>
+                   <widget class="QPushButton" name="save_mask">
+                    <property name="text">
+                     <string>Save...</string>
+                    </property>
+                    <property name="icon">
+                     <iconset resource="../icons.qrc">
+                      <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
+                    </property>
+                   </widget>
+                  </item>
+                  <item>
+                   <widget class="QPushButton" name="thresholding">
+                    <property name="text">
+                     <string>Thresholding</string>
+                    </property>
+                   </widget>
+                  </item>
+                  <item>
+                   <widget class="QPushButton" name="smoothing">
+                    <property name="text">
+                     <string>Smoothing</string>
+                    </property>
+                   </widget>
+                  </item>
+                  <item>
+                   <widget class="QPushButton" name="dilation">
+                    <property name="text">
+                     <string>Dilation</string>
+                    </property>
+                   </widget>
+                  </item>
+                  <item>
+                   <widget class="QPushButton" name="negate">
+                    <property name="text">
+                     <string>Negate</string>
+                    </property>
+                   </widget>
+                  </item>
+                  <item>
+                   <widget class="QPushButton" name="defragment">
+                    <property name="text">
+                     <string>Defragment</string>
+                    </property>
+                   </widget>
+                  </item>
+                  <item>
+                   <widget class="QPushButton" name="erosion">
+                    <property name="text">
+                     <string>Erosion</string>
+                    </property>
+                   </widget>
+                  </item>
+                 </layout>
                 </widget>
                </item>
-               <item row="0" column="2">
-                <widget class="QPushButton" name="smoothing">
+               <item row="0" column="9">
+                <widget class="QPushButton" name="edit_mask">
                  <property name="text">
-                  <string>Smoothing</string>
-                 </property>
-                </widget>
-               </item>
-               <item row="0" column="3">
-                <widget class="QPushButton" name="thresholding">
-                 <property name="text">
-                  <string>Thresholding</string>
-                 </property>
-                </widget>
-               </item>
-               <item row="0" column="4">
-                <widget class="QPushButton" name="dilation">
-                 <property name="text">
-                  <string>Dilation</string>
-                 </property>
-                </widget>
-               </item>
-               <item row="0" column="1">
-                <widget class="QPushButton" name="save_mask">
-                 <property name="text">
-                  <string>Save...</string>
-                 </property>
-                 <property name="icon">
-                  <iconset resource="../icons.qrc">
-                   <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
+                  <string>Edit&gt;&gt;</string>
                  </property>
                 </widget>
                </item>
@@ -699,7 +733,7 @@
                     <item>
                      <widget class="QCheckBox" name="not_human_brain">
                       <property name="text">
-                       <string>animal</string>
+                       <string>Animal</string>
                       </property>
                      </widget>
                     </item>
@@ -712,7 +746,7 @@
                        </sizepolicy>
                       </property>
                       <property name="text">
-                       <string>deformed</string>
+                       <string>Deformed</string>
                       </property>
                      </widget>
                     </item>
@@ -773,7 +807,7 @@
                     <item>
                      <widget class="QLabel" name="label_7">
                       <property name="text">
-                       <string>diffusion sampling length ratio:</string>
+                       <string>Diffusion sampling length ratio:</string>
                       </property>
                      </widget>
                     </item>
@@ -958,7 +992,7 @@
               <item>
                <widget class="QLabel" name="label_9">
                 <property name="text">
-                 <string>threads:</string>
+                 <string>Threads:</string>
                 </property>
                 <property name="alignment">
                  <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>

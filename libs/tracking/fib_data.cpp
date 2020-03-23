@@ -904,16 +904,7 @@ void fib_data::get_voxel_information(int x,int y,int z,std::vector<float>& buf) 
             buf.push_back(view_item[i].image_data.empty() ? 0.0 : view_item[i].image_data[index]);
     }
 }
-void fib_data::get_index_titles(std::vector<std::string>& titles)
-{
-    std::vector<std::string> index_list;
-    get_index_list(index_list);
-    for(unsigned int index = 0;index < index_list.size();++index)
-    {
-        titles.push_back(index_list[index]+" mean");
-        titles.push_back(index_list[index]+" sd");
-    }
-}
+
 void fib_data::set_template_id(int new_id)
 {
     if(new_id != template_id)

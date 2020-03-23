@@ -47,7 +47,6 @@ void ThreadData::run_thread(TrackingMethod* method_ptr,
               !(param.stop_by_tract == 0 && seed_count[thread_id] >= max_count) &&
               !(param.max_seed_count > 0 && seed_count[thread_id] >= param.max_seed_count))
         {
-
             if(!pushing_data && (iteration & 0x00000FFF) == 0x00000FFF && !local_track_buffer.empty())
                 push_tracts(local_track_buffer);
             if(param.threshold == 0.0f)
@@ -114,6 +113,7 @@ void ThreadData::run_thread(TrackingMethod* method_ptr,
                         continue;
                 }
             }
+
             ++tract_count[thread_id];
             local_track_buffer.push_back(std::vector<float>(result,end));
         }
@@ -227,6 +227,7 @@ void ThreadData::run(const tracking_data& trk,
         thread_count = 1;
     unsigned int run_count = std::max<int>(1,count/thread_count);
     unsigned int total_run_count = 0;
+    joinning = false;
     for (unsigned int index = 0;index < thread_count-1;++index,total_run_count += run_count)
         threads.push_back(std::make_shared<std::future<void> >(std::async(std::launch::async,
                 [&,thread_count,index,run_count](){run_thread(new_method(trk),thread_count,index,run_count);})));

@@ -292,8 +292,11 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         connect(ui->actionSmoothing,SIGNAL(triggered()),regionWidget,SLOT(action_smoothing()));
         connect(ui->actionErosion,SIGNAL(triggered()),regionWidget,SLOT(action_erosion()));
         connect(ui->actionDilation,SIGNAL(triggered()),regionWidget,SLOT(action_dilation()));
+        connect(ui->actionOpening,SIGNAL(triggered()),regionWidget,SLOT(action_opening()));
+        connect(ui->actionClosing,SIGNAL(triggered()),regionWidget,SLOT(action_closing()));
         connect(ui->actionNegate,SIGNAL(triggered()),regionWidget,SLOT(action_negate()));
         connect(ui->actionDefragment,SIGNAL(triggered()),regionWidget,SLOT(action_defragment()));
+
         connect(ui->actionSeparate,SIGNAL(triggered()),regionWidget,SLOT(action_separate()));
         connect(ui->actionA_B,SIGNAL(triggered()),regionWidget,SLOT(action_A_B()));
         connect(ui->actionB_A,SIGNAL(triggered()),regionWidget,SLOT(action_B_A()));
@@ -354,6 +357,9 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         connect(ui->actionDeleteTract,SIGNAL(triggered()),tractWidget,SLOT(delete_tract()));
         connect(ui->actionDeleteTractAll,SIGNAL(triggered()),tractWidget,SLOT(delete_all_tract()));
         connect(ui->actionDelete_By_Length,SIGNAL(triggered()),tractWidget,SLOT(delete_by_length()));
+        connect(ui->actionDelete_Branches,SIGNAL(triggered()),tractWidget,SLOT(delete_branches()));
+
+
         connect(ui->actionRemove_Repeated_Tracks,SIGNAL(triggered()),tractWidget,SLOT(delete_repeated()));
         connect(ui->actionSeparate_Deleted,SIGNAL(triggered()),tractWidget,SLOT(separate_deleted_track()));
         connect(ui->actionReconnect_Tracts,SIGNAL(triggered()),tractWidget,SLOT(reconnect_track()));
@@ -822,32 +828,37 @@ void tracking_window::change_contrast()
 
 void tracking_window::on_actionEndpoints_to_seeding_triggered()
 {
-    std::vector<tipl::vector<3,float> >points;
-
-    if(tractWidget->tract_models.empty())
+    std::vector<tipl::vector<3,short> > points1,points2;
+    if(tractWidget->tract_models.empty() || tractWidget->currentRow() < 0)
         return;
-    tractWidget->tract_models[tractWidget->currentRow()]->get_end_points(points);
+    const float resolution_ratio = 2.0f;
+    tractWidget->tract_models[size_t(tractWidget->currentRow())]->to_end_point_voxels(points1,points2,resolution_ratio);
     regionWidget->add_region(
             tractWidget->item(tractWidget->currentRow(),0)->text()+
-            QString(" end points"),roi_id);
-    regionWidget->add_points(points,false,false,1.0);
+            QString(" endpoints1"),roi_id);
+    regionWidget->regions.back()->resolution_ratio = resolution_ratio;
+    regionWidget->regions.back()->add_points(points1,false,resolution_ratio);
+    regionWidget->add_region(
+            tractWidget->item(tractWidget->currentRow(),0)->text()+
+            QString(" endpoints2"),roi_id);
+    regionWidget->regions.back()->resolution_ratio = resolution_ratio;
+    regionWidget->regions.back()->add_points(points2,false,resolution_ratio);
     scene.show_slice();
     glWidget->updateGL();
 }
 
 void tracking_window::on_actionTracts_to_seeds_triggered()
 {
-    std::vector<tipl::vector<3,float> >points;
     if(tractWidget->tract_models.empty())
         return;
-    tractWidget->tract_models[tractWidget->currentRow()]->get_tract_points(points);
+    std::vector<tipl::vector<3,short> > points;
+    tractWidget->tract_models[tractWidget->currentRow()]->to_voxel(points,2.0f);
     if(points.size() < 2)
         return;
     regionWidget->add_region(
             tractWidget->item(tractWidget->currentRow(),0)->text(),roi_id);
-    for(size_t i = 0;i < points.size();++i)
-        points[i] *= 4.0;
-    regionWidget->add_points(points,false,false,4.0);
+    regionWidget->regions.back()->resolution_ratio = 2.0;
+    regionWidget->add_points(points,false,false,2.0);
     scene.show_slice();
     glWidget->updateGL();
 }

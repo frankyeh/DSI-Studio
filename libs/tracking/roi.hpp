@@ -77,6 +77,7 @@ public:
 extern std::vector<std::string> tractography_name_list;
 class RoiMgr {
 public:
+    std::shared_ptr<fib_data> handle;
     std::string report;
     std::vector<tipl::vector<3,short> > seeds;
     std::vector<float> seeds_r;
@@ -88,6 +89,8 @@ public:
 public:
     std::shared_ptr<TractModel> atlas;
     unsigned int track_id = 0;
+public:
+    RoiMgr(std::shared_ptr<fib_data> handle_):handle(handle_){}
 public:
     bool is_excluded_point(const tipl::vector<3,float>& point) const
     {
@@ -152,7 +155,7 @@ public:
         report += ".";
     }
 
-    void setWholeBrainSeed(std::shared_ptr<fib_data> handle,float threashold)
+    void setWholeBrainSeed(float threashold)
     {
         if(!seeds.empty())
             return;
@@ -171,14 +174,12 @@ public:
                 if(fa0[index.index()] > threashold)
                     seed.push_back(tipl::vector<3,short>(short(index.x()),short(index.y()),short(index.z())));
         }
-        setRegions(handle->dim,seed,1.0,3/*seed i*/,name.c_str(),tipl::vector<3>());
+        setRegions(seed,1.0,3/*seed i*/,name.c_str());
     }
-    void setRegions(tipl::geometry<3> geo,
-                    const std::vector<tipl::vector<3,short> >& points,
+    void setRegions(const std::vector<tipl::vector<3,short> >& points,
                     float r,
                     unsigned char type,
-                    const char* roi_name,
-                    tipl::vector<3> voxel_size)
+                    const char* roi_name)
     {
         tipl::vector<3,float> center;
         for(size_t i = 0;i < points.size();++i)
@@ -189,31 +190,31 @@ public:
         switch(type)
         {
         case 0: //ROI
-            inclusive.push_back(std::make_shared<Roi>(geo,r));
+            inclusive.push_back(std::make_shared<Roi>(handle->dim,r));
             for(unsigned int index = 0; index < points.size(); ++index)
                 inclusive.back()->addPoint(points[index]);
             report += " An ROI was placed at ";
             break;
         case 1: //ROA
-            exclusive.push_back(std::make_shared<Roi>(geo,r));
+            exclusive.push_back(std::make_shared<Roi>(handle->dim,r));
             for(unsigned int index = 0; index < points.size(); ++index)
                 exclusive.back()->addPoint(points[index]);
             report += " An ROA was placed at ";
             break;
         case 2: //End
-            end.push_back(std::make_shared<Roi>(geo,r));
+            end.push_back(std::make_shared<Roi>(handle->dim,r));
             for(unsigned int index = 0; index < points.size(); ++index)
                 end.back()->addPoint(points[index]);
             report += " An ending region was placed at ";
             break;
         case 4: //Terminate
-            terminate.push_back(std::make_shared<Roi>(geo,r));
+            terminate.push_back(std::make_shared<Roi>(handle->dim,r));
             for(unsigned int index = 0; index < points.size(); ++index)
                 terminate.back()->addPoint(points[index]);
             report += " A terminative region was placed at ";
             break;
         case 5: //No ending region
-            no_end.push_back(std::make_shared<Roi>(geo,r));
+            no_end.push_back(std::make_shared<Roi>(handle->dim,r));
             for(unsigned int index = 0; index < points.size(); ++index)
                 no_end.back()->addPoint(points[index]);
             report += " A no ending region was placed at ";
@@ -228,11 +229,11 @@ public:
             break;
         }
         report += roi_name;
-        if(voxel_size[0]*voxel_size[1]*voxel_size[2] != 0.0f)
+        if(type != 3 && handle->vs[0]*handle->vs[1]*handle->vs[2] != 0.0f)
         {
             std::ostringstream out;
             out << std::setprecision(2) << " (" << center[0] << "," << center[1] << "," << center[2]
-                << ") with a volume size of " << float(points.size())*voxel_size[0]*voxel_size[1]*voxel_size[2]/r/r/r << " mm cubic";
+                << ") with a volume size of " << float(points.size())*handle->vs[0]*handle->vs[1]*handle->vs[2]/r/r/r << " mm cubic";
             if(r != 1.0f)
                 out << " and a super resolution factor of " << r;
             report += out.str();

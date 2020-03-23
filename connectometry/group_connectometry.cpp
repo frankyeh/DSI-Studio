@@ -611,7 +611,7 @@ void group_connectometry::on_run_clicked()
             roi_name[index] = ui->roi_table->item(index,0)->text().toStdString();
         }
         // if no seed assigned, assign whole brain
-        vbc->roi_mgr = std::make_shared<RoiMgr>();
+        vbc->roi_mgr = std::make_shared<RoiMgr>(vbc->handle);
         if(roi_list.empty() || std::find(roi_type.begin(),roi_type.end(),3) == roi_type.end())
         {
             std::vector<tipl::vector<3,short> > seed;
@@ -619,13 +619,12 @@ void group_connectometry::on_run_clicked()
                 if(vbc->handle->dir.fa[0][index.index()] > vbc->fiber_threshold)
                     seed.push_back(tipl::vector<3,short>(index.x(),index.y(),index.z()));
 
-            vbc->roi_mgr->setRegions(vbc->handle->dim,seed,1.0f,3/*seed*/,"whole brain",tipl::vector<3>());
+            vbc->roi_mgr->setRegions(seed,1.0f,3/*seed*/,"whole brain");
         }
 
 
         for(unsigned int index = 0;index < roi_list.size();++index)
-            vbc->roi_mgr->setRegions(vbc->handle->dim,roi_list[index],1.0f,roi_type[index],
-                                               "user assigned region",vbc->handle->vs);
+            vbc->roi_mgr->setRegions(roi_list[index],1.0f,roi_type[index],"user assigned region");
 
         // setup roi related report text
         vbc->roi_mgr_text.clear();

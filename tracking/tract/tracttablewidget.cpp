@@ -62,7 +62,7 @@ void TractTableWidget::check_check_status(int, int col)
 
 void TractTableWidget::addNewTracts(QString tract_name,bool checked)
 {
-    thread_data.push_back(std::make_shared<ThreadData>());
+    thread_data.push_back(std::make_shared<ThreadData>(cur_tracking_window.handle));
     tract_models.push_back(std::make_shared<TractModel>(cur_tracking_window.handle));
     insertRow(tract_models.size()-1);
     QTableWidgetItem *item0 = new QTableWidgetItem(tract_name);
@@ -145,7 +145,7 @@ void TractTableWidget::ppv_analysis(void)
         }
     }
     std::vector<int> tracks_count(100);
-    ThreadData base_thread;
+    ThreadData base_thread(cur_tracking_window.handle);
     cur_tracking_window.set_tracking_param(base_thread);
     cur_tracking_window.regionWidget->setROIs(&base_thread);
     tracking_data fib;
@@ -166,7 +166,7 @@ void TractTableWidget::ppv_analysis(void)
             }
             check_prog(i,100);
         }
-        ThreadData new_thread;
+        ThreadData new_thread(cur_tracking_window.handle);
         new_thread.param = base_thread.param;
         new_thread.param.min_length = p1[i];
         new_thread.param.dt_threshold = p2[i];
@@ -203,7 +203,7 @@ void TractTableWidget::ppv_analysis(void)
 
 void TractTableWidget::filter_by_roi(void)
 {
-    ThreadData track_thread;
+    ThreadData track_thread(cur_tracking_window.handle);
     cur_tracking_window.set_tracking_param(track_thread);
     cur_tracking_window.regionWidget->setROIs(&track_thread);
     for(int index = 0;index < tract_models.size();++index)
@@ -617,7 +617,7 @@ void TractTableWidget::save_end_point_as(void)
 
 void TractTableWidget::save_end_point_in_mni(void)
 {
-    if(currentRow() >= tract_models.size())
+    if(currentRow() >= tract_models.size() || currentRow() < 0)
         return;
     if(!cur_tracking_window.can_map_to_mni())
         return;
@@ -628,15 +628,21 @@ void TractTableWidget::save_end_point_in_mni(void)
                 "Tract files (*.txt);;MAT files (*.mat);;All files (*)");
     if(filename.isEmpty())
         return;
-    std::vector<tipl::vector<3,float> > points;
+
+    float resolution_ratio = 2.0f;
+    std::vector<tipl::vector<3,short> > points1,points2;
+    tract_models[size_t(currentRow())]->to_end_point_voxels(points1,points2,resolution_ratio);
+    points1.insert(points1.end(),points2.begin(),points2.end());
+
+    std::vector<tipl::vector<3> > points(points1.begin(),points1.end());
     std::vector<float> buffer;
-    tract_models[currentRow()]->get_end_points(points);
     for(unsigned int index = 0;index < points.size();++index)
     {
+        points[index] /= resolution_ratio;
         cur_tracking_window.handle->subject2mni(points[index]);
-        buffer.push_back(points[index][0]);
-        buffer.push_back(points[index][1]);
-        buffer.push_back(points[index][2]);
+        buffer.push_back(points1[index][0]);
+        buffer.push_back(points1[index][1]);
+        buffer.push_back(points1[index][2]);
     }
 
     if (QFileInfo(filename).suffix().toLower() == "txt")
@@ -1187,6 +1193,20 @@ void TractTableWidget::delete_repeated(void)
     {
         if(item(i,0)->checkState() == Qt::Checked)
             tract_models[i]->delete_repeated(distance);
+        item(i,1)->setText(QString::number(tract_models[i]->get_visible_track_count()));
+        item(i,2)->setText(QString::number(tract_models[i]->get_deleted_track_count()));
+    }
+    emit need_update();
+}
+
+
+void TractTableWidget::delete_branches(void)
+{
+    begin_prog("deleting branches");
+    for(int i = 0;check_prog(i,tract_models.size());++i)
+    {
+        if(item(i,0)->checkState() == Qt::Checked)
+            tract_models[i]->delete_branch();
         item(i,1)->setText(QString::number(tract_models[i]->get_visible_track_count()));
         item(i,2)->setText(QString::number(tract_models[i]->get_deleted_track_count()));
     }

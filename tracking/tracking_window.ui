@@ -289,7 +289,7 @@
    <property name="minimumSize">
     <size>
      <width>390</width>
-     <height>48</height>
+     <height>54</height>
     </size>
    </property>
    <property name="maximumSize">
@@ -559,7 +559,7 @@
    <property name="minimumSize">
     <size>
      <width>267</width>
-     <height>47</height>
+     <height>53</height>
     </size>
    </property>
    <property name="windowTitle">
@@ -689,6 +689,8 @@
      <addaction name="separator"/>
      <addaction name="actionDilation"/>
      <addaction name="actionErosion"/>
+     <addaction name="actionOpening"/>
+     <addaction name="actionClosing"/>
      <addaction name="actionSmoothing"/>
      <addaction name="actionNegate"/>
      <addaction name="actionDefragment"/>
@@ -818,6 +820,7 @@
      <addaction name="actionMerge_Tracts_by_Name"/>
      <addaction name="actionRemove_Repeated_Tracks"/>
      <addaction name="actionDelete_By_Length"/>
+     <addaction name="actionDelete_Branches"/>
      <addaction name="actionReconnect_Tracts"/>
      <addaction name="separator"/>
      <addaction name="actionSet_Color"/>
@@ -1022,8 +1025,8 @@
    </property>
    <property name="minimumSize">
     <size>
-     <width>309</width>
-     <height>155</height>
+     <width>314</width>
+     <height>161</height>
     </size>
    </property>
    <property name="maximumSize">
@@ -1424,8 +1427,8 @@ Tracking</string>
    </property>
    <property name="minimumSize">
     <size>
-     <width>356</width>
-     <height>173</height>
+     <width>362</width>
+     <height>179</height>
     </size>
    </property>
    <property name="floating">
@@ -3462,6 +3465,31 @@ Tracking</string>
    </property>
    <property name="text">
     <string>Modify All</string>
+   </property>
+  </action>
+  <action name="actionOpening">
+   <property name="text">
+    <string>Opening</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Shift+O</string>
+   </property>
+  </action>
+  <action name="actionClosing">
+   <property name="text">
+    <string>Closing</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Shift+C</string>
+   </property>
+  </action>
+  <action name="actionDelete_Branches">
+   <property name="icon">
+    <iconset resource="../icons.qrc">
+     <normaloff>:/icons/icons/delete.xpm</normaloff>:/icons/icons/delete.xpm</iconset>
+   </property>
+   <property name="text">
+    <string>Delete Branches</string>
    </property>
   </action>
  </widget>

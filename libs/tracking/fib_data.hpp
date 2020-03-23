@@ -206,7 +206,6 @@ public:
                    tipl::color_image& show_image,const tipl::value_to_color<float>& v2c);
     void get_voxel_info2(unsigned int x,unsigned int y,unsigned int z,std::vector<float>& buf) const;
     void get_voxel_information(int x,int y,int z,std::vector<float>& buf) const;
-    void get_index_titles(std::vector<std::string>& titles);
 };
 
 

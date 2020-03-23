@@ -110,6 +110,7 @@ private slots:
     void on_actionEddy_Motion_Correction_triggered();
     void on_show_bad_slice_clicked();
     void on_align_slices_clicked();
+    void on_edit_mask_clicked();
 };
 
 #endif // RECONSTRUCTION_WINDOW_H

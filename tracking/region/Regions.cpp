@@ -387,6 +387,18 @@ void ROIRegion::perform(const std::string& action)
         tipl::morphology::dilation(mask);
         LoadFromBuffer(mask);
     }
+    if(action == "opening")
+    {
+        SaveToBuffer(mask);
+        tipl::morphology::opening(mask);
+        LoadFromBuffer(mask);
+    }
+    if(action == "closing")
+    {
+        SaveToBuffer(mask);
+        tipl::morphology::closing(mask);
+        LoadFromBuffer(mask);
+    }
     if(action == "defragment")
     {
         SaveToBuffer(mask);
@@ -425,27 +437,25 @@ void ROIRegion::shift(tipl::vector<3,float> dx) {
 }
 // ---------------------------------------------------------------------------
 template<class Image,class Points>
-void calculate_region_stat(const Image& I, const Points& p,float& mean,float& sd,const float* T = 0)
+void calculate_region_stat(const Image& I, const Points& p,float& mean,const float* T = nullptr)
 {
-    float sum = 0.0,sum2 = 0.0;
-    unsigned int count = 0;
-    for(unsigned int index = 0; index < p.size(); ++index)
+    float sum = 0.0f;
+    size_t count = 0;
+    for(size_t index = 0; index < p.size(); ++index)
     {
-        float value = 0.0;
+        float value = 0.0f;
         tipl::vector<3> pos(p[index]);
         if(T)
             pos.to(T);
         value = tipl::estimate(I,pos);
-        if(value == 0.0)
+        if(value == 0.0f)
             continue;
         sum += value;
-        sum2 += value*value;
         ++count;
     }
-    sum /= count;
-    sum2 /= count;
+    if(count)
+    sum /= float(count);
     mean = sum;
-    sd = std::sqrt(std::max<float>(0.0,sum2-sum*sum));
 }
 
 void ROIRegion::get_quantitative_data(std::shared_ptr<fib_data> handle,std::vector<std::string>& titles,std::vector<float>& data)
@@ -496,7 +506,7 @@ void ROIRegion::get_quantitative_data(std::shared_ptr<fib_data> handle,std::vect
     titles.push_back("bounding box z");
     std::copy(min.begin(),min.end(),std::back_inserter(data)); // bounding box
 
-    handle->get_index_titles(titles); // other index
+    handle->get_index_list(titles); // other index
     std::vector<tipl::vector<3> > points;
     for (unsigned int index = 0; index < region.size(); ++index)
         points.push_back(tipl::vector<3>(region[index][0]/resolution_ratio,
@@ -504,17 +514,16 @@ void ROIRegion::get_quantitative_data(std::shared_ptr<fib_data> handle,std::vect
                                           region[index][2]/resolution_ratio));
 
 
-    for(int data_index = 0;data_index < handle->view_item.size(); ++data_index)
+    for(size_t data_index = 0;data_index < handle->view_item.size(); ++data_index)
     {
         if(handle->view_item[data_index].name == "color")
             continue;
-        float mean,sd;
+        float mean;
         if(handle->view_item[data_index].image_data.geometry() != handle->dim)
-            calculate_region_stat(handle->view_item[data_index].image_data,points,mean,sd,&handle->view_item[data_index].iT[0]);
+            calculate_region_stat(handle->view_item[data_index].image_data,points,mean,&handle->view_item[data_index].iT[0]);
         else
-            calculate_region_stat(handle->view_item[data_index].image_data,points,mean,sd);
+            calculate_region_stat(handle->view_item[data_index].image_data,points,mean);
         data.push_back(mean);
-        data.push_back(sd);
     }
 
     if(handle->db.has_db()) // connectometry database
@@ -524,9 +533,9 @@ void ROIRegion::get_quantitative_data(std::shared_ptr<fib_data> handle,std::vect
         {
             std::vector<std::vector<float> > fa_data;
             handle->db.get_subject_fa(subject_index,fa_data,normalize_qa);
-            float mean,sd;
+            float mean;
             tipl::const_pointer_image<float, 3> I(&fa_data[0][0],handle->dim);
-            calculate_region_stat(I,points,mean,sd);
+            calculate_region_stat(I,points,mean);
             data.push_back(mean);
             std::ostringstream out;
             out << handle->db.subject_names[subject_index] << (normalize_qa ? " mean_normalized_":" mean_") << handle->db.index_name;

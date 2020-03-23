@@ -45,6 +45,7 @@ public:
         void delete_tracts(const std::vector<unsigned int>& tracts_to_delete);
         void select_tracts(const std::vector<unsigned int>& tracts_to_select);
         void delete_repeated(float d);
+        void delete_branch(void);
         void delete_by_length(float length);
         unsigned int find_nearest(const float* trk,unsigned int length,bool contain = false);
 
@@ -85,6 +86,7 @@ public:
 
 
         void release_tracts(std::vector<std::vector<float> >& released_tracks);
+        void clear(void);
         void add_tracts(std::vector<std::vector<float> >& new_tracks);
         void add_tracts(std::vector<std::vector<float> >& new_tracks,tipl::rgb color);
         void add_tracts(std::vector<std::vector<float> >& new_tracks,unsigned int length_threshold);
@@ -108,10 +110,10 @@ public:
         void undo(void);
         void redo(void);
         bool trim(void);
-
-
-        void get_end_points(std::vector<tipl::vector<3,float> >& points);
         void get_tract_points(std::vector<tipl::vector<3,float> >& points);
+        void to_voxel(std::vector<tipl::vector<3,short> >& points,float ratio);
+        void to_end_point_voxels(std::vector<tipl::vector<3,short> >& points1,
+                                std::vector<tipl::vector<3,short> >& points2,float ratio);
 
         size_t get_deleted_track_count(void) const{return deleted_tract_data.size();}
         size_t get_visible_track_count(void) const{return tract_data.size();}
@@ -128,7 +130,6 @@ public:
              const tipl::matrix<4,4,float>& transformation,bool endpoint);
         void save_tdi(const char* file_name,bool sub_voxel,bool endpoint,const tipl::matrix<4,4,float>& tran);
 
-        void get_quantitative_data(std::vector<float>& data);
         void get_quantitative_info(std::string& result);
         bool recognize(std::vector<unsigned int>& result,std::shared_ptr<TractModel> atlas);
         bool recognize(std::map<float,std::string,std::greater<float> >& result,
@@ -146,7 +147,7 @@ public:
         bool get_tracts_data(
                 const std::string& index_name,
                 std::vector<std::vector<float> >& data) const;
-        void get_tracts_data(unsigned int index_num,float& mean, float& sd) const;
+        void get_tracts_data(unsigned int index_num,float& mean) const;
 public:
 
         void get_passing_list(const std::vector<std::vector<short> >& region_map,

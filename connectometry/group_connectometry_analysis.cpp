@@ -47,7 +47,7 @@ bool group_connectometry_analysis::load_database(const char* database_name)
 
 int group_connectometry_analysis::run_track(const tracking_data& fib,std::vector<std::vector<float> >& tracks,int seed_count, unsigned int thread_count)
 {
-    ThreadData tracking_thread;
+    ThreadData tracking_thread(handle);
     tracking_thread.param.threshold = tracking_threshold;
     tracking_thread.param.cull_cos_angle = 1.0f;
     tracking_thread.param.step_size = handle->vs[0];

@@ -295,7 +295,7 @@ int ana(void)
         std::cout << file_name << " loaded" << std::endl;
 
     }
-    std::shared_ptr<RoiMgr> roi_mgr(new RoiMgr);
+    std::shared_ptr<RoiMgr> roi_mgr(new RoiMgr(handle));
     if(!load_roi(handle,roi_mgr))
         return 1;
     tract_model.filter_by_roi(roi_mgr);

@@ -415,7 +415,7 @@ bool load_roi(std::shared_ptr<fib_data> handle,std::shared_ptr<RoiMgr> roi_mgr)
         ROIRegion roi(handle);
         if(!load_region(handle,roi,po.get(roi_names[index])))
             return false;
-        roi_mgr->setRegions(handle->dim,roi.get_region_voxels_raw(),roi.resolution_ratio,type[index],po.get(roi_names[index]).c_str(),handle->vs);
+        roi_mgr->setRegions(roi.get_region_voxels_raw(),roi.resolution_ratio,type[index],po.get(roi_names[index]).c_str());
     }
     if(po.has("track_id"))
     {
@@ -477,7 +477,7 @@ int trk(std::shared_ptr<fib_data> handle)
     float otsu = tipl::segmentation::otsu_threshold(tipl::make_image(fa0,geometry));
 
 
-    ThreadData tracking_thread;
+    ThreadData tracking_thread(handle);
     tracking_thread.param.default_otsu = po.get("otsu_threshold",0.6f);
     tracking_thread.param.threshold = po.get("fa_threshold",tracking_thread.param.default_otsu*otsu);
     tracking_thread.param.dt_threshold = po.get("dt_threshold",0.2f);
@@ -547,7 +547,7 @@ int trk(std::shared_ptr<fib_data> handle)
         float seed_threshold = tracking_thread.param.threshold;
         if(seed_threshold == 0.0f)
             seed_threshold = otsu*tracking_thread.param.default_otsu;
-        tracking_thread.roi_mgr->setWholeBrainSeed(handle,seed_threshold);
+        tracking_thread.roi_mgr->setWholeBrainSeed(seed_threshold);
     }
 
     if(!cnt_file_name.empty())
@@ -611,13 +611,37 @@ int trk(std::shared_ptr<fib_data> handle)
 
 
     std::cout << "start tracking." << std::endl;
-
-    tracking_thread.run(tract_model.get_fib(),po.get("thread_count",int(std::thread::hardware_concurrency())),true);
+    tracking_thread.run(tract_model.get_fib(),uint32_t(po.get("thread_count",int(std::thread::hardware_concurrency()))),true);
     tract_model.report += tracking_thread.report.str();
     std::cout << tract_model.report << std::endl;
 
     tracking_thread.fetchTracks(&tract_model);
     std::cout << "finished tracking." << std::endl;
+
+    if(tract_model.get_visible_track_count() && po.has("refine") && (po.get("refine",1) >= 1))
+    {
+        for(int i = 0;i < po.get("refine",1);++i)
+            tract_model.trim();
+        std::cout << "refine tracking result..." << std::endl;
+        std::cout << "convert tracks to seed regions" << std::endl;
+        tracking_thread.roi_mgr->seeds.clear();
+        std::vector<tipl::vector<3,short> > points;
+        tract_model.to_voxel(points,1.0f);
+        tract_model.clear();
+        tracking_thread.roi_mgr->setRegions(points,1.0f,3/*seed*/,"refine seeding region");
+
+
+        std::cout << "restart tracking..." << std::endl;
+        tracking_thread.run(tract_model.get_fib(),po.get("thread_count",uint32_t(std::thread::hardware_concurrency())),true);
+        tracking_thread.fetchTracks(&tract_model);
+        std::cout << "finished tracking." << std::endl;
+
+        if(tract_model.get_visible_track_count() == 0)
+        {
+            std::cout << "no tract generated. Terminating..." << std::endl;
+            return 0;
+        }
+    }
 
     for(int i = 0;i < tracking_thread.param.tip_iteration;++i)
         tract_model.trim();
@@ -627,7 +651,10 @@ int trk(std::shared_ptr<fib_data> handle)
         std::cout << "no tract generated. Terminating..." << std::endl;
         return 0;
     }
+
+
     std::cout << "a total of " << tract_model.get_visible_track_count() << " tracts are generated" << std::endl;
+
 
     std::string file_name;
     if (po.has("output"))

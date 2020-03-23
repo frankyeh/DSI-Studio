@@ -134,6 +134,8 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
             ui->half_sphere->setEnabled(false);
     }
 
+    ui->mask_edit->setVisible(false);
+
 }
 void reconstruction_window::update_dimension(void)
 {
@@ -1052,3 +1054,12 @@ void reconstruction_window::on_align_slices_clicked()
     on_SlicePos_valueChanged(ui->SlicePos->value());
 
 }
+
+void reconstruction_window::on_edit_mask_clicked()
+{
+    ui->edit_mask->setVisible(false);
+    ui->mask_edit->setVisible(true);
+
+}
+
+

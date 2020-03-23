@@ -1213,17 +1213,16 @@ void RegionTableWidget::setROIs(ThreadData* data)
     for (unsigned int index = 0;index < regions.size();++index)
         if (!regions[index]->empty() && item(int(index),0)->checkState() == Qt::Checked
                 && !(regions[index]->regions_feature == 0 && roi_count > 5))
-            data->roi_mgr->setRegions(cur_tracking_window.handle->dim,regions[index]->get_region_voxels_raw(),
+            data->roi_mgr->setRegions(regions[index]->get_region_voxels_raw(),
                                      regions[index]->resolution_ratio,
-                             regions[index]->regions_feature,item(int(index),0)->text().toLocal8Bit().begin(),
-                                     cur_tracking_window.handle->vs);
+                             regions[index]->regions_feature,item(int(index),0)->text().toLocal8Bit().begin());
     // auto track
     if(cur_tracking_window.ui->target->currentIndex() > 0 &&
        cur_tracking_window.tractography_atlas.get())
         data->roi_mgr->setAtlas(cur_tracking_window.tractography_atlas,
                                 uint32_t(cur_tracking_window.ui->target->currentIndex()-1));
 
-    data->roi_mgr->setWholeBrainSeed(cur_tracking_window.handle,cur_tracking_window.get_fa_threshold());
+    data->roi_mgr->setWholeBrainSeed(cur_tracking_window.get_fa_threshold());
 }
 
 QString RegionTableWidget::getROIname(void)
