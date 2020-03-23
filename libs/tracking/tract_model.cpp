@@ -2097,7 +2097,7 @@ void TractModel::get_quantitative_info(std::string& result)
             data.push_back(tract_length*tract_length/cross_section);
             titles.push_back("elongatedness");
             data.push_back(float(tract_area/2.0f/3.14159265358979323846f/bundle_diameter/tract_length));
-            titles.push_back("protrusion");
+            titles.push_back("irregularity");
         }
         // end points
         {
