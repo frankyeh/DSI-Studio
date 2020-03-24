@@ -2091,11 +2091,9 @@ void TractModel::get_quantitative_info(std::string& result)
                 if(edge[i])
                     ++num;
             data.push_back(tract_area = float(num)*vs[0]*vs[1]/resolution_ratio/resolution_ratio);
-            titles.push_back("total surface area(mm^2)");
+            titles.push_back("surface area(mm^2)");
             data.push_back(cross_section = tract_volume/tract_length);
             titles.push_back("cross sectional area(mm^2)");
-            data.push_back(tract_length*tract_length/cross_section);
-            titles.push_back("elongatedness");
             data.push_back(float(tract_area/2.0f/3.14159265358979323846f/bundle_diameter/tract_length));
             titles.push_back("irregularity");
         }
@@ -2108,8 +2106,8 @@ void TractModel::get_quantitative_info(std::string& result)
             // end point surface 1 and 2
             data.push_back(end_area1 = float(endpoint1.size())*vs[0]*vs[1]/resolution_ratio/resolution_ratio);
             data.push_back(end_area2 = float(endpoint2.size())*vs[0]*vs[1]/resolution_ratio/resolution_ratio);
-            titles.push_back("end point1 area (mm^2)");
-            titles.push_back("end point2 area (mm^2)");
+            titles.push_back("end area 1(mm^2)");
+            titles.push_back("end area 2(mm^2)");
 
             // radius
             auto c1 = std::accumulate(endpoint1.begin(),endpoint1.end(),tipl::vector<3,float>(0.0f,0.0f,0.0f))/float(endpoint1.size());
@@ -2131,13 +2129,13 @@ void TractModel::get_quantitative_info(std::string& result)
             // the average distance of a point in a circle to the center is 2R/3, where R is the radius
             data.push_back(radius1 = 1.5f*mean_dis1/float(endpoint1.size())/resolution_ratio);
             data.push_back(radius2 = 1.5f*mean_dis2/float(endpoint2.size())/resolution_ratio);
-            titles.push_back("radius of end point area1 (mm)");
-            titles.push_back("radius of end point area2 (mm)");
+            titles.push_back("radius of end area1 (mm)");
+            titles.push_back("radius of end area2 (mm)");
 
             data.push_back(3.14159265358979323846f*radius1*radius1/end_area1);
             data.push_back(3.14159265358979323846f*radius2*radius2/end_area2);
-            titles.push_back("irregularity of end point area1");
-            titles.push_back("irregularity of end point area2");
+            titles.push_back("irregularity of end area1");
+            titles.push_back("irregularity of end area2");
 
         }
         // output mean and std of each index
