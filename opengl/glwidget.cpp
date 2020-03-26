@@ -975,15 +975,16 @@ void GLWidget::renderLR()
             QFont font;
             font.setPointSize(get_param("track_label_size"));
             font.setBold(get_param("track_label_bold"));
-            for (unsigned int i = 0;i < cur_tracking_window.tractWidget->rowCount();++i)
+            for (int i = 0;i < cur_tracking_window.tractWidget->rowCount();++i)
             if(cur_tracking_window.tractWidget->item(i,0)->checkState() == Qt::Checked)
             {
-                auto active_tract_model = cur_tracking_window.tractWidget->tract_models[i];
+                auto active_tract_model = cur_tracking_window.tractWidget->tract_models[size_t(i)];
                 if (active_tract_model->get_visible_track_count() == 0)
                     continue;
                 const auto& t = active_tract_model->get_tract(0);
-                int pos = t.size()/6*3;
-                renderText(t[pos],t[pos+1],t[pos+2],cur_tracking_window.tractWidget->item(i,0)->text(),font);
+                size_t pos = t.size()/6*3;
+                renderText(double(t[pos]),double(t[pos+1]),double(t[pos+2]),
+                        cur_tracking_window.tractWidget->item(i,0)->text(),font);
             }
         }
         if (get_param("show_region_label"))
@@ -2173,6 +2174,39 @@ void GLWidget::copyToClipboard(void)
     get_bounding_box(I);
     QApplication::clipboard()->setImage(I);
 }
+
+void GLWidget::copyToClipboardEach(void)
+{
+    for (int i = 0;i < cur_tracking_window.tractWidget->rowCount();++i)
+        cur_tracking_window.tractWidget->item(i,0)->setCheckState(Qt::Unchecked);
+    std::vector<QImage> images;
+    int height = 0,width = 0;
+    for (int i = 0;i < cur_tracking_window.tractWidget->rowCount();++i)
+    {
+        if(i > 0)
+            cur_tracking_window.tractWidget->item(i-1,0)->setCheckState(Qt::Unchecked);
+        cur_tracking_window.tractWidget->item(i,0)->setCheckState(Qt::Checked);
+        makeTracts();
+        QImage I = grab_image();
+        get_bounding_box(I);
+        if(I.width() == 0)
+            continue;
+        images.push_back(I);
+        height = std::max<int>(I.height(),height);
+        width += I.width() + 20;
+    }
+    QImage I(width,height,QImage::Format_RGB32);
+    QPainter painter(&I);
+    painter.fillRect(I.rect(),images[0].pixel(0,0));
+    width = 0;
+    for (size_t i = 0;i < images.size();++i)
+    {
+        painter.drawImage(width,0,images[i]);
+        width += images[i].width() + 20;
+    }
+    QApplication::clipboard()->setImage(I);
+}
+
 
 
 void GLWidget::get3View(QImage& I,unsigned int type)

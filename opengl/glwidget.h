@@ -106,6 +106,7 @@ public:
      void saveRotationSeries(void);
      void save3ViewImage(void);
      void copyToClipboard(void);
+     void copyToClipboardEach(void);
      void rotate(void);
      void record_video(void);
  signals:
