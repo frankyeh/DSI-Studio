@@ -2035,6 +2035,8 @@ void TractModel::get_quantitative_info(std::string& result)
             }
             data.push_back(tract_length = sum_length/float(tract_data.size()));
             titles.push_back("mean length(mm)");
+            data.push_back(sum_end_dis/float(tract_data.size()));
+            titles.push_back("span(mm)");
             data.push_back(sum_length/sum_end_dis);
             titles.push_back("curl");
         }
@@ -2048,7 +2050,7 @@ void TractModel::get_quantitative_info(std::string& result)
             data.push_back(tract_volume = points.size()*voxel_volume/resolution_ratio/resolution_ratio/resolution_ratio);
             titles.push_back("volume (mm^3)");
             data.push_back(bundle_diameter = float(std::sqrt(tract_volume/tract_length/3.14159265358979323846f)));
-            titles.push_back("bundle diameter (mm)");
+            titles.push_back("diameter (mm)");
 
 
             // now next convert point list to volume
@@ -2094,7 +2096,7 @@ void TractModel::get_quantitative_info(std::string& result)
             titles.push_back("surface area(mm^2)");
             data.push_back(cross_section = tract_volume/tract_length);
             titles.push_back("cross sectional area(mm^2)");
-            data.push_back(float(tract_area/2.0f/3.14159265358979323846f/bundle_diameter/tract_length));
+            data.push_back(float(tract_area/3.14159265358979323846f/bundle_diameter/tract_length));
             titles.push_back("irregularity");
         }
         // end points
