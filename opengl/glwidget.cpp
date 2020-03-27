@@ -2193,16 +2193,18 @@ void GLWidget::copyToClipboardEach(void)
             continue;
         images.push_back(I);
         height = std::max<int>(I.height(),height);
-        width += I.width() + 20;
+        width = std::max<int>(I.width(),width);
     }
-    QImage I(width,height,QImage::Format_RGB32);
+    width += 5;
+    height += 5;
+    QImage I(images.size() >= 10 ? width*10:width*images.size(),height*(1+images.size()/10),QImage::Format_RGB32);
     QPainter painter(&I);
     painter.fillRect(I.rect(),images[0].pixel(0,0));
-    width = 0;
-    for (size_t i = 0;i < images.size();++i)
+    for (size_t i = 0,j = 0;i < images.size();++i,++j)
     {
-        painter.drawImage(width,0,images[i]);
-        width += images[i].width() + 20;
+        if(j == 10)
+            j = 0;
+        painter.drawImage(j*width,int(i/10)*height,images[i]);
     }
     QApplication::clipboard()->setImage(I);
 }
