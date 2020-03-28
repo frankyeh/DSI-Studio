@@ -171,14 +171,15 @@ void RegionTableWidget::add_region(QString name,unsigned char feature,unsigned i
     if(color == 0x00FFFFFF || !color)
     {
         tipl::rgb c;
-        c.from_hsl(((color_gen++)*1.1-std::floor((color_gen++)*1.1/6)*6)*3.14159265358979323846/3.0,0.85,0.7);
+        ++color_gen;
+        c.from_hsl(((color_gen)*1.1-std::floor((color_gen)*1.1/6)*6)*3.14159265358979323846/3.0,0.85,0.7);
         color = c.color;
     }
     regions.push_back(std::make_shared<ROIRegion>(cur_tracking_window.handle));
     regions.back()->show_region.color = color;
     regions.back()->regions_feature = feature;
 
-    insertRow(regions.size()-1);
+    insertRow(int(regions.size())-1);
     QTableWidgetItem *item0 = new QTableWidgetItem(name);
     QTableWidgetItem *item1 = new QTableWidgetItem(QString::number(int(feature)));
     QTableWidgetItem *item2 = new QTableWidgetItem();
@@ -189,16 +190,16 @@ void RegionTableWidget::add_region(QString name,unsigned char feature,unsigned i
     item2->setData(Qt::UserRole,0xFF000000 | color);
 
 
-    setItem(regions.size()-1, 0, item0);
-    setItem(regions.size()-1, 1, item1);
-    setItem(regions.size()-1, 2, item2);
+    setItem(int(regions.size())-1, 0, item0);
+    setItem(int(regions.size())-1, 1, item1);
+    setItem(int(regions.size())-1, 2, item2);
 
 
     openPersistentEditor(item1);
     openPersistentEditor(item2);
 
-    setRowHeight(regions.size()-1,22);
-    setCurrentCell(regions.size()-1,0);
+    setRowHeight(int(regions.size())-1,22);
+    setCurrentCell(int(regions.size())-1,0);
 
     cur_tracking_window.ui->target->setCurrentIndex(0);
 
@@ -821,6 +822,30 @@ bool RegionTableWidget::load_multiple_roi_nii(QString file_name)
     return true;
 }
 
+void RegionTableWidget::load_region_color(void)
+{
+    QString filename = QFileDialog::getOpenFileName(
+                this,"Load region color",QFileInfo(cur_tracking_window.windowTitle()).absolutePath(),
+                "Color files (*.txt);;All files (*)");
+    if(filename.isEmpty())
+        return;
+
+    std::ifstream in(filename.toStdString().c_str());
+    if (!in)
+        return;
+    std::vector<int> colors((std::istream_iterator<float>(in)),
+                              (std::istream_iterator<float>()));
+    for(size_t index = 0,pos = 0;index < regions.size() && pos+2 < colors.size();++index,pos+=3)
+    {
+        tipl::rgb c(std::min<int>(colors[pos],255),
+                    std::min<int>(colors[pos+1],255),
+                    std::min<int>(colors[pos+2],255));
+        regions[index]->show_region.color = c;
+        regions[index]->modified = true;
+        item(int(index),2)->setData(Qt::UserRole,0xFF000000 | uint32_t(c));
+    }
+    emit need_update();
+}
 
 void RegionTableWidget::load_region(void)
 {
@@ -865,7 +890,7 @@ void RegionTableWidget::load_mni_region(void)
 
     if(!cur_tracking_window.can_map_to_mni())
     {
-        QMessageBox::information(this,"Error","Atlas is not supported for the current image resolution.",0);
+        QMessageBox::information(this,"Error",cur_tracking_window.handle->error_msg.c_str(),0);
         return;
     }
 

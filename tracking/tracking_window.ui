@@ -724,6 +724,7 @@
      <addaction name="separator"/>
      <addaction name="actionWhole_brain_seeding"/>
      <addaction name="menuSort_Regions"/>
+     <addaction name="actionAssign_Colors"/>
     </widget>
     <widget class="QMenu" name="menuMove_Current_Region">
      <property name="title">
@@ -3496,6 +3497,15 @@ Tracking</string>
   <action name="action3D_Screen_Each_Tract">
    <property name="text">
     <string>3D Screen Each Tract</string>
+   </property>
+  </action>
+  <action name="actionAssign_Colors">
+   <property name="icon">
+    <iconset resource="../icons.qrc">
+     <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+   </property>
+   <property name="text">
+    <string>Assign Colors...</string>
    </property>
   </action>
  </widget>
