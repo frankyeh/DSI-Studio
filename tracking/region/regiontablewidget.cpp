@@ -825,7 +825,7 @@ bool RegionTableWidget::load_multiple_roi_nii(QString file_name)
 void RegionTableWidget::load_region_color(void)
 {
     QString filename = QFileDialog::getOpenFileName(
-                this,"Load region color",QFileInfo(cur_tracking_window.windowTitle()).absolutePath(),
+                this,"Load region color",QFileInfo(cur_tracking_window.windowTitle()).absolutePath()+"/region_color.txt",
                 "Color files (*.txt);;All files (*)");
     if(filename.isEmpty())
         return;
@@ -845,6 +845,24 @@ void RegionTableWidget::load_region_color(void)
         item(int(index),2)->setData(Qt::UserRole,0xFF000000 | uint32_t(c));
     }
     emit need_update();
+}
+void RegionTableWidget::save_region_color(void)
+{
+    QString filename = QFileDialog::getSaveFileName(
+                this,"Save region color",QFileInfo(cur_tracking_window.windowTitle()).absolutePath()+"/region_color.txt",
+                "Color files (*.txt);;All files (*)");
+    if(filename.isEmpty())
+        return;
+
+    std::ofstream out(filename.toStdString().c_str());
+    if (!out)
+        return;
+    for(size_t index = 0;index < regions.size();++index)
+    {
+        tipl::rgb c(regions[index]->show_region.color);
+        out << int(c[2]) << " " << int(c[1]) << " " << int(c[0]) << std::endl;
+    }
+    QMessageBox::information(this,"DSI Studio","File saved");
 }
 
 void RegionTableWidget::load_region(void)

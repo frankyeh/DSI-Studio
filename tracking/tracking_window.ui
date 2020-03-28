@@ -722,9 +722,11 @@
      <addaction name="actionSave_All_Regions_As_Multiple_Files"/>
      <addaction name="actionSave_Voxel_Data_As"/>
      <addaction name="separator"/>
+     <addaction name="actionLoad_Region_Color"/>
+     <addaction name="actionSave_Region_Color"/>
+     <addaction name="separator"/>
      <addaction name="actionWhole_brain_seeding"/>
      <addaction name="menuSort_Regions"/>
-     <addaction name="actionAssign_Colors"/>
     </widget>
     <widget class="QMenu" name="menuMove_Current_Region">
      <property name="title">
@@ -3499,13 +3501,22 @@ Tracking</string>
     <string>3D Screen Each Tract</string>
    </property>
   </action>
-  <action name="actionAssign_Colors">
+  <action name="actionLoad_Region_Color">
    <property name="icon">
     <iconset resource="../icons.qrc">
      <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
    </property>
    <property name="text">
-    <string>Assign Colors...</string>
+    <string>Load Region Color...</string>
+   </property>
+  </action>
+  <action name="actionSave_Region_Color">
+   <property name="icon">
+    <iconset resource="../icons.qrc">
+     <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
+   </property>
+   <property name="text">
+    <string>Save Region Color...</string>
    </property>
   </action>
  </widget>
