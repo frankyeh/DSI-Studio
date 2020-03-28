@@ -71,6 +71,7 @@ private slots:
     void on_actionFlip_yz_triggered(){command("[Step T2][Edit][Image swap yz]");}
     void on_actionFlip_xz_triggered(){command("[Step T2][Edit][Image swap xz]");}
     void on_actionRotate_to_MNI_triggered(){command("[Step T2][Edit][Rotate to MNI]");}
+    void on_actionRotate_to_MNI_2mm_triggered(){command("[Step T2][Edit][Rotate to MNI2]");}
 
     void on_actionTrim_image_triggered(){command("[Step T2][Edit][Trim]");}
     void on_actionFlip_bx_triggered();

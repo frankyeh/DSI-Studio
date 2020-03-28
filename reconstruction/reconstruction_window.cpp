@@ -1062,4 +1062,3 @@ void reconstruction_window::on_edit_mask_clicked()
 
 }
 
-

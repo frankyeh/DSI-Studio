@@ -488,10 +488,19 @@ bool ImageModel::command(std::string cmd,std::string param)
     if(cmd == "[Step T2][Edit][Rotate to MNI]")
     {
         begin_prog("rotating");
-        rotate_to_mni();
+        rotate_to_mni(1.0f);
         check_prog(0,0);
         voxel.steps += cmd+"\n";
-        voxel.report += std::string(" The diffusion weighted images were rotated to the MNI space.");
+        voxel.report += std::string(" The diffusion weighted images were rotated to the MNI space at 1mm.");
+        return true;
+    }
+    if(cmd == "[Step T2][Edit][Rotate to MNI2]")
+    {
+        begin_prog("rotating");
+        rotate_to_mni(2.0f);
+        check_prog(0,0);
+        voxel.steps += cmd+"\n";
+        voxel.report += std::string(" The diffusion weighted images were rotated to the MNI space at 2mm.");
         return true;
     }
     if(cmd == "[Step T2][Edit][Change b-table:flip bx]")
@@ -693,12 +702,12 @@ void ImageModel::resample(float nv)
 }
 extern std::string fib_template_file_name_2mm;
 extern std::vector<std::string> iso_template_list;
-bool ImageModel::rotate_to_mni(void)
+bool ImageModel::rotate_to_mni(float resolution)
 {
     tipl::image<float,3> I;
     tipl::vector<3> vs;
 
-    if(voxel.vs[2] > 2.0f)
+    if(resolution == 2.0f)
     {
         std::string file_name = fib_template_file_name_2mm;
         gz_mat_read read;
@@ -719,6 +728,7 @@ bool ImageModel::rotate_to_mni(void)
         }
     }
     else
+    if(resolution == 1.0f)
     {
         gz_nifti nii;
         if(!nii.load_from_file(iso_template_list.front()))
@@ -729,6 +739,8 @@ bool ImageModel::rotate_to_mni(void)
         nii.toLPS(I);
         nii.get_voxel_size(vs);
     }
+    else
+        return false;
     tipl::transformation_matrix<double> arg;
     bool terminated = false;
     begin_prog("registering to the MNI space");

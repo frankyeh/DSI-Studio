@@ -274,7 +274,7 @@ public:
                 const tipl::image<tipl::vector<3>,3>& cdm_dis = tipl::image<tipl::vector<3>,3>(),
                 const tipl::image<float,3>& super_reso_ref = tipl::image<float,3>());
     void resample(float nv);
-    bool rotate_to_mni(void);
+    bool rotate_to_mni(float resolution);
     void trim(void);
     void distortion_correction(const ImageModel& rhs);
     bool compare_src(const char* file_name);

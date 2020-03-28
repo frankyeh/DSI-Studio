@@ -1111,6 +1111,7 @@ Reconstruction</string>
     <addaction name="separator"/>
     <addaction name="actionManual_Rotation"/>
     <addaction name="actionRotate_to_MNI"/>
+    <addaction name="actionRotate_to_MNI_2mm"/>
     <addaction name="separator"/>
     <addaction name="actionResample"/>
     <addaction name="actionRotate"/>
@@ -1239,7 +1240,7 @@ Reconstruction</string>
   </action>
   <action name="actionRotate_to_MNI">
    <property name="text">
-    <string>Rotate to MNI...</string>
+    <string>Rotate to MNI (1mm)...</string>
    </property>
   </action>
   <action name="actionFlip_bx">
@@ -1288,6 +1289,11 @@ Reconstruction</string>
    </property>
    <property name="text">
     <string>Save DWI sum...</string>
+   </property>
+  </action>
+  <action name="actionRotate_to_MNI_2mm">
+   <property name="text">
+    <string>Rotate to MNI (2mm)...</string>
    </property>
   </action>
  </widget>
