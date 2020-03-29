@@ -772,7 +772,6 @@ bool load_nii(std::shared_ptr<fib_data> handle,
     }
 
     for(uint32_t i = 0;i < region_points.size();++i)
-        if(!region_points[i].empty())
         {
             unsigned short value = value_list[i];
             QString name = (label_map.find(value) == label_map.end() ?
@@ -780,7 +779,8 @@ bool load_nii(std::shared_ptr<fib_data> handle,
             regions.push_back(std::make_shared<ROIRegion>(handle));
             names.push_back(name.toStdString());
             regions.back()->show_region.color = label_color.empty() ? 0x00FFFFFF : label_color[value].color;
-            regions.back()->add_points(region_points[i],false,1.0f);
+            if(!region_points[i].empty())
+                regions.back()->add_points(region_points[i],false,1.0f);
         }
     if(verbose)
         std::cout << "a total of " << regions.size() << " regions are loaded." << std::endl;
