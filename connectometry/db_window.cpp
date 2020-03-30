@@ -525,10 +525,63 @@ void db_window::on_actionSelect_Subjects_triggered()
     std::vector<char> selected;
     std::copy(std::istream_iterator<int>(in),std::istream_iterator<int>(),std::back_inserter(selected));
     selected.resize(vbc->handle->db.num_subjects);
-    for(int i = selected.size()-1;i >=0;--i)
-        if(selected[i])
+    for(int i = int(selected.size())-1;i >=0;--i)
+        if(selected[uint32_t(i)])
         {
-            vbc->handle->db.remove_subject(i);
+            vbc->handle->db.remove_subject(uint32_t(i));
             ui->subject_list->removeRow(i);
         }
+}
+
+void db_window::on_actionCurrent_Subject_triggered()
+{
+    QString filename = QFileDialog::getSaveFileName(
+                           this,
+                           "Open Selection Text files",
+                           QFileInfo(windowTitle()).absoluteDir().absolutePath()+"\\"+
+                            vbc->handle->db.subject_names[uint32_t(ui->subject_list->currentRow())].c_str()+"."+
+                            vbc->handle->db.index_name.c_str()+".nii.gz",
+                           "NIFTI files (*.nii *nii.gz);;All files (*)");
+    if (filename.isEmpty())
+        return;
+    tipl::image<float,3> I;
+    vbc->handle->db.get_subject_volume(uint32_t(ui->subject_list->currentRow()),I);
+    gz_nifti out;
+    out.set_voxel_size(vbc->handle->vs);
+    out.set_image_transformation(vbc->handle->trans_to_mni);
+    out << I;
+    if(out.save_to_file(filename.toLocal8Bit().begin()))
+        QMessageBox::information(this,"DSI Studio","File exported");
+    else
+        QMessageBox::information(this,"Error","Cannot save file.");
+}
+
+void db_window::on_actionAll_Subjects_triggered()
+{
+    QString dir = QFileDialog::getExistingDirectory(
+                                this,
+                                "Output directory",
+                                "");
+    if(dir.isEmpty())
+        return;
+    begin_prog("exporting");
+    for(size_t i = 0;check_prog(i,vbc->handle->db.subject_names.size());++i)
+    {
+        QString file_name = dir + "\\"+
+                vbc->handle->db.subject_names[i].c_str()+"."+
+                vbc->handle->db.index_name.c_str()+".nii.gz";
+        tipl::image<float,3> I;
+        vbc->handle->db.get_subject_volume(uint32_t(i),I);
+        gz_nifti out;
+        out.set_voxel_size(vbc->handle->vs);
+        out.set_image_transformation(vbc->handle->trans_to_mni);
+        out << I;
+        if(!out.save_to_file(file_name.toLocal8Bit().begin()))
+        {
+            QMessageBox::information(this,"Error","Cannot save file.");
+            check_prog(0,0);
+            return;
+        }
+    }
+    QMessageBox::information(this,"DSI Studio","Files exported");
 }

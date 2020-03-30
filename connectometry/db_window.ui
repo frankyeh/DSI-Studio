@@ -573,18 +573,27 @@
      <x>0</x>
      <y>0</y>
      <width>699</width>
-     <height>26</height>
+     <height>21</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
     <property name="title">
      <string>File&amp;</string>
     </property>
+    <widget class="QMenu" name="menuExport">
+     <property name="title">
+      <string>Export</string>
+     </property>
+     <addaction name="actionCurrent_Subject"/>
+     <addaction name="actionAll_Subjects"/>
+    </widget>
     <addaction name="actionAdd_DB"/>
     <addaction name="actionSave_DB_as"/>
     <addaction name="separator"/>
     <addaction name="actionSave_Subject_Name_as"/>
     <addaction name="action_Save_R2_values_as"/>
+    <addaction name="separator"/>
+    <addaction name="menuExport"/>
    </widget>
    <widget class="QMenu" name="menuTools">
     <property name="title">
@@ -688,6 +697,16 @@
   <action name="actionSelect_Subjects">
    <property name="text">
     <string>Select Subjects...</string>
+   </property>
+  </action>
+  <action name="actionCurrent_Subject">
+   <property name="text">
+    <string>Current Subject</string>
+   </property>
+  </action>
+  <action name="actionAll_Subjects">
+   <property name="text">
+    <string>All Subjects...</string>
    </property>
   </action>
  </widget>

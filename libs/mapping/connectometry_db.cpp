@@ -652,6 +652,14 @@ void connectometry_db::get_subject_slice(unsigned int subject_index,unsigned cha
         if(tmp[index])
             slice[index] = subject_qa[subject_index][tmp[index]];
 }
+void connectometry_db::get_subject_volume(unsigned int subject_index,tipl::image<float,3>& volume) const
+{
+    tipl::image<float,3> I(handle->dim);
+    for(unsigned int index = 0;index < I.size();++index)
+        if(vi2si[index])
+            I[index] = subject_qa[subject_index][vi2si[index]];
+    volume.swap(I);
+}
 void connectometry_db::get_subject_fa(unsigned int subject_index,std::vector<std::vector<float> >& fa_data,bool normalize_qa) const
 {
     fa_data.resize(handle->dir.num_fiber);

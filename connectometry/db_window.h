@@ -65,6 +65,10 @@ private slots:
 
     void on_actionSelect_Subjects_triggered();
 
+    void on_actionCurrent_Subject_triggered();
+
+    void on_actionAll_Subjects_triggered();
+
 private:
     Ui::db_window *ui;
 };
