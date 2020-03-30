@@ -413,9 +413,13 @@ bool load_roi(std::shared_ptr<fib_data> handle,std::shared_ptr<RoiMgr> roi_mgr)
     if (po.has(roi_names[index]))
     {
         ROIRegion roi(handle);
-        if(!load_region(handle,roi,po.get(roi_names[index])))
-            return false;
-        roi_mgr->setRegions(roi.get_region_voxels_raw(),roi.resolution_ratio,type[index],po.get(roi_names[index]).c_str());
+        QStringList roi_list = QString(po.get(roi_names[index]).c_str()).split("+");
+        for(int i= 0;i < roi_list.size();++i)
+        {
+            if(!load_region(handle,roi,roi_list[i].toStdString()))
+                return false;
+            roi_mgr->setRegions(roi.get_region_voxels_raw(),roi.resolution_ratio,type[index],roi_list[i].toStdString().c_str());
+        }
     }
     if(po.has("track_id"))
     {
