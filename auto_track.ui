@@ -29,7 +29,7 @@
          </sizepolicy>
         </property>
         <property name="title">
-         <string> Step A1(a): Select SRC Files</string>
+         <string> Step A1(a): Specify SRC Files</string>
         </property>
         <layout class="QVBoxLayout" name="verticalLayout_7">
          <property name="spacing">
@@ -184,7 +184,7 @@
          </sizepolicy>
         </property>
         <property name="title">
-         <string>Step A1(b): Select Targets</string>
+         <string>Step A1(b): Select Bundles</string>
         </property>
         <layout class="QVBoxLayout" name="verticalLayout_2">
          <item>
@@ -343,6 +343,9 @@
             <widget class="QCheckBox" name="export_trk">
              <property name="text">
               <string>Output Trk files</string>
+             </property>
+             <property name="checked">
+              <bool>true</bool>
              </property>
             </widget>
            </item>
