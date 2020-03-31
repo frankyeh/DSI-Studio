@@ -530,7 +530,6 @@ int trk(std::shared_ptr<fib_data> handle)
         }
         cnt_type = po.get("connectometry_type").c_str();
     }
-    TractModel tract_model(handle);
 
     if(po.get("thread_count",int(std::thread::hardware_concurrency())) < 1)
     {
@@ -553,6 +552,7 @@ int trk(std::shared_ptr<fib_data> handle)
             seed_threshold = otsu*tracking_thread.param.default_otsu;
         tracking_thread.roi_mgr->setWholeBrainSeed(seed_threshold);
     }
+    TractModel tract_model(handle);
 
     if(!cnt_file_name.empty())
     {

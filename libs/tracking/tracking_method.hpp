@@ -31,11 +31,11 @@ typedef boost::mpl::vector<
 
 struct TrackingParam
 {
-    float threshold;
+    float threshold = 0.0f;
     float default_otsu = 0.6f;
-    float cull_cos_angle;
-    float step_size;
-    float smooth_fraction;
+    float cull_cos_angle = 0.0f;
+    float step_size = 0.0f;
+    float smooth_fraction = 0.0f;
     float min_length;
     float max_length;
     unsigned int termination_count = 100000;
