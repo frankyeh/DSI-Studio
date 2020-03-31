@@ -62,7 +62,6 @@ void set_title(const char* title)
         return;
     }
     current_title = title;
-    check_create();
     if(progressDialog.get())
     {
         progressDialog->setLabelText(title);
