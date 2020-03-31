@@ -31,8 +31,10 @@ extern std::vector<std::string> tractography_name_list;
 extern std::string t1w_template_file_name,wm_template_file_name;
 extern std::vector<std::string> fa_template_list;
 extern std::vector<tracking_window*> tracking_windows;
-QByteArray default_geo,default_state;
+extern size_t auto_track_pos[7];
+extern unsigned char auto_track_rgb[6][3];               // projection
 
+static QByteArray default_geo,default_state;
 
 void show_info_dialog(const std::string& title,const std::string& result)
 {
@@ -187,11 +189,10 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
                 ui->target->addItem("All");
                 for(size_t i = 0;i < tractography_name_list.size();++i)
                     ui->target->addItem(tractography_name_list[i].c_str());
-                int pos[7] = {1,21,43,46,53,67,81};
-                unsigned char rgb[6][3]={{40,40,160},{40,160,40},{160,40,40},{20,20,80},{20,20,60},{20,80,20}};               // projection
                 for(int i = 0;i < 6;++i)
-                for(int j = pos[i];j < pos[i+1];++j)
-                        ui->target->setItemData(j, QBrush(QColor(rgb[i][0],rgb[i][1],rgb[i][2])), Qt::TextColorRole);
+                for(size_t j = auto_track_pos[i];j < auto_track_pos[i+1];++j)
+                        ui->target->setItemData(int(j)+1,
+                            QBrush(QColor(auto_track_rgb[i][0],auto_track_rgb[i][1],auto_track_rgb[i][2])), Qt::TextColorRole);
                 ui->target->setCurrentIndex(0);
                 ui->enable_auto_track->setVisible(handle->template_id == 0);
             }

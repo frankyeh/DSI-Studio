@@ -54,7 +54,7 @@
        </size>
       </property>
       <property name="currentIndex">
-       <number>1</number>
+       <number>2</number>
       </property>
       <property name="tabSpacing">
        <number>0</number>
@@ -471,6 +471,16 @@
           </property>
           <property name="description">
            <string>Select a directory that contains SRC files in the subdirectories and performan reconstruction.</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QCommandLinkButton" name="auto_track">
+          <property name="text">
+           <string>Step B4: Automatic Fiber Tracking</string>
+          </property>
+          <property name="description">
+           <string>Select SRC files to run automatic fiber tracking</string>
           </property>
          </widget>
         </item>

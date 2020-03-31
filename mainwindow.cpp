@@ -31,6 +31,7 @@
 #include "connectometry/nn_connectometry.h"
 #include "program_option.hpp"
 #include "libs/dsi/image_model.hpp"
+#include "auto_track.h"
 extern program_option po;
 int rec(void);
 int trk(void);
@@ -1044,4 +1045,11 @@ void MainWindow::on_connectometry_nn_clicked()
     nn_connectometry* nn_cnt = new nn_connectometry(this,database->handle,filename,true);
     nn_cnt->setAttribute(Qt::WA_DeleteOnClose);
     nn_cnt->show();
+}
+
+void MainWindow::on_auto_track_clicked()
+{
+    auto_track* at = new auto_track(this);
+    at->setAttribute(Qt::WA_DeleteOnClose);
+    at->showNormal();
 }

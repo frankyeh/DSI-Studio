@@ -89,7 +89,8 @@ HEADERS += mainwindow.h \
     connectometry/group_connectometry_analysis.h \
     regtoolbox.h \
     connectometry/nn_connectometry.h \
-    connectometry/nn_connectometry_analysis.h
+    connectometry/nn_connectometry_analysis.h \
+    auto_track.h
 
 FORMS += mainwindow.ui \
     tracking/tracking_window.ui \
@@ -108,7 +109,8 @@ FORMS += mainwindow.ui \
     connectometry/db_window.ui \
     connectometry/group_connectometry.ui \
     regtoolbox.ui \
-    connectometry/nn_connectometry.ui
+    connectometry/nn_connectometry.ui \
+    auto_track.ui
 RESOURCES += \
     icons.qrc
 SOURCES += main.cpp \
@@ -166,7 +168,8 @@ SOURCES += main.cpp \
     libs/dsi/image_model.cpp \
     connectometry/nn_connectometry.cpp \
     connectometry/nn_connectometry_analysis.cpp \
-    cmd/reg.cpp
+    cmd/reg.cpp \
+    auto_track.cpp
 
 OTHER_FILES += \
     options.txt \
