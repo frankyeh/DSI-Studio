@@ -882,12 +882,7 @@ void MainWindow::on_ReconstructSRC_clicked()
         handle->voxel.odf_xyz[0] = 0;
         handle->voxel.odf_xyz[1] = 0;
         handle->voxel.odf_xyz[2] = 0;
-        handle->voxel.csf_calibration = 0;
-        handle->voxel.max_fiber_number = 5;
-        handle->voxel.r2_weighted = 0;
         handle->voxel.output_odf = true; // output ODF
-        handle->voxel.check_btable = true;
-        handle->voxel.output_tensor = false;
         handle->voxel.output_rdi = true;
         handle->voxel.thread_count = std::thread::hardware_concurrency();
         handle->voxel.primary_template = fa_template_list[0];
@@ -899,11 +894,11 @@ void MainWindow::on_ReconstructSRC_clicked()
             handle->voxel.scheme_balance = handle->need_scheme_balance();
         }
 
-        const char* msg = handle->reconstruction();
-        if (QFileInfo(msg).exists())
-            continue;
-        QMessageBox::information(this,"error",msg,0);
+        if (!handle->reconstruction())
+        {
+            QMessageBox::information(this,"ERROR",handle->error_msg.c_str());
             return;
+        }
     }
 }
 

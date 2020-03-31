@@ -233,7 +233,7 @@ public:
 
 public:
     Voxel voxel;
-    std::string file_name,file_ext,error_msg;
+    std::string file_name,error_msg;
     gz_mat_read mat_reader;
 public:
     // untouched b-table and DWI from SRC file (the ones in Voxel class will be sorted
@@ -283,7 +283,6 @@ public:
 public:
     bool load_from_file(const char* dwi_file_name);
     bool save_to_file(const char* dwi_file_name);
-    void save_fib(void);
     bool save_to_nii(const char* nifti_file_name) const;
     bool save_b0_to_nii(const char* nifti_file_name) const;
     bool save_dwi_sum_to_nii(const char* nifti_file_name) const;
@@ -310,7 +309,10 @@ public:
             voxel.CreateProcesses<ProcessType>();
             voxel.init();
             if(prog_aborted())
+            {
+                error_msg = "reconstruction canceled";
                 return false;
+            }
         }
         // reconstruction
         {
@@ -319,9 +321,16 @@ public:
             begin_prog(prog);
             voxel.run();
         }
-        return !prog_aborted();
+        if(prog_aborted())
+        {
+            error_msg = "reconstruction canceled";
+            return false;
+        }
+        return true;
     }
-    const char* reconstruction(void);
+    std::string get_file_ext(void);
+    bool save_fib(const std::string& file_name);
+    bool reconstruction(void);
 
 
 };

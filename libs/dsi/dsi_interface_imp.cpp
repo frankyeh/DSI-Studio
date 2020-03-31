@@ -79,10 +79,47 @@ typedef boost::mpl::vector<
     SaveDirIndex
 > reprocess_odf;
 
-
-const char* ImageModel::reconstruction(void)
+std::string ImageModel::get_file_ext(void)
 {
-    static std::string output_name;
+    std::ostringstream out;
+    if(voxel.method_id != 1) // DTI
+    {
+        if (voxel.output_odf)
+            out << ".odf";
+    }
+    switch (voxel.method_id)
+    {
+    case 1://DTI
+        out << ".dti.fib.gz";
+        break;
+    case 4://GQI
+        if(voxel.param[0] == 0.0f) // spectral analysis
+        {
+            out << (voxel.r2_weighted ? ".gqi2.spec.fib.gz":".gqi.spec.fib.gz");
+            break;
+        }
+        if(!voxel.study_src_file_path.empty())
+            out << (voxel.dt_deform ? ".ddf." : ".df.") << voxel.study_name << ".R" << int(voxel.R2*100.0f);
+
+        out << (voxel.r2_weighted ? ".gqi2.":".gqi.") << voxel.param[0] << ".fib.gz";
+        break;
+    case 6:
+        out << ".hardi."<< voxel.param[0]
+            << ".b" << voxel.param[1]
+            << ".reg" << voxel.param[2] << ".src.gz";
+        break;
+    case 7:
+        out << "." << QFileInfo(voxel.primary_template.c_str()).baseName().toLower().toStdString();
+        out << (voxel.r2_weighted ? ".qsdr2.":".qsdr.");
+        out << voxel.param[0];
+        out << ".R" << int(std::floor(voxel.R2*100.0f)) << ".fib.gz";
+        break;
+    }
+    return out.str();
+}
+
+bool ImageModel::reconstruction(void)
+{
     try
     {
         if(!is_human_data())
@@ -91,7 +128,6 @@ const char* ImageModel::reconstruction(void)
         voxel.recon_report.str("");
         voxel.step_report.clear();
         voxel.step_report.str("");
-        std::ostringstream out;
         if(voxel.method_id != 4 && voxel.method_id != 7)
             voxel.output_rdi = 0;
         if(voxel.method_id == 1) // DTI
@@ -106,13 +142,8 @@ const char* ImageModel::reconstruction(void)
             if(!voxel.study_src_file_path.empty()) // DDI
                 voxel.csf_calibration = false;
             if (voxel.output_odf)
-            {
                 voxel.step_report << "[Step T2b(2)][ODFs]=1" << std::endl;
-                out << ".odf";
-            }
-            if (voxel.csf_calibration && voxel.method_id == 4) // GQI
-                out << ".csfc";
-            else
+            if (voxel.method_id != 4) // GQI
                 voxel.csf_calibration = false;
         }
 
@@ -121,7 +152,7 @@ const char* ImageModel::reconstruction(void)
         {
             voxel.recon_report <<
             " The b-table was checked by an automatic quality control routine to ensure its accuracy (Schilling et al. MRI, 2019) .";
-            out << check_b_table();
+            check_b_table();
         }
         else
             voxel.step_report << "[Step T2b][Check b-table]=unchecked" << std::endl;
@@ -131,22 +162,19 @@ const char* ImageModel::reconstruction(void)
         case 1://DTI
             voxel.step_report << "[Step T2b(1)]=DTI" << std::endl;
             voxel.recon_report << " The diffusion tensor was calculated.";
-            out << ".dti.fib.gz";
             voxel.max_fiber_number = 1;
             if (!reconstruct<dti_process>("DTI"))
-                return "reconstruction canceled";
+                return false;
             break;
-
         case 4://GQI
             voxel.step_report << "[Step T2b(1)]=GQI" << std::endl;
-            voxel.step_report << "[Step T2b(1)][Diffusion sampling length ratio]=" << (float)voxel.param[0] << std::endl;
-            if(voxel.param[0] == 0.0) // spectral analysis
+            voxel.step_report << "[Step T2b(1)][Diffusion sampling length ratio]=" << float(voxel.param[0]) << std::endl;
+            if(voxel.param[0] == 0.0f) // spectral analysis
             {
                 voxel.recon_report <<
                 " The diffusion data were reconstructed using generalized q-sampling imaging (Yeh et al., IEEE TMI, ;29(9):1626-35, 2010).";
-                out << (voxel.r2_weighted ? ".gqi2.spec.fib.gz":".gqi.spec.fib.gz");
                 if (!reconstruct<gqi_spectral_process>("Spectral GQI"))
-                    return "reconstruction canceled";
+                    return false;
                 break;
             }
 
@@ -160,40 +188,39 @@ const char* ImageModel::reconstruction(void)
                 if(!voxel.not_human_brain)
                     rotate_to_mni(2.0f);
                 if(!compare_src(voxel.study_src_file_path.c_str()))
-                    return "Failed to load DDI study SRC file.";
+                {
+                    error_msg = "Failed to load DDI study SRC file.";
+                    return false;
+                }
                 voxel.step_report << "[Step T2b(1)][Compare SRC]=" << QFileInfo(voxel.study_src_file_path.c_str()).baseName().toStdString() << std::endl;
                 voxel.recon_report <<
                 " The diffusion data were compared with baseline scan using differential tractography with a diffusion sampling length ratio of "
-                << (float)voxel.param[0] << " to study neuronal change.";
+                << float(voxel.param[0]) << " to study neuronal change.";
 
-                out << (voxel.dt_deform ? ".ddf." : ".df.") << voxel.study_name << ".R" << (int)(voxel.R2*100.0f);
             }
             else
                 voxel.recon_report <<
-                " The diffusion data were reconstructed using generalized q-sampling imaging (Yeh et al., IEEE TMI, ;29(9):1626-35, 2010) with a diffusion sampling length ratio of " << (float)voxel.param[0] << ".";
+                " The diffusion data were reconstructed using generalized q-sampling imaging (Yeh et al., IEEE TMI, ;29(9):1626-35, 2010) with a diffusion sampling length ratio of "
+                << float(voxel.param[0]) << ".";
 
             if(voxel.r2_weighted)
                 voxel.recon_report << " The ODF calculation was weighted by the square of the diffuion displacement.";
-            out << (voxel.r2_weighted ? ".gqi2.":".gqi.") << voxel.param[0] << ".fib.gz";
 
             if(src_dwi_data.size() == 1)
             {
                 if (!reconstruct<hgqi_process>("Reconstruction"))
-                    return "reconstruction canceled";
+                    return false;
                 break;
             }
 
             if (!reconstruct<gqi_process>("GQI"))
-                return "reconstruction canceled";
+                return false;
             break;
         case 6:
             voxel.recon_report
                     << " The diffusion data were converted to HARDI using generalized q-sampling method with a regularization parameter of " << voxel.param[2] << ".";
-            out << ".hardi."<< voxel.param[0]
-                << ".b" << voxel.param[1]
-                << ".reg" << voxel.param[2] << ".src.gz";
             if (!reconstruct<hardi_convert_process>("HARDI reconstruction"))
-                return "reconstruction canceled";
+                return false;
             break;
         case 7:
             voxel.step_report << "[Step T2b(1)]=QSDR" << std::endl;
@@ -201,15 +228,9 @@ const char* ImageModel::reconstruction(void)
             voxel.recon_report
             << " The diffusion data were reconstructed in the MNI space using q-space diffeomorphic reconstruction (Yeh et al., Neuroimage, 58(1):91-9, 2011) to obtain the spin distribution function (Yeh et al., IEEE TMI, ;29(9):1626-35, 2010). "
             << " A diffusion sampling length ratio of "
-            << (float)voxel.param[0] << " was used";
+            << float(voxel.param[0]) << " was used";
             // run gqi to get the spin quantity
 
-
-
-
-            out << "." << QFileInfo(voxel.primary_template.c_str()).baseName().toLower().toStdString();
-            out << (voxel.r2_weighted ? ".qsdr2.":".qsdr.");
-            out << voxel.param[0];
             // obtain QA map for normalization
             {
                 std::vector<tipl::pointer_image<float,3> > tmp;
@@ -218,10 +239,10 @@ const char* ImageModel::reconstruction(void)
                 // clear mask to create whole volume QA map
                 std::fill(voxel.mask.begin(),voxel.mask.end(),1.0);
                 if (!reconstruct<qa_map>("GQI for QSDR"))
-                    return "reconstruction canceled";
+                    return false;
                 tmp.swap(voxel.grad_dev);
                 if (!reconstruct<qsdr_process>("QSDR"))
-                    return "reconstruction canceled";
+                    return false;
                 voxel.mask = mask;
             }
 
@@ -231,25 +252,23 @@ const char* ImageModel::reconstruction(void)
                 voxel.recon_report <<
                     " The restricted diffusion was quantified using restricted diffusion imaging (Yeh et al., MRM, 77:603–612 (2017)).";
 
-            out << ".R" << (int)std::floor(voxel.R2*100.0) << ".fib.gz";
             break;
         default:
-            return "Unknown method";
+            error_msg = "unknown method";
+            return false;
         }
-        file_ext = out.str();
-        save_fib();
-        output_name = file_name + out.str();
+        return save_fib(file_name + get_file_ext());
     }
     catch (std::exception& e)
     {
-        output_name = e.what();
-        return output_name.c_str();
+        error_msg = e.what();
+        return false;
     }
     catch (...)
     {
-        return "unknown exception";
+        error_msg = "unknown exception";
+        return false;
     }
-    return output_name.c_str();
 }
 
 
@@ -274,13 +293,12 @@ bool output_odfs(const tipl::image<unsigned char,3>& mni_mask,
     image_model.voxel.output_odf = record_odf;
     image_model.voxel.template_odfs.swap(odfs);
     image_model.file_name = out_name;
-    image_model.file_ext = ext;
     image_model.voxel.mask = mni_mask;
     std::copy(mni,mni+16,image_model.voxel.trans_to_mni);
     std::copy(vs,vs+3,image_model.voxel.vs.begin());
     if (prog_aborted() || !image_model.reconstruct<reprocess_odf>("Template reconstruction"))
         return false;
-    image_model.save_fib();
+    image_model.save_fib(std::string(out_name)+ext);
     image_model.voxel.template_odfs.swap(odfs);
     return true;
 }

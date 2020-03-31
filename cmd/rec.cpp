@@ -230,10 +230,9 @@ int rec(void)
         std::cout << "done." <<std::endl;
     }
     std::cout << "start reconstruction..." <<std::endl;
-    const char* msg = handle->reconstruction();
-    if (!msg)
+    if (handle->reconstruction())
         std::cout << "reconstruction finished." << std::endl;
     else
-        std::cout << msg << std::endl;
+        std::cout << "ERROR:" << handle->error_msg << std::endl;
     return 0;
 }

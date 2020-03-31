@@ -1252,11 +1252,14 @@ bool ImageModel::load_from_file(const char* dwi_file_name)
     return true;
 }
 
-void ImageModel::save_fib(void)
+bool ImageModel::save_fib(const std::string& output_name)
 {
-    std::string output_name = file_name + file_ext;
     gz_mat_write mat_writer(output_name.c_str());
-
+    if(!mat_writer)
+    {
+        error_msg = "Cannot save fib file";
+        return false;
+    }
     {
         uint16_t dim[3];
         dim[0] = uint16_t(voxel.dim[0]);
@@ -1280,6 +1283,7 @@ void ImageModel::save_fib(void)
     final_steps += voxel.step_report.str();
     final_steps += "[Step T2b][Run reconstruction]\n";
     mat_writer.write("steps",final_steps);
+    return true;
 }
 bool ImageModel::save_to_nii(const char* nifti_file_name) const
 {
