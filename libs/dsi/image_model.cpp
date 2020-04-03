@@ -503,21 +503,21 @@ bool ImageModel::command(std::string cmd,std::string param)
         voxel.report += std::string(" The diffusion weighted images were rotated to the MNI space at 2mm.");
         return true;
     }
-    if(cmd == "[Step T2][Edit][Change b-table:flip bx]")
+    if(cmd == "[Step T2][B-table][flip bx]")
     {
         for(int i = 0;i < src_bvectors.size();++i)
             src_bvectors[i][0] = -src_bvectors[i][0];
         voxel.steps += cmd+"\n";
         return true;
     }
-    if(cmd == "[Step T2][Edit][Change b-table:flip by]")
+    if(cmd == "[Step T2][B-table][flip by]")
     {
         for(int i = 0;i < src_bvectors.size();++i)
             src_bvectors[i][1] = -src_bvectors[i][1];
         voxel.steps += cmd+"\n";
         return true;
     }
-    if(cmd == "[Step T2][Edit][Change b-table:flip bz]")
+    if(cmd == "[Step T2][B-table][flip bz]")
     {
         for(int i = 0;i < src_bvectors.size();++i)
             src_bvectors[i][2] = -src_bvectors[i][2];
