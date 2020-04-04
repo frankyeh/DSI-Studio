@@ -30,8 +30,8 @@ void atlas::load_label(void)
 
     if(text[0] == "0\t* * * * *")//talairach
     {
-        std::map<std::string,std::set<unsigned int> > regions;
-        for(int i = 0;i < text.size();++i)
+        std::map<std::string,std::set<size_t> > regions;
+        for(size_t i = 0;i < text.size();++i)
         {
             std::istringstream read_line(text[i]);
             int num;
@@ -46,14 +46,14 @@ void atlas::load_label(void)
             index2label.resize(i+1);
         }
 
-        std::map<std::string,std::set<unsigned int> >::iterator iter = regions.begin();
-        std::map<std::string,std::set<unsigned int> >::iterator end = regions.end();
-        for (int i = 0;iter != end;++iter,++i)
+        auto iter = regions.begin();
+        auto end = regions.end();
+        for (size_t i = 0;iter != end;++iter,++i)
         {
             labels.push_back(iter->first);
-            label_num.push_back(label_num.size());// dummy
-            label2index.push_back(std::vector<unsigned int>(iter->second.begin(),iter->second.end()));
-            for(int j = 0;j < label2index.back().size();++j)
+            label_num.push_back(uint32_t(label_num.size()));// dummy
+            label2index.push_back(std::vector<size_t>(iter->second.begin(),iter->second.end()));
+            for(size_t j = 0;j < label2index.back().size();++j)
                 index2label[label2index[i][j]].push_back(i);
         }
     }
@@ -64,7 +64,7 @@ void atlas::load_label(void)
             if(line.empty() || line[0] == '#')
                 continue;
             std::string txt;
-            int num = 0;
+            uint32_t num = 0;
             std::istringstream(line) >> num >> txt;
             if(txt.empty())
                 continue;
@@ -104,12 +104,12 @@ bool atlas::load_from_file(void)
 
     if(label2index.empty() && !is_track) // not talairach not tracks
     {
-        std::vector<unsigned short> hist(1+*std::max_element(I.begin(),I.end()));
-        for(int index = 0;index < I.size();++index)
-            hist[I[index]] = 1;
+        std::vector<unsigned char> hist(1+*std::max_element(I.begin(),I.end()));
+        for(size_t index = 0;index < I.size();++index)
+            hist[size_t(I[index])] = 1;
         if(labels.empty())
         {
-            for(int index = 1;index < hist.size();++index)
+            for(uint32_t index = 1;index < hist.size();++index)
                 if(hist[index])
                 {
                     std::ostringstream out_name;
@@ -121,11 +121,11 @@ bool atlas::load_from_file(void)
         else
         {
             //bool modified_atlas = false;
-            for(int i = 0;i < labels.size();)
+            for(size_t i = 0;i < labels.size();)
                 if(label_num[i] >= hist.size() || !hist[label_num[i]])
                 {
-                    labels.erase(labels.begin()+i);
-                    label_num.erase(label_num.begin()+i);
+                    labels.erase(labels.begin()+long(i));
+                    label_num.erase(label_num.begin()+long(i));
                     //modified_atlas = true;
                 }
             else
@@ -153,13 +153,13 @@ bool atlas::load_from_file(void)
     return true;
 }
 
-int atlas::get_index(tipl::vector<3,float> p)
+size_t atlas::get_index(tipl::vector<3,float> p)
 {
     mni2sub(p,T);
     p.round();
     if(!I.geometry().is_valid(p))
         return 0;
-    return (int(p[2])*I.height()+int(p[1]))*I.width()+int(p[0]);
+    return size_t((int(p[2])*I.height()+int(p[1]))*I.width()+int(p[0]));
 }
 
 bool atlas::is_labeled_as(const tipl::vector<3,float>& mni_space,unsigned int label_name_index)
@@ -168,19 +168,19 @@ bool atlas::is_labeled_as(const tipl::vector<3,float>& mni_space,unsigned int la
         load_from_file();
     if(label_name_index >= label_num.size())
         return false;
-    int offset = get_index(mni_space);
+    size_t offset = get_index(mni_space);
     if(!offset || offset >= I.size())
         return false;
     if(is_track)
     {
         if(label_name_index >= track_base_pos.size())
             return false;
-        unsigned int pos = track_base_pos[label_name_index] + offset;
+        size_t pos = track_base_pos[label_name_index] + offset;
         if(pos >= track.size())
             return false;
         return track[pos];
     }
-    int l = I[offset];
+    size_t l = I[offset];
     if(index2label.empty()) // not talairach
         return l == label_num[label_name_index];
 
@@ -196,15 +196,15 @@ int atlas::get_track_label(const std::vector<tipl::vector<3> >& points)
     if(!is_track)
         return -1;
     std::vector<int> vote(track_base_pos.size());
-    for(int i = 0;i < points.size();++i)
+    for(size_t i = 0;i < points.size();++i)
     {
-        int offset = get_index(points[i]);
+        size_t offset = get_index(points[i]);
         if(!offset)
             continue;
-        for(int j = 0;j < track_base_pos.size();++j)
+        for(size_t j = 0;j < track_base_pos.size();++j)
             if(track[track_base_pos[j] + offset])
                 ++vote[j];
     }
-    return std::max_element(vote.begin(),vote.end())-vote.begin();
+    return int(std::max_element(vote.begin(),vote.end())-vote.begin());
 }
 

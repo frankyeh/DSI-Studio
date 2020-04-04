@@ -5,18 +5,18 @@
 #include <string>
 class atlas{
 private:
-    tipl::image<int,3> I;
-    std::vector<int> label_num;
+    tipl::image<uint32_t,3> I;
+    std::vector<uint32_t> label_num;
     std::vector<std::string> labels;
     tipl::matrix<4,4,float> T;
     void load_label(void);
-    int get_index(tipl::vector<3,float> atlas_space);
+    size_t get_index(tipl::vector<3,float> atlas_space);
 private:// for talairach only
-    std::vector<std::vector<unsigned int> > index2label;
-    std::vector<std::vector<unsigned int> > label2index;
+    std::vector<std::vector<size_t> > index2label;
+    std::vector<std::vector<size_t> > label2index;
 private:// for track atlas only
     tipl::image<char,4> track;
-    std::vector<unsigned int> track_base_pos;
+    std::vector<uint32_t> track_base_pos;
     bool is_track;
 public:
     std::string name,filename,error_msg;
@@ -32,7 +32,7 @@ public:
         }
         return labels;
     }
-    const std::vector<int>& get_num(void)
+    const std::vector<uint32_t>& get_num(void)
     {
         if(labels.empty())
         {
