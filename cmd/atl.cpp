@@ -16,7 +16,7 @@ bool atl_load_atlas(std::string atlas_name,std::vector<std::shared_ptr<atlas> >&
     QStringList name_list = QString(atlas_name.c_str()).split(",");
 
 
-    for(unsigned int index = 0;index < name_list.size();++index)
+    for(int index = 0;index < name_list.size();++index)
     {
         bool has_atlas = false;
         for(unsigned int i = 0;i < atlas_list.size();++i)
@@ -110,7 +110,7 @@ void get_files_in_folder(std::string dir,std::string file,std::vector<std::strin
     if(file_list.empty())
         return;
     std::vector<std::string> name_list;
-    for (unsigned int index = 0;index < file_list.size();++index)
+    for (int index = 0;index < file_list.size();++index)
     {
         std::string file_name = dir;
         file_name += "/";
