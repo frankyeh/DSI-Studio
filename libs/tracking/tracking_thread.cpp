@@ -65,8 +65,8 @@ void ThreadData::run_thread(TrackingMethod* method_ptr,
                 method->current_step_size_in_voxel[0] = step_size_in_mm/method->trk.vs[0];
                 method->current_step_size_in_voxel[1] = step_size_in_mm/method->trk.vs[1];
                 method->current_step_size_in_voxel[2] = step_size_in_mm/method->trk.vs[2];
-                method->current_max_steps3 = std::round(3.0f*param.max_length/step_size_in_mm);
-                method->current_min_steps3 = std::round(3.0f*param.min_length/step_size_in_mm);
+                method->current_max_steps3 = uint32_t(std::round(3.0f*param.max_length/step_size_in_mm));
+                method->current_min_steps3 = uint32_t(std::round(3.0f*param.min_length/step_size_in_mm));
             }
             ++seed_count[thread_id];
             {

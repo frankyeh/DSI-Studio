@@ -19,7 +19,7 @@ public:
         if(r == 1.0f)
             dim = geo;
         else
-            dim = tipl::geometry<3>(int(geo[0]*r),int(geo[1]*r),int(geo[2]*r));
+            dim = tipl::geometry<3>(uint32_t(geo[0]*r),uint32_t(geo[1]*r),uint32_t(geo[2]*r));
         roi_filter.resize(uint16_t(dim[0]));
     }
     void clear(void)

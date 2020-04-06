@@ -71,7 +71,7 @@ public:
                 {
                     if(i == j)
                         continue;
-                    double cur_cos = std::abs(std::cos(voxel.bvectors[i]*voxel.bvectors[j]));
+                    double cur_cos = std::abs(std::cos(double(voxel.bvectors[i]*voxel.bvectors[j])));
                     if(cur_cos > 0.998)
                         continue;
                     max_cos = std::max<double>(max_cos,cur_cos);
@@ -515,7 +515,7 @@ public:
     {
 
         for (unsigned int index = 0;index < voxel.max_fiber_number;++index)
-            findex[index][data.voxel_index] = data.dir_index[index];
+            findex[index][data.voxel_index] = short(data.dir_index[index]);
     }
     virtual void end(Voxel& voxel,gz_mat_write& mat_writer)
     {

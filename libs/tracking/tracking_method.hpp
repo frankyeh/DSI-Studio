@@ -59,8 +59,8 @@ struct TrackingParam
     static char char2index(unsigned char c)
     {
         if(c < 10)
-            return c+'0';
-        return c+'A'-10;
+            return char(c)+'0';
+        return char(c+'A'-10);
     }
     static unsigned char index2char(char h,char l)
     {
@@ -72,14 +72,14 @@ struct TrackingParam
             l -= '0';
         else
             l -= 'A'-10;
-        return (unsigned char)l | ((unsigned char)h << 4);
+        return uint8_t(l) | uint8_t(uint8_t(h) << 4);
     }
 
     std::string get_code(void) const
     {
-        const unsigned char* p = (const unsigned char*)this;
+        const unsigned char* p = reinterpret_cast<const unsigned char*>(this);
         std::string code;
-        for(int i = 0;i < sizeof(*this);++i)
+        for(size_t i = 0;i < sizeof(*this);++i)
         {
             code.push_back(char2index(p[i] >> 4));
             code.push_back(char2index(p[i] & 15));
@@ -87,11 +87,11 @@ struct TrackingParam
         char rep[8] = {'0','a','b','c','d','e','f','g'};
         for(int i = 0;i < 7;++i)
         {
-            for(int j = 1;j < code.size();++j)
+            for(size_t j = 1;j < code.size();++j)
                 if(code[j-1] == code[j] && code[j] == rep[i])
                 {
                     code[j-1] = rep[i+1];
-                    code.erase(code.begin()+j);
+                    code.erase(code.begin()+int(j));
                     --j;
                 }
         }
@@ -102,17 +102,17 @@ struct TrackingParam
         char rep[8] = {'0','a','b','c','d','e','f','g'};
         for(int i = 7;i > 0;--i)
         {
-            for(int j = 0;j < code.size();++j)
+            for(size_t j = 0;j < code.size();++j)
                 if(code[j] == rep[i])
                 {
                     code[j] = rep[i-1];
-                    code.insert(code.begin()+j,rep[i-1]);
+                    code.insert(code.begin()+int(j),rep[i-1]);
                 }
         }
         if(code.size()/2 > sizeof(*this))
             return false;
-        unsigned char* p = (unsigned char*)this;
-        for(int i = 0;i < code.size();i += 2,++p)
+        unsigned char* p = reinterpret_cast<unsigned char*>(this);
+        for(size_t i = 0;i < code.size();i += 2,++p)
             *p = index2char(code[i],code[i+1]);
         return true;
     }
@@ -120,28 +120,28 @@ struct TrackingParam
     std::string get_report(void)
     {
         std::ostringstream report;
-        if(threshold == 0.0)
+        if(threshold == 0.0f)
             report << " The anisotropy threshold was randomly selected.";
         else
             report << " The anisotropy threshold was " << threshold << ".";
-        if(dt_threshold != 0.0)
+        if(dt_threshold != 0.0f)
             report << " The change threshold was " << int(dt_threshold * 100) << "%.";
 
-        if(cull_cos_angle != 1.0)
-            report << " The angular threshold was " << (int)std::round(std::acos(cull_cos_angle)*180.0/3.14159265358979323846) << " degrees.";
+        if(cull_cos_angle != 1.0f)
+            report << " The angular threshold was " << int(std::round(std::acos(double(cull_cos_angle))*180.0/3.14159265358979323846)) << " degrees.";
         else
             report << " The angular threshold was randomly selected from 15 degrees to 90 degrees.";
 
-        if(step_size != 0.0)
+        if(step_size != 0.0f)
             report << " The step size was " << step_size << " mm.";
         else
             report << " The step size was randomly selected from 0.5 voxel to 1.5 voxels.";
 
-        if(smooth_fraction != 0.0)
+        if(smooth_fraction != 0.0f)
         {
-            if(smooth_fraction != 1.0)
+            if(smooth_fraction != 1.0f)
                 report << " The fiber trajectories were smoothed by averaging the propagation direction with "
-                       << (int)std::round(smooth_fraction * 100.0) << "% of the previous direction.";
+                       << int(std::round(smooth_fraction * 100.0f)) << "% of the previous direction.";
             else
                 report << " The fiber trajectories were smoothed by averaging the propagation direction with a percentage of the previous direction. The percentage was randomly selected from 0% to 95%.";
         }
@@ -149,7 +149,7 @@ struct TrackingParam
         report << " Tracks with length shorter than " << min_length << " or longer than " << max_length  << " mm were discarded.";
         report << " A total of " << termination_count << (stop_by_tract ? " tracts were calculated.":" seeds were placed.");
         if(tip_iteration)
-            report << " Topology-informed pruning (Yeh et al. Neurotherapeutics, 16(1), 52-58, 2019) was applied to the tractography with " << (int)tip_iteration <<
+            report << " Topology-informed pruning (Yeh et al. Neurotherapeutics, 16(1), 52-58, 2019) was applied to the tractography with " << int(tip_iteration) <<
                       " iteration(s) to remove false connections.";
         report << " parameter_id=" << get_code() << " ";
         return report.str();
@@ -174,8 +174,8 @@ public:
     float current_tracking_angle;
     float current_tracking_smoothing;
     float current_step_size_in_voxel[3];
-    int current_min_steps3;
-    int current_max_steps3;
+    unsigned int current_min_steps3;
+    unsigned int current_max_steps3;
     void scaling_in_voxel(tipl::vector<3,float>& dir) const
     {
         dir[0] *= current_step_size_in_voxel[0];
@@ -190,7 +190,7 @@ private:
     unsigned int buffer_back_pos;
 
 private:
-    unsigned int init_fib_index;
+    unsigned char init_fib_index;
 public:
     unsigned int get_buffer_size(void) const
 	{
@@ -209,7 +209,7 @@ public:
 public:
     TrackingMethod(const tracking_data& trk_,basic_interpolation* interpolation_,
                    std::shared_ptr<RoiMgr> roi_mgr_):
-        trk(trk_),interpolation(interpolation_),roi_mgr(roi_mgr_),init_fib_index(0)
+        interpolation(interpolation_),trk(trk_),roi_mgr(roi_mgr_),init_fib_index(0)
 	{
 
 
@@ -239,8 +239,8 @@ public:
         // floatd for full backward or full forward
         track_buffer.resize(current_max_steps3 << 1);
         reverse_buffer.resize(current_max_steps3 << 1);
-        buffer_front_pos = current_max_steps3;
-        buffer_back_pos = current_max_steps3;
+        buffer_front_pos = uint32_t(current_max_steps3);
+        buffer_back_pos = uint32_t(current_max_steps3);
         tipl::vector<3,float> end_point1;
         terminated = false;
 		do
@@ -288,19 +288,19 @@ public:
             std::vector<float> smoothed(track_buffer.size());
             float w[5] = {1.0,2.0,4.0,2.0,1.0};
             int dis[5] = {-6, -3, 0, 3, 6};
-            for(int index = buffer_front_pos;index < buffer_back_pos;++index)
+            for(size_t index = buffer_front_pos;index < buffer_back_pos;++index)
             {
                 float sum_w = 0.0;
                 float sum = 0.0;
-                for(char i = 0;i < 5;++i)
+                for(int i = 0;i < 5;++i)
                 {
-                    int cur_index = index + dis[i];
-                    if(cur_index < buffer_front_pos || cur_index >= buffer_back_pos)
+                    int cur_index = int(index) + dis[i];
+                    if(cur_index < int(buffer_front_pos) || cur_index >= int(buffer_back_pos))
                         continue;
-                    sum += w[i]*track_buffer[cur_index];
+                    sum += w[i]*track_buffer[uint32_t(cur_index)];
                     sum_w += w[i];
                 }
-                if(sum_w != 0.0)
+                if(sum_w != 0.0f)
                     smoothed[index] = sum/sum_w;
             }
             smoothed.swap(track_buffer);
@@ -332,14 +332,14 @@ public:
                 {
                     if(trk.fa[0][pindex.index()] < current_fa_threshold)
                         return false;
-                    dir = trk.get_dir(pindex.index(),0);
+                    dir = trk.get_dir(uint32_t(pindex.index()),0);
                 }
                 return true;
             case 1:// random direction
                 for (unsigned int index = 0;index < 10;++index)
                 {
                     float txy = gen(seed);
-                    float tz = gen(seed)/2.0;
+                    float tz = gen(seed)/2.0f;
                     float x = std::sin(txy)*std::sin(tz);
                     float y = std::cos(txy)*std::sin(tz);
                     float z = std::cos(tz);
@@ -356,7 +356,7 @@ public:
                         return false;
                     }
                     else
-                        dir = trk.get_dir(pindex.index(),init_fib_index);
+                        dir = trk.get_dir(uint32_t(pindex.index()),init_fib_index);
                     ++init_fib_index;
                 }
                 return true;
@@ -371,21 +371,21 @@ public:
             {
             case 0:
                 if (!start_tracking<streamline_method_process>(false))
-                    return 0;
+                    return nullptr;
                 break;
             case 1:
                 if (!start_tracking<streamline_runge_kutta_4_method_process>(false))
-                    return 0;
+                    return nullptr;
                 break;
             case 2:
                 position[0] = std::round(position[0]);
                 position[1] = std::round(position[1]);
                 position[2] = std::round(position[2]);
                 if (!start_tracking<voxel_tracking>(true))
-                    return 0;
+                    return nullptr;
                 break;
             default:
-                return 0;
+                return nullptr;
             }
             point_count = get_point_count();
             return get_result();
