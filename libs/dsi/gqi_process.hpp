@@ -139,7 +139,7 @@ public:
                     tipl::vector<3> dir(dx,dy,dz);
                     dir.normalize();
                     voxel.bvectors.push_back(dir);
-                    offset.push_back(dx + dy*voxel.dim.width() + dz*voxel.dim.plane_size());
+                    offset.push_back(dx + dy*int(voxel.dim.width()) + dz*int(voxel.dim.plane_size()));
                     scaling.push_back(float(std::exp(-r2)));
                 }
         voxel.calculate_sinc_ql(sinc_ql);
@@ -255,7 +255,7 @@ public:
     {
         if(voxel.b0_index == 0)
         {
-            b0[data.voxel_index] = data.space[0];
+            b0[data.voxel_index] = uint16_t(data.space[0]);
             data.space[0] = 0;
         }
         from.run(voxel,data);
@@ -267,7 +267,7 @@ public:
             if(hardi_data[index] < 0.0f)
                 ++total_negative_value;
             else
-                dwi[index][data.voxel_index] = hardi_data[index];
+                dwi[index][data.voxel_index] = uint16_t(hardi_data[index]);
             ++total_value;
         }
     }
@@ -298,68 +298,67 @@ public:
     }
 };
 
-template<class value_type>
-value_type sinint(value_type x)
+float sinint(float x)
 {
     bool sgn = x > 0;
     x = std::fabs(x);
-    value_type eps = 1e-15f;
-    value_type x2 = x*x;
-    value_type si;
-    if(x == 0.0)
-        return 0.0;
-    if(x <= 16.0)
+    float eps = 1e-15f;
+    float x2 = x*x;
+    float si;
+    if(x == 0.0f)
+        return 0.0f;
+    if(x <= 16.0f)
     {
-        value_type xr = x;
+        float xr = x;
         si = x;
         for(unsigned int k = 1;k <= 40;++k)
         {
-            si += (xr *= -0.5*(value_type)(2*k-1)/(value_type)k/(value_type)(4*k*(k+1)+1)*x2);
+            si += (xr *= -0.5f*float(2*k-1)/float(k)/float(4*k*(k+1)+1)*x2);
             if(std::fabs(xr) < std::fabs(si)*eps)
                 break;
         }
         return sgn ? si:-si;
     }
 
-    if(x <= 32.0)
+    if(x <= 32.0f)
     {
-        unsigned int m = std::floor(47.2+0.82*x);
-        std::vector<double> bj(m+1);
-        value_type xa1 = 0.0f;
-        value_type xa0 = 1.0e-100f;
+        unsigned int m = uint32_t(std::floor(47.2f+0.82f*x));
+        std::vector<float> bj(m+1);
+        float xa1 = 0.0f;
+        float xa0 = 1.0e-40f;
         for(unsigned int k=m;k>=1;--k)
         {
-            value_type xa = 4.0*(value_type)k*xa0/x-xa1;
+            float xa = 4.0f*float(k)*xa0/x-xa1;
             bj[k-1] = xa;
             xa1 = xa0;
             xa0 = xa;
         }
-        value_type xs = bj[0];
+        float xs = bj[0];
         for(unsigned int k=3;k <= m;k += 2)
-            xs += 2.0*bj[k-1];
+            xs += 2.0f*bj[k-1];
         for(unsigned int k=0;k < m;++k)
             bj[k] /= xs;
-        value_type xr = 1.0;
-        value_type xg1 = bj[0];
-        for(int k=2;k <= m;++k)
-            xg1 += bj[k-1]*(xr *= 0.25*(2*k-3)*(2*k-3)/((k-1)*(2*k-1)*(2*k-1))*x);
+        float xr = 1.0f;
+        float xg1 = bj[0];
+        for(unsigned int k=2;k <= m;++k)
+            xg1 += bj[k-1]*(xr *= 0.25f*(2*k-3)*(2*k-3)/((k-1)*(2*k-1)*(2*k-1))*x);
         xr = 1.0;
-        value_type xg2 = bj[0];
-        for(int k=2;k <= m;++k)
-            xg2 += bj[k-1]*(xr *= 0.25*(2*k-5)*(2*k-5)/((k-1)*(2*k-3)*(2*k-3))*x);
-        si = x*std::cos(x/2.0)*xg1+2.0*std::sin(x/2.0)*xg2-std::sin(x);
+        float xg2 = bj[0];
+        for(unsigned int k=2;k <= m;++k)
+            xg2 += bj[k-1]*(xr *= 0.25f*(2*k-5)*(2*k-5)/((k-1)*(2*k-3)*(2*k-3))*x);
+        si = x*std::cos(x/2.0f)*xg1+2.0f*std::sin(x/2.0f)*xg2-std::sin(x);
         return sgn ? si:-si;
     }
 
-    value_type xr = 1.0;
-    value_type xf = 1.0;
+    float xr = 1.0f;
+    float xf = 1.0f;
     for(unsigned int k=1;k <= 9;++k)
-        xf += (xr *= -2.0*k*(2*k-1)/x2);
-    xr = 1.0/x;
-    value_type xg = xr;
+        xf += (xr *= -2.0f*k*(2*k-1)/x2);
+    xr = 1.0f/x;
+    float xg = xr;
     for(unsigned int k=1;k <= 8;++k)
-        xg += (xr *= -2.0*(2*k+1)*k/x2);
-    si = 1.570796326794897-xf*std::cos(x)/x-xg*std::sin(x)/x;
+        xg += (xr *= -2.0f*(2*k+1)*k/x2);
+    si = 1.570796326794897f-xf*std::cos(x)/x-xg*std::sin(x)/x;
     return sgn ? si:-si;
 }
 
@@ -375,11 +374,11 @@ public:
     {
         b0_images.clear();
         for(unsigned int index = 0;index < voxel.bvalues.size();++index)
-            if(voxel.bvalues[index] == 0)
+            if(voxel.bvalues[index] == 0.0f)
                 b0_images.push_back(index);
 
         float diffusion_time = voxel.param[1];
-        float diffusion_length = std::sqrt(6.0*3.0*diffusion_time); // sqrt(6Dt)
+        float diffusion_length = std::sqrt(6.0f*3.0f*diffusion_time); // sqrt(6Dt)
         dis.clear();
         cdf.clear();
         disw.clear();
@@ -391,7 +390,7 @@ public:
         for(unsigned int n = 0;n < max_length;++n) // from 0 micron to 49 microns
         {
             // calculate the diffusion length ratio
-            float sigma = ((float)n)/diffusion_length;
+            float sigma = float(n)/diffusion_length;
 
             dis[n].resize(voxel.dim.size());
             cdf[n].resize(voxel.dim.size());
@@ -401,17 +400,17 @@ public:
             for(unsigned int index = 0;index < voxel.bvalues.size();++index)
             {
                 // 2pi*L*q = sigma*sqrt(6D*b_value)
-                double lq_2pi = sigma*std::sqrt(voxel.bvalues[index]*0.018);
+                float lq_2pi = sigma*std::sqrt(voxel.bvalues[index]*0.018f);
                 disw[n][index] = boost::math::sinc_pi(lq_2pi);
-                cdfw[n][index] = (voxel.bvalues[index] == 0.0 ?
-                                 sigma : sinint(lq_2pi)/std::sqrt(voxel.bvalues[index]*0.018));
+                cdfw[n][index] = (voxel.bvalues[index] == 0.0f ?
+                                 sigma : sinint(lq_2pi)/std::sqrt(voxel.bvalues[index]*0.018f));
             }
         }
     }
     virtual void run(Voxel& voxel, VoxelData& data)
     {
         if(b0_images.size() == 1 && voxel.half_sphere)
-            data.space[b0_images.front()] *= 0.5;
+            data.space[b0_images.front()] *= 0.5f;
         for(unsigned int index = 0;index < max_length;++index)
         {
             dis[index][data.voxel_index] =
@@ -422,8 +421,8 @@ public:
             if(index && cdf[index][data.voxel_index] < cdf[index-1][data.voxel_index])
                 cdf[index][data.voxel_index] = cdf[index-1][data.voxel_index];
             // make sure that dis is positive
-            if(dis[index][data.voxel_index] < 0.0)
-                dis[index][data.voxel_index] = 0.0;
+            if(dis[index][data.voxel_index] < 0.0f)
+                dis[index][data.voxel_index] = 0.0f;
         }
     }
     virtual void end(Voxel& voxel,gz_mat_write& mat_writer)
