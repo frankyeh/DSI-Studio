@@ -558,7 +558,7 @@ bool DwiHeader::output_src(const char* di_file,std::vector<std::shared_ptr<DwiHe
     if(!dwi_files[0]->grad_dev.empty())
         write_mat.write("grad_dev",dwi_files[0]->grad_dev,uint32_t(dwi_files[0]->grad_dev.size()/9));
     if(!dwi_files[0]->mask.empty())
-        write_mat.write("mask",dwi_files[0]->mask,uint32_t(dwi_files[0]->mask.plane_size()));
+        write_mat.write("mask",dwi_files[0]->mask,dwi_files[0]->mask.plane_size());
 
     //store images
     begin_prog("Save Files");

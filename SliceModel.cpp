@@ -232,7 +232,7 @@ bool CustomSliceModel::initialize(const std::vector<std::string>& files,
                 error_msg += files[file_index];
                 return false;
             }
-            std::copy(I.begin(),I.end(),source_images.begin() + size_t(i)*source_images.plane_size());
+            std::copy(I.begin(),I.end(),source_images.begin() + long(i*source_images.plane_size()));
         }
         if(prog_aborted())
             return false;

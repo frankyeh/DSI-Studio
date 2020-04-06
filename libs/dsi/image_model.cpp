@@ -236,7 +236,7 @@ std::vector<std::pair<int,int> > ImageModel::get_bad_slices(void)
             index_mapping.push_back(sorted_index[i]);
 
     std::vector<char> skip_slice(size_t(voxel.dim.depth()));
-    for(size_t i = 0,pos = 0;i < skip_slice.size();++i,pos += size_t(voxel.dim.plane_size()))
+    for(size_t i = 0,pos = 0;i < skip_slice.size();++i,pos += voxel.dim.plane_size())
         if(std::accumulate(voxel.mask.begin()+long(pos),voxel.mask.begin()+long(pos)+voxel.dim.plane_size(),0) < voxel.dim.plane_size()/16)
             skip_slice[i] = 1;
         else
@@ -250,7 +250,7 @@ std::vector<std::pair<int,int> > ImageModel::get_bad_slices(void)
         auto I = tipl::make_image(voxel.dwi_data[index],voxel.dim);
         size_t value_index = index*size_t(voxel.dim.depth());
         for(size_t z = 0,pos = 0;z < size_t(voxel.dim.depth());
-                                ++z,pos += size_t(voxel.dim.plane_size()))
+                                ++z,pos += voxel.dim.plane_size())
         {
             float cor = 0.0f;
             if(z)
@@ -305,7 +305,7 @@ std::vector<std::pair<int,int> > ImageModel::get_bad_slices(void)
 
     auto arg = tipl::arg_sort(sum,std::less<float>());
     //tipl::image<float,3> bad_I(tipl::geometry<3>(voxel.dim[0],voxel.dim[1],bad_i.size()));
-    for(size_t i = 0,out_pos = 0;i < bad_i.size();++i,out_pos += size_t(voxel.dim.plane_size()))
+    for(size_t i = 0,out_pos = 0;i < bad_i.size();++i,out_pos += voxel.dim.plane_size())
     {
         result.push_back(std::make_pair(bad_i[arg[i]],bad_z[arg[i]]));
         //int pos = bad_z[arg[i]]*voxel.dim.plane_size();

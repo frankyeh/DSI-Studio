@@ -285,7 +285,7 @@ void group_connectometry_analysis::save_tracks_files(void)
                         name == "odf_vertices" || name == "odf_faces" || name == "trans")
                     mat_write.write(handle->mat_reader[i]);
                 if(name == "fa0")
-                    mat_write.write("qa_map",handle->dir.fa[0],uint32_t(handle->dim.plane_size()),uint32_t(handle->dim.depth()));
+                    mat_write.write("qa_map",handle->dir.fa[0],handle->dim.plane_size(),handle->dim.depth());
             }
             for(unsigned int i = 0;i < spm_map->pos_corr_ptr.size();++i)
             {

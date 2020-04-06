@@ -1156,7 +1156,7 @@ unsigned int TractModel::find_nearest(const float* trk,unsigned int length,bool 
 //---------------------------------------------------------------------------
 void TractModel::delete_repeated(float d)
 {   
-    std::vector<std::vector<size_t> > x_reg(size_t(geometry.plane_size()));
+    std::vector<std::vector<size_t> > x_reg(geometry.plane_size());
     std::vector<size_t> track_reg(tract_data.size());
     for(size_t i = 0; i < tract_data.size();++i)
     {

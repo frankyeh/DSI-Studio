@@ -140,7 +140,7 @@ public:
                     dir.normalize();
                     voxel.bvectors.push_back(dir);
                     offset.push_back(dx + dy*voxel.dim.width() + dz*voxel.dim.plane_size());
-                    scaling.push_back(std::exp(-r2));
+                    scaling.push_back(float(std::exp(-r2)));
                 }
         voxel.calculate_sinc_ql(sinc_ql);
     }
@@ -171,7 +171,7 @@ public:
         }
 
         tipl::mat::vector_product(&*sinc_ql.begin(),&*data.space.begin(),&*data.odf.begin(),
-                                    tipl::dyndim(data.odf.size(),data.space.size()));
+                                    tipl::dyndim(uint32_t(data.odf.size()),uint32_t(data.space.size())));
     }
     virtual void end(Voxel& voxel,gz_mat_write& mat_writer)
     {
@@ -202,7 +202,7 @@ public:
             std::copy(std::istream_iterator<float>(read),std::istream_iterator<float>(),std::back_inserter(values));
             for(unsigned int i = 0;i < values.size()/4;++i)
             {
-                if(values[i*4] == 0.0)
+                if(values[i*4] == 0.0f)
                     continue;
                 bvalues.push_back(voxel.param[1]);
                 bvectors.push_back(tipl::vector<3,float>(values[i*4+1],values[i*4+2],values[i*4+3]));
@@ -264,7 +264,7 @@ public:
         tipl::mat::lu_solve(&*A.begin(),&*piv.begin(),&*tmp.begin(),&*hardi_data.begin(),tipl::dyndim(dwi.size(),dwi.size()));
         for(unsigned int index = 0;index < dwi.size();++index)
         {
-            if(hardi_data[index] < 0.0)
+            if(hardi_data[index] < 0.0f)
                 ++total_negative_value;
             else
                 dwi[index][data.voxel_index] = hardi_data[index];
@@ -274,7 +274,7 @@ public:
     virtual void end(Voxel& voxel,gz_mat_write& mat_writer)
     {
         voxel.recon_report
-                << " The percentage of the negative signals was " << (float)100.0*total_negative_value/(float)total_value << "%.";
+                << " The percentage of the negative signals was " << float(100.0f)*total_negative_value/float(total_value) << "%.";
         std::vector<float> b_table(4); // space for b0
         for (unsigned int index = 0;index < bvectors.size();++index)
         {
