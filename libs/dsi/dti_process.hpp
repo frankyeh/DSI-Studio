@@ -154,7 +154,7 @@ public:
                 tipl::vector<3> center(float(voxel.dim[0])*0.5f,float(voxel.dim[1])*0.5f,float(voxel.dim[2])*0.5f);
                 center -= tipl::vector<3>(tipl::pixel_index<3>(data.voxel_index,voxel.dim));
                 if((center.cross_product(tipl::vector<3>(0.0f,0.0f,1.0f))*tipl::vector<3>(V) < 0) ^
-                        (V[2] < 0.0f))
+                        (V[2] < 0.0))
                     ha[data.voxel_index] = -ha[data.voxel_index];
             }
             if(voxel.output_tensor)
