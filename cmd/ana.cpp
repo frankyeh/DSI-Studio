@@ -42,7 +42,7 @@ void export_track_info(const std::string& file_name,
             std::replace(cmd.begin(),cmd.end(),':',' ');
             std::istringstream in(cmd);
             std::string report_tag,index_name;
-            int profile_dir = 0,bandwidth = 0;
+            uint32_t profile_dir = 0,bandwidth = 0;
             in >> report_tag >> index_name >> profile_dir >> bandwidth;
             std::vector<float> values,data_profile;
             // check index
@@ -118,8 +118,8 @@ void export_track_info(const std::string& file_name,
             }
             tract_model.get_density_map(tdi,tr,false);
             tipl::image<tipl::rgb,2> mosaic;
-            tipl::mosaic(tdi,mosaic,std::sqrt(tdi.depth()));
-            QImage qimage((unsigned char*)&*mosaic.begin(),
+            tipl::mosaic(tdi,mosaic,uint32_t(std::sqrt(tdi.depth())));
+            QImage qimage(reinterpret_cast<unsigned char*>(&*mosaic.begin()),
                           mosaic.width(),mosaic.height(),QImage::Format_RGB32);
             qimage.save(file_name_stat.c_str());
             continue;
@@ -199,8 +199,8 @@ int ana(void)
         return 1;
     if(po.has("info"))
     {
-        float otsu = tipl::segmentation::otsu_threshold(tipl::make_image(handle->dir.fa[0],handle->dim))*0.6;
-        auto result = evaluate_fib(handle->dim,otsu,handle->dir.fa,[handle](int pos,char fib)
+        float otsu = tipl::segmentation::otsu_threshold(tipl::make_image(handle->dir.fa[0],handle->dim))*0.6f;
+        auto result = evaluate_fib(handle->dim,otsu,handle->dir.fa,[handle](size_t pos,unsigned int fib)
                                         {return tipl::vector<3>(handle->dir.get_dir(pos,fib));});
         std::ofstream out(po.get("info"));
         out << "fiber coherence index\t" << result.first << std::endl;
