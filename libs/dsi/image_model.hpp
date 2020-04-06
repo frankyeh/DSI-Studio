@@ -13,7 +13,7 @@ struct distortion_map{
         i2.resize(d.geometry());
         w1.resize(d.geometry());
         w2.resize(d.geometry());
-        int max_n = n-1.001f;
+        int max_n = n-1;
         tipl::par_for(d.height()*d.depth(),[&](int pos)
         {
             pos *= n;
@@ -32,10 +32,10 @@ struct distortion_map{
                     w2p[i] = 0.0f;
                     continue;
                 }
-                float p1 = std::max<float>(0.0f,std::min<float>((float)i+d[i],max_n));
-                float p2 = std::max<float>(0.0f,std::min<float>((float)i-d[i],max_n));
-                i1p[i] = p1;
-                i2p[i] = p2;
+                float p1 = std::max<float>(0.0f,std::min<float>(float(i)+d[i],max_n));
+                float p2 = std::max<float>(0.0f,std::min<float>(float(i)-d[i],max_n));
+                i1p[i] = int(p1);
+                i2p[i] = int(p2);
                 w1p[i] = p1-std::floor(p1);
                 w2p[i] = p2-std::floor(p2);
             }
@@ -94,7 +94,7 @@ struct distortion_map{
             const int* i2p = &i2[0]+pos;
             const float* w1p = &w1[0]+pos;
             const float* w2p = &w2[0]+pos;
-            std::vector<float> M(block2*2); // a col by col + col matrix
+            std::vector<float> M(size_t(block2*2)); // a col by col + col matrix
             float* p = &M[0];
             for(int i = 0;i < n;++i,p += n2)
             {
@@ -107,10 +107,11 @@ struct distortion_map{
             }
             const float* v1p = &*v1.begin()+pos;
             const float* v2p = &*v2.begin()+pos;
-            std::vector<float> y(n2);
+            std::vector<float> y;
+            y.resize(size_t(n2));
             std::copy(v1p,v1p+n,y.begin());
             std::copy(v2p,v2p+n,y.begin()+n);
-            tipl::mat::pseudo_inverse_solve(&M[0],&y[0],&v[0]+pos,tipl::dyndim(n,n2));
+            tipl::mat::pseudo_inverse_solve(&M[0],&y[0],&v[0]+pos,tipl::dyndim(uint32_t(n),uint32_t(n2)));
         });
     }
     void sample_gradient(const tipl::image<float,3>& g1,
@@ -188,7 +189,7 @@ void distortion_estimate(const image_type& v1,const image_type& v2,
         tipl::minus(j2,v2);
 
         float sum = 0.0f;
-        for(int i = 0;i < j1.size();++i)
+        for(size_t i = 0;i < j1.size();++i)
         {
             sum += j1[i]*j1[i];
             sum += j2[i]*j2[i];
@@ -208,7 +209,7 @@ void distortion_estimate(const image_type& v1,const image_type& v2,
             tipl::image<float,3> g1(geo),g2(geo);
             tipl::gradient(j1.begin(),j1.end(),g1.begin(),2,1);
             tipl::gradient(j2.begin(),j2.end(),g2.begin(),2,1);
-            for(int i = 0;i < g1.size();++i)
+            for(size_t i = 0;i < g1.size();++i)
                 g1[i] = -g1[i];
             // sample gradient
             m.sample_gradient(g1,g2,new_g);
@@ -217,13 +218,12 @@ void distortion_estimate(const image_type& v1,const image_type& v2,
         tipl::multiply_constant(new_g,s);
         tipl::add(d,new_g);
         tipl::lower_threshold(d,0.0f);
-        for(int i = 0,pos = 0;i < geo.depth()*geo.height();++i,pos+=n)
+        for(size_t i = 0,pos = 0;i < geo.depth()*geo.height();++i,pos+=size_t(n))
         {
             d[pos] = 0.0f;
             d[pos+n-1] = 0.0f;
         }
     }
-    std::cout << "end" << std::endl;
 }
 
 struct ImageModel
