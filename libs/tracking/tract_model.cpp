@@ -2051,7 +2051,8 @@ void TractModel::get_quantitative_info(std::string& result)
             titles.push_back("volume(mm^3)");
             data.push_back(bundle_diameter = float(std::sqrt(tract_volume/tract_length/3.14159265358979323846f)));
             titles.push_back("diameter(mm)");
-
+            data.push_back(tract_length/bundle_diameter);
+            titles.push_back("elongation");
 
             // now next convert point list to volume
             tipl::vector<3,short> max_value(points[0]), min_value(points[0]);
@@ -2078,10 +2079,7 @@ void TractModel::get_quantitative_info(std::string& result)
             // tract volume
             data.push_back(trunk_volume = points.size()*voxel_volume/resolution_ratio/resolution_ratio/resolution_ratio);
             titles.push_back("trunk volume(mm^3)");
-            data.push_back(tract_volume-trunk_volume);
-            titles.push_back("branch volume(mm^3)");
-            data.push_back((tract_volume-trunk_volume)/tract_volume);
-            titles.push_back("branchness");
+
         }
         // surface area
         {
@@ -2128,9 +2126,11 @@ void TractModel::get_quantitative_info(std::string& result)
                 dis -= endpoint2[i];
                 mean_dis2 += float(dis.length());
             }
+            mean_dis1 /= float(endpoint1.size());
+            mean_dis2 /= float(endpoint2.size());
             // the average distance of a point in a circle to the center is 2R/3, where R is the radius
-            data.push_back(radius1 = 1.5f*mean_dis1/float(endpoint1.size())/resolution_ratio);
-            data.push_back(radius2 = 1.5f*mean_dis2/float(endpoint2.size())/resolution_ratio);
+            data.push_back(radius1 = 1.5f*mean_dis1/resolution_ratio);
+            data.push_back(radius2 = 1.5f*mean_dis2/resolution_ratio);
             titles.push_back("radius of end area1(mm)");
             titles.push_back("radius of end area2(mm)");
 
