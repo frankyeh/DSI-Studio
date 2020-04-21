@@ -230,7 +230,7 @@
                <item>
                 <widget class="QLabel" name="label_5">
                  <property name="text">
-                  <string>GQI Length ratio</string>
+                  <string>GQI Length Ratio</string>
                  </property>
                 </widget>
                </item>
