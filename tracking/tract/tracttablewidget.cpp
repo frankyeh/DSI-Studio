@@ -1185,7 +1185,7 @@ void TractTableWidget::delete_repeated(void)
     float distance = 1.0;
     bool ok;
     distance = QInputDialog::getDouble(this,
-        "DSI Studio","Distance threshold (voxels)", distance,0,10,1,&ok);
+        "DSI Studio","Distance threshold (voxels)", distance,0,40,1,&ok);
     if (!ok)
         return;
     begin_prog("deleting tracks");
