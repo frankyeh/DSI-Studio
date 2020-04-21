@@ -99,7 +99,8 @@ extern std::string auto_track_report;
 std::string auto_track_report;
 std::string run_auto_track(const std::vector<std::string>& file_list,
                     const std::vector<unsigned int>& track_id,
-                    unsigned int seed_count,
+                    float length_ratio,
+                    unsigned int track_count,
                     int interpolation,int tip,
                     bool export_stat,
                     bool export_trk,
@@ -117,7 +118,7 @@ std::string run_auto_track(const std::vector<std::string>& file_list,
         {
             std::shared_ptr<ImageModel> handle(std::make_shared<ImageModel>());
             handle->voxel.method_id = 4; // GQI
-            handle->voxel.param[0] = 1.25f;
+            handle->voxel.param[0] = length_ratio;
             handle->voxel.ti.init(8); // odf order of 8
             handle->voxel.odf_xyz[0] = 0;
             handle->voxel.odf_xyz[1] = 0;
@@ -135,6 +136,7 @@ std::string run_auto_track(const std::vector<std::string>& file_list,
                 handle->voxel.scheme_balance = handle->need_scheme_balance();
                 if(interpolation)
                     handle->rotate_to_mni(float(interpolation));
+                begin_prog("Reconstruct DWI");
                 if (!handle->reconstruction())
                     return std::string("ERROR at ") + cur_file_base_name + ":" + handle->error_msg;
             }
@@ -165,8 +167,9 @@ std::string run_auto_track(const std::vector<std::string>& file_list,
                         thread.param.max_length = 300.0f;
                         thread.param.check_ending = 1;
                         thread.param.tip_iteration = uint8_t(tip);
-                        thread.param.termination_count = seed_count;
-                        thread.param.stop_by_tract = 0;
+                        thread.param.termination_count = track_count;
+                        thread.param.max_seed_count = 50000000;
+                        thread.param.stop_by_tract = 1;
                         thread.roi_mgr->setAtlas(tractography_atlas,track_id[j]);
 
                         float otsu = tipl::segmentation::otsu_threshold(tipl::make_image(handle->dir.fa[0],handle->dim));
@@ -177,9 +180,10 @@ std::string run_auto_track(const std::vector<std::string>& file_list,
                         auto_track_report = handle->report + thread.report.str();
                         if(reports[j].empty())
                             reports[j] = auto_track_report;
-                        while(check_prog(std::accumulate(thread.seed_count.begin(),
-                                                         thread.seed_count.end(),0),seed_count) && !thread.is_ended())
+                        while(check_prog(std::accumulate(thread.tract_count.begin(),
+                                                         thread.tract_count.end(),0),track_count) && !thread.is_ended())
                             thread.fetchTracks(&tract_model);
+                        thread.fetchTracks(&tract_model);
                         if(prog_aborted())
                             return std::string();
                     }
@@ -287,7 +291,8 @@ void auto_track::on_run_clicked()
     prog = 0;
     timer->start(5000);
     begin_prog("");
-    run_auto_track(file_list2,track_id,uint32_t(ui->seed_count->value()*1000000.0),
+    run_auto_track(file_list2,track_id,ui->gqi_l->value(),
+                               uint32_t(ui->track_count->value()*1000.0),
                                ui->interpolation->currentIndex(),ui->pruning->value(),
                                ui->export_stat->isChecked(),ui->export_trk->isChecked(),prog);
     timer->stop();
