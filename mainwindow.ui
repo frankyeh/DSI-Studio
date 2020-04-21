@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>800</width>
-    <height>600</height>
+    <width>940</width>
+    <height>629</height>
    </rect>
   </property>
   <property name="font">
@@ -54,7 +54,7 @@
        </size>
       </property>
       <property name="currentIndex">
-       <number>0</number>
+       <number>1</number>
       </property>
       <property name="tabSpacing">
        <number>0</number>
@@ -65,7 +65,7 @@
          <x>0</x>
          <y>0</y>
          <width>400</width>
-         <height>534</height>
+         <height>563</height>
         </rect>
        </property>
        <attribute name="label">
@@ -224,7 +224,7 @@
          <x>0</x>
          <y>0</y>
          <width>400</width>
-         <height>534</height>
+         <height>563</height>
         </rect>
        </property>
        <attribute name="label">
@@ -300,16 +300,6 @@
          <widget class="Line" name="line_7">
           <property name="orientation">
            <enum>Qt::Horizontal</enum>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QCommandLinkButton" name="parse_network_measures">
-          <property name="text">
-           <string>Parse Network Measure Text Files</string>
-          </property>
-          <property name="description">
-           <string>Select a list of network measure files and parse them into one data sheet</string>
           </property>
          </widget>
         </item>
@@ -413,7 +403,7 @@
          <x>0</x>
          <y>0</y>
          <width>400</width>
-         <height>534</height>
+         <height>563</height>
         </rect>
        </property>
        <attribute name="label">
@@ -577,6 +567,16 @@
           </property>
           <property name="description">
            <string>Average the ODFs to create a template</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QCommandLinkButton" name="parse_network_measures">
+          <property name="text">
+           <string>Parse Network Measure Text Files</string>
+          </property>
+          <property name="description">
+           <string>Select a list of network measure files and parse them into one data sheet</string>
           </property>
          </widget>
         </item>

@@ -20,7 +20,7 @@
       <property name="orientation">
        <enum>Qt::Vertical</enum>
       </property>
-      <widget class="QWidget" name="">
+      <widget class="QWidget" name="layoutWidget">
        <layout class="QHBoxLayout" name="horizontalLayout_5">
         <property name="rightMargin">
          <number>0</number>
@@ -34,7 +34,7 @@
            </sizepolicy>
           </property>
           <property name="title">
-           <string> Step A1(a): Specify SRC Files</string>
+           <string> Step B4(a): Specify SRC Files</string>
           </property>
           <layout class="QVBoxLayout" name="verticalLayout_7">
            <property name="spacing">
@@ -189,7 +189,7 @@
            </sizepolicy>
           </property>
           <property name="title">
-           <string>Step A1(b): Select Bundles</string>
+           <string>Step B4(b): Select Bundles</string>
           </property>
           <layout class="QVBoxLayout" name="verticalLayout_2">
            <item>
@@ -219,7 +219,7 @@
              </sizepolicy>
             </property>
             <property name="title">
-             <string>Step A1(c): Parameters</string>
+             <string>Step B4(c): Parameters</string>
             </property>
             <layout class="QVBoxLayout" name="verticalLayout_5">
              <item>
