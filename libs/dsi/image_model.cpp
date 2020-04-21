@@ -752,6 +752,9 @@ bool ImageModel::rotate_to_mni(float resolution)
     begin_prog("rotating to the MNI space");
     rotate(I.geometry(),arg);
     voxel.vs = vs;
+    voxel.report += " The diffusion MRI data were resampled to ";
+    voxel.report += std::to_string(int(vs[0]));
+    voxel.report += " mm isotropic reoslution.";
     check_prog(1,1);
     return true;
 }
