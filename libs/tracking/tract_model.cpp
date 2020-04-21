@@ -2007,7 +2007,7 @@ void TractModel::get_quantitative_info(std::string& result)
     std::vector<float> data;
     {
         float voxel_volume = vs[0]*vs[1]*vs[2];
-        float tract_volume, trunk_volume, tract_area, cross_section,tract_length, bundle_diameter;
+        float tract_volume, trunk_volume, tract_area, tract_length, bundle_diameter;
         tipl::image<unsigned char, 3> volume;
 
 
@@ -2049,7 +2049,7 @@ void TractModel::get_quantitative_info(std::string& result)
             // tract volume
             data.push_back(tract_volume = points.size()*voxel_volume/resolution_ratio/resolution_ratio/resolution_ratio);
             titles.push_back("volume(mm^3)");
-            data.push_back(bundle_diameter = float(std::sqrt(tract_volume/tract_length/3.14159265358979323846f)));
+            data.push_back(bundle_diameter = 2.0f*float(std::sqrt(tract_volume/tract_length/3.14159265358979323846f)));
             titles.push_back("diameter(mm)");
             data.push_back(tract_length/bundle_diameter);
             titles.push_back("elongation");
@@ -2092,8 +2092,6 @@ void TractModel::get_quantitative_info(std::string& result)
                     ++num;
             data.push_back(tract_area = float(num)*vs[0]*vs[1]/resolution_ratio/resolution_ratio);
             titles.push_back("surface area(mm^2)");
-            data.push_back(cross_section = tract_volume/tract_length);
-            titles.push_back("cross sectional area(mm^2)");
             data.push_back(float(tract_area/3.14159265358979323846f/bundle_diameter/tract_length));
             titles.push_back("irregularity");
         }
