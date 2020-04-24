@@ -168,7 +168,7 @@ std::string run_auto_track(const std::vector<std::string>& file_list,
                         thread.param.check_ending = 1;
                         thread.param.tip_iteration = uint8_t(tip);
                         thread.param.termination_count = track_count;
-                        thread.param.max_seed_count = 50000000;
+                        thread.param.max_seed_count = 10000000;
                         thread.param.stop_by_tract = 1;
                         thread.roi_mgr->setAtlas(tractography_atlas,track_id[j]);
 

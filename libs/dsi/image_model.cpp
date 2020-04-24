@@ -42,7 +42,6 @@ void ImageModel::calculate_dwi_sum(bool update_mask)
         for (size_t pos = 0;pos < dwi_sum.size();++pos)
             dwi_sum[pos] += src_dwi_data[index][pos];
     });
-
     float otsu = tipl::segmentation::otsu_threshold(dwi_sum);
     float max_value = std::min<float>(*std::max_element(dwi_sum.begin(),dwi_sum.end()),otsu*3.0f);
     float min_value = max_value;
@@ -642,6 +641,7 @@ void ImageModel::rotate(const tipl::geometry<3>& new_geo,
     tipl::image<unsigned char,3> new_mask(new_geo);
     tipl::resample(voxel.mask,new_mask,affine,tipl::linear);
     tipl::morphology::smoothing(new_mask);
+
 
     dwi.swap(new_dwi);
     // rotate b-table
