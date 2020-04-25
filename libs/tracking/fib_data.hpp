@@ -164,7 +164,7 @@ public:
     tipl::geometry<3> native_geo;
     tipl::image<tipl::vector<3,float>,3 > native_position;
 public:
-    int template_id = 0;
+    size_t template_id = 0;
     tipl::vector<3> template_vs,template_shift;
     tipl::image<float,3> template_I,template_I2;
     std::vector<std::shared_ptr<atlas> > atlas_list;

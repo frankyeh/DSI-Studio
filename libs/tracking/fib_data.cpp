@@ -952,9 +952,9 @@ bool fib_data::load_template(void)
            read2.load_from_file(iso_template_list[template_id].c_str()))
             read2.toLPS(template_I2);
     }
-    template_I *= 1.0f/tipl::mean(template_I);
+    template_I *= 1.0f/float(tipl::mean(template_I));
     if(!template_I2.empty())
-        template_I2 *= 1.0f/tipl::mean(template_I2);
+        template_I2 *= 1.0f/float(tipl::mean(template_I2));
 
     // populate atlas list
     std::string atlas_file = fa_template_list[template_id] + ".atlas.txt";
@@ -962,7 +962,7 @@ bool fib_data::load_template(void)
     std::string line;
     while(in >> line)
     {
-        for(int j = 0;j < atlas_file_list.size();++j)
+        for(size_t j = 0;j < atlas_file_list.size();++j)
             if(QFileInfo(atlas_file_list[j].c_str()).baseName().toStdString() == line)
             {
                 atlas_list.push_back(std::make_shared<atlas>());
@@ -971,6 +971,7 @@ bool fib_data::load_template(void)
                 break;
             }
     }
+
     need_normalization = !(is_qsdr && std::abs(float(dim[0])-template_I.width()*template_vs[0]/vs[0]) < 2);
     return true;
 }
