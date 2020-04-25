@@ -177,7 +177,10 @@ std::string run_auto_track(const std::vector<std::string>& file_list,
                             reports[j] = auto_track_report;
                         while(check_prog(std::accumulate(thread.tract_count.begin(),
                                                          thread.tract_count.end(),0),track_count) && !thread.is_ended())
+                        {
                             thread.fetchTracks(&tract_model);
+                            std::this_thread::sleep_for(std::chrono::milliseconds(2000));
+                        }
                         thread.fetchTracks(&tract_model);
                         if(prog_aborted())
                             return std::string();
