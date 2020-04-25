@@ -545,12 +545,11 @@ int trk(std::shared_ptr<fib_data> handle)
     if(!load_roi(handle,tracking_thread.roi_mgr))
         return 1;
 
-    if (!po.has("seed"))
+    if (tracking_thread.roi_mgr->seeds.empty())
     {
-        float seed_threshold = tracking_thread.param.threshold;
-        if(seed_threshold == 0.0f)
-            seed_threshold = otsu*tracking_thread.param.default_otsu;
-        tracking_thread.roi_mgr->setWholeBrainSeed(seed_threshold);
+        tracking_thread.roi_mgr->setWholeBrainSeed(
+                    tracking_thread.param.threshold == 0.0f ?
+                        otsu*tracking_thread.param.default_otsu:tracking_thread.param.threshold);
     }
     TractModel tract_model(handle);
 

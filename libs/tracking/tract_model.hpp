@@ -111,7 +111,7 @@ public:
         void redo(void);
         bool trim(void);
         void get_tract_points(std::vector<tipl::vector<3,float> >& points);
-        void to_voxel(std::vector<tipl::vector<3,short> >& points,float ratio);
+        void to_voxel(std::vector<tipl::vector<3,short> >& points,float ratio,int id = -1);
         void to_end_point_voxels(std::vector<tipl::vector<3,short> >& points1,
                                 std::vector<tipl::vector<3,short> >& points2,float ratio);
 

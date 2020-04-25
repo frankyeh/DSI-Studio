@@ -1904,13 +1904,15 @@ void TractModel::save_tdi(const char* file_name,bool sub_voxel,bool endpoint,con
     gz_nifti::save_to_file(file_name,tdi,new_vs,new_trans);
 }
 
-void TractModel::to_voxel(std::vector<tipl::vector<3,short> >& points,float ratio)
+void TractModel::to_voxel(std::vector<tipl::vector<3,short> >& points,float ratio,int id)
 {
     float voxel_length_2 = 0.5f/ratio;
     std::vector<std::set<tipl::vector<3,short> > > pass_map(std::thread::hardware_concurrency());
-    tipl::par_for2(tract_data.size(),[&](size_t i,size_t id)
+    tipl::par_for2(tract_data.size(),[&](size_t i,size_t thread)
     {
         if(tract_data[i].size() < 6)
+            return;
+        if(id != -1 && int(tract_cluster[i]) != id)
             return;
         float step_size = float((tipl::vector<3>(&tract_data[i][0])-tipl::vector<3>(&tract_data[i][3])).length());
         for (size_t j = 3;j < tract_data[i].size();j += 3)
@@ -1924,7 +1926,7 @@ void TractModel::to_voxel(std::vector<tipl::vector<3,short> >& points,float rati
                 cur += tipl::vector<3>(&tract_data[i][j-3]);
                 cur *= ratio;
                 cur.round();
-                pass_map[id].insert(tipl::vector<3,short>(cur));
+                pass_map[thread].insert(tipl::vector<3,short>(cur));
             }
 
         }

@@ -1265,7 +1265,8 @@ void RegionTableWidget::setROIs(ThreadData* data)
         data->roi_mgr->setAtlas(cur_tracking_window.tractography_atlas,
                                 uint32_t(cur_tracking_window.ui->target->currentIndex()-1));
 
-    data->roi_mgr->setWholeBrainSeed(cur_tracking_window.get_fa_threshold());
+    if(data->roi_mgr->seeds.empty())
+        data->roi_mgr->setWholeBrainSeed(cur_tracking_window.get_fa_threshold());
 }
 
 QString RegionTableWidget::getROIname(void)

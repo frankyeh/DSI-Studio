@@ -3,7 +3,7 @@
 #include <set>
 #include "tipl/tipl.hpp"
 #include "tract_model.hpp"
-
+#include "tracking/region/Regions.h"
 class Roi {
 private:
     float ratio;
@@ -153,27 +153,27 @@ public:
         report += " The anatomy prior of a tractography atlas (Yeh et al., Neuroimage 178, 57-68, 2018) was used to track ";
         report += tractography_name_list[size_t(track_id)];
         report += ".";
+        if(seeds.empty())
+        {
+            std::vector<tipl::vector<3,short> > seed;
+            atlas->to_voxel(seed,1.0f,int(track_id));
+            ROIRegion region(handle);
+            region.add_points(seed,false);
+            region.perform("dilation");
+            region.perform("dilation");
+            setRegions(region.get_region_voxels_raw(),1.0,3/*seed i*/,
+                tractography_name_list[size_t(track_id)].c_str());
+        }
     }
 
     void setWholeBrainSeed(float threashold)
     {
-        if(!seeds.empty())
-            return;
         std::vector<tipl::vector<3,short> > seed;
         std::string name = "whole brain";
-        // if auto track
-        if(atlas.get() && handle->load_atlas())
-        {
-            float r = 1.0f;
-            handle->get_atlas_roi(handle->atlas_list[0],track_id,seed,r);
-            name = tractography_name_list[size_t(track_id)];
-        }
-        else {
-            const float *fa0 = handle->dir.fa[0];
-            for(tipl::pixel_index<3> index(handle->dim);index < handle->dim.size();++index)
-                if(fa0[index.index()] > threashold)
-                    seed.push_back(tipl::vector<3,short>(short(index.x()),short(index.y()),short(index.z())));
-        }
+        const float *fa0 = handle->dir.fa[0];
+        for(tipl::pixel_index<3> index(handle->dim);index < handle->dim.size();++index)
+            if(fa0[index.index()] > threashold)
+                seed.push_back(tipl::vector<3,short>(short(index.x()),short(index.y()),short(index.z())));
         setRegions(seed,1.0,3/*seed i*/,name.c_str());
     }
     void setRegions(const std::vector<tipl::vector<3,short> >& points,

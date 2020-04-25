@@ -171,10 +171,6 @@ std::string run_auto_track(const std::vector<std::string>& file_list,
                         thread.param.max_seed_count = 10000000;
                         thread.param.stop_by_tract = 1;
                         thread.roi_mgr->setAtlas(tractography_atlas,track_id[j]);
-
-                        float otsu = tipl::segmentation::otsu_threshold(tipl::make_image(handle->dir.fa[0],handle->dim));
-                        thread.roi_mgr->setWholeBrainSeed(otsu*0.6f);
-
                         thread.run(tract_model.get_fib(),std::thread::hardware_concurrency(),false);
                         set_title("tracking");
                         auto_track_report = handle->report + thread.report.str();
