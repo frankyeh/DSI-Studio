@@ -424,7 +424,7 @@ bool load_roi(std::shared_ptr<fib_data> handle,std::shared_ptr<RoiMgr> roi_mgr)
     if(po.has("track_id"))
     {
         std::shared_ptr<TractModel> tractography_atlas(new TractModel(handle));
-        if(handle->can_map_to_mni() && tractography_atlas->load_from_file(tractography_atlas_file_name.c_str()))
+        if(tractography_atlas->load_from_file(tractography_atlas_file_name.c_str()))
         {
             if(po.get("track_id",0) >= tractography_name_list.size())
             {

@@ -261,13 +261,15 @@ bool TractModel::load_from_file(const char* file_name_,bool append)
             // used in autotrack
             if(handle->load_template() &&
                tipl::geometry<3>(trk.dim) == handle->template_I.geometry() &&
-               tipl::geometry<3>(trk.dim) != handle->dim &&
-               handle->can_map_to_mni())
+               tipl::geometry<3>(trk.dim) != handle->dim)
             {
+                begin_prog("track warpping");
                 handle->run_normalization(true,true);
-                tipl::par_for(loaded_tract_data.size(),[&](int i)
+                if(prog_aborted())
+                    return false;
+                tipl::par_for(loaded_tract_data.size(),[&](size_t i)
                 {
-                    for(int j = 0;j < loaded_tract_data[i].size();j += 3)
+                    for(size_t j = 0;j < loaded_tract_data[i].size();j += 3)
                     {
                         // here the values has been divided by vs due to TrackVis store in mm;
                         tipl::vector<3> p(loaded_tract_data[i][j]*vs[0],

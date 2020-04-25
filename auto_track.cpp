@@ -157,8 +157,7 @@ std::string run_auto_track(const std::vector<std::string>& file_list,
                     if (!handle->load_from_file(fib_file_name.c_str()))
                         return std::string("ERROR at ") + fib_file_name + ":" +handle->error_msg;
                     std::shared_ptr<TractModel> tractography_atlas(new TractModel(handle));
-                    if(!handle->can_map_to_mni() ||
-                       !tractography_atlas->load_from_file(tractography_atlas_file_name.c_str()))
+                    if(!tractography_atlas->load_from_file(tractography_atlas_file_name.c_str()))
                         return std::string("ERROR at ") + fib_file_name + ": cannot be normalized";
                     TractModel tract_model(handle);
                     {

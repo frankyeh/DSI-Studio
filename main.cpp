@@ -85,7 +85,6 @@ std::string find_full_path(QString name)
     throw error_msg;
 }
 
-
 void load_file_name(void)
 {
     fib_template_file_name_2mm = find_full_path("/HCP1021.2mm.fib.gz");

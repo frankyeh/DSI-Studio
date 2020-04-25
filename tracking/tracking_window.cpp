@@ -2022,18 +2022,6 @@ void tracking_window::on_actionKeep_Current_Slice_triggered()
 extern std::string tractography_atlas_file_name;
 void tracking_window::on_enable_auto_track_clicked()
 {
-    if(!can_map_to_mni() || !handle->load_atlas())
-    {
-        QMessageBox::information(this,"Error",handle->error_msg.c_str());
-        raise();
-        return;
-    }
-    if(handle->atlas_list[0]->name != "HCP842_tractography")
-    {
-        QMessageBox::information(this,"Error","No tractography atlas exists",0);
-        raise();
-        return;
-    }
     auto trk = std::make_shared<TractModel>(handle);
     if(trk->load_from_file(tractography_atlas_file_name.c_str()))
     {
