@@ -201,8 +201,8 @@ void RegionTableWidget::add_region(QString name,unsigned char feature,unsigned i
     setRowHeight(int(regions.size())-1,22);
     setCurrentCell(int(regions.size())-1,0);
 
-    cur_tracking_window.ui->target->setCurrentIndex(0);
-
+    if(cur_tracking_window.ui->target->count())
+        cur_tracking_window.ui->target->setCurrentIndex(0);
 }
 void RegionTableWidget::check_check_status(int row, int col)
 {
@@ -1261,9 +1261,9 @@ void RegionTableWidget::setROIs(ThreadData* data)
                              regions[index]->regions_feature,item(int(index),0)->text().toLocal8Bit().begin());
     // auto track
     if(cur_tracking_window.ui->target->currentIndex() > 0 &&
-       cur_tracking_window.tractography_atlas.get())
-        data->roi_mgr->setAtlas(cur_tracking_window.tractography_atlas,
-                                uint32_t(cur_tracking_window.ui->target->currentIndex()-1));
+       cur_tracking_window.handle->track_atlas.get())
+        data->roi_mgr->setAtlas(uint32_t(cur_tracking_window.ui->target->currentIndex()-1),
+                                cur_tracking_window["autotrack_tolerance"].toFloat()/cur_tracking_window.handle->vs[0]);
 
     if(data->roi_mgr->seeds.empty())
         data->roi_mgr->setWholeBrainSeed(cur_tracking_window.get_fa_threshold());

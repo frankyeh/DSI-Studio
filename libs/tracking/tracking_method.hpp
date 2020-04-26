@@ -36,8 +36,8 @@ struct TrackingParam
     float cull_cos_angle = 1.0f;
     float step_size = 0.0f;
     float smooth_fraction = 0.0f;
-    float min_length;
-    float max_length;
+    float min_length = 30.0f;
+    float max_length = 300.0f;
     unsigned int termination_count = 100000;
     unsigned int max_seed_count = 0;
     unsigned char stop_by_tract = 1;

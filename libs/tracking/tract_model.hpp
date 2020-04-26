@@ -47,7 +47,7 @@ public:
         void delete_repeated(float d);
         void delete_branch(void);
         void delete_by_length(float length);
-        unsigned int find_nearest(const float* trk,unsigned int length,bool contain = false);
+        unsigned int find_nearest(const float* trk,unsigned int length,bool contain,float false_distance);
 
 public:
         TractModel(std::shared_ptr<fib_data> handle_);
@@ -131,11 +131,9 @@ public:
         void save_tdi(const char* file_name,bool sub_voxel,bool endpoint,const tipl::matrix<4,4,float>& tran);
 
         void get_quantitative_info(std::string& result);
-        bool recognize(std::vector<unsigned int>& result,std::shared_ptr<TractModel> atlas);
-        bool recognize(std::map<float,std::string,std::greater<float> >& result,
-                       std::shared_ptr<TractModel> atlas,bool contain = false);
-        void recognize_report(std::string& report,
-                              std::shared_ptr<TractModel> atlas);
+        bool recognize(std::vector<unsigned int>& result);
+        bool recognize(std::map<float,std::string,std::greater<float> >& result,bool contain = false);
+        void recognize_report(std::string& report);
         void get_report(unsigned int profile_dir,float band_width,const std::string& index_name,
                         std::vector<float>& values,
                         std::vector<float>& data_profile);

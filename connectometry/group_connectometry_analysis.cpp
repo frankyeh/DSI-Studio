@@ -6,8 +6,6 @@
 #include "libs/tracking/tracking_thread.hpp"
 #include "tracking/tracking_window.h"
 
-
-extern std::string tractography_atlas_file_name;
 group_connectometry_analysis::group_connectometry_analysis():handle(0),normalize_qa(true)
 {
 
@@ -35,12 +33,6 @@ bool group_connectometry_analysis::load_database(const char* database_name)
         return false;
     }
     fiber_threshold = 0.6*tipl::segmentation::otsu_threshold(tipl::make_image(handle->dir.fa[0],handle->dim));
-    if(handle->is_human_data)
-    {
-        auto trk = std::make_shared<TractModel>(handle);
-        if(trk->load_from_file(tractography_atlas_file_name.c_str()))
-            tractography_atlas = trk;
-    }
     return handle->db.has_db();
 }
 
@@ -229,8 +221,7 @@ void group_connectometry_analysis::save_tracks_files(void)
             out1 << output_file_name << ".pos_corr.trk.gz";
             pos_corr_track->save_tracts_to_file(out1.str().c_str());
             pos_corr_tracks_result = "";
-            if(tractography_atlas.get())
-                pos_corr_track->recognize_report(pos_corr_tracks_result,tractography_atlas);
+            pos_corr_track->recognize_report(pos_corr_tracks_result);
             if(pos_corr_tracks_result.empty())
                 pos_corr_tracks_result = "tracks";
             has_pos_corr_result = true;
@@ -260,8 +251,7 @@ void group_connectometry_analysis::save_tracks_files(void)
             out1 << output_file_name << ".neg_corr.trk.gz";
             neg_corr_track->save_tracts_to_file(out1.str().c_str());
             neg_corr_tracks_result = "";
-            if(tractography_atlas.get())
-                neg_corr_track->recognize_report(neg_corr_tracks_result,tractography_atlas);
+            neg_corr_track->recognize_report(neg_corr_tracks_result);
             if(neg_corr_tracks_result.empty())
                 neg_corr_tracks_result = "tracks";
             has_neg_corr_result = true;

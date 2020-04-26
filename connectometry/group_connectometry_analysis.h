@@ -63,7 +63,6 @@ public:
     bool has_pos_corr_result,has_neg_corr_result;
     int seed_count;
     std::mutex  lock_resampling,lock_pos_corr_tracks,lock_neg_corr_tracks;
-    std::shared_ptr<TractModel> tractography_atlas;
     std::shared_ptr<TractModel> pos_corr_track;
     std::shared_ptr<TractModel> neg_corr_track;
     std::shared_ptr<connectometry_result> spm_map;

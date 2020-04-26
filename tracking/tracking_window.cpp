@@ -27,7 +27,6 @@
 #include "regtoolbox.h"
 #include "fib_data.hpp"
 
-extern std::vector<std::string> tractography_name_list;
 extern std::string t1w_template_file_name,wm_template_file_name;
 extern std::vector<std::string> fa_template_list;
 extern std::vector<tracking_window*> tracking_windows;
@@ -183,19 +182,6 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         {
             ui->target->setVisible(false);
             ui->target_label->setVisible(false);
-            ui->enable_auto_track->setVisible(false);
-            if(!tractography_name_list.empty())
-            {
-                ui->target->addItem("All");
-                for(size_t i = 0;i < tractography_name_list.size();++i)
-                    ui->target->addItem(tractography_name_list[i].c_str());
-                for(int i = 0;i < 6;++i)
-                for(size_t j = auto_track_pos[i];j < auto_track_pos[i+1];++j)
-                        ui->target->setItemData(int(j)+1,
-                            QBrush(QColor(auto_track_rgb[i][0],auto_track_rgb[i][1],auto_track_rgb[i][2])), Qt::TextColorRole);
-                ui->target->setCurrentIndex(0);
-                ui->enable_auto_track->setVisible(handle->template_id == 0);
-            }
         }
     }
 
@@ -1104,11 +1090,6 @@ void tracking_window::on_actionConnectivity_matrix_triggered()
         QMessageBox::information(this,"DSI Studio","Run fiber tracking first",0);
         return;
     }
-    if(!handle->load_atlas() && regionWidget->regions.empty())
-    {
-        QMessageBox::information(this,"Error","Please add regions as the node for connectivity matrix",0);
-        return;
-    }
     std::ostringstream out;
     if(tractWidget->currentRow() < tractWidget->tract_models.size())
         out << tractWidget->tract_models[tractWidget->currentRow()]->report.c_str() << std::endl;
@@ -1218,7 +1199,7 @@ void tracking_window::on_actionLoad_Rendering_Parameters_triggered()
 
 void tracking_window::on_addRegionFromAtlas_clicked()
 {
-    if(!handle->load_atlas() || !handle->can_map_to_mni())
+    if(handle->atlas_list.empty() || !handle->can_map_to_mni())
     {
         QMessageBox::information(this,"Error",handle->error_msg.c_str());
         raise();
@@ -1971,20 +1952,19 @@ void tracking_window::on_actionOpen_Connectivity_Matrix_triggered()
         }
     }
     tipl::multiply_constant(connectivity,1.0f/tipl::maximum(connectivity));
-    for(int i = 0;i < connectivity.size();++i)
-        if(connectivity[i] < 0.05)
+    for(size_t i = 0;i < connectivity.size();++i)
+        if(connectivity[i] < 0.05f)
             connectivity[i] = 0.0f;
     glWidget->connectivity = std::move(connectivity);
     if(atlas != "roi")
     {
         regionWidget->delete_all_region();
         regionWidget->begin_update();
-        if(handle->load_atlas())
-        for(int i = 0;i < handle->atlas_list.size();++i)
+        for(size_t i = 0;i < handle->atlas_list.size();++i)
             if(atlas == handle->atlas_list[i]->name)
             {
-                for(int j = 0;j < handle->atlas_list[i]->get_list().size();++j)
-                    regionWidget->add_region_from_atlas(handle->atlas_list[i],j);
+                for(size_t j = 0;j < handle->atlas_list[i]->get_list().size();++j)
+                    regionWidget->add_region_from_atlas(handle->atlas_list[i],uint32_t(j));
                 return;
             }
         regionWidget->end_update();
@@ -2019,19 +1999,28 @@ void tracking_window::on_actionKeep_Current_Slice_triggered()
     glWidget->updateGL();
     QMessageBox::information(this,"DSI Studio","Current viewing slice will reamin in the 3D window");
 }
-extern std::string tractography_atlas_file_name;
 void tracking_window::on_enable_auto_track_clicked()
 {
-    auto trk = std::make_shared<TractModel>(handle);
-    if(trk->load_from_file(tractography_atlas_file_name.c_str()))
+    if(handle->load_track_atlas(handle))
     {
-        tractography_atlas = trk;
         ui->enable_auto_track->setVisible(false);
         ui->target->setVisible(true);
         ui->target_label->setVisible(true);
+        if(ui->target->count() == 0)
+        {
+            ui->target->clear();
+            ui->target->addItem("All");
+            for(size_t i = 0;i < handle->tractography_name_list.size();++i)
+                ui->target->addItem(handle->tractography_name_list[i].c_str());
+            for(int i = 0;i < 6;++i)
+            for(size_t j = auto_track_pos[i];j < auto_track_pos[i+1];++j)
+                    ui->target->setItemData(int(j)+1,
+                        QBrush(QColor(auto_track_rgb[i][0],auto_track_rgb[i][1],auto_track_rgb[i][2])), Qt::TextColorRole);
+            ui->target->setCurrentIndex(0);
+        }
     }
     else
-        QMessageBox::information(this,"DSI Studio",QString("Fail to find the HCP842 tractography atlas at %1").arg(tractography_atlas_file_name.c_str()));
+        QMessageBox::information(this,"Error",handle->error_msg.c_str());
     raise();
 }
 
@@ -2066,14 +2055,10 @@ void tracking_window::on_actionFIB_protocol_triggered()
 void tracking_window::on_template_box_activated(int index)
 {
     handle->set_template_id(index);
-    if(tractography_atlas.get())
-    {
-        ui->target->setCurrentIndex(0);
-        ui->target->setVisible(index == 0);
-        ui->target_label->setVisible(index == 0);
-    }
-    else
-        ui->enable_auto_track->setVisible(index == 0);
+    ui->enable_auto_track->setVisible(true);
+    ui->target->setCurrentIndex(0);
+    ui->target->setVisible(false);
+    ui->target_label->setVisible(false);
 }
 void tracking_window::on_SliceModality_currentIndexChanged(int index)
 {

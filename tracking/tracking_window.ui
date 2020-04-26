@@ -1029,7 +1029,7 @@
    </property>
    <property name="minimumSize">
     <size>
-     <width>314</width>
+     <width>378</width>
      <height>161</height>
     </size>
    </property>
@@ -1264,6 +1264,12 @@
              </item>
              <item>
               <widget class="QLabel" name="target_label">
+               <property name="sizePolicy">
+                <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
+                 <horstretch>0</horstretch>
+                 <verstretch>0</verstretch>
+                </sizepolicy>
+               </property>
                <property name="text">
                 <string>Target</string>
                </property>
@@ -1271,19 +1277,6 @@
              </item>
              <item>
               <widget class="QComboBox" name="target"/>
-             </item>
-             <item>
-              <spacer name="horizontalSpacer_3">
-               <property name="orientation">
-                <enum>Qt::Horizontal</enum>
-               </property>
-               <property name="sizeHint" stdset="0">
-                <size>
-                 <width>40</width>
-                 <height>20</height>
-                </size>
-               </property>
-              </spacer>
              </item>
             </layout>
            </item>

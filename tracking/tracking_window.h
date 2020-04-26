@@ -62,8 +62,6 @@ public:
     unsigned char cur_dim;
     std::vector<std::shared_ptr<SliceModel> > overlay_slices;
 public:
-    std::shared_ptr<TractModel> tractography_atlas;
-public:
     connectometry_result cnt_result;
 public:
     std::auto_ptr<QTimer> timer,timer2;

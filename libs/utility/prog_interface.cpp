@@ -81,8 +81,7 @@ bool check_prog(unsigned int now,unsigned int total)
 {
     if(!has_gui)
         return now < total;
-    if(now)
-        check_create();
+    check_create();
     if(!progressDialog.get())
         return now < total;
     if((now >= total && !lock_dialog) || progressDialog->wasCanceled())

@@ -74,7 +74,6 @@ public:
     }
 };
 
-extern std::vector<std::string> tractography_name_list;
 class RoiMgr {
 public:
     std::shared_ptr<fib_data> handle;
@@ -88,6 +87,7 @@ public:
     std::vector<std::shared_ptr<Roi> > no_end;
 public:
     std::shared_ptr<TractModel> atlas;
+    float false_distance = 0.0f;
     unsigned int track_id = 0;
 public:
     RoiMgr(std::shared_ptr<fib_data> handle_):handle(handle_){}
@@ -143,15 +143,23 @@ public:
             if(!inclusive[index]->included(track,buffer_size))
                 return false;
         if(atlas.get())
-            return atlas->find_nearest(track,buffer_size) == track_id;
+            return atlas->find_nearest(track,buffer_size,false,false_distance) == track_id;
         return true;
     }
-    void setAtlas(std::shared_ptr<TractModel> atlas_,unsigned int track_id_)
+    bool setAtlas(unsigned int track_id_,float false_distance_)
     {
-        atlas = atlas_;
+        if(!handle->load_track_atlas(handle))
+            return false;
+        if( track_id >= handle->tractography_name_list.size())
+        {
+            handle->error_msg = "invalid track_id";
+            return false;
+        }
+        false_distance = false_distance_;
+        atlas = handle->track_atlas;
         track_id = track_id_;
         report += " The anatomy prior of a tractography atlas (Yeh et al., Neuroimage 178, 57-68, 2018) was used to track ";
-        report += tractography_name_list[size_t(track_id)];
+        report += handle->tractography_name_list[size_t(track_id)];
         report += ".";
         if(seeds.empty())
         {
@@ -162,8 +170,9 @@ public:
             region.perform("dilation");
             region.perform("dilation");
             setRegions(region.get_region_voxels_raw(),1.0,3/*seed i*/,
-                tractography_name_list[size_t(track_id)].c_str());
+                handle->tractography_name_list[size_t(track_id)].c_str());
         }
+        return true;
     }
 
     void setWholeBrainSeed(float threashold)

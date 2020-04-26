@@ -18,13 +18,14 @@ auto_track::auto_track(QWidget *parent) :
     ui->setupUi(this);
     progress = new QProgressBar(this);
     progress->setVisible(false);
-
     ui->statusbar->addPermanentWidget(progress);
+
+    fib.set_template_id(0);
 
     const int atlas_range = 4;
     QStringList tract_names;
     for(size_t index = 0;index < auto_track_pos[atlas_range];++index)
-        tract_names << tractography_name_list[index].c_str();
+        tract_names << fib.tractography_name_list[index].c_str();
 
     ui->candidate_list_view->addItems(tract_names);
     for(int i = 0;i < atlas_range;++i)
@@ -93,13 +94,14 @@ void auto_track::on_open_dir_clicked()
     file_list << search_files(dir,"*.src.gz");
     update_list();
 }
-extern std::string tractography_atlas_file_name;
-extern std::vector<std::string> tractography_name_list;
 extern std::string auto_track_report;
 std::string auto_track_report;
-std::string run_auto_track(const std::vector<std::string>& file_list,
+std::string run_auto_track(
+                    fib_data& fib,
+                    const std::vector<std::string>& file_list,
                     const std::vector<unsigned int>& track_id,
                     float length_ratio,
+                    float tolerance,
                     unsigned int track_count,
                     int interpolation,int tip,
                     bool export_stat,
@@ -142,7 +144,7 @@ std::string run_auto_track(const std::vector<std::string>& file_list,
             }
             for(size_t j = 0;j < track_id.size() && !prog_aborted();++j)
             {
-                std::string track_name = tractography_name_list[track_id[j]];
+                std::string track_name = fib.tractography_name_list[track_id[j]];
                 std::replace(track_name.begin(),track_name.end(),' ','_');
                 std::string trk_file_name = fib_file_name+"."+track_name+".trk.gz";
                 std::string stat_file_name = fib_file_name+"."+track_name+".stat.txt";
@@ -156,29 +158,32 @@ std::string run_auto_track(const std::vector<std::string>& file_list,
                     std::shared_ptr<fib_data> handle(new fib_data);
                     if (!handle->load_from_file(fib_file_name.c_str()))
                         return std::string("ERROR at ") + fib_file_name + ":" +handle->error_msg;
-                    std::shared_ptr<TractModel> tractography_atlas(new TractModel(handle));
-                    if(!tractography_atlas->load_from_file(tractography_atlas_file_name.c_str()))
-                        return std::string("ERROR at ") + fib_file_name + ": cannot be normalized";
+
                     TractModel tract_model(handle);
                     {
                         ThreadData thread(handle);
-                        thread.param.min_length = 30.0f;
-                        thread.param.max_length = 300.0f;
                         thread.param.check_ending = 1;
                         thread.param.tip_iteration = uint8_t(tip);
                         thread.param.termination_count = track_count;
                         thread.param.max_seed_count = 10000000;
                         thread.param.stop_by_tract = 1;
-                        thread.roi_mgr->setAtlas(tractography_atlas,track_id[j]);
+                        if(!thread.roi_mgr->setAtlas(track_id[j],tolerance/handle->vs[0]))
+                            return std::string("ERROR at ") + fib_file_name + ":" +handle->error_msg;
                         thread.run(tract_model.get_fib(),std::thread::hardware_concurrency(),false);
-                        set_title("tracking");
                         auto_track_report = handle->report + thread.report.str();
                         if(reports[j].empty())
                             reports[j] = auto_track_report;
-                        while(check_prog(std::accumulate(thread.tract_count.begin(),
-                                                         thread.tract_count.end(),0),track_count) && !thread.is_ended())
+                        begin_prog("fiber tracking");
+                        while(!thread.is_ended())
                         {
+                            size_t total_track = thread.get_total_tract_count();
+                            if(total_track)
+                                check_prog(total_track,track_count);
+                            else
+                                check_prog(thread.get_total_seed_count(),thread.param.max_seed_count);
                             thread.fetchTracks(&tract_model);
+                            if(prog_aborted())
+                                return std::string();
                             std::this_thread::sleep_for(std::chrono::milliseconds(2000));
                         }
                         thread.fetchTracks(&tract_model);
@@ -247,7 +252,7 @@ std::string run_auto_track(const std::vector<std::string>& file_list,
             }
         }
 
-        std::string track_name = tractography_name_list[track_id[t]];
+        std::string track_name = fib.tractography_name_list[track_id[t]];
         std::ofstream out((dir+"/"+track_name+".stat.txt").c_str());
         for(size_t i = 0;i < output.size();++i)
             out << output[i] << std::endl;
@@ -289,10 +294,13 @@ void auto_track::on_run_clicked()
     prog = 0;
     timer->start(5000);
     begin_prog("");
-    run_auto_track(file_list2,track_id,ui->gqi_l->value(),
-                               uint32_t(ui->track_count->value()*1000.0),
-                               ui->interpolation->currentIndex(),ui->pruning->value(),
-                               ui->export_stat->isChecked(),ui->export_trk->isChecked(),prog);
+    run_auto_track(fib,
+                   file_list2,track_id,
+                   ui->gqi_l->value(),
+                   ui->tolerance->value(),
+                   uint32_t(ui->track_count->value()*1000.0),
+                   ui->interpolation->currentIndex(),ui->pruning->value(),
+                   ui->export_stat->isChecked(),ui->export_trk->isChecked(),prog);
     timer->stop();
     ui->run->setEnabled(true);
     progress->setVisible(false);

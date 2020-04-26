@@ -26,12 +26,11 @@ connectivity_matrix_dialog::connectivity_matrix_dialog(tracking_window *parent,Q
 
     // atlas
     ui->region_list->addItem("ROIs");
-    if(parent->handle->load_atlas())
-    {
-        for(int index = 0;index < parent->handle->atlas_list.size();++index)
-            ui->region_list->addItem(parent->handle->atlas_list[index]->name.c_str());
+    for(int index = 0;index < parent->handle->atlas_list.size();++index)
+        ui->region_list->addItem(parent->handle->atlas_list[index]->name.c_str());
+    if(ui->region_list->count() > 1)
         ui->region_list->setCurrentIndex(1);
-    }
+
     for(unsigned int index = 0;index < cur_tracking_window->regionWidget->regions.size();++index)
         if(cur_tracking_window->regionWidget->item(index,0)->checkState() == Qt::Checked)
         {
@@ -114,12 +113,7 @@ void connectivity_matrix_dialog::on_recalculate_clicked()
             data.set_regions(cur_tracking_window->handle->dim,regions);
         }
     else
-        {
-            if(!cur_tracking_window->handle->load_atlas())
-                return;
-            data.set_atlas(cur_tracking_window->handle->atlas_list[ui->region_list->currentIndex()-1],cur_tracking_window->handle->get_mni_mapping());
-        }
-
+        data.set_atlas(cur_tracking_window->handle->atlas_list[ui->region_list->currentIndex()-1],cur_tracking_window->handle->get_mni_mapping());
     TractModel tracks(cur_tracking_window->handle);
     for(int index = 0;index < cur_tracking_window->tractWidget->tract_models.size();++index)
         if(cur_tracking_window->tractWidget->item(index,0)->checkState() == Qt::Checked)

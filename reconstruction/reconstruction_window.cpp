@@ -446,7 +446,7 @@ void reconstruction_window::on_GQI_toggled(bool checked)
     ui->csf_calibration->setVisible(handle->is_human_data());
     ui->DT_Option->setVisible(checked);
 }
-int match_template(float volume);
+size_t match_template(float volume);
 void reconstruction_window::on_QSDR_toggled(bool checked)
 {
     ui->ResolutionBox->setVisible(checked);

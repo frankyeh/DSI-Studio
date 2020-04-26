@@ -452,28 +452,26 @@ void TractTableWidget::open_cluster_label(void)
     load_cluster_label(labels);
     assign_colors();
 }
-
-extern std::vector<std::string> tractography_name_list;
 void TractTableWidget::auto_recognition(void)
 {
-    if(!cur_tracking_window.tractography_atlas.get() && cur_tracking_window.ui->enable_auto_track->isVisible())
+    if(!cur_tracking_window.handle->track_atlas.get() && cur_tracking_window.ui->enable_auto_track->isVisible())
         cur_tracking_window.on_enable_auto_track_clicked();
-    if(!cur_tracking_window.tractography_atlas.get())
+    if(!cur_tracking_window.handle->track_atlas.get())
         return;
     std::vector<unsigned int> c;
-    tract_models[currentRow()]->recognize(c,cur_tracking_window.tractography_atlas);
+    tract_models[currentRow()]->recognize(c);
     QStringList Names;
-    for(int i = 0;i < tractography_name_list.size();++i)
-        Names << tractography_name_list[i].c_str();
+    for(int i = 0;i < cur_tracking_window.handle->tractography_name_list.size();++i)
+        Names << cur_tracking_window.handle->tractography_name_list[i].c_str();
     Names << "false tracks";
     load_cluster_label(c,Names);
     assign_colors();
 }
 void TractTableWidget::recognize_rename(void)
 {
-    if(!cur_tracking_window.tractography_atlas.get() && cur_tracking_window.ui->enable_auto_track->isVisible())
+    if(!cur_tracking_window.handle->track_atlas.get() && cur_tracking_window.ui->enable_auto_track->isVisible())
         cur_tracking_window.on_enable_auto_track_clicked();
-    if(!cur_tracking_window.tractography_atlas.get())
+    if(!cur_tracking_window.handle->track_atlas.get())
     {
         QMessageBox::information(this,"Error","Recognition is only available with [Step T3a][Template]=HCP1021");
         return;
@@ -483,7 +481,7 @@ void TractTableWidget::recognize_rename(void)
         if(item(index,0)->checkState() == Qt::Checked)
         {
             std::map<float,std::string,std::greater<float> > sorted_list;
-            if(!tract_models[index]->recognize(sorted_list,cur_tracking_window.tractography_atlas,true))
+            if(!tract_models[index]->recognize(sorted_list,true))
                 return;
             item(index,0)->setText(sorted_list.begin()->second.c_str());
         }
@@ -736,12 +734,12 @@ void TractTableWidget::recog_tracks(void)
 {
     if(currentRow() >= tract_models.size() || tract_models[currentRow()]->get_tracts().size() == 0)
         return;
-    if(!cur_tracking_window.tractography_atlas.get() && cur_tracking_window.ui->enable_auto_track->isVisible())
+    if(!cur_tracking_window.handle->track_atlas.get() && cur_tracking_window.ui->enable_auto_track->isVisible())
         cur_tracking_window.on_enable_auto_track_clicked();
-    if(!cur_tracking_window.tractography_atlas.get())
+    if(!cur_tracking_window.handle->track_atlas.get())
         return;
     std::map<float,std::string,std::greater<float> > sorted_list;
-    if(!tract_models[currentRow()]->recognize(sorted_list,cur_tracking_window.tractography_atlas))
+    if(!tract_models[currentRow()]->recognize(sorted_list))
     {
         QMessageBox::information(this,"Error","Cannot recognize tracks.",0);
         return;

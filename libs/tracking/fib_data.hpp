@@ -138,6 +138,7 @@ struct item
     }
 };
 
+class TractModel;
 class fib_data
 {
 public:
@@ -169,9 +170,13 @@ public:
     tipl::image<float,3> template_I,template_I2;
     std::vector<std::shared_ptr<atlas> > atlas_list;
 public:
-    void set_template_id(int new_id);
+    std::shared_ptr<TractModel> track_atlas;
+    std::string tractography_atlas_file_name;
+    std::vector<std::string> tractography_name_list;
+public:
+    void set_template_id(size_t new_id);
     bool load_template(void);
-    bool load_atlas(void);
+    bool load_track_atlas(std::shared_ptr<fib_data> handle);
     void template_to_mni(tipl::vector<3>& p);
     void template_from_mni(tipl::vector<3>& p);
 

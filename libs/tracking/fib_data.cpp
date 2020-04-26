@@ -2,6 +2,7 @@
 #include <QFileInfo>
 #include "fib_data.hpp"
 #include "tessellated_icosahedron.hpp"
+#include "tract_model.hpp"
 extern std::vector<std::string> fa_template_list;
 bool odf_data::read(gz_mat_read& mat_reader)
 {
@@ -454,7 +455,7 @@ bool tracking_data::is_white_matter(const tipl::vector<3,float>& pos,float t) co
     return tipl::estimate(tipl::make_image(fa[0],dim),pos) > t && pos[2] > 0.5;
 }
 
-int match_template(float volume);
+size_t match_template(float volume);
 void initial_LPS_nifti_srow(tipl::matrix<4,4,float>& T,const tipl::geometry<3>& geo,const tipl::vector<3>& vs)
 {
     T[0] = -vs[0];
@@ -558,7 +559,7 @@ bool fib_data::load_from_file(const char* file_name)
         return false;
 
     if(is_qsdr)
-    for(int index = 0;index < fa_template_list.size();++index)
+    for(size_t index = 0;index < fa_template_list.size();++index)
     {
         gz_nifti read;
         if(!read.load_from_file(fa_template_list[index]))
@@ -569,7 +570,7 @@ bool fib_data::load_from_file(const char* file_name)
         read.get_voxel_size(Itvs);
         if(std::abs(dim[0]-read.nif_header2.dim[1]*Itvs[0]/vs[0]) < 2.0f)
         {
-            template_id = index;
+            set_template_id(index);
             return true;
         }
     }
@@ -578,24 +579,26 @@ bool fib_data::load_from_file(const char* file_name)
         initial_LPS_nifti_srow(trans_to_mni,dim,vs);
     }
     // template matching
-    for(int index = 0;index < fa_template_list.size();++index)
+    for(size_t index = 0;index < fa_template_list.size();++index)
     {
         QString name = QFileInfo(fa_template_list[index].c_str()).baseName().toLower();
         if(QFileInfo(file_name).fileName().contains(name) ||
            QFileInfo(QString(file_name)+"."+name+".map.gz").exists())
         {
-            template_id = index;
+            set_template_id(index);
             return true;
         }
     }
     if(!is_human_data)
     {
         size_t count = 0;
-        for(int i = 0;i < dim.size();++i)
+        for(size_t i = 0;i < dim.size();++i)
             if(dir.fa[0][i] > 0.0f)
                 ++count;
-        template_id = match_template(count*2.0*vs[0]*vs[1]*vs[2]);
+        set_template_id(match_template(count*2.0*vs[0]*vs[1]*vs[2]));
     }
+    else
+        set_template_id(template_id);
     return true;
 }
 bool fib_data::save_mapping(const std::string& index_name,const std::string& file_name,const tipl::value_to_color<float>& v2c)
@@ -904,18 +907,59 @@ void fib_data::get_voxel_information(int x,int y,int z,std::vector<float>& buf) 
             buf.push_back(view_item[i].image_data.empty() ? 0.0 : view_item[i].image_data[index]);
     }
 }
-
-void fib_data::set_template_id(int new_id)
+extern std::vector<std::string> fa_template_list,iso_template_list,atlas_file_list,track_atlas_file_list;
+void fib_data::set_template_id(size_t new_id)
 {
-    if(new_id != template_id)
+    if(new_id != template_id || atlas_list.empty())
     {
         template_id = new_id;
         template_I.clear();
         mni_position.clear();
         atlas_list.clear();
+        tractography_atlas_file_name.clear();
+        tractography_name_list.clear();
+        track_atlas.reset();
+        // populate atlas list
+        {
+            std::string atlas_file = fa_template_list[template_id] + ".atlas.txt";
+            std::ifstream in(atlas_file);
+            std::string line;
+            while(in >> line)
+            {
+                for(size_t j = 0;j < atlas_file_list.size();++j)
+                    if(QFileInfo(atlas_file_list[j].c_str()).baseName().toStdString() == line)
+                    {
+                        atlas_list.push_back(std::make_shared<atlas>());
+                        atlas_list.back()->name = line;
+                        atlas_list.back()->filename = atlas_file_list[j];
+                        break;
+                    }
+            }
+        }
+        {
+            std::string atlas_file = fa_template_list[template_id] + ".track.txt";
+            std::ifstream in(atlas_file);
+            if(in)
+            {
+                std::string line;
+                in >> line;
+                for(size_t j = 0;j < track_atlas_file_list.size();++j)
+                {
+                    if(QFileInfo(track_atlas_file_list[j].c_str()).baseName().toStdString() == line)
+                    {
+                        tractography_atlas_file_name = track_atlas_file_list[j];
+                        std::string tractography_name_list_file_name = tractography_atlas_file_name+".txt";
+                        std::ifstream in(tractography_name_list_file_name);
+                        if(in)
+                            std::copy(std::istream_iterator<std::string>(in),
+                            std::istream_iterator<std::string>(),std::back_inserter(tractography_name_list));
+                        break;
+                    }
+                }
+            }
+        }
     }
 }
-extern std::vector<std::string> fa_template_list,iso_template_list,atlas_file_list;
 bool fib_data::load_template(void)
 {
     if(!template_I.empty())
@@ -956,34 +1000,27 @@ bool fib_data::load_template(void)
     if(!template_I2.empty())
         template_I2 *= 1.0f/float(tipl::mean(template_I2));
 
-    // populate atlas list
-    std::string atlas_file = fa_template_list[template_id] + ".atlas.txt";
-    std::ifstream in(atlas_file);
-    std::string line;
-    while(in >> line)
-    {
-        for(size_t j = 0;j < atlas_file_list.size();++j)
-            if(QFileInfo(atlas_file_list[j].c_str()).baseName().toStdString() == line)
-            {
-                atlas_list.push_back(std::make_shared<atlas>());
-                atlas_list.back()->name = line;
-                atlas_list.back()->filename = atlas_file_list[j];
-                break;
-            }
-    }
-
     need_normalization = !(is_qsdr && std::abs(float(dim[0])-template_I.width()*template_vs[0]/vs[0]) < 2);
     return true;
 }
 
-bool fib_data::load_atlas(void)
+bool fib_data::load_track_atlas(std::shared_ptr<fib_data> handle)
 {
     if(!load_template())
         return false;
-    if(atlas_list.empty())
+    if(tractography_atlas_file_name.empty() || tractography_name_list.empty())
     {
-        error_msg = "cannot find atla files";
+        error_msg = "no tractography atlas associated with the current template";
         return false;
+    }
+    if(!track_atlas.get())
+    {
+        track_atlas = std::make_shared<TractModel>(handle);
+        if(!track_atlas->load_from_file(tractography_atlas_file_name.c_str()))
+        {
+            error_msg = "failed to load tractography atlas";
+            return false;
+        }
     }
     return true;
 }

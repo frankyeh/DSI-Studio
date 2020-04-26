@@ -402,8 +402,6 @@ int trk_post(std::shared_ptr<fib_data> handle,
 
 }
 
-extern std::string tractography_atlas_file_name;
-extern std::vector<std::string> tractography_name_list;
 bool load_roi(std::shared_ptr<fib_data> handle,std::shared_ptr<RoiMgr> roi_mgr)
 {
     const int total_count = 18;
@@ -423,17 +421,13 @@ bool load_roi(std::shared_ptr<fib_data> handle,std::shared_ptr<RoiMgr> roi_mgr)
     }
     if(po.has("track_id"))
     {
-        std::shared_ptr<TractModel> tractography_atlas(new TractModel(handle));
-        if(tractography_atlas->load_from_file(tractography_atlas_file_name.c_str()))
+        unsigned int track_id = uint32_t(po.get("track_id",0));
+        if(!roi_mgr->setAtlas(track_id,po.get("tolerance",16.0f)/handle->vs[0]))
         {
-            if(po.get("track_id",0) >= tractography_name_list.size())
-            {
-                std::cout << "invalid track_id value" << std::endl;
-                return false;
-            }
-            std::cout << "setting target track=" << tractography_name_list[po.get("track_id",0)] << std::endl;
-            roi_mgr->setAtlas(tractography_atlas,po.get("track_id",0));
+            std::cout << handle->error_msg << std::endl;
+            return false;
         }
+        std::cout << "setting target track=" << handle->tractography_name_list[track_id] << std::endl;
     }
     return true;
 }

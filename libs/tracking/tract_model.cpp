@@ -259,10 +259,11 @@ bool TractModel::load_from_file(const char* file_name_,bool append)
                     report += param.get_report();
             }
             // used in autotrack
-            if(handle->load_template() &&
-               tipl::geometry<3>(trk.dim) == handle->template_I.geometry() &&
+            if(tipl::geometry<3>(trk.dim) == handle->template_I.geometry() &&
                tipl::geometry<3>(trk.dim) != handle->dim)
             {
+                if(!handle->load_template())
+                    return false;
                 begin_prog("track warpping");
                 handle->run_normalization(true,true);
                 if(prog_aborted())
@@ -1103,10 +1104,10 @@ void TractModel::select_tracts(const std::vector<unsigned int>& tracts_to_select
     delete_tracts(not_selected);
 }
 //---------------------------------------------------------------------------
-unsigned int TractModel::find_nearest(const float* trk,unsigned int length,bool contain)
+unsigned int TractModel::find_nearest(const float* trk,unsigned int length,bool contain,float false_distance)
 {
     auto norm1 = [](const float* v1,const float* v2){return std::fabs(v1[0]-v2[0])+std::fabs(v1[1]-v2[1])+std::fabs(v1[2]-v2[2]);};
-    float best_distance = contain ? 100.0f : 16.0f/handle->vs[0];
+    float best_distance = contain ? 50.0f : false_distance;
     unsigned int best_index = tract_data.size()-1;
     for(int i = 0;i < tract_data.size();++i)
     {
@@ -2177,34 +2178,30 @@ void TractModel::get_quantitative_info(std::string& result)
     }
     result = out.str();
 }
-
-extern std::vector<std::string> tractography_name_list;
-bool TractModel::recognize(std::vector<unsigned int>& result,std::shared_ptr<TractModel> atlas)
+bool TractModel::recognize(std::vector<unsigned int>& result)
 {
-    if(tractography_name_list.empty())
+    if(!handle->load_track_atlas(handle))
         return false;
     result.resize(tract_data.size());
-    tipl::par_for(tract_data.size(),[&](int i)
+    tipl::par_for(tract_data.size(),[&](size_t i)
     {
         if(tract_data[i].empty())
             return;
-        result[i] = atlas->find_nearest(&tract_data[i][0],tract_data[i].size());
-        std::cout << result[i] << std::endl;
+        result[i] = handle->track_atlas->find_nearest(&tract_data[i][0],uint32_t(tract_data[i].size()),false,50.0f);
     });
     return true;
 }
 
-bool TractModel::recognize(std::map<float,std::string,std::greater<float> >& result,
-                           std::shared_ptr<TractModel> atlas,bool contain)
+bool TractModel::recognize(std::map<float,std::string,std::greater<float> >& result,bool contain)
 {
-    if(tractography_name_list.empty())
+    if(!handle->load_track_atlas(handle))
         return false;
-    std::vector<float> count(tractography_name_list.size()+1);
-    tipl::par_for(tract_data.size(),[&](int i)
+    std::vector<float> count(handle->tractography_name_list.size()+1);
+    tipl::par_for(tract_data.size(),[&](size_t i)
     {
         if(tract_data[i].empty())
             return;
-        int index = atlas->find_nearest(&tract_data[i][0],tract_data[i].size(),contain);
+        unsigned int index = handle->track_atlas->find_nearest(&tract_data[i][0],uint32_t(tract_data[i].size()),contain,50.0f);
         if(index < count.size())
             ++count[index];
     });
@@ -2212,15 +2209,14 @@ bool TractModel::recognize(std::map<float,std::string,std::greater<float> >& res
     if(sum != 0.0f)
         tipl::multiply_constant(count,1.0f/sum);
     result.clear();
-    for(int i = 0;i < count.size();++i)
-        result[count[i]] = (i < tractography_name_list.size()) ? tractography_name_list[i]:std::string("False");
+    for(size_t i = 0;i < count.size();++i)
+        result[count[i]] = (i < handle->tractography_name_list.size()) ? handle->tractography_name_list[i]:std::string("False");
     return true;
 }
-void TractModel::recognize_report(std::string& report,
-                                  std::shared_ptr<TractModel> atlas)
+void TractModel::recognize_report(std::string& report)
 {
     std::map<float,std::string,std::greater<float> > result;
-    if(!recognize(result,atlas,true)) // true: connectometry may only show part of pathways. enable containing condition
+    if(!recognize(result,true)) // true: connectometry may only show part of pathways. enable containing condition
         return;
     int n = 0;
     std::ostringstream out;
