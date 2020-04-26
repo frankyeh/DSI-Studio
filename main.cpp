@@ -17,8 +17,12 @@
 std::string
         fib_template_file_name_2mm,
         t1w_template_file_name,wm_template_file_name,
-        t1w_mask_template_file_name,tractography_atlas_file_name;
-std::vector<std::string> fa_template_list,iso_template_list,atlas_file_list,tractography_name_list;
+        t1w_mask_template_file_name;
+std::vector<std::string> fa_template_list,
+                         iso_template_list,
+                         atlas_file_list,
+                         track_atlas_file_list;
+
 int rec(void);
 int trk(void);
 int src(void);
@@ -34,17 +38,17 @@ int qc(void);
 int reg(void);
 
 
-int match_template(float volume)
+size_t match_template(float volume)
 {
     float min_dif = std::numeric_limits<float>::max();
-    int matched_index = 0;
-    for(int i = 0;i < fa_template_list.size();++i)
+    size_t matched_index = 0;
+    for(size_t i = 0;i < fa_template_list.size();++i)
     {
         gz_nifti read;
         if(!read.load_from_file(fa_template_list[i].c_str()))
             continue;
         float v = float(read.nif_header2.dim[1]*read.nif_header2.dim[2]*read.nif_header2.dim[3])*
-                read.nif_header2.pixdim[1]*read.nif_header2.pixdim[2]*read.nif_header2.pixdim[3];
+                float(read.nif_header2.pixdim[1]*read.nif_header2.pixdim[2]*read.nif_header2.pixdim[3]);
         v = std::fabs(v-volume);
         if(v < min_dif)
         {
@@ -91,29 +95,8 @@ void load_file_name(void)
     t1w_template_file_name = find_full_path("/mni_icbm152_t1_tal_nlin_asym_09c.nii.gz");
     wm_template_file_name = find_full_path("/mni_icbm152_wm_tal_nlin_asym_09c.nii.gz");
     t1w_mask_template_file_name = find_full_path("/mni_icbm152_t1_tal_nlin_asym_09c_mask.nii.gz");
-    tractography_atlas_file_name = find_full_path("/atlas/HCP842_tractography.trk.gz");
 
-    std::string tractography_name_list_file_name = find_full_path("/atlas/HCP842_tractography.txt");
-    if(!tractography_atlas_file_name.empty() && QFileInfo(tractography_name_list_file_name.c_str()).exists())
-    {
-        std::ifstream in(tractography_name_list_file_name);
-        std::string line;
-        while(std::getline(in,line))
-        {
-            std::istringstream in2(line);
-            in2 >> line;
-            in2 >> line;
-            std::replace(line.begin(),line.end(),'_',' ');
-            std::transform(line.begin(), line.end(), line.begin(),::tolower);
-            if(line.back() == 'l' && line[line.length()-2] == ' ')
-                line = std::string("left ") + line.substr(0,line.length()-2);
-            if(line.back() == 'r' && line[line.length()-2] == ' ')
-                line = std::string("right ") + line.substr(0,line.length()-2);
-            tractography_name_list.push_back(line);
-        }
-    }
-    else
-        tractography_atlas_file_name.clear();
+
     // search for all anisotropy template
     {
         QDir dir = QCoreApplication::applicationDirPath()+ "/template";
@@ -145,22 +128,37 @@ void load_file_name(void)
         }
     }
 
-    QDir dir = QCoreApplication::applicationDirPath()+ "/atlas";
-    if(!dir.exists())
-        dir = QDir::currentPath()+ "/atlas";
-    QStringList name_list = dir.entryList(QStringList("*.nii"),QDir::Files|QDir::NoSymLinks);
-    name_list << dir.entryList(QStringList("*.nii.gz"),QDir::Files|QDir::NoSymLinks);
-    if(name_list.empty())
-        return;
-    for(int i = 1;i < name_list.size();++i)
-        if(name_list[i].contains("tractography"))
+
+    // find all atlas
+    {
+        QDir dir = QCoreApplication::applicationDirPath()+ "/atlas";
+        if(!dir.exists())
+            dir = QDir::currentPath()+ "/atlas";
+        QStringList name_list = dir.entryList(QStringList("*.nii"),QDir::Files|QDir::NoSymLinks);
+        name_list << dir.entryList(QStringList("*.nii.gz"),QDir::Files|QDir::NoSymLinks);
+        if(!name_list.empty())
         {
-            auto str = name_list[i];
-            name_list.removeAt(i);
-            name_list.insert(0,str);
+            for(int i = 1;i < name_list.size();++i)
+                if(name_list[i].contains("tractography"))
+                {
+                    auto str = name_list[i];
+                    name_list.removeAt(i);
+                    name_list.insert(0,str);
+                }
+            for(int index = 0;index < name_list.size();++index)
+                atlas_file_list.push_back((dir.absolutePath() + "/" + name_list[index]).toStdString());
         }
-    for(int index = 0;index < name_list.size();++index)
-        atlas_file_list.push_back((dir.absolutePath() + "/" + name_list[index]).toStdString());
+    }
+    // find all track atlas
+    {
+        QDir dir = QCoreApplication::applicationDirPath()+ "/track";
+        if(!dir.exists())
+            dir = QDir::currentPath()+ "/track";
+        QStringList name_list = dir.entryList(QStringList("*.trk"),QDir::Files|QDir::NoSymLinks);
+        name_list << dir.entryList(QStringList("*.trk.gz"),QDir::Files|QDir::NoSymLinks);
+        for(int index = 0;index < name_list.size();++index)
+            track_atlas_file_list.push_back((dir.absolutePath() + "/" + name_list[index]).toStdString());
+    }
 }
 
 void init_application(void)
