@@ -221,7 +221,7 @@ void group_connectometry_analysis::save_tracks_files(void)
             out1 << output_file_name << ".pos_corr.trk.gz";
             pos_corr_track->save_tracts_to_file(out1.str().c_str());
             pos_corr_tracks_result = "";
-            pos_corr_track->recognize_report(pos_corr_tracks_result);
+            handle->recognize_report(pos_corr_track,pos_corr_tracks_result);
             if(pos_corr_tracks_result.empty())
                 pos_corr_tracks_result = "tracks";
             has_pos_corr_result = true;
@@ -251,7 +251,7 @@ void group_connectometry_analysis::save_tracks_files(void)
             out1 << output_file_name << ".neg_corr.trk.gz";
             neg_corr_track->save_tracts_to_file(out1.str().c_str());
             neg_corr_tracks_result = "";
-            neg_corr_track->recognize_report(neg_corr_tracks_result);
+            handle->recognize_report(neg_corr_track,neg_corr_tracks_result);
             if(neg_corr_tracks_result.empty())
                 neg_corr_tracks_result = "tracks";
             has_neg_corr_result = true;

@@ -173,6 +173,10 @@ public:
     std::shared_ptr<TractModel> track_atlas;
     std::string tractography_atlas_file_name;
     std::vector<std::string> tractography_name_list;
+    bool recognize(std::shared_ptr<TractModel>& trk,std::vector<unsigned int>& result);
+    bool recognize(std::shared_ptr<TractModel>& trk,std::map<float,std::string,std::greater<float> >& result,bool contain);
+    void recognize_report(std::shared_ptr<TractModel>& trk,std::string& report);
+    unsigned int find_nearest(const float* trk,unsigned int length,bool contain,float false_distance);
 public:
     void set_template_id(size_t new_id);
     bool load_template(void);

@@ -459,7 +459,7 @@ void TractTableWidget::auto_recognition(void)
     if(!cur_tracking_window.handle->track_atlas.get())
         return;
     std::vector<unsigned int> c;
-    tract_models[currentRow()]->recognize(c);
+    cur_tracking_window.handle->recognize(tract_models[currentRow()],c);
     QStringList Names;
     for(int i = 0;i < cur_tracking_window.handle->tractography_name_list.size();++i)
         Names << cur_tracking_window.handle->tractography_name_list[i].c_str();
@@ -481,7 +481,7 @@ void TractTableWidget::recognize_rename(void)
         if(item(index,0)->checkState() == Qt::Checked)
         {
             std::map<float,std::string,std::greater<float> > sorted_list;
-            if(!tract_models[index]->recognize(sorted_list,true))
+            if(!cur_tracking_window.handle->recognize(tract_models[index],sorted_list,true))
                 return;
             item(index,0)->setText(sorted_list.begin()->second.c_str());
         }
@@ -739,7 +739,7 @@ void TractTableWidget::recog_tracks(void)
     if(!cur_tracking_window.handle->track_atlas.get())
         return;
     std::map<float,std::string,std::greater<float> > sorted_list;
-    if(!tract_models[currentRow()]->recognize(sorted_list))
+    if(!cur_tracking_window.handle->recognize(tract_models[currentRow()],sorted_list,false))
     {
         QMessageBox::information(this,"Error","Cannot recognize tracks.",0);
         return;

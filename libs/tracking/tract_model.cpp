@@ -1104,59 +1104,6 @@ void TractModel::select_tracts(const std::vector<unsigned int>& tracts_to_select
     delete_tracts(not_selected);
 }
 //---------------------------------------------------------------------------
-unsigned int TractModel::find_nearest(const float* trk,unsigned int length,bool contain,float false_distance)
-{
-    auto norm1 = [](const float* v1,const float* v2){return std::fabs(v1[0]-v2[0])+std::fabs(v1[1]-v2[1])+std::fabs(v1[2]-v2[2]);};
-    float best_distance = contain ? 50.0f : false_distance;
-    unsigned int best_index = tract_data.size()-1;
-    for(int i = 0;i < tract_data.size();++i)
-    {
-        bool skip = false;
-        float max_dis = 0.0f;
-        if(contain)
-        {
-            if(tract_cluster[i] == 80) // skipping false track
-                continue;
-        }
-        else
-        if(norm1(&tract_data[i][0],trk) > best_distance ||
-            norm1(&tract_data[i][tract_data[i].size()-3],trk+length-3) > best_distance)
-            continue;
-        if(!contain)
-        for(int m = 0;m < tract_data[i].size();m += 6)
-        {
-            float min_dis = norm1(&tract_data[i][m],trk);
-            for(int n = 0;n < length;n += 3)
-                min_dis = std::min<float>(min_dis,norm1(&tract_data[i][m],trk+n));
-            max_dis = std::max<float>(min_dis,max_dis);
-            if(max_dis > best_distance)
-            {
-                break;
-                skip = true;
-            }
-        }
-        if(!skip)
-        for(int n = 0;n < length;n += 6)
-        {
-            float min_dis = norm1(&tract_data[i][0],trk+n);
-            for(int m = 0;m < tract_data[i].size();m += 3)
-                min_dis = std::min<float>(min_dis,norm1(&tract_data[i][m],trk+n));
-            max_dis = std::max<float>(min_dis,max_dis);
-            if(max_dis > best_distance)
-            {
-                skip = true;
-                break;
-            }
-        }
-        if(!skip)
-        {
-            best_distance = max_dis;
-            best_index = i;
-        }
-    }
-    return tract_cluster[best_index];
-}
-//---------------------------------------------------------------------------
 void TractModel::delete_repeated(float d)
 {   
     std::vector<std::vector<size_t> > x_reg(geometry.plane_size());
@@ -2177,59 +2124,6 @@ void TractModel::get_quantitative_info(std::string& result)
         fib->other_index[0] = old_index_data;
     }
     result = out.str();
-}
-bool TractModel::recognize(std::vector<unsigned int>& result)
-{
-    if(!handle->load_track_atlas(handle))
-        return false;
-    result.resize(tract_data.size());
-    tipl::par_for(tract_data.size(),[&](size_t i)
-    {
-        if(tract_data[i].empty())
-            return;
-        result[i] = handle->track_atlas->find_nearest(&tract_data[i][0],uint32_t(tract_data[i].size()),false,50.0f);
-    });
-    return true;
-}
-
-bool TractModel::recognize(std::map<float,std::string,std::greater<float> >& result,bool contain)
-{
-    if(!handle->load_track_atlas(handle))
-        return false;
-    std::vector<float> count(handle->tractography_name_list.size()+1);
-    tipl::par_for(tract_data.size(),[&](size_t i)
-    {
-        if(tract_data[i].empty())
-            return;
-        unsigned int index = handle->track_atlas->find_nearest(&tract_data[i][0],uint32_t(tract_data[i].size()),contain,50.0f);
-        if(index < count.size())
-            ++count[index];
-    });
-    float sum = std::accumulate(count.begin(),count.end(),0.0f);
-    if(sum != 0.0f)
-        tipl::multiply_constant(count,1.0f/sum);
-    result.clear();
-    for(size_t i = 0;i < count.size();++i)
-        result[count[i]] = (i < handle->tractography_name_list.size()) ? handle->tractography_name_list[i]:std::string("False");
-    return true;
-}
-void TractModel::recognize_report(std::string& report)
-{
-    std::map<float,std::string,std::greater<float> > result;
-    if(!recognize(result,true)) // true: connectometry may only show part of pathways. enable containing condition
-        return;
-    int n = 0;
-    std::ostringstream out;
-    for(auto& r : result)
-    {
-        if(r.first < 0.01) // only report greater than 1%
-            break;
-        if(n)
-            out << (n == result.size()-1 ? (result.size() == 2 ? " and ":", and ") : ", ");
-        out <<  r.second <<  " (" << std::setprecision(2) << r.first*100.0f << "%)";
-        ++n;
-    }
-    report += out.str();
 }
 
 void TractModel::get_report(unsigned int profile_dir,float band_width,const std::string& index_name,

@@ -1006,8 +1006,6 @@ bool fib_data::load_template(void)
 
 bool fib_data::load_track_atlas(std::shared_ptr<fib_data> handle)
 {
-    if(!load_template())
-        return false;
     if(tractography_atlas_file_name.empty() || tractography_name_list.empty())
     {
         error_msg = "no tractography atlas associated with the current template";
@@ -1052,6 +1050,166 @@ void fib_data::template_from_mni(tipl::vector<3>& p)
 
 
 }
+//---------------------------------------------------------------------------
+unsigned int fib_data::find_nearest(const float* trk,unsigned int length,bool contain,float false_distance)
+{
+    auto norm1 = [](const float* v1,const float* v2){return std::fabs(v1[0]-v2[0])+std::fabs(v1[1]-v2[1])+std::fabs(v1[2]-v2[2]);};
+    struct min_min{
+        inline float operator()(float min_dis,const float* v1,const float* v2)
+        {
+            float d1 = std::fabs(v1[0]-v2[0]);
+            if(d1 > min_dis)
+                return min_dis;
+            d1 += std::fabs(v1[1]-v2[1]);
+            if(d1 > min_dis)
+                return min_dis;
+            d1 += std::fabs(v1[2]-v2[2]);
+            if(d1 > min_dis)
+                return min_dis;
+            return d1;
+        }
+    }min_min_fun;
+
+    float best_distance = contain ? 50.0f : false_distance;
+    const auto& tract_data = track_atlas->get_tracts();
+    const auto& tract_cluster = track_atlas->get_cluster_info();
+    size_t best_index = tract_data.size()-1;
+    if(contain)
+    {
+        for(size_t i = 0;i < tract_data.size();++i)
+        {
+            bool skip = false;
+            float max_dis = 0.0f;
+            if(tract_cluster[i] == 80) // skipping false track
+                continue;
+
+            for(size_t n = 0;n < length;n += 6)
+            {
+                float min_dis = norm1(&tract_data[i][0],trk+n);
+                for(size_t m = 0;m < tract_data[i].size() && min_dis > max_dis;m += 3)
+                    min_dis = min_min_fun(min_dis,&tract_data[i][m],trk+n);
+                max_dis = std::max<float>(min_dis,max_dis);
+                if(max_dis > best_distance)
+                {
+                    skip = true;
+                    break;
+                }
+            }
+            if(!skip)
+            {
+                best_distance = max_dis;
+                best_index = i;
+            }
+        }
+    }
+    else
+    {
+        for(size_t i = 0;i < tract_data.size();++i)
+        {
+            if(min_min_fun(best_distance,&tract_data[i][0],trk) >= best_distance ||
+                min_min_fun(best_distance,&tract_data[i][tract_data[i].size()-3],trk+length-3) >= best_distance)
+                continue;
+
+            bool skip = false;
+            float max_dis = 0.0f;
+            for(size_t m = 0;m < tract_data[i].size();m += 6)
+            {
+                const float* tim = &tract_data[i][m];
+                const float* trk_length = trk+length;
+                float min_dis = norm1(tim,trk);
+                for(const float* trk_n = trk;trk_n < trk_length && min_dis > max_dis;trk_n += 3)
+                    min_dis = min_min_fun(min_dis,tim,trk_n);
+                max_dis = std::max<float>(min_dis,max_dis);
+                if(max_dis > best_distance)
+                {
+                    skip = true;
+                    break;
+                }
+            }
+            if(!skip)
+            for(size_t n = 0;n < length;n += 6)
+            {
+                const float* ti0 = &tract_data[i][0];
+                const float* ti_end = ti0+tract_data[i].size();
+                const float* trk_n = trk+n;
+                float min_dis = norm1(ti0,trk_n);
+                for(const float* tim = ti0;tim < ti_end && min_dis > max_dis;tim += 3)
+                    min_dis = min_min_fun(min_dis,tim,trk_n);
+                max_dis = std::max<float>(min_dis,max_dis);
+                if(max_dis > best_distance)
+                {
+                    skip = true;
+                    break;
+                }
+            }
+            if(!skip)
+            {
+                best_distance = max_dis;
+                best_index = i;
+            }
+        }
+    }
+
+
+
+    return tract_cluster[best_index];
+}
+//---------------------------------------------------------------------------
+
+bool fib_data::recognize(std::shared_ptr<TractModel>& trk,std::vector<unsigned int>& result)
+{
+    if(!load_track_atlas(trk->get_handle()))
+        return false;
+    result.resize(trk->get_tracts().size());
+    tipl::par_for(trk->get_tracts().size(),[&](size_t i)
+    {
+        if(trk->get_tracts()[i].empty())
+            return;
+        result[i] = find_nearest(&(trk->get_tracts()[i][0]),uint32_t(trk->get_tracts()[i].size()),false,50.0f);
+    });
+    return true;
+}
+
+bool fib_data::recognize(std::shared_ptr<TractModel>& trk,std::map<float,std::string,std::greater<float> >& result,bool contain)
+{
+    if(!load_track_atlas(trk->get_handle()))
+        return false;
+    std::vector<float> count(tractography_name_list.size()+1);
+    tipl::par_for(trk->get_tracts().size(),[&](size_t i)
+    {
+        if(trk->get_tracts()[i].empty())
+            return;
+        unsigned int index = find_nearest(&(trk->get_tracts()[i][0]),uint32_t(trk->get_tracts()[i].size()),contain,50.0f);
+        if(index < count.size())
+            ++count[index];
+    });
+    float sum = std::accumulate(count.begin(),count.end(),0.0f);
+    if(sum != 0.0f)
+        tipl::multiply_constant(count,1.0f/sum);
+    result.clear();
+    for(size_t i = 0;i < count.size();++i)
+        result[count[i]] = (i < tractography_name_list.size()) ? tractography_name_list[i]:std::string("False");
+    return true;
+}
+void fib_data::recognize_report(std::shared_ptr<TractModel>& trk,std::string& report)
+{
+    std::map<float,std::string,std::greater<float> > result;
+    if(!recognize(trk,result,true)) // true: connectometry may only show part of pathways. enable containing condition
+        return;
+    size_t n = 0;
+    std::ostringstream out;
+    for(auto& r : result)
+    {
+        if(r.first < 0.01f) // only report greater than 1%
+            break;
+        if(n)
+            out << (n == result.size()-1 ? (result.size() == 2 ? " and ":", and ") : ", ");
+        out <<  r.second <<  " (" << std::setprecision(2) << r.first*100.0f << "%)";
+        ++n;
+    }
+    report += out.str();
+}
+
 
 void animal_reg(const tipl::image<float,3>& from,tipl::vector<3> from_vs,
           const tipl::image<float,3>& to,tipl::vector<3> to_vs,

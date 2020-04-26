@@ -86,7 +86,6 @@ public:
     std::vector<std::shared_ptr<Roi> > terminate;
     std::vector<std::shared_ptr<Roi> > no_end;
 public:
-    std::shared_ptr<TractModel> atlas;
     float false_distance = 0.0f;
     unsigned int track_id = 0;
 public:
@@ -142,21 +141,20 @@ public:
         for(unsigned int index = 0; index < inclusive.size(); ++index)
             if(!inclusive[index]->included(track,buffer_size))
                 return false;
-        if(atlas.get())
-            return atlas->find_nearest(track,buffer_size,false,false_distance) == track_id;
+        if(false_distance != 0.0f)
+            return handle->find_nearest(track,buffer_size,false,false_distance) == track_id;
         return true;
     }
     bool setAtlas(unsigned int track_id_,float false_distance_)
     {
         if(!handle->load_track_atlas(handle))
             return false;
-        if( track_id >= handle->tractography_name_list.size())
+        if(track_id >= handle->tractography_name_list.size())
         {
             handle->error_msg = "invalid track_id";
             return false;
         }
         false_distance = false_distance_;
-        atlas = handle->track_atlas;
         track_id = track_id_;
         report += " The anatomy prior of a tractography atlas (Yeh et al., Neuroimage 178, 57-68, 2018) was used to track ";
         report += handle->tractography_name_list[size_t(track_id)];
@@ -164,7 +162,7 @@ public:
         if(seeds.empty())
         {
             std::vector<tipl::vector<3,short> > seed;
-            atlas->to_voxel(seed,1.0f,int(track_id));
+            handle->track_atlas->to_voxel(seed,1.0f,int(track_id));
             ROIRegion region(handle);
             region.add_points(seed,false);
             region.perform("dilation");
