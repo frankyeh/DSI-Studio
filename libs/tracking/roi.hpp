@@ -167,6 +167,9 @@ public:
             region.add_points(seed,false);
             region.perform("dilation");
             region.perform("dilation");
+            region.perform("dilation");
+            region.perform("smoothing");
+            region.perform("smoothing");
             setRegions(region.get_region_voxels_raw(),1.0,3/*seed i*/,
                 handle->tractography_name_list[size_t(track_id)].c_str());
         }

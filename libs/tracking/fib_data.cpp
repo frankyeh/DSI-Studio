@@ -1073,7 +1073,7 @@ unsigned int fib_data::find_nearest(const float* trk,unsigned int length,bool co
     float best_distance = contain ? 50.0f : false_distance;
     const auto& tract_data = track_atlas->get_tracts();
     const auto& tract_cluster = track_atlas->get_cluster_info();
-    size_t best_index = tract_data.size()-1;
+    size_t best_index = tract_data.size();
     if(contain)
     {
         for(size_t i = 0;i < tract_data.size();++i)
@@ -1149,14 +1149,13 @@ unsigned int fib_data::find_nearest(const float* trk,unsigned int length,bool co
             }
         }
     }
-
-
-
+    if(best_index == tract_data.size())
+        return 9999;
     return tract_cluster[best_index];
 }
 //---------------------------------------------------------------------------
 
-bool fib_data::recognize(std::shared_ptr<TractModel>& trk,std::vector<unsigned int>& result)
+bool fib_data::recognize(std::shared_ptr<TractModel>& trk,std::vector<unsigned int>& result,float tolerance)
 {
     if(!load_track_atlas(trk->get_handle()))
         return false;
@@ -1165,7 +1164,7 @@ bool fib_data::recognize(std::shared_ptr<TractModel>& trk,std::vector<unsigned i
     {
         if(trk->get_tracts()[i].empty())
             return;
-        result[i] = find_nearest(&(trk->get_tracts()[i][0]),uint32_t(trk->get_tracts()[i].size()),false,50.0f);
+        result[i] = find_nearest(&(trk->get_tracts()[i][0]),uint32_t(trk->get_tracts()[i].size()),false,tolerance);
     });
     return true;
 }
@@ -1174,7 +1173,7 @@ bool fib_data::recognize(std::shared_ptr<TractModel>& trk,std::map<float,std::st
 {
     if(!load_track_atlas(trk->get_handle()))
         return false;
-    std::vector<float> count(tractography_name_list.size()+1);
+    std::vector<float> count(tractography_name_list.size());
     tipl::par_for(trk->get_tracts().size(),[&](size_t i)
     {
         if(trk->get_tracts()[i].empty())
@@ -1188,7 +1187,7 @@ bool fib_data::recognize(std::shared_ptr<TractModel>& trk,std::map<float,std::st
         tipl::multiply_constant(count,1.0f/sum);
     result.clear();
     for(size_t i = 0;i < count.size();++i)
-        result[count[i]] = (i < tractography_name_list.size()) ? tractography_name_list[i]:std::string("False");
+        result[count[i]] = tractography_name_list[i];
     return true;
 }
 void fib_data::recognize_report(std::shared_ptr<TractModel>& trk,std::string& report)

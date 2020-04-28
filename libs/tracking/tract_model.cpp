@@ -395,6 +395,7 @@ bool TractModel::load_from_file(const char* file_name_,bool append)
         loaded_tract_cluster.swap(tract_cluster);
     else
         tract_cluster.clear();
+
     loaded_tract_data.swap(tract_data);
     tract_color.clear();
     tract_color.resize(tract_data.size());
@@ -1106,64 +1107,82 @@ void TractModel::select_tracts(const std::vector<unsigned int>& tracts_to_select
 //---------------------------------------------------------------------------
 void TractModel::delete_repeated(float d)
 {   
-    std::vector<std::vector<size_t> > x_reg(geometry.plane_size());
-    std::vector<size_t> track_reg(tract_data.size());
-    for(size_t i = 0; i < tract_data.size();++i)
+    std::vector<std::vector<size_t> > x_reg;
+    std::vector<size_t> track_reg;
+    if(tract_data.size() > 50000)
     {
-        int x = int(std::round(tract_data[i][0]));
-        int y = int(std::round(tract_data[i][1]));
-        if(x < 0)
-            x = 0;
-        if(y < 0)
-            y = 0;
-        if(x >= geometry[0])
-            x = geometry[0]-1;
-        if(y >= geometry[1])
-            y = geometry[1]-1;
-        x_reg[track_reg[i] = size_t(x + y*geometry[0])].push_back(i);
+        x_reg.resize(geometry.plane_size());
+        track_reg.resize(tract_data.size());
+        for(size_t i = 0; i < tract_data.size();++i)
+        {
+            int x = int(std::round(tract_data[i][0]));
+            int y = int(std::round(tract_data[i][1]));
+            if(x < 0)
+                x = 0;
+            if(y < 0)
+                y = 0;
+            if(x >= geometry[0])
+                x = geometry[0]-1;
+            if(y >= geometry[1])
+                y = geometry[1]-1;
+            x_reg[track_reg[i] = size_t(x + y*geometry[0])].push_back(i);
+        }
     }
     auto norm1 = [](const float* v1,const float* v2){return std::fabs(v1[0]-v2[0])+std::fabs(v1[1]-v2[1])+std::fabs(v1[2]-v2[2]);};
+    struct min_min{
+        inline float operator()(float min_dis,const float* v1,const float* v2)
+        {
+            float d1 = std::fabs(v1[0]-v2[0]);
+            if(d1 > min_dis)
+                return min_dis;
+            d1 += std::fabs(v1[1]-v2[1]);
+            if(d1 > min_dis)
+                return min_dis;
+            d1 += std::fabs(v1[2]-v2[2]);
+            if(d1 > min_dis)
+                return min_dis;
+            return d1;
+        }
+    }min_min_fun;
     std::vector<bool> repeated(tract_data.size());
     tipl::par_for(tract_data.size(),[&](size_t i)
     {
-        if(!repeated[i])
+        if(repeated[i])
+            return;
+        size_t max_k = x_reg.empty() ? tract_data.size():x_reg[track_reg[i]].size();
+        for(size_t k = x_reg.empty() ? i+1:0;k < max_k;++k)
         {
-            for(size_t k = 0;k < x_reg[track_reg[i]].size();++k)
+            size_t j = x_reg.empty() ? k :  x_reg[track_reg[i]][k];
+            if(j <= i || repeated[j] ||
+               min_min_fun(d,&tract_data[i][0],&tract_data[j][0]) >= d ||
+               min_min_fun(d,&tract_data[i][tract_data[i].size()-3],&tract_data[j][tract_data[j].size()-3]) >= d)
+                continue;
+            bool not_repeated = false;
+            for(size_t m = 0;m < tract_data[i].size();m += 3)
             {
-                size_t j = x_reg[track_reg[i]][k];
-                if(j == i || repeated[j] ||
-                   std::fabs(tract_data[i][0]-tract_data[j][0]) > d ||
-                   norm1(&tract_data[i][0],&tract_data[j][0]) > d ||
-                   norm1(&tract_data[i][tract_data[i].size()-3],&tract_data[j][tract_data[j].size()-3]) > d)
-                    continue;
-
-                bool not_repeated = false;
-                for(size_t m = 0;m < tract_data[i].size();m += 3)
+                float min_dis = norm1(&tract_data[i][m],&tract_data[j][0]);
+                for(size_t n = 3;n < tract_data[j].size();n += 3)
+                    min_dis = min_min_fun(min_dis,&tract_data[i][m],&tract_data[j][n]);
+                if(min_dis > d)
                 {
-                    float min_dis = norm1(&tract_data[i][m],&tract_data[j][0]);
-                    for(size_t n = 3;n < tract_data[j].size();n += 3)
-                        min_dis = std::min<float>(min_dis,norm1(&tract_data[i][m],&tract_data[j][n]));
-                    if(min_dis > d)
-                    {
-                        not_repeated = true;
-                        break;
-                    }
+                    not_repeated = true;
+                    break;
                 }
-                if(!not_repeated)
-                for(size_t m = 0;m < tract_data[j].size();m += 3)
-                {
-                    float min_dis = norm1(&tract_data[j][m],&tract_data[i][0]);
-                    for(size_t n = 0;n < tract_data[i].size();n += 3)
-                        min_dis = std::min<float>(min_dis,norm1(&tract_data[j][m],&tract_data[i][n]));
-                    if(min_dis > d)
-                    {
-                        not_repeated = true;
-                        break;
-                    }
-                }
-                if(!not_repeated)
-                    repeated[j] = true;
             }
+            if(!not_repeated)
+            for(size_t m = 0;m < tract_data[j].size();m += 3)
+            {
+                float min_dis = norm1(&tract_data[j][m],&tract_data[i][0]);
+                for(size_t n = 0;n < tract_data[i].size();n += 3)
+                    min_dis = min_min_fun(min_dis,&tract_data[j][m],&tract_data[i][n]);
+                if(min_dis > d)
+                {
+                    not_repeated = true;
+                    break;
+                }
+            }
+            if(!not_repeated)
+                repeated[j] = true;
         }
     });
     std::vector<unsigned int> track_to_delete;

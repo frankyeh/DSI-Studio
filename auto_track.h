@@ -24,6 +24,7 @@ public:
     int prog = 0;
     QStringList file_list;
     std::shared_ptr<QTimer> timer;
+    std::vector<char> rec_list;
 private slots:
     void on_open_clicked();
 
@@ -38,6 +39,8 @@ private slots:
     void on_run_clicked();
 
     void on_interpolation_currentIndexChanged(int index);
+
+    void on_recommend_list_toggled(bool checked);
 
 private:
     Ui::auto_track *ui;

@@ -91,7 +91,7 @@ std::string find_full_path(QString name)
 
 void load_file_name(void)
 {
-    fib_template_file_name_2mm = find_full_path("/HCP1021.2mm.fib.gz");
+    fib_template_file_name_2mm = find_full_path("/hcp1065_2mm.fib.gz");
     t1w_template_file_name = find_full_path("/mni_icbm152_t1_tal_nlin_asym_09c.nii.gz");
     wm_template_file_name = find_full_path("/mni_icbm152_wm_tal_nlin_asym_09c.nii.gz");
     t1w_mask_template_file_name = find_full_path("/mni_icbm152_t1_tal_nlin_asym_09c_mask.nii.gz");

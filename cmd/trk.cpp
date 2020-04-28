@@ -421,13 +421,31 @@ bool load_roi(std::shared_ptr<fib_data> handle,std::shared_ptr<RoiMgr> roi_mgr)
     }
     if(po.has("track_id"))
     {
-        unsigned int track_id = uint32_t(po.get("track_id",0));
-        if(!roi_mgr->setAtlas(track_id,po.get("tolerance",16.0f)/handle->vs[0]))
+        if(!handle->load_track_atlas(handle))
         {
             std::cout << handle->error_msg << std::endl;
             return false;
         }
-        std::cout << "setting target track=" << handle->tractography_name_list[track_id] << std::endl;
+        std::string name = po.get("track_id");
+        size_t track_id = handle->tractography_name_list.size();
+        for(size_t i = 0;i < handle->tractography_name_list.size();++i)
+            if(name == handle->tractography_name_list[i])
+            {
+                track_id = i;
+                break;
+            }
+        if(track_id == handle->tractography_name_list.size())
+        {
+            std::cout << "cannot find " << name << " in " << handle->tractography_atlas_file_name << std::endl;
+            return false;
+        }
+        if(!roi_mgr->setAtlas(uint32_t(track_id),po.get("tolerance",16.0f)/handle->vs[0]))
+        {
+            std::cout << handle->error_msg << std::endl;
+            return false;
+        }
+        std::cout << "set tolerance=" << po.get("tolerance",16.0f) << std::endl;
+        std::cout << "set target track=" << handle->tractography_name_list[track_id] << std::endl;
     }
     return true;
 }

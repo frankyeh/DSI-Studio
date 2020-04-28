@@ -6,11 +6,6 @@
 #include "libs/dsi/image_model.hpp"
 #include "fib_data.hpp"
 #include "libs/tracking/tracking_thread.hpp"
-extern size_t auto_track_pos[7];
-extern unsigned char auto_track_rgb[6][3];
-size_t auto_track_pos[7] = {0,20,42,45,52,66,80};
-unsigned char auto_track_rgb[6][3]={{40,40,160},{40,160,40},{160,40,40},{20,20,80},{20,20,60},{20,80,20}};               // projection
-
 auto_track::auto_track(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::auto_track)
@@ -22,16 +17,18 @@ auto_track::auto_track(QWidget *parent) :
 
     fib.set_template_id(0);
 
-    const int atlas_range = 4;
     QStringList tract_names;
-    for(size_t index = 0;index < auto_track_pos[atlas_range];++index)
+    const char rec_list_name[8][15] = {"Arcuate","Cingulum","Fornix","Aslant","Superior_L","Inferior_L","Inferior_F","Uncinate"};
+    for(size_t index = 0;index < fib.tractography_name_list.size();++index)
+    {
         tract_names << fib.tractography_name_list[index].c_str();
-
+        rec_list.push_back(0);
+        for(size_t i = 0;i < 8;++i)
+            if(fib.tractography_name_list[index].find(rec_list_name[i]) != std::string::npos)
+                rec_list.back() = 1;
+    }
     ui->candidate_list_view->addItems(tract_names);
-    for(int i = 0;i < atlas_range;++i)
-    for(size_t j = auto_track_pos[i];j < auto_track_pos[i+1];++j)
-        ui->candidate_list_view->item(int(j))->setData(Qt::ForegroundRole,
-            QBrush(QColor(auto_track_rgb[i][0],auto_track_rgb[i][1],auto_track_rgb[i][2])));
+    on_recommend_list_toggled(true);
 
     timer = std::make_shared<QTimer>(this);
     timer->stop();
@@ -106,6 +103,7 @@ std::string run_auto_track(
                     int interpolation,int tip,
                     bool export_stat,
                     bool export_trk,
+                    bool overwrite,
                     int& progress)
 {
     std::vector<std::string> reports(track_id.size());
@@ -152,8 +150,8 @@ std::string run_auto_track(
                 std::string no_result_file_name = fib_file_name+"."+track_name+".no_result.txt";
                 stat_files[j].push_back(stat_file_name);
 
-                if((export_stat && !QFileInfo(stat_file_name.c_str()).exists()) ||
-                   (export_trk && !QFileInfo(trk_file_name.c_str()).exists()))
+                if((export_stat && (overwrite || !QFileInfo(stat_file_name.c_str()).exists())) ||
+                   (export_trk && (overwrite || !QFileInfo(trk_file_name.c_str()).exists())))
                 {
                     std::shared_ptr<fib_data> handle(new fib_data);
                     if (!handle->load_from_file(fib_file_name.c_str()))
@@ -300,7 +298,10 @@ void auto_track::on_run_clicked()
                    ui->tolerance->value(),
                    uint32_t(ui->track_count->value()*1000.0),
                    ui->interpolation->currentIndex(),ui->pruning->value(),
-                   ui->export_stat->isChecked(),ui->export_trk->isChecked(),prog);
+                   ui->export_stat->isChecked(),
+                   ui->export_trk->isChecked(),
+                   ui->overwrite->isChecked(),
+                   prog);
     timer->stop();
     ui->run->setEnabled(true);
     progress->setVisible(false);
@@ -315,4 +316,18 @@ void auto_track::on_interpolation_currentIndexChanged(int)
 {
     QMessageBox::information(this,"DSI Studio","You may need to remove existing *.fib.gz and *.mapping.gz files to take effect");
 
+}
+
+void auto_track::on_recommend_list_toggled(bool checked)
+{
+    if(checked)
+    {
+        ui->candidate_list_view->setEnabled(false);
+        for(size_t i = 0;i < rec_list.size();++i)
+            ui->candidate_list_view->item(i)->setSelected(rec_list[i]);
+    }
+    else
+    {
+        ui->candidate_list_view->setEnabled(true);
+    }
 }

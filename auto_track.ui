@@ -193,6 +193,23 @@
           </property>
           <layout class="QVBoxLayout" name="verticalLayout_2">
            <item>
+            <widget class="QRadioButton" name="recommend_list">
+             <property name="text">
+              <string>Recommended List</string>
+             </property>
+             <property name="checked">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QRadioButton" name="custom">
+             <property name="text">
+              <string>Custom</string>
+             </property>
+            </widget>
+           </item>
+           <item>
             <widget class="QListWidget" name="candidate_list_view">
              <property name="selectionMode">
               <enum>QAbstractItemView::MultiSelection</enum>
@@ -354,7 +371,7 @@
                   <double>100.000000000000000</double>
                  </property>
                  <property name="value">
-                  <double>5.000000000000000</double>
+                  <double>8.000000000000000</double>
                  </property>
                 </widget>
                </item>
@@ -448,7 +465,7 @@
                   <number>100</number>
                  </property>
                  <property name="value">
-                  <number>20</number>
+                  <number>16</number>
                  </property>
                 </widget>
                </item>
@@ -471,6 +488,13 @@
                </property>
                <property name="checked">
                 <bool>true</bool>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QCheckBox" name="overwrite">
+               <property name="text">
+                <string>Overwrite Previous Track Output</string>
                </property>
               </widget>
              </item>

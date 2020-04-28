@@ -2001,26 +2001,22 @@ void tracking_window::on_actionKeep_Current_Slice_triggered()
 }
 void tracking_window::on_enable_auto_track_clicked()
 {
-    if(handle->load_track_atlas(handle))
+    if(!handle->load_track_atlas(handle))
     {
-        ui->enable_auto_track->setVisible(false);
-        ui->target->setVisible(true);
-        ui->target_label->setVisible(true);
-        if(ui->target->count() == 0)
-        {
-            ui->target->clear();
-            ui->target->addItem("All");
-            for(size_t i = 0;i < handle->tractography_name_list.size();++i)
-                ui->target->addItem(handle->tractography_name_list[i].c_str());
-            for(int i = 0;i < 6;++i)
-            for(size_t j = auto_track_pos[i];j < auto_track_pos[i+1];++j)
-                    ui->target->setItemData(int(j)+1,
-                        QBrush(QColor(auto_track_rgb[i][0],auto_track_rgb[i][1],auto_track_rgb[i][2])), Qt::TextColorRole);
-            ui->target->setCurrentIndex(0);
-        }
-    }
-    else
         QMessageBox::information(this,"Error",handle->error_msg.c_str());
+        return;
+    }
+    ui->enable_auto_track->setVisible(false);
+    ui->target->setVisible(true);
+    ui->target_label->setVisible(true);
+    if(ui->target->count() == 0)
+    {
+        ui->target->clear();
+        ui->target->addItem("All");
+        for(size_t i = 0;i < handle->tractography_name_list.size();++i)
+            ui->target->addItem(handle->tractography_name_list[i].c_str());
+        ui->target->setCurrentIndex(0);
+    }
     raise();
 }
 

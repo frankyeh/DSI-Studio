@@ -408,14 +408,14 @@ void TractTableWidget::assign_colors(void)
 }
 void TractTableWidget::load_cluster_label(const std::vector<unsigned int>& labels,QStringList Names)
 {
-    std::string report = tract_models[currentRow()]->report;
+    std::string report = tract_models[uint32_t(currentRow())]->report;
     std::vector<std::vector<float> > tracts;
-    tract_models[currentRow()]->release_tracts(tracts);
+    tract_models[uint32_t(currentRow())]->release_tracts(tracts);
     delete_row(currentRow());
-    unsigned int cluster_num = *std::max_element(labels.begin(),labels.end());
-    for(unsigned int cluster_index = 0;cluster_index <= cluster_num;++cluster_index)
+    unsigned int cluster_count = uint32_t(Names.empty() ? int(1+*std::max_element(labels.begin(),labels.end())):int(Names.count()));
+    for(unsigned int cluster_index = 0;cluster_index < cluster_count;++cluster_index)
     {
-        unsigned int fiber_num = std::count(labels.begin(),labels.end(),cluster_index);
+        unsigned int fiber_num = uint32_t(std::count(labels.begin(),labels.end(),cluster_index));
         if(!fiber_num)
             continue;
         std::vector<std::vector<float> > add_tracts(fiber_num);
@@ -425,13 +425,13 @@ void TractTableWidget::load_cluster_label(const std::vector<unsigned int>& label
                 add_tracts[i].swap(tracts[index]);
                 ++i;
             }
-        if(cluster_index < Names.size())
-            addNewTracts(Names[cluster_index],false);
+        if(int(cluster_index) < Names.size())
+            addNewTracts(Names[int(cluster_index)],false);
         else
             addNewTracts(QString("cluster")+QString::number(cluster_index),false);
         tract_models.back()->add_tracts(add_tracts);
         tract_models.back()->report = report;
-        item(tract_models.size()-1,1)->setText(QString::number(tract_models.back()->get_visible_track_count()));
+        item(int(tract_models.size())-1,1)->setText(QString::number(tract_models.back()->get_visible_track_count()));
     }
 }
 
@@ -454,26 +454,25 @@ void TractTableWidget::open_cluster_label(void)
 }
 void TractTableWidget::auto_recognition(void)
 {
-    if(!cur_tracking_window.handle->track_atlas.get() && cur_tracking_window.ui->enable_auto_track->isVisible())
-        cur_tracking_window.on_enable_auto_track_clicked();
-    if(!cur_tracking_window.handle->track_atlas.get())
+    if(!cur_tracking_window.handle->load_track_atlas(cur_tracking_window.handle))
+    {
+        QMessageBox::information(this,"Error",cur_tracking_window.handle->error_msg.c_str());
         return;
+    }
     std::vector<unsigned int> c;
-    cur_tracking_window.handle->recognize(tract_models[currentRow()],c);
+    cur_tracking_window.handle->recognize(tract_models[currentRow()],c,
+                    cur_tracking_window["autotrack_tolerance"].toFloat());
     QStringList Names;
     for(int i = 0;i < cur_tracking_window.handle->tractography_name_list.size();++i)
         Names << cur_tracking_window.handle->tractography_name_list[i].c_str();
-    Names << "false tracks";
     load_cluster_label(c,Names);
     assign_colors();
 }
 void TractTableWidget::recognize_rename(void)
 {
-    if(!cur_tracking_window.handle->track_atlas.get() && cur_tracking_window.ui->enable_auto_track->isVisible())
-        cur_tracking_window.on_enable_auto_track_clicked();
-    if(!cur_tracking_window.handle->track_atlas.get())
+    if(!cur_tracking_window.handle->load_track_atlas(cur_tracking_window.handle))
     {
-        QMessageBox::information(this,"Error","Recognition is only available with [Step T3a][Template]=HCP1021");
+        QMessageBox::information(this,"Error",cur_tracking_window.handle->error_msg.c_str());
         return;
     }
     begin_prog("Recognize and rename");
@@ -734,10 +733,11 @@ void TractTableWidget::recog_tracks(void)
 {
     if(currentRow() >= tract_models.size() || tract_models[currentRow()]->get_tracts().size() == 0)
         return;
-    if(!cur_tracking_window.handle->track_atlas.get() && cur_tracking_window.ui->enable_auto_track->isVisible())
-        cur_tracking_window.on_enable_auto_track_clicked();
-    if(!cur_tracking_window.handle->track_atlas.get())
+    if(!cur_tracking_window.handle->load_track_atlas(cur_tracking_window.handle))
+    {
+        QMessageBox::information(this,"Error",cur_tracking_window.handle->error_msg.c_str());
         return;
+    }
     std::map<float,std::string,std::greater<float> > sorted_list;
     if(!cur_tracking_window.handle->recognize(tract_models[currentRow()],sorted_list,false))
     {
@@ -1183,7 +1183,7 @@ void TractTableWidget::delete_repeated(void)
     float distance = 1.0;
     bool ok;
     distance = QInputDialog::getDouble(this,
-        "DSI Studio","Distance threshold (voxels)", distance,0,40,1,&ok);
+        "DSI Studio","Distance threshold (voxels)", distance,0,500,1,&ok);
     if (!ok)
         return;
     begin_prog("deleting tracks");
