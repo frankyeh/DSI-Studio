@@ -192,7 +192,7 @@ public:
             ptr_images.push_back(tipl::make_image(voxel.dwi_data[index],src_geo));
 
         voxel.vs = VGvs;
-        if(QFileInfo(voxel.primary_template.c_str()).baseName() == "HCP1021") // if default template is used
+        if(QFileInfo(voxel.primary_template.c_str()).baseName().contains("HCP")) // if default template is used
         {
             voxel.csf_pos1 = mni_to_voxel_index(voxel,6,0,18);
             voxel.csf_pos2 = mni_to_voxel_index(voxel,-6,0,18);
