@@ -66,6 +66,7 @@ public:
     void run_thread(TrackingMethod* method_ptr,unsigned int thread_count,
                     unsigned int thread_id,unsigned int max_count);
     bool fetchTracks(TractModel* handle);
+    void apply_tip(TractModel* handle);
     TrackingMethod* new_method(const tracking_data& trk);
     void run(const tracking_data& trk,
              unsigned int thread_count,

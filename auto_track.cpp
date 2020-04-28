@@ -184,12 +184,11 @@ std::string run_auto_track(
                                 return std::string();
                             std::this_thread::sleep_for(std::chrono::milliseconds(2000));
                         }
-                        thread.fetchTracks(&tract_model);
                         if(prog_aborted())
                             return std::string();
+                        thread.fetchTracks(&tract_model);
+                        thread.apply_tip(&tract_model);
                     }
-                    for(int i = 0;i < tip;++i)
-                        tract_model.trim();
                     tract_model.delete_repeated(1.0f);
 
                     if(prog_aborted())

@@ -27,7 +27,7 @@ Tracking/Direction Interpoation/interpolation/Trilinear:Gaussian radial basis:ne
 Tracking/Tracking Algorithm/tracking_method/Stremline(Euler):RK4:Voxel tracking/0
 Tracking/Differential Tracking Index/dt_index/none:adc/0
 Tracking/Differential Tracking Threshold/dt_threshold/float:0.0:1.0:0.05:2/0.2
-Tracking/Topology-Informed Pruning (iteration)/tip_iteration/int:0:10:1/0
+Tracking/Topology-Informed Pruning (iteration)/auto_tip/int:0:100:4/16
 Tracking/Autotrack tolerance (mm)/autotrack_tolerance/float:0:100:10:1/16
 Tracking/Thread Count/thread_count/int:1:12:1/1
 Tracking/Output Format/track_format/trk.gz:trk:txt/0

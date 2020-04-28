@@ -175,8 +175,7 @@ void TractTableWidget::ppv_analysis(void)
 
         TractModel trk(cur_tracking_window.handle);
         new_thread.fetchTracks(&trk);
-        for(int k = 0;k < base_thread.param.tip_iteration;++k)
-            trk.trim();
+        new_thread.apply_tip(&trk);
         tracks_count[i] = trk.get_visible_track_count();
     });
     check_prog(0,0);
@@ -236,13 +235,9 @@ void TractTableWidget::fetch_tracts(void)
                 QString::number(thread_data[index]->get_total_seed_count()));
             if(thread_data[index]->is_ended())
             {
-                if(thread_data[index]->param.tip_iteration)
-                {
-                    for(int i = 0;i < thread_data[index]->param.tip_iteration;++i)
-                        tract_models[index]->trim();
-                    item(index,1)->setText(QString::number(tract_models[index]->get_visible_track_count()));
-                    item(index,2)->setText(QString::number(tract_models[index]->get_deleted_track_count()));
-                }
+                thread_data[index]->apply_tip(tract_models[index].get());
+                item(index,1)->setText(QString::number(tract_models[index]->get_visible_track_count()));
+                item(index,2)->setText(QString::number(tract_models[index]->get_deleted_track_count()));
                 thread_data[index].reset();
             }
         }

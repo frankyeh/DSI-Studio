@@ -509,7 +509,7 @@ int trk(std::shared_ptr<fib_data> handle)
     tracking_thread.param.center_seed = po.get("seed_plan",int(0));
     tracking_thread.param.random_seed = po.get("random_seed",int(0));
     tracking_thread.param.check_ending = po.get("check_ending",int(0));
-    tracking_thread.param.tip_iteration = po.get("tip_iteration",int(0));
+    tracking_thread.param.tip_iteration = po.has("track_id") ? po.get("tip_iteration",int(16)) : 0;
 
     if (po.has("fiber_count"))
     {
@@ -657,9 +657,7 @@ int trk(std::shared_ptr<fib_data> handle)
             return 0;
         }
     }
-
-    for(int i = 0;i < tracking_thread.param.tip_iteration;++i)
-        tract_model.trim();
+    tracking_thread.apply_tip(&tract_model);
 
     if(tract_model.get_visible_track_count() == 0)
     {
