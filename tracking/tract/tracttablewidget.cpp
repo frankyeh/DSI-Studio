@@ -115,7 +115,6 @@ void TractTableWidget::start_tracking(void)
                             cur_tracking_window["thread_count"].toInt(),
                             false);
     tract_models.back()->report += thread_data.back()->report.str();
-    tract_models.back()->parameter_id = thread_data.back()->param.get_code();
     show_report();
     timer->start(1000);
 }

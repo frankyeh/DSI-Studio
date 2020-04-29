@@ -156,9 +156,10 @@ public:
         }
         false_distance = false_distance_;
         track_id = track_id_;
-        report += " The anatomy prior of a tractography atlas (Yeh et al., Neuroimage 178, 57-68, 2018) was used to track ";
+        report += " The anatomy prior of a tractography atlas (Yeh et al., Neuroimage 178, 57-68, 2018)\
+ was used to perform automatic fiber tracking on ";
         report += handle->tractography_name_list[size_t(track_id)];
-        report += ".";
+        report += " (Yeh, BioRxiv 2020).";
         if(seeds.empty())
         {
             std::vector<tipl::vector<3,short> > seed;

@@ -130,7 +130,8 @@ bool ThreadData::fetchTracks(TractModel* handle)
 {
     if (track_buffer.empty())
         return false;
-
+    if(handle->parameter_id.empty())
+        handle->parameter_id = param.get_code();
     std::lock_guard<std::mutex> lock(lock_feed_function);
     handle->add_tracts(track_buffer);
     track_buffer.clear();
