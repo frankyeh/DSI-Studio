@@ -44,7 +44,7 @@ void export_track_info(const std::string& file_name,
             std::string report_tag,index_name;
             uint32_t profile_dir = 0,bandwidth = 0;
             in >> report_tag >> index_name >> profile_dir >> bandwidth;
-            std::vector<float> values,data_profile;
+            std::vector<float> values,data_profile,data_ci1,data_ci2;
             // check index
             if(index_name != "qa" && index_name != "fa" &&  handle->get_name_index(index_name) == handle->view_item.size())
             {
@@ -66,7 +66,7 @@ void export_track_info(const std::string& file_name,
                                 profile_dir,
                                 bandwidth,
                                 index_name,
-                                values,data_profile);
+                                values,data_profile,data_ci1,data_ci2);
 
             std::replace(cmd.begin(),cmd.end(),' ','.');
             std::string file_name_stat(file_name);
@@ -80,6 +80,16 @@ void export_track_info(const std::string& file_name,
             report << std::endl;
             report << "value";
             std::copy(data_profile.begin(),data_profile.end(),std::ostream_iterator<float>(report,"\t"));
+            if(!data_ci1.empty())
+            {
+                report << "CI";
+                std::copy(data_ci1.begin(),data_ci1.end(),std::ostream_iterator<float>(report,"\t"));
+            }
+            if(!data_ci2.empty())
+            {
+                report << "CI";
+                std::copy(data_ci2.begin(),data_ci2.end(),std::ostream_iterator<float>(report,"\t"));
+            }
             report << std::endl;
             continue;
         }

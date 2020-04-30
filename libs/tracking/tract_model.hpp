@@ -131,7 +131,9 @@ public:
         void get_quantitative_info(std::string& result);
         void get_report(unsigned int profile_dir,float band_width,const std::string& index_name,
                         std::vector<float>& values,
-                        std::vector<float>& data_profile);
+                        std::vector<float>& data_profile,
+                        std::vector<float>& data_ci1,
+                        std::vector<float>& data_ci2);
 
 public:
         void get_tract_data(unsigned int fiber_index,

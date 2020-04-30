@@ -1087,7 +1087,7 @@ void tracking_window::on_actionTract_Analysis_Report_triggered()
     if(!tact_report_imp.get())
         tact_report_imp.reset(new tract_report(this));
     tact_report_imp->show();
-    tact_report_imp->on_refresh_report_clicked();
+    tact_report_imp->refresh_report();
 }
 
 void tracking_window::on_actionConnectivity_matrix_triggered()

@@ -23,10 +23,10 @@ tract_report::tract_report(QWidget *parent) :
 
     // report
     {
-        connect(ui->report_index,SIGNAL(currentIndexChanged(int)),this,SLOT(on_refresh_report_clicked()));
-        connect(ui->profile_dir,SIGNAL(currentIndexChanged(int)),this,SLOT(on_refresh_report_clicked()));
-        connect(ui->linewidth,SIGNAL(valueChanged(int)),this,SLOT(on_refresh_report_clicked()));
-        connect(ui->report_bandwidth,SIGNAL(valueChanged(double)),this,SLOT(on_refresh_report_clicked()));
+        connect(ui->report_index,SIGNAL(currentIndexChanged(int)),this,SLOT(refresh_report()));
+        connect(ui->profile_dir,SIGNAL(currentIndexChanged(int)),this,SLOT(refresh_report()));
+        connect(ui->linewidth,SIGNAL(valueChanged(int)),this,SLOT(refresh_report()));
+        connect(ui->report_bandwidth,SIGNAL(valueChanged(double)),this,SLOT(refresh_report()));
     }
 }
 
@@ -35,7 +35,7 @@ tract_report::~tract_report()
     delete ui;
 }
 
-void tract_report::on_refresh_report_clicked()
+void tract_report::refresh_report()
 {
     if(cur_tracking_window->tractWidget->tract_models.size() > 1 &&
        cur_tracking_window->tractWidget->tract_models[0]->get_tract_color(0) ==
@@ -49,12 +49,12 @@ void tract_report::on_refresh_report_clicked()
     {
         if(cur_tracking_window->tractWidget->item(index,0)->checkState() != Qt::Checked)
             continue;
-        std::vector<float> values,data_profile;
+        std::vector<float> values,data_profile,data_ci1,data_ci2;
         cur_tracking_window->tractWidget->tract_models[index]->get_report(
                     ui->profile_dir->currentIndex(),
                     ui->report_bandwidth->value(),
                     ui->report_index->currentText().toLocal8Bit().begin(),
-                    values,data_profile);
+                    values,data_profile,data_ci1,data_ci2);
         if(data_profile.empty())
             continue;
 
@@ -62,15 +62,40 @@ void tract_report::on_refresh_report_clicked()
         QPen pen;
         tipl::rgb color = cur_tracking_window->tractWidget->tract_models[index]->get_tract_color(0);
         pen.setColor(QColor(color.r,color.g,color.b,200));
-        pen.setWidth(ui->linewidth->value());
+        pen.setWidth(ui->linewidth->value()+1);
 
-        QLineSeries* series = new QLineSeries;
-        for(int i = 0; i < data_profile.size(); ++i)
-            series->append(values[i],data_profile[i]);
+        {
+            QLineSeries* series = new QLineSeries;
+            for(size_t i = 0; i < data_profile.size(); ++i)
+                series->append(double(values[i]),double(data_profile[i]));
+            series->setPen(pen);
+            series->setName(cur_tracking_window->tractWidget->item(int(index),0)->text());
+            report_chart->addSeries(series);
+        }
 
-        series->setPen(pen);
-        series->setName(cur_tracking_window->tractWidget->item(index,0)->text());
-        report_chart->addSeries(series);
+        if(!data_ci1.empty())
+        {
+            pen.setWidth(ui->linewidth->value());
+            QLineSeries* series = new QLineSeries;
+            for(size_t i = 0; i < data_ci1.size(); ++i)
+                series->append(double(values[i]),double(data_ci1[i]));
+            series->setPen(pen);
+            series->setName(cur_tracking_window->tractWidget->item(int(index),0)->text()+" CI");
+            report_chart->addSeries(series);
+
+        }
+
+        if(!data_ci2.empty())
+        {
+            QLineSeries* series = new QLineSeries;
+            for(size_t i = 0; i < data_ci2.size(); ++i)
+                series->append(double(values[i]),double(data_ci2[i]));
+            series->setPen(pen);
+            series->setName(cur_tracking_window->tractWidget->item(int(index),0)->text()+" CI");
+            report_chart->addSeries(series);
+        }
+
+
     }
     report_chart->createDefaultAxes();
     report_chart->axes(Qt::Horizontal).back()->setGridLineVisible(false);
@@ -98,12 +123,12 @@ void tract_report::on_save_report_clicked()
     {
         if(cur_tracking_window->tractWidget->item(index,0)->checkState() != Qt::Checked)
             continue;
-        std::vector<float> values,data_profile;
+        std::vector<float> values,data_profile,data_ci1,data_ci2;
         cur_tracking_window->tractWidget->tract_models[index]->get_report(
                     ui->profile_dir->currentIndex(),
                     ui->report_bandwidth->value(),
                     ui->report_index->currentText().toLocal8Bit().begin(),
-                    values,data_profile);
+                    values,data_profile,data_ci1,data_ci2);
         if(data_profile.empty())
             continue;
 
@@ -115,6 +140,19 @@ void tract_report::on_save_report_clicked()
         out << cur_tracking_window->tractWidget->item(index,0)->text().toStdString() << "\t";
         for(unsigned int i = 0;i < data_profile.size();++i)
             out << data_profile[i] << "\t";
+
+        if(!data_ci1.empty())
+        {
+            out << "CI\t";
+            for(unsigned int i = 0;i < data_profile.size();++i)
+                out << data_ci1[i] << "\t";
+        }
+        if(!data_ci2.empty())
+        {
+            out << "CI\t";
+            for(unsigned int i = 0;i < data_profile.size();++i)
+                out << data_ci2[i] << "\t";
+        }
         out << std::endl;
 
     }

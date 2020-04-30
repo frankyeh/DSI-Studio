@@ -19,7 +19,7 @@ public:
     explicit tract_report(QWidget *parent = nullptr);
     ~tract_report();
 public slots:
-    void on_refresh_report_clicked();
+    void refresh_report();
 
     void on_save_report_clicked();
 

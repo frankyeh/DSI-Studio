@@ -2147,89 +2147,110 @@ void TractModel::get_quantitative_info(std::string& result)
 
 void TractModel::get_report(unsigned int profile_dir,float band_width,const std::string& index_name,
                             std::vector<float>& values,
-                            std::vector<float>& data_profile)
+                            std::vector<float>& data_profile,
+                            std::vector<float>& data_ci1,
+                            std::vector<float>& data_ci2)
 {
     if(tract_data.empty())
         return;
-    int profile_on_length = 0;// 1 :along tract 2: mean value
+    unsigned int profile_on_length = 0;// 1 :along tract 2: mean value
     if(profile_dir > 2)
     {
         profile_on_length = profile_dir-2;
         profile_dir = 0;
     }
-    double detail = profile_on_length ? 1.0 : 2.0;
-    unsigned int profile_width = (geometry[profile_dir]+1)*detail;
+    float detail = profile_on_length ? 1.0 : 2.0;
+    size_t profile_width = size_t((geometry[profile_dir]+1)*detail);
 
 
-    std::vector<float> weighting((int)(1.0+band_width*3.0));
-    for(int index = 0;index < weighting.size();++index)
+    std::vector<float> weighting(uint32_t(1.0f+band_width*3.0f));
+    for(size_t index = 0;index < weighting.size();++index)
     {
         float x = index;
-        weighting[index] = std::exp(-x*x/2.0/band_width/band_width);
+        weighting[index] = std::exp(-x*x/2.0f/band_width/band_width);
     }
     // along tract profile
     if(profile_on_length == 1)
-        profile_width = tract_data[0].size()/2.0;
+        profile_width = 100;
     // mean value of each tract
     if(profile_on_length == 2)
         profile_width = tract_data.size();
 
     values.resize(profile_width);
     data_profile.resize(profile_width);
-    std::vector<float> data_profile_w(profile_width);
-
 
     {
         std::vector<std::vector<float> > data;
         get_tracts_data(index_name,data);
 
+
         if(profile_on_length == 2)// list the mean fa value of each tract
         {
             data_profile.resize(data.size());
-            data_profile_w.resize(data.size());
             for(unsigned int index = 0;index < data_profile.size();++index)
-            {
-                data_profile[index] = tipl::mean(data[index].begin(),data[index].end());
-                data_profile_w[index] = 1.0;
-            }
+                data_profile[index] = float(tipl::mean(data[index].begin(),data[index].end()));
         }
         else
-            for(int i = 0;i < data.size();++i)
-                for(int j = 0;j < data[i].size();++j)
+        {
+            std::vector<std::set<float> > profile_upper_ci(profile_width),profile_lower_ci(profile_width);
+            size_t ci_size = std::max<size_t>(1,size_t(float(data.size())*0.025f));
+
+            for(size_t i = 0;i < data.size();++i)
+            {
+                std::vector<float> line_profile(profile_width);
+                std::vector<float> line_profile_w(profile_width);
+                for(size_t j = 0;j < data[i].size();++j)
                 {
-                    int pos = profile_on_length ?
-                              j*(int)profile_width/data[i].size() :
-                              std::round(tract_data[i][j + j + j + profile_dir]*detail);
-                    if(pos < 0)
-                        pos = 0;
+                    size_t pos = profile_on_length ?
+                              size_t(j*profile_width/data[i].size()):
+                              size_t(std::max<int>(0,int(std::round(tract_data[i][j + j + j + profile_dir]*detail))));
                     if(pos >= profile_width)
                         pos = profile_width-1;
 
-                    data_profile[pos] += data[i][j]*weighting[0];
-                    data_profile_w[pos] += weighting[0];
-                    for(int k = 1;k < weighting.size();++k)
+                    for(size_t k = 0;k < weighting.size();++k)
                     {
-                        if(pos > k)
+                        float dw = data[i][j]*weighting[k];
+                        float w = weighting[k];
+                        if(pos > k && k != 0)
                         {
-                            data_profile[pos-k] += data[i][j]*weighting[k];
-                            data_profile_w[pos-k] += weighting[k];
+                            line_profile[pos-k] += dw;
+                            line_profile_w[pos-k] += w;
                         }
                         if(pos+k < data_profile.size())
                         {
-                            data_profile[pos+k] += data[i][j]*weighting[k];
-                            data_profile_w[pos+k] += weighting[k];
+                            line_profile[pos+k] += dw;
+                            line_profile_w[pos+k] += w;
                         }
                     }
                 }
-    }
+                for(unsigned int j = 0;j < line_profile.size();++j)
+                {
+                    float value = (line_profile_w[j] == 0.0f ? 0.0f : line_profile[j] / line_profile_w[j]);
 
-    for(unsigned int j = 0;j < data_profile.size();++j)
-    {
-        values[j] = (double)j/detail;
-        if(data_profile_w[j] + 1.0 != 1.0)
-            data_profile[j] /= data_profile_w[j];
-        else
-            data_profile[j] = 0.0;
+                    if(profile_upper_ci[j].size() < ci_size || value < *profile_upper_ci[j].begin())
+                        profile_upper_ci[j].insert(value);
+                    if(profile_lower_ci[j].size() < ci_size || value > *std::prev(profile_lower_ci[j].end()))
+                        profile_lower_ci[j].insert(value);
+
+                    if(profile_upper_ci[j].size() > ci_size)
+                        profile_upper_ci[j].erase(profile_upper_ci[j].begin());
+
+                    if(profile_lower_ci[j].size() > ci_size)
+                        profile_lower_ci[j].erase(std::prev(profile_lower_ci[j].end()));
+
+                    data_profile[j] += value;
+                }
+            }
+            data_ci1.resize(data_profile.size());
+            data_ci2.resize(data_profile.size());
+            for(unsigned int j = 0;j < data_profile.size();++j)
+            {
+                values[j] = float(j)/detail;
+                data_profile[j] /= data.size();
+                data_ci1[j] = *profile_upper_ci[j].begin();
+                data_ci2[j] = *std::prev(profile_upper_ci[j].end());
+            }
+        }
     }
 }
 

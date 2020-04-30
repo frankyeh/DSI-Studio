@@ -2836,7 +2836,7 @@ Tracking</string>
   </action>
   <action name="actionTract_Analysis_Report">
    <property name="text">
-    <string>Tract Analysis Report...</string>
+    <string>Tract Profile...</string>
    </property>
   </action>
   <action name="actionSave_End_Points_As">
