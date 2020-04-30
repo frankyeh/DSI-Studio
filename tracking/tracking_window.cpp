@@ -744,6 +744,13 @@ void tracking_window::on_actionPaint_triggered()
     tractWidget->edit_option = TractTableWidget::paint;
 }
 
+void tracking_window::on_actionMove_Objects_triggered()
+{
+    glWidget->setCursor(Qt::CrossCursor);
+    glWidget->editing_option = GLWidget::moving;
+}
+
+
 void tracking_window::on_glSagView_clicked()
 {
     cur_dim = 0;
@@ -2365,3 +2372,4 @@ void tracking_window::on_actionLoad_Parameter_ID_triggered()
     renderWidget->setData("auto_tip",int(param.tip_iteration));
 
 }
+

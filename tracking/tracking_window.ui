@@ -892,6 +892,7 @@
     <addaction name="actionCut"/>
     <addaction name="menuCut_by_slice"/>
     <addaction name="separator"/>
+    <addaction name="actionMove_Objects"/>
    </widget>
    <widget class="QMenu" name="menu_View">
     <property name="title">
@@ -3517,6 +3518,14 @@ Tracking</string>
   <action name="actionLoad_Parameter_ID">
    <property name="text">
     <string>Load Parameter ID...</string>
+   </property>
+  </action>
+  <action name="actionMove_Objects">
+   <property name="text">
+    <string>Move Objects</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+M</string>
    </property>
   </action>
  </widget>

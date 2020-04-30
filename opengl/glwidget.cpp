@@ -1724,10 +1724,11 @@ bool GLWidget::select_object(void)
     object_selected = false;
     slice_selected = false;
     // select region to move
+    object_distance = slice_distance = std::numeric_limits<float>::max();
     if(get_param("show_region") && !cur_tracking_window.regionWidget->regions.empty())
     {
         // select object
-        for(object_distance = 0;object_distance < 5000 && !object_selected;object_distance += 1.0)
+        for(object_distance = 0.0f;object_distance < 5000.0f && !object_selected;object_distance += 1.0f)
         {
         tipl::vector<3,float> cur_pos(dir1);
         cur_pos *= object_distance;
@@ -1735,11 +1736,11 @@ bool GLWidget::select_object(void)
         tipl::vector<3,short> voxel(cur_pos);
         if(!cur_tracking_window.handle->dim.is_valid(voxel))
             continue;
-        for(int index = 0;index < cur_tracking_window.regionWidget->regions.size();++index)
+        for(size_t index = 0;index < cur_tracking_window.regionWidget->regions.size();++index)
             if(cur_tracking_window.regionWidget->regions[index]->has_point(voxel) &&
-               cur_tracking_window.regionWidget->item(index,0)->checkState() == Qt::Checked)
+               cur_tracking_window.regionWidget->item(int(index),0)->checkState() == Qt::Checked)
             {
-                selected_index = index;
+                selected_index = int(index);
                 object_selected = true;
                 break;
             }
@@ -1753,14 +1754,13 @@ bool GLWidget::select_object(void)
         show_slice[1] = cur_tracking_window.ui->glCorCheck->checkState();
         show_slice[2] = cur_tracking_window.ui->glAxiCheck->checkState();
         // now check whether the slices are selected
-        slice_distance = std::numeric_limits<float>::max();
         for(unsigned char dim = 0;dim < 3;++dim)
         {
             if(!show_slice[dim])
                 continue;
             float d = get_slice_projection_point(dim,pos,dir1,slice_dx,slice_dy);
-            if(slice_dx > 0.0 && slice_dy > 0.0 &&
-               slice_dx < 1.0 && slice_dy < 1.0 &&
+            if(slice_dx > 0.0f && slice_dy > 0.0f &&
+               slice_dx < 1.0f && slice_dy < 1.0f &&
                     d > 0 && slice_distance > d)
             {
                 moving_at_slice_index = dim;
@@ -1792,25 +1792,28 @@ void GLWidget::mouseDoubleClickEvent(QMouseEvent *event)
     get_view_dir(cur_pos,dir1);
     if(!select_object())
         return;
-    if(object_selected)
+    if(event->button() == Qt::LeftButton)
     {
-        cur_tracking_window.regionWidget->setCurrentCell(selected_index,0);
-        cur_tracking_window.regionWidget->move_slice_to_current_region();
-        emit region_edited();
-    }
-    else
-    {
-        switch(moving_at_slice_index)
+        if(object_selected)
         {
-        case 0:
-            cur_tracking_window.ui->glSagCheck->setChecked(false);
-            break;
-        case 1:
-            cur_tracking_window.ui->glCorCheck->setChecked(false);
-            break;
-        case 2:
-            cur_tracking_window.ui->glAxiCheck->setChecked(false);
-            break;
+            cur_tracking_window.regionWidget->setCurrentCell(selected_index,0);
+            cur_tracking_window.regionWidget->move_slice_to_current_region();
+            emit region_edited();
+        }
+        else
+        {
+            switch(moving_at_slice_index)
+            {
+            case 0:
+                cur_tracking_window.ui->glSagCheck->setChecked(false);
+                break;
+            case 1:
+                cur_tracking_window.ui->glCorCheck->setChecked(false);
+                break;
+            case 2:
+                cur_tracking_window.ui->glAxiCheck->setChecked(false);
+                break;
+            }
         }
     }
 }
@@ -1871,54 +1874,52 @@ void GLWidget::mousePressEvent(QMouseEvent *event)
     lastPos = convert_pos(event);
     if(editing_option != none)
         get_pos();
-    // moving objects
-    if(event->button() == Qt::MidButton)
-    {
-        editing_option = moving;
-        get_view_dir(lastPos,dir1);
-        dir1.normalize();
-        if(!select_object())
-        {
-            editing_option = none;
-            setCursor(Qt::ArrowCursor);
-            return;
-        }
-        // if only slice is selected or slice is at the front, then move slice
-        if(slice_selected && object_distance > slice_distance)
-        {
-            editing_option = dragging;
-            return;
-        }
-        cur_tracking_window.regionWidget->selectRow(selected_index);
-        // determine the moving direction of the region
-        float angle[3] = {0,0,0};
-        bool show_slice[3];
-        show_slice[0] = cur_tracking_window.ui->glSagCheck->checkState();
-        show_slice[1] = cur_tracking_window.ui->glCorCheck->checkState();
-        show_slice[2] = cur_tracking_window.ui->glAxiCheck->checkState();
-
-        for(unsigned char dim = 0;dim < 3;++dim)
-        {
-            std::vector<tipl::vector<3,float> > points(4);
-            slice_location(dim,points);
-            angle[dim] = std::fabs(dir1*get_norm(points)) + (show_slice[dim] ? 1:0);
-        }
-        moving_at_slice_index = std::max_element(angle,angle+3)-angle;
-        if(get_slice_projection_point(moving_at_slice_index,pos,dir1,slice_dx,slice_dy) == 0.0)
-        {
-            editing_option = none;
-            setCursor(Qt::ArrowCursor);
-            return;
-        }
-        accumulated_dis = tipl::zero<float>();
-    }
-    else
-        if(editing_option == selecting)
+    if(editing_option == selecting)
         {
             dirs.clear();
             last_select_point = lastPos;
             dirs.push_back(tipl::vector<3,float>());
             get_view_dir(last_select_point,dirs.back());
+        }
+    else
+        if(editing_option == moving)
+        {
+            get_view_dir(lastPos,dir1);
+            dir1.normalize();
+            if(!select_object())
+            {
+                editing_option = none;
+                setCursor(Qt::ArrowCursor);
+                return;
+            }
+            // if only slice is selected or slice is at the front, then move slice
+            if(slice_selected && object_distance > slice_distance)
+            {
+                editing_option = dragging;
+                return;
+            }
+            cur_tracking_window.regionWidget->selectRow(selected_index);
+            // determine the moving direction of the region
+            float angle[3] = {0,0,0};
+            bool show_slice[3];
+            show_slice[0] = cur_tracking_window.ui->glSagCheck->checkState();
+            show_slice[1] = cur_tracking_window.ui->glCorCheck->checkState();
+            show_slice[2] = cur_tracking_window.ui->glAxiCheck->checkState();
+
+            for(unsigned char dim = 0;dim < 3;++dim)
+            {
+                std::vector<tipl::vector<3,float> > points(4);
+                slice_location(dim,points);
+                angle[dim] = std::fabs(dir1*get_norm(points)) + (show_slice[dim] ? 1:0);
+            }
+            moving_at_slice_index = std::max_element(angle,angle+3)-angle;
+            if(get_slice_projection_point(moving_at_slice_index,pos,dir1,slice_dx,slice_dy) == 0.0)
+            {
+                editing_option = none;
+                setCursor(Qt::ArrowCursor);
+                return;
+            }
+            accumulated_dis = tipl::zero<float>();
         }
 }
 void GLWidget::mouseReleaseEvent(QMouseEvent *event)
@@ -2009,7 +2010,7 @@ void GLWidget::mouseMoveEvent(QMouseEvent *event)
         dis = v1*(dx-slice_dx)+v2*(dy-slice_dy);
         dis -= accumulated_dis;
         dis.round();
-        if(dis[0] != 0 || dis[1] != 0 || dis[2] != 0)
+        if(cur_tracking_window.regionWidget->currentRow() != -1 && (dis[0] != 0 || dis[1] != 0 || dis[2] != 0))
         {
             cur_tracking_window.regionWidget->regions[cur_tracking_window.regionWidget->currentRow()]->shift(dis);
             accumulated_dis += dis;

@@ -190,6 +190,7 @@ private slots:
     void Move_Slice_Z();
     void Move_Slice_Z2();
     void on_actionLoad_Parameter_ID_triggered();
+    void on_actionMove_Objects_triggered();
 };
 
 #endif // TRACKING_WINDOW_H
