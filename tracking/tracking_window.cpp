@@ -509,7 +509,7 @@ bool tracking_window::command(QString cmd,QString param,QString param2)
     }
     if(cmd == "set_param")
     {
-        renderWidget->setData(param,param2);
+        set_data(param,param2);
         glWidget->updateGL();
         scene.show_slice();
         return true;
@@ -1084,6 +1084,7 @@ void tracking_window::on_actionManual_Registration_triggered()
 
 void tracking_window::on_actionTract_Analysis_Report_triggered()
 {
+    set_data("tract_color_style",2);// local directional
     if(!tact_report_imp.get())
         tact_report_imp.reset(new tract_report(this));
     tact_report_imp->show();
@@ -2351,25 +2352,25 @@ void tracking_window::on_actionLoad_Parameter_ID_triggered()
         return;
     TrackingParam param;
     param.set_code(id.toStdString());
-    renderWidget->setData("fa_threshold",float(param.threshold));
-    renderWidget->setData("dt_threshold",float(param.dt_threshold));
-    renderWidget->setData("turning_angle",float(std::acos(param.cull_cos_angle)*180.0f/3.14159265358979323846f));
-    renderWidget->setData("step_size",float(param.step_size));
-    renderWidget->setData("smoothing",float(param.smooth_fraction));
-    renderWidget->setData("min_length",float(param.min_length));
-    renderWidget->setData("max_length",float(param.max_length));
+    set_data("fa_threshold",float(param.threshold));
+    set_data("dt_threshold",float(param.dt_threshold));
+    set_data("turning_angle",float(std::acos(param.cull_cos_angle)*180.0f/3.14159265358979323846f));
+    set_data("step_size",float(param.step_size));
+    set_data("smoothing",float(param.smooth_fraction));
+    set_data("min_length",float(param.min_length));
+    set_data("max_length",float(param.max_length));
 
-    renderWidget->setData("tracking_method",int(param.tracking_method));
-    renderWidget->setData("initial_direction",int(param.initial_direction));
-    renderWidget->setData("interpolation",int(param.interpolation_strategy));
-    renderWidget->setData("tracking_plan",int(param.stop_by_tract));
-    renderWidget->setData("seed_plan",int(param.center_seed));
-    renderWidget->setData("random_seed",int(param.random_seed));
-    renderWidget->setData("check_ending",int(param.check_ending));
-    renderWidget->setData("track_count",int(param.termination_count));
+    set_data("tracking_method",int(param.tracking_method));
+    set_data("initial_direction",int(param.initial_direction));
+    set_data("interpolation",int(param.interpolation_strategy));
+    set_data("tracking_plan",int(param.stop_by_tract));
+    set_data("seed_plan",int(param.center_seed));
+    set_data("random_seed",int(param.random_seed));
+    set_data("check_ending",int(param.check_ending));
+    set_data("track_count",int(param.termination_count));
 
-    renderWidget->setData("otsu_threshold",float(param.default_otsu));
-    renderWidget->setData("auto_tip",int(param.tip_iteration));
+    set_data("otsu_threshold",float(param.default_otsu));
+    set_data("auto_tip",int(param.tip_iteration));
 
 }
 
