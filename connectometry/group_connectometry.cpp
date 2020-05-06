@@ -591,8 +591,9 @@ void group_connectometry::on_run_clicked()
         vbc->length_threshold = ui->length_threshold->value();
     }
     vbc->track_trimming = ui->track_trimming->value();
-    vbc->tracking_threshold = ui->threshold->value();
 
+    vbc->tracking_threshold = float(ui->threshold->value());
+    vbc->model->nonparametric = ui->nonparametric->isChecked();
 
     ui->run->setText("Stop");
     vbc->output_file_name = db_file_name.toStdString();

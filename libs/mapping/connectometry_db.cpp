@@ -1211,7 +1211,7 @@ bool stat_model::pre_process(void)
             for(unsigned int j = 0;j < feature_count;++j)
                 X_range[j] = X_max[j]-X_min[j];
         }
-        return mr.set_variables(&*X.begin(),feature_count,X.size()/feature_count);
+        return mr.set_variables(&*X.begin(),feature_count,uint32_t(X.size()/feature_count));
     case 2:
     case 3: //longitudinal change
         return true;
@@ -1284,7 +1284,16 @@ bool stat_model::resample(stat_model& rhs,bool null,bool bootstrap)
                 std::copy(rhs.X.begin()+new_index*feature_count,
                           rhs.X.begin()+new_index*feature_count+feature_count,X.begin()+pos);
             }
+            if(nonparametric)
+            {
+                std::vector<double> x_study_feature;
+                for(size_t index = study_feature;index< X.size();index += feature_count)
+                    x_study_feature.push_back(X[index]);
+                x_study_feature_rank = tipl::rank(x_study_feature,std::less<double>());
 
+                unsigned int n = uint32_t(X.size()/feature_count);
+                rank_c = 6.0/double(n)/double(n*n-1);
+            }
             break;
         case 3: // longitudinal
             for(unsigned int index = 0;index < rhs.subject_index.size();++index)
@@ -1346,9 +1355,36 @@ double stat_model::operator()(const std::vector<double>& original_population,uns
     }
     case 1: // multiple regression
         {
-            std::vector<double> b(feature_count),t(feature_count);
-            mr.regress(&*population.begin(),&*b.begin(),&*t.begin());
-            return t[study_feature];
+            if(nonparametric)
+            {
+                // partial correlation
+                std::vector<double> b(feature_count);
+                mr.regress(&*population.begin(),&*b.begin());
+                for(size_t i = 1;i < feature_count;++i) // skip intercept at i = 0
+                    if(i != study_feature)
+                    {
+                        auto cur_b = b[i];
+                        for(size_t j = 0,pos = i;j < population.size();++j,pos += feature_count)
+                            population[j] -= mr.X[pos]*cur_b;
+                    }
+
+                auto rank = tipl::rank(population,std::less<double>());
+                int sum_d2 = 0;
+                for(size_t i = 0;i < rank.size();++i)
+                {
+                    int d = int(rank[i])-int(x_study_feature_rank[i]);
+                    sum_d2 += d*d;
+                }
+                double r = 1.0-double(sum_d2)*rank_c;
+                return r*std::sqrt(double(population.size()-2.0)/(1.0-r*r)); // convert to t
+            }
+            else
+            {
+                std::vector<double> b(feature_count),t(feature_count);
+                mr.regress(&*population.begin(),&*b.begin(),&*t.begin());
+                return t[study_feature];
+            }
+
         }
     case 2: // individual
         {

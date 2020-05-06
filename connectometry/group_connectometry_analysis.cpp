@@ -294,6 +294,23 @@ void group_connectometry_analysis::save_tracks_files(void)
     }
 }
 
+std::string iterate_items(const std::vector<std::string>& item)
+{
+    std::string result;
+    for(unsigned int index = 0;index < item.size();++index)
+    {
+        if(index)
+        {
+            if(item.size() > 2)
+                result += ",";
+            result += " ";
+        }
+        if(item.size() >= 2 && index+1 == item.size())
+            result += "and ";
+        result += item[index];
+    }
+    return result;
+}
 void group_connectometry_analysis::run_permutation(unsigned int thread_count,unsigned int permutation_count)
 {
     clear();
@@ -301,26 +318,31 @@ void group_connectometry_analysis::run_permutation(unsigned int thread_count,uns
     {
         std::ostringstream out;
 
-        out << "\nDiffusion MRI connectometry (Yeh et al. NeuroImage 125 (2016): 162-171) was used to study ";
-        if(model->type == 1 && foi_str != "Intercept")
-            out << "the effect of " << foi_str << " on ";
+        out << "\nDiffusion MRI connectometry (Yeh et al. NeuroImage 125 (2016): 162-171) was used to derive the correlation tractography that has ";
         if(handle->db.is_longitudinal)
-            out << "the longitudinal change of ";
-        out << handle->db.index_name << ".";
+            out << "a longitudinal change of ";
+        out << handle->db.index_name;
+
+        if(foi_str == "Intercept")
+            out << ".";
+        else
+            out << " correlated with " << foi_str << ".";
 
         if(model->type == 1) // regression model
         {
-            out << " A multiple regression model was used to consider ";
-            for(unsigned int index = 1;index < model->variables.size();++index)
+            auto items = model->variables;
+            items.erase(items.begin()); // remove intercept
+            if(model->nonparametric)
             {
-                if(index && model->variables.size() > 3)
-                    out << ",";
-                out << " ";
-                if(model->variables.size() >= 3 && index+1 == model->variables.size())
-                    out << "and ";
-                out << model->variables[index];
+                items.erase(items.begin() + model->study_feature-1);
+                out << " A nonparametric Spearman" << (items.empty() ? " ":" partial ") << "correlation was used to derive the correlation";
+                if(items.empty())
+                    out << ".";
+                else
+                    out << ", and the effect of " << iterate_items(items) << " was removed using a multiple regression model.";
             }
-            out << ".";
+            else
+                out << " A multiple regression model was used to consider the effect of " << iterate_items(items) << ".";
         }
 
         // report subject cohort

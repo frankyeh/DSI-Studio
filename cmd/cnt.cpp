@@ -94,8 +94,11 @@ int cnt(void)
 
     }
 
-    vbc->ui->threshold->setValue(po.get("t_threshold",float(vbc->ui->threshold->value())));
+    vbc->ui->threshold->setValue(double(po.get("t_threshold",float(vbc->ui->threshold->value()))));
     std::cout << "t_threshold=" << vbc->ui->threshold->value() << std::endl;
+
+    vbc->ui->nonparametric->setChecked(po.get("nonparametric",1) == 1);
+    std::cout << "nonparametric=" << (vbc->ui->nonparametric->isChecked() ? 1:0) << std::endl;
 
     vbc->ui->seed_count->setValue(po.get("seed_count",10000));
     std::cout << "seed_count=" << vbc->ui->seed_count->value() << std::endl;

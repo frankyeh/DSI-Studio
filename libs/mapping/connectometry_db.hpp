@@ -93,6 +93,10 @@ public: // multiple regression
     unsigned int study_feature = 0;
     std::vector<std::string> variables;
     tipl::multiple_regression<double> mr;
+    // for nonlinear correlation
+    bool nonparametric = true;
+    std::vector<unsigned int> x_study_feature_rank;
+    double rank_c = 0;
     void select_variables(const std::vector<char>& sel);
 public: // individual
     const float* individual_data;
@@ -128,6 +132,7 @@ public:
         study_feature = rhs.study_feature;
         mr = rhs.mr;
         individual_data = rhs.individual_data;
+        nonparametric = rhs.nonparametric;
         return *this;
     }
 };
