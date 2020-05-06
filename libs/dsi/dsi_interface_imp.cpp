@@ -136,9 +136,12 @@ bool ImageModel::reconstruction(void)
             voxel.scheme_balance = 0;
             voxel.half_sphere = 0;
             voxel.odf_resolving = 0;
+            voxel.max_fiber_number = 1;
         }
         else
         {
+            voxel.max_fiber_number = 5;
+
             if(!voxel.study_src_file_path.empty()) // DDI
                 voxel.csf_calibration = false;
             if (voxel.output_odf)
@@ -162,7 +165,6 @@ bool ImageModel::reconstruction(void)
         case 1://DTI
             voxel.step_report << "[Step T2b(1)]=DTI" << std::endl;
             voxel.recon_report << " The diffusion tensor was calculated.";
-            voxel.max_fiber_number = 1;
             if (!reconstruct<dti_process>("DTI"))
                 return false;
             break;
