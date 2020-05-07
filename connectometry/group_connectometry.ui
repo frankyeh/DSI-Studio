@@ -412,13 +412,16 @@
                <layout class="QVBoxLayout" name="verticalLayout_12">
                 <item>
                  <layout class="QHBoxLayout" name="horizontalLayout_12">
+                  <property name="spacing">
+                   <number>0</number>
+                  </property>
                   <property name="leftMargin">
                    <number>0</number>
                   </property>
                   <item>
                    <widget class="QRadioButton" name="rb_length">
                     <property name="text">
-                     <string>Length &gt;</string>
+                     <string>Length&gt;</string>
                     </property>
                     <property name="checked">
                      <bool>true</bool>
@@ -447,6 +450,13 @@
                     </property>
                     <property name="value">
                      <number>20</number>
+                    </property>
+                   </widget>
+                  </item>
+                  <item>
+                   <widget class="QLabel" name="label">
+                    <property name="text">
+                     <string>voxel(s)</string>
                     </property>
                    </widget>
                   </item>
