@@ -259,30 +259,33 @@ bool TractModel::load_from_file(const char* file_name_,bool append)
                     report += param.get_report();
             }
             // used in autotrack
-            if(tipl::geometry<3>(trk.dim) == handle->template_I.geometry() &&
-               tipl::geometry<3>(trk.dim) != handle->dim)
+
+            if(tipl::geometry<3>(trk.dim) != handle->dim)
             {
                 if(!handle->load_template())
                     return false;
-                begin_prog("track warpping");
-                handle->run_normalization(true,true);
-                if(prog_aborted())
-                    return false;
-                tipl::par_for(loaded_tract_data.size(),[&](size_t i)
+                if(tipl::geometry<3>(trk.dim) == handle->template_I.geometry())
                 {
-                    for(size_t j = 0;j < loaded_tract_data[i].size();j += 3)
+                    begin_prog("track warpping");
+                    handle->run_normalization(true,true);
+                    if(prog_aborted())
+                        return false;
+                    tipl::par_for(loaded_tract_data.size(),[&](size_t i)
                     {
-                        // here the values has been divided by vs due to TrackVis store in mm;
-                        tipl::vector<3> p(loaded_tract_data[i][j]*vs[0],
-                                          loaded_tract_data[i][j+1]*vs[1],
-                                          loaded_tract_data[i][j+2]*vs[2]);
-                        handle->template_to_mni(p);
-                        handle->mni2subject(p);
-                        loaded_tract_data[i][j] = p[0];
-                        loaded_tract_data[i][j+1] = p[1];
-                        loaded_tract_data[i][j+2] = p[2];
-                    }
-                });
+                        for(size_t j = 0;j < loaded_tract_data[i].size();j += 3)
+                        {
+                            // here the values has been divided by vs due to TrackVis store in mm;
+                            tipl::vector<3> p(loaded_tract_data[i][j]*vs[0],
+                                              loaded_tract_data[i][j+1]*vs[1],
+                                              loaded_tract_data[i][j+2]*vs[2]);
+                            handle->template_to_mni(p);
+                            handle->mni2subject(p);
+                            loaded_tract_data[i][j] = p[0];
+                            loaded_tract_data[i][j+1] = p[1];
+                            loaded_tract_data[i][j+2] = p[2];
+                        }
+                    });
+                }
             }
         }
         else
