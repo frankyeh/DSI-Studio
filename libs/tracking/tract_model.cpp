@@ -286,6 +286,8 @@ bool TractModel::load_from_file(const char* file_name_,bool append)
                         }
                     });
                 }
+                else
+                    return false;
             }
         }
         else
