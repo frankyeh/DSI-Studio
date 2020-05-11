@@ -47,7 +47,7 @@ void auto_track::on_open_clicked()
                                      this,
                                      "Open SRC files",
                                      "",
-                                     "SRC files (*src.gz);;All files (*)" );
+                                     "SRC files (*src.gz);;FIB files (*fib.gz);;All files (*)" );
     if (filenames.isEmpty())
         return;
     file_list << filenames;
@@ -116,30 +116,38 @@ std::string run_auto_track(
         progress = int(i);
         // recon
         {
-            std::shared_ptr<ImageModel> handle(std::make_shared<ImageModel>());
-            handle->voxel.method_id = 4; // GQI
-            handle->voxel.param[0] = length_ratio;
-            handle->voxel.ti.init(8); // odf order of 8
-            handle->voxel.odf_xyz[0] = 0;
-            handle->voxel.odf_xyz[1] = 0;
-            handle->voxel.odf_xyz[2] = 0;
-            handle->voxel.thread_count = std::thread::hardware_concurrency();
-            // has fib file?
-            std::string fib_file_name = file_list[i]+handle->get_file_ext();
-            if(!QFileInfo(fib_file_name.c_str()).exists())
+            std::string fib_file_name;
+            if(file_list[i].substr(file_list[i].size()-7) == ".src.gz")
             {
-                if (!handle->load_from_file(file_list[i].c_str()))
-                    return std::string("ERROR at ") + cur_file_base_name + ":" + handle->error_msg;
-                if(!handle->is_human_data())
-                    return std::string("ERROR at ") + cur_file_base_name + ":" + handle->error_msg;
-                handle->voxel.half_sphere = handle->is_dsi_half_sphere();
-                handle->voxel.scheme_balance = handle->need_scheme_balance();
-                if(interpolation)
-                    handle->rotate_to_mni(float(interpolation));
-                begin_prog("Reconstruct DWI");
-                if (!handle->reconstruction())
-                    return std::string("ERROR at ") + cur_file_base_name + ":" + handle->error_msg;
+                std::shared_ptr<ImageModel> handle(std::make_shared<ImageModel>());
+                handle->voxel.method_id = 4; // GQI
+                handle->voxel.param[0] = length_ratio;
+                handle->voxel.ti.init(8); // odf order of 8
+                handle->voxel.odf_xyz[0] = 0;
+                handle->voxel.odf_xyz[1] = 0;
+                handle->voxel.odf_xyz[2] = 0;
+                handle->voxel.thread_count = std::thread::hardware_concurrency();
+                // has fib file?
+                fib_file_name = file_list[i]+handle->get_file_ext();
+                if(!QFileInfo(fib_file_name.c_str()).exists())
+                {
+                    if (!handle->load_from_file(file_list[i].c_str()))
+                        return std::string("ERROR at ") + cur_file_base_name + ":" + handle->error_msg;
+                    if(!handle->is_human_data())
+                        return std::string("ERROR at ") + cur_file_base_name + ":" + handle->error_msg;
+                    handle->voxel.half_sphere = handle->is_dsi_half_sphere();
+                    handle->voxel.scheme_balance = handle->need_scheme_balance();
+                    if(interpolation)
+                        handle->rotate_to_mni(float(interpolation));
+                    begin_prog("Reconstruct DWI");
+                    if (!handle->reconstruction())
+                        return std::string("ERROR at ") + cur_file_base_name + ":" + handle->error_msg;
+                }
             }
+            if(file_list[i].substr(file_list[i].size()-7) == ".fib.gz")
+                fib_file_name = file_list[i];
+            if(!QFileInfo(fib_file_name.c_str()).exists())
+                return std::string("Cannot process ") + cur_file_base_name;
             for(size_t j = 0;j < track_id.size() && !prog_aborted();++j)
             {
                 std::string track_name = fib.tractography_name_list[track_id[j]];
