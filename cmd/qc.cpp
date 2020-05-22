@@ -46,9 +46,17 @@ std::string quality_check_src_files(QString dir)
         if(restore_gui)
             has_gui = true;
         // output image dimension
-        output.back().push_back((std::ostringstream() << tipl::vector<3,int>(handle.voxel.dim.begin())).str());
+        {
+            std::ostringstream out1;
+            out1 << tipl::vector<3,int>(handle.voxel.dim.begin();
+            output.back().push_back(out1.str());
+        }
         // output image resolution
-        output.back().push_back((std::ostringstream() << handle.voxel.vs).str());
+        {
+            std::ostringstream out1;
+            out1 << handle.voxel.vs;
+            output.back().push_back(out1.str());
+        }
         // output DWI count
         size_t cur_dwi_count = handle.src_bvalues.size();
         output.back().push_back(std::to_string(cur_dwi_count));
