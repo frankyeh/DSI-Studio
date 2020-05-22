@@ -22,10 +22,14 @@ std::string quality_check_src_files(QString dir)
     size_t dwi_count = 0;
     float max_b = 0;
     std::cout << "a total of " << filenames.size() << " SRC file(s) were found."<< std::endl;
+
+    std::vector<std::vector<std::string> > output;
+    std::vector<float> ndc;
     for(int i = 0;check_prog(i,filenames.size());++i)
     {
         std::cout << "checking " << QFileInfo(filenames[i]).baseName().toStdString() << std::endl;
-        out << QFileInfo(filenames[i]).baseName().toStdString() << "\t";
+        output.push_back(std::vector<std::string>());
+        output.back().push_back(QFileInfo(filenames[i]).baseName().toStdString());
         ImageModel handle;
         bool restore_gui = false;
         if(has_gui)
@@ -42,28 +46,42 @@ std::string quality_check_src_files(QString dir)
         if(restore_gui)
             has_gui = true;
         // output image dimension
-        out << tipl::vector<3,int>(handle.voxel.dim.begin()) << "\t";
+        output.back().push_back((std::ostringstream() << tipl::vector<3,int>(handle.voxel.dim.begin())).str());
         // output image resolution
-        out << handle.voxel.vs << "\t";
+        output.back().push_back((std::ostringstream() << handle.voxel.vs).str());
         // output DWI count
         size_t cur_dwi_count = handle.src_bvalues.size();
-        out << cur_dwi_count<< "\t";
+        output.back().push_back(std::to_string(cur_dwi_count));
         if(i == 0)
             dwi_count = cur_dwi_count;
 
         // output max_b
         float cur_max_b = 0;
-        out << (cur_max_b = *std::max_element(handle.src_bvalues.begin(),handle.src_bvalues.end())) << "\t";
+        output.back().push_back(std::to_string(cur_max_b = *std::max_element(handle.src_bvalues.begin(),handle.src_bvalues.end())));
+
         if(i == 0)
             max_b = cur_max_b;
         // check shell structure
-        out << (std::fabs(max_b-cur_max_b) < 1.0f && cur_dwi_count == dwi_count ? "Yes\t" : "No\t");
+        output.back().push_back(std::fabs(max_b-cur_max_b) < 1.0f && cur_dwi_count == dwi_count ? "Yes" : "No");
 
         // calculate neighboring DWI correlation
-        out << handle.quality_control_neighboring_dwi_corr() << "\t";
+        ndc.push_back(handle.quality_control_neighboring_dwi_corr());
+        output.back().push_back(std::to_string(ndc.back()));
 
-        out << handle.get_bad_slices().size() << "\t";
+        output.back().push_back(std::to_string(handle.get_bad_slices().size()));
 
+    }
+    auto ndc_copy = ndc;
+    float m = tipl::median(ndc_copy.begin(),ndc_copy.end());
+    float mad = float(tipl::median_absolute_deviation(ndc_copy.begin(),ndc_copy.end(),double(m)));
+    float outlier_threshold = m-3.0f*mad;
+    for(size_t i = 0;i < output.size();++i)
+    {
+        for(size_t j = 0 ;j < output[i].size();++j)
+            out << output[i][j] << "\t";
+        if(ndc[i] < outlier_threshold)
+            out << "low quality outlier";
+        out << "\t";
         out << std::endl;
     }
     return out.str();
