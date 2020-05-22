@@ -104,6 +104,7 @@ std::string run_auto_track(
                     bool export_stat,
                     bool export_trk,
                     bool overwrite,
+                    bool default_mask,
                     int& progress)
 {
     std::vector<std::string> reports(track_id.size());
@@ -116,6 +117,8 @@ std::string run_auto_track(
         progress = int(i);
         // recon
         {
+            std::shared_ptr<fib_data> handle(new fib_data);
+            bool fib_loaded = false;
             std::string fib_file_name;
             if(file_list[i].substr(file_list[i].size()-7) == ".src.gz")
             {
@@ -140,6 +143,8 @@ std::string run_auto_track(
                     if(interpolation)
                         handle->rotate_to_mni(float(interpolation));
                     begin_prog("Reconstruct DWI");
+                    if(!default_mask)
+                        std::fill(handle->voxel.mask.begin(),handle->voxel.mask.end(),1);
                     if (!handle->reconstruction())
                         return std::string("ERROR at ") + cur_file_base_name + ":" + handle->error_msg;
                 }
@@ -148,23 +153,27 @@ std::string run_auto_track(
                 fib_file_name = file_list[i];
             if(!QFileInfo(fib_file_name.c_str()).exists())
                 return std::string("Cannot process ") + cur_file_base_name;
+
             for(size_t j = 0;j < track_id.size() && !prog_aborted();++j)
             {
                 std::string track_name = fib.tractography_name_list[track_id[j]];
                 std::replace(track_name.begin(),track_name.end(),' ','_');
+                std::string no_result_file_name = fib_file_name+"."+track_name+".no_result.txt";
+                if(QFileInfo(no_result_file_name.c_str()).exists() && !overwrite)
+                    continue;
+
                 std::string trk_file_name = fib_file_name+"."+track_name+".trk.gz";
                 std::string stat_file_name = fib_file_name+"."+track_name+".stat.txt";
                 std::string report_file_name = dir+"/"+track_name+".report.txt";
-                std::string no_result_file_name = fib_file_name+"."+track_name+".no_result.txt";
                 stat_files[j].push_back(stat_file_name);
 
-                if((export_stat && (overwrite || !QFileInfo(stat_file_name.c_str()).exists())) ||
-                   (export_trk && (overwrite || !QFileInfo(trk_file_name.c_str()).exists())))
+                bool no_stat_file = !QFileInfo(stat_file_name.c_str()).exists() || overwrite;
+                bool no_trk_file = !QFileInfo(trk_file_name.c_str()).exists() || overwrite;
+                if((export_stat && no_stat_file) || (export_trk && no_trk_file))
                 {
-                    std::shared_ptr<fib_data> handle(new fib_data);
-                    if (!handle->load_from_file(fib_file_name.c_str()))
+                    if (!fib_loaded && !handle->load_from_file(fib_file_name.c_str()))
                         return std::string("ERROR at ") + fib_file_name + ":" +handle->error_msg;
-
+                    fib_loaded = true;
                     TractModel tract_model(handle);
                     {
                         ThreadData thread(handle);
@@ -301,13 +310,14 @@ void auto_track::on_run_clicked()
     begin_prog("");
     run_auto_track(fib,
                    file_list2,track_id,
-                   ui->gqi_l->value(),
-                   ui->tolerance->value(),
+                   float(ui->gqi_l->value()),
+                   float(ui->tolerance->value()),
                    uint32_t(ui->track_count->value()*1000.0),
                    ui->interpolation->currentIndex(),ui->pruning->value(),
                    ui->export_stat->isChecked(),
                    ui->export_trk->isChecked(),
                    ui->overwrite->isChecked(),
+                   ui->default_mask->isChecked(),
                    prog);
     timer->stop();
     ui->run->setEnabled(true);

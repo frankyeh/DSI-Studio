@@ -492,6 +492,13 @@
               </widget>
              </item>
              <item>
+              <widget class="QCheckBox" name="default_mask">
+               <property name="text">
+                <string>Default mask</string>
+               </property>
+              </widget>
+             </item>
+             <item>
               <widget class="QCheckBox" name="overwrite">
                <property name="text">
                 <string>Overwrite Previous Track Output</string>
