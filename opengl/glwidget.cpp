@@ -716,11 +716,13 @@ void GLWidget::renderLR()
            check_change("tract_alpha_style",tract_alpha_style) ||
            check_change("tract_style",tract_style) ||
            check_change("tract_color_style",tract_color_style) ||
+           check_change("tract_color_saturation",tract_color_saturation) ||
+           check_change("tract_color_brightness",tract_color_brightness) ||
            check_change("tube_diameter",tube_diameter) ||
            check_change("tract_tube_detail",tract_tube_detail) ||
            check_change("tract_variant_size",tract_variant_size) ||
            check_change("tract_variant_color",tract_variant_color) ||
-           check_change("tract_shader",tract_shader) ||
+           check_change("tract_shader",tract_shader) ||     
            check_change("end_point_shift",end_point_shift);
         if(changed)
             makeTracts();
@@ -1226,10 +1228,9 @@ void GLWidget::makeTracts(void)
     glDeleteLists(tracts, 1);
     glNewList(tracts, GL_COMPILE);
     float alpha = (tract_alpha_style == 0)? tract_alpha/2.0f:tract_alpha;
+    float tract_color_saturation_base = tract_color_brightness*(1.0f-tract_color_saturation);
     const float detail_option[] = {1.0f,0.5f,0.25f,0.0f,0.0f};
     bool show_end_points = tract_style >= 2;
-    const float variant_prob_option[] = {0.1f,0.2f,0.4f,0.95f,2.0f};
-    float variant_prob = variant_prob_option[tract_tube_detail];
     float tube_detail = tube_diameter*detail_option[tract_tube_detail]*4.0f;
     float tract_shaderf = 0.01f*float(tract_shader);
     std::vector<float> mean_fa;
@@ -1386,6 +1387,10 @@ void GLWidget::makeTracts(void)
         glBegin((tract_style) ? GL_TRIANGLE_STRIP : GL_LINE_STRIP);
         for (unsigned int j = 0, index = 0; index < vertex_count;j += 3, data_iter += 3, ++index)
         {
+            int variant_factor = 0; // range=1~3
+            if((tract_variant_size || tract_variant_color) && (index < 4 || index + 3 >= vertex_count))
+                variant_factor = std::min(std::abs(4-int(index)),std::abs(int(index)-int(vertex_count-4)));
+
             pos[0] = data_iter[0];
             pos[1] = data_iter[1];
             pos[2] = data_iter[2];
@@ -1396,19 +1401,28 @@ void GLWidget::makeTracts(void)
                 vec_n[2] = data_iter[5] - data_iter[2];
                 vec_n.normalize();
             }
+            auto abs_vec_n = vec_n;
+            abs_vec_n.abs();
 
             switch(tract_color_style)
             {
             case 0://directional
-                cur_color[0] = std::fabs(vec_n[0]);
-                cur_color[1] = std::fabs(vec_n[1]);
-                cur_color[2] = std::fabs(vec_n[2]);
+                cur_color = abs_vec_n;
+                if(tract_color_saturation != 1.0f)
+                {
+                    cur_color *= tract_color_saturation;
+                    cur_color += tract_color_saturation_base;
+                }
+                if(variant_factor && tract_variant_color)
+                    cur_color += 0.02f*float(variant_factor);
                 break;
             case 1://manual assigned
             case 3://mean anisotropy
             case 4://mean directional
             case 5://max anisotropy
                 cur_color = paint_color_f;
+                if(variant_factor && tract_variant_color)
+                    cur_color += tract_color_brightness*0.1f*float(variant_factor);
                 break;
             case 2://local anisotropy
                 if(index < color.size())
@@ -1421,7 +1435,17 @@ void GLWidget::makeTracts(void)
                 int x = int(data_iter[0]*4.0f);
                 int y = int(data_iter[1]*4.0f);
                 int z = int(data_iter[2]*4.0f);
-                if(max_x_map.geometry().is_valid(y,z))
+                bool dir_x = false;
+                bool dir_y = false;
+                bool dir_z = false;
+                if(abs_vec_n[0] > abs_vec_n[1] && abs_vec_n[0] > abs_vec_n[2])
+                    dir_x = true;
+                else
+                    if(abs_vec_n[1] > abs_vec_n[2])
+                        dir_y = true;
+                    else
+                        dir_z = true;
+                if(!dir_x && max_x_map.geometry().is_valid(y,z))
                 {
                     size_t pos = size_t(y + z*max_x_map.width());
                     float d = 1.0f-std::min<float>(12,
@@ -1429,7 +1453,7 @@ void GLWidget::makeTracts(void)
                                                     std::max<float>(0.0f,data_iter[0]-min_x_map[pos])))*tract_shaderf;
                     cur_color *= d;
                 }
-                if(max_y_map.geometry().is_valid(x,z))
+                if(!dir_y && max_y_map.geometry().is_valid(x,z))
                 {
                     size_t pos = size_t(x + z*max_y_map.width());
                     float d = 1.0f-std::min<float>(12.0f,
@@ -1437,7 +1461,7 @@ void GLWidget::makeTracts(void)
                                                     std::max<float>(0.0f,data_iter[1]-min_y_map[pos])))*tract_shaderf;
                     cur_color *= d;
                 }
-                if(max_z_map.geometry().is_valid(x,y))
+                if(!dir_z && max_z_map.geometry().is_valid(x,y))
                 {
                     size_t pos = size_t(x + y*max_z_map.width());
                     float d = 1.0f-std::min<float>(12.0f,
@@ -1445,15 +1469,8 @@ void GLWidget::makeTracts(void)
                                                     std::max<float>(0.0f,data_iter[2]-min_z_map[pos])))*tract_shaderf;
                     cur_color *= d;
                 }
+                cur_color += 0.1f;
             }
-
-            if(tract_variant_color)
-            {
-                cur_color[0] += random_color();
-                cur_color[1] += random_color();
-                cur_color[2] += random_color();
-            }
-
             // skip straight line!
             if(tract_style)
             {
@@ -1465,7 +1482,7 @@ void GLWidget::makeTracts(void)
                 if (displacement.length() < tube_detail)
                     continue;
             }
-\
+
             if (index == 0 && std::fabs(vec_a*vec_n) > 0.5)
                 std::swap(vec_a,vec_b);
 
@@ -1489,17 +1506,23 @@ void GLWidget::makeTracts(void)
                 normals[6] = -vec_b;
                 normals[7] = vec_ba;
             }
-            if(tract_variant_size && uniform_gen() > variant_prob)
+            if(variant_factor && tract_variant_size)
             {
-                vec_ab += random_size();
-                vec_ba += random_size();
-                vec_a += random_size();
-                vec_b += random_size();
+                float size = variant_factor;
+                size *= 0.2f;
+                size += 1.0f;
+                size *= tube_diameter;
+                vec_ab *= size;
+                vec_ba *= size;
+                vec_a *= size;
+                vec_b *= size;
             }
-            vec_ab *= tube_diameter;
-            vec_ba *= tube_diameter;
-            vec_a *= tube_diameter;
-            vec_b *= tube_diameter;
+            else {
+                vec_ab *= tube_diameter;
+                vec_ba *= tube_diameter;
+                vec_a *= tube_diameter;
+                vec_b *= tube_diameter;
+            }
 
             // add point
             {

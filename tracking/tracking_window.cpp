@@ -1778,13 +1778,11 @@ void tracking_window::on_track_style_currentIndexChanged(int index)
             set_data("bkg_color",-1);
             set_data("tract_alpha",1);
             set_data("tract_alpha_style",1);
-            set_data("tract_variant_color",1);
-            set_data("tract_variant_size",1);
             set_data("tube_diameter",0.2);
             set_data("tract_light_option",1);
             set_data("tract_light_dir",2);
-            set_data("tract_light_shading",10);
-            set_data("tract_light_diffuse",9);
+            set_data("tract_light_shading",3);
+            set_data("tract_light_diffuse",6);
             set_data("tract_light_ambient",0);
             set_data("tract_light_specular",0);
             set_data("tract_specular",0);
@@ -1792,20 +1790,18 @@ void tracking_window::on_track_style_currentIndexChanged(int index)
             set_data("tract_emission",0);
             set_data("tract_bend1",4);
             set_data("tract_bend2",5);
-            set_data("tract_shader",4);
+            set_data("tract_shader",7);
             break;
         case 1: //Tube 2
             set_data("tract_style",1);
             set_data("bkg_color",0);
-            set_data("tract_alpha",0.7);
+            set_data("tract_alpha",1);
             set_data("tract_alpha_style",1);
-            set_data("tract_variant_color",0);
-            set_data("tract_variant_size",0);
             set_data("tube_diameter",0.2);
             set_data("tract_light_option",1);
             set_data("tract_light_dir",2);
-            set_data("tract_light_shading",10);
-            set_data("tract_light_diffuse",8);
+            set_data("tract_light_shading",2);
+            set_data("tract_light_diffuse",4);
             set_data("tract_light_ambient",0);
             set_data("tract_light_specular",0);
             set_data("tract_specular",0);
@@ -1813,17 +1809,17 @@ void tracking_window::on_track_style_currentIndexChanged(int index)
             set_data("tract_emission",0);
             set_data("tract_bend1",1);
             set_data("tract_bend2",5);
-            set_data("tract_shader",6);
+            set_data("tract_shader",8);
             break;
         case 2:
             set_data("tract_style",0);
-            set_data("tract_line_width",3.0f);
+            set_data("tract_line_width",2.0f);
             set_data("bkg_color",-1);
             set_data("tract_alpha",1);
             set_data("tract_alpha_style",0);
             set_data("tract_bend1",4);
             set_data("tract_bend2",5);
-            set_data("tract_shader",5);
+            set_data("tract_shader",7);
             break;
         case 3:
             set_data("tract_style",0);

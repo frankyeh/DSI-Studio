@@ -136,6 +136,8 @@ public:
      bool check_change(const char* name,float& var);
  private:
      float tract_alpha;
+     float tract_color_saturation;
+     float tract_color_brightness;
      unsigned char scale_voxel;
      unsigned char tract_alpha_style;
      unsigned char tract_style;
