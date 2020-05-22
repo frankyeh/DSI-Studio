@@ -48,7 +48,7 @@ std::string quality_check_src_files(QString dir)
         // output image dimension
         {
             std::ostringstream out1;
-            out1 << tipl::vector<3,int>(handle.voxel.dim.begin();
+            out1 << tipl::vector<3,int>(handle.voxel.dim.begin());
             output.back().push_back(out1.str());
         }
         // output image resolution
