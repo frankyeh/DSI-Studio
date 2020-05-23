@@ -140,7 +140,7 @@ int cnt(void)
         for(int index = 0;index < total_count;++index)
         if (po.has(roi_names[index]))
         {
-            ROIRegion roi(vbc->vbc->handle);
+            ROIRegion roi(vbc->vbc->handle.get());
             if(!load_region(vbc->vbc->handle,roi,po.get(roi_names[index])))
                 return 1;
             vbc->add_new_roi(po.get(roi_names[index]).c_str(),

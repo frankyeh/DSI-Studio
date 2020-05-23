@@ -458,7 +458,7 @@ void calculate_region_stat(const Image& I, const Points& p,float& mean,const flo
     mean = sum;
 }
 
-void ROIRegion::get_quantitative_data(std::shared_ptr<fib_data> handle,std::vector<std::string>& titles,std::vector<float>& data)
+void ROIRegion::get_quantitative_data(std::vector<std::string>& titles,std::vector<float>& data)
 {
     titles.clear();
     titles.push_back("voxel counts");

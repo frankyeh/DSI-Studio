@@ -164,7 +164,7 @@ public:
         {
             std::vector<tipl::vector<3,short> > seed;
             handle->track_atlas->to_voxel(seed,1.0f,int(track_id));
-            ROIRegion region(handle);
+            ROIRegion region(handle.get());
             region.add_points(seed,false);
             region.perform("dilation");
             region.perform("dilation");

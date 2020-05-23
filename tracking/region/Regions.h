@@ -19,9 +19,8 @@ const unsigned char not_ending_id = 5;
 
 class ROIRegion {
 public:
-        std::shared_ptr<fib_data> handle;
+        fib_data* handle = nullptr;
         std::vector<tipl::vector<3,short> > region;
-        bool modified;
         std::vector<std::vector<tipl::vector<3,short> > > undo_backup;
         std::vector<std::vector<tipl::vector<3,short> > > redo_backup;
 public:
@@ -31,12 +30,13 @@ public:
 public: // rendering options
         RegionModel show_region;
         unsigned char regions_feature;
-
-        ROIRegion(const ROIRegion& rhs,float resolution_ratio_ = 1.0) :
+        bool modified = true;
+public: // rendering options
+        ROIRegion(const ROIRegion& rhs,float resolution_ratio_ = 1.0f) :
             handle(rhs.handle),
-            region(rhs.region),super_resolution(resolution_ratio_ != 1.0),
+            region(rhs.region),super_resolution(resolution_ratio_ != 1.0f),
             resolution_ratio(resolution_ratio_),
-            regions_feature(rhs.regions_feature), modified(true)
+            regions_feature(rhs.regions_feature)
         {
             show_region = rhs.show_region;
         }
@@ -53,7 +53,7 @@ public: // rendering options
             return *this;
         }
         void swap(ROIRegion & rhs) {
-            handle.swap(rhs.handle);
+            std::swap(handle,rhs.handle);
             region.swap(rhs.region);
             undo_backup.swap(rhs.undo_backup);
             redo_backup.swap(rhs.redo_backup);
@@ -64,17 +64,17 @@ public: // rendering options
             std::swap(resolution_ratio,rhs.resolution_ratio);
         }
 
-        ROIRegion(std::shared_ptr<fib_data> handle_)
+        ROIRegion(fib_data* handle_)
             : handle(handle_),modified(false){}
         tipl::geometry<3> get_buffer_dim(void) const;
         tipl::vector<3,short> get_region_voxel(unsigned int index) const
         {
             tipl::vector<3,short> result = region[index];
-            if(resolution_ratio == 1.0)
+            if(resolution_ratio == 1.0f)
                 return result;
-            result[0] = (float)result[0]/resolution_ratio;
-            result[1] = (float)result[1]/resolution_ratio;
-            result[2] = (float)result[2]/resolution_ratio;
+            result[0] = short(float(result[0])/resolution_ratio);
+            result[1] = short(float(result[1])/resolution_ratio);
+            result[2] = short(float(result[2])/resolution_ratio);
             return result;
         }
         tipl::vector<3,float> get_center(void) const
@@ -92,13 +92,13 @@ public: // rendering options
         void get_region_voxels(std::vector<tipl::vector<3,short> >& output) const
         {
             output = region;
-            if(resolution_ratio == 1.0)
+            if(resolution_ratio == 1.0f)
                 return;
-            for(int i = 0;i < region.size();++i)
+            for(size_t i = 0;i < region.size();++i)
             {
-                output[i][0] = (float)region[i][0]/resolution_ratio;
-                output[i][1] = (float)region[i][1]/resolution_ratio;
-                output[i][2] = (float)region[i][2]/resolution_ratio;
+                output[i][0] = short(float(region[i][0])/resolution_ratio);
+                output[i][1] = short(float(region[i][1])/resolution_ratio);
+                output[i][2] = short(float(region[i][2])/resolution_ratio);
             }
         }
         const std::vector<tipl::vector<3,short> >& get_region_voxels_raw(void) const {return region;}
@@ -143,7 +143,7 @@ public:
             float ratio = resolution_ratio/point_resolution;
             if(resolution_ratio > point_resolution)
             {
-                short limit = std::ceil(ratio);
+                short limit = short(std::ceil(ratio));
                 std::vector<tipl::vector<3,short> > new_points;
                 for(short dz = -limit;dz <= limit;++dz)
                     for(short dy = -limit;dy <= limit;++dy)
@@ -254,7 +254,7 @@ public:
         template<typename value_type>
         bool has_point(const tipl::vector<3,value_type>& point) const
         {
-            if(resolution_ratio != 1.0)
+            if(resolution_ratio != 1.0f)
             {
                 tipl::vector<3,short> p(std::round(point[0]*resolution_ratio),
                                          std::round(point[1]*resolution_ratio),
@@ -274,7 +274,7 @@ public:
                     return true;
             return false;
         }
-        void get_quantitative_data(std::shared_ptr<fib_data> handle,std::vector<std::string>& titles,std::vector<float>& data);
+        void get_quantitative_data(std::vector<std::string>& titles,std::vector<float>& data);
 };
 
 #endif

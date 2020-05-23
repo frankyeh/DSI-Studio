@@ -21,8 +21,7 @@ bool load_roi(std::shared_ptr<fib_data> handle,std::shared_ptr<RoiMgr> roi_mgr);
 void get_connectivity_matrix(std::shared_ptr<fib_data> handle,
                              TractModel& tract_model);
 
-void get_regions_statistics(std::shared_ptr<fib_data> handle,
-                            const std::vector<std::shared_ptr<ROIRegion> >& regions,
+void get_regions_statistics(const std::vector<std::shared_ptr<ROIRegion> >& regions,
                             const std::vector<std::string>& region_name,
                             std::string& result);
 void export_track_info(const std::string& file_name,
@@ -229,7 +228,7 @@ int ana(void)
             {
                 for(unsigned int j = 0;j < atlas_list[i]->get_list().size();++j)
                 {
-                    std::shared_ptr<ROIRegion> region(std::make_shared<ROIRegion>(handle));
+                    std::shared_ptr<ROIRegion> region(std::make_shared<ROIRegion>(handle.get()));
                     std::string region_name = atlas_list[i]->name;
                     region_name += ":";
                     region_name += atlas_list[i]->get_list()[j];
@@ -252,7 +251,7 @@ int ana(void)
             std::vector<std::string> roi_list = {first, last};
             for(size_t i = 0;i < roi_list.size();++i)
             {
-                std::shared_ptr<ROIRegion> region(new ROIRegion(handle));
+                std::shared_ptr<ROIRegion> region(new ROIRegion(handle.get()));
                 if(!load_region(handle,*region.get(),roi_list[i]))
                 {
                     std::cout << "fail to load the ROI file." << std::endl;
@@ -271,7 +270,7 @@ int ana(void)
         }
         std::string result;
         std::cout << "calculating region statistics at a total of " << regions.size() << " regions" << std::endl;
-        get_regions_statistics(handle,regions,region_list,result);
+        get_regions_statistics(regions,region_list,result);
         std::string file_name(po.get("source"));
         file_name += ".statistics.txt";
         if(po.has("output"))

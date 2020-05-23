@@ -757,7 +757,7 @@ void group_connectometry::on_load_roi_from_atlas_clicked()
     {
         for(unsigned int i = 0;i < atlas_dialog->roi_list.size();++i)
         {
-            ROIRegion roi(vbc->handle);
+            ROIRegion roi(vbc->handle.get());
             if(!load_region(vbc->handle,roi,atlas_dialog->atlas_name + ":" + atlas_dialog->roi_name[i]))
                 return;
             add_new_roi(atlas_dialog->roi_name[i].c_str(),atlas_dialog->atlas_name.c_str(),
