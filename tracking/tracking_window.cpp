@@ -87,7 +87,7 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
     odf_size = fib.dir.odf_table.size();
     odf_face_size = fib.dir.odf_faces.size();
     for (unsigned int index = 0;index < fib.view_item.size(); ++index)
-        slices.push_back(std::make_shared<SliceModel>(handle,index));
+        slices.push_back(std::make_shared<SliceModel>(handle.get(),index));
     current_slice = slices[0];
 
     ui->setupUi(this);
@@ -1642,7 +1642,7 @@ void tracking_window::on_actionInsert_MNI_images_triggered()
         tipl::estimate(I,mni,v);
     });
     QString name = QFileInfo(filename).baseName();
-    std::shared_ptr<SliceModel> new_slice(new CustomSliceModel(handle));
+    std::shared_ptr<SliceModel> new_slice(new CustomSliceModel(handle.get()));
     CustomSliceModel* reg_slice_ptr = dynamic_cast<CustomSliceModel*>(new_slice.get());
     reg_slice_ptr->source_images.swap(J);
     reg_slice_ptr->T.identity();
@@ -1702,7 +1702,7 @@ bool tracking_window::addSlices(QStringList filenames,QString name,bool correct_
     std::vector<std::string> files(filenames.size());
     for (unsigned int index = 0; index < filenames.size(); ++index)
             files[index] = filenames[index].toLocal8Bit().begin();
-    std::shared_ptr<SliceModel> new_slice(new CustomSliceModel(handle));
+    std::shared_ptr<SliceModel> new_slice(new CustomSliceModel(handle.get()));
     CustomSliceModel* reg_slice_ptr = dynamic_cast<CustomSliceModel*>(new_slice.get());
     if(!reg_slice_ptr)
         return false;

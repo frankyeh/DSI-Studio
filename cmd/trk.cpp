@@ -72,7 +72,7 @@ bool get_t1t2_nifti(std::shared_ptr<fib_data> handle,
     static std::shared_ptr<CustomSliceModel> other_slice;
     if(!other_slice.get())
     {
-        other_slice = std::make_shared<CustomSliceModel>(handle);
+        other_slice = std::make_shared<CustomSliceModel>(handle.get());
         std::vector<std::string> files;
         files.push_back(po.get("t1t2"));
         if(!other_slice->initialize(files,true))
@@ -345,7 +345,7 @@ int trk_post(std::shared_ptr<fib_data> handle,
             {
                 std::vector<std::string> files;
                 files.push_back(po.get("ref"));
-                CustomSliceModel new_slice(handle);
+                CustomSliceModel new_slice(handle.get());
                 if(!new_slice.initialize(files,false))
                 {
                     std::cout << "error reading ref image file" << std::endl;

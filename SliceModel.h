@@ -8,7 +8,7 @@
 class fib_data;
 class SliceModel {
 public:
-    std::shared_ptr<fib_data> handle;
+    fib_data* handle = nullptr;
     int view_id;
     bool is_diffusion_space = true;
     tipl::matrix<4,4,float> T,invT; // T: image->diffusion iT: diffusion->image
@@ -22,7 +22,7 @@ public:
     tipl::vector<3,int> slice_pos;
     bool slice_visible[3];
 public:
-    SliceModel(std::shared_ptr<fib_data> new_handle,int view_id_);
+    SliceModel(fib_data* new_handle,int view_id_);
     virtual ~SliceModel(void){}
 public:
 
@@ -126,7 +126,7 @@ public:
     tipl::affine_transform<double> arg_min;
     bool terminated;
     bool ended;
-    CustomSliceModel(std::shared_ptr<fib_data> new_handle);
+    CustomSliceModel(fib_data* new_handle);
     ~CustomSliceModel(void)
     {
         terminate();

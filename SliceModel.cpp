@@ -9,7 +9,7 @@
 #include "prog_interface_static_link.h"
 #include "fib_data.hpp"
 
-SliceModel::SliceModel(std::shared_ptr<fib_data> handle_,int view_id_):handle(handle_),view_id(view_id_)
+SliceModel::SliceModel(fib_data* handle_,int view_id_):handle(handle_),view_id(view_id_)
 {
     slice_visible[0] = false;
     slice_visible[1] = false;
@@ -90,7 +90,7 @@ tipl::const_pointer_image<float, 3> SliceModel::get_source(void) const
 }
 
 // ---------------------------------------------------------------------------
-CustomSliceModel::CustomSliceModel(std::shared_ptr<fib_data> new_handle):
+CustomSliceModel::CustomSliceModel(fib_data* new_handle):
     SliceModel(new_handle,0)
 {
     new_handle->view_item.push_back(item());
