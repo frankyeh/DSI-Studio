@@ -287,7 +287,7 @@ int ana(void)
         return 0;
     }
 
-    TractModel tract_model(handle);
+    TractModel tract_model(handle.get());
     std::string file_name = po.get("tract");
     {
         std::cout << "loading " << file_name << "..." <<std::endl;
@@ -304,7 +304,7 @@ int ana(void)
         std::cout << file_name << " loaded" << std::endl;
 
     }
-    std::shared_ptr<RoiMgr> roi_mgr(new RoiMgr(handle));
+    std::shared_ptr<RoiMgr> roi_mgr(new RoiMgr(handle.get()));
     if(!load_roi(handle,roi_mgr))
         return 1;
     tract_model.filter_by_roi(roi_mgr);

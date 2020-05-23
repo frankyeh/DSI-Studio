@@ -612,7 +612,7 @@ void group_connectometry::on_run_clicked()
             roi_name[index] = ui->roi_table->item(index,0)->text().toStdString();
         }
         // if no seed assigned, assign whole brain
-        vbc->roi_mgr = std::make_shared<RoiMgr>(vbc->handle);
+        vbc->roi_mgr = std::make_shared<RoiMgr>(vbc->handle.get());
         if(roi_list.empty() || std::find(roi_type.begin(),roi_type.end(),3) == roi_type.end())
         {
             std::vector<tipl::vector<3,short> > seed;

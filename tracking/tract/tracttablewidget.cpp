@@ -62,8 +62,8 @@ void TractTableWidget::check_check_status(int, int col)
 
 void TractTableWidget::addNewTracts(QString tract_name,bool checked)
 {
-    thread_data.push_back(std::make_shared<ThreadData>(cur_tracking_window.handle));
-    tract_models.push_back(std::make_shared<TractModel>(cur_tracking_window.handle));
+    thread_data.push_back(std::make_shared<ThreadData>(cur_tracking_window.handle.get()));
+    tract_models.push_back(std::make_shared<TractModel>(cur_tracking_window.handle.get()));
     insertRow(tract_models.size()-1);
     QTableWidgetItem *item0 = new QTableWidgetItem(tract_name);
     item0->setCheckState(checked ? Qt::Checked : Qt::Unchecked);
@@ -144,7 +144,7 @@ void TractTableWidget::ppv_analysis(void)
         }
     }
     std::vector<int> tracks_count(100);
-    ThreadData base_thread(cur_tracking_window.handle);
+    ThreadData base_thread(cur_tracking_window.handle.get());
     cur_tracking_window.set_tracking_param(base_thread);
     cur_tracking_window.regionWidget->setROIs(&base_thread);
     tracking_data fib;
@@ -165,14 +165,14 @@ void TractTableWidget::ppv_analysis(void)
             }
             check_prog(i,100);
         }
-        ThreadData new_thread(cur_tracking_window.handle);
+        ThreadData new_thread(cur_tracking_window.handle.get());
         new_thread.param = base_thread.param;
         new_thread.param.min_length = p1[i];
         new_thread.param.dt_threshold = p2[i];
         new_thread.roi_mgr = base_thread.roi_mgr;
         new_thread.run(fib,1,true);
 
-        TractModel trk(cur_tracking_window.handle);
+        TractModel trk(cur_tracking_window.handle.get());
         new_thread.fetchTracks(&trk);
         new_thread.apply_tip(&trk);
         tracks_count[i] = trk.get_visible_track_count();
@@ -201,7 +201,7 @@ void TractTableWidget::ppv_analysis(void)
 
 void TractTableWidget::filter_by_roi(void)
 {
-    ThreadData track_thread(cur_tracking_window.handle);
+    ThreadData track_thread(cur_tracking_window.handle.get());
     cur_tracking_window.set_tracking_param(track_thread);
     cur_tracking_window.regionWidget->setROIs(&track_thread);
     for(int index = 0;index < tract_models.size();++index)
@@ -448,7 +448,7 @@ void TractTableWidget::open_cluster_label(void)
 }
 void TractTableWidget::auto_recognition(void)
 {
-    if(!cur_tracking_window.handle->load_track_atlas(cur_tracking_window.handle))
+    if(!cur_tracking_window.handle->load_track_atlas())
     {
         QMessageBox::information(this,"Error",cur_tracking_window.handle->error_msg.c_str());
         return;
@@ -464,7 +464,7 @@ void TractTableWidget::auto_recognition(void)
 }
 void TractTableWidget::recognize_rename(void)
 {
-    if(!cur_tracking_window.handle->load_track_atlas(cur_tracking_window.handle))
+    if(!cur_tracking_window.handle->load_track_atlas())
     {
         QMessageBox::information(this,"Error",cur_tracking_window.handle->error_msg.c_str());
         return;
@@ -727,7 +727,7 @@ void TractTableWidget::recog_tracks(void)
 {
     if(currentRow() >= tract_models.size() || tract_models[currentRow()]->get_tracts().size() == 0)
         return;
-    if(!cur_tracking_window.handle->load_track_atlas(cur_tracking_window.handle))
+    if(!cur_tracking_window.handle->load_track_atlas())
     {
         QMessageBox::information(this,"Error",cur_tracking_window.handle->error_msg.c_str());
         return;

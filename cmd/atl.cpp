@@ -242,7 +242,7 @@ int atl(void)
             std::cout << "no mapping information found. Please reconstruct QSDR with mapping checked in advanced option." << std::endl;
             return 1;
         }
-        TractModel tract_model(handle);
+        TractModel tract_model(handle.get());
         std::string file_name = po.get("tract");
         {
             std::cout << "loading " << file_name << "..." <<std::endl;

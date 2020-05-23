@@ -39,7 +39,7 @@ bool group_connectometry_analysis::load_database(const char* database_name)
 
 int group_connectometry_analysis::run_track(const tracking_data& fib,std::vector<std::vector<float> >& tracks,int seed_count, unsigned int thread_count)
 {
-    ThreadData tracking_thread(handle);
+    ThreadData tracking_thread(handle.get());
     tracking_thread.param.threshold = tracking_threshold;
     tracking_thread.param.cull_cos_angle = 1.0f;
     tracking_thread.param.step_size = handle->vs[0];
@@ -59,7 +59,7 @@ int group_connectometry_analysis::run_track(const tracking_data& fib,std::vector
 
     if(track_trimming)
     {
-        TractModel t(handle);
+        TractModel t(handle.get());
         t.add_tracts(tracks);
         for(int i = 0;i < track_trimming && t.get_visible_track_count();++i)
             t.trim();
@@ -438,8 +438,8 @@ void group_connectometry_analysis::run_permutation(unsigned int thread_count,uns
     pos_corr_tracks_result = "tracks";
     neg_corr_tracks_result = "tracks";
 
-    pos_corr_track = std::make_shared<TractModel>(handle);
-    neg_corr_track = std::make_shared<TractModel>(handle);
+    pos_corr_track = std::make_shared<TractModel>(handle.get());
+    neg_corr_track = std::make_shared<TractModel>(handle.get());
     spm_map = std::make_shared<connectometry_result>();
 
     progress = 0;

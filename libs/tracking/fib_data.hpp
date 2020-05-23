@@ -180,7 +180,7 @@ public:
 public:
     void set_template_id(size_t new_id);
     bool load_template(void);
-    bool load_track_atlas(std::shared_ptr<fib_data> handle);
+    bool load_track_atlas(void);
     void template_to_mni(tipl::vector<3>& p);
     void template_from_mni(tipl::vector<3>& p);
 

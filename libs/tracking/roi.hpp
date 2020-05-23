@@ -76,7 +76,7 @@ public:
 
 class RoiMgr {
 public:
-    std::shared_ptr<fib_data> handle;
+    fib_data* handle = nullptr;
     std::string report;
     std::vector<tipl::vector<3,short> > seeds;
     std::vector<float> seeds_r;
@@ -89,7 +89,7 @@ public:
     float false_distance = 0.0f;
     unsigned int track_id = 0;
 public:
-    RoiMgr(std::shared_ptr<fib_data> handle_):handle(handle_){}
+    RoiMgr(fib_data* handle_):handle(handle_){}
 public:
     bool is_excluded_point(const tipl::vector<3,float>& point) const
     {
@@ -147,7 +147,7 @@ public:
     }
     bool setAtlas(unsigned int track_id_,float false_distance_)
     {
-        if(!handle->load_track_atlas(handle))
+        if(!handle->load_track_atlas())
             return false;
         if(track_id >= handle->tractography_name_list.size())
         {
@@ -164,7 +164,7 @@ public:
         {
             std::vector<tipl::vector<3,short> > seed;
             handle->track_atlas->to_voxel(seed,1.0f,int(track_id));
-            ROIRegion region(handle.get());
+            ROIRegion region(handle);
             region.add_points(seed,false);
             region.perform("dilation");
             region.perform("dilation");

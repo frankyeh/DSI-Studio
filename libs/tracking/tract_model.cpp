@@ -203,7 +203,7 @@ struct TrackVis
 
 
 //---------------------------------------------------------------------------
-TractModel::TractModel(std::shared_ptr<fib_data> handle_):handle(handle_),
+TractModel::TractModel(fib_data* handle_):handle(handle_),
         report(handle_->report),geometry(handle_->dim),vs(handle_->vs),fib(new tracking_data)
 {
     fib->read(*handle_);
@@ -566,7 +566,7 @@ bool TractModel::save_tracts_to_file(const char* file_name_)
     {
         std::vector<tipl::vector<3,float> >points;
         get_tract_points(points);
-        ROIRegion region(handle.get());
+        ROIRegion region(handle);
         region.add_points(points,false);
         region.SaveToFile(file_name_);
         return true;
@@ -1202,7 +1202,7 @@ void TractModel::delete_branch(void)
     std::vector<tipl::vector<3,short> > p1,p2;
     to_end_point_voxels(p1,p2,resolution_ratio);
     tipl::image<unsigned char, 3>mask;
-    ROIRegion r1(handle.get()),r2(handle.get());
+    ROIRegion r1(handle),r2(handle);
     r1.resolution_ratio = resolution_ratio;
     r1.add_points(p1,false,resolution_ratio);
     r2.resolution_ratio = resolution_ratio;

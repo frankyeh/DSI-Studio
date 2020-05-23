@@ -421,7 +421,7 @@ bool load_roi(std::shared_ptr<fib_data> handle,std::shared_ptr<RoiMgr> roi_mgr)
     }
     if(po.has("track_id"))
     {
-        if(!handle->load_track_atlas(handle))
+        if(!handle->load_track_atlas())
         {
             std::cout << handle->error_msg << std::endl;
             return false;
@@ -493,7 +493,7 @@ int trk(std::shared_ptr<fib_data> handle)
     float otsu = tipl::segmentation::otsu_threshold(tipl::make_image(fa0,geometry));
 
 
-    ThreadData tracking_thread(handle);
+    ThreadData tracking_thread(handle.get());
     tracking_thread.param.default_otsu = po.get("otsu_threshold",0.6f);
     tracking_thread.param.threshold = po.get("fa_threshold",tracking_thread.param.default_otsu*otsu);
     tracking_thread.param.dt_threshold = po.get("dt_threshold",0.2f);
@@ -563,7 +563,7 @@ int trk(std::shared_ptr<fib_data> handle)
                     tracking_thread.param.threshold == 0.0f ?
                         otsu*tracking_thread.param.default_otsu:tracking_thread.param.threshold);
     }
-    TractModel tract_model(handle);
+    TractModel tract_model(handle.get());
 
     if(!cnt_file_name.empty())
     {

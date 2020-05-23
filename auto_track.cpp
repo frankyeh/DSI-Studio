@@ -174,9 +174,9 @@ std::string run_auto_track(
                     if (!fib_loaded && !handle->load_from_file(fib_file_name.c_str()))
                         return std::string("ERROR at ") + fib_file_name + ":" +handle->error_msg;
                     fib_loaded = true;
-                    TractModel tract_model(handle);
+                    TractModel tract_model(handle.get());
                     {
-                        ThreadData thread(handle);
+                        ThreadData thread(handle.get());
                         thread.param.check_ending = 1;
                         thread.param.tip_iteration = uint8_t(tip);
                         thread.param.termination_count = track_count;

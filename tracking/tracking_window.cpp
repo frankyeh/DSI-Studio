@@ -2005,7 +2005,7 @@ void tracking_window::on_actionKeep_Current_Slice_triggered()
 }
 void tracking_window::on_enable_auto_track_clicked()
 {
-    if(!handle->load_track_atlas(handle))
+    if(!handle->load_track_atlas())
     {
         QMessageBox::information(this,"Error",handle->error_msg.c_str());
         return;

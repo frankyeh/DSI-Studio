@@ -12,7 +12,7 @@ public:
         std::string parameter_id;
         bool saved = true;
 private:
-        std::shared_ptr<fib_data> handle;
+        fib_data* handle = nullptr;
         tipl::geometry<3> geometry;
         tipl::vector<3> vs;
         std::shared_ptr<tracking_data> fib;
@@ -48,7 +48,7 @@ public:
         void delete_branch(void);
         void delete_by_length(float length);
 public:
-        TractModel(std::shared_ptr<fib_data> handle_);
+        TractModel(fib_data* handle_);
         const TractModel& operator=(const TractModel& rhs)
         {
             geometry = rhs.geometry;
@@ -61,7 +61,7 @@ public:
             saved = true;
             return *this;
         }
-        std::shared_ptr<fib_data> get_handle(void){return handle;}
+        fib_data* get_handle(void){return handle;}
         const tracking_data& get_fib(void) const{return *fib.get();}
         tracking_data& get_fib(void){return *fib.get();}
         void add(const TractModel& rhs);

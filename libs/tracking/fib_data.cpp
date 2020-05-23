@@ -1004,7 +1004,7 @@ bool fib_data::load_template(void)
     return true;
 }
 
-bool fib_data::load_track_atlas(std::shared_ptr<fib_data> handle)
+bool fib_data::load_track_atlas()
 {
     if(tractography_atlas_file_name.empty() || tractography_name_list.empty())
     {
@@ -1013,7 +1013,7 @@ bool fib_data::load_track_atlas(std::shared_ptr<fib_data> handle)
     }
     if(!track_atlas.get())
     {
-        track_atlas = std::make_shared<TractModel>(handle);
+        track_atlas = std::make_shared<TractModel>(this);
         if(!track_atlas->load_from_file(tractography_atlas_file_name.c_str()))
         {
             error_msg = "failed to load tractography atlas";
@@ -1157,7 +1157,7 @@ unsigned int fib_data::find_nearest(const float* trk,unsigned int length,bool co
 
 bool fib_data::recognize(std::shared_ptr<TractModel>& trk,std::vector<unsigned int>& result,float tolerance)
 {
-    if(!load_track_atlas(trk->get_handle()))
+    if(!load_track_atlas())
         return false;
     result.resize(trk->get_tracts().size());
     tipl::par_for(trk->get_tracts().size(),[&](size_t i)
@@ -1171,7 +1171,7 @@ bool fib_data::recognize(std::shared_ptr<TractModel>& trk,std::vector<unsigned i
 
 bool fib_data::recognize(std::shared_ptr<TractModel>& trk,std::map<float,std::string,std::greater<float> >& result,bool contain)
 {
-    if(!load_track_atlas(trk->get_handle()))
+    if(!load_track_atlas())
         return false;
     std::vector<float> count(tractography_name_list.size());
     tipl::par_for(trk->get_tracts().size(),[&](size_t i)
