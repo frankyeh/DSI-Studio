@@ -78,14 +78,11 @@ void tracking_window::set_data(QString name, QVariant value)
 }
 
 tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_handle) :
-        QMainWindow(parent),handle(new_handle),cur_dim(2),
-        ui(new Ui::tracking_window),scene(*this),gLdock(0),renderWidget(0)
+        QMainWindow(parent),ui(new Ui::tracking_window),handle(new_handle),scene(*this)
 
 {
     fib_data& fib = *new_handle;
     scene.no_show = true;
-    odf_size = fib.dir.odf_table.size();
-    odf_face_size = fib.dir.odf_faces.size();
     for (unsigned int index = 0;index < fib.view_item.size(); ++index)
         slices.push_back(std::make_shared<SliceModel>(handle.get(),index));
     current_slice = slices[0];

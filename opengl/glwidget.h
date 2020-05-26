@@ -45,7 +45,7 @@ public:
      //int s_mvp,s_mvp2,s_depthMap;
      QImage captured_image;
  public:// editing
-     enum {none = 0,selecting = 1, moving = 2, dragging = 3} editing_option;
+     enum {none = 0,selecting = 1, moving = 2, dragging = 3} editing_option = none;
      tipl::vector<3,float> pos,dir1,dir2;
      std::vector<tipl::vector<3,float> > dirs;
      bool angular_selection;
@@ -160,7 +160,7 @@ public:
      GLuint tracts = 0;
      std::vector<std::shared_ptr<QOpenGLTexture> > slice_texture;
 
-     int slice_pos[3];
+     int slice_pos[3] = {-1,-1,-1};
      QPoint lastPos,last_select_point;
      tipl::matrix<4,4,float> mat,transformation_matrix,transformation_matrix2,rotation_matrix,rotation_matrix2;
      enum class view_mode_type { single, two, stereo} view_mode = view_mode_type::single;

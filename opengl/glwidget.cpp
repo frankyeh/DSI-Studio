@@ -22,7 +22,7 @@ void get_bounding_box(QImage& p,int margin = 5)
     int l =p.width(), r = 0, t = p.height(), b = 0;
     QRgb first_pixel = p.pixel(0,0);
     for (int y = 0; y < p.height(); ++y) {
-        QRgb *row = (QRgb*)p.scanLine(y);
+        QRgb *row = reinterpret_cast<QRgb*>(p.scanLine(y));
         bool rowFilled = false;
         for (int x = 0; x < p.width(); ++x)
         {
@@ -47,12 +47,13 @@ void get_bounding_box(QImage& p,int margin = 5)
     b = std::min(p.height()-1,b+margin);
     p = p.copy(QRect(l,t,r-l,b-t));
 }
+extern GLenum BlendFunc1[8],BlendFunc2[8];
 
-GLenum BlendFunc1[] = {GL_ZERO,GL_ONE,GL_DST_COLOR,
+GLenum BlendFunc1[8] = {GL_ZERO,GL_ONE,GL_DST_COLOR,
                       GL_ONE_MINUS_DST_COLOR,GL_SRC_ALPHA,
                       GL_ONE_MINUS_SRC_ALPHA,GL_DST_ALPHA,
                       GL_ONE_MINUS_DST_ALPHA};
-GLenum BlendFunc2[] = {GL_ZERO,GL_ONE,GL_SRC_COLOR,
+GLenum BlendFunc2[8] = {GL_ZERO,GL_ONE,GL_SRC_COLOR,
                       GL_ONE_MINUS_DST_COLOR,GL_SRC_ALPHA,
                       GL_ONE_MINUS_SRC_ALPHA,GL_DST_ALPHA,
                       GL_ONE_MINUS_DST_ALPHA};
@@ -64,17 +65,15 @@ GLWidget::GLWidget(bool samplebuffer,
                        : QGLWidget(samplebuffer ? QGLFormat(QGL::SampleBuffers):QGLFormat(),parent),
         cur_tracking_window(cur_tracking_window_),
         renderWidget(renderWidget_),
-        slice_texture(3),
-        editing_option(none)
+        slice_texture(3)
 {
-    slice_pos[0] = slice_pos[1] = slice_pos[2] = -1;
     transformation_matrix.identity();
     rotation_matrix.identity();
     transformation_matrix2.identity();
     rotation_matrix2.identity();
     if (cur_tracking_window.handle->has_odfs())
     {
-        for (unsigned int index = 0; index < cur_tracking_window.odf_size; ++index)
+        for (unsigned int index = 0; index < cur_tracking_window.handle->dir.odf_table.size(); ++index)
         {
             odf_color1.push_back(std::abs(cur_tracking_window.handle->dir.odf_table[index][0]));
             odf_color1.push_back(std::abs(cur_tracking_window.handle->dir.odf_table[index][1]));
@@ -117,7 +116,7 @@ float GLWidget::get_param_float(const char* name)
 
 bool GLWidget::check_change(const char* name,unsigned char& var)
 {
-    int v = renderWidget->getData(name).toInt();
+    unsigned char v = uint8_t(renderWidget->getData(name).toInt());
     if(v != var)
     {
         var = v;
@@ -140,8 +139,8 @@ bool GLWidget::check_change(const char* name,float& var)
 
 void check_error(const char* line)
 {
-    GLenum code;
-    while(code = glGetError())
+    GLenum code = glGetError();
+    while(code)
     {
         std::cout << line << std::endl;
         switch(code)
@@ -172,13 +171,13 @@ void check_error(const char* line)
 
 void GLWidget::set_view(unsigned char view_option)
 {
-    float scale = std::pow(transformation_matrix.det(),1.0/3.0);
+    float scale = float(std::pow(transformation_matrix.det(),1.0/3.0));
     // initialize world matrix
     transformation_matrix.identity();
     rotation_matrix.identity();
 
 
-    if(get_param("scale_voxel") && cur_tracking_window.handle->vs[0] > 0.0)
+    if(get_param("scale_voxel") && cur_tracking_window.handle->vs[0] > 0.0f)
     {
         transformation_matrix[5] = cur_tracking_window.handle->vs[1] / cur_tracking_window.handle->vs[0];
         transformation_matrix[10] = cur_tracking_window.handle->vs[2] / cur_tracking_window.handle->vs[0];
@@ -244,7 +243,7 @@ void setupLight(float ambient,float diffuse,float specular,float angle,float ang
         glEnable(GL_LIGHT2);
     else
         glDisable(GL_LIGHT2);
-    float angle_shift = 3.1415926*2.0/(light_option+1.0);
+    float angle_shift = 3.1415926f*2.0f/(light_option+1.0f);
 
     GLfloat light[4];
     std::fill(light,light+3,diffuse);
@@ -304,7 +303,7 @@ unsigned char getCurView(const tipl::matrix<4,4,float>& m)
         tipl::matrix<4,4,float> mat = tipl::inverse(m);
         tipl::vector<3,float> dir(mat.begin()+8);
         float max_cos = 0;
-        for (unsigned int index = 0;index < 6;++index)
+        for (unsigned char index = 0;index < 6;++index)
         if (dir*tipl::vector<3,float>(view_dirs[index]) < max_cos)
         {
             max_cos = dir*tipl::vector<3,float>(view_dirs[index]);
@@ -316,17 +315,17 @@ unsigned char getCurView(const tipl::matrix<4,4,float>& m)
 void handleAlpha(tipl::rgb color,
                  float alpha,int blend1,int blend2)
 {
-    if(alpha != 1.0)
+    if(alpha != 1.0f)
     {
         glEnable(GL_BLEND);
         glBlendFunc (BlendFunc1[blend1],
                      BlendFunc2[blend2]);
     }
     GLfloat material2[4] = { 0.0f, 0.0f, 0.0f, 0.5f};
-    material2[0] = color.r/255.0;
-    material2[1] = color.g/255.0;
-    material2[2] = color.b/255.0;
-    material2[3] = alpha*((float)color.a)/255.0;
+    material2[0] = color.r/255.0f;
+    material2[1] = color.g/255.0f;
+    material2[2] = color.b/255.0f;
+    material2[3] = alpha*float(color.a)/255.0f;
     glMaterialfv(GL_FRONT_AND_BACK,GL_DIFFUSE,material2);
 }
 
@@ -338,18 +337,18 @@ void drawRegion(RegionModel& cur_region,unsigned char cur_view,
     handleAlpha(cur_region.color,alpha,blend1,blend2);
     glEnableClientState(GL_VERTEX_ARRAY);
     glEnableClientState(GL_NORMAL_ARRAY);
-    glVertexPointer(3, GL_FLOAT, 0, (float*)&cur_region.get()->point_list.front());
-    glNormalPointer(GL_FLOAT, 0, (float*)&cur_region.get()->normal_list.front());
-    glDrawElements(GL_TRIANGLES, cur_region.getSortedIndex(cur_view).size(),
+    glVertexPointer(3, GL_FLOAT, 0, cur_region.get()->point_list.front().begin());
+    glNormalPointer(GL_FLOAT, 0, cur_region.get()->normal_list.front().begin());
+    glDrawElements(GL_TRIANGLES, int(cur_region.getSortedIndex(cur_view).size()),
                    GL_UNSIGNED_INT,&*cur_region.getSortedIndex(cur_view).begin());
     glDisableClientState(GL_VERTEX_ARRAY);
     glDisableClientState(GL_NORMAL_ARRAY);
     check_error(__FUNCTION__);
 }
 
-void my_gluLookAt(GLdouble eyex, GLdouble eyey, GLdouble eyez, GLdouble centerx,
-          GLdouble centery, GLdouble centerz, GLdouble upx, GLdouble upy,
-          GLdouble upz)
+void my_gluLookAt(GLfloat eyex, GLfloat eyey, GLfloat eyez, GLfloat centerx,
+          GLfloat centery, GLfloat centerz, GLfloat upx, GLfloat upy,
+          GLfloat upz)
 {
     tipl::vector<3,float> forward, side, up;
     GLfloat m[4][4];
@@ -393,24 +392,24 @@ void my_gluLookAt(GLdouble eyex, GLdouble eyey, GLdouble eyez, GLdouble centerx,
     m[3][3] = 1;
 
     glMultMatrixf(&m[0][0]);
-    glTranslated(-eyex, -eyey, -eyez);
+    glTranslatef(-eyex, -eyey, -eyez);
 }
 
 void GLWidget::setFrustum(void)
 {
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
-    float p[11] = {0.35f,0.4f,0.45f,0.5f,0.6f,0.8f,1.0f,1.5f,2.0f,12.0f,50.0f};
-    GLfloat perspective = p[get_param("pespective")];
-    GLfloat zNear = 1.0f;
-    GLfloat zFar = 1000.0f;
-    GLfloat aspect = float(view_mode == view_mode_type::two ? cur_width/2:cur_width)/float(cur_height);
-    GLfloat fH = 0.25f;
-    GLfloat fW = fH * aspect;
+    double p[11] = {0.35,0.4,0.45,0.5,0.6,0.8,1.0,1.5,2.0,12.0,50.0};
+    GLdouble perspective = p[get_param("pespective")];
+    GLdouble zNear = 1.0;
+    GLdouble zFar = 1000.0;
+    GLdouble aspect = double(view_mode == view_mode_type::two ? cur_width/2:cur_width)/double(cur_height);
+    GLdouble fH = 0.25;
+    GLdouble fW = fH * aspect;
     glFrustum( -fW, fW, -fH, fH, zNear*perspective, zFar*perspective);
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
-    my_gluLookAt(0,0,-200.0*perspective,0,0,0,0,-1.0,0);
+    my_gluLookAt(0.0f,0.0f,-200.0f*float(perspective),0.0f,0.0f,0.0f,0.0f,-1.0f,0.0f);
 }
 
 void GLWidget::initializeGL()
@@ -635,12 +634,12 @@ void GLWidget::renderLR()
         glEnableClientState(GL_VERTEX_ARRAY);
         glEnableClientState(GL_NORMAL_ARRAY);
         glEnableClientState(GL_COLOR_ARRAY);
-        unsigned int num_odf = odf_points.size()/cur_tracking_window.odf_size;
-        unsigned int face_size = cur_tracking_window.odf_face_size*3;
+        unsigned int num_odf = odf_points.size()/cur_tracking_window.handle->dir.odf_table.size();
+        unsigned int face_size = cur_tracking_window.handle->dir.odf_faces.size()*3;
 
 
         for(unsigned int index = 0,base_index = 0;index < num_odf;
-            ++index,base_index += cur_tracking_window.odf_size)
+            ++index,base_index += cur_tracking_window.handle->dir.odf_table.size())
         {
             glVertexPointer(3, GL_FLOAT, 0, (float*)&odf_points[base_index]);
             glColorPointer(3, GL_FLOAT, 0, odf_color_ptr);
@@ -1089,7 +1088,7 @@ void GLWidget::renderLR()
         QImage I = grab_image();
         writer.write(I);
         QByteArray data = buffer.data();
-        video_handle->add_frame((unsigned char*)&*data.begin(),data.size(),true);
+        video_handle->add_frame(data.begin(),uint32_t(data.size()),true);
         video_capturing = false;
         if(video_frames > 10000)
             record_video();
@@ -1102,23 +1101,23 @@ void GLWidget::add_odf(const std::vector<tipl::pixel_index<3> >& odf_pos_)
     std::shared_ptr<fib_data> handle = cur_tracking_window.handle;
     std::vector<const float*> odf_buffers;
     std::vector<tipl::pixel_index<3> > odf_pos;
-    for(int i = 0;i < odf_pos_.size();++i)
+    for(size_t i = 0;i < odf_pos_.size();++i)
     {
         const float* odf_buffer =
-            handle->get_odf_data(odf_pos_[i].index());
+            handle->get_odf_data(uint32_t(odf_pos_[i].index()));
         if(!odf_buffer)
             continue;
         odf_buffers.push_back(odf_buffer);
         odf_pos.push_back(odf_pos_[i]);
     }
 
-    unsigned int odf_dim = cur_tracking_window.odf_size;
+    unsigned int odf_dim = uint32_t(cur_tracking_window.handle->dir.odf_table.size());
     unsigned int half_odf = odf_dim >> 1;
     odf_points.resize(odf_pos.size()*odf_dim);
     odf_norm.resize(odf_pos.size()*odf_dim);
     bool odf_min_max = get_param("odf_min_max");
     bool odf_smoothing = get_param("odf_smoothing");
-    tipl::par_for(odf_pos.size(),[&](int i)
+    tipl::par_for(odf_pos.size(),[&](size_t i)
     {
 
         const float* odf_buffer = odf_buffers[i];
@@ -1134,7 +1133,7 @@ void GLWidget::add_odf(const std::vector<tipl::pixel_index<3> >& odf_pos_)
             new_odf_buffer.resize(half_odf);
             std::copy(odf_buffer,odf_buffer+half_odf,new_odf_buffer.begin());
             auto& odf_faces = handle->dir.odf_faces;
-            for(int index = 0;index < odf_faces.size();++index)
+            for(size_t index = 0;index < odf_faces.size();++index)
             {
                 unsigned short f1 = odf_faces[index][0];
                 unsigned short f2 = odf_faces[index][1];
@@ -2533,17 +2532,17 @@ bool GLWidget::command(QString cmd,QString param,QString param2)
             #ifndef __APPLE__
                 resize(1980,1080);
             #endif
-            for(float index = 0;check_prog(index,360);index += angle)
+            for(float index = 0.0f;check_prog(index,360);index += angle)
             {
                 rotate_angle(angle,0,1.0,0.0);
                 QBuffer buffer;
                 QImageWriter writer(&buffer, "JPG");
                 QImage I = grab_image();
                 writer.write(I);
-                if(index == 0.0)
+                if(index == 0.0f)
                     avi.open(param.toLocal8Bit().begin(),I.width(),I.height(), "MJPG", 30/*fps*/);
                 QByteArray data = buffer.data();
-                avi.add_frame((unsigned char*)&*data.begin(),data.size(),true);
+                avi.add_frame(data.begin(),uint32_t(data.size()),true);
             }
             avi.close();
             resize(ow,oh);

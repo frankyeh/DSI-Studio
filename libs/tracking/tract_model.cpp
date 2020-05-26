@@ -573,21 +573,17 @@ bool TractModel::save_tracts_to_file(const char* file_name_)
     }
     return false;
 }
-void TractModel::save_vrml(const char* file_name,
+void TractModel::save_vrml(const std::string& file_name,
                            unsigned char tract_style,
                            unsigned char tract_color_style,
                            float tube_diameter,
                            unsigned char tract_tube_detail,
                            const std::string& surface_text)
 {
-    std::ofstream out(file_name);
-    out << "#VRML V2.0 utf8" << std::endl;
-    out << "Viewpoint { description \"Initial view\" position 0 0 9 }" << std::endl;
-    out << "NavigationInfo { type \"EXAMINE\" }" << std::endl;
-
-
-
-
+    std::ofstream out(file_name.c_str());
+    bool is_ply = (file_name.substr(file_name.size()-4) == std::string(".ply"));
+    if(is_ply)
+        tract_style = 1;
     std::vector<tipl::vector<3,float> > points(8),previous_points(8);
     tipl::rgb paint_color;
     tipl::vector<3,float> paint_color_f;
@@ -596,8 +592,71 @@ void TractModel::save_vrml(const char* file_name,
     float tube_detail = tube_diameter*detail_option[tract_tube_detail]*4.0;
 
 
-    QString Coordinate,CoordinateIndex,Color;
+    std::string coordinate,coordinate_index;
     unsigned int vrml_coordinate_count = 0,vrml_color_count = 0;
+    auto push_vertices = [&](const tipl::vector<3,float>& pos,const tipl::vector<3,float>& color)
+    {
+        if(!is_ply)
+        {
+            coordinate.push_back('v');
+            coordinate.push_back(' ');
+            coordinate += std::to_string(pos[0]);
+            coordinate.pop_back();
+            coordinate.pop_back();
+            coordinate.pop_back();
+            coordinate.back() = ' ';
+            coordinate += std::to_string(pos[1]);
+            coordinate.pop_back();
+            coordinate.pop_back();
+            coordinate.pop_back();
+            coordinate.back() = ' ';
+            coordinate += std::to_string(pos[2]);
+            coordinate.pop_back();
+            coordinate.pop_back();
+            coordinate.pop_back();
+            coordinate.back() = ' ';
+            coordinate += std::to_string(color[0]);
+            coordinate.pop_back();
+            coordinate.pop_back();
+            coordinate.pop_back();
+            coordinate.back() = ' ';
+            coordinate += std::to_string(color[1]);
+            coordinate.pop_back();
+            coordinate.pop_back();
+            coordinate.pop_back();
+            coordinate.back() = ' ';
+            coordinate += std::to_string(color[2]);
+            coordinate.pop_back();
+            coordinate.pop_back();
+            coordinate.pop_back();
+            coordinate.back() = '\n';
+        }
+        else
+        {
+            coordinate += std::to_string(pos[0]);
+            coordinate.pop_back();
+            coordinate.pop_back();
+            coordinate.pop_back();
+            coordinate.back() = ' ';
+            coordinate += std::to_string(pos[1]);
+            coordinate.pop_back();
+            coordinate.pop_back();
+            coordinate.pop_back();
+            coordinate.back() = ' ';
+            coordinate += std::to_string(pos[2]);
+            coordinate.pop_back();
+            coordinate.pop_back();
+            coordinate.pop_back();
+            coordinate.back() = ' ';
+            coordinate += std::to_string(int(color[0]*255.0f));
+            coordinate.push_back(' ');
+            coordinate += std::to_string(int(color[1]*255.0f));
+            coordinate.push_back(' ');
+            coordinate += std::to_string(int(color[2]*255.0f));
+            coordinate.push_back('\n');
+        }
+
+    };
     for (unsigned int data_index = 0; data_index < tract_data.size(); ++data_index)
     {
         unsigned int vertex_count = get_tract_length(data_index)/3;
@@ -654,8 +713,7 @@ void TractModel::save_vrml(const char* file_name,
             // add end
             if(tract_style == 0)// line
             {
-                Coordinate += QString("%1 %2 %3 ").arg(pos[0]).arg(pos[1]).arg(pos[2]);
-                Color += QString("%1 %2 %3 ").arg(cur_color[0]).arg(cur_color[1]).arg(cur_color[2]);
+                push_vertices(pos,cur_color);
                 prev_vec_n = vec_n;
                 last_pos = pos;
                 ++vrml_coordinate_count;
@@ -698,34 +756,28 @@ void TractModel::save_vrml(const char* file_name,
             {
                 for (unsigned int k = 0;k < 8;++k)
                 {
-                    Coordinate += QString("%1 %2 %3 ").arg(points[end_sequence[k]][0]).arg(points[end_sequence[k]][1]).arg(points[end_sequence[k]][2]);
-                    Color += QString("%1 %2 %3 ").arg(cur_color[0]).arg(cur_color[1]).arg(cur_color[2]);
+                    tipl::vector<3,float> pos(points[end_sequence[k]][0],points[end_sequence[k]][1],points[end_sequence[k]][2]);
+                    push_vertices(pos,cur_color);
                 }
                 vrml_coordinate_count+=8;
             }
             else
             // add tube
             {
-
-                Coordinate += QString("%1 %2 %3 ").arg(points[0][0]).arg(points[0][1]).arg(points[0][2]);
-                Color += QString("%1 %2 %3 ").arg(cur_color[0]).arg(cur_color[1]).arg(cur_color[2]);
+                push_vertices(points[0],cur_color);
                 for (unsigned int k = 1;k < 8;++k)
                 {
-                    Coordinate += QString("%1 %2 %3 ").arg(previous_points[k][0]).arg(previous_points[k][1]).arg(previous_points[k][2]);
-                    Coordinate += QString("%1 %2 %3 ").arg(points[k][0]).arg(points[k][1]).arg(points[k][2]);
-                    Color += QString("%1 %2 %3 ").arg(cur_color[0]).arg(cur_color[1]).arg(cur_color[2]);
-                    Color += QString("%1 %2 %3 ").arg(cur_color[0]).arg(cur_color[1]).arg(cur_color[2]);
+                    push_vertices(previous_points[k],cur_color);
+                    push_vertices(points[k],cur_color);
                 }
-                Coordinate += QString("%1 %2 %3 ").arg(points[0][0]).arg(points[0][1]).arg(points[0][2]);
-                Color += QString("%1 %2 %3 ").arg(cur_color[0]).arg(cur_color[1]).arg(cur_color[2]);
+                push_vertices(points[0],cur_color);
                 vrml_coordinate_count+=16;
-
                 if(index +1 == vertex_count)
                 {
                     for (int k = 7;k >= 0;--k)
                     {
-                        Coordinate += QString("%1 %2 %3 ").arg(points[end_sequence[k]][0]).arg(points[end_sequence[k]][1]).arg(points[end_sequence[k]][2]);
-                        Color += QString("%1 %2 %3 ").arg(cur_color[0]).arg(cur_color[1]).arg(cur_color[2]);
+                        tipl::vector<3,float> pos(points[end_sequence[k]][0],points[end_sequence[k]][1],points[end_sequence[k]][2]);
+                        push_vertices(pos,cur_color);
                     }
                     vrml_coordinate_count+=8;
                 }
@@ -736,52 +788,52 @@ void TractModel::save_vrml(const char* file_name,
             ++vrml_color_count;
 
         }
-
         if(tract_style == 0)// line
         {
-            for (unsigned int j = prev_coordinate_count;j < vrml_coordinate_count;++j)
-                CoordinateIndex += QString("%1 ").arg(j);
-            CoordinateIndex += QString("-1 ");
+            coordinate_index.push_back('l');
+            for (unsigned int j = prev_coordinate_count+1;j+2 <= vrml_coordinate_count;++j)
+            {
+                coordinate_index.push_back(' ');
+                coordinate_index += std::to_string(j);
+            }
+            coordinate_index.push_back('\n');
         }
         else
+        for (unsigned int j = prev_coordinate_count;j+2 < vrml_coordinate_count;++j)
         {
-            for (unsigned int j = prev_coordinate_count;j+2 < vrml_coordinate_count;++j)
-                CoordinateIndex += QString("%1 %2 %3 -1 ").arg(j).arg(j+1).arg(j+2);
+            coordinate_index.push_back(is_ply ? '3':'f');
+            coordinate_index.push_back(' ');
+            coordinate_index += std::to_string(is_ply ? j : j+1);
+            coordinate_index.push_back(' ');
+            coordinate_index += std::to_string(is_ply ? j+1 : j+2);
+            coordinate_index.push_back(' ');
+            coordinate_index += std::to_string(is_ply ? j+2 : j+3);
+            coordinate_index.push_back('\n');
         }
     }
-
-
-    if(tract_style == 0)// line
+    if(is_ply)
     {
-
-        out << "Shape {" << std::endl;
-        out << "geometry IndexedLineSet {" << std::endl;
-        out << "coord Coordinate { point [" << Coordinate.toStdString() << " ] }" << std::endl;
-        out << "color Color { color ["<< Color.toStdString() <<"] } " << std::endl;
-        out << "coordIndex ["<< CoordinateIndex.toStdString() <<"] }" << std::endl;
+        out << "ply" << std::endl;
+        out << "format ascii 1.0" << std::endl;
+        out << "element vertex " << vrml_coordinate_count << std::endl;
+        out << "property float32 x" << std::endl;
+        out << "property float32 y" << std::endl;
+        out << "property float32 z" << std::endl;
+        out << "property red uint8" << std::endl;
+        out << "property green uint8" << std::endl;
+        out << "property blue uint8" << std::endl;
+        out << "element face " << vrml_coordinate_count-2 << std::endl;
+        out << "property list uint8 int32 vertex_index" << std::endl;
+        out << "end_header" << std::endl;
+        out << coordinate;
+        out << coordinate_index;
     }
     else
     {
-
-        out << "Shape {" << std::endl;
-        out << "appearance Appearance { " << std::endl;
-        out << "material Material { " << std::endl;
-        out << "ambientIntensity 0.0" << std::endl;
-        out << "diffuseColor 0.6 0.6 0.6" << std::endl;
-        out << "specularColor 0.1 0.1 0.1" << std::endl;
-        out << "emissiveColor 0.0 0.0 0.0" << std::endl;
-        out << "shininess 0.1" << std::endl;
-        out << "transparency 0" << std::endl;
-        out << "} }" << std::endl;
-        out << "geometry IndexedFaceSet {" << std::endl;
-        out << "creaseAngle 3.14" << std::endl;
-        out << "solid TRUE" << std::endl;
-        out << "coord Coordinate { point [" << Coordinate.toStdString() << " ] }" << std::endl;
-        out << "color Color { color ["<< Color.toStdString() <<"] }" << std::endl;
-        out << "coordIndex ["<< CoordinateIndex.toStdString() <<"] } }" << std::endl;
+        out << "g" << std::endl;
+        out << coordinate;
+        out << coordinate_index;
     }
-
-    out << surface_text;
 }
 
 //---------------------------------------------------------------------------

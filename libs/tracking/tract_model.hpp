@@ -69,7 +69,7 @@ public:
 
         bool save_tracts_in_native_space(const char* file_name,tipl::image<tipl::vector<3,float>,3 > native_position);
         bool save_tracts_to_file(const char* file_name);
-        void save_vrml(const char* file_name,
+        void save_vrml(const std::string& file_name,
                        unsigned char tract_style,
                        unsigned char tract_color_style,
                        float tube_diameter,

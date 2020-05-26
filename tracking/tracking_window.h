@@ -50,23 +50,21 @@ public:
     ~tracking_window();
 
     Ui::tracking_window *ui;
-    ::GLWidget *glWidget;
-    QGLDockWidget* gLdock;
-    RegionTableWidget *regionWidget;
-    TractTableWidget *tractWidget;
-    RenderingTableWidget *renderWidget;
+    ::GLWidget *glWidget = nullptr;
+    QGLDockWidget* gLdock = nullptr;
+    RegionTableWidget *regionWidget = nullptr;
+    TractTableWidget *tractWidget = nullptr;
+    RenderingTableWidget *renderWidget = nullptr;
 public:
     slice_view_scene scene;
     float get_scene_zoom(void);
 public:
-    unsigned char cur_dim;
+    unsigned char cur_dim = 2;
     std::vector<std::shared_ptr<SliceModel> > overlay_slices;
 public:
     connectometry_result cnt_result;
 public:
     std::auto_ptr<QTimer> timer,timer2;
-    unsigned int odf_size;
-    unsigned int odf_face_size;
     void set_tracking_param(ThreadData& tracking_thread);
 public:
     std::auto_ptr<tract_report> tact_report_imp;

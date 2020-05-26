@@ -547,11 +547,12 @@ void TractTableWidget::save_vrml_as(void)
         return;
     QString filename;
     filename = QFileDialog::getSaveFileName(
-                this,"Save tracts as",item(currentRow(),0)->text().replace(':','_') + ".wrl",
-                 "Tract files (*.wrl);;All files (*)");
+                this,"Save tracts as",item(currentRow(),0)->text().replace(':','_') + ".obj",
+                 "3D files (*.obj *.ply);;All files (*)");
     if(filename.isEmpty())
         return;
     std::string surface_text;
+    /*
     if(cur_tracking_window.glWidget->surface.get() && cur_tracking_window["show_surface"].toInt())
     {
         std::ostringstream out;
@@ -562,25 +563,9 @@ void TractTableWidget::save_vrml_as(void)
         const auto& tri_list = cur_tracking_window.glWidget->surface->get()->tri_list;
         for (unsigned int j = 0;j < tri_list.size();++j)
             CoordinateIndex += QString("%1 %2 %3 -1 ").arg(tri_list[j][0]).arg(tri_list[j][1]).arg(tri_list[j][2]);
-
-        out << "Shape {" << std::endl;
-        out << "appearance Appearance { " << std::endl;
-        out << "material Material { " << std::endl;
-        out << "ambientIntensity 0.0" << std::endl;
-        out << "diffuseColor 0.6 0.6 0.6" << std::endl;
-        out << "specularColor 0.1 0.1 0.1" << std::endl;
-        out << "emissiveColor 0.0 0.0 0.0" << std::endl;
-        out << "shininess 0.1" << std::endl;
-        out << "transparency 0.85" << std::endl;
-        out << "} }" << std::endl;
-        out << "geometry IndexedFaceSet {" << std::endl;
-        out << "creaseAngle 3.14" << std::endl;
-        out << "solid TRUE" << std::endl;
-        out << "coord Coordinate { point [" << Coordinate.toStdString() << " ] }" << std::endl;
-        out << "coordIndex ["<< CoordinateIndex.toStdString() <<"] } }" << std::endl;
         surface_text = out.str();
     }
-
+    */
     std::string sfilename = filename.toLocal8Bit().begin();
 
     tract_models[currentRow()]->save_vrml(&*sfilename.begin(),
