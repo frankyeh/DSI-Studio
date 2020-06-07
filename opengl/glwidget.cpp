@@ -547,14 +547,14 @@ void GLWidget::renderLR()
         float fa_threshold = cur_tracking_window.get_fa_threshold();
         if(odf_position != get_param("odf_position") ||
            odf_skip != get_param("odf_skip") ||
-           odf_scale != get_param("odf_scale") ||
+           odf_scale != get_param_float("odf_scale") ||
            odf_color != get_param("odf_color") ||
            (get_param("odf_position") <=1 && (odf_dim != cur_tracking_window.cur_dim ||
                                                odf_slide_pos != current_slice->slice_pos[cur_tracking_window.cur_dim])))
         {
             odf_position = get_param("odf_position");
             odf_skip = get_param("odf_skip");
-            odf_scale = get_param("odf_scale");
+            odf_scale = get_param_float("odf_scale");
             odf_dim = cur_tracking_window.cur_dim;
             odf_color = get_param("odf_color");
             odf_slide_pos = current_slice->slice_pos[cur_tracking_window.cur_dim];
