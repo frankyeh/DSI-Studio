@@ -972,9 +972,10 @@ void GLWidget::renderLR()
         if (get_param("show_track_label"))
         {
             int color = get_param("track_label_color");
+            int font_size = get_param("track_label_size");
             glColor3ub((color & 0x00FF0000) >> 16,(color & 0x0000FF00) >> 8,color & 0x000000FF);
             QFont font;
-            font.setPointSize(get_param("track_label_size"));
+            font.setPointSize(font_size);
             font.setBold(get_param("track_label_bold"));
             for (int i = 0;i < cur_tracking_window.tractWidget->rowCount();++i)
             if(cur_tracking_window.tractWidget->item(i,0)->checkState() == Qt::Checked)
@@ -982,10 +983,19 @@ void GLWidget::renderLR()
                 auto active_tract_model = cur_tracking_window.tractWidget->tract_models[size_t(i)];
                 if (active_tract_model->get_visible_track_count() == 0)
                     continue;
-                const auto& t = active_tract_model->get_tract(0);
-                size_t pos = t.size()/6*3;
-                renderText(double(t[pos]),double(t[pos+1]),double(t[pos+2]),
-                        cur_tracking_window.tractWidget->item(i,0)->text(),font);
+                if(get_param("show_track_label_location"))
+                {
+                    renderText(width()/2-font_size*cur_tracking_window.tractWidget->item(i,0)->text().size()/3.5,
+                               get_param("show_track_label_location") == 2 ? height()-font_size : height()/2,
+                            cur_tracking_window.tractWidget->item(i,0)->text(),font);
+                }
+                else
+                {
+                    const auto& t = active_tract_model->get_tract(0);
+                    size_t pos = t.size()/6*3;
+                    renderText(double(t[pos]),double(t[pos+1]),double(t[pos+2]),
+                            cur_tracking_window.tractWidget->item(i,0)->text(),font);
+                }
             }
         }
         if (get_param("show_region_label"))
@@ -2227,7 +2237,8 @@ void GLWidget::copyToClipboardEach(void)
     {
         if(j == 10)
             j = 0;
-        painter.drawImage(j*width,int(i/10)*height,images[i]);
+        painter.drawImage(j*width+(width-images[i].width())/2,
+                          int(i/10)*height+(height-images[i].height())/2,images[i]);
     }
     QApplication::clipboard()->setImage(I);
 }
