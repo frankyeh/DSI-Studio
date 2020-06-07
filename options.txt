@@ -113,6 +113,7 @@ Surface/Material Shininess/surface_shininess/int/0
 Surface/Blend Func1/surface_bend1/ZERO:ONE:DST_COLOR:ONE_MINUS_DST_COLOR:SRC_ALPHA:ONE_MINUS_SRC_ALPHA:DST_ALPHA:ONE_MINUS_DST_ALPHA/4
 Surface/Blend Func2/surface_bend2/ZERO:ONE:SRC_COLOR:ONE_MINUS_DST_COLOR:SRC_ALPHA:ONE_MINUS_SRC_ALPHA:DST_ALPHA:ONE_MINUS_DST_ALPHA/5
 Label/Show Track Label/show_track_label/Off:On/1
+Label/Track Label Location/show_track_label_location/With Track:Middle:Middle Bottom/0
 Label/Track Label Color/track_label_color/color/-1
 Label/Track Label Bold/track_label_bold/Off:On/1
 Label/Tract Label Size/track_label_size/int:2:24:2/12
@@ -121,7 +122,7 @@ Label/Region Label Color/region_label_color/color/-1
 Label/Region Label Bold/region_label_bold/Off:On/1
 Label/Region Label Size/region_label_size/int:2:24:2/12
 ODF/Position/odf_position/Along Slide:Slide Intersection:All/0
-ODF/Size/odf_scale/float:1:32:1:1/2
+ODF/Size/odf_scale/float:0.1:32:1:1/2
 ODF/Color/odf_color/Dir:Blue:Red/0
 ODF/Interleaved/odf_skip/none:2:4/0
 ODF/Smoothing/odf_smoothing/off:on/0
