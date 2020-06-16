@@ -210,7 +210,7 @@ void group_connectometry_analysis::save_tracks_files(void)
             {
                 fdr_pos_corr.back() = 0.0f;
                 for(int length = 10;length < fdr_pos_corr.size();++length)
-                    if(fdr_pos_corr[length] < fdr_threshold)
+                    if(fdr_pos_corr[length] <= fdr_threshold)
                     {
                         pos_corr_track->delete_by_length(length);
                         break;
@@ -240,7 +240,7 @@ void group_connectometry_analysis::save_tracks_files(void)
             {
                 fdr_neg_corr.back() = 0.0f;
                 for(int length = 10;length < fdr_neg_corr.size();++length)
-                    if(fdr_neg_corr[length] < fdr_threshold)
+                    if(fdr_neg_corr[length] <= fdr_threshold)
                     {
                         neg_corr_track->delete_by_length(length);
                         break;
@@ -493,9 +493,9 @@ void group_connectometry_analysis::generate_report(std::string& output)
     std::string track_hypothesis2 =
         (model->type == 1 ? index_name+" negatively correlated with "+foi_str : std::string("decreased ")+index_name);
     std::string fdr_result1,fdr_result2;
-    if(fdr_threshold == 0.0f) // fdr control
+    if(fdr_threshold != 0.0f) // fdr control
     {
-        fdr_result1 = "(FDR &lt ";
+        fdr_result1 = "(FDR ≤ ";
         fdr_result1 += std::to_string(fdr_threshold);
         fdr_result1 += ")";
         fdr_result2 = fdr_result1;
