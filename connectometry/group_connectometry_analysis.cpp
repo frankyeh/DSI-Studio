@@ -492,11 +492,23 @@ void group_connectometry_analysis::generate_report(std::string& output)
         (model->type == 1 ? index_name+" positively correlated with "+foi_str : std::string("increased ")+index_name);
     std::string track_hypothesis2 =
         (model->type == 1 ? index_name+" negatively correlated with "+foi_str : std::string("decreased ")+index_name);
-    std::string fdr_result1 = std::string("(FDR ") + (fdr_threshold == 0.0f ? "=":"<") + " " +
-                            std::to_string(fdr_threshold == 0.0f ? fdr_pos_corr[uint32_t(length_threshold)]:fdr_threshold)+ ")";
-    std::string fdr_result2 = std::string("(FDR ") + (fdr_threshold == 0.0f ? "=":"<") + " " +
-                            std::to_string(fdr_threshold == 0.0f ? fdr_neg_corr[uint32_t(length_threshold)]:fdr_threshold)+ ")";
-
+    std::string fdr_result1,fdr_result2;
+    if(fdr_threshold == 0.0f) // fdr control
+    {
+        fdr_result1 = "(FDR &lt ";
+        fdr_result1 += std::to_string(fdr_threshold);
+        fdr_result1 += ")";
+        fdr_result2 = fdr_result1;
+    }
+    else
+    {
+        fdr_result1 = "(FDR = ";
+        fdr_result1 += std::to_string(fdr_pos_corr[uint32_t(length_threshold)]);
+        fdr_result1 += ")";
+        fdr_result2 = "(FDR = ";
+        fdr_result2 += std::to_string(fdr_neg_corr[uint32_t(length_threshold)]);
+        fdr_result2 += ")";
+    }
 
 
     html_report << "<h2>Results</h2>" << std::endl;
