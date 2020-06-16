@@ -6,7 +6,7 @@
 #include "libs/tracking/tracking_thread.hpp"
 #include "tracking/tracking_window.h"
 
-group_connectometry_analysis::group_connectometry_analysis():handle(0),normalize_qa(true)
+group_connectometry_analysis::group_connectometry_analysis():handle(nullptr),normalize_qa(true)
 {
 
 }
@@ -19,7 +19,7 @@ bool group_connectometry_analysis::create_database(const char* template_name)
         error_msg = handle->error_msg;
         return false;
     }
-    fiber_threshold = 0.6*tipl::segmentation::otsu_threshold(tipl::make_image(handle->dir.fa[0],handle->dim));
+    fiber_threshold = 0.6f*tipl::segmentation::otsu_threshold(tipl::make_image(handle->dir.fa[0],handle->dim));
     handle->db.calculate_si2vi();
     return true;
 }
@@ -32,7 +32,7 @@ bool group_connectometry_analysis::load_database(const char* database_name)
         error_msg += handle->error_msg;
         return false;
     }
-    fiber_threshold = 0.6*tipl::segmentation::otsu_threshold(tipl::make_image(handle->dir.fa[0],handle->dim));
+    fiber_threshold = 0.6f*tipl::segmentation::otsu_threshold(tipl::make_image(handle->dir.fa[0],handle->dim));
     return handle->db.has_db();
 }
 
@@ -45,14 +45,14 @@ int group_connectometry_analysis::run_track(const tracking_data& fib,std::vector
     tracking_thread.param.step_size = handle->vs[0];
     tracking_thread.param.smooth_fraction = 0;
     tracking_thread.param.min_length = 0;
-    tracking_thread.param.max_length = 2.0*std::max<int>(fib.dim[0],std::max<int>(fib.dim[1],fib.dim[2]))*handle->vs[0];
+    tracking_thread.param.max_length = 2.0f*float(std::max<unsigned int>(fib.dim[0],std::max<unsigned int>(fib.dim[1],fib.dim[2])))*handle->vs[0];
     tracking_thread.param.tracking_method = 0;// streamline fiber tracking
     tracking_thread.param.initial_direction = 0;// main directions
     tracking_thread.param.interpolation_strategy = 0; // trilinear interpolation
     tracking_thread.param.stop_by_tract = 0;// stop by seed
     tracking_thread.param.center_seed = 0;// subvoxel seeding
     tracking_thread.param.random_seed = 0;
-    tracking_thread.param.termination_count = seed_count;
+    tracking_thread.param.termination_count = uint32_t(seed_count);
     tracking_thread.roi_mgr = roi_mgr;
     tracking_thread.run(fib,thread_count,true);
     tracking_thread.track_buffer.swap(tracks);
@@ -61,11 +61,11 @@ int group_connectometry_analysis::run_track(const tracking_data& fib,std::vector
     {
         TractModel t(handle.get());
         t.add_tracts(tracks);
-        for(int i = 0;i < track_trimming && t.get_visible_track_count();++i)
+        for(unsigned int i = 0;i < track_trimming && t.get_visible_track_count();++i)
             t.trim();
         tracks.swap(t.get_tracts());
     }
-    return tracks.size();
+    return int(tracks.size());
 }
 
 void cal_hist(const std::vector<std::vector<float> >& track,std::vector<unsigned int>& dist)

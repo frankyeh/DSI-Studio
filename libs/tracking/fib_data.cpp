@@ -1203,7 +1203,7 @@ void fib_data::recognize_report(std::shared_ptr<TractModel>& trk,std::string& re
             break;
         if(n)
             out << (n == result.size()-1 ? (result.size() == 2 ? " and ":", and ") : ", ");
-        out <<  r.second <<  " (" << std::setprecision(2) << r.first*100.0f << "%)";
+        out <<  r.second;
         ++n;
     }
     report += out.str();
