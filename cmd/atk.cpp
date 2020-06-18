@@ -44,7 +44,7 @@ int atk(void)
         while(in >> str)
         {
             try {
-                track_id.push_back(std::stoi(str));
+                track_id.push_back(uint32_t(std::stoi(str)));
             }
             catch (...)
             {
