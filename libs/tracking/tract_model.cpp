@@ -232,6 +232,53 @@ void TractModel::add(const TractModel& rhs)
     is_cut.insert(is_cut.end(),rhs.is_cut.begin(),rhs.is_cut.end());
 }
 //---------------------------------------------------------------------------
+bool TractModel::load_from_atlas(const char* file_name_)
+{
+    std::string file_name(file_name_);
+    std::vector<std::vector<float> > loaded_tract_data;
+    std::vector<unsigned int> loaded_tract_cluster;
+
+    TrackVis trk;
+    if(!trk.load_from_file(file_name_,loaded_tract_data,loaded_tract_cluster,parameter_id,vs))
+        return false;
+    if(!handle->load_template() || tipl::geometry<3>(trk.dim) != handle->template_I.geometry())
+        return false;
+    begin_prog("track warpping");
+    handle->run_normalization(true,true);
+    if(prog_aborted())
+        return false;
+    tipl::par_for(loaded_tract_data.size(),[&](size_t i)
+    {
+        for(size_t j = 0;j < loaded_tract_data[i].size();j += 3)
+        {
+            // here the values has been divided by vs due to TrackVis store in mm;
+            tipl::vector<3> p(loaded_tract_data[i][j]*vs[0],
+                              loaded_tract_data[i][j+1]*vs[1],
+                              loaded_tract_data[i][j+2]*vs[2]);
+            handle->template_to_mni(p);
+            handle->mni2subject(p);
+            loaded_tract_data[i][j] = p[0];
+            loaded_tract_data[i][j+1] = p[1];
+            loaded_tract_data[i][j+2] = p[2];
+        }
+    });
+
+    if (loaded_tract_data.empty())
+        return false;
+
+    if(loaded_tract_cluster.size() == loaded_tract_data.size())
+        loaded_tract_cluster.swap(tract_cluster);
+    else
+        tract_cluster.clear();
+
+    loaded_tract_data.swap(tract_data);
+    tract_color.clear();
+    tract_color.resize(tract_data.size());
+    tract_tag.clear();
+    tract_tag.resize(tract_data.size());
+    return true;
+}
+//---------------------------------------------------------------------------
 bool TractModel::load_from_file(const char* file_name_,bool append)
 {
     std::string file_name(file_name_);
@@ -257,37 +304,6 @@ bool TractModel::load_from_file(const char* file_name_,bool append)
                 TrackingParam param;
                 if(param.set_code(parameter_id))
                     report += param.get_report();
-            }
-            // used in autotrack
-
-            if(tipl::geometry<3>(trk.dim) != handle->dim)
-            {
-                if(!handle->load_template())
-                    return false;
-                if(tipl::geometry<3>(trk.dim) == handle->template_I.geometry())
-                {
-                    begin_prog("track warpping");
-                    handle->run_normalization(true,true);
-                    if(prog_aborted())
-                        return false;
-                    tipl::par_for(loaded_tract_data.size(),[&](size_t i)
-                    {
-                        for(size_t j = 0;j < loaded_tract_data[i].size();j += 3)
-                        {
-                            // here the values has been divided by vs due to TrackVis store in mm;
-                            tipl::vector<3> p(loaded_tract_data[i][j]*vs[0],
-                                              loaded_tract_data[i][j+1]*vs[1],
-                                              loaded_tract_data[i][j+2]*vs[2]);
-                            handle->template_to_mni(p);
-                            handle->mni2subject(p);
-                            loaded_tract_data[i][j] = p[0];
-                            loaded_tract_data[i][j+1] = p[1];
-                            loaded_tract_data[i][j+2] = p[2];
-                        }
-                    });
-                }
-                else
-                    return false;
             }
         }
         else
@@ -2035,7 +2051,8 @@ void TractModel::get_quantitative_info(std::string& result)
     std::vector<float> data;
     {
         float voxel_volume = vs[0]*vs[1]*vs[2];
-        float tract_volume, trunk_volume, tract_area, tract_length, bundle_diameter;
+        const float PI = 3.14159265358979323846f;
+        float tract_volume, trunk_volume, tract_area, tract_length, span, curl, bundle_diameter;
         tipl::image<unsigned char, 3> volume;
 
 
@@ -2061,12 +2078,10 @@ void TractModel::get_quantitative_info(std::string& result)
                 sum_end_dis += float((tipl::vector<3,float>(&tract_data[i][0])-
                                     tipl::vector<3,float>(&tract_data[i][tract_data[i].size()-3])).length());
             }
-            data.push_back(tract_length = sum_length/float(tract_data.size()));
-            titles.push_back("mean length(mm)");
-            data.push_back(sum_end_dis/float(tract_data.size()));
-            titles.push_back("span(mm)");
-            data.push_back(sum_length/sum_end_dis);
-            titles.push_back("curl");
+            tract_length = sum_length/float(tract_data.size());
+            span = sum_end_dis/float(tract_data.size());
+            curl = sum_length/sum_end_dis;
+
         }
 
 
@@ -2074,13 +2089,9 @@ void TractModel::get_quantitative_info(std::string& result)
             const float resolution_ratio = 2.0f;
             std::vector<tipl::vector<3,short> > points;
             to_voxel(points,resolution_ratio);
-            // tract volume
-            data.push_back(tract_volume = points.size()*voxel_volume/resolution_ratio/resolution_ratio/resolution_ratio);
-            titles.push_back("volume(mm^3)");
-            data.push_back(bundle_diameter = 2.0f*float(std::sqrt(tract_volume/tract_length/3.14159265358979323846f)));
-            titles.push_back("diameter(mm)");
-            data.push_back(tract_length/bundle_diameter);
-            titles.push_back("elongation");
+            tract_volume = points.size()*voxel_volume/resolution_ratio/resolution_ratio/resolution_ratio;
+            bundle_diameter = 2.0f*float(std::sqrt(tract_volume/tract_length/PI));
+
 
             // now next convert point list to volume
             tipl::vector<3,short> max_value(points[0]), min_value(points[0]);
@@ -2104,9 +2115,7 @@ void TractModel::get_quantitative_info(std::string& result)
             delete_branch();
             to_voxel(points,resolution_ratio);
             undo();
-            // tract volume
-            data.push_back(trunk_volume = points.size()*voxel_volume/resolution_ratio/resolution_ratio/resolution_ratio);
-            titles.push_back("trunk volume(mm^3)");
+            trunk_volume = points.size()*voxel_volume/resolution_ratio/resolution_ratio/resolution_ratio;
 
         }
         // surface area
@@ -2118,22 +2127,18 @@ void TractModel::get_quantitative_info(std::string& result)
             for(size_t i = 0;i < edge.size();++i)
                 if(edge[i])
                     ++num;
-            data.push_back(tract_area = float(num)*vs[0]*vs[1]/resolution_ratio/resolution_ratio);
-            titles.push_back("surface area(mm^2)");
-            data.push_back(float(tract_area/3.14159265358979323846f/bundle_diameter/tract_length));
-            titles.push_back("irregularity");
+            tract_area = float(num)*vs[0]*vs[1]/resolution_ratio/resolution_ratio;
+
         }
         // end points
+        float end_area1,end_area2,radius1,radius2;
         {
             const float resolution_ratio = 2.0f;
-            float end_area1,end_area2,radius1,radius2;
             std::vector<tipl::vector<3,short> > endpoint1,endpoint2;
             to_end_point_voxels(endpoint1,endpoint2,resolution_ratio);
             // end point surface 1 and 2
-            data.push_back(end_area1 = float(endpoint1.size())*vs[0]*vs[1]/resolution_ratio/resolution_ratio);
-            data.push_back(end_area2 = float(endpoint2.size())*vs[0]*vs[1]/resolution_ratio/resolution_ratio);
-            titles.push_back("end area 1(mm^2)");
-            titles.push_back("end area 2(mm^2)");
+            end_area1 = float(endpoint1.size())*vs[0]*vs[1]/resolution_ratio/resolution_ratio;
+            end_area2 = float(endpoint2.size())*vs[0]*vs[1]/resolution_ratio/resolution_ratio;
 
             // radius
             auto c1 = std::accumulate(endpoint1.begin(),endpoint1.end(),tipl::vector<3,float>(0.0f,0.0f,0.0f))/float(endpoint1.size());
@@ -2155,17 +2160,36 @@ void TractModel::get_quantitative_info(std::string& result)
             mean_dis1 /= float(endpoint1.size());
             mean_dis2 /= float(endpoint2.size());
             // the average distance of a point in a circle to the center is 2R/3, where R is the radius
-            data.push_back(radius1 = 1.5f*mean_dis1/resolution_ratio);
-            data.push_back(radius2 = 1.5f*mean_dis2/resolution_ratio);
-            titles.push_back("radius of end area1(mm)");
-            titles.push_back("radius of end area2(mm)");
+            radius1 = 1.5f*mean_dis1/resolution_ratio;
+            radius2 = 1.5f*mean_dis2/resolution_ratio;
 
-            data.push_back(3.14159265358979323846f*radius1*radius1/end_area1);
-            data.push_back(3.14159265358979323846f*radius2*radius2/end_area2);
-            titles.push_back("irregularity of end area1");
-            titles.push_back("irregularity of end area2");
+
 
         }
+        // length metrics
+        data.push_back(tract_length);   titles.push_back("mean length(mm)");
+        data.push_back(span);           titles.push_back("span(mm)");
+        data.push_back(bundle_diameter);titles.push_back("diameter(mm)");
+        data.push_back(radius1);        titles.push_back("radius of end area1(mm)");
+        data.push_back(radius2);        titles.push_back("radius of end area2(mm)");
+        // area metrics
+        data.push_back(tract_area);     titles.push_back("surface area(mm^2)");
+        data.push_back(end_area1);      titles.push_back("end area 1(mm^2)");
+        data.push_back(end_area2);      titles.push_back("end area 2(mm^2)");
+        // volume metrics
+        data.push_back(tract_volume);   titles.push_back("volume(mm^3)");
+        data.push_back(trunk_volume);   titles.push_back("trunk volume(mm^3)");
+        data.push_back(tract_volume-trunk_volume);   titles.push_back("branch volume(mm^3)");
+        // shape metrics
+        data.push_back(curl);           titles.push_back("curl");
+        data.push_back(tract_length/bundle_diameter);titles.push_back("elongation");
+        data.push_back(float(tract_area/PI/bundle_diameter/tract_length));
+        titles.push_back("irregularity");
+        data.push_back(PI*radius1*radius1/end_area1);
+        data.push_back(PI*radius2*radius2/end_area2);
+        titles.push_back("irregularity of end area1");
+        titles.push_back("irregularity of end area2");
+
         // output mean and std of each index
         for(size_t data_index = 0;data_index < handle->view_item.size();++data_index)
         {

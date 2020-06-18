@@ -6,6 +6,7 @@
 #include "libs/dsi/image_model.hpp"
 #include "fib_data.hpp"
 #include "libs/tracking/tracking_thread.hpp"
+
 auto_track::auto_track(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::auto_track)
@@ -15,6 +16,7 @@ auto_track::auto_track(QWidget *parent) :
     progress->setVisible(false);
     ui->statusbar->addPermanentWidget(progress);
 
+    fib_data fib;
     fib.set_template_id(0);
 
     QStringList tract_names;
@@ -94,7 +96,6 @@ void auto_track::on_open_dir_clicked()
 extern std::string auto_track_report;
 std::string auto_track_report;
 std::string run_auto_track(
-                    fib_data& fib,
                     const std::vector<std::string>& file_list,
                     const std::vector<unsigned int>& track_id,
                     float length_ratio,
@@ -110,7 +111,8 @@ std::string run_auto_track(
     std::vector<std::string> reports(track_id.size());
     std::vector<std::vector<std::string> > stat_files(track_id.size());
     std::string dir = QFileInfo(file_list.front().c_str()).absolutePath().toStdString();
-
+    fib_data fib;
+    fib.set_template_id(0);
     for(size_t i = 0;i < file_list.size() && !prog_aborted();++i)
     {
         std::string cur_file_base_name = QFileInfo(file_list[i].c_str()).baseName().toStdString();
@@ -235,7 +237,7 @@ std::string run_auto_track(
     }
 
     // aggregating
-
+    if(file_list.size() != 1)
     for(size_t t = 0;t < stat_files.size();++t)
     {
         std::vector<std::string> output;
@@ -308,8 +310,7 @@ void auto_track::on_run_clicked()
     prog = 0;
     timer->start(5000);
     begin_prog("");
-    run_auto_track(fib,
-                   file_list2,track_id,
+    run_auto_track(file_list2,track_id,
                    float(ui->gqi_l->value()),
                    float(ui->tolerance->value()),
                    uint32_t(ui->track_count->value()*1000.0),

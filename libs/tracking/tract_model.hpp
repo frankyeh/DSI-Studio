@@ -65,6 +65,7 @@ public:
         const tracking_data& get_fib(void) const{return *fib.get();}
         tracking_data& get_fib(void){return *fib.get();}
         void add(const TractModel& rhs);
+        bool load_from_atlas(const char* file_name);
         bool load_from_file(const char* file_name,bool append = false);
 
         bool save_tracts_in_native_space(const char* file_name,tipl::image<tipl::vector<3,float>,3 > native_position);

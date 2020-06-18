@@ -19,7 +19,6 @@ public:
 public:
     void update_list(void);
 public:
-    fib_data fib;
     std::shared_ptr<std::future<void> > thread;
     int prog = 0;
     QStringList file_list;

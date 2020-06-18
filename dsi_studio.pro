@@ -169,7 +169,8 @@ SOURCES += main.cpp \
     connectometry/nn_connectometry.cpp \
     connectometry/nn_connectometry_analysis.cpp \
     cmd/reg.cpp \
-    auto_track.cpp
+    auto_track.cpp \
+    cmd/atk.cpp
 
 OTHER_FILES += \
     options.txt \

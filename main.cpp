@@ -36,6 +36,7 @@ int ren(void);
 int cnn(void);
 int qc(void);
 int reg(void);
+int atk(void);
 
 
 size_t match_template(float volume)
@@ -190,6 +191,8 @@ int run_action(std::shared_ptr<QApplication> gui)
         return rec();
     if(action == std::string("trk"))
         return trk();
+    if(action == std::string("atk"))
+        return atk();
     if(action == std::string("src"))
         return src();
     if(action == std::string("ana"))
