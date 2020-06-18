@@ -156,8 +156,9 @@ bool connectometry_db::parse_demo(const std::string& filename,float missing_valu
     items.erase(items.begin(),items.begin()+col_count);
 
     // convert special characters
-    for(int i = 0;i < titles.size();++i)
+    for(size_t i = 0;i < titles.size();++i)
     {
+        std::replace(titles[i].begin(),titles[i].end(),' ','_');
         std::replace(titles[i].begin(),titles[i].end(),'/','_');
         std::replace(titles[i].begin(),titles[i].end(),'\\','_');
     }
@@ -165,16 +166,31 @@ bool connectometry_db::parse_demo(const std::string& filename,float missing_valu
     // find which column can be used as features
     feature_location.clear();
     feature_titles.clear();
-    for(int i = 0;i < titles.size();++i)
+
     {
-        try{
-            std::stof(items[i]);
-            feature_location.push_back(i);
+        std::vector<char> not_number(titles.size());
+        for(size_t i = 0;i < items.size();++i)
+        {
+            if(items[i] == " ")
+                items[i].clear();
+            if(items[i].empty() || not_number[i%titles.size()])
+                continue;
+            try{
+                std::stof(items[i]);
+            }
+            catch (...)
+            {
+                not_number[i%titles.size()] = 1;
+            }
+        }
+        for(size_t i = 0;i < titles.size();++i)
+        if(!not_number[i])
+        {
+            feature_location.push_back(int(i));
             feature_titles.push_back(titles[i]);
         }
-        catch (...)
-        {;}
     }
+
     //  get feature matrix
     X.clear();
     for(unsigned int i = 0;i < num_subjects;++i)
@@ -185,12 +201,17 @@ bool connectometry_db::parse_demo(const std::string& filename,float missing_valu
             int item_pos = i*titles.size() + feature_location[j];
             if(item_pos >= items.size())
             {
-                X.push_back(missing_value);
+                X.push_back(double(missing_value));
                 continue;
             }
             try{
-
-                X.push_back(std::stof(items[item_pos]));
+                if(items[item_pos].empty())
+                {
+                    items[item_pos] = std::to_string(int(missing_value));
+                    X.push_back(double(missing_value));
+                }
+                else
+                    X.push_back(double(std::stof(items[item_pos])));
             }
             catch(...)
             {
