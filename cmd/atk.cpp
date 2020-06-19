@@ -69,6 +69,7 @@ int atk(void)
         std::cout << "target tracks:";
         for(unsigned int index = 0;index < track_id.size();++index)
             std::cout << " " << fib.tractography_name_list[track_id[index]];
+        std::cout << std::endl;
     }
     int progress;
     std::cout << run_auto_track(file_list,track_id,

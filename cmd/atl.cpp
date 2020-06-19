@@ -168,38 +168,58 @@ int atl(void)
             tm = fib_template_file_name_2mm.c_str();
         // Initialize the DB
         std::cout << "loading template" << tm << std::endl;
-        std::shared_ptr<group_connectometry_analysis> data(new group_connectometry_analysis);
-        if(!data->create_database(tm.c_str()))
+        std::vector<std::string> index_name;
+        if(po.get("index_name","qa") == std::string("all"))
         {
-            std::cout << "error in initializing the database:" << data->error_msg << std::endl;
-            return 1;
-        }
-        // Extracting metrics
-        std::string index_name = po.get("index_name","qa");
-        std::cout << "extracting index:" << index_name << std::endl;
-        data->handle->db.index_name = index_name;
-        for (unsigned int index = 0;index < name_list.size();++index)
-        {
-            std::cout << "reading " << name_list[index] << std::endl;
-            if(!data->handle->db.add_subject_file(name_list[index],
-                QFileInfo(name_list[index].c_str()).baseName().toStdString()))
+            fib_data fib;
+            if(!fib.load_from_file(name_list[0].c_str()))
             {
-                std::cout << "error loading subject fib files:" << data->handle->error_msg << std::endl;
+                std::cout << "error loading subject fib files:" << name_list[0] << std::endl;
                 return 1;
             }
+            std::vector<std::string> item_list;
+            fib.get_index_list(item_list);
+            index_name.push_back("qa");
+            for(size_t i = fib.dir.index_name.size();i < item_list.size();++i)
+                index_name.push_back(item_list[i]);
         }
-        // Output
-        std::string output = dir;
-        output += "/";
-        output += "connectometry.";
-        output += index_name;
-        output += ".db.fib.gz";
-        if(!data->handle->db.save_subject_data(output.c_str()))
+        else
+            index_name.push_back(po.get("index_name","qa"));
+
+        for(size_t i = 0; i < index_name.size();++i)
         {
-            std::cout << "error saving the db file:" << data->handle->error_msg << std::endl;
-            return 1;
+            std::shared_ptr<group_connectometry_analysis> data(new group_connectometry_analysis);
+            if(!data->create_database(tm.c_str()))
+            {
+                std::cout << "error in initializing the database:" << data->error_msg << std::endl;
+                return 1;
+            }
+            // Extracting metrics
+            std::cout << "extracting index:" << index_name[i] << std::endl;
+            data->handle->db.index_name = index_name[i];
+            for (unsigned int index = 0;index < name_list.size();++index)
+            {
+                std::cout << "reading " << name_list[index] << std::endl;
+                if(!data->handle->db.add_subject_file(name_list[index],
+                    QFileInfo(name_list[index].c_str()).baseName().toStdString()))
+                {
+                    std::cout << "error loading subject fib files:" << data->handle->error_msg << std::endl;
+                    return 1;
+                }
+            }
+            // Output
+            std::string output = dir;
+            output += "/";
+            output += "connectometry.";
+            output += index_name[i];
+            output += ".db.fib.gz";
+            if(!data->handle->db.save_subject_data(output.c_str()))
+            {
+                std::cout << "error saving the db file:" << data->handle->error_msg << std::endl;
+                return 1;
+            }
+            std::cout << "connectometry db created:" << output << std::endl;
         }
-        std::cout << "connectometry db created:" << output << std::endl;
         return 0;
     }
     if(cmd=="roi")
