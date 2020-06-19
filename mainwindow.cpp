@@ -69,10 +69,6 @@ MainWindow::MainWindow(QWidget *parent) :
         ui->workDir->addItem(QDir::currentPath());
 
     ui->toolBox->setCurrentIndex(0);
-
-    QSettings settings;
-    restoreGeometry(settings.value("main_geometry").toByteArray());
-    restoreState(settings.value("main_state").toByteArray());
 }
 void MainWindow::dragEnterEvent(QDragEnterEvent *event)
 {
@@ -143,8 +139,6 @@ MainWindow::~MainWindow()
         workdir_list << ui->workDir->itemText(index);
     std::swap(workdir_list[0],workdir_list[ui->workDir->currentIndex()]);
     settings.setValue("WORK_PATH", workdir_list);
-    settings.setValue("main_geometry", saveGeometry());
-    settings.setValue("main_state", saveState());
     delete ui;
 
 }

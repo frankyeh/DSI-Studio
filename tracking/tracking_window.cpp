@@ -113,8 +113,6 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
                 default_geo = saveGeometry();
             if(!default_state.size())
                 default_state = saveState();
-            restoreGeometry(settings.value("geometry").toByteArray());
-            restoreState(settings.value("state").toByteArray());
             ui->rendering_efficiency->setCurrentIndex(settings.value("rendering_quality",1).toInt());
             ui->TractWidgetHolder->show();
             ui->renderingWidgetHolder->show();
@@ -448,8 +446,6 @@ tracking_window::~tracking_window()
     tractWidget->delete_all_tract();
     qApp->removeEventFilter(this);
     QSettings settings;
-    settings.setValue("geometry", saveGeometry());
-    settings.setValue("state", saveState());
     settings.setValue("rendering_quality",ui->rendering_efficiency->currentIndex());
     delete ui;
     //std::cout << __FUNCTION__ << " " << __FILE__ << std::endl;
