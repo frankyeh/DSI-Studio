@@ -233,21 +233,20 @@ bool load_region(std::shared_ptr<fib_data> handle,
             std::cout << "ERROR: please assign region name of an atlas." << std::endl;
             return false;
         }
-        std::vector<std::shared_ptr<atlas> > atlas_list;
-        if(!load_atlas_from_list(handle,file_name,atlas_list))
+        if(!load_atlas_from_list(handle,file_name,handle->atlas_list))
             return false;
 
         const tipl::image<tipl::vector<3,float>,3 >& mapping = handle->get_mni_mapping();
         std::cout << "loading " << region_name << " from " << file_name << " atlas" << std::endl;
         tipl::vector<3> null;
         std::vector<tipl::vector<3,short> > cur_region;
-        for(unsigned int i = 0;i < atlas_list.size();++i)
-            if(atlas_list[i]->name == file_name)
-                for (unsigned int label_index = 0; label_index < atlas_list[i]->get_list().size(); ++label_index)
-                    if(atlas_list[i]->get_list()[label_index] == region_name)
+        for(unsigned int i = 0;i < handle->atlas_list.size();++i)
+            if(handle->atlas_list[i]->name == file_name)
+                for (unsigned int label_index = 0; label_index < handle->atlas_list[i]->get_list().size(); ++label_index)
+                    if(handle->atlas_list[i]->get_list()[label_index] == region_name)
                 {
                     for (tipl::pixel_index<3>index(mapping.geometry());index < mapping.size();++index)
-                        if(mapping[index.index()] != null && atlas_list[i]->is_labeled_as(mapping[index.index()],label_index))
+                        if(mapping[index.index()] != null && handle->atlas_list[i]->is_labeled_as(mapping[index.index()],label_index))
                             cur_region.push_back(tipl::vector<3,short>(index.begin()));
                 }
         roi.add_points(cur_region,false);
