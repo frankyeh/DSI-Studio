@@ -475,6 +475,16 @@ bool tracking_window::command(QString cmd,QString param,QString param2)
         scene.show_slice();
         return true;
     }
+    if(cmd == "set_roi_view")
+    {
+        if(param == "0")
+            on_glSagView_clicked();
+        if(param == "1")
+            on_glCorView_clicked();
+        if(param == "2")
+            on_glAxiView_clicked();
+        return true;
+    }
     if(cmd == "set_roi_view_index")
     {
         bool okay = true;
