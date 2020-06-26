@@ -81,8 +81,6 @@ public slots:
 
     void on_roi_whole_brain_toggled(bool checked);
 
-    void on_missing_data_checked_toggled(bool checked);
-
 public slots:
     void calculate_FDR(void);
     void on_variable_list_clicked(const QModelIndex &index);
@@ -93,6 +91,9 @@ private slots:
     void on_clear_all_roi_clicked();
     void on_load_roi_from_file_clicked();
     void on_show_cohort_clicked();
+    void on_fdr_control_toggled(bool checked);
+    void on_apply_selection_clicked();
+    void on_show_cohort_widget_clicked();
 };
 
 #endif // VBC_DIALOG_HPP

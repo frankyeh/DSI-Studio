@@ -285,6 +285,7 @@ bool TractModel::load_from_file(const char* file_name_,bool append)
     std::vector<std::vector<float> > loaded_tract_data;
     std::vector<unsigned int> loaded_tract_cluster;
     unsigned int color = default_tract_color;
+
     std::string ext;
     if(file_name.length() > 4)
         ext = std::string(file_name.end()-4,file_name.end());
@@ -294,9 +295,15 @@ bool TractModel::load_from_file(const char* file_name_,bool append)
             TrackVis trk;
             if(!trk.load_from_file(file_name_,loaded_tract_data,loaded_tract_cluster,parameter_id,vs))
                 return false;
+            auto old_color = color;
             color = *(uint32_t*)(trk.reserved+440);
             if(color == 0)
-                color = default_tract_color;
+                color = old_color;
+            if(file_name.find(".neg_corr") != std::string::npos)
+                color = 0x004040F0;
+            if(file_name.find(".pos_corr") != std::string::npos)
+                color = 0x00F04040;
+
             if(!parameter_id.empty())
             {
                 report = handle->report;
@@ -1824,16 +1831,15 @@ void TractModel::add_tracts(std::vector<std::vector<float> >& new_tract,tipl::rg
     saved = false;
 }
 
-void TractModel::add_tracts(std::vector<std::vector<float> >& new_tract, unsigned int length_threshold)
+void TractModel::add_tracts(std::vector<std::vector<float> >& new_tract, unsigned int length_threshold,tipl::rgb color)
 {
     tract_data.reserve(tract_data.size()+new_tract.size()/2.0);
-    tipl::rgb def_color(200,100,30);
     for (unsigned int index = 0;index < new_tract.size();++index)
     {
         if (new_tract[index].size()/3-1 < length_threshold)
             continue;
         tract_data.push_back(std::move(new_tract[index]));
-        tract_color.push_back(def_color);
+        tract_color.push_back(color);
         tract_tag.push_back(0);
     }
     saved = false;

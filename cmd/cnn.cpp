@@ -54,7 +54,7 @@ int cnn(void)
     }
 
 
-    if(!gca->handle->db.parse_demo(po.get("demo").c_str(),po.get("no_data",9999)))
+    if(!gca->handle->db.parse_demo(po.get("demo").c_str()))
     {
         std::cout << gca->handle->db.error_msg << std::endl;
         return 1;

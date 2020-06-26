@@ -88,7 +88,7 @@ public:
         void clear(void);
         void add_tracts(std::vector<std::vector<float> >& new_tracks);
         void add_tracts(std::vector<std::vector<float> >& new_tracks,tipl::rgb color);
-        void add_tracts(std::vector<std::vector<float> >& new_tracks,unsigned int length_threshold);
+        void add_tracts(std::vector<std::vector<float> >& new_tracks,unsigned int length_threshold,tipl::rgb color);
         void filter_by_roi(std::shared_ptr<RoiMgr> roi_mgr);
         void reconnect_track(float distance,float angular_threshold);
         void cull(float select_angle,

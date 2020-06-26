@@ -67,6 +67,7 @@ group_connectometry::group_connectometry(QWidget *parent,std::shared_ptr<group_c
 {
 
     ui->setupUi(this);
+    ui->cohort_widget->hide();
     ui->chart_widget_layout->addWidget(null_pos_chart_view);
     ui->chart_widget_layout->addWidget(null_neg_chart_view);
     ui->chart_widget_layout->addWidget(fdr_chart_view);
@@ -80,9 +81,6 @@ group_connectometry::group_connectometry(QWidget *parent,std::shared_ptr<group_c
     setMouseTracking(true);
     ui->roi_table->setItemDelegate(new ROIViewDelegate(ui->roi_table));
     ui->roi_table->setAlternatingRowColors(true);
-
-
-    ui->multithread->setValue(std::thread::hardware_concurrency());
 
 
     ui->dist_table->setColumnCount(7);
@@ -143,12 +141,12 @@ QLineSeries* get_line_series(const data_type& data, const char* name)
 {
     QLineSeries* series = new QLineSeries;
     series->setName(name);
-    int max_size = data.size();
-    while(max_size > 0 && (data[max_size-1] == 0 || data[max_size-1] == 1))
+    auto max_size = data.size();
+    while(max_size > 0 && (data[max_size-1] == 0.0f || data[max_size-1] == 1.0f))
         --max_size;
     ++max_size;
-    for(int i = 0;i < max_size;++i)
-        series->append(i,data[i]);
+    for(size_t i = 0;i < max_size;++i)
+        series->append(i,double(data[i]));
     return series;
 }
 void group_connectometry::show_fdr_report()
@@ -159,11 +157,13 @@ void group_connectometry::show_fdr_report()
     fdr_chart->addSeries(get_line_series(vbc->fdr_pos_corr,"positive correlation"));
     fdr_chart->addSeries(get_line_series(vbc->fdr_neg_corr,"negative correlation"));
     fdr_chart->createDefaultAxes();
+    fdr_chart->axes(Qt::Horizontal).back()->setMin(vbc->length_threshold_voxels);
     fdr_chart->axes(Qt::Horizontal).back()->setTitleText("Length (voxel distance)");
     fdr_chart->axes(Qt::Vertical).back()->setTitleText("FDR");
     fdr_chart->axes(Qt::Horizontal).back()->setGridLineVisible(false);
     fdr_chart->axes(Qt::Vertical).back()->setGridLineVisible(false);
     fdr_chart->axes(Qt::Vertical).back()->setRange(0,1);
+
     fdr_chart->setTitle("FDR versus Track Length");
     ((QValueAxis*)fdr_chart->axes(Qt::Horizontal).back())->setTickType(QValueAxis::TicksDynamic);
     ((QValueAxis*)fdr_chart->axes(Qt::Horizontal).back())->setTickInterval(10);
@@ -184,12 +184,14 @@ void group_connectometry::show_report()
     null_neg_chart->addSeries(get_line_series(vbc->subject_neg_corr,"nonpermuted negative correlation"));
     null_pos_chart->createDefaultAxes();
     null_pos_chart->axes(Qt::Horizontal).back()->setTitleText("Length (voxel distance)");
+    null_pos_chart->axes(Qt::Horizontal).back()->setMin(vbc->length_threshold_voxels);
     null_pos_chart->axes(Qt::Vertical).back()->setTitleText("Count");
     null_pos_chart->axes(Qt::Horizontal).back()->setGridLineVisible(false);
     null_pos_chart->axes(Qt::Vertical).back()->setGridLineVisible(false);
     null_pos_chart->setTitle("Track count versus length (positive correlation)");
     null_neg_chart->createDefaultAxes();
     null_neg_chart->axes(Qt::Horizontal).back()->setTitleText("Length (voxel distance)");
+    null_neg_chart->axes(Qt::Horizontal).back()->setMin(vbc->length_threshold_voxels);
     null_neg_chart->axes(Qt::Vertical).back()->setTitleText("Count");
     null_neg_chart->axes(Qt::Horizontal).back()->setGridLineVisible(false);
     null_neg_chart->axes(Qt::Vertical).back()->setGridLineVisible(false);
@@ -203,15 +205,16 @@ void group_connectometry::show_report()
 void group_connectometry::show_dis_table(void)
 {
     ui->dist_table->setRowCount(100);
-    for(unsigned int index = 0;index < vbc->fdr_pos_corr.size()-1;++index)
+    for(unsigned int index = vbc->length_threshold_voxels;index < vbc->fdr_pos_corr.size()-1;++index)
     {
-        ui->dist_table->setItem(index,0, new QTableWidgetItem(QString::number(index + 1)));
-        ui->dist_table->setItem(index,1, new QTableWidgetItem(QString::number(vbc->fdr_pos_corr[index+1])));
-        ui->dist_table->setItem(index,2, new QTableWidgetItem(QString::number(vbc->fdr_neg_corr[index+1])));
-        ui->dist_table->setItem(index,3, new QTableWidgetItem(QString::number(vbc->subject_pos_corr_null[index+1])));
-        ui->dist_table->setItem(index,4, new QTableWidgetItem(QString::number(vbc->subject_neg_corr_null[index+1])));
-        ui->dist_table->setItem(index,5, new QTableWidgetItem(QString::number(vbc->subject_pos_corr[index+1])));
-        ui->dist_table->setItem(index,6, new QTableWidgetItem(QString::number(vbc->subject_neg_corr[index+1])));
+        int row = int(index-vbc->length_threshold_voxels);
+        ui->dist_table->setItem(row,0,new QTableWidgetItem(QString::number(index)));
+        ui->dist_table->setItem(row,1, new QTableWidgetItem(QString::number(double(vbc->fdr_pos_corr[index]))));
+        ui->dist_table->setItem(row,2, new QTableWidgetItem(QString::number(double(vbc->fdr_neg_corr[index]))));
+        ui->dist_table->setItem(row,3, new QTableWidgetItem(QString::number(vbc->subject_pos_corr_null[index])));
+        ui->dist_table->setItem(row,4, new QTableWidgetItem(QString::number(vbc->subject_neg_corr_null[index])));
+        ui->dist_table->setItem(row,5, new QTableWidgetItem(QString::number(vbc->subject_pos_corr[index])));
+        ui->dist_table->setItem(row,6, new QTableWidgetItem(QString::number(vbc->subject_neg_corr[index])));
     }
     ui->dist_table->selectRow(0);
 }
@@ -234,38 +237,24 @@ void group_connectometry::on_open_mr_files_clicked()
 void fill_demo_table(const connectometry_db& db,
                      QTableWidget* table)
 {
-    std::vector<int> col_has_value(db.titles.size());
-    for(int i = 0;i < db.titles.size();++i)
-    {
-        bool okay = true;
-        QString(db.items[i].c_str()).toDouble(&okay);
-        col_has_value[i] = okay ? 1:0;
-    }
     QStringList t2;
     t2 << "Subject";
-    for(int i = 0;i < db.titles.size();++i)
+    for(size_t i = 0;i < db.titles.size();++i)
         t2 << db.titles[i].c_str();
     table->clear();
     table->setColumnCount(t2.size());
     table->setHorizontalHeaderLabels(t2);
-    table->setRowCount(db.num_subjects);
-    for(unsigned int row = 0,index = 0;row < table->rowCount();++row)
+    table->setRowCount(int(db.num_subjects));
+    for(size_t row = 0;row < db.num_subjects;++row)
     {
-        table->setItem(row,0,new QTableWidgetItem(QString(db.subject_names[row].c_str())));
-        ++index;// skip intercep
-        for(unsigned int col = 0;col < col_has_value.size();++col)
+        table->setItem(int(row),0,new QTableWidgetItem(QString(db.subject_names[row].c_str())));
+        for(size_t col = 0;col < db.titles.size();++col)
         {
-            if(col_has_value[col])
-            {
-                table->setItem(row,col+1,new QTableWidgetItem(QString::number(db.X[index])));
-                ++index;
-                continue;
-            }
-            int item_pos = row*db.titles.size()+col;
+            auto item_pos = size_t(row)*db.titles.size()+col;
             if(item_pos < db.items.size())
-                table->setItem(row,col+1,new QTableWidgetItem(QString(db.items[item_pos].c_str())));
+                table->setItem(int(row),int(col)+1,new QTableWidgetItem(QString(db.items[item_pos].c_str())));
             else
-                table->setItem(row,col+1,new QTableWidgetItem(QString()));
+                table->setItem(int(row),int(col)+1,new QTableWidgetItem(QString()));
         }
     }
 }
@@ -274,7 +263,7 @@ bool group_connectometry::load_demographic_file(QString filename,std::string& er
 {
     auto& db = vbc->handle->db;
     // read demographic file
-    if(!db.parse_demo(filename.toStdString(),ui->missing_value->value()))
+    if(!db.parse_demo(filename.toStdString()))
     {
         error_msg = db.error_msg;
         return false;
@@ -293,17 +282,12 @@ bool group_connectometry::load_demographic_file(QString filename,std::string& er
         {
             ui->variable_list->item(i)->setFlags(ui->variable_list->item(i)->flags() | Qt::ItemIsUserCheckable); // set checkable flag
             ui->variable_list->item(i)->setCheckState(i == 0 ? Qt::Checked : Qt::Unchecked);
+            ui->variable_list->setItemAlignment(Qt::AlignLeft);
         }
         ui->cohort_index->clear();
         ui->cohort_index->addItems(t);
         ui->cohort_index->setCurrentIndex(0);
-        ui->cohort_index2->clear();
-        ui->cohort_index2->addItems(t);
-        ui->cohort_index2->setCurrentIndex(0);
-        ui->select_cohort->setChecked(false);
-        ui->exclude_cohort->setChecked(false);
         ui->foi_widget->show();
-        ui->missing_data_checked->setChecked(std::find(model->X.begin(),model->X.end(),ui->missing_value->value()) != model->X.end());
     }
     on_variable_list_clicked(QModelIndex());
     fill_demo_table(db,ui->subject_demo);
@@ -313,59 +297,81 @@ std::string group_connectometry::get_cohort_list(std::vector<char>& remove_list_
 {
     std::vector<char> remove_list(model->X.size()/model->feature_count);
     std::string cohort_text;
-    // consider missing values
-    if(ui->missing_data_checked->isChecked())
-    {
-        int missing_value = int(ui->missing_value->value());
-        for(size_t j = 0;j < ui->variable_list->count();++j)
-            if(ui->variable_list->item(int(j))->checkState() == Qt::Checked)
-            {
-                for(size_t i = 0,pos = 0;pos < model->X.size();++i,pos += model->feature_count)
-                    if(missing_value == int(model->X[pos+j+1]))
-                        remove_list[i] = 1;
-            }
-    }
+    // handle missing value
+    for(int k = 0;k < ui->variable_list->count();++k)
+        if(ui->variable_list->item(k)->checkState() == Qt::Checked)
+        {
+            for(size_t i = 0,pos = 0;pos < model->X.size();++i,pos += model->feature_count)
+                if(std::isnan(model->X[pos+size_t(k)+1]))
+                    remove_list[i] = 1;
+        }
     // select cohort
-    if(ui->select_cohort->isChecked())
+    if(!ui->select_text->text().isEmpty())
     {
-        float threshold = ui->cohort_value->text().toFloat();
-        for(size_t i = 0,pos = 0;pos < model->X.size();++i,pos += model->feature_count)
+        QStringList selections = ui->select_text->text().split(',');
+        for(int m = 0;m < selections.size();++m)
         {
-            float value = float(model->X[pos+ui->cohort_index->currentIndex()+1]);
-            if(ui->cohort_operator->currentIndex() == 0 && int(value*1000.0f) == int(threshold*1000.0f)) // equal
-                continue;
-            if(ui->cohort_operator->currentIndex() == 1 && value > threshold) // greater
-                continue;
-            if(ui->cohort_operator->currentIndex() == 2 && value < threshold) // less
-                continue;
-            remove_list[i] = 1;
-        }
-        std::ostringstream out;
-        out << " Subjects with "<< ui->cohort_index->currentText().toStdString() << " "
-            << ui->cohort_operator->currentText().toStdString() << " "
-            << ui->cohort_value->text().toStdString() << " were selected.";
-        cohort_text += out.str();
-    }
+            QString text = selections[m];
+            bool parsed = false;
+            auto select = [](QCharRef sel,float value,float threshold)
+            {
+                if(sel == '=')
+                    return int(value*1000.0f) == int(threshold*1000.0f);
+                if(sel == '>')
+                    return value > threshold;
+                if(sel == '<')
+                    return value < threshold;
+                return int(value*1000.0f) != int(threshold*1000.0f);
+            };
+            for(int j = text.size()-2;j > 1;--j)
+                if(text[j] == '=' || text[j] == '<' || text[j] == '>' || text[j] == "≠")
+                {
+                    QString fov_name = text.left(j);
+                    bool okay;
+                    float threshold = text.right(text.size()-j-1).toFloat(&okay);
+                    if(!okay)
+                        break;
+                    if(fov_name == "value")
+                    {
+                        for(int k = 0;k < ui->variable_list->count();++k)
+                            if(ui->variable_list->item(k)->checkState() == Qt::Checked)
+                            {
+                                for(size_t i = 0,pos = 0;pos < model->X.size();++i,pos += model->feature_count)
+                                    if(!select(text[j],float(model->X[pos+size_t(k)+1]),threshold))
+                                        remove_list[i] = 1;
+                            }
+                        parsed = true;
+                        break;
+                    }
+                    size_t fov_index = 0;
+                    okay = false;
+                    for(size_t k = 0;k < vbc->handle->db.feature_titles.size();++k)
+                        if(vbc->handle->db.feature_titles[k] == fov_name.toStdString())
+                        {
+                            fov_index = k;
+                            okay = true;
+                            break;
+                        }
+                    if(!okay)
+                        break;
 
-    // exclude cohort
-    if(ui->exclude_cohort->isChecked())
-    {
-        float threshold = ui->cohort_value2->text().toFloat();
-        for(size_t i = 0,pos = 0;pos < model->X.size();++i,pos += model->feature_count)
-        {
-            float value = float(model->X[pos+ui->cohort_index2->currentIndex()+1]);
-            if(ui->cohort_operator2->currentIndex() == 0 && int(value*1000.0f) == int(threshold*1000.0f)) // equal
-                remove_list[i] = 1;
-            if(ui->cohort_operator2->currentIndex() == 1 && value > threshold) // greater
-                remove_list[i] = 1;
-            if(ui->cohort_operator2->currentIndex() == 2 && value < threshold) // less
-                remove_list[i] = 1;
+                    for(size_t i = 0,pos = 0;pos < model->X.size();++i,pos += model->feature_count)
+                        if(!select(text[j],float(model->X[pos+fov_index+1]),threshold))
+                            remove_list[i] = 1;
+
+                    std::ostringstream out;
+                    out << " Subjects with " << fov_name.toStdString()
+                        << text.right(text.size()-j).toStdString() << " were selected.";
+                    cohort_text += out.str();
+                    parsed = true;
+                    break;
+                }
+            if(!parsed)
+            {
+                remove_list_.clear();
+                return std::string("cannot parse selection text:") + text.toStdString();
+            }
         }
-        std::ostringstream out;
-        out << " Subjects with "<< ui->cohort_index2->currentText().toStdString() << " "
-            << ui->cohort_operator2->currentText().toStdString() << " "
-            << ui->cohort_value2->text().toStdString() << " were excluded.";
-        cohort_text += out.str();
     }
 
     // visualize
@@ -379,7 +385,7 @@ std::string group_connectometry::get_cohort_list(std::vector<char>& remove_list_
             ui->subject_demo->item(i,j)->setBackgroundColor(remove_list[i] ? Qt::white : QColor(255,255,200));
     }
     ui->subject_demo->setUpdatesEnabled(true);
-    ui->cohort_text->setText(QString("%1 subjects selected").arg(selected_count));
+    ui->cohort_text->setText(QString("n=%1").arg(selected_count));
     remove_list.swap(remove_list_);
     return cohort_text;
 }
@@ -388,7 +394,8 @@ bool group_connectometry::setup_model(stat_model& m)
 {
     if(!vbc->handle->db.is_longitudinal && !model.get())
     {
-        QMessageBox::information(this,"Error","Please load demographic information",0);
+        if(gui)
+            QMessageBox::information(this,"Error","Please load demographic information",0);
         return false;
     }
     if(!model.get())
@@ -400,6 +407,14 @@ bool group_connectometry::setup_model(stat_model& m)
     m = *(model.get());
     std::vector<char> remove_list(m.X.size()/m.feature_count);
     m.cohort_text = get_cohort_list(remove_list);
+    if(remove_list.empty())
+    {
+        if(gui)
+            QMessageBox::information(this,"Error",m.cohort_text.c_str(),0);
+        else
+            std::cout << m.cohort_text << std::endl;
+        return false;
+    }
     m.type = 1;
     m.variables.clear();
     std::vector<char> sel(uint32_t(ui->variable_list->count()+1));
@@ -469,20 +484,19 @@ bool group_connectometry::setup_model(stat_model& m)
 
 void group_connectometry::calculate_FDR(void)
 {
+    if(vbc->progress == 100)
+    {
+        if(timer.get())
+            timer->stop();
+    }
+
     ui->progressBar->setValue(vbc->progress);
     vbc->calculate_FDR();
     show_report();
     show_dis_table();
     show_fdr_report();
 
-    if(vbc->progress == 100)
-    {
-        vbc->wait();// make sure that all threads done
-        if(timer.get())
-            timer->stop();
 
-        vbc->save_tracks_files();
-    }
     std::string output;
     vbc->generate_report(output);
     int pos = ui->textBrowser->verticalScrollBar()->value();
@@ -495,21 +509,7 @@ void group_connectometry::calculate_FDR(void)
 
     // progress = 100
     {
-        // output distribution values
-        {
-            std::ofstream out((vbc->output_file_name+".fdr_dist.values.txt").c_str());
-            out << "voxel_dis\tfdr_pos_cor\tfdr_neg_corr\t#track_pos_corr_null\t#track_neg_corr_null\t#track_pos_corr\t#track_neg_corr" << std::endl;
-            for(unsigned int index = 1;index < vbc->fdr_pos_corr.size()-1;++index)
-            {
-                out << index
-                    << "\t" << vbc->fdr_pos_corr[index]
-                    << "\t" << vbc->fdr_neg_corr[index]
-                    << "\t" << vbc->subject_pos_corr_null[index]
-                    << "\t" << vbc->subject_neg_corr_null[index]
-                    << "\t" << vbc->subject_pos_corr[index]
-                    << "\t" << vbc->subject_neg_corr[index] << std::endl;
-            }
-        }
+
         // output distribution image
         delete null_pos_chart_view;
         delete null_neg_chart_view;
@@ -538,14 +538,16 @@ void group_connectometry::calculate_FDR(void)
 
         if(gui)
         {
-            if(vbc->has_pos_corr_result || vbc->has_neg_corr_result)
+            if(vbc->pos_corr_track->get_visible_track_count() ||
+               vbc->neg_corr_track->get_visible_track_count())
                 QMessageBox::information(this,"Finished","Trk files saved.",0);
             else
                 QMessageBox::information(this,"Finished","No significant finding.",0);
         }
         else
         {
-            if(vbc->has_pos_corr_result || vbc->has_neg_corr_result)
+            if(vbc->pos_corr_track->get_visible_track_count() ||
+                    vbc->neg_corr_track->get_visible_track_count())
                 std::cout << "trk files saved" << std::endl;
             else
                 std::cout << "no significant finding" << std::endl;
@@ -576,29 +578,21 @@ void group_connectometry::on_run_clicked()
     vbc->model.reset(new stat_model);
     if(!setup_model(*vbc->model.get()))
         return;
-    vbc->seed_count = ui->seed_count->value();
     vbc->normalize_qa = ui->normalize_qa->isChecked();
-    vbc->output_resampling = ui->output_resampling->isChecked();
     vbc->foi_str = ui->foi->currentText().toStdString();
-    if(ui->rb_fdr->isChecked())
-    {
-        vbc->fdr_threshold = ui->fdr_threshold->value();
-        vbc->length_threshold = 10;
-    }
+    vbc->length_threshold_voxels = uint32_t(ui->length_threshold->value());
+    vbc->tip = uint32_t(ui->tip->value());
+    if(ui->fdr_control->isChecked())
+        vbc->fdr_threshold = float(ui->fdr_threshold->value());
     else
-    {
-        vbc->fdr_threshold = 0;
-        vbc->length_threshold = ui->length_threshold->value();
-    }
-    vbc->track_trimming = ui->track_trimming->value();
+        vbc->fdr_threshold = 0.0f;
 
     vbc->tracking_threshold = float(ui->threshold->value());
     vbc->model->nonparametric = ui->nonparametric->isChecked();
+    vbc->output_file_name = ui->output_name->text().toStdString();
 
     ui->run->setText("Stop");
-    vbc->output_file_name = db_file_name.toStdString();
-    if(vbc->model->type == 1) // regression
-        vbc->output_file_name = demo_file_name.substr(0,demo_file_name.find_last_of('.'));
+
 
     if(ui->roi_whole_brain->isChecked())
         roi_list.clear();
@@ -663,7 +657,7 @@ void group_connectometry::on_run_clicked()
         }
     }
 
-    vbc->run_permutation(ui->multithread->value(),ui->permutation_count->value());
+    vbc->run_permutation(std::thread::hardware_concurrency(),ui->permutation_count->value());
     if(gui)
     {
         timer.reset(new QTimer(this));
@@ -684,7 +678,7 @@ void group_connectometry::on_show_result_clicked()
     {
         result_fib.reset(new connectometry_result);
         stat_model info;
-        info.resample(cur_model,false,false);
+        info.resample(cur_model,false,false,0);
         vbc->calculate_spm(*result_fib.get(),info,vbc->normalize_qa);
         new_data->view_item.push_back(item());
         new_data->view_item.back().name = "dec_t";
@@ -728,11 +722,6 @@ void group_connectometry::on_roi_whole_brain_toggled(bool checked)
     ui->load_roi_from_atlas->setEnabled(!checked);
     ui->clear_all_roi->setEnabled(!checked);
     ui->load_roi_from_file->setEnabled(!checked);
-}
-
-void group_connectometry::on_missing_data_checked_toggled(bool checked)
-{
-    ui->missing_value->setEnabled(checked);
 }
 
 void group_connectometry::add_new_roi(QString name,QString source,
@@ -828,5 +817,31 @@ void group_connectometry::on_show_cohort_clicked()
     if(!model.get())
         return;
     std::vector<char> remove_list;
-    get_cohort_list(remove_list);
+    QString text = get_cohort_list(remove_list).c_str();
+    if(remove_list.empty())
+        QMessageBox::information(this,"Error",text);
+}
+
+void group_connectometry::on_fdr_control_toggled(bool checked)
+{
+    ui->fdr_threshold->setEnabled(checked);
+    ui->fdr_label->setEnabled(checked);
+}
+
+void group_connectometry::on_apply_selection_clicked()
+{
+    QString new_text(ui->select_text->text());
+    if(!new_text.isEmpty())
+        new_text += ",";
+    new_text += ui->cohort_index->currentText();
+    new_text += ui->cohort_operator->currentText();
+    new_text += ui->cohort_value->text();
+    ui->select_text->setText(new_text);
+    on_show_cohort_clicked();
+}
+
+void group_connectometry::on_show_cohort_widget_clicked()
+{
+    ui->show_cohort_widget->hide();
+    ui->cohort_widget->show();
 }

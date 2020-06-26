@@ -89,13 +89,13 @@ void connectometry_db::read_db(fib_data* handle_)
 }
 
 
-bool connectometry_db::parse_demo(const std::string& filename,float missing_value)
+bool connectometry_db::parse_demo(const std::string& filename)
 {
     titles.clear();
     items.clear();
-    int col_count = 0;
+    size_t col_count = 0;
     {
-        int row_count = 0,last_item_size = 0;
+        size_t row_count = 0,last_item_size = 0;
         bool is_csv = (filename.substr(filename.length()-4,4) == std::string(".csv"));
         std::ifstream in(filename.c_str());
         if(!in)
@@ -111,6 +111,8 @@ bool connectometry_db::parse_demo(const std::string& filename,float missing_valu
                 std::regex re(",");
                 std::sregex_token_iterator first{line.begin(), line.end(),re, -1},last;
                 std::copy(first,last,std::back_inserter(items));
+                if(line.back() == ',')
+                    items.push_back(std::string());
             }
             else
             {
@@ -152,8 +154,8 @@ bool connectometry_db::parse_demo(const std::string& filename,float missing_valu
         }
     }
     // first line moved to title vector
-    titles.insert(titles.end(),items.begin(),items.begin()+col_count);
-    items.erase(items.begin(),items.begin()+col_count);
+    titles.insert(titles.end(),items.begin(),items.begin()+int(col_count));
+    items.erase(items.begin(),items.begin()+int(col_count));
 
     // convert special characters
     for(size_t i = 0;i < titles.size();++i)
@@ -186,7 +188,7 @@ bool connectometry_db::parse_demo(const std::string& filename,float missing_valu
         for(size_t i = 0;i < titles.size();++i)
         if(!not_number[i])
         {
-            feature_location.push_back(int(i));
+            feature_location.push_back(i);
             feature_titles.push_back(titles[i]);
         }
     }
@@ -198,17 +200,16 @@ bool connectometry_db::parse_demo(const std::string& filename,float missing_valu
         X.push_back(1); // for the intercep
         for(unsigned int j = 0;j < feature_location.size();++j)
         {
-            int item_pos = i*titles.size() + feature_location[j];
+            size_t item_pos = i*titles.size() + feature_location[j];
             if(item_pos >= items.size())
             {
-                X.push_back(double(missing_value));
+                X.push_back(std::nan(nullptr));
                 continue;
             }
             try{
                 if(items[item_pos].empty())
                 {
-                    items[item_pos] = std::to_string(int(missing_value));
-                    X.push_back(double(missing_value));
+                    X.push_back(std::nan(nullptr));
                 }
                 else
                     X.push_back(double(std::stof(items[item_pos])));
@@ -241,15 +242,15 @@ void connectometry_db::remove_subject(unsigned int index)
 void connectometry_db::calculate_si2vi(void)
 {
     vi2si.resize(handle->dim);
-    for(unsigned int index = 0;index < (unsigned int)handle->dim.size();++index)
+    for(unsigned int index = 0;index < size_t(handle->dim.size());++index)
     {
         if(handle->dir.fa[0][index] != 0.0f)
         {
-            vi2si[index] = (unsigned int)si2vi.size();
+            vi2si[index] = uint32_t(si2vi.size());
             si2vi.push_back(index);
         }
     }
-    subject_qa_length = handle->dir.num_fiber*si2vi.size();
+    subject_qa_length = handle->dir.num_fiber*uint32_t(si2vi.size());
 }
 
 size_t convert_index(size_t old_index,
@@ -1263,9 +1264,9 @@ void stat_model::remove_data(const std::vector<char>& remove_list)
         }
 }
 
-bool stat_model::resample(stat_model& rhs,bool null,bool bootstrap)
+bool stat_model::resample(stat_model& rhs,bool null,bool bootstrap,unsigned int seed)
 {
-    std::lock_guard<std::mutex> lock(rhs.lock_random);
+    tipl::uniform_dist<int> rand_gen(0,1,seed);
     *this = rhs;
     unsigned int trial = 0;
     do
@@ -1290,7 +1291,7 @@ bool stat_model::resample(stat_model& rhs,bool null,bool bootstrap)
             {
                 unsigned int new_index = index;
                 if(bootstrap)
-                    new_index = rhs.label[index] ? group1[rhs.rand_gen(group1.size())]:group0[rhs.rand_gen(group0.size())];
+                    new_index = rhs.label[index] ? group1[rand_gen(group1.size())]:group0[rand_gen(group0.size())];
                 subject_index[index] = rhs.subject_index[new_index];
                 label[index] = rhs.label[new_index];
             }
@@ -1300,7 +1301,7 @@ bool stat_model::resample(stat_model& rhs,bool null,bool bootstrap)
             X.resize(rhs.X.size());
             for(unsigned int index = 0,pos = 0;index < rhs.subject_index.size();++index,pos += feature_count)
             {
-                unsigned int new_index = bootstrap ? rhs.rand_gen(rhs.subject_index.size()) : index;
+                unsigned int new_index = bootstrap ? rand_gen(rhs.subject_index.size()) : index;
                 subject_index[index] = rhs.subject_index[new_index];
                 std::copy(rhs.X.begin()+new_index*feature_count,
                           rhs.X.begin()+new_index*feature_count+feature_count,X.begin()+pos);
@@ -1319,14 +1320,14 @@ bool stat_model::resample(stat_model& rhs,bool null,bool bootstrap)
         case 3: // longitudinal
             for(unsigned int index = 0;index < rhs.subject_index.size();++index)
             {
-                unsigned int new_index = bootstrap ? rhs.rand_gen(rhs.subject_index.size()) : index;
+                unsigned int new_index = bootstrap ? rand_gen(rhs.subject_index.size()) : index;
                 subject_index[index] = rhs.subject_index[new_index];
             }
             if(null)
             {
                 label.resize(subject_index.size());
                 for(int i = 0;i < label.size();++i)
-                    label[i] = rhs.rand_gen(2);
+                    label[i] = rand_gen(2);
             }
             else
             {
@@ -1338,13 +1339,13 @@ bool stat_model::resample(stat_model& rhs,bool null,bool bootstrap)
         case 2: // individual
             for(unsigned int index = 0;index < rhs.subject_index.size();++index)
             {
-                unsigned int new_index = bootstrap ? rhs.rand_gen(rhs.subject_index.size()) : index;
+                unsigned int new_index = bootstrap ? rand_gen(rhs.subject_index.size()) : index;
                 subject_index[index] = rhs.subject_index[new_index];
             }
             break;
         }
         if(null)
-            std::random_shuffle(subject_index.begin(),subject_index.end(),rhs.rand_gen);
+            std::random_shuffle(subject_index.begin(),subject_index.end(),rand_gen);
     }while(!pre_process());
 
     return true;

@@ -34,15 +34,6 @@ int cnt(void)
         return 1;
     }
 
-
-    if(po.has("missing_value"))
-    {
-        vbc->ui->missing_data_checked->setChecked(true);
-        vbc->ui->missing_value->setValue(po.get("missing_value",9999));
-        std::cout << "missing value=" << vbc->ui->missing_value->value() << std::endl;
-    }
-
-
     if(!po.has("voi") || !po.has("variable_list"))
     {
         std::cout << "please assign --voi and --variable_list" << std::endl;
@@ -58,11 +49,11 @@ int cnt(void)
 
         for(int i = 0;i < vbc->ui->variable_list->count();++i)
             vbc->ui->variable_list->item(i)->setCheckState(Qt::Unchecked);
-        std::cout << "variables=";
 
         int voi_index = po.get("voi",0);
         int voi_sel = -1;
         std::string voi_text;
+        std::cout << "variables=";
         for(int i = 0;i < variable_list.size();++i)
         {
             int index = variable_list[i];
@@ -95,41 +86,26 @@ int cnt(void)
     }
 
     vbc->ui->threshold->setValue(double(po.get("t_threshold",float(vbc->ui->threshold->value()))));
-    std::cout << "t_threshold=" << vbc->ui->threshold->value() << std::endl;
+    vbc->ui->tip->setValue(po.get("tip",vbc->ui->tip->value()));
 
     vbc->ui->nonparametric->setChecked(po.get("nonparametric",1) == 1);
-    std::cout << "nonparametric=" << (vbc->ui->nonparametric->isChecked() ? 1:0) << std::endl;
+    vbc->ui->permutation_count->setValue(po.get("permutation",vbc->ui->permutation_count->value()));
+    vbc->ui->length_threshold->setValue(po.get("length_threshold",vbc->ui->length_threshold->value()));
+    vbc->ui->select_text->setText(po.get("select",vbc->ui->select_text->text().toStdString()).c_str());
+    if(po.has("output"))
+        vbc->ui->output_name->setText(po.get("output").c_str());
 
-    vbc->ui->seed_count->setValue(po.get("seed_count",10000));
-    std::cout << "seed_count=" << vbc->ui->seed_count->value() << std::endl;
-
-    vbc->ui->permutation_count->setValue(po.get("permutation",int(2000)));
-    std::cout << "permutation=" << vbc->ui->permutation_count->value() << std::endl;
-
-    vbc->ui->multithread->setValue(po.get("thread_count",int(std::thread::hardware_concurrency())));
-    std::cout << "thread=" << vbc->ui->multithread->value() << std::endl;
-
-    vbc->ui->track_trimming->setValue(po.get("trim",1));
-    std::cout << "trim=" << vbc->ui->track_trimming->value() << std::endl;
-
-
-    if(po.get("normalized_qa",int(0)))
-    {
-        std::cout << "normalized qa" << std::endl;
+    if(po.get("normalized_qa",int(1)))
         vbc->ui->normalize_qa->setChecked(true);
-    }
 
     if(po.has("fdr_threshold"))
     {
-        vbc->ui->rb_fdr->setChecked(true);
+        vbc->ui->fdr_control->setChecked(true);
         vbc->ui->fdr_threshold->setValue(po.get("fdr_threshold",0.05f));
-        std::cout << "fdr_threshold=" << vbc->ui->fdr_threshold->value() << std::endl;
     }
     else
     {
-        vbc->ui->rb_length->setChecked(true);
-        vbc->ui->length_threshold->setValue(po.get("length_threshold",int(40)));
-        std::cout << "length_threshold=" << vbc->ui->length_threshold->value() << std::endl;
+        vbc->ui->fdr_control->setChecked(false);
     }
 
     // check rois
@@ -151,15 +127,14 @@ int cnt(void)
         }
     }
 
-
-
-    vbc->on_run_clicked();
-    std::cout << vbc->vbc->report << std::endl;
     std::cout << "running connectometry" << std::endl;
+    vbc->on_run_clicked();
+    if(vbc->vbc->threads.empty())
+        return 0;
     vbc->vbc->wait();
     std::cout << "output results" << std::endl;
+    std::cout << vbc->vbc->report << std::endl;
     vbc->calculate_FDR();
-    std::cout << "close GUI" << std::endl;
     vbc->close();
     vbc.reset();
     return 0;

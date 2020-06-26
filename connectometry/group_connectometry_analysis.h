@@ -31,7 +31,6 @@ public:
 public:// database information
     float fiber_threshold;
     bool normalize_qa;
-    bool output_resampling;
 public:
     void calculate_spm(connectometry_result& data,stat_model& info,bool nqa)
     {
@@ -47,32 +46,25 @@ public:// for FDR analysis
     std::vector<unsigned int> subject_pos_corr;
     std::vector<unsigned int> subject_neg_corr;
     std::vector<float> fdr_pos_corr,fdr_neg_corr;
-
-    std::vector<unsigned int> seed_pos_corr_null;
-    std::vector<unsigned int> seed_neg_corr_null;
-    std::vector<unsigned int> seed_pos_corr;
-    std::vector<unsigned int> seed_neg_corr;
     unsigned int progress;// 0~100
     bool terminated = false;
+    unsigned int preproces;
 public:
     std::shared_ptr<RoiMgr> roi_mgr;
     std::string roi_mgr_text;
     std::string output_roi_suffix;
 public:
     std::string output_file_name;
-    bool has_pos_corr_result,has_neg_corr_result;
     int seed_count;
-    std::mutex  lock_resampling,lock_pos_corr_tracks,lock_neg_corr_tracks;
-    std::shared_ptr<TractModel> pos_corr_track;
-    std::shared_ptr<TractModel> neg_corr_track;
+    std::mutex  lock_resampling,lock_add_tracks,lock_add_null_track;
+    std::shared_ptr<TractModel> pos_corr_track,neg_corr_track,pos_null_corr_track,neg_null_corr_track;
     std::shared_ptr<connectometry_result> spm_map;
-    std::string pos_corr_tracks_result,neg_corr_tracks_result;
-    void save_tracks_files(void);
 public:// Multiple regression
     std::shared_ptr<stat_model> model;
     float tracking_threshold;
-    float length_threshold,fdr_threshold;
-    unsigned int track_trimming;
+    unsigned int length_threshold_voxels;
+    float fdr_threshold;
+    unsigned int tip;
     std::string foi_str;
     void run_permutation_multithread(unsigned int id,unsigned int thread_count,unsigned int permutation_count);
     void run_permutation(unsigned int thread_count,unsigned int permutation_count);

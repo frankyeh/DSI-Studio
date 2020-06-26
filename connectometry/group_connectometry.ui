@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1208</width>
-    <height>746</height>
+    <width>1500</width>
+    <height>900</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -29,7 +29,7 @@
      <widget class="QWidget" name="widget_3" native="true">
       <property name="sizePolicy">
        <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-        <horstretch>0</horstretch>
+        <horstretch>2</horstretch>
         <verstretch>0</verstretch>
        </sizepolicy>
       </property>
@@ -40,11 +40,14 @@
        </size>
       </property>
       <layout class="QVBoxLayout" name="verticalLayout">
+       <property name="spacing">
+        <number>3</number>
+       </property>
        <property name="leftMargin">
         <number>0</number>
        </property>
        <property name="topMargin">
-        <number>10</number>
+        <number>0</number>
        </property>
        <property name="rightMargin">
         <number>0</number>
@@ -65,9 +68,12 @@
          </property>
          <layout class="QVBoxLayout" name="verticalLayout_2">
           <property name="spacing">
-           <number>0</number>
+           <number>3</number>
           </property>
           <property name="topMargin">
+           <number>0</number>
+          </property>
+          <property name="bottomMargin">
            <number>0</number>
           </property>
           <item>
@@ -111,7 +117,7 @@
                   </font>
                  </property>
                  <property name="text">
-                  <string>Step C3a: Open demographics.</string>
+                  <string>Step C3a: Load demographics.</string>
                  </property>
                 </widget>
                </item>
@@ -133,38 +139,30 @@
                 </widget>
                </item>
                <item>
-                <spacer name="horizontalSpacer_4">
-                 <property name="orientation">
-                  <enum>Qt::Horizontal</enum>
-                 </property>
-                 <property name="sizeHint" stdset="0">
-                  <size>
-                   <width>40</width>
-                   <height>20</height>
-                  </size>
-                 </property>
-                </spacer>
-               </item>
-               <item>
-                <widget class="QCheckBox" name="missing_data_checked">
+                <widget class="QLabel" name="label_6">
                  <property name="text">
-                  <string>n/al label</string>
-                 </property>
-                 <property name="checked">
-                  <bool>false</bool>
+                  <string>Select if </string>
                  </property>
                 </widget>
                </item>
                <item>
-                <widget class="QSpinBox" name="missing_value">
-                 <property name="enabled">
-                  <bool>false</bool>
+                <widget class="QLineEdit" name="select_text">
+                 <property name="text">
+                  <string>value≠9999</string>
                  </property>
-                 <property name="maximum">
-                  <number>999999</number>
+                </widget>
+               </item>
+               <item>
+                <widget class="QPushButton" name="show_cohort">
+                 <property name="text">
+                  <string>Check</string>
                  </property>
-                 <property name="value">
-                  <number>9999</number>
+                </widget>
+               </item>
+               <item>
+                <widget class="QLabel" name="cohort_text">
+                 <property name="text">
+                  <string/>
                  </property>
                 </widget>
                </item>
@@ -195,11 +193,32 @@
            </widget>
           </item>
           <item>
+           <widget class="QWidget" name="widget" native="true">
+            <layout class="QHBoxLayout" name="horizontalLayout_6">
+             <property name="spacing">
+              <number>0</number>
+             </property>
+             <property name="leftMargin">
+              <number>0</number>
+             </property>
+             <property name="topMargin">
+              <number>0</number>
+             </property>
+             <property name="rightMargin">
+              <number>0</number>
+             </property>
+             <property name="bottomMargin">
+              <number>0</number>
+             </property>
+            </layout>
+           </widget>
+          </item>
+          <item>
            <widget class="QTableWidget" name="subject_demo">
             <property name="sizePolicy">
              <sizepolicy hsizetype="Preferred" vsizetype="MinimumExpanding">
               <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
+              <verstretch>5</verstretch>
              </sizepolicy>
             </property>
             <property name="alternatingRowColors">
@@ -231,66 +250,173 @@
            </widget>
           </item>
           <item>
-           <widget class="QLabel" name="label_8">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
+           <layout class="QVBoxLayout" name="verticalLayout_14">
+            <property name="spacing">
+             <number>0</number>
             </property>
-            <property name="font">
-             <font>
-              <weight>75</weight>
-              <bold>true</bold>
-             </font>
+            <property name="topMargin">
+             <number>0</number>
             </property>
-            <property name="text">
-             <string>Step C3b: Select variables to be included in regression</string>
+            <property name="bottomMargin">
+             <number>0</number>
             </property>
-           </widget>
+            <item>
+             <layout class="QHBoxLayout" name="horizontalLayout_13">
+              <property name="spacing">
+               <number>0</number>
+              </property>
+              <property name="topMargin">
+               <number>0</number>
+              </property>
+              <item>
+               <widget class="QPushButton" name="show_cohort_widget">
+                <property name="text">
+                 <string>Select Cohort</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QWidget" name="cohort_widget" native="true">
+                <layout class="QHBoxLayout" name="horizontalLayout_9">
+                 <property name="spacing">
+                  <number>0</number>
+                 </property>
+                 <property name="leftMargin">
+                  <number>0</number>
+                 </property>
+                 <property name="topMargin">
+                  <number>0</number>
+                 </property>
+                 <property name="rightMargin">
+                  <number>0</number>
+                 </property>
+                 <property name="bottomMargin">
+                  <number>0</number>
+                 </property>
+                 <item>
+                  <widget class="QLabel" name="label_4">
+                   <property name="maximumSize">
+                    <size>
+                     <width>35</width>
+                     <height>16777215</height>
+                    </size>
+                   </property>
+                   <property name="text">
+                    <string>Select</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QComboBox" name="cohort_index"/>
+                 </item>
+                 <item>
+                  <widget class="QComboBox" name="cohort_operator">
+                   <property name="maximumSize">
+                    <size>
+                     <width>30</width>
+                     <height>16777215</height>
+                    </size>
+                   </property>
+                   <item>
+                    <property name="text">
+                     <string>=</string>
+                    </property>
+                   </item>
+                   <item>
+                    <property name="text">
+                     <string>&gt;</string>
+                    </property>
+                   </item>
+                   <item>
+                    <property name="text">
+                     <string>&lt;</string>
+                    </property>
+                   </item>
+                   <item>
+                    <property name="text">
+                     <string>≠</string>
+                    </property>
+                   </item>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QLineEdit" name="cohort_value">
+                   <property name="minimumSize">
+                    <size>
+                     <width>0</width>
+                     <height>0</height>
+                    </size>
+                   </property>
+                   <property name="maximumSize">
+                    <size>
+                     <width>50</width>
+                     <height>16777215</height>
+                    </size>
+                   </property>
+                   <property name="text">
+                    <string>0</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QPushButton" name="apply_selection">
+                   <property name="maximumSize">
+                    <size>
+                     <width>40</width>
+                     <height>16777215</height>
+                    </size>
+                   </property>
+                   <property name="text">
+                    <string>Apply</string>
+                   </property>
+                  </widget>
+                 </item>
+                </layout>
+               </widget>
+              </item>
+              <item>
+               <spacer name="horizontalSpacer_6">
+                <property name="orientation">
+                 <enum>Qt::Horizontal</enum>
+                </property>
+                <property name="sizeHint" stdset="0">
+                 <size>
+                  <width>40</width>
+                  <height>20</height>
+                 </size>
+                </property>
+               </spacer>
+              </item>
+             </layout>
+            </item>
+           </layout>
           </item>
           <item>
-           <widget class="QListWidget" name="variable_list">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
-            <property name="minimumSize">
-             <size>
-              <width>0</width>
-              <height>0</height>
-             </size>
-            </property>
-            <property name="maximumSize">
-             <size>
-              <width>16777215</width>
-              <height>50</height>
-             </size>
-            </property>
-            <property name="flow">
-             <enum>QListView::LeftToRight</enum>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <layout class="QHBoxLayout" name="horizontalLayout_15">
+           <layout class="QHBoxLayout" name="horizontalLayout_11">
             <property name="topMargin">
              <number>0</number>
             </property>
             <item>
-             <widget class="QCheckBox" name="nonparametric">
-              <property name="text">
-               <string>Nonparametric</string>
+             <widget class="QLabel" name="label_8">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
               </property>
-              <property name="checked">
-               <bool>true</bool>
+              <property name="font">
+               <font>
+                <weight>75</weight>
+                <bold>true</bold>
+               </font>
+              </property>
+              <property name="text">
+               <string>Step C3b: Select covariates</string>
               </property>
              </widget>
             </item>
             <item>
-             <spacer name="horizontalSpacer_2">
+             <spacer name="horizontalSpacer_10">
               <property name="orientation">
                <enum>Qt::Horizontal</enum>
               </property>
@@ -324,7 +450,54 @@
             <item>
              <widget class="QComboBox" name="foi"/>
             </item>
+            <item>
+             <widget class="QCheckBox" name="nonparametric">
+              <property name="text">
+               <string>Nonparametric</string>
+              </property>
+              <property name="checked">
+               <bool>true</bool>
+              </property>
+             </widget>
+            </item>
            </layout>
+          </item>
+          <item>
+           <widget class="QListWidget" name="variable_list">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="minimumSize">
+             <size>
+              <width>0</width>
+              <height>0</height>
+             </size>
+            </property>
+            <property name="maximumSize">
+             <size>
+              <width>16777215</width>
+              <height>16777215</height>
+             </size>
+            </property>
+            <property name="sizeAdjustPolicy">
+             <enum>QAbstractScrollArea::AdjustToContents</enum>
+            </property>
+            <property name="flow">
+             <enum>QListView::LeftToRight</enum>
+            </property>
+            <property name="resizeMode">
+             <enum>QListView::Adjust</enum>
+            </property>
+            <property name="viewMode">
+             <enum>QListView::IconMode</enum>
+            </property>
+            <property name="itemAlignment">
+             <set>Qt::AlignLeading</set>
+            </property>
+           </widget>
           </item>
           <item>
            <widget class="QWidget" name="widget_4" native="true">
@@ -419,12 +592,80 @@
                    <number>0</number>
                   </property>
                   <item>
-                   <widget class="QRadioButton" name="rb_length">
+                   <widget class="QCheckBox" name="fdr_control">
                     <property name="text">
-                     <string>Length&gt;</string>
+                     <string>FDR Control</string>
                     </property>
-                    <property name="checked">
-                     <bool>true</bool>
+                   </widget>
+                  </item>
+                  <item>
+                   <spacer name="horizontalSpacer_5">
+                    <property name="orientation">
+                     <enum>Qt::Horizontal</enum>
+                    </property>
+                    <property name="sizeHint" stdset="0">
+                     <size>
+                      <width>40</width>
+                      <height>20</height>
+                     </size>
+                    </property>
+                   </spacer>
+                  </item>
+                  <item>
+                   <widget class="QLabel" name="fdr_label">
+                    <property name="enabled">
+                     <bool>false</bool>
+                    </property>
+                    <property name="text">
+                     <string>FDR&lt;</string>
+                    </property>
+                   </widget>
+                  </item>
+                  <item>
+                   <widget class="QDoubleSpinBox" name="fdr_threshold">
+                    <property name="enabled">
+                     <bool>false</bool>
+                    </property>
+                    <property name="minimumSize">
+                     <size>
+                      <width>60</width>
+                      <height>0</height>
+                     </size>
+                    </property>
+                    <property name="maximumSize">
+                     <size>
+                      <width>60</width>
+                      <height>16777215</height>
+                     </size>
+                    </property>
+                    <property name="decimals">
+                     <number>4</number>
+                    </property>
+                    <property name="minimum">
+                     <double>0.001000000000000</double>
+                    </property>
+                    <property name="maximum">
+                     <double>0.500000000000000</double>
+                    </property>
+                    <property name="singleStep">
+                     <double>0.005000000000000</double>
+                    </property>
+                    <property name="value">
+                     <double>0.050000000000000</double>
+                    </property>
+                   </widget>
+                  </item>
+                 </layout>
+                </item>
+                <item>
+                 <layout class="QHBoxLayout" name="horizontalLayout_4">
+                  <property name="bottomMargin">
+                   <number>0</number>
+                  </property>
+                  <item>
+                   <widget class="QLabel" name="label_2">
+                    <property name="text">
+                     <string>Length Threshold:</string>
                     </property>
                    </widget>
                   </item>
@@ -461,7 +702,7 @@
                    </widget>
                   </item>
                   <item>
-                   <spacer name="horizontalSpacer_5">
+                   <spacer name="horizontalSpacer_7">
                     <property name="orientation">
                      <enum>Qt::Horizontal</enum>
                     </property>
@@ -472,44 +713,6 @@
                      </size>
                     </property>
                    </spacer>
-                  </item>
-                  <item>
-                   <widget class="QRadioButton" name="rb_fdr">
-                    <property name="text">
-                     <string>FDR&lt;</string>
-                    </property>
-                   </widget>
-                  </item>
-                  <item>
-                   <widget class="QDoubleSpinBox" name="fdr_threshold">
-                    <property name="minimumSize">
-                     <size>
-                      <width>60</width>
-                      <height>0</height>
-                     </size>
-                    </property>
-                    <property name="maximumSize">
-                     <size>
-                      <width>60</width>
-                      <height>16777215</height>
-                     </size>
-                    </property>
-                    <property name="decimals">
-                     <number>4</number>
-                    </property>
-                    <property name="minimum">
-                     <double>0.001000000000000</double>
-                    </property>
-                    <property name="maximum">
-                     <double>0.500000000000000</double>
-                    </property>
-                    <property name="singleStep">
-                     <double>0.005000000000000</double>
-                    </property>
-                    <property name="value">
-                     <double>0.050000000000000</double>
-                    </property>
-                   </widget>
                   </item>
                  </layout>
                 </item>
@@ -546,7 +749,7 @@
                      </size>
                     </property>
                     <property name="decimals">
-                     <number>2</number>
+                     <number>1</number>
                     </property>
                     <property name="minimum">
                      <double>0.000000000000000</double>
@@ -558,14 +761,7 @@
                      <double>1.000000000000000</double>
                     </property>
                     <property name="value">
-                     <double>3.000000000000000</double>
-                    </property>
-                   </widget>
-                  </item>
-                  <item>
-                   <widget class="QLabel" name="label_3">
-                    <property name="text">
-                     <string/>
+                     <double>2.500000000000000</double>
                     </property>
                    </widget>
                   </item>
@@ -585,152 +781,22 @@
                  </layout>
                 </item>
                 <item>
-                 <spacer name="verticalSpacer_4">
-                  <property name="orientation">
-                   <enum>Qt::Vertical</enum>
-                  </property>
-                  <property name="sizeHint" stdset="0">
-                   <size>
-                    <width>20</width>
-                    <height>40</height>
-                   </size>
-                  </property>
-                 </spacer>
-                </item>
-               </layout>
-              </item>
-             </layout>
-            </widget>
-            <widget class="QWidget" name="cohort_tab">
-             <attribute name="title">
-              <string>Cohort</string>
-             </attribute>
-             <layout class="QVBoxLayout" name="verticalLayout_11">
-              <item>
-               <layout class="QVBoxLayout" name="verticalLayout_9">
-                <property name="spacing">
-                 <number>0</number>
-                </property>
-                <item>
-                 <layout class="QHBoxLayout" name="horizontalLayout_13">
-                  <property name="spacing">
-                   <number>0</number>
-                  </property>
+                 <layout class="QHBoxLayout" name="horizontalLayout_15">
                   <property name="topMargin">
                    <number>0</number>
                   </property>
                   <item>
-                   <widget class="QCheckBox" name="select_cohort">
+                   <widget class="QLabel" name="label_7">
                     <property name="text">
-                     <string>Include subjects if</string>
+                     <string>Output File Name</string>
                     </property>
                    </widget>
                   </item>
                   <item>
-                   <widget class="QComboBox" name="cohort_index"/>
+                   <widget class="QLineEdit" name="output_name"/>
                   </item>
                   <item>
-                   <widget class="QComboBox" name="cohort_operator">
-                    <item>
-                     <property name="text">
-                      <string>equal to</string>
-                     </property>
-                    </item>
-                    <item>
-                     <property name="text">
-                      <string>greater than</string>
-                     </property>
-                    </item>
-                    <item>
-                     <property name="text">
-                      <string>less than</string>
-                     </property>
-                    </item>
-                   </widget>
-                  </item>
-                  <item>
-                   <widget class="QLineEdit" name="cohort_value">
-                    <property name="minimumSize">
-                     <size>
-                      <width>0</width>
-                      <height>0</height>
-                     </size>
-                    </property>
-                    <property name="maximumSize">
-                     <size>
-                      <width>75</width>
-                      <height>16777215</height>
-                     </size>
-                    </property>
-                    <property name="text">
-                     <string>0</string>
-                    </property>
-                   </widget>
-                  </item>
-                 </layout>
-                </item>
-                <item>
-                 <layout class="QHBoxLayout" name="horizontalLayout_17">
-                  <property name="spacing">
-                   <number>0</number>
-                  </property>
-                  <property name="topMargin">
-                   <number>0</number>
-                  </property>
-                  <item>
-                   <widget class="QCheckBox" name="exclude_cohort">
-                    <property name="text">
-                     <string>Exclude subjects if</string>
-                    </property>
-                   </widget>
-                  </item>
-                  <item>
-                   <widget class="QComboBox" name="cohort_index2"/>
-                  </item>
-                  <item>
-                   <widget class="QComboBox" name="cohort_operator2">
-                    <item>
-                     <property name="text">
-                      <string>equal to</string>
-                     </property>
-                    </item>
-                    <item>
-                     <property name="text">
-                      <string>greater than</string>
-                     </property>
-                    </item>
-                    <item>
-                     <property name="text">
-                      <string>less than</string>
-                     </property>
-                    </item>
-                   </widget>
-                  </item>
-                  <item>
-                   <widget class="QLineEdit" name="cohort_value2">
-                    <property name="maximumSize">
-                     <size>
-                      <width>75</width>
-                      <height>16777215</height>
-                     </size>
-                    </property>
-                    <property name="text">
-                     <string>0</string>
-                    </property>
-                   </widget>
-                  </item>
-                 </layout>
-                </item>
-                <item>
-                 <layout class="QHBoxLayout" name="horizontalLayout_18">
-                  <property name="spacing">
-                   <number>0</number>
-                  </property>
-                  <property name="topMargin">
-                   <number>0</number>
-                  </property>
-                  <item>
-                   <spacer name="horizontalSpacer_6">
+                   <spacer name="horizontalSpacer_2">
                     <property name="orientation">
                      <enum>Qt::Horizontal</enum>
                     </property>
@@ -742,24 +808,10 @@
                     </property>
                    </spacer>
                   </item>
-                  <item>
-                   <widget class="QLabel" name="cohort_text">
-                    <property name="text">
-                     <string/>
-                    </property>
-                   </widget>
-                  </item>
-                  <item>
-                   <widget class="QPushButton" name="show_cohort">
-                    <property name="text">
-                     <string>Show selection</string>
-                    </property>
-                   </widget>
-                  </item>
                  </layout>
                 </item>
                 <item>
-                 <spacer name="verticalSpacer">
+                 <spacer name="verticalSpacer_4">
                   <property name="orientation">
                    <enum>Qt::Vertical</enum>
                   </property>
@@ -933,21 +985,15 @@
             </widget>
             <widget class="QWidget" name="tab_3">
              <attribute name="title">
-              <string>Advanced Options</string>
+              <string>Options</string>
              </attribute>
              <layout class="QVBoxLayout" name="verticalLayout_6">
-              <property name="topMargin">
-               <number>7</number>
-              </property>
-              <property name="bottomMargin">
-               <number>7</number>
-              </property>
               <item>
                <layout class="QHBoxLayout" name="horizontalLayout_2">
                 <item>
                  <widget class="QLabel" name="label_5">
                   <property name="text">
-                   <string>Permutation count</string>
+                   <string>Permutation Count:</string>
                   </property>
                  </widget>
                 </item>
@@ -975,127 +1021,69 @@
                    <number>500</number>
                   </property>
                   <property name="value">
-                   <number>2000</number>
+                   <number>4000</number>
                   </property>
                  </widget>
                 </item>
                 <item>
-                 <widget class="QLabel" name="label_7">
+                 <spacer name="horizontalSpacer_8">
+                  <property name="orientation">
+                   <enum>Qt::Horizontal</enum>
+                  </property>
+                  <property name="sizeHint" stdset="0">
+                   <size>
+                    <width>40</width>
+                    <height>20</height>
+                   </size>
+                  </property>
+                 </spacer>
+                </item>
+                <item>
+                 <widget class="QCheckBox" name="normalize_qa">
                   <property name="text">
-                   <string>Pruning (rounds)</string>
+                   <string>Normalize QA</string>
                   </property>
-                 </widget>
-                </item>
-                <item>
-                 <widget class="QSpinBox" name="track_trimming">
-                  <property name="minimumSize">
-                   <size>
-                    <width>50</width>
-                    <height>0</height>
-                   </size>
-                  </property>
-                  <property name="maximumSize">
-                   <size>
-                    <width>50</width>
-                    <height>16777215</height>
-                   </size>
-                  </property>
-                  <property name="maximum">
-                   <number>10</number>
-                  </property>
-                  <property name="value">
-                   <number>1</number>
+                  <property name="checked">
+                   <bool>true</bool>
                   </property>
                  </widget>
                 </item>
                </layout>
               </item>
               <item>
-               <layout class="QHBoxLayout" name="horizontalLayout_4">
-                <property name="bottomMargin">
-                 <number>0</number>
-                </property>
+               <layout class="QHBoxLayout" name="horizontalLayout_5">
                 <item>
-                 <widget class="QLabel" name="label_4">
+                 <widget class="QLabel" name="label_3">
                   <property name="text">
-                   <string>Seed count</string>
+                   <string>Pruning Iteration(s):</string>
                   </property>
                  </widget>
                 </item>
                 <item>
-                 <widget class="QSpinBox" name="seed_count">
-                  <property name="maximumSize">
-                   <size>
-                    <width>75</width>
-                    <height>16777215</height>
-                   </size>
-                  </property>
+                 <widget class="QSpinBox" name="tip">
                   <property name="minimum">
+                   <number>0</number>
+                  </property>
+                  <property name="maximum">
                    <number>100</number>
-                  </property>
-                  <property name="maximum">
-                   <number>500000</number>
-                  </property>
-                  <property name="value">
-                   <number>50000</number>
-                  </property>
-                 </widget>
-                </item>
-                <item>
-                 <widget class="QLabel" name="label_2">
-                  <property name="text">
-                   <string>Thread Count</string>
-                  </property>
-                 </widget>
-                </item>
-                <item>
-                 <widget class="QSpinBox" name="multithread">
-                  <property name="minimumSize">
-                   <size>
-                    <width>50</width>
-                    <height>0</height>
-                   </size>
-                  </property>
-                  <property name="maximumSize">
-                   <size>
-                    <width>50</width>
-                    <height>16777215</height>
-                   </size>
-                  </property>
-                  <property name="minimum">
-                   <number>1</number>
-                  </property>
-                  <property name="maximum">
-                   <number>32</number>
                   </property>
                   <property name="value">
                    <number>4</number>
                   </property>
                  </widget>
                 </item>
-               </layout>
-              </item>
-              <item>
-               <layout class="QHBoxLayout" name="horizontalLayout_6">
-                <property name="bottomMargin">
-                 <number>0</number>
-                </property>
                 <item>
-                 <widget class="QCheckBox" name="normalize_qa">
-                  <property name="text">
-                   <string>normalize SDF</string>
+                 <spacer name="horizontalSpacer_9">
+                  <property name="orientation">
+                   <enum>Qt::Horizontal</enum>
                   </property>
-                 </widget>
-                </item>
-                <item>
-                 <widget class="QCheckBox" name="output_resampling">
-                  <property name="text">
-                   <string>Output resampling</string>
+                  <property name="sizeHint" stdset="0">
+                   <size>
+                    <width>40</width>
+                    <height>20</height>
+                   </size>
                   </property>
-                  <property name="checked">
-                   <bool>true</bool>
-                  </property>
-                 </widget>
+                 </spacer>
                 </item>
                </layout>
               </item>
@@ -1155,69 +1143,155 @@
        </item>
       </layout>
      </widget>
-     <widget class="QTabWidget" name="tabWidget_2">
+     <widget class="QWidget" name="widget_2" native="true">
       <property name="sizePolicy">
-       <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-        <horstretch>2</horstretch>
+       <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+        <horstretch>3</horstretch>
         <verstretch>0</verstretch>
        </sizepolicy>
       </property>
-      <property name="currentIndex">
-       <number>0</number>
-      </property>
-      <widget class="QWidget" name="tab">
-       <attribute name="title">
-        <string>Results</string>
-       </attribute>
-       <layout class="QVBoxLayout" name="verticalLayout_3">
-        <item>
-         <layout class="QHBoxLayout" name="horizontalLayout_16">
-          <item>
-           <widget class="QPushButton" name="show_result">
-            <property name="enabled">
-             <bool>true</bool>
-            </property>
-            <property name="font">
-             <font>
-              <weight>75</weight>
-              <bold>true</bold>
-             </font>
-            </property>
-            <property name="text">
-             <string>Step C3f: View Results in 3D</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <spacer name="horizontalSpacer">
-            <property name="orientation">
-             <enum>Qt::Horizontal</enum>
-            </property>
-            <property name="sizeHint" stdset="0">
-             <size>
-              <width>40</width>
-              <height>20</height>
-             </size>
-            </property>
-           </spacer>
-          </item>
-         </layout>
-        </item>
-        <item>
-         <widget class="QWidget" name="widget_5" native="true">
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
-            <horstretch>0</horstretch>
-            <verstretch>0</verstretch>
-           </sizepolicy>
-          </property>
-          <property name="minimumSize">
-           <size>
-            <width>0</width>
-            <height>100</height>
-           </size>
-          </property>
-          <layout class="QVBoxLayout" name="verticalLayout_5">
+      <layout class="QVBoxLayout" name="verticalLayout_9">
+       <item>
+        <widget class="QTabWidget" name="tabWidget_2">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+           <horstretch>2</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="currentIndex">
+          <number>0</number>
+         </property>
+         <widget class="QWidget" name="tab">
+          <attribute name="title">
+           <string>Results</string>
+          </attribute>
+          <layout class="QVBoxLayout" name="verticalLayout_3">
+           <item>
+            <layout class="QHBoxLayout" name="horizontalLayout_16">
+             <item>
+              <widget class="QPushButton" name="show_result">
+               <property name="enabled">
+                <bool>true</bool>
+               </property>
+               <property name="font">
+                <font>
+                 <weight>75</weight>
+                 <bold>true</bold>
+                </font>
+               </property>
+               <property name="text">
+                <string>Step C3f: View Results in 3D</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <spacer name="horizontalSpacer">
+               <property name="orientation">
+                <enum>Qt::Horizontal</enum>
+               </property>
+               <property name="sizeHint" stdset="0">
+                <size>
+                 <width>40</width>
+                 <height>20</height>
+                </size>
+               </property>
+              </spacer>
+             </item>
+            </layout>
+           </item>
+           <item>
+            <widget class="QWidget" name="widget_5" native="true">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="minimumSize">
+              <size>
+               <width>0</width>
+               <height>100</height>
+              </size>
+             </property>
+             <layout class="QVBoxLayout" name="verticalLayout_5">
+              <property name="spacing">
+               <number>0</number>
+              </property>
+              <property name="leftMargin">
+               <number>0</number>
+              </property>
+              <property name="topMargin">
+               <number>0</number>
+              </property>
+              <property name="rightMargin">
+               <number>0</number>
+              </property>
+              <property name="bottomMargin">
+               <number>0</number>
+              </property>
+              <item>
+               <widget class="QSplitter" name="splitter_2">
+                <property name="orientation">
+                 <enum>Qt::Vertical</enum>
+                </property>
+                <widget class="QWidget" name="chart_widget" native="true">
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
+                   <horstretch>0</horstretch>
+                   <verstretch>3</verstretch>
+                  </sizepolicy>
+                 </property>
+                 <property name="minimumSize">
+                  <size>
+                   <width>0</width>
+                   <height>180</height>
+                  </size>
+                 </property>
+                 <layout class="QHBoxLayout" name="chart_widget_layout">
+                  <property name="spacing">
+                   <number>0</number>
+                  </property>
+                  <property name="leftMargin">
+                   <number>0</number>
+                  </property>
+                  <property name="topMargin">
+                   <number>0</number>
+                  </property>
+                  <property name="rightMargin">
+                   <number>0</number>
+                  </property>
+                  <property name="bottomMargin">
+                   <number>0</number>
+                  </property>
+                 </layout>
+                </widget>
+                <widget class="QTextBrowser" name="textBrowser">
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
+                   <horstretch>0</horstretch>
+                   <verstretch>1</verstretch>
+                  </sizepolicy>
+                 </property>
+                 <property name="maximumSize">
+                  <size>
+                   <width>65525</width>
+                   <height>65525</height>
+                  </size>
+                 </property>
+                </widget>
+               </widget>
+              </item>
+             </layout>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+         <widget class="QWidget" name="tab_2">
+          <attribute name="title">
+           <string>Results (raw data)</string>
+          </attribute>
+          <layout class="QVBoxLayout" name="verticalLayout_10">
            <property name="spacing">
             <number>0</number>
            </property>
@@ -1234,114 +1308,40 @@
             <number>0</number>
            </property>
            <item>
-            <widget class="QSplitter" name="splitter_2">
-             <property name="orientation">
-              <enum>Qt::Vertical</enum>
+            <widget class="QTableWidget" name="dist_table">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
              </property>
-             <widget class="QWidget" name="chart_widget" native="true">
-              <property name="sizePolicy">
-               <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
-                <horstretch>0</horstretch>
-                <verstretch>3</verstretch>
-               </sizepolicy>
+             <column>
+              <property name="text">
+               <string>span</string>
               </property>
-              <property name="minimumSize">
-               <size>
-                <width>0</width>
-                <height>180</height>
-               </size>
+             </column>
+             <column>
+              <property name="text">
+               <string>pdf(x)</string>
               </property>
-              <layout class="QHBoxLayout" name="chart_widget_layout">
-               <property name="spacing">
-                <number>0</number>
-               </property>
-               <property name="leftMargin">
-                <number>0</number>
-               </property>
-               <property name="topMargin">
-                <number>0</number>
-               </property>
-               <property name="rightMargin">
-                <number>0</number>
-               </property>
-               <property name="bottomMargin">
-                <number>0</number>
-               </property>
-              </layout>
-             </widget>
-             <widget class="QTextBrowser" name="textBrowser">
-              <property name="sizePolicy">
-               <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
-                <horstretch>0</horstretch>
-                <verstretch>1</verstretch>
-               </sizepolicy>
+             </column>
+             <column>
+              <property name="text">
+               <string>cdf(x)</string>
               </property>
-              <property name="maximumSize">
-               <size>
-                <width>65525</width>
-                <height>65525</height>
-               </size>
+             </column>
+             <column>
+              <property name="text">
+               <string>FDR</string>
               </property>
-             </widget>
+             </column>
             </widget>
            </item>
           </layout>
          </widget>
-        </item>
-       </layout>
-      </widget>
-      <widget class="QWidget" name="tab_2">
-       <attribute name="title">
-        <string>Results (raw data)</string>
-       </attribute>
-       <layout class="QVBoxLayout" name="verticalLayout_10">
-        <property name="spacing">
-         <number>0</number>
-        </property>
-        <property name="leftMargin">
-         <number>0</number>
-        </property>
-        <property name="topMargin">
-         <number>0</number>
-        </property>
-        <property name="rightMargin">
-         <number>0</number>
-        </property>
-        <property name="bottomMargin">
-         <number>0</number>
-        </property>
-        <item>
-         <widget class="QTableWidget" name="dist_table">
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
-            <horstretch>0</horstretch>
-            <verstretch>0</verstretch>
-           </sizepolicy>
-          </property>
-          <column>
-           <property name="text">
-            <string>span</string>
-           </property>
-          </column>
-          <column>
-           <property name="text">
-            <string>pdf(x)</string>
-           </property>
-          </column>
-          <column>
-           <property name="text">
-            <string>cdf(x)</string>
-           </property>
-          </column>
-          <column>
-           <property name="text">
-            <string>FDR</string>
-           </property>
-          </column>
-         </widget>
-        </item>
-       </layout>
-      </widget>
+        </widget>
+       </item>
+      </layout>
      </widget>
     </widget>
    </item>

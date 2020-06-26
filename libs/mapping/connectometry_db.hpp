@@ -16,10 +16,10 @@ public:
 public: // demographi infomation
     std::vector<std::string> titles;
     std::vector<std::string> items;
-    std::vector<int> feature_location;
+    std::vector<size_t> feature_location;
     std::vector<std::string> feature_titles;
     std::vector<double> X;
-    bool parse_demo(const std::string& filename,float missing_value);
+    bool parse_demo(const std::string& filename);
 
 public:// subject specific data
     std::vector<std::string> subject_names;
@@ -78,9 +78,6 @@ public:
 
 class stat_model{
 public:
-    tipl::uniform_dist<int> rand_gen;
-    std::mutex  lock_random;
-public:
     std::vector<unsigned int> subject_index;
 public:
     unsigned int type;
@@ -109,7 +106,7 @@ public:
 public:
     void read_demo(const connectometry_db& db);
     void remove_subject(unsigned int index);    
-    bool resample(stat_model& rhs,bool null,bool bootstrap);
+    bool resample(stat_model& rhs,bool null,bool bootstrap,unsigned int seed);
     bool pre_process(void);
     double operator()(const std::vector<double>& population,unsigned int pos) const;
     void clear(void)

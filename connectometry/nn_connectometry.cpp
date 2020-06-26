@@ -52,7 +52,7 @@ void nn_connectometry::on_open_mr_files_clicked()
         return;
     auto& db = nna.handle->db;
     // read demographic file
-    if(!db.parse_demo(filename.toStdString(),9999))
+    if(!db.parse_demo(filename.toStdString()))
     {
         QMessageBox::information(this,"Error",db.error_msg.c_str(),0);
         return;

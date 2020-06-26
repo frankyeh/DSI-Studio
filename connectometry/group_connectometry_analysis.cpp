@@ -37,14 +37,17 @@ bool group_connectometry_analysis::load_database(const char* database_name)
 }
 
 
-int group_connectometry_analysis::run_track(const tracking_data& fib,std::vector<std::vector<float> >& tracks,int seed_count, unsigned int thread_count)
+int group_connectometry_analysis::run_track(const tracking_data& fib,
+                                            std::vector<std::vector<float> >& tracks,
+                                            int seed_count,
+                                            unsigned int thread_count)
 {
     ThreadData tracking_thread(handle.get());
     tracking_thread.param.threshold = tracking_threshold;
     tracking_thread.param.cull_cos_angle = 1.0f;
     tracking_thread.param.step_size = handle->vs[0];
     tracking_thread.param.smooth_fraction = 0;
-    tracking_thread.param.min_length = 0;
+    tracking_thread.param.min_length = float(length_threshold_voxels)*handle->vs[0];
     tracking_thread.param.max_length = 2.0f*float(std::max<unsigned int>(fib.dim[0],std::max<unsigned int>(fib.dim[1],fib.dim[2])))*handle->vs[0];
     tracking_thread.param.tracking_method = 0;// streamline fiber tracking
     tracking_thread.param.initial_direction = 0;// main directions
@@ -56,15 +59,6 @@ int group_connectometry_analysis::run_track(const tracking_data& fib,std::vector
     tracking_thread.roi_mgr = roi_mgr;
     tracking_thread.run(fib,thread_count,true);
     tracking_thread.track_buffer.swap(tracks);
-
-    if(track_trimming)
-    {
-        TractModel t(handle.get());
-        t.add_tracts(tracks);
-        for(unsigned int i = 0;i < track_trimming && t.get_visible_track_count();++i)
-            t.trim();
-        tracks.swap(t.get_tracts());
-    }
     return int(tracks.size());
 }
 
@@ -88,143 +82,165 @@ void group_connectometry_analysis::run_permutation_multithread(unsigned int id,u
     connectometry_result data;
     tracking_data fib;
     fib.read(*handle);
-    std::vector<std::vector<float> > tracks;
-    const int max_visible_track = 1000000;
+
+    if(id == 0)
     {
-        bool null = true;
-        for(int i = id;i < permutation_count && !terminated;)
+        stat_model info;
+        info.resample(*model.get(),false,false,0);
+        calculate_spm(*spm_map.get(),info,normalize_qa);
+        preproces = 0;
+    }
+
+    bool null = true;
+    auto total_track = [&](void){return neg_corr_track->get_visible_track_count()+
+                                        pos_corr_track->get_visible_track_count();};
+    for(unsigned int i = id;i < permutation_count && !terminated;)
+    {
+        std::vector<std::vector<float> > pos_tracks,neg_tracks;
+
+        stat_model info;
+
+        info.resample(*model.get(),null,true,i);
+        calculate_spm(data,info,normalize_qa);
+        fib.fa = data.neg_corr_ptr;
+
+        run_track(fib,neg_tracks,seed_count);
+        cal_hist(neg_tracks,(null) ? subject_neg_corr_null : subject_neg_corr);
+
+
+        info.resample(*model.get(),null,true,i);
+        calculate_spm(data,info,normalize_qa);
+        fib.fa = data.pos_corr_ptr;
+
+        run_track(fib,pos_tracks,seed_count);
+        cal_hist(pos_tracks,(null) ? subject_pos_corr_null : subject_pos_corr);
+
         {
-
-            stat_model info;
-            info.resample(*model.get(),null,true);
-            calculate_spm(data,info,normalize_qa);
-
-            fib.fa = data.neg_corr_ptr;
-            unsigned int s = run_track(fib,tracks,seed_count);
+            std::lock_guard<std::mutex> lock(lock_add_tracks);
             if(null)
-                seed_neg_corr_null[i] = s;
+            {
+                neg_null_corr_track->add_tracts(neg_tracks,length_threshold_voxels,tipl::rgb(0x004040F0));
+                pos_null_corr_track->add_tracts(pos_tracks,length_threshold_voxels,tipl::rgb(0x00F04040));
+            }
             else
-                seed_neg_corr[i] = s;
-
-            cal_hist(tracks,(null) ? subject_neg_corr_null : subject_neg_corr);
-
-            if(output_resampling && !null)
             {
-                std::lock_guard<std::mutex> lock(lock_neg_corr_tracks);
-                if(tracks.size() > max_visible_track/permutation_count)
-                    tracks.resize(max_visible_track/permutation_count);
-                neg_corr_track->add_tracts(tracks,length_threshold);
-                if(id == 1)
-                {
-                    neg_corr_track->delete_repeated(1.0f);
-                    neg_corr_track->clear_deleted();
-                }
-                tracks.clear();
-            }
-
-            info.resample(*model.get(),null,true);
-            calculate_spm(data,info,normalize_qa);
-            fib.fa = data.pos_corr_ptr;
-            s = run_track(fib,tracks,seed_count);
-            if(null)
-                seed_pos_corr_null[i] = s;
-            else
-                seed_pos_corr[i] = s;
-            cal_hist(tracks,(null) ? subject_pos_corr_null : subject_pos_corr);
-
-            if(output_resampling && !null)
-            {
-                std::lock_guard<std::mutex> lock(lock_pos_corr_tracks);
-                if(tracks.size() > max_visible_track/permutation_count)
-                    tracks.resize(max_visible_track/permutation_count);
-                pos_corr_track->add_tracts(tracks,length_threshold);
-                if(id == 1)
-                {
-                    pos_corr_track->delete_repeated(1.0f);
-                    pos_corr_track->clear_deleted();
-                }
-                tracks.clear();
-            }
-
-            if(!null)
-            {
-                i += thread_count;
-                if(id == 0)
-                    progress = i*100/permutation_count;
-            }
-            null = !null;
-        }
-        if(id == 0)
-        {
-            stat_model info;
-            info.resample(*model.get(),false,false);
-            calculate_spm(*spm_map.get(),info,normalize_qa);
-
-            if(terminated)
-                return;
-            if(!output_resampling)
-            {
-                fib.fa = spm_map->neg_corr_ptr;
-                run_track(fib,tracks,seed_count*permutation_count,threads.size());
-                if(tracks.size() > max_visible_track)
-                    tracks.resize(max_visible_track);
-                neg_corr_track->add_tracts(tracks,length_threshold);
-                fib.fa = spm_map->pos_corr_ptr;
-                run_track(fib,tracks,seed_count*permutation_count,threads.size());
-                if(tracks.size() > max_visible_track)
-                    tracks.resize(max_visible_track);
-                pos_corr_track->add_tracts(tracks,length_threshold);
+                neg_corr_track->add_tracts(neg_tracks,length_threshold_voxels,tipl::rgb(0x004040F0));
+                pos_corr_track->add_tracts(pos_tracks,length_threshold_voxels,tipl::rgb(0x00F04040));
             }
         }
+
+        if(!null)
+        {
+            ++preproces;
+            i += thread_count;
+            if(id == 0)
+            {
+                if(preproces > 100 && total_track() < 100 &&
+                   (seed_count < 640000))
+                {
+                    std::cout << "total track=" << total_track() << " analysis restarted with higher seed count..." << std::endl;
+                    if(terminated)
+                        return;
+                    // stop other threads
+                    terminated = true;
+                    for(size_t index = 1;index < threads.size();++index)
+                        threads[index]->wait();
+                    terminated = false;
+                    // clear all records
+                    neg_corr_track->clear();
+                    pos_corr_track->clear();
+                    std::fill(subject_neg_corr_null.begin(),subject_neg_corr_null.end(),0);
+                    std::fill(subject_pos_corr_null.begin(),subject_pos_corr_null.end(),0);
+                    std::fill(subject_neg_corr.begin(),subject_neg_corr.end(),0);
+                    std::fill(subject_pos_corr.begin(),subject_pos_corr.end(),0);
+                    // adjust parameters
+                    seed_count*= 2;
+                    std::cout << "now running seed count=" << seed_count << std::endl;
+                    threads.resize(1);
+                    for(unsigned int index = 1;index < thread_count;++index)
+                        threads.push_back(std::make_shared<std::future<void> >(std::async(std::launch::async,
+                            [this,index,thread_count,permutation_count](){run_permutation_multithread(index,thread_count,permutation_count);})));
+
+                    preproces = 0;
+                    i = 0;
+                }
+                progress = uint32_t(i*95/permutation_count);
+            }
+        }
+        null = !null;
     }
     if(id == 0 && !terminated)
-        progress = 100;
-}
-void group_connectometry_analysis::clear(void)
-{
-    if(!threads.empty())
     {
-        terminated = true;
-        wait();
-        threads.clear();
-        terminated = false;
-    }
-}
-void group_connectometry_analysis::wait(void)
-{
-    for(int i = 0;i < threads.size();++i)
-        threads[i]->wait();
-}
+        for(size_t index = 1;index < threads.size();++index)
+            threads[index]->wait();
+        for(size_t index = 0;index < tip;++index)
+        {
+            neg_null_corr_track->trim();
+            pos_null_corr_track->trim();
+            neg_corr_track->trim();
+            pos_corr_track->trim();
+        }
+        // update fdr table
+        std::fill(subject_neg_corr_null.begin(),subject_neg_corr_null.end(),0);
+        std::fill(subject_pos_corr_null.begin(),subject_pos_corr_null.end(),0);
+        std::fill(subject_neg_corr.begin(),subject_neg_corr.end(),0);
+        std::fill(subject_pos_corr.begin(),subject_pos_corr.end(),0);
+        cal_hist(neg_corr_track->get_tracts(),subject_neg_corr);
+        cal_hist(neg_null_corr_track->get_tracts(),subject_neg_corr_null);
+        cal_hist(pos_corr_track->get_tracts(),subject_pos_corr);
+        cal_hist(pos_null_corr_track->get_tracts(),subject_pos_corr_null);
+        calculate_FDR();
 
+        // output distribution values
+        {
+            std::ofstream out((output_file_name+".fdr_dist.values.txt").c_str());
+            out << "voxel_dis\tfdr_pos_cor\tfdr_neg_corr\t#track_pos_corr_null\t#track_neg_corr_null\t#track_pos_corr\t#track_neg_corr" << std::endl;
+            for(size_t index = length_threshold_voxels;index < fdr_pos_corr.size()-1;++index)
+            {
+                out << index
+                    << "\t" << fdr_pos_corr[index]
+                    << "\t" << fdr_neg_corr[index]
+                    << "\t" << subject_pos_corr_null[index]
+                    << "\t" << subject_neg_corr_null[index]
+                    << "\t" << subject_pos_corr[index]
+                    << "\t" << subject_neg_corr[index] << std::endl;
+            }
+        }
 
-void group_connectometry_analysis::save_tracks_files(void)
-{
-    for(int i = 0;i < threads.size();++i)
-        threads[i]->wait();
-    has_pos_corr_result = false;
-    has_neg_corr_result = false;
-    {
+        if(fdr_threshold != 0.0f)
+        {
+            bool has_result = false;
+            for(size_t length = length_threshold_voxels;length < fdr_pos_corr.size();++length)
+                if(fdr_pos_corr[length] <= fdr_threshold)
+                {
+                    pos_corr_track->delete_by_length(length);
+                    pos_corr_track->clear_deleted();
+                    has_result = true;
+                    break;
+                }
+            if(!has_result)
+                pos_corr_track->clear();
+            has_result = false;
+            for(size_t length = length_threshold_voxels;length < fdr_neg_corr.size();++length)
+                if(fdr_neg_corr[length] <= fdr_threshold)
+                {
+                    neg_corr_track->delete_by_length(length);
+                    neg_corr_track->clear_deleted();
+                    has_result = true;
+                    break;
+                }
+            if(!has_result)
+                neg_corr_track->clear();
+        }
+
+        pos_corr_track->delete_repeated(1.0);
+        neg_corr_track->delete_repeated(1.0);
+
         if(pos_corr_track->get_visible_track_count())
         {
-            if(fdr_threshold != 0.0)
-            {
-                fdr_pos_corr.back() = 0.0f;
-                for(int length = 10;length < fdr_pos_corr.size();++length)
-                    if(fdr_pos_corr[length] <= fdr_threshold)
-                    {
-                        pos_corr_track->delete_by_length(length);
-                        break;
-                    }
-            }
-            pos_corr_track->delete_repeated(1.0);
             std::ostringstream out1;
             out1 << output_file_name << ".pos_corr.trk.gz";
             pos_corr_track->save_tracts_to_file(out1.str().c_str());
-            pos_corr_tracks_result = "";
-            handle->recognize_report(pos_corr_track,pos_corr_tracks_result);
-            if(pos_corr_tracks_result.empty())
-                pos_corr_tracks_result = "tracks";
-            has_pos_corr_result = true;
         }
         else
         {
@@ -233,28 +249,11 @@ void group_connectometry_analysis::save_tracks_files(void)
             std::ofstream(out1.str().c_str());
         }
 
-
         if(neg_corr_track->get_visible_track_count())
         {
-            if(fdr_threshold != 0.0)
-            {
-                fdr_neg_corr.back() = 0.0f;
-                for(int length = 10;length < fdr_neg_corr.size();++length)
-                    if(fdr_neg_corr[length] <= fdr_threshold)
-                    {
-                        neg_corr_track->delete_by_length(length);
-                        break;
-                    }
-            }
-            neg_corr_track->delete_repeated(1.0);
             std::ostringstream out1;
             out1 << output_file_name << ".neg_corr.trk.gz";
             neg_corr_track->save_tracts_to_file(out1.str().c_str());
-            neg_corr_tracks_result = "";
-            handle->recognize_report(neg_corr_track,neg_corr_tracks_result);
-            if(neg_corr_tracks_result.empty())
-                neg_corr_tracks_result = "tracks";
-            has_neg_corr_result = true;
         }
         else
         {
@@ -291,8 +290,28 @@ void group_connectometry_analysis::save_tracks_files(void)
             }
         }
 
+        progress = 100;
+
     }
 }
+void group_connectometry_analysis::clear(void)
+{
+    if(!threads.empty())
+    {
+        while(terminated)
+            std::this_thread::sleep_for(std::chrono::milliseconds(200));
+        terminated = true;
+        wait();
+        threads.clear();
+        terminated = false;
+    }
+}
+void group_connectometry_analysis::wait(void)
+{
+    for(size_t i = 0;i < threads.size();++i)
+        threads[i]->wait();
+}
+
 
 std::string iterate_items(const std::vector<std::string>& item)
 {
@@ -318,7 +337,7 @@ void group_connectometry_analysis::run_permutation(unsigned int thread_count,uns
     {
         std::ostringstream out;
 
-        out << "\nDiffusion MRI connectometry (Yeh et al. NeuroImage 125 (2016): 162-171) was used to derive the correlation tractography that has ";
+        out << "\nDiffusion MRI connectometry (Yeh et al. NeuroImage 125 (2016): 162-171) was used to derive the correlational tractography that has ";
         if(handle->db.is_longitudinal)
             out << "a longitudinal change of ";
         out << handle->db.index_name;
@@ -351,21 +370,17 @@ void group_connectometry_analysis::run_permutation(unsigned int thread_count,uns
 
         // report other parameters
         out << " A T-score threshold of " << tracking_threshold;
-        out << " was assigned and tracked using a deterministic fiber tracking algorithm (Yeh et al. PLoS ONE 8(11): e80713, 2013) to obtain correlation tractography.";
+        out << " was assigned and tracked using a deterministic fiber tracking algorithm (Yeh et al. PLoS ONE 8(11): e80713, 2013) to obtain correlational tractography.";
 
         if(normalize_qa)
             out << " The QA values were normalized.";
-        if(track_trimming)
-            out << " Topology-informed pruning (Yeh et al. Neurotherapeutics, 16(1), 52-58, 2019) was conducted with " << track_trimming << " iterations to remove false connections.";
-
-        if(output_resampling)
-            out << " All tracks generated from bootstrap resampling were included.";
-
+        if(tip)
+            out << " The tracks were filtered by topology-informed pruning (Yeh et al. Neurotherapeutics, 16(1), 52-58, 2019) with "
+                << tip << " iteration(s).";
         if(fdr_threshold == 0.0f)
-            out << " A length threshold of " << length_threshold << " voxel distance was used to select tracks.";
+            out << " A length threshold of " << length_threshold_voxels << " voxel distance was used to select tracks.";
         else
             out << " An FDR threshold of " << fdr_threshold << " was used to select tracks.";
-        out << " The seeding number for each permutation was " << seed_count << ".";
 
         out << " To estimate the false discovery rate, a total of "
             << permutation_count
@@ -376,13 +391,13 @@ void group_connectometry_analysis::run_permutation(unsigned int thread_count,uns
     }
 
     // setup output file name
+    if(output_file_name.empty())
     {
         if(model->type == 1) // run regression model
         {
+            output_file_name += foi_str;
             output_file_name += ".t";
             output_file_name += std::to_string((int)tracking_threshold);
-            output_file_name += ".";
-            output_file_name += foi_str;
         }
         if(model->type == 3) // longitudinal change
         {
@@ -392,10 +407,11 @@ void group_connectometry_analysis::run_permutation(unsigned int thread_count,uns
 
         if(normalize_qa)
             output_file_name += ".nqa";
-        if(fdr_threshold == 0)
+
+        if(fdr_threshold == 0.0f)
         {
             output_file_name += ".length";
-            output_file_name += std::to_string((int)length_threshold);
+            output_file_name += std::to_string(length_threshold_voxels);
         }
         else
         {
@@ -407,7 +423,6 @@ void group_connectometry_analysis::run_permutation(unsigned int thread_count,uns
 
     size_t max_dimension = *std::max_element(handle->dim.begin(),handle->dim.end());
 
-    terminated = false;
     subject_pos_corr_null.clear();
     subject_pos_corr_null.resize(max_dimension);
     subject_neg_corr_null.clear();
@@ -421,56 +436,66 @@ void group_connectometry_analysis::run_permutation(unsigned int thread_count,uns
     fdr_neg_corr.clear();
     fdr_neg_corr.resize(max_dimension);
 
-    seed_pos_corr_null.clear();
-    seed_pos_corr_null.resize(permutation_count);
-    seed_neg_corr_null.clear();
-    seed_neg_corr_null.resize(permutation_count);
-    seed_pos_corr.clear();
-    seed_pos_corr.resize(permutation_count);
-    seed_neg_corr.clear();
-    seed_neg_corr.resize(permutation_count);
-
-    model->rand_gen.reset();
-    std::srand(0);
-
-    has_pos_corr_result = true;
-    has_neg_corr_result = true;
-    pos_corr_tracks_result = "tracks";
-    neg_corr_tracks_result = "tracks";
-
     pos_corr_track = std::make_shared<TractModel>(handle.get());
     neg_corr_track = std::make_shared<TractModel>(handle.get());
+    pos_null_corr_track = std::make_shared<TractModel>(handle.get());
+    neg_null_corr_track = std::make_shared<TractModel>(handle.get());
     spm_map = std::make_shared<connectometry_result>();
 
+    terminated = false;
     progress = 0;
+    // need to be initialized
+    seed_count = 10000;
     for(unsigned int index = 0;index < thread_count;++index)
         threads.push_back(std::make_shared<std::future<void> >(std::async(std::launch::async,
             [this,index,thread_count,permutation_count](){run_permutation_multithread(index,thread_count,permutation_count);})));
 }
 void group_connectometry_analysis::calculate_FDR(void)
 {
-    double sum_pos_corr_null = 0;
-    double sum_neg_corr_null = 0;
-    double sum_pos_corr = 0;
-    double sum_neg_corr = 0;
-    for(int index = subject_pos_corr_null.size()-1;index >= 0;--index)
+    double sum_pos_corr_null = 0.0;
+    double sum_neg_corr_null = 0.0;
+    double sum_pos_corr = 0.0;
+    double sum_neg_corr = 0.0;
+    for(int index = int(subject_pos_corr_null.size())-1;index >= 0;--index)
     {
-        sum_pos_corr_null += subject_pos_corr_null[index];
-        sum_neg_corr_null += subject_neg_corr_null[index];
-        sum_pos_corr += subject_pos_corr[index];
-        sum_neg_corr += subject_neg_corr[index];
-        fdr_pos_corr[index] = (sum_pos_corr > 0.0 && sum_pos_corr_null > 0.0) ? std::min(1.0,sum_pos_corr_null/sum_pos_corr) : 1.0;
-        fdr_neg_corr[index] = (sum_neg_corr > 0.0 && sum_neg_corr_null > 0.0) ? std::min(1.0,sum_neg_corr_null/sum_neg_corr): 1.0;
-
+        if(sum_pos_corr_null == 0.0 && (subject_pos_corr_null[size_t(index)] != 0 || index == 0) && sum_pos_corr > 0.0)
+        {
+            float tail_fdr = 1.0f/float(sum_pos_corr);
+            for(int j = int(subject_pos_corr.size())-1;j >= index;--j)
+                if(subject_pos_corr[size_t(j)])
+                {
+                    for(int k = index;k <= j;++k)
+                        fdr_pos_corr[size_t(k)] = tail_fdr;
+                    break;
+                }
+        }
+        if(sum_neg_corr_null == 0.0 && (subject_neg_corr_null[size_t(index)] != 0 || index == 0) && sum_neg_corr > 0.0)
+        {
+            float tail_fdr = 1.0f/float(sum_neg_corr);
+            for(int j = int(subject_neg_corr.size())-1;j >= index;--j)
+                if(subject_neg_corr[size_t(j)])
+                {
+                    for(int k = index;k <= j;++k)
+                        fdr_neg_corr[size_t(k)] = tail_fdr;
+                    break;
+                }
+        }
+        sum_pos_corr_null += subject_pos_corr_null[size_t(index)];
+        sum_neg_corr_null += subject_neg_corr_null[size_t(index)];
+        sum_pos_corr += subject_pos_corr[size_t(index)];
+        sum_neg_corr += subject_neg_corr[size_t(index)];
+        fdr_pos_corr[size_t(index)] = float((sum_pos_corr > 0.0) ? std::min<double>(1.0,sum_pos_corr_null/sum_pos_corr): 1.0);
+        fdr_neg_corr[size_t(index)] = float((sum_neg_corr > 0.0) ? std::min<double>(1.0,sum_neg_corr_null/sum_neg_corr): 1.0);
     }
-    if(*std::min_element(fdr_pos_corr.begin(),fdr_pos_corr.end()) < 0.05)
-        std::replace(fdr_pos_corr.begin(),fdr_pos_corr.end(),1.0,0.0);
-    if(*std::min_element(fdr_neg_corr.begin(),fdr_neg_corr.end()) < 0.05)
-        std::replace(fdr_neg_corr.begin(),fdr_neg_corr.end(),1.0,0.0);
+    if(*std::min_element(fdr_pos_corr.begin(),fdr_pos_corr.end()) < 0.05f)
+        std::replace(fdr_pos_corr.begin(),fdr_pos_corr.end(),1.0f,0.0f);
+    if(*std::min_element(fdr_neg_corr.begin(),fdr_neg_corr.end()) < 0.05f)
+        std::replace(fdr_neg_corr.begin(),fdr_neg_corr.end(),1.0f,0.0f);
 }
 
 void group_connectometry_analysis::generate_report(std::string& output)
 {
+    std::string pos_corr_tracks_result("tracks"),neg_corr_tracks_result("tracks");
     std::ostringstream html_report((output_file_name+".report.html").c_str());
     html_report << "<!DOCTYPE html>" << std::endl;
     html_report << "<html><head><title>Connectometry Report</title></head>" << std::endl;
@@ -488,72 +513,109 @@ void group_connectometry_analysis::generate_report(std::string& output)
 
 
     std::string index_name = QString(handle->db.index_name.c_str()).toUpper().toStdString();
-    std::string track_hypothesis1 =
+    std::string track_hypothesis_pos =
         (model->type == 1 ? index_name+" positively correlated with "+foi_str : std::string("increased ")+index_name);
-    std::string track_hypothesis2 =
+    std::string track_hypothesis_neg =
         (model->type == 1 ? index_name+" negatively correlated with "+foi_str : std::string("decreased ")+index_name);
-    std::string fdr_result1,fdr_result2;
+    std::string fdr_result_pos,fdr_result_neg;
+    auto output_fdr = [](float fdr)
+    {
+        std::string str("(FDR = ");
+        str += std::to_string(fdr);
+        str += ")";
+        return str;
+    };
     if(fdr_threshold != 0.0f) // fdr control
     {
-        fdr_result1 = "(FDR ≤ ";
-        fdr_result1 += std::to_string(fdr_threshold);
-        fdr_result1 += ")";
-        fdr_result2 = fdr_result1;
+        fdr_result_pos = "(FDR ≤ ";
+        fdr_result_pos += std::to_string(fdr_threshold);
+        fdr_result_pos += ")";
+        fdr_result_neg = fdr_result_pos;
     }
     else
     {
-        fdr_result1 = "(FDR = ";
-        fdr_result1 += std::to_string(fdr_pos_corr[uint32_t(length_threshold)]);
-        fdr_result1 += ")";
-        fdr_result2 = "(FDR = ";
-        fdr_result2 += std::to_string(fdr_neg_corr[uint32_t(length_threshold)]);
-        fdr_result2 += ")";
+        fdr_result_pos = output_fdr(fdr_pos_corr[length_threshold_voxels]);
+        fdr_result_neg = output_fdr(fdr_neg_corr[length_threshold_voxels]);
     }
 
 
     html_report << "<h2>Results</h2>" << std::endl;
 
     // Positive correlation results
-    html_report << "<h3>Tracks with " << track_hypothesis1 << "</h3>" << std::endl;
+    html_report << "<h3>Tracks with " << track_hypothesis_pos << "</h3>" << std::endl;
+
+    auto output_track_image = [&](std::string name,std::string hypo,std::string fdr)
+    {
+        if(fdr.empty())
+            return;
+        html_report << "<p></p><img src = \""<< QFileInfo(QString(output_file_name.c_str())+"."+name.c_str()+"_map.jpg").fileName().toStdString() << "\" width=\"600\"/>" << std::endl;
+        html_report << "<p></p><img src = \""<< QFileInfo(QString(output_file_name.c_str())+"."+name.c_str()+"_map2.jpg").fileName().toStdString() << "\" width=\"600\"/>" << std::endl;
+        html_report << "<p></p><img src = \""<< QFileInfo(QString(output_file_name.c_str())+"."+name.c_str()+".jpg").fileName().toStdString() << "\" width=\"1200\"/>" << std::endl;
+        html_report << "<p><b>Fig.</b> Tracks with " << hypo << " " << fdr << "</p>" << std::endl;
+    };
+    auto get_track_name = [&](std::shared_ptr<TractModel> track)
+    {
+        std::string name;
+        handle->recognize_report(track,name);
+        if(name.empty())
+            name = "tracks";
+        return name;
+    };
+    auto report_fdr = [&](bool sig,std::string hypo,std::string result,std::string result2){
+        html_report << "<p>";
+        if(sig)
+            html_report << " The connectometry analysis found " << result << " showing ";
+        else
+            html_report << " The connectometry analysis found no significant result in tracks with ";
+        html_report << hypo << " " << result2 << ".</p>" << std::endl;
+    };
+    auto has_pos_corr_finding = [&](void){
+        if(!pos_corr_track->get_visible_track_count())
+            return false;
+        if(fdr_threshold == 0.0f)
+            return fdr_pos_corr[length_threshold_voxels]<= 0.2f;
+        for(size_t i = length_threshold_voxels;i < fdr_pos_corr.size();++i)
+                if(fdr_pos_corr[i] < fdr_threshold)
+                    return true;
+        return false;
+    };
+    auto has_neg_corr_finding = [&](void){
+        if(!neg_corr_track->get_visible_track_count())
+            return false;
+        if(fdr_threshold == 0.0f)
+            return fdr_neg_corr[length_threshold_voxels]<=0.2f;
+        for(size_t i = length_threshold_voxels;i < fdr_neg_corr.size();++i)
+                if(fdr_neg_corr[i] < fdr_threshold)
+                    return true;
+        return false;
+    };
 
     if(progress == 100)
     {
-        html_report << "<p></p><img src = \""<< QFileInfo(QString(output_file_name.c_str())+".pos_corr_map.jpg").fileName().toStdString() << "\" width=\"600\"/>" << std::endl;
-        html_report << "<p></p><img src = \""<< QFileInfo(QString(output_file_name.c_str())+".pos_corr.jpg").fileName().toStdString() << "\" width=\"1200\"/>" << std::endl;
-        html_report << "<p><b>Fig.</b> Tracks with " << track_hypothesis1 << " " << fdr_result1 << "</p>" << std::endl;
+        output_track_image("pos_corr",track_hypothesis_pos,fdr_result_pos);
+        pos_corr_tracks_result = get_track_name(pos_corr_track);
     }
-
-    {
-        html_report << "<p>";
-        if(fdr_pos_corr[uint32_t(length_threshold)]>0.5f || !has_pos_corr_result)
-            html_report << " The connectometry analysis found no significant result in tracks with ";
-        else
-            html_report << " The connectometry analysis found " << pos_corr_tracks_result << " showing ";
-        html_report << track_hypothesis1 << " " << fdr_result1 <<  ".</p>" << std::endl;
-    }
-
+    report_fdr(has_pos_corr_finding(),track_hypothesis_pos,pos_corr_tracks_result,fdr_result_pos);
 
     // Negative correlation results
-    html_report << "<h3>Tracks with " << track_hypothesis2 << "</h3>" << std::endl;
+    html_report << "<h3>Tracks with " << track_hypothesis_neg << "</h3>" << std::endl;
 
     if(progress == 100)
     {
-        html_report << "<p></p><img src = \""<< QFileInfo(QString(output_file_name.c_str())+".neg_corr_map.jpg").fileName().toStdString() << "\" width=\"600\"/>" << std::endl;
-        html_report << "<p></p><img src = \""<< QFileInfo(QString(output_file_name.c_str())+".neg_corr.jpg").fileName().toStdString() << "\" width=\"1200\"/>" << std::endl;
-        html_report << "<p><b>Fig.</b> Tracks with " << track_hypothesis2 << " " << fdr_result2 << "</p>" << std::endl;
+        output_track_image("neg_corr",track_hypothesis_neg,fdr_result_neg);
+        neg_corr_tracks_result = get_track_name(neg_corr_track);
     }
-
-    {
-        html_report << "<p>";
-        if(fdr_neg_corr[uint32_t(length_threshold)]>0.5f || !has_neg_corr_result)
-            html_report << " The connectometry analysis found no significant result in tracks with ";
-        else
-            html_report << " The connectometry analysis found " << neg_corr_tracks_result << " showing ";
-        html_report << track_hypothesis2 << " " << fdr_result2 <<  ".</p>" << std::endl;
-    }
+    report_fdr(has_neg_corr_finding(),track_hypothesis_neg,neg_corr_tracks_result,fdr_result_neg);
 
     if(progress == 100)
     {
+        if(fdr_pos_corr[length_threshold_voxels] < 0.2f || fdr_neg_corr[length_threshold_voxels] < 0.2f)
+        {
+            html_report << "<p></p><img src = \""<< QFileInfo(QString(output_file_name.c_str())+".pos_neg.jpg").fileName().toStdString() << "\" width=\"1200\"/>" << std::endl;
+            html_report << "<p><b>Fig.</b> Correlational tractography with positive correlation (red)" << fdr_result_pos
+                    << " and negative correlation (blue)" << fdr_result_neg << ".</p>" << std::endl;
+        }
+
         std::string permutation_explained =
     " The permutation was applied to subject labels to test results against permuted condition.\
      The histogram under permutated condition represents the result under the null hypothesis.\
@@ -564,11 +626,11 @@ void group_connectometry_analysis::generate_report(std::string& output)
         html_report << "<h3>False discovery rate analysis</h3>" << std::endl;
 
         html_report << "<p></p><img src = \""<< QFileInfo(QString(output_file_name.c_str())+".pos_corr.dist.jpg").fileName().toStdString() << "\" width=\"320\"/>" << std::endl;
-        html_report << "<p><b>Fig.</b> Permutation test showing the histograms of track counts with "<< track_hypothesis1 << ".</p>";
+        html_report << "<p><b>Fig.</b> Permutation test showing the histograms of track counts with "<< track_hypothesis_pos << ".</p>";
 
 
         html_report << "<p></p><img src = \""<< QFileInfo(QString(output_file_name.c_str())+".neg_corr.dist.jpg").fileName().toStdString() << "\" width=\"320\"/>" << std::endl;
-        html_report << "<p><b>Fig.</b> Permutation test showing the histograms of track counts with "<< track_hypothesis2 << ".</p>";
+        html_report << "<p><b>Fig.</b> Permutation test showing the histograms of track counts with "<< track_hypothesis_neg << ".</p>";
 
         html_report << permutation_explained << std::endl;
         html_report << "<p></p><img src = \""<< QFileInfo(QString(output_file_name.c_str())+".fdr.jpg").fileName().toStdString() << "\" width=\"320\"/>" << std::endl;
@@ -584,7 +646,7 @@ void group_connectometry_analysis::generate_report(std::string& output)
     {
         std::shared_ptr<fib_data> new_data(new fib_data);
         *(new_data.get()) = *(handle);
-        tracking_window* new_mdi = new tracking_window(0,new_data);
+        tracking_window* new_mdi = new tracking_window(nullptr,new_data);
         new_mdi->setWindowTitle(output_file_name.c_str());
         new_mdi->show();
         new_mdi->resize(2000,1000);
@@ -597,35 +659,59 @@ void group_connectometry_analysis::generate_report(std::string& output)
         new_mdi->command("set_param","surface_alpha","0.1");
         new_mdi->command("set_roi_view_index","icbm_wm");
         new_mdi->command("add_surface");
-        new_mdi->tractWidget->addNewTracts("greater");
-        new_mdi->tractWidget->tract_models[0]->add(*pos_corr_track.get());
-        new_mdi->command("update_track");
-        new_mdi->command("save_h3view_image",(output_file_name+".pos_corr.jpg").c_str());
-        // do it twice to eliminate 3D artifact
-        new_mdi->command("save_h3view_image",(output_file_name+".pos_corr.jpg").c_str());
-
-        new_mdi->command("tract_to_roi");
         new_mdi->command("set_roi_view_index","icbm_t1w");
         new_mdi->command("set_roi_view_contrast","0.0","190.0");
 
-        new_mdi->command("set_param","roi_zoom","16");
-        new_mdi->command("set_param","roi_layout","4");
-        new_mdi->command("save_roi_image",(output_file_name+".pos_corr_map.jpg").c_str(),"260");
-        new_mdi->command("detele_all_region");
+        auto show_track_result = [&](std::shared_ptr<TractModel> track,std::string name,unsigned int color){
+            if(track->get_visible_track_count())
+            {
+                new_mdi->tractWidget->addNewTracts(name.c_str());
+                new_mdi->tractWidget->tract_models[0]->add(*track.get());
+                new_mdi->command("set_param","tract_color_style","0");
+                new_mdi->command("update_track");
+                new_mdi->command("tract_to_region");
+                new_mdi->command("set_region_color",QString::number(color));
+            }
+            new_mdi->command("save_h3view_image",(output_file_name+"." + name + ".jpg").c_str());
+            // do it twice to eliminate 3D artifact
+            new_mdi->command("save_h3view_image",(output_file_name+"." + name + ".jpg").c_str());
 
+            new_mdi->command("set_param","roi_zoom","32");
+            new_mdi->command("set_param","roi_layout","5");
+            new_mdi->command("save_roi_image",(output_file_name+"." + name + "_map.jpg").c_str(),"700");
+            new_mdi->command("set_roi_view","1");
+            new_mdi->command("set_param","roi_layout","5");
+            new_mdi->command("save_roi_image",(output_file_name+"." + name + "_map2.jpg").c_str(),"550");
+            new_mdi->command("set_roi_view","2");
+            new_mdi->command("delete_all_tract");
+            new_mdi->command("detele_all_region");
+        };
+        show_track_result(pos_corr_track,"pos_corr",0x00F01010);
+        show_track_result(neg_corr_track,"neg_corr",0x001080F0);
 
-        new_mdi->command("delete_all_tract");
-        new_mdi->tractWidget->addNewTracts("lesser");
-        new_mdi->tractWidget->tract_models[0]->add(*neg_corr_track.get());
-        new_mdi->command("update_track");
-        new_mdi->command("save_h3view_image",(output_file_name+".neg_corr.jpg").c_str());
+        if(has_pos_corr_finding() || has_neg_corr_finding())
+        {
+            if(has_pos_corr_finding())
+            {
+                new_mdi->tractWidget->addNewTracts("pos_corr_track");
+                new_mdi->tractWidget->tract_models.back()->add(*pos_corr_track.get());
+            }
+            if(has_neg_corr_finding())
+            {
+                new_mdi->tractWidget->addNewTracts("neg_corr_track");
+                new_mdi->tractWidget->tract_models.back()->add(*neg_corr_track.get());
+            }
+            new_mdi->command("set_param","tract_color_style","1");
+            new_mdi->command("update_track");
+            new_mdi->command("save_h3view_image",(output_file_name+".pos_neg.jpg").c_str());
+            // do it twice to eliminate 3D artifact
+            new_mdi->command("save_h3view_image",(output_file_name+".pos_neg.jpg").c_str());
+            new_mdi->command("set_param","tract_color_style","0");
 
-        new_mdi->command("tract_to_roi");
-        new_mdi->command("save_roi_image",(output_file_name+".neg_corr_map.jpg").c_str(),"260");
-        new_mdi->command("detele_all_region");
-        // restore roi layout
+        }
+
         new_mdi->command("set_param","roi_layout","0");
-
+        // restore roi layout
         new_mdi->close();
     }
 }
