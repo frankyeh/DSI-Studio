@@ -1080,9 +1080,6 @@ unsigned int fib_data::find_nearest(const float* trk,unsigned int length,bool co
         {
             bool skip = false;
             float max_dis = 0.0f;
-            if(tract_cluster[i] == 80) // skipping false track
-                continue;
-
             for(size_t n = 0;n < length;n += 6)
             {
                 float min_dis = norm1(&tract_data[i][0],trk+n);
