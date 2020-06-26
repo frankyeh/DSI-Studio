@@ -201,7 +201,7 @@ std::string run_auto_track(
                             thread.fetchTracks(&tract_model);
                             if(prog_aborted())
                                 return std::string();
-                            std::this_thread::sleep_for(std::chrono::milliseconds(2000));
+                            std::this_thread::sleep_for(std::chrono::seconds(2));
                         }
                         if(prog_aborted())
                             return std::string();
