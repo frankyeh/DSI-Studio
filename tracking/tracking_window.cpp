@@ -517,9 +517,18 @@ bool tracking_window::command(QString cmd,QString param,QString param2)
         scene.show_slice();
         return true;
     }
-    if(cmd == "tract_to_roi")
+    if(cmd == "tract_to_region")
     {
         on_actionTracts_to_seeds_triggered();
+        return true;
+    }
+    if(cmd == "set_region_color")
+    {
+        if(regionWidget->regions.empty())
+            return true;
+        regionWidget->regions.back()->show_region.color = param.toInt();
+        glWidget->updateGL();
+        scene.show_slice();
         return true;
     }
     if(cmd == "add_slice")
@@ -1921,7 +1930,7 @@ void tracking_window::on_actionOpen_Connectivity_Matrix_triggered()
             return;
         }
         unsigned int row,col;
-        const char* ptr = 0;
+        const char* ptr = nullptr;
         if(!in.read("atlas",row,col,ptr))
         {
             QMessageBox::information(this,"Error",QString("Cannot find atlas matrix in file:")+filenames[i],0);
@@ -1937,7 +1946,7 @@ void tracking_window::on_actionOpen_Connectivity_Matrix_triggered()
                 return;
             }
         }
-        const float* buf = 0;
+        const float* buf = nullptr;
         if(!in.read("connectivity",row,col,buf))
         {
             QMessageBox::information(this,"Error",QString("Cannot find connectivity matrix in file:")+filenames[i],0);
@@ -1965,18 +1974,18 @@ void tracking_window::on_actionOpen_Connectivity_Matrix_triggered()
     glWidget->connectivity = std::move(connectivity);
     if(atlas != "roi")
     {
-        regionWidget->delete_all_region();
-        regionWidget->begin_update();
         for(size_t i = 0;i < handle->atlas_list.size();++i)
             if(atlas == handle->atlas_list[i]->name)
             {
+                regionWidget->delete_all_region();
+                regionWidget->begin_update();
                 for(size_t j = 0;j < handle->atlas_list[i]->get_list().size();++j)
                     regionWidget->add_region_from_atlas(handle->atlas_list[i],uint32_t(j));
+                regionWidget->end_update();
                 return;
             }
-        regionWidget->end_update();
         QMessageBox::information(this,"Error",QString("Cannot find ")+atlas.c_str()+
-        " atlas in DSI Studio. Please update DSI Studio package or check the atlas folder",0);
+                    " atlas in DSI Studio. Please update DSI Studio package or check the atlas folder",0);
 
     }
 }
