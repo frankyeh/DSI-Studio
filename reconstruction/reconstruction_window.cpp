@@ -51,6 +51,7 @@ bool is_dsi_half_sphere(const std::vector<unsigned int>& shell);
 bool is_dsi(const std::vector<unsigned int>& shell);
 bool is_multishell(const std::vector<unsigned int>& shell);
 bool need_scheme_balance(const std::vector<unsigned int>& shell);
+size_t match_template(float volume);
 extern std::vector<std::string> fa_template_list;
 reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *parent) :
     QMainWindow(parent),filenames(filenames_),ui(new Ui::reconstruction_window)
@@ -70,8 +71,13 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
     ui->b_table->setHorizontalHeaderLabels(QStringList() << "b value" << "bx" << "by" << "bz");
 
     populate_templates(ui->primary_template);
+    ui->primary_template->setCurrentIndex(int(match_template(
+        handle->voxel.vs[0]*handle->voxel.vs[1]*handle->voxel.vs[2]*handle->voxel.dim.size())));
 
-    ui->primary_template->setCurrentIndex(0);
+    if(ui->primary_template->currentIndex() == 0)
+        ui->diffusion_sampling->setValue(1.25); // human studies
+    else
+        ui->diffusion_sampling->setValue(0.6);  // animal studies (likely ex-vivo)
 
     v2c.two_color(tipl::rgb(0,0,0),tipl::rgb(255,255,255));
     update_dimension();
@@ -99,7 +105,6 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
 
     ui->AdvancedWidget->setVisible(false);
     ui->ThreadCount->setValue(settings.value("rec_thread_count",std::thread::hardware_concurrency()).toInt());
-    ui->diffusion_sampling->setValue(settings.value("rec_gqi_sampling",1.25).toDouble());
     ui->csf_calibration->setChecked(settings.value("csf_calibration",1).toInt());
 
     ui->odf_resolving->setChecked(settings.value("odf_resolving",0).toInt());
@@ -448,7 +453,7 @@ void reconstruction_window::on_GQI_toggled(bool checked)
     ui->csf_calibration->setVisible(handle->is_human_data());
     ui->DT_Option->setVisible(checked);
 }
-size_t match_template(float volume);
+
 void reconstruction_window::on_QSDR_toggled(bool checked)
 {
     ui->ResolutionBox->setVisible(checked);
@@ -462,11 +467,7 @@ void reconstruction_window::on_QSDR_toggled(bool checked)
     ui->RecordODF->setVisible(checked);
 
     ui->csf_calibration->setVisible(false);
-    if(checked)
-    {
-        ui->primary_template->setCurrentIndex(match_template(
-            handle->voxel.vs[0]*handle->voxel.vs[1]*handle->voxel.vs[2]*handle->voxel.dim.size()));
-    }
+
     ui->DT_Option->setVisible(!checked);
 }
 
