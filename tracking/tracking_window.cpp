@@ -166,6 +166,8 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
             ui->template_box->setCurrentIndex(handle->template_id);
             if(handle->is_qsdr)
                 handle->load_template();
+            set_data("min_length",handle->vs[0]*15.0f);
+            set_data("max_length",handle->vs[0]*150.0f);
         }
 
         // setup fa threshold
@@ -412,6 +414,7 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         on_glAxiView_clicked();
         if((*this)["orientation_convention"].toInt() == 1)
             glWidget->set_view(2);
+
     }
 
 }
@@ -1578,6 +1581,7 @@ void tracking_window::on_actionAdjust_Mapping_triggered()
     reg_slice->terminate();
     reg_slice->arg_min = manual->arg;
     reg_slice->update();
+    reg_slice->is_diffusion_space = false;
     glWidget->updateGL();
 }
 
