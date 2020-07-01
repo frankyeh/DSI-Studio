@@ -148,7 +148,7 @@
                <item>
                 <widget class="QLineEdit" name="select_text">
                  <property name="text">
-                  <string>value≠9999</string>
+                  <string/>
                  </property>
                 </widget>
                </item>

@@ -324,7 +324,7 @@ std::string group_connectometry::get_cohort_list(std::vector<char>& remove_list_
                 return int(value*1000.0f) != int(threshold*1000.0f);
             };
             for(int j = text.size()-2;j > 1;--j)
-                if(text[j] == '=' || text[j] == '<' || text[j] == '>' || text[j] == "≠")
+                if(text[j] == '=' || text[j] == '<' || text[j] == '>' || text[j] == '/')
                 {
                     QString fov_name = text.left(j);
                     bool okay;
@@ -834,7 +834,7 @@ void group_connectometry::on_apply_selection_clicked()
     if(!new_text.isEmpty())
         new_text += ",";
     new_text += ui->cohort_index->currentText();
-    new_text += ui->cohort_operator->currentText();
+    new_text += (ui->cohort_operator->currentIndex() == 3 ? QString("/") : ui->cohort_operator->currentText());
     new_text += ui->cohort_value->text();
     ui->select_text->setText(new_text);
     on_show_cohort_clicked();
