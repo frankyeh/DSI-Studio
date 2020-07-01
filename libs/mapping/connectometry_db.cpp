@@ -103,6 +103,12 @@ bool connectometry_db::parse_demo(const std::string& filename)
             error_msg = "Cannot open the demographic file";
             return false;
         }
+        // CSV BOM at the front
+        if(is_csv && in.peek() == 0xEF)
+        {
+            char dummy[3];
+            in.read(dummy,3);
+        }
         std::string line;
         while(std::getline(in,line))
         {
