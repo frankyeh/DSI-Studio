@@ -360,8 +360,9 @@ std::string group_connectometry::get_cohort_list(std::vector<char>& remove_list_
                             remove_list[i] = 1;
 
                     std::ostringstream out;
-                    out << " Subjects with " << fov_name.toStdString()
-                        << text.right(text.size()-j).toStdString() << " were selected.";
+                    out << " Subjects with " << fov_name.toStdString() <<
+                        (text[j] == '/' ? std::string("≠")+text.right(text.size()-j-1).toStdString():
+                                          text.right(text.size()-j).toStdString()) << " were selected.";
                     cohort_text += out.str();
                     parsed = true;
                     break;
