@@ -596,7 +596,9 @@ bool load_nii(std::shared_ptr<fib_data> handle,
         unsigned short max_value = 0;
         for (tipl::pixel_index<3>index(from.geometry());index < from.size();++index)
         {
-            value_map[uint16_t(from[index.index()])] = 1;
+            if(from[index.index()] >= value_map.size())
+                return false;
+            value_map[from[index.index()]] = 1;
             max_value = std::max<unsigned short>(uint16_t(from[index.index()]),max_value);
         }
         for(unsigned short value = 1;value <= max_value;++value)
@@ -881,7 +883,7 @@ void RegionTableWidget::load_region(void)
         {
             if(!load_multiple_roi_nii(filenames[index]))
             {
-                QMessageBox::information(this,"error","Image dimension mismatch. Please insert the original T1W/T2W first.",0);
+                QMessageBox::information(this,"error","Invalid Region File. If it is created from T1W/T2W, please insert the original T1W/T2W in [Slices][Insert]",0);
                 return;
             }
             continue;
