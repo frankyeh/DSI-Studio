@@ -345,7 +345,7 @@
                <item>
                 <widget class="QLabel" name="label">
                  <property name="text">
-                  <string>Tract Count:</string>
+                  <string>Tract/Voxel Ratio:</string>
                  </property>
                 </widget>
                </item>
@@ -363,22 +363,28 @@
                 </spacer>
                </item>
                <item>
-                <widget class="QDoubleSpinBox" name="track_count">
+                <widget class="QDoubleSpinBox" name="track_voxel_ratio">
+                 <property name="decimals">
+                  <number>1</number>
+                 </property>
                  <property name="minimum">
-                  <double>1.000000000000000</double>
+                  <double>0.500000000000000</double>
                  </property>
                  <property name="maximum">
-                  <double>100.000000000000000</double>
+                  <double>20.000000000000000</double>
+                 </property>
+                 <property name="singleStep">
+                  <double>0.500000000000000</double>
                  </property>
                  <property name="value">
-                  <double>8.000000000000000</double>
+                  <double>1.000000000000000</double>
                  </property>
                 </widget>
                </item>
                <item>
                 <widget class="QLabel" name="label_2">
                  <property name="text">
-                  <string>thousand(s)</string>
+                  <string>per voxel</string>
                  </property>
                 </widget>
                </item>

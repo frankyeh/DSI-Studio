@@ -100,7 +100,7 @@ std::string run_auto_track(
                     const std::vector<unsigned int>& track_id,
                     float length_ratio,
                     float tolerance,
-                    unsigned int track_count,
+                    float track_voxel_ratio,
                     int interpolation,int tip,
                     bool export_stat,
                     bool export_trk,
@@ -181,11 +181,18 @@ std::string run_auto_track(
                         ThreadData thread(handle.get());
                         thread.param.check_ending = 1;
                         thread.param.tip_iteration = uint8_t(tip);
-                        thread.param.termination_count = track_count;
+
                         thread.param.max_seed_count = 10000000;
                         thread.param.stop_by_tract = 1;
                         if(!thread.roi_mgr->setAtlas(track_id[j],tolerance/handle->vs[0]))
                             return std::string("ERROR at ") + fib_file_name + ":" +handle->error_msg;
+                        auto track_count = uint32_t(track_voxel_ratio*thread.roi_mgr->seeds.size());
+                        thread.param.termination_count = track_count;
+                        // report
+                        thread.roi_mgr->report += " The track-to-voxel ratio was set to ";
+                        thread.roi_mgr->report += std::to_string(track_voxel_ratio);
+                        thread.roi_mgr->report += ".";
+
                         thread.run(tract_model.get_fib(),std::thread::hardware_concurrency(),false);
                         auto_track_report = handle->report + thread.report.str();
                         if(reports[j].empty())
@@ -313,7 +320,7 @@ void auto_track::on_run_clicked()
     run_auto_track(file_list2,track_id,
                    float(ui->gqi_l->value()),
                    float(ui->tolerance->value()),
-                   uint32_t(ui->track_count->value()*1000.0),
+                   float(ui->track_voxel_ratio->value()),
                    ui->interpolation->currentIndex(),ui->pruning->value(),
                    ui->export_stat->isChecked(),
                    ui->export_trk->isChecked(),
