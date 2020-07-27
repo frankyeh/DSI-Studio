@@ -577,7 +577,8 @@ void MainWindow::on_batch_src_clicked()
             {
                 out << "\tNIFTI file found at " << nifti_file_list[index].toStdString() << std::endl;
                 std::vector<std::shared_ptr<DwiHeader> > dwi_files;
-                if(!load_4d_nii(QString(dir_list[i] + "/" + nifti_file_list[index]).toLocal8Bit().begin(),dwi_files))
+                QString Filename = QString(dir_list[i] + "/" + nifti_file_list[index]);
+                if(!load_4d_nii(Filename.toLocal8Bit().begin(),dwi_files))
                 {
                     out << "\t\tNot a 4D nifti. Skipping." << std::endl;
                     continue;
@@ -593,8 +594,10 @@ void MainWindow::on_batch_src_clicked()
                     out << "\t\tInvalid b-table. Skipping." << std::endl;
                     continue;
                 }
-                out << "\t\tSaving " << (src_output_prefix + ".src.gz").toStdString() << std::endl;
-                DwiHeader::output_src(QString(src_output_prefix + ".src.gz").toLocal8Bit().begin(),dwi_files,0,false);
+                QString OutputName = QFileInfo(Filename).baseName().contains(sub_dir[j]) ?
+                                     QFileInfo(Filename).baseName() : sub_dir[j]+QFileInfo(Filename).baseName();
+                out << "\t\tSaving " << (src_dir + "/" +  OutputName + ".src.gz").toStdString() << std::endl;
+                DwiHeader::output_src(QString(src_dir + "/" + OutputName + ".src.gz").toLocal8Bit().begin(),dwi_files,0,false);
             }
 
             QStringList dicom_file_list = cur_dir.entryList(QStringList("*.dcm"),QDir::Files|QDir::NoSymLinks);
