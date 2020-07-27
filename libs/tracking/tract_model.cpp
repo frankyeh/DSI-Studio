@@ -2178,10 +2178,12 @@ void TractModel::get_quantitative_info(std::string& result)
         data.push_back(bundle_diameter);titles.push_back("diameter(mm)");
         data.push_back(radius1);        titles.push_back("radius of end area1(mm)");
         data.push_back(radius2);        titles.push_back("radius of end area2(mm)");
+        data.push_back(radius1+radius2);titles.push_back("total radius of end area(mm)");
         // area metrics
         data.push_back(tract_area);     titles.push_back("surface area(mm^2)");
         data.push_back(end_area1);      titles.push_back("end area 1(mm^2)");
         data.push_back(end_area2);      titles.push_back("end area 2(mm^2)");
+        data.push_back(end_area1+end_area2);      titles.push_back("total end area(mm^2)");
         // volume metrics
         data.push_back(tract_volume);   titles.push_back("volume(mm^3)");
         data.push_back(trunk_volume);   titles.push_back("trunk volume(mm^3)");
