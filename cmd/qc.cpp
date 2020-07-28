@@ -82,7 +82,8 @@ std::string quality_check_src_files(QString dir)
     auto ndc_copy = ndc;
     float m = tipl::median(ndc_copy.begin(),ndc_copy.end());
     float mad = float(tipl::median_absolute_deviation(ndc_copy.begin(),ndc_copy.end(),double(m)));
-    float outlier_threshold = m-3.0f*mad;
+    float outlier_threshold = m-3.0f*1.482602218505602f*mad;
+    // 3 "scaled" MAD approach. The scale is -1/(sqrt(2)*erfcinv(3/2)) = 1.482602218505602f
     for(size_t i = 0;i < output.size();++i)
     {
         for(size_t j = 0 ;j < output[i].size();++j)
