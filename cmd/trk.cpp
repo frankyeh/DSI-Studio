@@ -656,16 +656,18 @@ int trk(std::shared_ptr<fib_data> handle)
             return 0;
         }
     }
+    std::cout << tract_model.get_visible_track_count() << " tracts are generated using " << tracking_thread.get_total_seed_count() << " seeds."<< std::endl;
     tracking_thread.apply_tip(&tract_model);
+    std::cout << tract_model.get_deleted_track_count() << " tracts are removed by pruning." << std::endl;
+
 
     if(tract_model.get_visible_track_count() == 0)
     {
-        std::cout << "no tract generated. Terminating..." << std::endl;
+        std::cout << "no tract to process. Terminating..." << std::endl;
         return 0;
     }
+    std::cout << "The final analysis results in " << tract_model.get_visible_track_count() << " tracts." << std::endl;
 
-
-    std::cout << "a total of " << tract_model.get_visible_track_count() << " tracts are generated" << std::endl;
 
 
     std::string file_name;
