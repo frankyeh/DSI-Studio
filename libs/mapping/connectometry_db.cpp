@@ -47,44 +47,36 @@ void connectometry_db::read_db(fib_data* handle_)
     if(!num_subjects)
         return;
     {
-        const char* report_buf = 0;
-        if(handle->mat_reader.read("report",row,col,report_buf))
+        if(handle->mat_reader.read("report",report))
         {
-            report = std::string(report_buf,report_buf+row*col);
             if(report.find(" sdf ") != std::string::npos)
             {
                 report.resize(report.find(" sdf "));
                 report += " local connectome fingerprint (LCF, Yeh et al. PLoS Comput Biol 12(11): e1005203) values were extracted from the data and used in the connectometry analysis.";
             }
         }
-        if(handle->mat_reader.read("subject_report",row,col,report_buf))
-            subject_report = std::string(report_buf,report_buf+row*col);
+        handle->mat_reader.read("subject_report",subject_report);
 
-        const char* str = 0;
-        handle->mat_reader.read("subject_names",row,col,str);
-        if(str)
+        std::string str;
+        handle->mat_reader.read("subject_names",str);
+        if(str.size())
         {
             std::istringstream in(str);
             for(unsigned int index = 0;in && index < num_subjects;++index)
                 std::getline(in,subject_names[index]);
         }
-        handle->mat_reader.read("index_name",row,col,str);
-        if(str)
-            index_name = std::string(str,str+row*col);
+        handle->mat_reader.read("index_name",index_name);
         if(index_name.empty() || index_name.find("sdf") != std::string::npos)
             index_name = "qa";
-        const float* r2_values = 0;
-        handle->mat_reader.read("R2",row,col,r2_values);
-        if(r2_values == 0)
+        R2.resize(num_subjects);
+        if(!handle->mat_reader.read("R2",R2))
         {
             handle->error_msg = "Memory insufficiency. Use 64-bit program instead";
             num_subjects = 0;
             subject_qa.clear();
             return;
         }
-        std::copy(r2_values,r2_values+num_subjects,R2.begin());
     }
-
     calculate_si2vi();
 }
 
@@ -283,21 +275,16 @@ bool connectometry_db::sample_subject_profile(gz_mat_read& m,std::vector<float>&
     tipl::geometry<3> subject_dim;
     {
         tipl::matrix<4,4,float> subject_trans;
-        const float* trans = nullptr;
-        unsigned int row,col;
-        if(!m.read("trans",row,col,trans))
+        if(!m.read("trans",subject_trans))
         {
             handle->error_msg = "Not a QSDR reconstructed file: ";
             return false;
         }
-        std::copy(trans,trans+16,subject_trans.begin());
-        const unsigned short* dim = nullptr;
-        if(!m.read("dimension",row,col,dim))
+        if(!m.read("dimension",subject_dim))
         {
             handle->error_msg = "Invalid FIB format: ";
             return false;
         }
-        std::copy(dim,dim+3,subject_dim.begin());
         if(subject_dim != handle->dim)
             trans_consistent = false;
         for(int i = 0; i < 16;++i)
@@ -448,9 +435,8 @@ bool connectometry_db::add_subject_file(const std::string& file_name,
         return false;
     }
     R2.push_back(*value);
-    const char* report_buf = 0;
-    if(subject_report.empty() && m.read("report",row,col,report_buf))
-        subject_report = std::string(report_buf,report_buf+row*col);
+    if(subject_report.empty())
+        m.read("report",subject_report);
     subject_qa_buf.push_back(std::move(new_subject_qa));
     subject_qa.push_back(&(subject_qa_buf.back()[0]));
     subject_names.push_back(subject_name);
@@ -720,10 +706,7 @@ bool connectometry_db::get_odf_profile(const char* file_name,std::vector<float>&
         handle->error_msg += file_name;
         return false;
     }
-    const char* report_buf = nullptr;
-    unsigned int row,col;
-    if(single_subject.read("report",row,col,report_buf))
-        subject_report = std::string(report_buf,report_buf+row*col);
+    single_subject.read("report",subject_report);
     return true;
 }
 bool connectometry_db::get_qa_profile(const char* file_name,std::vector<std::vector<float> >& data)
@@ -761,10 +744,7 @@ bool connectometry_db::get_qa_profile(const char* file_name,std::vector<std::vec
                 data[i][index] = odf[handle->dir.findex[i][index]]-min_value;
             }
         }
-    const char* report_buf = 0;
-    unsigned int row,col;
-    if(single_subject.read("report",row,col,report_buf))
-        subject_report = std::string(report_buf,report_buf+row*col);
+    single_subject.read("report",subject_report);
     return true;
 }
 bool connectometry_db::is_db_compatible(const connectometry_db& rhs)

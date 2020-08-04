@@ -1933,23 +1933,22 @@ void tracking_window::on_actionOpen_Connectivity_Matrix_triggered()
             QMessageBox::information(this,"Error",QString("Failed to load file:")+filenames[i],0);
             return;
         }
-        unsigned int row,col;
-        const char* ptr = nullptr;
-        if(!in.read("atlas",row,col,ptr))
+        if(!in.has("atlas"))
         {
             QMessageBox::information(this,"Error",QString("Cannot find atlas matrix in file:")+filenames[i],0);
             return;
         }
         if(i == 0)
-            atlas = ptr;
+            atlas = in.read_string("atlas");
         else
         {
-            if(atlas != std::string(ptr))
+            if(atlas != in.read_string("atlas"))
             {
                 QMessageBox::information(this,"Error",QString("Inconsistent atlas setting in file:")+filenames[i],0);
                 return;
             }
         }
+        unsigned int row,col;
         const float* buf = nullptr;
         if(!in.read("connectivity",row,col,buf))
         {

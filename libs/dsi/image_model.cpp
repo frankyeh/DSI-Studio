@@ -1167,33 +1167,25 @@ bool ImageModel::load_from_file(const char* dwi_file_name)
         error_msg = "Cannot open file";
         return false;
     }
-    unsigned int row,col;
 
-    const unsigned short* dim_ptr = nullptr;
-    if (!mat_reader.read("dimension",row,col,dim_ptr))
+    if (!mat_reader.read("dimension",voxel.dim))
     {
         error_msg = "Cannot find dimension matrix";
         return false;
     }
-    const float* voxel_size = nullptr;
-    if (!mat_reader.read("voxel_size",row,col,voxel_size))
+    if (!mat_reader.read("voxel_size",voxel.vs))
     {
-        //error_msg = "Cannot find voxel size matrix";
-        //return false;
-        std::fill(voxel.vs.begin(),voxel.vs.end(),2.0);
+        error_msg = "Cannot find voxel_size matrix";
+        return false;
     }
-    else
-        std::copy(voxel_size,voxel_size+3,voxel.vs.begin());
 
-    if (dim_ptr[0]*dim_ptr[1]*dim_ptr[2] <= 0)
+    if (voxel.dim[0]*voxel.dim[1]*voxel.dim[2] <= 0)
     {
         error_msg = "Invalid dimension setting";
         return false;
     }
-    voxel.dim[0] = dim_ptr[0];
-    voxel.dim[1] = dim_ptr[1];
-    voxel.dim[2] = dim_ptr[2];
 
+    unsigned int row,col;
     const float* table;
     if (!mat_reader.read("b_table",row,col,table))
     {
@@ -1212,10 +1204,7 @@ bool ImageModel::load_from_file(const char* dwi_file_name)
         table += 4;
     }
 
-    const char* report_buf = nullptr;
-    if(mat_reader.read("report",row,col,report_buf))
-        voxel.report = std::string(report_buf,report_buf+row*col);
-    else
+    if(!mat_reader.read("report",voxel.report))
         get_report(voxel.report);
 
     src_dwi_data.resize(src_bvalues.size());

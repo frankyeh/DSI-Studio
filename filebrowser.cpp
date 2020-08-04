@@ -230,10 +230,9 @@ void FileBrowser::on_subject_list_currentCellChanged(int currentRow, int , int p
             QStringList item_list;
             item_list << mat_file_list[i];
             unsigned int r,c;
-            const short* dim = 0;
-            const float* vs = 0;
-            if(!mat.read("dimension",r,c,dim) ||
-                    !mat.read("voxel_size",r,c,vs))
+            tipl::geometry<3> dim;
+            tipl::vector<3> vs;
+            if(!mat.read("dimension",dim) || !mat.read("voxel_size",vs))
                 continue;
 
             item_list << QString("%1/%2/%3").arg(dim[0]).arg(dim[1]).arg(dim[2]);
@@ -378,16 +377,12 @@ void FileBrowser::preview_image(QString file_name)
         gz_mat_read mat;
         if(mat.load_from_file(file_name.toStdString().c_str(),10,file_name.contains(".fib.gz") ? "fa0":"image0"))
         {
-            unsigned int r,c;
-            const short* dim = 0;
-            if(mat.read("dimension",r,c,dim))
+            tipl::geometry<3> dim;
+            if(mat.read("dimension",dim))
             {
-                preview_data.resize(tipl::geometry<3>(dim));
-                const float* ptr = 0;
-                if(!mat.read("fa0",r,c,ptr))
-                    mat.read("image0",r,c,ptr);
-                if(ptr)
-                    std::copy(ptr,ptr+preview_data.size(),preview_data.begin());
+                preview_data.resize(dim);
+                if(!mat.read("fa0",preview_data))
+                    mat.read("image0",preview_data);
             }
         }
         preview_loaded = true;

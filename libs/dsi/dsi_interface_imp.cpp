@@ -336,7 +336,6 @@ const char* odf_average(const char* out_name,std::vector<std::string>& file_name
             const float* fa0;
             const float* mni_ptr;
             unsigned int face_num,odf_num;
-            const char* report_buf = nullptr;
 
             if(!reader.read("dimension",row,col,dimension)||
                !reader.read("fa0",row,col,fa0) ||
@@ -348,8 +347,7 @@ const char* odf_average(const char* out_name,std::vector<std::string>& file_name
 
             if(index == 0)
             {
-                if(reader.read("report",row,col,report_buf))
-                    report = std::string(report_buf,report_buf+row*col);
+                reader.read("report",report);
                 dim = tipl::geometry<3>(dimension);
                 std::copy(vs_ptr,vs_ptr+3,vs);
                 ti.init(uint16_t(odf_num),odf_buffer,uint16_t(face_num),face_buffer);

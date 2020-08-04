@@ -51,26 +51,22 @@ int exp(void)
     }
 
     unsigned int col,row;
-    const unsigned short* dim_buf = nullptr;
-    if(!mat_reader.read("dimension",row,col,dim_buf))
+    tipl::geometry<3> geo;
+    if(!mat_reader.read("dimension",geo))
     {
         std::cout << "cannot find dimension matrix in the file" << file_name.c_str() <<std::endl;
         return 1;
     }
-    const float* vs = nullptr;
-    if(!mat_reader.read("voxel_size",row,col,vs))
+    tipl::vector<3> vs;
+    if(!mat_reader.read("voxel_size",vs))
     {
         std::cout << "cannot find voxel_size matrix in the file" << file_name.c_str() <<std::endl;
         return 1;
     }
     tipl::matrix<4,4,float> trans;
     {
-        const float* p = nullptr;
-        if(mat_reader.read("trans",row,col,p))
-        {
+        if(mat_reader.read("trans",trans))
             std::cout << "transformation matrix found." << std::endl;
-            std::copy(p,p+16,trans.begin());
-        }
         else
         {
             std::fill(trans.begin(),trans.end(),0.0f);
@@ -81,7 +77,6 @@ int exp(void)
         }
     }
     std::shared_ptr<fib_data> handle;
-    tipl::geometry<3> geo(dim_buf[0],dim_buf[1],dim_buf[2]);
     std::string export_option = po.get("export");
     std::replace(export_option.begin(),export_option.end(),',',' ');
     std::istringstream in(export_option);

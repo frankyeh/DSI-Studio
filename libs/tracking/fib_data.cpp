@@ -35,12 +35,8 @@ bool odf_data::read(gz_mat_read& mat_reader)
 
     // dimension
     tipl::geometry<3> dim;
-    {
-        const unsigned short* dim_buf = nullptr;
-        if (!mat_reader.read("dimension",row,col,dim_buf))
-            return false;
-        std::copy(dim_buf,dim_buf+3,dim.begin());
-    }
+    if (!mat_reader.read("dimension",dim))
+        return false;
     // odf_vertices
     {
         const float* odf_buffer;
@@ -663,21 +659,12 @@ bool is_human_size(tipl::geometry<3> dim,tipl::vector<3> vs)
 }
 bool fib_data::load_from_mat(void)
 {
+    mat_reader.read("report",report);
+    mat_reader.read("steps",steps);
+    if (!mat_reader.read("dimension",dim))
     {
-        unsigned int row,col;
-        const char* report_buf = 0;
-        if(mat_reader.read("report",row,col,report_buf))
-            report = std::string(report_buf,report_buf+row*col);
-        if(mat_reader.read("steps",row,col,report_buf))
-            steps = std::string(report_buf,report_buf+row*col);
-
-        const unsigned short* dim_buf = 0;
-        if (!mat_reader.read("dimension",row,col,dim_buf))
-        {
-            error_msg = "cannot find dimension matrix";
-            return false;
-        }
-        std::copy(dim_buf,dim_buf+3,dim.begin());
+        error_msg = "cannot find dimension matrix";
+        return false;
     }
     if(!dir.add_data(mat_reader))
     {
