@@ -84,7 +84,7 @@ class SmallTK{
         {
             track32[i].resize(tract_data[i].size());
             for(size_t j = 0;j < tract_data[i].size();++j)
-                track32[i][j] = int(std::round(std::ldexpf(tract_data[i][j],5)));
+                track32[i][j] = int(std::round(std::ldexp(tract_data[i][j],5)));
             buf_size[i] = sizeof(tract_header)+tract_data[i].size()-3;
         });
 
@@ -165,7 +165,7 @@ class SmallTK{
             for(size_t j = 3;j < tract_data[i].size();++j)
                 tract_data[i][j] = (tract_data[i][j-3] + track_buf[shift+j]);
             for(size_t j = 0;j < tract_data[i].size();++j)
-                tract_data[i][j] = std::ldexpf(tract_data[i][j],-5);
+                tract_data[i][j] = std::ldexp(tract_data[i][j],-5);
         });
         return true;
     }
