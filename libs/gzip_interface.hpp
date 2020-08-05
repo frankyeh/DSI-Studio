@@ -23,7 +23,7 @@ class gz_istream{
         return false;
     }
 public:
-    gz_istream(void):size_(0),handle(0){}
+    gz_istream(void):size_(0),handle(nullptr){}
     ~gz_istream(void)
     {
         close();
@@ -38,8 +38,8 @@ public:
         if(in)
         {
             in.seekg(-4,std::ios::end);
-            size_ = (size_t)in.tellg()+4;
-            in.read((char*)&gz_size,4);
+            size_ = size_t(in.tellg())+4;
+            in.read(reinterpret_cast<char*>(&gz_size),4);
             in.seekg(0,std::ios::beg);
         }
         if(is_gz(file_name))
@@ -54,29 +54,29 @@ public:
         }
         return in.good();
     }
-    bool read(void* buf,size_t buf_size)
+    bool read(void* buf_,size_t buf_size)
     {
-        if(cur() < size())
-            check_prog(100*cur()/size(),100);
-        else
-            check_prog(99,100);
+        char* buf = reinterpret_cast<char*>(buf_);
         if(prog_aborted())
             return false;
         if(handle)
         {
-
-            const size_t block_size = 524288000;// 500mb
+            const size_t block_size = 104857600;// 100mb
             while(buf_size > block_size)
             {
+                if(cur() < size())
+                    check_prog(100*cur()/size(),100);
+                else
+                    check_prog(99,100);
                 if(gzread(handle,buf,block_size) <= 0)
                 {
                     close();
                     return false;
                 }
                 buf_size -= block_size;
-                buf = (char*)buf + block_size;
+                buf = buf + block_size;
             }
-            if (gzread(handle,buf,(unsigned int)buf_size) <= 0)
+            if (gzread(handle,buf,uint32_t(buf_size)) <= 0)
             {
                 close();
                 return false;
@@ -86,7 +86,7 @@ public:
         else
             if(in)
             {
-                in.read((char*)buf,buf_size);
+                in.read(buf,uint32_t(buf_size));
                 return in.good();
             }
         return false;
@@ -107,7 +107,7 @@ public:
         if(handle)
         {
             gzclose(handle);
-            handle = 0;
+            handle = nullptr;
         }
         if(in)
             in.close();
@@ -115,7 +115,7 @@ public:
     }
     size_t cur(void)
     {
-        return handle ? (size_t)gztell(handle):(size_t)in.tellg();
+        return handle ? size_t(gztell(handle)):size_t(in.tellg());
     }
     size_t size(void)
     {
@@ -140,7 +140,7 @@ class gz_ostream{
         return false;
     }
 public:
-    gz_ostream(void):handle(0){}
+    gz_ostream(void):handle(nullptr){}
     ~gz_ostream(void)
     {
         close();
@@ -157,34 +157,36 @@ public:
         out.open(file_name,std::ios::binary);
         return out.good();
     }
-    void write(const void* buf,size_t size)
+    void write(const void* buf_,size_t size)
     {
+        const char* buf = reinterpret_cast<const char*>(buf_);
         if(handle)
         {
-            const size_t block_size = 524288000;// 500mb
+            const size_t block_size = 104857600;// 500mb
             while(size > block_size)
             {
+                check_prog(100*block_size/size,100);
                 if(gzwrite(handle,buf,block_size) <= 0)
                 {
                     close();
                     throw std::runtime_error("Cannot output gz file");
                 }
                 size -= block_size;
-                buf = (const char*)buf + block_size;
+                buf = buf + block_size;
             }
-            if(gzwrite(handle,buf,(unsigned int)size) <= 0)
+            if(gzwrite(handle,buf,uint32_t(size)) <= 0)
                 close();
         }
         else
             if(out)
-                out.write((const char*)buf,size);
+                out.write(buf,uint32_t(size));
     }
     void close(void)
     {
         if(handle)
         {
             gzclose(handle);
-            handle = 0;
+            handle = nullptr;
         }
         if(out)
             out.close();
