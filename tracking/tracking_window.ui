@@ -825,6 +825,7 @@
      <addaction name="actionDelete_By_Length"/>
      <addaction name="actionDelete_Branches"/>
      <addaction name="actionReconnect_Tracts"/>
+     <addaction name="actionResample_Step_Size"/>
      <addaction name="separator"/>
      <addaction name="actionSet_Color"/>
      <addaction name="actionOpen_Colors"/>
@@ -3526,6 +3527,11 @@ Tracking</string>
    </property>
    <property name="shortcut">
     <string>Ctrl+M</string>
+   </property>
+  </action>
+  <action name="actionResample_Step_Size">
+   <property name="text">
+    <string>Resample Step Size</string>
    </property>
   </action>
  </widget>

@@ -37,7 +37,6 @@ public:
     void export_tract_density(tipl::geometry<3>& dim,
                               tipl::vector<3,float> vs,
                               tipl::matrix<4,4,float>& transformation,bool color,bool endpoint);
-
     void saveTransformedTracts(const float* transform);
     void saveTransformedEndpoints(const float* transform);
     void load_tracts(QStringList filenames);
@@ -66,19 +65,22 @@ public slots:
     void start_tracking(void);
     void filter_by_roi(void);
     void fetch_tracts(void);
+
     void load_tracts(void);
     void load_tract_label(void);
+    void load_tracts_color(void);
+    void load_tracts_value(void);
+
     void save_tracts_as(void);
     void save_tracts_in_native(void);
     void save_vrml_as(void);
-    void load_tracts_color(void);
-    void load_tracts_value(void);
     void save_tracts_color_as(void);
     void save_tracts_data_as(void);
     void save_all_tracts_as(void);
     void save_all_tracts_to_dir(void);
     void save_end_point_as(void);
     void save_end_point_in_mni(void);
+
     void deep_learning_train(void);
     void merge_all(void);
     void copy_track(void);
@@ -91,6 +93,7 @@ public slots:
     void delete_repeated(void);
     void delete_by_length(void);
     void delete_branches(void);
+    void resample_step_size(void);
     void edit_tracts(void);
     void undo_tracts(void);
     void redo_tracts(void);

@@ -262,6 +262,7 @@ void TractTableWidget::load_tracts(QStringList filenames)
         if(!filename.size())
             continue;
         QString label = QFileInfo(filename).fileName();
+        label.remove(".tt.gz");
         label.remove(".trk");
         label.remove(".gz");
         label.remove(".txt");
@@ -294,7 +295,7 @@ void TractTableWidget::load_tracts(void)
 {
     load_tracts(QFileDialog::getOpenFileNames(
             this,"Load tracts as",QFileInfo(cur_tracking_window.windowTitle()).absolutePath(),
-            "Tract files (*.trk *trk.gz *.tck);;Text files (*.txt);;All files (*)"));
+            "Tract files (*tt.gz *.trk *trk.gz *.tck);;Text files (*.txt);;All files (*)"));
     show_report();
 }
 void TractTableWidget::load_tract_label(void)
@@ -338,9 +339,9 @@ QString TractTableWidget::output_format(void)
     switch(cur_tracking_window["track_format"].toInt())
     {
     case 0:
-        return ".trk.gz";
+        return ".tt.gz";
     case 1:
-        return ".trk";
+        return ".trk.gz";
     case 2:
         return ".txt";
     }
@@ -364,6 +365,8 @@ void TractTableWidget::save_all_tracts_to_dir(void)
             filename  += output_format().toStdString();
             tract_models[index]->save_tracts_to_file(filename.c_str());
         }
+    if(!prog_aborted())
+        QMessageBox::information(this,"DSI Studio","file saved");
 }
 void TractTableWidget::save_all_tracts_as(void)
 {
@@ -372,10 +375,11 @@ void TractTableWidget::save_all_tracts_as(void)
     QString filename;
     filename = QFileDialog::getSaveFileName(
                 this,"Save tracts as",item(currentRow(),0)->text().replace(':','_') + output_format(),
-                "Tract files (*.trk *trk.gz);;Text File (*.txt);;MAT files (*.mat);;All files (*)");
+                "Tract files (*.tt.gz *tt.gz *trk.gz *.trk);;Text File (*.txt);;MAT files (*.mat);;All files (*)");
     if(filename.isEmpty())
         return;
-    command("save_tracks",filename);
+    if(command("save_tracks",filename))
+        QMessageBox::information(this,"DSI Studio","file saved");
 }
 
 void TractTableWidget::set_color(void)
@@ -508,11 +512,12 @@ void TractTableWidget::save_tracts_as(void)
     QString filename;
     filename = QFileDialog::getSaveFileName(
                 this,"Save tracts as",item(currentRow(),0)->text().replace(':','_') + output_format(),
-                 "Tract files (*.trk *trk.gz);;Text File (*.txt);;MAT files (*.mat);;TCK file (*.tck);;ROI files (*.nii *nii.gz);;All files (*)");
+                 "Tract files (*.tt.gz *tt.gz *trk.gz *.trk);;Text File (*.txt);;MAT files (*.mat);;TCK file (*.tck);;ROI files (*.nii *nii.gz);;All files (*)");
     if(filename.isEmpty())
         return;
     std::string sfilename = filename.toLocal8Bit().begin();
-    tract_models[currentRow()]->save_tracts_to_file(&*sfilename.begin());
+    if(tract_models[currentRow()]->save_tracts_to_file(&*sfilename.begin()))
+        QMessageBox::information(this,"DSI Studio","file saved");
 }
 
 void TractTableWidget::save_tracts_in_native(void)
@@ -533,12 +538,13 @@ void TractTableWidget::save_tracts_in_native(void)
     QString filename;
     filename = QFileDialog::getSaveFileName(
                 this,"Save tracts as",item(currentRow(),0)->text().replace(':','_') + output_format(),
-                 "Tract files (*.trk *trk.gz);;Text File (*.txt);;MAT files (*.mat);;All files (*)");
+                 "Tract files (*.tt.gz *tt.gz *trk.gz *.trk);;Text File (*.txt);;MAT files (*.mat);;All files (*)");
     if(filename.isEmpty())
         return;
     std::string sfilename = filename.toLocal8Bit().begin();
     tract_models[currentRow()]->save_tracts_in_native_space(&*sfilename.begin(),
             cur_tracking_window.handle->native_position);
+    QMessageBox::information(this,"DSI Studio","file saved");
 }
 
 void TractTableWidget::save_vrml_as(void)
@@ -739,7 +745,7 @@ void TractTableWidget::saveTransformedTracts(const float* transform)
     filename = QFileDialog::getSaveFileName(
                 this,
                 "Save tracts as",item(currentRow(),0)->text() + output_format(),
-                 "Tract files (*.trk *trk.gz);;Text File (*.txt);;MAT files (*.mat);;NIFTI files (*.nii *nii.gz);;All files (*)");
+                 "Tract files (*.tt.gz *tt.gz *trk.gz *.trk);;Text File (*.txt);;MAT files (*.mat);;NIFTI files (*.nii *nii.gz);;All files (*)");
     if(filename.isEmpty())
         return;
     if(!cur_tracking_window.can_map_to_mni())
@@ -998,10 +1004,10 @@ void TractTableWidget::save_tracts_data_as(void)
                     filename.toLocal8Bit().begin(),
                     action->data().toString().toLocal8Bit().begin()))
     {
-        QMessageBox::information(this,"error","fail to save information",0);
+        QMessageBox::information(this,"error","fail to save information");
     }
     else
-        QMessageBox::information(this,"DSI Studio","file saved",0);
+        QMessageBox::information(this,"DSI Studio","file saved");
 }
 
 
@@ -1190,6 +1196,23 @@ void TractTableWidget::delete_branches(void)
     emit need_update();
 }
 
+void TractTableWidget::resample_step_size(void)
+{
+    if(currentRow() >= int(tract_models.size()))
+        return;
+    float new_step = 0.5f;
+    bool ok;
+    new_step = float(QInputDialog::getDouble(this,
+        "DSI Studio","New step size (voxels)",double(new_step),0.0,5.0,1,&ok));
+    if (!ok)
+        return;
+
+    begin_prog("resample tracks");
+    for(int i = 0;check_prog(i,tract_models.size());++i)
+        if(item(i,0)->checkState() == Qt::Checked)
+            tract_models[i]->resample(new_step);
+    emit need_update();
+}
 
 void TractTableWidget::delete_by_length(void)
 {
