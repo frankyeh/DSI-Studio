@@ -30,7 +30,7 @@ Tracking/Differential Tracking Threshold/dt_threshold/float:0.0:1.0:0.05:2/0.2
 Tracking/Topology-Informed Pruning (iteration)/auto_tip/int:0:100:4/16
 Tracking/Autotrack tolerance (mm)/autotrack_tolerance/float:0:100:10:1/16
 Tracking/Thread Count/thread_count/int:1:12:1/1
-Tracking/Output Format/track_format/trk.gz:trk:txt/0
+Tracking/Output Format/track_format/tt.gz:trk.gz:txt/0
 Tracking/Default Otsu/otsu_threshold/float:0.1:1:0.1:2/0.6
 Rendering/Scale with voxel size/scale_voxel/Off:On/1
 Rendering/Perspective/pespective/int/5

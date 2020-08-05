@@ -164,7 +164,7 @@ std::string run_auto_track(
                 if(QFileInfo(no_result_file_name.c_str()).exists() && !overwrite)
                     continue;
 
-                std::string trk_file_name = fib_file_name+"."+track_name+".trk.gz";
+                std::string trk_file_name = fib_file_name+"."+track_name+".tt.gz";
                 std::string stat_file_name = fib_file_name+"."+track_name+".stat.txt";
                 std::string report_file_name = dir+"/"+track_name+".report.txt";
                 stat_files[j].push_back(stat_file_name);

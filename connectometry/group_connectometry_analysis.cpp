@@ -239,26 +239,26 @@ void group_connectometry_analysis::run_permutation_multithread(unsigned int id,u
         if(pos_corr_track->get_visible_track_count())
         {
             std::ostringstream out1;
-            out1 << output_file_name << ".pos_corr.trk.gz";
+            out1 << output_file_name << ".pos_corr.tt.gz";
             pos_corr_track->save_tracts_to_file(out1.str().c_str());
         }
         else
         {
             std::ostringstream out1;
-            out1 << output_file_name << ".pos_corr.no_trk.txt";
+            out1 << output_file_name << ".pos_corr.no_tract.txt";
             std::ofstream(out1.str().c_str());
         }
 
         if(neg_corr_track->get_visible_track_count())
         {
             std::ostringstream out1;
-            out1 << output_file_name << ".neg_corr.trk.gz";
+            out1 << output_file_name << ".neg_corr.tt.gz";
             neg_corr_track->save_tracts_to_file(out1.str().c_str());
         }
         else
         {
             std::ostringstream out1;
-            out1 << output_file_name << ".neg_corr.no_trk.txt";
+            out1 << output_file_name << ".neg_corr.no_tract.txt";
             std::ofstream(out1.str().c_str());
         }
 

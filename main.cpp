@@ -155,8 +155,7 @@ void load_file_name(void)
         QDir dir = QCoreApplication::applicationDirPath()+ "/track";
         if(!dir.exists())
             dir = QDir::currentPath()+ "/track";
-        QStringList name_list = dir.entryList(QStringList("*.trk"),QDir::Files|QDir::NoSymLinks);
-        name_list << dir.entryList(QStringList("*.trk.gz"),QDir::Files|QDir::NoSymLinks);
+        QStringList name_list = dir.entryList(QStringList("*.tt.gz"),QDir::Files|QDir::NoSymLinks);
         for(int index = 0;index < name_list.size();++index)
             track_atlas_file_list.push_back((dir.absolutePath() + "/" + name_list[index]).toStdString());
     }

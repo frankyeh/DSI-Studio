@@ -38,7 +38,10 @@ void begin_prog(const char* title,bool lock)
     if(title)
         current_title = title;
     if(progressDialog.get())
+    {
         progressDialog->setLabelText(title);
+        progressDialog->show();
+    }
     start_time = std::chrono::high_resolution_clock::now();
     lock_dialog = lock;
     QApplication::processEvents();

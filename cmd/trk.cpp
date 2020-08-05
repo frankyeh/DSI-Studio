@@ -609,7 +609,7 @@ int trk(std::shared_ptr<fib_data> handle)
                 tracking_thread.fetchTracks(&tract_model);
                 std::ostringstream out;
                 out << cnt_file_name[i].toStdString() << "." << cnt_type.toStdString()
-                        << ((t > 0) ? "inc":"dec") << std::fabs(t) << ".trk.gz" << std::endl;
+                        << ((t > 0) ? "inc":"dec") << std::fabs(t) << ".tt.gz" << std::endl;
                 if(!tract_model.save_tracts_to_file(out.str().c_str()))
                 {
                     std::cout << "cannot save file to " << out.str()
@@ -676,7 +676,7 @@ int trk(std::shared_ptr<fib_data> handle)
     else
     {
         std::ostringstream fout;
-        fout << po.get("source") << ".trk.gz";
+        fout << po.get("source") << ".tt.gz";
         file_name = fout.str();
     }
     return trk_post(handle,tract_model,file_name,true/*save track*/);

@@ -6,6 +6,7 @@
 #include <tuple>
 #include <set>
 #include <map>
+#include <cmath>
 #include "roi.hpp"
 #include "tract_model.hpp"
 #include "prog_interface_static_link.h"
@@ -41,6 +42,134 @@ void smoothed_tracks(const std::vector<float>& track,std::vector<float>& smoothe
     }
 }
 
+/* limitations:
+ * 1. spatial resolution of 1/32.
+ * 2. step size between (-127/32 to 128/32) voxels for x,y,z, direction
+ */
+class SmallTK{
+
+    union tract_header{
+        char buf[16];
+        struct {
+        uint32_t count;
+        int32_t x;
+        int32_t y;
+        int32_t z;
+        } h;
+    };
+
+    public:
+    static bool save_to_file(const char* file_name,
+                             tipl::geometry<3> geo,
+                             tipl::vector<3> vs,
+                             const std::vector<std::vector<float> >& tract_data,
+                             const std::vector<uint16_t>& cluster,
+                             const std::string& report,
+                             const std::string& parameter_id,
+                             unsigned int color = 0)
+    {
+        gz_mat_write out(file_name);
+        if (!out)
+            return false;
+        out.write("dimension",&*geo.begin(),1,3);
+        out.write("voxel_size",vs);
+        out.write("report",report);
+        out.write("parameter_id",parameter_id);
+        if(color)
+            out.write("color",&color,1,1);
+        // multiply by 32 and convert to integer
+        std::vector<std::vector<int32_t> > track32(tract_data.size());
+        std::vector<size_t> buf_size(tract_data.size());
+        tipl::par_for(tract_data.size(),[&](size_t i)
+        {
+            track32[i].resize(tract_data[i].size());
+            for(size_t j = 0;j < tract_data[i].size();++j)
+                track32[i][j] = int(std::round(std::ldexpf(tract_data[i][j],5)));
+            buf_size[i] = sizeof(tract_header)+tract_data[i].size()-3;
+        });
+
+        // record write position for each track
+        size_t total_size = 0;
+        std::vector<size_t> pos(tract_data.size());
+        for(size_t i = 0;i < buf_size.size();++i)
+        {
+            pos[i] = total_size;
+            total_size += buf_size[i];
+        }
+
+        std::vector<char> out_buf(total_size);
+        tipl::par_for(track32.size(),[&](size_t i)
+        {
+            tract_header hr;
+            hr.h.count = uint32_t(track32[i].size());
+            hr.h.x = track32[i][0];
+            hr.h.y = track32[i][1];
+            hr.h.z = track32[i][2];
+            std::copy(hr.buf,hr.buf+16,out_buf.begin()+int64_t(pos[i]));
+            size_t shift = pos[i]+sizeof(tract_header)-3;
+            for(size_t j = 3;j < track32[i].size();j++)
+                out_buf[j+shift] = char(track32[i][j]-track32[i][j-3]);
+            track32[i].clear();
+        });
+        out.write("track",&out_buf[0],total_size,1);
+        if(!cluster.empty())
+            out.write("cluster",&cluster[0],cluster.size(),1);
+        return true;
+    }
+    static bool load_from_file(const char* file_name,
+                               std::vector<std::vector<float> >& tract_data,
+                               std::vector<unsigned int>& tract_cluster,
+                               tipl::geometry<3>& geo,tipl::vector<3>& vs,
+                               std::string& report,std::string& parameter_id,unsigned int& color)
+    {
+        gz_mat_read in;
+        if (!in.load_from_file(file_name))
+            return false;
+        in.read("dimension",geo);
+        in.read("voxel_size",vs);
+        in.read("report",report);
+        in.read("parameter_id",parameter_id);
+        unsigned int row,col;
+        const unsigned int* c_ptr = nullptr;
+        if(in.read("color",row,col,c_ptr))
+            color = *c_ptr;
+        const uint16_t* cluster = nullptr;
+        if(in.read("cluster",row,col,cluster))
+        {
+            tract_cluster.resize(row*col);
+            std::copy(cluster,cluster+tract_cluster.size(),tract_cluster.begin());
+        }
+        const char* track_buf = nullptr;
+        if(!in.read("track",row,col,track_buf))
+            return false;
+        size_t buf_size = row*col;
+        std::vector<size_t> pos;
+        for(size_t i = 0;i < buf_size;)
+        {
+            pos.push_back(i);
+            i += *reinterpret_cast<const uint32_t*>(track_buf+i);
+            i += sizeof(tract_header)-3;
+        }
+        tract_data.resize(pos.size());
+        tipl::par_for(pos.size(),[&](size_t i)
+        {
+            tract_header hr;
+            std::copy(&track_buf[pos[i]],&track_buf[pos[i]]+16,hr.buf);
+            if(hr.h.count > buf_size)
+                return;
+            tract_data[i].resize(hr.h.count);
+            tract_data[i][0] = hr.h.x;
+            tract_data[i][1] = hr.h.y;
+            tract_data[i][2] = hr.h.z;
+            size_t shift = pos[i]+sizeof(tract_header)-3;
+            for(size_t j = 3;j < tract_data[i].size();++j)
+                tract_data[i][j] = (tract_data[i][j-3] + track_buf[shift+j]);
+            for(size_t j = 0;j < tract_data[i].size();++j)
+                tract_data[i][j] = std::ldexpf(tract_data[i][j],-5);
+        });
+        return true;
+    }
+};
 
 struct TrackVis
 {
@@ -197,6 +326,8 @@ struct TrackVis
             out.write((const char*)&n_point,sizeof(int));
             out.write((const char*)&*buffer.begin(),sizeof(float)*buffer.size());
         }
+        if(prog_aborted())
+            return false;
         return true;
     }
 };
@@ -238,10 +369,12 @@ bool TractModel::load_from_atlas(const char* file_name_)
     std::vector<std::vector<float> > loaded_tract_data;
     std::vector<unsigned int> loaded_tract_cluster;
 
-    TrackVis trk;
-    if(!trk.load_from_file(file_name_,loaded_tract_data,loaded_tract_cluster,parameter_id,vs))
+    tipl::geometry<3> geo;
+    std::string r,pid;
+    unsigned int color;
+    if(!SmallTK::load_from_file(file_name_,loaded_tract_data,loaded_tract_cluster,geo,vs,r,pid,color))
         return false;
-    if(!handle->load_template() || tipl::geometry<3>(trk.dim) != handle->template_I.geometry())
+    if(!handle->load_template() || geo != handle->template_I.geometry())
         return false;
     begin_prog("track warpping");
     handle->run_normalization(true,true);
@@ -285,25 +418,33 @@ bool TractModel::load_from_file(const char* file_name_,bool append)
     std::vector<std::vector<float> > loaded_tract_data;
     std::vector<unsigned int> loaded_tract_cluster;
     unsigned int color = default_tract_color;
+    if(file_name.find(".neg_corr") != std::string::npos)
+        color = 0x004040F0;
+    if(file_name.find(".pos_corr") != std::string::npos)
+        color = 0x00F04040;
 
     std::string ext;
     if(file_name.length() > 4)
         ext = std::string(file_name.end()-4,file_name.end());
-
+    if(ext == std::string("t.gz"))
+    {
+        tipl::geometry<3> geo;
+        begin_prog("loading");
+        if(!SmallTK::load_from_file(file_name_,loaded_tract_data,loaded_tract_cluster,geo,vs,report,parameter_id,color))
+        {
+            check_prog(0,0);
+            return false;
+        }
+        check_prog(0,0);
+    }
     if(ext == std::string(".trk") || ext == std::string("k.gz"))
         {
             TrackVis trk;
             if(!trk.load_from_file(file_name_,loaded_tract_data,loaded_tract_cluster,parameter_id,vs))
                 return false;
-            auto old_color = color;
-            color = *(uint32_t*)(trk.reserved+440);
-            if(color == 0)
-                color = old_color;
-            if(file_name.find(".neg_corr") != std::string::npos)
-                color = 0x004040F0;
-            if(file_name.find(".pos_corr") != std::string::npos)
-                color = 0x00F04040;
-
+            unsigned int new_color = *(uint32_t*)(trk.reserved+440);
+            if(new_color)
+                color = new_color;
             if(!parameter_id.empty())
             {
                 report = handle->report;
@@ -451,7 +592,15 @@ bool TractModel::save_data_to_file(const char* file_name,const std::string& inde
     std::string ext;
     if(file_name_s.length() > 4)
         ext = std::string(file_name_s.end()-4,file_name_s.end());
-
+    if(ext == std::string("t.gz"))
+    {
+        std::vector<uint16_t> cluster;
+        begin_prog("saving");
+        bool result = SmallTK::save_to_file(file_name_s.c_str(),geometry,vs,tract_data,cluster,report,parameter_id,
+                                            color_changed ? tract_color.front():0);
+        check_prog(0,0);
+        return result;
+    }
     if(ext == std::string(".trk") || ext == std::string("k.gz"))
     {
         if(ext == std::string(".trk"))
@@ -517,6 +666,15 @@ bool TractModel::save_tracts_to_file(const char* file_name_)
     saved = true;
     if(file_name.length() > 4)
         ext = std::string(file_name.end()-4,file_name.end());
+    if(ext == std::string("t.gz"))
+    {
+        std::vector<uint16_t> cluster;
+        begin_prog("saving");
+        bool result = SmallTK::save_to_file(file_name.c_str(),geometry,vs,tract_data,cluster,report,parameter_id,
+                                            color_changed ? tract_color.front():0);
+        check_prog(0,0);
+        return result;
+    }
     if (ext == std::string(".trk") || ext == std::string("k.gz"))
     {
         if(ext == std::string(".trk"))
@@ -872,7 +1030,40 @@ bool TractModel::save_all(const char* file_name_,
     std::string ext;
     if(file_name.length() > 4)
         ext = std::string(file_name.end()-4,file_name.end());
+    if (ext == std::string("t.gz"))
+    {
+        std::vector<size_t> tract_size(all.size());
+        for(size_t i = 0;i < all.size();++i)
+            tract_size[i] = all[i]->tract_data.size();
+        size_t total_size = std::accumulate(tract_size.begin(),tract_size.end(),size_t(0));
 
+        // collect all tract together
+        std::vector<std::vector<float> > all_tract(total_size);
+        std::vector<uint16_t> cluster(total_size);
+        for(size_t i = 0,pos = 0;i < all.size();++i)
+        {
+            auto& tract = all[i]->tract_data;
+            for (size_t j = 0;j < tract.size();++j,++pos)
+            {
+                all_tract[pos].swap(tract[j]);
+                cluster[pos] = uint16_t(i);
+            }
+        }
+        // save file
+        begin_prog("saving");
+        bool result = SmallTK::save_to_file(file_name_,all[0]->geometry,all[0]->vs,
+                    all_tract,cluster,all[0]->report,all[0]->parameter_id);
+        check_prog(0,0);
+        // restore tracts
+        for(size_t i = 0,pos = 0;i < all.size();++i)
+        {
+            auto& tract = all[i]->tract_data;
+            for (size_t j = 0;j < tract.size();++j,++pos)
+                all_tract[pos].swap(tract[j]);
+        }
+        if(!result)
+            return false;
+    }
     if (ext == std::string(".txt"))
     {
         std::ofstream out(file_name_,std::ios::binary);
@@ -888,7 +1079,7 @@ bool TractModel::save_all(const char* file_name_,
             out << std::endl;
             out << index << std::endl;
         }
-        return true;
+        return !prog_aborted();
     }
 
     if (ext == std::string(".trk") || ext == std::string("k.gz"))
@@ -950,6 +1141,8 @@ bool TractModel::save_all(const char* file_name_,
         out.write("cluster",cluster);
         return true;
     }
+    if(prog_aborted())
+        return false;
     // output label file
     std::ofstream out((file_name+".txt").c_str());
     for(int i = 0;i < name_list.size();++i)
@@ -1062,6 +1255,40 @@ void TractModel::save_end_points(const char* file_name_) const
         out.write("end_points",(const float*)&*buffer.begin(),3,buffer.size()/3);
     }
 
+}
+//---------------------------------------------------------------------------
+void TractModel::resample(float new_step)
+{
+    tipl::par_for(tract_data.size(),[&](size_t i)
+    {
+        if(tract_data[i].size() <= 6)
+            return;
+        std::vector<float> new_tracts;
+        float d = 0.0;
+        new_tracts.push_back(tract_data[i][0]);
+        new_tracts.push_back(tract_data[i][1]);
+        new_tracts.push_back(tract_data[i][2]);
+        for (unsigned int j = 3;j < tract_data[i].size();j += 3)
+        {
+            tipl::vector<3> p(&tract_data[i][j-3]),dis(&tract_data[i][j]);
+            dis -= p;
+            float step = float(dis.length());
+            dis *= new_step/step;
+            while(d+new_step < step)
+            {
+                p += dis;
+                d += new_step;
+                new_tracts.push_back(p[0]);
+                new_tracts.push_back(p[1]);
+                new_tracts.push_back(p[2]);
+            }
+            d -= step;
+        }
+        new_tracts.push_back(tract_data[i][tract_data[i].size()-3]);
+        new_tracts.push_back(tract_data[i][tract_data[i].size()-2]);
+        new_tracts.push_back(tract_data[i][tract_data[i].size()-1]);
+        new_tracts.swap(tract_data[i]);
+    });
 }
 //---------------------------------------------------------------------------
 void TractModel::get_tract_points(std::vector<tipl::vector<3,float> >& points)
@@ -1571,6 +1798,7 @@ void TractModel::paint(float select_angle,
     for (unsigned int index = 0;index < selected.size();++index)
         if (selected[index] > 0)
             tract_color[index] = color;
+    color_changed = true;
 }
 
 //---------------------------------------------------------------------------

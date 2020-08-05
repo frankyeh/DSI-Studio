@@ -11,6 +11,7 @@ public:
         std::string report;
         std::string parameter_id;
         bool saved = true;
+        bool color_changed = false;
 private:
         fib_data* handle = nullptr;
         tipl::geometry<3> geometry;
@@ -101,14 +102,14 @@ public:
         void paint(float select_angle,const std::vector<tipl::vector<3,float> > & dirs,
                   const tipl::vector<3,float>& from_pos,
                   unsigned int color);
-        void set_color(unsigned int color){std::fill(tract_color.begin(),tract_color.end(),color);}
-        void set_tract_color(unsigned int index,unsigned int color){tract_color[index] = color;}
-        void set_tract_color(std::vector<unsigned int>& new_color){tract_color = new_color;}
+        void set_color(unsigned int color){std::fill(tract_color.begin(),tract_color.end(),color);color_changed = true;}
+        void set_tract_color(std::vector<unsigned int>& new_color){tract_color = new_color;color_changed = true;}
         void cut_by_mask(const char* file_name);
         void clear_deleted(void);
         void undo(void);
         void redo(void);
         bool trim(void);
+        void resample(float new_step);
         void get_tract_points(std::vector<tipl::vector<3,float> >& points);
         void to_voxel(std::vector<tipl::vector<3,short> >& points,float ratio,int id = -1);
         void to_end_point_voxels(std::vector<tipl::vector<3,short> >& points1,
