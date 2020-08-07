@@ -2985,7 +2985,7 @@ bool ConnectivityMatrix::calculate(TractModel& tract_model,std::string matrix_va
             {
                 if(region_passing_list[i][j].empty())
                     continue;
-                std::string file_name = region_name[i]+"_"+region_name[j]+".trk";
+                std::string file_name = region_name[i]+"_"+region_name[j]+".tt.gz";
                 TractModel tm(tract_model.get_handle());
                 std::vector<std::vector<float> > new_tracts;
                 for (unsigned int k = 0;k < region_passing_list[i][j].size();++k)
