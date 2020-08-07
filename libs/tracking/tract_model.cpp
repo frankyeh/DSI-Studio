@@ -25,20 +25,20 @@ void smoothed_tracks(const std::vector<float>& track,std::vector<float>& smoothe
     smoothed.resize(track.size());
     float w[5] = {1.0,2.0,4.0,2.0,1.0};
     int shift[5] = {-6, -3, 0, 3, 6};
-    for(int index = 0;index < track.size();++index)
+    for(int index = 0;index < int(track.size());++index)
     {
         float sum_w = 0.0;
         float sum = 0.0;
-        for(char i = 0;i < 5;++i)
+        for(int i = 0;i < 5;++i)
         {
             int cur_index = index + shift[i];
-            if(cur_index < 0 || cur_index >= track.size())
+            if(cur_index < 0 || cur_index >= int(track.size()))
                 continue;
-            sum += w[i]*track[cur_index];
+            sum += w[i]*track[size_t(cur_index)];
             sum_w += w[i];
         }
-        if(sum_w != 0.0)
-            smoothed[index] = sum/sum_w;
+        if(sum_w != 0.0f)
+            smoothed[size_t(index)] = sum/sum_w;
     }
 }
 
