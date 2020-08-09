@@ -2400,31 +2400,28 @@ void TractModel::get_quantitative_info(std::string& result)
 
 
         }
-        // length metrics
         data.push_back(tract_length);   titles.push_back("mean length(mm)");
         data.push_back(span);           titles.push_back("span(mm)");
+        data.push_back(curl);           titles.push_back("curl");
+        data.push_back(tract_length/bundle_diameter);titles.push_back("elongation");
+
         data.push_back(bundle_diameter);titles.push_back("diameter(mm)");
-        data.push_back(radius1);        titles.push_back("radius of end area1(mm)");
-        data.push_back(radius2);        titles.push_back("radius of end area2(mm)");
-        data.push_back(radius1+radius2);titles.push_back("total radius of end area(mm)");
-        // area metrics
-        data.push_back(tract_area);     titles.push_back("surface area(mm^2)");
-        data.push_back(end_area1);      titles.push_back("end area 1(mm^2)");
-        data.push_back(end_area2);      titles.push_back("end area 2(mm^2)");
-        data.push_back(end_area1+end_area2);      titles.push_back("total end area(mm^2)");
-        // volume metrics
         data.push_back(tract_volume);   titles.push_back("volume(mm^3)");
         data.push_back(trunk_volume);   titles.push_back("trunk volume(mm^3)");
         data.push_back(tract_volume-trunk_volume);   titles.push_back("branch volume(mm^3)");
-        // shape metrics
-        data.push_back(curl);           titles.push_back("curl");
-        data.push_back(tract_length/bundle_diameter);titles.push_back("elongation");
-        data.push_back(float(tract_area/PI/bundle_diameter/tract_length));
-        titles.push_back("irregularity");
-        data.push_back(PI*radius1*radius1/end_area1);
-        data.push_back(PI*radius2*radius2/end_area2);
-        titles.push_back("irregularity of end area1");
-        titles.push_back("irregularity of end area2");
+
+        data.push_back(tract_area);     titles.push_back("surface area(mm^2)");
+        data.push_back(float(tract_area/PI/bundle_diameter/tract_length));  titles.push_back("irregularity");
+        data.push_back(radius1+radius2);titles.push_back("total radius of end regions(mm)");
+        data.push_back(end_area1+end_area2);      titles.push_back("total area of end regions(mm^2)");
+
+        data.push_back(end_area1);      titles.push_back("end area 1(mm^2)");
+        data.push_back(radius1);        titles.push_back("radius of end area1(mm)");
+        data.push_back(PI*radius1*radius1/end_area1);        titles.push_back("irregularity of end area1");
+
+        data.push_back(end_area2);      titles.push_back("end area 2(mm^2)");
+        data.push_back(radius2);        titles.push_back("radius of end area2(mm)");
+        data.push_back(PI*radius2*radius2/end_area2);        titles.push_back("irregularity of end area2");
 
         // output mean and std of each index
         for(size_t data_index = 0;data_index < handle->view_item.size();++data_index)
