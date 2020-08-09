@@ -93,6 +93,9 @@ void auto_track::on_open_dir_clicked()
     file_list << search_files(dir,"*.src.gz");
     update_list();
 }
+int trk_post(std::shared_ptr<fib_data> handle,
+             TractModel& tract_model,
+             const std::string& file_name);
 extern std::string auto_track_report;
 std::string auto_track_report;
 std::string run_auto_track(
@@ -238,6 +241,7 @@ std::string run_auto_track(
                         if(!tract_model.save_tracts_to_file(trk_file_name.c_str()))
                             return std::string("fail to save trk file:")+trk_file_name;
                     }
+                    trk_post(handle,tract_model,trk_file_name);
                 }
             }
         }
