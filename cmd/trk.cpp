@@ -315,62 +315,8 @@ bool load_region(std::shared_ptr<fib_data> handle,
 
 int trk_post(std::shared_ptr<fib_data> handle,
              TractModel& tract_model,
-             const std::string& file_name,
-             bool save_track)
+             const std::string& file_name)
 {
-    if (po.has("delete_repeat"))
-    {
-        std::cout << "deleting repeat tracks..." << std::endl;
-        float distance = po.get("delete_repeat",float(1));
-        tract_model.delete_repeated(distance);
-        std::cout << "repeat tracks with distance smaller than " << distance <<" voxel distance are deleted" << std::endl;
-    }
-    if(po.has("trim"))
-    {
-        std::cout << "trimming tracks..." << std::endl;
-        int trim = po.get("trim",int(1));
-        for(int i = 0;i < trim;++i)
-            tract_model.trim();
-    }
-    if(save_track)
-    {
-        std::string file_list = file_name;
-        std::replace(file_list.begin(),file_list.end(),',',' ');
-        std::istringstream in(file_list);
-        std::string f;
-        while(in >> f)
-        {
-            if(po.has("ref")) // save track in T1W/T2W space
-            {
-                std::vector<std::string> files;
-                files.push_back(po.get("ref"));
-                CustomSliceModel new_slice(handle.get());
-                if(!new_slice.initialize(files,false))
-                {
-                    std::cout << "error reading ref image file" << std::endl;
-                    return 1;
-                }
-                new_slice.thread->wait();
-                new_slice.update();
-                std::cout << "applying linear registration." << std::endl;
-                std::cout << new_slice.T[0] << " " << new_slice.T[1] << " " << new_slice.T[2] << " " << new_slice.T[3] << std::endl;
-                std::cout << new_slice.T[4] << " " << new_slice.T[5] << " " << new_slice.T[6] << " " << new_slice.T[7] << std::endl;
-                std::cout << new_slice.T[8] << " " << new_slice.T[9] << " " << new_slice.T[10] << " " << new_slice.T[11] << std::endl;
-                tract_model.save_transformed_tracts_to_file(f.c_str(),&*new_slice.invT.begin(),false);
-            }
-            else
-            if(f != "no_file")
-            {
-                std::cout << "output file:" << f << std::endl;
-                if (!tract_model.save_tracts_to_file(f.c_str()))
-                {
-                    std::cout << "cannot save tracks as " << f << ". Please check write permission, directory, and disk space." << std::endl;
-                }
-                if(QFileInfo(f.c_str()).exists())
-                    std::cout << "file saved to " << f << std::endl;
-            }
-        }
-    }
     if(po.has("cluster"))
     {
         std::string cmd = po.get("cluster");
@@ -669,6 +615,21 @@ int trk(std::shared_ptr<fib_data> handle)
     std::cout << "The final analysis results in " << tract_model.get_visible_track_count() << " tracts." << std::endl;
 
 
+    if (po.has("delete_repeat"))
+    {
+        std::cout << "deleting repeat tracks..." << std::endl;
+        float distance = po.get("delete_repeat",float(1));
+        tract_model.delete_repeated(distance);
+        std::cout << "repeat tracks with distance smaller than " << distance <<" voxel distance are deleted" << std::endl;
+    }
+    if(po.has("trim"))
+    {
+        std::cout << "trimming tracks..." << std::endl;
+        int trim = po.get("trim",int(1));
+        for(int i = 0;i < trim;++i)
+            tract_model.trim();
+    }
+
 
     std::string file_name;
     if (po.has("output"))
@@ -679,5 +640,44 @@ int trk(std::shared_ptr<fib_data> handle)
         fout << po.get("source") << ".tt.gz";
         file_name = fout.str();
     }
-    return trk_post(handle,tract_model,file_name,true/*save track*/);
+    // save track
+    {
+        std::string file_list = file_name;
+        std::replace(file_list.begin(),file_list.end(),',',' ');
+        std::istringstream in(file_list);
+        std::string f;
+        while(in >> f)
+        {
+            if(po.has("ref")) // save track in T1W/T2W space
+            {
+                std::vector<std::string> files;
+                files.push_back(po.get("ref"));
+                CustomSliceModel new_slice(handle.get());
+                if(!new_slice.initialize(files,false))
+                {
+                    std::cout << "error reading ref image file" << std::endl;
+                    return 1;
+                }
+                new_slice.thread->wait();
+                new_slice.update();
+                std::cout << "applying linear registration." << std::endl;
+                std::cout << new_slice.T[0] << " " << new_slice.T[1] << " " << new_slice.T[2] << " " << new_slice.T[3] << std::endl;
+                std::cout << new_slice.T[4] << " " << new_slice.T[5] << " " << new_slice.T[6] << " " << new_slice.T[7] << std::endl;
+                std::cout << new_slice.T[8] << " " << new_slice.T[9] << " " << new_slice.T[10] << " " << new_slice.T[11] << std::endl;
+                tract_model.save_transformed_tracts_to_file(f.c_str(),&*new_slice.invT.begin(),false);
+            }
+            else
+            if(f != "no_file")
+            {
+                std::cout << "output file:" << f << std::endl;
+                if (!tract_model.save_tracts_to_file(f.c_str()))
+                {
+                    std::cout << "cannot save tracks as " << f << ". Please check write permission, directory, and disk space." << std::endl;
+                }
+                if(QFileInfo(f.c_str()).exists())
+                    std::cout << "file saved to " << f << std::endl;
+            }
+        }
+    }
+    return trk_post(handle,tract_model,file_name);
 }

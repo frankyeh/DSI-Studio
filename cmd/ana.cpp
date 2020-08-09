@@ -198,8 +198,7 @@ bool load_nii(std::shared_ptr<fib_data> handle,
 }
 int trk_post(std::shared_ptr<fib_data> handle,
              TractModel& tract_model,
-             const std::string& file_name,
-             bool save_track);
+             const std::string& file_name);
 std::shared_ptr<fib_data> cmd_load_fib(const std::string file_name);
 int ana(void)
 {
@@ -314,5 +313,5 @@ int ana(void)
         return 1;
     }
     // --output will save tracks into a file
-    return trk_post(handle,tract_model,po.has("output") ? po.get("output") : po.get("tract"),po.has("output"));
+    return trk_post(handle,tract_model,po.has("output") ? po.get("output") : po.get("tract"));
 }
