@@ -2354,7 +2354,7 @@ void TractModel::get_quantitative_info(std::string& result)
         }
         // surface area
         {
-            const float resolution_ratio = 4.0f;
+            const float resolution_ratio = 2.0f;
             tipl::image<unsigned char, 3> edge;
             tipl::morphology::edge(volume,edge);
             size_t num = 0;
