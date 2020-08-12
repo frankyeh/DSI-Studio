@@ -263,9 +263,11 @@ void TractTableWidget::load_tracts(QStringList filenames)
             continue;
         QString label = QFileInfo(filename).fileName();
         label.remove(".tt.gz");
-        label.remove(".trk");
-        label.remove(".gz");
+        label.remove(".trk.gz");
         label.remove(".txt");
+        int pos = label.indexOf(".fib.gz");
+        if(pos != -1)
+            label = label.right(label.length()-pos-8);
         std::string sfilename = filename.toStdString();
         addNewTracts(label);
         if(!tract_models.back()->load_from_file(&*sfilename.begin(),false))
