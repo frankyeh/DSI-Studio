@@ -2229,12 +2229,18 @@ void TractModel::to_end_point_voxels(std::vector<tipl::vector<3,short> >& points
     };
 
     std::vector<tipl::vector<3,float> > s1,s2;
+    tipl::vector<3,int> total_dis;
     for(size_t i = 0;i < tract_data.size();++i)
     {
         if(tract_data[i].size() < 6)
             return;
         tipl::vector<3> p1(&tract_data[i][0]);
         tipl::vector<3> p2(&tract_data[i][tract_data[i].size()-3]);
+        tipl::vector<3> dis(p1);
+        dis -= p2;
+        dis.abs();
+        total_dis[uint32_t(std::max_element(dis.begin(),dis.end())-dis.begin())]++;
+
         if(ratio != 1.0f)
             p1 *= ratio;
         p1.round();
@@ -2244,14 +2250,13 @@ void TractModel::to_end_point_voxels(std::vector<tipl::vector<3,short> >& points
         s1.push_back(p1);
         s2.push_back(p2);
     }
+    total_dis[1] *= 5;
+    auto max_dim = std::max_element(total_dis.begin(),total_dis.end())-total_dis.begin();
     for(int i = 0;i < 5;++i)
     {
         auto mean1 = std::accumulate(s1.begin(),s1.end(),tipl::vector<3,float>(0.0f,0.0f,0.0f))/float(s1.size());
         auto mean2 = std::accumulate(s2.begin(),s2.end(),tipl::vector<3,float>(0.0f,0.0f,0.0f))/float(s2.size());
         auto dis = mean1-mean2;
-        auto abs_dis = dis;
-        abs_dis.abs();
-        auto max_dim = std::max_element(abs_dis.begin(),abs_dis.end())-abs_dis.begin();
         if(dis[uint32_t(max_dim)] < 0.0f)
             std::swap(mean1,mean2);
         size_t swap_count = 0;
@@ -2284,6 +2289,7 @@ void TractModel::get_quantitative_info(std::string& result)
     std::vector<std::string> titles;
     std::vector<float> data;
     {
+        const float resolution_ratio = 2.0f;
         float voxel_volume = vs[0]*vs[1]*vs[2];
         const float PI = 3.14159265358979323846f;
         float tract_volume, trunk_volume, tract_area, tract_length, span, curl, bundle_diameter;
@@ -2320,7 +2326,6 @@ void TractModel::get_quantitative_info(std::string& result)
 
 
         {
-            const float resolution_ratio = 2.0f;
             std::vector<tipl::vector<3,short> > points;
             to_voxel(points,resolution_ratio);
             tract_volume = points.size()*voxel_volume/resolution_ratio/resolution_ratio/resolution_ratio;
@@ -2354,7 +2359,6 @@ void TractModel::get_quantitative_info(std::string& result)
         }
         // surface area
         {
-            const float resolution_ratio = 2.0f;
             tipl::image<unsigned char, 3> edge;
             tipl::morphology::edge(volume,edge);
             size_t num = 0;
@@ -2367,7 +2371,6 @@ void TractModel::get_quantitative_info(std::string& result)
         // end points
         float end_area1,end_area2,radius1,radius2;
         {
-            const float resolution_ratio = 2.0f;
             std::vector<tipl::vector<3,short> > endpoint1,endpoint2;
             to_end_point_voxels(endpoint1,endpoint2,resolution_ratio);
             // end point surface 1 and 2
