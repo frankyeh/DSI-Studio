@@ -2413,18 +2413,18 @@ void TractModel::get_quantitative_info(std::string& result)
         data.push_back(trunk_volume);   titles.push_back("trunk volume(mm^3)");
         data.push_back(tract_volume-trunk_volume);   titles.push_back("branch volume(mm^3)");
 
-        data.push_back(tract_area);     titles.push_back("surface area(mm^2)");
-        data.push_back(float(tract_area/PI/bundle_diameter/tract_length));  titles.push_back("irregularity");
+        data.push_back(tract_area);     titles.push_back("total surface area(mm^2)");
         data.push_back(radius1+radius2);titles.push_back("total radius of end regions(mm)");
         data.push_back(end_area1+end_area2);      titles.push_back("total area of end regions(mm^2)");
+        data.push_back(float(tract_area/PI/bundle_diameter/tract_length));  titles.push_back("irregularity");
 
-        data.push_back(end_area1);      titles.push_back("end area 1(mm^2)");
-        data.push_back(radius1);        titles.push_back("radius of end area1(mm)");
-        data.push_back(PI*radius1*radius1/end_area1);        titles.push_back("irregularity of end area1");
+        data.push_back(end_area1);      titles.push_back("area of end region 1(mm^2)");
+        data.push_back(radius1);        titles.push_back("radius of end region 1(mm)");
+        data.push_back(PI*radius1*radius1/end_area1);        titles.push_back("irregularity of end region 1");
 
-        data.push_back(end_area2);      titles.push_back("end area 2(mm^2)");
-        data.push_back(radius2);        titles.push_back("radius of end area2(mm)");
-        data.push_back(PI*radius2*radius2/end_area2);        titles.push_back("irregularity of end area2");
+        data.push_back(end_area2);      titles.push_back("area of end region 2(mm^2)");
+        data.push_back(radius2);        titles.push_back("radius of end region 2(mm)");
+        data.push_back(PI*radius2*radius2/end_area2);        titles.push_back("irregularity of end region 2");
 
         // output mean and std of each index
         for(size_t data_index = 0;data_index < handle->view_item.size();++data_index)
