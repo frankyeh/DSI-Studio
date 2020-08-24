@@ -46,12 +46,14 @@ void ImageModel::calculate_dwi_sum(bool update_mask)
     float max_value = std::min<float>(*std::max_element(dwi_sum.begin(),dwi_sum.end()),otsu*3.0f);
     float min_value = max_value;
     // handle 0 strip with background value condition
-    if(dwi_sum.depth() < 200)
     {
-        for (unsigned int index = 0;index < dwi_sum.size();++index)
+        for (unsigned int index = 0;index < dwi_sum.size();index += uint32_t(dwi_sum.width()+1))
             if (dwi_sum[index] < min_value && dwi_sum[index] > 0)
                 min_value = dwi_sum[index];
-        tipl::minus_constant(dwi_sum,min_value);
+        if(min_value >= max_value)
+            min_value = 0;
+        else
+            tipl::minus_constant(dwi_sum,min_value);
     }
     float r = max_value-min_value;
     if(r != 0.0f)
@@ -59,11 +61,11 @@ void ImageModel::calculate_dwi_sum(bool update_mask)
     // update dwi
     dwi.resize(voxel.dim);
     for(size_t index = 0;index < dwi.size();++index)
-        dwi[index] = uint8_t(std::max<float>(0.0f,std::min<float>(255.0f,std::floor((dwi_sum[index]-min_value)*r))));
+        dwi[index] = uint8_t(std::max<float>(0.0f,std::min<float>(255.0f,std::floor(dwi_sum[index]*r))));
 
     if(update_mask)
     {
-        tipl::threshold(dwi_sum,voxel.mask,(min_value + (max_value-min_value)*0.2f),1,0);
+        tipl::threshold(dwi_sum,voxel.mask,(max_value-min_value)*0.2f,1,0);
         if(dwi_sum.depth() < 200)
         {
             tipl::par_for(voxel.mask.depth(),[&](int i)
@@ -73,6 +75,10 @@ void ImageModel::calculate_dwi_sum(bool update_mask)
                 tipl::morphology::defragment(I);
                 tipl::morphology::recursive_smoothing(I,10);
                 tipl::morphology::defragment(I);
+                tipl::morphology::negate(I);
+                tipl::morphology::defragment(I);
+                tipl::morphology::negate(I);
+
             });
             tipl::morphology::recursive_smoothing(voxel.mask,10);
             tipl::morphology::defragment(voxel.mask);
