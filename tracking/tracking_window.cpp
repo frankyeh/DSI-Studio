@@ -2267,9 +2267,14 @@ void tracking_window::on_actionSave_Slices_to_DICOM_triggered()
         in.seekg(0,in.end);
         buf.resize(size_t(in.tellg()));
         in.seekg(0,in.beg);
-        if(read_size*sizeof(short) > buf.size() || !in.read(&buf[0],uint64_t(buf.size())))
+        if(read_size*sizeof(short) > buf.size())
         {
             failcode = 1;
+            return;
+        }
+        if(!in.read(&buf[0],uint64_t(buf.size())))
+        {
+            failcode = 4;
             return;
         }
         std::vector<short> image_buf(read_size);
@@ -2310,11 +2315,13 @@ void tracking_window::on_actionSave_Slices_to_DICOM_triggered()
     if(failcode == 0)
         QMessageBox::information(this,"DSI Studio","File saved");
     if(failcode == 1)
-        QMessageBox::information(this,"DSI Studio","Invalid DICOM format");
+        QMessageBox::information(this,"DSI Studio","Compressed DICOM is not supported. Please convert DICOM to uncompressed format.");
     if(failcode == 2)
         QMessageBox::information(this,"DSI Studio","Subject DICOM mismatch");
     if(failcode == 3)
         QMessageBox::information(this,"DSI Studio","Cannot output DICOM");
+    if(failcode == 4)
+        QMessageBox::information(this,"DSI Studio","Read DICOM failed");
 
 }
 
