@@ -660,7 +660,7 @@ void group_connectometry_analysis::generate_report(std::string& output)
         new_mdi->command("set_roi_view_index","icbm_wm");
         new_mdi->command("add_surface");
         new_mdi->command("set_roi_view_index","icbm_t1w");
-        new_mdi->command("set_roi_view_contrast","0.0","190.0");
+        new_mdi->command("set_roi_view_contrast","0.0","500.0");
 
         auto show_track_result = [&](std::shared_ptr<TractModel> track,std::string name,unsigned int color){
             if(track->get_visible_track_count())
