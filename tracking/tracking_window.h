@@ -151,7 +151,7 @@ private slots:
     void on_actionCut_Y_2_triggered();
     void on_actionCut_Z_triggered();
     void on_actionCut_Z_2_triggered();
-    void on_actionStrip_skull_for_T1w_image_triggered();
+    void stripSkull();
     void on_actionImprove_Quality_triggered();
     void on_actionRestore_Tracking_Settings_triggered();
     void on_actionAdjust_Mapping_triggered();

@@ -210,6 +210,16 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         connect(ui->reset_rendering,SIGNAL(clicked()),this,SLOT(on_actionRestore_Settings_triggered()));
         connect(ui->reset_rendering,SIGNAL(clicked()),this,SLOT(on_actionRestore_Tracking_Settings_triggered()));
 
+
+        connect(ui->actionFull,SIGNAL(triggered()),this,SLOT(stripSkull()));
+        connect(ui->actionRight,SIGNAL(triggered()),this,SLOT(stripSkull()));
+        connect(ui->actionLeft,SIGNAL(triggered()),this,SLOT(stripSkull()));
+        connect(ui->actionLower,SIGNAL(triggered()),this,SLOT(stripSkull()));
+        connect(ui->actionUpper,SIGNAL(triggered()),this,SLOT(stripSkull()));
+        connect(ui->actionAnterior,SIGNAL(triggered()),this,SLOT(stripSkull()));
+        connect(ui->actionPosterior,SIGNAL(triggered()),this,SLOT(stripSkull()));
+
+
         connect(ui->actionFull,SIGNAL(triggered()),glWidget,SLOT(addSurface()));
         connect(ui->actionRight,SIGNAL(triggered()),glWidget,SLOT(addSurface()));
         connect(ui->actionLeft,SIGNAL(triggered()),glWidget,SLOT(addSurface()));
@@ -1506,13 +1516,53 @@ void tracking_window::on_actionCut_Z_2_triggered()
 {
     tractWidget->cut_by_slice(2,false);
 }
-
-void tracking_window::on_actionStrip_skull_for_T1w_image_triggered()
+extern std::string t1w_template_file_name,t1w_mask_template_file_name;
+void tracking_window::stripSkull()
 {
-    CustomSliceModel* reg_slice = dynamic_cast<CustomSliceModel*>(current_slice.get());
-    if(!reg_slice)
+    if(!ui->SliceModality->currentIndex() || !handle->is_human_data || handle->is_qsdr)
         return;
-    reg_slice->stripskull();
+    CustomSliceModel* reg_slice = dynamic_cast<CustomSliceModel*>(current_slice.get());
+    if(!reg_slice || !reg_slice->skull_removed_images.empty())
+        return;
+    gz_nifti in1,in2;
+    tipl::image<float,3> It,Iw,J(reg_slice->get_source());
+    if(!in1.load_from_file(t1w_template_file_name.c_str()) || !in1.toLPS(It))
+        return;
+    if(!in2.load_from_file(t1w_mask_template_file_name.c_str()) || !in2.toLPS(Iw))
+        return;
+    tipl::vector<3> vs,vsJ(reg_slice->voxel_size);
+    in1.get_voxel_size(vs);
+
+    tipl::downsampling(It);
+    tipl::downsampling(It);
+    tipl::downsampling(Iw);
+    tipl::downsampling(Iw);
+    tipl::downsampling(J);
+    tipl::downsampling(J);
+    vs *= 4.0f;
+    vsJ *= 4.0f;
+
+    std::shared_ptr<manual_alignment> manual(new manual_alignment(this,
+            It,vs,J,vsJ,tipl::reg::affine,tipl::reg::cost_type::mutual_info));
+
+    manual->on_rerun_clicked();
+    if(manual->exec() != QDialog::Accepted)
+        return;
+    auto T = tipl::transformation_matrix<double>(manual->arg,
+        It.geometry(),vs,J.geometry(),vsJ);
+
+    tipl::multiply_constant(T.data,T.data+12,4.0f);
+    tipl::transformation_matrix<double> iT = T;
+    iT.inverse();
+
+    tipl::filter::mean(Iw);
+    tipl::filter::mean(Iw);
+
+    tipl::image<float,3> Iw_(reg_slice->source_images.geometry());
+    tipl::resample_mt(Iw,Iw_,iT,tipl::linear);
+
+    reg_slice->skull_removed_images = reg_slice->source_images;
+    reg_slice->skull_removed_images *= Iw_;
     scene.show_slice();
 }
 

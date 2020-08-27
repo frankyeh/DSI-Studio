@@ -948,14 +948,12 @@
     </widget>
     <addaction name="actionInsert_T1_T2"/>
     <addaction name="actionInsert_MNI_images"/>
+    <addaction name="menuAdd_Isosurface"/>
     <addaction name="separator"/>
     <addaction name="actionSave_T1W_T2W_images"/>
     <addaction name="actionSave_Slices_to_DICOM"/>
     <addaction name="actionMark_Tracts_on_T1W_T2W"/>
     <addaction name="actionMark_Region_on_T1W_T2W"/>
-    <addaction name="separator"/>
-    <addaction name="menuAdd_Isosurface"/>
-    <addaction name="actionStrip_skull_for_T1w_image"/>
     <addaction name="separator"/>
     <addaction name="actionLoad_mapping"/>
     <addaction name="actionSave_mapping"/>
@@ -3111,15 +3109,6 @@ Tracking</string>
    </property>
    <property name="shortcut">
     <string>Ctrl+Shift+Y</string>
-   </property>
-  </action>
-  <action name="actionStrip_skull_for_T1w_image">
-   <property name="icon">
-    <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/add_surface.xpm</normaloff>:/icons/icons/add_surface.xpm</iconset>
-   </property>
-   <property name="text">
-    <string>Remove Skull from T1w...</string>
    </property>
   </action>
   <action name="actionLoad_Color_Map">

@@ -2401,10 +2401,15 @@ bool GLWidget::command(QString cmd,QString param,QString param2)
     }
     if(cmd == "add_surface")
     {
-        float threshold = (param2.isEmpty()) ? tipl::segmentation::otsu_threshold(cur_tracking_window.current_slice->get_source()):param2.toFloat();
+        tipl::image<float, 3> crop_image;
+        CustomSliceModel* reg_slice = dynamic_cast<CustomSliceModel*>(cur_tracking_window.current_slice.get());
+        if(reg_slice && !reg_slice->skull_removed_images.empty())
+            crop_image = reg_slice->skull_removed_images;
+        else
+            crop_image = cur_tracking_window.current_slice->get_source();
+        float threshold = (param2.isEmpty()) ? tipl::segmentation::otsu_threshold(crop_image):param2.toFloat();
         {
             surface.reset(new RegionModel);
-            tipl::image<float, 3> crop_image(cur_tracking_window.current_slice->get_source());
             if(!param.isEmpty())
             switch(param.toInt())
             {
@@ -2453,19 +2458,19 @@ bool GLWidget::command(QString cmd,QString param,QString param2)
             case 2:
                 {
                 tipl::image<unsigned char,3> mask(crop_image);
-                for(int i = 0;i < mask.size();++i)
+                for(size_t i = 0;i < mask.size();++i)
                     mask[i] = (crop_image[i] > threshold? 1:0);
                 tipl::morphology::defragment(mask);
                 tipl::morphology::negate(mask);
                 tipl::morphology::defragment(mask);
                 tipl::morphology::negate(mask);
-                for(int i = 0;i < mask.size();++i)
+                tipl::morphology::smoothing(mask);
+                tipl::morphology::dilation(mask);
+                for(size_t i = 0;i < mask.size();++i)
                     if(mask[i] == 0)
-                        crop_image[i] = 0;
-
+                        crop_image[i] *= 0.2f;
+                tipl::filter::gaussian(crop_image);
                 }
-                tipl::filter::gaussian(crop_image);
-                tipl::filter::gaussian(crop_image);
                 break;
             }
             if(!surface->load(crop_image,threshold))

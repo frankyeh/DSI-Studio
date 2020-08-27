@@ -100,7 +100,7 @@ Region/Blend Func1/region_bend1/ZERO:ONE:DST_COLOR:ONE_MINUS_DST_COLOR:SRC_ALPHA
 Region/Blend Func2/region_bend2/ZERO:ONE:SRC_COLOR:ONE_MINUS_DST_COLOR:SRC_ALPHA:ONE_MINUS_SRC_ALPHA:DST_ALPHA:ONE_MINUS_DST_ALPHA/5
 Surface/Color/surface_color/color/11184800
 Surface/Opacity/surface_alpha/float:0:1:0.05:2/0.05
-Surface/Mesh Rendering/surface_mesh_smoothed/Original:Smoothed:Smoothed2/1
+Surface/Mesh Rendering/surface_mesh_smoothed/Original:Smoothed:Smoothed2/2
 Surface/Light/surface_light_option/One source:Two sources:Three sources/2
 Surface/Light Direction/surface_light_dir/int/5
 Surface/Light Shading/surface_light_shading/int/4

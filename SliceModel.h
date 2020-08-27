@@ -139,11 +139,10 @@ public:
 public:
     tipl::matrix<4,4,float> trans;
     tipl::image<float, 3> source_images;
+    tipl::image<float, 3> skull_removed_images;
 public:
     bool initialize(const std::vector<std::string>& files,bool correct_intensity);
     void initialize(void);
-public:
-    bool stripskull(void);
 };
 
 #endif
