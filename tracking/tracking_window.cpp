@@ -1542,6 +1542,7 @@ void tracking_window::stripSkull()
     vs *= 4.0f;
     vsJ *= 4.0f;
 
+    QMessageBox::information(this,"DSI Studio","Please align brain images to visualize isosurface.");
     std::shared_ptr<manual_alignment> manual(new manual_alignment(this,
             It,vs,J,vsJ,tipl::reg::affine,tipl::reg::cost_type::mutual_info));
 
