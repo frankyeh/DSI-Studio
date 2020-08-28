@@ -2170,7 +2170,7 @@ void GLWidget::loadCamera(void)
 }
 void GLWidget::addSurface(void)
 {
-    float threshold = tipl::segmentation::otsu_threshold(cur_tracking_window.current_slice->get_source());
+    float threshold = tipl::segmentation::otsu_threshold(cur_tracking_window.current_slice->get_source())*1.25f;
     bool ok;
     threshold = QInputDialog::getDouble(this,
         "DSI Studio","Threshold:", threshold,
@@ -2407,7 +2407,7 @@ bool GLWidget::command(QString cmd,QString param,QString param2)
             crop_image = reg_slice->skull_removed_images;
         else
             crop_image = cur_tracking_window.current_slice->get_source();
-        float threshold = (param2.isEmpty()) ? tipl::segmentation::otsu_threshold(crop_image):param2.toFloat();
+        float threshold = (param2.isEmpty()) ? tipl::segmentation::otsu_threshold(crop_image)*1.25f:param2.toFloat();
         {
             surface.reset(new RegionModel);
             if(!param.isEmpty())
