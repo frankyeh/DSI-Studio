@@ -90,7 +90,9 @@ HEADERS += mainwindow.h \
     regtoolbox.h \
     connectometry/nn_connectometry.h \
     connectometry/nn_connectometry_analysis.h \
-    auto_track.h
+    auto_track.h \
+    tracking/device.h \
+    tracking/devicetablewidget.h
 
 FORMS += mainwindow.ui \
     tracking/tracking_window.ui \
@@ -170,7 +172,9 @@ SOURCES += main.cpp \
     connectometry/nn_connectometry_analysis.cpp \
     cmd/reg.cpp \
     auto_track.cpp \
-    cmd/atk.cpp
+    cmd/atk.cpp \
+    tracking/device.cpp \
+    tracking/devicetablewidget.cpp
 
 OTHER_FILES += \
     options.txt \
