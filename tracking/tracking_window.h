@@ -15,6 +15,7 @@
 class fib_data;
 class RenderingTableWidget;
 class RegionTableWidget;
+class DeviceTableWidget;
 namespace Ui {
     class tracking_window;
 }
@@ -55,6 +56,7 @@ public:
     RegionTableWidget *regionWidget = nullptr;
     TractTableWidget *tractWidget = nullptr;
     RenderingTableWidget *renderWidget = nullptr;
+    DeviceTableWidget *deviceWidget = nullptr;
 public:
     slice_view_scene scene;
     float get_scene_zoom(void);
@@ -78,6 +80,7 @@ public:
     void updateSlicesMenu(void);
     float get_fa_threshold(void);
     bool no_update = false;
+
 public:
     bool eventFilter(QObject *obj, QEvent *event);
     QVariant operator[](QString name)const;

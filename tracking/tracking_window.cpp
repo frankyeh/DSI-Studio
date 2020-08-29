@@ -12,6 +12,7 @@
 #include "opengl/glwidget.h"
 #include "opengl/renderingtablewidget.h"
 #include "region/regiontablewidget.h"
+#include "devicetablewidget.h"
 #include <QApplication>
 #include <QMouseEvent>
 #include <QMessageBox>
@@ -89,6 +90,7 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
 
     ui->setupUi(this);
 
+
     // setup GUI
     {
         // create objects
@@ -100,8 +102,10 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
             ui->glLayout->addWidget(glWidget = new GLWidget(renderWidget->getData("anti_aliasing").toInt(),*this,renderWidget));
             ui->verticalLayout_3->addWidget(regionWidget = new RegionTableWidget(*this,ui->regionDockWidget));
             ui->track_verticalLayout->addWidget(tractWidget = new TractTableWidget(*this,ui->TractWidgetHolder));
+            ui->deviceLayout->addWidget(deviceWidget = new DeviceTableWidget(*this,ui->TractWidgetHolder));
             ui->graphicsView->setScene(&scene);
             ui->graphicsView->setCursor(Qt::CrossCursor);
+            ui->DeviceDockWidget->hide();
             scene.statusbar = ui->statusbar;
             color_bar.reset(new color_bar_dialog(this));
 
@@ -303,12 +307,6 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         connect(ui->actionBy_Z,SIGNAL(triggered()),regionWidget,SLOT(action_sort_z()));
         connect(ui->actionMove_Slices_To_Current_Region,SIGNAL(triggered()),regionWidget,SLOT(move_slice_to_current_region()));
 
-
-
-
-
-        connect(ui->actionSet_Opacity,SIGNAL(triggered()),regionWidget,SLOT(action_set_opa()));
-
         connect(ui->actionMerge_All_2,SIGNAL(triggered()),regionWidget,SLOT(merge_all()));
 
         connect(ui->actionCheck_all_regions,SIGNAL(triggered()),regionWidget,SLOT(check_all()));
@@ -321,6 +319,19 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
 
         connect(ui->region_up,SIGNAL(clicked()),regionWidget,SLOT(move_up()));
         connect(ui->region_down,SIGNAL(clicked()),regionWidget,SLOT(move_down()));
+    }
+    // Device
+    {
+        connect(deviceWidget,SIGNAL(need_update()),glWidget,SLOT(updateGL()));
+        connect(ui->actionNewDevice,SIGNAL(triggered()),deviceWidget,SLOT(newDevice()));
+
+        connect(ui->actionOpenDevice,SIGNAL(triggered()),deviceWidget,SLOT(load_device()));
+        connect(ui->actionSaveDevice,SIGNAL(triggered()),deviceWidget,SLOT(save_device()));
+        connect(ui->actionSave_All_Device,SIGNAL(triggered()),deviceWidget,SLOT(save_all_devices()));
+
+        connect(ui->actionDeleteDevice,SIGNAL(triggered()),deviceWidget,SLOT(delete_device()));
+        connect(ui->actionDeleteAllDevices,SIGNAL(triggered()),deviceWidget,SLOT(delete_all_devices()));
+
     }
     // tracts
     {
@@ -482,6 +493,7 @@ bool tracking_window::command(QString cmd,QString param,QString param2)
         renderWidget->setDefault("show_slice");
         renderWidget->setDefault("show_tract");
         renderWidget->setDefault("show_region");
+        renderWidget->setDefault("show_device");
         renderWidget->setDefault("show_surface");
         renderWidget->setDefault("show_label");
         renderWidget->setDefault("show_odf");
@@ -1516,6 +1528,7 @@ void tracking_window::on_actionCut_Z_2_triggered()
 {
     tractWidget->cut_by_slice(2,false);
 }
+
 extern std::string t1w_template_file_name,t1w_mask_template_file_name;
 void tracking_window::stripSkull()
 {

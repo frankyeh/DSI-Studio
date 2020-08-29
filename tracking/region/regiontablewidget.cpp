@@ -64,7 +64,7 @@ void ImageDelegate::setEditorData(QWidget *editor,
         {
             tipl::rgb color(uint32_t(index.data(Qt::UserRole).toInt()));
             dynamic_cast<QColorToolButton*>(editor)->setColor(
-                QColor(color.r,color.g,color.b));
+                QColor(color.r,color.g,color.b,color.a));
         }
         else
             return QItemDelegate::setEditorData(editor,index);
@@ -111,11 +111,6 @@ RegionTableWidget::RegionTableWidget(tracking_window& cur_tracking_window_,QWidg
     setEditTriggers(QAbstractItemView::DoubleClicked|QAbstractItemView::EditKeyPressed);
 }
 
-
-
-RegionTableWidget::~RegionTableWidget(void)
-{
-}
 
 void RegionTableWidget::contextMenuEvent ( QContextMenuEvent * event )
 {
@@ -1031,7 +1026,7 @@ void RegionTableWidget::move_down(void)
 
 void RegionTableWidget::save_region(void)
 {
-    if (currentRow() >= regions.size())
+    if (regions.empty() || currentRow() >= regions.size())
         return;
     QString filename = QFileDialog::getSaveFileName(
                            this,
@@ -1110,6 +1105,8 @@ void RegionTableWidget::save_all_regions(void)
 
 void RegionTableWidget::save_region_info(void)
 {
+    if (regions.empty())
+        return;
     if (currentRow() >= regions.size())
         return;
     QString filename = QFileDialog::getSaveFileName(
@@ -1355,18 +1352,7 @@ void RegionTableWidget::do_action(QString action)
             }
 
         }
-        if(action == "set_opacity")
-        {
-            bool ok;
-            double threshold = QInputDialog::getDouble(this,
-                "DSI Studio","Set opacity (between 0 and 1)",
-                    double(cur_region.opacity < 0.0f ?
-                    cur_tracking_window["region_alpha"].toFloat() : cur_region.opacity),
-                    0.0,1.0,1,&ok);
-            if(!ok)
-                return;
-            cur_region.opacity = float(threshold);
-        }
+
         if(action == "threshold")
         {
             tipl::image<unsigned char, 3>mask;

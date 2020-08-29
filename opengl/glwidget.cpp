@@ -12,6 +12,7 @@
 #include "ui_tracking_window.h"
 #include "renderingtablewidget.h"
 #include "tracking/region/regiontablewidget.h"
+#include "tracking/devicetablewidget.h"
 #include "SliceModel.h"
 #include "fib_data.hpp"
 #include "tracking/color_bar_dialog.hpp"
@@ -525,16 +526,16 @@ void GLWidget::paintGL()
     }
 }
 
-void CylinderGL(GLUquadricObj* ptr,const tipl::vector<3>& p1,const tipl::vector<3>& p2,float r)
+void CylinderGL(GLUquadricObj* ptr,const tipl::vector<3>& p1,const tipl::vector<3>& p2,double r)
 {
      tipl::vector<3> z(0,0,1),dis(p1-p2);
      tipl::vector<3> t = z.cross_product(dis);
-     float v = dis.length();
-     double angle = 180.0f / 3.1415926*std::acos (dis[2]/v);
+     double v = dis.length();
+     float angle = 180.0f / 3.1415926f*float(std::acos(double(dis[2])/v));
      glPushMatrix();
-     glTranslated(p2[0],p2[1],p2[2]);
-     glRotated(angle,t[0],t[1],t[2]);
-     gluCylinder(ptr,r,r,v,10,v/10+1);		// Draw A cylinder
+     glTranslatef(p2[0],p2[1],p2[2]);
+     glRotatef(angle,t[0],t[1],t[2]);
+     gluCylinder(ptr,r,r,v,10,int(v/10)+1);		// Draw A cylinder
      glPopMatrix();
 }
 
@@ -830,7 +831,118 @@ void GLWidget::renderLR()
         glDepthMask(true);
         check_error("show_slice");
     }
+    if (!cur_tracking_window.deviceWidget->devices.empty() &&
+        get_param("show_device"))
+    {
+        glDisable(GL_COLOR_MATERIAL);
+        setupLight(float(get_param("device_light_ambient"))/10.0f,
+                   float(get_param("device_light_diffuse"))/10.0f,
+                   float(get_param("device_light_specular"))/10.0f,
+                   float(get_param("device_light_dir"))*3.1415926f*2.0f/10.0f,
+                   float(get_param("device_light_shading"))*3.1415926f/20.0f,
+                   uint8_t(get_param("device_light_option")));
 
+        glPushMatrix();
+        glMultMatrixf(transformation_matrix.begin());
+        setupMaterial(float(get_param("device_emission"))/10.0f,
+                      float(get_param("device_specular"))/10.0f,
+                      get_param("device_shininess")*10);
+
+        int blend1 = get_param("device_bend1");
+        int blend2 = get_param("device_bend2");
+        glEnable(GL_BLEND);
+        glBlendFunc (BlendFunc1[blend1],
+                     BlendFunc2[blend2]);
+
+        glEnable(GL_COLOR_MATERIAL);
+        if(!DeviceQua.get())
+        {
+            DeviceQua.reset(new GluQua);
+            gluQuadricNormals(DeviceQua->get(), GLU_SMOOTH);
+        }
+
+        float vs = 1.0f/cur_tracking_window.handle->vs[0];
+        auto& devices = cur_tracking_window.deviceWidget->devices;
+        for(size_t index = 0;index < devices.size();++index)
+        {
+            glPushMatrix();
+            // oriented and move the device
+            glTranslatef(devices[index]->pos[0],devices[index]->pos[1],devices[index]->pos[2]);
+            tipl::vector<3> z(0,0,1);
+            tipl::vector<3> t = z.cross_product(devices[index]->dir);
+            float angle = 180.0f / 3.1415926f*float(std::acos(double(devices[index]->dir[2])));
+            glRotatef(angle,t[0],t[1],t[2]);
+            glScalef(vs,vs,vs);
+            std::vector<float> seg_length;
+            std::vector<char> seg_type;
+            float radius = 0.0f;
+            devices[index]->get_rendering(seg_length,seg_type,radius);
+            float r = devices[index]->color.r/255.0f;
+            float g = devices[index]->color.g/255.0f;
+            float b = devices[index]->color.b/255.0f;
+            float a = devices[index]->color.a/255.0f;
+
+            auto Cylinder = [&](float r,float length,int s = 20)
+                {gluCylinder(DeviceQua->get(),double(r),double(r),double(length),s,std::max<int>(1,int(length)));};
+            // head
+            for(size_t j = 0;j < seg_length.size();++j)
+            {
+                switch(seg_type[j])
+                {
+                    case -2: // cylindercap
+                        glColor4f(r,g,b,a);
+                        gluDisk(DeviceQua->get(),radius,radius+5,8,2);
+                        Cylinder(radius+5,seg_length[j],8);
+                        Cylinder(radius,seg_length[j],8);
+                        glPushMatrix();
+                        glTranslatef(0.0f,0.0f,seg_length[j]);
+                        gluDisk(DeviceQua->get(),radius,radius+5,8,2);
+                        glPopMatrix();
+                        break;
+                    case -1: // tip ball
+                        if(j+1 < seg_type.size() && seg_type[j+1] == 0)
+                            glColor4f(r,g,b,a);
+                        else
+                            glColor4f(0.2f,0.2f,0.2f,a);
+                        gluSphere(DeviceQua->get(),double(radius),20,10);
+                        continue;
+                    case 0:
+                        glColor4f(r,g,b,a);
+                        Cylinder(radius,seg_length[j]);
+                        break;
+                    case 1:
+                        glColor4f(0.2f,0.2f,0.2f,a);
+                        Cylinder(radius,seg_length[j]);
+                        break;
+                    case 2:
+                        glColor4f(r,g,b,a);
+                        Cylinder(radius,seg_length[j]);
+                        glPushMatrix();
+                        glTranslatef(radius*0.2f,0.0f,0.0f);
+                        glColor4f(0.2f,0.2f,0.2f,a);
+                        Cylinder(radius*0.9f,seg_length[j]);
+                        glPopMatrix();
+                        glPushMatrix();
+                        glTranslatef(-radius*0.1414f,radius*0.1414f,0.0f);
+                        Cylinder(radius*0.9f,seg_length[j]);
+                        glPopMatrix();
+                        glPushMatrix();
+                        glTranslatef(-radius*0.1414f,-radius*0.1414f,0.0f);
+                        Cylinder(radius*0.9f,seg_length[j]);
+                        glPopMatrix();
+                        break;
+                }
+                glTranslatef(0.0f,0.0f,seg_length[j]);
+            }
+            glPopMatrix();
+        }
+
+
+        glDisable(GL_COLOR_MATERIAL);
+        glDisable(GL_BLEND);
+        glPopMatrix();
+        check_error("show_device");
+    }
 
     if (get_param("show_region"))
     {
@@ -925,7 +1037,7 @@ void GLWidget::renderLR()
                 {
                     drawRegion(cur_tracking_window.regionWidget->regions[index]->show_region,
                                cur_view,
-                               cur_tracking_window.regionWidget->regions[index]->opacity == -1.0f ? alpha : cur_tracking_window.regionWidget->regions[index]->opacity,
+                               alpha,
                                get_param("region_bend1"),get_param("region_bend2"));
                 }
         }
@@ -1288,13 +1400,12 @@ void GLWidget::makeTracts(void)
 
     if(tract_shader)
     {
-        float ratio = 4.0f;
-        max_x_map.resize(tipl::geometry<2>(cur_tracking_window.handle->dim.height() * int(ratio),
-                                           cur_tracking_window.handle->dim.depth() * int(ratio)));
-        max_y_map.resize(tipl::geometry<2>(cur_tracking_window.handle->dim.width() * int(ratio),
-                                           cur_tracking_window.handle->dim.depth() * int(ratio)));
-        max_z_map.resize(tipl::geometry<2>(cur_tracking_window.handle->dim.width() * int(ratio),
-                                           cur_tracking_window.handle->dim.height() * int(ratio)));
+        max_x_map.resize(tipl::geometry<2>(cur_tracking_window.handle->dim.height(),
+                                           cur_tracking_window.handle->dim.depth()));
+        max_y_map.resize(tipl::geometry<2>(cur_tracking_window.handle->dim.width(),
+                                           cur_tracking_window.handle->dim.depth()));
+        max_z_map.resize(tipl::geometry<2>(cur_tracking_window.handle->dim.width(),
+                                           cur_tracking_window.handle->dim.height()));
         min_x_map.resize(max_x_map.geometry());
         min_y_map.resize(max_y_map.geometry());
         min_z_map.resize(max_z_map.geometry());
@@ -1314,9 +1425,9 @@ void GLWidget::makeTracts(void)
             const float* data_iter = &*(active_tract_model->get_tract(data_index).begin());
             for (unsigned int j = 0, index = 0; index < vertex_count;j += 3, data_iter += 3, ++index)
             {
-                int x = int(data_iter[0]*ratio);
-                int y = int(data_iter[1]*ratio);
-                int z = int(data_iter[2]*ratio);
+                int x = int(data_iter[0]);
+                int y = int(data_iter[1]);
+                int z = int(data_iter[2]);
                 if(max_x_map.geometry().is_valid(y,z))
                 {
                     size_t pos = size_t(y + z*max_x_map.width());
@@ -1339,12 +1450,12 @@ void GLWidget::makeTracts(void)
         });
         for(int i = 0;i < 3; ++i)
         {
-            tipl::filter::gaussian(max_x_map);
-            tipl::filter::gaussian(min_x_map);
-            tipl::filter::gaussian(max_y_map);
-            tipl::filter::gaussian(min_y_map);
-            tipl::filter::gaussian(max_z_map);
-            tipl::filter::gaussian(min_z_map);
+            tipl::filter::mean(max_x_map);
+            tipl::filter::mean(min_x_map);
+            tipl::filter::mean(max_y_map);
+            tipl::filter::mean(min_y_map);
+            tipl::filter::mean(max_z_map);
+            tipl::filter::mean(min_z_map);
         }
     }
 
@@ -1396,6 +1507,17 @@ void GLWidget::makeTracts(void)
         glBegin((tract_style) ? GL_TRIANGLE_STRIP : GL_LINE_STRIP);
         for (unsigned int j = 0, index = 0; index < vertex_count;j += 3, data_iter += 3, ++index)
         {
+            // skip straight line!
+            if (tract_style && index != 0 && index+1 != vertex_count)
+            {
+                tipl::vector<3,float> displacement(data_iter+3);
+                displacement -= last_pos;
+                displacement -= prev_vec_n*(prev_vec_n*displacement);
+                if (displacement.length() < tube_detail)
+                    continue;
+            }
+
+
             int variant_factor = 0; // range=1~3
             if((tract_variant_size || tract_variant_color) && (index < 4 || index + 3 >= vertex_count))
                 variant_factor = std::min(std::abs(4-int(index)),std::abs(int(index)-int(vertex_count-4)));
@@ -1441,58 +1563,38 @@ void GLWidget::makeTracts(void)
 
             if(tract_shader)
             {
-                int x = int(data_iter[0]*4.0f);
-                int y = int(data_iter[1]*4.0f);
-                int z = int(data_iter[2]*4.0f);
-                bool dir_x = false;
-                bool dir_y = false;
-                bool dir_z = false;
-                if(abs_vec_n[0] > abs_vec_n[1] && abs_vec_n[0] > abs_vec_n[2])
-                    dir_x = true;
-                else
-                    if(abs_vec_n[1] > abs_vec_n[2])
-                        dir_y = true;
-                    else
-                        dir_z = true;
-                if(!dir_x && max_x_map.geometry().is_valid(y,z))
+                int x = int(data_iter[0]);
+                int y = int(data_iter[1]);
+                int z = int(data_iter[2]);
+                float d = 1.0f;
+                if(max_x_map.geometry().is_valid(y,z))
                 {
                     size_t pos = size_t(y + z*max_x_map.width());
-                    float d = 1.0f-std::min<float>(12,
+                    d += std::min<float>(4.0f,
                                     std::min<float>(std::max<float>(0.0f,max_x_map[pos]-data_iter[0]),
-                                                    std::max<float>(0.0f,data_iter[0]-min_x_map[pos])))*tract_shaderf;
-                    cur_color *= d;
+                                                    std::max<float>(0.0f,data_iter[0]-min_x_map[pos])));
                 }
-                if(!dir_y && max_y_map.geometry().is_valid(x,z))
+                if(max_y_map.geometry().is_valid(x,z))
                 {
                     size_t pos = size_t(x + z*max_y_map.width());
-                    float d = 1.0f-std::min<float>(12.0f,
+                    d += std::min<float>(4.0f,
                                     std::min<float>(std::max<float>(0.0f,max_y_map[pos]-data_iter[1]),
-                                                    std::max<float>(0.0f,data_iter[1]-min_y_map[pos])))*tract_shaderf;
-                    cur_color *= d;
+                                                    std::max<float>(0.0f,data_iter[1]-min_y_map[pos])));
                 }
-                if(!dir_z && max_z_map.geometry().is_valid(x,y))
+                if(max_z_map.geometry().is_valid(x,y))
                 {
                     size_t pos = size_t(x + y*max_z_map.width());
-                    float d = 1.0f-std::min<float>(12.0f,
+                    d += std::min<float>(4.0f,
                                     std::min<float>(std::max<float>(0.0f,max_z_map[pos]-data_iter[2]),
-                                                    std::max<float>(0.0f,data_iter[2]-min_z_map[pos])))*tract_shaderf;
-                    cur_color *= d;
+                                                    std::max<float>(0.0f,data_iter[2]-min_z_map[pos])));
                 }
-                cur_color += 0.1f;
+                cur_color *= 1.0f-std::min<float>(d*tract_shaderf,0.95f);
+                cur_color += 0.05f;
             }
-            // skip straight line!
             if(tract_style)
             {
-            if (index != 0 && index+1 != vertex_count)
-            {
-                tipl::vector<3,float> displacement(data_iter+3);
-                displacement -= last_pos;
-                displacement -= prev_vec_n*(prev_vec_n*displacement);
-                if (displacement.length() < tube_detail)
-                    continue;
-            }
 
-            if (index == 0 && std::fabs(vec_a*vec_n) > 0.5)
+            if (index == 0 && std::fabs(vec_a*vec_n) > 0.5f)
                 std::swap(vec_a,vec_b);
 
             vec_b = vec_a.cross_product(vec_n);
@@ -1753,14 +1855,33 @@ tipl::vector<3,float> get_norm(const std::vector<tipl::vector<3,float> >& slice_
 }
 bool GLWidget::select_object(void)
 {
-    object_selected = false;
+    device_selected = false;
+    region_selected = false;
     slice_selected = false;
-    // select region to move
+
     object_distance = slice_distance = std::numeric_limits<float>::max();
-    if(get_param("show_region") && !cur_tracking_window.regionWidget->regions.empty())
+    // select device to move
+    if(get_param("show_device") && !cur_tracking_window.deviceWidget->devices.empty())
+    {
+        for(object_distance = 0.0f;object_distance < 2000.0f && !device_selected;object_distance += 1.0f)
+        {
+            tipl::vector<3,float> cur_pos(dir1);
+            cur_pos *= object_distance;
+            cur_pos += pos;
+            for(size_t index = 0;index < cur_tracking_window.deviceWidget->devices.size();++index)
+                if(cur_tracking_window.deviceWidget->devices[index]->has_point(cur_pos,device_selected_length))
+                {
+                    selected_index = index;
+                    device_selected = true;
+                    break;
+                }
+        }
+    }
+    // select region to move
+    if(get_param("show_region") && !cur_tracking_window.regionWidget->regions.empty() && !device_selected)
     {
         // select object
-        for(object_distance = 0.0f;object_distance < 5000.0f && !object_selected;object_distance += 1.0f)
+        for(object_distance = 0.0f;object_distance < 2000.0f && !region_selected;object_distance += 1.0f)
         {
         tipl::vector<3,float> cur_pos(dir1);
         cur_pos *= object_distance;
@@ -1772,8 +1893,8 @@ bool GLWidget::select_object(void)
             if(cur_tracking_window.regionWidget->regions[index]->has_point(voxel) &&
                cur_tracking_window.regionWidget->item(int(index),0)->checkState() == Qt::Checked)
             {
-                selected_index = int(index);
-                object_selected = true;
+                selected_index = index;
+                region_selected = true;
                 break;
             }
         }
@@ -1801,7 +1922,7 @@ bool GLWidget::select_object(void)
             }
         }
     }
-    return object_selected || slice_selected;
+    return region_selected || slice_selected || device_selected;
 }
 
 
@@ -1826,7 +1947,7 @@ void GLWidget::mouseDoubleClickEvent(QMouseEvent *event)
         return;
     if(event->button() == Qt::LeftButton)
     {
-        if(object_selected)
+        if(region_selected)
         {
             cur_tracking_window.regionWidget->setCurrentCell(selected_index,0);
             cur_tracking_window.regionWidget->move_slice_to_current_region();
@@ -1930,19 +2051,17 @@ void GLWidget::mousePressEvent(QMouseEvent *event)
                 editing_option = dragging;
                 return;
             }
-            cur_tracking_window.regionWidget->selectRow(selected_index);
+            if(region_selected)
+                cur_tracking_window.regionWidget->selectRow(int(selected_index));
+            if(device_selected)
+                cur_tracking_window.deviceWidget->selectRow(int(selected_index));
             // determine the moving direction of the region
             float angle[3] = {0,0,0};
-            bool show_slice[3];
-            show_slice[0] = cur_tracking_window.ui->glSagCheck->checkState();
-            show_slice[1] = cur_tracking_window.ui->glCorCheck->checkState();
-            show_slice[2] = cur_tracking_window.ui->glAxiCheck->checkState();
-
             for(unsigned char dim = 0;dim < 3;++dim)
             {
                 std::vector<tipl::vector<3,float> > points(4);
                 slice_location(dim,points);
-                angle[dim] = std::fabs(dir1*get_norm(points)) + (show_slice[dim] ? 1:0);
+                angle[dim] = std::fabs(dir1*get_norm(points));
             }
             moving_at_slice_index = std::max_element(angle,angle+3)-angle;
             if(get_slice_projection_point(moving_at_slice_index,pos,dir1,slice_dx,slice_dy) == 0.0)
@@ -1957,19 +2076,16 @@ void GLWidget::mousePressEvent(QMouseEvent *event)
 void GLWidget::mouseReleaseEvent(QMouseEvent *event)
 {
     makeCurrent();
-    if(editing_option == none)
-        return;
+    if(editing_option == selecting)
+    {
+        last_select_point = convert_pos(event);
+        dirs.push_back(tipl::vector<3,float>());
+        get_view_dir(last_select_point,dirs.back());
+        angular_selection = event->button() == Qt::RightButton;
+        emit edited();
+    }
     editing_option = none;
     setCursor(Qt::ArrowCursor);
-    if(editing_option == moving || editing_option == dragging)
-        return;
-
-    last_select_point = convert_pos(event);
-    dirs.push_back(tipl::vector<3,float>());
-    get_view_dir(last_select_point,dirs.back());
-
-    angular_selection = event->button() == Qt::RightButton;
-    emit edited();
 }
 void GLWidget::move_by(int x,int y)
 {
@@ -2034,19 +2150,28 @@ void GLWidget::mouseMoveEvent(QMouseEvent *event)
         slice_location(moving_at_slice_index,points);
         get_view_dir(cur_pos,dir2);
         float dx,dy;
-        if(get_slice_projection_point(moving_at_slice_index,pos,dir2,dx,dy) == 0.0)
+        if(get_slice_projection_point(moving_at_slice_index,pos,dir2,dx,dy) == 0.0f)
             return;
         tipl::vector<3,float> v1(points[1]),v2(points[2]),dis;
         v1 -= points[0];
         v2 -= points[0];
         dis = v1*(dx-slice_dx)+v2*(dy-slice_dy);
         dis -= accumulated_dis;
-        dis.round();
-        if(cur_tracking_window.regionWidget->currentRow() != -1 && (dis[0] != 0 || dis[1] != 0 || dis[2] != 0))
+        if(device_selected && selected_index < cur_tracking_window.deviceWidget->devices.size())
         {
-            cur_tracking_window.regionWidget->regions[cur_tracking_window.regionWidget->currentRow()]->shift(dis);
+            cur_tracking_window.deviceWidget->devices[selected_index]->move(device_selected_length,dis);
             accumulated_dis += dis;
-            emit region_edited();
+            updateGL();
+            return;
+        }
+
+        if(region_selected && selected_index < cur_tracking_window.regionWidget->regions.size())
+        {
+            if(cur_tracking_window.regionWidget->regions[selected_index]->shift(dis))
+            {
+                emit region_edited();
+                accumulated_dis += dis;
+            }
         }
         return;
     }

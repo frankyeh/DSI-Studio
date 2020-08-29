@@ -66,8 +66,9 @@ public:
      void get_view_dir(QPoint p,tipl::vector<3,float>& dir);
 
  private:
-     bool object_selected,slice_selected;
-     int selected_index;
+     bool region_selected,slice_selected,device_selected;
+     float device_selected_length;
+     size_t selected_index;
      float object_distance;
      bool select_object(void);
  public:// other slices
@@ -92,6 +93,7 @@ private:
      void add_odf(const std::vector<tipl::pixel_index<3> >& odf_pos);
 private: //glu
      std::shared_ptr<GluQua> RegionSpheres;
+     std::shared_ptr<GluQua> DeviceQua;
 public:
      tipl::image<float,2> connectivity;
  private:

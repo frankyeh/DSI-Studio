@@ -26,7 +26,6 @@ public:
 public:
         bool super_resolution = false;
         float resolution_ratio = 1.0;
-        float opacity = -1.0f;
 public: // rendering options
         RegionModel show_region;
         unsigned char regions_feature;
@@ -198,7 +197,7 @@ public:
         void SaveToFile(const char* FileName);
         bool LoadFromFile(const char* FileName);
         void Flip(unsigned int dimension);
-        void shift(tipl::vector<3,float> dx);
+        bool shift(tipl::vector<3,float> dx);
 
         template<class image_type>
         void LoadFromBuffer(const image_type& from,const tipl::matrix<4,4,float>& trans)

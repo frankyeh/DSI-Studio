@@ -425,15 +425,18 @@ void ROIRegion::Flip(unsigned int dimension) {
 }
 
 // ---------------------------------------------------------------------------
-void ROIRegion::shift(tipl::vector<3,float> dx) {
-    show_region.move_object(dx);
-    if(resolution_ratio != 1.0)
+bool ROIRegion::shift(tipl::vector<3,float> dx) {
+    if(resolution_ratio != 1.0f)
         dx *= resolution_ratio;
     dx.round();
+    if(dx[0] == 0.0f && dx[1] == 0.0f && dx[2] == 0.0f)
+        return false;
+    show_region.move_object(dx/resolution_ratio);
     tipl::par_for(region.size(),[&](unsigned int index)
     {
         region[index] += dx;
     });
+    return true;
 }
 // ---------------------------------------------------------------------------
 template<class Image,class Points>

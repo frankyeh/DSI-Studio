@@ -69,7 +69,6 @@ public:
     bool command(QString cmd,QString param = "",QString param2 = "");
 public:
     explicit RegionTableWidget(tracking_window& cur_tracking_window,QWidget *parent = nullptr);
-    ~RegionTableWidget();
 
     QColor currentRowColor(void);
     void add_region_from_atlas(std::shared_ptr<atlas> at,unsigned int roi_is);
@@ -99,8 +98,9 @@ public:
     QString output_format(void);
     void draw_region(tipl::color_image& I);
 public slots:
-    void draw_edge(QImage& image,QImage& scaledimage,bool draw_all);
     void updateRegions(QTableWidgetItem* item);
+
+    void draw_edge(QImage& image,QImage& scaledimage,bool draw_all);
     void new_region(void);
     void new_high_resolution_region(void);
     void copy_region(void);
@@ -154,7 +154,6 @@ public slots:
     void action_sort_x(void){do_action("sort_x");}
     void action_sort_y(void){do_action("sort_y");}
     void action_sort_z(void){do_action("sort_z");}
-    void action_set_opa(void){do_action("set_opacity");}
 };
 
 #endif // REGIONTABLEWIDGET_H

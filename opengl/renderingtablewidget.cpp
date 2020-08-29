@@ -239,17 +239,18 @@ void RenderingDelegate::emitCommitData()
 TreeModel::TreeModel(RenderingTableWidget *parent)
         : QAbstractItemModel(parent)
 {
-    root.reset(new RenderingItem("Objects","","root",0,0));
+    root.reset(new RenderingItem("Objects","","root",0,nullptr));
     root_mapping["Root"] = root.get();
     root_mapping["Tracking"] = new RenderingItem("Tracking Parameters","","Tracking",0,root.get());
     root_mapping["ROI"] = new RenderingItem("Region Window","","ROI",0,root.get());
     root_mapping["Rendering"] = new RenderingItem("Background Rendering","","Rendering",0,root.get());
-    root_mapping["Slice"] = (RenderingItem*)addItem("Root","show_slice","Slice Rendering",QString("check"),Qt::Checked).internalPointer();
-    root_mapping["Tract"] = (RenderingItem*)addItem("Root","show_tract","Tract Rendering",QString("check"),Qt::Checked).internalPointer();
-    root_mapping["Region"] = (RenderingItem*)addItem("Root","show_region","Region Rendering",QString("check"),Qt::Checked).internalPointer();
-    root_mapping["Surface"] = (RenderingItem*)addItem("Root","show_surface","Surface Rendering",QString("check"),Qt::Checked).internalPointer();
-    root_mapping["Label"] = (RenderingItem*)addItem("Root","show_label","Label Rendering",QString("check"),Qt::Checked).internalPointer();
-    root_mapping["ODF"] = (RenderingItem*)addItem("Root","show_odf","ODF Rendering",QString("check"),Qt::Checked).internalPointer();
+    root_mapping["Slice"] = reinterpret_cast<RenderingItem*>(addItem("Root","show_slice","Slice Rendering",QString("check"),Qt::Checked).internalPointer());
+    root_mapping["Tract"] = reinterpret_cast<RenderingItem*>(addItem("Root","show_tract","Tract Rendering",QString("check"),Qt::Checked).internalPointer());
+    root_mapping["Region"] = reinterpret_cast<RenderingItem*>(addItem("Root","show_region","Region Rendering",QString("check"),Qt::Checked).internalPointer());
+    root_mapping["Surface"] = reinterpret_cast<RenderingItem*>(addItem("Root","show_surface","Surface Rendering",QString("check"),Qt::Checked).internalPointer());
+    root_mapping["Device"] = reinterpret_cast<RenderingItem*>(addItem("Root","show_device","Device Rendering",QString("check"),Qt::Checked).internalPointer());
+    root_mapping["Label"] = reinterpret_cast<RenderingItem*>(addItem("Root","show_label","Label Rendering",QString("check"),Qt::Checked).internalPointer());
+    root_mapping["ODF"] = reinterpret_cast<RenderingItem*>(addItem("Root","show_odf","ODF Rendering",QString("check"),Qt::Checked).internalPointer());
 
 }
 
