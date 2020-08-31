@@ -978,12 +978,23 @@ void MainWindow::on_parse_network_measures_clicked()
     for(int i = 0;i < filename.size();++i)
     {
         std::ifstream in(filename[i].toStdString().c_str());
+        std::vector<std::string> node_list;
         // global measures
-        int line_index = 0;
-        for(int j = 0;j < 19;++j,++line_index)
+        size_t line_index = 0;
+        while(in)
         {
             std::string t1,t2;
-            in >> t1 >> t2;
+            in >> t1;
+            if(t1 == "network_measures")
+            {
+                std::string nodes;
+                std::getline(in,nodes);
+                std::istringstream nodestream(nodes);
+                std::copy(std::istream_iterator<std::string>(nodestream),
+                          std::istream_iterator<std::string>(),std::back_inserter(node_list));
+                break;
+            }
+            in >> t2;
             if(i == 0)
             {
                 line_output.push_back(t1);
@@ -991,26 +1002,18 @@ void MainWindow::on_parse_network_measures_clicked()
             }
             line_output[line_index] += t2;
             line_output[line_index] += "\t";
-        }
-        std::vector<std::string> node_list;
-        {
-            std::string nodes;
-            while(nodes.empty())
-                in >> nodes; // skip the network measure header
-            std::getline(in,nodes);
-            std::istringstream nodestream(nodes);
-            std::copy(std::istream_iterator<std::string>(nodestream),
-                      std::istream_iterator<std::string>(),std::back_inserter(node_list));
+            ++line_index;
         }
         // nodal measures
-        for(int j = 0;j < 14;++j)
+        std::string line;
+        while(std::getline(in,line))
         {
-            std::string line;
-            std::getline(in,line);
             std::istringstream in2(line);
             std::string t1;
             in2 >> t1;
-            for(int k = 0;k < node_list.size();++k,++line_index)
+            if(t1[0] == '#' || t1[0] == ' ')
+                continue;
+            for(size_t k = 0;k < node_list.size();++k,++line_index)
             {
                 std::string t2;
                 in2 >> t2;
@@ -1026,7 +1029,7 @@ void MainWindow::on_parse_network_measures_clicked()
             }
         }
     }
-    for(int i = 0;i < line_output.size();++i)
+    for(size_t i = 0;i < line_output.size();++i)
         out << line_output[i] << std::endl;
 
     QMessageBox::information(this,"DSI Studio",QString("File saved to")+filename[0]+".collected.txt",0);

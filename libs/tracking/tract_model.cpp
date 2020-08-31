@@ -3654,9 +3654,9 @@ void ConnectivityMatrix::network_property(std::string& report)
     output_node_measures(out,"eccentricity(weighted)",eccentricity_wei);
 
 
-    if(overlap_ratio > 0.5)
+    if(overlap_ratio > 0.5f)
     {
-        out << " The brain parcellations have a large overlapping area (ratio="
+        out << "#The brain parcellations have a large overlapping area (ratio="
             << overlap_ratio << "). The network measure calculated may not be reliable.";
     }
 
