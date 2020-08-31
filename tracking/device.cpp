@@ -17,25 +17,25 @@ void Device::get_rendering(std::vector<float>& seg_length,
 {
     if(type == device_types[0])
     {
-        seg_length = {0.0f,1.0f,1.5f,1.5f,1.5f,1.5f,1.5f,1.5f,1.5f,length};
+        seg_length = {0.0f,1.0f,1.5f,1.5f,1.5f,1.5f,1.5f,1.5f,1.5f,length-11.5f};
         seg_type = {-1,0,1,0,1,0,1,0,1,0};
         radius = 1.27f*0.5f;
     }
     if(type == device_types[1])
     {
-        seg_length = {0.0f,1.0f,1.5f,0.5f,1.5f,0.5f,1.5f,0.5f,1.5f,length};
+        seg_length = {0.0f,1.0f,1.5f,0.5f,1.5f,0.5f,1.5f,0.5f,1.5f,length-8.5f};
         seg_type = {-1,0,1,0,1,0,1,0,1,0};
         radius = 1.27f*0.5f;
     }
     if(type == device_types[2])
     {
-        seg_length = {0.0f,1.0f,1.5f,0.5f,1.5f,0.5f,1.5f,0.5f,1.5f,length};
+        seg_length = {0.0f,1.0f,1.5f,0.5f,1.5f,0.5f,1.5f,0.5f,1.5f,length-8.5f};
         seg_type = {-1,0,1,0,2,0,2,0,1,0};
         radius = 1.27f*0.5f;
     }
     if(type == device_types[3])
     {
-        seg_length = {0.0f,1.0f,0.5f,1.5f,0.5f,1.5f,0.5f,1.5f,length};
+        seg_length = {0.0f,1.0f,0.5f,1.5f,0.5f,1.5f,0.5f,1.5f,length-7.5f};
         seg_type = {-1,1,0,2,0,2,0,1,0};
         radius = 1.3f*0.5f;
     }

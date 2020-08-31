@@ -1117,20 +1117,37 @@ void GLWidget::renderLR()
             QFont font;
             font.setPointSize(get_param("region_label_size"));
             font.setBold(get_param("region_label_bold"));
-            for(unsigned int i = 0;i < cur_tracking_window.regionWidget->regions.size();++i)
-                if(cur_tracking_window.regionWidget->item(i,0)->checkState() == Qt::Checked &&
-                   !cur_tracking_window.regionWidget->regions[i]->region.empty())
+            auto& regions = cur_tracking_window.regionWidget->regions;
+            for(unsigned int i = 0;i < regions.size();++i)
+                if(cur_tracking_window.regionWidget->item(int(i),0)->checkState() == Qt::Checked &&
+                   !regions[i]->region.empty())
                 {
-                    auto p = cur_tracking_window.regionWidget->regions[i]->get_center();
-                    if(p[0] == 0.0 && p[1] == 0.0 && p[2] == 0.0)
+                    auto* item = cur_tracking_window.regionWidget->item(int(i),0);
+                    auto p = regions[i]->get_center();
+                    if(p[0] == 0.0f && p[1] == 0.0f && p[2] == 0.0f)
                     {
-                        const auto& p2 = cur_tracking_window.regionWidget->regions[i]->show_region.center;
+                        const auto& p2 = regions[i]->show_region.center;
                         tipl::vector<3> p3(p2);
-                        p3 /= cur_tracking_window.regionWidget->regions[i]->resolution_ratio;
-                        renderText(p3[0],p3[1],p3[2],cur_tracking_window.regionWidget->item(i,0)->text(),font);
+                        p3 /= regions[i]->resolution_ratio;
+                        renderText(double(p3[0]),double(p3[1]),double(p3[2]),item->text(),font);
                     }
                     else
-                        renderText(p[0],p[1],p[2],cur_tracking_window.regionWidget->item(i,0)->text(),font);
+                        renderText(double(p[0]),double(p[1]),double(p[2]),item->text(),font);
+                }
+        }
+        if (get_param("show_device_label"))
+        {
+            int color = get_param("device_label_color");
+            glColor3ub((color & 0x00FF0000) >> 16,(color & 0x0000FF00) >> 8,color & 0x000000FF);
+            QFont font;
+            font.setPointSize(get_param("device_label_size"));
+            font.setBold(get_param("device_label_bold"));
+            auto& devices = cur_tracking_window.deviceWidget->devices;
+            for(unsigned int i = 0;i < devices.size();++i)
+                if(cur_tracking_window.deviceWidget->item(int(i),0)->checkState() == Qt::Checked)
+                {
+                    auto p = devices[i]->pos + devices[i]->dir*(devices[i]->length/cur_tracking_window.handle->vs[0]);
+                    renderText(double(p[0]),double(p[1]),double(p[2]),cur_tracking_window.deviceWidget->item(int(i),0)->text(),font);
                 }
         }
         glPopMatrix();
