@@ -23,6 +23,12 @@ QWidget *DeviceTypeDelegate::createEditor(QWidget *parent,
         comboBox->addItem(device_types[4]);
         comboBox->addItem(device_types[5]);
         comboBox->addItem(device_types[6]);
+        comboBox->addItem(device_types[7]);
+        comboBox->addItem(device_types[8]);
+        comboBox->addItem(device_types[9]);
+        comboBox->addItem(device_types[10]);
+        comboBox->addItem(device_types[11]);
+
         connect(comboBox, SIGNAL(activated(int)), this, SLOT(emitCommitData()));
         return comboBox;
     }
@@ -222,6 +228,26 @@ void DeviceTableWidget::newDevice()
     cur_tracking_window.ui->DeviceDockWidget->show();
     emit need_update();
 }
+void DeviceTableWidget::check_all(void)
+{
+    for(int row = 0;row < rowCount();++row)
+    {
+        item(row,0)->setCheckState(Qt::Checked);
+        item(row,0)->setData(Qt::ForegroundRole,QBrush(Qt::black));
+    }
+    emit need_update();
+}
+
+void DeviceTableWidget::uncheck_all(void)
+{
+    for(int row = 0;row < rowCount();++row)
+    {
+        item(row,0)->setCheckState(Qt::Unchecked);
+        item(row,0)->setData(Qt::ForegroundRole,QBrush(Qt::gray));
+    }
+    emit need_update();
+}
+
 void DeviceTableWidget::load_device(void)
 {
     QString filename = QFileDialog::getOpenFileName(
@@ -248,7 +274,19 @@ void DeviceTableWidget::save_device(void)
     std::ofstream out(filename.toLocal8Bit().begin());
     out << devices[uint32_t(currentRow())]->to_str();
 }
-
+void DeviceTableWidget::assign_colors(void)
+{
+    for(unsigned int index = 0;index < devices.size();++index)
+    {
+        tipl::rgb c;
+        c.from_hsl((color_gen*1.1-std::floor(color_gen*1.1/6)*6)*3.14159265358979323846/3.0,0.85,0.7);
+        c.a = 255;
+        item(int(index),2)->setData(Qt::UserRole,0xFF000000 | uint32_t(c));
+        devices[index]->color = c.color;
+        color_gen++;
+    }
+    emit need_update();
+}
 void DeviceTableWidget::save_all_devices(void)
 {
     if (devices.empty())

@@ -332,6 +332,11 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         connect(ui->actionDeleteDevice,SIGNAL(triggered()),deviceWidget,SLOT(delete_device()));
         connect(ui->actionDeleteAllDevices,SIGNAL(triggered()),deviceWidget,SLOT(delete_all_devices()));
 
+        connect(ui->actionCheck_All_Devices,SIGNAL(triggered()),deviceWidget,SLOT(check_all()));
+        connect(ui->actionUncheck_All_Devices,SIGNAL(triggered()),deviceWidget,SLOT(uncheck_all()));
+
+        connect(ui->actionAssign_Colors_For_Devices,SIGNAL(triggered()),deviceWidget,SLOT(assign_colors()));
+
     }
     // tracts
     {
@@ -376,6 +381,9 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         connect(ui->actionOpen_Colors,SIGNAL(triggered()),tractWidget,SLOT(load_tracts_color()));
         connect(ui->actionOpen_Tract_Property,SIGNAL(triggered()),tractWidget,SLOT(load_tracts_value()));
         connect(ui->actionSave_Tracts_Colors_As,SIGNAL(triggered()),tractWidget,SLOT(save_tracts_color_as()));
+        connect(ui->actionAssign_Colors_For_Each,SIGNAL(triggered()),tractWidget,SLOT(assign_colors()));
+
+
 
         connect(ui->actionUndo,SIGNAL(triggered()),tractWidget,SLOT(undo_tracts()));
         connect(ui->actionRedo,SIGNAL(triggered()),tractWidget,SLOT(redo_tracts()));
@@ -983,8 +991,8 @@ void tracking_window::on_tracking_index_currentIndexChanged(int index)
             return;
     handle->dir.set_tracking_index(index);
     float max_value = *std::max_element(handle->dir.fa[0],handle->dir.fa[0]+handle->dim.size());
-    renderWidget->setMinMax("fa_threshold",0.0,max_value*1.1,max_value/50.0);
-    if(renderWidget->getData("fa_threshold").toFloat() != 0.0)
+    renderWidget->setMinMax("fa_threshold",0.0,max_value*1.1f,max_value/50.0f);
+    if(renderWidget->getData("fa_threshold").toFloat() != 0.0f)
         set_data("fa_threshold",
                  renderWidget->getData("otsu_threshold").toFloat()*
                  tipl::segmentation::otsu_threshold(tipl::make_image(handle->dir.fa[0],handle->dim)));

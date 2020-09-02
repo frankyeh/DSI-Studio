@@ -827,6 +827,7 @@
      <addaction name="actionResample_Step_Size"/>
      <addaction name="separator"/>
      <addaction name="actionSet_Color"/>
+     <addaction name="actionAssign_Colors_For_Each"/>
      <addaction name="actionOpen_Colors"/>
      <addaction name="actionOpen_Tract_Property"/>
      <addaction name="actionSave_Tracts_Colors_As"/>
@@ -1023,6 +1024,11 @@
     <addaction name="separator"/>
     <addaction name="actionDeleteDevice"/>
     <addaction name="actionDeleteAllDevices"/>
+    <addaction name="separator"/>
+    <addaction name="actionUncheck_All_Devices"/>
+    <addaction name="actionCheck_All_Devices"/>
+    <addaction name="separator"/>
+    <addaction name="actionAssign_Colors_For_Devices"/>
    </widget>
    <addaction name="menu_Edit"/>
    <addaction name="menuRegions"/>
@@ -3778,6 +3784,26 @@ Tracking</string>
    </property>
    <property name="text">
     <string>New Device</string>
+   </property>
+  </action>
+  <action name="actionAssign_Colors_For_Each">
+   <property name="text">
+    <string>Assign Colors For Each</string>
+   </property>
+  </action>
+  <action name="actionUncheck_All_Devices">
+   <property name="text">
+    <string>Uncheck All</string>
+   </property>
+  </action>
+  <action name="actionCheck_All_Devices">
+   <property name="text">
+    <string>Check All</string>
+   </property>
+  </action>
+  <action name="actionAssign_Colors_For_Devices">
+   <property name="text">
+    <string>Assign Colors</string>
    </property>
   </action>
  </widget>

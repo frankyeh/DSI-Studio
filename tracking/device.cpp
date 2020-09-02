@@ -2,11 +2,16 @@
 #include "device.h"
 
 
-char device_types[7][40]=
+char device_types[12][40]=
 {"DBS Lead:Medtronic 3387",
  "DBS Lead:Medtronic 3389",
  "DBS Lead:Abbott Infinity",
  "DBS Lead:Boston Scientific",
+ "SEEG Electrode:8 Contacts",
+ "SEEG Electrode:10 Contacts",
+ "SEEG Electrode:12 Contacts",
+ "SEEG Electrode:14 Contacts",
+ "SEEG Electrode:16 Contacts",
  "Probe",
  "Obturator:11 mm",
  "Obturator:13.5 mm"};
@@ -15,6 +20,7 @@ void Device::get_rendering(std::vector<float>& seg_length,
                    std::vector<char>& seg_type,
                    float& radius)
 {
+    // DBS Lead
     if(type == device_types[0])
     {
         seg_length = {0.0f,1.0f,1.5f,1.5f,1.5f,1.5f,1.5f,1.5f,1.5f,length-11.5f};
@@ -39,19 +45,55 @@ void Device::get_rendering(std::vector<float>& seg_length,
         seg_type = {-1,1,0,2,0,2,0,1,0};
         radius = 1.3f*0.5f;
     }
+    // SEEG Electrodes
     if(type == device_types[4])
+    {
+        seg_length = {0.0f,0.0f,2.0f,1.5f,2.0f,1.5f,2.0f,1.5f,2.0f,1.5f,2.0f,1.5f,2.0f,1.5f,2.0f,1.5f,2.0f,
+                      std::max<float>(1.5f,length-28)};
+        seg_type = {-1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0};
+        radius = 0.8f*0.5f;
+    }
+    if(type == device_types[5])
+    {
+        seg_length = {0.0f,0.0f,2.0f,1.5f,2.0f,1.5f,2.0f,1.5f,2.0f,1.5f,2.0f,1.5f,2.0f,1.5f,2.0f,1.5f,2.0f,1.5f,2.0f,1.5f,2.0f,
+                      std::max<float>(1.5f,length-28)};
+        seg_type = {-1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0};
+        radius = 0.8f*0.5f;
+    }
+    if(type == device_types[6])
+    {
+        seg_length = {0.0f,0.0f,2.0f,1.5f,2.0f,1.5f,2.0f,1.5f,2.0f,1.5f,2.0f,1.5f,2.0f,1.5f,2.0f,1.5f,2.0f,1.5f,2.0f,1.5f,2.0f,1.5f,2.0f,1.5f,2.0f,
+                      std::max<float>(1.5f,length-28)};
+        seg_type = {-1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0};
+        radius = 0.8f*0.5f;
+    }
+    if(type == device_types[7])
+    {
+        seg_length = {0.0f,0.0f,2.0f,1.5f,2.0f,1.5f,2.0f,1.5f,2.0f,1.5f,2.0f,1.5f,2.0f,1.5f,2.0f,1.5f,2.0f,1.5f,2.0f,1.5f,2.0f,1.5f,2.0f,1.5f,2.0f,1.5f,2.0f,1.5f,2.0f,
+                      std::max<float>(1.5f,length-28)};
+        seg_type = {-1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0};
+        radius = 0.8f*0.5f;
+    }
+    if(type == device_types[8])
+    {
+        seg_length = {0.0f,0.0f,2.0f,1.5f,2.0f,1.5f,2.0f,1.5f,2.0f,1.5f,2.0f,1.5f,2.0f,1.5f,2.0f,1.5f,2.0f,length};
+        seg_type = {-1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0};
+        radius = 0.8f*0.5f;
+    }
+
+    if(type == device_types[9])
     {
         seg_length = {0.0f,length};
         seg_type = {-1,0};
         radius = 1.0f*0.5f;
     }
-    if(type == device_types[5])
+    if(type == device_types[10])
     {
         seg_length = {length,2.0f};
         seg_type = {0,-2};
         radius = 11.0f*0.5f;
     }
-    if(type == device_types[6])
+    if(type == device_types[11])
     {
         seg_length = {length,2.0f};
         seg_type = {0,-2};

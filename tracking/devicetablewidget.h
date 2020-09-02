@@ -38,6 +38,7 @@ signals:
     void need_update(void);
 private:
     QString new_device_str;
+    int color_gen = 10;
 public slots:
     void updateDevices(QTableWidgetItem* item);
     void check_status(int,int);
@@ -47,6 +48,10 @@ public slots:
     void load_device(void);
     void save_device(void);
     void save_all_devices(void);
+    void assign_colors(void);
+    void check_all(void);
+    void uncheck_all(void);
+
 
 };
 

@@ -946,7 +946,7 @@ void RegionTableWidget::check_all(void)
 {
     cur_tracking_window.glWidget->no_update = true;
     cur_tracking_window.scene.no_show = true;
-    for(unsigned int row = 0;row < rowCount();++row)
+    for(int row = 0;row < rowCount();++row)
     {
         item(row,0)->setCheckState(Qt::Checked);
         item(row,0)->setData(Qt::ForegroundRole,QBrush(Qt::black));
@@ -960,7 +960,7 @@ void RegionTableWidget::uncheck_all(void)
 {
     cur_tracking_window.glWidget->no_update = true;
     cur_tracking_window.scene.no_show = true;
-    for(unsigned int row = 0;row < rowCount();++row)
+    for(int row = 0;row < rowCount();++row)
     {
         item(row,0)->setCheckState(Qt::Unchecked);
         item(row,0)->setData(Qt::ForegroundRole,QBrush(Qt::gray));

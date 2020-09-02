@@ -25,5 +25,5 @@ public:
                        float& radius);
 };
 
-extern char device_types[7][40];
+extern char device_types[12][40];
 #endif // DEVICE_H

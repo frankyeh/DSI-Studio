@@ -319,7 +319,7 @@ void TractTableWidget::load_tract_label(QString filename)
 
 void TractTableWidget::check_all(void)
 {
-    for(unsigned int row = 0;row < rowCount();++row)
+    for(int row = 0;row < rowCount();++row)
     {
         item(row,0)->setCheckState(Qt::Checked);
         item(row,0)->setData(Qt::ForegroundRole,QBrush(Qt::black));
@@ -329,7 +329,7 @@ void TractTableWidget::check_all(void)
 
 void TractTableWidget::uncheck_all(void)
 {
-    for(unsigned int row = 0;row < rowCount();++row)
+    for(int row = 0;row < rowCount();++row)
     {
         item(row,0)->setCheckState(Qt::Unchecked);
         item(row,0)->setData(Qt::ForegroundRole,QBrush(Qt::gray));
@@ -400,7 +400,8 @@ void TractTableWidget::assign_colors(void)
     for(unsigned int index = 0;index < tract_models.size();++index)
     {
         tipl::rgb c;
-        c.from_hsl(((color_gen++)*1.1-std::floor((color_gen++)*1.1/6)*6)*3.14159265358979323846/3.0,0.85,0.7);
+        c.from_hsl((color_gen*1.1-std::floor(color_gen*1.1/6)*6)*3.14159265358979323846/3.0,0.85,0.7);
+        color_gen++;
         tract_models[index]->set_color(c.color);
     }
     cur_tracking_window.set_data("tract_color_style",1);//manual assigned
@@ -466,8 +467,8 @@ void TractTableWidget::auto_recognition(void)
     for(int i = 0;i < cur_tracking_window.handle->tractography_name_list.size();++i)
         Names << cur_tracking_window.handle->tractography_name_list[i].c_str();
     load_cluster_label(c,Names);
-    assign_colors();
 }
+
 void TractTableWidget::recognize_rename(void)
 {
     if(!cur_tracking_window.handle->load_track_atlas())
