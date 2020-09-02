@@ -482,7 +482,7 @@ bool load_multiple_slice_dicom(QStringList file_list,std::vector<std::shared_ptr
     if(geo[2] != 1 || dicom_header.is_mosaic)
         return false;
     tipl::io::dicom dicom_header2;
-    if(!dicom_header2.load_from_file(file_list[1].toLocal8Bit().begin()))
+    if(file_list.size() < 2 || !dicom_header2.load_from_file(file_list[1].toLocal8Bit().begin()))
         return false;
     float s1 = dicom_header.get_slice_location();
     bool iterate_slice_first = true;
@@ -565,8 +565,12 @@ bool load_multiple_slice_dicom(QStringList file_list,std::vector<std::shared_ptr
             dicom_header.get_voxel_size(dwi_files.back()->voxel_size);
         }
         else
-            std::copy(dwi->image.begin(),dwi->image.end(),
-                dwi_files[b_index]->image.begin() + slice_index*geo.plane_size());
+        {
+            size_t pos = slice_index*geo.plane_size();
+            if(pos+dwi->image.size() > dwi_files[b_index]->image.size())
+                return false;
+            std::copy(dwi->image.begin(),dwi->image.end(),dwi_files[b_index]->image.begin() + pos);
+        }
         if(iterate_slice_first)
         {
             ++slice_index;
