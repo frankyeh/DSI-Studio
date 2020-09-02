@@ -211,8 +211,11 @@ void ThreadData::run(const tracking_data& trk,
         report << " in " << trk.dt_threshold_name.substr(4,std::string::npos) << ".";
     }
     else {
-        param.dt_threshold = 0.0f;
-        report << " A deterministic fiber tracking algorithm (Yeh et al., PLoS ONE 8(11): e80713, 2013) was used.";
+        report << " A deterministic fiber tracking algorithm (Yeh et al., PLoS ONE 8(11): e80713, 2013) was used";
+        if(param.threshold == 0.0f && param.cull_cos_angle == 1.0f && param.step_size == 0.0f) // parameter saturation, pruning
+            report << " with augmented tracking strategies (Yeh, Neuroimage, 2020) to improve reproducibility.";
+        else
+            report << ".";
     }
     report << roi_mgr->report;
     report << param.get_report();
