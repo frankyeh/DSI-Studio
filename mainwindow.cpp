@@ -609,7 +609,10 @@ void MainWindow::on_batch_src_clicked()
 
             std::vector<std::shared_ptr<DwiHeader> > dicom_files;
             if(!parse_dwi(dicom_file_list,dicom_files) || prog_aborted())
+            {
+                out << "Skipping..." << std::endl;
                 continue;
+            }
             if(dicom_files.size() == 1) //MPRAGE or T2W
             {
                 out << "\t\tNot 4D DWI files." << std::endl;
