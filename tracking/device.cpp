@@ -25,25 +25,25 @@ void Device::get_rendering(std::vector<float>& seg_length,
     {
         seg_length = {0.0f,1.0f,1.5f,1.5f,1.5f,1.5f,1.5f,1.5f,1.5f,length-11.5f};
         seg_type = {-1,0,1,0,1,0,1,0,1,0};
-        radius = 1.27f*0.5f;
+        rendering_radius = radius = 1.27f*0.5f;
     }
     if(type == device_types[1])
     {
         seg_length = {0.0f,1.0f,1.5f,0.5f,1.5f,0.5f,1.5f,0.5f,1.5f,length-8.5f};
         seg_type = {-1,0,1,0,1,0,1,0,1,0};
-        radius = 1.27f*0.5f;
+        rendering_radius = radius = 1.27f*0.5f;
     }
     if(type == device_types[2])
     {
         seg_length = {0.0f,1.0f,1.5f,0.5f,1.5f,0.5f,1.5f,0.5f,1.5f,length-8.5f};
         seg_type = {-1,0,1,0,2,0,2,0,1,0};
-        radius = 1.27f*0.5f;
+        rendering_radius = radius = 1.27f*0.5f;
     }
     if(type == device_types[3])
     {
         seg_length = {0.0f,1.0f,0.5f,1.5f,0.5f,1.5f,0.5f,1.5f,length-7.5f};
         seg_type = {-1,1,0,2,0,2,0,1,0};
-        radius = 1.3f*0.5f;
+        rendering_radius = radius = 1.3f*0.5f;
     }
     // SEEG Electrodes
     if(type == device_types[4])
@@ -51,53 +51,53 @@ void Device::get_rendering(std::vector<float>& seg_length,
         seg_length = {0.0f,0.0f,2.0f,1.5f,2.0f,1.5f,2.0f,1.5f,2.0f,1.5f,2.0f,1.5f,2.0f,1.5f,2.0f,1.5f,2.0f,
                       std::max<float>(1.5f,length-28)};
         seg_type = {-1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0};
-        radius = 0.8f*0.5f;
+        rendering_radius = radius = 0.8f*0.5f;
     }
     if(type == device_types[5])
     {
         seg_length = {0.0f,0.0f,2.0f,1.5f,2.0f,1.5f,2.0f,1.5f,2.0f,1.5f,2.0f,1.5f,2.0f,1.5f,2.0f,1.5f,2.0f,1.5f,2.0f,1.5f,2.0f,
                       std::max<float>(1.5f,length-28)};
         seg_type = {-1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0};
-        radius = 0.8f*0.5f;
+        rendering_radius = radius = 0.8f*0.5f;
     }
     if(type == device_types[6])
     {
         seg_length = {0.0f,0.0f,2.0f,1.5f,2.0f,1.5f,2.0f,1.5f,2.0f,1.5f,2.0f,1.5f,2.0f,1.5f,2.0f,1.5f,2.0f,1.5f,2.0f,1.5f,2.0f,1.5f,2.0f,1.5f,2.0f,
                       std::max<float>(1.5f,length-28)};
         seg_type = {-1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0};
-        radius = 0.8f*0.5f;
+        rendering_radius = radius = 0.8f*0.5f;
     }
     if(type == device_types[7])
     {
         seg_length = {0.0f,0.0f,2.0f,1.5f,2.0f,1.5f,2.0f,1.5f,2.0f,1.5f,2.0f,1.5f,2.0f,1.5f,2.0f,1.5f,2.0f,1.5f,2.0f,1.5f,2.0f,1.5f,2.0f,1.5f,2.0f,1.5f,2.0f,1.5f,2.0f,
                       std::max<float>(1.5f,length-28)};
         seg_type = {-1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0};
-        radius = 0.8f*0.5f;
+        rendering_radius = radius = 0.8f*0.5f;
     }
     if(type == device_types[8])
     {
         seg_length = {0.0f,0.0f,2.0f,1.5f,2.0f,1.5f,2.0f,1.5f,2.0f,1.5f,2.0f,1.5f,2.0f,1.5f,2.0f,1.5f,2.0f,length};
         seg_type = {-1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0};
-        radius = 0.8f*0.5f;
+        rendering_radius = radius = 0.8f*0.5f;
     }
 
     if(type == device_types[9])
     {
         seg_length = {0.0f,length};
         seg_type = {-1,0};
-        radius = 1.0f*0.5f;
+        rendering_radius = radius = 1.0f*0.5f;
     }
     if(type == device_types[10])
     {
         seg_length = {length,2.0f};
         seg_type = {0,-2};
-        radius = 11.0f*0.5f;
+        rendering_radius = radius = 11.0f*0.5f;
     }
     if(type == device_types[11])
     {
         seg_length = {length,2.0f};
         seg_type = {0,-2};
-        radius = 13.5f*0.5f;
+        rendering_radius = radius = 13.5f*0.5f;
     }
 
 }
@@ -107,19 +107,28 @@ Device::Device()
 }
 
 
-bool Device::has_point(const tipl::vector<3>& p,float& device_selected_length)
+bool Device::selected(const tipl::vector<3>& p,float vs,float& device_selected_length,float& distance)
 {
     auto dis = p-pos;
-    if(float(dis.length()) < length) // check if the body is selected
+    float dis_length = float(dis.length());
+    if(dis_length > length)
+        return false;
+    float radius = 0.5f+rendering_radius/vs;
+    if(dis_length < radius) // selecting the tip
     {
-        auto proj = dir;
-        device_selected_length = dis*proj;
-        proj *= device_selected_length;
-        dis -= proj;
-        if(dis.length() < 1.0)
-            return true;
+        device_selected_length = 0.0f;
+        distance = dis_length;
+        return true;
     }
-    return false;
+    // now consider selecting the shaft
+    auto proj = dir;
+    device_selected_length = dis*proj;
+    if(device_selected_length/dis_length < 0.8f)
+        return false;
+    proj *= device_selected_length;
+    dis -= proj;
+    distance = float(dis.length());
+    return float(dis.length()) < radius;
 }
 
 void Device::move(float device_selected_length,const tipl::vector<3>& dis)

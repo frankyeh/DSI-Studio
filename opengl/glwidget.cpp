@@ -864,6 +864,7 @@ void GLWidget::renderLR()
         float vs = 1.0f/cur_tracking_window.handle->vs[0];
         auto& devices = cur_tracking_window.deviceWidget->devices;
         for(size_t index = 0;index < devices.size();++index)
+        if(cur_tracking_window.deviceWidget->item(int(index),0)->checkState() == Qt::Checked)
         {
             glPushMatrix();
             // oriented and move the device
@@ -877,6 +878,8 @@ void GLWidget::renderLR()
             std::vector<char> seg_type;
             float radius = 0.0f;
             devices[index]->get_rendering(seg_length,seg_type,radius);
+            if(device_selected && index == selected_index)
+                radius += 0.2f;
             float r = devices[index]->color.r/255.0f;
             float g = devices[index]->color.g/255.0f;
             float b = devices[index]->color.b/255.0f;
@@ -1885,12 +1888,20 @@ bool GLWidget::select_object(void)
             tipl::vector<3,float> cur_pos(dir1);
             cur_pos *= object_distance;
             cur_pos += pos;
+            float min_distance = std::numeric_limits<float>::max();
+            float distance,slength;
             for(size_t index = 0;index < cur_tracking_window.deviceWidget->devices.size();++index)
-                if(cur_tracking_window.deviceWidget->devices[index]->has_point(cur_pos,device_selected_length))
+                if(cur_tracking_window.deviceWidget->item(int(index),0)->checkState() == Qt::Checked &&
+                   cur_tracking_window.deviceWidget->devices[index]->selected(
+                            cur_pos,
+                            cur_tracking_window.handle->vs[0],slength,distance) &&
+                   distance < min_distance)
                 {
+                    min_distance = distance;
+                    device_selected_length = slength;
                     selected_index = index;
                     device_selected = true;
-                    break;
+                    slice_distance = object_distance;
                 }
         }
     }
@@ -1912,6 +1923,7 @@ bool GLWidget::select_object(void)
             {
                 selected_index = index;
                 region_selected = true;
+                slice_distance = object_distance;
                 break;
             }
         }
@@ -1931,7 +1943,7 @@ bool GLWidget::select_object(void)
             float d = get_slice_projection_point(dim,pos,dir1,slice_dx,slice_dy);
             if(slice_dx > 0.0f && slice_dy > 0.0f &&
                slice_dx < 1.0f && slice_dy < 1.0f &&
-                    d > 0 && slice_distance > d)
+                    d > 0 && d < slice_distance)
             {
                 moving_at_slice_index = dim;
                 slice_distance = d;
@@ -1970,7 +1982,11 @@ void GLWidget::mouseDoubleClickEvent(QMouseEvent *event)
             cur_tracking_window.regionWidget->move_slice_to_current_region();
             emit region_edited();
         }
-        else
+        if(device_selected)
+        {
+            cur_tracking_window.deviceWidget->setCurrentCell(selected_index,0);
+        }
+        if(slice_selected)
         {
             switch(moving_at_slice_index)
             {
@@ -2088,6 +2104,7 @@ void GLWidget::mousePressEvent(QMouseEvent *event)
                 return;
             }
             accumulated_dis = tipl::zero<float>();
+            updateGL();
         }
 }
 void GLWidget::mouseReleaseEvent(QMouseEvent *event)
@@ -2100,6 +2117,11 @@ void GLWidget::mouseReleaseEvent(QMouseEvent *event)
         get_view_dir(last_select_point,dirs.back());
         angular_selection = event->button() == Qt::RightButton;
         emit edited();
+    }
+    if(device_selected)
+    {
+        device_selected = false;
+        updateGL();
     }
     editing_option = none;
     setCursor(Qt::ArrowCursor);

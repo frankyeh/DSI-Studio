@@ -13,9 +13,11 @@ public:
     tipl::rgb color = 0xFFFFFFFF;
 public: // for electrode
     float length = 30.0f;
+private:
+    float rendering_radius = 0.0; // for internnal use only to select device
 public:
     Device();
-    bool has_point(const tipl::vector<3>& p,float& device_selected_length);
+    bool selected(const tipl::vector<3>& p,float vs,float& device_selected_length,float& distance);
     void move(float select_length,const tipl::vector<3>& dis);
     std::string to_str(void);
     bool from_str(const std::string& str);
