@@ -41,10 +41,12 @@ signals:
 private:
     QString new_device_str;
     int color_gen = 10;
+    void new_device(std::shared_ptr<Device> device);
 public slots:
     void updateDevices(QTableWidgetItem* item);
     void check_status(int,int);
     void newDevice();
+    void copy_device();
     void delete_all_devices();
     void delete_device();
     void load_device(void);

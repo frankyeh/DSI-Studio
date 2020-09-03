@@ -1040,6 +1040,7 @@
     <addaction name="actionDeleteDevice"/>
     <addaction name="actionDeleteAllDevices"/>
     <addaction name="separator"/>
+    <addaction name="actionCopy_Device"/>
     <addaction name="actionUncheck_All_Devices"/>
     <addaction name="actionCheck_All_Devices"/>
     <addaction name="separator"/>
@@ -2378,6 +2379,25 @@ Tracking</string>
          <property name="icon">
           <iconset resource="../icons.qrc">
            <normaloff>:/icons/icons/new.xpm</normaloff>:/icons/icons/new.xpm</iconset>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="tbCopyDevice">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Maximum" vsizetype="Maximum">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="maximumSize">
+          <size>
+           <width>32</width>
+           <height>16777215</height>
+          </size>
+         </property>
+         <property name="text">
+          <string>Copy</string>
          </property>
         </widget>
        </item>
@@ -3852,6 +3872,11 @@ Tracking</string>
     <string>Save Workspace...</string>
    </property>
   </action>
+  <action name="actionCopy_Device">
+   <property name="text">
+    <string>&amp;Copy Device</string>
+   </property>
+  </action>
  </widget>
  <customwidgets>
   <customwidget>
@@ -4161,6 +4186,22 @@ Tracking</string>
     <hint type="sourcelabel">
      <x>836</x>
      <y>657</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>tbCopyDevice</sender>
+   <signal>clicked()</signal>
+   <receiver>actionCopy_Device</receiver>
+   <slot>trigger()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>841</x>
+     <y>647</y>
     </hint>
     <hint type="destinationlabel">
      <x>-1</x>

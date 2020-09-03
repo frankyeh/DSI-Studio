@@ -191,7 +191,7 @@ void DeviceTableWidget::newDevice()
                 cur_tracking_window.handle->dim[0]/2+dx,
                 cur_tracking_window.handle->dim[1]/2+dy,
                 cur_tracking_window.handle->dim[2]/2+dis(gen)/4.0);
-        devices.back()->dir = tipl::vector<3>(dx,dy,50.0);
+        devices.back()->dir = tipl::vector<3>(dx,dy,pAction->text().contains("SEEG") ? 0.0: 50.0);
         devices.back()->dir.normalize();
         devices.back()->name = (pAction->text().split(':')[0].split(' ').back()+QString::number(device_num++)).toStdString();
     }
@@ -200,16 +200,20 @@ void DeviceTableWidget::newDevice()
         devices.back()->from_str(new_device_str.toStdString());
         new_device_str.clear();
     }
-    // now handle gui
+    new_device(devices.back());
+}
+void DeviceTableWidget::new_device(std::shared_ptr<Device> device)
+{
+
     insertRow(int(devices.size())-1);
-    QTableWidgetItem *item0 = new QTableWidgetItem(devices.back()->name.c_str());
+    QTableWidgetItem *item0 = new QTableWidgetItem(device->name.c_str());
     item0->setCheckState(Qt::Checked);
-    QTableWidgetItem *item1 = new QTableWidgetItem(devices.back()->type.c_str());
+    QTableWidgetItem *item1 = new QTableWidgetItem(device->type.c_str());
     item1->setData(Qt::ForegroundRole,QBrush(Qt::white));
-    QTableWidgetItem *item2 = new QTableWidgetItem(QString::number(uint32_t(devices.back()->color)));
+    QTableWidgetItem *item2 = new QTableWidgetItem(QString::number(uint32_t(device->color)));
     item2->setData(Qt::ForegroundRole,QBrush(Qt::white));
-    item2->setData(Qt::UserRole,uint32_t(devices.back()->color));
-    QTableWidgetItem *item3 = new QTableWidgetItem(QString::number(devices.back()->length));
+    item2->setData(Qt::UserRole,uint32_t(device->color));
+    QTableWidgetItem *item3 = new QTableWidgetItem(QString::number(double(device->length)));
     item3->setData(Qt::ForegroundRole,QBrush(Qt::white));
 
 
@@ -227,6 +231,25 @@ void DeviceTableWidget::newDevice()
 
     cur_tracking_window.ui->DeviceDockWidget->show();
     emit need_update();
+}
+void DeviceTableWidget::copy_device()
+{
+    if(devices.empty())
+        return;
+    auto device_to_copy = devices.back();
+    devices.push_back(std::make_shared<Device>());
+    // random location
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_real_distribution<> dis(-2.0,2.0);
+
+    devices.back()->pos = device_to_copy->pos + tipl::vector<3>(dis(gen),dis(gen),dis(gen));
+    devices.back()->dir = device_to_copy->dir;
+    devices.back()->name = device_to_copy->name;
+    devices.back()->type = device_to_copy->type;
+    devices.back()->length = device_to_copy->length;
+
+    new_device(devices.back());
 }
 void DeviceTableWidget::check_all(void)
 {
