@@ -237,7 +237,23 @@ void DeviceTableWidget::check_all(void)
     }
     emit need_update();
 }
-
+bool DeviceTableWidget::command(QString cmd,QString param)
+{
+    if(cmd == "save_all_devices")
+    {
+        std::ofstream out(param.toStdString().c_str());
+        for (size_t i = 0; i < devices.size(); ++i)
+        {
+            if (item(int(i),0)->checkState() == Qt::Checked)
+            {
+                devices[i]->name = item(int(i),0)->text().toStdString();
+                out << devices[i]->to_str();
+            }
+        }
+        return true;
+    }
+    return false;
+}
 void DeviceTableWidget::uncheck_all(void)
 {
     for(int row = 0;row < rowCount();++row)
@@ -247,20 +263,26 @@ void DeviceTableWidget::uncheck_all(void)
     }
     emit need_update();
 }
-
-void DeviceTableWidget::load_device(void)
+bool DeviceTableWidget::load_device(QString Filename)
 {
-    QString filename = QFileDialog::getOpenFileName(
-                           this,"Open device","device.dv.csv","CSV file(*dv.csv);;All files(*)");
-    if (filename.isEmpty())
-        return;
-    std::ifstream in(filename.toLocal8Bit().begin());
+    std::ifstream in(Filename.toLocal8Bit().begin());
+    if(!in)
+        return false;
     std::string line;
     while(std::getline(in,line))
     {
         new_device_str = line.c_str();
         newDevice();
     }
+    return true;
+}
+void DeviceTableWidget::load_device(void)
+{
+    QString filename = QFileDialog::getOpenFileName(
+                           this,"Open device","device.dv.csv","CSV file(*dv.csv);;All files(*)");
+    if (filename.isEmpty())
+        return;
+    load_device(filename);
 }
 void DeviceTableWidget::save_device(void)
 {
@@ -296,15 +318,7 @@ void DeviceTableWidget::save_all_devices(void)
                            "CSV file(*dv.csv);;All files(*)");
     if (filename.isEmpty())
         return;
-    std::ofstream out(filename.toStdString().c_str());
-    for (size_t i = 0; i < devices.size(); ++i)
-    {
-        if (item(int(i),0)->checkState() == Qt::Checked)
-        {
-            devices[i]->name = item(int(i),0)->text().toStdString();
-            out << devices[i]->to_str();
-        }
-    }
+    command("save_all_devices",filename);
 }
 
 void DeviceTableWidget::delete_device(void)
