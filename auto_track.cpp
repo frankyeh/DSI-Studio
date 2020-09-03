@@ -197,6 +197,7 @@ std::string run_auto_track(
                         thread.roi_mgr->report += ".";
 
                         thread.run(tract_model.get_fib(),std::thread::hardware_concurrency(),false);
+                        tract_model.report += thread.report.str();
                         auto_track_report = handle->report + thread.report.str();
                         if(reports[j].empty())
                             reports[j] = auto_track_report;
