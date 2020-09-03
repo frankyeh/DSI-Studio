@@ -79,7 +79,7 @@ public:
      bool no_update = false;
 
  public://surface
-     std::auto_ptr<RegionModel> surface;
+     std::shared_ptr<RegionModel> surface;
 private:
      std::shared_ptr<tipl::io::avi> video_handle;
      bool video_capturing = false;

@@ -711,7 +711,8 @@ void GLWidget::renderLR()
         }
 
 
-        bool changed =
+        bool changed = false;
+        while(
            check_change("tract_alpha",tract_alpha) ||
            check_change("tract_alpha_style",tract_alpha_style) ||
            check_change("tract_style",tract_style) ||
@@ -723,7 +724,8 @@ void GLWidget::renderLR()
            check_change("tract_variant_size",tract_variant_size) ||
            check_change("tract_variant_color",tract_variant_color) ||
            check_change("tract_shader",tract_shader) ||     
-           check_change("end_point_shift",end_point_shift);
+           check_change("end_point_shift",end_point_shift))
+            changed = true;
         if(changed)
             makeTracts();
 
@@ -2308,13 +2310,7 @@ void GLWidget::saveCamera(void)
             get_save_file_name("Save Translocation Matrix","camera.txt","Text files (*.txt);;All files (*)");
     if(filename.isEmpty())
         return;
-    std::ofstream out(filename.toLocal8Bit().begin());
-    for(int row = 0,index = 0;row < 4;++row)
-    {
-        for(int col = 0;col < 4;++col,++index)
-            out << transformation_matrix[index] << " ";
-        out << std::endl;
-    }
+    command("save_camera",filename);
 }
 
 void GLWidget::loadCamera(void)
@@ -2322,15 +2318,9 @@ void GLWidget::loadCamera(void)
     QString filename = QFileDialog::getOpenFileName(
             this,
             "Open Translocation Matrix",QFileInfo(cur_tracking_window.windowTitle()).absolutePath(),"Text files (*.txt);;All files (*)");
-    std::ifstream in(filename.toLocal8Bit().begin());
-    if(filename.isEmpty() || !in)
+    if(filename.isEmpty())
         return;
-    std::vector<float> data;
-    std::copy(std::istream_iterator<float>(in),
-              std::istream_iterator<float>(),std::back_inserter(data));
-    data.resize(16);
-    std::copy(data.begin(),data.end(),transformation_matrix.begin());
-    updateGL();
+    command("load_camera",filename);
 }
 void GLWidget::addSurface(void)
 {
@@ -2466,6 +2456,31 @@ void GLWidget::get3View(QImage& I,unsigned int type)
 
 bool GLWidget::command(QString cmd,QString param,QString param2)
 {
+    if(cmd == "save_camera")
+    {
+        std::ofstream out(param.toStdString().c_str());
+        for(unsigned int row = 0,index = 0;row < 4;++row)
+        {
+            for(int col = 0;col < 4;++col,++index)
+                out << transformation_matrix[index] << " ";
+            out << std::endl;
+        }
+    }
+    if(cmd == "load_camera")
+    {
+        std::ifstream in(param.toStdString().c_str());
+        if(in)
+        {
+            std::vector<float> data;
+            std::copy(std::istream_iterator<float>(in),
+                      std::istream_iterator<float>(),std::back_inserter(data));
+            data.resize(16);
+            std::copy(data.begin(),data.end(),transformation_matrix.begin());
+            paintGL();
+
+        }
+        return true;
+    }
     if(cmd == "set_zoom")
     {
         if(param.isEmpty())
@@ -2573,7 +2588,7 @@ bool GLWidget::command(QString cmd,QString param,QString param2)
             crop_image = cur_tracking_window.current_slice->get_source();
         float threshold = (param2.isEmpty()) ? tipl::segmentation::otsu_threshold(crop_image)*1.25f:param2.toFloat();
         {
-            surface.reset(new RegionModel);
+            surface = std::make_shared<RegionModel>();
             if(!param.isEmpty())
             switch(param.toInt())
             {
@@ -2639,7 +2654,7 @@ bool GLWidget::command(QString cmd,QString param,QString param2)
             }
             if(!surface->load(crop_image,threshold))
             {
-                surface.reset(0);
+                surface.reset();
                 return true;
             }
         }
