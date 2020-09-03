@@ -47,7 +47,8 @@ public:
     void keyPressEvent ( QKeyEvent * event );
 
 public:
-    explicit tracking_window(QWidget *parent,std::shared_ptr<fib_data> handle);
+    explicit tracking_window(QWidget *parent,
+                             std::shared_ptr<fib_data> handle);
     ~tracking_window();
 
     Ui::tracking_window *ui;
@@ -80,7 +81,6 @@ public:
     void updateSlicesMenu(void);
     float get_fa_threshold(void);
     bool no_update = false;
-
 public:
     bool eventFilter(QObject *obj, QEvent *event);
     QVariant operator[](QString name)const;
@@ -94,6 +94,7 @@ public:
     bool can_map_to_mni(void);
     void set_roi_zoom(float zoom);
     bool command(QString cmd,QString param = "",QString param2 = "");
+
 public slots:
     void restore_3D_window();
     void on_show_fiber_toggled(bool checked);
@@ -192,6 +193,8 @@ private slots:
     void Move_Slice_Z2();
     void on_actionLoad_Parameter_ID_triggered();
     void on_actionMove_Objects_triggered();
+    void on_actionLoad_Presentation_triggered();
+    void on_actionSave_Presentation_triggered();
 };
 
 #endif // TRACKING_WINDOW_H

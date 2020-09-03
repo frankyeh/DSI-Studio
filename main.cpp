@@ -13,7 +13,6 @@
 #include <iterator>
 #include "program_option.hpp"
 #include "cmd/cnt.cpp" // Qt project cannot build cnt.cpp without adding this.
-
 std::string
         fib_template_file_name_2mm,
         t1w_template_file_name,wm_template_file_name,
@@ -299,8 +298,21 @@ int main(int ac, char *av[])
     QApplication a(ac,av);
     init_application();
     MainWindow w;
-    w.show();
-    w.setWindowTitle(QString("DSI Studio ") + __DATE__ + " build");
+
     has_gui = true;
+
+    // presentation mode
+    QStringList fib_list = QDir(QCoreApplication::applicationDirPath()+ "/presentation").
+                            entryList(QStringList("*fib.gz") << QString("*_qa.nii.gz"),QDir::Files|QDir::NoSymLinks);
+    if(fib_list.size())
+    {
+        w.hide();
+        w.loadFib(QCoreApplication::applicationDirPath() + "/presentation/" + fib_list[0],true);
+    }
+    else
+    {
+        w.show();
+        w.setWindowTitle(QString("DSI Studio ") + __DATE__ + " build");
+    }
     return a.exec();
 }

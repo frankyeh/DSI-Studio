@@ -216,7 +216,7 @@ void MainWindow::addSrc(QString filename)
     updateRecentList();
 }
 
-void MainWindow::loadFib(QString filename)
+void MainWindow::loadFib(QString filename,bool presentation_mode)
 {
     std::string file_name = filename.toLocal8Bit().begin();
     begin_prog("load fib");
@@ -227,14 +227,24 @@ void MainWindow::loadFib(QString filename)
             QMessageBox::information(this,"error",new_handle->error_msg.c_str(),0);
         return;
     }
+    QDir::setCurrent(QFileInfo(filename).absolutePath());
+
     tracking_windows.push_back(new tracking_window(this,new_handle));
     tracking_windows.back()->setAttribute(Qt::WA_DeleteOnClose);
     tracking_windows.back()->setWindowTitle(filename);
+    if(presentation_mode)
+    {
+        tracking_windows.back()->command("load_workspace",QFileInfo(filename).absolutePath());
+        tracking_windows.back()->command("presentation_mode");
+    }
+    else
+    {
+        addFib(filename);
+        add_work_dir(QFileInfo(filename).absolutePath());
+    }
     tracking_windows.back()->showNormal();
     tracking_windows.back()->resize(1200,700);
-    addFib(filename);
-    add_work_dir(QFileInfo(filename).absolutePath());
-    QDir::setCurrent(QFileInfo(filename).absolutePath());
+
 }
 
 void MainWindow::loadSrc(QStringList filenames)

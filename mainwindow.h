@@ -8,7 +8,6 @@
 namespace Ui {
     class MainWindow;
 }
-
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
@@ -24,8 +23,8 @@ public:
     void addSrc(QString Filename);
     void dragEnterEvent(QDragEnterEvent *event);
     void dropEvent(QDropEvent *event);
-private:
-    void loadFib(QString Filename);
+public:
+    void loadFib(QString Filename,bool presentation_mode = false);
     void loadSrc(QStringList filenames);
     void add_work_dir(QString dir);
     bool load_db(std::shared_ptr<group_connectometry_analysis>& database,QString& file_name);
