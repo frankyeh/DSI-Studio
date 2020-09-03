@@ -17,8 +17,8 @@ public:
         float alpha;
         tipl::rgb color;
         RegionModel(void) {
-                alpha = 0.6f;
-		color = (unsigned int)0x00FFFFFF;
+            alpha = 0.6f;
+            color = (unsigned int)0x00FFFFFF;
         }
         void swap(RegionModel& rhs) {
                 std::swap(alpha,rhs.alpha);
