@@ -84,9 +84,7 @@ std::string find_full_path(QString name)
     filename = QDir::currentPath() + name;
     if(QFileInfo(filename).exists())
         return filename.toStdString();
-    std::string error_msg = "Cannot find ";
-    error_msg += filename.toStdString();
-    throw error_msg;
+    return std::string();
 }
 
 void load_file_name(void)

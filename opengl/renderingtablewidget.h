@@ -123,7 +123,13 @@ public:
             result.push_back(parent->child(index)->id);
         return result;
     }
-
+    QStringList getParamList(void)
+    {
+        QStringList result;
+        for(auto& iter : name_data_mapping)
+            result << iter.first;
+        return result;
+    }
     void setDefault(QString);
 private:
 
@@ -143,7 +149,6 @@ public:
     void setData(QString name,QVariant data){(*treemodel)[name].setValue(data);}
     void setMinMax(QString name,float min,float max,float step){(*treemodel)[name].setMinMax(min,max,step);}
     void setList(QString name,QStringList list){(*treemodel)[name].setList(list);}
-    QStringList getChildren(QString root_name){return treemodel->getChildren(root_name);}
     void initialize(void);
 public slots:
     void setDefault(QString parent_id);
