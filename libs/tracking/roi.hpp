@@ -159,7 +159,7 @@ public:
         report += " The anatomy prior of a tractography atlas (Yeh et al., Neuroimage 178, 57-68, 2018) was used to map ";
         report += handle->tractography_name_list[size_t(track_id)];
         report += "  with a distance tolerance of ";
-        report += std::to_string(false_distance_*handle->vs[0]);
+        report += std::to_string(int(false_distance_*handle->vs[0]));
         report += " (mm).";
         if(seeds.empty())
         {

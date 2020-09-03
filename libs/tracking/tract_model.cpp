@@ -430,11 +430,14 @@ bool TractModel::load_from_file(const char* file_name_,bool append)
     {
         tipl::geometry<3> geo;
         begin_prog("loading");
+        unsigned int old_color = color;
         if(!SmallTK::load_from_file(file_name_,loaded_tract_data,loaded_tract_cluster,geo,vs,report,parameter_id,color))
         {
             check_prog(0,0);
             return false;
         }
+        if(color != old_color)
+            color_changed = true;
         check_prog(0,0);
     }
     if(ext == std::string(".trk") || ext == std::string("k.gz"))

@@ -552,6 +552,7 @@ int trk(std::shared_ptr<fib_data> handle)
                 std::cout << "start tracking." << std::endl;
                 tracking_thread.param.threshold = std::fabs(t);
                 tracking_thread.run(tract_model.get_fib(),po.get("thread_count",int(std::thread::hardware_concurrency())),true);
+                tract_model.report += tracking_thread.report.str();
                 tracking_thread.fetchTracks(&tract_model);
                 std::ostringstream out;
                 out << cnt_file_name[i].toStdString() << "." << cnt_type.toStdString()
