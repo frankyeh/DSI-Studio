@@ -490,7 +490,7 @@
              <item>
               <widget class="QCheckBox" name="export_trk">
                <property name="text">
-                <string>Output Trk files</string>
+                <string>Output Tractography</string>
                </property>
                <property name="checked">
                 <bool>true</bool>
