@@ -1,7 +1,6 @@
 #include <QFileDialog>
 #include <QMessageBox>
 #include <QClipboard>
-#include <QSettings>
 #include <QContextMenuEvent>
 #include <QColorDialog>
 #include <QInputDialog>
@@ -24,7 +23,7 @@ TractTableWidget::TractTableWidget(tracking_window& cur_tracking_window_,QWidget
     QTableWidget(parent),cur_tracking_window(cur_tracking_window_)
 {
     setColumnCount(4);
-    setColumnWidth(0,75);
+    setColumnWidth(0,200);
     setColumnWidth(1,50);
     setColumnWidth(2,50);
     setColumnWidth(3,50);
@@ -53,11 +52,27 @@ void TractTableWidget::contextMenuEvent ( QContextMenuEvent * event )
         cur_tracking_window.ui->menuTracts->popup(event->globalPos());
 }
 
-void TractTableWidget::check_check_status(int, int col)
+void TractTableWidget::check_check_status(int row, int col)
 {
     if(col != 0)
         return;
-    emit need_update();
+    setCurrentCell(row,col);
+    if (item(row,0)->checkState() == Qt::Checked)
+    {
+        if (item(row,0)->data(Qt::ForegroundRole) == QBrush(Qt::gray))
+        {
+            item(row,0)->setData(Qt::ForegroundRole,QBrush(Qt::black));
+            emit need_update();
+        }
+    }
+    else
+    {
+        if (item(row,0)->data(Qt::ForegroundRole) != QBrush(Qt::gray))
+        {
+            item(row,0)->setData(Qt::ForegroundRole,QBrush(Qt::gray));
+            emit need_update();
+        }
+    }
 }
 
 void TractTableWidget::addNewTracts(QString tract_name,bool checked)
@@ -357,16 +372,7 @@ void TractTableWidget::save_all_tracts_to_dir(void)
     QString dir = QFileDialog::getExistingDirectory(this,"Open directory","");
     if(dir.isEmpty())
         return;
-    begin_prog("save files...");
-    for(unsigned int index = 0;check_prog(index,rowCount());++index)
-        if (item(index,0)->checkState() == Qt::Checked)
-        {
-            std::string filename = dir.toLocal8Bit().begin();
-            filename  += "/";
-            filename  += item(index,0)->text().toLocal8Bit().begin();
-            filename  += output_format().toStdString();
-            tract_models[index]->save_tracts_to_file(filename.c_str());
-        }
+    command("save_all_tracts_to_dir",dir);
     if(!prog_aborted())
         QMessageBox::information(this,"DSI Studio","file saved");
 }
@@ -929,6 +935,20 @@ void TractTableWidget::show_tracts_statistics(void)
 
 bool TractTableWidget::command(QString cmd,QString param,QString param2)
 {
+    if(cmd == "save_all_tracts_to_dir")
+    {
+        begin_prog("save files");
+        for(int index = 0;check_prog(index,rowCount());++index)
+            if (item(index,0)->checkState() == Qt::Checked)
+            {
+                std::string filename = param.toStdString();
+                filename += "/";
+                filename += item(index,0)->text().toStdString();
+                filename += output_format().toStdString();
+                tract_models[size_t(index)]->save_tracts_to_file(filename.c_str());
+            }
+        return true;
+    }
     if(cmd == "update_track")
     {
         for(int index = 0;index < tract_models.size();++index)
