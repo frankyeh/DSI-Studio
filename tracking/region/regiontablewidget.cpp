@@ -4,7 +4,6 @@
 #include <QContextMenuEvent>
 #include <QMessageBox>
 #include <QClipboard>
-#include <QSettings>
 #include <QTableWidgetItem>
 #include <QTextStream>
 #include "regiontablewidget.h"
@@ -222,11 +221,48 @@ void RegionTableWidget::check_check_status(int row, int col)
     }
 }
 
-bool RegionTableWidget::command(QString cmd,QString,QString)
+bool RegionTableWidget::command(QString cmd,QString param,QString)
 {
+    if(cmd == "save_all_regions_to_dir")
+    {
+        begin_prog("save files...");
+        for(int index = 0;check_prog(index,rowCount());++index)
+            if (item(index,0)->checkState() == Qt::Checked) // either roi roa end or seed
+            {
+                std::string filename = param.toStdString();
+                filename  += "/";
+                filename  += item(index,0)->text().toStdString();
+                filename  += output_format().toStdString();
+                regions[size_t(index)]->SaveToFile(filename.c_str());
+            }
+        return true;
+    }
     if(cmd == "detele_all_region")
     {
         delete_all_region();
+        return true;
+    }
+    if(cmd == "load_region")
+    {
+        // check for multiple nii
+        if(QFileInfo(param).suffix() == "gz" ||
+            QFileInfo(param).suffix() == "nii" ||
+            QFileInfo(param).suffix() == "hdr")
+        {
+            if(!load_multiple_roi_nii(param))
+                QMessageBox::information(this,"error","Invalid Region File. If it is created from T1W/T2W, please insert the original T1W/T2W in [Slices][Insert]",0);
+            emit need_update();
+            return true;
+        }
+        ROIRegion region(cur_tracking_window.handle.get());
+        if(!region.LoadFromFile(param.toLocal8Bit().begin()))
+        {
+            QMessageBox::information(this,"error","Unknown file format",0);
+            return true;
+        }
+        add_region(QFileInfo(param).baseName(),roi_id,region.show_region.color.color);
+        regions.back()->assign(region.get_region_voxels_raw(),region.resolution_ratio);
+        emit need_update();
         return true;
     }
     return false;
@@ -870,29 +906,7 @@ void RegionTableWidget::load_region(void)
         return;
 
     for (int index = 0;index < filenames.size();++index)
-    {
-        // check for multiple nii
-        if(QFileInfo(filenames[index]).suffix() == "gz" ||
-            QFileInfo(filenames[index]).suffix() == "nii" ||
-            QFileInfo(filenames[index]).suffix() == "hdr")
-        {
-            if(!load_multiple_roi_nii(filenames[index]))
-            {
-                QMessageBox::information(this,"error","Invalid Region File. If it is created from T1W/T2W, please insert the original T1W/T2W in [Slices][Insert]",0);
-                return;
-            }
-            continue;
-        }
-        ROIRegion region(cur_tracking_window.handle.get());
-        if(!region.LoadFromFile(filenames[index].toLocal8Bit().begin()))
-        {
-            QMessageBox::information(this,"error","Unknown file format",0);
-            return;
-        }
-        add_region(QFileInfo(filenames[index]).baseName(),roi_id,region.show_region.color.color);
-        regions.back()->assign(region.get_region_voxels_raw(),region.resolution_ratio);
-
-    }
+        command("load_region",filenames[index]);
     emit need_update();
 }
 
@@ -1059,16 +1073,7 @@ void RegionTableWidget::save_all_regions_to_dir(void)
     QString dir = QFileDialog::getExistingDirectory(this,"Open directory","");
     if(dir.isEmpty())
         return;
-    begin_prog("save files...");
-    for(unsigned int index = 0;check_prog(index,rowCount());++index)
-        if (item(index,0)->checkState() == Qt::Checked) // either roi roa end or seed
-        {
-            std::string filename = dir.toLocal8Bit().begin();
-            filename  += "/";
-            filename  += item(index,0)->text().toLocal8Bit().begin();
-            filename  += output_format().toStdString();
-            regions[index]->SaveToFile(filename.c_str());
-        }
+    command("save_all_regions_to_dir",dir);
 }
 void RegionTableWidget::save_all_regions(void)
 {
