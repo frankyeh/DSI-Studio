@@ -12,6 +12,7 @@
 #include "program_option.hpp"
 
 extern std::vector<std::string> fa_template_list,iso_template_list;
+size_t match_template(float volume);
 void rec_motion_correction(ImageModel* handle);
 void calculate_shell(const std::vector<float>& bvalues,std::vector<unsigned int>& shell);
 bool is_dsi_half_sphere(const std::vector<unsigned int>& shell);
@@ -93,8 +94,20 @@ int rec(void)
     if(method_index == 7) // QSDR
     {
         handle->voxel.param[0] = 1.25f;
-        handle->voxel.primary_template = fa_template_list[size_t(po.get("template",0))];
-        handle->voxel.secondary_template = iso_template_list[size_t(po.get("template",0))];
+        std::cout << "selecting template..." << std::endl;
+        for(size_t index = 0;index < fa_template_list.size();++index)
+            std::cout << index << ":" << fa_template_list[index] << std::endl;
+        if(po.has("template"))
+        {
+            handle->voxel.primary_template = fa_template_list[size_t(po.get("template",0))];
+            handle->voxel.secondary_template = iso_template_list[size_t(po.get("template",0))];
+        }
+        else
+        {
+            size_t index = match_template(handle->voxel.vs[0]*handle->voxel.vs[1]*handle->voxel.vs[2]*handle->voxel.dim.size());
+            handle->voxel.primary_template = fa_template_list[index];
+            handle->voxel.secondary_template = iso_template_list[index];
+        }
         std::cout << "template = " << handle->voxel.primary_template << std::endl;
         std::cout << "template2 = " << handle->voxel.secondary_template << std::endl;
     }
