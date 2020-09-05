@@ -115,11 +115,6 @@ void get_files_in_folder(std::string dir,std::string file,std::vector<std::strin
         std::string file_name = dir;
         file_name += "/";
         file_name += file_list[index].toStdString();
-        if(!file_list[index].contains("rec"))
-        {
-            std::cout << file_list[index].toStdString() << " seems not containing QSDR ODF information. Skipping..." << std::endl;
-            continue;
-        }
         name_list.push_back(file_name);
     }
     files = std::move(name_list);
