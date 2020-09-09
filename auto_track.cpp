@@ -20,12 +20,12 @@ auto_track::auto_track(QWidget *parent) :
     fib.set_template_id(0);
 
     QStringList tract_names;
-    const char rec_list_name[8][15] = {"Arcuate","Cingulum","Fornix","Aslant","Superior_L","Inferior_L","Inferior_F","Uncinate"};
+    const char rec_list_name[3][15] = {"Fasciculus","Cingulum","Aslant"};
     for(size_t index = 0;index < fib.tractography_name_list.size();++index)
     {
         tract_names << fib.tractography_name_list[index].c_str();
         rec_list.push_back(0);
-        for(size_t i = 0;i < 8;++i)
+        for(size_t i = 0;i < 3;++i)
             if(fib.tractography_name_list[index].find(rec_list_name[i]) != std::string::npos)
                 rec_list.back() = 1;
     }
