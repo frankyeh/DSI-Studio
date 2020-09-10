@@ -2164,6 +2164,7 @@ void tracking_window::on_actionOpen_Connectivity_Matrix_triggered()
             tipl::add(connectivity.begin(),connectivity.end(),buf);
         }
     }
+    set_data("region_graph",1);
     tipl::multiply_constant(connectivity,1.0f/tipl::maximum(connectivity));
     for(size_t i = 0;i < connectivity.size();++i)
         if(connectivity[i] < 0.05f)
@@ -2185,6 +2186,7 @@ void tracking_window::on_actionOpen_Connectivity_Matrix_triggered()
                     " atlas in DSI Studio. Please update DSI Studio package or check the atlas folder",0);
 
     }
+    glWidget->update();
 }
 
 void tracking_window::on_SlicePos_valueChanged(int value)
