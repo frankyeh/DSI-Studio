@@ -1362,7 +1362,7 @@ bool ImageModel::save_bvec(const char* file_name) const
     for(unsigned int index = 0;index < src_bvalues.size();++index)
     {
         out << src_bvectors[index][0] << " "
-            << src_bvectors[index][1] << " "
+            << -src_bvectors[index][1] << " "
             << src_bvectors[index][2] << "\n";
     }
     return out.good();

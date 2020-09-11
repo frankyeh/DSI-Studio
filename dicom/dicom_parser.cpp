@@ -188,6 +188,9 @@ void load_bvec(const char* file_name,std::vector<double>& b_table)
     }
     if(total_line == 3)
         tipl::mat::transpose(b_table.begin(),tipl::dyndim(3,b_table.size()/3));
+    // flip in y direction
+    for(size_t index = 1;index < b_table.size();index += 3)
+        b_table[index] = -b_table[index];
 }
 void load_bval(const char* file_name,std::vector<double>& bval)
 {
