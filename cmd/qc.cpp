@@ -3,11 +3,48 @@
 #include <QFileInfo>
 #include "program_option.hpp"
 #include "libs/dsi/image_model.hpp"
+#include "fib_data.hpp"
 
 QStringList search_files(QString dir,QString filter);
 
 
 extern bool has_gui;
+
+bool check_src(std::string file_name,std::vector<std::string>& output,float& ndc)
+{
+    std::cout << "checking " << file_name << std::endl;
+    output.push_back(QFileInfo(file_name.c_str()).baseName().toStdString());
+    ImageModel handle;
+    if (!handle.load_from_file(file_name.c_str()))
+    {
+        std::cout << "cannot read SRC file" << std::endl;
+        return false;
+    }
+    // output image dimension
+    {
+        std::ostringstream out1;
+        out1 << tipl::vector<3,int>(handle.voxel.dim.begin());
+        output.push_back(out1.str());
+    }
+    // output image resolution
+    {
+        std::ostringstream out1;
+        out1 << handle.voxel.vs;
+        output.push_back(out1.str());
+    }
+    // output DWI count
+    size_t cur_dwi_count = handle.src_bvalues.size();
+    output.push_back(std::to_string(cur_dwi_count));
+
+    // output max_b
+    output.push_back(std::to_string(*std::max_element(handle.src_bvalues.begin(),handle.src_bvalues.end())));
+
+    // calculate neighboring DWI correlation
+    ndc = handle.quality_control_neighboring_dwi_corr();
+    output.push_back(std::to_string(ndc));
+    output.push_back(std::to_string(handle.get_bad_slices().size()));
+    return true;
+}
 std::string quality_check_src_files(QString dir)
 {
     std::ostringstream out;
@@ -18,66 +55,31 @@ std::string quality_check_src_files(QString dir)
         std::cout << "no SRC file found in the directory" << std::endl;
         return "no SRC file found in the directory";
     }
-    out << "FileName\tImage dimension\tResolution\tDWI count\tMax b-value\tB-table matched\tNeighboring DWI correlation\t# Bad Slices" << std::endl;
-    size_t dwi_count = 0;
-    float max_b = 0;
+    out << "FileName\tImage dimension\tResolution\tDWI count\tMax b-value\tNeighboring DWI correlation\t# Bad Slices" << std::endl;
     std::cout << "a total of " << filenames.size() << " SRC file(s) were found."<< std::endl;
 
     std::vector<std::vector<std::string> > output;
     std::vector<float> ndc;
     for(int i = 0;check_prog(i,filenames.size());++i)
     {
-        std::cout << "checking " << QFileInfo(filenames[i]).baseName().toStdString() << std::endl;
-        output.push_back(std::vector<std::string>());
-        output.back().push_back(QFileInfo(filenames[i]).baseName().toStdString());
-        ImageModel handle;
         bool restore_gui = false;
         if(has_gui)
         {
             has_gui = false;
             restore_gui = true;
         }
-        if (!handle.load_from_file(filenames[i].toStdString().c_str()))
+        std::vector<std::string> output_each;
+        float ndc_each;
+        if(!check_src(filenames[i].toStdString(),output_each,ndc_each))
         {
-            std::cout << "cannot read SRC file" << std::endl;
-            out << "cannot load SRC file"  << std::endl;
+            out << "cannot load SRC file " << filenames[i].toStdString() << std::endl;
             continue;
         }
         if(restore_gui)
             has_gui = true;
-        // output image dimension
-        {
-            std::ostringstream out1;
-            out1 << tipl::vector<3,int>(handle.voxel.dim.begin());
-            output.back().push_back(out1.str());
-        }
-        // output image resolution
-        {
-            std::ostringstream out1;
-            out1 << handle.voxel.vs;
-            output.back().push_back(out1.str());
-        }
-        // output DWI count
-        size_t cur_dwi_count = handle.src_bvalues.size();
-        output.back().push_back(std::to_string(cur_dwi_count));
-        if(i == 0)
-            dwi_count = cur_dwi_count;
 
-        // output max_b
-        float cur_max_b = 0;
-        output.back().push_back(std::to_string(cur_max_b = *std::max_element(handle.src_bvalues.begin(),handle.src_bvalues.end())));
-
-        if(i == 0)
-            max_b = cur_max_b;
-        // check shell structure
-        output.back().push_back(std::fabs(max_b-cur_max_b) < 1.0f && cur_dwi_count == dwi_count ? "Yes" : "No");
-
-        // calculate neighboring DWI correlation
-        ndc.push_back(handle.quality_control_neighboring_dwi_corr());
-        output.back().push_back(std::to_string(ndc.back()));
-
-        output.back().push_back(std::to_string(handle.get_bad_slices().size()));
-
+        output.push_back(std::move(output_each));
+        ndc.push_back(ndc_each);
     }
     auto ndc_copy = ndc;
     float m = tipl::median(ndc_copy.begin(),ndc_copy.end());
@@ -99,19 +101,47 @@ std::string quality_check_src_files(QString dir)
 /**
  perform reconstruction
  */
+std::shared_ptr<fib_data> cmd_load_fib(const std::string file_name);
 int qc(void)
 {
     std::string file_name = po.get("source");
     if(QFileInfo(file_name.c_str()).isDir())
     {
+        std::string report_file_name = file_name + ".qc.txt";
         std::cout << "quality control checking src files in " << file_name << std::endl;
-        std::string report_file_name = file_name + "/src_report.txt";
         std::ofstream out(report_file_name.c_str());
         out << quality_check_src_files(file_name.c_str());
         std::cout << "report saved to " << report_file_name << std::endl;
     }
     else {
-        std::cout << file_name << " is not a file folder." << std::endl;
+        std::string report_file_name = file_name.substr(0,file_name.size()-7) + ".qc.txt";
+        if(file_name.substr(file_name.size()-7) == ".fib.gz")
+        {
+            std::shared_ptr<fib_data> handle = cmd_load_fib(po.get("source"));
+            if(!handle.get())
+                return 1;
+            float threshold = 0.6f*tipl::segmentation::otsu_threshold(tipl::make_image(handle->dir.fa[0],handle->dim));
+            std::pair<float,float> result = evaluate_fib(handle->dim,threshold,handle->dir.fa,
+                                                         [&](int pos,char fib)
+                                                         {return tipl::vector<3>(handle->dir.get_dir(size_t(pos),uint32_t(fib)));});
+            std::ofstream out(report_file_name.c_str());
+            out << "Fiber coherence index: " << result.first << std::endl;
+            out << "Fiber discoherent index: " << result.second << std::endl;;
+        }
+        if(file_name.substr(file_name.size()-7) == ".src.gz")
+        {
+            std::ofstream out(report_file_name.c_str());
+            out << "FileName\tImage dimension\tResolution\tDWI count\tMax b-value\tNeighboring DWI correlation\t# Bad Slices" << std::endl;
+            std::vector<std::string> output_each;
+            float ndc_each;
+            if(!check_src(file_name,output_each,ndc_each))
+            {
+                std::cout << "cannot load SRC file " << file_name << std::endl;
+                return 1;
+            }
+            for(size_t j = 0 ;j < output_each.size();++j)
+                out << output_each[j] << "\t";
+        }
     }
     return 0;
 }
