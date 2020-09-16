@@ -912,6 +912,7 @@ void GLWidget::renderLR()
                         gluSphere(DeviceQua->get(),double(radius),20,10);
                         continue;
                     case 0:
+                    case 3:
                         glColor4f(r,g,b,a);
                         Cylinder(radius,seg_length[j]);
                         break;
