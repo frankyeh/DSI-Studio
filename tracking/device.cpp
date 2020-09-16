@@ -1,105 +1,68 @@
 #include "libs/gzip_interface.hpp"
 #include "device.h"
+extern std::vector<std::vector<float> > device_seg_length;
+extern std::vector<std::vector<char> > device_seg_type;
+extern std::vector<float> device_radius;
+extern std::string device_content_file;
 
+std::vector<std::string> device_types;
+std::vector<std::vector<float> > device_seg_length;
+std::vector<std::vector<char> > device_seg_type;
+std::vector<float> device_radius;
 
-char device_types[12][40]=
-{"DBS Lead:Medtronic 3387",
- "DBS Lead:Medtronic 3389",
- "DBS Lead:Abbott Infinity",
- "DBS Lead:Boston Scientific",
- "SEEG Electrode:8 Contacts",
- "SEEG Electrode:10 Contacts",
- "SEEG Electrode:12 Contacts",
- "SEEG Electrode:14 Contacts",
- "SEEG Electrode:16 Contacts",
- "Probe",
- "Obturator:11 mm",
- "Obturator:13.5 mm"};
+bool load_device_content(void)
+{
+    std::ifstream in(device_content_file.c_str());
+    if(!in)
+        return false;
+    std::string line;
+    while(std::getline(in,line))
+    {
+        device_types.push_back(line);
+        // read device segmentation length
+        {
+            std::getline(in,line);
+            std::istringstream in2(line);
+            std::vector<float> seg_length;
+            std::copy(std::istream_iterator<float>(in2),std::istream_iterator<float>(),std::back_inserter(seg_length));
+            device_seg_length.push_back(std::move(seg_length));
+        }
+        // read device segmentation length
+        {
+            std::getline(in,line);
+            std::istringstream in2(line);
+            std::vector<char> seg_type;
+            std::copy(std::istream_iterator<int>(in2),std::istream_iterator<int>(),std::back_inserter(seg_type));
+            device_seg_type.push_back(std::move(seg_type));
+        }
+        // read radius
+        {
+            std::getline(in,line);
+            std::istringstream in2(line);
+            float value;
+            in2 >> value;
+            device_radius.push_back(value);
+        }
+    }
+    return true;
+}
 
 void Device::get_rendering(std::vector<float>& seg_length,
                    std::vector<char>& seg_type,
                    float& radius)
 {
     // DBS Lead
-    if(type == device_types[0])
-    {
-        seg_length = {0.0f,1.0f,1.5f,1.5f,1.5f,1.5f,1.5f,1.5f,1.5f,length-11.5f};
-        seg_type = {-1,0,1,0,1,0,1,0,1,0};
-        rendering_radius = radius = 1.27f*0.5f;
-    }
-    if(type == device_types[1])
-    {
-        seg_length = {0.0f,1.0f,1.5f,0.5f,1.5f,0.5f,1.5f,0.5f,1.5f,length-8.5f};
-        seg_type = {-1,0,1,0,1,0,1,0,1,0};
-        rendering_radius = radius = 1.27f*0.5f;
-    }
-    if(type == device_types[2])
-    {
-        seg_length = {0.0f,1.0f,1.5f,0.5f,1.5f,0.5f,1.5f,0.5f,1.5f,length-8.5f};
-        seg_type = {-1,0,1,0,2,0,2,0,1,0};
-        rendering_radius = radius = 1.27f*0.5f;
-    }
-    if(type == device_types[3])
-    {
-        seg_length = {0.0f,1.0f,0.5f,1.5f,0.5f,1.5f,0.5f,1.5f,length-7.5f};
-        seg_type = {-1,1,0,2,0,2,0,1,0};
-        rendering_radius = radius = 1.3f*0.5f;
-    }
-    // SEEG Electrodes
-    if(type == device_types[4])
-    {
-        seg_length = {0.0f,0.0f,2.0f,1.5f,2.0f,1.5f,2.0f,1.5f,2.0f,1.5f,2.0f,1.5f,2.0f,1.5f,2.0f,1.5f,2.0f,
-                      std::max<float>(1.5f,length-28)};
-        seg_type = {-1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0};
-        rendering_radius = radius = 0.8f*0.5f;
-    }
-    if(type == device_types[5])
-    {
-        seg_length = {0.0f,0.0f,2.0f,1.5f,2.0f,1.5f,2.0f,1.5f,2.0f,1.5f,2.0f,1.5f,2.0f,1.5f,2.0f,1.5f,2.0f,1.5f,2.0f,1.5f,2.0f,
-                      std::max<float>(1.5f,length-28)};
-        seg_type = {-1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0};
-        rendering_radius = radius = 0.8f*0.5f;
-    }
-    if(type == device_types[6])
-    {
-        seg_length = {0.0f,0.0f,2.0f,1.5f,2.0f,1.5f,2.0f,1.5f,2.0f,1.5f,2.0f,1.5f,2.0f,1.5f,2.0f,1.5f,2.0f,1.5f,2.0f,1.5f,2.0f,1.5f,2.0f,1.5f,2.0f,
-                      std::max<float>(1.5f,length-28)};
-        seg_type = {-1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0};
-        rendering_radius = radius = 0.8f*0.5f;
-    }
-    if(type == device_types[7])
-    {
-        seg_length = {0.0f,0.0f,2.0f,1.5f,2.0f,1.5f,2.0f,1.5f,2.0f,1.5f,2.0f,1.5f,2.0f,1.5f,2.0f,1.5f,2.0f,1.5f,2.0f,1.5f,2.0f,1.5f,2.0f,1.5f,2.0f,1.5f,2.0f,1.5f,2.0f,
-                      std::max<float>(1.5f,length-28)};
-        seg_type = {-1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0};
-        rendering_radius = radius = 0.8f*0.5f;
-    }
-    if(type == device_types[8])
-    {
-        seg_length = {0.0f,0.0f,2.0f,1.5f,2.0f,1.5f,2.0f,1.5f,2.0f,1.5f,2.0f,1.5f,2.0f,1.5f,2.0f,1.5f,2.0f,length};
-        seg_type = {-1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0};
-        rendering_radius = radius = 0.8f*0.5f;
-    }
-
-    if(type == device_types[9])
-    {
-        seg_length = {0.0f,length};
-        seg_type = {-1,0};
-        rendering_radius = radius = 1.0f*0.5f;
-    }
-    if(type == device_types[10])
-    {
-        seg_length = {length,2.0f};
-        seg_type = {0,-2};
-        rendering_radius = radius = 11.0f*0.5f;
-    }
-    if(type == device_types[11])
-    {
-        seg_length = {length,2.0f};
-        seg_type = {0,-2};
-        rendering_radius = radius = 13.5f*0.5f;
-    }
-
+    for(size_t i = 0;i < device_types.size();++i)
+        if(type == device_types[i])
+        {
+            seg_length = device_seg_length[i];
+            seg_type = device_seg_type[i];
+            rendering_radius = radius = device_radius[i]*0.5f;
+            break;
+        }
+    auto pos = std::find(seg_type.begin(),seg_type.end(),3);
+    if(pos != seg_type.end())
+         seg_length[size_t(pos-seg_type.begin())] = length;
 }
 
 Device::Device()

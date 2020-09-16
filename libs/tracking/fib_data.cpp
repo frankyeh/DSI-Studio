@@ -923,26 +923,18 @@ void fib_data::set_template_id(size_t new_id)
                     }
             }
         }
+        for(size_t j = 0;j < track_atlas_file_list.size();++j)
         {
-            std::string atlas_file = fa_template_list[template_id] + ".track.txt";
-            std::ifstream in(atlas_file);
-            if(in)
+            if(QFileInfo(track_atlas_file_list[j].c_str()).baseName() ==
+               QFileInfo(fa_template_list[template_id].c_str()).baseName())
             {
-                std::string line;
-                in >> line;
-                for(size_t j = 0;j < track_atlas_file_list.size();++j)
-                {
-                    if(QFileInfo(track_atlas_file_list[j].c_str()).baseName().toStdString() == line)
-                    {
-                        tractography_atlas_file_name = track_atlas_file_list[j];
-                        std::string tractography_name_list_file_name = tractography_atlas_file_name+".txt";
-                        std::ifstream in(tractography_name_list_file_name);
-                        if(in)
-                            std::copy(std::istream_iterator<std::string>(in),
-                            std::istream_iterator<std::string>(),std::back_inserter(tractography_name_list));
-                        break;
-                    }
-                }
+                tractography_atlas_file_name = track_atlas_file_list[j];
+                std::string tractography_name_list_file_name = tractography_atlas_file_name+".txt";
+                std::ifstream in(tractography_name_list_file_name);
+                if(in)
+                    std::copy(std::istream_iterator<std::string>(in),
+                    std::istream_iterator<std::string>(),std::back_inserter(tractography_name_list));
+                break;
             }
         }
     }

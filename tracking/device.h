@@ -27,5 +27,6 @@ public:
                        float& radius);
 };
 
-extern char device_types[12][40];
+extern std::vector<std::string> device_types;
+bool load_device_content(void);
 #endif // DEVICE_H

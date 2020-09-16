@@ -16,7 +16,8 @@
 std::string
         fib_template_file_name_2mm,
         t1w_template_file_name,wm_template_file_name,
-        t1w_mask_template_file_name;
+        t1w_mask_template_file_name,
+        device_content_file;
 std::vector<std::string> fa_template_list,
                          iso_template_list,
                          atlas_file_list,
@@ -93,7 +94,7 @@ void load_file_name(void)
     t1w_template_file_name = find_full_path("/mni_icbm152_t1_tal_nlin_asym_09c.nii.gz");
     wm_template_file_name = find_full_path("/mni_icbm152_wm_tal_nlin_asym_09c.nii.gz");
     t1w_mask_template_file_name = find_full_path("/mni_icbm152_t1_tal_nlin_asym_09c_mask.nii.gz");
-
+    device_content_file = find_full_path("/device.txt");
 
     // search for all anisotropy template
     {
@@ -152,7 +153,7 @@ void load_file_name(void)
         QDir dir = QCoreApplication::applicationDirPath()+ "/track";
         if(!dir.exists())
             dir = QDir::currentPath()+ "/track";
-        QStringList name_list = dir.entryList(QStringList("*.tt.gz"),QDir::Files|QDir::NoSymLinks);
+        QStringList name_list = dir.entryList(QStringList("*tt.gz"),QDir::Files|QDir::NoSymLinks);
         for(int index = 0;index < name_list.size();++index)
             track_atlas_file_list.push_back((dir.absolutePath() + "/" + name_list[index]).toStdString());
     }

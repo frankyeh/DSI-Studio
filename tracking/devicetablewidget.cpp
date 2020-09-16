@@ -14,21 +14,12 @@ QWidget *DeviceTypeDelegate::createEditor(QWidget *parent,
 {
     if (index.column() == 1)
     {
+        if(device_types.empty() && !load_device_content())
+            return QItemDelegate::createEditor(parent,option,index);
         QComboBox *comboBox = new QComboBox(parent);
         comboBox->addItem("Please Select Device");
-        comboBox->addItem(device_types[0]);
-        comboBox->addItem(device_types[1]);
-        comboBox->addItem(device_types[2]);
-        comboBox->addItem(device_types[3]);
-        comboBox->addItem(device_types[4]);
-        comboBox->addItem(device_types[5]);
-        comboBox->addItem(device_types[6]);
-        comboBox->addItem(device_types[7]);
-        comboBox->addItem(device_types[8]);
-        comboBox->addItem(device_types[9]);
-        comboBox->addItem(device_types[10]);
-        comboBox->addItem(device_types[11]);
-
+        for(size_t index = 0;index < device_types.size();++index)
+            comboBox->addItem(device_types[index].c_str());
         connect(comboBox, SIGNAL(activated(int)), this, SLOT(emitCommitData()));
         return comboBox;
     }

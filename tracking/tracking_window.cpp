@@ -2164,7 +2164,6 @@ void tracking_window::on_actionOpen_Connectivity_Matrix_triggered()
             tipl::add(connectivity.begin(),connectivity.end(),buf);
         }
     }
-    set_data("region_graph",1);
     tipl::multiply_constant(connectivity,1.0f/tipl::maximum(connectivity));
     for(size_t i = 0;i < connectivity.size();++i)
         if(connectivity[i] < 0.05f)
@@ -2180,13 +2179,26 @@ void tracking_window::on_actionOpen_Connectivity_Matrix_triggered()
                 for(size_t j = 0;j < handle->atlas_list[i]->get_list().size();++j)
                     regionWidget->add_region_from_atlas(handle->atlas_list[i],uint32_t(j));
                 regionWidget->end_update();
+                set_data("region_graph",1);
+                glWidget->update();
                 return;
             }
         QMessageBox::information(this,"Error",QString("Cannot find ")+atlas.c_str()+
                     " atlas in DSI Studio. Please update DSI Studio package or check the atlas folder",0);
-
     }
-    glWidget->update();
+    else
+    {
+        if(regionWidget->regions.empty())
+            QMessageBox::information(this,"Error","Please load the original regions first for visualization",0);
+        else
+            if(regionWidget->regions.size() != glWidget->connectivity.width())
+                QMessageBox::information(this,"Error","The current region list does not match the connectiviti matrix",0);
+            else
+            {
+                set_data("region_graph",1);
+                glWidget->update();
+            }
+    }
 }
 
 void tracking_window::on_SlicePos_valueChanged(int value)
