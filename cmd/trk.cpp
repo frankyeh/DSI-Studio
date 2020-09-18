@@ -313,6 +313,47 @@ bool load_region(std::shared_ptr<fib_data> handle,
     return true;
 }
 
+void trk_post_save_trk(std::shared_ptr<fib_data> handle,
+             TractModel& tract_model,
+             const std::string& file_name)
+{
+    std::string file_list = file_name;
+    std::replace(file_list.begin(),file_list.end(),',',' ');
+    std::istringstream in(file_list);
+    std::string f;
+    while(in >> f)
+    {
+        if(po.has("ref")) // save track in T1W/T2W space
+        {
+            std::vector<std::string> files;
+            files.push_back(po.get("ref"));
+            CustomSliceModel new_slice(handle.get());
+            if(!new_slice.initialize(files,false))
+            {
+                std::cout << "error reading ref image file" << std::endl;
+                return;
+            }
+            new_slice.thread->wait();
+            new_slice.update();
+            std::cout << "applying linear registration." << std::endl;
+            std::cout << new_slice.T[0] << " " << new_slice.T[1] << " " << new_slice.T[2] << " " << new_slice.T[3] << std::endl;
+            std::cout << new_slice.T[4] << " " << new_slice.T[5] << " " << new_slice.T[6] << " " << new_slice.T[7] << std::endl;
+            std::cout << new_slice.T[8] << " " << new_slice.T[9] << " " << new_slice.T[10] << " " << new_slice.T[11] << std::endl;
+            tract_model.save_transformed_tracts_to_file(f.c_str(),&*new_slice.invT.begin(),false);
+        }
+        else
+        if(f != "no_file")
+        {
+            std::cout << "output file:" << f << std::endl;
+            if (!tract_model.save_tracts_to_file(f.c_str()))
+            {
+                std::cout << "cannot save tracks as " << f << ". Please check write permission, directory, and disk space." << std::endl;
+            }
+            if(QFileInfo(f.c_str()).exists())
+                std::cout << "file saved to " << f << std::endl;
+        }
+    }
+}
 int trk_post(std::shared_ptr<fib_data> handle,
              TractModel& tract_model,
              const std::string& file_name)
@@ -642,43 +683,6 @@ int trk(std::shared_ptr<fib_data> handle)
         file_name = fout.str();
     }
     // save track
-    {
-        std::string file_list = file_name;
-        std::replace(file_list.begin(),file_list.end(),',',' ');
-        std::istringstream in(file_list);
-        std::string f;
-        while(in >> f)
-        {
-            if(po.has("ref")) // save track in T1W/T2W space
-            {
-                std::vector<std::string> files;
-                files.push_back(po.get("ref"));
-                CustomSliceModel new_slice(handle.get());
-                if(!new_slice.initialize(files,false))
-                {
-                    std::cout << "error reading ref image file" << std::endl;
-                    return 1;
-                }
-                new_slice.thread->wait();
-                new_slice.update();
-                std::cout << "applying linear registration." << std::endl;
-                std::cout << new_slice.T[0] << " " << new_slice.T[1] << " " << new_slice.T[2] << " " << new_slice.T[3] << std::endl;
-                std::cout << new_slice.T[4] << " " << new_slice.T[5] << " " << new_slice.T[6] << " " << new_slice.T[7] << std::endl;
-                std::cout << new_slice.T[8] << " " << new_slice.T[9] << " " << new_slice.T[10] << " " << new_slice.T[11] << std::endl;
-                tract_model.save_transformed_tracts_to_file(f.c_str(),&*new_slice.invT.begin(),false);
-            }
-            else
-            if(f != "no_file")
-            {
-                std::cout << "output file:" << f << std::endl;
-                if (!tract_model.save_tracts_to_file(f.c_str()))
-                {
-                    std::cout << "cannot save tracks as " << f << ". Please check write permission, directory, and disk space." << std::endl;
-                }
-                if(QFileInfo(f.c_str()).exists())
-                    std::cout << "file saved to " << f << std::endl;
-            }
-        }
-    }
+    trk_post_save_trk(handle,tract_model,file_name);
     return trk_post(handle,tract_model,file_name);
 }
