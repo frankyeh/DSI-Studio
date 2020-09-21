@@ -82,6 +82,7 @@ void TractTableWidget::addNewTracts(QString tract_name,bool checked)
     insertRow(tract_models.size()-1);
     QTableWidgetItem *item0 = new QTableWidgetItem(tract_name);
     item0->setCheckState(checked ? Qt::Checked : Qt::Unchecked);
+    item0->setData(Qt::ForegroundRole,checked ? QBrush(Qt::black) : QBrush(Qt::gray));
     setItem(tract_models.size()-1, 0, item0);
     for(unsigned int index = 1;index <= 3;++index)
     {
