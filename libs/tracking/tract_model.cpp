@@ -46,7 +46,7 @@ void smoothed_tracks(const std::vector<float>& track,std::vector<float>& smoothe
  * 1. spatial resolution of 1/32.
  * 2. step size between (-127/32 to 128/32) voxels for x,y,z, direction
  */
-class SmallTK{
+class TinyTrack{
 
     union tract_header{
         char buf[16];
@@ -372,7 +372,7 @@ bool TractModel::load_from_atlas(const char* file_name_)
     tipl::geometry<3> geo;
     std::string r,pid;
     unsigned int color;
-    if(!SmallTK::load_from_file(file_name_,loaded_tract_data,loaded_tract_cluster,geo,vs,r,pid,color))
+    if(!TinyTrack::load_from_file(file_name_,loaded_tract_data,loaded_tract_cluster,geo,vs,r,pid,color))
         return false;
     if(!handle->load_template() || geo != handle->template_I.geometry())
         return false;
@@ -431,7 +431,7 @@ bool TractModel::load_from_file(const char* file_name_,bool append)
         tipl::geometry<3> geo;
         begin_prog("loading");
         unsigned int old_color = color;
-        if(!SmallTK::load_from_file(file_name_,loaded_tract_data,loaded_tract_cluster,geo,vs,report,parameter_id,color))
+        if(!TinyTrack::load_from_file(file_name_,loaded_tract_data,loaded_tract_cluster,geo,vs,report,parameter_id,color))
         {
             check_prog(0,0);
             return false;
@@ -599,7 +599,7 @@ bool TractModel::save_data_to_file(const char* file_name,const std::string& inde
     {
         std::vector<uint16_t> cluster;
         begin_prog("saving");
-        bool result = SmallTK::save_to_file(file_name_s.c_str(),geometry,vs,tract_data,cluster,report,parameter_id,
+        bool result = TinyTrack::save_to_file(file_name_s.c_str(),geometry,vs,tract_data,cluster,report,parameter_id,
                                             color_changed ? tract_color.front():0);
         check_prog(0,0);
         return result;
@@ -673,7 +673,7 @@ bool TractModel::save_tracts_to_file(const char* file_name_)
     {
         std::vector<uint16_t> cluster;
         begin_prog("saving");
-        bool result = SmallTK::save_to_file(file_name.c_str(),geometry,vs,tract_data,cluster,report,parameter_id,
+        bool result = TinyTrack::save_to_file(file_name.c_str(),geometry,vs,tract_data,cluster,report,parameter_id,
                                             color_changed ? tract_color.front():0);
         check_prog(0,0);
         return result;
@@ -1054,7 +1054,7 @@ bool TractModel::save_all(const char* file_name_,
         }
         // save file
         begin_prog("saving");
-        bool result = SmallTK::save_to_file(file_name_,all[0]->geometry,all[0]->vs,
+        bool result = TinyTrack::save_to_file(file_name_,all[0]->geometry,all[0]->vs,
                     all_tract,cluster,all[0]->report,all[0]->parameter_id);
         check_prog(0,0);
         // restore tracts
