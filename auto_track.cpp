@@ -365,17 +365,17 @@ void auto_track::select_tracts()
         ui->candidate_list_view->setEnabled(false);
         ui->recom_panel->setEnabled(true);
         std::vector<std::string> select_list;
-        if(ui->cb_projection->isChecked())
-        {
-            select_list.push_back("Cortico");
-            select_list.push_back("Optic");
-            select_list.push_back("Fornix");
-        }
         if(ui->cb_association->isChecked())
         {
             select_list.push_back("Fasciculus");
             select_list.push_back("Cingulum");
             select_list.push_back("Aslant");
+        }
+        if(ui->cb_projection->isChecked())
+        {
+            select_list.push_back("Cortico");
+            select_list.push_back("Optic");
+            select_list.push_back("Fornix");
         }
         if(ui->cb_commissural->isChecked())
         {
