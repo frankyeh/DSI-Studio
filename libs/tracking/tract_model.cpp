@@ -42,8 +42,7 @@ void smoothed_tracks(const std::vector<float>& track,std::vector<float>& smoothe
     }
 }
 
-/* limitations:
- * 1. spatial resolution of 1/32.
+/* 1. spatial resolution of 1/32 voxel spacing.
  * 2. step size between (-127/32 to 128/32) voxels for x,y,z, direction
  */
 class TinyTrack{
@@ -51,8 +50,8 @@ class TinyTrack{
     union tract_header{
         char buf[16];
         struct {
-        uint32_t count;
-        int32_t x;
+        uint32_t count; // number of coordinates
+        int32_t x; // first coordinate (x*32,y*32,z*32)
         int32_t y;
         int32_t z;
         } h;

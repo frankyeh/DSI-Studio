@@ -37,7 +37,7 @@ int atk(void)
     {
         fib_data fib;
         fib.set_template_id(0);
-        std::string track_id_str = po.get("track_id","Fasciculus,Cingulum,Aslant");
+        std::string track_id_str = po.get("track_id","Fasciculus,Cingulum,Aslant,Cortico,Optic,Fornix,Corpus");
         std::replace(track_id_str.begin(),track_id_str.end(),',',' ');
         std::istringstream in(track_id_str);
         std::string str;

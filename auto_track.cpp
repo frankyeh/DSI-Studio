@@ -20,22 +20,20 @@ auto_track::auto_track(QWidget *parent) :
     fib.set_template_id(0);
 
     QStringList tract_names;
-    const char rec_list_name[3][15] = {"Fasciculus","Cingulum","Aslant"};
     for(size_t index = 0;index < fib.tractography_name_list.size();++index)
-    {
         tract_names << fib.tractography_name_list[index].c_str();
-        rec_list.push_back(0);
-        for(size_t i = 0;i < 3;++i)
-            if(fib.tractography_name_list[index].find(rec_list_name[i]) != std::string::npos)
-                rec_list.back() = 1;
-    }
     ui->candidate_list_view->addItems(tract_names);
-    on_recommend_list_toggled(true);
+    select_tracts();
 
     timer = std::make_shared<QTimer>(this);
     timer->stop();
     timer->setInterval(1000);
-    connect(timer.get(), SIGNAL(timeout()), this, SLOT(check_status()));
+    connect(timer.get(),SIGNAL(timeout()),this,SLOT(check_status()));
+    connect(ui->recommend_list,SIGNAL(clicked()),this,SLOT(select_tracts()));
+    connect(ui->custom,SIGNAL(clicked()),this,SLOT(select_tracts()));
+    connect(ui->cb_projection,SIGNAL(clicked()),this,SLOT(select_tracts()));
+    connect(ui->cb_association,SIGNAL(clicked()),this,SLOT(select_tracts()));
+    connect(ui->cb_commissural,SIGNAL(clicked()),this,SLOT(select_tracts()));
 }
 
 auto_track::~auto_track()
@@ -49,7 +47,7 @@ void auto_track::on_open_clicked()
                                      this,
                                      "Open SRC files",
                                      "",
-                                     "SRC files (*src.gz);;FIB files (*fib.gz);;All files (*)" );
+                                     "SRC files (*src.gz);;FIB files (*fib.gz);;4D NIFTI files (*nii.gz);;All files (*)" );
     if (filenames.isEmpty())
         return;
     file_list << filenames;
@@ -125,7 +123,8 @@ std::string run_auto_track(
             std::shared_ptr<fib_data> handle(new fib_data);
             bool fib_loaded = false;
             std::string fib_file_name;
-            if(file_list[i].substr(file_list[i].size()-7) == ".src.gz")
+            if(file_list[i].substr(file_list[i].size()-7) == ".src.gz" ||
+               file_list[i].substr(file_list[i].size()-7) == ".nii.gz")
             {
                 std::shared_ptr<ImageModel> handle(std::make_shared<ImageModel>());
                 handle->voxel.method_id = 4; // GQI
@@ -349,16 +348,40 @@ void auto_track::on_interpolation_currentIndexChanged(int)
 
 }
 
-void auto_track::on_recommend_list_toggled(bool checked)
+void auto_track::select_tracts()
 {
-    if(checked)
+    if(ui->recommend_list->isChecked())
     {
         ui->candidate_list_view->setEnabled(false);
-        for(size_t i = 0;i < rec_list.size();++i)
-            ui->candidate_list_view->item(i)->setSelected(rec_list[i]);
+        ui->recom_panel->setEnabled(true);
+        std::vector<std::string> select_list;
+        if(ui->cb_projection->isChecked())
+        {
+            select_list.push_back("Cortico");
+            select_list.push_back("Optic");
+            select_list.push_back("Fornix");
+        }
+        if(ui->cb_association->isChecked())
+        {
+            select_list.push_back("Fasciculus");
+            select_list.push_back("Cingulum");
+            select_list.push_back("Aslant");
+        }
+        if(ui->cb_commissural->isChecked())
+        {
+            select_list.push_back("Corpus");
+        }
+        for(int i = 0;i < ui->candidate_list_view->count();++i)
+            ui->candidate_list_view->item(i)->setSelected(false);
+
+        for(size_t j = 0;j < select_list.size();++j)
+        for(int i = 0;i < ui->candidate_list_view->count();++i)
+            if(ui->candidate_list_view->item(i)->text().contains(select_list[j].c_str()))
+                ui->candidate_list_view->item(i)->setSelected(true);
     }
     else
     {
         ui->candidate_list_view->setEnabled(true);
+        ui->recom_panel->setEnabled(false);
     }
 }

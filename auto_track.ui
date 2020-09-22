@@ -34,7 +34,7 @@
            </sizepolicy>
           </property>
           <property name="title">
-           <string> Step B4(a): Specify SRC Files</string>
+           <string> Step B4(a): Specify 4DNIFTI/SRC/FIB Files</string>
           </property>
           <layout class="QVBoxLayout" name="verticalLayout_7">
            <property name="spacing">
@@ -200,6 +200,57 @@
              <property name="checked">
               <bool>true</bool>
              </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QWidget" name="recom_panel" native="true">
+             <layout class="QVBoxLayout" name="verticalLayout_6">
+              <property name="spacing">
+               <number>0</number>
+              </property>
+              <property name="leftMargin">
+               <number>24</number>
+              </property>
+              <property name="topMargin">
+               <number>0</number>
+              </property>
+              <property name="rightMargin">
+               <number>0</number>
+              </property>
+              <property name="bottomMargin">
+               <number>0</number>
+              </property>
+              <item>
+               <widget class="QCheckBox" name="cb_association">
+                <property name="text">
+                 <string>Association Pathways</string>
+                </property>
+                <property name="checked">
+                 <bool>true</bool>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QCheckBox" name="cb_projection">
+                <property name="text">
+                 <string>Projection Pathways</string>
+                </property>
+                <property name="checked">
+                 <bool>true</bool>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QCheckBox" name="cb_commissural">
+                <property name="text">
+                 <string>Commissural Pathways</string>
+                </property>
+                <property name="checked">
+                 <bool>true</bool>
+                </property>
+               </widget>
+              </item>
+             </layout>
             </widget>
            </item>
            <item>

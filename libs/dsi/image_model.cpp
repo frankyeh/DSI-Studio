@@ -4,6 +4,7 @@
 #include "odf_process.hpp"
 #include "dti_process.hpp"
 #include "fib_data.hpp"
+#include "dwi_header.hpp"
 
 void ImageModel::draw_mask(tipl::color_image& buffer,int position)
 {
@@ -1142,36 +1143,49 @@ bool ImageModel::save_to_file(const char* dwi_file_name)
     mat_writer.write("mask",voxel.mask,uint32_t(voxel.dim.plane_size()));
     return true;
 }
+
+extern std::string src_error_msg;
+bool find_bval_bvec(const char* file_name,QString& bval,QString& bvec);
+bool load_4d_nii(const char* file_name,std::vector<std::shared_ptr<DwiHeader> >& dwi_files);
 bool ImageModel::load_from_file(const char* dwi_file_name)
 {
     file_name = dwi_file_name;
     if (!mat_reader.load_from_file(dwi_file_name))
     {
-        gz_nifti nii;
-        if(nii.load_from_file(dwi_file_name))
+        QString bval,bvec;
+        if(!find_bval_bvec(dwi_file_name,bval,bvec))
         {
-            for(unsigned int index = 0;index < nii.dim(4);++index)
-            {
-                tipl::image<float,3> data;
-                if(!nii.toLPS(data,index == 0))
-                    break;
-                tipl::lower_threshold(data,0.0f);
-                tipl::image<unsigned short,3> buf = data;
-                new_dwi.push_back(std::move(buf));
-                src_dwi_data.push_back(&new_dwi.back()[0]);
-                src_bvalues.push_back(0.0f);
-                src_bvectors.push_back(tipl::vector<3>(0.0f,0.0f,0.0f));
-                if(index == 0)
-                {
-                    nii.get_voxel_size(voxel.vs);
-                    voxel.dim = new_dwi.front().geometry();
-                }
-            }
-            calculate_dwi_sum(true);
-            return !new_dwi.empty();
+            error_msg = "Cannot find bval bvec files";
+            return false;
         }
-        error_msg = "Cannot open file";
-        return false;
+        std::vector<std::shared_ptr<DwiHeader> > dwi_files;
+        if(!load_4d_nii(dwi_file_name,dwi_files))
+        {
+            error_msg = src_error_msg;
+            return false;
+        }
+        new_dwi.resize(dwi_files.size());
+        src_dwi_data.resize(dwi_files.size());
+        src_bvalues.resize(dwi_files.size());
+        src_bvectors.resize(dwi_files.size());
+        for(size_t index = 0;index < dwi_files.size();++index)
+        {
+            if(index == 0)
+            {
+                voxel.vs = dwi_files[0]->voxel_size;
+                voxel.dim = dwi_files[0]->image.geometry();
+            }
+            new_dwi[index].swap(dwi_files[index]->image);
+            src_dwi_data[index] = &new_dwi[index][0];
+            src_bvalues[index] = dwi_files[index]->bvalue;
+            src_bvectors[index] = dwi_files[index]->bvec;
+        }
+        get_report(voxel.report);
+        calculate_dwi_sum(true);
+        voxel.steps += "[Step T2][Reconstruction] open ";
+        voxel.steps += QFileInfo(dwi_file_name).fileName().toStdString();
+        voxel.steps += "\n";
+        return true;
     }
 
     if (!mat_reader.read("dimension",voxel.dim))
@@ -1240,7 +1254,6 @@ bool ImageModel::load_from_file(const char* dwi_file_name)
                 tipl::add_constant(voxel.grad_dev[8].begin(),voxel.grad_dev[8].end(),1.0);
             }
         }
-
     }
 
     // create mask;
