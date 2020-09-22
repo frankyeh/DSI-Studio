@@ -7,6 +7,7 @@
 #include "fib_data.hpp"
 #include "libs/tracking/tracking_thread.hpp"
 
+extern std::vector<std::string> fa_template_list;
 auto_track::auto_track(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::auto_track)
@@ -18,7 +19,12 @@ auto_track::auto_track(QWidget *parent) :
 
     fib_data fib;
     fib.set_template_id(0);
-
+    if(fib.tractography_name_list.empty())
+    {
+        QMessageBox::information(this,"Error",
+            QString("Cannot find the template track file ")+QFileInfo(fa_template_list[0].c_str()).baseName()+".tt.gz"
+            + " at folder " + QCoreApplication::applicationDirPath()+ "/track Please re-install the DSI Studio package");
+    }
     QStringList tract_names;
     for(size_t index = 0;index < fib.tractography_name_list.size();++index)
         tract_names << fib.tractography_name_list[index].c_str();
