@@ -13,6 +13,7 @@
 #include <iterator>
 #include "program_option.hpp"
 #include "cmd/cnt.cpp" // Qt project cannot build cnt.cpp without adding this.
+std::string arg_file_name;
 std::string
         fib_template_file_name_2mm,
         t1w_template_file_name,wm_template_file_name,
@@ -296,6 +297,8 @@ int main(int ac, char *av[])
 {
     if(ac > 2)
         return run_cmd(ac,av);
+    if(ac == 2)
+        arg_file_name = av[1];
     QApplication a(ac,av);
     init_application();
     MainWindow w;

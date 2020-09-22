@@ -32,7 +32,6 @@
 #include "program_option.hpp"
 #include "libs/dsi/image_model.hpp"
 #include "auto_track.h"
-extern program_option po;
 int rec(void);
 int trk(void);
 int src(void);
@@ -42,6 +41,8 @@ int atl(void);
 int cnt(void);
 int vis(void);
 int ren(void);
+extern program_option po;
+extern std::string arg_file_name;
 std::vector<tracking_window*> tracking_windows;
 MainWindow::MainWindow(QWidget *parent) :
         QMainWindow(parent),
@@ -69,6 +70,37 @@ MainWindow::MainWindow(QWidget *parent) :
         ui->workDir->addItem(QDir::currentPath());
 
     ui->toolBox->setCurrentIndex(0);
+
+    if(!arg_file_name.empty())
+    {
+        if(!QFileInfo(arg_file_name.c_str()).exists())
+        {
+            QMessageBox::information(this,"Error",QString("Cannot find ") +
+            arg_file_name.c_str() + " at current dir: " + QDir::current().dirName());
+        }
+        else
+        {
+            if(QString(arg_file_name.c_str()).right(7) == ".fib.gz")
+            {
+                loadFib(arg_file_name.c_str());
+            }
+            if(QString(arg_file_name.c_str()).right(7) == ".src.gz")
+            {
+                loadSrc(QStringList() << arg_file_name.c_str());
+            }
+            if(QString(arg_file_name.c_str()).right(7) == ".nii.gz")
+            {
+                view_image* dialog = new view_image(this);
+                dialog->setAttribute(Qt::WA_DeleteOnClose);
+                if(!dialog->open(QStringList() << arg_file_name.c_str()))
+                {
+                    delete dialog;
+                    return;
+                }
+                dialog->show();
+            }
+        }
+    }
 }
 void MainWindow::dragEnterEvent(QDragEnterEvent *event)
 {
