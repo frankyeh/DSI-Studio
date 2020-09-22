@@ -1,12 +1,9 @@
 Copyright 2020 Fang-Cheng Yeh
 
-Licensed under the Attribution-NonCommercial-ShareAlike 2.0 Generic license (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
 
-https://creativecommons.org/licenses/by-nc-sa/2.0/
-
-For commercial purpose, please contact frank.yeh@gmail.com
+========Academic License========
+ 
+DSI Studio is free for research purpose under the Attribution-NonCommercial-ShareAlike 2.0 Generic (CC BY-NC-SA 2.0) license. https://creativecommons.org/licenses/by-nc-sa/2.0/
 
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
@@ -14,6 +11,28 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 
-DSI Studio is not FDA cleared/approved. Users using it in clinical settings
-require an IRB approval and/or Investigational Device Exemption 
-and will assume full responsibility
+========Clinical License========
+
+DSI Studio is free for clinical use.
+
+The license follows CC BY-NC-SA 2.0 license https://creativecommons.org/licenses/by-nc-sa/2.0/ with the following additional requirements to protect patients and minimize DSI Studio users from possible liability.
+
+1. The license is for one year and can be renewed.
+2. Users must maintain a valid IRB in the licensing period.
+     
+To obtain this license, please fills out the following form to provide IRB number and indication: https://forms.gle/9A7Qz2Q3HAWqeSd28
+
+The license will be provided through an email notification. Users under a clinical license will receive notifications of critical updates that may affect the tractography quality. The bug report and feature suggestions from clinical license users will be placed on high priority on the update list.
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+========Commercial License========
+
+DSI Studio is free for commercial usage under GNU General Public License https://www.gnu.org/licenses/gpl-3.0.en.html
+Other commercial licenses can be provided after contacting Frank Yeh at frank.yeh@gmail.com
+
+
