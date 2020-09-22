@@ -129,6 +129,10 @@ std::string run_auto_track(
             std::shared_ptr<fib_data> handle(new fib_data);
             bool fib_loaded = false;
             std::string fib_file_name;
+            if(!QFileInfo(file_list[i].c_str()).exists())
+            {
+                return std::string("ERROR at ") + file_list[i] + ": file not exist";
+            }
             if(file_list[i].substr(file_list[i].size()-7) == ".src.gz" ||
                file_list[i].substr(file_list[i].size()-7) == ".nii.gz")
             {
