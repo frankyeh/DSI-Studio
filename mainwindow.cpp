@@ -80,15 +80,15 @@ MainWindow::MainWindow(QWidget *parent) :
         }
         else
         {
-            if(QString(arg_file_name.c_str()).right(7) == ".fib.gz")
+            if(QString(arg_file_name.c_str()).endsWith(".fib.gz"))
             {
                 loadFib(arg_file_name.c_str());
             }
-            if(QString(arg_file_name.c_str()).right(7) == ".src.gz")
+            if(QString(arg_file_name.c_str()).endsWith(".src.gz"))
             {
                 loadSrc(QStringList() << arg_file_name.c_str());
             }
-            if(QString(arg_file_name.c_str()).right(7) == ".nii.gz")
+            if(QString(arg_file_name.c_str()).endsWith(".nii.gz"))
             {
                 view_image* dialog = new view_image(this);
                 dialog->setAttribute(Qt::WA_DeleteOnClose);
