@@ -262,7 +262,9 @@ int run_cmd(int ac, char *av[])
             std::cout << "invalid command, use --help for more detail" << std::endl;
             return 1;
         }
-        QDir::setCurrent(QFileInfo(po.get("source").c_str()).absolutePath());
+        std::string source = po.get("source");
+        if(!source.empty() && source[0] != '.')
+            QDir::setCurrent(QFileInfo(source.c_str()).absolutePath());
         if(po.get("source").find('*') != std::string::npos)
         {
             auto file_list = QDir::current().entryList(QStringList(QFileInfo(po.get("source").c_str()).fileName()),
