@@ -38,7 +38,8 @@ ICON = dsi_studio.icns
 INCLUDEPATH += libs \
     libs/dsi \
     libs/tracking \
-    libs/mapping
+    libs/mapping \
+    dicom
 HEADERS += mainwindow.h \
     dicom/dicom_parser.h \
     dicom/dwi_header.hpp \
