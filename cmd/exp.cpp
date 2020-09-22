@@ -11,14 +11,53 @@
 #include "libs/gzip_interface.hpp"
 #include "program_option.hpp"
 
-// test example
 std::shared_ptr<fib_data> cmd_load_fib(const std::string file_name);
+bool trk2tt(const char* trk_file,const char* tt_file);
+bool tt2trk(const char* tt_file,const char* trk_file);
 int exp(void)
 {
+    std::string file_name = po.get("source");
+    if(QString(file_name.c_str()).endsWith(".trk.gz"))
+    {
+        std::string output_name = po.get("output");
+        if(QString(output_name.c_str()).endsWith(".tt.gz"))
+        {
+            if(trk2tt(file_name.c_str(),output_name.c_str()))
+            {
+                std::cout << "file converted." << std::endl;
+                return 0;
+            }
+            else
+            {
+                std::cout << "Cannot write to file:" << output_name << std::endl;
+                return 1;
+            }
+        }
+        std::cout << "unsupported file format" << std::endl;
+        return 1;
+    }
+    if(QString(file_name.c_str()).endsWith(".tt.gz"))
+    {
+        std::string output_name = po.get("output");
+        if(QString(output_name.c_str()).endsWith(".trk.gz"))
+        {
+            if(tt2trk(file_name.c_str(),output_name.c_str()))
+            {
+                std::cout << "file converted." << std::endl;
+                return 0;
+            }
+            else
+            {
+                std::cout << "Cannot write to file:" << output_name << std::endl;
+                return 1;
+            }
+        }
+        std::cout << "unsupported file format" << std::endl;
+        return 1;
+    }
     std::string export_name = po.get("export");
     if(export_name == "4dnii")
     {
-        std::string file_name = po.get("source");
         ImageModel handle;
         if(!handle.load_from_file(file_name.c_str()))
         {
@@ -37,7 +76,6 @@ int exp(void)
     }
 
     gz_mat_read mat_reader;
-    std::string file_name = po.get("source");
     std::cout << "loading " << file_name << "..." <<std::endl;
     if(!QFileInfo(file_name.c_str()).exists())
     {

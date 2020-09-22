@@ -14,7 +14,7 @@ public:
         bool color_changed = false;
 private:
         fib_data* handle = nullptr;
-        tipl::geometry<3> geometry;
+        tipl::geometry<3> geo;
         tipl::vector<3> vs;
         std::shared_ptr<tracking_data> fib;
 private:
@@ -52,7 +52,7 @@ public:
         TractModel(fib_data* handle_);
         const TractModel& operator=(const TractModel& rhs)
         {
-            geometry = rhs.geometry;
+            geo = rhs.geo;
             vs = rhs.vs;
             handle = rhs.handle;
             tract_data = rhs.tract_data;
