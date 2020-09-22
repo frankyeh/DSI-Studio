@@ -8,6 +8,7 @@
 #include "mainwindow.h"
 #include "prog_interface_static_link.h"
 #include "libs/gzip_interface.hpp"
+#include "program_option.hpp"
 
 std::string src_error_msg;
 
@@ -201,9 +202,15 @@ void load_bval(const char* file_name,std::vector<double>& bval)
               std::istream_iterator<double>(),
               std::back_inserter(bval));
 }
-
+extern program_option po;
 bool find_bval_bvec(const char* file_name,QString& bval,QString& bvec)
 {
+    if(po.has("bval") && po.has("bvec"))
+    {
+        bval = po.get("bval").c_str();
+        bvec = po.get("bvec").c_str();
+        return QFileInfo(bval).exists() && QFileInfo(bvec).exists();
+    }
     std::vector<QString> bval_name(4),bvec_name(4);
     QString path = QFileInfo(file_name).absolutePath() + "/";
     bval_name[0] = path + QFileInfo(file_name).baseName() + ".bvals";
