@@ -72,7 +72,7 @@ int atk(void)
         std::cout << std::endl;
     }
     int progress;
-    std::cout << run_auto_track(file_list,track_id,
+    std::string result = run_auto_track(file_list,track_id,
                                 po.get("length_ratio",1.25f),
                                 po.get("tolerance",16.0f),
                                 po.get("track_voxel_ratio",1.0f),
@@ -81,6 +81,9 @@ int atk(void)
                                 po.get("export_stat",1),
                                 po.get("export_trk",1),
                                 po.get("overwrite",0),
-                                po.get("default_mask",0),progress) << std::endl;
+                                po.get("default_mask",0),progress);
+    if(result.empty())
+        return 0;
+    std::cout << result << std::endl;
     return 1;
 }
