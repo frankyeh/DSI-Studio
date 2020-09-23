@@ -2861,6 +2861,7 @@ void GLWidget::record_video(void)
 {
     if(video_handle.get())
     {
+        timer->stop();
         video_handle->close();
         QMessageBox::information(this,"DSI Studio","Video saved");
         video_handle.reset();
@@ -2879,6 +2880,11 @@ void GLWidget::record_video(void)
         video_handle = std::make_shared<tipl::io::avi>();
         video_handle->open(file.toStdString().c_str(),I.width(),I.height(), "MJPG", 10/*fps*/);
         video_frames = 0;
+        timer = std::make_shared<QTimer>(this);
+        timer->stop();
+        connect(timer.get(),SIGNAL(timeout()),this,SLOT(renderLR()));
+        timer->setInterval(100);
+        timer->start(100);
     }
 }
 

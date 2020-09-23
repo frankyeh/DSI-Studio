@@ -81,6 +81,7 @@ public:
  public://surface
      std::shared_ptr<RegionModel> surface;
 private:
+     std::shared_ptr<QTimer> timer;
      std::shared_ptr<tipl::io::avi> video_handle;
      bool video_capturing = false;
      size_t video_frames = 0;
@@ -111,6 +112,7 @@ public:
      void copyToClipboardEach(void);
      void rotate(void);
      void record_video(void);
+     void renderLR(void);
  signals:
      void edited();
      void region_edited();
@@ -118,7 +120,6 @@ public:
      void initializeGL();
      void resizeGL(int width, int height);
      void setFrustum(void);
-     void renderLR(void);
  public:
      bool edit_right;
      QPoint convert_pos(QMouseEvent *event);
