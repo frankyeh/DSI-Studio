@@ -128,7 +128,8 @@ int qc(void)
             out << "Fiber coherence index: " << result.first << std::endl;
             out << "Fiber discoherent index: " << result.second << std::endl;;
         }
-        if(QString(file_name.c_str()).endsWith("src.gz"))
+        if(QString(file_name.c_str()).endsWith("src.gz") ||
+           QString(file_name.c_str()).endsWith("nii.gz"))
         {
             std::ofstream out(report_file_name.c_str());
             out << "FileName\tImage dimension\tResolution\tDWI count\tMax b-value\tNeighboring DWI correlation\t# Bad Slices" << std::endl;
@@ -136,7 +137,7 @@ int qc(void)
             float ndc_each;
             if(!check_src(file_name,output_each,ndc_each))
             {
-                std::cout << "cannot load SRC file " << file_name << std::endl;
+                std::cout << "cannot load file " << file_name << std::endl;
                 return 1;
             }
             for(size_t j = 0 ;j < output_each.size();++j)
