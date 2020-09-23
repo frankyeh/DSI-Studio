@@ -311,7 +311,7 @@ bool connectometry_db::sample_subject_profile(gz_mat_read& m,std::vector<float>&
             handle->error_msg = "Failed to read odf at ";
             return false;
         }
-        set_title("Loading Data");
+        set_title("loading");
         tipl::par_for(si2vi.size(),[&](unsigned int index)
         {
             unsigned int cur_index = si2vi[index];

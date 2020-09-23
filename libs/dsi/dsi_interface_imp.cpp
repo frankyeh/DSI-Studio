@@ -165,7 +165,7 @@ bool ImageModel::reconstruction(void)
         case 1://DTI
             voxel.step_report << "[Step T2b(1)]=DTI" << std::endl;
             voxel.recon_report << " The diffusion tensor was calculated.";
-            if (!reconstruct<dti_process>("DTI"))
+            if (!reconstruct<dti_process>("DTI reconstruction"))
                 return false;
             break;
         case 4://GQI
@@ -175,7 +175,7 @@ bool ImageModel::reconstruction(void)
             {
                 voxel.recon_report <<
                 " The diffusion data were reconstructed using generalized q-sampling imaging (Yeh et al., IEEE TMI, ;29(9):1626-35, 2010).";
-                if (!reconstruct<gqi_spectral_process>("Spectral GQI"))
+                if (!reconstruct<gqi_spectral_process>("spectral GQI reconstruction"))
                     return false;
                 break;
             }
@@ -215,7 +215,7 @@ bool ImageModel::reconstruction(void)
                 break;
             }
 
-            if (!reconstruct<gqi_process>("GQI"))
+            if (!reconstruct<gqi_process>("GQI reconstruction"))
                 return false;
             break;
         case 6:
@@ -243,7 +243,7 @@ bool ImageModel::reconstruction(void)
                 if (!reconstruct<qa_map>("GQI for QSDR"))
                     return false;
                 tmp.swap(voxel.grad_dev);
-                if (!reconstruct<qsdr_process>("QSDR"))
+                if (!reconstruct<qsdr_process>("QSDR reconstruction"))
                     return false;
                 voxel.mask = mask;
             }
@@ -424,7 +424,6 @@ const char* odf_average(const char* out_name,std::vector<std::string>& file_name
     std::ostringstream out;
     out << "A group average template was constructed from a total of " << file_names.size() << " subjects." << report.c_str();
     report = out.str();
-    set_title("output Files");
     output_odfs(mask,out_name,".mean.odf.fib.gz",odfs,ti,vs,mni,report);
     output_odfs(mask,out_name,".mean.fib.gz",odfs,ti,vs,mni,report,false);
     return nullptr;

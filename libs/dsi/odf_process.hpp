@@ -221,7 +221,6 @@ public:
         if (!voxel.output_odf)
             return;
         {
-            set_title("Output ODFs");
             for (unsigned int index = 0;index < odf_data.size();++index)
             {
                 tipl::divide_constant(odf_data[index],voxel.z0);
@@ -286,7 +285,6 @@ public:
     {
         if (voxel.output_odf)
         {
-            set_title("Output ODFs");
             for (unsigned int index = 0;index < voxel.template_odfs.size();++index)
             {
                 std::ostringstream out;
@@ -337,7 +335,6 @@ protected:
             out << index;
             std::string num = out.str();
             std::string str = name + num;
-            set_title(str.c_str());
             mat_writer.write(str.c_str(),metrics[index],uint32_t(dim.plane_size()));
         }
     }
@@ -415,7 +412,6 @@ public:
     }
     virtual void end(Voxel& voxel,gz_mat_write& mat_writer)
     {
-        set_title("output data");
         mat_writer.write("gfa",gfa,uint32_t(voxel.dim.plane_size()));
         if(voxel.csf_calibration)
             voxel.z0 = z0;
@@ -526,7 +522,6 @@ public:
             std::string num = out.str();
             std::string index_str = "index";
             index_str += num;
-            set_title(index_str.c_str());
             mat_writer.write(index_str.c_str(),findex[index]);
         }
     }
@@ -561,7 +556,6 @@ public:
             std::string num = out.str();
             std::string index_str = "dir";
             index_str += num;
-            set_title(index_str.c_str());
             mat_writer.write(index_str.c_str(),dir[index]);
         }
     }

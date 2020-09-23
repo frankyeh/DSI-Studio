@@ -154,7 +154,7 @@ void ImageModel::pre_dti(void)
 {
     bool output_tensor = voxel.output_tensor;
     voxel.output_tensor = false;
-    reconstruct<check_btable_process>("Checking b-table");
+    reconstruct<check_btable_process>("checking b-table");
     voxel.output_tensor = output_tensor;
 }
 
@@ -495,7 +495,6 @@ bool ImageModel::command(std::string cmd,std::string param)
     }
     if(cmd == "[Step T2][Edit][Rotate to MNI]")
     {
-        prog_init p("rotating");
         rotate_to_mni(1.0f);
         voxel.steps += cmd+"\n";
         voxel.report += std::string(" The diffusion weighted images were rotated to the MNI space at 1mm.");
@@ -503,7 +502,6 @@ bool ImageModel::command(std::string cmd,std::string param)
     }
     if(cmd == "[Step T2][Edit][Rotate to MNI2]")
     {
-        prog_init p("rotating");
         rotate_to_mni(2.0f);
         voxel.steps += cmd+"\n";
         voxel.report += std::string(" The diffusion weighted images were rotated to the MNI space at 2mm.");
@@ -748,11 +746,10 @@ bool ImageModel::rotate_to_mni(float resolution)
         return false;
     tipl::transformation_matrix<double> arg;
     bool terminated = false;
-    begin_prog("registering to the MNI space");
+    begin_prog("aligning with MNI ac-pc");
     check_prog(0,1);
     tipl::reg::two_way_linear_mr(I,vs,dwi_sum,voxel.vs,
                     arg,tipl::reg::rigid_body,tipl::reg::mutual_information(),terminated);
-    begin_prog("rotating to the MNI space");
     rotate(I.geometry(),arg);
     voxel.vs = vs;
     voxel.report += " The diffusion MRI data were resampled to ";
@@ -1268,6 +1265,7 @@ bool ImageModel::load_from_file(const char* dwi_file_name)
 
 bool ImageModel::save_fib(const std::string& output_name)
 {
+    prog_init p("saving ",output_name.c_str());
     gz_mat_write mat_writer(output_name.c_str());
     if(!mat_writer)
     {

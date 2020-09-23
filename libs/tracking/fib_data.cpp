@@ -1256,7 +1256,6 @@ void fib_data::run_normalization(bool background,bool inv)
 
 
         prog = 1;
-        set_title("Initial Registration");
         auto tvs = vs;
         tvs *= std::sqrt((It.plane_size()*template_vs[0]*template_vs[1])/
                 (Is.plane_size()*vs[0]*vs[1]));
@@ -1285,7 +1284,7 @@ void fib_data::run_normalization(bool background,bool inv)
         tipl::reg::cdm_pre(It,It2,Iss,Iss2);
         if(Iss2.geometry() == Iss.geometry())
         {
-            set_title("Dual Normalization");
+            set_title("dual normalization");
             if(inv)
                 tipl::reg::cdm2(It,It2,Iss,Iss2,dis,terminated);
             else
@@ -1301,7 +1300,6 @@ void fib_data::run_normalization(bool background,bool inv)
 
         if(terminated)
             return;
-        set_title("Warpping");
         prog = 4;
         tipl::image<tipl::vector<3,float>,3 > mni(inv ? template_I.geometry() : dim);
 

@@ -133,7 +133,6 @@ void Voxel::run(void)
 
 void Voxel::end(gz_mat_write& writer)
 {
-    begin_prog("Output Data");
     for (size_t index = 0; check_prog(uint32_t(index),uint32_t(process_list.size())); ++index)
         process_list[index]->end(*this,writer);
 }
