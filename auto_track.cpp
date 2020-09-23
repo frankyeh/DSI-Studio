@@ -133,8 +133,8 @@ std::string run_auto_track(
             {
                 return std::string("ERROR at ") + file_list[i] + ": file not exist";
             }
-            if(file_list[i].substr(file_list[i].size()-7) == ".src.gz" ||
-               file_list[i].substr(file_list[i].size()-7) == ".nii.gz")
+            if(QString(file_list[i].c_str()).endsWith("src.gz") ||
+               QString(file_list[i].c_str()).endsWith("nii.gz"))
             {
                 std::shared_ptr<ImageModel> handle(std::make_shared<ImageModel>());
                 handle->voxel.method_id = 4; // GQI
@@ -163,7 +163,7 @@ std::string run_auto_track(
                         return std::string("ERROR at ") + cur_file_base_name + ":" + handle->error_msg;
                 }
             }
-            if(file_list[i].substr(file_list[i].size()-7) == ".fib.gz")
+            if(QString(file_list[i].c_str()).endsWith("fib.gz"))
                 fib_file_name = file_list[i];
             if(!QFileInfo(fib_file_name.c_str()).exists())
                 return std::string("Cannot process ") + cur_file_base_name;

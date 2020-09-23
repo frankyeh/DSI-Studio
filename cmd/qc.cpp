@@ -115,7 +115,7 @@ int qc(void)
     }
     else {
         std::string report_file_name = file_name.substr(0,file_name.size()-7) + ".qc.txt";
-        if(file_name.substr(file_name.size()-7) == ".fib.gz")
+        if(QString(file_name.c_str()).endsWith("fib.gz"))
         {
             std::shared_ptr<fib_data> handle = cmd_load_fib(po.get("source"));
             if(!handle.get())
@@ -128,7 +128,7 @@ int qc(void)
             out << "Fiber coherence index: " << result.first << std::endl;
             out << "Fiber discoherent index: " << result.second << std::endl;;
         }
-        if(file_name.substr(file_name.size()-7) == ".src.gz")
+        if(QString(file_name.c_str()).endsWith("src.gz"))
         {
             std::ofstream out(report_file_name.c_str());
             out << "FileName\tImage dimension\tResolution\tDWI count\tMax b-value\tNeighboring DWI correlation\t# Bad Slices" << std::endl;
