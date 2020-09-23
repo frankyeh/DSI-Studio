@@ -211,7 +211,7 @@ std::string run_auto_track(
                         auto_track_report = tract_model.report;
                         if(reports[j].empty())
                             reports[j] = auto_track_report;
-                        begin_prog("fiber tracking");
+                        prog_init p("tracking ",handle->tractography_name_list[track_id[j]].c_str());
                         while(!thread.is_ended())
                         {
                             size_t total_track = thread.get_total_tract_count();

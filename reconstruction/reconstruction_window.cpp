@@ -20,14 +20,13 @@ void show_view(QGraphicsScene& scene,QImage I);
 void populate_templates(QComboBox* combo);
 bool reconstruction_window::load_src(int index)
 {
-    begin_prog("load src");
+    prog_init p("load src");
     check_prog(index,filenames.size());
     handle.reset(new ImageModel);
     if (!handle->load_from_file(filenames[index].toLocal8Bit().begin()))
     {
         QMessageBox::information(this,"error",QString("Cannot open ") +
             filenames[index] + " : " +handle->error_msg.c_str(),0);
-        check_prog(0,0);
         return false;
     }
     double m = double(*std::max_element(handle->src_dwi_data[0],handle->src_dwi_data[0]+handle->voxel.dim.size()));
@@ -502,6 +501,7 @@ void reconstruction_window::on_actionSave_4D_nifti_triggered()
 {
     if(filenames.size() > 1)
     {
+        prog_init p("loading");
         for(int index = 0;check_prog(index,filenames.size());++index)
         {
             ImageModel model;
@@ -509,7 +509,6 @@ void reconstruction_window::on_actionSave_4D_nifti_triggered()
             {
                 QMessageBox::information(this,"error",QString("Cannot open ") +
                     filenames[index] + " : " +handle->error_msg.c_str(),0);
-                check_prog(0,0);
                 return;
             }
             model.save_to_nii((filenames[index]+".nii.gz").toLocal8Bit().begin());
@@ -841,7 +840,7 @@ void reconstruction_window::on_actionCorrect_AP_PA_scans_triggered()
     if( filename.isEmpty())
         return;
 
-    begin_prog("load src");
+    prog_init p("load src");
     ImageModel src2;
     tipl::image<unsigned short,3> I;
     if(QFileInfo(filename).suffix().toLower() == "dcm")
@@ -875,10 +874,8 @@ void reconstruction_window::on_actionCorrect_AP_PA_scans_triggered()
         {
             QMessageBox::information(this,"error",QString("Cannot open ") +
                filename + " : " +src2.error_msg.c_str(),0);
-            check_prog(0,0);
             return;
         }
-        check_prog(0,0);
     }
 
     if(handle->voxel.dim != src2.voxel.dim)
@@ -989,9 +986,8 @@ void reconstruction_window::on_actionSave_SRC_file_as_triggered()
             "SRC files (*src.gz);;All files (*)" );
     if(filename.isEmpty())
         return;
-    begin_prog("save file");
+    prog_init p("saving ",filename.toStdString().c_str());
     handle->save_to_file(filename.toStdString().c_str());
-    check_prog(0,0);
 }
 
 

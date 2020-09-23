@@ -67,6 +67,7 @@ class TinyTrack{
                              const std::string& parameter_id,
                              unsigned int color = 0)
     {
+        prog_init p("saving ",file_name);
         gz_mat_write out(file_name);
         if (!out)
             return false;
@@ -122,6 +123,7 @@ class TinyTrack{
                                tipl::geometry<3>& geo,tipl::vector<3>& vs,
                                std::string& report,std::string& parameter_id,unsigned int& color)
     {
+        prog_init p("loading ",file_name);
         gz_mat_read in;
         if (!in.load_from_file(file_name))
             return false;
@@ -236,6 +238,7 @@ struct TrackVis
                 std::string& info,
                 tipl::vector<3> vs)
     {
+        prog_init p("loading ",file_name_);
         gz_istream in;
         if (!in.open(file_name_))
             return false;
@@ -246,7 +249,6 @@ struct TrackVis
             info.clear();
         if(!track_number) // number is not stored
             track_number = 100000000;
-        begin_prog("loading");
         for (unsigned int index = 0;!(!in) && check_prog(index,track_number);++index)
         {
             unsigned int n_point;
@@ -254,10 +256,7 @@ struct TrackVis
             unsigned int index_shift = 3 + n_scalars;
             std::vector<float> tract(index_shift*n_point + n_properties);
             if(!in.read((char*)&*tract.begin(),sizeof(float)*tract.size()))
-            {
-                check_prog(0,0);
                 break;
-            }
 
             loaded_tract_data.push_back(std::move(std::vector<float>(n_point*3)));
             const float *from = &*tract.begin();
@@ -290,6 +289,7 @@ struct TrackVis
                              const std::string& info,
                              unsigned int color)
     {
+        prog_init p("saving ",file_name);
         gz_ostream out;
         if (!out.open(file_name))
             return false;
@@ -302,7 +302,6 @@ struct TrackVis
         if(info.length())
             std::copy(info.begin(),info.begin()+std::min<int>(439,info.length()),trk.reserved);
         out.write((const char*)&trk,1000);
-        begin_prog("saving");
         for (unsigned int i = 0;check_prog(i,tract_data.size());++i)
         {
             int n_point = tract_data[i].size()/3;
@@ -422,7 +421,7 @@ bool TractModel::load_from_atlas(const char* file_name_)
         return false;
     if(!handle->load_template() || geo != handle->template_I.geometry())
         return false;
-    begin_prog("track warpping");
+    prog_init p("track warping");
     handle->run_normalization(true,true);
     if(prog_aborted())
         return false;
@@ -473,18 +472,13 @@ bool TractModel::load_from_file(const char* file_name_,bool append)
         ext = std::string(file_name.end()-4,file_name.end());
     if(ext == std::string("t.gz"))
     {
-        begin_prog("loading");
         unsigned int old_color = color;
         std::vector<uint16_t> cluster;
         if(!TinyTrack::load_from_file(file_name_,loaded_tract_data,cluster,geo,vs,report,parameter_id,color))
-        {
-            check_prog(0,0);
             return false;
-        }
         std::copy(cluster.begin(),cluster.end(),std::back_inserter(loaded_tract_cluster));
         if(color != old_color)
             color_changed = true;
-        check_prog(0,0);
     }
     if(ext == std::string(".trk") || ext == std::string("k.gz"))
         {
@@ -513,10 +507,8 @@ bool TractModel::load_from_file(const char* file_name_,bool append)
             in.seekg(0,std::ios::end);
             unsigned int total = in.tellg();
             in.seekg(0,std::ios::beg);
-            begin_prog("loading");
             while (std::getline(in,line))
             {
-                check_prog(in.tellg(),total);
                 loaded_tract_data.push_back(std::vector<float>());
                 std::istringstream in(line);
                 std::copy(std::istream_iterator<float>(in),
@@ -525,8 +517,6 @@ bool TractModel::load_from_file(const char* file_name_,bool append)
                 if(loaded_tract_data.back().size() == 1)// cluster info
                     loaded_tract_cluster.push_back(loaded_tract_data.back()[0]);
             }
-            check_prog(0,0);
-
         }
         else
             if (ext == std::string(".mat"))
@@ -644,10 +634,8 @@ bool TractModel::save_data_to_file(const char* file_name,const std::string& inde
     if(ext == std::string("t.gz"))
     {
         std::vector<uint16_t> cluster;
-        begin_prog("saving");
         bool result = TinyTrack::save_to_file(file_name_s.c_str(),geo,vs,tract_data,cluster,report,parameter_id,
                                             color_changed ? tract_color.front():0);
-        check_prog(0,0);
         return result;
     }
     if(ext == std::string(".trk") || ext == std::string("k.gz"))
@@ -661,8 +649,7 @@ bool TractModel::save_data_to_file(const char* file_name,const std::string& inde
         std::ofstream out(file_name,std::ios::binary);
         if (!out)
             return false;
-        begin_prog("saving");
-        for (unsigned int i = 0;check_prog(i,data.size());++i)
+        for (unsigned int i = 0;i < data.size();++i)
         {
             std::copy(data[i].begin(),data[i].end(),std::ostream_iterator<float>(out," "));
             out << std::endl;
@@ -718,10 +705,8 @@ bool TractModel::save_tracts_to_file(const char* file_name_)
     if(ext == std::string("t.gz"))
     {
         std::vector<uint16_t> cluster;
-        begin_prog("saving");
         bool result = TinyTrack::save_to_file(file_name.c_str(),geo,vs,tract_data,cluster,report,parameter_id,
                                             color_changed ? tract_color.front():0);
-        check_prog(0,0);
         return result;
     }
     if (ext == std::string(".trk") || ext == std::string("k.gz"))
@@ -766,8 +751,7 @@ bool TractModel::save_tracts_to_file(const char* file_name_)
         std::ofstream out(file_name_,std::ios::binary);
         if (!out)
             return false;
-        begin_prog("saving");
-        for (unsigned int i = 0;check_prog(i,tract_data.size());++i)
+        for (unsigned int i = 0;i < tract_data.size();++i)
         {
             std::copy(tract_data[i].begin(),
                       tract_data[i].end(),
@@ -1099,10 +1083,8 @@ bool TractModel::save_all(const char* file_name_,
             }
         }
         // save file
-        begin_prog("saving");
         bool result = TinyTrack::save_to_file(file_name_,all[0]->geo,all[0]->vs,
                     all_tract,cluster,all[0]->report,all[0]->parameter_id);
-        check_prog(0,0);
         // restore tracts
         for(size_t i = 0,pos = 0;i < all.size();++i)
         {
@@ -1118,8 +1100,7 @@ bool TractModel::save_all(const char* file_name_,
         std::ofstream out(file_name_,std::ios::binary);
         if (!out)
             return false;
-        begin_prog("saving");
-        for(unsigned int index = 0;check_prog(index,all.size());++index)
+        for(unsigned int index = 0;index < all.size();++index)
         for (unsigned int i = 0;i < all[index]->tract_data.size();++i)
         {
             std::copy(all[index]->tract_data[i].begin(),
@@ -1128,7 +1109,7 @@ bool TractModel::save_all(const char* file_name_,
             out << std::endl;
             out << index << std::endl;
         }
-        return !prog_aborted();
+        return true;
     }
 
     if (ext == std::string(".trk") || ext == std::string("k.gz"))
@@ -1136,7 +1117,7 @@ bool TractModel::save_all(const char* file_name_,
         gz_ostream out;
         if (!out.open(file_name_))
             return false;
-        begin_prog("saving");
+        prog_init p("saving ",file_name_);
         {
             TrackVis trk;
             trk.init(all[0]->geo,all[0]->vs);

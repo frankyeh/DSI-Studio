@@ -495,18 +495,16 @@ bool ImageModel::command(std::string cmd,std::string param)
     }
     if(cmd == "[Step T2][Edit][Rotate to MNI]")
     {
-        begin_prog("rotating");
+        prog_init p("rotating");
         rotate_to_mni(1.0f);
-        check_prog(0,0);
         voxel.steps += cmd+"\n";
         voxel.report += std::string(" The diffusion weighted images were rotated to the MNI space at 1mm.");
         return true;
     }
     if(cmd == "[Step T2][Edit][Rotate to MNI2]")
     {
-        begin_prog("rotating");
+        prog_init p("rotating");
         rotate_to_mni(2.0f);
-        check_prog(0,0);
         voxel.steps += cmd+"\n";
         voxel.report += std::string(" The diffusion weighted images were rotated to the MNI space at 2mm.");
         return true;
@@ -591,7 +589,7 @@ void ImageModel::flip_dwi(unsigned char type)
         auto I = tipl::make_image(const_cast<float*>(&*(voxel.grad_dev[i].begin())),voxel.dim);
         tipl::flip(I,type);
     }
-    begin_prog("Processing");
+    prog_init p("Processing");
     tipl::par_for2(src_dwi_data.size(),[&](unsigned int index,unsigned id)
     {
         if(!id)
@@ -599,7 +597,6 @@ void ImageModel::flip_dwi(unsigned char type)
         auto I = tipl::make_image(const_cast<unsigned short*>(src_dwi_data[index]),voxel.dim);
         tipl::flip(I,type);
     });
-    check_prog(0,0);
     voxel.dim = dwi_sum.geometry();
     voxel.dwi_data.clear();
 }
@@ -625,7 +622,7 @@ void ImageModel::rotate(const tipl::geometry<3>& new_geo,
                         const tipl::image<float,3>& super_reso_ref)
 {
     std::vector<tipl::image<unsigned short,3> > dwi(src_dwi_data.size());
-    begin_prog("rotating");
+    prog_init p("rotating");
     tipl::par_for2(src_dwi_data.size(),[&](unsigned int index,unsigned int id)
     {
         if(!id)
@@ -643,7 +640,6 @@ void ImageModel::rotate(const tipl::geometry<3>& new_geo,
         }
         src_dwi_data[index] = &(dwi[index][0]);
     });
-    check_prog(0,0);
 
     tipl::image<unsigned char,3> new_mask(new_geo);
     tipl::resample(voxel.mask,new_mask,affine,tipl::linear);
@@ -770,7 +766,7 @@ void ImageModel::trim(void)
 {
     tipl::geometry<3> range_min,range_max;
     tipl::bounding_box(voxel.mask,range_min,range_max,0);
-    begin_prog("Removing background region");
+    prog_init p("Removing background region");
     tipl::par_for2(src_dwi_data.size(),[&](unsigned int index,unsigned int id)
     {
         if(!id)
@@ -781,7 +777,6 @@ void ImageModel::trim(void)
         std::fill(I.begin(),I.end(),0);
         std::copy(I0.begin(),I0.end(),I.begin());
     });
-    check_prog(0,0);
     tipl::crop(voxel.mask,range_min,range_max);
     tipl::crop(dwi_sum,range_min,range_max);
     tipl::crop(dwi,range_min,range_max);
@@ -1131,7 +1126,7 @@ bool ImageModel::save_to_file(const char* dwi_file_name)
         }
         mat_writer.write("b_table",b_table,4);
     }
-    begin_prog("Saving");
+    prog_init p("saving ",dwi_file_name);
     for (unsigned int index = 0;check_prog(index,src_bvalues.size());++index)
     {
         std::ostringstream out;
@@ -1139,7 +1134,6 @@ bool ImageModel::save_to_file(const char* dwi_file_name)
         mat_writer.write(out.str().c_str(),src_dwi_data[index],
                          uint32_t(voxel.dim.plane_size()),uint32_t(voxel.dim.depth()));
     }
-    check_prog(0,0);
     mat_writer.write("mask",voxel.mask,uint32_t(voxel.dim.plane_size()));
     return true;
 }

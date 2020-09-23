@@ -106,19 +106,16 @@ void individual_connectometry::on_compare_clicked()
         return;
     }
 
-    begin_prog("reading",0);
-
+    prog_init p("reading");
     std::shared_ptr<fib_data> baseline(std::make_shared<fib_data>());
     if (!baseline->load_from_file(ui->File1->text().toStdString().c_str()))
     {
         QMessageBox::information(this,"error",baseline->error_msg.c_str(),0);
-        check_prog(0,0);
         return;
     }
     if(!baseline->is_qsdr)
     {
         QMessageBox::information(this,"error","Please open a QSDR reconstructed FIB file. Please see online document for details.",0);
-        check_prog(0,0);
         return;
     }
     bool two_subjects = false;
@@ -129,7 +126,6 @@ void individual_connectometry::on_compare_clicked()
         if(!baseline->load_from_file(ui->Template->text().toStdString().c_str()))
         {
             QMessageBox::information(this,"error",baseline->error_msg.c_str(),0);
-            check_prog(0,0);
             return;
         }
     }
@@ -152,7 +148,6 @@ void individual_connectometry::on_compare_clicked()
     QSettings settings;
     settings.setValue("individual_connectometry_norm",(int)normalization);
 
-    begin_prog("reading",0);
     if(two_subjects)
     {
         if(!new_mdi->cnt_result.individual_vs_individual(new_mdi->handle,
@@ -185,7 +180,6 @@ void individual_connectometry::on_compare_clicked()
         baseline->report = baseline->db.report + new_mdi->cnt_result.report;
         new_mdi->initialize_tracking_index(0);
         new_mdi->scene.show_slice();
-        check_prog(0,0);
         QDir::setCurrent(QFileInfo(ui->File1->text()).absolutePath());
         return;
     }
@@ -195,7 +189,6 @@ void individual_connectometry::on_compare_clicked()
         QMessageBox::information(this,"Error",new_mdi->cnt_result.error_msg.c_str());
         new_mdi->close();
         delete new_mdi;
-        check_prog(0,0);
         return;
     }
 

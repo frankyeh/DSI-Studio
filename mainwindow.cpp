@@ -288,7 +288,6 @@ void MainWindow::loadSrc(QStringList filenames)
     }
     try
     {
-
         reconstruction_window* new_mdi = new reconstruction_window(filenames,this);
         new_mdi->setAttribute(Qt::WA_DeleteOnClose);
         new_mdi->show();

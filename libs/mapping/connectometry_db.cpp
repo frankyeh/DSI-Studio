@@ -519,7 +519,7 @@ void connectometry_db::get_dif_matrix(std::vector<float>& matrix,const tipl::ima
     matrix.resize(num_subjects*num_subjects);
     std::vector<std::vector<float> > subject_vector;
     get_subject_vector(0,num_subjects,subject_vector,fp_mask,fiber_threshold,normalize_fp);
-    begin_prog("calculating");
+    prog_init p("calculating");
     tipl::par_for2(num_subjects,[&](int i,int id){
         if(id == 0)
             check_prog(i,num_subjects);
@@ -532,7 +532,6 @@ void connectometry_db::get_dif_matrix(std::vector<float>& matrix,const tipl::ima
             matrix[j*num_subjects+i] = result;
         }
     });
-    check_prog(0,0);
 }
 
 void connectometry_db::save_subject_vector(const char* output_name,
@@ -543,7 +542,7 @@ void connectometry_db::save_subject_vector(const char* output_name,
     const unsigned int block_size = 400;
     std::string file_name = output_name;
     file_name = file_name.substr(0,file_name.length()-4); // remove .mat
-    begin_prog("saving");
+    prog_init p("saving ","output_name");
     for(unsigned int from = 0,iter = 0;from < num_subjects;from += block_size,++iter)
     {
         unsigned int to = std::min<unsigned int>(from+block_size,num_subjects);
@@ -609,7 +608,6 @@ void connectometry_db::save_subject_vector(const char* output_name,
             matfile.write("fiber_direction",fiber_direction,3);
         }
     }
-    check_prog(0,0);
 }
 bool connectometry_db::save_subject_data(const char* output_name)
 {

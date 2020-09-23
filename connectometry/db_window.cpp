@@ -425,9 +425,8 @@ void db_window::on_actionSave_DB_as_triggered()
                            "Database files (*db?fib.gz *fib.gz);;All files (*)");
     if (filename.isEmpty())
         return;
-    begin_prog("saving");
+    prog_init p("saving ",filename.toStdString().c_str());
     vbc->handle->db.save_subject_data(filename.toStdString().c_str());
-    check_prog(0,0);
 }
 
 void db_window::on_subject_view_currentChanged(int index)
@@ -495,18 +494,14 @@ void db_window::on_actionAdd_DB_triggered()
         }
         if(handle->has_odfs())
         {
-            begin_prog(QFileInfo(filenames[i]).baseName().toStdString().c_str());
+            prog_init p(QFileInfo(filenames[i]).baseName().toStdString().c_str());
             if(!vbc->handle->db.add_subject_file(filenames[i].toStdString(),QFileInfo(filenames[i]).baseName().toStdString()))
             {
                 QMessageBox::information(this,"error in loading subject fib files",vbc->handle->error_msg.c_str(),0);
-                check_prog(0,0);
                 break;
             }
             if(prog_aborted())
-            {
-                check_prog(0,0);
                 break;
-            }
         }
     }
     update_db();
@@ -564,7 +559,7 @@ void db_window::on_actionAll_Subjects_triggered()
                                 "");
     if(dir.isEmpty())
         return;
-    begin_prog("exporting");
+    prog_init p("exporting ",dir.toStdString().c_str());
     for(size_t i = 0;check_prog(i,vbc->handle->db.subject_names.size());++i)
     {
         QString file_name = dir + "\\"+
@@ -579,7 +574,6 @@ void db_window::on_actionAll_Subjects_triggered()
         if(!out.save_to_file(file_name.toLocal8Bit().begin()))
         {
             QMessageBox::information(this,"Error","Cannot save file.");
-            check_prog(0,0);
             return;
         }
     }

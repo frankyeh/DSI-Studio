@@ -1,7 +1,8 @@
 #ifndef PROG_INTERFACE_STATIC_LINKH
 #define PROG_INTERFACE_STATIC_LINKH
 #include <tipl/tipl.hpp>
-void begin_prog(const char* title = 0,bool lock = false);
+#include <string>
+void begin_prog(const char* title = nullptr,bool lock = false);
 void set_title(const char* title);
 bool check_prog(unsigned int now,unsigned int total);
 template<typename value_type1,typename value_type2>
@@ -48,5 +49,24 @@ bool run_prog(const char* msg,fun_type fun,terminated_class& terminated)
     close_prog();
     return !prog_aborted();
 }
+
+struct prog_init{
+    prog_init(const char* status)
+    {
+        begin_prog(status);
+    }
+    prog_init(const char* status1,const char* status2)
+    {
+        std::string s(status1);
+        s += status2;
+        begin_prog(s.c_str());
+    }
+    ~prog_init(void)
+    {
+        check_prog(0,0);
+    }
+};
+
+
 #endif
 

@@ -282,17 +282,15 @@ void CreateDBDialog::on_create_data_base_clicked()
 
         for (unsigned int index = 0;index < group.count();++index)
         {
-            begin_prog(QFileInfo(group[index]).baseName().toStdString().c_str());
+            prog_init p(QFileInfo(group[index]).baseName().toStdString().c_str());
             if(!data->handle->db.add_subject_file(group[index].toStdString(),get_file_name(group[index]).toStdString()))
             {
                 QMessageBox::information(this,"error in loading subject fib files",data->handle->error_msg.c_str(),0);
-                check_prog(0,0);
                 raise(); // for Mac
                 return;
             }
             if(prog_aborted())
             {
-                check_prog(0,0);
                 raise(); // for Mac
                 return;
             }

@@ -132,7 +132,7 @@ bool view_image::open(QStringList file_names)
     QString info;
     file_name = file_names[0];
     setWindowTitle(QFileInfo(file_name).fileName());
-    begin_prog("loading...");
+    prog_init p("loading ",file_name.toStdString().c_str());
     check_prog(0,1);
     if(file_names.size() > 1 && file_name.contains("bmp"))
     {
@@ -292,7 +292,6 @@ bool view_image::open(QStringList file_names)
                 data = std::move(seq.get_image());
                 seq.get_voxel_size(vs);
             }
-    check_prog(0,0);
     QStringList list = info.split("\n");
     ui->info->clear();
     ui->info->setRowCount(list.size());

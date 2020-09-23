@@ -167,7 +167,7 @@ void TractTableWidget::ppv_analysis(void)
     fib.read(*cur_tracking_window.handle.get());
 
     bool terminated = false;
-    begin_prog("PPV analysis");
+    prog_init p("PPV analysis");
     tipl::par_for2(100,[&](int i,int j){
         if(terminated)
             return;
@@ -175,7 +175,6 @@ void TractTableWidget::ppv_analysis(void)
         {
             if(prog_aborted())
             {
-                check_prog(0,0);
                 terminated = true;
                 return;
             }
@@ -193,7 +192,6 @@ void TractTableWidget::ppv_analysis(void)
         new_thread.apply_tip(&trk);
         tracks_count[i] = trk.get_visible_track_count();
     });
-    check_prog(0,0);
     if(prog_aborted())
         return;
 
