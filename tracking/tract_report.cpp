@@ -26,6 +26,7 @@ tract_report::tract_report(QWidget *parent) :
         connect(ui->report_index,SIGNAL(currentIndexChanged(int)),this,SLOT(refresh_report()));
         connect(ui->profile_dir,SIGNAL(currentIndexChanged(int)),this,SLOT(refresh_report()));
         connect(ui->linewidth,SIGNAL(valueChanged(int)),this,SLOT(refresh_report()));
+        connect(ui->CI,SIGNAL(clicked()),this,SLOT(refresh_report()));
         connect(ui->report_bandwidth,SIGNAL(valueChanged(double)),this,SLOT(refresh_report()));
     }
 }
@@ -73,7 +74,7 @@ void tract_report::refresh_report()
             report_chart->addSeries(series);
         }
 
-        if(!data_ci1.empty())
+        if(!data_ci1.empty() && ui->CI->isChecked())
         {
             pen.setWidth(ui->linewidth->value());
             QLineSeries* series = new QLineSeries;
@@ -85,7 +86,7 @@ void tract_report::refresh_report()
 
         }
 
-        if(!data_ci2.empty())
+        if(!data_ci2.empty() && ui->CI->isChecked())
         {
             QLineSeries* series = new QLineSeries;
             for(size_t i = 0; i < data_ci2.size(); ++i)
