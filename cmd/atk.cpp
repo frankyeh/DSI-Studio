@@ -78,7 +78,7 @@ int atk(void)
                                 po.get("tolerance",16.0f),
                                 po.get("track_voxel_ratio",float(po.get("interpolation",2))),
                                 po.get("interpolation",2),
-                                po.get("tip",16),
+                                po.get("tip",24),
                                 po.get("export_stat",1),
                                 po.get("export_trk",1),
                                 po.get("overwrite",0),
