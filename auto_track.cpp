@@ -199,7 +199,7 @@ std::string run_auto_track(
                     TractModel tract_model(handle.get());
                     {
                         ThreadData thread(handle.get());
-                        thread.param.check_ending = 1;
+
                         thread.param.tip_iteration = uint8_t(tip);
 
                         thread.param.max_seed_count = 10000000;
@@ -210,10 +210,11 @@ std::string run_auto_track(
                         thread.param.termination_count = track_count;
                         // report
                         thread.roi_mgr->report += " The track-to-voxel ratio was set to ";
-                        thread.roi_mgr->report += std::to_string(track_voxel_ratio);
+                        thread.roi_mgr->report += QString::number(double(track_voxel_ratio),'g',1).toStdString();
                         thread.roi_mgr->report += ".";
+                        // run tracking
+                        thread.run(tract_model.get_fib(),std::thread::hardware_concurrency(),!has_gui);
 
-                        thread.run(tract_model.get_fib(),std::thread::hardware_concurrency(),false);
                         tract_model.report += thread.report.str();
                         tract_model.report += " Shape analysis (Yeh, Neuroimage, 2020) was conducted to derive shape metrics for tractography.";
                         if(reports[j].empty())
@@ -223,23 +224,30 @@ std::string run_auto_track(
                             std::string temp_report = tract_model.report;
                             auto iter = temp_report.find(fib.tractography_name_list[track_id[j]]);
                             temp_report.replace(iter,fib.tractography_name_list[track_id[j]].length(),targets);
+                            // remove "A seeding region was placed at xxxxx"
+                            iter = temp_report.find("A seeding region was placed at ");
+                            temp_report.replace(iter+31,fib.tractography_name_list[track_id[j]].length(),
+                                    "the track region indicates by tractography atlas");
+
+
+                            // remove "A total of xxxxx tracts were calculated."
+                            iter = temp_report.find("tracts were calculated.");
+                            auto iter2 = temp_report.find_first_of("A total of ",iter-20);
+                            temp_report.replace(iter2,iter-iter2+23,"");
                             auto_track_report = temp_report;
                         }
-                        prog_init p("tracking ",handle->tractography_name_list[track_id[j]].c_str());
-                        while(!thread.is_ended())
+                        if(has_gui)
                         {
-                            size_t total_track = thread.get_total_tract_count();
-                            if(total_track)
-                                check_prog(total_track,track_count);
-                            else
-                                check_prog(thread.get_total_seed_count(),thread.param.max_seed_count);
-                            thread.fetchTracks(&tract_model);
+                            prog_init p("tracking ",handle->tractography_name_list[track_id[j]].c_str());
+                            while(!thread.is_ended() && !prog_aborted())
+                            {
+                                check_prog(thread.get_total_tract_count(),track_count);
+                                thread.fetchTracks(&tract_model);
+                                std::this_thread::sleep_for(std::chrono::seconds(2));
+                            }
                             if(prog_aborted())
                                 return std::string();
-                            std::this_thread::sleep_for(std::chrono::seconds(2));
                         }
-                        if(prog_aborted())
-                            return std::string();
                         thread.fetchTracks(&tract_model);
                         thread.apply_tip(&tract_model);
                     }

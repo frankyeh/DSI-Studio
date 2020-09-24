@@ -76,7 +76,7 @@ int atk(void)
     std::string error = run_auto_track(file_list,track_id,
                                 po.get("length_ratio",1.25f),
                                 po.get("tolerance",16.0f),
-                                po.get("track_voxel_ratio",1.0f),
+                                po.get("track_voxel_ratio",float(po.get("interpolation",2))),
                                 po.get("interpolation",2),
                                 po.get("tip",16),
                                 po.get("export_stat",1),
