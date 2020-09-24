@@ -29,6 +29,7 @@ std::string run_auto_track(
                     bool default_mask,
                     int& progress);
 
+extern std::string auto_track_report;
 int atk(void)
 {
     std::vector<std::string> file_list;
@@ -72,7 +73,7 @@ int atk(void)
         std::cout << std::endl;
     }
     int progress;
-    std::string result = run_auto_track(file_list,track_id,
+    std::string error = run_auto_track(file_list,track_id,
                                 po.get("length_ratio",1.25f),
                                 po.get("tolerance",16.0f),
                                 po.get("track_voxel_ratio",1.0f),
@@ -82,8 +83,15 @@ int atk(void)
                                 po.get("export_trk",1),
                                 po.get("overwrite",0),
                                 po.get("default_mask",0),progress);
-    if(result.empty())
+    if(error.empty())
+    {
+        if(po.has("report"))
+        {
+            std::ofstream out(po.get("report").c_str());
+            out << auto_track_report;
+        }
         return 0;
-    std::cout << result << std::endl;
+    }
+    std::cout << error << std::endl;
     return 1;
 }

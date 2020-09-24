@@ -615,10 +615,15 @@ int trk(std::shared_ptr<fib_data> handle)
     std::cout << "start tracking." << std::endl;
     tracking_thread.run(tract_model.get_fib(),uint32_t(po.get("thread_count",int(std::thread::hardware_concurrency()))),true);
     tract_model.report += tracking_thread.report.str();
-    std::cout << tract_model.report << std::endl;
 
     tracking_thread.fetchTracks(&tract_model);
     std::cout << "finished tracking." << std::endl;
+
+    if(po.has("report"))
+    {
+        std::ofstream out(po.get("report").c_str());
+        out << tract_model.report;
+    }
 
     if(tract_model.get_visible_track_count() && po.has("refine") && (po.get("refine",1) >= 1))
     {

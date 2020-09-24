@@ -168,6 +168,14 @@ std::string run_auto_track(
             if(!QFileInfo(fib_file_name.c_str()).exists())
                 return std::string("Cannot process ") + cur_file_base_name;
 
+            std::string targets;
+            for(unsigned int index = 0;index < track_id.size();++index)
+            {
+                targets += fib.tractography_name_list[track_id[index]];
+                if(index+1 < track_id.size())
+                    targets += ",";
+            }
+
             for(size_t j = 0;j < track_id.size() && !prog_aborted();++j)
             {
                 std::string track_name = fib.tractography_name_list[track_id[j]];
@@ -208,9 +216,15 @@ std::string run_auto_track(
                         thread.run(tract_model.get_fib(),std::thread::hardware_concurrency(),false);
                         tract_model.report += thread.report.str();
                         tract_model.report += " Shape analysis (Yeh, Neuroimage, 2020) was conducted to derive shape metrics for tractography.";
-                        auto_track_report = tract_model.report;
                         if(reports[j].empty())
-                            reports[j] = auto_track_report;
+                            reports[j] = tract_model.report;
+
+                        {
+                            std::string temp_report = tract_model.report;
+                            auto iter = temp_report.find(fib.tractography_name_list[track_id[j]]);
+                            temp_report.replace(iter,fib.tractography_name_list[track_id[j]].length(),targets);
+                            auto_track_report = temp_report;
+                        }
                         prog_init p("tracking ",handle->tractography_name_list[track_id[j]].c_str());
                         while(!thread.is_ended())
                         {
