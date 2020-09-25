@@ -178,6 +178,7 @@ std::string run_auto_track(
 
             for(size_t j = 0;j < track_id.size() && !prog_aborted();++j)
             {
+                prog_init p("tracking ",handle->tractography_name_list[track_id[j]].c_str());
                 std::string track_name = fib.tractography_name_list[track_id[j]];
                 std::replace(track_name.begin(),track_name.end(),' ','_');
                 std::string no_result_file_name = fib_file_name+"."+track_name+".no_result.txt";
@@ -239,7 +240,6 @@ std::string run_auto_track(
                         }
                         if(has_gui)
                         {
-                            prog_init p("tracking ",handle->tractography_name_list[track_id[j]].c_str());
                             while(!thread.is_ended() && !prog_aborted())
                             {
                                 check_prog(thread.get_total_tract_count(),track_count);
