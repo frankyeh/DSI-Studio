@@ -909,7 +909,8 @@ void apply_distortion_map2(const image_type& v1,
 void ImageModel::distortion_correction(const ImageModel& rhs)
 {
     tipl::image<float,3> v1,v2,vv1,vv2;
-    v1 = tipl::make_image(src_dwi_data[0],voxel.dim);
+    v1 = tipl::make_image(
+        src_dwi_data[size_t(std::min_element(src_bvalues.begin(),src_bvalues.end())-src_bvalues.begin())],voxel.dim);
     v2 = tipl::make_image(rhs.src_dwi_data[0],voxel.dim);
 
 
