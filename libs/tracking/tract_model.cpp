@@ -505,7 +505,6 @@ bool TractModel::load_from_file(const char* file_name_,bool append)
                 return false;
             std::string line;
             in.seekg(0,std::ios::end);
-            unsigned int total = in.tellg();
             in.seekg(0,std::ios::beg);
             while (std::getline(in,line))
             {
