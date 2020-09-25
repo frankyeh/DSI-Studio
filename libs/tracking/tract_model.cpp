@@ -421,7 +421,7 @@ bool TractModel::load_from_atlas(const char* file_name_)
         return false;
     if(!handle->load_template() || geo != handle->template_I.geometry())
         return false;
-    prog_init p("track warping");
+    prog_init p("warping atlas track to subject space");
     handle->run_normalization(true,true);
     if(prog_aborted())
         return false;
