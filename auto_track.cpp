@@ -118,164 +118,170 @@ std::string run_auto_track(
     std::vector<std::string> reports(track_id.size());
     std::vector<std::vector<std::string> > stat_files(track_id.size());
     std::string dir = QFileInfo(file_list.front().c_str()).absolutePath().toStdString();
+
     fib_data fib;
     fib.set_template_id(0);
+    std::string targets;
+    for(unsigned int index = 0;index < track_id.size();++index)
+    {
+        targets += fib.tractography_name_list[track_id[index]];
+        if(index+1 < track_id.size())
+            targets += ",";
+    }
+
     for(size_t i = 0;i < file_list.size() && !prog_aborted();++i)
     {
         std::string cur_file_base_name = QFileInfo(file_list[i].c_str()).baseName().toStdString();
         progress = int(i);
-        // recon
+
+        std::string fib_file_name;
+        if(!QFileInfo(file_list[i].c_str()).exists())
+            return std::string("cannot find file:")+file_list[i];
+
+        // DWI reconstruction
+        if(QString(file_list[i].c_str()).endsWith(".src.gz") ||
+           QString(file_list[i].c_str()).endsWith(".nii.gz"))
         {
-            std::shared_ptr<fib_data> handle(new fib_data);
-            bool fib_loaded = false;
-            std::string fib_file_name;
-            if(!QFileInfo(file_list[i].c_str()).exists())
+            ImageModel src;
+            src.voxel.method_id = 4; // GQI
+            src.voxel.param[0] = length_ratio;
+            src.voxel.ti.init(8); // odf order of 8
+            src.voxel.odf_xyz[0] = 0;
+            src.voxel.odf_xyz[1] = 0;
+            src.voxel.odf_xyz[2] = 0;
+            src.voxel.thread_count = std::thread::hardware_concurrency();
+            // has fib file?
+            fib_file_name = file_list[i]+src.get_file_ext();
+            if(!QFileInfo(fib_file_name.c_str()).exists())
             {
-                return std::string("ERROR at ") + file_list[i] + ": file not exist";
+                if (!src.load_from_file(file_list[i].c_str()))
+                    return std::string("ERROR at ") + cur_file_base_name + ":" + src.error_msg;
+                if(!src.is_human_data())
+                    return std::string("ERROR at ") + cur_file_base_name + ":" + src.error_msg;
+                src.voxel.half_sphere = src.is_dsi_half_sphere();
+                src.voxel.scheme_balance = src.need_scheme_balance();
+                if(interpolation)
+                    src.rotate_to_mni(float(interpolation));
+                begin_prog("reconstruct DWI");
+                if(!default_mask)
+                    std::fill(src.voxel.mask.begin(),src.voxel.mask.end(),1);
+                if (!src.reconstruction())
+                    return std::string("ERROR at ") + cur_file_base_name + ":" + src.error_msg;
             }
-            if(QString(file_list[i].c_str()).endsWith("src.gz") ||
-               QString(file_list[i].c_str()).endsWith("nii.gz"))
-            {
-                std::shared_ptr<ImageModel> handle(std::make_shared<ImageModel>());
-                handle->voxel.method_id = 4; // GQI
-                handle->voxel.param[0] = length_ratio;
-                handle->voxel.ti.init(8); // odf order of 8
-                handle->voxel.odf_xyz[0] = 0;
-                handle->voxel.odf_xyz[1] = 0;
-                handle->voxel.odf_xyz[2] = 0;
-                handle->voxel.thread_count = std::thread::hardware_concurrency();
-                // has fib file?
-                fib_file_name = file_list[i]+handle->get_file_ext();
-                if(!QFileInfo(fib_file_name.c_str()).exists())
-                {
-                    if (!handle->load_from_file(file_list[i].c_str()))
-                        return std::string("ERROR at ") + cur_file_base_name + ":" + handle->error_msg;
-                    if(!handle->is_human_data())
-                        return std::string("ERROR at ") + cur_file_base_name + ":" + handle->error_msg;
-                    handle->voxel.half_sphere = handle->is_dsi_half_sphere();
-                    handle->voxel.scheme_balance = handle->need_scheme_balance();
-                    if(interpolation)
-                        handle->rotate_to_mni(float(interpolation));
-                    begin_prog("Reconstruct DWI");
-                    if(!default_mask)
-                        std::fill(handle->voxel.mask.begin(),handle->voxel.mask.end(),1);
-                    if (!handle->reconstruction())
-                        return std::string("ERROR at ") + cur_file_base_name + ":" + handle->error_msg;
-                }
-            }
+            if(!QFileInfo(fib_file_name.c_str()).exists())
+                return std::string("fib file not generated for ") + file_list[i];
+        }
+        else
+        {
             if(QString(file_list[i].c_str()).endsWith("fib.gz"))
                 fib_file_name = file_list[i];
-            if(!QFileInfo(fib_file_name.c_str()).exists())
-                return std::string("Cannot process ") + cur_file_base_name;
+            else
+                return std::string("unsupported file format :") + file_list[i];
+        }
 
-            std::string targets;
-            for(unsigned int index = 0;index < track_id.size();++index)
+
+        // fiber tracking on fib file
+        std::shared_ptr<fib_data> handle(new fib_data);
+        bool fib_loaded = false;
+        for(size_t j = 0;j < track_id.size() && !prog_aborted();++j)
+        {
+            std::string track_name = fib.tractography_name_list[track_id[j]];
+            std::string no_result_file_name = fib_file_name+"."+track_name+".no_result.txt";
+            if(QFileInfo(no_result_file_name.c_str()).exists() && !overwrite)
+                continue;
+
+            std::string trk_file_name = fib_file_name+"."+track_name+".tt.gz";
+            std::string stat_file_name = fib_file_name+"."+track_name+".stat.txt";
+            std::string report_file_name = dir+"/"+track_name+".report.txt";
+            stat_files[j].push_back(stat_file_name);
+
+            bool no_stat_file = !QFileInfo(stat_file_name.c_str()).exists() || overwrite;
+            bool no_trk_file = !QFileInfo(trk_file_name.c_str()).exists() || overwrite;
+            if((export_stat && no_stat_file) || (export_trk && no_trk_file))
             {
-                targets += fib.tractography_name_list[track_id[index]];
-                if(index+1 < track_id.size())
-                    targets += ",";
-            }
-
-            for(size_t j = 0;j < track_id.size() && !prog_aborted();++j)
-            {
-                std::string track_name = fib.tractography_name_list[track_id[j]];
-                std::string no_result_file_name = fib_file_name+"."+track_name+".no_result.txt";
-                if(QFileInfo(no_result_file_name.c_str()).exists() && !overwrite)
-                    continue;
-
-                std::string trk_file_name = fib_file_name+"."+track_name+".tt.gz";
-                std::string stat_file_name = fib_file_name+"."+track_name+".stat.txt";
-                std::string report_file_name = dir+"/"+track_name+".report.txt";
-                stat_files[j].push_back(stat_file_name);
-
-                bool no_stat_file = !QFileInfo(stat_file_name.c_str()).exists() || overwrite;
-                bool no_trk_file = !QFileInfo(trk_file_name.c_str()).exists() || overwrite;
-                if((export_stat && no_stat_file) || (export_trk && no_trk_file))
+                if (!fib_loaded && !handle->load_from_file(fib_file_name.c_str()))
+                    return std::string("ERROR at ") + fib_file_name + ":" +handle->error_msg;
+                fib_loaded = true;
+                TractModel tract_model(handle.get());
                 {
-                    if (!fib_loaded && !handle->load_from_file(fib_file_name.c_str()))
+                    prog_init p("tracking ",track_name.c_str());
+                    ThreadData thread(handle.get());
+
+                    thread.param.tip_iteration = uint8_t(tip);
+                    // turn on check ending for corpus callosum
+                    thread.param.check_ending = QString(track_name.c_str()).contains("Corpus");
+                    thread.param.max_seed_count = 10000000;
+                    thread.param.stop_by_tract = 1;
+                    if(!thread.roi_mgr->setAtlas(track_id[j],tolerance/handle->vs[0]))
                         return std::string("ERROR at ") + fib_file_name + ":" +handle->error_msg;
-                    fib_loaded = true;
-                    TractModel tract_model(handle.get());
+                    auto track_count = uint32_t(track_voxel_ratio*thread.roi_mgr->seeds.size());
+                    thread.param.termination_count = track_count;
+                    // report
+                    thread.roi_mgr->report += " The track-to-voxel ratio was set to ";
+                    thread.roi_mgr->report += QString::number(double(track_voxel_ratio),'g',1).toStdString();
+                    thread.roi_mgr->report += ".";
+                    // run tracking
+                    thread.run(tract_model.get_fib(),std::thread::hardware_concurrency(),!has_gui);
+
+                    tract_model.report += thread.report.str();
+                    tract_model.report += " Shape analysis (Yeh, Neuroimage, 2020) was conducted to derive shape metrics for tractography.";
+                    if(reports[j].empty())
+                        reports[j] = tract_model.report;
+
                     {
-                        prog_init p("tracking ",track_name.c_str());
-                        ThreadData thread(handle.get());
+                        std::string temp_report = tract_model.report;
+                        auto iter = temp_report.find(track_name);
+                        temp_report.replace(iter,track_name.length(),targets);
+                        // remove "A seeding region was placed at xxxxx"
+                        iter = temp_report.find("A seeding region was placed at ");
+                        temp_report.replace(iter+31,track_name.length(),
+                                "the track region indicates by tractography atlas");
 
-                        thread.param.tip_iteration = uint8_t(tip);
-                        // turn on check ending for corpus callosum
-                        thread.param.check_ending = QString(track_name.c_str()).contains("Corpus");
-                        thread.param.max_seed_count = 10000000;
-                        thread.param.stop_by_tract = 1;
-                        if(!thread.roi_mgr->setAtlas(track_id[j],tolerance/handle->vs[0]))
-                            return std::string("ERROR at ") + fib_file_name + ":" +handle->error_msg;
-                        auto track_count = uint32_t(track_voxel_ratio*thread.roi_mgr->seeds.size());
-                        thread.param.termination_count = track_count;
-                        // report
-                        thread.roi_mgr->report += " The track-to-voxel ratio was set to ";
-                        thread.roi_mgr->report += QString::number(double(track_voxel_ratio),'g',1).toStdString();
-                        thread.roi_mgr->report += ".";
-                        // run tracking
-                        thread.run(tract_model.get_fib(),std::thread::hardware_concurrency(),!has_gui);
 
-                        tract_model.report += thread.report.str();
-                        tract_model.report += " Shape analysis (Yeh, Neuroimage, 2020) was conducted to derive shape metrics for tractography.";
-                        if(reports[j].empty())
-                            reports[j] = tract_model.report;
-
+                        // remove "A total of xxxxx tracts were calculated."
+                        iter = temp_report.find("tracts were calculated.");
+                        auto iter2 = temp_report.find_first_of("A total of ",iter-20);
+                        temp_report.replace(iter2,iter-iter2+23,"");
+                        auto_track_report = temp_report;
+                    }
+                    if(has_gui)
+                    {
+                        while(!thread.is_ended() && !prog_aborted())
                         {
-                            std::string temp_report = tract_model.report;
-                            auto iter = temp_report.find(track_name);
-                            temp_report.replace(iter,track_name.length(),targets);
-                            // remove "A seeding region was placed at xxxxx"
-                            iter = temp_report.find("A seeding region was placed at ");
-                            temp_report.replace(iter+31,track_name.length(),
-                                    "the track region indicates by tractography atlas");
-
-
-                            // remove "A total of xxxxx tracts were calculated."
-                            iter = temp_report.find("tracts were calculated.");
-                            auto iter2 = temp_report.find_first_of("A total of ",iter-20);
-                            temp_report.replace(iter2,iter-iter2+23,"");
-                            auto_track_report = temp_report;
+                            check_prog(thread.get_total_tract_count(),track_count);
+                            thread.fetchTracks(&tract_model);
+                            std::this_thread::sleep_for(std::chrono::seconds(2));
                         }
-                        if(has_gui)
-                        {
-                            while(!thread.is_ended() && !prog_aborted())
-                            {
-                                check_prog(thread.get_total_tract_count(),track_count);
-                                thread.fetchTracks(&tract_model);
-                                std::this_thread::sleep_for(std::chrono::seconds(2));
-                            }
-                            if(prog_aborted())
-                                return std::string();
-                        }
-                        thread.fetchTracks(&tract_model);
-                        thread.apply_tip(&tract_model);
+                        if(prog_aborted())
+                            return std::string();
                     }
-                    tract_model.delete_repeated(1.0f);
-
-                    if(prog_aborted())
-                        return std::string();
-
-                    if(tract_model.get_visible_track_count() == 0)
-                    {
-                        std::ofstream out(no_result_file_name.c_str());
-                        continue;
-                    }
-
-                    if(export_stat)
-                    {
-                        std::ofstream out_stat(stat_file_name.c_str());
-                        std::string result;
-                        tract_model.get_quantitative_info(result);
-                        out_stat << result;
-                    }
-                    if(export_trk)
-                    {
-                        if(!tract_model.save_tracts_to_file(trk_file_name.c_str()))
-                            return std::string("fail to save trk file:")+trk_file_name;
-                    }
-                    trk_post(handle,tract_model,trk_file_name);
+                    thread.fetchTracks(&tract_model);
+                    thread.apply_tip(&tract_model);
                 }
+                tract_model.delete_repeated(1.0f);
+
+                if(prog_aborted())
+                    return std::string();
+
+                if(tract_model.get_visible_track_count() == 0)
+                {
+                    std::ofstream out(no_result_file_name.c_str());
+                    continue;
+                }
+
+                if(export_stat)
+                {
+                    std::ofstream out_stat(stat_file_name.c_str());
+                    std::string result;
+                    tract_model.get_quantitative_info(result);
+                    out_stat << result;
+                }
+                if(export_trk)
+                {
+                    if(!tract_model.save_tracts_to_file(trk_file_name.c_str()))
+                        return std::string("fail to save trk file:")+trk_file_name;
+                }
+                trk_post(handle,tract_model,trk_file_name);
             }
         }
     }
