@@ -204,12 +204,13 @@ std::string run_auto_track(
                 fib_loaded = true;
                 TractModel tract_model(handle.get());
                 {
-                    prog_init p("tracking ",track_name.c_str());
                     ThreadData thread(handle.get());
 
                     thread.param.tip_iteration = uint8_t(tip);
-                    // turn on check ending for corpus callosum
-                    thread.param.check_ending = QString(track_name.c_str()).contains("Corpus");
+                    // turn on check ending for corpus callosum excluding the tapetum
+                    thread.param.check_ending =
+                            QString(track_name.c_str()).contains("Corpus") &&
+                            !QString(track_name.c_str()).contains("Tapetum");
                     thread.param.max_seed_count = 10000000;
                     thread.param.stop_by_tract = 1;
                     if(!thread.roi_mgr->setAtlas(track_id[j],tolerance/handle->vs[0]))
@@ -221,6 +222,7 @@ std::string run_auto_track(
                     thread.roi_mgr->report += QString::number(double(track_voxel_ratio),'g',1).toStdString();
                     thread.roi_mgr->report += ".";
                     // run tracking
+                    prog_init p("tracking ",track_name.c_str());
                     thread.run(tract_model.get_fib(),std::thread::hardware_concurrency(),!has_gui);
 
                     tract_model.report += thread.report.str();
