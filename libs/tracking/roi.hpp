@@ -161,6 +161,7 @@ public:
         report += "  with a distance tolerance of ";
         report += std::to_string(int(false_distance_*handle->vs[0]));
         report += " (mm).";
+        // place seed at the atlas track region
         if(seeds.empty())
         {
             std::vector<tipl::vector<3,short> > seed;
@@ -174,6 +175,38 @@ public:
             region.perform("smoothing");
             setRegions(region.get_region_voxels_raw(),1.0,3/*seed i*/,
                 handle->tractography_name_list[size_t(track_id)].c_str());
+        }
+        // add tolerance roa to speed up tracking
+        {
+            std::vector<tipl::vector<3,short> > seed;
+            handle->track_atlas->to_voxel(seed,1.0f,int(track_id));
+            std::vector<tipl::vector<3,short> > track_roa;
+            tipl::image<char,3> roa_mask(handle->dim);
+            const float *fa0 = handle->dir.fa[0];
+            for(size_t index = 0;index < roa_mask.size();++index)
+                if(fa0[index] > 0.0f)
+                    roa_mask[index] = 1;
+
+            // build a shift vector
+            tipl::neighbor_index_shift<3> shift(handle->dim,int(false_distance_)+1);
+            for(size_t i = 0;i < seed.size();++i)
+            {
+                int index = int(tipl::pixel_index<3>(seed[i][0],
+                                                     seed[i][1],
+                                                     seed[i][2],handle->dim).index());
+                for(size_t j = 0;j < shift.index_shift.size();++j)
+                {
+                    int pos = index+shift.index_shift[j];
+                    if(pos >=0 && pos < int(roa_mask.size()))
+                        roa_mask[pos] = 0;
+                }
+            }
+
+            std::vector<tipl::vector<3,short> > roa_points;
+            for(tipl::pixel_index<3> index(handle->dim);index < handle->dim.size();++index)
+                if(roa_mask[index.index()])
+                    roa_points.push_back(tipl::vector<3,short>(short(index.x()),short(index.y()),short(index.z())));
+            setRegions(roa_points,1.0f,1,"track tolerance region");
         }
         return true;
     }
