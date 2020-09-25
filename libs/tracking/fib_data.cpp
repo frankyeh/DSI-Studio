@@ -1088,7 +1088,7 @@ unsigned int fib_data::find_nearest(const float* trk,unsigned int length,bool co
 
             bool skip = false;
             float max_dis = 0.0f;
-            for(size_t m = 0;m < tract_data[i].size();m += 6)
+            for(size_t m = 0;m < tract_data[i].size();m += 3)
             {
                 const float* tim = &tract_data[i][m];
                 const float* trk_length = trk+length;
@@ -1103,7 +1103,7 @@ unsigned int fib_data::find_nearest(const float* trk,unsigned int length,bool co
                 }
             }
             if(!skip)
-            for(size_t n = 0;n < length;n += 6)
+            for(size_t n = 0;n < length;n += 3)
             {
                 const float* ti0 = &tract_data[i][0];
                 const float* ti_end = ti0+tract_data[i].size();
