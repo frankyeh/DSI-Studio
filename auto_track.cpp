@@ -178,9 +178,7 @@ std::string run_auto_track(
 
             for(size_t j = 0;j < track_id.size() && !prog_aborted();++j)
             {
-                prog_init p("tracking ",handle->tractography_name_list[track_id[j]].c_str());
                 std::string track_name = fib.tractography_name_list[track_id[j]];
-                std::replace(track_name.begin(),track_name.end(),' ','_');
                 std::string no_result_file_name = fib_file_name+"."+track_name+".no_result.txt";
                 if(QFileInfo(no_result_file_name.c_str()).exists() && !overwrite)
                     continue;
@@ -199,11 +197,12 @@ std::string run_auto_track(
                     fib_loaded = true;
                     TractModel tract_model(handle.get());
                     {
+                        prog_init p("tracking ",track_name.c_str());
                         ThreadData thread(handle.get());
 
                         thread.param.tip_iteration = uint8_t(tip);
                         // turn on check ending for corpus callosum
-                        thread.param.check_ending = QString(fib.tractography_name_list[track_id[j]].c_str()).contains("Corpus");
+                        thread.param.check_ending = QString(track_name.c_str()).contains("Corpus");
                         thread.param.max_seed_count = 10000000;
                         thread.param.stop_by_tract = 1;
                         if(!thread.roi_mgr->setAtlas(track_id[j],tolerance/handle->vs[0]))
@@ -224,11 +223,11 @@ std::string run_auto_track(
 
                         {
                             std::string temp_report = tract_model.report;
-                            auto iter = temp_report.find(fib.tractography_name_list[track_id[j]]);
-                            temp_report.replace(iter,fib.tractography_name_list[track_id[j]].length(),targets);
+                            auto iter = temp_report.find(track_name);
+                            temp_report.replace(iter,track_name.length(),targets);
                             // remove "A seeding region was placed at xxxxx"
                             iter = temp_report.find("A seeding region was placed at ");
-                            temp_report.replace(iter+31,fib.tractography_name_list[track_id[j]].length(),
+                            temp_report.replace(iter+31,track_name.length(),
                                     "the track region indicates by tractography atlas");
 
 
