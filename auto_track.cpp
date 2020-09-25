@@ -126,7 +126,7 @@ std::string run_auto_track(
     {
         targets += fib.tractography_name_list[track_id[index]];
         if(index+1 < track_id.size())
-            targets += ",";
+            targets += ", ";
     }
 
     for(size_t i = 0;i < file_list.size() && !prog_aborted();++i)
