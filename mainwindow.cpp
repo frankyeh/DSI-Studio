@@ -72,33 +72,35 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->toolBox->setCurrentIndex(0);
 
     if(!arg_file_name.empty())
+        openFile(arg_file_name.c_str());
+}
+void MainWindow::openFile(QString file_name)
+{
+    if(!QFileInfo(file_name).exists())
     {
-        if(!QFileInfo(arg_file_name.c_str()).exists())
+        QMessageBox::information(this,"Error",QString("Cannot find ") +
+        file_name + " at current dir: " + QDir::current().dirName());
+    }
+    else
+    {
+        if(QString(file_name).endsWith(".fib.gz"))
         {
-            QMessageBox::information(this,"Error",QString("Cannot find ") +
-            arg_file_name.c_str() + " at current dir: " + QDir::current().dirName());
+            loadFib(file_name);
         }
-        else
+        if(QString(file_name).endsWith(".src.gz"))
         {
-            if(QString(arg_file_name.c_str()).endsWith(".fib.gz"))
+            loadSrc(QStringList() << file_name);
+        }
+        if(QString(file_name).endsWith(".nii.gz"))
+        {
+            view_image* dialog = new view_image(this);
+            dialog->setAttribute(Qt::WA_DeleteOnClose);
+            if(!dialog->open(QStringList() << file_name))
             {
-                loadFib(arg_file_name.c_str());
+                delete dialog;
+                return;
             }
-            if(QString(arg_file_name.c_str()).endsWith(".src.gz"))
-            {
-                loadSrc(QStringList() << arg_file_name.c_str());
-            }
-            if(QString(arg_file_name.c_str()).endsWith(".nii.gz"))
-            {
-                view_image* dialog = new view_image(this);
-                dialog->setAttribute(Qt::WA_DeleteOnClose);
-                if(!dialog->open(QStringList() << arg_file_name.c_str()))
-                {
-                    delete dialog;
-                    return;
-                }
-                dialog->show();
-            }
+            dialog->show();
         }
     }
 }
@@ -120,23 +122,7 @@ void MainWindow::dropEvent(QDropEvent *event)
         files << droppedUrls[i].toLocalFile();
 
     if(files.size() == 1)
-    {
-        if(QFileInfo(files[0]).completeSuffix() == "fib.gz")
-        {
-            loadFib(files[0]);
-            return;
-        }
-        if(QFileInfo(files[0]).completeSuffix() == "src.gz")
-        {
-            loadSrc(files);
-            return;
-        }
-    }
-
-    dicom_parser* dp = new dicom_parser(files,this);
-    dp->setAttribute(Qt::WA_DeleteOnClose);
-    dp->showNormal();
-
+        openFile(files[0]);
 }
 
 void MainWindow::open_fib_at(int row,int)
