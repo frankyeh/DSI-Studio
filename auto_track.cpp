@@ -201,7 +201,8 @@ std::string run_auto_track(
                         ThreadData thread(handle.get());
 
                         thread.param.tip_iteration = uint8_t(tip);
-
+                        // turn on check ending for corpus callosum
+                        thread.param.check_ending = QString(fib.tractography_name_list[track_id[j]].c_str()).contains("Corpus");
                         thread.param.max_seed_count = 10000000;
                         thread.param.stop_by_tract = 1;
                         if(!thread.roi_mgr->setAtlas(track_id[j],tolerance/handle->vs[0]))
