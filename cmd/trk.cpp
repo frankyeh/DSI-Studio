@@ -407,6 +407,7 @@ bool load_roi(std::shared_ptr<fib_data> handle,std::shared_ptr<RoiMgr> roi_mgr)
     }
     if(po.has("track_id"))
     {
+        std::cout << "Consider using --action=atk for automatic fiber tracking" << std::endl;
         if(!handle->load_track_atlas())
         {
             std::cout << handle->error_msg << std::endl;
