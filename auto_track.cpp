@@ -207,10 +207,8 @@ std::string run_auto_track(
                     ThreadData thread(handle.get());
 
                     thread.param.tip_iteration = uint8_t(tip);
-                    // turn on check ending for corpus callosum excluding the tapetum
                     thread.param.check_ending =
-                            QString(track_name.c_str()).contains("Corpus") &&
-                            !QString(track_name.c_str()).contains("Tapetum");
+                            !QString(track_name.c_str()).contains("Cingulum");
                     thread.param.max_seed_count = 10000000;
                     thread.param.stop_by_tract = 1;
                     if(!thread.roi_mgr->setAtlas(track_id[j],tolerance/handle->vs[0]))
@@ -403,13 +401,15 @@ void auto_track::select_tracts()
         }
         if(ui->cb_projection->isChecked())
         {
-            select_list.push_back("Cortico");
+            select_list.push_back("Corticospinal");
+            select_list.push_back("Thalamic");
             select_list.push_back("Optic");
             select_list.push_back("Fornix");
         }
         if(ui->cb_commissural->isChecked())
         {
-            select_list.push_back("Corpus");
+            select_list.push_back("Body");
+            select_list.push_back("Forceps");
         }
         for(int i = 0;i < ui->candidate_list_view->count();++i)
             ui->candidate_list_view->item(i)->setSelected(false);
