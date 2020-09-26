@@ -370,7 +370,7 @@ int trk_post(std::shared_ptr<fib_data> handle,
         std::cout << "cluster count=" << count << std::endl;
         std::cout << "cluster resolution (if method is 0) = " << detail << " mm" << std::endl;
         std::cout << "run clustering." << std::endl;
-        tract_model.run_clustering(method,count,detail);
+        tract_model.run_clustering(uint8_t(method),uint32_t(count),detail);
         std::ofstream out(name);
         std::cout << "cluster label saved to " << name << std::endl;
         std::copy(tract_model.get_cluster_info().begin(),tract_model.get_cluster_info().end(),std::ostream_iterator<int>(out," "));
@@ -484,32 +484,32 @@ int trk(std::shared_ptr<fib_data> handle)
     tracking_thread.param.default_otsu = po.get("otsu_threshold",0.6f);
     tracking_thread.param.threshold = po.get("fa_threshold",tracking_thread.param.default_otsu*otsu);
     tracking_thread.param.dt_threshold = po.get("dt_threshold",0.2f);
-    tracking_thread.param.cull_cos_angle = std::cos(po.get("turning_angle",0.0)*3.14159265358979323846/180.0);
+    tracking_thread.param.cull_cos_angle = float(std::cos(po.get("turning_angle",0.0)*3.14159265358979323846/180.0));
     tracking_thread.param.step_size = po.get("step_size",0.0f);
     tracking_thread.param.smooth_fraction = po.get("smoothing",0.0f);
     tracking_thread.param.min_length = po.get("min_length",30.0f);
     tracking_thread.param.max_length = std::max<float>(tracking_thread.param.min_length,po.get("max_length",300.0f));
 
-    tracking_thread.param.tracking_method = po.get("method",int(0));
-    tracking_thread.param.initial_direction  = po.get("initial_dir",int(0));
-    tracking_thread.param.interpolation_strategy = po.get("interpolation",int(0));
-    tracking_thread.param.center_seed = po.get("seed_plan",int(0));
-    tracking_thread.param.random_seed = po.get("random_seed",int(0));
-    tracking_thread.param.check_ending = po.get("check_ending",int(0));
-    tracking_thread.param.tip_iteration = po.has("track_id") ? po.get("tip_iteration",int(16)) : 0;
+    tracking_thread.param.tracking_method = uint8_t(po.get("method",int(0)));
+    tracking_thread.param.initial_direction  = uint8_t(po.get("initial_dir",int(0)));
+    tracking_thread.param.interpolation_strategy = uint8_t(po.get("interpolation",int(0)));
+    tracking_thread.param.center_seed = uint8_t(po.get("seed_plan",int(0)));
+    tracking_thread.param.random_seed = uint8_t(po.get("random_seed",int(0)));
+    tracking_thread.param.check_ending = uint8_t(po.get("check_ending",int(0)));
+    tracking_thread.param.tip_iteration = uint8_t(po.has("track_id") ? po.get("tip_iteration",int(16)) : 0);
 
     if (po.has("fiber_count"))
     {
-        tracking_thread.param.termination_count = po.get("fiber_count",int(tracking_thread.param.termination_count));
+        tracking_thread.param.termination_count = po.get("fiber_count",uint32_t(tracking_thread.param.termination_count));
         tracking_thread.param.stop_by_tract = 1;
 
         if (po.has("seed_count"))
-            tracking_thread.param.max_seed_count = po.get("seed_count",int(tracking_thread.param.termination_count));
+            tracking_thread.param.max_seed_count = po.get("seed_count",uint32_t(tracking_thread.param.termination_count));
     }
     else
     {
         if (po.has("seed_count"))
-            tracking_thread.param.termination_count = po.get("seed_count",int(tracking_thread.param.termination_count));
+            tracking_thread.param.termination_count = po.get("seed_count",uint32_t(tracking_thread.param.termination_count));
         tracking_thread.param.stop_by_tract = 0;
     }
 
@@ -561,7 +561,7 @@ int trk(std::shared_ptr<fib_data> handle)
             return 1;
         }
         connectometry_threshold = QString(po.get("connectometry_threshold").c_str()).split(",");
-        for(unsigned int i = 0;i < cnt_file_name.size();++i)
+        for(int i = 0;i < cnt_file_name.size();++i)
         {
             connectometry_result cnt;
             std::cout << "loading individual file:" << cnt_file_name[i].toStdString() << std::endl;
@@ -586,14 +586,14 @@ int trk(std::shared_ptr<fib_data> handle)
                 }
                 ++i;
             }
-            for(unsigned int j = 0;j < connectometry_threshold.size();++j)
+            for(int j = 0;j < connectometry_threshold.size();++j)
             {
                 double t = connectometry_threshold[j].toDouble();
-                handle->dir.set_tracking_index(handle->dir.index_data.size()-((t > 0) ? 2:1));
+                handle->dir.set_tracking_index(int(handle->dir.index_data.size()-((t > 0) ? 2:1)));
                 std::cout << "mapping track with " << ((t > 0) ? "increased":"decreased") << " connectivity at " << std::fabs(t) << std::endl;
                 std::cout << "start tracking." << std::endl;
-                tracking_thread.param.threshold = std::fabs(t);
-                tracking_thread.run(tract_model.get_fib(),po.get("thread_count",int(std::thread::hardware_concurrency())),true);
+                tracking_thread.param.threshold = float(std::fabs(t));
+                tracking_thread.run(tract_model.get_fib(),po.get("thread_count",uint32_t(std::thread::hardware_concurrency())),true);
                 tract_model.report += tracking_thread.report.str();
                 tracking_thread.fetchTracks(&tract_model);
                 std::ostringstream out;

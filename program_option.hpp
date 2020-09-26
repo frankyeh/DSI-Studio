@@ -127,7 +127,7 @@ public:
     value_type get(const char* name,value_type df)
     {
         std::string str_name(name);
-        for(int i = 0;i < names.size();++i)
+        for(size_t i = 0;i < names.size();++i)
             if(names[i] == str_name)
             {
                 if(!used[i])
