@@ -1048,7 +1048,8 @@ unsigned int fib_data::find_nearest(const float* trk,unsigned int length,bool co
             return d1;
         }
     }min_min_fun;
-
+    if(length <= 6)
+        return 9999;
     float best_distance = contain ? 50.0f : false_distance;
     const auto& tract_data = track_atlas->get_tracts();
     const auto& tract_cluster = track_atlas->get_cluster_info();
@@ -1083,7 +1084,8 @@ unsigned int fib_data::find_nearest(const float* trk,unsigned int length,bool co
         for(size_t i = 0;i < tract_data.size();++i)
         {
             if(min_min_fun(best_distance,&tract_data[i][0],trk) >= best_distance ||
-                min_min_fun(best_distance,&tract_data[i][tract_data[i].size()-3],trk+length-3) >= best_distance)
+                min_min_fun(best_distance,&tract_data[i][tract_data[i].size()-3],trk+length-3) >= best_distance ||
+                min_min_fun(best_distance,&tract_data[i][tract_data[i].size()/3/2*3],trk+(length/3/2*3)) >= best_distance)
                 continue;
 
             bool skip = false;
