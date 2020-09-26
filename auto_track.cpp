@@ -102,6 +102,7 @@ int trk_post(std::shared_ptr<fib_data> handle,
              const std::string& file_name);
 extern std::string auto_track_report;
 std::string auto_track_report;
+bool check_other_src(ImageModel& src);
 std::string run_auto_track(
                     const std::vector<std::string>& file_list,
                     const std::vector<unsigned int>& track_id,
@@ -157,7 +158,9 @@ std::string run_auto_track(
                 if (!src.load_from_file(file_list[i].c_str()))
                     return std::string("ERROR at ") + cur_file_base_name + ":" + src.error_msg;
                 if(!src.is_human_data())
-                    return std::string("ERROR at ") + cur_file_base_name + ":" + src.error_msg;
+                    return std::string("ERROR at ") + cur_file_base_name + ": seems not human data";
+                if(!check_other_src(src))
+                    return std::string("ERROR at ") + cur_file_base_name;
                 src.voxel.half_sphere = src.is_dsi_half_sphere();
                 src.voxel.scheme_balance = src.need_scheme_balance();
                 if(interpolation)
