@@ -539,6 +539,7 @@ bool fib_data::load_from_file(const char* file_name)
     else
     if(QString(file_name).endsWith("trk.gz") ||
        QString(file_name).endsWith("trk") ||
+       QString(file_name).endsWith("tck") ||
        QString(file_name).endsWith("tt.gz"))
     {
         if(!load_fib_from_tracks(file_name,I,vs))

@@ -86,7 +86,8 @@ void MainWindow::openFile(QString file_name)
         if(QString(file_name).endsWith("fib.gz") ||
            QString(file_name).endsWith("trk.gz") ||
            QString(file_name).endsWith("tt.gz") ||
-           QString(file_name).endsWith("trk"))
+           QString(file_name).endsWith("trk") ||
+           QString(file_name).endsWith("tck"))
         {
             loadFib(file_name);
         }
@@ -270,7 +271,7 @@ void MainWindow::loadFib(QString filename,bool presentation_mode)
     }
     tracking_windows.back()->showNormal();
     tracking_windows.back()->resize(1200,700);
-    if(filename.endsWith("trk.gz") || filename.endsWith("trk") || filename.endsWith("tt.gz"))
+    if(filename.endsWith("trk.gz") || filename.endsWith("trk") || filename.endsWith("tck") || filename.endsWith("tt.gz"))
         tracking_windows.back()->tractWidget->load_tracts(QStringList() << filename);
 }
 

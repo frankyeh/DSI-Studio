@@ -330,6 +330,74 @@ struct TrackVis
         return true;
     }
 };
+
+struct Tck{
+    tipl::vector<3> vs;
+    tipl::geometry<3> geo;
+    bool load_from_file(const char* file_name,
+                        std::vector<std::vector<float> >& loaded_tract_data)
+    {
+        unsigned int offset = 0;
+        {
+            std::ifstream in(file_name);
+            if(!in)
+                return false;
+            std::string line;
+            while(std::getline(in,line))
+            {
+                if(line.size() <= 4)
+                    continue;
+                std::istringstream str(line);
+                std::string s1,s2;
+                str >> s1 >> s2;
+                if(line.substr(0,7) == std::string("file: ."))
+                {
+                    str >> offset;
+                    break;
+                }
+                std::replace(s2.begin(),s2.end(),',',' ');
+                if(s1 == "dim:")
+                {
+                    std::istringstream str(s2);
+                    str >> geo[0] >> geo[1] >> geo[2];
+                }
+                if(s1 == "vox:")
+                {
+                    std::istringstream str(s2);
+                    str >> vs[0] >> vs[1] >> vs[2];
+                }
+            }
+        }
+
+        std::ifstream in(file_name,std::ios::binary);
+        if(!in)
+            return false;
+        in.seekg(0,std::ios::end);
+        unsigned int total_size = uint32_t(in.tellg());
+        in.seekg(offset,std::ios::beg);
+        std::vector<unsigned int> buf((total_size-offset)/4);
+        in.read((char*)&*buf.begin(),total_size-offset-16);// 16 skip the final inf
+        for(unsigned int index = 0;index < buf.size();)
+        {
+            unsigned int end = std::find(buf.begin()+index,buf.end(),0x7FC00000)-buf.begin(); // NaN
+            if(end-index > 3)
+            {
+                std::vector<float> track(end-index);
+                std::copy((const float*)&*buf.begin() + index,
+                          (const float*)&*buf.begin() + end,
+                          track.begin());
+                loaded_tract_data.push_back(std::move(track));
+                tipl::divide_constant(loaded_tract_data.back().begin(),loaded_tract_data.back().end(),vs[0]);
+            }
+            index = end+3;
+        }
+        return true;
+    }
+
+};
+
+
+
 bool tt2trk(const char* tt_file,const char* trk_file)
 {
     std::vector<std::vector<float> > tract_data;
@@ -383,6 +451,18 @@ bool load_fib_from_tracks(const char* file_name,tipl::image<float,3>& I,tipl::ve
 {
     tipl::geometry<3> geo;
     std::vector<std::vector<float> > loaded_tract_data;
+    if(QString(file_name).endsWith("tck"))
+    {
+        Tck tck;
+        if(!tck.load_from_file(file_name,loaded_tract_data))
+        {
+            std::cout << "cannot read file:" << file_name << std::endl;
+            return false;
+        }
+        vs = tck.vs;
+        geo = tck.geo;
+    }
+    else
     if(QString(file_name).endsWith("trk.gz") || QString(file_name).endsWith("trk"))
     {
         TrackVis vis;
@@ -514,10 +594,7 @@ bool TractModel::load_from_file(const char* file_name_,bool append)
     if(file_name.find(".pos_corr") != std::string::npos)
         color = 0x00F04040;
 
-    std::string ext;
-    if(file_name.length() > 4)
-        ext = std::string(file_name.end()-4,file_name.end());
-    if(ext == std::string("t.gz"))
+    if(QString(file_name_).endsWith("tt.gz"))
     {
         unsigned int old_color = color;
         std::vector<uint16_t> cluster;
@@ -527,116 +604,74 @@ bool TractModel::load_from_file(const char* file_name_,bool append)
         if(color != old_color)
             color_changed = true;
     }
-    if(ext == std::string(".trk") || ext == std::string("k.gz"))
+    if(QString(file_name_).endsWith("trk.gz") || QString(file_name_).endsWith("trk"))
+    {
+        TrackVis trk;
+        if(!trk.load_from_file(file_name_,loaded_tract_data,loaded_tract_cluster,parameter_id,vs))
+            return false;
+        unsigned int new_color = *(uint32_t*)(trk.reserved+440);
+        if(new_color)
+            color = new_color;
+        if(!parameter_id.empty())
         {
-            TrackVis trk;
-            if(!trk.load_from_file(file_name_,loaded_tract_data,loaded_tract_cluster,parameter_id,vs))
-                return false;
-            unsigned int new_color = *(uint32_t*)(trk.reserved+440);
-            if(new_color)
-                color = new_color;
-            if(!parameter_id.empty())
-            {
-                report = handle->report;
-                report += "\nThis tractography was generated using the following parameters: ";
-                TrackingParam param;
-                if(param.set_code(parameter_id))
-                    report += param.get_report();
-            }
+            report = handle->report;
+            report += "\nThis tractography was generated using the following parameters: ";
+            TrackingParam param;
+            if(param.set_code(parameter_id))
+                report += param.get_report();
         }
-        else
-        if (ext == std::string(".txt"))
+    }
+
+    if (QString(file_name_).endsWith(".txt"))
+    {
+        std::ifstream in(file_name_);
+        if (!in)
+            return false;
+        std::string line;
+        in.seekg(0,std::ios::end);
+        in.seekg(0,std::ios::beg);
+        while (std::getline(in,line))
         {
-            std::ifstream in(file_name_);
-            if (!in)
-                return false;
-            std::string line;
-            in.seekg(0,std::ios::end);
-            in.seekg(0,std::ios::beg);
-            while (std::getline(in,line))
-            {
-                loaded_tract_data.push_back(std::vector<float>());
-                std::istringstream in(line);
-                std::copy(std::istream_iterator<float>(in),
-                          std::istream_iterator<float>(),std::back_inserter(loaded_tract_data.back()));
+            loaded_tract_data.push_back(std::vector<float>());
+            std::istringstream in(line);
+            std::copy(std::istream_iterator<float>(in),
+                      std::istream_iterator<float>(),std::back_inserter(loaded_tract_data.back()));
 
-                if(loaded_tract_data.back().size() == 1)// cluster info
-                    loaded_tract_cluster.push_back(loaded_tract_data.back()[0]);
-            }
+            if(loaded_tract_data.back().size() == 1)// cluster info
+                loaded_tract_cluster.push_back(uint32_t(loaded_tract_data.back()[0]));
         }
-        else
-            if (ext == std::string(".mat"))
-            {
-                gz_mat_read in;
-                if(!in.load_from_file(file_name_))
-                    return false;
-                const float* buf = 0;
-                const unsigned int* length = 0;
-                const unsigned int* cluster = 0;
-                unsigned int row,col;
-                if(!in.read("tracts",row,col,buf))
-                    return false;
-                if(!in.read("length",row,col,length))
-                    return false;
-                loaded_tract_data.resize(col);
-                in.read("cluster",row,col,cluster);
-                for(unsigned int index = 0;index < loaded_tract_data.size();++index)
-                {
-                    loaded_tract_data[index].resize(length[index]*3);
-                    if(cluster)
-                        loaded_tract_cluster.push_back(cluster[index]);
-                    std::copy(buf,buf + loaded_tract_data[index].size(),loaded_tract_data[index].begin());
-                    buf += loaded_tract_data[index].size();
-                }
-            }
-    else
-                if (ext == std::string(".tck"))
-                {
-                    unsigned int offset = 0;
-                    {
-                        std::ifstream in(file_name.c_str());
-                        if(!in)
-                            return false;
-                        std::string line;
-                        while(std::getline(in,line))
-                        {
-                            if(line.size() > 4 &&
-                                    line.substr(0,7) == std::string("file: ."))
-                            {
-                                std::istringstream str(line);
-                                std::string s1,s2;
-                                str >> s1 >> s2 >> offset;
-                                break;
-                            }
-                        }
-                        if(!in)
-                            return false;
-                    }
-                    std::ifstream in(file_name.c_str(),std::ios::binary);
-                    if(!in)
-                        return false;
-                    in.seekg(0,std::ios::end);
-                    unsigned int total_size = in.tellg();
-                    in.seekg(offset,std::ios::beg);
-                    std::vector<unsigned int> buf((total_size-offset)/4);
-                    in.read((char*)&*buf.begin(),total_size-offset-16);// 16 skip the final inf
-                    for(unsigned int index = 0;index < buf.size();)
-                    {
+    }
 
-                        unsigned int end = std::find(buf.begin()+index,buf.end(),0x7FC00000)-buf.begin(); // NaN
-                        if(end-index > 3)
-                        {
-                            std::vector<float> track(end-index);
-                            std::copy((const float*)&*buf.begin() + index,
-                                      (const float*)&*buf.begin() + end,
-                                      track.begin());
-                            loaded_tract_data.push_back(std::move(track));
-                            tipl::divide_constant(loaded_tract_data.back().begin(),loaded_tract_data.back().end(),handle->vs[0]);
-                        }
-                        index = end+3;
-                    }
-
-                }
+    if (QString(file_name_).endsWith(".mat"))
+    {
+        gz_mat_read in;
+        if(!in.load_from_file(file_name_))
+            return false;
+        const float* buf = nullptr;
+        const unsigned int* length = nullptr;
+        const unsigned int* cluster = nullptr;
+        unsigned int row,col;
+        if(!in.read("tracts",row,col,buf))
+            return false;
+        if(!in.read("length",row,col,length))
+            return false;
+        loaded_tract_data.resize(col);
+        in.read("cluster",row,col,cluster);
+        for(unsigned int index = 0;index < loaded_tract_data.size();++index)
+        {
+            loaded_tract_data[index].resize(length[index]*3);
+            if(cluster)
+                loaded_tract_cluster.push_back(cluster[index]);
+            std::copy(buf,buf + loaded_tract_data[index].size(),loaded_tract_data[index].begin());
+            buf += loaded_tract_data[index].size();
+        }
+    }
+    if (QString(file_name_).endsWith("tck"))
+    {
+        Tck tck;
+        if(!tck.load_from_file(file_name_,loaded_tract_data))
+            return false;
+    }
 
     if (loaded_tract_data.empty())
         return false;
@@ -764,12 +799,17 @@ bool TractModel::save_tracts_to_file(const char* file_name_)
     }
     if(ext == std::string(".tck"))
     {
-        char header[100] = {0};
+        char header[200] = {0};
         {
             std::ostringstream out;
-            out << "mrtrix tracks\ndatatype: Float32LE\nfile: . 100\ncount: " << tract_data.size() << "\nEND\n";
+            out << "mrtrix tracks" << std::endl;
+            out << "datatype: Float32LE" << std::endl;
+            out << "dim: " << handle->dim[0] << "," << handle->dim[1] << "," << handle->dim[2] << std::endl;
+            out << "vox: " << handle->vs[0] << "," << handle->vs[1] << "," << handle->vs[2] << std::endl;
+            out << "datatype: Float32LE" << std::endl;
+            out << "file: . 200\ncount: " << tract_data.size() << "\nEND\n";
             std::string t = out.str();
-            if(t.length() > 100)
+            if(t.length() > 200)
                 return false;
             std::copy(t.begin(),t.end(),header);
         }
