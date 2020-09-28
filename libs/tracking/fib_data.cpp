@@ -461,6 +461,7 @@ void initial_LPS_nifti_srow(tipl::matrix<4,4,float>& T,const tipl::geometry<3>& 
     T[7] = vs[1]*(geo[1]-1);
     T[15] = 1.0f;
 }
+bool load_fib_from_tracks(const char* file_name,tipl::image<float,3>& I,tipl::vector<3>& vs);
 bool fib_data::load_from_file(const char* file_name)
 {
     tipl::image<float,3> I;
@@ -534,6 +535,17 @@ bool fib_data::load_from_file(const char* file_name)
         out << "Image resolution is (" << vs[0] << "," << vs[1] << "," << vs[2] << ")." << std::endl;
         report = out.str();
 
+    }
+    else
+    if(QString(file_name).endsWith("trk.gz") ||
+       QString(file_name).endsWith("trk") ||
+       QString(file_name).endsWith("tt.gz"))
+    {
+        if(!load_fib_from_tracks(file_name,I,vs))
+        {
+            error_msg = "Invalid track format";
+            return false;
+        }
     }
     if(!I.empty())
     {

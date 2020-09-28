@@ -83,15 +83,20 @@ void MainWindow::openFile(QString file_name)
     }
     else
     {
-        if(QString(file_name).endsWith(".fib.gz"))
+        if(QString(file_name).endsWith("fib.gz") ||
+           QString(file_name).endsWith("trk.gz") ||
+           QString(file_name).endsWith("tt.gz") ||
+           QString(file_name).endsWith("trk"))
         {
             loadFib(file_name);
         }
-        if(QString(file_name).endsWith(".src.gz"))
+        else
+        if(QString(file_name).endsWith("src.gz"))
         {
             loadSrc(QStringList() << file_name);
         }
-        if(QString(file_name).endsWith(".nii.gz"))
+        else
+        if(QString(file_name).endsWith("nii.gz"))
         {
             view_image* dialog = new view_image(this);
             dialog->setAttribute(Qt::WA_DeleteOnClose);
@@ -101,6 +106,9 @@ void MainWindow::openFile(QString file_name)
                 return;
             }
             dialog->show();
+        }
+        else {
+            QMessageBox::information(this,"error","Unsupported file extension");
         }
     }
 }
@@ -262,7 +270,8 @@ void MainWindow::loadFib(QString filename,bool presentation_mode)
     }
     tracking_windows.back()->showNormal();
     tracking_windows.back()->resize(1200,700);
-
+    if(filename.endsWith("trk.gz") || filename.endsWith("trk") || filename.endsWith("tt.gz"))
+        tracking_windows.back()->tractWidget->load_tracts(QStringList() << filename);
 }
 
 void MainWindow::loadSrc(QStringList filenames)

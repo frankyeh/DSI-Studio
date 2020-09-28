@@ -379,6 +379,53 @@ bool trk2tt(const char* trk_file,const char* tt_file)
     return TinyTrack::save_to_file(tt_file,geo,vs,loaded_tract_data,cluster,info,p_id,color);
 }
 //---------------------------------------------------------------------------
+bool load_fib_from_tracks(const char* file_name,tipl::image<float,3>& I,tipl::vector<3>& vs)
+{
+    tipl::geometry<3> geo;
+    std::vector<std::vector<float> > loaded_tract_data;
+    if(QString(file_name).endsWith("trk.gz") || QString(file_name).endsWith("trk"))
+    {
+        TrackVis vis;
+        std::vector<unsigned int> loaded_tract_cluster;
+        std::string info;
+        if(!vis.load_from_file(file_name,loaded_tract_data,loaded_tract_cluster,info,vs))
+        {
+            std::cout << "cannot read file:" << file_name << std::endl;
+            return false;
+        }
+        std::copy(vis.voxel_size,vis.voxel_size+3,vs.begin());
+        std::copy(vis.dim,vis.dim+3,geo.begin());
+    }
+    else
+        if(QString(file_name).endsWith("tt.gz"))
+        {
+            std::vector<unsigned short> loaded_tract_cluster;
+            std::string report,pid;
+            unsigned int color;
+            if(!TinyTrack::load_from_file(file_name,loaded_tract_data,loaded_tract_cluster,geo,vs,report,pid,color))
+            {
+                std::cout << "cannot read file:" << file_name << std::endl;
+                return false;
+            }
+        }
+    else
+        return false;
+    I.clear();
+    I.resize(geo);
+    tipl::par_for(loaded_tract_data.size(),[&](size_t i)
+    {
+        for(size_t j = 0;j < loaded_tract_data[i].size();j += 3)
+        {
+            int x = int(std::round(loaded_tract_data[i][j]));
+            int y = int(std::round(loaded_tract_data[i][j+1]));
+            int z = int(std::round(loaded_tract_data[i][j+2]));
+            if(geo.is_valid(x,y,z))
+                I[tipl::pixel_index<3>(x,y,z,geo).index()]++;
+        }
+    });
+    return true;
+}
+//---------------------------------------------------------------------------
 TractModel::TractModel(fib_data* handle_):handle(handle_),
         report(handle_->report),geo(handle_->dim),vs(handle_->vs),fib(new tracking_data)
 {
