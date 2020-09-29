@@ -163,6 +163,7 @@ std::string run_auto_track(
                     return std::string("ERROR at ") + cur_file_base_name;
                 src.voxel.half_sphere = src.is_dsi_half_sphere();
                 src.voxel.scheme_balance = src.need_scheme_balance();
+                src.voxel.output_rdi = 1;
                 if(interpolation)
                     src.rotate_to_mni(float(interpolation));
                 begin_prog("reconstruct DWI");
