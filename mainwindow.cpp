@@ -76,6 +76,25 @@ MainWindow::MainWindow(QWidget *parent) :
 }
 void MainWindow::openFile(QString file_name)
 {
+    if(QFileInfo(file_name).isDir())
+    {
+        QStringList fib_list = QDir(file_name).entryList(QStringList("*fib.gz"),QDir::Files|QDir::NoSymLinks);
+        QStringList tt_list = QDir(file_name).entryList(
+                    QStringList("*tt.gz") <<
+                    QString("*trk.gz") <<
+                    QString("*trk") <<
+                    QString("*tck"),QDir::Files|QDir::NoSymLinks);
+        if(!fib_list.empty())
+            loadFib(fib_list[0]);
+        else
+        {
+            loadFib(tt_list[0]);
+            tt_list.removeAt(0);
+        }
+        if(!tt_list.empty())
+            tracking_windows.back()->tractWidget->load_tracts(tt_list);
+        return;
+    }
     if(!QFileInfo(file_name).exists())
     {
         QMessageBox::information(this,"Error",QString("Cannot find ") +
@@ -242,7 +261,7 @@ void MainWindow::addSrc(QString filename)
     settings.setValue("recentSrcFileList", files);
     updateRecentList();
 }
-
+void shift_track_for_tck(std::vector<std::vector<float> >& loaded_tract_data,tipl::geometry<3>& geo);
 void MainWindow::loadFib(QString filename,bool presentation_mode)
 {
     std::string file_name = filename.toLocal8Bit().begin();
@@ -272,7 +291,15 @@ void MainWindow::loadFib(QString filename,bool presentation_mode)
     tracking_windows.back()->showNormal();
     tracking_windows.back()->resize(1200,700);
     if(filename.endsWith("trk.gz") || filename.endsWith("trk") || filename.endsWith("tck") || filename.endsWith("tt.gz"))
+    {
         tracking_windows.back()->tractWidget->load_tracts(QStringList() << filename);
+        if(filename.endsWith("tck"))
+        {
+            tipl::geometry<3> geo;
+            shift_track_for_tck(tracking_windows.back()->tractWidget->tract_models.back()->get_tracts(),geo);
+        }
+    }
+
 }
 
 void MainWindow::loadSrc(QStringList filenames)

@@ -447,6 +447,34 @@ bool trk2tt(const char* trk_file,const char* tt_file)
     return TinyTrack::save_to_file(tt_file,geo,vs,loaded_tract_data,cluster,info,p_id,color);
 }
 //---------------------------------------------------------------------------
+void shift_track_for_tck(std::vector<std::vector<float> >& loaded_tract_data,tipl::geometry<3>& geo)
+{
+    tipl::vector<3> min_xyz(0.0f,0.0f,0.0f),max_xyz(0.0f,0.0f,0.0f);
+    tipl::par_for(loaded_tract_data.size(),[&](size_t i)
+    {
+        for(unsigned int k = 0;k < 3;++k)
+        for(size_t j = k;j < loaded_tract_data[i].size();j += 3)
+        {
+            if(loaded_tract_data[i][j] < min_xyz[k])
+                min_xyz[k] = loaded_tract_data[i][j];
+            if(loaded_tract_data[i][j] > max_xyz[k])
+                max_xyz[k] = loaded_tract_data[i][j];
+        }
+    });
+    for(unsigned int k = 0;k < 3;++k)
+    {
+        geo[k] = uint32_t(max_xyz[k]-min_xyz[k]+2);
+        min_xyz[k] -= 1;
+    }
+    tipl::par_for(loaded_tract_data.size(),[&](size_t i)
+    {
+        for(unsigned int k = 0;k < 2;++k)
+        for(size_t j = k;j < loaded_tract_data[i].size();j += 3)
+            loaded_tract_data[i][j] = max_xyz[k] - loaded_tract_data[i][j];
+        for(size_t j = 2;j < loaded_tract_data[i].size();j += 3)
+            loaded_tract_data[i][j] -= min_xyz[2];
+    });
+}
 bool load_fib_from_tracks(const char* file_name,tipl::image<float,3>& I,tipl::vector<3>& vs)
 {
     tipl::geometry<3> geo;
@@ -454,13 +482,13 @@ bool load_fib_from_tracks(const char* file_name,tipl::image<float,3>& I,tipl::ve
     if(QString(file_name).endsWith("tck"))
     {
         Tck tck;
+        tck.vs = tipl::vector<3>(1.0f,1.0f,1.0f);
         if(!tck.load_from_file(file_name,loaded_tract_data))
         {
             std::cout << "cannot read file:" << file_name << std::endl;
             return false;
         }
-        vs = tck.vs;
-        geo = tck.geo;
+        shift_track_for_tck(loaded_tract_data,geo);
     }
     else
     if(QString(file_name).endsWith("trk.gz") || QString(file_name).endsWith("trk"))
@@ -669,6 +697,7 @@ bool TractModel::load_from_file(const char* file_name_,bool append)
     if (QString(file_name_).endsWith("tck"))
     {
         Tck tck;
+        tck.vs = handle->vs;
         if(!tck.load_from_file(file_name_,loaded_tract_data))
             return false;
     }
