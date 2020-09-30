@@ -2072,6 +2072,11 @@ void tracking_window::on_addSlices_clicked()
         }
     }
     addSlices(filenames,QFileInfo(filenames[0]).baseName(),renderWidget->getData("slice_smoothing").toBool(),false);
+    set_data("show_slice",true);
+    ui->glSagCheck->setChecked(true);
+    ui->glCorCheck->setChecked(true);
+    ui->glAxiCheck->setChecked(true);
+    glWidget->update();
 }
 
 void tracking_window::on_actionSingle_triggered()
