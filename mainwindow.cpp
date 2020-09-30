@@ -85,14 +85,18 @@ void MainWindow::openFile(QString file_name)
                     QString("*trk") <<
                     QString("*tck"),QDir::Files|QDir::NoSymLinks);
         if(!fib_list.empty())
-            loadFib(fib_list[0]);
+            loadFib(file_name + "/" + fib_list[0]);
         else
         {
-            loadFib(tt_list[0]);
+            loadFib(file_name + "/" + tt_list[0]);
             tt_list.removeAt(0);
         }
         if(!tt_list.empty())
+        {
+            for(int i = 0;i < tt_list.size();++i)
+                tt_list[i] = file_name + "/" + tt_list[i];
             tracking_windows.back()->tractWidget->load_tracts(tt_list);
+        }
         return;
     }
     if(!QFileInfo(file_name).exists())
