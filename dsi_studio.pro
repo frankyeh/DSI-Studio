@@ -19,7 +19,7 @@ win32* {
 INCLUDEPATH += ../include
 QMAKE_CXXFLAGS += -wd4244 -wd4267 -wd4018
 LIBS += -lOpenGL32 -lGlu32
-RC_FILE = dsi_studio.rc
+RC_ICONS = dsi_studio.ico
 }
 
 linux* {
