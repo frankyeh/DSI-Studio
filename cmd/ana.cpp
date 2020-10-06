@@ -293,34 +293,40 @@ int ana(void)
     }
 
     TractModel tract_model(handle.get());
-    std::string file_name = po.get("tract");
+    QStringList output_list;
+    QStringList tract_list = QString(po.get("tract").c_str()).split(",");
+    if(po.has("output"))
+        output_list = QString(po.get("output").c_str()).split(",");
+    for(int i = 0;i < tract_list.size();++i)
     {
-        std::cout << "loading " << file_name << "..." <<std::endl;
-        if(!QFileInfo(file_name.c_str()).exists())
+        std::string file_name = tract_list[i].toStdString();
         {
-            std::cout << file_name << " does not exist. terminating..." << std::endl;
+            std::cout << "loading " << file_name << "..." <<std::endl;
+            if(!QFileInfo(file_name.c_str()).exists())
+            {
+                std::cout << file_name << " does not exist. terminating..." << std::endl;
+                return 1;
+            }
+            if (!tract_model.load_from_file(file_name.c_str()))
+            {
+                std::cout << "cannot open file " << file_name << std::endl;
+                return 1;
+            }
+            std::cout << file_name << " loaded" << std::endl;
+        }
+        std::shared_ptr<RoiMgr> roi_mgr(new RoiMgr(handle.get()));
+        if(!load_roi(handle,roi_mgr))
+            return 1;
+        tract_model.filter_by_roi(roi_mgr);
+        if(tract_model.get_visible_track_count() == 0)
+        {
+            std::cout << "no tracks remained after ROI selection." << std::endl;
             return 1;
         }
-        if (!tract_model.load_from_file(file_name.c_str()))
-        {
-            std::cout << "cannot open file " << file_name << std::endl;
-            return 1;
-        }
-        std::cout << file_name << " loaded" << std::endl;
-
+        if(i < output_list.size())// --output will save tracks into a file
+            trk_post_save_trk(handle,tract_model,output_list[i].toStdString());
+        else
+            trk_post(handle,tract_model,file_name);
     }
-    std::shared_ptr<RoiMgr> roi_mgr(new RoiMgr(handle.get()));
-    if(!load_roi(handle,roi_mgr))
-        return 1;
-    tract_model.filter_by_roi(roi_mgr);
-    if(tract_model.get_visible_track_count() == 0)
-    {
-        std::cout << "no tracks remained after ROI selection." << std::endl;
-        return 1;
-    }
-    if(po.has("output"))// --output will save tracks into a file
-        trk_post_save_trk(handle,tract_model,po.get("output"));
-    else
-        trk_post(handle,tract_model,po.get("tract"));
     return 0;
 }
