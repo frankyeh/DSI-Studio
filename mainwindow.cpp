@@ -101,6 +101,8 @@ void MainWindow::openFile(QString file_name)
     }
     if(!QFileInfo(file_name).exists())
     {
+        if(file_name[0] == '-') // Mac pass a variable
+            return;
         QMessageBox::information(this,"Error",QString("Cannot find ") +
         file_name + " at current dir: " + QDir::current().dirName());
     }
