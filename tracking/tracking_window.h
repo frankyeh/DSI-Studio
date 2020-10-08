@@ -195,6 +195,8 @@ private slots:
     void on_actionMove_Objects_triggered();
     void on_actionLoad_Presentation_triggered();
     void on_actionSave_Presentation_triggered();
+    void on_actionZoom_In_triggered();
+    void on_actionZoom_Out_triggered();
 };
 
 #endif // TRACKING_WINDOW_H

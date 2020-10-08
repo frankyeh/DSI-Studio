@@ -927,6 +927,8 @@
     <addaction name="actionCoronal_View"/>
     <addaction name="actionAxial_View"/>
     <addaction name="actionAuto_Rotate"/>
+    <addaction name="actionZoom_In"/>
+    <addaction name="actionZoom_Out"/>
     <addaction name="separator"/>
     <addaction name="actionLoad_Presentation"/>
     <addaction name="actionSave_Presentation"/>
@@ -3875,6 +3877,30 @@ Tracking</string>
   <action name="actionCopy_Device">
    <property name="text">
     <string>&amp;Copy Device</string>
+   </property>
+  </action>
+  <action name="actionZoom_In">
+   <property name="icon">
+    <iconset resource="../icons.qrc">
+     <normaloff>:/icons/icons/zoom-in.xpm</normaloff>:/icons/icons/zoom-in.xpm</iconset>
+   </property>
+   <property name="text">
+    <string>Zoom In</string>
+   </property>
+   <property name="shortcut">
+    <string>+</string>
+   </property>
+  </action>
+  <action name="actionZoom_Out">
+   <property name="icon">
+    <iconset resource="../icons.qrc">
+     <normaloff>:/icons/icons/zoom-out.xpm</normaloff>:/icons/icons/zoom-out.xpm</iconset>
+   </property>
+   <property name="text">
+    <string>Zoom Out</string>
+   </property>
+   <property name="shortcut">
+    <string>-</string>
    </property>
   </action>
  </widget>

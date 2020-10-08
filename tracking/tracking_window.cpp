@@ -436,6 +436,7 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         connect(ShortcutS,SIGNAL(activated()),this,SLOT(Move_Slice_Y2()));
         connect(ShortcutE,SIGNAL(activated()),this,SLOT(Move_Slice_Z()));
         connect(ShortcutD,SIGNAL(activated()),this,SLOT(Move_Slice_Z2()));
+
     }
 
     qApp->installEventFilter(this);
@@ -2622,4 +2623,14 @@ void tracking_window::on_actionSave_Presentation_triggered()
         return;
     command("save_workspace",dir);
     QMessageBox::information(this,"DSI Studio","File saved");
+}
+
+void tracking_window::on_actionZoom_In_triggered()
+{
+    ui->zoom_3d->setValue(ui->zoom_3d->value()+0.1);
+}
+
+void tracking_window::on_actionZoom_Out_triggered()
+{
+    ui->zoom_3d->setValue(ui->zoom_3d->value()-0.1);
 }
