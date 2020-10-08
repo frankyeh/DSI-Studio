@@ -483,8 +483,9 @@ void GLWidget::paintGL()
     {
         case view_mode_type::single:
             glViewport(0,0, cur_width, cur_height);
-            if(!get_param("stereoscopy"))
-                renderLR();
+            //if(!get_param("stereoscopy"))
+            renderLR();
+            /*
             else
             {
                 glDrawBuffer(GL_BACK_RIGHT);
@@ -493,6 +494,7 @@ void GLWidget::paintGL()
                 renderLR();
                 glDrawBuffer(GL_BACK);
             }
+            */
             break;
         case view_mode_type::two:
             glViewport(0,0, cur_width/2, cur_height);
