@@ -513,6 +513,56 @@ bool fib_data::load_from_file(const char* file_name)
             return true;
         }
         else
+        if(header.dim(4) % 3 == 0)
+        {
+            uint32_t fib_num = header.dim(4)/3;
+            for(uint32_t i = 0;i < fib_num;++i)
+            {
+                tipl::image<float,3> x,y,z;
+                header.get_voxel_size(vs);
+                header.toLPS(x,false);
+                header.toLPS(y,false);
+                header.toLPS(z,false);
+                if(i == 0)
+                {
+                    dim = x.geometry();
+                    dir.check_index(fib_num-1);
+                    dir.num_fiber = fib_num;
+                    dir.findex_buf.resize(fib_num);
+                    dir.fa_buf.resize(fib_num);
+                }
+
+                dir.findex_buf[i].resize(x.size());
+                dir.findex[i] = &*(dir.findex_buf[i].begin());
+                dir.fa_buf[i].resize(x.size());
+                dir.fa[i] = &*(dir.fa_buf[i].begin());
+
+                tessellated_icosahedron ti;
+                ti.init(8);
+                dir.odf_faces = ti.faces;
+                dir.odf_table = ti.vertices;
+                dir.half_odf_size = ti.half_vertices_count;
+                tipl::par_for(x.size(),[&](uint32_t j)
+                {
+                    tipl::vector<3> v(x[j],y[j],-z[j]);
+                    float length = float(v.length());
+                    if(length == 0.0f || std::isnan(length))
+                        return;
+                    v /= length;
+                    dir.fa_buf[i][j] = length;
+                    dir.findex_buf[i][j] = short(ti.discretize(v));
+                });
+
+            }
+            dir.index_name.push_back("fiber");
+            dir.index_data.push_back(dir.fa);
+            view_item.push_back(item());
+            view_item.back().name =  "fiber";
+            view_item.back().image_data = tipl::make_image(dir.fa[0],dim);
+            view_item.back().set_scale(dir.fa[0],dir.fa[0]+dim.size());
+            return true;
+        }
+        else
         {
             header.toLPS(I);
             header.get_voxel_size(vs);
