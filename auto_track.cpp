@@ -6,7 +6,7 @@
 #include "libs/dsi/image_model.hpp"
 #include "fib_data.hpp"
 #include "libs/tracking/tracking_thread.hpp"
-
+#include "program_option.hpp"
 extern std::vector<std::string> fa_template_list;
 auto_track::auto_track(QWidget *parent) :
     QMainWindow(parent),
@@ -101,6 +101,7 @@ int trk_post(std::shared_ptr<fib_data> handle,
              TractModel& tract_model,
              const std::string& file_name);
 extern std::string auto_track_report;
+extern program_option po;
 std::string auto_track_report;
 bool check_other_src(ImageModel& src);
 std::string run_auto_track(
@@ -147,9 +148,6 @@ std::string run_auto_track(
             src.voxel.method_id = 4; // GQI
             src.voxel.param[0] = length_ratio;
             src.voxel.ti.init(8); // odf order of 8
-            src.voxel.odf_xyz[0] = 0;
-            src.voxel.odf_xyz[1] = 0;
-            src.voxel.odf_xyz[2] = 0;
             src.voxel.thread_count = std::thread::hardware_concurrency();
             // has fib file?
             fib_file_name = file_list[i]+src.get_file_ext();
@@ -164,6 +162,7 @@ std::string run_auto_track(
                 src.voxel.half_sphere = src.is_dsi_half_sphere();
                 src.voxel.scheme_balance = src.need_scheme_balance();
                 src.voxel.output_rdi = 1;
+                src.voxel.check_btable = po.get("check_btable",1);
                 if(interpolation)
                     src.rotate_to_mni(float(interpolation));
                 begin_prog("reconstruct DWI");
