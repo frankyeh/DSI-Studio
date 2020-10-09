@@ -11,7 +11,7 @@
 #include "libs/tracking/fib_data.hpp"
 #include "tracking/atlasdialog.h"
 #include "tracking/roi.hpp"
-
+extern bool has_gui;
 QWidget *ROIViewDelegate::createEditor(QWidget *parent,
                                      const QStyleOptionViewItem &option,
                                      const QModelIndex &index) const
@@ -117,9 +117,14 @@ group_connectometry::group_connectometry(QWidget *parent,std::shared_ptr<group_c
             check_quality += out.str();
         }
     }
-    if(!check_quality.empty())
-        QMessageBox::information(this,"Warning",check_quality.c_str());
 
+    if(!check_quality.empty())
+    {
+        if(has_gui)
+            QMessageBox::information(this,"Warning",check_quality.c_str());
+        else
+            std::cout << check_quality << std::endl;
+    }
     ui->subject_demo->clear();
     ui->subject_demo->setColumnCount(1);
     ui->subject_demo->setHorizontalHeaderLabels(QStringList("Subject ID"));
