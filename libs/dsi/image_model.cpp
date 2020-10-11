@@ -116,6 +116,25 @@ void flip_fib_dir(std::vector<tipl::vector<3> >& fib_dir,const unsigned char* or
             fib_dir[j][2] = -fib_dir[j][2];
     }
 }
+void flip_fib_dir(std::vector<tipl::vector<3> >& fib_dir,const unsigned char* order,const tipl::matrix<3,3,float>& T)
+{
+    tipl::matrix<3,3,float> iT = tipl::inverse(T);
+    tipl::par_for(fib_dir.size(),[&](size_t j)
+    {
+        tipl::vector<3> tmp;
+        tipl::vector_rotation(fib_dir[j].begin(),tmp.begin(),iT,tipl::vdim<3>());
+        tmp = tipl::vector<3>(tmp[order[0]],tmp[order[1]],tmp[order[2]]);
+        if(order[3])
+            tmp[0] = -tmp[0];
+        if(order[4])
+            tmp[1] = -tmp[1];
+        if(order[5])
+            tmp[2] = -tmp[2];
+        tmp.normalize();
+        tipl::vector_rotation(tmp.begin(),fib_dir[j].begin(),T,tipl::vdim<3>());
+    });
+}
+
 std::vector<size_t> ImageModel::get_sorted_dwi_index(void)
 {
     std::vector<size_t> sorted_index(src_bvalues.size());
@@ -205,7 +224,10 @@ std::string ImageModel::check_b_table(void)
     for(int i = 1;i < 24;++i)// 0 is the current score
     {
         auto new_dir(fib_dir);
-        flip_fib_dir(new_dir[0],order[i]);
+        if(has_image_rotation)
+            flip_fib_dir(new_dir[0],order[i],src_bvectors_rotate);
+        else
+            flip_fib_dir(new_dir[0],order[i]);
         result[i] = evaluate_fib(voxel.dim,otsu,fib_fa,[&](uint32_t pos,uint8_t fib){return new_dir[fib][pos];}).first;
     }
     long best = long(std::max_element(result,result+24)-result);
@@ -507,21 +529,21 @@ bool ImageModel::command(std::string cmd,std::string param)
         voxel.report += std::string(" The diffusion weighted images were rotated to the MNI space at 2mm.");
         return true;
     }
-    if(cmd == "[Step T2][B-table][flip bx]")
+    if(cmd == "[Step T2][Edit][Change b-table:flip bx]")
     {
         for(size_t i = 0;i < src_bvectors.size();++i)
             src_bvectors[i][0] = -src_bvectors[i][0];
         voxel.steps += cmd+"\n";
         return true;
     }
-    if(cmd == "[Step T2][B-table][flip by]")
+    if(cmd == "[Step T2][Edit][Change b-table:flip by]")
     {
         for(size_t i = 0;i < src_bvectors.size();++i)
             src_bvectors[i][1] = -src_bvectors[i][1];
         voxel.steps += cmd+"\n";
         return true;
     }
-    if(cmd == "[Step T2][B-table][flip bz]")
+    if(cmd == "[Step T2][Edit][Change b-table:flip bz]")
     {
         for(size_t i = 0;i < src_bvectors.size();++i)
             src_bvectors[i][2] = -src_bvectors[i][2];
@@ -748,9 +770,30 @@ bool ImageModel::rotate_to_mni(float resolution)
     bool terminated = false;
     begin_prog("aligning with MNI ac-pc");
     check_prog(0,1);
-    tipl::reg::two_way_linear_mr(I,vs,dwi_sum,voxel.vs,
-                    arg,tipl::reg::rigid_body,tipl::reg::mutual_information(),terminated);
+
+    const float bound[8] = {1.0f,-1.0f,0.02f,-0.02f,1.2f,0.9f,0.1f,-0.1f};
+    tipl::affine_transform<float> T;
+    tipl::reg::linear_mr(I,vs,dwi_sum,voxel.vs,
+            T,tipl::reg::affine,tipl::reg::mutual_information(),terminated,0.1,bound);
+    tipl::reg::linear_mr(I,vs,dwi_sum,voxel.vs,
+            T,tipl::reg::affine,tipl::reg::mutual_information(),terminated,0.01,bound);
+    tipl::reg::linear_mr(I,vs,dwi_sum,voxel.vs,
+            T,tipl::reg::affine,tipl::reg::mutual_information(),terminated,0.001,bound);
+    T.scaling[0] = T.scaling[1] = T.scaling[2] = 1.0f;
+    T.affine[0] = T.affine[1] = T.affine[2] = 0.0f;
+    arg = tipl::transformation_matrix<float>(T,I.geometry(),vs,dwi_sum.geometry(),voxel.vs);
+
+    {
+        tipl::image<float,3> I2(I.geometry());
+        tipl::resample(dwi_sum,I2,arg,tipl::cubic);
+        float r = float(tipl::correlation(I.begin(),I.end(),I2.begin()));
+        std::cout << T;
+        std::cout << "R2 for ac-pc alignment=" << r*r << std::endl;
+        if(r*r < 0.3f)
+            return false;
+    }
     rotate(I.geometry(),arg);
+
     voxel.vs = vs;
     voxel.report += " The diffusion MRI data were resampled to ";
     voxel.report += std::to_string(int(vs[0]));
