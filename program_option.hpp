@@ -3,7 +3,7 @@
 #include <sstream>
 #include <vector>
 #include <iostream>
-
+extern bool has_gui;
 class program_option{
     std::vector<std::string> names;
     std::vector<std::string> values;
@@ -119,7 +119,8 @@ public:
                 }
                 return values[i];
             }
-        std::cout << name << "=" << df_value << std::endl;
+        if(!has_gui)
+            std::cout << name << "=" << df_value << std::endl;
         return df_value;
     }
 
@@ -138,7 +139,8 @@ public:
                 std::istringstream(values[i]) >> df;
                 return df;
             }
-        std::cout << name << "=" << df << std::endl;
+        if(!has_gui)
+            std::cout << name << "=" << df << std::endl;
         return df;
     }
 };
