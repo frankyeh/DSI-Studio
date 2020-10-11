@@ -109,8 +109,6 @@ manual_alignment::~manual_alignment()
 }
 void manual_alignment::load_param(void)
 {
-
-
     // translocation
     ui->tx->setMaximum(b_upper.translocation[0]);
     ui->tx->setMinimum(b_lower.translocation[0]);
@@ -295,18 +293,19 @@ void manual_alignment::on_rerun_clicked()
         ui->scaling_group->setEnabled(true);
         ui->tilting_group->setEnabled(true);
     }
+    load_param();
 
     thread.run([this,cost]()
     {
         if(cost == tipl::reg::mutual_info)
         {
-            tipl::reg::linear(from,from_vs,to,to_vs,arg,reg_type,tipl::reg::mutual_information(),thread.terminated,0.01,500,tipl::reg::large_bound);
-            tipl::reg::linear(from,from_vs,to,to_vs,arg,reg_type,tipl::reg::mutual_information(),thread.terminated,0.001,500,tipl::reg::large_bound);
+            tipl::reg::linear(from,from_vs,to,to_vs,arg,reg_type,tipl::reg::mutual_information(),thread.terminated,0.01,50,tipl::reg::large_bound);
+            tipl::reg::linear(from,from_vs,to,to_vs,arg,reg_type,tipl::reg::mutual_information(),thread.terminated,0.001,50,tipl::reg::large_bound);
         }
         else
         {
-            tipl::reg::linear(from,from_vs,to,to_vs,arg,reg_type,tipl::reg::correlation(),thread.terminated,0.01,500,tipl::reg::large_bound);
-            tipl::reg::linear(from,from_vs,to,to_vs,arg,reg_type,tipl::reg::correlation(),thread.terminated,0.001,500,tipl::reg::large_bound);
+            tipl::reg::linear(from,from_vs,to,to_vs,arg,reg_type,tipl::reg::correlation(),thread.terminated,0.01,50,tipl::reg::large_bound);
+            tipl::reg::linear(from,from_vs,to,to_vs,arg,reg_type,tipl::reg::correlation(),thread.terminated,0.001,50,tipl::reg::large_bound);
         }
 
     });
