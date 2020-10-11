@@ -151,7 +151,7 @@ std::string run_auto_track(
             src.voxel.thread_count = std::thread::hardware_concurrency();
             // has fib file?
             fib_file_name = file_list[i]+src.get_file_ext();
-            if(!QFileInfo(fib_file_name.c_str()).exists())
+            if(!QFileInfo(fib_file_name.c_str()).exists() || overwrite)
             {
                 if (!src.load_from_file(file_list[i].c_str()))
                     return std::string("ERROR at ") + cur_file_base_name + ":" + src.error_msg;
@@ -170,6 +170,13 @@ std::string run_auto_track(
                     std::fill(src.voxel.mask.begin(),src.voxel.mask.end(),1);
                 if (!src.reconstruction())
                     return std::string("ERROR at ") + cur_file_base_name + ":" + src.error_msg;
+
+                std::string mapping_file_name(fib_file_name);
+                mapping_file_name += ".";
+                mapping_file_name += QFileInfo(fa_template_list[0].c_str()).baseName().toLower().toStdString();
+                mapping_file_name += ".inv.mapping.gz";
+                if(QFileInfo(mapping_file_name.c_str()).exists())
+                    QFile::remove(mapping_file_name.c_str());
             }
             if(!QFileInfo(fib_file_name.c_str()).exists())
                 return std::string("fib file not generated for ") + file_list[i];
