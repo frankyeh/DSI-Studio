@@ -567,7 +567,11 @@ void GLWidget::renderLR()
         std::shared_ptr<fib_data> handle = cur_tracking_window.handle;
         unsigned char skip_mask_set[3] = {0,1,3};
         unsigned char mask = skip_mask_set[odf_skip];
-        auto& slice = cur_tracking_window.slices[0];
+        std::shared_ptr<SliceModel> slice =
+                (cur_tracking_window.current_slice->is_diffusion_space?
+                     cur_tracking_window.current_slice:
+                     cur_tracking_window.slices[0]);
+
         auto& geo = cur_tracking_window.handle->dim;
         if(odf_points.empty())
         {
