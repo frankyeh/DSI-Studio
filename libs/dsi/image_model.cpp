@@ -123,6 +123,7 @@ void flip_fib_dir(std::vector<tipl::vector<3> >& fib_dir,const unsigned char* or
     {
         tipl::vector<3> tmp;
         tipl::vector_rotation(fib_dir[j].begin(),tmp.begin(),iT,tipl::vdim<3>());
+        tmp = tipl::vector<3>(tmp[order[0]],tmp[order[1]],tmp[order[2]]);
         if(order[3])
             tmp[0] = -tmp[0];
         if(order[4])
@@ -170,10 +171,7 @@ void ImageModel::flip_b_table(const unsigned char* order)
 }
 void ImageModel::pre_dti(void)
 {
-    bool output_tensor = voxel.output_tensor;
-    voxel.output_tensor = false;
     reconstruct<check_btable_process>("checking b-table");
-    voxel.output_tensor = output_tensor;
 }
 
 std::string ImageModel::check_b_table(void)
