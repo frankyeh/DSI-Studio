@@ -104,6 +104,23 @@ extern std::string auto_track_report;
 extern program_option po;
 std::string auto_track_report;
 bool check_other_src(ImageModel& src);
+
+
+struct file_holder{
+    std::string file_name;
+    file_holder(std::string file_name_):file_name(file_name_)
+    {
+        // create a zero-sized file to hold it
+        std::ofstream(file_name.c_str());
+    }
+    ~file_holder()
+    {
+        // at the end, check if the file size is zero.
+        if(QFileInfo(file_name.c_str()).size() == 0)
+            QFile::remove(file_name.c_str());
+    }
+};
+
 std::string run_auto_track(
                     const std::vector<std::string>& file_list,
                     const std::vector<unsigned int>& track_id,
@@ -131,9 +148,11 @@ std::string run_auto_track(
             targets += ", ";
     }
 
+    std::vector<std::string> names;
     for(size_t i = 0;i < file_list.size() && !prog_aborted();++i)
     {
         std::string cur_file_base_name = QFileInfo(file_list[i].c_str()).baseName().toStdString();
+        names.push_back(cur_file_base_name);
         progress = int(i);
 
         std::string fib_file_name;
@@ -197,18 +216,20 @@ std::string run_auto_track(
         {
             std::string track_name = fib.tractography_name_list[track_id[j]];
             std::string no_result_file_name = fib_file_name+"."+track_name+".no_result.txt";
-            if(QFileInfo(no_result_file_name.c_str()).exists() && !overwrite)
-                continue;
-
             std::string trk_file_name = fib_file_name+"."+track_name+".tt.gz";
             std::string stat_file_name = fib_file_name+"."+track_name+".stat.txt";
             std::string report_file_name = dir+"/"+track_name+".report.txt";
             stat_files[j].push_back(stat_file_name);
 
-            bool no_stat_file = !QFileInfo(stat_file_name.c_str()).exists() || overwrite;
-            bool no_trk_file = !QFileInfo(trk_file_name.c_str()).exists() || overwrite;
-            if((export_stat && no_stat_file) || (export_trk && no_trk_file))
+            if(QFileInfo(no_result_file_name.c_str()).exists() && !overwrite)
+                continue;
+
+            if( overwrite ||
+               (export_stat && QFileInfo(stat_file_name.c_str()).size() == 0) ||
+               (export_trk && QFileInfo(trk_file_name.c_str()).size() == 0))
             {
+                file_holder state_file(stat_file_name),trk_file(trk_file_name);
+
                 if (!fib_loaded && !handle->load_from_file(fib_file_name.c_str()))
                     return std::string("ERROR at ") + fib_file_name + ":" +handle->error_msg;
                 fib_loaded = true;
@@ -217,21 +238,20 @@ std::string run_auto_track(
                     ThreadData thread(handle.get());
 
                     thread.param.tip_iteration = uint8_t(tip);
-                    thread.param.check_ending =
-                            !QString(track_name.c_str()).contains("Cingulum");
-                    thread.param.max_seed_count = 10000000;
+                    thread.param.check_ending = !QString(track_name.c_str()).contains("Cingulum");
                     thread.param.stop_by_tract = 1;
                     if(!thread.roi_mgr->setAtlas(track_id[j],tolerance/handle->vs[0]))
                         return std::string("ERROR at ") + fib_file_name + ":" +handle->error_msg;
                     auto track_count = uint32_t(track_voxel_ratio*thread.roi_mgr->seeds.size());
                     thread.param.termination_count = track_count;
+                    thread.param.max_seed_count = track_count*5000; //yield rate easy:1/100 hard:1/5000
                     // report
                     thread.roi_mgr->report += " The track-to-voxel ratio was set to ";
                     thread.roi_mgr->report += QString::number(double(track_voxel_ratio),'g',1).toStdString();
                     thread.roi_mgr->report += ".";
                     // run tracking
                     prog_init p("tracking ",track_name.c_str());
-                    thread.run(tract_model.get_fib(),std::thread::hardware_concurrency(),!has_gui);
+                    thread.run(tract_model.get_fib(),std::thread::hardware_concurrency(),false);
 
                     tract_model.report += thread.report.str();
                     tract_model.report += " Shape analysis (Yeh, Neuroimage, 2020) was conducted to derive shape metrics for tractography.";
@@ -254,31 +274,28 @@ std::string run_auto_track(
                         temp_report.replace(iter2,iter-iter2+23,"");
                         auto_track_report = temp_report;
                     }
-                    if(has_gui)
+                    while(!thread.is_ended() && !prog_aborted())
                     {
-                        while(!thread.is_ended() && !prog_aborted())
-                        {
-                            check_prog(thread.get_total_tract_count(),track_count);
-                            thread.fetchTracks(&tract_model);
-                            std::this_thread::sleep_for(std::chrono::seconds(2));
-                        }
-                        if(prog_aborted())
-                            return std::string();
+                        check_prog(thread.get_total_tract_count(),track_count);
+                        thread.fetchTracks(&tract_model);
+                        std::this_thread::sleep_for(std::chrono::seconds(2));
+                        // very low yield rate
+                        if(thread.get_total_tract_count() == 0 && thread.get_total_seed_count() > 50000)
+                            break;
                     }
+                    if(thread.get_total_tract_count() == 0)
+                    {
+                        std::ofstream out(no_result_file_name.c_str());
+                        continue;
+                    }
+
+                    if(prog_aborted())
+                        return std::string();
                     thread.fetchTracks(&tract_model);
                     thread.apply_tip(&tract_model);
                 }
+
                 tract_model.delete_repeated(1.0f);
-
-                if(prog_aborted())
-                    return std::string();
-
-                if(tract_model.get_visible_track_count() == 0)
-                {
-                    std::ofstream out(no_result_file_name.c_str());
-                    continue;
-                }
-
                 if(export_stat)
                 {
                     std::ofstream out_stat(stat_file_name.c_str());
@@ -295,44 +312,77 @@ std::string run_auto_track(
             }
         }
     }
-
+    if(prog_aborted())
+        return std::string();
     // aggregating
     if(file_list.size() != 1)
-    for(size_t t = 0;t < stat_files.size();++t)
     {
-        std::vector<std::string> output;
-        for(size_t j = 0;j < stat_files[t].size();++j)
+        std::string column_title("Subjects");
+        for(size_t s = 0;s < names.size();++s) // for each scan
         {
-            std::ifstream in(stat_files[t][j].c_str());
-            if(!in)
-                continue;
-            std::string base_name = QFileInfo(stat_files[t][j].c_str()).baseName().toStdString();
-            std::string line;
-            if(output.empty())
+            column_title += "\t";
+            column_title += names[s];
+        }
+        std::ofstream all_out((QFileInfo(stat_files[0][0].c_str()).absolutePath()+"/all_results_tract_wise.txt").toStdString().c_str());
+        std::vector<std::string> all_out2_text;
+        std::vector<std::string> metrics_names; // row titles are metrics
+        for(size_t t = 0;t < track_id.size();++t) // for each track
+        {
+            std::vector<std::vector<std::string> > output(names.size());
+            for(size_t s = 0;s < names.size();++s) // for each scan
             {
-                output.push_back(std::string(std::string("Files\t")+base_name));
-                while(std::getline(in,line))
-                    output.push_back(line);
-            }
-            else
-            {
-                output[0] += "\t";
-                output[0] += base_name;
-                for(size_t i = 1;i < output.size();++i)
+                std::ifstream in(stat_files[t][s].c_str());
+                if(!in)
+                    continue;
+                std::string line;
+                for(size_t m = 0;std::getline(in,line);++m)
                 {
-                    if(std::getline(in,line))
-                        output[i] += line.substr(line.find('\t'));
-                    else
-                        output[i] += "\t";
+                    auto sep = line.find('\t');
+                    if(m >= metrics_names.size())
+                        metrics_names.push_back(line.substr(0,sep));
+                    output[s].push_back(line.substr(sep+1));
                 }
             }
+            std::string track_name = fib.tractography_name_list[track_id[t]];
+            std::ofstream out((dir+"/"+track_name+".stat.txt").c_str());
+            out << column_title << std::endl;
+            if(t == 0)
+                all_out << "Tract\t" << column_title << std::endl;
+            for(size_t m = 0;m < metrics_names.size();++m)
+            {
+                std::string metrics_output(metrics_names[m]);
+                for(size_t s = 0;s < names.size();++s)
+                {
+                    metrics_output += "\t";
+                    if(m < output[s].size())
+                        metrics_output += output[s][m];
+                }
+                out << metrics_output << std::endl;
+                all_out << track_name << "\t" << metrics_output << std::endl;
+            }
+            if(t == 0)
+                all_out2_text.resize(output.size()*metrics_names.size());
+            for(size_t s = 0,index = 0;s < names.size();++s)
+                for(size_t m = 0;m < metrics_names.size();++m,++index)
+                {
+                    if(t == 0)
+                    {
+                        all_out2_text[index] = names[s];
+                        all_out2_text[index] += "\t";
+                        all_out2_text[index] += metrics_names[m];
+                    }
+                    all_out2_text[index] += "\t";
+                    all_out2_text[index] += output[s][m];
+                }
         }
 
-        std::string track_name = fib.tractography_name_list[track_id[t]];
-        std::ofstream out((dir+"/"+track_name+".stat.txt").c_str());
-        for(size_t i = 0;i < output.size();++i)
-            out << output[i] << std::endl;
-        out << reports[t] << std::endl;
+        std::ofstream all_out2((QFileInfo(stat_files[0][0].c_str()).absolutePath()+"/all_results_subject_wise.txt").toStdString().c_str());
+        all_out2 << "Subjects\tMetrics";
+        for(size_t t = 0;t < track_id.size();++t) // for each tract
+            all_out2 << "\t" << fib.tractography_name_list[track_id[t]];
+        all_out2 << std::endl;
+        for(size_t index = 0;index < all_out2_text.size();++index) // for each tract
+            all_out2 << all_out2_text[index] << std::endl;
     }
     return std::string();
 }
