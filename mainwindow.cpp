@@ -635,15 +635,16 @@ void MainWindow::on_batch_src_clicked()
         QString src_output_prefix = src_dir + "/" + sub_dir[j];
         QString t1wt2w_output_prefix = t1wt2w_dir + "/" + sub_dir[j];
 
-        QStringList dir_list = GetSubDir(sub_dir[j],true);
+        QStringList dir_list = GetSubDir(dir + "/" + sub_dir[j],true);
+        dir_list << dir;
         std::vector<std::shared_ptr<DwiHeader> > dicom_dwi_files;
         QString dicom_output;
-        for(unsigned int i = 0;i < dir_list.size();++i)
+        for(int i = 0;i < dir_list.size();++i)
         {
             QDir cur_dir = dir_list[i];
             // 4D nifti with same base name bvals and bvecs
             QStringList nifti_file_list = cur_dir.entryList(QStringList("*.nii.gz") << "*.nii",QDir::Files|QDir::NoSymLinks);
-            for (unsigned int index = 0;index < nifti_file_list.size();++index)
+            for (int index = 0;index < nifti_file_list.size();++index)
             {
                 out << "\tNIFTI file found at " << nifti_file_list[index].toStdString() << std::endl;
                 std::vector<std::shared_ptr<DwiHeader> > dwi_files;
@@ -674,7 +675,7 @@ void MainWindow::on_batch_src_clicked()
             if(dicom_file_list.empty())
                 continue;
             out << "\tDICOM files found at " << dir_list[i].toStdString() << std::endl;
-            for (unsigned int index = 0;index < dicom_file_list.size();++index)
+            for (int index = 0;index < dicom_file_list.size();++index)
                 dicom_file_list[index] = dir_list[i] + "/" + dicom_file_list[index];
 
             std::vector<std::shared_ptr<DwiHeader> > dicom_files;
@@ -690,7 +691,7 @@ void MainWindow::on_batch_src_clicked()
                 tipl::io::volume v;
                 tipl::io::dicom header;
                 std::vector<std::string> file_list;
-                for(unsigned int index = 0;index < dicom_file_list.size();++index)
+                for(int index = 0;index < dicom_file_list.size();++index)
                     file_list.push_back(dicom_file_list[index].toLocal8Bit().begin());
                 if(!v.load_from_files(file_list,file_list.size()) ||
                    !header.load_from_file(dicom_file_list[0].toLocal8Bit().begin()))
