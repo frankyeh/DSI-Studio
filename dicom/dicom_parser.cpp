@@ -80,7 +80,6 @@ bool load_dicom_multi_frame(const char* file_name,std::vector<std::shared_ptr<Dw
     dicom_header >> buf_image;
     unsigned int slice_num = dicom_header.get_int(0x2001,0x1018);
     std::vector<float> b_table;
-
     {
         std::vector<float> b,bx,by,bz;
         dicom_header.get_values(0x2001,0x1003,b);
@@ -91,14 +90,15 @@ bool load_dicom_multi_frame(const char* file_name,std::vector<std::shared_ptr<Dw
         {
             if(!slice_num)
                 slice_num = 1;
-            b.resize(buf_image.depth()/slice_num);
-            bx.resize(buf_image.depth()/slice_num);
-            by.resize(buf_image.depth()/slice_num);
-            bz.resize(buf_image.depth()/slice_num);
-            for(int i = 0;i < b.size();++i)
+            uint32_t b_count = uint32_t(buf_image.depth())/slice_num;
+            b.resize(b_count);
+            bx.resize(b_count);
+            by.resize(b_count);
+            bz.resize(b_count);
+            for(size_t i = 0;i < b.size();++i)
             {
                 tipl::vector<3, float> bvec(bx[i],by[i],bz[i]);
-                b_table.push_back(b[i]*bvec.length());
+                b_table.push_back(b[i]*float(bvec.length()));
                 if(bvec.length() > 0)
                     bvec.normalize();
                 b_table.push_back(bvec[0]);
@@ -110,29 +110,30 @@ bool load_dicom_multi_frame(const char* file_name,std::vector<std::shared_ptr<Dw
 
     if(b_table.empty())
     {
-        for(int i = 0;i < dicom_header.data.size();++i)
-            if(dicom_header.data[i].sq_data.size() == buf_image.depth())
+        for(size_t i = 0;i < dicom_header.data.size();++i)
+            if(int(dicom_header.data[i].sq_data.size()) == buf_image.depth())
             {
                 std::string slice_pos;
                 for(int j = 0;j < buf_image.depth();++j)
                 {
+                    const auto& ge = dicom_header.data[i].sq_data[uint32_t(j)];
                     std::string pos;
-                    if(!tipl::io::dicom::get_values(dicom_header.data[i].sq_data[j],0x0020,0x0032,
+                    if(!tipl::io::dicom::get_values(ge,0x0020,0x0032,
                                                     j ? pos : slice_pos))
                         break;
                     if(j && pos != slice_pos)
                     {
-                        slice_num = buf_image.depth()/j;
+                        slice_num = uint32_t(buf_image.depth()/j);
                         break;
                     }
                     float b_value = 0;
-                    tipl::io::dicom::get_value(dicom_header.data[i].sq_data[j],0x0018,0x9087,b_value);
+                    tipl::io::dicom::get_value(ge,0x0018,0x9087,b_value);
                     b_table.push_back(b_value);
-                    if(b_value == 0 || !tipl::io::dicom::get_values(dicom_header.data[i].sq_data[j],0x0018,0x9089,b_table))
+                    if(b_value == 0.0f || !tipl::io::dicom::get_values(ge,0x0018,0x9089,b_table))
                     {
-                        b_table.push_back(0);
-                        b_table.push_back(0);
-                        b_table.push_back(0);
+                        b_table.push_back(0.0f);
+                        b_table.push_back(0.0f);
+                        b_table.push_back(0.0f);
                     }
                 }
                 if(slice_num == 0)
@@ -141,11 +142,27 @@ bool load_dicom_multi_frame(const char* file_name,std::vector<std::shared_ptr<Dw
             }
     }
 
+    // Philips multiframe
+    // The b-table should be multiplied with the image rotation matrix
+    tipl::matrix<3,3,float> T;
+    {
+        tipl::vector<3> x,y,z;
+        dicom_header.get_image_row_orientation(x.begin());
+        dicom_header.get_image_col_orientation(y.begin());
+        z = x.cross_product(y);
+        std::copy(x.begin(),x.end(),T.begin());
+        std::copy(y.begin(),y.end(),T.begin()+3);
+        std::copy(z.begin(),z.end(),T.begin()+6);
+        std::cout << "b-table multiplied by DICOM image rotation matrix" << std::endl;
+        std::cout << T << std::endl;
+    }
+
     if(!slice_num)
         slice_num = 1;
-    // Philips multiframe
-    unsigned int num_gradient = buf_image.depth()/slice_num;
-    unsigned int plane_size = buf_image.width()*buf_image.height();
+    unsigned int num_gradient = uint32_t(buf_image.depth())/slice_num;
+
+
+    unsigned int plane_size = uint32_t(buf_image.width()*buf_image.height());
     b_table.resize(num_gradient*4);
     begin_prog("loading multi frame DICOM");
     for(unsigned int index = 0;check_prog(index,num_gradient);++index)
@@ -153,7 +170,8 @@ bool load_dicom_multi_frame(const char* file_name,std::vector<std::shared_ptr<Dw
         std::shared_ptr<DwiHeader> new_file(new DwiHeader);
         if(index == 0)
             get_report_from_dicom(dicom_header,new_file->report);
-        new_file->image.resize(tipl::geometry<3>(buf_image.width(),buf_image.height(),slice_num));
+        new_file->image.resize(tipl::geometry<3>(uint32_t(buf_image.width()),
+                                                 uint32_t(buf_image.height()),slice_num));
 
         for(unsigned int j = 0;j < slice_num;++j)
         std::copy(buf_image.begin()+(j*num_gradient + index)*plane_size,
@@ -165,7 +183,8 @@ bool load_dicom_multi_frame(const char* file_name,std::vector<std::shared_ptr<Dw
         new_file->file_name += out.str();
         dicom_header.get_voxel_size(new_file->voxel_size);
         new_file->bvalue = b_table[index*4];
-        new_file->bvec = tipl::vector<3, float>(b_table[index*4+1],b_table[index*4+2],b_table[index*4+3]);
+        tipl::vector_rotation(tipl::vector<3, float>(b_table[index*4+1],b_table[index*4+2],b_table[index*4+3]).begin(),
+                              new_file->bvec.begin(),T.begin(),tipl::vdim<3>());
         dwi_files.push_back(new_file);
     }
     return true;
@@ -875,7 +894,7 @@ bool parse_dwi(QStringList file_list,
         return load_3d_series(file_list,dwi_files);
     if(geo[2] == 1)
         return load_multiple_slice_dicom(file_list,dwi_files);
-    // multiframe DICOM
+    // multiframe Phillips DICOM
     for(int index = 0;index < file_list.size();++index)
         if(!load_dicom_multi_frame(file_list[index].toLocal8Bit().begin(),dwi_files))
             return false;
