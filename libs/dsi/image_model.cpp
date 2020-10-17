@@ -123,15 +123,14 @@ void flip_fib_dir(std::vector<tipl::vector<3> >& fib_dir,const unsigned char* or
     {
         tipl::vector<3> tmp;
         tipl::vector_rotation(fib_dir[j].begin(),tmp.begin(),iT,tipl::vdim<3>());
-        tmp = tipl::vector<3>(tmp[order[0]],tmp[order[1]],tmp[order[2]]);
         if(order[3])
             tmp[0] = -tmp[0];
         if(order[4])
             tmp[1] = -tmp[1];
         if(order[5])
             tmp[2] = -tmp[2];
-        tmp.normalize();
         tipl::vector_rotation(tmp.begin(),fib_dir[j].begin(),T,tipl::vdim<3>());
+        fib_dir[j].normalize();
     });
 }
 
@@ -661,11 +660,6 @@ void ImageModel::rotate(const tipl::geometry<3>& new_geo,
         src_dwi_data[index] = &(dwi[index][0]);
     });
 
-    tipl::image<unsigned char,3> new_mask(new_geo);
-    tipl::resample(voxel.mask,new_mask,affine,tipl::linear);
-    tipl::morphology::smoothing(new_mask);
-
-
     dwi.swap(new_dwi);
     // rotate b-table
     if(has_image_rotation)
@@ -706,8 +700,7 @@ void ImageModel::rotate(const tipl::geometry<3>& new_geo,
     }
     voxel.dim = new_geo;
     voxel.dwi_data.clear();
-    calculate_dwi_sum(false);
-    voxel.mask.swap(new_mask);
+    calculate_dwi_sum(true);
 }
 void ImageModel::resample(float nv)
 {
