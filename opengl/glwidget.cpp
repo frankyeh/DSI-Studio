@@ -1168,7 +1168,7 @@ void GLWidget::renderLR()
 
     }
 
-    if (get_param("show_axis"))
+    if (get_param("show_directional_axis"))
     {
         float L2 = get_param_float("axis_line_length")*0.75f;
 
