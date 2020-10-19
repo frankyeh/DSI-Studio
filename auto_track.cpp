@@ -231,7 +231,7 @@ std::string run_auto_track(
                 file_holder state_file(stat_file_name),trk_file(trk_file_name);
 
                 if (!fib_loaded && !handle->load_from_file(fib_file_name.c_str()))
-                    return std::string("ERROR at ") + fib_file_name + ":" +handle->error_msg;
+                    return std::string("ERROR at ") + fib_file_name + ": Not human data. Check image resolution.";
                 fib_loaded = true;
                 TractModel tract_model(handle.get());
                 {
@@ -432,7 +432,7 @@ void auto_track::on_run_clicked()
     prog = 0;
     timer->start(5000);
     begin_prog("");
-    run_auto_track(file_list2,track_id,
+    std::string error = run_auto_track(file_list2,track_id,
                    float(ui->gqi_l->value()),
                    float(ui->tolerance->value()),
                    float(ui->track_voxel_ratio->value()),
@@ -445,8 +445,14 @@ void auto_track::on_run_clicked()
     timer->stop();
     ui->run->setEnabled(true);
     progress->setVisible(false);
+
     if(!prog_aborted())
-        QMessageBox::information(this,"DSI Studio","Completed");
+    {
+        if(error.empty())
+            QMessageBox::information(this,"DSI Studio","Completed");
+        else
+            QMessageBox::information(this,"DSI Studio",error.c_str());
+    }
     close_prog();
     raise(); //  for mac
 }
