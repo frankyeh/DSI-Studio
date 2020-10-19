@@ -251,6 +251,8 @@ std::string run_auto_track(
                     thread.roi_mgr->report += ".";
                     // run tracking
                     prog_init p("tracking ",track_name.c_str());
+                    check_prog(0,track_count);
+
                     thread.run(tract_model.get_fib(),std::thread::hardware_concurrency(),false);
 
                     tract_model.report += thread.report.str();
@@ -274,25 +276,34 @@ std::string run_auto_track(
                         temp_report.replace(iter2,iter-iter2+23,"");
                         auto_track_report = temp_report;
                     }
+                    bool no_result = false;
+                    const unsigned int low_yield_threshold = 100000;
                     while(!thread.is_ended() && !prog_aborted())
                     {
                         check_prog(thread.get_total_tract_count(),track_count);
                         thread.fetchTracks(&tract_model);
                         std::this_thread::sleep_for(std::chrono::seconds(2));
-                        // very low yield rate
-                        if(thread.get_total_tract_count() == 0 && thread.get_total_seed_count() > 50000)
+                        // terminate if yield rate is very low, likely quality problem
+                        if(thread.get_total_seed_count() > low_yield_threshold &&
+                           thread.get_total_tract_count() < thread.get_total_seed_count()/low_yield_threshold)
+                        {
+                            no_result = true;
+                            thread.end_thread();
                             break;
+                        }
+
                     }
-                    if(thread.get_total_tract_count() == 0)
+                    if(prog_aborted())
+                        return std::string();
+                    thread.fetchTracks(&tract_model);
+                    thread.apply_tip(&tract_model);
+
+                    if(no_result || tract_model.get_visible_track_count() == 0)
                     {
                         std::ofstream out(no_result_file_name.c_str());
                         continue;
                     }
 
-                    if(prog_aborted())
-                        return std::string();
-                    thread.fetchTracks(&tract_model);
-                    thread.apply_tip(&tract_model);
                 }
 
                 tract_model.delete_repeated(1.0f);
@@ -372,7 +383,8 @@ std::string run_auto_track(
                         all_out2_text[index] += metrics_names[m];
                     }
                     all_out2_text[index] += "\t";
-                    all_out2_text[index] += output[s][m];
+                    if(m < output[s].size())
+                        all_out2_text[index] += output[s][m];
                 }
         }
 
