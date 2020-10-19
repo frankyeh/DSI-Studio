@@ -36,6 +36,7 @@ public:
     std::vector<std::shared_ptr<std::future<void> > > threads;
     std::vector<unsigned int> seed_count;
     std::vector<unsigned int> tract_count;
+    std::vector<unsigned int> end_count;
     std::vector<unsigned char> running;
     std::mutex  lock_feed_function,lock_seed_function;
     unsigned int get_total_seed_count(void)const
@@ -64,7 +65,7 @@ public:
 
 public:
     void run_thread(TrackingMethod* method_ptr,unsigned int thread_count,
-                    unsigned int thread_id,unsigned int max_count);
+                    unsigned int thread_id);
     bool fetchTracks(TractModel* handle);
     void apply_tip(TractModel* handle);
     TrackingMethod* new_method(const tracking_data& trk);

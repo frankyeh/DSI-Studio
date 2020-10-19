@@ -20,7 +20,7 @@ void ThreadData::end_thread(void)
     if (!threads.empty())
     {
         joinning = true;
-        for(int i = 0;i < threads.size();++i)
+        for(size_t i = 0;i < threads.size();++i)
             threads[i]->wait();
         threads.clear();
     }
@@ -28,8 +28,7 @@ void ThreadData::end_thread(void)
 
 void ThreadData::run_thread(TrackingMethod* method_ptr,
                             unsigned int thread_count,
-                            unsigned int thread_id,
-                            unsigned int max_count)
+                            unsigned int thread_id)
 {
     std::auto_ptr<TrackingMethod> method(method_ptr);
     std::uniform_real_distribution<float> rand_gen(0,1),
@@ -43,11 +42,11 @@ void ThreadData::run_thread(TrackingMethod* method_ptr,
     try{
         std::vector<std::vector<float> > local_track_buffer;
         while(!joinning &&
-              !(param.stop_by_tract == 1 && tract_count[thread_id] >= max_count) &&
-              !(param.stop_by_tract == 0 && seed_count[thread_id] >= max_count) &&
+              !(param.stop_by_tract == 1 && tract_count[thread_id] >= end_count[thread_id]) &&
+              !(param.stop_by_tract == 0 && seed_count[thread_id] >= end_count[thread_id]) &&
               !(param.max_seed_count > 0 && seed_count[thread_id] >= param.max_seed_count))
         {
-            if(!pushing_data && (iteration & 0x00000FFF) == 0x00000FFF && !local_track_buffer.empty())
+            if(!local_track_buffer.empty() && !pushing_data && (iteration & 0x00000FFF) == 0x00000FFF)
                 push_tracts(local_track_buffer);
             if(param.threshold == 0.0f)
             {
@@ -227,35 +226,47 @@ void ThreadData::run(const tracking_data& trk,
         std::srand(0);
         std::random_shuffle(roi_mgr->seeds.begin(),roi_mgr->seeds.end());
     }
-    seed = std::mt19937(param.random_seed ? std::random_device()():0);
-    seed_count.clear();
-    tract_count.clear();
-    seed_count.resize(thread_count);
-    tract_count.resize(thread_count);
-    running.resize(thread_count);
-    pushing_data = false;
-    std::fill(running.begin(),running.end(),1);
 
-    unsigned int count = param.termination_count;
     end_thread();
-    if(thread_count > count)
-        thread_count = count;
+
+
+    if(thread_count > param.termination_count)
+        thread_count = param.termination_count;
     if(thread_count < 1)
         thread_count = 1;
-    unsigned int run_count = std::max<int>(1,count/thread_count);
-    unsigned int total_run_count = 0;
+
+    // initialize multi-thread for tracking
+    {
+        seed_count.clear();
+        tract_count.clear();
+        end_count.clear();
+
+        seed_count.resize(thread_count);
+        tract_count.resize(thread_count);
+        end_count.resize(thread_count);
+        running.resize(thread_count);
+
+        std::fill(running.begin(),running.end(),1);
+
+        std::fill(end_count.begin(),end_count.end(),param.termination_count/thread_count);
+        end_count.back() = param.termination_count-end_count.front()*(thread_count-1);
+    }
+
+
     joinning = false;
-    for (unsigned int index = 0;index < thread_count-1;++index,total_run_count += run_count)
+    pushing_data = false;
+    seed = std::mt19937(param.random_seed ? std::random_device()():0);
+    for (unsigned int index = 0;index < thread_count-1;++index)
         threads.push_back(std::make_shared<std::future<void> >(std::async(std::launch::async,
-                [&,thread_count,index,run_count](){run_thread(new_method(trk),thread_count,index,run_count);})));
+                [&,thread_count,index](){run_thread(new_method(trk),thread_count,index);})));
 
     if(wait)
     {
-        run_thread(new_method(trk),thread_count,thread_count-1,count-total_run_count);
-        for(int i = 0;i < threads.size();++i)
+        run_thread(new_method(trk),thread_count,thread_count-1);
+        for(size_t i = 0;i < threads.size();++i)
             threads[i]->wait();
     }
     else
         threads.push_back(std::make_shared<std::future<void> >(std::async(std::launch::async,
-                [&,thread_count,count,total_run_count](){run_thread(new_method(trk),thread_count,thread_count-1,count-total_run_count);})));
+                [&,thread_count](){run_thread(new_method(trk),thread_count,thread_count-1);})));
 }
