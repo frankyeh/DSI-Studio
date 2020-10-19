@@ -241,6 +241,7 @@ int rec(void)
                         terminated,src.voxel.thread_count);
         std::cout << "DWI rotated." << std::endl;
         src.rotate(I.geometry(),T);
+        src.voxel.vs = vs;
     }
 
     if(po.get("motion_correction",int(0)))
