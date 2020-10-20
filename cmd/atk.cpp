@@ -36,7 +36,7 @@ int atk(void)
 {
     std::vector<std::string> file_list;
     std::string source = po.get("source");
-    if(source.find("*") != std::string::npos)
+    if(source.find('*') != std::string::npos)
     {
         QDir dir(QFileInfo(source.c_str()).absoluteDir());
         QStringList result = dir.entryList(QStringList(QFileInfo(source.c_str()).fileName()),QDir::Files);
