@@ -264,18 +264,16 @@ int run_cmd(int ac, char *av[])
             return 1;
         }
         std::string source = po.get("source");
-        if(!source.empty() && source[0] != '.')
-            QDir::setCurrent(QFileInfo(source.c_str()).absolutePath());
-        if(po.get("source").find('*') != std::string::npos)
+        if(po.get("action") != std::string("atk") &&
+           source.find('*') != std::string::npos)
         {
-            auto file_list = QDir::current().entryList(QStringList(QFileInfo(po.get("source").c_str()).fileName()),
-                                            QDir::Files|QDir::NoSymLinks);
-            for (unsigned int index = 0;index < file_list.size();++index)
+            QDir dir(QFileInfo(source.c_str()).absoluteDir());
+            QStringList file_list = dir.entryList(QStringList(QFileInfo(source.c_str()).fileName()),QDir::Files);
+            for (int index = 0;index < file_list.size();++index)
             {
-                QString filename = QDir::current().absoluteFilePath(file_list[index]);
-                std::cout << "=======================================" << std::endl;
-                std::cout << "Process file:" << filename.toStdString() << std::endl;
-                po.set("source",filename.toStdString());
+                QString file_name = dir.absolutePath() + "/" + file_list[index];
+                std::cout << "Process file:" << file_name.toStdString() << std::endl;
+                po.set("source",file_name.toStdString());
                 run_action(gui);
             }
         }
