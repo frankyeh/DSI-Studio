@@ -3,6 +3,8 @@
 #include <string>
 #include <iterator>
 #include <cctype>
+#include <QDir>
+#include <QFileInfo>
 #include "fib_data.hpp"
 #include "program_option.hpp"
 
@@ -33,7 +35,26 @@ extern std::string auto_track_report;
 int atk(void)
 {
     std::vector<std::string> file_list;
-    file_list.push_back(po.get("source"));
+    std::string source = po.get("source");
+    if(source.find("*") != std::string::npos)
+    {
+        QDir dir(QFileInfo(source.c_str()).absoluteDir());
+        QStringList result = dir.entryList(QStringList(QFileInfo(source.c_str()).fileName()),QDir::Files);
+        std::cout << "searching " << QFileInfo(source.c_str()).fileName().toStdString() << " at " << dir.absolutePath().toStdString() << std::endl;
+        for(int i = 0;i < result.size();++i)
+        {
+            file_list.push_back((dir.absolutePath() + "/" + result[i]).toStdString());
+            std::cout << file_list.back() << std::endl;
+        }
+        if(file_list.empty())
+        {
+            std::cout << "no file found." << std::endl;
+            return 1;
+        }
+    }
+    else
+        file_list.push_back(source);
+
     std::vector<unsigned int> track_id;
     {
         fib_data fib;
