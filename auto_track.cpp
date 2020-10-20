@@ -352,25 +352,45 @@ std::string run_auto_track(
             column_title += "\t";
             column_title += names[s];
         }
+        std::vector<std::string> metrics_names; // row titles are metrics
+        {
+            std::ifstream in(stat_files[0][0].c_str());
+            std::string line;
+            for(size_t m = 0;std::getline(in,line);++m)
+            {
+                auto sep = line.find('\t');
+                metrics_names.push_back(line.substr(0,sep));
+            }
+        }
+
         std::ofstream all_out((QFileInfo(stat_files[0][0].c_str()).absolutePath()+"/all_results_tract_wise.txt").toStdString().c_str());
         std::vector<std::string> all_out2_text;
-        std::vector<std::string> metrics_names; // row titles are metrics
         for(size_t t = 0;t < track_id.size();++t) // for each track
         {
             std::vector<std::vector<std::string> > output(names.size());
-            for(size_t s = 0;s < names.size();++s) // for each scan
+            for(size_t s = 0;s < output.size();++s) // for each scan
             {
                 std::ifstream in(stat_files[t][s].c_str());
                 if(!in)
                     continue;
-                std::string line;
-                for(size_t m = 0;std::getline(in,line);++m)
+                std::vector<std::string> lines;
                 {
-                    auto sep = line.find('\t');
-                    if(m >= metrics_names.size())
-                        metrics_names.push_back(line.substr(0,sep));
-                    output[s].push_back(line.substr(sep+1));
+                    std::string line;
+                    while(std::getline(in,line))
+                        lines.push_back(line);
                 }
+                if(lines.size() != metrics_names.size())
+                {
+                    std::string error("inconsistent stat file (remove it and rerun):");
+                    error += QFileInfo(stat_files[t][s].c_str()).fileName().toStdString();
+                    error += " metrics count=";
+                    error += std::to_string(lines.size());
+                    error += " others=";
+                    error += std::to_string(metrics_names.size());
+                    return error;
+                }
+                for(size_t m = 0;m < lines.size();++m)
+                    output[s].push_back(lines[m].substr(lines[m].find('\t')+1));
             }
             std::string track_name = fib.tractography_name_list[track_id[t]];
             std::ofstream out((dir+"/"+track_name+".stat.txt").c_str());
