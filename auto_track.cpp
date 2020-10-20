@@ -154,7 +154,7 @@ std::string run_auto_track(
         std::string cur_file_base_name = QFileInfo(file_list[i].c_str()).baseName().toStdString();
         names.push_back(cur_file_base_name);
         progress = int(i);
-
+        std::cout << "processing " << cur_file_base_name << std::endl;
         std::string fib_file_name;
         if(!QFileInfo(file_list[i].c_str()).exists())
             return std::string("cannot find file:")+file_list[i];
@@ -370,6 +370,7 @@ std::string run_auto_track(
             std::vector<std::vector<std::string> > output(names.size());
             for(size_t s = 0;s < output.size();++s) // for each scan
             {
+                std::cout << "reading " << stat_files[t][s] << std::endl;
                 std::ifstream in(stat_files[t][s].c_str());
                 if(!in)
                     continue;
