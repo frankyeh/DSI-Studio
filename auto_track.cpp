@@ -219,14 +219,15 @@ std::string run_auto_track(
             std::string trk_file_name = fib_file_name+"."+track_name+".tt.gz";
             std::string stat_file_name = fib_file_name+"."+track_name+".stat.txt";
             std::string report_file_name = dir+"/"+track_name+".report.txt";
+
             stat_files[j].push_back(stat_file_name);
 
             if(QFileInfo(no_result_file_name.c_str()).exists() && !overwrite)
                 continue;
 
             if( overwrite ||
-               (export_stat && QFileInfo(stat_file_name.c_str()).size() == 0) ||
-               (export_trk && QFileInfo(trk_file_name.c_str()).size() == 0))
+               (export_stat && !QFileInfo(stat_file_name.c_str()).exists()) ||
+               (export_trk && !QFileInfo(trk_file_name.c_str()).exists()))
             {
                 file_holder state_file(stat_file_name),trk_file(trk_file_name);
 
@@ -325,6 +326,23 @@ std::string run_auto_track(
     }
     if(prog_aborted())
         return std::string();
+    // check if there is any incomplete task
+    {
+        bool has_incomplete = false;
+        for(size_t i = 0;i < stat_files.size();++i)
+        {
+            for(size_t j = 0;j < stat_files[i].size();++j)
+                if(QFileInfo(stat_files[i][j].c_str()).exists() &&
+                   QFileInfo(stat_files[i][j].c_str()).size() == 0)
+                {
+                    QFile::remove(stat_files[i][j].c_str());
+                    has_incomplete = true;
+                }
+        }
+        if(has_incomplete)
+            return "Incomplete tasked found. Please rerun the analysis.";
+    }
+
     // aggregating
     if(file_list.size() != 1)
     {
