@@ -230,9 +230,9 @@ std::string run_auto_track(
                (export_trk && !QFileInfo(trk_file_name.c_str()).exists()))
             {
                 file_holder state_file(stat_file_name),trk_file(trk_file_name);
-
                 if (!fib_loaded && !handle->load_from_file(fib_file_name.c_str()))
                     return std::string("ERROR at ") + fib_file_name + ": Not human data. Check image resolution.";
+                prog_init p("tracking ",track_name.c_str());
                 fib_loaded = true;
                 TractModel tract_model(handle.get());
                 {
@@ -251,7 +251,6 @@ std::string run_auto_track(
                     thread.roi_mgr->report += QString::number(double(track_voxel_ratio),'g',1).toStdString();
                     thread.roi_mgr->report += ".";
                     // run tracking
-                    prog_init p("tracking ",track_name.c_str());
                     check_prog(0,track_count);
 
                     thread.run(tract_model.get_fib(),std::thread::hardware_concurrency(),false);
@@ -308,6 +307,10 @@ std::string run_auto_track(
                 }
 
                 tract_model.delete_repeated(1.0f);
+
+                // output already exist continue next
+                if(!overwrite && QFileInfo(stat_file_name.c_str()).size() != 0)
+                    continue;
                 if(export_stat)
                 {
                     std::ofstream out_stat(stat_file_name.c_str());
@@ -335,6 +338,7 @@ std::string run_auto_track(
                 if(QFileInfo(stat_files[i][j].c_str()).exists() &&
                    QFileInfo(stat_files[i][j].c_str()).size() == 0)
                 {
+                    std::cout << "remove empty file:" << stat_files[i][j] << std::endl;
                     QFile::remove(stat_files[i][j].c_str());
                     has_incomplete = true;
                 }
@@ -380,7 +384,7 @@ std::string run_auto_track(
                     while(std::getline(in,line))
                         lines.push_back(line);
                 }
-                if(lines.size() != metrics_names.size())
+                if(lines.size() > metrics_names.size())
                 {
                     std::string error("inconsistent stat file (remove it and rerun):");
                     error += QFileInfo(stat_files[t][s].c_str()).fileName().toStdString();
@@ -390,7 +394,7 @@ std::string run_auto_track(
                     error += std::to_string(metrics_names.size());
                     return error;
                 }
-                for(size_t m = 0;m < lines.size();++m)
+                for(size_t m = 0;m < metrics_names.size();++m)
                     output[s].push_back(lines[m].substr(lines[m].find('\t')+1));
             }
             std::string track_name = fib.tractography_name_list[track_id[t]];
