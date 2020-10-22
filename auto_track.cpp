@@ -384,7 +384,7 @@ std::string run_auto_track(
                     while(std::getline(in,line))
                         lines.push_back(line);
                 }
-                if(lines.size() > metrics_names.size())
+                if(lines.size() < metrics_names.size())
                 {
                     std::string error("inconsistent stat file (remove it and rerun):");
                     error += QFileInfo(stat_files[t][s].c_str()).fileName().toStdString();

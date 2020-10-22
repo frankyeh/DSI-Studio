@@ -32,7 +32,7 @@ void ThreadData::run_thread(TrackingMethod* method_ptr,
 {
     std::auto_ptr<TrackingMethod> method(method_ptr);
     std::uniform_real_distribution<float> rand_gen(0,1),
-            angle_gen(float(60.0*M_PI/180.0),float(90.0*M_PI/180.0)),
+            angle_gen(float(15.0*M_PI/180.0),float(90.0*M_PI/180.0)),
             smoothing_gen(0.0f,0.95f),
             step_gen(method->trk.vs[0]*0.5f,method->trk.vs[0]*1.5f),
             threshold_gen(0.0,1.0);
