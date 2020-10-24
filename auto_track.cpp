@@ -225,19 +225,41 @@ std::string run_auto_track(
             if(QFileInfo(no_result_file_name.c_str()).exists() && !overwrite)
                 continue;
 
-            if( overwrite ||
-               (export_stat && !QFileInfo(stat_file_name.c_str()).exists()) ||
-               (export_trk && !QFileInfo(trk_file_name.c_str()).exists()))
+            bool has_stat_file = QFileInfo(stat_file_name.c_str()).exists();
+            bool has_trk_file = QFileInfo(trk_file_name.c_str()).exists();
+            if(has_stat_file)
+                std::cout << "found stat file:" << stat_file_name << std::endl;
+            if(has_trk_file)
+                std::cout << "found track file:" << trk_file_name << std::endl;
+
+            if(!overwrite && (!export_stat || has_stat_file) && (!export_trk || has_trk_file))
             {
-                file_holder state_file(stat_file_name),trk_file(trk_file_name);
-                if (!fib_loaded && !handle->load_from_file(fib_file_name.c_str()))
-                    return std::string("ERROR at ") + fib_file_name + ": Not human data. Check image resolution.";
-                prog_init p("tracking ",track_name.c_str());
-                fib_loaded = true;
-                TractModel tract_model(handle.get());
-                if(overwrite || !QFileInfo(trk_file_name.c_str()).exists() ||
-                   !tract_model.load_from_file(trk_file_name.c_str()))
+                std::cout << "skip " << track_name << std::endl;
+                continue;
+            }
+
+            {
+                std::shared_ptr<file_holder> stat_file,trk_file;
+                if(export_stat && !has_stat_file)
+                    stat_file = std::make_shared<file_holder>(stat_file_name);
+                if(export_trk && !has_trk_file)
+                    trk_file = std::make_shared<file_holder>(trk_file_name);
+
+                if (!fib_loaded)
                 {
+                    prog_init p("loading ",fib_file_name.c_str());
+                    if(!handle->load_from_file(fib_file_name.c_str()))
+                       return std::string("ERROR at ") + fib_file_name + ": Not human data. Check image resolution.";
+                    fib_loaded = true;
+                }
+
+                TractModel tract_model(handle.get());
+                if(!overwrite && has_trk_file)
+                    tract_model.load_from_file(trk_file_name.c_str());
+
+                if(tract_model.get_visible_track_count() == 0)
+                {
+                    prog_init p("tracking ",track_name.c_str());
                     ThreadData thread(handle.get());
 
                     thread.param.tip_iteration = uint8_t(tip);
@@ -316,6 +338,7 @@ std::string run_auto_track(
 
                 if(export_stat && (overwrite || QFileInfo(stat_file_name.c_str()).size() == 0))
                 {
+                    std::cout << "saving " << stat_file_name << std::endl;
                     std::ofstream out_stat(stat_file_name.c_str());
                     std::string result;
                     tract_model.get_quantitative_info(result);
