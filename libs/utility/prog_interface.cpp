@@ -30,11 +30,9 @@ void check_create(void)
 }
 void begin_prog(const char* title,bool lock)
 {
+    std::cout << title << std::endl;
     if(!has_gui)
-    {
-        std::cout << title << std::endl;
         return;
-    }
     if(title)
         current_title = title;
     if(progressDialog.get())
@@ -59,11 +57,9 @@ bool is_running(void)
 
 void set_title(const char* title)
 {
+    std::cout << title << std::endl;
     if(!has_gui)
-    {
-        std::cout << title << std::endl;
         return;
-    }
     current_title = title;
     if(progressDialog.get())
     {
