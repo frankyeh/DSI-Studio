@@ -1,5 +1,6 @@
 //---------------------------------------------------------------------------
 #include <QString>
+#include <QFileInfo>
 #include <fstream>
 #include <sstream>
 #include <iterator>
@@ -67,7 +68,7 @@ class TinyTrack{
                              const std::string& parameter_id,
                              unsigned int color = 0)
     {
-        prog_init p("saving ",file_name);
+        prog_init p("saving ",QFileInfo(file_name).fileName().toStdString().c_str());
         gz_mat_write out(file_name);
         if (!out)
             return false;
@@ -289,7 +290,7 @@ struct TrackVis
                              const std::string& info,
                              unsigned int color)
     {
-        prog_init p("saving ",file_name);
+        prog_init p("saving ",QFileInfo(file_name).fileName().toStdString().c_str());
         gz_ostream out;
         if (!out.open(file_name))
             return false;
@@ -1232,7 +1233,7 @@ bool TractModel::save_all(const char* file_name_,
         gz_ostream out;
         if (!out.open(file_name_))
             return false;
-        prog_init p("saving ",file_name_);
+        prog_init p("saving ",QFileInfo(file_name_).fileName().toStdString().c_str());
         {
             TrackVis trk;
             trk.init(all[0]->geo,all[0]->vs);
@@ -2367,56 +2368,78 @@ void TractModel::to_voxel(std::vector<tipl::vector<3,short> >& points,float rati
 void TractModel::to_end_point_voxels(std::vector<tipl::vector<3,short> >& points1,
                                std::vector<tipl::vector<3,short> >& points2,float ratio)
 {
-    auto norm1 = [](const tipl::vector<3,float>& v1,
-                    const tipl::vector<3,float>& v2)
-    {
-        return std::fabs(v1[0]-v2[0])+std::fabs(v1[1]-v2[1])+std::fabs(v1[2]-v2[2]);
-    };
-
-    std::vector<tipl::vector<3,float> > s1,s2;
-    tipl::vector<3,int> total_dis;
+    // estimate the average mid-point direction
+    tipl::vector<3> total_dis;
     for(size_t i = 0;i < tract_data.size();++i)
     {
         if(tract_data[i].size() < 6)
             return;
+        uint32_t mid_pos = uint32_t(tract_data[i].size()/6)*3;
+        tipl::vector<3> dis(&tract_data[i][mid_pos]);
+        dis -= tipl::vector<3>(&tract_data[i][mid_pos+3]);
+        if(dis*total_dis < 0.0f)
+            total_dis -= dis;
+        else
+            total_dis += dis;
+    }
+    total_dis.normalize();
+
+    // categlorize endpoints using the mid point direction
+    std::vector<tipl::vector<3,float> > s1,s2;
+    tipl::vector<3,float> sum_s1,sum_s2;
+    for(size_t i = 0;i < tract_data.size();++i)
+    {
+        if(tract_data[i].size() < 6)
+            return;
+
         tipl::vector<3> p1(&tract_data[i][0]);
         tipl::vector<3> p2(&tract_data[i][tract_data[i].size()-3]);
-        tipl::vector<3> dis(p1);
-        dis -= p2;
-        dis.abs();
-        total_dis[uint32_t(std::max_element(dis.begin(),dis.end())-dis.begin())]++;
-
         if(ratio != 1.0f)
             p1 *= ratio;
         p1.round();
         if(ratio != 1.0f)
             p2 *= ratio;
         p2.round();
-        s1.push_back(p1);
-        s2.push_back(p2);
-    }
-    total_dis[1] *= 5;
-    auto max_dim = std::max_element(total_dis.begin(),total_dis.end())-total_dis.begin();
-    for(int i = 0;i < 5;++i)
-    {
-        auto mean1 = std::accumulate(s1.begin(),s1.end(),tipl::vector<3,float>(0.0f,0.0f,0.0f))/float(s1.size());
-        auto mean2 = std::accumulate(s2.begin(),s2.end(),tipl::vector<3,float>(0.0f,0.0f,0.0f))/float(s2.size());
-        auto dis = mean1-mean2;
-        if(dis[uint32_t(max_dim)] < 0.0f)
-            std::swap(mean1,mean2);
-        size_t swap_count = 0;
-        tipl::par_for(s1.size(),[&](size_t index)
+
+        uint32_t mid_pos = uint32_t(tract_data[i].size()/6)*3;
+        uint32_t q1_pos = uint32_t(tract_data[i].size()/12)*3;
+        uint32_t q3_pos = uint32_t(tract_data[i].size()/4)*3;
+        tipl::vector<3> mid_dis(&tract_data[i][mid_pos]);
+        mid_dis -= tipl::vector<3>(&tract_data[i][mid_pos+3]);
+        tipl::vector<3> q1_dis(&tract_data[i][q1_pos]);
+        q1_dis -= tipl::vector<3>(&tract_data[i][q1_pos+3]);
+        tipl::vector<3> q3_dis(&tract_data[i][q3_pos]);
+        q3_dis -= tipl::vector<3>(&tract_data[i][q3_pos+3]);
+        mid_dis += q1_dis;
+        mid_dis += q3_dis;
+        if(total_dis*mid_dis > 0.0f)
         {
-            if(norm1(s1[index],mean1)+norm1(s2[index],mean2) >
-               norm1(s2[index],mean1)+norm1(s1[index],mean2))
-            {
-                std::swap(s1[index],s2[index]);
-                ++swap_count;
-            }
-        });
-        if(!swap_count)
-            break;
+            s1.push_back(p1);
+            s2.push_back(p2);
+            sum_s1 += p1;
+            sum_s2 += p2;
+        }
+        else
+        {
+            s2.push_back(p1);
+            s1.push_back(p2);
+            sum_s1 += p2;
+            sum_s2 += p1;
+        }
     }
+
+    // use end surface central point to determine
+    // end surface 1 is located at larger axis value
+    {
+        sum_s1 -= sum_s2;
+        sum_s1[1] *= 3.0f; // mainly use y-axis to define surface number
+        auto dir = sum_s1;
+        dir.abs();
+        auto max_sum_dim = std::max_element(dir.begin(),dir.end())-dir.begin();
+        if(sum_s1[uint32_t(max_sum_dim)] < 0.0f)
+            s1.swap(s2);
+    }
+
     std::set<tipl::vector<3,short> > ss1,ss2;
     for(auto& p : s1)
         ss1.insert(tipl::vector<3,short>(p));
