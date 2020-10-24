@@ -425,7 +425,7 @@ void db_window::on_actionSave_DB_as_triggered()
                            "Database files (*db?fib.gz *fib.gz);;All files (*)");
     if (filename.isEmpty())
         return;
-    prog_init p("saving ",filename.toStdString().c_str());
+    prog_init p("saving ",QFileInfo(filename).fileName().toStdString().c_str());
     vbc->handle->db.save_subject_data(filename.toStdString().c_str());
 }
 
