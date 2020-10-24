@@ -59,15 +59,15 @@ public:
         char* buf = reinterpret_cast<char*>(buf_);
         if(prog_aborted())
             return false;
+        if(cur() < size())
+            check_prog(100*cur()/size(),100);
+        else
+            check_prog(99,100);
         if(handle)
         {
             const size_t block_size = 104857600;// 100mb
             while(buf_size > block_size)
             {
-                if(cur() < size())
-                    check_prog(100*cur()/size(),100);
-                else
-                    check_prog(99,100);
                 if(gzread(handle,buf,block_size) <= 0)
                 {
                     close();
@@ -158,14 +158,13 @@ public:
         return out.good();
     }
     void write(const void* buf_,size_t size)
-    {
+    {        
         const char* buf = reinterpret_cast<const char*>(buf_);
         if(handle)
         {
             const size_t block_size = 104857600;// 500mb
             while(size > block_size)
             {
-                check_prog(100*block_size/size,100);
                 if(gzwrite(handle,buf,block_size) <= 0)
                 {
                     close();

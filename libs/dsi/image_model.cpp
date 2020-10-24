@@ -1158,7 +1158,7 @@ bool ImageModel::save_to_file(const char* dwi_file_name)
         }
         mat_writer.write("b_table",b_table,4);
     }
-    prog_init p("saving ",dwi_file_name);
+    prog_init p("saving ",QFileInfo(dwi_file_name).fileName().toStdString().c_str());
     for (unsigned int index = 0;check_prog(index,src_bvalues.size());++index)
     {
         std::ostringstream out;
@@ -1300,7 +1300,7 @@ bool ImageModel::load_from_file(const char* dwi_file_name)
 
 bool ImageModel::save_fib(const std::string& output_name)
 {
-    prog_init p("saving ",output_name.c_str());
+    prog_init p("saving ",QFileInfo(output_name.c_str()).fileName().toStdString().c_str());
     gz_mat_write mat_writer(output_name.c_str());
     if(!mat_writer)
     {
