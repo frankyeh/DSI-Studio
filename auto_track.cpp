@@ -235,6 +235,8 @@ std::string run_auto_track(
                 prog_init p("tracking ",track_name.c_str());
                 fib_loaded = true;
                 TractModel tract_model(handle.get());
+                if(overwrite || !QFileInfo(trk_file_name.c_str()).exists() ||
+                   !tract_model.load_from_file(trk_file_name.c_str()))
                 {
                     ThreadData thread(handle.get());
 
@@ -303,26 +305,23 @@ std::string run_auto_track(
                         std::ofstream out(no_result_file_name.c_str());
                         continue;
                     }
+                    tract_model.delete_repeated(1.0f);
 
+                    if(export_trk)
+                    {
+                        if(!tract_model.save_tracts_to_file(trk_file_name.c_str()))
+                            return std::string("fail to save trk file:")+trk_file_name;
+                    }
                 }
 
-                tract_model.delete_repeated(1.0f);
-
-                // output already exist continue next
-                if(!overwrite && QFileInfo(stat_file_name.c_str()).size() != 0)
-                    continue;
-                if(export_stat)
+                if(export_stat && (overwrite || QFileInfo(stat_file_name.c_str()).size() == 0))
                 {
                     std::ofstream out_stat(stat_file_name.c_str());
                     std::string result;
                     tract_model.get_quantitative_info(result);
                     out_stat << result;
                 }
-                if(export_trk)
-                {
-                    if(!tract_model.save_tracts_to_file(trk_file_name.c_str()))
-                        return std::string("fail to save trk file:")+trk_file_name;
-                }
+
                 trk_post(handle,tract_model,trk_file_name);
             }
         }
