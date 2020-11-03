@@ -1357,7 +1357,8 @@ bool ImageModel::save_b0_to_nii(const char* nifti_file_name) const
 {
     gz_nifti header;
     header.set_voxel_size(voxel.vs);
-    tipl::image<unsigned short,3> buffer(src_dwi_data[0],voxel.dim);
+    tipl::image<float,3> buffer(voxel.dim);
+    std::copy(src_dwi_data[0],src_dwi_data[0]+buffer.size(),buffer.begin());
     tipl::flip_xy(buffer);
     header << buffer;
     return header.save_to_file(nifti_file_name);
