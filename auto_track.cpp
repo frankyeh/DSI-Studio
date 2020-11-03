@@ -357,6 +357,8 @@ std::string run_auto_track(
         for(size_t i = 0;i < stat_files.size();++i)
         {
             for(size_t j = 0;j < stat_files[i].size();++j)
+            {
+                std::cout << "checking file:" << stat_files[i][j] << std::endl;
                 if(QFileInfo(stat_files[i][j].c_str()).exists() &&
                    QFileInfo(stat_files[i][j].c_str()).size() == 0)
                 {
@@ -364,6 +366,7 @@ std::string run_auto_track(
                     QFile::remove(stat_files[i][j].c_str());
                     has_incomplete = true;
                 }
+            }
         }
         if(has_incomplete)
             return "Incomplete tasked found. Please rerun the analysis.";
