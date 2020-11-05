@@ -95,9 +95,9 @@ public: // rendering options
                 return;
             for(size_t i = 0;i < region.size();++i)
             {
-                output[i][0] = short(float(region[i][0])/resolution_ratio);
-                output[i][1] = short(float(region[i][1])/resolution_ratio);
-                output[i][2] = short(float(region[i][2])/resolution_ratio);
+                output[i][0] = short(std::round(float(region[i][0])/resolution_ratio));
+                output[i][1] = short(std::round(float(region[i][1])/resolution_ratio));
+                output[i][2] = short(std::round(float(region[i][2])/resolution_ratio));
             }
         }
         const std::vector<tipl::vector<3,short> >& get_region_voxels_raw(void) const {return region;}
