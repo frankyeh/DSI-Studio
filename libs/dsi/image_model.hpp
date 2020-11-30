@@ -229,8 +229,9 @@ void distortion_estimate(const image_type& v1,const image_type& v2,
 struct ImageModel
 {
 public:
-    std::vector<tipl::image<unsigned short,3> > new_dwi;//used in rotated volume
-
+    std::vector<tipl::image<unsigned short,3> > new_dwi; //used in rotated volume
+    std::vector<const unsigned short*> original_src_dwi_data; // used in check b-table
+    tipl::geometry<3> original_dim;
 public:
     Voxel voxel;
     std::string file_name,error_msg;
@@ -249,7 +250,6 @@ public:
     void draw_mask(tipl::color_image& buffer,int position);
     void calculate_dwi_sum(bool update_mask);
     void remove(unsigned int index);
-    void pre_dti(void);
     std::string check_b_table(void);
 public:
     std::vector<unsigned int> shell;

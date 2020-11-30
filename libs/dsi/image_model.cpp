@@ -116,24 +116,6 @@ void flip_fib_dir(std::vector<tipl::vector<3> >& fib_dir,const unsigned char* or
             fib_dir[j][2] = -fib_dir[j][2];
     }
 }
-void flip_fib_dir(std::vector<tipl::vector<3> >& fib_dir,const unsigned char* order,const tipl::matrix<3,3,float>& T)
-{
-    tipl::matrix<3,3,float> iT = tipl::inverse(T);
-    tipl::par_for(fib_dir.size(),[&](size_t j)
-    {
-        tipl::vector<3> tmp;
-        tipl::vector_rotation(fib_dir[j].begin(),tmp.begin(),iT,tipl::vdim<3>());
-        tmp = tipl::vector<3>(tmp[order[0]],tmp[order[1]],tmp[order[2]]);
-        if(order[3])
-            tmp[0] = -tmp[0];
-        if(order[4])
-            tmp[1] = -tmp[1];
-        if(order[5])
-            tmp[2] = -tmp[2];
-        tipl::vector_rotation(tmp.begin(),fib_dir[j].begin(),T,tipl::vdim<3>());
-        fib_dir[j].normalize();
-    });
-}
 
 std::vector<size_t> ImageModel::get_sorted_dwi_index(void)
 {
@@ -169,14 +151,30 @@ void ImageModel::flip_b_table(const unsigned char* order)
     }
     voxel.grad_dev.clear();
 }
-void ImageModel::pre_dti(void)
-{
-    reconstruct<check_btable_process>("checking b-table");
-}
 
 std::string ImageModel::check_b_table(void)
 {
-    pre_dti();
+    // reconstruct DTI using original data and b-table
+    {
+        tipl::image<unsigned char,3> mask(original_dim);
+        std::fill(mask.begin(),mask.end(),1);
+        mask.swap(voxel.mask);
+
+        bool has_rotation = has_image_rotation;
+        has_image_rotation = false;
+
+        original_src_dwi_data.swap(src_dwi_data);
+        original_dim.swap(voxel.dim);
+
+        reconstruct<check_btable_process>("checking b-table");
+
+        original_src_dwi_data.swap(src_dwi_data);
+        original_dim.swap(voxel.dim);
+
+        mask.swap(voxel.mask);
+        has_image_rotation = has_rotation;
+    }
+
     std::vector<tipl::image<float,3> > fib_fa(1);
     std::vector<std::vector<tipl::vector<3> > > fib_dir(1);
     fib_fa[0].swap(voxel.fib_fa);
@@ -216,16 +214,12 @@ std::string ImageModel::check_b_table(void)
 
     float result[24] = {0};
     float otsu = tipl::segmentation::otsu_threshold(fib_fa[0])*0.6f;
-    float cur_score = evaluate_fib(voxel.dim,otsu,fib_fa,[&](uint32_t pos,uint8_t fib){return fib_dir[fib][pos];}).first;
-    result[0] = cur_score;
-    for(int i = 1;i < 24;++i)// 0 is the current score
+    for(int i = 0;i < 24;++i)// 0 is the current score
     {
         auto new_dir(fib_dir);
-        if(has_image_rotation)
-            flip_fib_dir(new_dir[0],order[i],src_bvectors_rotate);
-        else
+        if(i)
             flip_fib_dir(new_dir[0],order[i]);
-        result[i] = evaluate_fib(voxel.dim,otsu,fib_fa,[&](uint32_t pos,uint8_t fib){return new_dir[fib][pos];}).first;
+        result[i] = evaluate_fib(fib_fa[0].geometry(),otsu,fib_fa,[&](uint32_t pos,uint8_t fib){return new_dir[fib][pos];}).first;
     }
     long best = long(std::max_element(result,result+24)-result);
     for(int i = 0;i < 24;++i)
@@ -240,7 +234,7 @@ std::string ImageModel::check_b_table(void)
             std::cout << ",";
     }
 
-    if(result[best] > cur_score)
+    if(result[best] > result[0])
     {
         std::cout << "b-table corrected by " << txt[best] << " for " << file_name << std::endl;
         flip_b_table(order[best]);
@@ -1266,6 +1260,11 @@ bool ImageModel::load_from_file(const char* dwi_file_name)
         }
     }
 
+    // for check_btable
+    {
+        original_src_dwi_data = src_dwi_data;
+        original_dim = voxel.dim;
+    }
 
     {
         const float* grad_dev = nullptr;
@@ -1497,8 +1496,6 @@ bool ImageModel::compare_src(const char* file_name)
         });
         study_src->calculate_dwi_sum(false);
     }
-    pre_dti();
-    study_src->pre_dti();
     voxel.R2 = float(tipl::correlation(dwi_sum.begin(),dwi_sum.end(),study_src->dwi_sum.begin()));
     return true;
 }

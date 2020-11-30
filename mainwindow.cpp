@@ -41,6 +41,7 @@ int atl(void);
 int cnt(void);
 int vis(void);
 int ren(void);
+int atk(void);
 extern program_option po;
 extern std::string arg_file_name;
 std::vector<tracking_window*> tracking_windows;
@@ -271,7 +272,7 @@ void shift_track_for_tck(std::vector<std::vector<float> >& loaded_tract_data,tip
 void MainWindow::loadFib(QString filename,bool presentation_mode)
 {
     std::string file_name = filename.toLocal8Bit().begin();
-    begin_prog("load fib");
+    prog_init("loading ",QFileInfo(file_name.c_str()).fileName().toStdString().c_str());
     std::shared_ptr<fib_data> new_handle(new fib_data);
     if (!new_handle->load_from_file(&*file_name.begin()))
     {
@@ -919,6 +920,8 @@ void MainWindow::on_run_cmd_clicked()
         vis();
     if(po.get("action") == std::string("ren"))
         ren();
+    if(po.get("action") == std::string("atk"))
+        atk();
 }
 
 

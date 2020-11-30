@@ -182,11 +182,13 @@ std::string run_auto_track(
                 src.voxel.scheme_balance = src.need_scheme_balance();
                 src.voxel.output_rdi = 1;
                 src.voxel.check_btable = po.get("check_btable",1);
-                if(interpolation)
-                    src.rotate_to_mni(float(interpolation));
-                begin_prog("reconstruct DWI");
+                if(interpolation == 1)
+                    src.command("[Step T2][Edit][Rotate to MNI]");
+                if(interpolation == 2)
+                    src.command("[Step T2][Edit][Rotate to MNI2]");
                 if(!default_mask)
-                    std::fill(src.voxel.mask.begin(),src.voxel.mask.end(),1);
+                    src.command("[Step T2a][Threshold]","0");
+                begin_prog("reconstruct DWI");
                 if (!src.reconstruction())
                     return std::string("ERROR at ") + cur_file_base_name + ":" + src.error_msg;
 
