@@ -971,8 +971,7 @@ void fib_data::set_template_id(size_t new_id)
         track_atlas.reset();
         // populate atlas list
         {
-            std::string atlas_file = fa_template_list[template_id];
-            atlas_file += ".atlas.txt";
+            std::string atlas_file = fa_template_list[template_id]+".atlas.txt";
             std::ifstream in(atlas_file);
             std::string line;
             while(in >> line)
@@ -993,8 +992,7 @@ void fib_data::set_template_id(size_t new_id)
                QFileInfo(fa_template_list[template_id].c_str()).baseName())
             {
                 tractography_atlas_file_name = track_atlas_file_list[j];
-                std::string tractography_name_list_file_name = tractography_atlas_file_name;
-                tractography_name_list_file_name+=".txt";
+                std::string tractography_name_list_file_name = tractography_atlas_file_name + ".txt";
                 std::ifstream in(tractography_name_list_file_name);
                 if(in)
                     std::copy(std::istream_iterator<std::string>(in),

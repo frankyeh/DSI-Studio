@@ -1184,7 +1184,7 @@ bool ImageModel::load_from_file(const char* dwi_file_name)
             error_msg = src_error_msg;
             return false;
         }
-        new_dwi.resize(dwi_files.size());
+        nifti_dwi.resize(dwi_files.size());
         src_dwi_data.resize(dwi_files.size());
         src_bvalues.resize(dwi_files.size());
         src_bvectors.resize(dwi_files.size());
@@ -1195,10 +1195,15 @@ bool ImageModel::load_from_file(const char* dwi_file_name)
                 voxel.vs = dwi_files[0]->voxel_size;
                 voxel.dim = dwi_files[0]->image.geometry();
             }
-            new_dwi[index].swap(dwi_files[index]->image);
-            src_dwi_data[index] = &new_dwi[index][0];
+            nifti_dwi[index].swap(dwi_files[index]->image);
+            src_dwi_data[index] = &nifti_dwi[index][0];
             src_bvalues[index] = dwi_files[index]->bvalue;
             src_bvectors[index] = dwi_files[index]->bvec;
+        }
+        // for check_btable
+        {
+            original_src_dwi_data = src_dwi_data;
+            original_dim = voxel.dim;
         }
         get_report(voxel.report);
         calculate_dwi_sum(true);

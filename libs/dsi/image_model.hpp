@@ -238,8 +238,9 @@ public:
     gz_mat_read mat_reader;
 public:
     // untouched b-table and DWI from SRC file (the ones in Voxel class will be sorted
-    std::vector<tipl::vector<3,float> > src_bvectors;
     bool has_image_rotation = false;
+    std::vector<tipl::vector<3,float> > src_bvectors;
+    std::vector<tipl::image<unsigned short,3> > nifti_dwi; // if load directly from nifti
     tipl::matrix<3,3,float> src_bvectors_rotate;
 public:
     std::vector<float> src_bvalues;
