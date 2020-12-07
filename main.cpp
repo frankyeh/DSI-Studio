@@ -89,7 +89,7 @@ std::string find_full_path(QString name)
     return std::string();
 }
 
-void load_file_name(void)
+bool load_file_name(void)
 {
     fib_template_file_name_2mm = find_full_path("/hcp1065_2mm.fib.gz");
     t1w_template_file_name = find_full_path("/mni_icbm152_t1_tal_nlin_asym_09c.nii.gz");
@@ -126,6 +126,8 @@ void load_file_name(void)
             else
                 iso_template_list.push_back(std::string());
         }
+        if(fa_template_list.empty())
+            return false;
     }
 
 
@@ -158,6 +160,7 @@ void load_file_name(void)
         for(int index = 0;index < name_list.size();++index)
             track_atlas_file_list.push_back((dir.absolutePath() + "/" + name_list[index]).toStdString());
     }
+    return true;
 }
 
 void init_application(void)
@@ -171,14 +174,10 @@ void init_application(void)
     QApplication::setFont(font);
     QApplication::setStyle(QStyleFactory::create("Fusion"));
     #endif
-    try{
-    load_file_name();
-    }
-    catch(std::string msg)
-    {
-        QMessageBox::information(0,"Error",QString() + msg.c_str() +
-            ". Please download dsi_studio_other_files.zip from DSI Studio website and place them with the DSI Studio executives",0);
-    }
+    if(!load_file_name())
+        QMessageBox::information(nullptr,"Error",
+        "Cannot find FA template in the template folder. Please download dsi_studio_other_files.zip from DSI Studio website and place them with the DSI Studio executives.");
+
 }
 
 program_option po;
@@ -247,12 +246,9 @@ int run_cmd(int ac, char *av[])
         if(!gui.get())
         {
             cmd.reset(new QCoreApplication(ac, av));
-            try{
-            load_file_name();
-            }
-            catch(std::string msg)
+            if(!load_file_name())
             {
-                std::cout << msg << std::endl;
+                std::cout << "Cannot find FA template in the template folder. Please download dsi_studio_other_files.zip from DSI Studio website and place them with the DSI Studio executives." << std::endl;
                 return 1;
             }
             cmd->setOrganizationName("LabSolver");
