@@ -2728,15 +2728,14 @@ bool GLWidget::command(QString cmd,QString param,QString param2)
         if(QFileInfo(param).suffix() == "avi")
         {
             begin_prog("save video");
-            float angle = (param2.isEmpty()) ? 1 : param2.toFloat();
             int ow = width(),oh = height();
             tipl::io::avi avi;
             #ifndef __APPLE__
                 resize(1980,1080);
             #endif
-            for(float index = 0.0f;check_prog(index,360);index += angle)
+            for(float index = 0.0f;check_prog(index,360);index += 0.2f)
             {
-                rotate_angle(angle,0,1.0,0.0);
+                rotate_angle(0.2f,0,1.0,0.0);
                 QBuffer buffer;
                 QImageWriter writer(&buffer, "JPG");
                 QImage I = grab_image();
@@ -2818,13 +2817,7 @@ void GLWidget::saveRotationSeries(void)
                 "Video file (*.avi);;Image filess (*.jpg *.png);;All files (*)");
     if(filename.isEmpty())
         return;
-    bool ok;
-    int angle = QInputDialog::getInt(this,
-            "DSI Studio",
-            "Assign angle increament in degree(s):",1,1,10,1,&ok);
-    if(!ok)
-        return;
-    command("save_rotation_video",filename,QString::number(angle));
+    command("save_rotation_video",filename);
 }
 
 void GLWidget::rotate_angle(float angle,float x,float y,float z)
