@@ -96,8 +96,10 @@ int cnt(void)
     if(po.has("output"))
         vbc->ui->output_name->setText(po.get("output").c_str());
 
-    if(po.get("normalized_qa",int(1)))
+    if(po.get("normalized_qa",(vbc->vbc->handle->db.index_name == "sdf" || vbc->vbc->handle->db.index_name == "qa") ? 1:0))
         vbc->ui->normalize_qa->setChecked(true);
+    else
+        vbc->ui->normalize_qa->setChecked(false);
 
     if(po.has("fdr_threshold"))
     {
