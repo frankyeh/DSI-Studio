@@ -24,11 +24,11 @@ void get_connectivity_matrix(std::shared_ptr<fib_data> handle,
 void get_regions_statistics(const std::vector<std::shared_ptr<ROIRegion> >& regions,
                             const std::vector<std::string>& region_name,
                             std::string& result);
-void export_track_info(const std::string& file_name,
-                       std::string export_option,
-                       std::shared_ptr<fib_data> handle,
+void export_track_info(std::shared_ptr<fib_data> handle,
                        TractModel& tract_model)
 {
+    std::string export_option = po.get("export");
+    std::string file_name = po.get("output",po.get("tract",po.get("source")+"tt.gz"));
     std::replace(export_option.begin(),export_option.end(),',',' ');
     std::istringstream in(export_option);
     std::string cmd;
@@ -71,10 +71,7 @@ void export_track_info(const std::string& file_name,
                                 values,data_profile,data_ci1,data_ci2);
 
             std::replace(cmd.begin(),cmd.end(),' ','.');
-            std::string file_name_stat(file_name);
-            file_name_stat += ".";
-            file_name_stat += cmd;
-            file_name_stat += ".txt";
+            std::string file_name_stat = file_name + "." + cmd + ".txt";
             std::cout << "output report:" << file_name_stat << std::endl;
             std::ofstream report(file_name_stat.c_str());
             report << "position\t";
@@ -96,9 +93,7 @@ void export_track_info(const std::string& file_name,
             continue;
         }
 
-        std::string file_name_stat(file_name);
-        file_name_stat += ".";
-        file_name_stat += cmd;
+        std::string file_name_stat = file_name + "." + cmd;
         // export statistics
         if(cmd == "tdi" || cmd == "tdi_end")
         {
@@ -199,12 +194,8 @@ bool load_nii(std::shared_ptr<fib_data> handle,
     }
     return true;
 }
-int trk_post(std::shared_ptr<fib_data> handle,
-             TractModel& tract_model,
-             const std::string& file_name);
-void trk_post_save_trk(std::shared_ptr<fib_data> handle,
-             TractModel& tract_model,
-             const std::string& file_name);
+void trk_post(std::shared_ptr<fib_data> handle,
+             TractModel& tract_model);
 std::shared_ptr<fib_data> cmd_load_fib(const std::string file_name);
 int ana(void)
 {
@@ -293,13 +284,8 @@ int ana(void)
     }
 
     TractModel tract_model(handle.get());
-    QStringList output_list;
-    QStringList tract_list = QString(po.get("tract").c_str()).split(",");
-    if(po.has("output"))
-        output_list = QString(po.get("output").c_str()).split(",");
-    for(int i = 0;i < tract_list.size();++i)
     {
-        std::string file_name = tract_list[i].toStdString();
+        std::string file_name = po.get("tract");
         {
             std::cout << "loading " << file_name << "..." <<std::endl;
             if(!QFileInfo(file_name.c_str()).exists())
@@ -323,10 +309,7 @@ int ana(void)
             std::cout << "no tracks remained after ROI selection." << std::endl;
             return 1;
         }
-        if(i < output_list.size())// --output will save tracks into a file
-            trk_post_save_trk(handle,tract_model,output_list[i].toStdString());
-        else
-            trk_post(handle,tract_model,file_name);
+        trk_post(handle,tract_model);
     }
     return 0;
 }
