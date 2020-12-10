@@ -97,9 +97,6 @@ void auto_track::on_open_dir_clicked()
     file_list << search_files(dir,"*.src.gz");
     update_list();
 }
-int trk_post(std::shared_ptr<fib_data> handle,
-             TractModel& tract_model,
-             const std::string& file_name);
 extern std::string auto_track_report;
 extern program_option po;
 std::string auto_track_report;
@@ -346,8 +343,6 @@ std::string run_auto_track(
                     tract_model.get_quantitative_info(result);
                     out_stat << result;
                 }
-
-                trk_post(handle,tract_model,trk_file_name);
             }
         }
     }
