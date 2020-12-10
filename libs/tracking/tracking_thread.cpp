@@ -46,7 +46,7 @@ void ThreadData::run_thread(TrackingMethod* method_ptr,
               !(param.stop_by_tract == 0 && seed_count[thread_id] >= end_count[thread_id]) &&
               !(param.max_seed_count > 0 && seed_count[thread_id] >= param.max_seed_count))
         {
-            if(!local_track_buffer.empty() && !pushing_data && (iteration & 0x00000FFF) == 0x00000FFF)
+            if(!local_track_buffer.empty() && !pushing_data)
                 push_tracts(local_track_buffer);
             if(param.threshold == 0.0f)
             {
