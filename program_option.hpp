@@ -27,11 +27,9 @@ public:
 
     ~program_option(void)
     {
-        for(int i = 0;i < used.size();++i)
+        for(size_t i = 0;i < used.size();++i)
             if(!used[i])
-            {
                 std::cout << "Warning: --" << names[i] << " is not used. Please check command line syntax." << std::endl;
-            }
     }
     void clear(void)
     {
@@ -76,7 +74,7 @@ public:
     bool has(const char* name)
     {
         std::string str_name(name);
-        for(int i = 0;i < names.size();++i)
+        for(size_t i = 0;i < names.size();++i)
             if(names[i] == str_name)
                 return true;
         return false;
