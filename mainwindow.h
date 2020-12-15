@@ -42,7 +42,6 @@ private slots:
     void openRecentSrcFile();
     void open_fib_at(int,int);
     void open_src_at(int,int);
-    void on_batch_src_clicked();
     void on_batch_reconstruction_clicked();
     void on_view_image_clicked();
     void on_workDir_currentTextChanged(const QString &arg1);
@@ -60,6 +59,11 @@ private slots:
     void on_parse_network_measures_clicked();
     void on_connectometry_nn_clicked();
     void on_auto_track_clicked();
+    void on_nii2src_bids_clicked();
+    void on_nii2src_sf_clicked();
+    void on_dicom2nii_clicked();
+    void on_clear_src_history_clicked();
+    void on_clear_fib_history_clicked();
 };
 
 #endif // MAINWINDOW_H

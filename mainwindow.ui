@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>940</width>
-    <height>629</height>
+    <width>1033</width>
+    <height>655</height>
    </rect>
   </property>
   <property name="font">
@@ -65,7 +65,7 @@
          <x>0</x>
          <y>0</y>
          <width>400</width>
-         <height>563</height>
+         <height>589</height>
         </rect>
        </property>
        <attribute name="label">
@@ -224,7 +224,7 @@
          <x>0</x>
          <y>0</y>
          <width>400</width>
-         <height>563</height>
+         <height>589</height>
         </rect>
        </property>
        <attribute name="label">
@@ -267,19 +267,53 @@
          </widget>
         </item>
         <item>
-         <widget class="QCommandLinkButton" name="batch_src">
+         <widget class="Line" name="line_8">
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QCommandLinkButton" name="nii2src_bids">
           <property name="text">
-           <string>Step B2: Create SRC/Nifti files </string>
+           <string>Step B2a: NIFTI to SRC (BIDS)</string>
           </property>
           <property name="description">
-           <string>Select a root directory that contains multiple subdirectory and generate an SRC file for each of them.</string>
+           <string>Specify a root directory that contains multiple subdirectory arranged in BIDS format to generate SRC files.</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QCommandLinkButton" name="nii2src_sf">
+          <property name="text">
+           <string>Step B2b: NIFTI to SRC (Single Folder)</string>
+          </property>
+          <property name="description">
+           <string>Specify a directory that contains multiple NIFTI files to generate SRC files.</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QCommandLinkButton" name="dicom2nii">
+          <property name="text">
+           <string>Step B2c: DICOM to SRC</string>
+          </property>
+          <property name="description">
+           <string>Select a folder that contain DICOM files to generate SRC and NIFTI files.</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="Line" name="line_9">
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
           </property>
          </widget>
         </item>
         <item>
          <widget class="QCommandLinkButton" name="batch_reconstruction">
           <property name="text">
-           <string>Step B3: Batch SRC Reconstruction</string>
+           <string>Step B3: SRC to FIB</string>
           </property>
           <property name="description">
            <string>Select a directory that contains SRC files in the subdirectories and performan reconstruction.</string>
@@ -403,7 +437,7 @@
          <x>0</x>
          <y>0</y>
          <width>400</width>
-         <height>563</height>
+         <height>589</height>
         </rect>
        </property>
        <attribute name="label">
@@ -624,17 +658,47 @@
        <item>
         <layout class="QVBoxLayout" name="verticalLayout_2">
          <item>
-          <widget class="QLabel" name="label_3">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
+          <layout class="QHBoxLayout" name="horizontalLayout_4">
+           <property name="spacing">
+            <number>0</number>
            </property>
-           <property name="text">
-            <string>Recent src files: double click to open</string>
+           <property name="topMargin">
+            <number>0</number>
            </property>
-          </widget>
+           <item>
+            <widget class="QLabel" name="label_3">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="text">
+              <string>Recent src files: double click to open</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <spacer name="horizontalSpacer_2">
+             <property name="orientation">
+              <enum>Qt::Horizontal</enum>
+             </property>
+             <property name="sizeHint" stdset="0">
+              <size>
+               <width>40</width>
+               <height>20</height>
+              </size>
+             </property>
+            </spacer>
+           </item>
+           <item>
+            <widget class="QPushButton" name="clear_src_history">
+             <property name="text">
+              <string>Clear</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
          </item>
          <item>
           <widget class="QTableWidget" name="recentSrc">
@@ -669,17 +733,47 @@
           </widget>
          </item>
          <item>
-          <widget class="QLabel" name="label_2">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
+          <layout class="QHBoxLayout" name="horizontalLayout_5">
+           <property name="spacing">
+            <number>0</number>
            </property>
-           <property name="text">
-            <string>Recent fib files: double click to open</string>
+           <property name="topMargin">
+            <number>0</number>
            </property>
-          </widget>
+           <item>
+            <widget class="QLabel" name="label_2">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="text">
+              <string>Recent fib files: double click to open</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <spacer name="horizontalSpacer_3">
+             <property name="orientation">
+              <enum>Qt::Horizontal</enum>
+             </property>
+             <property name="sizeHint" stdset="0">
+              <size>
+               <width>40</width>
+               <height>20</height>
+              </size>
+             </property>
+            </spacer>
+           </item>
+           <item>
+            <widget class="QPushButton" name="clear_fib_history">
+             <property name="text">
+              <string>Clear</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
          </item>
          <item>
           <widget class="QTableWidget" name="recentFib">
