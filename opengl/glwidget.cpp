@@ -1244,6 +1244,47 @@ void GLWidget::renderLR()
         if(video_frames > 10000)
             record_video();
     }
+
+    if(editing_option == selecting)
+    {
+        glEnable(GL_COLOR_MATERIAL);
+        glDisable(GL_LIGHTING);
+        glMatrixMode(GL_PROJECTION);
+        glPushMatrix();
+        glLoadIdentity();
+        glMatrixMode(GL_MODELVIEW);
+        glPushMatrix();
+        {
+            glLoadIdentity();
+            glOrtho(0,width(),height(),0,0.0,100.0);
+
+            glDisable(GL_DEPTH_TEST);
+
+            glLineWidth(4);
+            glBegin (GL_LINES);
+            glColor3f (0.5f,0.2f,0.2f);
+            glVertex3f(lastPos.x(),lastPos.y(),0);
+            glVertex3f(curPos.x(),curPos.y(),0);
+            glEnd();
+
+            glLineWidth(2);
+            glBegin (GL_LINES);
+            glColor3f (0.8f,0.5f,0.5f);
+            glVertex3f(lastPos.x(),lastPos.y(),0);
+            glVertex3f(curPos.x(),curPos.y(),0);
+            glEnd();
+
+        // This keep shade on other regions black
+            glColor3f (0.0f,0.0f,0.0f);
+            glEnable(GL_DEPTH_TEST);
+        }
+        glPopMatrix();
+        glMatrixMode(GL_PROJECTION);
+        glPopMatrix();
+        glMatrixMode(GL_MODELVIEW);
+        check_error("selection");
+    }
+
 }
 
 
@@ -1894,15 +1935,14 @@ bool GLWidget::select_object(void)
     {
         for(object_distance = 0.0f;object_distance < 2000.0f && !device_selected;object_distance += 1.0f)
         {
-            tipl::vector<3,float> cur_pos(dir1);
-            cur_pos *= object_distance;
-            cur_pos += pos;
+            tipl::vector<3,float> p(dir1);
+            p *= object_distance;
+            p += pos;
             float min_distance = std::numeric_limits<float>::max();
             float distance,slength;
             for(size_t index = 0;index < cur_tracking_window.deviceWidget->devices.size();++index)
                 if(cur_tracking_window.deviceWidget->item(int(index),0)->checkState() == Qt::Checked &&
-                   cur_tracking_window.deviceWidget->devices[index]->selected(
-                            cur_pos,
+                   cur_tracking_window.deviceWidget->devices[index]->selected(p,
                             cur_tracking_window.handle->vs[0],slength,distance) &&
                    distance < min_distance)
                 {
@@ -1920,10 +1960,10 @@ bool GLWidget::select_object(void)
         // select object
         for(object_distance = 0.0f;object_distance < 2000.0f && !region_selected;object_distance += 1.0f)
         {
-        tipl::vector<3,float> cur_pos(dir1);
-        cur_pos *= object_distance;
-        cur_pos += pos;
-        tipl::vector<3,short> voxel(cur_pos);
+        tipl::vector<3,float> p(dir1);
+        p *= object_distance;
+        p += pos;
+        tipl::vector<3,short> voxel(p);
         if(!cur_tracking_window.handle->dim.is_valid(voxel))
             continue;
         for(size_t index = 0;index < cur_tracking_window.regionWidget->regions.size();++index)
@@ -2174,21 +2214,21 @@ void handle_rotate(bool circular,bool only_y,float fx,float fy,float dx,float dy
 
 void GLWidget::mouseMoveEvent(QMouseEvent *event)
 {
-    QPoint cur_pos = convert_pos(event);
-
+    curPos = convert_pos(event);
     makeCurrent();
     if(editing_option == selecting)
     {
         if(event->modifiers() & Qt::ShiftModifier)
         {
-            QPoint dis(cur_pos);
+            QPoint dis(curPos);
             dis -= last_select_point;
             if(dis.manhattanLength() < 20)
                 return;
-            last_select_point = cur_pos;
+            last_select_point = curPos;
             dirs.push_back(tipl::vector<3,float>());
             get_view_dir(last_select_point,dirs.back());
         }
+        updateGL();
         return;
     }
 
@@ -2196,7 +2236,7 @@ void GLWidget::mouseMoveEvent(QMouseEvent *event)
     {
         std::vector<tipl::vector<3,float> > points(4);
         slice_location(moving_at_slice_index,points);
-        get_view_dir(cur_pos,dir2);
+        get_view_dir(curPos,dir2);
         float dx,dy;
         if(get_slice_projection_point(moving_at_slice_index,pos,dir2,dx,dy) == 0.0f)
             return;
@@ -2228,7 +2268,7 @@ void GLWidget::mouseMoveEvent(QMouseEvent *event)
     {
         std::vector<tipl::vector<3,float> > points(4);
         slice_location(moving_at_slice_index,points);
-        get_view_dir(cur_pos,dir2);
+        get_view_dir(curPos,dir2);
         float move_dis = (dir2-dir1)*get_norm(points);
         move_dis *= slice_distance;
         if(std::fabs(move_dis) < 1.0)
@@ -2251,12 +2291,12 @@ void GLWidget::mouseMoveEvent(QMouseEvent *event)
     }
 
 
-    float dx = cur_pos.x() - lastPos.x();
-    float dy = cur_pos.y() - lastPos.y();
+    float dx = curPos.x() - lastPos.x();
+    float dy = curPos.y() - lastPos.y();
     if(event->modifiers() & Qt::ControlModifier)
     {
-        dx /= 16.0;
-        dy /= 16.0;
+        dx /= 16.0f;
+        dy /= 16.0f;
     }
 
     glPushMatrix();
@@ -2308,7 +2348,7 @@ void GLWidget::mouseMoveEvent(QMouseEvent *event)
 
     glPopMatrix();
     updateGL();
-    lastPos = cur_pos;
+    lastPos = curPos;
 }
 
 void GLWidget::saveCamera(void)
