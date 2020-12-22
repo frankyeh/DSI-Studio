@@ -117,6 +117,8 @@ void color_bar_dialog::update_color_map(void)
 
     if(ui->color_bar_style->currentIndex() == 0)
     {
+        ui->color_from->show();
+        ui->color_to->show();
         tipl::rgb from_color = ui->color_from->color().rgb();
         tipl::rgb to_color = ui->color_to->color().rgb();
         bar.two_color(from_color,to_color);
@@ -127,6 +129,8 @@ void color_bar_dialog::update_color_map(void)
     }
     else
     {
+        ui->color_from->hide();
+        ui->color_to->hide();
         QString filename = QCoreApplication::applicationDirPath()+"/color_map/"+ui->color_bar_style->currentText()+".txt";
         color_map.load_from_file(filename.toStdString().c_str());
         color_map_rgb.load_from_file(filename.toStdString().c_str());
