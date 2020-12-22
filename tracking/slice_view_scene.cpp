@@ -713,7 +713,7 @@ bool slice_view_scene::click_on_3D(float x,float y)
     auto dim = cur_tracking_window.current_slice->geometry;
     return cur_tracking_window["roi_layout"].toInt() == 1 &&
            y > dim[2] &&
-           (x < dim[1] ^ cur_tracking_window["orientation_convention"].toInt());
+           ((x < dim[1]) ^ cur_tracking_window["orientation_convention"].toInt());
 }
 void slice_view_scene::mousePressEvent ( QGraphicsSceneMouseEvent * mouseEvent )
 {
