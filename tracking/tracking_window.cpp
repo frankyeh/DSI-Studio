@@ -1961,10 +1961,9 @@ void tracking_window::check_reg(void)
 }
 void tracking_window::on_actionLoad_Color_Map_triggered()
 {
-    QMessageBox::information(this,"Load color map","Please assign a text file of RGB numbers as the colormap.");
     QString filename;
     filename = QFileDialog::getOpenFileName(this,
-                "Load color map","color_map.txt",
+                "Load color map",QCoreApplication::applicationDirPath()+"/color_map/",
                 "Text files (*.txt);;All files|(*)");
     if(filename.isEmpty())
         return;

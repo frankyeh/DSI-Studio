@@ -18,23 +18,23 @@ public:// color_bar
     tipl::color_map_rgb color_map_rgb;
     tipl::color_bar bar;
     QGraphicsScene color_bar;
-    float color_r,color_min;
+    double color_r,color_min;
 public:
     tracking_window* cur_tracking_window;
     Ui::color_bar_dialog *ui;
     explicit color_bar_dialog(QWidget *parent = nullptr);
     ~color_bar_dialog();    
 public:
-    const tipl::vector<3,float>& get_color(float value) const
+    const tipl::vector<3,float>& get_color(double value) const
     {
-        return color_map[std::floor(std::min(1.0f,(std::max<float>(value-color_min,0.0))/color_r)*255.0+0.49)];
+        return color_map[uint32_t(std::floor(std::min(1.0,(std::max<double>(value-color_min,0.0))/color_r)*255.0+0.49))];
     }
-    const tipl::rgb& get_rgb(float value) const
+    const tipl::rgb& get_rgb(double value) const
     {
-        return color_map_rgb[std::floor(std::min(1.0f,(std::max<float>(value-color_min,0.0))/color_r)*255.0+0.49)];
+        return color_map_rgb[uint32_t(std::floor(std::min(1.0,(std::max<double>(value-color_min,0.0))/color_r)*255.0+0.49))];
     }
     QString get_tract_color_name(void) const;
-    void set_value(float min_value,float max_value);
+    void set_value(double min_value,double max_value);
 public slots:
     void update_color_map(void);
     void update_slice_indices(void);

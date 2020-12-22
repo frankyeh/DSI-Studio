@@ -1,5 +1,6 @@
 #include <QSettings>
 #include <QGraphicsTextItem>
+#include <QDir>
 #include "color_bar_dialog.hpp"
 #include "ui_color_bar_dialog.h"
 #include "tracking_window.h"
@@ -7,8 +8,8 @@
 #include "libs/tracking/fib_data.hpp"
 
 color_bar_dialog::color_bar_dialog(QWidget *parent) :
-    QDialog(parent),
-    cur_tracking_window((tracking_window*)parent),bar(20,256),
+    QDialog(parent),bar(20,256),
+    cur_tracking_window(static_cast<tracking_window*>(parent)),
     ui(new Ui::color_bar_dialog)
 {
     ui->setupUi(this);
@@ -25,8 +26,14 @@ color_bar_dialog::color_bar_dialog(QWidget *parent) :
         ui->index_label->hide();
     }
     ui->color_bar_view->setScene(&color_bar);
-    ui->color_bar_style->setCurrentIndex(1);
 
+    // populate color bar
+    {
+        QStringList name_list = QDir(QCoreApplication::applicationDirPath()+"/color_map/").
+                                entryList(QStringList("*.txt"),QDir::Files|QDir::NoSymLinks);
+        for(int i = 0;i < name_list.size();++i)
+            ui->color_bar_style->addItem(QFileInfo(name_list[i]).baseName());
+    }
     connect(ui->color_bar_style,SIGNAL(currentIndexChanged(int)),this,SLOT(update_color_map()));
     connect(ui->color_from,SIGNAL(clicked()),this,SLOT(update_color_map()));
     connect(ui->color_to,SIGNAL(clicked()),this,SLOT(update_color_map()));
@@ -35,8 +42,8 @@ color_bar_dialog::color_bar_dialog(QWidget *parent) :
     on_tract_color_index_currentIndexChanged(0);
 
     QSettings settings;
-    ui->color_from->setColor(settings.value("color_from",0x00FF1010).toInt());
-    ui->color_to->setColor(settings.value("color_to",0x00FFFF10).toInt());
+    ui->color_from->setColor(uint32_t(settings.value("color_from",0x00FF1010).toInt()));
+    ui->color_to->setColor(uint32_t(settings.value("color_to",0x00FFFF10).toInt()));
 }
 
 
@@ -60,22 +67,22 @@ void color_bar_dialog::update_slice_indices(void)
     }
 }
 
-void color_bar_dialog::set_value(float min_value,float max_value)
+void color_bar_dialog::set_value(double min_value,double max_value)
 {
-    float decimal = std::floor(2.0-std::log10(max_value));
-    float scale = std::pow(10.0,(double)decimal);
+    double decimal = std::floor(2.0-std::log10(max_value));
+    double scale = std::pow(10.0,decimal);
     if(decimal < 1.0)
         decimal = 1.0;
     max_value = std::ceil(max_value*scale)/scale;
     min_value = std::floor(min_value*scale)/scale;
 
-    ui->tract_color_max_value->setDecimals(decimal);
+    ui->tract_color_max_value->setDecimals(int(decimal));
     ui->tract_color_max_value->setMaximum(max_value);
     ui->tract_color_max_value->setMinimum(min_value);
     ui->tract_color_max_value->setSingleStep((max_value-min_value)/50);
     ui->tract_color_max_value->setValue(max_value);
 
-    ui->tract_color_min_value->setDecimals(decimal);
+    ui->tract_color_min_value->setDecimals(int(decimal));
     ui->tract_color_min_value->setMaximum(max_value);
     ui->tract_color_min_value->setMinimum(min_value);
     ui->tract_color_min_value->setSingleStep((max_value-min_value)/50);
@@ -90,9 +97,9 @@ void color_bar_dialog::on_tract_color_index_currentIndexChanged(int index)
     std::string index_name = ui->tract_color_index->currentText().toStdString();
     if(index_name.empty())
         return;
-    unsigned int item_index = cur_tracking_window->handle->get_name_index(index_name);
-    float max_value = cur_tracking_window->handle->view_item[item_index].max_value;
-    float min_value = cur_tracking_window->handle->view_item[item_index].min_value;
+    size_t item_index = cur_tracking_window->handle->get_name_index(index_name);
+    double max_value = double(cur_tracking_window->handle->view_item[item_index].max_value);
+    double min_value = double(cur_tracking_window->handle->view_item[item_index].min_value);
     set_value(min_value,max_value);
 }
 
@@ -118,19 +125,19 @@ void color_bar_dialog::update_color_map(void)
         color_map.two_color(from_color,to_color);
         color_map_rgb.two_color(from_color,to_color);
     }
-
-    if(ui->color_bar_style->currentIndex() == 1)
+    else
     {
-        color_map.spectrum();
-        color_map_rgb.spectrum();
-        bar.spectrum();
+        QString filename = QCoreApplication::applicationDirPath()+"/color_map/"+ui->color_bar_style->currentText()+".txt";
+        color_map.load_from_file(filename.toStdString().c_str());
+        color_map_rgb.load_from_file(filename.toStdString().c_str());
+        bar.load_from_file(filename.toStdString().c_str());
     }
 
     color_bar.clear();
     QGraphicsTextItem *max_text = color_bar.addText(QString::number(ui->tract_color_max_value->value()));
     QGraphicsTextItem *min_text = color_bar.addText(QString::number(ui->tract_color_min_value->value()));
     QGraphicsPixmapItem *map = color_bar.addPixmap(fromImage(
-            QImage((unsigned char*)&*bar.begin(),bar.width(),bar.height(),QImage::Format_RGB32)));
+            QImage(reinterpret_cast<unsigned char*>(&*bar.begin()),bar.width(),bar.height(),QImage::Format_RGB32)));
     max_text->moveBy(10,-128-10);
     min_text->moveBy(10,128-10);
     map->moveBy(-10,-128);
