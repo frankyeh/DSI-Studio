@@ -1115,6 +1115,7 @@ Reconstruction</string>
     <addaction name="separator"/>
     <addaction name="actionResample"/>
     <addaction name="actionRotate"/>
+    <addaction name="actionOverwrite_Voxel_Size"/>
     <addaction name="actionImage_upsample_to_T1W_TESTING"/>
     <addaction name="separator"/>
     <addaction name="actionErase_Background_Signals"/>
@@ -1294,6 +1295,11 @@ Reconstruction</string>
   <action name="actionRotate_to_MNI_2mm">
    <property name="text">
     <string>Rotate to MNI (2mm)...</string>
+   </property>
+  </action>
+  <action name="actionOverwrite_Voxel_Size">
+   <property name="text">
+    <string>Overwrite Voxel Size...</string>
    </property>
   </action>
  </widget>

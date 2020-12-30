@@ -1073,3 +1073,19 @@ void reconstruction_window::on_edit_mask_clicked()
 
 }
 
+
+void reconstruction_window::on_actionOverwrite_Voxel_Size_triggered()
+{
+    bool ok;
+    QString result = QInputDialog::getText(this,"DSI Studio","Assign voxel size in mm",
+                                           QLineEdit::Normal,
+                                           QString("%1 %2 %3").arg(double(handle->voxel.vs[0]))
+                                                              .arg(double(handle->voxel.vs[1]))
+                                                              .arg(double(handle->voxel.vs[2])),&ok);
+    if(!ok)
+        return;
+    std::istringstream in(result.toStdString());
+    in >> handle->voxel.vs[0] >> handle->voxel.vs[1] >> handle->voxel.vs[2];
+    handle->get_report(handle->voxel.report);
+    ui->report->setText(handle->voxel.report.c_str());
+}
