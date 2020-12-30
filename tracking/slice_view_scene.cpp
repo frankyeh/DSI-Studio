@@ -179,13 +179,16 @@ void slice_view_scene::show_ruler(QPainter& paint)
 }
 void slice_view_scene::show_fiber(QPainter& painter)
 {
+    float display_ratio = cur_tracking_window.get_scene_zoom();
+    if(display_ratio < 7.0f)
+        return;
+
     int roi_fiber = cur_tracking_window["roi_fiber"].toInt();
     float threshold = cur_tracking_window.get_fa_threshold();
     float threshold2 = cur_tracking_window["dt_index"].toInt() ? cur_tracking_window["dt_threshold"].toFloat() : 0.0f;
     if (threshold == 0.0f)
         threshold = 0.00000001f;
     int X,Y,Z;
-    float display_ratio = cur_tracking_window.get_scene_zoom();
     unsigned char dir_x[3] = {1,0,0};
     unsigned char dir_y[3] = {2,2,1};
 
