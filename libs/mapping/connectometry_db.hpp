@@ -137,7 +137,7 @@ public:
 
 
 struct connectometry_result{
-    std::vector<std::vector<float> > greater,lesser;
+    std::vector<std::vector<float> > pos_corr,neg_corr;
     std::vector<const float*> pos_corr_ptr,neg_corr_ptr;
     void remove_old_index(std::shared_ptr<fib_data> handle);
     bool compare(std::shared_ptr<fib_data> handle,
