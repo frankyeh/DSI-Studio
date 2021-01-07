@@ -28,7 +28,6 @@ int src(void)
     QStringList file_list;
     if(ext ==".nii" || ext == ".dcm" || ext == "dseq" || ext == "i.gz")
     {
-        std::cout << "image=" << source.c_str() << std::endl;
         std::istringstream ss(source);
         std::string token;
         while(std::getline(ss, token, ','))
