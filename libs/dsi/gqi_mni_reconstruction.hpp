@@ -68,14 +68,6 @@ public:
 
         {
             float best_reso = *std::min_element(voxel.vs.begin(),voxel.vs.end());
-            // upsample template
-            while(best_reso < VGvs[0]*0.5f)
-            {
-                tipl::upsampling(VG);
-                if(!VG2.empty())
-                    tipl::upsampling(VG2);
-                VGvs *= 0.5f;
-            }
             // downsample template
             while(best_reso > VGvs[0]*1.5f)
             {
