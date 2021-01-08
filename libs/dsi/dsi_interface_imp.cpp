@@ -198,7 +198,8 @@ bool ImageModel::reconstruction(void)
                 voxel.recon_report <<
                 " The diffusion data were compared with baseline scan using differential tractography with a diffusion sampling length ratio of "
                 << float(voxel.param[0]) << " to study neuronal change.";
-
+                if (!study_src->reconstruct<dti_process>("GQI reconstruction"))
+                    return false;
             }
             else
                 voxel.recon_report <<
