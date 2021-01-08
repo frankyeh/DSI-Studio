@@ -1317,9 +1317,15 @@ void fib_data::run_normalization(bool background,bool inv)
         auto It2 = template_I2;
         tipl::transformation_matrix<double> T;
         tipl::image<float,3> Is(dir.fa[0],dim);
+        unsigned int downsampling = 0;
+
+        while(Is.size() > It.size())
+        {
+            tipl::downsampling(Is);
+            ++downsampling;
+        }
+
         tipl::filter::gaussian(Is);
-
-
         prog = 1;
         auto tvs = vs;
         tvs *= std::sqrt((It.plane_size()*template_vs[0]*template_vs[1])/
@@ -1329,6 +1335,10 @@ void fib_data::run_normalization(bool background,bool inv)
         else
             tipl::reg::two_way_linear_mr(It,template_vs,Is,tvs,T,tipl::reg::affine,
                                          tipl::reg::mutual_information(),terminated);
+
+        for(unsigned int i = 0;i < downsampling;++i)
+            tipl::multiply_constant(T.get(),T.get()+12,2.0f);
+
         if(terminated)
             return;
         tipl::image<float,3> Iss(It.geometry());
@@ -1337,7 +1347,7 @@ void fib_data::run_normalization(bool background,bool inv)
         tipl::image<float,3> Iss2;
         if(It2.geometry() == It.geometry())
         {
-            for(int i = 0;i < view_item.size();++i)
+            for(unsigned int i = 0;i < view_item.size();++i)
                 if(view_item[i].name == std::string("iso"))
                 {
                     Iss2.resize(It.geometry());
