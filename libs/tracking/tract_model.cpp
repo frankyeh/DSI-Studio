@@ -2614,6 +2614,10 @@ void TractModel::get_quantitative_info(std::string& result)
     {
         std::vector<const float*> old_index_data(fib->other_index[0]);
         for(char normalize_qa = 0;normalize_qa <= 1;++normalize_qa)
+        {
+            // only applied normalized value to qa
+            if(handle->db.index_name != "qa" && normalize_qa)
+                break;
             for(unsigned int i = 0;i < handle->db.num_subjects;++i)
             {
                 std::vector<std::vector<float> > fa_data;
@@ -2622,9 +2626,10 @@ void TractModel::get_quantitative_info(std::string& result)
                     fib->other_index[0][j] = &fa_data[j][0];
                 float mean;
                 get_tracts_data(0,mean);
-                out << handle->db.subject_names[i] << (normalize_qa ? " mean_normalized_":" mean_") <<
+                out << handle->db.subject_names[i] << (normalize_qa ? " mean_n":" mean_") <<
                        handle->db.index_name << "\t" << mean << std::endl;
             }
+        }
         fib->other_index[0] = old_index_data;
     }
     result = out.str();
