@@ -3457,7 +3457,7 @@ void ConnectivityMatrix::network_property(std::string& report)
         out << "network_characteristic_path_length(weighted)\t" << ncpl_wei << std::endl;
         out << "small-worldness(binary)\t" << (ncpl_bin == 0.0 ? 0.0:cc_bin/ncpl_bin) << std::endl;
         out << "small-worldness(weighted)\t" << (ncpl_wei == 0.0 ? 0.0:cc_wei/ncpl_wei) << std::endl;
-        tipl::image<float,2> invD;
+        tipl::image<float,2> invD(dis_bin.geometry());
         inv_dis(dis_bin,invD);
         out << "global_efficiency(binary)\t" << std::accumulate(invD.begin(),invD.end(),0.0)/(n*n-inf_count_bin) << std::endl;
         inv_dis(dis_wei,invD);
