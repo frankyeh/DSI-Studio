@@ -182,15 +182,21 @@ int rec(void)
 
     if(po.has("other_image"))
     {
-        QStringList file_list = QString(po.get("other_image").c_str()).split(":");
+        QStringList file_list = QString(po.get("other_image").c_str()).split(",");
         for(int i = 0;i < file_list.size();++i)
         {
-            QStringList name_value = file_list[i].split(",");
-            if(name_value.size() != 2)
+            QStringList name_value = file_list[i].split(":");
+            if(name_value.size() == 1)
             {
-                std::cout << "invalid command: " << file_list[i].toStdString() << std::endl;
+                std::cout << "invalid parameter: " << file_list[i].toStdString() << std::endl;
                 return 1;
             }
+            if(name_value.size() == 3) // handle windows directory with drive letter
+            {
+                name_value[1] += ":";
+                name_value[1] += name_value[2];
+            }
+            std::cout << name_value[0].toStdString() << "=" << name_value[1].toStdString() << std::endl;
             if(!add_other_image(&src,name_value[0],name_value[1]))
                 return 1;
         }
