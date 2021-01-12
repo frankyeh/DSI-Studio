@@ -577,18 +577,17 @@ bool TractModel::load_from_atlas(const char* file_name_)
         return false;
     if(!handle->load_template() || geo != handle->template_I.geometry())
         return false;
-    prog_init p("warping atlas tracks to subject space");
-    handle->run_normalization(true,true);
-    if(prog_aborted())
-        return false;
+    {
+        prog_init p("warping atlas tracks to subject space");
+        handle->run_normalization(true,true);
+        if(prog_aborted())
+            return false;
+    }
     tipl::par_for(loaded_tract_data.size(),[&](size_t i)
     {
         for(size_t j = 0;j < loaded_tract_data[i].size();j += 3)
         {
-            // here the values has been divided by vs due to TrackVis store in mm;
-            tipl::vector<3> p(loaded_tract_data[i][j]*vs[0],
-                              loaded_tract_data[i][j+1]*vs[1],
-                              loaded_tract_data[i][j+2]*vs[2]);
+            tipl::vector<3> p(&loaded_tract_data[i][j]);
             handle->template_to_mni(p);
             handle->mni2subject(p);
             loaded_tract_data[i][j] = p[0];
@@ -3345,8 +3344,7 @@ void distance_wei(const matrix_type& W_,tipl::image<float,2>& D)
 template<class matrix_type>
 void inv_dis(const matrix_type& D,matrix_type& e)
 {
-    if(e.begin() != D.begin())
-        e = D;
+    e = D;
     unsigned int n = D.width();
     for(unsigned int i = 0;i < e.size();++i)
         e[i] = ((e[i] == 0 || e[i] == std::numeric_limits<float>::max()) ? 0:1.0/e[i]);
@@ -3457,7 +3455,7 @@ void ConnectivityMatrix::network_property(std::string& report)
         out << "network_characteristic_path_length(weighted)\t" << ncpl_wei << std::endl;
         out << "small-worldness(binary)\t" << (ncpl_bin == 0.0 ? 0.0:cc_bin/ncpl_bin) << std::endl;
         out << "small-worldness(weighted)\t" << (ncpl_wei == 0.0 ? 0.0:cc_wei/ncpl_wei) << std::endl;
-        tipl::image<float,2> invD(dis_bin.geometry());
+        tipl::image<float,2> invD;
         inv_dis(dis_bin,invD);
         out << "global_efficiency(binary)\t" << std::accumulate(invD.begin(),invD.end(),0.0)/(n*n-inf_count_bin) << std::endl;
         inv_dis(dis_wei,invD);
