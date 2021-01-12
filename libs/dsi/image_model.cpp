@@ -1,4 +1,5 @@
 #include <QFileInfo>
+#include <QDir>
 #include <QInputDialog>
 #include "image_model.hpp"
 #include "odf_process.hpp"
@@ -454,6 +455,47 @@ bool ImageModel::command(std::string cmd,std::string param)
                     buf[i] = 0;
         }
         voxel.steps += cmd+"\n";
+        return true;
+    }
+    if(cmd == "[Step T2b(2)][Advanced Options][Compare SRC]")
+    {
+        if(param.empty()) // try to find the best match in the same directory
+        {
+            auto file_list = QFileInfo(file_name.c_str()).dir().entryList(QStringList("*.src.gz"),QDir::Files);
+            int64_t min_dif = std::numeric_limits<int64_t>::max();
+            for(int i = 0;i < file_list.size();++i)
+            {
+                QString cur_file_name = QFileInfo(file_name.c_str()).absolutePath() + "/" + file_list[i];
+                if(file_list[i] == QFileInfo(file_name.c_str()).fileName())
+                    continue;
+                std::string name1 = QFileInfo(file_name.c_str()).baseName().toStdString();
+                std::string name2 = QFileInfo(file_list[i]).baseName().toStdString();
+                int64_t cur_dif = 0;
+                for(int j = int(std::min(name1.length(),name2.length()))-1,k = 0;j >= 0 && k < 60; --j,k += 3)
+                {
+                    int dir = std::abs(int(name1[uint32_t(j)])-int(name2[uint32_t(j)]));
+                    if(k)
+                        dir <<= k;
+                    cur_dif += dir;
+                }
+                if(cur_dif < min_dif)
+                {
+                    min_dif = cur_dif;
+                    voxel.study_src_file_path = cur_file_name.toStdString();
+                }
+
+            }
+        }
+        else
+            voxel.study_src_file_path = param;
+        voxel.steps += cmd+"\n";
+        return true;
+    }
+    if(cmd == "[Step T2][Edit][Overwrite Voxel Size]")
+    {
+        std::istringstream in(param);
+        in >> voxel.vs[0] >> voxel.vs[1] >> voxel.vs[2];
+        voxel.steps += cmd+"="+param+"\n";
         return true;
     }
     if(cmd == "[Step T2][Edit][Trim]")

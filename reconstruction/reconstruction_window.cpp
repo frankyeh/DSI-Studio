@@ -393,6 +393,7 @@ void reconstruction_window::on_doDTI_clicked()
             if(!load_src(index))
                 break;
             std::string step;
+            std::getline(in,step); // ignore the first step [Step T2][Reconstruction]
             while(std::getline(in,step))
             {
                 size_t pos = step.find('=');
@@ -953,7 +954,7 @@ void reconstruction_window::on_open_ddi_study_src_clicked()
             "Images (*src.gz);;All files (*)" );
     if( filename.isEmpty())
         return;
-    handle->voxel.study_src_file_path = filename.toStdString();
+    command("[Step T2b(2)][Advanced Options][Compare SRC]",filename.toStdString());
     ui->ddi_file->setText(QFileInfo(filename).baseName());
 }
 
@@ -1084,8 +1085,7 @@ void reconstruction_window::on_actionOverwrite_Voxel_Size_triggered()
                                                               .arg(double(handle->voxel.vs[2])),&ok);
     if(!ok)
         return;
-    std::istringstream in(result.toStdString());
-    in >> handle->voxel.vs[0] >> handle->voxel.vs[1] >> handle->voxel.vs[2];
+    command("[Step T2][Edit][Overwrite Voxel Size]",result.toStdString());
     handle->get_report(handle->voxel.report);
     ui->report->setText(handle->voxel.report.c_str());
 }
