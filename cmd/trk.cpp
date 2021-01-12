@@ -344,13 +344,8 @@ void trk_post(std::shared_ptr<fib_data> handle,
             else
             if(f != "no_file")
             {
-                std::cout << "output file:" << f << std::endl;
                 if (!tract_model.save_tracts_to_file(f.c_str()))
-                {
                     std::cout << "cannot save tracks as " << f << ". Please check write permission, directory, and disk space." << std::endl;
-                }
-                if(QFileInfo(f.c_str()).exists())
-                    std::cout << "file saved to " << f << std::endl;
             }
         }
     }
@@ -490,7 +485,8 @@ int trk(std::shared_ptr<fib_data> handle)
     tracking_thread.param.center_seed = uint8_t(po.get("seed_plan",int(0)));
     tracking_thread.param.random_seed = uint8_t(po.get("random_seed",int(0)));
     tracking_thread.param.check_ending = uint8_t(po.get("check_ending",int(0)));
-    tracking_thread.param.tip_iteration = uint8_t(po.has("track_id") ? po.get("tip_iteration",int(16)) : 0);
+    tracking_thread.param.tip_iteration = uint8_t(po.get("tip_iteration",
+                                                  po.has("track_id") ? 16 : (po.has("dt_threshold_index")? 4:0)));
 
     if (po.has("fiber_count"))
     {
