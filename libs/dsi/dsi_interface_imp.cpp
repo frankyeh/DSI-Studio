@@ -187,6 +187,7 @@ bool ImageModel::reconstruction(void)
 
             if(!voxel.study_src_file_path.empty())
             {
+                std::cout << "SRC compared with=" << voxel.study_src_file_path << std::endl;
                 if(!voxel.not_human_brain)
                     rotate_to_mni(2.0f);
                 if(!compare_src(voxel.study_src_file_path.c_str()))
