@@ -251,6 +251,11 @@ std::string run_auto_track(
                        return std::string("ERROR at ") + fib_file_name + ": Not human data. Check image resolution.";
                     fib_loaded = true;
                 }
+                if(handle->template_id != 0)
+                {
+                    std::cout << "WARNING: Not adult human data. Enforce registration." << std::endl;
+                    handle->set_template_id(0);
+                }
 
                 TractModel tract_model(handle.get());
                 if(!overwrite && has_trk_file)
@@ -258,24 +263,24 @@ std::string run_auto_track(
 
                 if(tract_model.get_visible_track_count() == 0)
                 {
-                    prog_init p("tracking ",track_name.c_str());
                     ThreadData thread(handle.get());
+                    {
+                        prog_init p("preparing tracking ",track_name.c_str());
+                        thread.param.tip_iteration = uint8_t(tip);
+                        thread.param.check_ending = !QString(track_name.c_str()).contains("Cingulum");
+                        thread.param.stop_by_tract = 1;
+                        if(!thread.roi_mgr->setAtlas(track_id[j],tolerance/handle->vs[0]))
+                            return std::string("ERROR at ") + fib_file_name + ":" +handle->error_msg;
+                        thread.param.termination_count = uint32_t(track_voxel_ratio*thread.roi_mgr->seeds.size());
+                        thread.param.max_seed_count = thread.param.termination_count*5000; //yield rate easy:1/100 hard:1/5000
+                        // report
+                        thread.roi_mgr->report += " The track-to-voxel ratio was set to ";
+                        thread.roi_mgr->report += QString::number(double(track_voxel_ratio),'g',1).toStdString();
+                        thread.roi_mgr->report += ".";
+                    }
 
-                    thread.param.tip_iteration = uint8_t(tip);
-                    thread.param.check_ending = !QString(track_name.c_str()).contains("Cingulum");
-                    thread.param.stop_by_tract = 1;
-                    if(!thread.roi_mgr->setAtlas(track_id[j],tolerance/handle->vs[0]))
-                        return std::string("ERROR at ") + fib_file_name + ":" +handle->error_msg;
-                    auto track_count = uint32_t(track_voxel_ratio*thread.roi_mgr->seeds.size());
-                    thread.param.termination_count = track_count;
-                    thread.param.max_seed_count = track_count*5000; //yield rate easy:1/100 hard:1/5000
-                    // report
-                    thread.roi_mgr->report += " The track-to-voxel ratio was set to ";
-                    thread.roi_mgr->report += QString::number(double(track_voxel_ratio),'g',1).toStdString();
-                    thread.roi_mgr->report += ".";
                     // run tracking
-                    check_prog(0,track_count);
-
+                    prog_init p("tracking ",track_name.c_str());
                     thread.run(tract_model.get_fib(),std::thread::hardware_concurrency(),false);
 
                     tract_model.report += thread.report.str();
@@ -303,7 +308,8 @@ std::string run_auto_track(
                     const unsigned int low_yield_threshold = 100000;
                     while(!thread.is_ended() && !prog_aborted())
                     {
-                        check_prog(thread.get_total_tract_count(),track_count);
+                        check_prog(thread.get_total_tract_count(),
+                                   thread.param.termination_count);
                         thread.fetchTracks(&tract_model);
                         std::this_thread::sleep_for(std::chrono::seconds(2));
                         // terminate if yield rate is very low, likely quality problem
