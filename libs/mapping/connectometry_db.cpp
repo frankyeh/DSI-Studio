@@ -142,8 +142,30 @@ bool connectometry_db::parse_demo(const std::string& filename)
             error_msg = "Invalid demographic file format";
             return false;
         }
-        // check subject count for command line
-        if(items.size()/col_count != num_subjects+1) // +1 for title
+        // check subject count
+        if(items.size()/col_count > num_subjects+1) // matching subjects +1 for title
+        {
+            std::vector<std::string> new_items;
+            // copy titles
+            std::copy(items.begin(),items.begin()+int(col_count),std::back_inserter(new_items));
+            for(size_t i = 0;i < num_subjects;++i)
+            {
+                bool find = false;
+                for(size_t j = col_count;j+col_count <= items.size();j += col_count)
+                    if(items[j].find(subject_names[i]) != std::string::npos ||
+                       subject_names[i].find(items[j]) != std::string::npos)
+                    {
+                        find = true;
+                        std::copy(items.begin()+int(j),items.begin()+int(j+col_count),std::back_inserter(new_items));
+                        break;
+                    }
+                if(!find)
+                    new_items.resize((i+2)*col_count);
+            }
+            items.swap(new_items);
+        }
+        else
+        if(items.size()/col_count < num_subjects+1) //
         {
             std::ostringstream out;
             out << "Subject number mismatch. The demographic file has " << row_count-1 << " subjects, but the database has " << num_subjects << " subjects.";
