@@ -471,7 +471,7 @@ int trk(std::shared_ptr<fib_data> handle)
 
     ThreadData tracking_thread(handle.get());
     tracking_thread.param.default_otsu = po.get("otsu_threshold",0.6f);
-    tracking_thread.param.threshold = po.get("fa_threshold",tracking_thread.param.default_otsu*otsu);
+    tracking_thread.param.threshold = po.get("fa_threshold",0.0f);
     tracking_thread.param.dt_threshold = po.get("dt_threshold",0.2f);
     tracking_thread.param.cull_cos_angle = float(std::cos(po.get("turning_angle",0.0)*3.14159265358979323846/180.0));
     tracking_thread.param.step_size = po.get("step_size",0.0f);
@@ -486,7 +486,7 @@ int trk(std::shared_ptr<fib_data> handle)
     tracking_thread.param.random_seed = uint8_t(po.get("random_seed",int(0)));
     tracking_thread.param.check_ending = uint8_t(po.get("check_ending",int(0)));
     tracking_thread.param.tip_iteration = uint8_t(po.get("tip_iteration",
-                                                  po.has("track_id") ? 16 : (po.has("dt_threshold_index")? 4:0)));
+                                                  (po.has("track_id") | po.has("dt_threshold_index") ) ? 16 : 0));
 
     if (po.has("fiber_count"))
     {
