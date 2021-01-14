@@ -1749,7 +1749,6 @@ void GLWidget::makeTracts(void)
                 else
                 {
                     myglColor(cur_color,alpha);
-                    //glNormal3f(-vec_n[0],-vec_n[1],-vec_n[2]);
                     for (unsigned int k = 0;k < 8;++k)
                     {
                         glNormal3fv(normals[end_sequence[k]].begin());
@@ -1802,7 +1801,7 @@ void GLWidget::makeTracts(void)
                     else
                     {
                         myglColor(cur_color,alpha);
-                        for (unsigned int k = 0;k < 8;++k)
+                        for (unsigned int k = 2;k < 8;++k) // skip 0 and 1 because the tubes have them
                         {
                             glNormal3fv(normals[end_sequence2[k]].begin());
                             glVertex3fv(points[end_sequence2[k]].begin());
