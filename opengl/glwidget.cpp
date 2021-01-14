@@ -1422,7 +1422,7 @@ void GLWidget::makeTracts(void)
     float tract_color_saturation_base = tract_color_brightness*(1.0f-tract_color_saturation);
     const float detail_option[] = {1.0f,0.5f,0.25f,0.0f,0.0f};
     const unsigned char end_sequence[8] = {4,3,5,2,6,1,7,0};
-    const unsigned char end_sequence2[8] = {0,1,7,2,6,3,5,4};
+    const unsigned char end_sequence2[8] = {7,0,6,1,5,2,4,3};
     bool show_end_points = tract_style >= 2;
     float tube_detail = tube_diameter*detail_option[tract_tube_detail]*4.0f;
     float tract_shaderf = 0.01f*float(tract_shader);
@@ -1749,9 +1749,12 @@ void GLWidget::makeTracts(void)
                 else
                 {
                     myglColor(cur_color,alpha);
-                    glNormal3f(-vec_n[0],-vec_n[1],-vec_n[2]);
+                    //glNormal3f(-vec_n[0],-vec_n[1],-vec_n[2]);
                     for (unsigned int k = 0;k < 8;++k)
+                    {
+                        glNormal3fv(normals[end_sequence[k]].begin());
                         glVertex3fv(points[end_sequence[k]].begin());
+                    }
                 }
             }
             else
@@ -1799,9 +1802,11 @@ void GLWidget::makeTracts(void)
                     else
                     {
                         myglColor(cur_color,alpha);
-                        glNormal3fv(vec_n.begin());
                         for (unsigned int k = 0;k < 8;++k)
+                        {
+                            glNormal3fv(normals[end_sequence2[k]].begin());
                             glVertex3fv(points[end_sequence2[k]].begin());
+                        }
                     }
                 }
 
