@@ -344,7 +344,7 @@ void reconstruction_window::on_save_mask_clicked()
     QString filename = QFileDialog::getSaveFileName(
             this,
             "Save region",
-            absolute_path+"/mask.txt",
+            absolute_path+"/mask.nii.gz",
             "Nifti file(*nii.gz *.nii);;Text files (*.txt);;All files (*)" );
     if(filename.isEmpty())
         return;
