@@ -907,88 +907,60 @@ void TractModel::save_vrml(const std::string& file_name,
                            unsigned char tract_color_style,
                            float tube_diameter,
                            unsigned char tract_tube_detail,
-                           const std::string& surface_text)
+                           const std::string&)
 {
     std::ofstream out(file_name.c_str());
-    bool is_ply = (file_name.substr(file_name.size()-4) == std::string(".ply"));
-    if(is_ply)
-        tract_style = 1;
     std::vector<tipl::vector<3,float> > points(8),previous_points(8);
     tipl::rgb paint_color;
     tipl::vector<3,float> paint_color_f;
 
     const float detail_option[] = {1.0,0.5,0.25,0.0,0.0};
-    float tube_detail = tube_diameter*detail_option[tract_tube_detail]*4.0;
+    const unsigned char end_sequence[8] = {4,3,5,2,6,1,7,0};
+    const unsigned char end_sequence2[8] = {0,1,7,2,6,3,5,4};
+
+    float tube_detail = tube_diameter*detail_option[tract_tube_detail]*4.0f;
 
 
     std::string coordinate,coordinate_index;
-    unsigned int vrml_coordinate_count = 0,vrml_color_count = 0;
+    unsigned int coordinate_count = 0;
     auto push_vertices = [&](const tipl::vector<3,float>& pos,const tipl::vector<3,float>& color)
     {
-        if(!is_ply)
-        {
-            coordinate.push_back('v');
-            coordinate.push_back(' ');
-            coordinate += std::to_string(pos[0]);
-            coordinate.pop_back();
-            coordinate.pop_back();
-            coordinate.pop_back();
-            coordinate.back() = ' ';
-            coordinate += std::to_string(pos[1]);
-            coordinate.pop_back();
-            coordinate.pop_back();
-            coordinate.pop_back();
-            coordinate.back() = ' ';
-            coordinate += std::to_string(pos[2]);
-            coordinate.pop_back();
-            coordinate.pop_back();
-            coordinate.pop_back();
-            coordinate.back() = ' ';
-            coordinate += std::to_string(color[0]);
-            coordinate.pop_back();
-            coordinate.pop_back();
-            coordinate.pop_back();
-            coordinate.back() = ' ';
-            coordinate += std::to_string(color[1]);
-            coordinate.pop_back();
-            coordinate.pop_back();
-            coordinate.pop_back();
-            coordinate.back() = ' ';
-            coordinate += std::to_string(color[2]);
-            coordinate.pop_back();
-            coordinate.pop_back();
-            coordinate.pop_back();
-            coordinate.back() = '\n';
-        }
-        else
-        {
-            coordinate += std::to_string(pos[0]);
-            coordinate.pop_back();
-            coordinate.pop_back();
-            coordinate.pop_back();
-            coordinate.back() = ' ';
-            coordinate += std::to_string(pos[1]);
-            coordinate.pop_back();
-            coordinate.pop_back();
-            coordinate.pop_back();
-            coordinate.back() = ' ';
-            coordinate += std::to_string(pos[2]);
-            coordinate.pop_back();
-            coordinate.pop_back();
-            coordinate.pop_back();
-            coordinate.back() = ' ';
-            coordinate += std::to_string(int(color[0]*255.0f));
-            coordinate.push_back(' ');
-            coordinate += std::to_string(int(color[1]*255.0f));
-            coordinate.push_back(' ');
-            coordinate += std::to_string(int(color[2]*255.0f));
-            coordinate.push_back('\n');
-        }
-
+        coordinate.push_back('v');
+        coordinate.push_back(' ');
+        coordinate += std::to_string(pos[0]);
+        coordinate.pop_back();
+        coordinate.pop_back();
+        coordinate.pop_back();
+        coordinate.back() = ' ';
+        coordinate += std::to_string(pos[1]);
+        coordinate.pop_back();
+        coordinate.pop_back();
+        coordinate.pop_back();
+        coordinate.back() = ' ';
+        coordinate += std::to_string(pos[2]);
+        coordinate.pop_back();
+        coordinate.pop_back();
+        coordinate.pop_back();
+        coordinate.back() = ' ';
+        coordinate += std::to_string(color[0]);
+        coordinate.pop_back();
+        coordinate.pop_back();
+        coordinate.pop_back();
+        coordinate.back() = ' ';
+        coordinate += std::to_string(color[1]);
+        coordinate.pop_back();
+        coordinate.pop_back();
+        coordinate.pop_back();
+        coordinate.back() = ' ';
+        coordinate += std::to_string(color[2]);
+        coordinate.pop_back();
+        coordinate.pop_back();
+        coordinate.pop_back();
+        coordinate.back() = '\n';
     };
     for (unsigned int data_index = 0; data_index < tract_data.size(); ++data_index)
     {
-        unsigned int vertex_count = get_tract_length(data_index)/3;
+        unsigned int vertex_count = uint32_t(get_tract_length(data_index))/3;
         if (vertex_count <= 1)
             continue;
 
@@ -1001,9 +973,8 @@ void TractModel::save_vrml(const std::string& file_name,
             paint_color_f = tipl::vector<3,float>(paint_color.r,paint_color.g,paint_color.b);
             paint_color_f /= 255.0;
             break;
-        break;
         }
-        unsigned int prev_coordinate_count = vrml_coordinate_count;
+        unsigned int prev_coordinate_count = coordinate_count;
         tipl::vector<3,float> last_pos(data_iter),
                 vec_a(1,0,0),vec_b(0,1,0),
                 vec_n,prev_vec_n,vec_ab,vec_ba,cur_color;
@@ -1036,7 +1007,7 @@ void TractModel::save_vrml(const std::string& file_name,
                 tipl::vector<3,float> displacement(data_iter+3);
                 displacement -= last_pos;
                 displacement -= prev_vec_n*(prev_vec_n*displacement);
-                if (displacement.length() < tube_detail)
+                if (float(displacement.length()) < tube_detail)
                     continue;
             }
             // add end
@@ -1045,12 +1016,11 @@ void TractModel::save_vrml(const std::string& file_name,
                 push_vertices(pos,cur_color);
                 prev_vec_n = vec_n;
                 last_pos = pos;
-                ++vrml_coordinate_count;
-                ++vrml_color_count;
+                ++coordinate_count;
                 continue;
             }
 
-            if (index == 0 && std::fabs(vec_a*vec_n) > 0.5)
+            if (index == 0 && std::fabs(vec_a*vec_n) > 0.5f)
                 std::swap(vec_a,vec_b);
 
             vec_b = vec_a.cross_product(vec_n);
@@ -1080,7 +1050,6 @@ void TractModel::save_vrml(const std::string& file_name,
                 points[7] += vec_ba;
             }
 
-            static const unsigned char end_sequence[8] = {4,3,5,2,6,1,7,0};
             if (index == 0)
             {
                 for (unsigned int k = 0;k < 8;++k)
@@ -1088,7 +1057,7 @@ void TractModel::save_vrml(const std::string& file_name,
                     tipl::vector<3,float> pos(points[end_sequence[k]][0],points[end_sequence[k]][1],points[end_sequence[k]][2]);
                     push_vertices(pos,cur_color);
                 }
-                vrml_coordinate_count+=8;
+                coordinate_count+=8;
             }
             else
             // add tube
@@ -1100,27 +1069,25 @@ void TractModel::save_vrml(const std::string& file_name,
                     push_vertices(points[k],cur_color);
                 }
                 push_vertices(points[0],cur_color);
-                vrml_coordinate_count+=16;
+                coordinate_count+=16;
                 if(index +1 == vertex_count)
                 {
-                    for (int k = 7;k >= 0;--k)
+                    for (unsigned int k = 0;k < 8;++k)
                     {
-                        tipl::vector<3,float> pos(points[end_sequence[k]][0],points[end_sequence[k]][1],points[end_sequence[k]][2]);
+                        tipl::vector<3,float> pos(points[end_sequence2[k]][0],points[end_sequence2[k]][1],points[end_sequence2[k]][2]);
                         push_vertices(pos,cur_color);
                     }
-                    vrml_coordinate_count+=8;
+                    coordinate_count+=8;
                 }
             }
             previous_points.swap(points);
             prev_vec_n = vec_n;
             last_pos = pos;
-            ++vrml_color_count;
-
         }
         if(tract_style == 0)// line
         {
             coordinate_index.push_back('l');
-            for (unsigned int j = prev_coordinate_count+1;j+2 <= vrml_coordinate_count;++j)
+            for (unsigned int j = prev_coordinate_count+1;j+2 <= coordinate_count;++j)
             {
                 coordinate_index.push_back(' ');
                 coordinate_index += std::to_string(j);
@@ -1128,41 +1095,22 @@ void TractModel::save_vrml(const std::string& file_name,
             coordinate_index.push_back('\n');
         }
         else
-        for (unsigned int j = prev_coordinate_count;j+2 < vrml_coordinate_count;++j)
+        for (unsigned int j = prev_coordinate_count,k = 0;j+2 < coordinate_count;++j)
         {
-            coordinate_index.push_back(is_ply ? '3':'f');
+            coordinate_index.push_back('f');
             coordinate_index.push_back(' ');
-            coordinate_index += std::to_string(is_ply ? j : j+1);
+            coordinate_index += std::to_string(j+1);
             coordinate_index.push_back(' ');
-            coordinate_index += std::to_string(is_ply ? j+1 : j+2);
+            coordinate_index += std::to_string(j+ (k ? 2 : 3));
             coordinate_index.push_back(' ');
-            coordinate_index += std::to_string(is_ply ? j+2 : j+3);
+            coordinate_index += std::to_string(j+ (k ? 3 : 2));
             coordinate_index.push_back('\n');
+            k = (k ? 0 :1);
         }
     }
-    if(is_ply)
-    {
-        out << "ply" << std::endl;
-        out << "format ascii 1.0" << std::endl;
-        out << "element vertex " << vrml_coordinate_count << std::endl;
-        out << "property float32 x" << std::endl;
-        out << "property float32 y" << std::endl;
-        out << "property float32 z" << std::endl;
-        out << "property red uint8" << std::endl;
-        out << "property green uint8" << std::endl;
-        out << "property blue uint8" << std::endl;
-        out << "element face " << vrml_coordinate_count-2 << std::endl;
-        out << "property list uint8 int32 vertex_index" << std::endl;
-        out << "end_header" << std::endl;
-        out << coordinate;
-        out << coordinate_index;
-    }
-    else
-    {
-        out << "g" << std::endl;
-        out << coordinate;
-        out << coordinate_index;
-    }
+    out << "g" << std::endl;
+    out << coordinate;
+    out << coordinate_index;
 }
 
 //---------------------------------------------------------------------------
