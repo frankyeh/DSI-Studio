@@ -1404,7 +1404,8 @@ double stat_model::operator()(const std::vector<double>& original_population,uns
                     sum_d2 += d*d;
                 }
                 double r = 1.0-double(sum_d2)*rank_c;
-                return r*std::sqrt(double(population.size()-2.0)/(1.0-r*r)); // convert to t
+                double result = r*std::sqrt(double(population.size()-2.0)/(1.0-r*r));
+                return std::isnormal(result) ? result : 0.0;
             }
             else
             {
