@@ -562,7 +562,7 @@ void TractTableWidget::save_vrml_as(void)
     QString filename;
     filename = QFileDialog::getSaveFileName(
                 this,"Save tracts as",item(currentRow(),0)->text().replace(':','_') + ".obj",
-                 "3D files (*.obj *.ply);;All files (*)");
+                 "3D files (*.obj);;All files (*)");
     if(filename.isEmpty())
         return;
     std::string surface_text;
