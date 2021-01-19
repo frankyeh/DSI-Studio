@@ -180,8 +180,6 @@ void slice_view_scene::show_ruler(QPainter& paint)
 void slice_view_scene::show_fiber(QPainter& painter)
 {
     float display_ratio = cur_tracking_window.get_scene_zoom();
-    if(display_ratio < 7.0f)
-        return;
 
     int roi_fiber = cur_tracking_window["roi_fiber"].toInt();
     float threshold = cur_tracking_window.get_fa_threshold();
@@ -210,6 +208,8 @@ void slice_view_scene::show_fiber(QPainter& painter)
         r *= steps;
         pen_w *= steps;
     }
+    if(r < 1.0f)
+        return;
     for (int y = 0; y < slice_image.height(); y += steps)
         for (int x = 0; x < slice_image.width(); x += steps)
             {
