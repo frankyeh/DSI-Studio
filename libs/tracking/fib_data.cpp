@@ -454,6 +454,7 @@ bool tracking_data::is_white_matter(const tipl::vector<3,float>& pos,float t) co
 size_t match_template(float volume);
 void initial_LPS_nifti_srow(tipl::matrix<4,4,float>& T,const tipl::geometry<3>& geo,const tipl::vector<3>& vs)
 {
+    std::fill(T.begin(),T.end(),0.0f);
     T[0] = -vs[0];
     T[5] = -vs[1];
     T[10] = vs[2];
@@ -461,6 +462,12 @@ void initial_LPS_nifti_srow(tipl::matrix<4,4,float>& T,const tipl::geometry<3>& 
     T[7] = vs[1]*(geo[1]-1);
     T[15] = 1.0f;
 }
+
+fib_data::fib_data(tipl::geometry<3> dim_,tipl::vector<3> vs_):dim(dim_),vs(vs_)
+{
+    initial_LPS_nifti_srow(trans_to_mni,dim,vs);
+}
+
 bool load_fib_from_tracks(const char* file_name,tipl::image<float,3>& I,tipl::vector<3>& vs);
 bool fib_data::load_from_file(const char* file_name)
 {

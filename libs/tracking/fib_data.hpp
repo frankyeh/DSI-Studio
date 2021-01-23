@@ -198,7 +198,7 @@ public:
         vs[0] = vs[1] = vs[2] = 1.0;
         trans_to_mni.identity();
     }
-    fib_data(tipl::geometry<3> dim_,tipl::vector<3> vs_):dim(dim_),vs(vs_){}
+    fib_data(tipl::geometry<3> dim_,tipl::vector<3> vs_);
 public:
     bool load_from_file(const char* file_name);
     bool load_from_mat(void);
