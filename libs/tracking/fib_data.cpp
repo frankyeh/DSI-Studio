@@ -520,7 +520,7 @@ bool fib_data::load_from_file(const char* file_name)
             return true;
         }
         else
-        if(header.dim(4) % 3 == 0)
+        if(header.dim(4) && header.dim(4) % 3 == 0)
         {
             uint32_t fib_num = header.dim(4)/3;
             for(uint32_t i = 0;i < fib_num;++i)
