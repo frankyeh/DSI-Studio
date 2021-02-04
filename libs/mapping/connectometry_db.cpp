@@ -1042,7 +1042,7 @@ bool connectometry_result::individual_vs_db(std::shared_ptr<fib_data> handle,con
         error_msg = handle->error_msg;
         return false;
     }
-    bool normalized_qa = false;
+    bool normalize_qa = false;
     bool terminated = false;
     stat_model info;
     info.read_demo(handle->db);
@@ -1051,7 +1051,7 @@ bool connectometry_result::individual_vs_db(std::shared_ptr<fib_data> handle,con
     //info.individual_data_sd = normalize_qa ? individual_data_sd[subject_id]:1.0;
     info.individual_data_sd = 1.0;
     float fa_threshold = 0.6*tipl::segmentation::otsu_threshold(tipl::make_image(handle->dir.fa[0],handle->dim));
-    calculate_spm(handle,*this,info,fa_threshold,normalized_qa,terminated);
+    calculate_spm(handle,*this,info,fa_threshold,normalize_qa,terminated);
     add_mapping_for_tracking(handle,"inc_db","dec_db");
     return true;
 }

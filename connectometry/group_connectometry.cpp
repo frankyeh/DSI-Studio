@@ -12,6 +12,8 @@
 #include "tracking/atlasdialog.h"
 #include "tracking/roi.hpp"
 extern bool has_gui;
+bool load_region(std::shared_ptr<fib_data> handle,
+                 ROIRegion& roi,const std::string& region_text);
 QWidget *ROIViewDelegate::createEditor(QWidget *parent,
                                      const QStyleOptionViewItem &option,
                                      const QModelIndex &index) const
@@ -608,6 +610,18 @@ void group_connectometry::on_run_clicked()
     if(ui->roi_whole_brain->isChecked())
         roi_list.clear();
 
+
+    if(ui->exclude_cb->isChecked() && vbc->handle->is_human_data)
+    {
+        ROIRegion roi(vbc->handle.get());
+        if(!load_region(vbc->handle,roi,"FreeSurferSeg:Left-Cerebellum-White-Matter") ||
+           !load_region(vbc->handle,roi,"FreeSurferSeg:Left-Cerebellum-Cortex") ||
+           !load_region(vbc->handle,roi,"FreeSurferSeg:Right-Cerebellum-White-Matter") ||
+           !load_region(vbc->handle,roi,"FreeSurferSeg:Right-Cerebellum-Cortex") )
+            return;
+        add_new_roi("cerebellum","",roi.get_region_voxels_raw(),4/*terminative*/);
+    }
+
     {
         std::vector<int> roi_type(roi_list.size());
         std::vector<std::string> roi_name(roi_list.size());
@@ -746,8 +760,7 @@ void group_connectometry::add_new_roi(QString name,QString source,
     ui->roi_table->openPersistentEditor(ui->roi_table->item(ui->roi_table->rowCount()-1,2));
     roi_list.push_back(new_roi);
 }
-bool load_region(std::shared_ptr<fib_data> handle,
-                 ROIRegion& roi,const std::string& region_text);
+
 void group_connectometry::on_load_roi_from_atlas_clicked()
 {
     if(vbc->handle->atlas_list.empty())
