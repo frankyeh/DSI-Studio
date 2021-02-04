@@ -59,6 +59,8 @@ private slots:
 
     void on_actionTo_Edge_triggered();
 
+    void on_actionNormalize_Intensity_triggered();
+
 private:
     Ui::view_image *ui;
     tipl::image<float,3> data;

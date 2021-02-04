@@ -204,11 +204,15 @@
     </property>
     <addaction name="actionUpper_Threshold"/>
     <addaction name="actionLower_threshold"/>
+    <addaction name="separator"/>
     <addaction name="actionIntensity_shift"/>
     <addaction name="actionIntensity_scale"/>
-    <addaction name="actionMasking"/>
+    <addaction name="actionNormalize_Intensity"/>
+    <addaction name="separator"/>
     <addaction name="actionSmoothing"/>
     <addaction name="actionTo_Edge"/>
+    <addaction name="separator"/>
+    <addaction name="actionMasking"/>
    </widget>
    <widget class="QMenu" name="menu_Spatial_transform">
     <property name="title">
@@ -305,7 +309,12 @@
   </action>
   <action name="actionTo_Edge">
    <property name="text">
-    <string>To Edge...</string>
+    <string>Edge Detector...</string>
+   </property>
+  </action>
+  <action name="actionNormalize_Intensity">
+   <property name="text">
+    <string>Normalize Intensity...</string>
    </property>
   </action>
  </widget>

@@ -695,3 +695,9 @@ void view_image::on_actionTo_Edge_triggered()
     }
     update_image();
 }
+
+void view_image::on_actionNormalize_Intensity_triggered()
+{
+    tipl::normalize(data,1.0f);
+    update_image();
+}
