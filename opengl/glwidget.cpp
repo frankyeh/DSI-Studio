@@ -17,6 +17,7 @@
 #include "fib_data.hpp"
 #include "tracking/color_bar_dialog.hpp"
 #include "libs/tracking/tract_model.hpp"
+#include "odf_process.hpp"
 
 void get_bounding_box(QImage& p,int margin = 5)
 {
@@ -548,18 +549,15 @@ void GLWidget::renderLR()
         get_param("show_odf"))
     {
         float fa_threshold = cur_tracking_window.get_fa_threshold();
-        if(odf_position != get_param("odf_position") ||
-           odf_skip != get_param("odf_skip") ||
-           odf_scale != get_param_float("odf_scale") ||
-           odf_color != get_param("odf_color") ||
-           (get_param("odf_position") <=1 && (odf_dim != cur_tracking_window.cur_dim ||
-                                               odf_slide_pos != current_slice->slice_pos[cur_tracking_window.cur_dim])))
+        if(check_param("odf_position",odf_position)+
+           check_param("odf_skip",odf_skip)+
+           check_param("odf_shape",odf_shape)+
+           check_param("odf_scale",odf_scale)+
+           check_param("odf_color",odf_color)+
+           check_param("odf_position",odf_position) > 0 ||
+           odf_dim != cur_tracking_window.cur_dim || odf_slide_pos != current_slice->slice_pos[cur_tracking_window.cur_dim])
         {
-            odf_position = get_param("odf_position");
-            odf_skip = get_param("odf_skip");
-            odf_scale = get_param_float("odf_scale");
             odf_dim = cur_tracking_window.cur_dim;
-            odf_color = get_param("odf_color");
             odf_slide_pos = current_slice->slice_pos[cur_tracking_window.cur_dim];
             odf_points.clear();            
         }
@@ -1309,6 +1307,11 @@ void GLWidget::add_odf(const std::vector<tipl::pixel_index<3> >& odf_pos_)
     odf_norm.resize(odf_pos.size()*odf_dim);
     bool odf_min_max = get_param("odf_min_max");
     bool odf_smoothing = get_param("odf_smoothing");
+    unsigned int odf_shape = get_param("odf_shape");
+    ODFShaping shaping;
+    tessellated_icosahedron ti;
+    ti.init(8);
+    shaping.init(ti);
     tipl::par_for(odf_pos.size(),[&](size_t i)
     {
 
@@ -1347,6 +1350,27 @@ void GLWidget::add_odf(const std::vector<tipl::pixel_index<3> >& odf_pos_)
                     new_odf_buffer[f3] = std::max(sum,new_odf_buffer[f3]);
             }
             odf_buffer = &new_odf_buffer[0];
+        }
+        if(odf_shape)
+        {
+            std::vector<float> odf(half_odf);
+            std::copy(odf_buffer,odf_buffer+half_odf,odf.begin());
+
+            shaping.shape(odf,uint16_t(std::max_element(odf.begin(),odf.end())-odf.begin()));
+
+            if(odf_shape == 1)
+            {
+                new_odf_buffer.resize(half_odf);
+                std::copy(odf_buffer,odf_buffer+half_odf,new_odf_buffer.begin());
+                tipl::minus(new_odf_buffer,odf);
+            }
+            else
+            {
+                new_odf_buffer.swap(odf);
+                odf_min = 0;
+            }
+            odf_buffer = &new_odf_buffer[0];
+
         }
         auto iter = odf_points.begin()+odf_dim*i;
         std::fill(iter,iter + odf_dim,odf_pos[i]);

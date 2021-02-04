@@ -565,16 +565,17 @@ public:
 
 struct ODFShaping
 {
+
     std::vector<std::vector<unsigned int> > shape_list;
-    void init(Voxel& voxel)
+    void init(tessellated_icosahedron& ti)
     {
-        unsigned int half_odf_size = voxel.ti.half_vertices_count;
+        unsigned int half_odf_size = ti.half_vertices_count;
         shape_list.clear();
         for (unsigned int i = 0;i < half_odf_size;++i)
         {
             std::vector<float> cos_value(half_odf_size);
             for(unsigned int j = 0;j < half_odf_size;++j)
-                cos_value[i] = std::fabs(voxel.ti.vertices_cos(i,j));
+                cos_value[j] = std::fabs(ti.vertices_cos(i,j));
             shape_list.push_back(tipl::arg_sort(cos_value,std::greater<float>()));
         }
     }
@@ -590,6 +591,51 @@ struct ODFShaping
             odf[pos] -= cur_max;
         }
     }
+    void reshape(std::vector<float>& odf,uint16_t dir)
+    {
+        const std::vector<unsigned int>& remove_list = shape_list[dir];
+        for (unsigned int index = 1;index < remove_list.size();++index)
+        {
+            float back_value = odf[remove_list[index]];
+            if(back_value > odf[remove_list[index-1]])
+            {
+                unsigned int j = index -1;
+                do{
+                    odf[remove_list[j]] = back_value;
+                }
+                while(back_value > odf[remove_list[j]] && j);
+            }
+        }
+    }
+    /*
+    std::vector<std::vector<std::vector<unsigned int> > > shape_list;
+    void init(Voxel& voxel)
+    {
+        unsigned int half_odf_size = voxel.ti.half_vertices_count;
+        shape_list.resize(half_odf_size);
+        for (unsigned int i = 0;i < half_odf_size;++i)
+        {
+            std::vector<std::vector<unsigned int> > cos_table(6);
+            for(unsigned int j = 0;j < half_odf_size;++j)
+                if(j != i)
+                    cos_table[uint32_t(std::floor(float(cos_table.size())*std::fabs(voxel.ti.vertices_cos(i,j))))].push_back(j);
+            std::reverse(cos_table.begin(),cos_table.end());
+            shape_list[i] = std::move(cos_table);
+        }
+    }
+    void shape(std::vector<float>& odf,uint16_t dir)
+    {
+        float cur_max = odf[dir];
+        odf[dir] = 0.0f;
+        const auto& cos_table = shape_list[dir];
+        for (size_t index = 0;index < cos_table.size();++index)
+        {
+            for(auto sym_dir : cos_table[index])
+                cur_max = std::min<float>(odf[sym_dir],cur_max);
+            for(auto sym_dir : cos_table[index])
+                odf[sym_dir] -= cur_max;
+        }
+    }*/
 };
 struct SearchLocalMaximum
 {
@@ -650,35 +696,71 @@ public:
     virtual void init(Voxel& voxel)
     {
         if(voxel.odf_resolving)
-            shaping.init(voxel);
+            shaping.init(voxel.ti);
         lm.init(voxel);
     }
 
     virtual void run(Voxel& voxel,VoxelData& data)
     {
         data.min_odf = *std::min_element(data.odf.begin(),data.odf.end());
-        std::map<float,unsigned short,std::greater<float> > max_table;
-        lm.search(data.odf,max_table);
         if(voxel.odf_resolving)
         {
             std::vector<float> odf(data.odf);
-            for (unsigned int index = 0;index < 3;++index)
+            tipl::minus_constant(odf,data.min_odf);
+            float sum = std::accumulate(odf.begin(),odf.end(),0.0f);
+            float last_fiber_sum = 0.0;
+            for(unsigned int i = 0;i < voxel.max_fiber_number;++i)
             {
-                uint16_t max_dir = uint16_t(std::max_element(odf.begin(),odf.end())-odf.begin());
-                if(odf[max_dir] == 0.0f)
+                uint16_t peak = uint16_t(std::max_element(odf.begin(),odf.end())-odf.begin());
+                float qa = odf[peak];
+                shaping.shape(odf,peak);
+                float new_sum = std::accumulate(odf.begin(),odf.end(),0.0f);
+                if(i && last_fiber_sum*0.2f > sum-new_sum)
                     break;
-                if(index)
-                    max_table[data.odf[max_dir]] = max_dir;
-                shaping.shape(odf,max_dir);
+                last_fiber_sum = sum-new_sum;
+                sum = new_sum;
+                data.dir_index[i] = peak;
+                data.fa[i] = qa;
+            }
+
+            /*
+            std::vector<float> second_fiber_odf(data.odf.size());
+            for(int i = 0;i < 3;++i)
+            {
+                std::vector<float> odf(data.odf);
+                if(i)
+                    tipl::minus(odf,second_fiber_odf);
+                shaping.shape(odf,first_peak);
+                if(i)
+                    tipl::add(odf,second_fiber_odf);
+                second_peak = uint16_t(std::max_element(odf.begin(),odf.end())-odf.begin());
+                shaping.reshape(odf,second_peak);
+                second_fiber_odf = odf;
+
+                std::vector<float> new_odf(data.odf);
+                tipl::minus(new_odf,second_fiber_odf);
+                uint16_t first_peak2 = uint16_t(std::max_element(odf.begin(),odf.end())-odf.begin());
+                if(first_peak != first_peak2)
+                    iter->second = first_peak = first_peak2;
+                else
+                    break;
+            }
+            */
+
+        }
+        else
+        {
+            std::map<float,unsigned short,std::greater<float> > max_table;
+            lm.search(data.odf,max_table);
+            auto iter = max_table.begin();
+            auto end = max_table.end();
+            for (unsigned int index = 0;iter != end && index < voxel.max_fiber_number;++index,++iter)
+            {
+                data.dir_index[index] = iter->second;
+                data.fa[index] = iter->first - data.min_odf;
             }
         }
-        auto iter = max_table.begin();
-        auto end = max_table.end();
-        for (unsigned int index = 0;iter != end && index < voxel.max_fiber_number;++index,++iter)
-        {
-            data.dir_index[index] = iter->second;
-            data.fa[index] = iter->first - data.min_odf;
-        }
+
     }
 };
 

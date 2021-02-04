@@ -134,6 +134,25 @@ public:
      int cur_width = 1,cur_height = 1;
  private:
      int get_param(const char* name);
+     template<typename value_type>
+     int check_param(const char* name,value_type& value)
+     {
+         if(int(value) != get_param(name))
+         {
+            value = value_type(get_param(name));
+            return 1;
+         }
+         return 0;
+     }
+     int check_param(const char* name,float& value)
+     {
+         if(value < get_param_float(name) || value > get_param_float(name))
+         {
+            value = get_param_float(name);
+            return 1;
+         }
+         return 0;
+     }
      float get_param_float(const char* name);
      bool check_change(const char* name,unsigned char& var);
      bool check_change(const char* name,float& var);
@@ -154,6 +173,7 @@ public:
      unsigned char end_point_shift;
      unsigned char odf_position;
      unsigned char odf_skip;
+     unsigned char odf_shape = 0;
      unsigned char odf_color;
      float odf_scale;
 public:
