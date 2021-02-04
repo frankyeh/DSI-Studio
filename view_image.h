@@ -55,6 +55,10 @@ private slots:
 
     void on_actionUpper_Threshold_triggered();
 
+    void on_actionSmoothing_triggered();
+
+    void on_actionTo_Edge_triggered();
+
 private:
     Ui::view_image *ui;
     tipl::image<float,3> data;

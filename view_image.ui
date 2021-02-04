@@ -207,6 +207,8 @@
     <addaction name="actionIntensity_shift"/>
     <addaction name="actionIntensity_scale"/>
     <addaction name="actionMasking"/>
+    <addaction name="actionSmoothing"/>
+    <addaction name="actionTo_Edge"/>
    </widget>
    <widget class="QMenu" name="menu_Spatial_transform">
     <property name="title">
@@ -294,6 +296,16 @@
   <action name="actionUpper_Threshold">
    <property name="text">
     <string>Upper Threshold...</string>
+   </property>
+  </action>
+  <action name="actionSmoothing">
+   <property name="text">
+    <string>Smoothing...</string>
+   </property>
+  </action>
+  <action name="actionTo_Edge">
+   <property name="text">
+    <string>To Edge...</string>
    </property>
   </action>
  </widget>
