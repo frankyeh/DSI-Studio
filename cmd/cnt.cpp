@@ -101,6 +101,11 @@ int cnt(void)
     else
         vbc->ui->normalize_qa->setChecked(false);
 
+    if(po.get("no_tractogram",0))
+        vbc->ui->no_tractogram->setChecked(true);
+    else
+        vbc->ui->no_tractogram->setChecked(false);
+
     if(po.get("exclude_cb",0))
         vbc->ui->exclude_cb->setChecked(true);
     else

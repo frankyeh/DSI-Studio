@@ -642,7 +642,7 @@ void group_connectometry_analysis::generate_report(std::string& output)
 
 
     // output track images
-    if(progress == 100)
+    if(progress == 100 && !no_tractogram)
     {
         std::shared_ptr<fib_data> new_data(new fib_data);
         *(new_data.get()) = *(handle);

@@ -48,6 +48,7 @@ public:// for FDR analysis
     std::vector<float> fdr_pos_corr,fdr_neg_corr;
     unsigned int progress;// 0~100
     bool terminated = false;
+    bool no_tractogram = false;
     unsigned int preproces;
 public:
     std::shared_ptr<RoiMgr> roi_mgr;

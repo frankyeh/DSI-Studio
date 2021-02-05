@@ -592,6 +592,7 @@ void group_connectometry::on_run_clicked()
     if(!setup_model(*vbc->model.get()))
         return;
     vbc->normalize_qa = ui->normalize_qa->isChecked();
+    vbc->no_tractogram = ui->no_tractogram->isChecked();
     vbc->foi_str = ui->foi->currentText().toStdString();
     vbc->length_threshold_voxels = uint32_t(ui->length_threshold->value());
     vbc->tip = uint32_t(ui->tip->value());

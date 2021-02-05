@@ -1086,6 +1086,13 @@
                  </spacer>
                 </item>
                 <item>
+                 <widget class="QCheckBox" name="no_tractogram">
+                  <property name="text">
+                   <string>No Tractogram</string>
+                  </property>
+                 </widget>
+                </item>
+                <item>
                  <widget class="QCheckBox" name="exclude_cb">
                   <property name="enabled">
                    <bool>true</bool>
