@@ -1,7 +1,15 @@
 #include "tipl/tipl.hpp"
 #include "libs/gzip_interface.hpp"
 #include "program_option.hpp"
-
+bool apply_warping(const char* from,
+                   const char* to,
+                   tipl::geometry<3> from_geo,
+                   tipl::geometry<3> to_geo,
+                   tipl::image<tipl::vector<3>,3>& dis,
+                   tipl::vector<3> Itvs,
+                   tipl::matrix<4,4,float>& ItR,
+                   tipl::transformation_matrix<double>& T,
+                   std::string& error);
 int reg(void)
 {
     tipl::image<float,3> from,to;
@@ -98,6 +106,24 @@ int reg(void)
         std::cout << "R2=" << r*r << std::endl;
         std::cout << "output warpped image:" << output_wp_image << std::endl;
         gz_nifti::save_to_file(output_wp_image.c_str(),from_wp,to_vs,to_trans);
+    }
+
+    if(po.has("apply_warp"))
+    {
+        std::string from3 = po.get("apply_warp");
+        std::string to3 = from3+".wp.nii.gz";
+        std::string error;
+        if(!apply_warping(from3.c_str(),to3.c_str(),
+                      from.geometry(),
+                      to.geometry(),
+                      cdm_dis,
+                      to_vs,
+                      to_trans,
+                      T,error))
+        {
+            std::cout << "[ERROR]" << error <<std::endl;
+            return 1;
+        }
     }
     return 0;
 }
