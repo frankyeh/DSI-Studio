@@ -551,14 +551,15 @@ void auto_track::select_tracts()
         if(ui->cb_projection->isChecked())
         {
             select_list.push_back("Corticospinal");
+            select_list.push_back("Corticopontine");
+            select_list.push_back("Corticostriatal");
             select_list.push_back("Thalamic");
             select_list.push_back("Optic");
             select_list.push_back("Fornix");
         }
         if(ui->cb_commissural->isChecked())
         {
-            select_list.push_back("Body");
-            select_list.push_back("Forceps");
+            select_list.push_back("Corpus");
         }
         for(int i = 0;i < ui->candidate_list_view->count();++i)
             ui->candidate_list_view->item(i)->setSelected(false);
