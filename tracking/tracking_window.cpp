@@ -2456,6 +2456,32 @@ void tracking_window::on_actionSave_Slices_to_DICOM_triggered()
                                                       QFileInfo(windowTitle()).absolutePath(),"DICOM files (*.dcm);;All files (*)");
     if(files.isEmpty())
         return;
+
+    std::vector<std::string> file_list;
+    for(int i = 0;i < files.size();++i)
+        file_list.push_back(files[i].toStdString());
+    tipl::io::volume volume;
+    if(volume.load_from_files(file_list,uint32_t(file_list.size())))
+    {
+        tipl::image<float,3> I;
+        volume >> I;
+        if(I.geometry() != slice->source_images.geometry())
+        {
+            QMessageBox::information(this,"Error","Selected DICOM files does not match the original slices. Please check if missing any files.");
+            return;
+        }
+    }
+
+    uint8_t new_dim_order[3];
+    uint8_t new_flip[3];
+    for(uint8_t i = 0;i < 3; ++i)
+    {
+        new_dim_order[uint8_t(volume.dim_order[i])] = i;
+        new_flip[uint8_t(volume.dim_order[i])] = uint8_t(volume.flip[i]);
+    }
+    tipl::image<float,3> out;
+    tipl::reorder(slice->source_images,out,new_dim_order,new_flip);
+
     tipl::io::dicom header;
     tipl::vector<3> row_orientation;
     if(!header.load_from_file(files[0].toStdString().c_str()) ||
@@ -2467,74 +2493,40 @@ void tracking_window::on_actionSave_Slices_to_DICOM_triggered()
     auto I = slice->source_images;
     bool is_axial = row_orientation[0] > row_orientation[1];
     size_t read_size = is_axial ? I.plane_size():size_t(I.height()*I.depth());
-    int failcode= 0;
-    std::vector<char> slice_matched(size_t(is_axial ? I.depth():I.width()));
+
     begin_prog("Writing data");
-    tipl::par_for2(files.size(),[&](int i,int id)
+    for(int i = 0,pos = 0;check_prog(i,files.size());++i,pos += read_size)
     {
-        if(id == 0)
-            check_prog(i,files.size());
         std::vector<char> buf;
-        std::ifstream in(files[i].toStdString().c_str(),std::ios::binary);
-        in.seekg(0,in.end);
-        buf.resize(size_t(in.tellg()));
-        in.seekg(0,in.beg);
-        if(read_size*sizeof(short) > buf.size())
         {
-            failcode = 1;
-            return;
-        }
-        if(!in.read(&buf[0],uint64_t(buf.size())))
-        {
-            failcode = 4;
-            return;
-        }
-        std::vector<short> image_buf(read_size);
-        std::copy(buf.end()-read_size*sizeof(short),buf.end(),(char*)&image_buf[0]);
-        for(size_t j = 0;j < slice_matched.size();++j)
-        {
-            if(slice_matched[j])
-                continue;
-            tipl::image<short,2> slice;
-            tipl::volume2slice(I, slice, is_axial ? 2 : 0, j);
-            if(!is_axial)
-                tipl::flip_y(slice);
-            size_t mismatched_count = 0;
-            size_t check_count = slice.size()/3;
-            size_t max_mismatch_count = check_count/2;
-            for(size_t k = 0;k < check_count && mismatched_count < max_mismatch_count;++k)
-                if(image_buf[k+check_count] != slice[k+check_count])
-                    ++mismatched_count;
-            if(mismatched_count < max_mismatch_count) // found a match
+            std::ifstream in(files[i].toStdString().c_str(),std::ios::binary);
+            in.seekg(0,in.end);
+            buf.resize(size_t(in.tellg()));
+            in.seekg(0,in.beg);
+            if(read_size*sizeof(short) > buf.size())
             {
-                std::copy(slice.begin(),slice.end(),(short*)&(char&)*(buf.end()-read_size*sizeof(short)));
-                QFileInfo info(files[i]);
-                QString output_name = info.path() + "/mod_" + info.completeBaseName() + ".dcm";
-                std::ofstream out(output_name.toStdString().c_str(),std::ios::binary);
-                if(!out)
-                {
-                    failcode = 3;
-                    return;
-                }
-                out.write(&buf[0],int64_t(buf.size()));
-                slice_matched[j] = 1;
+                QMessageBox::information(this,"Error","Compressed DICOM is not supported. Please convert DICOM to uncompressed format.");
+                return;
+            }
+            if(!in.read(&buf[0],int64_t(buf.size())))
+            {
+                QMessageBox::information(this,"Error","Read DICOM failed");
                 return;
             }
         }
-        failcode = 2;
-    });
-    check_prog(0,0);
-    if(failcode == 0)
-        QMessageBox::information(this,"DSI Studio","File saved");
-    if(failcode == 1)
-        QMessageBox::information(this,"DSI Studio","Compressed DICOM is not supported. Please convert DICOM to uncompressed format.");
-    if(failcode == 2)
-        QMessageBox::information(this,"DSI Studio","Subject DICOM mismatch");
-    if(failcode == 3)
-        QMessageBox::information(this,"DSI Studio","Cannot output DICOM");
-    if(failcode == 4)
-        QMessageBox::information(this,"DSI Studio","Read DICOM failed");
+        std::copy(out.begin()+pos,out.begin()+pos+int(read_size),
+                  reinterpret_cast<short*>(&*(buf.end()-int(read_size*sizeof(short)))));
 
+        QFileInfo info(files[i]);
+        QString output_name = info.path() + "/mod_" + info.completeBaseName() + ".dcm";
+        std::ofstream out(output_name.toStdString().c_str(),std::ios::binary);
+        if(!out)
+        {
+            QMessageBox::information(this,"Error","Cannot output DICOM. Please check disk space or output permission.");
+            return;
+        }
+        out.write(&buf[0],int64_t(buf.size()));
+    }
 }
 
 void tracking_window::on_zoom_valueChanged(double arg1)
