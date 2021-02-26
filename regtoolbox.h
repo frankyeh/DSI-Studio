@@ -16,6 +16,7 @@ class RegToolBox : public QMainWindow
     Q_OBJECT
 
 public:
+    uint8_t cur_view = 2;
     tipl::image<float,3> It,I,J,JJ,I2,It2,J2;
     tipl::image<tipl::vector<3>,3> dis;
     tipl::vector<3> Itvs,Ivs;
@@ -27,13 +28,15 @@ public:
 public:
     tipl::affine_transform<double> arg;
     tipl::thread thread;
-    std::shared_ptr<QTimer> timer;
+    std::shared_ptr<QTimer> timer,flash_timer;
     std::string status;
 public:
     std::shared_ptr<tipl::reg::bfnorm_mapping<float,3> > bnorm_data;
     bool reg_done;
+    bool flash = false;
 private:
     void clear(void);
+    void setup_slice_pos(void);
     void linear_reg(tipl::reg::reg_type reg_type);
     void nonlinear_reg(void);
 
@@ -50,11 +53,10 @@ private slots:
     void on_run_reg_clicked();
     void on_timer();
 
+    void flash_image();
     void show_image();
-    void on_action_Save_Warpped_Image_triggered();
 
 
-    void on_reg_type_currentIndexChanged(int index);
 
     void on_stop_clicked();
 
@@ -70,11 +72,19 @@ private slots:
 
     void on_actionSave_Warpping_triggered();
 
+    void on_show_option_clicked();
+
+    void on_axial_view_clicked();
+
+    void on_coronal_view_clicked();
+
+    void on_sag_view_clicked();
+
 private:
     Ui::RegToolBox *ui;
-    QGraphicsScene It_scene,I_scene;
+    QGraphicsScene It_scene,I_scene,It_mix_scene;
 private:
-    tipl::color_image cIt,cI,cJ;
+    tipl::color_image cIt,cI,cJ,cIt_mix;
 
 };
 

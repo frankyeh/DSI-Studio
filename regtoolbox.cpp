@@ -5,7 +5,7 @@
 #include "ui_regtoolbox.h"
 #include "libs/gzip_interface.hpp"
 #include "basic_voxel.hpp"
-
+bool is_label_image(const tipl::image<float,3>& I);
 
 void show_view(QGraphicsScene& scene,QImage I);
 RegToolBox::RegToolBox(QWidget *parent) :
@@ -13,19 +13,22 @@ RegToolBox::RegToolBox(QWidget *parent) :
     ui(new Ui::RegToolBox)
 {
     ui->setupUi(this);
+    ui->options->hide();
     ui->It_view->setScene(&It_scene);
+    ui->It_mix_view->setScene(&It_mix_scene);
     ui->I_view->setScene(&I_scene);
     connect(ui->slice_pos, SIGNAL(sliderMoved(int)), this, SLOT(show_image()));
     connect(ui->contrast, SIGNAL(sliderMoved(int)), this, SLOT(show_image()));
     connect(ui->main_zoom, SIGNAL(sliderMoved(int)), this, SLOT(show_image()));
-    connect(ui->show_warp, SIGNAL(clicked()), this, SLOT(show_image()));
-    connect(ui->dis_map, SIGNAL(clicked()), this, SLOT(show_image()));
-    connect(ui->mosaic, SIGNAL(clicked()), this, SLOT(show_image()));
 
     timer.reset(new QTimer());
     connect(timer.get(), SIGNAL(timeout()), this, SLOT(on_timer()));
     timer->setInterval(2000);
 
+    flash_timer.reset(new QTimer());
+    connect(flash_timer.get(), SIGNAL(timeout()), this, SLOT(flash_image()));
+    flash_timer->setInterval(1000);
+    flash_timer->start();
     QMovie *movie = new QMovie(":/data/icons/ajax-loader.gif");
     ui->running_label->setMovie(movie);
     ui->running_label->hide();
@@ -35,6 +38,7 @@ RegToolBox::RegToolBox(QWidget *parent) :
 
 RegToolBox::~RegToolBox()
 {
+    thread.clear();
     delete ui;
 }
 
@@ -49,7 +53,15 @@ void RegToolBox::clear(void)
     arg.clear();
     ui->run_reg->setText("run");
 }
-
+void RegToolBox::setup_slice_pos(void)
+{
+    if(!It.empty())
+    {
+        int range = int(It.geometry()[cur_view]);
+        ui->slice_pos->setMaximum(range-1);
+        ui->slice_pos->setValue(range/2);
+    }
+}
 void RegToolBox::on_OpenTemplate_clicked()
 {
     QString filename = QFileDialog::getOpenFileName(
@@ -69,8 +81,7 @@ void RegToolBox::on_OpenTemplate_clicked()
     nifti.get_image_transformation(ItR);
     tipl::normalize(It,1.0f);
     nifti.get_voxel_size(Itvs);
-    ui->slice_pos->setMaximum(It.depth()-1);
-    ui->slice_pos->setValue(It.depth()/2);
+    setup_slice_pos();
     clear();
     show_image();
 }
@@ -90,6 +101,7 @@ void RegToolBox::on_OpenSubject_clicked()
         return;
     }
     nifti.toLPS(I);
+    ui->edge->setChecked(is_label_image(I));
     tipl::normalize(I,1.0f);
     nifti.get_voxel_size(Ivs);
     clear();
@@ -142,34 +154,36 @@ void image2rgb(tipl::image<float,2>& tmp,tipl::color_image& buf,float contrast)
 }
 
 
-void show_slice_at(QGraphicsScene& scene,tipl::image<float,2>& tmp,tipl::color_image& buf,float ratio,float contrast)
+void show_slice_at(QGraphicsScene& scene,tipl::image<float,2>& tmp,tipl::color_image& buf,float ratio,float contrast,uint8_t cur_view)
 {
     image2rgb(tmp,buf,contrast);
-    show_view(scene,QImage((unsigned char*)&*buf.begin(),buf.width(),buf.height(),QImage::Format_RGB32).
-              scaled(buf.width()*ratio,buf.height()*ratio));
+    QImage I(reinterpret_cast<unsigned char*>(&*buf.begin()),buf.width(),buf.height(),QImage::Format_RGB32);
+    if(cur_view != 2)
+        I = I.mirrored(false,true);
+    show_view(scene,I.scaled(int(buf.width()*ratio),int(buf.height()*ratio)));
 }
 
 
 void show_slice_at(QGraphicsScene& scene,const tipl::image<float,3>& source,
-                   tipl::color_image& buf,size_t slice_pos,float ratio,float contrast)
+                   tipl::color_image& buf,size_t slice_pos,float ratio,float contrast,uint8_t cur_view)
 {
     tipl::image<float,2> tmp;
-    tipl::volume2slice(source,tmp,2,slice_pos);
-    show_slice_at(scene,tmp,buf,ratio,contrast);
+    tipl::volume2slice(source,tmp,cur_view,slice_pos);
+    show_slice_at(scene,tmp,buf,ratio,contrast,cur_view);
 }
 void show_mosaic_slice_at(QGraphicsScene& scene,
                           const tipl::image<float,3>& source1,
                           const tipl::image<float,3>& source2,
-                          tipl::color_image& buf,size_t slice_pos,float ratio,float contrast,bool mosaic)
+                          tipl::color_image& buf,size_t slice_pos,float ratio,float contrast,bool mosaic,uint8_t cur_view)
 {
     if(!mosaic)
     {
-        show_slice_at(scene,source1,buf,slice_pos,ratio,contrast);
+        show_slice_at(scene,source1,buf,slice_pos,ratio,contrast,cur_view);
         return;
     }
     tipl::image<float,2> tmp1,tmp2,tmp;
-    tipl::volume2slice(source1,tmp1,2,slice_pos);
-    tipl::volume2slice(source2,tmp2,2,slice_pos);
+    tipl::volume2slice(source1,tmp1,cur_view,slice_pos);
+    tipl::volume2slice(source2,tmp2,cur_view,slice_pos);
     if(tmp1.geometry() != tmp2.geometry())
         return;
     tmp.resize(tmp1.geometry());
@@ -184,94 +198,114 @@ void show_mosaic_slice_at(QGraphicsScene& scene,
         int y = index[1] >> 5;
         v = (x&1 ^ y&1) ? tmp1[index.index()] : tmp2[index.index()];
     });
-    show_slice_at(scene,tmp,buf,ratio,contrast);
+    show_slice_at(scene,tmp,buf,ratio,contrast,cur_view);
 }
-
+void RegToolBox::flash_image()
+{
+    flash = !flash;
+    if(ui->rb_flash->isChecked())
+        show_image();
+}
 void RegToolBox::show_image(void)
 {
     float ratio = ui->main_zoom->value()/10.0;
     float contrast = ui->contrast->value()*20;
     if(!It.empty())
     {
-        const auto& I = (ui->show_second->isChecked() && It2.geometry() == It.geometry() ? It2 : It);
-        if(ui->show_warp->isChecked())
+        const auto& I_show = (ui->show_second->isChecked() && It2.geometry() == It.geometry() ? It2 : It);
+
+        if(ui->rb_mosaic->isChecked())
         {
             if(!J_view2.empty())
-                show_mosaic_slice_at(It_scene,J_view2,I,cIt,ui->slice_pos->value(),ratio,contrast,ui->mosaic->isChecked());
+                show_mosaic_slice_at(It_mix_scene,J_view2,I_show,cIt_mix,ui->slice_pos->value(),ratio,contrast,true,cur_view);
             else
                 if(!J_view.empty())
-                    show_mosaic_slice_at(It_scene,J_view,I,cIt,ui->slice_pos->value(),ratio,contrast,ui->mosaic->isChecked());
-                else
-                    show_slice_at(It_scene,I,cIt,ui->slice_pos->value(),ratio,contrast);
+                    show_mosaic_slice_at(It_mix_scene,J_view,I_show,cIt_mix,ui->slice_pos->value(),ratio,contrast,true,cur_view);
         }
-        else
-            show_slice_at(It_scene,I,cIt,ui->slice_pos->value(),ratio,contrast);
-
-    }
-    if(!J_view2.empty())
-    {
-        if(ui->dis_map->isChecked())
+        if(ui->rb_flash->isChecked())
         {
-            tipl::image<float,2> J_view_slice(J_view.slice_at(ui->slice_pos->value()));
-            image2rgb(J_view_slice,cJ,contrast);
-            QImage qcJ = QImage((unsigned char*)&*cJ.begin(),cJ.width(),cJ.height(),QImage::Format_RGB32).
-                          scaled(cJ.width()*ratio,cJ.height()*ratio);
-
-            QPainter paint(&qcJ);
-            paint.setBrush(Qt::NoBrush);
-            paint.setPen(Qt::red);
-            auto dis_slice = dis_view.slice_at(ui->slice_pos->value());
-            int cur_dis = 1 << (ui->dis_spacing->currentIndex()-1);
-            for(int x = 0;x < dis_slice.width();x += cur_dis)
+            if(flash)
             {
-                for(int y = 1,index = x;
-                        y < dis_slice.height()-1;++y,index += dis_slice.width())
-                {
-                    auto vfrom = dis_slice[index];
-                    auto vto = dis_slice[index+dis_slice.width()];
-                    vfrom[0] += x;
-                    vfrom[1] += y-1;
-                    vto[0] += x;
-                    vto[1] += y;
-                    paint.drawLine(vfrom[0]*ratio,vfrom[1]*ratio,
-                                   vto[0]*ratio,vto[1]*ratio);
-                }
+                if(!J_view2.empty())
+                    show_mosaic_slice_at(It_mix_scene,J_view2,I_show,cIt_mix,ui->slice_pos->value(),ratio,contrast,false,cur_view);
+                else
+                    if(!J_view.empty())
+                        show_mosaic_slice_at(It_mix_scene,J_view,I_show,cIt_mix,ui->slice_pos->value(),ratio,contrast,false,cur_view);
+                    else
+                        show_slice_at(It_mix_scene,I_show,cIt_mix,ui->slice_pos->value(),ratio,contrast,cur_view);
             }
-
-            for(int y = 0;y < dis_slice.height();y += cur_dis)
+            else
             {
-                for(int x = 1,index = y*dis_slice.width();
-                        x < dis_slice.width()-1;++x,++index)
-                {
-                    auto vfrom = dis_slice[index];
-                    auto vto = dis_slice[index+1];
-                    vfrom[0] += x-1;
-                    vfrom[1] += y;
-                    vto[0] += x;
-                    vto[1] += y;
-                    paint.drawLine(vfrom[0]*ratio,vfrom[1]*ratio,
-                                   vto[0]*ratio,vto[1]*ratio);
-                }
+                show_slice_at(It_mix_scene,I_show,cIt_mix,ui->slice_pos->value(),ratio,contrast,cur_view);
             }
-            show_view(I_scene,qcJ);
         }
-        else
-        show_slice_at(I_scene,J_view2,cJ,ui->slice_pos->value(),ratio,contrast);
-    }
-    else
-    if(!J_view.empty())
-        show_slice_at(I_scene,J_view,cJ,ui->slice_pos->value(),ratio,contrast);
-    else
-        if(!I.empty())
-            show_slice_at(I_scene,I,cI,std::min(I.depth()-1,I.depth()*ui->slice_pos->value()/ui->slice_pos->maximum()),ratio,contrast);
+        if(ui->rb_show_warp->isChecked())
+        {
+            if(ui->dis_spacing->currentIndex())
+            {
+                tipl::image<float,2> J_view_slice;
+                tipl::volume2slice(J_view,J_view_slice,cur_view,ui->slice_pos->value());
+                image2rgb(J_view_slice,cJ,contrast);
+                QImage qcJ = QImage((unsigned char*)&*cJ.begin(),cJ.width(),cJ.height(),QImage::Format_RGB32).
+                              scaled(cJ.width()*ratio,cJ.height()*ratio);
 
-    /*
-    if(J_view2.empty())
-        return;
-    {
+                QPainter paint(&qcJ);
+                paint.setBrush(Qt::NoBrush);
+                paint.setPen(Qt::red);
+                tipl::image<tipl::vector<3>,2> dis_slice;
+                tipl::volume2slice(dis_view,dis_slice,cur_view,ui->slice_pos->value());
+                int cur_dis = 1 << (ui->dis_spacing->currentIndex()-1);
+                for(int x = 0;x < dis_slice.width();x += cur_dis)
+                {
+                    for(int y = 1,index = x;
+                            y < dis_slice.height()-1;++y,index += dis_slice.width())
+                    {
+                        auto vfrom = dis_slice[index];
+                        auto vto = dis_slice[index+dis_slice.width()];
+                        vfrom[0] += x;
+                        vfrom[1] += y-1;
+                        vto[0] += x;
+                        vto[1] += y;
+                        paint.drawLine(vfrom[0]*ratio,vfrom[1]*ratio,
+                                       vto[0]*ratio,vto[1]*ratio);
+                    }
+                }
 
+                for(int y = 0;y < dis_slice.height();y += cur_dis)
+                {
+                    for(int x = 1,index = y*dis_slice.width();
+                            x < dis_slice.width()-1;++x,++index)
+                    {
+                        auto vfrom = dis_slice[index];
+                        auto vto = dis_slice[index+1];
+                        vfrom[0] += x-1;
+                        vfrom[1] += y;
+                        vto[0] += x;
+                        vto[1] += y;
+                        paint.drawLine(vfrom[0]*ratio,vfrom[1]*ratio,
+                                       vto[0]*ratio,vto[1]*ratio);
+                    }
+                }
+                if(cur_view != 2)
+                    qcJ = qcJ.mirrored(false,true);
+                show_view(It_mix_scene,qcJ);
+            }
+            else
+            {
+                if(!J_view2.empty())
+                    show_mosaic_slice_at(It_mix_scene,J_view2,I_show,cIt_mix,ui->slice_pos->value(),ratio,contrast,false,cur_view);
+                else
+                    if(!J_view.empty())
+                        show_mosaic_slice_at(It_mix_scene,J_view,I_show,cIt_mix,ui->slice_pos->value(),ratio,contrast,false,cur_view);
+            }
+        }
+        show_slice_at(It_scene,I_show,cIt,ui->slice_pos->value(),ratio,contrast,cur_view);
     }
-    */
+
+
+    if(!I.empty())
+        show_slice_at(I_scene,I,cI,std::min(I.depth()-1,I.depth()*ui->slice_pos->value()/ui->slice_pos->maximum()),ratio,contrast,cur_view);
+
 }
 
 void RegToolBox::on_timer()
@@ -361,6 +395,8 @@ void RegToolBox::nonlinear_reg(void)
             tipl::image<float,3> sIt(It),sJ(J);
             tipl::filter::sobel(sIt);
             tipl::filter::sobel(sJ);
+            tipl::filter::mean(sIt);
+            tipl::filter::mean(sJ);
             tipl::reg::cdm(sIt,sJ,dis,thread.terminated,ui->resolution->value(),ui->smoothness->value(),ui->steps->value());
         }
         else
@@ -383,39 +419,30 @@ void RegToolBox::on_run_reg_clicked()
         QMessageBox::information(this,"Error","Please load image first",0);
         return;
     }
-    if(It.geometry() != I.geometry() && ui->linear_method->currentIndex() == 0)
-    {
-        QMessageBox::information(this,"Error","Linear registration is require if subject/template images have different dimensions",0);
-        return;
-    }
     clear();
     thread.terminated = false;
 
     thread.run([this]()
     {
-        if(ui->linear_method->currentIndex())
-        {
-            if(ui->linear_method->currentIndex() == 1) // rigid body
-                linear_reg(tipl::reg::rigid_body);
-            else
-            {
-                // adjust Ivs for affine
-                Ivs *= std::sqrt((It.plane_size()*Itvs[0]*Itvs[1])/
-                        (I.plane_size()*Ivs[0]*Ivs[1]));
-                linear_reg(tipl::reg::affine);
-            }
-        }
+        // adjust Ivs for affine
+        Ivs *= std::sqrt((It.plane_size()*Itvs[0]*Itvs[1])/
+                    (I.plane_size()*Ivs[0]*Ivs[1]));
+        linear_reg(tipl::reg::affine);
+        /*
+        // This skip affine registration
         else
         {
             J = I;
             if(I2.geometry() == I.geometry())
                 J2 = I2;
         }
-        if(ui->nonlinear_method->currentIndex())
-            nonlinear_reg();
+        */
+
+        nonlinear_reg();
         reg_done = true;
         status = "registration done";
     });
+
     ui->running_label->movie()->start();
     ui->running_label->show();
     timer->start();
@@ -423,28 +450,6 @@ void RegToolBox::on_run_reg_clicked()
     ui->run_reg->hide();
 }
 
-void RegToolBox::on_action_Save_Warpped_Image_triggered()
-{
-    QString filename = QFileDialog::getSaveFileName(
-            this,"Save Warpped Image","",
-            "Images (*.nii *nii.gz);;All files (*)" );
-    if(filename.isEmpty())
-        return;
-    if(!JJ.empty())
-    {
-        auto JJ_ = JJ;
-        gz_nifti::save_to_file(filename.toStdString().c_str(),JJ_,Itvs,ItR);
-    }
-    else
-    if(!J.empty())
-    {
-        auto J_ = J;
-        gz_nifti::save_to_file(filename.toStdString().c_str(),J_,Itvs,ItR);
-    }
-}
-
-
-bool is_label_image(const tipl::image<float,3>& I);
 bool apply_warping(const char* from,
                    const char* to,
                    tipl::geometry<3> from_geo,
@@ -494,16 +499,6 @@ void RegToolBox::on_actionApply_Warpping_triggered()
         QMessageBox::information(this,"Error",error.c_str());
 }
 
-
-void RegToolBox::on_reg_type_currentIndexChanged(int index)
-{
-    if(index)
-        ui->nonlinear_widget->show();
-    else
-        ui->nonlinear_widget->hide();
-
-}
-
 void RegToolBox::on_stop_clicked()
 {
     timer->stop();
@@ -551,4 +546,33 @@ void RegToolBox::on_actionSave_Warpping_triggered()
     gz_mat_write out(filename.toStdString().c_str());
     if(out)
         out.write("mapping",&mapping[0][0],3,mapping.size());
+}
+
+
+void RegToolBox::on_show_option_clicked()
+{
+    ui->options->show();
+    ui->show_option->hide();
+}
+
+void RegToolBox::on_axial_view_clicked()
+{
+    cur_view = 2;
+    setup_slice_pos();
+    show_image();
+}
+
+
+void RegToolBox::on_coronal_view_clicked()
+{
+    cur_view = 1;
+    setup_slice_pos();
+    show_image();
+}
+
+void RegToolBox::on_sag_view_clicked()
+{
+    cur_view = 0;
+    setup_slice_pos();
+    show_image();
 }
