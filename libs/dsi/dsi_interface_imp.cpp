@@ -154,8 +154,10 @@ bool ImageModel::reconstruction(void)
         if(voxel.check_btable)
         {
             voxel.recon_report <<
-            " The b-table was checked by an automatic quality control routine to ensure its accuracy (Schilling et al. MRI, 2019) .";
-            check_b_table();
+            " The b-table was checked by an automatic quality control routine to ensure its accuracy (Schilling et al. MRI, 2019).";
+            std::string result = check_b_table();
+            if(!result.empty())
+                voxel.recon_report << " The b-table was flipped by " << result << ".";
         }
         else
             voxel.step_report << "[Step T2b][Check b-table]=unchecked" << std::endl;
