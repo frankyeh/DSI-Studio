@@ -35,7 +35,7 @@ void save_connectivity_matrix(TractModel& tract_model,
     }
     if(data.overlap_ratio > 0.5f)
     {
-        std::cout << "the ROIs have a large overlapping area (ratio="
+        std::cout << "the ROIs have a large overlapping area (ratio: "
                   << data.overlap_ratio << "). The network measure calculated may not be reliable" << std::endl;
     }
     if(connectivity_value == "trk")
@@ -88,7 +88,7 @@ bool get_t1t2_nifti(std::shared_ptr<fib_data> handle,
     std::cout << convert[0] << " " << convert[1] << " " << convert[2] << " " << convert[3] << std::endl;
     std::cout << convert[4] << " " << convert[5] << " " << convert[6] << " " << convert[7] << std::endl;
     std::cout << convert[8] << " " << convert[9] << " " << convert[10] << " " << convert[11] << std::endl;
-    std::cout << "T1T2 dimension=" << nifti_geo << std::endl;
+    std::cout << "T1T2 dimension: " << nifti_geo << std::endl;
     return true;
 }
 bool load_atlas_from_list(std::shared_ptr<fib_data> handle,
@@ -264,12 +264,12 @@ bool load_region(std::shared_ptr<fib_data> handle,
             if(!region_name.empty())
             {
                 int region_value = std::stoi(region_name);
-                std::cout << "select region with value=" << region_value << std::endl;
+                std::cout << "select region with value of " << region_value << std::endl;
                 for(size_t i = 0 ;i < from.size();++i)
                     from[i] = (from[i] == region_value ? 1:0);
             }
-            std::cout << file_name << " dimension=" << from.geometry() << std::endl;
-            std::cout << "DWI dimension=" << handle->dim << std::endl;
+            std::cout << file_name << " dimension: " << from.geometry() << std::endl;
+            std::cout << "DWI dimension: " << handle->dim << std::endl;
             if(from.geometry() == handle->dim)
             {
                 std::cout << "loading " << file_name << "as a native space region" << std::endl;
@@ -357,9 +357,9 @@ void trk_post(std::shared_ptr<fib_data> handle,
         int method = 0,count = 0,detail = 0;
         std::string name;
         in >> method >> count >> detail >> name;
-        std::cout << "cluster method=" << method << std::endl;
-        std::cout << "cluster count=" << count << std::endl;
-        std::cout << "cluster resolution (if method is 0) = " << detail << " mm" << std::endl;
+        std::cout << "cluster method: " << method << std::endl;
+        std::cout << "cluster count: " << count << std::endl;
+        std::cout << "cluster resolution (if method is 0) : " << detail << " mm" << std::endl;
         std::cout << "run clustering." << std::endl;
         tract_model.run_clustering(uint8_t(method),uint32_t(count),detail);
         std::ofstream out(name);
@@ -420,8 +420,7 @@ bool load_roi(std::shared_ptr<fib_data> handle,std::shared_ptr<RoiMgr> roi_mgr)
             std::cout << handle->error_msg << std::endl;
             return false;
         }
-        std::cout << "set tolerance=" << po.get("tolerance",16.0f) << std::endl;
-        std::cout << "set target track=" << handle->tractography_name_list[track_id] << std::endl;
+        std::cout << "set target track: " << handle->tractography_name_list[track_id] << std::endl;
     }
     return true;
 }
@@ -524,10 +523,7 @@ int trk(std::shared_ptr<fib_data> handle)
         return 1;
     }
     if(po.has("parameter_id"))
-    {
         tracking_thread.param.set_code(po.get("parameter_id"));
-        std::cout << "parameter_code=" << tracking_thread.param.get_code() << std::endl;
-    }
 
     if(!load_roi(handle,tracking_thread.roi_mgr))
         return 1;

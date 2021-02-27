@@ -19,7 +19,7 @@ bool train_cnn(std::string network,
         std::cout << "invalid network: " << nn.error_msg << std::endl;
         return false;
     }
-    std::cout << "training network=" << network << std::endl;
+    std::cout << "training network: " << network << std::endl;
     tipl::ml::trainer t;
     t.learning_rate = po.get("learning_rate",0.01f);
     //t.w_decay_rate = po.get("w_decay_rate",0.0f);

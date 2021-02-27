@@ -72,7 +72,7 @@ int reg(void)
         tipl::resample_mt(from2,from2_,T,tipl::cubic);
     }
     auto r2 = tipl::correlation(from_.begin(),from_.end(),to.begin());
-    std::cout << "correlation cofficient=" << r2 << std::endl;
+    std::cout << "correlation cofficient: " << r2 << std::endl;
     if(po.get("reg_type",1) == 0) // just rigidbody
     {
         std::cout << "output warpped image:" << output_wp_image << std::endl;
@@ -103,8 +103,8 @@ int reg(void)
         tipl::image<float,3> from_wp;
         tipl::compose_displacement(from_,cdm_dis,from_wp);
         float r = float(tipl::correlation(to.begin(),to.end(),from_wp.begin()));
-        std::cout << "R2=" << r*r << std::endl;
-        std::cout << "output warpped image:" << output_wp_image << std::endl;
+        std::cout << "R2: " << r*r << std::endl;
+        std::cout << "output warpped image: " << output_wp_image << std::endl;
         gz_nifti::save_to_file(output_wp_image.c_str(),from_wp,to_vs,to_trans);
     }
 

@@ -88,8 +88,6 @@ int rec(void)
     }
 
     unsigned char method_index = uint8_t(po.get("method",4));
-    std::cout << "method=" << int(method_index) << std::endl;
-
     if(method_index == 4)
         src.voxel.param[0] = 1.25f;
     if(method_index == 6) // Convert to HARDI
@@ -115,39 +113,21 @@ int rec(void)
             src.voxel.primary_template = fa_template_list[index];
             src.voxel.secondary_template = iso_template_list[index];
         }
-        std::cout << "template = " << src.voxel.primary_template << std::endl;
-        std::cout << "template2 = " << src.voxel.secondary_template << std::endl;
+        std::cout << "template: " << src.voxel.primary_template << std::endl;
+        std::cout << "template2: " << src.voxel.secondary_template << std::endl;
     }
     if(po.has("study_src")) // DDI
-    {
         src.voxel.study_src_file_path = po.get("study_src");
-        std::cout << "comparison src=" << src.voxel.study_src_file_path << std::endl;
-    }
     if (po.has("param0"))
-    {
         src.voxel.param[0] = po.get("param0",float(0));
-        std::cout << "param0=" << src.voxel.param[0] << std::endl;
-    }
     if (po.has("param1"))
-    {
         src.voxel.param[1] = po.get("param1",float(0));
-        std::cout << "param1=" << src.voxel.param[1] << std::endl;
-    }
     if (po.has("param2"))
-    {
         src.voxel.param[2] = po.get("param2",float(0));
-        std::cout << "param2=" << src.voxel.param[2] << std::endl;
-    }
     if (po.has("param3"))
-    {
         src.voxel.param[3] = po.get("param3",float(0));
-        std::cout << "param3=" << src.voxel.param[3] << std::endl;
-    }
     if (po.has("param4"))
-    {
         src.voxel.param[4] = po.get("param4",float(0));
-        std::cout << "param4=" << src.voxel.param[4] << std::endl;
-    }
 
     src.voxel.method_id = method_index;
     src.voxel.ti.init(uint16_t(po.get("odf_order",int(8))));
@@ -196,7 +176,7 @@ int rec(void)
                 name_value[1] += ":";
                 name_value[1] += name_value[2];
             }
-            std::cout << name_value[0].toStdString() << "=" << name_value[1].toStdString() << std::endl;
+            std::cout << name_value[0].toStdString() << ":" << name_value[1].toStdString() << std::endl;
             if(!add_other_image(&src,name_value[0],name_value[1]))
                 return 1;
         }

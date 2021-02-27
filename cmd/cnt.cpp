@@ -53,7 +53,7 @@ int cnt(void)
         int voi_index = po.get("voi",0);
         int voi_sel = -1;
         std::string voi_text;
-        std::cout << "variables=";
+        std::cout << "variables: ";
         for(int i = 0;i < variable_list.size();++i)
         {
             int index = variable_list[i];
@@ -81,7 +81,7 @@ int cnt(void)
         vbc->on_variable_list_clicked(QModelIndex());
         vbc->ui->foi->update();
         vbc->ui->foi->setCurrentText(voi_text.c_str());
-        std::cout << "study variable=" << vbc->ui->foi->currentText().toStdString() << std::endl;
+        std::cout << "study variable: " << vbc->ui->foi->currentText().toStdString() << std::endl;
 
     }
 
@@ -163,8 +163,6 @@ int cnt_ind(void)
     if(!handle.get())
         return 1;
     int normalization = po.get("norm",0);
-    std::cout << "normalization=" << normalization << std::endl;
-
     if(!po.has("study"))
     {
         std::cout << "please assign the study FIB file to --study." << std::endl;

@@ -291,8 +291,11 @@ int main(int ac, char *av[])
 {
     if(ac > 2)
         return run_cmd(ac,av);
+    if(QString(av[1]).endsWith(".txt") || QString(av[1]).endsWith(".log"))
+        return run_cmd(ac,av);
     if(ac == 2)
         arg_file_name = av[1];
+
     QApplication a(ac,av);
     init_application();
     MainWindow w;

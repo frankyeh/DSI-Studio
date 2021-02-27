@@ -61,9 +61,9 @@ void export_track_info(std::shared_ptr<fib_data> handle,
                 continue;
             }
             std::cout << "calculating report" << std::endl;
-            std::cout << "profile_dir=" << profile_dir << std::endl;
-            std::cout << "bandwidth=" << bandwidth << std::endl;
-            std::cout << "index_name=" << index_name << std::endl;
+            std::cout << "profile_dir:" << profile_dir << std::endl;
+            std::cout << "bandwidth:" << bandwidth << std::endl;
+            std::cout << "index_name:" << index_name << std::endl;
             tract_model.get_report(
                                 profile_dir,
                                 bandwidth,

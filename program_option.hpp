@@ -1,6 +1,7 @@
 #ifndef PROGRAM_OPTION_HPP
 #define PROGRAM_OPTION_HPP
 #include <sstream>
+#include <fstream>
 #include <vector>
 #include <iostream>
 extern bool has_gui;
@@ -41,6 +42,14 @@ public:
     bool parse(int ac, char *av[])
     {
         clear();
+        if(ac == 2) // command from log file
+        {
+            std::ifstream in(av[1]);
+            std::string line;
+            while(std::getline(in,line))
+                add_option(line);
+        }
+        else
         for(int i = 1;i < ac;++i)
         {
             std::string str(av[i]);
