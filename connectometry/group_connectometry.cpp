@@ -652,8 +652,8 @@ void group_connectometry::on_run_clicked()
         if(!roi_list.empty())
         {
             std::ostringstream out;
-            out << " The tracking algorithm used";
-            const char roi_type_name[5][20] = {"region of interst","region of avoidance","ending region","seeding region","terminating region"};
+            out << " The tracking algorithm assigned";
+            const char roi_type_name[5][20] = {"region of interst","region of avoidance","ending region","seeding region","excluded region"};
             for(unsigned int index = 0;index < roi_list.size();++index)
             {
                 if(index && roi_list.size() > 2)
@@ -665,21 +665,6 @@ void group_connectometry::on_run_clicked()
             }
             out << ".";
             vbc->roi_mgr_text = out.str();
-        }
-
-        // setup roi related output suffix
-        vbc->output_roi_suffix.clear();
-        if(!roi_list.empty())
-        {
-            const char roi_type_name2[5][5] = {"roi","roa","end","seed"};
-            for(unsigned int index = 0;index < roi_list.size();++index)
-            {
-                vbc->output_roi_suffix += ".";
-                vbc->output_roi_suffix += roi_type_name2[roi_type[index]];
-                vbc->output_roi_suffix += ".";
-                vbc->output_roi_suffix += roi_name[index];
-            }
-            std::replace(vbc->output_roi_suffix.begin(),vbc->output_roi_suffix.end(),':','_');
         }
     }
 

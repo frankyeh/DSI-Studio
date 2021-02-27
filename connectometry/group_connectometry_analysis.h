@@ -53,7 +53,6 @@ public:// for FDR analysis
 public:
     std::shared_ptr<RoiMgr> roi_mgr;
     std::string roi_mgr_text;
-    std::string output_roi_suffix;
 public:
     std::string output_file_name;
     int seed_count;

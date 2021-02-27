@@ -416,9 +416,10 @@ void group_connectometry_analysis::run_permutation(unsigned int thread_count,uns
         else
         {
             output_file_name += ".fdr";
-            output_file_name += std::to_string(fdr_threshold);
+            std::string value = std::to_string(fdr_threshold);
+            value.resize(4);
+            output_file_name += value;
         }
-        output_file_name += output_roi_suffix;
     }
 
     size_t max_dimension = *std::max_element(handle->dim.begin(),handle->dim.end());
