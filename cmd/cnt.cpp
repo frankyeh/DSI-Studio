@@ -91,7 +91,8 @@ int cnt(void)
     vbc->ui->nonparametric->setChecked(po.get("nonparametric",1) == 1);
     vbc->ui->permutation_count->setValue(po.get("permutation",vbc->ui->permutation_count->value()));
     vbc->ui->length_threshold->setValue(po.get("length_threshold",vbc->ui->length_threshold->value()));
-    vbc->ui->select_text->setText(po.get("select",vbc->ui->select_text->text().toStdString()).c_str());
+    if(po.has("select"))
+       vbc->ui->select_text->setText(po.get("select",vbc->ui->select_text->text().toStdString()).c_str());
     vbc->ui->tip->setValue(po.get("tip",vbc->ui->tip->value()));
     if(po.has("output"))
         vbc->ui->output_name->setText(po.get("output").c_str());

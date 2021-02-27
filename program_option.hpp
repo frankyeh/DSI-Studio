@@ -47,7 +47,10 @@ public:
             std::ifstream in(av[1]);
             std::string line;
             while(std::getline(in,line))
+            {
+                line = std::string("--")+line;
                 add_option(line);
+            }
         }
         else
         for(int i = 1;i < ac;++i)
