@@ -264,7 +264,7 @@ bool load_region(std::shared_ptr<fib_data> handle,
             if(!region_name.empty())
             {
                 int region_value = std::stoi(region_name);
-                std::cout << "select region with value of " << region_value << std::endl;
+                std::cout << "select region with value: " << region_value << std::endl;
                 for(size_t i = 0 ;i < from.size();++i)
                     from[i] = (from[i] == region_value ? 1:0);
             }

@@ -145,11 +145,10 @@ int cnt(void)
     if(vbc->vbc->threads.empty())
         return 0;
     vbc->vbc->wait();
-    std::cout << "output results" << std::endl;
-    std::cout << vbc->vbc->report << std::endl;
     vbc->calculate_FDR();
     vbc->close();
     vbc.reset();
+    std::cout << "analysis completed" << std::endl;
     return 0;
 }
 
