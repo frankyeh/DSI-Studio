@@ -672,7 +672,7 @@ void ImageModel::rotate_one_dwi(unsigned int dwi_index,const tipl::transformatio
 void ImageModel::rotate(const tipl::geometry<3>& new_geo,
                         const tipl::transformation_matrix<double>& affine,
                         const tipl::image<tipl::vector<3>,3>& cdm_dis,
-                        const tipl::image<float,3>& super_reso_ref)
+                        const tipl::image<float,3>& super_reso_ref,double var)
 {
     std::vector<tipl::image<unsigned short,3> > dwi(src_dwi_data.size());
     prog_init p("rotating");
@@ -683,7 +683,7 @@ void ImageModel::rotate(const tipl::geometry<3>& new_geo,
         dwi[index].resize(new_geo);
         auto I = tipl::make_image(const_cast<unsigned short*>(src_dwi_data[index]),voxel.dim);
         if(!super_reso_ref.empty())
-            tipl::resample_with_ref(I,super_reso_ref,dwi[index],affine);
+            tipl::resample_with_ref(I,super_reso_ref,dwi[index],affine,var);
         else
         {
             if(cdm_dis.empty())
