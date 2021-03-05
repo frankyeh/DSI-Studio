@@ -197,8 +197,6 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         connect(ui->glCorCheck,SIGNAL(stateChanged(int)),glWidget,SLOT(updateGL()));
         connect(ui->glAxiCheck,SIGNAL(stateChanged(int)),glWidget,SLOT(updateGL()));
 
-        connect(ui->min_value_gl,SIGNAL(valueChanged(double)),this,SLOT(change_contrast()));
-        connect(ui->max_value_gl,SIGNAL(valueChanged(double)),this,SLOT(change_contrast()));
         connect(ui->max_color_gl,SIGNAL(clicked()),this,SLOT(change_contrast()));
         connect(ui->min_color_gl,SIGNAL(clicked()),this,SLOT(change_contrast()));
 
@@ -2625,3 +2623,30 @@ void tracking_window::on_actionZoom_Out_triggered()
 {
     ui->zoom_3d->setValue(ui->zoom_3d->value()-0.1);
 }
+
+void tracking_window::on_min_value_gl_valueChanged(double)
+{
+    ui->min_slider->setValue(int((ui->min_value_gl->value()-ui->min_value_gl->minimum())*double(ui->min_slider->maximum())/
+                             (ui->min_value_gl->maximum()-ui->min_value_gl->minimum())));
+    change_contrast();
+}
+
+void tracking_window::on_min_slider_sliderMoved(int)
+{
+    ui->min_value_gl->setValue(ui->min_value_gl->minimum()+(ui->min_value_gl->maximum()-ui->min_value_gl->minimum())*
+                      double(ui->min_slider->value())/double(ui->min_slider->maximum()));
+}
+
+void tracking_window::on_max_value_gl_valueChanged(double)
+{
+    ui->max_slider->setValue(int((ui->max_value_gl->value()-ui->max_value_gl->minimum())*double(ui->max_slider->maximum())/
+                             (ui->max_value_gl->maximum()-ui->max_value_gl->minimum())));
+    change_contrast();
+}
+
+void tracking_window::on_max_slider_sliderMoved(int)
+{
+    ui->max_value_gl->setValue(ui->max_value_gl->minimum()+(ui->max_value_gl->maximum()-ui->max_value_gl->minimum())*
+                      double(ui->max_slider->value())/double(ui->max_slider->maximum()));
+}
+

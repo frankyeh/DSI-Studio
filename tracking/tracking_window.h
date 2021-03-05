@@ -197,6 +197,10 @@ private slots:
     void on_actionSave_Presentation_triggered();
     void on_actionZoom_In_triggered();
     void on_actionZoom_Out_triggered();
+    void on_min_value_gl_valueChanged(double arg1);
+    void on_max_value_gl_valueChanged(double arg1);
+    void on_min_slider_sliderMoved(int position);
+    void on_max_slider_sliderMoved(int position);
 };
 
 #endif // TRACKING_WINDOW_H
