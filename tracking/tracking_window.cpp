@@ -589,7 +589,7 @@ bool tracking_window::command(QString cmd,QString param,QString param2)
             QDir::setCurrent(param+"/devices");
             QStringList device_list = QDir().entryList(QStringList("*dv.csv"),QDir::Files|QDir::NoSymLinks);
             for(int i = 0;i < device_list.size();++i)
-                deviceWidget->load_device(device_list[i]);
+                deviceWidget->load_device(device_list);
         }
 
         if(QDir(param+"/slices").exists())

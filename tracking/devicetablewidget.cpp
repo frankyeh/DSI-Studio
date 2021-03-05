@@ -277,26 +277,29 @@ void DeviceTableWidget::uncheck_all(void)
     }
     emit need_update();
 }
-bool DeviceTableWidget::load_device(QString Filename)
+bool DeviceTableWidget::load_device(QStringList Filename)
 {
-    std::ifstream in(Filename.toLocal8Bit().begin());
-    if(!in)
-        return false;
-    std::string line;
-    while(std::getline(in,line))
+    for(int i = 0;i < Filename.size();++i)
     {
-        new_device_str = line.c_str();
-        newDevice();
+        std::ifstream in(Filename[i].toStdString().c_str());
+        if(!in)
+            return false;
+        std::string line;
+        while(std::getline(in,line))
+        {
+            new_device_str = line.c_str();
+            newDevice();
+        }
     }
     return true;
 }
 void DeviceTableWidget::load_device(void)
 {
-    QString filename = QFileDialog::getOpenFileName(
+    QStringList filenames = QFileDialog::getOpenFileNames(
                            this,"Open device","device.dv.csv","CSV file(*dv.csv);;All files(*)");
-    if (filename.isEmpty())
+    if (filenames.isEmpty())
         return;
-    load_device(filename);
+    load_device(filenames);
 }
 void DeviceTableWidget::save_device(void)
 {

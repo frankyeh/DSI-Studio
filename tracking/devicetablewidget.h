@@ -34,7 +34,7 @@ public:
 public:
     tracking_window& cur_tracking_window;
     std::vector<std::shared_ptr<Device> > devices;
-    bool load_device(QString Filename);
+    bool load_device(QStringList Filename);
     bool command(QString cmd,QString param);
 signals:
     void need_update(void);
