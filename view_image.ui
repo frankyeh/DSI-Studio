@@ -76,19 +76,26 @@
            </widget>
           </item>
           <item>
-           <widget class="QLabel" name="label_3">
+           <widget class="QColorToolButton" name="min_color">
+            <property name="toolTip">
+             <string>Set contrast color</string>
+            </property>
             <property name="text">
-             <string>Contrast</string>
+             <string>...</string>
+            </property>
+            <property name="icon">
+             <iconset resource="icons.qrc">
+              <normaloff>:/icons/icons/cubic.xpm</normaloff>:/icons/icons/cubic.xpm</iconset>
             </property>
            </widget>
           </item>
           <item>
-           <widget class="QSlider" name="contrast">
-            <property name="minimum">
-             <number>1</number>
-            </property>
+           <widget class="QDoubleSpinBox" name="min"/>
+          </item>
+          <item>
+           <widget class="QSlider" name="min_slider">
             <property name="maximum">
-             <number>30</number>
+             <number>999</number>
             </property>
             <property name="orientation">
              <enum>Qt::Horizontal</enum>
@@ -96,19 +103,29 @@
            </widget>
           </item>
           <item>
-           <widget class="QLabel" name="label_2">
+           <widget class="QColorToolButton" name="max_color">
+            <property name="toolTip">
+             <string>Set contrast color</string>
+            </property>
             <property name="text">
-             <string>Brightness</string>
+             <string>...</string>
+            </property>
+            <property name="icon">
+             <iconset resource="icons.qrc">
+              <normaloff>:/icons/icons/rec.xpm</normaloff>:/icons/icons/rec.xpm</iconset>
             </property>
            </widget>
           </item>
           <item>
-           <widget class="QSlider" name="brightness">
-            <property name="minimum">
-             <number>-10</number>
-            </property>
+           <widget class="QDoubleSpinBox" name="max"/>
+          </item>
+          <item>
+           <widget class="QSlider" name="max_slider">
             <property name="maximum">
-             <number>10</number>
+             <number>999</number>
+            </property>
+            <property name="pageStep">
+             <number>100</number>
             </property>
             <property name="orientation">
              <enum>Qt::Horizontal</enum>
@@ -121,11 +138,105 @@
          <widget class="QGraphicsView" name="view"/>
         </item>
         <item>
-         <widget class="QSlider" name="slice_pos">
-          <property name="orientation">
-           <enum>Qt::Horizontal</enum>
+         <layout class="QHBoxLayout" name="horizontalLayout_3">
+          <property name="spacing">
+           <number>0</number>
           </property>
-         </widget>
+          <property name="topMargin">
+           <number>0</number>
+          </property>
+          <item>
+           <widget class="QPushButton" name="AxiView">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Maximum" vsizetype="Maximum">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="minimumSize">
+             <size>
+              <width>0</width>
+              <height>0</height>
+             </size>
+            </property>
+            <property name="maximumSize">
+             <size>
+              <width>16777215</width>
+              <height>16777215</height>
+             </size>
+            </property>
+            <property name="toolTip">
+             <string>Switch to axial view</string>
+            </property>
+            <property name="text">
+             <string/>
+            </property>
+            <property name="icon">
+             <iconset resource="icons.qrc">
+              <normaloff>:/icons/icons/axial.xpm</normaloff>:/icons/icons/axial.xpm</iconset>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="CorView">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Maximum" vsizetype="Maximum">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="maximumSize">
+             <size>
+              <width>16777215</width>
+              <height>16777215</height>
+             </size>
+            </property>
+            <property name="toolTip">
+             <string>Switch to coronal view</string>
+            </property>
+            <property name="text">
+             <string/>
+            </property>
+            <property name="icon">
+             <iconset resource="icons.qrc">
+              <normaloff>:/icons/icons/coronal.xpm</normaloff>:/icons/icons/coronal.xpm</iconset>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="SagView">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Maximum" vsizetype="Maximum">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="maximumSize">
+             <size>
+              <width>16777215</width>
+              <height>16777215</height>
+             </size>
+            </property>
+            <property name="toolTip">
+             <string>Switch to sagittal  view</string>
+            </property>
+            <property name="text">
+             <string/>
+            </property>
+            <property name="icon">
+             <iconset resource="icons.qrc">
+              <normaloff>:/icons/icons/sag.xpm</normaloff>:/icons/icons/sag.xpm</iconset>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QSlider" name="slice_pos">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+           </widget>
+          </item>
+         </layout>
         </item>
         <item>
          <widget class="QLabel" name="info_label">
@@ -318,6 +429,13 @@
    </property>
   </action>
  </widget>
+ <customwidgets>
+  <customwidget>
+   <class>QColorToolButton</class>
+   <extends>QToolButton</extends>
+   <header>qcolorcombobox.h</header>
+  </customwidget>
+ </customwidgets>
  <resources>
   <include location="icons.qrc"/>
  </resources>

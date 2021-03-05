@@ -64,9 +64,11 @@ view_image::view_image(QWidget *parent) :
     ui->info->setColumnWidth(1,200);
     ui->info->setHorizontalHeaderLabels(QStringList() << "Header" << "Value");
     ui->view->setScene(&source);
-    connect(ui->slice_pos,SIGNAL(valueChanged(int)),this,SLOT(update_image()));
-    connect(ui->contrast,SIGNAL(valueChanged(int)),this,SLOT(update_image()));
-    connect(ui->brightness,SIGNAL(valueChanged(int)),this,SLOT(update_image()));
+    ui->max_color->setColor(0xFFFFFFFF);
+    ui->min_color->setColor(0XFF000000);
+    connect(ui->max_color,SIGNAL(clicked()),this,SLOT(change_contrast()));
+    connect(ui->min_color,SIGNAL(clicked()),this,SLOT(change_contrast()));
+
     source_ratio = 2.0;
     ui->tabWidget->setCurrentIndex(0);
 
@@ -315,45 +317,47 @@ bool view_image::open(QStringList file_names)
 
 void view_image::init_image(void)
 {
-    ui->slice_pos->setRange(0,data.depth()-1);
-    ui->slice_pos->setValue(data.depth() >> 1);
+    no_update = true;
+    max_value = tipl::maximum(data);
+    min_value = tipl::minimum(data);
+    float range = max_value-min_value;
     ui->image_info->setText(QString("dim=(%1,%2,%3) vs=(%4,%5,%6) T=(%7,%8,%9,%10;%11,%12,%13,%14;%15,%16,%17,%18)").
             arg(data.width()).arg(data.height()).arg(data.depth()).
             arg(double(vs[0])).arg(double(vs[1])).arg(double(vs[2])).
             arg(double(T[0])).arg(double(T[1])).arg(double(T[2])).arg(double(T[3])).
             arg(double(T[4])).arg(double(T[5])).arg(double(T[6])).arg(double(T[7])).
             arg(double(T[8])).arg(double(T[9])).arg(double(T[10])).arg(double(T[11])));
+    ui->min->setRange(double(min_value-range/3),double(max_value));
+    ui->max->setRange(double(min_value),double(max_value+range/3));
+    ui->min->setSingleStep(double(range/20));
+    ui->max->setSingleStep(double(range/20));
+    ui->min->setValue(double(min_value));
+    ui->max->setValue(double(max_value));
+    slice_pos[0] = data.width()/2;
+    slice_pos[1] = data.height()/2;
+    slice_pos[2] = data.depth()/2;
+    on_AxiView_clicked();
+    no_update = false;
 }
 void view_image::update_image(void)
 {
-    if(data.empty())
+    if(data.empty() || no_update)
         return;
-    tipl::image<float,2> tmp(tipl::geometry<2>(data.width(),data.height()));
-    size_t offset = size_t(ui->slice_pos->value())*tmp.size();
-
-    std::copy(data.begin() + offset,
-              data.begin() + offset + tmp.size(),tmp.begin());
-    max_source_value = std::max<float>(max_source_value,*std::max_element(tmp.begin(),tmp.end()));
-    if(max_source_value + 1.0f != 1.0f)
-        tipl::divide_constant(tmp.begin(),tmp.end(),max_source_value/255.0f);
-
-    float mean_value = tipl::mean(tmp.begin(),tmp.end());
-    tipl::minus_constant(tmp.begin(),tmp.end(),mean_value);
-    tipl::multiply_constant(tmp.begin(),tmp.end(),ui->contrast->value());
-    tipl::add_constant(tmp.begin(),tmp.end(),mean_value+ui->brightness->value()*25.5f);
-
-    tipl::upper_lower_threshold(tmp.begin(),tmp.end(),tmp.begin(),0.0f,255.0f);
-
-
-    buffer.resize(tipl::geometry<2>(data.width(),data.height()));
-    std::copy(tmp.begin(),tmp.end(),buffer.begin());
-
-    source_image = QImage((unsigned char*)&*buffer.begin(),data.width(),data.height(),QImage::Format_RGB32).
-                    scaled(data.width()*source_ratio,data.height()*source_ratio);
-
+    tipl::image<float,2> buf;
+    tipl::volume2slice(data, buf, cur_dim, size_t(slice_pos[cur_dim]));
+    v2c.convert(buf,buffer);
+    QImage I(reinterpret_cast<unsigned char*>(&*buffer.begin()),buffer.width(),buffer.height(),QImage::Format_RGB32);
+    //if(cur_view != 2)
+    //    I = I.mirrored(false,true);
+    source_image = I.scaled(buffer.width()*source_ratio,buffer.height()*source_ratio);
     show_view(source,source_image);
 }
-
+void view_image::change_contrast()
+{
+    v2c.set_range(float(ui->min->value()),float(ui->max->value()));
+    v2c.two_color(ui->min_color->color().rgb(),ui->max_color->color().rgb());
+    update_image();
+}
 void view_image::on_zoom_in_clicked()
 {
      source_ratio *= 1.1f;
@@ -699,5 +703,60 @@ void view_image::on_actionTo_Edge_triggered()
 void view_image::on_actionNormalize_Intensity_triggered()
 {
     tipl::normalize(data,1.0f);
+    update_image();
+}
+
+void view_image::on_min_slider_sliderMoved(int)
+{
+    ui->min->setValue(ui->min->minimum()+(ui->min->maximum()-ui->min->minimum())*
+                      double(ui->min_slider->value())/double(ui->min_slider->maximum()));
+}
+
+void view_image::on_min_valueChanged(double)
+{
+    ui->min_slider->setValue(int((ui->min->value()-ui->min->minimum())*double(ui->min_slider->maximum())/
+                             (ui->min->maximum()-ui->min->minimum())));
+    change_contrast();
+}
+
+void view_image::on_max_slider_sliderMoved(int)
+{
+    ui->max->setValue(ui->max->minimum()+(ui->max->maximum()-ui->max->minimum())*
+                      double(ui->max_slider->value())/double(ui->max_slider->maximum()));
+}
+
+void view_image::on_max_valueChanged(double)
+{
+    ui->max_slider->setValue(int((ui->max->value()-ui->max->minimum())*double(ui->max_slider->maximum())/
+                             (ui->max->maximum()-ui->max->minimum())));
+    change_contrast();
+}
+
+void view_image::on_AxiView_clicked()
+{
+    cur_dim = 2;
+    ui->slice_pos->setRange(0,data.depth()-1);
+    ui->slice_pos->setValue(slice_pos[cur_dim]);
+}
+
+void view_image::on_CorView_clicked()
+{
+    cur_dim = 1;
+    ui->slice_pos->setRange(0,data.height()-1);
+    ui->slice_pos->setValue(slice_pos[cur_dim]);
+}
+
+void view_image::on_SagView_clicked()
+{
+    cur_dim = 0;
+    ui->slice_pos->setRange(0,data.width()-1);
+    ui->slice_pos->setValue(slice_pos[cur_dim]);
+}
+
+void view_image::on_slice_pos_valueChanged(int value)
+{
+    if(data.empty())
+        return;
+    slice_pos[cur_dim] = value;
     update_image();
 }
