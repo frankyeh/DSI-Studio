@@ -2294,37 +2294,35 @@ void tracking_window::on_SliceModality_currentIndexChanged(int index)
     tipl::vector<3,float> slice_position(current_slice->slice_pos);
     if(!current_slice->is_diffusion_space)
         slice_position.to(current_slice->T);
-    current_slice = slices[index];
+    current_slice = slices[size_t(index)];
 
 
     ui->is_overlay->setChecked(current_slice->is_overlay);
-    ui->glSagSlider->setRange(0,current_slice->geometry[0]-1);
-    ui->glCorSlider->setRange(0,current_slice->geometry[1]-1);
-    ui->glAxiSlider->setRange(0,current_slice->geometry[2]-1);
-    ui->glSagBox->setRange(0,current_slice->geometry[0]-1);
-    ui->glCorBox->setRange(0,current_slice->geometry[1]-1);
-    ui->glAxiBox->setRange(0,current_slice->geometry[2]-1);
+    ui->glSagSlider->setRange(0,int(current_slice->geometry[0]-1));
+    ui->glCorSlider->setRange(0,int(current_slice->geometry[1]-1));
+    ui->glAxiSlider->setRange(0,int(current_slice->geometry[2]-1));
+    ui->glSagBox->setRange(0,int(current_slice->geometry[0]-1));
+    ui->glCorBox->setRange(0,int(current_slice->geometry[1]-1));
+    ui->glAxiBox->setRange(0,int(current_slice->geometry[2]-1));
 
 
     std::pair<float,float> range = current_slice->get_value_range();
     std::pair<float,float> contrast_range = current_slice->get_contrast_range();
     std::pair<unsigned int,unsigned int> contrast_color = current_slice->get_contrast_color();
     float r = range.second-range.first;
-    if(r == 0.0)
-        r = 1;
-    float step = r/20.0;
-    ui->min_value_gl->setMinimum(range.first-r);
-    ui->min_value_gl->setMaximum(range.second+r);
-    ui->min_value_gl->setSingleStep(step);
+    float step = r/20.0f;
+    ui->min_value_gl->setMinimum(double(range.first-r/5.0f));
+    ui->min_value_gl->setMaximum(double(range.second));
+    ui->min_value_gl->setSingleStep(double(step));
     ui->min_color_gl->setColor(contrast_color.first);
 
-    ui->max_value_gl->setMinimum(range.first-r);
-    ui->max_value_gl->setMaximum(range.second+r);
-    ui->max_value_gl->setSingleStep(step);
+    ui->max_value_gl->setMinimum(double(range.first));
+    ui->max_value_gl->setMaximum(double(range.second+r/5.0f));
+    ui->max_value_gl->setSingleStep(double(step));
     ui->max_color_gl->setColor(contrast_color.second);
 
-    ui->min_value_gl->setValue(contrast_range.first);
-    ui->max_value_gl->setValue(contrast_range.second);
+    ui->min_value_gl->setValue(double(contrast_range.first));
+    ui->max_value_gl->setValue(double(contrast_range.second));
 
     if(!current_slice->is_diffusion_space)
         slice_position.to(current_slice->invT);
