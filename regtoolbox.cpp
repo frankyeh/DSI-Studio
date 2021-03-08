@@ -83,6 +83,8 @@ void RegToolBox::on_OpenTemplate_clicked()
     nifti.get_voxel_size(Itvs);
     setup_slice_pos();
     clear();
+    if(!I.empty())
+        J_view = I;
     show_image();
 }
 
@@ -105,6 +107,7 @@ void RegToolBox::on_OpenSubject_clicked()
     tipl::normalize(I,1.0f);
     nifti.get_voxel_size(Ivs);
     clear();
+    J_view = I;
     show_image();
 }
 
@@ -165,8 +168,10 @@ void show_slice_at(QGraphicsScene& scene,tipl::image<float,2>& tmp,tipl::color_i
 
 
 void show_slice_at(QGraphicsScene& scene,const tipl::image<float,3>& source,
-                   tipl::color_image& buf,size_t slice_pos,float ratio,float contrast,uint8_t cur_view)
+                   tipl::color_image& buf,int slice_pos,float ratio,float contrast,uint8_t cur_view)
 {
+    if(source.empty())
+        return;
     tipl::image<float,2> tmp;
     tipl::volume2slice(source,tmp,cur_view,slice_pos);
     show_slice_at(scene,tmp,buf,ratio,contrast,cur_view);
@@ -174,13 +179,10 @@ void show_slice_at(QGraphicsScene& scene,const tipl::image<float,3>& source,
 void show_mosaic_slice_at(QGraphicsScene& scene,
                           const tipl::image<float,3>& source1,
                           const tipl::image<float,3>& source2,
-                          tipl::color_image& buf,size_t slice_pos,float ratio,float contrast,bool mosaic,uint8_t cur_view)
+                          tipl::color_image& buf,size_t slice_pos,float ratio,float contrast,uint8_t cur_view)
 {
-    if(!mosaic)
-    {
-        show_slice_at(scene,source1,buf,slice_pos,ratio,contrast,cur_view);
+    if(source1.empty() || source2.empty())
         return;
-    }
     tipl::image<float,2> tmp1,tmp2,tmp;
     tipl::volume2slice(source1,tmp1,cur_view,slice_pos);
     tipl::volume2slice(source2,tmp2,cur_view,slice_pos);
@@ -217,22 +219,18 @@ void RegToolBox::show_image(void)
         if(ui->rb_mosaic->isChecked())
         {
             if(!J_view2.empty())
-                show_mosaic_slice_at(It_mix_scene,J_view2,I_show,cIt_mix,ui->slice_pos->value(),ratio,contrast,true,cur_view);
+                show_mosaic_slice_at(It_mix_scene,J_view2,I_show,cIt_mix,ui->slice_pos->value(),ratio,contrast,cur_view);
             else
-                if(!J_view.empty())
-                    show_mosaic_slice_at(It_mix_scene,J_view,I_show,cIt_mix,ui->slice_pos->value(),ratio,contrast,true,cur_view);
+                show_mosaic_slice_at(It_mix_scene,J_view,I_show,cIt_mix,ui->slice_pos->value(),ratio,contrast,cur_view);
         }
         if(ui->rb_flash->isChecked())
         {
-            if(flash)
+            if(flash && (!J_view2.empty() || (!J_view.empty())))
             {
                 if(!J_view2.empty())
-                    show_mosaic_slice_at(It_mix_scene,J_view2,I_show,cIt_mix,ui->slice_pos->value(),ratio,contrast,false,cur_view);
+                    show_slice_at(It_mix_scene,J_view2,cIt_mix,ui->slice_pos->value(),ratio,contrast,cur_view);
                 else
-                    if(!J_view.empty())
-                        show_mosaic_slice_at(It_mix_scene,J_view,I_show,cIt_mix,ui->slice_pos->value(),ratio,contrast,false,cur_view);
-                    else
-                        show_slice_at(It_mix_scene,I_show,cIt_mix,ui->slice_pos->value(),ratio,contrast,cur_view);
+                    show_slice_at(It_mix_scene,J_view,cIt_mix,ui->slice_pos->value(),ratio,contrast,cur_view);
             }
             else
             {
@@ -293,10 +291,9 @@ void RegToolBox::show_image(void)
             else
             {
                 if(!J_view2.empty())
-                    show_mosaic_slice_at(It_mix_scene,J_view2,I_show,cIt_mix,ui->slice_pos->value(),ratio,contrast,false,cur_view);
+                    show_slice_at(It_mix_scene,J_view2,cIt_mix,ui->slice_pos->value(),ratio,contrast,cur_view);
                 else
-                    if(!J_view.empty())
-                        show_mosaic_slice_at(It_mix_scene,J_view,I_show,cIt_mix,ui->slice_pos->value(),ratio,contrast,false,cur_view);
+                    show_slice_at(It_mix_scene,J_view,cIt_mix,ui->slice_pos->value(),ratio,contrast,cur_view);
             }
         }
         show_slice_at(It_scene,I_show,cIt,ui->slice_pos->value(),ratio,contrast,cur_view);
@@ -340,6 +337,7 @@ void RegToolBox::on_timer()
                     tipl::upsample_with_padding(dis_view,dis_view,geo_stack.back());
                     dis_view *= 2.0f;
                     geo_stack.pop_back();
+                    tipl::multiply_constant(J_view2,0.5f);
                 }
                 show_image();
             }

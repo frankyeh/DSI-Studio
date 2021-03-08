@@ -657,7 +657,7 @@
                <item>
                 <widget class="QDoubleSpinBox" name="smoothness">
                  <property name="minimum">
-                  <double>0.050000000000000</double>
+                  <double>0.010000000000000</double>
                  </property>
                  <property name="maximum">
                   <double>5.000000000000000</double>
