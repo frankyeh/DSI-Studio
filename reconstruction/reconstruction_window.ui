@@ -881,7 +881,7 @@
                     <item>
                      <widget class="QCheckBox" name="scheme_balance">
                       <property name="text">
-                       <string>Scheme balance</string>
+                       <string>Scheme balance (for shell data)</string>
                       </property>
                      </widget>
                     </item>
