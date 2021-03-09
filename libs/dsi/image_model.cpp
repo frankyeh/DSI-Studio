@@ -1472,6 +1472,7 @@ bool ImageModel::compare_src(const char* file_name)
         reconstruct<check_btable_process>("calculating fa map1");
         study_src->reconstruct<check_btable_process>("calculating fa map2");
 
+        check_prog(0,0);
         begin_prog("registration between longitudinal scans");
         auto& Ib = voxel.fib_fa; // baseline
         auto& If = study_src->voxel.fib_fa; // follow-up
@@ -1482,6 +1483,7 @@ bool ImageModel::compare_src(const char* file_name)
         check_prog(0,1);
         tipl::reg::two_way_linear_mr(Ib,Ib_vs,If,If_vs,
                                         arg,tipl::reg::rigid_body,tipl::reg::correlation(),terminated);
+        check_prog(1,2);
         // nonlinear part
         tipl::image<tipl::vector<3>,3> cdm_dis;
 
@@ -1491,9 +1493,7 @@ bool ImageModel::compare_src(const char* file_name)
             tipl::resample(If,Iff,arg,tipl::cubic);
             tipl::match_signal(Ib,Iff);
             bool terminated = false;
-            begin_prog("nonlinear registration between longitudinal scans");
-            tipl::reg::cdm(Ib,Iff,cdm_dis,terminated,1.0f,0.1f,120);
-            check_prog(0,1);
+            tipl::reg::cdm(Ib,Iff,cdm_dis,terminated,1.0f,0.2f,120);
 
             /*
             if(1) // debug
