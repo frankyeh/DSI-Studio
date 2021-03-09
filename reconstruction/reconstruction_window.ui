@@ -395,8 +395,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>780</width>
-         <height>616</height>
+         <width>872</width>
+         <height>599</height>
         </rect>
        </property>
        <attribute name="label">
@@ -718,16 +718,6 @@
                      </widget>
                     </item>
                     <item>
-                     <widget class="QCheckBox" name="csf_calibration">
-                      <property name="text">
-                       <string>CSF calibration</string>
-                      </property>
-                      <property name="checked">
-                       <bool>true</bool>
-                      </property>
-                     </widget>
-                    </item>
-                    <item>
                      <spacer name="horizontalSpacer_5">
                       <property name="orientation">
                        <enum>Qt::Horizontal</enum>
@@ -809,6 +799,20 @@
                   <widget class="QCheckBox" name="RecordODF">
                    <property name="text">
                     <string>ODFs (for connectometry analysis)</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QPushButton" name="open_ddi_study_src">
+                   <property name="text">
+                    <string>Compare SRC...</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QLabel" name="ddi_file">
+                   <property name="text">
+                    <string>.</string>
                    </property>
                   </widget>
                  </item>
@@ -916,40 +920,6 @@
                        <property name="bottomMargin">
                         <number>0</number>
                        </property>
-                       <item>
-                        <widget class="QPushButton" name="open_ddi_study_src">
-                         <property name="text">
-                          <string>Compare SRC...</string>
-                         </property>
-                        </widget>
-                       </item>
-                       <item>
-                        <widget class="QCheckBox" name="not_human_brain">
-                         <property name="text">
-                          <string>Animal</string>
-                         </property>
-                        </widget>
-                       </item>
-                       <item>
-                        <widget class="QCheckBox" name="dt_deform">
-                         <property name="sizePolicy">
-                          <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
-                           <horstretch>0</horstretch>
-                           <verstretch>0</verstretch>
-                          </sizepolicy>
-                         </property>
-                         <property name="text">
-                          <string>Deformed</string>
-                         </property>
-                        </widget>
-                       </item>
-                       <item>
-                        <widget class="QLabel" name="ddi_file">
-                         <property name="text">
-                          <string>...</string>
-                         </property>
-                        </widget>
-                       </item>
                        <item>
                         <spacer name="horizontalSpacer_3">
                          <property name="orientation">

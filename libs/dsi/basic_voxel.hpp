@@ -87,8 +87,6 @@ public://used in GQI
     void calculate_q_vec_t(std::vector<tipl::vector<3,float> >& q_vector_time);
 public://used in GQI
     bool scheme_balance = false;
-    bool csf_calibration = false;
-    tipl::vector<3,short> odf_xyz;
 public:// gradient deviation
     std::vector<tipl::image<float,3> > new_grad_dev;
     std::vector<tipl::pointer_image<float,3> > grad_dev;
@@ -112,8 +110,6 @@ public: // for DDI
     Voxel* compare_voxel = nullptr;
     std::string study_name;
     std::string study_src_file_path;
-    bool dt_deform = false;
-    bool not_human_brain = false;
 public:
     float z0 = 0.0;
     // other information for second pass processing

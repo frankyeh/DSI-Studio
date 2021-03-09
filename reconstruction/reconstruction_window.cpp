@@ -104,14 +104,12 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
 
     ui->AdvancedWidget->setVisible(false);
     ui->ThreadCount->setValue(settings.value("rec_thread_count",std::thread::hardware_concurrency()).toInt());
-    ui->csf_calibration->setChecked(settings.value("csf_calibration",1).toInt());
 
     ui->odf_resolving->setChecked(settings.value("odf_resolving",0).toInt());
 
     ui->RecordODF->setChecked(settings.value("rec_record_odf",0).toInt());
     ui->output_tensor->setChecked(settings.value("output_tensor",0).toInt());
     ui->output_helix_angle->setChecked(settings.value("output_helix_angle",0).toInt());
-    ui->not_human_brain->setChecked(settings.value("not_human_brain",0).toInt());
     ui->check_btable->setChecked(settings.value("check_btable",1).toInt());
     if(handle->voxel.vs[2] > handle->voxel.vs[0]*2.0f || handle->voxel.vs[0] < 0.5f)
         ui->check_btable->setChecked(false);
@@ -260,22 +258,18 @@ void reconstruction_window::doReconstruction(unsigned char method_id,bool prompt
 
     settings.setValue("rec_method_id",method_id);
     settings.setValue("rec_thread_count",ui->ThreadCount->value());
-    settings.setValue("csf_calibration",ui->csf_calibration->isChecked() ? 1 : 0);
 
     settings.setValue("odf_resolving",ui->odf_resolving->isChecked() ? 1 : 0);
     settings.setValue("rec_record_odf",ui->RecordODF->isChecked() ? 1 : 0);
     settings.setValue("output_tensor",ui->output_tensor->isChecked() ? 1 : 0);
     settings.setValue("output_helix_angle",ui->output_helix_angle->isChecked() ? 1 : 0);
-    settings.setValue("not_human_brain",ui->not_human_brain->isChecked() ? 1 : 0);
     settings.setValue("check_btable",ui->check_btable->isChecked() ? 1 : 0);
 
     begin_prog("reconstruction",true);
     handle->voxel.method_id = method_id;
     handle->voxel.ti.init(8);
     handle->voxel.odf_resolving = ui->odf_resolving->isChecked();
-    handle->voxel.csf_calibration = (ui->csf_calibration->isVisible() && ui->csf_calibration->isChecked()) ? 1: 0;
     handle->voxel.output_odf = ui->RecordODF->isChecked();
-    handle->voxel.not_human_brain = ui->not_human_brain->isChecked();
     handle->voxel.check_btable = ui->check_btable->isChecked();
     handle->voxel.output_tensor = ui->output_tensor->isChecked();
     handle->voxel.output_helix_angle = ui->output_helix_angle->isChecked();
@@ -294,9 +288,6 @@ void reconstruction_window::doReconstruction(unsigned char method_id,bool prompt
         handle->voxel.half_sphere = false;
         handle->voxel.scheme_balance = false;
     }
-
-    if(!handle->voxel.study_src_file_path.empty())
-        handle->voxel.dt_deform = ui->dt_deform->isChecked();
 
     auto dim_backup = handle->voxel.dim; // for QSDR
     auto vs = handle->voxel.vs; // for QSDR
@@ -434,6 +425,8 @@ void reconstruction_window::on_DTI_toggled(bool checked)
     ui->RecordODF->setVisible(!checked);
     ui->DT_Option->setVisible(!checked);
 
+    ui->open_ddi_study_src->setVisible(!checked);
+    ui->ddi_file->setVisible(!checked);
 }
 
 
@@ -450,8 +443,10 @@ void reconstruction_window::on_GQI_toggled(bool checked)
     ui->output_helix_angle->setVisible(!checked);
 
     ui->RecordODF->setVisible(checked);
-    ui->csf_calibration->setVisible(handle->is_human_data());
     ui->DT_Option->setVisible(checked);
+
+    ui->open_ddi_study_src->setVisible(checked);
+    ui->ddi_file->setVisible(checked);
 }
 
 void reconstruction_window::on_QSDR_toggled(bool checked)
@@ -466,9 +461,10 @@ void reconstruction_window::on_QSDR_toggled(bool checked)
 
     ui->RecordODF->setVisible(checked);
 
-    ui->csf_calibration->setVisible(false);
-
     ui->DT_Option->setVisible(!checked);
+
+    ui->open_ddi_study_src->setVisible(!checked);
+    ui->ddi_file->setVisible(!checked);
 }
 
 void reconstruction_window::on_zoom_in_clicked()

@@ -99,7 +99,7 @@ std::string ImageModel::get_file_ext(void)
             break;
         }
         if(!voxel.study_src_file_path.empty())
-            out << (voxel.dt_deform ? ".ddf." : ".df.") << voxel.study_name << ".R" << int(voxel.R2*100.0f);
+            out << ".df." << voxel.study_name << ".R" << int(voxel.R2*100.0f);
 
         out << (voxel.r2_weighted ? ".gqi2.":".gqi.") << voxel.param[0] << ".fib.gz";
         break;
@@ -117,13 +117,11 @@ std::string ImageModel::get_file_ext(void)
     }
     return out.str();
 }
-
+bool is_human_size(tipl::geometry<3> dim,tipl::vector<3> vs);
 bool ImageModel::reconstruction(void)
 {
     try
     {
-        if(!is_human_data())
-            voxel.csf_calibration = false;
         voxel.recon_report.clear();
         voxel.recon_report.str("");
         voxel.step_report.clear();
@@ -141,13 +139,8 @@ bool ImageModel::reconstruction(void)
         else
         {
             voxel.max_fiber_number = 5;
-
-            if(!voxel.study_src_file_path.empty()) // DDI
-                voxel.csf_calibration = false;
             if (voxel.output_odf)
                 voxel.step_report << "[Step T2b(2)][ODFs]=1" << std::endl;
-            if (voxel.method_id != 4) // GQI
-                voxel.csf_calibration = false;
         }
 
         // correct for b-table orientation
@@ -190,7 +183,7 @@ bool ImageModel::reconstruction(void)
             if(!voxel.study_src_file_path.empty())
             {
                 std::cout << "SRC compared with=" << voxel.study_src_file_path << std::endl;
-                if(!voxel.not_human_brain)
+                if(is_human_size(voxel.dim,voxel.vs))
                     rotate_to_mni(2.0f);
                 if(!compare_src(voxel.study_src_file_path.c_str()))
                 {

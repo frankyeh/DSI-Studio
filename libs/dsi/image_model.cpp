@@ -1467,25 +1467,32 @@ bool ImageModel::compare_src(const char* file_name)
 
     voxel.study_name = QFileInfo(file_name).baseName().toStdString();
     voxel.compare_voxel = &(study_src->voxel);
-
-    begin_prog("Registration between longitudinal scans");
     {
+        check_prog(0,0);
+        reconstruct<check_btable_process>("calculating fa map1");
+        study_src->reconstruct<check_btable_process>("calculating fa map2");
+
+        begin_prog("registration between longitudinal scans");
+        auto& Ib = voxel.fib_fa; // baseline
+        auto& If = study_src->voxel.fib_fa; // follow-up
+        auto& Ib_vs = voxel.vs;
+        auto& If_vs = study_src->voxel.vs;
         tipl::transformation_matrix<double> arg;
         bool terminated = false;
         check_prog(0,1);
-        tipl::reg::two_way_linear_mr(dwi_sum,voxel.vs,
-                                     study_src->dwi_sum,study_src->voxel.vs,
+        tipl::reg::two_way_linear_mr(Ib,Ib_vs,If,If_vs,
                                         arg,tipl::reg::rigid_body,tipl::reg::correlation(),terminated);
         // nonlinear part
         tipl::image<tipl::vector<3>,3> cdm_dis;
-        if(voxel.dt_deform)
+
+        //if(voxel.dt_deform)
         {
-            tipl::image<float,3> new_dwi_sum(dwi_sum.geometry());
-            tipl::resample(study_src->dwi_sum,new_dwi_sum,arg,tipl::cubic);
-            tipl::match_signal(dwi_sum,new_dwi_sum);
+            tipl::image<float,3> Iff(Ib.geometry());
+            tipl::resample(If,Iff,arg,tipl::cubic);
+            tipl::match_signal(Ib,Iff);
             bool terminated = false;
-            begin_prog("Nonlinear registration between longitudinal scans");
-            tipl::reg::cdm(dwi_sum,new_dwi_sum,cdm_dis,terminated);
+            begin_prog("nonlinear registration between longitudinal scans");
+            tipl::reg::cdm(Ib,Iff,cdm_dis,terminated,1.0f,0.1f,120);
             check_prog(0,1);
 
             /*
@@ -1507,7 +1514,7 @@ bool ImageModel::compare_src(const char* file_name)
                 o3.save_to_file("d:/3.nii.gz");
             }*/
         }
-        study_src->rotate(dwi_sum.geometry(),arg,cdm_dis);
+        study_src->rotate(Ib.geometry(),arg,cdm_dis);
         study_src->voxel.vs = voxel.vs;
         study_src->voxel.mask = voxel.mask;
         check_prog(1,1);

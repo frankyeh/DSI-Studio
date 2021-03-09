@@ -138,17 +138,7 @@ int rec(void)
     src.voxel.output_rdi = po.get("output_rdi",int(1)) && (method_index == 4 || method_index == 7);
     src.voxel.max_fiber_number = uint32_t(po.get("num_fiber",int(5)));
     src.voxel.r2_weighted = po.get("r2_weighted",int(0));
-    src.voxel.csf_calibration = po.get("csf_calibration",int(0)) && method_index == 4;
     src.voxel.thread_count = po.get("thread_count",uint32_t(std::thread::hardware_concurrency()));
-
-
-
-    if(src.voxel.csf_calibration && !src.is_human_data())
-    {
-        std::cout << "not a human brain data set. Disable CSF calibratoin" << std::endl;
-        src.voxel.csf_calibration = 0;
-    }
-
     src.voxel.half_sphere = po.get("half_sphere",src.is_dsi_half_sphere() ? 1:0);
     src.voxel.scheme_balance = po.get("scheme_balance",src.need_scheme_balance() ? 1:0);
 

@@ -359,27 +359,6 @@ public:
             for(float L = 0.2f;L <= sigma;L+= 0.2f)
                 rdi.push_back(std::vector<float>(dim.size()));
         }
-
-        if(voxel.csf_calibration)
-        {
-            std::vector<unsigned short> data(voxel.dwi_data[0],voxel.dwi_data[0]+dim.size());
-            std::sort(data.begin(),data.end());
-            // CSF selected at 125,000 mm^3
-            int size = int(125000.0f/(voxel.vs[0]*voxel.vs[1]*voxel.vs[2]));
-            float water_b0 = *(data.end()-size);
-
-            // numerically estimate free water ODF
-            unsigned int odf_size = voxel.ti.half_vertices_count;
-            std::vector<float> dwi(voxel.bvalues.size()),odf(odf_size);
-            for(size_t i = 0;i < dwi.size();++i)
-                dwi[i] = water_b0*std::exp(-voxel.bvalues[i]*0.003f); // free water diffusivity
-            std::vector<float> sinc_ql;
-            voxel.calculate_sinc_ql(sinc_ql);
-            tipl::mat::vector_product(&*sinc_ql.begin(),&*dwi.begin(),&*odf.begin(),
-                                    tipl::dyndim(uint32_t(odf.size()),uint32_t(dwi.size())));
-            z0 = float(tipl::mean(odf.begin(),odf.end()));
-        }
-
         voxel.z0 = 0.0;
     }
     virtual void run(Voxel& voxel, VoxelData& data)
@@ -413,8 +392,6 @@ public:
     virtual void end(Voxel& voxel,gz_mat_write& mat_writer)
     {
         mat_writer.write("gfa",gfa,uint32_t(voxel.dim.plane_size()));
-        if(voxel.csf_calibration)
-            voxel.z0 = z0;
         if(voxel.z0 + 1.0f == 1.0f)
             voxel.z0 = 1.0f;
         mat_writer.write("z0",&voxel.z0,1,1);
