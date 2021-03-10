@@ -2312,15 +2312,15 @@ void TractModel::to_voxel(std::vector<tipl::vector<3,short> >& points,float rati
     points = std::vector<tipl::vector<3,short> >(pass_map[0].begin(),pass_map[0].end());
 }
 
-void TractModel::to_end_point_voxels(std::vector<tipl::vector<3,short> >& points1,
-                               std::vector<tipl::vector<3,short> >& points2,float ratio)
+tipl::vector<3> get_tract_dir(const std::vector<std::vector<float> >& tract_data,
+                   std::vector<char>& dir)
 {
     // estimate the average mid-point direction
     tipl::vector<3> total_dis;
     for(size_t i = 0;i < tract_data.size();++i)
     {
         if(tract_data[i].size() < 6)
-            return;
+            continue;
         uint32_t mid_pos = uint32_t(tract_data[i].size()/6)*3;
         tipl::vector<3> dis(&tract_data[i][mid_pos]);
         dis -= tipl::vector<3>(&tract_data[i][mid_pos+3]);
@@ -2329,25 +2329,13 @@ void TractModel::to_end_point_voxels(std::vector<tipl::vector<3,short> >& points
         else
             total_dis += dis;
     }
-    total_dis.normalize();
-
     // categlorize endpoints using the mid point direction
-    std::vector<tipl::vector<3,float> > s1,s2;
-    tipl::vector<3,float> sum_s1,sum_s2;
+    total_dis.normalize();
+    dir.resize(tract_data.size());
     for(size_t i = 0;i < tract_data.size();++i)
     {
         if(tract_data[i].size() < 6)
-            return;
-
-        tipl::vector<3> p1(&tract_data[i][0]);
-        tipl::vector<3> p2(&tract_data[i][tract_data[i].size()-3]);
-        if(ratio != 1.0f)
-            p1 *= ratio;
-        p1.round();
-        if(ratio != 1.0f)
-            p2 *= ratio;
-        p2.round();
-
+            continue;
         uint32_t mid_pos = uint32_t(tract_data[i].size()/6)*3;
         uint32_t q1_pos = uint32_t(tract_data[i].size()/12)*3;
         uint32_t q3_pos = uint32_t(tract_data[i].size()/4)*3;
@@ -2360,6 +2348,32 @@ void TractModel::to_end_point_voxels(std::vector<tipl::vector<3,short> >& points
         mid_dis += q1_dis;
         mid_dis += q3_dis;
         if(total_dis*mid_dis > 0.0f)
+            dir[i] = 1;
+    }
+    return total_dis;
+}
+void TractModel::to_end_point_voxels(std::vector<tipl::vector<3,short> >& points1,
+                               std::vector<tipl::vector<3,short> >& points2,float ratio)
+{
+    std::vector<char> dir;
+    get_tract_dir(tract_data,dir);
+
+    // categlorize endpoints using the mid point direction
+    std::vector<tipl::vector<3,float> > s1,s2;
+    tipl::vector<3,float> sum_s1,sum_s2;
+    for(size_t i = 0;i < tract_data.size();++i)
+    {
+        if(tract_data[i].size() < 6)
+            continue;
+        tipl::vector<3> p1(&tract_data[i][0]);
+        tipl::vector<3> p2(&tract_data[i][tract_data[i].size()-3]);
+        if(ratio != 1.0f)
+            p1 *= ratio;
+        p1.round();
+        if(ratio != 1.0f)
+            p2 *= ratio;
+        p2.round();
+        if(dir[i])
         {
             s1.push_back(p1);
             s2.push_back(p2);
@@ -2582,14 +2596,15 @@ void TractModel::get_quantitative_info(std::string& result)
     result = out.str();
 }
 
-void TractModel::get_report(unsigned int profile_dir,float band_width,const std::string& index_name,
+tipl::vector<3> TractModel::get_report(unsigned int profile_dir,float band_width,const std::string& index_name,
                             std::vector<float>& values,
                             std::vector<float>& data_profile,
                             std::vector<float>& data_ci1,
                             std::vector<float>& data_ci2)
 {
+    tipl::vector<3> avg_dir;
     if(tract_data.empty())
-        return;
+        return avg_dir;
     unsigned int profile_on_length = 0;// 1 :along tract 2: mean value
     if(profile_dir > 2)
     {
@@ -2628,7 +2643,10 @@ void TractModel::get_report(unsigned int profile_dir,float band_width,const std:
                 data_profile[index] = float(tipl::mean(data[index].begin(),data[index].end()));
         }
         else
+        // along tract profile
         {
+            std::vector<char> dir;
+            avg_dir = get_tract_dir(tract_data,dir);
             std::vector<std::set<float> > profile_upper_ci(profile_width),profile_lower_ci(profile_width);
             size_t ci_size = std::max<size_t>(1,size_t(float(data.size())*0.025f));
 
@@ -2636,6 +2654,8 @@ void TractModel::get_report(unsigned int profile_dir,float band_width,const std:
             {
                 std::vector<float> line_profile(profile_width);
                 std::vector<float> line_profile_w(profile_width);
+                if(profile_on_length == 1 && !dir[i])
+                    std::reverse(data[i].begin(),data[i].end());
                 for(size_t j = 0;j < data[i].size();++j)
                 {
                     size_t pos = profile_on_length ?
@@ -2689,6 +2709,7 @@ void TractModel::get_report(unsigned int profile_dir,float band_width,const std:
             }
         }
     }
+    return avg_dir;
 }
 
 

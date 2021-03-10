@@ -131,7 +131,7 @@ public:
         void save_tdi(const char* file_name,bool sub_voxel,bool endpoint,const tipl::matrix<4,4,float>& tran);
 
         void get_quantitative_info(std::string& result);
-        void get_report(unsigned int profile_dir,float band_width,const std::string& index_name,
+        tipl::vector<3> get_report(unsigned int profile_dir,float band_width,const std::string& index_name,
                         std::vector<float>& values,
                         std::vector<float>& data_profile,
                         std::vector<float>& data_ci1,
