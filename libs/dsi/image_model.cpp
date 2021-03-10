@@ -457,7 +457,7 @@ bool ImageModel::command(std::string cmd,std::string param)
         voxel.steps += cmd+"\n";
         return true;
     }
-    if(cmd == "[Step T2b(2)][Advanced Options][Compare SRC]")
+    if(cmd == "[Step T2b(2)][Compare SRC]")
     {
         if(param.empty()) // try to find the best match in the same directory
         {
@@ -488,7 +488,7 @@ bool ImageModel::command(std::string cmd,std::string param)
         }
         else
             voxel.study_src_file_path = param;
-        voxel.steps += cmd+"\n";
+        voxel.steps += cmd+" open " + QFileInfo(voxel.study_src_file_path.c_str()).fileName().toStdString()+"\n";
         return true;
     }
     if(cmd == "[Step T2][Edit][Overwrite Voxel Size]")

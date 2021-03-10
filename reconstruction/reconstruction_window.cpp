@@ -954,7 +954,7 @@ void reconstruction_window::on_open_ddi_study_src_clicked()
             "Images (*src.gz);;All files (*)" );
     if( filename.isEmpty())
         return;
-    command("[Step T2b(2)][Advanced Options][Compare SRC]",filename.toStdString());
+    command("[Step T2b(2)][Compare SRC]",filename.toStdString());
     ui->ddi_file->setText(QFileInfo(filename).baseName());
 }
 

@@ -190,7 +190,6 @@ bool ImageModel::reconstruction(void)
                     error_msg = "Failed to load DDI study SRC file.";
                     return false;
                 }
-                voxel.step_report << "[Step T2b(1)][Compare SRC]=" << QFileInfo(voxel.study_src_file_path.c_str()).baseName().toStdString() << std::endl;
                 voxel.recon_report <<
                 " The diffusion data were compared with baseline scan using differential tractography with a diffusion sampling length ratio of "
                 << float(voxel.param[0]) << " to study neuronal change.";
