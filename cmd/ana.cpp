@@ -77,7 +77,7 @@ void export_track_info(std::shared_ptr<fib_data> handle,
             report << "position\t";
             std::copy(values.begin(),values.end(),std::ostream_iterator<float>(report,"\t"));
             report << std::endl;
-            report << "value";
+            report << "value\t";
             std::copy(data_profile.begin(),data_profile.end(),std::ostream_iterator<float>(report,"\t"));
             if(!data_ci1.empty())
             {
