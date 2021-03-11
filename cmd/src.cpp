@@ -5,7 +5,7 @@
 #include "tipl/tipl.hpp"
 #include "dicom/dwi_header.hpp"
 #include "program_option.hpp"
-
+extern std::string src_error_msg;
 QStringList search_files(QString dir,QString filter);
 void load_bval(const char* file_name,std::vector<double>& bval);
 void load_bvec(const char* file_name,std::vector<double>& b_table);
@@ -68,7 +68,7 @@ int src(void)
 
     if(!parse_dwi(file_list,dwi_files))
     {
-        std::cout << "invalid file format" << std::endl;
+        std::cout << "error loading dwi file:" << src_error_msg << std::endl;
         return 1;
     }
     if(po.has("b_table"))
