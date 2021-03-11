@@ -905,11 +905,11 @@ void get_track_statistics(const std::vector<std::shared_ptr<TractModel> >& tract
     }
     result = out.str();
 }
-std::vector<std::shared_ptr<TractModel> > TractTableWidget::get_checked_tracks(void) const
+std::vector<std::shared_ptr<TractModel> > TractTableWidget::get_checked_tracks(void)
 {
     std::vector<std::shared_ptr<TractModel> > active_tracks;
     for(unsigned int index = 0;index < tract_models.size();++index)
-        if(item(index,0)->checkState() == Qt::Checked)
+        if(item(int(index),0)->checkState() == Qt::Checked)
             active_tracks.push_back(tract_models[index]);
     return active_tracks;
 }
@@ -1373,71 +1373,25 @@ void TractTableWidget::export_tract_density(tipl::geometry<3>& dim,
                           tipl::vector<3,float> vs,
                           tipl::matrix<4,4,float>& transformation,bool color,bool end_point)
 {
+    QString filename;
     if(color)
     {
-        QString filename = QFileDialog::getSaveFileName(
+        filename = QFileDialog::getSaveFileName(
                 this,"Save Images files",item(currentRow(),0)->text()+".nii.gz",
                 "Image files (*.png *.bmp *nii.gz *.nii *.jpg *.tif);;All files (*)");
         if(filename.isEmpty())
             return;
-
-        tipl::image<tipl::rgb,3> tdi(dim);
-        for(unsigned int index = 0;index < tract_models.size();++index)
-        {
-            if(item(index,0)->checkState() != Qt::Checked)
-                continue;
-            tract_models[index]->get_density_map(tdi,transformation,end_point);
-        }
-        tipl::image<tipl::rgb,2> mosaic;
-        if(QFileInfo(filename).fileName().endsWith(".nii") || QFileInfo(filename).fileName().endsWith(".nii.gz"))
-        {
-            gz_nifti nii;
-            tipl::flip_xy(tdi);
-            nii << tdi;
-            nii.set_voxel_size(vs);
-            nii.save_to_file(filename.toStdString().c_str());
-        }
-        else
-        {
-            tipl::mosaic(tdi,mosaic,std::sqrt(tdi.depth()));
-            QImage qimage((unsigned char*)&*mosaic.begin(),
-                          mosaic.width(),mosaic.height(),QImage::Format_RGB32);
-            qimage.save(filename);
-        }
     }
     else
     {
-        QString filename = QFileDialog::getSaveFileName(
+        filename = QFileDialog::getSaveFileName(
                     this,"Save as",item(currentRow(),0)->text()+".nii.gz",
                     "NIFTI files (*nii.gz *.nii);;MAT File (*.mat);;");
         if(filename.isEmpty())
             return;
-        if(QFileInfo(filename.toLower()).completeSuffix() != "mat")
-            filename = QFileInfo(filename).absolutePath() + "/" + QFileInfo(filename).baseName() + ".nii.gz";
-
-        tipl::image<unsigned int,3> tdi(dim);
-        for(unsigned int index = 0;index < tract_models.size();++index)
-        {
-            if(item(index,0)->checkState() != Qt::Checked)
-                continue;
-            tract_models[index]->get_density_map(tdi,transformation,end_point);
-        }
-        if(QFileInfo(filename).completeSuffix().toLower() == "mat")
-        {
-            tipl::io::mat_write mat_header(filename.toLocal8Bit().begin());
-            mat_header << tdi;
-        }
-        else
-        {
-            tipl::matrix<4,4,float> new_trans(transformation),trans(cur_tracking_window.handle->trans_to_mni);
-            if(cur_tracking_window.handle->is_qsdr)
-            {
-                new_trans.inv();
-                trans *= new_trans;
-            }
-            gz_nifti::save_to_file(filename.toStdString().c_str(),tdi,vs,trans);
-        }
     }
+    auto selected_tracts = get_checked_tracks();
+    TractModel::export_tdi(filename.toStdString().c_str(),selected_tracts,dim,vs,transformation,color,end_point);
 }
 
 

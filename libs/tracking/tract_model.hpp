@@ -124,12 +124,19 @@ public:
         std::vector<std::vector<float> >& get_tracts(void) {return tract_data;}
         unsigned int get_tract_color(unsigned int index) const{return tract_color[index];}
         size_t get_tract_length(unsigned int index) const{return tract_data[index].size();}
+
+public:
         void get_density_map(tipl::image<unsigned int,3>& mapping,
              const tipl::matrix<4,4,float>& transformation,bool endpoint);
         void get_density_map(tipl::image<tipl::rgb,3>& mapping,
              const tipl::matrix<4,4,float>& transformation,bool endpoint);
         void save_tdi(const char* file_name,bool sub_voxel,bool endpoint,const tipl::matrix<4,4,float>& tran);
-
+        static void export_tdi(const char* file_name,
+                          std::vector<std::shared_ptr<TractModel> >& tract_models,
+                          tipl::geometry<3>& dim,
+                          tipl::vector<3,float> vs,
+                          tipl::matrix<4,4,float>& transformation,bool color,bool end_point);
+public:
         void get_quantitative_info(std::string& result);
         tipl::vector<3> get_report(unsigned int profile_dir,float band_width,const std::string& index_name,
                         std::vector<float>& values,

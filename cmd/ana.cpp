@@ -19,13 +19,23 @@
 bool atl_load_atlas(std::string atlas_name,std::vector<std::shared_ptr<atlas> >& atlas_list);
 bool load_roi(std::shared_ptr<fib_data> handle,std::shared_ptr<RoiMgr> roi_mgr);
 void get_connectivity_matrix(std::shared_ptr<fib_data> handle,
-                             TractModel& tract_model);
+                             std::shared_ptr<TractModel> tract_model);
 
 void get_regions_statistics(const std::vector<std::shared_ptr<ROIRegion> >& regions,
                             const std::vector<std::string>& region_name,
                             std::string& result);
+bool load_region(std::shared_ptr<fib_data> handle,
+                 ROIRegion& roi,const std::string& region_text);
+bool get_t1t2_nifti(std::shared_ptr<fib_data> handle,
+                    tipl::geometry<3>& nifti_geo,
+                    tipl::matrix<4,4,float>& convert);
+bool load_nii(std::shared_ptr<fib_data> handle,
+              const std::string& file_name,
+              std::vector<std::pair<tipl::geometry<3>,tipl::matrix<4,4,float> > >& transform_lookup,
+              std::vector<std::shared_ptr<ROIRegion> >& regions,
+              std::vector<std::string>& names,bool verbose);
 void export_track_info(std::shared_ptr<fib_data> handle,
-                       TractModel& tract_model)
+                       std::shared_ptr<TractModel> tract_model)
 {
     std::string export_option = po.get("export");
     std::string file_name = po.get("output",po.get("tract",po.get("source")+"tt.gz"));
@@ -64,7 +74,7 @@ void export_track_info(std::shared_ptr<fib_data> handle,
             std::cout << "profile_dir:" << profile_dir << std::endl;
             std::cout << "bandwidth:" << bandwidth << std::endl;
             std::cout << "index_name:" << index_name << std::endl;
-            tract_model.get_report(
+            tract_model->get_report(
                                 profile_dir,
                                 bandwidth,
                                 index_name,
@@ -99,14 +109,14 @@ void export_track_info(std::shared_ptr<fib_data> handle,
         {
             file_name_stat += ".nii.gz";
             std::cout << "export TDI to " << file_name_stat << std::endl;
-            tract_model.save_tdi(file_name_stat.c_str(),false,cmd == "tdi_end",handle->trans_to_mni);
+            tract_model->save_tdi(file_name_stat.c_str(),false,cmd == "tdi_end",handle->trans_to_mni);
             continue;
         }
         if(cmd == "tdi2" || cmd == "tdi2_end")
         {
             file_name_stat += ".nii.gz";
             std::cout << "export subvoxel TDI to " << file_name_stat << std::endl;
-            tract_model.save_tdi(file_name_stat.c_str(),true,cmd == "tdi2_end",handle->trans_to_mni);
+            tract_model->save_tdi(file_name_stat.c_str(),true,cmd == "tdi2_end",handle->trans_to_mni);
             continue;
         }
         if(cmd == "tdi_color" || cmd == "tdi2_color")
@@ -123,7 +133,7 @@ void export_track_info(std::shared_ptr<fib_data> handle,
                 tdi.resize(tipl::geometry<3>(handle->dim[0]*4,handle->dim[1]*4,handle->dim[2]*4));
                 tr[0] = tr[5] = tr[10] = 4.0f;
             }
-            tract_model.get_density_map(tdi,tr,false);
+            tract_model->get_density_map(tdi,tr,false);
             tipl::image<tipl::rgb,2> mosaic;
             tipl::mosaic(tdi,mosaic,uint32_t(std::sqrt(tdi.depth())));
             QImage qimage(reinterpret_cast<unsigned char*>(&*mosaic.begin()),
@@ -144,7 +154,7 @@ void export_track_info(std::shared_ptr<fib_data> handle,
                 return;
             }
             std::string result;
-            tract_model.get_quantitative_info(result);
+            tract_model->get_quantitative_info(result);
             out_stat << result;
             continue;
         }
@@ -156,7 +166,7 @@ void export_track_info(std::shared_ptr<fib_data> handle,
                 file_name_stat += ".txt";
             if(handle->get_name_index(cmd) != handle->view_item.size())
             {
-                tract_model.save_data_to_file(file_name_stat.c_str(),cmd);
+                tract_model->save_data_to_file(file_name_stat.c_str(),cmd);
                 continue;
             }
         }
@@ -164,16 +174,6 @@ void export_track_info(std::shared_ptr<fib_data> handle,
         continue;
     }
 }
-bool load_region(std::shared_ptr<fib_data> handle,
-                 ROIRegion& roi,const std::string& region_text);
-bool get_t1t2_nifti(std::shared_ptr<fib_data> handle,
-                    tipl::geometry<3>& nifti_geo,
-                    tipl::matrix<4,4,float>& convert);
-bool load_nii(std::shared_ptr<fib_data> handle,
-              const std::string& file_name,
-              std::vector<std::pair<tipl::geometry<3>,tipl::matrix<4,4,float> > >& transform_lookup,
-              std::vector<std::shared_ptr<ROIRegion> >& regions,
-              std::vector<std::string>& names,bool verbose);
 bool load_nii(std::shared_ptr<fib_data> handle,
               const std::string& file_name,
               std::vector<std::shared_ptr<ROIRegion> >& regions,
@@ -194,8 +194,7 @@ bool load_nii(std::shared_ptr<fib_data> handle,
     }
     return true;
 }
-void trk_post(std::shared_ptr<fib_data> handle,
-             TractModel& tract_model);
+void trk_post(std::shared_ptr<fib_data> handle,std::shared_ptr<TractModel> tract_model);
 std::shared_ptr<fib_data> cmd_load_fib(const std::string file_name);
 int ana(void)
 {
@@ -283,7 +282,7 @@ int ana(void)
         return 0;
     }
 
-    TractModel tract_model(handle.get());
+    std::shared_ptr<TractModel> tract_model(new TractModel(handle.get()));
     {
         std::string file_name = po.get("tract");
         {
@@ -293,7 +292,7 @@ int ana(void)
                 std::cout << file_name << " does not exist. terminating..." << std::endl;
                 return 1;
             }
-            if (!tract_model.load_from_file(file_name.c_str()))
+            if (!tract_model->load_from_file(file_name.c_str()))
             {
                 std::cout << "cannot open file " << file_name << std::endl;
                 return 1;
@@ -303,8 +302,8 @@ int ana(void)
         std::shared_ptr<RoiMgr> roi_mgr(new RoiMgr(handle.get()));
         if(!load_roi(handle,roi_mgr))
             return 1;
-        tract_model.filter_by_roi(roi_mgr);
-        if(tract_model.get_visible_track_count() == 0)
+        tract_model->filter_by_roi(roi_mgr);
+        if(tract_model->get_visible_track_count() == 0)
         {
             std::cout << "no tracks remained after ROI selection." << std::endl;
             return 1;

@@ -28,7 +28,7 @@ public:
     std::vector<std::shared_ptr<ThreadData> > thread_data;
     std::vector<std::shared_ptr<TractModel> > tract_models;
 public:
-    std::vector<std::shared_ptr<TractModel> > get_checked_tracks(void) const;
+    std::vector<std::shared_ptr<TractModel> > get_checked_tracks(void);
     std::vector<std::string> get_checked_tracks_name(void) const;
     enum {none = 0,select = 1,del = 2,cut = 3,paint = 4,move = 5}edit_option;
     void addNewTracts(QString tract_name,bool checked = true);

@@ -1,6 +1,7 @@
 //---------------------------------------------------------------------------
 #include <QString>
 #include <QFileInfo>
+#include <QImage>
 #include <fstream>
 #include <sstream>
 #include <iterator>
@@ -2247,6 +2248,57 @@ void TractModel::get_density_map(
     }
 }
 
+void TractModel::export_tdi(const char* filename,
+                  std::vector<std::shared_ptr<TractModel> >& tract_models,
+                  tipl::geometry<3>& dim,
+                  tipl::vector<3,float> vs,
+                  tipl::matrix<4,4,float>& transformation,bool color,bool end_point)
+{
+    if(color)
+    {
+        tipl::image<tipl::rgb,3> tdi(dim);
+        for(unsigned int index = 0;index < tract_models.size();++index)
+            tract_models[index]->get_density_map(tdi,transformation,end_point);
+        tipl::image<tipl::rgb,2> mosaic;
+        if(QFileInfo(filename).fileName().endsWith(".nii") ||
+           QFileInfo(filename).fileName().endsWith(".nii.gz"))
+        {
+            gz_nifti nii;
+            tipl::flip_xy(tdi);
+            nii << tdi;
+            nii.set_voxel_size(vs);
+            nii.save_to_file(filename);
+        }
+        else
+        {
+            tipl::mosaic(tdi,mosaic,uint32_t(std::sqrt(tdi.depth())));
+            QImage qimage(reinterpret_cast<unsigned char*>(&*mosaic.begin()),
+                          mosaic.width(),mosaic.height(),QImage::Format_RGB32);
+            qimage.save(filename);
+        }
+    }
+    else
+    {
+        tipl::image<unsigned int,3> tdi(dim);
+        for(unsigned int index = 0;index < tract_models.size();++index)
+            tract_models[index]->get_density_map(tdi,transformation,end_point);
+        if(QFileInfo(filename).completeSuffix().toLower() == "mat")
+        {
+            tipl::io::mat_write mat_header(filename);
+            mat_header << tdi;
+        }
+        else
+        {
+            tipl::matrix<4,4,float> new_trans(transformation),trans(tract_models[0]->handle->trans_to_mni);
+            if(tract_models[0]->handle->is_qsdr)
+            {
+                new_trans.inv();
+                trans *= new_trans;
+            }
+            gz_nifti::save_to_file(filename,tdi,vs,trans);
+        }
+    }
+}
 void TractModel::save_tdi(const char* file_name,bool sub_voxel,bool endpoint,const tipl::matrix<4,4,float>& trans)
 {
     tipl::matrix<4,4,float> tr;

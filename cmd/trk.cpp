@@ -15,10 +15,8 @@
 #include "connectometry/group_connectometry_analysis.h"
 #include "program_option.hpp"
 bool atl_load_atlas(const std::string atlas_name,std::vector<std::shared_ptr<atlas> >& atlas_list);
-void export_track_info(std::shared_ptr<fib_data> handle,
-                       TractModel& tract_model);
-
-void save_connectivity_matrix(TractModel& tract_model,
+void export_track_info(std::shared_ptr<fib_data> handle,std::shared_ptr<TractModel> tract_model);
+void save_connectivity_matrix(std::shared_ptr<TractModel> tract_model,
                               ConnectivityMatrix& data,
                               const std::string& source,
                               const std::string& connectivity_roi,
@@ -28,7 +26,7 @@ void save_connectivity_matrix(TractModel& tract_model,
 {
     std::cout << "count tracks by " << (use_end_only ? "ending":"passing") << std::endl;
     std::cout << "calculate matrix using " << connectivity_value << std::endl;
-    if(!data.calculate(tract_model,connectivity_value,use_end_only,t))
+    if(!data.calculate(*(tract_model.get()),connectivity_value,use_end_only,t))
     {
         std::cout << "connectivity calculation error:" << data.error_msg << std::endl;
         return;
@@ -114,7 +112,7 @@ bool load_nii(std::shared_ptr<fib_data> handle,
               std::vector<std::shared_ptr<ROIRegion> >& regions,
               std::vector<std::string>& names);
 void get_connectivity_matrix(std::shared_ptr<fib_data> handle,
-                             TractModel& tract_model)
+                             std::shared_ptr<TractModel> tract_model)
 {
     std::string source;
     QStringList connectivity_list = QString(po.get("connectivity").c_str()).split(",");
@@ -311,8 +309,7 @@ bool load_region(std::shared_ptr<fib_data> handle,
     return true;
 }
 
-void trk_post(std::shared_ptr<fib_data> handle,
-             TractModel& tract_model)
+void trk_post(std::shared_ptr<fib_data> handle,std::shared_ptr<TractModel> tract_model)
 {
     // save file
     if(po.has("output"))
@@ -339,12 +336,12 @@ void trk_post(std::shared_ptr<fib_data> handle,
                 std::cout << new_slice.T[0] << " " << new_slice.T[1] << " " << new_slice.T[2] << " " << new_slice.T[3] << std::endl;
                 std::cout << new_slice.T[4] << " " << new_slice.T[5] << " " << new_slice.T[6] << " " << new_slice.T[7] << std::endl;
                 std::cout << new_slice.T[8] << " " << new_slice.T[9] << " " << new_slice.T[10] << " " << new_slice.T[11] << std::endl;
-                tract_model.save_transformed_tracts_to_file(f.c_str(),&*new_slice.invT.begin(),false);
+                tract_model->save_transformed_tracts_to_file(f.c_str(),&*new_slice.invT.begin(),false);
             }
             else
             if(f != "no_file")
             {
-                if (!tract_model.save_tracts_to_file(f.c_str()))
+                if (!tract_model->save_tracts_to_file(f.c_str()))
                     std::cout << "cannot save tracks as " << f << ". Please check write permission, directory, and disk space." << std::endl;
             }
         }
@@ -361,14 +358,14 @@ void trk_post(std::shared_ptr<fib_data> handle,
         std::cout << "cluster count: " << count << std::endl;
         std::cout << "cluster resolution (if method is 0) : " << detail << " mm" << std::endl;
         std::cout << "run clustering." << std::endl;
-        tract_model.run_clustering(uint8_t(method),uint32_t(count),detail);
+        tract_model->run_clustering(uint8_t(method),uint32_t(count),detail);
         std::ofstream out(name);
         std::cout << "cluster label saved to " << name << std::endl;
-        std::copy(tract_model.get_cluster_info().begin(),tract_model.get_cluster_info().end(),std::ostream_iterator<int>(out," "));
+        std::copy(tract_model->get_cluster_info().begin(),tract_model->get_cluster_info().end(),std::ostream_iterator<int>(out," "));
     }
 
     if(po.has(("end_point")))
-        tract_model.save_end_points(po.get("end_point").c_str());
+        tract_model->save_end_points(po.get("end_point").c_str());
 
     if(po.has("connectivity"))
         get_connectivity_matrix(handle,tract_model);
@@ -534,7 +531,7 @@ int trk(std::shared_ptr<fib_data> handle)
                     tracking_thread.param.threshold == 0.0f ?
                         otsu*tracking_thread.param.default_otsu:tracking_thread.param.threshold);
     }
-    TractModel tract_model(handle.get());
+    std::shared_ptr<TractModel> tract_model(new TractModel(handle.get()));
 
     if(!cnt_file_name.empty())
     {
@@ -577,20 +574,20 @@ int trk(std::shared_ptr<fib_data> handle)
                 std::cout << "mapping track with " << ((t > 0) ? "increased":"decreased") << " connectivity at " << std::fabs(t) << std::endl;
                 std::cout << "start tracking." << std::endl;
                 tracking_thread.param.threshold = float(std::fabs(t));
-                tracking_thread.run(tract_model.get_fib(),po.get("thread_count",uint32_t(std::thread::hardware_concurrency())),true);
-                tract_model.report += tracking_thread.report.str();
-                tracking_thread.fetchTracks(&tract_model);
+                tracking_thread.run(tract_model->get_fib(),po.get("thread_count",uint32_t(std::thread::hardware_concurrency())),true);
+                tract_model->report += tracking_thread.report.str();
+                tracking_thread.fetchTracks(tract_model.get());
                 std::ostringstream out;
                 out << cnt_file_name[i].toStdString() << "." << cnt_type.toStdString()
                         << ((t > 0) ? "inc":"dec") << std::fabs(t) << ".tt.gz" << std::endl;
-                if(!tract_model.save_tracts_to_file(out.str().c_str()))
+                if(!tract_model->save_tracts_to_file(out.str().c_str()))
                 {
                     std::cout << "cannot save file to " << out.str()
                               << ". Please check write permission, directory, and disk space." << std::endl;
                     return 1;
                 }
                 std::vector<std::vector<float> > tmp;
-                tract_model.release_tracts(tmp);
+                tract_model->release_tracts(tmp);
             }
         }
         return 0;
@@ -598,60 +595,60 @@ int trk(std::shared_ptr<fib_data> handle)
 
 
     std::cout << "start tracking." << std::endl;
-    tracking_thread.run(tract_model.get_fib(),uint32_t(po.get("thread_count",int(std::thread::hardware_concurrency()))),true);
-    tract_model.report += tracking_thread.report.str();
+    tracking_thread.run(tract_model->get_fib(),uint32_t(po.get("thread_count",int(std::thread::hardware_concurrency()))),true);
+    tract_model->report += tracking_thread.report.str();
 
-    tracking_thread.fetchTracks(&tract_model);
+    tracking_thread.fetchTracks(tract_model.get());
     std::cout << "finished tracking." << std::endl;
 
     if(po.has("report"))
     {
         std::ofstream out(po.get("report").c_str());
-        out << tract_model.report;
+        out << tract_model->report;
     }
 
-    if(tract_model.get_visible_track_count() && po.has("refine") && (po.get("refine",1) >= 1))
+    if(tract_model->get_visible_track_count() && po.has("refine") && (po.get("refine",1) >= 1))
     {
         for(int i = 0;i < po.get("refine",1);++i)
-            tract_model.trim();
+            tract_model->trim();
         std::cout << "refine tracking result..." << std::endl;
         std::cout << "convert tracks to seed regions" << std::endl;
         tracking_thread.roi_mgr->seeds.clear();
         std::vector<tipl::vector<3,short> > points;
-        tract_model.to_voxel(points,1.0f);
-        tract_model.clear();
+        tract_model->to_voxel(points,1.0f);
+        tract_model->clear();
         tracking_thread.roi_mgr->setRegions(points,1.0f,3/*seed*/,"refine seeding region");
 
 
         std::cout << "restart tracking..." << std::endl;
-        tracking_thread.run(tract_model.get_fib(),po.get("thread_count",uint32_t(std::thread::hardware_concurrency())),true);
-        tracking_thread.fetchTracks(&tract_model);
+        tracking_thread.run(tract_model->get_fib(),po.get("thread_count",uint32_t(std::thread::hardware_concurrency())),true);
+        tracking_thread.fetchTracks(tract_model.get());
         std::cout << "finished tracking." << std::endl;
 
-        if(tract_model.get_visible_track_count() == 0)
+        if(tract_model->get_visible_track_count() == 0)
         {
             std::cout << "no tract generated. Terminating..." << std::endl;
             return 0;
         }
     }
-    std::cout << tract_model.get_visible_track_count() << " tracts are generated using " << tracking_thread.get_total_seed_count() << " seeds."<< std::endl;
-    tracking_thread.apply_tip(&tract_model);
-    std::cout << tract_model.get_deleted_track_count() << " tracts are removed by pruning." << std::endl;
+    std::cout << tract_model->get_visible_track_count() << " tracts are generated using " << tracking_thread.get_total_seed_count() << " seeds."<< std::endl;
+    tracking_thread.apply_tip(tract_model.get());
+    std::cout << tract_model->get_deleted_track_count() << " tracts are removed by pruning." << std::endl;
 
 
-    if(tract_model.get_visible_track_count() == 0)
+    if(tract_model->get_visible_track_count() == 0)
     {
         std::cout << "no tract to process. Terminating..." << std::endl;
         return 0;
     }
-    std::cout << "The final analysis results in " << tract_model.get_visible_track_count() << " tracts." << std::endl;
+    std::cout << "The final analysis results in " << tract_model->get_visible_track_count() << " tracts." << std::endl;
 
 
     if (po.has("delete_repeat"))
     {
         std::cout << "deleting repeat tracks..." << std::endl;
         float distance = po.get("delete_repeat",float(1));
-        tract_model.delete_repeated(distance);
+        tract_model->delete_repeated(distance);
         std::cout << "repeat tracks with distance smaller than " << distance <<" voxel distance are deleted" << std::endl;
     }
     if(po.has("trim"))
@@ -659,7 +656,7 @@ int trk(std::shared_ptr<fib_data> handle)
         std::cout << "trimming tracks..." << std::endl;
         int trim = po.get("trim",int(1));
         for(int i = 0;i < trim;++i)
-            tract_model.trim();
+            tract_model->trim();
     }
 
     // if no output assigned, assign a default track output file name
