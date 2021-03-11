@@ -2299,32 +2299,6 @@ void TractModel::export_tdi(const char* filename,
         }
     }
 }
-void TractModel::save_tdi(const char* file_name,bool sub_voxel,bool endpoint,const tipl::matrix<4,4,float>& trans)
-{
-    tipl::matrix<4,4,float> tr;
-    tr.zero();
-    tr[0] = tr[5] = tr[10] = tr[15] = (sub_voxel ? 4.0:1.0);
-    tipl::vector<3,float> new_vs(vs);
-    if(sub_voxel)
-        new_vs /= 4.0;
-    tipl::image<unsigned int,3> tdi;
-
-    if(sub_voxel)
-        tdi.resize(tipl::geometry<3>(geo[0]*4,geo[1]*4,geo[2]*4));
-    else
-        tdi.resize(geo);
-
-    get_density_map(tdi,tr,endpoint);
-    tipl::matrix<4,4,float> new_trans(trans);
-    if(sub_voxel)
-    {
-        new_trans[0] /= 4.0f;
-        new_trans[4] /= 4.0f;
-        new_trans[8] /= 4.0f;
-    }
-    gz_nifti::save_to_file(file_name,tdi,new_vs,new_trans);
-}
-
 void TractModel::to_voxel(std::vector<tipl::vector<3,short> >& points,float ratio,int id)
 {
     float voxel_length_2 = 0.5f/ratio;

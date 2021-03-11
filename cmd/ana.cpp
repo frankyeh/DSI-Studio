@@ -28,12 +28,14 @@ bool load_region(std::shared_ptr<fib_data> handle,
                  ROIRegion& roi,const std::string& region_text);
 bool get_t1t2_nifti(std::shared_ptr<fib_data> handle,
                     tipl::geometry<3>& nifti_geo,
+                    tipl::vector<3>& nifti_vs,
                     tipl::matrix<4,4,float>& convert);
 bool load_nii(std::shared_ptr<fib_data> handle,
               const std::string& file_name,
               std::vector<std::pair<tipl::geometry<3>,tipl::matrix<4,4,float> > >& transform_lookup,
               std::vector<std::shared_ptr<ROIRegion> >& regions,
               std::vector<std::string>& names,bool verbose);
+
 void export_track_info(std::shared_ptr<fib_data> handle,
                        std::shared_ptr<TractModel> tract_model)
 {
@@ -105,40 +107,35 @@ void export_track_info(std::shared_ptr<fib_data> handle,
 
         std::string file_name_stat = file_name + "." + cmd;
         // export statistics
-        if(cmd == "tdi" || cmd == "tdi_end")
+        if(QString(cmd.c_str()).startsWith("tdi"))
         {
             file_name_stat += ".nii.gz";
-            std::cout << "export TDI to " << file_name_stat << std::endl;
-            tract_model->save_tdi(file_name_stat.c_str(),false,cmd == "tdi_end",handle->trans_to_mni);
-            continue;
-        }
-        if(cmd == "tdi2" || cmd == "tdi2_end")
-        {
-            file_name_stat += ".nii.gz";
-            std::cout << "export subvoxel TDI to " << file_name_stat << std::endl;
-            tract_model->save_tdi(file_name_stat.c_str(),true,cmd == "tdi2_end",handle->trans_to_mni);
-            continue;
-        }
-        if(cmd == "tdi_color" || cmd == "tdi2_color")
-        {
-            file_name_stat += ".bmp";
-            std::cout << "export subvoxel TDI to " << file_name_stat << std::endl;
-            tipl::image<tipl::rgb,3> tdi;
             tipl::matrix<4,4,float> tr;
+            tipl::geometry<3> dim;
+            tipl::vector<3,float> vs;
             tr.identity();
-            if(cmd == "tdi_color")
-                tdi.resize(handle->dim);
-            else
-            {
-                tdi.resize(tipl::geometry<3>(handle->dim[0]*4,handle->dim[1]*4,handle->dim[2]*4));
-                tr[0] = tr[5] = tr[10] = 4.0f;
-            }
-            tract_model->get_density_map(tdi,tr,false);
-            tipl::image<tipl::rgb,2> mosaic;
-            tipl::mosaic(tdi,mosaic,uint32_t(std::sqrt(tdi.depth())));
-            QImage qimage(reinterpret_cast<unsigned char*>(&*mosaic.begin()),
-                          mosaic.width(),mosaic.height(),QImage::Format_RGB32);
-            qimage.save(file_name_stat.c_str());
+            dim = handle->dim;
+            vs = handle->vs;
+            if(!get_t1t2_nifti(handle,dim,vs,tr) && QString(cmd.c_str()).startsWith("tdi2"))
+                {
+                    unsigned int ratio = 4;
+                    tr[0] = tr[5] = tr[10] = ratio;
+                    dim = tipl::geometry<3>(handle->dim[0]*ratio,
+                                            handle->dim[1]*ratio,
+                                            handle->dim[2]*ratio);
+                    vs /= float(ratio);
+                }
+            std::vector<std::shared_ptr<TractModel> > tract;
+            tract.push_back(tract_model);
+            std::cout << "export TDI to " << file_name_stat;
+            if(QString(cmd.c_str()).endsWith("color"))
+                std::cout << " in RGB color";
+            if(QString(cmd.c_str()).endsWith("end"))
+                std::cout << " end point only";
+            std::cout << std::endl;
+            TractModel::export_tdi(file_name_stat.c_str(),tract,dim,vs,tr,
+                                   QString(cmd.c_str()).endsWith("color"),
+                                   QString(cmd.c_str()).endsWith("end"));
             continue;
         }
 
@@ -183,8 +180,9 @@ bool load_nii(std::shared_ptr<fib_data> handle,
     // --t1t2 provide registration
     {
         tipl::geometry<3> t1t2_geo;
+        tipl::vector<3> vs;
         tipl::matrix<4,4,float> convert;
-        if(get_t1t2_nifti(handle,t1t2_geo,convert))
+        if(get_t1t2_nifti(handle,t1t2_geo,vs,convert))
             transform_lookup.push_back(std::make_pair(t1t2_geo,convert));
     }
     if(!load_nii(handle,file_name,transform_lookup,regions,names,true))

@@ -61,6 +61,7 @@ void save_connectivity_matrix(std::shared_ptr<TractModel> tract_model,
 }
 bool get_t1t2_nifti(std::shared_ptr<fib_data> handle,
                     tipl::geometry<3>& nifti_geo,
+                    tipl::vector<3>& nifti_vs,
                     tipl::matrix<4,4,float>& convert)
 {
     if(!po.has("t1t2"))
@@ -79,14 +80,16 @@ bool get_t1t2_nifti(std::shared_ptr<fib_data> handle,
         handle->view_item.pop_back(); // remove the new item added by initialize
         if(other_slice->thread.get())
             other_slice->thread->wait();
+        std::cout << "registeration complete" << std::endl;
+        std::cout << convert[0] << " " << convert[1] << " " << convert[2] << " " << convert[3] << std::endl;
+        std::cout << convert[4] << " " << convert[5] << " " << convert[6] << " " << convert[7] << std::endl;
+        std::cout << convert[8] << " " << convert[9] << " " << convert[10] << " " << convert[11] << std::endl;
     }
     nifti_geo = other_slice->source_images.geometry();
+    nifti_vs = other_slice->voxel_size;
     convert = other_slice->invT;
-    std::cout << "registeration complete" << std::endl;
-    std::cout << convert[0] << " " << convert[1] << " " << convert[2] << " " << convert[3] << std::endl;
-    std::cout << convert[4] << " " << convert[5] << " " << convert[6] << " " << convert[7] << std::endl;
-    std::cout << convert[8] << " " << convert[9] << " " << convert[10] << " " << convert[11] << std::endl;
     std::cout << "T1T2 dimension: " << nifti_geo << std::endl;
+    std::cout << "T1T2 voxel size: " << nifti_vs << std::endl;
     return true;
 }
 bool load_atlas_from_list(std::shared_ptr<fib_data> handle,
@@ -278,8 +281,9 @@ bool load_region(std::shared_ptr<fib_data> handle,
                 std::cout << file_name << " has a different dimension from DWI" << std::endl;
                 std::cout << "checking if there is --t1t2 assigned for registration" << std::endl;
                 tipl::geometry<3> t1t2_geo;
+                tipl::vector<3> vs;
                 tipl::matrix<4,4,float> convert;
-                if(!get_t1t2_nifti(handle,t1t2_geo,convert))
+                if(!get_t1t2_nifti(handle,t1t2_geo,vs,convert))
                 {
                     std::cout << "No --t1t2 assigned to guide warping the region file to DWI." << std::endl;
                     std::cout << "loading " << file_name << "as an MNI space region" << std::endl;

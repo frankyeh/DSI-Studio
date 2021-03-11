@@ -130,7 +130,6 @@ public:
              const tipl::matrix<4,4,float>& transformation,bool endpoint);
         void get_density_map(tipl::image<tipl::rgb,3>& mapping,
              const tipl::matrix<4,4,float>& transformation,bool endpoint);
-        void save_tdi(const char* file_name,bool sub_voxel,bool endpoint,const tipl::matrix<4,4,float>& tran);
         static void export_tdi(const char* file_name,
                           std::vector<std::shared_ptr<TractModel> >& tract_models,
                           tipl::geometry<3>& dim,
