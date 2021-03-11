@@ -22,7 +22,7 @@ bool load_image_from_files(QStringList filenames,tipl::image<float,3>& ref,tipl:
         gz_nifti in;
         if(!in.load_from_file(filenames[0].toLocal8Bit().begin()) || !in.toLPS(ref))
         {
-            QMessageBox::information(0,"Error","Not a valid nifti file",0);
+            QMessageBox::information(nullptr,"Error","Not a valid nifti file");
             return false;
         }
         in.get_voxel_size(vs);
@@ -35,7 +35,7 @@ bool load_image_from_files(QStringList filenames,tipl::image<float,3>& ref,tipl:
             tipl::io::bruker_2dseq seq;
             if(!seq.load_from_file(filenames[0].toLocal8Bit().begin()))
             {
-                QMessageBox::information(0,"Error","Not a valid 2dseq file",0);
+                QMessageBox::information(nullptr,"Error","Not a valid 2dseq file");
                 return false;
             }
             seq.get_image().swap(ref);
@@ -213,7 +213,7 @@ bool view_image::open(QStringList file_names)
 
     }
     else
-        if(dicom.load_from_file(file_name.toLocal8Bit().begin()))
+        if(dicom.load_from_file(file_name.toStdString()))
         {
             dicom >> data;
             if(dicom.is_compressed)
