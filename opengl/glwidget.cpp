@@ -971,7 +971,7 @@ void GLWidget::renderLR()
 
 
 
-        if(get_param("region_graph"))
+        if(get_param("region_graph") && !connectivity.empty())
         {
 
             if (cur_tracking_window.regionWidget->regions.size())
@@ -998,29 +998,32 @@ void GLWidget::renderLR()
                                   *(get_param("region_node_size")+5)/50.0f,10,10);
                         glPopMatrix();
                     }
-                float edge_threshold = get_param_float("region_edge_threshold");
-                if(!connectivity.empty() && connectivity.width() == cur_tracking_window.regionWidget->regions.size())
+                float edge_threshold = get_param_float("region_edge_threshold")*max_connectivity;
+                if(!connectivity.empty() && connectivity.width() == int(cur_tracking_window.regionWidget->regions.size()) && max_connectivity != 0.0f)
                 {
-                    float max_connectivity = connectivity.at(0,0);
                     for(unsigned int i = 0;i < cur_tracking_window.regionWidget->regions.size();++i)
                         for(unsigned int j = i+1;j < cur_tracking_window.regionWidget->regions.size();++j)
-                            max_connectivity = std::max<float>(max_connectivity,connectivity.at(i,j));
-                    if(max_connectivity != 0.0f)
-                    for(unsigned int i = 0;i < cur_tracking_window.regionWidget->regions.size();++i)
-                        for(unsigned int j = i+1;j < cur_tracking_window.regionWidget->regions.size();++j)
-                        if(cur_tracking_window.regionWidget->item(i,0)->checkState() == Qt::Checked &&
-                           cur_tracking_window.regionWidget->item(j,0)->checkState() == Qt::Checked &&
+                        if(cur_tracking_window.regionWidget->item(int(i),0)->checkState() == Qt::Checked &&
+                           cur_tracking_window.regionWidget->item(int(j),0)->checkState() == Qt::Checked &&
                            !cur_tracking_window.regionWidget->regions[i]->region.empty() &&
-                                !cur_tracking_window.regionWidget->regions[j]->region.empty() &&
-                                connectivity.at(i,j) != 0.0f)
+                                !cur_tracking_window.regionWidget->regions[j]->region.empty())
                         {
-                            if(edge_threshold != 0.0f && connectivity.at(i,j) < edge_threshold)
+                            float c = std::fabs(connectivity.at(i,j));
+                            if(c == 0.0f || (edge_threshold != 0.0f && c < edge_threshold))
                                 continue;
                             auto centeri = cur_tracking_window.regionWidget->regions[i]->get_center();
                             auto centerj = cur_tracking_window.regionWidget->regions[j]->get_center();
-                            glColor4f(1.0f,1.0f,1.0f,1.0f);
+                            if(two_color_connectivity)
+                            {
+                                if(connectivity.at(i,j)>0.0f)
+                                    glColor4f(1.0f,0.2f,0.2f,1.0f);
+                                else
+                                    glColor4f(0.2f,0.2f,1.0f,1.0f);
+                            }
+                            else
+                                glColor4f(1.0f,1.0f,1.0f,1.0f);
                             CylinderGL(RegionSpheres->get(),centeri,centerj,
-                                       (get_param("region_constant_edge_size") ? 0.5f:connectivity.at(i,j)/max_connectivity)*(get_param("region_edge_size")+5)/5.0f);
+                                       double((get_param("region_constant_edge_size") ? 0.5f:c/max_connectivity)*(get_param("region_edge_size")+5)/5.0f));
                         }
                 }
                 glDisable(GL_COLOR_MATERIAL);

@@ -97,6 +97,8 @@ private: //glu
      std::shared_ptr<GluQua> DeviceQua;
 public:
      tipl::image<float,2> connectivity;
+     float max_connectivity = 0.0f;
+     bool two_color_connectivity = false;
  private:
      void rotate_angle(float angle,float x,float y,float z);
  public slots:

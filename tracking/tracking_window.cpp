@@ -2163,93 +2163,99 @@ void tracking_window::on_is_overlay_clicked()
 
 void tracking_window::on_actionOpen_Connectivity_Matrix_triggered()
 {
-    QStringList filenames = QFileDialog::getOpenFileNames(
+    QString filename = QFileDialog::getOpenFileName(
         this,"Open Connectivity Matrices files",QFileInfo(windowTitle()).absolutePath(),
-                "Connectivity files (*.mat);;All files (*)" );
-    if( filenames.isEmpty())
+                "Connectivity file (*.mat *.txt);;All files (*)" );
+    if(filename.isEmpty())
         return;
-    tipl::image<float,2> connectivity;
-    std::string atlas;
-    for(int i = 0;i < filenames.size();++i)
+    if(filename.endsWith(".mat"))
     {
         tipl::io::mat_read in;
-        if(!in.load_from_file(filenames[i].toStdString().c_str()))
+        if(!in.load_from_file(filename.toStdString().c_str()))
         {
-            QMessageBox::information(this,"Error",QString("Failed to load file:")+filenames[i],0);
+            QMessageBox::information(this,"Error","Please save the MAT file using -v4 option");
             return;
-        }
-        if(!in.has("atlas"))
-        {
-            QMessageBox::information(this,"Error",QString("Cannot find atlas matrix in file:")+filenames[i],0);
-            return;
-        }
-        if(i == 0)
-            atlas = in.read_string("atlas");
-        else
-        {
-            if(atlas != in.read_string("atlas"))
-            {
-                QMessageBox::information(this,"Error",QString("Inconsistent atlas setting in file:")+filenames[i],0);
-                return;
-            }
         }
         unsigned int row,col;
         const float* buf = nullptr;
         if(!in.read("connectivity",row,col,buf))
         {
-            QMessageBox::information(this,"Error",QString("Cannot find connectivity matrix in file:")+filenames[i],0);
+            QMessageBox::information(this,"error","Cannot find a matrix named connectivity");
             return;
         }
-        if(i == 0)
+        if(row != col)
         {
-            connectivity.resize(tipl::geometry<2>(row,col));
-            std::copy(buf,buf+row*col,connectivity.begin());
+            QMessageBox::information(this,"error","The connectivity matrix should be a square matrix");
+            return;
         }
-        else
+        tipl::image<float,2> connectivity(tipl::geometry<2>(row,col));
+        std::copy(buf,buf+row*col,connectivity.begin());
+        glWidget->connectivity = std::move(connectivity);
+
+        if(in.has("atlas") && in.read_string("atlas") != "roi")
         {
-            if(row != connectivity.width() || col != connectivity.height())
-            {
-                QMessageBox::information(this,"Error",QString("Inconsistent matrix size in file:")+filenames[i],0);
-                return;
-            }
-            tipl::add(connectivity.begin(),connectivity.end(),buf);
+            std::string atlas = in.read_string("atlas");
+            for(size_t i = 0;i < handle->atlas_list.size();++i)
+                if(atlas == handle->atlas_list[i]->name)
+                {
+                    regionWidget->delete_all_region();
+                    regionWidget->begin_update();
+                    for(size_t j = 0;j < handle->atlas_list[i]->get_list().size();++j)
+                        regionWidget->add_region_from_atlas(handle->atlas_list[i],uint32_t(j));
+                    regionWidget->end_update();
+                    set_data("region_graph",1);
+                    glWidget->update();
+                    break;
+                }
         }
     }
-    tipl::multiply_constant(connectivity,1.0f/tipl::maximum(connectivity));
-    for(size_t i = 0;i < connectivity.size();++i)
-        if(connectivity[i] < 0.05f)
-            connectivity[i] = 0.0f;
-    glWidget->connectivity = std::move(connectivity);
-    if(atlas != "roi")
+    if(regionWidget->regions.empty())
     {
-        for(size_t i = 0;i < handle->atlas_list.size();++i)
-            if(atlas == handle->atlas_list[i]->name)
-            {
-                regionWidget->delete_all_region();
-                regionWidget->begin_update();
-                for(size_t j = 0;j < handle->atlas_list[i]->get_list().size();++j)
-                    regionWidget->add_region_from_atlas(handle->atlas_list[i],uint32_t(j));
-                regionWidget->end_update();
-                set_data("region_graph",1);
-                glWidget->update();
-                return;
-            }
-        QMessageBox::information(this,"Error",QString("Cannot find ")+atlas.c_str()+
-                    " atlas in DSI Studio. Please update DSI Studio package or check the atlas folder",0);
+        QMessageBox::information(this,"error","Please load the regions first for visualization",0);
+        return;
     }
-    else
+    if(filename.endsWith(".txt"))
     {
-        if(regionWidget->regions.empty())
-            QMessageBox::information(this,"Error","Please load the original regions first for visualization",0);
-        else
-            if(regionWidget->regions.size() != glWidget->connectivity.width())
-                QMessageBox::information(this,"Error","The current region list does not match the connectiviti matrix",0);
-            else
-            {
-                set_data("region_graph",1);
-                glWidget->update();
-            }
+        std::vector<float> buf;
+        std::ifstream in(filename.toStdString().c_str());
+        while(in)
+        {
+            std::string v;
+            in >> v;
+            if(v.empty())
+                break;
+            std::istringstream ss(v);
+            buf.push_back(0.0f);
+            ss >> buf.back();
+        }
+        unsigned int dim = uint32_t(std::sqrt(buf.size()));
+        if(dim*dim != buf.size())
+        {
+            QMessageBox::information(this,"error",
+            QString("There are %1 values in the file. The matrix in the text file is not a square matrix.").arg(buf.size()));
+            return;
+        }
+        glWidget->connectivity.resize(tipl::geometry<2>(dim,dim));
+        std::copy(buf.begin(),buf.end(),glWidget->connectivity.begin());
     }
+
+    if(int(regionWidget->regions.size()) != glWidget->connectivity.width())
+    {
+        QMessageBox::information(this,"error",
+            QString("The connectiviti matrix is %1-by-%2, but there are %3 regions. Please make sure the sizes are matched.").
+                arg(glWidget->connectivity.width()).
+                arg(glWidget->connectivity.height()).
+                arg(regionWidget->regions.size()));
+        return;
+    }
+    float max = tipl::maximum(glWidget->connectivity);
+    float min = tipl::minimum(glWidget->connectivity);
+
+    glWidget->two_color_connectivity = (min < 0.0f);
+    glWidget->max_connectivity = std::max<float>(max,-min);
+    set_data("region_graph",1);
+    regionWidget->check_all();
+    glWidget->update();
 }
 
 void tracking_window::on_SlicePos_valueChanged(int value)

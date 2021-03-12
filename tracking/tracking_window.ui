@@ -3587,7 +3587,7 @@ Tracking</string>
   </action>
   <action name="actionOpen_Connectivity_Matrix">
    <property name="text">
-    <string>Graph Visualization...</string>
+    <string>Visualize Graph...</string>
    </property>
   </action>
   <action name="actionKeep_Current_Slice">
