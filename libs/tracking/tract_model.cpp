@@ -3694,6 +3694,13 @@ void ConnectivityMatrix::network_property(std::string& report)
             std::fill(S.begin(),S.end(),1);
             tipl::image<unsigned char,2> P(binary_matrix.geometry());
             tipl::image<float,2> G1(norm_matrix);
+            // per suggestion from Mikail Rubinov, the matrix has to be "granulated"
+            {
+                float eps = max_value*0.001f;
+                for(size_t i = 0;i < G1.size();++i)
+                    if(G1[i] > 0.0f && G1[i] < eps)
+                        G1[i] = eps;
+            }
             std::vector<unsigned int> V;
             V.push_back(i);
             while(q >= V.size())
