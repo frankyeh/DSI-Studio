@@ -172,6 +172,13 @@
           </widget>
          </item>
          <item>
+          <widget class="QCheckBox" name="is_overlay">
+           <property name="text">
+            <string>Overlay</string>
+           </property>
+          </widget>
+         </item>
+         <item>
           <widget class="QColorToolButton" name="min_color_gl">
            <property name="toolTip">
             <string>Set contrast color</string>
@@ -1997,13 +2004,6 @@ Tracking</string>
          </property>
          <property name="autoExclusive">
           <bool>true</bool>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QCheckBox" name="is_overlay">
-         <property name="text">
-          <string>Overlay</string>
          </property>
         </widget>
        </item>
