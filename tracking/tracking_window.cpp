@@ -634,6 +634,62 @@ bool tracking_window::command(QString cmd,QString param,QString param2)
         for(int index = 0;index < param_list.size();++index)
             s.setValue(param_list[index],renderWidget->getData(param_list[index]));
     }
+    if(cmd == "save_rendering_setting")
+    {
+        QString filename = param;
+        QSettings s(filename, QSettings::IniFormat);
+        QStringList param_list = renderWidget->treemodel->getChildren("ROI");
+        param_list += renderWidget->treemodel->getChildren("Rendering");
+        param_list += renderWidget->treemodel->getChildren("Slice");
+        param_list += renderWidget->treemodel->getChildren("Tract");
+        param_list += renderWidget->treemodel->getChildren("Region");
+        param_list += renderWidget->treemodel->getChildren("Surface");
+        param_list += renderWidget->treemodel->getChildren("Device");
+        param_list += renderWidget->treemodel->getChildren("Label");
+        param_list += renderWidget->treemodel->getChildren("ODF");
+        for(int index = 0;index < param_list.size();++index)
+            s.setValue(param_list[index],renderWidget->getData(param_list[index]));
+    }
+    if(cmd == "load_rendering_setting")
+    {
+        QString filename = param;
+        if(QFileInfo(filename).exists())
+        {
+            QSettings s(filename, QSettings::IniFormat);
+            QStringList param_list = renderWidget->treemodel->getChildren("ROI");
+            param_list += renderWidget->treemodel->getChildren("Rendering");
+            param_list += renderWidget->treemodel->getChildren("Slice");
+            param_list += renderWidget->treemodel->getChildren("Tract");
+            param_list += renderWidget->treemodel->getChildren("Region");
+            param_list += renderWidget->treemodel->getChildren("Surface");
+            param_list += renderWidget->treemodel->getChildren("Device");
+            param_list += renderWidget->treemodel->getChildren("Label");
+            param_list += renderWidget->treemodel->getChildren("ODF");
+            for(int index = 0;index < param_list.size();++index)
+                if(s.contains(param_list[index]))
+                    set_data(param_list[index],s.value(param_list[index]));
+        }
+    }
+    if(cmd == "save_tracking_setting")
+    {
+        QString filename = param;
+        QSettings s(filename, QSettings::IniFormat);
+        QStringList param_list = renderWidget->treemodel->getChildren("Tracking");
+        for(int index = 0;index < param_list.size();++index)
+            s.setValue(param_list[index],renderWidget->getData(param_list[index]));
+    }
+    if(cmd == "load_tracking_setting")
+    {
+        QString filename = param;
+        if(QFileInfo(filename).exists())
+        {
+            QSettings s(filename, QSettings::IniFormat);
+            QStringList param_list = renderWidget->treemodel->getChildren("Tracking");
+            for(int index = 0;index < param_list.size();++index)
+                if(s.contains(param_list[index]))
+                    set_data(param_list[index],s.value(param_list[index]));
+        }
+    }
     if(cmd == "restore_rendering")
     {
         renderWidget->setDefault("ROI");
@@ -1329,14 +1385,10 @@ void tracking_window::on_actionSave_tracking_parameters_triggered()
 {
     QString filename = QFileDialog::getSaveFileName(
                            this,
-                           "Save INI files",QFileInfo(windowTitle()).baseName()+".ini","Setting file (*.ini);;All files (*)");
+                           "Save INI files",QFileInfo(windowTitle()).baseName()+"_tracking.ini","Setting file (*.ini);;All files (*)");
     if (filename.isEmpty())
         return;
-    QSettings s(filename, QSettings::IniFormat);
-    QStringList param_list = renderWidget->treemodel->getChildren("Tracking");
-    for(int index = 0;index < param_list.size();++index)
-        s.setValue(param_list[index],renderWidget->getData(param_list[index]));
-
+    command("save_tracking_setting",filename);
 }
 
 void tracking_window::on_actionLoad_tracking_parameters_triggered()
@@ -1345,21 +1397,17 @@ void tracking_window::on_actionLoad_tracking_parameters_triggered()
                            this,"Open INI files",QFileInfo(windowTitle()).absolutePath(),"Setting file (*.ini);;All files (*)");
     if (filename.isEmpty())
         return;
-    QSettings s(filename, QSettings::IniFormat);
-    QStringList param_list = renderWidget->treemodel->getChildren("Tracking");
-    for(int index = 0;index < param_list.size();++index)
-        if(s.contains(param_list[index]))
-            set_data(param_list[index],s.value(param_list[index]));
+    command("load_tracking_setting",filename);
 }
 
 void tracking_window::on_actionSave_Rendering_Parameters_triggered()
 {
     QString filename = QFileDialog::getSaveFileName(
                            this,
-                           "Save INI files",QFileInfo(windowTitle()).baseName()+".ini","Setting file (*.ini);;All files (*)");
+                           "Save INI files",QFileInfo(windowTitle()).baseName()+"_rendering.ini","Setting file (*.ini);;All files (*)");
     if (filename.isEmpty())
         return;
-    command("save_setting",filename);
+    command("save_rendering_setting",filename);
 }
 
 void tracking_window::on_actionLoad_Rendering_Parameters_triggered()
@@ -1368,7 +1416,7 @@ void tracking_window::on_actionLoad_Rendering_Parameters_triggered()
                            this,"Open INI files",QFileInfo(windowTitle()).absolutePath(),"Setting file (*.ini);;All files (*)");
     if (filename.isEmpty())
         return;
-    command("load_setting",filename);
+    command("load_rendering_setting",filename);
 }
 
 void tracking_window::on_addRegionFromAtlas_clicked()
