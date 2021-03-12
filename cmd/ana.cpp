@@ -93,12 +93,14 @@ void export_track_info(std::shared_ptr<fib_data> handle,
             std::copy(data_profile.begin(),data_profile.end(),std::ostream_iterator<float>(report,"\t"));
             if(!data_ci1.empty())
             {
-                report << "CI";
+                report << std::endl;
+                report << "CI\t";
                 std::copy(data_ci1.begin(),data_ci1.end(),std::ostream_iterator<float>(report,"\t"));
             }
             if(!data_ci2.empty())
             {
-                report << "CI";
+                report << std::endl;
+                report << "CI\t";
                 std::copy(data_ci2.begin(),data_ci2.end(),std::ostream_iterator<float>(report,"\t"));
             }
             report << std::endl;
