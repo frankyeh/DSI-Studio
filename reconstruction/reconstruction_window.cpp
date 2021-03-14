@@ -955,7 +955,7 @@ void reconstruction_window::on_open_ddi_study_src_clicked()
     if( filename.isEmpty())
         return;
     command("[Step T2b(2)][Compare SRC]",filename.toStdString());
-    ui->ddi_file->setText(QFileInfo(filename).baseName());
+    ui->ddi_file->setText(QString("Compared with ") + QFileInfo(filename).baseName());
 }
 
 void reconstruction_window::on_SagView_clicked()
