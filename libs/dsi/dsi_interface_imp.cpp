@@ -187,7 +187,7 @@ bool ImageModel::reconstruction(void)
                     rotate_to_mni(2.0f);
                 if(!compare_src(voxel.study_src_file_path.c_str()))
                 {
-                    error_msg = "Failed to load DDI study SRC file.";
+                    error_msg = "Failed to load SRC file.";
                     return false;
                 }
                 voxel.recon_report <<
