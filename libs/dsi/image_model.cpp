@@ -1465,6 +1465,22 @@ bool ImageModel::compare_src(const char* file_name)
     }
     study_src = bl;
 
+    // apply preprocessing steps
+    {
+        std::istringstream commands(voxel.steps);
+        std::string cmd;
+        std::cout << "applying following commands to comapred SRC" << std::endl;
+        while(std::getline(commands,cmd))
+        {
+            if(cmd.find("[Edit]") != std::string::npos &&
+               cmd.find('=') == std::string::npos)
+            {
+                std::cout << cmd << std::endl;
+                    study_src->command(cmd);
+            }
+        }
+    }
+
     voxel.study_name = QFileInfo(file_name).baseName().toStdString();
     voxel.compare_voxel = &(study_src->voxel);
     {
@@ -1478,11 +1494,14 @@ bool ImageModel::compare_src(const char* file_name)
         auto& If = study_src->voxel.fib_fa; // follow-up
         auto& Ib_vs = voxel.vs;
         auto& If_vs = study_src->voxel.vs;
-        tipl::transformation_matrix<double> arg;
         bool terminated = false;
         check_prog(0,1);
-        tipl::reg::two_way_linear_mr(Ib,Ib_vs,If,If_vs,
-                                        arg,tipl::reg::rigid_body,tipl::reg::correlation(),terminated);
+        tipl::affine_transform<double> T;
+        tipl::reg::linear(Ib,Ib_vs,If,If_vs,
+                T,tipl::reg::rigid_body,tipl::reg::correlation(),terminated,0.01,0,tipl::reg::narrow_bound);
+        tipl::reg::linear(Ib,Ib_vs,If,If_vs,
+                T,tipl::reg::rigid_body,tipl::reg::correlation(),terminated,0.001,0,tipl::reg::narrow_bound);
+        tipl::transformation_matrix<double> arg(T,Ib.geometry(),Ib_vs,If.geometry(),If_vs);
         check_prog(1,2);
         // nonlinear part
         tipl::image<tipl::vector<3>,3> cdm_dis;
@@ -1502,17 +1521,18 @@ bool ImageModel::compare_src(const char* file_name)
                 tipl::resample_dis(study_src->dwi_sum,result,arg,cdm_dis,tipl::cubic);
                 gz_nifti o1,o2,o3;
                 o1.set_voxel_size(voxel.vs);
-                o1.load_from_image(dwi_sum);
-                o1.save_to_file("d:/1.nii.gz");
+                o1.load_from_image(Ib);
+                o1.save_to_file("d:/Ib.nii.gz");
 
                 o2.set_voxel_size(study_src->voxel.vs);
-                o2.load_from_image(new_dwi_sum);
-                o2.save_to_file("d:/2.nii.gz");
+                o2.load_from_image(If);
+                o2.save_to_file("d:/If.nii.gz");
 
-                o3.set_voxel_size(study_src->voxel.vs);
-                o3.load_from_image(result);
-                o3.save_to_file("d:/3.nii.gz");
-            }*/
+                o3.set_voxel_size(voxel.vs);
+                o3.load_from_image(Iff);
+                o3.save_to_file("d:/Iff.nii.gz");
+            }
+            */
         }
         study_src->rotate(Ib.geometry(),arg,cdm_dis);
         study_src->voxel.vs = voxel.vs;
@@ -1524,13 +1544,6 @@ bool ImageModel::compare_src(const char* file_name)
     // correct b_table first
     if(voxel.check_btable)
         study_src->check_b_table();
-
-
-    for(size_t i = 0;i < voxel.mask.size();++i)
-        if(study_src->src_dwi_data[0][i] == 0)
-            voxel.mask[i] = 0;
-
-
 
     // Signal match on b0 to allow for quantitative MRI in DDI
     {
