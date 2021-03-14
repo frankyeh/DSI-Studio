@@ -1,6 +1,6 @@
-ROI/Orientation Convention/orientation_convention/Radiology:Neurology/0
-ROI/Zoom/roi_zoom/float:0.2:40:0.5:1/5.0
-ROI/Draw Edge/roi_edge/Off:On/0
+ROI/Orientation Convention/orientation_convention/Radiology:Neurology/0/Radiology views from foot, whereas Neurology views from top
+ROI/Zoom/roi_zoom/float:0.2:40:0.5:1/5.0/Zoom in or zoom out
+ROI/Show Edge/roi_edge/Off:On/0/Show edge of the region
 ROI/Fiber Direction/roi_fiber/Off:On:1st:2nd/1
 ROI/Fiber Color/roi_fiber_color/RGB:red:green:blue/0
 ROI/Fiber Width/roi_fiber_width/float:0.1:1:0.1:2/0.2
@@ -9,20 +9,20 @@ ROI/"R" label/roi_label/Off:On/1
 ROI/Position Line/roi_position/Off:On/1
 ROI/Ruler/roi_ruler/Off:On/1
 ROI/Slice Layout/roi_layout/Single Slice:3 Slices:Mosaic:Mosaic 2:Mosaic 4:Mosaic 8:Mosaic 16/0
-ROI/Output Format/roi_format/nii.gz:mat:txt/0
+ROI/Default Output Format/roi_format/nii.gz:mat:txt/0
 Tracking/Tracking Index/tracking_index/fa:adc/0/The anisotropy metrics that will be used as the termination criterion
 Tracking/Tracking Threshold (0=random)/fa_threshold/float:0:2:0.01:5/0.0/The anisotropy threshold to terminate tracking
 Tracking/Angular Threshold (0=random)/turning_angle/int:0:90:5/0/The angular threshold to terminate tracking
 Tracking/Step Size(mm)(0=random)/step_size/float:0.00:10:0.1:2/0/The propagation distance for each tracking iteration
 Tracking/Min Length(mm)/min_length/float:0:800:10:1/30/Remove tracks with length shorter than this threshold
 Tracking/Max Length(mm)/max_length/float:0:10000:10:1/300/Remove tracks with length longer than this threshold
-Tracking/Terminate if/track_count/int:1:100000000:1000/50000
+Tracking/Terminate if/track_count/int:1:100000000:1000/50000/Specify the number of seeds or tracks to generate
 Tracking/ /tracking_plan/Seeds:Tracts/0
-Tracking/Topology-Informed Pruning (iteration)/auto_tip/int:0:100:4/16
-Tracking/Autotrack tolerance (mm)/autotrack_tolerance/float:0:100:10:1/16
+Tracking/Topology-Informed Pruning (iteration)/auto_tip/int:0:100:4/16/The number of pruning iterations used to remove noisy tracks
+Tracking/Autotrack tolerance (mm)/autotrack_tolerance/float:0:100:10:1/16/The inclusion distance for automated fiber tracking
 Tracking/Differential Tracking/Tracking_dT
-Tracking_dT/Differential Tracking Index/dt_index/none:adc/0
-Tracking_dT/Differential Tracking Threshold/dt_threshold/float:0.0:1.0:0.05:2/0.2
+Tracking_dT/Differential Tracking Index/dt_index/none:adc/0/The metric that drives the difference
+Tracking_dT/Differential Tracking Threshold/dt_threshold/float:0.0:1.0:0.05:2/0.2/The percentage threshold for tracking the differences (0.05 tracks differences >5%)
 Tracking/Advanced Options/Tracking_adv
 Tracking_adv/Tracking Algorithm/tracking_method/Stremline(Euler):RK4:Voxel tracking/0
 Tracking_adv/Smoothing (1=random)/smoothing/float:-1.5:1:0.1:2/0
