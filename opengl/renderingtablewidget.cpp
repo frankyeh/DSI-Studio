@@ -22,28 +22,28 @@ void RenderingItem::setValue(QVariant new_value)
         return;
     if(QString(GUI->metaObject()->className()) == "QSlider")
     {
-        QSlider *slider = (QSlider*)GUI;
+        QSlider *slider = reinterpret_cast<QSlider*>(GUI);
         if(slider->maximum() == 10) // int
             slider->setValue(new_value.toInt());
         else
-            slider->setValue(new_value.toFloat()*5.0);
+            slider->setValue(int(new_value.toFloat()*5.0f));
     }
     if(QString(GUI->metaObject()->className()) == "QColorToolButton")
     {
-        ((QColorToolButton*)GUI)->setColor(new_value.toInt());
+        reinterpret_cast<QColorToolButton*>(GUI)->setColor(uint32_t(new_value.toInt()));
     }
     if(QString(GUI->metaObject()->className()) == "QDoubleSpinBox")
     {
-        ((QDoubleSpinBox*)GUI)->setValue(new_value.toFloat());
+        reinterpret_cast<QDoubleSpinBox*>(GUI)->setValue(double(new_value.toFloat()));
     }
     if(QString(GUI->metaObject()->className()) == "QSpinBox")
     {
-        ((QSpinBox*)GUI)->setValue(new_value.toInt());
+        reinterpret_cast<QSpinBox*>(GUI)->setValue(new_value.toInt());
 
     }
     if(QString(GUI->metaObject()->className()) == "QComboBox")
     {
-        ((QComboBox*)GUI)->setCurrentIndex(new_value.toInt());
+        reinterpret_cast<QComboBox*>(GUI)->setCurrentIndex(new_value.toInt());
     }
 }
 void RenderingItem::setMinMax(float min,float max,float step)
@@ -52,9 +52,9 @@ void RenderingItem::setMinMax(float min,float max,float step)
         return;
     if(QString(GUI->metaObject()->className()) == "QDoubleSpinBox")
     {
-        ((QDoubleSpinBox*)GUI)->setMaximum(max);
-        ((QDoubleSpinBox*)GUI)->setMinimum(min);
-        ((QDoubleSpinBox*)GUI)->setSingleStep(step);
+        reinterpret_cast<QDoubleSpinBox*>(GUI)->setMaximum(double(max));
+        reinterpret_cast<QDoubleSpinBox*>(GUI)->setMinimum(double(min));
+        reinterpret_cast<QDoubleSpinBox*>(GUI)->setSingleStep(double(step));
     }
 }
 void RenderingItem::setList(QStringList list)
@@ -63,8 +63,8 @@ void RenderingItem::setList(QStringList list)
         return;
     if(QString(GUI->metaObject()->className()) == "QComboBox")
     {
-        ((QComboBox*)GUI)->clear();
-        ((QComboBox*)GUI)->addItems(list);
+        reinterpret_cast<QComboBox*>(GUI)->clear();
+        reinterpret_cast<QComboBox*>(GUI)->addItems(list);
     }
 }
 
@@ -119,9 +119,9 @@ QWidget *RenderingDelegate::createEditor(QWidget *parent,
             else
                 dsb->setSingleStep((dsb->maximum()-dsb->minimum())/10);
             if(string_list.size() > 4)
-                dsb->setDecimals(string_list[4].toDouble());
+                dsb->setDecimals(string_list[4].toInt());
             else
-                dsb->setDecimals(std::max<double>((double)0,4-std::log10(dsb->maximum())));
+                dsb->setDecimals(std::max<int>(0,4-int(std::log10(dsb->maximum()))));
             connect(dsb, SIGNAL(valueChanged(double)), this, SLOT(emitCommitData()));
             dsb->setMaximumWidth(100);
             dsb->setToolTip(cur_node->hint);
@@ -166,29 +166,29 @@ void RenderingDelegate::setEditorData(QWidget *editor,
     QString string = index.data(Qt::UserRole+1).toString();
     if (string == QString("int"))
     {
-        ((QSlider*)editor)->setValue(index.data(Qt::UserRole).toInt());
+        reinterpret_cast<QSlider*>(editor)->setValue(index.data(Qt::UserRole).toInt());
         return;
     }
     if (string == QString("slider"))
     {
-        ((QSlider*)editor)->setValue(index.data(Qt::UserRole).toFloat()*5.0);
+        reinterpret_cast<QSlider*>(editor)->setValue(int(index.data(Qt::UserRole).toFloat()*5.0f));
         return;
     }
     if (string == QString("color"))
     {
-        ((QColorToolButton*)editor)->setColor(index.data(Qt::UserRole).toInt());
+        reinterpret_cast<QColorToolButton*>(editor)->setColor(uint32_t(index.data(Qt::UserRole).toInt()));
         return;
     }
     QStringList string_list = index.data(Qt::UserRole+1).toStringList();
     if (string_list.size() > 1)
     {
         if(string_list[0] == QString("float"))
-            ((QDoubleSpinBox*)editor)->setValue(index.data(Qt::UserRole).toFloat());
+            reinterpret_cast<QDoubleSpinBox*>(editor)->setValue(index.data(Qt::UserRole).toDouble());
         else
             if(string_list[0] == QString("int"))
-                ((QSpinBox*)editor)->setValue(index.data(Qt::UserRole).toInt());
+                reinterpret_cast<QSpinBox*>(editor)->setValue(index.data(Qt::UserRole).toInt());
             else
-                ((QComboBox*)editor)->setCurrentIndex(index.data(Qt::UserRole).toInt());
+                reinterpret_cast<QComboBox*>(editor)->setCurrentIndex(index.data(Qt::UserRole).toInt());
         return;
     }
 
@@ -206,18 +206,18 @@ void RenderingDelegate::setModelData(QWidget *editor, QAbstractItemModel *model,
     QString string = index.data(Qt::UserRole+1).toString();
     if (string == QString("int"))
     {
-        model->setData(index,((QSlider*)editor)->value(),Qt::UserRole);
+        model->setData(index,reinterpret_cast<QSlider*>(editor)->value(),Qt::UserRole);
         return;
     }
     if (string == QString("slider"))
     {
-        model->setData(index,((QSlider*)editor)->value()/5.0,Qt::UserRole);
+        model->setData(index,reinterpret_cast<QSlider*>(editor)->value()/5.0,Qt::UserRole);
         return;
     }
 
     if (string == QString("color"))
     {
-        model->setData(index,(int)(((QColorToolButton*)editor)->color().rgb()),Qt::UserRole);
+        model->setData(index,int(reinterpret_cast<QColorToolButton*>(editor)->color().rgb()),Qt::UserRole);
         return;
     }
 
@@ -225,12 +225,12 @@ void RenderingDelegate::setModelData(QWidget *editor, QAbstractItemModel *model,
     if (string_list.size() > 1)
     {
         if(string_list[0] == QString("float"))
-            model->setData(index,((QDoubleSpinBox*)editor)->value(),Qt::UserRole);
+            model->setData(index,reinterpret_cast<QDoubleSpinBox*>(editor)->value(),Qt::UserRole);
         else
             if(string_list[0] == QString("int"))
-                model->setData(index,((QSpinBox*)editor)->value(),Qt::UserRole);
+                model->setData(index,reinterpret_cast<QSpinBox*>(editor)->value(),Qt::UserRole);
             else
-                model->setData(index,((QComboBox*)editor)->currentIndex(),Qt::UserRole);
+                model->setData(index,reinterpret_cast<QComboBox*>(editor)->currentIndex(),Qt::UserRole);
         return;
     }
     QItemDelegate::setModelData(editor,model,index);
