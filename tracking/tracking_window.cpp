@@ -675,6 +675,8 @@ bool tracking_window::command(QString cmd,QString param,QString param2)
         QString filename = param;
         QSettings s(filename, QSettings::IniFormat);
         QStringList param_list = renderWidget->treemodel->getChildren("Tracking");
+        param_list += renderWidget->treemodel->getChildren("Tracking_dT");
+        param_list += renderWidget->treemodel->getChildren("Tracking_adv");
         for(int index = 0;index < param_list.size();++index)
             s.setValue(param_list[index],renderWidget->getData(param_list[index]));
     }
@@ -685,6 +687,8 @@ bool tracking_window::command(QString cmd,QString param,QString param2)
         {
             QSettings s(filename, QSettings::IniFormat);
             QStringList param_list = renderWidget->treemodel->getChildren("Tracking");
+            param_list += renderWidget->treemodel->getChildren("Tracking_dT");
+            param_list += renderWidget->treemodel->getChildren("Tracking_adv");
             for(int index = 0;index < param_list.size();++index)
                 if(s.contains(param_list[index]))
                     set_data(param_list[index],s.value(param_list[index]));
@@ -780,11 +784,11 @@ void tracking_window::initialize_tracking_index(int p)
 {
     QStringList tracking_index_list,dt_list;
     dt_list << "none";
-    for(int index = 0;index < handle->dir.index_name.size();++index)
+    for(size_t index = 0;index < handle->dir.index_name.size();++index)
         if(handle->dir.index_name[index].find("dec_") != 0 &&
            handle->dir.index_name[index].find("inc_") != 0)
             tracking_index_list.push_back(handle->dir.index_name[index].c_str());
-    for(int index = 0;index < handle->dir.dt_index_name.size();++index)
+    for(size_t index = 0;index < handle->dir.dt_index_name.size();++index)
         dt_list.push_back(handle->dir.dt_index_name[index].c_str());
 
     renderWidget->setList("tracking_index",tracking_index_list);
@@ -885,7 +889,10 @@ void tracking_window::set_tracking_param(ThreadData& tracking_thread)
     tracking_thread.param.default_otsu = renderWidget->getData("otsu_threshold").toFloat();
     tracking_thread.param.tip_iteration =
             // only used in automatic fiber tracking
-            ui->target->currentIndex() > 0 ? renderWidget->getData("auto_tip").toInt() : 0;
+            (ui->target->currentIndex() > 0 ||
+            // or differential tractography
+            renderWidget->getData("dt_index").toInt() > 0)
+            ? renderWidget->getData("auto_tip").toInt() : 0;
 }
 float tracking_window::get_scene_zoom(void)
 {
@@ -1458,6 +1465,8 @@ void tracking_window::on_actionRestore_Settings_triggered()
 void tracking_window::on_actionRestore_Tracking_Settings_triggered()
 {
     renderWidget->setDefault("Tracking");
+    renderWidget->setDefault("Tracking_dT");
+    renderWidget->setDefault("Tracking_adv");
     on_tracking_index_currentIndexChanged((*this)["tracking_index"].toInt());
     glWidget->updateGL();
 }

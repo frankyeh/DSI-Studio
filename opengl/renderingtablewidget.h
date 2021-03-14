@@ -70,6 +70,7 @@ class RenderingItem
      QObject* GUI;
      QString id;
      QVariant title,type,value;
+     QString hint;
 
  };
 
@@ -98,7 +99,8 @@ public:
     int rowCount(const QModelIndex &parent = QModelIndex()) const;
     int columnCount(const QModelIndex &parent = QModelIndex()) const;
 public:
-    QModelIndex addItem(QString root_name,QString id,QVariant title, QVariant type, QVariant value);
+    void addNode(QString root_name,QString id,QVariant title);
+    QModelIndex addItem(QString root_name,QString id,QVariant title, QVariant type, QVariant value, QString hint = QString());
     QVariant getData(QString name)
     {
         std::map<QString,RenderingItem*>::const_iterator iter = name_data_mapping.find(name);

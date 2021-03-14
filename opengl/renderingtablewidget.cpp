@@ -72,6 +72,7 @@ QWidget *RenderingDelegate::createEditor(QWidget *parent,
         const QStyleOptionViewItem &option,
         const QModelIndex &index) const
 {
+    auto cur_node = reinterpret_cast<RenderingItem*>(index.internalPointer());
     QString string = index.data(Qt::UserRole+1).toString();
     if (string == QString("int"))
     {
@@ -80,7 +81,8 @@ QWidget *RenderingDelegate::createEditor(QWidget *parent,
         sd->setRange(0,10);
         sd->setMaximumWidth(100);
         connect(sd, SIGNAL(valueChanged(int)), this, SLOT(emitCommitData()));
-        ((RenderingItem*)index.internalPointer())->GUI = sd;
+        sd->setToolTip(cur_node->hint);
+        cur_node->GUI = sd;
         return sd;
     }
     if (string == QString("slider"))
@@ -90,7 +92,8 @@ QWidget *RenderingDelegate::createEditor(QWidget *parent,
         sd->setRange(0,50);
         sd->setMaximumWidth(100);
         connect(sd, SIGNAL(valueChanged(int)), this, SLOT(emitCommitData()));
-        ((RenderingItem*)index.internalPointer())->GUI = sd;
+        sd->setToolTip(cur_node->hint);
+        cur_node->GUI = sd;
         return sd;
     }
 
@@ -99,7 +102,8 @@ QWidget *RenderingDelegate::createEditor(QWidget *parent,
         QColorToolButton* sd = new QColorToolButton(parent);
         sd->setMaximumWidth(100);
         connect(sd, SIGNAL(clicked()), this, SLOT(emitCommitData()));
-        ((RenderingItem*)index.internalPointer())->GUI = sd;
+        sd->setToolTip(cur_node->hint);
+        cur_node->GUI = sd;
         return sd;
     }
     QStringList string_list = index.data(Qt::UserRole+1).toStringList();
@@ -120,7 +124,8 @@ QWidget *RenderingDelegate::createEditor(QWidget *parent,
                 dsb->setDecimals(std::max<double>((double)0,4-std::log10(dsb->maximum())));
             connect(dsb, SIGNAL(valueChanged(double)), this, SLOT(emitCommitData()));
             dsb->setMaximumWidth(100);
-            ((RenderingItem*)index.internalPointer())->GUI = dsb;
+            dsb->setToolTip(cur_node->hint);
+            cur_node->GUI = dsb;
             return dsb;
         }
         if(string_list[0] == QString("int"))
@@ -134,7 +139,8 @@ QWidget *RenderingDelegate::createEditor(QWidget *parent,
                 dsb->setSingleStep(std::max<int>(1,(dsb->maximum()-dsb->minimum())/10));
             dsb->setMaximumWidth(100);
             connect(dsb, SIGNAL(valueChanged(int)), this, SLOT(emitCommitData()));
-            ((RenderingItem*)index.internalPointer())->GUI = dsb;
+            dsb->setToolTip(cur_node->hint);
+            cur_node->GUI = dsb;
             return dsb;
         }
         {
@@ -144,7 +150,8 @@ QWidget *RenderingDelegate::createEditor(QWidget *parent,
             cb->setMaximumWidth(100);
             cb->setFocusPolicy(Qt::WheelFocus);
             connect(cb, SIGNAL(currentIndexChanged(int)), this, SLOT(emitCommitData()));
-            ((RenderingItem*)index.internalPointer())->GUI = cb;
+            cb->setToolTip(cur_node->hint);
+            cur_node->GUI = cb;
             return cb;
         }
     }
@@ -191,7 +198,7 @@ void RenderingDelegate::setEditorData(QWidget *editor,
 void RenderingDelegate::setModelData(QWidget *editor, QAbstractItemModel *model,
                                      const QModelIndex &index) const
 {
-    if(index.column() != 1)
+    if(index.column() == 0)
     {
         QItemDelegate::setModelData(editor,model,index);
         return;
@@ -274,19 +281,22 @@ QVariant TreeModel::data(const QModelIndex &index, int role) const
 {
     if (!index.isValid())
         return QVariant();
-
-    if (index.column() == 0 && role == Qt::CheckStateRole &&
-        ((RenderingItem*)index.internalPointer())->type == QString("check"))
-        return ((RenderingItem*)index.internalPointer())->value;
-
-    if (index.column() == 0 && role == Qt::DisplayRole)
-        return ((RenderingItem*)index.internalPointer())->title;
-
-    if (index.column() == 1 && role == Qt::UserRole)
-        return ((RenderingItem*)index.internalPointer())->value;
-
-    if (index.column() == 1 && role == Qt::UserRole+1)
-        return ((RenderingItem*)index.internalPointer())->type;
+    auto cur_node = reinterpret_cast<RenderingItem*>(index.internalPointer());
+    if (index.column() == 0) // title column
+    {
+        if(role == Qt::CheckStateRole &&
+            cur_node->type == QString("check"))
+            return cur_node->value;
+        if(role == Qt::DisplayRole)
+            return cur_node->title;
+    }
+    else // editor column
+    {
+        if (role == Qt::UserRole)
+            return cur_node->value;
+        if (role == Qt::UserRole+1)
+            return cur_node->type;
+    }
 
     if (role == Qt::SizeHintRole)
         return QSize(250,24);
@@ -297,49 +307,52 @@ bool TreeModel::setData ( const QModelIndex & index, const QVariant & value, int
 {
     if (!index.isValid())
         return false;
-    if(index.column() == 0)
+    auto cur_node = reinterpret_cast<RenderingItem*>(index.internalPointer());
+    if(index.column() == 0) // title column
     {
         if (role == Qt::DisplayRole)
-            ((RenderingItem*)index.internalPointer())->title = value;
+            cur_node->title = value;
         if (role == Qt::CheckStateRole &&
-            ((RenderingItem*)index.internalPointer())->type == QString("check"))
+            cur_node->type == QString("check"))
         {
-            QVariant old_value = ((RenderingItem*)index.internalPointer())->value;
-            ((RenderingItem*)index.internalPointer())->value = value;
+            QVariant old_value = cur_node->value;
+            cur_node->value = value;
             if(old_value != value)
                 emit dataChanged(index,index);
         }
         return true;
     }
-    else
-    // column = 1
+    else// editor column
+    {
         switch(role)
         {
         case Qt::UserRole:
             {
-                QVariant old_value = ((RenderingItem*)index.internalPointer())->value;
-                ((RenderingItem*)index.internalPointer())->value = value;
+                QVariant old_value = cur_node->value;
+                cur_node->value = value;
                 if(old_value != value)
                     emit dataChanged(index,index);
             }
             return true;
         case Qt::UserRole+1:
-            ((RenderingItem*)index.internalPointer())->type = value;
+            cur_node->type = value;
             return true;
         case Qt::DisplayRole:
             return true;
         }
+    }
     return false;
 }
 
 Qt::ItemFlags TreeModel::flags(const QModelIndex &index) const
 {
     if (!index.isValid())
-        return 0;
-    if (index.column() == 1 && !((RenderingItem*)index.internalPointer())->type.isNull())
+        return Qt::NoItemFlags;
+    auto cur_node = reinterpret_cast<RenderingItem*>(index.internalPointer());
+    if (index.column() >= 1 && !cur_node->type.isNull())
         return Qt::ItemIsEnabled | Qt::ItemIsEditable;
     else
-    if(((RenderingItem*)index.internalPointer())->type == QString("check"))
+    if(cur_node->type == QString("check"))
     {
         return Qt::ItemIsUserCheckable | Qt::ItemIsEnabled;
     }
@@ -351,7 +364,7 @@ QVariant TreeModel::headerData(int section, Qt::Orientation orientation,
                                int role) const
 {
     if (orientation == Qt::Horizontal && role == Qt::DisplayRole)
-        (section) ? root->title : root->type;
+        return (section) ? root->title : root->type;
     return QVariant();
 }
 
@@ -380,7 +393,7 @@ QModelIndex TreeModel::parent(const QModelIndex &index) const
     if (!index.isValid())
         return QModelIndex();
 
-    RenderingItem *childItem = static_cast<RenderingItem*>(index.internalPointer());
+    RenderingItem *childItem = reinterpret_cast<RenderingItem*>(index.internalPointer());
     RenderingItem *parentItem = childItem->parent();
 
     if (parentItem == root.get())
@@ -402,14 +415,19 @@ int TreeModel::rowCount(const QModelIndex &parent) const
 
     return parentItem->childCount();
 }
-
-QModelIndex TreeModel::addItem(QString root_name,QString id,QVariant title, QVariant type, QVariant value)
+void TreeModel::addNode(QString root_name,QString id,QVariant title)
+{
+    root_mapping[id] = new RenderingItem(title,"",id,0,root_mapping[root_name]);
+}
+QModelIndex TreeModel::addItem(QString root_name,QString id,QVariant title, QVariant type, QVariant value,QString hint)
 {
     if(!name_data_mapping[id])
     {
         QSettings settings;
         settings.beginGroup("Rendering Options");
-        name_data_mapping[id] = new RenderingItem(title,type,id,settings.value(id,value),root_mapping[root_name]);
+        auto item = new RenderingItem(title,type,id,settings.value(id,value),root_mapping[root_name]);
+        item->hint = hint;
+        name_data_mapping[id] = item;
         name_default_values[id] = value;
         settings.endGroup();
     }
@@ -460,14 +478,19 @@ void RenderingTableWidget::initialize(void)
     while (!in.atEnd())
     {
         QStringList list = in.readLine().split('/');
-        if(list.size() != 5)
+        if(list.size() == 3) // tree node
+        {
+            treemodel->addNode(list[0],list[2],list[1]);
+            continue;
+        }
+        if(list.size() < 5)
             continue;
         QStringList value_list = list[3].split(':');
         QModelIndex index;
         if(value_list.size() == 1)
-            index = treemodel->addItem(list[0],list[2],list[1],list[3],list[4].toDouble());
+            index = treemodel->addItem(list[0],list[2],list[1],list[3],list[4].toDouble(),list.size() == 6 ? list[5]:QString());
         else
-            index = treemodel->addItem(list[0],list[2],list[1],value_list,list[4].toDouble());
+            index = treemodel->addItem(list[0],list[2],list[1],value_list,list[4].toDouble(),list.size() == 6 ? list[5]:QString());
         openPersistentEditor(index);
     }
 }
@@ -477,46 +500,47 @@ void RenderingTableWidget::setDefault(QString parent_id)
 }
 void RenderingTableWidget::dataChanged(const QModelIndex &, const QModelIndex &bottomRight)
 {
-    if(((RenderingItem*)bottomRight.internalPointer())->id == "tracking_index")
+    auto cur_node = reinterpret_cast<RenderingItem*>(bottomRight.internalPointer());
+    if(cur_node->id == "tracking_index")
     {
-        cur_tracking_window.on_tracking_index_currentIndexChanged(((RenderingItem*)bottomRight.internalPointer())->value.toInt());
+        cur_tracking_window.on_tracking_index_currentIndexChanged(cur_node->value.toInt());
         return;
     }
-    if(((RenderingItem*)bottomRight.internalPointer())->id == "dt_index")
+    if(cur_node->id == "dt_index")
     {
-        cur_tracking_window.on_dt_index_currentIndexChanged(((RenderingItem*)bottomRight.internalPointer())->value.toInt());
+        cur_tracking_window.on_dt_index_currentIndexChanged(cur_node->value.toInt());
         return;
     }
-    if(((RenderingItem*)bottomRight.internalPointer())->id == "roi_zoom")
+    if(cur_node->id == "roi_zoom")
     {
-        cur_tracking_window.set_roi_zoom(((RenderingItem*)bottomRight.internalPointer())->value.toInt());
+        cur_tracking_window.set_roi_zoom(cur_node->value.toInt());
         cur_tracking_window.scene.show_slice();
         return;
     }
-    if(((RenderingItem*)bottomRight.internalPointer())->id == "roi_position")
+    if(cur_node->id == "roi_position")
     {
-        cur_tracking_window.on_show_position_toggled(((RenderingItem*)bottomRight.internalPointer())->value.toBool());
+        cur_tracking_window.on_show_position_toggled(cur_node->value.toBool());
         return;
     }
-    if(((RenderingItem*)bottomRight.internalPointer())->id == "roi_ruler")
+    if(cur_node->id == "roi_ruler")
     {
-        cur_tracking_window.on_show_ruler_toggled(((RenderingItem*)bottomRight.internalPointer())->value.toBool());
+        cur_tracking_window.on_show_ruler_toggled(cur_node->value.toBool());
         return;
     }
-    if(((RenderingItem*)bottomRight.internalPointer())->id == "roi_label")
+    if(cur_node->id == "roi_label")
     {
-        cur_tracking_window.on_show_r_toggled(((RenderingItem*)bottomRight.internalPointer())->value.toBool());
+        cur_tracking_window.on_show_r_toggled(cur_node->value.toBool());
         return;
     }
-    if(((RenderingItem*)bottomRight.internalPointer())->id == "roi_fiber")
+    if(cur_node->id == "roi_fiber")
     {
-        cur_tracking_window.on_show_fiber_toggled(((RenderingItem*)bottomRight.internalPointer())->value.toBool());
+        cur_tracking_window.on_show_fiber_toggled(cur_node->value.toBool());
         return;
     }
 
-    if(((RenderingItem*)bottomRight.internalPointer())->id == "fa_threshold" ||
-       ((RenderingItem*)bottomRight.internalPointer())->id == "dt_threshold" ||
-            ((RenderingItem*)bottomRight.internalPointer())->parent()->id == QString("ROI"))
+    if(cur_node->id == "fa_threshold" ||
+       cur_node->id == "dt_threshold" ||
+            cur_node->parent()->id == QString("ROI"))
     {
         cur_tracking_window.scene.show_slice();
         return;
