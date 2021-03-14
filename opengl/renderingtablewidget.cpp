@@ -249,8 +249,8 @@ TreeModel::TreeModel(RenderingTableWidget *parent)
     root_mapping["Region"] = reinterpret_cast<RenderingItem*>(addItem("Root","show_region","Region Rendering",QString("check"),Qt::Checked).internalPointer());
     root_mapping["Surface"] = reinterpret_cast<RenderingItem*>(addItem("Root","show_surface","Surface Rendering",QString("check"),Qt::Checked).internalPointer());
     root_mapping["Device"] = reinterpret_cast<RenderingItem*>(addItem("Root","show_device","Device Rendering",QString("check"),Qt::Checked).internalPointer());
-    root_mapping["Label"] = reinterpret_cast<RenderingItem*>(addItem("Root","show_label","Label Rendering",QString("check"),Qt::Checked).internalPointer());
-    root_mapping["ODF"] = reinterpret_cast<RenderingItem*>(addItem("Root","show_odf","ODF Rendering",QString("check"),Qt::Checked).internalPointer());
+    root_mapping["Label"] = reinterpret_cast<RenderingItem*>(addItem("Root","show_label","Label Rendering",QString("check"),Qt::Unchecked).internalPointer());
+    root_mapping["ODF"] = reinterpret_cast<RenderingItem*>(addItem("Root","show_odf","ODF Rendering",QString("check"),Qt::Unchecked).internalPointer());
 
 }
 
