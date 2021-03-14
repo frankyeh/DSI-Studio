@@ -426,17 +426,20 @@ public:
                 mat_writer.write("base_fa",voxel.fib_fa,uint32_t(voxel.dim.plane_size()));
                 mat_writer.write("study_fa",voxel.compare_voxel->fib_fa,uint32_t(voxel.dim.plane_size()));
                 for(size_t i = 0;i < voxel.dim.size();++i)
+                {
+                    if(voxel.fib_fa[i] == 0.0f || voxel.compare_voxel->fib_fa[i] == 0.0f)
+                        continue;
                     if(voxel.compare_voxel->fib_fa[i] > voxel.fib_fa[i])
                     {
-                        qa_inc[0][i] = voxel.compare_voxel->fib_fa[i] - voxel.fib_fa[i];
+                        qa_inc[0][i] = (voxel.compare_voxel->fib_fa[i] - voxel.fib_fa[i])/voxel.fib_fa[i];
                         qa_dec[0][i] = 0;
                     }
                 else
                     {
-                        qa_dec[0][i] = voxel.fib_fa[i]-voxel.compare_voxel->fib_fa[i];
+                        qa_dec[0][i] = (voxel.fib_fa[i]-voxel.compare_voxel->fib_fa[i])/voxel.fib_fa[i];
                         qa_inc[0][i] = 0;
                     }
-
+                }
                 for (unsigned int index = 1;index < voxel.max_fiber_number;++index)
                 {
                     std::fill(qa_inc[index].begin(),qa_inc[index].end(),0.0f);
