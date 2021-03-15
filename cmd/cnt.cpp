@@ -40,6 +40,9 @@ int cnt(void)
         return 1;
     }
     {
+        int voi_index = po.get("voi",0);
+        std::string voi_text = vbc->ui->variable_list->item(voi_index)->text().toStdString();
+
         std::string var_text = po.get("variable_list");
         std::replace(var_text.begin(),var_text.end(),',',' ');
         std::istringstream var_in(var_text);
@@ -47,14 +50,18 @@ int cnt(void)
                     (std::istream_iterator<int>(var_in)),
                     (std::istream_iterator<int>()));
 
+        // sort and variables and make them unique
+        {
+            std::set<int> sorted(variable_list.begin(),variable_list.end());
+            sorted.insert(voi_index);
+            variable_list = std::vector<int>(sorted.begin(),sorted.end());
+        }
+
         for(int i = 0;i < vbc->ui->variable_list->count();++i)
             vbc->ui->variable_list->item(i)->setCheckState(Qt::Unchecked);
 
-        int voi_index = po.get("voi",0);
-        int voi_sel = -1;
-        std::string voi_text;
         std::cout << "variables: ";
-        for(int i = 0;i < variable_list.size();++i)
+        for(size_t i = 0;i < variable_list.size();++i)
         {
             int index = variable_list[i];
             if(index >= vbc->ui->variable_list->count())
@@ -62,22 +69,12 @@ int cnt(void)
                 std::cout << "invalid number in the variable_list:" << index << std::endl;
                 return 1;
             }
-            if(index == voi_index)
-            {
-                voi_sel = vbc->ui->variable_list->count();
-                voi_text = vbc->ui->variable_list->item(index)->text().toStdString();
-            }
             vbc->ui->variable_list->item(index)->setCheckState(Qt::Checked);
             if(i)
                 std::cout << ",";
             std::cout << vbc->ui->variable_list->item(index)->text().toStdString();
         }
         std::cout << std::endl;
-        if(voi_sel == -1)
-        {
-            std::cout << "variable of interest is not included in the variable list" << std::endl;
-            return 1;
-        }
         vbc->on_variable_list_clicked(QModelIndex());
         vbc->ui->foi->update();
         vbc->ui->foi->setCurrentText(voi_text.c_str());
