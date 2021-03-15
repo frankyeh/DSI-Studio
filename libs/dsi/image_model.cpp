@@ -1485,11 +1485,15 @@ bool ImageModel::compare_src(const char* file_name)
     voxel.compare_voxel = &(study_src->voxel);
     {
         check_prog(0,0);
+        // temporary store the mask
         auto mask = voxel.mask;
+        // set all mask=1 for baseline and follow-up
         std::fill(voxel.mask.begin(),voxel.mask.end(),1);
         std::fill(study_src->voxel.mask.begin(),study_src->voxel.mask.end(),1);
         reconstruct<check_btable_process>("calculating fa map1");
         study_src->reconstruct<check_btable_process>("calculating fa map2");
+        // restore mask
+
         voxel.mask.swap(mask);
         check_prog(0,0);
         begin_prog("registration between longitudinal scans");
