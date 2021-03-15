@@ -69,7 +69,6 @@ group_connectometry::group_connectometry(QWidget *parent,std::shared_ptr<group_c
 {
 
     ui->setupUi(this);
-    ui->cohort_widget->hide();
     ui->chart_widget_layout->addWidget(null_pos_chart_view);
     ui->chart_widget_layout->addWidget(null_neg_chart_view);
     ui->chart_widget_layout->addWidget(fdr_chart_view);
@@ -853,8 +852,3 @@ void group_connectometry::on_apply_selection_clicked()
     on_show_cohort_clicked();
 }
 
-void group_connectometry::on_show_cohort_widget_clicked()
-{
-    ui->show_cohort_widget->hide();
-    ui->cohort_widget->show();
-}
