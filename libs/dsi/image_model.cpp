@@ -1485,9 +1485,12 @@ bool ImageModel::compare_src(const char* file_name)
     voxel.compare_voxel = &(study_src->voxel);
     {
         check_prog(0,0);
+        auto mask = voxel.mask;
+        std::fill(voxel.mask.begin(),voxel.mask.end(),1);
+        std::fill(study_src->voxel.mask.begin(),study_src->voxel.mask.end(),1);
         reconstruct<check_btable_process>("calculating fa map1");
         study_src->reconstruct<check_btable_process>("calculating fa map2");
-
+        voxel.mask.swap(mask);
         check_prog(0,0);
         begin_prog("registration between longitudinal scans");
         auto& Ib = voxel.fib_fa; // baseline
