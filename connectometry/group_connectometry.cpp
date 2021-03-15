@@ -120,10 +120,13 @@ group_connectometry::group_connectometry(QWidget *parent,std::shared_ptr<group_c
         }
     }
     // setup normalize QA
-    if(vbc->handle->db.index_name == "sdf" || vbc->handle->db.index_name == "qa")
+    if(vbc->handle->db.index_name == "qa")
         ui->normalize_qa->setChecked(true);
     else
+    {
         ui->normalize_qa->setChecked(false);
+        ui->normalize_qa->setVisible(false);
+    }
 
     if(!check_quality.empty())
     {
