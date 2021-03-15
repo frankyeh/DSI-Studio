@@ -2613,8 +2613,8 @@ void TractModel::get_quantitative_info(std::string& result)
                     fib->other_index[0][j] = &fa_data[j][0];
                 float mean;
                 get_tracts_data(0,mean);
-                out << handle->db.subject_names[i] << (normalize_qa ? " mean_n":" mean_") <<
-                       handle->db.index_name << "\t" << mean << std::endl;
+                out << handle->db.subject_names[i] << " mean_" <<
+                       handle->db.index_name << (normalize_qa ? "_post_norm\t": "\t") << mean << std::endl;
             }
         }
         fib->other_index[0] = old_index_data;
