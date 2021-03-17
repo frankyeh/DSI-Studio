@@ -806,6 +806,28 @@ bool TractModel::save_tracts_in_native_space(const char* file_name,tipl::image<t
     return result;
 }
 //---------------------------------------------------------------------------
+bool TractModel::save_tracts_in_template_space(const char* file_name)
+{
+    if(!handle->can_map_to_mni())
+        return false;
+    std::vector<std::vector<float> > old_tract_data = tract_data;
+    tipl::par_for(tract_data.size(),[&](unsigned int i)
+    {
+        for(unsigned int j = 0;j < tract_data[i].size();j += 3)
+        {
+            tipl::vector<3> v(&(tract_data[i][j]));
+            handle->subject2mni(v);
+            handle->template_from_mni(v);
+            tract_data[i][j] = v[0];
+            tract_data[i][j+1] = v[1];
+            tract_data[i][j+2] = v[2];
+        }
+    });
+    resample(0.5f);
+    bool result = save_tracts_to_file(file_name);
+    old_tract_data.swap(tract_data);
+    return result;
+}
 bool TractModel::save_tracts_to_file(const char* file_name_)
 {
     std::string file_name(file_name_);
