@@ -688,7 +688,7 @@ public:
             std::vector<float> odf(data.odf);
             tipl::minus_constant(odf,data.min_odf);
             float sum = std::accumulate(odf.begin(),odf.end(),0.0f);
-            float last_fiber_sum = 0.0;
+            float last_fiber_sum = 0.0f;
             for(unsigned int i = 0;i < voxel.max_fiber_number;++i)
             {
                 uint16_t peak = uint16_t(std::max_element(odf.begin(),odf.end())-odf.begin());
