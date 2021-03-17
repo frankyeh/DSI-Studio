@@ -549,6 +549,13 @@
               </widget>
              </item>
              <item>
+              <widget class="QCheckBox" name="output_template_trk">
+               <property name="text">
+                <string>Output Tractography in HCP1065 Space</string>
+               </property>
+              </widget>
+             </item>
+             <item>
               <widget class="QCheckBox" name="default_mask">
                <property name="text">
                 <string>Default mask</string>

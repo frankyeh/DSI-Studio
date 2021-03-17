@@ -29,6 +29,7 @@ std::string run_auto_track(
                     bool export_trk,
                     bool overwrite,
                     bool default_mask,
+                    bool export_template_trk,
                     int& progress);
 
 extern std::string auto_track_report;
@@ -60,7 +61,7 @@ int atk(void)
         fib_data fib;
         fib.set_template_id(0);
         std::string track_id_str =
-                po.get("track_id","Fasciculus,Cingulum,Aslant,Corticospinal,Corticostriatal,Corticopontine,Thalamic_R,Optic,Fornix,Corpus");
+                po.get("track_id","Fasciculus,Cingulum,Aslant,spinal,Corticostriatal,Corticopontine,Thalamic_R,Optic,Fornix,Corpus");
         std::replace(track_id_str.begin(),track_id_str.end(),',',' ');
         std::istringstream in(track_id_str);
         std::string str;
@@ -104,6 +105,7 @@ int atk(void)
                                 po.get("export_stat",1),
                                 po.get("export_trk",1),
                                 po.get("overwrite",0),
+                                po.get("export_template_trk",0),
                                 po.get("default_mask",0),progress);
     if(error.empty())
     {

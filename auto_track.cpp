@@ -129,6 +129,7 @@ std::string run_auto_track(
                     bool export_trk,
                     bool overwrite,
                     bool default_mask,
+                    bool export_template_trk,
                     int& progress)
 {
     std::vector<std::string> reports(track_id.size());
@@ -214,9 +215,18 @@ std::string run_auto_track(
         for(size_t j = 0;j < track_id.size() && !prog_aborted();++j)
         {
             std::string track_name = fib.tractography_name_list[track_id[j]];
-            std::string no_result_file_name = fib_file_name+"."+track_name+".no_result.txt";
-            std::string trk_file_name = fib_file_name+"."+track_name+".tt.gz";
-            std::string stat_file_name = fib_file_name+"."+track_name+".stat.txt";
+            std::string output_path = dir + "/" + track_name;
+            // create storing directory
+            {
+                QDir dir(output_path.c_str());
+                if (!dir.exists() && !dir.mkpath("."))
+                    std::cout << std::string("cannot create directory:") + output_path;
+            }
+            std::string fib_base = QFileInfo(fib_file_name.c_str()).baseName().toStdString();
+            std::string no_result_file_name = output_path + "/" + fib_base+"."+track_name+".no_result.txt";
+            std::string trk_file_name = output_path + "/" + fib_base+"."+track_name+".tt.gz";
+            std::string template_trk_file_name = output_path + "/T_" + fib_base+"."+track_name+".tt.gz";
+            std::string stat_file_name = output_path + "/" + fib_base+"."+track_name+".stat.txt";
             std::string report_file_name = dir+"/"+track_name+".report.txt";
 
             stat_files[j].push_back(stat_file_name);
@@ -337,7 +347,10 @@ std::string run_auto_track(
                     if(export_trk)
                     {
                         if(!tract_model.save_tracts_to_file(trk_file_name.c_str()))
-                            return std::string("fail to save trk file:")+trk_file_name;
+                            return std::string("fail to save tractography file:")+trk_file_name;
+                        if(export_template_trk &&
+                           !tract_model.save_tracts_in_template_space(template_trk_file_name.c_str()))
+                                return std::string("fail to save template tractography file:")+trk_file_name;
                     }
                 }
 
@@ -512,6 +525,7 @@ void auto_track::on_run_clicked()
                    ui->export_trk->isChecked(),
                    ui->overwrite->isChecked(),
                    ui->default_mask->isChecked(),
+                   ui->output_template_trk->isChecked(),
                    prog);
     timer->stop();
     ui->run->setEnabled(true);
@@ -550,7 +564,7 @@ void auto_track::select_tracts()
         }
         if(ui->cb_projection->isChecked())
         {
-            select_list.push_back("Corticospinal");
+            select_list.push_back("spinal");
             select_list.push_back("Corticopontine");
             select_list.push_back("Corticostriatal");
             select_list.push_back("Thalamic");
