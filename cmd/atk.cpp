@@ -105,8 +105,8 @@ int atk(void)
                                 po.get("export_stat",1),
                                 po.get("export_trk",1),
                                 po.get("overwrite",0),
-                                po.get("export_template_trk",0),
-                                po.get("default_mask",0),progress);
+                                po.get("default_mask",0),
+                                po.get("export_template_trk",0),progress);
     if(error.empty())
     {
         if(po.has("report"))
