@@ -371,15 +371,16 @@ void tracking_data::read(const fib_data& fib)
     dim = fib.dim;
     vs = fib.vs;
     odf_table = fib.dir.odf_table;
-    fib_num = fib.dir.num_fiber;
+    fib_num = uint8_t(fib.dir.num_fiber);
     fa = fib.dir.fa;
     dt_fa = fib.dir.dt_fa;
     findex = fib.dir.findex;
     dir = fib.dir.dir;
     other_index = fib.dir.index_data;
-    threshold_name = fib.dir.index_name[fib.dir.cur_index];
+    if(!fib.dir.index_name.empty())
+        threshold_name = fib.dir.index_name[uint32_t(fib.dir.cur_index)];
     if(!dt_fa.empty())
-        dt_threshold_name = fib.dir.dt_index_name[fib.dir.dt_cur_index];
+        dt_threshold_name = fib.dir.dt_index_name[uint32_t(fib.dir.dt_cur_index)];
 }
 bool tracking_data::get_dir(unsigned int space_index,
                      const tipl::vector<3,float>& dir, // reference direction, should be unit vector
