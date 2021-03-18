@@ -582,7 +582,7 @@ bool load_nii(std::shared_ptr<fib_data> handle,
     {
         tipl::image<float, 3> tmp;
         header.toLPS(tmp);
-        if(is_label_image(tmp))
+        if(header.is_integer() || is_label_image(tmp))
             from = tmp;
         else
         {
