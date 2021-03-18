@@ -14,8 +14,202 @@
 #include "SliceModel.h"
 #include "connectometry/group_connectometry_analysis.h"
 #include "program_option.hpp"
+extern std::shared_ptr<CustomSliceModel> t1t2_slices;
+std::shared_ptr<CustomSliceModel> t1t2_slices;
+extern std::vector<std::shared_ptr<CustomSliceModel> > other_slices;
+std::vector<std::shared_ptr<CustomSliceModel> > other_slices;
+
 bool atl_load_atlas(const std::string atlas_name,std::vector<std::shared_ptr<atlas> >& atlas_list);
-void export_track_info(std::shared_ptr<fib_data> handle,std::shared_ptr<TractModel> tract_model);
+void check_other_slices(std::shared_ptr<fib_data> handle)
+{
+    if(!po.has("other_slices") || !other_slices.empty())
+        return;
+    QStringList slice_list = QString(po.get("other_slices").c_str()).split(",");
+    for(int i = 0;i < slice_list.size();++i)
+    {
+        other_slices.push_back(std::make_shared<CustomSliceModel>(handle.get()));
+        std::vector<std::string> files;
+        files.push_back(slice_list[i].toStdString());
+        std::cout << "add other slice: " << QFileInfo(slice_list[i]).baseName().toStdString() << std::endl;
+        if(!other_slices.back()->initialize(files,true))
+        {
+            std::cout << "ERROR: fail to load " << files.back() << std::endl;
+            return;
+        }
+        if(other_slices.back()->thread.get())
+            other_slices.back()->thread->wait();
+    }
+}
+bool get_t1t2_nifti(std::shared_ptr<fib_data> handle,
+                    tipl::geometry<3>& nifti_geo,
+                    tipl::vector<3>& nifti_vs,
+                    tipl::matrix<4,4,float>& convert)
+{
+    if(!po.has("t1t2"))
+        return false;
+    if(!t1t2_slices.get())
+    {
+        t1t2_slices = std::make_shared<CustomSliceModel>(handle.get());
+        std::vector<std::string> files;
+        files.push_back(po.get("t1t2"));
+        if(!t1t2_slices->initialize(files,true))
+        {
+            std::cout << "ERROR: fail to load " << files.back() << std::endl;
+            return false;
+        }
+        handle->view_item.pop_back(); // remove the new item added by initialize
+        if(t1t2_slices->thread.get())
+            t1t2_slices->thread->wait();
+        std::cout << "registeration complete" << std::endl;
+        std::cout << convert[0] << " " << convert[1] << " " << convert[2] << " " << convert[3] << std::endl;
+        std::cout << convert[4] << " " << convert[5] << " " << convert[6] << " " << convert[7] << std::endl;
+        std::cout << convert[8] << " " << convert[9] << " " << convert[10] << " " << convert[11] << std::endl;
+    }
+    nifti_geo = t1t2_slices->source_images.geometry();
+    nifti_vs = t1t2_slices->voxel_size;
+    convert = t1t2_slices->invT;
+    std::cout << "T1T2 dimension: " << nifti_geo << std::endl;
+    std::cout << "T1T2 voxel size: " << nifti_vs << std::endl;
+    return true;
+}
+void export_track_info(std::shared_ptr<fib_data> handle,
+                       std::shared_ptr<TractModel> tract_model)
+{
+    std::string export_option = po.get("export");
+    std::string file_name = po.get("output",po.get("tract",po.get("source")+"tt.gz"));
+    std::replace(export_option.begin(),export_option.end(),',',' ');
+    std::istringstream in(export_option);
+    std::string cmd;
+
+    while(in >> cmd)
+    {
+        // track analysis report
+        if(cmd.find("report") == 0)
+        {
+            std::cout << "export track analysis report..." << std::endl;
+            std::replace(cmd.begin(),cmd.end(),':',' ');
+            std::istringstream in(cmd);
+            std::string report_tag,index_name;
+            uint32_t profile_dir = 0,bandwidth = 0;
+            in >> report_tag >> index_name >> profile_dir >> bandwidth;
+            std::vector<float> values,data_profile,data_ci1,data_ci2;
+            // check index
+            if(index_name != "qa" && index_name != "fa" &&  handle->get_name_index(index_name) == handle->view_item.size())
+            {
+                std::cout << "cannot find index name:" << index_name << std::endl;
+                continue;
+            }
+            if(bandwidth == 0)
+            {
+                std::cout << "please specify bandwidth value" << std::endl;
+                continue;
+            }
+            if(profile_dir > 4)
+            {
+                std::cout << "please specify a valid profile type" << std::endl;
+                continue;
+            }
+            std::cout << "calculating report" << std::endl;
+            std::cout << "profile_dir:" << profile_dir << std::endl;
+            std::cout << "bandwidth:" << bandwidth << std::endl;
+            std::cout << "index_name:" << index_name << std::endl;
+            tract_model->get_report(
+                                profile_dir,
+                                bandwidth,
+                                index_name,
+                                values,data_profile,data_ci1,data_ci2);
+
+            std::replace(cmd.begin(),cmd.end(),' ','.');
+            std::string file_name_stat = file_name + "." + cmd + ".txt";
+            std::cout << "output report:" << file_name_stat << std::endl;
+            std::ofstream report(file_name_stat.c_str());
+            report << "position\t";
+            std::copy(values.begin(),values.end(),std::ostream_iterator<float>(report,"\t"));
+            report << std::endl;
+            report << "value\t";
+            std::copy(data_profile.begin(),data_profile.end(),std::ostream_iterator<float>(report,"\t"));
+            if(!data_ci1.empty())
+            {
+                report << std::endl;
+                report << "CI\t";
+                std::copy(data_ci1.begin(),data_ci1.end(),std::ostream_iterator<float>(report,"\t"));
+            }
+            if(!data_ci2.empty())
+            {
+                report << std::endl;
+                report << "CI\t";
+                std::copy(data_ci2.begin(),data_ci2.end(),std::ostream_iterator<float>(report,"\t"));
+            }
+            report << std::endl;
+            continue;
+        }
+
+        std::string file_name_stat = file_name + "." + cmd;
+        // export statistics
+        if(QString(cmd.c_str()).startsWith("tdi"))
+        {
+            file_name_stat += ".nii.gz";
+            tipl::matrix<4,4,float> tr;
+            tipl::geometry<3> dim;
+            tipl::vector<3,float> vs;
+            tr.identity();
+            dim = handle->dim;
+            vs = handle->vs;
+            if(!get_t1t2_nifti(handle,dim,vs,tr) && QString(cmd.c_str()).startsWith("tdi2"))
+                {
+                    unsigned int ratio = 4;
+                    tr[0] = tr[5] = tr[10] = ratio;
+                    dim = tipl::geometry<3>(handle->dim[0]*ratio,
+                                            handle->dim[1]*ratio,
+                                            handle->dim[2]*ratio);
+                    vs /= float(ratio);
+                }
+            std::vector<std::shared_ptr<TractModel> > tract;
+            tract.push_back(tract_model);
+            std::cout << "export TDI to " << file_name_stat;
+            if(QString(cmd.c_str()).endsWith("color"))
+                std::cout << " in RGB color";
+            if(QString(cmd.c_str()).endsWith("end"))
+                std::cout << " end point only";
+            std::cout << std::endl;
+            TractModel::export_tdi(file_name_stat.c_str(),tract,dim,vs,tr,
+                                   QString(cmd.c_str()).endsWith("color"),
+                                   QString(cmd.c_str()).endsWith("end"));
+            continue;
+        }
+
+
+        if(cmd == "stat")
+        {
+            file_name_stat += ".txt";
+            std::cout << "export statistics to " << file_name_stat << std::endl;
+            std::ofstream out_stat(file_name_stat.c_str());
+            if(!out_stat)
+            {
+                std::cout << "Output statistics to file_name_stat failed. Please check write permission" << std::endl;
+                return;
+            }
+            std::string result;
+            tract_model->get_quantitative_info(result);
+            out_stat << result;
+            continue;
+        }
+
+        {
+            if(cmd.find('.') != std::string::npos)
+                cmd = cmd.substr(0,cmd.find('.'));
+            else
+                file_name_stat += ".txt";
+            if(handle->get_name_index(cmd) != handle->view_item.size())
+            {
+                tract_model->save_data_to_file(file_name_stat.c_str(),cmd);
+                continue;
+            }
+        }
+        std::cout << "invalid export option:" << cmd << std::endl;
+        continue;
+    }
+}
 void save_connectivity_matrix(std::shared_ptr<TractModel> tract_model,
                               ConnectivityMatrix& data,
                               const std::string& source,
@@ -59,39 +253,8 @@ void save_connectivity_matrix(std::shared_ptr<TractModel> tract_model,
     std::ofstream out(network_measures.c_str());
     out << report;
 }
-bool get_t1t2_nifti(std::shared_ptr<fib_data> handle,
-                    tipl::geometry<3>& nifti_geo,
-                    tipl::vector<3>& nifti_vs,
-                    tipl::matrix<4,4,float>& convert)
-{
-    if(!po.has("t1t2"))
-        return false;
-    static std::shared_ptr<CustomSliceModel> other_slice;
-    if(!other_slice.get())
-    {
-        other_slice = std::make_shared<CustomSliceModel>(handle.get());
-        std::vector<std::string> files;
-        files.push_back(po.get("t1t2"));
-        if(!other_slice->initialize(files,true))
-        {
-            std::cout << "ERROR: fail to load " << files.back() << std::endl;
-            return false;
-        }
-        handle->view_item.pop_back(); // remove the new item added by initialize
-        if(other_slice->thread.get())
-            other_slice->thread->wait();
-        std::cout << "registeration complete" << std::endl;
-        std::cout << convert[0] << " " << convert[1] << " " << convert[2] << " " << convert[3] << std::endl;
-        std::cout << convert[4] << " " << convert[5] << " " << convert[6] << " " << convert[7] << std::endl;
-        std::cout << convert[8] << " " << convert[9] << " " << convert[10] << " " << convert[11] << std::endl;
-    }
-    nifti_geo = other_slice->source_images.geometry();
-    nifti_vs = other_slice->voxel_size;
-    convert = other_slice->invT;
-    std::cout << "T1T2 dimension: " << nifti_geo << std::endl;
-    std::cout << "T1T2 voxel size: " << nifti_vs << std::endl;
-    return true;
-}
+
+
 bool load_atlas_from_list(std::shared_ptr<fib_data> handle,
                           const std::string& atlas_name,
                           std::vector<std::shared_ptr<atlas> >& atlas_list)
@@ -370,6 +533,9 @@ void trk_post(std::shared_ptr<fib_data> handle,std::shared_ptr<TractModel> tract
 
     if(po.has(("end_point")))
         tract_model->save_end_points(po.get("end_point").c_str());
+
+    // allow adding other slices for connectivity and statistics
+    check_other_slices(handle);
 
     if(po.has("connectivity"))
         get_connectivity_matrix(handle,tract_model);

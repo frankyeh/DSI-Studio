@@ -18,14 +18,13 @@
 // --action=ana --source=20100129_F026Y_WANFANGYUN.src.gz.odf8.f3rec.de0.dti.fib.gz --method=0 --fiber_count=5000
 bool atl_load_atlas(std::string atlas_name,std::vector<std::shared_ptr<atlas> >& atlas_list);
 bool load_roi(std::shared_ptr<fib_data> handle,std::shared_ptr<RoiMgr> roi_mgr);
-void get_connectivity_matrix(std::shared_ptr<fib_data> handle,
-                             std::shared_ptr<TractModel> tract_model);
 
 void get_regions_statistics(const std::vector<std::shared_ptr<ROIRegion> >& regions,
                             const std::vector<std::string>& region_name,
                             std::string& result);
 bool load_region(std::shared_ptr<fib_data> handle,
                  ROIRegion& roi,const std::string& region_text);
+void check_other_slices(std::shared_ptr<fib_data> handle);
 bool get_t1t2_nifti(std::shared_ptr<fib_data> handle,
                     tipl::geometry<3>& nifti_geo,
                     tipl::vector<3>& nifti_vs,
@@ -36,143 +35,7 @@ bool load_nii(std::shared_ptr<fib_data> handle,
               std::vector<std::shared_ptr<ROIRegion> >& regions,
               std::vector<std::string>& names,bool verbose);
 
-void export_track_info(std::shared_ptr<fib_data> handle,
-                       std::shared_ptr<TractModel> tract_model)
-{
-    std::string export_option = po.get("export");
-    std::string file_name = po.get("output",po.get("tract",po.get("source")+"tt.gz"));
-    std::replace(export_option.begin(),export_option.end(),',',' ');
-    std::istringstream in(export_option);
-    std::string cmd;
-    while(in >> cmd)
-    {
-        // track analysis report
-        if(cmd.find("report") == 0)
-        {
-            std::cout << "export track analysis report..." << std::endl;
-            std::replace(cmd.begin(),cmd.end(),':',' ');
-            std::istringstream in(cmd);
-            std::string report_tag,index_name;
-            uint32_t profile_dir = 0,bandwidth = 0;
-            in >> report_tag >> index_name >> profile_dir >> bandwidth;
-            std::vector<float> values,data_profile,data_ci1,data_ci2;
-            // check index
-            if(index_name != "qa" && index_name != "fa" &&  handle->get_name_index(index_name) == handle->view_item.size())
-            {
-                std::cout << "cannot find index name:" << index_name << std::endl;
-                continue;
-            }
-            if(bandwidth == 0)
-            {
-                std::cout << "please specify bandwidth value" << std::endl;
-                continue;
-            }
-            if(profile_dir > 4)
-            {
-                std::cout << "please specify a valid profile type" << std::endl;
-                continue;
-            }
-            std::cout << "calculating report" << std::endl;
-            std::cout << "profile_dir:" << profile_dir << std::endl;
-            std::cout << "bandwidth:" << bandwidth << std::endl;
-            std::cout << "index_name:" << index_name << std::endl;
-            tract_model->get_report(
-                                profile_dir,
-                                bandwidth,
-                                index_name,
-                                values,data_profile,data_ci1,data_ci2);
 
-            std::replace(cmd.begin(),cmd.end(),' ','.');
-            std::string file_name_stat = file_name + "." + cmd + ".txt";
-            std::cout << "output report:" << file_name_stat << std::endl;
-            std::ofstream report(file_name_stat.c_str());
-            report << "position\t";
-            std::copy(values.begin(),values.end(),std::ostream_iterator<float>(report,"\t"));
-            report << std::endl;
-            report << "value\t";
-            std::copy(data_profile.begin(),data_profile.end(),std::ostream_iterator<float>(report,"\t"));
-            if(!data_ci1.empty())
-            {
-                report << std::endl;
-                report << "CI\t";
-                std::copy(data_ci1.begin(),data_ci1.end(),std::ostream_iterator<float>(report,"\t"));
-            }
-            if(!data_ci2.empty())
-            {
-                report << std::endl;
-                report << "CI\t";
-                std::copy(data_ci2.begin(),data_ci2.end(),std::ostream_iterator<float>(report,"\t"));
-            }
-            report << std::endl;
-            continue;
-        }
-
-        std::string file_name_stat = file_name + "." + cmd;
-        // export statistics
-        if(QString(cmd.c_str()).startsWith("tdi"))
-        {
-            file_name_stat += ".nii.gz";
-            tipl::matrix<4,4,float> tr;
-            tipl::geometry<3> dim;
-            tipl::vector<3,float> vs;
-            tr.identity();
-            dim = handle->dim;
-            vs = handle->vs;
-            if(!get_t1t2_nifti(handle,dim,vs,tr) && QString(cmd.c_str()).startsWith("tdi2"))
-                {
-                    unsigned int ratio = 4;
-                    tr[0] = tr[5] = tr[10] = ratio;
-                    dim = tipl::geometry<3>(handle->dim[0]*ratio,
-                                            handle->dim[1]*ratio,
-                                            handle->dim[2]*ratio);
-                    vs /= float(ratio);
-                }
-            std::vector<std::shared_ptr<TractModel> > tract;
-            tract.push_back(tract_model);
-            std::cout << "export TDI to " << file_name_stat;
-            if(QString(cmd.c_str()).endsWith("color"))
-                std::cout << " in RGB color";
-            if(QString(cmd.c_str()).endsWith("end"))
-                std::cout << " end point only";
-            std::cout << std::endl;
-            TractModel::export_tdi(file_name_stat.c_str(),tract,dim,vs,tr,
-                                   QString(cmd.c_str()).endsWith("color"),
-                                   QString(cmd.c_str()).endsWith("end"));
-            continue;
-        }
-
-
-        if(cmd == "stat")
-        {
-            file_name_stat += ".txt";
-            std::cout << "export statistics to " << file_name_stat << std::endl;
-            std::ofstream out_stat(file_name_stat.c_str());
-            if(!out_stat)
-            {
-                std::cout << "Output statistics to file_name_stat failed. Please check write permission" << std::endl;
-                return;
-            }
-            std::string result;
-            tract_model->get_quantitative_info(result);
-            out_stat << result;
-            continue;
-        }
-
-        {
-            if(cmd.find('.') != std::string::npos)
-                cmd = cmd.substr(0,cmd.find('.'));
-            else
-                file_name_stat += ".txt";
-            if(handle->get_name_index(cmd) != handle->view_item.size())
-            {
-                tract_model->save_data_to_file(file_name_stat.c_str(),cmd);
-                continue;
-            }
-        }
-        std::cout << "invalid export option:" << cmd << std::endl;
-        continue;
-    }
-}
 bool load_nii(std::shared_ptr<fib_data> handle,
               const std::string& file_name,
               std::vector<std::shared_ptr<ROIRegion> >& regions,

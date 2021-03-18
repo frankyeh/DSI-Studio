@@ -28,10 +28,7 @@ int src(void)
     QStringList file_list;
     if(ext ==".nii" || ext == ".dcm" || ext == "dseq" || ext == "i.gz")
     {
-        std::istringstream ss(source);
-        std::string token;
-        while(std::getline(ss, token, ','))
-            file_list << source.c_str();
+        file_list << source.c_str();
         if(!po.has("output"))
             output = file_list.front().toStdString() + ".src.gz";
     }
