@@ -6,9 +6,6 @@
 void show_view(QGraphicsScene& scene,QImage I);
 bool is_label_image(const tipl::image<float,3>& I)
 {
-    for(int i = 1;i < I.width();++i)
-        if(I[0] > I[i] || I[0] < I[i])
-            return false;
     for(size_t i = 0;i < I.size();++i)
         if(std::floor(I[i]) < I[i])
             return false;
