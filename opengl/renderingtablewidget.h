@@ -115,14 +115,15 @@ public:
             throw std::runtime_error("Cannot find the setting value");
         return *(iter->second);
     }
-    QStringList getChildren(QString root_name)
+    QStringList get_param_list(QString root_name)
     {
         QStringList result;
         RenderingItem* parent = root_mapping[root_name];
         if(!parent)
             throw std::runtime_error("Cannot find the root node");
-        for(unsigned int index = 0;index < parent->childCount();++index)
-            result.push_back(parent->child(index)->id);
+        for(int index = 0;index < parent->childCount();++index)
+            if(!parent->child(index)->type.isNull()) // second layer tree node has type = QVariant() assigned in AddNode
+                result.push_back(parent->child(index)->id);
         return result;
     }
     QStringList getParamList(void)

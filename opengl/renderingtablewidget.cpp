@@ -417,7 +417,7 @@ int TreeModel::rowCount(const QModelIndex &parent) const
 }
 void TreeModel::addNode(QString root_name,QString id,QVariant title)
 {
-    root_mapping[id] = new RenderingItem(title,"",id,0,root_mapping[root_name]);
+    root_mapping[id] = new RenderingItem(title,QVariant(),id,0,root_mapping[root_name]);
 }
 QModelIndex TreeModel::addItem(QString root_name,QString id,QVariant title, QVariant type, QVariant value,QString hint)
 {

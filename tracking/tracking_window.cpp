@@ -639,15 +639,15 @@ bool tracking_window::command(QString cmd,QString param,QString param2)
     {
         QString filename = param;
         QSettings s(filename, QSettings::IniFormat);
-        QStringList param_list = renderWidget->treemodel->getChildren("ROI");
-        param_list += renderWidget->treemodel->getChildren("Rendering");
-        param_list += renderWidget->treemodel->getChildren("Slice");
-        param_list += renderWidget->treemodel->getChildren("Tract");
-        param_list += renderWidget->treemodel->getChildren("Region");
-        param_list += renderWidget->treemodel->getChildren("Surface");
-        param_list += renderWidget->treemodel->getChildren("Device");
-        param_list += renderWidget->treemodel->getChildren("Label");
-        param_list += renderWidget->treemodel->getChildren("ODF");
+        QStringList param_list = renderWidget->treemodel->get_param_list("ROI");
+        param_list += renderWidget->treemodel->get_param_list("Rendering");
+        param_list += renderWidget->treemodel->get_param_list("Slice");
+        param_list += renderWidget->treemodel->get_param_list("Tract");
+        param_list += renderWidget->treemodel->get_param_list("Region");
+        param_list += renderWidget->treemodel->get_param_list("Surface");
+        param_list += renderWidget->treemodel->get_param_list("Device");
+        param_list += renderWidget->treemodel->get_param_list("Label");
+        param_list += renderWidget->treemodel->get_param_list("ODF");
         for(int index = 0;index < param_list.size();++index)
             s.setValue(param_list[index],renderWidget->getData(param_list[index]));
     }
@@ -657,15 +657,15 @@ bool tracking_window::command(QString cmd,QString param,QString param2)
         if(QFileInfo(filename).exists())
         {
             QSettings s(filename, QSettings::IniFormat);
-            QStringList param_list = renderWidget->treemodel->getChildren("ROI");
-            param_list += renderWidget->treemodel->getChildren("Rendering");
-            param_list += renderWidget->treemodel->getChildren("Slice");
-            param_list += renderWidget->treemodel->getChildren("Tract");
-            param_list += renderWidget->treemodel->getChildren("Region");
-            param_list += renderWidget->treemodel->getChildren("Surface");
-            param_list += renderWidget->treemodel->getChildren("Device");
-            param_list += renderWidget->treemodel->getChildren("Label");
-            param_list += renderWidget->treemodel->getChildren("ODF");
+            QStringList param_list = renderWidget->treemodel->get_param_list("ROI");
+            param_list += renderWidget->treemodel->get_param_list("Rendering");
+            param_list += renderWidget->treemodel->get_param_list("Slice");
+            param_list += renderWidget->treemodel->get_param_list("Tract");
+            param_list += renderWidget->treemodel->get_param_list("Region");
+            param_list += renderWidget->treemodel->get_param_list("Surface");
+            param_list += renderWidget->treemodel->get_param_list("Device");
+            param_list += renderWidget->treemodel->get_param_list("Label");
+            param_list += renderWidget->treemodel->get_param_list("ODF");
             for(int index = 0;index < param_list.size();++index)
                 if(s.contains(param_list[index]))
                     set_data(param_list[index],s.value(param_list[index]));
@@ -675,9 +675,9 @@ bool tracking_window::command(QString cmd,QString param,QString param2)
     {
         QString filename = param;
         QSettings s(filename, QSettings::IniFormat);
-        QStringList param_list = renderWidget->treemodel->getChildren("Tracking");
-        param_list += renderWidget->treemodel->getChildren("Tracking_dT");
-        param_list += renderWidget->treemodel->getChildren("Tracking_adv");
+        QStringList param_list = renderWidget->treemodel->get_param_list("Tracking");
+        param_list += renderWidget->treemodel->get_param_list("Tracking_dT");
+        param_list += renderWidget->treemodel->get_param_list("Tracking_adv");
         for(int index = 0;index < param_list.size();++index)
             s.setValue(param_list[index],renderWidget->getData(param_list[index]));
     }
@@ -687,12 +687,18 @@ bool tracking_window::command(QString cmd,QString param,QString param2)
         if(QFileInfo(filename).exists())
         {
             QSettings s(filename, QSettings::IniFormat);
-            QStringList param_list = renderWidget->treemodel->getChildren("Tracking");
-            param_list += renderWidget->treemodel->getChildren("Tracking_dT");
-            param_list += renderWidget->treemodel->getChildren("Tracking_adv");
+            QStringList param_list = renderWidget->treemodel->get_param_list("Tracking");
+            param_list += renderWidget->treemodel->get_param_list("Tracking_dT");
+            param_list += renderWidget->treemodel->get_param_list("Tracking_adv");
             for(int index = 0;index < param_list.size();++index)
+            {
+                std::cout << param_list[index].toStdString() << std::endl;
                 if(s.contains(param_list[index]))
+                {
+                    std::cout << param_list[index].toStdString() << std::endl;
                     set_data(param_list[index],s.value(param_list[index]));
+                }
+            }
         }
     }
     if(cmd == "restore_rendering")
