@@ -810,7 +810,9 @@ bool TractModel::save_tracts_in_template_space(const char* file_name)
 {
     if(!handle->can_map_to_mni())
         return false;
-    std::vector<std::vector<float> > old_tract_data = tract_data;
+    std::shared_ptr<fib_data> fib(new fib_data(handle->template_I.geometry(),handle->template_vs));
+    std::shared_ptr<TractModel> tract_in_template(new TractModel(fib.get()));
+    std::vector<std::vector<float> > new_tract_data = tract_data;
     tipl::par_for(tract_data.size(),[&](unsigned int i)
     {
         for(unsigned int j = 0;j < tract_data[i].size();j += 3)
@@ -818,15 +820,14 @@ bool TractModel::save_tracts_in_template_space(const char* file_name)
             tipl::vector<3> v(&(tract_data[i][j]));
             handle->subject2mni(v);
             handle->template_from_mni(v);
-            tract_data[i][j] = v[0];
-            tract_data[i][j+1] = v[1];
-            tract_data[i][j+2] = v[2];
+            new_tract_data[i][j] = v[0];
+            new_tract_data[i][j+1] = v[1];
+            new_tract_data[i][j+2] = v[2];
         }
     });
-    resample(0.5f);
-    bool result = save_tracts_to_file(file_name);
-    old_tract_data.swap(tract_data);
-    return result;
+    tract_in_template->add_tracts(new_tract_data);
+    tract_in_template->resample(0.5f);
+    return tract_in_template->save_tracts_to_file(file_name);
 }
 bool TractModel::save_tracts_to_file(const char* file_name_)
 {
@@ -1149,7 +1150,7 @@ bool TractModel::save_all(const char* file_name_,
     std::string ext;
     if(file_name.length() > 4)
         ext = std::string(file_name.end()-4,file_name.end());
-    if (ext == std::string("t.gz"))
+    if (ext == std::string("t.gz")) // tt.gz
     {
         std::vector<size_t> tract_size(all.size());
         for(size_t i = 0;i < all.size();++i)
@@ -1198,7 +1199,7 @@ bool TractModel::save_all(const char* file_name_,
         return true;
     }
 
-    if (ext == std::string(".trk") || ext == std::string("k.gz"))
+    if (ext == std::string(".trk") || ext == std::string("k.gz")) // trk.gz
     {
         gz_ostream out;
         if (!out.open(file_name_))
@@ -1236,7 +1237,10 @@ bool TractModel::save_all(const char* file_name_,
             out.write((const char*)&*buffer.begin(),sizeof(float)*buffer.size());
         }
     }
-
+    if (ext == std::string("i.gz")) // nii.gz
+    {
+        return TractModel::export_pdi(file_name.c_str(),all);
+    }
     if (ext == std::string(".mat"))
     {
         tipl::io::mat_write out(file_name.c_str());
@@ -2269,8 +2273,66 @@ void TractModel::get_density_map(
                 (unsigned char)std::min<float>(255,v[2]));
     }
 }
-
-void TractModel::export_tdi(const char* filename,
+bool TractModel::export_end_pdi(const char* file_name,
+                       const std::vector<std::shared_ptr<TractModel> >& tract_models,size_t end_distance)
+{
+    if(tract_models.empty())
+        return false;
+    auto dim = tract_models.front()->geo;
+    tipl::image<uint32_t,3> p1_map(dim),p2_map(dim);
+    for(size_t index = 0;index < tract_models.size();++index)
+    {
+        std::vector<tipl::vector<3,short> > p1,p2;
+        tract_models[index]->to_end_point_voxels(p1,p2,1.0f,end_distance);
+        tipl::par_for(p1.size(),[&](size_t j)
+        {
+            tipl::vector<3,short> p = p1[j];
+            if(dim.is_valid(p))
+                p1_map[tipl::pixel_index<3>(p[0],p[1],p[2],dim).index()]++;
+        });
+        tipl::par_for(p2.size(),[&](size_t j)
+        {
+            tipl::vector<3,short> p = p2[j];
+            if(dim.is_valid(p))
+                p2_map[tipl::pixel_index<3>(p[0],p[1],p[2],dim).index()]++;
+        });
+    }
+    tipl::image<float,3> pdi1(p1_map),pdi2(p2_map);
+    if(tract_models.size() > 1)
+    {
+        tipl::multiply_constant(pdi1,1.0f/float(tract_models.size()));
+        tipl::multiply_constant(pdi2,1.0f/float(tract_models.size()));
+    }
+    QString f1 = QFileInfo(file_name).absolutePath() + "/"+ QFileInfo(file_name).baseName() + "_1.nii.gz";
+    QString f2 = QFileInfo(file_name).absolutePath() + "/"+ QFileInfo(file_name).baseName() + "_2.nii.gz";
+    return gz_nifti::save_to_file(f1.toStdString().c_str(),pdi1,tract_models.front()->vs,tract_models.front()->handle->trans_to_mni) &&
+           gz_nifti::save_to_file(f2.toStdString().c_str(),pdi2,tract_models.front()->vs,tract_models.front()->handle->trans_to_mni);
+}
+bool TractModel::export_pdi(const char* file_name,
+                            const std::vector<std::shared_ptr<TractModel> >& tract_models)
+{
+    if(tract_models.empty())
+        return false;
+    // here should use handle's dimesion, not tract_model's dimension
+    auto dim = tract_models.front()->handle->dim;
+    tipl::image<uint32_t,3> accumulate_map(dim);
+    for(size_t index = 0;index < tract_models.size();++index)
+    {
+        std::vector<tipl::vector<3,short> > points;
+        tract_models[index]->to_voxel(points,1.0f);
+        tipl::par_for(points.size(),[&](size_t j)
+        {
+            tipl::vector<3,short> p = points[j];
+            if(dim.is_valid(p))
+                accumulate_map[tipl::pixel_index<3>(p[0],p[1],p[2],dim).index()]++;
+        });
+    }
+    tipl::image<float,3> pdi(accumulate_map);
+    if(tract_models.size() > 1)
+        tipl::multiply_constant(pdi,1.0f/float(tract_models.size()));
+    return gz_nifti::save_to_file(file_name,pdi,tract_models.front()->vs,tract_models.front()->handle->trans_to_mni);
+}
+bool TractModel::export_tdi(const char* filename,
                   std::vector<std::shared_ptr<TractModel> >& tract_models,
                   tipl::geometry<3>& dim,
                   tipl::vector<3,float> vs,
@@ -2289,14 +2351,14 @@ void TractModel::export_tdi(const char* filename,
             tipl::flip_xy(tdi);
             nii << tdi;
             nii.set_voxel_size(vs);
-            nii.save_to_file(filename);
+            return nii.save_to_file(filename);
         }
         else
         {
             tipl::mosaic(tdi,mosaic,uint32_t(std::sqrt(tdi.depth())));
             QImage qimage(reinterpret_cast<unsigned char*>(&*mosaic.begin()),
                           mosaic.width(),mosaic.height(),QImage::Format_RGB32);
-            qimage.save(filename);
+            return qimage.save(filename);
         }
     }
     else
@@ -2308,6 +2370,7 @@ void TractModel::export_tdi(const char* filename,
         {
             tipl::io::mat_write mat_header(filename);
             mat_header << tdi;
+            return true;
         }
         else
         {
@@ -2317,7 +2380,7 @@ void TractModel::export_tdi(const char* filename,
                 new_trans.inv();
                 trans *= new_trans;
             }
-            gz_nifti::save_to_file(filename,tdi,vs,trans);
+            return gz_nifti::save_to_file(filename,tdi,vs,trans);
         }
     }
 }
@@ -2400,6 +2463,34 @@ tipl::vector<3> get_tract_dir(const std::vector<std::vector<float> >& tract_data
     }
     return total_dis;
 }
+
+void check_order(tipl::geometry<3> geo,
+                 std::vector<tipl::vector<3,float> >& s1,
+                 std::vector<tipl::vector<3,float> >& s2)
+{
+    // use end surface central point to determine
+    // end surface 1 is located at larger axis value
+    tipl::vector<3,float> sum_s1 = std::accumulate(s1.begin(),s1.end(),tipl::vector<3,float>(0,0,0));
+    tipl::vector<3,float> sum_s2 = std::accumulate(s2.begin(),s2.end(),tipl::vector<3,float>(0,0,0));
+    sum_s1 -= sum_s2;
+    sum_s1[0] *= geo[0];
+    sum_s1[1] *= geo[1];
+    sum_s1[2] *= geo[2];
+    auto dir = sum_s1;
+    dir.abs();
+    auto max_sum_dim = std::max_element(dir.begin(),dir.end())-dir.begin();
+    if(sum_s1[uint32_t(max_sum_dim)] < 0.0f)
+        s1.swap(s2);
+
+}
+inline tipl::vector<3> get_rounded_voxel(const float* ptr,float ratio)
+{
+    tipl::vector<3> p(ptr);
+    if(ratio != 1.0f)
+        p *= ratio;
+    p.round();
+    return p;
+}
 void TractModel::to_end_point_voxels(std::vector<tipl::vector<3,short> >& points1,
                                std::vector<tipl::vector<3,short> >& points2,float ratio)
 {
@@ -2408,55 +2499,93 @@ void TractModel::to_end_point_voxels(std::vector<tipl::vector<3,short> >& points
 
     // categlorize endpoints using the mid point direction
     std::vector<tipl::vector<3,float> > s1,s2;
-    tipl::vector<3,float> sum_s1,sum_s2;
     for(size_t i = 0;i < tract_data.size();++i)
     {
         if(tract_data[i].size() < 6)
             continue;
-        tipl::vector<3> p1(&tract_data[i][0]);
-        tipl::vector<3> p2(&tract_data[i][tract_data[i].size()-3]);
-        if(ratio != 1.0f)
-            p1 *= ratio;
-        p1.round();
-        if(ratio != 1.0f)
-            p2 *= ratio;
-        p2.round();
+        tipl::vector<3> p1(get_rounded_voxel(&tract_data[i][0],ratio));
+        tipl::vector<3> p2(get_rounded_voxel(&tract_data[i][tract_data[i].size()-3],ratio));
         if(dir[i])
         {
             s1.push_back(p1);
             s2.push_back(p2);
-            sum_s1 += p1;
-            sum_s2 += p2;
         }
         else
         {
             s2.push_back(p1);
             s1.push_back(p2);
-            sum_s1 += p2;
-            sum_s2 += p1;
         }
     }
 
-    // use end surface central point to determine
-    // end surface 1 is located at larger axis value
+    check_order(geo,s1,s2);
+
+    std::set<tipl::vector<3,short> > ss1(s1.begin(),s1.end()),ss2(s2.begin(),s2.end());
+    points1.assign(ss1.begin(),ss1.end());
+    points2.assign(ss2.begin(),ss2.end());
+}
+
+void TractModel::to_end_point_voxels(std::vector<tipl::vector<3,short> >& points1,
+                        std::vector<tipl::vector<3,short> >& points2,float ratio,float end_dis)
+{
+    std::vector<char> dir;
+    get_tract_dir(tract_data,dir);
+
+    // categlorize endpoints using the mid point direction
+    std::vector<tipl::vector<3,float> > s1,s2;
+    for(size_t i = 0;i < tract_data.size();++i)
     {
-        sum_s1 -= sum_s2;
-        sum_s1[1] *= 3.0f; // mainly use y-axis to define surface number
-        auto dir = sum_s1;
-        dir.abs();
-        auto max_sum_dim = std::max_element(dir.begin(),dir.end())-dir.begin();
-        if(sum_s1[uint32_t(max_sum_dim)] < 0.0f)
-            s1.swap(s2);
+        if(tract_data[i].size() < 6)
+            continue;
+
+        std::vector<tipl::vector<3> > p1,p2;
+        // get end points at first end
+        {
+            size_t j = 0;
+            for(float dis = 0.0f;dis < end_dis;)
+            {
+                p1.push_back(get_rounded_voxel(&tract_data[i][j],ratio));
+                j += 3;
+                if(j >= tract_data[i].size())
+                    break;
+                tipl::vector<3> u(&tract_data[i][j]),v(&tract_data[i][j-3]);
+                u -= v;
+                dis += float(u.length());
+            }
+        }
+        // get end points at the second end
+        {
+            size_t j = tract_data[i].size()-3;
+            for(float dis = 0.0f;dis < end_dis;)
+            {
+                p2.push_back(get_rounded_voxel(&tract_data[i][j],ratio));
+                if(j < 3)
+                    break;
+                j -= 3;
+                tipl::vector<3> u(&tract_data[i][j]),v(&tract_data[i][j+3]);
+                u -= v;
+                dis += float(u.length());
+            }
+        }
+
+        if(dir[i])
+        {
+            s1.insert(s1.end(),p1.begin(),p1.end());
+            s2.insert(s2.end(),p2.begin(),p2.end());
+        }
+        else
+        {
+            s2.insert(s2.end(),p1.begin(),p1.end());
+            s1.insert(s1.end(),p2.begin(),p2.end());
+        }
     }
 
-    std::set<tipl::vector<3,short> > ss1,ss2;
-    for(auto& p : s1)
-        ss1.insert(tipl::vector<3,short>(p));
-    for(auto& p : s2)
-        ss2.insert(tipl::vector<3,short>(p));
-    points1 = std::vector<tipl::vector<3,short> >(ss1.begin(),ss1.end());
-    points2 = std::vector<tipl::vector<3,short> >(ss2.begin(),ss2.end());
+    check_order(geo,s1,s2);
+
+    std::set<tipl::vector<3,short> > ss1(s1.begin(),s1.end()),ss2(s2.begin(),s2.end());
+    points1.assign(ss1.begin(),ss1.end());
+    points2.assign(ss2.begin(),ss2.end());
 }
+
 
 void TractModel::get_quantitative_info(std::string& result)
 {

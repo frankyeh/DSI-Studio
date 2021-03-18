@@ -382,7 +382,7 @@ void TractTableWidget::save_all_tracts_as(void)
     QString filename;
     filename = QFileDialog::getSaveFileName(
                 this,"Save tracts as",item(currentRow(),0)->text().replace(':','_') + output_format(),
-                "Tract files (*.tt.gz *tt.gz *trk.gz *.trk);;Text File (*.txt);;MAT files (*.mat);;All files (*)");
+                "Tract files (*.tt.gz *tt.gz *trk.gz *.trk);;NIFTI File (*nii.gz);;Text File (*.txt);;MAT files (*.mat);;All files (*)");
     if(filename.isEmpty())
         return;
     if(command("save_tracks",filename))
@@ -605,7 +605,25 @@ void TractTableWidget::save_vrml_as(void)
                                                 cur_tracking_window["tube_diameter"].toFloat(),
                                                 cur_tracking_window["tract_tube_detail"].toInt(),surface_text);
 }
-
+void TractTableWidget::save_all_tracts_end_point_as(void)
+{
+    auto tracts = this->get_checked_tracks();
+    if(tracts.empty())
+        return;
+    QString filename;
+    filename = QFileDialog::getSaveFileName(
+                this,
+                "Save end points as",item(currentRow(),0)->text().replace(':','_') + "endpoint.nii.gz",
+                "NIFTI files (*nii.gz);;All files (*)");
+    if(filename.isEmpty())
+        return;
+    bool ok;
+    float dis = float(QInputDialog::getDouble(this,
+        "DSI Studio","Assign end segment length in voxel distance:",3.0,0.0,10.0,1,&ok));
+    if (!ok)
+        return;
+    TractModel::export_end_pdi(filename.toStdString().c_str(),tracts,dis);
+}
 void TractTableWidget::save_end_point_as(void)
 {
     if(currentRow() >= tract_models.size())

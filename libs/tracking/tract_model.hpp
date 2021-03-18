@@ -115,6 +115,8 @@ public:
         void to_voxel(std::vector<tipl::vector<3,short> >& points,float ratio,int id = -1);
         void to_end_point_voxels(std::vector<tipl::vector<3,short> >& points1,
                                 std::vector<tipl::vector<3,short> >& points2,float ratio);
+        void to_end_point_voxels(std::vector<tipl::vector<3,short> >& points1,
+                                std::vector<tipl::vector<3,short> >& points2,float ratio,float end_dis);
 
         size_t get_deleted_track_count(void) const{return deleted_tract_data.size();}
         size_t get_visible_track_count(void) const{return tract_data.size();}
@@ -131,11 +133,15 @@ public:
              const tipl::matrix<4,4,float>& transformation,bool endpoint);
         void get_density_map(tipl::image<tipl::rgb,3>& mapping,
              const tipl::matrix<4,4,float>& transformation,bool endpoint);
-        static void export_tdi(const char* file_name,
+        static bool export_tdi(const char* file_name,
                           std::vector<std::shared_ptr<TractModel> >& tract_models,
                           tipl::geometry<3>& dim,
                           tipl::vector<3,float> vs,
                           tipl::matrix<4,4,float>& transformation,bool color,bool end_point);
+        static bool export_pdi(const char* file_name,
+                               const std::vector<std::shared_ptr<TractModel> >& tract_models);
+        static bool export_end_pdi(const char* file_name,
+                               const std::vector<std::shared_ptr<TractModel> >& tract_models,size_t end_distance = 3);
 public:
         void get_quantitative_info(std::string& result);
         tipl::vector<3> get_report(unsigned int profile_dir,float band_width,const std::string& index_name,

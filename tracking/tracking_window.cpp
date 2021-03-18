@@ -406,6 +406,7 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         connect(ui->actionSave_All_Tracts_As,SIGNAL(triggered()),tractWidget,SLOT(save_all_tracts_as()));
         connect(ui->actionSave_All_Tracts_As_Multiple_Files,SIGNAL(triggered()),tractWidget,SLOT(save_all_tracts_to_dir()));
         connect(ui->actionSave_End_Points_As,SIGNAL(triggered()),tractWidget,SLOT(save_end_point_as()));
+        connect(ui->actionSave_End_Points_All_Tracts_As,SIGNAL(triggered()),tractWidget,SLOT(save_all_tracts_end_point_as()));
         connect(ui->actionSave_Enpoints_In_MNI_Space,SIGNAL(triggered()),tractWidget,SLOT(save_end_point_in_mni()));
         connect(ui->actionSave_Tracts_in_Template_Space,SIGNAL(triggered()),tractWidget,SLOT(save_tracts_in_template()));
         connect(ui->actionSave_Tracts_In_Native_Space,SIGNAL(triggered()),tractWidget,SLOT(save_tracts_in_native()));
@@ -691,14 +692,8 @@ bool tracking_window::command(QString cmd,QString param,QString param2)
             param_list += renderWidget->treemodel->get_param_list("Tracking_dT");
             param_list += renderWidget->treemodel->get_param_list("Tracking_adv");
             for(int index = 0;index < param_list.size();++index)
-            {
-                std::cout << param_list[index].toStdString() << std::endl;
                 if(s.contains(param_list[index]))
-                {
-                    std::cout << param_list[index].toStdString() << std::endl;
                     set_data(param_list[index],s.value(param_list[index]));
-                }
-            }
         }
     }
     if(cmd == "restore_rendering")
