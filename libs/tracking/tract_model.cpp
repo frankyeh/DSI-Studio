@@ -2465,8 +2465,8 @@ tipl::vector<3> get_tract_dir(const std::vector<std::vector<float> >& tract_data
 }
 
 void check_order(tipl::geometry<3> geo,
-                 std::vector<tipl::vector<3,float> >& s1,
-                 std::vector<tipl::vector<3,float> >& s2)
+                 std::vector<tipl::vector<3,short> >& s1,
+                 std::vector<tipl::vector<3,short> >& s2)
 {
     // use end surface central point to determine
     // end surface 1 is located at larger axis value
@@ -2483,13 +2483,13 @@ void check_order(tipl::geometry<3> geo,
         s1.swap(s2);
 
 }
-inline tipl::vector<3> get_rounded_voxel(const float* ptr,float ratio)
+inline tipl::vector<3,short> get_rounded_voxel(const float* ptr,float ratio)
 {
-    tipl::vector<3> p(ptr);
+    tipl::vector<3,float> p(ptr);
     if(ratio != 1.0f)
         p *= ratio;
     p.round();
-    return p;
+    return tipl::vector<3,short>(p[0],p[1],p[2]);
 }
 void TractModel::to_end_point_voxels(std::vector<tipl::vector<3,short> >& points1,
                                std::vector<tipl::vector<3,short> >& points2,float ratio)
@@ -2498,13 +2498,13 @@ void TractModel::to_end_point_voxels(std::vector<tipl::vector<3,short> >& points
     get_tract_dir(tract_data,dir);
 
     // categlorize endpoints using the mid point direction
-    std::vector<tipl::vector<3,float> > s1,s2;
+    std::vector<tipl::vector<3,short> > s1,s2;
     for(size_t i = 0;i < tract_data.size();++i)
     {
         if(tract_data[i].size() < 6)
             continue;
-        tipl::vector<3> p1(get_rounded_voxel(&tract_data[i][0],ratio));
-        tipl::vector<3> p2(get_rounded_voxel(&tract_data[i][tract_data[i].size()-3],ratio));
+        tipl::vector<3,short> p1(get_rounded_voxel(&tract_data[i][0],ratio));
+        tipl::vector<3,short> p2(get_rounded_voxel(&tract_data[i][tract_data[i].size()-3],ratio));
         if(dir[i])
         {
             s1.push_back(p1);
@@ -2519,9 +2519,10 @@ void TractModel::to_end_point_voxels(std::vector<tipl::vector<3,short> >& points
 
     check_order(geo,s1,s2);
 
-    std::set<tipl::vector<3,short> > ss1(s1.begin(),s1.end()),ss2(s2.begin(),s2.end());
-    points1.assign(ss1.begin(),ss1.end());
-    points2.assign(ss2.begin(),ss2.end());
+    std::sort(s1.begin(),s1.end());
+    std::sort(s2.begin(),s2.end());
+    std::unique_copy(s1.begin(),s1.end(),std::back_inserter(points1));
+    std::unique_copy(s2.begin(),s2.end(),std::back_inserter(points2));
 }
 
 void TractModel::to_end_point_voxels(std::vector<tipl::vector<3,short> >& points1,
@@ -2531,13 +2532,13 @@ void TractModel::to_end_point_voxels(std::vector<tipl::vector<3,short> >& points
     get_tract_dir(tract_data,dir);
 
     // categlorize endpoints using the mid point direction
-    std::vector<tipl::vector<3,float> > s1,s2;
+    std::vector<tipl::vector<3,short> > s1,s2;
     for(size_t i = 0;i < tract_data.size();++i)
     {
         if(tract_data[i].size() < 6)
             continue;
 
-        std::vector<tipl::vector<3> > p1,p2;
+        std::vector<tipl::vector<3,short> > p1,p2;
         // get end points at first end
         {
             size_t j = 0;
@@ -2581,9 +2582,10 @@ void TractModel::to_end_point_voxels(std::vector<tipl::vector<3,short> >& points
 
     check_order(geo,s1,s2);
 
-    std::set<tipl::vector<3,short> > ss1(s1.begin(),s1.end()),ss2(s2.begin(),s2.end());
-    points1.assign(ss1.begin(),ss1.end());
-    points2.assign(ss2.begin(),ss2.end());
+    std::sort(s1.begin(),s1.end());
+    std::sort(s2.begin(),s2.end());
+    std::unique_copy(s1.begin(),s1.end(),std::back_inserter(points1));
+    std::unique_copy(s2.begin(),s2.end(),std::back_inserter(points2));
 }
 
 
