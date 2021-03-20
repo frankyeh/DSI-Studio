@@ -985,7 +985,7 @@ bool TractTableWidget::command(QString cmd,QString param,QString param2)
     }
     if(cmd == "update_track")
     {
-        for(int index = 0;index < tract_models.size();++index)
+        for(int index = 0;index < int(tract_models.size());++index)
         {
             item(index,1)->setText(QString::number(tract_models[index]->get_visible_track_count()));
             item(index,2)->setText(QString::number(tract_models[index]->get_deleted_track_count()));
