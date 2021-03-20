@@ -1,5 +1,6 @@
 #include <regex>
 #include <QFileInfo>
+#include <QDir>
 #include <QStringList>
 #include <QImage>
 #include <iostream>
@@ -145,9 +146,33 @@ int ana(void)
         return 0;
     }
 
-    std::shared_ptr<TractModel> tract_model(new TractModel(handle.get()));
+    std::string file_name = po.get("tract");
+    if(file_name.find('*') != std::string::npos)
     {
-        std::string file_name = po.get("tract");
+        QDir dir = QDir::currentPath();
+        QStringList name_list = dir.entryList(QStringList(file_name.c_str()),QDir::Files|QDir::NoSymLinks);
+        std::vector<std::shared_ptr<TractModel> > tracts;
+        std::vector<std::string> name_list_str;
+        for(int i = 0;i < name_list.size();++i)
+        {
+            std::cout << "loading " << name_list[i].toStdString() << "..." <<std::endl;
+            tracts.push_back(std::make_shared<TractModel>(handle.get()));
+            if(!tracts.back()->load_from_file(name_list[i].toStdString().c_str()))
+            {
+                std::cout << "open file error. terminating..." << std::endl;
+                return 1;
+            }
+            name_list_str.push_back(name_list[i].toStdString());
+        }
+        if(po.has("output"))
+        {
+            std::string file_list = po.get("output");
+            TractModel::save_all(file_name.c_str(),tracts,name_list_str);
+        }
+    }
+    else
+    {
+        std::shared_ptr<TractModel> tract_model(new TractModel(handle.get()));
         {
             std::cout << "loading " << file_name << "..." <<std::endl;
             if(!QFileInfo(file_name.c_str()).exists())
