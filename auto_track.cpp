@@ -235,7 +235,8 @@ std::string run_auto_track(
                 continue;
 
             bool has_stat_file = QFileInfo(stat_file_name.c_str()).exists();
-            bool has_trk_file = QFileInfo(trk_file_name.c_str()).exists();
+            bool has_trk_file = QFileInfo(trk_file_name.c_str()).exists() &&
+                    (!export_template_trk || QFileInfo(template_trk_file_name.c_str()).exists());
             if(has_stat_file)
                 std::cout << "found stat file:" << stat_file_name << std::endl;
             if(has_trk_file)
