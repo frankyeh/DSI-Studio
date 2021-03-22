@@ -149,17 +149,16 @@ int ana(void)
     std::string file_name = po.get("tract");
     if(file_name.find('*') != std::string::npos && po.has("output"))
     {
-        std::string file_list = po.get("output");
+        std::string output = po.get("output");
         QDir dir = QDir::currentPath();
         QStringList name_list = dir.entryList(QStringList(file_name.c_str()),QDir::Files|QDir::NoSymLinks);
 
-        if(QString(file_list.c_str()).endsWith("nii.gz"))
+        if(QString(output.c_str()).endsWith("nii.gz"))
         {
             auto dim = handle->dim;
             tipl::image<uint32_t,3> accumulate_map(dim);
             for(int i = 0;i < name_list.size();++i)
             {
-                std::cout << "loading " << name_list[i].toStdString() << "..." <<std::endl;
                 TractModel tract_model(handle.get());
                 if(!tract_model.load_from_file(name_list[i].toStdString().c_str()))
                 {
@@ -178,9 +177,9 @@ int ana(void)
             }
             tipl::image<float,3> pdi(accumulate_map);
             tipl::multiply_constant(pdi,1.0f/float(name_list.size()));
-            if(gz_nifti::save_to_file(file_name.c_str(),pdi,handle->vs,handle->trans_to_mni))
+            if(gz_nifti::save_to_file(output.c_str(),pdi,handle->vs,handle->trans_to_mni))
             {
-                std::cout << "file saved at " << file_name << std::endl;
+                std::cout << "file saved at " << output << std::endl;
                 return 0;
             }
             return 1;
@@ -189,7 +188,6 @@ int ana(void)
         std::vector<std::string> name_list_str;
         for(int i = 0;i < name_list.size();++i)
         {
-            std::cout << "loading " << name_list[i].toStdString() << "..." <<std::endl;
             tracts.push_back(std::make_shared<TractModel>(handle.get()));
             if(!tracts.back()->load_from_file(name_list[i].toStdString().c_str()))
             {
