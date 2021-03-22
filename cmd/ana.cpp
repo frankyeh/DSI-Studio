@@ -143,13 +143,19 @@ int ana(void)
     if(!po.has("tract"))
     {
         std::cout << "no tract file or ROI file assigned." << std::endl;
-        return 0;
+        return 1;
     }
 
     std::string file_name = po.get("tract");
     if(file_name.find('*') != std::string::npos && po.has("output"))
     {
         std::string output = po.get("output");
+        if(QFileInfo(output.c_str()).exists())
+        {
+            std::cout << "output file:" << output << " exists. terminating..." << std::endl;
+            return 0;
+        }
+
         QDir dir = QDir::currentPath();
         QStringList name_list = dir.entryList(QStringList(file_name.c_str()),QDir::Files|QDir::NoSymLinks);
 
@@ -162,7 +168,7 @@ int ana(void)
                 TractModel tract_model(handle.get());
                 if(!tract_model.load_from_file(name_list[i].toStdString().c_str()))
                 {
-                    std::cout << "open file error. terminating..." << std::endl;
+                    std::cout << "open file error:" << name_list[i].toStdString() << std::endl;
                     return 1;
                 }
                 std::cout << "accumulating " << name_list[i].toStdString() << "..." <<std::endl;
@@ -196,7 +202,7 @@ int ana(void)
             }
             name_list_str.push_back(name_list[i].toStdString());
         }
-        TractModel::save_all(file_name.c_str(),tracts,name_list_str);
+        TractModel::save_all(output.c_str(),tracts,name_list_str);
     }
     else
     {
