@@ -147,10 +147,44 @@ int ana(void)
     }
 
     std::string file_name = po.get("tract");
-    if(file_name.find('*') != std::string::npos)
+    if(file_name.find('*') != std::string::npos && po.has("output"))
     {
+        std::string file_list = po.get("output");
         QDir dir = QDir::currentPath();
         QStringList name_list = dir.entryList(QStringList(file_name.c_str()),QDir::Files|QDir::NoSymLinks);
+
+        if(QString(file_list.c_str()).endsWith("nii.gz"))
+        {
+            auto dim = handle->dim;
+            tipl::image<uint32_t,3> accumulate_map(dim);
+            for(int i = 0;i < name_list.size();++i)
+            {
+                std::cout << "loading " << name_list[i].toStdString() << "..." <<std::endl;
+                TractModel tract_model(handle.get());
+                if(!tract_model.load_from_file(name_list[i].toStdString().c_str()))
+                {
+                    std::cout << "open file error. terminating..." << std::endl;
+                    return 1;
+                }
+                std::cout << "accumulating " << name_list[i].toStdString() << "..." <<std::endl;
+                std::vector<tipl::vector<3,short> > points;
+                tract_model.to_voxel(points,1.0f);
+                tipl::par_for(points.size(),[&](size_t j)
+                {
+                    tipl::vector<3,short> p = points[j];
+                    if(dim.is_valid(p))
+                        accumulate_map[tipl::pixel_index<3>(p[0],p[1],p[2],dim).index()]++;
+                });
+            }
+            tipl::image<float,3> pdi(accumulate_map);
+            tipl::multiply_constant(pdi,1.0f/float(name_list.size()));
+            if(gz_nifti::save_to_file(file_name.c_str(),pdi,handle->vs,handle->trans_to_mni))
+            {
+                std::cout << "file saved at " << file_name << std::endl;
+                return 0;
+            }
+            return 1;
+        }
         std::vector<std::shared_ptr<TractModel> > tracts;
         std::vector<std::string> name_list_str;
         for(int i = 0;i < name_list.size();++i)
@@ -164,11 +198,7 @@ int ana(void)
             }
             name_list_str.push_back(name_list[i].toStdString());
         }
-        if(po.has("output"))
-        {
-            std::string file_list = po.get("output");
-            TractModel::save_all(file_name.c_str(),tracts,name_list_str);
-        }
+        TractModel::save_all(file_name.c_str(),tracts,name_list_str);
     }
     else
     {
