@@ -232,7 +232,10 @@ std::string run_auto_track(
             stat_files[j].push_back(stat_file_name);
 
             if(QFileInfo(no_result_file_name.c_str()).exists() && !overwrite)
+            {
+                std::cout << "skip " << track_name << " due to no result" << std::endl;
                 continue;
+            }
 
             bool has_stat_file = QFileInfo(stat_file_name.c_str()).exists();
             bool has_trk_file = QFileInfo(trk_file_name.c_str()).exists() &&
