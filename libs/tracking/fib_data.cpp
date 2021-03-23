@@ -1299,19 +1299,25 @@ void fib_data::run_normalization(bool background,bool inv)
     gz_mat_read in;
     if(in.load_from_file(output_file_name.c_str()))
     {
-        tipl::image<tipl::vector<3,float>,3 > mni(inv ? template_I.geometry() : dim);
-        const float* ptr = nullptr;
-        unsigned int row,col;
-        in.read("mapping",row,col,ptr);
-        if(row == 3 && col == mni.size() && ptr)
+        // check if the current fib files has the same recon steps as the one generating the maps
+        std::string check_steps;
+        in.read("steps",check_steps);
+        if(check_steps.empty() || check_steps == steps)
         {
-            std::copy(ptr,ptr+col*row,&mni[0][0]);
-            if(inv)
-                inv_mni_position.swap(mni);
-            else
-                mni_position.swap(mni);
-            prog = 5;
-            return;
+            tipl::image<tipl::vector<3,float>,3 > mni(inv ? template_I.geometry() : dim);
+            const float* ptr = nullptr;
+            unsigned int row,col;
+            in.read("mapping",row,col,ptr);
+            if(row == 3 && col == mni.size() && ptr)
+            {
+                std::copy(ptr,ptr+col*row,&mni[0][0]);
+                if(inv)
+                    inv_mni_position.swap(mni);
+                else
+                    mni_position.swap(mni);
+                prog = 5;
+                return;
+            }
         }
     }
     if(background)
@@ -1320,11 +1326,21 @@ void fib_data::run_normalization(bool background,bool inv)
     bool terminated = false;
     auto lambda = [this,output_file_name,inv,&terminated]()
     {
+        tipl::transformation_matrix<double> T;
 
         auto It = template_I;
         auto It2 = template_I2;
-        tipl::transformation_matrix<double> T;
         tipl::image<float,3> Is(dir.fa[0],dim);
+        tipl::image<float,3> Is2;
+
+        for(unsigned int i = 0;i < view_item.size();++i)
+            if(view_item[i].name == std::string("iso"))
+                Is2 = view_item[i].image_data;
+        if(Is2.empty()) // DTI reconstruction
+        for(unsigned int i = 0;i < view_item.size();++i)
+            if(view_item[i].name == std::string("md"))
+                Is2 = view_item[i].image_data;
+
         unsigned int downsampling = 0;
 
         while(Is.size() > It.size())
@@ -1339,7 +1355,12 @@ void fib_data::run_normalization(bool background,bool inv)
         tvs *= std::sqrt((It.plane_size()*template_vs[0]*template_vs[1])/
                 (Is.plane_size()*vs[0]*vs[1]));
         if(template_vs[0] < 1.0f) // animal
-            animal_reg(It,template_vs,Is,tvs,T,terminated);
+        {
+            if(Is2.empty() || It2.empty())
+                animal_reg(It,template_vs,Is,tvs,T,terminated);
+            else
+                animal_reg(It2,template_vs,Is2,tvs,T,terminated);
+        }
         else
             tipl::reg::two_way_linear_mr(It,template_vs,Is,tvs,T,tipl::reg::affine,
                                          tipl::reg::mutual_information(),terminated);
@@ -1349,19 +1370,12 @@ void fib_data::run_normalization(bool background,bool inv)
 
         if(terminated)
             return;
+        prog = 2;
         tipl::image<float,3> Iss(It.geometry());
         tipl::resample_mt(Is,Iss,T,tipl::linear);
-        prog = 2;
         tipl::image<float,3> Iss2;
-        if(It2.geometry() == It.geometry())
-        {
-            for(unsigned int i = 0;i < view_item.size();++i)
-                if(view_item[i].name == std::string("iso"))
-                {
-                    Iss2.resize(It.geometry());
-                    tipl::resample_mt(view_item[i].image_data,Iss2,T,tipl::linear);
-                }
-        }
+        if(!Is2.empty())
+            tipl::resample_mt(Is2,Iss2,T,tipl::linear);
         prog = 3;
         tipl::image<tipl::vector<3>,3> dis,inv_dis;
         tipl::reg::cdm_pre(It,It2,Iss,Iss2);
@@ -1420,7 +1434,7 @@ void fib_data::run_normalization(bool background,bool inv)
                 out.write("mapping",&inv_mni_position[0][0],3,inv_mni_position.size());
             else
                 out.write("mapping",&mni_position[0][0],3,mni_position.size());
-
+            out.write("steps",steps);
         }
         prog = 5;
     };
