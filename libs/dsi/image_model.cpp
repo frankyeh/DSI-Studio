@@ -498,7 +498,7 @@ bool ImageModel::command(std::string cmd,std::string param)
         voxel.steps += cmd+"="+param+"\n";
         return true;
     }
-    if(cmd == "[Step T2][Edit][Trim]")
+    if(cmd == "[Step T2][Edit][Crop Background]")
     {
         trim();
         voxel.steps += cmd+"\n";
