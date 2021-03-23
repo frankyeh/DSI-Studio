@@ -1487,7 +1487,7 @@ void tracking_window::on_actionQuality_Assessment_triggered()
                                                  {return tipl::vector<3>(handle->dir.get_dir(pos,fib));});
     std::ostringstream out;
     out << "Fiber coherence index: " << result.first << std::endl;
-    out << "Fiber discoherent index: " << result.second << std::endl;
+    out << "Fiber incoherent index: " << result.second << std::endl;
     show_info_dialog("Quality assessment",out.str().c_str());
 }
 
