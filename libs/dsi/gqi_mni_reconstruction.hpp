@@ -126,7 +126,12 @@ public:
                     bool terminated = false;
                     if(!run_prog("Linear Registration",[&](){
                         if(VGvs[0] < 1.0f) // animal recon
-                            animal_reg(VG,VGvs,VF,voxel.vs,affine,terminated);
+                        {
+                            if(VF2.empty() || VG2.empty())
+                                animal_reg(VG,VGvs,VF,voxel.vs,affine,terminated);
+                            else
+                                animal_reg(VG2,VGvs,VF2,voxel.vs,affine,terminated);
+                        }
                         else
                             tipl::reg::two_way_linear_mr(VG,VGvs,VF,voxel.vs,affine,
                                     tipl::reg::affine,tipl::reg::correlation(),terminated,voxel.thread_count);
