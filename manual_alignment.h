@@ -18,7 +18,7 @@ public:
     tipl::image<float,3> from_original;
     tipl::image<float,3> from,to,warped_from;
     tipl::matrix<4,4,float> nifti_srow;
-    tipl::affine_transform<double> arg,b_upper,b_lower;
+    tipl::affine_transform<float> arg,b_upper,b_lower;
     tipl::vector<3> from_vs,to_vs;
     QGraphicsScene scene[3];
     tipl::color_image buffer[3];
@@ -46,7 +46,6 @@ public:
 private slots:
     void slice_pos_moved();
     void param_changed();
-    void check_reg();
     void on_buttonBox_accepted();
 
     void on_buttonBox_rejected();
@@ -57,8 +56,11 @@ private slots:
 
     void on_save_warpped_clicked();
 
+    void on_reg_type_currentIndexChanged(int index);
+
 public slots:
     void on_rerun_clicked();
+    void check_reg();
 private:
     Ui::manual_alignment *ui;
     void update_image(void);

@@ -9,7 +9,7 @@
 #include "prog_interface_static_link.h"
 #include "fib_data.hpp"
 
-SliceModel::SliceModel(fib_data* handle_,int view_id_):handle(handle_),view_id(view_id_)
+SliceModel::SliceModel(fib_data* handle_,uint32_t view_id_):handle(handle_),view_id(view_id_)
 {
     slice_visible[0] = false;
     slice_visible[1] = false;
@@ -98,7 +98,8 @@ CustomSliceModel::CustomSliceModel(fib_data* new_handle):
 // ---------------------------------------------------------------------------
 void CustomSliceModel::initialize(void)
 {
-    view_id = handle->view_item.size()-1;
+    if(!handle->view_item.empty())
+        view_id = uint32_t(handle->view_item.size()-1);
     geometry = source_images.geometry();
     handle->view_item.back().image_data = tipl::make_image(&*source_images.begin(),source_images.geometry());
     handle->view_item.back().set_scale(source_images.begin(),source_images.end());
@@ -112,9 +113,17 @@ void CustomSliceModel::initialize(void)
     v2c.two_color(handle->view_item[view_id].min_color,handle->view_item[view_id].max_color);
 }
 // ---------------------------------------------------------------------------
+void CustomSliceModel::get_slice(tipl::color_image& image,
+                           unsigned char dim,
+                           const std::vector<std::shared_ptr<SliceModel> >& overlay_slices) const
+{
+    if(picture.empty())
+        return SliceModel::get_slice(image,dim,overlay_slices);
+    image = picture;
+}
+// ---------------------------------------------------------------------------
 void initial_LPS_nifti_srow(tipl::matrix<4,4,float>& T,const tipl::geometry<3>& geo,const tipl::vector<3>& vs);
-bool CustomSliceModel::initialize(const std::vector<std::string>& files,
-                                  bool correct_intensity)
+bool CustomSliceModel::initialize(const std::vector<std::string>& files)
 {
     terminated = true;
     ended = true;
@@ -128,133 +137,162 @@ bool CustomSliceModel::initialize(const std::vector<std::string>& files,
     name = QFileInfo(files[0].c_str()).completeBaseName().remove(".nii").toStdString();
 
     if(QFileInfo(files[0].c_str()).suffix() == "bmp" ||
-            QFileInfo(files[0].c_str()).suffix() == "jpg")
+       QFileInfo(files[0].c_str()).suffix() == "jpg" ||
+       QFileInfo(files[0].c_str()).suffix() == "png")
 
     {
         QString info_file = QString(files[0].c_str()) + ".info.txt";
         if(!QFileInfo(info_file).exists())
         {
-            error_msg = "Cannot find ";
-            error_msg += info_file.toStdString();
-            return false;
-        }
-        std::ifstream in(info_file.toStdString().c_str());
-        in >> geometry[0];
-        in >> geometry[1];
-        in >> geometry[2];
-        in >> voxel_size[0];
-        in >> voxel_size[1];
-        in >> voxel_size[2];
-        std::copy(std::istream_iterator<float>(in),
-                  std::istream_iterator<float>(),T.begin());
-        if(geometry[2] != int(files.size()))
-        {
-            error_msg = "Invalid BMP info text: file count does not match.";
-            return false;
-        }
-        unsigned int in_plane_subsample = 1;
-        unsigned int slice_subsample = 1;
-
-        // non isotropic condition
-        while(voxel_size[2]/voxel_size[0] > 1.5f)
-        {
-            ++in_plane_subsample;
-            geometry[0] = geometry[0] >> 1;
-            geometry[1] = geometry[1] >> 1;
-            voxel_size[0] *= 2.0f;
-            voxel_size[1] *= 2.0f;
-            T[0] *= 2.0f;
-            T[1] *= 2.0f;
-            T[4] *= 2.0f;
-            T[5] *= 2.0f;
-            T[8] *= 2.0f;
-            T[9] *= 2.0f;
-        }
-        tipl::geometry<3> geo(geometry);
-
-        bool ok = true;
-        int down_size = (geo[2] > 1 ? QInputDialog::getInt(nullptr,"DSI Studio",
-                "Downsampling count (0:no downsampling)",1,0,4,1,&ok) : 0);
-        if(!ok)
-        {
-            error_msg = "Slice loading canceled";
-            return false;
-        }
-        for(int i = 0;i < down_size;++i)
-        {
-            geo[0] = geo[0] >> 1;
-            geo[1] = geo[1] >> 1;
-            geo[2] = geo[2] >> 1;
-            voxel_size *= 2.0;
-            tipl::multiply_constant(T.begin(),T.begin()+3,2.0);
-            tipl::multiply_constant(T.begin()+4,T.begin()+7,2.0);
-            tipl::multiply_constant(T.begin()+8,T.begin()+11,2.0);
-            ++in_plane_subsample;
-            ++slice_subsample;
-        }
-
-
-        try{
-            source_images.resize(geo);
-        }
-        catch(...)
-        {
-            error_msg = "Memory allocation failed. Please increase downsampling count";
-            return false;
-        }
-
-        begin_prog("loading images");
-        for(unsigned int i = 0;check_prog(i,geo[2]);++i)
-        {
-            tipl::image<short,2> I;
+            if(files.size() != 1)
+            {
+                error_msg = "multiple jpg/bmp/png files are not supported";
+                return false;
+            }
             QImage in;
-            unsigned int file_index = (slice_subsample == 1 ? i : (i << (slice_subsample-1)));
-            if(file_index >= files.size())
-                break;
-            QString filename(files[file_index].c_str());
-            if(!in.load(filename))
+            if(!in.load(files[0].c_str()))
             {
                 error_msg = "invalid image format: ";
-                error_msg += files[file_index];
+                error_msg += files[0];
                 return false;
             }
-            QImage buf = in.convertToFormat(QImage::Format_RGB32).mirrored();
-            I.resize(tipl::geometry<2>(in.width(),in.height()));
+            QImage buf = in.convertToFormat(QImage::Format_RGB32);
+            picture.resize(tipl::geometry<2>(uint32_t(in.width()),uint32_t(in.height())));
+            source_images.resize(tipl::geometry<3>(uint32_t(in.width()),uint32_t(in.height()),1));
             const uchar* ptr = buf.bits();
-            for(size_t j = 0;j < I.size();++j,ptr += 4)
-                I[j] = *ptr;
-
-            for(size_t j = 1;j < in_plane_subsample;++j)
-                tipl::downsampling(I);
-            if(I.size() != source_images.plane_size())
+            for(size_t j = 0;j < source_images.size();++j,ptr += 4)
             {
-                error_msg = "Invalid BMP image size: ";
-                error_msg += files[file_index];
+                source_images[j] = float(*ptr);
+                picture[j] = tipl::rgb(*ptr,*(ptr+1),*(ptr+2));
+            }
+
+            voxel_size = handle->vs*0.5f*(handle->dim.width())/(in.width());
+            tipl::transformation_matrix<float> M(arg_min,handle->dim,handle->vs,source_images.geometry(),voxel_size);
+            invT.identity();
+            M.save_to_transform(invT.begin());
+            T = tipl::inverse(invT);
+            has_transform = true;
+        }
+        else
+        {
+            std::ifstream in(info_file.toStdString().c_str());
+            in >> geometry[0];
+            in >> geometry[1];
+            in >> geometry[2];
+            in >> voxel_size[0];
+            in >> voxel_size[1];
+            in >> voxel_size[2];
+            std::copy(std::istream_iterator<float>(in),
+                      std::istream_iterator<float>(),T.begin());
+            if(geometry[2] != uint32_t(files.size()))
+            {
+                error_msg = "Invalid BMP info text: file count does not match.";
                 return false;
             }
-            std::copy(I.begin(),I.end(),source_images.begin() + long(i*source_images.plane_size()));
-        }
-        if(prog_aborted())
-            return false;
-        tipl::io::nifti nii;
-        nii.set_dim(geo);
-        nii.set_voxel_size(voxel_size);
-        nii.set_image_transformation(T);
-        nii << source_images;
-        nii.toLPS(source_images);
-        nii.get_voxel_size(voxel_size);
-        nii.get_image_transformation(T);
-        // LPS matrix switched to RAS
+            unsigned int in_plane_subsample = 1;
+            unsigned int slice_subsample = 1;
 
-        T[0] = -T[0];
-        T[1] = -T[1];
-        T[4] = -T[4];
-        T[5] = -T[5];
-        T[8] = -T[8];
-        T[9] = -T[9];
-        invT = tipl::inverse(T);
-        initial_LPS_nifti_srow(trans,source_images.geometry(),voxel_size);
-        has_transform = true;
+            // non isotropic condition
+            while(voxel_size[2]/voxel_size[0] > 1.5f)
+            {
+                ++in_plane_subsample;
+                geometry[0] = geometry[0] >> 1;
+                geometry[1] = geometry[1] >> 1;
+                voxel_size[0] *= 2.0f;
+                voxel_size[1] *= 2.0f;
+                T[0] *= 2.0f;
+                T[1] *= 2.0f;
+                T[4] *= 2.0f;
+                T[5] *= 2.0f;
+                T[8] *= 2.0f;
+                T[9] *= 2.0f;
+            }
+            tipl::geometry<3> geo(geometry);
+
+            bool ok = true;
+            int down_size = (geo[2] > 1 ? QInputDialog::getInt(nullptr,"DSI Studio",
+                    "Downsampling count (0:no downsampling)",1,0,4,1,&ok) : 0);
+            if(!ok)
+            {
+                error_msg = "Slice loading canceled";
+                return false;
+            }
+            for(int i = 0;i < down_size;++i)
+            {
+                geo[0] = geo[0] >> 1;
+                geo[1] = geo[1] >> 1;
+                geo[2] = geo[2] >> 1;
+                voxel_size *= 2.0;
+                tipl::multiply_constant(T.begin(),T.begin()+3,2.0);
+                tipl::multiply_constant(T.begin()+4,T.begin()+7,2.0);
+                tipl::multiply_constant(T.begin()+8,T.begin()+11,2.0);
+                ++in_plane_subsample;
+                ++slice_subsample;
+            }
+
+
+            try{
+                source_images.resize(geo);
+            }
+            catch(...)
+            {
+                error_msg = "Memory allocation failed. Please increase downsampling count";
+                return false;
+            }
+
+            begin_prog("loading images");
+            for(unsigned int i = 0;check_prog(i,geo[2]);++i)
+            {
+                tipl::image<short,2> I;
+                QImage in;
+                unsigned int file_index = (slice_subsample == 1 ? i : (i << (slice_subsample-1)));
+                if(file_index >= files.size())
+                    break;
+                QString filename(files[file_index].c_str());
+                if(!in.load(filename))
+                {
+                    error_msg = "invalid image format: ";
+                    error_msg += files[file_index];
+                    return false;
+                }
+                QImage buf = in.convertToFormat(QImage::Format_RGB32).mirrored();
+                I.resize(tipl::geometry<2>(in.width(),in.height()));
+                const uchar* ptr = buf.bits();
+                for(size_t j = 0;j < I.size();++j,ptr += 4)
+                    I[j] = *ptr;
+
+                for(size_t j = 1;j < in_plane_subsample;++j)
+                    tipl::downsampling(I);
+                if(I.size() != source_images.plane_size())
+                {
+                    error_msg = "Invalid BMP image size: ";
+                    error_msg += files[file_index];
+                    return false;
+                }
+                std::copy(I.begin(),I.end(),source_images.begin() + long(i*source_images.plane_size()));
+            }
+            if(prog_aborted())
+                return false;
+            tipl::io::nifti nii;
+            nii.set_dim(geo);
+            nii.set_voxel_size(voxel_size);
+            nii.set_image_transformation(T);
+            nii << source_images;
+            nii.toLPS(source_images);
+            nii.get_voxel_size(voxel_size);
+            nii.get_image_transformation(T);
+            // LPS matrix switched to RAS
+
+            T[0] = -T[0];
+            T[1] = -T[1];
+            T[4] = -T[4];
+            T[5] = -T[5];
+            T[8] = -T[8];
+            T[9] = -T[9];
+            invT = tipl::inverse(T);
+            initial_LPS_nifti_srow(trans,source_images.geometry(),voxel_size);
+            has_transform = true;
+        }
     }
     else
     {
@@ -322,62 +360,30 @@ bool CustomSliceModel::initialize(const std::vector<std::string>& files,
         has_transform = true;
     }
 
-    // quality control for t1w
-    if(correct_intensity)
-    {
-        float t = tipl::segmentation::otsu_threshold(source_images);
-        float snr = tipl::mean(source_images.begin()+source_images.width(),source_images.begin()+2*source_images.width());
-        // correction for SNR
-        for(unsigned int i = 0;i < 6 && snr != 0 && t/snr < 10;++i)
-        {
-            tipl::filter::gaussian(source_images);
-            t = tipl::segmentation::otsu_threshold(source_images);
-            snr = tipl::mean(source_images.begin()+source_images.width(),source_images.begin()+2*source_images.width());
-        }
-
-        // correction for intensity bias
-        t = tipl::segmentation::otsu_threshold(source_images);
-        std::vector<float> x,y;
-        for(unsigned char dim = 0;dim < 3;++dim)
-        {
-            x.clear();
-            y.clear();
-            for(tipl::pixel_index<3> i(source_images.geometry());i < source_images.size();++i)
-            if(source_images[i.index()] > t)
-            {
-                x.push_back(i[dim]);
-                y.push_back(source_images[i.index()]);
-            }
-            std::pair<double,double> r = tipl::linear_regression(x.begin(),x.end(),y.begin());
-            for(tipl::pixel_index<3> i(source_images.geometry());i < source_images.size();++i)
-                source_images[i.index()] -= (float)i[dim]*r.first;
-            tipl::lower_threshold(source_images,0);
-        }
-    }
-
     if(!has_transform)
     {
         if(handle->dim.depth() < 10) // 2d assume FOV is the same
         {
             T.identity();
             invT.identity();
-            invT[0] = (float)source_images.width()/(float)handle->dim.width();
-            invT[5] = (float)source_images.height()/(float)handle->dim.height();
-            invT[10] = (float)source_images.depth()/(float)handle->dim.depth();
+            invT[0] = float(source_images.width())/float(handle->dim.width());
+            invT[5] = float(source_images.height())/float(handle->dim.height());
+            invT[10] = float(source_images.depth())/float(handle->dim.depth());
             invT[15] = 1.0;
             T = tipl::inverse(invT);
         }
         else
         {
-            size_t iso = handle->get_name_index("iso");// for DDI
+            size_t iso = handle->get_name_index("iso");
             if(handle->view_item.size() != iso)
                 from = handle->view_item[iso].image_data;
-            size_t base_nqa = handle->get_name_index("base_nqa");// for DDI
+            size_t base_nqa = handle->get_name_index("base_nqa");
             if(handle->view_item.size() != base_nqa)
                 from = handle->view_item[base_nqa].image_data;
 
             thread.reset(new std::future<void>(
-                             std::async(std::launch::async,[this](){argmin(tipl::reg::rigid_body);})));
+                std::async(std::launch::async,[this](){argmin(tipl::reg::rigid_body);})));
+
         }
     }
     initialize();
@@ -385,12 +391,17 @@ bool CustomSliceModel::initialize(const std::vector<std::string>& files,
 }
 
 // ---------------------------------------------------------------------------
+
 void CustomSliceModel::argmin(tipl::reg::reg_type reg_type)
 {
     terminated = false;
     ended = false;
     tipl::const_pointer_image<float,3> to = source_images;
-    tipl::transformation_matrix<double> M;
+    tipl::transformation_matrix<float> M;
+
+
+    tipl::affine_transform_2d<float> a;
+    tipl::transformation_matrix_2d<float> m;
 
     // assume brain top
     float z_shift = (float(from.geometry()[2])*from_vs[2]-float(to.geometry()[2])*voxel_size[2])*0.1f;
@@ -398,6 +409,7 @@ void CustomSliceModel::argmin(tipl::reg::reg_type reg_type)
 
     tipl::reg::two_way_linear_mr(from,from_vs,to,voxel_size,M,reg_type,tipl::reg::mutual_information(),terminated,
                                   std::thread::hardware_concurrency(),&arg_min);
+
     ended = true;
     M.save_to_transform(invT.begin());
     handle->view_item[view_id].T = T = tipl::inverse(invT);
@@ -406,7 +418,7 @@ void CustomSliceModel::argmin(tipl::reg::reg_type reg_type)
 // ---------------------------------------------------------------------------
 void CustomSliceModel::update(void)
 {
-    tipl::transformation_matrix<double> M(arg_min,from.geometry(),from_vs,source_images.geometry(),voxel_size);
+    tipl::transformation_matrix<float> M(arg_min,from.geometry(),from_vs,source_images.geometry(),voxel_size);
     invT.identity();
     M.save_to_transform(invT.begin());
     handle->view_item[view_id].T = T = tipl::inverse(invT);

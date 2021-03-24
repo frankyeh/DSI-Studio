@@ -2100,7 +2100,6 @@ bool GLWidget::get_mouse_pos(QMouseEvent *event,tipl::vector<3,float>& position)
     show_slice[1] = cur_tracking_window.ui->glCorCheck->checkState();
     show_slice[2] = cur_tracking_window.ui->glAxiCheck->checkState();
     // select slice
-    slice_selected = false;
     {
         // now check whether the slices are selected
         std::vector<float> x(3),y(3),d(3);
@@ -2160,7 +2159,8 @@ void GLWidget::mousePressEvent(QMouseEvent *event)
                 return;
             }
             // if only slice is selected or slice is at the front, then move slice
-            if(slice_selected && object_distance > slice_distance)
+            // if only one slice, then the slice will be moved.
+            if(slice_selected && object_distance > slice_distance && cur_tracking_window.current_slice->geometry[2] != 1)
             {
                 editing_option = dragging;
                 return;
@@ -2293,6 +2293,28 @@ void GLWidget::mouseMoveEvent(QMouseEvent *event)
                 accumulated_dis += dis;
             }
         }
+
+        if(slice_selected && dynamic_cast<CustomSliceModel*>(cur_tracking_window.current_slice.get()))
+        {
+            auto slice = dynamic_cast<CustomSliceModel*>(cur_tracking_window.current_slice.get());
+            if (event->buttons() & Qt::LeftButton)
+            {
+                slice->arg_min[0] -= dis[0]*0.5f;
+                slice->arg_min[1] -= dis[1]*0.5f;
+                slice->arg_min[2] -= dis[2]*0.5f;
+            }
+            else
+            {
+                auto dif = curPos-lastPos;
+                slice->arg_min.scaling[0] += dif.x()*0.005f;
+                slice->arg_min.scaling[1] += dif.y()*0.005f;
+                lastPos = curPos;
+            }
+            emit region_edited();
+            slice->update();
+            updateGL();
+            accumulated_dis += dis;
+        }
         return;
     }
     // move slice
@@ -2303,7 +2325,7 @@ void GLWidget::mouseMoveEvent(QMouseEvent *event)
         get_view_dir(curPos,dir2);
         float move_dis = (dir2-dir1)*get_norm(points);
         move_dis *= slice_distance;
-        if(std::fabs(move_dis) < 1.0)
+        if(std::fabs(move_dis) < 1.0f)
             return;
         move_dis = std::round(move_dis);
         switch(moving_at_slice_index)

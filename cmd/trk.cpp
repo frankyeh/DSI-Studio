@@ -31,7 +31,7 @@ void check_other_slices(std::shared_ptr<fib_data> handle)
         std::vector<std::string> files;
         files.push_back(slice_list[i].toStdString());
         std::cout << "add other slice: " << QFileInfo(slice_list[i]).baseName().toStdString() << std::endl;
-        if(!other_slices.back()->initialize(files,true))
+        if(!other_slices.back()->initialize(files))
         {
             std::cout << "ERROR: fail to load " << files.back() << std::endl;
             return;
@@ -52,7 +52,7 @@ bool get_t1t2_nifti(std::shared_ptr<fib_data> handle,
         t1t2_slices = std::make_shared<CustomSliceModel>(handle.get());
         std::vector<std::string> files;
         files.push_back(po.get("t1t2"));
-        if(!t1t2_slices->initialize(files,true))
+        if(!t1t2_slices->initialize(files))
         {
             std::cout << "ERROR: fail to load " << files.back() << std::endl;
             return false;
@@ -492,7 +492,7 @@ void trk_post(std::shared_ptr<fib_data> handle,std::shared_ptr<TractModel> tract
                 std::vector<std::string> files;
                 files.push_back(po.get("ref"));
                 CustomSliceModel new_slice(handle.get());
-                if(!new_slice.initialize(files,false))
+                if(!new_slice.initialize(files))
                 {
                     std::cout << "error reading ref image file" << std::endl;
                     return;

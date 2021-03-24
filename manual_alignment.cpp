@@ -56,6 +56,7 @@ manual_alignment::manual_alignment(QWidget *parent,
     connect(ui->sag_slice_pos,SIGNAL(valueChanged(int)),this,SLOT(slice_pos_moved()));
     connect(ui->cor_slice_pos,SIGNAL(valueChanged(int)),this,SLOT(slice_pos_moved()));
     connect(ui->axi_slice_pos,SIGNAL(valueChanged(int)),this,SLOT(slice_pos_moved()));
+    connect(ui->zoom,SIGNAL(valueChanged(double)),this,SLOT(slice_pos_moved()));
     connect(ui->blend_pos,SIGNAL(valueChanged(int)),this,SLOT(slice_pos_moved()));
 
     timer = new QTimer(this);
@@ -154,7 +155,7 @@ void manual_alignment::load_param(void)
 
 void manual_alignment::update_image(void)
 {
-    T = tipl::transformation_matrix<double>(arg,from.geometry(),from_vs,to.geometry(),to_vs);
+    T = tipl::transformation_matrix<float>(arg,from.geometry(),from_vs,to.geometry(),to_vs);
     iT = T;
     iT.inverse();
     warped_from.clear();
@@ -205,9 +206,7 @@ void manual_alignment::slice_pos_moved()
     slice_pos[0] = ui->sag_slice_pos->value();
     slice_pos[1] = ui->cor_slice_pos->value();
     slice_pos[2] = ui->axi_slice_pos->value();
-    double ratio =
-        std::min((double)(ui->axi_view->width()-10)/(double)warped_from.width(),
-                 (double)(ui->axi_view->height()-10)/(double)warped_from.height());
+    double ratio = ui->zoom->value();
     float w1 = ui->blend_pos->value()/10.0;
     float w2 = 1.0-w1;
     w1*= 255.0;
@@ -282,16 +281,8 @@ void manual_alignment::on_rerun_clicked()
     if(ui->reg_type->currentIndex() <= 1) // translocation or rigid
     {
         ui->rotation_group->setEnabled(reg_type == tipl::reg::rigid_body);
-        ui->scaling_group->setEnabled(false);
-        ui->tilting_group->setEnabled(false);
         arg.scaling[0] = arg.scaling[1] = arg.scaling[2] = 1.0f;
         arg.affine[0] = arg.affine[1] = arg.affine[2] = 0.0f;
-    }
-    else
-    {
-        ui->rotation_group->setEnabled(true);
-        ui->scaling_group->setEnabled(true);
-        ui->tilting_group->setEnabled(true);
     }
     load_param();
 
@@ -299,13 +290,13 @@ void manual_alignment::on_rerun_clicked()
     {
         if(cost == tipl::reg::mutual_info)
         {
-            tipl::reg::linear(from,from_vs,to,to_vs,arg,reg_type,tipl::reg::mutual_information(),thread.terminated,0.01,50,tipl::reg::large_bound);
-            tipl::reg::linear(from,from_vs,to,to_vs,arg,reg_type,tipl::reg::mutual_information(),thread.terminated,0.001,50,tipl::reg::large_bound);
+            tipl::reg::linear(from,from_vs,to,to_vs,arg,reg_type,tipl::reg::faster<tipl::reg::mutual_information>(),thread.terminated,0.01,0,tipl::reg::large_bound);
+            tipl::reg::linear(from,from_vs,to,to_vs,arg,reg_type,tipl::reg::faster<tipl::reg::mutual_information>(),thread.terminated,0.001,0,tipl::reg::large_bound);
         }
         else
         {
-            tipl::reg::linear(from,from_vs,to,to_vs,arg,reg_type,tipl::reg::correlation(),thread.terminated,0.01,50,tipl::reg::large_bound);
-            tipl::reg::linear(from,from_vs,to,to_vs,arg,reg_type,tipl::reg::correlation(),thread.terminated,0.001,50,tipl::reg::large_bound);
+            tipl::reg::linear(from,from_vs,to,to_vs,arg,reg_type,tipl::reg::faster<tipl::reg::correlation>(),thread.terminated,0.01,0,tipl::reg::large_bound);
+            tipl::reg::linear(from,from_vs,to,to_vs,arg,reg_type,tipl::reg::faster<tipl::reg::correlation>(),thread.terminated,0.001,0,tipl::reg::large_bound);
         }
 
     });
@@ -331,3 +322,19 @@ void manual_alignment::on_save_warpped_clicked()
     gz_nifti::save_to_file(filename.toStdString().c_str(),I,to_vs,nifti_srow);
 }
 
+
+void manual_alignment::on_reg_type_currentIndexChanged(int index)
+{
+    if(ui->reg_type->currentIndex() <= 1) // translocation or rigid
+    {
+        tipl::reg::get_bound(from,to,arg,b_upper,b_lower,tipl::reg::rigid_body,tipl::reg::large_bound);
+        ui->scaling_group->setEnabled(false);
+        ui->tilting_group->setEnabled(false);
+    }
+    else
+    {
+        tipl::reg::get_bound(from,to,arg,b_upper,b_lower,tipl::reg::affine,tipl::reg::large_bound);
+        ui->scaling_group->setEnabled(true);
+        ui->tilting_group->setEnabled(true);
+    }
+}

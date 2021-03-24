@@ -163,9 +163,9 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
             if(handle->is_qsdr && handle->is_human_data)
             {
                 if(QFileInfo(QString(t1w_template_file_name.c_str())).exists())
-                    addSlices(QStringList() << QString(t1w_template_file_name.c_str()),"icbm_t1w",false,false);
+                    addSlices(QStringList() << QString(t1w_template_file_name.c_str()),"icbm_t1w",true);
                 if(QFileInfo(QString(wm_template_file_name.c_str())).exists())
-                    addSlices(QStringList() << QString(wm_template_file_name.c_str()),"icbm_wm",false,false);
+                    addSlices(QStringList() << QString(wm_template_file_name.c_str()),"icbm_wm",true);
             }
             populate_templates(ui->template_box);
             ui->template_box->setCurrentIndex(handle->template_id);
@@ -597,7 +597,7 @@ bool tracking_window::command(QString cmd,QString param,QString param2)
             QDir::setCurrent(param+"/slices");
             QStringList slice_list = QDir().entryList(QStringList("*nii.gz"),QDir::Files|QDir::NoSymLinks);
             for(int i = 0;i < slice_list.size();++i)
-                addSlices(QStringList(slice_list[i]),QFileInfo(slice_list[0]).baseName(),renderWidget->getData("slice_smoothing").toBool(),false);
+                addSlices(QStringList(slice_list[i]),QFileInfo(slice_list[0]).baseName(),true);
         }
 
         QDir::setCurrent(param);
@@ -769,8 +769,8 @@ bool tracking_window::command(QString cmd,QString param,QString param2)
     }
     if(cmd == "add_slice")
     {
-        if(!addSlices(QStringList() << param,param,renderWidget->getData("slice_smoothing").toBool(),true))
-            return true;
+        if(!addSlices(QStringList() << param,param,true))
+            return false;
         std::cout << "register image to the DWI space" << std::endl;
         CustomSliceModel* cur_slice = (CustomSliceModel*)slices.back().get();
         if(cur_slice->thread.get())
@@ -1749,11 +1749,11 @@ void tracking_window::stripSkull()
     manual->on_rerun_clicked();
     if(manual->exec() != QDialog::Accepted)
         return;
-    auto T = tipl::transformation_matrix<double>(manual->arg,
+    auto T = tipl::transformation_matrix<float>(manual->arg,
         It.geometry(),vs,J.geometry(),vsJ);
 
     tipl::multiply_constant(T.data,T.data+12,4.0f);
-    tipl::transformation_matrix<double> iT = T;
+    tipl::transformation_matrix<float> iT = T;
     iT.inverse();
 
     tipl::filter::mean(Iw);
@@ -1823,11 +1823,15 @@ void tracking_window::on_actionAdjust_Mapping_triggered()
         QMessageBox::information(this,"Error","In the region window to the left, select the inserted slides to adjust mapping");
         return;
     }
+    size_t index = handle->get_name_index("iso");
+    if(handle->view_item.size() == index)
+        index = 0;
     std::shared_ptr<manual_alignment> manual(new manual_alignment(this,
-        slices[0]->get_source(),slices[0]->voxel_size,
+        handle->view_item[index].image_data,slices[0]->voxel_size,
         reg_slice->get_source(),reg_slice->voxel_size,
-            tipl::reg::rigid_body,tipl::reg::cost_type::mutual_info));
-    manual->on_rerun_clicked();
+        (reg_slice->source_images.depth() == 1 ? tipl::reg::affine : tipl::reg::rigid_body),tipl::reg::cost_type::mutual_info));
+    manual->arg = reg_slice->arg_min;
+    manual->check_reg();
     if(manual->exec() != QDialog::Accepted)
         return;
     reg_slice->terminate();
@@ -1965,7 +1969,7 @@ void tracking_window::updateSlicesMenu(void)
     color_bar->update_slice_indices();
 }
 
-bool tracking_window::addSlices(QStringList filenames,QString name,bool correct_intensity,bool cmd)
+bool tracking_window::addSlices(QStringList filenames,QString name,bool cmd)
 {
     std::vector<std::string> files(filenames.size());
     for (unsigned int index = 0; index < filenames.size(); ++index)
@@ -1974,7 +1978,7 @@ bool tracking_window::addSlices(QStringList filenames,QString name,bool correct_
     CustomSliceModel* reg_slice_ptr = dynamic_cast<CustomSliceModel*>(new_slice.get());
     if(!reg_slice_ptr)
         return false;
-    if(!reg_slice_ptr->initialize(files,correct_intensity))
+    if(!reg_slice_ptr->initialize(files))
     {
         if(!cmd)
             QMessageBox::information(this,"DSI Studio",reg_slice_ptr->error_msg.c_str(),0);
@@ -1985,7 +1989,7 @@ bool tracking_window::addSlices(QStringList filenames,QString name,bool correct_
     slices.push_back(new_slice);
     ui->SliceModality->addItem(name);
 
-    if(!cmd && !timer2.get())
+    if(!timer2.get())
     {
         timer2.reset(new QTimer());
         timer2->setInterval(200);
@@ -1995,6 +1999,14 @@ bool tracking_window::addSlices(QStringList filenames,QString name,bool correct_
     }
     ui->SliceModality->setCurrentIndex(handle->view_item.size()-1);
     updateSlicesMenu();
+    if(!cmd)
+    {
+        set_data("show_slice",Qt::Checked);
+        ui->glSagCheck->setChecked(true);
+        ui->glCorCheck->setChecked(true);
+        ui->glAxiCheck->setChecked(true);
+        glWidget->update();
+    }
     return true;
 }
 
@@ -2012,7 +2024,7 @@ void tracking_window::check_reg(void)
     }
     scene.show_slice();
     if(all_ended)
-        timer2.reset(0);
+        timer2.reset(nullptr);
     else
         glWidget->updateGL();
 }
@@ -2105,7 +2117,7 @@ void tracking_window::on_track_style_currentIndexChanged(int index)
 void tracking_window::on_addSlices_clicked()
 {
     QStringList filenames = QFileDialog::getOpenFileNames(
-        this,"Open Images files",QFileInfo(windowTitle()).absolutePath(),"Image files (*.dcm *.hdr *.nii *nii.gz *.jpg *.bmp 2dseq);;All files (*)" );
+        this,"Open Images files",QFileInfo(windowTitle()).absolutePath(),"Image files (*.dcm *.hdr *.nii *nii.gz 2dseq);;All files (*)" );
     if( filenames.isEmpty())
         return;
     if(QFileInfo(filenames[0]).completeSuffix() == "dcm" && filenames.size() == 1)
@@ -2128,12 +2140,7 @@ void tracking_window::on_addSlices_clicked()
             }
         }
     }
-    addSlices(filenames,QFileInfo(filenames[0]).baseName(),renderWidget->getData("slice_smoothing").toBool(),false);
-    set_data("show_slice",true);
-    ui->glSagCheck->setChecked(true);
-    ui->glCorCheck->setChecked(true);
-    ui->glAxiCheck->setChecked(true);
-    glWidget->update();
+    addSlices(filenames,QFileInfo(filenames[0]).baseName(),false);
 }
 
 void tracking_window::on_actionSingle_triggered()
@@ -2713,3 +2720,38 @@ void tracking_window::on_max_slider_sliderMoved(int)
                       double(ui->max_slider->value())/double(ui->max_slider->maximum()));
 }
 
+
+void tracking_window::on_actionInsert_Axial_Pictures_triggered()
+{
+    QString filename = QFileDialog::getOpenFileName(
+        this,"Open Picture",QFileInfo(windowTitle()).absolutePath(),"Pictures (*.jpg *.bmp *.png);;All files (*)" );
+    if(filename.isEmpty())
+        return;
+    QStringList filenames;
+    filenames << filename;
+    if(!addSlices(filenames,QFileInfo(filename).baseName(),false))
+        return;
+    CustomSliceModel* reg_slice_ptr = dynamic_cast<CustomSliceModel*>(slices.back().get());
+    if(!reg_slice_ptr)
+        return;
+    reg_slice_ptr->arg_min.rotation[2] = 3.1415926f;
+    reg_slice_ptr->update();
+    glWidget->update();
+    QMessageBox::information(this,"DSI Studio","Press Ctrl+A or Cmd+A and then hold LEFT/RIGHT button to MOVE/RESIZE slice.");
+}
+
+void tracking_window::on_actionInsert_Coronal_Pictures_triggered()
+{
+    size_t slice_size = slices.size();
+    on_actionInsert_Axial_Pictures_triggered();
+    if(slice_size == slices.size())
+        return;
+    CustomSliceModel* reg_slice_ptr = dynamic_cast<CustomSliceModel*>(slices.back().get());
+    if(!reg_slice_ptr)
+        return;
+    reg_slice_ptr->arg_min.rotation[2] = 0.0f;
+    reg_slice_ptr->arg_min.rotation[0] = -3.1415926f/2.0f;
+    reg_slice_ptr->update();
+    glWidget->update();
+
+}

@@ -9,7 +9,7 @@ class fib_data;
 class SliceModel {
 public:
     fib_data* handle = nullptr;
-    int view_id;
+    uint32_t view_id = 0;
     bool is_diffusion_space = true;
     tipl::matrix<4,4,float> T,invT; // T: image->diffusion iT: diffusion->image
     tipl::geometry<3>geometry;
@@ -22,7 +22,7 @@ public:
     tipl::vector<3,int> slice_pos;
     bool slice_visible[3];
 public:
-    SliceModel(fib_data* new_handle,int view_id_);
+    SliceModel(fib_data* new_handle,uint32_t view_id_);
     virtual ~SliceModel(void){}
 public:
 
@@ -31,7 +31,7 @@ public:
     std::pair<unsigned int,unsigned int> get_contrast_color(void) const;
     void set_contrast_range(float min_v,float max_v);
     void set_contrast_color(unsigned int min_c,unsigned int max_c);
-    void get_slice(tipl::color_image& image,
+    virtual void get_slice(tipl::color_image& image,
                            unsigned char,
                            const std::vector<std::shared_ptr<SliceModel> >& overlay_slices) const;
     tipl::const_pointer_image<float, 3> get_source(void) const;
@@ -123,7 +123,7 @@ public:
     std::shared_ptr<std::future<void> > thread;
     tipl::const_pointer_image<float,3> from;
     tipl::vector<3> from_vs;
-    tipl::affine_transform<double> arg_min;
+    tipl::affine_transform<float> arg_min;
     bool terminated;
     bool ended;
     CustomSliceModel(fib_data* new_handle);
@@ -140,8 +140,12 @@ public:
     tipl::matrix<4,4,float> trans;
     tipl::image<float, 3> source_images;
     tipl::image<float, 3> skull_removed_images;
+    tipl::color_image picture;
+    virtual void get_slice(tipl::color_image& image,
+                           unsigned char,
+                           const std::vector<std::shared_ptr<SliceModel> >& overlay_slices) const;
 public:
-    bool initialize(const std::vector<std::string>& files,bool correct_intensity);
+    bool initialize(const std::vector<std::string>& files);
     void initialize(void);
 };
 

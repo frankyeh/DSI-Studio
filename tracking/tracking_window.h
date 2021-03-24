@@ -77,7 +77,7 @@ public:
     std::shared_ptr<fib_data> handle;
     std::vector<std::shared_ptr<SliceModel> > slices;
     std::shared_ptr<SliceModel> current_slice;
-    bool addSlices(QStringList filenames,QString name,bool correct_intensity,bool cmd);
+    bool addSlices(QStringList filenames,QString name,bool cmd);
     void updateSlicesMenu(void);
     float get_fa_threshold(void);
     bool no_update = false;
@@ -201,6 +201,8 @@ private slots:
     void on_max_value_gl_valueChanged(double arg1);
     void on_min_slider_sliderMoved(int position);
     void on_max_slider_sliderMoved(int position);
+    void on_actionInsert_Axial_Pictures_triggered();
+    void on_actionInsert_Coronal_Pictures_triggered();
 };
 
 #endif // TRACKING_WINDOW_H

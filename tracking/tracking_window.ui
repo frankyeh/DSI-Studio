@@ -1186,6 +1186,8 @@
     </widget>
     <addaction name="actionInsert_T1_T2"/>
     <addaction name="actionInsert_MNI_images"/>
+    <addaction name="actionInsert_Coronal_Pictures"/>
+    <addaction name="actionInsert_Axial_Pictures"/>
     <addaction name="menuAdd_Isosurface"/>
     <addaction name="separator"/>
     <addaction name="actionSave_T1W_T2W_images"/>
@@ -2942,7 +2944,7 @@ Tracking</string>
      <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
    </property>
    <property name="text">
-    <string>Insert T1W/T2W images...</string>
+    <string>Insert T1W/T2W Images...</string>
    </property>
   </action>
   <action name="actionSave_mapping">
@@ -3579,7 +3581,7 @@ Tracking</string>
      <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
    </property>
    <property name="text">
-    <string>Insert MNI images...</string>
+    <string>Insert MNI Images...</string>
    </property>
   </action>
   <action name="actionSave_Tracts_In_Native_Space">
@@ -3944,6 +3946,24 @@ Tracking</string>
    </property>
    <property name="text">
     <string>Save End Points (All Tracts) As...</string>
+   </property>
+  </action>
+  <action name="actionInsert_Coronal_Pictures">
+   <property name="icon">
+    <iconset resource="../icons.qrc">
+     <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+   </property>
+   <property name="text">
+    <string>Insert Coronal Pictures...</string>
+   </property>
+  </action>
+  <action name="actionInsert_Axial_Pictures">
+   <property name="icon">
+    <iconset resource="../icons.qrc">
+     <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+   </property>
+   <property name="text">
+    <string>Insert Axial Pictures...</string>
    </property>
   </action>
  </widget>

@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>756</width>
-    <height>566</height>
+    <width>944</width>
+    <height>752</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -447,7 +447,7 @@
             <item>
              <widget class="QLabel" name="label_13">
               <property name="text">
-               <string>Move the following slide to view the overlap of two images</string>
+               <string>Move the slide bar to  view the overlap of two images</string>
               </property>
              </widget>
             </item>
@@ -459,7 +459,7 @@
               <item>
                <widget class="QPushButton" name="switch_view">
                 <property name="text">
-                 <string>Switch view</string>
+                 <string>Click to switch views</string>
                 </property>
                </widget>
               </item>
@@ -552,6 +552,32 @@
               <property name="topMargin">
                <number>0</number>
               </property>
+              <item>
+               <widget class="QLabel" name="label_15">
+                <property name="text">
+                 <string>Zoom</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QDoubleSpinBox" name="zoom">
+                <property name="decimals">
+                 <number>1</number>
+                </property>
+                <property name="minimum">
+                 <double>0.100000000000000</double>
+                </property>
+                <property name="maximum">
+                 <double>10.000000000000000</double>
+                </property>
+                <property name="singleStep">
+                 <double>0.200000000000000</double>
+                </property>
+                <property name="value">
+                 <double>1.000000000000000</double>
+                </property>
+               </widget>
+              </item>
               <item>
                <spacer name="horizontalSpacer_2">
                 <property name="orientation">
