@@ -1827,7 +1827,7 @@ void tracking_window::on_actionAdjust_Mapping_triggered()
     if(handle->view_item.size() == index)
         index = 0;
     std::shared_ptr<manual_alignment> manual(new manual_alignment(this,
-        handle->view_item[index].image_data,slices[0]->voxel_size,
+        handle->view_item[0].image_data,slices[0]->voxel_size,
         reg_slice->get_source(),reg_slice->voxel_size,
         (reg_slice->source_images.depth() == 1 ? tipl::reg::affine : tipl::reg::rigid_body),tipl::reg::cost_type::mutual_info));
     manual->arg = reg_slice->arg_min;
@@ -1848,21 +1848,13 @@ void tracking_window::on_actionSave_mapping_triggered()
     CustomSliceModel* reg_slice = dynamic_cast<CustomSliceModel*>(current_slice.get());
     if(!reg_slice)
         return;
-
     QString filename = QFileDialog::getSaveFileName(
             this,
-            "Save Mapping Matrix",QFileInfo(windowTitle()).completeBaseName()+".mapping.txt",
+            "Save Mapping Matrix",QString(reg_slice->source_file_name.c_str())+".mapping.txt",
             "Text files (*.txt);;All files (*)");
     if(filename.isEmpty())
         return;
-    std::ofstream out(filename.toLocal8Bit().begin());
-
-    for(int row = 0,index = 0;row < 4;++row)
-    {
-        for(int col = 0;col < 4;++col,++index)
-            out << reg_slice->T[index] << " ";
-        out << std::endl;
-    }
+    reg_slice->save_mapping(filename.toLocal8Bit().begin());
 }
 
 void tracking_window::on_actionLoad_mapping_triggered()
@@ -1873,19 +1865,10 @@ void tracking_window::on_actionLoad_mapping_triggered()
     if(!reg_slice)
         return;
     QString filename = QFileDialog::getOpenFileName(
-            this,"Open Mapping Matrix",QFileInfo(windowTitle()).absolutePath(),"Text files (*.txt);;All files (*)");
-    std::ifstream in(filename.toLocal8Bit().begin());
-    if(filename.isEmpty() || !in)
-        return;
+            this,"Open Mapping Matrix",QString(reg_slice->source_file_name.c_str())+".mapping.txt",
+                "Text files (*.txt);;All files (*)");
     reg_slice->terminate();
-    std::vector<float> data;
-    std::copy(std::istream_iterator<float>(in),
-              std::istream_iterator<float>(),std::back_inserter(data));
-    data.resize(16);
-    data[15] = 1.0;
-    reg_slice->T = data;
-    reg_slice->invT = data;
-    reg_slice->invT.inv();
+    reg_slice->load_mapping(filename.toLocal8Bit().begin());
     glWidget->updateGL();
 }
 
@@ -2734,10 +2717,13 @@ void tracking_window::on_actionInsert_Axial_Pictures_triggered()
     CustomSliceModel* reg_slice_ptr = dynamic_cast<CustomSliceModel*>(slices.back().get());
     if(!reg_slice_ptr)
         return;
-    reg_slice_ptr->arg_min.rotation[2] = 3.1415926f;
-    reg_slice_ptr->update();
+    if(reg_slice_ptr->arg_min.rotation[2] == 0.0f)
+    {
+        reg_slice_ptr->arg_min.rotation[2] = 3.1415926f;
+        reg_slice_ptr->update();
+    }
     glWidget->update();
-    QMessageBox::information(this,"DSI Studio","Press Ctrl+A or Cmd+A and then hold LEFT/RIGHT button to MOVE/RESIZE slice.");
+    QMessageBox::information(this,"DSI Studio","Press Ctrl+A and then hold LEFT/RIGHT button to MOVE/RESIZE slice close to the target before using [Slices][Adjust Mapping]");
 }
 
 void tracking_window::on_actionInsert_Coronal_Pictures_triggered()
@@ -2749,9 +2735,12 @@ void tracking_window::on_actionInsert_Coronal_Pictures_triggered()
     CustomSliceModel* reg_slice_ptr = dynamic_cast<CustomSliceModel*>(slices.back().get());
     if(!reg_slice_ptr)
         return;
-    reg_slice_ptr->arg_min.rotation[2] = 0.0f;
-    reg_slice_ptr->arg_min.rotation[0] = -3.1415926f/2.0f;
-    reg_slice_ptr->update();
+    if(reg_slice_ptr->arg_min.rotation[0] == 0.0f)
+    {
+        reg_slice_ptr->arg_min.rotation[2] = 0.0f;
+        reg_slice_ptr->arg_min.rotation[0] = -3.1415926f/2.0f;
+        reg_slice_ptr->update();
+    }
     glWidget->update();
 
 }

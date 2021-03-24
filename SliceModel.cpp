@@ -125,6 +125,8 @@ void CustomSliceModel::get_slice(tipl::color_image& image,
 void initial_LPS_nifti_srow(tipl::matrix<4,4,float>& T,const tipl::geometry<3>& geo,const tipl::vector<3>& vs);
 bool CustomSliceModel::initialize(const std::vector<std::string>& files)
 {
+    if(files.empty())
+        return false;
     terminated = true;
     ended = true;
     is_diffusion_space = false;
@@ -134,6 +136,7 @@ bool CustomSliceModel::initialize(const std::vector<std::string>& files)
     bool has_transform = false;
     from = tipl::make_image(handle->dir.fa[0],handle->dim);
     from_vs = handle->vs;
+    source_file_name = files[0].c_str();
     name = QFileInfo(files[0].c_str()).completeBaseName().remove(".nii").toStdString();
 
     if(QFileInfo(files[0].c_str()).suffix() == "bmp" ||
@@ -360,6 +363,15 @@ bool CustomSliceModel::initialize(const std::vector<std::string>& files)
         has_transform = true;
     }
 
+    {
+        std::string mapping_file = source_file_name+".mapping.txt";
+        if(QFileInfo(mapping_file.c_str()).exists())
+        {
+            load_mapping(mapping_file.c_str());
+            has_transform = true;
+        }
+    }
+
     if(!has_transform)
     {
         if(handle->dim.depth() < 10) // 2d assume FOV is the same
@@ -416,6 +428,51 @@ void CustomSliceModel::argmin(tipl::reg::reg_type reg_type)
     handle->view_item[view_id].iT = invT;
 }
 // ---------------------------------------------------------------------------
+void CustomSliceModel::save_mapping(const char* file_name)
+{
+    std::ofstream out(file_name);
+    for(uint32_t row = 0,index = 0;row < 4;++row)
+    {
+        for(uint32_t col = 0;col < 4;++col,++index)
+        {
+            if(col)
+                out << " ";
+            out << T[index];
+        }
+        out << std::endl;
+    }
+    for(uint32_t i = 0;i < 12;++i)
+    {
+        if(i)
+            out << " ";
+        out << arg_min.data[i];
+    }
+    out << std::endl;
+}// ---------------------------------------------------------------------------
+void CustomSliceModel::load_mapping(const char* file_name)
+{
+    std::ifstream in(file_name);
+    if(!in)
+        return;
+    std::vector<float> data,arg;
+    std::copy(std::istream_iterator<float>(in),
+              std::istream_iterator<float>(),std::back_inserter(data));
+    if(data.size() == 28)
+    {
+        std::copy(data.begin()+16,data.begin()+16+12,arg_min.data);
+        update();
+    }
+    else
+    {
+        data.resize(16);
+        data[15] = 1.0;
+        T = data;
+        invT = data;
+        invT.inv();
+        handle->view_item[view_id].T = T;
+        handle->view_item[view_id].iT = invT;
+    }
+}
 void CustomSliceModel::update(void)
 {
     tipl::transformation_matrix<float> M(arg_min,from.geometry(),from_vs,source_images.geometry(),voxel_size);

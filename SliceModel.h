@@ -118,7 +118,7 @@ public:
 
 class CustomSliceModel : public SliceModel {
 public:
-    std::string name,error_msg = "unknown error";
+    std::string source_file_name,name,error_msg = "unknown error";
 public:
     std::shared_ptr<std::future<void> > thread;
     tipl::const_pointer_image<float,3> from;
@@ -135,7 +135,8 @@ public:
     void terminate(void);
     void argmin(tipl::reg::reg_type reg_type);
     void update(void);
-
+    void save_mapping(const char* file_name);
+    void load_mapping(const char* file_name);
 public:
     tipl::matrix<4,4,float> trans;
     tipl::image<float, 3> source_images;
