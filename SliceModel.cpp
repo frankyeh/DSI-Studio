@@ -166,7 +166,7 @@ bool CustomSliceModel::initialize(const std::vector<std::string>& files)
             for(size_t j = 0;j < source_images.size();++j,ptr += 4)
             {
                 source_images[j] = float(*ptr);
-                picture[j] = tipl::rgb(*ptr,*(ptr+1),*(ptr+2));
+                picture[j] = tipl::rgb(*(ptr+2),*(ptr+1),*ptr);
             }
 
             voxel_size = handle->vs*0.5f*(handle->dim.width())/(in.width());
