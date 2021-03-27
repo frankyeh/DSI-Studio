@@ -575,8 +575,7 @@ bool fib_data::load_from_file(const char* file_name)
             header.toLPS(I);
             header.get_voxel_size(vs);
             header.get_image_transformation(trans_to_mni);
-            if(std::floor(trans_to_mni[0]) == trans_to_mni[0])
-                is_mni_image = true;
+            is_mni_image = true;
         }
     }
     else
