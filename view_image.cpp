@@ -691,7 +691,7 @@ void view_image::on_actionTo_Edge_triggered()
 {
     if(is_label_image(data))
     {
-        tipl::morphology::edge(data);
+        tipl::morphology::edge_thin(data);
     }
     else
     {
