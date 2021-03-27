@@ -1080,9 +1080,19 @@ void RegionTableWidget::save_all_regions(void)
             }
             out << i+1 << " " << item(i,0)->text().toStdString() << std::endl;
         }
-    gz_nifti::save_to_file(filename.toStdString().c_str(),mask,
+    if(regions.size() <= 255)
+    {
+        tipl::image<uint8_t, 3> i8mask(mask);
+        gz_nifti::save_to_file(filename.toStdString().c_str(),i8mask,
                            cur_tracking_window.current_slice->voxel_size,
                            cur_tracking_window.handle->trans_to_mni);
+    }
+    else
+    {
+        gz_nifti::save_to_file(filename.toStdString().c_str(),mask,
+                           cur_tracking_window.current_slice->voxel_size,
+                           cur_tracking_window.handle->trans_to_mni);
+    }
 }
 
 void RegionTableWidget::save_region_info(void)

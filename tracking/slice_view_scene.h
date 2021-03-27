@@ -26,6 +26,7 @@ public:
 private:
     tracking_window& cur_tracking_window;
     tipl::color_image slice_image,mosaic_image;
+    QColor line_color = Qt::white;
 public:
     unsigned int mosaic_size;
     void adjust_xy_to_layout(float& X,float& Y);

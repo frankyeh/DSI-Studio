@@ -95,7 +95,7 @@ void slice_view_scene::show_ruler(QPainter& paint)
     pen.setWidth(int(zoom_2));
     pen.setCapStyle(Qt::RoundCap);
     pen.setJoinStyle(Qt::RoundJoin);
-    pen.setColor(Qt::white);
+    pen.setColor(line_color);
     paint.setPen(pen);
 
     QFont f = font();
@@ -268,6 +268,15 @@ void slice_view_scene::get_view_image(QImage& new_view_image)
                                                  cur_tracking_window.overlay_slices);
     // draw region colors on the image
     tipl::color_image slice_image_with_region(slice_image);
+    if(!slice_image.empty())
+    {
+        float grey = slice_image[0].r;
+        grey += slice_image[0].g;
+        grey += slice_image[0].b;
+        grey /= 3.0f;
+        line_color = grey < 128 ? Qt::white : Qt::black;
+    }
+
     if(!cur_tracking_window["roi_edge"].toInt())
         cur_tracking_window.regionWidget->draw_region(slice_image_with_region);
     QImage qimage((unsigned char*)&*slice_image_with_region.begin(),slice_image_with_region.width(),slice_image_with_region.height(),QImage::Format_RGB32);
@@ -303,7 +312,7 @@ void slice_view_scene::add_R_label(QPainter& painter)
 {
     if(cur_tracking_window.cur_dim && cur_tracking_window["roi_label"].toInt())
     {
-        painter.setPen(QPen(QColor(255,255,255)));
+        painter.setPen(QPen(line_color));
         QFont f = font();  // start out with MainWindow's font..
         f.setPointSize(cur_tracking_window.get_scene_zoom()+10); // and make a bit smaller for legend
         painter.setFont(f);
