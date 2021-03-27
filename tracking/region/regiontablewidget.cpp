@@ -1069,16 +1069,16 @@ void RegionTableWidget::save_all_regions(void)
     tipl::geometry<3> geo = cur_tracking_window.handle->dim;
     tipl::image<unsigned short, 3> mask(geo);
     for (unsigned int i = 0; i < regions.size(); ++i)
-        if (item(i,0)->checkState() == Qt::Checked)
+        if (item(int(i),0)->checkState() == Qt::Checked)
         {
             for (unsigned int j = 0; j < regions[i]->size(); ++j)
             {
                 tipl::vector<3,short> p = regions[i]->get_region_voxel(j);
                 if (geo.is_valid(p))
-                    mask[tipl::pixel_index<3>(p[0],p[1],p[2], geo).index()] = i+1;
+                    mask[tipl::pixel_index<3>(p[0],p[1],p[2], geo).index()] = uint16_t(i+1);
 
             }
-            out << i+1 << " " << item(i,0)->text().toStdString() << std::endl;
+            out << i+1 << " " << item(int(i),0)->text().toStdString() << std::endl;
         }
     if(regions.size() <= 255)
     {
