@@ -440,7 +440,7 @@ bool ROIRegion::shift(tipl::vector<3,float> dx) {
 }
 // ---------------------------------------------------------------------------
 template<class Image,class Points>
-void calculate_region_stat(const Image& I, const Points& p,float& mean,const float* T = nullptr)
+void calculate_region_stat(const Image& I, const Points& p,float& mean,float& max,float& min,const float* T = nullptr)
 {
     float sum = 0.0f;
     size_t count = 0;
@@ -453,11 +453,18 @@ void calculate_region_stat(const Image& I, const Points& p,float& mean,const flo
         value = tipl::estimate(I,pos);
         if(value == 0.0f)
             continue;
+        if(index)
+        {
+            max = std::max<float>(value,max);
+            min = std::min<float>(value,min);
+        }
+        else
+            min = max = value;
         sum += value;
         ++count;
     }
     if(count)
-    sum /= float(count);
+        sum /= float(count);
     mean = sum;
 }
 
@@ -509,24 +516,43 @@ void ROIRegion::get_quantitative_data(std::vector<std::string>& titles,std::vect
     titles.push_back("bounding box z");
     std::copy(min.begin(),min.end(),std::back_inserter(data)); // bounding box
 
-    handle->get_index_list(titles); // other index
+
+    std::vector<std::string> index_titles;
+    handle->get_index_list(index_titles);
     std::vector<tipl::vector<3> > points;
     for (unsigned int index = 0; index < region.size(); ++index)
         points.push_back(tipl::vector<3>(region[index][0]/resolution_ratio,
                                           region[index][1]/resolution_ratio,
                                           region[index][2]/resolution_ratio));
-
-
+    // get mean, max, min value of each index
+    std::vector<float> max_values,min_values;
     for(size_t data_index = 0;data_index < handle->view_item.size(); ++data_index)
     {
         if(handle->view_item[data_index].name == "color")
             continue;
         float mean;
+        max_values.push_back(0.0f);
+        min_values.push_back(0.0f);
         if(handle->view_item[data_index].image_data.geometry() != handle->dim)
-            calculate_region_stat(handle->view_item[data_index].image_data,points,mean,&handle->view_item[data_index].iT[0]);
+            calculate_region_stat(handle->view_item[data_index].image_data,points,mean,max_values.back(),min_values.back(),
+                                  &handle->view_item[data_index].iT[0]);
         else
-            calculate_region_stat(handle->view_item[data_index].image_data,points,mean);
+            calculate_region_stat(handle->view_item[data_index].image_data,points,mean,max_values.back(),min_values.back());
         data.push_back(mean);
+    }
+    titles.insert(titles.end(),index_titles.begin(),index_titles.end());
+
+    // max value of each index
+    for(size_t index = 0;index < index_titles.size();++index)
+    {
+        data.push_back(max_values[index]);
+        titles.push_back(index_titles[index]+"_max");
+    }
+    // min value of each index
+    for(size_t index = 0;index < index_titles.size();++index)
+    {
+        data.push_back(min_values[index]);
+        titles.push_back(index_titles[index]+"_min");
     }
 
     if(handle->db.has_db()) // connectometry database
@@ -536,9 +562,9 @@ void ROIRegion::get_quantitative_data(std::vector<std::string>& titles,std::vect
         {
             std::vector<std::vector<float> > fa_data;
             handle->db.get_subject_fa(subject_index,fa_data,normalize_qa);
-            float mean;
+            float mean,max,min;
             tipl::const_pointer_image<float, 3> I(&fa_data[0][0],handle->dim);
-            calculate_region_stat(I,points,mean);
+            calculate_region_stat(I,points,mean,max,min);
             data.push_back(mean);
             std::ostringstream out;
             out << handle->db.subject_names[subject_index] << (normalize_qa ? " mean_normalized_":" mean_") << handle->db.index_name;
