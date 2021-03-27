@@ -2,8 +2,10 @@
 #include <QMessageBox>
 #include "atlasdialog.h"
 #include "ui_atlasdialog.h"
-#include "region/regiontablewidget.h"
 #include "fib_data.hpp"
+#include "tracking_window.h"
+#include "region/regiontablewidget.h"
+#include "opengl/glwidget.h"
 AtlasDialog::AtlasDialog(QWidget *parent,std::shared_ptr<fib_data> handle_) :
     QDialog(parent),
     handle(handle_),
@@ -33,20 +35,43 @@ AtlasDialog::~AtlasDialog()
 
 void AtlasDialog::on_add_atlas_clicked()
 {
-    atlas_index = ui->atlasListBox->currentIndex();
+    atlas_index = uint32_t(ui->atlasListBox->currentIndex());
     atlas_name = ui->atlasListBox->currentText().toStdString();
     QModelIndexList indexes = ui->region_list->selectionModel()->selectedRows();
     if(!indexes.count())
+        return;
+
+    auto* w = dynamic_cast<tracking_window*>(parent());
+    if(!w)
     {
-        reject();
+        for(int index = 0; index < indexes.size(); ++index)
+        {
+            roi_list.push_back(uint32_t(indexes[index].row()));
+            roi_name.push_back(dynamic_cast<QStringListModel*>(ui->region_list->model())->stringList()[indexes[index].row()].toStdString());
+        }
+        accept();
+    }
+
+
+    if(!handle->atlas_list[atlas_index]->load_from_file())
+    {
+        QMessageBox::information(this,"Error",handle->atlas_list[atlas_index]->error_msg.c_str());
         return;
     }
-    for(unsigned int index = 0; index < indexes.size(); ++index)
-    {
-        roi_list.push_back(indexes[index].row());
-        roi_name.push_back(((QStringListModel*)ui->region_list->model())->stringList()[indexes[index].row()].toStdString());
-    }
-    accept();
+    begin_prog("adding regions");
+    w->regionWidget->begin_update();
+    for(unsigned int index = 0;check_prog(index,indexes.size()); ++index)
+        w->regionWidget->add_region_from_atlas(handle->atlas_list[atlas_index],uint32_t(indexes[int(index)].row()));
+    w->regionWidget->end_update();
+    w->glWidget->updateGL();
+    w->scene.show_slice();
+    w->raise();
+
+
+
+    ui->region_list->clearSelection();
+    ui->search_atlas->setText("");
+    ui->search_atlas->setFocus();
 }
 
 void AtlasDialog::on_atlasListBox_currentIndexChanged(int i)

@@ -18,6 +18,19 @@
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
    <item>
+    <widget class="QComboBox" name="atlasListBox"/>
+   </item>
+   <item>
+    <widget class="QListView" name="region_list">
+     <property name="selectionMode">
+      <enum>QAbstractItemView::MultiSelection</enum>
+     </property>
+     <property name="selectionBehavior">
+      <enum>QAbstractItemView::SelectRows</enum>
+     </property>
+    </widget>
+   </item>
+   <item>
     <layout class="QHBoxLayout" name="horizontalLayout_2">
      <property name="topMargin">
       <number>0</number>
@@ -37,19 +50,6 @@
       </widget>
      </item>
     </layout>
-   </item>
-   <item>
-    <widget class="QComboBox" name="atlasListBox"/>
-   </item>
-   <item>
-    <widget class="QListView" name="region_list">
-     <property name="selectionMode">
-      <enum>QAbstractItemView::MultiSelection</enum>
-     </property>
-     <property name="selectionBehavior">
-      <enum>QAbstractItemView::SelectRows</enum>
-     </property>
-    </widget>
    </item>
    <item>
     <layout class="QHBoxLayout" name="horizontalLayout">

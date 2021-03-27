@@ -1437,25 +1437,8 @@ void tracking_window::on_addRegionFromAtlas_clicked()
         return;
     }
     std::shared_ptr<AtlasDialog> atlas_dialog(new AtlasDialog(this,handle));
-    if(atlas_dialog->exec() == QDialog::Accepted)
-    {
-        if(!handle->atlas_list[atlas_dialog->atlas_index]->load_from_file())
-        {
-            QMessageBox::information(this,"Error",handle->atlas_list[atlas_dialog->atlas_index]->error_msg.c_str());
-            return;
-        }
-        begin_prog("adding regions");
-        regionWidget->begin_update();
-        for(unsigned int i = 0;check_prog(i,atlas_dialog->roi_list.size());++i)
-        {
-            regionWidget->add_region_from_atlas(handle->atlas_list[atlas_dialog->atlas_index],atlas_dialog->roi_list[i]);
-            raise();
-        }
-        regionWidget->end_update();
-        glWidget->updateGL();
-        scene.show_slice();
-    }
-    }
+    atlas_dialog->exec();
+}
 
 
 void tracking_window::on_actionRestore_Settings_triggered()
@@ -2123,7 +2106,13 @@ void tracking_window::on_addSlices_clicked()
             }
         }
     }
-    addSlices(filenames,QFileInfo(filenames[0]).baseName(),false);
+    if(filenames[0].endsWith(".nii.gz"))
+    {
+        for(int i = 0;i < filenames.size();++i)
+            addSlices(QStringList() << filenames[i],QFileInfo(filenames[i]).baseName(),false);
+    }
+    else
+        addSlices(filenames,QFileInfo(filenames[0]).baseName(),false);
 }
 
 void tracking_window::on_actionSingle_triggered()
