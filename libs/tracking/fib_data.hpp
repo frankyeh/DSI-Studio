@@ -150,6 +150,7 @@ public:
     tipl::vector<3> vs;
     bool is_human_data = true;
     bool is_qsdr = false;
+    bool is_mni_image = false;
     bool need_normalization = true;
     bool trackable = true;
 public:
