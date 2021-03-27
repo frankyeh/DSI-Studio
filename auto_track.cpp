@@ -568,10 +568,9 @@ void auto_track::select_tracts()
         }
         if(ui->cb_projection->isChecked())
         {
-            select_list.push_back("spinal");
-            select_list.push_back("Corticopontine");
-            select_list.push_back("Corticostriatal");
+            select_list.push_back("Cortico");
             select_list.push_back("Thalamic");
+            select_list.push_back("Reticulo");
             select_list.push_back("Optic");
             select_list.push_back("Fornix");
         }
