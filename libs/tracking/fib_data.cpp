@@ -575,6 +575,8 @@ bool fib_data::load_from_file(const char* file_name)
             header.toLPS(I);
             header.get_voxel_size(vs);
             header.get_image_transformation(trans_to_mni);
+            if(std::floor(trans_to_mni[0]) == trans_to_mni[0])
+                is_mni_image = true;
         }
     }
     else
@@ -624,48 +626,6 @@ bool fib_data::load_from_file(const char* file_name)
     }
     if(!load_from_mat())
         return false;
-
-    if(is_qsdr)
-    for(size_t index = 0;index < fa_template_list.size();++index)
-    {
-        gz_nifti read;
-        if(!read.load_from_file(fa_template_list[index]))
-            continue;
-        tipl::vector<3> Itvs;
-        tipl::image<float,3> dummy;
-        read.toLPS(I,true,false);
-        read.get_voxel_size(Itvs);
-        if(std::abs(dim[0]-read.nif_header2.dim[1]*Itvs[0]/vs[0]) < 2.0f)
-        {
-            set_template_id(index);
-            return true;
-        }
-    }
-    else
-    {
-        initial_LPS_nifti_srow(trans_to_mni,dim,vs);
-    }
-    // template matching
-    for(size_t index = 0;index < fa_template_list.size();++index)
-    {
-        QString name = QFileInfo(fa_template_list[index].c_str()).baseName().toLower();
-        if(QFileInfo(file_name).fileName().contains(name) ||
-           QFileInfo(QString(file_name)+"."+name+".map.gz").exists())
-        {
-            set_template_id(index);
-            return true;
-        }
-    }
-    if(!is_human_data)
-    {
-        size_t count = 0;
-        for(size_t i = 0;i < dim.size();++i)
-            if(dir.fa[0][i] > 0.0f)
-                ++count;
-        set_template_id(match_template(count*2.0*vs[0]*vs[1]*vs[2]));
-    }
-    else
-        set_template_id(template_id);
     return true;
 }
 bool fib_data::save_mapping(const std::string& index_name,const std::string& file_name,const tipl::value_to_color<float>& v2c)
@@ -737,6 +697,19 @@ bool fib_data::load_from_mat(void)
         error_msg = "cannot find dimension matrix";
         return false;
     }
+    if(!dim.size())
+    {
+        error_msg = "invalid dimension";
+        return false;
+    }
+    if (!mat_reader.read("voxel_size",vs))
+    {
+        error_msg = "cannot find voxel_size matrix";
+        return false;
+    }
+    if (mat_reader.read("trans",trans_to_mni))
+        is_qsdr = true;
+
     if(!dir.add_data(mat_reader))
     {
         error_msg = dir.error_msg;
@@ -769,31 +742,12 @@ bool fib_data::load_from_mat(void)
     for (unsigned int index = 0;index < mat_reader.size();++index)
     {
         std::string matrix_name = mat_reader.name(index);
-        if (matrix_name == "voxel_size")
-        {
-            const float* size_buf = 0;
-            mat_reader.read(index,row,col,size_buf);
-            if (!size_buf || row*col != 3)
-                return false;
-            vs = size_buf;
-            if(vs[0]*vs[1]*vs[2] == 0.0)
-                vs[0] = vs[1] = vs[2] = 2.0;
-            continue;
-        }
-        if (matrix_name == "trans")
-        {
-            const float* trans = 0;
-            mat_reader.read(index,row,col,trans);
-            std::copy(trans,trans+16,trans_to_mni.begin());
-            is_qsdr = true;
-            continue;
-        }
         if (matrix_name == "image")
             continue;
         std::string prefix_name(matrix_name.begin(),matrix_name.end()-1);
         if (prefix_name == "index" || prefix_name == "fa" || prefix_name == "dir")
             continue;
-        const float* buf = 0;
+        const float* buf = nullptr;
         mat_reader.read(index,row,col,buf);
         if (size_t(row)*size_t(col) != dim.size() || !buf)
             continue;
@@ -810,35 +764,8 @@ bool fib_data::load_from_mat(void)
         view_item.back().image_data = tipl::make_image(buf,dim);
         view_item.back().set_scale(buf,buf+dim.size());
     }
-    if (!dim[2])
-    {
-        error_msg = "invalid dimension";
-        return false;
-    }
 
-    {
-        const float* mapping = nullptr;
-        if(!is_qsdr && mat_reader.read("mapping",row,col,mapping))
-        {
-            mni_position.resize(dim);
-            std::copy(mapping,mapping+col*row,&mni_position[0][0]);
-        }
-        if(is_qsdr && mat_reader.read("mapping",row,col,mapping))
-        {
-            native_position.resize(dim);
-            std::copy(mapping,mapping+col*row,&native_position[0][0]);
-            const unsigned short* native_dim = nullptr;
-            if(mat_reader.read("native_dimension",row,col,native_dim))
-            {
-                native_geo[0] = native_dim[0];
-                native_geo[1] = native_dim[1];
-                native_geo[2] = native_dim[2];
-            }
-        }
-    }
-
-
-    if(is_qsdr && !view_item.empty())
+    if(is_qsdr && !view_item.empty()) // read native geometry and transformation information
     {
         unsigned int row,col;
         const short* dim = nullptr;
@@ -860,6 +787,73 @@ bool fib_data::load_from_mat(void)
     }
     is_human_data = is_human_size(dim,vs); // 1 percentile head size in mm
     db.read_db(this);
+
+
+    if(is_qsdr)
+    {
+        // read native space mapping
+        const float* mapping = nullptr;
+        if(is_qsdr && mat_reader.read("mapping",row,col,mapping))
+        {
+            native_position.resize(dim);
+            std::copy(mapping,mapping+col*row,&native_position[0][0]);
+            const unsigned short* native_dim = nullptr;
+            if(mat_reader.read("native_dimension",row,col,native_dim))
+            {
+                native_geo[0] = native_dim[0];
+                native_geo[1] = native_dim[1];
+                native_geo[2] = native_dim[2];
+            }
+        }
+        // matching templates
+        for(size_t index = 0;index < fa_template_list.size();++index)
+        {
+            gz_nifti read;
+            if(!read.load_from_file(fa_template_list[index]))
+                continue;
+            tipl::vector<3> Itvs;
+            tipl::image<float,3> dummy;
+            read.toLPS(dummy,true,false);
+            read.get_voxel_size(Itvs);
+            if(std::abs(dim[0]-read.nif_header2.dim[1]*Itvs[0]/vs[0]) < 2.0f)
+            {
+                set_template_id(index);
+                return true;
+            }
+        }
+        // older version of QSDR
+        set_template_id(0);
+        return true;
+    }
+
+    if(!is_mni_image)
+        initial_LPS_nifti_srow(trans_to_mni,dim,vs);
+    // template matching
+    {
+        // check if there is any mapping files exist
+        for(size_t index = 0;index < fa_template_list.size();++index)
+        {
+            QString name = QFileInfo(fa_template_list[index].c_str()).baseName().toLower();
+            if(QFileInfo(fib_file_name.c_str()).fileName().contains(name) ||
+               QFileInfo(QString(fib_file_name.c_str())+"."+name+".mapping.gz").exists() ||
+               QFileInfo(QString(fib_file_name.c_str())+"."+name+".inv.mapping.gz").exists())
+            {
+                set_template_id(index);
+                return true;
+            }
+        }
+
+        if(!is_human_data)
+        {
+            size_t count = 0;
+            for(size_t i = 0;i < dim.size();++i)
+                if(dir.fa[0][i] > 0.0f)
+                    ++count;
+            set_template_id(match_template(count*2.0f*vs[0]*vs[1]*vs[2]));
+        }
+        else
+            set_template_id(template_id);
+    }
     return true;
 }
 
@@ -1051,6 +1045,8 @@ bool fib_data::load_template(void)
         template_I2 *= 1.0f/float(tipl::mean(template_I2));
 
     need_normalization = !(is_qsdr && std::abs(float(dim[0])-template_I.width()*template_vs[0]/vs[0]) < 2);
+    if(is_mni_image)
+        need_normalization = false;
     return true;
 }
 
@@ -1373,7 +1369,7 @@ void fib_data::run_normalization(bool background,bool inv)
         prog = 2;
         tipl::image<float,3> Iss(It.geometry());
         tipl::resample_mt(Is,Iss,T,tipl::linear);
-        tipl::image<float,3> Iss2;
+        tipl::image<float,3> Iss2(It.geometry());
         if(!Is2.empty())
             tipl::resample_mt(Is2,Iss2,T,tipl::linear);
         prog = 3;
@@ -1546,7 +1542,7 @@ void fib_data::subject2mni(tipl::vector<3>& pos)
 }
 void fib_data::subject2mni(tipl::pixel_index<3>& index,tipl::vector<3>& pos)
 {
-    if(is_qsdr && mni_position.empty())
+    if((is_qsdr || is_mni_image) && mni_position.empty())
     {
         pos = index;
         mni2sub(pos,trans_to_mni);
