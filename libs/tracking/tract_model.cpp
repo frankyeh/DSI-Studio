@@ -1421,6 +1421,87 @@ void TractModel::get_tract_points(std::vector<tipl::vector<3,float> >& points)
         }
 }
 //---------------------------------------------------------------------------
+void TractModel::get_in_slice_tracts(unsigned char dim,int pos,
+                                     tipl::matrix<4,4,float>* pT,
+                                     std::vector<std::vector<tipl::vector<2,float> > >& lines,
+                                     std::vector<unsigned int>& colors,
+                                     unsigned int max_count)
+{
+
+    std::vector<tipl::vector<2,float> > line;
+    auto add_line = [&](unsigned int index)
+    {
+        if(line.empty())
+            return;
+        lines.push_back(std::move(line));
+        colors.push_back(tract_color[index]);
+        line.clear();
+    };
+
+    if(!pT) // native space
+    {
+        for (unsigned int index = 0;index < tract_data.size() && lines.size() < max_count;++index,add_line(index))
+            for (unsigned int j = 0;j < tract_data[index].size();j += 3)
+            {
+                if(int(std::round(tract_data[index][j+dim])) == pos)
+                {
+                    tipl::vector<2,float> p;
+                    tipl::space2slice(dim,tract_data[index][j],
+                                          tract_data[index][j+1],
+                                          tract_data[index][j+2],p[0],p[1]);
+                    line.push_back(p);
+                }
+                else
+                    add_line(index);
+            }
+    }
+    else
+    {
+        auto& T = *pT;
+        if(T[1]*T[2]*T[4]*T[6]*T[8]*T[9] == 0.0f) // simple transform
+        {
+            float scale = T[0];
+            tipl::vector<3,float> shift(T[3],T[7],T[11]);
+            pos -= shift[dim];
+            for (unsigned int index = 0;index < tract_data.size() && lines.size() < max_count;++index,add_line(index))
+            for (unsigned int j = 0;j < tract_data[index].size();j += 3)
+            {
+                if(int(std::round(tract_data[index][j+dim]*scale)) == pos)
+                {
+                    tipl::vector<3> t(&tract_data[index][j]);
+                    t *= scale;
+                    t += shift;
+                    tipl::vector<2,float> p;
+                    tipl::space2slice(dim,t[0],t[1],t[2],p[0],p[1]);
+                    line.push_back(p);
+                }
+                else
+                    add_line(index);
+            }
+        }
+        else
+        // more complicated transformation
+        {
+            tipl::vector<3,float> rotate(&T[0]+dim*4);
+            pos -= T[dim*4-1];
+            for (unsigned int index = 0;index < tract_data.size() && lines.size() < max_count;++index,add_line(index))
+            for (unsigned int j = 0;j < tract_data[index].size();j += 3)
+            {
+                tipl::vector<3> t(&tract_data[index][j]);
+                if(int(std::round(rotate*t)) == pos)
+                {
+                    t.to(T);
+                    tipl::vector<2,float> p;
+                    tipl::space2slice(dim,t[0],t[1],t[2],p[0],p[1]);
+                    line.push_back(p);
+                }
+                else
+                    add_line(index);
+            }
+        }
+    }
+}
+//---------------------------------------------------------------------------
 void TractModel::select(float select_angle,
                         const std::vector<tipl::vector<3,float> >& dirs,
                         const tipl::vector<3,float>& from_pos,std::vector<unsigned int>& selected)

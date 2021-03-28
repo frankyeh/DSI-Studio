@@ -112,6 +112,11 @@ public:
         bool trim(void);
         void resample(float new_step);
         void get_tract_points(std::vector<tipl::vector<3,float> >& points);
+        void get_in_slice_tracts(unsigned char dim,int pos,
+                                 tipl::matrix<4,4,float>* T,
+                                 std::vector<std::vector<tipl::vector<2,float> > >& lines,
+                                 std::vector<unsigned int>& colors,
+                                 unsigned int max_count);
         void to_voxel(std::vector<tipl::vector<3,short> >& points,float ratio,int id = -1);
         void to_end_point_voxels(std::vector<tipl::vector<3,short> >& points1,
                                 std::vector<tipl::vector<3,short> >& points2,float ratio);
