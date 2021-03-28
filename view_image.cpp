@@ -88,9 +88,9 @@ bool view_image::eventFilter(QObject *obj, QEvent *event)
     QMouseEvent *mouseEvent = static_cast<QMouseEvent*>(event);
     QPointF point = ui->view->mapToScene(mouseEvent->pos().x(),mouseEvent->pos().y());
     tipl::vector<3,float> pos,mni;
-    pos[0] = std::round(((float)point.x()) / source_ratio);
-    pos[1] = std::round(((float)point.y()) / source_ratio);
-    pos[2] = ui->slice_pos->value();
+    tipl::slice2space(cur_dim,
+                      std::round(float(point.x()) / source_ratio),
+                      std::round(float(point.y()) / source_ratio),ui->slice_pos->value(),pos[0],pos[1],pos[2]);
     if(!data.geometry().is_valid(pos))
         return true;
     mni = pos;
@@ -310,7 +310,7 @@ bool view_image::open(QStringList file_names)
     if(!data.empty())
     {
         init_image();
-        update_image();
+        show_image();
     }
     return !data.empty() || !info.isEmpty();
 }
@@ -339,7 +339,7 @@ void view_image::init_image(void)
     on_AxiView_clicked();
     no_update = false;
 }
-void view_image::update_image(void)
+void view_image::show_image(void)
 {
     if(data.empty() || no_update)
         return;
@@ -356,18 +356,18 @@ void view_image::change_contrast()
 {
     v2c.set_range(float(ui->min->value()),float(ui->max->value()));
     v2c.two_color(ui->min_color->color().rgb(),ui->max_color->color().rgb());
-    update_image();
+    show_image();
 }
 void view_image::on_zoom_in_clicked()
 {
      source_ratio *= 1.1f;
-     update_image();
+     show_image();
 }
 
 void view_image::on_zoom_out_clicked()
 {
     source_ratio *= 0.9f;
-    update_image();
+    show_image();
 }
 
 bool is_label_image(const tipl::image<float,3>& I);
@@ -397,7 +397,16 @@ void view_image::on_actionResample_triggered()
     T = T*nT;
 
     init_image();
-    update_image();
+    show_image();
+}
+void view_image::on_actionSave_triggered()
+{
+    gz_nifti nii;
+    nii.set_image_transformation(T);
+    nii.set_voxel_size(vs);
+    nii << data;
+    nii.save_to_file(file_name.toStdString().c_str());
+    QMessageBox::information(this,"DSI Studio","Saved");
 }
 
 void view_image::on_action_Save_as_triggered()
@@ -411,8 +420,40 @@ void view_image::on_action_Save_as_triggered()
     nii.set_voxel_size(vs);
     nii << data;
     nii.save_to_file(filename.toStdString().c_str());
+    file_name = filename;
+    setWindowTitle(QFileInfo(file_name).fileName());
+}
+void view_image::on_actionSave_as_Int8_triggered()
+{
+    QString filename = QFileDialog::getSaveFileName(
+                           this,"Save image",file_name,"NIFTI file(*nii.gz *.nii)" );
+    if (filename.isEmpty())
+        return;
+    tipl::image<uint8_t,3> new_data = data;
+    gz_nifti nii;
+    nii.set_image_transformation(T);
+    nii.set_voxel_size(vs);
+    nii << new_data;
+    nii.save_to_file(filename.toStdString().c_str());
+    file_name = filename;
+    setWindowTitle(QFileInfo(file_name).fileName());
 }
 
+void view_image::on_actionSave_as_Int16_triggered()
+{
+    QString filename = QFileDialog::getSaveFileName(
+                           this,"Save image",file_name,"NIFTI file(*nii.gz *.nii)" );
+    if (filename.isEmpty())
+        return;
+    tipl::image<uint16_t,3> new_data = data;
+    gz_nifti nii;
+    nii.set_image_transformation(T);
+    nii.set_voxel_size(vs);
+    nii << new_data;
+    nii.save_to_file(filename.toStdString().c_str());
+    file_name = filename;
+    setWindowTitle(QFileInfo(file_name).fileName());
+}
 void view_image::on_actionMasking_triggered()
 {
     QString filename = QFileDialog::getOpenFileName(
@@ -436,7 +477,7 @@ void view_image::on_actionMasking_triggered()
     tipl::filter::gaussian(mask);
     tipl::normalize(mask,1.0f);
     data *= mask;
-    update_image();
+    show_image();
 }
 
 void view_image::on_actionResize_triggered()
@@ -456,7 +497,7 @@ void view_image::on_actionResize_triggered()
     tipl::draw(data,new_data,tipl::vector<3>());
     data.swap(new_data);
     init_image();
-    update_image();
+    show_image();
 }
 
 void view_image::on_actionTranslocate_triggered()
@@ -477,7 +518,7 @@ void view_image::on_actionTranslocate_triggered()
     T[7] -= T[5]*dy;
     T[11] -= T[10]*dz;
     init_image();
-    update_image();
+    show_image();
 }
 
 void view_image::on_actionTrim_triggered()
@@ -499,7 +540,7 @@ void view_image::on_actionTrim_triggered()
     T[7] -= T[5]*translocate[1];
     T[11] -= T[10]*translocate[2];
     init_image();
-    update_image();
+    show_image();
 }
 
 void view_image::on_actionSet_Translocation_triggered()
@@ -515,7 +556,7 @@ void view_image::on_actionSet_Translocation_triggered()
     std::istringstream in(result.toStdString());
     in >> T[3] >> T[7] >> T[11];
     init_image();
-    update_image();
+    show_image();
 }
 
 void view_image::on_actionSet_Transformation_triggered()
@@ -533,7 +574,7 @@ void view_image::on_actionSet_Transformation_triggered()
     for(int i = 0;i < 16;++i)
         in >> T[i];
     init_image();
-    update_image();
+    show_image();
 }
 
 void view_image::on_actionLower_threshold_triggered()
@@ -547,7 +588,8 @@ void view_image::on_actionLower_threshold_triggered()
     if(!ok)
         return;
     tipl::lower_threshold(data,value);
-    update_image();
+    init_image();
+    show_image();
 }
 
 void view_image::on_actionLPS_RAS_swap_triggered()
@@ -564,7 +606,7 @@ void view_image::on_actionLPS_RAS_swap_triggered()
     tipl::flip_x(data);
     tipl::flip_y(data);
     init_image();
-    update_image();
+    show_image();
 }
 
 
@@ -579,7 +621,8 @@ void view_image::on_actionIntensity_shift_triggered()
     if(!ok)
         return;
     tipl::add_constant(data,value);
-    update_image();
+    init_image();
+    show_image();
 }
 
 void view_image::on_actionIntensity_scale_triggered()
@@ -593,35 +636,8 @@ void view_image::on_actionIntensity_scale_triggered()
     if(!ok)
         return;
     tipl::multiply_constant(data,value);
-    update_image();
-}
-
-void view_image::on_actionSave_as_Int8_triggered()
-{
-    QString filename = QFileDialog::getSaveFileName(
-                           this,"Save image",file_name,"NIFTI file(*nii.gz *.nii)" );
-    if (filename.isEmpty())
-        return;
-    tipl::image<uint8_t,3> new_data = data;
-    gz_nifti nii;
-    nii.set_image_transformation(T);
-    nii.set_voxel_size(vs);
-    nii << new_data;
-    nii.save_to_file(filename.toStdString().c_str());
-}
-
-void view_image::on_actionSave_as_Int16_triggered()
-{
-    QString filename = QFileDialog::getSaveFileName(
-                           this,"Save image",file_name,"NIFTI file(*nii.gz *.nii)" );
-    if (filename.isEmpty())
-        return;
-    tipl::image<uint16_t,3> new_data = data;
-    gz_nifti nii;
-    nii.set_image_transformation(T);
-    nii.set_voxel_size(vs);
-    nii << new_data;
-    nii.save_to_file(filename.toStdString().c_str());
+    init_image();
+    show_image();
 }
 
 void view_image::on_actionUpper_Threshold_triggered()
@@ -635,7 +651,8 @@ void view_image::on_actionUpper_Threshold_triggered()
     if(!ok)
         return;
     tipl::upper_threshold(data,value);
-    update_image();
+    init_image();
+    show_image();
 }
 bool is_label_image(const tipl::image<float,3>& I);
 void view_image::on_actionSmoothing_triggered()
@@ -684,26 +701,16 @@ void view_image::on_actionSmoothing_triggered()
     {
         tipl::filter::mean(data);
     }
-    update_image();
+    init_image();
+    show_image();
 }
 
-void view_image::on_actionTo_Edge_triggered()
-{
-    if(is_label_image(data))
-    {
-        tipl::morphology::edge_thin(data);
-    }
-    else
-    {
-        tipl::filter::sobel(data);
-    }
-    update_image();
-}
 
 void view_image::on_actionNormalize_Intensity_triggered()
 {
     tipl::normalize(data,1.0f);
-    update_image();
+    init_image();
+    show_image();
 }
 
 void view_image::on_min_slider_sliderMoved(int)
@@ -758,5 +765,41 @@ void view_image::on_slice_pos_valueChanged(int value)
     if(data.empty())
         return;
     slice_pos[cur_dim] = value;
-    update_image();
+    show_image();
 }
+
+void view_image::on_actionSobel_triggered()
+{
+    tipl::filter::sobel(data);
+    init_image();
+    show_image();
+}
+
+void view_image::on_actionMorphology_triggered()
+{
+    tipl::morphology::edge(data);
+    init_image();
+    show_image();
+}
+
+void view_image::on_actionMorphology_Thin_triggered()
+{
+    tipl::morphology::edge_thin(data);
+    init_image();
+    show_image();
+}
+
+void view_image::on_actionMorphology_XY_triggered()
+{
+    tipl::morphology::edge_xy(data);
+    init_image();
+    show_image();
+}
+
+void view_image::on_actionMorphology_XZ_triggered()
+{
+    tipl::morphology::edge_xz(data);
+    init_image();
+    show_image();
+}
+

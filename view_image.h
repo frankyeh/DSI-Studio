@@ -20,7 +20,7 @@ public:
     bool open(QStringList file_name);
     bool eventFilter(QObject *obj, QEvent *event);
 private slots:
-    void update_image(void);
+    void show_image(void);
     void init_image(void);
     void on_zoom_in_clicked();
     void on_zoom_out_clicked();
@@ -57,8 +57,6 @@ private slots:
 
     void on_actionSmoothing_triggered();
 
-    void on_actionTo_Edge_triggered();
-
     void on_actionNormalize_Intensity_triggered();
 
     void change_contrast();
@@ -77,6 +75,18 @@ private slots:
     void on_SagView_clicked();
 
     void on_slice_pos_valueChanged(int value);
+
+    void on_actionSobel_triggered();
+
+    void on_actionMorphology_triggered();
+
+    void on_actionMorphology_Thin_triggered();
+
+    void on_actionMorphology_XY_triggered();
+
+    void on_actionMorphology_XZ_triggered();
+
+    void on_actionSave_triggered();
 
 private:
     Ui::view_image *ui;

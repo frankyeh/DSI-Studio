@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>640</width>
-    <height>480</height>
+    <height>517</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -290,17 +290,22 @@
     <property name="title">
      <string>&amp;File</string>
     </property>
+    <addaction name="actionSave"/>
     <addaction name="action_Save_as"/>
     <addaction name="actionSave_as_Int8"/>
     <addaction name="actionSave_as_Int16"/>
    </widget>
    <widget class="QMenu" name="menuResize">
     <property name="title">
-     <string>&amp;Resize</string>
+     <string>&amp;Edit</string>
     </property>
     <addaction name="actionResample"/>
     <addaction name="actionResize"/>
     <addaction name="actionTrim"/>
+    <addaction name="separator"/>
+    <addaction name="actionTranslocate"/>
+    <addaction name="actionLPS_RAS_swap"/>
+    <addaction name="separator"/>
    </widget>
    <widget class="QMenu" name="menu_Header">
     <property name="title">
@@ -313,34 +318,37 @@
     <property name="title">
      <string>&amp;Signals</string>
     </property>
-    <addaction name="actionUpper_Threshold"/>
-    <addaction name="actionLower_threshold"/>
+    <widget class="QMenu" name="menuEdge_Detector">
+     <property name="title">
+      <string>Edge Detector...</string>
+     </property>
+     <addaction name="actionSobel"/>
+     <addaction name="actionMorphology"/>
+     <addaction name="actionMorphology_Thin"/>
+     <addaction name="actionMorphology_XY"/>
+     <addaction name="actionMorphology_XZ"/>
+    </widget>
     <addaction name="separator"/>
     <addaction name="actionIntensity_shift"/>
     <addaction name="actionIntensity_scale"/>
     <addaction name="actionNormalize_Intensity"/>
     <addaction name="separator"/>
+    <addaction name="actionUpper_Threshold"/>
+    <addaction name="actionLower_threshold"/>
+    <addaction name="separator"/>
     <addaction name="actionSmoothing"/>
-    <addaction name="actionTo_Edge"/>
+    <addaction name="menuEdge_Detector"/>
     <addaction name="separator"/>
     <addaction name="actionMasking"/>
    </widget>
-   <widget class="QMenu" name="menu_Spatial_transform">
-    <property name="title">
-     <string>&amp;Spatial transform</string>
-    </property>
-    <addaction name="actionTranslocate"/>
-    <addaction name="actionLPS_RAS_swap"/>
-   </widget>
    <addaction name="menu_File"/>
    <addaction name="menuResize"/>
-   <addaction name="menu_Header"/>
    <addaction name="menu_Intensity"/>
-   <addaction name="menu_Spatial_transform"/>
+   <addaction name="menu_Header"/>
   </widget>
   <action name="action_Save_as">
    <property name="text">
-    <string>&amp;Save as...</string>
+    <string>Save as Float...</string>
    </property>
   </action>
   <action name="actionResample">
@@ -390,12 +398,12 @@
   </action>
   <action name="actionIntensity_shift">
    <property name="text">
-    <string>Intensity Shift...</string>
+    <string>Add...</string>
    </property>
   </action>
   <action name="actionIntensity_scale">
    <property name="text">
-    <string>Intensity Scale...</string>
+    <string>Multiply...</string>
    </property>
   </action>
   <action name="actionSave_as_Int16">
@@ -418,14 +426,42 @@
     <string>Smoothing...</string>
    </property>
   </action>
-  <action name="actionTo_Edge">
-   <property name="text">
-    <string>Edge Detector...</string>
-   </property>
-  </action>
   <action name="actionNormalize_Intensity">
    <property name="text">
     <string>Normalize Intensity...</string>
+   </property>
+  </action>
+  <action name="actionSobel">
+   <property name="text">
+    <string>Sobel</string>
+   </property>
+  </action>
+  <action name="actionMorphology">
+   <property name="text">
+    <string>Morphology</string>
+   </property>
+  </action>
+  <action name="actionMorphology_Thin">
+   <property name="text">
+    <string>Morphology Thin</string>
+   </property>
+  </action>
+  <action name="actionMorphology_XY">
+   <property name="text">
+    <string>Morphology XY</string>
+   </property>
+  </action>
+  <action name="actionMorphology_XZ">
+   <property name="text">
+    <string>Morphology XZ</string>
+   </property>
+  </action>
+  <action name="actionSave">
+   <property name="text">
+    <string>&amp;Save</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+S</string>
    </property>
   </action>
  </widget>
