@@ -333,7 +333,7 @@ void draw_region_voxels(tracking_window& cur_tracking_window,
                 p.to(iT);
                 float X,Y,Z;
                 tipl::space2slice(cur_tracking_window.cur_dim,p[0],p[1],p[2],X,Y,Z);
-                if (std::fabs(float(slice_pos)-Z) > z_range || X < 0.0f || Y < 0.0f ||
+                if (std::fabs(float(slice_pos)-Z) >= z_range || X < 0.0f || Y < 0.0f ||
                     int(X) >= w || int(Y) >= h)
                     return;
                 uint32_t iX = uint32_t(std::floor(X));
