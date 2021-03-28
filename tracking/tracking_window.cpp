@@ -127,6 +127,7 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         {
             ui->zoom->setValue((*this)["roi_zoom"].toFloat());
             ui->show_edge->setChecked((*this)["roi_edge"].toBool());
+            ui->show_track->setChecked((*this)["roi_track"].toBool());
             ui->show_3view->setChecked((*this)["roi_layout"].toBool());
             ui->show_r->setChecked((*this)["roi_label"].toBool());
             ui->show_position->setChecked((*this)["roi_position"].toBool());
@@ -346,6 +347,7 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
 
         connect(tractWidget,SIGNAL(need_update()),glWidget,SLOT(makeTracts()));
         connect(tractWidget,SIGNAL(need_update()),glWidget,SLOT(updateGL()));
+        connect(tractWidget,SIGNAL(need_update()),&scene,SLOT(show_slice()));
         connect(tractWidget,SIGNAL(cellChanged(int,int)),glWidget,SLOT(updateGL())); //update label
         connect(tractWidget,SIGNAL(itemSelectionChanged()),tractWidget,SLOT(show_report()));
         connect(glWidget,SIGNAL(edited()),tractWidget,SLOT(edit_tracts()));
@@ -1765,6 +1767,13 @@ void tracking_window::on_show_edge_toggled(bool checked)
     scene.show_slice();
 
 }
+void tracking_window::on_show_track_toggled(bool checked)
+{
+    ui->show_edge->setChecked(checked);
+    if(ui->show_edge->isChecked() ^ (*this)["roi_track"].toBool())
+        set_data("roi_track",ui->show_edge->isChecked());
+    scene.show_slice();
+}
 void tracking_window::on_show_r_toggled(bool checked)
 {
     ui->show_r->setChecked(checked);
@@ -2733,3 +2742,5 @@ void tracking_window::on_actionInsert_Coronal_Pictures_triggered()
     glWidget->update();
 
 }
+
+

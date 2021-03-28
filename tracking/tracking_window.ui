@@ -99,7 +99,7 @@
           <widget class="QComboBox" name="SliceModality">
            <property name="sizePolicy">
             <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-             <horstretch>0</horstretch>
+             <horstretch>1</horstretch>
              <verstretch>0</verstretch>
             </sizepolicy>
            </property>
@@ -222,6 +222,12 @@
          </item>
          <item>
           <widget class="QSlider" name="min_slider">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+             <horstretch>2</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
            <property name="maximum">
             <number>999</number>
            </property>
@@ -277,6 +283,12 @@
          </item>
          <item>
           <widget class="QSlider" name="max_slider">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+             <horstretch>2</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
            <property name="maximum">
             <number>999</number>
            </property>
@@ -2059,7 +2071,7 @@ Tracking</string>
           </size>
          </property>
          <property name="toolTip">
-          <string>Show local fiber directions</string>
+          <string>Show local fibers </string>
          </property>
          <property name="text">
           <string/>
@@ -2076,6 +2088,31 @@ Tracking</string>
          </property>
          <property name="autoRaise">
           <bool>false</bool>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QToolButton" name="show_track">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="minimumSize">
+          <size>
+           <width>24</width>
+           <height>0</height>
+          </size>
+         </property>
+         <property name="toolTip">
+          <string>Show Tracks</string>
+         </property>
+         <property name="text">
+          <string>T</string>
+         </property>
+         <property name="checkable">
+          <bool>true</bool>
          </property>
         </widget>
        </item>
@@ -2217,7 +2254,7 @@ Tracking</string>
           </size>
          </property>
          <property name="toolTip">
-          <string>Show region by contour</string>
+          <string>Show region edges</string>
          </property>
          <property name="text">
           <string>E</string>

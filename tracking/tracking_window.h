@@ -203,6 +203,7 @@ private slots:
     void on_max_slider_sliderMoved(int position);
     void on_actionInsert_Axial_Pictures_triggered();
     void on_actionInsert_Coronal_Pictures_triggered();
+    void on_show_track_toggled(bool checked);
 };
 
 #endif // TRACKING_WINDOW_H
