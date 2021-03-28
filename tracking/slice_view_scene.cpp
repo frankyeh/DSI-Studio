@@ -279,13 +279,21 @@ void slice_view_scene::get_view_image(QImage& new_view_image)
 
     if(!cur_tracking_window["roi_edge"].toInt())
         cur_tracking_window.regionWidget->draw_region(slice_image_with_region);
-    QImage qimage((unsigned char*)&*slice_image_with_region.begin(),slice_image_with_region.width(),slice_image_with_region.height(),QImage::Format_RGB32);
+
+    QImage qimage(reinterpret_cast<unsigned char*>(&*slice_image_with_region.begin()),
+                  slice_image_with_region.width(),slice_image_with_region.height(),QImage::Format_RGB32);
     // make sure that qimage get a hard copy
     qimage.setPixel(0,0,qimage.pixel(0,0));
-    QImage scaled_image = qimage.scaled(slice_image.width()*display_ratio,slice_image.height()*display_ratio);
+    QImage scaled_image = qimage.scaled(int(slice_image.width()*display_ratio),
+                                        int(slice_image.height()*display_ratio));
 
     cur_tracking_window.regionWidget->draw_edge(qimage,scaled_image,
                             cur_tracking_window["roi_edge"].toInt());
+
+    if(cur_tracking_window["roi_track"].toInt())
+        cur_tracking_window.tractWidget->draw_tracts(cur_tracking_window.cur_dim,
+                                                 cur_tracking_window.current_slice->slice_pos[cur_tracking_window.cur_dim],
+                                                 scaled_image,display_ratio,cur_tracking_window["roi_track_count"].toInt());
 
     QPainter painter(&scaled_image);
     if(cur_tracking_window["roi_fiber"].toInt())
