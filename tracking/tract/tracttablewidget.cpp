@@ -79,7 +79,7 @@ void TractTableWidget::draw_tracts(unsigned char dim,int pos,
                                    QImage& scaled_image,float display_ratio,unsigned int max_count)
 {
     auto selected_tracts = get_checked_tracks();
-    if(seleced_tracts.empty())
+    if(selected_tracts.empty())
         return;
     QPainter paint;
     paint.begin(&scaled_image);
