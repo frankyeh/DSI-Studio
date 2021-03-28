@@ -78,13 +78,15 @@ void TractTableWidget::check_check_status(int row, int col)
 void TractTableWidget::draw_tracts(unsigned char dim,int pos,
                                    QImage& scaled_image,float display_ratio,unsigned int max_count)
 {
+    auto selected_tracts = get_checked_tracks();
+    if(seleced_tracts.empty())
+        return;
     QPainter paint;
     paint.begin(&scaled_image);
     paint.setBrush(Qt::NoBrush);
 
     auto iT = cur_tracking_window.current_slice->T;
     iT.inv();
-    auto selected_tracts = get_checked_tracks();
     max_count /= selected_tracts.size();
     for(size_t index = 0;index < selected_tracts.size();++index)
         {
