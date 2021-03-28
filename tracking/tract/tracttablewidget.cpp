@@ -81,41 +81,69 @@ void TractTableWidget::draw_tracts(unsigned char dim,int pos,
     auto selected_tracts = get_checked_tracks();
     if(selected_tracts.empty())
         return;
-    QPainter paint;
-    paint.begin(&scaled_image);
-    paint.setBrush(Qt::NoBrush);
 
+
+    unsigned int thread_count = std::thread::hardware_concurrency();
+    std::vector<std::vector<std::vector<tipl::vector<2,float> > > > lines_threaded(thread_count);
+    std::vector<std::vector<unsigned int> > colors_threaded(thread_count);
     auto iT = cur_tracking_window.current_slice->T;
     iT.inv();
     max_count /= selected_tracts.size();
-    for(size_t index = 0;index < selected_tracts.size();++index)
+
+    tipl::par_for2(selected_tracts.size(),[&](unsigned int index,unsigned int thread)
+    {
+        if(cur_tracking_window.current_slice->is_diffusion_space)
+            selected_tracts[index]->get_in_slice_tracts(dim,pos,nullptr,lines_threaded[thread],colors_threaded[thread],max_count);
+        else
+            selected_tracts[index]->get_in_slice_tracts(dim,pos,&iT,lines_threaded[thread],colors_threaded[thread],max_count);
+    });
+
+    std::vector<std::vector<tipl::vector<2,float> > > lines(std::move(lines_threaded[0]));
+    std::vector<unsigned int> colors(std::move(colors_threaded[0]));
+    for(unsigned int i = 1;i < thread_count;++i)
+    {
+        lines.insert(lines.end(),std::make_move_iterator(lines_threaded[i].begin()),std::make_move_iterator(lines_threaded[i].end()));
+        colors.insert(colors.end(),std::make_move_iterator(colors_threaded[i].begin()),std::make_move_iterator(colors_threaded[i].end()));
+    }
+
+    struct draw_point_class{
+        int height;
+        int width;
+        std::vector<QRgb*> I;
+        draw_point_class(QImage& scaled_image):I(uint32_t(scaled_image.height()))
         {
-            std::vector<std::vector<tipl::vector<2,float> > > lines;
-            std::vector<unsigned int> colors;
-            if(cur_tracking_window.current_slice->is_diffusion_space)
-                selected_tracts[index]->get_in_slice_tracts(dim,pos,nullptr,lines,colors,max_count);
-            else
-                selected_tracts[index]->get_in_slice_tracts(dim,pos,&iT,lines,colors,max_count);
-            //QPen pen(QColor(Qt::red),1, Qt::DashDotLine, Qt::RoundCap, Qt::RoundJoin);
-            for(size_t i = 0;i < lines.size();++i)
-            {
-                if(i == 0 || colors[i] != colors[i-1])
-                {
-                    QPen pen(QColor(QRgb(colors[i])),0.5);
-                    paint.setPen(pen);
-                }
-                auto& line = lines[i];
-                if(lines.size() <= 3)
-                    paint.drawPoint(int(line[0][0]),int(line[0][1]));
-                else
-                {
-                    tipl::multiply_constant(line,display_ratio);
-                    for(size_t j = 1;j < line.size();++j)
-                        paint.drawLine(int(line[j-1][0]),int(line[j-1][1]),int(line[j][0]),int(line[j][1]));
-                }
-            }
+            for (int y = 0; y < scaled_image.height(); ++y)
+                I[uint32_t(y)] = reinterpret_cast<QRgb*>(scaled_image.scanLine(y));
+            height = scaled_image.height();
+            width = scaled_image.width();
         }
-    paint.end();
+        inline void operator()(int x,int y,unsigned int color)
+        {
+            if(y < 0 || x < 0 || y >= height || x >= width)
+                return;
+            I[uint32_t(y)][uint32_t(x)] = color;
+        }
+    } draw_point(scaled_image);
+
+
+    auto draw_line = [&](int x,int y,int x1,int y1,unsigned int color)
+    {
+        tipl::draw_line(x,y,x1,y1,[&](int xx,int yy)
+        {
+            draw_point(xx,yy,color);
+        });
+    };
+
+    tipl::par_for(lines.size(),[&](unsigned int i)
+    {
+        auto& line = lines[i];
+        tipl::multiply_constant(line,display_ratio);
+        if(line.size() >= 2)
+        {
+            for(size_t j = 1;j < line.size();++j)
+                draw_line(int(line[j-1][0]),int(line[j-1][1]),int(line[j][0]),int(line[j][1]),colors[i]);
+        }
+    });
 }
 void TractTableWidget::addNewTracts(QString tract_name,bool checked)
 {
