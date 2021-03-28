@@ -75,6 +75,46 @@ void TractTableWidget::check_check_status(int row, int col)
     }
 }
 
+void TractTableWidget::draw_tracts(unsigned char dim,int pos,
+                                   QImage& scaled_image,float display_ratio,unsigned int max_count)
+{
+    QPainter paint;
+    paint.begin(&scaled_image);
+    paint.setBrush(Qt::NoBrush);
+
+    auto iT = cur_tracking_window.current_slice->T;
+    iT.inv();
+    auto selected_tracts = get_checked_tracks();
+    max_count /= selected_tracts.size();
+    for(size_t index = 0;index < selected_tracts.size();++index)
+        {
+            std::vector<std::vector<tipl::vector<2,float> > > lines;
+            std::vector<unsigned int> colors;
+            if(cur_tracking_window.current_slice->is_diffusion_space)
+                selected_tracts[index]->get_in_slice_tracts(dim,pos,nullptr,lines,colors,max_count);
+            else
+                selected_tracts[index]->get_in_slice_tracts(dim,pos,&iT,lines,colors,max_count);
+            //QPen pen(QColor(Qt::red),1, Qt::DashDotLine, Qt::RoundCap, Qt::RoundJoin);
+            for(size_t i = 0;i < lines.size();++i)
+            {
+                if(i == 0 || colors[i] != colors[i-1])
+                {
+                    QPen pen(QColor(QRgb(colors[i])),0.5);
+                    paint.setPen(pen);
+                }
+                auto& line = lines[i];
+                if(lines.size() <= 3)
+                    paint.drawPoint(int(line[0][0]),int(line[0][1]));
+                else
+                {
+                    tipl::multiply_constant(line,display_ratio);
+                    for(size_t j = 1;j < line.size();++j)
+                        paint.drawLine(int(line[j-1][0]),int(line[j-1][1]),int(line[j][0]),int(line[j][1]));
+                }
+            }
+        }
+    paint.end();
+}
 void TractTableWidget::addNewTracts(QString tract_name,bool checked)
 {
     thread_data.push_back(std::make_shared<ThreadData>(cur_tracking_window.handle.get()));
@@ -607,8 +647,8 @@ void TractTableWidget::save_vrml_as(void)
 }
 void TractTableWidget::save_all_tracts_end_point_as(void)
 {
-    auto tracts = this->get_checked_tracks();
-    if(tracts.empty())
+    auto selected_tracts = get_checked_tracks();
+    if(selected_tracts.empty())
         return;
     QString filename;
     filename = QFileDialog::getSaveFileName(
@@ -622,7 +662,7 @@ void TractTableWidget::save_all_tracts_end_point_as(void)
         "DSI Studio","Assign end segment length in voxel distance:",3.0,0.0,10.0,1,&ok));
     if (!ok)
         return;
-    TractModel::export_end_pdi(filename.toStdString().c_str(),tracts,dis);
+    TractModel::export_end_pdi(filename.toStdString().c_str(),selected_tracts,dis);
 }
 void TractTableWidget::save_end_point_as(void)
 {
@@ -972,15 +1012,15 @@ bool TractTableWidget::command(QString cmd,QString param,QString param2)
     if(cmd == "save_all_tracts_to_dir")
     {
         begin_prog("save files");
-        for(int index = 0;check_prog(index,rowCount());++index)
-            if (item(index,0)->checkState() == Qt::Checked)
-            {
-                std::string filename = param.toStdString();
-                filename += "/";
-                filename += item(index,0)->text().toStdString();
-                filename += output_format().toStdString();
-                tract_models[size_t(index)]->save_tracts_to_file(filename.c_str());
-            }
+        auto selected_tracts = get_checked_tracks();
+        for(size_t index = 0;index < selected_tracts.size();++index)
+        {
+            std::string filename = param.toStdString();
+            filename += "/";
+            filename += item(int(index),0)->text().toStdString();
+            filename += output_format().toStdString();
+            selected_tracts[index]->save_tracts_to_file(filename.c_str());
+        }
         return true;
     }
     if(cmd == "update_track")
@@ -1265,9 +1305,9 @@ void TractTableWidget::resample_step_size(void)
         return;
 
     begin_prog("resample tracks");
-    for(int i = 0;check_prog(i,tract_models.size());++i)
-        if(item(i,0)->checkState() == Qt::Checked)
-            tract_models[i]->resample(new_step);
+    auto selected_tracts = get_checked_tracks();
+    for(size_t i = 0;check_prog(i,selected_tracts.size());++i)
+        selected_tracts[i]->resample(new_step);
     emit need_update();
 }
 
@@ -1425,8 +1465,7 @@ void TractTableWidget::export_tract_density(tipl::geometry<3>& dim,
         if(filename.isEmpty())
             return;
     }
-    auto selected_tracts = get_checked_tracks();
-    TractModel::export_tdi(filename.toStdString().c_str(),selected_tracts,dim,vs,transformation,color,end_point);
+    TractModel::export_tdi(filename.toStdString().c_str(),get_checked_tracks(),dim,vs,transformation,color,end_point);
 }
 
 
