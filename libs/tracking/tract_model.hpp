@@ -139,7 +139,7 @@ public:
         void get_density_map(tipl::image<tipl::rgb,3>& mapping,
              const tipl::matrix<4,4,float>& transformation,bool endpoint);
         static bool export_tdi(const char* file_name,
-                          std::vector<std::shared_ptr<TractModel> >& tract_models,
+                          std::vector<std::shared_ptr<TractModel> > tract_models,
                           tipl::geometry<3>& dim,
                           tipl::vector<3,float> vs,
                           tipl::matrix<4,4,float>& transformation,bool color,bool end_point);
