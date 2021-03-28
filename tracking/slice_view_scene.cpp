@@ -293,7 +293,7 @@ void slice_view_scene::get_view_image(QImage& new_view_image)
     if(cur_tracking_window["roi_track"].toInt())
         cur_tracking_window.tractWidget->draw_tracts(cur_tracking_window.cur_dim,
                                                  cur_tracking_window.current_slice->slice_pos[cur_tracking_window.cur_dim],
-                                                 scaled_image,display_ratio,cur_tracking_window["roi_track_count"].toInt());
+                                                 scaled_image,display_ratio,uint32_t(cur_tracking_window["roi_track_count"].toInt()));
 
     QPainter painter(&scaled_image);
     if(cur_tracking_window["roi_fiber"].toInt())
@@ -511,16 +511,20 @@ void slice_view_scene::show_slice(void)
         mosaic_size = std::max((int)1,(int)std::ceil(
                                    std::sqrt((float)(cur_tracking_window.current_slice->geometry[cur_dim] / skip))));
 
+
+        char dim_order[3][2]= {{1,2},{0,2},{0,1}};
+        auto dim = cur_tracking_window.current_slice->geometry;
+        unsigned slice_num = dim[cur_dim] / skip;
+        tipl::geometry<2> mosaic_tile_geo;
         {
-            char dim_order[3][2]= {{1,2},{0,2},{0,1}};
-            auto dim = cur_tracking_window.current_slice->geometry;
-            unsigned slice_num = dim[cur_dim] / skip;
-            mosaic_image = std::move(tipl::color_image(tipl::geometry<2>(dim[dim_order[cur_dim][0]]*mosaic_size,
-                                                  dim[dim_order[cur_dim][1]]*(std::ceil((float)slice_num/(float)mosaic_size)))));
+            mosaic_image.clear();
+            mosaic_image.resize(tipl::geometry<2>(
+                    dim[dim_order[uint8_t(cur_dim)][0]]*mosaic_size,
+                    uint32_t(dim[dim_order[uint8_t(cur_dim)][1]]*(std::ceil(float(slice_num)/float(mosaic_size))))));
             int old_z = cur_tracking_window.current_slice->slice_pos[cur_tracking_window.cur_dim];
             for(unsigned int z = 0;z < slice_num;++z)
             {
-                cur_tracking_window.current_slice->slice_pos[cur_tracking_window.cur_dim] = z*skip;
+                cur_tracking_window.current_slice->slice_pos[cur_tracking_window.cur_dim] = int(z*skip);
                 tipl::color_image slice_image;
                 cur_tracking_window.current_slice->get_slice(slice_image,cur_tracking_window.cur_dim,cur_tracking_window.overlay_slices);
 
@@ -529,15 +533,42 @@ void slice_view_scene::show_slice(void)
                     tipl::flip_y(slice_image);
                 if(cur_tracking_window["orientation_convention"].toInt())
                     tipl::flip_x(slice_image);
-                tipl::vector<2,int> pos(dim[dim_order[cur_dim][0]]*(z%mosaic_size),
-                                        dim[dim_order[cur_dim][1]]*(z/mosaic_size));
+                if(z == 0)
+                    mosaic_tile_geo = slice_image.geometry();
+                tipl::vector<2,int> pos(int(dim[dim_order[uint8_t(cur_dim)][0]]*(z%mosaic_size)),
+                                        int(dim[dim_order[uint8_t(cur_dim)][1]]*(z/mosaic_size)));
                 tipl::draw(slice_image,mosaic_image,pos);
             }
             cur_tracking_window.current_slice->slice_pos[cur_tracking_window.cur_dim] = old_z;
         }
 
-        QImage qimage((unsigned char*)&*mosaic_image.begin(),mosaic_image.width(),mosaic_image.height(),QImage::Format_RGB32);
-        view_image = qimage.scaled(mosaic_image.width()*display_ratio/(float)mosaic_size,mosaic_image.height()*display_ratio/(float)mosaic_size);
+        QImage qimage(reinterpret_cast<unsigned char*>(&*mosaic_image.begin()),
+                      mosaic_image.width(),mosaic_image.height(),QImage::Format_RGB32);
+        float scale = display_ratio/float(mosaic_size);
+        view_image = qimage.scaled(int(mosaic_image.width()*scale),
+                                   int(mosaic_image.height()*scale));
+
+        if(cur_tracking_window["roi_track"].toInt() &&
+           !cur_tracking_window.tractWidget->tract_models.empty() &&
+           !cur_tracking_window.tractWidget->get_checked_tracks().empty())// draw tracks
+        {
+            mosaic_tile_geo[0] *= scale;
+            mosaic_tile_geo[1] *= scale;
+            QPainter painter(&view_image);
+            for(unsigned int z = 0;z < slice_num;++z)
+            {
+                int x = int(dim[dim_order[uint8_t(cur_dim)][0]]*(z%mosaic_size));
+                int y = int(dim[dim_order[uint8_t(cur_dim)][1]]*(z/mosaic_size));
+                x *= scale;
+                y *= scale;
+                QImage cropped = view_image.copy(QRect(x, y, int(mosaic_tile_geo[0]), int(mosaic_tile_geo[1])));
+                cur_tracking_window.tractWidget->draw_tracts(cur_tracking_window.cur_dim,int(z*skip),
+                                                         cropped,scale,
+                                                         uint32_t(cur_tracking_window["roi_track_count"].toInt()));
+                painter.drawImage(QPoint(x,y), cropped);
+            }
+            painter.end();
+        }
         QPainter painter2(&view_image);
         add_R_label(painter2);
     }
