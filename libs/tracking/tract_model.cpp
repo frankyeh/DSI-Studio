@@ -1437,10 +1437,10 @@ void TractModel::get_in_slice_tracts(unsigned char dim,int pos,
         colors.push_back(tract_color[index]);
         line.clear();
     };
-
+    int skip = std::max<int>(1,tract_data.size()/max_count);
     if(!pT) // native space
     {
-        for (unsigned int index = 0;index < tract_data.size() && lines.size() < max_count;++index,add_line(index))
+        for (unsigned int index = 0;index < tract_data.size();index += skip,add_line(index))
             for (unsigned int j = 0;j < tract_data[index].size();j += 3)
             {
                 if(int(std::round(tract_data[index][j+dim])) == pos)
@@ -1463,7 +1463,7 @@ void TractModel::get_in_slice_tracts(unsigned char dim,int pos,
             float scale = T[0];
             tipl::vector<3,float> shift(T[3],T[7],T[11]);
             pos -= shift[dim];
-            for (unsigned int index = 0;index < tract_data.size() && lines.size() < max_count;++index,add_line(index))
+            for (unsigned int index = 0;index < tract_data.size();index += skip,add_line(index))
             for (unsigned int j = 0;j < tract_data[index].size();j += 3)
             {
                 if(int(std::round(tract_data[index][j+dim]*scale)) == pos)
@@ -1484,7 +1484,7 @@ void TractModel::get_in_slice_tracts(unsigned char dim,int pos,
         {
             tipl::vector<3,float> rotate(&T[0]+dim*4);
             pos -= T[dim*4-1];
-            for (unsigned int index = 0;index < tract_data.size() && lines.size() < max_count;++index,add_line(index))
+            for (unsigned int index = 0;index < tract_data.size();index += skip,add_line(index))
             for (unsigned int j = 0;j < tract_data[index].size();j += 3)
             {
                 tipl::vector<3> t(&tract_data[index][j]);
