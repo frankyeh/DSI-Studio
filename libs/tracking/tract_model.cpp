@@ -1437,7 +1437,7 @@ void TractModel::get_in_slice_tracts(unsigned char dim,int pos,
         colors.push_back(tract_color[index]);
         line.clear();
     };
-    unsigned int skip = std::max<int>(1,int(tract_data.size())/int(max_count));
+    unsigned int skip = std::max<unsigned int>(1,uint32_t(tract_data.size())/max_count);
     if(!pT) // native space
     {
         for (unsigned int index = 0;index < tract_data.size();index += skip,add_line(index))
