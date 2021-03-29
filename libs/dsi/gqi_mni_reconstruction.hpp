@@ -271,7 +271,7 @@ public:
     {
         // calculate jacobian
         {
-            std::copy(affine.get(),affine.get()+9,data.jacobian.begin());
+            std::copy(affine.data,affine.data+9,data.jacobian.begin());
             tipl::pixel_index<3> pos_index(data.voxel_index,voxel.dim);
             if(!cdm_dis.geometry().is_edge(pos_index))
             {
@@ -294,7 +294,7 @@ public:
         {
             mat_writer.write(voxel.other_image_name[index].c_str(),other_image[index]);
             mat_writer.write((voxel.other_image_name[index]+"_dimension").c_str(),&voxel.other_image[index].geometry()[0],1,3);
-            mat_writer.write((voxel.other_image_name[index]+"_trans").c_str(),voxel.other_image_trans[index].get(),1,12);
+            mat_writer.write((voxel.other_image_name[index]+"_trans").c_str(),voxel.other_image_trans[index].data,1,12);
         }
         mat_writer.write("trans",voxel.trans_to_mni,4,4);
         mat_writer.write("R2",&voxel.R2,1,1);

@@ -779,7 +779,7 @@ bool fib_data::load_from_mat(void)
             else
                 view_item[i].native_geo = this->native_geo;
             if(mat_reader.read((name+"_trans").c_str(),row,col,native_trans))
-                std::copy(native_trans,native_trans+12,view_item[i].native_trans.get());
+                std::copy(native_trans,native_trans+12,view_item[i].native_trans.data);
             else
                 view_item[i].native_trans.sr[0] = view_item[i].native_trans.sr[4] = view_item[i].native_trans.sr[8] = 1.0f;
         }
@@ -1361,7 +1361,7 @@ void fib_data::run_normalization(bool background,bool inv)
                                          tipl::reg::mutual_information(),terminated);
 
         for(unsigned int i = 0;i < downsampling;++i)
-            tipl::multiply_constant(T.get(),T.get()+12,2.0f);
+            tipl::multiply_constant(T.data,T.data+12,2.0f);
 
         if(terminated)
             return;

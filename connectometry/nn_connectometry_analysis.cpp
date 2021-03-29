@@ -19,10 +19,8 @@ nn_connectometry_analysis::nn_connectometry_analysis(std::shared_ptr<fib_data> h
             tr2[15] = 1.0f;
             tr *= tr2;
 
-            tipl::transformation_matrix<double> T;
-            T.load_from_transform(tr.begin());
             It.resize(handle->dim);
-            tipl::resample(I,It,T,tipl::nearest);
+            tipl::resample(I,It,tr,tipl::nearest);
             // create Ib as the salient map background
             int plane_size = handle->dim.plane_size();
             // skip top 2 slices

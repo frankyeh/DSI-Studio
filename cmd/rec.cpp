@@ -81,8 +81,7 @@ int rec(void)
             std::cout << "invalid transfformation matrix." <<std::endl;
             return 1;
         }
-        tipl::transformation_matrix<double> affine;
-        affine.load_from_transform(T.begin());
+        tipl::transformation_matrix<double> affine(T);
         std::cout << "rotating images" << std::endl;
         src.rotate(src.voxel.dim,affine);
     }

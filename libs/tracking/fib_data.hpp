@@ -121,7 +121,7 @@ struct item
     // used in QSDR
     tipl::image<unsigned int,3> color_map_buf;
     tipl::geometry<3> native_geo;
-    tipl::transformation_matrix<double> native_trans;
+    tipl::transformation_matrix<float> native_trans;
 
 
     template<class input_iterator>

@@ -662,7 +662,7 @@ void ImageModel::rotate_one_dwi(unsigned int dwi_index,const tipl::transformatio
     tipl::lower_threshold(tmp,0);
     std::copy(tmp.begin(),tmp.end(),I.begin());
     // rotate b-table
-    tipl::matrix<3,3,float> iT = tipl::inverse(affine.get());
+    tipl::matrix<3,3,float> iT = tipl::inverse(affine.sr);
     tipl::vector<3> v;
     tipl::vector_rotation(src_bvectors[dwi_index].begin(),v.begin(),iT,tipl::vdim<3>());
     v.normalize();
@@ -698,11 +698,11 @@ void ImageModel::rotate(const tipl::geometry<3>& new_geo,
     // rotate b-table
     if(has_image_rotation)
     {
-        tipl::matrix<3,3,float> T = tipl::inverse(affine.get());
+        tipl::matrix<3,3,float> T = tipl::inverse(affine.sr);
         src_bvectors_rotate *= T;
     }
     else
-        src_bvectors_rotate = tipl::inverse(affine.get());
+        src_bvectors_rotate = tipl::inverse(affine.sr);
     has_image_rotation = true;
 
 
@@ -717,7 +717,7 @@ void ImageModel::rotate(const tipl::geometry<3>& new_geo,
             tipl::matrix<3,3,float> grad_dev,G_invR;
             for(unsigned int i = 0; i < 9; ++i)
                 grad_dev[i] = voxel.grad_dev[i][index];
-            G_invR = grad_dev*affine.get();
+            G_invR = grad_dev*affine.sr;
             grad_dev = src_bvectors_rotate*G_invR;
             for(unsigned int i = 0; i < 9; ++i)
                 voxel.grad_dev[i][index] = grad_dev[i]/det;
