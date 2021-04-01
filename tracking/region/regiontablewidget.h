@@ -100,7 +100,7 @@ public:
 public slots:
     void updateRegions(QTableWidgetItem* item);
 
-    void draw_edge(QImage& image,QImage& scaledimage,bool draw_all);
+    void draw_edge(int slice_width,int slice_height,QImage& scaledimage,bool draw_all);
     void new_region(void);
     void new_high_resolution_region(void);
     void copy_region(void);

@@ -371,7 +371,7 @@ void draw_region_voxels(tracking_window& cur_tracking_window,
     }
 }
 
-void RegionTableWidget::draw_edge(QImage& qimage,QImage& scaled_image,bool draw_all)
+void RegionTableWidget::draw_edge(int slice_width,int slice_height,QImage& scaled_image,bool draw_all)
 {
     // during region removal, there will be a call with invalid currentRow
     if(regions.empty() || currentRow() >= int(regions.size()) || currentRow() == -1)
@@ -402,11 +402,11 @@ void RegionTableWidget::draw_edge(QImage& qimage,QImage& scaled_image,bool draw_
     float display_ratio = cur_tracking_window.get_scene_zoom();
 
     tipl::image<unsigned char,2> cur_image_mask;
-    cur_image_mask.resize(tipl::geometry<2>(uint32_t(qimage.width()),
-                                            uint32_t(qimage.height())));
+    cur_image_mask.resize(tipl::geometry<2>(uint32_t(slice_width),
+                                            uint32_t(slice_height)));
 
     draw_region_voxels(cur_tracking_window,
-                       qimage.width(),qimage.height(),
+                       slice_width,slice_height,
                         checked_regions,
     // draw_voxel
     [&cur_image_mask](uint32_t pos,uint32_t)
@@ -425,18 +425,18 @@ void RegionTableWidget::draw_edge(QImage& qimage,QImage& scaled_image,bool draw_
         QPen pen(QColor(cur_color),
                  double(int(display_ratio)+1)*(cur_roi_index == int(roi_index) ? 0.25 : 0.2), Qt::DashDotLine, Qt::RoundCap, Qt::RoundJoin);
         paint.setPen(pen);
-        for(int y = 1,cur_index = qimage.width();y < qimage.height()-1;++y)
-        for(int x = 0;x < qimage.width();++x,++cur_index)
+        for(int y = 1,cur_index = slice_width;y < slice_height-1;++y)
+        for(int x = 0;x < slice_width;++x,++cur_index)
         {
-            if(x == 0 || x+1 >= qimage.width() || !cur_image_mask[cur_index])
+            if(x == 0 || x+1 >= slice_width || !cur_image_mask[cur_index])
                 continue;
             int xd = int(x*display_ratio);
             int xd_1 = int(xd+display_ratio);
             int yd = int(y*display_ratio);
             int yd_1 = int(yd+display_ratio);
-            if(!(cur_image_mask[cur_index-qimage.width()]))
+            if(!(cur_image_mask[cur_index-slice_width]))
                 paint.drawLine(xd,yd,xd_1,yd);
-            if(!(cur_image_mask[cur_index+qimage.width()]))
+            if(!(cur_image_mask[cur_index+slice_width]))
                 paint.drawLine(xd,yd_1,xd_1,yd_1);
             if(!(cur_image_mask[cur_index-1]))
                 paint.drawLine(xd,yd,xd,yd_1);

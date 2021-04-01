@@ -260,6 +260,17 @@ void slice_view_scene::show_pos(QPainter& painter)
     painter.drawLine(std::min<int>(x_pos+20,slice_image.width()*display_ratio),y_pos,slice_image.width()*display_ratio,y_pos);
 }
 
+void slice_view_scene::manage_slice_orientation(QImage& slice,QImage& new_slice)
+{
+    bool flip_x = false;
+    bool flip_y = false;
+    if(cur_tracking_window.cur_dim != 2)
+        flip_y = true;
+    else
+    if(cur_tracking_window["orientation_convention"].toInt())
+        flip_x = true;
+    new_slice = (!flip_x && !flip_y ? slice : slice.mirrored(flip_x,flip_y));
+}
 void slice_view_scene::get_view_image(QImage& new_view_image)
 {
     float display_ratio = cur_tracking_window.get_scene_zoom();
@@ -287,7 +298,7 @@ void slice_view_scene::get_view_image(QImage& new_view_image)
     QImage scaled_image = qimage.scaled(int(slice_image.width()*display_ratio),
                                         int(slice_image.height()*display_ratio));
 
-    cur_tracking_window.regionWidget->draw_edge(qimage,scaled_image,
+    cur_tracking_window.regionWidget->draw_edge(slice_image.width(),slice_image.height(),scaled_image,
                             cur_tracking_window["roi_edge"].toInt());
 
     if(cur_tracking_window["roi_track"].toInt())
@@ -301,15 +312,7 @@ void slice_view_scene::get_view_image(QImage& new_view_image)
     if(cur_tracking_window["roi_position"].toInt())
         show_pos(painter);
 
-    bool flip_x = false;
-    bool flip_y = false;
-    if(cur_tracking_window.cur_dim != 2)
-        flip_y = true;
-    if(cur_tracking_window["orientation_convention"].toInt())
-        flip_x = true;
-    new_view_image = (!flip_x && !flip_y ? scaled_image : scaled_image.mirrored(flip_x,flip_y));
-
-
+    manage_slice_orientation(scaled_image,new_view_image);
     QPainter painter2(&new_view_image);
     if(cur_tracking_window["roi_ruler"].toInt())
         show_ruler(painter2);
@@ -528,9 +531,11 @@ void slice_view_scene::show_slice(void)
                 tipl::color_image slice_image;
                 cur_tracking_window.current_slice->get_slice(slice_image,cur_tracking_window.cur_dim,cur_tracking_window.overlay_slices);
 
-                cur_tracking_window.regionWidget->draw_region(slice_image);
+                if(!cur_tracking_window["roi_edge"].toInt())
+                    cur_tracking_window.regionWidget->draw_region(slice_image);
                 if(cur_dim != 2)
                     tipl::flip_y(slice_image);
+                else
                 if(cur_tracking_window["orientation_convention"].toInt())
                     tipl::flip_x(slice_image);
                 if(z == 0)
@@ -548,9 +553,11 @@ void slice_view_scene::show_slice(void)
         view_image = qimage.scaled(int(mosaic_image.width()*scale),
                                    int(mosaic_image.height()*scale));
 
-        if(cur_tracking_window["roi_track"].toInt() &&
-           !cur_tracking_window.tractWidget->tract_models.empty() &&
-           !cur_tracking_window.tractWidget->get_checked_tracks().empty())// draw tracks
+        bool draw_track = cur_tracking_window["roi_track"].toInt() &&
+                !cur_tracking_window.tractWidget->tract_models.empty() &&
+                !cur_tracking_window.tractWidget->get_checked_tracks().empty();
+        bool draw_edge = cur_tracking_window["roi_edge"].toInt();
+        if(draw_track || draw_edge)// draw tracks or edges
         {
             mosaic_tile_geo[0] *= scale;
             mosaic_tile_geo[1] *= scale;
@@ -562,9 +569,17 @@ void slice_view_scene::show_slice(void)
                 x *= scale;
                 y *= scale;
                 QImage cropped = view_image.copy(QRect(x, y, int(mosaic_tile_geo[0]), int(mosaic_tile_geo[1])));
-                cur_tracking_window.tractWidget->draw_tracts(cur_tracking_window.cur_dim,int(z*skip),
+                manage_slice_orientation(cropped,cropped);
+                if(draw_edge)
+                    cur_tracking_window.regionWidget->draw_edge(mosaic_tile_geo.width(),
+                                                                mosaic_tile_geo.height(),cropped,
+                                                                cur_tracking_window["roi_edge"].toInt());
+
+                if(draw_track)
+                    cur_tracking_window.tractWidget->draw_tracts(cur_tracking_window.cur_dim,int(z*skip),
                                                          cropped,scale,
                                                          uint32_t(cur_tracking_window["roi_track_count"].toInt()));
+                manage_slice_orientation(cropped,cropped);
                 painter.drawImage(QPoint(x,y), cropped);
             }
             painter.end();

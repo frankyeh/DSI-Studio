@@ -55,6 +55,7 @@ public:    // record the mouse press points
     void show_fiber(QPainter& painter);
     void get_view_image(QImage& new_view_image);
     void add_R_label(QPainter& painter);
+    void manage_slice_orientation(QImage& slice,QImage& new_slice);
     bool command(QString cmd,QString param = "",QString param2 = "");
     // update cursor info
 protected:
