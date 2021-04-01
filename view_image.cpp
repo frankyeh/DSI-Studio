@@ -524,8 +524,8 @@ void view_image::on_actionTranslocate_triggered()
 void view_image::on_actionTrim_triggered()
 {
     tipl::vector<3,int> range_min,range_max;
-    tipl::bounding_box(data,range_min,range_max,0);
-    int margin = (range_max[0]-range_min[0])/10;
+    tipl::bounding_box(data,range_min,range_max,data[0]);
+    int margin = 1;
     tipl::vector<3,int> translocate(margin,margin,0);
     range_min[2] += 1;
     range_max[2] -= 1;
