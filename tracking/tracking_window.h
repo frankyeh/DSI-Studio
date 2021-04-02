@@ -182,7 +182,6 @@ private slots:
     void on_actionSave_T1W_T2W_images_triggered();
     void on_actionMark_Region_on_T1W_T2W_triggered();
     void on_actionMark_Tracts_on_T1W_T2W_triggered();
-    void on_actionApply_Operation_triggered();
     void on_actionSave_Slices_to_DICOM_triggered();
     void on_zoom_valueChanged(double arg1);
     void Move_Slice_X();
@@ -204,6 +203,7 @@ private slots:
     void on_actionInsert_Axial_Pictures_triggered();
     void on_actionInsert_Coronal_Pictures_triggered();
     void on_show_track_toggled(bool checked);
+    void on_actionInsert_Sagittal_Picture_triggered();
 };
 
 #endif // TRACKING_WINDOW_H

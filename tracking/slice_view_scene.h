@@ -25,7 +25,7 @@ public:
     QStatusBar* statusbar;
 private:
     tracking_window& cur_tracking_window;
-    tipl::color_image slice_image,mosaic_image;
+    tipl::color_image slice_image;
     QColor line_color = Qt::white;
 public:
     unsigned int mosaic_size;
@@ -53,7 +53,7 @@ public:    // record the mouse press points
     void show_ruler(QPainter& painter);
     void show_pos(QPainter& painter);
     void show_fiber(QPainter& painter);
-    void get_view_image(QImage& new_view_image);
+    void get_view_image(QImage& new_view_image,float display_ratio);
     void add_R_label(QPainter& painter);
     void manage_slice_orientation(QImage& slice,QImage& new_slice);
     bool command(QString cmd,QString param = "",QString param2 = "");

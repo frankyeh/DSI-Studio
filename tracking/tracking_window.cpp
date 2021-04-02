@@ -1818,8 +1818,11 @@ void tracking_window::on_actionAdjust_Mapping_triggered()
     size_t index = handle->get_name_index("iso");
     if(handle->view_item.size() == index)
         index = 0;
+    tipl::image<float,3> iso_fa(handle->view_item[index].image_data);
+    tipl::add(iso_fa,handle->view_item[0].image_data);
+
     std::shared_ptr<manual_alignment> manual(new manual_alignment(this,
-        handle->view_item[0].image_data,slices[0]->voxel_size,
+        iso_fa,slices[index]->voxel_size,
         reg_slice->get_source(),reg_slice->voxel_size,
         (reg_slice->source_images.depth() == 1 ? tipl::reg::affine : tipl::reg::rigid_body),tipl::reg::cost_type::mutual_info));
     manual->arg = reg_slice->arg_min;
@@ -1864,42 +1867,6 @@ void tracking_window::on_actionLoad_mapping_triggered()
     glWidget->updateGL();
 }
 
-void tracking_window::on_actionInsert_MNI_images_triggered()
-{
-    QString filename = QFileDialog::getOpenFileName(
-        this,"Open MNI Image",QFileInfo(windowTitle()).absolutePath(),"Image files (*.hdr *.nii *nii.gz);;All files (*)" );
-    if( filename.isEmpty() || !can_map_to_mni() || handle->get_mni_mapping().empty())
-        return;
-
-    gz_nifti reader;
-    if(!reader.load_from_file(filename.toStdString()))
-    {
-        QMessageBox::information(this,"Error","Cannot open the nifti file",0);
-        return;
-    }
-    tipl::image<float,3> I,J(handle->mni_position.geometry());
-    tipl::matrix<4,4,float> T;
-    reader.toLPS(I);
-    reader.get_image_transformation(T);
-    T.inv();
-    J.for_each_mt([&](float& v,const tipl::pixel_index<3>& pos)
-    {
-        tipl::vector<3> mni(handle->mni_position[pos.index()]);
-        mni.to(T);
-        tipl::estimate(I,mni,v);
-    });
-    QString name = QFileInfo(filename).baseName();
-    std::shared_ptr<SliceModel> new_slice(new CustomSliceModel(handle.get()));
-    CustomSliceModel* reg_slice_ptr = dynamic_cast<CustomSliceModel*>(new_slice.get());
-    reg_slice_ptr->source_images.swap(J);
-    reg_slice_ptr->T.identity();
-    reg_slice_ptr->invT.identity();
-    reg_slice_ptr->is_diffusion_space = true;
-    reg_slice_ptr->initialize();
-    slices.push_back(new_slice);
-    ui->SliceModality->addItem(name);
-    ui->SliceModality->setCurrentIndex(handle->view_item.size()-1);
-}
 void tracking_window::updateSlicesMenu(void)
 {
     fib_data& fib = *handle;
@@ -1944,15 +1911,40 @@ void tracking_window::updateSlicesMenu(void)
     color_bar->update_slice_indices();
 }
 
+void tracking_window::on_actionInsert_MNI_images_triggered()
+{
+    QString filename = QFileDialog::getOpenFileName(
+        this,"Open MNI Image",QFileInfo(windowTitle()).absolutePath(),"Image files (*.hdr *.nii *nii.gz);;All files (*)" );
+    if( filename.isEmpty() || !can_map_to_mni() || handle->get_mni_mapping().empty())
+        return;
+
+    CustomSliceModel* reg_slice_ptr = nullptr;
+    std::shared_ptr<SliceModel> new_slice(reg_slice_ptr = new CustomSliceModel(handle.get()));
+    reg_slice_ptr->is_mni_image = true;
+
+    std::vector<std::string> files;
+    files.push_back(filename.toStdString());
+    if(!reg_slice_ptr->initialize(files))
+    {
+        QMessageBox::information(this,"DSI Studio",reg_slice_ptr->error_msg.c_str(),0);
+        return;
+    }
+    slices.push_back(new_slice);
+    ui->SliceModality->addItem(reg_slice_ptr->name.c_str());
+    ui->SliceModality->setCurrentIndex(int(handle->view_item.size())-1);
+    set_data("show_slice",Qt::Checked);
+    ui->glSagCheck->setChecked(true);
+    ui->glCorCheck->setChecked(true);
+    ui->glAxiCheck->setChecked(true);
+    glWidget->update();
+}
 bool tracking_window::addSlices(QStringList filenames,QString name,bool cmd)
 {
-    std::vector<std::string> files(filenames.size());
-    for (unsigned int index = 0; index < filenames.size(); ++index)
-            files[index] = filenames[index].toLocal8Bit().begin();
-    std::shared_ptr<SliceModel> new_slice(new CustomSliceModel(handle.get()));
-    CustomSliceModel* reg_slice_ptr = dynamic_cast<CustomSliceModel*>(new_slice.get());
-    if(!reg_slice_ptr)
-        return false;
+    std::vector<std::string> files(uint32_t(filenames.size()));
+    for (int index = 0; index < filenames.size(); ++index)
+            files[size_t(index)] = filenames[index].toStdString();
+    CustomSliceModel* reg_slice_ptr = nullptr;
+    std::shared_ptr<SliceModel> new_slice(reg_slice_ptr = new CustomSliceModel(handle.get()));
     if(!reg_slice_ptr->initialize(files))
     {
         if(!cmd)
@@ -1964,15 +1956,15 @@ bool tracking_window::addSlices(QStringList filenames,QString name,bool cmd)
     slices.push_back(new_slice);
     ui->SliceModality->addItem(name);
 
-    if(!timer2.get())
+    if(!timer2.get() && reg_slice_ptr->running)
     {
         timer2.reset(new QTimer());
-        timer2->setInterval(200);
+        timer2->setInterval(1000);
         connect(timer2.get(), SIGNAL(timeout()), this, SLOT(check_reg()));
         timer2->start();
         check_reg();
     }
-    ui->SliceModality->setCurrentIndex(handle->view_item.size()-1);
+    ui->SliceModality->setCurrentIndex(int(handle->view_item.size())-1);
     updateSlicesMenu();
     if(!cmd)
     {
@@ -1991,7 +1983,7 @@ void tracking_window::check_reg(void)
     for(unsigned int index = 0;index < slices.size();++index)
     {
         CustomSliceModel* reg_slice = dynamic_cast<CustomSliceModel*>(slices[index].get());
-        if(reg_slice && !reg_slice->ended)
+        if(reg_slice && reg_slice->running)
         {
             all_ended = false;
             reg_slice->update();
@@ -2463,37 +2455,6 @@ void tracking_window::on_actionMark_Tracts_on_T1W_T2W_triggered()
     glWidget->updateGL();
 }
 
-
-void tracking_window::on_actionApply_Operation_triggered()
-{
-    CustomSliceModel* slice = dynamic_cast<CustomSliceModel*>(current_slice.get());
-    if(!slice || slice->source_images.empty())
-        return;
-    QString cmd = QInputDialog::getText(this,"Apply Operation","Please specify command");
-    if(cmd == "upsample2")
-    {
-        slice->terminate();
-        slice->voxel_size *= 0.5;
-        tipl::matrix<4,4,float> nT;
-        nT.identity();
-        nT[0] = nT[5] = nT[10] = 0.5f;
-        slice->T = slice->T*nT;
-        slice->invT = tipl::inverse(slice->T);
-        tipl::image<float,3> J(tipl::geometry<3>(slice->source_images.width()*2,slice->source_images.height()*2,slice->source_images.depth()*2));
-        tipl::resample_mt(slice->source_images,J,nT,tipl::cubic);
-        slice->source_images.swap(J);
-        slice->initialize();
-        on_SliceModality_currentIndexChanged(ui->SliceModality->currentIndex());
-        return;
-    }
-    if(cmd == "smoothing")
-    {
-        tipl::filter::mean(slice->source_images);
-        on_SliceModality_currentIndexChanged(ui->SliceModality->currentIndex());
-        return;
-    }
-}
-
 void tracking_window::on_actionSave_Slices_to_DICOM_triggered()
 {
     CustomSliceModel* slice = dynamic_cast<CustomSliceModel*>(current_slice.get());
@@ -2715,12 +2676,15 @@ void tracking_window::on_actionInsert_Axial_Pictures_triggered()
     CustomSliceModel* reg_slice_ptr = dynamic_cast<CustomSliceModel*>(slices.back().get());
     if(!reg_slice_ptr)
         return;
-    if(reg_slice_ptr->arg_min.rotation[2] == 0.0f)
+    if(reg_slice_ptr->arg_min.rotation[1] == 0.0f)
     {
-        reg_slice_ptr->arg_min.rotation[2] = 3.1415926f;
+        reg_slice_ptr->arg_min.rotation[0] = 0.0f;
+        reg_slice_ptr->arg_min.rotation[1] = 3.1415926f;
+        reg_slice_ptr->arg_min.rotation[2] = 0.0f;
         reg_slice_ptr->update();
     }
     glWidget->update();
+    scene.show_slice();
     QMessageBox::information(this,"DSI Studio","Press Ctrl+A and then hold LEFT/RIGHT button to MOVE/RESIZE slice close to the target before using [Slices][Adjust Mapping]");
 }
 
@@ -2735,12 +2699,33 @@ void tracking_window::on_actionInsert_Coronal_Pictures_triggered()
         return;
     if(reg_slice_ptr->arg_min.rotation[0] == 0.0f)
     {
-        reg_slice_ptr->arg_min.rotation[2] = 0.0f;
         reg_slice_ptr->arg_min.rotation[0] = -3.1415926f/2.0f;
+        reg_slice_ptr->arg_min.rotation[1] = 0.0f;
+        reg_slice_ptr->arg_min.rotation[2] = 0.0f;
         reg_slice_ptr->update();
     }
     glWidget->update();
-
+    scene.show_slice();
 }
 
 
+
+void tracking_window::on_actionInsert_Sagittal_Picture_triggered()
+{
+    size_t slice_size = slices.size();
+    on_actionInsert_Axial_Pictures_triggered();
+    if(slice_size == slices.size())
+        return;
+    CustomSliceModel* reg_slice_ptr = dynamic_cast<CustomSliceModel*>(slices.back().get());
+    if(!reg_slice_ptr)
+        return;
+    if(reg_slice_ptr->arg_min.rotation[0] == 0.0f)
+    {
+        reg_slice_ptr->arg_min.rotation[0] = 3.1415926f/2.0f;
+        reg_slice_ptr->arg_min.rotation[1] = 3.1415926f;
+        reg_slice_ptr->arg_min.rotation[2] = -3.1415926f/2.0f;
+        reg_slice_ptr->update();
+    }
+    glWidget->update();
+    scene.show_slice();
+}

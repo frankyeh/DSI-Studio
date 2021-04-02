@@ -93,24 +93,7 @@ tipl::const_pointer_image<float, 3> SliceModel::get_source(void) const
 CustomSliceModel::CustomSliceModel(fib_data* new_handle):
     SliceModel(new_handle,0)
 {
-    new_handle->view_item.push_back(item());
-}
-// ---------------------------------------------------------------------------
-void CustomSliceModel::initialize(void)
-{
-    if(!handle->view_item.empty())
-        view_id = uint32_t(handle->view_item.size()-1);
-    geometry = source_images.geometry();
-    handle->view_item.back().image_data = tipl::make_image(&*source_images.begin(),source_images.geometry());
-    handle->view_item.back().set_scale(source_images.begin(),source_images.end());
-    handle->view_item.back().name = name;
-    handle->view_item.back().T = T;
-    handle->view_item.back().iT = invT;
-    slice_pos[0] = geometry.width() >> 1;
-    slice_pos[1] = geometry.height() >> 1;
-    slice_pos[2] = geometry.depth() >> 1;
-    v2c.set_range(handle->view_item[view_id].contrast_min,handle->view_item[view_id].contrast_max);
-    v2c.two_color(handle->view_item[view_id].min_color,handle->view_item[view_id].max_color);
+    is_diffusion_space = false;
 }
 // ---------------------------------------------------------------------------
 void CustomSliceModel::get_slice(tipl::color_image& image,
@@ -127,18 +110,12 @@ bool CustomSliceModel::initialize(const std::vector<std::string>& files)
 {
     if(files.empty())
         return false;
-    terminated = true;
-    ended = true;
-    is_diffusion_space = false;
-
-    gz_nifti nifti;
     // QSDR loaded, use MNI transformation instead
     bool has_transform = false;
-    from = tipl::make_image(handle->dir.fa[0],handle->dim);
-    from_vs = handle->vs;
     source_file_name = files[0].c_str();
     name = QFileInfo(files[0].c_str()).completeBaseName().remove(".nii").toStdString();
 
+    // picture as slice
     if(QFileInfo(files[0].c_str()).suffix() == "bmp" ||
        QFileInfo(files[0].c_str()).suffix() == "jpg" ||
        QFileInfo(files[0].c_str()).suffix() == "png")
@@ -179,12 +156,8 @@ bool CustomSliceModel::initialize(const std::vector<std::string>& files)
         else
         {
             std::ifstream in(info_file.toStdString().c_str());
-            in >> geometry[0];
-            in >> geometry[1];
-            in >> geometry[2];
-            in >> voxel_size[0];
-            in >> voxel_size[1];
-            in >> voxel_size[2];
+            in >> geometry[0];in >> geometry[1];in >> geometry[2];
+            in >> voxel_size[0];in >> voxel_size[1];in >> voxel_size[2];
             std::copy(std::istream_iterator<float>(in),
                       std::istream_iterator<float>(),T.begin());
             if(geometry[2] != uint32_t(files.size()))
@@ -232,7 +205,6 @@ bool CustomSliceModel::initialize(const std::vector<std::string>& files)
                 ++in_plane_subsample;
                 ++slice_subsample;
             }
-
 
             try{
                 source_images.resize(geo);
@@ -297,57 +269,76 @@ bool CustomSliceModel::initialize(const std::vector<std::string>& files)
             has_transform = true;
         }
     }
-    else
+
+    // load nifti file
+    if(source_images.empty())
     {
-        if(files.size() == 1)
+        gz_nifti nifti;
+        if(nifti.load_from_file(files[0]))
         {
-            if(nifti.load_from_file(files[0]))
+            nifti.toLPS(source_images);
+            nifti.get_voxel_size(voxel_size);
+            nifti.get_image_transformation(trans);
+            if(handle->is_qsdr || handle->is_mni_image)
             {
-                nifti.toLPS(source_images);
-                nifti.get_voxel_size(voxel_size);
-                nifti.get_image_transformation(trans);
-                if(handle->is_qsdr || handle->is_mni_image)
-                {
-                    nifti.get_image_transformation(invT);
-                    invT.inv();
-                    invT *= handle->trans_to_mni;
-                    T = tipl::inverse(invT);
-                    has_transform = true;
-                }
+                nifti.get_image_transformation(invT);
+                invT.inv();
+                invT *= handle->trans_to_mni;
+                T = tipl::inverse(invT);
+                has_transform = true;
             }
             else
+            if(is_mni_image)
             {
-                tipl::io::bruker_2dseq bruker;
-                if(bruker.load_from_file(files[0].c_str()))
+                tipl::image<float,3> J(handle->mni_position.geometry());
+                auto iT = trans;
+                iT.inv();
+                J.for_each_mt([&](float& v,const tipl::pixel_index<3>& pos)
                 {
-                    bruker.get_voxel_size(voxel_size);
-                    source_images = std::move(bruker.get_image());
-                    initial_LPS_nifti_srow(trans,source_images.geometry(),voxel_size);
-                    QDir d = QFileInfo(files[0].c_str()).dir();
-                    if(d.cdUp() && d.cdUp())
-                    {
-                        QString method_file_name = d.absolutePath()+ "/method";
-                        tipl::io::bruker_info method;
-                        if(method.load_from_file(method_file_name.toStdString().c_str()))
-                            name = method["Method"];
-                    }
-                }
-            }
-        }
-        else
-        {
-            tipl::io::volume volume;
-            if(volume.load_from_files(files,files.size()))
-            {
-                volume.get_voxel_size(voxel_size);
-                volume >> source_images;
-                initial_LPS_nifti_srow(trans,source_images.geometry(),voxel_size);
+                    tipl::vector<3> mni(handle->mni_position[pos.index()]);
+                    mni.to(iT);
+                    tipl::estimate(source_images,mni,v);
+                });
+                source_images.swap(J);
+                T.identity();
+                invT.identity();
+                is_diffusion_space = true;
+                has_transform = true;
             }
         }
     }
 
+    // bruker images
+    if(source_images.empty())
+    {
+        tipl::io::bruker_2dseq bruker;
+        if(bruker.load_from_file(files[0].c_str()))
+        {
+            bruker.get_voxel_size(voxel_size);
+            source_images = std::move(bruker.get_image());
+            initial_LPS_nifti_srow(trans,source_images.geometry(),voxel_size);
+            QDir d = QFileInfo(files[0].c_str()).dir();
+            if(d.cdUp() && d.cdUp())
+            {
+                QString method_file_name = d.absolutePath()+ "/method";
+                tipl::io::bruker_info method;
+                if(method.load_from_file(method_file_name.toStdString().c_str()))
+                    name = method["Method"];
+            }
+        }
+    }
 
-
+    // dicom images
+    if(source_images.empty())
+    {
+        tipl::io::volume volume;
+        if(volume.load_from_files(files,files.size()))
+        {
+            volume.get_voxel_size(voxel_size);
+            volume >> source_images;
+            initial_LPS_nifti_srow(trans,source_images.geometry(),voxel_size);
+        }
+    }
 
     if(source_images.empty())
     {
@@ -361,15 +352,6 @@ bool CustomSliceModel::initialize(const std::vector<std::string>& files)
         invT.identity();
         is_diffusion_space = true;
         has_transform = true;
-    }
-
-    {
-        std::string mapping_file = source_file_name+".mapping.txt";
-        if(QFileInfo(mapping_file.c_str()).exists())
-        {
-            load_mapping(mapping_file.c_str());
-            has_transform = true;
-        }
     }
 
     if(!has_transform)
@@ -386,28 +368,45 @@ bool CustomSliceModel::initialize(const std::vector<std::string>& files)
         }
         else
         {
-            size_t iso = handle->get_name_index("iso");
-            if(handle->view_item.size() != iso)
-                from = handle->view_item[iso].image_data;
-            size_t base_nqa = handle->get_name_index("base_nqa");
-            if(handle->view_item.size() != base_nqa)
-                from = handle->view_item[base_nqa].image_data;
-
             thread.reset(new std::future<void>(
                 std::async(std::launch::async,[this](){argmin(tipl::reg::rigid_body);})));
-
         }
     }
-    initialize();
+    // add new image to handle view list
+    // initialize base class
+    {
+        handle->view_item.push_back(item());
+        view_id = uint32_t(handle->view_item.size()-1);
+        handle->view_item.back().image_data = tipl::make_image(&*source_images.begin(),source_images.geometry());
+        handle->view_item.back().set_scale(source_images.begin(),source_images.end());
+        handle->view_item.back().name = name;
+        handle->view_item.back().T = T;
+        handle->view_item.back().iT = invT;
+        geometry = source_images.geometry();
+        slice_pos[0] = source_images.width() >> 1;
+        slice_pos[1] = source_images.height() >> 1;
+        slice_pos[2] = source_images.depth() >> 1;
+        v2c.set_range(handle->view_item[view_id].contrast_min,handle->view_item[view_id].contrast_max);
+        v2c.two_color(handle->view_item[view_id].min_color,handle->view_item[view_id].max_color);
+    }
     return true;
 }
 
 // ---------------------------------------------------------------------------
-
+void CustomSliceModel::update(void)
+{
+    tipl::transformation_matrix<float> M(arg_min,handle->dim,handle->vs,geometry,voxel_size);
+    invT.identity();
+    M.save_to_transform(invT.begin());
+    T = tipl::inverse(invT);
+    handle->view_item[view_id].T = tipl::inverse(invT);
+    handle->view_item[view_id].iT = invT;
+}
+// ---------------------------------------------------------------------------
 void CustomSliceModel::argmin(tipl::reg::reg_type reg_type)
 {
     terminated = false;
-    ended = false;
+    running = true;
     tipl::const_pointer_image<float,3> to = source_images;
     tipl::transformation_matrix<float> M;
 
@@ -415,17 +414,26 @@ void CustomSliceModel::argmin(tipl::reg::reg_type reg_type)
     tipl::affine_transform_2d<float> a;
     tipl::transformation_matrix_2d<float> m;
 
-    // assume brain top
-    float z_shift = (float(from.geometry()[2])*from_vs[2]-float(to.geometry()[2])*voxel_size[2])*0.1f;
+    auto from = handle->view_item[0].image_data;
+    size_t iso = handle->get_name_index("iso");
+    if(handle->view_item.size() != iso)
+        from = handle->view_item[iso].image_data;
+    size_t base_nqa = handle->get_name_index("base_nqa");
+    if(handle->view_item.size() != base_nqa)
+        from = handle->view_item[base_nqa].image_data;
+
+
+    // align brain top
+    float z_shift = (float(handle->dim[2])*handle->vs[2]-float(to.geometry()[2])*voxel_size[2])*0.1f;
     arg_min.translocation[2] = -z_shift*voxel_size[2];
 
-    tipl::reg::two_way_linear_mr(from,from_vs,to,voxel_size,M,reg_type,tipl::reg::mutual_information(),terminated,
+    tipl::reg::two_way_linear_mr(from,handle->vs,to,voxel_size,M,reg_type,tipl::reg::mutual_information(),terminated,
                                   std::thread::hardware_concurrency(),&arg_min);
 
-    ended = true;
     M.save_to_transform(invT.begin());
     handle->view_item[view_id].T = T = tipl::inverse(invT);
     handle->view_item[view_id].iT = invT;
+    running = false;
 }
 // ---------------------------------------------------------------------------
 void CustomSliceModel::save_mapping(const char* file_name)
@@ -473,20 +481,14 @@ void CustomSliceModel::load_mapping(const char* file_name)
         handle->view_item[view_id].iT = invT;
     }
 }
-void CustomSliceModel::update(void)
-{
-    tipl::transformation_matrix<float> M(arg_min,from.geometry(),from_vs,source_images.geometry(),voxel_size);
-    invT.identity();
-    M.save_to_transform(invT.begin());
-    handle->view_item[view_id].T = T = tipl::inverse(invT);
-    handle->view_item[view_id].iT = invT;
-}
+
 // ---------------------------------------------------------------------------
 void CustomSliceModel::terminate(void)
 {
     terminated = true;
+    running = false;
     if(thread.get())
         thread->wait();
-    ended = true;
+
 }
 // ---------------------------------------------------------------------------

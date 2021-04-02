@@ -12,7 +12,7 @@ public:
     uint32_t view_id = 0;
     bool is_diffusion_space = true;
     tipl::matrix<4,4,float> T,invT; // T: image->diffusion iT: diffusion->image
-    tipl::geometry<3>geometry;
+    tipl::geometry<3> geometry;
     tipl::vector<3,float> voxel_size;
 public:
     bool is_overlay = false;
@@ -121,20 +121,21 @@ public:
     std::string source_file_name,name,error_msg = "unknown error";
 public:
     std::shared_ptr<std::future<void> > thread;
-    tipl::const_pointer_image<float,3> from;
-    tipl::vector<3> from_vs;
     tipl::affine_transform<float> arg_min;
-    bool terminated;
-    bool ended;
+    bool terminated = true;
+    bool running = false;
+    bool is_mni_image = false; // only used in loading mni image to the native space
+    void terminate(void);
+    void argmin(tipl::reg::reg_type reg_type);
+    void update(void);
+public:
     CustomSliceModel(fib_data* new_handle);
     ~CustomSliceModel(void)
     {
         terminate();
     }
 
-    void terminate(void);
-    void argmin(tipl::reg::reg_type reg_type);
-    void update(void);
+
     void save_mapping(const char* file_name);
     void load_mapping(const char* file_name);
 public:
@@ -147,7 +148,6 @@ public:
                            const std::vector<std::shared_ptr<SliceModel> >& overlay_slices) const;
 public:
     bool initialize(const std::vector<std::string>& files);
-    void initialize(void);
 };
 
 #endif

@@ -271,9 +271,8 @@ void slice_view_scene::manage_slice_orientation(QImage& slice,QImage& new_slice)
         flip_x = true;
     new_slice = (!flip_x && !flip_y ? slice : slice.mirrored(flip_x,flip_y));
 }
-void slice_view_scene::get_view_image(QImage& new_view_image)
+void slice_view_scene::get_view_image(QImage& new_view_image,float display_ratio)
 {
-    float display_ratio = cur_tracking_window.get_scene_zoom();
     cur_tracking_window.current_slice->get_slice(slice_image,
                                                  cur_tracking_window.cur_dim,
                                                  cur_tracking_window.overlay_slices);
@@ -298,7 +297,7 @@ void slice_view_scene::get_view_image(QImage& new_view_image)
     QImage scaled_image = qimage.scaled(int(slice_image.width()*display_ratio),
                                         int(slice_image.height()*display_ratio));
 
-    cur_tracking_window.regionWidget->draw_edge(slice_image.width(),slice_image.height(),scaled_image,
+    cur_tracking_window.regionWidget->draw_edge(slice_image.width(),slice_image.height(),display_ratio,scaled_image,
                             cur_tracking_window["roi_edge"].toInt());
 
     if(cur_tracking_window["roi_track"].toInt())
@@ -306,17 +305,24 @@ void slice_view_scene::get_view_image(QImage& new_view_image)
                                                  cur_tracking_window.current_slice->slice_pos[cur_tracking_window.cur_dim],
                                                  scaled_image,display_ratio,uint32_t(cur_tracking_window["roi_track_count"].toInt()));
 
-    QPainter painter(&scaled_image);
-    if(cur_tracking_window["roi_fiber"].toInt())
-        show_fiber(painter);
-    if(cur_tracking_window["roi_position"].toInt())
-        show_pos(painter);
+    if(cur_tracking_window["roi_layout"].toInt() <= 1) // not mosaic
+    {
+        QPainter painter(&scaled_image);
+        if(cur_tracking_window["roi_fiber"].toInt())
+            show_fiber(painter);
+        if(cur_tracking_window["roi_position"].toInt())
+            show_pos(painter);
+    }
 
     manage_slice_orientation(scaled_image,new_view_image);
-    QPainter painter2(&new_view_image);
-    if(cur_tracking_window["roi_ruler"].toInt())
-        show_ruler(painter2);
-    add_R_label(painter2);
+
+    if(cur_tracking_window["roi_layout"].toInt() <= 1) // not mosaic
+    {
+        QPainter painter2(&new_view_image);
+        if(cur_tracking_window["roi_ruler"].toInt())
+            show_ruler(painter2);
+        add_R_label(painter2);
+    }
 }
 
 void slice_view_scene::add_R_label(QPainter& painter)
@@ -462,7 +468,7 @@ void slice_view_scene::show_slice(void)
     float display_ratio = cur_tracking_window.get_scene_zoom();
 
     if(cur_tracking_window["roi_layout"].toInt() == 0)// single slice
-        get_view_image(view_image);
+        get_view_image(view_image,display_ratio);
     else
     if(cur_tracking_window["roi_layout"].toInt() == 1)// 3 slices
     {
@@ -471,11 +477,11 @@ void slice_view_scene::show_slice(void)
         unsigned char old_dim = cur_tracking_window.cur_dim;
         QImage view1,view2,view3;
         cur_tracking_window.cur_dim = 0;
-        get_view_image(view1);
+        get_view_image(view1,display_ratio);
         cur_tracking_window.cur_dim = 1;
-        get_view_image(view2);
+        get_view_image(view2,display_ratio);
         cur_tracking_window.cur_dim = 2;
-        get_view_image(view3);
+        get_view_image(view3,display_ratio);
         cur_tracking_window.cur_dim = old_dim;
         view_image = QImage(QSize(view1.width()+view2.width(),view1.height()+view3.height()),QImage::Format_RGB32);
         QPainter painter(&view_image);
@@ -501,91 +507,50 @@ void slice_view_scene::show_slice(void)
             painter.drawImage(0,view1.height(),view4);
         }
         QPen pen(QColor(255,255,255));
-        pen.setWidthF(std::max(1.0,display_ratio/4.0));
+        pen.setWidthF(std::max(1.0,double(display_ratio)/4.0));
         painter.setPen(pen);
         painter.drawLine(cur_tracking_window["orientation_convention"].toInt() ? view2.width() : view1.width(),0,
                          cur_tracking_window["orientation_convention"].toInt() ? view2.width() : view1.width(),view_image.height());
         painter.drawLine(0,view1.height(),view_image.width(),view1.height());
     }
     else
+    // mosaic
     {
-        unsigned int skip = std::pow(2,cur_tracking_window["roi_layout"].toInt()-2);
-        char cur_dim = cur_tracking_window.cur_dim;
-        mosaic_size = std::max((int)1,(int)std::ceil(
-                                   std::sqrt((float)(cur_tracking_window.current_slice->geometry[cur_dim] / skip))));
-
-
+        unsigned int skip = uint32_t(std::pow(2,cur_tracking_window["roi_layout"].toInt()-2));
+        unsigned char cur_dim = cur_tracking_window.cur_dim;
+        mosaic_size = std::max<uint32_t>(1,uint32_t(std::ceil(
+                                   std::sqrt(float(cur_tracking_window.current_slice->geometry[cur_dim]) / skip))));
+        float scale = display_ratio/float(mosaic_size);
         char dim_order[3][2]= {{1,2},{0,2},{0,1}};
         auto dim = cur_tracking_window.current_slice->geometry;
         unsigned slice_num = dim[cur_dim] / skip;
+
+        view_image = QImage(QSize(
+                                int(dim[dim_order[uint8_t(cur_dim)][0]]*scale*mosaic_size),
+                                int(dim[dim_order[uint8_t(cur_dim)][1]]*scale*(std::ceil(float(slice_num)/float(mosaic_size))))),
+                                QImage::Format_RGB32);
+        QPainter painter(&view_image);
         tipl::geometry<2> mosaic_tile_geo;
         {
-            mosaic_image.clear();
-            mosaic_image.resize(tipl::geometry<2>(
-                    dim[dim_order[uint8_t(cur_dim)][0]]*mosaic_size,
-                    uint32_t(dim[dim_order[uint8_t(cur_dim)][1]]*(std::ceil(float(slice_num)/float(mosaic_size))))));
             int old_z = cur_tracking_window.current_slice->slice_pos[cur_tracking_window.cur_dim];
             for(unsigned int z = 0;z < slice_num;++z)
             {
+                QImage view;
                 cur_tracking_window.current_slice->slice_pos[cur_tracking_window.cur_dim] = int(z*skip);
-                tipl::color_image slice_image;
-                cur_tracking_window.current_slice->get_slice(slice_image,cur_tracking_window.cur_dim,cur_tracking_window.overlay_slices);
-
-                if(!cur_tracking_window["roi_edge"].toInt())
-                    cur_tracking_window.regionWidget->draw_region(slice_image);
-                if(cur_dim != 2)
-                    tipl::flip_y(slice_image);
-                else
-                if(cur_tracking_window["orientation_convention"].toInt())
-                    tipl::flip_x(slice_image);
+                get_view_image(view,scale);
                 if(z == 0)
-                    mosaic_tile_geo = slice_image.geometry();
-                tipl::vector<2,int> pos(int(dim[dim_order[uint8_t(cur_dim)][0]]*(z%mosaic_size)),
-                                        int(dim[dim_order[uint8_t(cur_dim)][1]]*(z/mosaic_size)));
-                tipl::draw(slice_image,mosaic_image,pos);
-            }
-            cur_tracking_window.current_slice->slice_pos[cur_tracking_window.cur_dim] = old_z;
-        }
-
-        QImage qimage(reinterpret_cast<unsigned char*>(&*mosaic_image.begin()),
-                      mosaic_image.width(),mosaic_image.height(),QImage::Format_RGB32);
-        float scale = display_ratio/float(mosaic_size);
-        view_image = qimage.scaled(int(mosaic_image.width()*scale),
-                                   int(mosaic_image.height()*scale));
-
-        bool draw_track = cur_tracking_window["roi_track"].toInt() &&
-                !cur_tracking_window.tractWidget->tract_models.empty() &&
-                !cur_tracking_window.tractWidget->get_checked_tracks().empty();
-        bool draw_edge = cur_tracking_window["roi_edge"].toInt();
-        if(draw_track || draw_edge)// draw tracks or edges
-        {
-            mosaic_tile_geo[0] *= scale;
-            mosaic_tile_geo[1] *= scale;
-            QPainter painter(&view_image);
-            for(unsigned int z = 0;z < slice_num;++z)
-            {
+                    painter.fillRect(0,0,view_image.width(),view_image.height(),view.pixel(0,0));
                 int x = int(dim[dim_order[uint8_t(cur_dim)][0]]*(z%mosaic_size));
                 int y = int(dim[dim_order[uint8_t(cur_dim)][1]]*(z/mosaic_size));
                 x *= scale;
                 y *= scale;
-                QImage cropped = view_image.copy(QRect(x, y, int(mosaic_tile_geo[0]), int(mosaic_tile_geo[1])));
-                manage_slice_orientation(cropped,cropped);
-                if(draw_edge)
-                    cur_tracking_window.regionWidget->draw_edge(mosaic_tile_geo.width(),
-                                                                mosaic_tile_geo.height(),cropped,
-                                                                cur_tracking_window["roi_edge"].toInt());
-
-                if(draw_track)
-                    cur_tracking_window.tractWidget->draw_tracts(cur_tracking_window.cur_dim,int(z*skip),
-                                                         cropped,scale,
-                                                         uint32_t(cur_tracking_window["roi_track_count"].toInt()));
-                manage_slice_orientation(cropped,cropped);
-                painter.drawImage(QPoint(x,y), cropped);
+                painter.drawImage(QPoint(x,y), view);
             }
-            painter.end();
+            cur_tracking_window.current_slice->slice_pos[cur_tracking_window.cur_dim] = old_z;
         }
-        QPainter painter2(&view_image);
-        add_R_label(painter2);
+
+        if(cur_tracking_window.cur_dim) // not sagittal view
+            add_R_label(painter);
     }
     show_view(*this,view_image);
 }

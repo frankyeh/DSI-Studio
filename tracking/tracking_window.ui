@@ -1196,10 +1196,17 @@
      <addaction name="actionAnterior"/>
      <addaction name="actionPosterior"/>
     </widget>
+    <widget class="QMenu" name="menuInsert_Picture">
+     <property name="title">
+      <string>Insert Picture</string>
+     </property>
+     <addaction name="actionInsert_Coronal_Pictures"/>
+     <addaction name="actionInsert_Axial_Pictures"/>
+     <addaction name="actionInsert_Sagittal_Picture"/>
+    </widget>
     <addaction name="actionInsert_T1_T2"/>
     <addaction name="actionInsert_MNI_images"/>
-    <addaction name="actionInsert_Coronal_Pictures"/>
-    <addaction name="actionInsert_Axial_Pictures"/>
+    <addaction name="menuInsert_Picture"/>
     <addaction name="menuAdd_Isosurface"/>
     <addaction name="separator"/>
     <addaction name="actionSave_T1W_T2W_images"/>
@@ -1214,7 +1221,6 @@
     <addaction name="actionLoad_Color_Map"/>
     <addaction name="actionKeep_Current_Slice"/>
     <addaction name="separator"/>
-    <addaction name="actionApply_Operation"/>
     <addaction name="actionMove_Slices_To_Current_Region"/>
    </widget>
    <widget class="QMenu" name="menuTools">
@@ -4001,6 +4007,15 @@ Tracking</string>
    </property>
    <property name="text">
     <string>Insert Axial Pictures...</string>
+   </property>
+  </action>
+  <action name="actionInsert_Sagittal_Picture">
+   <property name="icon">
+    <iconset resource="../icons.qrc">
+     <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+   </property>
+   <property name="text">
+    <string>Insert Sagittal Picture...</string>
    </property>
   </action>
  </widget>

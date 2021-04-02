@@ -371,7 +371,7 @@ void draw_region_voxels(tracking_window& cur_tracking_window,
     }
 }
 
-void RegionTableWidget::draw_edge(int slice_width,int slice_height,QImage& scaled_image,bool draw_all)
+void RegionTableWidget::draw_edge(int slice_width,int slice_height,float display_ratio,QImage& scaled_image,bool draw_all)
 {
     // during region removal, there will be a call with invalid currentRow
     if(regions.empty() || currentRow() >= int(regions.size()) || currentRow() == -1)
@@ -399,7 +399,6 @@ void RegionTableWidget::draw_edge(int slice_width,int slice_height,QImage& scale
     }
     if(checked_regions.empty())
         return;
-    float display_ratio = cur_tracking_window.get_scene_zoom();
 
     tipl::image<unsigned char,2> cur_image_mask;
     cur_image_mask.resize(tipl::geometry<2>(uint32_t(slice_width),
