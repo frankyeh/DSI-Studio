@@ -1431,7 +1431,7 @@ void TractModel::get_in_slice_tracts(unsigned char dim,int pos,
     std::vector<tipl::vector<2,float> > line;
     auto add_line = [&](unsigned int index)
     {
-        if(line.empty() || index >= tract_color[index])
+        if(line.empty() || index >= tract_color.size())
             return;
         lines.push_back(std::move(line));
         colors.push_back(tract_color[index]);
