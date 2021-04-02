@@ -179,7 +179,7 @@ void individual_connectometry::on_compare_clicked()
         run:
         baseline->report = baseline->db.report + new_mdi->cnt_result.report;
         new_mdi->initialize_tracking_index(0);
-        new_mdi->scene.show_slice();
+        new_mdi->slice_need_update = true;
         QDir::setCurrent(QFileInfo(ui->File1->text()).absolutePath());
         return;
     }

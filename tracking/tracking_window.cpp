@@ -240,7 +240,7 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
     // scene view
     {
 
-        connect(&scene,SIGNAL(need_update()),&scene,SLOT(show_slice()));
+        connect(&scene,SIGNAL(need_update()),this,SLOT(update_scene_slice()));
         connect(&scene,SIGNAL(need_update()),glWidget,SLOT(updateGL()));
 
         connect(ui->actionAxial_View,SIGNAL(triggered()),this,SLOT(on_glAxiView_clicked()));
@@ -255,8 +255,8 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
     // regions
     {
 
-        connect(regionWidget,SIGNAL(need_update()),&scene,SLOT(show_slice()));
-        connect(regionWidget,SIGNAL(itemSelectionChanged()),&scene,SLOT(show_slice()));
+        connect(regionWidget,SIGNAL(need_update()),this,SLOT(update_scene_slice()));
+        connect(regionWidget,SIGNAL(itemSelectionChanged()),this,SLOT(update_scene_slice()));
         connect(regionWidget,SIGNAL(need_update()),glWidget,SLOT(updateGL()));
 
         connect(ui->actionNewRegion,SIGNAL(triggered()),regionWidget,SLOT(new_region()));
@@ -347,12 +347,12 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
 
         connect(tractWidget,SIGNAL(need_update()),glWidget,SLOT(makeTracts()));
         connect(tractWidget,SIGNAL(need_update()),glWidget,SLOT(updateGL()));
-        connect(tractWidget,SIGNAL(need_update()),&scene,SLOT(show_slice()));
+        connect(tractWidget,SIGNAL(need_update()),this,SLOT(update_scene_slice()));
         connect(tractWidget,SIGNAL(cellChanged(int,int)),glWidget,SLOT(updateGL())); //update label
         connect(tractWidget,SIGNAL(itemSelectionChanged()),tractWidget,SLOT(show_report()));
         connect(glWidget,SIGNAL(edited()),tractWidget,SLOT(edit_tracts()));
         connect(glWidget,SIGNAL(region_edited()),glWidget,SLOT(updateGL()));
-        connect(glWidget,SIGNAL(region_edited()),&scene,SLOT(show_slice()));
+        connect(glWidget,SIGNAL(region_edited()),this,SLOT(update_scene_slice()));
 
 
         connect(ui->actionFilter_by_ROI,SIGNAL(triggered()),tractWidget,SLOT(filter_by_roi()));
@@ -710,7 +710,6 @@ bool tracking_window::command(QString cmd,QString param,QString param2)
         renderWidget->setDefault("show_label");
         renderWidget->setDefault("show_odf");
         glWidget->paintGL();
-        scene.show_slice();
         return true;
     }
     if(cmd == "set_roi_view")
@@ -752,7 +751,7 @@ bool tracking_window::command(QString cmd,QString param,QString param2)
     {
         set_data(param,param2);
         glWidget->paintGL();
-        scene.show_slice();
+        slice_need_update = true;
         return true;
     }
     if(cmd == "tract_to_region")
@@ -766,7 +765,7 @@ bool tracking_window::command(QString cmd,QString param,QString param2)
             return true;
         regionWidget->regions.back()->show_region.color = param.toInt();
         glWidget->paintGL();
-        scene.show_slice();
+        slice_need_update = true;
         return true;
     }
     if(cmd == "add_slice")
@@ -802,10 +801,22 @@ void tracking_window::initialize_tracking_index(int p)
     on_tracking_index_currentIndexChanged(p);
     scene.center();
 }
+void tracking_window::update_scene_slice(void)
+{
+    slice_need_update = true;
+}
 bool tracking_window::eventFilter(QObject *obj, QEvent *event)
 {
     bool has_info = false;
     tipl::vector<3,float> pos;
+    // update slice here
+    if(slice_need_update)
+    {
+        slice_need_update = false;
+        scene.show_slice();
+    }
+
+
     if (event->type() == QEvent::MouseMove)
     {
         if (obj == glWidget)
@@ -915,7 +926,8 @@ void tracking_window::SliderValueChanged(void)
             ui->glAxiSlider->value()))
     {
         ui->SlicePos->setValue(current_slice->slice_pos[cur_dim]);
-        scene.show_slice();
+        if((*this)["roi_layout"].toInt() < 2) // >2 is mosaic, there is no need to update
+            slice_need_update = true;
         glWidget->updateGL();
     }
 }
@@ -962,7 +974,7 @@ void tracking_window::on_tool5_pressed()
 void tracking_window::on_tool6_pressed()
 {
     scene.sel_mode = 6;
-    scene.show_slice();
+    slice_need_update = true;
     scene.setFocus();
 
 }
@@ -1013,7 +1025,7 @@ void tracking_window::on_glSagView_clicked()
     glWidget->updateGL();
     glWidget->setFocus();
 
-    scene.show_slice();
+    slice_need_update = true;
 }
 
 void tracking_window::on_glCorView_clicked()
@@ -1024,7 +1036,7 @@ void tracking_window::on_glCorView_clicked()
     glWidget->set_view(1);
     glWidget->updateGL();
     glWidget->setFocus();
-    scene.show_slice();
+    slice_need_update = true;
 }
 
 void tracking_window::on_glAxiView_clicked()
@@ -1035,7 +1047,7 @@ void tracking_window::on_glAxiView_clicked()
     glWidget->set_view(2);
     glWidget->updateGL();
     glWidget->setFocus();
-    scene.show_slice();
+    slice_need_update = true;
 
 }
 
@@ -1063,7 +1075,7 @@ void tracking_window::move_slice_to(tipl::vector<3,float> slice_position)
 
     glWidget->slice_pos[0] = glWidget->slice_pos[1] = glWidget->slice_pos[2] = -1;
     glWidget->updateGL();
-    scene.show_slice();
+    slice_need_update = true;
 }
 void tracking_window::change_contrast()
 {
@@ -1073,7 +1085,7 @@ void tracking_window::change_contrast()
     current_slice->set_contrast_color(ui->min_color_gl->color().rgb(),ui->max_color_gl->color().rgb());
     glWidget->slice_pos[0] = glWidget->slice_pos[1] = glWidget->slice_pos[2] = -1;
     glWidget->updateGL();
-    scene.show_slice();
+    slice_need_update = true;
 }
 
 void tracking_window::on_actionEndpoints_to_seeding_triggered()
@@ -1093,7 +1105,7 @@ void tracking_window::on_actionEndpoints_to_seeding_triggered()
             QString(" endpoints2"),roi_id);
     regionWidget->regions.back()->resolution_ratio = resolution_ratio;
     regionWidget->regions.back()->add_points(points2,false,resolution_ratio);
-    scene.show_slice();
+    slice_need_update = true;
     glWidget->updateGL();
 }
 
@@ -1109,7 +1121,7 @@ void tracking_window::on_actionTracts_to_seeds_triggered()
             tractWidget->item(tractWidget->currentRow(),0)->text(),roi_id);
     regionWidget->regions.back()->resolution_ratio = 2.0;
     regionWidget->add_points(points,false,false,2.0);
-    scene.show_slice();
+    slice_need_update = true;
     glWidget->updateGL();
 }
 
@@ -1203,13 +1215,13 @@ void tracking_window::on_tracking_index_currentIndexChanged(int index)
         set_data("fa_threshold",
                  renderWidget->getData("otsu_threshold").toFloat()*
                  tipl::segmentation::otsu_threshold(tipl::make_image(handle->dir.fa[0],handle->dim)));
-    scene.show_slice();
+    slice_need_update = true;
 }
 
 void tracking_window::on_dt_index_currentIndexChanged(int index)
 {
     handle->dir.set_dt_index(index-1); // skip the first "none" item
-    scene.show_slice();
+    slice_need_update = true;
 }
 
 
@@ -1587,7 +1599,7 @@ void tracking_window::on_actionImprove_Quality_triggered()
             std::copy(new_index[i].begin(),new_index[i].begin()+size,(short*)handle->dir.findex[i]);
         }
     }
-    scene.show_slice();
+    slice_need_update = true;
 }
 
 void tracking_window::on_actionAuto_Rotate_triggered(bool checked)
@@ -1749,7 +1761,7 @@ void tracking_window::stripSkull()
 
     reg_slice->skull_removed_images = reg_slice->source_images;
     reg_slice->skull_removed_images *= Iw_;
-    scene.show_slice();
+    slice_need_update = true;
 }
 
 void tracking_window::on_show_fiber_toggled(bool checked)
@@ -1757,14 +1769,14 @@ void tracking_window::on_show_fiber_toggled(bool checked)
     ui->show_fiber->setChecked(checked);
     if(ui->show_fiber->isChecked() ^ (*this)["roi_fiber"].toBool())
         set_data("roi_fiber",ui->show_fiber->isChecked());
-    scene.show_slice();
+    slice_need_update = true;
 }
 void tracking_window::on_show_edge_toggled(bool checked)
 {
     ui->show_edge->setChecked(checked);
     if(ui->show_edge->isChecked() ^ (*this)["roi_edge"].toBool())
         set_data("roi_edge",ui->show_edge->isChecked());
-    scene.show_slice();
+    slice_need_update = true;
 
 }
 void tracking_window::on_show_track_toggled(bool checked)
@@ -1772,14 +1784,14 @@ void tracking_window::on_show_track_toggled(bool checked)
     ui->show_edge->setChecked(checked);
     if(ui->show_edge->isChecked() ^ (*this)["roi_track"].toBool())
         set_data("roi_track",ui->show_edge->isChecked());
-    scene.show_slice();
+    slice_need_update = true;
 }
 void tracking_window::on_show_r_toggled(bool checked)
 {
     ui->show_r->setChecked(checked);
     if(ui->show_r->isChecked() ^ (*this)["roi_label"].toBool())
         set_data("roi_label",ui->show_r->isChecked());
-    scene.show_slice();
+    slice_need_update = true;
 }
 void tracking_window::on_show_3view_toggled(bool checked)
 {
@@ -1787,7 +1799,7 @@ void tracking_window::on_show_3view_toggled(bool checked)
     set_data("roi_layout",checked ? 1:0);
     if(checked)
         glWidget->updateGL();
-    scene.show_slice();
+    slice_need_update = true;
 }
 
 void tracking_window::on_show_position_toggled(bool checked)
@@ -1795,14 +1807,14 @@ void tracking_window::on_show_position_toggled(bool checked)
     ui->show_position->setChecked(checked);
     if(ui->show_position->isChecked() ^ (*this)["roi_position"].toBool())
         set_data("roi_position",ui->show_position->isChecked());
-    scene.show_slice();
+    slice_need_update = true;
 }
 void tracking_window::on_show_ruler_toggled(bool checked)
 {
     ui->show_ruler->setChecked(checked);
     if(ui->show_ruler->isChecked() ^ (*this)["roi_ruler"].toBool())
         set_data("roi_ruler",ui->show_ruler->isChecked());
-    scene.show_slice();
+    slice_need_update = true;
 }
 
 
@@ -1989,7 +2001,7 @@ void tracking_window::check_reg(void)
             reg_slice->update();
         }
     }
-    scene.show_slice();
+    slice_need_update = true;
     if(all_ended)
         timer2.reset(nullptr);
     else
@@ -2012,7 +2024,7 @@ void tracking_window::on_actionLoad_Color_Map_triggered()
     current_slice->v2c.set_color_map(new_color_map);
     glWidget->slice_pos[0] = glWidget->slice_pos[1] = glWidget->slice_pos[2] = -1;
     glWidget->updateGL();
-    scene.show_slice();
+    slice_need_update = true;
 }
 
 void tracking_window::on_track_style_currentIndexChanged(int index)
@@ -2413,7 +2425,7 @@ void tracking_window::on_actionMark_Region_on_T1W_T2W_triggered()
     for(size_t i = 0;i < t_mask.size();++i)
         if(t_mask[i])
             slice->source_images[i] = mark_value;
-    scene.show_slice();
+    slice_need_update = true;
     glWidget->updateGL();
 }
 
@@ -2451,7 +2463,7 @@ void tracking_window::on_actionMark_Tracts_on_T1W_T2W_triggered()
     for(size_t i = 0;i < t_mask.size();++i)
         if(t_mask[i])
             slice->source_images[i] = mark_value;
-    scene.show_slice();
+    slice_need_update = true;
     glWidget->updateGL();
 }
 
@@ -2545,7 +2557,7 @@ void tracking_window::on_zoom_valueChanged(double arg1)
         return;
     set_data("roi_zoom",arg1);
     scene.center();
-    scene.show_slice();
+    slice_need_update = true;
 }
 
 void tracking_window::Move_Slice_X()
@@ -2684,7 +2696,7 @@ void tracking_window::on_actionInsert_Axial_Pictures_triggered()
         reg_slice_ptr->update();
     }
     glWidget->update();
-    scene.show_slice();
+    slice_need_update = true;
     QMessageBox::information(this,"DSI Studio","Press Ctrl+A and then hold LEFT/RIGHT button to MOVE/RESIZE slice close to the target before using [Slices][Adjust Mapping]");
 }
 
@@ -2705,7 +2717,7 @@ void tracking_window::on_actionInsert_Coronal_Pictures_triggered()
         reg_slice_ptr->update();
     }
     glWidget->update();
-    scene.show_slice();
+    slice_need_update = true;
 }
 
 
@@ -2727,5 +2739,5 @@ void tracking_window::on_actionInsert_Sagittal_Picture_triggered()
         reg_slice_ptr->update();
     }
     glWidget->update();
-    scene.show_slice();
+    slice_need_update = true;
 }

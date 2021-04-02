@@ -514,7 +514,7 @@ void RenderingTableWidget::dataChanged(const QModelIndex &, const QModelIndex &b
     if(cur_node->id == "roi_zoom")
     {
         cur_tracking_window.set_roi_zoom(cur_node->value.toInt());
-        cur_tracking_window.scene.show_slice();
+        cur_tracking_window.slice_need_update = true;
         return;
     }
     if(cur_node->id == "roi_position")
@@ -542,7 +542,7 @@ void RenderingTableWidget::dataChanged(const QModelIndex &, const QModelIndex &b
        cur_node->id == "dt_threshold" ||
             cur_node->parent()->id == QString("ROI"))
     {
-        cur_tracking_window.scene.show_slice();
+        cur_tracking_window.slice_need_update = true;
         return;
     }
     else

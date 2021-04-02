@@ -64,7 +64,7 @@ void AtlasDialog::on_add_atlas_clicked()
         w->regionWidget->add_region_from_atlas(handle->atlas_list[atlas_index],uint32_t(indexes[int(index)].row()));
     w->regionWidget->end_update();
     w->glWidget->updateGL();
-    w->scene.show_slice();
+    w->slice_need_update = true;
     w->raise();
 
 

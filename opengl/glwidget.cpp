@@ -1228,7 +1228,7 @@ void GLWidget::renderLR()
         {
             video_capturing = true;
             captured_image = grab_image();
-            cur_tracking_window.scene.show_slice();
+            cur_tracking_window.slice_need_update = true;
             video_capturing = false;
         }
     }

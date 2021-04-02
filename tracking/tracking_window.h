@@ -60,6 +60,7 @@ public:
     DeviceTableWidget *deviceWidget = nullptr;
 public:
     slice_view_scene scene;
+    bool slice_need_update = false;
     float get_scene_zoom(void);
 public:
     unsigned char cur_dim = 2;
@@ -104,6 +105,7 @@ public slots:
     void check_reg(void);
     void change_contrast();
     void on_enable_auto_track_clicked();
+    void update_scene_slice(void);
 private slots:
     void on_actionRestore_window_layout_triggered();
     void on_actionSave_Tracts_in_Current_Mapping_triggered();
