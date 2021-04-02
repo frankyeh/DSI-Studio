@@ -19,6 +19,7 @@ public:
     ~view_image();
     bool open(QStringList file_name);
     bool eventFilter(QObject *obj, QEvent *event);
+    bool command(std::string cmd,std::string param1 = std::string(),std::string param2 = std::string());
 private slots:
     void show_image(void);
     void init_image(void);
@@ -95,6 +96,11 @@ private:
     tipl::vector<3,float> vs;
     tipl::matrix<4,4,float> T;
     tipl::value_to_color<float> v2c;
+private:// batch processing
+    std::vector<tipl::image<float,3> > other_data;
+    std::vector<std::string> other_file_name;
+    std::vector<tipl::vector<3,float> > other_vs;
+    std::vector<tipl::matrix<4,4,float> > other_T;
 private:
     bool no_update = true;
     unsigned char cur_dim = 2;

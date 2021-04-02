@@ -14,6 +14,91 @@
 
 std::map<std::string,std::string> dicom_dictionary;
 
+bool img_command(tipl::image<float,3>& data,
+                 tipl::vector<3>& vs,
+                 tipl::matrix<4,4,float>& T,
+                 std::string cmd,
+                 std::string param1,
+                 std::string param2,
+                 std::string& error_msg)
+{
+    if(cmd == "multiply")
+    {
+        gz_nifti nii;
+        if(!nii.load_from_file(param1.c_str()))
+        {
+            error_msg = "cannot open file:";
+            error_msg += param1;
+            return false;
+        }
+        tipl::image<float,3> mask;
+        nii >> mask;
+        if(mask.geometry() != data.geometry())
+        {
+            error_msg = "invalid mask file:";
+            error_msg += param1;
+            error_msg += " The dimension does not match:";
+            std::ostringstream out;
+            out << mask.geometry() << " vs " << data.geometry();
+            error_msg += out.str();
+            return false;
+        }
+        data *= mask;
+        return true;
+    }
+    if(cmd == "save")
+    {
+        gz_nifti nii;
+        nii.set_image_transformation(T);
+        nii.set_voxel_size(vs);
+        nii << data;
+        return nii.save_to_file(param1.c_str());
+    }
+    if(cmd == "open")
+    {
+        gz_nifti nii;
+        nii.set_image_transformation(T);
+        nii.set_voxel_size(vs);
+        nii << data;
+        return nii.save_to_file(param1.c_str());
+    }
+    return false;
+}
+
+bool view_image::command(std::string cmd,std::string param1,std::string param2)
+{
+    std::string error_msg;
+    if(!img_command(data,vs,T,cmd,param1,param2,error_msg))
+    {
+        QMessageBox::information(this,"Error",error_msg.c_str());
+        return false;
+    }
+    show_image();
+
+    if(!other_data.empty())
+    {
+        begin_prog("applying to others");
+        QString failed_list;
+        for(size_t i = 0;check_prog(i,other_data.size());++i)
+        {
+            QString new_param1 = param1.c_str();
+            // if param1 is a file, then try to generalize
+            if(QFileInfo(new_param1).exists())
+                new_param1.replace(QFileInfo(file_name).fileName(),QFileInfo(other_file_name[i].c_str()).fileName());
+            if(!img_command(other_data[i],other_vs[i],other_T[i],cmd,new_param1.toStdString(),param2,error_msg))
+            {
+                QMessageBox::critical(this,"Error",QString("Operation stoped at ")+
+                                      QFileInfo(other_file_name[i].c_str()).fileName() + " error:" +
+                                      error_msg.c_str());
+                return false;
+            }
+        }
+        QMessageBox::information(this,"DSI Studio","Operation applied to other images");
+    }
+    return true;
+}
+
+
 void show_view(QGraphicsScene& scene,QImage I);
 bool load_image_from_files(QStringList filenames,tipl::image<float,3>& ref,tipl::vector<3>& vs,tipl::matrix<4,4,float>& trans)
 {
@@ -100,6 +185,7 @@ bool view_image::eventFilter(QObject *obj, QEvent *event)
                                                                     .arg(data.at(pos[0],pos[1],pos[2])));
     return true;
 }
+
 
 bool get_compressed_image(tipl::io::dicom& dicom,tipl::image<short,2>& I)
 {
@@ -210,7 +296,36 @@ bool view_image::open(QStringList file_names)
 
         info += QString("intent_name=%1\n").arg(nifti.nif_header2.intent_name);
 
-
+        if(file_names.size() > 1)
+        {
+            begin_prog("reading");
+            QString failed_list;
+            for(int i = 1;check_prog(i,file_names.size());++i)
+            {
+                gz_nifti other_nifti;
+                if(!other_nifti.load_from_file(file_names[i].toStdString()))
+                {
+                    if(!failed_list.isEmpty())
+                        failed_list += ",";
+                    failed_list += QFileInfo(file_names[i]).fileName();
+                    continue;
+                }
+                tipl::image<float,3> odata;
+                tipl::vector<3> ovs;
+                tipl::matrix<4,4,float> oT;
+                other_nifti >> odata;
+                other_nifti.get_voxel_size(ovs);
+                other_nifti.get_image_transformation(oT);
+                other_file_name.push_back(file_names[i].toStdString());
+                other_data.push_back(odata);
+                other_vs.push_back(ovs);
+                other_T.push_back(oT);
+            }
+            if(!failed_list.isEmpty())
+                QMessageBox::critical(this,"Error",QString("Some files could not be opened:")+failed_list);
+            else
+                QMessageBox::information(this,"DSI Studio",QString("Other files read in memory for operation"));
+        }
     }
     else
         if(dicom.load_from_file(file_name.toStdString()))
@@ -401,12 +516,8 @@ void view_image::on_actionResample_triggered()
 }
 void view_image::on_actionSave_triggered()
 {
-    gz_nifti nii;
-    nii.set_image_transformation(T);
-    nii.set_voxel_size(vs);
-    nii << data;
-    nii.save_to_file(file_name.toStdString().c_str());
-    QMessageBox::information(this,"DSI Studio","Saved");
+    if(command("save",file_name.toStdString()))
+        QMessageBox::information(this,"DSI Studio","Saved");
 }
 
 void view_image::on_action_Save_as_triggered()
@@ -460,24 +571,7 @@ void view_image::on_actionMasking_triggered()
                            this,"Open mask",QFileInfo(file_name).absolutePath(),"NIFTI file(*nii.gz *.nii)" );
     if (filename.isEmpty())
         return;
-    gz_nifti nii;
-    if(!nii.load_from_file(filename.toStdString().c_str()))
-    {
-        QMessageBox::information(this,"Error","Cannot open file",0);
-        return;
-    }
-    tipl::image<float,3> mask;
-    nii >> mask;
-    if(mask.geometry() != data.geometry())
-    {
-        QMessageBox::information(this,"Error","Invalid mask file. Dimension does not match",0);
-        return;
-    }
-    tipl::filter::gaussian(mask);
-    tipl::filter::gaussian(mask);
-    tipl::normalize(mask,1.0f);
-    data *= mask;
-    show_image();
+    command("multiply",filename.toStdString(),std::string());
 }
 
 void view_image::on_actionResize_triggered()
