@@ -452,9 +452,9 @@ bool slice_view_scene::to_3d_space(float x,float y,tipl::vector<3,float>& pos)
     // mosaic
     if(cur_tracking_window["orientation_convention"].toInt())
         return false;
-    pos[0] = x*(float)mosaic_size;
-    pos[1] = y*(float)mosaic_size;
-    pos[2] = std::floor(pos[1]/geo[1])*mosaic_size +
+    pos[0] = x*float(mosaic_column_count);
+    pos[1] = y*float(mosaic_column_count);
+    pos[2] = std::floor(pos[1]/geo[1])*mosaic_column_count +
              std::floor(pos[0]/geo[0]);
     pos[0] -= std::floor(pos[0]/geo[0])*geo[0];
     pos[1] -= std::floor(pos[1]/geo[1])*geo[1];
@@ -517,31 +517,35 @@ void slice_view_scene::show_slice(void)
     // mosaic
     {
         unsigned int skip = uint32_t(std::pow(2,cur_tracking_window["roi_layout"].toInt()-2));
+
+
         unsigned char cur_dim = cur_tracking_window.cur_dim;
-        mosaic_size = std::max<uint32_t>(1,uint32_t(std::ceil(
+
+        mosaic_column_count = cur_tracking_window["roi_mosaic_column"].toInt() ?
+                uint32_t(cur_tracking_window["roi_mosaic_column"].toInt()):
+                std::max<uint32_t>(1,uint32_t(std::ceil(
                                    std::sqrt(float(cur_tracking_window.current_slice->geometry[cur_dim]) / skip))));
-        float scale = display_ratio/float(mosaic_size);
+        float scale = display_ratio/float(mosaic_column_count);
         char dim_order[3][2]= {{1,2},{0,2},{0,1}};
         auto dim = cur_tracking_window.current_slice->geometry;
-        unsigned slice_num = dim[cur_dim] / skip;
 
         view_image = QImage(QSize(
-                                int(dim[dim_order[uint8_t(cur_dim)][0]]*scale*mosaic_size),
-                                int(dim[dim_order[uint8_t(cur_dim)][1]]*scale*(std::ceil(float(slice_num)/float(mosaic_size))))),
+                                int(dim[dim_order[uint8_t(cur_dim)][0]]*scale*mosaic_column_count),
+                                int(dim[dim_order[uint8_t(cur_dim)][1]]*scale*(std::ceil(float(dim[cur_dim]/skip)/float(mosaic_column_count))))),
                                 QImage::Format_RGB32);
         QPainter painter(&view_image);
         tipl::geometry<2> mosaic_tile_geo;
         {
             int old_z = cur_tracking_window.current_slice->slice_pos[cur_tracking_window.cur_dim];
-            for(unsigned int z = 0;z < slice_num;++z)
+            for(unsigned int z = 0,slice_pos = skip-1;slice_pos < dim[cur_dim];++z,slice_pos += skip)
             {
                 QImage view;
-                cur_tracking_window.current_slice->slice_pos[cur_tracking_window.cur_dim] = int(z*skip);
+                cur_tracking_window.current_slice->slice_pos[cur_tracking_window.cur_dim] = int(slice_pos);
                 get_view_image(view,scale);
                 if(z == 0)
                     painter.fillRect(0,0,view_image.width(),view_image.height(),view.pixel(0,0));
-                int x = int(dim[dim_order[uint8_t(cur_dim)][0]]*(z%mosaic_size));
-                int y = int(dim[dim_order[uint8_t(cur_dim)][1]]*(z/mosaic_size));
+                int x = int(dim[dim_order[uint8_t(cur_dim)][0]]*(z%mosaic_column_count));
+                int y = int(dim[dim_order[uint8_t(cur_dim)][1]]*(z/mosaic_column_count));
                 x *= scale;
                 y *= scale;
                 painter.drawImage(QPoint(x,y), view);
