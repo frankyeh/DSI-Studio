@@ -96,11 +96,10 @@ public:
     }
 
     QString output_format(void);
-    void draw_region(tipl::color_image& I);
 public slots:
     void updateRegions(QTableWidgetItem* item);
 
-    void draw_edge(int slice_width,int slice_height,float display_ratio,QImage& scaledimage,bool draw_all);
+    void draw_region(const tipl::color_image& slice_image,float display_ratio,QImage& scaledimage,int line_width,bool draw_edges);
     void new_region(void);
     void new_high_resolution_region(void);
     void copy_region(void);

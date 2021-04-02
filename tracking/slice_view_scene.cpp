@@ -276,8 +276,6 @@ void slice_view_scene::get_view_image(QImage& new_view_image,float display_ratio
     cur_tracking_window.current_slice->get_slice(slice_image,
                                                  cur_tracking_window.cur_dim,
                                                  cur_tracking_window.overlay_slices);
-    // draw region colors on the image
-    tipl::color_image slice_image_with_region(slice_image);
     if(!slice_image.empty())
     {
         float grey = slice_image[0].r;
@@ -287,17 +285,9 @@ void slice_view_scene::get_view_image(QImage& new_view_image,float display_ratio
         line_color = grey < 128 ? Qt::white : Qt::black;
     }
 
-    if(!cur_tracking_window["roi_edge"].toInt())
-        cur_tracking_window.regionWidget->draw_region(slice_image_with_region);
-
-    QImage qimage(reinterpret_cast<unsigned char*>(&*slice_image_with_region.begin()),
-                  slice_image_with_region.width(),slice_image_with_region.height(),QImage::Format_RGB32);
-    // make sure that qimage get a hard copy
-    qimage.setPixel(0,0,qimage.pixel(0,0));
-    QImage scaled_image = qimage.scaled(int(slice_image.width()*display_ratio),
-                                        int(slice_image.height()*display_ratio));
-
-    cur_tracking_window.regionWidget->draw_edge(slice_image.width(),slice_image.height(),display_ratio,scaled_image,
+    QImage scaled_image;
+    cur_tracking_window.regionWidget->draw_region(slice_image,display_ratio,scaled_image,
+                            cur_tracking_window["roi_edge_width"].toInt(),
                             cur_tracking_window["roi_edge"].toInt());
 
     if(cur_tracking_window["roi_track"].toInt())

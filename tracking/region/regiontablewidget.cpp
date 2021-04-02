@@ -285,192 +285,169 @@ void RegionTableWidget::move_slice_to_current_region(void)
     cur_tracking_window.move_slice_to(p);
 }
 
-template<typename func,typename func2>
-void draw_region_voxels(tracking_window& cur_tracking_window,
-                        int w,int h,
-                        const std::vector<std::shared_ptr<ROIRegion> >& regions,
-                        func draw_voxel,
-                        func2 draw_edge)
-{
-    auto current_slice = cur_tracking_window.current_slice;
-    int slice_pos = current_slice->slice_pos[cur_tracking_window.cur_dim];
-    std::vector<uint32_t> yw((size_t(h)));
-    for(uint32_t y = 0;y < uint32_t(h);++y)
-        yw[y] = y*uint32_t(w);
 
-    for (uint32_t roi_index = 0;roi_index < regions.size();++roi_index)
-    {
-        auto color = regions[roi_index]->show_region.color;
-        float r = regions[roi_index]->resolution_ratio;
-        auto iT = current_slice->T;
-        iT.inv();
-
-        if(!current_slice->is_diffusion_space)
-        {
-            // apply resolution ratio to iT
-            if(r != 1.0f)
-                for(int i : {0,1,2,4,5,6,8,9,10})
-                    iT[uint32_t(i)] /= r;
-            auto rT = iT;
-            rT[3] = rT[7] = rT[11] = 0.0f;
-            uint32_t x_range = 0;
-            uint32_t y_range = 0;
-            uint32_t z_range = 0;
-            tipl::vector<3,float> p;
-            tipl::slice2space(cur_tracking_window.cur_dim,1.0f,0.0f,0.0f,p[0],p[1],p[2]);
-            p.to(rT);
-            x_range = uint32_t(std::ceil(p.length()));
-            tipl::slice2space(cur_tracking_window.cur_dim,0.0f,1.0f,0.0f,p[0],p[1],p[2]);
-            p.to(rT);
-            y_range = uint32_t(std::ceil(p.length()));
-            tipl::slice2space(cur_tracking_window.cur_dim,0.0f,0.0f,1.0f,p[0],p[1],p[2]);
-            p.to(rT);
-            z_range = uint32_t(std::ceil(p.length()));
-
-            tipl::par_for(regions[roi_index]->size(),[&](unsigned int index)
-            {
-                tipl::vector<3,float> p(regions[roi_index]->region[index]);
-                p.to(iT);
-                float X,Y,Z;
-                tipl::space2slice(cur_tracking_window.cur_dim,p[0],p[1],p[2],X,Y,Z);
-                if (std::fabs(float(slice_pos)-Z) >= z_range || X < 0.0f || Y < 0.0f ||
-                    int(X) >= w || int(Y) >= h)
-                    return;
-                uint32_t iX = uint32_t(std::floor(X));
-                uint32_t iY = uint32_t(std::floor(Y));
-                uint32_t pos = yw[iY]+iX;
-                for(uint32_t dy = 0;dy < y_range;++dy,pos += uint32_t(w))
-                    for(uint32_t dx = 0,pos2 = pos;dx < x_range;++dx,++pos2)
-                        draw_voxel(pos2,color);
-            });
-        }
-        else
-        {
-            tipl::par_for(regions[roi_index]->size(),[&](unsigned int index)
-            {
-                int X, Y, Z;
-                if(r != 1.0f)
-                {
-                    tipl::vector<3,float> p(regions[roi_index]->region[index]);
-                    p /= r;
-                    p.round();
-                    tipl::space2slice(cur_tracking_window.cur_dim,p[0],p[1],p[2],X,Y,Z);
-                }
-                else
-                {
-                    auto p = regions[roi_index]->region[index];
-                    tipl::space2slice(cur_tracking_window.cur_dim,p[0],p[1],p[2],X,Y,Z);
-                }
-                if (slice_pos != Z || X < 0 || Y < 0 ||
-                    X >= w || Y >= h)
-                    return;
-                draw_voxel(uint32_t(yw[uint32_t(Y)]+X),color);
-            });
-        }
-        draw_edge(roi_index);
-    }
-}
-
-void RegionTableWidget::draw_edge(int slice_width,int slice_height,float display_ratio,QImage& scaled_image,bool draw_all)
+void RegionTableWidget::draw_region(const tipl::color_image& slice_image,float display_ratio,QImage& scaled_image,int line_width,bool draw_edges)
 {
     // during region removal, there will be a call with invalid currentRow
-    if(regions.empty() || currentRow() >= int(regions.size()) || currentRow() == -1)
-        return;
-    std::vector<std::shared_ptr<ROIRegion> > checked_regions;
-    int cur_roi_index = -1;
-    if(draw_all)
-    {
-        checked_regions = get_checked_regions();
-        if(currentRow() >= 0)
-        for(unsigned int i = 0;i < checked_regions.size();++i)
-            if(checked_regions[i] == regions[uint32_t(currentRow())])
-            {
-                cur_roi_index = int(i);
-                break;
-            }
-    }
-    else
-    if(currentRow() >= 0)
-    {
-        if(item(currentRow(),0)->checkState() != Qt::Checked)
-            return;
-        checked_regions.push_back(regions[uint32_t(currentRow())]);
-        cur_roi_index = 0;
-    }
-    if(checked_regions.empty())
-        return;
-
-    tipl::image<unsigned char,2> cur_image_mask;
-    cur_image_mask.resize(tipl::geometry<2>(uint32_t(slice_width),
-                                            uint32_t(slice_height)));
-
-    draw_region_voxels(cur_tracking_window,
-                       slice_width,slice_height,
-                        checked_regions,
-    // draw_voxel
-    [&cur_image_mask](uint32_t pos,uint32_t)
-    {
-        cur_image_mask[pos] = 1;
-    },
-    // draw_edge
-    [&](uint32_t roi_index)
-    {
-        unsigned int cur_color = 0xFFFFFFFF;
-        if(draw_all)
-            cur_color = checked_regions[roi_index]->show_region.color;
-
-        QPainter paint(&scaled_image);
-        paint.setBrush(Qt::NoBrush);
-        QPen pen(QColor(cur_color),
-                 double(int(display_ratio)+1)*(cur_roi_index == int(roi_index) ? 0.25 : 0.2), Qt::DashDotLine, Qt::RoundCap, Qt::RoundJoin);
-        paint.setPen(pen);
-        for(int y = 1,cur_index = slice_width;y < slice_height-1;++y)
-        for(int x = 0;x < slice_width;++x,++cur_index)
-        {
-            if(x == 0 || x+1 >= slice_width || !cur_image_mask[cur_index])
-                continue;
-            int xd = int(x*display_ratio);
-            int xd_1 = int(xd+display_ratio);
-            int yd = int(y*display_ratio);
-            int yd_1 = int(yd+display_ratio);
-            if(!(cur_image_mask[cur_index-slice_width]))
-                paint.drawLine(xd,yd,xd_1,yd);
-            if(!(cur_image_mask[cur_index+slice_width]))
-                paint.drawLine(xd,yd_1,xd_1,yd_1);
-            if(!(cur_image_mask[cur_index-1]))
-                paint.drawLine(xd,yd,xd,yd_1);
-            if(!(cur_image_mask[cur_index+1]))
-                paint.drawLine(xd_1,yd,xd_1,yd_1);
-        }
-        std::fill(cur_image_mask.begin(),cur_image_mask.end(),0);
-    }
-    );
-
-
-}
-void RegionTableWidget::draw_region(tipl::color_image& I)
-{
-    auto current_slice = cur_tracking_window.current_slice;
     auto checked_regions = get_checked_regions();
-    if(checked_regions.empty())
+    if(checked_regions.empty() || currentRow() >= int(regions.size()) || currentRow() == -1)
+    {
+        QImage qimage(reinterpret_cast<const unsigned char*>(&*slice_image.begin()),
+                      slice_image.width(),slice_image.height(),QImage::Format_RGB32);
+        // make sure that qimage get a hard copy
+        qimage.setPixel(0,0,qimage.pixel(0,0));
+        scaled_image = qimage.scaled(int(slice_image.width()*display_ratio),
+                                            int(slice_image.height()*display_ratio));
         return;
-
-    draw_region_voxels(cur_tracking_window,
-                       I.width(),I.height(),
-                        checked_regions,
-    // draw_voxel
-    [&I](uint32_t pos,uint32_t color)
-    {
-        I[pos] = color;
-    },
-    // draw_edge
-    [](uint32_t)
-    {
     }
-    );
+    // draw region colors on the image
+    tipl::color_image slice_image_with_region(slice_image);  //original slices for adding regions pixels
+    std::vector<std::vector<int> > region_pixels_x_edges(checked_regions.size()),
+                                   region_pixels_y_edges(checked_regions.size());
+    int w = slice_image.width();
+    int h = slice_image.height();
+
+    // draw regions and also derive where the edges are
+    std::vector<std::vector<tipl::vector<2,int> > > edge_x(checked_regions.size()),
+                                                    edge_y(checked_regions.size());
+    {
+        auto current_slice = cur_tracking_window.current_slice;
+        int slice_pos = current_slice->slice_pos[cur_tracking_window.cur_dim];
+        std::vector<uint32_t> yw((size_t(h)));
+        for(uint32_t y = 0;y < uint32_t(h);++y)
+            yw[y] = y*uint32_t(w);
+
+        for (uint32_t roi_index = 0;roi_index < checked_regions.size();++roi_index)
+        {
+            tipl::image<uint8_t,2> detect_edge(slice_image.geometry());
+            auto color = checked_regions[roi_index]->show_region.color;
+            float r = checked_regions[roi_index]->resolution_ratio;
+            bool draw_region = (cur_tracking_window["roi_edge"].toInt() == 0 && color.a >= 128);
+            if(!current_slice->is_diffusion_space)
+            {
+                // apply resolution ratio to iT
+                auto iT = current_slice->T;
+                iT.inv();
+                if(r != 1.0f)
+                    for(int i : {0,1,2,4,5,6,8,9,10})
+                        iT[uint32_t(i)] /= r;
+                auto rT = iT;
+                rT[3] = rT[7] = rT[11] = 0.0f;
+                uint32_t x_range = 0;
+                uint32_t y_range = 0;
+                uint32_t z_range = 0;
+                tipl::vector<3,float> p;
+                tipl::slice2space(cur_tracking_window.cur_dim,1.0f,0.0f,0.0f,p[0],p[1],p[2]);
+                p.to(rT);
+                x_range = uint32_t(std::ceil(p.length()));
+                tipl::slice2space(cur_tracking_window.cur_dim,0.0f,1.0f,0.0f,p[0],p[1],p[2]);
+                p.to(rT);
+                y_range = uint32_t(std::ceil(p.length()));
+                tipl::slice2space(cur_tracking_window.cur_dim,0.0f,0.0f,1.0f,p[0],p[1],p[2]);
+                p.to(rT);
+                z_range = uint32_t(std::ceil(p.length()));
+
+                tipl::par_for(checked_regions[roi_index]->size(),[&](unsigned int index)
+                {
+                    tipl::vector<3,float> p(checked_regions[roi_index]->region[index]);
+                    p.to(iT);
+                    float X,Y,Z;
+                    tipl::space2slice(cur_tracking_window.cur_dim,p[0],p[1],p[2],X,Y,Z);
+                    if (std::fabs(float(slice_pos)-Z) >= z_range || X < 0.0f || Y < 0.0f ||
+                        int(X) >= w || int(Y) >= h)
+                        return;
+                    uint32_t iX = uint32_t(std::floor(X));
+                    uint32_t iY = uint32_t(std::floor(Y));
+                    uint32_t pos = yw[iY]+iX;
+                    for(uint32_t dy = 0;dy < y_range;++dy,pos += uint32_t(w))
+                        for(uint32_t dx = 0,pos2 = pos;dx < x_range;++dx,++pos2)
+                        {
+                            if(draw_region)
+                                slice_image_with_region[pos2] = color;
+                            detect_edge[pos2] = 1;
+                        }
+                });
+            }
+            else
+            {
+                tipl::par_for(checked_regions[roi_index]->size(),[&](unsigned int index)
+                {
+                    int X, Y, Z;
+                    if(r != 1.0f)
+                    {
+                        tipl::vector<3,float> p(checked_regions[roi_index]->region[index]);
+                        p /= r;
+                        p.round();
+                        tipl::space2slice(cur_tracking_window.cur_dim,p[0],p[1],p[2],X,Y,Z);
+                    }
+                    else
+                    {
+                        auto p = checked_regions[roi_index]->region[index];
+                        tipl::space2slice(cur_tracking_window.cur_dim,p[0],p[1],p[2],X,Y,Z);
+                    }
+                    if (slice_pos != Z || X < 0 || Y < 0 || X >= w || Y >= h)
+                        return;
+                    auto pos = uint32_t(yw[uint32_t(Y)]+uint32_t(X));
+                    if(draw_region)
+                        slice_image_with_region[pos] = color;
+                    detect_edge[pos] = 1;
+                });
+            }
+            // detect edge
+            auto& cur_edge_x = edge_x[roi_index];
+            auto& cur_edge_y = edge_y[roi_index];
+            for(int y = 1,cur_index = w;y < h-1;++y)
+            for(int x = 0;x < w;++x,++cur_index)
+            if(detect_edge[cur_index])
+            {
+                if(x == 0 || x+1 >= w)
+                    continue;
+                if(!detect_edge[cur_index-w])
+                    cur_edge_x.push_back(tipl::vector<2,int>(int(x*display_ratio),int(y*display_ratio)));
+                if(!detect_edge[cur_index+w])
+                    cur_edge_x.push_back(tipl::vector<2,int>(int(x*display_ratio),int(y*display_ratio+display_ratio)));
+                if(!detect_edge[cur_index-1])
+                    cur_edge_y.push_back(tipl::vector<2,int>(int(x*display_ratio),int(y*display_ratio)));
+                if(!detect_edge[cur_index+1])
+                    cur_edge_y.push_back(tipl::vector<2,int>(int(x*display_ratio+display_ratio),int(y*display_ratio)));
+            }
+        }
+    }
+    // now apply image scaling to the slice image
+    QImage qimage(reinterpret_cast<unsigned char*>(&*slice_image_with_region.begin()),
+                  slice_image_with_region.width(),slice_image_with_region.height(),QImage::Format_RGB32);
+    qimage.setPixel(0,0,qimage.pixel(0,0)); // make sure that qimage get a hard copy
+    scaled_image = qimage.scaled(int(slice_image.width()*display_ratio),
+                                        int(slice_image.height()*display_ratio));
+
+
+    // the following draw the edge of the regions
+    int cur_roi_index = -1;
+    if(currentRow() >= 0)
+    for(unsigned int i = 0;i < checked_regions.size();++i)
+        if(checked_regions[i] == regions[uint32_t(currentRow())])
+        {
+            cur_roi_index = int(i);
+            break;
+        }
+
+    unsigned int foreground_color = ((scaled_image.pixel(0,0) & 0x000000FF) < 128 ? 0xFFFFFFFF:0xFF000000);
+    int length = int(display_ratio);
+    QPainter paint(&scaled_image);
+    for (uint32_t roi_index = 0;roi_index < checked_regions.size();++roi_index)
+    {
+        unsigned int cur_color = foreground_color;
+        if(draw_edges && (int(roi_index) != cur_roi_index))
+            cur_color = checked_regions[roi_index]->show_region.color;
+        paint.setBrush(Qt::NoBrush);
+        QPen pen(QColor(cur_color),line_width, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
+        paint.setPen(pen);
+        for(const auto& pos : edge_x[roi_index])
+            paint.drawLine(pos[0],pos[1],pos[0]+length,pos[1]);
+        for(const auto& pos : edge_y[roi_index])
+            paint.drawLine(pos[0],pos[1],pos[0],pos[1]+length);
+    }
 }
-
-
 
 void RegionTableWidget::new_region(void)
 {
