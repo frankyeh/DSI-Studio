@@ -388,7 +388,7 @@ void group_connectometry::calculate_FDR(void)
 
         ui->run->setText("Run");
         ui->progressBar->setValue(100);
-        timer.reset(0);
+        timer.reset(nullptr);
     }
 }
 void group_connectometry::on_run_clicked()
@@ -397,7 +397,7 @@ void group_connectometry::on_run_clicked()
     {
         vbc->clear();
         timer->stop();
-        timer.reset(0);
+        timer.reset(nullptr);
         ui->progressBar->setValue(0);
         ui->run->setText("Run");
         return;
@@ -422,10 +422,6 @@ void group_connectometry::on_run_clicked()
 
     // setup parameters
     {
-        if(ui->roi_whole_brain->isChecked())
-            roi_list.clear();
-
-
         vbc->normalize_qa = ui->normalize_qa->isChecked();
         vbc->no_tractogram = ui->no_tractogram->isChecked();
         vbc->foi_str = ui->foi->currentText().toStdString();
@@ -452,69 +448,42 @@ void group_connectometry::on_run_clicked()
         }
     }
 
-
-
-
-
-
-
-    if(ui->exclude_cb->isChecked() && vbc->handle->is_human_data)
+    // setup roi
     {
-        ROIRegion roi(vbc->handle.get());
-        if(!load_region(vbc->handle,roi,"FreeSurferSeg:Left-Cerebellum-White-Matter") ||
-           !load_region(vbc->handle,roi,"FreeSurferSeg:Left-Cerebellum-Cortex") ||
-           !load_region(vbc->handle,roi,"FreeSurferSeg:Right-Cerebellum-White-Matter") ||
-           !load_region(vbc->handle,roi,"FreeSurferSeg:Right-Cerebellum-Cortex") )
-            return;
-        add_new_roi("cerebellum","",roi.get_region_voxels_raw(),4/*terminative*/);
-    }
-
-    {
-        std::vector<int> roi_type(roi_list.size());
-        std::vector<std::string> roi_name(roi_list.size());
-        for(unsigned int index = 0;index < roi_list.size();++index)
-        {
-            roi_type[index] = ui->roi_table->item(index,2)->text().toInt();
-            roi_name[index] = ui->roi_table->item(index,0)->text().toStdString();
-        }
-        // if no seed assigned, assign whole brain
         vbc->roi_mgr = std::make_shared<RoiMgr>(vbc->handle.get());
-        if(roi_list.empty() || std::find(roi_type.begin(),roi_type.end(),3) == roi_type.end())
+        // exclude cerebellum
+        if(ui->exclude_cb->isChecked() && vbc->handle->is_human_data)
         {
-            std::vector<tipl::vector<3,short> > seed;
-            for(tipl::pixel_index<3> index(vbc->handle->dim);index < vbc->handle->dim.size();++index)
-                if(vbc->handle->dir.fa[0][index.index()] > vbc->fiber_threshold)
-                    seed.push_back(tipl::vector<3,short>(index.x(),index.y(),index.z()));
-
-            vbc->roi_mgr->setRegions(seed,1.0f,3/*seed*/,"whole brain");
+            ROIRegion roi(vbc->handle.get());
+            if(!load_region(vbc->handle,roi,"BrainSeg:Cerebellum"))
+                return;
+            vbc->roi_mgr->setRegions(roi.get_region_voxels_raw(),1.0f,4/*terminative*/,"Cerebellum");
+            vbc->roi_mgr->report = " Cerebellum was excluded.";
         }
 
-
-        for(unsigned int index = 0;index < roi_list.size();++index)
-            vbc->roi_mgr->setRegions(roi_list[index],1.0f,roi_type[index],"user assigned region");
-
-        // setup roi related report text
-        vbc->roi_mgr_text.clear();
-        if(!roi_list.empty())
+        // apply ROI
+        if(!ui->roi_whole_brain->isChecked())
         {
-            std::ostringstream out;
-            out << " The tracking algorithm assigned";
-            const char roi_type_name[5][20] = {"region of interst","region of avoidance","ending region","seeding region","excluded region"};
+            std::vector<unsigned char> roi_type(roi_list.size());
+            std::vector<std::string> roi_name(roi_list.size());
             for(unsigned int index = 0;index < roi_list.size();++index)
             {
-                if(index && roi_list.size() > 2)
-                    out << ",";
-                out << " ";
-                if(roi_list.size() >= 2 && index+1 == roi_list.size())
-                    out << "and ";
-                out << roi_name[index] << " as the " << roi_type_name[roi_type[index]];
+                roi_type[index] = uint8_t(ui->roi_table->item(int(index),2)->text().toInt());
+                roi_name[index] = ui->roi_table->item(int(index),0)->text().toStdString();
             }
-            out << ".";
-            vbc->roi_mgr_text = out.str();
+            for(unsigned int index = 0;index < roi_list.size();++index)
+                vbc->roi_mgr->setRegions(roi_list[index],1.0f,roi_type[index],roi_name[index].c_str());
         }
+
+        // if no seed assigned, assign whole brain
+        if(vbc->roi_mgr->seeds.empty())
+            vbc->roi_mgr->setWholeBrainSeed(vbc->fiber_threshold);
+
+        // setup roi related report text
+        vbc->roi_mgr_text = vbc->roi_mgr->report;
     }
 
-    vbc->run_permutation(std::thread::hardware_concurrency(),ui->permutation_count->value());
+    vbc->run_permutation(std::thread::hardware_concurrency(),uint32_t(ui->permutation_count->value()));
 
     ui->run->setText("Stop");
     if(gui)

@@ -374,6 +374,8 @@ void group_connectometry_analysis::run_permutation(unsigned int thread_count,uns
 
         if(normalize_qa)
             out << " The QA values were normalized.";
+        if(!roi_mgr_text.empty())
+            out << roi_mgr_text << std::endl;
         if(tip)
             out << " The tracks were filtered by topology-informed pruning (Yeh et al. Neurotherapeutics, 16(1), 52-58, 2019) with "
                 << tip << " iteration(s).";
@@ -385,8 +387,6 @@ void group_connectometry_analysis::run_permutation(unsigned int thread_count,uns
         out << " To estimate the false discovery rate, a total of "
             << permutation_count
             << " randomized permutations were applied to the group label to obtain the null distribution of the track length.";
-        if(!roi_mgr_text.empty())
-            out << roi_mgr_text << std::endl;
         report = out.str().c_str();
     }
 
