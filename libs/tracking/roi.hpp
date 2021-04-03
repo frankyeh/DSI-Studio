@@ -214,12 +214,11 @@ public:
     void setWholeBrainSeed(float threashold)
     {
         std::vector<tipl::vector<3,short> > seed;
-        std::string name = "whole brain";
         const float *fa0 = handle->dir.fa[0];
         for(tipl::pixel_index<3> index(handle->dim);index < handle->dim.size();++index)
             if(fa0[index.index()] > threashold)
                 seed.push_back(tipl::vector<3,short>(short(index.x()),short(index.y()),short(index.z())));
-        setRegions(seed,1.0,3/*seed i*/,name.c_str());
+        setRegions(seed,1.0,3/*seed i*/,"whole brain");
     }
     void setRegions(const std::vector<tipl::vector<3,short> >& points,
                     float r,
