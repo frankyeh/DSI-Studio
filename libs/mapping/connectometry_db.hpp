@@ -18,6 +18,7 @@ public: // demographi infomation
     std::vector<std::string> items;
     std::vector<size_t> feature_location;
     std::vector<std::string> feature_titles;
+    std::vector<bool> feature_selected;
     std::vector<double> X;
     bool parse_demo(const std::string& filename);
 

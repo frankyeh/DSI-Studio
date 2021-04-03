@@ -210,6 +210,7 @@ bool connectometry_db::parse_demo(const std::string& filename)
         {
             feature_location.push_back(i);
             feature_titles.push_back(titles[i]);
+            feature_selected.push_back(true);
         }
     }
 
