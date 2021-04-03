@@ -885,7 +885,7 @@
                  </spacer>
                 </item>
                 <item>
-                 <widget class="QLabel" name="cohort_text">
+                 <widget class="QLabel" name="cohort_report">
                   <property name="text">
                    <string/>
                   </property>

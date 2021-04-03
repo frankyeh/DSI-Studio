@@ -365,7 +365,7 @@ void group_connectometry_analysis::run_permutation(unsigned int thread_count,uns
         }
 
         // report subject cohort
-        out << model->cohort_text;
+        out << model->cohort_report;
         out << " A total of " << model->subject_index.size() << " subjects were included in the analysis.";
 
         // report other parameters
@@ -451,6 +451,7 @@ void group_connectometry_analysis::run_permutation(unsigned int thread_count,uns
         threads.push_back(std::make_shared<std::future<void> >(std::async(std::launch::async,
             [this,index,thread_count,permutation_count](){run_permutation_multithread(index,thread_count,permutation_count);})));
 }
+
 void group_connectometry_analysis::calculate_FDR(void)
 {
     double sum_pos_corr_null = 0.0;

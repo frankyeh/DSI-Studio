@@ -61,10 +61,12 @@ void ROIViewDelegate::emitCommitData()
 
 group_connectometry::group_connectometry(QWidget *parent,std::shared_ptr<group_connectometry_analysis> vbc_,QString db_file_name_,bool gui_) :
     QDialog(parent),
-    null_pos_chart(new QChart),null_pos_chart_view(new QChartView(null_pos_chart)),
-    null_neg_chart(new QChart),null_neg_chart_view(new QChartView(null_neg_chart)),
+    null_pos_chart(new QChart),null_neg_chart(new QChart),
+    null_pos_chart_view(new QChartView(null_pos_chart)),null_neg_chart_view(new QChartView(null_neg_chart)),
     fdr_chart(new QChart),fdr_chart_view(new QChartView(fdr_chart)),
-    db_file_name(db_file_name_),vbc(vbc_),work_dir(QFileInfo(db_file_name_).absoluteDir().absolutePath()),gui(gui_),
+    gui(gui_),
+    db_file_name(db_file_name_),work_dir(QFileInfo(db_file_name_).absoluteDir().absolutePath()),
+    vbc(vbc_),db(vbc->handle->db),
     ui(new Ui::group_connectometry)
 {
 
@@ -107,19 +109,19 @@ group_connectometry::group_connectometry(QWidget *parent,std::shared_ptr<group_c
 
     // CHECK R2
     std::string check_quality;
-    for(unsigned int index = 0;index < vbc->handle->db.num_subjects;++index)
+    for(unsigned int index = 0;index < db.num_subjects;++index)
     {
-        if(vbc->handle->db.R2[index] < 0.5)
+        if(db.R2[index] < 0.5)
         {
             if(check_quality.empty())
                 check_quality = "Poor image quality found found in subject(s):";
             std::ostringstream out;
-            out << " #" << index+1 << " " << vbc->handle->db.subject_names[index];
+            out << " #" << index+1 << " " << db.subject_names[index];
             check_quality += out.str();
         }
     }
     // setup normalize QA
-    if(vbc->handle->db.index_name == "qa")
+    if(db.index_name == "qa")
         ui->normalize_qa->setChecked(true);
     else
     {
@@ -137,9 +139,9 @@ group_connectometry::group_connectometry(QWidget *parent,std::shared_ptr<group_c
     ui->subject_demo->clear();
     ui->subject_demo->setColumnCount(1);
     ui->subject_demo->setHorizontalHeaderLabels(QStringList("Subject ID"));
-    ui->subject_demo->setRowCount(vbc->handle->db.num_subjects);
+    ui->subject_demo->setRowCount(db.num_subjects);
     for(unsigned int row = 0;row < ui->subject_demo->rowCount();++row)
-        ui->subject_demo->setItem(row,0,new QTableWidgetItem(QString(vbc->handle->db.subject_names[row].c_str())));
+        ui->subject_demo->setItem(row,0,new QTableWidgetItem(QString(db.subject_names[row].c_str())));
 
     ui->advanced_options->setCurrentIndex(0);
 }
@@ -275,7 +277,6 @@ void fill_demo_table(const connectometry_db& db,
 
 bool group_connectometry::load_demographic_file(QString filename,std::string& error_msg)
 {
-    auto& db = vbc->handle->db;
     // read demographic file
     if(!db.parse_demo(filename.toStdString()))
     {
@@ -288,7 +289,7 @@ bool group_connectometry::load_demographic_file(QString filename,std::string& er
     // fill up regression values
     {
         QStringList t;
-        for(int i = 0; i < db.feature_titles.size();++i)
+        for(size_t i = 0; i < db.feature_titles.size();++i)
             t << db.feature_titles[i].c_str();
         ui->variable_list->clear();
         ui->variable_list->addItems(t);
@@ -307,195 +308,6 @@ bool group_connectometry::load_demographic_file(QString filename,std::string& er
     fill_demo_table(db,ui->subject_demo);
     return true;
 }
-std::string group_connectometry::get_cohort_list(std::vector<char>& remove_list_)
-{
-    std::vector<char> remove_list(model->X.size()/model->feature_count);
-    std::string cohort_text;
-    // handle missing value
-    for(int k = 0;k < ui->variable_list->count();++k)
-        if(ui->variable_list->item(k)->checkState() == Qt::Checked)
-        {
-            for(size_t i = 0,pos = 0;pos < model->X.size();++i,pos += model->feature_count)
-                if(std::isnan(model->X[pos+size_t(k)+1]))
-                    remove_list[i] = 1;
-        }
-    // select cohort
-    if(!ui->select_text->text().isEmpty())
-    {
-        QStringList selections = ui->select_text->text().split(',');
-        for(int m = 0;m < selections.size();++m)
-        {
-            QString text = selections[m];
-            bool parsed = false;
-            auto select = [](QCharRef sel,float value,float threshold)
-            {
-                if(sel == '=')
-                    return int(value*1000.0f) == int(threshold*1000.0f);
-                if(sel == '>')
-                    return value > threshold;
-                if(sel == '<')
-                    return value < threshold;
-                return int(value*1000.0f) != int(threshold*1000.0f);
-            };
-            for(int j = text.size()-2;j > 1;--j)
-                if(text[j] == '=' || text[j] == '<' || text[j] == '>' || text[j] == '/')
-                {
-                    QString fov_name = text.left(j);
-                    bool okay;
-                    float threshold = text.right(text.size()-j-1).toFloat(&okay);
-                    if(!okay)
-                        break;
-                    if(fov_name == "value")
-                    {
-                        for(int k = 0;k < ui->variable_list->count();++k)
-                            if(ui->variable_list->item(k)->checkState() == Qt::Checked)
-                            {
-                                for(size_t i = 0,pos = 0;pos < model->X.size();++i,pos += model->feature_count)
-                                    if(!select(text[j],float(model->X[pos+size_t(k)+1]),threshold))
-                                        remove_list[i] = 1;
-                            }
-                        parsed = true;
-                        break;
-                    }
-                    size_t fov_index = 0;
-                    okay = false;
-                    for(size_t k = 0;k < vbc->handle->db.feature_titles.size();++k)
-                        if(vbc->handle->db.feature_titles[k] == fov_name.toStdString())
-                        {
-                            fov_index = k;
-                            okay = true;
-                            break;
-                        }
-                    if(!okay)
-                        break;
-
-                    for(size_t i = 0,pos = 0;pos < model->X.size();++i,pos += model->feature_count)
-                        if(!select(text[j],float(model->X[pos+fov_index+1]),threshold))
-                            remove_list[i] = 1;
-
-                    std::ostringstream out;
-                    out << " Subjects with " << fov_name.toStdString() <<
-                        (text[j] == '/' ? std::string("≠")+text.right(text.size()-j-1).toStdString():
-                                          text.right(text.size()-j).toStdString()) << " were selected.";
-                    cohort_text += out.str();
-                    parsed = true;
-                    break;
-                }
-            if(!parsed)
-            {
-                remove_list_.clear();
-                return std::string("cannot parse selection text:") + text.toStdString();
-            }
-        }
-    }
-
-    // visualize
-    size_t selected_count = 0;
-    ui->subject_demo->setUpdatesEnabled(false);
-    for(size_t i = 0;i < remove_list.size();++i)
-    {
-        if(!remove_list[i])
-            selected_count++;
-        for(int j = 0;j < ui->subject_demo->columnCount();++j)
-            ui->subject_demo->item(i,j)->setBackgroundColor(remove_list[i] ? Qt::white : QColor(255,255,200));
-    }
-    ui->subject_demo->setUpdatesEnabled(true);
-    ui->cohort_text->setText(QString("n=%1").arg(selected_count));
-    remove_list.swap(remove_list_);
-    return cohort_text;
-}
-
-bool group_connectometry::setup_model(stat_model& m)
-{
-    if(!vbc->handle->db.is_longitudinal && !model.get())
-    {
-        if(gui)
-            QMessageBox::information(this,"Error","Please load demographic information",0);
-        return false;
-    }
-    if(!model.get())
-    {
-        model.reset(new stat_model);
-        model->read_demo(vbc->handle->db);
-    }
-
-    m = *(model.get());
-    std::vector<char> remove_list(m.X.size()/m.feature_count);
-    m.cohort_text = get_cohort_list(remove_list);
-    if(remove_list.empty())
-    {
-        if(gui)
-            QMessageBox::information(this,"Error",m.cohort_text.c_str(),0);
-        else
-            std::cout << m.cohort_text << std::endl;
-        return false;
-    }
-    m.type = 1;
-    m.variables.clear();
-    std::vector<char> sel(uint32_t(ui->variable_list->count()+1));
-    sel[0] = 1; // intercept
-    m.variables.push_back("Intercept");
-    bool has_variable = false;
-    for(size_t i = 1;i < sel.size();++i)
-        if(ui->variable_list->item(int32_t(i)-1)->checkState() == Qt::Checked)
-        {
-            std::set<double> unique_values;
-            for(size_t j = 0,pos = 0;pos < model->X.size();++j,pos += model->feature_count)
-                if(!remove_list[j])
-                {
-                    unique_values.insert(model->X[pos+i]);
-                    if(unique_values.size() > 1)
-                    {
-                        sel[i] = 1;
-                        m.variables.push_back(ui->variable_list->item(int32_t(i)-1)->text().toStdString());
-                        has_variable = true;
-                        break;
-                    }
-                }
-        }
-    if(!has_variable)
-    {
-        // look at longitudinal change without considering any demographics
-        if(vbc->handle->db.is_longitudinal)
-        {
-            model->type = 3;
-            m.type = 3;
-            m.read_demo(vbc->handle->db);
-            m.X.clear();
-            return true;
-        }
-        else
-            goto error;
-    }
-
-    {
-        bool find_study_feature = false;
-        // variables[0] = "intercept"
-        for(size_t i = 0;i < m.variables.size();++i)
-            if(m.variables[i] == ui->foi->currentText().toStdString())
-            {
-                m.study_feature = i;
-                find_study_feature = true;
-                break;
-            }
-        if(!find_study_feature)
-            goto error;
-    }
-    m.select_variables(sel);
-    m.remove_data(remove_list);
-    if(!m.pre_process())
-    {
-        error:
-        const char* msg = "No valid variable selected for regression. Please check selected variables and cohort.";
-        if(gui)
-            QMessageBox::information(this,"Error",msg,0);
-        else
-            std::cout << msg << std::endl;
-        return false;
-    }
-    return true;
-}
-
 
 void group_connectometry::calculate_FDR(void)
 {
@@ -590,28 +402,60 @@ void group_connectometry::on_run_clicked()
         ui->run->setText("Run");
         return;
     }
-    vbc->model.reset(new stat_model);
-    if(!setup_model(*vbc->model.get()))
+    // longitudinal data wihtout loading demographics
+    if(db.is_longitudinal && !model.get())
+    {
+        model.reset(new stat_model);
+        model->read_demo(vbc->handle->db);
+    }
+
+    if(!model.get())
+    {
+        QMessageBox::information(this,"DSI Studio","Load demographic file first");
         return;
-    vbc->normalize_qa = ui->normalize_qa->isChecked();
-    vbc->no_tractogram = ui->no_tractogram->isChecked();
-    vbc->foi_str = ui->foi->currentText().toStdString();
-    vbc->length_threshold_voxels = uint32_t(ui->length_threshold->value());
-    vbc->tip = uint32_t(ui->tip->value());
-    if(ui->fdr_control->isChecked())
-        vbc->fdr_threshold = float(ui->fdr_threshold->value());
-    else
-        vbc->fdr_threshold = 0.0f;
+    }
 
-    vbc->tracking_threshold = float(ui->threshold->value());
-    vbc->model->nonparametric = ui->nonparametric->isChecked();
-    vbc->output_file_name = ui->output_name->text().toStdString();
+    // check cohort text
+    on_show_cohort_clicked();
+    if(model->remove_list.empty()) // select cohort failed
+        return;
 
-    ui->run->setText("Stop");
+    // setup parameters
+    {
+        if(ui->roi_whole_brain->isChecked())
+            roi_list.clear();
 
 
-    if(ui->roi_whole_brain->isChecked())
-        roi_list.clear();
+        vbc->normalize_qa = ui->normalize_qa->isChecked();
+        vbc->no_tractogram = ui->no_tractogram->isChecked();
+        vbc->foi_str = ui->foi->currentText().toStdString();
+        vbc->length_threshold_voxels = uint32_t(ui->length_threshold->value());
+        vbc->tip = uint32_t(ui->tip->value());
+        if(ui->fdr_control->isChecked())
+            vbc->fdr_threshold = float(ui->fdr_threshold->value());
+        else
+            vbc->fdr_threshold = 0.0f;
+
+        vbc->tracking_threshold = float(ui->threshold->value());
+        vbc->output_file_name = ui->output_name->text().toStdString();
+    }
+
+    // setup statistical model
+    {
+        vbc->model.reset(new stat_model);
+        *(vbc->model.get()) = *(model.get());
+        vbc->model->nonparametric = ui->nonparametric->isChecked();
+        if(!vbc->model->select_feature(db,ui->foi->currentText().toStdString()))
+        {
+            QMessageBox::critical(this,"Error",vbc->model->error_msg.c_str());
+            return;
+        }
+    }
+
+
+
+
+
 
 
     if(ui->exclude_cb->isChecked() && vbc->handle->is_human_data)
@@ -671,6 +515,8 @@ void group_connectometry::on_run_clicked()
     }
 
     vbc->run_permutation(std::thread::hardware_concurrency(),ui->permutation_count->value());
+
+    ui->run->setText("Stop");
     if(gui)
     {
         timer.reset(new QTimer(this));
@@ -682,16 +528,14 @@ void group_connectometry::on_run_clicked()
 
 void group_connectometry::on_show_result_clicked()
 {
+    if(!vbc->model.get())
+        return;
     std::shared_ptr<fib_data> new_data(new fib_data);
     *(new_data.get()) = *(vbc->handle);
-    stat_model cur_model;
-    if(!setup_model(cur_model))
-        return;
-
     {
         result_fib.reset(new connectometry_result);
         stat_model info;
-        info.resample(cur_model,false,false,0);
+        info.resample(*(vbc->model.get()),false,false,0);
         vbc->calculate_spm(*result_fib.get(),info,vbc->normalize_qa);
         new_data->view_item.push_back(item());
         new_data->view_item.back().name = "dec_t";
@@ -816,9 +660,9 @@ void group_connectometry::on_variable_list_clicked(const QModelIndex &)
 {
     ui->foi->clear();
     for(int i =0;i < ui->variable_list->count();++i)
-        if(ui->variable_list->item(i)->checkState() == Qt::Checked)
+        if((db.feature_selected[uint32_t(i)] = (ui->variable_list->item(i)->checkState() == Qt::Checked)))
             ui->foi->addItem(ui->variable_list->item(i)->text());
-    if(vbc->handle->db.is_longitudinal)
+    if(db.is_longitudinal)
         ui->foi->addItem(QString("Intercept"));
     if(ui->foi->count() != 0)
         ui->foi->setCurrentIndex(ui->foi->count()-1);
@@ -828,10 +672,23 @@ void group_connectometry::on_show_cohort_clicked()
 {
     if(!model.get())
         return;
-    std::vector<char> remove_list;
-    QString text = get_cohort_list(remove_list).c_str();
-    if(remove_list.empty())
-        QMessageBox::information(this,"Error",text);
+    if(!model->select_cohort(db,ui->select_text->text().toStdString()))
+    {
+        QMessageBox::critical(this,"Error",model->error_msg.c_str());
+        return;
+    }
+    size_t selected_count = 0;
+    ui->subject_demo->setUpdatesEnabled(false);
+    for(size_t i = 0;i < model->remove_list.size();++i)
+    {
+        if(!model->remove_list[i])
+            selected_count++;
+        for(int j = 0;j < ui->subject_demo->columnCount();++j)
+            ui->subject_demo->item(int(i),j)->setBackgroundColor(model->remove_list[i] ? Qt::white : QColor(255,255,200));
+    }
+    ui->subject_demo->setUpdatesEnabled(true);
+    ui->cohort_report->setText(QString("n=%1").arg(selected_count));
+
 }
 
 void group_connectometry::on_fdr_control_toggled(bool checked)

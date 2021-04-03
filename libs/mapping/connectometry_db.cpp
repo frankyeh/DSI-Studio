@@ -1261,17 +1261,189 @@ void stat_model::remove_subject(unsigned int index)
     subject_index.erase(subject_index.begin()+index);
 }
 
-void stat_model::remove_data(const std::vector<char>& remove_list)
+
+bool stat_model::select_cohort(connectometry_db& db,
+                               std::string select_text)
 {
+    error_msg.clear();
+    cohort_report.clear();
+    remove_list.clear();
+    remove_list.resize(X.size()/feature_count);
+    // handle missing value
+    for(size_t k = 0;k < db.feature_titles.size();++k)
+        if(db.feature_selected[k])
+        {
+            for(size_t i = 0,pos = 0;pos < X.size();++i,pos += feature_count)
+                if(std::isnan(X[pos+size_t(k)+1]))
+                    remove_list[i] = 1;
+        }
+    // select cohort
+    if(!select_text.empty())
+    {
+        std::istringstream ss(select_text);
+        std::string text;
+        while(std::getline(ss,text,','))
+        {
+            bool parsed = false;
+            auto select = [](char sel,float value,float threshold)
+            {
+                if(sel == '=')
+                    return int(value*1000.0f) == int(threshold*1000.0f);
+                if(sel == '>')
+                    return value > threshold;
+                if(sel == '<')
+                    return value < threshold;
+                return int(value*1000.0f) != int(threshold*1000.0f);
+            };
+            if(text.length() < 2)
+                continue;
+            for(size_t j = text.length()-2;j > 1;--j)
+                if(text[j] == '=' || text[j] == '<' || text[j] == '>' || text[j] == '/')
+                {
+                    auto fov_name = text.substr(0,j);
+                    auto value_text = text.substr(j+1);
+                    bool okay;
+                    std::istringstream si(value_text);
+                    float threshold = 0.0f;
+                    if(!(si >> threshold))
+                    {
+                        error_msg = "invalid selection text: ";
+                        error_msg += text;
+                        goto error;
+                    }
+                    if(fov_name == "value")
+                    {
+                        for(size_t k = 0;k < db.feature_titles.size();++k)
+                            if(db.feature_selected[k])
+                            {
+                                for(size_t i = 0,pos = 0;pos < X.size();++i,pos += feature_count)
+                                    if(!select(text[j],float(X[pos+size_t(k)+1]),threshold))
+                                        remove_list[i] = 1;
+                            }
+                        parsed = true;
+                        break;
+                    }
+                    size_t fov_index = 0;
+                    okay = false;
+                    for(size_t k = 0;k < db.feature_titles.size();++k)
+                        if(db.feature_titles[k] == fov_name)
+                        {
+                            fov_index = k;
+                            okay = true;
+                            break;
+                        }
+                    if(!okay)
+                        break;
+
+                    for(size_t i = 0,pos = 0;pos < X.size();++i,pos += feature_count)
+                        if(!select(text[j],float(X[pos+fov_index+1]),threshold))
+                            remove_list[i] = 1;
+
+                    std::ostringstream out;
+                    if(text[j] == '/')
+                        out << " Subjects with " << fov_name << "≠" << value_text << " were selected.";
+                    else
+                        out << " Subjects with " << text << " were selected.";
+                    cohort_report += out.str();
+                    parsed = true;
+                    break;
+                }
+            if(!parsed)
+            {
+                error_msg = "cannot parse selection text:";
+                error_msg += text;
+                goto error;
+            }
+        }
+    }
+    return true;
+    error:
+    remove_list.clear();
+    cohort_report.clear();
+    return false;
+}
+bool stat_model::select_feature(connectometry_db& db,std::string foi_text)
+{
+    error_msg.clear();
+
+    std::vector<char> sel(uint32_t(db.feature_titles.size()+1));
+    sel[0] = 1; // intercept
+    type = 1;
+
+    variables.clear();
+    variables.push_back("Intercept");
+    bool has_variable = false;
+    for(size_t i = 1;i < sel.size();++i)
+        if(db.feature_selected[i-1])
+        {
+            std::set<double> unique_values;
+            for(size_t j = 0,pos = 0;pos < X.size();++j,pos += feature_count)
+                if(!remove_list[j])
+                {
+                    unique_values.insert(X[pos+i]);
+                    if(unique_values.size() > 1)
+                    {
+                        sel[i] = 1;
+                        variables.push_back(db.feature_titles[i-1]);
+                        has_variable = true;
+                        break;
+                    }
+                }
+        }
+    if(!has_variable)
+    {
+        // look at longitudinal change without considering any demographics
+        if(db.is_longitudinal)
+        {
+            type = 3;
+            read_demo(db);
+            X.clear();
+            return true;
+        }
+        else
+        {
+            error_msg = "No variables selected for regression. Please check selected variables.";
+            return false;
+        }
+    }
+
+    // select feature of interest
+    {
+        bool find_study_feature = false;
+        // variables[0] = "intercept"
+        for(unsigned int i = 0;i < variables.size();++i)
+            if(variables[i] == foi_text)
+            {
+                study_feature = i;
+                find_study_feature = true;
+                break;
+            }
+        if(!find_study_feature)
+        {
+            error_msg = "Please select the targeted study feature.";
+            return false;
+        }
+    }
+    select_variables(sel);
+
+
+    // remove subjects according to the cohort selection
     for(int index = int(remove_list.size())-1;index >= 0;--index)
         if(remove_list[uint32_t(index)])
         {
             if(!label.empty())
                 label.erase(label.begin()+index);
             if(!X.empty())
-                X.erase(X.begin()+index*feature_count,X.begin()+(index+1)*feature_count);
+                X.erase(X.begin()+uint32_t(index)*feature_count,X.begin()+(uint32_t(index)+1)*feature_count);
             subject_index.erase(subject_index.begin()+index);
         }
+
+    if(!pre_process())
+    {
+        error_msg = "Some demographic data are duplicated. Please check the demographics.";
+        return false;
+    }
+    return true;
 }
 
 bool stat_model::resample(stat_model& rhs,bool null,bool bootstrap,unsigned int seed)

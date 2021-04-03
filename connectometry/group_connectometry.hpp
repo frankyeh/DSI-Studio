@@ -57,10 +57,9 @@ public:
 
 public:
     std::shared_ptr<group_connectometry_analysis> vbc;
-    std::auto_ptr<stat_model> model;
+    connectometry_db& db;
+    std::shared_ptr<stat_model> model;
     std::auto_ptr<QTimer> timer;
-    std::string get_cohort_list(std::vector<char>& remove_list);
-    bool setup_model(stat_model& model);
 
     explicit group_connectometry(QWidget *parent,std::shared_ptr<group_connectometry_analysis> vbc_ptr,QString db_file_name_,bool gui_);
     ~group_connectometry();

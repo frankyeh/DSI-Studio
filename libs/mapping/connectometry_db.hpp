@@ -102,8 +102,12 @@ public: // individual
 public:
     stat_model(void):individual_data(nullptr){}
 public:
-    std::string cohort_text;
-    void remove_data(const std::vector<char>& remove_list);
+    std::string error_msg;
+    std::string cohort_report;
+    std::vector<char> remove_list;
+    bool select_cohort(connectometry_db& db,
+                       std::string select_text);
+    bool select_feature(connectometry_db& db,std::string foi_text);
 public:
     void read_demo(const connectometry_db& db);
     void remove_subject(unsigned int index);    
@@ -131,6 +135,9 @@ public:
         mr = rhs.mr;
         individual_data = rhs.individual_data;
         nonparametric = rhs.nonparametric;
+
+        remove_list = rhs.remove_list;
+        cohort_report = rhs.cohort_report;
         return *this;
     }
 };
