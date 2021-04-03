@@ -1917,6 +1917,16 @@ void tracking_window::updateSlicesMenu(void)
         Item->setVisible(true);
         connect(Item, SIGNAL(triggered()),&scene, SLOT(save_slice_as()));
         ui->menuE_xport->addAction(Item);
+
+        if(handle->has_odfs())
+        {
+            QAction* Item = new QAction(this);
+            Item->setText(QString("Save ODFs..."));
+            Item->setData(QString("odfs"));
+            Item->setVisible(true);
+            connect(Item, SIGNAL(triggered()),&scene, SLOT(save_slice_as()));
+            ui->menuE_xport->addAction(Item);
+        }
     }
 
     // update along track color dialog
