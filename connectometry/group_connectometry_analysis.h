@@ -49,7 +49,7 @@ public:// for FDR analysis
     unsigned int progress;// 0~100
     bool terminated = false;
     bool no_tractogram = false;
-    unsigned int preproces;
+    unsigned int preproces = 0;
 public:
     std::shared_ptr<RoiMgr> roi_mgr;
     void exclude_cerebellum(void);

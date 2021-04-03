@@ -464,10 +464,10 @@ void group_connectometry_analysis::run_permutation(unsigned int thread_count,uns
 
     if(wait)
     {
-        for(unsigned int index = 1;index < thread_count;++index)
+        for(unsigned int index = 0;index < thread_count-1;++index)
             threads.push_back(std::make_shared<std::future<void> >(std::async(std::launch::async,
                 [this,index,thread_count,permutation_count](){run_permutation_multithread(index,thread_count,permutation_count);})));
-        run_permutation_multithread(0,thread_count,permutation_count);
+        run_permutation_multithread(thread_count-1,thread_count,permutation_count);
     }
     else
     for(unsigned int index = 0;index < thread_count;++index)

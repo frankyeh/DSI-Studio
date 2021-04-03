@@ -34,17 +34,12 @@ int cnt(void)
         std::cout << "error: " << db.error_msg << std::endl;
         return 1;
     }
-    std::cout << "demographic imported." << std::endl;
 
+    std::cout << "demographics include ";
     // show features readed
     for(size_t i = 0;i < db.feature_titles.size();++i)
-         std::cout << i << ":" << db.feature_titles[i] << " ";
+         std::cout << "(" << i << ")" << db.feature_titles[i] << " ";
     std::cout << std::endl;
-
-
-    stat_model model;
-    model.read_demo(db);
-    model.nonparametric = po.get("nonparametric",1);
 
     std::vector<unsigned int> variable_list;
     unsigned int voi_index = 0;
@@ -77,7 +72,7 @@ int cnt(void)
         }
 
         std::fill(db.feature_selected.begin(),db.feature_selected.end(),false);
-        std::cout << "variables: ";
+        std::cout << "variables considered in regression: ";
         for(auto index : variable_list)
         {
             std::cout << "(" << index << ")" << db.feature_titles[index] << " ";
@@ -100,9 +95,12 @@ int cnt(void)
     }
 
     // select cohort and feature
-    if(!model.select_cohort(db,po.get("select")) || !model.select_feature(db,vbc->foi_str))
+    vbc->model.reset(new stat_model);
+    vbc->model->read_demo(db);
+    vbc->model->nonparametric = po.get("nonparametric",1);
+    if(!vbc->model->select_cohort(db,po.get("select")) || !vbc->model->select_feature(db,vbc->foi_str))
     {
-        std::cout << "error:" << model.error_msg.c_str() << std::endl;
+        std::cout << "error:" << vbc->model->error_msg.c_str() << std::endl;
         return 1;
     }
 
