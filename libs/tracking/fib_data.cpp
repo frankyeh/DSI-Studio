@@ -647,7 +647,26 @@ bool fib_data::save_mapping(const std::string& index_name,const std::string& fil
         file << buf;
         return file.save_to_file(file_name.c_str());
     }
+    if(index_name == "odfs" && odf.has_odfs())
+    {
+        gz_nifti file;
+        file.set_voxel_size(vs);
+        tipl::image<float,4> buf(tipl::geometry<4>(
+                                 dim.width(),
+                                 dim.height(),
+                                 dim.depth(),
+                                 dir.half_odf_size));
+        for(unsigned int pos = 0;pos < dim.size();++pos)
+        {
+            auto* ptr = odf.get_odf_data(pos);
+            if(ptr!= nullptr)
+                std::copy(ptr,ptr+dir.half_odf_size,buf.begin()+pos*dir.half_odf_size);
 
+        }
+        tipl::flip_xy(buf);
+        file << buf;
+        return file.save_to_file(file_name.c_str());
+    }
     size_t index = get_name_index(index_name);
     if(index >= view_item.size())
         return false;
