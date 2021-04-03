@@ -10,7 +10,6 @@ bool load_roi(std::shared_ptr<fib_data> handle,std::shared_ptr<RoiMgr> roi_mgr);
 int cnt(void)
 {
     std::shared_ptr<group_connectometry_analysis> vbc(new group_connectometry_analysis);
-    auto& db = vbc->handle->db;
 
     std::cout << "reading connectometry db" <<std::endl;
     if(!vbc->load_database(po.get("source").c_str()))
@@ -31,11 +30,13 @@ int cnt(void)
     }
 
     // read demographic file
+    auto& db = vbc->handle->db;
     if(!db.parse_demo(po.get("demo")))
     {
         std::cout << "error: " << db.error_msg << std::endl;
         return 1;
     }
+    std::cout << "demographic imported." << std::endl;
 
     // show features readed
     for(size_t i = 0;i < db.feature_titles.size();++i)
