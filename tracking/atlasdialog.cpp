@@ -42,7 +42,7 @@ void AtlasDialog::on_add_atlas_clicked()
         return;
 
     auto* w = dynamic_cast<tracking_window*>(parent());
-    if(!w)
+    if(!w) // for connectometry atlas
     {
         for(int index = 0; index < indexes.size(); ++index)
         {
@@ -50,6 +50,7 @@ void AtlasDialog::on_add_atlas_clicked()
             roi_name.push_back(dynamic_cast<QStringListModel*>(ui->region_list->model())->stringList()[indexes[index].row()].toStdString());
         }
         accept();
+        return;
     }
 
 
