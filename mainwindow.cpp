@@ -698,7 +698,7 @@ void MainWindow::on_group_connectometry_clicked()
     std::shared_ptr<group_connectometry_analysis> database;
     if(!load_db(database,filename))
         return;
-    group_connectometry* group_cnt = new group_connectometry(this,database,filename,true);
+    group_connectometry* group_cnt = new group_connectometry(this,database,filename);
     group_cnt->setAttribute(Qt::WA_DeleteOnClose);
     group_cnt->show();
 }

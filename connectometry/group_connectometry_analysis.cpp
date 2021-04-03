@@ -77,6 +77,20 @@ void cal_hist(const std::vector<std::vector<float> >& track,std::vector<unsigned
     }
 }
 
+bool load_region(std::shared_ptr<fib_data> handle,
+                 ROIRegion& roi,const std::string& region_text);
+void group_connectometry_analysis::exclude_cerebellum(void)
+{
+    if(handle->is_human_data)
+    {
+        ROIRegion roi(handle.get());
+        if(!load_region(handle,roi,"BrainSeg:Cerebellum"))
+            return;
+        roi_mgr->setRegions(roi.get_region_voxels_raw(),1.0f,4/*terminative*/,"Cerebellum");
+        roi_mgr->report = " Cerebellum was excluded.";
+    }
+}
+
 void group_connectometry_analysis::run_permutation_multithread(unsigned int id,unsigned int thread_count,unsigned int permutation_count)
 {
     connectometry_result data;
@@ -330,7 +344,7 @@ std::string iterate_items(const std::vector<std::string>& item)
     }
     return result;
 }
-void group_connectometry_analysis::run_permutation(unsigned int thread_count,unsigned int permutation_count)
+void group_connectometry_analysis::run_permutation(unsigned int thread_count,unsigned int permutation_count,bool wait)
 {
     clear();
     // output report
@@ -374,8 +388,8 @@ void group_connectometry_analysis::run_permutation(unsigned int thread_count,uns
 
         if(normalize_qa)
             out << " The QA values were normalized.";
-        if(!roi_mgr_text.empty())
-            out << roi_mgr_text << std::endl;
+        if(!roi_mgr->report.empty())
+            out << roi_mgr->report << std::endl;
         if(tip)
             out << " The tracks were filtered by topology-informed pruning (Yeh et al. Neurotherapeutics, 16(1), 52-58, 2019) with "
                 << tip << " iteration(s).";
@@ -447,6 +461,15 @@ void group_connectometry_analysis::run_permutation(unsigned int thread_count,uns
     progress = 0;
     // need to be initialized
     seed_count = 10000;
+
+    if(wait)
+    {
+        for(unsigned int index = 1;index < thread_count;++index)
+            threads.push_back(std::make_shared<std::future<void> >(std::async(std::launch::async,
+                [this,index,thread_count,permutation_count](){run_permutation_multithread(index,thread_count,permutation_count);})));
+        run_permutation_multithread(0,thread_count,permutation_count);
+    }
+    else
     for(unsigned int index = 0;index < thread_count;++index)
         threads.push_back(std::make_shared<std::future<void> >(std::async(std::launch::async,
             [this,index,thread_count,permutation_count](){run_permutation_multithread(index,thread_count,permutation_count);})));

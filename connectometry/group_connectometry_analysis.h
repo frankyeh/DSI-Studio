@@ -52,7 +52,7 @@ public:// for FDR analysis
     unsigned int preproces;
 public:
     std::shared_ptr<RoiMgr> roi_mgr;
-    std::string roi_mgr_text;
+    void exclude_cerebellum(void);
 public:
     std::string output_file_name;
     int seed_count;
@@ -67,7 +67,7 @@ public:// Multiple regression
     unsigned int tip;
     std::string foi_str;
     void run_permutation_multithread(unsigned int id,unsigned int thread_count,unsigned int permutation_count);
-    void run_permutation(unsigned int thread_count,unsigned int permutation_count);
+    void run_permutation(unsigned int thread_count,unsigned int permutation_count,bool wait = false);
     void calculate_FDR(void);
     void generate_report(std::string& output);
 };

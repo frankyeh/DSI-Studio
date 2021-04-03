@@ -59,12 +59,11 @@ void ROIViewDelegate::emitCommitData()
 }
 
 
-group_connectometry::group_connectometry(QWidget *parent,std::shared_ptr<group_connectometry_analysis> vbc_,QString db_file_name_,bool gui_) :
+group_connectometry::group_connectometry(QWidget *parent,std::shared_ptr<group_connectometry_analysis> vbc_,QString db_file_name_) :
     QDialog(parent),
     null_pos_chart(new QChart),null_neg_chart(new QChart),
     null_pos_chart_view(new QChartView(null_pos_chart)),null_neg_chart_view(new QChartView(null_neg_chart)),
     fdr_chart(new QChart),fdr_chart_view(new QChartView(fdr_chart)),
-    gui(gui_),
     db_file_name(db_file_name_),work_dir(QFileInfo(db_file_name_).absoluteDir().absolutePath()),
     vbc(vbc_),db(vbc->handle->db),
     ui(new Ui::group_connectometry)
@@ -363,22 +362,11 @@ void group_connectometry::calculate_FDR(void)
         ui->chart_widget_layout->addWidget(fdr_chart_view);
 
 
-        if(gui)
-        {
-            if(vbc->pos_corr_track->get_visible_track_count() ||
-               vbc->neg_corr_track->get_visible_track_count())
-                QMessageBox::information(this,"Finished","Trk files saved.",0);
-            else
-                QMessageBox::information(this,"Finished","No significant finding.",0);
-        }
+        if(vbc->pos_corr_track->get_visible_track_count() ||
+           vbc->neg_corr_track->get_visible_track_count())
+            QMessageBox::information(this,"Finished","Trk files saved.",0);
         else
-        {
-            if(vbc->pos_corr_track->get_visible_track_count() ||
-                    vbc->neg_corr_track->get_visible_track_count())
-                std::cout << "trk files saved" << std::endl;
-            else
-                std::cout << "no significant finding" << std::endl;
-        }
+            QMessageBox::information(this,"Finished","No significant finding.",0);
 
         // save report in text
         {
@@ -451,15 +439,8 @@ void group_connectometry::on_run_clicked()
     // setup roi
     {
         vbc->roi_mgr = std::make_shared<RoiMgr>(vbc->handle.get());
-        // exclude cerebellum
-        if(ui->exclude_cb->isChecked() && vbc->handle->is_human_data)
-        {
-            ROIRegion roi(vbc->handle.get());
-            if(!load_region(vbc->handle,roi,"BrainSeg:Cerebellum"))
-                return;
-            vbc->roi_mgr->setRegions(roi.get_region_voxels_raw(),1.0f,4/*terminative*/,"Cerebellum");
-            vbc->roi_mgr->report = " Cerebellum was excluded.";
-        }
+        if(ui->exclude_cb->isChecked())
+            vbc->exclude_cerebellum();
 
         // apply ROI
         if(!ui->roi_whole_brain->isChecked())
@@ -478,21 +459,16 @@ void group_connectometry::on_run_clicked()
         // if no seed assigned, assign whole brain
         if(vbc->roi_mgr->seeds.empty())
             vbc->roi_mgr->setWholeBrainSeed(vbc->fiber_threshold);
-
-        // setup roi related report text
-        vbc->roi_mgr_text = vbc->roi_mgr->report;
     }
 
     vbc->run_permutation(std::thread::hardware_concurrency(),uint32_t(ui->permutation_count->value()));
 
+
     ui->run->setText("Stop");
-    if(gui)
-    {
-        timer.reset(new QTimer(this));
-        timer->setInterval(1000);
-        connect(timer.get(), SIGNAL(timeout()), this, SLOT(calculate_FDR()));
-        timer->start();
-    }
+    timer.reset(new QTimer(this));
+    timer->setInterval(1000);
+    connect(timer.get(), SIGNAL(timeout()), this, SLOT(calculate_FDR()));
+    timer->start();
 }
 
 void group_connectometry::on_show_result_clicked()

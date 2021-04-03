@@ -177,7 +177,6 @@ void init_application(void)
     if(!load_file_name())
         QMessageBox::information(nullptr,"Error",
         "Cannot find FA template in the template folder. Please download dsi_studio_other_files.zip from DSI Studio website and place them with the DSI Studio executives.");
-
 }
 
 program_option po;
@@ -234,7 +233,7 @@ int run_cmd(int ac, char *av[])
         std::shared_ptr<QApplication> gui;
         std::shared_ptr<QCoreApplication> cmd;
         for (int i = 1; i < ac; ++i)
-            if (std::string(av[i]) == std::string("--action=cnt") ||
+            if ((std::string(av[i]) == std::string("--action=cnt") && po.get("no_tractogram",1) != 1) ||
                 std::string(av[i]) == std::string("--action=vis"))
             {
                 gui.reset(new QApplication(ac, av));

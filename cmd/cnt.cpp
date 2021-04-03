@@ -1,152 +1,150 @@
 #include <QApplication>
 #include <QFileInfo>
-
 #include "tracking/region/Regions.h"
 #include "tracking/atlasdialog.h"
+#include "tracking/roi.hpp"
 #include "connectometry/group_connectometry.hpp"
 #include "ui_group_connectometry.h"
 #include "program_option.hpp"
-bool load_region(std::shared_ptr<fib_data> handle,
-                 ROIRegion& roi,const std::string& region_text);
+bool load_roi(std::shared_ptr<fib_data> handle,std::shared_ptr<RoiMgr> roi_mgr);
 int cnt(void)
 {
-    std::shared_ptr<group_connectometry_analysis> database(new group_connectometry_analysis);
+    std::shared_ptr<group_connectometry_analysis> vbc(new group_connectometry_analysis);
+    auto& db = vbc->handle->db;
+
     std::cout << "reading connectometry db" <<std::endl;
-    if(!database->load_database(po.get("source").c_str()))
+    if(!vbc->load_database(po.get("source").c_str()))
     {
         std::cout << "invalid database format" << std::endl;
         return 1;
     }
-    std::shared_ptr<group_connectometry> vbc(new group_connectometry(0,database,po.get("source").c_str(),false));
-    vbc->setAttribute(Qt::WA_DeleteOnClose);
-    vbc->show();
-    //vbc->hide();
 
     if(!po.has("demo"))
     {
-        std::cout << "please assign demographic file" << std::endl;
+        std::cout << "please assign --demo" << std::endl;
         return 1;
     }
-    std::string error_msg;
-    if(!vbc->load_demographic_file(po.get("demo").c_str(),error_msg))
-    {
-        std::cout << error_msg << std::endl;
-        return 1;
-    }
-
     if(!po.has("voi") || !po.has("variable_list"))
     {
         std::cout << "please assign --voi and --variable_list" << std::endl;
         return 1;
     }
+
+    // read demographic file
+    if(!db.parse_demo(po.get("demo")))
     {
-        int voi_index = po.get("voi",0);
-        std::string voi_text = vbc->ui->variable_list->item(voi_index)->text().toStdString();
+        std::cout << "error: " << db.error_msg << std::endl;
+        return 1;
+    }
+
+    // show features readed
+    for(size_t i = 0;i < db.feature_titles.size();++i)
+         std::cout << i << ":" << db.feature_titles[i] << " ";
+    std::cout << std::endl;
+
+
+    stat_model model;
+    model.read_demo(db);
+    model.nonparametric = po.get("nonparametric",1);
+
+    std::vector<unsigned int> variable_list;
+    unsigned int voi_index = 0;
+
+    {
+        voi_index = po.get("voi",uint32_t(0));
+        if(voi_index >= db.feature_titles.size())
+        {
+            std::cout << "invalid voi value: " << voi_index << std::endl;
+            return 1;
+        }
+        std::cout << "feature selected (study variable): " << db.feature_titles[voi_index] << std::endl;
 
         std::string var_text = po.get("variable_list");
         std::replace(var_text.begin(),var_text.end(),',',' ');
         std::istringstream var_in(var_text);
-        std::vector<int> variable_list(
-                    (std::istream_iterator<int>(var_in)),
-                    (std::istream_iterator<int>()));
-
-        // sort and variables and make them unique
-        {
-            std::set<int> sorted(variable_list.begin(),variable_list.end());
-            sorted.insert(voi_index);
-            variable_list = std::vector<int>(sorted.begin(),sorted.end());
-        }
-
-        for(int i = 0;i < vbc->ui->variable_list->count();++i)
-            vbc->ui->variable_list->item(i)->setCheckState(Qt::Unchecked);
-
-        std::cout << "variables: ";
-        for(size_t i = 0;i < variable_list.size();++i)
-        {
-            int index = variable_list[i];
-            if(index >= vbc->ui->variable_list->count())
+        variable_list.assign((std::istream_iterator<int>(var_in)),(std::istream_iterator<int>()));
+        for(auto v : variable_list)
+            if(v >= db.feature_titles.size())
             {
-                std::cout << "invalid number in the variable_list:" << index << std::endl;
+                std::cout << "invalid variable value: " << v << std::endl;
                 return 1;
             }
-            vbc->ui->variable_list->item(index)->setCheckState(Qt::Checked);
-            if(i)
-                std::cout << ",";
-            std::cout << vbc->ui->variable_list->item(index)->text().toStdString();
+
+        // sort and variables, make them unique, and make sure voi is included
+        {
+            variable_list.push_back(voi_index);
+            std::set<unsigned int> s(variable_list.begin(),variable_list.end());
+            variable_list.assign(s.begin(),s.end());
+        }
+
+        std::fill(db.feature_selected.begin(),db.feature_selected.end(),false);
+        std::cout << "variables: ";
+        for(auto index : variable_list)
+        {
+            std::cout << "(" << index << ")" << db.feature_titles[index] << " ";
+            db.feature_selected[index] = true;
         }
         std::cout << std::endl;
-        vbc->on_variable_list_clicked(QModelIndex());
-        vbc->ui->foi->update();
-        vbc->ui->foi->setCurrentText(voi_text.c_str());
-        std::cout << "study variable: " << vbc->ui->foi->currentText().toStdString() << std::endl;
-
     }
 
-    vbc->ui->threshold->setValue(double(po.get("t_threshold",float(vbc->ui->threshold->value()))));
-    vbc->ui->tip->setValue(po.get("tip",vbc->ui->tip->value()));
 
-    vbc->ui->nonparametric->setChecked(po.get("nonparametric",1) == 1);
-    vbc->ui->permutation_count->setValue(po.get("permutation",vbc->ui->permutation_count->value()));
-    vbc->ui->length_threshold->setValue(po.get("length_threshold",vbc->ui->length_threshold->value()));
-    if(po.has("select"))
-       vbc->ui->select_text->setText(po.get("select",vbc->ui->select_text->text().toStdString()).c_str());
-    vbc->ui->tip->setValue(po.get("tip",vbc->ui->tip->value()));
-    if(po.has("output"))
-        vbc->ui->output_name->setText(po.get("output").c_str());
-
-    if(po.get("normalize_qa",(vbc->vbc->handle->db.index_name == "sdf" || vbc->vbc->handle->db.index_name == "qa") ? 1:0))
-        vbc->ui->normalize_qa->setChecked(true);
-    else
-        vbc->ui->normalize_qa->setChecked(false);
-
-    if(po.get("no_tractogram",0))
-        vbc->ui->no_tractogram->setChecked(true);
-    else
-        vbc->ui->no_tractogram->setChecked(false);
-
-    if(po.get("exclude_cb",0))
-        vbc->ui->exclude_cb->setChecked(true);
-    else
-        vbc->ui->exclude_cb->setChecked(false);
-
-    if(po.has("fdr_threshold"))
+    // setup parameters
     {
-        vbc->ui->fdr_control->setChecked(true);
-        vbc->ui->fdr_threshold->setValue(po.get("fdr_threshold",0.05f));
-    }
-    else
-    {
-        vbc->ui->fdr_control->setChecked(false);
+        vbc->no_tractogram = (po.get("no_tractogram",1) == 1);
+        vbc->normalize_qa = po.get("normalize_qa",(db.index_name == "sdf" || db.index_name == "qa") ? 1:0);
+        vbc->foi_str = db.feature_titles[voi_index];
+        vbc->length_threshold_voxels = po.get("length_threshold",uint32_t(20));
+        vbc->tip = po.get("tip",uint32_t(4));
+        vbc->fdr_threshold = po.get("fdr_threshold",0.00f);
+        vbc->tracking_threshold = po.get("t_threshold",2.5f);
+        vbc->output_file_name = po.get("output");
     }
 
-    // check rois
+    // select cohort and feature
+    if(!model.select_cohort(db,po.get("select")) || !model.select_feature(db,vbc->foi_str))
     {
-        const int total_count = 18;
-        char roi_names[total_count][5] = {"roi","roi2","roi3","roi4","roi5","roa","roa2","roa3","roa4","roa5","end","end2","seed","ter","ter2","ter3","ter4","ter5"};
-        unsigned char type[total_count] = {0,0,0,0,0,1,1,1,1,1,2,2,3,4,4,4,4,4};
-        for(int index = 0;index < total_count;++index)
-        if (po.has(roi_names[index]))
-        {
-            ROIRegion roi(vbc->vbc->handle.get());
-            if(!load_region(vbc->vbc->handle,roi,po.get(roi_names[index])))
-                return 1;
-            vbc->add_new_roi(po.get(roi_names[index]).c_str(),
-                             po.get(roi_names[index]).c_str(),
-                             roi.get_region_voxels_raw(),type[index]);
-            vbc->ui->roi_user_defined->setChecked(true);
-            vbc->ui->roi_whole_brain->setChecked(false);
-        }
+        std::cout << "error:" << model.error_msg.c_str() << std::endl;
+        return 1;
+    }
+
+    // setup roi
+    {
+        vbc->roi_mgr = std::make_shared<RoiMgr>(vbc->handle.get());
+        if(po.get("exclude_cb",0))
+            vbc->exclude_cerebellum();
+
+        if(!load_roi(vbc->handle,vbc->roi_mgr))
+            return 1;
+
+        // if no seed assigned, assign whole brain
+        if(vbc->roi_mgr->seeds.empty())
+            vbc->roi_mgr->setWholeBrainSeed(vbc->fiber_threshold);
     }
 
     std::cout << "running connectometry" << std::endl;
-    vbc->on_run_clicked();
-    if(vbc->vbc->threads.empty())
-        return 0;
-    vbc->vbc->wait();
-    vbc->calculate_FDR();
-    vbc->close();
-    vbc.reset();
+    vbc->run_permutation(std::thread::hardware_concurrency(),po.get("permutation",uint32_t(2000)),true /*wait until completed*/);
     std::cout << "analysis completed" << std::endl;
+
+    if(vbc->pos_corr_track->get_visible_track_count() ||
+            vbc->neg_corr_track->get_visible_track_count())
+        std::cout << "trk files saved" << std::endl;
+    else
+        std::cout << "no significant finding" << std::endl;
+
+    vbc->calculate_FDR();
+    std::string output;
+    vbc->generate_report(output);
+    {
+        std::string report_file_name = vbc->output_file_name+".report.html";
+        std::ofstream out(report_file_name.c_str());
+        if(!out)
+            std::cout << "cannot output file to " << report_file_name << std::endl;
+        else
+        {
+            out << output << std::endl;
+            std::cout << "report saved to " << report_file_name << std::endl;
+        }
+    }
     return 0;
 }
 

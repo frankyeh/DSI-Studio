@@ -48,7 +48,6 @@ private:
     std::auto_ptr<connectometry_result> result_fib;
     void show_dis_table(void);
 public:
-    bool gui = true;
     QString db_file_name,work_dir;
     std::string demo_file_name;
 public:
@@ -61,7 +60,7 @@ public:
     std::shared_ptr<stat_model> model;
     std::auto_ptr<QTimer> timer;
 
-    explicit group_connectometry(QWidget *parent,std::shared_ptr<group_connectometry_analysis> vbc_ptr,QString db_file_name_,bool gui_);
+    explicit group_connectometry(QWidget *parent,std::shared_ptr<group_connectometry_analysis> vbc_ptr,QString db_file_name_);
     ~group_connectometry();
 
 public:
