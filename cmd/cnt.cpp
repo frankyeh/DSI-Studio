@@ -10,8 +10,6 @@ bool load_roi(std::shared_ptr<fib_data> handle,std::shared_ptr<RoiMgr> roi_mgr);
 int cnt(void)
 {
     std::shared_ptr<group_connectometry_analysis> vbc(new group_connectometry_analysis);
-
-    std::cout << "reading connectometry db" <<std::endl;
     if(!vbc->load_database(po.get("source").c_str()))
     {
         std::cout << "invalid database format" << std::endl;
