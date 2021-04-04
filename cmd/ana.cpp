@@ -53,7 +53,7 @@ bool load_nii(std::shared_ptr<fib_data> handle,
     }
     if(!load_nii(handle,file_name,transform_lookup,regions,names,true))
     {
-        std::cout << "ERROR: fail to load multi-region NIFTI file." << std::endl;
+        std::cout << "ERROR: fail to load NIFTI file." << std::endl;
         return false;
     }
     return true;

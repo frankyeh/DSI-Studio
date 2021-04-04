@@ -169,7 +169,7 @@ int atl(void)
             fib_data fib;
             if(!fib.load_from_file(name_list[0].c_str()))
             {
-                std::cout << "error loading subject fib files:" << name_list[0] << std::endl;
+                std::cout << "ERROR loading subject fib files:" << name_list[0] << std::endl;
                 return 1;
             }
             std::vector<std::string> item_list;
@@ -186,7 +186,7 @@ int atl(void)
             std::shared_ptr<group_connectometry_analysis> data(new group_connectometry_analysis);
             if(!data->create_database(tm.c_str()))
             {
-                std::cout << "error in initializing the database:" << data->error_msg << std::endl;
+                std::cout << "ERROR in initializing the database:" << data->error_msg << std::endl;
                 return 1;
             }
             // Extracting metrics
@@ -198,7 +198,7 @@ int atl(void)
                 if(!data->handle->db.add_subject_file(name_list[index],
                     QFileInfo(name_list[index].c_str()).baseName().toStdString()))
                 {
-                    std::cout << "error loading subject fib files:" << data->handle->error_msg << std::endl;
+                    std::cout << "ERROR loading subject fib files:" << data->handle->error_msg << std::endl;
                     return 1;
                 }
             }
@@ -210,7 +210,7 @@ int atl(void)
             output += ".db.fib.gz";
             if(!data->handle->db.save_subject_data(output.c_str()))
             {
-                std::cout << "error saving the db file:" << data->handle->error_msg << std::endl;
+                std::cout << "ERROR saving the db file:" << data->handle->error_msg << std::endl;
                 return 1;
             }
             std::cout << "connectometry db created:" << output << std::endl;

@@ -389,15 +389,13 @@ bool load_region(std::shared_ptr<fib_data> handle,
 
     if(!QFileInfo(file_name.c_str()).exists())
     {
-        LOAD_MNI:
+        if(!load_atlas_from_list(handle,file_name,handle->atlas_list))
+            return false;
         if(region_name.empty())
         {
             std::cout << "ERROR: please assign region name of an atlas." << std::endl;
             return false;
         }
-        if(!load_atlas_from_list(handle,file_name,handle->atlas_list))
-            return false;
-
         const tipl::image<tipl::vector<3,float>,3 >& mapping = handle->get_mni_mapping();
         std::cout << "loading " << region_name << " from " << file_name << " atlas" << std::endl;
         tipl::vector<3> null;
@@ -415,53 +413,27 @@ bool load_region(std::shared_ptr<fib_data> handle,
     }
     else
     {
-        if(!roi.LoadFromFile(file_name.c_str()))
+        std::vector<std::shared_ptr<ROIRegion> > regions;
+        std::vector<std::string> names;
+        if(!load_nii(handle,file_name,regions,names))
+            return false;
+        if(region_name.empty())
+            roi = *(regions[0].get());
+        else
         {
-            gz_nifti header;
-            if (!header.load_from_file(file_name.c_str()))
+            bool found = false;
+            for(size_t index = 0;index < names.size();++index)
+                if(names[index] == region_name ||
+                   names[index] == QFileInfo(file_name.c_str()).baseName().toStdString() + "_" + region_name)
+                {
+                    found = true;
+                    roi = *(regions[index].get());
+                    break;
+                }
+            if(!found)
             {
-                std::cout << "not a valid nifti file:" << file_name << std::endl;
+                std::cout << "ERROR: cannot find " << region_name << " in the NIFTI file." << std::endl;
                 return false;
-            }
-            tipl::image<int, 3> from;
-            header.toLPS(from);
-            if(!region_name.empty())
-            {
-                int region_value = std::stoi(region_name);
-                std::cout << "select region with value: " << region_value << std::endl;
-                for(size_t i = 0 ;i < from.size();++i)
-                    from[i] = (from[i] == region_value ? 1:0);
-            }
-            std::cout << file_name << " dimension: " << from.geometry() << std::endl;
-            std::cout << "DWI dimension: " << handle->dim << std::endl;
-            if(from.geometry() == handle->dim)
-            {
-                std::cout << "loading " << file_name << "as a native space region" << std::endl;
-                roi.LoadFromBuffer(from);
-            }
-            else
-            {
-                std::cout << file_name << " has a different dimension from DWI" << std::endl;
-                std::cout << "checking if there is --t1t2 assigned for registration" << std::endl;
-                tipl::geometry<3> t1t2_geo;
-                tipl::vector<3> vs;
-                tipl::matrix<4,4,float> convert;
-                if(!get_t1t2_nifti(handle,t1t2_geo,vs,convert))
-                {
-                    std::cout << "No --t1t2 assigned to guide warping the region file to DWI." << std::endl;
-                    std::cout << "loading " << file_name << "as an MNI space region" << std::endl;
-                    goto LOAD_MNI;
-                }
-                if(t1t2_geo != from.geometry())
-                {
-                    std::cout << "--t1t2 also has a different dimension." << std::endl;
-                    std::cout << "loading " << file_name << "as an MNI space region" << std::endl;
-                    goto LOAD_MNI;
-                }
-                std::cout << "using t1t2 as the reference to load " << file_name << std::endl;
-                std::cout << "loading " << file_name << "as an MNI space region" << std::endl;
-                roi.LoadFromBuffer(from,convert);
-                goto LOAD_MNI;
             }
         }
     }
@@ -472,7 +444,7 @@ bool load_region(std::shared_ptr<fib_data> handle,
         roi.perform(str_list[i].toStdString());
     }
     if(roi.empty())
-        std::cout << "warning: " << file_name << " is an empty region file" << std::endl;
+        std::cout << "WARNING: " << file_name << " is an empty region file" << std::endl;
     return true;
 }
 
@@ -494,7 +466,7 @@ void trk_post(std::shared_ptr<fib_data> handle,std::shared_ptr<TractModel> tract
                 CustomSliceModel new_slice(handle.get());
                 if(!new_slice.initialize(files))
                 {
-                    std::cout << "error reading ref image file" << std::endl;
+                    std::cout << "ERROR reading ref image file" << std::endl;
                     return;
                 }
                 new_slice.thread->wait();
@@ -718,12 +690,12 @@ int trk(std::shared_ptr<fib_data> handle)
             std::cout << "loading individual file:" << cnt_file_name[i].toStdString() << std::endl;
             if(cnt_type == "iva" && !cnt.individual_vs_atlas(handle,cnt_file_name[i].toLocal8Bit().begin(),0))
             {
-                std::cout << "error loading connectometry file:" << cnt.error_msg <<std::endl;
+                std::cout << "ERROR loading connectometry file:" << cnt.error_msg <<std::endl;
                 return 1;
             }
             if(cnt_type == "ivp" && !cnt.individual_vs_db(handle,cnt_file_name[i].toLocal8Bit().begin()))
             {
-                std::cout << "error loading connectometry file:" << cnt.error_msg <<std::endl;
+                std::cout << "ERROR loading connectometry file:" << cnt.error_msg <<std::endl;
                 return 1;
             }
             if(cnt_type == "ivi")
@@ -732,7 +704,7 @@ int trk(std::shared_ptr<fib_data> handle)
                 if(!cnt.individual_vs_individual(handle,cnt_file_name[i].toLocal8Bit().begin(),
                                                               cnt_file_name[i+1].toLocal8Bit().begin(),0))
                 {
-                    std::cout << "error loading connectometry file:" << cnt.error_msg <<std::endl;
+                    std::cout << "ERROR loading connectometry file:" << cnt.error_msg <<std::endl;
                     return 1;
                 }
                 ++i;

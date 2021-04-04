@@ -31,7 +31,7 @@ int cnt(void)
     auto& db = vbc->handle->db;
     if(!db.parse_demo(po.get("demo")))
     {
-        std::cout << "error: " << db.error_msg << std::endl;
+        std::cout << "ERROR: " << db.error_msg << std::endl;
         return 1;
     }
 
@@ -100,7 +100,7 @@ int cnt(void)
     vbc->model->nonparametric = po.get("nonparametric",1);
     if(!vbc->model->select_cohort(db,po.get("select")) || !vbc->model->select_feature(db,vbc->foi_str))
     {
-        std::cout << "error:" << vbc->model->error_msg.c_str() << std::endl;
+        std::cout << "ERROR:" << vbc->model->error_msg.c_str() << std::endl;
         return 1;
     }
 

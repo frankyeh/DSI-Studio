@@ -65,7 +65,7 @@ int src(void)
 
     if(!parse_dwi(file_list,dwi_files))
     {
-        std::cout << "error loading dwi file:" << src_error_msg << std::endl;
+        std::cout << "ERROR loading dwi file:" << src_error_msg << std::endl;
         return 1;
     }
     if(po.has("b_table"))
