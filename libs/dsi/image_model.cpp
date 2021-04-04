@@ -1212,12 +1212,19 @@ bool load_4d_nii(const char* file_name,std::vector<std::shared_ptr<DwiHeader> >&
 bool ImageModel::load_from_file(const char* dwi_file_name)
 {
     file_name = dwi_file_name;
-    if (!mat_reader.load_from_file(dwi_file_name))
+    if(!QFileInfo(dwi_file_name).exists())
+    {
+        error_msg = "File does not exist:";
+        error_msg += dwi_file_name;
+        return false;
+    }
+
+    if(QString(dwi_file_name).toLower().endsWith(".nii.gz"))
     {
         QString bval,bvec;
         if(!find_bval_bvec(dwi_file_name,bval,bvec))
         {
-            error_msg = "Cannot find bval bvec files";
+            error_msg = "Cannot find bval bvec files for the NIFTI file";
             return false;
         }
         std::vector<std::shared_ptr<DwiHeader> > dwi_files;
@@ -1253,6 +1260,19 @@ bool ImageModel::load_from_file(const char* dwi_file_name)
         voxel.steps += QFileInfo(dwi_file_name).fileName().toStdString();
         voxel.steps += "\n";
         return true;
+    }
+
+    if (!QString(dwi_file_name).toLower().endsWith(".src.gz") &&
+        !QString(dwi_file_name).toLower().endsWith(".src"))
+    {
+        error_msg = "Unsupported file format";
+        return false;
+    }
+
+    if(!mat_reader.load_from_file(dwi_file_name))
+    {
+        error_msg = "Invalid SRC file";
+        return false;
     }
 
     if (!mat_reader.read("dimension",voxel.dim))
