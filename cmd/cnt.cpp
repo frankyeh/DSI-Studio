@@ -119,7 +119,8 @@ int cnt(void)
     }
 
     std::cout << "running connectometry" << std::endl;
-    vbc->run_permutation(std::thread::hardware_concurrency(),po.get("permutation",uint32_t(2000)),true /*wait until completed*/);
+    vbc->run_permutation(std::thread::hardware_concurrency(),po.get("permutation",uint32_t(2000)));
+    vbc->wait();
     std::cout << "analysis completed" << std::endl;
 
     if(vbc->pos_corr_track->get_visible_track_count() ||

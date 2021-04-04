@@ -344,7 +344,7 @@ std::string iterate_items(const std::vector<std::string>& item)
     }
     return result;
 }
-void group_connectometry_analysis::run_permutation(unsigned int thread_count,unsigned int permutation_count,bool wait)
+void group_connectometry_analysis::run_permutation(unsigned int thread_count,unsigned int permutation_count)
 {
     clear();
     // output report
@@ -462,14 +462,6 @@ void group_connectometry_analysis::run_permutation(unsigned int thread_count,uns
     // need to be initialized
     seed_count = 10000;
 
-    if(wait)
-    {
-        for(unsigned int index = 0;index < thread_count-1;++index)
-            threads.push_back(std::make_shared<std::future<void> >(std::async(std::launch::async,
-                [this,index,thread_count,permutation_count](){run_permutation_multithread(index,thread_count,permutation_count);})));
-        run_permutation_multithread(thread_count-1,thread_count,permutation_count);
-    }
-    else
     for(unsigned int index = 0;index < thread_count;++index)
         threads.push_back(std::make_shared<std::future<void> >(std::async(std::launch::async,
             [this,index,thread_count,permutation_count](){run_permutation_multithread(index,thread_count,permutation_count);})));
