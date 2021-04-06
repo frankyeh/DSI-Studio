@@ -12,8 +12,8 @@ public:
     uint32_t view_id = 0;
     bool is_diffusion_space = true;
     tipl::matrix<4,4,float> T,invT; // T: image->diffusion iT: diffusion->image
-    tipl::geometry<3> geometry;
-    tipl::vector<3,float> voxel_size;
+    tipl::geometry<3> dim;
+    tipl::vector<3> vs;
 public:
     bool is_overlay = false;
     tipl::value_to_color<float> v2c;
@@ -69,7 +69,7 @@ public:
                    value_type& px, value_type& py, value_type& pz) const
     {
         tipl::slice2space(cur_dim, x, y, slice_pos[cur_dim], px, py, pz);
-        return geometry.is_valid(px, py, pz);
+        return dim.is_valid(px, py, pz);
     }
 
 
@@ -83,7 +83,7 @@ public:
     }
     bool set_slice_pos(int x,int y,int z)
     {
-        if(!geometry.is_valid(x,y,z))
+        if(!dim.is_valid(x,y,z))
             return false;
         bool has_updated = false;
         if(slice_pos[0] != x)
@@ -103,10 +103,10 @@ public:
         }
         return has_updated;
     }
-    void get_slice_positions(unsigned int dim,std::vector<tipl::vector<3,float> >& points)
+    void get_slice_positions(unsigned int cur_dim,std::vector<tipl::vector<3,float> >& points)
     {
         points.resize(4);
-        tipl::get_slice_positions(dim, slice_pos[dim], geometry,points);
+        tipl::get_slice_positions(cur_dim, slice_pos[cur_dim],dim,points);
         if(!is_diffusion_space)
         for(unsigned int index = 0;index < points.size();++index)
             points[index].to(T);

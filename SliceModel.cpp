@@ -16,11 +16,11 @@ SliceModel::SliceModel(fib_data* handle_,uint32_t view_id_):handle(handle_),view
     slice_visible[2] = false;
     T.identity();
     invT = T;
-    geometry = handle_->dim;
-    voxel_size = handle_->vs;
-    slice_pos[0] = geometry.width() >> 1;
-    slice_pos[1] = geometry.height() >> 1;
-    slice_pos[2] = geometry.depth() >> 1;
+    dim = handle_->dim;
+    vs = handle_->vs;
+    slice_pos[0] = dim.width() >> 1;
+    slice_pos[1] = dim.height() >> 1;
+    slice_pos[2] = dim.depth() >> 1;
     v2c.set_range(handle->view_item[view_id].contrast_min,handle->view_item[view_id].contrast_max);
     v2c.two_color(handle->view_item[view_id].min_color,handle->view_item[view_id].max_color);
 }
@@ -146,8 +146,8 @@ bool CustomSliceModel::initialize(const std::vector<std::string>& files)
                 picture[j] = tipl::rgb(*(ptr+2),*(ptr+1),*ptr);
             }
 
-            voxel_size = handle->vs*0.5f*(handle->dim.width())/(in.width());
-            tipl::transformation_matrix<float> M(arg_min,handle->dim,handle->vs,source_images.geometry(),voxel_size);
+            vs = handle->vs*0.5f*(handle->dim.width())/(in.width());
+            tipl::transformation_matrix<float> M(arg_min,handle->dim,handle->vs,source_images.geometry(),vs);
             invT.identity();
             M.save_to_transform(invT.begin());
             T = tipl::inverse(invT);
@@ -156,11 +156,10 @@ bool CustomSliceModel::initialize(const std::vector<std::string>& files)
         else
         {
             std::ifstream in(info_file.toStdString().c_str());
-            in >> geometry[0];in >> geometry[1];in >> geometry[2];
-            in >> voxel_size[0];in >> voxel_size[1];in >> voxel_size[2];
+            in >> dim[0] >> dim[1] >> dim[2] >> vs[0] >> vs[1] >> vs[2];
             std::copy(std::istream_iterator<float>(in),
                       std::istream_iterator<float>(),T.begin());
-            if(geometry[2] != uint32_t(files.size()))
+            if(dim[2] != uint32_t(files.size()))
             {
                 error_msg = "Invalid BMP info text: file count does not match.";
                 return false;
@@ -169,13 +168,13 @@ bool CustomSliceModel::initialize(const std::vector<std::string>& files)
             unsigned int slice_subsample = 1;
 
             // non isotropic condition
-            while(voxel_size[2]/voxel_size[0] > 1.5f)
+            while(vs[2]/vs[0] > 1.5f)
             {
                 ++in_plane_subsample;
-                geometry[0] = geometry[0] >> 1;
-                geometry[1] = geometry[1] >> 1;
-                voxel_size[0] *= 2.0f;
-                voxel_size[1] *= 2.0f;
+                dim[0] = dim[0] >> 1;
+                dim[1] = dim[1] >> 1;
+                vs[0] *= 2.0f;
+                vs[1] *= 2.0f;
                 T[0] *= 2.0f;
                 T[1] *= 2.0f;
                 T[4] *= 2.0f;
@@ -183,7 +182,7 @@ bool CustomSliceModel::initialize(const std::vector<std::string>& files)
                 T[8] *= 2.0f;
                 T[9] *= 2.0f;
             }
-            tipl::geometry<3> geo(geometry);
+            tipl::geometry<3> geo(dim);
 
             bool ok = true;
             int down_size = (geo[2] > 1 ? QInputDialog::getInt(nullptr,"DSI Studio",
@@ -198,7 +197,7 @@ bool CustomSliceModel::initialize(const std::vector<std::string>& files)
                 geo[0] = geo[0] >> 1;
                 geo[1] = geo[1] >> 1;
                 geo[2] = geo[2] >> 1;
-                voxel_size *= 2.0;
+                vs *= 2.0;
                 tipl::multiply_constant(T.begin(),T.begin()+3,2.0);
                 tipl::multiply_constant(T.begin()+4,T.begin()+7,2.0);
                 tipl::multiply_constant(T.begin()+8,T.begin()+11,2.0);
@@ -250,11 +249,11 @@ bool CustomSliceModel::initialize(const std::vector<std::string>& files)
                 return false;
             tipl::io::nifti nii;
             nii.set_dim(geo);
-            nii.set_voxel_size(voxel_size);
+            nii.set_voxel_size(vs);
             nii.set_image_transformation(T);
             nii << source_images;
             nii.toLPS(source_images);
-            nii.get_voxel_size(voxel_size);
+            nii.get_voxel_size(vs);
             nii.get_image_transformation(T);
             // LPS matrix switched to RAS
 
@@ -265,7 +264,7 @@ bool CustomSliceModel::initialize(const std::vector<std::string>& files)
             T[8] = -T[8];
             T[9] = -T[9];
             invT = tipl::inverse(T);
-            initial_LPS_nifti_srow(trans,source_images.geometry(),voxel_size);
+            initial_LPS_nifti_srow(trans,source_images.geometry(),vs);
             has_transform = true;
         }
     }
@@ -277,7 +276,7 @@ bool CustomSliceModel::initialize(const std::vector<std::string>& files)
         if(nifti.load_from_file(files[0]))
         {
             nifti.toLPS(source_images);
-            nifti.get_voxel_size(voxel_size);
+            nifti.get_voxel_size(vs);
             nifti.get_image_transformation(trans);
             if(handle->is_qsdr || handle->is_mni_image)
             {
@@ -314,9 +313,9 @@ bool CustomSliceModel::initialize(const std::vector<std::string>& files)
         tipl::io::bruker_2dseq bruker;
         if(bruker.load_from_file(files[0].c_str()))
         {
-            bruker.get_voxel_size(voxel_size);
+            bruker.get_voxel_size(vs);
             source_images = std::move(bruker.get_image());
-            initial_LPS_nifti_srow(trans,source_images.geometry(),voxel_size);
+            initial_LPS_nifti_srow(trans,source_images.geometry(),vs);
             QDir d = QFileInfo(files[0].c_str()).dir();
             if(d.cdUp() && d.cdUp())
             {
@@ -334,9 +333,9 @@ bool CustomSliceModel::initialize(const std::vector<std::string>& files)
         tipl::io::volume volume;
         if(volume.load_from_files(files,files.size()))
         {
-            volume.get_voxel_size(voxel_size);
+            volume.get_voxel_size(vs);
             volume >> source_images;
-            initial_LPS_nifti_srow(trans,source_images.geometry(),voxel_size);
+            initial_LPS_nifti_srow(trans,source_images.geometry(),vs);
         }
     }
 
@@ -382,7 +381,7 @@ bool CustomSliceModel::initialize(const std::vector<std::string>& files)
         handle->view_item.back().name = name;
         handle->view_item.back().T = T;
         handle->view_item.back().iT = invT;
-        geometry = source_images.geometry();
+        dim = source_images.geometry();
         slice_pos[0] = source_images.width() >> 1;
         slice_pos[1] = source_images.height() >> 1;
         slice_pos[2] = source_images.depth() >> 1;
@@ -395,7 +394,7 @@ bool CustomSliceModel::initialize(const std::vector<std::string>& files)
 // ---------------------------------------------------------------------------
 void CustomSliceModel::update(void)
 {
-    tipl::transformation_matrix<float> M(arg_min,handle->dim,handle->vs,geometry,voxel_size);
+    tipl::transformation_matrix<float> M(arg_min,handle->dim,handle->vs,dim,vs);
     invT.identity();
     M.save_to_transform(invT.begin());
     T = tipl::inverse(invT);
@@ -424,10 +423,10 @@ void CustomSliceModel::argmin(tipl::reg::reg_type reg_type)
 
 
     // align brain top
-    float z_shift = (float(handle->dim[2])*handle->vs[2]-float(to.geometry()[2])*voxel_size[2])*0.1f;
-    arg_min.translocation[2] = -z_shift*voxel_size[2];
+    float z_shift = (float(handle->dim[2])*handle->vs[2]-float(to.geometry()[2])*vs[2])*0.1f;
+    arg_min.translocation[2] = -z_shift*vs[2];
 
-    tipl::reg::two_way_linear_mr(from,handle->vs,to,voxel_size,M,reg_type,tipl::reg::mutual_information(),terminated,
+    tipl::reg::two_way_linear_mr(from,handle->vs,to,vs,M,reg_type,tipl::reg::mutual_information(),terminated,
                                   std::thread::hardware_concurrency(),&arg_min);
 
     M.save_to_transform(invT.begin());
@@ -478,7 +477,7 @@ void CustomSliceModel::load_mapping(const char* file_name)
         invT = data;
         invT.inv();
         tipl::transformation_matrix<float> trans = invT;
-        trans.to_affine_transform(arg_min,handle->dim,handle->vs,geometry,voxel_size);
+        trans.to_affine_transform(arg_min,handle->dim,handle->vs,dim,vs);
         handle->view_item[view_id].T = T;
         handle->view_item[view_id].iT = invT;
     }

@@ -53,9 +53,9 @@ void slice_view_scene::show_ruler2(QPainter& paint)
         from -= to;
         float pixel_length = float(from.length());
         from /= zoom;
-        from[0] *= cur_tracking_window.current_slice->voxel_size[0];
-        from[1] *= cur_tracking_window.current_slice->voxel_size[1];
-        from[2] *= cur_tracking_window.current_slice->voxel_size[2];
+        from[0] *= cur_tracking_window.current_slice->vs[0];
+        from[1] *= cur_tracking_window.current_slice->vs[1];
+        from[2] *= cur_tracking_window.current_slice->vs[2];
         float length = float(from.length());
         float precision = float(std::pow(10.0,std::floor(std::log10(double(length)))-1));
         float tic_dis = float(std::pow(10.0,std::floor(std::log10(50.0*double(length/pixel_length)))));
@@ -126,7 +126,7 @@ void slice_view_scene::show_ruler(QPainter& paint)
         int pad_x =  (is_qsdr ? qsdr_origin[dim]%tic_dis:0);
         if(pad_x == 0)
             pad_x = tic_dis;
-        int length = (cur_tracking_window.current_slice->geometry[dim]-pad_x-pad_x)
+        int length = (cur_tracking_window.current_slice->dim[dim]-pad_x-pad_x)
                         /tic_dis*tic_dis;
         space_x = int(float(pad_x)*zoom+zoom_2);
         for(int tic = 0;tic <= length;tic += tic_dis)
@@ -155,7 +155,7 @@ void slice_view_scene::show_ruler(QPainter& paint)
             pad_y = tic_dis;
         if(flip_y && pad_y < tic_dis)
             pad_y += tic_dis;
-        int length = (cur_tracking_window.current_slice->geometry[dim]-pad_y-tic_dis)
+        int length = (cur_tracking_window.current_slice->dim[dim]-pad_y-tic_dis)
                         /tic_dis*tic_dis;
         for(int tic = 0;tic <= length;tic += tic_dis)
         {
@@ -204,7 +204,7 @@ void slice_view_scene::show_fiber(QPainter& painter)
     int steps = 1;
     if(!cur_tracking_window.current_slice->is_diffusion_space)
     {
-        steps = int(std::ceil(cur_tracking_window.handle->vs[0]/cur_tracking_window.current_slice->voxel_size[0]));
+        steps = int(std::ceil(cur_tracking_window.handle->vs[0]/cur_tracking_window.current_slice->vs[0]));
         r *= steps;
         pen_w *= steps;
     }
@@ -357,7 +357,7 @@ bool slice_view_scene::command(QString cmd,QString param,QString param2)
 
 bool slice_view_scene::to_3d_space_single_slice(float x,float y,tipl::vector<3,float>& pos)
 {
-    tipl::geometry<3> geo(cur_tracking_window.current_slice->geometry);
+    tipl::geometry<3> geo(cur_tracking_window.current_slice->dim);
     if(cur_tracking_window["orientation_convention"].toInt())
         x = (cur_tracking_window.cur_dim ? geo[0]:geo[1])-x;
     if(cur_tracking_window.cur_dim != 2)
@@ -367,7 +367,7 @@ bool slice_view_scene::to_3d_space_single_slice(float x,float y,tipl::vector<3,f
 
 bool slice_view_scene::to_3d_space(float x,float y,tipl::vector<3,float>& pos)
 {
-    tipl::geometry<3> geo(cur_tracking_window.current_slice->geometry);
+    tipl::geometry<3> geo(cur_tracking_window.current_slice->dim);
     float display_ratio = cur_tracking_window.get_scene_zoom();
     x /= display_ratio;
     y /= display_ratio;
@@ -514,10 +514,10 @@ void slice_view_scene::show_slice(void)
         mosaic_column_count = cur_tracking_window["roi_mosaic_column"].toInt() ?
                 uint32_t(cur_tracking_window["roi_mosaic_column"].toInt()):
                 std::max<uint32_t>(1,uint32_t(std::ceil(
-                                   std::sqrt(float(cur_tracking_window.current_slice->geometry[cur_dim]) / skip))));
+                                   std::sqrt(float(cur_tracking_window.current_slice->dim[cur_dim]) / skip))));
         float scale = display_ratio/float(mosaic_column_count);
         char dim_order[3][2]= {{1,2},{0,2},{0,1}};
-        auto dim = cur_tracking_window.current_slice->geometry;
+        auto dim = cur_tracking_window.current_slice->dim;
 
         view_image = QImage(QSize(
                                 int(dim[dim_order[uint8_t(cur_dim)][0]]*scale*mosaic_column_count),
@@ -669,7 +669,7 @@ void slice_view_scene::mouseDoubleClickEvent ( QGraphicsSceneMouseEvent * mouseE
 
 void slice_view_scene::adjust_xy_to_layout(float& X,float& Y)
 {
-    tipl::geometry<3> geo(cur_tracking_window.current_slice->geometry);
+    tipl::geometry<3> geo(cur_tracking_window.current_slice->dim);
     float display_ratio = cur_tracking_window.get_scene_zoom();
     if(cur_tracking_window["roi_layout"].toInt() == 1)
     {
@@ -691,7 +691,7 @@ void slice_view_scene::send_event_to_3D(QEvent::Type type,
     float y = mouseEvent->scenePos().y();
     float x = mouseEvent->scenePos().x();
     float display_ratio = cur_tracking_window.get_scene_zoom();
-    auto dim = cur_tracking_window.current_slice->geometry;
+    auto dim = cur_tracking_window.current_slice->dim;
     y -= dim[2]*display_ratio;
     if(cur_tracking_window["orientation_convention"].toInt())
         x -= dim[1]*display_ratio;
@@ -735,7 +735,7 @@ bool slice_view_scene::click_on_3D(float x,float y)
     float display_ratio = cur_tracking_window.get_scene_zoom();
     x /= display_ratio;
     y /= display_ratio;
-    auto dim = cur_tracking_window.current_slice->geometry;
+    auto dim = cur_tracking_window.current_slice->dim;
     return cur_tracking_window["roi_layout"].toInt() == 1 &&
            y > dim[2] &&
            ((x < dim[1]) ^ cur_tracking_window["orientation_convention"].toInt());
@@ -840,7 +840,7 @@ void slice_view_scene::mousePressEvent ( QGraphicsSceneMouseEvent * mouseEvent )
 }
 void slice_view_scene::new_annotated_image(void)
 {
-    tipl::geometry<3> geo(cur_tracking_window.current_slice->geometry);
+    tipl::geometry<3> geo(cur_tracking_window.current_slice->dim);
     float display_ratio = cur_tracking_window.get_scene_zoom();
     if(cur_tracking_window["roi_layout"].toInt() == 0)
         annotated_image = view_image;
@@ -867,7 +867,7 @@ void slice_view_scene::mouseMoveEvent ( QGraphicsSceneMouseEvent * mouseEvent )
         return;
     if (!mouse_down)
         return;
-    tipl::geometry<3> geo(cur_tracking_window.current_slice->geometry);
+    tipl::geometry<3> geo(cur_tracking_window.current_slice->dim);
     float Y = mouseEvent->scenePos().y();
     float X = mouseEvent->scenePos().x();
     float display_ratio = cur_tracking_window.get_scene_zoom();
@@ -1027,7 +1027,7 @@ void slice_view_scene::mouseReleaseEvent ( QGraphicsSceneMouseEvent * mouseEvent
         return;
     }
 
-    tipl::geometry<3> geo(cur_tracking_window.current_slice->geometry);
+    tipl::geometry<3> geo(cur_tracking_window.current_slice->dim);
     float display_ratio = cur_tracking_window.get_scene_zoom();
 
 
@@ -1054,7 +1054,7 @@ void slice_view_scene::mouseReleaseEvent ( QGraphicsSceneMouseEvent * mouseEvent
         for (float z = min_cood[2]; z <= max_cood[2]; z += dis)
             for (float y = min_cood[1]; y <= max_cood[1]; y += dis)
                 for (float x = min_cood[0]; x <= max_cood[0]; x += dis)
-                    if (cur_tracking_window.current_slice->geometry.is_valid(x, y, z))
+                    if (cur_tracking_window.current_slice->dim.is_valid(x, y, z))
                         points.push_back(tipl::vector<3,float>(x, y, z));
     }
     break;
@@ -1102,7 +1102,7 @@ void slice_view_scene::mouseReleaseEvent ( QGraphicsSceneMouseEvent * mouseEvent
         for (float z = -dis; z <= dis; z += interval)
             for (float y = -dis; y <= dis; y += interval)
                 for (float x = -dis; x <= dis; x += interval)
-                    if (cur_tracking_window.current_slice->geometry.is_valid(sel_coord[0][0] + x,
+                    if (cur_tracking_window.current_slice->dim.is_valid(sel_coord[0][0] + x,
                                                  sel_coord[0][1] + y, sel_coord[0][2] + z) && x*x +
                             y*y + z*z <= distance2)
                         points.push_back(tipl::vector<3,float>(sel_coord[0][0] + x,
@@ -1167,7 +1167,7 @@ void slice_view_scene::mouseReleaseEvent ( QGraphicsSceneMouseEvent * mouseEvent
     if(!cur_tracking_window.current_slice->is_diffusion_space)
     {
         // resolution difference between DWI and current slices;
-        resolution = std::min<float>(16.0f,display_ratio*std::floor(cur_tracking_window.handle->vs[0]/cur_tracking_window.current_slice->voxel_size[0]));
+        resolution = std::min<float>(16.0f,display_ratio*std::floor(cur_tracking_window.handle->vs[0]/cur_tracking_window.current_slice->vs[0]));
         tipl::par_for(points.size(),[&](int index)
         {
             points[index].to(cur_tracking_window.current_slice->T);

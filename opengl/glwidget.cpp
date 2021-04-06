@@ -579,8 +579,8 @@ void GLWidget::renderLR()
 
             case 0:
                 {
-                    tipl::geometry<2> geo2(slice->geometry[odf_dim==0?1:0],
-                                           slice->geometry[odf_dim==2?1:2]);
+                    tipl::geometry<2> geo2(slice->dim[odf_dim==0?1:0],
+                                           slice->dim[odf_dim==2?1:2]);
                     for(tipl::pixel_index<2> index(geo2);index < geo2.size();++index)
                     {
                         if((index[0] & mask) | (index[1] & mask))
@@ -2160,7 +2160,7 @@ void GLWidget::mousePressEvent(QMouseEvent *event)
             }
             // if only slice is selected or slice is at the front, then move slice
             // if only one slice, then the slice will be moved.
-            if(slice_selected && object_distance > slice_distance && cur_tracking_window.current_slice->geometry[2] != 1)
+            if(slice_selected && object_distance > slice_distance && cur_tracking_window.current_slice->dim[2] != 1)
             {
                 editing_option = dragging;
                 return;

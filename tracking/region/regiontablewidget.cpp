@@ -460,7 +460,7 @@ void RegionTableWidget::new_region(void)
             std::min<float>(4.0f,std::max<float>(1.0f,std::ceil(
             (float)cur_tracking_window.get_scene_zoom()*
             cur_tracking_window.handle->vs[0]/
-            cur_tracking_window.current_slice->voxel_size[0])));
+            cur_tracking_window.current_slice->vs[0])));
     }
 }
 void RegionTableWidget::new_high_resolution_region(void)
@@ -782,7 +782,7 @@ bool RegionTableWidget::load_multiple_roi_nii(QString file_name)
     {
         CustomSliceModel* slice = dynamic_cast<CustomSliceModel*>(cur_tracking_window.slices[index].get());
         if(slice)
-            transform_lookup.push_back(std::make_pair(slice->geometry,slice->invT));
+            transform_lookup.push_back(std::make_pair(slice->dim,slice->invT));
     }
     std::vector<std::shared_ptr<ROIRegion> > loaded_regions;
     std::vector<std::string> names;
@@ -1060,13 +1060,13 @@ void RegionTableWidget::save_all_regions(void)
     {
         tipl::image<uint8_t, 3> i8mask(mask);
         gz_nifti::save_to_file(filename.toStdString().c_str(),i8mask,
-                           cur_tracking_window.current_slice->voxel_size,
+                           cur_tracking_window.current_slice->vs,
                            cur_tracking_window.handle->trans_to_mni);
     }
     else
     {
         gz_nifti::save_to_file(filename.toStdString().c_str(),mask,
-                           cur_tracking_window.current_slice->voxel_size,
+                           cur_tracking_window.current_slice->vs,
                            cur_tracking_window.handle->trans_to_mni);
     }
 }

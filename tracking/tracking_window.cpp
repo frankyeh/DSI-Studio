@@ -540,7 +540,7 @@ bool tracking_window::command(QString cmd,QString param,QString param2)
             tipl::image<unsigned char,3> II(I.geometry());
             std::copy(I.begin(),I.end(),II.begin());
             gz_nifti::save_to_file((param+"/slices/" + ui->SliceModality->currentText() + ".nii.gz").toStdString().c_str(),
-                                   II,reg_slice->voxel_size,reg_slice->trans);
+                                   II,reg_slice->vs,reg_slice->trans);
         }
 
         QDir::setCurrent(param);
@@ -913,7 +913,7 @@ float tracking_window::get_scene_zoom(void)
 {
     float display_ratio = (*this)["roi_zoom"].toFloat();
     if(!current_slice->is_diffusion_space)
-        display_ratio *= current_slice->voxel_size[0]/handle->vs[0];
+        display_ratio *= current_slice->vs[0]/handle->vs[0];
     display_ratio = std::min<float>(display_ratio,4096.0/handle->dim[0]);
     return display_ratio;
 }
@@ -1019,7 +1019,7 @@ void tracking_window::on_actionMove_Objects_triggered()
 void tracking_window::on_glSagView_clicked()
 {
     cur_dim = 0;
-    ui->SlicePos->setRange(0,current_slice->geometry[cur_dim]-1);
+    ui->SlicePos->setRange(0,current_slice->dim[cur_dim]-1);
     ui->SlicePos->setValue(current_slice->slice_pos[cur_dim]);
     glWidget->set_view(0);
     glWidget->updateGL();
@@ -1031,7 +1031,7 @@ void tracking_window::on_glSagView_clicked()
 void tracking_window::on_glCorView_clicked()
 {
     cur_dim = 1;
-    ui->SlicePos->setRange(0,current_slice->geometry[cur_dim]-1);
+    ui->SlicePos->setRange(0,current_slice->dim[cur_dim]-1);
     ui->SlicePos->setValue(current_slice->slice_pos[cur_dim]);
     glWidget->set_view(1);
     glWidget->updateGL();
@@ -1042,7 +1042,7 @@ void tracking_window::on_glCorView_clicked()
 void tracking_window::on_glAxiView_clicked()
 {
     cur_dim = 2;
-    ui->SlicePos->setRange(0,current_slice->geometry[cur_dim]-1);
+    ui->SlicePos->setRange(0,current_slice->dim[cur_dim]-1);
     ui->SlicePos->setValue(current_slice->slice_pos[cur_dim]);
     glWidget->set_view(2);
     glWidget->updateGL();
@@ -1058,7 +1058,7 @@ void tracking_window::move_slice_to(tipl::vector<3,float> slice_position)
     {
         if(slice_position[i] < 0)
             slice_position[i] = 0;
-        if(slice_position[i] >= current_slice->geometry[i]-1)
+        if(slice_position[i] >= current_slice->dim[i]-1)
             slice_position[i] = 0;
     }
     current_slice->slice_pos = slice_position;
@@ -1070,7 +1070,7 @@ void tracking_window::move_slice_to(tipl::vector<3,float> slice_position)
     ui->glCorBox->setValue(slice_position[1]);
     ui->glAxiBox->setValue(slice_position[2]);
 
-    ui->SlicePos->setRange(0,current_slice->geometry[cur_dim]-1);
+    ui->SlicePos->setRange(0,current_slice->dim[cur_dim]-1);
     ui->SlicePos->setValue(current_slice->slice_pos[cur_dim]);
 
     glWidget->slice_pos[0] = glWidget->slice_pos[1] = glWidget->slice_pos[2] = -1;
@@ -1177,8 +1177,8 @@ void tracking_window::on_actionTDI_Subvoxel_Diffusion_Space_triggered()
 void tracking_window::on_actionTDI_Import_Slice_Space_triggered()
 {
     tipl::matrix<4,4,float> tr = current_slice->invT;
-    tipl::geometry<3> geo = current_slice->geometry;
-    tipl::vector<3,float> vs = current_slice->voxel_size;
+    tipl::geometry<3> geo = current_slice->dim;
+    tipl::vector<3,float> vs = current_slice->vs;
     int rec,rec2;
     if(!ask_TDI_options(rec,rec2))
         return;
@@ -1727,7 +1727,7 @@ void tracking_window::stripSkull()
         return;
     if(!in2.load_from_file(t1w_mask_template_file_name.c_str()) || !in2.toLPS(Iw))
         return;
-    tipl::vector<3> vs,vsJ(reg_slice->voxel_size);
+    tipl::vector<3> vs,vsJ(reg_slice->vs);
     in1.get_voxel_size(vs);
 
     tipl::downsampling(It);
@@ -1834,8 +1834,8 @@ void tracking_window::on_actionAdjust_Mapping_triggered()
     tipl::add(iso_fa,handle->view_item[0].image_data);
 
     std::shared_ptr<manual_alignment> manual(new manual_alignment(this,
-        iso_fa,slices[index]->voxel_size,
-        reg_slice->get_source(),reg_slice->voxel_size,
+        iso_fa,slices[index]->vs,
+        reg_slice->get_source(),reg_slice->vs,
         (reg_slice->source_images.depth() == 1 ? tipl::reg::affine : tipl::reg::rigid_body),tipl::reg::cost_type::mutual_info));
     manual->arg = reg_slice->arg_min;
     manual->check_reg();
@@ -2365,12 +2365,12 @@ void tracking_window::on_SliceModality_currentIndexChanged(int index)
 
 
     ui->is_overlay->setChecked(current_slice->is_overlay);
-    ui->glSagSlider->setRange(0,int(current_slice->geometry[0]-1));
-    ui->glCorSlider->setRange(0,int(current_slice->geometry[1]-1));
-    ui->glAxiSlider->setRange(0,int(current_slice->geometry[2]-1));
-    ui->glSagBox->setRange(0,int(current_slice->geometry[0]-1));
-    ui->glCorBox->setRange(0,int(current_slice->geometry[1]-1));
-    ui->glAxiBox->setRange(0,int(current_slice->geometry[2]-1));
+    ui->glSagSlider->setRange(0,int(current_slice->dim[0]-1));
+    ui->glCorSlider->setRange(0,int(current_slice->dim[1]-1));
+    ui->glAxiSlider->setRange(0,int(current_slice->dim[2]-1));
+    ui->glSagBox->setRange(0,int(current_slice->dim[0]-1));
+    ui->glCorBox->setRange(0,int(current_slice->dim[1]-1));
+    ui->glAxiBox->setRange(0,int(current_slice->dim[2]-1));
 
 
     std::pair<float,float> range = current_slice->get_value_range();
@@ -2410,7 +2410,7 @@ void tracking_window::on_actionSave_T1W_T2W_images_triggered()
     if( filename.isEmpty())
         return;
     auto I = slice->source_images;
-    gz_nifti::save_to_file(filename.toStdString().c_str(),I,slice->voxel_size,slice->trans);
+    gz_nifti::save_to_file(filename.toStdString().c_str(),I,slice->vs,slice->trans);
 }
 
 void tracking_window::on_actionMark_Region_on_T1W_T2W_triggered()
