@@ -399,7 +399,7 @@ void CustomSliceModel::update(void)
     invT.identity();
     M.save_to_transform(invT.begin());
     T = tipl::inverse(invT);
-    handle->view_item[view_id].T = tipl::inverse(invT);
+    handle->view_item[view_id].T = T;
     handle->view_item[view_id].iT = invT;
 }
 // ---------------------------------------------------------------------------
@@ -477,6 +477,8 @@ void CustomSliceModel::load_mapping(const char* file_name)
         T = data;
         invT = data;
         invT.inv();
+        tipl::transformation_matrix<float> trans = invT;
+        trans.to_affine_transform(arg_min,handle->dim,handle->vs,geometry,voxel_size);
         handle->view_item[view_id].T = T;
         handle->view_item[view_id].iT = invT;
     }
