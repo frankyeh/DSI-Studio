@@ -1102,13 +1102,17 @@ void slice_view_scene::mouseReleaseEvent ( QGraphicsSceneMouseEvent * mouseEvent
         float dis = std::sqrt((double)distance2);
         float interval = 1.0f/(std::min<float>(16.0,display_ratio));
         for (float z = -dis; z <= dis; z += interval)
+        {
+            float zz = z*z;
             for (float y = -dis; y <= dis; y += interval)
+            {
+                float yy = y*y;
                 for (float x = -dis; x <= dis; x += interval)
-                    if (cur_tracking_window.current_slice->dim.is_valid(sel_coord[0][0] + x,
-                                                 sel_coord[0][1] + y, sel_coord[0][2] + z) && x*x +
-                            y*y + z*z <= distance2)
+                    if (x*x + yy + zz <= distance2)
                         points.push_back(tipl::vector<3,float>(sel_coord[0][0] + x,
                                             sel_coord[0][1] + y, sel_coord[0][2] + z));
+            }
+        }
     }
     break;
     case 3:
