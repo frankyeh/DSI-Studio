@@ -160,6 +160,33 @@ void RegionTableWidget::end_update(void)
     cur_tracking_window.connect(cur_tracking_window.regionWidget,SIGNAL(cellChanged(int,int)),cur_tracking_window.glWidget,SLOT(updateGL()));
 }
 
+void RegionTableWidget::add_row(int row,QString name,unsigned char feature,unsigned int color)
+{
+    insertRow(row);
+    QTableWidgetItem *item0 = new QTableWidgetItem(name);
+    QTableWidgetItem *item1 = new QTableWidgetItem(QString::number(int(feature)));
+    QTableWidgetItem *item2 = new QTableWidgetItem();
+
+    item1->setData(Qt::ForegroundRole,QBrush(Qt::white));
+    item0->setCheckState(Qt::Checked);
+    item2->setData(Qt::ForegroundRole,QBrush(Qt::white));
+    item2->setData(Qt::UserRole,0xFF000000 | color);
+
+
+    setItem(row, 0, item0);
+    setItem(row, 1, item1);
+    setItem(row, 2, item2);
+
+
+    openPersistentEditor(item1);
+    openPersistentEditor(item2);
+
+    setRowHeight(row,22);
+    setCurrentCell(row,0);
+
+    if(cur_tracking_window.ui->target->count())
+        cur_tracking_window.ui->target->setCurrentIndex(0);
+}
 void RegionTableWidget::add_region(QString name,unsigned char feature,unsigned int color)
 {
     if(color == 0x00FFFFFF || !color)
@@ -172,31 +199,7 @@ void RegionTableWidget::add_region(QString name,unsigned char feature,unsigned i
     regions.push_back(std::make_shared<ROIRegion>(cur_tracking_window.handle.get()));
     regions.back()->show_region.color = color;
     regions.back()->regions_feature = feature;
-
-    insertRow(int(regions.size())-1);
-    QTableWidgetItem *item0 = new QTableWidgetItem(name);
-    QTableWidgetItem *item1 = new QTableWidgetItem(QString::number(int(feature)));
-    QTableWidgetItem *item2 = new QTableWidgetItem();
-
-    item1->setData(Qt::ForegroundRole,QBrush(Qt::white));
-    item0->setCheckState(Qt::Checked);
-    item2->setData(Qt::ForegroundRole,QBrush(Qt::white));
-    item2->setData(Qt::UserRole,0xFF000000 | color);
-
-
-    setItem(int(regions.size())-1, 0, item0);
-    setItem(int(regions.size())-1, 1, item1);
-    setItem(int(regions.size())-1, 2, item2);
-
-
-    openPersistentEditor(item1);
-    openPersistentEditor(item2);
-
-    setRowHeight(int(regions.size())-1,22);
-    setCurrentCell(int(regions.size())-1,0);
-
-    if(cur_tracking_window.ui->target->count())
-        cur_tracking_window.ui->target->setCurrentIndex(0);
+    add_row(int(regions.size())-1,name,feature,color);
 }
 void RegionTableWidget::check_check_status(int row, int col)
 {
@@ -477,11 +480,14 @@ void RegionTableWidget::new_high_resolution_region(void)
 
 void RegionTableWidget::copy_region(void)
 {
-    unsigned int cur_row = currentRow();
-    add_region(item(cur_row,0)->text(),regions[cur_row]->regions_feature);
+    if(currentRow() < 0)
+        return;
+    unsigned int cur_row = uint32_t(currentRow());
     unsigned int color = regions.back()->show_region.color.color;
-    *regions.back() = *regions[cur_row];
-    regions.back()->show_region.color.color = color;
+    regions.insert(regions.begin() + cur_row + 1,std::make_shared<ROIRegion>(cur_tracking_window.handle.get()));
+    *regions[cur_row + 1] = *regions[cur_row];
+    regions[cur_row + 1]->show_region.color.color = color;
+    add_row(int(cur_row+1),item(currentRow(),0)->text(),regions.back()->regions_feature,color);
 }
 void load_nii_label(const char* filename,std::map<int,std::string>& label_map)
 {
@@ -941,54 +947,37 @@ void RegionTableWidget::move_up(void)
 {
     if(currentRow())
     {
-        regions[currentRow()].swap(regions[currentRow()-1]);
-
-        QString name = item(currentRow()-1,0)->text();
-        item(currentRow()-1,0)->setText(item(currentRow(),0)->text());
-        item(currentRow(),0)->setText(name);
-
-        closePersistentEditor(item(currentRow()-1,1));
-        closePersistentEditor(item(currentRow(),1));
-        closePersistentEditor(item(currentRow()-1,2));
-        closePersistentEditor(item(currentRow(),2));
-        item(currentRow()-1,1)->setData(Qt::DisplayRole,regions[currentRow()-1]->regions_feature);
-        item(currentRow(),1)->setData(Qt::DisplayRole,regions[currentRow()]->regions_feature);
-        item(currentRow()-1,2)->setData(Qt::UserRole,regions[currentRow()-1]->show_region.color.color);
-        item(currentRow(),2)->setData(Qt::UserRole,regions[currentRow()]->show_region.color.color);
-        openPersistentEditor(item(currentRow()-1,1));
-        openPersistentEditor(item(currentRow(),1));
-        openPersistentEditor(item(currentRow()-1,2));
-        openPersistentEditor(item(currentRow(),2));
+        regions[uint32_t(currentRow())].swap(regions[uint32_t(currentRow())-1]);
+        begin_update();
+        for(int i = 0;i < 3;++i)
+        {
+            QTableWidgetItem* item0 = takeItem(currentRow()-1,i);
+            QTableWidgetItem* item1 = takeItem(currentRow(),i);
+            setItem(currentRow()-1,i,item1);
+            setItem(currentRow(),i,item0);
+        }
+        end_update();
         setCurrentCell(currentRow()-1,0);
     }
-    emit need_update();
+
 }
 
 void RegionTableWidget::move_down(void)
 {
-    if(currentRow()+1 < regions.size())
+    if(currentRow()+1 < int(regions.size()))
     {
-        regions[currentRow()].swap(regions[currentRow()+1]);
-
-        QString name = item(currentRow()+1,0)->text();
-        item(currentRow()+1,0)->setText(item(currentRow(),0)->text());
-        item(currentRow(),0)->setText(name);
-
-        closePersistentEditor(item(currentRow()+1,1));
-        closePersistentEditor(item(currentRow(),1));
-        closePersistentEditor(item(currentRow()+1,2));
-        closePersistentEditor(item(currentRow(),2));
-        item(currentRow()+1,1)->setData(Qt::DisplayRole,regions[currentRow()+1]->regions_feature);
-        item(currentRow(),1)->setData(Qt::DisplayRole,regions[currentRow()]->regions_feature);
-        item(currentRow()+1,2)->setData(Qt::UserRole,regions[currentRow()+1]->show_region.color.color);
-        item(currentRow(),2)->setData(Qt::UserRole,regions[currentRow()]->show_region.color.color);
-        openPersistentEditor(item(currentRow()+1,1));
-        openPersistentEditor(item(currentRow(),1));
-        openPersistentEditor(item(currentRow()+1,2));
-        openPersistentEditor(item(currentRow(),2));
+        regions[uint32_t(currentRow())].swap(regions[uint32_t(currentRow())+1]);
+        begin_update();
+        for(int i = 0;i < 3;++i)
+        {
+            QTableWidgetItem* item0 = takeItem(currentRow()+1,i);
+            QTableWidgetItem* item1 = takeItem(currentRow(),i);
+            setItem(currentRow()+1,i,item1);
+            setItem(currentRow(),i,item0);
+        }
+        end_update();
         setCurrentCell(currentRow()+1,0);
     }
-    emit need_update();
 }
 
 void RegionTableWidget::save_region(void)

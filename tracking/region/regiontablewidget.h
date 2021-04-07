@@ -72,6 +72,7 @@ public:
 
     QColor currentRowColor(void);
     void add_region_from_atlas(std::shared_ptr<atlas> at,unsigned int roi_is);
+    void add_row(int row,QString name,unsigned char type,unsigned int color = 0x00FFFFFF);
     void add_region(QString name,unsigned char type,unsigned int color = 0x00FFFFFF);
     void begin_update(void);
     void end_update(void);
@@ -80,7 +81,8 @@ public:
     template<typename type>
     void add_points(std::vector<tipl::vector<3,type> >& points,bool erase,bool all,float resolution = 1.0)
     {
-        if (currentRow() < 0 || currentRow() >= regions.size())
+        if (currentRow() < 0 || currentRow() >= int(regions.size()) ||
+            item(currentRow(),0)->checkState() != Qt::Checked)
             return;
         if(all)
         {
