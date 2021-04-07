@@ -2698,7 +2698,10 @@ void tracking_window::on_actionInsert_Axial_Pictures_triggered()
     CustomSliceModel* reg_slice_ptr = dynamic_cast<CustomSliceModel*>(slices.back().get());
     if(!reg_slice_ptr)
         return;
+    reg_slice_ptr->arg_min.rotation[1] = 3.1415926f;
+    reg_slice_ptr->update_transform();
     QMessageBox::information(this,"DSI Studio","Press Ctrl+A and then hold LEFT/RIGHT button to MOVE/RESIZE slice close to the target before using [Slices][Adjust Mapping]");
+    slice_need_update = true;
 }
 
 void tracking_window::on_actionInsert_Coronal_Pictures_triggered()
@@ -2710,7 +2713,8 @@ void tracking_window::on_actionInsert_Coronal_Pictures_triggered()
     CustomSliceModel* reg_slice_ptr = dynamic_cast<CustomSliceModel*>(slices.back().get());
     if(!reg_slice_ptr)
         return;
-
+    reg_slice_ptr->arg_min.rotation[1] = 0.0f;
+    reg_slice_ptr->update_transform();
     tipl::flip_y(reg_slice_ptr->picture);
     tipl::flip_y(reg_slice_ptr->source_images);
     tipl::swap_yz(reg_slice_ptr->source_images);
@@ -2732,7 +2736,8 @@ void tracking_window::on_actionInsert_Sagittal_Picture_triggered()
     CustomSliceModel* reg_slice_ptr = dynamic_cast<CustomSliceModel*>(slices.back().get());
     if(!reg_slice_ptr)
         return;
-
+    reg_slice_ptr->arg_min.rotation[1] = 0.0f;
+    reg_slice_ptr->update_transform();
     tipl::flip_y(reg_slice_ptr->picture);
     tipl::flip_y(reg_slice_ptr->source_images);
     tipl::swap_xy(reg_slice_ptr->source_images);
