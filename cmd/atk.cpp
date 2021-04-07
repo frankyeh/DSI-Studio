@@ -22,7 +22,7 @@ std::string run_auto_track(
                     const std::vector<std::string>& file_list,
                     const std::vector<unsigned int>& track_id,
                     float length_ratio,
-                    float tolerance,
+                    std::string tolerance_string,
                     float track_voxel_ratio,
                     int interpolation,int tip,
                     bool export_stat,
@@ -95,10 +95,12 @@ int atk(void)
             std::cout << " " << fib.tractography_name_list[track_id[index]];
         std::cout << std::endl;
     }
+
+
     int progress;
     std::string error = run_auto_track(file_list,track_id,
                                 po.get("length_ratio",1.25f),
-                                po.get("tolerance",16.0f),
+                                po.get("tolerance","16,18,20"),
                                 po.get("track_voxel_ratio",2),
                                 po.get("interpolation",2),
                                 po.get("tip",32),
@@ -116,6 +118,6 @@ int atk(void)
         }
         return 0;
     }
-    std::cerr << error << std::endl;
+    std::cerr << "ERROR:" << error << std::endl;
     return 1;
 }

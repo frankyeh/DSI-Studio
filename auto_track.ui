@@ -470,15 +470,15 @@
                 </spacer>
                </item>
                <item>
-                <widget class="QDoubleSpinBox" name="tolerance">
-                 <property name="minimum">
-                  <double>1.000000000000000</double>
+                <widget class="QLineEdit" name="tolerance">
+                 <property name="maximumSize">
+                  <size>
+                   <width>70</width>
+                   <height>16777215</height>
+                  </size>
                  </property>
-                 <property name="maximum">
-                  <double>100.000000000000000</double>
-                 </property>
-                 <property name="value">
-                  <double>16.000000000000000</double>
+                 <property name="text">
+                  <string>16,18,20</string>
                  </property>
                 </widget>
                </item>

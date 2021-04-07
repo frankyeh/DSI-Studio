@@ -122,7 +122,7 @@ std::string run_auto_track(
                     const std::vector<std::string>& file_list,
                     const std::vector<unsigned int>& track_id,
                     float length_ratio,
-                    float tolerance,
+                    std::string tolerance_string,
                     float track_voxel_ratio,
                     int interpolation,int tip,
                     bool export_stat,
@@ -132,6 +132,24 @@ std::string run_auto_track(
                     bool export_template_trk,
                     int& progress)
 {
+    std::vector<float> tolerance;
+    {
+        std::istringstream in(tolerance_string);
+        std::string num;
+        while(std::getline(in,num,','))
+        {
+            std::istringstream in2(num);
+            float t;
+            if(!(in2 >> t))
+            {
+                return std::string("Cannot parse tolerance number: ")+num;
+            }
+            tolerance.push_back(t);
+        }
+        if(tolerance.empty())
+            return "Please assign tolerance distance";
+    }
+
     std::vector<std::string> reports(track_id.size());
     std::vector<std::vector<std::string> > stat_files(track_id.size());
     std::string dir = QFileInfo(file_list.front().c_str()).absolutePath().toStdString();
@@ -171,9 +189,9 @@ std::string run_auto_track(
             if(!QFileInfo(fib_file_name.c_str()).exists() || overwrite)
             {
                 if (!src.load_from_file(file_list[i].c_str()))
-                    return std::string("ERROR at ") + cur_file_base_name + ":" + src.error_msg;
+                    return src.error_msg + (" at ") + cur_file_base_name;
                 if(!src.is_human_data())
-                    return std::string("ERROR at ") + cur_file_base_name + ": seems not human data";
+                    return cur_file_base_name + " is not human data";
                 if(!check_other_src(src))
                     return std::string("ERROR at ") + cur_file_base_name;
                 src.voxel.half_sphere = src.is_dsi_half_sphere();
@@ -275,16 +293,19 @@ std::string run_auto_track(
                 if(!overwrite && has_trk_file)
                     tract_model.load_from_file(trk_file_name.c_str());
 
-                if(tract_model.get_visible_track_count() == 0)
+                // each iteration increases tolerance
+                for(size_t tracking_iteration = 0;tracking_iteration < tolerance.size() &&
+                                                  !tract_model.get_visible_track_count();++tracking_iteration)
                 {
+                    float cur_tolerance = tolerance[tracking_iteration];
                     ThreadData thread(handle.get());
                     {
                         prog_init p("preparing tracking ",track_name.c_str());
                         thread.param.tip_iteration = uint8_t(tip);
                         thread.param.check_ending = !QString(track_name.c_str()).contains("Cingulum");
                         thread.param.stop_by_tract = 1;
-                        if(!thread.roi_mgr->setAtlas(track_id[j],tolerance/handle->vs[0]))
-                            return std::string("ERROR at ") + fib_file_name + ":" +handle->error_msg;
+                        if(!thread.roi_mgr->setAtlas(track_id[j],cur_tolerance/handle->vs[0]))
+                            return handle->error_msg + " at " + fib_file_name;
                         thread.param.termination_count = uint32_t(track_voxel_ratio*thread.roi_mgr->seeds.size());
                         thread.param.max_seed_count = thread.param.termination_count*5000; //yield rate easy:1/100 hard:1/5000
                         // report
@@ -296,14 +317,13 @@ std::string run_auto_track(
                     // run tracking
                     prog_init p("tracking ",track_name.c_str());
                     thread.run(tract_model.get_fib(),std::thread::hardware_concurrency(),false);
-
-                    tract_model.report += thread.report.str();
-                    tract_model.report += " Shape analysis (Yeh, Neuroimage, 2020) was conducted to derive shape metrics for tractography.";
+                    std::string report = tract_model.report + thread.report.str();
+                    report += " Shape analysis (Yeh, Neuroimage, 2020) was conducted to derive shape metrics for tractography.";
                     if(reports[j].empty())
-                        reports[j] = tract_model.report;
+                        reports[j] = report;
 
                     {
-                        std::string temp_report = tract_model.report;
+                        std::string temp_report = report;
                         auto iter = temp_report.find(track_name);
                         temp_report.replace(iter,track_name.length(),targets);
                         // remove "A seeding region was placed at xxxxx"
@@ -334,7 +354,6 @@ std::string run_auto_track(
                             thread.end_thread();
                             break;
                         }
-
                     }
                     if(prog_aborted())
                         return std::string();
@@ -343,19 +362,28 @@ std::string run_auto_track(
 
                     if(no_result || tract_model.get_visible_track_count() == 0)
                     {
-                        std::ofstream out(no_result_file_name.c_str());
+                        tract_model.clear();
                         continue;
                     }
+
                     tract_model.delete_repeated(1.0f);
 
                     if(export_trk)
                     {
+                        tract_model.report = report;
                         if(!tract_model.save_tracts_to_file(trk_file_name.c_str()))
                             return std::string("fail to save tractography file:")+trk_file_name;
                         if(export_template_trk &&
                            !tract_model.save_tracts_in_template_space(template_trk_file_name.c_str()))
                                 return std::string("fail to save template tractography file:")+trk_file_name;
                     }
+                    break;
+                }
+
+                if(tract_model.get_visible_track_count() == 0)
+                {
+                    std::ofstream out(no_result_file_name.c_str());
+                    continue;
                 }
 
                 if(export_stat && (overwrite || QFileInfo(stat_file_name.c_str()).size() == 0))
@@ -497,7 +525,6 @@ void auto_track::on_run_clicked()
 {
     std::vector<std::string> file_list2;
     std::vector<unsigned int> track_id;
-
     QModelIndexList indexes = ui->candidate_list_view->selectionModel()->selectedRows();
     for(int i = 0;i < indexes.count();++i)
         track_id.push_back(uint32_t(indexes[i].row()));
@@ -520,9 +547,11 @@ void auto_track::on_run_clicked()
     prog = 0;
     timer->start(5000);
     begin_prog("");
+
+
     std::string error = run_auto_track(file_list2,track_id,
                    float(ui->gqi_l->value()),
-                   float(ui->tolerance->value()),
+                   ui->tolerance->text().toStdString(),
                    float(ui->track_voxel_ratio->value()),
                    ui->interpolation->currentIndex(),ui->pruning->value(),
                    ui->export_stat->isChecked(),
