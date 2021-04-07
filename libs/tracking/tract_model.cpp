@@ -1776,17 +1776,59 @@ void TractModel::cut(float select_angle,const std::vector<tipl::vector<3,float> 
     redo_size.clear();
 
 }
-void TractModel::cut_by_slice(unsigned int dim, unsigned int pos,bool greater)
+
+void get_cut_points(const std::vector<std::vector<float> >& tract_data,
+                    unsigned int dim, unsigned int pos,bool greater,
+                    std::vector<std::vector<bool> >& has_cut)
 {
+    has_cut.resize(tract_data.size());
+    tipl::par_for(tract_data.size(),[&](unsigned int i)
+    {
+        has_cut[i].resize(tract_data[i].size()/3);
+        for(unsigned int j = 0,t = 0;j < tract_data[i].size();j += 3,++t)
+        {
+            has_cut[i][t] = ((tract_data[i][j+dim] < pos) ^ greater);
+        }
+    });
+}
+
+void get_cut_points(const std::vector<std::vector<float> >& tract_data,
+                    unsigned int dim, unsigned int pos,bool greater,
+                    const tipl::matrix<4,4,float>& T,
+                    std::vector<std::vector<bool> >& has_cut)
+{
+    has_cut.resize(tract_data.size());
+    tipl::vector<3> sr(T.begin()+dim*4);
+    float shift = T[3+dim*4];
+    tipl::par_for(tract_data.size(),[&](unsigned int i)
+    {
+        has_cut[i].resize(tract_data[i].size()/3);
+        for(unsigned int j = 0,t = 0;j < tract_data[i].size();j += 3,++t)
+        {
+            tipl::vector<3> v(&tract_data[i][j]);
+            float p = v*sr;
+            p += shift;
+            has_cut[i][t] = ((p < pos) ^ greater);
+        }
+    });
+}
+
+void TractModel::cut_by_slice(unsigned int dim, unsigned int pos,bool greater,const tipl::matrix<4,4,float>* T)
+{
+    std::vector<std::vector<bool> > has_cut;
+    if(T == nullptr)
+        get_cut_points(tract_data,dim,pos,greater,has_cut);
+    else
+        get_cut_points(tract_data,dim,pos,greater,*T,has_cut);
     std::vector<std::vector<float> > new_tract;
     std::vector<unsigned int> new_tract_color;
     std::vector<unsigned int> tract_to_delete;
     for(unsigned int i = 0;i < tract_data.size();++i)
     {
         bool adding = false;
-        for(unsigned int j = 0;j < tract_data[i].size();j += 3)
+        for(unsigned int j = 0,t = 0;j < tract_data[i].size();j += 3,++t)
         {
-            if((tract_data[i][j+dim] < pos) ^ greater)
+            if(has_cut[i][t])
             {
                 if(!adding)
                     continue;

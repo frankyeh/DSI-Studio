@@ -99,7 +99,7 @@ public:
                   bool delete_track);
         void cut(float select_angle,const std::vector<tipl::vector<3,float> > & dirs,
                   const tipl::vector<3,float>& from_pos);
-        void cut_by_slice(unsigned int dim, unsigned int pos,bool greater);
+        void cut_by_slice(unsigned int dim, unsigned int pos,bool greater,const tipl::matrix<4,4,float>* T = nullptr);
         void paint(float select_angle,const std::vector<tipl::vector<3,float> > & dirs,
                   const tipl::vector<3,float>& from_pos,
                   unsigned int color);

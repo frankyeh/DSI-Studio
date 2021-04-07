@@ -1436,12 +1436,17 @@ void TractTableWidget::undo_tracts(void)
 }
 void TractTableWidget::cut_by_slice(unsigned char dim,bool greater)
 {
-    cur_tracking_window.ui->SliceModality->setCurrentIndex(0);
     for(unsigned int index = 0;index < tract_models.size();++index)
     {
         if(item(index,0)->checkState() != Qt::Checked)
             continue;
-        tract_models[index]->cut_by_slice(dim,cur_tracking_window.current_slice->slice_pos[dim],greater);
+        if(cur_tracking_window.current_slice->is_diffusion_space)
+            tract_models[index]->cut_by_slice(dim,cur_tracking_window.current_slice->slice_pos[dim],greater);
+        else
+        {
+            tract_models[index]->cut_by_slice(dim,cur_tracking_window.current_slice->slice_pos[dim],greater,
+                                                  &cur_tracking_window.current_slice->invT);
+        }
         item(index,1)->setText(QString::number(tract_models[index]->get_visible_track_count()));
         item(index,2)->setText(QString::number(tract_models[index]->get_deleted_track_count()));
     }
