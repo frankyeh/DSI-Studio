@@ -1200,9 +1200,9 @@
      <property name="title">
       <string>Insert Picture</string>
      </property>
+     <addaction name="actionInsert_Sagittal_Picture"/>
      <addaction name="actionInsert_Coronal_Pictures"/>
      <addaction name="actionInsert_Axial_Pictures"/>
-     <addaction name="actionInsert_Sagittal_Picture"/>
     </widget>
     <addaction name="actionInsert_T1_T2"/>
     <addaction name="actionInsert_MNI_images"/>
@@ -3997,7 +3997,7 @@ Tracking</string>
      <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
    </property>
    <property name="text">
-    <string>Insert Coronal Pictures...</string>
+    <string>Insert Coronal Picture...</string>
    </property>
   </action>
   <action name="actionInsert_Axial_Pictures">
@@ -4006,7 +4006,7 @@ Tracking</string>
      <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
    </property>
    <property name="text">
-    <string>Insert Axial Pictures...</string>
+    <string>Insert Axial Picture...</string>
    </property>
   </action>
   <action name="actionInsert_Sagittal_Picture">

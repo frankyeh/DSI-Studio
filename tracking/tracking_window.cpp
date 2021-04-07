@@ -776,7 +776,7 @@ bool tracking_window::command(QString cmd,QString param,QString param2)
         CustomSliceModel* cur_slice = (CustomSliceModel*)slices.back().get();
         if(cur_slice->thread.get())
             cur_slice->thread->wait();
-        cur_slice->update();
+        cur_slice->update_transform();
 
         return true;
     }
@@ -1836,14 +1836,14 @@ void tracking_window::on_actionAdjust_Mapping_triggered()
     std::shared_ptr<manual_alignment> manual(new manual_alignment(this,
         iso_fa,slices[index]->vs,
         reg_slice->get_source(),reg_slice->vs,
-        (reg_slice->source_images.depth() == 1 ? tipl::reg::affine : tipl::reg::rigid_body),tipl::reg::cost_type::mutual_info));
+        (reg_slice->is_picture() ? tipl::reg::affine : tipl::reg::rigid_body),tipl::reg::cost_type::mutual_info));
     manual->arg = reg_slice->arg_min;
     manual->check_reg();
     if(manual->exec() != QDialog::Accepted)
         return;
     reg_slice->terminate();
     reg_slice->arg_min = manual->arg;
-    reg_slice->update();
+    reg_slice->update_transform();
     reg_slice->is_diffusion_space = false;
     glWidget->updateGL();
 }
@@ -2008,7 +2008,7 @@ void tracking_window::check_reg(void)
         if(reg_slice && reg_slice->running)
         {
             all_ended = false;
-            reg_slice->update();
+            reg_slice->update_transform();
         }
     }
     slice_need_update = true;
@@ -2698,15 +2698,6 @@ void tracking_window::on_actionInsert_Axial_Pictures_triggered()
     CustomSliceModel* reg_slice_ptr = dynamic_cast<CustomSliceModel*>(slices.back().get());
     if(!reg_slice_ptr)
         return;
-    if(reg_slice_ptr->arg_min.rotation[1] == 0.0f)
-    {
-        reg_slice_ptr->arg_min.rotation[0] = 0.0f;
-        reg_slice_ptr->arg_min.rotation[1] = 3.1415926f;
-        reg_slice_ptr->arg_min.rotation[2] = 0.0f;
-        reg_slice_ptr->update();
-    }
-    glWidget->update();
-    slice_need_update = true;
     QMessageBox::information(this,"DSI Studio","Press Ctrl+A and then hold LEFT/RIGHT button to MOVE/RESIZE slice close to the target before using [Slices][Adjust Mapping]");
 }
 
@@ -2719,15 +2710,15 @@ void tracking_window::on_actionInsert_Coronal_Pictures_triggered()
     CustomSliceModel* reg_slice_ptr = dynamic_cast<CustomSliceModel*>(slices.back().get());
     if(!reg_slice_ptr)
         return;
-    if(reg_slice_ptr->arg_min.rotation[0] == 0.0f)
-    {
-        reg_slice_ptr->arg_min.rotation[0] = -3.1415926f/2.0f;
-        reg_slice_ptr->arg_min.rotation[1] = 0.0f;
-        reg_slice_ptr->arg_min.rotation[2] = 0.0f;
-        reg_slice_ptr->update();
-    }
-    glWidget->update();
-    slice_need_update = true;
+
+    tipl::flip_y(reg_slice_ptr->picture);
+    tipl::flip_y(reg_slice_ptr->source_images);
+    tipl::swap_yz(reg_slice_ptr->source_images);
+    std::swap(reg_slice_ptr->vs[1],reg_slice_ptr->vs[2]);
+    reg_slice_ptr->update_image();
+    ui->SliceModality->setCurrentIndex(0);
+    ui->SliceModality->setCurrentIndex(int(handle->view_item.size())-1);
+    on_glCorView_clicked();
 }
 
 
@@ -2741,13 +2732,14 @@ void tracking_window::on_actionInsert_Sagittal_Picture_triggered()
     CustomSliceModel* reg_slice_ptr = dynamic_cast<CustomSliceModel*>(slices.back().get());
     if(!reg_slice_ptr)
         return;
-    if(reg_slice_ptr->arg_min.rotation[0] == 0.0f)
-    {
-        reg_slice_ptr->arg_min.rotation[0] = 3.1415926f/2.0f;
-        reg_slice_ptr->arg_min.rotation[1] = 3.1415926f;
-        reg_slice_ptr->arg_min.rotation[2] = -3.1415926f/2.0f;
-        reg_slice_ptr->update();
-    }
-    glWidget->update();
-    slice_need_update = true;
+
+    tipl::flip_y(reg_slice_ptr->picture);
+    tipl::flip_y(reg_slice_ptr->source_images);
+    tipl::swap_xy(reg_slice_ptr->source_images);
+    tipl::swap_xz(reg_slice_ptr->source_images);
+    std::swap(reg_slice_ptr->vs[0],reg_slice_ptr->vs[2]);
+    reg_slice_ptr->update_image();
+    ui->SliceModality->setCurrentIndex(0);
+    ui->SliceModality->setCurrentIndex(int(handle->view_item.size())-1);
+    on_glSagView_clicked();
 }

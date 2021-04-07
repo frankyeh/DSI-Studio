@@ -276,7 +276,9 @@ void slice_view_scene::get_view_image(QImage& new_view_image,float display_ratio
     cur_tracking_window.current_slice->get_slice(slice_image,
                                                  cur_tracking_window.cur_dim,
                                                  cur_tracking_window.overlay_slices);
-    if(!slice_image.empty())
+    if(slice_image.empty())
+        return;
+
     {
         float grey = slice_image[0].r;
         grey += slice_image[0].g;

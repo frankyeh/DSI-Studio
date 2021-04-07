@@ -66,7 +66,7 @@ bool get_t1t2_nifti(std::shared_ptr<fib_data> handle,
         std::cout << convert[8] << " " << convert[9] << " " << convert[10] << " " << convert[11] << std::endl;
     }
     nifti_geo = t1t2_slices->source_images.geometry();
-    nifti_vs = t1t2_slices->voxel_size;
+    nifti_vs = t1t2_slices->vs;
     convert = t1t2_slices->invT;
     std::cout << "T1T2 dimension: " << nifti_geo << std::endl;
     std::cout << "T1T2 voxel size: " << nifti_vs << std::endl;
@@ -470,7 +470,7 @@ void trk_post(std::shared_ptr<fib_data> handle,std::shared_ptr<TractModel> tract
                     return;
                 }
                 new_slice.thread->wait();
-                new_slice.update();
+                new_slice.update_transform();
                 std::cout << "applying linear registration." << std::endl;
                 std::cout << new_slice.T[0] << " " << new_slice.T[1] << " " << new_slice.T[2] << " " << new_slice.T[3] << std::endl;
                 std::cout << new_slice.T[4] << " " << new_slice.T[5] << " " << new_slice.T[6] << " " << new_slice.T[7] << std::endl;

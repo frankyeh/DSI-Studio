@@ -28,10 +28,12 @@ manual_alignment::manual_alignment(QWidget *parent,
     tipl::reg::get_bound(from,to,arg,b_upper,b_lower,reg_type,tipl::reg::large_bound);
 
     ui->setupUi(this);
+    ui->options->hide();
+    ui->menuBar->hide();
     ui->reg_type->setCurrentIndex(reg_type == tipl::reg::rigid_body? 1: 2);
     ui->cost_type->setCurrentIndex(cost_function == tipl::reg::mutual_info ? 1 : 0);
-
-
+    if(to.depth() == 1 || to.width() == 1 || to.height() == 1) // turn of search for slice wise registration
+        ui->search_count->setValue(0);
     ui->sag_view->setScene(&scene[0]);
     ui->cor_view->setScene(&scene[1]);
     ui->axi_view->setScene(&scene[2]);
@@ -40,15 +42,15 @@ manual_alignment::manual_alignment(QWidget *parent,
 
     load_param();
 
-    ui->sag_slice_pos->setMaximum(to.geometry()[0]-1);
+    ui->sag_slice_pos->setMaximum(to.width()-1);
     ui->sag_slice_pos->setMinimum(0);
-    ui->sag_slice_pos->setValue(to.geometry()[0] >> 1);
-    ui->cor_slice_pos->setMaximum(to.geometry()[1]-1);
+    ui->sag_slice_pos->setValue(to.width() >> 1);
+    ui->cor_slice_pos->setMaximum(to.height()-1);
     ui->cor_slice_pos->setMinimum(0);
-    ui->cor_slice_pos->setValue(to.geometry()[1] >> 1);
-    ui->axi_slice_pos->setMaximum(to.geometry()[2]-1);
+    ui->cor_slice_pos->setValue(to.height() >> 1);
+    ui->axi_slice_pos->setMaximum(to.depth()-1);
     ui->axi_slice_pos->setMinimum(0);
-    ui->axi_slice_pos->setValue(to.geometry()[2] >> 1);
+    ui->axi_slice_pos->setValue(to.depth() >> 1);
 
 
 
@@ -69,6 +71,17 @@ manual_alignment::manual_alignment(QWidget *parent,
 
 }
 
+void manual_alignment::add_images(std::shared_ptr<fib_data> handle)
+{
+    for(size_t i = 0;i < handle->view_item.size();++i)
+        if(handle->view_item[i].name != "color")
+        {
+            tipl::transformation_matrix<float> T(handle->view_item[i].T);
+            add_image(handle->view_item[i].name,
+                      handle->view_item[i].image_data,
+                      T);
+        }
+}
 
 void manual_alignment::connect_arg_update()
 {
@@ -259,6 +272,7 @@ void manual_alignment::on_buttonBox_accepted()
     if(timer)
         timer->stop();
     update_image(); // to update the affine matrix
+    accept();
 }
 
 void manual_alignment::on_buttonBox_rejected()
@@ -266,7 +280,9 @@ void manual_alignment::on_buttonBox_rejected()
     thread.terminated = true;
     if(timer)
         timer->stop();
+    reject();
 }
+
 
 void manual_alignment::on_rerun_clicked()
 {
@@ -286,20 +302,19 @@ void manual_alignment::on_rerun_clicked()
     }
     load_param();
 
-    int search = ui->search->value();
-    thread.run([this,cost,search]()
+    int search_count = ui->search_count->value();
+    thread.run([this,cost,search_count]()
     {
         if(cost == tipl::reg::mutual_info)
         {
-            tipl::reg::linear(from,from_vs,to,to_vs,arg,reg_type,tipl::reg::faster<tipl::reg::mutual_information>(),thread.terminated,0.01,search,tipl::reg::large_bound);
-            tipl::reg::linear(from,from_vs,to,to_vs,arg,reg_type,tipl::reg::faster<tipl::reg::mutual_information>(),thread.terminated,0.001,search,tipl::reg::large_bound);
+            tipl::reg::linear2(from,from_vs,to,to_vs,arg,reg_type,tipl::reg::faster<tipl::reg::mutual_information>(),thread.terminated,0.01,search_count,tipl::reg::large_bound);
+            tipl::reg::linear2(from,from_vs,to,to_vs,arg,reg_type,tipl::reg::faster<tipl::reg::mutual_information>(),thread.terminated,0.001,search_count,tipl::reg::large_bound);
         }
         else
         {
-            tipl::reg::linear(from,from_vs,to,to_vs,arg,reg_type,tipl::reg::faster<tipl::reg::correlation>(),thread.terminated,0.01,search,tipl::reg::large_bound);
-            tipl::reg::linear(from,from_vs,to,to_vs,arg,reg_type,tipl::reg::faster<tipl::reg::correlation>(),thread.terminated,0.001,search,tipl::reg::large_bound);
+            tipl::reg::linear2(from,from_vs,to,to_vs,arg,reg_type,tipl::reg::faster<tipl::reg::correlation>(),thread.terminated,0.01,search_count,tipl::reg::large_bound);
+            tipl::reg::linear2(from,from_vs,to,to_vs,arg,reg_type,tipl::reg::faster<tipl::reg::correlation>(),thread.terminated,0.001,search_count,tipl::reg::large_bound);
         }
-
     });
     if(timer)
         timer->start();
@@ -310,19 +325,6 @@ void manual_alignment::on_switch_view_clicked()
 {
     ui->blend_pos->setValue(ui->blend_pos->value() > ui->blend_pos->maximum()/2 ? 0:ui->blend_pos->maximum());
 }
-
-void manual_alignment::on_save_warpped_clicked()
-{
-    QString filename = QFileDialog::getSaveFileName(
-            this,"Save Warpping Image","","Images (*.nii *nii.gz);;All files (*)" );
-    if(filename.isEmpty())
-        return;
-
-    tipl::image<float,3> I(to.geometry());
-    tipl::resample(from_original,I,iT,is_label_image(from_original) ? tipl::nearest : tipl::cubic);
-    gz_nifti::save_to_file(filename.toStdString().c_str(),I,to_vs,nifti_srow);
-}
-
 
 void manual_alignment::on_reg_type_currentIndexChanged(int index)
 {
@@ -338,4 +340,30 @@ void manual_alignment::on_reg_type_currentIndexChanged(int index)
         ui->scaling_group->setEnabled(true);
         ui->tilting_group->setEnabled(true);
     }
+}
+
+
+void manual_alignment::on_actionSave_Warpped_Image_triggered()
+{
+    QString filename = QFileDialog::getSaveFileName(
+            this,"Save Warpping Image","","Images (*.nii *nii.gz);;All files (*)" );
+    if(filename.isEmpty())
+        return;
+
+    tipl::image<float,3> I(to.geometry());
+    tipl::resample(from_original,I,iT,is_label_image(from_original) ? tipl::nearest : tipl::cubic);
+    gz_nifti::save_to_file(filename.toStdString().c_str(),I,to_vs,nifti_srow);
+}
+
+void manual_alignment::on_advance_options_clicked()
+{
+    if(ui->options->isVisible())
+        ui->options->hide();
+    else
+        ui->options->show();
+}
+
+void manual_alignment::on_files_clicked()
+{
+    ui->menu_File->popup(QCursor::pos());
 }

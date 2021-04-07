@@ -10,6 +10,7 @@ namespace Ui {
 class manual_alignment;
 }
 
+class fib_data;
 
 class manual_alignment : public QDialog
 {
@@ -24,6 +25,10 @@ public:
     tipl::color_image buffer[3];
     QImage slice_image[3];
     tipl::reg::reg_type reg_type;
+public:
+    std::vector<tipl::image<float,3> > other_images;
+    std::vector<std::string> other_images_name;
+    std::vector<tipl::transformation_matrix<float> > other_image_T;
 private:
     tipl::thread thread;
 private:
@@ -43,6 +48,13 @@ public:
     ~manual_alignment();
     void connect_arg_update();
     void disconnect_arg_update();
+    void add_image(const std::string& name,tipl::image<float,3> new_image,const tipl::transformation_matrix<float>& T)
+    {
+        other_images_name.push_back(name);
+        other_images.push_back(std::move(new_image));
+        other_image_T.push_back(T);
+    }
+    void add_images(std::shared_ptr<fib_data> handle);
 private slots:
     void slice_pos_moved();
     void param_changed();
@@ -50,13 +62,16 @@ private slots:
 
     void on_buttonBox_rejected();
 
-
-
     void on_switch_view_clicked();
 
-    void on_save_warpped_clicked();
 
     void on_reg_type_currentIndexChanged(int index);
+
+    void on_actionSave_Warpped_Image_triggered();
+
+    void on_advance_options_clicked();
+
+    void on_files_clicked();
 
 public slots:
     void on_rerun_clicked();

@@ -35,7 +35,7 @@ public:
                            unsigned char,
                            const std::vector<std::shared_ptr<SliceModel> >& overlay_slices) const;
     tipl::const_pointer_image<float, 3> get_source(void) const;
-
+    bool is_picture(void) const{return dim[0] == 1 || dim[1] == 1 || dim[2] == 1;}
 public:
     template<typename value_type1,typename value_type2>
     void toDiffusionSpace(unsigned char cur_dim,value_type1 x, value_type1 y,
@@ -127,7 +127,7 @@ public:
     bool is_mni_image = false; // only used in loading mni image to the native space
     void terminate(void);
     void argmin(tipl::reg::reg_type reg_type);
-    void update(void);
+    void update_transform(void);
 public:
     CustomSliceModel(fib_data* new_handle);
     ~CustomSliceModel(void)
@@ -143,6 +143,7 @@ public:
     tipl::image<float, 3> source_images;
     tipl::image<float, 3> skull_removed_images;
     tipl::color_image picture;
+    void update_image(void);
     virtual void get_slice(tipl::color_image& image,
                            unsigned char,
                            const std::vector<std::shared_ptr<SliceModel> >& overlay_slices) const;

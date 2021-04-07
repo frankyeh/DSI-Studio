@@ -295,7 +295,7 @@ void RegionTableWidget::draw_region(const tipl::color_image& slice_image,float d
         QImage qimage(reinterpret_cast<const unsigned char*>(&*slice_image.begin()),
                       slice_image.width(),slice_image.height(),QImage::Format_RGB32);
         // make sure that qimage get a hard copy
-        qimage.setPixel(0,0,qimage.pixel(0,0));
+        qimage.detach();
         scaled_image = qimage.scaled(int(slice_image.width()*display_ratio),
                                             int(slice_image.height()*display_ratio));
         return;

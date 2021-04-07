@@ -97,12 +97,13 @@ CustomSliceModel::CustomSliceModel(fib_data* new_handle):
 }
 // ---------------------------------------------------------------------------
 void CustomSliceModel::get_slice(tipl::color_image& image,
-                           unsigned char dim,
+                           unsigned char cur_dim,
                            const std::vector<std::shared_ptr<SliceModel> >& overlay_slices) const
 {
-    if(picture.empty())
-        return SliceModel::get_slice(image,dim,overlay_slices);
-    image = picture;
+    if(!picture.empty() && dim[cur_dim] == 1)
+        image = picture;
+    else
+        return SliceModel::get_slice(image,cur_dim,overlay_slices);
 }
 // ---------------------------------------------------------------------------
 void initial_LPS_nifti_srow(tipl::matrix<4,4,float>& T,const tipl::geometry<3>& geo,const tipl::vector<3>& vs);
@@ -381,18 +382,24 @@ bool CustomSliceModel::initialize(const std::vector<std::string>& files)
         handle->view_item.back().name = name;
         handle->view_item.back().T = T;
         handle->view_item.back().iT = invT;
-        dim = source_images.geometry();
-        slice_pos[0] = source_images.width() >> 1;
-        slice_pos[1] = source_images.height() >> 1;
-        slice_pos[2] = source_images.depth() >> 1;
+
         v2c.set_range(handle->view_item[view_id].contrast_min,handle->view_item[view_id].contrast_max);
         v2c.two_color(handle->view_item[view_id].min_color,handle->view_item[view_id].max_color);
+
+        update_image();
     }
     return true;
 }
-
+void CustomSliceModel::update_image(void)
+{
+    handle->view_item[view_id].image_data = tipl::make_image(&*source_images.begin(),source_images.geometry());
+    dim = source_images.geometry();
+    slice_pos[0] = source_images.width() >> 1;
+    slice_pos[1] = source_images.height() >> 1;
+    slice_pos[2] = source_images.depth() >> 1;
+}
 // ---------------------------------------------------------------------------
-void CustomSliceModel::update(void)
+void CustomSliceModel::update_transform(void)
 {
     tipl::transformation_matrix<float> M(arg_min,handle->dim,handle->vs,dim,vs);
     invT.identity();
@@ -467,7 +474,7 @@ void CustomSliceModel::load_mapping(const char* file_name)
     if(data.size() == 28)
     {
         std::copy(data.begin()+16,data.begin()+16+12,arg_min.data);
-        update();
+        update_transform();
     }
     else
     {

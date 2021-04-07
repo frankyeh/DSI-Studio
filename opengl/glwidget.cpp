@@ -2159,8 +2159,9 @@ void GLWidget::mousePressEvent(QMouseEvent *event)
                 return;
             }
             // if only slice is selected or slice is at the front, then move slice
-            // if only one slice, then the slice will be moved.
-            if(slice_selected && object_distance > slice_distance && cur_tracking_window.current_slice->dim[2] != 1)
+            // if the slice is the picture, then the slice will be moved.
+            if(slice_selected && object_distance > slice_distance &&
+                    !cur_tracking_window.current_slice->is_picture())
             {
                 editing_option = dragging;
                 return;
@@ -2294,6 +2295,7 @@ void GLWidget::mouseMoveEvent(QMouseEvent *event)
             }
         }
 
+        // a picture slice is selected
         if(slice_selected && dynamic_cast<CustomSliceModel*>(cur_tracking_window.current_slice.get()))
         {
             auto slice = dynamic_cast<CustomSliceModel*>(cur_tracking_window.current_slice.get());
@@ -2306,12 +2308,25 @@ void GLWidget::mouseMoveEvent(QMouseEvent *event)
             else
             {
                 auto dif = curPos-lastPos;
-                slice->arg_min.scaling[0] += dif.x()*0.005f;
-                slice->arg_min.scaling[1] += dif.y()*0.005f;
+                if(cur_tracking_window.cur_dim == 2) // axial picture
+                {
+                    slice->arg_min.scaling[0] += dif.x()*0.005f;
+                    slice->arg_min.scaling[1] += dif.y()*0.005f;
+                }
+                if(cur_tracking_window.cur_dim == 1) // coronal picture
+                {
+                    slice->arg_min.scaling[0] += dif.x()*0.005f;
+                    slice->arg_min.scaling[2] += dif.y()*0.005f;
+                }
+                if(cur_tracking_window.cur_dim == 0) // sagittal picture
+                {
+                    slice->arg_min.scaling[1] += dif.x()*0.005f;
+                    slice->arg_min.scaling[2] += dif.y()*0.005f;
+                }
                 lastPos = curPos;
             }
             emit region_edited();
-            slice->update();
+            slice->update_transform();
             updateGL();
             accumulated_dis += dis;
         }
