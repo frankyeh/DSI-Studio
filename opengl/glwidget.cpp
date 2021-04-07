@@ -2293,6 +2293,7 @@ void GLWidget::mouseMoveEvent(QMouseEvent *event)
                 emit region_edited();
                 accumulated_dis += dis;
             }
+            return;
         }
 
         // a picture slice is selected
@@ -2301,29 +2302,15 @@ void GLWidget::mouseMoveEvent(QMouseEvent *event)
             auto slice = dynamic_cast<CustomSliceModel*>(cur_tracking_window.current_slice.get());
             if (event->buttons() & Qt::LeftButton)
             {
-                slice->arg_min[0] -= dis[0]*0.5f;
-                slice->arg_min[1] -= dis[1]*0.5f;
-                slice->arg_min[2] -= dis[2]*0.5f;
+                slice->arg_min.translocation[0] -= dis[0]*0.5f;
+                slice->arg_min.translocation[1] -= dis[1]*0.5f;
+                slice->arg_min.translocation[2] -= dis[2]*0.5f;
             }
             else
             {
-                auto dif = curPos-lastPos;
-                if(cur_tracking_window.cur_dim == 2) // axial picture
-                {
-                    slice->arg_min.scaling[0] += dif.x()*0.005f;
-                    slice->arg_min.scaling[1] += dif.y()*0.005f;
-                }
-                if(cur_tracking_window.cur_dim == 1) // coronal picture
-                {
-                    slice->arg_min.scaling[0] += dif.x()*0.005f;
-                    slice->arg_min.scaling[2] += dif.y()*0.005f;
-                }
-                if(cur_tracking_window.cur_dim == 0) // sagittal picture
-                {
-                    slice->arg_min.scaling[1] += dif.x()*0.005f;
-                    slice->arg_min.scaling[2] += dif.y()*0.005f;
-                }
-                lastPos = curPos;
+                slice->arg_min.scaling[0] += dis[0]*0.005f;
+                slice->arg_min.scaling[1] += dis[1]*0.005f;
+                slice->arg_min.scaling[2] += dis[2]*0.005f;
             }
             emit region_edited();
             slice->update_transform();
