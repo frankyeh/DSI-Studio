@@ -1149,10 +1149,11 @@
       <string>Copy to Clipboard</string>
      </property>
      <addaction name="action3D_Screen"/>
-     <addaction name="action3D_Screen_Each_Tract"/>
      <addaction name="action3D_Screen_3_Views"/>
      <addaction name="action3D_Screen_3_Views_Horizontal"/>
      <addaction name="action3D_Screen_3_Views_Vertical"/>
+     <addaction name="action3D_Screen_Each_Tract"/>
+     <addaction name="action3D_Screen_Each_Region"/>
      <addaction name="actionROI"/>
      <addaction name="actionTrack_Report"/>
     </widget>
@@ -4016,6 +4017,11 @@ Tracking</string>
    </property>
    <property name="text">
     <string>Insert Sagittal Picture...</string>
+   </property>
+  </action>
+  <action name="action3D_Screen_Each_Region">
+   <property name="text">
+    <string>3D Screen Each Region</string>
    </property>
   </action>
  </widget>

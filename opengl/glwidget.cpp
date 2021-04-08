@@ -2468,41 +2468,59 @@ void GLWidget::copyToClipboard(void)
     QApplication::clipboard()->setImage(I);
 }
 
-void GLWidget::copyToClipboardEach(void)
+void GLWidget::copyToClipboardEach(QTableWidget* widget)
 {
-    for (int i = 0;i < cur_tracking_window.tractWidget->rowCount();++i)
-        cur_tracking_window.tractWidget->item(i,0)->setCheckState(Qt::Unchecked);
+    std::vector<bool> is_checked(uint32_t(widget->rowCount()));
+    for (int i = 0;i < widget->rowCount();++i)
+    {
+        is_checked[i] = widget->item(i,0)->checkState() == Qt::Checked;
+        widget->item(i,0)->setCheckState(Qt::Unchecked);
+    }
     std::vector<QImage> images;
     int height = 0,width = 0;
-    for (int i = 0;i < cur_tracking_window.tractWidget->rowCount();++i)
-    {
-        if(i > 0)
-            cur_tracking_window.tractWidget->item(i-1,0)->setCheckState(Qt::Unchecked);
-        cur_tracking_window.tractWidget->item(i,0)->setCheckState(Qt::Checked);
-        makeTracts();
-        QImage I = grab_image();
-        get_bounding_box(I);
-        if(I.width() == 0)
-            continue;
-        images.push_back(I);
-        height = std::max<int>(I.height(),height);
-        width = std::max<int>(I.width(),width);
-    }
+    for (int i = 0;i < widget->rowCount();++i)
+        if(is_checked[uint32_t(i)])
+        {
+            if(i > 0)
+                widget->item(i-1,0)->setCheckState(Qt::Unchecked);
+            widget->item(i,0)->setCheckState(Qt::Checked);
+            makeTracts();
+            QImage I = grab_image();
+            get_bounding_box(I);
+            if(I.width() == 0)
+                continue;
+            images.push_back(I);
+            height = std::max<int>(I.height(),height);
+            width = std::max<int>(I.width(),width);
+        }
     width += 5;
     height += 5;
-    QImage I(images.size() >= 10 ? width*10:width*images.size(),height*(1+images.size()/10),QImage::Format_RGB32);
+    QImage I(images.size() >= 10 ? width*10:width*int(images.size()),height*int(1+images.size()/10),QImage::Format_RGB32);
     QPainter painter(&I);
     painter.fillRect(I.rect(),images[0].pixel(0,0));
     for (size_t i = 0,j = 0;i < images.size();++i,++j)
     {
         if(j == 10)
             j = 0;
-        painter.drawImage(j*width+(width-images[i].width())/2,
+        painter.drawImage(int(j)*width+(width-images[i].width())/2,
                           int(i/10)*height+(height-images[i].height())/2,images[i]);
     }
     QApplication::clipboard()->setImage(I);
+
+    for (int i = 0;i < widget->rowCount();++i)
+        if(is_checked[uint32_t(i)])
+            widget->item(i,0)->setCheckState(Qt::Checked);
 }
 
+void GLWidget::copyToClipboardEachTract(void)
+{
+    copyToClipboardEach(cur_tracking_window.tractWidget);
+}
+
+void GLWidget::copyToClipboardEachRegion(void)
+{
+    copyToClipboardEach(cur_tracking_window.regionWidget);
+}
 
 
 void GLWidget::get3View(QImage& I,unsigned int type)

@@ -208,7 +208,8 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         connect(ui->actionSave_Rotation_Images,SIGNAL(triggered()),glWidget,SLOT(saveRotationSeries()));
         connect(ui->actionSave_3D_screen_in_3_views,SIGNAL(triggered()),glWidget,SLOT(save3ViewImage()));
         connect(ui->action3D_Screen,SIGNAL(triggered()),glWidget,SLOT(copyToClipboard()));
-        connect(ui->action3D_Screen_Each_Tract,SIGNAL(triggered()),glWidget,SLOT(copyToClipboardEach()));
+        connect(ui->action3D_Screen_Each_Tract,SIGNAL(triggered()),glWidget,SLOT(copyToClipboardEachTract()));
+        connect(ui->action3D_Screen_Each_Region,SIGNAL(triggered()),glWidget,SLOT(copyToClipboardEachRegion()));
         connect(ui->actionRecord_Video,SIGNAL(triggered()),glWidget,SLOT(record_video()));
 
 

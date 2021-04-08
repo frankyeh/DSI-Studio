@@ -101,6 +101,7 @@ public:
      bool two_color_connectivity = false;
  private:
      void rotate_angle(float angle,float x,float y,float z);
+     void copyToClipboardEach(QTableWidget* widget);
  public slots:
      void makeTracts(void);
      void addSurface(void);
@@ -111,7 +112,8 @@ public:
      void saveRotationSeries(void);
      void save3ViewImage(void);
      void copyToClipboard(void);
-     void copyToClipboardEach(void);
+     void copyToClipboardEachTract(void);
+     void copyToClipboardEachRegion(void);
      void rotate(void);
      void record_video(void);
      void renderLR(void);
