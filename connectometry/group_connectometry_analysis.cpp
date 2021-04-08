@@ -675,7 +675,7 @@ void group_connectometry_analysis::generate_report(std::string& output)
         new_mdi->command("set_param","bkg_color","16777215");
         new_mdi->command("set_param","surface_alpha","0.1");
         new_mdi->command("set_roi_view_index","icbm_wm");
-        new_mdi->command("add_surface");
+        new_mdi->command("add_surface","","0.1");
         new_mdi->command("set_roi_view_index","icbm_t1w");
         new_mdi->command("set_roi_view_contrast","0.0","500.0");
 

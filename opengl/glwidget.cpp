@@ -2427,13 +2427,16 @@ void GLWidget::loadCamera(void)
 }
 void GLWidget::addSurface(void)
 {
-    float threshold = tipl::segmentation::otsu_threshold(cur_tracking_window.current_slice->get_source())*1.25f;
+    auto slice = cur_tracking_window.current_slice;
+    float threshold = 0.1f;
+    if(slice->handle->view_item[slice->view_id].name.find("icbm152_wm") == std::string::npos)
+        threshold = tipl::segmentation::otsu_threshold(slice->get_source())*1.25f;
     bool ok;
-    threshold = QInputDialog::getDouble(this,
-        "DSI Studio","Threshold:", threshold,
-        *std::min_element(cur_tracking_window.current_slice->get_source().begin(),cur_tracking_window.current_slice->get_source().end()),
-        *std::max_element(cur_tracking_window.current_slice->get_source().begin(),cur_tracking_window.current_slice->get_source().end()),
-        4, &ok);
+    threshold = float(QInputDialog::getDouble(this,
+        "DSI Studio","Threshold:", double(threshold),
+        double(*std::min_element(slice->get_source().begin(),slice->get_source().end())),
+        double(*std::max_element(slice->get_source().begin(),slice->get_source().end())),
+        4, &ok));
     if (!ok)
         return;
     QAction* pAction = qobject_cast<QAction*>(sender());
