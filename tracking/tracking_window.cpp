@@ -1229,12 +1229,13 @@ void tracking_window::on_dt_index_currentIndexChanged(int index)
 
 void tracking_window::on_deleteSlice_clicked()
 {
-    if(dynamic_cast<CustomSliceModel*>(current_slice.get()) == 0)
+    if(dynamic_cast<CustomSliceModel*>(current_slice.get()) == nullptr)
         return;
     int index = ui->SliceModality->currentIndex();
     handle->view_item.erase(handle->view_item.begin()+index);
     slices.erase(slices.begin()+index);
-    ui->SliceModality->setCurrentIndex(0);
+    for(uint32_t i = uint32_t(index);i < slices.size();++i)
+        slices[i]->view_id--;
     ui->SliceModality->removeItem(index);
     updateSlicesMenu();
 }
