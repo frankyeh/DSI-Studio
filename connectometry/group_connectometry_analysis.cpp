@@ -37,7 +37,7 @@ bool group_connectometry_analysis::load_database(const char* database_name)
 }
 
 
-int group_connectometry_analysis::run_track(const tracking_data& fib,
+int group_connectometry_analysis::run_track(std::shared_ptr<tracking_data> fib,
                                             std::vector<std::vector<float> >& tracks,
                                             int seed_count,
                                             unsigned int thread_count)
@@ -48,7 +48,7 @@ int group_connectometry_analysis::run_track(const tracking_data& fib,
     tracking_thread.param.step_size = handle->vs[0];
     tracking_thread.param.smooth_fraction = 0;
     tracking_thread.param.min_length = float(length_threshold_voxels)*handle->vs[0];
-    tracking_thread.param.max_length = 2.0f*float(std::max<unsigned int>(fib.dim[0],std::max<unsigned int>(fib.dim[1],fib.dim[2])))*handle->vs[0];
+    tracking_thread.param.max_length = 2.0f*float(std::max<unsigned int>(handle->dim[0],std::max<unsigned int>(handle->dim[1],handle->dim[2])))*handle->vs[0];
     tracking_thread.param.tracking_method = 0;// streamline fiber tracking
     tracking_thread.param.initial_direction = 0;// main directions
     tracking_thread.param.interpolation_strategy = 0; // trilinear interpolation
@@ -94,8 +94,8 @@ void group_connectometry_analysis::exclude_cerebellum(void)
 void group_connectometry_analysis::run_permutation_multithread(unsigned int id,unsigned int thread_count,unsigned int permutation_count)
 {
     connectometry_result data;
-    tracking_data fib;
-    fib.read(*handle);
+    std::shared_ptr<tracking_data> fib(new tracking_data);
+    fib->read(*handle);
 
     if(id == 0)
     {
@@ -116,7 +116,7 @@ void group_connectometry_analysis::run_permutation_multithread(unsigned int id,u
 
         info.resample(*model.get(),null,true,i);
         calculate_spm(data,info,normalize_qa);
-        fib.fa = data.neg_corr_ptr;
+        fib->fa = data.neg_corr_ptr;
 
         run_track(fib,neg_tracks,seed_count);
         cal_hist(neg_tracks,(null) ? subject_neg_corr_null : subject_neg_corr);
@@ -124,7 +124,7 @@ void group_connectometry_analysis::run_permutation_multithread(unsigned int id,u
 
         info.resample(*model.get(),null,true,i);
         calculate_spm(data,info,normalize_qa);
-        fib.fa = data.pos_corr_ptr;
+        fib->fa = data.pos_corr_ptr;
 
         run_track(fib,pos_tracks,seed_count);
         cal_hist(pos_tracks,(null) ? subject_pos_corr_null : subject_pos_corr);

@@ -160,7 +160,7 @@ struct TrackingParam
 
 class TrackingMethod{
 private:
-    std::auto_ptr<basic_interpolation> interpolation;
+    std::shared_ptr<basic_interpolation> interpolation;
 public:// Parameters
     tipl::vector<3,float> position;
     tipl::vector<3,float> dir;
@@ -168,7 +168,7 @@ public:// Parameters
     bool terminated;
     bool forward;
 public:
-    const tracking_data& trk;
+    std::shared_ptr<tracking_data> trk;
     float current_fa_threshold;
     float current_dt_threshold = 0;
     float current_tracking_angle;
@@ -204,12 +204,13 @@ public:
                       const tipl::vector<3,float>& ref_dir,
                       tipl::vector<3,float>& result_dir)
     {
-        return interpolation->evaluate(trk,position,ref_dir,result_dir,current_fa_threshold,current_tracking_angle,current_dt_threshold);
+        return interpolation->evaluate(*trk.get(),position,ref_dir,result_dir,current_fa_threshold,current_tracking_angle,current_dt_threshold);
     }
 public:
-    TrackingMethod(const tracking_data& trk_,basic_interpolation* interpolation_,
+    TrackingMethod(std::shared_ptr<tracking_data> trk_,
+                   std::shared_ptr<basic_interpolation> interpolation_,
                    std::shared_ptr<RoiMgr> roi_mgr_):
-        interpolation(interpolation_),trk(trk_),roi_mgr(roi_mgr_),init_fib_index(0)
+                    interpolation(interpolation_),trk(trk_),roi_mgr(roi_mgr_),init_fib_index(0)
 	{
 
 
@@ -322,17 +323,17 @@ public:
             forward = true;
             tipl::pixel_index<3> pindex(std::round(position[0]),
                                     std::round(position[1]),
-                                    std::round(position[2]),trk.dim);
-            if (!trk.dim.is_valid(pindex))
+                                    std::round(position[2]),trk->dim);
+            if (!trk->dim.is_valid(pindex))
                 return false;
 
             switch (initial_direction)
             {
             case 0:// main direction
                 {
-                    if(trk.fa[0][pindex.index()] < current_fa_threshold)
+                    if(trk->fa[0][pindex.index()] < current_fa_threshold)
                         return false;
-                    dir = trk.get_dir(uint32_t(pindex.index()),0);
+                    dir = trk->get_dir(uint32_t(pindex.index()),0);
                 }
                 return true;
             case 1:// random direction
@@ -349,14 +350,14 @@ public:
                 return false;
             case 2:// all direction
                 {
-                    if (init_fib_index >= trk.fib_num ||
-                        trk.fa[init_fib_index][pindex.index()] < current_fa_threshold)
+                    if (init_fib_index >= trk->fib_num ||
+                        trk->fa[init_fib_index][pindex.index()] < current_fa_threshold)
                     {
                         init_fib_index = 0;
                         return false;
                     }
                     else
-                        dir = trk.get_dir(uint32_t(pindex.index()),init_fib_index);
+                        dir = trk->get_dir(uint32_t(pindex.index()),init_fib_index);
                     ++init_fib_index;
                 }
                 return true;

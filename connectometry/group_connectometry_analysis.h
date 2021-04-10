@@ -37,7 +37,7 @@ public:
         ::calculate_spm(handle,data,info,fiber_threshold,nqa,terminated);
     }
 private: // single subject analysis result
-    int run_track(const tracking_data& fib,std::vector<std::vector<float> >& track,
+    int run_track(std::shared_ptr<tracking_data> fib,std::vector<std::vector<float> >& track,
                   int seed_count,unsigned int thread_count = 1);
 public:// for FDR analysis
     std::vector<std::shared_ptr<std::future<void> > > threads;

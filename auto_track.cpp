@@ -318,7 +318,7 @@ std::string run_auto_track(
 
                     // run tracking
                     prog_init p("tracking ",track_name.c_str());
-                    thread.run(tract_model.get_fib(),std::thread::hardware_concurrency(),false);
+                    thread.run(std::thread::hardware_concurrency(),false);
                     std::string report = tract_model.report + thread.report.str();
                     report += " Shape analysis (Yeh, Neuroimage, 2020) was conducted to derive shape metrics for tractography.";
                     if(reports[j].empty())

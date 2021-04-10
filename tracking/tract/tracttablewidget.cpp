@@ -197,9 +197,7 @@ void TractTableWidget::start_tracking(void)
         addNewTracts(cur_tracking_window.regionWidget->getROIname());
     cur_tracking_window.set_tracking_param(*thread_data.back());
     cur_tracking_window.regionWidget->setROIs(thread_data.back().get());
-    thread_data.back()->run(tract_models.back()->get_fib(),
-                            cur_tracking_window["thread_count"].toInt(),
-                            false);
+    thread_data.back()->run(cur_tracking_window["thread_count"].toInt(),false);
     tract_models.back()->report += thread_data.back()->report.str();
     show_report();
     timer->start(1000);
@@ -233,8 +231,8 @@ void TractTableWidget::ppv_analysis(void)
     ThreadData base_thread(cur_tracking_window.handle.get());
     cur_tracking_window.set_tracking_param(base_thread);
     cur_tracking_window.regionWidget->setROIs(&base_thread);
-    tracking_data fib;
-    fib.read(*cur_tracking_window.handle.get());
+    std::shared_ptr<tracking_data> fib(new tracking_data);
+    fib->read(*cur_tracking_window.handle.get());
 
     bool terminated = false;
     prog_init p("PPV analysis");
@@ -267,7 +265,7 @@ void TractTableWidget::ppv_analysis(void)
 
 
     std::ostringstream out;
-    out << fib.dt_threshold_name << "\t";
+    out << fib->dt_threshold_name << "\t";
     for(int length_threshold = 5;length_threshold <= 50;length_threshold += 5)
         out << length_threshold << " mm\t";
     out << std::endl;

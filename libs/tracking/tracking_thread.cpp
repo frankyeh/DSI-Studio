@@ -26,15 +26,43 @@ void ThreadData::end_thread(void)
     }
 }
 
-void ThreadData::run_thread(TrackingMethod* method_ptr,
-                            unsigned int thread_count,
+void ThreadData::run_thread(unsigned int thread_count,
                             unsigned int thread_id)
 {
-    std::auto_ptr<TrackingMethod> method(method_ptr);
+    std::shared_ptr<basic_interpolation> interpo_method;
+    switch (param.interpolation_strategy)
+    {
+    case 0:
+        interpo_method.reset(new trilinear_interpolation);
+        break;
+    case 1:
+        interpo_method.reset(new trilinear_interpolation_with_gaussian_basis);
+        break;
+    case 2:
+        interpo_method.reset(new nearest_direction);
+        break;
+
+    }
+    std::shared_ptr<TrackingMethod> method(new TrackingMethod(trk,interpo_method,roi_mgr));
+    method->current_fa_threshold = param.threshold;
+    method->current_dt_threshold = param.dt_threshold;
+    method->current_tracking_angle = param.cull_cos_angle;
+    method->current_tracking_smoothing = param.smooth_fraction;
+    method->current_step_size_in_voxel[0] = param.step_size/method->trk->vs[0];
+    method->current_step_size_in_voxel[1] = param.step_size/method->trk->vs[1];
+    method->current_step_size_in_voxel[2] = param.step_size/method->trk->vs[2];
+    if(param.step_size != 0.0f)
+    {
+        method->current_max_steps3 = uint32_t(std::round(3.0f*param.max_length/param.step_size));
+        method->current_min_steps3 = uint32_t(std::round(3.0f*param.min_length/param.step_size));
+    }
+
+
+
     std::uniform_real_distribution<float> rand_gen(0,1),
             angle_gen(float(15.0*M_PI/180.0),float(90.0*M_PI/180.0)),
             smoothing_gen(0.0f,0.95f),
-            step_gen(method->trk.vs[0]*0.5f,method->trk.vs[0]*1.5f),
+            step_gen(method->trk->vs[0]*0.5f,method->trk->vs[0]*1.5f),
             threshold_gen(0.0,1.0);
     unsigned int iteration = thread_id; // for center seed
     float white_matter_t = param.threshold*1.2f;
@@ -61,9 +89,9 @@ void ThreadData::run_thread(TrackingMethod* method_ptr,
             if(param.step_size == 0.0f)
             {
                 float step_size_in_mm = step_gen(seed);
-                method->current_step_size_in_voxel[0] = step_size_in_mm/method->trk.vs[0];
-                method->current_step_size_in_voxel[1] = step_size_in_mm/method->trk.vs[1];
-                method->current_step_size_in_voxel[2] = step_size_in_mm/method->trk.vs[2];
+                method->current_step_size_in_voxel[0] = step_size_in_mm/method->trk->vs[0];
+                method->current_step_size_in_voxel[1] = step_size_in_mm/method->trk->vs[1];
+                method->current_step_size_in_voxel[2] = step_size_in_mm/method->trk->vs[2];
                 method->current_max_steps3 = uint32_t(std::round(3.0f*param.max_length/step_size_in_mm));
                 method->current_min_steps3 = uint32_t(std::round(3.0f*param.min_length/step_size_in_mm));
             }
@@ -100,7 +128,7 @@ void ThreadData::run_thread(TrackingMethod* method_ptr,
                     tipl::vector<3> p0(result),p1(result+3);
                     p1 -= p0;
                     p0 -= p1;
-                    if(method->trk.is_white_matter(p0,white_matter_t))
+                    if(method->trk->is_white_matter(p0,white_matter_t))
                         continue;
                 }
                 tipl::vector<3> p2(end-6),p3(end-3);
@@ -108,7 +136,7 @@ void ThreadData::run_thread(TrackingMethod* method_ptr,
                 {
                     p2 -= p3;
                     p3 -= p2;
-                    if(method->trk.is_white_matter(p3,white_matter_t))
+                    if(method->trk->is_white_matter(p3,white_matter_t))
                         continue;
                 }
             }
@@ -146,52 +174,27 @@ void ThreadData::apply_tip(TractModel* handle)
     for(size_t i = 0;i < 20 && i < handle->get_tracts().size();++i)
         max_length = std::max(max_length,float(handle->get_tracts()[i].size()));
     float t_index = float(handle->get_visible_track_count())*max_length/3.0f;
-    if(t_index/float(roi_mgr->seeds.size()) > 20.0f || !handle->get_fib().dt_threshold_name.empty())
+    if(t_index/float(roi_mgr->seeds.size()) > 20.0f || !trk->dt_threshold_name.empty())
         for(size_t i = 0;i < param.tip_iteration;++i)
             handle->trim();
 }
-TrackingMethod* ThreadData::new_method(const tracking_data& trk)
-{
 
-    std::auto_ptr<basic_interpolation> interpo_method;
-    switch (param.interpolation_strategy)
-    {
-    case 0:
-        interpo_method.reset(new trilinear_interpolation);
-        break;
-    case 1:
-        interpo_method.reset(new trilinear_interpolation_with_gaussian_basis);
-        break;
-    case 2:
-        interpo_method.reset(new nearest_direction);
-        break;
-
-    }
-    TrackingMethod* method = new TrackingMethod(trk,interpo_method.release(),roi_mgr);
-    method->current_fa_threshold = param.threshold;
-    method->current_dt_threshold = param.dt_threshold;
-    method->current_tracking_angle = param.cull_cos_angle;
-    method->current_tracking_smoothing = param.smooth_fraction;
-    method->current_step_size_in_voxel[0] = param.step_size/method->trk.vs[0];
-    method->current_step_size_in_voxel[1] = param.step_size/method->trk.vs[1];
-    method->current_step_size_in_voxel[2] = param.step_size/method->trk.vs[2];
-    if(param.step_size != 0.0)
-    {
-        method->current_max_steps3 = std::round(3.0*param.max_length/param.step_size);
-        method->current_min_steps3 = std::round(3.0*param.min_length/param.step_size);
-    }
-    return method;
-}
-
-void ThreadData::run(const tracking_data& trk,
-                     unsigned int thread_count,
+void ThreadData::run(unsigned int thread_count,
                      bool wait)
 {
+    std::shared_ptr<tracking_data> trk_(new tracking_data);
+    trk_->read(*roi_mgr->handle);
+    run(trk_,thread_count,wait);
+}
+
+void ThreadData::run(std::shared_ptr<tracking_data> trk_,unsigned int thread_count,bool wait)
+{
+    trk = trk_;
     if(!param.termination_count)
         return;
     if(param.threshold == 0.0f)
     {
-        float otsu = tipl::segmentation::otsu_threshold(tipl::make_image(trk.fa[0],trk.dim));
+        float otsu = tipl::segmentation::otsu_threshold(tipl::make_image(trk->fa[0],trk->dim));
         fa_threshold1 = (param.default_otsu-0.1f)*otsu;
         fa_threshold2 = (param.default_otsu+0.1f)*otsu;
     }
@@ -200,14 +203,14 @@ void ThreadData::run(const tracking_data& trk,
 
     report.clear();
     report.str("");
-    if(!trk.dt_threshold_name.empty())
+    if(!trk->dt_threshold_name.empty())
     {
         report << " Differential tractography (Yeh et al., 2019) was applied to map pathways with ";
-        if(trk.dt_threshold_name.substr(0,4) == "inc_")
+        if(trk->dt_threshold_name.substr(0,4) == "inc_")
             report << "an increase";
         else
             report << "a decrease";
-        report << " in " << trk.dt_threshold_name.substr(4,std::string::npos) << ".";
+        report << " in " << trk->dt_threshold_name.substr(4,std::string::npos) << ".";
     }
     else {
         report << " A deterministic fiber tracking algorithm (Yeh et al., PLoS ONE 8(11): e80713, 2013) was used";
@@ -258,15 +261,15 @@ void ThreadData::run(const tracking_data& trk,
     seed = std::mt19937(param.random_seed ? std::random_device()():0);
     for (unsigned int index = 0;index < thread_count-1;++index)
         threads.push_back(std::make_shared<std::future<void> >(std::async(std::launch::async,
-                [&,thread_count,index](){run_thread(new_method(trk),thread_count,index);})));
+                [&,thread_count,index](){run_thread(thread_count,index);})));
 
     if(wait)
     {
-        run_thread(new_method(trk),thread_count,thread_count-1);
+        run_thread(thread_count,thread_count-1);
         for(size_t i = 0;i < threads.size();++i)
             threads[i]->wait();
     }
     else
         threads.push_back(std::make_shared<std::future<void> >(std::async(std::launch::async,
-                [&,thread_count](){run_thread(new_method(trk),thread_count,thread_count-1);})));
+                [&,thread_count](){run_thread(thread_count,thread_count-1);})));
 }

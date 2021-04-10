@@ -537,9 +537,8 @@ bool load_fib_from_tracks(const char* file_name,tipl::image<float,3>& I,tipl::ve
 }
 //---------------------------------------------------------------------------
 TractModel::TractModel(fib_data* handle_):handle(handle_),
-        report(handle_->report),geo(handle_->dim),vs(handle_->vs),fib(new tracking_data)
+        report(handle_->report),geo(handle_->dim),vs(handle_->vs)
 {
-    fib->read(*handle_);
 }
 //---------------------------------------------------------------------------
 void TractModel::add(const TractModel& rhs)

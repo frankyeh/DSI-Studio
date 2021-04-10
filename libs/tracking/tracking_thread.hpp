@@ -16,15 +16,15 @@ private:
     std::mt19937 seed;
 
 public:
+    std::shared_ptr<tracking_data> trk;
     std::shared_ptr<RoiMgr> roi_mgr;
-
 public:
     std::ostringstream report;
     TrackingParam param;
     float fa_threshold1,fa_threshold2;// use only if fa_threshold=0
 
 public:
-    ThreadData(fib_data* handle):joinning(false),seed(0),roi_mgr(new RoiMgr(handle)){}
+    ThreadData(fib_data* handle):seed(0),roi_mgr(new RoiMgr(handle)){}
     ~ThreadData(void)
     {
         end_thread();
@@ -32,7 +32,6 @@ public:
 public:
     bool joinning = false;
     bool pushing_data = false;
-
     std::vector<std::shared_ptr<std::future<void> > > threads;
     std::vector<unsigned int> seed_count;
     std::vector<unsigned int> tract_count;
@@ -64,14 +63,11 @@ public:
     void end_thread(void);
 
 public:
-    void run_thread(TrackingMethod* method_ptr,unsigned int thread_count,
-                    unsigned int thread_id);
+    void run_thread(unsigned int thread_count,unsigned int thread_id);
     bool fetchTracks(TractModel* handle);
     void apply_tip(TractModel* handle);
-    TrackingMethod* new_method(const tracking_data& trk);
-    void run(const tracking_data& trk,
-             unsigned int thread_count,
-             bool wait);
+    void run(std::shared_ptr<tracking_data> trk,unsigned int thread_count,bool wait);
+    void run(unsigned int thread_count,bool wait);
 
 
 

@@ -16,7 +16,6 @@ private:
         fib_data* handle = nullptr;
         tipl::geometry<3> geo;
         tipl::vector<3> vs;
-        std::shared_ptr<tracking_data> fib;
 private:
         std::vector<std::vector<float> > tract_data;
         std::vector<std::vector<float> > deleted_tract_data;
@@ -63,8 +62,6 @@ public:
             return *this;
         }
         fib_data* get_handle(void){return handle;}
-        const tracking_data& get_fib(void) const{return *fib.get();}
-        tracking_data& get_fib(void){return *fib.get();}
         void add(const TractModel& rhs);
         bool load_from_atlas(const char* file_name);
         bool load_from_file(const char* file_name,bool append = false);

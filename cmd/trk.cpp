@@ -716,7 +716,7 @@ int trk(std::shared_ptr<fib_data> handle)
                 std::cout << "mapping track with " << ((t > 0) ? "increased":"decreased") << " connectivity at " << std::fabs(t) << std::endl;
                 std::cout << "start tracking." << std::endl;
                 tracking_thread.param.threshold = float(std::fabs(t));
-                tracking_thread.run(tract_model->get_fib(),po.get("thread_count",uint32_t(std::thread::hardware_concurrency())),true);
+                tracking_thread.run(po.get("thread_count",uint32_t(std::thread::hardware_concurrency())),true);
                 tract_model->report += tracking_thread.report.str();
                 tracking_thread.fetchTracks(tract_model.get());
                 std::ostringstream out;
@@ -737,7 +737,7 @@ int trk(std::shared_ptr<fib_data> handle)
 
 
     std::cout << "start tracking." << std::endl;
-    tracking_thread.run(tract_model->get_fib(),uint32_t(po.get("thread_count",int(std::thread::hardware_concurrency()))),true);
+    tracking_thread.run(uint32_t(po.get("thread_count",int(std::thread::hardware_concurrency()))),true);
     tract_model->report += tracking_thread.report.str();
 
     tracking_thread.fetchTracks(tract_model.get());
@@ -763,7 +763,7 @@ int trk(std::shared_ptr<fib_data> handle)
 
 
         std::cout << "restart tracking..." << std::endl;
-        tracking_thread.run(tract_model->get_fib(),po.get("thread_count",uint32_t(std::thread::hardware_concurrency())),true);
+        tracking_thread.run(po.get("thread_count",uint32_t(std::thread::hardware_concurrency())),true);
         tracking_thread.fetchTracks(tract_model.get());
         std::cout << "finished tracking." << std::endl;
 
