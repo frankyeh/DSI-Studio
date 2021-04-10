@@ -2875,7 +2875,7 @@ void TractModel::get_quantitative_info(std::string& result)
 
     if(handle->db.has_db()) // connectometry database
     {
-        std::vector<const float*> old_index_data(fib->other_index[0]);
+        std::vector<const float*> old_index_data(handle->dir.index_data[0]);
         for(char normalize_qa = 0;normalize_qa <= 1;++normalize_qa)
         {
             // only applied normalized value to qa
@@ -2886,14 +2886,14 @@ void TractModel::get_quantitative_info(std::string& result)
                 std::vector<std::vector<float> > fa_data;
                 handle->db.get_subject_fa(i,fa_data,normalize_qa);
                 for(unsigned int j = 0;j < fa_data.size();++j)
-                    fib->other_index[0][j] = &fa_data[j][0];
+                    handle->dir.index_data[0][j] = &fa_data[j][0];
                 float mean;
                 get_tracts_data(0,mean);
                 out << handle->db.subject_names[i] << " mean_" <<
                        handle->db.index_name << (normalize_qa ? "_post_norm\t": "\t") << mean << std::endl;
             }
         }
-        fib->other_index[0] = old_index_data;
+        handle->dir.index_data[0] = old_index_data;
     }
     result = out.str();
 }
@@ -3054,9 +3054,9 @@ void TractModel::get_tract_data(unsigned int fiber_index,unsigned int index_num,
     unsigned int count = uint32_t(tract_data[fiber_index].size()/3);
     data.resize(count);
     // track specific index
-    if(index_num < fib->other_index.size())
+    if(index_num < handle->dir.index_data.size())
     {
-        auto base_image = tipl::make_image(fib->other_index[index_num][0],fib->dim);
+        auto base_image = tipl::make_image(handle->dir.index_data[index_num][0],geo);
         std::vector<tipl::vector<3,float> > gradient(count);
         auto tract_ptr = reinterpret_cast<const float (*)[3]>(&(tract_data[fiber_index][0]));
         ::gradient(tract_ptr,tract_ptr+count,gradient.begin());
@@ -3065,14 +3065,14 @@ void TractModel::get_tract_data(unsigned int fiber_index,unsigned int index_num,
         {
             tipl::interpolation<tipl::linear_weighting,3> tri_interpo;
             gradient[point_index].normalize();
-            if (tri_interpo.get_location(fib->dim,&(tract_data[fiber_index][tract_index])))
+            if (tri_interpo.get_location(handle->dim,&(tract_data[fiber_index][tract_index])))
             {
                 float value,average_value = 0.0f;
                 float sum_value = 0.0f;
                 for (unsigned int index = 0;index < 8;++index)
                 {
-                    if ((value = fib->get_track_specific_index(uint32_t(tri_interpo.dindex[index]),
-                                                               fib->other_index[index_num],gradient[point_index])) == 0.0f)
+                    if ((value = handle->dir.get_track_specific_index(uint32_t(tri_interpo.dindex[index]),
+                                                               handle->dir.index_data[index_num],gradient[point_index])) == 0.0f)
                         continue;
                     average_value += value*tri_interpo.ratio[index];
                     sum_value += tri_interpo.ratio[index];

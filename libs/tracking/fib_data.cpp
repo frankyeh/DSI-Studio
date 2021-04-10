@@ -193,7 +193,7 @@ bool fiber_directions::add_data(gz_mat_read& mat_reader)
             continue;
         }
 
-        // accept fiber wise index (e.g. my_fa0,my_fa1,my_fa2)
+        // read fiber wise index (e.g. my_fa0,my_fa1,my_fa2)
         std::string prefix_name(matrix_name.begin(),matrix_name.end()-1); // the "my_fa" part
         auto last_ch = matrix_name[matrix_name.length()-1]; // the index value part
         if (last_ch < '0' || last_ch > '9')
@@ -322,6 +322,44 @@ const float* fiber_directions::get_dir(size_t index,unsigned int order) const
     return &*(odf_table[findex[order][index]].begin());
 }
 
+float fiber_directions::cos_angle(const tipl::vector<3>& cur_dir,unsigned int space_index,unsigned char fib_order) const
+{
+    if(!dir.empty())
+    {
+        const float* dir_at = dir[fib_order] + space_index + (space_index << 1);
+        return cur_dir[0]*dir_at[0] + cur_dir[1]*dir_at[1] + cur_dir[2]*dir_at[2];
+    }
+    return cur_dir*odf_table[findex[fib_order][space_index]];
+}
+
+
+float fiber_directions::get_track_specific_index(unsigned int space_index,const std::vector<const float*>& index,
+                         const tipl::vector<3,float>& dir) const
+{
+    if(fa[0][space_index] == 0.0)
+        return 0.0;
+    unsigned char fib_order = 0;
+    float max_value = std::abs(cos_angle(dir,space_index,0));
+    for (unsigned char index = 1;index < fa.size();++index)
+    {
+        if (fa[index][space_index] == 0.0)
+            continue;
+        float value = cos_angle(dir,space_index,index);
+        if (-value > max_value)
+        {
+            max_value = -value;
+            fib_order = index;
+        }
+        else
+            if (value > max_value)
+            {
+                max_value = value;
+                fib_order = index;
+            }
+    }
+    return index[fib_order][space_index];
+}
+
 
 bool tracking_data::get_nearest_dir_fib(unsigned int space_index,
                      const tipl::vector<3,float>& ref_dir, // reference direction, should be unit vector
@@ -417,32 +455,7 @@ float tracking_data::cos_angle(const tipl::vector<3>& cur_dir,unsigned int space
     return cur_dir*odf_table[findex[fib_order][space_index]];
 }
 
-float tracking_data::get_track_specific_index(unsigned int space_index,const std::vector<const float*>& index,
-                         const tipl::vector<3,float>& dir) const
-{
-    if(space_index >= dim.size() || fa[0][space_index] == 0.0)
-        return 0.0;
-    unsigned char fib_order = 0;
-    float max_value = std::abs(cos_angle(dir,space_index,0));
-    for (unsigned char index = 1;index < fib_num;++index)
-    {
-        if (fa[index][space_index] == 0.0)
-            continue;
-        float value = cos_angle(dir,space_index,index);
-        if (-value > max_value)
-        {
-            max_value = -value;
-            fib_order = index;
-        }
-        else
-            if (value > max_value)
-            {
-                max_value = value;
-                fib_order = index;
-            }
-    }
-    return index[fib_order][space_index];
-}
+
 
 bool tracking_data::is_white_matter(const tipl::vector<3,float>& pos,float t) const
 {
