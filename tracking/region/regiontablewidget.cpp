@@ -289,7 +289,7 @@ void RegionTableWidget::move_slice_to_current_region(void)
 }
 
 
-void RegionTableWidget::draw_region(const tipl::color_image& slice_image,float display_ratio,QImage& scaled_image,int line_width,bool draw_edges)
+void RegionTableWidget::draw_region(const tipl::color_image& slice_image,float display_ratio,QImage& scaled_image,int line_width,unsigned char draw_edges)
 {
     // during region removal, there will be a call with invalid currentRow
     auto checked_regions = get_checked_regions();
@@ -440,7 +440,7 @@ void RegionTableWidget::draw_region(const tipl::color_image& slice_image,float d
     for (uint32_t roi_index = 0;roi_index < checked_regions.size();++roi_index)
     {
         unsigned int cur_color = foreground_color;
-        if(draw_edges && (int(roi_index) != cur_roi_index))
+        if(draw_edges == 1 && (int(roi_index) != cur_roi_index))
             cur_color = checked_regions[roi_index]->show_region.color;
         paint.setBrush(Qt::NoBrush);
         QPen pen(QColor(cur_color),line_width, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
@@ -483,7 +483,7 @@ void RegionTableWidget::copy_region(void)
     if(currentRow() < 0)
         return;
     unsigned int cur_row = uint32_t(currentRow());
-    unsigned int color = regions.back()->show_region.color.color;
+    unsigned int color = regions[cur_row]->show_region.color.color;
     regions.insert(regions.begin() + cur_row + 1,std::make_shared<ROIRegion>(cur_tracking_window.handle.get()));
     *regions[cur_row + 1] = *regions[cur_row];
     regions[cur_row + 1]->show_region.color.color = color;
