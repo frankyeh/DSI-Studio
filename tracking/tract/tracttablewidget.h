@@ -37,8 +37,6 @@ public:
     void export_tract_density(tipl::geometry<3>& dim,
                               tipl::vector<3,float> vs,
                               tipl::matrix<4,4,float>& transformation,bool color,bool endpoint);
-    void saveTransformedTracts(const float* transform);
-    void saveTransformedEndpoints(const float* transform);
     void load_tracts(QStringList filenames);
     void cut_by_slice(unsigned char dim,bool greater);
     void draw_tracts(unsigned char dim,int pos,
@@ -74,16 +72,21 @@ public slots:
     void load_tracts_value(void);
 
     void save_tracts_as(void);
-    void save_tracts_in_native(void);
-    void save_tracts_in_template(void);
     void save_vrml_as(void);
     void save_tracts_color_as(void);
     void save_tracts_data_as(void);
     void save_all_tracts_as(void);
     void save_all_tracts_to_dir(void);
     void save_all_tracts_end_point_as(void);
+
+    void save_tracts_in_native(void);
+    void save_tracts_in_template(void);
+    void save_tracts_in_mni(void);
     void save_end_point_as(void);
     void save_end_point_in_mni(void);
+    void save_transformed_tracts(void);
+    void save_transformed_endpoints(void);
+
 
     void deep_learning_train(void);
     void merge_all(void);
@@ -110,6 +113,8 @@ public slots:
     void recog_tracks(void);
     void ppv_analysis(void);
     void show_report(void);
+
+
 };
 
 #endif // TRACTTABLEWIDGET_H

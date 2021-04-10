@@ -108,7 +108,6 @@ public slots:
     void update_scene_slice(void);
 private slots:
     void on_actionRestore_window_layout_triggered();
-    void on_actionSave_Tracts_in_Current_Mapping_triggered();
     void on_actionTDI_Import_Slice_Space_triggered();
     void on_actionTDI_Subvoxel_Diffusion_Space_triggered();
     void on_actionTDI_Diffusion_Space_triggered();
@@ -130,9 +129,7 @@ private slots:
     void on_tool6_pressed();
     void SliderValueChanged(void);
 
-    void on_actionSave_Endpoints_in_Current_Mapping_triggered();
     void on_deleteSlice_clicked();
-    void on_actionSave_Tracts_in_MNI_space_triggered();
 
     void on_actionManual_Registration_triggered();
     void on_actionTract_Analysis_Report_triggered();

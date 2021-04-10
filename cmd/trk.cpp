@@ -477,7 +477,7 @@ void trk_post(std::shared_ptr<fib_data> handle,std::shared_ptr<TractModel> tract
                 std::cout << new_slice.T[0] << " " << new_slice.T[1] << " " << new_slice.T[2] << " " << new_slice.T[3] << std::endl;
                 std::cout << new_slice.T[4] << " " << new_slice.T[5] << " " << new_slice.T[6] << " " << new_slice.T[7] << std::endl;
                 std::cout << new_slice.T[8] << " " << new_slice.T[9] << " " << new_slice.T[10] << " " << new_slice.T[11] << std::endl;
-                tract_model->save_transformed_tracts_to_file(f.c_str(),&*new_slice.invT.begin(),false);
+                tract_model->save_transformed_tracts_to_file(f.c_str(),new_slice.dim,new_slice.vs,new_slice.invT,false);
             }
             else
             if(f != "no_file")

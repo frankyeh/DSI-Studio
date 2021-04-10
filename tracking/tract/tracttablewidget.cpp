@@ -205,9 +205,9 @@ void TractTableWidget::start_tracking(void)
 
 void TractTableWidget::show_report(void)
 {
-    if(currentRow() >= tract_models.size())
+    if(currentRow() >= int(tract_models.size()) || currentRow() == -1)
         return;
-    cur_tracking_window.report(tract_models[currentRow()]->report.c_str());
+    cur_tracking_window.report(tract_models[uint32_t(currentRow())]->report.c_str());
 }
 
 void TractTableWidget::ppv_analysis(void)
@@ -287,11 +287,11 @@ void TractTableWidget::filter_by_roi(void)
     cur_tracking_window.set_tracking_param(track_thread);
     cur_tracking_window.regionWidget->setROIs(&track_thread);
     for(int index = 0;index < tract_models.size();++index)
-    if(item(index,0)->checkState() == Qt::Checked)
+    if(item(int(index),0)->checkState() == Qt::Checked)
     {
         tract_models[index]->filter_by_roi(track_thread.roi_mgr);
-        item(index,1)->setText(QString::number(tract_models[index]->get_visible_track_count()));
-        item(index,2)->setText(QString::number(tract_models[index]->get_deleted_track_count()));
+        item(int(index),1)->setText(QString::number(tract_models[index]->get_visible_track_count()));
+        item(int(index),2)->setText(QString::number(tract_models[index]->get_deleted_track_count()));
     }
     emit need_update();
 }
@@ -308,17 +308,17 @@ void TractTableWidget::fetch_tracts(void)
             if(thread_data[index]->fetchTracks(tract_models[index].get()))
             {
                 // 1 for tract number
-                item(index,1)->setText(
+                item(int(index),1)->setText(
                         QString::number(tract_models[index]->get_visible_track_count()));
                 has_tracts = true;
             }
-            item(index,3)->setText(
+            item(int(index),3)->setText(
                 QString::number(thread_data[index]->get_total_seed_count()));
             if(thread_data[index]->is_ended())
             {
                 thread_data[index]->apply_tip(tract_models[index].get());
-                item(index,1)->setText(QString::number(tract_models[index]->get_visible_track_count()));
-                item(index,2)->setText(QString::number(tract_models[index]->get_deleted_track_count()));
+                item(int(index),1)->setText(QString::number(tract_models[index]->get_visible_track_count()));
+                item(int(index),2)->setText(QString::number(tract_models[index]->get_deleted_track_count()));
                 thread_data[index].reset();
             }
         }
@@ -464,7 +464,7 @@ void TractTableWidget::set_color(void)
     QColor color = QColorDialog::getColor(Qt::red,(QWidget*)this,"Select color",QColorDialog::ShowAlphaChannel);
     if(!color.isValid())
         return;
-    tract_models[currentRow()]->set_color(color.rgb());
+    tract_models[uint32_t(currentRow())]->set_color(color.rgb());
     cur_tracking_window.set_data("tract_color_style",1);//manual assigned
     emit need_update();
 }
@@ -520,7 +520,7 @@ void TractTableWidget::open_cluster_label(void)
         return;
 
     std::ifstream in(filename.toLocal8Bit().begin());
-    std::vector<unsigned int> labels(tract_models[currentRow()]->get_visible_track_count());
+    std::vector<unsigned int> labels(tract_models[uint32_t(currentRow())]->get_visible_track_count());
     std::copy(std::istream_iterator<unsigned int>(in),
               std::istream_iterator<unsigned int>(),labels.begin());
     load_cluster_label(labels);
@@ -534,7 +534,7 @@ void TractTableWidget::auto_recognition(void)
         return;
     }
     std::vector<unsigned int> c;
-    cur_tracking_window.handle->recognize(tract_models[currentRow()],c,
+    cur_tracking_window.handle->recognize(tract_models[uint32_t(currentRow())],c,
                     cur_tracking_window["autotrack_tolerance"].toFloat());
     QStringList Names;
     for(int i = 0;i < cur_tracking_window.handle->tractography_name_list.size();++i)
@@ -551,12 +551,12 @@ void TractTableWidget::recognize_rename(void)
     }
     begin_prog("Recognize and rename");
     for(unsigned int index = 0;check_prog(index,tract_models.size());++index)
-        if(item(index,0)->checkState() == Qt::Checked)
+        if(item(int(index),0)->checkState() == Qt::Checked)
         {
             std::map<float,std::string,std::greater<float> > sorted_list;
             if(!cur_tracking_window.handle->recognize(tract_models[index],sorted_list,true))
                 return;
-            item(index,0)->setText(sorted_list.begin()->second.c_str());
+            item(int(index),0)->setText(sorted_list.begin()->second.c_str());
         }
 }
 
@@ -575,35 +575,16 @@ void TractTableWidget::clustering(int method_id)
             "DSI Studio","Clustering detail (mm):",cur_tracking_window.handle->vs[0],0.2,50.0,2,&ok);
     if(!ok)
         return;
-    tract_models[currentRow()]->run_clustering(method_id,n,detail);
-    std::vector<unsigned int> c = tract_models[currentRow()]->get_cluster_info();
+    tract_models[uint32_t(currentRow())]->run_clustering(method_id,n,detail);
+    std::vector<unsigned int> c = tract_models[uint32_t(currentRow())]->get_cluster_info();
     load_cluster_label(c);
     assign_colors();
 }
 
 void TractTableWidget::save_tracts_as(void)
 {
-    if(currentRow() >= tract_models.size())
-        return;
-    QString filename;
-    filename = QFileDialog::getSaveFileName(
-                this,"Save tracts as",item(currentRow(),0)->text().replace(':','_') + output_format(),
-                 "Tract files (*.tt.gz *tt.gz *trk.gz *.trk);;Text File (*.txt);;MAT files (*.mat);;TCK file (*.tck);;ROI files (*.nii *nii.gz);;All files (*)");
-    if(filename.isEmpty())
-        return;
-    std::string sfilename = filename.toLocal8Bit().begin();
-    if(tract_models[currentRow()]->save_tracts_to_file(&*sfilename.begin()))
-        QMessageBox::information(this,"DSI Studio","file saved");
-    else
-        QMessageBox::critical(this,"Error","Cannot write to file. Please check write permission.");
-}
-
-void TractTableWidget::save_tracts_in_template(void)
-{
     if(currentRow() >= int(tract_models.size()) || currentRow() < 0)
         return;
-    if(!cur_tracking_window.can_map_to_mni())
-        return;
     QString filename;
     filename = QFileDialog::getSaveFileName(
                 this,"Save tracts as",item(currentRow(),0)->text().replace(':','_') + output_format(),
@@ -611,7 +592,7 @@ void TractTableWidget::save_tracts_in_template(void)
     if(filename.isEmpty())
         return;
     std::string sfilename = filename.toLocal8Bit().begin();
-    if(tract_models[size_t(currentRow())]->save_tracts_in_template_space(cur_tracking_window.handle,&*sfilename.begin()))
+    if(tract_models[uint32_t(currentRow())]->save_tracts_to_file(&*sfilename.begin()))
         QMessageBox::information(this,"DSI Studio","file saved");
     else
         QMessageBox::critical(this,"Error","Cannot write to file. Please check write permission.");
@@ -619,7 +600,7 @@ void TractTableWidget::save_tracts_in_template(void)
 
 void TractTableWidget::save_tracts_in_native(void)
 {
-    if(currentRow() >= tract_models.size())
+    if(currentRow() >= int(tract_models.size()) || currentRow() < 0)
         return;
     if(!cur_tracking_window.handle->is_qsdr)
     {
@@ -646,7 +627,7 @@ void TractTableWidget::save_tracts_in_native(void)
 
 void TractTableWidget::save_vrml_as(void)
 {
-    if(currentRow() >= tract_models.size())
+    if(currentRow() >= int(tract_models.size()) || currentRow() < 0)
         return;
     QString filename;
     filename = QFileDialog::getSaveFileName(
@@ -671,7 +652,7 @@ void TractTableWidget::save_vrml_as(void)
     */
     std::string sfilename = filename.toLocal8Bit().begin();
 
-    tract_models[currentRow()]->save_vrml(&*sfilename.begin(),
+    tract_models[uint32_t(currentRow())]->save_vrml(&*sfilename.begin(),
                                                 cur_tracking_window["tract_style"].toInt(),
                                                 cur_tracking_window["tract_color_style"].toInt(),
                                                 cur_tracking_window["tube_diameter"].toFloat(),
@@ -698,7 +679,7 @@ void TractTableWidget::save_all_tracts_end_point_as(void)
 }
 void TractTableWidget::save_end_point_as(void)
 {
-    if(currentRow() >= tract_models.size())
+    if(currentRow() >= int(tract_models.size()) || currentRow() < 0)
         return;
     QString filename;
     filename = QFileDialog::getSaveFileName(
@@ -707,17 +688,18 @@ void TractTableWidget::save_end_point_as(void)
                 "Tract files (*.txt);;MAT files (*.mat);;All files (*)");
     if(filename.isEmpty())
         return;
-
-    std::string sfilename = filename.toLocal8Bit().begin();
-    tract_models[currentRow()]->save_end_points(&*sfilename.begin());
+    tract_models[uint32_t(currentRow())]->save_end_points(filename.toStdString().c_str());
 }
 
 void TractTableWidget::save_end_point_in_mni(void)
 {
-    if(currentRow() >= tract_models.size() || currentRow() < 0)
+    if(currentRow() >= int(tract_models.size()) || currentRow() < 0)
         return;
     if(!cur_tracking_window.can_map_to_mni())
+    {
+        QMessageBox::critical(this,"Error",cur_tracking_window.handle->error_msg.c_str());
         return;
+    }
     QString filename;
     filename = QFileDialog::getSaveFileName(
                 this,
@@ -758,9 +740,108 @@ void TractTableWidget::save_end_point_in_mni(void)
     }
 }
 
+
+void TractTableWidget::save_transformed_tracts(void)
+{
+    if(currentRow() >= int(tract_models.size()) || currentRow() == -1)
+        return;
+    QString filename;
+    filename = QFileDialog::getSaveFileName(
+                this,
+                "Save tracts as",item(currentRow(),0)->text() + "_in_" +
+                cur_tracking_window.current_slice->get_name().c_str()+output_format(),
+                 "Tract files (*.tt.gz *tt.gz *trk.gz *.trk);;Text File (*.txt);;MAT files (*.mat);;NIFTI files (*.nii *nii.gz);;All files (*)");
+    if(filename.isEmpty())
+        return;
+    CustomSliceModel* slice = dynamic_cast<CustomSliceModel*>(cur_tracking_window.current_slice.get());
+    if(!slice)
+    {
+        QMessageBox::critical(this,"Error","Current slice is in the DWI space. Please use regular tract saving function");
+        return;
+    }
+
+    slice->update_transform();
+    if(tract_models[uint32_t(currentRow())]->save_transformed_tracts_to_file(filename.toStdString().c_str(),slice->dim,slice->vs,slice->invT,false))
+        QMessageBox::information(this,"DSI Studio","File saved");
+    else
+        QMessageBox::critical(this,"Error","File not saved. Please check write permission");
+}
+
+
+void TractTableWidget::save_transformed_endpoints(void)
+{
+    if(currentRow() >= int(tract_models.size()) || currentRow() == -1)
+        return;
+    QString filename;
+    filename = QFileDialog::getSaveFileName(
+                this,
+                "Save end_point as",item(currentRow(),0)->text() + "_endpoints_in_" +
+                cur_tracking_window.current_slice->get_name().c_str()+
+                ".txt",
+                "Tract files (*.txt);;MAT files (*.mat);;All files (*)");
+    if(filename.isEmpty())
+        return;
+    CustomSliceModel* slice = dynamic_cast<CustomSliceModel*>(cur_tracking_window.current_slice.get());
+    if(!slice)
+    {
+        QMessageBox::critical(this,"Error","Current slice is in the DWI space. Please use regular tract saving function");
+        return;
+    }
+    if(tract_models[uint32_t(currentRow())]->save_transformed_tracts_to_file(filename.toStdString().c_str(),slice->dim,slice->vs,slice->invT,true))
+        QMessageBox::information(this,"DSI Studio","File saved");
+    else
+        QMessageBox::critical(this,"Error","File not saved. Please check write permission");
+}
+extern std::vector<std::string> fa_template_list;
+void TractTableWidget::save_tracts_in_template(void)
+{
+    if(currentRow() >= int(tract_models.size()) || currentRow() == -1)
+        return;
+    if(!cur_tracking_window.can_map_to_mni())
+    {
+        QMessageBox::critical(this,"Error",cur_tracking_window.handle->error_msg.c_str());
+        return;
+    }
+    QString filename;
+    filename = QFileDialog::getSaveFileName(
+                this,
+                "Save tracts as",item(currentRow(),0)->text() + "_in_" +
+                QFileInfo(fa_template_list[cur_tracking_window.handle->template_id].c_str()).baseName() +
+                output_format(),
+                 "Tract files (*.tt.gz *tt.gz *trk.gz *.trk);;Text File (*.txt);;MAT files (*.mat);;NIFTI files (*.nii *nii.gz);;All files (*)");
+    if(filename.isEmpty())
+        return;
+    if(tract_models[uint32_t(currentRow())]->save_tracts_in_template_space(cur_tracking_window.handle,filename.toStdString().c_str()))
+        QMessageBox::information(this,"DSI Studio","File saved");
+    else
+        QMessageBox::critical(this,"Error","File not saved. Please check write permission");
+}
+
+void TractTableWidget::save_tracts_in_mni(void)
+{
+    if(currentRow() >= int(tract_models.size()) || currentRow() == -1)
+        return;
+    if(!cur_tracking_window.can_map_to_mni())
+    {
+        QMessageBox::critical(this,"Error",cur_tracking_window.handle->error_msg.c_str());
+        return;
+    }
+    QString filename;
+    filename = QFileDialog::getSaveFileName(
+                this,
+                "Save tracts as",item(currentRow(),0)->text() + "_in_mni" + output_format(),
+                 "NIFTI files (*.nii *nii.gz);;All files (*)");
+    if(filename.isEmpty())
+        return;
+    if(tract_models[uint32_t(currentRow())]->save_tracts_in_template_space(cur_tracking_window.handle,filename.toStdString().c_str()))
+        QMessageBox::information(this,"DSI Studio","File saved");
+    else
+        QMessageBox::critical(this,"Error","File not saved. Please check write permission");
+}
+
 void paint_track_on_volume(tipl::image<unsigned char,3>& track_map,const std::vector<float>& tracks)
 {
-    for(int j = 0;j < tracks.size();j += 3)
+    for(size_t j = 0;j < tracks.size();j += 3)
     {
         tipl::pixel_index<3> p(std::round(tracks[j]),std::round(tracks[j+1]),std::round(tracks[j+2]),track_map.geometry());
         if(track_map.geometry().is_valid(p))
@@ -806,7 +887,7 @@ void TractTableWidget::deep_learning_train(void)
                 ;
             tipl::morphology::defragment(track_map);
 
-            QString track_file_name = QFileInfo(filename).absolutePath() + "/" + item(index,0)->text() + ".nii.gz";
+            QString track_file_name = QFileInfo(filename).absolutePath() + "/" + item(int(index),0)->text() + ".nii.gz";
             gz_nifti nifti2;
             nifti2.set_voxel_size(cur_tracking_window.current_slice->vs);
             nifti2.set_image_transformation(cur_tracking_window.handle->trans_to_mni);
@@ -831,7 +912,7 @@ void TractTableWidget::deep_learning_train(void)
 
 void TractTableWidget::recog_tracks(void)
 {
-    if(currentRow() >= tract_models.size() || tract_models[currentRow()]->get_tracts().size() == 0)
+    if(currentRow() >= int(tract_models.size()) || tract_models[uint32_t(currentRow())]->get_tracts().size() == 0)
         return;
     if(!cur_tracking_window.handle->load_track_atlas())
     {
@@ -839,86 +920,23 @@ void TractTableWidget::recog_tracks(void)
         return;
     }
     std::map<float,std::string,std::greater<float> > sorted_list;
-    if(!cur_tracking_window.handle->recognize(tract_models[currentRow()],sorted_list,false))
+    if(!cur_tracking_window.handle->recognize(tract_models[uint32_t(currentRow())],sorted_list,false))
     {
         QMessageBox::information(this,"Error","Cannot recognize tracks.",0);
         return;
     }
     std::ostringstream out;
     auto beg = sorted_list.begin();
-    for(int i = 0;i < sorted_list.size();++i,++beg)
+    for(size_t i = 0;i < sorted_list.size();++i,++beg)
         if(beg->first != 0.0f)
             out << beg->first*100.0f << "% " << beg->second << std::endl;
     show_info_dialog("Tract Recognition Result",out.str());
 }
-void smoothed_tracks(const std::vector<float>& track,std::vector<float>& smoothed);
-void TractTableWidget::saveTransformedTracts(const float* transform)
-{
-    if(currentRow() >= tract_models.size())
-        return;
-    QString filename;
-    filename = QFileDialog::getSaveFileName(
-                this,
-                "Save tracts as",item(currentRow(),0)->text() + output_format(),
-                 "Tract files (*.tt.gz *tt.gz *trk.gz *.trk);;Text File (*.txt);;MAT files (*.mat);;NIFTI files (*.nii *nii.gz);;All files (*)");
-    if(filename.isEmpty())
-        return;
-    if(!cur_tracking_window.can_map_to_mni())
-        return;
-    std::string sfilename = filename.toLocal8Bit().begin();
-    if(transform)
-        tract_models[currentRow()]->save_transformed_tracts_to_file(&*sfilename.begin(),transform,false);
-    else
-    {
-        std::vector<std::vector<float> > tract_data(tract_models[currentRow()]->get_tracts());
-        begin_prog("converting coordinates");
-        for(unsigned int i = 0;check_prog(i,tract_data.size());++i)
-        {
-            for(unsigned int j = 0;j < tract_data[i].size();j += 3)
-            {
-                tipl::vector<3> v(&(tract_data[i][j]));
-                cur_tracking_window.handle->subject2mni(v);
-                tract_data[i][j] = v[0];
-                tract_data[i][j+1] = v[1];
-                tract_data[i][j+2] = v[2];
-            }
-            if(!cur_tracking_window.handle->is_qsdr)
-            {
-                std::vector<float> smooth_track;
-                smoothed_tracks(tract_data[i],smooth_track);
-                tract_data[i].swap(smooth_track);
-            }
-        }
-        if(!prog_aborted())
-        {
-            tract_models[currentRow()]->get_tracts().swap(tract_data);
-            tract_models[currentRow()]->save_tracts_to_file(&*sfilename.begin());
-            tract_models[currentRow()]->get_tracts().swap(tract_data);
-        }
-    }
-}
 
-
-
-void TractTableWidget::saveTransformedEndpoints(const float* transform)
-{
-    if(currentRow() >= tract_models.size())
-        return;
-    QString filename;
-    filename = QFileDialog::getSaveFileName(
-                this,
-                "Save end_point as",item(currentRow(),0)->text() + ".txt",
-                "Tract files (*.txt);;MAT files (*.mat);;All files (*)");
-    if(filename.isEmpty())
-        return;
-
-    std::string sfilename = filename.toLocal8Bit().begin();
-    tract_models[currentRow()]->save_transformed_tracts_to_file(&*sfilename.begin(),transform,true);
-}
 
 void TractTableWidget::load_tracts_color(void)
 {
-    if(currentRow() >= tract_models.size())
+    if(currentRow() >= int(tract_models.size()) || currentRow() == -1)
         return;
     QString filename = QFileDialog::getOpenFileName(
             this,"Load tracts color",QFileInfo(cur_tracking_window.windowTitle()).absolutePath(),
@@ -930,7 +948,7 @@ void TractTableWidget::load_tracts_color(void)
 
 void TractTableWidget::load_tracts_value(void)
 {
-    if(currentRow() >= tract_models.size())
+    if(currentRow() >= int(tract_models.size()) || currentRow() == -1)
         return;
     QString filename = QFileDialog::getOpenFileName(
             this,"Load tracts color",QFileInfo(cur_tracking_window.windowTitle()).absolutePath(),
@@ -944,28 +962,28 @@ void TractTableWidget::load_tracts_value(void)
     std::copy(std::istream_iterator<float>(in),
               std::istream_iterator<float>(),
               std::back_inserter(values));
-    if(tract_models[currentRow()]->get_visible_track_count() != values.size())
+    if(tract_models[uint32_t(currentRow())]->get_visible_track_count() != values.size())
     {
         QMessageBox::information(this,"Inconsistent track number",
                                  QString("The text file has %1 values, but there are %2 tracks.").
-                                 arg(values.size()).arg(tract_models[currentRow()]->get_visible_track_count()),0);
+                                 arg(values.size()).arg(tract_models[uint32_t(currentRow())]->get_visible_track_count()),0);
         return;
     }
-    color_bar_dialog dialog(0);
+    color_bar_dialog dialog(nullptr);
     auto min_max = std::minmax_element(values.begin(),values.end());
     dialog.set_value(*min_max.first,*min_max.second);
     dialog.exec();
     std::vector<unsigned int> colors(values.size());
     for(int i = 0;i < values.size();++i)
         colors[i] = (unsigned int)dialog.get_rgb(values[i]);
-    tract_models[currentRow()]->set_tract_color(colors);
+    tract_models[uint32_t(currentRow())]->set_tract_color(colors);
     cur_tracking_window.set_data("tract_color_style",1);//manual assigned
     emit need_update();
 }
 
 void TractTableWidget::save_tracts_color_as(void)
 {
-    if(currentRow() >= tract_models.size())
+    if(currentRow() >= int(tract_models.size()) || currentRow() == -1)
         return;
     QString filename;
     filename = QFileDialog::getSaveFileName(
@@ -975,7 +993,7 @@ void TractTableWidget::save_tracts_color_as(void)
         return;
 
     std::string sfilename = filename.toLocal8Bit().begin();
-    tract_models[currentRow()]->save_tracts_color_to_file(&*sfilename.begin());
+    tract_models[uint32_t(currentRow())]->save_tracts_color_to_file(&*sfilename.begin());
 }
 
 void get_track_statistics(std::shared_ptr<fib_data> handle,
@@ -1025,8 +1043,8 @@ std::vector<std::string> TractTableWidget::get_checked_tracks_name(void) const
 {
     std::vector<std::string> track_name;
     for(unsigned int index = 0;index < tract_models.size();++index)
-        if(item(index,0)->checkState() == Qt::Checked)
-            track_name.push_back(item(index,0)->text().toStdString());
+        if(item(int(index),0)->checkState() == Qt::Checked)
+            track_name.push_back(item(int(index),0)->text().toStdString());
     return track_name;
 }
 void TractTableWidget::show_tracts_statistics(void)
@@ -1060,8 +1078,8 @@ bool TractTableWidget::command(QString cmd,QString param,QString param2)
     {
         for(int index = 0;index < int(tract_models.size());++index)
         {
-            item(index,1)->setText(QString::number(tract_models[index]->get_visible_track_count()));
-            item(index,2)->setText(QString::number(tract_models[index]->get_deleted_track_count()));
+            item(int(index),1)->setText(QString::number(tract_models[index]->get_visible_track_count()));
+            item(int(index),2)->setText(QString::number(tract_models[index]->get_deleted_track_count()));
         }
         emit need_update();
         return true;
@@ -1119,7 +1137,7 @@ bool TractTableWidget::command(QString cmd,QString param,QString param2)
 
 void TractTableWidget::save_tracts_data_as(void)
 {
-    if(currentRow() >= tract_models.size())
+    if(currentRow() >= int(tract_models.size()) || currentRow() == -1)
         return;
     QAction *action = qobject_cast<QAction *>(sender());
     if(!action)
@@ -1130,7 +1148,7 @@ void TractTableWidget::save_tracts_data_as(void)
     if(filename.isEmpty())
         return;
 
-    if(!tract_models[currentRow()]->save_data_to_file(
+    if(!tract_models[uint32_t(currentRow())]->save_data_to_file(
                     cur_tracking_window.handle,filename.toLocal8Bit().begin(),
                     action->data().toString().toLocal8Bit().begin()))
     {
@@ -1145,7 +1163,7 @@ void TractTableWidget::merge_all(void)
 {
     std::vector<unsigned int> merge_list;
     for(int index = 0;index < tract_models.size();++index)
-        if(item(index,0)->checkState() == Qt::Checked)
+        if(item(int(index),0)->checkState() == Qt::Checked)
             merge_list.push_back(index);
     if(merge_list.size() <= 1)
         return;
@@ -1170,26 +1188,28 @@ void TractTableWidget::delete_row(int row)
 
 void TractTableWidget::copy_track(void)
 {
-    unsigned int cur_row = currentRow();
-    addNewTracts(item(cur_row,0)->text() + "copy");
-    *(tract_models.back()) = *(tract_models[cur_row]);
+    if(currentRow() >= int(tract_models.size()) || currentRow() == -1)
+        return;
+    addNewTracts(item(currentRow(),0)->text() + "copy");
+    *(tract_models.back()) = *(tract_models[currentRow()]);
     item(currentRow(),1)->setText(QString::number(tract_models.back()->get_visible_track_count()));
     emit need_update();
 }
 
 void TractTableWidget::separate_deleted_track(void)
 {
-    unsigned int cur_row = currentRow();
-    addNewTracts(item(cur_row,0)->text(),false);
-    std::vector<std::vector<float> > new_tracks = tract_models[cur_row]->get_deleted_tracts();
+    if(currentRow() >= int(tract_models.size()) || currentRow() == -1)
+        return;
+    addNewTracts(item(currentRow(),0)->text(),false);
+    std::vector<std::vector<float> > new_tracks = tract_models[currentRow()]->get_deleted_tracts();
     if(new_tracks.empty())
         return;
     tract_models.back()->add_tracts(new_tracks);
-    tract_models[cur_row]->clear_deleted();
+    tract_models[currentRow()]->clear_deleted();
     item(rowCount()-1,1)->setText(QString::number(tract_models.back()->get_visible_track_count()));
     item(rowCount()-1,2)->setText(QString::number(tract_models.back()->get_deleted_track_count()));
-    item(cur_row,1)->setText(QString::number(tract_models[cur_row]->get_visible_track_count()));
-    item(cur_row,2)->setText(QString::number(tract_models[cur_row]->get_deleted_track_count()));
+    item(currentRow(),1)->setText(QString::number(tract_models[currentRow()]->get_visible_track_count()));
+    item(currentRow(),2)->setText(QString::number(tract_models[currentRow()]->get_deleted_track_count()));
     emit need_update();
 }
 void TractTableWidget::sort_track_by_name(void)
@@ -1244,8 +1264,8 @@ void TractTableWidget::move_up(void)
         Qt::CheckState checked = item(currentRow(),0)->checkState();
         item(currentRow(),0)->setCheckState(item(currentRow()-1,0)->checkState());
         item(currentRow()-1,0)->setCheckState(checked);
-        std::swap(thread_data[currentRow()],thread_data[currentRow()-1]);
-        std::swap(tract_models[currentRow()],tract_models[currentRow()-1]);
+        std::swap(thread_data[uint32_t(currentRow())],thread_data[currentRow()-1]);
+        std::swap(tract_models[uint32_t(currentRow())],tract_models[currentRow()-1]);
         setCurrentCell(currentRow()-1,0);
     }
     emit need_update();
@@ -1264,8 +1284,8 @@ void TractTableWidget::move_down(void)
         Qt::CheckState checked = item(currentRow(),0)->checkState();
         item(currentRow(),0)->setCheckState(item(currentRow()+1,0)->checkState());
         item(currentRow()+1,0)->setCheckState(checked);
-        std::swap(thread_data[currentRow()],thread_data[currentRow()+1]);
-        std::swap(tract_models[currentRow()],tract_models[currentRow()+1]);
+        std::swap(thread_data[uint32_t(currentRow())],thread_data[currentRow()+1]);
+        std::swap(tract_models[uint32_t(currentRow())],tract_models[currentRow()+1]);
         setCurrentCell(currentRow()+1,0);
     }
     emit need_update();
@@ -1328,7 +1348,7 @@ void TractTableWidget::delete_branches(void)
 
 void TractTableWidget::resample_step_size(void)
 {
-    if(currentRow() >= int(tract_models.size()))
+    if(currentRow() >= int(tract_models.size()) || currentRow() == -1)
         return;
     float new_step = 0.5f;
     bool ok;
@@ -1381,17 +1401,17 @@ void TractTableWidget::reconnect_track(void)
     if(dis <= 2.0f || angle <= 0.0f)
         return;
     tract_models[uint32_t(cur_row)]->reconnect_track(dis,std::cos(angle*3.14159265358979323846f/180.0f));
-    item(cur_row,1)->setText(QString::number(tract_models[cur_row]->get_visible_track_count()));
+    item(cur_row,1)->setText(QString::number(tract_models[uint32_t(cur_row)]->get_visible_track_count()));
     emit need_update();
 }
 void TractTableWidget::edit_tracts(void)
 {
-    QRgb color;
+    QRgb color = 0;
     if(edit_option == paint)
         color = QColorDialog::getColor(Qt::red,this,"Select color",QColorDialog::ShowAlphaChannel).rgb();
     for(unsigned int index = 0;index < tract_models.size();++index)
     {
-        if(item(index,0)->checkState() != Qt::Checked)
+        if(item(int(index),0)->checkState() != Qt::Checked)
             continue;
         switch(edit_option)
         {
@@ -1418,9 +1438,11 @@ void TractTableWidget::edit_tracts(void)
                              cur_tracking_window.glWidget->pos,color);
             cur_tracking_window.set_data("tract_color_style",1);//manual assigned
             break;
+        default:
+            break;
         }
-        item(index,1)->setText(QString::number(tract_models[index]->get_visible_track_count()));
-        item(index,2)->setText(QString::number(tract_models[index]->get_deleted_track_count()));
+        item(int(index),1)->setText(QString::number(tract_models[index]->get_visible_track_count()));
+        item(int(index),2)->setText(QString::number(tract_models[index]->get_deleted_track_count()));
     }
     emit need_update();
 }
@@ -1429,11 +1451,11 @@ void TractTableWidget::undo_tracts(void)
 {
     for(unsigned int index = 0;index < tract_models.size();++index)
     {
-        if(item(index,0)->checkState() != Qt::Checked)
+        if(item(int(index),0)->checkState() != Qt::Checked)
             continue;
         tract_models[index]->undo();
-        item(index,1)->setText(QString::number(tract_models[index]->get_visible_track_count()));
-        item(index,2)->setText(QString::number(tract_models[index]->get_deleted_track_count()));
+        item(int(index),1)->setText(QString::number(tract_models[index]->get_visible_track_count()));
+        item(int(index),2)->setText(QString::number(tract_models[index]->get_deleted_track_count()));
     }
     emit need_update();
 }
@@ -1441,7 +1463,7 @@ void TractTableWidget::cut_by_slice(unsigned char dim,bool greater)
 {
     for(unsigned int index = 0;index < tract_models.size();++index)
     {
-        if(item(index,0)->checkState() != Qt::Checked)
+        if(item(int(index),0)->checkState() != Qt::Checked)
             continue;
         if(cur_tracking_window.current_slice->is_diffusion_space)
             tract_models[index]->cut_by_slice(dim,cur_tracking_window.current_slice->slice_pos[dim],greater);
@@ -1450,8 +1472,8 @@ void TractTableWidget::cut_by_slice(unsigned char dim,bool greater)
             tract_models[index]->cut_by_slice(dim,cur_tracking_window.current_slice->slice_pos[dim],greater,
                                                   &cur_tracking_window.current_slice->invT);
         }
-        item(index,1)->setText(QString::number(tract_models[index]->get_visible_track_count()));
-        item(index,2)->setText(QString::number(tract_models[index]->get_deleted_track_count()));
+        item(int(index),1)->setText(QString::number(tract_models[index]->get_visible_track_count()));
+        item(int(index),2)->setText(QString::number(tract_models[index]->get_deleted_track_count()));
     }
     emit need_update();
 }
@@ -1460,11 +1482,11 @@ void TractTableWidget::redo_tracts(void)
 {
     for(unsigned int index = 0;index < tract_models.size();++index)
     {
-        if(item(index,0)->checkState() != Qt::Checked)
+        if(item(int(index),0)->checkState() != Qt::Checked)
             continue;
         tract_models[index]->redo();
-        item(index,1)->setText(QString::number(tract_models[index]->get_visible_track_count()));
-        item(index,2)->setText(QString::number(tract_models[index]->get_deleted_track_count()));
+        item(int(index),1)->setText(QString::number(tract_models[index]->get_visible_track_count()));
+        item(int(index),2)->setText(QString::number(tract_models[index]->get_deleted_track_count()));
     }
     emit need_update();
 }
@@ -1473,11 +1495,11 @@ void TractTableWidget::trim_tracts(void)
 {
     for(unsigned int index = 0;index < tract_models.size();++index)
     {
-        if(item(index,0)->checkState() != Qt::Checked)
+        if(item(int(index),0)->checkState() != Qt::Checked)
             continue;
         tract_models[index]->trim();
-        item(index,1)->setText(QString::number(tract_models[index]->get_visible_track_count()));
-        item(index,2)->setText(QString::number(tract_models[index]->get_deleted_track_count()));
+        item(int(index),1)->setText(QString::number(tract_models[index]->get_visible_track_count()));
+        item(int(index),2)->setText(QString::number(tract_models[index]->get_deleted_track_count()));
     }
     emit need_update();
 }

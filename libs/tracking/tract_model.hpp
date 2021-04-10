@@ -80,7 +80,8 @@ public:
         bool save_tracts_to_file(const char* file_name);
         bool save_tracts_in_native_space(std::shared_ptr<fib_data> handle,const char* file_name);
         bool save_tracts_in_template_space(std::shared_ptr<fib_data> handle,const char* file_name);
-        bool save_transformed_tracts_to_file(const char* file_name,const float* transform,bool end_point);
+        bool save_transformed_tracts_to_file(const char* file_name,tipl::geometry<3> new_dim,
+                                             tipl::vector<3> new_vs,const tipl::matrix<4,4,float>& T,bool end_point);
 
         void save_vrml(const std::string& file_name,
                        unsigned char tract_style,
@@ -89,7 +90,7 @@ public:
                        unsigned char tract_tube_detail,
                        const std::string& surface_text);
         bool save_data_to_file(std::shared_ptr<fib_data> handle,const char* file_name,const std::string& index_name);
-        void save_end_points(const char* file_name) const;
+        bool save_end_points(const char* file_name) const;
 
         bool load_tracts_color_from_file(const char* file_name);
         bool save_tracts_color_to_file(const char* file_name);
@@ -155,7 +156,7 @@ public:
         static bool export_pdi(const char* file_name,
                                const std::vector<std::shared_ptr<TractModel> >& tract_models);
         static bool export_end_pdi(const char* file_name,
-                               const std::vector<std::shared_ptr<TractModel> >& tract_models,size_t end_distance = 3);
+                               const std::vector<std::shared_ptr<TractModel> >& tract_models,float end_distance = 3.0f);
 public:
         void get_quantitative_info(std::shared_ptr<fib_data> handle,std::string& result);
         tipl::vector<3> get_report(std::shared_ptr<fib_data> handle,

@@ -2430,7 +2430,7 @@ void GLWidget::addSurface(void)
 {
     auto slice = cur_tracking_window.current_slice;
     float threshold = 0.1f;
-    if(slice->handle->view_item[slice->view_id].name.find("icbm152_wm") == std::string::npos)
+    if(slice->get_name().find("icbm152_wm") == std::string::npos)
         threshold = tipl::segmentation::otsu_threshold(slice->get_source())*1.25f;
     bool ok;
     threshold = float(QInputDialog::getDouble(this,

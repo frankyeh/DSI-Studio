@@ -762,7 +762,7 @@ bool TractModel::save_tracts_in_template_space(std::shared_ptr<fib_data> handle,
         return false;
     std::shared_ptr<TractModel> tract_in_template(
                 new TractModel(handle->template_I.geometry(),handle->template_vs,handle->template_trans_to_mni));
-    std::vector<std::vector<float> > new_tract_data = tract_data;
+    std::vector<std::vector<float> > new_tract_data(tract_data);
     tipl::par_for(tract_data.size(),[&](unsigned int i)
     {
         for(unsigned int j = 0;j < tract_data[i].size();j += 3)
@@ -781,20 +781,20 @@ bool TractModel::save_tracts_in_template_space(std::shared_ptr<fib_data> handle,
 }
 
 //---------------------------------------------------------------------------
-bool TractModel::save_transformed_tracts_to_file(const char* file_name,const float* transform,bool end_point)
+bool TractModel::save_transformed_tracts_to_file(const char* file_name,tipl::geometry<3> new_dim,
+                                                 tipl::vector<3> new_vs,const tipl::matrix<4,4,float>& T,bool end_point)
 {
+    std::shared_ptr<TractModel> tract_in_other_space(new TractModel(new_dim,new_vs));
     std::vector<std::vector<float> > new_tract_data(tract_data);
     for(unsigned int i = 0;i < tract_data.size();++i)
         for(unsigned int j = 0;j < tract_data[i].size();j += 3)
-        tipl::vector_transformation(&(new_tract_data[i][j]),
-                                    &(tract_data[i][j]),transform,tipl::vdim<3>());
-    bool result = true;
+        tipl::vector_transformation(&(tract_data[i][j]),&(new_tract_data[i][j]),&T[0],tipl::vdim<3>());
+    tract_in_other_space->add_tracts(new_tract_data);
+    tract_in_other_space->resample(0.5f);
     if(end_point)
-        save_end_points(file_name);
+        return tract_in_other_space->save_end_points(file_name);
     else
-        result = save_tracts_to_file(file_name);
-    new_tract_data.swap(tract_data);
-    return result;
+        return tract_in_other_space->save_tracts_to_file(file_name);
 }
 
 //---------------------------------------------------------------------------
@@ -1297,14 +1297,14 @@ bool TractModel::save_data_to_mat(const char* file_name,int index,const char* da
 }
 */
 //---------------------------------------------------------------------------
-void TractModel::save_end_points(const char* file_name_) const
+bool TractModel::save_end_points(const char* file_name_) const
 {
 
     std::vector<float> buffer;
     buffer.reserve(tract_data.size() * 6);
     for (unsigned int index = 0;index < tract_data.size();++index)
     {
-        unsigned int length = tract_data[index].size();
+        size_t length = tract_data[index].size();
         buffer.push_back(tract_data[index][0]);
         buffer.push_back(tract_data[index][1]);
         buffer.push_back(tract_data[index][2]);
@@ -1318,17 +1318,17 @@ void TractModel::save_end_points(const char* file_name_) const
     {
         std::ofstream out(file_name_,std::ios::out);
         if (!out)
-            return;
+            return false;
         std::copy(buffer.begin(),buffer.end(),std::ostream_iterator<float>(out," "));
     }
     if (file_name.find(".mat") != std::string::npos)
     {
         tipl::io::mat_write out(file_name_);
         if(!out)
-            return;
-        out.write("end_points",(const float*)&*buffer.begin(),3,buffer.size()/3);
+            return false;
+        out.write("end_points",buffer,3);
     }
-
+    return true;
 }
 //---------------------------------------------------------------------------
 void TractModel::resample(float new_step)
@@ -2353,7 +2353,7 @@ void TractModel::get_density_map(
 }
 bool TractModel::export_end_pdi(
                        const char* file_name,
-                       const std::vector<std::shared_ptr<TractModel> >& tract_models,size_t end_distance)
+                       const std::vector<std::shared_ptr<TractModel> >& tract_models,float end_distance)
 {
     if(tract_models.empty())
         return false;

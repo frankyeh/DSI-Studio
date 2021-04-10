@@ -408,11 +408,19 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         connect(ui->actionSave_VMRL,SIGNAL(triggered()),tractWidget,SLOT(save_vrml_as()));
         connect(ui->actionSave_All_Tracts_As,SIGNAL(triggered()),tractWidget,SLOT(save_all_tracts_as()));
         connect(ui->actionSave_All_Tracts_As_Multiple_Files,SIGNAL(triggered()),tractWidget,SLOT(save_all_tracts_to_dir()));
+
         connect(ui->actionSave_End_Points_As,SIGNAL(triggered()),tractWidget,SLOT(save_end_point_as()));
         connect(ui->actionSave_End_Points_All_Tracts_As,SIGNAL(triggered()),tractWidget,SLOT(save_all_tracts_end_point_as()));
-        connect(ui->actionSave_Enpoints_In_MNI_Space,SIGNAL(triggered()),tractWidget,SLOT(save_end_point_in_mni()));
+        connect(ui->actionSave_Endpoints_in_Current_Mapping,SIGNAL(triggered()),tractWidget,SLOT(save_transformed_endpoints()));
+
         connect(ui->actionSave_Tracts_in_Template_Space,SIGNAL(triggered()),tractWidget,SLOT(save_tracts_in_template()));
+        connect(ui->actionSave_Tracts_in_Current_Mapping,SIGNAL(triggered()),tractWidget,SLOT(save_transformed_tracts()));
         connect(ui->actionSave_Tracts_In_Native_Space,SIGNAL(triggered()),tractWidget,SLOT(save_tracts_in_native()));
+
+        connect(ui->actionSave_Tract_in_MNI_Coordinates,SIGNAL(triggered()),tractWidget,SLOT(save_tracts_in_mni()));
+        connect(ui->actionSave_Endpoints_in_MNI_Coordinates,SIGNAL(triggered()),tractWidget,SLOT(save_end_point_in_mni()));
+
+
         connect(ui->actionDeep_Learning_Train,SIGNAL(triggered()),tractWidget,SLOT(deep_learning_train()));
         connect(ui->actionStatistics,SIGNAL(triggered()),tractWidget,SLOT(show_tracts_statistics()));
         connect(ui->actionRecognize_Current_Tract,SIGNAL(triggered()),tractWidget,SLOT(recog_tracks()));
@@ -1187,16 +1195,6 @@ void tracking_window::on_actionTDI_Import_Slice_Space_triggered()
 }
 
 
-void tracking_window::on_actionSave_Tracts_in_Current_Mapping_triggered()
-{
-    tractWidget->saveTransformedTracts(&*current_slice->invT.begin());
-}
-void tracking_window::on_actionSave_Endpoints_in_Current_Mapping_triggered()
-{
-    tractWidget->saveTransformedEndpoints(&*current_slice->invT.begin());
-}
-
-
 void tracking_window::on_actionRestore_window_layout_triggered()
 {
     restoreGeometry(default_geo);
@@ -1245,22 +1243,6 @@ bool tracking_window::can_map_to_mni(void)
 {
     return handle->can_map_to_mni();
 }
-
-void tracking_window::on_actionSave_Tracts_in_MNI_space_triggered()
-{
-    if(!can_map_to_mni())
-    {
-        QMessageBox::information(this,"Error",handle->error_msg.c_str(),0);
-        return;
-    }
-    if(handle->is_qsdr)
-        tractWidget->saveTransformedTracts(&*(handle->trans_to_mni.begin()));
-    else
-        tractWidget->saveTransformedTracts(nullptr);
-}
-
-
-
 
 void tracking_window::keyPressEvent ( QKeyEvent * event )
 {

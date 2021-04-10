@@ -35,6 +35,7 @@ public:
                            unsigned char,
                            const std::vector<std::shared_ptr<SliceModel> >& overlay_slices) const;
     tipl::const_pointer_image<float, 3> get_source(void) const;
+    std::string get_name(void) const;
     bool is_picture(void) const{return dim[0] == 1 || dim[1] == 1 || dim[2] == 1;}
 public:
     template<typename value_type1,typename value_type2>

@@ -88,7 +88,11 @@ tipl::const_pointer_image<float, 3> SliceModel::get_source(void) const
 {
     return handle->view_item[view_id].image_data;
 }
-
+// ---------------------------------------------------------------------------
+std::string SliceModel::get_name(void) const
+{
+    return handle->view_item[view_id].name;
+}
 // ---------------------------------------------------------------------------
 CustomSliceModel::CustomSliceModel(fib_data* new_handle):
     SliceModel(new_handle,0)
