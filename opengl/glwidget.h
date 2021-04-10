@@ -101,7 +101,7 @@ public:
      bool two_color_connectivity = false;
  private:
      void rotate_angle(float angle,float x,float y,float z);
-     void copyToClipboardEach(QTableWidget* widget);
+     void copyToClipboardEach(QTableWidget* widget,unsigned int col_size);
  public slots:
      void makeTracts(void);
      void addSurface(void);

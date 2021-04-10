@@ -2468,7 +2468,7 @@ void GLWidget::copyToClipboard(void)
     QApplication::clipboard()->setImage(I);
 }
 
-void GLWidget::copyToClipboardEach(QTableWidget* widget)
+void GLWidget::copyToClipboardEach(QTableWidget* widget,unsigned int col_size)
 {
     std::vector<bool> is_checked(uint32_t(widget->rowCount()));
     for (int i = 0;i < widget->rowCount();++i)
@@ -2495,16 +2495,13 @@ void GLWidget::copyToClipboardEach(QTableWidget* widget)
         }
     width += 5;
     height += 5;
-    QImage I(images.size() >= 10 ? width*10:width*int(images.size()),height*int(1+images.size()/10),QImage::Format_RGB32);
+    QImage I(images.size() >= col_size ? width*int(col_size): width*int(images.size()),
+             height*int(1+images.size()/col_size),QImage::Format_RGB32);
     QPainter painter(&I);
     painter.fillRect(I.rect(),images[0].pixel(0,0));
     for (size_t i = 0,j = 0;i < images.size();++i,++j)
-    {
-        if(j == 10)
-            j = 0;
-        painter.drawImage(int(j)*width+(width-images[i].width())/2,
-                          int(i/10)*height+(height-images[i].height())/2,images[i]);
-    }
+        painter.drawImage(int(j%col_size)*width+(width-images[i].width())/2,
+                          int(i/col_size)*height+(height-images[i].height())/2,images[i]);
     QApplication::clipboard()->setImage(I);
 
     for (int i = 0;i < widget->rowCount();++i)
@@ -2514,12 +2511,20 @@ void GLWidget::copyToClipboardEach(QTableWidget* widget)
 
 void GLWidget::copyToClipboardEachTract(void)
 {
-    copyToClipboardEach(cur_tracking_window.tractWidget);
+    bool ok = true;
+    int col_count = QInputDialog::getInt(nullptr,"DSI Studio","Column Count",5,1,50,1&ok);
+    if(!ok)
+        return;
+    copyToClipboardEach(cur_tracking_window.tractWidget,uint32_t(col_count));
 }
 
 void GLWidget::copyToClipboardEachRegion(void)
 {
-    copyToClipboardEach(cur_tracking_window.regionWidget);
+    bool ok = true;
+    int col_count = QInputDialog::getInt(nullptr,"DSI Studio","Column Count",5,1,50,1&ok);
+    if(!ok)
+        return;
+    copyToClipboardEach(cur_tracking_window.regionWidget,uint32_t(col_count));
 }
 
 
