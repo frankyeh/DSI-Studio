@@ -193,12 +193,12 @@ bool fiber_directions::add_data(gz_mat_read& mat_reader)
             continue;
         }
 
-        // prefix started here
-        std::string prefix_name(matrix_name.begin(),matrix_name.end()-1);
-        int store_index = matrix_name[matrix_name.length()-1]-'0';
-        if (store_index < 0 || store_index > 9)
+        // accept fiber wise index (e.g. my_fa0,my_fa1,my_fa2)
+        std::string prefix_name(matrix_name.begin(),matrix_name.end()-1); // the "my_fa" part
+        auto last_ch = matrix_name[matrix_name.length()-1]; // the index value part
+        if (last_ch < '0' || last_ch > '9')
             continue;
-
+        uint32_t store_index = uint32_t(last_ch-'0');
         if (prefix_name == "index")
         {
             check_index(store_index);
@@ -221,17 +221,14 @@ bool fiber_directions::add_data(gz_mat_read& mat_reader)
             continue;
         }
 
-        int prefix_name_index = 0;
-        for(;prefix_name_index < index_name.size();++prefix_name_index)
-            if(index_name[prefix_name_index] == prefix_name)
-                break;
+        auto prefix_name_index = size_t(std::find(index_name.begin(),index_name.end(),prefix_name)-index_name.begin());
         if(prefix_name_index == index_name.size())
         {
             index_name.push_back(prefix_name);
             index_data.push_back(std::vector<const float*>());
         }
 
-        if(index_data[prefix_name_index].size() <= store_index)
+        if(index_data[prefix_name_index].size() <= size_t(store_index))
             index_data[prefix_name_index].resize(store_index+1);
         mat_reader.read(index,row,col,index_data[prefix_name_index][store_index]);
 
@@ -420,7 +417,7 @@ float tracking_data::cos_angle(const tipl::vector<3>& cur_dir,unsigned int space
     return cur_dir*odf_table[findex[fib_order][space_index]];
 }
 
-float tracking_data::get_track_specific_index(unsigned int space_index,unsigned int index_num,
+float tracking_data::get_track_specific_index(unsigned int space_index,const std::vector<const float*>& index,
                          const tipl::vector<3,float>& dir) const
 {
     if(space_index >= dim.size() || fa[0][space_index] == 0.0)
@@ -444,7 +441,7 @@ float tracking_data::get_track_specific_index(unsigned int space_index,unsigned 
                 fib_order = index;
             }
     }
-    return other_index[index_num][fib_order][space_index];
+    return index[fib_order][space_index];
 }
 
 bool tracking_data::is_white_matter(const tipl::vector<3,float>& pos,float t) const

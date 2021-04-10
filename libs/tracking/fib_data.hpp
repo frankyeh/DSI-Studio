@@ -99,7 +99,7 @@ public:
                  float dt_threshold) const;
     const float* get_dir(unsigned int space_index,unsigned char fib_order) const;
     float cos_angle(const tipl::vector<3>& cur_dir,unsigned int space_index,unsigned char fib_order) const;
-    float get_track_specific_index(unsigned int space_index,unsigned int index_num,
+    float get_track_specific_index(unsigned int space_index,const std::vector<const float*>& index,
                              const tipl::vector<3,float>& dir) const;
     bool is_white_matter(const tipl::vector<3,float>& pos,float t) const;
 

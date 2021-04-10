@@ -3051,14 +3051,14 @@ void TractModel::get_tract_data(unsigned int fiber_index,unsigned int index_num,
     data.clear();
     if(tract_data[fiber_index].empty())
         return;
-    unsigned int count = tract_data[fiber_index].size()/3;
+    unsigned int count = uint32_t(tract_data[fiber_index].size()/3);
     data.resize(count);
     // track specific index
     if(index_num < fib->other_index.size())
     {
         auto base_image = tipl::make_image(fib->other_index[index_num][0],fib->dim);
         std::vector<tipl::vector<3,float> > gradient(count);
-        const float (*tract_ptr)[3] = (const float (*)[3])&(tract_data[fiber_index][0]);
+        auto tract_ptr = reinterpret_cast<const float (*)[3]>(&(tract_data[fiber_index][0]));
         ::gradient(tract_ptr,tract_ptr+count,gradient.begin());
         for (unsigned int point_index = 0,tract_index = 0;
              point_index < count;++point_index,tract_index += 3)
@@ -3067,16 +3067,17 @@ void TractModel::get_tract_data(unsigned int fiber_index,unsigned int index_num,
             gradient[point_index].normalize();
             if (tri_interpo.get_location(fib->dim,&(tract_data[fiber_index][tract_index])))
             {
-                float value,average_value = 0.0;
-                float sum_value = 0.0;
+                float value,average_value = 0.0f;
+                float sum_value = 0.0f;
                 for (unsigned int index = 0;index < 8;++index)
                 {
-                    if ((value = fib->get_track_specific_index(tri_interpo.dindex[index],index_num,gradient[point_index])) == 0.0)
+                    if ((value = fib->get_track_specific_index(uint32_t(tri_interpo.dindex[index]),
+                                                               fib->other_index[index_num],gradient[point_index])) == 0.0f)
                         continue;
                     average_value += value*tri_interpo.ratio[index];
                     sum_value += tri_interpo.ratio[index];
                 }
-                if (sum_value > 0.5)
+                if (sum_value > 0.5f)
                     data[point_index] = average_value/sum_value;
                 else
                     tipl::estimate(base_image,&(tract_data[fiber_index][tract_index]),data[point_index],tipl::linear);
