@@ -250,6 +250,13 @@
                 </property>
                </widget>
               </item>
+              <item>
+               <widget class="QCheckBox" name="cb_brainstem">
+                <property name="text">
+                 <string>Brainstem/Cerebellum Pathways</string>
+                </property>
+               </widget>
+              </item>
              </layout>
             </widget>
            </item>

@@ -40,6 +40,8 @@ auto_track::auto_track(QWidget *parent) :
     connect(ui->cb_projection,SIGNAL(clicked()),this,SLOT(select_tracts()));
     connect(ui->cb_association,SIGNAL(clicked()),this,SLOT(select_tracts()));
     connect(ui->cb_commissural,SIGNAL(clicked()),this,SLOT(select_tracts()));
+    connect(ui->cb_brainstem,SIGNAL(clicked()),this,SLOT(select_tracts()));
+
 }
 
 auto_track::~auto_track()
@@ -597,15 +599,22 @@ void auto_track::select_tracts()
         }
         if(ui->cb_projection->isChecked())
         {
-            select_list.push_back("Cortico");
+            select_list.push_back("Corticos");
+            select_list.push_back("Corticob");
             select_list.push_back("Thalamic");
-            select_list.push_back("Reticulo");
             select_list.push_back("Optic");
             select_list.push_back("Fornix");
         }
         if(ui->cb_commissural->isChecked())
         {
             select_list.push_back("Corpus");
+        }
+        if(ui->cb_brainstem->isChecked())
+        {
+            select_list.push_back("Reticular");
+            select_list.push_back("pontine");
+            select_list.push_back("rubro");
+            select_list.push_back("Cereb");
         }
         for(int i = 0;i < ui->candidate_list_view->count();++i)
             ui->candidate_list_view->item(i)->setSelected(false);
