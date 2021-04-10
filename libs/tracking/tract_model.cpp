@@ -564,53 +564,6 @@ void TractModel::add(const TractModel& rhs)
     is_cut.insert(is_cut.end(),rhs.is_cut.begin(),rhs.is_cut.end());
 }
 //---------------------------------------------------------------------------
-bool TractModel::load_from_atlas(const char* file_name_)
-{
-    std::string file_name(file_name_);
-    std::vector<std::vector<float> > loaded_tract_data;
-    std::vector<uint16_t> loaded_tract_cluster;
-
-    tipl::geometry<3> geo;
-    std::string r,pid;
-    unsigned int color;
-    if(!TinyTrack::load_from_file(file_name_,loaded_tract_data,loaded_tract_cluster,geo,vs,r,pid,color))
-        return false;
-    if(!handle->load_template() || geo != handle->template_I.geometry())
-        return false;
-    {
-        prog_init p("warping atlas tracks to subject space");
-        handle->run_normalization(true,true);
-        if(prog_aborted())
-            return false;
-    }
-    tipl::par_for(loaded_tract_data.size(),[&](size_t i)
-    {
-        for(size_t j = 0;j < loaded_tract_data[i].size();j += 3)
-        {
-            tipl::vector<3> p(&loaded_tract_data[i][j]);
-            handle->template_to_mni(p);
-            handle->mni2subject(p);
-            loaded_tract_data[i][j] = p[0];
-            loaded_tract_data[i][j+1] = p[1];
-            loaded_tract_data[i][j+2] = p[2];
-        }
-    });
-
-    if (loaded_tract_data.empty())
-        return false;
-
-    tract_cluster.clear();
-    if(loaded_tract_cluster.size() == loaded_tract_data.size())
-        std::copy(loaded_tract_cluster.begin(),loaded_tract_cluster.end(),std::back_inserter(tract_cluster));
-
-    loaded_tract_data.swap(tract_data);
-    tract_color.clear();
-    tract_color.resize(tract_data.size());
-    tract_tag.clear();
-    tract_tag.resize(tract_data.size());
-    return true;
-}
-//---------------------------------------------------------------------------
 bool TractModel::load_from_file(const char* file_name_,bool append)
 {
     std::string file_name(file_name_);
@@ -697,7 +650,7 @@ bool TractModel::load_from_file(const char* file_name_,bool append)
     if (QString(file_name_).endsWith("tck"))
     {
         Tck tck;
-        tck.vs = handle->vs;
+        tck.vs = vs;
         if(!tck.load_from_file(file_name_,loaded_tract_data))
             return false;
     }
@@ -856,8 +809,8 @@ bool TractModel::save_tracts_to_file(const char* file_name_)
             std::ostringstream out;
             out << "mrtrix tracks" << std::endl;
             out << "datatype: Float32LE" << std::endl;
-            out << "dim: " << handle->dim[0] << "," << handle->dim[1] << "," << handle->dim[2] << std::endl;
-            out << "vox: " << handle->vs[0] << "," << handle->vs[1] << "," << handle->vs[2] << std::endl;
+            out << "dim: " << geo[0] << "," << geo[1] << "," << geo[2] << std::endl;
+            out << "vox: " << vs[0] << "," << vs[1] << "," << vs[2] << std::endl;
             out << "datatype: Float32LE" << std::endl;
             out << "file: . 200\ncount: " << tract_data.size() << "\nEND\n";
             std::string t = out.str();
@@ -871,7 +824,7 @@ bool TractModel::save_tracts_to_file(const char* file_name_)
         for(size_t i = 0;i < tract_data.size();++i)
         {
             std::vector<float> buf(tract_data[i]);
-            tipl::multiply_constant(buf,handle->vs[0]);
+            tipl::multiply_constant(buf,vs[0]);
             out.write((char*)&buf[0],buf.size()*sizeof(float));
             out.write((char*)&NaN,sizeof(NaN));
             out.write((char*)&NaN,sizeof(NaN));
@@ -1894,7 +1847,7 @@ void TractModel::reconnect_track(float distance,float angular_threshold)
 {
     if(distance >= 2.0f)
         reconnect_track(distance*0.5f,angular_threshold);
-    std::vector<std::vector<uint32_t> > endpoint_map(handle->dim.size());
+    std::vector<std::vector<uint32_t> > endpoint_map(geo.size());
     for (unsigned int index = 0;index < tract_data.size();++index)
         if(tract_data[index].size() > 6)
         {
@@ -1904,10 +1857,10 @@ void TractModel::reconnect_track(float distance,float angular_threshold)
             end2 /= distance;
             end1.round();
             end2.round();
-            if(handle->dim.is_valid(end1))
-                endpoint_map[tipl::pixel_index<3>(end1[0],end1[1],end1[2],handle->dim).index()].push_back(index);
-            if(handle->dim.is_valid(end2))
-                endpoint_map[tipl::pixel_index<3>(end2[0],end2[1],end2[2],handle->dim).index()].push_back(index);
+            if(geo.is_valid(end1))
+                endpoint_map[tipl::pixel_index<3>(end1[0],end1[1],end1[2],geo).index()].push_back(index);
+            if(geo.is_valid(end2))
+                endpoint_map[tipl::pixel_index<3>(end2[0],end2[1],end2[2],geo).index()].push_back(index);
         }
     tipl::par_for(endpoint_map.size(),[&](size_t index)
     {
@@ -1921,7 +1874,7 @@ void TractModel::reconnect_track(float distance,float angular_threshold)
     // 2: track2 beg
     // 3: track2 end
     const int compare_pair[4][2] = {{0,2},{0,3},{1,2},{1,3}}; // for checking which end to connect
-    for (size_t pos = 0;pos < handle->dim.size();++pos)
+    for (size_t pos = 0;pos < geo.size();++pos)
         if(endpoint_map[pos].size() >= 2)
         {
             std::vector<uint32_t>& track_list = endpoint_map[pos];
@@ -2435,8 +2388,9 @@ bool TractModel::export_pdi(const char* file_name,
 {
     if(tract_models.empty())
         return false;
+    auto handle = tract_models.front()->handle;
     // here should use handle's dimesion, not tract_model's dimension
-    auto dim = tract_models.front()->handle->dim;
+    auto dim = handle->dim;
     tipl::image<uint32_t,3> accumulate_map(dim);
     for(size_t index = 0;index < tract_models.size();++index)
     {
@@ -2452,7 +2406,7 @@ bool TractModel::export_pdi(const char* file_name,
     tipl::image<float,3> pdi(accumulate_map);
     if(tract_models.size() > 1)
         tipl::multiply_constant(pdi,1.0f/float(tract_models.size()));
-    return gz_nifti::save_to_file(file_name,pdi,tract_models.front()->vs,tract_models.front()->handle->trans_to_mni);
+    return gz_nifti::save_to_file(file_name,pdi,handle->vs,handle->trans_to_mni);
 }
 bool TractModel::export_tdi(const char* filename,
                   std::vector<std::shared_ptr<TractModel> > tract_models,
@@ -3055,7 +3009,7 @@ void TractModel::get_tract_data(unsigned int fiber_index,unsigned int index_num,
     // track specific index
     if(index_num < handle->dir.index_data.size())
     {
-        auto base_image = tipl::make_image(handle->dir.index_data[index_num][0],geo);
+        auto base_image = tipl::make_image(handle->dir.index_data[index_num][0],handle->dim);
         std::vector<tipl::vector<3,float> > gradient(count);
         auto tract_ptr = reinterpret_cast<const float (*)[3]>(&(tract_data[fiber_index][0]));
         ::gradient(tract_ptr,tract_ptr+count,gradient.begin());
@@ -3088,7 +3042,7 @@ void TractModel::get_tract_data(unsigned int fiber_index,unsigned int index_num,
     else
     // voxel-based index
     {
-        if(handle->view_item[index_num].image_data.geometry() != handle->dim)
+        if(handle->view_item[index_num].image_data.geometry() != handle->dim) // other slices
         {
             for (unsigned int data_index = 0,index = 0;index < tract_data[fiber_index].size();index += 3,++data_index)
             {
@@ -3207,8 +3161,7 @@ void TractModel::run_clustering(unsigned char method_id,unsigned int cluster_cou
         param[0] = cluster_count;
     else
     {
-        std::copy(handle->dim.begin(),
-                  handle->dim.end(),param);
+        std::copy(geo.begin(),geo.end(),param);
         param[3] = detail;
     }
     std::unique_ptr<BasicCluster> c;

@@ -12,7 +12,7 @@ public:
         std::string parameter_id;
         bool saved = true;
         bool color_changed = false;
-private:
+public:
         fib_data* handle = nullptr;
         tipl::geometry<3> geo;
         tipl::vector<3> vs;
@@ -63,7 +63,6 @@ public:
         }
         fib_data* get_handle(void){return handle;}
         void add(const TractModel& rhs);
-        bool load_from_atlas(const char* file_name);
         bool load_from_file(const char* file_name,bool append = false);
 
         bool save_tracts_in_native_space(const char* file_name,tipl::image<tipl::vector<3,float>,3 > native_position);

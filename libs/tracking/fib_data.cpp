@@ -1088,11 +1088,43 @@ bool fib_data::load_track_atlas()
     if(!track_atlas.get())
     {
         track_atlas = std::make_shared<TractModel>(this);
-        if(!track_atlas->load_from_atlas(tractography_atlas_file_name.c_str()))
+        if(!track_atlas->load_from_file(tractography_atlas_file_name.c_str()))
         {
             error_msg = "failed to load tractography atlas";
             return false;
         }
+        if(!load_template())
+        {
+            error_msg = "failed to load template";
+            return false;
+        }
+        if(track_atlas->geo != template_I.geometry())
+        {
+            error_msg = "dimension mismatch between tractography atlas and template";
+            return false;
+        }
+
+        {
+            prog_init p("warping atlas tracks to subject space");
+            run_normalization(true,true);
+            if(prog_aborted())
+                return false;
+        }
+
+        // warp tractography atlas to subject space
+        auto& tract_data = track_atlas->get_tracts();
+        tipl::par_for(tract_data.size(),[&](size_t i)
+        {
+            for(size_t j = 0;j < tract_data[i].size();j += 3)
+            {
+                tipl::vector<3> p(&tract_data[i][j]);
+                template_to_mni(p);
+                mni2subject(p);
+                tract_data[i][j] = p[0];
+                tract_data[i][j+1] = p[1];
+                tract_data[i][j+2] = p[2];
+            }
+        });
     }
     return true;
 }
