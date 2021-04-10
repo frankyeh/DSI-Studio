@@ -118,11 +118,11 @@ struct item
     float contrast_min;
     unsigned int max_color = 0x00FFFFFF;
     unsigned int min_color = 0;
-    // used in QSDR
     tipl::image<unsigned int,3> color_map_buf;
+
+    // for other slice in QSDR, allow for loading t1w-based ROIs in QSDR fib
     tipl::geometry<3> native_geo;
     tipl::transformation_matrix<float> native_trans;
-
 
     template<class input_iterator>
     void set_scale(input_iterator from,input_iterator to)
@@ -148,6 +148,7 @@ public:
 public:
     tipl::geometry<3> dim;
     tipl::vector<3> vs;
+    tipl::matrix<4,4,float> trans_to_mni;
     bool is_human_data = true;
     bool is_qsdr = false;
     bool is_mni_image = false;
@@ -160,16 +161,17 @@ public:
     std::vector<item> view_item;
 public:
     int prog;
-    tipl::matrix<4,4,float> trans_to_mni;
     tipl::image<tipl::vector<3,float>,3 > mni_position,inv_mni_position;
 public:
     tipl::geometry<3> native_geo;
+    tipl::vector<3> native_vs;
     tipl::image<tipl::vector<3,float>,3 > native_position;
 public:
     size_t template_id = 0;
     tipl::vector<3> template_vs,template_shift;
     tipl::image<float,3> template_I,template_I2;
     std::vector<std::shared_ptr<atlas> > atlas_list;
+    tipl::matrix<4,4,float> template_trans_to_mni;
 public:
     std::shared_ptr<TractModel> track_atlas;
     std::string tractography_atlas_file_name;
@@ -200,6 +202,7 @@ public:
         trans_to_mni.identity();
     }
     fib_data(tipl::geometry<3> dim_,tipl::vector<3> vs_);
+    fib_data(tipl::geometry<3> dim_,tipl::vector<3> vs_,const tipl::matrix<4,4,float>& trans_to_mni_);
 public:
     bool load_from_file(const char* file_name);
     bool load_from_mat(void);

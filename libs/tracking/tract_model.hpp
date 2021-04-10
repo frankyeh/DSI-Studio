@@ -6,6 +6,7 @@
 #include "fib_data.hpp"
 
 class RoiMgr;
+void initial_LPS_nifti_srow(tipl::matrix<4,4,float>& T,const tipl::geometry<3>& geo,const tipl::vector<3>& vs);
 class TractModel{
 public:
         std::string report;
@@ -13,9 +14,9 @@ public:
         bool saved = true;
         bool color_changed = false;
 public:
-        fib_data* handle = nullptr;
         tipl::geometry<3> geo;
         tipl::vector<3> vs;
+        tipl::matrix<4,4,float> trans_to_mni;
 private:
         std::vector<std::vector<float> > tract_data;
         std::vector<std::vector<float> > deleted_tract_data;
@@ -48,12 +49,24 @@ public:
         void delete_branch(void);
         void delete_by_length(float length);
 public:
-        TractModel(fib_data* handle_);
+        TractModel(const fib_data* handle):geo(handle->dim),vs(handle->vs),trans_to_mni(handle->trans_to_mni){}
+        TractModel(tipl::geometry<3> dim_,tipl::vector<3> vs_):geo(dim_),vs(vs_)
+        {
+            initial_LPS_nifti_srow(trans_to_mni,geo,vs);
+        }
+        TractModel(tipl::geometry<3> dim_,tipl::vector<3> vs_,const tipl::matrix<4,4,float>& trans_to_mni_)
+            :geo(dim_),vs(vs_),trans_to_mni(trans_to_mni_)
+        {}
+
+        TractModel(const TractModel& rhs)
+        {
+            (*this) = rhs;
+        }
         const TractModel& operator=(const TractModel& rhs)
         {
             geo = rhs.geo;
             vs = rhs.vs;
-            handle = rhs.handle;
+            trans_to_mni = rhs.trans_to_mni;
             tract_data = rhs.tract_data;
             tract_color = rhs.tract_color;
             tract_tag = rhs.tract_tag;
@@ -61,21 +74,21 @@ public:
             saved = true;
             return *this;
         }
-        fib_data* get_handle(void){return handle;}
         void add(const TractModel& rhs);
         bool load_from_file(const char* file_name,bool append = false);
 
-        bool save_tracts_in_native_space(const char* file_name,tipl::image<tipl::vector<3,float>,3 > native_position);
         bool save_tracts_to_file(const char* file_name);
-        bool save_tracts_in_template_space(const char* file_name);
+        bool save_tracts_in_native_space(std::shared_ptr<fib_data> handle,const char* file_name);
+        bool save_tracts_in_template_space(std::shared_ptr<fib_data> handle,const char* file_name);
+        bool save_transformed_tracts_to_file(const char* file_name,const float* transform,bool end_point);
+
         void save_vrml(const std::string& file_name,
                        unsigned char tract_style,
                        unsigned char tract_color_style,
                        float tube_diameter,
                        unsigned char tract_tube_detail,
                        const std::string& surface_text);
-        bool save_transformed_tracts_to_file(const char* file_name,const float* transform,bool end_point);
-        bool save_data_to_file(const char* file_name,const std::string& index_name);
+        bool save_data_to_file(std::shared_ptr<fib_data> handle,const char* file_name,const std::string& index_name);
         void save_end_points(const char* file_name) const;
 
         bool load_tracts_color_from_file(const char* file_name);
@@ -144,21 +157,23 @@ public:
         static bool export_end_pdi(const char* file_name,
                                const std::vector<std::shared_ptr<TractModel> >& tract_models,size_t end_distance = 3);
 public:
-        void get_quantitative_info(std::string& result);
-        tipl::vector<3> get_report(unsigned int profile_dir,float band_width,const std::string& index_name,
+        void get_quantitative_info(std::shared_ptr<fib_data> handle,std::string& result);
+        tipl::vector<3> get_report(std::shared_ptr<fib_data> handle,
+                        unsigned int profile_dir,float band_width,const std::string& index_name,
                         std::vector<float>& values,
                         std::vector<float>& data_profile,
                         std::vector<float>& data_ci1,
                         std::vector<float>& data_ci2);
 
 public:
-        void get_tract_data(unsigned int fiber_index,
+        void get_tract_data(std::shared_ptr<fib_data> handle,
+                            unsigned int fiber_index,
                             unsigned int index_num,
                             std::vector<float>& data) const;
-        bool get_tracts_data(
+        bool get_tracts_data(std::shared_ptr<fib_data> handle,
                 const std::string& index_name,
                 std::vector<std::vector<float> >& data) const;
-        void get_tracts_data(unsigned int index_num,float& mean) const;
+        void get_tracts_data(std::shared_ptr<fib_data> handle,unsigned int index_num,float& mean) const;
 public:
 
         void get_passing_list(const std::vector<std::vector<short> >& region_map,
@@ -195,7 +210,7 @@ public:
     void save_to_file(const char* file_name);
     void save_to_connectogram(const char* file_name);
     void save_to_text(std::string& text);
-    bool calculate(TractModel& tract_model,std::string matrix_value_type,bool use_end_only,float threshold);
+    bool calculate(std::shared_ptr<fib_data> handle,TractModel& tract_model,std::string matrix_value_type,bool use_end_only,float threshold);
     void network_property(std::string& report);
 };
 

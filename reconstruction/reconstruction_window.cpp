@@ -741,6 +741,9 @@ bool add_other_image(ImageModel* handle,QString name,QString filename)
         std::cout << "not a valid nifti file:" << filename.toStdString() << std::endl;
         return false;
     }
+
+    std::cout << "add " << filename.toStdString() << " as " << name.toStdString();
+
     tipl::transformation_matrix<double> affine;
     bool has_registered = false;
     for(unsigned int index = 0;index < handle->voxel.other_image.size();++index)
@@ -751,8 +754,8 @@ bool add_other_image(ImageModel* handle,QString name,QString filename)
         }
     if(!has_registered && ref.geometry() != handle->voxel.dim)
     {
+        std::cout << " and register image with DWI." << std::endl;
         in.get_voxel_size(vs);
-        std::cout << "add " << filename.toStdString() << " as " << name.toStdString() << std::endl;
         tipl::image<float,3> from(handle->dwi_sum),to(ref);
         tipl::normalize(from,1.0);
         tipl::normalize(to,1.0);
@@ -761,6 +764,13 @@ bool add_other_image(ImageModel* handle,QString name,QString filename)
         tipl::reg::linear_mr(from,handle->voxel.vs,to,vs,arg,tipl::reg::rigid_body,tipl::reg::mutual_information(),terminated,0.1);
         tipl::reg::linear_mr(from,handle->voxel.vs,to,vs,arg,tipl::reg::rigid_body,tipl::reg::mutual_information(),terminated,0.01);
         affine = tipl::transformation_matrix<float>(arg,handle->voxel.dim,handle->voxel.vs,to.geometry(),vs);
+        std::cout << arg << std::endl;
+    }
+    else {
+        if(has_registered)
+            std::cout << " using previous registration." << std::endl;
+        else
+            std::cout << " treated as DWI space images." << std::endl;
     }
     handle->voxel.other_image.push_back(ref);
     handle->voxel.other_image_name.push_back(name.toLocal8Bit().begin());

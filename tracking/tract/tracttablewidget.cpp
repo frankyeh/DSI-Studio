@@ -594,6 +594,8 @@ void TractTableWidget::save_tracts_as(void)
     std::string sfilename = filename.toLocal8Bit().begin();
     if(tract_models[currentRow()]->save_tracts_to_file(&*sfilename.begin()))
         QMessageBox::information(this,"DSI Studio","file saved");
+    else
+        QMessageBox::critical(this,"Error","Cannot write to file. Please check write permission.");
 }
 
 void TractTableWidget::save_tracts_in_template(void)
@@ -609,8 +611,10 @@ void TractTableWidget::save_tracts_in_template(void)
     if(filename.isEmpty())
         return;
     std::string sfilename = filename.toLocal8Bit().begin();
-    if(tract_models[size_t(currentRow())]->save_tracts_in_template_space(&*sfilename.begin()))
+    if(tract_models[size_t(currentRow())]->save_tracts_in_template_space(cur_tracking_window.handle,&*sfilename.begin()))
         QMessageBox::information(this,"DSI Studio","file saved");
+    else
+        QMessageBox::critical(this,"Error","Cannot write to file. Please check write permission.");
 }
 
 void TractTableWidget::save_tracts_in_native(void)
@@ -634,10 +638,10 @@ void TractTableWidget::save_tracts_in_native(void)
                  "Tract files (*.tt.gz *tt.gz *trk.gz *.trk);;Text File (*.txt);;MAT files (*.mat);;All files (*)");
     if(filename.isEmpty())
         return;
-    std::string sfilename = filename.toLocal8Bit().begin();
-    tract_models[currentRow()]->save_tracts_in_native_space(&*sfilename.begin(),
-            cur_tracking_window.handle->native_position);
-    QMessageBox::information(this,"DSI Studio","file saved");
+    if(tract_models[uint32_t(currentRow())]->save_tracts_in_native_space(cur_tracking_window.handle,filename.toStdString().c_str()))
+        QMessageBox::information(this,"DSI Studio","file saved");
+    else
+        QMessageBox::critical(this,"Error","Cannot write to file. Please check write permission.");
 }
 
 void TractTableWidget::save_vrml_as(void)
@@ -974,7 +978,8 @@ void TractTableWidget::save_tracts_color_as(void)
     tract_models[currentRow()]->save_tracts_color_to_file(&*sfilename.begin());
 }
 
-void get_track_statistics(const std::vector<std::shared_ptr<TractModel> >& tract_models,
+void get_track_statistics(std::shared_ptr<fib_data> handle,
+                          const std::vector<std::shared_ptr<TractModel> >& tract_models,
                           const std::vector<std::string>& track_name,
                           std::string& result)
 {
@@ -984,7 +989,7 @@ void get_track_statistics(const std::vector<std::shared_ptr<TractModel> >& tract
     tipl::par_for(tract_models.size(),[&](unsigned int index)
     {
         std::string tmp,line;
-        tract_models[index]->get_quantitative_info(tmp);
+        tract_models[index]->get_quantitative_info(handle,tmp);
         std::istringstream in(tmp);
         while(std::getline(in,line))
         {
@@ -1029,7 +1034,7 @@ void TractTableWidget::show_tracts_statistics(void)
     if(tract_models.empty())
         return;
     std::string result;
-    get_track_statistics(get_checked_tracks(),get_checked_tracks_name(),result);
+    get_track_statistics(cur_tracking_window.handle,get_checked_tracks(),get_checked_tracks_name(),result);
     if(!result.empty())
         show_info_dialog("Tract Statistics",result);
 
@@ -1126,7 +1131,7 @@ void TractTableWidget::save_tracts_data_as(void)
         return;
 
     if(!tract_models[currentRow()]->save_data_to_file(
-                    filename.toLocal8Bit().begin(),
+                    cur_tracking_window.handle,filename.toLocal8Bit().begin(),
                     action->data().toString().toLocal8Bit().begin()))
     {
         QMessageBox::information(this,"error","fail to save information");

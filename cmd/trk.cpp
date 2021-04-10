@@ -114,6 +114,7 @@ void export_track_info(std::shared_ptr<fib_data> handle,
             std::cout << "bandwidth:" << bandwidth << std::endl;
             std::cout << "index_name:" << index_name << std::endl;
             tract_model->get_report(
+                                handle,
                                 profile_dir,
                                 bandwidth,
                                 index_name,
@@ -190,7 +191,7 @@ void export_track_info(std::shared_ptr<fib_data> handle,
                 return;
             }
             std::string result;
-            tract_model->get_quantitative_info(result);
+            tract_model->get_quantitative_info(handle,result);
             out_stat << result;
             continue;
         }
@@ -202,7 +203,7 @@ void export_track_info(std::shared_ptr<fib_data> handle,
                 file_name_stat += ".txt";
             if(handle->get_name_index(cmd) != handle->view_item.size())
             {
-                tract_model->save_data_to_file(file_name_stat.c_str(),cmd);
+                tract_model->save_data_to_file(handle,file_name_stat.c_str(),cmd);
                 continue;
             }
         }
@@ -210,7 +211,8 @@ void export_track_info(std::shared_ptr<fib_data> handle,
         continue;
     }
 }
-void save_connectivity_matrix(std::shared_ptr<TractModel> tract_model,
+void save_connectivity_matrix(std::shared_ptr<fib_data> handle,
+                              std::shared_ptr<TractModel> tract_model,
                               ConnectivityMatrix& data,
                               const std::string& source,
                               const std::string& connectivity_roi,
@@ -220,7 +222,7 @@ void save_connectivity_matrix(std::shared_ptr<TractModel> tract_model,
 {
     std::cout << "count tracks by " << (use_end_only ? "ending":"passing") << std::endl;
     std::cout << "calculate matrix using " << connectivity_value << std::endl;
-    if(!data.calculate(*(tract_model.get()),connectivity_value,use_end_only,t))
+    if(!data.calculate(handle,*(tract_model.get()),connectivity_value,use_end_only,t))
     {
         std::cout << "connectivity calculation error:" << data.error_msg << std::endl;
         return;
@@ -344,7 +346,7 @@ void get_connectivity_matrix(std::shared_ptr<fib_data> handle,
 
         for(int j = 0;j < connectivity_type_list.size();++j)
         for(int k = 0;k < connectivity_value_list.size();++k)
-            save_connectivity_matrix(tract_model,data,source,roi_file_name,connectivity_value_list[k].toStdString(),
+            save_connectivity_matrix(handle,tract_model,data,source,roi_file_name,connectivity_value_list[k].toStdString(),
                                      po.get("connectivity_threshold",0.001f),
                                      connectivity_type_list[j].toLower() == QString("end"));
     }

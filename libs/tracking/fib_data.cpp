@@ -479,6 +479,10 @@ fib_data::fib_data(tipl::geometry<3> dim_,tipl::vector<3> vs_):dim(dim_),vs(vs_)
     initial_LPS_nifti_srow(trans_to_mni,dim,vs);
 }
 
+fib_data::fib_data(tipl::geometry<3> dim_,tipl::vector<3> vs_,const tipl::matrix<4,4,float>& trans_to_mni_):
+    dim(dim_),vs(vs_),trans_to_mni(trans_to_mni_)
+{}
+
 bool load_fib_from_tracks(const char* file_name,tipl::image<float,3>& I,tipl::vector<3>& vs);
 bool fib_data::load_from_file(const char* file_name)
 {
@@ -619,14 +623,19 @@ bool fib_data::load_from_file(const char* file_name)
     }
     if(!I.empty())
     {
-        mat_reader.add("dimension",I.geometry().begin(),3,1);
-        mat_reader.add("voxel_size",&*vs.begin(),3,1);
-        mat_reader.add("image",&*I.begin(),I.size(),1);
+        mat_reader.add("dimension",I.geometry());
+        mat_reader.add("voxel_size",vs);
+        mat_reader.add("image",I);
         load_from_mat();
         dir.index_name[0] = "image";
         view_item[0].name = "image";
         trackable = false;
         return true;
+    }
+    if(!QFileInfo(file_name).exists())
+    {
+        error_msg = "File not exist";
+        return false;
     }
     if (!mat_reader.load_from_file(file_name) || prog_aborted())
     {
@@ -766,6 +775,7 @@ bool fib_data::load_from_mat(void)
     view_item.back() = view_item[0];
     view_item.back().name = "color";
 
+    // read other DWI space volume
     unsigned int row,col;
     for (unsigned int index = 0;index < mat_reader.size();++index)
     {
@@ -773,19 +783,18 @@ bool fib_data::load_from_mat(void)
         if (matrix_name == "image")
             continue;
         std::string prefix_name(matrix_name.begin(),matrix_name.end()-1);
-        if (prefix_name == "index" || prefix_name == "fa" || prefix_name == "dir")
-            continue;
+        char post_fix = matrix_name[matrix_name.length()-1];
+        if(post_fix >= '0' && post_fix <= '9')
+        {
+            if (prefix_name == "index" || prefix_name == "fa" || prefix_name == "dir" ||
+                std::find_if(view_item.begin(),
+                             view_item.end(),
+                             [&prefix_name](const item& view)
+                             {return view.name == prefix_name;}) != view_item.end())
+                continue;
+        }
         const float* buf = nullptr;
-        mat_reader.read(index,row,col,buf);
-        if (size_t(row)*size_t(col) != dim.size() || !buf)
-            continue;
-        if(matrix_name.length() >= 2 && matrix_name[matrix_name.length()-2] == '_' &&
-           (matrix_name[matrix_name.length()-1] == 'x' ||
-            matrix_name[matrix_name.length()-1] == 'y' ||
-            matrix_name[matrix_name.length()-1] == 'z' ||
-            matrix_name[matrix_name.length()-1] == 'd'))
-            continue;
-        if(matrix_name[matrix_name.length()-1] >= '0' && matrix_name[matrix_name.length()-1] <= '9')
+        if (!mat_reader.read(index,row,col,buf) || size_t(row)*size_t(col) != dim.size())
             continue;
         view_item.push_back(item());
         view_item.back().name = matrix_name;
@@ -793,46 +802,26 @@ bool fib_data::load_from_mat(void)
         view_item.back().set_scale(buf,buf+dim.size());
     }
 
-    if(is_qsdr && !view_item.empty()) // read native geometry and transformation information
-    {
-        unsigned int row,col;
-        const short* dim = nullptr;
-        const float* native_trans = nullptr;
-        for(unsigned int i = 0; i < view_item.size();++i)
-        {
-            std::string name;
-            if(i)
-                name = view_item[i].name;
-            if(mat_reader.read((name+"_dimension").c_str(),row,col,dim))
-                view_item[i].native_geo = tipl::geometry<3>(dim[0],dim[1],dim[2]);
-            else
-                view_item[i].native_geo = this->native_geo;
-            if(mat_reader.read((name+"_trans").c_str(),row,col,native_trans))
-                std::copy(native_trans,native_trans+12,view_item[i].native_trans.data);
-            else
-                view_item[i].native_trans.sr[0] = view_item[i].native_trans.sr[4] = view_item[i].native_trans.sr[8] = 1.0f;
-        }
-    }
     is_human_data = is_human_size(dim,vs); // 1 percentile head size in mm
     db.read_db(this);
 
-
     if(is_qsdr)
     {
-        // read native space mapping
+        // read native geometry and transformation information
         const float* mapping = nullptr;
-        if(is_qsdr && mat_reader.read("mapping",row,col,mapping))
+        if(mat_reader.read("native_mapping",row,col,mapping))
         {
             native_position.resize(dim);
             std::copy(mapping,mapping+col*row,&native_position[0][0]);
-            const unsigned short* native_dim = nullptr;
-            if(mat_reader.read("native_dimension",row,col,native_dim))
-            {
-                native_geo[0] = native_dim[0];
-                native_geo[1] = native_dim[1];
-                native_geo[2] = native_dim[2];
-            }
+            mat_reader.read("native_dimension",native_geo);
+            mat_reader.read("native_voxel_size",native_vs);
         }
+        for(unsigned int i = 0; i < view_item.size();++i)
+        {
+            mat_reader.read((view_item[i].name+"_dimension").c_str(),view_item[i].native_geo);
+            mat_reader.read((view_item[i].name+"_trans").c_str(),view_item[i].native_trans);
+        }
+
         // matching templates
         for(size_t index = 0;index < fa_template_list.size();++index)
         {
@@ -1048,7 +1037,7 @@ bool fib_data::load_template(void)
     tipl::matrix<4,4,float> tran;
     read.toLPS(I);
     read.get_voxel_size(I_vs);
-    read.get_image_transformation(tran);
+    read.get_image_transformation(template_trans_to_mni);
     float ratio = float(I.width()*I_vs[0])/float(dim[0]*vs[0]);
     if(ratio < 0.25f || ratio > 4.0f)
     {
@@ -1056,11 +1045,12 @@ bool fib_data::load_template(void)
         error_msg += std::to_string(ratio);
         return false;
     }
-    template_shift[0] = tran[3];
-    template_shift[1] = tran[7];
-    template_shift[2] = tran[11];
+    template_shift[0] = template_trans_to_mni[3];
+    template_shift[1] = template_trans_to_mni[7];
+    template_shift[2] = template_trans_to_mni[11];
     template_I.swap(I);
     template_vs = I_vs;
+
     // load iso template if exists
     {
         gz_nifti read2;

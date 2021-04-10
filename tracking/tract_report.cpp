@@ -52,6 +52,7 @@ void tract_report::refresh_report()
             continue;
         std::vector<float> values,data_profile,data_ci1,data_ci2;
         dir = cur_tracking_window->tractWidget->tract_models[index]->get_report(
+                    cur_tracking_window->handle,
                     uint32_t(ui->profile_dir->currentIndex()),
                     float(ui->report_bandwidth->value()),
                     ui->report_index->currentText().toStdString().c_str(),
@@ -128,6 +129,7 @@ void tract_report::on_save_report_clicked()
             continue;
         std::vector<float> values,data_profile,data_ci1,data_ci2;
         cur_tracking_window->tractWidget->tract_models[index]->get_report(
+                    cur_tracking_window->handle,
                     ui->profile_dir->currentIndex(),
                     ui->report_bandwidth->value(),
                     ui->report_index->currentText().toLocal8Bit().begin(),

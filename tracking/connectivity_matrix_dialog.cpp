@@ -118,7 +118,7 @@ void connectivity_matrix_dialog::on_recalculate_clicked()
     for(int index = 0;index < cur_tracking_window->tractWidget->tract_models.size();++index)
         if(cur_tracking_window->tractWidget->item(index,0)->checkState() == Qt::Checked)
             tracks.add(*cur_tracking_window->tractWidget->tract_models[index]);
-    if(!data.calculate(tracks,ui->matrix_value->currentText().toLocal8Bit().begin(),
+    if(!data.calculate(cur_tracking_window->handle,tracks,ui->matrix_value->currentText().toLocal8Bit().begin(),
                        ui->end_only->currentIndex(),
                        ui->apply_threshold->isChecked() ? ui->network_threshold->value() : 0.0))
     {

@@ -536,11 +536,6 @@ bool load_fib_from_tracks(const char* file_name,tipl::image<float,3>& I,tipl::ve
     return true;
 }
 //---------------------------------------------------------------------------
-TractModel::TractModel(fib_data* handle_):handle(handle_),
-        report(handle_->report),geo(handle_->dim),vs(handle_->vs)
-{
-}
-//---------------------------------------------------------------------------
 void TractModel::add(const TractModel& rhs)
 {
     for(unsigned int index = 0;index < rhs.redo_size.size();++index)
@@ -595,8 +590,7 @@ bool TractModel::load_from_file(const char* file_name_,bool append)
             color = new_color;
         if(!parameter_id.empty())
         {
-            report = handle->report;
-            report += "\nThis tractography was generated using the following parameters: ";
+            report = "\nThis tractography was generated using the following parameters: ";
             TrackingParam param;
             if(param.set_code(parameter_id))
                 report += param.get_report();
@@ -684,10 +678,10 @@ bool TractModel::load_from_file(const char* file_name_,bool append)
 }
 
 //---------------------------------------------------------------------------
-bool TractModel::save_data_to_file(const char* file_name,const std::string& index_name)
+bool TractModel::save_data_to_file(std::shared_ptr<fib_data> handle,const char* file_name,const std::string& index_name)
 {
     std::vector<std::vector<float> > data;
-    if(!get_tracts_data(index_name,data) || data.empty())
+    if(!get_tracts_data(handle,index_name,data) || data.empty())
         return false;
 
     std::string file_name_s(file_name);
@@ -739,31 +733,35 @@ bool TractModel::save_data_to_file(const char* file_name,const std::string& inde
     return false;
 }
 //---------------------------------------------------------------------------
-bool TractModel::save_tracts_in_native_space(const char* file_name,tipl::image<tipl::vector<3,float>,3 > native_position)
+// QSDR FIB save tracts back to native space
+bool TractModel::save_tracts_in_native_space(std::shared_ptr<fib_data> handle,
+                                             const char* file_name)
 {
-    std::vector<std::vector<float> > keep_tract_data(tract_data);
-    tipl::par_for(tract_data.size(),[&](int i)
+    std::shared_ptr<TractModel> tract_in_native(new TractModel(handle->native_geo,handle->native_vs));
+    std::vector<std::vector<float> > new_tract_data = tract_data;
+    tipl::par_for(new_tract_data.size(),[&](size_t i)
     {
-        for(int j = 0;j < tract_data[i].size();j += 3)
+        for(size_t j = 0;j < new_tract_data[i].size();j += 3)
         {
-            tipl::vector<3> pos(&tract_data[i][0]+j),new_pos;
-            tipl::estimate(native_position,pos,new_pos);
-            tract_data[i][j] = new_pos[0];
-            tract_data[i][j+1] = new_pos[1];
-            tract_data[i][j+2] = new_pos[2];
+            tipl::vector<3> pos(&new_tract_data[i][0]+j),new_pos;
+            tipl::estimate(handle->native_position,pos,new_pos);
+            new_tract_data[i][j] = new_pos[0];
+            new_tract_data[i][j+1] = new_pos[1];
+            new_tract_data[i][j+2] = new_pos[2];
         }
     });
-    bool result = save_tracts_to_file(file_name);
-    keep_tract_data.swap(tract_data);
-    return result;
+    tract_in_native->add_tracts(new_tract_data);
+    tract_in_native->resample(0.5f);
+    return tract_in_native->save_tracts_to_file(file_name);
 }
 //---------------------------------------------------------------------------
-bool TractModel::save_tracts_in_template_space(const char* file_name)
+// Native space FIB save tracts to the tempalte space
+bool TractModel::save_tracts_in_template_space(std::shared_ptr<fib_data> handle,const char* file_name)
 {
     if(!handle->can_map_to_mni())
         return false;
-    std::shared_ptr<fib_data> fib(new fib_data(handle->template_I.geometry(),handle->template_vs));
-    std::shared_ptr<TractModel> tract_in_template(new TractModel(fib.get()));
+    std::shared_ptr<TractModel> tract_in_template(
+                new TractModel(handle->template_I.geometry(),handle->template_vs,handle->template_trans_to_mni));
     std::vector<std::vector<float> > new_tract_data = tract_data;
     tipl::par_for(tract_data.size(),[&](unsigned int i)
     {
@@ -781,6 +779,25 @@ bool TractModel::save_tracts_in_template_space(const char* file_name)
     tract_in_template->resample(0.5f);
     return tract_in_template->save_tracts_to_file(file_name);
 }
+
+//---------------------------------------------------------------------------
+bool TractModel::save_transformed_tracts_to_file(const char* file_name,const float* transform,bool end_point)
+{
+    std::vector<std::vector<float> > new_tract_data(tract_data);
+    for(unsigned int i = 0;i < tract_data.size();++i)
+        for(unsigned int j = 0;j < tract_data[i].size();j += 3)
+        tipl::vector_transformation(&(new_tract_data[i][j]),
+                                    &(tract_data[i][j]),transform,tipl::vdim<3>());
+    bool result = true;
+    if(end_point)
+        save_end_points(file_name);
+    else
+        result = save_tracts_to_file(file_name);
+    new_tract_data.swap(tract_data);
+    return result;
+}
+
+//---------------------------------------------------------------------------
 bool TractModel::save_tracts_to_file(const char* file_name_)
 {
     std::string file_name(file_name_);
@@ -871,7 +888,8 @@ bool TractModel::save_tracts_to_file(const char* file_name_)
     {
         std::vector<tipl::vector<3,float> >points;
         get_tract_points(points);
-        ROIRegion region(handle);
+        fib_data handle(geo,vs,trans_to_mni);
+        ROIRegion region(&handle);
         region.add_points(points,false);
         region.SaveToFile(file_name_);
         return true;
@@ -1220,22 +1238,6 @@ bool TractModel::save_all(const char* file_name_,
     for(int i = 0;i < name_list.size();++i)
         out << name_list[i] << std::endl;
     return true;
-}
-//---------------------------------------------------------------------------
-bool TractModel::save_transformed_tracts_to_file(const char* file_name,const float* transform,bool end_point)
-{
-    std::vector<std::vector<float> > new_tract_data(tract_data);
-    for(unsigned int i = 0;i < tract_data.size();++i)
-        for(unsigned int j = 0;j < tract_data[i].size();j += 3)
-        tipl::vector_transformation(&(new_tract_data[i][j]),
-                                    &(tract_data[i][j]),transform,tipl::vdim<3>());
-    bool result = true;
-    if(end_point)
-        save_end_points(file_name);
-    else
-        result = save_tracts_to_file(file_name);
-    new_tract_data.swap(tract_data);
-    return result;
 }
 //---------------------------------------------------------------------------
 bool TractModel::load_tracts_color_from_file(const char* file_name)
@@ -1657,7 +1659,8 @@ void TractModel::delete_branch(void)
     std::vector<tipl::vector<3,short> > p1,p2;
     to_end_point_voxels(p1,p2,resolution_ratio);
     tipl::image<unsigned char, 3>mask;
-    ROIRegion r1(handle),r2(handle);
+    fib_data handle(geo,vs,trans_to_mni);
+    ROIRegion r1(&handle),r2(&handle);
     r1.resolution_ratio = resolution_ratio;
     r1.add_points(p1,false,resolution_ratio);
     r2.resolution_ratio = resolution_ratio;
@@ -1671,7 +1674,7 @@ void TractModel::delete_branch(void)
     tipl::morphology::defragment(mask);
     r2.LoadFromBuffer(mask);
 
-    std::shared_ptr<RoiMgr> roi_mgr(new RoiMgr(handle));
+    std::shared_ptr<RoiMgr> roi_mgr(new RoiMgr(&handle));
     roi_mgr->setRegions(r1.get_region_voxels_raw(),r1.resolution_ratio,2,"end1");
     roi_mgr->setRegions(r2.get_region_voxels_raw(),r2.resolution_ratio,2,"end2");
     filter_by_roi(roi_mgr);
@@ -2348,12 +2351,15 @@ void TractModel::get_density_map(
                 (unsigned char)std::min<float>(255,v[2]));
     }
 }
-bool TractModel::export_end_pdi(const char* file_name,
+bool TractModel::export_end_pdi(
+                       const char* file_name,
                        const std::vector<std::shared_ptr<TractModel> >& tract_models,size_t end_distance)
 {
     if(tract_models.empty())
         return false;
     auto dim = tract_models.front()->geo;
+    auto vs = tract_models.front()->vs;
+    auto trans_to_mni = tract_models.front()->trans_to_mni;
     tipl::image<uint32_t,3> p1_map(dim),p2_map(dim);
     for(size_t index = 0;index < tract_models.size();++index)
     {
@@ -2380,17 +2386,17 @@ bool TractModel::export_end_pdi(const char* file_name,
     }
     QString f1 = QFileInfo(file_name).absolutePath() + "/"+ QFileInfo(file_name).baseName() + "_1.nii.gz";
     QString f2 = QFileInfo(file_name).absolutePath() + "/"+ QFileInfo(file_name).baseName() + "_2.nii.gz";
-    return gz_nifti::save_to_file(f1.toStdString().c_str(),pdi1,tract_models.front()->vs,tract_models.front()->handle->trans_to_mni) &&
-           gz_nifti::save_to_file(f2.toStdString().c_str(),pdi2,tract_models.front()->vs,tract_models.front()->handle->trans_to_mni);
+    return gz_nifti::save_to_file(f1.toStdString().c_str(),pdi1,vs,trans_to_mni) &&
+           gz_nifti::save_to_file(f2.toStdString().c_str(),pdi2,vs,trans_to_mni);
 }
 bool TractModel::export_pdi(const char* file_name,
                             const std::vector<std::shared_ptr<TractModel> >& tract_models)
 {
     if(tract_models.empty())
         return false;
-    auto handle = tract_models.front()->handle;
-    // here should use handle's dimesion, not tract_model's dimension
-    auto dim = handle->dim;
+    auto dim = tract_models.front()->geo;
+    auto vs = tract_models.front()->vs;
+    auto trans_to_mni = tract_models.front()->trans_to_mni;
     tipl::image<uint32_t,3> accumulate_map(dim);
     for(size_t index = 0;index < tract_models.size();++index)
     {
@@ -2406,7 +2412,7 @@ bool TractModel::export_pdi(const char* file_name,
     tipl::image<float,3> pdi(accumulate_map);
     if(tract_models.size() > 1)
         tipl::multiply_constant(pdi,1.0f/float(tract_models.size()));
-    return gz_nifti::save_to_file(file_name,pdi,handle->vs,handle->trans_to_mni);
+    return gz_nifti::save_to_file(file_name,pdi,vs,trans_to_mni);
 }
 bool TractModel::export_tdi(const char* filename,
                   std::vector<std::shared_ptr<TractModel> > tract_models,
@@ -2450,12 +2456,9 @@ bool TractModel::export_tdi(const char* filename,
         }
         else
         {
-            tipl::matrix<4,4,float> new_trans(transformation),trans(tract_models[0]->handle->trans_to_mni);
-            if(tract_models[0]->handle->is_qsdr)
-            {
-                new_trans.inv();
-                trans *= new_trans;
-            }
+            tipl::matrix<4,4,float> new_trans(transformation),trans(tract_models[0]->trans_to_mni);
+            new_trans.inv();
+            trans *= new_trans;
             return gz_nifti::save_to_file(filename,tdi,vs,trans);
         }
     }
@@ -2665,7 +2668,7 @@ void TractModel::to_end_point_voxels(std::vector<tipl::vector<3,short> >& points
 }
 
 
-void TractModel::get_quantitative_info(std::string& result)
+void TractModel::get_quantitative_info(std::shared_ptr<fib_data> handle,std::string& result)
 {
     if(tract_data.empty())
         return;
@@ -2816,7 +2819,7 @@ void TractModel::get_quantitative_info(std::string& result)
             if(handle->view_item[data_index].name == "color")
                 continue;
             float mean;
-            get_tracts_data(uint32_t(data_index),mean);
+            get_tracts_data(handle,uint32_t(data_index),mean);
             data.push_back(mean);
         }
         handle->get_index_list(titles);
@@ -2841,7 +2844,7 @@ void TractModel::get_quantitative_info(std::string& result)
                 for(unsigned int j = 0;j < fa_data.size();++j)
                     handle->dir.index_data[0][j] = &fa_data[j][0];
                 float mean;
-                get_tracts_data(0,mean);
+                get_tracts_data(handle,0,mean);
                 out << handle->db.subject_names[i] << " mean_" <<
                        handle->db.index_name << (normalize_qa ? "_post_norm\t": "\t") << mean << std::endl;
             }
@@ -2851,7 +2854,8 @@ void TractModel::get_quantitative_info(std::string& result)
     result = out.str();
 }
 
-tipl::vector<3> TractModel::get_report(unsigned int profile_dir,float band_width,const std::string& index_name,
+tipl::vector<3> TractModel::get_report(std::shared_ptr<fib_data> handle,
+                            unsigned int profile_dir,float band_width,const std::string& index_name,
                             std::vector<float>& values,
                             std::vector<float>& data_profile,
                             std::vector<float>& data_ci1,
@@ -2888,7 +2892,7 @@ tipl::vector<3> TractModel::get_report(unsigned int profile_dir,float band_width
 
     {
         std::vector<std::vector<float> > data;
-        get_tracts_data(index_name,data);
+        get_tracts_data(handle,index_name,data);
 
 
         if(profile_on_length == 2)// list the mean fa value of each tract
@@ -2999,7 +3003,7 @@ void gradient(input_iterator from,input_iterator to,output_iterator out)
     }
 }
 
-void TractModel::get_tract_data(unsigned int fiber_index,unsigned int index_num,std::vector<float>& data) const
+void TractModel::get_tract_data(std::shared_ptr<fib_data> handle,unsigned int fiber_index,unsigned int index_num,std::vector<float>& data) const
 {
     data.clear();
     if(tract_data[fiber_index].empty())
@@ -3057,7 +3061,7 @@ void TractModel::get_tract_data(unsigned int fiber_index,unsigned int index_num,
     }
 }
 
-bool TractModel::get_tracts_data(
+bool TractModel::get_tracts_data(std::shared_ptr<fib_data> handle,
         const std::string& index_name,
         std::vector<std::vector<float> >& data) const
 {
@@ -3068,18 +3072,18 @@ bool TractModel::get_tracts_data(
     data.resize(tract_data.size());
     tipl::par_for(tract_data.size(),[&](unsigned int i)
     {
-         get_tract_data(i,index_num,data[i]);
+         get_tract_data(handle,i,index_num,data[i]);
     });
     return true;
 }
-void TractModel::get_tracts_data(unsigned int data_index,float& mean) const
+void TractModel::get_tracts_data(std::shared_ptr<fib_data> handle,unsigned int data_index,float& mean) const
 {
     float sum_data = 0.0f;
     size_t total = 0;
     for (size_t i = 0;i < tract_data.size();++i)
     {
         std::vector<float> data;
-        get_tract_data(i,data_index,data);
+        get_tract_data(handle,i,data_index,data);
         for(size_t j = 0;j < data.size();++j)
         {
             sum_data += data[j];
@@ -3355,7 +3359,8 @@ void for_each_connectivity(const T& end_list1,
     }
 }
 
-bool ConnectivityMatrix::calculate(TractModel& tract_model,std::string matrix_value_type,bool use_end_only,float threshold)
+bool ConnectivityMatrix::calculate(std::shared_ptr<fib_data> handle,
+                                   TractModel& tract_model,std::string matrix_value_type,bool use_end_only,float threshold)
 {
     if(region_count == 0)
     {
@@ -3384,7 +3389,7 @@ bool ConnectivityMatrix::calculate(TractModel& tract_model,std::string matrix_va
                 if(region_passing_list[i][j].empty())
                     continue;
                 std::string file_name = region_name[i]+"_"+region_name[j]+".tt.gz";
-                TractModel tm(tract_model.get_handle());
+                TractModel tm(tract_model);
                 std::vector<std::vector<float> > new_tracts;
                 for (unsigned int k = 0;k < region_passing_list[i][j].size();++k)
                     new_tracts.push_back(tract_model.get_tract(region_passing_list[i][j][k]));
@@ -3468,7 +3473,7 @@ bool ConnectivityMatrix::calculate(TractModel& tract_model,std::string matrix_va
         return true;
     }
     std::vector<std::vector<float> > data;
-    if(!tract_model.get_tracts_data(matrix_value_type,data))
+    if(!tract_model.get_tracts_data(handle,matrix_value_type,data))
     {
         error_msg = "Cannot quantify matrix value using ";
         error_msg += matrix_value_type;

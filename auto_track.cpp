@@ -376,7 +376,7 @@ std::string run_auto_track(
                         if(!tract_model.save_tracts_to_file(trk_file_name.c_str()))
                             return std::string("fail to save tractography file:")+trk_file_name;
                         if(export_template_trk &&
-                           !tract_model.save_tracts_in_template_space(template_trk_file_name.c_str()))
+                           !tract_model.save_tracts_in_template_space(handle,template_trk_file_name.c_str()))
                                 return std::string("fail to save template tractography file:")+trk_file_name;
                     }
                     break;
@@ -393,7 +393,7 @@ std::string run_auto_track(
                     std::cout << "saving " << stat_file_name << std::endl;
                     std::ofstream out_stat(stat_file_name.c_str());
                     std::string result;
-                    tract_model.get_quantitative_info(result);
+                    tract_model.get_quantitative_info(handle,result);
                     out_stat << result;
                 }
             }

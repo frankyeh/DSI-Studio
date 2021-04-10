@@ -1481,7 +1481,8 @@ void GLWidget::makeTracts(void)
                 if (vertex_count <= 1)
                     return;
                 std::vector<float> fa_values;
-                active_tract_model->get_tract_data(data_index,track_num_index,fa_values);
+                active_tract_model->get_tract_data(cur_tracking_window.handle,
+                                                   data_index,track_num_index,fa_values);
                 if(tract_color_style == 3)
                 {
                     float sum = std::accumulate(fa_values.begin(),fa_values.end(),0.0f);
@@ -1592,7 +1593,7 @@ void GLWidget::makeTracts(void)
             paint_color_f /= 255.0;
             break;
         case 2:// local
-            active_tract_model->get_tract_data(data_index,track_num_index,color);
+            active_tract_model->get_tract_data(cur_tracking_window.handle,data_index,track_num_index,color);
             break;
         case 3:// mean
         case 5:// max
