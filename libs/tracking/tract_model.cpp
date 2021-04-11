@@ -888,8 +888,7 @@ bool TractModel::save_tracts_to_file(const char* file_name_)
     {
         std::vector<tipl::vector<3,float> >points;
         get_tract_points(points);
-        fib_data handle(geo,vs,trans_to_mni);
-        ROIRegion region(&handle);
+        ROIRegion region(geo,vs,trans_to_mni);
         region.add_points(points,false);
         region.SaveToFile(file_name_);
         return true;
@@ -1659,8 +1658,7 @@ void TractModel::delete_branch(void)
     std::vector<tipl::vector<3,short> > p1,p2;
     to_end_point_voxels(p1,p2,resolution_ratio);
     tipl::image<unsigned char, 3>mask;
-    fib_data handle(geo,vs,trans_to_mni);
-    ROIRegion r1(&handle),r2(&handle);
+    ROIRegion r1(geo,vs,trans_to_mni),r2(geo,vs,trans_to_mni);
     r1.resolution_ratio = resolution_ratio;
     r1.add_points(p1,false,resolution_ratio);
     r2.resolution_ratio = resolution_ratio;
@@ -1674,7 +1672,8 @@ void TractModel::delete_branch(void)
     tipl::morphology::defragment(mask);
     r2.LoadFromBuffer(mask);
 
-    std::shared_ptr<RoiMgr> roi_mgr(new RoiMgr(&handle));
+    std::shared_ptr<fib_data> handle(new fib_data(geo,vs,trans_to_mni));
+    std::shared_ptr<RoiMgr> roi_mgr(new RoiMgr(handle));
     roi_mgr->setRegions(r1.get_region_voxels_raw(),r1.resolution_ratio,2,"end1");
     roi_mgr->setRegions(r2.get_region_voxels_raw(),r2.resolution_ratio,2,"end2");
     filter_by_roi(roi_mgr);
@@ -2490,7 +2489,6 @@ void TractModel::to_voxel(std::vector<tipl::vector<3,short> >& points,float rati
 
         }
     });
-
     for(size_t i = 1;i < pass_map.size();++i)
     {
         std::set<tipl::vector<3,short> > new_set;

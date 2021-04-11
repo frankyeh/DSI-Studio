@@ -186,6 +186,7 @@ void RegionTableWidget::add_row(int row,QString name,unsigned char feature,unsig
 
     if(cur_tracking_window.ui->target->count())
         cur_tracking_window.ui->target->setCurrentIndex(0);
+
 }
 void RegionTableWidget::add_region(QString name,unsigned char feature,unsigned int color)
 {
@@ -196,10 +197,10 @@ void RegionTableWidget::add_region(QString name,unsigned char feature,unsigned i
         c.from_hsl(((color_gen)*1.1-std::floor((color_gen)*1.1/6)*6)*3.14159265358979323846/3.0,0.85,0.7);
         color = c.color;
     }
-    regions.push_back(std::make_shared<ROIRegion>(cur_tracking_window.handle.get()));
+    regions.push_back(std::make_shared<ROIRegion>(cur_tracking_window.handle));
     regions.back()->show_region.color = color;
     regions.back()->regions_feature = feature;
-    add_row(int(regions.size())-1,name,feature,color);
+    add_row(int(regions.size()-1),name,feature,color);
 }
 void RegionTableWidget::check_check_status(int row, int col)
 {
@@ -257,7 +258,7 @@ bool RegionTableWidget::command(QString cmd,QString param,QString)
             emit need_update();
             return true;
         }
-        ROIRegion region(cur_tracking_window.handle.get());
+        ROIRegion region(cur_tracking_window.handle);
         if(!region.LoadFromFile(param.toLocal8Bit().begin()))
         {
             QMessageBox::information(this,"error","Unknown file format",0);
@@ -484,7 +485,7 @@ void RegionTableWidget::copy_region(void)
         return;
     unsigned int cur_row = uint32_t(currentRow());
     unsigned int color = regions[cur_row]->show_region.color.color;
-    regions.insert(regions.begin() + cur_row + 1,std::make_shared<ROIRegion>(cur_tracking_window.handle.get()));
+    regions.insert(regions.begin() + cur_row + 1,std::make_shared<ROIRegion>(cur_tracking_window.handle));
     *regions[cur_row + 1] = *regions[cur_row];
     regions[cur_row + 1]->show_region.color.color = color;
     add_row(int(cur_row+1),item(currentRow(),0)->text(),regions.back()->regions_feature,color);
@@ -692,7 +693,7 @@ bool load_nii(std::shared_ptr<fib_data> handle,
     // single region ROI
     if(!multiple_roi)
     {
-        regions.push_back(std::make_shared<ROIRegion>(handle.get()));
+        regions.push_back(std::make_shared<ROIRegion>(handle));
         names.push_back(QFileInfo(file_name.c_str()).baseName().toStdString());
         if(has_transform)
             regions[0]->LoadFromBuffer(from,convert);
@@ -768,7 +769,7 @@ bool load_nii(std::shared_ptr<fib_data> handle,
             unsigned short value = value_list[i];
             QString name = (label_map.find(value) == label_map.end() ?
                  QFileInfo(file_name.c_str()).baseName() + "_" + QString::number(value):QString(label_map[value].c_str()));
-            regions.push_back(std::make_shared<ROIRegion>(handle.get()));
+            regions.push_back(std::make_shared<ROIRegion>(handle));
             names.push_back(name.toStdString());
             regions.back()->show_region.color = label_color.empty() ? 0x00FFFFFF : label_color[value].color;
             if(!region_points[i].empty())
@@ -1111,7 +1112,7 @@ void RegionTableWidget::delete_all_region(void)
 }
 
 
-void get_regions_statistics(const std::vector<std::shared_ptr<ROIRegion> >& regions,
+void get_regions_statistics(std::shared_ptr<fib_data> handle,const std::vector<std::shared_ptr<ROIRegion> >& regions,
                             const std::vector<std::string>& region_name,
                             std::string& result)
 {
@@ -1119,7 +1120,7 @@ void get_regions_statistics(const std::vector<std::shared_ptr<ROIRegion> >& regi
     std::vector<std::vector<float> > data(regions.size());
     tipl::par_for(regions.size(),[&](unsigned int index){
         std::vector<std::string> dummy;
-        regions[index]->get_quantitative_data((index == 0) ? titles : dummy,data[index]);
+        regions[index]->get_quantitative_data(handle,(index == 0) ? titles : dummy,data[index]);
     });
     std::ostringstream out;
     out << "Name\t";
@@ -1154,7 +1155,7 @@ void RegionTableWidget::show_statistics(void)
                 active_regions.push_back(regions[index]);
                 region_name.push_back(item(index,0)->text().toStdString());
             }
-        get_regions_statistics(active_regions,region_name,result);
+        get_regions_statistics(cur_tracking_window.handle,active_regions,region_name,result);
     }
     QMessageBox msgBox;
     msgBox.setText("Region Statistics");
@@ -1410,20 +1411,21 @@ void RegionTableWidget::do_action(QString action)
             tipl::image<unsigned int,3> labels;
             std::vector<std::vector<unsigned int> > r;
             tipl::morphology::connected_component_labeling(mask,labels,r);
-
+            begin_update();
             for(unsigned int j = 0,total_count = 0;j < r.size() && total_count < 256;++j)
                 if(!r[j].empty())
                 {
                     std::fill(mask.begin(),mask.end(),0);
                     for(unsigned int i = 0;i < r[j].size();++i)
                         mask[r[j][i]] = 1;
-                    ROIRegion region(cur_tracking_window.handle.get());
+                    ROIRegion region(cur_tracking_window.handle);
                     region.LoadFromBuffer(mask);
                     add_region(name + "_"+QString::number(total_count+1),
                                roi_id,region.show_region.color.color);
                     regions.back()->assign(region.get_region_voxels_raw(),region.resolution_ratio);
                     ++total_count;
                 }
+            end_update();
         }
         if(action.contains("sort_"))
         {
@@ -1453,7 +1455,7 @@ void RegionTableWidget::do_action(QString action)
                 std::vector<std::vector<float> > data(regions.size());
                 tipl::par_for(regions.size(),[&](unsigned int index){
                     std::vector<std::string> dummy;
-                    regions[index]->get_quantitative_data(dummy,data[index]);
+                    regions[index]->get_quantitative_data(cur_tracking_window.handle,dummy,data[index]);
                 });
                 size_t comp_index = 0; // sort_size
                 if(action == "sort_x")

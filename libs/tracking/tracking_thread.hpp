@@ -24,7 +24,7 @@ public:
     float fa_threshold1,fa_threshold2;// use only if fa_threshold=0
 
 public:
-    ThreadData(fib_data* handle):seed(0),roi_mgr(new RoiMgr(handle)){}
+    ThreadData(std::shared_ptr<fib_data> handle):seed(0),roi_mgr(new RoiMgr(handle)){}
     ~ThreadData(void)
     {
         end_thread();

@@ -1442,6 +1442,8 @@ void GLWidget::makeTracts(void)
 {
     if(!tracts)
         return;
+    if(cur_tracking_window["roi_track"].toInt())
+        cur_tracking_window.slice_need_update = true;
     makeCurrent();
     glDeleteLists(tracts, 1);
     glNewList(tracts, GL_COMPILE);

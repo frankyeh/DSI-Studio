@@ -348,7 +348,6 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
 
         connect(tractWidget,SIGNAL(need_update()),glWidget,SLOT(makeTracts()));
         connect(tractWidget,SIGNAL(need_update()),glWidget,SLOT(updateGL()));
-        connect(tractWidget,SIGNAL(need_update()),this,SLOT(update_scene_slice()));
         connect(tractWidget,SIGNAL(cellChanged(int,int)),glWidget,SLOT(updateGL())); //update label
         connect(tractWidget,SIGNAL(itemSelectionChanged()),tractWidget,SLOT(show_report()));
         connect(glWidget,SIGNAL(edited()),tractWidget,SLOT(edit_tracts()));
@@ -824,8 +823,6 @@ bool tracking_window::eventFilter(QObject *obj, QEvent *event)
         slice_need_update = false;
         scene.show_slice();
     }
-
-
     if (event->type() == QEvent::MouseMove)
     {
         if (obj == glWidget)
@@ -1104,28 +1101,30 @@ void tracking_window::on_actionEndpoints_to_seeding_triggered()
         return;
     const float resolution_ratio = 2.0f;
     tractWidget->tract_models[size_t(tractWidget->currentRow())]->to_end_point_voxels(points1,points2,resolution_ratio);
+
+    regionWidget->begin_update();
     regionWidget->add_region(
             tractWidget->item(tractWidget->currentRow(),0)->text()+
             QString(" endpoints1"),roi_id);
     regionWidget->regions.back()->resolution_ratio = resolution_ratio;
     regionWidget->regions.back()->add_points(points1,false,resolution_ratio);
+
     regionWidget->add_region(
             tractWidget->item(tractWidget->currentRow(),0)->text()+
             QString(" endpoints2"),roi_id);
     regionWidget->regions.back()->resolution_ratio = resolution_ratio;
     regionWidget->regions.back()->add_points(points2,false,resolution_ratio);
+    regionWidget->end_update();
     slice_need_update = true;
     glWidget->updateGL();
 }
 
 void tracking_window::on_actionTracts_to_seeds_triggered()
 {
-    if(tractWidget->tract_models.empty())
+    if(tractWidget->tract_models.empty()|| tractWidget->currentRow() < 0)
         return;
     std::vector<tipl::vector<3,short> > points;
     tractWidget->tract_models[tractWidget->currentRow()]->to_voxel(points,2.0f);
-    if(points.size() < 2)
-        return;
     regionWidget->add_region(
             tractWidget->item(tractWidget->currentRow(),0)->text(),roi_id);
     regionWidget->regions.back()->resolution_ratio = 2.0;

@@ -42,7 +42,7 @@ int group_connectometry_analysis::run_track(std::shared_ptr<tracking_data> fib,
                                             int seed_count,
                                             unsigned int thread_count)
 {
-    ThreadData tracking_thread(handle.get());
+    ThreadData tracking_thread(handle);
     tracking_thread.param.threshold = tracking_threshold;
     tracking_thread.param.cull_cos_angle = 1.0f;
     tracking_thread.param.step_size = handle->vs[0];
@@ -83,7 +83,7 @@ void group_connectometry_analysis::exclude_cerebellum(void)
 {
     if(handle->is_human_data)
     {
-        ROIRegion roi(handle.get());
+        ROIRegion roi(handle);
         if(!load_region(handle,roi,"BrainSeg:Cerebellum"))
             return;
         roi_mgr->setRegions(roi.get_region_voxels_raw(),1.0f,4/*terminative*/,"Cerebellum");
@@ -451,10 +451,10 @@ void group_connectometry_analysis::run_permutation(unsigned int thread_count,uns
     fdr_neg_corr.clear();
     fdr_neg_corr.resize(max_dimension);
 
-    pos_corr_track = std::make_shared<TractModel>(handle.get());
-    neg_corr_track = std::make_shared<TractModel>(handle.get());
-    pos_null_corr_track = std::make_shared<TractModel>(handle.get());
-    neg_null_corr_track = std::make_shared<TractModel>(handle.get());
+    pos_corr_track = std::make_shared<TractModel>(handle);
+    neg_corr_track = std::make_shared<TractModel>(handle);
+    pos_null_corr_track = std::make_shared<TractModel>(handle);
+    neg_null_corr_track = std::make_shared<TractModel>(handle);
     spm_map = std::make_shared<connectometry_result>();
 
     terminated = false;

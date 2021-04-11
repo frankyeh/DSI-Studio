@@ -20,7 +20,8 @@
 bool atl_load_atlas(std::string atlas_name,std::vector<std::shared_ptr<atlas> >& atlas_list);
 bool load_roi(std::shared_ptr<fib_data> handle,std::shared_ptr<RoiMgr> roi_mgr);
 
-void get_regions_statistics(const std::vector<std::shared_ptr<ROIRegion> >& regions,
+void get_regions_statistics(std::shared_ptr<fib_data> handle,
+                            const std::vector<std::shared_ptr<ROIRegion> >& regions,
                             const std::vector<std::string>& region_name,
                             std::string& result);
 bool load_region(std::shared_ptr<fib_data> handle,
@@ -87,7 +88,7 @@ int ana(void)
             {
                 for(unsigned int j = 0;j < atlas_list[i]->get_list().size();++j)
                 {
-                    std::shared_ptr<ROIRegion> region(std::make_shared<ROIRegion>(handle.get()));
+                    std::shared_ptr<ROIRegion> region(std::make_shared<ROIRegion>(handle));
                     std::string region_name = atlas_list[i]->name;
                     region_name += ":";
                     region_name += atlas_list[i]->get_list()[j];
@@ -110,7 +111,7 @@ int ana(void)
             std::vector<std::string> roi_list = {first, last};
             for(size_t i = 0;i < roi_list.size();++i)
             {
-                std::shared_ptr<ROIRegion> region(new ROIRegion(handle.get()));
+                std::shared_ptr<ROIRegion> region(new ROIRegion(handle));
                 if(!load_region(handle,*region.get(),roi_list[i]))
                 {
                     std::cout << "fail to load the ROI file." << std::endl;
@@ -129,7 +130,7 @@ int ana(void)
         }
         std::string result;
         std::cout << "calculating region statistics at a total of " << regions.size() << " regions" << std::endl;
-        get_regions_statistics(regions,region_list,result);
+        get_regions_statistics(handle,regions,region_list,result);
         std::string file_name(po.get("source"));
         file_name += ".statistics.txt";
         if(po.has("output"))
@@ -165,7 +166,7 @@ int ana(void)
             tipl::image<uint32_t,3> accumulate_map(dim);
             for(int i = 0;i < name_list.size();++i)
             {
-                TractModel tract_model(handle.get());
+                TractModel tract_model(handle);
                 if(!tract_model.load_from_file(name_list[i].toStdString().c_str()))
                 {
                     std::cout << "open file error:" << name_list[i].toStdString() << std::endl;
@@ -194,7 +195,7 @@ int ana(void)
         std::vector<std::string> name_list_str;
         for(int i = 0;i < name_list.size();++i)
         {
-            tracts.push_back(std::make_shared<TractModel>(handle.get()));
+            tracts.push_back(std::make_shared<TractModel>(handle));
             if(!tracts.back()->load_from_file(name_list[i].toStdString().c_str()))
             {
                 std::cout << "open file error. terminating..." << std::endl;
@@ -206,7 +207,7 @@ int ana(void)
     }
     else
     {
-        std::shared_ptr<TractModel> tract_model(new TractModel(handle.get()));
+        std::shared_ptr<TractModel> tract_model(new TractModel(handle));
         {
             std::cout << "loading " << file_name << "..." <<std::endl;
             if(!QFileInfo(file_name.c_str()).exists())
@@ -221,7 +222,7 @@ int ana(void)
             }
             std::cout << file_name << " loaded" << std::endl;
         }
-        std::shared_ptr<RoiMgr> roi_mgr(new RoiMgr(handle.get()));
+        std::shared_ptr<RoiMgr> roi_mgr(new RoiMgr(handle));
         if(!load_roi(handle,roi_mgr))
             return 1;
         tract_model->filter_by_roi(roi_mgr);

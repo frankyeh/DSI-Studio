@@ -1077,7 +1077,7 @@ bool fib_data::load_track_atlas()
     }
     if(!track_atlas.get())
     {
-        track_atlas = std::make_shared<TractModel>(this);
+        track_atlas = std::make_shared<TractModel>(dim,vs,trans_to_mni);
         if(!track_atlas->load_from_file(tractography_atlas_file_name.c_str()))
         {
             error_msg = "failed to load tractography atlas";

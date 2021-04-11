@@ -321,8 +321,7 @@ void reconstruction_window::on_load_mask_clicked()
             "Mask files (*.nii *nii.gz *.hdr);;Text files (*.txt);;All files (*)" );
     if(filename.isEmpty())
         return;
-    fib_data fib(handle->dwi.geometry(),handle->voxel.vs);
-    ROIRegion region(&fib);
+    ROIRegion region(handle->dwi.geometry(),handle->voxel.vs);
     region.LoadFromFile(filename.toLocal8Bit().begin());
     region.SaveToBuffer(handle->voxel.mask,1.0f);
     on_SlicePos_valueChanged(ui->SlicePos->value());
@@ -341,8 +340,7 @@ void reconstruction_window::on_save_mask_clicked()
         return;
     if(QFileInfo(filename.toLower()).completeSuffix() != "txt")
         filename = QFileInfo(filename).absolutePath() + "/" + QFileInfo(filename).baseName() + ".nii.gz";
-    fib_data fib(handle->dwi.geometry(),handle->voxel.vs);
-    ROIRegion region(&fib);
+    ROIRegion region(handle->dwi.geometry(),handle->voxel.vs);
     region.LoadFromBuffer(handle->voxel.mask);
     region.SaveToFile(filename.toLocal8Bit().begin());
 }

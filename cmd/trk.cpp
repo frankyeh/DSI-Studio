@@ -313,7 +313,7 @@ void get_connectivity_matrix(std::shared_ptr<fib_data> handle,
             std::vector<std::shared_ptr<ROIRegion> > regions;
             while(std::getline(in,line))
             {
-                std::shared_ptr<ROIRegion> region(new ROIRegion(handle.get()));
+                std::shared_ptr<ROIRegion> region(new ROIRegion(handle));
                 std::string fn;
                 if(QFileInfo(line.c_str()).exists())
                     fn = line;
@@ -526,7 +526,7 @@ bool load_roi(std::shared_ptr<fib_data> handle,std::shared_ptr<RoiMgr> roi_mgr)
     for(int index = 0;index < total_count;++index)
     if (po.has(roi_names[index]))
     {
-        ROIRegion roi(handle.get());
+        ROIRegion roi(handle);
         QStringList roi_list = QString(po.get(roi_names[index]).c_str()).split("+");
         for(int i= 0;i < roi_list.size();++i)
         {
@@ -609,7 +609,7 @@ int trk(std::shared_ptr<fib_data> handle)
     float otsu = tipl::segmentation::otsu_threshold(tipl::make_image(fa0,geometry));
 
 
-    ThreadData tracking_thread(handle.get());
+    ThreadData tracking_thread(handle);
     tracking_thread.param.default_otsu = po.get("otsu_threshold",0.6f);
     tracking_thread.param.threshold = po.get("fa_threshold",0.0f);
     tracking_thread.param.dt_threshold = po.get("dt_threshold",0.2f);
@@ -675,7 +675,7 @@ int trk(std::shared_ptr<fib_data> handle)
                     tracking_thread.param.threshold == 0.0f ?
                         otsu*tracking_thread.param.default_otsu:tracking_thread.param.threshold);
     }
-    std::shared_ptr<TractModel> tract_model(new TractModel(handle.get()));
+    std::shared_ptr<TractModel> tract_model(new TractModel(handle));
 
     if(!cnt_file_name.empty())
     {

@@ -114,7 +114,7 @@ void connectivity_matrix_dialog::on_recalculate_clicked()
         }
     else
         data.set_atlas(cur_tracking_window->handle->atlas_list[ui->region_list->currentIndex()-1],cur_tracking_window->handle->get_mni_mapping());
-    TractModel tracks(cur_tracking_window->handle.get());
+    TractModel tracks(cur_tracking_window->handle);
     for(int index = 0;index < cur_tracking_window->tractWidget->tract_models.size();++index)
         if(cur_tracking_window->tractWidget->item(index,0)->checkState() == Qt::Checked)
             tracks.add(*cur_tracking_window->tractWidget->tract_models[index]);

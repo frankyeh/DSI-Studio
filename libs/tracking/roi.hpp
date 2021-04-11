@@ -76,7 +76,7 @@ public:
 
 class RoiMgr {
 public:
-    fib_data* handle = nullptr;
+    std::shared_ptr<fib_data> handle;
     std::string report;
     std::vector<tipl::vector<3,short> > seeds;
     std::vector<float> seeds_r;
@@ -89,7 +89,7 @@ public:
     float false_distance = 0.0f;
     unsigned int track_id = 0;
 public:
-    RoiMgr(fib_data* handle_):handle(handle_){}
+    RoiMgr(std::shared_ptr<fib_data> handle_):handle(handle_){}
 public:
     bool is_excluded_point(const tipl::vector<3,float>& point) const
     {

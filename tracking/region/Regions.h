@@ -16,10 +16,13 @@ const unsigned char end_id = 2;
 const unsigned char seed_id = 3;
 const unsigned char terminate_id = 4;
 const unsigned char not_ending_id = 5;
-
+void initial_LPS_nifti_srow(tipl::matrix<4,4,float>& T,const tipl::geometry<3>& geo,const tipl::vector<3>& vs);
 class ROIRegion {
 public:
-        fib_data* handle = nullptr;
+        tipl::geometry<3> dim;
+        tipl::vector<3> vs;
+        tipl::matrix<4,4,float> trans_to_mni;
+public:
         std::vector<tipl::vector<3,short> > region;
         std::vector<std::vector<tipl::vector<3,short> > > undo_backup;
         std::vector<std::vector<tipl::vector<3,short> > > redo_backup;
@@ -31,16 +34,26 @@ public: // rendering options
         unsigned char regions_feature;
         bool modified = true;
 public: // rendering options
-        ROIRegion(const ROIRegion& rhs,float resolution_ratio_ = 1.0f) :
-            handle(rhs.handle),
-            region(rhs.region),super_resolution(resolution_ratio_ != 1.0f),
-            resolution_ratio(resolution_ratio_),
-            regions_feature(rhs.regions_feature)
+        ROIRegion(std::shared_ptr<fib_data> handle):
+            dim(handle->dim),vs(handle->vs),trans_to_mni(handle->trans_to_mni){}
+        ROIRegion(tipl::geometry<3> dim_,tipl::vector<3> vs_):dim(dim_),vs(vs_)
         {
-            show_region = rhs.show_region;
+            initial_LPS_nifti_srow(trans_to_mni,dim,vs);
         }
+        ROIRegion(tipl::geometry<3> dim_,tipl::vector<3> vs_,const tipl::matrix<4,4,float>& trans_to_mni_)
+            :dim(dim_),vs(vs_),trans_to_mni(trans_to_mni_){}
+
+        ROIRegion(const ROIRegion& rhs)
+        {
+            (*this) = rhs;
+        }
+
         const ROIRegion& operator = (const ROIRegion & rhs) {
-            handle = rhs.handle;
+
+            dim = rhs.dim;
+            vs = rhs.vs;
+            trans_to_mni = rhs.trans_to_mni;
+
             region = rhs.region;
             undo_backup = rhs.undo_backup;
             redo_backup = rhs.redo_backup;
@@ -52,7 +65,10 @@ public: // rendering options
             return *this;
         }
         void swap(ROIRegion & rhs) {
-            std::swap(handle,rhs.handle);
+
+            dim.swap(rhs.dim);
+            std::swap(vs,rhs.vs);
+            trans_to_mni.swap(rhs.trans_to_mni);
             region.swap(rhs.region);
             undo_backup.swap(rhs.undo_backup);
             redo_backup.swap(rhs.redo_backup);
@@ -63,8 +79,6 @@ public: // rendering options
             std::swap(resolution_ratio,rhs.resolution_ratio);
         }
 
-        ROIRegion(fib_data* handle_)
-            : handle(handle_),modified(false){}
         tipl::geometry<3> get_buffer_dim(void) const;
         tipl::vector<3,short> get_region_voxel(unsigned int index) const
         {
@@ -203,7 +217,7 @@ public:
         void LoadFromBuffer(const image_type& from,const tipl::matrix<4,4,float>& trans)
         {
             std::vector<tipl::vector<3,float> > points;
-            for (tipl::pixel_index<3> index(handle->dim);index < handle->dim.size();++index)
+            for (tipl::pixel_index<3> index(dim);index < dim.size();++index)
             {
                 tipl::vector<3> p(index.begin());
                 p.to(trans);
@@ -224,11 +238,11 @@ public:
             region.clear();
             std::vector<tipl::vector<3,short> > points;
 
-            if(mask.width() != handle->dim[0])
-                resolution_ratio = (float)mask.width()/(float)handle->dim[0];
+            if(mask.width() != dim[0])
+                resolution_ratio = (float)mask.width()/(float)dim[0];
             if(resolution_ratio < 1.0f)
             {
-                for (tipl::pixel_index<3>index(handle->dim);index < handle->dim.size();++index)
+                for (tipl::pixel_index<3>index(dim);index < dim.size();++index)
                 {
                     tipl::vector<3> pos(index);
                     pos *= resolution_ratio;
@@ -273,7 +287,7 @@ public:
                     return true;
             return false;
         }
-        void get_quantitative_data(std::vector<std::string>& titles,std::vector<float>& data);
+        void get_quantitative_data(std::shared_ptr<fib_data> handle,std::vector<std::string>& titles,std::vector<float>& data);
 };
 
 #endif

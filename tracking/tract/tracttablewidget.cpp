@@ -147,8 +147,8 @@ void TractTableWidget::draw_tracts(unsigned char dim,int pos,
 }
 void TractTableWidget::addNewTracts(QString tract_name,bool checked)
 {
-    thread_data.push_back(std::make_shared<ThreadData>(cur_tracking_window.handle.get()));
-    tract_models.push_back(std::make_shared<TractModel>(cur_tracking_window.handle.get()));
+    thread_data.push_back(std::make_shared<ThreadData>(cur_tracking_window.handle));
+    tract_models.push_back(std::make_shared<TractModel>(cur_tracking_window.handle));
     insertRow(tract_models.size()-1);
     QTableWidgetItem *item0 = new QTableWidgetItem(tract_name);
     item0->setCheckState(checked ? Qt::Checked : Qt::Unchecked);
@@ -228,7 +228,7 @@ void TractTableWidget::ppv_analysis(void)
         }
     }
     std::vector<int> tracks_count(100);
-    ThreadData base_thread(cur_tracking_window.handle.get());
+    ThreadData base_thread(cur_tracking_window.handle);
     cur_tracking_window.set_tracking_param(base_thread);
     cur_tracking_window.regionWidget->setROIs(&base_thread);
     std::shared_ptr<tracking_data> fib(new tracking_data);
@@ -248,14 +248,14 @@ void TractTableWidget::ppv_analysis(void)
             }
             check_prog(i,100);
         }
-        ThreadData new_thread(cur_tracking_window.handle.get());
+        ThreadData new_thread(cur_tracking_window.handle);
         new_thread.param = base_thread.param;
         new_thread.param.min_length = p1[i];
         new_thread.param.dt_threshold = p2[i];
         new_thread.roi_mgr = base_thread.roi_mgr;
         new_thread.run(fib,1,true);
 
-        TractModel trk(cur_tracking_window.handle.get());
+        TractModel trk(cur_tracking_window.handle);
         new_thread.fetchTracks(&trk);
         new_thread.apply_tip(&trk);
         tracks_count[i] = trk.get_visible_track_count();
@@ -283,7 +283,7 @@ void TractTableWidget::ppv_analysis(void)
 
 void TractTableWidget::filter_by_roi(void)
 {
-    ThreadData track_thread(cur_tracking_window.handle.get());
+    ThreadData track_thread(cur_tracking_window.handle);
     cur_tracking_window.set_tracking_param(track_thread);
     cur_tracking_window.regionWidget->setROIs(&track_thread);
     for(int index = 0;index < tract_models.size();++index)
@@ -1190,8 +1190,9 @@ void TractTableWidget::copy_track(void)
 {
     if(currentRow() >= int(tract_models.size()) || currentRow() == -1)
         return;
-    addNewTracts(item(currentRow(),0)->text() + "copy");
-    *(tract_models.back()) = *(tract_models[currentRow()]);
+    uint32_t old_row = uint32_t(currentRow());
+    addNewTracts(item(currentRow(),0)->text() + "_copy");
+    *(tract_models.back()) = *(tract_models[old_row]);
     item(currentRow(),1)->setText(QString::number(tract_models.back()->get_visible_track_count()));
     emit need_update();
 }

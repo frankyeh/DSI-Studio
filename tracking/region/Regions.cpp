@@ -8,9 +8,9 @@
 
 tipl::geometry<3> ROIRegion::get_buffer_dim(void) const
 {
-    return tipl::geometry<3>(handle->dim[0]*resolution_ratio,
-                                      handle->dim[1]*resolution_ratio,
-                                      handle->dim[2]*resolution_ratio);
+    return tipl::geometry<3>(dim[0]*resolution_ratio,
+                                      dim[1]*resolution_ratio,
+                                      dim[2]*resolution_ratio);
 }
 
 void ROIRegion::add_points(std::vector<tipl::vector<3,float> >& points,bool del,float point_resolution)
@@ -33,7 +33,7 @@ void ROIRegion::add_points(std::vector<tipl::vector<3,short> >& points, bool del
     if(resolution_ratio == 1.0)
     {
         for(unsigned int index = 0; index < points.size();)
-            if (!handle->dim.is_valid(points[index][0], points[index][1], points[index][2]))
+            if (!dim.is_valid(points[index][0], points[index][1], points[index][2]))
             {
                 points[index] = points.back();
                 points.pop_back();
@@ -166,14 +166,14 @@ void ROIRegion::SaveToFile(const char* FileName)
     else if (ext == std::string(".mat")) {
         if(resolution_ratio > 8.0f)
             return;
-        tipl::image<unsigned char, 3> mask(handle->dim);
+        tipl::image<unsigned char, 3> mask(dim);
         if(resolution_ratio != 1.0f)
             mask.resize(get_buffer_dim());
         for (unsigned int index = 0; index < region.size(); ++index) {
-            if (handle->dim.is_valid(region[index][0], region[index][1],
+            if (dim.is_valid(region[index][0], region[index][1],
                              region[index][2]))
                 mask[tipl::pixel_index<3>(region[index][0], region[index][1],
-                                           region[index][2], handle->dim).index()] = 255;
+                                           region[index][2], dim).index()] = 255;
         }
         tipl::io::mat_write header(FileName);
         header << mask;
@@ -185,8 +185,8 @@ void ROIRegion::SaveToFile(const char* FileName)
         unsigned int color = show_region.color.color & 0x00FFFFFF;
         tipl::image<unsigned char, 3>mask;
         SaveToBuffer(mask);
-        tipl::vector<3,float> rvs(handle->vs);
-        tipl::matrix<4,4,float> T(handle->trans_to_mni);
+        tipl::vector<3,float> rvs(vs);
+        tipl::matrix<4,4,float> T(trans_to_mni);
         if(resolution_ratio != 1.0f)
         {
             rvs /= resolution_ratio;
@@ -237,11 +237,11 @@ bool ROIRegion::LoadFromFile(const char* FileName) {
             return false;
         tipl::image<short, 3>from;
         header >> from;
-        if(from.geometry() != handle->dim)
+        if(from.geometry() != dim)
         {
-            float r1 = (float)from.geometry()[0]/(float)handle->dim[0];
-            float r2 = (float)from.geometry()[1]/(float)handle->dim[1];
-            float r3 = (float)from.geometry()[2]/(float)handle->dim[2];
+            float r1 = (float)from.geometry()[0]/(float)dim[0];
+            float r2 = (float)from.geometry()[1]/(float)dim[1];
+            float r3 = (float)from.geometry()[2]/(float)dim[2];
             if(r1 != r2 || r1 != r3)
                 return false;
             resolution_ratio = r1;
@@ -266,12 +266,12 @@ bool ROIRegion::LoadFromFile(const char* FileName) {
         tipl::image<unsigned int, 3>from;
         tipl::geometry<3> nii_geo;
         header.get_image_dimension(nii_geo);
-        if(nii_geo != handle->dim)// use transformation information
+        if(nii_geo != dim)// use transformation information
         {
             {
-                float r1 = (float)nii_geo[0]/(float)handle->dim[0];
-                float r2 = (float)nii_geo[1]/(float)handle->dim[1];
-                float r3 = (float)nii_geo[2]/(float)handle->dim[2];
+                float r1 = (float)nii_geo[0]/(float)dim[0];
+                float r2 = (float)nii_geo[1]/(float)dim[1];
+                float r3 = (float)nii_geo[2]/(float)dim[2];
                 if(r1 == r2 && r1 == r3)
                 {
                     resolution_ratio = r1;
@@ -280,14 +280,11 @@ bool ROIRegion::LoadFromFile(const char* FileName) {
                     return true;
                 }
             }
-
-            if(!handle->is_qsdr)
-                return false;
             header >> from;
             tipl::matrix<4,4,float> t;
             header.get_image_transformation(t);
             t.inv();
-            t *= handle->trans_to_mni;
+            t *= trans_to_mni;
             LoadFromBuffer(from,t);
             return true;
         }
@@ -317,11 +314,11 @@ void ROIRegion::SaveToBuffer(tipl::image<unsigned char, 3>& mask,
 {
     if(target_resolution != 1.0f)
         mask.resize(tipl::geometry<3>(
-                    handle->dim[0]*target_resolution,
-                    handle->dim[1]*target_resolution,
-                    handle->dim[2]*target_resolution));
+                    dim[0]*target_resolution,
+                    dim[1]*target_resolution,
+                    dim[2]*target_resolution));
     else
-        mask.resize(handle->dim);
+        mask.resize(dim);
     std::fill(mask.begin(), mask.end(), 0);
     if(target_resolution == resolution_ratio)
         tipl::par_for (region.size(),[&](unsigned int index)
@@ -420,7 +417,7 @@ void ROIRegion::Flip(unsigned int dimension) {
     if(!region.empty())
         undo_backup.push_back(region);
     for (unsigned int index = 0; index < region.size(); ++index)
-        region[index][dimension] = (float)handle->dim[dimension]*resolution_ratio -
+        region[index][dimension] = (float)dim[dimension]*resolution_ratio -
                                    region[index][dimension] - 1;
 }
 
@@ -468,14 +465,14 @@ void calculate_region_stat(const Image& I, const Points& p,float& mean,float& ma
     mean = sum;
 }
 
-void ROIRegion::get_quantitative_data(std::vector<std::string>& titles,std::vector<float>& data)
+void ROIRegion::get_quantitative_data(std::shared_ptr<fib_data> handle,std::vector<std::string>& titles,std::vector<float>& data)
 {
     titles.clear();
     titles.push_back("voxel counts");
     data.push_back(region.size());
 
     titles.push_back("volume (mm^3)");
-    data.push_back(region.size()*handle->vs[0]*handle->vs[1]*handle->vs[2]/resolution_ratio); //volume (mm^3)
+    data.push_back(region.size()*vs[0]*vs[1]*vs[2]/resolution_ratio); //volume (mm^3)
     if(region.empty())
         return;
     tipl::vector<3,float> cm;

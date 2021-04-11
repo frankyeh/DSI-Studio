@@ -291,7 +291,7 @@ std::string run_auto_track(
                     handle->set_template_id(0);
                 }
 
-                TractModel tract_model(handle.get());
+                TractModel tract_model(handle);
                 if(!overwrite && has_trk_file)
                     tract_model.load_from_file(trk_file_name.c_str());
 
@@ -300,7 +300,7 @@ std::string run_auto_track(
                                                   !tract_model.get_visible_track_count();++tracking_iteration)
                 {
                     float cur_tolerance = tolerance[tracking_iteration];
-                    ThreadData thread(handle.get());
+                    ThreadData thread(handle);
                     {
                         prog_init p("preparing tracking ",track_name.c_str());
                         thread.param.tip_iteration = uint8_t(tip);
