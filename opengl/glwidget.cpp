@@ -429,14 +429,13 @@ void GLWidget::paintGL()
 {
     if(no_update)
         return;
+    check_error("begin");
     glDrawBuffer(GL_BACK);
     int color = get_param("bkg_color");
     glClearColor(float((color & 0x00FF0000) >> 16)/255.0f,
                   float((color & 0x0000FF00) >> 8)/255.0f,
                   float(color & 0x000000FF)/255.0f,1.0);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    check_error("begin");
-
     setFrustum();
     check_error("basic");
     {
