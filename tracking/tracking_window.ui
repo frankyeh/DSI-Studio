@@ -934,8 +934,8 @@
     <addaction name="actionCheck_all_regions"/>
     <addaction name="actionUnckech_all_regions"/>
     <addaction name="separator"/>
-    <addaction name="actionDeleteRegionAll"/>
     <addaction name="actionDeleteRegion"/>
+    <addaction name="actionDeleteRegionAll"/>
     <addaction name="separator"/>
     <addaction name="actionCopy_Region"/>
     <addaction name="actionUndo_Edit"/>
