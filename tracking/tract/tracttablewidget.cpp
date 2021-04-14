@@ -198,7 +198,7 @@ void TractTableWidget::start_tracking(void)
     cur_tracking_window.set_tracking_param(*thread_data.back());
     cur_tracking_window.regionWidget->setROIs(thread_data.back().get());
     thread_data.back()->run(cur_tracking_window["thread_count"].toInt(),false);
-    tract_models.back()->report += thread_data.back()->report.str();
+    tract_models.back()->report = cur_tracking_window.handle->report + thread_data.back()->report.str();
     show_report();
     timer->start(1000);
 }
@@ -1201,16 +1201,19 @@ void TractTableWidget::separate_deleted_track(void)
 {
     if(currentRow() >= int(tract_models.size()) || currentRow() == -1)
         return;
-    addNewTracts(item(currentRow(),0)->text(),false);
-    std::vector<std::vector<float> > new_tracks = tract_models[currentRow()]->get_deleted_tracts();
+    std::vector<std::vector<float> > new_tracks;
+    new_tracks.swap(tract_models[uint32_t(currentRow())]->get_deleted_tracts());
     if(new_tracks.empty())
         return;
+    // clean the deleted tracks
+    tract_models[uint32_t(currentRow())]->clear_deleted();
+    item(currentRow(),1)->setText(QString::number(tract_models[uint32_t(currentRow())]->get_visible_track_count()));
+    item(currentRow(),2)->setText(QString::number(tract_models[uint32_t(currentRow())]->get_deleted_track_count()));
+    // add deleted tracks to a new entry
+    addNewTracts(item(currentRow(),0)->text(),false);
     tract_models.back()->add_tracts(new_tracks);
-    tract_models[currentRow()]->clear_deleted();
     item(rowCount()-1,1)->setText(QString::number(tract_models.back()->get_visible_track_count()));
     item(rowCount()-1,2)->setText(QString::number(tract_models.back()->get_deleted_track_count()));
-    item(currentRow(),1)->setText(QString::number(tract_models[currentRow()]->get_visible_track_count()));
-    item(currentRow(),2)->setText(QString::number(tract_models[currentRow()]->get_deleted_track_count()));
     emit need_update();
 }
 void TractTableWidget::sort_track_by_name(void)
