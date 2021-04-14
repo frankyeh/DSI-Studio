@@ -138,7 +138,7 @@ public:
         
         const std::vector<float>& get_tract(unsigned int index) const{return tract_data[index];}
         const std::vector<std::vector<float> >& get_tracts(void) const{return tract_data;}
-        const std::vector<std::vector<float> >& get_deleted_tracts(void) const{return deleted_tract_data;}
+        std::vector<std::vector<float> >& get_deleted_tracts(void) {return deleted_tract_data;}
         std::vector<std::vector<float> >& get_tracts(void) {return tract_data;}
         unsigned int get_tract_color(unsigned int index) const{return tract_color[index];}
         size_t get_tract_length(unsigned int index) const{return tract_data[index].size();}
