@@ -472,7 +472,7 @@ void ROIRegion::get_quantitative_data(std::shared_ptr<fib_data> handle,std::vect
     data.push_back(region.size());
 
     titles.push_back("volume (mm^3)");
-    data.push_back(region.size()*vs[0]*vs[1]*vs[2]/resolution_ratio); //volume (mm^3)
+    data.push_back(region.size()*vs[0]*vs[1]*vs[2]/resolution_ratio/resolution_ratio/resolution_ratio); //volume (mm^3)
     if(region.empty())
         return;
     tipl::vector<3,float> cm;
@@ -480,14 +480,19 @@ void ROIRegion::get_quantitative_data(std::shared_ptr<fib_data> handle,std::vect
     for (unsigned int index = 0; index < region.size(); ++index)
     {
         cm += region[index];
-        max[0] = std::max<short>(max[0],region[index][0]);
-        max[1] = std::max<short>(max[1],region[index][1]);
-        max[2] = std::max<short>(max[2],region[index][2]);
-        min[0] = std::min<short>(min[0],region[index][0]);
-        min[1] = std::min<short>(min[1],region[index][1]);
-        min[2] = std::min<short>(min[2],region[index][2]);
+        max[0] = std::max<float>(max[0],region[index][0]);
+        max[1] = std::max<float>(max[1],region[index][1]);
+        max[2] = std::max<float>(max[2],region[index][2]);
+        min[0] = std::min<float>(min[0],region[index][0]);
+        min[1] = std::min<float>(min[1],region[index][1]);
+        min[2] = std::min<float>(min[2],region[index][2]);
     }
     cm /= region.size();
+
+    cm /= resolution_ratio;
+    max /= resolution_ratio;
+    min /= resolution_ratio;
+
     titles.push_back("center x");
     titles.push_back("center y");
     titles.push_back("center z");
