@@ -29,6 +29,9 @@ void SliceModel::apply_overlay(tipl::color_image& show_image,
                     unsigned char cur_dim,
                     std::shared_ptr<SliceModel> other_slice) const
 {
+    if(show_image.empty())
+        return;
+    bool op = show_image[0][0] < 128;
     std::pair<float,float> range = other_slice->get_contrast_range();
     for(int y = 0,pos = 0;y < show_image.height();++y)
         for(int x = 0;x < show_image.width();++x,++pos)
@@ -40,7 +43,13 @@ void SliceModel::apply_overlay(tipl::color_image& show_image,
                 continue;
             if((value > 0.0f && value > range.first) ||
                (value < 0.0f && value < range.second))
-                show_image[pos] |= other_slice->v2c[value];
+            {
+                if(op)
+                    show_image[pos] |= other_slice->v2c[value];
+                else
+                    show_image[pos] &= other_slice->v2c[value];
+            }
+
         }
 }
 
