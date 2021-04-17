@@ -120,7 +120,7 @@ void slice_view_scene::show_ruler(QPainter& paint)
     // horizontal direction
     int space_x = 0;
     {
-        bool flip_x = cur_tracking_window["orientation_convention"].toInt();
+        bool flip_x = (cur_dim && cur_tracking_window["orientation_convention"].toInt());
         uint8_t dim = (cur_dim == 0 ? 1:0);
         int Y = paint.window().height()-tic_length;
         int pad_x =  (is_qsdr ? qsdr_origin[dim]%tic_dis:0);
@@ -266,8 +266,7 @@ void slice_view_scene::manage_slice_orientation(QImage& slice,QImage& new_slice)
     bool flip_y = false;
     if(cur_tracking_window.cur_dim != 2)
         flip_y = true;
-    else
-    if(cur_tracking_window["orientation_convention"].toInt())
+    if(cur_tracking_window.cur_dim && cur_tracking_window["orientation_convention"].toInt())
         flip_x = true;
     new_slice = (!flip_x && !flip_y ? slice : slice.mirrored(flip_x,flip_y));
 }
