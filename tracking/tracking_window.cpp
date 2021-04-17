@@ -166,7 +166,10 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
                 if(QFileInfo(QString(t1w_template_file_name.c_str())).exists())
                     addSlices(QStringList() << QString(t1w_template_file_name.c_str()),"icbm_t1w",true);
                 if(QFileInfo(QString(wm_template_file_name.c_str())).exists())
+                {
                     addSlices(QStringList() << QString(wm_template_file_name.c_str()),"icbm_wm",true);
+                    command("add_surface","0","0.1"); // add full surface
+                }
             }
             populate_templates(ui->template_box);
             ui->template_box->setCurrentIndex(handle->template_id);
@@ -1228,6 +1231,8 @@ void tracking_window::on_deleteSlice_clicked()
 {
     if(dynamic_cast<CustomSliceModel*>(current_slice.get()) == nullptr)
         return;
+    if(current_slice->is_overlay)
+        on_is_overlay_clicked();
     int index = ui->SliceModality->currentIndex();
     handle->view_item.erase(handle->view_item.begin()+index);
     slices.erase(slices.begin()+index);
@@ -2148,11 +2153,8 @@ void tracking_window::on_is_overlay_clicked()
     if(current_slice->is_overlay)
         overlay_slices.push_back(current_slice);
     else
-    {
-        for(size_t index = 0;index < overlay_slices.size();++index)
-            if(current_slice == overlay_slices[index])
-                overlay_slices.erase(overlay_slices.begin()+int64_t(index));
-    }
+        overlay_slices.erase(std::remove(overlay_slices.begin(),overlay_slices.end(),current_slice),overlay_slices.end());
+
 }
 
 
