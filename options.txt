@@ -12,7 +12,7 @@ ROI/"R" label/roi_label/Off:On/1
 ROI/Position Line/roi_position/Off:On/1
 ROI/Ruler/roi_ruler/Off:On/1
 ROI/Slice Layout/roi_layout/Single Slice:3 Slices:Mosaic:Mosaic 2:Mosaic 4:Mosaic 8:Mosaic 16:Mosaic 32/0
-ROI/Column Number (Mosaic)/roi_mosaic_column/int:0:30:5/0/Column count for the mosaic view (0: default square number)
+ROI/Column Number (Mosaic)/roi_mosaic_column/int:0:30:5/0/Column count for the mosaic view (0 for default square number)
 ROI/Default Output Format/roi_format/nii.gz:mat:txt/0
 Tracking/Tracking Index/tracking_index/fa:adc/0/The anisotropy metrics that will be used as the termination criterion
 Tracking/Tracking Threshold (0=random)/fa_threshold/float:0:2:0.01:5/0.0/The anisotropy threshold to terminate tracking
@@ -25,8 +25,8 @@ Tracking/ /tracking_plan/Seeds:Tracts/0
 Tracking/Topology-Informed Pruning (iteration)/auto_tip/int:0:100:4/16/The number of pruning iterations used to remove noisy tracks
 Tracking/Autotrack tolerance (mm)/autotrack_tolerance/float:0:100:10:1/16/The inclusion distance for automated fiber tracking
 Tracking/Differential Tracking/Tracking_dT
-Tracking_dT/Differential Tracking Index/dt_index/none:adc/0/The metric that drives the difference
-Tracking_dT/Differential Tracking Threshold/dt_threshold/float:0.0:1.0:0.05:2/0.2/The percentage threshold for tracking the differences (0.05 tracks differences >5%)
+Tracking_dT/Metrics/dt_index/none:adc/0/The metric that drives the difference
+Tracking_dT/Threshold/dt_threshold/float:0.0:1.0:0.05:2/0.2/0.05 means tracking differences > 5%
 Tracking/Advanced Options/Tracking_adv
 Tracking_adv/Tracking Algorithm/tracking_method/Stremline(Euler):RK4:Voxel tracking/0
 Tracking_adv/Smoothing (1=random)/smoothing/float:-1.5:1:0.1:2/0
