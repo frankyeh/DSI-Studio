@@ -1337,7 +1337,6 @@ void tracking_window::on_actionManual_Registration_triggered()
 
 void tracking_window::on_actionTract_Analysis_Report_triggered()
 {
-    set_data("tract_color_style",2);// local directional
     if(!tact_report_imp.get())
         tact_report_imp.reset(new tract_report(this));
     tact_report_imp->show();
