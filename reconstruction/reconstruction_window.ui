@@ -486,13 +486,6 @@
                    </widget>
                   </item>
                   <item>
-                   <widget class="QPushButton" name="smoothing">
-                    <property name="text">
-                     <string>Smoothing</string>
-                    </property>
-                   </widget>
-                  </item>
-                  <item>
                    <widget class="QPushButton" name="dilation">
                     <property name="text">
                      <string>Dilation</string>
@@ -500,9 +493,16 @@
                    </widget>
                   </item>
                   <item>
-                   <widget class="QPushButton" name="negate">
+                   <widget class="QPushButton" name="erosion">
                     <property name="text">
-                     <string>Negate</string>
+                     <string>Erosion</string>
+                    </property>
+                   </widget>
+                  </item>
+                  <item>
+                   <widget class="QPushButton" name="smoothing">
+                    <property name="text">
+                     <string>Smoothing</string>
                     </property>
                    </widget>
                   </item>
@@ -514,9 +514,9 @@
                    </widget>
                   </item>
                   <item>
-                   <widget class="QPushButton" name="erosion">
+                   <widget class="QPushButton" name="negate">
                     <property name="text">
-                     <string>Erosion</string>
+                     <string>Negate</string>
                     </property>
                    </widget>
                   </item>
@@ -606,7 +606,7 @@
                  <item>
                   <widget class="QLabel" name="ddi_file">
                    <property name="text">
-                    <string> </string>
+                    <string/>
                    </property>
                   </widget>
                  </item>
