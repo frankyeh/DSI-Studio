@@ -413,9 +413,9 @@ void tracking_data::read(const fib_data& fib)
     dir = fib.dir.dir;
     other_index = fib.dir.index_data;
     if(!fib.dir.index_name.empty())
-        threshold_name = fib.dir.index_name[uint32_t(fib.dir.cur_index)];
+        threshold_name = fib.dir.get_threshold_name();
     if(!dt_fa.empty())
-        dt_threshold_name = fib.dir.dt_index_name[uint32_t(fib.dir.dt_cur_index)];
+        dt_threshold_name = fib.dir.get_dt_threshold_name();
 }
 bool tracking_data::get_dir(unsigned int space_index,
                      const tipl::vector<3,float>& dir, // reference direction, should be unit vector

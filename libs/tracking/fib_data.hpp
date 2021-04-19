@@ -43,27 +43,31 @@ public:
     std::vector<std::vector<const float*> > index_data;
     int cur_index = 0;
 public:
-    std::vector<std::string> dt_index_name;
-    std::vector<std::vector<const float*> > dt_index_data;
-    int dt_cur_index = 0;
-public:
     std::vector<const float*> fa;
-    std::vector<const float*> dt_fa;
     std::vector<tipl::vector<3,float> > odf_table;
     std::vector<tipl::vector<3,unsigned short> > odf_faces;
     unsigned int num_fiber;
     unsigned int half_odf_size;
     std::string error_msg;
+public: // for differential tractography
+    std::vector<const float*> dt_fa;
+    std::vector<std::string> dt_index_name;
+    std::vector<std::vector<const float*> > dt_index_data;
+    int dt_cur_index = 0;
+
+    bool is_dt(void)const{return !dt_fa.empty();}
+    float get_dt_fa(size_t index,unsigned char order) const;
+    bool set_dt_index(int new_index);
+    bool set_dt_index(const std::string& name);
+    std::string get_dt_threshold_name(void) const{return dt_fa.empty() ? std::string() : dt_index_name[uint32_t(dt_cur_index)];}
+
 public:
     void check_index(unsigned int index);
     bool add_data(gz_mat_read& mat_reader);
     bool set_tracking_index(int new_index);
     bool set_tracking_index(const std::string& name);
-    bool set_dt_index(int new_index);
-    bool set_dt_index(const std::string& name);
-
+    std::string get_threshold_name(void) const{return index_name[uint32_t(cur_index)];}
     float get_fa(size_t index,unsigned char order) const;
-    float get_dt_fa(size_t index,unsigned char order) const;
     const float* get_dir(size_t index,unsigned int order) const;
     float cos_angle(const tipl::vector<3>& cur_dir,unsigned int space_index,unsigned char fib_order) const;
     float get_track_specific_index(unsigned int space_index,const std::vector<const float*>& index,
