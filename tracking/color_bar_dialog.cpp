@@ -34,6 +34,7 @@ color_bar_dialog::color_bar_dialog(QWidget *parent) :
         for(int i = 0;i < name_list.size();++i)
             ui->color_bar_style->addItem(QFileInfo(name_list[i]).baseName());
     }
+    ui->color_bar_style->setCurrentText("jet");
     connect(ui->color_bar_style,SIGNAL(currentIndexChanged(int)),this,SLOT(update_color_map()));
     connect(ui->color_from,SIGNAL(clicked()),this,SLOT(update_color_map()));
     connect(ui->color_to,SIGNAL(clicked()),this,SLOT(update_color_map()));
@@ -42,8 +43,8 @@ color_bar_dialog::color_bar_dialog(QWidget *parent) :
     on_tract_color_index_currentIndexChanged(0);
 
     QSettings settings;
-    ui->color_from->setColor(uint32_t(settings.value("color_from",0x00FF1010).toInt()));
-    ui->color_to->setColor(uint32_t(settings.value("color_to",0x00FFFF10).toInt()));
+    ui->color_from->setColor(uint32_t(settings.value("color_from",0xFFFF1010).toInt()));
+    ui->color_to->setColor(uint32_t(settings.value("color_to",0xFFFFFF10).toInt()));
 }
 
 
