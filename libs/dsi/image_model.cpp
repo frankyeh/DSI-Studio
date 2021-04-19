@@ -824,7 +824,7 @@ bool ImageModel::rotate_to_mni(float resolution)
     voxel.vs = vs;
     voxel.report += " The diffusion MRI data were resampled to ";
     voxel.report += std::to_string(int(vs[0]));
-    voxel.report += " mm isotropic reoslution.";
+    voxel.report += " mm isotropic resolution.";
     check_prog(1,1);
     return true;
 }
