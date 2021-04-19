@@ -191,10 +191,25 @@ void TractTableWidget::addConnectometryResults(std::vector<std::vector<std::vect
 
 void TractTableWidget::start_tracking(void)
 {
-    if(cur_tracking_window.ui->target->currentIndex() > 0)
+    bool auto_track = cur_tracking_window.ui->target->currentIndex() > 0;
+    bool dT = cur_tracking_window.handle->dir.is_dt();
+    if(auto_track)
+    {
+        if(dT)
+        {
+            QMessageBox::critical(this,"Error","Differential tractography cannot be comabined with automated tractography. Use regions instead");
+            return;
+        }
         addNewTracts(cur_tracking_window.ui->target->currentText());
+    }
     else
-        addNewTracts(cur_tracking_window.regionWidget->getROIname());
+    {
+        if(dT)
+            addNewTracts(QString(cur_tracking_window.handle->dir.get_dt_threshold_name().c_str())+"_"+
+                         QString::number(cur_tracking_window["dt_threshold"].toDouble()));
+        else
+            addNewTracts(cur_tracking_window.regionWidget->getROIname());
+    }
     cur_tracking_window.set_tracking_param(*thread_data.back());
     cur_tracking_window.regionWidget->setROIs(thread_data.back().get());
     thread_data.back()->run(cur_tracking_window["thread_count"].toInt(),false);
