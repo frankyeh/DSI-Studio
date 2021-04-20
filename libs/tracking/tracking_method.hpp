@@ -124,8 +124,6 @@ struct TrackingParam
             report << " The anisotropy threshold was randomly selected.";
         else
             report << " The anisotropy threshold was " << threshold << ".";
-        if(dt_threshold != 0.0f)
-            report << " The change threshold was " << int(dt_threshold * 100) << "%.";
 
         if(cull_cos_angle != 1.0f)
             report << " The angular threshold was " << int(std::round(std::acos(double(cull_cos_angle))*180.0/3.14159265358979323846)) << " degrees.";
