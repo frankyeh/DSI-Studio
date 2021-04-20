@@ -1227,6 +1227,7 @@ void TractTableWidget::separate_deleted_track(void)
     // add deleted tracks to a new entry
     addNewTracts(item(currentRow(),0)->text(),false);
     tract_models.back()->add_tracts(new_tracks);
+    tract_models.back()->report = tract_models[uint32_t(currentRow())]->report;
     item(rowCount()-1,1)->setText(QString::number(tract_models.back()->get_visible_track_count()));
     item(rowCount()-1,2)->setText(QString::number(tract_models.back()->get_deleted_track_count()));
     emit need_update();
