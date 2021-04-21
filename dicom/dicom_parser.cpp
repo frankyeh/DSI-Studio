@@ -971,17 +971,21 @@ void dicom_parser::on_buttonBox_accepted()
                     ui->tableWidget->item(index,4)->text().toFloat());
     }
 
-    DwiHeader::output_src(ui->SrcName->text().toLocal8Bit().begin(),
+    if(!DwiHeader::output_src(ui->SrcName->text().toLocal8Bit().begin(),
                           dwi_files,
                           ui->upsampling->currentIndex(),
-                          ui->sort_btable->isChecked());
+                          ui->sort_btable->isChecked()))
+    {
+        QMessageBox::critical(this,"Error",src_error_msg.c_str());
+        close();
+    }
 
     dwi_files.clear();
     if(QFileInfo(ui->SrcName->text()).suffix() != "gz")
         ((MainWindow*)parent())->addSrc(ui->SrcName->text()+".gz");
     else
         ((MainWindow*)parent())->addSrc(ui->SrcName->text());
-    QMessageBox::information(this,"DSI Studio","SRC file created",0);
+    QMessageBox::information(this,"DSI Studio","SRC file created");
     close();
 }
 void dicom_parser::on_buttonBox_rejected()

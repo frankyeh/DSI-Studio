@@ -138,8 +138,12 @@ int src(void)
         return 1;
     }
     std::cout << "output src to " << output << std::endl;
-    DwiHeader::output_src(output.c_str(),dwi_files,
+    if(!DwiHeader::output_src(output.c_str(),dwi_files,
                           po.get<int>("up_sampling",0),
-                          po.get<int>("sort_b_table",0));
+                          po.get<int>("sort_b_table",0)))
+    {
+        std::cout << "ERROR: " << src_error_msg << std::endl;
+        return 1;
+    }
     return 0;
 }

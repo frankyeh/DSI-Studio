@@ -484,11 +484,20 @@ bool DwiHeader::has_b_table(std::vector<std::shared_ptr<DwiHeader> >& dwi_files)
 }
 
 // upsampling 1: upsampling 2: downsampling
+extern std::string src_error_msg;
 bool DwiHeader::output_src(const char* di_file,std::vector<std::shared_ptr<DwiHeader> >& dwi_files,
                            int upsampling,bool sort_btable)
 {
-    if(dwi_files.empty() || !has_b_table(dwi_files))
+    if(!has_b_table(dwi_files))
+    {
+        src_error_msg = "invalid b-table";
         return false;
+    }
+    if(dwi_files.empty())
+    {
+        src_error_msg = "no DWI data for output";
+        return false;
+    }
     if(sort_btable)
     {
         sort_dwi(dwi_files);
@@ -496,8 +505,11 @@ bool DwiHeader::output_src(const char* di_file,std::vector<std::shared_ptr<DwiHe
     }
     gz_mat_write write_mat(di_file);
     if(!write_mat)
+    {
+        src_error_msg = "cannot output file to ";
+        src_error_msg += di_file;
         return false;
-
+    }
     tipl::geometry<3> geo = dwi_files.front()->image.geometry();
 
     //store dimension
@@ -592,9 +604,11 @@ bool DwiHeader::output_src(const char* di_file,std::vector<std::shared_ptr<DwiHe
         write_mat.write(name.str().c_str(),ptr,output_dim.plane_size(),output_dim.depth());
     }
 
-
-
-
+    if(prog_aborted())
+    {
+        src_error_msg = "output aborted";
+        return false;
+    }
     std::string report1 = dwi_files.front()->report;
     std::string report2;
     {

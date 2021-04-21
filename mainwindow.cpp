@@ -953,7 +953,8 @@ void nii2src(std::string nii_name,std::string src_name,std::ostream& out)
         return;
     }
     out << QFileInfo(src_name.c_str()).fileName().toStdString() << std::endl;
-    DwiHeader::output_src(src_name.c_str(),dwi_files,0,false);
+    if(!DwiHeader::output_src(src_name.c_str(),dwi_files,0,false))
+        out << "ERROR: " << src_error_msg << std::endl;
 }
 void MainWindow::on_nii2src_bids_clicked()
 {
@@ -1051,7 +1052,7 @@ bool dcm2src(QStringList files,std::ostream& out)
         QString src_name = get_dicom_output_name(files[0],suffix.c_str(),true);
         out << "Create SRC file: " << QFileInfo(src_name).fileName().toStdString() << std::endl;
         if(!DwiHeader::output_src(src_name.toStdString().c_str(),dicom_files,0,false))
-            out << "[ERROR] Cannot output the SRC file. Skip" << std::endl;
+            out << "[ERROR]" << src_error_msg << std::endl;
         return true;
     }
 
