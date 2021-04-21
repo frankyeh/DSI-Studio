@@ -81,8 +81,8 @@ int atk(void)
                     }
                 if(!find)
                 {
-                    std::cout << "invalid track_id: cannot find track name containing " << str << std::endl;
-                    return false;
+                    std::cout << "ERROR: track_id: cannot find track name containing " << str << std::endl;
+                    return 1;
                 }
             }
 
