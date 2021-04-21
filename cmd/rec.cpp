@@ -19,7 +19,7 @@ bool is_dsi_half_sphere(const std::vector<unsigned int>& shell);
 bool is_dsi(const std::vector<unsigned int>& shell);
 bool need_scheme_balance(const std::vector<unsigned int>& shell);
 bool get_src(std::string filename,ImageModel& src2,std::string& error_msg);
-bool check_other_src(ImageModel& src)
+bool correct_phase_distortion(ImageModel& src)
 {
     if(po.has("other_src"))
     {
@@ -27,12 +27,12 @@ bool check_other_src(ImageModel& src)
         ImageModel src2;
         if (!get_src(po.get("other_src"),src2,msg))
         {
-            std::cout << msg << std::endl;
+            std::cout << "ERROR: " << msg << std::endl;
             return false;
         }
         if(src.voxel.dim != src2.voxel.dim)
         {
-            std::cout << "inconsistent appa image dimension" << std::endl;
+            std::cout << "ERROR: inconsistent appa image dimension" << std::endl;
             return false;
         }
         src.distortion_correction(src2);
@@ -54,7 +54,7 @@ int rec(void)
         return 1;
     }
     std::cout << "src loaded" <<std::endl;
-    if(!check_other_src(src))
+    if(!correct_phase_distortion(src))
         return 1;
     if (po.has("cmd"))
     {

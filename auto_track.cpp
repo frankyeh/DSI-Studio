@@ -102,7 +102,7 @@ void auto_track::on_open_dir_clicked()
 extern std::string auto_track_report;
 extern program_option po;
 std::string auto_track_report;
-bool check_other_src(ImageModel& src);
+bool correct_phase_distortion(ImageModel& src);
 
 
 struct file_holder{
@@ -194,7 +194,8 @@ std::string run_auto_track(
                     return src.error_msg + (" at ") + cur_file_base_name;
                 if(!src.is_human_data())
                     return cur_file_base_name + " is not human data";
-
+                if(!correct_phase_distortion(src))
+                    return "cannot correct for phase distoration";
                 src.voxel.half_sphere = src.is_dsi_half_sphere();
                 src.voxel.scheme_balance = src.need_scheme_balance();
                 src.voxel.output_rdi = 1;
