@@ -1208,7 +1208,7 @@ bool ImageModel::save_to_file(const char* dwi_file_name)
 
 extern std::string src_error_msg;
 bool find_bval_bvec(const char* file_name,QString& bval,QString& bvec);
-bool load_4d_nii(const char* file_name,std::vector<std::shared_ptr<DwiHeader> >& dwi_files);
+bool load_4d_nii(const char* file_name,std::vector<std::shared_ptr<DwiHeader> >& dwi_files,bool need_bvalbvec);
 bool ImageModel::load_from_file(const char* dwi_file_name)
 {
     file_name = dwi_file_name;
@@ -1228,7 +1228,7 @@ bool ImageModel::load_from_file(const char* dwi_file_name)
             return false;
         }
         std::vector<std::shared_ptr<DwiHeader> > dwi_files;
-        if(!load_4d_nii(dwi_file_name,dwi_files))
+        if(!load_4d_nii(dwi_file_name,dwi_files,true))
         {
             error_msg = src_error_msg;
             return false;
@@ -1249,6 +1249,7 @@ bool ImageModel::load_from_file(const char* dwi_file_name)
             src_bvalues[index] = dwi_files[index]->bvalue;
             src_bvectors[index] = dwi_files[index]->bvec;
         }
+
         // for check_btable
         {
             original_src_dwi_data = src_dwi_data;

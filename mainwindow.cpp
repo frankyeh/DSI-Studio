@@ -601,7 +601,7 @@ void MainWindow::on_averagefib_clicked()
 
 bool parse_dwi(QStringList file_list,std::vector<std::shared_ptr<DwiHeader> >& dwi_files);
 bool find_bval_bvec(const char* file_name,QString& bval,QString& bvec);
-bool load_4d_nii(const char* file_name,std::vector<std::shared_ptr<DwiHeader> >& dwi_files);
+bool load_4d_nii(const char* file_name,std::vector<std::shared_ptr<DwiHeader> >& dwi_files,bool need_bvalbvec);
 QString get_dicom_output_name(QString file_name,QString file_extension,bool add_path);
 
 
@@ -947,20 +947,9 @@ extern std::string src_error_msg;
 void nii2src(std::string nii_name,std::string src_name,std::ostream& out)
 {
     std::vector<std::shared_ptr<DwiHeader> > dwi_files;
-    if(!load_4d_nii(nii_name.c_str(),dwi_files))
+    if(!load_4d_nii(nii_name.c_str(),dwi_files,true))
     {
-        out << "[Error] " << src_error_msg << std::endl;
-        return;
-    }
-    QString bval,bvec;
-    if(!find_bval_bvec(nii_name.c_str(),bval,bvec))
-    {
-        out << "[Error] Cannot find bval/bvec. Skip." << std::endl;
-        return;
-    }
-    if(!DwiHeader::has_b_table(dwi_files))
-    {
-        out << "[Error] Invalid b-table. Skip." << std::endl;
+        out << "ERROR: " << src_error_msg << std::endl;
         return;
     }
     out << QFileInfo(src_name.c_str()).fileName().toStdString() << std::endl;

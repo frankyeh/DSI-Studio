@@ -270,7 +270,7 @@ bool find_bval_bvec(const char* file_name,QString& bval,QString& bvec)
     return QFileInfo(bval).exists() && QFileInfo(bvec).exists();
 }
 
-bool load_4d_nii(const char* file_name,std::vector<std::shared_ptr<DwiHeader> >& dwi_files)
+bool load_4d_nii(const char* file_name,std::vector<std::shared_ptr<DwiHeader> >& dwi_files,bool need_bvalbvec)
 {
     gz_nifti analyze_header;
     if(!analyze_header.load_from_file(file_name))
@@ -292,21 +292,30 @@ bool load_4d_nii(const char* file_name,std::vector<std::shared_ptr<DwiHeader> >&
             load_bvec(bvec_name.toLocal8Bit().begin(),bvecs);
             if(!bval_name.isEmpty() && analyze_header.dim(4) != bvals.size())
             {
-                bvals.clear();
-                bvecs.clear();
-                std::cout << "The b-table " << bval_name.toStdString() << " does not match the DWI: there are "
+                std::ostringstream out;
+                out << "bval/bvec does not match the DWI: "
                           << analyze_header.dim(4)
-                          << " DWI in the nifti file, but the b-table has "
-                          << bvals.size() << " entries." << std::endl;
+                          << " DWI in the nifti file, but "
+                          << bvals.size() << " in bval/bvec" << std::endl;
+                src_error_msg = out.str();
+                return false;
             }
             if(bvals.size()*3 != bvecs.size())
             {
-                bvals.clear();
-                bvecs.clear();
-                std::cout << "The b-table " << bval_name.toStdString() << " and " << bvec_name.toStdString() << " do not match each other" << std::endl;
+                std::ostringstream out;
+                out << "b-table " << bval_name.toStdString() << " and " << bvec_name.toStdString() << " do not match " << std::endl;
+                src_error_msg = out.str();
+                return false;
             }
         }
     }
+
+    if(need_bvalbvec && (bvals.empty() || *std::max_element(bvals.begin(),bvals.end()) == 0.0))
+    {
+        src_error_msg = "cannot find bval or bvec file";
+        return false;
+    }
+
     tipl::image<float,4> grad_dev;
     tipl::image<unsigned char,3> mask;
     if(QFileInfo(QFileInfo(file_name).absolutePath() + "/grad_dev.nii.gz").exists())
@@ -853,7 +862,7 @@ bool parse_dwi(QStringList file_list,
     {
         begin_prog("loading");
         for(int i = 0;i < file_list.size();++i)
-            if(!load_4d_nii(file_list[i].toLocal8Bit().begin(),dwi_files))
+            if(!load_4d_nii(file_list[i].toLocal8Bit().begin(),dwi_files,false))
             {
                 std::shared_ptr<DwiHeader> new_file(new DwiHeader);
                 if(new_file->open(file_list[i].toLocal8Bit().begin()))

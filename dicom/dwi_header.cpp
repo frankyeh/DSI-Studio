@@ -477,7 +477,7 @@ void correct_t2(std::vector<std::shared_ptr<DwiHeader> >& dwi_files)
 
 bool DwiHeader::has_b_table(std::vector<std::shared_ptr<DwiHeader> >& dwi_files)
 {
-    for(int i = 0;i < dwi_files.size();++i)
+    for(size_t i = 0;i < dwi_files.size();++i)
         if(dwi_files[i]->bvalue > 0.0f)
             return true;
     return false;
