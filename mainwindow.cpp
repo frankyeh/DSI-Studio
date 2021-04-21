@@ -943,12 +943,13 @@ void MainWindow::on_auto_track_clicked()
 }
 
 
+extern std::string src_error_msg;
 void nii2src(std::string nii_name,std::string src_name,std::ostream& out)
 {
     std::vector<std::shared_ptr<DwiHeader> > dwi_files;
     if(!load_4d_nii(nii_name.c_str(),dwi_files))
     {
-        out << "[Error] Not 4D DWI. Skip." << std::endl;
+        out << "[Error] " << src_error_msg << std::endl;
         return;
     }
     QString bval,bvec;
