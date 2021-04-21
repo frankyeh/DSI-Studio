@@ -190,12 +190,11 @@ std::string run_auto_track(
             fib_file_name = file_list[i]+src.get_file_ext();
             if(!QFileInfo(fib_file_name.c_str()).exists() || overwrite)
             {
-                if (!src.load_from_file(file_list[i].c_str()))
+                if(!src.load_from_file(file_list[i].c_str()))
                     return src.error_msg + (" at ") + cur_file_base_name;
                 if(!src.is_human_data())
                     return cur_file_base_name + " is not human data";
-                if(!check_other_src(src))
-                    return std::string("ERROR at ") + cur_file_base_name;
+
                 src.voxel.half_sphere = src.is_dsi_half_sphere();
                 src.voxel.scheme_balance = src.need_scheme_balance();
                 src.voxel.output_rdi = 1;
@@ -208,7 +207,7 @@ std::string run_auto_track(
                     src.command("[Step T2a][Threshold]","0");
                 begin_prog("reconstruct DWI");
                 if (!src.reconstruction())
-                    return std::string("ERROR at ") + cur_file_base_name + ":" + src.error_msg;
+                    return src.error_msg + (" at ") + cur_file_base_name;
 
                 std::string mapping_file_name(fib_file_name);
                 mapping_file_name += ".";
@@ -282,12 +281,12 @@ std::string run_auto_track(
                 {
                     prog_init p("loading ",fib_file_name.c_str());
                     if(!handle->load_from_file(fib_file_name.c_str()))
-                       return std::string("ERROR at ") + fib_file_name + ": Not human data. Check image resolution.";
+                       return fib_file_name + ": Not human data. Check image resolution.";
                     fib_loaded = true;
                 }
                 if(handle->template_id != 0)
                 {
-                    std::cout << "WARNING: Not adult human data. Enforce registration." << std::endl;
+                    std::cout << "Not adult human data. Enforce registration." << std::endl;
                     handle->set_template_id(0);
                 }
 
