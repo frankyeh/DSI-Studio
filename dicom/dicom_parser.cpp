@@ -343,7 +343,10 @@ bool load_4d_nii(const char* file_name,std::vector<std::shared_ptr<DwiHeader> >&
     }
     analyze_header.get_voxel_size(vs);
     if(!analyze_header.load_from_file(file_name))
+    {
+        src_error_msg = analyze_header.error;
         return false;
+    }
     {
         for(unsigned int index = 0;index < analyze_header.dim(4);++index)
         {
