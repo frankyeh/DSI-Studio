@@ -332,6 +332,7 @@ bool slice_view_scene::command(QString cmd,QString param,QString param2)
 {
     if(cmd == "save_roi_image")
     {
+        show_slice();
         if(param.isEmpty())
             param = QFileInfo(cur_tracking_window.windowTitle()).absolutePath() + "/" +
                     QFileInfo(cur_tracking_window.windowTitle()).baseName()+"_"+
