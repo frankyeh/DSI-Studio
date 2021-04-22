@@ -118,6 +118,6 @@ int atk(void)
         }
         return 0;
     }
-    std::cerr << "ERROR:" << error << std::endl;
+    std::cout << "ERROR:" << error << std::endl;
     return 1;
 }
