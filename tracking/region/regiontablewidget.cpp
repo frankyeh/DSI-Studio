@@ -269,6 +269,11 @@ bool RegionTableWidget::command(QString cmd,QString param,QString)
         emit need_update();
         return true;
     }
+    if(cmd == "check_all_regions")
+    {
+        check_all();
+        return true;
+    }
     return false;
 }
 void RegionTableWidget::move_slice_to_current_region(void)
