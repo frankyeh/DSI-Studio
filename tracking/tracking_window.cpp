@@ -166,10 +166,7 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
                 if(QFileInfo(QString(t1w_template_file_name.c_str())).exists())
                     addSlices(QStringList() << QString(t1w_template_file_name.c_str()),"icbm_t1w",true);
                 if(QFileInfo(QString(wm_template_file_name.c_str())).exists())
-                {
                     addSlices(QStringList() << QString(wm_template_file_name.c_str()),"icbm_wm",true);
-                    command("add_surface","0","0.1"); // add full surface
-                }
             }
             populate_templates(ui->template_box);
             ui->template_box->setCurrentIndex(handle->template_id);
@@ -456,11 +453,12 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
     // now begin visualization
     {
         scene.no_show = false;
-        ui->SliceModality->setCurrentIndex(0);
         on_glAxiView_clicked();
         if((*this)["orientation_convention"].toInt() == 1)
             glWidget->set_view(2);
-
+        if(ui->SliceModality->currentText() == "icbm_wm")
+            command("add_surface","0","0.1"); // add full surface
+        ui->SliceModality->setCurrentIndex(0);
     }
 }
 
