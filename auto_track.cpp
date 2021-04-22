@@ -191,7 +191,7 @@ std::string run_auto_track(
             if(!QFileInfo(fib_file_name.c_str()).exists() || overwrite)
             {
                 if(!src.load_from_file(file_list[i].c_str()))
-                    return src.error_msg + (" at ") + cur_file_base_name;
+                    return src.error_msg + " at " + cur_file_base_name;
                 if(!src.is_human_data())
                     return cur_file_base_name + " is not human data";
                 if(!correct_phase_distortion(src))
