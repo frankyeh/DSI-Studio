@@ -697,7 +697,6 @@ void group_connectometry_analysis::generate_report(std::string& output)
             new_mdi->command("set_param","roi_layout","5");
             new_mdi->command("save_roi_image",(output_file_name+"." + name + "_map.jpg").c_str(),"700");
             new_mdi->command("set_roi_view","1");
-            new_mdi->command("set_param","roi_layout","5");
             new_mdi->command("save_roi_image",(output_file_name+"." + name + "_map2.jpg").c_str(),"550");
             new_mdi->command("set_roi_view","2");
             new_mdi->command("delete_all_tract");
