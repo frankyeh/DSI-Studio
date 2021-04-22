@@ -686,21 +686,18 @@ void group_connectometry_analysis::generate_report(std::string& output)
                 new_mdi->tractWidget->tract_models[0]->add(*track.get());
                 new_mdi->command("set_param","tract_color_style","0");
                 new_mdi->command("update_track");
-                new_mdi->command("tract_to_region");
-                new_mdi->command("set_region_color",QString::number(color));
             }
             new_mdi->command("save_h3view_image",(output_file_name+"." + name + ".jpg").c_str());
             // do it twice to eliminate 3D artifact
             new_mdi->command("save_h3view_image",(output_file_name+"." + name + ".jpg").c_str());
 
-            new_mdi->command("set_param","roi_zoom","32");
+            new_mdi->command("set_param","roi_zoom","8");
             new_mdi->command("set_param","roi_layout","5");
-            new_mdi->command("save_roi_image",(output_file_name+"." + name + "_map.jpg").c_str(),"700");
+            new_mdi->command("save_roi_image",(output_file_name+"." + name + "_map.jpg").c_str(),"0");
             new_mdi->command("set_roi_view","1");
-            new_mdi->command("save_roi_image",(output_file_name+"." + name + "_map2.jpg").c_str(),"550");
+            new_mdi->command("save_roi_image",(output_file_name+"." + name + "_map2.jpg").c_str(),"0");
             new_mdi->command("set_roi_view","2");
             new_mdi->command("delete_all_tract");
-            new_mdi->command("detele_all_region");
         };
         show_track_result(pos_corr_track,"pos_corr",0x00F01010);
         show_track_result(neg_corr_track,"neg_corr",0x001080F0);

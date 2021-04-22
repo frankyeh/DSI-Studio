@@ -28,7 +28,7 @@ private:
     tipl::color_image slice_image;
     QColor line_color = Qt::white;
 public:
-    unsigned int mosaic_column_count;
+    unsigned int mosaic_column_count,mosaic_row_count;
     void adjust_xy_to_layout(float& X,float& Y);
     bool to_3d_space_single_slice(float x,float y,tipl::vector<3,float>& pos);
     bool to_3d_space(float x,float y,tipl::vector<3,float>& pos);
