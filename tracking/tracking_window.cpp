@@ -2368,13 +2368,13 @@ void tracking_window::on_SliceModality_currentIndexChanged(int index)
     std::pair<unsigned int,unsigned int> contrast_color = current_slice->get_contrast_color();
     float r = range.second-range.first;
     float step = r/20.0f;
-    ui->min_value_gl->setMinimum(double(range.first-r/5.0f));
+    ui->min_value_gl->setMinimum(double(range.first-r));
     ui->min_value_gl->setMaximum(double(range.second));
     ui->min_value_gl->setSingleStep(double(step));
     ui->min_color_gl->setColor(contrast_color.first);
 
     ui->max_value_gl->setMinimum(double(range.first));
-    ui->max_value_gl->setMaximum(double(range.second+r/5.0f));
+    ui->max_value_gl->setMaximum(double(range.second+r));
     ui->max_value_gl->setSingleStep(double(step));
     ui->max_color_gl->setColor(contrast_color.second);
 
