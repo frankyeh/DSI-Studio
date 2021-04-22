@@ -758,6 +758,13 @@ bool tracking_window::command(QString cmd,QString param,QString param2)
         change_contrast();
         return true;
     }
+    if(cmd == "set_slice_color")
+    {
+        ui->min_color_gl->setColor(param.toUInt());
+        ui->max_color_gl->setColor(param2.toUInt());
+        change_contrast();
+        return true;
+    }
     if(cmd == "set_param")
     {
         set_data(param,param2);
