@@ -272,17 +272,65 @@ bool find_bval_bvec(const char* file_name,QString& bval,QString& bvec)
 
 bool load_4d_nii(const char* file_name,std::vector<std::shared_ptr<DwiHeader> >& dwi_files,bool need_bvalbvec)
 {
-    gz_nifti analyze_header;
-    if(!analyze_header.load_from_file(file_name))
+    tipl::vector<3,float> vs;
+    std::vector<tipl::image<float,3> > dwi_data;
     {
-        src_error_msg = analyze_header.error;
-        return false;
+        gz_nifti nii;
+        if(!nii.load_from_file(file_name))
+        {
+            src_error_msg = nii.error;
+            return false;
+        }
+        if(nii.dim(4) <= 1)
+        {
+            src_error_msg = "not a 4D nifti file";
+            return false;
+        }
+        dwi_data.resize(nii.dim(4));
+        nii.get_voxel_size(vs);
+        // check data range
+        for(unsigned int index = 0;index < nii.dim(4);++index)
+        {
+            tipl::image<float,3> data;
+            if(!nii.toLPS(data,false))
+                break;
+            std::replace_if(data.begin(),data.end(),[](float v){return std::isnan(v) || std::isinf(v) || v < 0.0f;},0.0f);
+            if(*std::max_element(data.begin(),data.end()) >
+                    float(std::numeric_limits<unsigned short>::max()-1))
+            {
+                src_error_msg = "The data have overflow values. Please check data quality.";
+                return false;
+            }
+            dwi_data[index].swap(data);
+        }
+        if(prog_aborted())
+        {
+            src_error_msg = "Aborted by user.";
+            return false;
+        }
     }
-    if(analyze_header.dim(4) <= 1)
+    tipl::image<float,4> grad_dev;
+    if(QFileInfo(QFileInfo(file_name).absolutePath() + "/grad_dev.nii.gz").exists())
     {
-        src_error_msg = "not a 4D nifti file";
-        return false;
+        gz_nifti grad_header;
+        if(grad_header.load_from_file(QString(QFileInfo(file_name).absolutePath() + "/grad_dev.nii.gz").toLocal8Bit().begin()))
+        {
+            grad_header.toLPS(grad_dev);
+            std::cout << "grad_dev used" << std::endl;
+        }
     }
+
+    tipl::image<unsigned char,3> mask;
+    if(QFileInfo(QFileInfo(file_name).absolutePath() + "/nodif_brain_mask.nii.gz").exists())
+    {
+        gz_nifti mask_header;
+        if(mask_header.load_from_file(QString(QFileInfo(file_name).absolutePath() + "/nodif_brain_mask.nii.gz").toLocal8Bit().begin()))
+        {
+            mask_header.toLPS(mask);
+            std::cout << "mask used" << std::endl;
+        }
+    }
+
     std::vector<double> bvals,bvecs;
     {
         QString bval_name,bvec_name;
@@ -290,13 +338,12 @@ bool load_4d_nii(const char* file_name,std::vector<std::shared_ptr<DwiHeader> >&
         {
             load_bval(bval_name.toLocal8Bit().begin(),bvals);
             load_bvec(bvec_name.toLocal8Bit().begin(),bvecs);
-            if(!bval_name.isEmpty() && analyze_header.dim(4) != bvals.size())
+            if(!bval_name.isEmpty() && dwi_data.size() != bvals.size())
             {
                 std::ostringstream out;
-                out << "bval/bvec does not match the DWI: "
-                          << analyze_header.dim(4)
-                          << " DWI in the nifti file, but "
-                          << bvals.size() << " in bval/bvec" << std::endl;
+                out << "bval/bvec does not match the DWI: " << dwi_data.size()
+                          << " DWI in the nifti file, but " << bvals.size()
+                          << " in bval/bvec" << std::endl;
                 src_error_msg = out.str();
                 return false;
             }
@@ -308,97 +355,42 @@ bool load_4d_nii(const char* file_name,std::vector<std::shared_ptr<DwiHeader> >&
                 return false;
             }
         }
-    }
-
-    if(need_bvalbvec && (bvals.empty() || *std::max_element(bvals.begin(),bvals.end()) == 0.0))
-    {
-        src_error_msg = "cannot find bval or bvec file";
-        return false;
-    }
-
-    tipl::image<float,4> grad_dev;
-    tipl::image<unsigned char,3> mask;
-    if(QFileInfo(QFileInfo(file_name).absolutePath() + "/grad_dev.nii.gz").exists())
-    {
-        gz_nifti grad_header;
-        if(grad_header.load_from_file(QString(QFileInfo(file_name).absolutePath() + "/grad_dev.nii.gz").toLocal8Bit().begin()))
+        if(need_bvalbvec && (bvals.empty() || *std::max_element(bvals.begin(),bvals.end()) == 0.0))
         {
-            grad_header.toLPS(grad_dev);
-            std::cout << "grad_dev used" << std::endl;
+            src_error_msg = "cannot find bval or bvec file";
+            return false;
         }
     }
-    if(QFileInfo(QFileInfo(file_name).absolutePath() + "/nodif_brain_mask.nii.gz").exists())
+
+    for(unsigned int index = 0;index < dwi_data.size();++index)
     {
-        gz_nifti mask_header;
-        if(mask_header.load_from_file(QString(QFileInfo(file_name).absolutePath() + "/nodif_brain_mask.nii.gz").toLocal8Bit().begin()))
-        {
-            mask_header.toLPS(mask);
-            std::cout << "mask used" << std::endl;
-        }
-    }
-    // check data range
-    tipl::vector<3,float> vs;
-    float max_value = 0.0;
-    float m = float(std::numeric_limits<unsigned short>::max()-1);
-    for(unsigned int index = 0;index < analyze_header.dim(4);++index)
-    {
+        std::shared_ptr<DwiHeader> new_file(new DwiHeader);
         tipl::image<float,3> data;
-        if(!analyze_header.toLPS(data,index == 0))
-            break;
-        for(size_t i = 0;i < data.size();++i)
-            if(std::isnan(data[i]) || std::isinf(data[i]))
-                data[i] = 0.0f;
-        max_value = std::max<float>(max_value,*std::max_element(data.begin(),data.end()));
-    }
-    analyze_header.get_voxel_size(vs);
-    if(!analyze_header.load_from_file(file_name))
-    {
-        src_error_msg = analyze_header.error;
-        return false;
-    }
-    {
-        for(unsigned int index = 0;index < analyze_header.dim(4);++index)
+        data.swap(dwi_data[index]);
+        new_file->image = data;
+        new_file->file_name = file_name;
+        new_file->file_name += ":";
+        new_file->file_name += std::to_string(index);
+        new_file->voxel_size = vs;
+        if(!bvals.empty())
         {
-            std::shared_ptr<DwiHeader> new_file(new DwiHeader);
-            tipl::image<float,3> data;
-            if(!analyze_header.toLPS(data,false))
-                break;
-            tipl::lower_threshold(data,0.0);
-            if(max_value > m)
+            new_file->bvalue = float(bvals[index]);
+            new_file->bvec[0] = float(bvecs[index*3]);
+            new_file->bvec[1] = float(bvecs[index*3+1]);
+            new_file->bvec[2] = float(bvecs[index*3+2]);
+            new_file->bvec.normalize();
+            if(new_file->bvalue < 10)
             {
-                data *= m/max_value;
-                tipl::upper_threshold(data,m);
+                new_file->bvalue = 0;
+                new_file->bvec = tipl::vector<3>(0,0,0);
             }
-            for(size_t i = 0;i < data.size();++i)
-                if(std::isnan(data[i]) || std::isinf(data[i]))
-                    data[i] = 0.0f;
-            new_file->image = data;
-            new_file->file_name = file_name;
-            std::ostringstream out;
-            out << index;
-            new_file->file_name += out.str();
-            new_file->voxel_size = vs;
-            if(!bvals.empty())
-            {
-                new_file->bvalue = bvals[index];
-                new_file->bvec[0] = bvecs[index*3];
-                new_file->bvec[1] = bvecs[index*3+1];
-                new_file->bvec[2] = bvecs[index*3+2];
-                new_file->bvec.normalize();
-                if(new_file->bvalue < 10)
-                {
-                    new_file->bvalue = 0;
-                    new_file->bvec = tipl::vector<3>(0,0,0);
-                }
-            }
-            if(index == 0 && !grad_dev.empty())
-                new_file->grad_dev.swap(grad_dev);
-            if(index == 0 && !mask.empty())
-                new_file->mask.swap(mask);
-            dwi_files.push_back(new_file);
         }
+        if(index == 0 && !grad_dev.empty())
+            new_file->grad_dev.swap(grad_dev);
+        if(index == 0 && !mask.empty())
+            new_file->mask.swap(mask);
+        dwi_files.push_back(new_file);
     }
-
     return true;
 }
 
