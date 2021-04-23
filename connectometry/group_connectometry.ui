@@ -369,7 +369,7 @@
              </size>
             </property>
             <property name="currentIndex">
-             <number>0</number>
+             <number>3</number>
             </property>
             <widget class="QWidget" name="tab_6">
              <attribute name="title">
@@ -389,7 +389,7 @@
                   <item>
                    <widget class="QCheckBox" name="fdr_control">
                     <property name="toolTip">
-                     <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Check &amp;quot;FDR control&amp;quot; to show only significant results. Uncheck it to report FDR value of all findings.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                     <string>Check &quot;FDR control&quot; to show only significant results. Uncheck it to report FDR value of all findings.</string>
                     </property>
                     <property name="text">
                      <string>FDR Control</string>
@@ -487,6 +487,9 @@
                       <height>16777215</height>
                      </size>
                     </property>
+                    <property name="toolTip">
+                     <string>The threshold for t-statistics</string>
+                    </property>
                     <property name="decimals">
                      <number>1</number>
                     </property>
@@ -539,7 +542,7 @@
                      </size>
                     </property>
                     <property name="toolTip">
-                     <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;The length threshold to remove fragmented findings&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                     <string>The length threshold to remove fragmented findings</string>
                     </property>
                     <property name="minimum">
                      <number>1</number>
@@ -770,7 +773,7 @@
                 <item>
                  <widget class="QLabel" name="label_6">
                   <property name="text">
-                   <string>Cohort Selection Criteria: (e.g., age&gt;0,sex=1)</string>
+                   <string>Selection Criteria: (e.g., age&gt;30,sex=1)</string>
                   </property>
                  </widget>
                 </item>
@@ -870,14 +873,20 @@
                    </item>
                    <item>
                     <widget class="QPushButton" name="apply_selection">
+                     <property name="sizePolicy">
+                      <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+                       <horstretch>0</horstretch>
+                       <verstretch>0</verstretch>
+                      </sizepolicy>
+                     </property>
                      <property name="maximumSize">
                       <size>
-                       <width>40</width>
+                       <width>16777215</width>
                        <height>16777215</height>
                       </size>
                      </property>
                      <property name="text">
-                      <string>Add</string>
+                      <string>Add to criteria</string>
                      </property>
                     </widget>
                    </item>
@@ -948,6 +957,9 @@
                     <width>75</width>
                     <height>16777215</height>
                    </size>
+                  </property>
+                  <property name="toolTip">
+                   <string>number of permutation for null distribution</string>
                   </property>
                   <property name="minimum">
                    <number>100</number>
