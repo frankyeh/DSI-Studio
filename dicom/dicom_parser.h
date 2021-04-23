@@ -27,6 +27,7 @@ public:
 private:
     Ui::dicom_parser *ui;
     QString cur_path;
+public:
     std::vector<std::shared_ptr<DwiHeader> > dwi_files;
     std::vector<float> slice_orientation;// for applying slice orientation
     void load_table(void);
