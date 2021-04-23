@@ -426,6 +426,8 @@ void MainWindow::on_OpenDICOM_clicked()
     dicom_parser* dp = new dicom_parser(filenames,this);
     dp->setAttribute(Qt::WA_DeleteOnClose);
     dp->showNormal();
+    if(dp->dwi_files.empty())
+        dp->close();
 }
 
 void MainWindow::on_Reconstruction_clicked()
