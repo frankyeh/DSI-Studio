@@ -2514,7 +2514,7 @@ void GLWidget::copyToClipboardEach(QTableWidget* widget,unsigned int col_size)
 void GLWidget::copyToClipboardEachTract(void)
 {
     bool ok = true;
-    int col_count = QInputDialog::getInt(nullptr,"DSI Studio","Column Count",5,1,50,1&ok);
+    int col_count = QInputDialog::getInt(this,"DSI Studio","Column Count",5,1,50,1&ok);
     if(!ok)
         return;
     copyToClipboardEach(cur_tracking_window.tractWidget,uint32_t(col_count));
@@ -2523,7 +2523,7 @@ void GLWidget::copyToClipboardEachTract(void)
 void GLWidget::copyToClipboardEachRegion(void)
 {
     bool ok = true;
-    int col_count = QInputDialog::getInt(nullptr,"DSI Studio","Column Count",5,1,50,1&ok);
+    int col_count = QInputDialog::getInt(this,"DSI Studio","Column Count",5,1,50,1&ok);
     if(!ok)
         return;
     copyToClipboardEach(cur_tracking_window.regionWidget,uint32_t(col_count));
