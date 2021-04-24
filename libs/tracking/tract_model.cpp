@@ -80,21 +80,66 @@ class TinyTrack{
             out.write("parameter_id",parameter_id);
         if(color)
             out.write("color",&color,1,1);
-        // multiply by 32 and convert to integer
         std::vector<std::vector<int32_t> > track32(tract_data.size());
-        std::vector<size_t> buf_size(tract_data.size());
-        tipl::par_for(tract_data.size(),[&](size_t i)
+        std::vector<size_t> buf_size(track32.size());
+        tipl::par_for(track32.size(),[&](size_t i)
         {
-            track32[i].resize(tract_data[i].size());
-            for(size_t j = 0;j < tract_data[i].size();++j)
-                track32[i][j] = int(std::round(std::ldexp(tract_data[i][j],5)));
-            buf_size[i] = sizeof(tract_header)+tract_data[i].size()-3;
+            auto& t32 = track32[i];
+            t32.resize(tract_data[i].size());
+            // all coordinates multiply by 32 and convert to integer
+            for(size_t j = 0;j < t32.size();j++)
+                t32[j] = int(std::round(std::ldexp(tract_data[i][j],5)));
+            // Calculate coordinate displacement, skipping the first coordinate
+            for(size_t j = t32.size()-1;j >= 3;j--)
+                t32[j] -= t32[j-3];
+
+            // check if there is a leap, skipping the first coordinate
+            bool has_leap = false;
+            for(size_t j = 3;j < t32.size();j++)
+                if(t32[j] < -127 || t32[j] > 127)
+                {
+                    has_leap = true;
+                    break;
+                }
+            // if there is a leap, interpolate it
+            if(has_leap)
+            {
+                std::vector<int32_t> new_t32;
+                new_t32.reserve(t32.size());
+                for(size_t j = 0;j < t32.size();j += 3)
+                {
+                    int32_t x = t32[j];
+                    int32_t y = t32[j+1];
+                    int32_t z = t32[j+2];
+                    bool interpolated = false;
+                    while(j && (x < -127 || x > 127 || y < -127 || y > 127 || z < -127 || z > 127))
+                    {
+                        x /= 2;
+                        y /= 2;
+                        z /= 2;
+                        interpolated = true;
+                    }
+                    if(interpolated)
+                    {
+                        t32[j] -= x;
+                        t32[j+1] -= y;
+                        t32[j+2] -= z;
+                        j -= 3;
+                    }
+                    new_t32.push_back(x);
+                    new_t32.push_back(y);
+                    new_t32.push_back(z);
+                }
+                new_t32.swap(t32);
+            }
+            buf_size[i] = sizeof(tract_header)+t32.size()-3;
         });
+
 
         // record write position for each track
         size_t total_size = 0;
-        std::vector<size_t> pos(tract_data.size());
-        for(size_t i = 0;i < buf_size.size();++i)
+        std::vector<size_t> pos(track32.size());
+        for(size_t i = 0;i < track32.size();++i)
         {
             pos[i] = total_size;
             total_size += buf_size[i];
@@ -103,16 +148,16 @@ class TinyTrack{
         std::vector<char> out_buf(total_size);
         tipl::par_for(track32.size(),[&](size_t i)
         {
+            auto& t32 = track32[i];
             tract_header hr;
-            hr.h.count = uint32_t(track32[i].size());
-            hr.h.x = track32[i][0];
-            hr.h.y = track32[i][1];
-            hr.h.z = track32[i][2];
+            hr.h.count = uint32_t(t32.size());
+            hr.h.x = t32[0];
+            hr.h.y = t32[1];
+            hr.h.z = t32[2];
             std::copy(hr.buf,hr.buf+16,out_buf.begin()+int64_t(pos[i]));
             size_t shift = pos[i]+sizeof(tract_header)-3;
-            for(size_t j = 3;j < track32[i].size();j++)
-                out_buf[j+shift] = char(track32[i][j]-track32[i][j-3]);
-            track32[i].clear();
+            for(size_t j = 3;j < t32.size();j++)
+                out_buf[j+shift] = char(t32[j]);
         });
         out.write("track",&out_buf[0],total_size,1);
         if(!cluster.empty())
