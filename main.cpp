@@ -219,7 +219,7 @@ int run_action(std::shared_ptr<QApplication> gui)
     std::cout << "Unknown action:" << action << std::endl;
     return 1;
 }
-
+void get_filenames_from(const std::string param,std::vector<std::string>& filenames);
 int run_cmd(int ac, char *av[])
 {
     try
@@ -259,16 +259,16 @@ int run_cmd(int ac, char *av[])
             return 1;
         }
         std::string source = po.get("source");
-        if(po.get("action") != std::string("atk") &&
-           source.find('*') != std::string::npos)
+        if(po.get("action") != std::string("atk") && // atk handle * by itself
+           (source.find('*') != std::string::npos ||
+            source.find(',') != std::string::npos))
         {
-            QDir dir(QFileInfo(source.c_str()).absoluteDir());
-            QStringList file_list = dir.entryList(QStringList(QFileInfo(source.c_str()).fileName()),QDir::Files);
-            for (int index = 0;index < file_list.size();++index)
+            std::vector<std::string> source_files;
+            get_filenames_from("source",source_files);
+            for (size_t i = 0;i < source_files.size();++i)
             {
-                QString file_name = dir.absolutePath() + "/" + file_list[index];
-                std::cout << "Process file:" << file_name.toStdString() << std::endl;
-                po.set("source",file_name.toStdString());
+                std::cout << "Process file:" << source_files[i] << std::endl;
+                po.set("source",source_files[i]);
                 run_action(gui);
             }
         }

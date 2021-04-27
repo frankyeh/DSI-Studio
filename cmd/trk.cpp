@@ -20,25 +20,34 @@ extern std::vector<std::shared_ptr<CustomSliceModel> > other_slices;
 std::vector<std::shared_ptr<CustomSliceModel> > other_slices;
 
 bool atl_load_atlas(const std::string atlas_name,std::vector<std::shared_ptr<atlas> >& atlas_list);
-void check_other_slices(std::shared_ptr<fib_data> handle)
+void get_filenames_from(const std::string param,std::vector<std::string>& filenames);
+bool check_other_slices(std::shared_ptr<fib_data> handle)
 {
     if(!po.has("other_slices") || !other_slices.empty())
-        return;
-    QStringList slice_list = QString(po.get("other_slices").c_str()).split(",");
-    for(int i = 0;i < slice_list.size();++i)
+        return true;
+    std::vector<std::string> filenames;
+    get_filenames_from("other_slices",filenames);
+    for(size_t i = 0;i < filenames.size();++i)
     {
-        other_slices.push_back(std::make_shared<CustomSliceModel>(handle.get()));
+        std::cout << "add slice: " << QFileInfo(filenames[i].c_str()).baseName().toStdString() << std::endl;
+        if(!QFileInfo(filenames[i].c_str()).exists())
+        {
+            std::cout << "ERROR: file not exist " << filenames[i] << std::endl;
+            return false;
+        }
+        auto new_slice = std::make_shared<CustomSliceModel>(handle.get());
         std::vector<std::string> files;
-        files.push_back(slice_list[i].toStdString());
-        std::cout << "add other slice: " << QFileInfo(slice_list[i]).baseName().toStdString() << std::endl;
-        if(!other_slices.back()->initialize(files))
+        files.push_back(filenames[i]);
+        if(!new_slice->initialize(files))
         {
             std::cout << "ERROR: fail to load " << files.back() << std::endl;
-            return;
+            return false;
         }
-        if(other_slices.back()->thread.get())
-            other_slices.back()->thread->wait();
+        if(new_slice->thread.get())
+            new_slice->thread->wait();
+        other_slices.push_back(new_slice);
     }
+    return true;
 }
 bool get_t1t2_nifti(std::shared_ptr<fib_data> handle,
                     tipl::geometry<3>& nifti_geo,
@@ -509,7 +518,8 @@ void trk_post(std::shared_ptr<fib_data> handle,std::shared_ptr<TractModel> tract
         tract_model->save_end_points(po.get("end_point").c_str());
 
     // allow adding other slices for connectivity and statistics
-    check_other_slices(handle);
+    if(!check_other_slices(handle))
+        return;
 
     if(po.has("connectivity"))
         get_connectivity_matrix(handle,tract_model);

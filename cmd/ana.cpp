@@ -26,7 +26,6 @@ void get_regions_statistics(std::shared_ptr<fib_data> handle,
                             std::string& result);
 bool load_region(std::shared_ptr<fib_data> handle,
                  ROIRegion& roi,const std::string& region_text);
-void check_other_slices(std::shared_ptr<fib_data> handle);
 bool get_t1t2_nifti(std::shared_ptr<fib_data> handle,
                     tipl::geometry<3>& nifti_geo,
                     tipl::vector<3>& nifti_vs,
@@ -59,8 +58,49 @@ bool load_nii(std::shared_ptr<fib_data> handle,
     }
     return true;
 }
+
+void get_filenames_from(const std::string param,std::vector<std::string>& filenames)
+{
+    std::istringstream in(po.get(param.c_str()));
+    std::string line;
+    std::vector<std::string> file_list;
+    while(std::getline(in,line,','))
+        file_list.push_back(line);
+    for(size_t index = 0;index < file_list.size();++index)
+    {
+        std::string cur_file = file_list[index];
+        if(cur_file.find('*') != std::string::npos)
+        {
+            QStringList new_list;
+            std::string search_path;
+            if(cur_file.find('/') != std::string::npos)
+            {
+                search_path = cur_file.substr(0,cur_file.find_last_of('/'));
+                std::string filter = cur_file.substr(cur_file.find_last_of('/')+1);
+                std::cout << "searching " << filter << " in directory " << search_path << std::endl;
+                new_list = QDir(search_path.c_str()).entryList(QStringList(filter.c_str()),QDir::Files);
+                search_path += "/";
+            }
+            else
+            {
+                std::cout << "searching " << cur_file << std::endl;
+                new_list = QDir().entryList(QStringList(cur_file.c_str()),QDir::Files);
+            }
+            std::cout << "found " << new_list.size() << " files." << std::endl;
+            for(int i = 0;i < new_list.size();++i)
+                file_list.push_back(search_path + new_list[i].toStdString());
+        }
+        else
+            filenames.push_back(file_list[index]);
+    }
+}
+
 void trk_post(std::shared_ptr<fib_data> handle,std::shared_ptr<TractModel> tract_model);
 std::shared_ptr<fib_data> cmd_load_fib(const std::string file_name);
+
+
+
+
 int ana(void)
 {
     std::shared_ptr<fib_data> handle = cmd_load_fib(po.get("source"));
@@ -147,8 +187,10 @@ int ana(void)
         return 1;
     }
 
-    std::string file_name = po.get("tract");
-    if(file_name.find('*') != std::string::npos && po.has("output"))
+    std::vector<std::string> tract_files;
+    get_filenames_from("tract",tract_files);
+
+    if(tract_files.size() > 1 && po.has("output"))
     {
         std::string output = po.get("output");
         if(QFileInfo(output.c_str()).exists())
@@ -157,22 +199,19 @@ int ana(void)
             return 0;
         }
 
-        QDir dir = QDir::currentPath();
-        QStringList name_list = dir.entryList(QStringList(file_name.c_str()),QDir::Files|QDir::NoSymLinks);
-
         if(QString(output.c_str()).endsWith("nii.gz"))
         {
             auto dim = handle->dim;
             tipl::image<uint32_t,3> accumulate_map(dim);
-            for(int i = 0;i < name_list.size();++i)
+            for(size_t i = 0;i < tract_files.size();++i)
             {
                 TractModel tract_model(handle);
-                if(!tract_model.load_from_file(name_list[i].toStdString().c_str()))
+                if(!tract_model.load_from_file(tract_files[i].c_str()))
                 {
-                    std::cout << "open file error:" << name_list[i].toStdString() << std::endl;
+                    std::cout << "open file error:" << tract_files[i] << std::endl;
                     return 1;
                 }
-                std::cout << "accumulating " << name_list[i].toStdString() << "..." <<std::endl;
+                std::cout << "accumulating " << tract_files[i] << "..." <<std::endl;
                 std::vector<tipl::vector<3,short> > points;
                 tract_model.to_voxel(points,1.0f);
                 tipl::par_for(points.size(),[&](size_t j)
@@ -183,7 +222,7 @@ int ana(void)
                 });
             }
             tipl::image<float,3> pdi(accumulate_map);
-            tipl::multiply_constant(pdi,1.0f/float(name_list.size()));
+            tipl::multiply_constant(pdi,1.0f/float(tract_files.size()));
             if(gz_nifti::save_to_file(output.c_str(),pdi,handle->vs,handle->trans_to_mni))
             {
                 std::cout << "file saved at " << output << std::endl;
@@ -192,21 +231,21 @@ int ana(void)
             return 1;
         }
         std::vector<std::shared_ptr<TractModel> > tracts;
-        std::vector<std::string> name_list_str;
-        for(int i = 0;i < name_list.size();++i)
+        for(size_t i = 0;i < tract_files.size();++i)
         {
             tracts.push_back(std::make_shared<TractModel>(handle));
-            if(!tracts.back()->load_from_file(name_list[i].toStdString().c_str()))
+            if(!tracts.back()->load_from_file(tract_files[i].c_str()))
             {
                 std::cout << "open file error. terminating..." << std::endl;
                 return 1;
             }
-            name_list_str.push_back(name_list[i].toStdString());
         }
-        TractModel::save_all(output.c_str(),tracts,name_list_str);
+        TractModel::save_all(output.c_str(),tracts,tract_files);
     }
     else
+    if(tract_files.size() == 1)
     {
+        std::string file_name = tract_files[0];
         std::shared_ptr<TractModel> tract_model(new TractModel(handle));
         {
             std::cout << "loading " << file_name << "..." <<std::endl;
