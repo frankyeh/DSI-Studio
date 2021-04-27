@@ -2861,7 +2861,7 @@ void TractModel::get_quantitative_info(std::shared_ptr<fib_data> handle,std::str
         {
             if(handle->view_item[data_index].name == "color")
                 continue;
-            float mean;
+            float mean = 0.0f;
             get_tracts_data(handle,uint32_t(data_index),mean);
             data.push_back(mean);
         }
@@ -2886,7 +2886,7 @@ void TractModel::get_quantitative_info(std::shared_ptr<fib_data> handle,std::str
                 handle->db.get_subject_fa(i,fa_data,normalize_qa);
                 for(unsigned int j = 0;j < fa_data.size();++j)
                     handle->dir.index_data[0][j] = &fa_data[j][0];
-                float mean;
+                float mean = 0.0f;
                 get_tracts_data(handle,0,mean);
                 out << handle->db.subject_names[i] << " mean_" <<
                        handle->db.index_name << (normalize_qa ? "_post_norm\t": "\t") << mean << std::endl;
@@ -3123,7 +3123,7 @@ void TractModel::get_tracts_data(std::shared_ptr<fib_data> handle,unsigned int d
 {
     float sum_data = 0.0f;
     size_t total = 0;
-    for (size_t i = 0;i < tract_data.size();++i)
+    for (unsigned int i = 0;i < tract_data.size();++i)
     {
         std::vector<float> data;
         get_tract_data(handle,i,data_index,data);
