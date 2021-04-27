@@ -390,7 +390,7 @@ bool CustomSliceModel::initialize(const std::vector<std::string>& files)
     {
         handle->view_item.push_back(item());
         view_id = uint32_t(handle->view_item.size()-1);
-        handle->view_item.back().image_data = tipl::make_image(&*source_images.begin(),source_images.geometry());
+        update_image();
         handle->view_item.back().set_scale(source_images.begin(),source_images.end());
         handle->view_item.back().name = name;
         handle->view_item.back().T = T;
@@ -399,7 +399,6 @@ bool CustomSliceModel::initialize(const std::vector<std::string>& files)
         v2c.set_range(handle->view_item[view_id].contrast_min,handle->view_item[view_id].contrast_max);
         v2c.two_color(handle->view_item[view_id].min_color,handle->view_item[view_id].max_color);
 
-        update_image();
     }
     return true;
 }
