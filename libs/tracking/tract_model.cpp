@@ -2855,15 +2855,23 @@ void TractModel::get_quantitative_info(std::shared_ptr<fib_data> handle,std::str
         data.push_back(end_area2);      titles.push_back("area of end region 2(mm^2)");
         data.push_back(radius2);        titles.push_back("radius of end region 2(mm)");
         data.push_back(PI*radius2*radius2/end_area2);        titles.push_back("irregularity of end region 2");
+    }
 
-        // output mean and std of each index
+    // output mean and std of each index
+    {
+        std::vector<float> mean_values(handle->view_item.size());
+        tipl::par_for(handle->view_item.size(),[&](size_t data_index)
+        {
+            if(handle->view_item[data_index].name == "color")
+                return;
+            get_tracts_data(handle,uint32_t(data_index),mean_values[data_index]);
+        });
+
         for(size_t data_index = 0;data_index < handle->view_item.size();++data_index)
         {
             if(handle->view_item[data_index].name == "color")
                 continue;
-            float mean = 0.0f;
-            get_tracts_data(handle,uint32_t(data_index),mean);
-            data.push_back(mean);
+            data.push_back(mean_values[data_index]);
         }
         handle->get_index_list(titles);
     }
@@ -3121,22 +3129,19 @@ bool TractModel::get_tracts_data(std::shared_ptr<fib_data> handle,
 }
 void TractModel::get_tracts_data(std::shared_ptr<fib_data> handle,unsigned int data_index,float& mean) const
 {
-    float sum_data = 0.0f;
+    double sum_data = 0.0;
     size_t total = 0;
     for (unsigned int i = 0;i < tract_data.size();++i)
     {
         std::vector<float> data;
         get_tract_data(handle,i,data_index,data);
-        for(size_t j = 0;j < data.size();++j)
-        {
-            sum_data += data[j];
-            ++total;
-        }
+        sum_data += double(std::accumulate(data.begin(),data.end(),0.0f));
+        total += data.size();
     }
     if(total == 0)
         mean = 0.0f;
     else
-        mean = sum_data/float(total);
+        mean = float(sum_data/double(total));
 }
 
 void TractModel::get_passing_list(const std::vector<std::vector<short> >& region_map,
