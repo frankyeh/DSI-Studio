@@ -3135,7 +3135,7 @@ void TractModel::get_tracts_data(std::shared_ptr<fib_data> handle,unsigned int d
     {
         std::vector<float> data;
         get_tract_data(handle,i,data_index,data);
-        sum_data += double(std::accumulate(data.begin(),data.end(),0.0f));
+        sum_data += std::accumulate(data.begin(),data.end(),0.0);
         total += data.size();
     }
     if(total == 0)
