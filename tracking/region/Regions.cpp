@@ -439,7 +439,7 @@ bool ROIRegion::shift(tipl::vector<3,float> dx) {
 template<class Image,class Points>
 void calculate_region_stat(const Image& I, const Points& p,float& mean,float& max,float& min,const float* T = nullptr)
 {
-    float sum = 0.0f;
+    double sum = 0.0;
     size_t count = 0;
     for(size_t index = 0; index < p.size(); ++index)
     {
@@ -457,12 +457,12 @@ void calculate_region_stat(const Image& I, const Points& p,float& mean,float& ma
         }
         else
             min = max = value;
-        sum += value;
+        sum += double(value);
         ++count;
     }
     if(count)
-        sum /= float(count);
-    mean = sum;
+        sum /= double(count);
+    mean = float(sum);
 }
 
 void ROIRegion::get_quantitative_data(std::shared_ptr<fib_data> handle,std::vector<std::string>& titles,std::vector<float>& data)
