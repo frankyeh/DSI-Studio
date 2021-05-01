@@ -22,7 +22,7 @@ bool img_command(tipl::image<float,3>& data,
                  std::string param2,
                  std::string& error_msg)
 {
-    if(cmd == "multiply")
+    if(cmd == "image_multiplication" || cmd == "image_addition")
     {
         gz_nifti nii;
         if(!nii.load_from_file(param1.c_str()))
@@ -43,7 +43,10 @@ bool img_command(tipl::image<float,3>& data,
             error_msg += out.str();
             return false;
         }
-        data *= mask;
+        if(cmd == "image_multiplication")
+            data *= mask;
+        if(cmd == "image_addition")
+            data += mask;
         return true;
     }
     if(cmd == "save")
@@ -77,17 +80,62 @@ bool view_image::command(std::string cmd,std::string param1,std::string param2)
 
     if(!other_data.empty())
     {
+
+        std::vector<std::string> other_params(other_data.size());
+
+        // generalized file names
+        {
+            std::string filename1 = QFileInfo(file_name).fileName().toStdString();
+            std::string filename2 = QFileInfo(param1.c_str()).fileName().toStdString();
+            for(size_t i = 0;i < other_data.size();++i)
+            {
+                // if param1 is file name, then try to generalize
+                if(param1.find('.') != std::string::npos)
+                {
+                    std::string filename1_others = QFileInfo(other_file_name[i].c_str()).fileName().toStdString();
+                    // directory is the only difference
+                    if(filename1 == filename2)
+                        other_params[i] = QString(param1.c_str()).
+                                replace(filename1.c_str(),QFileInfo(other_file_name[i].c_str()).fileName()).toStdString();
+                    else
+                    // common postfix
+                    {
+                        size_t common_prefix = 0;
+                        for(;common_prefix < filename1.length() && common_prefix < filename2.length();++common_prefix)
+                            if(filename1[common_prefix] != filename2[common_prefix])
+                                break;
+                        if(common_prefix == 0) // consider prefix different
+                        {
+                            QMessageBox::critical(this,"Error",QString("Cannot apply the same for ")+
+                                                  QFileInfo(other_file_name[i].c_str()).fileName());
+                            return false;
+                        }
+                        else
+                        {
+                            size_t postfix_length = filename1.length()-common_prefix;
+                            other_params[i] = other_file_name[i].substr(0,other_file_name[i].length()-postfix_length)
+                                                    + filename2.substr(common_prefix);
+                        }
+
+                        if(other_params[i] == other_file_name[i])
+                        {
+                            QMessageBox::critical(this,"Error",QString("Cannot apply the same for ")+
+                                                  QFileInfo(other_file_name[i].c_str()).fileName());
+                            return false;
+                        }
+                    }
+                }
+                else
+                    other_params[i] = param1;
+            }
+        }
+
         begin_prog("applying to others");
-        QString failed_list;
         for(size_t i = 0;check_prog(i,other_data.size());++i)
         {
-            QString new_param1 = param1.c_str();
-            // if param1 is a file, then try to generalize
-            if(QFileInfo(new_param1).exists())
-                new_param1.replace(QFileInfo(file_name).fileName(),QFileInfo(other_file_name[i].c_str()).fileName());
-            if(!img_command(other_data[i],other_vs[i],other_T[i],cmd,new_param1.toStdString(),param2,error_msg))
+            if(!img_command(other_data[i],other_vs[i],other_T[i],cmd,other_params[i],param2,error_msg))
             {
-                QMessageBox::critical(this,"Error",QString("Operation stoped at ")+
+                QMessageBox::critical(this,"Error",QString("Operation stopped at ")+
                                       QFileInfo(other_file_name[i].c_str()).fileName() + " error:" +
                                       error_msg.c_str());
                 return false;
@@ -526,11 +574,8 @@ void view_image::on_action_Save_as_triggered()
                            this,"Save image",file_name,"NIFTI file(*nii.gz *.nii)" );
     if (filename.isEmpty())
         return;
-    gz_nifti nii;
-    nii.set_image_transformation(T);
-    nii.set_voxel_size(vs);
-    nii << data;
-    nii.save_to_file(filename.toStdString().c_str());
+    if(command("save",filename.toStdString()))
+        QMessageBox::information(this,"DSI Studio","Saved");
     file_name = filename;
     setWindowTitle(QFileInfo(file_name).fileName());
 }
@@ -564,14 +609,6 @@ void view_image::on_actionSave_as_Int16_triggered()
     nii.save_to_file(filename.toStdString().c_str());
     file_name = filename;
     setWindowTitle(QFileInfo(file_name).fileName());
-}
-void view_image::on_actionMasking_triggered()
-{
-    QString filename = QFileDialog::getOpenFileName(
-                           this,"Open mask",QFileInfo(file_name).absolutePath(),"NIFTI file(*nii.gz *.nii)" );
-    if (filename.isEmpty())
-        return;
-    command("multiply",filename.toStdString(),std::string());
 }
 
 void view_image::on_actionResize_triggered()
@@ -897,3 +934,21 @@ void view_image::on_actionMorphology_XZ_triggered()
     show_image();
 }
 
+
+void view_image::on_actionImageAddition_triggered()
+{
+    QString filename = QFileDialog::getOpenFileName(
+                           this,"Open other another image to apply",QFileInfo(file_name).absolutePath(),"NIFTI file(*nii.gz *.nii)" );
+    if (filename.isEmpty())
+        return;
+    command("image_addition",filename.toStdString(),std::string());
+}
+
+void view_image::on_actionImageMultiplication_triggered()
+{
+    QString filename = QFileDialog::getOpenFileName(
+                           this,"Open other another image to apply",QFileInfo(file_name).absolutePath(),"NIFTI file(*nii.gz *.nii)" );
+    if (filename.isEmpty())
+        return;
+    command("image_multiplication",filename.toStdString(),std::string());
+}

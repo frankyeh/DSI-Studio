@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string></string>
+   <string/>
   </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QVBoxLayout" name="verticalLayout">
@@ -339,7 +339,8 @@
     <addaction name="actionSmoothing"/>
     <addaction name="menuEdge_Detector"/>
     <addaction name="separator"/>
-    <addaction name="actionMasking"/>
+    <addaction name="actionImageMultiplication"/>
+    <addaction name="actionImageAddition"/>
    </widget>
    <addaction name="menu_File"/>
    <addaction name="menuResize"/>
@@ -356,9 +357,9 @@
     <string>Make Isotropic...</string>
    </property>
   </action>
-  <action name="actionMasking">
+  <action name="actionImageMultiplication">
    <property name="text">
-    <string>Apply Mask...</string>
+    <string>Image Multiplication...</string>
    </property>
   </action>
   <action name="actionResize">
@@ -462,6 +463,11 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+S</string>
+   </property>
+  </action>
+  <action name="actionImageAddition">
+   <property name="text">
+    <string>Image Addition...</string>
    </property>
   </action>
  </widget>

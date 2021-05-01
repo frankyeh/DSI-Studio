@@ -30,8 +30,6 @@ private slots:
 
     void on_action_Save_as_triggered();
 
-    void on_actionMasking_triggered();
-
     void on_actionResize_triggered();
 
     void on_actionTranslocate_triggered();
@@ -88,6 +86,10 @@ private slots:
     void on_actionMorphology_XZ_triggered();
 
     void on_actionSave_triggered();
+
+    void on_actionImageAddition_triggered();
+
+    void on_actionImageMultiplication_triggered();
 
 private:
     Ui::view_image *ui;
