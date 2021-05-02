@@ -78,6 +78,7 @@ public:
 public:// DTI
     bool output_tensor = false;
     bool output_helix_angle = false;
+    bool dti_no_high_b = true;
 public://used in GQI
     bool odf_resolving = false;
     bool r2_weighted = false;// used in GQI only
