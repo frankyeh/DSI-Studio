@@ -132,6 +132,7 @@ int rec(void)
     src.voxel.ti.init(uint16_t(po.get("odf_order",int(8))));
     src.voxel.odf_resolving = po.get("odf_resolving",int(0));
     src.voxel.output_odf = po.get("record_odf",int(0));
+    src.voxel.dti_no_high_b = po.get("dti_no_high_b",int(1));
     src.voxel.check_btable = po.get("check_btable",int(src.voxel.dim[2] < src.voxel.dim[0]*2.0 ? 1:0));
     src.voxel.output_tensor = po.get("output_tensor",int(0));
     src.voxel.output_rdi = po.get("output_rdi",int(1)) && (method_index == 4 || method_index == 7);

@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>780</width>
+    <width>848</width>
     <height>679</height>
    </rect>
   </property>
@@ -63,7 +63,7 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>780</width>
+         <width>848</width>
          <height>616</height>
         </rect>
        </property>
@@ -395,7 +395,7 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>862</width>
+         <width>869</width>
          <height>599</height>
         </rect>
        </property>
@@ -794,6 +794,9 @@
                 <layout class="QHBoxLayout" name="horizontalLayout_4">
                  <item>
                   <widget class="QCheckBox" name="check_btable">
+                   <property name="statusTip">
+                    <string>Check whether b-table is flipped and correct it</string>
+                   </property>
                    <property name="text">
                     <string>Check b-table</string>
                    </property>
@@ -804,13 +807,32 @@
                  </item>
                  <item>
                   <widget class="QCheckBox" name="RecordODF">
+                   <property name="statusTip">
+                    <string>Output ODFs in the FIB file (will increase file size)</string>
+                   </property>
                    <property name="text">
-                    <string>ODFs (for connectometry analysis)</string>
+                    <string>Output ODFs</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QCheckBox" name="dti_no_high_b">
+                   <property name="statusTip">
+                    <string>calculate DTI metrics by using only b &lt; 1750</string>
+                   </property>
+                   <property name="text">
+                    <string>No high b for DTI</string>
+                   </property>
+                   <property name="checked">
+                    <bool>true</bool>
                    </property>
                   </widget>
                  </item>
                  <item>
                   <widget class="QPushButton" name="open_ddi_study_src">
+                   <property name="statusTip">
+                    <string>Compare longitudinal scans for differential tractography</string>
+                   </property>
                    <property name="text">
                     <string>Compare SRC...</string>
                    </property>
@@ -1036,7 +1058,7 @@ Reconstruction</string>
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>780</width>
+     <width>848</width>
      <height>21</height>
     </rect>
    </property>

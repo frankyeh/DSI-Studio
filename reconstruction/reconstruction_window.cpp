@@ -270,6 +270,7 @@ void reconstruction_window::doReconstruction(unsigned char method_id,bool prompt
     handle->voxel.ti.init(8);
     handle->voxel.odf_resolving = ui->odf_resolving->isChecked();
     handle->voxel.output_odf = ui->RecordODF->isChecked();
+    handle->voxel.dti_no_high_b = ui->dti_no_high_b->isChecked();
     handle->voxel.check_btable = ui->check_btable->isChecked();
     handle->voxel.output_tensor = ui->output_tensor->isChecked();
     handle->voxel.output_helix_angle = ui->output_helix_angle->isChecked();

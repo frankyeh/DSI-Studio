@@ -24,6 +24,7 @@ private:
     std::vector<std::vector<unsigned int> > iKtK_pivot;
     std::vector<double> Kt;
     unsigned int b_count;
+    std::vector<size_t> b_location;
 public:
     virtual void init(Voxel& voxel)
     {
@@ -50,12 +51,18 @@ public:
                 tzz.resize(voxel.dim.size());
             }
         }
-        b_count = uint32_t(voxel.bvalues.size()-1);
-        std::vector<tipl::vector<3> > b_data(b_count);
-        //skip b0
-        std::copy(voxel.bvectors.begin()+1,voxel.bvectors.end(),b_data.begin());
-        for(unsigned int index = 0; index < b_count; ++index)
-            b_data[index] *= std::sqrt(voxel.bvalues[index+1]);
+
+        std::vector<tipl::vector<3> > b_data;
+        b_count = 0;
+        for(size_t i = 1;i < voxel.bvalues.size();++i)//skip b0
+        {
+            if(voxel.dti_no_high_b && voxel.bvalues[i] > 1750.0f)
+                continue;
+            b_count++;
+            b_location.push_back(i);
+            b_data.push_back(voxel.bvectors[i]);
+            b_data.back() *= voxel.bvalues[i];
+        }
 
         Kt.resize(6*b_count);
         {
@@ -98,12 +105,12 @@ public:
 public:
     virtual void run(Voxel& voxel, VoxelData& data)
     {
-        std::vector<float> signal(data.space.size());
+        std::vector<float> signal(b_count);
         if (data.space.front() != 0.0f)
         {
             float logs0 = std::log(std::max<float>(1.0,data.space.front()));
-            for (unsigned int i = 1; i < data.space.size(); ++i)
-                signal[i-1] = std::max<float>(0.0,logs0-std::log(std::max<float>(1.0,data.space[i])));
+            for (size_t i = 0;i < b_count;++i)
+                signal[i] = std::max<float>(0.0,logs0-std::log(std::max<float>(1.0,data.space[b_location[i]])));
         }
         //  Kt S = Kt K D
         double KtS[6],tensor_param[6];
