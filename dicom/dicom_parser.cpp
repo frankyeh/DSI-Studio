@@ -295,18 +295,27 @@ bool load_4d_nii(const char* file_name,std::vector<std::shared_ptr<DwiHeader> >&
             if(!nii.toLPS(data,false))
                 break;
             std::replace_if(data.begin(),data.end(),[](float v){return std::isnan(v) || std::isinf(v) || v < 0.0f;},0.0f);
-            if(*std::max_element(data.begin(),data.end()) >
-                    float(std::numeric_limits<unsigned short>::max()-1))
-            {
-                src_error_msg = "The data have overflow values. Please check data quality.";
-                return false;
-            }
             dwi_data[index].swap(data);
         }
         if(prog_aborted())
         {
             src_error_msg = "Aborted by user.";
             return false;
+        }
+    }
+
+
+    // if the imaging value is larger than 16-bit integer, then scale it.
+    {
+        float max_value = 0.0f;
+        for(unsigned int index = 0;index < dwi_data.size();++index)
+            max_value = std::max<float>(max_value,*std::max_element(dwi_data[index].begin(),dwi_data[index].end()));
+        if(max_value > float(std::numeric_limits<unsigned short>::max()-1))
+        {
+            float scale = float(std::numeric_limits<unsigned short>::max()-1)/max_value;
+            tipl::par_for(dwi_data.size(),[&](unsigned int index){
+                tipl::multiply_constant(dwi_data[index],scale);
+            });
         }
     }
     tipl::image<float,4> grad_dev;
@@ -855,13 +864,7 @@ bool parse_dwi(QStringList file_list,
         begin_prog("loading");
         for(int i = 0;i < file_list.size();++i)
             if(!load_4d_nii(file_list[i].toLocal8Bit().begin(),dwi_files,false))
-            {
-                std::shared_ptr<DwiHeader> new_file(new DwiHeader);
-                if(new_file->open(file_list[i].toLocal8Bit().begin()))
-                    dwi_files.push_back(new_file);
-                else
-                    return false;
-            }
+                return false;
         return !dwi_files.empty();
     }
     if(file_list.size() == 1 && QFileInfo(file_list[0]).isDir()) // single folder with DICOM files
