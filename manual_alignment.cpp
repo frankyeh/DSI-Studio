@@ -18,7 +18,7 @@ manual_alignment::manual_alignment(QWidget *parent,
                                    const tipl::vector<3>& to_vs_,
                                    tipl::reg::reg_type reg_type_,
                                    tipl::reg::cost_type cost_function) :
-    QDialog(parent),ui(new Ui::manual_alignment),from_vs(from_vs_),to_vs(to_vs_),reg_type(reg_type_),timer(0)
+    QDialog(parent),from_vs(from_vs_),to_vs(to_vs_),reg_type(reg_type_),timer(nullptr),ui(new Ui::manual_alignment)
 {
     from_original = from_;
     from.swap(from_);
@@ -326,7 +326,7 @@ void manual_alignment::on_switch_view_clicked()
     ui->blend_pos->setValue(ui->blend_pos->value() > ui->blend_pos->maximum()/2 ? 0:ui->blend_pos->maximum());
 }
 
-void manual_alignment::on_reg_type_currentIndexChanged(int index)
+void manual_alignment::on_reg_type_currentIndexChanged(int)
 {
     if(ui->reg_type->currentIndex() <= 1) // translocation or rigid
     {
