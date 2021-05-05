@@ -16,22 +16,11 @@ int src(void)
     std::string ext;
     if(source.size() > 4)
         ext = std::string(source.end()-4,source.end());
-    std::string output;
-    if(po.has("output"))
-        output = po.get("output");
-    if(QFileInfo(output.c_str()).exists())
-    {
-        std::cout << output << " exists. skipping..." << std::endl;
-        return 1;
-    }
+
     std::vector<std::shared_ptr<DwiHeader> > dwi_files;
     QStringList file_list;
     if(ext ==".nii" || ext == ".dcm" || ext == "dseq" || ext == "i.gz")
-    {
         file_list << source.c_str();
-        if(!po.has("output"))
-            output = file_list.front().toStdString() + ".src.gz";
-    }
     else
     {
 
@@ -49,12 +38,10 @@ int src(void)
                 file_list = directory.entryList(QStringList("*.nii.gz"),QDir::Files|QDir::NoSymLinks);
             if(file_list.empty())
                 file_list = directory.entryList(QStringList("*.fdf"),QDir::Files|QDir::NoSymLinks);
-            for (unsigned int index = 0;index < file_list.size();++index)
+            for (int index = 0;index < file_list.size();++index)
                 file_list[index] = QString(source.c_str()) + "/" + file_list[index];
         }
         std::cout << "a total of " << file_list.size() <<" files found in the directory" << std::endl;
-        if(!po.has("output"))
-            output = source + ".src.gz";
     }
 
     if(file_list.empty())
@@ -93,7 +80,7 @@ int src(void)
         }
         for(unsigned int index = 0,b_index = 0;index < dwi_files.size();++index,b_index += 4)
         {
-            dwi_files[index]->bvalue = b_table[b_index];
+            dwi_files[index]->bvalue = float(b_table[b_index]);
             dwi_files[index]->bvec = tipl::vector<3>(b_table[b_index+1],b_table[b_index+2],b_table[b_index+3]);
         }
         std::cout << "b-table " << table_file_name << " loaded" << std::endl;
@@ -115,7 +102,7 @@ int src(void)
         }
         for(unsigned int index = 0;index < dwi_files.size();++index)
         {
-            dwi_files[index]->bvalue = bval[index];
+            dwi_files[index]->bvalue = float(bval[index]);
             dwi_files[index]->bvec = tipl::vector<3>(bvec[index*3],bvec[index*3+1],bvec[index*3+2]);
         }
     }
@@ -130,12 +117,30 @@ int src(void)
     {
         if(dwi_files[index]->bvalue < 100.0f)
             dwi_files[index]->bvalue = 0.0f;
-        max_b = std::max(max_b,(double)dwi_files[index]->bvalue);
+        max_b = std::max(max_b,double(dwi_files[index]->bvalue));
     }
     if(max_b == 0.0)
     {
         std::cout << "cannot find b-table from the header. You may need to load an external b-table using--b_table or --bval and --bvec." << std::endl;
         return 1;
+    }
+
+    std::string output;
+    if(po.has("output"))
+    {
+        output = po.get("output");
+        if(QFileInfo(output.c_str()).isDir())
+            output += std::string("/") + QFileInfo(source.c_str()).baseName().toStdString() + ".src.gz";
+        else
+        if(output.find(".src.gz") == std::string::npos)
+            output += ".src.gz";
+    }
+    else
+    {
+        if(QFileInfo(source.c_str()).isDir())
+            output = source + ".src.gz";
+        else
+            output = file_list.front().toStdString() + ".src.gz";
     }
     std::cout << "output src to " << output << std::endl;
     if(!DwiHeader::output_src(output.c_str(),dwi_files,
