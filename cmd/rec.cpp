@@ -1,5 +1,6 @@
 #include <QString>
 #include <QFileInfo>
+#include <QDir>
 #include <iostream>
 #include <iterator>
 #include <string>
@@ -227,9 +228,20 @@ int rec(void)
         std::cout << "done." <<std::endl;
     }
     std::cout << "start reconstruction..." <<std::endl;
+    if(po.has("output"))
+    {
+        std::string output = po.get("output");
+        if(QFileInfo(output.c_str()).isDir())
+            src.file_name = output + "/" + QFileInfo(src.file_name.c_str()).fileName().toStdString();
+        else
+            src.file_name = output;
+    }
     if (src.reconstruction())
         std::cout << "reconstruction finished." << std::endl;
     else
+    {
         std::cout << "ERROR:" << src.error_msg << std::endl;
+        return 1;
+    }
     return 0;
 }
