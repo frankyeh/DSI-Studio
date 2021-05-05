@@ -105,44 +105,39 @@ public:
 public:
     virtual void run(Voxel& voxel, VoxelData& data)
     {
-        std::vector<float> signal(b_count);
-        if (data.space.front() != 0.0f)
+        std::vector<double> signal(b_count);
         {
-            float logs0 = std::log(std::max<float>(1.0,data.space.front()));
+            if (data.space.front() == 0.0f)
+                return;
+            double logs0 = std::log(std::max<double>(1.0,double(data.space.front())));
             for (size_t i = 0;i < b_count;++i)
-                signal[i] = std::max<float>(0.0,logs0-std::log(std::max<float>(1.0,data.space[b_location[i]])));
+                signal[i] = std::log(std::max<double>(1.0,double(data.space[b_location[i]])));
+            logs0 = std::max<double>(logs0,*std::max_element(signal.begin(),signal.end()));
+            if(logs0 == 0.0)
+                return;
+            for (size_t i = 0;i < b_count;++i)
+                signal[i] = std::max<double>(0.0,logs0-signal[i]);
         }
         //  Kt S = Kt K D
         double KtS[6],tensor_param[6];
         double tensor[9];
         double V[9],d[3];
+        tipl::mat::product(Kt.begin(),signal.begin(),KtS,tipl::dyndim(6,b_count),tipl::dyndim(b_count,1));
         for(unsigned int i = 0;i < iKtK.size();++i)
         {
-            tipl::mat::product(Kt.begin(),signal.begin(),KtS,tipl::dyndim(6,b_count),tipl::dyndim(b_count,1));
-            tipl::mat::lu_solve(iKtK[i].begin(),iKtK_pivot[i].begin(),KtS,tensor_param,tipl::dyndim(6,6));
-
-
+            if(!tipl::mat::lu_solve(iKtK[i].begin(),iKtK_pivot[i].begin(),KtS,tensor_param,tipl::dyndim(6,6)))
+                continue;
             unsigned int tensor_index[9] = {0,3,4,3,1,5,4,5,2};
             for (unsigned int index = 0; index < 9; ++index)
                 tensor[index] = tensor_param[tensor_index[index]];
-
             tipl::mat::eigen_decomposition_sym(tensor,V,d,tipl::dim<3,3>());
             if(d[0] > 0.0 && d[1] > 0.0 && d[2] > 0.0)
                 break;
         }
-        if (d[1] < 0.0)
-        {
-            d[1] = 0.0;
-            d[2] = 0.0;
-        }
-        if (d[2] < 0.0)
-            d[2] = 0.0;
-        if (d[0] < 0.0)
-        {
-            d[0] = 0.0;
-            d[1] = 0.0;
-            d[2] = 0.0;
-        }
+
+        if (d[0] < 0.0 || d[1] < 0.0 || d[2] < 0.0)
+            return;
+
         std::copy(V,V+3,voxel.fib_dir[data.voxel_index].begin());
         data.fa[0] = voxel.fib_fa[data.voxel_index] = get_fa(float(d[0]),float(d[1]),float(d[2]));
         {
@@ -151,7 +146,6 @@ public:
             d2[data.voxel_index] = 1000.0f*float(d[1]);
             d3[data.voxel_index] = 1000.0f*float(d[2]);
             d1[data.voxel_index] = 1000.0f*float(d[1]+d[2])/2.0f;
-
         }
         if(voxel.method_id == 1) // DTI
         {
