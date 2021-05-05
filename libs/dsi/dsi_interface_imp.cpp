@@ -255,7 +255,7 @@ bool ImageModel::reconstruction(void)
             error_msg = "unknown method";
             return false;
         }
-        return save_fib(file_name + get_file_ext());
+        return save_fib(file_name.find(".fib.gz") == std::string::npos ? file_name + get_file_ext():file_name);
     }
     catch (std::exception& e)
     {
