@@ -953,6 +953,7 @@ void GLWidget::renderLR()
         check_error("show_device");
     }
 
+    std::vector<bool> region_visualized(cur_tracking_window.regionWidget->regions.size());
     if (get_param("show_region"))
     {
         glDisable(GL_COLOR_MATERIAL);
@@ -981,9 +982,6 @@ void GLWidget::renderLR()
                     RegionSpheres.reset(new GluQua);
                     gluQuadricNormals(RegionSpheres->get(), GLU_SMOOTH);
                 }
-
-                std::vector<bool> has_connection(cur_tracking_window.regionWidget->regions.size());
-
                 float edge_threshold = get_param_float("region_edge_threshold")*max_connectivity;
                 if(!connectivity.empty() && connectivity.width() == int(cur_tracking_window.regionWidget->regions.size()) && max_connectivity != 0.0f)
                 {
@@ -997,8 +995,8 @@ void GLWidget::renderLR()
                             float c = std::fabs(connectivity.at(i,j));
                             if(c == 0.0f || (edge_threshold != 0.0f && c < edge_threshold))
                                 continue;
-                            has_connection[i] = true;
-                            has_connection[j] = true;
+                            region_visualized[i] = true;
+                            region_visualized[j] = true;
                             auto centeri = cur_tracking_window.regionWidget->regions[i]->get_center();
                             auto centerj = cur_tracking_window.regionWidget->regions[j]->get_center();
                             if(two_color_connectivity)
@@ -1020,8 +1018,7 @@ void GLWidget::renderLR()
                     if(cur_tracking_window.regionWidget->item(i,0)->checkState() == Qt::Checked &&
                        !cur_tracking_window.regionWidget->regions[i]->region.empty())
                     {
-                        if(get_param("region_hide_unconnected_node") &&
-                           !has_connection[i])
+                        if(get_param("region_hide_unconnected_node") && !region_visualized[i])
                             continue;
                         auto& cur_region = cur_tracking_window.regionWidget->regions[i];
                         auto center = cur_tracking_window.regionWidget->regions[i]->get_center();
@@ -1056,12 +1053,14 @@ void GLWidget::renderLR()
             });
 
             for(unsigned int index = 0;index < cur_tracking_window.regionWidget->regions.size();++index)
-                if(cur_tracking_window.regionWidget->item(int(index),0)->checkState() == Qt::Checked)
+                if(cur_tracking_window.regionWidget->item(int(index),0)->checkState() == Qt::Checked &&
+                   !cur_tracking_window.regionWidget->regions[index]->region.empty())
                 {
                     drawRegion(cur_tracking_window.regionWidget->regions[index]->show_region,
                                cur_view,
                                alpha,
                                get_param("region_bend1"),get_param("region_bend2"));
+                    region_visualized[index] = true;
                 }
         }
         glDisable(GL_BLEND);
@@ -1142,8 +1141,7 @@ void GLWidget::renderLR()
             font.setBold(get_param("region_label_bold"));
             auto& regions = cur_tracking_window.regionWidget->regions;
             for(unsigned int i = 0;i < regions.size();++i)
-                if(cur_tracking_window.regionWidget->item(int(i),0)->checkState() == Qt::Checked &&
-                   !regions[i]->region.empty())
+                if(region_visualized[i])
                 {
                     auto* item = cur_tracking_window.regionWidget->item(int(i),0);
                     auto p = regions[i]->get_center();
