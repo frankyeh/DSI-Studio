@@ -107,14 +107,14 @@ int qc(void)
     std::string file_name = po.get("source");
     if(QFileInfo(file_name.c_str()).isDir())
     {
-        std::string report_file_name = file_name + ".qc.txt";
+        std::string report_file_name = po.get("output",file_name + ".qc.txt");
         std::cout << "quality control checking src files in " << file_name << std::endl;
         std::ofstream out(report_file_name.c_str());
         out << quality_check_src_files(file_name.c_str());
         std::cout << "report saved to " << report_file_name << std::endl;
     }
     else {
-        std::string report_file_name = file_name.substr(0,file_name.size()-7) + ".qc.txt";
+        std::string report_file_name = po.get("output",file_name.substr(0,file_name.size()-7) + ".qc.txt");
         if(QString(file_name.c_str()).endsWith("fib.gz"))
         {
             std::shared_ptr<fib_data> handle = cmd_load_fib(po.get("source"));
