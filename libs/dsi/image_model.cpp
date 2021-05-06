@@ -6,6 +6,7 @@
 #include "dti_process.hpp"
 #include "fib_data.hpp"
 #include "dwi_header.hpp"
+#include "tracking/region/Regions.h"
 
 void ImageModel::draw_mask(tipl::color_image& buffer,int position)
 {
@@ -386,8 +387,43 @@ bool ImageModel::is_human_data(void) const
     return is_human_size(voxel.dim,voxel.vs);
 }
 
+bool ImageModel::run_steps(std::string steps)
+{
+    std::istringstream in(steps);
+    std::string step;
+    std::getline(in,step); // ignore the first step [Step T2][Reconstruction]
+    while(std::getline(in,step))
+    {
+        size_t pos = step.find('=');
+        if(pos == std::string::npos)
+        {
+            if(!command(step))
+                return false;
+        }
+        else
+        {
+            if(!command(step.substr(0,pos),step.substr(pos+1,step.size()-pos-1)))
+                return false;
+        }
+    }
+    return true;
+}
 bool ImageModel::command(std::string cmd,std::string param)
 {
+    if(cmd == "[Step T2a][Open]")
+    {
+        if(!QFileInfo(param.c_str()).exists())
+        {
+            error_msg = param;
+            error_msg += " does not exist";
+            return false;
+        }
+        ROIRegion region(voxel.dim,voxel.vs);
+        region.LoadFromFile(param.c_str());
+        region.SaveToBuffer(voxel.mask,1.0f);
+        voxel.steps += std::string("[Step T2a][Open]=") + param + "\n";
+        return true;
+    }
     if(cmd == "[Step T2a][Erosion]")
     {
         tipl::morphology::erosion(voxel.mask);

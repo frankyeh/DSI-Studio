@@ -281,6 +281,7 @@ public:
     bool compare_src(const char* file_name);
 public:
     bool command(std::string cmd,std::string param = "");
+    bool run_steps(std::string steps);
 public:
     bool load_from_file(const char* dwi_file_name);
     bool save_to_file(const char* dwi_file_name);
