@@ -977,11 +977,7 @@ void MainWindow::on_nii2src_bids_clicked()
         out << "Process " << sub_dir[j].toStdString() << std::endl;
         QString dwi_folder = dir + "/" + sub_dir[j] + "/dwi";
         if(!QDir(dwi_folder).exists())
-        {
-            out << "[ERROR] No DWI folder in this subject's folder. Skip." << std::endl;
-            continue;
-        }
-
+            dwi_folder = dir + "/" + sub_dir[j];
         QStringList nifti_file_list = QDir(dwi_folder).
                 entryList(QStringList("*.nii.gz") << "*.nii",QDir::Files|QDir::NoSymLinks);
         if(nifti_file_list.size() > 1)
