@@ -52,6 +52,11 @@ public:
             }
         }
 
+        // the first DWI should be b0
+        if(voxel.bvalues[0] > 100.0f)
+            throw std::runtime_error("cannot locate b0 data for DTI reconstruction");
+        voxel.bvalues[0] = 0.0f;
+
         std::vector<tipl::vector<3> > b_data;
         b_count = 0;
         for(size_t i = 1;i < voxel.bvalues.size();++i)//skip b0
@@ -63,6 +68,8 @@ public:
             b_data.push_back(voxel.bvectors[i]);
             b_data.back() *= voxel.bvalues[i];
         }
+        if(!b_count)
+            throw std::runtime_error("no valid DWI signals to calculate tensor matrix");
 
         Kt.resize(6*b_count);
         {
@@ -107,8 +114,6 @@ public:
     {
         std::vector<double> signal(b_count);
         {
-            if (data.space.front() == 0.0f)
-                return;
             double logs0 = std::log(std::max<double>(1.0,double(data.space.front())));
             for (size_t i = 0;i < b_count;++i)
                 signal[i] = std::log(std::max<double>(1.0,double(data.space[b_location[i]])));
@@ -135,8 +140,9 @@ public:
                 break;
         }
 
-        if (d[0] < 0.0 || d[1] < 0.0 || d[2] < 0.0)
-            return;
+        d[0] = std::max(0.0,d[0]);
+        d[1] = std::max(0.0,d[1]);
+        d[2] = std::max(0.0,d[2]);
 
         std::copy(V,V+3,voxel.fib_dir[data.voxel_index].begin());
         data.fa[0] = voxel.fib_fa[data.voxel_index] = get_fa(float(d[0]),float(d[1]),float(d[2]));
