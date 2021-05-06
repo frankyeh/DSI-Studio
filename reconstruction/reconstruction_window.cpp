@@ -322,11 +322,8 @@ void reconstruction_window::on_load_mask_clicked()
             "Mask files (*.nii *nii.gz *.hdr);;Text files (*.txt);;All files (*)" );
     if(filename.isEmpty())
         return;
-    ROIRegion region(handle->dwi.geometry(),handle->voxel.vs);
-    region.LoadFromFile(filename.toLocal8Bit().begin());
-    region.SaveToBuffer(handle->voxel.mask,1.0f);
+    command("[Step T2a][Open]",filename.toStdString());
     on_SlicePos_valueChanged(ui->SlicePos->value());
-    handle->voxel.steps += std::string("[Step T2a][Open...]=") + QFileInfo(filename).fileName().toStdString()+"\n";
 }
 
 
@@ -378,20 +375,12 @@ void reconstruction_window::on_doDTI_clicked()
     {
         if(index)
         {
-            std::istringstream in(handle->voxel.steps);
+            std::string steps = handle->voxel.steps;
             begin_prog("load src");
             if(!load_src(index))
                 break;
-            std::string step;
-            std::getline(in,step); // ignore the first step [Step T2][Reconstruction]
-            while(std::getline(in,step))
-            {
-                size_t pos = step.find('=');
-                if(pos == std::string::npos)
-                    command(step);
-                else
-                    command(step.substr(0,pos),step.substr(pos+1,step.size()-pos-1));
-            }
+            handle->run_steps(steps);
+            handle->voxel.steps = steps;
         }
         std::fill(handle->voxel.param.begin(),handle->voxel.param.end(),0.0);
         if(ui->DTI->isChecked())
@@ -497,19 +486,28 @@ void reconstruction_window::on_actionSave_4D_nifti_triggered()
 {
     if(filenames.size() > 1)
     {
-        prog_init p("loading");
-        for(int index = 0;check_prog(index,filenames.size());++index)
+        int result = QMessageBox::information(this,"DSI Studio","Also save 4D NIFTI for each SRC file?",
+                                 QMessageBox::Yes|QMessageBox::No|QMessageBox::Cancel);
+        if(result == QMessageBox::Cancel)
+            return;
+        if(result == QMessageBox::Yes)
         {
-            ImageModel model;
-            if (!model.load_from_file(filenames[index].toLocal8Bit().begin()))
+            prog_init p("loading");
+            for(int index = 0;check_prog(index,filenames.size());++index)
             {
-                QMessageBox::information(this,"error",QString("Cannot open ") +
-                    filenames[index] + " : " +handle->error_msg.c_str(),0);
-                return;
+                ImageModel model;
+                if (!model.load_from_file(filenames[index].toStdString().c_str()) ||
+                    !model.run_steps(handle->voxel.steps))
+                {
+                    QMessageBox::critical(this,"error",QFileInfo(filenames[index]).fileName() + " : " + model.error_msg.c_str());
+                    return;
+                }
+                QString file_prefix = filenames[index];
+                file_prefix.chop(7); // remove .src.gz
+                model.save_to_nii((file_prefix+".nii.gz").toStdString().c_str());
+                model.save_bval((file_prefix+".bval").toStdString().c_str());
+                model.save_bvec((file_prefix+".bvec").toStdString().c_str());
             }
-            model.save_to_nii((filenames[index]+".nii.gz").toLocal8Bit().begin());
-            model.save_bval((filenames[index]+".bval").toLocal8Bit().begin());
-            model.save_bvec((filenames[index]+".bvec").toLocal8Bit().begin());
         }
         return;
     }
