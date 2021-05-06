@@ -65,7 +65,6 @@ void Voxel::load_from_src(ImageModel& image_model)
         bvalues.push_back(0);
         bvectors.push_back(tipl::vector<3,float>(0,0,0));
         dwi_data.push_back(image_model.src_dwi_data[sorted_index[0]]);
-        b0_index = 0;
     }
     for(size_t i = 0;i < sorted_index.size();++i)
         if(image_model.src_bvalues[sorted_index[i]] != 0.0f)

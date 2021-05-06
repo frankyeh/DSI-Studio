@@ -25,7 +25,7 @@ public:
     }
     virtual void run(Voxel& voxel, VoxelData& data)
     {
-        if(voxel.b0_index == 0 && voxel.half_sphere)
+        if(voxel.half_sphere)
             data.space[0] *= 0.5f;
         // add rotation from QSDR or gradient nonlinearity
         if(voxel.qsdr || !voxel.grad_dev.empty())
@@ -230,8 +230,7 @@ public:
         voxel.bvalues.swap(bvalues);
         voxel.bvectors.swap(bvectors);
 
-        if(voxel.b0_index == 0)
-            b0.resize(voxel.dim.size());
+        b0.resize(voxel.dim.size());
 
         Rt.resize(dwi.size()*dwi.size());
         tipl::mat::transpose(&*to.sinc_ql.begin(),&*Rt.begin(),tipl::dyndim(dwi.size(),dwi.size()));
@@ -253,7 +252,6 @@ public:
 
     virtual void run(Voxel& voxel, VoxelData& data)
     {
-        if(voxel.b0_index == 0)
         {
             b0[data.voxel_index] = uint16_t(data.space[0]);
             data.space[0] = 0;
