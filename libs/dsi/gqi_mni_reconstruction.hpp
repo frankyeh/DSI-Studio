@@ -68,14 +68,24 @@ public:
 
         {
             float best_reso = *std::min_element(voxel.vs.begin(),voxel.vs.end());
-            // downsample template
-            while(best_reso > VGvs[0]*1.5f)
+            // downsample template if the image resolution is much lower
+            if(best_reso > VGvs[0]*1.5f)
             {
                 tipl::downsampling(VG);
                 if(!VG2.empty())
                     tipl::downsampling(VG2);
                 VGvs *= 2.0f;
             }
+            // upsample template if the image resolution is much higher than the tempalte
+            if(best_reso < VGvs[0])
+            {
+                tipl::upsampling(VG);
+                if(!VG2.empty())
+                    tipl::upsampling(VG2);
+                VGvs *= 0.5f;
+            }
+
+
             // setup output bounding box
             {
                 des_geo = VG.geometry();
