@@ -172,8 +172,14 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
             ui->template_box->setCurrentIndex(handle->template_id);
             if(handle->is_qsdr)
                 handle->load_template();
-            set_data("min_length",handle->vs[0]*15.0f);
-            set_data("max_length",handle->vs[0]*150.0f);
+
+            float largest_span = std::max(std::max(handle->dim[0]*handle->vs[0],handle->dim[1]*handle->vs[1]),handle->dim[2]*handle->vs[2]);
+            float min_length = largest_span/10.0f;
+            float min_length_digit = float(std::pow(10.0f,std::floor(std::log10(double(min_length)))));
+            float max_length = largest_span*1.5f;
+            float max_length_digit = float(std::pow(10.0f,std::floor(std::log10(double(max_length)))));
+            set_data("min_length",int(min_length/min_length_digit)*min_length_digit);
+            set_data("max_length",int(max_length/max_length_digit)*max_length_digit);
         }
 
         // setup fa threshold
