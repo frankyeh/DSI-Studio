@@ -95,7 +95,7 @@ void get_filenames_from(const std::string param,std::vector<std::string>& filena
     }
 }
 
-void trk_post(std::shared_ptr<fib_data> handle,std::shared_ptr<TractModel> tract_model);
+int trk_post(std::shared_ptr<fib_data> handle,std::shared_ptr<TractModel> tract_model,std::string tract_file_name,bool output_track);
 std::shared_ptr<fib_data> cmd_load_fib(const std::string file_name);
 
 
@@ -171,10 +171,19 @@ int ana(void)
         std::string result;
         std::cout << "calculating region statistics at a total of " << regions.size() << " regions" << std::endl;
         get_regions_statistics(handle,regions,region_list,result);
+
         std::string file_name(po.get("source"));
         file_name += ".statistics.txt";
         if(po.has("output"))
-            file_name = po.get("output");
+        {
+            std::string output = po.get("output");
+            if(QFileInfo(output.c_str()).isDir())
+                file_name = output + std::string("/") + QFileInfo(file_name.c_str()).fileName().toStdString();
+            else
+                file_name = output;
+            if(file_name.find(".txt") == std::string::npos)
+                file_name += ".txt";
+        }
         std::cout << "export ROI statistics to file:" << file_name << std::endl;
         std::ofstream out(file_name.c_str());
         out << result <<std::endl;
@@ -270,7 +279,17 @@ int ana(void)
             std::cout << "no tracks remained after ROI selection." << std::endl;
             return 1;
         }
-        trk_post(handle,tract_model);
+        if(po.has("output"))
+        {
+            std::string output = po.get("output");
+            if(output.find(".tt.gz") != std::string::npos ||
+               output.find(".trk.gz") != std::string::npos)
+                return trk_post(handle,tract_model,output,true);
+            if(QFileInfo(output.c_str()).isDir())
+                return trk_post(handle,tract_model,output + "/" + QFileInfo(file_name.c_str()).baseName().toStdString(),true);
+            return trk_post(handle,tract_model,output,true);
+        }
+        return trk_post(handle,tract_model,po.get("tract"),false);
     }
     return 0;
 }

@@ -82,10 +82,10 @@ bool get_t1t2_nifti(std::shared_ptr<fib_data> handle,
     return true;
 }
 void export_track_info(std::shared_ptr<fib_data> handle,
+                       std::string file_name,
                        std::shared_ptr<TractModel> tract_model)
 {
     std::string export_option = po.get("export");
-    std::string file_name = po.get("output",po.get("tract",po.get("source")+"tt.gz"));
     std::replace(export_option.begin(),export_option.end(),',',' ');
     std::istringstream in(export_option);
     std::string cmd;
@@ -220,51 +220,6 @@ void export_track_info(std::shared_ptr<fib_data> handle,
         continue;
     }
 }
-void save_connectivity_matrix(std::shared_ptr<fib_data> handle,
-                              std::shared_ptr<TractModel> tract_model,
-                              ConnectivityMatrix& data,
-                              const std::string& source,
-                              const std::string& connectivity_roi,
-                              const std::string& connectivity_value,
-                              float t,
-                              bool use_end_only)
-{
-    std::cout << "count tracks by " << (use_end_only ? "ending":"passing") << std::endl;
-    std::cout << "calculate matrix using " << connectivity_value << std::endl;
-    if(!data.calculate(handle,*(tract_model.get()),connectivity_value,use_end_only,t))
-    {
-        std::cout << "connectivity calculation error:" << data.error_msg << std::endl;
-        return;
-    }
-    if(data.overlap_ratio > 0.5f)
-    {
-        std::cout << "the ROIs have a large overlapping area (ratio: "
-                  << data.overlap_ratio << "). The network measure calculated may not be reliable" << std::endl;
-    }
-    if(connectivity_value == "trk")
-        return;
-    std::string file_name_stat(source);
-    file_name_stat += ".";
-    file_name_stat += (QFileInfo(connectivity_roi.c_str()).exists()) ? QFileInfo(connectivity_roi.c_str()).baseName().toStdString():connectivity_roi;
-    file_name_stat += ".";
-    file_name_stat += connectivity_value;
-    file_name_stat += use_end_only ? ".end":".pass";
-    std::string network_measures(file_name_stat),connectogram(file_name_stat);
-    file_name_stat += ".connectivity.mat";
-    std::cout << "export connectivity matrix to " << file_name_stat << std::endl;
-    data.save_to_file(file_name_stat.c_str());
-    connectogram += ".connectogram.txt";
-    std::cout << "export connectogram to " << connectogram << std::endl;
-    data.save_to_connectogram(connectogram.c_str());
-
-    network_measures += ".network_measures.txt";
-    std::cout << "export network measures to " << network_measures << std::endl;
-    std::string report;
-    data.network_property(report);
-    std::ofstream out(network_measures.c_str());
-    out << report;
-}
-
 
 bool load_atlas_from_list(std::shared_ptr<fib_data> handle,
                           const std::string& atlas_name,
@@ -289,16 +244,12 @@ bool load_nii(std::shared_ptr<fib_data> handle,
               std::vector<std::shared_ptr<ROIRegion> >& regions,
               std::vector<std::string>& names);
 void get_connectivity_matrix(std::shared_ptr<fib_data> handle,
+                             std::string output_name,
                              std::shared_ptr<TractModel> tract_model)
 {
-    std::string source;
     QStringList connectivity_list = QString(po.get("connectivity").c_str()).split(",");
     QStringList connectivity_type_list = QString(po.get("connectivity_type","end").c_str()).split(",");
     QStringList connectivity_value_list = QString(po.get("connectivity_value","count").c_str()).split(",");
-    if(po.has("output"))
-        source = po.get("output");
-    if(source == "no_file" || source.empty())
-        source = po.get("source");
     for(int i = 0;i < connectivity_list.size();++i)
     {
         std::string roi_file_name = connectivity_list[i].toStdString();
@@ -353,11 +304,48 @@ void get_connectivity_matrix(std::shared_ptr<fib_data> handle,
             }
         }
 
+        float t = po.get("connectivity_threshold",0.001f);
         for(int j = 0;j < connectivity_type_list.size();++j)
         for(int k = 0;k < connectivity_value_list.size();++k)
-            save_connectivity_matrix(handle,tract_model,data,source,roi_file_name,connectivity_value_list[k].toStdString(),
-                                     po.get("connectivity_threshold",0.001f),
-                                     connectivity_type_list[j].toLower() == QString("end"));
+        {
+            std::string connectivity_roi = roi_file_name;
+            std::string connectivity_value = connectivity_value_list[k].toStdString();
+            bool use_end_only = connectivity_type_list[j].toLower() == QString("end");
+            std::cout << "count tracks by " << (use_end_only ? "ending":"passing") << std::endl;
+            std::cout << "calculate matrix using " << connectivity_value << std::endl;
+            if(!data.calculate(handle,*(tract_model.get()),connectivity_value,use_end_only,t))
+            {
+                std::cout << "connectivity calculation error:" << data.error_msg << std::endl;
+                return;
+            }
+            if(data.overlap_ratio > 0.5f)
+            {
+                std::cout << "the ROIs have a large overlapping area (ratio: "
+                          << data.overlap_ratio << "). The network measure calculated may not be reliable" << std::endl;
+            }
+            if(connectivity_value == "trk")
+                return;
+            std::string file_name_stat(output_name);
+            file_name_stat += ".";
+            file_name_stat += (QFileInfo(connectivity_roi.c_str()).exists()) ? QFileInfo(connectivity_roi.c_str()).baseName().toStdString():connectivity_roi;
+            file_name_stat += ".";
+            file_name_stat += connectivity_value;
+            file_name_stat += use_end_only ? ".end":".pass";
+            std::string network_measures(file_name_stat),connectogram(file_name_stat);
+            file_name_stat += ".connectivity.mat";
+            std::cout << "export connectivity matrix to " << file_name_stat << std::endl;
+            data.save_to_file(file_name_stat.c_str());
+            connectogram += ".connectogram.txt";
+            std::cout << "export connectogram to " << connectogram << std::endl;
+            data.save_to_connectogram(connectogram.c_str());
+
+            network_measures += ".network_measures.txt";
+            std::cout << "export network measures to " << network_measures << std::endl;
+            std::string report;
+            data.network_property(report);
+            std::ofstream out(network_measures.c_str());
+            out << report;
+        }
     }
 }
 
@@ -459,41 +447,33 @@ bool load_region(std::shared_ptr<fib_data> handle,
     return true;
 }
 
-void trk_post(std::shared_ptr<fib_data> handle,std::shared_ptr<TractModel> tract_model)
+int trk_post(std::shared_ptr<fib_data> handle,std::shared_ptr<TractModel> tract_model,std::string tract_file_name,bool output_track)
 {
-    // save file
-    if(po.has("output"))
+    if(output_track)
     {
-        std::string file_list = po.get("output");
-        std::replace(file_list.begin(),file_list.end(),',',' ');
-        std::istringstream in(file_list);
-        std::string f;
-        while(in >> f)
+        if(po.has("ref")) // save track in T1W/T2W space
         {
-            if(po.has("ref")) // save track in T1W/T2W space
+            std::vector<std::string> files;
+            files.push_back(po.get("ref"));
+            CustomSliceModel new_slice(handle.get());
+            if(!new_slice.initialize(files))
             {
-                std::vector<std::string> files;
-                files.push_back(po.get("ref"));
-                CustomSliceModel new_slice(handle.get());
-                if(!new_slice.initialize(files))
-                {
-                    std::cout << "ERROR reading ref image file" << std::endl;
-                    return;
-                }
-                new_slice.thread->wait();
-                new_slice.update_transform();
-                std::cout << "applying linear registration." << std::endl;
-                std::cout << new_slice.T[0] << " " << new_slice.T[1] << " " << new_slice.T[2] << " " << new_slice.T[3] << std::endl;
-                std::cout << new_slice.T[4] << " " << new_slice.T[5] << " " << new_slice.T[6] << " " << new_slice.T[7] << std::endl;
-                std::cout << new_slice.T[8] << " " << new_slice.T[9] << " " << new_slice.T[10] << " " << new_slice.T[11] << std::endl;
-                tract_model->save_transformed_tracts_to_file(f.c_str(),new_slice.dim,new_slice.vs,new_slice.invT,false);
+                std::cout << "ERROR: reading ref image file" << std::endl;
+                return 1;
             }
-            else
-            if(f != "no_file")
-            {
-                if (!tract_model->save_tracts_to_file(f.c_str()))
-                    std::cout << "cannot save tracks as " << f << ". Please check write permission, directory, and disk space." << std::endl;
-            }
+            new_slice.thread->wait();
+            new_slice.update_transform();
+            std::cout << "applying linear registration." << std::endl;
+            std::cout << new_slice.T[0] << " " << new_slice.T[1] << " " << new_slice.T[2] << " " << new_slice.T[3] << std::endl;
+            std::cout << new_slice.T[4] << " " << new_slice.T[5] << " " << new_slice.T[6] << " " << new_slice.T[7] << std::endl;
+            std::cout << new_slice.T[8] << " " << new_slice.T[9] << " " << new_slice.T[10] << " " << new_slice.T[11] << std::endl;
+            tract_model->save_transformed_tracts_to_file(tract_file_name.c_str(),new_slice.dim,new_slice.vs,new_slice.invT,false);
+        }
+        {
+            if (!tract_model->save_tracts_to_file(tract_file_name.c_str()))
+                std::cout << "ERROR: cannot save tracks as " << tract_file_name
+                          << ". Please check write permission, directory, and disk space." << std::endl;
+            return 1;
         }
     }
     if(po.has("cluster"))
@@ -509,7 +489,7 @@ void trk_post(std::shared_ptr<fib_data> handle,std::shared_ptr<TractModel> tract
         std::cout << "cluster resolution (if method is 0) : " << detail << " mm" << std::endl;
         std::cout << "run clustering." << std::endl;
         tract_model->run_clustering(uint8_t(method),uint32_t(count),detail);
-        std::ofstream out(name);
+        std::ofstream out(tract_file_name + "." + name);
         std::cout << "cluster label saved to " << name << std::endl;
         std::copy(tract_model->get_cluster_info().begin(),tract_model->get_cluster_info().end(),std::ostream_iterator<int>(out," "));
     }
@@ -519,13 +499,14 @@ void trk_post(std::shared_ptr<fib_data> handle,std::shared_ptr<TractModel> tract
 
     // allow adding other slices for connectivity and statistics
     if(!check_other_slices(handle))
-        return;
+        return 1;
 
     if(po.has("connectivity"))
-        get_connectivity_matrix(handle,tract_model);
+        get_connectivity_matrix(handle,tract_file_name,tract_model);
 
     if(po.has("export"))
-        export_track_info(handle,tract_model);
+        export_track_info(handle,tract_file_name,tract_model);
+    return 0;
 }
 
 bool load_roi(std::shared_ptr<fib_data> handle,std::shared_ptr<RoiMgr> roi_mgr)
@@ -813,11 +794,17 @@ int trk(std::shared_ptr<fib_data> handle)
             tract_model->trim();
     }
 
-    // if no output assigned, assign a default track output file name
-    if (!po.has("output"))
-        po.set("output",po.get("source")+".tt.gz");
+    std::string tract_file_name = po.get("source")+".tt.gz";
+    bool output_track = true;
+    if (po.has("output"))
+    {
+        std::string output = po.get("output");
+        if(output == "no_file")
+            output_track = false;
+        else
+        if(QFileInfo(output.c_str()).isDir())
+                tract_file_name = output+"/"+QFileInfo(po.get("source").c_str()).baseName().toStdString() + ".tt.gz";
+    }
 
-    // save track
-    trk_post(handle,tract_model);
-    return 0;
+    return trk_post(handle,tract_model,tract_file_name,output_track);
 }
