@@ -67,9 +67,9 @@ RUN mkdir /opt/dsi-studio \
   && mkdir build && cd build \
   && /opt/qt512/bin/qmake ../src && make \
   && cd /opt/dsi-studio \
-  && curl -sSLO 'https://pitt.box.com/shared/static/n3ln8k7bakr7y5p0ekm3g4s0ucdmqkia.zip' \
-  && unzip n3ln8k7bakr7y5p0ekm3g4s0ucdmqkia.zip \
-  && rm n3ln8k7bakr7y5p0ekm3g4s0ucdmqkia.zip \
+  && curl -sSLO 'https://www.dropbox.com/s/nbfrfuvh7njfrrh/dsi_studio_64.zip' \
+  && unzip dsi_studio_64.zip \
+  && rm dsi_studio_64.zip \
   && cd dsi_studio_64 \
   && rm *.dll \
   && rm *.exe \
