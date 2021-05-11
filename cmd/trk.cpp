@@ -803,7 +803,7 @@ int trk(std::shared_ptr<fib_data> handle)
             output_track = false;
         else
         if(QFileInfo(output.c_str()).isDir())
-                tract_file_name = output+"/"+QFileInfo(po.get("source").c_str()).baseName().toStdString() + ".tt.gz";
+            tract_file_name = output+"/"+QFileInfo(po.get("source").c_str()).baseName().toStdString() + ".tt.gz";
     }
 
     return trk_post(handle,tract_model,tract_file_name,output_track);
