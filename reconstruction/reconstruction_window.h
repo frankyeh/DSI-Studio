@@ -113,6 +113,7 @@ private slots:
     void on_align_slices_clicked();
     void on_edit_mask_clicked();
     void on_actionOverwrite_Voxel_Size_triggered();
+    void on_qsdr_manual_clicked();
 };
 
 #endif // RECONSTRUCTION_WINDOW_H

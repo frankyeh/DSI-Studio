@@ -1096,3 +1096,51 @@ void reconstruction_window::on_actionOverwrite_Voxel_Size_triggered()
     handle->get_report(handle->voxel.report);
     ui->report->setText(handle->voxel.report.c_str());
 }
+
+void match_template_resolution(tipl::image<float,3>& VG,
+                               tipl::image<float,3>& VG2,
+                               tipl::vector<3>& VGvs,
+                               tipl::vector<3> subject_vs)
+{
+    float best_reso = *std::min_element(subject_vs.begin(),subject_vs.end());
+    if(best_reso > VGvs[0]*1.5f)
+    {
+        tipl::downsampling(VG);
+        if(!VG2.empty())
+            tipl::downsampling(VG2);
+        VGvs *= 2.0f;
+    }
+    if(best_reso < VGvs[0])
+    {
+        tipl::upsampling(VG);
+        if(!VG2.empty())
+            tipl::upsampling(VG2);
+        VGvs *= 0.5f;
+    }
+}
+
+void reconstruction_window::on_qsdr_manual_clicked()
+{
+    tipl::image<float,3> ref,dummy;
+    tipl::vector<3> vs;
+    {
+        gz_nifti read;
+        if(!read.load_from_file(fa_template_list[uint32_t(ui->primary_template->currentIndex())]))
+        {
+            QMessageBox::critical(this,"Error",QString("Cannot load tempalte:")+ui->primary_template->currentText());
+            return;
+        }
+        read.toLPS(ref);
+        read.get_voxel_size(vs);
+    }
+
+    match_template_resolution(ref,dummy,vs,handle->voxel.vs);
+    std::shared_ptr<manual_alignment> manual(new manual_alignment(this,
+                                                                handle->dwi,handle->voxel.vs,ref,vs,
+                                                                tipl::reg::rigid_body,
+                                                                tipl::reg::cost_type::mutual_info));
+    manual->on_rerun_clicked();
+    if(manual->exec() != QDialog::Accepted)
+        return;
+    handle->voxel.qsdr_trans = manual->iT;
+}

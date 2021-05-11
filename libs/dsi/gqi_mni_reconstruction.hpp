@@ -8,6 +8,10 @@
 void animal_reg(const tipl::image<float,3>& from,tipl::vector<3> from_vs,
           const tipl::image<float,3>& to,tipl::vector<3> to_vs,
           tipl::transformation_matrix<double>& T,bool& terminated);
+void match_template_resolution(tipl::image<float,3>& VG,
+                               tipl::image<float,3>& VG2,
+                               tipl::vector<3>& VGvs,
+                               tipl::vector<3> subject_vs);
 class DWINormalization  : public BaseProcess
 {
 protected:
@@ -66,39 +70,20 @@ public:
         }
 
 
+        match_template_resolution(VG,VG2,VGvs,voxel.vs);
+
+        // setup output bounding box
         {
-            float best_reso = *std::min_element(voxel.vs.begin(),voxel.vs.end());
-            // downsample template if the image resolution is much lower
-            if(best_reso > VGvs[0]*1.5f)
-            {
-                tipl::downsampling(VG);
-                if(!VG2.empty())
-                    tipl::downsampling(VG2);
-                VGvs *= 2.0f;
-            }
-            // upsample template if the image resolution is much higher than the tempalte
-            if(best_reso < VGvs[0])
-            {
-                tipl::upsampling(VG);
-                if(!VG2.empty())
-                    tipl::upsampling(VG2);
-                VGvs *= 0.5f;
-            }
-
-
-            // setup output bounding box
-            {
-                des_geo = VG.geometry();
-                // setup transformation matrix
-                std::fill(voxel.trans_to_mni,voxel.trans_to_mni+16,0.0);
-                voxel.trans_to_mni[15] = 1.0;
-                voxel.trans_to_mni[0] = -VGvs[0];
-                voxel.trans_to_mni[5] = -VGvs[1];
-                voxel.trans_to_mni[10] = VGvs[2];
-                voxel.trans_to_mni[3] = VGshift[0];
-                voxel.trans_to_mni[7] = VGshift[1];
-                voxel.trans_to_mni[11] = VGshift[2];
-            }
+            des_geo = VG.geometry();
+            // setup transformation matrix
+            std::fill(voxel.trans_to_mni,voxel.trans_to_mni+16,0.0);
+            voxel.trans_to_mni[15] = 1.0;
+            voxel.trans_to_mni[0] = -VGvs[0];
+            voxel.trans_to_mni[5] = -VGvs[1];
+            voxel.trans_to_mni[10] = VGvs[2];
+            voxel.trans_to_mni[3] = VGshift[0];
+            voxel.trans_to_mni[7] = VGshift[1];
+            voxel.trans_to_mni[11] = VGshift[2];
         }
 
 

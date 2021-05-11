@@ -768,6 +768,13 @@
                           <widget class="QComboBox" name="primary_template"/>
                          </item>
                          <item>
+                          <widget class="QPushButton" name="qsdr_manual">
+                           <property name="text">
+                            <string>Manual Align...</string>
+                           </property>
+                          </widget>
+                         </item>
+                         <item>
                           <widget class="QPushButton" name="add_t1t2">
                            <property name="sizePolicy">
                             <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
