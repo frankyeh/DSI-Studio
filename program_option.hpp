@@ -94,6 +94,14 @@ public:
 
     void set(const char* name,const std::string& value)
     {
+        std::string str_name(name);
+        for(size_t i = 0;i < names.size();++i)
+            if(names[i] == str_name)
+            {
+                values[i] = value;
+                used[i] = 0;
+                return;
+            }
         names.push_back(name);
         values.push_back(value);
         used.push_back(0);
