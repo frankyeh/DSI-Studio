@@ -232,16 +232,28 @@ bool find_bval_bvec(const char* file_name,QString& bval,QString& bvec)
         bvec = po.get("bvec").c_str();
         return QFileInfo(bval).exists() && QFileInfo(bvec).exists();
     }
-    std::vector<QString> bval_name(4),bvec_name(4);
+    std::vector<QString> bval_name(6),bvec_name(6);
     QString path = QFileInfo(file_name).absolutePath() + "/";
     bval_name[0] = path + QFileInfo(file_name).baseName() + ".bvals";
     bval_name[1] = path + QFileInfo(file_name).baseName() + ".bval";
     bval_name[2] = path + QFileInfo(file_name).completeBaseName() + ".bvals";
     bval_name[3] = path + QFileInfo(file_name).completeBaseName() + ".bval";
+    bval_name[4] = QString(file_name).replace(".nii.gz",".bvals");
+    bval_name[5] = QString(file_name).replace(".nii.gz",".bval");
+
+
     bvec_name[0] = path + QFileInfo(file_name).baseName() + ".bvecs";
     bvec_name[1] = path + QFileInfo(file_name).baseName() + ".bvec";
     bvec_name[2] = path + QFileInfo(file_name).completeBaseName() + ".bvecs";
     bvec_name[3] = path + QFileInfo(file_name).completeBaseName() + ".bvec";
+    bvec_name[4] = QString(file_name).replace(".nii.gz",".bvecs");
+    bvec_name[5] = QString(file_name).replace(".nii.gz",".bvec");
+
+    for(size_t i = 0;i < 6;++i)
+    {
+        bval_name.push_back(bval_name[i] + ".txt");
+        bvec_name.push_back(bvec_name[i] + ".txt");
+    }
 
     if(QFileInfo(file_name).completeBaseName() == "data.nii")
     {
@@ -249,12 +261,6 @@ bool find_bval_bvec(const char* file_name,QString& bval,QString& bvec)
         bval_name.push_back(path + "bval");
         bvec_name.push_back(path + "bvecs");
         bvec_name.push_back(path + "bvec");
-    }
-
-    for(size_t i = 0;i < 4;++i)
-    {
-        bval_name.push_back(bval_name[i] + ".txt");
-        bvec_name.push_back(bvec_name[i] + ".txt");
     }
 
     for(size_t i = 0;i < bval_name.size();++i)
