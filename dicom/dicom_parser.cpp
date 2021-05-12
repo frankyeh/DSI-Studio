@@ -250,18 +250,20 @@ bool find_bval_bvec(const char* file_name,QString& bval,QString& bvec)
         bvec_name.push_back(path + "bvecs");
         bvec_name.push_back(path + "bvec");
     }
-    for(int i = bval_name.size()-1;i >= 0;--i)
-        bval_name.push_back(bval_name[i] + ".txt");
-    for(int i = bvec_name.size()-1;i >= 0;--i)
-        bvec_name.push_back(bvec_name[i] + ".txt");
 
-    for(int i = 0;i < bval_name.size();++i)
+    for(size_t i = 0;i < 4;++i)
+    {
+        bval_name.push_back(bval_name[i] + ".txt");
+        bvec_name.push_back(bvec_name[i] + ".txt");
+    }
+
+    for(size_t i = 0;i < bval_name.size();++i)
         if(QFileInfo(bval_name[i]).exists())
         {
             bval = bval_name[i];
             break;
         }
-    for(int i = 0;i < bvec_name.size();++i)
+    for(size_t i = 0;i < bvec_name.size();++i)
         if(QFileInfo(bvec_name[i]).exists())
         {
             bvec = bvec_name[i];
@@ -861,7 +863,7 @@ bool parse_dwi(QStringList file_list,
     if(QFileInfo(file_list[0]).fileName().endsWith(".nii") ||
             QFileInfo(file_list[0]).fileName().endsWith(".nii.gz"))
     {
-        begin_prog("loading");
+        prog_init prog("loading nifti");
         for(int i = 0;i < file_list.size();++i)
             if(!load_4d_nii(file_list[i].toLocal8Bit().begin(),dwi_files,false))
                 return false;
@@ -887,7 +889,7 @@ bool parse_dwi(QStringList file_list,
         return !dwi_files.empty();
     }
 
-    begin_prog("loading");
+    prog_init prog("loading dicoms");
     std::sort(file_list.begin(),file_list.end(),compare_qstring());
     tipl::io::dicom dicom_header;// multiple frame image
     tipl::geometry<3> geo;
