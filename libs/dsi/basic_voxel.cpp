@@ -59,11 +59,6 @@ void Voxel::load_from_src(ImageModel& image_model)
     bvalues.clear();
     bvectors.clear();
     dwi_data.clear();
-
-    for(size_t i = 0;i < sorted_index.size();++i)
-    {
-        std::cout << image_model.src_bvalues[sorted_index[i]] << std::endl;
-    }
     // include only the first b0
     if(image_model.src_bvalues[sorted_index[0]] == 0.0f)
     {
