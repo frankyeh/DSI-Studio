@@ -127,8 +127,6 @@ std::vector<size_t> ImageModel::get_sorted_dwi_index(void)
     std::sort(sorted_index.begin(),sorted_index.end(),
               [&](size_t left,size_t right)
     {
-        if(int(src_bvalues[left])/400 == int(src_bvalues[right])/400)
-            return src_bvectors[left] < src_bvectors[right];
         return src_bvalues[left] < src_bvalues[right];
     }
     );
