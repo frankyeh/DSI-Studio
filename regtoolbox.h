@@ -37,7 +37,7 @@ public:
 private:
     void clear(void);
     void setup_slice_pos(void);
-    void linear_reg(tipl::reg::reg_type reg_type);
+    void linear_reg(tipl::reg::reg_type reg_type,int cost_type);
     void nonlinear_reg(void);
 
 public:
@@ -85,7 +85,6 @@ private:
     QGraphicsScene It_scene,I_scene,It_mix_scene;
 private:
     tipl::color_image cIt,cI,cJ,cIt_mix;
-
 };
 
 #endif // REGTOOLBOX_H

@@ -85,7 +85,7 @@
            <number>6</number>
           </property>
           <item>
-           <layout class="QHBoxLayout" name="horizontalLayout_14" stretch="2,1">
+           <layout class="QHBoxLayout" name="horizontalLayout_14" stretch="0,0,0">
             <property name="spacing">
              <number>0</number>
             </property>
@@ -106,11 +106,11 @@
               <property name="minimumSize">
                <size>
                 <width>0</width>
-                <height>32</height>
+                <height>0</height>
                </size>
               </property>
               <property name="text">
-               <string>Open Subject...</string>
+               <string>Subject...</string>
               </property>
               <property name="icon">
                <iconset resource="icons.qrc">
@@ -136,7 +136,7 @@
                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Add the second image modality&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
               </property>
               <property name="text">
-               <string>...</string>
+               <string>2nd Modality...</string>
               </property>
               <property name="icon">
                <iconset resource="icons.qrc">
@@ -144,53 +144,36 @@
               </property>
              </widget>
             </item>
+            <item>
+             <widget class="QLabel" name="subject_filename">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+              <property name="text">
+               <string/>
+              </property>
+             </widget>
+            </item>
            </layout>
           </item>
           <item>
-           <widget class="QGraphicsView" name="I_view"/>
-          </item>
-         </layout>
-        </widget>
-       </item>
-       <item>
-        <widget class="QGroupBox" name="groupBox_4">
-         <property name="title">
-          <string>Accuracy Inspection</string>
-         </property>
-         <layout class="QVBoxLayout" name="verticalLayout_2">
-          <item>
-           <layout class="QHBoxLayout" name="horizontalLayout_16">
+           <layout class="QHBoxLayout" name="horizontalLayout">
+            <property name="spacing">
+             <number>0</number>
+            </property>
             <property name="topMargin">
              <number>0</number>
             </property>
             <item>
-             <widget class="QRadioButton" name="rb_mosaic">
+             <widget class="QCheckBox" name="show_warp">
               <property name="text">
-               <string>Mosaic</string>
+               <string>Show Warp</string>
               </property>
               <property name="checked">
                <bool>true</bool>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QRadioButton" name="rb_flash">
-              <property name="text">
-               <string>Flash</string>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QRadioButton" name="rb_edge">
-              <property name="text">
-               <string>Edge</string>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QRadioButton" name="rb_show_warp">
-              <property name="text">
-               <string>Show Warping</string>
               </property>
              </widget>
             </item>
@@ -237,63 +220,83 @@
               </item>
              </widget>
             </item>
-           </layout>
-          </item>
-          <item>
-           <widget class="QGraphicsView" name="It_mix_view"/>
-          </item>
-          <item>
-           <layout class="QHBoxLayout" name="horizontalLayout_11">
-            <property name="spacing">
-             <number>0</number>
-            </property>
-            <property name="leftMargin">
-             <number>0</number>
-            </property>
-            <property name="topMargin">
-             <number>0</number>
-            </property>
             <item>
-             <widget class="QToolButton" name="sag_view">
+             <widget class="QLabel" name="label_3">
               <property name="text">
-               <string>...</string>
-              </property>
-              <property name="icon">
-               <iconset resource="icons.qrc">
-                <normaloff>:/icons/icons/sag.xpm</normaloff>:/icons/icons/sag.xpm</iconset>
+               <string>Contrast</string>
               </property>
              </widget>
             </item>
             <item>
-             <widget class="QToolButton" name="coronal_view">
-              <property name="text">
-               <string>...</string>
+             <widget class="QSlider" name="contrast1">
+              <property name="maximum">
+               <number>150</number>
               </property>
-              <property name="icon">
-               <iconset resource="icons.qrc">
-                <normaloff>:/icons/icons/coronal.xpm</normaloff>:/icons/icons/coronal.xpm</iconset>
+              <property name="singleStep">
+               <number>5</number>
               </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QToolButton" name="axial_view">
-              <property name="text">
-               <string>...</string>
+              <property name="value">
+               <number>100</number>
               </property>
-              <property name="icon">
-               <iconset resource="icons.qrc">
-                <normaloff>:/icons/icons/axial.xpm</normaloff>:/icons/icons/axial.xpm</iconset>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QSlider" name="slice_pos">
               <property name="orientation">
                <enum>Qt::Horizontal</enum>
               </property>
              </widget>
             </item>
            </layout>
+          </item>
+          <item>
+           <widget class="QGraphicsView" name="I_view"/>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
+        <widget class="QGroupBox" name="groupBox_4">
+         <property name="title">
+          <string>Alignment</string>
+         </property>
+         <layout class="QVBoxLayout" name="verticalLayout_2">
+          <item>
+           <layout class="QHBoxLayout" name="horizontalLayout_16">
+            <property name="topMargin">
+             <number>0</number>
+            </property>
+            <item>
+             <widget class="QRadioButton" name="rb_mosaic">
+              <property name="text">
+               <string>Mosaic</string>
+              </property>
+              <property name="checked">
+               <bool>true</bool>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QRadioButton" name="rb_flash">
+              <property name="text">
+               <string>Flash</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QRadioButton" name="rb_blend1">
+              <property name="text">
+               <string>Blend1</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QRadioButton" name="rb_blend2">
+              <property name="text">
+               <string>Blend2</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+          <item>
+           <widget class="QGraphicsView" name="It_mix_view"/>
           </item>
          </layout>
         </widget>
@@ -311,7 +314,7 @@
            <number>6</number>
           </property>
           <item>
-           <layout class="QHBoxLayout" name="horizontalLayout_15" stretch="2,1">
+           <layout class="QHBoxLayout" name="horizontalLayout_15" stretch="0,0,0">
             <property name="spacing">
              <number>0</number>
             </property>
@@ -329,11 +332,11 @@
               <property name="minimumSize">
                <size>
                 <width>0</width>
-                <height>32</height>
+                <height>0</height>
                </size>
               </property>
               <property name="text">
-               <string>Open Reference...</string>
+               <string>Reference...</string>
               </property>
               <property name="icon">
                <iconset resource="icons.qrc">
@@ -359,7 +362,7 @@
                <string>Add the second image modality</string>
               </property>
               <property name="text">
-               <string>...</string>
+               <string>2nd Modality</string>
               </property>
               <property name="icon">
                <iconset resource="icons.qrc">
@@ -367,10 +370,20 @@
               </property>
              </widget>
             </item>
+            <item>
+             <widget class="QLabel" name="template_filename">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+              <property name="text">
+               <string/>
+              </property>
+             </widget>
+            </item>
            </layout>
-          </item>
-          <item>
-           <widget class="QGraphicsView" name="It_view"/>
           </item>
           <item>
            <layout class="QHBoxLayout" name="horizontalLayout_9">
@@ -388,25 +401,130 @@
              </widget>
             </item>
             <item>
-             <spacer name="horizontalSpacer_3">
+             <widget class="QLabel" name="label_2">
+              <property name="text">
+               <string>Contrast</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QSlider" name="contrast2">
+              <property name="maximum">
+               <number>150</number>
+              </property>
+              <property name="singleStep">
+               <number>5</number>
+              </property>
+              <property name="value">
+               <number>100</number>
+              </property>
               <property name="orientation">
                <enum>Qt::Horizontal</enum>
               </property>
-              <property name="sizeHint" stdset="0">
-               <size>
-                <width>40</width>
-                <height>20</height>
-               </size>
-              </property>
-             </spacer>
+             </widget>
             </item>
            </layout>
+          </item>
+          <item>
+           <widget class="QGraphicsView" name="It_view"/>
           </item>
          </layout>
         </widget>
        </item>
       </layout>
      </widget>
+    </item>
+    <item>
+     <layout class="QHBoxLayout" name="horizontalLayout_11">
+      <property name="spacing">
+       <number>0</number>
+      </property>
+      <property name="leftMargin">
+       <number>0</number>
+      </property>
+      <property name="topMargin">
+       <number>0</number>
+      </property>
+      <item>
+       <widget class="QToolButton" name="sag_view">
+        <property name="text">
+         <string>...</string>
+        </property>
+        <property name="icon">
+         <iconset resource="icons.qrc">
+          <normaloff>:/icons/icons/sag.xpm</normaloff>:/icons/icons/sag.xpm</iconset>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QToolButton" name="coronal_view">
+        <property name="text">
+         <string>...</string>
+        </property>
+        <property name="icon">
+         <iconset resource="icons.qrc">
+          <normaloff>:/icons/icons/coronal.xpm</normaloff>:/icons/icons/coronal.xpm</iconset>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QToolButton" name="axial_view">
+        <property name="text">
+         <string>...</string>
+        </property>
+        <property name="icon">
+         <iconset resource="icons.qrc">
+          <normaloff>:/icons/icons/axial.xpm</normaloff>:/icons/icons/axial.xpm</iconset>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QLabel" name="label_8">
+        <property name="text">
+         <string>Slice Position</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QSlider" name="slice_pos">
+        <property name="value">
+         <number>50</number>
+        </property>
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QLabel" name="label_4">
+        <property name="text">
+         <string>Zoom</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QSlider" name="main_zoom">
+        <property name="maximumSize">
+         <size>
+          <width>100</width>
+          <height>16777215</height>
+         </size>
+        </property>
+        <property name="minimum">
+         <number>1</number>
+        </property>
+        <property name="maximum">
+         <number>50</number>
+        </property>
+        <property name="value">
+         <number>20</number>
+        </property>
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+       </widget>
+      </item>
+     </layout>
     </item>
     <item>
      <layout class="QHBoxLayout" name="horizontalLayout_7">
@@ -433,116 +551,6 @@
         <property name="bottomMargin">
          <number>0</number>
         </property>
-        <item>
-         <layout class="QHBoxLayout" name="horizontalLayout_2">
-          <property name="spacing">
-           <number>0</number>
-          </property>
-          <property name="leftMargin">
-           <number>0</number>
-          </property>
-          <property name="topMargin">
-           <number>0</number>
-          </property>
-          <property name="rightMargin">
-           <number>0</number>
-          </property>
-          <property name="bottomMargin">
-           <number>0</number>
-          </property>
-          <item>
-           <widget class="QLabel" name="label_4">
-            <property name="text">
-             <string>Zoom</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QSlider" name="main_zoom">
-            <property name="maximumSize">
-             <size>
-              <width>100</width>
-              <height>16777215</height>
-             </size>
-            </property>
-            <property name="minimum">
-             <number>1</number>
-            </property>
-            <property name="maximum">
-             <number>50</number>
-            </property>
-            <property name="value">
-             <number>20</number>
-            </property>
-            <property name="orientation">
-             <enum>Qt::Horizontal</enum>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <spacer name="horizontalSpacer_2">
-            <property name="orientation">
-             <enum>Qt::Horizontal</enum>
-            </property>
-            <property name="sizeHint" stdset="0">
-             <size>
-              <width>40</width>
-              <height>20</height>
-             </size>
-            </property>
-           </spacer>
-          </item>
-         </layout>
-        </item>
-        <item>
-         <layout class="QHBoxLayout" name="horizontalLayout_4">
-          <property name="spacing">
-           <number>0</number>
-          </property>
-          <item>
-           <widget class="QLabel" name="label_3">
-            <property name="text">
-             <string>Contrast</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QSlider" name="contrast">
-            <property name="maximumSize">
-             <size>
-              <width>100</width>
-              <height>16777215</height>
-             </size>
-            </property>
-            <property name="minimum">
-             <number>1</number>
-            </property>
-            <property name="maximum">
-             <number>20</number>
-            </property>
-            <property name="value">
-             <number>10</number>
-            </property>
-            <property name="orientation">
-             <enum>Qt::Horizontal</enum>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <spacer name="horizontalSpacer_4">
-            <property name="orientation">
-             <enum>Qt::Horizontal</enum>
-            </property>
-            <property name="sizeHint" stdset="0">
-             <size>
-              <width>40</width>
-              <height>20</height>
-             </size>
-            </property>
-           </spacer>
-          </item>
-         </layout>
-        </item>
        </layout>
       </item>
       <item>
@@ -583,6 +591,11 @@
            <item>
             <property name="text">
              <string>Correlation</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>No Linear Registration</string>
             </property>
            </item>
           </widget>
@@ -687,6 +700,32 @@
                  </property>
                  <property name="value">
                   <number>2</number>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QLabel" name="label_7">
+                 <property name="text">
+                  <string>Constraint:</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QDoubleSpinBox" name="constraint">
+                 <property name="decimals">
+                  <number>1</number>
+                 </property>
+                 <property name="minimum">
+                  <double>0.100000000000000</double>
+                 </property>
+                 <property name="maximum">
+                  <double>10.000000000000000</double>
+                 </property>
+                 <property name="singleStep">
+                  <double>0.100000000000000</double>
+                 </property>
+                 <property name="value">
+                  <double>0.500000000000000</double>
                  </property>
                 </widget>
                </item>

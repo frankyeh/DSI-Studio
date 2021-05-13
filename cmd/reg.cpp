@@ -90,8 +90,13 @@ int reg(void)
     if(!from2_.empty())
     {
         std::cout << "nonlinear registration using dual image modalities" << std::endl;
-        tipl::reg::cdm2(to,to2,from_,from2_,cdm_dis,terminated,
-                        po.get("resolution",2.0f),po.get("smoothness",0.3f),po.get("iteration",64));
+        tipl::reg::cdm_param param;
+        param.resolution = po.get("resolution",param.resolution);
+        param.cdm_smoothness = po.get("smoothness",param.cdm_smoothness);
+        param.contraint = po.get("constraint",param.contraint);
+        param.iterations = po.get("iteration",param.iterations);
+        param.min_dimension = po.get("min_dimension",param.min_dimension);
+        tipl::reg::cdm2(to,to2,from_,from2_,cdm_dis,terminated,param);
     }
     else
     {

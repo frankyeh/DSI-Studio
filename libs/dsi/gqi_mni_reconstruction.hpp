@@ -143,7 +143,11 @@ public:
             }
 
             if(export_intermediate)
+            {
                 VFF.save_to_file<gz_nifti>("Subject_QA_linear_reg.nii.gz");
+                if(!VFF2.empty())
+                    VFF2.save_to_file<gz_nifti>("Subject_ISO_linear_reg.nii.gz");
+            }
 
             tipl::reg::cdm_pre(VG,VG2,VFF,VFF2);
 

@@ -1576,7 +1576,11 @@ bool ImageModel::compare_src(const char* file_name)
             tipl::resample(If,Iff,arg,tipl::cubic);
             tipl::match_signal(Ib,Iff);
             bool terminated = false;
-            tipl::reg::cdm(Ib,Iff,cdm_dis,terminated,1.0f,0.2f,120);
+            tipl::reg::cdm_param param;
+            param.resolution = 1.0f;
+            param.cdm_smoothness = 0.2f;
+            param.iterations = 120;
+            tipl::reg::cdm(Ib,Iff,cdm_dis,terminated,param);
 
             /*
             if(1) // debug
