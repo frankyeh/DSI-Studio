@@ -67,7 +67,7 @@ RUN mkdir /opt/dsi-studio \
   && mkdir build && cd build \
   && /opt/qt512/bin/qmake ../src && make \
   && cd /opt/dsi-studio \
-  && curl -sSLO 'https://www.dropbox.com/s/nbfrfuvh7njfrrh/dsi_studio_64.zip' \
+  && curl -sSLO 'https://www.dropbox.com/s/icq81cvakzhlb81/dsi_studio_64.zip' \
   && unzip dsi_studio_64.zip \
   && rm dsi_studio_64.zip \
   && cd dsi_studio_64 \
