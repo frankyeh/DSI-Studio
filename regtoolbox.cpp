@@ -21,6 +21,9 @@ RegToolBox::RegToolBox(QWidget *parent) :
     connect(ui->rb_flash, SIGNAL(clicked()), this, SLOT(show_image()));
     connect(ui->rb_blend1, SIGNAL(clicked()), this, SLOT(show_image()));
     connect(ui->rb_blend2, SIGNAL(clicked()), this, SLOT(show_image()));
+    connect(ui->show_warp, SIGNAL(clicked()), this, SLOT(show_image()));
+    connect(ui->dis_spacing, SIGNAL(currentIndexChanged(int)), this, SLOT(show_image()));
+    connect(ui->mosaic_size, SIGNAL(valueChanged(int)), this, SLOT(show_image()));
     connect(ui->slice_pos, SIGNAL(sliderMoved(int)), this, SLOT(show_image()));
     connect(ui->contrast1, SIGNAL(sliderMoved(int)), this, SLOT(show_image()));
     connect(ui->contrast2, SIGNAL(sliderMoved(int)), this, SLOT(show_image()));
@@ -188,7 +191,7 @@ void show_mosaic_slice_at(QGraphicsScene& scene,
                           const tipl::image<float,3>& source2,
                           tipl::color_image& buf,size_t slice_pos,float ratio,
                           float contrast,
-                          float contrast2,uint8_t cur_view)
+                          float contrast2,uint8_t cur_view,unsigned int mosaic_size)
 {
     if(source1.empty() || source2.empty())
         return;
@@ -201,13 +204,8 @@ void show_mosaic_slice_at(QGraphicsScene& scene,
     float c = contrast2/contrast;
     tmp.for_each([&](float& v,tipl::pixel_index<2>& index)
     {
-        if(!(index[0] & 31) || !(index[1] & 31))
-        {
-            v = 0;
-            return;
-        }
-        int x = index[0] >> 5;
-        int y = index[1] >> 5;
+        int x = index[0] >> mosaic_size;
+        int y = index[1] >> mosaic_size;
         v = (x&1 ^ y&1) ? tmp1[index.index()] : tmp2[index.index()]*c;
     });
     show_slice_at(scene,tmp,buf,ratio,contrast,cur_view);
@@ -270,9 +268,9 @@ void RegToolBox::show_image(void)
         if(ui->rb_mosaic->isChecked())
         {
             if(!J_view2.empty())
-                show_mosaic_slice_at(It_mix_scene,J_view2,I_show,cIt_mix,ui->slice_pos->value(),ratio,contrast1,contrast2,cur_view);
+                show_mosaic_slice_at(It_mix_scene,J_view2,I_show,cIt_mix,ui->slice_pos->value(),ratio,contrast1,contrast2,cur_view,ui->mosaic_size->value());
             else
-                show_mosaic_slice_at(It_mix_scene,J_view,I_show,cIt_mix,ui->slice_pos->value(),ratio,contrast1,contrast2,cur_view);
+                show_mosaic_slice_at(It_mix_scene,J_view,I_show,cIt_mix,ui->slice_pos->value(),ratio,contrast1,contrast2,cur_view,ui->mosaic_size->value());
         }
         if(ui->rb_flash->isChecked())
         {

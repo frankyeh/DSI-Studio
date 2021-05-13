@@ -264,11 +264,36 @@
             </property>
             <item>
              <widget class="QRadioButton" name="rb_mosaic">
+              <property name="maximumSize">
+               <size>
+                <width>54</width>
+                <height>16777215</height>
+               </size>
+              </property>
               <property name="text">
                <string>Mosaic</string>
               </property>
               <property name="checked">
                <bool>true</bool>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QSpinBox" name="mosaic_size">
+              <property name="maximumSize">
+               <size>
+                <width>32</width>
+                <height>16777215</height>
+               </size>
+              </property>
+              <property name="minimum">
+               <number>2</number>
+              </property>
+              <property name="maximum">
+               <number>10</number>
+              </property>
+              <property name="value">
+               <number>4</number>
               </property>
              </widget>
             </item>
