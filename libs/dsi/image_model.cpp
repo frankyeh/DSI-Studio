@@ -1010,13 +1010,41 @@ void apply_distortion_map2(const image_type& v1,
 
 
 
-void ImageModel::distortion_correction(const ImageModel& rhs)
+bool ImageModel::distortion_correction(const char* filename)
 {
-    tipl::image<float,3> v1,v2,vv1,vv2;
+    tipl::image<float,3> v2;
+    {
+        if(QString(filename).endsWith(".nii.gz") || QString(filename).endsWith(".nii"))
+        {
+            gz_nifti nii;
+            if(!nii.load_from_file(filename))
+            {
+                error_msg = "Cannot load the image file";
+                return false;
+            }
+            nii.toLPS(v2);
+
+        }
+        if(QString(filename).endsWith(".src.gz"))
+        {
+            ImageModel src2;
+            if(!src2.load_from_file(filename))
+            {
+                error_msg = src2.error_msg;
+                return false;
+            }
+            v2 = tipl::make_image(src2.src_dwi_data[0],src2.voxel.dim);
+        }
+        if(voxel.dim != v2.geometry())
+        {
+            error_msg = "inconsistent appa image dimension";
+            return false;
+        }
+    }
+
+    tipl::image<float,3> v1,vv1,vv2;
     v1 = tipl::make_image(
         src_dwi_data[size_t(std::min_element(src_bvalues.begin(),src_bvalues.end())-src_bvalues.begin())],voxel.dim);
-    v2 = tipl::make_image(rhs.src_dwi_data[0],voxel.dim);
-
 
     bool swap_xy = false;
     {
@@ -1088,7 +1116,7 @@ void ImageModel::distortion_correction(const ImageModel& rhs)
 
     calculate_dwi_sum(false);
     voxel.report += " The phase distortion was correlated using data from an opposiate phase encoding direction.";
-
+    return true;
 }
 
 void calculate_shell(const std::vector<float>& sorted_bvalues,

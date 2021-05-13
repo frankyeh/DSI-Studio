@@ -24,20 +24,12 @@ bool correct_phase_distortion(ImageModel& src)
 {
     if(po.has("other_src"))
     {
-        std::string msg;
-        ImageModel src2;
-        if (!get_src(po.get("other_src"),src2,msg))
+        std::cout << "phase correction with " << po.get("other_src") << std::endl;
+        if(!src.distortion_correction(po.get("other_src").c_str()))
         {
-            std::cout << "ERROR: " << msg << std::endl;
+            std::cout << "ERROR:" << src.error_msg << std::endl;
             return false;
         }
-        if(src.voxel.dim != src2.voxel.dim)
-        {
-            std::cout << "ERROR: inconsistent appa image dimension" << std::endl;
-            return false;
-        }
-        src.distortion_correction(src2);
-        std::cout << "phase correction done with " << po.get("other_src") << std::endl;
     }
     return true;
 }

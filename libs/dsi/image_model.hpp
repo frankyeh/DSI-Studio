@@ -277,7 +277,7 @@ public:
     void resample(float nv);
     bool rotate_to_mni(float resolution);
     void trim(void);
-    void distortion_correction(const ImageModel& rhs);
+    bool distortion_correction(const char* file_name);
     bool compare_src(const char* file_name);
 public:
     bool command(std::string cmd,std::string param = "");

@@ -883,23 +883,15 @@ void reconstruction_window::on_actionCorrect_AP_PA_scans_triggered()
     QMessageBox::information(this,"DSI Studio","Please assign another SRC/DICOM/NIFTI file with an opposite phase encoding",0);
     QString filename = QFileDialog::getOpenFileName(
             this,"Open SRC file",absolute_path,
-            "Images (*src.gz);;DICOM image (*.dcm);;NIFTI image (*.nii *nii.gz);;All files (*)" );
+            "Images (*src.gz *.nii *nii.gz);;DICOM image (*.dcm);;All files (*)" );
     if( filename.isEmpty())
         return;
 
-    ImageModel src2;
-    std::string msg;
-    if(!get_src(filename.toStdString(),src2,msg))
+    if(!handle->distortion_correction(filename.toStdString().c_str()))
     {
-        QMessageBox::information(this,"Error",msg.c_str());
+        QMessageBox::critical(this,"Error",handle->error_msg.c_str());
         return;
     }
-    if(handle->voxel.dim != src2.voxel.dim)
-    {
-        QMessageBox::information(this,"Error","inconsistent appa image dimension");
-        return;
-    }
-    handle->distortion_correction(src2);
     on_SlicePos_valueChanged(ui->SlicePos->value());
 }
 
