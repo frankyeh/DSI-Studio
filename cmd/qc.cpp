@@ -107,7 +107,7 @@ int qc(void)
     std::string file_name = po.get("source");
     if(QFileInfo(file_name.c_str()).isDir())
     {
-        std::string report_file_name = po.get("output",file_name + ".qc.txt");
+        std::string report_file_name = po.get("output",file_name + "/qc.txt");
         std::cout << "quality control checking src files in " << file_name << std::endl;
         std::ofstream out(report_file_name.c_str());
         out << quality_check_src_files(file_name.c_str());
