@@ -788,50 +788,43 @@ void view_image::on_actionUpper_Threshold_triggered()
 bool is_label_image(const tipl::image<float,3>& I);
 void view_image::on_actionSmoothing_triggered()
 {
-    if(is_label_image(data))
+    tipl::image<float,3> new_data(data.geometry());
+    uint32_t m = uint32_t(*std::max_element(data.begin(),data.end()));
+    tipl::image<char,3> all_mask(data.geometry());
+    for(size_t i = 0;i < data.size();++i)
+        if(data[i] > 0.0f)
+            all_mask[i] = 1;
+    tipl::morphology::smoothing(all_mask);
+
+    // smooth each region
+    tipl::par_for(m,[&](uint32_t index)
     {
-        tipl::image<float,3> new_data(data.geometry());
-        uint32_t m = uint32_t(*std::max_element(data.begin(),data.end()));
-        tipl::image<char,3> all_mask(data.geometry());
+        tipl::image<char,3> mask(data.geometry());
         for(size_t i = 0;i < data.size();++i)
-            if(data[i] > 0.0f)
-                all_mask[i] = 1;
-        tipl::morphology::smoothing(all_mask);
+            if(uint32_t(data[i]) == index)
+                mask[i] = 1;
+        tipl::morphology::smoothing(mask);
+        float value = float(index);
+        for(size_t i = 0;i < data.size();++i)
+            if(mask[i])
+                new_data[i] = value;
+    });
 
-        // smooth each region
-        tipl::par_for(m,[&](uint32_t index)
-        {
-            tipl::image<char,3> mask(data.geometry());
-            for(size_t i = 0;i < data.size();++i)
-                if(uint32_t(data[i]) == index)
-                    mask[i] = 1;
-            tipl::morphology::smoothing(mask);
-            float value = float(index);
-            for(size_t i = 0;i < data.size();++i)
-                if(mask[i])
-                    new_data[i] = value;
-        });
-
-        // fill up gaps
-        tipl::par_for(m,[&](uint32_t index)
-        {
-            tipl::image<char,3> mask(data.geometry());
-            for(size_t i = 0;i < new_data.size();++i)
-                if(uint32_t(new_data[i]) == index)
-                    mask[i] = 1;
-            tipl::morphology::dilation(mask);
-            float value = float(index);
-            for(size_t i = 0;i < data.size();++i)
-                if(new_data[i] == 0.0f && mask[i])
-                    new_data[i] = value;
-        });
-
-        new_data.swap(data);
-    }
-    else
+    // fill up gaps
+    tipl::par_for(m,[&](uint32_t index)
     {
-        tipl::filter::mean(data);
-    }
+        tipl::image<char,3> mask(data.geometry());
+        for(size_t i = 0;i < new_data.size();++i)
+            if(uint32_t(new_data[i]) == index)
+                mask[i] = 1;
+        tipl::morphology::dilation(mask);
+        float value = float(index);
+        for(size_t i = 0;i < data.size();++i)
+            if(new_data[i] == 0.0f && mask[i])
+                new_data[i] = value;
+    });
+
+    new_data.swap(data);
     init_image();
     show_image();
 }
@@ -951,4 +944,11 @@ void view_image::on_actionImageMultiplication_triggered()
     if (filename.isEmpty())
         return;
     command("image_multiplication",filename.toStdString(),std::string());
+}
+
+void view_image::on_actionSignal_Smoothing_triggered()
+{
+    tipl::filter::mean(data);
+    init_image();
+    show_image();
 }

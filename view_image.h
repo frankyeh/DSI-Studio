@@ -91,6 +91,8 @@ private slots:
 
     void on_actionImageMultiplication_triggered();
 
+    void on_actionSignal_Smoothing_triggered();
+
 private:
     Ui::view_image *ui;
     tipl::image<float,3> data;

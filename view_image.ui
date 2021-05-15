@@ -332,6 +332,7 @@
     <addaction name="actionIntensity_shift"/>
     <addaction name="actionIntensity_scale"/>
     <addaction name="actionNormalize_Intensity"/>
+    <addaction name="actionSignal_Smoothing"/>
     <addaction name="separator"/>
     <addaction name="actionUpper_Threshold"/>
     <addaction name="actionLower_threshold"/>
@@ -359,7 +360,7 @@
   </action>
   <action name="actionImageMultiplication">
    <property name="text">
-    <string>Image Multiplication...</string>
+    <string>Multiply Image...</string>
    </property>
   </action>
   <action name="actionResize">
@@ -424,7 +425,7 @@
   </action>
   <action name="actionSmoothing">
    <property name="text">
-    <string>Smoothing...</string>
+    <string>Morphology Smoothing...</string>
    </property>
   </action>
   <action name="actionNormalize_Intensity">
@@ -467,7 +468,12 @@
   </action>
   <action name="actionImageAddition">
    <property name="text">
-    <string>Image Addition...</string>
+    <string>Add Image...</string>
+   </property>
+  </action>
+  <action name="actionSignal_Smoothing">
+   <property name="text">
+    <string>Smoothing...</string>
    </property>
   </action>
  </widget>
