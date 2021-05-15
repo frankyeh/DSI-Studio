@@ -59,6 +59,8 @@ public:
 
         std::vector<tipl::vector<3> > b_data;
         b_count = 0;
+        if(voxel.bvalues[1] > 1750.0f)
+            voxel.dti_no_high_b = false;
         for(size_t i = 1;i < voxel.bvalues.size();++i)//skip b0
         {
             if(voxel.dti_no_high_b && voxel.bvalues[i] > 1750.0f)
@@ -68,8 +70,6 @@ public:
             b_data.push_back(voxel.bvectors[i]);
             b_data.back() *= voxel.bvalues[i];
         }
-        if(!b_count)
-            throw std::runtime_error("no valid DWI signals to calculate tensor matrix");
 
         Kt.resize(6*b_count);
         {
