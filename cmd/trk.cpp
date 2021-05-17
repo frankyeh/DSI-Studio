@@ -469,10 +469,11 @@ int trk_post(std::shared_ptr<fib_data> handle,std::shared_ptr<TractModel> tract_
             std::cout << new_slice.T[8] << " " << new_slice.T[9] << " " << new_slice.T[10] << " " << new_slice.T[11] << std::endl;
             tract_model->save_transformed_tracts_to_file(tract_file_name.c_str(),new_slice.dim,new_slice.vs,new_slice.invT,false);
         }
+
+        if (!tract_model->save_tracts_to_file(tract_file_name.c_str()))
         {
-            if (!tract_model->save_tracts_to_file(tract_file_name.c_str()))
-                std::cout << "ERROR: cannot save tracks as " << tract_file_name
-                          << ". Please check write permission, directory, and disk space." << std::endl;
+            std::cout << "ERROR: cannot save tracks as " << tract_file_name
+                      << ". Please check write permission, directory, and disk space." << std::endl;
             return 1;
         }
     }
