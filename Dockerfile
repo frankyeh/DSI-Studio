@@ -51,7 +51,7 @@ RUN add-apt-repository ppa:beineri/opt-qt-5.12.2-xenial \
     qt512wayland qt512x11extras qt512xmlpatterns qt512charts-no-lgpl \
     && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-RUN apt-get install python3 && \
+RUN apt-get install python3.6 && \
     apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 RUN curl "https://bootstrap.pypa.io/get-pip.py" -o "get-pip.py"
 RUN python get-pip.py
