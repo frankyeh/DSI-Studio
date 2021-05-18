@@ -1,5 +1,5 @@
-# Use Ubuntu 16.10 LTS
-FROM ubuntu:16.10
+# Use Ubuntu 16.04 LTS
+FROM ubuntu:16.04
 
 # Prepare environment
 RUN apt-get update && \
@@ -39,22 +39,6 @@ RUN apt-get update && \
                     git \
                     software-properties-common && \
     apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
-
-# 
-RUN apt-get install python3.6 && \
-    apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
-RUN curl "https://bootstrap.pypa.io/get-pip.py" -o "get-pip.py"
-RUN python3 get-pip.py
-RUN pip install --no-cache notebook
-ENV NB_USER dsistudiouser
-ENV NB_UID 1000
-ENV HOME /home/${NB_USER}
-RUN adduser --disabled-password \
-            --gecos "Default user" \
-            --uid ${NB_UID} \
-            ${NB_USER}
-WORKDIR ${HOME}
-
 
 
 # Get newer qt5
