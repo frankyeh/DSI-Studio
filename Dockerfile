@@ -40,6 +40,25 @@ RUN apt-get update && \
                     software-properties-common && \
     apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
+# Install notebook
+RUN pt-get upgrade
+RUN apt-get install software-properties-common
+RUN add-apt-repository ppa:deadsnakes/ppa
+RUN apt-get update
+RUN apt-get install python3.6 && \
+    apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+RUN curl "https://bootstrap.pypa.io/get-pip.py" -o "get-pip.py"
+RUN python3 get-pip.py
+RUN pip install --no-cache notebook
+ENV NB_USER dsistudiouser
+ENV NB_UID 1000
+ENV HOME /home/${NB_USER}
+RUN adduser --disabled-password \
+            --gecos "Default user" \
+            --uid ${NB_UID} \
+            ${NB_USER}
+WORKDIR ${HOME}
+
 
 # Get newer qt5
 RUN add-apt-repository ppa:beineri/opt-qt-5.12.2-xenial \
@@ -52,6 +71,7 @@ RUN add-apt-repository ppa:beineri/opt-qt-5.12.2-xenial \
     qt512wayland qt512x11extras qt512xmlpatterns qt512charts-no-lgpl \
     && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
+RUN 
 
 # Install DSI Studio
 ENV QT_BASE_DIR="/opt/qt512"
