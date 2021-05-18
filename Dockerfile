@@ -41,12 +41,7 @@ RUN apt-get update && \
     apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 # Install notebook
-RUN apt-get upgrade
-RUN add-apt-repository ppa:deadsnakes/ppa
-RUN apt-get update
-RUN apt-get install python3.6 -y --no-install-recommends && \
-    apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
-RUN curl "https://bootstrap.pypa.io/get-pip.py" -o "get-pip.py"
+RUN curl "https://bootstrap.pypa.io/pip/3.5/get-pip.py" -o "get-pip.py"
 RUN python3 get-pip.py
 RUN pip install --no-cache notebook
 ENV NB_USER dsistudiouser
