@@ -41,7 +41,7 @@ RUN apt-get update && \
     apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 # Install notebook
-RUN pt-get upgrade
+RUN apt-get upgrade
 RUN apt-get install software-properties-common
 RUN add-apt-repository ppa:deadsnakes/ppa
 RUN apt-get update
