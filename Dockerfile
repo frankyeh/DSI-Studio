@@ -51,6 +51,7 @@ RUN add-apt-repository ppa:beineri/opt-qt-5.12.2-xenial \
     qt512wayland qt512x11extras qt512xmlpatterns qt512charts-no-lgpl \
     && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
+RUN apt-get install python3-pip
 RUN pip install --no-cache notebook
 ENV NB_USER dsistudiouser
 ENV NB_UID 1000
