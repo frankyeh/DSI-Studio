@@ -65,8 +65,6 @@ RUN add-apt-repository ppa:beineri/opt-qt-5.12.2-xenial \
     qt512wayland qt512x11extras qt512xmlpatterns qt512charts-no-lgpl \
     && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-RUN 
-
 # Install DSI Studio
 ENV QT_BASE_DIR="/opt/qt512"
 ENV QTDIR="$QT_BASE_DIR" \
