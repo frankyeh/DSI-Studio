@@ -23,7 +23,7 @@ RC_ICONS = dsi_studio.ico
 }
 
 linux* {
-QMAKE_CXXFLAGS += -fpermissive
+QMAKE_CXXFLAGS += -fpermissive -Wno-sign-compare
 LIBS += -lGLU -lz
 }
 
