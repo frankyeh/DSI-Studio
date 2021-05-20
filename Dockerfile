@@ -31,13 +31,6 @@ RUN apt-get update && \
     && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 
-# Get DSI Studio code and compile it
-ENV QT_BASE_DIR="/opt/qt512"
-ENV QTDIR="$QT_BASE_DIR" \
-    PATH="$QT_BASE_DIR/bin:$PATH:/opt/dsi-studio/dsi_studio_64" \
-    LD_LIBRARY_PATH="$QT_BASE_DIR/lib/x86_64-linux-gnu:$QT_BASE_DIR/lib:$LD_LIBRARY_PATH" \
-    PKG_CONFIG_PATH="$QT_BASE_DIR/lib/pkgconfig:$PKG_CONFIG_PATH"
-
 RUN mkdir /opt/dsi-studio \
   && cd /opt/dsi-studio \
   && git clone https://github.com/frankyeh/DSI-Studio.git \
