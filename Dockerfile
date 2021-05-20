@@ -38,11 +38,8 @@ RUN mkdir /opt/dsi-studio \
   && git clone https://github.com/frankyeh/TIPL.git \
   && mv TIPL src/tipl \
   && mkdir build && cd build \
-  && qmake --version && qmake /opt/dsi-studio/src && make
-
-
-# Download DSI Studio package
-RUN cd /opt/dsi-studio \
+  && qmake ../src && make \
+  && cd /opt/dsi-studio \
   && curl -sSLO 'https://www.dropbox.com/s/xha3srev45at7vx/dsi_studio_64.zip' \
   && unzip dsi_studio_64.zip \
   && rm dsi_studio_64.zip \
