@@ -38,7 +38,7 @@ RUN mkdir /opt/dsi-studio \
   && git clone https://github.com/frankyeh/TIPL.git \
   && mv TIPL src/tipl \
   && mkdir build && cd build \
-  && qmake /opt/dsi-studio/src && make
+  && qmake --version && qmake /opt/dsi-studio/src && make
 
 
 # Download DSI Studio package
