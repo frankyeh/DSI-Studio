@@ -31,7 +31,7 @@ public:
         float resolution_ratio = 1.0;
 public: // rendering options
         RegionModel show_region;
-        unsigned char regions_feature;
+        unsigned char regions_feature = 0;
         bool modified = true;
 public: // rendering options
         ROIRegion(std::shared_ptr<fib_data> handle):
