@@ -19,7 +19,7 @@ RUN apt-get update && \
     apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 RUN update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-7 10
-Run update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-7 10
+RUN update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-7 10
 
 # Get newer qt5
 RUN apt-get update && \
@@ -30,6 +30,11 @@ RUN apt-get update && \
     libqt5opengl5-dev \
     && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
+ENV QT_BASE_DIR="/usr/lib/qt5/"
+ENV QTDIR="$QT_BASE_DIR" \
+    PATH="$QT_BASE_DIR/bin:$PATH:/opt/dsi-studio/dsi_studio_64" \
+    LD_LIBRARY_PATH="$QT_BASE_DIR/lib/x86_64-linux-gnu:$QT_BASE_DIR/lib:$LD_LIBRARY_PATH" \
+    PKG_CONFIG_PATH="$QT_BASE_DIR/lib/pkgconfig:$PKG_CONFIG_PATH"
 
 RUN mkdir /opt/dsi-studio \
   && cd /opt/dsi-studio \
