@@ -30,12 +30,6 @@ RUN apt-get update && \
     libqt5opengl5-dev \
     && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-ENV QT_BASE_DIR="/usr/lib/qt5/"
-ENV QTDIR="$QT_BASE_DIR" \
-    PATH="$QT_BASE_DIR/bin:$PATH:/opt/dsi-studio/dsi_studio_64" \
-    LD_LIBRARY_PATH="$QT_BASE_DIR/lib/x86_64-linux-gnu:$QT_BASE_DIR/lib:$LD_LIBRARY_PATH" \
-    PKG_CONFIG_PATH="$QT_BASE_DIR/lib/pkgconfig:$PKG_CONFIG_PATH"
-
 RUN mkdir /opt/dsi-studio \
   && cd /opt/dsi-studio \
   && git clone https://github.com/frankyeh/DSI-Studio.git \
@@ -43,7 +37,7 @@ RUN mkdir /opt/dsi-studio \
   && git clone https://github.com/frankyeh/TIPL.git \
   && mv TIPL src/tipl \
   && mkdir build && cd build \
-  && qmake ../src && make \
+  && qmake ../src/dsi_studio.pro && make \
   && cd /opt/dsi-studio \
   && curl -sSLO 'https://www.dropbox.com/s/xha3srev45at7vx/dsi_studio_64.zip' \
   && unzip dsi_studio_64.zip \
