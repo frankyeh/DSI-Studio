@@ -35,7 +35,6 @@ RUN apt-get update && \
                     g++ \
                     gcc \
                     make \
-                    zlib1g-dev \
                     git \
                     software-properties-common && \
     apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
