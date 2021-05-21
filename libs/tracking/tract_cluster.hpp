@@ -41,7 +41,7 @@ class FeatureBasedClutering : public BasicCluster
     method_type clustering_method;
     unsigned int cluster_number;
 public:
-    FeatureBasedClutering(const float* param):cluster_number(param[0]),clustering_method(param[0]) {}
+    FeatureBasedClutering(const float* param):clustering_method(param[0]),cluster_number(param[0]){}
     virtual ~FeatureBasedClutering(void) {}
 
 public:

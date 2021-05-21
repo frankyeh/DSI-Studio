@@ -19,7 +19,7 @@ bool img_command(tipl::image<float,3>& data,
                  tipl::matrix<4,4,float>& T,
                  std::string cmd,
                  std::string param1,
-                 std::string param2,
+                 std::string,
                  std::string& error_msg)
 {
     if(cmd == "image_multiplication" || cmd == "image_addition")

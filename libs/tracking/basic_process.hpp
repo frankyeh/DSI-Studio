@@ -36,8 +36,8 @@ public:
             voxel_angle.push_back(angle_cos);
         }
 
-        unsigned char max_i;
-        unsigned char max_j;
+        unsigned char max_i(0);
+        unsigned char max_j(0);
         float max_angle_cos = 0;
         for(unsigned char i = 0;i < next_voxels_index.size();++i)
         {

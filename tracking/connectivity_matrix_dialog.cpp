@@ -13,8 +13,8 @@
 #include "libs/tracking/fib_data.hpp"
 void show_view(QGraphicsScene& scene,QImage I);
 connectivity_matrix_dialog::connectivity_matrix_dialog(tracking_window *parent,QString method_) :
-    QDialog(parent),cur_tracking_window(parent),
-    ui(new Ui::connectivity_matrix_dialog),method(method_)
+    QDialog(parent),method(method_),cur_tracking_window(parent),
+    ui(new Ui::connectivity_matrix_dialog)
 {
     ui->setupUi(this);
     ui->graphicsView->setScene(&scene);
