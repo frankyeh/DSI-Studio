@@ -15,7 +15,6 @@ RUN apt-get update && \
 	            libboost-all-dev \
 	            zlib1g \
                     zlib1g-dev \
-                    libseccomp \
 		    libseccomp-dev \
                     software-properties-common && \
     apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
