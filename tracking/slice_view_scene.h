@@ -12,17 +12,9 @@ class slice_view_scene : public QGraphicsScene
     Q_OBJECT
 public:
     bool no_show = false;
-    slice_view_scene(tracking_window& cur_tracking_window_):
-            sel_mode(0),
-            mid_down(false),
-            mouse_down(false),
-            cur_tracking_window(cur_tracking_window_),
-            statusbar(0)
-    {
-
-    }
-    unsigned char sel_mode;
-    QStatusBar* statusbar;
+    slice_view_scene(tracking_window& cur_tracking_window_):cur_tracking_window(cur_tracking_window_){}
+    unsigned char sel_mode = 0;
+    QStatusBar* statusbar = nullptr;
 private:
     tracking_window& cur_tracking_window;
     tipl::color_image slice_image;
@@ -40,9 +32,9 @@ private:
 public:    // record the mouse press points
     std::vector<tipl::vector<3,float> >sel_coord;
     std::vector<tipl::vector<2,short> >sel_point;
-    int cur_region;
-    bool mouse_down;
-    bool mid_down;
+    int cur_region = -1;
+    bool mouse_down = false;
+    bool mid_down = false;
     bool move_slice = false;
     bool move_viewing_slice = false;
     int cX, cY;

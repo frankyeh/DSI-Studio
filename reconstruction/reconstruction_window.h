@@ -44,7 +44,7 @@ private: //bad slices
     std::vector<std::pair<int,int> > bad_slices;
 private:
     Ui::reconstruction_window *ui;
-    std::auto_ptr<ImageModel> handle;
+    std::shared_ptr<ImageModel> handle;
     bool load_src(int index);
     void update_dimension(void);
     void doReconstruction(unsigned char method_id,bool prompt);

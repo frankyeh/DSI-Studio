@@ -79,7 +79,7 @@ class TreeModel : public QAbstractItemModel
 {
     Q_OBJECT
 private:
-    std::auto_ptr<RenderingItem> root;
+    std::shared_ptr<RenderingItem> root;
     std::map<QString,RenderingItem*> root_mapping;
     std::map<QString,RenderingItem*> name_data_mapping;
     std::map<QString,QVariant> name_default_values;

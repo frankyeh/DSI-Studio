@@ -56,7 +56,7 @@ bool RegionModel::load(const std::vector<tipl::vector<3,short> >& seeds, double 
 {
     if(seeds.empty())
     {
-        object.reset(0);
+        object.reset();
         return false;
     }
     tipl::vector<3,short> max_value(seeds[0]), min_value(seeds[0]);
@@ -101,7 +101,7 @@ bool RegionModel::load(const std::vector<tipl::vector<3,short> >& seeds, double 
     object.reset(new tipl::march_cube<tipl::vector<3,float> >(buffer, 20));
     if (object->point_list.empty())
     {
-        object.reset(0);
+        object.reset();
         return false;
     }
     tipl::vector<3,float>shift(min_value);
@@ -171,7 +171,7 @@ bool RegionModel::load(unsigned int* buffer, tipl::geometry<3>geo,
 
     object.reset(new tipl::march_cube<tipl::vector<3,float> >(re_buffer, 50));
     if (object->point_list.empty())
-        object.reset(0);
+        object.reset();
     else
         sortIndices();
     return object.get();

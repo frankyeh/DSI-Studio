@@ -2012,7 +2012,7 @@ void tracking_window::check_reg(void)
     }
     slice_need_update = true;
     if(all_ended)
-        timer2.reset(nullptr);
+        timer2.reset();
     else
         glWidget->updateGL();
 }

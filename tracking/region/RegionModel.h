@@ -9,7 +9,7 @@
 class RegionModel {
 public:
         typedef tipl::march_cube<tipl::vector<3,float> >mesh_type;
-        std::auto_ptr<mesh_type> object;
+        std::shared_ptr<mesh_type> object;
         std::vector<std::vector<unsigned int> > sorted_index;
         tipl::vector<3,float> center;
         void sortIndices(void);

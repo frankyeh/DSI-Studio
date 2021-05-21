@@ -376,7 +376,7 @@ void group_connectometry::calculate_FDR(void)
 
         ui->run->setText("Run");
         ui->progressBar->setValue(100);
-        timer.reset(nullptr);
+        timer.reset();
     }
 }
 void group_connectometry::on_run_clicked()
@@ -385,7 +385,7 @@ void group_connectometry::on_run_clicked()
     {
         vbc->clear();
         timer->stop();
-        timer.reset(nullptr);
+        timer.reset();
         ui->progressBar->setValue(0);
         ui->run->setText("Run");
         return;

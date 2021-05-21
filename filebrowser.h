@@ -36,7 +36,7 @@ private:
     float preview_voxel_size[3];
     bool preview_loaded;
     tipl::image<float,3> preview_data;
-    std::auto_ptr<std::future<void>> preview_thread;
+    std::shared_ptr<std::future<void>> preview_thread;
     void preview_image(QString file_name);
 private slots:
 

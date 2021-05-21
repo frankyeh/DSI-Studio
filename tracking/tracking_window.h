@@ -68,12 +68,12 @@ public:
 public:
     connectometry_result cnt_result;
 public:
-    std::auto_ptr<QTimer> timer,timer2;
+    std::shared_ptr<QTimer> timer,timer2;
     void set_tracking_param(ThreadData& tracking_thread);
 public:
-    std::auto_ptr<tract_report> tact_report_imp;
-    std::auto_ptr<color_bar_dialog> color_bar;
-    std::auto_ptr<connectivity_matrix_dialog> connectivity_matrix;
+    std::shared_ptr<tract_report> tact_report_imp;
+    std::shared_ptr<color_bar_dialog> color_bar;
+    std::shared_ptr<connectivity_matrix_dialog> connectivity_matrix;
 public:
     std::shared_ptr<fib_data> handle;
     std::vector<std::shared_ptr<SliceModel> > slices;

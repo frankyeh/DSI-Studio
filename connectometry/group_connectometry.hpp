@@ -45,7 +45,7 @@ private:
     QChart* fdr_chart;
     QChartView* fdr_chart_view;
 private:
-    std::auto_ptr<connectometry_result> result_fib;
+    std::shared_ptr<connectometry_result> result_fib;
     void show_dis_table(void);
 public:
     QString db_file_name,work_dir;
@@ -58,7 +58,7 @@ public:
     std::shared_ptr<group_connectometry_analysis> vbc;
     connectometry_db& db;
     std::shared_ptr<stat_model> model;
-    std::auto_ptr<QTimer> timer;
+    std::shared_ptr<QTimer> timer;
 
     explicit group_connectometry(QWidget *parent,std::shared_ptr<group_connectometry_analysis> vbc_ptr,QString db_file_name_);
     ~group_connectometry();
