@@ -2883,7 +2883,7 @@ void TractModel::get_quantitative_info(std::shared_ptr<fib_data> handle,std::str
     if(handle->db.has_db()) // connectometry database
     {
         std::vector<const float*> old_index_data(handle->dir.index_data[0]);
-        for(char normalize_qa = 0;normalize_qa <= 1;++normalize_qa)
+        for(unsigned char normalize_qa = 0;normalize_qa <= 1;++normalize_qa)
         {
             // only applied normalized value to qa
             if(handle->db.index_name != "qa" && normalize_qa)

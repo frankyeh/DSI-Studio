@@ -559,7 +559,7 @@ void ROIRegion::get_quantitative_data(std::shared_ptr<fib_data> handle,std::vect
 
     if(handle->db.has_db()) // connectometry database
     {
-        for(char normalize_qa = 0;normalize_qa <= 1;++normalize_qa)
+        for(unsigned char normalize_qa = 0;normalize_qa <= 1;++normalize_qa)
         for(unsigned int subject_index = 0;subject_index < handle->db.num_subjects;++subject_index)
         {
             std::vector<std::vector<float> > fa_data;
