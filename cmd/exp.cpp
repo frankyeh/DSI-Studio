@@ -140,24 +140,24 @@ int exp(void)
             if(cmd[3] == 's') // all directions
             {
                 fibers.resize(tipl::geometry<4>(geo[0],geo[1],geo[2],dir.num_fiber*3));
-                for(unsigned int i = 0,ptr = 0;i < dir.num_fiber;++i)
+                for(unsigned char i = 0,ptr = 0;i < dir.num_fiber;++i)
                 for(unsigned int j = 0;j < 3;++j)
                 for(unsigned int index = 0;index < geo.size();++index,++ptr)
-                    if(dir.get_fa(index,i))
+                    if(dir.get_fa(index,i) > 0.0f)
                         fibers[ptr] = dir.get_dir(index,i)[j];
             }
             else
             {
-                unsigned char dir_index = cmd[3] - '0';
-                if(dir_index < 0 || dir_index >= dir.num_fiber)
+                unsigned char dir_index = uint8_t(cmd[3] - '0');
+                if(dir_index >= dir.num_fiber)
                 {
-                    std::cout << "invalid fiber index. The maximum fiber per voxel is " << (int) dir.num_fiber << std::endl;
+                    std::cout << "invalid fiber index. The maximum fiber per voxel is " << int(dir.num_fiber) << std::endl;
                     continue;
                 }
                 fibers.resize(tipl::geometry<4>(geo[0],geo[1],geo[2],3));
                 for(unsigned int j = 0,ptr = 0;j < 3;++j)
                 for(unsigned int index = 0;index < geo.size();++index,++ptr)
-                    if(dir.get_fa(index,dir_index))
+                    if(dir.get_fa(index,dir_index) > 0.0f)
                         fibers[ptr] = dir.get_dir(index,dir_index)[j];
             }
             std::cout << "write to file " << file_name_stat << std::endl;

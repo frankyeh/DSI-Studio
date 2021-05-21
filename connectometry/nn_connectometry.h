@@ -27,9 +27,9 @@ private:
     QChartView* chart4_view;
 
     int cur_fold = 0;
-    QLineSeries *s2 = 0;
-    QLineSeries *s3 = 0;
-    QLineSeries *s4 = 0;
+    QLineSeries *s2 = nullptr;
+    QLineSeries *s3 = nullptr;
+    QLineSeries *s4 = nullptr;
 
 public:
     bool gui = true;
@@ -37,7 +37,7 @@ public:
     nn_connectometry_analysis nna;
 
 public:
-    QTimer* timer = 0;
+    QTimer* timer = nullptr;
     QString log_text;
 public:
     QGraphicsScene network_scene,layer_scene;

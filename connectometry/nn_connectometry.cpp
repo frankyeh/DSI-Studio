@@ -10,7 +10,7 @@ nn_connectometry::nn_connectometry(QWidget *parent,std::shared_ptr<fib_data> han
     chart2(new QChart),chart2_view(new QChartView(chart2)),
     chart3(new QChart),chart3_view(new QChartView(chart3)),
     chart4(new QChart),chart4_view(new QChartView(chart4)),
-    nna(handle),work_dir(QFileInfo(db_file_name_).absoluteDir().absolutePath()),gui(gui_),
+    gui(gui_),work_dir(QFileInfo(db_file_name_).absoluteDir().absolutePath()),nna(handle),
     ui(new Ui::nn_connectometry)
 {
     ui->setupUi(this);

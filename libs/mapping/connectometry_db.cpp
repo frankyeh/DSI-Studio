@@ -224,13 +224,13 @@ bool connectometry_db::parse_demo(const std::string& filename)
             size_t item_pos = i*titles.size() + feature_location[j];
             if(item_pos >= items.size())
             {
-                X.push_back(std::nan(nullptr));
+                X.push_back(NAN);
                 continue;
             }
             try{
                 if(items[item_pos].empty())
                 {
-                    X.push_back(std::nan(nullptr));
+                    X.push_back(NAN);
                 }
                 else
                     X.push_back(double(std::stof(items[item_pos])));
