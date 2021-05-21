@@ -219,7 +219,6 @@
       <zorder>label_15</zorder>
       <zorder>tract_color_min_value</zorder>
       <zorder>label_11</zorder>
-      <zorder></zorder>
       <zorder>update_rendering</zorder>
      </widget>
      <widget class="QGraphicsView" name="color_bar_view"/>
@@ -244,6 +243,16 @@
    <header>qcolorcombobox.h</header>
   </customwidget>
  </customwidgets>
+ <tabstops>
+  <tabstop>color_bar_view</tabstop>
+  <tabstop>tract_color_index</tabstop>
+  <tabstop>color_bar_style</tabstop>
+  <tabstop>tract_color_max_value</tabstop>
+  <tabstop>tract_color_min_value</tabstop>
+  <tabstop>color_from</tabstop>
+  <tabstop>color_to</tabstop>
+  <tabstop>update_rendering</tabstop>
+ </tabstops>
  <resources>
   <include location="../icons.qrc"/>
  </resources>

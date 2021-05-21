@@ -12,7 +12,7 @@
 void show_view(QGraphicsScene& scene,QImage I);
 
 db_window::db_window(QWidget *parent,std::shared_ptr<group_connectometry_analysis> vbc_) :
-    QMainWindow(parent),color_bar(10,256),vbc(vbc_),
+    QMainWindow(parent),vbc(vbc_),color_bar(10,256),
     ui(new Ui::db_window)
 {
     color_map.spectrum();

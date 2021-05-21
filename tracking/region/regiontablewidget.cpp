@@ -358,15 +358,14 @@ void RegionTableWidget::draw_region(const tipl::color_image& slice_image,float d
 
                 tipl::par_for(checked_regions[roi_index]->size(),[&](unsigned int index)
                 {
-                    tipl::vector<3,float> p(checked_regions[roi_index]->region[index]);
+                    tipl::vector<3,float> p(checked_regions[roi_index]->region[index]),p2;
                     p.to(iT);
-                    float X,Y,Z;
-                    tipl::space2slice(cur_tracking_window.cur_dim,p[0],p[1],p[2],X,Y,Z);
-                    if (std::fabs(float(slice_pos)-Z) >= z_range || X < 0.0f || Y < 0.0f ||
-                        int(X) >= w || int(Y) >= h)
+                    tipl::space2slice(cur_tracking_window.cur_dim,p[0],p[1],p[2],p2[0],p2[1],p2[2]);
+                    if (std::fabs(float(slice_pos)-p2[2]) >= z_range || p2[0] < 0.0f || p2[1] < 0.0f ||
+                        int(p2[0]) >= w || int(p2[1]) >= h)
                         return;
-                    uint32_t iX = uint32_t(std::floor(X));
-                    uint32_t iY = uint32_t(std::floor(Y));
+                    uint32_t iX = uint32_t(std::floor(p2[0]));
+                    uint32_t iY = uint32_t(std::floor(p2[1]));
                     uint32_t pos = yw[iY]+iX;
                     for(uint32_t dy = 0;dy < y_range;++dy,pos += uint32_t(w))
                         for(uint32_t dx = 0,pos2 = pos;dx < x_range;++dx,++pos2)

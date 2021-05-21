@@ -206,7 +206,7 @@ void show_mosaic_slice_at(QGraphicsScene& scene,
     {
         int x = index[0] >> mosaic_size;
         int y = index[1] >> mosaic_size;
-        v = (x&1 ^ y&1) ? tmp1[index.index()] : tmp2[index.index()]*c;
+        v = ((x&1) ^ (y&1)) ? tmp1[index.index()] : tmp2[index.index()]*c;
     });
     show_slice_at(scene,tmp,buf,ratio,contrast,cur_view);
 }
