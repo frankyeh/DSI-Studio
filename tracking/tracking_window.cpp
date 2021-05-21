@@ -79,11 +79,10 @@ void tracking_window::set_data(QString name, QVariant value)
 }
 
 tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_handle) :
-        QMainWindow(parent),ui(new Ui::tracking_window),handle(new_handle),scene(*this)
+        QMainWindow(parent),ui(new Ui::tracking_window),scene(*this),handle(new_handle)
 
 {
     fib_data& fib = *new_handle;
-    scene.no_show = true;
     for (unsigned int index = 0;index < fib.view_item.size(); ++index)
         slices.push_back(std::make_shared<SliceModel>(handle.get(),index));
     current_slice = slices[0];

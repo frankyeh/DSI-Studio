@@ -38,7 +38,7 @@ private:
     tipl::color_image buffer;
     QImage slice_image;
     tipl::value_to_color<float> v2c;
-    char view_orientation = 2;
+    unsigned char view_orientation = 2;
 private: //bad slices
     bool bad_slice_analzed = false;
     std::vector<std::pair<int,int> > bad_slices;

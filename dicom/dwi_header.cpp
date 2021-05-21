@@ -79,7 +79,7 @@ bool DwiHeader::open(const char* filename)
     get_report_from_dicom(header,report);
 
     float orientation_matrix[9];
-    char dim_order[3] = {0,1,2};
+    unsigned char dim_order[3] = {0,1,2};
     char flip[3] = {0,0,0};
     bool has_orientation_info = false;
 

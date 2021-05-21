@@ -186,7 +186,7 @@ void slice_view_scene::show_fiber(QPainter& painter)
     float threshold2 = cur_tracking_window["dt_index"].toInt() ? cur_tracking_window["dt_threshold"].toFloat() : 0.0f;
     if (threshold == 0.0f)
         threshold = 0.00000001f;
-    int X,Y,Z;
+    int X(0),Y(0),Z(0);
     unsigned char dir_x[3] = {1,0,0};
     unsigned char dir_y[3] = {2,2,1};
 
@@ -251,13 +251,13 @@ void slice_view_scene::show_pos(QPainter& painter)
     int x_pos,y_pos;
     float display_ratio = cur_tracking_window.get_scene_zoom();
     cur_tracking_window.current_slice->get_other_slice_pos(cur_tracking_window.cur_dim,x_pos, y_pos);
-    x_pos = ((double)x_pos + 0.5)*display_ratio;
-    y_pos = ((double)y_pos + 0.5)*display_ratio;
+    x_pos = int((float(x_pos) + 0.5f)*display_ratio);
+    y_pos = int((float(y_pos) + 0.5f)*display_ratio);
     painter.setPen(QColor(255,move_slice?255:0,move_slice ? 255:0));
     painter.drawLine(x_pos,0,x_pos,std::max<int>(0,y_pos-20));
-    painter.drawLine(x_pos,std::min<int>(y_pos+20,slice_image.height()*display_ratio),x_pos,slice_image.height()*display_ratio);
+    painter.drawLine(x_pos,std::min<int>(y_pos+20,int(slice_image.height()*display_ratio)),x_pos,int(slice_image.height()*display_ratio));
     painter.drawLine(0,y_pos,std::max<int>(0,x_pos-20),y_pos);
-    painter.drawLine(std::min<int>(x_pos+20,slice_image.width()*display_ratio),y_pos,slice_image.width()*display_ratio,y_pos);
+    painter.drawLine(std::min<int>(x_pos+20,int(slice_image.width()*display_ratio)),y_pos,int(slice_image.width()*display_ratio),y_pos);
 }
 
 void slice_view_scene::manage_slice_orientation(QImage& slice,QImage& new_slice)
@@ -526,7 +526,7 @@ void slice_view_scene::show_slice(void)
         else
             skip_row = 0;
         float scale = display_ratio/float(mosaic_column_count);
-        char dim_order[3][2]= {{1,2},{0,2},{0,1}};
+        unsigned char dim_order[3][2]= {{1,2},{0,2},{0,1}};
 
         view_image = QImage(QSize(
                                 int(dim[dim_order[uint8_t(cur_dim)][0]]*scale*mosaic_column_count),

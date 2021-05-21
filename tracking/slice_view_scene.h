@@ -11,7 +11,7 @@ class slice_view_scene : public QGraphicsScene
 {
     Q_OBJECT
 public:
-    bool no_show = false;
+    bool no_show = true;
     slice_view_scene(tracking_window& cur_tracking_window_):cur_tracking_window(cur_tracking_window_){}
     unsigned char sel_mode = 0;
     QStatusBar* statusbar = nullptr;

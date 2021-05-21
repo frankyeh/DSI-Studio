@@ -35,10 +35,18 @@ private slots:
 
 
 class RenderingItem
- {
- public:
+{
+private:
+    QList<RenderingItem*> childItems;
+    RenderingItem *parentItem;
+public:
+    QObject* GUI = nullptr;
+    QString id;
+    QVariant title,type,value;
+    QString hint;
+public:
     RenderingItem(QVariant title_, QVariant type_, QString id_,QVariant value_, RenderingItem *parent = nullptr):
-        parentItem(parent),title(title_),type(type_),id(id_),value(value_),GUI(0)
+        parentItem(parent),id(id_),title(title_),type(type_),value(value_)
     {
         if(parent)
             parent->appendChild(this);
@@ -63,16 +71,7 @@ class RenderingItem
      void setMinMax(float min,float max,float step);
      void setList(QStringList list);
 
- private:
-     QList<RenderingItem*> childItems;
-     RenderingItem *parentItem;
- public:
-     QObject* GUI;
-     QString id;
-     QVariant title,type,value;
-     QString hint;
-
- };
+};
 
 class RenderingTableWidget;
 class TreeModel : public QAbstractItemModel

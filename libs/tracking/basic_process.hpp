@@ -13,9 +13,6 @@ public:
     void operator()(method& info)
     {
         tipl::vector<3,short> cur_pos(info.position);
-        unsigned int cur_pos_index;
-        cur_pos_index = tipl::pixel_index<3>(cur_pos[0],cur_pos[1],cur_pos[2],info.trk->dim).index();
-
         std::vector<tipl::vector<3,float> > next_voxels_dir;
         std::vector<tipl::vector<3,short> > next_voxels_pos;
         std::vector<unsigned int> next_voxels_index;
