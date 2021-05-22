@@ -186,7 +186,7 @@ public:
                       const tipl::vector<3,float>& ref_dir,
                       tipl::vector<3,float>& result_dir)
     {
-        return interpolation->evaluate(*trk.get(),position,ref_dir,result_dir,current_fa_threshold,current_tracking_angle,current_dt_threshold);
+        return interpolation->evaluate(trk,position,ref_dir,result_dir,current_fa_threshold,current_tracking_angle,current_dt_threshold);
     }
 public:
     TrackingMethod(std::shared_ptr<tracking_data> trk_,

@@ -7,7 +7,7 @@ class basic_interpolation
 {
 public:
     virtual ~basic_interpolation(){}
-    virtual bool evaluate(const tracking_data& fib,
+    virtual bool evaluate(std::shared_ptr<tracking_data> fib,
                           const tipl::vector<3,float>& position,
                           const tipl::vector<3,float>& ref_dir,
                           tipl::vector<3,float>& result,
@@ -19,7 +19,7 @@ public:
 class trilinear_interpolation_with_gaussian_basis : public basic_interpolation
 {
 public:
-    virtual bool evaluate(const tracking_data& fib,
+    virtual bool evaluate(std::shared_ptr<tracking_data> fib,
                           const tipl::vector<3,float>& position,
                           const tipl::vector<3,float>& ref_dir,
                           tipl::vector<3,float>& result,
@@ -32,7 +32,7 @@ public:
 class trilinear_interpolation : public basic_interpolation
 {
 public:
-    virtual bool evaluate(const tracking_data& fib,
+    virtual bool evaluate(std::shared_ptr<tracking_data> fib,
                           const tipl::vector<3,float>& position,
                           const tipl::vector<3,float>& ref_dir,
                           tipl::vector<3,float>& result,
@@ -45,7 +45,7 @@ public:
 class nearest_direction : public basic_interpolation
 {
 public:
-    virtual bool evaluate(const tracking_data& fib,
+    virtual bool evaluate(std::shared_ptr<tracking_data> fib,
                           const tipl::vector<3,float>& position,
                           const tipl::vector<3,float>& ref_dir,
                           tipl::vector<3,float>& result,
