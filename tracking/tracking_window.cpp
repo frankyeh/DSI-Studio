@@ -160,7 +160,7 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         {
             if(handle->is_qsdr)
                 ui->actionOpen_MNI_Region->setVisible(false);
-            if(handle->is_qsdr && handle->is_human_data)
+            if(handle->is_qsdr && handle->template_id == 0)
             {
                 if(QFileInfo(QString(t1w_template_file_name.c_str())).exists())
                     addSlices(QStringList() << QString(t1w_template_file_name.c_str()),"icbm_t1w",true);
