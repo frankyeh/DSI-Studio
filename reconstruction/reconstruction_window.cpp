@@ -1095,14 +1095,14 @@ void match_template_resolution(tipl::image<float,3>& VG,
                                tipl::vector<3> subject_vs)
 {
     float best_reso = *std::min_element(subject_vs.begin(),subject_vs.end());
-    if(best_reso > VGvs[0]*1.5f)
+    if(best_reso > VGvs[0]*1.5f)   // if subject resolution is substantially lower, downsample template
     {
         tipl::downsampling(VG);
         if(!VG2.empty())
             tipl::downsampling(VG2);
         VGvs *= 2.0f;
     }
-    if(best_reso < VGvs[0])
+    if(best_reso < VGvs[0])  // if subject resolution is substantially higher, upsample template
     {
         tipl::upsampling(VG);
         if(!VG2.empty())
