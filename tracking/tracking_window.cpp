@@ -1490,7 +1490,7 @@ void tracking_window::on_actionQuality_Assessment_triggered()
 void tracking_window::on_actionImprove_Quality_triggered()
 {
     tracking_data fib;
-    fib.read(*handle);
+    fib.read(handle);
     float threshold = renderWidget->getData("otsu_threshold").toFloat()*
                 tipl::segmentation::otsu_threshold(tipl::make_image(handle->dir.fa[0],handle->dim));
     if(!fib.dir.empty())

@@ -401,21 +401,21 @@ bool tracking_data::get_nearest_dir_fib(unsigned int space_index,
     reverse_ = reverse;
     return true;
 }
-void tracking_data::read(const fib_data& fib)
+void tracking_data::read(std::shared_ptr<fib_data> fib)
 {
-    dim = fib.dim;
-    vs = fib.vs;
-    odf_table = fib.dir.odf_table;
-    fib_num = uint8_t(fib.dir.num_fiber);
-    fa = fib.dir.fa;
-    dt_fa = fib.dir.dt_fa;
-    findex = fib.dir.findex;
-    dir = fib.dir.dir;
-    other_index = fib.dir.index_data;
-    if(!fib.dir.index_name.empty())
-        threshold_name = fib.dir.get_threshold_name();
+    dim = fib->dim;
+    vs = fib->vs;
+    odf_table = fib->dir.odf_table;
+    fib_num = uint8_t(fib->dir.num_fiber);
+    fa = fib->dir.fa;
+    dt_fa = fib->dir.dt_fa;
+    findex = fib->dir.findex;
+    dir = fib->dir.dir;
+    other_index = fib->dir.index_data;
+    if(!fib->dir.index_name.empty())
+        threshold_name = fib->dir.get_threshold_name();
     if(!dt_fa.empty())
-        dt_threshold_name = fib.dir.get_dt_threshold_name();
+        dt_threshold_name = fib->dir.get_dt_threshold_name();
 }
 bool tracking_data::get_dir(unsigned int space_index,
                      const tipl::vector<3,float>& dir, // reference direction, should be unit vector

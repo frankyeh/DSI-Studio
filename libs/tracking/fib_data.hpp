@@ -60,7 +60,6 @@ public: // for differential tractography
     bool set_dt_index(int new_index);
     bool set_dt_index(const std::string& name);
     std::string get_dt_threshold_name(void) const{return dt_fa.empty() ? std::string() : dt_index_name[uint32_t(dt_cur_index)];}
-
 public:
     void check_index(unsigned int index);
     bool add_data(gz_mat_read& mat_reader);
@@ -88,6 +87,8 @@ public:
     std::vector<const short*> findex;
     std::vector<std::vector<const float*> > other_index;
     std::vector<tipl::vector<3,float> > odf_table;
+private:
+    const tracking_data& operator=(const tracking_data& rhs);
 public:
     bool get_nearest_dir_fib(unsigned int space_index,
                          const tipl::vector<3,float>& ref_dir, // reference direction, should be unit vector
@@ -96,7 +97,7 @@ public:
                              float threshold,
                              float cull_cos_angle,
                              float dt_threshold) const;
-    void read(const fib_data& fib);
+    void read(std::shared_ptr<fib_data> fib);
     bool get_dir(unsigned int space_index,
                          const tipl::vector<3,float>& dir, // reference direction, should be unit vector
                          tipl::vector<3,float>& main_dir,

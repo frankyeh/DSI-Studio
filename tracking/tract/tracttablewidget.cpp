@@ -247,7 +247,7 @@ void TractTableWidget::ppv_analysis(void)
     cur_tracking_window.set_tracking_param(base_thread);
     cur_tracking_window.regionWidget->setROIs(&base_thread);
     std::shared_ptr<tracking_data> fib(new tracking_data);
-    fib->read(*cur_tracking_window.handle.get());
+    fib->read(cur_tracking_window.handle);
 
     bool terminated = false;
     prog_init p("PPV analysis");

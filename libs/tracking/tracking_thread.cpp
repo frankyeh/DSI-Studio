@@ -183,7 +183,7 @@ void ThreadData::run(unsigned int thread_count,
                      bool wait)
 {
     std::shared_ptr<tracking_data> trk_(new tracking_data);
-    trk_->read(*roi_mgr->handle);
+    trk_->read(roi_mgr->handle);
     run(trk_,thread_count,wait);
 }
 

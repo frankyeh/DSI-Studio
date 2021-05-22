@@ -95,7 +95,7 @@ void group_connectometry_analysis::run_permutation_multithread(unsigned int id,u
 {
     connectometry_result data;
     std::shared_ptr<tracking_data> fib(new tracking_data);
-    fib->read(*handle);
+    fib->read(handle);
 
     if(id == 0)
     {
