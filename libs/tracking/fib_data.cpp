@@ -395,7 +395,7 @@ bool tracking_data::get_nearest_dir_fib(unsigned int space_index,
                 reverse = 0;
             }
     }
-    if (max_value == cull_cos_angle)
+    if (max_value <= cull_cos_angle)
         return false;
     fib_order_ = fib_order;
     reverse_ = reverse;
@@ -442,7 +442,7 @@ const float* tracking_data::get_dir(unsigned int space_index,unsigned char fib_o
 {
     if(!dir.empty())
         return dir[fib_order] + space_index + (space_index << 1);
-    return &*(odf_table[findex[fib_order][space_index]].begin());
+    return &odf_table[findex[fib_order][space_index]][0];
 }
 
 float tracking_data::cos_angle(const tipl::vector<3>& cur_dir,unsigned int space_index,unsigned char fib_order) const
