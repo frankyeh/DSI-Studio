@@ -137,7 +137,7 @@ public:
     }
 public:
     void init(void);
-    void run(void);
+    bool run(void);
     void end(gz_mat_write& writer);
     BaseProcess* get(unsigned int index);
 };

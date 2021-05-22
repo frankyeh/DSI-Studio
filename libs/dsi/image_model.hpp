@@ -302,28 +302,34 @@ public:
     bool reconstruct(const char* prog)
     {
         // initialization
-        prog_init p(prog);
-        {
-            // Copy SRC b-table to voxel b-table and sort it
-            voxel.load_from_src(*this);
-            voxel.CreateProcesses<ProcessType>();
-            voxel.init();
-            if(prog_aborted())
-            {
-                error_msg = "reconstruction canceled";
-                return false;
-            }
-        }
-        // reconstruction
-        {
-            voxel.run();
-        }
+        voxel.load_from_src(*this);
+        voxel.CreateProcesses<ProcessType>();
+        voxel.init();
         if(prog_aborted())
         {
             error_msg = "reconstruction canceled";
             return false;
         }
-        return true;
+
+        // reconstruction
+        prog_init p(prog);
+        try
+        {
+            if(voxel.run())
+                return true;
+        }
+        catch(std::exception& error)
+        {
+            error_msg = error.what();
+        }
+        catch(...)
+        {
+            error_msg = "unknown error";
+        }
+        if(prog_aborted())
+            error_msg = "reconstruction canceled";
+        std::cout << error_msg << std::endl;
+        return false;
     }
     std::string get_file_ext(void);
     bool save_fib(const std::string& file_name);

@@ -85,23 +85,16 @@ void Voxel::load_from_src(ImageModel& image_model)
 
 }
 
-void Voxel::run(void)
+bool Voxel::run(void)
 {
-    try{
-
-    size_t total_voxel = 0;
-    bool terminated = false;
-    for(size_t index = 0;index < mask.size();++index)
-        if (mask[index])
-            ++total_voxel;
-
+    size_t total_voxel = std::accumulate(mask.begin(),mask.end(),size_t(0),[](size_t sum,unsigned char value){return value ? sum+1:sum;});
     size_t total = 0;
-    tipl::par_for2(mask.size(),
-                    [&](size_t voxel_index,size_t thread_id)
+    bool terminated = false;
+    tipl::par_for2(mask.size(),[&](size_t voxel_index,size_t thread_id)
     {
-        ++total;
         if(terminated || !mask[voxel_index])
             return;
+        ++total;
         if(thread_id == 0)
         {
             if(prog_aborted())
@@ -109,24 +102,15 @@ void Voxel::run(void)
                 terminated = true;
                 return;
             }
-            check_prog(uint32_t(total*100/mask.size()),100);
+            check_prog(uint32_t(total*100/total_voxel),100);
         }
         voxel_data[thread_id].init();
         voxel_data[thread_id].voxel_index = voxel_index;
         for (size_t index = 0; index < process_list.size(); ++index)
             process_list[index]->run(*this,voxel_data[thread_id]);
     },thread_count);
-    check_prog(1,1);
-    }
-    catch(std::exception& error)
-    {
-        std::cout << error.what() << std::endl;
-    }
-    catch(...)
-    {
-        std::cout << "unknown error" << std::endl;
-    }
 
+    return !prog_aborted();
 }
 
 
