@@ -104,7 +104,7 @@ bool RegionModel::load(const std::vector<tipl::vector<3,short> >& seeds, double 
         object.reset();
         return false;
     }
-    tipl::vector<3,float>shift(min_value);
+    tipl::vector<3,float> shift(min_value);
     if (resolution_ratio != 1.0)
     {
         cur_scale /= resolution_ratio;
