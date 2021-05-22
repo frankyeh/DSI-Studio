@@ -180,6 +180,20 @@ void slice_view_scene::show_ruler(QPainter& paint)
 void slice_view_scene::show_fiber(QPainter& painter)
 {
     float display_ratio = cur_tracking_window.get_scene_zoom();
+    float r = display_ratio * cur_tracking_window["roi_fiber_length"].toFloat();
+    float pen_w = display_ratio * cur_tracking_window["roi_fiber_width"].toFloat();
+    int steps = 1;
+    if(!cur_tracking_window.current_slice->is_diffusion_space)
+    {
+        steps = int(std::ceil(cur_tracking_window.handle->vs[0]/cur_tracking_window.current_slice->vs[0]));
+        r *= steps;
+        pen_w *= steps;
+    }
+    if(r < 1.0f)
+        return;
+
+    auto dim = cur_tracking_window.handle->dim;
+    auto& dir = cur_tracking_window.handle->dir;
 
     int roi_fiber = cur_tracking_window["roi_fiber"].toInt();
     float threshold = cur_tracking_window.get_fa_threshold();
@@ -191,43 +205,31 @@ void slice_view_scene::show_fiber(QPainter& painter)
     unsigned char dir_y[3] = {2,2,1};
 
     int fiber_color = cur_tracking_window["roi_fiber_color"].toInt();
-    float pen_w = display_ratio * cur_tracking_window["roi_fiber_width"].toFloat();
-    float r = display_ratio * cur_tracking_window["roi_fiber_length"].toFloat();
     if(fiber_color)
     {
         QPen pen(QColor(fiber_color == 1 ? 255:0,fiber_color == 2 ? 255:0,fiber_color == 3 ? 255:0));
         pen.setWidthF(double(pen_w));
         painter.setPen(pen);
     }
-    const fib_data& fib = *(cur_tracking_window.handle);
-    int max_fiber = int(fib.dir.num_fiber-1);
-    int steps = 1;
-    if(!cur_tracking_window.current_slice->is_diffusion_space)
-    {
-        steps = int(std::ceil(cur_tracking_window.handle->vs[0]/cur_tracking_window.current_slice->vs[0]));
-        r *= steps;
-        pen_w *= steps;
-    }
-    if(r < 1.0f)
-        return;
+    int max_fiber = int(dir.num_fiber-1);
     for (int y = 0; y < slice_image.height(); y += steps)
         for (int x = 0; x < slice_image.width(); x += steps)
             {
                 cur_tracking_window.current_slice->toDiffusionSpace(cur_tracking_window.cur_dim,x, y, X, Y, Z);
-                if(!cur_tracking_window.handle->dim.is_valid(X,Y,Z))
+                if(!dim.is_valid(X,Y,Z))
                     continue;
-                tipl::pixel_index<3> pos(X,Y,Z,fib.dim);
-                if (pos.index() >= fib.dim.size() || fib.dir.get_fa(pos.index(),0) == 0.0f)
+                tipl::pixel_index<3> pos(X,Y,Z,dim);
+                if (pos.index() >= dim.size() || dir.get_fa(pos.index(),0) == 0.0f)
                     continue;
                 for (int fiber = max_fiber; fiber >= 0; --fiber)
-                    if(fib.dir.get_fa(pos.index(),uint8_t(fiber)) > threshold)
+                    if(dir.get_fa(pos.index(),uint8_t(fiber)) > threshold)
                     {
-                        if(threshold2 != 0.0f && fib.dir.get_dt_fa(pos.index(),uint8_t(fiber)) < threshold2)
+                        if(threshold2 != 0.0f && dir.get_dt_fa(pos.index(),uint8_t(fiber)) < threshold2)
                             continue;
                         if((roi_fiber == 2 && fiber != 0) ||
                            (roi_fiber == 3 && fiber != 1))
                             continue;
-                        const float* dir_ptr = fib.dir.get_dir(pos.index(),uint8_t(fiber));
+                        const float* dir_ptr = dir.get_dir(pos.index(),uint8_t(fiber));
                         if(!fiber_color)
                         {
                             QPen pen(QColor(int(std::abs(dir_ptr[0]) * 255.0f),
