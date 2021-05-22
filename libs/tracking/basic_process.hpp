@@ -6,7 +6,7 @@ extern char fib_dx[80];
 extern char fib_dy[80];
 extern char fib_dz[80];
 
-struct LocateVoxel{
+struct VoxelTracking{
 
 public:
     template<class method>
@@ -72,10 +72,9 @@ public:
 };
 
 
-struct EstimateNextDirectionRungeKutta4
+struct RungeKutta4
 {
 public:
-
     template<class method>
     void operator()(method& info)
     {
@@ -122,11 +121,17 @@ public:
         y += k4;
         y /= 6.0;
         info.next_dir = y;
+
+        // propagate
+        tipl::vector<3,float> step(info.next_dir);
+        info.scaling_in_voxel(step);
+        info.position += step;
+        info.dir = info.next_dir;
     }
 };
 
 
-struct EstimateNextDirection
+struct EulerTracking
 {
 public:
 
@@ -136,33 +141,13 @@ public:
         if (!info.get_dir(info.position,info.dir,info.next_dir))
             info.terminated = true;
 
-    }
-};
-
-struct SmoothDir
-{
-public:
-
-    template<class method>
-    void operator()(method& info)
-    {
         if(info.current_tracking_smoothing != 0.0f)
         {
             info.next_dir += (info.dir-info.next_dir)*info.current_tracking_smoothing;
             info.next_dir.normalize();
         }
-    }
-};
 
-struct MoveTrack
-{
-public:
-
-    template<class method>
-    void operator()(method& info)
-    {
-        if (info.terminated)
-            return;
+        // propagate
         tipl::vector<3,float> step(info.next_dir);
         info.scaling_in_voxel(step);
         info.position += step;

@@ -12,22 +12,6 @@
 #include "roi.hpp"
 #include "fib_data.hpp"
 
-typedef boost::mpl::vector<
-            EstimateNextDirection,
-            SmoothDir,
-            MoveTrack
-> streamline_method_process;
-
-typedef boost::mpl::vector<
-            LocateVoxel
-> voxel_tracking;
-
-
-typedef boost::mpl::vector<
-            EstimateNextDirectionRungeKutta4,
-            MoveTrack
-> streamline_runge_kutta_4_method_process;
-
 
 struct TrackingParam
 {
@@ -209,29 +193,15 @@ public:
                    std::shared_ptr<basic_interpolation> interpolation_,
                    std::shared_ptr<RoiMgr> roi_mgr_):
                     interpolation(interpolation_),trk(trk_),roi_mgr(roi_mgr_),init_fib_index(0)
-	{
-
-
-	}
-public:
-	template<class Process>
-    void operator()(Process)
-    {
-        Process()(*this);
-    }
-	template<class ProcessList>
-    void tracking(ProcessList)
-    {
-        boost::mpl::for_each<ProcessList>(boost::ref(*this));
-    }
+    {}
 public:
 
 
 	std::vector<float>& get_track_buffer(void){return track_buffer;}
 	std::vector<float>& get_reverse_buffer(void){return reverse_buffer;}
 
-	template<class ProcessList>
-    bool start_tracking(bool smoothing)
+    template<typename tracking_algo>
+    bool start_tracking(tracking_algo track)
     {
         tipl::vector<3,float> seed_pos(position);
         tipl::vector<3,float> begin_dir(dir);
@@ -254,8 +224,8 @@ public:
             buffer_back_pos += 3;
             if(roi_mgr->is_terminate_point(position))
                 break;
-            tracking(ProcessList());
-			// make sure that the length won't overflow
+
+            track(*this);
 			
 		}
         while(!terminated);
@@ -267,8 +237,8 @@ public:
         forward = false;
 		do
 		{
-            tracking(ProcessList());
-			// make sure that the length won't overflow
+            track(*this);
+
             if(get_buffer_size() > current_max_steps3 || buffer_front_pos < 3)
 				return false;			
             if(terminated)
@@ -281,29 +251,6 @@ public:
             track_buffer[buffer_front_pos+2] = position[2];
         }
         while(!roi_mgr->is_terminate_point(position));
-
-        if(smoothing)
-        {
-            std::vector<float> smoothed(track_buffer.size());
-            float w[5] = {1.0,2.0,4.0,2.0,1.0};
-            int dis[5] = {-6, -3, 0, 3, 6};
-            for(size_t index = buffer_front_pos;index < buffer_back_pos;++index)
-            {
-                float sum_w = 0.0;
-                float sum = 0.0;
-                for(int i = 0;i < 5;++i)
-                {
-                    int cur_index = int(index) + dis[i];
-                    if(cur_index < int(buffer_front_pos) || cur_index >= int(buffer_back_pos))
-                        continue;
-                    sum += w[i]*track_buffer[uint32_t(cur_index)];
-                    sum_w += w[i];
-                }
-                if(sum_w != 0.0f)
-                    smoothed[index] = sum/sum_w;
-            }
-            smoothed.swap(track_buffer);
-        }
 
         return get_buffer_size() > current_min_steps3 &&
                roi_mgr->have_include(get_result(),get_buffer_size()) &&
@@ -369,19 +316,43 @@ public:
             switch (tracking_method)
             {
             case 0:
-                if (!start_tracking<streamline_method_process>(false))
+                if (!start_tracking(EulerTracking()))
                     return nullptr;
                 break;
             case 1:
-                if (!start_tracking<streamline_runge_kutta_4_method_process>(false))
+                if (!start_tracking(RungeKutta4()))
                     return nullptr;
                 break;
             case 2:
                 position[0] = std::round(position[0]);
                 position[1] = std::round(position[1]);
                 position[2] = std::round(position[2]);
-                if (!start_tracking<voxel_tracking>(true))
+                if (!start_tracking(VoxelTracking()))
                     return nullptr;
+
+                // smooth trajectories
+                {
+                    std::vector<float> smoothed(track_buffer.size());
+                    float w[5] = {1.0,2.0,4.0,2.0,1.0};
+                    int dis[5] = {-6, -3, 0, 3, 6};
+                    for(size_t index = buffer_front_pos;index < buffer_back_pos;++index)
+                    {
+                        float sum_w = 0.0;
+                        float sum = 0.0;
+                        for(int i = 0;i < 5;++i)
+                        {
+                            int cur_index = int(index) + dis[i];
+                            if(cur_index < int(buffer_front_pos) || cur_index >= int(buffer_back_pos))
+                                continue;
+                            sum += w[i]*track_buffer[uint32_t(cur_index)];
+                            sum_w += w[i];
+                        }
+                        if(sum_w != 0.0f)
+                            smoothed[index] = sum/sum_w;
+                    }
+                    smoothed.swap(track_buffer);
+                }
+
                 break;
             default:
                 return nullptr;
