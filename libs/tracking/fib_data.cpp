@@ -822,9 +822,18 @@ bool fib_data::load_from_mat(void)
             mat_reader.read((view_item[i].name+"_trans").c_str(),view_item[i].native_trans);
         }
 
+        std::string template_name;
+        mat_reader.read("template_name",template_name);
+
+
         // matching templates
         for(size_t index = 0;index < fa_template_list.size();++index)
         {
+            if(QFileInfo(fa_template_list[index].c_str()).baseName().toStdString() == template_name)
+            {
+                set_template_id(index);
+                return true;
+            }
             gz_nifti read;
             if(!read.load_from_file(fa_template_list[index]))
                 continue;
