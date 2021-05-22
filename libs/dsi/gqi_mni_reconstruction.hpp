@@ -15,6 +15,7 @@ void match_template_resolution(tipl::image<float,3>& VG,
 class DWINormalization  : public BaseProcess
 {
 protected:
+    std::string template_name;
     tipl::geometry<3> src_geo;
     tipl::geometry<3> des_geo;
 protected:
@@ -38,9 +39,11 @@ public:
            voxel.vs[2] == 0.0f)
             throw std::runtime_error("No spatial information found in src file. Recreate src file or contact developer for assistance");
 
-        tipl::image<float,3> VG,VF(voxel.qa_map),VG2,VF2;
-        tipl::vector<3> VGvs;
+        tipl::image<float,3> VG,VF(voxel.qa_map),VG2,VF2; // G: template images F: subject images
+        tipl::vector<3> VGvs, VFvs(voxel.vs);
         tipl::vector<3> VGshift;
+        template_name = QFileInfo(voxel.primary_template.c_str()).baseName().toStdString();
+        bool is_hcp_template = template_name.find("HCP") != std::string::npos;
         if(voxel.primary_template.empty())
             throw std::runtime_error("Invalid external template");
         {
@@ -70,7 +73,7 @@ public:
         }
 
 
-        match_template_resolution(VG,VG2,VGvs,voxel.vs);
+        match_template_resolution(VG,VG2,VGvs,VFvs);
 
         // setup output bounding box
         {
@@ -94,52 +97,50 @@ public:
 
         affine_volume_scale = (voxel.vs[0]*voxel.vs[1]*voxel.vs[2]/VGvs[0]/VGvs[1]/VGvs[2]);
 
+        tipl::image<float,3> VFFF;
         {
-
             tipl::normalize(VG,1.0);
             tipl::normalize(VF,1.0);
             if(!VF2.empty())
                 tipl::normalize(VF2,1.0);
 
-            tipl::image<float,3> VFF,VFF2;
+            // VG: FA TEMPLATE
+            // VF: SUBJECT QA
+            // VF2: SUBJECT ISO
+            if(export_intermediate)
             {
-                // VG: FA TEMPLATE
-                // VF: SUBJECT QA
-                // VF2: SUBJECT ISO
-                if(export_intermediate)
-                {
-                    VG.save_to_file<gz_nifti>("Template_QA.nii.gz");
-                    VF.save_to_file<gz_nifti>("Subject_QA.nii.gz");
-                    if(!VF2.empty())
-                        VF2.save_to_file<gz_nifti>("Subject_ISO.nii.gz");
-                }
-
-                if(voxel.qsdr_trans.data[0] != 0.0) // has manual reg data
-                    affine = voxel.qsdr_trans;
-                else
-                {
-                    bool terminated = false;
-                    if(!run_prog("Linear Registration",[&](){
-                        if(VGvs[0] < 1.0f) // animal recon
-                        {
-                            if(VF2.empty() || VG2.empty())
-                                animal_reg(VG,VGvs,VF,voxel.vs,affine,terminated);
-                            else
-                                animal_reg(VG2,VGvs,VF2,voxel.vs,affine,terminated);
-                        }
-                        else
-                            tipl::reg::two_way_linear_mr(VG,VGvs,VF,voxel.vs,affine,
-                                    tipl::reg::affine,tipl::reg::correlation(),terminated,voxel.thread_count);
-                    },terminated))
-                        throw std::runtime_error("Reconstruction canceled");
-                }
-                VFF.resize(VG.geometry());
-                tipl::resample(VF,VFF,affine,tipl::cubic);
+                VG.save_to_file<gz_nifti>("Template_QA.nii.gz");
+                VF.save_to_file<gz_nifti>("Subject_QA.nii.gz");
                 if(!VF2.empty())
-                {
-                    VFF2.resize(VG.geometry());
-                    tipl::resample(VF2,VFF2,affine,tipl::cubic);
-                }
+                    VF2.save_to_file<gz_nifti>("Subject_ISO.nii.gz");
+            }
+
+            if(voxel.qsdr_trans.data[0] != 0.0) // has manual reg data
+                affine = voxel.qsdr_trans;
+            else
+            {
+                bool terminated = false;
+                if(!run_prog("Linear Registration",[&](){
+                    if(!is_hcp_template) // animal recon
+                    {
+                        if(VF2.empty() || VG2.empty())
+                            animal_reg(VG,VGvs,VF,voxel.vs,affine,terminated);
+                        else
+                            animal_reg(VG2,VGvs,VF2,voxel.vs,affine,terminated);
+                    }
+                    else
+                        tipl::reg::two_way_linear_mr(VG,VGvs,VF,voxel.vs,affine,
+                                tipl::reg::affine,tipl::reg::correlation(),terminated,voxel.thread_count);
+                },terminated))
+                    throw std::runtime_error("Reconstruction canceled");
+            }
+
+            tipl::image<float,3> VFF(VG.geometry()),VFF2;
+            tipl::resample(VF,VFF,affine,tipl::cubic);
+            if(!VF2.empty())
+            {
+                VFF2.resize(VG.geometry());
+                tipl::resample(VF2,VFF2,affine,tipl::cubic);
             }
 
             if(export_intermediate)
@@ -153,63 +154,143 @@ public:
 
             bool terminated = false;
 
-            if(!run_prog("Normalization",[&]()
+            if(!run_prog("normalization",[&]()
                 {
+                    tipl::reg::cdm_param param;
+                    if(VFvs[0] < VGvs[0])
+                        param.resolution = 1.0f;
                     if(!VFF2.empty())
                     {
                         std::cout << "normalization using dual QA/ISO templates" << std::endl;
-                        tipl::reg::cdm2(VG,VG2,VFF,VFF2,cdm_dis,terminated);
+                        tipl::reg::cdm2(VG,VG2,VFF,VFF2,cdm_dis,terminated,param);
                     }
                     else
-                        tipl::reg::cdm(VG,VFF,cdm_dis,terminated);
+                        tipl::reg::cdm(VG,VFF,cdm_dis,terminated,param);
                 },terminated))
-                throw std::runtime_error("Reconstruction canceled");
+                throw std::runtime_error("reconstruction canceled");
 
             {
-                tipl::image<float,3> VFFF;
                 tipl::compose_displacement(VFF,cdm_dis,VFFF);
-                float r = float(tipl::correlation(VG.begin(),VG.end(),VFFF.begin()));
+                std::vector<float> VGdata,VFFFdata;
+                for(size_t i = 0;i < VG.size();++i)
+                    if(VG[i] > 0.0f && VFFF[i] > 0.0f)
+                    {
+                        VGdata.push_back(VG[i]);
+                        VFFFdata.push_back(VFFF[i]);
+                    }
+                float r = float(tipl::correlation(VGdata.begin(),VGdata.end(),VFFFdata.begin()));
                 voxel.R2 = r*r;
                 std::cout << "R2=" << voxel.R2 << std::endl;
             }
+        }       
 
-        }
+        // used for partial reconstruction
+        size_t total_voxel_count = 0;
+        size_t subject_voxel_count = 0;
+
         voxel.dim = des_geo;
         voxel.mask.resize(des_geo);
         std::fill(voxel.mask.begin(),voxel.mask.end(),0);
         for(size_t index = 0;index < des_geo.size();++index)
+        {
             if(VG[index] > 0.0f)
+            {
                 voxel.mask[index] = 1;
+                ++total_voxel_count;
+                if(VFFF[index] > 0.0f)
+                    ++subject_voxel_count;
+            }
+        }
         for(int i = 0;i < 5;++i)
             tipl::morphology::smoothing_fill(voxel.mask);
+
+        tipl::vector<3,int> partial_shift;
+        float partial_resolution = 1.0f;
+        bool partial_reconstruction = float(subject_voxel_count)/float(total_voxel_count) < 0.25f;
+        if(partial_reconstruction)
+        {
+            std::cout << "partial reconstruction" << std::endl;
+
+            tipl::vector<3,int> bmin,bmax;
+            tipl::bounding_box(VFFF,bmin,bmax,0.0f);
+            for(unsigned char dim = 0;dim < 3;++dim)
+            {
+                bmin[dim] = std::max<int>(0,bmin[dim]-5);
+                bmax[dim] = std::min<int>(int(VFFF.geometry()[dim])-1,bmax[dim]+5);
+            }
+
+            tipl::crop(cdm_dis,bmin,bmax);
+            partial_shift = bmin;
+            // update transformation
+            voxel.trans_to_mni[3] -= bmin[0]*VGvs[0];
+            voxel.trans_to_mni[7] -= bmin[1]*VGvs[1];
+            voxel.trans_to_mni[11] += bmin[2]*VGvs[2];
+
+            while(VFvs[0] < VGvs[0])
+            {
+                partial_resolution *= 0.5f;
+                tipl::image<tipl::vector<3>,3> new_cdm_dis;
+                tipl::upsampling(cdm_dis,new_cdm_dis);
+                new_cdm_dis.swap(cdm_dis);
+                VGvs *= 0.5f;
+            }
+
+            voxel.trans_to_mni[0] = -VGvs[0];
+            voxel.trans_to_mni[5] = -VGvs[1];
+            voxel.trans_to_mni[10] = VGvs[2];
+
+
+
+            voxel.dim = des_geo = cdm_dis.geometry();
+            std::cout << "output resolution:" << VGvs[0] << std::endl;
+            std::cout << "new dimension:" << des_geo << std::endl;
+
+            // update mask
+            voxel.mask.resize(des_geo);
+            std::fill(voxel.mask.begin(),voxel.mask.end(),1);
+
+        }
+
 
         ptr_images.clear();
         for (unsigned int index = 0; index < voxel.dwi_data.size(); ++index)
             ptr_images.push_back(tipl::make_image(voxel.dwi_data[index],src_geo));
 
         voxel.vs = VGvs;
-        if(QFileInfo(voxel.primary_template.c_str()).baseName().contains("HCP")) // if default template is used
+        if(is_hcp_template && !partial_reconstruction) // if default template is used
         {
             voxel.csf_pos1 = mni_to_voxel_index(voxel,6,0,18);
             voxel.csf_pos2 = mni_to_voxel_index(voxel,-6,0,18);
             voxel.csf_pos3 = mni_to_voxel_index(voxel,4,18,10);
             voxel.csf_pos4 = mni_to_voxel_index(voxel,-4,18,10);
         }
-        else
-        {
-            voxel.csf_pos1 = voxel.csf_pos2 = voxel.csf_pos3 = voxel.csf_pos4 = tipl::vector<3,int>(0,0,0);
-        }
+
         // output jacobian
         jdet.resize(voxel.dim.size());
 
         // compute mappings
         mapping.resize(voxel.dim);
-        mapping.for_each_mt([&](tipl::vector<3>& Jpos,tipl::pixel_index<3> pos)
+        if(partial_reconstruction)
         {
-            Jpos = pos;
-            Jpos += cdm_dis[pos.index()];
-            affine(Jpos);
-        });
+            mapping.for_each_mt([&](tipl::vector<3>& Jpos,tipl::pixel_index<3> pos)
+            {
+                Jpos = pos; // VG upsampled space
+                Jpos *= partial_resolution; // VG space
+                Jpos += cdm_dis[pos.index()]; // VFF space
+                Jpos += partial_shift;
+                affine(Jpos);// VFF to VF space
+            });
+        }
+        else
+        {
+            mapping.for_each_mt([&](tipl::vector<3>& Jpos,tipl::pixel_index<3> pos)
+            {
+                Jpos = pos;  // VG space
+                Jpos += cdm_dis[pos.index()]; // VFF space
+                affine(Jpos);// VFF to VF space
+            });
+        }
+
 
         // other image
         if(!voxel.other_image.empty())
@@ -300,6 +381,7 @@ public:
         }
         mat_writer.write("trans",voxel.trans_to_mni,4,4);
         mat_writer.write("R2",&voxel.R2,1,1);
+        mat_writer.write("template_name",template_name);
     }
 
 };
