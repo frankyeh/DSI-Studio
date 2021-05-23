@@ -447,33 +447,33 @@ public:
 class RDI_Recon  : public BaseProcess
 {
 private:
-    std::vector<std::vector<float> > rdi;
+    std::vector<std::vector<float> > rdi_weightings;
 public:
     virtual void init(Voxel& voxel)
     {
-        float sigma = voxel.param[0]; //optimal 1.24
-        if(!voxel.output_rdi)
+        if(!voxel.needs("rdi"))
             return;
+        float sigma = voxel.param[0]; //optimal 1.24
         for(float L = 0.2f;L <= sigma;L+= 0.2f)
         {
-            rdi.push_back(std::vector<float>(voxel.bvalues.size()));
+            rdi_weightings.push_back(std::vector<float>(voxel.bvalues.size()));
             for(unsigned int index = 0;index < voxel.bvalues.size();++index)
             {
                 float q = std::sqrt(voxel.bvalues[index]*0.018f);
-                rdi.back()[index] = (q > 0)? sinint(L*q)/q:L;
+                rdi_weightings.back()[index] = (q > 0)? sinint(L*q)/q:L;
             }
         }
     }
-    virtual void run(Voxel& voxel, VoxelData& data)
+    virtual void run(Voxel&, VoxelData& data)
     {
-        if(!voxel.output_rdi)
+        if(rdi_weightings.empty())
             return;
         float last_value = 0;
-        std::vector<float> rdi_values(rdi.size());
-        for(unsigned int index = 0;index < rdi.size();++index)
+        std::vector<float> rdi_values(rdi_weightings.size());
+        for(unsigned int index = 0;index < rdi_weightings.size();++index)
         {
             // force incremental
-            rdi_values[index] = std::max<float>(last_value,tipl::vec::dot(rdi[index].begin(),rdi[index].end(),data.space.begin()));
+            rdi_values[index] = std::max<float>(last_value,tipl::vec::dot(rdi_weightings[index].begin(),rdi_weightings[index].end(),data.space.begin()));
             last_value = rdi_values[index];
         }
         data.rdi.swap(rdi_values);

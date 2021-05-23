@@ -266,7 +266,8 @@ public:
         }
 
         // output jacobian
-        jdet.resize(voxel.dim.size());
+        if(voxel.needs("jdet"))
+            jdet.resize(voxel.dim.size());
 
         // compute mappings
         mapping.resize(voxel.dim);
@@ -362,15 +363,19 @@ public:
         }
 
         interpolate_dwi(voxel,data,mapping[data.voxel_index],tipl::cubic_interpolation<3>());
-        jdet[data.voxel_index] = std::abs(data.jacobian.det()*affine_volume_scale);
+        if(!jdet.empty())
+            jdet[data.voxel_index] = std::abs(data.jacobian.det()*affine_volume_scale);
     }
     virtual void end(Voxel& voxel,gz_mat_write& mat_writer)
     {
         voxel.qsdr = false;
         mat_writer.write("jdet",jdet,uint32_t(voxel.dim.plane_size()));
-        mat_writer.write("native_dimension",src_geo);
-        mat_writer.write("native_voxel_size",voxel.vs);
-        mat_writer.write("native_mapping",&mapping[0][0],3,mapping.size());
+        if(voxel.needs("mapping"))
+        {
+            mat_writer.write("native_dimension",src_geo);
+            mat_writer.write("native_voxel_size",voxel.vs);
+            mat_writer.write("native_mapping",&mapping[0][0],3,mapping.size());
+        }
 
         // allow loading native space t1w-based ROI
         for(unsigned int index = 0;index < other_image.size();++index)

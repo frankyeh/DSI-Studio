@@ -624,7 +624,7 @@ void TractTableWidget::save_tracts_in_native(void)
     }
     if(cur_tracking_window.handle->native_position.empty())
     {
-        QMessageBox::information(this,"DSI Studio","No mapping information included. Please reconstruct QSDR with mapping checked in advanced option.",0);
+        QMessageBox::information(this,"DSI Studio","No mapping information included. Please reconstruct QSDR with 'mapping' included in the output.",0);
         return;
     }
 

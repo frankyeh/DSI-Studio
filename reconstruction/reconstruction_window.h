@@ -90,8 +90,6 @@ private slots:
     void on_actionRotate_triggered();
     void on_delete_2_clicked();
     void on_SlicePos_valueChanged(int value);
-    void on_scheme_balance_toggled(bool checked);
-    void on_half_sphere_toggled(bool checked);
     void on_add_t1t2_clicked();
     void on_actionManual_Rotation_triggered();
     void on_actionReplace_b0_by_T2W_image_triggered();

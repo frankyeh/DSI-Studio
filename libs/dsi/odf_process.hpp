@@ -346,14 +346,15 @@ public:
     {
         dim = voxel.dim;
         fa = std::vector<std::vector<float> >(voxel.max_fiber_number,std::vector<float>(dim.size()));
-        gfa = std::vector<float>(dim.size());
-        iso= std::vector<float>(dim.size());
+        if(voxel.needs("gfa"))
+            gfa = std::vector<float>(dim.size());
+        iso = std::vector<float>(dim.size());
         if(voxel.compare_voxel) // DDI
         {
             qa_inc = std::vector<std::vector<float> >(voxel.max_fiber_number,std::vector<float>(dim.size()));
             qa_dec = std::vector<std::vector<float> >(voxel.max_fiber_number,std::vector<float>(dim.size()));
         }
-        if(voxel.output_rdi)
+        if(voxel.needs("rdi"))
         {
             float sigma = voxel.param[0]; //optimal 1.24
             for(float L = 0.2f;L <= sigma;L+= 0.2f)
@@ -364,12 +365,17 @@ public:
     virtual void run(Voxel& voxel, VoxelData& data)
     {
         iso[data.voxel_index] = data.min_odf;
-        gfa[data.voxel_index] = GeneralizedFA()(data.odf);
+
+        if(!gfa.empty())
+            gfa[data.voxel_index] = GeneralizedFA()(data.odf);
+
         for (unsigned int index = 0;index < voxel.max_fiber_number;++index)
             fa[index][data.voxel_index] = data.fa[index];
-        if(voxel.output_rdi)
+
+        if(!rdi.empty())
             for (unsigned int index = 0;index < data.rdi.size();++index)
                 rdi[index][data.voxel_index] = data.rdi[index];
+
         if(data.min_odf > voxel.z0)
             voxel.z0 = data.min_odf;
         if(voxel.compare_voxel) // DDI
@@ -394,12 +400,12 @@ public:
         mat_writer.write("gfa",gfa,uint32_t(voxel.dim.plane_size()));
         if(voxel.z0 + 1.0f == 1.0f)
             voxel.z0 = 1.0f;
-        mat_writer.write("z0",&voxel.z0,1,1);
-
-
+        if(voxel.needs("z0"))
+            mat_writer.write("z0",&voxel.z0,1,1);
 
         for (unsigned int index = 0;index < voxel.max_fiber_number;++index)
             tipl::divide_constant(fa[index],voxel.z0);
+
         output_anisotropy(mat_writer,"fa",fa);
 
         tipl::divide_constant(iso,voxel.z0);
@@ -407,6 +413,7 @@ public:
 
 
         // output normalized qa
+        if(voxel.needs("nqa"))
         {
             float max_qa = 0.0;
             for (unsigned int i = 0;i < voxel.max_fiber_number;++i)
@@ -418,56 +425,61 @@ public:
                     tipl::divide_constant(fa[index],max_qa);
                 output_anisotropy(mat_writer,"nqa",fa);
             }
-            if(voxel.compare_voxel) // DDI
-            {
-                output_anisotropy(mat_writer,"inc_qa",qa_inc);
-                output_anisotropy(mat_writer,"dec_qa",qa_dec);
-
-                mat_writer.write("base_fa",voxel.fib_fa,uint32_t(voxel.dim.plane_size()));
-                mat_writer.write("study_fa",voxel.compare_voxel->fib_fa,uint32_t(voxel.dim.plane_size()));
-                for(size_t i = 0;i < voxel.dim.size();++i)
-                {
-                    if(voxel.fib_fa[i] == 0.0f || voxel.compare_voxel->fib_fa[i] == 0.0f)
-                        continue;
-                    if(voxel.compare_voxel->fib_fa[i] > voxel.fib_fa[i])
-                    {
-                        qa_inc[0][i] = (voxel.compare_voxel->fib_fa[i] - voxel.fib_fa[i])/voxel.fib_fa[i];
-                        qa_dec[0][i] = 0;
-                    }
-                else
-                    {
-                        qa_dec[0][i] = (voxel.fib_fa[i]-voxel.compare_voxel->fib_fa[i])/voxel.fib_fa[i];
-                        qa_inc[0][i] = 0;
-                    }
-                }
-                for (unsigned int index = 1;index < voxel.max_fiber_number;++index)
-                {
-                    std::fill(qa_inc[index].begin(),qa_inc[index].end(),0.0f);
-                    std::fill(qa_dec[index].begin(),qa_dec[index].end(),0.0f);
-                }
-                output_anisotropy(mat_writer,"inc_fa",qa_inc);
-                output_anisotropy(mat_writer,"dec_fa",qa_dec);
-
-            }
         }
 
 
-        if(voxel.output_rdi)
+        if(voxel.compare_voxel) // DDI
+        {
+            output_anisotropy(mat_writer,"inc_qa",qa_inc);
+            output_anisotropy(mat_writer,"dec_qa",qa_dec);
+
+            mat_writer.write("base_fa",voxel.fib_fa,uint32_t(voxel.dim.plane_size()));
+            mat_writer.write("study_fa",voxel.compare_voxel->fib_fa,uint32_t(voxel.dim.plane_size()));
+            for(size_t i = 0;i < voxel.dim.size();++i)
+            {
+                if(voxel.fib_fa[i] == 0.0f || voxel.compare_voxel->fib_fa[i] == 0.0f)
+                    continue;
+                if(voxel.compare_voxel->fib_fa[i] > voxel.fib_fa[i])
+                {
+                    qa_inc[0][i] = (voxel.compare_voxel->fib_fa[i] - voxel.fib_fa[i])/voxel.fib_fa[i];
+                    qa_dec[0][i] = 0;
+                }
+            else
+                {
+                    qa_dec[0][i] = (voxel.fib_fa[i]-voxel.compare_voxel->fib_fa[i])/voxel.fib_fa[i];
+                    qa_inc[0][i] = 0;
+                }
+            }
+            for (unsigned int index = 1;index < voxel.max_fiber_number;++index)
+            {
+                std::fill(qa_inc[index].begin(),qa_inc[index].end(),0.0f);
+                std::fill(qa_dec[index].begin(),qa_dec[index].end(),0.0f);
+            }
+            output_anisotropy(mat_writer,"inc_fa",qa_inc);
+            output_anisotropy(mat_writer,"dec_fa",qa_dec);
+
+        }
+
+        if(!rdi.empty())
         {
             for(unsigned int i = 0;i < rdi.size();++i)
                 tipl::divide_constant(rdi[i],voxel.z0);
             float L = 0.2f;
             mat_writer.write("rdi",rdi[0],uint32_t(voxel.dim.plane_size()));
-            for(unsigned int i = 0;i < rdi[0].size();++i)
-            for(unsigned int j = 0;j < rdi.size();++j)
-                rdi[j][i] = rdi.back()[i]-rdi[j][i];
-            L = 0.2f;
-            for(unsigned int i = 0;i < rdi.size() && L < 0.8f;++i,L += 0.2f)
+
+            if(voxel.needs("nrdi"))
             {
-                std::ostringstream out2;
-                out2.precision(2);
-                out2 << "nrdi" << std::setfill('0') << std::setw(2) << int(L*10) << "L";
-                mat_writer.write(out2.str().c_str(),rdi[i],uint32_t(voxel.dim.plane_size()));
+                for(unsigned int i = 0;i < rdi[0].size();++i)
+                for(unsigned int j = 0;j < rdi.size();++j)
+                    rdi[j][i] = rdi.back()[i]-rdi[j][i];
+                L = 0.2f;
+                for(unsigned int i = 0;i < rdi.size() && L < 0.8f;++i,L += 0.2f)
+                {
+                    std::ostringstream out2;
+                    out2.precision(2);
+                    out2 << "nrdi" << std::setfill('0') << std::setw(2) << int(L*10) << "L";
+                    mat_writer.write(out2.str().c_str(),rdi[i],uint32_t(voxel.dim.plane_size()));
+                }
             }
         }
     }
@@ -502,7 +514,7 @@ public:
             std::string num = out.str();
             std::string index_str = "index";
             index_str += num;
-            mat_writer.write(index_str.c_str(),findex[index]);
+            mat_writer.write(index_str.c_str(),findex[index],uint32_t(voxel.dim.plane_size()));
         }
     }
 };

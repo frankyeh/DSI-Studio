@@ -108,8 +108,9 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
     ui->odf_resolving->setChecked(settings.value("odf_resolving",0).toInt());
 
     ui->RecordODF->setChecked(settings.value("rec_record_odf",0).toInt());
-    ui->output_tensor->setChecked(settings.value("output_tensor",0).toInt());
-    ui->output_helix_angle->setChecked(settings.value("output_helix_angle",0).toInt());
+
+    ui->other_output->setText(settings.value("other_output",ui->other_output->text()).toString());
+
     ui->check_btable->setChecked(settings.value("check_btable",1).toInt());
     if(handle->voxel.vs[2] > handle->voxel.vs[0]*2.0f || handle->voxel.vs[0] < 0.5f)
         ui->check_btable->setChecked(false);
@@ -128,12 +129,9 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
 
 
     {
-        ui->half_sphere->setChecked(handle->is_dsi_half_sphere());
         ui->scheme_balance->setChecked(handle->need_scheme_balance());
         if(handle->is_dsi())
             ui->scheme_balance->setEnabled(false);
-        else
-            ui->half_sphere->setEnabled(false);
     }
 
     ui->mask_edit->setVisible(false);
@@ -261,8 +259,7 @@ void reconstruction_window::doReconstruction(unsigned char method_id,bool prompt
 
     settings.setValue("odf_resolving",ui->odf_resolving->isChecked() ? 1 : 0);
     settings.setValue("rec_record_odf",ui->RecordODF->isChecked() ? 1 : 0);
-    settings.setValue("output_tensor",ui->output_tensor->isChecked() ? 1 : 0);
-    settings.setValue("output_helix_angle",ui->output_helix_angle->isChecked() ? 1 : 0);
+    settings.setValue("other_output",ui->other_output->text());
     settings.setValue("check_btable",ui->check_btable->isChecked() ? 1 : 0);
 
     begin_prog("reconstruction",true);
@@ -272,23 +269,16 @@ void reconstruction_window::doReconstruction(unsigned char method_id,bool prompt
     handle->voxel.output_odf = ui->RecordODF->isChecked();
     handle->voxel.dti_no_high_b = ui->dti_no_high_b->isChecked();
     handle->voxel.check_btable = ui->check_btable->isChecked();
-    handle->voxel.output_tensor = ui->output_tensor->isChecked();
-    handle->voxel.output_helix_angle = ui->output_helix_angle->isChecked();
+    handle->voxel.other_output = ui->other_output->text().toStdString();
 
     handle->voxel.output_rdi = (method_id == 4 || method_id == 7);
     handle->voxel.thread_count = ui->ThreadCount->value();
 
 
     if(method_id == 7 || method_id == 4)
-    {
-        handle->voxel.half_sphere = ui->half_sphere->isChecked() ? 1:0;
         handle->voxel.scheme_balance = ui->scheme_balance->isChecked() ? 1:0;
-    }
     else
-    {
-        handle->voxel.half_sphere = false;
         handle->voxel.scheme_balance = false;
-    }
 
     auto dim_backup = handle->voxel.dim; // for QSDR
     auto vs = handle->voxel.vs; // for QSDR
@@ -407,11 +397,8 @@ void reconstruction_window::on_DTI_toggled(bool checked)
     ui->GQIOption_2->setVisible(!checked);
 
     ui->AdvancedOptions->setVisible(checked);
-    ui->output_tensor->setVisible(checked);
-    ui->output_helix_angle->setVisible(checked);
 
     ui->RecordODF->setVisible(!checked);
-    ui->DT_Option->setVisible(!checked);
 
     ui->open_ddi_study_src->setVisible(!checked);
     ui->ddi_file->setVisible(!checked);
@@ -427,11 +414,7 @@ void reconstruction_window::on_GQI_toggled(bool checked)
 
     ui->AdvancedOptions->setVisible(checked);
 
-    ui->output_tensor->setVisible(!checked);
-    ui->output_helix_angle->setVisible(!checked);
-
     ui->RecordODF->setVisible(checked);
-    ui->DT_Option->setVisible(checked);
 
     ui->open_ddi_study_src->setVisible(checked);
     ui->ddi_file->setVisible(checked);
@@ -444,12 +427,7 @@ void reconstruction_window::on_QSDR_toggled(bool checked)
 
     ui->AdvancedOptions->setVisible(checked);
 
-    ui->output_tensor->setVisible(!checked);
-    ui->output_helix_angle->setVisible(!checked);
-
     ui->RecordODF->setVisible(checked);
-
-    ui->DT_Option->setVisible(!checked);
 
     ui->open_ddi_study_src->setVisible(!checked);
     ui->ddi_file->setVisible(!checked);
@@ -711,21 +689,6 @@ void rec_motion_correction(ImageModel* handle)
     });
     check_prog(1,1);
 
-}
-
-
-void reconstruction_window::on_scheme_balance_toggled(bool checked)
-{
-    if(checked)
-        ui->half_sphere->setChecked(false);
-}
-
-
-
-void reconstruction_window::on_half_sphere_toggled(bool checked)
-{
-    if(checked)
-        ui->scheme_balance->setChecked(false);
 }
 
 bool add_other_image(ImageModel* handle,QString name,QString filename)

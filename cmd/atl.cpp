@@ -254,7 +254,7 @@ int atl(void)
         }
         if(handle->native_position.empty())
         {
-            std::cout << "no mapping information found. Please reconstruct QSDR with mapping checked in advanced option." << std::endl;
+            std::cout << "no mapping information found. Please reconstruct QSDR with 'mapping' included in the output." << std::endl;
             return 1;
         }
         TractModel tract_model(handle);

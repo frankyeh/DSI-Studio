@@ -75,14 +75,25 @@ public:
     bool check_btable = true;
     unsigned int max_fiber_number = 5;
     std::vector<std::string> file_list;
+public:
+    std::string other_output;
+    bool needs(const char* metric)
+    {
+        if(other_output == "all")
+            return true;
+        std::istringstream in(other_output);
+        std::string m;
+        while(std::getline(in,m,','))
+            if(m == metric)
+                return true;
+        return false;
+    }
 public:// DTI
-    bool output_tensor = false;
-    bool output_helix_angle = false;
     bool dti_no_high_b = true;
 public://used in GQI
     bool odf_resolving = false;
     bool r2_weighted = false;// used in GQI only
-    bool half_sphere = false;
+    bool half_sphere = true;
     void calculate_sinc_ql(std::vector<float>& sinc_ql);
     void calculate_q_vec_t(std::vector<tipl::vector<3,float> >& q_vector_time);
 public://used in GQI

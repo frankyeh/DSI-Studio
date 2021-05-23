@@ -163,13 +163,20 @@ std::string ImageModel::check_b_table(void)
         bool has_rotation = has_image_rotation;
         has_image_rotation = false;
 
+        auto method_id = voxel.method_id;
+        auto other_output = voxel.other_output;
+
         original_src_dwi_data.swap(src_dwi_data);
         original_dim.swap(voxel.dim);
+        voxel.method_id = 1;
+        voxel.other_output = std::string();
 
         reconstruct<check_btable_process>("checking b-table");
 
         original_src_dwi_data.swap(src_dwi_data);
         original_dim.swap(voxel.dim);
+        voxel.method_id = method_id;
+        voxel.other_output = other_output;
 
         mask.swap(voxel.mask);
         has_image_rotation = has_rotation;

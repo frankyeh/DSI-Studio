@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>848</width>
-    <height>679</height>
+    <height>706</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -64,7 +64,7 @@
          <x>0</x>
          <y>0</y>
          <width>848</width>
-         <height>616</height>
+         <height>643</height>
         </rect>
        </property>
        <attribute name="label">
@@ -395,8 +395,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>869</width>
-         <height>599</height>
+         <width>848</width>
+         <height>643</height>
         </rect>
        </property>
        <attribute name="label">
@@ -635,6 +635,43 @@
                  </item>
                 </layout>
                </item>
+               <item>
+                <layout class="QHBoxLayout" name="horizontalLayout">
+                 <property name="topMargin">
+                  <number>0</number>
+                 </property>
+                 <item>
+                  <widget class="QLabel" name="label">
+                   <property name="toolTip">
+                    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;e.g., fa,md,ad,rd,tensor,helix,gfa,nqa,rdi,nrdi,jdet,mapping, or 'all' for all metrics&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                   </property>
+                   <property name="text">
+                    <string>Other output metrics:</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QLineEdit" name="other_output">
+                   <property name="text">
+                    <string>fa,nqa,rdi,nrdi</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <spacer name="horizontalSpacer_3">
+                   <property name="orientation">
+                    <enum>Qt::Horizontal</enum>
+                   </property>
+                   <property name="sizeHint" stdset="0">
+                    <size>
+                     <width>40</width>
+                     <height>20</height>
+                    </size>
+                   </property>
+                  </spacer>
+                 </item>
+                </layout>
+               </item>
               </layout>
              </widget>
             </item>
@@ -823,39 +860,12 @@
                   </widget>
                  </item>
                  <item>
-                  <widget class="QCheckBox" name="dti_no_high_b">
-                   <property name="statusTip">
-                    <string>calculate DTI metrics by using only b &lt; 1750</string>
-                   </property>
-                   <property name="text">
-                    <string>No high b for DTI</string>
-                   </property>
-                   <property name="checked">
-                    <bool>true</bool>
-                   </property>
-                  </widget>
-                 </item>
-                 <item>
                   <widget class="QPushButton" name="open_ddi_study_src">
                    <property name="statusTip">
                     <string>Compare longitudinal scans for differential tractography</string>
                    </property>
                    <property name="text">
                     <string>Compare SRC...</string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item>
-                  <widget class="QCheckBox" name="output_tensor">
-                   <property name="text">
-                    <string>Tensor matrix</string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item>
-                  <widget class="QCheckBox" name="output_helix_angle">
-                   <property name="text">
-                    <string>Helix angle</string>
                    </property>
                   </widget>
                  </item>
@@ -905,16 +915,22 @@
                      <number>0</number>
                     </property>
                     <item>
-                     <widget class="QCheckBox" name="half_sphere">
+                     <widget class="QCheckBox" name="scheme_balance">
                       <property name="text">
-                       <string>Half-sphere DSI</string>
+                       <string>Scheme balance (for shell data)</string>
                       </property>
                      </widget>
                     </item>
                     <item>
-                     <widget class="QCheckBox" name="scheme_balance">
+                     <widget class="QCheckBox" name="dti_no_high_b">
+                      <property name="statusTip">
+                       <string>calculate DTI metrics by using only b &lt; 1750</string>
+                      </property>
                       <property name="text">
-                       <string>Scheme balance (for shell data)</string>
+                       <string>No high b for DTI</string>
+                      </property>
+                      <property name="checked">
+                       <bool>true</bool>
                       </property>
                      </widget>
                     </item>
@@ -930,40 +946,6 @@
                        </size>
                       </property>
                      </spacer>
-                    </item>
-                    <item>
-                     <widget class="QWidget" name="DT_Option" native="true">
-                      <layout class="QHBoxLayout" name="horizontalLayout">
-                       <property name="spacing">
-                        <number>3</number>
-                       </property>
-                       <property name="leftMargin">
-                        <number>0</number>
-                       </property>
-                       <property name="topMargin">
-                        <number>0</number>
-                       </property>
-                       <property name="rightMargin">
-                        <number>0</number>
-                       </property>
-                       <property name="bottomMargin">
-                        <number>0</number>
-                       </property>
-                       <item>
-                        <spacer name="horizontalSpacer_3">
-                         <property name="orientation">
-                          <enum>Qt::Horizontal</enum>
-                         </property>
-                         <property name="sizeHint" stdset="0">
-                          <size>
-                           <width>40</width>
-                           <height>20</height>
-                          </size>
-                         </property>
-                        </spacer>
-                       </item>
-                      </layout>
-                     </widget>
                     </item>
                    </layout>
                   </item>
@@ -1069,15 +1051,6 @@ Reconstruction</string>
      <height>21</height>
     </rect>
    </property>
-   <widget class="QMenu" name="menuFile">
-    <property name="title">
-     <string>File</string>
-    </property>
-    <addaction name="actionSave_SRC_file_as"/>
-    <addaction name="actionSave_4D_nifti"/>
-    <addaction name="actionSave_b0"/>
-    <addaction name="actionSave_DWI_sum"/>
-   </widget>
    <widget class="QMenu" name="menuB_table">
     <property name="title">
      <string>B-table</string>
@@ -1123,7 +1096,6 @@ Reconstruction</string>
     <addaction name="actionReplace_b0_by_T2W_image"/>
     <addaction name="actionEnable_TEST_features"/>
    </widget>
-   <addaction name="menuFile"/>
    <addaction name="menuEdit"/>
    <addaction name="menuB_table"/>
    <addaction name="menuCorrections"/>
