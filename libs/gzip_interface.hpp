@@ -10,6 +10,7 @@
 extern bool prog_aborted_;
 class gz_istream{
     size_t size_;
+    size_t cur_ = 0;
     std::ifstream in;
     gzFile handle;
     bool is_gz(const char* file_name)
@@ -59,15 +60,20 @@ public:
         char* buf = reinterpret_cast<char*>(buf_);
         if(prog_aborted())
             return false;
-        if(cur() < size())
-            check_prog(100*cur()/size(),100);
-        else
-            check_prog(99,100);
         if(handle)
         {
             const size_t block_size = 104857600;// 100mb
             while(buf_size > block_size)
             {
+
+                if(cur() < size())
+                    check_prog(100*cur()/size(),100);
+                else
+                    check_prog(99,100);
+                if(prog_aborted())
+                    return false;
+
+                cur_ += block_size;
                 if(gzread(handle,buf,block_size) <= 0)
                 {
                     close();
@@ -76,6 +82,8 @@ public:
                 buf_size -= block_size;
                 buf = buf + block_size;
             }
+
+            cur_ += buf_size;
             if (gzread(handle,buf,uint32_t(buf_size)) <= 0)
             {
                 close();
@@ -115,7 +123,7 @@ public:
     }
     size_t cur(void)
     {
-        return handle ? size_t(gztell(handle)):size_t(in.tellg());
+        return handle ? cur_:size_t(in.tellg());
     }
     size_t size(void)
     {
