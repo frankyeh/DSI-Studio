@@ -433,14 +433,6 @@ void CustomSliceModel::argmin(tipl::reg::reg_type reg_type)
     tipl::transformation_matrix_2d<float> m;
 
     auto from = handle->view_item[0].image_data;
-    size_t iso = handle->get_name_index("iso");
-    if(handle->view_item.size() != iso)
-        from = handle->view_item[iso].image_data;
-    size_t base_nqa = handle->get_name_index("base_nqa");
-    if(handle->view_item.size() != base_nqa)
-        from = handle->view_item[base_nqa].image_data;
-
-
     // align brain top
     float z_shift = (float(handle->dim[2])*handle->vs[2]-float(to.geometry()[2])*vs[2])*0.1f;
     arg_min.translocation[2] = -z_shift*vs[2];
