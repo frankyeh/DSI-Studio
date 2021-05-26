@@ -777,8 +777,7 @@ bool fib_data::load_from_mat(void)
                              {return view.name == prefix_name;}) != view_item.end())
                 continue;
         }
-        const float* buf = nullptr;
-        if (!mat_reader.read(index,row,col,buf) || size_t(row)*size_t(col) != dim.size())
+        if (size_t(mat_reader[index].get_rows())*size_t(mat_reader[index].get_cols()) != dim.size())
             continue;
         view_item.push_back(item(matrix_name,dim,&mat_reader,index));
     }
