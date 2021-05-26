@@ -1083,7 +1083,8 @@ void RegionTableWidget::save_region_info(void)
             out << "\tdx" << index << "\tdy" << index << "\tdz" << index;
 
     for(unsigned int index = 0;index < cur_tracking_window.handle->view_item.size();++index)
-        if(cur_tracking_window.handle->view_item[index].name != "color")
+        if(cur_tracking_window.handle->view_item[index].name != "color" &&
+           cur_tracking_window.handle->view_item[index].image_ready)
             out << "\t" << cur_tracking_window.handle->view_item[index].name;
 
     out << std::endl;

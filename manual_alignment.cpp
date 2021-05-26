@@ -78,8 +78,7 @@ void manual_alignment::add_images(std::shared_ptr<fib_data> handle)
         {
             tipl::transformation_matrix<float> T(handle->view_item[i].T);
             add_image(handle->view_item[i].name,
-                      handle->view_item[i].image_data,
-                      T);
+                      handle->view_item[i].get_image(),T);
         }
 }
 

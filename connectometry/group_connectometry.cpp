@@ -482,17 +482,8 @@ void group_connectometry::on_show_result_clicked()
         stat_model info;
         info.resample(*(vbc->model.get()),false,false,0);
         vbc->calculate_spm(*result_fib.get(),info,vbc->normalize_qa);
-        new_data->view_item.push_back(item());
-        new_data->view_item.back().name = "dec_t";
-        new_data->view_item.back().image_data = tipl::make_image(result_fib->neg_corr_ptr[0],new_data->dim);
-        new_data->view_item.back().set_scale(result_fib->neg_corr_ptr[0],
-                                             result_fib->neg_corr_ptr[0]+new_data->dim.size());
-        new_data->view_item.push_back(item());
-        new_data->view_item.back().name = "inc_t";
-        new_data->view_item.back().image_data = tipl::make_image(result_fib->pos_corr_ptr[0],new_data->dim);
-        new_data->view_item.back().set_scale(result_fib->pos_corr_ptr[0],
-                                             result_fib->pos_corr_ptr[0]+new_data->dim.size());
-
+        new_data->view_item.push_back(item("dec_t",result_fib->neg_corr_ptr[0],new_data->dim));
+        new_data->view_item.push_back(item("inc_t",result_fib->pos_corr_ptr[0],new_data->dim));
     }
     tracking_window* current_tracking_window = new tracking_window(this,new_data);
     current_tracking_window->setAttribute(Qt::WA_DeleteOnClose);

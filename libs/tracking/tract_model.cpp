@@ -3099,18 +3099,18 @@ void TractModel::get_tract_data(std::shared_ptr<fib_data> handle,unsigned int fi
     else
     // voxel-based index
     {
-        if(handle->view_item[index_num].image_data.geometry() != handle->dim) // other slices
+        if(handle->view_item[index_num].get_image().geometry() != handle->dim) // other slices
         {
             for (unsigned int data_index = 0,index = 0;index < tract_data[fiber_index].size();index += 3,++data_index)
             {
                 tipl::vector<3> pos(&(tract_data[fiber_index][index]));
                 pos.to(handle->view_item[index_num].iT);
-                tipl::estimate(handle->view_item[index_num].image_data,pos,data[data_index],tipl::linear);
+                tipl::estimate(handle->view_item[index_num].get_image(),pos,data[data_index],tipl::linear);
             }
         }
         else
         for (unsigned int data_index = 0,index = 0;index < tract_data[fiber_index].size();index += 3,++data_index)
-            tipl::estimate(handle->view_item[index_num].image_data,&(tract_data[fiber_index][index]),data[data_index],tipl::linear);
+            tipl::estimate(handle->view_item[index_num].get_image(),&(tract_data[fiber_index][index]),data[data_index],tipl::linear);
     }
 }
 

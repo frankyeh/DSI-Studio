@@ -892,7 +892,7 @@ bool tracking_window::eventFilter(QObject *obj, QEvent *event)
     pos.round();
     handle->get_voxel_information(pos[0],pos[1],pos[2], data);
     for(unsigned int index = 0,data_index = 0;index < handle->view_item.size() && data_index < data.size();++index)
-        if(handle->view_item[index].name != "color")
+        if(handle->view_item[index].name != "color" && handle->view_item[index].image_ready)
         {
             status += handle->view_item[index].name.c_str();
             status += QString("=%1 ").arg(data[data_index]);
@@ -1828,8 +1828,8 @@ void tracking_window::on_actionAdjust_Mapping_triggered()
     size_t index = handle->get_name_index("iso");
     if(handle->view_item.size() == index)
         index = 0;
-    tipl::image<float,3> iso_fa(handle->view_item[index].image_data);
-    tipl::add(iso_fa,handle->view_item[0].image_data);
+    tipl::image<float,3> iso_fa(handle->view_item[index].get_image());
+    tipl::add(iso_fa,handle->view_item[0].get_image());
 
     std::shared_ptr<manual_alignment> manual(new manual_alignment(this,
         iso_fa,slices[index]->vs,
@@ -2352,11 +2352,19 @@ void tracking_window::on_SliceModality_currentIndexChanged(int index)
 {
     if(index == -1 || !current_slice.get())
         return;
+
     no_update = true;
     tipl::vector<3,float> slice_position(current_slice->slice_pos);
     if(!current_slice->is_diffusion_space)
         slice_position.to(current_slice->T);
     current_slice = slices[size_t(index)];
+
+    // invoke image reading and update contrast
+    if(!handle->view_item[current_slice->view_id].image_ready)
+    {
+        current_slice->get_source();
+        current_slice->update_contrast();
+    }
 
 
     ui->is_overlay->setChecked(current_slice->is_overlay);
@@ -2366,7 +2374,6 @@ void tracking_window::on_SliceModality_currentIndexChanged(int index)
     ui->glSagBox->setRange(0,int(current_slice->dim[0]-1));
     ui->glCorBox->setRange(0,int(current_slice->dim[1]-1));
     ui->glAxiBox->setRange(0,int(current_slice->dim[2]-1));
-
 
     std::pair<float,float> range = current_slice->get_value_range();
     std::pair<float,float> contrast_range = current_slice->get_contrast_range();
@@ -2391,6 +2398,7 @@ void tracking_window::on_SliceModality_currentIndexChanged(int index)
 
     move_slice_to(slice_position);
     no_update = false;
+
 }
 
 
@@ -2714,6 +2722,7 @@ void tracking_window::on_actionInsert_Coronal_Pictures_triggered()
     tipl::flip_y(reg_slice_ptr->source_images);
     tipl::swap_yz(reg_slice_ptr->source_images);
     std::swap(reg_slice_ptr->vs[1],reg_slice_ptr->vs[2]);
+    handle->view_item.back().set_image(tipl::make_image(&*reg_slice_ptr->source_images.begin(),reg_slice_ptr->source_images.geometry()));
     reg_slice_ptr->update_image();
     ui->SliceModality->setCurrentIndex(0);
     ui->SliceModality->setCurrentIndex(int(handle->view_item.size())-1);
@@ -2738,6 +2747,7 @@ void tracking_window::on_actionInsert_Sagittal_Picture_triggered()
     tipl::swap_xy(reg_slice_ptr->source_images);
     tipl::swap_xz(reg_slice_ptr->source_images);
     std::swap(reg_slice_ptr->vs[0],reg_slice_ptr->vs[2]);
+    handle->view_item.back().set_image(tipl::make_image(&*reg_slice_ptr->source_images.begin(),reg_slice_ptr->source_images.geometry()));
     reg_slice_ptr->update_image();
     ui->SliceModality->setCurrentIndex(0);
     ui->SliceModality->setCurrentIndex(int(handle->view_item.size())-1);

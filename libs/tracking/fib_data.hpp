@@ -114,8 +114,46 @@ public:
 
 struct item
 {
-    std::string name;
+private:
     tipl::const_pointer_image<float,3> image_data;
+    tipl::image<float,3> dummy;
+    gz_mat_read* mat_reader = nullptr;
+    unsigned int image_index = 0;
+public:
+    template<typename value_type>
+    item(const std::string& name_,const value_type* pointer,const tipl::geometry<3>& dim_):
+        image_data(tipl::make_image(pointer,dim_)),name(name_)
+    {
+        set_scale(image_data.begin(),image_data.end());
+    }
+    item(const std::string& name_,const tipl::geometry<3>& dim_,gz_mat_read* mat_reader_,unsigned int index_):
+        image_data(tipl::make_image((const float*)nullptr,dim_)),mat_reader(mat_reader_),image_index(index_),name(name_)
+    {
+        image_ready = false;
+    }
+    tipl::const_pointer_image<float,3> get_image(void)
+    {
+        if(!image_ready)
+        {
+            // delay read routine
+            unsigned int row,col;
+            const float* buf = nullptr;
+            if (!mat_reader->read(image_index,row,col,buf))
+            {
+                dummy.resize(image_data.geometry());
+                image_data = tipl::make_image(&*dummy.begin(),dummy.geometry());
+            }
+            else
+                image_data = tipl::make_image(buf,image_data.geometry());
+            image_ready = true;
+            set_scale(image_data.begin(),image_data.end());
+        }
+        return image_data;
+    }
+    void set_image(tipl::const_pointer_image<float,3> new_image){image_data = new_image;}
+public:
+    std::string name;
+    bool image_ready = true;
     tipl::matrix<4,4,float> T,iT;// T: image->diffusion iT: diffusion->image
     float max_value;
     float min_value;
@@ -163,7 +201,7 @@ public:
     fiber_directions dir;
     odf_data odf;
     connectometry_db db;
-    std::vector<item> view_item;
+    mutable std::vector<item> view_item;
 public:
     int prog;
     tipl::image<tipl::vector<3,float>,3 > mni_position,inv_mni_position;

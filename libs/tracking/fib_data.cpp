@@ -528,10 +528,7 @@ bool fib_data::load_from_file(const char* file_name)
                 dir.findex_buf[0][i] = ti.discretize(v);
             });
 
-            view_item.push_back(item());
-            view_item.back().name =  "fiber";
-            view_item.back().image_data = tipl::make_image(dir.fa[0],dim);
-            view_item.back().set_scale(dir.fa[0],dir.fa[0]+dim.size());
+            view_item.push_back(item("fiber",dir.fa[0],dim));
             return true;
         }
         else
@@ -578,10 +575,7 @@ bool fib_data::load_from_file(const char* file_name)
             }
             dir.index_name.push_back("fiber");
             dir.index_data.push_back(dir.fa);
-            view_item.push_back(item());
-            view_item.back().name =  "fiber";
-            view_item.back().image_data = tipl::make_image(dir.fa[0],dim);
-            view_item.back().set_scale(dir.fa[0],dir.fa[0]+dim.size());
+            view_item.push_back(item("fiber",dir.fa[0],dim));
             return true;
         }
         else
@@ -706,13 +700,13 @@ bool fib_data::save_mapping(const std::string& index_name,const std::string& fil
     if(QFileInfo(QString(file_name.c_str())).completeSuffix().toLower() == "mat")
     {
         tipl::io::mat_write file(file_name.c_str());
-        file << view_item[index].image_data;
+        file << view_item[index].get_image();
         return true;
     }
     else
     {
-        tipl::image<float,3> buf(view_item[index].image_data);
-        if(view_item[index].image_data.geometry() != dim)
+        tipl::image<float,3> buf(view_item[index].get_image());
+        if(view_item[index].get_image().geometry() != dim)
         {
             tipl::image<float,3> new_buf(dim);
             tipl::resample(buf,new_buf,view_item[index].iT,tipl::cubic);
@@ -760,20 +754,10 @@ bool fib_data::load_from_mat(void)
     }
     odf.read(mat_reader);
 
-    view_item.push_back(item());
-    view_item.back().name =  dir.fa.size() == 1 ? "fa":"qa";
-    view_item.back().image_data = tipl::make_image(dir.fa[0],dim);
-    view_item.back().set_scale(dir.fa[0],dir.fa[0]+dim.size());
+    view_item.push_back(item(dir.fa.size() == 1 ? "fa":"qa",dir.fa[0],dim));
     for(unsigned int index = 1;index < dir.index_name.size();++index)
-    {
-        view_item.push_back(item());
-        view_item.back().name =  dir.index_name[index];
-        view_item.back().image_data = tipl::make_image(dir.index_data[index][0],dim);
-        view_item.back().set_scale(dir.index_data[index][0],dir.index_data[index][0]+dim.size());
-    }
-    view_item.push_back(item());
-    view_item.back() = view_item[0];
-    view_item.back().name = "color";
+        view_item.push_back(item(dir.index_name[index],dir.index_data[index][0],dim));
+    view_item.push_back(item("color",dir.fa[0],dim));
 
     // read other DWI space volume
     unsigned int row,col;
@@ -796,10 +780,7 @@ bool fib_data::load_from_mat(void)
         const float* buf = nullptr;
         if (!mat_reader.read(index,row,col,buf) || size_t(row)*size_t(col) != dim.size())
             continue;
-        view_item.push_back(item());
-        view_item.back().name = matrix_name;
-        view_item.back().image_data = tipl::make_image(buf,dim);
-        view_item.back().set_scale(buf,buf+dim.size());
+        view_item.push_back(item(matrix_name,dim,&mat_reader,index));
     }
 
     is_human_data = is_human_size(dim,vs); // 1 percentile head size in mm
@@ -915,7 +896,7 @@ void fib_data::get_slice(unsigned int view_index,
     {
         {
             tipl::image<float,2> buf;
-            tipl::volume2slice(view_item[0].image_data, buf, d_index, pos);
+            tipl::volume2slice(view_item[0].get_image(), buf, d_index, pos);
             v2c.convert(buf,show_image);
         }
 
@@ -938,7 +919,7 @@ void fib_data::get_slice(unsigned int view_index,
     else
     {
         tipl::image<float,2> buf;
-        tipl::volume2slice(view_item[view_index].image_data, buf, d_index, pos);
+        tipl::volume2slice(view_item[view_index].get_image(), buf, d_index, pos);
         v2c.convert(buf,show_image);
     }
 
@@ -973,16 +954,16 @@ void fib_data::get_voxel_information(int x,int y,int z,std::vector<float>& buf) 
         return;
     for(unsigned int i = 0;i < view_item.size();++i)
     {
-        if(view_item[i].name == "color")
+        if(view_item[i].name == "color" || !view_item[i].image_ready)
             continue;
-        if(view_item[i].image_data.geometry() != dim)
+        if(view_item[i].get_image().geometry() != dim)
         {
             tipl::vector<3> pos(x,y,z);
             pos.to(view_item[i].iT);
-            buf.push_back(tipl::estimate(view_item[i].image_data,pos));
+            buf.push_back(tipl::estimate(view_item[i].get_image(),pos));
         }
         else
-            buf.push_back(view_item[i].image_data.empty() ? 0.0 : view_item[i].image_data[index]);
+            buf.push_back(view_item[i].get_image().size() ? view_item[i].get_image()[index] : 0.0);
     }
 }
 extern std::vector<std::string> fa_template_list,iso_template_list,atlas_file_list,track_atlas_file_list;
@@ -1390,11 +1371,11 @@ void fib_data::run_normalization(bool background,bool inv)
 
         for(unsigned int i = 0;i < view_item.size();++i)
             if(view_item[i].name == std::string("iso"))
-                Is2 = view_item[i].image_data;
+                Is2 = view_item[i].get_image();
         if(Is2.empty()) // DTI reconstruction
         for(unsigned int i = 0;i < view_item.size();++i)
             if(view_item[i].name == std::string("md"))
-                Is2 = view_item[i].image_data;
+                Is2 = view_item[i].get_image();
 
         unsigned int downsampling = 0;
 

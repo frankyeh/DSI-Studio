@@ -535,11 +535,11 @@ void ROIRegion::get_quantitative_data(std::shared_ptr<fib_data> handle,std::vect
         float mean;
         max_values.push_back(0.0f);
         min_values.push_back(0.0f);
-        if(handle->view_item[data_index].image_data.geometry() != handle->dim)
-            calculate_region_stat(handle->view_item[data_index].image_data,points,mean,max_values.back(),min_values.back(),
+        if(handle->view_item[data_index].get_image().geometry() != handle->dim)
+            calculate_region_stat(handle->view_item[data_index].get_image(),points,mean,max_values.back(),min_values.back(),
                                   &handle->view_item[data_index].iT[0]);
         else
-            calculate_region_stat(handle->view_item[data_index].image_data,points,mean,max_values.back(),min_values.back());
+            calculate_region_stat(handle->view_item[data_index].get_image(),points,mean,max_values.back(),min_values.back());
         data.push_back(mean);
     }
     titles.insert(titles.end(),index_titles.begin(),index_titles.end());

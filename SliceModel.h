@@ -25,7 +25,7 @@ public:
     SliceModel(fib_data* new_handle,uint32_t view_id_);
     virtual ~SliceModel(void){}
 public:
-
+    void update_contrast(void);
     std::pair<float,float> get_value_range(void) const;
     std::pair<float,float> get_contrast_range(void) const;
     std::pair<unsigned int,unsigned int> get_contrast_color(void) const;
