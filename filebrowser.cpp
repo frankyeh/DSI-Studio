@@ -223,7 +223,7 @@ void FileBrowser::on_subject_list_currentCellChanged(int currentRow, int , int p
         {
             QString file_name = directory.absolutePath() + "/" + mat_file_list[i];
             gz_mat_read mat;
-            if(!mat.load_from_file(file_name.toStdString().c_str(),5,"voxel_size"))
+            if(!mat.load_from_file(file_name.toStdString().c_str()))
                 continue;
             int row = ui->tableWidget->rowCount();
             ui->tableWidget->setRowCount(row+1);
@@ -375,7 +375,7 @@ void FileBrowser::preview_image(QString file_name)
     if(QFileInfo(file_name).suffix() == "gz")
     {
         gz_mat_read mat;
-        if(mat.load_from_file(file_name.toStdString().c_str(),10,file_name.contains(".fib.gz") ? "fa0":"image0"))
+        if(mat.load_from_file(file_name.toStdString().c_str()))
         {
             tipl::geometry<3> dim;
             if(mat.read("dimension",dim))
