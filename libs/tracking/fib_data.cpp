@@ -124,6 +124,28 @@ const float* odf_data::get_odf_data(unsigned int index) const
     return nullptr;
 }
 
+extern bool has_gui;
+tipl::const_pointer_image<float,3> item::get_image(void)
+{
+    if(!image_ready)
+    {
+        // delay read routine
+        unsigned int row,col;
+        const float* buf = nullptr;
+        has_gui = false;
+        if (!mat_reader->read(image_index,row,col,buf))
+        {
+            dummy.resize(image_data.geometry());
+            image_data = tipl::make_image(&*dummy.begin(),dummy.geometry());
+        }
+        else
+            image_data = tipl::make_image(buf,image_data.geometry());
+        has_gui = true;
+        image_ready = true;
+        set_scale(image_data.begin(),image_data.end());
+    }
+    return image_data;
+}
 
 
 void fiber_directions::check_index(unsigned int index)
@@ -631,11 +653,39 @@ bool fib_data::load_from_file(const char* file_name)
         error_msg = "File not exist";
         return false;
     }
+
+
+    //  prepare idx file
+    std::string idx_name(file_name);
+    idx_name += ".idx";
+    {
+        if(QFileInfo(idx_name.c_str()).exists())
+        {
+            mat_reader.in->load_index(idx_name.c_str());
+            mat_reader.in->free_on_read = true;
+            mat_reader.delay_read = true;
+        }
+        else
+        {
+            if(QFileInfo(file_name).size() > 67108864) // 64mb
+            {
+                mat_reader.in->sample_access_point = true;
+                mat_reader.in->buffer_all = true;
+            }
+        }
+    }
+
     if (!mat_reader.load_from_file(file_name) || prog_aborted())
     {
         error_msg = prog_aborted() ? "Loading process aborted" : "Invalid file format";
         return false;
     }
+
+    // save idx file
+    if(mat_reader.in->has_access_points())
+        mat_reader.in->save_index(idx_name.c_str());
+
+
     if(!load_from_mat())
         return false;
     return true;

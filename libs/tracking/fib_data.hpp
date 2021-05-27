@@ -131,25 +131,7 @@ public:
     {
         image_ready = false;
     }
-    tipl::const_pointer_image<float,3> get_image(void)
-    {
-        if(!image_ready)
-        {
-            // delay read routine
-            unsigned int row,col;
-            const float* buf = nullptr;
-            if (!mat_reader->read(image_index,row,col,buf))
-            {
-                dummy.resize(image_data.geometry());
-                image_data = tipl::make_image(&*dummy.begin(),dummy.geometry());
-            }
-            else
-                image_data = tipl::make_image(buf,image_data.geometry());
-            image_ready = true;
-            set_scale(image_data.begin(),image_data.end());
-        }
-        return image_data;
-    }
+    tipl::const_pointer_image<float,3> get_image(void);
     void set_image(tipl::const_pointer_image<float,3> new_image){image_data = new_image;}
 public:
     std::string name;
