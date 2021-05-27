@@ -4,7 +4,6 @@
 #include <QFileDialog>
 #include "view_image.h"
 #include "ui_view_image.h"
-#include "libs/gzip_interface.hpp"
 #include "prog_interface_static_link.h"
 #include <QPlainTextEdit>
 #include <QFileInfo>
@@ -199,6 +198,8 @@ view_image::view_image(QWidget *parent) :
     ui->view->setScene(&source);
     ui->max_color->setColor(0xFFFFFFFF);
     ui->min_color->setColor(0XFF000000);
+    ui->dwi_volume->hide();
+    ui->dwi_label->hide();
     connect(ui->max_color,SIGNAL(clicked()),this,SLOT(change_contrast()));
     connect(ui->min_color,SIGNAL(clicked()),this,SLOT(change_contrast()));
 
@@ -258,7 +259,6 @@ bool get_compressed_image(tipl::io::dicom& dicom,tipl::image<short,2>& I)
 
 bool view_image::open(QStringList file_names)
 {
-    gz_nifti nifti;
     tipl::io::dicom dicom;
     tipl::io::bruker_2dseq seq;
     gz_mat_read mat;
@@ -270,6 +270,7 @@ bool view_image::open(QStringList file_names)
     setWindowTitle(QFileInfo(file_name).fileName());
     prog_init p("loading ",file_name.toStdString().c_str());
     check_prog(0,1);
+
     if(file_names.size() > 1 && file_name.contains("bmp"))
     {
         for(unsigned int i = 0;check_prog(i,file_names.size());++i)
@@ -289,6 +290,15 @@ bool view_image::open(QStringList file_names)
     else
     if(nifti.load_from_file(file_name.toLocal8Bit().begin()))
     {
+        if(nifti.dim(4) > 1)
+        {
+            ui->dwi_volume->setMaximum(nifti.dim(4)-1);
+            dwi_volume_buf.resize(nifti.dim(4));
+            nifti.input_stream->sample_access_point = true;
+            nifti.input_stream->free_on_read = true;
+            ui->dwi_volume->show();
+            ui->dwi_label->show();
+        }
         nifti >> data;
         nifti.get_voxel_size(vs);
         nifti.get_image_transformation(T);
@@ -949,6 +959,32 @@ void view_image::on_actionImageMultiplication_triggered()
 void view_image::on_actionSignal_Smoothing_triggered()
 {
     tipl::filter::mean(data);
+    init_image();
+    show_image();
+}
+
+extern bool has_gui;
+
+void view_image::on_dwi_volume_valueChanged(int value)
+{
+    dwi_volume_buf[cur_dwi_volume].swap(data); // return image data to buffer
+
+    cur_dwi_volume = size_t(value);
+    if(dwi_volume_buf[cur_dwi_volume].empty())
+    {
+        has_gui = false;
+        nifti.select_volume(cur_dwi_volume);
+        tipl::image<float,3> new_data;
+        nifti >> new_data;
+        has_gui = true;
+        if(new_data.empty())
+            return;
+        new_data.swap(data);
+    }
+    else
+        dwi_volume_buf[cur_dwi_volume].swap(data);
+
+    ui->dwi_label->setText(QString("DWI(%1/%2)").arg(value).arg(ui->dwi_volume->maximum()));
     init_image();
     show_image();
 }

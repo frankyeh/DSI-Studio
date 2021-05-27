@@ -7,129 +7,114 @@
 #endif
 #include "tipl/tipl.hpp"
 #include "prog_interface_static_link.h"
+#include <stdio.h>
+
+#define WINSIZE 32768U      /* sliding window size */
+
 extern bool prog_aborted_;
-class gz_istream{
-    size_t size_;
-    size_t cur_ = 0;
-    std::ifstream in;
-    gzFile handle;
-    bool is_gz(const char* file_name)
+
+struct access_point {
+    uint64_t uncompressed_pos = 0;
+    uint64_t compressed_pos = 0;
+    unsigned char dict32k[WINSIZE];  /* preceding 32K of uncompressed data */
+    access_point(void){;}
+    access_point(uint64_t up,uint64_t cp,const unsigned char* dict32k_):
+        uncompressed_pos(up),compressed_pos(cp)
     {
-        std::string filename = file_name;
-        if (filename.length() > 3 &&
-                filename[filename.length()-3] == '.' &&
-                filename[filename.length()-2] == 'g' &&
-                filename[filename.length()-1] == 'z')
-            return true;
-        return false;
+        std::copy(dict32k_,dict32k_+WINSIZE,dict32k);
     }
+};
+
+class inflate_stream{
+    z_stream strm;
+    bool ok = true;
+    std::vector<unsigned char> buf;
 public:
-    gz_istream(void):size_(0),handle(nullptr){}
-    ~gz_istream(void)
+    inflate_stream(void);
+    inflate_stream(std::shared_ptr<access_point> point);
+    ~inflate_stream();
+private: // no copy of the class
+    inflate_stream(const inflate_stream& rhs);
+    void operator=(const inflate_stream& rhs);
+public:
+    int process(void);
+    int process(size_t& cur_uncompressed,size_t& cur_compressed,bool get_access_point);
+    void input(const std::vector<unsigned char>& rhs);
+    void input(std::vector<unsigned char>&& rhs);
+    void output(void* buf,size_t len);
+    bool empty(void) const
     {
-        close();
+        return strm.avail_in == 0;
     }
+    size_t size_to_extract(void) const
+    {
+        return strm.avail_out;
+    }
+    bool at_block_end(void) const
+    {
+        return strm.data_type == 128;
+    }
+    void shift_input(size_t shift)
+    {
+        strm.avail_in -= shift;
+        strm.next_in += shift;
+    }
+};
 
-    template<class char_type>
-    bool open(const char_type* file_name)
-    {
-        prog_aborted_ = false;
-        in.open(file_name,std::ios::binary);
-        unsigned int gz_size = 0;
-        if(in)
-        {
-            in.seekg(-4,std::ios::end);
-            size_ = size_t(in.tellg())+4;
-            in.read(reinterpret_cast<char*>(&gz_size),4);
-            in.seekg(0,std::ios::beg);
-        }
-        if(is_gz(file_name))
-        {
-            in.close();
-            if(size_ > gz_size) // size > 4G
-                size_ = size_*2;
-            else
-                size_ = gz_size;
-            handle = gzopen(file_name, "rb");
-            return handle;
-        }
-        return in.good();
-    }
-    bool read(void* buf_,size_t buf_size)
-    {
-        char* buf = reinterpret_cast<char*>(buf_);
-        if(prog_aborted())
-            return false;
-        if(handle)
-        {
-            const size_t block_size = 104857600;// 100mb
-            while(buf_size > block_size)
-            {
 
-                if(cur() < size())
-                    check_prog(100*cur()/size(),100);
-                else
-                    check_prog(99,100);
-                if(prog_aborted())
-                    return false;
-
-                cur_ += block_size;
-                if(gzread(handle,buf,block_size) <= 0)
-                {
-                    close();
-                    return false;
-                }
-                buf_size -= block_size;
-                buf = buf + block_size;
-            }
-
-            cur_ += buf_size;
-            if (gzread(handle,buf,uint32_t(buf_size)) <= 0)
-            {
-                close();
-                return false;
-            }
-            return true;
-        }
-        else
-            if(in)
-            {
-                in.read(buf,uint32_t(buf_size));
-                return in.good();
-            }
-        return false;
-    }
-    void seek(long pos)
+class gz_istream{
+    std::ifstream in;
+    std::shared_ptr<inflate_stream> istrm;
+    bool is_gz = false;
+private:
+    size_t file_size = 0;
+    size_t cur_input_index = 0;
+    size_t cur_uncompressed = 0;
+    size_t cur_compressed = 0;
+    size_t cur_input_shift = 0; // used when seek
+private:
+    // read all buffer
+    std::shared_ptr<std::future<void> > readfile_thread;
+    bool terminated = false;
+    bool reading_buf = false;
+    bool read_each_buf(size_t begin_index,size_t n);
+private:
+    std::vector<std::shared_ptr<std::future<void> > > inflate_thread;
+private:
+    std::vector<std::vector<unsigned char> > file_buf;
+    std::vector<bool> file_buf_ready;
+    std::vector<unsigned char> file_buf_ref;
+    bool load_file_buf(size_t size);
+    bool fetch(void);
+private:
+    std::map<uint64_t,std::shared_ptr<access_point>,std::greater<uint64_t> > points;
+    std::vector<access_point> access;
+    void initgz(void);
+    void terminate_readfile_thread(void);
+    bool jump_to(std::shared_ptr<access_point> p);
+public:
+    bool sample_access_point = false;
+    bool buffer_all = false;
+    bool free_on_read = true;
+    bool load_index(const char* file_name);
+    bool save_index(const char* file_name);
+    bool has_access_points(void) const {return !points.empty();}
+public:
+    ~gz_istream(void){close();}
+    bool open(const char* file_name);
+    bool read(void* buf_,size_t buf_size);
+    bool seek(size_t offset);
+    void flush(void);
+    void close(void);
+    void clear(void){;}
+    size_t tell(void) const
     {
-        if(handle)
-        {
-            if(gzseek(handle,pos,SEEK_SET) == -1)
-                close();
-        }
-        else
-            if(in)
-                in.seekg(pos,std::ios::beg);
+        return cur_uncompressed;
     }
-    void close(void)
+    bool good(void) const
     {
-        if(handle)
-        {
-            gzclose(handle);
-            handle = nullptr;
-        }
-        if(in)
-            in.close();
-        check_prog(0,0);
+        return (is_gz ? cur_compressed+8 < file_size : in.good());
     }
-    size_t cur(void)
-    {
-        return handle ? cur_:size_t(in.tellg());
-    }
-    size_t size(void)
-    {
-        return size_;
-    }
-    bool good(void) const {return handle ? !gzeof(handle):in.good();}
     operator bool() const	{return good();}
     bool operator!() const	{return !good();}
 };
@@ -154,50 +139,10 @@ public:
         close();
     }
 public:
-    template<class char_type>
-    bool open(const char_type* file_name)
-    {
-        if(is_gz(file_name))
-        {
-            handle = gzopen(file_name, "wb");
-            return handle;
-        }
-        out.open(file_name,std::ios::binary);
-        return out.good();
-    }
-    void write(const void* buf_,size_t size)
-    {        
-        const char* buf = reinterpret_cast<const char*>(buf_);
-        if(handle)
-        {
-            const size_t block_size = 104857600;// 500mb
-            while(size > block_size)
-            {
-                if(gzwrite(handle,buf,block_size) <= 0)
-                {
-                    close();
-                    throw std::runtime_error("Cannot output gz file");
-                }
-                size -= block_size;
-                buf = buf + block_size;
-            }
-            if(gzwrite(handle,buf,uint32_t(size)) <= 0)
-                close();
-        }
-        else
-            if(out)
-                out.write(buf,uint32_t(size));
-    }
-    void close(void)
-    {
-        if(handle)
-        {
-            gzclose(handle);
-            handle = nullptr;
-        }
-        if(out)
-            out.close();
-    }
+    bool open(const char* file_name);
+    void write(const void* buf_,size_t size);
+    void flush(void);
+    void close(void);
     bool good(void) const {return handle ? !gzeof(handle):out.good();}
     operator bool() const	{return good();}
     bool operator!() const	{return !good();}

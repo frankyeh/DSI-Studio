@@ -4,7 +4,7 @@
 #include <QMainWindow>
 #include <QGraphicsScene>
 #include <tipl/tipl.hpp>
-
+#include "libs/gzip_interface.hpp"
 namespace Ui {
 class view_image;
 }
@@ -15,6 +15,7 @@ class view_image : public QMainWindow
     
 public:
     QString file_name;
+    gz_nifti nifti;
     explicit view_image(QWidget *parent = nullptr);
     ~view_image();
     bool open(QStringList file_name);
@@ -93,6 +94,8 @@ private slots:
 
     void on_actionSignal_Smoothing_triggered();
 
+    void on_dwi_volume_valueChanged(int value);
+
 private:
     Ui::view_image *ui;
     tipl::image<float,3> data;
@@ -100,6 +103,9 @@ private:
     tipl::vector<3,float> vs;
     tipl::matrix<4,4,float> T;
     tipl::value_to_color<float> v2c;
+private:
+    std::vector<tipl::image<float,3> > dwi_volume_buf;
+    size_t cur_dwi_volume = 0;
 private:// batch processing
     std::vector<tipl::image<float,3> > other_data;
     std::vector<std::string> other_file_name;

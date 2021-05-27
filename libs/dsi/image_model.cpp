@@ -1339,11 +1339,31 @@ bool ImageModel::load_from_file(const char* dwi_file_name)
         return false;
     }
 
-    if(!mat_reader.load_from_file(dwi_file_name))
+    //  prepare idx file
+    std::string idx_name = dwi_file_name;
+    idx_name += ".idx";
     {
-        error_msg = "Invalid SRC file";
+        mat_reader.in->free_on_read = true;
+        mat_reader.in->buffer_all = true;
+        if(QFileInfo(idx_name.c_str()).exists())
+            mat_reader.in->load_index(idx_name.c_str());
+        else
+        {
+            if(QFileInfo(dwi_file_name).size() > 67108864) // 64mb
+                mat_reader.in->sample_access_point = true;
+        }
+    }
+
+    if(!mat_reader.load_from_file(dwi_file_name) || prog_aborted())
+    {
+        if(!prog_aborted())
+            error_msg = "Invalid SRC file";
         return false;
     }
+    // save idx file
+    if(mat_reader.in->has_access_points())
+        mat_reader.in->save_index(idx_name.c_str());
+
 
     if (!mat_reader.read("dimension",voxel.dim))
     {

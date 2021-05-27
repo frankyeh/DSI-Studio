@@ -284,6 +284,7 @@ bool load_4d_nii(const char* file_name,std::vector<std::shared_ptr<DwiHeader> >&
     std::vector<tipl::image<float,3> > dwi_data;
     {
         gz_nifti nii;
+        nii.input_stream->buffer_all = true;
         if(!nii.load_from_file(file_name))
         {
             src_error_msg = nii.error;

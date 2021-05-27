@@ -236,6 +236,20 @@
             </property>
            </widget>
           </item>
+          <item>
+           <widget class="QLabel" name="dwi_label">
+            <property name="text">
+             <string>DWI:</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QSlider" name="dwi_volume">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+           </widget>
+          </item>
          </layout>
         </item>
         <item>

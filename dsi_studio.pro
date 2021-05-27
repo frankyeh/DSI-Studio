@@ -175,7 +175,8 @@ SOURCES += main.cpp \
     auto_track.cpp \
     cmd/atk.cpp \
     tracking/device.cpp \
-    tracking/devicetablewidget.cpp
+    tracking/devicetablewidget.cpp \
+    libs/gzip_interface.cpp
 
 OTHER_FILES += \
     options.txt \
