@@ -810,7 +810,6 @@ bool fib_data::load_from_mat(void)
     view_item.push_back(item("color",dir.fa[0],dim));
 
     // read other DWI space volume
-    unsigned int row,col;
     for (unsigned int index = 0;index < mat_reader.size();++index)
     {
         std::string matrix_name = mat_reader.name(index);
