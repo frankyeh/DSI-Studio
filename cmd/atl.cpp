@@ -252,7 +252,7 @@ int atl(void)
             std::cout << "only QSDR reconstructed FIB file is supported." << std::endl;
             return 1;
         }
-        if(handle->native_position.empty())
+        if(handle->get_native_position().empty())
         {
             std::cout << "no mapping information found. Please reconstruct QSDR with 'mapping' included in the output." << std::endl;
             return 1;

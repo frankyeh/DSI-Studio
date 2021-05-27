@@ -787,12 +787,8 @@ bool fib_data::load_from_mat(void)
 
     if(is_qsdr)
     {
-        // read native geometry and transformation information
-        const float* mapping = nullptr;
-        if(mat_reader.read("native_mapping",row,col,mapping))
+        if(mat_reader.has("native_mapping"))
         {
-            native_position.resize(dim);
-            std::copy(mapping,mapping+col*row,&native_position[0][0]);
             mat_reader.read("native_dimension",native_geo);
             mat_reader.read("native_voxel_size",native_vs);
         }
@@ -861,6 +857,21 @@ bool fib_data::load_from_mat(void)
             set_template_id(template_id);
     }
     return true;
+}
+
+const tipl::image<tipl::vector<3,float>,3 >& fib_data::get_native_position(void) const
+{
+    if(native_position.empty() && mat_reader.has("native_mapping"))
+    {
+        unsigned int row,col;
+        const float* mapping = nullptr;
+        if(mat_reader.read("native_mapping",row,col,mapping))
+        {
+            native_position.resize(dim);
+            std::copy(mapping,mapping+col*row,&native_position[0][0]);
+        }
+    }
+    return native_position;
 }
 
 size_t fib_data::get_name_index(const std::string& index_name) const

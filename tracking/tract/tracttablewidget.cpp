@@ -622,7 +622,7 @@ void TractTableWidget::save_tracts_in_native(void)
         QMessageBox::information(this,"DSI Studio","This function only works with QSDR reconstructed FIB files.");
         return;
     }
-    if(cur_tracking_window.handle->native_position.empty())
+    if(cur_tracking_window.handle->get_native_position().empty())
     {
         QMessageBox::information(this,"DSI Studio","No mapping information included. Please reconstruct QSDR with 'mapping' included in the output.",0);
         return;

@@ -782,7 +782,7 @@ bool TractModel::save_data_to_file(std::shared_ptr<fib_data> handle,const char* 
 bool TractModel::save_tracts_in_native_space(std::shared_ptr<fib_data> handle,
                                              const char* file_name)
 {
-    if(handle->native_position.empty())
+    if(handle->get_native_position().empty())
         return false;
     std::shared_ptr<TractModel> tract_in_native(new TractModel(handle->native_geo,handle->native_vs));
     std::vector<std::vector<float> > new_tract_data = tract_data;
@@ -791,7 +791,7 @@ bool TractModel::save_tracts_in_native_space(std::shared_ptr<fib_data> handle,
         for(size_t j = 0;j < new_tract_data[i].size();j += 3)
         {
             tipl::vector<3> pos(&new_tract_data[i][0]+j),new_pos;
-            tipl::estimate(handle->native_position,pos,new_pos);
+            tipl::estimate(handle->get_native_position(),pos,new_pos);
             new_tract_data[i][j] = new_pos[0];
             new_tract_data[i][j+1] = new_pos[1];
             new_tract_data[i][j+2] = new_pos[2];

@@ -205,10 +205,12 @@ public:
 public:
     int prog;
     tipl::image<tipl::vector<3,float>,3 > mni_position,inv_mni_position;
+private:
+    mutable tipl::image<tipl::vector<3,float>,3 > native_position;
 public:
     tipl::geometry<3> native_geo;
     tipl::vector<3> native_vs;
-    tipl::image<tipl::vector<3,float>,3 > native_position;
+    const tipl::image<tipl::vector<3,float>,3 >& get_native_position(void) const;
 public:
     size_t template_id = 0;
     tipl::vector<3> template_vs,template_shift;

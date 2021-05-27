@@ -629,15 +629,16 @@ bool load_nii(std::shared_ptr<fib_data> handle,
         if(handle->is_qsdr)
         {
             tipl::image<unsigned int, 3> new_from;
-            if(!handle->native_position.empty())
             for(unsigned int index = 0;index < handle->view_item.size();++index)
                 if(handle->view_item[index].native_geo == from.geometry())
                 {
+                    if(handle->get_native_position().empty())
+                        break;
                     auto T = handle->view_item[index].native_trans;
                     new_from.resize(handle->dim);
                     for(size_t i = 0;i < new_from.size();++i)
                     {
-                        auto pos = handle->native_position[i];
+                        auto pos = handle->get_native_position()[i];
                         T(pos);
                         tipl::estimate(from,pos,new_from[i],tipl::nearest);
                     }
