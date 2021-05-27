@@ -3,7 +3,7 @@ QT += core \
     opengl \
     charts
 greaterThan(QT_MAJOR_VERSION, 5): QT += widgets
-CONFIG += c++11
+CONFIG += c++14
 #CONFIG += console
 TARGET = dsi_studio
 TEMPLATE = app
