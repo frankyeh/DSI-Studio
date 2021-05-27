@@ -171,6 +171,7 @@ bool gz_istream::load_file_buf(size_t num)
         for(size_t i = 0;i < 5;++i)
         {
             using namespace std::chrono;
+            using namespace std::chrono_literals;
             std::this_thread::sleep_for(0.1ms);
             if(file_buf_ready[cur_input_index])
                 return true;
