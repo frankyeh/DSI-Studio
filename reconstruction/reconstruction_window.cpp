@@ -25,8 +25,8 @@ bool reconstruction_window::load_src(int index)
     handle.reset(new ImageModel);
     if (!handle->load_from_file(filenames[index].toLocal8Bit().begin()))
     {
-        QMessageBox::information(this,"error",QString("Cannot open ") +
-            filenames[index] + " : " +handle->error_msg.c_str(),0);
+        if(!prog_aborted())
+            QMessageBox::critical(this,"ERROR",QString("Cannot open ") + QFileInfo(filenames[index]).baseName() + " " +handle->error_msg.c_str());
         return false;
     }
     double m = double(*std::max_element(handle->src_dwi_data[0],handle->src_dwi_data[0]+handle->voxel.dim.size()));

@@ -763,8 +763,8 @@ void MainWindow::on_ReconstructSRC_clicked()
         std::shared_ptr<ImageModel> handle(std::make_shared<ImageModel>());
         if (!handle->load_from_file(list[i].toLocal8Bit().begin()))
         {
-            QMessageBox::information(this,"error",QString("Cannot open ") +
-                list[i] + " : " +handle->error_msg.c_str(),0);
+            if(!handle->error_msg.empty())
+                QMessageBox::critical(this,"ERROR",handle->error_msg.c_str());
             return;
         }
 
