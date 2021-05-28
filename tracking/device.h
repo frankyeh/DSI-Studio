@@ -17,7 +17,7 @@ private:
     float rendering_radius = 0.0; // for internnal use only to select device
 public:
     Device();
-    bool selected(const tipl::vector<3>& p,float vs,float& device_selected_length,float& distance);
+    bool selected(const tipl::vector<3>& p,float vs,float& device_selected_length,float& distance_in_voxel);
     void move(float select_length,const tipl::vector<3>& dis);
     std::string to_str(void);
     bool from_str(const std::string& str);
