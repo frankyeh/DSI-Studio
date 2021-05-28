@@ -165,6 +165,7 @@ public:
      float tract_color_saturation;
      float tract_color_brightness;
      unsigned char scale_voxel;
+     unsigned char slice_match_bkcolor = 0;
      unsigned char tract_alpha_style;
      unsigned char tract_style;
      unsigned char tract_color_style;

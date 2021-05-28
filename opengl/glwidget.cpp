@@ -768,6 +768,7 @@ void GLWidget::renderLR()
 
         std::vector<tipl::vector<3,float> > points(4);
 
+        bool changed_slice = check_change("slice_match_bkcolor",slice_match_bkcolor);
         for(unsigned char dim = 0;dim < slice_texture.size();++dim)
         {
             if((dim == 0 && !cur_tracking_window.ui->glSagCheck->checkState()) ||
@@ -775,11 +776,20 @@ void GLWidget::renderLR()
                (dim == 2 && !cur_tracking_window.ui->glAxiCheck->checkState()))
                 continue;
 
-            if(dim < 3 && slice_pos[dim] != current_slice->slice_pos[dim])
+            if(dim < 3 && (slice_pos[dim] != current_slice->slice_pos[dim] || changed_slice))
             {
                 tipl::color_image texture;
                 current_slice->get_slice(texture,dim,
                                          cur_tracking_window.overlay_slices);
+
+                if(get_param("slice_match_bkcolor"))
+                {
+                    auto slice_bk = texture[0];
+                    uint32_t bkcolor = get_param("bkg_color");
+                    for(size_t index = 0;index < texture.size();++index)
+                        if(texture[index] == slice_bk)
+                            texture[index] = bkcolor;
+                }
 
                 for(unsigned int index = 0;index < texture.size();++index)
                 {
