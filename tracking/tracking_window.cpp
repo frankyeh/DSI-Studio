@@ -519,7 +519,6 @@ bool tracking_window::command(QString cmd,QString param,QString param2)
         ui->ROIdockWidget->hide();
         if(!regionWidget->rowCount())
             ui->regionDockWidget->hide();
-        ui->renderingWidgetHolder->hide();
         return true;
     }
     if(cmd == "save_workspace")
