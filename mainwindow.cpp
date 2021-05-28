@@ -1,6 +1,3 @@
-#include "mainwindow.h"
-#include "ui_mainwindow.h"
-#include "tipl/tipl.hpp"
 #include <QFileDialog>
 #include <QDateTime>
 #include <QUrl>
@@ -9,6 +6,10 @@
 #include <QDragEnterEvent>
 #include <QMimeData>
 #include <QAction>
+#include <QStyleFactory>
+#include "mainwindow.h"
+#include "ui_mainwindow.h"
+#include "tipl/tipl.hpp"
 #include <regtoolbox.h>
 #include <qmessagebox.h>
 #include "filebrowser.h"
@@ -51,6 +52,10 @@ MainWindow::MainWindow(QWidget *parent) :
 {
     setAcceptDrops(true);
     ui->setupUi(this);
+
+    ui->styles->addItems(QStringList("default") << QStyleFactory::keys());
+    ui->styles->setCurrentText(settings.value("styles","Fusion").toString());
+
     ui->recentFib->setColumnCount(3);
     ui->recentFib->setColumnWidth(0,200);
     ui->recentFib->setColumnWidth(1,200);
@@ -1171,4 +1176,14 @@ void MainWindow::on_clear_fib_history_clicked()
 {
     ui->recentFib->setRowCount(0);
     settings.setValue("recentFibFileList", QStringList());
+}
+
+
+void MainWindow::on_styles_activated(const QString&)
+{
+    if(ui->styles->currentText() != settings.value("styles","Fusion").toString())
+    {
+        settings.setValue("styles",ui->styles->currentText());
+        QMessageBox::information(this,"DSI Studio","You will need to restart DSI Studio to see the change");
+    }
 }

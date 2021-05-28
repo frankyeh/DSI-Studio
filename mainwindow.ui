@@ -54,7 +54,7 @@
        </size>
       </property>
       <property name="currentIndex">
-       <number>1</number>
+       <number>2</number>
       </property>
       <property name="tabSpacing">
        <number>0</number>
@@ -808,7 +808,17 @@
           </widget>
          </item>
          <item>
-          <layout class="QHBoxLayout" name="horizontalLayout_2">
+          <layout class="QHBoxLayout" name="horizontalLayout_2" stretch="0,0,0,1,0">
+           <item>
+            <widget class="QLabel" name="label_11">
+             <property name="text">
+              <string>Style</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QComboBox" name="styles"/>
+           </item>
            <item>
             <widget class="QLabel" name="label">
              <property name="sizePolicy">

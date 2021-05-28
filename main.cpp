@@ -172,8 +172,12 @@ void init_application(void)
     QFont font;
     font.setFamily(QString::fromUtf8("Arial"));
     QApplication::setFont(font);
-    QApplication::setStyle(QStyleFactory::create("Fusion"));
     #endif
+    QSettings settings;
+    QString style = settings.value("styles","Fusion").toString();
+    if(style != "default" && !style.isEmpty())
+        QApplication::setStyle(style);
+
     if(!load_file_name())
         QMessageBox::information(nullptr,"Error",
         "Cannot find FA template in the template folder. Please download dsi_studio_other_files.zip from DSI Studio website and place them with the DSI Studio executives.");
@@ -294,6 +298,7 @@ int main(int ac, char *av[])
         return run_cmd(ac,av);
     if(ac == 2)
         arg_file_name = av[1];
+
 
     QApplication a(ac,av);
     init_application();
