@@ -203,6 +203,7 @@ private slots:
     void on_actionInsert_Coronal_Pictures_triggered();
     void on_show_track_toggled(bool checked);
     void on_actionInsert_Sagittal_Picture_triggered();
+    void on_actionAdjust_Atlas_Mapping_triggered();
 };
 
 #endif // TRACKING_WINDOW_H

@@ -506,6 +506,7 @@ void tracking_window::report(QString string)
     ui->text_report->setText(string);
 }
 
+extern bool has_gui;
 bool tracking_window::command(QString cmd,QString param,QString param2)
 {
     if(glWidget->command(cmd,param,param2) ||
@@ -580,6 +581,7 @@ bool tracking_window::command(QString cmd,QString param,QString param2)
     }
     if(cmd == "load_workspace")
     {
+        unique_prog workspace("loading data");
         if(QDir(param+"/tracts").exists())
         {
             if(tractWidget->rowCount())
@@ -589,6 +591,9 @@ bool tracking_window::command(QString cmd,QString param,QString param2)
             if(tract_list.size())
                 tractWidget->load_tracts(tract_list);
         }
+
+        workspace(1,5);
+
         if(QDir(param+"/regions").exists())
         {
             if(regionWidget->rowCount())
@@ -598,6 +603,9 @@ bool tracking_window::command(QString cmd,QString param,QString param2)
             for(int i = 0;i < region_list.size();++i)
                 regionWidget->command("load_region",region_list[i]);
         }
+
+        workspace(2,5);
+
         if(QDir(param+"/devices").exists())
         {
             if(deviceWidget->rowCount())
@@ -608,6 +616,8 @@ bool tracking_window::command(QString cmd,QString param,QString param2)
                 deviceWidget->load_device(device_list);
         }
 
+        workspace(3,5);
+
         if(QDir(param+"/slices").exists())
         {
             QDir::setCurrent(param+"/slices");
@@ -615,6 +625,8 @@ bool tracking_window::command(QString cmd,QString param,QString param2)
             for(int i = 0;i < slice_list.size();++i)
                 addSlices(QStringList(slice_list[i]),QFileInfo(slice_list[0]).baseName(),true);
         }
+
+        workspace(4,5);
 
         QDir::setCurrent(param);
         command("load_setting",param + "/setting.ini");
@@ -629,6 +641,14 @@ bool tracking_window::command(QString cmd,QString param,QString param2)
             in2 >> cmd >> param >> param2;
             command(cmd.c_str(),param.empty() ? "":param.c_str(),param2.empty() ? "":param2.c_str());
         }
+
+        std::string readme;
+        if(QFileInfo(param+"/README").exists())
+        {
+            std::ifstream in((param+"/README").toStdString().c_str());
+            readme = std::string((std::istreambuf_iterator<char>(in)),std::istreambuf_iterator<char>());
+        }
+        report((readme + "\r\nMethods\r\n" + handle->report).c_str());
         return true;
     }
     if(cmd == "load_setting")
@@ -1816,6 +1836,15 @@ void tracking_window::on_show_ruler_toggled(bool checked)
 }
 
 
+void get_iso_fa(std::shared_ptr<fib_data> handle, tipl::image<float,3>& iso_fa_)
+{
+    size_t index = handle->get_name_index("iso");
+    if(handle->view_item.size() == index)
+        index = 0;
+    tipl::image<float,3> iso_fa(handle->view_item[index].get_image());
+    tipl::add(iso_fa,handle->view_item[0].get_image());
+    iso_fa.swap(iso_fa_);
+}
 
 void tracking_window::on_actionAdjust_Mapping_triggered()
 {
@@ -1825,14 +1854,10 @@ void tracking_window::on_actionAdjust_Mapping_triggered()
         QMessageBox::information(this,"Error","In the region window to the left, select the inserted slides to adjust mapping");
         return;
     }
-    size_t index = handle->get_name_index("iso");
-    if(handle->view_item.size() == index)
-        index = 0;
-    tipl::image<float,3> iso_fa(handle->view_item[index].get_image());
-    tipl::add(iso_fa,handle->view_item[0].get_image());
-
+    tipl::image<float,3> iso_fa;
+    get_iso_fa(handle,iso_fa);
     std::shared_ptr<manual_alignment> manual(new manual_alignment(this,
-        iso_fa,slices[index]->vs,
+        iso_fa,slices[0]->vs,
         reg_slice->get_source(),reg_slice->vs,
         (reg_slice->is_picture() ? tipl::reg::affine : tipl::reg::rigid_body),tipl::reg::cost_type::mutual_info));
     manual->arg = reg_slice->arg_min;
@@ -2752,4 +2777,25 @@ void tracking_window::on_actionInsert_Sagittal_Picture_triggered()
     ui->SliceModality->setCurrentIndex(0);
     ui->SliceModality->setCurrentIndex(int(handle->view_item.size())-1);
     on_glSagView_clicked();
+}
+
+void tracking_window::on_actionAdjust_Atlas_Mapping_triggered()
+{
+    if(!handle->load_template())
+        return;
+    tipl::image<float,3> iso_fa;
+    get_iso_fa(handle,iso_fa);
+    std::shared_ptr<manual_alignment> manual(new manual_alignment(this,
+        iso_fa,slices[0]->vs,
+        handle->template_I2.empty() ? handle->template_I2: handle->template_I,handle->template_vs,
+        tipl::reg::affine,tipl::reg::cost_type::mutual_info));
+    if(manual->exec() != QDialog::Accepted)
+        return;
+    handle->manual_template_T = manual->iT;
+    handle->has_manual_atlas = true;
+    handle->need_normalization = true;
+    handle->mni_position.clear();
+    handle->inv_mni_position.clear();
+    handle->run_normalization(true,true);
+    handle->run_normalization(true,false);
 }

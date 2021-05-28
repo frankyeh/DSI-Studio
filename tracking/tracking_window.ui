@@ -1246,8 +1246,9 @@
     <addaction name="actionNew_Super_Resolution_Region"/>
     <addaction name="actionThreshold"/>
     <addaction name="separator"/>
-    <addaction name="actionOpen_MNI_Region"/>
     <addaction name="actionLoad_Region_Color"/>
+    <addaction name="actionOpen_MNI_Region"/>
+    <addaction name="actionAdjust_Atlas_Mapping"/>
     <addaction name="separator"/>
     <addaction name="actionSave_Region_Color"/>
     <addaction name="actionSave_Voxel_Data_As"/>
@@ -4008,6 +4009,11 @@ Tracking</string>
    </property>
    <property name="text">
     <string>Save Endpoints in MNI Coordinates...</string>
+   </property>
+  </action>
+  <action name="actionAdjust_Atlas_Mapping">
+   <property name="text">
+    <string>Adjust Atlas Mapping...</string>
    </property>
   </action>
  </widget>
