@@ -200,6 +200,8 @@ public:
     tipl::image<float,3> template_I,template_I2;
     std::vector<std::shared_ptr<atlas> > atlas_list;
     tipl::matrix<4,4,float> template_trans_to_mni;
+    bool has_manual_atlas = false;
+    tipl::transformation_matrix<double> manual_template_T;
 public:
     std::shared_ptr<TractModel> track_atlas;
     std::string tractography_atlas_file_name;

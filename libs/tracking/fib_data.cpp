@@ -139,7 +139,10 @@ tipl::const_pointer_image<float,3> item::get_image(void)
             image_data = tipl::make_image(&*dummy.begin(),dummy.geometry());
         }
         else
+        {
+            mat_reader->in->flush();
             image_data = tipl::make_image(buf,image_data.geometry());
+        }
         has_gui = true;
         image_ready = true;
         set_scale(image_data.begin(),image_data.end());
@@ -1431,22 +1434,27 @@ void fib_data::run_normalization(bool background,bool inv)
 
         tipl::filter::gaussian(Is);
         prog = 1;
-        auto tvs = vs;
-        tvs *= std::sqrt((It.plane_size()*template_vs[0]*template_vs[1])/
-                (Is.plane_size()*vs[0]*vs[1]));
-        if(template_vs[0] < 1.0f) // animal
+        if(!has_manual_atlas)
         {
-            if(Is2.empty() || It2.empty())
-                animal_reg(It,template_vs,Is,tvs,T,terminated);
+            auto tvs = vs;
+            tvs *= std::sqrt((It.plane_size()*template_vs[0]*template_vs[1])/
+                    (Is.plane_size()*vs[0]*vs[1]));
+            if(template_vs[0] < 1.0f) // animal
+            {
+                if(Is2.empty() || It2.empty())
+                    animal_reg(It,template_vs,Is,tvs,T,terminated);
+                else
+                    animal_reg(It2,template_vs,Is2,tvs,T,terminated);
+            }
             else
-                animal_reg(It2,template_vs,Is2,tvs,T,terminated);
+                tipl::reg::two_way_linear_mr(It,template_vs,Is,tvs,T,tipl::reg::affine,
+                                             tipl::reg::mutual_information(),terminated);
+
+            for(unsigned int i = 0;i < downsampling;++i)
+                tipl::multiply_constant(T.data,T.data+12,2.0f);
         }
         else
-            tipl::reg::two_way_linear_mr(It,template_vs,Is,tvs,T,tipl::reg::affine,
-                                         tipl::reg::mutual_information(),terminated);
-
-        for(unsigned int i = 0;i < downsampling;++i)
-            tipl::multiply_constant(T.data,T.data+12,2.0f);
+            T = manual_template_T;
 
         if(terminated)
             return;
