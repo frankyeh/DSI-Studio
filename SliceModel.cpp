@@ -125,6 +125,8 @@ void CustomSliceModel::get_slice(tipl::color_image& image,
 }
 // ---------------------------------------------------------------------------
 void initial_LPS_nifti_srow(tipl::matrix<4,4,float>& T,const tipl::geometry<3>& geo,const tipl::vector<3>& vs);
+void prepare_idx(const char* file_name,std::shared_ptr<gz_istream> in);
+void save_idx(const char* file_name,std::shared_ptr<gz_istream> in);
 bool CustomSliceModel::initialize(const std::vector<std::string>& files)
 {
     if(files.empty())
@@ -292,9 +294,12 @@ bool CustomSliceModel::initialize(const std::vector<std::string>& files)
     if(source_images.empty())
     {
         gz_nifti nifti;
+        //  prepare idx file
+        prepare_idx(files[0].c_str(),nifti.input_stream);
         if(nifti.load_from_file(files[0]))
         {
             nifti.toLPS(source_images);
+            save_idx(files[0].c_str(),nifti.input_stream);
             nifti.get_voxel_size(vs);
             nifti.get_image_transformation(trans);
             if(handle->is_qsdr || handle->is_mni_image)
@@ -363,6 +368,16 @@ bool CustomSliceModel::initialize(const std::vector<std::string>& files)
         error_msg = "failed to load image volume.";
         return false;
     }
+    // add image to the view item lists
+    {
+        update_image();
+        handle->view_item.push_back(item(name,&*source_images.begin(),source_images.geometry()));
+        view_id = uint32_t(handle->view_item.size()-1);
+        v2c.set_range(handle->view_item[view_id].contrast_min,handle->view_item[view_id].contrast_max);
+        v2c.two_color(handle->view_item[view_id].min_color,handle->view_item[view_id].max_color);
+    }
+
+
     // same dimension, no registration required.
     if(source_images.geometry() == handle->dim)
     {
@@ -372,35 +387,36 @@ bool CustomSliceModel::initialize(const std::vector<std::string>& files)
         has_transform = true;
     }
 
-    if(!has_transform)
+    if(!has_transform && handle->dim.depth() < 10) // 2d assume FOV is the same
     {
-        if(handle->dim.depth() < 10) // 2d assume FOV is the same
-        {
-            T.identity();
-            invT.identity();
-            invT[0] = float(source_images.width())/float(handle->dim.width());
-            invT[5] = float(source_images.height())/float(handle->dim.height());
-            invT[10] = float(source_images.depth())/float(handle->dim.depth());
-            invT[15] = 1.0;
-            T = tipl::inverse(invT);
-        }
+        T.identity();
+        invT.identity();
+        invT[0] = float(source_images.width())/float(handle->dim.width());
+        invT[5] = float(source_images.height())/float(handle->dim.height());
+        invT[10] = float(source_images.depth())/float(handle->dim.depth());
+        invT[15] = 1.0;
+        T = tipl::inverse(invT);
+        has_transform = true;
+    }
+
+    // has mapping.txt saved load it
+    if(QFileInfo((files[0]+".mapping.txt").c_str()).exists())
+    {
+        load_mapping((files[0]+".mapping.txt").c_str());
+        has_transform = true;
+    }
+
+
+    // handle registration
+    {
+        if(!has_transform)
+            thread.reset(new std::future<void>(
+                        std::async(std::launch::async,[this](){argmin(tipl::reg::rigid_body);})));
         else
         {
-            thread.reset(new std::future<void>(
-                std::async(std::launch::async,[this](){argmin(tipl::reg::rigid_body);})));
+            handle->view_item.back().T = T;
+            handle->view_item.back().iT = invT;
         }
-    }
-    // add new image to handle view list
-    // initialize base class
-    {
-        handle->view_item.push_back(item(name,&*source_images.begin(),source_images.geometry()));
-        view_id = uint32_t(handle->view_item.size()-1);
-        update_image();
-        handle->view_item.back().T = T;
-        handle->view_item.back().iT = invT;
-        v2c.set_range(handle->view_item[view_id].contrast_min,handle->view_item[view_id].contrast_max);
-        v2c.two_color(handle->view_item[view_id].min_color,handle->view_item[view_id].max_color);
-
     }
     return true;
 }
