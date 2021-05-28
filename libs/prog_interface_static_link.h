@@ -67,6 +67,27 @@ struct prog_init{
     }
 };
 
+struct unique_prog{
+    unique_prog(const char* status)
+    {
+        begin_prog(status);
+        has_gui = false;
+    }
+    template<typename value_type1,typename value_type2>
+    bool operator()(value_type1 now,value_type2 total)
+    {
+        has_gui = true;
+        bool ret = check_prog(uint32_t(now),uint32_t(total));
+        has_gui = false;
+        return ret;
+    }
+    ~unique_prog(void)
+    {
+        has_gui = true;
+        check_prog(0,0);
+    }
+};
+
 
 #endif
 
