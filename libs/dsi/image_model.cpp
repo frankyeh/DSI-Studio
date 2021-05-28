@@ -1278,6 +1278,29 @@ bool ImageModel::save_to_file(const char* dwi_file_name)
 extern std::string src_error_msg;
 bool find_bval_bvec(const char* file_name,QString& bval,QString& bvec);
 bool load_4d_nii(const char* file_name,std::vector<std::shared_ptr<DwiHeader> >& dwi_files,bool need_bvalbvec);
+void prepare_idx(const char* file_name,std::shared_ptr<gz_istream> in)
+{
+    std::string idx_name = file_name;
+    idx_name += ".idx";
+    {
+        in->buffer_all = true;
+        if(QFileInfo(idx_name.c_str()).exists())
+            in->load_index(idx_name.c_str());
+        else
+        {
+            if(QFileInfo(file_name).size() > 67108864) // 64mb
+                in->sample_access_point = true;
+        }
+    }
+}
+void save_idx(const char* file_name,std::shared_ptr<gz_istream> in)
+{
+    std::string idx_name = file_name;
+    idx_name += ".idx";
+    if(in->has_access_points())
+        in->save_index(idx_name.c_str());
+}
+
 bool ImageModel::load_from_file(const char* dwi_file_name)
 {
     file_name = dwi_file_name;
@@ -1339,30 +1362,14 @@ bool ImageModel::load_from_file(const char* dwi_file_name)
         return false;
     }
 
-    //  prepare idx file
-    std::string idx_name = dwi_file_name;
-    idx_name += ".idx";
-    {
-        mat_reader.in->free_on_read = true;
-        mat_reader.in->buffer_all = true;
-        if(QFileInfo(idx_name.c_str()).exists())
-            mat_reader.in->load_index(idx_name.c_str());
-        else
-        {
-            if(QFileInfo(dwi_file_name).size() > 67108864) // 64mb
-                mat_reader.in->sample_access_point = true;
-        }
-    }
-
+    prepare_idx(dwi_file_name,mat_reader.in);
     if(!mat_reader.load_from_file(dwi_file_name) || prog_aborted())
     {
         if(!prog_aborted())
             error_msg = "Invalid SRC file";
         return false;
     }
-    // save idx file
-    if(mat_reader.in->has_access_points())
-        mat_reader.in->save_index(idx_name.c_str());
+    save_idx(dwi_file_name,mat_reader.in);
 
 
     if (!mat_reader.read("dimension",voxel.dim))

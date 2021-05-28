@@ -506,6 +506,8 @@ fib_data::fib_data(tipl::geometry<3> dim_,tipl::vector<3> vs_,const tipl::matrix
 {}
 
 bool load_fib_from_tracks(const char* file_name,tipl::image<float,3>& I,tipl::vector<3>& vs);
+void prepare_idx(const char* file_name,std::shared_ptr<gz_istream> in);
+void save_idx(const char* file_name,std::shared_ptr<gz_istream> in);
 bool fib_data::load_from_file(const char* file_name)
 {
     tipl::image<float,3> I;
@@ -656,35 +658,18 @@ bool fib_data::load_from_file(const char* file_name)
 
 
     //  prepare idx file
-    std::string idx_name(file_name);
-    idx_name += ".idx";
+    prepare_idx(file_name,mat_reader.in);
+    if(mat_reader.in->has_access_points())
     {
-        if(QFileInfo(idx_name.c_str()).exists())
-        {
-            mat_reader.in->load_index(idx_name.c_str());
-            mat_reader.in->free_on_read = true;
-            mat_reader.delay_read = true;
-        }
-        else
-        {
-            if(QFileInfo(file_name).size() > 67108864) // 64mb
-            {
-                mat_reader.in->sample_access_point = true;
-                mat_reader.in->buffer_all = true;
-            }
-        }
+        mat_reader.delay_read = true;
+        mat_reader.in->buffer_all = false;
     }
-
     if (!mat_reader.load_from_file(file_name) || prog_aborted())
     {
         error_msg = prog_aborted() ? "Loading process aborted" : "Invalid file format";
         return false;
     }
-
-    // save idx file
-    if(mat_reader.in->has_access_points())
-        mat_reader.in->save_index(idx_name.c_str());
-
+    save_idx(file_name,mat_reader.in);
 
     if(!load_from_mat())
         return false;
