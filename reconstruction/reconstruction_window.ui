@@ -635,43 +635,6 @@
                  </item>
                 </layout>
                </item>
-               <item>
-                <layout class="QHBoxLayout" name="horizontalLayout">
-                 <property name="topMargin">
-                  <number>0</number>
-                 </property>
-                 <item>
-                  <widget class="QLabel" name="label">
-                   <property name="toolTip">
-                    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;e.g., fa,md,ad,rd,tensor,helix,gfa,nqa,rdi,nrdi,jdet,mapping, or 'all' for all metrics&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-                   </property>
-                   <property name="text">
-                    <string>Other output metrics:</string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item>
-                  <widget class="QLineEdit" name="other_output">
-                   <property name="text">
-                    <string>fa,nqa,rdi,nrdi</string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item>
-                  <spacer name="horizontalSpacer_3">
-                   <property name="orientation">
-                    <enum>Qt::Horizontal</enum>
-                   </property>
-                   <property name="sizeHint" stdset="0">
-                    <size>
-                     <width>40</width>
-                     <height>20</height>
-                    </size>
-                   </property>
-                  </spacer>
-                 </item>
-                </layout>
-               </item>
               </layout>
              </widget>
             </item>
@@ -935,17 +898,21 @@
                      </widget>
                     </item>
                     <item>
-                     <spacer name="horizontalSpacer">
-                      <property name="orientation">
-                       <enum>Qt::Horizontal</enum>
+                     <widget class="QLabel" name="label">
+                      <property name="toolTip">
+                       <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;e.g., fa,md,ad,rd,tensor,helix,gfa,nqa,rdi,nrdi,jdet,mapping, or 'all' for all metrics&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                       </property>
-                      <property name="sizeHint" stdset="0">
-                       <size>
-                        <width>40</width>
-                        <height>20</height>
-                       </size>
+                      <property name="text">
+                       <string>Other output metrics:</string>
                       </property>
-                     </spacer>
+                     </widget>
+                    </item>
+                    <item>
+                     <widget class="QLineEdit" name="other_output">
+                      <property name="text">
+                       <string>fa,nqa,rdi,nrdi</string>
+                      </property>
+                     </widget>
                     </item>
                    </layout>
                   </item>

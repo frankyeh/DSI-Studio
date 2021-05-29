@@ -1076,17 +1076,20 @@ void match_template_resolution(tipl::image<float,3>& VG,
 
 void reconstruction_window::on_qsdr_manual_clicked()
 {
-    tipl::image<float,3> ref,dummy;
+    tipl::image<float,3> ref,ref2,dummy;
     tipl::vector<3> vs;
     {
-        gz_nifti read;
-        if(!read.load_from_file(fa_template_list[uint32_t(ui->primary_template->currentIndex())]))
+        gz_nifti read,read2;
+        if(!read.load_from_file(fa_template_list[uint32_t(ui->primary_template->currentIndex())]) ||
+           !read2.load_from_file(iso_template_list[uint32_t(ui->primary_template->currentIndex())]))
         {
             QMessageBox::critical(this,"Error",QString("Cannot load tempalte:")+ui->primary_template->currentText());
             return;
         }
         read.toLPS(ref);
         read.get_voxel_size(vs);
+        read2.toLPS(ref2);
+        ref += ref2;
     }
 
     match_template_resolution(ref,dummy,vs,handle->voxel.vs);
