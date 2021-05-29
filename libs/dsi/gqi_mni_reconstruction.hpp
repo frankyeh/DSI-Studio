@@ -120,7 +120,8 @@ public:
             else
             {
                 bool terminated = false;
-                if(!run_prog("Linear Registration",[&](){
+                if(!run_prog("linear Registration",[&]()
+                {
                     if(!is_hcp_template) // animal recon
                     {
                         if(VF2.empty() || VG2.empty())
@@ -129,8 +130,22 @@ public:
                             animal_reg(VG2,VGvs,VF2,voxel.vs,affine,terminated);
                     }
                     else
-                        tipl::reg::two_way_linear_mr(VG,VGvs,VF,voxel.vs,affine,
+                    {
+                        if(VF2.empty() || VG2.empty())
+                        {
+                            tipl::reg::two_way_linear_mr(VG,VGvs,VF,voxel.vs,affine,
                                 tipl::reg::affine,tipl::reg::correlation(),terminated,voxel.thread_count);
+                        }
+                        else
+                        {
+                            auto VG3 = VG;
+                            auto VF3 = VF;
+                            VG3 += VG2;
+                            VF3 += VF2;
+                            tipl::reg::two_way_linear_mr(VG3,VGvs,VF3,voxel.vs,affine,
+                                 tipl::reg::affine,tipl::reg::mutual_information(),terminated,voxel.thread_count);
+                        }
+                    }
                 },terminated))
                     throw std::runtime_error("Reconstruction canceled");
             }
@@ -205,7 +220,7 @@ public:
             tipl::morphology::smoothing_fill(voxel.mask);
 
         tipl::vector<3,int> partial_shift;
-        float partial_resolution = 1.0f;
+        float dim_ratio = 1.0f;
         bool partial_reconstruction = float(subject_voxel_count)/float(total_voxel_count) < 0.25f;
         if(partial_reconstruction)
         {
@@ -221,27 +236,27 @@ public:
 
             tipl::crop(cdm_dis,bmin,bmax);
             partial_shift = bmin;
-            // update transformation
+
+            // update transformation and dimension
             voxel.trans_to_mni[3] -= bmin[0]*VGvs[0];
             voxel.trans_to_mni[7] -= bmin[1]*VGvs[1];
             voxel.trans_to_mni[11] += bmin[2]*VGvs[2];
+            voxel.dim = des_geo = cdm_dis.geometry();
 
-            while(VFvs[0] < VGvs[0])
+            if(VFvs[0] < VGvs[0]) // if subject resolution is higher than template
             {
-                partial_resolution *= 0.5f;
-                tipl::image<tipl::vector<3>,3> new_cdm_dis;
-                tipl::upsampling(cdm_dis,new_cdm_dis);
-                new_cdm_dis.swap(cdm_dis);
-                VGvs *= 0.5f;
-            }
+                dim_ratio = VFvs[0]/VGvs[0]; // < 1.0
+                VGvs = VFvs;
+                des_geo[0] /= dim_ratio;
+                des_geo[1] /= dim_ratio;
+                des_geo[2] /= dim_ratio;
+                voxel.dim = des_geo;
+            }    
 
             voxel.trans_to_mni[0] = -VGvs[0];
             voxel.trans_to_mni[5] = -VGvs[1];
             voxel.trans_to_mni[10] = VGvs[2];
 
-
-
-            voxel.dim = des_geo = cdm_dis.geometry();
             std::cout << "output resolution:" << VGvs[0] << std::endl;
             std::cout << "new dimension:" << des_geo << std::endl;
 
@@ -276,8 +291,15 @@ public:
             mapping.for_each_mt([&](tipl::vector<3>& Jpos,tipl::pixel_index<3> pos)
             {
                 Jpos = pos; // VG upsampled space
-                Jpos *= partial_resolution; // VG space
-                Jpos += cdm_dis[pos.index()]; // VFF space
+                if(dim_ratio != 1.0f)
+                {
+                    Jpos *= dim_ratio; // VG space
+                    tipl::vector<3> dis;
+                    if(tipl::estimate(cdm_dis,Jpos,dis))
+                        Jpos += dis;
+                }
+                else
+                    Jpos += cdm_dis[pos.index()]; // VFF space
                 Jpos += partial_shift;
                 affine(Jpos);// VFF to VF space
             });
