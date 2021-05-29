@@ -258,6 +258,7 @@ public:
                     Jpos = pos; // VG upsampled space
                     Jpos *= dim_ratio; // VG space
                     tipl::estimate(cdm_dis,Jpos,new_cdm_dis[pos.index()]);
+                    new_cdm_dis[pos.index()] /= dim_ratio;
                 });
                 new_cdm_dis.swap(cdm_dis);
             }    
