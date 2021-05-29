@@ -147,7 +147,7 @@ public:
                         }
                     }
                 },terminated))
-                    throw std::runtime_error("Reconstruction canceled");
+                    throw std::runtime_error("reconstruction canceled");
             }
 
             tipl::image<float,3> VFF(VG.geometry()),VFF2;
@@ -250,7 +250,16 @@ public:
                 des_geo[0] /= dim_ratio;
                 des_geo[1] /= dim_ratio;
                 des_geo[2] /= dim_ratio;
+
                 voxel.dim = des_geo;
+                tipl::image<tipl::vector<3>,3> new_cdm_dis(des_geo);
+                new_cdm_dis.for_each_mt([&](tipl::vector<3>& Jpos,tipl::pixel_index<3> pos)
+                {
+                    Jpos = pos; // VG upsampled space
+                    Jpos *= dim_ratio; // VG space
+                    tipl::estimate(cdm_dis,Jpos,new_cdm_dis[pos.index()]);
+                });
+                new_cdm_dis.swap(cdm_dis);
             }    
 
             voxel.trans_to_mni[0] = -VGvs[0];
@@ -286,33 +295,16 @@ public:
 
         // compute mappings
         mapping.resize(voxel.dim);
-        if(partial_reconstruction)
+        mapping.for_each_mt([&](tipl::vector<3>& Jpos,tipl::pixel_index<3> pos)
         {
-            mapping.for_each_mt([&](tipl::vector<3>& Jpos,tipl::pixel_index<3> pos)
-            {
-                Jpos = pos; // VG upsampled space
-                if(dim_ratio != 1.0f)
-                {
-                    Jpos *= dim_ratio; // VG space
-                    tipl::vector<3> dis;
-                    if(tipl::estimate(cdm_dis,Jpos,dis))
-                        Jpos += dis;
-                }
-                else
-                    Jpos += cdm_dis[pos.index()]; // VFF space
+            Jpos = pos; // VG upsampled space
+            if(dim_ratio != 1.0f)
+                Jpos *= dim_ratio; // VG space
+            Jpos += cdm_dis[pos.index()]; // VFF space
+            if(partial_reconstruction)
                 Jpos += partial_shift;
-                affine(Jpos);// VFF to VF space
-            });
-        }
-        else
-        {
-            mapping.for_each_mt([&](tipl::vector<3>& Jpos,tipl::pixel_index<3> pos)
-            {
-                Jpos = pos;  // VG space
-                Jpos += cdm_dis[pos.index()]; // VFF space
-                affine(Jpos);// VFF to VF space
-            });
-        }
+            affine(Jpos);// VFF to VF space
+        });
 
 
         // other image
