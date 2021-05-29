@@ -2224,9 +2224,9 @@ void tracking_window::on_actionOpen_Connectivity_Matrix_triggered()
         std::copy(buf,buf+row*col,connectivity.begin());
         glWidget->connectivity = std::move(connectivity);
 
-        if(in.has("atlas") && in.read_string("atlas") != "roi")
+        if(in.has("atlas") && in.read<std::string>("atlas") != "roi")
         {
-            std::string atlas = in.read_string("atlas");
+            std::string atlas = in.read<std::string>("atlas");
             for(size_t i = 0;i < handle->atlas_list.size();++i)
                 if(atlas == handle->atlas_list[i]->name)
                 {
