@@ -835,10 +835,7 @@ bool fib_data::load_from_mat(void)
             mat_reader.read((view_item[i].name+"_trans").c_str(),view_item[i].native_trans);
         }
 
-        std::string template_name;
-        mat_reader.read("template_name",template_name);
-
-
+        std::string template_name = mat_reader.read<std::string>("template_name");
         // matching templates
         for(size_t index = 0;index < fa_template_list.size();++index)
         {
@@ -1099,9 +1096,23 @@ bool fib_data::load_template(void)
     if(!template_I2.empty())
         template_I2 *= 1.0f/float(tipl::mean(template_I2));
 
-    need_normalization = !(is_qsdr && std::abs(float(dim[0])-template_I.width()*template_vs[0]/vs[0]) < 2);
+
     if(is_mni_image)
+    {
         need_normalization = false;
+        return true;
+    }
+    if(!is_qsdr)
+    {
+        need_normalization = true;
+        return true;
+    }
+
+    std::string template_name = mat_reader.read<std::string>("template_name");
+    if(template_name.empty())
+        need_normalization = std::abs(float(dim[0])-template_I.width()*template_vs[0]/vs[0]) > 2;
+    else
+        need_normalization = QFileInfo(fa_template_list[template_id].c_str()).baseName().toStdString() != template_name;
     return true;
 }
 
