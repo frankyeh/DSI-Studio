@@ -102,7 +102,7 @@ public:// gradient deviation
     std::vector<tipl::image<float,3> > new_grad_dev;
     std::vector<tipl::pointer_image<float,3> > grad_dev;
 public:// used in QSDR
-    float trans_to_mni[16];
+    tipl::matrix<4,4,float> trans_to_mni;
     std::string primary_template,secondary_template;
     tipl::transformation_matrix<double> qsdr_trans;
     bool output_rdi = false;

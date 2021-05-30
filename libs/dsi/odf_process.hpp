@@ -292,7 +292,7 @@ public:
                 mat_writer.write(out.str().c_str(),voxel.template_odfs[index],voxel.ti.half_vertices_count);
             }
         }
-        mat_writer.write("trans",voxel.trans_to_mni,4,4);
+        mat_writer.write("trans",voxel.trans_to_mni.begin(),4,4);
     }
 };
 

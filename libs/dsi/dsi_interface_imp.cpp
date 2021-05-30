@@ -292,7 +292,7 @@ bool output_odfs(const tipl::image<unsigned char,3>& mni_mask,
     image_model.voxel.template_odfs.swap(odfs);
     image_model.file_name = out_name;
     image_model.voxel.mask = mni_mask;
-    std::copy(mni,mni+16,image_model.voxel.trans_to_mni);
+    std::copy(mni,mni+16,image_model.voxel.trans_to_mni.begin());
     std::copy(vs,vs+3,image_model.voxel.vs.begin());
     if (prog_aborted() || !image_model.reconstruct<reprocess_odf>("Template reconstruction"))
         return false;

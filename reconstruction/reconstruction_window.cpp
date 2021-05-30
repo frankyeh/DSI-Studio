@@ -1055,29 +1055,31 @@ void reconstruction_window::on_actionOverwrite_Voxel_Size_triggered()
 void match_template_resolution(tipl::image<float,3>& VG,
                                tipl::image<float,3>& VG2,
                                tipl::vector<3>& VGvs,
-                               tipl::vector<3> subject_vs)
+                               tipl::image<float,3>& VF,
+                               tipl::image<float,3>& VF2,
+                               tipl::vector<3>& VFvs)
 {
-    float best_reso = *std::min_element(subject_vs.begin(),subject_vs.end());
-    if(best_reso > VGvs[0]*1.5f)   // if subject resolution is substantially lower, downsample template
+    if(VFvs[0] > VGvs[0]*1.5f)   // if subject resolution is substantially lower, downsample template
     {
         tipl::downsampling(VG);
         if(!VG2.empty())
             tipl::downsampling(VG2);
         VGvs *= 2.0f;
+        return;
     }
-    if(best_reso < VGvs[0])  // if subject resolution is substantially higher, upsample template
+    while(VFvs[0]*2.0f < VGvs[0])  // if subject resolution is higher, downsample it for registration
     {
-        tipl::upsampling(VG);
-        if(!VG2.empty())
-            tipl::upsampling(VG2);
-        VGvs *= 0.5f;
+        tipl::downsampling(VF);
+        if(!VF2.empty())
+            tipl::downsampling(VF2);
+        VFvs *= 2.0f;
     }
 }
 
 void reconstruction_window::on_qsdr_manual_clicked()
 {
-    tipl::image<float,3> ref,ref2,dummy;
-    tipl::vector<3> vs;
+    tipl::image<float,3> VG,VG2,dummy,VF(handle->dwi);
+    tipl::vector<3> VGvs,VFvs(handle->voxel.vs);
     {
         gz_nifti read,read2;
         if(!read.load_from_file(fa_template_list[uint32_t(ui->primary_template->currentIndex())]) ||
@@ -1086,15 +1088,15 @@ void reconstruction_window::on_qsdr_manual_clicked()
             QMessageBox::critical(this,"Error",QString("Cannot load tempalte:")+ui->primary_template->currentText());
             return;
         }
-        read.toLPS(ref);
-        read.get_voxel_size(vs);
-        read2.toLPS(ref2);
-        ref += ref2;
+        read.toLPS(VG);
+        read.get_voxel_size(VGvs);
+        read2.toLPS(VG2);
+        VG += VG2;
     }
 
-    match_template_resolution(ref,dummy,vs,handle->voxel.vs);
+    match_template_resolution(VG,dummy,VGvs,VF,dummy,VFvs);
     std::shared_ptr<manual_alignment> manual(new manual_alignment(this,
-                                                                handle->dwi,handle->voxel.vs,ref,vs,
+                                                                VF,VFvs,VG,VGvs,
                                                                 tipl::reg::rigid_body,
                                                                 tipl::reg::cost_type::mutual_info));
     manual->on_rerun_clicked();
