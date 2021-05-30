@@ -513,6 +513,7 @@ bool CustomSliceModel::load_mapping(const char* file_name)
     if(!load_transform(file_name,arg_min))
         return false;
     update_transform();
+    return true;
 }
 
 // ---------------------------------------------------------------------------
