@@ -463,9 +463,12 @@ void CustomSliceModel::argmin(tipl::reg::reg_type reg_type)
     running = false;
 }
 // ---------------------------------------------------------------------------
-void CustomSliceModel::save_mapping(const char* file_name)
+bool save_transform(const char* file_name,const tipl::matrix<4,4,float>& T,
+                    const tipl::affine_transform<float>& argmin)
 {
     std::ofstream out(file_name);
+    if(!out)
+        return false;
     for(uint32_t row = 0,index = 0;row < 4;++row)
     {
         for(uint32_t col = 0;col < 4;++col,++index)
@@ -480,35 +483,36 @@ void CustomSliceModel::save_mapping(const char* file_name)
     {
         if(i)
             out << " ";
-        out << arg_min.data[i];
+        out << argmin.data[i];
     }
     out << std::endl;
-}// ---------------------------------------------------------------------------
-void CustomSliceModel::load_mapping(const char* file_name)
+    return true;
+}
+// ---------------------------------------------------------------------------
+bool CustomSliceModel::save_mapping(const char* file_name)
+{
+    return save_transform(file_name,T,arg_min);
+}
+// ---------------------------------------------------------------------------
+bool load_transform(const char* file_name,tipl::affine_transform<float>& arg_min)
 {
     std::ifstream in(file_name);
     if(!in)
-        return;
+        return false;
     std::vector<float> data,arg;
     std::copy(std::istream_iterator<float>(in),
               std::istream_iterator<float>(),std::back_inserter(data));
-    if(data.size() == 28)
-    {
-        std::copy(data.begin()+16,data.begin()+16+12,arg_min.data);
-        update_transform();
-    }
-    else
-    {
-        data.resize(16);
-        data[15] = 1.0;
-        T = data;
-        invT = data;
-        invT.inv();
-        tipl::transformation_matrix<float> trans = invT;
-        trans.to_affine_transform(arg_min,handle->dim,handle->vs,dim,vs);
-        handle->view_item[view_id].T = T;
-        handle->view_item[view_id].iT = invT;
-    }
+    if(data.size() != 28)
+        return false;
+    std::copy(data.begin()+16,data.begin()+16+12,arg_min.data);
+    return true;
+}
+// ---------------------------------------------------------------------------
+bool CustomSliceModel::load_mapping(const char* file_name)
+{
+    if(!load_transform(file_name,arg_min))
+        return false;
+    update_transform();
 }
 
 // ---------------------------------------------------------------------------

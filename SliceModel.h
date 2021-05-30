@@ -137,8 +137,8 @@ public:
     }
 
 
-    void save_mapping(const char* file_name);
-    void load_mapping(const char* file_name);
+    bool save_mapping(const char* file_name);
+    bool load_mapping(const char* file_name);
 public:
     tipl::matrix<4,4,float> trans;
     tipl::image<float, 3> source_images;

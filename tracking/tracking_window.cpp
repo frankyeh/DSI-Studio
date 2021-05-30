@@ -1883,7 +1883,8 @@ void tracking_window::on_actionSave_mapping_triggered()
             "Text files (*.txt);;All files (*)");
     if(filename.isEmpty())
         return;
-    reg_slice->save_mapping(filename.toLocal8Bit().begin());
+    if(!reg_slice->save_mapping(filename.toLocal8Bit().begin()))
+        QMessageBox::critical(this,"ERROR","Cannot save mapping file.");
 }
 
 void tracking_window::on_actionLoad_mapping_triggered()
@@ -1896,8 +1897,14 @@ void tracking_window::on_actionLoad_mapping_triggered()
     QString filename = QFileDialog::getOpenFileName(
             this,"Open Mapping Matrix",QString(reg_slice->source_file_name.c_str())+".mapping.txt",
                 "Text files (*.txt);;All files (*)");
+    if(filename.isEmpty())
+        return;
     reg_slice->terminate();
-    reg_slice->load_mapping(filename.toLocal8Bit().begin());
+    if(!reg_slice->load_mapping(filename.toLocal8Bit().begin()))
+    {
+        QMessageBox::critical(this,"ERROR","Invalid mapping file.");
+        return;
+    }
     glWidget->updateGL();
 }
 
