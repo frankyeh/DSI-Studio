@@ -1,4 +1,5 @@
 #include <QFileDialog>
+#include <QMessageBox>
 #include "manual_alignment.h"
 #include "ui_manual_alignment.h"
 #include "tracking/tracking_window.h"
@@ -365,4 +366,39 @@ void manual_alignment::on_advance_options_clicked()
 void manual_alignment::on_files_clicked()
 {
     ui->menu_File->popup(QCursor::pos());
+}
+
+bool save_transform(const char* file_name,const tipl::matrix<4,4,float>& T,
+                    const tipl::affine_transform<float>& argmin);
+
+void manual_alignment::on_actionSave_Transformation_triggered()
+{
+    QString filename = QFileDialog::getSaveFileName(
+            this,
+            "Save Mapping Matrix","mapping.txt",
+            "Text files (*.txt);;All files (*)");
+    if(filename.isEmpty())
+        return;
+    tipl::matrix<4,4,float> T_;
+    T.save_to_transform(T_.begin());
+    if(!save_transform(filename.toStdString().c_str(),T_,arg))
+        QMessageBox::critical(this,"ERROR","Cannot save mapping file.");
+}
+
+bool load_transform(const char* file_name,tipl::affine_transform<float>& arg_min);
+void manual_alignment::on_actionLoad_Transformation_triggered()
+{
+    QString filename = QFileDialog::getOpenFileName(
+            this,"Open Mapping Matrix",".mapping.txt",
+                "Text files (*.txt);;All files (*)");
+    if(filename.isEmpty())
+        return;
+    thread.terminated = true;
+    thread.wait();
+    if(!load_transform(filename.toStdString().c_str(),arg))
+    {
+        QMessageBox::critical(this,"ERROR","Invalid mapping file.");
+        return;
+    }
+    update_image();
 }

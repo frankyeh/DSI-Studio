@@ -35,7 +35,7 @@ private:
 
     void load_param(void);
 public:
-    tipl::transformation_matrix<double> T,iT;
+    tipl::transformation_matrix<float> T,iT;
 public:
     QTimer* timer;
     explicit manual_alignment(QWidget *parent,
@@ -72,6 +72,10 @@ private slots:
     void on_advance_options_clicked();
 
     void on_files_clicked();
+
+    void on_actionSave_Transformation_triggered();
+
+    void on_actionLoad_Transformation_triggered();
 
 public slots:
     void on_rerun_clicked();
