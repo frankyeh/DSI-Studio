@@ -1297,7 +1297,7 @@ void save_idx(const char* file_name,std::shared_ptr<gz_istream> in)
 {
     std::string idx_name = file_name;
     idx_name += ".idx";
-    if(in->has_access_points())
+    if(in->has_access_points() && in->sample_access_point)
         in->save_index(idx_name.c_str());
 }
 
