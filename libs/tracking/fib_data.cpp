@@ -864,32 +864,31 @@ bool fib_data::load_from_mat(void)
 
     if(!is_mni_image)
         initial_LPS_nifti_srow(trans_to_mni,dim,vs);
-    // template matching
-    {
-        // check if there is any mapping files exist
-        for(size_t index = 0;index < fa_template_list.size();++index)
-        {
-            QString name = QFileInfo(fa_template_list[index].c_str()).baseName().toLower();
-            if(QFileInfo(fib_file_name.c_str()).fileName().contains(name) ||
-               QFileInfo(QString(fib_file_name.c_str())+"."+name+".mapping.gz").exists() ||
-               QFileInfo(QString(fib_file_name.c_str())+"."+name+".inv.mapping.gz").exists())
-            {
-                set_template_id(index);
-                return true;
-            }
-        }
 
-        if(!is_human_data)
+    // template matching
+    // check if there is any mapping files exist
+    for(size_t index = 0;index < fa_template_list.size();++index)
+    {
+        QString name = QFileInfo(fa_template_list[index].c_str()).baseName().toLower();
+        if(QFileInfo(fib_file_name.c_str()).fileName().contains(name) ||
+           QFileInfo(QString(fib_file_name.c_str())+"."+name+".mapping.gz").exists() ||
+           QFileInfo(QString(fib_file_name.c_str())+"."+name+".inv.mapping.gz").exists())
         {
-            size_t count = 0;
-            for(size_t i = 0;i < dim.size();++i)
-                if(dir.fa[0][i] > 0.0f)
-                    ++count;
-            set_template_id(match_template(count*2.0f*vs[0]*vs[1]*vs[2]));
+            set_template_id(index);
+            return true;
         }
-        else
-            set_template_id(template_id);
     }
+
+    if(!is_human_data)
+    {
+        size_t count = 0;
+        for(size_t i = 0;i < dim.size();++i)
+            if(dir.fa[0][i] > 0.0f)
+                ++count;
+        set_template_id(match_template(count*2.0f*vs[0]*vs[1]*vs[2]));
+        return true;
+    }
+    set_template_id(0);
     return true;
 }
 
@@ -1013,7 +1012,7 @@ void fib_data::get_voxel_information(int x,int y,int z,std::vector<float>& buf) 
 extern std::vector<std::string> fa_template_list,iso_template_list,atlas_file_list,track_atlas_file_list;
 void fib_data::set_template_id(size_t new_id)
 {
-    if(new_id != template_id || atlas_list.empty())
+    if(new_id != template_id)
     {
         template_id = new_id;
         template_I.clear();

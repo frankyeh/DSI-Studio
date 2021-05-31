@@ -195,7 +195,7 @@ public:
     tipl::vector<3> native_vs;
     const tipl::image<tipl::vector<3,float>,3 >& get_native_position(void) const;
 public:
-    size_t template_id = 0;
+    size_t template_id = 256;
     tipl::vector<3> template_vs,template_shift;
     tipl::image<float,3> template_I,template_I2;
     std::vector<std::shared_ptr<atlas> > atlas_list;
