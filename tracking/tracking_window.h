@@ -176,7 +176,6 @@ private slots:
     void on_show_3view_toggled(bool checked);
     void on_show_edge_toggled(bool checked);
     void on_actionFIB_protocol_triggered();
-    void on_template_box_activated(int index);
     void on_SliceModality_currentIndexChanged(int index);
     void on_actionSave_T1W_T2W_images_triggered();
     void on_actionMark_Region_on_T1W_T2W_triggered();
@@ -204,6 +203,7 @@ private slots:
     void on_show_track_toggled(bool checked);
     void on_actionInsert_Sagittal_Picture_triggered();
     void on_actionAdjust_Atlas_Mapping_triggered();
+    void on_template_box_currentIndexChanged(int index);
 };
 
 #endif // TRACKING_WINDOW_H

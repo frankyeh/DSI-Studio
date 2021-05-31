@@ -29,7 +29,7 @@
 #include "fib_data.hpp"
 
 extern std::string t1w_template_file_name,wm_template_file_name;
-extern std::vector<std::string> fa_template_list;
+extern std::vector<std::string> fa_template_list,track_atlas_file_list;
 extern std::vector<tracking_window*> tracking_windows;
 extern size_t auto_track_pos[7];
 extern unsigned char auto_track_rgb[6][3];               // projection
@@ -146,7 +146,7 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
                 ui->show_fiber->setChecked(false);
                 ui->show_fiber->hide();
                 ui->enable_auto_track->hide();
-            }
+            }            
         }
         // Initialize slices
         {
@@ -2371,14 +2371,6 @@ void tracking_window::on_actionFIB_protocol_triggered()
     show_info_dialog("FIB",out.str());
 }
 
-void tracking_window::on_template_box_activated(int index)
-{
-    handle->set_template_id(index);
-    ui->enable_auto_track->setVisible(true);
-    ui->target->setCurrentIndex(0);
-    ui->target->setVisible(false);
-    ui->target_label->setVisible(false);
-}
 void tracking_window::on_SliceModality_currentIndexChanged(int index)
 {
     if(index == -1 || !current_slice.get())
@@ -2804,4 +2796,14 @@ void tracking_window::on_actionAdjust_Atlas_Mapping_triggered()
     handle->inv_mni_position.clear();
     handle->run_normalization(true,true);
     handle->run_normalization(true,false);
+}
+
+void tracking_window::on_template_box_currentIndexChanged(int index)
+{
+    handle->set_template_id(size_t(index));
+    ui->addRegionFromAtlas->setVisible(!handle->atlas_list.empty());
+    ui->enable_auto_track->setVisible(index == 0 && !track_atlas_file_list.empty());
+    ui->target->setCurrentIndex(0);
+    ui->target->setVisible(false);
+    ui->target_label->setVisible(false);
 }
