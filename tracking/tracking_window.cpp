@@ -57,13 +57,13 @@ void show_info_dialog(const std::string& title,const std::string& result)
         QApplication::clipboard()->setText(result.c_str());
 }
 
-void populate_templates(QComboBox* combo)
+void populate_templates(QComboBox* combo,size_t index)
 {
     if(!fa_template_list.empty())
     {
         for(int index = 0;index < fa_template_list.size();++index)
             combo->addItem(QFileInfo(fa_template_list[index].c_str()).baseName());
-        combo->setCurrentIndex(0);
+        combo->setCurrentIndex(int(index));
     }
 }
 
@@ -167,8 +167,7 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
                 if(QFileInfo(QString(wm_template_file_name.c_str())).exists())
                     addSlices(QStringList() << QString(wm_template_file_name.c_str()),"icbm_wm",true);
             }
-            populate_templates(ui->template_box);
-            ui->template_box->setCurrentIndex(handle->template_id);
+            populate_templates(ui->template_box,handle->template_id);
             if(handle->is_qsdr)
                 handle->load_template();
 

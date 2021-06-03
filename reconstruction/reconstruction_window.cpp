@@ -17,7 +17,7 @@
 
 extern std::vector<std::string> fa_template_list,iso_template_list;
 void show_view(QGraphicsScene& scene,QImage I);
-void populate_templates(QComboBox* combo);
+void populate_templates(QComboBox* combo,size_t index);
 bool reconstruction_window::load_src(int index)
 {
     prog_init p("load src");
@@ -69,9 +69,8 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
     ui->b_table->setColumnWidth(3,80);
     ui->b_table->setHorizontalHeaderLabels(QStringList() << "b value" << "bx" << "by" << "bz");
 
-    populate_templates(ui->primary_template);
-    ui->primary_template->setCurrentIndex(int(match_template(
-        handle->voxel.vs[0]*handle->voxel.vs[1]*handle->voxel.vs[2]*handle->voxel.dim.size())));
+    populate_templates(ui->primary_template,match_template(
+        handle->voxel.vs[0]*handle->voxel.vs[1]*handle->voxel.vs[2]*handle->voxel.dim.size()));
 
     if(ui->primary_template->currentIndex() == 0)
         ui->diffusion_sampling->setValue(1.25); // human studies
