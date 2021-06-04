@@ -74,7 +74,7 @@ public:
             b_count++;
             b_location.push_back(i);
             b_data.push_back(voxel.bvectors[i]);
-            b_data.back() *= voxel.bvalues[i];
+            b_data.back() *= std::sqrt(voxel.bvalues[i]);
         }
 
         Kt.resize(6*b_count);
