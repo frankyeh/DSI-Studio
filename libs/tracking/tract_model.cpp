@@ -3439,7 +3439,9 @@ bool ConnectivityMatrix::calculate(std::shared_ptr<fib_data> handle,
                 if(region_passing_list[i][j].empty())
                     continue;
                 std::string file_name = region_name[i]+"_"+region_name[j]+".tt.gz";
-                TractModel tm(tract_model);
+                TractModel tm(tract_model.geo,tract_model.vs);
+                tm.report = tract_model.report;
+                tm.trans_to_mni = tract_model.trans_to_mni;
                 std::vector<std::vector<float> > new_tracts;
                 for (unsigned int k = 0;k < region_passing_list[i][j].size();++k)
                     new_tracts.push_back(tract_model.get_tract(region_passing_list[i][j][k]));
