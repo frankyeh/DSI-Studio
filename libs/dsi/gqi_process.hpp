@@ -18,7 +18,7 @@ public:
 public:
     virtual void init(Voxel& voxel)
     {
-        if(!voxel.grad_dev.empty() || voxel.qsdr)
+        if(voxel.qsdr)
             voxel.calculate_q_vec_t(q_vectors_time);
         else
             voxel.calculate_sinc_ql(sinc_ql);
@@ -28,16 +28,8 @@ public:
         if(voxel.half_sphere)
             data.space[0] *= 0.5f;
         // add rotation from QSDR or gradient nonlinearity
-        if(voxel.qsdr || !voxel.grad_dev.empty())
+        if(voxel.qsdr)
         {
-            if(!voxel.qsdr) // grad_dev already multiplied in interpolate_dwi routine
-            {
-                // correction for gradient nonlinearity
-                // new_bvecs = (I+grad_dev) * bvecs;
-                for(unsigned int i = 0; i < 9; ++i)
-                    data.jacobian[i] = voxel.grad_dev[i][data.voxel_index];
-                tipl::mat::transpose(data.jacobian.begin(),tipl::dim<3,3>());
-            }
             std::vector<float> sinc_ql_(data.odf.size()*data.space.size());
             for (unsigned int j = 0,index = 0; j < data.odf.size(); ++j)
             {
