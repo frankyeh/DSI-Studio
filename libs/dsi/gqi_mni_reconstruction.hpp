@@ -333,7 +333,7 @@ public:
         return tipl::vector<3,int>(x,y,z);
     }
     template<class interpolation_type>
-    void interpolate_dwi(Voxel& voxel, VoxelData& data,const tipl::vector<3,float>& Jpos,interpolation_type)
+    void interpolate_dwi(Voxel&, VoxelData& data,const tipl::vector<3,float>& Jpos,interpolation_type)
     {
         interpolation_type interpolation;
 
@@ -346,16 +346,6 @@ public:
         data.space.resize(ptr_images.size());
         for (unsigned int i = 0; i < ptr_images.size(); ++i)
             interpolation.estimate(ptr_images[i],data.space[i]);
-
-        if(!voxel.grad_dev.empty())
-        {
-            tipl::matrix<3,3,float> grad_dev,new_j;
-            for(unsigned int i = 0; i < 9; ++i)
-                interpolation.estimate(voxel.grad_dev[i],grad_dev[i]);
-            tipl::mat::transpose(grad_dev.begin(),tipl::dim<3,3>());
-            new_j = grad_dev*data.jacobian;
-            data.jacobian = new_j;
-        }
     }
 
     virtual void run(Voxel& voxel, VoxelData& data)
