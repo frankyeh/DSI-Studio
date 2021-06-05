@@ -242,6 +242,7 @@ public:
     std::vector<tipl::vector<3,float> > src_bvectors;
     std::vector<tipl::image<unsigned short,3> > nifti_dwi; // if load directly from nifti
     tipl::matrix<3,3,float> src_bvectors_rotate;
+    std::vector<tipl::vector<3,float> > untouched_src_bvectors;
 public:
     std::vector<float> src_bvalues;
     std::vector<const unsigned short*> src_dwi_data;

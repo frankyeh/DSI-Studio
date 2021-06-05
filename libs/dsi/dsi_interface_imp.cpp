@@ -13,6 +13,7 @@
 
 typedef boost::mpl::vector<
     ReadDWIData,
+    CorrectGradientNonlinearity,
     Dwi2Tensor
 > dti_process;
 
@@ -27,6 +28,7 @@ typedef boost::mpl::vector<
 
 typedef boost::mpl::vector<
     DWINormalization,
+    CorrectGradientNonlinearity,
     Dwi2Tensor,
     BalanceScheme,
     GQI_Recon,
@@ -40,6 +42,7 @@ typedef boost::mpl::vector<
 
 typedef boost::mpl::vector<
     ReadDWIData,
+    CorrectGradientNonlinearity,
     Dwi2Tensor,
     BalanceScheme,
     GQI_Recon,
@@ -232,13 +235,11 @@ bool ImageModel::reconstruction(void)
             // obtain QA map for normalization
             {
                 std::vector<tipl::pointer_image<float,3> > tmp;
-                tmp.swap(voxel.grad_dev);
                 auto mask = voxel.mask;
                 // clear mask to create whole volume QA map
                 std::fill(voxel.mask.begin(),voxel.mask.end(),1.0);
                 if (!reconstruct<qa_map>("GQI for QSDR"))
                     return false;
-                tmp.swap(voxel.grad_dev);
                 if (!reconstruct<qsdr_process>("QSDR reconstruction"))
                     return false;
                 voxel.mask = mask;

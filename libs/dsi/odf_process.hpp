@@ -16,6 +16,37 @@ public:
     virtual void end(Voxel&,gz_mat_write&) {}
 };
 
+class CorrectGradientNonlinearity : public BaseProcess{
+public:
+    virtual void init(Voxel& voxel)
+    {
+        if(!voxel.grad_dev.empty())
+            voxel.recon_report
+                << " Gradient nonlinearity was corrected using exponential signal decay approximation.";
+    }
+    virtual void run(Voxel& voxel, VoxelData& data)
+    {
+        if(!voxel.grad_dev.empty())
+        {
+            double b0_signal = double(data.space.front());
+            if(b0_signal == 0.0)
+                return;
+            tipl::matrix<3,3,float> J;
+            for(unsigned int i = 0;i < 9;++i)
+                J[i] = voxel.grad_dev[i][data.voxel_index];
+            for(unsigned int i = 1;i < data.space.size();++i)
+            {
+                auto bvec = voxel.untouched_bvectors[i];
+                bvec.rotate(J);
+                double inv_l2 = 1.0/double(bvec.length2());
+                data.space[i] = float(std::pow(b0_signal,1.0-inv_l2)*std::pow(double(data.space[i]),inv_l2));
+            }
+        }
+    }
+    virtual void end(Voxel&,gz_mat_write&) {}
+};
+
+
 
 void calculate_shell(const std::vector<float>& sorted_bvalues,
                      std::vector<unsigned int>& shell);

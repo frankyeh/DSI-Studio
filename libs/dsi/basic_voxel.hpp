@@ -59,6 +59,7 @@ public:
 public:
     std::vector<const unsigned short*> dwi_data;
     std::vector<tipl::vector<3,float> > bvectors;
+    std::vector<tipl::vector<3,float> > untouched_bvectors; // gradient nonliearity correction
     std::vector<float> bvalues;
 
     std::string report,steps;
@@ -99,7 +100,6 @@ public://used in GQI
 public://used in GQI
     bool scheme_balance = false;
 public:// gradient deviation
-    std::vector<tipl::image<float,3> > new_grad_dev;
     std::vector<tipl::pointer_image<float,3> > grad_dev;
 public:// used in QSDR
     tipl::matrix<4,4,float> trans_to_mni;

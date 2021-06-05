@@ -95,6 +95,7 @@ void ImageModel::remove(unsigned int index)
     src_dwi_data.erase(src_dwi_data.begin()+index);
     src_bvalues.erase(src_bvalues.begin()+index);
     src_bvectors.erase(src_bvectors.begin()+index);
+    untouched_src_bvectors.erase(untouched_src_bvectors.begin()+index);
     shell.clear();
     voxel.dwi_data.clear();
 }
@@ -149,7 +150,6 @@ void ImageModel::flip_b_table(const unsigned char* order)
         if(order[5])
             src_bvectors[index][2] = -src_bvectors[index][2];
     }
-    voxel.grad_dev.clear();
 }
 
 std::string ImageModel::check_b_table(void)
@@ -631,21 +631,6 @@ void ImageModel::flip_b_table(unsigned char dim)
 {
     for(unsigned int index = 0;index < src_bvectors.size();++index)
         src_bvectors[index][dim] = -src_bvectors[index][dim];
-    if(!voxel.grad_dev.empty())
-    {
-        // <Flip*Gra_dev*b_table,ODF>
-        // = <(Flip*Gra_dev*inv(Flip))*Flip*b_table,ODF>
-        unsigned char nindex[3][4] = {{1,2,3,6},{1,3,5,7},{2,5,6,7}};
-        for(unsigned int index = 0;index < 4;++index)
-        {
-            // 1  0  0         1  0  0
-            //[0 -1  0] *Grad*[0 -1  0]
-            // 0  0  1         0  0  1
-            unsigned char pos = nindex[dim][index];
-            for(unsigned int i = 0;i < voxel.dim.size();++i)
-                voxel.grad_dev[pos][i] = -voxel.grad_dev[pos][i];
-        }
-    }
 }
 // 0:xy 1:yz 2: xz
 void ImageModel::swap_b_table(unsigned char dim)
@@ -653,18 +638,6 @@ void ImageModel::swap_b_table(unsigned char dim)
     std::swap(voxel.vs[dim],voxel.vs[(dim+1)%3]);
     for (unsigned int index = 0;index < src_bvectors.size();++index)
         std::swap(src_bvectors[index][dim],src_bvectors[index][(dim+1)%3]);
-    if(!voxel.grad_dev.empty())
-    {
-        unsigned char swap1[3][6] = {{0,3,6,0,1,2},{1,4,7,3,4,5},{0,3,6,0,1,2}};
-        unsigned char swap2[3][6] = {{1,4,7,3,4,5},{2,5,8,6,7,8},{2,5,8,6,7,8}};
-        for(unsigned int index = 0;index < 6;++index)
-        {
-            unsigned char s1 = swap1[dim][index];
-            unsigned char s2 = swap2[dim][index];
-            for(unsigned int i = 0;i < voxel.dim.size();++i)
-                std::swap(voxel.grad_dev[s1][i],voxel.grad_dev[s2][i]);
-        }
-    }
 }
 
 // 0: x  1: y  2: z
@@ -678,11 +651,6 @@ void ImageModel::flip_dwi(unsigned char type)
     tipl::flip(dwi_sum,type);
     tipl::flip(dwi,type);
     tipl::flip(voxel.mask,type);
-    for(unsigned int i = 0;i < voxel.grad_dev.size();++i)
-    {
-        auto I = tipl::make_image(const_cast<float*>(&*(voxel.grad_dev[i].begin())),voxel.dim);
-        tipl::flip(I,type);
-    }
     prog_init p("Processing");
     tipl::par_for2(src_dwi_data.size(),[&](unsigned int index,unsigned id)
     {
@@ -745,34 +713,6 @@ void ImageModel::rotate(const tipl::geometry<3>& new_geo,
     else
         src_bvectors_rotate = tipl::inverse(affine.sr);
     has_image_rotation = true;
-
-
-    if(!voxel.grad_dev.empty())
-    {
-        // <R*Gra_dev*b_table,ODF>
-        // = <(R*Gra_dev*inv(R))*R*b_table,ODF>
-        float det = std::abs(src_bvectors_rotate.det());
-        begin_prog("rotating grad_dev");
-        for(unsigned int index = 0;check_prog(index,voxel.dim.size());++index)
-        {
-            tipl::matrix<3,3,float> grad_dev,G_invR;
-            for(unsigned int i = 0; i < 9; ++i)
-                grad_dev[i] = voxel.grad_dev[i][index];
-            G_invR = grad_dev*affine.sr;
-            grad_dev = src_bvectors_rotate*G_invR;
-            for(unsigned int i = 0; i < 9; ++i)
-                voxel.grad_dev[i][index] = grad_dev[i]/det;
-        }
-        std::vector<tipl::image<float,3> > new_gra_dev(voxel.grad_dev.size());
-        begin_prog("rotating grad_dev volume");
-        for (unsigned int index = 0;check_prog(index,new_gra_dev.size());++index)
-        {
-            new_gra_dev[index].resize(new_geo);
-            tipl::resample(voxel.grad_dev[index],new_gra_dev[index],affine,tipl::cubic);
-            voxel.grad_dev[index] = tipl::make_image(const_cast<float*>(&(new_gra_dev[index][0])),voxel.dim);
-        }
-        new_gra_dev.swap(voxel.new_grad_dev);
-    }
     voxel.dim = new_geo;
     voxel.dwi_data.clear();
     calculate_dwi_sum(true);
@@ -1341,6 +1281,7 @@ bool ImageModel::load_from_file(const char* dwi_file_name)
             src_bvalues[index] = dwi_files[index]->bvalue;
             src_bvectors[index] = dwi_files[index]->bvec;
         }
+        untouched_src_bvectors = src_bvectors;
 
         // for check_btable
         {
@@ -1407,6 +1348,7 @@ bool ImageModel::load_from_file(const char* dwi_file_name)
         src_bvectors[index].normalize();
         table += 4;
     }
+    untouched_src_bvectors = src_bvectors;
 
     if(!mat_reader.read("report",voxel.report))
         get_report(voxel.report);
@@ -1431,11 +1373,11 @@ bool ImageModel::load_from_file(const char* dwi_file_name)
     }
 
     {
-        const float* grad_dev = nullptr;
-        if(mat_reader.read("grad_dev",row,col,grad_dev) && size_t(row)*size_t(col) == voxel.dim.size()*9)
+        const float* grad_dev_ptr = nullptr;
+        if(mat_reader.read("grad_dev",row,col,grad_dev_ptr) && size_t(row)*size_t(col) == voxel.dim.size()*9)
         {
             for(unsigned int index = 0;index < 9;index++)
-                voxel.grad_dev.push_back(tipl::make_image(const_cast<float*>(grad_dev+index*voxel.dim.size()),voxel.dim));
+                voxel.grad_dev.push_back(tipl::make_image(const_cast<float*>(grad_dev_ptr+index*voxel.dim.size()),voxel.dim));
             if(std::fabs(voxel.grad_dev[0][0])+std::fabs(voxel.grad_dev[4][0])+std::fabs(voxel.grad_dev[8][0]) < 1.0f)
             {
                 tipl::add_constant(voxel.grad_dev[0].begin(),voxel.grad_dev[0].end(),1.0);
