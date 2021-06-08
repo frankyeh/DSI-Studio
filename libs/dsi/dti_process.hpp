@@ -67,19 +67,28 @@ public:
         b_count = 0;
         if(voxel.bvalues[1] > 1750.0f)
             voxel.dti_no_high_b = false;
+        bool has_remove_high_b = false;
+        float highest_b = 0.0f;
         for(size_t i = 1;i < voxel.bvalues.size();++i)//skip b0
         {
             if(voxel.dti_no_high_b && voxel.bvalues[i] > 1750.0f)
+            {
+                has_remove_high_b = true;
                 continue;
+            }
             b_count++;
             b_location.push_back(i);
             b_data.push_back(voxel.bvectors[i]);
             b_data.back() *= std::sqrt(voxel.bvalues[i]);
+            highest_b = std::max<float>(highest_b,voxel.bvalues[i]);
         }
+
+        if(has_remove_high_b)
+            voxel.recon_report << " DTI metrics were calculated using only b-values lower than or equal to " << int(highest_b) << "." << std::endl;
 
         Kt.resize(6*b_count);
         {
-            unsigned int qmap[6]		= {0  ,4  ,8  ,1  ,2  ,5  };
+            unsigned int qmap[6]= {0  ,4  ,8  ,1  ,2  ,5  };
             double qweighting[6]= {1.0,1.0,1.0,2.0,2.0,2.0};
             //					  bxx,byy,bzz,bxy,bxz,byz
             for (unsigned int i = 0,k = 0; i < b_data.size(); ++i,k+=6)
