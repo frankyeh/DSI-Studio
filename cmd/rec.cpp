@@ -127,7 +127,7 @@ int rec(void)
     src.voxel.output_odf = po.get("record_odf",int(0));
     src.voxel.dti_no_high_b = po.get("dti_no_high_b",int(1));
     src.voxel.check_btable = po.get("check_btable",int(src.voxel.dim[2] < src.voxel.dim[0]*2.0 ? 1:0));
-    src.voxel.other_output = po.get("other_output","fa,nqa,rdi,nrdi");
+    src.voxel.other_output = po.get("other_output","fa,ad,rd,md,nqa,rdi,nrdi");
     src.voxel.max_fiber_number = uint32_t(po.get("num_fiber",int(5)));
     src.voxel.r2_weighted = po.get("r2_weighted",int(0));
     src.voxel.thread_count = po.get("thread_count",uint32_t(std::thread::hardware_concurrency()));
