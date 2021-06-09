@@ -132,6 +132,7 @@ tipl::const_pointer_image<float,3> item::get_image(void)
         // delay read routine
         unsigned int row,col;
         const float* buf = nullptr;
+        bool has_gui_ = has_gui;
         has_gui = false;
         if (!mat_reader->read(image_index,row,col,buf))
         {
@@ -143,7 +144,7 @@ tipl::const_pointer_image<float,3> item::get_image(void)
             mat_reader->in->flush();
             image_data = tipl::make_image(buf,image_data.geometry());
         }
-        has_gui = true;
+        has_gui = has_gui_;
         image_ready = true;
         set_scale(image_data.begin(),image_data.end());
     }
