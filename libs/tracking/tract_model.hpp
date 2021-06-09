@@ -199,7 +199,7 @@ public:
     tipl::image<float,2> matrix_value;
 public:
     std::vector<std::vector<short> > region_map;
-    size_t region_count;
+    size_t region_count = 0;
     std::vector<std::string> region_name;
     std::string error_msg,atlas_name;
     float overlap_ratio;
