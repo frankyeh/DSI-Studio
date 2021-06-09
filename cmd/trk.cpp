@@ -266,7 +266,7 @@ void get_connectivity_matrix(std::shared_ptr<fib_data> handle,
 
         if(!QFileInfo(roi_file_name.c_str()).exists())
         {
-            std::cout << "ERROR:" << " cannot open file " << roi_file_name << std::endl;
+            std::cout << "ERROR: file does not exist or cannot open " << std::endl;
             return;
         }
 
@@ -303,7 +303,7 @@ void get_connectivity_matrix(std::shared_ptr<fib_data> handle,
             std::vector<std::string> names;
             if(!load_nii(handle,roi_file_name,regions,names))
             {
-                std::cout << "ERROR: cannot load the ROI file:" << roi_file_name << std::endl;
+                std::cout << "ERROR: cannot open the NIFTI file " << std::endl;
                 return;
             }
             data.region_name = names;
@@ -312,7 +312,7 @@ void get_connectivity_matrix(std::shared_ptr<fib_data> handle,
 
         if(data.region_count == 0)
         {
-            std::cout << "ERROR: " << roi_file_name << " unsupported atlas format " << std::endl;
+            std::cout << "ERROR: unsupported atlas format " << std::endl;
             return;
         }
 
