@@ -10,6 +10,7 @@ bool apply_warping(const char* from,
                    tipl::matrix<4,4,float>& ItR,
                    tipl::transformation_matrix<double>& T,
                    std::string& error);
+bool is_label_image(const tipl::image<float,3>& I);
 int reg(void)
 {
     tipl::image<float,3> from,to;
@@ -65,11 +66,15 @@ int reg(void)
 
     std::cout << T;
     tipl::image<float,3> from_(to.geometry()),from2_;
-    tipl::resample_mt(from,from_,T,tipl::cubic);
+
+
+    tipl::resample_mt(from,from_,T,is_label_image(from) ? tipl::nearest : tipl::cubic);
+
+
     if(!from2.empty())
     {
         from2_.resize(to.geometry());
-        tipl::resample_mt(from2,from2_,T,tipl::cubic);
+        tipl::resample_mt(from2,from2_,T,is_label_image(from2) ? tipl::nearest : tipl::cubic);
     }
     auto r2 = tipl::correlation(from_.begin(),from_.end(),to.begin());
     std::cout << "correlation cofficient: " << r2 << std::endl;
@@ -106,7 +111,7 @@ int reg(void)
 
     {
         tipl::image<float,3> from_wp;
-        tipl::compose_displacement(from_,cdm_dis,from_wp);
+        tipl::compose_displacement(from_,cdm_dis,from_wp,is_label_image(from) ? tipl::nearest : tipl::linear);
         float r = float(tipl::correlation(to.begin(),to.end(),from_wp.begin()));
         std::cout << "R2: " << r*r << std::endl;
         std::cout << "output warpped image: " << output_wp_image << std::endl;
