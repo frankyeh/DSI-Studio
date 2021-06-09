@@ -255,16 +255,22 @@ void get_connectivity_matrix(std::shared_ptr<fib_data> handle,
         std::string roi_file_name = connectivity_list[i].toStdString();
         std::cout << "loading " << roi_file_name << std::endl;
         ConnectivityMatrix data;
-        // atlas name?
-        if(!QFileInfo(roi_file_name.c_str()).exists())
+
+        if(!QString(roi_file_name.c_str()).contains("."))
         {
             std::vector<std::shared_ptr<atlas> > atlas_list;
             if(!load_atlas_from_list(handle,roi_file_name,atlas_list))
-                continue;
+                return;
             data.set_atlas(atlas_list[0],handle->get_mni_mapping());
         }
-        else
-        if(QFileInfo(roi_file_name.c_str()).suffix() == "txt") // a roi list
+
+        if(!QFileInfo(roi_file_name.c_str()).exists())
+        {
+            std::cout << "ERROR:" << " cannot open file " << roi_file_name << std::endl;
+            return;
+        }
+
+        if(QString(roi_file_name.c_str()).toLower().endsWith("txt")) // a roi list
         {
             std::string dir = QFileInfo(roi_file_name.c_str()).absolutePath().toStdString();
             dir += "/";
@@ -281,7 +287,7 @@ void get_connectivity_matrix(std::shared_ptr<fib_data> handle,
                     fn = dir + line;
                 if(!region->LoadFromFile(fn.c_str()))
                 {
-                    std::cout << "failed to open file as a region:" << fn << std::endl;
+                    std::cout << "ERROR: failed to open file as a region:" << fn << std::endl;
                     return;
                 }
                 regions.push_back(region);
@@ -290,18 +296,24 @@ void get_connectivity_matrix(std::shared_ptr<fib_data> handle,
             data.set_regions(handle->dim,regions);
             std::cout << "a total of " << data.region_count << " regions are loaded." << std::endl;
         }
-        else {
+
+        if(QString(roi_file_name.c_str()).toLower().endsWith("nii.gz"))
+        {
             std::vector<std::shared_ptr<ROIRegion> > regions;
             std::vector<std::string> names;
-            if(load_nii(handle,roi_file_name,regions,names))
+            if(!load_nii(handle,roi_file_name,regions,names))
             {
-                data.region_name = names;
-                data.set_regions(handle->dim,regions);
-            }
-            else {
                 std::cout << "ERROR: cannot load the ROI file:" << roi_file_name << std::endl;
                 return;
             }
+            data.region_name = names;
+            data.set_regions(handle->dim,regions);
+        }
+
+        if(data.region_count == 0)
+        {
+            std::cout << "ERROR: " << roi_file_name << " unsupported atlas format " << std::endl;
+            return;
         }
 
         float t = po.get("connectivity_threshold",0.001f);
