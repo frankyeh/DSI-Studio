@@ -62,22 +62,17 @@ std::string quality_check_src_files(QString dir)
     std::vector<float> ndc;
     for(int i = 0;check_prog(i,filenames.size());++i)
     {
-        bool restore_gui = false;
-        if(has_gui)
-        {
-            has_gui = false;
-            restore_gui = true;
-        }
+        bool has_gui_ = has_gui;
+        has_gui = false;
         std::vector<std::string> output_each;
         float ndc_each;
         if(!check_src(filenames[i].toStdString(),output_each,ndc_each))
         {
             out << "cannot load SRC file " << filenames[i].toStdString() << std::endl;
+            has_gui = has_gui_;
             continue;
         }
-        if(restore_gui)
-            has_gui = true;
-
+        has_gui = has_gui_;
         output.push_back(std::move(output_each));
         ndc.push_back(ndc_each);
     }
