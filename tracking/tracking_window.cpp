@@ -1460,7 +1460,13 @@ void tracking_window::on_actionLoad_Rendering_Parameters_triggered()
 
 void tracking_window::on_addRegionFromAtlas_clicked()
 {
-    if(handle->atlas_list.empty() || !handle->can_map_to_mni())
+    if(handle->atlas_list.empty())
+    {
+        QMessageBox::information(this,"Error","no atlas data");
+        raise();
+        return;
+    }
+    if(!handle->can_map_to_mni())
     {
         QMessageBox::information(this,"Error",handle->error_msg.c_str());
         raise();
