@@ -611,7 +611,7 @@ void reconstruction_window::on_delete_2_clicked()
     if(handle->src_dwi_data.size() == 1)
         return;
     int index = ui->b_table->currentRow();
-    if(index <= 0)
+    if(index < 0)
         return;
     bad_slice_analzed = false;
     ui->b_table->removeRow(index);
