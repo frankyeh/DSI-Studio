@@ -52,7 +52,7 @@ bool atl_load_atlas(std::string atlas_name,std::vector<std::shared_ptr<atlas> >&
             atlas_list.back()->name = name_list[index].toStdString();
             if(atlas_list.back()->get_num().empty())
             {
-                std::cout << "invalid file format. No ROI found in " << name_list[index].toStdString() << "." << std::endl;
+                std::cout << "fail to load " << name_list[index].toStdString() << ":" << atlas_list.back()->error_msg << std::endl;
                 return false;
             }
             continue;
