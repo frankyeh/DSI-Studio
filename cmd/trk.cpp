@@ -400,6 +400,11 @@ bool load_region(std::shared_ptr<fib_data> handle,
 
     if(!QFileInfo(file_name.c_str()).exists())
     {
+        if(QString(file_name.c_str()).contains(".")) // is a file
+        {
+            std::cout << "ERROR: cannot find " << file_name << std::endl;
+            return false;
+        }
         if(!load_atlas_from_list(handle,file_name,handle->atlas_list))
             return false;
         if(region_name.empty())
