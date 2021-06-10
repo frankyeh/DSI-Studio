@@ -399,8 +399,7 @@ std::string run_auto_track(
             }
         }
     }
-    if(prog_aborted())
-        return std::string();
+
     // check if there is any incomplete task
     {
         bool has_incomplete = false;
