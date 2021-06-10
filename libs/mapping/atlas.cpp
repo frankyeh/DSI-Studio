@@ -22,7 +22,11 @@ void atlas::load_label(void)
     text_file_name += "txt";
     std::ifstream in(text_file_name.c_str());
     if(!in)
+    {
+        error_msg = "cannot find label file at ";
+        error_msg += text_file_name;
         return;
+    }
     std::vector<std::string> text;
     std::string str;
     while(std::getline(in,str))
@@ -82,7 +86,7 @@ bool atlas::load_from_file(void)
     gz_nifti nii;
     if(!nii.load_from_file(filename.c_str()))
     {
-        error_msg = "Cannot load atlas file";
+        error_msg = nii.error;
         return false;
     }
     if(name.empty())
