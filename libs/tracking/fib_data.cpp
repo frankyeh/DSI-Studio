@@ -681,28 +681,32 @@ bool fib_data::load_from_file(const char* file_name)
 }
 bool fib_data::save_mapping(const std::string& index_name,const std::string& file_name,const tipl::value_to_color<float>& v2c)
 {
-    if(index_name == "fiber")
+    if(index_name == "fiber" || index_name == "dirs") // command line exp use "dirs"
     {
-        gz_nifti file;
-        file.set_voxel_size(vs);
         tipl::image<float,4> buf(tipl::geometry<4>(
                                  dim.width(),
                                  dim.height(),
-                                 dim.depth(),3*int(dir.num_fiber)));
+                                 dim.depth(),3*uint32_t(dir.num_fiber)));
 
         for(unsigned int j = 0,index = 0;j < dir.num_fiber;++j)
         for(int k = 0;k < 3;++k)
         for(unsigned int i = 0;i < dim.size();++i,++index)
             buf[index] = dir.get_dir(i,j)[k];
 
-        tipl::flip_xy(buf);
-        file << buf;
-        return file.save_to_file(file_name.c_str());
+        return gz_nifti::save_to_file(file_name.c_str(),buf,vs,trans_to_mni);
+    }
+    if(index_name.length() == 4 && index_name.substr(0,3) == "dir" && index_name[3]-'0' >= 0 && index_name[3]-'0' < int(dir.num_fiber))
+    {
+        unsigned char dir_index = uint8_t(index_name[3]-'0');
+        tipl::image<float,4> buf(tipl::geometry<4>(dim[0],dim[1],dim[2],3));
+        for(unsigned int j = 0,ptr = 0;j < 3;++j)
+        for(unsigned int index = 0;index < dim.size();++index,++ptr)
+            if(dir.get_fa(index,dir_index) > 0.0f)
+                buf[ptr] = dir.get_dir(index,dir_index)[j];
+        return gz_nifti::save_to_file(file_name.c_str(),buf,vs,trans_to_mni);
     }
     if(index_name == "odfs" && odf.has_odfs())
     {
-        gz_nifti file;
-        file.set_voxel_size(vs);
         tipl::image<float,4> buf(tipl::geometry<4>(
                                  dim.width(),
                                  dim.height(),
@@ -715,9 +719,7 @@ bool fib_data::save_mapping(const std::string& index_name,const std::string& fil
                 std::copy(ptr,ptr+dir.half_odf_size,buf.begin()+pos*dir.half_odf_size);
 
         }
-        tipl::flip_xy(buf);
-        file << buf;
-        return file.save_to_file(file_name.c_str());
+        return gz_nifti::save_to_file(file_name.c_str(),buf,vs,trans_to_mni);
     }
     size_t index = get_name_index(index_name);
     if(index >= view_item.size())
