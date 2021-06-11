@@ -84,24 +84,20 @@ int exp(void)
             std::cout << "ERROR: " << handle->error_msg << std::endl;
             return 0;
         }
+        tipl::value_to_color<float> v2c;// used if "color" is wanted
+        v2c.set_range(handle->view_item[0].contrast_min,handle->view_item[0].contrast_max);
+        v2c.two_color(tipl::rgb(0,0,0),tipl::rgb(255,255,255));
 
         std::istringstream in(po.get("export"));
         std::string cmd;
         while(std::getline(in,cmd,','))
         {
-            std::string file_name_stat(file_name);
-            file_name_stat += ".";
-            file_name_stat += cmd;
-            file_name_stat += ".nii.gz";
-            tipl::value_to_color<float> v2c;// used if "color" is wanted
-            v2c.set_range(handle->view_item[0].contrast_min,handle->view_item[0].contrast_max);
-            v2c.two_color(tipl::rgb(0,0,0),tipl::rgb(255,255,255));
-            if(!handle->save_mapping(cmd,file_name_stat,v2c))
+            if(!handle->save_mapping(cmd,file_name + "." + cmd + ".nii.gz",v2c))
             {
                 std::cout << "ERROR: cannot find "<< cmd.c_str() <<" in " << file_name.c_str() <<std::endl;
                 return 1;
             }
-            std::cout << cmd << " saved to " << file_name_stat << std::endl;
+            std::cout << cmd << ".nii.gz saved " << std::endl;
         }
         return 0;
     }
