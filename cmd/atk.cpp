@@ -47,12 +47,9 @@ int atk(void)
     {
         fib_data fib;
         fib.set_template_id(0);
-        std::string track_id_str =
-                po.get("track_id","Fasciculus,Cingulum,Aslant,Cortico,Thalamic_R,Reticular,Optic,Fornix,Corpus");
-        std::replace(track_id_str.begin(),track_id_str.end(),',',' ');
-        std::istringstream in(track_id_str);
+        std::istringstream in(po.get("track_id","Fasciculus,Cingulum,Aslant,Cortico,Thalamic_R,Reticular,Optic,Fornix,Corpus"));
         std::string str;
-        while(in >> str)
+        while(std::getline(in,str,','))
         {
             try {
                 track_id.push_back(uint32_t(std::stoi(str)));
