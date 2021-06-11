@@ -85,12 +85,9 @@ void export_track_info(std::shared_ptr<fib_data> handle,
                        std::string file_name,
                        std::shared_ptr<TractModel> tract_model)
 {
-    std::string export_option = po.get("export");
-    std::replace(export_option.begin(),export_option.end(),',',' ');
-    std::istringstream in(export_option);
+    std::istringstream in(po.get("export"));
     std::string cmd;
-
-    while(in >> cmd)
+    while(std::getline(in,cmd,','))
     {
         // track analysis report
         if(cmd.find("report") == 0)
