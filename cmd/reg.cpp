@@ -120,19 +120,24 @@ int reg(void)
 
     if(po.has("apply_warp"))
     {
-        std::string from3 = po.get("apply_warp");
-        std::string to3 = from3+".wp.nii.gz";
-        std::string error;
-        if(!apply_warping(from3.c_str(),to3.c_str(),
-                      from.geometry(),
-                      to.geometry(),
-                      cdm_dis,
-                      to_vs,
-                      to_trans,
-                      T,error))
+        std::istringstream in(po.get("apply_warp"));
+        std::string from3;
+        while(std::getline(in,from3,','))
         {
-            std::cout << "[ERROR]" << error <<std::endl;
-            return 1;
+            std::string to3 = from3+".wp.nii.gz";
+            std::string error;
+            std::cout << "apply warping to " << from3 << std::endl;
+            if(!apply_warping(from3.c_str(),to3.c_str(),
+                          from.geometry(),
+                          to.geometry(),
+                          cdm_dis,
+                          to_vs,
+                          to_trans,
+                          T,error))
+            {
+                std::cout << "[ERROR]" << error <<std::endl;
+                return 1;
+            }
         }
     }
     return 0;
