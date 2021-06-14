@@ -108,8 +108,6 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
 
     ui->RecordODF->setChecked(settings.value("rec_record_odf",0).toInt());
 
-    ui->other_output->setText(settings.value("other_output",ui->other_output->text()).toString());
-
     ui->check_btable->setChecked(settings.value("check_btable",1).toInt());
     if(handle->voxel.vs[2] > handle->voxel.vs[0]*2.0f || handle->voxel.vs[0] < 0.5f)
         ui->check_btable->setChecked(false);
