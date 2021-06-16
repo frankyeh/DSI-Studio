@@ -2494,7 +2494,7 @@ void GLWidget::copyToClipboardEach(QTableWidget* widget,unsigned int col_size)
     std::vector<bool> is_checked(uint32_t(widget->rowCount()));
     for (int i = 0;i < widget->rowCount();++i)
     {
-        is_checked[i] = widget->item(i,0)->checkState() == Qt::Checked;
+        is_checked[size_t(i)] = (widget->item(i,0)->checkState() == Qt::Checked);
         widget->item(i,0)->setCheckState(Qt::Unchecked);
     }
     std::vector<QImage> images;
@@ -2502,8 +2502,6 @@ void GLWidget::copyToClipboardEach(QTableWidget* widget,unsigned int col_size)
     for (int i = 0;i < widget->rowCount();++i)
         if(is_checked[uint32_t(i)])
         {
-            if(i > 0)
-                widget->item(i-1,0)->setCheckState(Qt::Unchecked);
             widget->item(i,0)->setCheckState(Qt::Checked);
             makeTracts();
             QImage I = grab_image();
@@ -2513,7 +2511,13 @@ void GLWidget::copyToClipboardEach(QTableWidget* widget,unsigned int col_size)
             images.push_back(I);
             height = std::max<int>(I.height(),height);
             width = std::max<int>(I.width(),width);
+            widget->item(i,0)->setCheckState(Qt::Unchecked);
         }
+    if(images.empty())
+    {
+        QMessageBox::critical(this,"ERROR","No visible output captured. Did you check any region or tract?");
+        return;
+    }
     width += 5;
     height += 5;
     QImage I(images.size() >= col_size ? width*int(col_size): width*int(images.size()),
