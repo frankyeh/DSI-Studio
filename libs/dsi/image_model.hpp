@@ -276,6 +276,7 @@ public:
                 const tipl::image<tipl::vector<3>,3>& cdm_dis = tipl::image<tipl::vector<3>,3>(),
                 const tipl::image<float,3>& super_reso_ref = tipl::image<float,3>(),double var = 3.0);
     void resample(float nv);
+    bool arg_to_mni(float resolution,tipl::vector<3>& vs,tipl::geometry<3>& new_geo,tipl::affine_transform<float>& T);
     bool rotate_to_mni(float resolution);
     void trim(void);
     bool distortion_correction(const char* file_name);

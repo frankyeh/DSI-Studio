@@ -735,10 +735,9 @@ void ImageModel::resample(float nv)
 }
 extern std::string fib_template_file_name_2mm;
 extern std::vector<std::string> iso_template_list;
-bool ImageModel::rotate_to_mni(float resolution)
+bool ImageModel::arg_to_mni(float resolution,tipl::vector<3>& vs,tipl::geometry<3>& new_geo,tipl::affine_transform<float>& T)
 {
     tipl::image<float,3> I;
-    tipl::vector<3> vs;
 
     if(resolution == 2.0f)
     {
@@ -774,39 +773,47 @@ bool ImageModel::rotate_to_mni(float resolution)
     }
     else
         return false;
-    tipl::transformation_matrix<double> arg;
-    bool terminated = false;
-    begin_prog("aligning with MNI ac-pc");
-    check_prog(0,1);
 
+    bool terminated = false;
+    begin_prog("aligning with MNI ac-pc",true);
+    check_prog(0,4);
     const float bound[8] = {1.0f,-1.0f,0.02f,-0.02f,1.2f,0.9f,0.1f,-0.1f};
-    tipl::affine_transform<float> T;
     tipl::reg::linear_mr(I,vs,dwi_sum,voxel.vs,
             T,tipl::reg::affine,tipl::reg::mutual_information(),terminated,0.1,bound);
+    check_prog(1,4);
     tipl::reg::linear_mr(I,vs,dwi_sum,voxel.vs,
             T,tipl::reg::affine,tipl::reg::mutual_information(),terminated,0.01,bound);
+    check_prog(2,4);
     tipl::reg::linear_mr(I,vs,dwi_sum,voxel.vs,
             T,tipl::reg::affine,tipl::reg::mutual_information(),terminated,0.001,bound);
     T.scaling[0] = T.scaling[1] = T.scaling[2] = 1.0f;
     T.affine[0] = T.affine[1] = T.affine[2] = 0.0f;
-    arg = tipl::transformation_matrix<float>(T,I.geometry(),vs,dwi_sum.geometry(),voxel.vs);
+    check_prog(3,4);
 
-    {
-        tipl::image<float,3> I2(I.geometry());
-        tipl::resample(dwi_sum,I2,arg,tipl::cubic);
-        float r = float(tipl::correlation(I.begin(),I.end(),I2.begin()));
-        std::cout << T;
-        std::cout << "R2 for ac-pc alignment=" << r*r << std::endl;
-        if(r*r < 0.3f)
-            return false;
-    }
-    rotate(I.geometry(),arg);
+    tipl::image<float,3> I2(I.geometry());
+    tipl::resample(dwi_sum,I2,tipl::transformation_matrix<float>(T,I.geometry(),vs,dwi_sum.geometry(),voxel.vs),tipl::cubic);
+    float r = float(tipl::correlation(I.begin(),I.end(),I2.begin()));
+    std::cout << T;
+    std::cout << "R2 for ac-pc alignment=" << r*r << std::endl;
+    check_prog(4,4);
+    if(r*r < 0.3f)
+        return false;
+    new_geo = I.geometry();
+    return true;
+}
 
+bool ImageModel::rotate_to_mni(float resolution)
+{
+    tipl::vector<3> vs;
+    tipl::geometry<3> geo;
+    tipl::affine_transform<float> T;
+    if(!arg_to_mni(resolution,vs,geo,T))
+        return false;
+    rotate(geo,tipl::transformation_matrix<float>(T,geo,vs,dwi_sum.geometry(),voxel.vs));
     voxel.vs = vs;
     voxel.report += " The diffusion MRI data were resampled to ";
     voxel.report += std::to_string(int(vs[0]));
     voxel.report += " mm isotropic resolution.";
-    check_prog(1,1);
     return true;
 }
 
@@ -1563,12 +1570,17 @@ bool ImageModel::compare_src(const char* file_name)
         auto& If_vs = study_src->voxel.vs;
         bool terminated = false;
         check_prog(0,1);
-        tipl::affine_transform<double> T;
+        tipl::affine_transform<float> T;
+        {
+            tipl::vector<3> vs;
+            tipl::geometry<3> geo;
+            study_src->arg_to_mni(2.0f,vs,geo,T);
+        }
         tipl::reg::linear(Ib,Ib_vs,If,If_vs,
-                T,tipl::reg::rigid_body,tipl::reg::correlation(),terminated,0.01,0,tipl::reg::narrow_bound);
+                T,tipl::reg::rigid_body,tipl::reg::correlation(),terminated,0.01,0,tipl::reg::large_bound);
         tipl::reg::linear(Ib,Ib_vs,If,If_vs,
-                T,tipl::reg::rigid_body,tipl::reg::correlation(),terminated,0.001,0,tipl::reg::narrow_bound);
-        tipl::transformation_matrix<double> arg(T,Ib.geometry(),Ib_vs,If.geometry(),If_vs);
+                T,tipl::reg::rigid_body,tipl::reg::correlation(),terminated,0.001,0,tipl::reg::large_bound);
+        tipl::transformation_matrix<float> arg(T,Ib.geometry(),Ib_vs,If.geometry(),If_vs);
         check_prog(1,2);
         // nonlinear part
         tipl::image<tipl::vector<3>,3> cdm_dis;
