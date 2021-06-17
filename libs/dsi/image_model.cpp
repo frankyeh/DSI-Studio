@@ -1550,6 +1550,7 @@ bool ImageModel::compare_src(const char* file_name)
         std::fill(voxel.mask.begin(),voxel.mask.end(),1);
         std::fill(study_src->voxel.mask.begin(),study_src->voxel.mask.end(),1);
         reconstruct<check_btable_process>("calculating fa map1");
+        study_src->voxel.method_id = 1;
         study_src->reconstruct<check_btable_process>("calculating fa map2");
         // restore mask
 
