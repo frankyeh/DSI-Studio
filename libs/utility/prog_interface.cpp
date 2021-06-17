@@ -10,7 +10,6 @@
 bool has_gui = false;
 std::shared_ptr<QProgressDialog> progressDialog;
 QTime t_total,t_last;
-bool lock_dialog = false;
 bool prog_aborted_ = false;
 auto start_time = std::chrono::high_resolution_clock::now();
 std::string current_title;
@@ -28,7 +27,7 @@ void check_create(void)
         QApplication::processEvents();
     }
 }
-void begin_prog(const char* title,bool lock)
+void begin_prog(const char* title,bool always_show_dialog)
 {
     std::cout << title << std::endl;
     if(!has_gui)
@@ -40,8 +39,13 @@ void begin_prog(const char* title,bool lock)
         progressDialog->setLabelText(title);
         progressDialog->show();
     }
+    else
+    if(always_show_dialog)
+    {
+        progressDialog.reset(new QProgressDialog(current_title.c_str(),"Cancel",0,100));
+        progressDialog->show();
+    }
     start_time = std::chrono::high_resolution_clock::now();
-    lock_dialog = lock;
     QApplication::processEvents();
     t_total.start();
     t_last.start();
@@ -83,7 +87,7 @@ bool check_prog(unsigned int now,unsigned int total)
     check_create();
     if(!progressDialog.get())
         return now < total;
-    if((now >= total && !lock_dialog) || progressDialog->wasCanceled())
+    if(now >= total || progressDialog->wasCanceled())
     {
         close_prog();
         return false;
