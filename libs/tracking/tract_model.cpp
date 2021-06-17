@@ -861,8 +861,6 @@ bool TractModel::save_tracts_to_file(const char* file_name_)
     }
     if (ext == std::string(".trk") || ext == std::string("k.gz"))
     {
-        if(ext == std::string(".trk"))
-            file_name += ".gz";
         std::vector<std::vector<float> > empty_scalar;
         return TrackVis::save_to_file(file_name.c_str(),geo,vs,tract_data,empty_scalar,parameter_id,tract_color.front());
     }
