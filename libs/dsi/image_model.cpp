@@ -1576,17 +1576,21 @@ bool ImageModel::compare_src(const char* file_name)
             tipl::geometry<3> geo;
             study_src->arg_to_mni(2.0f,vs,geo,T);
         }
+        begin_prog("registering longitudinal data",true);
+        check_prog(0,3);
         tipl::reg::linear(Ib,Ib_vs,If,If_vs,
                 T,tipl::reg::rigid_body,tipl::reg::correlation(),terminated,0.01,0,tipl::reg::large_bound);
+        check_prog(1,3);
         tipl::reg::linear(Ib,Ib_vs,If,If_vs,
                 T,tipl::reg::rigid_body,tipl::reg::correlation(),terminated,0.001,0,tipl::reg::large_bound);
         tipl::transformation_matrix<float> arg(T,Ib.geometry(),Ib_vs,If.geometry(),If_vs);
-        check_prog(1,2);
         // nonlinear part
         tipl::image<tipl::vector<3>,3> cdm_dis;
 
         //if(voxel.dt_deform)
         {
+            set_title("nonlinear warping");
+            check_prog(2,3);
             tipl::image<float,3> Iff(Ib.geometry());
             tipl::resample(If,Iff,arg,tipl::cubic);
             tipl::match_signal(Ib,Iff);
@@ -1620,7 +1624,7 @@ bool ImageModel::compare_src(const char* file_name)
         study_src->rotate(Ib.geometry(),arg,cdm_dis);
         study_src->voxel.vs = voxel.vs;
         study_src->voxel.mask = voxel.mask;
-        check_prog(1,1);
+        check_prog(3,3);
     }
 
 
