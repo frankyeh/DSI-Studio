@@ -259,7 +259,7 @@ void reconstruction_window::doReconstruction(unsigned char method_id,bool prompt
     settings.setValue("other_output",ui->other_output->text());
     settings.setValue("check_btable",ui->check_btable->isChecked() ? 1 : 0);
 
-    begin_prog("reconstruction",true);
+    begin_prog("reconstruction");
     handle->voxel.method_id = method_id;
     handle->voxel.ti.init(8);
     handle->voxel.odf_resolving = ui->odf_resolving->isChecked();
