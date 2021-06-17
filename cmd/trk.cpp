@@ -253,6 +253,7 @@ void get_connectivity_matrix(std::shared_ptr<fib_data> handle,
         std::cout << "loading " << roi_file_name << std::endl;
         ConnectivityMatrix data;
 
+        // specify atlas name (e.g. --connectivity=AAL2)
         if(!QString(roi_file_name.c_str()).contains("."))
         {
             std::vector<std::shared_ptr<atlas> > atlas_list;
@@ -260,57 +261,55 @@ void get_connectivity_matrix(std::shared_ptr<fib_data> handle,
                 return;
             data.set_atlas(atlas_list[0],handle->get_mni_mapping());
         }
-
-        if(!QFileInfo(roi_file_name.c_str()).exists())
+        else
+        // specify atlas file (e.g. --connectivity=subject_file.nii.gz)
         {
-            std::cout << "ERROR: file does not exist or cannot open " << std::endl;
-            return;
-        }
-
-        if(QString(roi_file_name.c_str()).toLower().endsWith("txt")) // a roi list
-        {
-            std::string dir = QFileInfo(roi_file_name.c_str()).absolutePath().toStdString();
-            dir += "/";
-            std::ifstream in(roi_file_name.c_str());
-            std::string line;
-            std::vector<std::shared_ptr<ROIRegion> > regions;
-            while(std::getline(in,line))
+            if(!QFileInfo(roi_file_name.c_str()).exists())
             {
-                std::shared_ptr<ROIRegion> region(new ROIRegion(handle));
-                std::string fn;
-                if(QFileInfo(line.c_str()).exists())
-                    fn = line;
-                else
-                    fn = dir + line;
-                if(!region->LoadFromFile(fn.c_str()))
-                {
-                    std::cout << "ERROR: failed to open file as a region:" << fn << std::endl;
-                    return;
-                }
-                regions.push_back(region);
-                data.region_name.push_back(QFileInfo(line.c_str()).baseName().toStdString());
-            }
-            data.set_regions(handle->dim,regions);
-            std::cout << "a total of " << data.region_count << " regions are loaded." << std::endl;
-        }
-
-        if(QString(roi_file_name.c_str()).toLower().endsWith("nii.gz"))
-        {
-            std::vector<std::shared_ptr<ROIRegion> > regions;
-            std::vector<std::string> names;
-            if(!load_nii(handle,roi_file_name,regions,names))
-            {
-                std::cout << "ERROR: cannot open the NIFTI file " << std::endl;
+                std::cout << "ERROR: file does not exist" << std::endl;
                 return;
             }
-            data.region_name = names;
-            data.set_regions(handle->dim,regions);
-        }
 
-        if(data.region_count == 0)
-        {
-            std::cout << "ERROR: unsupported atlas format " << std::endl;
-            return;
+            if(QString(roi_file_name.c_str()).toLower().endsWith("txt")) // a roi list
+            {
+                std::cout << "reading " << roi_file_name << " as an ROI list" << std::endl;
+                std::string dir = QFileInfo(roi_file_name.c_str()).absolutePath().toStdString();
+                dir += "/";
+                std::ifstream in(roi_file_name.c_str());
+                std::string line;
+                std::vector<std::shared_ptr<ROIRegion> > regions;
+                while(std::getline(in,line))
+                {
+                    std::shared_ptr<ROIRegion> region(new ROIRegion(handle));
+                    std::string fn;
+                    if(QFileInfo(line.c_str()).exists())
+                        fn = line;
+                    else
+                        fn = dir + line;
+                    if(!region->LoadFromFile(fn.c_str()))
+                    {
+                        std::cout << "ERROR: failed to open file as a region:" << fn << std::endl;
+                        return;
+                    }
+                    regions.push_back(region);
+                    data.region_name.push_back(QFileInfo(line.c_str()).baseName().toStdString());
+                }
+                data.set_regions(handle->dim,regions);
+                std::cout << "a total of " << data.region_count << " regions are loaded." << std::endl;
+            }
+            else
+            {
+                std::cout << "reading " << roi_file_name << " as a NIFTI regioin file" << std::endl;
+                std::vector<std::shared_ptr<ROIRegion> > regions;
+                std::vector<std::string> names;
+                if(!load_nii(handle,roi_file_name,regions,names))
+                {
+                    std::cout << "ERROR: cannot read regions from " << roi_file_name << std::endl;
+                    return;
+                }
+                data.region_name = names;
+                data.set_regions(handle->dim,regions);
+            }
         }
 
         float t = po.get("connectivity_threshold",0.001f);
