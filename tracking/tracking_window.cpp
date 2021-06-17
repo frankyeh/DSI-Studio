@@ -460,8 +460,6 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         on_glAxiView_clicked();
         if((*this)["orientation_convention"].toInt() == 1)
             glWidget->set_view(2);
-        if(ui->SliceModality->currentText() == "icbm_wm")
-            command("add_surface","0","0.1"); // add full surface
         ui->SliceModality->setCurrentIndex(0);
     }
 }
