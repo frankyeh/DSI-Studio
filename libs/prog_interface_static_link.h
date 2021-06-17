@@ -2,7 +2,7 @@
 #define PROG_INTERFACE_STATIC_LINKH
 #include <tipl/tipl.hpp>
 #include <string>
-void begin_prog(const char* title = nullptr,bool lock = false);
+void begin_prog(const char* title = nullptr,bool always_show_dialog = false);
 void set_title(const char* title);
 bool check_prog(unsigned int now,unsigned int total);
 template<typename value_type1,typename value_type2>
