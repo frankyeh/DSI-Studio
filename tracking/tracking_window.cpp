@@ -1251,6 +1251,7 @@ void tracking_window::on_dt_index_currentIndexChanged(int index)
 {
     handle->dir.set_dt_index(index-1); // skip the first "none" item
     set_data("tracking_plan",0); // use seed instead of tracks for dT
+    set_data("track_count",1000000);
     slice_need_update = true;
 }
 
