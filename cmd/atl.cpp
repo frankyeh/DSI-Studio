@@ -40,7 +40,7 @@ bool atl_load_atlas(std::string atlas_name,std::vector<std::shared_ptr<atlas> >&
                 file_path = atlas_path;
             else
             {
-                std::cout << "load " << name_list[index].toStdString() << " failed. Cannot find file in " << atlas_path << std::endl;
+                std::cout << "ERROR: fail to open " << name_list[index].toStdString() << " failed. There is no such an atlas installed in the DSI Studio." << std::endl;
                 return false;
             }
         }
@@ -52,7 +52,7 @@ bool atl_load_atlas(std::string atlas_name,std::vector<std::shared_ptr<atlas> >&
             atlas_list.back()->name = name_list[index].toStdString();
             if(atlas_list.back()->get_num().empty())
             {
-                std::cout << "fail to load " << name_list[index].toStdString() << ":" << atlas_list.back()->error_msg << std::endl;
+                std::cout << "ERROR: fail to open " << name_list[index].toStdString() << ":" << atlas_list.back()->error_msg << std::endl;
                 return false;
             }
             continue;
