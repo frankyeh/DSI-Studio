@@ -152,6 +152,7 @@ void ImageModel::flip_b_table(const unsigned char* order)
     }
 }
 
+extern std::string fib_template_file_name_2mm;
 std::string ImageModel::check_b_table(void)
 {
     // reconstruct DTI using original data and b-table
@@ -163,19 +164,16 @@ std::string ImageModel::check_b_table(void)
         bool has_rotation = has_image_rotation;
         has_image_rotation = false;
 
-        auto method_id = voxel.method_id;
         auto other_output = voxel.other_output;
 
         original_src_dwi_data.swap(src_dwi_data);
         original_dim.swap(voxel.dim);
-        voxel.method_id = 1;
         voxel.other_output = std::string();
 
         reconstruct<check_btable_process>("checking b-table");
 
         original_src_dwi_data.swap(src_dwi_data);
         original_dim.swap(voxel.dim);
-        voxel.method_id = method_id;
         voxel.other_output = other_output;
 
         mask.swap(voxel.mask);
@@ -219,14 +217,68 @@ std::string ImageModel::check_b_table(void)
                              ".210",".210fx",".210fy",".210fz",
                              ".201",".201fx",".201fy",".201fz"};
 
+    std::shared_ptr<fib_data> template_fib;
+    tipl::transformation_matrix<float> T;
+    if(is_human_data())
+    {
+        template_fib = std::make_shared<fib_data>();
+        if(!template_fib->load_from_file(fib_template_file_name_2mm.c_str()))
+            template_fib.reset();
+        else
+        {
+            tipl::vector<3> vs;
+            tipl::geometry<3> geo;
+            tipl::affine_transform<float> arg;
+            if(!arg_to_mni(2.0f,vs,geo,arg))
+                template_fib.reset();
+            else
+                T = tipl::transformation_matrix<float>(arg,geo,vs,voxel.dim,voxel.vs);
+        }
+    }
+    if(template_fib.get())
+    {
+        voxel.recon_report <<
+        " The accuracy of b-table orientation was examined by comparing fiber orientations with those of a population-averaged template (Yeh et al. Neuroimage, 2018).";
+    }
+    else
+    {
+        voxel.recon_report <<
+        " The b-table was checked by an automatic quality control routine to ensure its accuracy (Schilling et al. MRI, 2019).";
+    }
+
     float result[24] = {0};
     float otsu = tipl::segmentation::otsu_threshold(fib_fa[0])*0.6f;
+    auto subject_geo = fib_fa[0].geometry();
     for(int i = 0;i < 24;++i)// 0 is the current score
     {
         auto new_dir(fib_dir);
         if(i)
             flip_fib_dir(new_dir[0],order[i]);
-        result[i] = evaluate_fib(fib_fa[0].geometry(),otsu,fib_fa,[&](uint32_t pos,uint8_t fib){return new_dir[fib][pos];}).first;
+
+        if(template_fib.get()) // comparing with hcp 2mm template
+        {
+            double sum_cos = 0.0;
+            size_t ncount = 0;
+            auto tempalte_geo = template_fib->dim;
+            const float* ptr = nullptr;
+            for(tipl::pixel_index<3> index(tempalte_geo);index < tempalte_geo.size();++index)
+            {
+                if(template_fib->dir.fa[0][index.index()] < 0.2f || !(ptr = template_fib->dir.get_dir(index.index(),0)))
+                    continue;
+                tipl::vector<3> pos(index);
+                T(pos);
+                pos.round();
+                if(subject_geo.is_valid(pos))
+                {
+                    sum_cos += std::abs(double(new_dir[0][tipl::pixel_index<3>(pos.begin(),subject_geo).index()]*tipl::vector<3>(ptr)));
+                    ++ncount;
+                }
+            }
+            result[i] = float(sum_cos/double(ncount));
+        }
+        else
+        // for animal studies, use fiber coherence index
+            result[i] = evaluate_fib(subject_geo,otsu,fib_fa,[&](uint32_t pos,uint8_t fib){return new_dir[fib][pos];}).first;
     }
     long best = long(std::max_element(result,result+24)-result);
     for(int i = 0;i < 24;++i)
@@ -1145,7 +1197,7 @@ void ImageModel::get_report(std::string& report)
     {
         out << " A diffusion spectrum imaging scheme was used, and a total of " << num_dir
             << " diffusion sampling were acquired."
-            << " The maximum b-value was " << int(std::round(sorted_bvalues.back())) << " s/mm2.";
+            << " The maximum b-value was " << int(std::round(sorted_bvalues.back())) << " s/mm².";
     }
     else
     if(is_multishell())
@@ -1163,7 +1215,7 @@ void ImageModel::get_report(std::string& report)
             out << int(std::round(sorted_bvalues[
                 index == shell.size()-1 ? (sorted_bvalues.size()+shell.back())/2 : (shell[index+1] + shell[index])/2]));
         }
-        out << " s/mm2.";
+        out << " s/mm².";
 
         out << " The number of diffusion sampling directions were ";
         for(unsigned int index = 0;index < shell.size()-1;++index)
@@ -1179,7 +1231,7 @@ void ImageModel::get_report(std::string& report)
                 out << " A HARDI scheme was used, and a total of ";
             out << num_dir
                 << " diffusion sampling directions were acquired."
-                << " The b-value was " << sorted_bvalues.back() << " s/mm2.";
+                << " The b-value was " << sorted_bvalues.back() << " s/mm².";
         }
 
     out << " The in-plane resolution was " << voxel.vs[0] << " mm."
@@ -1530,7 +1582,9 @@ bool ImageModel::compare_src(const char* file_name)
         return false;
     }
     study_src = bl;
-
+    // correct b_table first
+    if(voxel.check_btable)
+        study_src->check_b_table();
     // apply preprocessing steps
     {
         std::istringstream commands(voxel.steps);
@@ -1556,8 +1610,8 @@ bool ImageModel::compare_src(const char* file_name)
         // set all mask=1 for baseline and follow-up
         std::fill(voxel.mask.begin(),voxel.mask.end(),1);
         std::fill(study_src->voxel.mask.begin(),study_src->voxel.mask.end(),1);
+
         reconstruct<check_btable_process>("calculating fa map1");
-        study_src->voxel.method_id = 1;
         study_src->reconstruct<check_btable_process>("calculating fa map2");
         // restore mask
 
@@ -1569,7 +1623,7 @@ bool ImageModel::compare_src(const char* file_name)
         auto& Ib_vs = voxel.vs;
         auto& If_vs = study_src->voxel.vs;
         bool terminated = false;
-        check_prog(0,1);
+        check_prog(0,4);
         tipl::affine_transform<float> T;
         {
             tipl::vector<3> vs;
@@ -1577,10 +1631,10 @@ bool ImageModel::compare_src(const char* file_name)
             study_src->arg_to_mni(2.0f,vs,geo,T);
         }
         begin_prog("registering longitudinal data",true);
-        check_prog(0,3);
+        check_prog(0,4);
         tipl::reg::linear(Ib,Ib_vs,If,If_vs,
                 T,tipl::reg::rigid_body,tipl::reg::correlation(),terminated,0.01,0,tipl::reg::large_bound);
-        check_prog(1,3);
+        check_prog(1,4);
         tipl::reg::linear(Ib,Ib_vs,If,If_vs,
                 T,tipl::reg::rigid_body,tipl::reg::correlation(),terminated,0.001,0,tipl::reg::large_bound);
         tipl::transformation_matrix<float> arg(T,Ib.geometry(),Ib_vs,If.geometry(),If_vs);
@@ -1590,23 +1644,34 @@ bool ImageModel::compare_src(const char* file_name)
         //if(voxel.dt_deform)
         {
             set_title("nonlinear warping");
-            check_prog(2,3);
+            check_prog(2,4);
             tipl::image<float,3> Iff(Ib.geometry());
             tipl::resample(If,Iff,arg,tipl::cubic);
             tipl::match_signal(Ib,Iff);
             bool terminated = false;
             tipl::reg::cdm_param param;
-            param.resolution = 1.0f;
             param.cdm_smoothness = 0.2f;
             param.iterations = 120;
             tipl::reg::cdm(Ib,Iff,cdm_dis,terminated,param);
 
+
+            set_title("subvoxel nonlinear warping");
+            check_prog(3,4);
+
+            tipl::image<float,3> If2Ib(Ib.geometry());
+            tipl::resample_dis(If,If2Ib,arg,cdm_dis,tipl::cubic);
+            tipl::image<tipl::vector<3>,3> cdm_dis2;
+
+            param.multi_resolution = false;
+            tipl::reg::cdm(Ib,If2Ib,cdm_dis2,terminated,param);
+            tipl::accumulate_displacement(cdm_dis,cdm_dis2);
+
             /*
             if(1) // debug
             {
-                tipl::image<float,3> result(dwi_sum.geometry());
-                tipl::resample_dis(study_src->dwi_sum,result,arg,cdm_dis,tipl::cubic);
-                gz_nifti o1,o2,o3;
+                tipl::image<float,3> If2Ib(dwi_sum.geometry());
+                tipl::resample_dis(If,If2Ib,arg,cdm_dis,tipl::cubic);
+                gz_nifti o1,o2,o3,o4;
                 o1.set_voxel_size(voxel.vs);
                 o1.load_from_image(Ib);
                 o1.save_to_file("d:/Ib.nii.gz");
@@ -1618,19 +1683,18 @@ bool ImageModel::compare_src(const char* file_name)
                 o3.set_voxel_size(voxel.vs);
                 o3.load_from_image(Iff);
                 o3.save_to_file("d:/Iff.nii.gz");
+
+                o3.set_voxel_size(voxel.vs);
+                o3.load_from_image(If2Ib);
+                o3.save_to_file("d:/If2Ib.nii.gz");
             }
             */
         }
         study_src->rotate(Ib.geometry(),arg,cdm_dis);
         study_src->voxel.vs = voxel.vs;
         study_src->voxel.mask = voxel.mask;
-        check_prog(3,3);
+        check_prog(4,4);
     }
-
-
-    // correct b_table first
-    if(voxel.check_btable)
-        study_src->check_b_table();
 
     // Signal match on b0 to allow for quantitative MRI in DDI
     {
