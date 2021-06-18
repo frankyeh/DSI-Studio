@@ -33,9 +33,6 @@ public:
         voxel.fib_dir.clear();
         voxel.fib_dir.resize(voxel.dim.size());
 
-        if(voxel.method_id != 1 && voxel.other_output.empty())
-            return;
-
         if(voxel.needs("md"))
             md.resize(voxel.dim.size());
         if(voxel.needs("ad"))
@@ -162,7 +159,7 @@ public:
         d[2] = std::max(0.0,d[2]);
 
         std::copy(V,V+3,voxel.fib_dir[data.voxel_index].begin());
-        data.fa[0] = voxel.fib_fa[data.voxel_index] = get_fa(float(d[0]),float(d[1]),float(d[2]));
+        voxel.fib_fa[data.voxel_index] = get_fa(float(d[0]),float(d[1]),float(d[2]));
 
         if(!md.empty())
             md[data.voxel_index] = 1000.0f*float(d[0]+d[1]+d[2])/3.0f;
