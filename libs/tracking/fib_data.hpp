@@ -322,7 +322,7 @@ std::pair<float,float> evaluate_fib(
         fun dir,
         bool check_trajectory = true)
 {
-    float connection_count = 0;
+    double connection_count = 0.0;
     std::vector<std::vector<unsigned char> > connected(fib_fa.size());
         for(unsigned int index = 0;index < connected.size();++index)
             connected[index].resize(dim.size());
@@ -334,17 +334,17 @@ std::pair<float,float> evaluate_fib(
         connected[fib2][pos2] = 1;
         auto v = fib_fa[fib2][pos2];
         std::lock_guard<std::mutex> lock(add_mutex);
-        connection_count += v;
+        connection_count += double(v);
         // no need to add fib1 because it will be counted if fib2 becomes fib1
     },check_trajectory);
 
     unsigned char num_fib = fib_fa.size();
-    float no_connection_count = 0;
+    double no_connection_count = 0.0;
     for(tipl::pixel_index<3> index(dim);index < dim.size();++index)
     {
         for(unsigned int i = 0;i < num_fib;++i)
             if(fib_fa[i][index.index()] > otsu && !connected[i][index.index()])
-                no_connection_count += fib_fa[i][index.index()];
+                no_connection_count += double(fib_fa[i][index.index()]);
     }
 
     return std::make_pair(connection_count,no_connection_count);
