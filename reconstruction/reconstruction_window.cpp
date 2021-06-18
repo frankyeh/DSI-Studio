@@ -646,7 +646,7 @@ void reconstruction_window::on_SlicePos_valueChanged(int position)
 
 void rec_motion_correction(ImageModel* handle)
 {
-    begin_prog("correcting motion...");
+    begin_prog("correcting motion...",true);
     int down_size = 0;
     tipl::image<float,3> from(handle->voxel.dim);
     std::copy(handle->src_dwi_data[0],handle->src_dwi_data[0]+from.size(),from.begin());
