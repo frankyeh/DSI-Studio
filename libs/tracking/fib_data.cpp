@@ -124,7 +124,6 @@ const float* odf_data::get_odf_data(unsigned int index) const
     return nullptr;
 }
 
-extern bool has_gui;
 tipl::const_pointer_image<float,3> item::get_image(void)
 {
     if(!image_ready)

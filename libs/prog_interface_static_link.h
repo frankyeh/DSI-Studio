@@ -2,6 +2,7 @@
 #define PROG_INTERFACE_STATIC_LINKH
 #include <tipl/tipl.hpp>
 #include <string>
+extern bool has_gui;
 void begin_prog(const char* title = nullptr,bool always_show_dialog = false);
 void set_title(const char* title);
 bool check_prog(unsigned int now,unsigned int total);
@@ -14,7 +15,6 @@ bool check_prog(value_type1 now,value_type2 total)
 void close_prog();
 bool prog_aborted(void);
 bool is_running(void);
-extern bool has_gui;
 template<typename fun_type,typename terminated_class>
 bool run_prog(const char* msg,fun_type fun,terminated_class& terminated)
 {

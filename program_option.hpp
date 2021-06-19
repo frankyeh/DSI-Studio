@@ -4,7 +4,6 @@
 #include <fstream>
 #include <vector>
 #include <iostream>
-extern bool has_gui;
 class program_option{
     std::vector<std::string> names;
     std::vector<std::string> values;
@@ -137,8 +136,7 @@ public:
                 }
                 return values[i];
             }
-        if(!has_gui)
-            std::cout << name << "=" << df_value << std::endl;
+        std::cout << name << "=" << df_value << std::endl;
         return df_value;
     }
 
@@ -157,8 +155,7 @@ public:
                 std::istringstream(values[i]) >> df;
                 return df;
             }
-        if(!has_gui)
-            std::cout << name << "=" << df << std::endl;
+        std::cout << name << "=" << df << std::endl;
         return df;
     }
 };

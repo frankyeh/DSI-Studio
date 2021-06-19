@@ -11,7 +11,6 @@
 #include "libs/tracking/fib_data.hpp"
 #include "tracking/atlasdialog.h"
 #include "tracking/roi.hpp"
-extern bool has_gui;
 bool load_region(std::shared_ptr<fib_data> handle,
                  ROIRegion& roi,const std::string& region_text);
 QWidget *ROIViewDelegate::createEditor(QWidget *parent,

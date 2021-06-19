@@ -7,7 +7,7 @@
 #include <chrono>
 #include <thread>
 #include <QTime>
-
+#include "prog_interface_static_link.h"
 bool has_gui = false;
 std::shared_ptr<QProgressDialog> progressDialog;
 QTime t_total,t_last;

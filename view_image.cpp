@@ -963,8 +963,6 @@ void view_image::on_actionSignal_Smoothing_triggered()
     show_image();
 }
 
-extern bool has_gui;
-
 void view_image::on_dwi_volume_valueChanged(int value)
 {
     dwi_volume_buf[cur_dwi_volume].swap(data); // return image data to buffer

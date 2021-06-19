@@ -503,7 +503,6 @@ void tracking_window::report(QString string)
     ui->text_report->setText(string);
 }
 
-extern bool has_gui;
 bool tracking_window::command(QString cmd,QString param,QString param2)
 {
     if(glWidget->command(cmd,param,param2) ||
