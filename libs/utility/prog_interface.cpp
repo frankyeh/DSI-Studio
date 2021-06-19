@@ -5,6 +5,7 @@
 #include <ctime>
 #include <iostream>
 #include <chrono>
+#include <thread>
 #include <QTime>
 
 bool has_gui = false;
@@ -13,11 +14,15 @@ QTime t_total,t_last;
 bool prog_aborted_ = false;
 auto start_time = std::chrono::high_resolution_clock::now();
 std::string current_title;
-
+std::thread::id main_thread_id = std::this_thread::get_id();
+bool is_main_thread(void)
+{
+    return main_thread_id == std::this_thread::get_id();
+}
 void check_create(void)
 {
-    if(!has_gui)
-            return;
+    if(!has_gui || !is_main_thread())
+        return;
     auto cur = std::chrono::high_resolution_clock::now();
     if(!progressDialog.get() &&
        std::chrono::duration_cast<std::chrono::milliseconds>(cur - start_time).count() > 500)
@@ -30,7 +35,7 @@ void check_create(void)
 void begin_prog(const char* title,bool always_show_dialog)
 {
     std::cout << title << std::endl;
-    if(!has_gui)
+    if(!has_gui || !is_main_thread())
         return;
     if(title)
         current_title = title;
@@ -62,7 +67,7 @@ bool is_running(void)
 void set_title(const char* title)
 {
     std::cout << title << std::endl;
-    if(!has_gui)
+    if(!has_gui || !is_main_thread())
         return;
     current_title = title;
     if(progressDialog.get())
@@ -82,7 +87,7 @@ void close_prog(void)
 }
 bool check_prog(unsigned int now,unsigned int total)
 {
-    if(!has_gui)
+    if(!has_gui || !is_main_thread())
         return now < total;
     check_create();
     if(!progressDialog.get())
@@ -116,7 +121,7 @@ bool check_prog(unsigned int now,unsigned int total)
 
 bool prog_aborted(void)
 {
-    if(!has_gui)
+    if(!has_gui || !is_main_thread())
         return false;
     if(prog_aborted_)
         return true;
