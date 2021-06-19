@@ -211,6 +211,7 @@ public:
     void recognize_report(std::shared_ptr<TractModel>& trk,std::string& report);
     unsigned int find_nearest(const float* trk,unsigned int length,bool contain,float false_distance);
 public:
+    void match_template(void);
     void set_template_id(size_t new_id);
     bool load_template(void);
     bool load_track_atlas(void);

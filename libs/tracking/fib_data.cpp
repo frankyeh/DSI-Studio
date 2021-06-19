@@ -556,6 +556,7 @@ bool fib_data::load_from_file(const char* file_name)
             });
 
             view_item.push_back(item("fiber",dir.fa[0],dim));
+            match_template();
             return true;
         }
         else
@@ -603,6 +604,7 @@ bool fib_data::load_from_file(const char* file_name)
             dir.index_name.push_back("fiber");
             dir.index_data.push_back(dir.fa);
             view_item.push_back(item("fiber",dir.fa[0],dim));
+            match_template();
             return true;
         }
         else
@@ -628,7 +630,6 @@ bool fib_data::load_from_file(const char* file_name)
         std::ostringstream out;
         out << "Image resolution is (" << vs[0] << "," << vs[1] << "," << vs[2] << ")." << std::endl;
         report = out.str();
-
     }
     else
     if(QString(file_name).endsWith("trk.gz") ||
@@ -881,17 +882,15 @@ bool fib_data::load_from_mat(void)
         }
     }
 
-    if(!is_human_data)
-    {
-        size_t count = 0;
-        for(size_t i = 0;i < dim.size();++i)
-            if(dir.fa[0][i] > 0.0f)
-                ++count;
-        set_template_id(match_template(count*2.0f*vs[0]*vs[1]*vs[2]));
-        return true;
-    }
-    set_template_id(0);
+    match_template();
     return true;
+}
+void fib_data::match_template(void)
+{
+    if(is_human_size(dim,vs))
+        set_template_id(0);
+    else
+        set_template_id(::match_template(std::count_if(dir.fa[0],dir.fa[0]+dim.size(),[](float v){return v > 0.0f;})*2.0f*vs[0]*vs[1]*vs[2]));
 }
 
 const tipl::image<tipl::vector<3,float>,3 >& fib_data::get_native_position(void) const
