@@ -160,7 +160,6 @@ bool ImageModel::reconstruction(void)
         {
         case 1://DTI
             voxel.step_report << "[Step T2b(1)]=DTI" << std::endl;
-            voxel.recon_report << " The diffusion tensor was calculated.";
             if (!reconstruct<dti_process>("DTI reconstruction"))
                 return false;
             break;
@@ -194,7 +193,8 @@ bool ImageModel::reconstruction(void)
                 voxel.recon_report <<
                 " The diffusion data were compared with baseline scan using differential tractography with a diffusion sampling length ratio of "
                 << float(voxel.param[0]) << " to study neuronal change.";
-                if (!study_src->reconstruct<dti_process>("GQI reconstruction"))
+                // to get study fa
+                if (!study_src->reconstruct<dti_process>("Reconstruction"))
                     return false;
             }
             else
@@ -254,6 +254,12 @@ bool ImageModel::reconstruction(void)
             error_msg = "unknown method";
             return false;
         }
+
+        if(!voxel.dti_no_high_b)
+            voxel.recon_report << " The tensor metrics were calculated using DWI with b-value lower than 1750 s/mm².";
+        else
+            voxel.recon_report << " The tensor metrics were calculated.";
+
         return save_fib(file_name.find(".fib.gz") == std::string::npos ? file_name + get_file_ext():file_name);
     }
     catch (std::exception& e)
