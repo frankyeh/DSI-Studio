@@ -279,6 +279,7 @@ std::string ImageModel::check_b_table(void)
         else
         // for animal studies, use fiber coherence index
             result[i] = evaluate_fib(subject_geo,otsu,fib_fa,[&](uint32_t pos,uint8_t fib){return new_dir[fib][pos];}).first;
+        std::cout << result[i] << std::endl;
     }
     long best = long(std::max_element(result,result+24)-result);
     for(int i = 0;i < 24;++i)
@@ -1287,7 +1288,7 @@ void prepare_idx(const char* file_name,std::shared_ptr<gz_istream> in)
             in->load_index(idx_name.c_str());
         else
         {
-            if(QFileInfo(file_name).size() > 67108864) // 64mb
+            if(QFileInfo(file_name).size() > 134217728) // 128mb
                 in->sample_access_point = true;
         }
     }
