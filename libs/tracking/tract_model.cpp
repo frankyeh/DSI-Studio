@@ -2319,8 +2319,7 @@ void TractModel::get_density_map(tipl::image<unsigned int,3>& mapping,
                                  const tipl::matrix<4,4,float>& transformation,bool endpoint)
 {
     tipl::geometry<3> geo = mapping.geometry();
-    begin_prog("calculating");
-    for (unsigned int i = 0;check_prog(i,tract_data.size());++i)
+    tipl::par_for(tract_data.size(),[&](unsigned int i)
     {
         std::set<unsigned int> point_set;
         for (unsigned int j = 0;j < tract_data[i].size();j+=3)
@@ -2342,7 +2341,7 @@ void TractModel::get_density_map(tipl::image<unsigned int,3>& mapping,
         std::vector<unsigned int> point_list(point_set.begin(),point_set.end());
         for(unsigned int j = 0;j < point_list.size();++j)
             ++mapping[point_list[j]];
-    }
+    });
 }
 //---------------------------------------------------------------------------
 void TractModel::get_density_map(
