@@ -2803,6 +2803,8 @@ void tracking_window::on_actionAdjust_Atlas_Mapping_triggered()
 
 void tracking_window::on_template_box_currentIndexChanged(int index)
 {
+    if(index < 0 || index >= int(fa_template_list.size()))
+        return;
     handle->set_template_id(size_t(index));
     ui->addRegionFromAtlas->setVisible(!handle->atlas_list.empty());
     ui->enable_auto_track->setVisible(index == 0 && !track_atlas_file_list.empty());
