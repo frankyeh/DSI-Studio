@@ -6,10 +6,6 @@
 #include "fib_data.hpp"
 
 QStringList search_files(QString dir,QString filter);
-
-
-extern bool has_gui;
-
 bool check_src(std::string file_name,std::vector<std::string>& output,float& ndc)
 {
     std::cout << "checking " << file_name << std::endl;
