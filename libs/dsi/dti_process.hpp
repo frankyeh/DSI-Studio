@@ -28,6 +28,12 @@ private:
 public:
     virtual void init(Voxel& voxel)
     {
+        if(std::count_if(voxel.bvalues.begin(),voxel.bvalues.end(),[](float b){return b > 100.0f && b <= 1750.0f;}) < 10)
+            voxel.dti_no_high_b = false;
+        if(!voxel.dti_no_high_b)
+            voxel.recon_report << " Tensor-based metrics were calculated using all DWI.";
+
+
         voxel.fib_fa.clear();
         voxel.fib_fa.resize(voxel.dim);
         voxel.fib_dir.clear();
@@ -62,8 +68,7 @@ public:
 
         std::vector<tipl::vector<3> > b_data;
         b_count = 0;
-        if(voxel.bvalues[1] > 1750.0f)
-            voxel.dti_no_high_b = false;
+
         bool has_remove_high_b = false;
         float highest_b = 0.0f;
         for(size_t i = 1;i < voxel.bvalues.size();++i)//skip b0
@@ -81,7 +86,7 @@ public:
         }
 
         if(has_remove_high_b)
-            voxel.recon_report << " DTI metrics were calculated using only b-values lower than or equal to " << int(highest_b) << "." << std::endl;
+            voxel.recon_report << " Tensor-based metrics were calculated using DWI with b-values lower than or equal to " << int(highest_b) << "." << std::endl;
 
         Kt.resize(6*b_count);
         {
