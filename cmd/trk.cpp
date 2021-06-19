@@ -155,6 +155,8 @@ void export_track_info(std::shared_ptr<fib_data> handle,
         // export statistics
         if(QString(cmd.c_str()).startsWith("tdi"))
         {
+            bool output_color = QString(cmd.c_str()).endsWith("color");
+            bool output_end = QString(cmd.c_str()).endsWith("end");
             file_name_stat += ".nii.gz";
             tipl::matrix<4,4,float> tr;
             tipl::geometry<3> dim;
@@ -162,26 +164,40 @@ void export_track_info(std::shared_ptr<fib_data> handle,
             tr.identity();
             dim = handle->dim;
             vs = handle->vs;
-            if(!get_t1t2_nifti(handle,dim,vs,tr) && QString(cmd.c_str()).startsWith("tdi2"))
+
+            // t1t2
+            if(!get_t1t2_nifti(handle,dim,vs,tr))
+            {
+                unsigned int ratio = 1;
+                if(QString(cmd.c_str()).startsWith("tdi2"))
+                    ratio = 2;
+                if(QString(cmd.c_str()).startsWith("tdi3"))
+                    ratio = 3;
+                if(QString(cmd.c_str()).startsWith("tdi4"))
+                    ratio = 4;
+
+                if(ratio != 1)
                 {
-                    unsigned int ratio = 4;
                     tr[0] = tr[5] = tr[10] = ratio;
                     dim = tipl::geometry<3>(handle->dim[0]*ratio,
                                             handle->dim[1]*ratio,
                                             handle->dim[2]*ratio);
                     vs /= float(ratio);
+                    std::cout << "Output TDI with dimension scaled by " << ratio << std::endl;
+                    std::cout << "dimension: " << dim << std::endl;
+                    std::cout << "voxel size: " << vs << std::endl;
                 }
+            }
             std::vector<std::shared_ptr<TractModel> > tract;
             tract.push_back(tract_model);
             std::cout << "export TDI to " << file_name_stat;
-            if(QString(cmd.c_str()).endsWith("color"))
+            if(output_color)
                 std::cout << " in RGB color";
-            if(QString(cmd.c_str()).endsWith("end"))
+            if(output_end)
                 std::cout << " end point only";
             std::cout << std::endl;
-            TractModel::export_tdi(file_name_stat.c_str(),tract,dim,vs,tr,
-                                   QString(cmd.c_str()).endsWith("color"),
-                                   QString(cmd.c_str()).endsWith("end"));
+            if(!TractModel::export_tdi(file_name_stat.c_str(),tract,dim,vs,tr,output_color,output_end))
+                std::cout << "ERROR: failed to save file. Please check write permission." << std::endl;
             continue;
         }
 
