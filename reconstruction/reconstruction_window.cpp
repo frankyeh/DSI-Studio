@@ -112,9 +112,11 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
     if(handle->voxel.vs[2] > handle->voxel.vs[0]*2.0f || handle->voxel.vs[0] < 0.5f)
         ui->check_btable->setChecked(false);
     ui->report->setText(handle->voxel.report.c_str());
+    ui->dti_no_high_b->setChecked(handle->is_human_data());
 
     max_source_value = *std::max_element(handle->src_dwi_data.back(),
                                          handle->src_dwi_data.back()+handle->voxel.dim.size());
+
 
 
 
