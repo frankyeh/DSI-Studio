@@ -1545,7 +1545,10 @@ void TractTableWidget::export_tract_density(tipl::geometry<3>& dim,
         if(filename.isEmpty())
             return;
     }
-    TractModel::export_tdi(filename.toStdString().c_str(),get_checked_tracks(),dim,vs,transformation,color,end_point);
+    if(TractModel::export_tdi(filename.toStdString().c_str(),get_checked_tracks(),dim,vs,transformation,color,end_point))
+        QMessageBox::information(this,"DSI Studio","File saved");
+    else
+        QMessageBox::critical(this,"ERROR","Failed to save file");
 }
 
 
