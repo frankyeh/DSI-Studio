@@ -79,6 +79,9 @@ MainWindow::MainWindow(QWidget *parent) :
 
     if(!arg_file_name.empty())
         openFile(arg_file_name.c_str());
+    #ifndef WIN32
+        ui->show_console->hide();
+    #endif
 }
 void MainWindow::openFile(QString file_name)
 {
@@ -1186,4 +1189,14 @@ void MainWindow::on_styles_activated(const QString&)
         settings.setValue("styles",ui->styles->currentText());
         QMessageBox::information(this,"DSI Studio","You will need to restart DSI Studio to see the change");
     }
+}
+
+#ifdef _WIN32
+void show_console(void);
+#endif
+void MainWindow::on_show_console_clicked()
+{
+    #ifdef _WIN32
+        show_console();
+    #endif
 }

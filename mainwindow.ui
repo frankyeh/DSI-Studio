@@ -808,7 +808,10 @@
           </widget>
          </item>
          <item>
-          <layout class="QHBoxLayout" name="horizontalLayout_2" stretch="0,0,0,1,0">
+          <layout class="QHBoxLayout" name="horizontalLayout_2" stretch="0,0,0,0,1,0">
+           <property name="spacing">
+            <number>0</number>
+           </property>
            <item>
             <widget class="QLabel" name="label_11">
              <property name="text">
@@ -818,6 +821,13 @@
            </item>
            <item>
             <widget class="QComboBox" name="styles"/>
+           </item>
+           <item>
+            <widget class="QPushButton" name="show_console">
+             <property name="text">
+              <string>Console...</string>
+             </property>
+            </widget>
            </item>
            <item>
             <widget class="QLabel" name="label">

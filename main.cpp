@@ -13,6 +13,23 @@
 #include <iterator>
 #include "program_option.hpp"
 #include "cmd/cnt.cpp" // Qt project cannot build cnt.cpp without adding this.
+
+#ifdef _WIN32
+void show_console(void)
+{
+    AllocConsole();
+    FILE *pFileCon = nullptr;
+    pFileCon = freopen("CONOUT$", "w", stdout);
+
+    COORD coordInfo;
+    coordInfo.X = 130;
+    coordInfo.Y = 9000;
+
+    SetConsoleScreenBufferSize(GetStdHandle(STD_OUTPUT_HANDLE), coordInfo);
+    SetConsoleMode(GetStdHandle(STD_OUTPUT_HANDLE),ENABLE_QUICK_EDIT_MODE| ENABLE_EXTENDED_FLAGS);
+}
+#endif
+
 std::string arg_file_name;
 std::string
         fib_template_file_name_2mm,
@@ -289,7 +306,8 @@ int run_cmd(int ac, char *av[])
     return 0;
 }
 
-extern bool has_gui;
+
+
 int main(int ac, char *av[])
 {
     if(ac > 2)
