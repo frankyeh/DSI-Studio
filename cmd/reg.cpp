@@ -111,7 +111,7 @@ int reg(void)
 
     {
         tipl::image<float,3> from_wp;
-        tipl::compose_displacement(from_,cdm_dis,from_wp,is_label_image(from) ? tipl::nearest : tipl::linear);
+        tipl::compose_displacement_with_affine(from,from_wp,T,cdm_dis,is_label_image(from) ? tipl::nearest : tipl::cubic);
         float r = float(tipl::correlation(to.begin(),to.end(),from_wp.begin()));
         std::cout << "R2: " << r*r << std::endl;
         std::cout << "output warpped image: " << output_wp_image << std::endl;
