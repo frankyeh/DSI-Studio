@@ -43,6 +43,7 @@ int cnt(void);
 int vis(void);
 int ren(void);
 int atk(void);
+int reg(void);
 extern program_option po;
 extern std::string arg_file_name;
 std::vector<tracking_window*> tracking_windows;
@@ -721,7 +722,7 @@ void MainWindow::on_run_cmd_clicked()
         QMessageBox::information(this,"Error",po.error_msg.c_str(),0);
         return;
     }
-    if (!po.has("action") || !po.has("source"))
+    if (!po.has("action"))
     {
         std::cout << "invalid command, use --help for more detail" << std::endl;
         return;
@@ -747,6 +748,8 @@ void MainWindow::on_run_cmd_clicked()
         ren();
     if(po.get("action") == std::string("atk"))
         atk();
+    if(po.get("action") == std::string("reg"))
+        reg();
 }
 
 
