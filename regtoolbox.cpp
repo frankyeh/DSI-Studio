@@ -543,7 +543,7 @@ bool apply_warping(const char* from,
         error = "The warping image does not match subject image dimension";
         return false;
     }
-    tipl::image<float,3> J3(to_geo);
+    tipl::image<float,3> J3;
     tipl::compose_displacement_with_affine(I3,J3,T,dis,is_label_image(I3) ? tipl::nearest : tipl::cubic);
     gz_nifti::save_to_file(to,J3,Itvs,ItR);
     return true;
