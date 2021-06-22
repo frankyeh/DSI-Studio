@@ -94,13 +94,13 @@ int reg(void)
     tipl::image<tipl::vector<3>,3> cdm_dis;
     if(!from2_.empty())
     {
-        std::cout << "nonlinear registration using dual image modalities" << std::endl;
         tipl::reg::cdm_param param;
         param.resolution = po.get("resolution",param.resolution);
         param.cdm_smoothness = po.get("smoothness",param.cdm_smoothness);
         param.contraint = po.get("constraint",param.contraint);
         param.iterations = po.get("iteration",param.iterations);
         param.min_dimension = po.get("min_dimension",param.min_dimension);
+        std::cout << "nonlinear registration using dual image modalities" << std::endl;
         tipl::reg::cdm2(to,to2,from_,from2_,cdm_dis,terminated,param);
     }
     else
@@ -110,6 +110,7 @@ int reg(void)
     }
 
     {
+        std::cout << "compose output images" << std::endl;
         tipl::image<float,3> from_wp;
         tipl::compose_displacement_with_affine(from,from_wp,T,cdm_dis,is_label_image(from) ? tipl::nearest : tipl::cubic);
         float r = float(tipl::correlation(to.begin(),to.end(),from_wp.begin()));
