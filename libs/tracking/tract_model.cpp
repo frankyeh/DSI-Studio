@@ -2351,13 +2351,13 @@ void TractModel::get_density_map(
     tipl::geometry<3> geo = mapping.geometry();
     tipl::image<float,3> map_r(geo),
                             map_g(geo),map_b(geo);
-    for (unsigned int i = 0;i < tract_data.size();++i)
+    tipl::par_for (tract_data.size(),[&](unsigned int i)
     {
         const float* buf = &*tract_data[i].begin();
         for (unsigned int j = 3;j < tract_data[i].size();j+=3)
         {
             if(j > 3 && endpoint)
-                j = tract_data[i].size()-3;
+                j = uint32_t(tract_data[i].size()-3);
             tipl::vector<3,float>  tmp,dir;
             tipl::vector_transformation(buf+j-3, dir.begin(),
                 transformation.begin(), tipl::vdim<3>());
@@ -2365,34 +2365,31 @@ void TractModel::get_density_map(
                 transformation.begin(), tipl::vdim<3>());
             dir -= tmp;
             dir.normalize();
-            int x = std::round(tmp[0]);
-            int y = std::round(tmp[1]);
-            int z = std::round(tmp[2]);
+            int x = int(std::round(tmp[0]));
+            int y = int(std::round(tmp[1]));
+            int z = int(std::round(tmp[2]));
             if (!geo.is_valid(x,y,z))
                 continue;
-            unsigned int ptr = (z*mapping.height()+y)*mapping.width()+x;
+            unsigned int ptr = uint32_t((z*mapping.height()+y)*mapping.width()+x);
             map_r[ptr] += std::fabs(dir[0]);
             map_g[ptr] += std::fabs(dir[1]);
             map_b[ptr] += std::fabs(dir[2]);
         }
-    }
+    });
     float max_value = 0.0f;
     for(unsigned int index = 0;index < mapping.size();++index)
         max_value = std::max<float>(max_value,map_r[index]+map_g[index]+map_b[index]);
 
-    for(unsigned int index = 0;index < mapping.size();++index)
+    tipl::par_for(mapping.size(),[&](unsigned int index)
     {
         float sum = map_r[index]+map_g[index]+map_b[index];
         if(sum == 0.0f)
-            continue;
+            return;
         tipl::vector<3> v(map_r[index],map_g[index],map_b[index]);
         sum = v.normalize();
-        v*=255.0*std::log(200.0f*sum/max_value+1)/2.303f;
-        mapping[index] = tipl::rgb(
-                (unsigned char)std::min<float>(255,v[0]),
-                (unsigned char)std::min<float>(255,v[1]),
-                (unsigned char)std::min<float>(255,v[2]));
-    }
+        v*=255.0f*std::log(200.0f*sum/max_value+1)/2.303f;
+        mapping[index] = tipl::rgb(uint8_t(std::min<float>(255,v[0])),uint8_t(std::min<float>(255,v[1])),uint8_t(std::min<float>(255,v[2])));
+    });
 }
 bool TractModel::export_end_pdi(
                        const char* file_name,
