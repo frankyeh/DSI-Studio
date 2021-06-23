@@ -1,6 +1,7 @@
 #include <QFileInfo>
 #include <QDir>
 #include <QInputDialog>
+#include <QDateTime>
 #include "image_model.hpp"
 #include "odf_process.hpp"
 #include "dti_process.hpp"
@@ -1283,7 +1284,8 @@ void prepare_idx(const char* file_name,std::shared_ptr<gz_istream> in)
     idx_name += ".idx";
     {
         in->buffer_all = true;
-        if(QFileInfo(idx_name.c_str()).exists())
+        if(QFileInfo(idx_name.c_str()).exists() &&
+           QFileInfo(idx_name.c_str()).lastModified() > QFileInfo(file_name).lastModified())
             in->load_index(idx_name.c_str());
         else
         {
