@@ -217,8 +217,22 @@ view_image::~view_image()
 }
 bool view_image::eventFilter(QObject *obj, QEvent *event)
 {
+    if (event->type() == QEvent::Wheel && obj->parent() == ui->view)
+    {
+        QWheelEvent* we = dynamic_cast<QWheelEvent*>(event);
+        if(!we)
+            return false;
+        if(we->delta() < 0)
+            on_zoom_in_clicked();
+        else
+            on_zoom_out_clicked();
+        event->accept();
+
+        return true;
+    }
     if (event->type() != QEvent::MouseMove || obj->parent() != ui->view)
         return false;
+
     QMouseEvent *mouseEvent = static_cast<QMouseEvent*>(event);
     QPointF point = ui->view->mapToScene(mouseEvent->pos().x(),mouseEvent->pos().y());
     tipl::vector<3,float> pos,mni;
@@ -494,8 +508,11 @@ void view_image::init_image(void)
     max_value = tipl::maximum(data);
     min_value = tipl::minimum(data);
     float range = max_value-min_value;
-    ui->image_info->setText(QString("dim=(%1,%2,%3) vs=(%4,%5,%6) T=(%7,%8,%9,%10;%11,%12,%13,%14;%15,%16,%17,%18)").
-            arg(data.width()).arg(data.height()).arg(data.depth()).
+    QString dim_text = QString("%1,%2,%3").arg(data.width()).arg(data.height()).arg(data.depth());
+    if(!dwi_volume_buf.empty())
+        dim_text += QString(",%1").arg(dwi_volume_buf.size());
+    ui->image_info->setText(QString("dim=(%1) vs=(%4,%5,%6) T=(%7,%8,%9,%10;%11,%12,%13,%14;%15,%16,%17,%18)").
+            arg(dim_text).
             arg(double(vs[0])).arg(double(vs[1])).arg(double(vs[2])).
             arg(double(T[0])).arg(double(T[1])).arg(double(T[2])).arg(double(T[3])).
             arg(double(T[4])).arg(double(T[5])).arg(double(T[6])).arg(double(T[7])).
@@ -982,7 +999,7 @@ void view_image::on_dwi_volume_valueChanged(int value)
     else
         dwi_volume_buf[cur_dwi_volume].swap(data);
 
-    ui->dwi_label->setText(QString("DWI(%1/%2)").arg(value).arg(ui->dwi_volume->maximum()));
+    ui->dwi_label->setText(QString("DWI(%1/%2)").arg(value+1).arg(ui->dwi_volume->maximum()+1));
     init_image();
     show_image();
 }
