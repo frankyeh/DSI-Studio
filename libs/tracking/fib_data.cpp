@@ -1073,7 +1073,7 @@ bool fib_data::load_template(void)
     read.get_voxel_size(I_vs);
     read.get_image_transformation(template_trans_to_mni);
     float ratio = float(I.width()*I_vs[0])/float(dim[0]*vs[0]);
-    if(ratio < 0.25f || ratio > 4.0f)
+    if(ratio < 0.25f || ratio > 8.0f)
     {
         error_msg = "image resolution mismatch: ratio=";
         error_msg += std::to_string(ratio);
@@ -1132,10 +1132,7 @@ bool fib_data::load_track_atlas()
             return false;
         }
         if(!load_template())
-        {
-            error_msg = "failed to load template";
             return false;
-        }
         if(track_atlas->geo != template_I.geometry())
         {
             error_msg = "dimension mismatch between tractography atlas and template";
