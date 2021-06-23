@@ -522,13 +522,12 @@ void RegToolBox::on_run_reg_clicked()
 
 bool apply_warping(const char* from,
                    const char* to,
-                   tipl::geometry<3> from_geo,
-                   tipl::geometry<3> to_geo,
                    tipl::image<tipl::vector<3>,3>& dis,
                    tipl::vector<3> Itvs,
                    tipl::matrix<4,4,float>& ItR,
                    tipl::transformation_matrix<double>& T,
-                   std::string& error)
+                   std::string& error,
+                   tipl::interpolation_type interpo)
 {
     gz_nifti nifti;
     if(!nifti.load_from_file(from))
@@ -538,13 +537,8 @@ bool apply_warping(const char* from,
     }
     tipl::image<float,3> I3;
     nifti.toLPS(I3);
-    if(I3.geometry() != from_geo)
-    {
-        error = "The warping image does not match subject image dimension";
-        return false;
-    }
     tipl::image<float,3> J3;
-    tipl::compose_displacement_with_affine(I3,J3,T,dis,is_label_image(I3) ? tipl::nearest : tipl::cubic);
+    tipl::compose_displacement_with_affine(I3,J3,T,dis,is_label_image(I3) ? tipl::nearest : interpo);
     gz_nifti::save_to_file(to,J3,Itvs,ItR);
     return true;
 }
@@ -563,9 +557,7 @@ void RegToolBox::on_actionApply_Warpping_triggered()
     std::string error;
     if(!apply_warping(from.toStdString().c_str(),
                       to.toStdString().c_str(),
-                      I.geometry(),
-                      It.geometry(),
-                      dis,Itvs,ItR,T,error))
+                      dis,Itvs,ItR,T,error,tipl::cubic))
         QMessageBox::information(this,"Error",error.c_str());
 }
 

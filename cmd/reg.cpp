@@ -3,13 +3,12 @@
 #include "program_option.hpp"
 bool apply_warping(const char* from,
                    const char* to,
-                   tipl::geometry<3> from_geo,
-                   tipl::geometry<3> to_geo,
                    tipl::image<tipl::vector<3>,3>& dis,
                    tipl::vector<3> Itvs,
                    tipl::matrix<4,4,float>& ItR,
                    tipl::transformation_matrix<double>& T,
-                   std::string& error);
+                   std::string& error,
+                   tipl::interpolation_type interpo);
 bool is_label_image(const tipl::image<float,3>& I);
 int reg(void)
 {
@@ -55,6 +54,7 @@ int reg(void)
 
     std::string output_wp_image = po.get("output",po.get("from")+".wp.nii.gz");
     bool terminated = false;
+    auto interpo_method = (po.get("interpolation",1) ? tipl::cubic : tipl::linear);
     tipl::transformation_matrix<double> T;
     std::cout << "running linear registration." << std::endl;
 
@@ -68,13 +68,13 @@ int reg(void)
     tipl::image<float,3> from_(to.geometry()),from2_;
 
 
-    tipl::resample_mt(from,from_,T,is_label_image(from) ? tipl::nearest : tipl::cubic);
+    tipl::resample_mt(from,from_,T,is_label_image(from) ? tipl::nearest : interpo_method);
 
 
     if(!from2.empty())
     {
         from2_.resize(to.geometry());
-        tipl::resample_mt(from2,from2_,T,is_label_image(from2) ? tipl::nearest : tipl::cubic);
+        tipl::resample_mt(from2,from2_,T,is_label_image(from2) ? tipl::nearest : interpo_method);
     }
     auto r2 = tipl::correlation(from_.begin(),from_.end(),to.begin());
     std::cout << "correlation cofficient: " << r2 << std::endl;
@@ -112,7 +112,7 @@ int reg(void)
     {
         std::cout << "compose output images" << std::endl;
         tipl::image<float,3> from_wp;
-        tipl::compose_displacement_with_affine(from,from_wp,T,cdm_dis,is_label_image(from) ? tipl::nearest : tipl::cubic);
+        tipl::compose_displacement_with_affine(from,from_wp,T,cdm_dis,is_label_image(from) ? tipl::nearest : interpo_method);
         float r = float(tipl::correlation(to.begin(),to.end(),from_wp.begin()));
         std::cout << "R2: " << r*r << std::endl;
         std::cout << "output warpped image: " << output_wp_image << std::endl;
@@ -128,13 +128,7 @@ int reg(void)
             std::string to3 = from3+".wp.nii.gz";
             std::string error;
             std::cout << "apply warping to " << from3 << std::endl;
-            if(!apply_warping(from3.c_str(),to3.c_str(),
-                          from.geometry(),
-                          to.geometry(),
-                          cdm_dis,
-                          to_vs,
-                          to_trans,
-                          T,error))
+            if(!apply_warping(from3.c_str(),to3.c_str(),cdm_dis,to_vs,to_trans,T,error,interpo_method))
             {
                 std::cout << "[ERROR]" << error <<std::endl;
                 return 1;
