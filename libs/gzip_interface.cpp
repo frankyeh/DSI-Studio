@@ -1,5 +1,6 @@
 #include <stdexcept>
 #include <chrono>
+#include <stdio.h>
 #include "gzip_interface.hpp"
 
 #define SPAN 8388608L       /* 8MB as the desired distance between access points */
@@ -465,6 +466,10 @@ bool gz_ostream::open(const char* file_name)
     if(is_gz(file_name))
     {
         handle = gzopen(file_name, "wb");
+        std::string idx_name(file_name);
+        idx_name += ".idx";
+        if(std::ifstream(idx_name.c_str(),std::ios::binary))
+            ::remove(idx_name.c_str());
         return handle;
     }
     out.open(file_name,std::ios::binary);
