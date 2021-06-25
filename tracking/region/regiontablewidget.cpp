@@ -1316,7 +1316,17 @@ void RegionTableWidget::do_action(QString action)
             }
 
         }
-
+        if(action == "dilation_by_voxel")
+        {
+            bool ok;
+            int threshold = float(QInputDialog::getInt(this,"DSI Studio","Voxel distance",10,1,100,1,&ok));
+            if(!ok)
+                return;
+            tipl::image<unsigned char,3> mask;
+            cur_region.SaveToBuffer(mask);
+            tipl::morphology::dilation2(mask,threshold);
+            cur_region.LoadFromBuffer(mask);
+        }
         if(action == "threshold")
         {
             tipl::image<unsigned char, 3>mask;

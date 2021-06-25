@@ -132,6 +132,7 @@ public slots:
     void action_smoothing(void){do_action("smoothing");}
     void action_erosion(void){do_action("erosion");}
     void action_dilation(void){do_action("dilation");}
+    void action_dilation_by_voxel(void){do_action("dilation_by_voxel");}
     void action_opening(void){do_action("opening");}
     void action_closing(void){do_action("closing");}
     void action_defragment(void){do_action("defragment");}
