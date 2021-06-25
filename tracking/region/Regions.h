@@ -216,17 +216,19 @@ public:
         template<class image_type>
         void LoadFromBuffer(const image_type& from,const tipl::matrix<4,4,float>& trans)
         {
-            std::vector<tipl::vector<3,float> > points;
-            for (tipl::pixel_index<3> index(dim);index < dim.size();++index)
+            std::vector<tipl::vector<3,short> > points;
+            image_type from2(tipl::geometry<3>(uint32_t(dim[0]*resolution_ratio),
+                                      uint32_t(dim[1]*resolution_ratio),
+                                      uint32_t(dim[2]*resolution_ratio)));
+            auto iT = trans;
+            if(resolution_ratio != 1.0f)
             {
-                tipl::vector<3> p(index.begin());
-                p.to(trans);
-                p += 0.5;
-                if (from.geometry().is_valid(p) && from.at(p[0],p[1],p[2]) != 0)
-                    points.push_back(tipl::vector<3>(index.begin()));
+                tipl::multiply_constant(iT.begin(),iT.begin()+3,1.0f/resolution_ratio);
+                tipl::multiply_constant(iT.begin()+4,iT.begin()+7,1.0f/resolution_ratio);
+                tipl::multiply_constant(iT.begin()+8,iT.begin()+11,1.0f/resolution_ratio);
             }
-            region.clear();
-            add_points(points,false,1.0f);
+            tipl::resample_mt(from,from2,iT,tipl::nearest);
+            LoadFromBuffer(from2);
         }
 
         template<class image_type>
@@ -235,11 +237,9 @@ public:
             modified = true;
             if(!region.empty())
                 undo_backup.push_back(std::move(region));
-            region.clear();
             std::vector<tipl::vector<3,short> > points;
-
             if(mask.width() != dim[0])
-                resolution_ratio = (float)mask.width()/(float)dim[0];
+                resolution_ratio = float(mask.width())/float(dim[0]);
             if(resolution_ratio < 1.0f)
             {
                 for (tipl::pixel_index<3>index(dim);index < dim.size();++index)
