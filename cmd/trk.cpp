@@ -549,16 +549,24 @@ bool load_roi(std::shared_ptr<fib_data> handle,std::shared_ptr<RoiMgr> roi_mgr)
     {
         ROIRegion roi(handle);
         QStringList roi_list = QString(po.get(roi_names[index]).c_str()).split("+");
-        for(int i= 0;i < roi_list.size();++i)
+        std::string region_name;
+        for(int i = 0;i < roi_list.size();++i)
         {
-            if(!load_region(handle,roi,roi_list[i].toStdString()))
+            ROIRegion other_roi(handle);
+            if(!load_region(handle,i ? other_roi : roi,roi_list[i].toStdString()))
                 return false;
-            roi_mgr->setRegions(roi.get_region_voxels_raw(),roi.resolution_ratio,type[index],roi_list[i].toStdString().c_str());
+            if(i)
+            {
+                roi.add(other_roi);
+                region_name += ",";
+            }
+            region_name += roi_list[0].toStdString();
         }
+        roi_mgr->setRegions(roi.get_region_voxels_raw(),roi.resolution_ratio,type[index],region_name.c_str());
     }
     if(po.has("track_id"))
     {
-        std::cout << "Consider using --action=atk for automatic fiber tracking" << std::endl;
+        std::cout << "Consider using action atk for automatic fiber tracking" << std::endl;
         if(!handle->load_track_atlas())
         {
             std::cout << handle->error_msg << std::endl;
