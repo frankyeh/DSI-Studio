@@ -56,7 +56,7 @@ public:
 public:
     std::string output_file_name;
     int seed_count;
-    std::mutex  lock_resampling,lock_add_tracks,lock_add_null_track;
+    std::mutex  lock_add_tracks,lock_add_null_track;
     std::shared_ptr<TractModel> pos_corr_track,neg_corr_track,pos_null_corr_track,neg_null_corr_track;
     std::shared_ptr<connectometry_result> spm_map;
 public:// Multiple regression
