@@ -7,8 +7,8 @@
 #include "program_option.hpp"
 extern std::string src_error_msg;
 QStringList search_files(QString dir,QString filter);
-void load_bval(const char* file_name,std::vector<double>& bval);
-void load_bvec(const char* file_name,std::vector<double>& b_table);
+bool load_bval(const char* file_name,std::vector<double>& bval);
+bool load_bvec(const char* file_name,std::vector<double>& b_table);
 bool parse_dwi(QStringList file_list,std::vector<std::shared_ptr<DwiHeader> >& dwi_files);
 int src(void)
 {
@@ -88,8 +88,16 @@ int src(void)
     if(po.has("bval") && po.has("bvec"))
     {
         std::vector<double> bval,bvec;
-        load_bval(po.get("bval").c_str(),bval);
-        load_bvec(po.get("bvec").c_str(),bvec);
+        if(!load_bval(po.get("bval").c_str(),bval))
+        {
+            std::cout << "cannot find bval at " << po.get("bval") << std::endl;
+            return 1;
+        }
+        if(!load_bvec(po.get("bvec").c_str(),bvec))
+        {
+            std::cout << "cannot find bvec at " << po.get("bvec") << std::endl;
+            return 1;
+        }
         if(bval.size() != dwi_files.size())
         {
             std::cout << "mismatch between bval file and the loaded images" << std::endl;

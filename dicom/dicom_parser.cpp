@@ -191,11 +191,11 @@ bool load_dicom_multi_frame(const char* file_name,std::vector<std::shared_ptr<Dw
 }
 
 
-void load_bvec(const char* file_name,std::vector<double>& b_table)
+bool load_bvec(const char* file_name,std::vector<double>& b_table)
 {
     std::ifstream in(file_name);
     if(!in)
-        return;
+        return false;
     std::string line;
     unsigned int total_line = 0;
     while(std::getline(in,line))
@@ -213,15 +213,17 @@ void load_bvec(const char* file_name,std::vector<double>& b_table)
         for(size_t index = 1;index < b_table.size();index += 3)
                 b_table[index] = -b_table[index];
     }
+    return true;
 }
-void load_bval(const char* file_name,std::vector<double>& bval)
+bool load_bval(const char* file_name,std::vector<double>& bval)
 {
     std::ifstream in(file_name);
     if(!in)
-        return;
+        return false;
     std::copy(std::istream_iterator<double>(in),
               std::istream_iterator<double>(),
               std::back_inserter(bval));
+    return true;
 }
 extern program_option po;
 bool find_bval_bvec(const char* file_name,QString& bval,QString& bvec)
@@ -238,16 +240,22 @@ bool find_bval_bvec(const char* file_name,QString& bval,QString& bvec)
     bval_name[1] = path + QFileInfo(file_name).baseName() + ".bval";
     bval_name[2] = path + QFileInfo(file_name).completeBaseName() + ".bvals";
     bval_name[3] = path + QFileInfo(file_name).completeBaseName() + ".bval";
-    bval_name[4] = QString(file_name).replace(".nii.gz",".bvals");
-    bval_name[5] = QString(file_name).replace(".nii.gz",".bval");
+    if(QString(file_name).endsWith(".nii.gz"))
+    {
+        bval_name[4] = QString(file_name).replace(".nii.gz",".bvals");
+        bval_name[5] = QString(file_name).replace(".nii.gz",".bval");
+    }
 
 
     bvec_name[0] = path + QFileInfo(file_name).baseName() + ".bvecs";
     bvec_name[1] = path + QFileInfo(file_name).baseName() + ".bvec";
     bvec_name[2] = path + QFileInfo(file_name).completeBaseName() + ".bvecs";
     bvec_name[3] = path + QFileInfo(file_name).completeBaseName() + ".bvec";
-    bvec_name[4] = QString(file_name).replace(".nii.gz",".bvecs");
-    bvec_name[5] = QString(file_name).replace(".nii.gz",".bvec");
+    if(QString(file_name).endsWith(".nii.gz"))
+    {
+        bvec_name[4] = QString(file_name).replace(".nii.gz",".bvecs");
+        bvec_name[5] = QString(file_name).replace(".nii.gz",".bvec");
+    }
 
     for(size_t i = 0;i < 6;++i)
     {
@@ -354,14 +362,24 @@ bool load_4d_nii(const char* file_name,std::vector<std::shared_ptr<DwiHeader> >&
         QString bval_name,bvec_name;
         if(find_bval_bvec(file_name,bval_name,bvec_name))
         {
-            load_bval(bval_name.toLocal8Bit().begin(),bvals);
-            load_bvec(bvec_name.toLocal8Bit().begin(),bvecs);
+            if(!load_bval(bval_name.toLocal8Bit().begin(),bvals))
+            {
+                src_error_msg = "cannot find bval at ";
+                src_error_msg += bval_name.toStdString();
+                return false;
+            }
+            if(!load_bvec(bvec_name.toLocal8Bit().begin(),bvecs))
+            {
+                src_error_msg = "cannot find bvec at ";
+                src_error_msg += bvec_name.toStdString();
+                return false;
+            }
             if(!bval_name.isEmpty() && dwi_data.size() != bvals.size())
             {
                 std::ostringstream out;
-                out << "bval/bvec does not match the DWI: " << dwi_data.size()
+                out << "bval number does not match DWI: " << dwi_data.size()
                           << " DWI in the nifti file, but " << bvals.size()
-                          << " in bval/bvec" << std::endl;
+                          << " in " << bval_name.toStdString() << std::endl;
                 src_error_msg = out.str();
                 return false;
             }
@@ -933,7 +951,7 @@ void dicom_parser::load_table(void)
         max_b = std::max(max_b,(double)dwi_files[index]->bvalue);
     }
     if(max_b == 0.0)
-        QMessageBox::information(this,"DSI Studio","Cannot find b-table from the header. You may need to load an external b-table",0);
+        QMessageBox::critical(this,"DSI Studio","Cannot find bval and bvec from the header. You can load them using the [File] menu");
 }
 extern std::string src_error_msg;
 void dicom_parser::load_files(QStringList file_list)
