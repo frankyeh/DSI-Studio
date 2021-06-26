@@ -640,7 +640,7 @@ void DeviceTableWidget::detect_electrodes(void)
                 auto new_count = contact_group[i].size()+contact_group[j].size();
                 if(new_count & 1)
                     ++new_count;
-                dev->type = (std::ostringstream() << "SEEG Electrode:" << new_count << " Contacts").str();
+                dev->type = std::string("SEEG Electrode:") + std::to_string(new_count) + " Contacts";
                 // merge groups
                 contact_group[j].insert(contact_group[j].end(),contact_group[i].begin(),contact_group[i].end());
                 if(i < contact_group.size()-1)
@@ -659,7 +659,7 @@ void DeviceTableWidget::detect_electrodes(void)
         // add device
         devices.push_back(std::make_shared<Device>());
         devices.back()->name = std::string("Electrode ") + std::to_string(i+1);
-        devices.back()->type = (std::ostringstream() << "SEEG Electrode:" << contact_count << " Contacts").str();
+        devices.back()->type = std::string("SEEG Electrode:") + std::to_string(contact_count) + " Contacts";
         devices.back()->pos = device_pos;
         devices.back()->dir = device_dir;
         new_device(devices.back());
