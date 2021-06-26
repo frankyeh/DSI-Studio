@@ -460,6 +460,8 @@ void CustomSliceModel::argmin(tipl::reg::reg_type reg_type)
     M.save_to_transform(invT.begin());
     handle->view_item[view_id].T = T = tipl::inverse(invT);
     handle->view_item[view_id].iT = invT;
+    if(!terminated)
+        save_mapping((source_file_name+".mapping.txt").c_str());
     running = false;
 }
 // ---------------------------------------------------------------------------
