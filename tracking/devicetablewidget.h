@@ -55,6 +55,7 @@ public slots:
     void assign_colors(void);
     void check_all(void);
     void uncheck_all(void);
+    void detect_electrodes(void);
 
 
 };

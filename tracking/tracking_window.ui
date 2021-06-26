@@ -1194,6 +1194,7 @@
     <addaction name="actionCheck_All_Devices"/>
     <addaction name="separator"/>
     <addaction name="actionAssign_Colors_For_Devices"/>
+    <addaction name="actionDetect_Electrodes"/>
    </widget>
    <widget class="QMenu" name="menuRegions_Misc">
     <property name="title">
@@ -1240,8 +1241,10 @@
      <addaction name="actionThreshold_2"/>
      <addaction name="separator"/>
      <addaction name="actionB_A"/>
-     <addaction name="actionAB"/>
      <addaction name="actionA_B"/>
+     <addaction name="actionAB"/>
+     <addaction name="separator"/>
+     <addaction name="actionDilation_by_voxel"/>
     </widget>
     <addaction name="actionNew_Super_Resolution_Region"/>
     <addaction name="actionThreshold"/>
@@ -4014,6 +4017,16 @@ Tracking</string>
   <action name="actionAdjust_Atlas_Mapping">
    <property name="text">
     <string>Adjust Atlas Mapping...</string>
+   </property>
+  </action>
+  <action name="actionDetect_Electrodes">
+   <property name="text">
+    <string>Detect Electrodes</string>
+   </property>
+  </action>
+  <action name="actionDilation_by_voxel">
+   <property name="text">
+    <string>Dilation by voxel...</string>
    </property>
   </action>
  </widget>

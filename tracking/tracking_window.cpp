@@ -301,6 +301,7 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         connect(ui->actionClosing,SIGNAL(triggered()),regionWidget,SLOT(action_closing()));
         connect(ui->actionNegate,SIGNAL(triggered()),regionWidget,SLOT(action_negate()));
         connect(ui->actionDefragment,SIGNAL(triggered()),regionWidget,SLOT(action_defragment()));
+        connect(ui->actionDilation_by_voxel,SIGNAL(triggered()),regionWidget,SLOT(action_dilation_by_voxel()));
 
         connect(ui->actionSeparate,SIGNAL(triggered()),regionWidget,SLOT(action_separate()));
         connect(ui->actionA_B,SIGNAL(triggered()),regionWidget,SLOT(action_A_B()));
@@ -343,6 +344,10 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         connect(ui->actionUncheck_All_Devices,SIGNAL(triggered()),deviceWidget,SLOT(uncheck_all()));
 
         connect(ui->actionAssign_Colors_For_Devices,SIGNAL(triggered()),deviceWidget,SLOT(assign_colors()));
+
+        connect(ui->actionDetect_Electrodes,SIGNAL(triggered()),deviceWidget,SLOT(detect_electrodes()));
+
+
 
     }
     // tracts
@@ -2812,3 +2817,4 @@ void tracking_window::on_template_box_currentIndexChanged(int index)
     ui->target->setVisible(false);
     ui->target_label->setVisible(false);
 }
+
