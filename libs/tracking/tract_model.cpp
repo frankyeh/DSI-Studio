@@ -2458,25 +2458,20 @@ bool TractModel::export_tdi(const char* filename,
                   std::vector<std::shared_ptr<TractModel> > tract_models,
                   tipl::geometry<3>& dim,
                   tipl::vector<3,float> vs,
-                  tipl::matrix<4,4,float>& transformation,bool color,bool end_point)
+                  tipl::matrix<4,4,float> transformation,bool color,bool end_point)
 {
+    transformation.inv();
     if(color)
     {
         tipl::image<tipl::rgb,3> tdi(dim);
         for(unsigned int index = 0;index < tract_models.size();++index)
             tract_models[index]->get_density_map(tdi,transformation,end_point);
-        tipl::image<tipl::rgb,2> mosaic;
         if(QFileInfo(filename).fileName().endsWith(".nii") ||
            QFileInfo(filename).fileName().endsWith(".nii.gz"))
-        {
-            gz_nifti nii;
-            tipl::flip_xy(tdi);
-            nii << tdi;
-            nii.set_voxel_size(vs);
-            return nii.save_to_file(filename);
-        }
+            return gz_nifti::save_to_file(filename,tdi,vs,tract_models[0]->trans_to_mni*transformation);
         else
         {
+            tipl::image<tipl::rgb,2> mosaic;
             tipl::mosaic(tdi,mosaic,uint32_t(std::sqrt(tdi.depth())));
             QImage qimage(reinterpret_cast<unsigned char*>(&*mosaic.begin()),
                           mosaic.width(),mosaic.height(),QImage::Format_RGB32);
@@ -2488,19 +2483,17 @@ bool TractModel::export_tdi(const char* filename,
         tipl::image<unsigned int,3> tdi(dim);
         for(unsigned int index = 0;index < tract_models.size();++index)
             tract_models[index]->get_density_map(tdi,transformation,end_point);
+
+        if(QFileInfo(filename).fileName().endsWith(".nii") ||
+           QFileInfo(filename).fileName().endsWith(".nii.gz"))
+            return gz_nifti::save_to_file(filename,tdi,vs,tract_models[0]->trans_to_mni*transformation);
         if(QFileInfo(filename).completeSuffix().toLower() == "mat")
         {
             tipl::io::mat_write mat_header(filename);
             mat_header << tdi;
             return true;
         }
-        else
-        {
-            tipl::matrix<4,4,float> new_trans(transformation),trans(tract_models[0]->trans_to_mni);
-            new_trans.inv();
-            trans *= new_trans;
-            return gz_nifti::save_to_file(filename,tdi,vs,trans);
-        }
+        return false;
     }
 }
 void TractModel::to_voxel(std::vector<tipl::vector<3,short> >& points,float ratio,int id)

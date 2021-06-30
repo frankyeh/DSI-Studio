@@ -152,7 +152,7 @@ public:
                           std::vector<std::shared_ptr<TractModel> > tract_models,
                           tipl::geometry<3>& dim,
                           tipl::vector<3,float> vs,
-                          tipl::matrix<4,4,float>& transformation,bool color,bool end_point);
+                          tipl::matrix<4,4,float> transformation,bool color,bool end_point);
         static bool export_pdi(const char* file_name,
                                const std::vector<std::shared_ptr<TractModel> >& tract_models);
         static bool export_end_pdi(const char* file_name,
