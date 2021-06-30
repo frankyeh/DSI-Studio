@@ -511,6 +511,34 @@ void load_nii_label(const char* filename,std::map<int,std::string>& label_map)
         }
     }
 }
+void load_jason_label(const char* filename,std::map<int,std::string>& label_map)
+{
+    std::ifstream in(filename);
+    if(!in)
+        return;
+    std::string line,label;
+    while(std::getline(in,line))
+    {
+        std::replace(line.begin(),line.end(),'\"',' ');
+        std::replace(line.begin(),line.end(),'\t',' ');
+        std::replace(line.begin(),line.end(),',',' ');
+        line.erase(std::remove(line.begin(),line.end(),' '),line.end());
+        if(line.find("arealabel") != std::string::npos)
+        {
+            label = line.substr(line.find(":")+1,std::string::npos);
+            continue;
+        }
+        if(line.find("labelIndex") != std::string::npos)
+        {
+            line = line.substr(line.find(":")+1,std::string::npos);
+            std::istringstream in3(line);
+            int num = 0;
+            in3 >> num;
+            label_map[num] = label;
+        }
+    }
+}
+
 void get_roi_label(QString file_name,std::map<int,std::string>& label_map,
                           std::map<int,tipl::rgb>& label_color,bool is_free_surfer,bool verbose)
 {
@@ -519,6 +547,23 @@ void get_roi_label(QString file_name,std::map<int,std::string>& label_map,
     QString base_name = QFileInfo(file_name).baseName();
     if(verbose)
         std::cout << "looking for region label file" << std::endl;
+
+    QString label_file = QFileInfo(file_name).absolutePath()+"/"+base_name+".txt";
+    if(QFileInfo(label_file).exists())
+    {
+        load_nii_label(label_file.toLocal8Bit().begin(),label_map);
+        if(verbose)
+            std::cout << "label file loaded:" << label_file.toStdString() << std::endl;
+        return;
+    }
+    label_file = QFileInfo(file_name).absolutePath()+"/"+base_name+".json";
+    if(QFileInfo(label_file).exists())
+    {
+        load_jason_label(label_file.toLocal8Bit().begin(),label_map);
+        if(verbose)
+            std::cout << "jason file loaded:" << label_file.toStdString() << std::endl;
+        return;
+    }
     if(base_name.contains("aparc+aseg") || is_free_surfer) // FreeSurfer
     {
         if(verbose)
@@ -542,14 +587,7 @@ void get_roi_label(QString file_name,std::map<int,std::string>& label_map,
             return;
         }
     }
-    QString label_file = QFileInfo(file_name).absolutePath()+"/"+base_name+".txt";
-    if(QFileInfo(label_file).exists())
-    {
-        load_nii_label(label_file.toLocal8Bit().begin(),label_map);
-        if(verbose)
-            std::cout << "label file loaded:" << label_file.toStdString() << std::endl;
-        return;
-    }
+
     if(verbose)
         std::cout << "no label file found. Use default ROI numbering." << std::endl;
 }
