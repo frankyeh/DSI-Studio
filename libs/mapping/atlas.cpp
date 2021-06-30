@@ -12,14 +12,10 @@ void atlas::load_label(void)
 {
     std::string file_name_str(filename);
     std::string text_file_name;
-    if (file_name_str.length() > 3 &&
-            file_name_str[file_name_str.length()-3] == '.' &&
-            file_name_str[file_name_str.length()-2] == 'g' &&
-            file_name_str[file_name_str.length()-1] == 'z')
-        text_file_name = std::string(file_name_str.begin(),file_name_str.end()-6);
-    else
-        text_file_name = std::string(file_name_str.begin(),file_name_str.end()-3);
-    text_file_name += "txt";
+    if (QString(filename.c_str()).endsWith(".nii.gz"))
+        text_file_name = std::string(file_name_str.begin(),file_name_str.end()-6)+"txt";
+    if (QString(filename.c_str()).endsWith(".nii"))
+        text_file_name = std::string(file_name_str.begin(),file_name_str.end()-3)+"txt";
     std::ifstream in(text_file_name.c_str());
     if(!in)
     {
@@ -27,55 +23,18 @@ void atlas::load_label(void)
         error_msg += text_file_name;
         return;
     }
-    std::vector<std::string> text;
-    std::string str;
-    while(std::getline(in,str))
-        text.push_back(str);
-
-    if(text[0] == "0\t* * * * *")//talairach
+    std::string line;
+    while(std::getline(in,line))
     {
-        std::map<std::string,std::set<size_t> > regions;
-        for(size_t i = 0;i < text.size();++i)
-        {
-            std::istringstream read_line(text[i]);
-            int num;
-            read_line >> num;
-            std::string region;
-            while (read_line >> region)
-            {
-                if(region == "*")
-                    continue;
-                regions[region].insert(i);
-            }
-            index2label.resize(i+1);
-        }
-
-        auto iter = regions.begin();
-        auto end = regions.end();
-        for (size_t i = 0;iter != end;++iter,++i)
-        {
-            labels.push_back(iter->first);
-            label_num.push_back(uint32_t(label_num.size()));// dummy
-            label2index.push_back(std::vector<size_t>(iter->second.begin(),iter->second.end()));
-            for(size_t j = 0;j < label2index.back().size();++j)
-                index2label[label2index[i][j]].push_back(i);
-        }
-    }
-    else
-    {
-        for(auto& line : text)
-        {
-            if(line.empty() || line[0] == '#')
-                continue;
-            std::string txt;
-            uint32_t num = 0;
-            std::istringstream(line) >> num >> txt;
-            if(txt.empty())
-                continue;
-            label_num.push_back(num);
-            labels.push_back(txt);
-        }
-
+        if(line.empty() || line[0] == '#')
+            continue;
+        std::string txt;
+        uint32_t num = 0;
+        std::istringstream(line) >> num >> txt;
+        if(txt.empty())
+            continue;
+        label_num.push_back(num);
+        labels.push_back(txt);
     }
 }
 extern std::vector<std::string> fa_template_list;
