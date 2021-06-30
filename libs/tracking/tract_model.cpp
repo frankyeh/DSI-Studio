@@ -2468,7 +2468,7 @@ bool TractModel::export_tdi(const char* filename,
             tract_models[index]->get_density_map(tdi,transformation,end_point);
         if(QFileInfo(filename).fileName().endsWith(".nii") ||
            QFileInfo(filename).fileName().endsWith(".nii.gz"))
-            return gz_nifti::save_to_file(filename,tdi,vs,tract_models[0]->trans_to_mni*transformation);
+            return gz_nifti::save_to_file(filename,tdi,vs,tipl::matrix<4,4,float>(tract_models[0]->trans_to_mni*transformation));
         else
         {
             tipl::image<tipl::rgb,2> mosaic;
@@ -2486,7 +2486,7 @@ bool TractModel::export_tdi(const char* filename,
 
         if(QFileInfo(filename).fileName().endsWith(".nii") ||
            QFileInfo(filename).fileName().endsWith(".nii.gz"))
-            return gz_nifti::save_to_file(filename,tdi,vs,tract_models[0]->trans_to_mni*transformation);
+            return gz_nifti::save_to_file(filename,tdi,vs,tipl::matrix<4,4,float>(tract_models[0]->trans_to_mni*transformation));
         if(QFileInfo(filename).completeSuffix().toLower() == "mat")
         {
             tipl::io::mat_write mat_header(filename);
