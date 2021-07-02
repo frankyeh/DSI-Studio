@@ -198,47 +198,52 @@ int ana(void)
 
     std::vector<std::string> tract_files;
     get_filenames_from("tract",tract_files);
+    std::string output = po.get("output");
 
-    if(tract_files.size() > 1 && po.has("output"))
+    // convert tract to nii (not tdi)
+    if(QString(output.c_str()).endsWith(".nii.gz"))
     {
-        std::string output = po.get("output");
         if(QFileInfo(output.c_str()).exists())
         {
             std::cout << "output file:" << output << " exists. terminating..." << std::endl;
             return 0;
         }
-
-        if(QString(output.c_str()).endsWith("nii.gz"))
+        auto dim = handle->dim;
+        tipl::image<uint32_t,3> accumulate_map(dim);
+        for(size_t i = 0;i < tract_files.size();++i)
         {
-            auto dim = handle->dim;
-            tipl::image<uint32_t,3> accumulate_map(dim);
-            for(size_t i = 0;i < tract_files.size();++i)
+            TractModel tract_model(handle);
+            if(!tract_model.load_from_file(tract_files[i].c_str()))
             {
-                TractModel tract_model(handle);
-                if(!tract_model.load_from_file(tract_files[i].c_str()))
-                {
-                    std::cout << "open file error:" << tract_files[i] << std::endl;
-                    return 1;
-                }
-                std::cout << "accumulating " << tract_files[i] << "..." <<std::endl;
-                std::vector<tipl::vector<3,short> > points;
-                tract_model.to_voxel(points,1.0f);
-                tipl::par_for(points.size(),[&](size_t j)
-                {
-                    tipl::vector<3,short> p = points[j];
-                    if(dim.is_valid(p))
-                        accumulate_map[tipl::pixel_index<3>(p[0],p[1],p[2],dim).index()]++;
-                });
+                std::cout << "open file error:" << tract_files[i] << std::endl;
+                return 1;
             }
-            tipl::image<float,3> pdi(accumulate_map);
-            tipl::multiply_constant(pdi,1.0f/float(tract_files.size()));
-            if(gz_nifti::save_to_file(output.c_str(),pdi,handle->vs,handle->trans_to_mni))
+            std::cout << "accumulating " << tract_files[i] << "..." <<std::endl;
+            std::vector<tipl::vector<3,short> > points;
+            tract_model.to_voxel(points,1.0f);
+            tipl::par_for(points.size(),[&](size_t j)
             {
-                std::cout << "file saved at " << output << std::endl;
-                return 0;
-            }
+                tipl::vector<3,short> p = points[j];
+                if(dim.is_valid(p))
+                    accumulate_map[tipl::pixel_index<3>(p[0],p[1],p[2],dim).index()]++;
+            });
+        }
+        tipl::image<float,3> pdi(accumulate_map);
+        tipl::multiply_constant(pdi,1.0f/float(tract_files.size()));
+        if(!gz_nifti::save_to_file(output.c_str(),pdi,handle->vs,handle->trans_to_mni))
+        {
+            std::cout << "ERROR: cannot write to " << output << std::endl;
             return 1;
         }
+        std::cout << "file saved at " << output << std::endl;
+        return 0;
+    }
+
+
+    if(QString(output.c_str()).endsWith(".trk.gz") ||
+       QString(output.c_str()).endsWith(".tt.gz"))
+    {
+
         std::vector<std::shared_ptr<TractModel> > tracts;
         for(size_t i = 0;i < tract_files.size();++i)
         {
@@ -249,47 +254,56 @@ int ana(void)
                 return 1;
             }
         }
-        TractModel::save_all(output.c_str(),tracts,tract_files);
+        std::cout << "save all tracts to " << output << std::endl;
+        if(!TractModel::save_all(output.c_str(),tracts,tract_files))
+        {
+            std::cout << "ERROR: cannot write to " << output << std::endl;
+            return 1;
+        }
+        std::cout << "file saved at " << output << std::endl;
+        return 0;
     }
-    else
-    if(tract_files.size() == 1)
+
+
+    std::shared_ptr<TractModel> tract_model(new TractModel(handle));
+    for(unsigned int i = 0;i < tract_files.size();++i)
     {
-        std::string file_name = tract_files[0];
-        std::shared_ptr<TractModel> tract_model(new TractModel(handle));
+        std::shared_ptr<TractModel> tract(new TractModel(handle));
+        std::string file_name = tract_files[i];
+        std::cout << "loading " << file_name << "..." <<std::endl;
+        if(!QFileInfo(file_name.c_str()).exists())
         {
-            std::cout << "loading " << file_name << "..." <<std::endl;
-            if(!QFileInfo(file_name.c_str()).exists())
-            {
-                std::cout << file_name << " does not exist. terminating..." << std::endl;
-                return 1;
-            }
-            if (!tract_model->load_from_file(file_name.c_str()))
-            {
-                std::cout << "cannot open file " << file_name << std::endl;
-                return 1;
-            }
+            std::cout << file_name << " does not exist. terminating..." << std::endl;
+            return 1;
+        }
+        if (!tract->load_from_file(file_name.c_str()))
+        {
+            std::cout << "cannot open file " << file_name << std::endl;
+            return 1;
+        }
+        if(i)
+        {
+            std::cout << file_name << " loaded and merged" << std::endl;
+            tract_model->add(*tract.get());
+        }
+        else
+        {
             std::cout << file_name << " loaded" << std::endl;
+            tract_model = tract;
         }
-        std::shared_ptr<RoiMgr> roi_mgr(new RoiMgr(handle));
-        if(!load_roi(handle,roi_mgr))
-            return 1;
-        tract_model->filter_by_roi(roi_mgr);
-        if(tract_model->get_visible_track_count() == 0)
-        {
-            std::cout << "no tracks remained after ROI selection." << std::endl;
-            return 1;
-        }
-        if(po.has("output"))
-        {
-            std::string output = po.get("output");
-            if(output.find(".tt.gz") != std::string::npos ||
-               output.find(".trk.gz") != std::string::npos)
-                return trk_post(handle,tract_model,output,true);
-            if(QFileInfo(output.c_str()).isDir())
-                return trk_post(handle,tract_model,output + "/" + QFileInfo(file_name.c_str()).baseName().toStdString(),true);
-            return trk_post(handle,tract_model,output,true);
-        }
-        return trk_post(handle,tract_model,po.get("tract"),false);
     }
-    return 0;
+    std::shared_ptr<RoiMgr> roi_mgr(new RoiMgr(handle));
+    if(!load_roi(handle,roi_mgr))
+        return 1;
+    tract_model->filter_by_roi(roi_mgr);
+    if(tract_model->get_visible_track_count() == 0)
+    {
+        std::cout << "no tracks remained after ROI selection." << std::endl;
+        return 1;
+    }
+    if(po.has("output") && QFileInfo(output.c_str()).isDir())
+        return trk_post(handle,tract_model,output + "/" + QFileInfo(tract_files[0].c_str()).baseName().toStdString(),true);
+    if(po.has("output"))
+        return trk_post(handle,tract_model,output,true);
+    return trk_post(handle,tract_model,tract_files[0],false);
 }
