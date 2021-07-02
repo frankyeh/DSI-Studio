@@ -2325,17 +2325,17 @@ void TractModel::get_density_map(tipl::image<unsigned int,3>& mapping,
         for (unsigned int j = 0;j < tract_data[i].size();j+=3)
         {
             if(j && endpoint)
-                j = tract_data[i].size()-3;
+                j = uint32_t(tract_data[i].size())-3;
             tipl::vector<3,float> tmp;
             tipl::vector_transformation(tract_data[i].begin()+j, tmp.begin(),
                 transformation.begin(), tipl::vdim<3>());
 
-            int x = std::round(tmp[0]);
-            int y = std::round(tmp[1]);
-            int z = std::round(tmp[2]);
+            int x = int(std::round(tmp[0]));
+            int y = int(std::round(tmp[1]));
+            int z = int(std::round(tmp[2]));
             if (!geo.is_valid(x,y,z))
                 continue;
-            point_set.insert((z*mapping.height()+y)*mapping.width()+x);
+            point_set.insert(uint32_t((z*mapping.height()+y)*mapping.width()+x));
         }
 
         std::vector<unsigned int> point_list(point_set.begin(),point_set.end());
@@ -2349,8 +2349,8 @@ void TractModel::get_density_map(
         const tipl::matrix<4,4,float>& transformation,bool endpoint)
 {
     tipl::geometry<3> geo = mapping.geometry();
-    tipl::image<float,3> map_r(geo),
-                            map_g(geo),map_b(geo);
+    tipl::image<float,3> map_r(geo),map_g(geo),map_b(geo);
+    std::cout << "aggregating tracts to voxels" << std::endl;
     tipl::par_for (tract_data.size(),[&](unsigned int i)
     {
         const float* buf = &*tract_data[i].begin();
@@ -2380,6 +2380,7 @@ void TractModel::get_density_map(
     for(unsigned int index = 0;index < mapping.size();++index)
         max_value = std::max<float>(max_value,map_r[index]+map_g[index]+map_b[index]);
 
+    std::cout << "generating rgb maps" << std::endl;
     tipl::par_for(mapping.size(),[&](unsigned int index)
     {
         float sum = map_r[index]+map_g[index]+map_b[index];
