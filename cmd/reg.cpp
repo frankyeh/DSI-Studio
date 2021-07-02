@@ -1,14 +1,15 @@
+#include <QString>
 #include "tipl/tipl.hpp"
 #include "libs/gzip_interface.hpp"
 #include "program_option.hpp"
 bool apply_warping(const char* from,
                    const char* to,
-                   tipl::image<tipl::vector<3>,3>& dis,
+                   tipl::image<tipl::vector<3>,3>& mapping,
                    tipl::vector<3> Itvs,
                    tipl::matrix<4,4,float>& ItR,
-                   tipl::transformation_matrix<double>& T,
                    std::string& error,
                    tipl::interpolation_type interpo);
+void get_filenames_from(const std::string param,std::vector<std::string>& filenames);
 bool is_label_image(const tipl::image<float,3>& I);
 int reg(void)
 {
@@ -109,31 +110,57 @@ int reg(void)
         tipl::reg::cdm(to,from_,cdm_dis,terminated);
     }
 
+    tipl::image<tipl::vector<3>,3> mapping(cdm_dis);
+    tipl::displacement_to_mapping(mapping,T);
+
     {
         std::cout << "compose output images" << std::endl;
         tipl::image<float,3> from_wp;
-        tipl::compose_displacement_with_affine(from,from_wp,T,cdm_dis,is_label_image(from) ? tipl::nearest : interpo_method);
+        tipl::compose_mapping(from,mapping,from_wp,is_label_image(from) ? tipl::nearest : interpo_method);
         float r = float(tipl::correlation(to.begin(),to.end(),from_wp.begin()));
         std::cout << "R2: " << r*r << std::endl;
-        std::cout << "output warpped image: " << output_wp_image << std::endl;
-        gz_nifti::save_to_file(output_wp_image.c_str(),from_wp,to_vs,to_trans);
+        if(!gz_nifti::save_to_file(output_wp_image.c_str(),from_wp,to_vs,to_trans))
+        {
+            std::cout << "ERROR: cannot write warpped image to " << output_wp_image << std::endl;
+            return 0;
+        }
+        else
+            std::cout << "output warpped image to " << output_wp_image << std::endl;
     }
 
     if(po.has("apply_warp"))
     {
-        std::istringstream in(po.get("apply_warp"));
-        std::string from3;
-        while(std::getline(in,from3,','))
+        std::vector<std::string> filenames;
+        get_filenames_from("apply_warp",filenames);
+        for(auto filename: filenames)
         {
-            std::string to3 = from3+".wp.nii.gz";
+            std::string filename_warp = filename+".wp.nii.gz";
             std::string error;
-            std::cout << "apply warping to " << from3 << std::endl;
-            if(!apply_warping(from3.c_str(),to3.c_str(),cdm_dis,to_vs,to_trans,T,error,interpo_method))
+            std::cout << "apply warping to " << filename << std::endl;
+            if(!apply_warping(filename.c_str(),filename_warp.c_str(),mapping,to_vs,to_trans,error,interpo_method))
             {
-                std::cout << "[ERROR]" << error <<std::endl;
+                std::cout << "ERROR: " << error <<std::endl;
                 return 1;
             }
         }
     }
+    if(po.has("output_warp"))
+    {
+        std::string filename = po.get("output_warp");
+        if(!QString(filename.c_str()).endsWith(".map.gz"))
+            filename += ".map.gz";
+        gz_mat_write out(filename.c_str());
+        if(!out)
+        {
+            std::cout << "ERROR: cannot write to " << filename << std::endl;
+            return 1;
+        }
+        out.write("mapping",&mapping[0][0],3,mapping.size());
+        out.write("dimension",mapping.geometry().begin(),1,3);
+        out.write("voxel_size",to_vs);
+        out.write("trans",to_trans.begin(),4,4);
+        std::cout << "save warpping to " << filename << std::endl;
+    }
+
     return 0;
 }

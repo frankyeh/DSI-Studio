@@ -58,6 +58,7 @@ void RegToolBox::clear(void)
     J_view.clear();
     J_view2.clear();
     dis.clear();
+    mapping.clear();
     arg.clear();
     ui->run_reg->setText("run");
 }
@@ -478,7 +479,9 @@ void RegToolBox::nonlinear_reg(void)
                 tipl::reg::cdm(It,J,dis,thread.terminated,param);
         }
     }
-    tipl::compose_displacement(J,dis,JJ);
+    mapping = dis;
+    tipl::displacement_to_mapping(mapping,T);
+    tipl::compose_mapping(I,mapping,JJ);
     std::cout << "nonlinear:" << tipl::correlation(JJ.begin(),JJ.end(),It.begin()) << std::endl;
 }
 
@@ -522,24 +525,28 @@ void RegToolBox::on_run_reg_clicked()
 
 bool apply_warping(const char* from,
                    const char* to,
-                   tipl::image<tipl::vector<3>,3>& dis,
+                   tipl::image<tipl::vector<3>,3>& mapping,
                    tipl::vector<3> Itvs,
                    tipl::matrix<4,4,float>& ItR,
-                   tipl::transformation_matrix<double>& T,
                    std::string& error,
                    tipl::interpolation_type interpo)
 {
     gz_nifti nifti;
     if(!nifti.load_from_file(from))
     {
-        error = "Invalid file format";
+        error = nifti.error;
         return false;
     }
     tipl::image<float,3> I3;
     nifti.toLPS(I3);
     tipl::image<float,3> J3;
-    tipl::compose_displacement_with_affine(I3,J3,T,dis,is_label_image(I3) ? tipl::nearest : interpo);
-    gz_nifti::save_to_file(to,J3,Itvs,ItR);
+    tipl::compose_mapping(I3,mapping,J3,is_label_image(I3) ? tipl::nearest : interpo);
+    if(!gz_nifti::save_to_file(to,J3,Itvs,ItR))
+    {
+        error = "cannot write to file ";
+        error += to;
+        return false;
+    }
     return true;
 }
 void RegToolBox::on_actionApply_Warpping_triggered()
@@ -557,8 +564,11 @@ void RegToolBox::on_actionApply_Warpping_triggered()
     std::string error;
     if(!apply_warping(from.toStdString().c_str(),
                       to.toStdString().c_str(),
-                      dis,Itvs,ItR,T,error,tipl::cubic))
-        QMessageBox::information(this,"Error",error.c_str());
+                      mapping,Itvs,ItR,error,tipl::cubic))
+        QMessageBox::critical(this,"ERROR",error.c_str());
+    else
+        QMessageBox::information(this,"DSI Studio","Saved");
+
 }
 
 void RegToolBox::on_stop_clicked()
@@ -596,18 +606,23 @@ void RegToolBox::on_actionRemove_Background_triggered()
 
 void RegToolBox::on_actionSave_Warpping_triggered()
 {
-    if(dis.empty())
+    if(mapping.empty())
         return;
     QString filename = QFileDialog::getSaveFileName(
             this,"Save Warpping","",
             "Images (*.map.gz);;All files (*)" );
     if(filename.isEmpty())
         return;
-    tipl::image<tipl::vector<3>,3> mapping(dis);
-    tipl::displacement_to_mapping(mapping,T);
     gz_mat_write out(filename.toStdString().c_str());
-    if(out)
-        out.write("mapping",&mapping[0][0],3,mapping.size());
+    if(!out)
+    {
+        QMessageBox::critical(this,"ERROR","Cannot write to file");
+        return;
+    }
+    out.write("mapping",&mapping[0][0],3,mapping.size());
+    out.write("dimension",mapping.geometry().begin(),1,3);
+    out.write("voxel_size",Itvs);
+    out.write("trans",ItR.begin(),4,4);
 }
 
 

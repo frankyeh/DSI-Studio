@@ -18,7 +18,7 @@ class RegToolBox : public QMainWindow
 public:
     uint8_t cur_view = 2;
     tipl::image<float,3> It,I,J,JJ,I2,It2,J2;
-    tipl::image<tipl::vector<3>,3> dis;
+    tipl::image<tipl::vector<3>,3> dis,mapping;
     tipl::vector<3> Itvs,Ivs;
     tipl::matrix<4,4,float> ItR;
 public:
