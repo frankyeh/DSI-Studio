@@ -704,7 +704,7 @@ void ImageModel::flip_dwi(unsigned char type)
     tipl::flip(dwi_sum,type);
     tipl::flip(dwi,type);
     tipl::flip(voxel.mask,type);
-    prog_init p("Processing");
+    prog_init p("flip image");
     tipl::par_for2(src_dwi_data.size(),[&](unsigned int index,unsigned id)
     {
         if(!id)
@@ -1498,16 +1498,16 @@ bool ImageModel::save_fib(const std::string& output_name)
     mat_writer.write("steps",final_steps);
     return true;
 }
+void initial_LPS_nifti_srow(tipl::matrix<4,4,float>& T,const tipl::geometry<3>& geo,const tipl::vector<3>& vs);
 bool ImageModel::save_to_nii(const char* nifti_file_name) const
 {
-    gz_nifti header;
-    header.set_voxel_size(voxel.vs);
-    header.nif_header.pixdim[0] = 4;
-    header.nif_header2.pixdim[0] = 4;
+    tipl::matrix<4,4,float> trans;
+    initial_LPS_nifti_srow(trans,voxel.dim,voxel.vs);
 
     tipl::geometry<4> nifti_dim;
     std::copy(voxel.dim.begin(),voxel.dim.end(),nifti_dim.begin());
-    nifti_dim[3] = int(src_bvalues.size());
+    nifti_dim[3] = uint32_t(src_bvalues.size());
+
     tipl::image<unsigned short,4> buffer(nifti_dim);
     for(unsigned int index = 0;index < src_bvalues.size();++index)
     {
@@ -1515,29 +1515,23 @@ bool ImageModel::save_to_nii(const char* nifti_file_name) const
                   src_dwi_data[index]+voxel.dim.size(),
                   buffer.begin() + long(index*voxel.dim.size()));
     }
-    tipl::flip_xy(buffer);
-    header << buffer;
-    return header.save_to_file(nifti_file_name);
+    return gz_nifti::save_to_file(nifti_file_name,buffer,voxel.vs,trans);
 }
 bool ImageModel::save_b0_to_nii(const char* nifti_file_name) const
 {
-    gz_nifti header;
-    header.set_voxel_size(voxel.vs);
+    tipl::matrix<4,4,float> trans;
+    initial_LPS_nifti_srow(trans,voxel.dim,voxel.vs);
     tipl::image<float,3> buffer(voxel.dim);
     std::copy(src_dwi_data[0],src_dwi_data[0]+buffer.size(),buffer.begin());
-    tipl::flip_xy(buffer);
-    header << buffer;
-    return header.save_to_file(nifti_file_name);
+    return gz_nifti::save_to_file(nifti_file_name,buffer,voxel.vs,trans);
 }
 
 bool ImageModel::save_dwi_sum_to_nii(const char* nifti_file_name) const
 {
-    gz_nifti header;
-    header.set_voxel_size(voxel.vs);
+    tipl::matrix<4,4,float> trans;
+    initial_LPS_nifti_srow(trans,voxel.dim,voxel.vs);
     tipl::image<float,3> buffer(dwi_sum);
-    tipl::flip_xy(buffer);
-    header << buffer;
-    return header.save_to_file(nifti_file_name);
+    return gz_nifti::save_to_file(nifti_file_name,buffer,voxel.vs,trans);
 }
 
 bool ImageModel::save_b_table(const char* file_name) const
