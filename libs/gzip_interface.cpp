@@ -478,11 +478,13 @@ bool gz_ostream::open(const char* file_name)
 void gz_ostream::write(const void* buf_,size_t size)
 {
     const char* buf = reinterpret_cast<const char*>(buf_);
+    size_t total_size = size;
     if(handle)
     {
-        const size_t block_size = 104857600;// 500mb
+        const size_t block_size = 104857600;// 100mb
         while(size > block_size)
         {
+            check_prog(total_size-size,total_size);
             if(gzwrite(handle,buf,block_size) <= 0)
             {
                 close();
@@ -515,4 +517,5 @@ void gz_ostream::close(void)
     }
     if(out)
         out.close();
+    check_prog(0,0);
 }
