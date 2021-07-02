@@ -527,7 +527,7 @@ bool apply_warping(const char* from,
                    const char* to,
                    tipl::image<tipl::vector<3>,3>& mapping,
                    tipl::vector<3> Itvs,
-                   tipl::matrix<4,4,float>& ItR,
+                   const tipl::matrix<4,4,float>& ItR,
                    std::string& error,
                    tipl::interpolation_type interpo)
 {
