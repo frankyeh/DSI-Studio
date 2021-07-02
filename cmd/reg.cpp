@@ -6,18 +6,64 @@ bool apply_warping(const char* from,
                    const char* to,
                    tipl::image<tipl::vector<3>,3>& mapping,
                    tipl::vector<3> Itvs,
-                   tipl::matrix<4,4,float>& ItR,
+                   const tipl::matrix<4,4,float>& ItR,
                    std::string& error,
                    tipl::interpolation_type interpo);
 void get_filenames_from(const std::string param,std::vector<std::string>& filenames);
 bool is_label_image(const tipl::image<float,3>& I);
+
+int after_warp(tipl::image<tipl::vector<3>,3>& mapping,tipl::vector<3> vs,const tipl::matrix<4,4,float>& to_trans)
+{
+    if(po.has("apply_warp"))
+    {
+        std::vector<std::string> filenames;
+        get_filenames_from("apply_warp",filenames);
+        for(auto filename: filenames)
+        {
+            std::string filename_warp = filename+".wp.nii.gz";
+            std::string error;
+            std::cout << "apply warping to " << filename << std::endl;
+            if(!apply_warping(filename.c_str(),filename_warp.c_str(),mapping,vs,to_trans,error,(po.get("interpolation",1) ? tipl::cubic : tipl::linear)))
+            {
+                std::cout << "ERROR: " << error <<std::endl;
+                return 1;
+            }
+        }
+    }
+    return 0;
+}
 int reg(void)
 {
     tipl::image<float,3> from,to;
     tipl::image<float,3> from2,to2;
     tipl::vector<3> from_vs,to_vs;
     tipl::matrix<4,4,float> to_trans;
+    tipl::image<tipl::vector<3>,3> cdm_dis,mapping;
 
+
+    if(po.has("warp"))
+    {
+        gz_mat_read in;
+        if(!in.load_from_file(po.get("warp").c_str()))
+        {
+            std::cout << "ERROR: cannot open or parse warp file " << po.get("warp") << std::endl;
+            return 1;
+        }
+        tipl::geometry<3> dim;
+        const float* ptr = nullptr;
+        unsigned int row,col;
+        if (!in.read("dimension",dim) ||
+            !in.read("voxel_size",to_vs) ||
+            !in.read("trans",to_trans) ||
+            !in.read("mapping",row,col,ptr))
+        {
+            std::cout << "ERROR: invalid warp file " << po.get("warp") << std::endl;
+            return 1;
+        }
+        mapping.resize(dim);
+        std::copy(ptr,ptr+col*row,&mapping[0][0]);
+        return after_warp(mapping,to_vs,to_trans);
+    }
     if(!gz_nifti::load_from_file(po.get("from").c_str(),from,from_vs))
     {
         std::cout << "cannot load from file" << std::endl;
@@ -92,7 +138,6 @@ int reg(void)
         tipl::reg::cdm_pre(from_,from2_,to,to2);
     }
 
-    tipl::image<tipl::vector<3>,3> cdm_dis;
     if(!from2_.empty())
     {
         tipl::reg::cdm_param param;
@@ -110,7 +155,7 @@ int reg(void)
         tipl::reg::cdm(to,from_,cdm_dis,terminated);
     }
 
-    tipl::image<tipl::vector<3>,3> mapping(cdm_dis);
+    mapping = cdm_dis;
     tipl::displacement_to_mapping(mapping,T);
 
     {
@@ -128,22 +173,6 @@ int reg(void)
             std::cout << "output warpped image to " << output_wp_image << std::endl;
     }
 
-    if(po.has("apply_warp"))
-    {
-        std::vector<std::string> filenames;
-        get_filenames_from("apply_warp",filenames);
-        for(auto filename: filenames)
-        {
-            std::string filename_warp = filename+".wp.nii.gz";
-            std::string error;
-            std::cout << "apply warping to " << filename << std::endl;
-            if(!apply_warping(filename.c_str(),filename_warp.c_str(),mapping,to_vs,to_trans,error,interpo_method))
-            {
-                std::cout << "ERROR: " << error <<std::endl;
-                return 1;
-            }
-        }
-    }
     if(po.has("output_warp"))
     {
         std::string filename = po.get("output_warp");
@@ -162,5 +191,7 @@ int reg(void)
         std::cout << "save warpping to " << filename << std::endl;
     }
 
-    return 0;
+
+    return after_warp(mapping,to_vs,to_trans);
+
 }
