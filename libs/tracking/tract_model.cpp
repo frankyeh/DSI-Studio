@@ -19,7 +19,8 @@
 #include "tract_cluster.hpp"
 #include "../../tracking/region/Regions.h"
 #include "tracking_method.hpp"
-
+void prepare_idx(const char* file_name,std::shared_ptr<gz_istream> in);
+void save_idx(const char* file_name,std::shared_ptr<gz_istream> in);
 const tipl::rgb default_tract_color(255,160,60);
 void smoothed_tracks(const std::vector<float>& track,std::vector<float>& smoothed)
 {
@@ -69,10 +70,12 @@ class TinyTrack{
                              const std::string& parameter_id,
                              unsigned int color = 0)
     {
-        prog_init p("saving ",QFileInfo(file_name).fileName().toStdString().c_str());
         gz_mat_write out(file_name);
         if (!out)
             return false;
+        prog_init p("saving ",QFileInfo(file_name).fileName().toStdString().c_str());
+        check_prog(0,tract_data.size() << 1);
+
         out.write("dimension",&*geo.begin(),1,3);
         out.write("voxel_size",vs);
         out.write("report",report);
@@ -82,8 +85,10 @@ class TinyTrack{
             out.write("color",&color,1,1);
         std::vector<std::vector<int32_t> > track32(tract_data.size());
         std::vector<size_t> buf_size(track32.size());
-        tipl::par_for(track32.size(),[&](size_t i)
+        tipl::par_for2(track32.size(),[&](size_t i,unsigned int id)
         {
+            if(id == 0)
+                check_prog(i,tract_data.size() << 1);
             auto& t32 = track32[i];
             t32.resize(tract_data[i].size());
             // all coordinates multiply by 32 and convert to integer
@@ -134,32 +139,41 @@ class TinyTrack{
             }
             buf_size[i] = sizeof(tract_header)+t32.size()-3;
         });
-
-
-        // record write position for each track
-        size_t total_size = 0;
-        std::vector<size_t> pos(track32.size());
-        for(size_t i = 0;i < track32.size();++i)
+        for(size_t block = 0,cur_track_block = 0;cur_track_block < track32.size();++block)
         {
-            pos[i] = total_size;
-            total_size += buf_size[i];
+            // record write position for each track
+            size_t total_size = 0;
+            std::vector<size_t> pos;
+            for(size_t i = cur_track_block;i < track32.size();++i)
+            {
+                pos.push_back(total_size);
+                total_size += buf_size[i];
+                if(total_size > 536870912) // 500 mb
+                    break;
+            }
+
+            std::vector<char> out_buf(total_size);
+            tipl::par_for(pos.size(),[&](size_t i)
+            {
+                auto& t32 = track32[cur_track_block+i];
+                auto out = &out_buf[pos[i]];
+                tract_header hr;
+                hr.h.count = uint32_t(t32.size());
+                hr.h.x = t32[0];
+                hr.h.y = t32[1];
+                hr.h.z = t32[2];
+                std::copy(hr.buf,hr.buf+16,out);
+                out += sizeof(tract_header)-3;
+                for(size_t j = 3;j < t32.size();j++)
+                    out[j] = char(t32[j]);
+            });
+
+            if(block == 0)
+                out.write("track",&out_buf[0],total_size,1);
+            else
+                out.write((std::string("track")+std::to_string(block)).c_str(),&out_buf[0],total_size,1);
+            cur_track_block += pos.size();
         }
-
-        std::vector<char> out_buf(total_size);
-        tipl::par_for(track32.size(),[&](size_t i)
-        {
-            auto& t32 = track32[i];
-            tract_header hr;
-            hr.h.count = uint32_t(t32.size());
-            hr.h.x = t32[0];
-            hr.h.y = t32[1];
-            hr.h.z = t32[2];
-            std::copy(hr.buf,hr.buf+16,out_buf.begin()+int64_t(pos[i]));
-            size_t shift = pos[i]+sizeof(tract_header)-3;
-            for(size_t j = 3;j < t32.size();j++)
-                out_buf[j+shift] = char(t32[j]);
-        });
-        out.write("track",&out_buf[0],total_size,1);
         if(!cluster.empty())
             out.write("cluster",&cluster[0],cluster.size(),1);
         return true;
@@ -172,6 +186,7 @@ class TinyTrack{
     {
         prog_init p("loading ",file_name);
         gz_mat_read in;
+        prepare_idx(file_name,in.in);
         if (!in.load_from_file(file_name))
             return false;
         in.read("dimension",geo);
@@ -188,34 +203,53 @@ class TinyTrack{
             tract_cluster.resize(row*col);
             std::copy(cluster,cluster+tract_cluster.size(),tract_cluster.begin());
         }
-        const char* track_buf = nullptr;
-        if(!in.read("track",row,col,track_buf))
-            return false;
-        size_t buf_size = row*col;
-        std::vector<size_t> pos;
-        for(size_t i = 0;i < buf_size;)
+
+        for(unsigned int block = 0;1;block++)
         {
-            pos.push_back(i);
-            i += *reinterpret_cast<const uint32_t*>(track_buf+i);
-            i += sizeof(tract_header)-3;
+            const char* track_buf = nullptr;
+            if(block == 0)
+            {
+                if(!in.read("track",row,col,track_buf))
+                    return false;
+            }
+            else
+            {
+                auto name = std::string("track")+std::to_string(block);
+                if(!in.has(name.c_str()))
+                    break;
+                if(!in.read(name.c_str(),row,col,track_buf))
+                    return false;
+            }
+            size_t buf_size = size_t(row)*size_t(col);
+            std::vector<size_t> pos;
+            for(size_t i = 0;i < buf_size;)
+            {
+                pos.push_back(i);
+                i += *reinterpret_cast<const uint32_t*>(track_buf+i);
+                i += sizeof(tract_header)-3;
+            }
+            size_t add_tract_index = tract_data.size();
+            tract_data.resize(add_tract_index+pos.size());
+            tipl::par_for(pos.size(),[&](size_t i)
+            {
+                auto& cur_tract = tract_data[i+add_tract_index];
+                tract_header hr;
+                std::copy(&track_buf[pos[i]],&track_buf[pos[i]]+16,hr.buf);
+                if(hr.h.count > buf_size)
+                    return;
+                cur_tract.resize(hr.h.count);
+                cur_tract[0] = hr.h.x;
+                cur_tract[1] = hr.h.y;
+                cur_tract[2] = hr.h.z;
+                size_t shift = pos[i]+sizeof(tract_header)-3;
+                for(size_t j = 3;j < cur_tract.size();++j)
+                    cur_tract[j] = (cur_tract[j-3] + track_buf[shift+j]);
+                for(size_t j = 0;j < cur_tract.size();++j)
+                    cur_tract[j] = std::ldexp(cur_tract[j],-5);
+            });
         }
-        tract_data.resize(pos.size());
-        tipl::par_for(pos.size(),[&](size_t i)
-        {
-            tract_header hr;
-            std::copy(&track_buf[pos[i]],&track_buf[pos[i]]+16,hr.buf);
-            if(hr.h.count > buf_size)
-                return;
-            tract_data[i].resize(hr.h.count);
-            tract_data[i][0] = hr.h.x;
-            tract_data[i][1] = hr.h.y;
-            tract_data[i][2] = hr.h.z;
-            size_t shift = pos[i]+sizeof(tract_header)-3;
-            for(size_t j = 3;j < tract_data[i].size();++j)
-                tract_data[i][j] = (tract_data[i][j-3] + track_buf[shift+j]);
-            for(size_t j = 0;j < tract_data[i].size();++j)
-                tract_data[i][j] = std::ldexp(tract_data[i][j],-5);
-        });
+
+        save_idx(file_name,in.in);
         return true;
     }
 };
