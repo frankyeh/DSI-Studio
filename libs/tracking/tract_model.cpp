@@ -2321,7 +2321,7 @@ void TractModel::get_density_map(tipl::image<unsigned int,3>& mapping,
     tipl::geometry<3> geo = mapping.geometry();
     tipl::par_for(tract_data.size(),[&](unsigned int i)
     {
-        std::set<unsigned int> point_set;
+        std::set<size_t> point_set;
         for (unsigned int j = 0;j < tract_data[i].size();j+=3)
         {
             if(j && endpoint)
@@ -2335,12 +2335,11 @@ void TractModel::get_density_map(tipl::image<unsigned int,3>& mapping,
             int z = int(std::round(tmp[2]));
             if (!geo.is_valid(x,y,z))
                 continue;
-            point_set.insert(uint32_t((z*mapping.height()+y)*mapping.width()+x));
+            point_set.insert(size_t(z*mapping.height()+y)*size_t(mapping.width())+size_t(x));
         }
 
-        std::vector<unsigned int> point_list(point_set.begin(),point_set.end());
-        for(unsigned int j = 0;j < point_list.size();++j)
-            ++mapping[point_list[j]];
+        for(auto pos : point_set)
+            ++mapping[pos];
     });
 }
 //---------------------------------------------------------------------------
@@ -2370,18 +2369,18 @@ void TractModel::get_density_map(
             int z = int(std::round(tmp[2]));
             if (!geo.is_valid(x,y,z))
                 continue;
-            unsigned int ptr = uint32_t((z*mapping.height()+y)*mapping.width()+x);
+            size_t ptr = size_t(z*mapping.height()+y)*size_t(mapping.width())+size_t(x);
             map_r[ptr] += std::fabs(dir[0]);
             map_g[ptr] += std::fabs(dir[1]);
             map_b[ptr] += std::fabs(dir[2]);
         }
     });
+    std::cout << "generating rgb maps" << std::endl;
     float max_value = 0.0f;
-    for(unsigned int index = 0;index < mapping.size();++index)
+    for(size_t index = 0;index < mapping.size();++index)
         max_value = std::max<float>(max_value,map_r[index]+map_g[index]+map_b[index]);
 
-    std::cout << "generating rgb maps" << std::endl;
-    tipl::par_for(mapping.size(),[&](unsigned int index)
+    tipl::par_for(mapping.size(),[&](size_t index)
     {
         float sum = map_r[index]+map_g[index]+map_b[index];
         if(sum == 0.0f)
