@@ -76,7 +76,7 @@ public:
      int last_time;
      bool get_mouse_pos(QMouseEvent *mouseEvent,tipl::vector<3,float>& position);
      void paintGL();
-     bool no_update = false;
+     bool no_update = true;
 
  public://surface
      std::shared_ptr<RegionModel> surface;

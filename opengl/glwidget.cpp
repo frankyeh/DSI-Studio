@@ -139,35 +139,37 @@ bool GLWidget::check_change(const char* name,float& var)
 
 
 
-void check_error(const char* line)
+bool check_error(const char* line)
 {
     GLenum code = glGetError();
+    if(code == GL_NO_ERROR)
+        return false;
     while(code)
     {
-        std::cout << line << std::endl;
         switch(code)
         {
         case GL_INVALID_ENUM:
-            std::cout << "GL_INVALID_ENUM" << std::endl;
+            std::cout << "GL_INVALID_ENUM";
             break;
         case GL_INVALID_VALUE:
-            std::cout << "GL_INVALID_VALUE" << std::endl;
+            std::cout << "GL_INVALID_VALUE";
             break;
         case GL_INVALID_OPERATION:
-            std::cout << "GL_INVALID_OPERATION" << std::endl;
+            std::cout << "GL_INVALID_OPERATION";
             break;
         case GL_STACK_OVERFLOW:
-            std::cout << "GL_STACK_OVERFLOW" << std::endl;
+            std::cout << "GL_STACK_OVERFLOW";
             break;
         case GL_STACK_UNDERFLOW:
-            std::cout << "GL_STACK_UNDERFLOW" << std::endl;
+            std::cout << "GL_STACK_UNDERFLOW";
             break;
         case GL_OUT_OF_MEMORY:
-            std::cout << "GL_OUT_OF_MEMORY" << std::endl;
+            std::cout << "GL_OUT_OF_MEMORY";
             break;
-
         }
+        std::cout << " at " << line << std::endl;
     }
+    return true;
 }
 
 
@@ -416,6 +418,16 @@ void GLWidget::setFrustum(void)
 
 void GLWidget::initializeGL()
 {
+    std::cout << "openGL information" << std::endl;
+    if(!glGetString(GL_VERSION))
+    {
+        QMessageBox::critical(this,"ERROR","OpenGL driver not found. 3D visualization is disabled. Please update system graphic card driver or check opengl settings");
+        return;
+    }
+    std::cout << "version:" << glGetString(GL_VERSION) << std::endl;
+    std::cout << "vender:" << glGetString(GL_VENDOR) << std::endl;
+    std::cout << "renderer:" << glGetString(GL_RENDERER) << std::endl;
+
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_NORMALIZE);
     glColorMaterial(GL_FRONT_AND_BACK, GL_DIFFUSE);
@@ -423,13 +435,22 @@ void GLWidget::initializeGL()
     tracts = glGenLists(1);
     tract_alpha = -1; // ensure that make_track is called
     odf_position = 255;//ensure ODFs is renderred
-    check_error(__FUNCTION__);
+    if(check_error(__FUNCTION__))
+    {
+        QMessageBox::critical(this,"ERROR","Failed to initialize openGL. 3D visualization is disabled. Please update system graphic card driver or check opengl settings.");
+        return;
+    }
+    no_update = false;
 }
 void GLWidget::paintGL()
 {
     if(no_update)
         return;
-    check_error("begin");
+    if(check_error(__FUNCTION__))
+    {
+        no_update = true;
+        return;
+    }
     glDrawBuffer(GL_BACK);
     int color = get_param("bkg_color");
     glClearColor(float((color & 0x00FF0000) >> 16)/255.0f,
