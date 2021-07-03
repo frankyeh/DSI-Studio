@@ -418,12 +418,12 @@ void GLWidget::setFrustum(void)
 
 void GLWidget::initializeGL()
 {
-    std::cout << "openGL information" << std::endl;
-    if(!glGetString(GL_VERSION))
+    if(!isValid() || !glGetString(GL_VERSION))
     {
-        QMessageBox::critical(this,"ERROR","OpenGL driver not found. 3D visualization is disabled. Please update system graphic card driver or check opengl settings");
+        QMessageBox::critical(this,"ERROR","System has no OpenGL support. 3D visualization is disabled. Please update or install graphic card driver.");
         return;
     }
+    std::cout << "openGL information" << std::endl;
     std::cout << "version:" << glGetString(GL_VERSION) << std::endl;
     std::cout << "vender:" << glGetString(GL_VENDOR) << std::endl;
     std::cout << "renderer:" << glGetString(GL_RENDERER) << std::endl;
@@ -435,11 +435,6 @@ void GLWidget::initializeGL()
     tracts = glGenLists(1);
     tract_alpha = -1; // ensure that make_track is called
     odf_position = 255;//ensure ODFs is renderred
-    if(check_error(__FUNCTION__))
-    {
-        QMessageBox::critical(this,"ERROR","Failed to initialize openGL. 3D visualization is disabled. Please update system graphic card driver or check opengl settings.");
-        return;
-    }
     no_update = false;
 }
 void GLWidget::paintGL()
