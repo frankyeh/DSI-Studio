@@ -73,8 +73,6 @@ class TinyTrack{
         gz_mat_write out(file_name);
         if (!out)
             return false;
-        prog_init p("saving ",QFileInfo(file_name).fileName().toStdString().c_str());
-        check_prog(0,tract_data.size() << 1);
 
         out.write("dimension",&*geo.begin(),1,3);
         out.write("voxel_size",vs);
@@ -85,10 +83,12 @@ class TinyTrack{
             out.write("color",&color,1,1);
         std::vector<std::vector<int32_t> > track32(tract_data.size());
         std::vector<size_t> buf_size(track32.size());
+        prog_init p("compressing trajectories");
+        check_prog(0,tract_data.size());
         tipl::par_for2(track32.size(),[&](size_t i,unsigned int id)
         {
             if(id == 0)
-                check_prog(i,tract_data.size() << 1);
+                check_prog(i,tract_data.size());
             auto& t32 = track32[i];
             t32.resize(tract_data[i].size());
             // all coordinates multiply by 32 and convert to integer
@@ -139,6 +139,7 @@ class TinyTrack{
             }
             buf_size[i] = sizeof(tract_header)+t32.size()-3;
         });
+        set_title((std::string("saving to ")+QFileInfo(file_name).fileName().toStdString()).c_str());
         for(size_t block = 0,cur_track_block = 0;cur_track_block < track32.size();++block)
         {
             // record write position for each track
