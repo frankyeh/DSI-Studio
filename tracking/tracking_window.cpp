@@ -82,6 +82,7 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         QMainWindow(parent),ui(new Ui::tracking_window),scene(*this),handle(new_handle)
 
 {
+    std::cout << "initiate image/slices" << std::endl;
     fib_data& fib = *new_handle;
     for (unsigned int index = 0;index < fib.view_item.size(); ++index)
         slices.push_back(std::make_shared<SliceModel>(handle.get(),index));
@@ -92,8 +93,8 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
 
     // setup GUI
     {
-        // create objects
         {
+            std::cout << "create GUI objects" << std::endl;
             setGeometry(10,10,800,600);
             ui->regionDockWidget->setMinimumWidth(0);
             ui->ROIdockWidget->setMinimumWidth(0);
@@ -109,20 +110,18 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
             color_bar.reset(new color_bar_dialog(this));
 
         }
-        // recall the setting
         {
+            std::cout << "recall previous settings" << std::endl;
             QSettings settings;
             if(!default_geo.size())
                 default_geo = saveGeometry();
             if(!default_state.size())
                 default_state = saveState();
-            ui->rendering_efficiency->setCurrentIndex(settings.value("rendering_quality",1).toInt());
             ui->TractWidgetHolder->show();
             ui->renderingWidgetHolder->show();
             ui->ROIdockWidget->show();
             ui->regionDockWidget->show();
         }
-        // update GUI values
         {
             ui->zoom->setValue((*this)["roi_zoom"].toFloat());
             ui->show_edge->setChecked((*this)["roi_edge"].toBool());
@@ -148,7 +147,7 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
                 ui->enable_auto_track->hide();
             }            
         }
-        // Initialize slices
+        std::cout << "initialize slices" << std::endl;
         {
             ui->SliceModality->clear();
             for (unsigned int index = 0;index < fib.view_item.size(); ++index)
@@ -156,7 +155,7 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
             ui->SliceModality->setCurrentIndex(-1);
             updateSlicesMenu();
         }
-        // Handle template and atlases
+        std::cout << "prepare template and atlases" << std::endl;
         {
             if(handle->is_qsdr)
                 ui->actionOpen_MNI_Region->setVisible(false);
@@ -193,6 +192,7 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
 
     }
 
+    std::cout << "connect signal and slots " << std::endl;
     // opengl
     {
         connect(ui->glSagSlider,SIGNAL(valueChanged(int)),this,SLOT(SliderValueChanged()));
@@ -460,6 +460,7 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
 
     qApp->installEventFilter(this);
     // now begin visualization
+    std::cout << "begin visualization" << std::endl;
     {
         scene.no_show = false;
         on_glAxiView_clicked();
@@ -467,6 +468,7 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
             glWidget->set_view(2);
         ui->SliceModality->setCurrentIndex(0);
     }
+    std::cout << "GUI initialization complete" << std::endl;
 }
 
 void tracking_window::closeEvent(QCloseEvent *event)
