@@ -302,7 +302,7 @@ int ana(void)
         return 1;
     }
     if(po.has("output") && QFileInfo(output.c_str()).isDir())
-        return trk_post(handle,tract_model,output + "/" + QFileInfo(tract_files[0].c_str()).baseName().toStdString(),true);
+        return trk_post(handle,tract_model,output + "/" + QFileInfo(tract_files[0].c_str()).baseName().toStdString(),false);
     if(po.has("output"))
         return trk_post(handle,tract_model,output,true);
     return trk_post(handle,tract_model,tract_files[0],false);
