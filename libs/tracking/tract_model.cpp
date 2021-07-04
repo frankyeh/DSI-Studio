@@ -186,7 +186,7 @@ class TinyTrack{
                                tipl::geometry<3>& geo,tipl::vector<3>& vs,
                                std::string& report,std::string& parameter_id,unsigned int& color)
     {
-        prog_init p("loading ",file_name);
+        prog_init p("loading ",QFileInfo(file_name).fileName().toStdString().c_str());
         gz_mat_read in;
         prepare_idx(file_name,in.in);
         if (!in.load_from_file(file_name))
@@ -315,15 +315,15 @@ struct TrackVis
         version = 2;
         hdr_size = 1000;
     }
-    bool load_from_file(const char* file_name_,
+    bool load_from_file(const char* file_name,
                 std::vector<std::vector<float> >& loaded_tract_data,
                 std::vector<unsigned int>& loaded_tract_cluster,
                 std::string& info,
                 tipl::vector<3> vs)
     {
-        prog_init p("loading ",file_name_);
+        prog_init p("loading ",QFileInfo(file_name).fileName().toStdString().c_str());
         gz_istream in;
-        if (!in.open(file_name_))
+        if (!in.open(file_name))
             return false;
         in.read((char*)this,1000);
         unsigned int track_number = n_count;
