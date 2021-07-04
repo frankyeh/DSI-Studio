@@ -210,8 +210,10 @@ view_image::view_image(QWidget *parent) :
     qApp->installEventFilter(this);
 }
 
+void save_idx(const char* file_name,std::shared_ptr<gz_istream> in);
 view_image::~view_image()
 {
+    save_idx(file_name.toStdString().c_str(),nifti.input_stream);
     qApp->removeEventFilter(this);
     delete ui;
 }
@@ -270,7 +272,7 @@ bool get_compressed_image(tipl::io::dicom& dicom,tipl::image<short,2>& I)
         I[j] = *ptr;
     return true;
 }
-
+void prepare_idx(const char* file_name,std::shared_ptr<gz_istream> in);
 bool view_image::open(QStringList file_names)
 {
     tipl::io::dicom dicom;
@@ -282,10 +284,10 @@ bool view_image::open(QStringList file_names)
     QString info;
     file_name = file_names[0];
     setWindowTitle(QFileInfo(file_name).fileName());
-    prog_init p("loading ",file_name.toStdString().c_str());
+    prog_init p("loading ",QFileInfo(file_name).fileName().toStdString().c_str());
     check_prog(0,1);
 
-    if(file_names.size() > 1 && file_name.contains("bmp"))
+    if(file_names.size() > 1 && QString(file_name).endsWith(".bmp"))
     {
         for(unsigned int i = 0;check_prog(i,file_names.size());++i)
         {
@@ -302,14 +304,19 @@ bool view_image::open(QStringList file_names)
         }
     }
     else
-    if(nifti.load_from_file(file_name.toLocal8Bit().begin()))
+    if(QString(file_name).endsWith(".nii.gz") || QString(file_name).endsWith(".nii"))
     {
+        prepare_idx(file_name.toStdString().c_str(),nifti.input_stream);
+        if(!nifti.load_from_file(file_name.toStdString().c_str()))
+        {
+            QMessageBox::critical(this,"Error","Invalid NIFTI file");
+            return false;
+        }
         if(nifti.dim(4) > 1)
         {
             ui->dwi_volume->setMaximum(nifti.dim(4)-1);
             dwi_volume_buf.resize(nifti.dim(4));
             nifti.input_stream->sample_access_point = true;
-            nifti.input_stream->free_on_read = true;
             ui->dwi_volume->show();
             ui->dwi_label->show();
         }
