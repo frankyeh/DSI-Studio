@@ -74,7 +74,7 @@ class TinyTrack{
         if (!out)
             return false;
 
-        out.write("dimension",&*geo.begin(),1,3);
+        out.write("dimension",geo);
         out.write("voxel_size",vs);
         out.write("report",report);
         if(!parameter_id.empty())
