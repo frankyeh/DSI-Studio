@@ -185,7 +185,7 @@ int reg(void)
             return 1;
         }
         out.write("mapping",&mapping[0][0],3,mapping.size());
-        out.write("dimension",mapping.geometry().begin(),1,3);
+        out.write("dimension",mapping.geometry());
         out.write("voxel_size",to_vs);
         out.write("trans",to_trans.begin(),4,4);
         std::cout << "save warpping to " << filename << std::endl;
