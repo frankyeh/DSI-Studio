@@ -827,13 +827,11 @@ bool fib_data::load_from_mat(void)
 
     if(is_qsdr)
     {
-        if(mat_reader.has("native_mapping"))
-        {
-            mat_reader.read("native_dimension",native_geo);
-            mat_reader.read("native_voxel_size",native_vs);
-        }
+        mat_reader.read("native_dimension",native_geo);
+        mat_reader.read("native_voxel_size",native_vs);
         for(unsigned int i = 0; i < view_item.size();++i)
         {
+            view_item[i].native_geo = native_geo;
             mat_reader.read((view_item[i].name+"_dimension").c_str(),view_item[i].native_geo);
             mat_reader.read((view_item[i].name+"_trans").c_str(),view_item[i].native_trans);
         }
