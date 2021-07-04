@@ -51,7 +51,13 @@ public:
 
 
         template_name = QFileInfo(voxel.primary_template.c_str()).baseName().toStdString();
+
         bool is_hcp_template = template_name.find("HCP") != std::string::npos;
+        bool manual_alignment = voxel.qsdr_trans.data[0] != 0.0;
+        bool export_intermediate = false;
+        bool partial_reconstruction = false;
+        bool dual_modality = false;
+
         if(voxel.primary_template.empty())
             throw std::runtime_error("Invalid external template");
         {
@@ -72,22 +78,21 @@ public:
             if(read2.load_from_file(voxel.secondary_template.c_str()))
             {
                 read2.toLPS(VG2);
-                if(voxel.secondary_template.find("ISO.nii.gz") != std::string::npos)
-                    VF2.swap(voxel.iso_map);
+                VF2.swap(voxel.iso_map);
+                dual_modality = true;
             }
         }
 
 
-        bool export_intermediate = false;
-        bool partial_reconstruction = false;
 
         {
             match_template_resolution(VG,VG2,VGvs,VF,VF2,VFvs);
             float VFratio = VFvs[0]/voxel.vs[0]; // if subject data are downsampled, then VFratio=2, 4, 8, ...etc
-
+            if(VFratio != 1.0f)
+                std::cout << "data have a much higher resolution than template's at " << VGvs[0] << " mm,  registration will be performed at " << VFvs[0] << std::endl;
             tipl::normalize(VG,1.0);
             tipl::normalize(VF,1.0);
-            if(!VF2.empty())
+            if(dual_modality)
                 tipl::normalize(VF2,1.0);
             if(export_intermediate)
             {
@@ -98,7 +103,7 @@ public:
             }
 
 
-            if(voxel.qsdr_trans.data[0] != 0.0) // has manual reg data
+            if(manual_alignment)
                 affine = voxel.qsdr_trans;
             else
             {
@@ -107,14 +112,14 @@ public:
                 {
                     if(!is_hcp_template) // animal recon
                     {
-                        if(VF2.empty() || VG2.empty())
+                        if(!dual_modality)
                             animal_reg(VG,VGvs,VF,VFvs,affine,terminated);
                         else
                             animal_reg(VG2,VGvs,VF2,VFvs,affine,terminated);
                     }
                     else
                     {
-                        if(VF2.empty() || VG2.empty())
+                        if(!dual_modality)
                         {
                             tipl::reg::two_way_linear_mr(VG,VGvs,VF,VFvs,affine,
                                 tipl::reg::affine,tipl::reg::correlation(),terminated,voxel.thread_count);
@@ -135,7 +140,7 @@ public:
 
             tipl::image<float,3> VFF(VG.geometry()),VFF2;
             tipl::resample(VF,VFF,affine,tipl::cubic);
-            if(!VF2.empty())
+            if(dual_modality)
             {
                 VFF2.resize(VG.geometry());
                 tipl::resample(VF2,VFF2,affine,tipl::cubic);
@@ -144,7 +149,7 @@ public:
             if(export_intermediate)
             {
                 VFF.save_to_file<gz_nifti>("Subject_QA_linear_reg.nii.gz");
-                if(!VFF2.empty())
+                if(dual_modality)
                     VFF2.save_to_file<gz_nifti>("Subject_ISO_linear_reg.nii.gz");
             }
 
@@ -157,9 +162,9 @@ public:
                     tipl::reg::cdm_param param;
                     if(VFvs[0] < VGvs[0])
                         param.resolution = 1.0f;
-                    if(!VFF2.empty())
+                    if(dual_modality)
                     {
-                        std::cout << "normalization using dual QA/ISO templates" << std::endl;
+                        std::cout << "using dual QA/ISO templates" << std::endl;
                         tipl::reg::cdm2(VG,VG2,VFF,VFF2,cdm_dis,terminated,param);
                     }
                     else
@@ -169,6 +174,9 @@ public:
 
             tipl::image<float,3> VFFF;
             tipl::compose_displacement(VFF,cdm_dis,VFFF);
+
+            if(export_intermediate)
+                VFFF.save_to_file<gz_nifti>("Subject_QA_nonlinear_reg.nii.gz");
 
             // check if partial reconstruction
             size_t total_voxel_count = 0;
@@ -188,7 +196,9 @@ public:
 
             float r = float(tipl::correlation(VG.begin(),VG.end(),VFFF.begin()));
             voxel.R2 = r*r;
-            std::cout << "R2=" << voxel.R2 << std::endl;
+            std::cout << "R2:" << voxel.R2 << std::endl;
+            if(!manual_alignment && voxel.R2 < 0.3f)
+                throw std::runtime_error("ERROR: Poor R2 found. Please check image orientation or use manual alignment.");
 
             // if subject's data were downsampled, then apply it to affine to get the right mapping matrix
             if(VFratio != 1.0f)
