@@ -270,7 +270,6 @@ int ana(void)
     {
         std::shared_ptr<TractModel> tract(new TractModel(handle));
         std::string file_name = tract_files[i];
-        std::cout << "loading " << file_name << "..." <<std::endl;
         if(!QFileInfo(file_name.c_str()).exists())
         {
             std::cout << file_name << " does not exist. terminating..." << std::endl;
