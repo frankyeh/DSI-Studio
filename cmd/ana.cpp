@@ -34,7 +34,7 @@ bool load_nii(std::shared_ptr<fib_data> handle,
               const std::string& file_name,
               std::vector<std::pair<tipl::geometry<3>,tipl::matrix<4,4,float> > >& transform_lookup,
               std::vector<std::shared_ptr<ROIRegion> >& regions,
-              std::vector<std::string>& names,bool verbose);
+              std::vector<std::string>& names);
 
 
 bool load_nii(std::shared_ptr<fib_data> handle,
@@ -51,7 +51,7 @@ bool load_nii(std::shared_ptr<fib_data> handle,
         if(get_t1t2_nifti(handle,t1t2_geo,vs,convert))
             transform_lookup.push_back(std::make_pair(t1t2_geo,convert));
     }
-    if(!load_nii(handle,file_name,transform_lookup,regions,names,true))
+    if(!load_nii(handle,file_name,transform_lookup,regions,names))
     {
         std::cout << "ERROR: fail to load NIFTI file." << std::endl;
         return false;
