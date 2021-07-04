@@ -620,7 +620,7 @@ void RegToolBox::on_actionSave_Warpping_triggered()
         return;
     }
     out.write("mapping",&mapping[0][0],3,mapping.size());
-    out.write("dimension",mapping.geometry().begin(),1,3);
+    out.write("dimension",mapping.geometry());
     out.write("voxel_size",Itvs);
     out.write("trans",ItR.begin(),4,4);
 }
