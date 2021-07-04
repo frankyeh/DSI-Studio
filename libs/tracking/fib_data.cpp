@@ -1526,9 +1526,19 @@ void fib_data::run_normalization(bool background,bool inv)
         if(out)
         {
             if(inv)
+            {
+                out.write("dimension",inv_mni_position.geometry());
+                out.write("voxel_size",template_vs);
+                out.write("trans",template_trans_to_mni);
                 out.write("mapping",&inv_mni_position[0][0],3,inv_mni_position.size());
+            }
             else
+            {
+                out.write("dimension",mni_position.geometry());
+                out.write("voxel_size",vs);
+                out.write("trans",trans_to_mni);
                 out.write("mapping",&mni_position[0][0],3,mni_position.size());
+            }
             out.write("steps",steps);
         }
         prog = 5;
