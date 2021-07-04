@@ -1361,6 +1361,7 @@ void animal_reg(const tipl::image<float,3>& from,tipl::vector<3> from_vs,
         {PI*-0.5f,0.0f,PI}
     };
     float cost = std::numeric_limits<float>::max();
+    std::cout << "linear registratino for animal data" << std::endl;
     tipl::par_for(5,[&](int i)
     {
          tipl::affine_transform<double> arg;
