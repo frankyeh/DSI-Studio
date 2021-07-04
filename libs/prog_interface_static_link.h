@@ -18,9 +18,9 @@ bool is_running(void);
 template<typename fun_type,typename terminated_class>
 bool run_prog(const char* msg,fun_type fun,terminated_class& terminated)
 {
-    std::cout << msg << std::endl;
     if(!has_gui)
     {
+        std::cout << msg << std::endl;
         fun();
         return true;
     }
