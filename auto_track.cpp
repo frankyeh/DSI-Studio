@@ -280,7 +280,7 @@ std::string run_auto_track(
 
                 if (!fib_loaded)
                 {
-                    prog_init p("loading ",fib_file_name.c_str());
+                    prog_init p("loading ",QFileInfo(fib_file_name.c_str()).fileName().toStdString().c_str());
                     if(!handle->load_from_file(fib_file_name.c_str()))
                        return fib_file_name + ": Not human data. Check image resolution.";
                     fib_loaded = true;
