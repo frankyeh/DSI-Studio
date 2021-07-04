@@ -81,6 +81,9 @@ class TinyTrack{
             out.write("parameter_id",parameter_id);
         if(color)
             out.write("color",&color,1,1);
+        if(!cluster.empty())
+            out.write("cluster",&cluster[0],cluster.size(),1);
+
         std::vector<std::vector<int32_t> > track32(tract_data.size());
         std::vector<size_t> buf_size(track32.size());
         prog_init p("compressing trajectories");
@@ -140,7 +143,7 @@ class TinyTrack{
             buf_size[i] = sizeof(tract_header)+t32.size()-3;
         });
         set_title((std::string("saving to ")+QFileInfo(file_name).fileName().toStdString()).c_str());
-        for(size_t block = 0,cur_track_block = 0;cur_track_block < track32.size();++block)
+        for(size_t block = 0,cur_track_block = 0;check_prog(cur_track_block,track32.size());++block)
         {
             // record write position for each track
             size_t total_size = 0;
@@ -149,7 +152,7 @@ class TinyTrack{
             {
                 pos.push_back(total_size);
                 total_size += buf_size[i];
-                if(total_size > 536870912) // 500 mb
+                if(total_size > 134217728) // 128 mb
                     break;
             }
 
@@ -175,8 +178,6 @@ class TinyTrack{
                 out.write((std::string("track")+std::to_string(block)).c_str(),&out_buf[0],total_size,1);
             cur_track_block += pos.size();
         }
-        if(!cluster.empty())
-            out.write("cluster",&cluster[0],cluster.size(),1);
         return true;
     }
     static bool load_from_file(const char* file_name,
@@ -2503,11 +2504,7 @@ bool TractModel::export_tdi(const char* filename,
         tipl::image<unsigned int,3> tdi(dim);
         for(unsigned int index = 0;index < tract_models.size();++index)
             tract_models[index]->get_density_map(tdi,transformation,end_point);
-        tipl::image<float,3> tdi_log(dim);
-        tipl::par_for(dim.size(),[&](unsigned int index){
-            tdi_log[index] = float(std::log(tdi[index]+1));
-        });
-        return gz_nifti::save_to_file(filename,tdi_log,vs,tipl::matrix<4,4,float>(tract_models[0]->trans_to_mni*transformation));
+        return gz_nifti::save_to_file(filename,tdi,vs,tipl::matrix<4,4,float>(tract_models[0]->trans_to_mni*transformation));
     }
 }
 void TractModel::to_voxel(std::vector<tipl::vector<3,short> >& points,float ratio,int id)
