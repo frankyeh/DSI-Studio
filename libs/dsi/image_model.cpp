@@ -1280,26 +1280,39 @@ bool find_bval_bvec(const char* file_name,QString& bval,QString& bvec);
 bool load_4d_nii(const char* file_name,std::vector<std::shared_ptr<DwiHeader> >& dwi_files,bool need_bvalbvec);
 void prepare_idx(const char* file_name,std::shared_ptr<gz_istream> in)
 {
+    if(!QString(file_name).endsWith(".gz"))
+        return;
     std::string idx_name = file_name;
     idx_name += ".idx";
     {
         in->buffer_all = true;
         if(QFileInfo(idx_name.c_str()).exists() &&
            QFileInfo(idx_name.c_str()).lastModified() > QFileInfo(file_name).lastModified())
+        {
+            std::cout << "loading index file for acceleration:" << idx_name << std::endl;
             in->load_index(idx_name.c_str());
+        }
         else
         {
             if(QFileInfo(file_name).size() > 134217728) // 128mb
+            {
+                std::cout << "prepare index file for future acceleration" << std::endl;
                 in->sample_access_point = true;
+            }
         }
     }
 }
 void save_idx(const char* file_name,std::shared_ptr<gz_istream> in)
 {
+    if(!QString(file_name).endsWith(".gz"))
+        return;
     std::string idx_name = file_name;
     idx_name += ".idx";
     if(in->has_access_points() && in->sample_access_point)
+    {
+        std::cout << "saving index file for future acceleration: " << idx_name << std::endl;
         in->save_index(idx_name.c_str());
+    }
 }
 
 bool ImageModel::load_from_file(const char* dwi_file_name)
