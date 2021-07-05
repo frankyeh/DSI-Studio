@@ -254,7 +254,7 @@ bool RegionTableWidget::command(QString cmd,QString param,QString)
             QFileInfo(param).suffix() == "hdr")
         {
             if(!load_multiple_roi_nii(param))
-                QMessageBox::information(this,"error","Invalid Region File. If it is created from T1W/T2W, please insert the original T1W/T2W in [Slices][Insert]",0);
+                return false;
             emit need_update();
             return true;
         }
@@ -540,34 +540,30 @@ void load_jason_label(const char* filename,std::map<int,std::string>& label_map)
 }
 
 void get_roi_label(QString file_name,std::map<int,std::string>& label_map,
-                          std::map<int,tipl::rgb>& label_color,bool is_free_surfer,bool verbose)
+                          std::map<int,tipl::rgb>& label_color,bool is_free_surfer)
 {
     label_map.clear();
     label_color.clear();
     QString base_name = QFileInfo(file_name).baseName();
-    if(verbose)
-        std::cout << "looking for region label file" << std::endl;
+    std::cout << "looking for region label file" << std::endl;
 
     QString label_file = QFileInfo(file_name).absolutePath()+"/"+base_name+".txt";
     if(QFileInfo(label_file).exists())
     {
         load_nii_label(label_file.toLocal8Bit().begin(),label_map);
-        if(verbose)
-            std::cout << "label file loaded:" << label_file.toStdString() << std::endl;
+        std::cout << "label file loaded:" << label_file.toStdString() << std::endl;
         return;
     }
     label_file = QFileInfo(file_name).absolutePath()+"/"+base_name+".json";
     if(QFileInfo(label_file).exists())
     {
         load_jason_label(label_file.toLocal8Bit().begin(),label_map);
-        if(verbose)
-            std::cout << "jason file loaded:" << label_file.toStdString() << std::endl;
+        std::cout << "jason file loaded:" << label_file.toStdString() << std::endl;
         return;
     }
     if(base_name.contains("aparc+aseg") || is_free_surfer) // FreeSurfer
     {
-        if(verbose)
-            std::cout << "using freesurfer labels." << std::endl;
+        std::cout << "using freesurfer labels." << std::endl;
         QFile data(":/data/FreeSurferColorLUT.txt");
         if (data.open(QIODevice::ReadOnly | QIODevice::Text))
         {
@@ -587,20 +583,22 @@ void get_roi_label(QString file_name,std::map<int,std::string>& label_map,
             return;
         }
     }
-
-    if(verbose)
-        std::cout << "no label file found. Use default ROI numbering." << std::endl;
+    std::cout << "no label file found. Use default ROI numbering." << std::endl;
 }
 bool is_label_image(const tipl::image<float,3>& I);
 bool load_nii(std::shared_ptr<fib_data> handle,
               const std::string& file_name,
               std::vector<std::pair<tipl::geometry<3>,tipl::matrix<4,4,float> > >& transform_lookup,
               std::vector<std::shared_ptr<ROIRegion> >& regions,
-              std::vector<std::string>& names)
+              std::vector<std::string>& names,
+              std::string& error_msg)
 {
     gz_nifti header;
     if (!header.load_from_file(file_name.c_str()))
+    {
+        error_msg = "cannot load the file. Please check access permision.";
         return false;
+    }
 
     tipl::image<unsigned int, 3> from;
     {
@@ -649,7 +647,7 @@ bool load_nii(std::shared_ptr<fib_data> handle,
 
     std::string des(header.get_descrip());
     if(multiple_roi)
-        get_roi_label(file_name.c_str(),label_map,label_color,des.find("FreeSurfer") == 0,true);
+        get_roi_label(file_name.c_str(),label_map,label_color,des.find("FreeSurfer") == 0);
 
     tipl::matrix<4,4,float> convert;
     bool has_transform = false;
@@ -667,8 +665,7 @@ bool load_nii(std::shared_ptr<fib_data> handle,
                 {
                     if(handle->get_native_position().empty())
                     {
-                        std::cout << "ERROR: NIFTI is from the native space, but older versions of FIB files do not have a mapping matrix. \
-                                      Please reconstruct FIB file again." << std::endl;
+                        error_msg = "NIFTI is from the native space, and current FIB file is obsolete. Please reconstruct FIB file again to enable warpping.";
                         return false;
                     }
                     auto T = handle->view_item[index].native_trans;
@@ -714,8 +711,11 @@ bool load_nii(std::shared_ptr<fib_data> handle,
         }
         else
         {
-            std::cout << "ERROR: The ROI file has a different dimension from DWI, and there is no registration strategy." << std::endl;
-            std::cout << "ERROR: use --t1t2 to load the original T1W/T2W for guiding the registration." << std::endl;
+            error_msg = "Cannot align ROI file with DWI.";
+            if(has_gui)
+                error_msg += "Please insert its reference T1W/T2W using [Slices][Insert T1WT2W] to guide the registration.";
+            else
+                error_msg += "use --t1t2 to load the reference T1W/T2W to guide the registration.";
             return false;
         }
     }
@@ -791,7 +791,10 @@ bool load_nii(std::shared_ptr<fib_data> handle,
             }
         }
         else
+        {
+            error_msg = "unknown error";
             return false;
+        }
     }
 
     for(uint32_t i = 0;i < region_points.size();++i)
@@ -806,7 +809,12 @@ bool load_nii(std::shared_ptr<fib_data> handle,
                 regions.back()->add_points(region_points[i],false,1.0f);
         }
     std::cout << "a total of " << regions.size() << " regions are loaded." << std::endl;
-    return !regions.empty();
+    if(regions.empty())
+    {
+        error_msg = "empty region file";
+        return false;
+    }
+    return true;
 }
 
 bool RegionTableWidget::load_multiple_roi_nii(QString file_name)
@@ -826,7 +834,8 @@ bool RegionTableWidget::load_multiple_roi_nii(QString file_name)
                  file_name.toStdString(),
                  transform_lookup,
                  loaded_regions,
-                 names))
+                 names,
+                 error_msg))
         return false;
     begin_prog("loading ROIs");
     begin_update();
@@ -895,7 +904,11 @@ void RegionTableWidget::load_region(void)
         return;
 
     for (int index = 0;index < filenames.size();++index)
-        command("load_region",filenames[index]);
+        if(!command("load_region",filenames[index]))
+        {
+            QMessageBox::critical(this,"ERROR",error_msg.c_str());
+            break;
+        }
     emit need_update();
 }
 

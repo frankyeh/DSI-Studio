@@ -256,6 +256,7 @@ bool load_nii(std::shared_ptr<fib_data> handle,
               const std::string& file_name,
               std::vector<std::shared_ptr<ROIRegion> >& regions,
               std::vector<std::string>& names);
+
 void get_connectivity_matrix(std::shared_ptr<fib_data> handle,
                              std::string output_name,
                              std::shared_ptr<TractModel> tract_model)
@@ -319,10 +320,7 @@ void get_connectivity_matrix(std::shared_ptr<fib_data> handle,
                 std::vector<std::shared_ptr<ROIRegion> > regions;
                 std::vector<std::string> names;
                 if(!load_nii(handle,roi_file_name,regions,names))
-                {
-                    std::cout << "ERROR: cannot read regions from " << roi_file_name << std::endl;
                     return;
-                }
                 data.region_name = names;
                 data.set_regions(handle->dim,regions);
             }
