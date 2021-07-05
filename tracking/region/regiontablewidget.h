@@ -73,6 +73,7 @@ public:
 
     QColor currentRowColor(void);
     void add_region_from_atlas(std::shared_ptr<atlas> at,unsigned int roi_is);
+    void add_all_regions_from_atlas(std::shared_ptr<atlas> at);
     void add_row(int row,QString name,unsigned char type,unsigned int color = 0x00FFFFFF);
     void add_region(QString name,unsigned char type,unsigned int color = 0x00FFFFFF);
     void begin_update(void);

@@ -1025,8 +1025,6 @@ void fib_data::set_template_id(size_t new_id)
         template_I.clear();
         mni_position.clear();
         atlas_list.clear();
-        tractography_atlas_file_name.clear();
-        tractography_name_list.clear();
         track_atlas.reset();
         // populate atlas list
         for(size_t i = 0;i < template_atlas_list[template_id].size();++i)
@@ -1036,8 +1034,9 @@ void fib_data::set_template_id(size_t new_id)
             atlas_list.back()->filename = template_atlas_list[template_id][i];
         }
         // populate tract names
+        tractography_atlas_file_name = track_atlas_file_list[template_id];
         tractography_name_list.clear();
-        if(QFileInfo(track_atlas_file_list[template_id].c_str()).exists())
+        if(QFileInfo(tractography_atlas_file_name.c_str()).exists())
         {
             std::ifstream in(track_atlas_file_list[template_id]+".txt");
             if(in)
@@ -1655,13 +1654,12 @@ void fib_data::subject2mni(tipl::pixel_index<3>& index,tipl::vector<3>& pos)
     return;
 }
 
-void fib_data::get_atlas_roi(std::shared_ptr<atlas> at,unsigned int roi_index,std::vector<tipl::vector<3,short> >& points,float& r)
+void fib_data::get_atlas_roi(std::shared_ptr<atlas> at,unsigned int roi_index,std::vector<tipl::vector<3,short> >& points)
 {
     if(get_mni_mapping().empty() || !at->load_from_file())
         return;
     unsigned int thread_count = std::thread::hardware_concurrency();
     std::vector<std::vector<tipl::vector<3,short> > > buf(thread_count);
-    r = 1.0;
     mni_position.for_each_mt2([&](const tipl::vector<3>& mni,const tipl::pixel_index<3>& index,int id)
     {
         if (at->is_labeled_as(mni, roi_index))
@@ -1671,8 +1669,45 @@ void fib_data::get_atlas_roi(std::shared_ptr<atlas> at,unsigned int roi_index,st
     for(int i = 0;i < buf.size();++i)
         points.insert(points.end(),buf[i].begin(),buf[i].end());
 
-
 }
+
+void fib_data::get_atlas_all_roi(std::shared_ptr<atlas> at,std::vector<std::vector<tipl::vector<3,short> > >& points)
+{
+    if(get_mni_mapping().empty() || !at->load_from_file())
+        return;
+    points.clear();
+    points.resize(at->get_list().size());
+    std::vector<std::mutex> push_back_mutex(points.size());
+    if(at->is_multiple_roi)
+    {
+        mni_position.for_each_mt([&](const tipl::vector<3>& mni,const tipl::pixel_index<3>& index)
+        {
+            std::vector<uint16_t> region_indicies;
+            at->region_indices_at(mni,region_indicies);
+            if(region_indicies.empty())
+                return;
+            tipl::vector<3,short> point(index.begin());
+            for(unsigned int i = 0;i < region_indicies.size();++i)
+            {
+                auto region_index = region_indicies[i];
+                std::lock_guard<std::mutex> lock(push_back_mutex[region_index]);
+                points[region_index].push_back(point);
+            }
+        });
+    }
+    else
+    {
+        mni_position.for_each_mt([&](const tipl::vector<3>& mni,const tipl::pixel_index<3>& index)
+        {
+            int region_index = at->region_index_at(mni);
+            if(region_index < 0 || region_index >= int(points.size()))
+                return;
+            std::lock_guard<std::mutex> lock(push_back_mutex[uint32_t(region_index)]);
+            points[uint32_t(region_index)].push_back(tipl::vector<3,short>(index.begin()));
+        });
+    }
+}
+
 const tipl::image<tipl::vector<3,float>,3 >& fib_data::get_mni_mapping(void)
 {
     if(!mni_position.empty())

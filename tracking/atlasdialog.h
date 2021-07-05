@@ -29,6 +29,8 @@ private slots:
 
     void on_search_atlas_textChanged(const QString &arg1);
 
+    void on_add_all_regions_clicked();
+
 private:
     Ui::AtlasDialog *ui;
 };

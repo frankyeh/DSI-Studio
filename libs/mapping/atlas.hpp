@@ -6,7 +6,8 @@
 class atlas{
 private:
     tipl::image<uint32_t,3> I;
-    std::vector<uint32_t> label_num;
+    std::vector<uint32_t> region_value;
+    std::vector<uint16_t> value2index;
     std::vector<std::string> labels;
     tipl::matrix<4,4,float> T;
     void load_label(void);
@@ -14,12 +15,12 @@ private:
 private:// for talairach only
     std::vector<std::vector<size_t> > index2label;
     std::vector<std::vector<size_t> > label2index;
-private:// for track atlas only
-    tipl::image<char,4> track;
-    std::vector<uint32_t> track_base_pos;
-    bool is_track;
+private:// for multiple roi atlas only
+    tipl::image<char,4> multiple_I;
+    std::vector<uint32_t> multiple_I_pos;
 public:
     std::string name,filename,error_msg;
+    bool is_multiple_roi;
 public:
     bool load_from_file(void);
     const std::vector<std::string>& get_list(void)
@@ -40,11 +41,11 @@ public:
             if(labels.empty())
                 load_from_file();
         }
-        return label_num;
+        return region_value;
     }
-    //std::string get_label_name_at(const tipl::vector<3,float>& mni_space);
-    bool is_labeled_as(const tipl::vector<3,float>& mni_space,unsigned int label);
-    int get_track_label(const std::vector<tipl::vector<3> >& points);
+    bool is_labeled_as(const tipl::vector<3,float>& mni_space,unsigned int region_index);
+    int region_index_at(const tipl::vector<3,float>& mni_space);
+    void region_indices_at(const tipl::vector<3,float>& mni_space,std::vector<uint16_t>& indices);
 };
 
 #endif // ATLAS_HPP

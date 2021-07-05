@@ -12,6 +12,9 @@ AtlasDialog::AtlasDialog(QWidget *parent,std::shared_ptr<fib_data> handle_) :
     ui(new Ui::AtlasDialog)
 {
     ui->setupUi(this);
+    auto* w = dynamic_cast<tracking_window*>(parent);
+    if(!w)
+        ui->add_all_regions->setVisible(false);
     ui->region_list->setModel(new QStringListModel);
     ui->region_list->setSelectionModel(new QItemSelectionModel(ui->region_list->model()));
     for(int index = 0; index < handle->atlas_list.size(); ++index)
@@ -108,4 +111,26 @@ void AtlasDialog::on_search_atlas_textChanged(const QString &)
                 return;
             }
         }
+}
+
+void AtlasDialog::on_add_all_regions_clicked()
+{
+    atlas_index = uint32_t(ui->atlasListBox->currentIndex());
+    atlas_name = ui->atlasListBox->currentText().toStdString();
+    if(!handle->atlas_list[atlas_index]->load_from_file())
+    {
+        QMessageBox::information(this,"Error",handle->atlas_list[atlas_index]->error_msg.c_str());
+        return;
+    }
+    auto* w = dynamic_cast<tracking_window*>(parent());
+    if(!w)
+        return;
+    begin_prog("adding regions");
+    w->regionWidget->begin_update();
+    w->regionWidget->add_all_regions_from_atlas(handle->atlas_list[atlas_index]);
+    w->regionWidget->end_update();
+    w->glWidget->updateGL();
+    w->slice_need_update = true;
+    w->raise();
+
 }

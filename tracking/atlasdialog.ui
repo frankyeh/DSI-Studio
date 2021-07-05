@@ -67,9 +67,16 @@
       </spacer>
      </item>
      <item>
+      <widget class="QPushButton" name="add_all_regions">
+       <property name="text">
+        <string>Add Alll</string>
+       </property>
+      </widget>
+     </item>
+     <item>
       <widget class="QPushButton" name="add_atlas">
        <property name="text">
-        <string>Add</string>
+        <string>Add Selected</string>
        </property>
       </widget>
      </item>

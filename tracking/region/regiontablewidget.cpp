@@ -137,14 +137,26 @@ QColor RegionTableWidget::currentRowColor(void)
 }
 void RegionTableWidget::add_region_from_atlas(std::shared_ptr<atlas> at,unsigned int label)
 {
-    float r = 1.0f;
     std::vector<tipl::vector<3,short> > points;
-    cur_tracking_window.handle->get_atlas_roi(at,label,points,r);
+    cur_tracking_window.handle->get_atlas_roi(at,label,points);
     if(points.empty())
         return;
     add_region(at->get_list()[label].c_str(),roi_id);
-    regions.back()->resolution_ratio = r;
-    regions.back()->add_points(points,false,r);
+    regions.back()->resolution_ratio = 1.0f;
+    regions.back()->add_points(points,false,1.0f);
+}
+void RegionTableWidget::add_all_regions_from_atlas(std::shared_ptr<atlas> at)
+{
+    std::vector<std::vector<tipl::vector<3,short> > > points;
+    cur_tracking_window.handle->get_atlas_all_roi(at,points);
+    for(unsigned int i = 0;i < points.size();++i)
+    {
+        if(points.empty())
+            continue;
+        add_region(at->get_list()[i].c_str(),roi_id);
+        regions.back()->resolution_ratio = 1.0f;
+        regions.back()->add_points(points[i],false,1.0f);
+    }
 }
 void RegionTableWidget::begin_update(void)
 {

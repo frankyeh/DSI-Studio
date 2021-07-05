@@ -31,9 +31,12 @@ void atlas::load_label(void)
         std::string txt;
         uint32_t num = 0;
         std::istringstream(line) >> num >> txt;
-        if(txt.empty())
+        if(txt.empty() || num > std::numeric_limits<uint16_t>::max())
             continue;
-        label_num.push_back(num);
+        if(num >= value2index.size())
+            value2index.resize(num+1);
+        region_value.push_back(num);
+        value2index[num] = uint16_t(region_value.size());
         labels.push_back(txt);
     }
 }
@@ -50,13 +53,13 @@ bool atlas::load_from_file(void)
     }
     if(name.empty())
         name = QFileInfo(filename.c_str()).baseName().toStdString();
-    is_track = (nii.dim(4) > 1); // 4d nifti as track files
-    if(is_track)
+    is_multiple_roi = (nii.dim(4) > 1); // 4d nifti as multiple roi
+    if(is_multiple_roi)
     {
-        nii.toLPS(track);
-        I.resize(tipl::geometry<3>(track.width(),track.height(),track.depth()));
-        for(unsigned int i = 0;i < track.size();i += I.size())
-            track_base_pos.push_back(i);
+        nii.toLPS(multiple_I);
+        I.resize(tipl::geometry<3>(multiple_I.width(),multiple_I.height(),multiple_I.depth()));
+        for(unsigned int i = 0;i < multiple_I.size();i += I.size())
+            multiple_I_pos.push_back(i);
     }
     else
         nii.toLPS(I);
@@ -65,7 +68,7 @@ bool atlas::load_from_file(void)
     if(labels.empty())
         load_label();
 
-    if(label2index.empty() && !is_track) // not talairach not tracks
+    if(label2index.empty() && !is_multiple_roi) // not talairach not tracks
     {
         std::vector<unsigned char> hist(1+*std::max_element(I.begin(),I.end()));
         for(size_t index = 0;index < I.size();++index)
@@ -76,7 +79,7 @@ bool atlas::load_from_file(void)
                 if(hist[index])
                 {
                     std::ostringstream out_name;
-                    label_num.push_back(index);
+                    region_value.push_back(index);
                     out_name << "region " << index;
                     labels.push_back(out_name.str());
                 }
@@ -85,32 +88,14 @@ bool atlas::load_from_file(void)
         {
             //bool modified_atlas = false;
             for(size_t i = 0;i < labels.size();)
-                if(label_num[i] >= hist.size() || !hist[label_num[i]])
+                if(region_value[i] >= hist.size() || !hist[region_value[i]])
                 {
                     labels.erase(labels.begin()+long(i));
-                    label_num.erase(label_num.begin()+long(i));
+                    region_value.erase(region_value.begin()+long(i));
                     //modified_atlas = true;
                 }
             else
                 ++i;
-            // used to removed empty label
-            /*
-            if(modified_atlas)
-            {
-                std::string file_name_str(filename);
-                std::string text_file_name;
-                if (file_name_str.length() > 3 &&
-                        file_name_str[file_name_str.length()-3] == '.' &&
-                        file_name_str[file_name_str.length()-2] == 'g' &&
-                        file_name_str[file_name_str.length()-1] == 'z')
-                    text_file_name = std::string(file_name_str.begin(),file_name_str.end()-6);
-                else
-                    text_file_name = std::string(file_name_str.begin(),file_name_str.end()-3);
-                text_file_name += "txt";
-                std::ofstream out(text_file_name.c_str());
-                for(int i = 0;i < labels.size();++i)
-                    out << label_num[i] << " " << labels[i] << std::endl;
-            }*/
         }
     }
     return true;
@@ -125,49 +110,55 @@ size_t atlas::get_index(tipl::vector<3,float> p)
     return size_t((int(p[2])*I.height()+int(p[1]))*I.width()+int(p[0]));
 }
 
-bool atlas::is_labeled_as(const tipl::vector<3,float>& mni_space,unsigned int label_name_index)
+bool atlas::is_labeled_as(const tipl::vector<3,float>& mni_space,unsigned int region_index)
 {
     if(I.empty())
         load_from_file();
-    if(label_name_index >= label_num.size())
+    if(region_index >= region_value.size())
         return false;
     size_t offset = get_index(mni_space);
     if(!offset || offset >= I.size())
         return false;
-    if(is_track)
+    if(is_multiple_roi)
     {
-        if(label_name_index >= track_base_pos.size())
+        if(region_index >= multiple_I_pos.size())
             return false;
-        size_t pos = track_base_pos[label_name_index] + offset;
-        if(pos >= track.size())
+        size_t pos = multiple_I_pos[region_index] + offset;
+        if(pos >= multiple_I.size())
             return false;
-        return track[pos];
+        return multiple_I[pos];
     }
-    size_t l = I[offset];
-    if(index2label.empty()) // not talairach
-        return l == label_num[label_name_index];
-
-    // The following is for talairach
-    if(l >= index2label.size())
-        return false;
-    return std::find(index2label[l].begin(),index2label[l].end(),label_name_index) != index2label[l].end();
+    return I[offset] == region_value[region_index];
 }
-int atlas::get_track_label(const std::vector<tipl::vector<3> >& points)
+int atlas::region_index_at(const tipl::vector<3,float>& mni_space)
 {
+    if(is_multiple_roi)
+        return -1;
     if(I.empty())
         load_from_file();
-    if(!is_track)
+    size_t offset = get_index(mni_space);
+    if(!offset || offset >= I.size())
         return -1;
-    std::vector<int> vote(track_base_pos.size());
-    for(size_t i = 0;i < points.size();++i)
-    {
-        size_t offset = get_index(points[i]);
-        if(!offset)
-            continue;
-        for(size_t j = 0;j < track_base_pos.size();++j)
-            if(track[track_base_pos[j] + offset])
-                ++vote[j];
-    }
-    return int(std::max_element(vote.begin(),vote.end())-vote.begin());
+    auto value = I[offset];
+    if(value >= value2index.size())
+        return -1;
+    return int(value2index[value])-1;
 }
+void atlas::region_indices_at(const tipl::vector<3,float>& mni_space,std::vector<uint16_t>& indices)
+{
+    if(!is_multiple_roi)
+        return;
+    if(I.empty())
+        load_from_file();
+    size_t offset = get_index(mni_space);
+    if(!offset || offset >= I.size())
+        return;
+    for(uint16_t region_index = 0;region_index < multiple_I_pos.size();++region_index)
+    {
+        size_t pos = multiple_I_pos[region_index] + offset;
+        if(pos < multiple_I.size() && multiple_I[pos])
+            indices.push_back(region_index);
+    }
+}
+
 
