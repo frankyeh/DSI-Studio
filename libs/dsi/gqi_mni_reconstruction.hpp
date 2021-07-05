@@ -17,7 +17,6 @@ void match_template_resolution(tipl::image<float,3>& VG,
 class DWINormalization  : public BaseProcess
 {
 protected:
-    std::string template_name;
     tipl::geometry<3> src_geo;
 protected:
     tipl::image<tipl::vector<3>,3> cdm_dis,mapping;
@@ -50,9 +49,7 @@ public:
         tipl::vector<3> VGvs, VFvs(voxel.vs);
 
 
-        template_name = QFileInfo(voxel.primary_template.c_str()).baseName().toStdString();
-
-        bool is_hcp_template = template_name.find("HCP") != std::string::npos;
+        bool is_hcp_template = QFileInfo(voxel.primary_template.c_str()).baseName().contains("HCP");
         bool manual_alignment = voxel.qsdr_trans.data[0] != 0.0;
         bool export_intermediate = false;
         bool partial_reconstruction = false;
@@ -393,7 +390,6 @@ public:
         }
         mat_writer.write("trans",voxel.trans_to_mni.begin(),4,4);
         mat_writer.write("R2",&voxel.R2,1,1);
-        mat_writer.write("template_name",template_name);
     }
 
 };
