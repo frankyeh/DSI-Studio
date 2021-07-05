@@ -128,6 +128,10 @@ tipl::const_pointer_image<float,3> item::get_image(void)
 {
     if(!image_ready)
     {
+        static std::mutex mat_load;
+        std::lock_guard<std::mutex> lock(mat_load);
+        if(image_ready)
+            return image_data;
         // delay read routine
         unsigned int row,col;
         const float* buf = nullptr;
@@ -135,11 +139,13 @@ tipl::const_pointer_image<float,3> item::get_image(void)
         has_gui = false;
         if (!mat_reader->read(image_index,row,col,buf))
         {
+            std::cout << "ERROR: reading " << name << std::endl;
             dummy.resize(image_data.geometry());
             image_data = tipl::make_image(&*dummy.begin(),dummy.geometry());
         }
         else
         {
+            std::cout << name << " loaded" << std::endl;
             mat_reader->in->flush();
             image_data = tipl::make_image(buf,image_data.geometry());
         }
