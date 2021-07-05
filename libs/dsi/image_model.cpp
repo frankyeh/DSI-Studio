@@ -1289,14 +1289,14 @@ void prepare_idx(const char* file_name,std::shared_ptr<gz_istream> in)
         if(QFileInfo(idx_name.c_str()).exists() &&
            QFileInfo(idx_name.c_str()).lastModified() > QFileInfo(file_name).lastModified())
         {
-            std::cout << "loading index file for acceleration:" << idx_name << std::endl;
+            std::cout << "using index file for accelerated loading:" << idx_name << std::endl;
             in->load_index(idx_name.c_str());
         }
         else
         {
             if(QFileInfo(file_name).size() > 134217728) // 128mb
             {
-                std::cout << "prepare index file for future acceleration" << std::endl;
+                std::cout << "prepare index file for future accelerated loading" << std::endl;
                 in->sample_access_point = true;
             }
         }
@@ -1310,7 +1310,7 @@ void save_idx(const char* file_name,std::shared_ptr<gz_istream> in)
     idx_name += ".idx";
     if(in->has_access_points() && in->sample_access_point)
     {
-        std::cout << "saving index file for future acceleration: " << idx_name << std::endl;
+        std::cout << "saving index file for accelerated loading: " << idx_name << std::endl;
         in->save_index(idx_name.c_str());
     }
 }
