@@ -60,7 +60,7 @@ private:
         });
         return checked_regions;
     }
-
+    void save_region_label_file(std::vector<std::shared_ptr<ROIRegion> > checked_regions,QString filename);
 signals:
     void need_update(void);
 public:
@@ -110,6 +110,7 @@ public slots:
     void copy_region(void);
     void save_region(void);
     void save_all_regions(void);
+    void save_all_regions_to_4dnifti(void);
     void save_all_regions_to_dir(void);
     void save_region_info(void);
     void load_region(void);

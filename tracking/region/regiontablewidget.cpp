@@ -1072,6 +1072,50 @@ void RegionTableWidget::save_all_regions_to_dir(void)
         return;
     command("save_all_regions_to_dir",dir);
 }
+
+void RegionTableWidget::save_region_label_file(std::vector<std::shared_ptr<ROIRegion> > checked_regions,QString filename)
+{
+    QString base_name = QFileInfo(filename).completeBaseName();
+    if(QFileInfo(base_name).suffix().toLower() == "nii")
+        base_name = QFileInfo(base_name).completeBaseName();
+    QString label_file = QFileInfo(filename).absolutePath()+"/"+base_name+".txt";
+    std::ofstream out(label_file.toStdString().c_str());
+    for (unsigned int i = 0; i < checked_regions.size(); ++i)
+        out << i+1 << " " << item(int(i),0)->text().toStdString() << std::endl;
+}
+
+void RegionTableWidget::save_all_regions_to_4dnifti(void)
+{
+    if (regions.empty())
+        return;
+    QString filename = QFileDialog::getSaveFileName(
+                           this,"Save region",item(currentRow(),0)->text() + output_format(),
+                           "Region file(*nii.gz *.nii);;All file types (*)" );
+    if (filename.isEmpty())
+        return;
+
+    auto checked_regions = get_checked_regions();
+    save_region_label_file(checked_regions,filename);
+
+    tipl::geometry<3> geo = cur_tracking_window.handle->dim;
+    tipl::image<unsigned char,4> multiple_I(tipl::geometry<4>(geo[0],geo[1],geo[2],uint32_t(checked_regions.size())));
+    tipl::par_for (checked_regions.size(),[&](unsigned int region_index)
+    {
+        size_t offset = region_index*geo.size();
+        for (unsigned int j = 0; j < checked_regions[region_index]->size(); ++j)
+        {
+            tipl::vector<3,short> p = checked_regions[region_index]->get_region_voxel(j);
+            if (geo.is_valid(p))
+                multiple_I[offset+tipl::pixel_index<3>(p[0],p[1],p[2],geo).index()] = 1;
+        }
+    });
+
+    if(gz_nifti::save_to_file(filename.toStdString().c_str(),multiple_I,
+                              cur_tracking_window.current_slice->vs,cur_tracking_window.handle->trans_to_mni))
+        QMessageBox::information(this,"DSI Studio","saved");
+    else
+        QMessageBox::critical(this,"ERROR","cannot write to file");
+}
 void RegionTableWidget::save_all_regions(void)
 {
     if (regions.empty())
@@ -1081,38 +1125,38 @@ void RegionTableWidget::save_all_regions(void)
                            "Region file(*nii.gz *.nii *.mat);;Text file (*.txt);;All file types (*)" );
     if (filename.isEmpty())
         return;
-    QString base_name = QFileInfo(filename).completeBaseName();
-    if(QFileInfo(base_name).suffix().toLower() == "nii")
-        base_name = QFileInfo(base_name).completeBaseName();
-    QString label_file = QFileInfo(filename).absolutePath()+"/"+base_name+".txt";
-    std::ofstream out(label_file.toLocal8Bit().begin());
+
+    auto checked_regions = get_checked_regions();
+    save_region_label_file(checked_regions,filename);
+
     tipl::geometry<3> geo = cur_tracking_window.handle->dim;
     tipl::image<unsigned short, 3> mask(geo);
-    for (unsigned int i = 0; i < regions.size(); ++i)
-        if (item(int(i),0)->checkState() == Qt::Checked)
+    for (unsigned int i = 0; i < checked_regions.size(); ++i)
+        for (unsigned int j = 0; j < checked_regions[i]->size(); ++j)
         {
-            for (unsigned int j = 0; j < regions[i]->size(); ++j)
-            {
-                tipl::vector<3,short> p = regions[i]->get_region_voxel(j);
-                if (geo.is_valid(p))
-                    mask[tipl::pixel_index<3>(p[0],p[1],p[2], geo).index()] = uint16_t(i+1);
-
-            }
-            out << i+1 << " " << item(int(i),0)->text().toStdString() << std::endl;
+            tipl::vector<3,short> p = checked_regions[i]->get_region_voxel(j);
+            if (geo.is_valid(p))
+                mask[tipl::pixel_index<3>(p[0],p[1],p[2], geo).index()] = uint16_t(i+1);
         }
-    if(regions.size() <= 255)
+
+    bool result;
+    if(checked_regions.size() <= 255)
     {
         tipl::image<uint8_t, 3> i8mask(mask);
-        gz_nifti::save_to_file(filename.toStdString().c_str(),i8mask,
+        result = gz_nifti::save_to_file(filename.toStdString().c_str(),i8mask,
                            cur_tracking_window.current_slice->vs,
                            cur_tracking_window.handle->trans_to_mni);
     }
     else
     {
-        gz_nifti::save_to_file(filename.toStdString().c_str(),mask,
+        result = gz_nifti::save_to_file(filename.toStdString().c_str(),mask,
                            cur_tracking_window.current_slice->vs,
                            cur_tracking_window.handle->trans_to_mni);
     }
+    if(result)
+        QMessageBox::information(this,"DSI Studio","saved");
+    else
+        QMessageBox::critical(this,"ERROR","cannot write to file");
 }
 
 void RegionTableWidget::save_region_info(void)

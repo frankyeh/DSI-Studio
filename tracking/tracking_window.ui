@@ -1255,6 +1255,7 @@
     <addaction name="separator"/>
     <addaction name="actionSave_Region_Color"/>
     <addaction name="actionSave_Voxel_Data_As"/>
+    <addaction name="actionSave_All_Regions_as_4D_NIFTI"/>
     <addaction name="separator"/>
     <addaction name="actionWhole_brain_seeding"/>
     <addaction name="separator"/>
@@ -4027,6 +4028,15 @@ Tracking</string>
   <action name="actionDilation_by_voxel">
    <property name="text">
     <string>Dilation by voxel...</string>
+   </property>
+  </action>
+  <action name="actionSave_All_Regions_as_4D_NIFTI">
+   <property name="icon">
+    <iconset resource="../icons.qrc">
+     <normaloff>:/icons/icons/save_all.xpm</normaloff>:/icons/icons/save_all.xpm</iconset>
+   </property>
+   <property name="text">
+    <string>Save All Regions as 4D NIFTI...</string>
    </property>
   </action>
  </widget>
