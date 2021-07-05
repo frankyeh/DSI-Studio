@@ -464,7 +464,20 @@ void calculate_region_stat(const Image& I, const Points& p,float& mean,float& ma
         sum /= double(count);
     mean = float(sum);
 }
+float ROIRegion::get_volume(void) const
+{
+    return region.size()*vs[0]*vs[1]*vs[2]/resolution_ratio/resolution_ratio/resolution_ratio;
+}
 
+tipl::vector<3> ROIRegion::get_pos(void) const
+{
+    tipl::vector<3,float> cm;
+    for (unsigned int index = 0; index < region.size(); ++index)
+        cm += region[index];
+    cm /= region.size();
+    cm /= resolution_ratio;
+    return cm;
+}
 void ROIRegion::get_quantitative_data(std::shared_ptr<fib_data> handle,std::vector<std::string>& titles,std::vector<float>& data)
 {
     titles.clear();
@@ -472,14 +485,13 @@ void ROIRegion::get_quantitative_data(std::shared_ptr<fib_data> handle,std::vect
     data.push_back(region.size());
 
     titles.push_back("volume (mm^3)");
-    data.push_back(region.size()*vs[0]*vs[1]*vs[2]/resolution_ratio/resolution_ratio/resolution_ratio); //volume (mm^3)
+    data.push_back(get_volume()); //volume (mm^3)
     if(region.empty())
         return;
-    tipl::vector<3,float> cm;
+    tipl::vector<3,float> cm = get_pos();
     tipl::vector<3,float> max(region[0]),min(region[0]);
     for (unsigned int index = 0; index < region.size(); ++index)
     {
-        cm += region[index];
         max[0] = std::max<float>(max[0],region[index][0]);
         max[1] = std::max<float>(max[1],region[index][1]);
         max[2] = std::max<float>(max[2],region[index][2]);
@@ -487,9 +499,6 @@ void ROIRegion::get_quantitative_data(std::shared_ptr<fib_data> handle,std::vect
         min[1] = std::min<float>(min[1],region[index][1]);
         min[2] = std::min<float>(min[2],region[index][2]);
     }
-    cm /= region.size();
-
-    cm /= resolution_ratio;
     max /= resolution_ratio;
     min /= resolution_ratio;
 

@@ -287,6 +287,9 @@ public:
                     return true;
             return false;
         }
+    public:
+        float get_volume(void) const;
+        tipl::vector<3> get_pos(void) const;
         void get_quantitative_data(std::shared_ptr<fib_data> handle,std::vector<std::string>& titles,std::vector<float>& data);
 };
 

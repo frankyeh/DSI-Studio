@@ -1498,31 +1498,26 @@ void RegionTableWidget::do_action(QString action)
             if(action == "sort_name")
             {
                 arg = tipl::arg_sort(regions.size(),[&]
-                (size_t lhs,size_t rhs)
+                (int lhs,int rhs)
                 {
                     return negate ^ (item(lhs,0)->text() < item(rhs,0)->text());
                 });
             }
             else
             {
-                std::vector<std::vector<float> > data(regions.size());
+                std::vector<float> data(regions.size());
                 tipl::par_for(regions.size(),[&](unsigned int index){
-                    std::vector<std::string> dummy;
-                    regions[index]->get_quantitative_data(cur_tracking_window.handle,dummy,data[index]);
+                    if(action == "sort_x")
+                        data[index] = regions[index]->get_pos()[0];
+                    if(action == "sort_y")
+                        data[index] = regions[index]->get_pos()[1];
+                    if(action == "sort_z")
+                        data[index] = regions[index]->get_pos()[2];
+                    if(action == "sort_size")
+                        data[index] = regions[index]->get_volume();
                 });
-                size_t comp_index = 0; // sort_size
-                if(action == "sort_x")
-                    comp_index = 2;
-                if(action == "sort_y")
-                    comp_index = 3;
-                if(action == "sort_z")
-                    comp_index = 4;
 
-                arg = tipl::arg_sort(data,[negate,comp_index]
-                    (const std::vector<float>& lhs,const std::vector<float>& rhs)
-                    {
-                        return negate ^ (lhs[comp_index] < rhs[comp_index]);
-                    });
+                arg = tipl::arg_sort(data,[negate](float lhs,float rhs){return negate ^ (lhs < rhs);});
             }
 
             std::vector<std::shared_ptr<ROIRegion> > new_region(arg.size());
