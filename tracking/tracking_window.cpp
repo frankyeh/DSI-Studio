@@ -2814,7 +2814,7 @@ void tracking_window::on_template_box_currentIndexChanged(int index)
         return;
     handle->set_template_id(size_t(index));
     ui->addRegionFromAtlas->setVisible(!handle->atlas_list.empty());
-    ui->enable_auto_track->setVisible(index == 0 && !track_atlas_file_list.empty());
+    ui->enable_auto_track->setVisible(QFileInfo(track_atlas_file_list[uint32_t(index)].c_str()).exists());
     ui->target->setCurrentIndex(0);
     ui->target->setVisible(false);
     ui->target_label->setVisible(false);

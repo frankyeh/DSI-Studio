@@ -38,8 +38,9 @@ std::string
         device_content_file;
 std::vector<std::string> fa_template_list,
                          iso_template_list,
-                         atlas_file_list,
                          track_atlas_file_list;
+std::vector<std::vector<std::string> > template_atlas_list;
+
 
 int rec(void);
 int trk(void);
@@ -114,12 +115,13 @@ bool load_file_name(void)
     t1w_mask_template_file_name = find_full_path("/mni_icbm152_t1_tal_nlin_asym_09c_mask.nii.gz");
     device_content_file = find_full_path("/device.txt");
 
-    // search for all anisotropy template
+    // search for all template
     {
-        QDir dir = QCoreApplication::applicationDirPath()+ "/template";
+        QDir dir = QCoreApplication::applicationDirPath()+ "/atlas";
         if(!dir.exists())
-            dir = QDir::currentPath()+ "/template";
-        QStringList name_list = dir.entryList(QStringList("*.nii.gz"),QDir::Files|QDir::NoSymLinks);
+            dir = QDir::currentPath()+ "/atlas";
+        std::cout << "searching for atlas at " << dir.absolutePath().toStdString() << std::endl;
+        QStringList name_list = dir.entryList(QStringList("*"),QDir::Dirs|QDir::NoSymLinks);
 
         // Make HCP1021 the default
         for(int i = 0;i < name_list.size();++i)
@@ -133,49 +135,36 @@ bool load_file_name(void)
         }
         for(int i = 0;i < name_list.size();++i)
         {
-            std::string full_path = (dir.absolutePath() + "/" + name_list[i]).toStdString();
-            if(!QFileInfo(name_list[i]).fileName().contains(".QA.nii.gz"))
+            QDir template_dir = dir.absolutePath() + "/" + name_list[i];
+            QString qa_file_path = template_dir.absolutePath() + "/" + name_list[i] + ".QA.nii.gz";
+            QString iso_file_path = template_dir.absolutePath() + "/" + name_list[i] + ".ISO.nii.gz";
+            QString tt_file_path = template_dir.absolutePath() + "/" + name_list[i] + ".tt.gz";
+            if(!QFileInfo(qa_file_path).exists())
                 continue;
-            fa_template_list.push_back(full_path);
-            QString iso_file = dir.absolutePath() + "/" + QFileInfo(name_list[i]).baseName() + ".ISO.nii.gz";
-            if(QFileInfo(iso_file).exists())
-                iso_template_list.push_back(iso_file.toStdString());
+            // setup QA and ISO template
+            fa_template_list.push_back(qa_file_path.toStdString());
+            if(QFileInfo(iso_file_path).exists())
+                iso_template_list.push_back(iso_file_path.toStdString());
             else
                 iso_template_list.push_back(std::string());
+
+            if(QFileInfo(iso_file_path).exists())
+                track_atlas_file_list.push_back(tt_file_path.toStdString());
+            else
+                track_atlas_file_list.push_back(std::string());
+            // find related atlases
+            {
+                QStringList atlas_list = template_dir.entryList(QStringList("*.nii"),QDir::Files|QDir::NoSymLinks);
+                atlas_list << template_dir.entryList(QStringList("*.nii.gz"),QDir::Files|QDir::NoSymLinks);
+                std::vector<std::string> atlas_file_list;
+                for(int index = 0;index < atlas_list.size();++index)
+                    if(QFileInfo(atlas_list[index]).baseName() != name_list[i])
+                        atlas_file_list.push_back((template_dir.absolutePath() + "/" + atlas_list[index]).toStdString());
+                template_atlas_list.push_back(std::move(atlas_file_list));
+            }
         }
         if(fa_template_list.empty())
             return false;
-    }
-
-
-    // find all atlas
-    {
-        QDir dir = QCoreApplication::applicationDirPath()+ "/atlas";
-        if(!dir.exists())
-            dir = QDir::currentPath()+ "/atlas";
-        QStringList name_list = dir.entryList(QStringList("*.nii"),QDir::Files|QDir::NoSymLinks);
-        name_list << dir.entryList(QStringList("*.nii.gz"),QDir::Files|QDir::NoSymLinks);
-        if(!name_list.empty())
-        {
-            for(int i = 1;i < name_list.size();++i)
-                if(name_list[i].contains("tractography"))
-                {
-                    auto str = name_list[i];
-                    name_list.removeAt(i);
-                    name_list.insert(0,str);
-                }
-            for(int index = 0;index < name_list.size();++index)
-                atlas_file_list.push_back((dir.absolutePath() + "/" + name_list[index]).toStdString());
-        }
-    }
-    // find all track atlas
-    {
-        QDir dir = QCoreApplication::applicationDirPath()+ "/track";
-        if(!dir.exists())
-            dir = QDir::currentPath()+ "/track";
-        QStringList name_list = dir.entryList(QStringList("*tt.gz"),QDir::Files|QDir::NoSymLinks);
-        for(int index = 0;index < name_list.size();++index)
-            track_atlas_file_list.push_back((dir.absolutePath() + "/" + name_list[index]).toStdString());
     }
     return true;
 }

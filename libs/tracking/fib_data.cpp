@@ -1015,7 +1015,8 @@ void fib_data::get_voxel_information(int x,int y,int z,std::vector<float>& buf) 
             buf.push_back(view_item[i].get_image().size() ? view_item[i].get_image()[index] : 0.0);
     }
 }
-extern std::vector<std::string> fa_template_list,iso_template_list,atlas_file_list,track_atlas_file_list;
+extern std::vector<std::string> fa_template_list,iso_template_list,track_atlas_file_list;
+extern std::vector<std::vector<std::string> > template_atlas_list;
 void fib_data::set_template_id(size_t new_id)
 {
     if(new_id != template_id)
@@ -1028,35 +1029,20 @@ void fib_data::set_template_id(size_t new_id)
         tractography_name_list.clear();
         track_atlas.reset();
         // populate atlas list
+        for(size_t i = 0;i < template_atlas_list[template_id].size();++i)
         {
-            std::string atlas_file = fa_template_list[template_id]+".atlas.txt";
-            std::ifstream in(atlas_file);
-            std::string line;
-            while(in >> line)
-            {
-                for(size_t j = 0;j < atlas_file_list.size();++j)
-                    if(QFileInfo(atlas_file_list[j].c_str()).baseName().toStdString() == line)
-                    {
-                        atlas_list.push_back(std::make_shared<atlas>());
-                        atlas_list.back()->name = line;
-                        atlas_list.back()->filename = atlas_file_list[j];
-                        break;
-                    }
-            }
+            atlas_list.push_back(std::make_shared<atlas>());
+            atlas_list.back()->name = QFileInfo(template_atlas_list[template_id][i].c_str()).baseName().toStdString();
+            atlas_list.back()->filename = template_atlas_list[template_id][i];
         }
-        for(size_t j = 0;j < track_atlas_file_list.size();++j)
+        // populate tract names
+        tractography_name_list.clear();
+        if(QFileInfo(track_atlas_file_list[template_id].c_str()).exists())
         {
-            if(QFileInfo(track_atlas_file_list[j].c_str()).baseName() ==
-               QFileInfo(fa_template_list[template_id].c_str()).baseName())
-            {
-                tractography_atlas_file_name = track_atlas_file_list[j];
-                std::string tractography_name_list_file_name = tractography_atlas_file_name + ".txt";
-                std::ifstream in(tractography_name_list_file_name);
-                if(in)
-                    std::copy(std::istream_iterator<std::string>(in),
-                    std::istream_iterator<std::string>(),std::back_inserter(tractography_name_list));
-                break;
-            }
+            std::ifstream in(track_atlas_file_list[template_id]+".txt");
+            if(in)
+                std::copy(std::istream_iterator<std::string>(in),
+                          std::istream_iterator<std::string>(),std::back_inserter(tractography_name_list));
         }
     }
 }
