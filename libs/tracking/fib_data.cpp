@@ -832,6 +832,7 @@ bool fib_data::load_from_mat(void)
         for(unsigned int i = 0; i < view_item.size();++i)
         {
             view_item[i].native_geo = native_geo;
+            view_item[i].native_trans.sr[0] = view_item[i].native_trans.sr[4] = view_item[i].native_trans.sr[8] = 1.0;
             mat_reader.read((view_item[i].name+"_dimension").c_str(),view_item[i].native_geo);
             mat_reader.read((view_item[i].name+"_trans").c_str(),view_item[i].native_trans);
         }
@@ -893,11 +894,11 @@ void fib_data::match_template(void)
 
 const tipl::image<tipl::vector<3,float>,3 >& fib_data::get_native_position(void) const
 {
-    if(native_position.empty() && mat_reader.has("native_mapping"))
+    if(native_position.empty() && mat_reader.has("mapping"))
     {
         unsigned int row,col;
         const float* mapping = nullptr;
-        if(mat_reader.read("native_mapping",row,col,mapping))
+        if(mat_reader.read("mapping",row,col,mapping))
         {
             native_position.resize(dim);
             std::copy(mapping,mapping+col*row,&native_position[0][0]);
