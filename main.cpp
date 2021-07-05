@@ -156,6 +156,7 @@ bool load_file_name(void)
             {
                 QStringList atlas_list = template_dir.entryList(QStringList("*.nii"),QDir::Files|QDir::NoSymLinks);
                 atlas_list << template_dir.entryList(QStringList("*.nii.gz"),QDir::Files|QDir::NoSymLinks);
+                atlas_list.sort();
                 std::vector<std::string> atlas_file_list;
                 for(int index = 0;index < atlas_list.size();++index)
                     if(QFileInfo(atlas_list[index]).baseName() != name_list[i])
