@@ -1073,13 +1073,30 @@ bool fib_data::load_template(void)
     template_shift[2] = template_trans_to_mni[11];
     template_I.swap(I);
     template_vs = I_vs;
+    unsigned int downsampling = 0;
+    while(template_I.width()/3 > int(dim[0]))
+    {
+        std::cout << "downsampling template by 2x to match subject resolution" << std::endl;
+        template_vs *= 2.0f;
+        template_trans_to_mni[0] *= 2.0f;
+        template_trans_to_mni[5] *= 2.0f;
+        template_trans_to_mni[10] *= 2.0f;
+        tipl::downsampling(template_I);
+        ++downsampling;
+    }
+
 
     // load iso template if exists
     {
         gz_nifti read2;
         if(!iso_template_list[template_id].empty() &&
            read2.load_from_file(iso_template_list[template_id].c_str()))
+        {
             read2.toLPS(template_I2);
+            for(unsigned int i = 0;i < downsampling;++i)
+                tipl::downsampling(template_I2);
+        }
+
     }
     template_I *= 1.0f/float(tipl::mean(template_I));
     if(!template_I2.empty())
