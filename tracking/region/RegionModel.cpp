@@ -21,7 +21,7 @@ void RegionModel::sortIndices(void)
         //const unsigned int* meshes,unsigned int mesh_count,const float* vertices)
 {
     sorted_index.resize(6);
-    unsigned int mesh_count = object->tri_list.size();
+    auto mesh_count = object->tri_list.size();
     for (unsigned int view_index = 0;view_index < 3;++view_index)
     {
         std::vector<std::pair<float,unsigned int> > index_weighting(mesh_count);
@@ -52,7 +52,7 @@ void RegionModel::sortIndices(void)
 
 
 
-bool RegionModel::load(const std::vector<tipl::vector<3,short> >& seeds, double resolution_ratio,unsigned char smooth)
+bool RegionModel::load(const std::vector<tipl::vector<3,short> >& seeds, float resolution_ratio,unsigned char smooth)
 {
     if(seeds.empty())
     {
@@ -64,20 +64,21 @@ bool RegionModel::load(const std::vector<tipl::vector<3,short> >& seeds, double 
 
     center = max_value;
     center += min_value;
-    center *= 0.5;
+    center *= 0.5f;
     center /= resolution_ratio;
 
     max_value += tipl::vector<3,short>(5, 5, 5);
     min_value -= tipl::vector<3,short>(5, 5, 5);
-    tipl::geometry<3> geo(max_value[0] - min_value[0],
-            max_value[1] - min_value[1], max_value[2] - min_value[2]);
-    float cur_scale = 1.0;
+    tipl::geometry<3> geo(uint32_t(max_value[0] - min_value[0]),
+                          uint32_t(max_value[1] - min_value[1]),
+                          uint32_t(max_value[2] - min_value[2]));
+    float cur_scale = 1.0f;
     while(geo.width() > 256 || geo.height() > 256 || geo.depth() > 256)
     {
-        cur_scale *= 2.0;
-        geo[0] /= 2.0;
-        geo[1] /= 2.0;
-        geo[2] /= 2.0;
+        cur_scale *= 2.0f;
+        geo[0] /= 2.0f;
+        geo[1] /= 2.0f;
+        geo[2] /= 2.0f;
     }
 
 
@@ -105,14 +106,14 @@ bool RegionModel::load(const std::vector<tipl::vector<3,short> >& seeds, double 
         return false;
     }
     tipl::vector<3,float> shift(min_value);
-    if (resolution_ratio != 1.0)
+    if (resolution_ratio != 1.0f)
     {
         cur_scale /= resolution_ratio;
         shift /= resolution_ratio;
     }
     tipl::par_for(object->point_list.size(),[&](unsigned int index)
     {
-        if (cur_scale != 1.0)
+        if (cur_scale != 1.0f)
             object->point_list[index] *= cur_scale;
         object->point_list[index] += shift;
     });
@@ -125,19 +126,18 @@ bool RegionModel::load(const tipl::image<float, 3>& image_,
 {
     tipl::image<float, 3> image_buffer(image_);
 
-    float scale = 1.0;
+    float scale = 1.0f;
     while(image_buffer.width() > 256 || image_buffer.height() > 256 || image_buffer.depth() > 256)
     {
-        scale *= 2.0;
+        scale *= 2.0f;
         tipl::downsampling(image_buffer);
     }
-    if (threshold == 0.0)
+    if (threshold == 0.0f)
     {
         float sum = 0;
         unsigned int num = 0;
-        unsigned int index_to = (image_buffer.size() >> 1) + image_buffer.geometry()
-                          .plane_size();
-        for (unsigned int index = (image_buffer.size() >> 1); index < index_to;++index)
+        auto index_to = (image_buffer.size() >> 1) + image_buffer.geometry().plane_size();
+        for (auto index = (image_buffer.size() >> 1); index < index_to;++index)
         {
             float g = image_buffer[index];
             if (g > 0)
@@ -148,11 +148,11 @@ bool RegionModel::load(const tipl::image<float, 3>& image_,
         }
         if (!num)
             return false;
-        threshold = sum / num * 0.85;
+        threshold = sum / num * 0.85f;
     }
     object.reset(new tipl::march_cube<tipl::vector<3,float> >(image_buffer,
                  threshold));
-    if (scale != 1.0)
+    if (scale != 1.0f)
         for (unsigned int index = 0; index < object->point_list.size(); ++index)
             object->point_list[index] *= scale;
     sortIndices();
