@@ -92,7 +92,8 @@ HEADERS += mainwindow.h \
     connectometry/nn_connectometry_analysis.h \
     auto_track.h \
     tracking/device.h \
-    tracking/devicetablewidget.h
+    tracking/devicetablewidget.h \
+    mac_filesystem.hpp
 
 FORMS += mainwindow.ui \
     tracking/tracking_window.ui \
