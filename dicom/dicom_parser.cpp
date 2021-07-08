@@ -334,6 +334,20 @@ bool load_4d_nii(const char* file_name,std::vector<std::shared_ptr<DwiHeader> >&
                 tipl::multiply_constant(dwi_data[index],scale);
             });
         }
+        if(max_value < 256.0f)
+        {
+            std::cout << "The maximum singal is only " << max_value << std::endl;
+            float scale = 1.0f;
+            while(max_value*scale < std::numeric_limits<unsigned short>::max())
+                scale*=32;
+            if(scale != 1.0f)
+            {
+                std::cout << "scaling the image by " << scale << std::endl;
+                tipl::par_for(dwi_data.size(),[&](unsigned int index){
+                    tipl::multiply_constant(dwi_data[index],scale);
+                });
+            }
+        }
     }
     tipl::image<float,4> grad_dev;
     if(QFileInfo(QFileInfo(file_name).absolutePath() + "/grad_dev.nii.gz").exists())
