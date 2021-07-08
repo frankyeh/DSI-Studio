@@ -1,5 +1,6 @@
 // ---------------------------------------------------------------------------
 #include <string>
+#include <filesystem>
 #include <QFileInfo>
 #include <QImage>
 #include <QInputDialog>
@@ -400,7 +401,7 @@ bool CustomSliceModel::initialize(const std::vector<std::string>& files)
     }
 
     // has mapping.txt saved load it
-    if(QFileInfo((files[0]+".mapping.txt").c_str()).exists())
+    if(std::filesystem::exists((files[0]+".mapping.txt")))
     {
         load_mapping((files[0]+".mapping.txt").c_str());
         has_transform = true;

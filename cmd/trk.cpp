@@ -1,6 +1,7 @@
 #include <QFileInfo>
 #include <QStringList>
 #include <QDir>
+#include <filesystem>
 #include <iostream>
 #include <iterator>
 #include <string>
@@ -30,7 +31,7 @@ bool check_other_slices(std::shared_ptr<fib_data> handle)
     for(size_t i = 0;i < filenames.size();++i)
     {
         std::cout << "add slice: " << QFileInfo(filenames[i].c_str()).baseName().toStdString() << std::endl;
-        if(!QFileInfo(filenames[i].c_str()).exists())
+        if(!std::filesystem::exists(filenames[i]))
         {
             std::cout << "ERROR: file not exist " << filenames[i] << std::endl;
             return false;
@@ -281,7 +282,7 @@ void get_connectivity_matrix(std::shared_ptr<fib_data> handle,
         else
         // specify atlas file (e.g. --connectivity=subject_file.nii.gz)
         {
-            if(!QFileInfo(roi_file_name.c_str()).exists())
+            if(!std::filesystem::exists(roi_file_name))
             {
                 std::cout << "ERROR: file does not exist" << std::endl;
                 return;
@@ -299,7 +300,7 @@ void get_connectivity_matrix(std::shared_ptr<fib_data> handle,
                 {
                     std::shared_ptr<ROIRegion> region(new ROIRegion(handle));
                     std::string fn;
-                    if(QFileInfo(line.c_str()).exists())
+                    if(std::filesystem::exists(line))
                         fn = line;
                     else
                         fn = dir + line;
@@ -349,7 +350,7 @@ void get_connectivity_matrix(std::shared_ptr<fib_data> handle,
                 return;
             std::string file_name_stat(output_name);
             file_name_stat += ".";
-            file_name_stat += (QFileInfo(connectivity_roi.c_str()).exists()) ? QFileInfo(connectivity_roi.c_str()).baseName().toStdString():connectivity_roi;
+            file_name_stat += (std::filesystem::exists(connectivity_roi)) ? QFileInfo(connectivity_roi.c_str()).baseName().toStdString():connectivity_roi;
             file_name_stat += ".";
             file_name_stat += connectivity_value;
             file_name_stat += use_end_only ? ".end":".pass";
@@ -378,7 +379,7 @@ std::shared_ptr<fib_data> cmd_load_fib(const std::string file_name)
 {
     std::shared_ptr<fib_data> handle(new fib_data);
     std::cout << "loading " << file_name << "..." <<std::endl;
-    if(!QFileInfo(file_name.c_str()).exists())
+    if(!std::filesystem::exists(file_name))
     {
         std::cout << file_name << " does not exist. terminating..." << std::endl;
         return std::shared_ptr<fib_data>();
@@ -408,7 +409,7 @@ bool load_region(std::shared_ptr<fib_data> handle,
         file_name = file_name.substr(0,file_name.find_last_of(':'));
     }
 
-    if(!QFileInfo(file_name.c_str()).exists())
+    if(!std::filesystem::exists(file_name))
     {
         if(QString(file_name.c_str()).contains(".")) // is a file
         {

@@ -175,7 +175,7 @@ std::string run_auto_track(
         progress = int(i);
         std::cout << "processing " << cur_file_base_name << std::endl;
         std::string fib_file_name;
-        if(!QFileInfo(file_list[i].c_str()).exists())
+        if(!std::filesystem::exists(file_list[i]))
             return std::string("cannot find file:")+file_list[i];
 
         // DWI reconstruction
@@ -189,7 +189,7 @@ std::string run_auto_track(
             src.voxel.thread_count = std::thread::hardware_concurrency();
             // has fib file?
             fib_file_name = file_list[i]+src.get_file_ext();
-            if(!QFileInfo(fib_file_name.c_str()).exists() || overwrite)
+            if(!std::filesystem::exists(fib_file_name) || overwrite)
             {
                 if(!src.load_from_file(file_list[i].c_str()))
                     return src.error_msg + " at " + cur_file_base_name;
@@ -215,10 +215,10 @@ std::string run_auto_track(
                 mapping_file_name += ".";
                 mapping_file_name += QFileInfo(fa_template_list[0].c_str()).baseName().toLower().toStdString();
                 mapping_file_name += ".inv.mapping.gz";
-                if(QFileInfo(mapping_file_name.c_str()).exists())
+                if(std::filesystem::exists(mapping_file_name))
                     QFile::remove(mapping_file_name.c_str());
             }
-            if(!QFileInfo(fib_file_name.c_str()).exists())
+            if(!std::filesystem::exists(fib_file_name))
                 return std::string("fib file not generated for ") + file_list[i];
         }
         else
@@ -252,15 +252,15 @@ std::string run_auto_track(
 
             stat_files[j].push_back(stat_file_name);
 
-            if(QFileInfo(no_result_file_name.c_str()).exists() && !overwrite)
+            if(std::filesystem::exists(no_result_file_name) && !overwrite)
             {
                 std::cout << "skip " << track_name << " due to no result" << std::endl;
                 continue;
             }
 
-            bool has_stat_file = QFileInfo(stat_file_name.c_str()).exists();
-            bool has_trk_file = QFileInfo(trk_file_name.c_str()).exists() &&
-                    (!export_template_trk || QFileInfo(template_trk_file_name.c_str()).exists());
+            bool has_stat_file = std::filesystem::exists(stat_file_name);
+            bool has_trk_file = std::filesystem::exists(trk_file_name) &&
+                    (!export_template_trk || std::filesystem::exists(template_trk_file_name));
             if(has_stat_file)
                 std::cout << "found stat file:" << stat_file_name << std::endl;
             if(has_trk_file)
@@ -409,7 +409,7 @@ std::string run_auto_track(
             for(size_t j = 0;j < stat_files[i].size();++j)
             {
                 std::cout << "checking file:" << stat_files[i][j] << std::endl;
-                if(QFileInfo(stat_files[i][j].c_str()).exists() &&
+                if(std::filesystem::exists(stat_files[i][j]) &&
                    QFileInfo(stat_files[i][j].c_str()).size() == 0)
                 {
                     std::cout << "remove empty file:" << stat_files[i][j] << std::endl;

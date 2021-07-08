@@ -1,4 +1,5 @@
 #include <utility>
+#include <filesystem>
 #include <QFileDialog>
 #include <QInputDialog>
 #include <QStringListModel>
@@ -2815,7 +2816,7 @@ void tracking_window::on_template_box_currentIndexChanged(int index)
         return;
     handle->set_template_id(size_t(index));
     ui->addRegionFromAtlas->setVisible(!handle->atlas_list.empty());
-    ui->enable_auto_track->setVisible(QFileInfo(track_atlas_file_list[uint32_t(index)].c_str()).exists());
+    ui->enable_auto_track->setVisible(std::filesystem::exists(track_atlas_file_list[uint32_t(index)]));
     ui->target->setCurrentIndex(0);
     ui->target->setVisible(false);
     ui->target_label->setVisible(false);

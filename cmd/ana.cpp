@@ -206,7 +206,7 @@ int ana(void)
     // convert tract to nii (not tdi)
     if(QString(output.c_str()).endsWith(".nii.gz"))
     {
-        if(QFileInfo(output.c_str()).exists())
+        if(std::filesystem::exists(output))
         {
             std::cout << "output file:" << output << " exists. terminating..." << std::endl;
             return 0;
@@ -273,7 +273,7 @@ int ana(void)
     {
         std::shared_ptr<TractModel> tract(new TractModel(handle));
         std::string file_name = tract_files[i];
-        if(!QFileInfo(file_name.c_str()).exists())
+        if(!std::filesystem::exists(file_name))
         {
             std::cout << file_name << " does not exist. terminating..." << std::endl;
             return 1;

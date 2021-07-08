@@ -1,4 +1,4 @@
-
+#include <filesystem>
 #include <QFileInfo>
 #include <QApplication>
 #include <QDir>
@@ -36,7 +36,7 @@ bool atl_load_atlas(std::string atlas_name,std::vector<std::shared_ptr<atlas> >&
             atlas_path += "/atlas/";
             atlas_path += name_list[index].toStdString();
             atlas_path += ".nii.gz";
-            if(QFileInfo(atlas_path.c_str()).exists())
+            if(std::filesystem::exists(atlas_path))
                 file_path = atlas_path;
             else
             {

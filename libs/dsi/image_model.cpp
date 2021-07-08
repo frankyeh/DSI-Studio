@@ -471,7 +471,7 @@ bool ImageModel::command(std::string cmd,std::string param)
 {
     if(cmd == "[Step T2a][Open]")
     {
-        if(!QFileInfo(param.c_str()).exists())
+        if(!std::filesystem::exists(param))
         {
             error_msg = param;
             error_msg += " does not exist";
@@ -1287,7 +1287,7 @@ void prepare_idx(const char* file_name,std::shared_ptr<gz_istream> in)
     idx_name += ".idx";
     {
         in->buffer_all = true;
-        if(QFileInfo(idx_name.c_str()).exists() &&
+        if(std::filesystem::exists(idx_name) &&
            QFileInfo(idx_name.c_str()).lastModified() > QFileInfo(file_name).lastModified())
         {
             std::cout << "using index file for accelerated loading:" << idx_name << std::endl;

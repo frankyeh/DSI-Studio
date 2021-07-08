@@ -1,3 +1,4 @@
+#include <filesystem>
 #include <QCoreApplication>
 #include <QFileInfo>
 #include "fib_data.hpp"
@@ -1035,7 +1036,7 @@ void fib_data::set_template_id(size_t new_id)
         // populate tract names
         tractography_atlas_file_name = track_atlas_file_list[template_id];
         tractography_name_list.clear();
-        if(QFileInfo(tractography_atlas_file_name.c_str()).exists())
+        if(std::filesystem::exists(tractography_atlas_file_name))
         {
             std::ifstream in(track_atlas_file_list[template_id]+".txt");
             if(in)
