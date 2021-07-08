@@ -1,6 +1,17 @@
 # Use Ubuntu 16.04 LTS
 FROM ubuntu:16.04
 
+RUN apt-get install -y software-properties-common python-software-properties
+RUN add-apt-repository ppa:ubuntu-toolchain-r/test
+RUN apt update
+RUN apt install g++-7 -y
+RUN update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-7 60 \
+                         --slave /usr/bin/g++ g++ /usr/bin/g++-7 
+RUN update-alternatives --config gcc
+RUN gcc --version
+RUN g++ --version
+
+
 # Prepare environment
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
@@ -70,9 +81,6 @@ ENV QTDIR="$QT_BASE_DIR" \
     PATH="$QT_BASE_DIR/bin:$PATH:/opt/dsi-studio/dsi_studio_64" \
     LD_LIBRARY_PATH="$QT_BASE_DIR/lib/x86_64-linux-gnu:$QT_BASE_DIR/lib:$LD_LIBRARY_PATH" \
     PKG_CONFIG_PATH="$QT_BASE_DIR/lib/pkgconfig:$PKG_CONFIG_PATH"
-
-RUN gcc --version
-RUN g++ --version
 
 RUN mkdir /opt/dsi-studio \
   && cd /opt/dsi-studio \
