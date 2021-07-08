@@ -1,17 +1,6 @@
 # Use Ubuntu 16.04 LTS
 FROM ubuntu:16.04
 
-RUN apt-get install -y software-properties-common python-software-properties
-RUN add-apt-repository ppa:ubuntu-toolchain-r/test
-RUN apt update
-RUN apt install g++-7 -y
-RUN update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-7 60 \
-                         --slave /usr/bin/g++ g++ /usr/bin/g++-7 
-RUN update-alternatives --config gcc
-RUN gcc --version
-RUN g++ --version
-
-
 # Prepare environment
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
@@ -43,12 +32,27 @@ RUN apt-get update && \
                     libglu1-mesa-dev \
                     freeglut3-dev \
                     mesa-utils \
-                    g++-7 \
+                    g++ \
                     gcc \
                     make \
                     git \
-                    software-properties-common && \
+                    software-properties-common \
+		    python-software-properties && \
     apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
+# update to g++7
+
+RUN add-apt-repository ppa:ubuntu-toolchain-r/test  \
+    && apt-get update \
+    && apt install -y --no-install-recommends \
+		g++-7 \
+    && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+RUN update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-7 60 \
+                         --slave /usr/bin/g++ g++ /usr/bin/g++-7 
+RUN update-alternatives --config gcc
+RUN gcc --version
+RUN g++ --version
+
 
 # Install notebook
 RUN curl "https://bootstrap.pypa.io/pip/3.5/get-pip.py" -o "get-pip.py"
