@@ -23,7 +23,7 @@ RC_ICONS = dsi_studio.ico
 }
 
 linux* {
-QMAKE_CXXFLAGS += -std=c++17 -fpermissive -Wno-sign-compare
+QMAKE_CXXFLAGS += -fpermissive -Wno-sign-compare
 LIBS += -lGLU -lz
 }
 
