@@ -1527,7 +1527,7 @@ bool stat_model::resample(stat_model& rhs,bool null,bool bootstrap,unsigned int 
             break;
         }
         if(null)
-            std::random_shuffle(subject_index.begin(),subject_index.end(),rand_gen);
+            std::shuffle(subject_index.begin(),subject_index.end(),rand_gen.gen);
     }while(!pre_process());
 
     return true;

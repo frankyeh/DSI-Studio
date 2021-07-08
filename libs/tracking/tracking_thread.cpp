@@ -226,10 +226,7 @@ void ThreadData::run(std::shared_ptr<tracking_data> trk_,unsigned int thread_cou
     if(param.initial_direction == 2)
         thread_count = 1;
     if(param.center_seed)
-    {
-        std::srand(0);
-        std::random_shuffle(roi_mgr->seeds.begin(),roi_mgr->seeds.end());
-    }
+        std::shuffle(roi_mgr->seeds.begin(),roi_mgr->seeds.end(),std::mt19937(0));
 
     end_thread();
 
