@@ -28,6 +28,7 @@ LIBS += -lGLU -lz
 }
 
 mac{
+QMAKE_CXXFLAGS -= -Wall
 QMAKE_CXXFLAGS += -Wno-sign-compare
 INCLUDEPATH += /Users/admin/include
 LIBS += -lz
