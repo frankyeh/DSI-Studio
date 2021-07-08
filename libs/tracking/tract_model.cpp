@@ -3,6 +3,7 @@
 #include <QFileInfo>
 #include <QImage>
 #include <fstream>
+#include <filesystem>
 #include <sstream>
 #include <iterator>
 #include <tuple>
@@ -142,7 +143,7 @@ class TinyTrack{
             }
             buf_size[i] = sizeof(tract_header)+t32.size()-3;
         });
-        set_title((std::string("saving to ")+QFileInfo(file_name).fileName().toStdString()).c_str());
+        set_title((std::string("saving to ")+std::filesystem::path(file_name).filename().string()).c_str());
         for(size_t block = 0,cur_track_block = 0;check_prog(cur_track_block,track32.size());++block)
         {
             // record write position for each track
@@ -186,7 +187,7 @@ class TinyTrack{
                                tipl::geometry<3>& geo,tipl::vector<3>& vs,
                                std::string& report,std::string& parameter_id,unsigned int& color)
     {
-        prog_init p("loading ",QFileInfo(file_name).fileName().toStdString().c_str());
+        prog_init p("loading ",std::filesystem::path(file_name).filename().string().c_str());
         gz_mat_read in;
         prepare_idx(file_name,in.in);
         if (!in.load_from_file(file_name))
@@ -321,7 +322,7 @@ struct TrackVis
                 std::string& info,
                 tipl::vector<3> vs)
     {
-        prog_init p("loading ",QFileInfo(file_name).fileName().toStdString().c_str());
+        prog_init p("loading ",std::filesystem::path(file_name).filename().string().c_str());
         gz_istream in;
         if (!in.open(file_name))
             return false;
@@ -372,7 +373,7 @@ struct TrackVis
                              const std::string& info,
                              unsigned int color)
     {
-        prog_init p("saving ",QFileInfo(file_name).fileName().toStdString().c_str());
+        prog_init p("saving ",std::filesystem::path(file_name).filename().string().c_str());
         gz_ostream out;
         if (!out.open(file_name))
             return false;
@@ -1254,7 +1255,7 @@ bool TractModel::save_all(const char* file_name_,
         gz_ostream out;
         if (!out.open(file_name_))
             return false;
-        prog_init p("saving ",QFileInfo(file_name_).fileName().toStdString().c_str());
+        prog_init p("saving ",std::filesystem::path(file_name_).filename().string().c_str());
         {
             TrackVis trk;
             trk.init(all[0]->geo,all[0]->vs);

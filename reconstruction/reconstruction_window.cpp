@@ -1,3 +1,4 @@
+#include <filesystem>
 #include <QSplitter>
 #include <QThread>
 #include "reconstruction_window.h"
@@ -946,7 +947,7 @@ void reconstruction_window::on_actionSave_SRC_file_as_triggered()
             "SRC files (*src.gz);;All files (*)" );
     if(filename.isEmpty())
         return;
-    prog_init p("saving ",QFileInfo(filename).fileName().toStdString().c_str());
+    prog_init p("saving ",std::filesystem::path(filename.toStdString()).filename().string().c_str());
     handle->save_to_file(filename.toStdString().c_str());
 }
 

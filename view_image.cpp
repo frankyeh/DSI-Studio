@@ -1,4 +1,5 @@
 #include <map>
+#include <filesystem>
 #include <QTextStream>
 #include <QInputDialog>
 #include <QFileDialog>
@@ -84,14 +85,14 @@ bool view_image::command(std::string cmd,std::string param1,std::string param2)
 
         // generalized file names
         {
-            std::string filename1 = QFileInfo(file_name).fileName().toStdString();
-            std::string filename2 = QFileInfo(param1.c_str()).fileName().toStdString();
+            std::string filename1 = std::filesystem::path(file_name.toStdString()).filename().string();
+            std::string filename2 = std::filesystem::path(param1).filename().string();
             for(size_t i = 0;i < other_data.size();++i)
             {
                 // if param1 is file name, then try to generalize
                 if(param1.find('.') != std::string::npos)
                 {
-                    std::string filename1_others = QFileInfo(other_file_name[i].c_str()).fileName().toStdString();
+                    std::string filename1_others = std::filesystem::path(other_file_name[i]).filename().string();
                     // directory is the only difference
                     if(filename1 == filename2)
                         other_params[i] = QString(param1.c_str()).
@@ -284,7 +285,7 @@ bool view_image::open(QStringList file_names)
     QString info;
     file_name = file_names[0];
     setWindowTitle(QFileInfo(file_name).fileName());
-    prog_init p("loading ",QFileInfo(file_name).fileName().toStdString().c_str());
+    prog_init p("loading ",std::filesystem::path(file_name.toStdString()).filename().string().c_str());
     check_prog(0,1);
 
     if(file_names.size() > 1 && QString(file_name).endsWith(".bmp"))

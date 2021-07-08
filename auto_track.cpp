@@ -1,3 +1,4 @@
+#include <filesystem>
 #include <QFileDialog>
 #include <QStringListModel>
 #include <QMessageBox>
@@ -280,7 +281,7 @@ std::string run_auto_track(
 
                 if (!fib_loaded)
                 {
-                    prog_init p("loading ",QFileInfo(fib_file_name.c_str()).fileName().toStdString().c_str());
+                    prog_init p("loading ",std::filesystem::path(fib_file_name).filename().string().c_str());
                     if(!handle->load_from_file(fib_file_name.c_str()))
                        return fib_file_name + ": Not human data. Check image resolution.";
                     fib_loaded = true;
@@ -461,7 +462,7 @@ std::string run_auto_track(
                 if(lines.size() < metrics_names.size())
                 {
                     std::string error("inconsistent stat file (remove it and rerun):");
-                    error += QFileInfo(stat_files[t][s].c_str()).fileName().toStdString();
+                    error += std::filesystem::path(stat_files[t][s]).filename().string();
                     error += " metrics count=";
                     error += std::to_string(lines.size());
                     error += " others=";

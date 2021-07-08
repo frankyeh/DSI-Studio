@@ -1,3 +1,4 @@
+#include <filesystem>
 #include <QFileDialog>
 #include <QDateTime>
 #include <QUrl>
@@ -965,7 +966,7 @@ void nii2src(std::string nii_name,std::string src_name,std::ostream& out)
         out << "ERROR: " << src_error_msg << std::endl;
         return;
     }
-    out << QFileInfo(src_name.c_str()).fileName().toStdString() << std::endl;
+    out << std::filesystem::path(src_name).filename().string() << std::endl;
     if(!DwiHeader::output_src(src_name.c_str(),dwi_files,0,false))
         out << "ERROR: " << src_error_msg << std::endl;
 }
@@ -1059,7 +1060,7 @@ bool dcm2src(QStringList files,std::ostream& out)
         suffix += std::to_string(files.size());
         suffix += ".src.gz";
         QString src_name = get_dicom_output_name(files[0],suffix.c_str(),true);
-        out << "Create SRC file: " << QFileInfo(src_name).fileName().toStdString() << std::endl;
+        out << "Create SRC file: " << std::filesystem::path(src_name.toStdString()).filename().string() << std::endl;
         if(!DwiHeader::output_src(src_name.toStdString().c_str(),dicom_files,0,false))
             out << "[ERROR]" << src_error_msg << std::endl;
         return true;
@@ -1133,7 +1134,7 @@ bool dcm2src(QStringList files,std::ostream& out)
         suffix += sequence;
         suffix += ".nii.gz";
         QString output = get_dicom_output_name(files[0],suffix.c_str(),true);
-        out << "converted to NIFTI:" << QFileInfo(output).fileName().toStdString() << std::endl;
+        out << "converted to NIFTI:" << std::filesystem::path(output.toStdString()).filename().string() << std::endl;
         nii_out.save_to_file(output.toStdString().c_str());
     }
     return true;

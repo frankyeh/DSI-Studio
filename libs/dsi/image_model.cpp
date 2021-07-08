@@ -1,3 +1,4 @@
+#include <filesystem>
 #include <QFileInfo>
 #include <QDir>
 #include <QInputDialog>
@@ -582,7 +583,7 @@ bool ImageModel::command(std::string cmd,std::string param)
         }
         else
             voxel.study_src_file_path = param;
-        voxel.steps += cmd+" open " + QFileInfo(voxel.study_src_file_path.c_str()).fileName().toStdString()+"\n";
+        voxel.steps += cmd+" open " + std::filesystem::path(voxel.study_src_file_path).filename().string()+"\n";
         return true;
     }
     if(cmd == "[Step T2][Edit][Overwrite Voxel Size]")
@@ -1263,7 +1264,7 @@ bool ImageModel::save_to_file(const char* dwi_file_name)
         }
         mat_writer.write("b_table",b_table,4);
     }
-    prog_init p("saving ",QFileInfo(dwi_file_name).fileName().toStdString().c_str());
+    prog_init p("saving ",std::filesystem::path(dwi_file_name).filename().string().c_str());
     for (unsigned int index = 0;check_prog(index,src_bvalues.size());++index)
     {
         std::ostringstream out;
@@ -1365,7 +1366,7 @@ bool ImageModel::load_from_file(const char* dwi_file_name)
         get_report(voxel.report);
         calculate_dwi_sum(true);
         voxel.steps += "[Step T2][Reconstruction] open ";
-        voxel.steps += QFileInfo(dwi_file_name).fileName().toStdString();
+        voxel.steps += std::filesystem::path(dwi_file_name).filename().string();
         voxel.steps += "\n";
         return true;
     }
@@ -1472,14 +1473,14 @@ bool ImageModel::load_from_file(const char* dwi_file_name)
             std::copy(mask_ptr,mask_ptr+size_t(row)*size_t(col),voxel.mask.begin());
     }
     voxel.steps += "[Step T2][Reconstruction] open ";
-    voxel.steps += QFileInfo(dwi_file_name).fileName().toStdString();
+    voxel.steps += std::filesystem::path(dwi_file_name).filename().string();
     voxel.steps += "\n";
     return true;
 }
 
 bool ImageModel::save_fib(const std::string& output_name)
 {
-    prog_init p("saving ",QFileInfo(output_name.c_str()).fileName().toStdString().c_str());
+    prog_init p("saving ",std::filesystem::path(output_name).filename().string().c_str());
     gz_mat_write mat_writer(output_name.c_str());
     if(!mat_writer)
     {

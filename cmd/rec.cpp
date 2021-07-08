@@ -2,6 +2,7 @@
 #include <QFileInfo>
 #include <QDir>
 #include <iostream>
+#include <filesystem>
 #include <iterator>
 #include <string>
 #include "fib_data.hpp"
@@ -223,7 +224,7 @@ int rec(void)
     {
         std::string output = po.get("output");
         if(QFileInfo(output.c_str()).isDir())
-            src.file_name = output + "/" + QFileInfo(src.file_name.c_str()).fileName().toStdString();
+            src.file_name = output + "/" + std::filesystem::path(src.file_name).filename().string();
         else
             src.file_name = output;
     }

@@ -1,3 +1,4 @@
+#include <filesystem>
 #include <QFileInfo>
 #include <QDir>
 #include <QFileDialog>
@@ -425,7 +426,7 @@ void db_window::on_actionSave_DB_as_triggered()
                            "Database files (*db?fib.gz *fib.gz);;All files (*)");
     if (filename.isEmpty())
         return;
-    prog_init p("saving ",QFileInfo(filename).fileName().toStdString().c_str());
+    prog_init p("saving ",std::filesystem::path(filename.toStdString()).filename().string().c_str());
     vbc->handle->db.save_subject_data(filename.toStdString().c_str());
 }
 

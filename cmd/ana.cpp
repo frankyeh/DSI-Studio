@@ -6,6 +6,7 @@
 #include <iostream>
 #include <iterator>
 #include <string>
+#include <filesystem>
 #include "tipl/tipl.hpp"
 #include "tracking/region/Regions.h"
 #include "libs/tracking/tract_model.hpp"
@@ -180,7 +181,7 @@ int ana(void)
         {
             std::string output = po.get("output");
             if(QFileInfo(output.c_str()).isDir())
-                file_name = output + std::string("/") + QFileInfo(file_name.c_str()).fileName().toStdString();
+                file_name = output + std::string("/") + std::filesystem::path(file_name).filename().string();
             else
                 file_name = output;
             if(file_name.find(".txt") == std::string::npos)
