@@ -116,8 +116,8 @@ struct file_holder{
     ~file_holder()
     {
         // at the end, check if the file size is zero.
-        if(QFileInfo(file_name.c_str()).size() == 0)
-            QFile::remove(file_name.c_str());
+        if(std::filesystem::exists(file_name) && !std::filesystem::file_size(file_name))
+            std::filesystem::remove(file_name);
     }
 };
 
@@ -389,7 +389,8 @@ std::string run_auto_track(
                     continue;
                 }
 
-                if(export_stat && (overwrite || QFileInfo(stat_file_name.c_str()).size() == 0))
+                if(export_stat &&
+                   (overwrite || !std::filesystem::exists(stat_file_name) || !std::filesystem::file_size(stat_file_name)))
                 {
                     std::cout << "saving " << stat_file_name << std::endl;
                     std::ofstream out_stat(stat_file_name.c_str());
@@ -410,7 +411,7 @@ std::string run_auto_track(
             {
                 std::cout << "checking file:" << stat_files[i][j] << std::endl;
                 if(std::filesystem::exists(stat_files[i][j]) &&
-                   QFileInfo(stat_files[i][j].c_str()).size() == 0)
+                   !std::filesystem::file_size(stat_files[i][j]))
                 {
                     std::cout << "remove empty file:" << stat_files[i][j] << std::endl;
                     QFile::remove(stat_files[i][j].c_str());
