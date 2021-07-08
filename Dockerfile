@@ -32,25 +32,23 @@ RUN apt-get update && \
                     libglu1-mesa-dev \
                     freeglut3-dev \
                     mesa-utils \
-                    g++ \
-                    gcc \
                     make \
                     git \
                     software-properties-common \
 		    python-software-properties && \
     apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-# update to g++8
+# update to g++9
 
 RUN add-apt-repository ppa:ubuntu-toolchain-r/test  \
     && apt-get update \
     && apt install -y --no-install-recommends \
-		g++-8 \
-		gcc-8 \
+		g++-9 \
+		gcc-9 \
     && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-RUN update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-8 60 \
-                         --slave /usr/bin/g++ g++ /usr/bin/g++-8 
+RUN update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-9 60 \
+                         --slave /usr/bin/g++ g++ /usr/bin/g++-9 
 RUN update-alternatives --config gcc
 RUN gcc --version
 RUN g++ --version
