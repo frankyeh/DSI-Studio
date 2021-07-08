@@ -32,7 +32,7 @@ RUN apt-get update && \
                     libglu1-mesa-dev \
                     freeglut3-dev \
                     mesa-utils \
-                    g++ \
+                    g++-7 \
                     gcc \
                     make \
                     git \
@@ -70,6 +70,10 @@ ENV QTDIR="$QT_BASE_DIR" \
     PATH="$QT_BASE_DIR/bin:$PATH:/opt/dsi-studio/dsi_studio_64" \
     LD_LIBRARY_PATH="$QT_BASE_DIR/lib/x86_64-linux-gnu:$QT_BASE_DIR/lib:$LD_LIBRARY_PATH" \
     PKG_CONFIG_PATH="$QT_BASE_DIR/lib/pkgconfig:$PKG_CONFIG_PATH"
+
+RUN gcc --version
+RUN g++ --version
+
 RUN mkdir /opt/dsi-studio \
   && cd /opt/dsi-studio \
   && git clone https://github.com/frankyeh/DSI-Studio.git \
