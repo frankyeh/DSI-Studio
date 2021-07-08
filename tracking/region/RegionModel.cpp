@@ -5,11 +5,12 @@
 #include <iterator>
 #include "RegionModel.h"
 #include "SliceModel.h"
+
 // ---------------------------------------------------------------------------
 const RegionModel& RegionModel:: operator = (const RegionModel & rhs)
 {
     if (rhs.object.get())
-        object.reset(new mesh_type(*rhs.object.get()));
+        object.reset(new tipl::march_cube(*rhs.object.get()));
     sorted_index = rhs.sorted_index;
     alpha = rhs.alpha;
     color = rhs.color;
@@ -76,9 +77,7 @@ bool RegionModel::load(const std::vector<tipl::vector<3,short> >& seeds, float r
     while(geo.width() > 256 || geo.height() > 256 || geo.depth() > 256)
     {
         cur_scale *= 2.0f;
-        geo[0] /= 2.0f;
-        geo[1] /= 2.0f;
-        geo[2] /= 2.0f;
+        geo = tipl::geometry<3>(geo[0]/2,geo[1]/2,geo[2]/2);
     }
 
 
@@ -98,8 +97,7 @@ bool RegionModel::load(const std::vector<tipl::vector<3,short> >& seeds, float r
         tipl::filter::mean(buffer);
         --smooth;
     }
-
-    object.reset(new tipl::march_cube<tipl::vector<3,float> >(buffer, 20));
+    object.reset(new tipl::march_cube(buffer, 20));
     if (object->point_list.empty())
     {
         object.reset();
@@ -150,8 +148,7 @@ bool RegionModel::load(const tipl::image<float, 3>& image_,
             return false;
         threshold = sum / num * 0.85f;
     }
-    object.reset(new tipl::march_cube<tipl::vector<3,float> >(image_buffer,
-                 threshold));
+    object.reset(new tipl::march_cube(image_buffer,threshold));
     if (scale != 1.0f)
         for (unsigned int index = 0; index < object->point_list.size(); ++index)
             object->point_list[index] *= scale;
@@ -168,8 +165,7 @@ bool RegionModel::load(unsigned int* buffer, tipl::geometry<3>geo,
         re_buffer[index] = buffer[index] > threshold ? 200 : 0;
 
     tipl::filter::mean(re_buffer);
-
-    object.reset(new tipl::march_cube<tipl::vector<3,float> >(re_buffer, 50));
+    object.reset(new tipl::march_cube(re_buffer, 50));
     if (object->point_list.empty())
         object.reset();
     else
@@ -183,4 +179,27 @@ void RegionModel::move_object(const tipl::vector<3,float>& shift)
         return;
     tipl::add_constant(object->point_list,shift);
 
+}
+
+const std::vector<tipl::vector<3> >& RegionModel::point_list(void) const
+{
+    return object->point_list;
+}
+const std::vector<tipl::vector<3> >& RegionModel::normal_list(void) const
+{
+    return object->normal_list;
+}
+const std::vector<tipl::vector<3,unsigned int> >& RegionModel::tri_list(void) const
+{
+    return object->tri_list;
+}
+
+void RegionModel::trasnform_point_list(const tipl::matrix<4,4,float>& T)
+{
+    if(!object.get())
+        return;
+    auto& point_list = object->point_list;
+    tipl::par_for(point_list.size(),[&](unsigned int i){
+        point_list[i].to(T);
+    });
 }

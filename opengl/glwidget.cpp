@@ -336,13 +336,13 @@ void handleAlpha(tipl::rgb color,
 void drawRegion(RegionModel& cur_region,unsigned char cur_view,
                 float alpha,int blend1,int blend2)
 {
-    if(!cur_region.get() || cur_region.get()->tri_list.empty())
+    if(!cur_region.get() || cur_region.tri_list().empty())
         return;
     handleAlpha(cur_region.color,alpha,blend1,blend2);
     glEnableClientState(GL_VERTEX_ARRAY);
     glEnableClientState(GL_NORMAL_ARRAY);
-    glVertexPointer(3, GL_FLOAT, 0, cur_region.get()->point_list.front().begin());
-    glNormalPointer(GL_FLOAT, 0, cur_region.get()->normal_list.front().begin());
+    glVertexPointer(3, GL_FLOAT, 0, cur_region.point_list().front().begin());
+    glNormalPointer(GL_FLOAT, 0, cur_region.normal_list().front().begin());
     glDrawElements(GL_TRIANGLES, int(cur_region.getSortedIndex(cur_view).size()),
                    GL_UNSIGNED_INT,&*cur_region.getSortedIndex(cur_view).begin());
     glDisableClientState(GL_VERTEX_ARRAY);
@@ -2830,11 +2830,8 @@ bool GLWidget::command(QString cmd,QString param,QString param2)
         }
 
         if(!cur_tracking_window.current_slice->is_diffusion_space)
-        for(unsigned int index = 0;index < surface->get()->point_list.size();++index)
-        {
-            surface->get()->point_list[index].to(cur_tracking_window.current_slice->T);
-            surface->get()->point_list[index] += 0.5;
-        }
+            surface->trasnform_point_list(cur_tracking_window.current_slice->T);
+
         paintGL();
         return true;
     }

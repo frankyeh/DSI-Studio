@@ -5,21 +5,21 @@
 #include <vector>
 #include <map>
 #include "tipl/tipl.hpp"
+
+namespace tipl{
+    class march_cube;
+}
+
 // ---------------------------------------------------------------------------
 class RegionModel {
 public:
-        typedef tipl::march_cube<tipl::vector<3,float> >mesh_type;
-        std::shared_ptr<mesh_type> object;
+        std::shared_ptr<tipl::march_cube> object;
         std::vector<std::vector<unsigned int> > sorted_index;
         tipl::vector<3,float> center;
         void sortIndices(void);
 public:
-        float alpha;
-        tipl::rgb color;
-        RegionModel(void) {
-            alpha = 0.6f;
-            color = (unsigned int)0x00FFFFFF;
-        }
+        float alpha = 0.6f;
+        tipl::rgb color = uint32_t(0x00FFFFFF);
         void swap(RegionModel& rhs) {
                 std::swap(alpha,rhs.alpha);
                 std::swap(color,rhs.color);
@@ -32,11 +32,15 @@ public:
         bool load(const std::vector<tipl::vector<3,short> >& region, float scale,unsigned char smooth);
         //bool load(const tipl::image<unsigned char, 3>& mask,unsigned char threshold);
         bool load(unsigned int* buffer, tipl::geometry<3>geo, unsigned int threshold);
-        mesh_type* get(void) {return object.get();}
+        tipl::march_cube* get(void) {return object.get();}
         const std::vector<unsigned int>& getSortedIndex(unsigned char view) const
         {return sorted_index[view];}
 
         void move_object(const tipl::vector<3,float>& shift);
+        const std::vector<tipl::vector<3> >& point_list(void) const;
+        const std::vector<tipl::vector<3> >& normal_list(void) const;
+        const std::vector<tipl::vector<3,unsigned int> >& tri_list(void) const;
+        void trasnform_point_list(const tipl::matrix<4,4,float>& T);
 };
 
 #endif
