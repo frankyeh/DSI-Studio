@@ -40,15 +40,17 @@ RUN apt-get update && \
 		    python-software-properties && \
     apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-# update to g++7
+# update to g++8
 
 RUN add-apt-repository ppa:ubuntu-toolchain-r/test  \
     && apt-get update \
     && apt install -y --no-install-recommends \
-		g++-7 \
+		g++-8 \
+		gcc-8 \
     && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
-RUN update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-7 60 \
-                         --slave /usr/bin/g++ g++ /usr/bin/g++-7 
+
+RUN update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-8 60 \
+                         --slave /usr/bin/g++ g++ /usr/bin/g++-8 
 RUN update-alternatives --config gcc
 RUN gcc --version
 RUN g++ --version
