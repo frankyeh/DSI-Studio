@@ -20,15 +20,12 @@ RUN apt update && apt full-upgrade -y && \
   g++ && \
   apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-#We clone here the specific 2021_06 version, and the closest TIPL commit
 RUN mkdir /opt/dsi-studio \
   && cd /opt/dsi-studio \
-  && git clone --branch 2021_06 https://github.com/frankyeh/DSI-Studio.git \
+  && git clone https://github.com/frankyeh/DSI-Studio.git \
   && mv DSI-Studio src \
   && git clone https://github.com/frankyeh/TIPL.git \
-  && (cd TIPL && git checkout 0635e9dc932437189c590a7c6b5e2eee16b1debf) \
   && mv TIPL src/tipl \
-  && sed -i 's/std::vector<typename ImageType::value_type> pixels;/std::vector<float> pixels;/g' /opt/dsi-studio/src/tipl/vis/march_cube.hpp \
   && mkdir -p /opt/dsi-studio/build \
   && cd /opt/dsi-studio/build \
   && qmake ../src/dsi_studio.pro \
