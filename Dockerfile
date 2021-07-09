@@ -54,20 +54,6 @@ RUN gcc --version
 RUN g++ --version
 
 
-# Install notebook
-RUN curl "https://bootstrap.pypa.io/pip/3.5/get-pip.py" -o "get-pip.py"
-RUN python3 get-pip.py
-RUN pip install --no-cache notebook
-ENV NB_USER dsistudiouser
-ENV NB_UID 1000
-ENV HOME /home/${NB_USER}
-RUN adduser --disabled-password \
-            --gecos "Default user" \
-            --uid ${NB_UID} \
-            ${NB_USER}
-WORKDIR ${HOME}
-
-
 # Get newer qt5
 RUN add-apt-repository ppa:beineri/opt-qt-5.12.2-xenial \
     && apt-get update \
