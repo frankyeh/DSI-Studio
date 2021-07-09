@@ -13,16 +13,16 @@ namespace std{
 
     namespace filesystem{
 
-        bool exists(const std::string& file_name)
+        inline bool exists(const std::string& file_name)
         {
             return QFileInfo(file_name.c_str()).exists();
         }
-        size_t file_size(const std::string& file_name)
+        inline size_t file_size(const std::string& file_name)
         {
             return size_t(QFileInfo(file_name.c_str()).size());
         }
 
-        bool remove(const std::string& file_name)
+        inline bool remove(const std::string& file_name)
         {
             return QFile::remove(file_name.c_str());
         }
@@ -42,7 +42,7 @@ namespace std{
 
         };
 
-        path_warpper path(const std::string& file_name)
+        inline path_warpper path(const std::string& file_name)
         {
             return path_warpper(file_name);
         }
