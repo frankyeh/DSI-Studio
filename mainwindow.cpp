@@ -212,12 +212,14 @@ void MainWindow::updateRecentList(void)
     {
         QStringList file_list = settings.value("recentFibFileList").toStringList();
         for (int index = 0;index < file_list.size();)
+        {
             if(!QFileInfo(file_list[index]).exists())
                 file_list.removeAt(index);
             else
                 ++index;
-            ui->recentFib->clear();
-            ui->recentFib->setRowCount(file_list.size());
+        }
+        ui->recentFib->clear();
+        ui->recentFib->setRowCount(file_list.size());
         for (int index = 0;index < file_list.size();++index)
         {
             ui->recentFib->setRowHeight(index,20);
