@@ -41,7 +41,7 @@ RUN source /opt/qt512/bin/qt512-env.sh \
   && qmake ../src/dsi_studio.pro \
   && make -k -j$(nproc) \
   && cd /opt/dsi-studio \
-  && curl -sSLO 'https://www.dropbox.com/s/xha3srev45at7vx/dsi_studio_64.zip' \
+  && curl -sSLO 'https://www.dropbox.com/s/pib533irglhnwy7/dsi_studio_64.zip' \
   && unzip dsi_studio_64.zip \
   && rm dsi_studio_64.zip \
   && cd dsi_studio_64 \
