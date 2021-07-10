@@ -96,13 +96,32 @@ void get_filenames_from(const std::string param,std::vector<std::string>& filena
         else
             filenames.push_back(file_list[index]);
     }
+    if(filenames.size() > file_list.size())
+        std::cout << "a total of " << filenames.size() << "files matching the search" << std::endl;
 }
 
 int trk_post(std::shared_ptr<fib_data> handle,std::shared_ptr<TractModel> tract_model,std::string tract_file_name,bool output_track);
 std::shared_ptr<fib_data> cmd_load_fib(const std::string file_name);
 
-
-
+bool load_tracts(const char* file_name,std::shared_ptr<TractModel> tract_model,std::shared_ptr<RoiMgr> roi_mgr)
+{
+    if(!std::filesystem::exists(file_name))
+    {
+        std::cout << "ERROR:" << file_name << " does not exist. terminating..." << std::endl;
+        return 1;
+    }
+    if(!tract_model->load_from_file(file_name))
+    {
+        std::cout << "ERROR: cannot read or parse the tractography file :" << file_name << std::endl;
+        return false;
+    }
+    if(!roi_mgr->report.empty())
+    {
+        std::cout << "filtering tracts using roi/roa/end regions." << std::endl;
+        tract_model->filter_by_roi(roi_mgr);
+    }
+    return true;
+}
 
 int ana(void)
 {
@@ -199,6 +218,10 @@ int ana(void)
         return 1;
     }
 
+    std::shared_ptr<RoiMgr> roi_mgr(new RoiMgr(handle));
+    if(!load_roi(handle,roi_mgr))
+        return 1;
+
     std::vector<std::string> tract_files;
     get_filenames_from("tract",tract_files);
     std::string output = po.get("output");
@@ -215,15 +238,12 @@ int ana(void)
         tipl::image<uint32_t,3> accumulate_map(dim);
         for(size_t i = 0;i < tract_files.size();++i)
         {
-            TractModel tract_model(handle);
-            if(!tract_model.load_from_file(tract_files[i].c_str()))
-            {
-                std::cout << "open file error:" << tract_files[i] << std::endl;
+            std::shared_ptr<TractModel> tract_model(new TractModel(handle));
+            if(!load_tracts(tract_files[i].c_str(),tract_model,roi_mgr))
                 return 1;
-            }
             std::cout << "accumulating " << tract_files[i] << "..." <<std::endl;
             std::vector<tipl::vector<3,short> > points;
-            tract_model.to_voxel(points,1.0f);
+            tract_model->to_voxel(points,1.0f);
             tipl::par_for(points.size(),[&](size_t j)
             {
                 tipl::vector<3,short> p = points[j];
@@ -251,11 +271,8 @@ int ana(void)
         for(size_t i = 0;i < tract_files.size();++i)
         {
             tracts.push_back(std::make_shared<TractModel>(handle));
-            if(!tracts.back()->load_from_file(tract_files[i].c_str()))
-            {
-                std::cout << "open file error. terminating..." << std::endl;
+            if(!load_tracts(tract_files[i].c_str(),tracts.back(),roi_mgr))
                 return 1;
-            }
         }
         std::cout << "save all tracts to " << output << std::endl;
         if(!TractModel::save_all(output.c_str(),tracts,tract_files))
@@ -273,16 +290,8 @@ int ana(void)
     {
         std::shared_ptr<TractModel> tract(new TractModel(handle));
         std::string file_name = tract_files[i];
-        if(!std::filesystem::exists(file_name))
-        {
-            std::cout << file_name << " does not exist. terminating..." << std::endl;
+        if(!load_tracts(tract_files[i].c_str(),tract,roi_mgr))
             return 1;
-        }
-        if (!tract->load_from_file(file_name.c_str()))
-        {
-            std::cout << "cannot open file " << file_name << std::endl;
-            return 1;
-        }
         if(i)
         {
             std::cout << file_name << " loaded and merged" << std::endl;
@@ -294,10 +303,7 @@ int ana(void)
             tract_model = tract;
         }
     }
-    std::shared_ptr<RoiMgr> roi_mgr(new RoiMgr(handle));
-    if(!load_roi(handle,roi_mgr))
-        return 1;
-    tract_model->filter_by_roi(roi_mgr);
+
     if(tract_model->get_visible_track_count() == 0)
     {
         std::cout << "no tracks remained after ROI selection." << std::endl;
