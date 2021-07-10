@@ -244,12 +244,14 @@ int ana(void)
             std::cout << "accumulating " << tract_files[i] << "..." <<std::endl;
             std::vector<tipl::vector<3,short> > points;
             tract_model->to_voxel(points,1.0f);
+            tipl::image<char,3> tract_mask(dim);
             tipl::par_for(points.size(),[&](size_t j)
             {
                 tipl::vector<3,short> p = points[j];
                 if(dim.is_valid(p))
-                    accumulate_map[tipl::pixel_index<3>(p[0],p[1],p[2],dim).index()]++;
+                    tract_mask[tipl::pixel_index<3>(p[0],p[1],p[2],dim).index()]=1;
             });
+            accumulate_map += tract_mask;
         }
         tipl::image<float,3> pdi(accumulate_map);
         tipl::multiply_constant(pdi,1.0f/float(tract_files.size()));
