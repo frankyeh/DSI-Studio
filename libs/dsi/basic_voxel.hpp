@@ -36,6 +36,7 @@ struct VoxelData
     std::vector<unsigned short> dir_index;
     float min_odf;
     tipl::matrix<3,3,float> jacobian;
+    tipl::matrix<3,3,float> grad_dev;
 
     void init(void)
     {
