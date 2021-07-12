@@ -1487,14 +1487,9 @@ bool ImageModel::save_fib(const std::string& output_name)
         error_msg = "Cannot save fib file";
         return false;
     }
-    {
-        uint16_t dim[3];
-        dim[0] = uint16_t(voxel.dim[0]);
-        dim[1] = uint16_t(voxel.dim[1]);
-        dim[2] = uint16_t(voxel.dim[2]);
-        mat_writer.write("dimension",dim,1,3);
-        mat_writer.write("voxel_size",voxel.vs);
-    }
+
+    mat_writer.write("dimension",voxel.dim);
+    mat_writer.write("voxel_size",voxel.vs);
 
     std::vector<float> float_data;
     std::vector<short> short_data;
