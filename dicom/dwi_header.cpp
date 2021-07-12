@@ -515,35 +515,34 @@ bool DwiHeader::output_src(const char* di_file,std::vector<std::shared_ptr<DwiHe
     //store dimension
     tipl::geometry<3> output_dim(geo);
     {
-        uint16_t dimension[3];
-        std::copy(geo.begin(),geo.end(),dimension);
+        tipl::vector<3,uint16_t> dimension(geo.begin());
         tipl::vector<3> voxel_size(dwi_files.front()->voxel_size);
 
         if(upsampling == 1) // upsampling 2
         {
             voxel_size /= 2.0;
-            std::for_each(dimension,dimension+3,[](uint16_t& i){i <<= 1;});
+            dimension *= 2;
         }
         if(upsampling == 2) // downsampling 2
         {
             voxel_size *= 2.0;
-            std::for_each(dimension,dimension+3,[](uint16_t& i){i >>= 1;});
+            dimension /= 2;
         }
         if(upsampling == 3) // upsampling 4
         {
             voxel_size /= 4.0;
-            std::for_each(dimension,dimension+3,[](uint16_t& i){i <<= 2;});
+            dimension *= 4;
         }
         if(upsampling == 4) // downsampling 4
         {
             voxel_size *= 4.0;
-            std::for_each(dimension,dimension+3,[](uint16_t& i){i >>= 2;});
+            dimension /= 4;
         }
         output_dim[0] = dimension[0];
         output_dim[1] = dimension[1];
         output_dim[2] = dimension[2];
 
-        write_mat.write("dimension",dimension,1,3);
+        write_mat.write("dimension",output_dim);
         write_mat.write("voxel_size",voxel_size);
 
     }
