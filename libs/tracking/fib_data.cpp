@@ -1,6 +1,7 @@
 #include "mac_filesystem.hpp"
 #include <QCoreApplication>
 #include <QFileInfo>
+#include <QDateTime>
 #include "fib_data.hpp"
 #include "tessellated_icosahedron.hpp"
 #include "tract_model.hpp"
@@ -1366,7 +1367,7 @@ void animal_reg(const tipl::image<float,3>& from,tipl::vector<3> from_vs,
         {PI*-0.5f,0.0f,PI}
     };
     float cost = std::numeric_limits<float>::max();
-    std::cout << "linear registratino for animal data" << std::endl;
+    set_title("linear registratino for animal data");
     tipl::par_for(5,[&](int i)
     {
          tipl::affine_transform<double> arg;
@@ -1387,12 +1388,16 @@ void fib_data::run_normalization(bool background,bool inv)
        (!inv && !mni_position.empty()) ||
        (inv && !inv_mni_position.empty()))
         return;
-    std::string output_file_name(fib_file_name);
-    output_file_name += ".";
-    output_file_name += QFileInfo(fa_template_list[template_id].c_str()).baseName().toLower().toStdString();
-    output_file_name += inv ? ".inv.mapping.gz" : ".mapping.gz";
+    std::string output_file_name1(fib_file_name),output_file_name2;
+    output_file_name1 += ".";
+    output_file_name1 += QFileInfo(fa_template_list[template_id].c_str()).baseName().toLower().toStdString();
+    output_file_name2 = output_file_name1;
+    output_file_name1 += ".inv.mapping.gz";
+    output_file_name2 += ".mapping.gz";
+    std::string output_file_name(inv ? output_file_name1:output_file_name2);
     gz_mat_read in;
-    if(in.load_from_file(output_file_name.c_str()))
+    if(QFileInfo(output_file_name.c_str()).lastModified() > QFileInfo(fib_file_name.c_str()).lastModified() &&
+       in.load_from_file(output_file_name.c_str()))
     {
         // check if the current fib files has the same recon steps as the one generating the maps
         std::string check_steps;
@@ -1419,9 +1424,9 @@ void fib_data::run_normalization(bool background,bool inv)
         begin_prog("running normalization");
     prog = 0;
     bool terminated = false;
-    auto lambda = [this,output_file_name,inv,&terminated]()
+    auto lambda = [this,output_file_name1,output_file_name2,&terminated]()
     {
-        tipl::transformation_matrix<double> T;
+        tipl::transformation_matrix<double> T,iT;
 
         auto It = template_I;
         auto It2 = template_I2;
@@ -1438,13 +1443,14 @@ void fib_data::run_normalization(bool background,bool inv)
 
         unsigned int downsampling = 0;
 
-        while(Is.size() > It.size())
+        while(Is.size() > It.size()*2.0f)
         {
             tipl::downsampling(Is);
             ++downsampling;
         }
 
-        tipl::filter::gaussian(Is);
+        if(!downsampling)
+            tipl::filter::gaussian(Is);
         prog = 1;
         if(!has_manual_atlas)
         {
@@ -1481,29 +1487,23 @@ void fib_data::run_normalization(bool background,bool inv)
         tipl::reg::cdm_pre(It,It2,Iss,Iss2);
         if(Iss2.geometry() == Iss.geometry())
         {
-            set_title("dual normalization");
-            if(inv)
-                tipl::reg::cdm2(It,It2,Iss,Iss2,dis,terminated);
-            else
-                tipl::reg::cdm2(Iss,Iss2,It,It2,inv_dis,terminated);
+            set_title("dual modality normalization");
+            tipl::reg::cdm2(It,It2,Iss,Iss2,dis,terminated);
+            tipl::invert_displacement(dis,inv_dis);
         }
         else
         {
-            if(inv)
-                tipl::reg::cdm(It,Iss,dis,terminated);
-            else
-                tipl::reg::cdm(Iss,It,inv_dis,terminated);
+            set_title("single modality normalization");
+            tipl::reg::cdm(It,Iss,dis,terminated);
+            tipl::invert_displacement(dis,inv_dis);
         }
 
         if(terminated)
             return;
-        prog = 4;
-        tipl::image<tipl::vector<3,float>,3 > mni(inv ? template_I.geometry() : dim);
-
-        if(terminated)
-            return;
-        if(inv)
         {
+            prog = 4;
+            set_title("calculating tempalte to subject warp field");
+            tipl::image<tipl::vector<3,float>,3 > mni(template_I.geometry());
             mni.for_each_mt([&](tipl::vector<3,float>& v,const tipl::pixel_index<3>& pos)
             {
                 tipl::vector<3> p(pos);
@@ -1511,66 +1511,55 @@ void fib_data::run_normalization(bool background,bool inv)
                 v += dis[pos.index()];
                 T(v);
             });
+            gz_mat_write out(output_file_name1.c_str());
+            if(out)
+            {
+                out.write("dimension",mni.geometry());
+                out.write("voxel_size",template_vs);
+                out.write("trans",template_trans_to_mni);
+                out.write("mapping",&mni[0][0],3,mni.size());
+                out.write("steps",steps);
+            }
             inv_mni_position.swap(mni);
         }
-        else {
-            T.inverse();
+        if(terminated)
+            return;
+        {
+            prog = 5;
+            set_title("calculating subject to template warp field");
+            tipl::image<tipl::vector<3,float>,3 > mni(dim);
+            iT = T;
+            iT.inverse();
             mni.for_each_mt([&](tipl::vector<3,float>& v,const tipl::pixel_index<3>& pos)
             {
                 tipl::vector<3> p(pos),d;
-                T(p);
+                iT(p);
                 v = p;
                 tipl::estimate(inv_dis,v,d,tipl::linear);
                 v += d;
                 template_to_mni(v);
             });
-            mni_position.swap(mni);
-        }
-
-        gz_mat_write out(output_file_name.c_str());
-        if(out)
-        {
-            if(inv)
+            gz_mat_write out(output_file_name2.c_str());
+            if(out)
             {
-                out.write("dimension",inv_mni_position.geometry());
-                out.write("voxel_size",template_vs);
-                out.write("trans",template_trans_to_mni);
-                out.write("mapping",&inv_mni_position[0][0],3,inv_mni_position.size());
-            }
-            else
-            {
-                out.write("dimension",mni_position.geometry());
+                out.write("dimension",mni.geometry());
                 out.write("voxel_size",vs);
                 out.write("trans",trans_to_mni);
-                out.write("mapping",&mni_position[0][0],3,mni_position.size());
+                out.write("mapping",&mni[0][0],3,mni.size());
+                out.write("steps",steps);
             }
-            out.write("steps",steps);
+            mni_position.swap(mni);
         }
-        prog = 5;
+        prog = 6;
     };
 
     if(background)
     {
         std::thread t(lambda);
-        while(check_prog(prog,5))
-        {
-            if(prog_aborted())
-            {
-                terminated = true;
-                t.join();
-                return;
-            }
-            if(inv)
-            {
-                if(!inv_mni_position.empty())
-                    break;
-            }
-            else
-            {
-                if(!mni_position.empty())
-                    break;
-            }
-        }
+        while(check_prog(prog,6))
+            std::this_thread::sleep_for(std::chrono::milliseconds(200));
+        if(prog_aborted())
+            terminated = true;
         check_prog(0,0);
         t.join();
     }
