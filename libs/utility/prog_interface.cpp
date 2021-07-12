@@ -35,10 +35,10 @@ void check_create(void)
 void begin_prog(const char* title,bool always_show_dialog)
 {
     std::cout << title << std::endl;
-    if(!has_gui || !is_main_thread())
-        return;
     if(title)
         current_title = title;
+    if(!has_gui || !is_main_thread())
+        return;
     if(progressDialog.get())
     {
         progressDialog->setLabelText(title);
@@ -67,9 +67,9 @@ bool is_running(void)
 void set_title(const char* title)
 {
     std::cout << title << std::endl;
+    current_title = title;
     if(!has_gui || !is_main_thread())
         return;
-    current_title = title;
     if(progressDialog.get())
     {
         progressDialog->setLabelText(title);
@@ -107,7 +107,7 @@ bool check_prog(unsigned int now,unsigned int total)
             expected_sec = ((double)t_total.elapsed()*(double)(total-now)/(double)now/1000.0);
         progressDialog->setRange(0, total);
         progressDialog->setValue(now);
-        QString label = progressDialog->labelText().split(':').at(0);
+        QString label = current_title.c_str();
         if(expected_sec)
             progressDialog->setLabelText(label + QString(": %1 of %2, estimated time: %3 min %4 sec").
                                              arg(now).arg(total).arg(expected_sec/60).arg(expected_sec%60));
