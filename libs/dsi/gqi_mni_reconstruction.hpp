@@ -162,12 +162,16 @@ public:
                     if(dual_modality)
                     {
                         std::cout << "using dual QA/ISO templates" << std::endl;
-                        //tipl::reg::cdm2(VFF,VFF2,VG,VG2,cdm_dis,terminated,param);
-                        //tipl::invert_displacement(cdm_dis);
-                        tipl::reg::cdm2(VG,VG2,VFF,VFF2,cdm_dis,terminated,param);
+                        tipl::reg::cdm2(VFF,VFF2,VG,VG2,cdm_dis,terminated,param);
+                        tipl::invert_displacement(cdm_dis);
+                        //tipl::reg::cdm2(VG,VG2,VFF,VFF2,cdm_dis,terminated,param);
                     }
                     else
-                        tipl::reg::cdm(VG,VFF,cdm_dis,terminated,param);
+                    {
+                        //tipl::reg::cdm(VG,VFF,cdm_dis,terminated,param);
+                        tipl::reg::cdm(VFF,VG,cdm_dis,terminated,param);
+                        tipl::invert_displacement(cdm_dis);
+                    }
                 },terminated))
                 throw std::runtime_error("reconstruction canceled");
 
