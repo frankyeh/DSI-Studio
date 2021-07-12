@@ -610,7 +610,7 @@ void RegToolBox::on_actionSave_Warpping_triggered()
         return;
     QString filename = QFileDialog::getSaveFileName(
             this,"Save Warpping","",
-            "Images (*.map.gz);;All files (*)" );
+            "Images (*mapping.gz);;All files (*)" );
     if(filename.isEmpty())
         return;
     gz_mat_write out(filename.toStdString().c_str());

@@ -176,8 +176,8 @@ int reg(void)
     if(po.has("output_warp"))
     {
         std::string filename = po.get("output_warp");
-        if(!QString(filename.c_str()).endsWith(".map.gz"))
-            filename += ".map.gz";
+        if(!QString(filename.c_str()).endsWith(".mapping.gz"))
+            filename += ".mapping.gz";
         gz_mat_write out(filename.c_str());
         if(!out)
         {
