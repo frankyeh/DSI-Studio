@@ -594,7 +594,7 @@ void reconstruction_window::on_actionRotate_triggered()
     tipl::image<float,3> ref2(ref);
     float m = tipl::median(ref2.begin(),ref2.end());
     tipl::multiply_constant_mt(ref,0.5f/m);
-    handle->rotate(ref.geometry(),manual->iT);
+    handle->rotate(ref.geometry(),manual->get_iT());
     handle->voxel.vs = vs;
     handle->voxel.report += " The diffusion images were rotated and scaled to the space of ";
     handle->voxel.report += QFileInfo(filenames[0]).baseName().toStdString();
@@ -745,7 +745,7 @@ void reconstruction_window::on_actionManual_Rotation_triggered()
     if(manual->exec() != QDialog::Accepted)
         return;
     begin_prog("rotating");
-    handle->rotate(handle->dwi.geometry(),manual->iT);
+    handle->rotate(handle->dwi.geometry(),manual->get_iT());
     load_b_table();
     update_dimension();
     on_SlicePos_valueChanged(ui->SlicePos->value());
@@ -775,7 +775,7 @@ void reconstruction_window::on_actionReplace_b0_by_T2W_image_triggered()
         return;
 
     begin_prog("rotating");
-    handle->rotate(ref.geometry(),manual->iT);
+    handle->rotate(ref.geometry(),manual->get_iT());
     handle->voxel.vs = vs;
     tipl::pointer_image<unsigned short,3> I = tipl::make_image((unsigned short*)handle->src_dwi_data[0],handle->voxel.dim);
     ref *= (float)(*std::max_element(I.begin(),I.end()))/(*std::max_element(ref.begin(),ref.end()));
@@ -814,7 +814,8 @@ bool get_src(std::string filename,ImageModel& src2,std::string& error_msg)
         src2.voxel.dim = I.geometry();
         src2.src_dwi_data.push_back(&I[0]);
     }
-    else {
+    else
+    {
         if (!src2.load_from_file(filename.c_str()))
         {
             error_msg = "cannot open ";
@@ -882,7 +883,7 @@ void reconstruction_window::on_actionImage_upsample_to_T1W_TESTING_triggered()
     float m = tipl::median(ref2.begin(),ref2.end());
     tipl::multiply_constant_mt(ref,0.5f/m);
 
-    handle->rotate(ref.geometry(),manual->iT,tipl::image<tipl::vector<3>,3>(),ref,var);
+    handle->rotate(ref.geometry(),manual->get_iT(),tipl::image<tipl::vector<3>,3>(),ref,var);
     handle->voxel.vs = vs;
     handle->voxel.report += " The diffusion images were rotated and scaled to the space of ";
     handle->voxel.report += QFileInfo(filenames[0]).baseName().toStdString();
@@ -1007,7 +1008,7 @@ void reconstruction_window::on_align_slices_clicked()
     if(manual->exec() != QDialog::Accepted)
         return;
 
-    handle->rotate_one_dwi(ui->b_table->currentRow(),manual->iT);
+    handle->rotate_one_dwi(ui->b_table->currentRow(),manual->get_iT());
 
     update_dimension();
     load_b_table();
@@ -1088,5 +1089,5 @@ void reconstruction_window::on_qsdr_manual_clicked()
     manual->on_rerun_clicked();
     if(manual->exec() != QDialog::Accepted)
         return;
-    handle->voxel.qsdr_trans = manual->iT;
+    handle->voxel.qsdr_trans = manual->get_iT();
 }

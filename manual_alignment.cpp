@@ -24,10 +24,25 @@ manual_alignment::manual_alignment(QWidget *parent,
     from_original = from_;
     from.swap(from_);
     to.swap(to_);
+
+    while(tipl::minimum(to_vs) < tipl::minimum(from_vs)/2.0f)
+    {
+        tipl::downsampling(to);
+        to_vs *= 2.0f;
+        to_downsample *= 0.5f;
+        std::cout << "downsampling to image by 2" << std::endl;
+    }
+    while(tipl::minimum(from_vs) < tipl::minimum(to_vs)/2.0f)
+    {
+        tipl::downsampling(from);
+        from_vs *= 2.0f;
+        from_downsample *= 2.0f;
+        std::cout << "downsampling from image by 2" << std::endl;
+    }
+
     tipl::normalize(from,1.0);
     tipl::normalize(to,1.0);
     tipl::reg::get_bound(from,to,arg,b_upper,b_lower,reg_type,tipl::reg::large_bound);
-
     ui->setupUi(this);
     ui->options->hide();
     ui->menuBar->hide();
@@ -174,6 +189,18 @@ void manual_alignment::update_image(void)
     warped_from.clear();
     warped_from.resize(to.geometry());
     tipl::resample(from,warped_from,iT,tipl::linear);
+}
+tipl::transformation_matrix<float> manual_alignment::get_iT(void)
+{
+    update_image();
+    tipl::transformation_matrix<float> result = iT;
+    if(to_downsample != 1.0f)
+        tipl::multiply_constant(result.sr,result.sr+9,to_downsample);
+    if(from_downsample != 1.0f)
+        tipl::multiply_constant(result.data,result.data+12,from_downsample);
+    std::cout << "iT:" << std::endl;
+    std::cout << result << std::endl;
+    return result;
 }
 void manual_alignment::param_changed()
 {

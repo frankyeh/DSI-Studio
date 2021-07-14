@@ -15,27 +15,25 @@ class fib_data;
 class manual_alignment : public QDialog
 {
     Q_OBJECT
-public:
+private:
     tipl::image<float,3> from_original;
     tipl::image<float,3> from,to,warped_from;
-    tipl::matrix<4,4,float> nifti_srow;
     tipl::affine_transform<float> arg,b_upper,b_lower;
     tipl::vector<3> from_vs,to_vs;
     QGraphicsScene scene[3];
     tipl::color_image buffer[3];
     QImage slice_image[3];
     tipl::reg::reg_type reg_type;
+    float from_downsample = 1.0f;
+    float to_downsample = 1.0f;
+    tipl::thread thread;
+    tipl::transformation_matrix<float> T,iT;
+    void load_param(void);
 public:
     std::vector<tipl::image<float,3> > other_images;
     std::vector<std::string> other_images_name;
+    tipl::matrix<4,4,float> nifti_srow;
     std::vector<tipl::transformation_matrix<float> > other_image_T;
-private:
-    tipl::thread thread;
-private:
-
-    void load_param(void);
-public:
-    tipl::transformation_matrix<float> T,iT;
 public:
     QTimer* timer;
     explicit manual_alignment(QWidget *parent,
@@ -55,6 +53,7 @@ public:
         other_image_T.push_back(T);
     }
     void add_images(std::shared_ptr<fib_data> handle);
+    tipl::transformation_matrix<float> get_iT(void);
 private slots:
     void slice_pos_moved();
     void param_changed();

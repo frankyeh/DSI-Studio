@@ -1763,10 +1763,7 @@ void tracking_window::stripSkull()
     tipl::downsampling(It);
     tipl::downsampling(Iw);
     tipl::downsampling(Iw);
-    tipl::downsampling(J);
-    tipl::downsampling(J);
     vs *= 4.0f;
-    vsJ *= 4.0f;
 
     QMessageBox::information(this,"DSI Studio","Please align brain images to visualize isosurface.");
     std::shared_ptr<manual_alignment> manual(new manual_alignment(this,
@@ -1775,18 +1772,12 @@ void tracking_window::stripSkull()
     manual->on_rerun_clicked();
     if(manual->exec() != QDialog::Accepted)
         return;
-    auto T = tipl::transformation_matrix<float>(manual->arg,
-        It.geometry(),vs,J.geometry(),vsJ);
-
-    tipl::multiply_constant(T.data,T.data+12,4.0f);
-    tipl::transformation_matrix<float> iT = T;
-    iT.inverse();
 
     tipl::filter::mean(Iw);
     tipl::filter::mean(Iw);
 
     tipl::image<float,3> Iw_(reg_slice->source_images.geometry());
-    tipl::resample_mt(Iw,Iw_,iT,tipl::linear);
+    tipl::resample_mt(Iw,Iw_,manual->get_iT(),tipl::linear);
 
     reg_slice->skull_removed_images = reg_slice->source_images;
     reg_slice->skull_removed_images *= Iw_;
@@ -1865,18 +1856,19 @@ void tracking_window::on_actionAdjust_Mapping_triggered()
         QMessageBox::information(this,"Error","In the region window to the left, select the inserted slides to adjust mapping");
         return;
     }
+    reg_slice->terminate();
     tipl::image<float,3> iso_fa;
     get_iso_fa(handle,iso_fa);
     std::shared_ptr<manual_alignment> manual(new manual_alignment(this,
         iso_fa,slices[0]->vs,
         reg_slice->get_source(),reg_slice->vs,
         (reg_slice->is_picture() ? tipl::reg::affine : tipl::reg::rigid_body),tipl::reg::cost_type::mutual_info));
-    manual->arg = reg_slice->arg_min;
-    manual->check_reg();
     if(manual->exec() != QDialog::Accepted)
         return;
-    reg_slice->terminate();
-    reg_slice->arg_min = manual->arg;
+
+    tipl::transformation_matrix<float> T = manual->get_iT();
+    T.inverse();
+    T.to_affine_transform(reg_slice->arg_min,handle->dim,handle->vs,reg_slice->dim,reg_slice->vs);
     reg_slice->update_transform();
     reg_slice->is_diffusion_space = false;
     glWidget->updateGL();
@@ -2801,7 +2793,7 @@ void tracking_window::on_actionAdjust_Atlas_Mapping_triggered()
         tipl::reg::affine,tipl::reg::cost_type::mutual_info));
     if(manual->exec() != QDialog::Accepted)
         return;
-    handle->manual_template_T = manual->iT;
+    handle->manual_template_T = manual->get_iT();
     handle->has_manual_atlas = true;
     handle->need_normalization = true;
     handle->mni_position.clear();
