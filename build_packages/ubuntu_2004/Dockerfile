@@ -21,6 +21,8 @@ RUN apt update && apt full-upgrade -y && \
   apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 ADD "https://api.github.com/repos/frankyeh/DSI-Studio/commits?per_page=1" latest_commit
+ADD "https://api.github.com/repos/frankyeh/TIPL/commits?per_page=1" latest_commit
+
 RUN mkdir /opt/dsi-studio \
   && cd /opt/dsi-studio \
   && git clone https://github.com/frankyeh/DSI-Studio.git \
