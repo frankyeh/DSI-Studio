@@ -42,6 +42,7 @@ RUN update-alternatives --auto gcc
 #Need to use a different shell so the QT ENV script works
 SHELL ["/bin/bash", "-c"]
 
+ADD "https://api.github.com/repos/frankyeh/DSI-Studio/commits?per_page=1" latest_commit
 RUN source /opt/qt512/bin/qt512-env.sh \
   && mkdir /opt/dsi-studio \
   && cd /opt/dsi-studio \
