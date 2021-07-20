@@ -53,6 +53,8 @@ public:
         other_image_T.push_back(T);
     }
     void add_images(std::shared_ptr<fib_data> handle);
+    void set_arg(const tipl::affine_transform<float>& arg_min,
+                 tipl::transformation_matrix<float> iT);
     tipl::transformation_matrix<float> get_iT(void);
 private slots:
     void slice_pos_moved();

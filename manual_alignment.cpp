@@ -27,17 +27,21 @@ manual_alignment::manual_alignment(QWidget *parent,
 
     while(tipl::minimum(to_vs) < tipl::minimum(from_vs)/2.0f)
     {
-        tipl::downsampling(to);
+        tipl::image<float,3> new_to;
+        tipl::downsample_with_padding2(to,new_to);
+        to.swap(new_to);
         to_vs *= 2.0f;
         to_downsample *= 0.5f;
-        std::cout << "downsampling to image by 2" << std::endl;
+        std::cout << "downsampling template image by 2 dim=" << to.geometry() << std::endl;
     }
     while(tipl::minimum(from_vs) < tipl::minimum(to_vs)/2.0f)
     {
-        tipl::downsampling(from);
+        tipl::image<float,3> new_from;
+        tipl::downsample_with_padding2(from,new_from);
+        from.swap(new_from);
         from_vs *= 2.0f;
         from_downsample *= 2.0f;
-        std::cout << "downsampling from image by 2" << std::endl;
+        std::cout << "downsampling subject image by 2 dim=" << from.geometry() << std::endl;
     }
 
     tipl::normalize(from,1.0);
@@ -82,6 +86,7 @@ manual_alignment::manual_alignment(QWidget *parent,
     timer->setInterval(1000);
     connect(timer, SIGNAL(timeout()), this, SLOT(check_reg()));
 
+    ui->zoom->setValue(400.0/std::max(from.width(),to.width()));
     update_image();
     slice_pos_moved();
 
@@ -189,6 +194,24 @@ void manual_alignment::update_image(void)
     warped_from.clear();
     warped_from.resize(to.geometry());
     tipl::resample(from,warped_from,iT,tipl::linear);
+}
+
+void manual_alignment::set_arg(const tipl::affine_transform<float>& arg_min,
+                               tipl::transformation_matrix<float> iT)
+{
+    if(to_downsample != 1.0f || from_downsample != 1.0f)
+    {
+        if(to_downsample != 1.0f)
+            tipl::multiply_constant(iT.sr,iT.sr+9,1.0f/to_downsample);
+        if(from_downsample != 1.0f)
+            tipl::multiply_constant(iT.data,iT.data+12,1.0f/from_downsample);
+        iT.inverse();
+        iT.to_affine_transform(arg,from.geometry(),from_vs,to.geometry(),to_vs);
+    }
+    else
+        arg = arg_min;
+    tipl::reg::get_bound(from,to,arg,b_upper,b_lower,reg_type,tipl::reg::large_bound);
+    check_reg();
 }
 tipl::transformation_matrix<float> manual_alignment::get_iT(void)
 {
