@@ -1011,3 +1011,17 @@ void view_image::on_dwi_volume_valueChanged(int value)
     init_image();
     show_image();
 }
+
+void view_image::on_actionDownsample_by_2_triggered()
+{
+    tipl::downsample_with_padding2(data);
+    init_image();
+    show_image();
+}
+
+void view_image::on_actionUpsample_by_2_triggered()
+{
+    tipl::upsampling(data);
+    init_image();
+    show_image();
+}

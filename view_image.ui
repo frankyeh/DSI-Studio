@@ -320,6 +320,8 @@
     <addaction name="actionTranslocate"/>
     <addaction name="actionLPS_RAS_swap"/>
     <addaction name="separator"/>
+    <addaction name="actionDownsample_by_2"/>
+    <addaction name="actionUpsample_by_2"/>
    </widget>
    <widget class="QMenu" name="menu_Header">
     <property name="title">
@@ -488,6 +490,16 @@
   <action name="actionSignal_Smoothing">
    <property name="text">
     <string>Smoothing...</string>
+   </property>
+  </action>
+  <action name="actionDownsample_by_2">
+   <property name="text">
+    <string>Downsample by 2</string>
+   </property>
+  </action>
+  <action name="actionUpsample_by_2">
+   <property name="text">
+    <string>Upsample by 2</string>
    </property>
   </action>
  </widget>

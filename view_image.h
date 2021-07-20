@@ -96,6 +96,10 @@ private slots:
 
     void on_dwi_volume_valueChanged(int value);
 
+    void on_actionDownsample_by_2_triggered();
+
+    void on_actionUpsample_by_2_triggered();
+
 private:
     Ui::view_image *ui;
     tipl::image<float,3> data;
