@@ -64,14 +64,17 @@ void AtlasDialog::on_add_atlas_clicked()
     }
     begin_prog("adding regions");
     w->regionWidget->begin_update();
-    for(unsigned int index = 0;check_prog(index,indexes.size()); ++index)
-        w->regionWidget->add_region_from_atlas(handle->atlas_list[atlas_index],uint32_t(indexes[int(index)].row()));
+    if(indexes.count() == ui->region_list->model()->rowCount()) // select all
+        w->regionWidget->add_all_regions_from_atlas(handle->atlas_list[atlas_index]);
+    else
+    {
+        for(unsigned int index = 0;check_prog(index,indexes.size()); ++index)
+            w->regionWidget->add_region_from_atlas(handle->atlas_list[atlas_index],uint32_t(indexes[int(index)].row()));
+    }
     w->regionWidget->end_update();
     w->glWidget->updateGL();
     w->slice_need_update = true;
     w->raise();
-
-
 
     ui->region_list->clearSelection();
     ui->search_atlas->setText("");
@@ -99,14 +102,14 @@ void AtlasDialog::on_search_atlas_textChanged(const QString &)
         return;
     std::string atlas_name = name_value.substr(pos+1);
     std::string region_name = name_value.substr(0,pos);
-    for(int i = 0;i < handle->atlas_list.size();++i)
+    for(size_t i = 0;i < handle->atlas_list.size();++i)
         if(atlas_name == handle->atlas_list[i]->name)
         {
-            ui->atlasListBox->setCurrentIndex(i);
-            for(int j = 0;j < handle->atlas_list[i]->get_list().size();++j)
+            ui->atlasListBox->setCurrentIndex(int(i));
+            for(size_t j = 0;j < handle->atlas_list[i]->get_list().size();++j)
             if(handle->atlas_list[i]->get_list()[j] == region_name)
             {
-                ui->region_list->setCurrentIndex(ui->region_list->model()->index(j,0));
+                ui->region_list->setCurrentIndex(ui->region_list->model()->index(int(j),0));
                 ui->search_atlas->setText("");
                 return;
             }
@@ -115,22 +118,7 @@ void AtlasDialog::on_search_atlas_textChanged(const QString &)
 
 void AtlasDialog::on_add_all_regions_clicked()
 {
-    atlas_index = uint32_t(ui->atlasListBox->currentIndex());
-    atlas_name = ui->atlasListBox->currentText().toStdString();
-    if(!handle->atlas_list[atlas_index]->load_from_file())
-    {
-        QMessageBox::information(this,"Error",handle->atlas_list[atlas_index]->error_msg.c_str());
-        return;
-    }
-    auto* w = dynamic_cast<tracking_window*>(parent());
-    if(!w)
-        return;
-    begin_prog("adding regions");
-    w->regionWidget->begin_update();
-    w->regionWidget->add_all_regions_from_atlas(handle->atlas_list[atlas_index]);
-    w->regionWidget->end_update();
-    w->glWidget->updateGL();
-    w->slice_need_update = true;
-    w->raise();
-
+    ui->region_list->selectAll();
+    ui->region_list->setFocus();
+    ui->region_list->raise();
 }

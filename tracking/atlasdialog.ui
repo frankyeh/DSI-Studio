@@ -18,7 +18,30 @@
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
    <item>
-    <widget class="QComboBox" name="atlasListBox"/>
+    <layout class="QHBoxLayout" name="horizontalLayout_3">
+     <property name="spacing">
+      <number>0</number>
+     </property>
+     <property name="topMargin">
+      <number>0</number>
+     </property>
+     <item>
+      <widget class="QComboBox" name="atlasListBox"/>
+     </item>
+     <item>
+      <widget class="QPushButton" name="add_all_regions">
+       <property name="maximumSize">
+        <size>
+         <width>64</width>
+         <height>16777215</height>
+        </size>
+       </property>
+       <property name="text">
+        <string>Select All</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
    </item>
    <item>
     <widget class="QListView" name="region_list">
@@ -67,16 +90,9 @@
       </spacer>
      </item>
      <item>
-      <widget class="QPushButton" name="add_all_regions">
-       <property name="text">
-        <string>Add Alll</string>
-       </property>
-      </widget>
-     </item>
-     <item>
       <widget class="QPushButton" name="add_atlas">
        <property name="text">
-        <string>Add Selected</string>
+        <string>Add</string>
        </property>
       </widget>
      </item>
