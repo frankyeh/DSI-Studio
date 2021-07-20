@@ -1863,6 +1863,13 @@ void tracking_window::on_actionAdjust_Mapping_triggered()
         iso_fa,slices[0]->vs,
         reg_slice->get_source(),reg_slice->vs,
         (reg_slice->is_picture() ? tipl::reg::affine : tipl::reg::rigid_body),tipl::reg::cost_type::mutual_info));
+
+    {
+        reg_slice->update_transform();
+        manual->set_arg(reg_slice->arg_min,reg_slice->T);
+        manual->check_reg();
+    }
+
     if(manual->exec() != QDialog::Accepted)
         return;
 
