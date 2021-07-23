@@ -60,7 +60,6 @@ manual_alignment::manual_alignment(QWidget *parent,
 
 
 
-    load_param();
 
     ui->sag_slice_pos->setMaximum(to.width()-1);
     ui->sag_slice_pos->setMinimum(0);
@@ -72,7 +71,7 @@ manual_alignment::manual_alignment(QWidget *parent,
     ui->axi_slice_pos->setMinimum(0);
     ui->axi_slice_pos->setValue(to.depth() >> 1);
 
-
+    load_param();
 
     connect_arg_update();
     connect(ui->sag_slice_pos,SIGNAL(valueChanged(int)),this,SLOT(slice_pos_moved()));
@@ -144,6 +143,7 @@ manual_alignment::~manual_alignment()
 void manual_alignment::load_param(void)
 {
     // translocation
+    disconnect_arg_update();
     ui->tx->setMaximum(b_upper.translocation[0]);
     ui->tx->setMinimum(b_lower.translocation[0]);
     ui->tx->setValue(arg.translocation[0]);
@@ -174,16 +174,16 @@ void manual_alignment::load_param(void)
     ui->sz->setMinimum(b_lower.scaling[2]);
     ui->sz->setValue(arg.scaling[2]);
     //tilting
-    ui->xy->setMaximum(b_upper.affine[0]);
-    ui->xy->setMinimum(b_lower.affine[0]);
-    ui->xy->setValue(arg.affine[0]);
-    ui->xz->setMaximum(b_upper.affine[1]);
-    ui->xz->setMinimum(b_lower.affine[1]);
-    ui->xz->setValue(arg.affine[1]);
-    ui->yz->setMaximum(b_upper.affine[2]);
-    ui->yz->setMinimum(b_lower.affine[2]);
-    ui->yz->setValue(arg.affine[2]);
-
+    ui->xy->setMaximum(double(b_upper.affine[0]));
+    ui->xy->setMinimum(double(b_lower.affine[0]));
+    ui->xy->setValue(double(arg.affine[0]));
+    ui->xz->setMaximum(double(b_upper.affine[1]));
+    ui->xz->setMinimum(double(b_lower.affine[1]));
+    ui->xz->setValue(double(arg.affine[1]));
+    ui->yz->setMaximum(double(b_upper.affine[2]));
+    ui->yz->setMinimum(double(b_lower.affine[2]));
+    ui->yz->setValue(double(arg.affine[2]));
+    connect_arg_update();
 }
 
 void manual_alignment::update_image(void)
@@ -235,17 +235,7 @@ void manual_alignment::param_changed()
     arg.rotation[1] = ui->ry->value();
     arg.rotation[2] = ui->rz->value();
 
-    if(reg_type == tipl::reg::affine) // not rigid body
-    {
-        arg.scaling[0] = ui->sx->value();
-        arg.scaling[1] = ui->sy->value();
-        arg.scaling[2] = ui->sz->value();
-
-        arg.affine[0] = ui->xy->value();
-        arg.affine[1] = ui->xz->value();
-        arg.affine[2] = ui->yz->value();
-    }
-    else
+    if(ui->reg_type->currentIndex() <= 1) // translocation or rigid
     {
         ui->sx->setValue(arg.scaling[0]);
         ui->sy->setValue(arg.scaling[1]);
@@ -254,6 +244,16 @@ void manual_alignment::param_changed()
         ui->xy->setValue(arg.affine[0]);
         ui->xz->setValue(arg.affine[1]);
         ui->yz->setValue(arg.affine[2]);
+    }
+    else
+    {
+        arg.scaling[0] = ui->sx->value();
+        arg.scaling[1] = ui->sy->value();
+        arg.scaling[2] = ui->sz->value();
+
+        arg.affine[0] = ui->xy->value();
+        arg.affine[1] = ui->xz->value();
+        arg.affine[2] = ui->yz->value();
     }
     update_image();
     slice_pos_moved();
@@ -390,6 +390,7 @@ void manual_alignment::on_reg_type_currentIndexChanged(int)
         ui->scaling_group->setEnabled(true);
         ui->tilting_group->setEnabled(true);
     }
+    load_param();
 }
 
 
