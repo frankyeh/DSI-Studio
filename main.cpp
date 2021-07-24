@@ -120,7 +120,7 @@ bool load_file_name(void)
         QDir dir = QCoreApplication::applicationDirPath()+ "/atlas";
         if(!dir.exists())
             dir = QDir::currentPath()+ "/atlas";
-        std::cout << "searching for atlas at " << dir.absolutePath().toStdString() << std::endl;
+
         QStringList name_list = dir.entryList(QStringList("*"),QDir::Dirs|QDir::NoSymLinks);
 
         // Make HCP1021 the default
