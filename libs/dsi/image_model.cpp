@@ -454,21 +454,28 @@ bool ImageModel::run_steps(std::string steps)
     while(std::getline(in,step))
     {
         size_t pos = step.find('=');
+        std::string cmd,param;
         if(pos == std::string::npos)
         {
-            if(!command(step))
-                return false;
+            cmd = step.substr(0,step.find_last_of(']')+1);
         }
         else
         {
-            if(!command(step.substr(0,pos),step.substr(pos+1,step.size()-pos-1)))
-                return false;
+            cmd = step.substr(0,pos);
+            param = step.substr(pos+1,step.size()-pos-1);
+        }
+        if(!command(cmd,param))
+        {
+            error_msg = "processing failed at ";
+            error_msg += step;
+            return false;
         }
     }
     return true;
 }
 bool ImageModel::command(std::string cmd,std::string param)
 {
+    std::cout << cmd << (param.empty() ? "":" param:") << param << std::endl;
     if(cmd == "[Step T2a][Open]")
     {
         if(!std::filesystem::exists(param))
