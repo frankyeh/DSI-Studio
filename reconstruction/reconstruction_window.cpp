@@ -369,8 +369,11 @@ void reconstruction_window::on_doDTI_clicked()
             begin_prog("load src");
             if(!load_src(index))
                 break;
-            handle->run_steps(steps);
-            handle->voxel.steps = steps;
+            if(!handle->run_steps(steps))
+            {
+                QMessageBox::critical(this,"ERROR",QFileInfo(filenames[index]).fileName() + " : " + handle->error_msg.c_str());
+                return;
+            }
         }
         std::fill(handle->voxel.param.begin(),handle->voxel.param.end(),0.0);
         if(ui->DTI->isChecked())
@@ -481,7 +484,7 @@ void reconstruction_window::on_actionSave_4D_nifti_triggered()
                 if (!model.load_from_file(filenames[index].toStdString().c_str()) ||
                     !model.run_steps(handle->voxel.steps))
                 {
-                    QMessageBox::critical(this,"error",QFileInfo(filenames[index]).fileName() + " : " + model.error_msg.c_str());
+                    QMessageBox::critical(this,"ERROR",QFileInfo(filenames[index]).fileName() + " : " + model.error_msg.c_str());
                     return;
                 }
                 QString file_prefix = filenames[index];
