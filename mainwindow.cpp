@@ -1197,12 +1197,14 @@ void MainWindow::on_styles_activated(const QString&)
     }
 }
 
-#ifdef _WIN32
-void show_console(void);
-#endif
 void MainWindow::on_show_console_clicked()
 {
     #ifdef _WIN32
-        show_console();
+    if(!AllocConsole())
+        return;
+    FILE *d;
+    freopen_s(&d,"CONOUT$", "w", stdout);
+    std::cout.clear();
+    std::cin.clear();
     #endif
 }
