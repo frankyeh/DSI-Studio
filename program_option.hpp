@@ -91,6 +91,10 @@ public:
         return false;
     }
 
+    void set_used(char value)
+    {
+        std::fill(used.begin(),used.end(),value);
+    }
     void set(const char* name,const std::string& value)
     {
         std::string str_name(name);
