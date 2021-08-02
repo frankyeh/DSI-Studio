@@ -878,14 +878,31 @@ void RegionTableWidget::load_region_color(void)
         return;
     std::vector<int> colors((std::istream_iterator<float>(in)),
                               (std::istream_iterator<float>()));
-    for(size_t index = 0,pos = 0;index < regions.size() && pos+2 < colors.size();++index,pos+=3)
+    if(colors.size() == regions.size()*4) // RGBA
     {
-        tipl::rgb c(std::min<int>(colors[pos],255),
-                    std::min<int>(colors[pos+1],255),
-                    std::min<int>(colors[pos+2],255));
-        regions[index]->show_region.color = c;
-        regions[index]->modified = true;
-        item(int(index),2)->setData(Qt::UserRole,0xFF000000 | uint32_t(c));
+        for(size_t index = 0,pos = 0;index < regions.size() && pos+2 < colors.size();++index,pos+=4)
+        {
+            tipl::rgb c(std::min<int>(colors[pos],255),
+                        std::min<int>(colors[pos+1],255),
+                        std::min<int>(colors[pos+2],255),
+                        std::min<int>(colors[pos+3],255));
+            regions[index]->show_region.color = c;
+            regions[index]->modified = true;
+            item(int(index),2)->setData(Qt::UserRole,uint32_t(c));
+        }
+    }
+    else
+    //RGB
+    {
+        for(size_t index = 0,pos = 0;index < regions.size() && pos+2 < colors.size();++index,pos+=3)
+        {
+            tipl::rgb c(std::min<int>(colors[pos],255),
+                        std::min<int>(colors[pos+1],255),
+                        std::min<int>(colors[pos+2],255),255);
+            regions[index]->show_region.color = c;
+            regions[index]->modified = true;
+            item(int(index),2)->setData(Qt::UserRole,uint32_t(c));
+        }
     }
     emit need_update();
 }
@@ -903,7 +920,7 @@ void RegionTableWidget::save_region_color(void)
     for(size_t index = 0;index < regions.size();++index)
     {
         tipl::rgb c(regions[index]->show_region.color);
-        out << int(c[2]) << " " << int(c[1]) << " " << int(c[0]) << std::endl;
+        out << int(c[2]) << " " << int(c[1]) << " " << int(c[0]) << " " << int(c[3]) << std::endl;
     }
     QMessageBox::information(this,"DSI Studio","File saved");
 }
