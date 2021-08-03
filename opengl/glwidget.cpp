@@ -2847,8 +2847,10 @@ bool GLWidget::command(QString cmd,QString param,QString param2)
             int ow = width(),oh = height();
             in >> w >> h;
             resize(w,h);
+            resizeGL(w,h);
             grab_image().save(param);
             resize(ow,oh);
+            resizeGL(ow,oh);
         }
         else
             grab_image().save(param);
@@ -2892,6 +2894,7 @@ bool GLWidget::command(QString cmd,QString param,QString param2)
             tipl::io::avi avi;
             #ifndef __APPLE__
                 resize(1980,1080);
+                resizeGL(1980,1080);
             #endif
             for(float index = 0.0f;check_prog(index,360);index += 0.2f)
             {
