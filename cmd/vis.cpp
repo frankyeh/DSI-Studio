@@ -18,8 +18,6 @@ int vis(void)
     new_mdi->setAttribute(Qt::WA_DeleteOnClose);
     new_mdi->setWindowTitle(po.get("source").c_str());
     new_mdi->showMaximized();
-    if(!po.has("stay_open"))
-        new_mdi->hide();
 
     if(po.has("track"))
         new_mdi->tractWidget->load_tracts(QString(po.get("track").c_str()).split(","));
