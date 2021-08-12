@@ -1113,6 +1113,7 @@
     <addaction name="actionInsert_T1_T2"/>
     <addaction name="actionInsert_MNI_images"/>
     <addaction name="menuInsert_Picture"/>
+    <addaction name="separator"/>
     <addaction name="menuAdd_Isosurface"/>
     <addaction name="separator"/>
     <addaction name="actionSave_T1W_T2W_images"/>
@@ -1147,13 +1148,11 @@
     <property name="title">
      <string>Analysis</string>
     </property>
-    <addaction name="actionManual_Registration"/>
+    <addaction name="actionAdd_Tracking_Metrics"/>
     <addaction name="separator"/>
     <addaction name="actionQuality_Assessment"/>
-    <addaction name="actionImprove_Quality"/>
     <addaction name="actionFIB_protocol"/>
     <addaction name="separator"/>
-    <addaction name="actionPPV_analysis"/>
    </widget>
    <widget class="QMenu" name="menuLayout">
     <property name="title">
@@ -3107,15 +3106,6 @@ Tracking</string>
     <string>Save Endpoints In Current Slice (T1W/T2W) space...</string>
    </property>
   </action>
-  <action name="actionSave_Tracts_in_MNI_space">
-   <property name="icon">
-    <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
-   </property>
-   <property name="text">
-    <string>Save Tracts In MNI Space...</string>
-   </property>
-  </action>
   <action name="actionOpen_Cluster_Labels">
    <property name="icon">
     <iconset resource="../icons.qrc">
@@ -3663,11 +3653,6 @@ Tracking</string>
     <string>Ctrl+Shift+3</string>
    </property>
   </action>
-  <action name="actionPPV_analysis">
-   <property name="text">
-    <string>PPV analysis...</string>
-   </property>
-  </action>
   <action name="actionBy_Size">
    <property name="text">
     <string>By Size</string>
@@ -4037,6 +4022,11 @@ Tracking</string>
    </property>
    <property name="text">
     <string>Save All Regions as 4D NIFTI...</string>
+   </property>
+  </action>
+  <action name="actionAdd_Tracking_Metrics">
+   <property name="text">
+    <string>Add Tracking Metrics...</string>
    </property>
   </action>
  </widget>

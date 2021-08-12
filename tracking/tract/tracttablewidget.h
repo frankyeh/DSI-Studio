@@ -111,7 +111,6 @@ public slots:
     void move_down(void);
     void show_tracts_statistics(void);
     void recog_tracks(void);
-    void ppv_analysis(void);
     void show_report(void);
 
 

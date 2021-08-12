@@ -137,8 +137,6 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         }
         // Enabled/disable GUIs
         {
-            if(!handle->is_qsdr)
-                ui->actionManual_Registration->setEnabled(false);
             if(!handle->trackable)
             {
                 ui->perform_tracking->hide();
@@ -438,7 +436,6 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         connect(ui->track_up,SIGNAL(clicked()),tractWidget,SLOT(move_up()));
         connect(ui->track_down,SIGNAL(clicked()),tractWidget,SLOT(move_down()));
 
-        connect(ui->actionPPV_analysis,SIGNAL(triggered()),tractWidget,SLOT(ppv_analysis()));
 
 
 
@@ -1347,28 +1344,6 @@ void tracking_window::keyPressEvent ( QKeyEvent * event )
 
 }
 
-
-
-void tracking_window::on_actionManual_Registration_triggered()
-{
-    if(!handle->load_template())
-    {
-        QMessageBox::information(this,"Error","No template image loaded.",0);
-        return;
-    }
-    tipl::image<float,3> from = current_slice->get_source();
-    tipl::filter::gaussian(from);
-    from -= tipl::segmentation::otsu_threshold(from);
-    tipl::lower_threshold(from,0.0);
-    std::shared_ptr<manual_alignment> manual(new manual_alignment(this,
-                                   from,handle->vs,
-                                   handle->template_I,handle->template_vs,
-                                   tipl::reg::affine,tipl::reg::cost_type::corr));
-
-    manual->on_rerun_clicked();
-    if(manual->exec() != QDialog::Accepted)
-        return;
-}
 
 
 void tracking_window::on_actionTract_Analysis_Report_triggered()
@@ -2821,3 +2796,8 @@ void tracking_window::on_template_box_currentIndexChanged(int index)
     ui->target_label->setVisible(false);
 }
 
+
+void tracking_window::on_actionAdd_Tracking_Metrics_triggered()
+{
+
+}

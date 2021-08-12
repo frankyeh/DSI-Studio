@@ -131,7 +131,6 @@ private slots:
 
     void on_deleteSlice_clicked();
 
-    void on_actionManual_Registration_triggered();
     void on_actionTract_Analysis_Report_triggered();
     void on_actionConnectivity_matrix_triggered();
     void on_actionFloat_3D_window_triggered();
@@ -204,6 +203,7 @@ private slots:
     void on_actionInsert_Sagittal_Picture_triggered();
     void on_actionAdjust_Atlas_Mapping_triggered();
     void on_template_box_currentIndexChanged(int index);
+    void on_actionAdd_Tracking_Metrics_triggered();
 };
 
 #endif // TRACKING_WINDOW_H
