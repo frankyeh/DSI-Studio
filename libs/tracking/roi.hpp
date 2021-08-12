@@ -225,12 +225,6 @@ public:
                     unsigned char type,
                     const char* roi_name)
     {
-        tipl::vector<3,float> center;
-        for(size_t i = 0;i < points.size();++i)
-            center += points[i];
-        center /= points.size();
-        center /= r;
-
         switch(type)
         {
         case 0: //ROI
@@ -271,10 +265,17 @@ public:
             };
             report += " A seeding region was placed at ";
             break;
+        default:
+            return;
         }
         report += roi_name;
         if(type != 3 && handle->vs[0]*handle->vs[1]*handle->vs[2] != 0.0f)
         {
+            tipl::vector<3,float> center;
+            for(size_t i = 0;i < points.size();++i)
+                center += points[i];
+            center /= points.size();
+            center /= r;
             std::ostringstream out;
             out << std::setprecision(2) << " (" << center[0] << "," << center[1] << "," << center[2]
                 << ") with a volume size of " << float(points.size())*handle->vs[0]*handle->vs[1]*handle->vs[2]/r/r/r << " mm cubic";
