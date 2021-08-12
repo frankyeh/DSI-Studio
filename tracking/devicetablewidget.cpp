@@ -671,7 +671,7 @@ void DeviceTableWidget::detect_electrodes(void)
     std::vector<std::shared_ptr<ROIRegion> > new_regions;
     for(unsigned int i = 0;i < contact_group.size();++i)
     {
-        cur_tracking_window.regionWidget->add_region((std::string("Electrode ") + std::to_string(i+1)).c_str(),roi_id);
+        cur_tracking_window.regionWidget->add_region((std::string("Electrode ") + std::to_string(i+1)).c_str());
         cur_tracking_window.regionWidget->regions.back()->resolution_ratio = resotluion_ratio;
         new_regions.push_back(cur_tracking_window.regionWidget->regions.back());
     }

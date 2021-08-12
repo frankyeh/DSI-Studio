@@ -38,6 +38,7 @@ QWidget *ImageDelegate::createEditor(QWidget *parent,
         comboBox->addItem("Seed");
         comboBox->addItem("Terminative");
         comboBox->addItem("NotEnd");
+        comboBox->addItem("...");
         connect(comboBox, SIGNAL(activated(int)), this, SLOT(emitCommitData()));
         return comboBox;
     }
@@ -141,7 +142,7 @@ void RegionTableWidget::add_region_from_atlas(std::shared_ptr<atlas> at,unsigned
     cur_tracking_window.handle->get_atlas_roi(at,label,points);
     if(points.empty())
         return;
-    add_region(at->get_list()[label].c_str(),roi_id);
+    add_region(at->get_list()[label].c_str());
     regions.back()->resolution_ratio = 1.0f;
     regions.back()->add_points(points,false,1.0f);
 }
@@ -153,7 +154,7 @@ void RegionTableWidget::add_all_regions_from_atlas(std::shared_ptr<atlas> at)
     {
         if(points.empty())
             continue;
-        add_region(at->get_list()[i].c_str(),roi_id);
+        add_region(at->get_list()[i].c_str());
         regions.back()->resolution_ratio = 1.0f;
         regions.back()->add_points(points[i],false,1.0f);
     }
@@ -276,7 +277,7 @@ bool RegionTableWidget::command(QString cmd,QString param,QString)
             QMessageBox::information(this,"error","Unknown file format",0);
             return true;
         }
-        add_region(QFileInfo(param).baseName(),roi_id,region.show_region.color.color);
+        add_region(QFileInfo(param).baseName(),default_id,region.show_region.color.color);
         regions.back()->assign(region.get_region_voxels_raw(),region.resolution_ratio);
         emit need_update();
         return true;
@@ -471,7 +472,7 @@ void RegionTableWidget::draw_region(const tipl::color_image& slice_image,float d
 
 void RegionTableWidget::new_region(void)
 {
-    add_region("New Region",roi_id);
+    add_region("New Region");
     if(cur_tracking_window.current_slice->is_diffusion_space)
         regions.back()->resolution_ratio = 1;
     else
@@ -491,7 +492,7 @@ void RegionTableWidget::new_high_resolution_region(void)
             "Input resolution ratio (e.g. 2 for 2X, 8 for 8X",8,2,64,2,&ok);
     if(!ok)
         return;
-    add_region("New High Resolution Region",roi_id);
+    add_region("New High Resolution Region");
     regions.back()->resolution_ratio = ratio;
 }
 
@@ -504,7 +505,7 @@ void RegionTableWidget::copy_region(void)
     regions.insert(regions.begin() + cur_row + 1,std::make_shared<ROIRegion>(cur_tracking_window.handle));
     *regions[cur_row + 1] = *regions[cur_row];
     regions[cur_row + 1]->show_region.color.color = color;
-    add_row(int(cur_row+1),item(currentRow(),0)->text(),regions.back()->regions_feature,color);
+    add_row(int(cur_row+1),item(currentRow(),0)->text(),default_id,color);
 }
 void load_nii_label(const char* filename,std::map<int,std::string>& label_map)
 {
@@ -743,7 +744,7 @@ bool load_nii(std::shared_ptr<fib_data> handle,
             regions[0]->LoadFromBuffer(from);
 
         unsigned int color = 0;
-        unsigned int type = roi_id;
+        unsigned int type = default_id;
 
         try{
             std::vector<std::string> info;
@@ -853,7 +854,7 @@ bool RegionTableWidget::load_multiple_roi_nii(QString file_name)
     begin_update();
     for(uint32_t i = 0;check_prog(i,loaded_regions.size());++i)
         {
-            add_region(names[i].c_str(),roi_id,loaded_regions[i]->show_region.color);
+            add_region(names[i].c_str(),loaded_regions[i]->regions_feature,loaded_regions[i]->show_region.color);
             unsigned int color = regions.back()->show_region.color;
             regions.back()->swap(*loaded_regions[i].get());
             regions.back()->show_region.color = color;
@@ -1323,14 +1324,15 @@ void RegionTableWidget::setROIs(ThreadData* data)
     int roi_count = 0;
     for (unsigned int index = 0;index < regions.size();++index)
         if (!regions[index]->empty() && item(int(index),0)->checkState() == Qt::Checked
-                && regions[index]->regions_feature == 0 /*ROI*/)
+                && regions[index]->regions_feature == roi_id)
             ++roi_count;
     for (unsigned int index = 0;index < regions.size();++index)
         if (!regions[index]->empty() && item(int(index),0)->checkState() == Qt::Checked
-                && !(regions[index]->regions_feature == 0 && roi_count > 5))
+                && !(regions[index]->regions_feature == roi_id && roi_count > 5) &&
+                regions[index]->regions_feature != default_id)
             data->roi_mgr->setRegions(regions[index]->get_region_voxels_raw(),
-                                     regions[index]->resolution_ratio,
-                             regions[index]->regions_feature,item(int(index),0)->text().toLocal8Bit().begin());
+                                      regions[index]->resolution_ratio,
+                                      regions[index]->regions_feature,item(int(index),0)->text().toLocal8Bit().begin());
     // auto track
     if(cur_tracking_window.ui->target->currentIndex() > 0 &&
        cur_tracking_window.handle->track_atlas.get())
@@ -1547,7 +1549,7 @@ void RegionTableWidget::do_action(QString action)
                     ROIRegion region(cur_tracking_window.handle);
                     region.LoadFromBuffer(mask);
                     add_region(name + "_"+QString::number(total_count+1),
-                               roi_id,region.show_region.color.color);
+                               default_id,region.show_region.color.color);
                     regions.back()->assign(region.get_region_voxels_raw(),region.resolution_ratio);
                     ++total_count;
                 }
