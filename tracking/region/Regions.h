@@ -16,6 +16,7 @@ const unsigned char end_id = 2;
 const unsigned char seed_id = 3;
 const unsigned char terminate_id = 4;
 const unsigned char not_ending_id = 5;
+const unsigned char default_id = 6;
 void initial_LPS_nifti_srow(tipl::matrix<4,4,float>& T,const tipl::geometry<3>& geo,const tipl::vector<3>& vs);
 class ROIRegion {
 public:
@@ -31,7 +32,7 @@ public:
         float resolution_ratio = 1.0;
 public: // rendering options
         RegionModel show_region;
-        unsigned char regions_feature = 0;
+        unsigned char regions_feature = default_id;
         bool modified = true;
 public: // rendering options
         ROIRegion(std::shared_ptr<fib_data> handle):
