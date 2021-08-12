@@ -158,7 +158,6 @@ tipl::const_pointer_image<float,3> item::get_image(void)
     return image_data;
 }
 
-
 void fiber_directions::check_index(unsigned int index)
 {
     if (fa.size() <= index)
@@ -273,14 +272,14 @@ bool fiber_directions::add_data(gz_mat_read& mat_reader)
     index_name.insert(index_name.begin(),fa.size() == 1 ? "fa":"qa");
     index_data.insert(index_data.begin(),fa);
 
-    for(int index = 1;index < index_data.size();++index)
+    for(size_t index = 1;index < index_data.size();++index)
     {
         // check index_data integrity
-        for(int j = 0;j < index_data[index].size();++j)
+        for(size_t j = 0;j < index_data[index].size();++j)
             if(!index_data[index][j] || index_data[index].size() != num_fiber)
             {
-                index_data.erase(index_data.begin()+index);
-                index_name.erase(index_name.begin()+index);
+                index_data.erase(index_data.begin()+int64_t(index));
+                index_name.erase(index_name.begin()+int64_t(index));
                 --index;
                 break;
             }
@@ -291,10 +290,6 @@ bool fiber_directions::add_data(gz_mat_read& mat_reader)
         {
             dt_index_name.push_back(index_name[index]);
             dt_index_data.push_back(index_data[index]);
-            //index_data.erase(index_data.begin()+index);
-            //index_name.erase(index_name.begin()+index);
-            //--index;
-            //continue;
         }
     }
 
@@ -330,6 +325,15 @@ bool fiber_directions::set_dt_index(int new_index)
 bool fiber_directions::set_dt_index(const std::string& name)
 {
     return set_dt_index(std::find(dt_index_name.begin(),dt_index_name.end(),name)-dt_index_name.begin());
+}
+void fiber_directions::add_dt_index(const std::string& name,tipl::image<float,3>&& I)
+{
+    new_dT.push_back(std::make_shared<tipl::image<float,3> >());
+    new_dT.back()->swap(I);
+    std::vector<const float*> new_ptr(num_fiber);
+    std::fill(new_ptr.begin(),new_ptr.end(),&*new_dT.back()->begin());
+    dt_index_data.push_back(new_ptr);
+    dt_index_name.push_back(name);
 }
 
 float fiber_directions::get_fa(size_t index,unsigned char order) const
@@ -923,10 +927,89 @@ size_t fib_data::get_name_index(const std::string& index_name) const
 }
 void fib_data::get_index_list(std::vector<std::string>& index_list) const
 {
-    for (int index = 0; index < view_item.size(); ++index)
+    for (size_t index = 0; index < view_item.size(); ++index)
         if(view_item[index].name != "color")
             index_list.push_back(view_item[index].name);
 }
+
+bool fib_data::add_dT_index(const std::string& index_name)
+{
+    std::string metrics;
+    for(size_t i = 0;i < view_item.size();++i)
+    {
+        if(i)
+            metrics += ",";
+        metrics += view_item[i].name;
+        // find if the prefix of index_name matches the name of the index
+        if(index_name.length() <= view_item[i].name.length() ||
+           index_name.find(view_item[i].name) != 0 ||
+           index_name[view_item[i].name.length()] != '-')
+            continue;
+        std::string post_fix = index_name.substr(view_item[i].name.length()+1);
+        for(size_t j = 0;j < view_item.size();++j)
+            if(post_fix == view_item[j].name ||
+               post_fix == view_item[j].name+"_raw")
+            {
+                bool raw = post_fix == view_item[j].name+"_raw";
+                tipl::image<float,3> Ibuf,Jbuf;
+                auto J = view_item[j].get_image();
+                auto I = view_item[i].get_image();
+                if(J.geometry() != dim)
+                {
+                    std::cout << view_item[j].name << " has a dimension of " << J.geometry() <<
+                                 " warpping to the DWI space..." << std::endl;
+                    Jbuf.resize(dim);
+                    tipl::resample_mt(J,Jbuf,view_item[j].iT);
+                    J = Jbuf;
+                }
+                if(I.geometry() != dim)
+                {
+                    std::cout << view_item[i].name << " has a dimension of " << I.geometry() <<
+                                 " warpping to the DWI space..." << std::endl;
+                    Ibuf.resize(dim);
+                    tipl::resample_mt(I,Ibuf,view_item[i].iT);
+                    I = Ibuf;
+                }
+
+                tipl::image<float,3> new_metrics(dim);
+                std::cout << "new metric: (" << view_item[i].name << " - " << view_item[j].name << ")/" << view_item[j].name << " x 100%" << std::endl;
+                if(!raw)
+                {
+                    std::vector<float> x,y;
+                    for(size_t k = 0;k < I.size();++k)
+                        if(dir.fa[0][k] > 0.0f && I[k] > 0.0f && J[k] > 0.0f)
+                        {
+                            x.push_back(I[k]); // x = I
+                            y.push_back(J[k]); // y = J
+                        }
+                    float a,b,r2; // I ~ a*J+b
+                    tipl::linear_regression(x.begin(),x.end(),y.begin(),a,b,r2);
+                    std::cout << "matching " << view_item[j].name << " ~ a*" << view_item[i].name << " + b" << std::endl;
+                    std::cout << "a:" << a << " b:" << b << " r2:" << r2 << std::endl;
+                    for(size_t k = 0;k < I.size();++k)
+                        if(dir.fa[0][k] > 0.0f && I[k] > 0.0f && J[k] > 0.0f)
+                            new_metrics[k] = (a*I[k]+b)/J[k]-1.0f;
+                }
+                else
+                {
+                    for(size_t k = 0;k < I.size();++k)
+                        if(dir.fa[0][k] > 0.0f && I[k] > 0.0f && J[k] > 0.0f)
+                            new_metrics[k] = I[k]/J[k]-1.0f;
+                }
+                dir.add_dt_index(index_name,std::move(new_metrics));
+                return true;
+            }
+        error_msg = "cannot find ";
+        error_msg += post_fix;
+        error_msg += " among ";
+        error_msg += metrics;
+        return false;
+    }
+    error_msg = "cannot find matched metrics among ";
+    error_msg += metrics;
+    return false;
+}
+
 
 std::pair<float,float> fib_data::get_value_range(const std::string& view_name) const
 {

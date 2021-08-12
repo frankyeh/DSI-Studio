@@ -69,11 +69,13 @@ bool get_t1t2_nifti(std::shared_ptr<fib_data> handle,
         }
         handle->view_item.pop_back(); // remove the new item added by initialize
         if(t1t2_slices->thread.get())
+        {
             t1t2_slices->thread->wait();
-        std::cout << "registeration complete" << std::endl;
-        std::cout << convert[0] << " " << convert[1] << " " << convert[2] << " " << convert[3] << std::endl;
-        std::cout << convert[4] << " " << convert[5] << " " << convert[6] << " " << convert[7] << std::endl;
-        std::cout << convert[8] << " " << convert[9] << " " << convert[10] << " " << convert[11] << std::endl;
+            std::cout << "registeration complete" << std::endl;
+            std::cout << convert[0] << " " << convert[1] << " " << convert[2] << " " << convert[3] << std::endl;
+            std::cout << convert[4] << " " << convert[5] << " " << convert[6] << " " << convert[7] << std::endl;
+            std::cout << convert[8] << " " << convert[9] << " " << convert[10] << " " << convert[11] << std::endl;
+        }
     }
     nifti_geo = t1t2_slices->source_images.geometry();
     nifti_vs = t1t2_slices->vs;
@@ -625,10 +627,28 @@ int trk(std::shared_ptr<fib_data> handle)
     }
     if (po.has("dt_threshold_index"))
     {
-        if(!handle->dir.set_dt_index(po.get("dt_threshold_index")))
+        std::string dt_index = po.get("dt_threshold_index");
+        if(!handle->dir.set_dt_index(dt_index))
         {
-            std::cout << "failed...cannot find the dt index" << std::endl;
-            return 1;
+            if(dt_index.find('-') == std::string::npos)
+            {
+                std::cout << "ERROR: cannot find the dt index" << dt_index << std::endl;
+                return 1;
+            }
+            std::cout << "adding " << dt_index << " as a new metrics" << std::endl;
+            // allow adding other slices for creating new metrics
+            if(!check_other_slices(handle))
+                return 1;
+            if(!handle->add_dT_index(po.get("dt_threshold_index")))
+            {
+                std::cout << "ERROR:" << handle->error_msg << std::endl;
+                return 1;
+            }
+            if(!handle->dir.set_dt_index(dt_index))
+            {
+                std::cout << "ERROR: failed to add new dt metrics" << std::endl;
+                return 1;
+            }
         }
     }
 

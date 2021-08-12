@@ -1139,13 +1139,13 @@ void tracking_window::on_actionEndpoints_to_seeding_triggered()
     regionWidget->begin_update();
     regionWidget->add_region(
             tractWidget->item(tractWidget->currentRow(),0)->text()+
-            QString(" endpoints1"),roi_id);
+            QString(" endpoints1"));
     regionWidget->regions.back()->resolution_ratio = resolution_ratio;
     regionWidget->regions.back()->add_points(points1,false,resolution_ratio);
 
     regionWidget->add_region(
             tractWidget->item(tractWidget->currentRow(),0)->text()+
-            QString(" endpoints2"),roi_id);
+            QString(" endpoints2"));
     regionWidget->regions.back()->resolution_ratio = resolution_ratio;
     regionWidget->regions.back()->add_points(points2,false,resolution_ratio);
     regionWidget->end_update();
@@ -1160,7 +1160,7 @@ void tracking_window::on_actionTracts_to_seeds_triggered()
     std::vector<tipl::vector<3,short> > points;
     tractWidget->tract_models[tractWidget->currentRow()]->to_voxel(points,2.0f);
     regionWidget->add_region(
-            tractWidget->item(tractWidget->currentRow(),0)->text(),roi_id);
+            tractWidget->item(tractWidget->currentRow(),0)->text());
     regionWidget->regions.back()->resolution_ratio = 2.0;
     regionWidget->add_points(points,false,false,2.0);
     slice_need_update = true;
@@ -2799,5 +2799,19 @@ void tracking_window::on_template_box_currentIndexChanged(int index)
 
 void tracking_window::on_actionAdd_Tracking_Metrics_triggered()
 {
-
+    QString text = QInputDialog::getText(this,"Specify metrics name","metrics for differential tracking (e.g., qa_post-qa)");
+    if(text.isEmpty())
+        return;
+    if(!handle->add_dT_index(text.toStdString()))
+    {
+        QMessageBox::critical(this,"ERROR",handle->error_msg.c_str());
+        return;
+    }
+    QStringList dt_list;
+    dt_list << "none";
+    for(size_t index = 0;index < handle->dir.dt_index_name.size();++index)
+        dt_list.push_back(handle->dir.dt_index_name[index].c_str());
+    renderWidget->setList("dt_index",dt_list);
+    set_data("dt_index",handle->dir.dt_index_name.size()-1);
+    scene.center();
 }

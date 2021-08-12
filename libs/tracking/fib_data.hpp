@@ -50,6 +50,7 @@ public:
     unsigned int half_odf_size;
     std::string error_msg;
 public: // for differential tractography
+    std::vector<std::shared_ptr<tipl::image<float,3> > > new_dT;
     std::vector<const float*> dt_fa;
     std::vector<std::string> dt_index_name;
     std::vector<std::vector<const float*> > dt_index_data;
@@ -60,6 +61,7 @@ public: // for differential tractography
     bool set_dt_index(int new_index);
     bool set_dt_index(const std::string& name);
     std::string get_dt_threshold_name(void) const{return dt_fa.empty() ? std::string() : dt_index_name[uint32_t(dt_cur_index)];}
+    void add_dt_index(const std::string& name,tipl::image<float,3>&& I);
 public:
     void check_index(unsigned int index);
     bool add_data(gz_mat_read& mat_reader);
@@ -245,6 +247,9 @@ public:
 public:
     size_t get_name_index(const std::string& index_name) const;
     void get_index_list(std::vector<std::string>& index_list) const;
+public:
+    bool add_dT_index(const std::string& index_name);
+public:
     std::pair<float,float> get_value_range(const std::string& view_name) const;
     void get_slice(unsigned int view_index,
                    unsigned char d_index,unsigned int pos,
