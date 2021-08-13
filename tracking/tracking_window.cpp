@@ -2799,7 +2799,9 @@ void tracking_window::on_template_box_currentIndexChanged(int index)
 
 void tracking_window::on_actionAdd_Tracking_Metrics_triggered()
 {
-    QString text = QInputDialog::getText(this,"Specify metrics name","metrics for differential tracking (e.g., qa_post-qa)");
+    QString text = QInputDialog::getText(this,"Specify metrics name",
+                                         "metrics for differential tracking (e.g., qa_post-qa)",
+                                         QLineEdit::Normal,ui->SliceModality->currentText());
     if(text.isEmpty())
         return;
     if(!handle->add_dT_index(text.toStdString()))
@@ -2814,4 +2816,5 @@ void tracking_window::on_actionAdd_Tracking_Metrics_triggered()
     renderWidget->setList("dt_index",dt_list);
     set_data("dt_index",handle->dir.dt_index_name.size()-1);
     scene.center();
+    QMessageBox::information(this,"DSI Studio","New metric added");
 }
