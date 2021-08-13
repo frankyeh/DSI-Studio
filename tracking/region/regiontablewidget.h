@@ -39,7 +39,7 @@ private:
     void do_action(QString action);
     void do_action(QString action,size_t roi_index);
     void whole_brain_points(std::vector<tipl::vector<3,short> >& points);
-    bool load_multiple_roi_nii(QString file_name);
+    bool load_multiple_roi_nii(QString file_name,bool is_mni_image);
 private:
     template<typename func>
     void for_each_checked_region(func fun)

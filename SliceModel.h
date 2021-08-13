@@ -125,7 +125,6 @@ public:
     tipl::affine_transform<float> arg_min;
     bool terminated = true;
     bool running = false;
-    bool is_mni_image = false; // only used in loading mni image to the native space
     void terminate(void);
     void argmin(tipl::reg::reg_type reg_type);
     void update_transform(void);
@@ -149,7 +148,13 @@ public:
                            unsigned char,
                            const std::vector<std::shared_ptr<SliceModel> >& overlay_slices) const;
 public:
-    bool initialize(const std::vector<std::string>& files);
+    bool initialize(const std::vector<std::string>& files,bool is_mni_image = false);
+    bool initialize(const std::string& file,bool is_mni_image = false)
+    {
+        std::vector<std::string> files;
+        files.push_back(file);
+        return initialize(files,is_mni_image);
+    }
 };
 
 #endif

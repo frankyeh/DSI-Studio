@@ -1957,11 +1957,7 @@ void tracking_window::on_actionInsert_MNI_images_triggered()
 
     CustomSliceModel* reg_slice_ptr = nullptr;
     std::shared_ptr<SliceModel> new_slice(reg_slice_ptr = new CustomSliceModel(handle.get()));
-    reg_slice_ptr->is_mni_image = true;
-
-    std::vector<std::string> files;
-    files.push_back(filename.toStdString());
-    if(!reg_slice_ptr->initialize(files))
+    if(!reg_slice_ptr->initialize(filename.toStdString(),true/* mni-space image*/))
     {
         QMessageBox::information(this,"DSI Studio",reg_slice_ptr->error_msg.c_str(),0);
         return;
@@ -1979,7 +1975,7 @@ bool tracking_window::addSlices(QStringList filenames,QString name,bool cmd)
 {
     std::vector<std::string> files(uint32_t(filenames.size()));
     for (int index = 0; index < filenames.size(); ++index)
-            files[size_t(index)] = filenames[index].toStdString();
+        files[size_t(index)] = filenames[index].toStdString();
     CustomSliceModel* reg_slice_ptr = nullptr;
     std::shared_ptr<SliceModel> new_slice(reg_slice_ptr = new CustomSliceModel(handle.get()));
     if(!reg_slice_ptr->initialize(files))

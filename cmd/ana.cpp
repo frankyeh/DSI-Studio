@@ -36,7 +36,8 @@ bool load_nii(std::shared_ptr<fib_data> handle,
               std::vector<std::pair<tipl::geometry<3>,tipl::matrix<4,4,float> > >& transform_lookup,
               std::vector<std::shared_ptr<ROIRegion> >& regions,
               std::vector<std::string>& names,
-              std::string& error_msg);
+              std::string& error_msg,
+              bool is_mni_image);
 
 
 bool load_nii(std::shared_ptr<fib_data> handle,
@@ -54,7 +55,7 @@ bool load_nii(std::shared_ptr<fib_data> handle,
             transform_lookup.push_back(std::make_pair(t1t2_geo,convert));
     }
     std::string error_msg;
-    if(!load_nii(handle,file_name,transform_lookup,regions,names,error_msg))
+    if(!load_nii(handle,file_name,transform_lookup,regions,names,error_msg,QFileInfo(file_name.c_str()).baseName().toLower().contains("mni")))
     {
         std::cout << "ERROR:" << error_msg << std::endl;
         return false;

@@ -128,7 +128,7 @@ void CustomSliceModel::get_slice(tipl::color_image& image,
 void initial_LPS_nifti_srow(tipl::matrix<4,4,float>& T,const tipl::geometry<3>& geo,const tipl::vector<3>& vs);
 void prepare_idx(const char* file_name,std::shared_ptr<gz_istream> in);
 void save_idx(const char* file_name,std::shared_ptr<gz_istream> in);
-bool CustomSliceModel::initialize(const std::vector<std::string>& files)
+bool CustomSliceModel::initialize(const std::vector<std::string>& files,bool is_mni_image)
 {
     if(files.empty())
         return false;
@@ -314,16 +314,11 @@ bool CustomSliceModel::initialize(const std::vector<std::string>& files)
             else
             if(is_mni_image)
             {
-                tipl::image<float,3> J(handle->mni_position.geometry());
-                auto iT = trans;
-                iT.inv();
-                J.for_each_mt([&](float& v,const tipl::pixel_index<3>& pos)
+                if(!handle->mni2subject(source_images,trans))
                 {
-                    tipl::vector<3> mni(handle->mni_position[pos.index()]);
-                    mni.to(iT);
-                    tipl::estimate(source_images,mni,v);
-                });
-                source_images.swap(J);
+                    error_msg = handle->error_msg;
+                    return false;
+                }
                 T.identity();
                 invT.identity();
                 is_diffusion_space = true;

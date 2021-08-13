@@ -37,13 +37,9 @@ bool check_other_slices(std::shared_ptr<fib_data> handle)
             return false;
         }
         auto new_slice = std::make_shared<CustomSliceModel>(handle.get());
-        if(QFileInfo(filenames[i].c_str()).baseName().toLower().contains("mni"))
-            new_slice->is_mni_image = true;
-        std::vector<std::string> files;
-        files.push_back(filenames[i]);
-        if(!new_slice->initialize(files))
+        if(!new_slice->initialize(filenames[i],QFileInfo(filenames[i].c_str()).baseName().toLower().contains("mni")))
         {
-            std::cout << "ERROR: fail to load " << files.back() << std::endl;
+            std::cout << "ERROR: fail to load " << filenames[i] << std::endl;
             return false;
         }
         if(new_slice->thread.get())
@@ -62,11 +58,9 @@ bool get_t1t2_nifti(std::shared_ptr<fib_data> handle,
     if(!t1t2_slices.get())
     {
         t1t2_slices = std::make_shared<CustomSliceModel>(handle.get());
-        std::vector<std::string> files;
-        files.push_back(po.get("t1t2"));
-        if(!t1t2_slices->initialize(files))
+        if(!t1t2_slices->initialize(po.get("t1t2")))
         {
-            std::cout << "ERROR: fail to load " << files.back() << std::endl;
+            std::cout << "ERROR: fail to load " << po.get("t1t2") << std::endl;
             return false;
         }
         handle->view_item.pop_back(); // remove the new item added by initialize
@@ -485,10 +479,8 @@ int trk_post(std::shared_ptr<fib_data> handle,std::shared_ptr<TractModel> tract_
     {
         if(po.has("ref")) // save track in T1W/T2W space
         {
-            std::vector<std::string> files;
-            files.push_back(po.get("ref"));
             CustomSliceModel new_slice(handle.get());
-            if(!new_slice.initialize(files))
+            if(!new_slice.initialize(po.get("ref")))
             {
                 std::cout << "ERROR: reading ref image file" << std::endl;
                 return 1;

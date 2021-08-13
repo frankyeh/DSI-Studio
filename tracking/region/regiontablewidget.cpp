@@ -266,7 +266,7 @@ bool RegionTableWidget::command(QString cmd,QString param,QString)
             QFileInfo(param).suffix() == "nii" ||
             QFileInfo(param).suffix() == "hdr")
         {
-            if(!load_multiple_roi_nii(param))
+            if(!load_multiple_roi_nii(param,false))
                 return false;
             emit need_update();
             return true;
@@ -279,6 +279,13 @@ bool RegionTableWidget::command(QString cmd,QString param,QString)
         }
         add_region(QFileInfo(param).baseName(),default_id,region.show_region.color.color);
         regions.back()->assign(region.get_region_voxels_raw(),region.resolution_ratio);
+        emit need_update();
+        return true;
+    }
+    if(cmd == "load_mni_region")
+    {
+        if(!load_multiple_roi_nii(param,true))
+            return false;
         emit need_update();
         return true;
     }
@@ -604,7 +611,8 @@ bool load_nii(std::shared_ptr<fib_data> handle,
               std::vector<std::pair<tipl::geometry<3>,tipl::matrix<4,4,float> > >& transform_lookup,
               std::vector<std::shared_ptr<ROIRegion> >& regions,
               std::vector<std::string>& names,
-              std::string& error_msg)
+              std::string& error_msg,
+              bool is_mni_image)
 {
     gz_nifti header;
     if (!header.load_from_file(file_name.c_str()))
@@ -704,13 +712,26 @@ bool load_nii(std::shared_ptr<fib_data> handle,
                 goto end;
             }
 
-        if(handle->is_qsdr)
+        if(handle->is_qsdr || handle->is_mni_image)
         {
             std::cout << "loaded NIFTI file used as MNI space image." << std::endl;
             header.get_image_transformation(convert);
             convert.inv();
             convert *= handle->trans_to_mni;
             has_transform = true;
+            goto end;
+        }
+
+        if(is_mni_image)
+        {
+            std::cout << "warpping the NIFTI file from MNI space to the native space." << std::endl;
+            tipl::matrix<4,4,float> trans;
+            header.get_image_transformation(trans);
+            if(!handle->mni2subject(from,trans,tipl::nearest))
+            {
+                error_msg = handle->error_msg;
+                return false;
+            }
             goto end;
         }
 
@@ -721,16 +742,16 @@ bool load_nii(std::shared_ptr<fib_data> handle,
         {
             has_transform = false;
             scale_image = true;
+            goto end;
         }
+
+
+        error_msg = "Cannot align ROI file with DWI.";
+        if(has_gui)
+            error_msg += "Please insert its reference T1W/T2W using [Slices][Insert T1WT2W] to guide the registration.";
         else
-        {
-            error_msg = "Cannot align ROI file with DWI.";
-            if(has_gui)
-                error_msg += "Please insert its reference T1W/T2W using [Slices][Insert T1WT2W] to guide the registration.";
-            else
-                error_msg += "use --t1t2 to load the reference T1W/T2W to guide the registration.";
-            return false;
-        }
+            error_msg += "use --t1t2 to load the reference T1W/T2W to guide the registration.";
+        return false;
     }
     end:
     // single region ROI
@@ -830,7 +851,7 @@ bool load_nii(std::shared_ptr<fib_data> handle,
     return true;
 }
 
-bool RegionTableWidget::load_multiple_roi_nii(QString file_name)
+bool RegionTableWidget::load_multiple_roi_nii(QString file_name,bool is_mni_image)
 {
 
     std::vector<std::pair<tipl::geometry<3>,tipl::matrix<4,4,float> > > transform_lookup;
@@ -848,7 +869,7 @@ bool RegionTableWidget::load_multiple_roi_nii(QString file_name)
                  transform_lookup,
                  loaded_regions,
                  names,
-                 error_msg))
+                 error_msg,is_mni_image))
         return false;
     begin_prog("loading ROIs");
     begin_update();
@@ -955,17 +976,12 @@ void RegionTableWidget::load_mni_region(void)
         return;
     }
 
-    for (unsigned int index = 0;index < filenames.size();++index)
-    {
-        std::shared_ptr<atlas> a(new atlas);
-        a->filename = filenames[index].toStdString();
-        a->load_from_file();
-        begin_prog("loading");
-        begin_update();
-        for(int j = 0;check_prog(j,a->get_list().size());++j)
-            add_region_from_atlas(a,j);
-        end_update();
-    }
+    for (int index = 0;index < filenames.size();++index)
+        if(!command("load_mni_region",filenames[index]))
+        {
+            QMessageBox::critical(this,"ERROR",error_msg.c_str());
+            break;
+        }
     emit need_update();
 }
 
