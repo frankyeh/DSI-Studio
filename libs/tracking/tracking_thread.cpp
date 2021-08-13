@@ -206,12 +206,24 @@ void ThreadData::run(std::shared_ptr<tracking_data> trk_,unsigned int thread_cou
     if(!trk->dt_threshold_name.empty())
     {
         report << " Differential tractography (Yeh et al., 2019) was applied to map pathways with ";
-        if(trk->dt_threshold_name.substr(0,4) == "inc_")
-            report << "an increase";
+        if(trk->dt_threshold_name.substr(0,4) == "inc_" || trk->dt_threshold_name.substr(0,4) == "dec_")
+        {
+            if(trk->dt_threshold_name.substr(0,4) == "inc_")
+                report << "an increase";
+            else
+                report << "a decrease";
+            report << " in " << trk->dt_threshold_name.substr(4,std::string::npos);
+
+        }
         else
-            report << "a decrease";
-        report << " in " << trk->dt_threshold_name.substr(4,std::string::npos)
-               << ", and only the differences greater than " << int(param.dt_threshold * 100) << "% were tracked.";
+        {
+            auto pos = trk->dt_threshold_name.find('-');
+            if(pos == std::string::npos)
+                report << "changes in " << trk->dt_threshold_name;
+            else
+                report << trk->dt_threshold_name.substr(0,pos) << " larger than " << trk->dt_threshold_name.substr(pos+1);
+        }
+        report << ", and only the differences greater than " << int(param.dt_threshold * 100) << "% were tracked.";
     }
     else {
         report << " A deterministic fiber tracking algorithm (Yeh et al., PLoS ONE 8(11): e80713, 2013) was used";
