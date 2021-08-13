@@ -2814,7 +2814,7 @@ void tracking_window::on_actionAdd_Tracking_Metrics_triggered()
     for(size_t index = 0;index < handle->dir.dt_index_name.size();++index)
         dt_list.push_back(handle->dir.dt_index_name[index].c_str());
     renderWidget->setList("dt_index",dt_list);
-    set_data("dt_index",handle->dir.dt_index_name.size()-1);
+    set_data("dt_index",int(handle->dir.dt_index_name.size())-1);
     scene.center();
     QMessageBox::information(this,"DSI Studio","New metric added");
 }
