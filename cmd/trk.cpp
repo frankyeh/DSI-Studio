@@ -37,6 +37,8 @@ bool check_other_slices(std::shared_ptr<fib_data> handle)
             return false;
         }
         auto new_slice = std::make_shared<CustomSliceModel>(handle.get());
+        if(QFileInfo(filenames[i].c_str()).baseName().toLower().contains("mni"))
+            new_slice->is_mni_image = true;
         std::vector<std::string> files;
         files.push_back(filenames[i]);
         if(!new_slice->initialize(files))
