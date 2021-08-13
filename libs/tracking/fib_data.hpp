@@ -228,7 +228,30 @@ public:
     void subject2mni(tipl::pixel_index<3>& index,tipl::vector<3>& pos);
     void get_atlas_roi(std::shared_ptr<atlas> at,unsigned int roi_index,std::vector<tipl::vector<3,short> >& points);
     void get_atlas_all_roi(std::shared_ptr<atlas> at,std::vector<std::vector<tipl::vector<3,short> > >& points);
+    template<typename image_type>
+    bool mni2subject(image_type& mni_image,const tipl::matrix<4,4,float>& trans,tipl::interpolation_type interpo = tipl::linear)
+    {
+        using value_type = typename image_type::value_type;
+        const auto& mni_position = get_mni_mapping();
+        if(mni_position.empty())
+        {
+            error_msg = "No spatial mapping found for warpping MNI images";
+            return false;
+        }
+        image_type J(mni_position.geometry());
+        auto iT = trans;
+        iT.inv();
+        J.for_each_mt([&](value_type& v,const tipl::pixel_index<3>& pos)
+        {
+            tipl::vector<3> mni(mni_position[pos.index()]);
+            mni.to(iT);
+            tipl::estimate(mni_image,mni,v,interpo);
+        });
+        mni_image.swap(J);
+        return true;
+    }
     const tipl::image<tipl::vector<3,float>,3 >& get_mni_mapping(void);
+
 public:
     fib_data(void)
     {
