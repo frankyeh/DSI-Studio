@@ -1,12 +1,11 @@
 #include "nn_connectometry_analysis.h"
 #include "fib_data.hpp"
-extern std::string t1w_template_file_name;
 nn_connectometry_analysis::nn_connectometry_analysis(std::shared_ptr<fib_data> handle_):handle(handle_)
 {
     if(handle->is_qsdr && handle->is_human_data)
     {
         gz_nifti in;
-        if(in.load_from_file(t1w_template_file_name.c_str()))
+        if(in.load_from_file(handle->t1w_template_file_name.c_str()))
         {
             tipl::image<float,3> I;
             in.toLPS(I);

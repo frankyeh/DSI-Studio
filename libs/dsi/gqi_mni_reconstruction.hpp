@@ -49,7 +49,7 @@ public:
         tipl::vector<3> VGvs, VFvs(voxel.vs);
 
 
-        bool is_hcp_template = QFileInfo(voxel.primary_template.c_str()).baseName().contains("HCP");
+        bool is_human_template = QFileInfo(voxel.primary_template.c_str()).baseName().contains("ICBM");
         bool manual_alignment = voxel.qsdr_trans.data[0] != 0.0;
         bool export_intermediate = false;
         bool partial_reconstruction = false;
@@ -107,7 +107,7 @@ public:
                 bool terminated = false;
                 if(!run_prog("linear registration",[&]()
                 {
-                    if(!is_hcp_template) // animal recon
+                    if(!is_human_template) // animal recon
                     {
                         if(!dual_modality)
                             animal_reg(VG,VGvs,VF,VFvs,affine,terminated);
@@ -303,7 +303,7 @@ public:
             std::cout << "output dimension:" << VG.geometry() << std::endl;
 
 
-            if(is_hcp_template && !partial_reconstruction) // if default template is used
+            if(is_human_template && !partial_reconstruction) // if default template is used
             {
                 voxel.csf_pos1 = mni_to_voxel_index(voxel,6,0,18);
                 voxel.csf_pos2 = mni_to_voxel_index(voxel,-6,0,18);

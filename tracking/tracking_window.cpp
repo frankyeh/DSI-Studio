@@ -29,7 +29,6 @@
 #include "regtoolbox.h"
 #include "fib_data.hpp"
 
-extern std::string t1w_template_file_name,wm_template_file_name;
 extern std::vector<std::string> fa_template_list,track_atlas_file_list;
 extern std::vector<tracking_window*> tracking_windows;
 extern size_t auto_track_pos[7];
@@ -156,18 +155,16 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         }
         std::cout << "prepare template and atlases" << std::endl;
         {
-            if(handle->is_qsdr)
-                ui->actionOpen_MNI_Region->setVisible(false);
-            if(handle->is_qsdr && handle->template_id == 0)
-            {
-                if(QFileInfo(QString(t1w_template_file_name.c_str())).exists())
-                    addSlices(QStringList() << QString(t1w_template_file_name.c_str()),"icbm_t1w",true);
-                if(QFileInfo(QString(wm_template_file_name.c_str())).exists())
-                    addSlices(QStringList() << QString(wm_template_file_name.c_str()),"icbm_wm",true);
-            }
             populate_templates(ui->template_box,handle->template_id);
             if(handle->is_qsdr)
+            {
+                ui->actionOpen_MNI_Region->setVisible(false);
+                if(QFileInfo(QString(handle->t1w_template_file_name.c_str())).exists())
+                    addSlices(QStringList() << QString(handle->t1w_template_file_name.c_str()),"t1w",true);
+                if(QFileInfo(QString(handle->wm_template_file_name.c_str())).exists())
+                    addSlices(QStringList() << QString(handle->wm_template_file_name.c_str()),"wm",true);
                 handle->load_template();
+            }
 
             float largest_span = std::max(std::max(handle->dim[0]*handle->vs[0],handle->dim[1]*handle->vs[1]),handle->dim[2]*handle->vs[2]);
             float min_length = largest_span/10.0f;
@@ -1717,7 +1714,6 @@ void tracking_window::on_actionCut_Z_2_triggered()
     tractWidget->cut_by_slice(2,false);
 }
 
-extern std::string t1w_template_file_name,t1w_mask_template_file_name;
 void tracking_window::stripSkull()
 {
     if(!ui->SliceModality->currentIndex() || !handle->is_human_data || handle->is_qsdr)
@@ -1727,9 +1723,9 @@ void tracking_window::stripSkull()
         return;
     gz_nifti in1,in2;
     tipl::image<float,3> It,Iw,J(reg_slice->get_source());
-    if(!in1.load_from_file(t1w_template_file_name.c_str()) || !in1.toLPS(It))
+    if(!in1.load_from_file(handle->t1w_template_file_name.c_str()) || !in1.toLPS(It))
         return;
-    if(!in2.load_from_file(t1w_mask_template_file_name.c_str()) || !in2.toLPS(Iw))
+    if(!in2.load_from_file(handle->mask_template_file_name.c_str()) || !in2.toLPS(Iw))
         return;
     tipl::vector<3> vs,vsJ(reg_slice->vs);
     in1.get_voxel_size(vs);

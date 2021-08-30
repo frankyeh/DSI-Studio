@@ -205,6 +205,8 @@ public:
     bool has_manual_atlas = false;
     tipl::transformation_matrix<float> manual_template_T;
 public:
+    std::string t1w_template_file_name,wm_template_file_name,mask_template_file_name;
+public:
     std::shared_ptr<TractModel> track_atlas;
     std::string tractography_atlas_file_name;
     std::vector<std::string> tractography_name_list;

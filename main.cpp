@@ -17,8 +17,6 @@
 std::string arg_file_name;
 std::string
         fib_template_file_name_2mm,
-        t1w_template_file_name,wm_template_file_name,
-        t1w_mask_template_file_name,
         device_content_file;
 std::vector<std::string> fa_template_list,
                          iso_template_list,
@@ -94,9 +92,6 @@ std::string find_full_path(QString name)
 bool load_file_name(void)
 {
     fib_template_file_name_2mm = find_full_path("/hcp1065_2mm.fib.gz");
-    t1w_template_file_name = find_full_path("/mni_icbm152_t1_tal_nlin_asym_09c.nii.gz");
-    wm_template_file_name = find_full_path("/mni_icbm152_wm_tal_nlin_asym_09c.nii.gz");
-    t1w_mask_template_file_name = find_full_path("/mni_icbm152_t1_tal_nlin_asym_09c_mask.nii.gz");
     device_content_file = find_full_path("/device.txt");
 
     // search for all template
@@ -107,10 +102,10 @@ bool load_file_name(void)
 
         QStringList name_list = dir.entryList(QStringList("*"),QDir::Dirs|QDir::NoSymLinks);
 
-        // Make HCP1021 the default
+        // Make ICBM152 the default
         for(int i = 0;i < name_list.size();++i)
         {
-            if(name_list[i].contains("HCP"))
+            if(name_list[i].contains("ICBM"))
             {
                 QString item_to_move = name_list[i];
                 name_list.erase(name_list.begin()+i);

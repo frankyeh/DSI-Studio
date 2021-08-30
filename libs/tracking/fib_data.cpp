@@ -1127,6 +1127,10 @@ void fib_data::set_template_id(size_t new_id)
                 std::copy(std::istream_iterator<std::string>(in),
                           std::istream_iterator<std::string>(),std::back_inserter(tractography_name_list));
         }
+        // populate other modality name
+        t1w_template_file_name = QString(fa_template_list[template_id].c_str()).replace(".QA.nii.gz",".T1W.nii.gz").toStdString();
+        wm_template_file_name = QString(fa_template_list[template_id].c_str()).replace(".QA.nii.gz",".WM.nii.gz").toStdString();
+        mask_template_file_name = QString(fa_template_list[template_id].c_str()).replace(".QA.nii.gz",".mask.nii.gz").toStdString();
     }
 }
 bool fib_data::load_template(void)
