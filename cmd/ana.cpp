@@ -123,7 +123,7 @@ bool load_tracts(const char* file_name,std::shared_ptr<TractModel> tract_model,s
     }
     return true;
 }
-
+bool check_other_slices(std::shared_ptr<fib_data> handle);
 int ana(void)
 {
     std::shared_ptr<fib_data> handle = cmd_load_fib(po.get("source"));
@@ -191,6 +191,11 @@ int ana(void)
             std::cout << "ERROR: no region assigned" << std::endl;
             return 1;
         }
+
+        // allow adding other slices for connectivity and statistics
+        if(!check_other_slices(handle))
+            return 1;
+
         std::string result;
         std::cout << "calculating region statistics at a total of " << regions.size() << " regions" << std::endl;
         get_regions_statistics(handle,regions,region_list,result);
