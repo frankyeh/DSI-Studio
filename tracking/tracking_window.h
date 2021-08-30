@@ -65,6 +65,8 @@ public:
 public:
     unsigned char cur_dim = 2;
     std::vector<std::shared_ptr<SliceModel> > overlay_slices;
+    bool slice_view_flip_x(void) const {return cur_dim && (*this)["orientation_convention"].toInt();}
+    bool slice_view_flip_y(void) const {return cur_dim != 2;}
 public:
     connectometry_result cnt_result;
 public:

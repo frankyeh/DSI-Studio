@@ -120,7 +120,7 @@ void slice_view_scene::show_ruler(QPainter& paint)
     // horizontal direction
     int space_x = 0;
     {
-        bool flip_x = (cur_dim && cur_tracking_window["orientation_convention"].toInt());
+        bool flip_x = cur_tracking_window.slice_view_flip_x();
         uint8_t dim = (cur_dim == 0 ? 1:0);
         int Y = paint.window().height()-tic_length;
         int pad_x =  (is_qsdr ? qsdr_origin[dim]%tic_dis:0);
@@ -264,12 +264,8 @@ void slice_view_scene::show_pos(QPainter& painter)
 
 void slice_view_scene::manage_slice_orientation(QImage& slice,QImage& new_slice)
 {
-    bool flip_x = false;
-    bool flip_y = false;
-    if(cur_tracking_window.cur_dim != 2)
-        flip_y = true;
-    if(cur_tracking_window.cur_dim && cur_tracking_window["orientation_convention"].toInt())
-        flip_x = true;
+    bool flip_x = cur_tracking_window.slice_view_flip_x();
+    bool flip_y = cur_tracking_window.slice_view_flip_y();
     new_slice = (!flip_x && !flip_y ? slice : slice.mirrored(flip_x,flip_y));
 }
 void slice_view_scene::get_view_image(QImage& new_view_image,float display_ratio)
@@ -362,9 +358,9 @@ bool slice_view_scene::command(QString cmd,QString param,QString param2)
 bool slice_view_scene::to_3d_space_single_slice(float x,float y,tipl::vector<3,float>& pos)
 {
     tipl::geometry<3> geo(cur_tracking_window.current_slice->dim);
-    if(cur_tracking_window["orientation_convention"].toInt())
+    if(cur_tracking_window.slice_view_flip_x())
         x = (cur_tracking_window.cur_dim ? geo[0]:geo[1])-x;
-    if(cur_tracking_window.cur_dim != 2)
+    if(cur_tracking_window.slice_view_flip_y())
         y = geo[2] - y;
     return cur_tracking_window.current_slice->to3DSpace(cur_tracking_window.cur_dim,x - 0.5f,y - 0.5f,pos[0], pos[1], pos[2]);
 }
