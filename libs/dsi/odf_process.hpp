@@ -326,6 +326,8 @@ public:
             }
         }
         mat_writer.write("trans",voxel.trans_to_mni.begin(),4,4);
+        for(size_t i = 0;i < voxel.template_metrics.size();++i)
+            mat_writer.write(voxel.template_metrics_name[i].c_str(),voxel.template_metrics[i]);
     }
 };
 

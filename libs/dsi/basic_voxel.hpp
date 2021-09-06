@@ -130,6 +130,8 @@ public:
     float reponse_function_scaling;
 public:// for template creation
     std::vector<std::vector<float> > template_odfs;
+    std::vector<tipl::image<float,3> > template_metrics;
+    std::vector<std::string> template_metrics_name;
     std::string template_file_name;
 public:
     std::vector<VoxelData> voxel_data;

@@ -1389,7 +1389,10 @@ bool ImageModel::load_from_file(const char* dwi_file_name)
     if(!mat_reader.load_from_file(dwi_file_name) || prog_aborted())
     {
         if(!prog_aborted())
-            error_msg = "Invalid SRC file";
+        {
+            error_msg = QFileInfo(dwi_file_name).baseName().toStdString();
+            error_msg = " is an invalid SRC file";
+        }
         return false;
     }
     save_idx(dwi_file_name,mat_reader.in);

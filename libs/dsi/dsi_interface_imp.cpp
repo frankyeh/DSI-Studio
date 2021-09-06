@@ -279,10 +279,13 @@ bool output_odfs(const tipl::image<unsigned char,3>& mni_mask,
                  const char* out_name,
                  const char* ext,
                  std::vector<std::vector<float> >& odfs,
+                 std::vector<tipl::image<float,3> >& template_metrics,
+                 std::vector<std::string>& template_metrics_name,
                  const tessellated_icosahedron& ti,
                  const float* vs,
                  const float* mni,
                  const std::string& report,
+
                  bool record_odf = true)
 {
     begin_prog("output");
@@ -295,6 +298,8 @@ bool output_odfs(const tipl::image<unsigned char,3>& mni_mask,
     image_model.voxel.odf_resolving = true;
     image_model.voxel.output_odf = record_odf;
     image_model.voxel.template_odfs.swap(odfs);
+    image_model.voxel.template_metrics.swap(template_metrics);
+    image_model.voxel.template_metrics_name.swap(template_metrics_name);
     image_model.file_name = out_name;
     image_model.voxel.mask = mni_mask;
     std::copy(mni,mni+16,image_model.voxel.trans_to_mni.begin());
@@ -303,6 +308,8 @@ bool output_odfs(const tipl::image<unsigned char,3>& mni_mask,
         return false;
     image_model.save_fib(std::string(out_name)+ext);
     image_model.voxel.template_odfs.swap(odfs);
+    image_model.voxel.template_metrics.swap(template_metrics);
+    image_model.voxel.template_metrics_name.swap(template_metrics_name);
     return true;
 }
 
@@ -320,6 +327,12 @@ const char* odf_average(const char* out_name,std::vector<std::string>& file_name
     unsigned int row,col;
     float mni[16]={0};
     std::string file_name;
+
+    std::vector<std::string> other_metrics_name;
+    std::vector<tipl::image<float,3> > other_metrics_images;
+    std::vector<size_t> other_metrics_count;
+    std::locale loc;
+
     try {
         begin_prog("averaging");
         for (unsigned int index = 0;check_prog(index,file_names.size());++index)
@@ -354,6 +367,18 @@ const char* odf_average(const char* out_name,std::vector<std::string>& file_name
                 ti.init(uint16_t(odf_num),odf_buffer,uint16_t(face_num),face_buffer);
                 half_vertex_count = odf_num >> 1;
                 std::copy(mni_ptr,mni_ptr+16,mni);
+
+                for(size_t i = 0;i < reader.size();++i)
+                    if(reader[i].get_cols()*reader[i].get_rows() == dim.size())
+                    {
+                        std::string name = reader[i].get_name();
+                        if(std::isdigit(name.back(),loc) && reader.has((name.substr(0,name.length()-1)+"0").c_str()))
+                            continue;
+                        std::cout << "found metric:" << reader[i].get_name() << std::endl;
+                        other_metrics_name.push_back(reader[i].get_name());
+                        other_metrics_images.push_back(tipl::image<float,3>(dim));
+                        other_metrics_count.push_back(0);
+                    }
             }
             else
             // check odf consistency
@@ -369,6 +394,14 @@ const char* odf_average(const char* out_name,std::vector<std::string>& file_name
                     throw std::runtime_error("inconsistent ODF orientations");
                 }
             }
+
+            // accumulate metrics
+            for(size_t i = 0;i < other_metrics_name.size();++i)
+                if(reader.read(other_metrics_name[i].c_str(),row,col,fa0))
+                {
+                    tipl::add(other_metrics_images[i],tipl::make_image(fa0,dim));
+                    other_metrics_count[i]++;
+                }
 
             odf_data buf;
             if(!buf.read(reader))
@@ -408,6 +441,10 @@ const char* odf_average(const char* out_name,std::vector<std::string>& file_name
             tipl::divide_constant(odfs[i].begin(),odfs[i].end(),float(odf_count[i]));
     });
 
+    // average other metrics
+    for(size_t i = 0;i < other_metrics_name.size();++i)
+        tipl::multiply_constant(other_metrics_images[i],1.0f/other_metrics_count[i]);
+
     // eliminate ODF if missing more than half of the population
     tipl::image<unsigned char,3> mask(dim);
     unsigned int odf_size = 0;
@@ -425,8 +462,8 @@ const char* odf_average(const char* out_name,std::vector<std::string>& file_name
     std::ostringstream out;
     out << "A group average template was constructed from a total of " << file_names.size() << " subjects." << report.c_str();
     report = out.str();
-    output_odfs(mask,out_name,".mean.odf.fib.gz",odfs,ti,vs,mni,report);
-    output_odfs(mask,out_name,".mean.fib.gz",odfs,ti,vs,mni,report,false);
+    output_odfs(mask,out_name,".mean.odf.fib.gz",odfs,other_metrics_images,other_metrics_name,ti,vs,mni,report);
+    output_odfs(mask,out_name,".mean.fib.gz",odfs,other_metrics_images,other_metrics_name,ti,vs,mni,report,false);
     return nullptr;
 }
 
