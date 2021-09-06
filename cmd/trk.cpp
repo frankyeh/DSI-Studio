@@ -37,6 +37,11 @@ bool check_other_slices(std::shared_ptr<fib_data> handle)
             return false;
         }
         auto new_slice = std::make_shared<CustomSliceModel>(handle.get());
+        if(QFileInfo(filenames[i].c_str()).baseName().toLower().contains("mni"))
+        {
+            std::cout << QFileInfo(filenames[i].c_str()).baseName().toStdString() <<
+                         " has mni in the file name. It will be loaded as an MNI space image" << std::endl;
+        }
         if(!new_slice->initialize(filenames[i],QFileInfo(filenames[i].c_str()).baseName().toLower().contains("mni")))
         {
             std::cout << "ERROR: fail to load " << filenames[i] << std::endl;

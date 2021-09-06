@@ -55,6 +55,11 @@ bool load_nii(std::shared_ptr<fib_data> handle,
             transform_lookup.push_back(std::make_pair(t1t2_geo,convert));
     }
     std::string error_msg;
+    if(QFileInfo(file_name.c_str()).baseName().toLower().contains("mni"))
+    {
+        std::cout << QFileInfo(file_name.c_str()).baseName().toStdString() <<
+                     " has mni in the file name. It will be loaded as an MNI space image" << std::endl;
+    }
     if(!load_nii(handle,file_name,transform_lookup,regions,names,error_msg,QFileInfo(file_name.c_str()).baseName().toLower().contains("mni")))
     {
         std::cout << "ERROR:" << error_msg << std::endl;
