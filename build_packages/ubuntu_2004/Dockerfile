@@ -45,6 +45,7 @@ RUN mkdir /opt/dsi-studio \
   && rm -rf platforms \
   && rm -rf styles \
   && mv ../build/dsi_studio . \
+  && chmod 755 dsi_studio \
   && rm -rf /opt/dsi-studio/src /opt/dsi-studio/build
 
 #Create an empty container and transfer only the compiled software out
