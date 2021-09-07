@@ -41,7 +41,7 @@ bool load_nii(std::shared_ptr<fib_data> handle,
 
 
 bool load_nii(std::shared_ptr<fib_data> handle,
-              const std::string& file_name,
+              const std::string& region_text,
               std::vector<std::shared_ptr<ROIRegion> >& regions,
               std::vector<std::string>& names)
 {
@@ -54,17 +54,29 @@ bool load_nii(std::shared_ptr<fib_data> handle,
         if(get_t1t2_nifti(handle,t1t2_geo,vs,convert))
             transform_lookup.push_back(std::make_pair(t1t2_geo,convert));
     }
+
+    QStringList str_list = QString(region_text.c_str()).split(",");// splitting actions
+    QString file_name = str_list[0];
     std::string error_msg;
-    if(QFileInfo(file_name.c_str()).baseName().toLower().contains("mni"))
+    if(QFileInfo(file_name).baseName().toLower().contains("mni"))
     {
-        std::cout << QFileInfo(file_name.c_str()).baseName().toStdString() <<
+        std::cout << QFileInfo(file_name).baseName().toStdString() <<
                      " has mni in the file name. It will be loaded as an MNI space image" << std::endl;
     }
-    if(!load_nii(handle,file_name,transform_lookup,regions,names,error_msg,QFileInfo(file_name.c_str()).baseName().toLower().contains("mni")))
+    if(!load_nii(handle,file_name.toStdString(),transform_lookup,regions,names,error_msg,QFileInfo(file_name).baseName().toLower().contains("mni")))
     {
         std::cout << "ERROR:" << error_msg << std::endl;
         return false;
     }
+
+    // now perform actions
+    for(int i = 1;i < str_list.size();++i)
+    {
+        std::cout << str_list[i].toStdString() << " applied." << std::endl;
+        for(size_t j = 0;j < regions.size();++j)
+            regions[j]->perform(str_list[i].toStdString());
+    }
+
     return true;
 }
 
@@ -173,24 +185,28 @@ int ana(void)
         }
         if(po.has("region"))
         {
-            std::string text = po.get("region");
-            std::regex reg("[,]");
-            std::sregex_token_iterator first{text.begin(), text.end(),reg, -1},last;
-            std::vector<std::string> roi_list = {first, last};
-            for(size_t i = 0;i < roi_list.size();++i)
+            QStringList roi_list = QString(po.get("region").c_str()).split("+");
+            for(int i = 0;i < roi_list.size();++i)
             {
                 std::shared_ptr<ROIRegion> region(new ROIRegion(handle));
-                if(!load_region(handle,*region.get(),roi_list[i]))
+                if(!load_region(handle,*region.get(),roi_list[i].toStdString()))
                 {
                     std::cout << "fail to load the ROI file." << std::endl;
                     return 1;
                 }
-                region_list.push_back(roi_list[i]);
+                region_list.push_back(roi_list[i].toStdString());
                 regions.push_back(region);
             }
         }
-        if(po.has("regions") && !load_nii(handle,po.get("regions"),regions,region_list))
-            return 1;
+        if(po.has("regions"))
+        {
+            QStringList roi_list = QString(po.get("regions").c_str()).split("+");
+            for(int i = 0;i < roi_list.size();++i)
+            {
+                if(!load_nii(handle,po.get("regions"),regions,region_list))
+                    return 1;
+            }
+        }
         if(regions.empty())
         {
             std::cout << "ERROR: no region assigned" << std::endl;
