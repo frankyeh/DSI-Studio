@@ -390,7 +390,7 @@ void FileBrowser::preview_image(QString file_name)
     }
     gz_nifti nii;
     if(nii.load_from_file(file_name.toStdString()))
-        nii >> preview_data;
+        nii.get_untouched_image(preview_data);
     preview_loaded = true;
 }
 

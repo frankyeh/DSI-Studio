@@ -32,7 +32,7 @@ bool img_command(tipl::image<float,3>& data,
             return false;
         }
         tipl::image<float,3> mask;
-        nii >> mask;
+        nii.get_untouched_image(mask);
         if(mask.geometry() != data.geometry())
         {
             error_msg = "invalid mask file:";
@@ -321,60 +321,12 @@ bool view_image::open(QStringList file_names)
             ui->dwi_volume->show();
             ui->dwi_label->show();
         }
-        nifti >> data;
+        nifti.get_untouched_image(data);
         nifti.get_voxel_size(vs);
         nifti.get_image_transformation(T);
-        info = QString("sizeof_hdr=%1\ndim_info=%2\n").
-                arg(nifti.nif_header2.sizeof_hdr).
-                arg((int)nifti.nif_header2.dim_info);
-        for(unsigned int i = 0;i < 8;++i)
-            info +=  QString("dim[%1]=%2\n").
-                    arg(i).arg(nifti.nif_header2.dim[i]);
-        info += QString("intent_p1=%1\n").arg(nifti.nif_header2.intent_p1);
-        info += QString("intent_p2=%1\n").arg(nifti.nif_header2.intent_p2);
-        info += QString("intent_p3=%1\n").arg(nifti.nif_header2.intent_p3);
-        info += QString("intent_code=%1\n").arg(nifti.nif_header2.intent_code);
-        info += QString("datatype=%1\n").arg(nifti.nif_header2.datatype);
-        info += QString("bitpix=%1\n").arg(nifti.nif_header2.bitpix);
-        info += QString("slice_start=%1\n").arg(nifti.nif_header2.slice_start);
-
-        for(unsigned int i = 0;i < 8;++i)
-            info +=  QString("pixdim[%1]=%2\n").
-                    arg(i).arg(nifti.nif_header2.pixdim[i]);
-
-        info += QString("vox_offset=%1\n").arg(nifti.nif_header2.vox_offset);
-        info += QString("scl_slope=%1\n").arg(nifti.nif_header2.scl_slope);
-        info += QString("scl_inter=%1\n").arg(nifti.nif_header2.scl_inter);
-        info += QString("slice_end=%1\n").arg(nifti.nif_header2.slice_end);
-        info += QString("slice_code=%1\n").arg((int)nifti.nif_header2.slice_code);
-        info += QString("xyzt_units=%1\n").arg((int)nifti.nif_header2.xyzt_units);
-        info += QString("scl_inter=%1\n").arg(nifti.nif_header2.scl_inter);
-        info += QString("cal_max=%1\n").arg(nifti.nif_header2.cal_max);
-        info += QString("cal_min=%1\n").arg(nifti.nif_header2.cal_min);
-        info += QString("slice_duration=%1\n").arg(nifti.nif_header2.slice_duration);
-        info += QString("toffset=%1\n").arg(nifti.nif_header2.toffset);
-        info += QString("descrip=%1\n").arg(nifti.nif_header2.descrip);
-        info += QString("aux_file=%1\n").arg(nifti.nif_header2.aux_file);
-        info += QString("qform_code=%1\n").arg(nifti.nif_header2.qform_code);
-        info += QString("sform_code=%1\n").arg(nifti.nif_header2.sform_code);
-        info += QString("quatern_b=%1\n").arg(nifti.nif_header2.quatern_b);
-        info += QString("quatern_c=%1\n").arg(nifti.nif_header2.quatern_c);
-        info += QString("quatern_d=%1\n").arg(nifti.nif_header2.quatern_d);
-        info += QString("qoffset_x=%1\n").arg(nifti.nif_header2.qoffset_x);
-        info += QString("qoffset_y=%1\n").arg(nifti.nif_header2.qoffset_y);
-        info += QString("qoffset_z=%1\n").arg(nifti.nif_header2.qoffset_z);
-
-        for(unsigned int i = 0;i < 4;++i)
-            info +=  QString("srow_x[%1]=%2\n").
-                    arg(i).arg(nifti.nif_header2.srow_x[i]);
-        for(unsigned int i = 0;i < 4;++i)
-            info +=  QString("srow_y[%1]=%2\n").
-                    arg(i).arg(nifti.nif_header2.srow_y[i]);
-        for(unsigned int i = 0;i < 4;++i)
-            info +=  QString("srow_z[%1]=%2\n").
-                    arg(i).arg(nifti.nif_header2.srow_z[i]);
-
-        info += QString("intent_name=%1\n").arg(nifti.nif_header2.intent_name);
+        std::ostringstream out;
+        out << nifti;
+        info = out.str().c_str();
 
         if(file_names.size() > 1)
         {
@@ -393,7 +345,7 @@ bool view_image::open(QStringList file_names)
                 tipl::image<float,3> odata;
                 tipl::vector<3> ovs;
                 tipl::matrix<4,4,float> oT;
-                other_nifti >> odata;
+                other_nifti.get_untouched_image(odata);
                 other_nifti.get_voxel_size(ovs);
                 other_nifti.get_image_transformation(oT);
                 other_file_name.push_back(file_names[i].toStdString());
@@ -998,7 +950,7 @@ void view_image::on_dwi_volume_valueChanged(int value)
         has_gui = false;
         nifti.select_volume(cur_dwi_volume);
         tipl::image<float,3> new_data;
-        nifti >> new_data;
+        nifti.get_untouched_image(new_data);
         has_gui = true;
         if(new_data.empty())
             return;

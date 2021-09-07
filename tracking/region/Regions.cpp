@@ -280,7 +280,7 @@ bool ROIRegion::LoadFromFile(const char* FileName) {
                     return true;
                 }
             }
-            header >> from;
+            header.get_untouched_image(from);
             tipl::matrix<4,4,float> t;
             header.get_image_transformation(t);
             t.inv();

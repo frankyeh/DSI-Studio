@@ -53,12 +53,11 @@ bool DwiHeader::open(const char* filename)
     tipl::io::dicom header;
     if (!header.load_from_file(filename))
     {
-        tipl::io::nifti analyze_header;
-        if (!analyze_header.load_from_file(filename))
+        tipl::io::nifti nii;
+        if (!nii.load_from_file(filename))
             return false;
-        analyze_header >> image;
-        tipl::flip_xy(image);
-        analyze_header.get_voxel_size(voxel_size);
+        nii.toLPS(image);
+        nii.get_voxel_size(voxel_size);
         file_name = filename;
         return true;
     }
