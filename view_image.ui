@@ -359,10 +359,16 @@
     <addaction name="actionImageMultiplication"/>
     <addaction name="actionImageAddition"/>
    </widget>
+   <widget class="QMenu" name="menuOverlay">
+    <property name="title">
+     <string>Overlay</string>
+    </property>
+   </widget>
    <addaction name="menu_File"/>
    <addaction name="menuResize"/>
    <addaction name="menu_Intensity"/>
    <addaction name="menu_Header"/>
+   <addaction name="menuOverlay"/>
   </widget>
   <action name="action_Save_as">
    <property name="text">

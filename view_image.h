@@ -24,6 +24,8 @@ public:
 private slots:
     void show_image(void);
     void init_image(void);
+    void update_overlay_menu(void);
+    void add_overlay(void);
     void on_zoom_in_clicked();
     void on_zoom_out_clicked();
 
@@ -102,11 +104,11 @@ private slots:
 
 private:
     Ui::view_image *ui;
-    tipl::image<float,3> data;
+    tipl::image<float,3> data,overlay;
     float min_value,max_value;
     tipl::vector<3,float> vs;
     tipl::matrix<4,4,float> T;
-    tipl::value_to_color<float> v2c;
+    tipl::value_to_color<float> v2c,overlay_v2c;
 private:
     std::vector<tipl::image<float,3> > dwi_volume_buf;
     size_t cur_dwi_volume = 0;

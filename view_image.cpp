@@ -13,7 +13,7 @@
 #include <QImageReader>
 
 std::map<std::string,std::string> dicom_dictionary;
-
+std::vector<view_image*> opened_images;
 bool img_command(tipl::image<float,3>& data,
                  tipl::vector<3>& vs,
                  tipl::matrix<4,4,float>& T,
@@ -203,17 +203,20 @@ view_image::view_image(QWidget *parent) :
     ui->dwi_label->hide();
     connect(ui->max_color,SIGNAL(clicked()),this,SLOT(change_contrast()));
     connect(ui->min_color,SIGNAL(clicked()),this,SLOT(change_contrast()));
+    connect(ui->menuOverlay, SIGNAL(aboutToShow()),this, SLOT(update_overlay_menu()));
 
     source_ratio = 2.0;
     ui->tabWidget->setCurrentIndex(0);
 
 
     qApp->installEventFilter(this);
+    opened_images.push_back(this);
 }
 
 void save_idx(const char* file_name,std::shared_ptr<gz_istream> in);
 view_image::~view_image()
 {
+    opened_images.erase(std::remove(opened_images.begin(),opened_images.end(),this),opened_images.end());
     save_idx(file_name.toStdString().c_str(),nifti.input_stream);
     qApp->removeEventFilter(this);
     delete ui;
@@ -246,7 +249,7 @@ bool view_image::eventFilter(QObject *obj, QEvent *event)
         return true;
     mni = pos;
     mni.to(T);
-    ui->info_label->setText(QString("(%1,%2,%3) MNI(%4,%5,%6) = %7").arg(pos[0]).arg(pos[1]).arg(pos[2])
+    ui->info_label->setText(QString("(i,j,k)=(%1,%2,%3) (x,y,z)=(%4,%5,%6) value=%7").arg(pos[0]).arg(pos[1]).arg(pos[2])
                                                                     .arg(mni[0]).arg(mni[1]).arg(mni[2])
                                                                     .arg(data.at(pos[0],pos[1],pos[2])));
     return true;
@@ -423,7 +426,17 @@ bool view_image::open(QStringList file_names)
         else
             if(mat.load_from_file(file_name.toLocal8Bit().begin()))
             {
-                mat >> data;
+                if((mat.has("fa0") || mat.has("image0")) && mat.has("dimension"))
+                {
+                    tipl::geometry<3> geo;
+                    mat.read("dimension",geo);
+                    data.resize(geo);
+                    mat.read(mat.has("fa0") ? "fa0":"image0",data);
+                }
+                else
+                    mat >> data;
+                if(mat.has("trans"))
+                    mat.read("trans",T);
                 mat.get_voxel_size(vs);
                 for(unsigned int index = 0;index < mat.size();++index)
                 {
@@ -471,7 +484,7 @@ void view_image::init_image(void)
     QString dim_text = QString("%1,%2,%3").arg(data.width()).arg(data.height()).arg(data.depth());
     if(!dwi_volume_buf.empty())
         dim_text += QString(",%1").arg(dwi_volume_buf.size());
-    ui->image_info->setText(QString("dim=(%1) vs=(%4,%5,%6) T=(%7,%8,%9,%10;%11,%12,%13,%14;%15,%16,%17,%18)").
+    ui->image_info->setText(QString("dim=(%1) vs=(%4,%5,%6) srow=[%7 %8 %9 %10][%11 %12 %13 %14][%15 %16 %17 %18]").
             arg(dim_text).
             arg(double(vs[0])).arg(double(vs[1])).arg(double(vs[2])).
             arg(double(T[0])).arg(double(T[1])).arg(double(T[2])).arg(double(T[3])).
@@ -489,6 +502,38 @@ void view_image::init_image(void)
     on_AxiView_clicked();
     no_update = false;
 }
+void view_image::add_overlay(void)
+{
+    QAction *action = qobject_cast<QAction *>(sender());
+    size_t index = size_t(action->data().toInt());
+    if(index >= opened_images.size())
+        return;
+    overlay.resize(data.geometry());
+    tipl::transformation_matrix<float> trans(
+                tipl::matrix<4,4,float>(T*tipl::matrix<4,4,float>(tipl::inverse(opened_images[index]->T))));
+    tipl::resample(opened_images[index]->data,overlay,trans,tipl::cubic);
+    overlay_v2c = opened_images[index]->v2c;
+    show_image();
+}
+void view_image::update_overlay_menu(void)
+{
+    while(ui->menuOverlay->actions().size() > int(opened_images.size()))
+    {
+        ui->menuOverlay->removeAction(ui->menuOverlay->actions()[ui->menuOverlay->actions().size()-1]);
+    }
+    for (size_t index = 0; index < opened_images.size(); ++index)
+    {
+        if(index >= size_t(ui->menuOverlay->actions().size()))
+        {
+            QAction* Item = new QAction(this);
+            Item->setVisible(true);
+            Item->setData(index);
+            connect(Item, SIGNAL(triggered()),this, SLOT(add_overlay()));
+            ui->menuOverlay->addAction(Item);
+        }
+        ui->menuOverlay->actions()[index]->setText(opened_images[index]->windowTitle());
+    }
+}
 void view_image::show_image(void)
 {
     if(data.empty() || no_update)
@@ -496,9 +541,17 @@ void view_image::show_image(void)
     tipl::image<float,2> buf;
     tipl::volume2slice(data, buf, cur_dim, size_t(slice_pos[cur_dim]));
     v2c.convert(buf,buffer);
+
+    if(overlay.size() == data.size())
+    {
+        tipl::image<float,2> buf_overlay;
+        tipl::color_image buffer2;
+        tipl::volume2slice(overlay, buf_overlay, cur_dim, size_t(slice_pos[cur_dim]));
+        overlay_v2c.convert(buf_overlay,buffer2);
+        for(size_t i = 0;i < buffer.size();++i)
+            buffer[i] |= buffer2[i];
+    }
     QImage I(reinterpret_cast<unsigned char*>(&*buffer.begin()),buffer.width(),buffer.height(),QImage::Format_RGB32);
-    //if(cur_view != 2)
-    //    I = I.mirrored(false,true);
     source_image = I.scaled(buffer.width()*source_ratio,buffer.height()*source_ratio);
     show_view(source,source_image);
 }
