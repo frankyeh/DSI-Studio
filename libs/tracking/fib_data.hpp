@@ -227,7 +227,6 @@ public:
     bool can_map_to_mni(void);
     void mni2subject(tipl::vector<3>& pos);
     void subject2mni(tipl::vector<3>& pos);
-    void subject2mni(tipl::pixel_index<3>& index,tipl::vector<3>& pos);
     void get_atlas_roi(std::shared_ptr<atlas> at,unsigned int roi_index,std::vector<tipl::vector<3,short> >& points);
     void get_atlas_all_roi(std::shared_ptr<atlas> at,std::vector<std::vector<tipl::vector<3,short> > >& points);
     template<typename image_type>
