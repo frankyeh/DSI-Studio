@@ -1590,14 +1590,8 @@ void fib_data::run_normalization(bool background,bool inv)
         {
             prog = 4;
             set_title("calculating tempalte to subject warp field");
-            tipl::image<tipl::vector<3,float>,3 > mni(template_I.geometry());
-            mni.for_each_mt([&](tipl::vector<3,float>& v,const tipl::pixel_index<3>& pos)
-            {
-                tipl::vector<3> p(pos);
-                v = p;
-                v += dis[pos.index()];
-                T(v);
-            });
+            tipl::image<tipl::vector<3,float>,3 > mni(dis);
+            tipl::displacement_to_mapping(mni,T);
             gz_mat_write out(output_file_name1.c_str());
             if(out)
             {
@@ -1729,18 +1723,6 @@ void fib_data::subject2mni(tipl::vector<3>& pos)
         tipl::estimate(mni_position,pos,p);
         pos = p;
     }
-}
-void fib_data::subject2mni(tipl::pixel_index<3>& index,tipl::vector<3>& pos)
-{
-    if((is_qsdr || is_mni_image) && mni_position.empty())
-    {
-        pos = index;
-        mni2sub(pos,trans_to_mni);
-        return;
-    }
-    if(mni_position.empty())
-        mni_position[index.index()];
-    return;
 }
 
 void fib_data::get_atlas_roi(std::shared_ptr<atlas> at,unsigned int roi_index,std::vector<tipl::vector<3,short> >& points)
