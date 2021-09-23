@@ -158,7 +158,6 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
             populate_templates(ui->template_box,handle->template_id);
             if(handle->is_qsdr)
             {
-                ui->actionOpen_MNI_Region->setVisible(false);
                 if(QFileInfo(QString(handle->t1w_template_file_name.c_str())).exists())
                     addSlices(QStringList() << QString(handle->t1w_template_file_name.c_str()),"t1w",true);
                 if(QFileInfo(QString(handle->wm_template_file_name.c_str())).exists())
