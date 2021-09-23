@@ -479,8 +479,7 @@ void RegToolBox::nonlinear_reg(void)
                 tipl::reg::cdm(It,J,dis,thread.terminated,param);
         }
     }
-    mapping = dis;
-    tipl::displacement_to_mapping(mapping,T);
+    tipl::displacement_to_mapping(dis,mapping,T);
     tipl::compose_mapping(I,mapping,JJ);
     std::cout << "nonlinear:" << tipl::correlation(JJ.begin(),JJ.end(),It.begin()) << std::endl;
 }
