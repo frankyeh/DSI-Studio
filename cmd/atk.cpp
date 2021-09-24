@@ -47,7 +47,7 @@ int atk(void)
     {
         fib_data fib;
         fib.set_template_id(0);
-        std::istringstream in(po.get("track_id","Fasciculus,Cingulum,Aslant,Cortico,Thalamic_R,Reticular,Optic,Fornix,Corpus"));
+        std::istringstream in(po.get("track_id","Fasciculus,Cingulum,Aslant,Corticos,Thalamic_R,Reticular,Optic,Fornix,Corpus"));
         std::string str;
         while(std::getline(in,str,','))
         {
