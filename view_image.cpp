@@ -527,7 +527,7 @@ void view_image::update_overlay_menu(void)
         {
             QAction* Item = new QAction(this);
             Item->setVisible(true);
-            Item->setData(index);
+            Item->setData((unsigned int)index);
             connect(Item, SIGNAL(triggered()),this, SLOT(add_overlay()));
             ui->menuOverlay->addAction(Item);
         }
