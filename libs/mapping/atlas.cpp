@@ -5,8 +5,9 @@
 #include <QCoreApplication>
 #include <QDir>
 
-void sub2mni(tipl::vector<3>& pos,const tipl::matrix<4,4,float>& trans);
-void mni2sub(tipl::vector<3>& pos,const tipl::matrix<4,4,float>& trans);
+
+
+void apply_trans(tipl::vector<3>& pos,const tipl::matrix<4,4,float>& trans);
 
 void atlas::load_label(void)
 {
@@ -63,7 +64,15 @@ bool atlas::load_from_file(void)
     }
     else
         nii.toLPS(I);
+
     nii.get_image_transformation(T);
+    if(T == template_to_mni)
+    {
+        in_template_space = true;
+        T.identity();
+    }
+    else
+        T = tipl::from_space(template_to_mni).to(T);
 
     if(labels.empty())
         load_label();
@@ -103,20 +112,22 @@ bool atlas::load_from_file(void)
 
 size_t atlas::get_index(tipl::vector<3,float> p)
 {
-    mni2sub(p,T);
+    // template to atlas space
+    if(!in_template_space)
+        apply_trans(p,T);
     p.round();
     if(!I.geometry().is_valid(p))
         return 0;
     return size_t((int(p[2])*I.height()+int(p[1]))*I.width()+int(p[0]));
 }
 
-bool atlas::is_labeled_as(const tipl::vector<3,float>& mni_space,unsigned int region_index)
+bool atlas::is_labeled_as(const tipl::vector<3,float>& template_space,unsigned int region_index)
 {
     if(I.empty())
         load_from_file();
     if(region_index >= region_value.size())
         return false;
-    size_t offset = get_index(mni_space);
+    size_t offset = get_index(template_space);
     if(!offset || offset >= I.size())
         return false;
     if(is_multiple_roi)
@@ -130,13 +141,13 @@ bool atlas::is_labeled_as(const tipl::vector<3,float>& mni_space,unsigned int re
     }
     return I[offset] == region_value[region_index];
 }
-int atlas::region_index_at(const tipl::vector<3,float>& mni_space)
+int atlas::region_index_at(const tipl::vector<3,float>& template_space)
 {
     if(is_multiple_roi)
         return -1;
     if(I.empty())
         load_from_file();
-    size_t offset = get_index(mni_space);
+    size_t offset = get_index(template_space);
     if(!offset || offset >= I.size())
         return -1;
     auto value = I[offset];
@@ -144,13 +155,13 @@ int atlas::region_index_at(const tipl::vector<3,float>& mni_space)
         return -1;
     return int(value2index[value])-1;
 }
-void atlas::region_indices_at(const tipl::vector<3,float>& mni_space,std::vector<uint16_t>& indices)
+void atlas::region_indices_at(const tipl::vector<3,float>& template_space,std::vector<uint16_t>& indices)
 {
     if(!is_multiple_roi)
         return;
     if(I.empty())
         load_from_file();
-    size_t offset = get_index(mni_space);
+    size_t offset = get_index(template_space);
     if(!offset || offset >= I.size())
         return;
     for(uint16_t region_index = 0;region_index < multiple_I_pos.size();++region_index)

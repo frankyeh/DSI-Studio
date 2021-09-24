@@ -520,7 +520,10 @@ fib_data::fib_data(tipl::geometry<3> dim_,tipl::vector<3> vs_,const tipl::matrix
     dim(dim_),vs(vs_),trans_to_mni(trans_to_mni_)
 {}
 
-bool load_fib_from_tracks(const char* file_name,tipl::image<float,3>& I,tipl::vector<3>& vs);
+bool load_fib_from_tracks(const char* file_name,
+                          tipl::image<float,3>& I,
+                          tipl::vector<3>& vs,
+                          tipl::matrix<4,4,float>& trans_to_mni);
 void prepare_idx(const char* file_name,std::shared_ptr<gz_istream> in);
 void save_idx(const char* file_name,std::shared_ptr<gz_istream> in);
 bool fib_data::load_from_file(const char* file_name)
@@ -649,7 +652,7 @@ bool fib_data::load_from_file(const char* file_name)
        QString(file_name).endsWith("tck") ||
        QString(file_name).endsWith("tt.gz"))
     {
-        if(!load_fib_from_tracks(file_name,I,vs))
+        if(!load_fib_from_tracks(file_name,I,vs,trans_to_mni))
         {
             error_msg = "Invalid track format";
             return false;
@@ -1101,13 +1104,41 @@ void fib_data::get_voxel_information(int x,int y,int z,std::vector<float>& buf) 
 }
 extern std::vector<std::string> fa_template_list,iso_template_list,track_atlas_file_list;
 extern std::vector<std::vector<std::string> > template_atlas_list;
+
+
+void apply_trans(tipl::vector<3>& pos,const tipl::matrix<4,4,float>& trans)
+{
+    if(trans[0] != 1.0f)
+        pos[0] *= trans[0];
+    if(trans[5] != 1.0f)
+        pos[1] *= trans[5];
+    if(trans[10] != 1.0f)
+        pos[2] *= trans[10];
+    pos[0] += trans[3];
+    pos[1] += trans[7];
+    pos[2] += trans[11];
+}
+/*
+void mni2temp(tipl::vector<3>& pos,const tipl::matrix<4,4,float>& trans)
+{
+    pos[0] -= trans[3];
+    pos[1] -= trans[7];
+    pos[2] -= trans[11];
+    if(trans[0] != 1.0f)
+        pos[0] /= trans[0];
+    if(trans[5] != 1.0f)
+        pos[1] /= trans[5];
+    if(trans[10] != 1.0f)
+        pos[2] /= trans[10];
+}
+*/
 void fib_data::set_template_id(size_t new_id)
 {
     if(new_id != template_id)
     {
         template_id = new_id;
         template_I.clear();
-        mni_position.clear();
+        s2t.clear();
         atlas_list.clear();
         track_atlas.reset();
         // populate atlas list
@@ -1116,6 +1147,7 @@ void fib_data::set_template_id(size_t new_id)
             atlas_list.push_back(std::make_shared<atlas>());
             atlas_list.back()->name = QFileInfo(template_atlas_list[template_id][i].c_str()).baseName().toStdString();
             atlas_list.back()->filename = template_atlas_list[template_id][i];
+            atlas_list.back()->template_to_mni = trans_to_mni;
         }
         // populate tract names
         tractography_atlas_file_name = track_atlas_file_list[template_id];
@@ -1146,10 +1178,9 @@ bool fib_data::load_template(void)
         error_msg += fa_template_list[template_id];
         return false;
     }
-    tipl::matrix<4,4,float> tran;
     read.toLPS(I);
     read.get_voxel_size(I_vs);
-    read.get_image_transformation(template_trans_to_mni);
+    read.get_image_transformation(template_to_mni);
     float ratio = float(I.width()*I_vs[0])/float(dim[0]*vs[0]);
     if(ratio < 0.25f || ratio > 8.0f)
     {
@@ -1157,23 +1188,36 @@ bool fib_data::load_template(void)
         error_msg += std::to_string(ratio);
         return false;
     }
-    template_shift[0] = template_trans_to_mni[3];
-    template_shift[1] = template_trans_to_mni[7];
-    template_shift[2] = template_trans_to_mni[11];
+
+    is_template_space = is_mni_image || (is_qsdr && std::abs(float(dim[0])-I.width()*I_vs[0]/vs[0]) < 2);
+
+    if(is_template_space)
+    {
+        // set template space to current space
+        template_I.resize(dim);
+        template_vs = vs;
+        template_to_mni = trans_to_mni;
+        return true;
+    }
+
     template_I.swap(I);
     template_vs = I_vs;
+
     unsigned int downsampling = 0;
-    while(template_I.width()/3 > int(dim[0]))
+    while((!is_human_data && template_I.width()/3 > int(dim[0])) ||
+          (is_human_data && template_vs[0]*2.0f <= int(vs[0])))
     {
         std::cout << "downsampling template by 2x to match subject resolution" << std::endl;
         template_vs *= 2.0f;
-        template_trans_to_mni[0] *= 2.0f;
-        template_trans_to_mni[5] *= 2.0f;
-        template_trans_to_mni[10] *= 2.0f;
+        template_to_mni[0] *= 2.0f;
+        template_to_mni[5] *= 2.0f;
+        template_to_mni[10] *= 2.0f;
         tipl::downsampling(template_I);
         ++downsampling;
     }
 
+    for(size_t i = 0;i < atlas_list.size();++i)
+        atlas_list[i]->template_to_mni = template_to_mni;
 
     // load iso template if exists
     {
@@ -1191,19 +1235,6 @@ bool fib_data::load_template(void)
     if(!template_I2.empty())
         template_I2 *= 1.0f/float(tipl::mean(template_I2));
 
-
-    if(is_mni_image)
-    {
-        need_normalization = false;
-        return true;
-    }
-    if(!is_qsdr)
-    {
-        need_normalization = true;
-        return true;
-    }
-
-    need_normalization = std::abs(float(dim[0])-template_I.width()*template_vs[0]/vs[0]) > 2;
     return true;
 }
 
@@ -1222,66 +1253,41 @@ bool fib_data::load_track_atlas()
             error_msg = "failed to load tractography atlas";
             return false;
         }
-        if(!load_template())
-            return false;
-        if(track_atlas->geo != template_I.geometry())
-        {
-            error_msg = "dimension mismatch between tractography atlas and template";
-            return false;
-        }
-
-        {
-            prog_init p("warping atlas tracks to subject space");
-            run_normalization(true,true);
-            if(prog_aborted())
-                return false;
-        }
-
-        // warp tractography atlas to subject space
-        auto& tract_data = track_atlas->get_tracts();
-        tipl::par_for(tract_data.size(),[&](size_t i)
-        {
-            for(size_t j = 0;j < tract_data[i].size();j += 3)
-            {
-                tipl::vector<3> p(&tract_data[i][j]);
-                template_to_mni(p);
-                mni2subject(p);
-                tract_data[i][j] = p[0];
-                tract_data[i][j+1] = p[1];
-                tract_data[i][j+2] = p[2];
-            }
-        });
+        return load_track_atlas(track_atlas);
     }
     return true;
 }
 
-void fib_data::template_to_mni(tipl::vector<3>& p)
+bool fib_data::load_track_atlas(std::shared_ptr<TractModel> track)
 {
-    p[0] = -p[0];
-    if(template_vs[0] != 1.0f)
-        p[0] *= template_vs[0];
-    p[1] = -p[1];
-    if(template_vs[1] != 1.0f)
-        p[1] *= template_vs[1];
-    if(template_vs[2] != 1.0f)
-        p[2] *= template_vs[2];
-    p += template_shift;
+    if(!load_template())
+        return false;
+
+    {
+        prog_init p("warping atlas tracks to subject space");
+        run_normalization(true,true);
+        if(prog_aborted())
+            return false;
+    }
+
+    // warp tractography atlas to subject space
+    auto& tract_data = track->get_tracts();
+    auto T = tipl::from_space(track->trans_to_mni).to(template_to_mni);
+    tipl::par_for(tract_data.size(),[&](size_t i)
+    {
+        for(size_t j = 0;j < tract_data[i].size();j += 3)
+        {
+            tipl::vector<3> p(&tract_data[i][j]);
+            apply_trans(p,T); // from tract atlas space to current template space
+            temp2sub(p);
+            tract_data[i][j] = p[0];
+            tract_data[i][j+1] = p[1];
+            tract_data[i][j+2] = p[2];
+        }
+    });
+    return true;
 }
 
-void fib_data::template_from_mni(tipl::vector<3>& p)
-{
-    p -= template_shift;
-    if(template_vs[2] != 1.0f)
-        p[2] /= template_vs[2];
-    if(template_vs[1] != 1.0f)
-        p[1] /= template_vs[1];
-    p[1] = -p[1];
-    if(template_vs[0] != 1.0f)
-        p[0] /= template_vs[0];
-    p[0] = -p[0];
-
-
-}
 //---------------------------------------------------------------------------
 unsigned int fib_data::find_nearest(const float* trk,unsigned int length,bool contain,float false_distance)
 {
@@ -1471,37 +1477,52 @@ void animal_reg(const tipl::image<float,3>& from,tipl::vector<3> from_vs,
 
 void fib_data::run_normalization(bool background,bool inv)
 {
-    if(!need_normalization ||
-       (!inv && !mni_position.empty()) ||
-       (inv && !inv_mni_position.empty()))
+    if(is_template_space||
+       (!inv && !s2t.empty()) ||
+       (inv && !t2s.empty()))
         return;
     std::string output_file_name1(fib_file_name),output_file_name2;
     output_file_name1 += ".";
     output_file_name1 += QFileInfo(fa_template_list[template_id].c_str()).baseName().toLower().toStdString();
     output_file_name2 = output_file_name1;
+    std::string output_file_name(output_file_name1);
     output_file_name1 += ".inv.mapping.gz";
     output_file_name2 += ".mapping.gz";
-    std::string output_file_name(inv ? output_file_name1:output_file_name2);
+    output_file_name += ".map.gz";
+
+    // older version will save .inv.mapping.gz
+    // remove them here
+    if(QFileInfo(output_file_name1.c_str()).exists())
+        QFile(output_file_name1.c_str()).remove();
+    if(QFileInfo(output_file_name2.c_str()).exists())
+        QFile(output_file_name2.c_str()).remove();
+
     gz_mat_read in;
+
+    // check 1. mapping files was created later than the FIB file
+    //       2. the recon steps are the same
+    //       3. has inv_mapping matrix (new format after Sep 2021
+
     if(QFileInfo(output_file_name.c_str()).lastModified() > QFileInfo(fib_file_name.c_str()).lastModified() &&
-       in.load_from_file(output_file_name.c_str()))
+       in.load_from_file(output_file_name.c_str()) && in.has("from2to") && in.has("to2from")
+       && in.read<std::string>("steps") == steps)
     {
-        // check if the current fib files has the same recon steps as the one generating the maps
-        std::string check_steps;
-        in.read("steps",check_steps);
-        if(check_steps.empty() || check_steps == steps)
+        const float* t2s_ptr = nullptr;
+        unsigned int t2s_row,t2s_col,s2t_row,s2t_col;
+        const float* s2t_ptr = nullptr;
+        if(in.read("to2from",t2s_row,t2s_col,t2s_ptr) &&
+           in.read("from2to",s2t_row,s2t_col,s2t_ptr))
         {
-            tipl::image<tipl::vector<3,float>,3 > mni(inv ? template_I.geometry() : dim);
-            const float* ptr = nullptr;
-            unsigned int row,col;
-            in.read("mapping",row,col,ptr);
-            if(row == 3 && col == mni.size() && ptr)
+            if(t2s_col*t2s_row == template_I.size()*3 &&
+               s2t_col*s2t_row == dim.size()*3)
             {
-                std::copy(ptr,ptr+col*row,&mni[0][0]);
-                if(inv)
-                    inv_mni_position.swap(mni);
-                else
-                    mni_position.swap(mni);
+                std::cout << "loading mapping fields from " << output_file_name << std::endl;
+                t2s.clear();
+                t2s.resize(template_I.geometry());
+                s2t.clear();
+                s2t.resize(dim);
+                std::copy(t2s_ptr,t2s_ptr+t2s_col*t2s_row,&t2s[0][0]);
+                std::copy(s2t_ptr,s2t_ptr+s2t_col*s2t_row,&s2t[0][0]);
                 prog = 5;
                 return;
             }
@@ -1511,7 +1532,7 @@ void fib_data::run_normalization(bool background,bool inv)
         begin_prog("running normalization");
     prog = 0;
     bool terminated = false;
-    auto lambda = [this,output_file_name1,output_file_name2,&terminated]()
+    auto lambda = [this,output_file_name,&terminated]()
     {
         tipl::transformation_matrix<double> T,iT;
 
@@ -1576,60 +1597,55 @@ void fib_data::run_normalization(bool background,bool inv)
         {
             set_title("dual modality normalization");
             tipl::reg::cdm2(It,It2,Iss,Iss2,dis,terminated);
-            tipl::invert_displacement(dis,inv_dis);
         }
         else
         {
             set_title("single modality normalization");
             tipl::reg::cdm(It,Iss,dis,terminated);
-            tipl::invert_displacement(dis,inv_dis);
         }
+
+        tipl::invert_displacement(dis,inv_dis);
 
         if(terminated)
             return;
+        gz_mat_write out(output_file_name.c_str());
+        if(out)
+        {
+            out.write("to_dim",dis.geometry());
+            out.write("to_vs",template_vs);
+            out.write("from_dim",dim);
+            out.write("from_vs",vs);
+            out.write("steps",steps);
+        }
+
         {
             prog = 4;
             set_title("calculating tempalte to subject warp field");
-            tipl::image<tipl::vector<3,float>,3 > mni(dis);
-            tipl::displacement_to_mapping(mni,T);
-            gz_mat_write out(output_file_name1.c_str());
+            tipl::image<tipl::vector<3,float>,3 > pos;
+            tipl::displacement_to_mapping(dis,pos,T);
             if(out)
-            {
-                out.write("dimension",mni.geometry());
-                out.write("voxel_size",template_vs);
-                out.write("trans",template_trans_to_mni);
-                out.write("mapping",&mni[0][0],3,mni.size());
-                out.write("steps",steps);
-            }
-            inv_mni_position.swap(mni);
+                out.write("to2from",&pos[0][0],3,pos.size());
+            t2s.swap(pos);
         }
         if(terminated)
             return;
         {
             prog = 5;
             set_title("calculating subject to template warp field");
-            tipl::image<tipl::vector<3,float>,3 > mni(dim);
+            tipl::image<tipl::vector<3,float>,3 > pos(dim);
             iT = T;
             iT.inverse();
-            mni.for_each_mt([&](tipl::vector<3,float>& v,const tipl::pixel_index<3>& pos)
+            pos.for_each_mt([&](tipl::vector<3,float>& v,const tipl::pixel_index<3>& index)
             {
-                tipl::vector<3> p(pos),d;
+                tipl::vector<3> p(index),d;
                 iT(p);
                 v = p;
                 tipl::estimate(inv_dis,v,d,tipl::linear);
                 v += d;
-                template_to_mni(v);
             });
-            gz_mat_write out(output_file_name2.c_str());
             if(out)
-            {
-                out.write("dimension",mni.geometry());
-                out.write("voxel_size",vs);
-                out.write("trans",trans_to_mni);
-                out.write("mapping",&mni[0][0],3,mni.size());
-                out.write("steps",steps);
-            }
-            mni_position.swap(mni);
+                out.write("from2to",&pos[0][0],3,pos.size());
+            s2t.swap(pos);
         }
         prog = 6;
     };
@@ -1664,97 +1680,69 @@ bool fib_data::can_map_to_mni(void)
     return true;
 }
 
-void sub2mni(tipl::vector<3>& pos,const tipl::matrix<4,4,float>& trans)
+void fib_data::temp2sub(tipl::vector<3>& pos)
 {
-    if(trans[0] != 1.0f)
-        pos[0] *= trans[0];
-    if(trans[5] != 1.0f)
-        pos[1] *= trans[5];
-    if(trans[10] != 1.0f)
-        pos[2] *= trans[10];
-    pos[0] += trans[3];
-    pos[1] += trans[7];
-    pos[2] += trans[11];
-}
-void mni2sub(tipl::vector<3>& pos,const tipl::matrix<4,4,float>& trans)
-{
-    pos[0] -= trans[3];
-    pos[1] -= trans[7];
-    pos[2] -= trans[11];
-    if(trans[0] != 1.0f)
-        pos[0] /= trans[0];
-    if(trans[5] != 1.0f)
-        pos[1] /= trans[5];
-    if(trans[10] != 1.0f)
-        pos[2] /= trans[10];
-}
-
-
-void fib_data::mni2subject(tipl::vector<3>& pos)
-{
-    if(!need_normalization)
-    {
-        mni2sub(pos,trans_to_mni);
+    if(is_template_space)
         return;
-    }
-    if(!inv_mni_position.empty())
-    {
-        template_from_mni(pos);
-        tipl::vector<3> p;
-        if(pos[2] < 0.0f)
-            pos[2] = 0.0f;
-        tipl::estimate(inv_mni_position,pos,p);
-        pos = p;
-    }
-}
-
-void fib_data::subject2mni(tipl::vector<3>& pos)
-{
-    if(!need_normalization)
-    {
-        sub2mni(pos,trans_to_mni);
-        return;
-    }
-    if(!mni_position.empty())
+    if(!t2s.empty())
     {
         tipl::vector<3> p;
         if(pos[2] < 0.0f)
             pos[2] = 0.0f;
-        tipl::estimate(mni_position,pos,p);
+        tipl::estimate(t2s,pos,p);
         pos = p;
     }
+}
+
+void fib_data::sub2temp(tipl::vector<3>& pos)
+{
+    if(is_template_space)
+        return;
+    if(!s2t.empty())
+    {
+        tipl::vector<3> p;
+        if(pos[2] < 0.0f)
+            pos[2] = 0.0f;
+        tipl::estimate(s2t,pos,p);
+        pos = p;
+    }
+}
+void fib_data::sub2mni(tipl::vector<3>& pos)
+{
+    sub2temp(pos);
+    apply_trans(pos,template_to_mni);
 }
 
 void fib_data::get_atlas_roi(std::shared_ptr<atlas> at,unsigned int roi_index,std::vector<tipl::vector<3,short> >& points)
 {
-    if(get_mni_mapping().empty() || !at->load_from_file())
+    if(get_sub2temp_mapping().empty() || !at->load_from_file())
         return;
     unsigned int thread_count = std::thread::hardware_concurrency();
     std::vector<std::vector<tipl::vector<3,short> > > buf(thread_count);
-    mni_position.for_each_mt2([&](const tipl::vector<3>& mni,const tipl::pixel_index<3>& index,int id)
+    s2t.for_each_mt2([&](const tipl::vector<3>& pos,const tipl::pixel_index<3>& index,size_t id)
     {
-        if (at->is_labeled_as(mni, roi_index))
+        if (at->is_labeled_as(pos, roi_index))
             buf[id].push_back(tipl::vector<3,short>(index.begin()));
     });
     points.clear();
-    for(int i = 0;i < buf.size();++i)
+    for(size_t i = 0;i < buf.size();++i)
         points.insert(points.end(),buf[i].begin(),buf[i].end());
 
 }
 
 void fib_data::get_atlas_all_roi(std::shared_ptr<atlas> at,std::vector<std::vector<tipl::vector<3,short> > >& points)
 {
-    if(get_mni_mapping().empty() || !at->load_from_file())
+    if(get_sub2temp_mapping().empty() || !at->load_from_file())
         return;
     points.clear();
     points.resize(at->get_list().size());
     std::vector<std::mutex> push_back_mutex(points.size());
     if(at->is_multiple_roi)
     {
-        mni_position.for_each_mt([&](const tipl::vector<3>& mni,const tipl::pixel_index<3>& index)
+        s2t.for_each_mt([&](const tipl::vector<3>& pos,const tipl::pixel_index<3>& index)
         {
             std::vector<uint16_t> region_indicies;
-            at->region_indices_at(mni,region_indicies);
+            at->region_indices_at(pos,region_indicies);
             if(region_indicies.empty())
                 return;
             tipl::vector<3,short> point(index.begin());
@@ -1768,9 +1756,9 @@ void fib_data::get_atlas_all_roi(std::shared_ptr<atlas> at,std::vector<std::vect
     }
     else
     {
-        mni_position.for_each_mt([&](const tipl::vector<3>& mni,const tipl::pixel_index<3>& index)
+        s2t.for_each_mt([&](const tipl::vector<3>& pos,const tipl::pixel_index<3>& index)
         {
-            int region_index = at->region_index_at(mni);
+            int region_index = at->region_index_at(pos);
             if(region_index < 0 || region_index >= int(points.size()))
                 return;
             std::lock_guard<std::mutex> lock(push_back_mutex[uint32_t(region_index)]);
@@ -1779,21 +1767,20 @@ void fib_data::get_atlas_all_roi(std::shared_ptr<atlas> at,std::vector<std::vect
     }
 }
 
-const tipl::image<tipl::vector<3,float>,3 >& fib_data::get_mni_mapping(void)
+const tipl::image<tipl::vector<3,float>,3 >& fib_data::get_sub2temp_mapping(void)
 {
-    if(!mni_position.empty())
-        return mni_position;
-    if(!need_normalization)
+    if(!s2t.empty())
+        return s2t;
+    if(is_template_space)
     {
-        mni_position.resize(dim);
-        mni_position.for_each_mt([&](tipl::vector<3>& mni,const tipl::pixel_index<3>& index)
+        s2t.resize(dim);
+        s2t.for_each_mt([&](tipl::vector<3>& pos,const tipl::pixel_index<3>& index)
         {
-            mni = index.begin();
-            sub2mni(mni,trans_to_mni);
+            pos = index.begin();
         });
-        return mni_position;
+        return s2t;
     }
     if(load_template())
         run_normalization(false,false);
-    return mni_position;
+    return s2t;
 }
