@@ -615,7 +615,7 @@ void connectometry_db::save_subject_vector(const char* output_name,
                     voxel_location.push_back(int(cur_index));
                     tipl::pixel_index<3> p(cur_index,handle->dim);
                     tipl::vector<3> p2(p);
-                    handle->subject2mni(p2);
+                    handle->sub2mni(p2);
                     mni_location.push_back(p2[0]);
                     mni_location.push_back(p2[1]);
                     mni_location.push_back(p2[2]);

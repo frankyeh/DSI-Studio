@@ -65,6 +65,7 @@ class TinyTrack{
     static bool save_to_file(const char* file_name,
                              tipl::geometry<3> geo,
                              tipl::vector<3> vs,
+                             const tipl::matrix<4,4,float>& trans_to_mni,
                              const std::vector<std::vector<float> >& tract_data,
                              const std::vector<uint16_t>& cluster,
                              const std::string& report,
@@ -77,6 +78,7 @@ class TinyTrack{
 
         out.write("dimension",geo);
         out.write("voxel_size",vs);
+        out.write("trans_to_mni",trans_to_mni);
         out.write("report",report);
         if(!parameter_id.empty())
             out.write("parameter_id",parameter_id);
@@ -185,6 +187,7 @@ class TinyTrack{
                                std::vector<std::vector<float> >& tract_data,
                                std::vector<uint16_t>& tract_cluster,
                                tipl::geometry<3>& geo,tipl::vector<3>& vs,
+                               tipl::matrix<4,4,float>& trans_to_mni,
                                std::string& report,std::string& parameter_id,unsigned int& color)
     {
         prog_init p("loading ",std::filesystem::path(file_name).filename().string().c_str());
@@ -194,6 +197,7 @@ class TinyTrack{
             return false;
         in.read("dimension",geo);
         in.read("voxel_size",vs);
+        in.read("trans_to_mni",trans_to_mni);
         in.read("report",report);
         in.read("parameter_id",parameter_id);
         unsigned int row,col;
@@ -489,8 +493,9 @@ bool tt2trk(const char* tt_file,const char* trk_file)
     std::string report,pid;
     tipl::vector<3> vs;
     tipl::geometry<3> geo;
+    tipl::matrix<4,4,float> trans_to_mni;
     unsigned int color = default_tract_color;
-    if(!TinyTrack::load_from_file(tt_file,tract_data,cluster,geo,vs,report,pid,color))
+    if(!TinyTrack::load_from_file(tt_file,tract_data,cluster,geo,vs,trans_to_mni,report,pid,color))
     {
         std::cout << "cannot read file:" << tt_file << std::endl;
         return false;
@@ -528,7 +533,9 @@ bool trk2tt(const char* trk_file,const char* tt_file)
         }
     std::string p_id;
     std::vector<uint16_t> cluster(loaded_tract_cluster.begin(),loaded_tract_cluster.end());
-    return TinyTrack::save_to_file(tt_file,geo,vs,loaded_tract_data,cluster,info,p_id,color);
+    tipl::matrix<4,4,float> trans_to_mni;
+    initial_LPS_nifti_srow(trans_to_mni,geo,vs);
+    return TinyTrack::save_to_file(tt_file,geo,vs,trans_to_mni,loaded_tract_data,cluster,info,p_id,color);
 }
 //---------------------------------------------------------------------------
 void shift_track_for_tck(std::vector<std::vector<float> >& loaded_tract_data,tipl::geometry<3>& geo)
@@ -559,7 +566,10 @@ void shift_track_for_tck(std::vector<std::vector<float> >& loaded_tract_data,tip
             loaded_tract_data[i][j] -= min_xyz[2];
     });
 }
-bool load_fib_from_tracks(const char* file_name,tipl::image<float,3>& I,tipl::vector<3>& vs)
+bool load_fib_from_tracks(const char* file_name,
+                          tipl::image<float,3>& I,
+                          tipl::vector<3>& vs,
+                          tipl::matrix<4,4,float>& trans_to_mni)
 {
     tipl::geometry<3> geo;
     std::vector<std::vector<float> > loaded_tract_data;
@@ -594,7 +604,7 @@ bool load_fib_from_tracks(const char* file_name,tipl::image<float,3>& I,tipl::ve
             std::vector<unsigned short> loaded_tract_cluster;
             std::string report,pid;
             unsigned int color;
-            if(!TinyTrack::load_from_file(file_name,loaded_tract_data,loaded_tract_cluster,geo,vs,report,pid,color))
+            if(!TinyTrack::load_from_file(file_name,loaded_tract_data,loaded_tract_cluster,geo,vs,trans_to_mni,report,pid,color))
             {
                 std::cout << "cannot read file:" << file_name << std::endl;
                 return false;
@@ -641,6 +651,50 @@ void TractModel::add(const TractModel& rhs)
     is_cut.insert(is_cut.end(),rhs.is_cut.begin(),rhs.is_cut.end());
 }
 //---------------------------------------------------------------------------
+bool apply_unwarping_tt(const char* from,
+                        const char* to,
+                        const tipl::image<tipl::vector<3>,3>& from2to,
+                        tipl::geometry<3> new_geo,
+                        tipl::vector<3> new_vs,
+                        const tipl::matrix<4,4,float>& new_trans_to_mni,
+                        std::string& error)
+{
+    std::vector<std::vector<float> > loaded_tract_data;
+    std::vector<uint16_t> cluster;
+    unsigned int color;
+    tipl::geometry<3> geo;
+    tipl::vector<3> vs;
+    tipl::matrix<4,4,float> trans_to_mni;
+    std::string report, parameter_id;
+    if(!TinyTrack::load_from_file(from,loaded_tract_data,cluster,geo,vs,trans_to_mni,report,parameter_id,color))
+    {
+        error = "Failed to read file";
+        return false;
+    }
+    tipl::vector<3> max_pos(geo);
+    max_pos -= 1.0f;
+    tipl::par_for(loaded_tract_data.size(),[&](size_t i)
+    {
+        for(size_t j = 0;j < loaded_tract_data[i].size();j += 3)
+        {
+            tipl::vector<3> pos(&loaded_tract_data[i][j]);
+            pos[0] = std::min<float>(std::max<float>(pos[0],0.0f),max_pos[0]);
+            pos[1] = std::min<float>(std::max<float>(pos[1],0.0f),max_pos[1]);
+            pos[2] = std::min<float>(std::max<float>(pos[2],0.0f),max_pos[2]);
+            tipl::vector<3> new_pos;
+            tipl::estimate(from2to,pos,new_pos);
+            loaded_tract_data[i][j] = new_pos[0];
+            loaded_tract_data[i][j+1] = new_pos[1];
+            loaded_tract_data[i][j+2] = new_pos[2];
+        }
+    });
+    if(!TinyTrack::save_to_file(to,new_geo,new_vs,new_trans_to_mni,loaded_tract_data,cluster,report,parameter_id,color))
+    {
+        error = "Failed to save file";
+        return false;
+    }
+    return true;
+}
 bool TractModel::load_from_file(const char* file_name_,bool append)
 {
     std::string file_name(file_name_);
@@ -656,7 +710,7 @@ bool TractModel::load_from_file(const char* file_name_,bool append)
     {
         unsigned int old_color = color;
         std::vector<uint16_t> cluster;
-        if(!TinyTrack::load_from_file(file_name_,loaded_tract_data,cluster,geo,vs,report,parameter_id,color))
+        if(!TinyTrack::load_from_file(file_name_,loaded_tract_data,cluster,geo,vs,trans_to_mni,report,parameter_id,color))
             return false;
         std::copy(cluster.begin(),cluster.end(),std::back_inserter(loaded_tract_cluster));
         if(color != old_color)
@@ -773,7 +827,7 @@ bool TractModel::save_data_to_file(std::shared_ptr<fib_data> handle,const char* 
     if(ext == std::string("t.gz"))
     {
         std::vector<uint16_t> cluster;
-        bool result = TinyTrack::save_to_file(file_name_s.c_str(),geo,vs,tract_data,cluster,report,parameter_id,
+        bool result = TinyTrack::save_to_file(file_name_s.c_str(),geo,vs,trans_to_mni,tract_data,cluster,report,parameter_id,
                                             color_changed ? tract_color.front():0);
         return result;
     }
@@ -845,15 +899,14 @@ bool TractModel::save_tracts_in_template_space(std::shared_ptr<fib_data> handle,
     if(!handle->can_map_to_mni())
         return false;
     std::shared_ptr<TractModel> tract_in_template(
-                new TractModel(handle->template_I.geometry(),handle->template_vs,handle->template_trans_to_mni));
+                new TractModel(handle->template_I.geometry(),handle->template_vs,handle->template_to_mni));
     std::vector<std::vector<float> > new_tract_data(tract_data);
     tipl::par_for(tract_data.size(),[&](unsigned int i)
     {
         for(unsigned int j = 0;j < tract_data[i].size();j += 3)
         {
             tipl::vector<3> v(&(tract_data[i][j]));
-            handle->subject2mni(v);
-            handle->template_from_mni(v);
+            handle->sub2temp(v);
             new_tract_data[i][j] = v[0];
             new_tract_data[i][j+1] = v[1];
             new_tract_data[i][j+2] = v[2];
@@ -892,7 +945,8 @@ bool TractModel::save_tracts_to_file(const char* file_name_)
     if(ext == std::string("t.gz"))
     {
         std::vector<uint16_t> cluster;
-        bool result = TinyTrack::save_to_file(file_name.c_str(),geo,vs,tract_data,cluster,report,parameter_id,
+        bool result = TinyTrack::save_to_file(file_name.c_str(),geo,vs,trans_to_mni,
+                                            tract_data,cluster,report,parameter_id,
                                             color_changed ? tract_color.front():0);
         return result;
     }
@@ -1221,7 +1275,7 @@ bool TractModel::save_all(const char* file_name_,
             }
         }
         // save file
-        bool result = TinyTrack::save_to_file(file_name_,all[0]->geo,all[0]->vs,
+        bool result = TinyTrack::save_to_file(file_name_,all[0]->geo,all[0]->vs,all[0]->trans_to_mni,
                     all_tract,cluster,all[0]->report,all[0]->parameter_id);
         // restore tracts
         for(size_t i = 0,pos = 0;i < all.size();++i)
@@ -3145,7 +3199,7 @@ void TractModel::get_tracts_data(std::shared_ptr<fib_data> handle,unsigned int d
         mean = float(sum_data/double(total));
 }
 
-void TractModel::get_passing_list(const std::vector<std::vector<short> >& region_map,
+void TractModel::get_passing_list(const tipl::image<std::vector<short>,3>& region_map,
                                   unsigned int region_count,
                                   std::vector<std::vector<short> >& passing_list1,
                                   std::vector<std::vector<short> >& passing_list2) const
@@ -3181,7 +3235,7 @@ void TractModel::get_passing_list(const std::vector<std::vector<short> >& region
     });
 }
 
-void TractModel::get_end_list(const std::vector<std::vector<short> >& region_map,
+void TractModel::get_end_list(const tipl::image<std::vector<short>,3>& region_map,
                               std::vector<std::vector<short> >& end_pair1,
                               std::vector<std::vector<short> >& end_pair2) const
 {
@@ -3318,7 +3372,7 @@ void ConnectivityMatrix::set_regions(const tipl::geometry<3>& geo,
 {
     region_count = regions.size();
     region_map.clear();
-    region_map.resize(geo.size());
+    region_map.resize(geo);
 
     std::vector<std::set<uint16_t> > regions_set(geo.size());
     for(size_t roi = 0;roi < regions.size();++roi)
@@ -3346,30 +3400,35 @@ void ConnectivityMatrix::set_regions(const tipl::geometry<3>& geo,
     atlas_name = "roi";
 }
 
-void ConnectivityMatrix::set_atlas(std::shared_ptr<atlas> data,const tipl::image<tipl::vector<3,float>,3 >& mni_position)
+
+bool ConnectivityMatrix::set_atlas(std::shared_ptr<atlas> data,
+                                   std::shared_ptr<fib_data> handle)
 {
-    if(mni_position.empty())
-        return;
-    tipl::geometry<3> geo(mni_position.geometry());
+    if(!handle->can_map_to_mni() && !handle->get_sub2temp_mapping().empty())
+        return false;
     tipl::vector<3> null;
     region_count = data->get_list().size();
     region_name.clear();
     for (unsigned int label_index = 0; label_index < region_count; ++label_index)
         region_name.push_back(data->get_list()[label_index]);
-    data->is_labeled_as(mni_position.front(),0);// trigger load from file
 
+    // trigger atlas loading to aoivd crash in multi thread
+    data->is_labeled_as(tipl::vector<3>(0.0f,0.0f,0.0f),0);
+
+    const auto& s2t = handle->get_sub2temp_mapping();
     region_map.clear();
-    region_map.resize(geo.size());
-    for(unsigned int i = 0;i < region_count;++i)
+    region_map.resize(handle->dim);
+    tipl::par_for(region_map.size(),[&](size_t index)
     {
-        mni_position.for_each_mt([&](const tipl::vector<3,float>& mni,const tipl::pixel_index<3>& index)
+        for(unsigned int i = 0;i < region_count;++i)
         {
-            if(mni != null && data->is_labeled_as(mni,i))
-                region_map[index.index()].push_back(short(i));
-        });
-    }
+            if(data->is_labeled_as(s2t[index],i))
+                region_map[index].push_back(short(i));
+        }
+    });
+
     unsigned int overlap_count = 0,total_count = 0;
-    for(unsigned int index = 0;index < geo.size();++index)
+    for(unsigned int index = 0;index < region_map.size();++index)
         if(!region_map[index].empty())
         {
             ++total_count;
@@ -3378,6 +3437,7 @@ void ConnectivityMatrix::set_atlas(std::shared_ptr<atlas> data,const tipl::image
         }
     overlap_ratio = float(overlap_count)/float(total_count);
     atlas_name = data->name;
+    return true;
 }
 
 

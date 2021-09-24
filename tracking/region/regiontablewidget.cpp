@@ -306,11 +306,7 @@ void RegionTableWidget::move_slice_to_current_region(void)
         return;
     tipl::vector<3,float> p(current_region->get_center());
     if(!current_slice->is_diffusion_space)
-    {
-        auto iT = current_slice->T;
-        iT.inv();
-        p.to(iT);
-    }
+        p.to(current_slice->invT);
     cur_tracking_window.move_slice_to(p);
 }
 
@@ -355,8 +351,7 @@ void RegionTableWidget::draw_region(const tipl::color_image& slice_image,float d
             if(!current_slice->is_diffusion_space)
             {
                 // apply resolution ratio to iT
-                auto iT = current_slice->T;
-                iT.inv();
+                auto iT = current_slice->invT;
                 if(r != 1.0f)
                     for(int i : {0,1,2,4,5,6,8,9,10})
                         iT[uint32_t(i)] /= r;
@@ -716,8 +711,7 @@ bool load_nii(std::shared_ptr<fib_data> handle,
         {
             std::cout << "loaded NIFTI file used as MNI space image." << std::endl;
             header.get_image_transformation(convert);
-            convert.inv();
-            convert *= handle->trans_to_mni;
+            convert = tipl::from_space(handle->trans_to_mni).to(convert);
             has_transform = true;
             goto end;
         }
@@ -727,7 +721,7 @@ bool load_nii(std::shared_ptr<fib_data> handle,
             std::cout << "warpping the NIFTI file from MNI space to the native space." << std::endl;
             tipl::matrix<4,4,float> trans;
             header.get_image_transformation(trans);
-            if(!handle->mni2subject(from,trans,tipl::nearest))
+            if(!handle->mni2sub(from,trans,tipl::nearest))
             {
                 error_msg = handle->error_msg;
                 return false;
@@ -1482,11 +1476,7 @@ void RegionTableWidget::do_action(QString action)
             if(cur_tracking_window.current_slice->is_diffusion_space)
                 cur_region.LoadFromBuffer(mask);
             else
-            {
-                auto iT = cur_tracking_window.current_slice->T;
-                iT.inv();
-                cur_region.LoadFromBuffer(mask,iT);
-            }
+                cur_region.LoadFromBuffer(mask,cur_tracking_window.current_slice->invT);
 
         }
         if(action == "threshold_current")
@@ -1532,8 +1522,7 @@ void RegionTableWidget::do_action(QString action)
             }
             else
             {
-                auto iT = cur_tracking_window.current_slice->T;
-                iT.inv();
+                auto iT = cur_tracking_window.current_slice->invT;
                 for(size_t i = 0;i < region.size();++i)
                 {
                     tipl::vector<3,float> pos(region[i]);

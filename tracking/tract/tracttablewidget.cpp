@@ -86,8 +86,7 @@ void TractTableWidget::draw_tracts(unsigned char dim,int pos,
     unsigned int thread_count = std::thread::hardware_concurrency();
     std::vector<std::vector<std::vector<tipl::vector<2,float> > > > lines_threaded(thread_count);
     std::vector<std::vector<unsigned int> > colors_threaded(thread_count);
-    auto iT = cur_tracking_window.current_slice->T;
-    iT.inv();
+    auto iT = cur_tracking_window.current_slice->invT;
     max_count /= selected_tracts.size();
 
     tipl::par_for2(selected_tracts.size(),[&](unsigned int index,unsigned int thread)
@@ -662,7 +661,7 @@ void TractTableWidget::save_end_point_in_mni(void)
     for(unsigned int index = 0;index < points.size();++index)
     {
         points[index] /= resolution_ratio;
-        cur_tracking_window.handle->subject2mni(points[index]);
+        cur_tracking_window.handle->sub2mni(points[index]);
         buffer.push_back(points1[index][0]);
         buffer.push_back(points1[index][1]);
         buffer.push_back(points1[index][2]);

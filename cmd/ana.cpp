@@ -18,7 +18,7 @@
 
 // test example
 // --action=ana --source=20100129_F026Y_WANFANGYUN.src.gz.odf8.f3rec.de0.dti.fib.gz --method=0 --fiber_count=5000
-bool atl_load_atlas(std::string atlas_name,std::vector<std::shared_ptr<atlas> >& atlas_list);
+bool atl_load_atlas(std::shared_ptr<fib_data> handle,std::string atlas_name,std::vector<std::shared_ptr<atlas> >& atlas_list);
 bool load_roi(std::shared_ptr<fib_data> handle,std::shared_ptr<RoiMgr> roi_mgr);
 
 void get_regions_statistics(std::shared_ptr<fib_data> handle,
@@ -162,7 +162,7 @@ int ana(void)
         if(po.has("atlas"))
         {
             std::vector<std::shared_ptr<atlas> > atlas_list;
-            if(!atl_load_atlas(po.get("atlas"),atlas_list))
+            if(!atl_load_atlas(handle,po.get("atlas"),atlas_list))
                 return 1;
             for(unsigned int i = 0;i < atlas_list.size();++i)
             {

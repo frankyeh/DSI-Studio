@@ -11,7 +11,7 @@
 
 extern std::string fib_template_file_name_2mm;
 const char* odf_average(const char* out_name,std::vector<std::string>& file_names);
-bool atl_load_atlas(std::string atlas_name,std::vector<std::shared_ptr<atlas> >& atlas_list)
+bool atl_load_atlas(std::shared_ptr<fib_data> handle,std::string atlas_name,std::vector<std::shared_ptr<atlas> >& atlas_list)
 {
     QStringList name_list = QString(atlas_name.c_str()).split(",");
 
@@ -58,49 +58,10 @@ bool atl_load_atlas(std::string atlas_name,std::vector<std::shared_ptr<atlas> >&
             continue;
         }
     }
+    handle->atlas_list = atlas_list;
     return !atlas_list.empty();
 }
 
-void atl_save_mapping(std::vector<std::shared_ptr<atlas> >& atlas_list,
-                      const std::string& file_name,const tipl::geometry<3>& geo,
-                      const tipl::image<tipl::vector<3>,3>& mapping,
-                      const tipl::matrix<4,4,float>& trans,
-                      const tipl::vector<3>& vs,
-                      bool multiple)
-{
-    for(unsigned int i = 0;i < atlas_list.size();++i)
-    {
-        std::string base_name = file_name;
-        base_name += ".";
-        base_name += atlas_list[i]->name;
-        for(unsigned int j = 0;j < atlas_list[i]->get_list().size();++j)
-        {
-            std::string output = base_name;
-            output += ".";
-            output += atlas_list[i]->get_list()[j];
-            output += ".nii.gz";
-
-            tipl::image<unsigned char,3> roi(geo);
-            for(unsigned int k = 0;k < mapping.size();++k)
-                if (atlas_list[i]->is_labeled_as(mapping[k], j))
-                    roi[k] = 1;
-            if(multiple)
-            {
-                std::cout << "save " << output << std::endl;
-                if(!gz_nifti::save_to_file(output.c_str(),roi,vs,trans))
-                    std::cout << "cannot write output to file:" << output << std::endl;
-
-            }
-        }
-        {
-            std::string label_name = base_name;
-            label_name += ".txt";
-            std::ofstream txt_out(label_name.c_str());
-            for(unsigned int j = 0;j < atlas_list[i]->get_list().size();++j)
-                txt_out << atlas_list[i]->get_num()[j] << " " << atlas_list[i]->get_list()[j] << std::endl;
-        }
-    }
-}
 std::shared_ptr<fib_data> cmd_load_fib(const std::string file_name);
 
 void get_files_in_folder(std::string dir,std::string file,std::vector<std::string>& files)
@@ -226,17 +187,47 @@ int atl(void)
             return 1;
         }
         std::vector<std::shared_ptr<atlas> > atlas_list;
-        if(!atl_load_atlas(po.get("atlas"),atlas_list))
+        if(!atl_load_atlas(handle,po.get("atlas"),atlas_list))
             return 1;
-        if(!handle->can_map_to_mni())
+        if(!handle->can_map_to_mni() || handle->get_sub2temp_mapping().empty())
         {
             std::cout << "cannot output connectivity: no mni mapping" << std::endl;
             return 1;
         }
-        atl_save_mapping(atlas_list,
-                         po.get("source"),handle->dim,
-                         handle->get_mni_mapping(),handle->trans_to_mni,handle->vs,
-                         po.get("output","multiple") == "multiple");
+        std::string file_name = po.get("source");
+        const auto& mapping = handle->get_sub2temp_mapping();
+        bool multiple = (po.get("output","multiple") == "multiple");
+
+        for(unsigned int i = 0;i < atlas_list.size();++i)
+        {
+            std::string base_name = file_name;
+            base_name += ".";
+            base_name += atlas_list[i]->name;
+            for(unsigned int j = 0;j < atlas_list[i]->get_list().size();++j)
+            {
+                std::string output = base_name;
+                output += ".";
+                output += atlas_list[i]->get_list()[j];
+                output += ".nii.gz";
+                tipl::image<unsigned char,3> roi(handle->dim);
+                for(unsigned int k = 0;k < mapping.size();++k)
+                    if (atlas_list[i]->is_labeled_as(mapping[k], j))
+                        roi[k] = 1;
+                if(multiple)
+                {
+                    std::cout << "save " << output << std::endl;
+                    if(!gz_nifti::save_to_file(output.c_str(),roi,handle->vs,handle->trans_to_mni))
+                        std::cout << "cannot write output to file:" << output << std::endl;
+                }
+            }
+            {
+                std::string label_name = base_name;
+                label_name += ".txt";
+                std::ofstream txt_out(label_name.c_str());
+                for(unsigned int j = 0;j < atlas_list[i]->get_list().size();++j)
+                    txt_out << atlas_list[i]->get_num()[j] << " " << atlas_list[i]->get_list()[j] << std::endl;
+            }
+        }
         return 0;
     }
     if(cmd=="trk")

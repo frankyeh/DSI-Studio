@@ -895,10 +895,10 @@ bool tracking_window::eventFilter(QObject *obj, QEvent *event)
                 .arg(std::round(pos[2]*10.0)/10.0);
     }
 
-    if(!handle->need_normalization || !handle->mni_position.empty())
+    if(handle->is_template_space|| !handle->s2t.empty())
     {
         tipl::vector<3,float> mni(pos);
-        handle->subject2mni(mni);
+        handle->sub2mni(mni);
         status += QString("MNI(%1,%2,%3) ")
                 .arg(std::round(mni[0]*10.0)/10.0)
                 .arg(std::round(mni[1]*10.0)/10.0)
@@ -1947,7 +1947,7 @@ void tracking_window::on_actionInsert_MNI_images_triggered()
 {
     QString filename = QFileDialog::getOpenFileName(
         this,"Open MNI Image",QFileInfo(windowTitle()).absolutePath(),"Image files (*.hdr *.nii *nii.gz);;All files (*)" );
-    if( filename.isEmpty() || !can_map_to_mni() || handle->get_mni_mapping().empty())
+    if( filename.isEmpty() || !can_map_to_mni())
         return;
 
     CustomSliceModel* reg_slice_ptr = nullptr;
@@ -2768,9 +2768,9 @@ void tracking_window::on_actionAdjust_Atlas_Mapping_triggered()
         return;
     handle->manual_template_T = manual->get_iT();
     handle->has_manual_atlas = true;
-    handle->need_normalization = true;
-    handle->mni_position.clear();
-    handle->inv_mni_position.clear();
+    handle->is_template_space= false;
+    handle->s2t.clear();
+    handle->t2s.clear();
     handle->run_normalization(true,true);
     handle->run_normalization(true,false);
 }

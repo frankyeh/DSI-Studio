@@ -283,9 +283,7 @@ bool ROIRegion::LoadFromFile(const char* FileName) {
             header.get_untouched_image(from);
             tipl::matrix<4,4,float> t;
             header.get_image_transformation(t);
-            t.inv();
-            t *= trans_to_mni;
-            LoadFromBuffer(from,t);
+            LoadFromBuffer(from,tipl::from_space(trans_to_mni).to(t));
             return true;
         }
         {
@@ -507,10 +505,10 @@ void ROIRegion::get_quantitative_data(std::shared_ptr<fib_data> handle,std::vect
     titles.push_back("center z");
     std::copy(cm.begin(),cm.end(),std::back_inserter(data)); // center of the mass
 
-    if(!handle->mni_position.empty())
+    if(!handle->s2t.empty())
     {
-        tipl::vector<3> mni;
-        tipl::estimate(handle->mni_position,cm,mni);
+        tipl::vector<3> mni(cm);
+        handle->sub2mni(mni);
         titles.push_back("center mni x");
         titles.push_back("center mni y");
         titles.push_back("center mni z");

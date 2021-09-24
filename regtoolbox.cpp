@@ -57,8 +57,10 @@ void RegToolBox::clear(void)
     J.clear();
     J_view.clear();
     J_view2.clear();
-    dis.clear();
-    mapping.clear();
+    t2f_dis.clear();
+    to2from.clear();
+    f2t_dis.clear();
+    from2to.clear();
     arg.clear();
     ui->run_reg->setText("run");
 }
@@ -113,6 +115,7 @@ void RegToolBox::on_OpenSubject_clicked()
         return;
     }
     nifti.toLPS(I);
+    nifti.get_image_transformation(IR);
     ui->edge->setChecked(is_label_image(I));
     tipl::normalize(I,1.0f);
     nifti.get_voxel_size(Ivs);
@@ -367,9 +370,9 @@ void RegToolBox::on_timer()
         }
         else // nonlinear
         {
-            if(!dis.empty())
+            if(!t2f_dis.empty())
             {
-                dis_view = dis;
+                dis_view = t2f_dis;
                 J_view = (ui->show_second->isChecked() && J2.geometry() == J.geometry() ? J2 : J);
                 std::vector<tipl::geometry<3> > geo_stack;
                 while(J_view.width() > dis_view.width())
@@ -468,19 +471,28 @@ void RegToolBox::nonlinear_reg(void)
             tipl::filter::sobel(sJ);
             tipl::filter::mean(sIt);
             tipl::filter::mean(sJ);
-            tipl::reg::cdm(sIt,sJ,dis,thread.terminated,param);
+            tipl::reg::cdm(sIt,sJ,t2f_dis,thread.terminated,param);
         }
         else
         {
             //tipl::reg::cdm_pre(It,It2,J,J2);
             if(It2.geometry() == It.geometry() && J2.geometry() == J.geometry())
-                tipl::reg::cdm2(It,It2,J,J2,dis,thread.terminated,param);
+                tipl::reg::cdm2(It,It2,J,J2,t2f_dis,thread.terminated,param);
             else
-                tipl::reg::cdm(It,J,dis,thread.terminated,param);
+                tipl::reg::cdm(It,J,t2f_dis,thread.terminated,param);
         }
     }
-    tipl::displacement_to_mapping(dis,mapping,T);
-    tipl::compose_mapping(I,mapping,JJ);
+    tipl::displacement_to_mapping(t2f_dis,to2from,T);
+
+    // calculate inverted to2from
+    {
+        from2to.resize(I.geometry());
+        tipl::invert_displacement(t2f_dis,f2t_dis);
+        tipl::inv_displacement_to_mapping(f2t_dis,from2to,T);
+    }
+
+
+    tipl::compose_mapping(I,to2from,JJ);
     std::cout << "nonlinear:" << tipl::correlation(JJ.begin(),JJ.end(),It.begin()) << std::endl;
 }
 
@@ -524,7 +536,7 @@ void RegToolBox::on_run_reg_clicked()
 
 bool apply_warping(const char* from,
                    const char* to,
-                   tipl::image<tipl::vector<3>,3>& mapping,
+                   tipl::image<tipl::vector<3>,3>& to2from,
                    tipl::vector<3> Itvs,
                    const tipl::matrix<4,4,float>& ItR,
                    std::string& error,
@@ -539,7 +551,7 @@ bool apply_warping(const char* from,
     tipl::image<float,3> I3;
     nifti.toLPS(I3);
     tipl::image<float,3> J3;
-    tipl::compose_mapping(I3,mapping,J3,is_label_image(I3) ? tipl::nearest : interpo);
+    tipl::compose_mapping(I3,to2from,J3,is_label_image(I3) ? tipl::nearest : interpo);
     if(!gz_nifti::save_to_file(to,J3,Itvs,ItR))
     {
         error = "cannot write to file ";
@@ -563,7 +575,7 @@ void RegToolBox::on_actionApply_Warpping_triggered()
     std::string error;
     if(!apply_warping(from.toStdString().c_str(),
                       to.toStdString().c_str(),
-                      mapping,Itvs,ItR,error,tipl::cubic))
+                      to2from,Itvs,ItR,error,tipl::cubic))
         QMessageBox::critical(this,"ERROR",error.c_str());
     else
         QMessageBox::information(this,"DSI Studio","Saved");
@@ -605,11 +617,11 @@ void RegToolBox::on_actionRemove_Background_triggered()
 
 void RegToolBox::on_actionSave_Warpping_triggered()
 {
-    if(mapping.empty())
+    if(to2from.empty())
         return;
     QString filename = QFileDialog::getSaveFileName(
             this,"Save Warpping","",
-            "Images (*mapping.gz);;All files (*)" );
+            "Images (*map.gz);;All files (*)" );
     if(filename.isEmpty())
         return;
     gz_mat_write out(filename.toStdString().c_str());
@@ -618,10 +630,15 @@ void RegToolBox::on_actionSave_Warpping_triggered()
         QMessageBox::critical(this,"ERROR","Cannot write to file");
         return;
     }
-    out.write("mapping",&mapping[0][0],3,mapping.size());
-    out.write("dimension",mapping.geometry());
-    out.write("voxel_size",Itvs);
-    out.write("trans",ItR.begin(),4,4);
+    out.write("to2from",&to2from[0][0],3,to2from.size());
+    out.write("to_dim",to2from.geometry());
+    out.write("to_vs",Itvs);
+    out.write("to_trans",ItR);
+
+    out.write("from2to",&from2to[0][0],3,from2to.size());
+    out.write("from_dim",from2to.geometry());
+    out.write("from_vs",Ivs);
+    out.write("from_trans",IR);
 }
 
 

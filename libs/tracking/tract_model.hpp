@@ -177,11 +177,11 @@ public:
         void get_tracts_data(std::shared_ptr<fib_data> handle,unsigned int index_num,float& mean) const;
 public:
 
-        void get_passing_list(const std::vector<std::vector<short> >& region_map,
+        void get_passing_list(const tipl::image<std::vector<short>,3>& region_map,
                               unsigned int region_count,
                                      std::vector<std::vector<short> >& passing_list1,
                                      std::vector<std::vector<short> >& passing_list2) const;
-        void get_end_list(const std::vector<std::vector<short> >& region_map,
+        void get_end_list(const tipl::image<std::vector<short>,3>& region_map,
                                      std::vector<std::vector<short> >& end_list1,
                                      std::vector<std::vector<short> >& end_list2) const;
         void run_clustering(unsigned char method_id,unsigned int cluster_count,float param);
@@ -198,12 +198,12 @@ public:
 
     tipl::image<float,2> matrix_value;
 public:
-    std::vector<std::vector<short> > region_map;
+    tipl::image<std::vector<short>,3> region_map;
     size_t region_count = 0;
     std::vector<std::string> region_name;
     std::string error_msg,atlas_name;
     float overlap_ratio;
-    void set_atlas(std::shared_ptr<atlas> data,const tipl::image<tipl::vector<3,float>,3 >& mni_position);
+    bool set_atlas(std::shared_ptr<atlas> data,std::shared_ptr<fib_data> handle);
     void set_regions(const tipl::geometry<3>& geo,
                      const std::vector<std::shared_ptr<ROIRegion> >& regions);
 public:

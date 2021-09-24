@@ -20,7 +20,7 @@ std::shared_ptr<CustomSliceModel> t1t2_slices;
 extern std::vector<std::shared_ptr<CustomSliceModel> > other_slices;
 std::vector<std::shared_ptr<CustomSliceModel> > other_slices;
 
-bool atl_load_atlas(const std::string atlas_name,std::vector<std::shared_ptr<atlas> >& atlas_list);
+bool atl_load_atlas(std::shared_ptr<fib_data> handle,const std::string atlas_name,std::vector<std::shared_ptr<atlas> >& atlas_list);
 void get_filenames_from(const std::string param,std::vector<std::string>& filenames);
 bool check_other_slices(std::shared_ptr<fib_data> handle)
 {
@@ -243,7 +243,7 @@ bool load_atlas_from_list(std::shared_ptr<fib_data> handle,
                           std::vector<std::shared_ptr<atlas> >& atlas_list)
 {
     std::cout << "searching " << atlas_name << " from the atlas pool..." << std::endl;
-    if(!atl_load_atlas(atlas_name,atlas_list))
+    if(!atl_load_atlas(handle,atlas_name,atlas_list))
     {
         std::cout << "ERROR: file or atlas does not exist:" << atlas_name << std::endl;
         return false;
@@ -280,7 +280,7 @@ void get_connectivity_matrix(std::shared_ptr<fib_data> handle,
             std::vector<std::shared_ptr<atlas> > atlas_list;
             if(!load_atlas_from_list(handle,roi_file_name,atlas_list))
                 return;
-            data.set_atlas(atlas_list[0],handle->get_mni_mapping());
+            data.set_atlas(atlas_list[0],handle);
         }
         else
         // specify atlas file (e.g. --connectivity=subject_file.nii.gz)
@@ -426,7 +426,7 @@ bool load_region(std::shared_ptr<fib_data> handle,
             std::cout << "ERROR: please assign region name of an atlas." << std::endl;
             return false;
         }
-        const tipl::image<tipl::vector<3,float>,3 >& mapping = handle->get_mni_mapping();
+        const tipl::image<tipl::vector<3,float>,3 >& s2t = handle->get_sub2temp_mapping();
         std::cout << "loading " << region_name << " from " << file_name << " atlas" << std::endl;
         tipl::vector<3> null;
         std::vector<tipl::vector<3,short> > cur_region;
@@ -435,9 +435,11 @@ bool load_region(std::shared_ptr<fib_data> handle,
                 for (unsigned int label_index = 0; label_index < handle->atlas_list[i]->get_list().size(); ++label_index)
                     if(handle->atlas_list[i]->get_list()[label_index] == region_name)
                 {
-                    for (tipl::pixel_index<3>index(mapping.geometry());index < mapping.size();++index)
-                        if(mapping[index.index()] != null && handle->atlas_list[i]->is_labeled_as(mapping[index.index()],label_index))
+                    for (tipl::pixel_index<3>index(s2t.geometry());index < s2t.size();++index)
+                    {
+                        if(handle->atlas_list[i]->is_labeled_as(s2t[index.index()],label_index))
                             cur_region.push_back(tipl::vector<3,short>(index.begin()));
+                    }
                 }
         roi.add_points(cur_region,false);
     }

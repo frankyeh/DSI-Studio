@@ -180,7 +180,7 @@ public:
     bool is_human_data = true;
     bool is_qsdr = false;
     bool is_mni_image = false;
-    bool need_normalization = true;
+    bool is_template_space= false;
     bool trackable = true;
 public:
     fiber_directions dir;
@@ -189,7 +189,7 @@ public:
     mutable std::vector<item> view_item;
 public:
     int prog;
-    tipl::image<tipl::vector<3,float>,3 > mni_position,inv_mni_position;
+    tipl::image<tipl::vector<3,float>,3 > s2t,t2s;
 private:
     mutable tipl::image<tipl::vector<3,float>,3 > native_position;
 public:
@@ -198,10 +198,10 @@ public:
     const tipl::image<tipl::vector<3,float>,3 >& get_native_position(void) const;
 public:
     size_t template_id = 256;
-    tipl::vector<3> template_vs,template_shift;
+    tipl::vector<3> template_vs;
     tipl::image<float,3> template_I,template_I2;
     std::vector<std::shared_ptr<atlas> > atlas_list;
-    tipl::matrix<4,4,float> template_trans_to_mni;
+    tipl::matrix<4,4,float> template_to_mni;
     bool has_manual_atlas = false;
     tipl::transformation_matrix<float> manual_template_T;
 public:
@@ -219,39 +219,39 @@ public:
     void set_template_id(size_t new_id);
     bool load_template(void);
     bool load_track_atlas(void);
-    void template_to_mni(tipl::vector<3>& p);
-    void template_from_mni(tipl::vector<3>& p);
-
+    bool load_track_atlas(std::shared_ptr<TractModel> track);
 public:
     void run_normalization(bool background,bool inv);
     bool can_map_to_mni(void);
-    void mni2subject(tipl::vector<3>& pos);
-    void subject2mni(tipl::vector<3>& pos);
+    void temp2sub(tipl::vector<3>& pos);
+    void sub2temp(tipl::vector<3>& pos);
+    void sub2mni(tipl::vector<3>& pos);
     void get_atlas_roi(std::shared_ptr<atlas> at,unsigned int roi_index,std::vector<tipl::vector<3,short> >& points);
     void get_atlas_all_roi(std::shared_ptr<atlas> at,std::vector<std::vector<tipl::vector<3,short> > >& points);
     template<typename image_type>
-    bool mni2subject(image_type& mni_image,const tipl::matrix<4,4,float>& trans,tipl::interpolation_type interpo = tipl::linear)
+    bool mni2sub(image_type& mni_image,
+                 const tipl::matrix<4,4,float>& trans,tipl::interpolation_type interpo = tipl::linear)
     {
-        using value_type = typename image_type::value_type;
-        const auto& mni_position = get_mni_mapping();
-        if(mni_position.empty())
+        const auto& s2t = get_sub2temp_mapping();
+        if(s2t.empty())
         {
             error_msg = "No spatial mapping found for warpping MNI images";
             return false;
         }
-        image_type J(mni_position.geometry());
-        auto iT = trans;
-        iT.inv();
-        J.for_each_mt([&](value_type& v,const tipl::pixel_index<3>& pos)
+        image_type J(s2t.geometry()); // subject space image
+
+        // from template space to mni image's space
+        auto T = tipl::from_space(template_to_mni).to(trans);
+        tipl::par_for(J.size(),[&](size_t index)
         {
-            tipl::vector<3> mni(mni_position[pos.index()]);
-            mni.to(iT);
-            tipl::estimate(mni_image,mni,v,interpo);
+            tipl::vector<3> pos(s2t[index]);
+            pos.to(T);
+            tipl::estimate(mni_image,pos,J[index],interpo);
         });
         mni_image.swap(J);
         return true;
     }
-    const tipl::image<tipl::vector<3,float>,3 >& get_mni_mapping(void);
+    const tipl::image<tipl::vector<3,float>,3 >& get_sub2temp_mapping(void);
 
 public:
     fib_data(void)

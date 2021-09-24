@@ -10,6 +10,7 @@ private:
     std::vector<uint16_t> value2index;
     std::vector<std::string> labels;
     tipl::matrix<4,4,float> T;
+    bool in_template_space = false;
     void load_label(void);
     size_t get_index(tipl::vector<3,float> atlas_space);
 private:// for talairach only
@@ -21,6 +22,7 @@ private:// for multiple roi atlas only
 public:
     std::string name,filename,error_msg;
     bool is_multiple_roi;
+    tipl::matrix<4,4,float> template_to_mni;
 public:
     bool load_from_file(void);
     const std::vector<std::string>& get_list(void)
@@ -43,9 +45,9 @@ public:
         }
         return region_value;
     }
-    bool is_labeled_as(const tipl::vector<3,float>& mni_space,unsigned int region_index);
-    int region_index_at(const tipl::vector<3,float>& mni_space);
-    void region_indices_at(const tipl::vector<3,float>& mni_space,std::vector<uint16_t>& indices);
+    bool is_labeled_as(const tipl::vector<3,float>& template_space,unsigned int region_index);
+    int region_index_at(const tipl::vector<3,float>& template_space);
+    void region_indices_at(const tipl::vector<3,float>& template_space,std::vector<uint16_t>& indices);
 };
 
 #endif // ATLAS_HPP
