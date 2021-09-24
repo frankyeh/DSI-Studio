@@ -129,8 +129,6 @@ bool ImageModel::reconstruction(void)
         voxel.recon_report.str("");
         voxel.step_report.clear();
         voxel.step_report.str("");
-        if(voxel.method_id != 4 && voxel.method_id != 7)
-            voxel.output_rdi = 0;
         if(voxel.method_id == 1) // DTI
         {
             voxel.output_odf = 0;
@@ -175,7 +173,7 @@ bool ImageModel::reconstruction(void)
                 break;
             }
 
-            if(voxel.output_rdi)
+            if(voxel.needs("rdi"))
                 voxel.recon_report <<
                     " The restricted diffusion was quantified using restricted diffusion imaging (Yeh et al., MRM, 77:603–612 (2017)).";
 
@@ -245,7 +243,7 @@ bool ImageModel::reconstruction(void)
 
             voxel.recon_report
             << " The output resolution in diffeomorphic reconstruction was " << voxel.vs[0] << " mm isotorpic.";
-            if(voxel.output_rdi)
+            if(voxel.needs("rdi"))
                 voxel.recon_report <<
                     " The restricted diffusion was quantified using restricted diffusion imaging (Yeh et al., MRM, 77:603–612 (2017)).";
 

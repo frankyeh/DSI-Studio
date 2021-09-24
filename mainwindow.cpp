@@ -786,7 +786,6 @@ void MainWindow::on_ReconstructSRC_clicked()
         handle->voxel.param[0] = 1.25f;
         handle->voxel.ti.init(8); // odf order of 8
         handle->voxel.output_odf = true; // output ODF
-        handle->voxel.output_rdi = true;
         handle->voxel.other_output = "all";
         handle->voxel.thread_count = std::thread::hardware_concurrency();
         handle->voxel.primary_template = fa_template_list[0];

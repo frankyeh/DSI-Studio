@@ -270,8 +270,6 @@ void reconstruction_window::doReconstruction(unsigned char method_id,bool prompt
     handle->voxel.dti_no_high_b = ui->dti_no_high_b->isChecked();
     handle->voxel.check_btable = ui->check_btable->isChecked();
     handle->voxel.other_output = ui->other_output->text().toStdString();
-
-    handle->voxel.output_rdi = (method_id == 4 || method_id == 7);
     handle->voxel.thread_count = ui->ThreadCount->value();
 
 
