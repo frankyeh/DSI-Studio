@@ -149,7 +149,7 @@ bool ImageModel::reconstruction(void)
                 voxel.recon_report << " The b-table was flipped by " << result << ".";
         }
         else
-            voxel.step_report << "[Step T2b][Check b-table]=unchecked" << std::endl;
+            voxel.step_report << "[Step T2b][Check b-table]=0" << std::endl;
 
         switch (voxel.method_id)
         {
