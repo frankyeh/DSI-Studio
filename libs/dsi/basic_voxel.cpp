@@ -59,13 +59,11 @@ void Voxel::load_from_src(ImageModel& image_model)
     bvalues.clear();
     bvectors.clear();
     dwi_data.clear();
-    untouched_bvectors.clear();
     // include only the first b0
     if(image_model.src_bvalues[sorted_index[0]] == 0.0f)
     {
         bvalues.push_back(0);
         bvectors.push_back(tipl::vector<3,float>(0,0,0));
-        untouched_bvectors.push_back(tipl::vector<3,float>(0,0,0));
         dwi_data.push_back(image_model.src_dwi_data[sorted_index[0]]);
     }
     for(size_t i = 0;i < sorted_index.size();++i)
@@ -73,19 +71,8 @@ void Voxel::load_from_src(ImageModel& image_model)
         {
             bvalues.push_back(image_model.src_bvalues[sorted_index[i]]);
             bvectors.push_back(image_model.src_bvectors[sorted_index[i]]);
-            untouched_bvectors.push_back(image_model.untouched_src_bvectors[sorted_index[i]]);
             dwi_data.push_back(image_model.src_dwi_data[sorted_index[i]]);
         }
-
-    if(image_model.has_image_rotation)
-        for (unsigned int index = 0;index < bvectors.size();++index)
-            {
-                tipl::vector<3> tmp;
-                tipl::vector_rotation(bvectors[index].begin(),tmp.begin(),image_model.src_bvectors_rotate,tipl::vdim<3>());
-                tmp.normalize();
-                bvectors[index] = tmp;
-            }
-
 }
 
 bool Voxel::run(void)

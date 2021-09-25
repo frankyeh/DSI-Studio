@@ -230,25 +230,20 @@ struct ImageModel
 {
 public:
     std::vector<tipl::image<unsigned short,3> > new_dwi; //used in rotated volume
-    std::vector<const unsigned short*> original_src_dwi_data; // used in check b-table
-    tipl::geometry<3> original_dim;
+    std::vector<tipl::image<unsigned short,3> > nifti_dwi; // if load directly from nifti
 public:
     Voxel voxel;
     std::string file_name,error_msg;
     gz_mat_read mat_reader;
 public:
-    // untouched b-table and DWI from SRC file (the ones in Voxel class will be sorted
-    bool has_image_rotation = false;
     std::vector<tipl::vector<3,float> > src_bvectors;
-    std::vector<tipl::image<unsigned short,3> > nifti_dwi; // if load directly from nifti
-    tipl::matrix<3,3,float> src_bvectors_rotate;
-    std::vector<tipl::vector<3,float> > untouched_src_bvectors;
 public:
     std::vector<float> src_bvalues;
     std::vector<const unsigned short*> src_dwi_data;
     tipl::image<float,3> dwi_sum;
     tipl::image<unsigned char, 3>dwi;
     std::shared_ptr<ImageModel> study_src;
+public:
     void draw_mask(tipl::color_image& buffer,int position);
     void calculate_dwi_sum(bool update_mask);
     void remove(unsigned int index);

@@ -60,7 +60,6 @@ public:
 public:
     std::vector<const unsigned short*> dwi_data;
     std::vector<tipl::vector<3,float> > bvectors;
-    std::vector<tipl::vector<3,float> > untouched_bvectors; // gradient nonliearity correction
     std::vector<float> bvalues;
 
     std::string report,steps;

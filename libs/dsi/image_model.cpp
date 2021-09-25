@@ -97,7 +97,6 @@ void ImageModel::remove(unsigned int index)
     src_dwi_data.erase(src_dwi_data.begin()+index);
     src_bvalues.erase(src_bvalues.begin()+index);
     src_bvectors.erase(src_bvectors.begin()+index);
-    untouched_src_bvectors.erase(untouched_src_bvectors.begin()+index);
     shell.clear();
     voxel.dwi_data.clear();
 }
@@ -159,27 +158,19 @@ std::string ImageModel::check_b_table(void)
 {
     // reconstruct DTI using original data and b-table
     {
-        tipl::image<unsigned char,3> mask(original_dim);
+        tipl::image<unsigned char,3> mask(voxel.mask.geometry());
         std::fill(mask.begin(),mask.end(),1);
         mask.swap(voxel.mask);
 
-        bool has_rotation = has_image_rotation;
-        has_image_rotation = false;
-
         auto other_output = voxel.other_output;
-
-        original_src_dwi_data.swap(src_dwi_data);
-        original_dim.swap(voxel.dim);
         voxel.other_output = std::string();
 
         reconstruct<check_btable_process>("checking b-table");
 
-        original_src_dwi_data.swap(src_dwi_data);
-        original_dim.swap(voxel.dim);
         voxel.other_output = other_output;
 
         mask.swap(voxel.mask);
-        has_image_rotation = has_rotation;
+
     }
 
     std::vector<tipl::image<float,3> > fib_fa(1);
@@ -261,9 +252,9 @@ std::string ImageModel::check_b_table(void)
         {
             double sum_cos = 0.0;
             size_t ncount = 0;
-            auto tempalte_geo = template_fib->dim;
+            auto template_geo = template_fib->dim;
             const float* ptr = nullptr;
-            for(tipl::pixel_index<3> index(tempalte_geo);index < tempalte_geo.size();++index)
+            for(tipl::pixel_index<3> index(template_geo);index < template_geo.size();++index)
             {
                 if(template_fib->dir.fa[0][index.index()] < 0.2f || !(ptr = template_fib->dir.get_dir(index.index(),0)))
                     continue;
@@ -272,7 +263,8 @@ std::string ImageModel::check_b_table(void)
                 pos.round();
                 if(subject_geo.is_valid(pos))
                 {
-                    sum_cos += std::abs(double(new_dir[0][tipl::pixel_index<3>(pos.begin(),subject_geo).index()]*tipl::vector<3>(ptr)));
+                    auto sub_dir = new_dir[0][tipl::pixel_index<3>(pos.begin(),subject_geo).index()];
+                    sum_cos += std::abs(double(sub_dir*tipl::vector<3>(ptr)));
                     ++ncount;
                 }
             }
@@ -766,14 +758,13 @@ void ImageModel::rotate(const tipl::geometry<3>& new_geo,
 
     dwi.swap(new_dwi);
     // rotate b-table
-    if(has_image_rotation)
-    {
-        tipl::matrix<3,3,float> T = tipl::inverse(affine.sr);
-        src_bvectors_rotate *= T;
-    }
-    else
-        src_bvectors_rotate = tipl::inverse(affine.sr);
-    has_image_rotation = true;
+    tipl::matrix<3,3,float> T = tipl::inverse(affine.sr);
+    for (auto& vec : src_bvectors)
+        {
+            vec.rotate(T);
+            vec.normalize();
+        }
+
     voxel.dim = new_geo;
     voxel.dwi_data.clear();
     calculate_dwi_sum(true);
@@ -1363,13 +1354,7 @@ bool ImageModel::load_from_file(const char* dwi_file_name)
             src_bvalues[index] = dwi_files[index]->bvalue;
             src_bvectors[index] = dwi_files[index]->bvec;
         }
-        untouched_src_bvectors = src_bvectors;
 
-        // for check_btable
-        {
-            original_src_dwi_data = src_dwi_data;
-            original_dim = voxel.dim;
-        }
         get_report(voxel.report);
         calculate_dwi_sum(true);
         voxel.steps += "[Step T2][Reconstruction] open ";
@@ -1433,7 +1418,6 @@ bool ImageModel::load_from_file(const char* dwi_file_name)
         src_bvectors[index].normalize();
         table += 4;
     }
-    untouched_src_bvectors = src_bvectors;
 
     if(!mat_reader.read("report",voxel.report))
         get_report(voxel.report);
@@ -1449,12 +1433,6 @@ bool ImageModel::load_from_file(const char* dwi_file_name)
             error_msg = "Cannot find image matrix";
             return false;
         }
-    }
-
-    // for check_btable
-    {
-        original_src_dwi_data = src_dwi_data;
-        original_dim = voxel.dim;
     }
 
     {
