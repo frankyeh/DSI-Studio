@@ -507,6 +507,7 @@ void tracking_window::report(QString string)
 
 bool tracking_window::command(QString cmd,QString param,QString param2)
 {
+    std::cout << "run " << param.toStdString() << " " << param2.toStdString() << std::endl;
     if(glWidget->command(cmd,param,param2) ||
        scene.command(cmd,param,param2) ||
        tractWidget->command(cmd,param,param2) ||

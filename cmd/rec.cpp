@@ -56,7 +56,6 @@ int rec(void)
         for(int i = 0;i < cmd_list.size();++i)
         {
             QStringList run_list = QString(cmd_list[i]).split("=");
-            std::cout << "run " << cmd_list[i].toStdString() << std::endl;
             if(!src.command(run_list[0].toStdString(),
                                 run_list.count() > 1 ? run_list[1].toStdString():std::string()))
                 return 1;

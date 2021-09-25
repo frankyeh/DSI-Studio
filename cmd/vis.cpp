@@ -25,10 +25,6 @@ int vis(void)
     for(unsigned int index = 0;index < cmd.size();++index)
     {
         QStringList param = cmd[index].split(',');
-        std::cout << "run ";
-        for(unsigned int j = 0;j < param.size();++j)
-            std::cout << param[j].toStdString() << " ";
-        std::cout << std::endl;
         if(!new_mdi->command(param[0],param.size() > 1 ? param[1]:QString(),param.size() > 2 ? param[2]:QString()))
         {
             std::cout << "unknown command:" << param[0].toStdString() << std::endl;
