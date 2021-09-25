@@ -229,6 +229,13 @@ int rec(void)
         else
             src.file_name = output;
     }
+    if(po.has("save_src"))
+    {
+        std::string new_src_file = po.get("save_src");
+        std::cout << "saving to " << new_src_file << std::endl;
+        src.save_to_file(new_src_file.c_str());
+        return 0;
+    }
     if (src.reconstruction())
         std::cout << "reconstruction finished." << std::endl;
     else
