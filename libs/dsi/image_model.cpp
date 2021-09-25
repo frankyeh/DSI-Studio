@@ -1459,15 +1459,43 @@ bool ImageModel::load_from_file(const char* dwi_file_name)
 
     {
         const float* grad_dev_ptr = nullptr;
-        if(mat_reader.read("grad_dev",row,col,grad_dev_ptr) && size_t(row)*size_t(col) == voxel.dim.size()*9)
+        std::vector<tipl::pointer_image<float,3> > grad_dev;
+        size_t b0_pos = size_t(std::min_element(src_bvalues.begin(),src_bvalues.end())-src_bvalues.begin());
+        if(src_bvalues[b0_pos] == 0.0f &&
+           mat_reader.read("grad_dev",row,col,grad_dev_ptr) &&
+           size_t(row)*size_t(col) == voxel.dim.size()*9)
         {
             for(unsigned int index = 0;index < 9;index++)
-                voxel.grad_dev.push_back(tipl::make_image(const_cast<float*>(grad_dev_ptr+index*voxel.dim.size()),voxel.dim));
-            if(std::fabs(voxel.grad_dev[0][0])+std::fabs(voxel.grad_dev[4][0])+std::fabs(voxel.grad_dev[8][0]) < 1.0f)
+                grad_dev.push_back(tipl::make_image(const_cast<float*>(grad_dev_ptr+index*voxel.dim.size()),voxel.dim));
+            if(std::fabs(grad_dev[0][0])+std::fabs(grad_dev[4][0])+std::fabs(grad_dev[8][0]) < 1.0f)
             {
-                tipl::add_constant(voxel.grad_dev[0].begin(),voxel.grad_dev[0].end(),1.0);
-                tipl::add_constant(voxel.grad_dev[4].begin(),voxel.grad_dev[4].end(),1.0);
-                tipl::add_constant(voxel.grad_dev[8].begin(),voxel.grad_dev[8].end(),1.0);
+                tipl::add_constant(grad_dev[0].begin(),grad_dev[0].end(),1.0);
+                tipl::add_constant(grad_dev[4].begin(),grad_dev[4].end(),1.0);
+                tipl::add_constant(grad_dev[8].begin(),grad_dev[8].end(),1.0);
+            }
+            // correct signals
+            {
+                set_title("apply gradient deviation correction");
+                tipl::par_for(voxel.dim.size(),[&](size_t voxel_index)
+                {
+                    tipl::matrix<3,3,float> G;
+                    for(unsigned int i = 0;i < 9;++i)
+                        G[i] = grad_dev[i][voxel_index];
+
+                    double b0_signal = double(src_dwi_data[b0_pos][voxel_index]);
+                    if(b0_signal == 0.0)
+                        return;
+                    for(unsigned int index = 0;index < src_bvalues.size();++index)
+                        if(src_bvalues[index] > 0.0f)
+                        {
+                            auto bvec = src_bvectors[index];
+                            bvec.rotate(G);
+                            double inv_l2 = 1.0/double(bvec.length2());
+                            const_cast<unsigned short*>(src_dwi_data[index])[voxel_index] =
+                                    uint16_t(std::pow(b0_signal,1.0-inv_l2)*
+                                    std::pow(double(src_dwi_data[index][voxel_index]),inv_l2));
+                        }
+                });
             }
         }
     }
@@ -1506,7 +1534,6 @@ bool ImageModel::save_fib(const std::string& output_name)
     voxel.ti.save_to_buffer(float_data,short_data);
     mat_writer.write("odf_vertices",float_data,3);
     mat_writer.write("odf_faces",short_data,3);
-
     voxel.end(mat_writer);
     std::string final_report = voxel.report;
     final_report += voxel.recon_report.str();

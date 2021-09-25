@@ -112,7 +112,6 @@ bool Voxel::run(void)
         for (size_t index = 0; index < process_list.size(); ++index)
             process_list[index]->run(*this,voxel_data[thread_id]);
     },thread_count);
-
     return !prog_aborted();
 }
 

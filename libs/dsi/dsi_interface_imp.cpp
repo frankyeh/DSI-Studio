@@ -13,7 +13,6 @@
 
 typedef boost::mpl::vector<
     ReadDWIData,
-    CorrectGradientNonlinearity,
     Dwi2Tensor
 > dti_process;
 
@@ -28,7 +27,6 @@ typedef boost::mpl::vector<
 
 typedef boost::mpl::vector<
     DWINormalization,
-    CorrectGradientNonlinearity,
     Dwi2Tensor,
     BalanceScheme,
     GQI_Recon,
@@ -42,7 +40,6 @@ typedef boost::mpl::vector<
 
 typedef boost::mpl::vector<
     ReadDWIData,
-    CorrectGradientNonlinearity,
     Dwi2Tensor,
     BalanceScheme,
     GQI_Recon,

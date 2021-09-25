@@ -100,8 +100,6 @@ public://used in GQI
     void calculate_q_vec_t(std::vector<tipl::vector<3,float> >& q_vector_time);
 public://used in GQI
     bool scheme_balance = false;
-public:// gradient deviation
-    std::vector<tipl::pointer_image<float,3> > grad_dev;
 public:// used in QSDR
     tipl::matrix<4,4,float> trans_to_mni;
     std::string primary_template,secondary_template;
