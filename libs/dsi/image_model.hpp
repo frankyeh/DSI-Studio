@@ -267,6 +267,7 @@ public:
     void flip_dwi(unsigned char type);
     void rotate_one_dwi(unsigned int dwi_index,const tipl::transformation_matrix<double>& affine);
     void rotate(const tipl::geometry<3>& new_geo,
+                const tipl::vector<3>& new_vs,
                 const tipl::transformation_matrix<double>& affine,
                 const tipl::image<tipl::vector<3>,3>& cdm_dis = tipl::image<tipl::vector<3>,3>(),
                 const tipl::image<float,3>& super_reso_ref = tipl::image<float,3>(),double var = 3.0);

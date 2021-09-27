@@ -77,7 +77,7 @@ int rec(void)
         tipl::transformation_matrix<double> affine;
         std::copy(T.begin(),T.end(),affine.begin());
         std::cout << "rotating images" << std::endl;
-        src.rotate(src.voxel.dim,affine);
+        src.rotate(src.voxel.dim,src.voxel.vs,affine);
     }
 
     unsigned char method_index = uint8_t(po.get("method",4));
@@ -209,8 +209,7 @@ int rec(void)
                        T,tipl::reg::rigid_body,tipl::reg::mutual_information(),
                         terminated,src.voxel.thread_count);
         std::cout << "DWI rotated." << std::endl;
-        src.rotate(I.geometry(),T);
-        src.voxel.vs = vs;
+        src.rotate(I.geometry(),vs,T);
     }
 
     if(po.get("motion_correction",int(0)))

@@ -732,7 +732,8 @@ void ImageModel::rotate_one_dwi(unsigned int dwi_index,const tipl::transformatio
 }
 
 void ImageModel::rotate(const tipl::geometry<3>& new_geo,
-                        const tipl::transformation_matrix<double>& affine,
+                        const tipl::vector<3>& new_vs,
+                        const tipl::transformation_matrix<double>& T,
                         const tipl::image<tipl::vector<3>,3>& cdm_dis,
                         const tipl::image<float,3>& super_reso_ref,double var)
 {
@@ -740,41 +741,50 @@ void ImageModel::rotate(const tipl::geometry<3>& new_geo,
     prog_init p("rotating");
     tipl::par_for2(src_dwi_data.size(),[&](unsigned int index,unsigned int id)
     {
+        if(prog_aborted())
+            return;
         if(!id)
             check_prog(index,src_dwi_data.size());
         dwi[index].resize(new_geo);
         auto I = tipl::make_image(const_cast<unsigned short*>(src_dwi_data[index]),voxel.dim);
         if(!super_reso_ref.empty())
-            tipl::resample_with_ref(I,super_reso_ref,dwi[index],affine,var);
+            tipl::resample_with_ref(I,super_reso_ref,dwi[index],T,var);
         else
         {
             if(cdm_dis.empty())
-                tipl::resample(I,dwi[index],affine,tipl::cubic);
+                tipl::resample(I,dwi[index],T,tipl::cubic);
             else
-                tipl::resample_dis(I,dwi[index],affine,cdm_dis,tipl::cubic);
+                tipl::resample_dis(I,dwi[index],T,cdm_dis,tipl::cubic);
         }
         src_dwi_data[index] = &(dwi[index][0]);
     });
-
+    if(prog_aborted())
+        return;
     dwi.swap(new_dwi);
     // rotate b-table
-    tipl::matrix<3,3,float> T = tipl::inverse(affine.sr);
+    tipl::affine_transform<double> arg;
+    T.to_affine_transform(arg,new_geo,new_vs,dwi_sum.geometry(),voxel.vs);
+    tipl::matrix<3,3,float> r;
+    tipl::rotation_matrix(arg.rotation,r.begin(),tipl::vdim<3>());
+    r.inv();
+
     for (auto& vec : src_bvectors)
         {
-            vec.rotate(T);
+            vec.rotate(r);
             vec.normalize();
         }
 
     voxel.dim = new_geo;
+    voxel.vs = new_vs;
     voxel.dwi_data.clear();
     calculate_dwi_sum(true);
 }
 void ImageModel::resample(float nv)
 {
     tipl::vector<3,float> new_vs(nv,nv,nv);
-    tipl::geometry<3> new_geo(int(std::ceil(float(voxel.dim.width())*voxel.vs[0]/new_vs[0])),
-                              int(std::ceil(float(voxel.dim.height())*voxel.vs[1]/new_vs[1])),
-                              int(std::ceil(float(voxel.dim.depth())*voxel.vs[2]/new_vs[2])));
+    tipl::geometry<3> new_geo(uint32_t(std::ceil(float(voxel.dim.width())*voxel.vs[0]/new_vs[0])),
+                              uint32_t(std::ceil(float(voxel.dim.height())*voxel.vs[1]/new_vs[1])),
+                              uint32_t(std::ceil(float(voxel.dim.depth())*voxel.vs[2]/new_vs[2])));
     tipl::image<float,3> J(new_geo);
     if(J.empty())
         return;
@@ -782,8 +792,7 @@ void ImageModel::resample(float nv)
     T.sr[0] = double(new_vs[0]/voxel.vs[0]);
     T.sr[4] = double(new_vs[1]/voxel.vs[1]);
     T.sr[8] = double(new_vs[2]/voxel.vs[2]);
-    rotate(new_geo,T);
-    voxel.vs = new_vs;
+    rotate(new_geo,new_vs,T);
 }
 extern std::string fib_template_file_name_2mm;
 extern std::vector<std::string> iso_template_list;
@@ -861,8 +870,7 @@ bool ImageModel::rotate_to_mni(float resolution)
     tipl::affine_transform<float> T;
     if(!arg_to_mni(resolution,vs,geo,T))
         return false;
-    rotate(geo,tipl::transformation_matrix<float>(T,geo,vs,dwi_sum.geometry(),voxel.vs));
-    voxel.vs = vs;
+    rotate(geo,vs,tipl::transformation_matrix<float>(T,geo,vs,dwi_sum.geometry(),voxel.vs));
     voxel.report += " The diffusion MRI data were resampled to ";
     voxel.report += std::to_string(int(vs[0]));
     voxel.report += " mm isotropic resolution.";
