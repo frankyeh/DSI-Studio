@@ -508,10 +508,10 @@ void view_image::add_overlay(void)
     size_t index = size_t(action->data().toInt());
     if(index >= opened_images.size())
         return;
+    overlay.clear();
     overlay.resize(data.geometry());
-    tipl::transformation_matrix<float> trans(
-                tipl::matrix<4,4,float>(T*tipl::matrix<4,4,float>(tipl::inverse(opened_images[index]->T))));
-    tipl::resample(opened_images[index]->data,overlay,trans,tipl::cubic);
+    tipl::resample(opened_images[index]->data,overlay,
+                   tipl::from_space(T).to(opened_images[index]->T),tipl::cubic);
     overlay_v2c = opened_images[index]->v2c;
     show_image();
 }
