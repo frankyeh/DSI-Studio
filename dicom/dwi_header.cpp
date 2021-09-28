@@ -287,13 +287,11 @@ bool DwiHeader::open(const char* filename)
             bvec[1] = y;
             bvec[2] = z;
         }
-        tipl::vector<3,float> cbvec;
-        tipl::vector_rotation(bvec.begin(),cbvec.begin(),orientation_matrix,tipl::vdim<3>());
-        bvec = cbvec;
+        bvec.rotate(orientation_matrix);
     }
     bvec.normalize();
-    if(bvalue == 0.0)
-        bvec[0] = bvec[1] = bvec[2] = 0.0;
+    if(bvalue == 0.0f)
+        bvec[0] = bvec[1] = bvec[2] = 0.0f;
     return true;
 }
 

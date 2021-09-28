@@ -183,8 +183,8 @@ bool load_dicom_multi_frame(const char* file_name,std::vector<std::shared_ptr<Dw
         new_file->file_name += out.str();
         dicom_header.get_voxel_size(new_file->voxel_size);
         new_file->bvalue = b_table[index*4];
-        tipl::vector_rotation(tipl::vector<3, float>(b_table[index*4+1],b_table[index*4+2],b_table[index*4+3]).begin(),
-                              new_file->bvec.begin(),T.begin(),tipl::vdim<3>());
+        new_file->bvec = tipl::vector<3, float>(b_table[index*4+1],b_table[index*4+2],b_table[index*4+3]);
+        new_file->bvec.rotate(T);
         dwi_files.push_back(new_file);
     }
     return true;

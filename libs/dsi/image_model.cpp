@@ -725,10 +725,8 @@ void ImageModel::rotate_one_dwi(unsigned int dwi_index,const tipl::transformatio
     std::copy(tmp.begin(),tmp.end(),I.begin());
     // rotate b-table
     tipl::matrix<3,3,float> iT = tipl::inverse(affine.sr);
-    tipl::vector<3> v;
-    tipl::vector_rotation(src_bvectors[dwi_index].begin(),v.begin(),iT,tipl::vdim<3>());
-    v.normalize();
-    src_bvectors[dwi_index] = v;
+    src_bvectors[dwi_index].rotate(iT);
+    src_bvectors[dwi_index].normalize();
 }
 
 void ImageModel::rotate(const tipl::geometry<3>& new_geo,
