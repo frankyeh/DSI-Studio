@@ -6,9 +6,9 @@
 #include "SliceModel.h"
 #include "libs/gzip_interface.hpp"
 
-tipl::geometry<3> ROIRegion::get_buffer_dim(void) const
+tipl::shape<3> ROIRegion::get_buffer_dim(void) const
 {
-    return tipl::geometry<3>(dim[0]*resolution_ratio,
+    return tipl::shape<3>(dim[0]*resolution_ratio,
                                       dim[1]*resolution_ratio,
                                       dim[2]*resolution_ratio);
 }
@@ -43,7 +43,7 @@ void ROIRegion::add_points(std::vector<tipl::vector<3,short> >& points, bool del
     }
     else
     {
-        tipl::geometry<3> new_geo = get_buffer_dim();
+        tipl::shape<3> new_geo = get_buffer_dim();
         for(unsigned int index = 0; index < points.size();)
         if (!new_geo.is_valid(points[index][0], points[index][1], points[index][2]))
         {
@@ -68,7 +68,7 @@ void ROIRegion::add_points(std::vector<tipl::vector<3,short> >& points, bool del
         tipl::bounding_box_mt(region,max_value,min_value);
 
         geo_size = max_value-min_value;
-        tipl::geometry<3> mask_geo(geo_size[0]+1,geo_size[1]+1,geo_size[2]+1);
+        tipl::shape<3> mask_geo(geo_size[0]+1,geo_size[1]+1,geo_size[2]+1);
         tipl::image<unsigned char,3> mask;
 
         try
@@ -86,7 +86,7 @@ void ROIRegion::add_points(std::vector<tipl::vector<3,short> >& points, bool del
         {
             auto p = region[index];
             p -= min_value;
-            if (mask.geometry().is_valid(p))
+            if (mask.shape().is_valid(p))
                 mask.at(p[0],p[1],p[2]) = 1;
         });
 
@@ -95,13 +95,13 @@ void ROIRegion::add_points(std::vector<tipl::vector<3,short> >& points, bool del
         {
             auto p = points[index];
             p -= min_value;
-            if (mask.geometry().is_valid(p))
+            if (mask.shape().is_valid(p))
                 mask.at(p[0],p[1],p[2]) = 0;
         });
 
         points.clear();
         region.clear();
-        for(tipl::pixel_index<3> index(mask.geometry());index.is_valid(mask.geometry());++index)
+        for(tipl::pixel_index<3> index(mask.shape());index.is_valid(mask.shape());++index)
             if(mask[index.index()])
                 region.push_back(tipl::vector<3,short>(index[0]+min_value[0],
                                                     index[1]+min_value[1],
@@ -237,17 +237,17 @@ bool ROIRegion::LoadFromFile(const char* FileName) {
             return false;
         tipl::image<short, 3>from;
         header >> from;
-        if(from.geometry() != dim)
+        if(from.shape() != dim)
         {
-            float r1 = (float)from.geometry()[0]/(float)dim[0];
-            float r2 = (float)from.geometry()[1]/(float)dim[1];
-            float r3 = (float)from.geometry()[2]/(float)dim[2];
+            float r1 = (float)from.shape()[0]/(float)dim[0];
+            float r2 = (float)from.shape()[1]/(float)dim[1];
+            float r3 = (float)from.shape()[2]/(float)dim[2];
             if(r1 != r2 || r1 != r3)
                 return false;
             resolution_ratio = r1;
         }
         std::vector<tipl::vector<3,short> > points;
-        for (tipl::pixel_index<3> index(from.geometry());index < from.size();++index)
+        for (tipl::pixel_index<3> index(from.shape());index < from.size();++index)
             if (from[index.index()])
                 points.push_back(tipl::vector<3,short>((const unsigned int*)index.begin()));
         add_points(points,false,resolution_ratio);
@@ -264,7 +264,7 @@ bool ROIRegion::LoadFromFile(const char* FileName) {
         }
         // use unsigned int to avoid the nan background problem
         tipl::image<unsigned int, 3>from;
-        tipl::geometry<3> nii_geo;
+        tipl::shape<3> nii_geo;
         header.get_image_dimension(nii_geo);
         if(nii_geo != dim)// use transformation information
         {
@@ -311,7 +311,7 @@ void ROIRegion::SaveToBuffer(tipl::image<unsigned char, 3>& mask,
                              float target_resolution)
 {
     if(target_resolution != 1.0f)
-        mask.resize(tipl::geometry<3>(
+        mask.resize(tipl::shape<3>(
                     dim[0]*target_resolution,
                     dim[1]*target_resolution,
                     dim[2]*target_resolution));
@@ -321,7 +321,7 @@ void ROIRegion::SaveToBuffer(tipl::image<unsigned char, 3>& mask,
     if(target_resolution == resolution_ratio)
         tipl::par_for (region.size(),[&](unsigned int index)
         {
-            if (mask.geometry().is_valid(region[index]))
+            if (mask.shape().is_valid(region[index]))
                 mask.at(region[index][0], region[index][1],region[index][2]) = 1;
         });
     else
@@ -333,7 +333,7 @@ void ROIRegion::SaveToBuffer(tipl::image<unsigned char, 3>& mask,
             p *= r;
             p.round();
             tipl::vector<3,short> pp(p);
-            if (mask.geometry().is_valid(pp))
+            if (mask.shape().is_valid(pp))
                 mask.at(pp[0],pp[1],pp[2]) = 1;
         });
     }
@@ -542,7 +542,7 @@ void ROIRegion::get_quantitative_data(std::shared_ptr<fib_data> handle,std::vect
         float mean;
         max_values.push_back(0.0f);
         min_values.push_back(0.0f);
-        if(handle->view_item[data_index].get_image().geometry() != handle->dim)
+        if(handle->view_item[data_index].get_image().shape() != handle->dim)
             calculate_region_stat(handle->view_item[data_index].get_image(),points,mean,max_values.back(),min_values.back(),
                                   &handle->view_item[data_index].iT[0]);
         else

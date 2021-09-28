@@ -70,14 +70,14 @@ bool RegionModel::load(const std::vector<tipl::vector<3,short> >& seeds, float r
 
     max_value += tipl::vector<3,short>(5, 5, 5);
     min_value -= tipl::vector<3,short>(5, 5, 5);
-    tipl::geometry<3> geo(uint32_t(max_value[0] - min_value[0]),
+    tipl::shape<3> geo(uint32_t(max_value[0] - min_value[0]),
                           uint32_t(max_value[1] - min_value[1]),
                           uint32_t(max_value[2] - min_value[2]));
     float cur_scale = 1.0f;
     while(geo.width() > 256 || geo.height() > 256 || geo.depth() > 256)
     {
         cur_scale *= 2.0f;
-        geo = tipl::geometry<3>(geo[0]/2,geo[1]/2,geo[2]/2);
+        geo = tipl::shape<3>(geo[0]/2,geo[1]/2,geo[2]/2);
     }
 
 
@@ -88,7 +88,7 @@ bool RegionModel::load(const std::vector<tipl::vector<3,short> >& seeds, float r
         point -= min_value;
         point /= cur_scale;
         buffer[tipl::pixel_index<3>(point[0], point[1], point[2],
-                                     buffer.geometry()).index()] = 200;
+                                     buffer.shape()).index()] = 200;
     });
 
 
@@ -134,7 +134,7 @@ bool RegionModel::load(const tipl::image<float, 3>& image_,
     {
         float sum = 0;
         unsigned int num = 0;
-        auto index_to = (image_buffer.size() >> 1) + image_buffer.geometry().plane_size();
+        auto index_to = (image_buffer.size() >> 1) + image_buffer.shape().plane_size();
         for (auto index = (image_buffer.size() >> 1); index < index_to;++index)
         {
             float g = image_buffer[index];
@@ -157,7 +157,7 @@ bool RegionModel::load(const tipl::image<float, 3>& image_,
 }
 // ---------------------------------------------------------------------------
 
-bool RegionModel::load(unsigned int* buffer, tipl::geometry<3>geo,
+bool RegionModel::load(unsigned int* buffer, tipl::shape<3>geo,
                        unsigned int threshold)
 {
     tipl::image<unsigned char, 3>re_buffer(geo);

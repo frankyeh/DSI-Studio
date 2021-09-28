@@ -7,19 +7,19 @@
 class Roi {
 private:
     float ratio;
-    tipl::geometry<3> dim;
+    tipl::shape<3> dim;
     std::vector<std::vector<std::vector<unsigned char> > > roi_filter;
     bool in_range(int x,int y,int z) const
     {
         return dim.is_valid(x,y,z);
     }
 public:
-    Roi(const tipl::geometry<3>& geo,float r):ratio(r)
+    Roi(const tipl::shape<3>& geo,float r):ratio(r)
     {
         if(r == 1.0f)
             dim = geo;
         else
-            dim = tipl::geometry<3>(uint32_t(geo[0]*r),uint32_t(geo[1]*r),uint32_t(geo[2]*r));
+            dim = tipl::shape<3>(uint32_t(geo[0]*r),uint32_t(geo[1]*r),uint32_t(geo[2]*r));
         roi_filter.resize(uint16_t(dim[0]));
     }
     void clear(void)

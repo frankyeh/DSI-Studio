@@ -86,7 +86,7 @@ public:
                 //qq = q qT
                 std::vector<double> qq(3*3);
                 tipl::mat::product_transpose(b_data[i].begin(),b_data[i].begin(),qq.begin(),
-                                               tipl::shape(3,1),tipl::shape(3,1));
+                                               tipl::shape<2>(3,1),tipl::shape<2>(3,1));
 
                 /*
                       q11 q15 q19 2*q12 2*q13 2*q16
@@ -104,14 +104,14 @@ public:
             iKtK[i].resize(6*6);
             iKtK_pivot[i].resize(6);
             tipl::mat::product_transpose(Kt.begin(),Kt.begin(),iKtK[i].begin(),
-                                           tipl::shape(6,b_count),tipl::shape(6,b_count));
+                                           tipl::shape<2>(6,b_count),tipl::shape<2>(6,b_count));
             if(i)
             {
                 double w = 0.005*std::pow(2.0,double(i))*(*std::max_element(iKtK[i].begin(),iKtK[i].end()));
                 for(unsigned int j = 0;j < 36;j += 7)
                     iKtK[i][j] += w;
             }
-            tipl::mat::lu_decomposition(iKtK[i].begin(),iKtK_pivot[i].begin(),tipl::shape(6,6));
+            tipl::mat::lu_decomposition(iKtK[i].begin(),iKtK_pivot[i].begin(),tipl::shape<2>(6,6));
         }
     }
 public:
@@ -134,10 +134,10 @@ public:
         double KtS[6],tensor_param[6];
         double tensor[9];
         double V[9],d[3];
-        tipl::mat::product(Kt.begin(),signal.begin(),KtS,tipl::shape(6,b_count),tipl::shape(b_count,1));
+        tipl::mat::product(Kt.begin(),signal.begin(),KtS,tipl::shape<2>(6,b_count),tipl::shape<2>(b_count,1));
         for(unsigned int i = 0;i < iKtK.size();++i)
         {
-            if(!tipl::mat::lu_solve(iKtK[i].begin(),iKtK_pivot[i].begin(),KtS,tensor_param,tipl::shape(6,6)))
+            if(!tipl::mat::lu_solve(iKtK[i].begin(),iKtK_pivot[i].begin(),KtS,tensor_param,tipl::shape<2>(6,6)))
                 continue;
             unsigned int tensor_index[9] = {0,3,4,3,1,5,4,5,2};
             for (unsigned int index = 0; index < 9; ++index)

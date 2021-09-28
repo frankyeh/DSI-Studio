@@ -63,7 +63,7 @@ class TinyTrack{
 
     public:
     static bool save_to_file(const char* file_name,
-                             tipl::geometry<3> geo,
+                             tipl::shape<3> geo,
                              tipl::vector<3> vs,
                              const tipl::matrix<4,4,float>& trans_to_mni,
                              const std::vector<std::vector<float> >& tract_data,
@@ -186,7 +186,7 @@ class TinyTrack{
     static bool load_from_file(const char* file_name,
                                std::vector<std::vector<float> >& tract_data,
                                std::vector<uint16_t>& tract_cluster,
-                               tipl::geometry<3>& geo,tipl::vector<3>& vs,
+                               tipl::shape<3>& geo,tipl::vector<3>& vs,
                                tipl::matrix<4,4,float>& trans_to_mni,
                                std::string& report,std::string& parameter_id,unsigned int& color)
     {
@@ -281,7 +281,7 @@ struct TrackVis
     int n_count;//Number of tract stored in this track file. 0 means the number was NOT stored.
     int version;//Version number. Current version is 1.
     int hdr_size;//Size of the header. Used to determine byte swap. Should be 1000.
-    void init(tipl::geometry<3> geo_,const tipl::vector<3>& voxel_size_)
+    void init(tipl::shape<3> geo_,const tipl::vector<3>& voxel_size_)
     {
         id_string[0] = 'T';
         id_string[1] = 'R';
@@ -370,7 +370,7 @@ struct TrackVis
         return true;
     }
     static bool save_to_file(const char* file_name,
-                             tipl::geometry<3> geo,
+                             tipl::shape<3> geo,
                              tipl::vector<3> vs,
                              const std::vector<std::vector<float> >& tract_data,
                              const std::vector<std::vector<float> >& scalar,
@@ -421,7 +421,7 @@ struct TrackVis
 
 struct Tck{
     tipl::vector<3> vs;
-    tipl::geometry<3> geo;
+    tipl::shape<3> geo;
     bool load_from_file(const char* file_name,
                         std::vector<std::vector<float> >& loaded_tract_data)
     {
@@ -492,7 +492,7 @@ bool tt2trk(const char* tt_file,const char* trk_file)
     std::vector<uint16_t> cluster;
     std::string report,pid;
     tipl::vector<3> vs;
-    tipl::geometry<3> geo;
+    tipl::shape<3> geo;
     tipl::matrix<4,4,float> trans_to_mni;
     unsigned int color = default_tract_color;
     if(!TinyTrack::load_from_file(tt_file,tract_data,cluster,geo,vs,trans_to_mni,report,pid,color))
@@ -511,7 +511,7 @@ bool trk2tt(const char* trk_file,const char* tt_file)
     std::vector<unsigned int> loaded_tract_cluster;
     std::string info;
     tipl::vector<3> vs(1.0f,1.0f,1.0f);
-    tipl::geometry<3> geo;
+    tipl::shape<3> geo;
     if(!vis.load_from_file(trk_file,loaded_tract_data,loaded_tract_cluster,info,vs))
     {
         std::cout << "cannot read file:" << trk_file << std::endl;
@@ -538,7 +538,7 @@ bool trk2tt(const char* trk_file,const char* tt_file)
     return TinyTrack::save_to_file(tt_file,geo,vs,trans_to_mni,loaded_tract_data,cluster,info,p_id,color);
 }
 //---------------------------------------------------------------------------
-void shift_track_for_tck(std::vector<std::vector<float> >& loaded_tract_data,tipl::geometry<3>& geo)
+void shift_track_for_tck(std::vector<std::vector<float> >& loaded_tract_data,tipl::shape<3>& geo)
 {
     tipl::vector<3> min_xyz(0.0f,0.0f,0.0f),max_xyz(0.0f,0.0f,0.0f);
     tipl::par_for(loaded_tract_data.size(),[&](size_t i)
@@ -571,7 +571,7 @@ bool load_fib_from_tracks(const char* file_name,
                           tipl::vector<3>& vs,
                           tipl::matrix<4,4,float>& trans_to_mni)
 {
-    tipl::geometry<3> geo;
+    tipl::shape<3> geo;
     std::vector<std::vector<float> > loaded_tract_data;
     if(QString(file_name).endsWith("tck"))
     {
@@ -654,7 +654,7 @@ void TractModel::add(const TractModel& rhs)
 bool apply_unwarping_tt(const char* from,
                         const char* to,
                         const tipl::image<tipl::vector<3>,3>& from2to,
-                        tipl::geometry<3> new_geo,
+                        tipl::shape<3> new_geo,
                         tipl::vector<3> new_vs,
                         const tipl::matrix<4,4,float>& new_trans_to_mni,
                         std::string& error)
@@ -662,7 +662,7 @@ bool apply_unwarping_tt(const char* from,
     std::vector<std::vector<float> > loaded_tract_data;
     std::vector<uint16_t> cluster;
     unsigned int color;
-    tipl::geometry<3> geo;
+    tipl::shape<3> geo;
     tipl::vector<3> vs;
     tipl::matrix<4,4,float> trans_to_mni;
     std::string report, parameter_id;
@@ -899,7 +899,7 @@ bool TractModel::save_tracts_in_template_space(std::shared_ptr<fib_data> handle,
     if(!handle->can_map_to_mni())
         return false;
     std::shared_ptr<TractModel> tract_in_template(
-                new TractModel(handle->template_I.geometry(),handle->template_vs,handle->template_to_mni));
+                new TractModel(handle->template_I.shape(),handle->template_vs,handle->template_to_mni));
     std::vector<std::vector<float> > new_tract_data(tract_data);
     tipl::par_for(tract_data.size(),[&](unsigned int i)
     {
@@ -918,7 +918,7 @@ bool TractModel::save_tracts_in_template_space(std::shared_ptr<fib_data> handle,
 }
 
 //---------------------------------------------------------------------------
-bool TractModel::save_transformed_tracts_to_file(const char* file_name,tipl::geometry<3> new_dim,
+bool TractModel::save_transformed_tracts_to_file(const char* file_name,tipl::shape<3> new_dim,
                                                  tipl::vector<3> new_vs,const tipl::matrix<4,4,float>& T,bool end_point)
 {
     std::shared_ptr<TractModel> tract_in_other_space(new TractModel(new_dim,new_vs));
@@ -2409,7 +2409,7 @@ void TractModel::add_tracts(std::vector<std::vector<float> >& new_tract, unsigne
 void TractModel::get_density_map(tipl::image<unsigned int,3>& mapping,
                                  const tipl::matrix<4,4,float>& transformation,bool endpoint)
 {
-    tipl::geometry<3> geo = mapping.geometry();
+    tipl::shape<3> geo = mapping.shape();
     tipl::par_for(tract_data.size(),[&](unsigned int i)
     {
         std::set<size_t> point_set;
@@ -2422,7 +2422,7 @@ void TractModel::get_density_map(tipl::image<unsigned int,3>& mapping,
             pos.round();
             tipl::vector<3,int> ipos(pos);
             if (geo.is_valid(ipos))
-                point_set.insert(tipl::pixel_index<3>::voxel2index(ipos.begin(),mapping.geometry()));
+                point_set.insert(tipl::pixel_index<3>::voxel2index(ipos.begin(),mapping.shape()));
         }
 
         for(auto pos : point_set)
@@ -2434,7 +2434,7 @@ void TractModel::get_density_map(
         tipl::image<tipl::rgb,3>& mapping,
         const tipl::matrix<4,4,float>& transformation,bool endpoint)
 {
-    tipl::geometry<3> geo = mapping.geometry();
+    tipl::shape<3> geo = mapping.shape();
     tipl::image<float,3> map_r(geo),map_g(geo),map_b(geo);
     std::cout << "aggregating tracts to voxels" << std::endl;
     tipl::par_for (tract_data.size(),[&](unsigned int i)
@@ -2453,7 +2453,7 @@ void TractModel::get_density_map(
             tipl::vector<3,int> ipos(pos);
             if (!geo.is_valid(ipos))
                 continue;
-            size_t ptr = tipl::pixel_index<3>::voxel2index(ipos.begin(),mapping.geometry());
+            size_t ptr = tipl::pixel_index<3>::voxel2index(ipos.begin(),mapping.shape());
             map_r[ptr] += std::fabs(dir[0]);
             map_g[ptr] += std::fabs(dir[1]);
             map_b[ptr] += std::fabs(dir[2]);
@@ -2540,7 +2540,7 @@ bool TractModel::export_pdi(const char* file_name,
 }
 bool TractModel::export_tdi(const char* filename,
                   std::vector<std::shared_ptr<TractModel> > tract_models,
-                  tipl::geometry<3>& dim,
+                  tipl::shape<3>& dim,
                   tipl::vector<3,float> vs,
                   tipl::matrix<4,4,float> transformation,bool color,bool end_point)
 {
@@ -2641,7 +2641,7 @@ tipl::vector<3> get_tract_dir(const std::vector<std::vector<float> >& tract_data
     return total_dis;
 }
 
-void check_order(tipl::geometry<3> geo,
+void check_order(tipl::shape<3> geo,
                  std::vector<tipl::vector<3,short> >& s1,
                  std::vector<tipl::vector<3,short> >& s2)
 {
@@ -2824,7 +2824,7 @@ void TractModel::get_quantitative_info(std::shared_ptr<fib_data> handle,std::str
             max_value += tipl::vector<3,short>(1, 1, 1);
             min_value -= tipl::vector<3,short>(1, 1, 1);
 
-            tipl::geometry<3> geo(max_value[0] - min_value[0],
+            tipl::shape<3> geo(max_value[0] - min_value[0],
                                   max_value[1] - min_value[1],
                                   max_value[2] - min_value[2]);
 
@@ -3152,7 +3152,7 @@ void TractModel::get_tract_data(std::shared_ptr<fib_data> handle,unsigned int fi
     else
     // voxel-based index
     {
-        if(handle->view_item[index_num].get_image().geometry() != handle->dim) // other slices
+        if(handle->view_item[index_num].get_image().shape() != handle->dim) // other slices
         {
             for (unsigned int data_index = 0,index = 0;index < tract_data[fiber_index].size();index += 3,++data_index)
             {
@@ -3305,7 +3305,7 @@ void ConnectivityMatrix::save_to_image(tipl::color_image& cm)
 {
     if(matrix_value.empty())
         return;
-    cm.resize(matrix_value.geometry());
+    cm.resize(matrix_value.shape());
     std::vector<float> values(matrix_value.size());
     std::copy(matrix_value.begin(),matrix_value.end(),values.begin());
     tipl::normalize(values,255.99f);
@@ -3367,7 +3367,7 @@ void ConnectivityMatrix::save_to_connectogram(const char* file_name)
     }
 }
 
-void ConnectivityMatrix::set_regions(const tipl::geometry<3>& geo,
+void ConnectivityMatrix::set_regions(const tipl::shape<3>& geo,
                                      const std::vector<std::shared_ptr<ROIRegion> >& regions)
 {
     region_count = regions.size();
@@ -3511,7 +3511,7 @@ bool ConnectivityMatrix::calculate(std::shared_ptr<fib_data> handle,
         return true;
     }
     matrix_value.clear();
-    matrix_value.resize(tipl::geometry<2>(uint32_t(region_count),uint32_t(region_count)));
+    matrix_value.resize(tipl::shape<2>(uint32_t(region_count),uint32_t(region_count)));
     std::vector<std::vector<unsigned int> > count;
     init_matrix(count,uint32_t(region_count));
 
@@ -3620,8 +3620,8 @@ void distance_bin(const matrix_type& bin,tipl::image<float,2>& D)
     D = bin;
     for(unsigned int l = 2;1;++l)
     {
-        tipl::image<unsigned int,2> t(A.geometry());
-        tipl::mat::product(Lpath.begin(),A.begin(),t.begin(),tipl::shape(n,n),tipl::shape(n,n));
+        tipl::image<unsigned int,2> t(A.shape());
+        tipl::mat::product(Lpath.begin(),A.begin(),t.begin(),tipl::shape<2>(n,n),tipl::shape<2>(n,n));
         std::swap(Lpath,t);
         bool con = false;
         for(unsigned int i = 0;i < D.size();++i)
@@ -3643,7 +3643,7 @@ void distance_wei(const matrix_type& W_,tipl::image<float,2>& D)
         W[i] = (W[i] != 0) ? 1.0/W[i]:0;
     unsigned int n = W.width();
     D.clear();
-    D.resize(W.geometry());
+    D.resize(W.shape());
     std::fill(D.begin(),D.end(),std::numeric_limits<float>::max());
     for(unsigned int i = 0,dg = 0;i < n;++i,dg += n + 1)
         D[dg] = 0;
@@ -3708,8 +3708,8 @@ void ConnectivityMatrix::network_property(std::string& report)
 {
     std::ostringstream out;
     size_t n = matrix_value.width();
-    tipl::image<unsigned char,2> binary_matrix(matrix_value.geometry());
-    tipl::image<float,2> norm_matrix(matrix_value.geometry());
+    tipl::image<unsigned char,2> binary_matrix(matrix_value.shape());
+    tipl::image<float,2> norm_matrix(matrix_value.shape());
 
     float max_value = *std::max_element(matrix_value.begin(),matrix_value.end());
     for(unsigned int i = 0;i < binary_matrix.size();++i)
@@ -3745,7 +3745,7 @@ void ConnectivityMatrix::network_property(std::string& report)
     out << "clustering_coeff_average(binary)\t" << cc_bin << std::endl;
 
     // calculate weighted clustering coefficient
-    tipl::image<float,2> cyc3(norm_matrix.geometry());
+    tipl::image<float,2> cyc3(norm_matrix.shape());
     std::vector<float> wcluster_co(n);
     {
         tipl::image<float,2> root(norm_matrix);
@@ -3753,9 +3753,9 @@ void ConnectivityMatrix::network_property(std::string& report)
         for(unsigned int j = 0;j < root.size();++j)
             root[j] = std::pow(root[j],(float)(1.0/3.0));
         // cyc3 = (W.^1/3)^3
-        tipl::image<float,2> t(root.geometry());
-        tipl::mat::product(root.begin(),root.begin(),t.begin(),tipl::shape(n,n),tipl::shape(n,n));
-        tipl::mat::product(t.begin(),root.begin(),cyc3.begin(),tipl::shape(n,n),tipl::shape(n,n));
+        tipl::image<float,2> t(root.shape());
+        tipl::mat::product(root.begin(),root.begin(),t.begin(),tipl::shape<2>(n,n),tipl::shape<2>(n,n));
+        tipl::mat::product(t.begin(),root.begin(),cyc3.begin(),tipl::shape<2>(n,n),tipl::shape<2>(n,n));
         // wcc = diag(cyc3)/(K.*(K-1));
         for(unsigned int i = 0;i < n;++i)
         if(degree[i] >= 2)
@@ -3770,16 +3770,16 @@ void ConnectivityMatrix::network_property(std::string& report)
 
     // transitivity
     {
-        tipl::image<float,2> norm_matrix2(norm_matrix.geometry());
-        tipl::image<float,2> norm_matrix3(norm_matrix.geometry());
-        tipl::mat::product(norm_matrix.begin(),norm_matrix.begin(),norm_matrix2.begin(),tipl::shape(n,n),tipl::shape(n,n));
-        tipl::mat::product(norm_matrix2.begin(),norm_matrix.begin(),norm_matrix3.begin(),tipl::shape(n,n),tipl::shape(n,n));
-        out << "transitivity(binary)\t" << tipl::mat::trace(norm_matrix3.begin(),tipl::shape(n,n)) /
-                (std::accumulate(norm_matrix2.begin(),norm_matrix2.end(),0.0) - tipl::mat::trace(norm_matrix2.begin(),tipl::shape(n,n))) << std::endl;
+        tipl::image<float,2> norm_matrix2(norm_matrix.shape());
+        tipl::image<float,2> norm_matrix3(norm_matrix.shape());
+        tipl::mat::product(norm_matrix.begin(),norm_matrix.begin(),norm_matrix2.begin(),tipl::shape<2>(n,n),tipl::shape<2>(n,n));
+        tipl::mat::product(norm_matrix2.begin(),norm_matrix.begin(),norm_matrix3.begin(),tipl::shape<2>(n,n),tipl::shape<2>(n,n));
+        out << "transitivity(binary)\t" << tipl::mat::trace(norm_matrix3.begin(),tipl::shape<2>(n,n)) /
+                (std::accumulate(norm_matrix2.begin(),norm_matrix2.end(),0.0) - tipl::mat::trace(norm_matrix2.begin(),tipl::shape<2>(n,n))) << std::endl;
         float k = 0;
         for(unsigned int i = 0;i < n;++i)
             k += degree[i]*(degree[i]-1);
-        out << "transitivity(weighted)\t" << (k == 0 ? 0 : tipl::mat::trace(cyc3.begin(),tipl::shape(n,n))/k) << std::endl;
+        out << "transitivity(weighted)\t" << (k == 0 ? 0 : tipl::mat::trace(cyc3.begin(),tipl::shape<2>(n,n))/k) << std::endl;
     }
 
     std::vector<float> eccentricity_bin(n),eccentricity_wei(n);
@@ -3833,7 +3833,7 @@ void ConnectivityMatrix::network_property(std::string& report)
                                                  binary_matrix.begin()+ipos+n,0);
             if(new_n < 2)
                 continue;
-            tipl::image<float,2> newA(tipl::geometry<2>(new_n,new_n));
+            tipl::image<float,2> newA(tipl::shape<2>(new_n,new_n));
             unsigned int pos = 0;
             for(unsigned int j = 0,index = 0;j < n;++j)
                 for(unsigned int k = 0;k < n;++k,++index)
@@ -3859,7 +3859,7 @@ void ConnectivityMatrix::network_property(std::string& report)
                                                  binary_matrix.begin()+ipos+n,0);
             if(new_n < 2)
                 continue;
-            tipl::image<float,2> newA(tipl::geometry<2>(new_n,new_n));
+            tipl::image<float,2> newA(tipl::shape<2>(new_n,new_n));
             unsigned int pos = 0;
             for(unsigned int j = 0,index = 0;j < n;++j)
                 for(unsigned int k = 0;k < n;++k,++index)
@@ -3989,8 +3989,8 @@ void ConnectivityMatrix::network_property(std::string& report)
         unsigned int d = 2;
         for(;std::find(NSPd.begin(),NSPd.end(),1) != NSPd.end();++d)
         {
-            tipl::image<unsigned int,2> t(binary_matrix.geometry());
-            tipl::mat::product(NPd.begin(),binary_matrix.begin(),t.begin(),tipl::shape(n,n),tipl::shape(n,n));
+            tipl::image<unsigned int,2> t(binary_matrix.shape());
+            tipl::mat::product(NPd.begin(),binary_matrix.begin(),t.begin(),tipl::shape<2>(n,n),tipl::shape<2>(n,n));
             t.swap(NPd);
             for(unsigned int i = 0;i < L.size();++i)
             {
@@ -4003,17 +4003,17 @@ void ConnectivityMatrix::network_property(std::string& report)
         for(unsigned int i = 0,dg = 0;i < n;++i,dg += n+1)
             L[dg] = 0;
         std::replace(NSP.begin(),NSP.end(),0,1);
-        tipl::image<float,2> DP(binary_matrix.geometry());
+        tipl::image<float,2> DP(binary_matrix.shape());
         for(--d;d >= 2;--d)
         {
-            tipl::image<float,2> t(DP),DPd1(binary_matrix.geometry());
+            tipl::image<float,2> t(DP),DPd1(binary_matrix.shape());
             t += 1.0;
             for(unsigned int i = 0;i < t.size();++i)
                 if(L[i] != d)
                     t[i] = 0;
                 else
                     t[i] /= NSP[i];
-            tipl::mat::product(t.begin(),binary_matrix.begin(),DPd1.begin(),tipl::shape(n,n),tipl::shape(n,n));
+            tipl::mat::product(t.begin(),binary_matrix.begin(),DPd1.begin(),tipl::shape<2>(n,n),tipl::shape<2>(n,n));
             for(unsigned int i = 0;i < DPd1.size();++i)
                 if(L[i] != d-1)
                     DPd1[i] = 0;
@@ -4037,7 +4037,7 @@ void ConnectivityMatrix::network_property(std::string& report)
             std::vector<unsigned char> S(n),Q(n);
             int q = n-1;
             std::fill(S.begin(),S.end(),1);
-            tipl::image<unsigned char,2> P(binary_matrix.geometry());
+            tipl::image<unsigned char,2> P(binary_matrix.shape());
             tipl::image<float,2> G1(norm_matrix);
             // per suggestion from Mikail Rubinov, the matrix has to be "granulated"
             {
@@ -4115,9 +4115,9 @@ void ConnectivityMatrix::network_property(std::string& report)
         tipl::image<float,2> bin;
         bin = binary_matrix;
         std::vector<float> V(binary_matrix.size()),d(n);
-        tipl::mat::eigen_decomposition_sym(bin.begin(),V.begin(),d.begin(),tipl::shape(n,n));
+        tipl::mat::eigen_decomposition_sym(bin.begin(),V.begin(),d.begin(),tipl::shape<2>(n,n));
         std::copy(V.begin(),V.begin()+n,eigenvector_centrality_bin.begin());
-        tipl::mat::eigen_decomposition_sym(norm_matrix.begin(),V.begin(),d.begin(),tipl::shape(n,n));
+        tipl::mat::eigen_decomposition_sym(norm_matrix.begin(),V.begin(),d.begin(),tipl::shape<2>(n,n));
         std::copy(V.begin(),V.begin()+n,eigenvector_centrality_wei.begin());
     }
 
@@ -4128,7 +4128,7 @@ void ConnectivityMatrix::network_property(std::string& report)
         std::replace(deg_bin.begin(),deg_bin.end(),0.0f,1.0f);
         std::replace(deg_wei.begin(),deg_wei.end(),0.0f,1.0f);
 
-        tipl::image<float,2> B_bin(binary_matrix.geometry()),B_wei(binary_matrix.geometry());
+        tipl::image<float,2> B_bin(binary_matrix.shape()),B_wei(binary_matrix.shape());
         for(unsigned int i = 0,index = 0;i < n;++i)
             for(unsigned int j = 0;j < n;++j,++index)
             {
@@ -4143,10 +4143,10 @@ void ConnectivityMatrix::network_property(std::string& report)
         std::vector<unsigned int> pivot(n);
         std::vector<float> b(n);
         std::fill(b.begin(),b.end(),(1.0-d)/n);
-        tipl::mat::lu_decomposition(B_bin.begin(),pivot.begin(),tipl::shape(n,n));
-        tipl::mat::lu_solve(B_bin.begin(),pivot.begin(),b.begin(),pagerank_centrality_bin.begin(),tipl::shape(n,n));
-        tipl::mat::lu_decomposition(B_wei.begin(),pivot.begin(),tipl::shape(n,n));
-        tipl::mat::lu_solve(B_wei.begin(),pivot.begin(),b.begin(),pagerank_centrality_wei.begin(),tipl::shape(n,n));
+        tipl::mat::lu_decomposition(B_bin.begin(),pivot.begin(),tipl::shape<2>(n,n));
+        tipl::mat::lu_solve(B_bin.begin(),pivot.begin(),b.begin(),pagerank_centrality_bin.begin(),tipl::shape<2>(n,n));
+        tipl::mat::lu_decomposition(B_wei.begin(),pivot.begin(),tipl::shape<2>(n,n));
+        tipl::mat::lu_solve(B_wei.begin(),pivot.begin(),b.begin(),pagerank_centrality_wei.begin(),tipl::shape<2>(n,n));
 
         float sum_bin = std::accumulate(pagerank_centrality_bin.begin(),pagerank_centrality_bin.end(),0.0);
         float sum_wei = std::accumulate(pagerank_centrality_wei.begin(),pagerank_centrality_wei.end(),0.0);

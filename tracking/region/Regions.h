@@ -17,10 +17,10 @@ const unsigned char seed_id = 3;
 const unsigned char terminate_id = 4;
 const unsigned char not_ending_id = 5;
 const unsigned char default_id = 6;
-void initial_LPS_nifti_srow(tipl::matrix<4,4,float>& T,const tipl::geometry<3>& geo,const tipl::vector<3>& vs);
+void initial_LPS_nifti_srow(tipl::matrix<4,4,float>& T,const tipl::shape<3>& geo,const tipl::vector<3>& vs);
 class ROIRegion {
 public:
-        tipl::geometry<3> dim;
+        tipl::shape<3> dim;
         tipl::vector<3> vs;
         tipl::matrix<4,4,float> trans_to_mni;
 public:
@@ -37,11 +37,11 @@ public: // rendering options
 public: // rendering options
         ROIRegion(std::shared_ptr<fib_data> handle):
             dim(handle->dim),vs(handle->vs),trans_to_mni(handle->trans_to_mni){}
-        ROIRegion(tipl::geometry<3> dim_,tipl::vector<3> vs_):dim(dim_),vs(vs_)
+        ROIRegion(tipl::shape<3> dim_,tipl::vector<3> vs_):dim(dim_),vs(vs_)
         {
             initial_LPS_nifti_srow(trans_to_mni,dim,vs);
         }
-        ROIRegion(tipl::geometry<3> dim_,tipl::vector<3> vs_,const tipl::matrix<4,4,float>& trans_to_mni_)
+        ROIRegion(tipl::shape<3> dim_,tipl::vector<3> vs_,const tipl::matrix<4,4,float>& trans_to_mni_)
             :dim(dim_),vs(vs_),trans_to_mni(trans_to_mni_){}
 
         ROIRegion(const ROIRegion& rhs)
@@ -80,7 +80,7 @@ public: // rendering options
             std::swap(resolution_ratio,rhs.resolution_ratio);
         }
 
-        tipl::geometry<3> get_buffer_dim(void) const;
+        tipl::shape<3> get_buffer_dim(void) const;
         tipl::vector<3,short> get_region_voxel(unsigned int index) const
         {
             tipl::vector<3,short> result = region[index];
@@ -218,7 +218,7 @@ public:
         void LoadFromBuffer(const image_type& from,const tipl::matrix<4,4,float>& trans)
         {
             std::vector<tipl::vector<3,short> > points;
-            image_type from2(tipl::geometry<3>(uint32_t(dim[0]*resolution_ratio),
+            image_type from2(tipl::shape<3>(uint32_t(dim[0]*resolution_ratio),
                                       uint32_t(dim[1]*resolution_ratio),
                                       uint32_t(dim[2]*resolution_ratio)));
             auto iT = trans;
@@ -248,14 +248,14 @@ public:
                     tipl::vector<3> pos(index);
                     pos *= resolution_ratio;
                     pos.round();
-                    if(mask.geometry().is_valid(pos) &&
+                    if(mask.shape().is_valid(pos) &&
                        mask.at(pos[0],pos[1],pos[2]))
                         points.push_back(tipl::vector<3,short>(index.x(), index.y(),index.z()));
                 }
                 resolution_ratio = 1.0f;
             }
             else {
-                for (tipl::pixel_index<3>index(mask.geometry());index < mask.size();++index)
+                for (tipl::pixel_index<3>index(mask.shape());index < mask.size();++index)
                     if (mask[index.index()] != 0)
                         points.push_back(tipl::vector<3,short>(index.x(), index.y(),index.z()));
             }

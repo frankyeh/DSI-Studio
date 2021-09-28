@@ -32,7 +32,7 @@ manual_alignment::manual_alignment(QWidget *parent,
         to.swap(new_to);
         to_vs *= 2.0f;
         to_downsample *= 0.5f;
-        std::cout << "downsampling template image by 2 dim=" << to.geometry() << std::endl;
+        std::cout << "downsampling template image by 2 dim=" << to.shape() << std::endl;
     }
     while(tipl::minimum(from_vs) < tipl::minimum(to_vs)/2.0f)
     {
@@ -41,7 +41,7 @@ manual_alignment::manual_alignment(QWidget *parent,
         from.swap(new_from);
         from_vs *= 2.0f;
         from_downsample *= 2.0f;
-        std::cout << "downsampling subject image by 2 dim=" << from.geometry() << std::endl;
+        std::cout << "downsampling subject image by 2 dim=" << from.shape() << std::endl;
     }
 
     tipl::normalize(from,1.0);
@@ -188,11 +188,11 @@ void manual_alignment::load_param(void)
 
 void manual_alignment::update_image(void)
 {
-    T = tipl::transformation_matrix<float>(arg,from.geometry(),from_vs,to.geometry(),to_vs);
+    T = tipl::transformation_matrix<float>(arg,from.shape(),from_vs,to.shape(),to_vs);
     iT = T;
     iT.inverse();
     warped_from.clear();
-    warped_from.resize(to.geometry());
+    warped_from.resize(to.shape());
     tipl::resample(from,warped_from,iT,tipl::linear);
 }
 
@@ -206,7 +206,7 @@ void manual_alignment::set_arg(const tipl::affine_transform<float>& arg_min,
         if(from_downsample != 1.0f)
             tipl::multiply_constant(iT.data,iT.data+12,1.0f/from_downsample);
         iT.inverse();
-        iT.to_affine_transform(arg,from.geometry(),from_vs,to.geometry(),to_vs);
+        iT.to_affine_transform(arg,from.shape(),from_vs,to.shape(),to_vs);
     }
     else
         arg = arg_min;
@@ -279,7 +279,7 @@ void manual_alignment::slice_pos_moved()
         tipl::image<float,2> slice,slice2;
         tipl::volume2slice(warped_from,slice,dim,slice_pos[dim]);
         tipl::volume2slice(to,slice2,dim,slice_pos[dim]);
-        buffer[dim].resize(slice.geometry());
+        buffer[dim].resize(slice.shape());
         for (unsigned int index = 0; index < slice.size(); ++index)
         {
             float value = slice[index]*w2+slice2[index]*w1;
@@ -401,7 +401,7 @@ void manual_alignment::on_actionSave_Warpped_Image_triggered()
     if(filename.isEmpty())
         return;
 
-    tipl::image<float,3> I(to.geometry());
+    tipl::image<float,3> I(to.shape());
     tipl::resample(from_original,I,iT,is_label_image(from_original) ? tipl::nearest : tipl::cubic);
     gz_nifti::save_to_file(filename.toStdString().c_str(),I,to_vs,nifti_srow);
 }

@@ -127,7 +127,7 @@ public:
         }
         std::vector<float> new_data(new_q_count);
         data.space.swap(new_data);
-        tipl::mat::vector_product(trans.begin(),new_data.begin(),data.space.begin(),tipl::shape(new_q_count,old_q_count));
+        tipl::mat::vector_product(trans.begin(),new_data.begin(),data.space.begin(),tipl::shape<2>(new_q_count,old_q_count));
     }
 };
 
@@ -325,7 +325,7 @@ struct SaveMetrics : public BaseProcess
 protected:
     std::vector<float> iso,gfa;
     std::vector<std::vector<float> > fa,rdi,qa_inc,qa_dec;
-    tipl::geometry<3> dim;
+    tipl::shape<3> dim;
 
     void output_anisotropy(gz_mat_write& mat_writer,
                            const char* name,const std::vector<std::vector<float> >& metrics)

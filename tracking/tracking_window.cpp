@@ -550,7 +550,7 @@ bool tracking_window::command(QString cmd,QString param,QString param2)
             auto I = reg_slice->source_images;
             tipl::lower_threshold(I,0);
             tipl::normalize(I,255);
-            tipl::image<unsigned char,3> II(I.geometry());
+            tipl::image<unsigned char,3> II(I.shape());
             std::copy(I.begin(),I.end(),II.begin());
             gz_nifti::save_to_file((param+"/slices/" + ui->SliceModality->currentText() + ".nii.gz").toStdString().c_str(),
                                    II,reg_slice->vs,reg_slice->trans);
@@ -1207,7 +1207,7 @@ void tracking_window::on_actionTDI_Subvoxel_Diffusion_Space_triggered()
     tipl::matrix<4,4,float> tr;
     tr.identity();
     tr[0] = tr[5] = tr[10] = ratio;
-    tipl::geometry<3> new_geo(handle->dim[0]*ratio,handle->dim[1]*ratio,handle->dim[2]*ratio);
+    tipl::shape<3> new_geo(handle->dim[0]*ratio,handle->dim[1]*ratio,handle->dim[2]*ratio);
     tipl::vector<3,float> new_vs(handle->vs);
     new_vs /= (float)ratio;
     tractWidget->export_tract_density(new_geo,new_vs,tr,rec == QMessageBox::Yes,rec2 != QMessageBox::Yes);
@@ -1216,7 +1216,7 @@ void tracking_window::on_actionTDI_Subvoxel_Diffusion_Space_triggered()
 void tracking_window::on_actionTDI_Import_Slice_Space_triggered()
 {
     tipl::matrix<4,4,float> tr = current_slice->invT;
-    tipl::geometry<3> geo = current_slice->dim;
+    tipl::shape<3> geo = current_slice->dim;
     tipl::vector<3,float> vs = current_slice->vs;
     int rec,rec2;
     if(!ask_TDI_options(rec,rec2))
@@ -1747,7 +1747,7 @@ void tracking_window::stripSkull()
     tipl::filter::mean(Iw);
     tipl::filter::mean(Iw);
 
-    tipl::image<float,3> Iw_(reg_slice->source_images.geometry());
+    tipl::image<float,3> Iw_(reg_slice->source_images.shape());
     tipl::resample_mt(Iw,Iw_,manual->get_iT(),tipl::linear);
 
     reg_slice->skull_removed_images = reg_slice->source_images;
@@ -2205,7 +2205,7 @@ void tracking_window::on_actionOpen_Connectivity_Matrix_triggered()
             QMessageBox::information(this,"error","The connectivity matrix should be a square matrix");
             return;
         }
-        tipl::image<float,2> connectivity(tipl::geometry<2>(row,col));
+        tipl::image<float,2> connectivity(tipl::shape<2>(row,col));
         std::copy(buf,buf+row*col,connectivity.begin());
         glWidget->connectivity = std::move(connectivity);
 
@@ -2252,7 +2252,7 @@ void tracking_window::on_actionOpen_Connectivity_Matrix_triggered()
             QString("There are %1 values in the file. The matrix in the text file is not a square matrix.").arg(buf.size()));
             return;
         }
-        glWidget->connectivity.resize(tipl::geometry<2>(dim,dim));
+        glWidget->connectivity.resize(tipl::shape<2>(dim,dim));
         std::copy(buf.begin(),buf.end(),glWidget->connectivity.begin());
     }
 
@@ -2434,7 +2434,7 @@ void tracking_window::on_actionMark_Region_on_T1W_T2W_triggered()
     float resolution_ratio = current_region->resolution_ratio;
     tipl::matrix<4,4,float> T(slice->T);
     tipl::multiply_constant(&T[0],&T[0]+12,resolution_ratio);
-    tipl::image<unsigned char, 3> t_mask(slice->source_images.geometry());
+    tipl::image<unsigned char, 3> t_mask(slice->source_images.shape());
     tipl::resample(mask,t_mask,T,tipl::nearest);
     for(size_t i = 0;i < t_mask.size();++i)
         if(t_mask[i])
@@ -2456,7 +2456,7 @@ void tracking_window::on_actionMark_Tracts_on_T1W_T2W_triggered()
             "Aissgn intensity (ratio to the maximum, e.g., 1.2 = 1.2*max)",1.0,0.0,10.0,1,&ok);
     if(!ok)
         return;
-    tipl::image<unsigned char, 3> t_mask(slice->source_images.geometry());
+    tipl::image<unsigned char, 3> t_mask(slice->source_images.shape());
     auto checked_tracks = tractWidget->get_checked_tracks();
     tipl::par_for(checked_tracks.size(),[&](size_t i){
         for(size_t j = 0;j < checked_tracks[i]->get_visible_track_count();++j)
@@ -2501,7 +2501,7 @@ void tracking_window::on_actionSave_Slices_to_DICOM_triggered()
     {
         tipl::image<float,3> I;
         volume >> I;
-        if(I.geometry() != slice->source_images.geometry())
+        if(I.shape() != slice->source_images.shape())
         {
             QMessageBox::information(this,"Error","Selected DICOM files does not match the original slices. Please check if missing any files.");
             return;
@@ -2723,7 +2723,7 @@ void tracking_window::on_actionInsert_Coronal_Pictures_triggered()
     tipl::flip_y(reg_slice_ptr->source_images);
     tipl::swap_yz(reg_slice_ptr->source_images);
     std::swap(reg_slice_ptr->vs[1],reg_slice_ptr->vs[2]);
-    handle->view_item.back().set_image(tipl::make_image(&*reg_slice_ptr->source_images.begin(),reg_slice_ptr->source_images.geometry()));
+    handle->view_item.back().set_image(tipl::make_image(&*reg_slice_ptr->source_images.begin(),reg_slice_ptr->source_images.shape()));
     reg_slice_ptr->update_image();
     ui->SliceModality->setCurrentIndex(0);
     ui->SliceModality->setCurrentIndex(int(handle->view_item.size())-1);
@@ -2748,7 +2748,7 @@ void tracking_window::on_actionInsert_Sagittal_Picture_triggered()
     tipl::swap_xy(reg_slice_ptr->source_images);
     tipl::swap_xz(reg_slice_ptr->source_images);
     std::swap(reg_slice_ptr->vs[0],reg_slice_ptr->vs[2]);
-    handle->view_item.back().set_image(tipl::make_image(&*reg_slice_ptr->source_images.begin(),reg_slice_ptr->source_images.geometry()));
+    handle->view_item.back().set_image(tipl::make_image(&*reg_slice_ptr->source_images.begin(),reg_slice_ptr->source_images.shape()));
     reg_slice_ptr->update_image();
     ui->SliceModality->setCurrentIndex(0);
     ui->SliceModality->setCurrentIndex(int(handle->view_item.size())-1);

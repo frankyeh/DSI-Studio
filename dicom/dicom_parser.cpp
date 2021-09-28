@@ -170,7 +170,7 @@ bool load_dicom_multi_frame(const char* file_name,std::vector<std::shared_ptr<Dw
         std::shared_ptr<DwiHeader> new_file(new DwiHeader);
         if(index == 0)
             get_report_from_dicom(dicom_header,new_file->report);
-        new_file->image.resize(tipl::geometry<3>(uint32_t(buf_image.width()),
+        new_file->image.resize(tipl::shape<3>(uint32_t(buf_image.width()),
                                                  uint32_t(buf_image.height()),slice_num));
 
         for(unsigned int j = 0;j < slice_num;++j)
@@ -207,7 +207,7 @@ bool load_bvec(const char* file_name,std::vector<double>& b_table)
         ++total_line;
     }
     if(total_line == 3)
-        tipl::mat::transpose(b_table.begin(),tipl::shape(3,b_table.size()/3));
+        tipl::mat::transpose(b_table.begin(),tipl::shape<2>(3,b_table.size()/3));
     if(po.get("flip_by",1))
     {
         for(size_t index = 1;index < b_table.size();index += 3)
@@ -532,10 +532,10 @@ bool load_4d_2dseq(const char* file_name,std::vector<std::shared_ptr<DwiHeader> 
     }
 
 
-    tipl::geometry<3> dim(bruker_header.get_image().geometry());
+    tipl::shape<3> dim(bruker_header.get_image().shape());
     dim[2] /= bvalues.size();
 
-    if(dwi_files.size() && dwi_files.back()->image.geometry() != dim)
+    if(dwi_files.size() && dwi_files.back()->image.shape() != dim)
     {
         src_error_msg = "inconsistent dimension found";
         return false;
@@ -566,7 +566,7 @@ bool load_4d_2dseq(const char* file_name,std::vector<std::shared_ptr<DwiHeader> 
 bool load_multiple_slice_dicom(QStringList file_list,std::vector<std::shared_ptr<DwiHeader> >& dwi_files)
 {
     tipl::io::dicom dicom_header;// multiple frame image
-    tipl::geometry<3> geo;
+    tipl::shape<3> geo;
     if(!dicom_header.load_from_file(file_list[0].toLocal8Bit().begin()))
         return false;
     dicom_header.get_image_dimension(geo);
@@ -698,7 +698,7 @@ void scale_image_buf_to_uint16(std::vector<tipl::image<float,3> >& image_buf)
 bool load_nhdr(QStringList file_list,std::vector<std::shared_ptr<DwiHeader> >& dwi_files)
 {
     std::vector<tipl::image<float,3> > image_buf;
-    tipl::geometry<3> dim;
+    tipl::shape<3> dim;
     tipl::vector<3> vs;
     image_buf.resize(file_list.size());
     begin_prog("Reading raw data");
@@ -820,9 +820,9 @@ bool load_4d_fdf(QStringList file_list,std::vector<std::shared_ptr<DwiHeader> >&
             image_buf.resize(dwi_num);
             for(unsigned int i = 0;i < dwi_num;++i)
             {
-                image_buf[i].resize(tipl::geometry<3>(width,height,depth));
+                image_buf[i].resize(tipl::shape<3>(width,height,depth));
                 dwi_files.push_back(std::make_shared<DwiHeader>());
-                dwi_files.back()->image.resize(tipl::geometry<3>(width,height,depth));
+                dwi_files.back()->image.resize(tipl::shape<3>(width,height,depth));
                 dwi_files.back()->voxel_size[0] = fov1*10.0/width;
                 dwi_files.back()->voxel_size[1] = fov2*10.0/height;
                 dwi_files.back()->voxel_size[2] = fov3*100.0/depth;
@@ -938,7 +938,7 @@ bool parse_dwi(QStringList file_list,
     prog_init prog("loading dicoms");
     std::sort(file_list.begin(),file_list.end(),compare_qstring());
     tipl::io::dicom dicom_header;// multiple frame image
-    tipl::geometry<3> geo;
+    tipl::shape<3> geo;
     if(!dicom_header.load_from_file(file_list[0].toLocal8Bit().begin()))
     {
         src_error_msg = "unsupported file format";
@@ -1101,7 +1101,7 @@ void dicom_parser::on_actionOpen_b_table_triggered()
     {
         auto& I = dwi_files[0]->image;
         unsigned int b_count = b_table.size()/4;
-        tipl::geometry<3> dim(I.width(),I.height(),I.depth()/b_count);
+        tipl::shape<3> dim(I.width(),I.height(),I.depth()/b_count);
         std::vector<std::shared_ptr<DwiHeader> > new_files;
         unsigned int plane_size = I.plane_size();
         for(int i = 0;i < b_count;++i)

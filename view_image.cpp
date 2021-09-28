@@ -33,13 +33,13 @@ bool img_command(tipl::image<float,3>& data,
         }
         tipl::image<float,3> mask;
         nii.get_untouched_image(mask);
-        if(mask.geometry() != data.geometry())
+        if(mask.shape() != data.shape())
         {
             error_msg = "invalid mask file:";
             error_msg += param1;
             error_msg += " The dimension does not match:";
             std::ostringstream out;
-            out << mask.geometry() << " vs " << data.geometry();
+            out << mask.shape() << " vs " << data.shape();
             error_msg += out.str();
             return false;
         }
@@ -245,7 +245,7 @@ bool view_image::eventFilter(QObject *obj, QEvent *event)
     tipl::slice2space(cur_dim,
                       std::round(float(point.x()) / source_ratio),
                       std::round(float(point.y()) / source_ratio),ui->slice_pos->value(),pos[0],pos[1],pos[2]);
-    if(!data.geometry().is_valid(pos))
+    if(!data.shape().is_valid(pos))
         return true;
     mni = pos;
     mni.to(T);
@@ -270,7 +270,7 @@ bool get_compressed_image(tipl::io::dicom& dicom,tipl::image<short,2>& I)
         return false;
     }
     QImage buf = img.convertToFormat(QImage::Format_RGB32);
-    I.resize(tipl::geometry<2>(buf.width(),buf.height()));
+    I.resize(tipl::shape<2>(buf.width(),buf.height()));
     const uchar* ptr = buf.bits();
     for(int j = 0;j < I.size();++j,ptr += 4)
         I[j] = *ptr;
@@ -301,7 +301,7 @@ bool view_image::open(QStringList file_names)
                 return false;
             bmp >> I;
             if(i == 0)
-                data.resize(tipl::geometry<3>(I.width(),I.height(),file_names.size()));
+                data.resize(tipl::shape<3>(I.width(),I.height(),file_names.size()));
             unsigned int pos = i*I.size();
             for(unsigned int j = 0;j < I.size();++j)
                 data[pos+j] = ((float)I[j].r+(float)I[j].r+(float)I[j].r)/3.0;
@@ -428,7 +428,7 @@ bool view_image::open(QStringList file_names)
             {
                 if((mat.has("fa0") || mat.has("image0")) && mat.has("dimension"))
                 {
-                    tipl::geometry<3> geo;
+                    tipl::shape<3> geo;
                     mat.read("dimension",geo);
                     data.resize(geo);
                     mat.read(mat.has("fa0") ? "fa0":"image0",data);
@@ -509,7 +509,7 @@ void view_image::add_overlay(void)
     if(index >= opened_images.size())
         return;
     overlay.clear();
-    overlay.resize(data.geometry());
+    overlay.resize(data.shape());
     tipl::resample(opened_images[index]->data,overlay,
                    tipl::from_space(T).to(opened_images[index]->T),tipl::cubic);
     overlay_v2c = opened_images[index]->v2c;
@@ -582,7 +582,7 @@ void view_image::on_actionResample_triggered()
     if (!ok || nv == 0.0f)
         return;
     tipl::vector<3,float> new_vs(nv,nv,nv);
-    tipl::image<float,3> J(tipl::geometry<3>(
+    tipl::image<float,3> J(tipl::shape<3>(
             int(std::ceil(float(data.width())*vs[0]/new_vs[0])),
             int(std::ceil(float(data.height())*vs[1]/new_vs[1])),
             int(std::ceil(float(data.depth())*vs[2]/new_vs[2]))));
@@ -664,7 +664,7 @@ void view_image::on_actionResize_triggered()
     std::istringstream in(result.toStdString());
     int w,h,d;
     in >> w >> h >> d;
-    tipl::image<float,3> new_data(tipl::geometry<3>(w,h,d));
+    tipl::image<float,3> new_data(tipl::shape<3>(w,h,d));
     tipl::draw(data,new_data,tipl::vector<3>());
     data.swap(new_data);
     init_image();
@@ -682,7 +682,7 @@ void view_image::on_actionTranslocate_triggered()
     std::istringstream in(result.toStdString());
     int dx,dy,dz;
     in >> dx >> dy >> dz;
-    tipl::image<float,3> new_data(data.geometry());
+    tipl::image<float,3> new_data(data.shape());
     tipl::draw(data,new_data,tipl::vector<3>(dx,dy,dz));
     data.swap(new_data);
     T[3] -= T[0]*dx;
@@ -704,7 +704,7 @@ void view_image::on_actionTrim_triggered()
     range_max -= range_min;
     range_max[0] += margin+margin;
     range_max[1] += margin+margin;
-    tipl::image<float,3> new_data(tipl::geometry<3>(range_max[0],range_max[1],range_max[2]));
+    tipl::image<float,3> new_data(tipl::shape<3>(range_max[0],range_max[1],range_max[2]));
     tipl::draw(data,new_data,translocate);
     data.swap(new_data);
     T[3] -= T[0]*translocate[0];
@@ -828,9 +828,9 @@ void view_image::on_actionUpper_Threshold_triggered()
 bool is_label_image(const tipl::image<float,3>& I);
 void view_image::on_actionSmoothing_triggered()
 {
-    tipl::image<float,3> new_data(data.geometry());
+    tipl::image<float,3> new_data(data.shape());
     uint32_t m = uint32_t(*std::max_element(data.begin(),data.end()));
-    tipl::image<char,3> all_mask(data.geometry());
+    tipl::image<char,3> all_mask(data.shape());
     for(size_t i = 0;i < data.size();++i)
         if(data[i] > 0.0f)
             all_mask[i] = 1;
@@ -839,7 +839,7 @@ void view_image::on_actionSmoothing_triggered()
     // smooth each region
     tipl::par_for(m,[&](uint32_t index)
     {
-        tipl::image<char,3> mask(data.geometry());
+        tipl::image<char,3> mask(data.shape());
         for(size_t i = 0;i < data.size();++i)
             if(uint32_t(data[i]) == index)
                 mask[i] = 1;
@@ -853,7 +853,7 @@ void view_image::on_actionSmoothing_triggered()
     // fill up gaps
     tipl::par_for(m,[&](uint32_t index)
     {
-        tipl::image<char,3> mask(data.geometry());
+        tipl::image<char,3> mask(data.shape());
         for(size_t i = 0;i < new_data.size();++i)
             if(uint32_t(new_data[i]) == index)
                 mask[i] = 1;

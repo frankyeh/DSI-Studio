@@ -54,7 +54,7 @@ bool check_other_slices(std::shared_ptr<fib_data> handle)
     return true;
 }
 bool get_t1t2_nifti(std::shared_ptr<fib_data> handle,
-                    tipl::geometry<3>& nifti_geo,
+                    tipl::shape<3>& nifti_geo,
                     tipl::vector<3>& nifti_vs,
                     tipl::matrix<4,4,float>& convert)
 {
@@ -78,7 +78,7 @@ bool get_t1t2_nifti(std::shared_ptr<fib_data> handle,
             std::cout << convert[8] << " " << convert[9] << " " << convert[10] << " " << convert[11] << std::endl;
         }
     }
-    nifti_geo = t1t2_slices->source_images.geometry();
+    nifti_geo = t1t2_slices->source_images.shape();
     nifti_vs = t1t2_slices->vs;
     convert = t1t2_slices->invT;
     std::cout << "T1T2 dimension: " << nifti_geo << std::endl;
@@ -163,7 +163,7 @@ void export_track_info(std::shared_ptr<fib_data> handle,
             bool output_end = QString(cmd.c_str()).endsWith("end");
             file_name_stat += ".nii.gz";
             tipl::matrix<4,4,float> tr;
-            tipl::geometry<3> dim;
+            tipl::shape<3> dim;
             tipl::vector<3,float> vs;
             tr.identity();
             dim = handle->dim;
@@ -183,7 +183,7 @@ void export_track_info(std::shared_ptr<fib_data> handle,
                 if(ratio != 1)
                 {
                     tr[0] = tr[5] = tr[10] = ratio;
-                    dim = tipl::geometry<3>(handle->dim[0]*ratio,
+                    dim = tipl::shape<3>(handle->dim[0]*ratio,
                                             handle->dim[1]*ratio,
                                             handle->dim[2]*ratio);
                     vs /= float(ratio);
@@ -435,7 +435,7 @@ bool load_region(std::shared_ptr<fib_data> handle,
                 for (unsigned int label_index = 0; label_index < handle->atlas_list[i]->get_list().size(); ++label_index)
                     if(handle->atlas_list[i]->get_list()[label_index] == region_name)
                 {
-                    for (tipl::pixel_index<3>index(s2t.geometry());index < s2t.size();++index)
+                    for (tipl::pixel_index<3>index(s2t.shape());index < s2t.size();++index)
                     {
                         if(handle->atlas_list[i]->is_labeled_as(s2t[index.index()],label_index))
                             cur_region.push_back(tipl::vector<3,short>(index.begin()));
@@ -653,9 +653,9 @@ int trk(std::shared_ptr<fib_data> handle)
         }
     }
 
-    tipl::geometry<3> geometry = handle->dim;
+    tipl::shape<3> shape = handle->dim;
     const float *fa0 = handle->dir.fa[0];
-    float otsu = tipl::segmentation::otsu_threshold(tipl::make_image(fa0,geometry));
+    float otsu = tipl::segmentation::otsu_threshold(tipl::make_image(fa0,shape));
 
 
     ThreadData tracking_thread(handle);

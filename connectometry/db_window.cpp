@@ -147,7 +147,7 @@ void db_window::on_subject_list_itemSelectionChanged()
                                    ui->view_x->isChecked() ? 0:(ui->view_y->isChecked() ? 1:2),
                                    ui->slice_pos->value(),slice);
     tipl::normalize(slice);
-    tipl::color_image color_slice(slice.geometry());
+    tipl::color_image color_slice(slice.shape());
     std::copy(slice.begin(),slice.end(),color_slice.begin());
     if(ui->show_mask->isChecked())
     {
@@ -169,7 +169,7 @@ void db_window::on_subject_list_itemSelectionChanged()
         float threshold = ui->fp_coverage->value()*tipl::segmentation::otsu_threshold(tipl::make_image(vbc->handle->dir.fa[0],vbc->handle->dim));
         vbc->handle->db.get_subject_vector(ui->subject_list->currentRow(),fp,fp_mask,threshold,ui->normalize_fp->isChecked());
         fp_image_buf.clear();
-        fp_image_buf.resize(tipl::geometry<2>(ui->fp_zoom->value()*25,ui->fp_zoom->value()*100));// rotated
+        fp_image_buf.resize(tipl::shape<2>(ui->fp_zoom->value()*25,ui->fp_zoom->value()*100));// rotated
 
         tipl::minus_constant(fp.begin(),fp.end(),*std::min_element(fp.begin(),fp.end()));
         float max_fp = *std::max_element(fp.begin(),fp.end());
@@ -208,7 +208,7 @@ void db_window::on_subject_list_itemSelectionChanged()
 
     if(!fp_dif_map.empty() && fp_dif_map.width() == vbc->handle->db.num_subjects)
     {
-        fp_dif_map.resize(tipl::geometry<2>(vbc->handle->db.num_subjects,vbc->handle->db.num_subjects));
+        fp_dif_map.resize(tipl::shape<2>(vbc->handle->db.num_subjects,vbc->handle->db.num_subjects));
         for(unsigned int index = 0;index < fp_matrix.size();++index)
             fp_dif_map[index] = color_map[fp_matrix[index]*256.0/fp_max_value];
 
@@ -327,7 +327,7 @@ void db_window::on_actionLoad_mask_triggered()
         return;
     }
     nii.toLPS(I);
-    if(I.geometry() != fp_mask.geometry())
+    if(I.shape() != fp_mask.shape())
     {
         QMessageBox::information(this,"Error","Inconsistent image dimension. Please use DSI Studio to output the mask.",0);
         return;
@@ -373,7 +373,7 @@ void db_window::on_calculate_dif_clicked()
                     tipl::make_image(vbc->handle->dir.fa[0],vbc->handle->dim));
     vbc->handle->db.get_dif_matrix(fp_matrix,fp_mask,threshold,ui->normalize_fp->isChecked());
     fp_max_value = *std::max_element(fp_matrix.begin(),fp_matrix.end());
-    fp_dif_map.resize(tipl::geometry<2>(vbc->handle->db.num_subjects,vbc->handle->db.num_subjects));
+    fp_dif_map.resize(tipl::shape<2>(vbc->handle->db.num_subjects,vbc->handle->db.num_subjects));
     for(unsigned int index = 0;index < fp_matrix.size();++index)
         fp_dif_map[index] = color_map[fp_matrix[index]*255.0/fp_max_value];
     on_fp_zoom_valueChanged(ui->fp_zoom->value());

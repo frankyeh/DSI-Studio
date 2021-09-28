@@ -6,7 +6,7 @@
 #include "fib_data.hpp"
 
 class RoiMgr;
-void initial_LPS_nifti_srow(tipl::matrix<4,4,float>& T,const tipl::geometry<3>& geo,const tipl::vector<3>& vs);
+void initial_LPS_nifti_srow(tipl::matrix<4,4,float>& T,const tipl::shape<3>& geo,const tipl::vector<3>& vs);
 class TractModel{
 public:
         std::string report;
@@ -14,7 +14,7 @@ public:
         bool saved = true;
         bool color_changed = false;
 public:
-        tipl::geometry<3> geo;
+        tipl::shape<3> geo;
         tipl::vector<3> vs;
         tipl::matrix<4,4,float> trans_to_mni;
 private:
@@ -50,11 +50,11 @@ public:
         void delete_by_length(float length);
 public:
         TractModel(std::shared_ptr<fib_data> handle):geo(handle->dim),vs(handle->vs),trans_to_mni(handle->trans_to_mni){}
-        TractModel(tipl::geometry<3> dim_,tipl::vector<3> vs_):geo(dim_),vs(vs_)
+        TractModel(tipl::shape<3> dim_,tipl::vector<3> vs_):geo(dim_),vs(vs_)
         {
             initial_LPS_nifti_srow(trans_to_mni,geo,vs);
         }
-        TractModel(tipl::geometry<3> dim_,tipl::vector<3> vs_,const tipl::matrix<4,4,float>& trans_to_mni_)
+        TractModel(tipl::shape<3> dim_,tipl::vector<3> vs_,const tipl::matrix<4,4,float>& trans_to_mni_)
             :geo(dim_),vs(vs_),trans_to_mni(trans_to_mni_)
         {}
 
@@ -80,7 +80,7 @@ public:
         bool save_tracts_to_file(const char* file_name);
         bool save_tracts_in_native_space(std::shared_ptr<fib_data> handle,const char* file_name);
         bool save_tracts_in_template_space(std::shared_ptr<fib_data> handle,const char* file_name);
-        bool save_transformed_tracts_to_file(const char* file_name,tipl::geometry<3> new_dim,
+        bool save_transformed_tracts_to_file(const char* file_name,tipl::shape<3> new_dim,
                                              tipl::vector<3> new_vs,const tipl::matrix<4,4,float>& T,bool end_point);
 
         void save_vrml(const std::string& file_name,
@@ -150,7 +150,7 @@ public:
              const tipl::matrix<4,4,float>& transformation,bool endpoint);
         static bool export_tdi(const char* file_name,
                           std::vector<std::shared_ptr<TractModel> > tract_models,
-                          tipl::geometry<3>& dim,
+                          tipl::shape<3>& dim,
                           tipl::vector<3,float> vs,
                           tipl::matrix<4,4,float> transformation,bool color,bool end_point);
         static bool export_pdi(const char* file_name,
@@ -204,7 +204,7 @@ public:
     std::string error_msg,atlas_name;
     float overlap_ratio;
     bool set_atlas(std::shared_ptr<atlas> data,std::shared_ptr<fib_data> handle);
-    void set_regions(const tipl::geometry<3>& geo,
+    void set_regions(const tipl::shape<3>& geo,
                      const std::vector<std::shared_ptr<ROIRegion> >& regions);
 public:
     void save_to_image(tipl::color_image& cm);

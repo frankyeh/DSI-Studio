@@ -280,7 +280,7 @@ void MainWindow::addSrc(QString filename)
     settings.setValue("recentSrcFileList", files);
     updateRecentList();
 }
-void shift_track_for_tck(std::vector<std::vector<float> >& loaded_tract_data,tipl::geometry<3>& geo);
+void shift_track_for_tck(std::vector<std::vector<float> >& loaded_tract_data,tipl::shape<3>& geo);
 void MainWindow::loadFib(QString filename,bool presentation_mode)
 {
     std::string file_name = filename.toLocal8Bit().begin();
@@ -314,7 +314,7 @@ void MainWindow::loadFib(QString filename,bool presentation_mode)
         tracking_windows.back()->tractWidget->load_tracts(QStringList() << filename);
         if(filename.endsWith("tck"))
         {
-            tipl::geometry<3> geo;
+            tipl::shape<3> geo;
             shift_track_for_tck(tracking_windows.back()->tractWidget->tract_models.back()->get_tracts(),geo);
         }
     }
@@ -1052,7 +1052,7 @@ bool dcm2src(QStringList files,std::ostream& out)
                 dicom_files[index]->bvalue = 0.0f;
                 dicom_files[index]->bvec = tipl::vector<3>(0.0f,0.0f,0.0f);
             }
-            if(dicom_files[index]->image.geometry() != dicom_files[index]->image.geometry())
+            if(dicom_files[index]->image.shape() != dicom_files[index]->image.shape())
             {
                 out << "Inconsistent image dimension." << std::endl;
                 return false;
@@ -1099,7 +1099,7 @@ bool dcm2src(QStringList files,std::ostream& out)
         {
             float reso = *std::min_element(vs.begin(),vs.end());
             tipl::vector<3,float> new_vs(reso,reso,reso);
-            tipl::image<float,3> J(tipl::geometry<3>(
+            tipl::image<float,3> J(tipl::shape<3>(
                     int(std::ceil(float(I.width())*vs[0]/new_vs[0])),
                     int(std::ceil(float(I.height())*vs[1]/new_vs[1])),
                     int(std::ceil(float(I.depth())*vs[2]/new_vs[2]))));

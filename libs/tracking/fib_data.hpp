@@ -79,7 +79,7 @@ public:
 class fib_data;
 class tracking_data{
 public:
-    tipl::geometry<3> dim;
+    tipl::shape<3> dim;
     tipl::vector<3> vs;
     unsigned char fib_num;
     std::string threshold_name,dt_threshold_name;
@@ -123,12 +123,12 @@ private:
     unsigned int image_index = 0;
 public:
     template<typename value_type>
-    item(const std::string& name_,const value_type* pointer,const tipl::geometry<3>& dim_):
+    item(const std::string& name_,const value_type* pointer,const tipl::shape<3>& dim_):
         image_data(tipl::make_image(pointer,dim_)),name(name_)
     {
         set_scale(image_data.begin(),image_data.end());
     }
-    item(const std::string& name_,const tipl::geometry<3>& dim_,gz_mat_read* mat_reader_,unsigned int index_):
+    item(const std::string& name_,const tipl::shape<3>& dim_,gz_mat_read* mat_reader_,unsigned int index_):
         image_data(tipl::make_image((const float*)nullptr,dim_)),mat_reader(mat_reader_),image_index(index_),name(name_)
     {
         image_ready = false;
@@ -148,7 +148,7 @@ public:
     tipl::image<unsigned int,3> color_map_buf;
 
     // for other slice in QSDR, allow for loading t1w-based ROIs in QSDR fib
-    tipl::geometry<3> native_geo;
+    tipl::shape<3> native_geo;
     tipl::transformation_matrix<float> native_trans;
 
     template<class input_iterator>
@@ -174,7 +174,7 @@ public:
     std::string report,steps,fib_file_name;
     gz_mat_read mat_reader;
 public:
-    tipl::geometry<3> dim;
+    tipl::shape<3> dim;
     tipl::vector<3> vs;
     tipl::matrix<4,4,float> trans_to_mni;
     bool is_human_data = true;
@@ -193,7 +193,7 @@ public:
 private:
     mutable tipl::image<tipl::vector<3,float>,3 > native_position;
 public:
-    tipl::geometry<3> native_geo;
+    tipl::shape<3> native_geo;
     tipl::vector<3> native_vs;
     const tipl::image<tipl::vector<3,float>,3 >& get_native_position(void) const;
 public:
@@ -238,7 +238,7 @@ public:
             error_msg = "No spatial mapping found for warpping MNI images";
             return false;
         }
-        image_type J(s2t.geometry()); // subject space image
+        image_type J(s2t.shape()); // subject space image
 
         // from template space to mni image's space
         auto T = tipl::from_space(template_to_mni).to(trans);
@@ -259,8 +259,8 @@ public:
         vs[0] = vs[1] = vs[2] = 1.0;
         trans_to_mni.identity();
     }
-    fib_data(tipl::geometry<3> dim_,tipl::vector<3> vs_);
-    fib_data(tipl::geometry<3> dim_,tipl::vector<3> vs_,const tipl::matrix<4,4,float>& trans_to_mni_);
+    fib_data(tipl::shape<3> dim_,tipl::vector<3> vs_);
+    fib_data(tipl::shape<3> dim_,tipl::vector<3> vs_,const tipl::matrix<4,4,float>& trans_to_mni_);
 public:
     bool load_from_file(const char* file_name);
     bool load_from_mat(void);
@@ -286,7 +286,7 @@ public:
 
 template<typename fib_fa_type,typename fun1,typename fun2>
 void evaluate_connection(
-        const tipl::geometry<3>& dim,
+        const tipl::shape<3>& dim,
         float otsu,
         const fib_fa_type& fib_fa,
         fun1 dir,
@@ -347,7 +347,7 @@ void evaluate_connection(
 
 template<typename fib_fa_type,typename fun>
 std::pair<float,float> evaluate_fib(
-        const tipl::geometry<3>& dim,
+        const tipl::shape<3>& dim,
         float otsu,
         const fib_fa_type& fib_fa,
         fun dir,

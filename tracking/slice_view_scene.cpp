@@ -357,7 +357,7 @@ bool slice_view_scene::command(QString cmd,QString param,QString param2)
 
 bool slice_view_scene::to_3d_space_single_slice(float x,float y,tipl::vector<3,float>& pos)
 {
-    tipl::geometry<3> geo(cur_tracking_window.current_slice->dim);
+    tipl::shape<3> geo(cur_tracking_window.current_slice->dim);
     if(cur_tracking_window.slice_view_flip_x())
         x = (cur_tracking_window.cur_dim ? geo[0]:geo[1])-x;
     if(cur_tracking_window.slice_view_flip_y())
@@ -367,7 +367,7 @@ bool slice_view_scene::to_3d_space_single_slice(float x,float y,tipl::vector<3,f
 
 bool slice_view_scene::to_3d_space(float x,float y,tipl::vector<3,float>& pos)
 {
-    tipl::geometry<3> geo(cur_tracking_window.current_slice->dim);
+    tipl::shape<3> geo(cur_tracking_window.current_slice->dim);
     float display_ratio = cur_tracking_window.get_scene_zoom();
     x /= display_ratio;
     y /= display_ratio;
@@ -530,7 +530,7 @@ void slice_view_scene::show_slice(void)
                                 int(dim[dim_order[uint8_t(cur_dim)][0]]*scale*mosaic_column_count),
                                 int(dim[dim_order[uint8_t(cur_dim)][1]]*scale*mosaic_row_count)),QImage::Format_RGB32);
         QPainter painter(&view_image);
-        tipl::geometry<2> mosaic_tile_geo;
+        tipl::shape<2> mosaic_tile_geo;
         {
             int old_z = cur_tracking_window.current_slice->slice_pos[cur_tracking_window.cur_dim];
             unsigned int skip_slices = skip_row*mosaic_column_count;
@@ -678,7 +678,7 @@ void slice_view_scene::mouseDoubleClickEvent ( QGraphicsSceneMouseEvent * mouseE
 
 void slice_view_scene::adjust_xy_to_layout(float& X,float& Y)
 {
-    tipl::geometry<3> geo(cur_tracking_window.current_slice->dim);
+    tipl::shape<3> geo(cur_tracking_window.current_slice->dim);
     float display_ratio = cur_tracking_window.get_scene_zoom();
     if(cur_tracking_window["roi_layout"].toInt() == 1)
     {
@@ -849,7 +849,7 @@ void slice_view_scene::mousePressEvent ( QGraphicsSceneMouseEvent * mouseEvent )
 }
 void slice_view_scene::new_annotated_image(void)
 {
-    tipl::geometry<3> geo(cur_tracking_window.current_slice->dim);
+    tipl::shape<3> geo(cur_tracking_window.current_slice->dim);
     float display_ratio = cur_tracking_window.get_scene_zoom();
     if(cur_tracking_window["roi_layout"].toInt() == 0)
         annotated_image = view_image;
@@ -876,7 +876,7 @@ void slice_view_scene::mouseMoveEvent ( QGraphicsSceneMouseEvent * mouseEvent )
         return;
     if (!mouse_down)
         return;
-    tipl::geometry<3> geo(cur_tracking_window.current_slice->dim);
+    tipl::shape<3> geo(cur_tracking_window.current_slice->dim);
     float Y = mouseEvent->scenePos().y();
     float X = mouseEvent->scenePos().x();
     float display_ratio = cur_tracking_window.get_scene_zoom();
@@ -1036,7 +1036,7 @@ void slice_view_scene::mouseReleaseEvent ( QGraphicsSceneMouseEvent * mouseEvent
         return;
     }
 
-    tipl::geometry<3> geo(cur_tracking_window.current_slice->dim);
+    tipl::shape<3> geo(cur_tracking_window.current_slice->dim);
     float display_ratio = cur_tracking_window.get_scene_zoom();
 
 
@@ -1084,7 +1084,7 @@ void slice_view_scene::mouseReleaseEvent ( QGraphicsSceneMouseEvent * mouseEvent
             for(unsigned int index = 0;index < sel_point.size();++index)
                 qpoints[index] = QPoint(sel_point[index][0],sel_point[index][1]);
             paint.drawPolygon(&*qpoints.begin(),qpoints.size() - 1);
-            tipl::geometry<2> geo2(bitmap.width(),bitmap.height());
+            tipl::shape<2> geo2(bitmap.width(),bitmap.height());
             for (tipl::pixel_index<2>index(geo2); index < geo2.size();++index)
             {
                 tipl::vector<3,float> pos;

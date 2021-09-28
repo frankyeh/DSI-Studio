@@ -23,7 +23,7 @@ nn_connectometry_analysis::nn_connectometry_analysis(std::shared_ptr<fib_data> h
             // create Ib as the salient map background
             int plane_size = handle->dim.plane_size();
             // skip top 2 slices
-            tipl::image<float,2> Itt(tipl::geometry<2>(handle->dim[0],handle->dim[1]*int(handle->dim[2]/skip_slice-1)));
+            tipl::image<float,2> Itt(tipl::shape<2>(handle->dim[0],handle->dim[1]*int(handle->dim[2]/skip_slice-1)));
             for(int z = 0,i = 0;z < It.depth() && i+plane_size <= Itt.size();z += skip_slice,i += plane_size)
             {
                 std::copy(It.begin()+z*plane_size,
@@ -163,11 +163,11 @@ bool nn_connectometry_analysis::run(const std::string& net_string_)
         {
             fp_data.data = std::move(fps);
             fp_data.data_label = selected_label;
-            fp_data.input = tipl::geometry<3>(fp_dimension,1,1);
+            fp_data.input = tipl::shape<3>(fp_dimension,1,1);
             if(is_regression)
-                fp_data.output = tipl::geometry<3>(1,1,1);
+                fp_data.output = tipl::shape<3>(1,1,1);
             else
-                fp_data.output = tipl::geometry<3>(1,1,selected_label_max+1);
+                fp_data.output = tipl::shape<3>(1,1,selected_label_max+1);
         }
     }
 
@@ -380,7 +380,7 @@ void nn_connectometry_analysis::get_salient_map(tipl::color_image& I)
     }
     if(!w_map.empty())
     {
-        I.resize(tipl::geometry<2>(w_map[0].width()*w_map.size(),w_map[0].height()));
+        I.resize(tipl::shape<2>(w_map[0].width()*w_map.size(),w_map[0].height()));
         for(int i = 0;i < w_map.size();++i)
             tipl::draw(w_map[i],I,tipl::vector<2>(i*w_map[0].width(),0));
     }

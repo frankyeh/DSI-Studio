@@ -13,7 +13,7 @@ bool apply_warping(const char* from,
 bool apply_unwarping_tt(const char* from,
                         const char* to,
                         const tipl::image<tipl::vector<3>,3>& from2to,
-                        tipl::geometry<3> new_geo,
+                        tipl::shape<3> new_geo,
                         tipl::vector<3> new_vs,
                         const tipl::matrix<4,4,float>& new_trans_to_mni,
                         std::string& error);
@@ -49,7 +49,7 @@ int after_warp(tipl::image<tipl::vector<3>,3>& to2from,
                 std::string filename_warp = filename+".wp.tt.gz";
                 std::cout << "apply warping to " << filename << std::endl;
                 if(!apply_unwarping_tt(filename.c_str(),filename_warp.c_str(),from2to,
-                                       to2from.geometry(),to_vs,to_trans,error))
+                                       to2from.shape(),to_vs,to_trans,error))
                 {
                     std::cout << "ERROR: " << error <<std::endl;
                     return 1;
@@ -84,7 +84,7 @@ int reg(void)
             std::cout << "ERROR: cannot open or parse warp file " << po.get("warp") << std::endl;
             return 1;
         }
-        tipl::geometry<3> to_dim,from_dim;
+        tipl::shape<3> to_dim,from_dim;
         const float* to2from_ptr = nullptr;
         const float* from2to_ptr = nullptr;
         unsigned int row,col;
@@ -130,12 +130,12 @@ int reg(void)
         }
     }
 
-    if(!from2.empty() && from.geometry() != from2.geometry())
+    if(!from2.empty() && from.shape() != from2.shape())
     {
         std::cout << "from2 image has a dimension different from from image" << std::endl;
         return 1;
     }
-    if(!to2.empty() && to.geometry() != to2.geometry())
+    if(!to2.empty() && to.shape() != to2.shape())
     {
         std::cout << "to2 image has a dimension different from tolate image" << std::endl;
         return 1;
@@ -154,7 +154,7 @@ int reg(void)
                                  terminated);
 
     std::cout << T;
-    tipl::image<float,3> from_(to.geometry()),from2_;
+    tipl::image<float,3> from_(to.shape()),from2_;
 
 
     tipl::resample_mt(from,from_,T,is_label_image(from) ? tipl::nearest : interpo_method);
@@ -162,7 +162,7 @@ int reg(void)
 
     if(!from2.empty())
     {
-        from2_.resize(to.geometry());
+        from2_.resize(to.shape());
         tipl::resample_mt(from2,from2_,T,is_label_image(from2) ? tipl::nearest : interpo_method);
     }
     auto r2 = tipl::correlation(from_.begin(),from_.end(),to.begin());
@@ -203,7 +203,7 @@ int reg(void)
 
     // calculate inverted to2from
     {
-        from2to.resize(from.geometry());
+        from2to.resize(from.shape());
         tipl::invert_displacement(t2f_dis,f2t_dis);
         tipl::inv_displacement_to_mapping(f2t_dis,from2to,T);
     }
@@ -235,12 +235,12 @@ int reg(void)
             return 1;
         }
         out.write("to2from",&to2from[0][0],3,to2from.size());
-        out.write("to_dim",to2from.geometry());
+        out.write("to_dim",to2from.shape());
         out.write("to_vs",to_vs);
         out.write("to_trans",to_trans);
 
         out.write("from2to",&from2to[0][0],3,from2to.size());
-        out.write("from_dim",from.geometry());
+        out.write("from_dim",from.shape());
         out.write("from_vs",from_vs);
         out.write("from_trans",from_trans);
         std::cout << "save mapping to " << filename << std::endl;

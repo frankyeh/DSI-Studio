@@ -344,7 +344,7 @@ void RegionTableWidget::draw_region(const tipl::color_image& slice_image,float d
 
         for (uint32_t roi_index = 0;roi_index < checked_regions.size();++roi_index)
         {
-            tipl::image<uint8_t,2> detect_edge(slice_image.geometry());
+            tipl::image<uint8_t,2> detect_edge(slice_image.shape());
             auto color = checked_regions[roi_index]->show_region.color;
             float r = checked_regions[roi_index]->resolution_ratio;
             bool draw_region = (cur_tracking_window["roi_edge"].toInt() == 0 && color.a >= 128);
@@ -603,7 +603,7 @@ void get_roi_label(QString file_name,std::map<int,std::string>& label_map,
 bool is_label_image(const tipl::image<float,3>& I);
 bool load_nii(std::shared_ptr<fib_data> handle,
               const std::string& file_name,
-              std::vector<std::pair<tipl::geometry<3>,tipl::matrix<4,4,float> > >& transform_lookup,
+              std::vector<std::pair<tipl::shape<3>,tipl::matrix<4,4,float> > >& transform_lookup,
               std::vector<std::shared_ptr<ROIRegion> >& regions,
               std::vector<std::string>& names,
               std::string& error_msg,
@@ -624,7 +624,7 @@ bool load_nii(std::shared_ptr<fib_data> handle,
             from = tmp;
         else
         {
-            from.resize(tmp.geometry());
+            from.resize(tmp.shape());
             for(size_t i = 0;i < from.size();++i)
                 from[i] = (tmp[i] == 0.0f ? 0:1);
         }
@@ -632,14 +632,14 @@ bool load_nii(std::shared_ptr<fib_data> handle,
 
     {
         std::cout << "DWI dimension=" << handle->dim << std::endl;
-        std::cout << "NIFTI dimension=" << from.geometry() << std::endl;
+        std::cout << "NIFTI dimension=" << from.shape() << std::endl;
     }
     std::vector<unsigned short> value_list;
     std::vector<unsigned short> value_map(std::numeric_limits<unsigned short>::max()+1);
 
     {
         unsigned short max_value = 0;
-        for (tipl::pixel_index<3>index(from.geometry());index < from.size();++index)
+        for (tipl::pixel_index<3>index(from.shape());index < from.size();++index)
         {
             if(from[index.index()] >= value_map.size())
                 return false;
@@ -670,14 +670,14 @@ bool load_nii(std::shared_ptr<fib_data> handle,
     bool scale_image = false;
 
 
-    if(from.geometry() != handle->dim)
+    if(from.shape() != handle->dim)
     {
         std::cout << "NIFTI file has a different dimension from DWI." << std::endl;
 
         if(handle->is_qsdr)
         {
             for(unsigned int index = 0;index < handle->view_item.size();++index)
-                if(handle->view_item[index].native_geo == from.geometry())
+                if(handle->view_item[index].native_geo == from.shape())
                 {
                     if(handle->get_native_position().empty())
                     {
@@ -699,7 +699,7 @@ bool load_nii(std::shared_ptr<fib_data> handle,
         }
 
         for(unsigned int index = 0;index < transform_lookup.size();++index)
-            if(from.geometry() == transform_lookup[index].first)
+            if(from.shape() == transform_lookup[index].first)
             {
                 std::cout << "applying loaded t1wt2w transformation." << std::endl;
                 convert = transform_lookup[index].second;
@@ -782,9 +782,9 @@ bool load_nii(std::shared_ptr<fib_data> handle,
     }
 
     std::vector<std::vector<tipl::vector<3,short> > > region_points(value_list.size());
-    if(from.geometry() == handle->dim)
+    if(from.shape() == handle->dim)
     {
-        for (tipl::pixel_index<3>index(from.geometry());index < from.size();++index)
+        for (tipl::pixel_index<3>index(from.shape());index < from.size();++index)
             if(from[index.index()])
                 region_points[value_map[from[index.index()]]].push_back(tipl::vector<3,short>(index.x(), index.y(),index.z()));
     }
@@ -792,13 +792,13 @@ bool load_nii(std::shared_ptr<fib_data> handle,
     {
         if(has_transform)
         {
-            tipl::geometry<3> geo = handle->dim;
+            tipl::shape<3> geo = handle->dim;
             for (tipl::pixel_index<3>index(geo);index < geo.size();++index)
             {
                 tipl::vector<3> p(index.begin()); // point in subject space
                 p.to(convert); // point in "from" space
                 p.round();
-                if (from.geometry().is_valid(p))
+                if (from.shape().is_valid(p))
                 {
                     unsigned int value = from.at(uint32_t(p[0]),uint32_t(p[1]),uint32_t(p[2]));
                     if(value)
@@ -812,7 +812,7 @@ bool load_nii(std::shared_ptr<fib_data> handle,
             float r = float(handle->dim[0])/float(from.width());
             if(r <= 1.0f)
             {
-                for (tipl::pixel_index<3>index(from.geometry());index < from.size();++index)
+                for (tipl::pixel_index<3>index(from.shape());index < from.size();++index)
                 if(from[index.index()])
                     region_points[value_map[from[index.index()]]].
                             push_back(tipl::vector<3,short>(r*index.x(), r*index.y(),r*index.z()));
@@ -848,7 +848,7 @@ bool load_nii(std::shared_ptr<fib_data> handle,
 bool RegionTableWidget::load_multiple_roi_nii(QString file_name,bool is_mni_image)
 {
 
-    std::vector<std::pair<tipl::geometry<3>,tipl::matrix<4,4,float> > > transform_lookup;
+    std::vector<std::pair<tipl::shape<3>,tipl::matrix<4,4,float> > > transform_lookup;
     // searching for T1/T2 mappings
     for(unsigned int index = 0;index < cur_tracking_window.slices.size();++index)
     {
@@ -1125,8 +1125,8 @@ void RegionTableWidget::save_all_regions_to_4dnifti(void)
     auto checked_regions = get_checked_regions();
     save_region_label_file(checked_regions,filename);
 
-    tipl::geometry<3> geo = cur_tracking_window.handle->dim;
-    tipl::image<unsigned char,4> multiple_I(tipl::geometry<4>(geo[0],geo[1],geo[2],uint32_t(checked_regions.size())));
+    tipl::shape<3> geo = cur_tracking_window.handle->dim;
+    tipl::image<unsigned char,4> multiple_I(tipl::shape<4>(geo[0],geo[1],geo[2],uint32_t(checked_regions.size())));
     tipl::par_for (checked_regions.size(),[&](unsigned int region_index)
     {
         size_t offset = region_index*geo.size();
@@ -1157,7 +1157,7 @@ void RegionTableWidget::save_all_regions(void)
     auto checked_regions = get_checked_regions();
     save_region_label_file(checked_regions,filename);
 
-    tipl::geometry<3> geo = cur_tracking_window.handle->dim;
+    tipl::shape<3> geo = cur_tracking_window.handle->dim;
     tipl::image<unsigned short, 3> mask(geo);
     for (unsigned int i = 0; i < checked_regions.size(); ++i)
         for (unsigned int j = 0; j < checked_regions[i]->size(); ++j)
@@ -1310,7 +1310,7 @@ void RegionTableWidget::show_statistics(void)
 
 void RegionTableWidget::whole_brain_points(std::vector<tipl::vector<3,short> >& points)
 {
-    tipl::geometry<3> geo = cur_tracking_window.handle->dim;
+    tipl::shape<3> geo = cur_tracking_window.handle->dim;
     float threshold = cur_tracking_window.get_fa_threshold();
     for (tipl::pixel_index<3>index(geo); index < geo.size();++index)
     {
@@ -1418,7 +1418,7 @@ void RegionTableWidget::do_action(QString action)
                 for(size_t r = 1;r < checked_regions.size();++r)
                 {
                     checked_regions[r]->SaveToBuffer(B);
-                    if(B.geometry() != A.geometry())
+                    if(B.shape() != A.shape())
                         checked_regions[0]->SaveToBuffer(A,checked_regions[r]->resolution_ratio);
 
                     if(action == "B-A")
@@ -1455,7 +1455,7 @@ void RegionTableWidget::do_action(QString action)
             tipl::const_pointer_image<float,3> I = cur_tracking_window.current_slice->get_source();
             if(I.empty())
                 return;
-            mask.resize(I.geometry());
+            mask.resize(I.shape());
             double m = *std::max_element(I.begin(),I.end());
             bool ok;
             bool flip = false;
@@ -1507,7 +1507,7 @@ void RegionTableWidget::do_action(QString action)
                     {
                         tipl::vector<3,float> pos(region[i]);
                         pos /= cur_region.resolution_ratio;
-                        if(I.geometry().is_valid(pos[0],pos[1],pos[2]) &&
+                        if(I.shape().is_valid(pos[0],pos[1],pos[2]) &&
                             ((I.at(pos[0],pos[1],pos[2]) > threshold) ^ flip))
                                    new_region.push_back(region[i]);
                     }
@@ -1515,7 +1515,7 @@ void RegionTableWidget::do_action(QString action)
                 else
                 for(size_t i = 0;i < region.size();++i)
                 {
-                    if(I.geometry().is_valid(region[i][0],region[i][1],region[i][2]) &&
+                    if(I.shape().is_valid(region[i][0],region[i][1],region[i][2]) &&
                         ((I.at(region[i][0],region[i][1],region[i][2]) > threshold) ^ flip))
                                new_region.push_back(region[i]);
                 }
@@ -1529,7 +1529,7 @@ void RegionTableWidget::do_action(QString action)
                     if(cur_region.resolution_ratio != 1.0f)
                         pos /= cur_region.resolution_ratio;
                     pos.to(iT);
-                    if(I.geometry().is_valid(pos[0],pos[1],pos[2]) &&
+                    if(I.shape().is_valid(pos[0],pos[1],pos[2]) &&
                         ((I.at(pos[0],pos[1],pos[2]) > threshold) ^ flip))
                                new_region.push_back(region[i]);
                 }

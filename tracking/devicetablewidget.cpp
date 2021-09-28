@@ -394,10 +394,10 @@ void DeviceTableWidget::detect_electrodes(void)
 
     // use intensity threshold to locate possible contact regions
     {
-        tipl::image<unsigned char,3> mask(I.geometry());
+        tipl::image<unsigned char,3> mask(I.shape());
         tipl::threshold(I,mask,tipl::maximum(I)*0.98);
 
-        tipl::image<uint32_t,3> label(I.geometry());
+        tipl::image<uint32_t,3> label(I.shape());
         tipl::morphology::connected_component_labeling(mask,label,regions);
 
         float voxel_size = vs[0]*vs[1]*vs[2];
@@ -409,7 +409,7 @@ void DeviceTableWidget::detect_electrodes(void)
             if(regions[i].size() >= min_size && regions[i].size() <= max_size)
             {
                 std::sort(regions[i].begin(),regions[i].end());
-                tipl::pixel_index<3> pos(regions[i][regions[i].size()/2],I.geometry());
+                tipl::pixel_index<3> pos(regions[i][regions[i].size()/2],I.shape());
                 std::vector<float> values;
                 tipl::get_window(pos,I,uint32_t(contact_distance_in_mm),values);
                 if(tipl::minimum(values) > 100)
@@ -426,17 +426,17 @@ void DeviceTableWidget::detect_electrodes(void)
             contact_list.push_back(i);
 
     // calculating distance between contacts
-    tipl::image<float,2> distance(tipl::geometry<2>(uint32_t(contact_list.size()),uint32_t(contact_list.size())));
-    for(tipl::pixel_index<2> p(distance.geometry());p < int(distance.size());++p)
+    tipl::image<float,2> distance(tipl::shape<2>(uint32_t(contact_list.size()),uint32_t(contact_list.size())));
+    for(tipl::pixel_index<2> p(distance.shape());p < int(distance.size());++p)
     {
         uint32_t i = uint32_t(p[0]);
         uint32_t j = uint32_t(p[1]);
         if(i <= j)
             continue;
-        tipl::vector<3> p0(tipl::pixel_index<3>(regions[contact_list[i]][regions[contact_list[i]].size()/2],I.geometry()));
-        tipl::vector<3> p1(tipl::pixel_index<3>(regions[contact_list[j]][regions[contact_list[j]].size()/2],I.geometry()));
+        tipl::vector<3> p0(tipl::pixel_index<3>(regions[contact_list[i]][regions[contact_list[i]].size()/2],I.shape()));
+        tipl::vector<3> p1(tipl::pixel_index<3>(regions[contact_list[j]][regions[contact_list[j]].size()/2],I.shape()));
         p0 -= p1;
-        distance[tipl::pixel_index<2>(j,i,distance.geometry()).index()] = distance[p.index()] = float(p0.length());
+        distance[tipl::pixel_index<2>(j,i,distance.shape()).index()] = distance[p.index()] = float(p0.length());
     }
 
     // grouping
@@ -524,7 +524,7 @@ void DeviceTableWidget::detect_electrodes(void)
             {
                 auto region_id = contact_list[contact_group[i][c]];
                 for(unsigned int j = 0;j < regions[region_id].size();++j)
-                    all_points.push_back(tipl::vector<3>(tipl::pixel_index<3>(regions[region_id][j],I.geometry())));
+                    all_points.push_back(tipl::vector<3>(tipl::pixel_index<3>(regions[region_id][j],I.shape())));
             }
             auto center = std::accumulate(all_points.begin(),all_points.end(),tipl::vector<3>())/float(all_points.size());
 
@@ -600,12 +600,12 @@ void DeviceTableWidget::detect_electrodes(void)
             auto region_id = contact_list[contact_group[i][c]];
             std::vector<tipl::vector<3> > points_contact;
             for(unsigned int j = 0;j < regions[region_id].size();++j)
-                points_contact.push_back(tipl::vector<3>(tipl::pixel_index<3>(regions[region_id][j],I.geometry())));
+                points_contact.push_back(tipl::vector<3>(tipl::pixel_index<3>(regions[region_id][j],I.shape())));
             contact_pos[c] = std::accumulate(points_contact.begin(),points_contact.end(),tipl::vector<3>())/float(points_contact.size());
             contact_2_center[c] = float((contact_pos[c]-tipl::vector<3>(float(I.width())*0.5f,float(I.height())*0.5f,float(I.depth())*0.5f)).length());
         }
 
-        // prepare device geometry
+        // prepare device shape
         auto tip_contact = std::min_element(contact_2_center.begin(),contact_2_center.end())-contact_2_center.begin();
         auto tail_contact = std::max_element(contact_2_center.begin(),contact_2_center.end())-contact_2_center.begin();
         auto tip_pos = contact_pos[uint32_t(tip_contact)];
@@ -683,7 +683,7 @@ void DeviceTableWidget::detect_electrodes(void)
             auto region_id = contact_list[contact];
             for(unsigned int j = 0;j < regions[region_id].size();++j)
             {
-                voxels.push_back(tipl::vector<3>(tipl::pixel_index<3>(regions[region_id][j],I.geometry())));
+                voxels.push_back(tipl::vector<3>(tipl::pixel_index<3>(regions[region_id][j],I.shape())));
                 voxels.back().to(slice->T);
                 voxels.back() *= resotluion_ratio;
             }

@@ -594,7 +594,7 @@ void GLWidget::renderLR()
 
             case 0:
                 {
-                    tipl::geometry<2> geo2(slice->dim[odf_dim==0?1:0],
+                    tipl::shape<2> geo2(slice->dim[odf_dim==0?1:0],
                                            slice->dim[odf_dim==2?1:2]);
                     for(tipl::pixel_index<2> index(geo2);index < geo2.size();++index)
                     {
@@ -1536,15 +1536,15 @@ void GLWidget::makeTracts(void)
 
     if(tract_shader)
     {
-        max_x_map.resize(tipl::geometry<2>(cur_tracking_window.handle->dim.height(),
+        max_x_map.resize(tipl::shape<2>(cur_tracking_window.handle->dim.height(),
                                            cur_tracking_window.handle->dim.depth()));
-        max_y_map.resize(tipl::geometry<2>(cur_tracking_window.handle->dim.width(),
+        max_y_map.resize(tipl::shape<2>(cur_tracking_window.handle->dim.width(),
                                            cur_tracking_window.handle->dim.depth()));
-        max_z_map.resize(tipl::geometry<2>(cur_tracking_window.handle->dim.width(),
+        max_z_map.resize(tipl::shape<2>(cur_tracking_window.handle->dim.width(),
                                            cur_tracking_window.handle->dim.height()));
-        min_x_map.resize(max_x_map.geometry());
-        min_y_map.resize(max_y_map.geometry());
-        min_z_map.resize(max_z_map.geometry());
+        min_x_map.resize(max_x_map.shape());
+        min_y_map.resize(max_y_map.shape());
+        min_z_map.resize(max_z_map.shape());
 
         std::fill(min_x_map.begin(),min_x_map.end(),cur_tracking_window.handle->dim.width());
         std::fill(min_y_map.begin(),min_y_map.end(),cur_tracking_window.handle->dim.height());
@@ -1564,19 +1564,19 @@ void GLWidget::makeTracts(void)
                 int x = int(data_iter[0]);
                 int y = int(data_iter[1]);
                 int z = int(data_iter[2]);
-                if(max_x_map.geometry().is_valid(y,z))
+                if(max_x_map.shape().is_valid(y,z))
                 {
                     size_t pos = size_t(y + z*max_x_map.width());
                     max_x_map[pos] = std::max<float>(max_x_map[pos],data_iter[0]);
                     min_x_map[pos] = std::min<float>(min_x_map[pos],data_iter[0]);
                 }
-                if(max_y_map.geometry().is_valid(x,z))
+                if(max_y_map.shape().is_valid(x,z))
                 {
                     size_t pos = size_t(x + z*max_y_map.width());
                     max_y_map[pos] = std::max<float>(max_y_map[pos],data_iter[1]);
                     min_y_map[pos] = std::min<float>(min_y_map[pos],data_iter[1]);
                 }
-                if(max_z_map.geometry().is_valid(x,y))
+                if(max_z_map.shape().is_valid(x,y))
                 {
                     size_t pos = size_t(x + y*max_z_map.width());
                     max_z_map[pos] = std::max<float>(max_z_map[pos],data_iter[2]);
@@ -1703,21 +1703,21 @@ void GLWidget::makeTracts(void)
                 int y = int(data_iter[1]);
                 int z = int(data_iter[2]);
                 float d = 1.0f;
-                if(max_x_map.geometry().is_valid(y,z))
+                if(max_x_map.shape().is_valid(y,z))
                 {
                     size_t pos = size_t(y + z*max_x_map.width());
                     d += std::min<float>(4.0f,
                                     std::min<float>(std::max<float>(0.0f,max_x_map[pos]-data_iter[0]),
                                                     std::max<float>(0.0f,data_iter[0]-min_x_map[pos])));
                 }
-                if(max_y_map.geometry().is_valid(x,z))
+                if(max_y_map.shape().is_valid(x,z))
                 {
                     size_t pos = size_t(x + z*max_y_map.width());
                     d += std::min<float>(4.0f,
                                     std::min<float>(std::max<float>(0.0f,max_y_map[pos]-data_iter[1]),
                                                     std::max<float>(0.0f,data_iter[1]-min_y_map[pos])));
                 }
-                if(max_z_map.geometry().is_valid(x,y))
+                if(max_z_map.shape().is_valid(x,y))
                 {
                     size_t pos = size_t(x + y*max_z_map.width());
                     d += std::min<float>(4.0f,

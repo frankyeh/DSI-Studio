@@ -9,10 +9,10 @@ struct distortion_map{
     void operator=(const tipl::image<float,3>& d)
     {
         int n = d.width();
-        i1.resize(d.geometry());
-        i2.resize(d.geometry());
-        w1.resize(d.geometry());
-        w2.resize(d.geometry());
+        i1.resize(d.shape());
+        i2.resize(d.shape());
+        w1.resize(d.shape());
+        w2.resize(d.shape());
         int max_n = n-1;
         tipl::par_for(d.height()*d.depth(),[&](int pos)
         {
@@ -48,8 +48,8 @@ struct distortion_map{
         int n = v.width();
         j1.clear();
         j2.clear();
-        j1.resize(v.geometry());
-        j2.resize(v.geometry());
+        j1.resize(v.shape());
+        j2.resize(v.shape());
         tipl::par_for(v.height()*v.depth(),[&](int pos)
         {
             pos *= n;
@@ -86,7 +86,7 @@ struct distortion_map{
         int n2 = n + n;
         int block2 = n*n;
         v.clear();
-        v.resize(v1.geometry());
+        v.resize(v1.shape());
         tipl::par_for(v1.height()*v1.depth(),[&](int pos)
         {
             pos *= n;
@@ -111,7 +111,7 @@ struct distortion_map{
             y.resize(size_t(n2));
             std::copy(v1p,v1p+n,y.begin());
             std::copy(v2p,v2p+n,y.begin()+n);
-            tipl::mat::pseudo_inverse_solve(&M[0],&y[0],&v[0]+pos,tipl::shape(uint32_t(n),uint32_t(n2)));
+            tipl::mat::pseudo_inverse_solve(&M[0],&y[0],&v[0]+pos,tipl::shape<2>(uint32_t(n),uint32_t(n2)));
         });
     }
     void sample_gradient(const tipl::image<float,3>& g1,
@@ -120,7 +120,7 @@ struct distortion_map{
     {
         int n = g1.width();
         new_g.clear();
-        new_g.resize(g1.geometry());
+        new_g.resize(g1.shape());
         tipl::par_for(g1.height()*g1.depth(),[&](int pos)
         {
             pos *= n;
@@ -159,7 +159,7 @@ template<typename image_type>
 void distortion_estimate(const image_type& v1,const image_type& v2,
                          image_type& d)
 {
-    tipl::geometry<3> geo(v1.geometry());
+    tipl::shape<3> geo(v1.shape());
     if(geo.width() > 8)
     {
         image_type vv1,vv2;
@@ -266,13 +266,13 @@ public:
     void swap_b_table(unsigned char dim);
     void flip_dwi(unsigned char type);
     void rotate_one_dwi(unsigned int dwi_index,const tipl::transformation_matrix<double>& affine);
-    void rotate(const tipl::geometry<3>& new_geo,
+    void rotate(const tipl::shape<3>& new_geo,
                 const tipl::vector<3>& new_vs,
                 const tipl::transformation_matrix<double>& affine,
                 const tipl::image<tipl::vector<3>,3>& cdm_dis = tipl::image<tipl::vector<3>,3>(),
                 const tipl::image<float,3>& super_reso_ref = tipl::image<float,3>(),double var = 3.0);
     void resample(float nv);
-    bool arg_to_mni(float resolution,tipl::vector<3>& vs,tipl::geometry<3>& new_geo,tipl::affine_transform<float>& T);
+    bool arg_to_mni(float resolution,tipl::vector<3>& vs,tipl::shape<3>& new_geo,tipl::affine_transform<float>& T);
     bool rotate_to_mni(float resolution);
     void trim(void);
     bool distortion_correction(const char* file_name);

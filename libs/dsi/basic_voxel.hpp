@@ -52,7 +52,7 @@ class Voxel
 private:
     std::vector<std::shared_ptr<BaseProcess> > process_list;
 public:
-    tipl::geometry<3> dim;
+    tipl::shape<3> dim;
     tipl::vector<3> vs;
 public:
 

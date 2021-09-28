@@ -230,7 +230,7 @@ void FileBrowser::on_subject_list_currentCellChanged(int currentRow, int , int p
             QStringList item_list;
             item_list << mat_file_list[i];
             unsigned int r,c;
-            tipl::geometry<3> dim;
+            tipl::shape<3> dim;
             tipl::vector<3> vs;
             if(!mat.read("dimension",dim) || !mat.read("voxel_size",vs))
                 continue;
@@ -377,7 +377,7 @@ void FileBrowser::preview_image(QString file_name)
         gz_mat_read mat;
         if(mat.load_from_file(file_name.toStdString().c_str()))
         {
-            tipl::geometry<3> dim;
+            tipl::shape<3> dim;
             if(mat.read("dimension",dim))
             {
                 preview_data.resize(dim);

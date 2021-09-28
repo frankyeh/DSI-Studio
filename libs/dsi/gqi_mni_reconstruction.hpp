@@ -17,7 +17,7 @@ void match_template_resolution(tipl::image<float,3>& VG,
 class DWINormalization  : public BaseProcess
 {
 protected:
-    tipl::geometry<3> src_geo;
+    tipl::shape<3> src_geo;
 protected:
     tipl::image<tipl::vector<3>,3> cdm_dis,mapping;
 protected:
@@ -135,11 +135,11 @@ public:
                     throw std::runtime_error("reconstruction canceled");
             }
 
-            tipl::image<float,3> VFF(VG.geometry()),VFF2;
+            tipl::image<float,3> VFF(VG.shape()),VFF2;
             tipl::resample(VF,VFF,affine,tipl::cubic);
             if(dual_modality)
             {
-                VFF2.resize(VG.geometry());
+                VFF2.resize(VG.shape());
                 tipl::resample(VF2,VFF2,affine,tipl::cubic);
             }
 
@@ -216,7 +216,7 @@ public:
             for(unsigned char dim = 0;dim < 3;++dim)
             {
                 bmin[dim] = std::max<int>(0,bmin[dim]-5);
-                bmax[dim] = std::min<int>(int(VG.geometry()[dim])-1,bmax[dim]+5);
+                bmax[dim] = std::min<int>(int(VG.shape()[dim])-1,bmax[dim]+5);
             }
             // update cdm_dis
             tipl::crop(cdm_dis,bmin,bmax);
@@ -240,7 +240,7 @@ public:
             std::cout << "output resolution changed to " << voxel.vs[0] << std::endl;
 
             VG_ratio = voxel.vs[0]/VGvs[0];
-            tipl::geometry<3> new_geo(VG.geometry());
+            tipl::shape<3> new_geo(VG.shape());
             new_geo[0] /= VG_ratio;
             new_geo[1] /= VG_ratio;
             new_geo[2] /= VG_ratio;
@@ -253,7 +253,7 @@ public:
                 tipl::vector<3> p(pos);
                 p *= VG_ratio;
                 tipl::interpolation<tipl::linear_weighting,3> interp;
-                if(!interp.get_location(VG.geometry(),p))
+                if(!interp.get_location(VG.shape(),p))
                     return;
                 interp.estimate(cdm_dis,dis);
                 // here the displacement values are still in the VGvs resolution
@@ -269,7 +269,7 @@ public:
 
         // assign mask
         {
-            voxel.mask.resize(VG.geometry());
+            voxel.mask.resize(VG.shape());
             for(size_t index = 0;index < VG.size();++index)
                 voxel.mask[index] = VG[index] > 0.0f ? 1:0;
             for(int i = 0;i < 5;++i)
@@ -278,7 +278,7 @@ public:
 
         // compute mappings
         {
-            mapping.resize(cdm_dis.geometry());
+            mapping.resize(cdm_dis.shape());
             mapping.for_each_mt([&](tipl::vector<3>& mapping,tipl::pixel_index<3> pos)
             {
                 tipl::vector<3> Jpos(pos);
@@ -294,13 +294,13 @@ public:
         // setup voxel data for QSDR
         {
             voxel.qsdr = true;
-            voxel.dim = VG.geometry();
+            voxel.dim = VG.shape();
             voxel.vs = VGvs;
             voxel.trans_to_mni[0] = -VGvs[0];
             voxel.trans_to_mni[5] = -VGvs[1];
             voxel.trans_to_mni[10] = VGvs[2];
             std::cout << "output resolution:" << VGvs[0] << std::endl;
-            std::cout << "output dimension:" << VG.geometry() << std::endl;
+            std::cout << "output dimension:" << VG.shape() << std::endl;
 
 
             if(is_human_template && !partial_reconstruction) // if default template is used
@@ -316,11 +316,11 @@ public:
                 other_image.resize(voxel.other_image.size());
                 for(unsigned int i = 0;i < voxel.other_image.size();++i)
                 {
-                    other_image[i].resize(VG.geometry());
+                    other_image[i].resize(VG.shape());
                     tipl::par_for(voxel.mask.size(),[&](size_t index)
                     {
                         tipl::vector<3,float> Jpos(mapping[index]);
-                        if(voxel.other_image[i].geometry() != src_geo)
+                        if(voxel.other_image[i].shape() != src_geo)
                             voxel.other_image_trans[i](Jpos);
                         tipl::estimate(voxel.other_image[i],Jpos,other_image[i][index]);
                     });
@@ -368,7 +368,7 @@ public:
         {
             std::copy(affine.data,affine.data+9,data.jacobian.begin());
             tipl::pixel_index<3> pos_index(data.voxel_index,voxel.dim);
-            if(!cdm_dis.geometry().is_edge(pos_index))
+            if(!cdm_dis.shape().is_edge(pos_index))
             {
                 tipl::matrix<3,3,float> M;
                 tipl::jacobian_dis_at(cdm_dis,pos_index,M.begin());
@@ -392,7 +392,7 @@ public:
         for(unsigned int index = 0;index < other_image.size();++index)
         {
             mat_writer.write(voxel.other_image_name[index].c_str(),other_image[index]);
-            mat_writer.write((voxel.other_image_name[index]+"_dimension").c_str(),voxel.other_image[index].geometry());
+            mat_writer.write((voxel.other_image_name[index]+"_dimension").c_str(),voxel.other_image[index].shape());
             mat_writer.write((voxel.other_image_name[index]+"_trans").c_str(),voxel.other_image_trans[index]);
         }
         mat_writer.write("trans",voxel.trans_to_mni.begin(),4,4);

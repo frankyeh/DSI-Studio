@@ -786,8 +786,8 @@ void paint_track_on_volume(tipl::image<unsigned char,3>& track_map,const std::ve
 {
     for(size_t j = 0;j < tracks.size();j += 3)
     {
-        tipl::pixel_index<3> p(std::round(tracks[j]),std::round(tracks[j+1]),std::round(tracks[j+2]),track_map.geometry());
-        if(track_map.geometry().is_valid(p))
+        tipl::pixel_index<3> p(std::round(tracks[j]),std::round(tracks[j+1]),std::round(tracks[j+2]),track_map.shape());
+        if(track_map.shape().is_valid(p))
             track_map[p.index()] = 1;
         if(j)
         {
@@ -795,8 +795,8 @@ void paint_track_on_volume(tipl::image<unsigned char,3>& track_map,const std::ve
             {
                 tipl::pixel_index<3> p2(std::round(tracks[j]*r+tracks[j-3]*(1-r)),
                                          std::round(tracks[j+1]*r+tracks[j-2]*(1-r)),
-                                         std::round(tracks[j+2]*r+tracks[j-1]*(1-r)),track_map.geometry());
-                if(track_map.geometry().is_valid(p2))
+                                         std::round(tracks[j+2]*r+tracks[j-1]*(1-r)),track_map.shape());
+                if(track_map.shape().is_valid(p2))
                     track_map[p2.index()] = 1;
             }
         }
@@ -815,7 +815,7 @@ void TractTableWidget::deep_learning_train(void)
     // save atlas as a nifti file
     if(cur_tracking_window.handle->is_qsdr) //QSDR condition
     {
-        tipl::image<int,4> atlas(tipl::geometry<4>(
+        tipl::image<int,4> atlas(tipl::shape<4>(
                 cur_tracking_window.handle->dim[0],
                 cur_tracking_window.handle->dim[1],
                 cur_tracking_window.handle->dim[2],
@@ -1452,7 +1452,7 @@ void TractTableWidget::trim_tracts(void)
     emit need_update();
 }
 
-void TractTableWidget::export_tract_density(tipl::geometry<3>& dim,
+void TractTableWidget::export_tract_density(tipl::shape<3>& dim,
                                             tipl::vector<3,float> vs,
                                             tipl::matrix<4,4,float> transformation,bool color,bool end_point)
 {

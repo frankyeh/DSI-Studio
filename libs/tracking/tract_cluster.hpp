@@ -87,7 +87,7 @@ public:
 
 class TractCluster : public BasicCluster
 {
-    tipl::geometry<3> dim;
+    tipl::shape<3> dim;
     unsigned int w,wh;
     float error_distance;
     std::mutex  lock_merge;

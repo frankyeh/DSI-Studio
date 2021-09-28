@@ -12,7 +12,7 @@ public:
     uint32_t view_id = 0;
     bool is_diffusion_space = true;
     tipl::matrix<4,4,float> T,invT; // T: image->diffusion iT: diffusion->image
-    tipl::geometry<3> dim;
+    tipl::shape<3> dim;
     tipl::vector<3> vs;
 public:
     bool is_overlay = false;

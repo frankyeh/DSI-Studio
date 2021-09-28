@@ -36,7 +36,7 @@ bool odf_data::read(gz_mat_read& mat_reader)
         return false;
 
     // dimension
-    tipl::geometry<3> dim;
+    tipl::shape<3> dim;
     if (!mat_reader.read("dimension",dim))
         return false;
     // odf_vertices
@@ -142,14 +142,14 @@ tipl::const_pointer_image<float,3> item::get_image(void)
         if (!mat_reader->read(image_index,row,col,buf))
         {
             std::cout << "ERROR: reading " << name << std::endl;
-            dummy.resize(image_data.geometry());
-            image_data = tipl::make_image(&*dummy.begin(),dummy.geometry());
+            dummy.resize(image_data.shape());
+            image_data = tipl::make_image(&*dummy.begin(),dummy.shape());
         }
         else
         {
             std::cout << name << " loaded" << std::endl;
             mat_reader->in->flush();
-            image_data = tipl::make_image(buf,image_data.geometry());
+            image_data = tipl::make_image(buf,image_data.shape());
         }
         has_gui = has_gui_;
         image_ready = true;
@@ -500,7 +500,7 @@ bool tracking_data::is_white_matter(const tipl::vector<3,float>& pos,float t) co
 }
 
 size_t match_template(float volume);
-void initial_LPS_nifti_srow(tipl::matrix<4,4,float>& T,const tipl::geometry<3>& geo,const tipl::vector<3>& vs)
+void initial_LPS_nifti_srow(tipl::matrix<4,4,float>& T,const tipl::shape<3>& geo,const tipl::vector<3>& vs)
 {
     std::fill(T.begin(),T.end(),0.0f);
     T[0] = -vs[0];
@@ -511,12 +511,12 @@ void initial_LPS_nifti_srow(tipl::matrix<4,4,float>& T,const tipl::geometry<3>& 
     T[15] = 1.0f;
 }
 
-fib_data::fib_data(tipl::geometry<3> dim_,tipl::vector<3> vs_):dim(dim_),vs(vs_)
+fib_data::fib_data(tipl::shape<3> dim_,tipl::vector<3> vs_):dim(dim_),vs(vs_)
 {
     initial_LPS_nifti_srow(trans_to_mni,dim,vs);
 }
 
-fib_data::fib_data(tipl::geometry<3> dim_,tipl::vector<3> vs_,const tipl::matrix<4,4,float>& trans_to_mni_):
+fib_data::fib_data(tipl::shape<3> dim_,tipl::vector<3> vs_,const tipl::matrix<4,4,float>& trans_to_mni_):
     dim(dim_),vs(vs_),trans_to_mni(trans_to_mni_)
 {}
 
@@ -542,7 +542,7 @@ bool fib_data::load_from_file(const char* file_name)
             header.toLPS(x,false);
             header.toLPS(y,false);
             header.toLPS(z,false);
-            dim = x.geometry();
+            dim = x.shape();
             dir.check_index(0);
             dir.num_fiber = 1;
             dir.findex_buf.resize(1);
@@ -587,7 +587,7 @@ bool fib_data::load_from_file(const char* file_name)
                 header.toLPS(z,false);
                 if(i == 0)
                 {
-                    dim = x.geometry();
+                    dim = x.shape();
                     dir.check_index(fib_num-1);
                     dir.num_fiber = fib_num;
                     dir.findex_buf.resize(fib_num);
@@ -660,7 +660,7 @@ bool fib_data::load_from_file(const char* file_name)
     }
     if(!I.empty())
     {
-        mat_reader.add("dimension",I.geometry());
+        mat_reader.add("dimension",I.shape());
         mat_reader.add("voxel_size",vs);
         mat_reader.add("image",I);
         load_from_mat();
@@ -698,7 +698,7 @@ bool fib_data::save_mapping(const std::string& index_name,const std::string& fil
 {
     if(index_name == "fiber" || index_name == "dirs") // command line exp use "dirs"
     {
-        tipl::image<float,4> buf(tipl::geometry<4>(
+        tipl::image<float,4> buf(tipl::shape<4>(
                                  dim.width(),
                                  dim.height(),
                                  dim.depth(),3*uint32_t(dir.num_fiber)));
@@ -713,7 +713,7 @@ bool fib_data::save_mapping(const std::string& index_name,const std::string& fil
     if(index_name.length() == 4 && index_name.substr(0,3) == "dir" && index_name[3]-'0' >= 0 && index_name[3]-'0' < int(dir.num_fiber))
     {
         unsigned char dir_index = uint8_t(index_name[3]-'0');
-        tipl::image<float,4> buf(tipl::geometry<4>(dim[0],dim[1],dim[2],3));
+        tipl::image<float,4> buf(tipl::shape<4>(dim[0],dim[1],dim[2],3));
         for(unsigned int j = 0,ptr = 0;j < 3;++j)
         for(unsigned int index = 0;index < dim.size();++index,++ptr)
             if(dir.get_fa(index,dir_index) > 0.0f)
@@ -722,7 +722,7 @@ bool fib_data::save_mapping(const std::string& index_name,const std::string& fil
     }
     if(index_name == "odfs" && odf.has_odfs())
     {
-        tipl::image<float,4> buf(tipl::geometry<4>(
+        tipl::image<float,4> buf(tipl::shape<4>(
                                  dim.width(),
                                  dim.height(),
                                  dim.depth(),
@@ -762,7 +762,7 @@ bool fib_data::save_mapping(const std::string& index_name,const std::string& fil
     else
     {
         tipl::image<float,3> buf(view_item[index].get_image());
-        if(view_item[index].get_image().geometry() != dim)
+        if(view_item[index].get_image().shape() != dim)
         {
             tipl::image<float,3> new_buf(dim);
             tipl::resample(buf,new_buf,view_item[index].iT,tipl::cubic);
@@ -771,7 +771,7 @@ bool fib_data::save_mapping(const std::string& index_name,const std::string& fil
         return gz_nifti::save_to_file(file_name.c_str(),buf,vs,trans_to_mni);
     }
 }
-bool is_human_size(tipl::geometry<3> dim,tipl::vector<3> vs)
+bool is_human_size(tipl::shape<3> dim,tipl::vector<3> vs)
 {
     return dim[0]*vs[0] > 130 && dim[1]*vs[1] > 180;
 }
@@ -957,17 +957,17 @@ bool fib_data::add_dT_index(const std::string& index_name)
                 tipl::image<float,3> Ibuf,Jbuf;
                 auto J = view_item[j].get_image();
                 auto I = view_item[i].get_image();
-                if(J.geometry() != dim)
+                if(J.shape() != dim)
                 {
-                    std::cout << view_item[j].name << " has a dimension of " << J.geometry() <<
+                    std::cout << view_item[j].name << " has a dimension of " << J.shape() <<
                                  " warpping to the DWI space..." << std::endl;
                     Jbuf.resize(dim);
                     tipl::resample_mt(J,Jbuf,view_item[j].iT);
                     J = Jbuf;
                 }
-                if(I.geometry() != dim)
+                if(I.shape() != dim)
                 {
-                    std::cout << view_item[i].name << " has a dimension of " << I.geometry() <<
+                    std::cout << view_item[i].name << " has a dimension of " << I.shape() <<
                                  " warpping to the DWI space..." << std::endl;
                     Ibuf.resize(dim);
                     tipl::resample_mt(I,Ibuf,view_item[i].iT);
@@ -1092,7 +1092,7 @@ void fib_data::get_voxel_information(int x,int y,int z,std::vector<float>& buf) 
     {
         if(view_item[i].name == "color" || !view_item[i].image_ready)
             continue;
-        if(view_item[i].get_image().geometry() != dim)
+        if(view_item[i].get_image().shape() != dim)
         {
             tipl::vector<3> pos(x,y,z);
             pos.to(view_item[i].iT);
@@ -1470,7 +1470,7 @@ void animal_reg(const tipl::image<float,3>& from,tipl::vector<3> from_vs,
          if(cur_cost < cost)
          {
              cost = cur_cost;
-             T = tipl::transformation_matrix<double>(arg,from.geometry(),from_vs,to.geometry(),to_vs);
+             T = tipl::transformation_matrix<double>(arg,from.shape(),from_vs,to.shape(),to_vs);
          }
     });
 }
@@ -1518,7 +1518,7 @@ void fib_data::run_normalization(bool background,bool inv)
             {
                 std::cout << "loading mapping fields from " << output_file_name << std::endl;
                 t2s.clear();
-                t2s.resize(template_I.geometry());
+                t2s.resize(template_I.shape());
                 s2t.clear();
                 s2t.resize(dim);
                 std::copy(t2s_ptr,t2s_ptr+t2s_col*t2s_row,&t2s[0][0]);
@@ -1585,15 +1585,15 @@ void fib_data::run_normalization(bool background,bool inv)
         if(terminated)
             return;
         prog = 2;
-        tipl::image<float,3> Iss(It.geometry());
+        tipl::image<float,3> Iss(It.shape());
         tipl::resample_mt(Is,Iss,T,tipl::linear);
-        tipl::image<float,3> Iss2(It.geometry());
+        tipl::image<float,3> Iss2(It.shape());
         if(!Is2.empty())
             tipl::resample_mt(Is2,Iss2,T,tipl::linear);
         prog = 3;
         tipl::image<tipl::vector<3>,3> dis,inv_dis;
         tipl::reg::cdm_pre(It,It2,Iss,Iss2);
-        if(Iss2.geometry() == Iss.geometry())
+        if(Iss2.shape() == Iss.shape())
         {
             set_title("dual modality normalization");
             tipl::reg::cdm2(It,It2,Iss,Iss2,dis,terminated);
@@ -1611,7 +1611,7 @@ void fib_data::run_normalization(bool background,bool inv)
         gz_mat_write out(output_file_name.c_str());
         if(out)
         {
-            out.write("to_dim",dis.geometry());
+            out.write("to_dim",dis.shape());
             out.write("to_vs",template_vs);
             out.write("from_dim",dim);
             out.write("from_vs",vs);

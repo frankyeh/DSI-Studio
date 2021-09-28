@@ -68,7 +68,7 @@ void RegToolBox::setup_slice_pos(void)
 {
     if(!It.empty())
     {
-        int range = int(It.geometry()[cur_view]);
+        int range = int(It.shape()[cur_view]);
         ui->slice_pos->setMaximum(range-1);
         ui->slice_pos->setValue(range/2);
     }
@@ -202,9 +202,9 @@ void show_mosaic_slice_at(QGraphicsScene& scene,
     tipl::image<float,2> tmp1,tmp2,tmp;
     tipl::volume2slice(source1,tmp1,cur_view,slice_pos);
     tipl::volume2slice(source2,tmp2,cur_view,slice_pos);
-    if(tmp1.geometry() != tmp2.geometry())
+    if(tmp1.shape() != tmp2.shape())
         return;
-    tmp.resize(tmp1.geometry());
+    tmp.resize(tmp1.shape());
     float c = contrast2/contrast;
     tmp.for_each([&](float& v,tipl::pixel_index<2>& index)
     {
@@ -227,7 +227,7 @@ void show_blend_slice_at(QGraphicsScene& scene,
     tipl::image<float,2> tmp1,tmp2;
     tipl::volume2slice(source1,tmp1,cur_view,slice_pos);
     tipl::volume2slice(source2,tmp2,cur_view,slice_pos);
-    if(tmp1.geometry() != tmp2.geometry())
+    if(tmp1.shape() != tmp2.shape())
         return;
     tipl::color_image buf1,buf2;
     image2rgb(tmp1,buf1,contrast1);
@@ -264,7 +264,7 @@ void RegToolBox::show_image(void)
     if(!It.empty())
     {
 
-        const auto& I_show = (ui->show_second->isChecked() && It2.geometry() == It.geometry() ? It2 : It);
+        const auto& I_show = (ui->show_second->isChecked() && It2.shape() == It.shape() ? It2 : It);
         // show tempalte image on the right
         show_slice_at(It_scene,I_show,cIt,ui->slice_pos->value(),ratio,contrast2,cur_view);
 
@@ -362,9 +362,9 @@ void RegToolBox::on_timer()
     {
         if(J.empty()) // linear registration
         {
-            J_view.resize(It.geometry());
-            tipl::resample_mt((ui->show_second->isChecked() && I2.geometry() == I.geometry() ? I2 : I),
-                              J_view,tipl::transformation_matrix<double>(arg,It.geometry(),Itvs,I.geometry(),Ivs),tipl::linear);
+            J_view.resize(It.shape());
+            tipl::resample_mt((ui->show_second->isChecked() && I2.shape() == I.shape() ? I2 : I),
+                              J_view,tipl::transformation_matrix<double>(arg,It.shape(),Itvs,I.shape(),Ivs),tipl::linear);
 
             show_image();
         }
@@ -373,14 +373,14 @@ void RegToolBox::on_timer()
             if(!t2f_dis.empty())
             {
                 dis_view = t2f_dis;
-                J_view = (ui->show_second->isChecked() && J2.geometry() == J.geometry() ? J2 : J);
-                std::vector<tipl::geometry<3> > geo_stack;
+                J_view = (ui->show_second->isChecked() && J2.shape() == J.shape() ? J2 : J);
+                std::vector<tipl::shape<3> > geo_stack;
                 while(J_view.width() > dis_view.width())
                 {
-                    geo_stack.push_back(J_view.geometry());
+                    geo_stack.push_back(J_view.shape());
                     tipl::downsample_with_padding(J_view,J_view);
                 }
-                if(J_view.geometry() != dis_view.geometry())
+                if(J_view.shape() != dis_view.shape())
                     return;
                 tipl::compose_displacement(J_view,dis_view,J_view2);
                 while(!geo_stack.empty())
@@ -411,18 +411,18 @@ void RegToolBox::on_timer()
 void RegToolBox::linear_reg(tipl::reg::reg_type reg_type,int cost_type)
 {
     status = "linear registration";
-    tipl::image<float,3> J_(It.geometry());
+    tipl::image<float,3> J_(It.shape());
     if(cost_type == 2) // skip nonlinear registration
     {
-        if(I.geometry() == It.geometry())
+        if(I.shape() == It.shape())
             J_ = I;
         else
             tipl::draw(I,J_,tipl::vector<3,int>(0,0,0));
 
-        if(I2.geometry() == I.geometry())
+        if(I2.shape() == I.shape())
         {
-            tipl::image<float,3> J2_(It.geometry());
-            if(I.geometry() == It.geometry())
+            tipl::image<float,3> J2_(It.shape());
+            if(I.shape() == It.shape())
                 J2_ = I2;
             else
                 tipl::draw(I2,J2_,tipl::vector<3,int>(0,0,0));
@@ -439,9 +439,9 @@ void RegToolBox::linear_reg(tipl::reg::reg_type reg_type,int cost_type)
             tipl::reg::two_way_linear_mr(It,Itvs,I,Ivs,T,reg_type,tipl::reg::correlation(),thread.terminated,
                                       std::thread::hardware_concurrency(),&arg,tipl::reg::large_bound);
         tipl::resample_mt(I,J_,T,tipl::cubic);
-        if(I2.geometry() == I.geometry())
+        if(I2.shape() == I.shape())
         {
-            tipl::image<float,3> J2_(It.geometry());
+            tipl::image<float,3> J2_(It.shape());
             tipl::resample_mt(I2,J2_,T,tipl::cubic);
             tipl::normalize(J2,1.0f);
             J2.swap(J2_);
@@ -476,7 +476,7 @@ void RegToolBox::nonlinear_reg(void)
         else
         {
             //tipl::reg::cdm_pre(It,It2,J,J2);
-            if(It2.geometry() == It.geometry() && J2.geometry() == J.geometry())
+            if(It2.shape() == It.shape() && J2.shape() == J.shape())
                 tipl::reg::cdm2(It,It2,J,J2,t2f_dis,thread.terminated,param);
             else
                 tipl::reg::cdm(It,J,t2f_dis,thread.terminated,param);
@@ -486,7 +486,7 @@ void RegToolBox::nonlinear_reg(void)
 
     // calculate inverted to2from
     {
-        from2to.resize(I.geometry());
+        from2to.resize(I.shape());
         tipl::invert_displacement(t2f_dis,f2t_dis);
         tipl::inv_displacement_to_mapping(f2t_dis,from2to,T);
     }
@@ -517,7 +517,7 @@ void RegToolBox::on_run_reg_clicked()
         else
         {
             J = I;
-            if(I2.geometry() == I.geometry())
+            if(I2.shape() == I.shape())
                 J2 = I2;
         }
         */
@@ -595,7 +595,7 @@ void RegToolBox::on_stop_clicked()
 
 void RegToolBox::on_actionMatch_Intensity_triggered()
 {
-    if(I.geometry() == It.geometry())
+    if(I.shape() == It.shape())
     {
         tipl::homogenize(I,It);
         show_image();
@@ -631,12 +631,12 @@ void RegToolBox::on_actionSave_Warpping_triggered()
         return;
     }
     out.write("to2from",&to2from[0][0],3,to2from.size());
-    out.write("to_dim",to2from.geometry());
+    out.write("to_dim",to2from.shape());
     out.write("to_vs",Itvs);
     out.write("to_trans",ItR);
 
     out.write("from2to",&from2to[0][0],3,from2to.size());
-    out.write("from_dim",from2to.geometry());
+    out.write("from_dim",from2to.shape());
     out.write("from_vs",Ivs);
     out.write("from_trans",IR);
 }

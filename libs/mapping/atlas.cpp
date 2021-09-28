@@ -58,7 +58,7 @@ bool atlas::load_from_file(void)
     if(is_multiple_roi)
     {
         nii.toLPS(multiple_I);
-        I.resize(tipl::geometry<3>(multiple_I.width(),multiple_I.height(),multiple_I.depth()));
+        I.resize(tipl::shape<3>(multiple_I.width(),multiple_I.height(),multiple_I.depth()));
         for(unsigned int i = 0;i < multiple_I.size();i += I.size())
             multiple_I_pos.push_back(i);
     }
@@ -116,7 +116,7 @@ size_t atlas::get_index(tipl::vector<3,float> p)
     if(!in_template_space)
         apply_trans(p,T);
     p.round();
-    if(!I.geometry().is_valid(p))
+    if(!I.shape().is_valid(p))
         return 0;
     return size_t((int(p[2])*I.height()+int(p[1]))*I.width()+int(p[0]));
 }

@@ -275,8 +275,8 @@ void connectometry_db::calculate_si2vi(void)
 }
 
 size_t convert_index(size_t old_index,
-                     const tipl::geometry<3>& from_geo,
-                     const tipl::geometry<3>& to_geo,
+                     const tipl::shape<3>& from_geo,
+                     const tipl::shape<3>& to_geo,
                      float ratio,
                      const tipl::vector<3>& shift)
 {
@@ -295,7 +295,7 @@ bool connectometry_db::sample_subject_profile(gz_mat_read& m,std::vector<float>&
     bool trans_consistent = true;
     float ratio = 1.0f;
     tipl::vector<3> shift;
-    tipl::geometry<3> subject_dim;
+    tipl::shape<3> subject_dim;
     {
         tipl::matrix<4,4,float> subject_trans;
         if(!m.read("trans",subject_trans))
@@ -682,7 +682,7 @@ void connectometry_db::get_subject_slice(unsigned int subject_index,unsigned cha
     tipl::image<unsigned int,2> tmp;
     tipl::volume2slice(vi2si, tmp, dim, pos);
     slice.clear();
-    slice.resize(tmp.geometry());
+    slice.resize(tmp.shape());
     for(unsigned int index = 0;index < slice.size();++index)
         if(tmp[index])
             slice[index] = subject_qa[subject_index][tmp[index]];

@@ -117,7 +117,7 @@ std::string ImageModel::get_file_ext(void)
     }
     return out.str();
 }
-bool is_human_size(tipl::geometry<3> dim,tipl::vector<3> vs);
+bool is_human_size(tipl::shape<3> dim,tipl::vector<3> vs);
 bool ImageModel::reconstruction(void)
 {
     try
@@ -287,7 +287,7 @@ bool output_odfs(const tipl::image<unsigned char,3>& mni_mask,
     ImageModel image_model;
     if(report.length())
         image_model.voxel.report = report.c_str();
-    image_model.voxel.dim = mni_mask.geometry();
+    image_model.voxel.dim = mni_mask.shape();
     image_model.voxel.ti = ti;
     image_model.voxel.max_fiber_number = 5;
     image_model.voxel.odf_resolving = true;
@@ -314,7 +314,7 @@ const char* odf_average(const char* out_name,std::vector<std::string>& file_name
     static std::string report,error_msg;
     tessellated_icosahedron ti;
     float vs[3];
-    tipl::geometry<3> dim;
+    tipl::shape<3> dim;
     std::vector<std::vector<float> > odfs;
     std::vector<size_t> odf_count;
 
@@ -357,7 +357,7 @@ const char* odf_average(const char* out_name,std::vector<std::string>& file_name
             if(index == 0)
             {
                 reader.read("report",report);
-                dim = tipl::geometry<3>(dimension);
+                dim = tipl::shape<3>(dimension);
                 std::copy(vs_ptr,vs_ptr+3,vs);
                 ti.init(uint16_t(odf_num),odf_buffer,uint16_t(face_num),face_buffer);
                 half_vertex_count = odf_num >> 1;
@@ -380,7 +380,7 @@ const char* odf_average(const char* out_name,std::vector<std::string>& file_name
             {
                 if(odf_num != ti.vertices_count)
                     throw std::runtime_error("inconsistent ODF dimension");
-                if(dim != tipl::geometry<3>(dimension))
+                if(dim != tipl::shape<3>(dimension))
                     throw std::runtime_error("inconsistent image dimension");
                 for (unsigned int index = 0;index < col;++index,odf_buffer += 3)
                 {

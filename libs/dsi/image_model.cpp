@@ -14,7 +14,7 @@ void ImageModel::draw_mask(tipl::color_image& buffer,int position)
 {
     if (!dwi.size())
         return;
-    buffer.resize(tipl::geometry<2>(dwi.width(),dwi.height()));
+    buffer.resize(tipl::shape<2>(dwi.width(),dwi.height()));
     long offset = long(position)*long(buffer.size());
     std::copy(dwi.begin()+ offset,
               dwi.begin()+ offset + long(buffer.size()),buffer.begin());
@@ -22,7 +22,7 @@ void ImageModel::draw_mask(tipl::color_image& buffer,int position)
     unsigned char* slice_image_ptr = &*dwi.begin() + long(buffer.size())*position;
     unsigned char* slice_mask = &*voxel.mask.begin() + long(buffer.size())*position;
 
-    tipl::color_image buffer2(tipl::geometry<2>(dwi.width()*2,dwi.height()));
+    tipl::color_image buffer2(tipl::shape<2>(dwi.width()*2,dwi.height()));
     tipl::draw(buffer,buffer2,tipl::vector<2,int>());
     for (unsigned int index = 0; index < buffer.size(); ++index)
     {
@@ -76,7 +76,7 @@ void ImageModel::calculate_dwi_sum(bool update_mask)
             tipl::par_for(voxel.mask.depth(),[&](int i)
             {
                 tipl::pointer_image<unsigned char,2> I(&voxel.mask[0]+size_t(i)*voxel.mask.plane_size(),
-                        tipl::geometry<2>(voxel.mask.width(),voxel.mask.height()));
+                        tipl::shape<2>(voxel.mask.width(),voxel.mask.height()));
                 tipl::morphology::defragment(I);
                 tipl::morphology::recursive_smoothing(I,10);
                 tipl::morphology::defragment(I);
@@ -158,7 +158,7 @@ std::string ImageModel::check_b_table(void)
 {
     // reconstruct DTI using original data and b-table
     {
-        tipl::image<unsigned char,3> mask(voxel.mask.geometry());
+        tipl::image<unsigned char,3> mask(voxel.mask.shape());
         std::fill(mask.begin(),mask.end(),1);
         mask.swap(voxel.mask);
 
@@ -220,7 +220,7 @@ std::string ImageModel::check_b_table(void)
         else
         {
             tipl::vector<3> vs;
-            tipl::geometry<3> geo;
+            tipl::shape<3> geo;
             tipl::affine_transform<float> arg;
             if(!arg_to_mni(2.0f,vs,geo,arg))
                 template_fib.reset();
@@ -241,7 +241,7 @@ std::string ImageModel::check_b_table(void)
 
     float result[24] = {0};
     float otsu = tipl::segmentation::otsu_threshold(fib_fa[0])*0.6f;
-    auto subject_geo = fib_fa[0].geometry();
+    auto subject_geo = fib_fa[0].shape();
     for(int i = 0;i < 24;++i)// 0 is the current score
     {
         auto new_dir(fib_dir);
@@ -315,7 +315,7 @@ std::vector<std::pair<int,int> > ImageModel::get_bad_slices(void)
             skip_slice[i] = 0
                     ;
     tipl::image<float,2> cor_values(
-                tipl::geometry<2>(int(voxel.dwi_data.size()),voxel.dim.depth()));
+                tipl::shape<2>(int(voxel.dwi_data.size()),voxel.dim.depth()));
 
     tipl::par_for(voxel.dwi_data.size(),[&](size_t index)
     {
@@ -376,7 +376,7 @@ std::vector<std::pair<int,int> > ImageModel::get_bad_slices(void)
     std::vector<std::pair<int,int> > result;
 
     auto arg = tipl::arg_sort(sum,std::less<float>());
-    //tipl::image<float,3> bad_I(tipl::geometry<3>(voxel.dim[0],voxel.dim[1],bad_i.size()));
+    //tipl::image<float,3> bad_I(tipl::shape<3>(voxel.dim[0],voxel.dim[1],bad_i.size()));
     for(size_t i = 0,out_pos = 0;i < bad_i.size();++i,out_pos += voxel.dim.plane_size())
     {
         result.push_back(std::make_pair(bad_i[arg[i]],bad_z[arg[i]]));
@@ -432,7 +432,7 @@ float ImageModel::quality_control_neighboring_dwi_corr(void)
     self_cor/= float(count);
     return self_cor;
 }
-bool is_human_size(tipl::geometry<3> dim,tipl::vector<3> vs);
+bool is_human_size(tipl::shape<3> dim,tipl::vector<3> vs);
 bool ImageModel::is_human_data(void) const
 {
     return is_human_size(voxel.dim,voxel.vs);
@@ -712,7 +712,7 @@ void ImageModel::flip_dwi(unsigned char type)
         auto I = tipl::make_image(const_cast<unsigned short*>(src_dwi_data[index]),voxel.dim);
         tipl::flip(I,type);
     });
-    voxel.dim = dwi_sum.geometry();
+    voxel.dim = dwi_sum.shape();
     voxel.dwi_data.clear();
 }
 // used in eddy correction for each dwi
@@ -729,7 +729,7 @@ void ImageModel::rotate_one_dwi(unsigned int dwi_index,const tipl::transformatio
     src_bvectors[dwi_index].normalize();
 }
 
-void ImageModel::rotate(const tipl::geometry<3>& new_geo,
+void ImageModel::rotate(const tipl::shape<3>& new_geo,
                         const tipl::vector<3>& new_vs,
                         const tipl::transformation_matrix<double>& T,
                         const tipl::image<tipl::vector<3>,3>& cdm_dis,
@@ -761,7 +761,7 @@ void ImageModel::rotate(const tipl::geometry<3>& new_geo,
     dwi.swap(new_dwi);
     // rotate b-table
     tipl::affine_transform<double> arg;
-    T.to_affine_transform(arg,new_geo,new_vs,dwi_sum.geometry(),voxel.vs);
+    T.to_affine_transform(arg,new_geo,new_vs,dwi_sum.shape(),voxel.vs);
     tipl::matrix<3,3,float> r;
     tipl::rotation_matrix(arg.rotation,r.begin(),tipl::vdim<3>());
     r.inv();
@@ -780,7 +780,7 @@ void ImageModel::rotate(const tipl::geometry<3>& new_geo,
 void ImageModel::resample(float nv)
 {
     tipl::vector<3,float> new_vs(nv,nv,nv);
-    tipl::geometry<3> new_geo(uint32_t(std::ceil(float(voxel.dim.width())*voxel.vs[0]/new_vs[0])),
+    tipl::shape<3> new_geo(uint32_t(std::ceil(float(voxel.dim.width())*voxel.vs[0]/new_vs[0])),
                               uint32_t(std::ceil(float(voxel.dim.height())*voxel.vs[1]/new_vs[1])),
                               uint32_t(std::ceil(float(voxel.dim.depth())*voxel.vs[2]/new_vs[2])));
     tipl::image<float,3> J(new_geo);
@@ -794,7 +794,7 @@ void ImageModel::resample(float nv)
 }
 extern std::string fib_template_file_name_2mm;
 extern std::vector<std::string> iso_template_list;
-bool ImageModel::arg_to_mni(float resolution,tipl::vector<3>& vs,tipl::geometry<3>& new_geo,tipl::affine_transform<float>& T)
+bool ImageModel::arg_to_mni(float resolution,tipl::vector<3>& vs,tipl::shape<3>& new_geo,tipl::affine_transform<float>& T)
 {
     tipl::image<float,3> I;
 
@@ -849,26 +849,26 @@ bool ImageModel::arg_to_mni(float resolution,tipl::vector<3>& vs,tipl::geometry<
     T.affine[0] = T.affine[1] = T.affine[2] = 0.0f;
     check_prog(3,4);
 
-    tipl::image<float,3> I2(I.geometry());
-    tipl::resample(dwi_sum,I2,tipl::transformation_matrix<float>(T,I.geometry(),vs,dwi_sum.geometry(),voxel.vs),tipl::cubic);
+    tipl::image<float,3> I2(I.shape());
+    tipl::resample(dwi_sum,I2,tipl::transformation_matrix<float>(T,I.shape(),vs,dwi_sum.shape(),voxel.vs),tipl::cubic);
     float r = float(tipl::correlation(I.begin(),I.end(),I2.begin()));
     std::cout << T;
     std::cout << "R2 for ac-pc alignment=" << r*r << std::endl;
     check_prog(4,4);
     if(r*r < 0.3f)
         return false;
-    new_geo = I.geometry();
+    new_geo = I.shape();
     return true;
 }
 
 bool ImageModel::rotate_to_mni(float resolution)
 {
     tipl::vector<3> vs;
-    tipl::geometry<3> geo;
+    tipl::shape<3> geo;
     tipl::affine_transform<float> T;
     if(!arg_to_mni(resolution,vs,geo,T))
         return false;
-    rotate(geo,vs,tipl::transformation_matrix<float>(T,geo,vs,dwi_sum.geometry(),voxel.vs));
+    rotate(geo,vs,tipl::transformation_matrix<float>(T,geo,vs,dwi_sum.shape(),voxel.vs));
     voxel.report += " The diffusion MRI data were resampled to ";
     voxel.report += std::to_string(int(vs[0]));
     voxel.report += " mm isotropic resolution.";
@@ -877,7 +877,7 @@ bool ImageModel::rotate_to_mni(float resolution)
 
 void ImageModel::trim(void)
 {
-    tipl::geometry<3> range_min,range_max;
+    tipl::shape<3> range_min,range_max;
     tipl::bounding_box(voxel.mask,range_min,range_max,0);
     prog_init p("Removing background region");
     tipl::par_for2(src_dwi_data.size(),[&](unsigned int index,unsigned int id)
@@ -893,7 +893,7 @@ void ImageModel::trim(void)
     tipl::crop(voxel.mask,range_min,range_max);
     tipl::crop(dwi_sum,range_min,range_max);
     tipl::crop(dwi,range_min,range_max);
-    voxel.dim = voxel.mask.geometry();
+    voxel.dim = voxel.mask.shape();
     voxel.dwi_data.clear();
 }
 
@@ -909,7 +909,7 @@ void get_distortion_map(const image_type& v1,
                         tipl::image<float,3>& dis_map)
 {
     int h = v1.height(),w = v1.width();
-    dis_map.resize(v1.geometry());
+    dis_map.resize(v1.shape());
     tipl::par_for(v1.depth()*h,[&](int z)
     {
         int base_pos = z*w;
@@ -1000,7 +1000,7 @@ void apply_distortion_map2(const image_type& v1,
                           image_type& v1_out,bool positive)
 {
     int w = v1.width();
-    v1_out.resize(v1.geometry());
+    v1_out.resize(v1.shape());
     tipl::par_for(v1.depth()*v1.height(),[&](int z)
     {
         std::vector<float> cdf_x1,cdf;
@@ -1009,7 +1009,7 @@ void apply_distortion_map2(const image_type& v1,
         int base_pos = z*w;
         {
             tipl::pdf2cdf(v1.begin()+base_pos,v1.begin()+base_pos+w,&cdf_x1[0]);
-            auto I1 = tipl::make_image(&cdf_x1[0],tipl::geometry<1>(w));
+            auto I1 = tipl::make_image(&cdf_x1[0],tipl::shape<1>(w));
             for(int x = 0,pos = base_pos;x < w;++x,++pos)
                 cdf[size_t(x)] = tipl::estimate(I1,positive ? x+dis_map[pos] : x-dis_map[pos]);
             for(int x = 0,pos = base_pos;x < w;++x,++pos)
@@ -1047,7 +1047,7 @@ bool ImageModel::distortion_correction(const char* filename)
             }
             v2 = tipl::make_image(src2.src_dwi_data[0],src2.voxel.dim);
         }
-        if(voxel.dim != v2.geometry())
+        if(voxel.dim != v2.shape())
         {
             error_msg = "inconsistent appa image dimension";
             return false;
@@ -1076,7 +1076,7 @@ bool ImageModel::distortion_correction(const char* filename)
         }
     }
 
-    tipl::image<float,3> dis_map(v1.geometry()),df,gx(v1.geometry()),v1_gx(v1.geometry()),v2_gx(v2.geometry());
+    tipl::image<float,3> dis_map(v1.shape()),df,gx(v1.shape()),v1_gx(v1.shape()),v2_gx(v2.shape());
 
 
     tipl::filter::gaussian(v1);
@@ -1353,7 +1353,7 @@ bool ImageModel::load_from_file(const char* dwi_file_name)
             if(index == 0)
             {
                 voxel.vs = dwi_files[0]->voxel_size;
-                voxel.dim = dwi_files[0]->image.geometry();
+                voxel.dim = dwi_files[0]->image.shape();
             }
             nifti_dwi[index].swap(dwi_files[index]->image);
             src_dwi_data[index] = &nifti_dwi[index][0];
@@ -1528,13 +1528,13 @@ bool ImageModel::save_fib(const std::string& output_name)
     mat_writer.write("steps",final_steps);
     return true;
 }
-void initial_LPS_nifti_srow(tipl::matrix<4,4,float>& T,const tipl::geometry<3>& geo,const tipl::vector<3>& vs);
+void initial_LPS_nifti_srow(tipl::matrix<4,4,float>& T,const tipl::shape<3>& geo,const tipl::vector<3>& vs);
 bool ImageModel::save_to_nii(const char* nifti_file_name) const
 {
     tipl::matrix<4,4,float> trans;
     initial_LPS_nifti_srow(trans,voxel.dim,voxel.vs);
 
-    tipl::geometry<4> nifti_dim;
+    tipl::shape<4> nifti_dim;
     std::copy(voxel.dim.begin(),voxel.dim.end(),nifti_dim.begin());
     nifti_dim[3] = uint32_t(src_bvalues.size());
 
@@ -1653,7 +1653,7 @@ bool ImageModel::compare_src(const char* file_name)
         tipl::affine_transform<float> T;
         {
             tipl::vector<3> vs;
-            tipl::geometry<3> geo;
+            tipl::shape<3> geo;
             study_src->arg_to_mni(2.0f,vs,geo,T);
         }
         begin_prog("registering longitudinal data",true);
@@ -1663,7 +1663,7 @@ bool ImageModel::compare_src(const char* file_name)
         check_prog(1,4);
         tipl::reg::linear(Ib,Ib_vs,If,If_vs,
                 T,tipl::reg::rigid_body,tipl::reg::correlation(),terminated,0.001,0,tipl::reg::large_bound);
-        tipl::transformation_matrix<float> arg(T,Ib.geometry(),Ib_vs,If.geometry(),If_vs);
+        tipl::transformation_matrix<float> arg(T,Ib.shape(),Ib_vs,If.shape(),If_vs);
         // nonlinear part
         tipl::image<tipl::vector<3>,3> cdm_dis;
 
@@ -1671,7 +1671,7 @@ bool ImageModel::compare_src(const char* file_name)
         {
             set_title("nonlinear warping");
             check_prog(2,4);
-            tipl::image<float,3> Iff(Ib.geometry());
+            tipl::image<float,3> Iff(Ib.shape());
             tipl::resample(If,Iff,arg,tipl::cubic);
             tipl::match_signal(Ib,Iff);
             bool terminated = false;
@@ -1684,7 +1684,7 @@ bool ImageModel::compare_src(const char* file_name)
             set_title("subvoxel nonlinear warping");
             check_prog(3,4);
 
-            tipl::image<float,3> If2Ib(Ib.geometry());
+            tipl::image<float,3> If2Ib(Ib.shape());
             tipl::resample_dis(If,If2Ib,arg,cdm_dis,tipl::cubic);
             tipl::image<tipl::vector<3>,3> cdm_dis2;
 
@@ -1695,7 +1695,7 @@ bool ImageModel::compare_src(const char* file_name)
             /*
             if(1) // debug
             {
-                tipl::image<float,3> If2Ib(dwi_sum.geometry());
+                tipl::image<float,3> If2Ib(dwi_sum.shape());
                 tipl::resample_dis(If,If2Ib,arg,cdm_dis,tipl::cubic);
                 gz_nifti o1,o2,o3,o4;
                 o1.set_voxel_size(voxel.vs);
@@ -1716,7 +1716,7 @@ bool ImageModel::compare_src(const char* file_name)
             }
             */
         }
-        study_src->rotate(Ib.geometry(),arg,cdm_dis);
+        study_src->rotate(Ib.shape(),arg,cdm_dis);
         study_src->voxel.vs = voxel.vs;
         study_src->voxel.mask = voxel.mask;
         check_prog(4,4);

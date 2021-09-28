@@ -342,7 +342,7 @@ void sort_dwi(std::vector<std::shared_ptr<DwiHeader> >& dwi_files)
 
 void correct_t2(std::vector<std::shared_ptr<DwiHeader> >& dwi_files)
 {
-    tipl::geometry<3> geo = dwi_files.front()->image.geometry();
+    tipl::shape<3> geo = dwi_files.front()->image.shape();
     //find out if there are two b0 images having different TE
     std::vector<unsigned int> b0_index;
     std::vector<float> b0_te;
@@ -507,10 +507,10 @@ bool DwiHeader::output_src(const char* di_file,std::vector<std::shared_ptr<DwiHe
         src_error_msg += di_file;
         return false;
     }
-    tipl::geometry<3> geo = dwi_files.front()->image.geometry();
+    tipl::shape<3> geo = dwi_files.front()->image.shape();
 
     //store dimension
-    tipl::geometry<3> output_dim(geo);
+    tipl::shape<3> output_dim(geo);
     {
         tipl::vector<3,uint16_t> dimension(geo.begin());
         tipl::vector<3> voxel_size(dwi_files.front()->voxel_size);

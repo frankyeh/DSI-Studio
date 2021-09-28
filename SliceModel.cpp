@@ -125,7 +125,7 @@ void CustomSliceModel::get_slice(tipl::color_image& image,
         return SliceModel::get_slice(image,cur_dim,overlay_slices);
 }
 // ---------------------------------------------------------------------------
-void initial_LPS_nifti_srow(tipl::matrix<4,4,float>& T,const tipl::geometry<3>& geo,const tipl::vector<3>& vs);
+void initial_LPS_nifti_srow(tipl::matrix<4,4,float>& T,const tipl::shape<3>& geo,const tipl::vector<3>& vs);
 void prepare_idx(const char* file_name,std::shared_ptr<gz_istream> in);
 void save_idx(const char* file_name,std::shared_ptr<gz_istream> in);
 bool CustomSliceModel::initialize(const std::vector<std::string>& files,bool is_mni_image)
@@ -159,8 +159,8 @@ bool CustomSliceModel::initialize(const std::vector<std::string>& files,bool is_
                 return false;
             }
             QImage buf = in.convertToFormat(QImage::Format_RGB32);
-            picture.resize(tipl::geometry<2>(uint32_t(in.width()),uint32_t(in.height())));
-            source_images.resize(tipl::geometry<3>(uint32_t(in.width()),uint32_t(in.height()),1));
+            picture.resize(tipl::shape<2>(uint32_t(in.width()),uint32_t(in.height())));
+            source_images.resize(tipl::shape<3>(uint32_t(in.width()),uint32_t(in.height()),1));
             const uchar* ptr = buf.bits();
             for(size_t j = 0;j < source_images.size();++j,ptr += 4)
             {
@@ -169,7 +169,7 @@ bool CustomSliceModel::initialize(const std::vector<std::string>& files,bool is_
             }
 
             vs = handle->vs*0.5f*(handle->dim.width())/(in.width());
-            tipl::transformation_matrix<float> M(arg_min,handle->dim,handle->vs,source_images.geometry(),vs);
+            tipl::transformation_matrix<float> M(arg_min,handle->dim,handle->vs,source_images.shape(),vs);
             invT.identity();
             M.save_to_transform(invT.begin());
             T = tipl::inverse(invT);
@@ -204,7 +204,7 @@ bool CustomSliceModel::initialize(const std::vector<std::string>& files,bool is_
                 T[8] *= 2.0f;
                 T[9] *= 2.0f;
             }
-            tipl::geometry<3> geo(dim);
+            tipl::shape<3> geo(dim);
 
             bool ok = true;
             int down_size = (geo[2] > 1 ? QInputDialog::getInt(nullptr,"DSI Studio",
@@ -252,7 +252,7 @@ bool CustomSliceModel::initialize(const std::vector<std::string>& files,bool is_
                     return false;
                 }
                 QImage buf = in.convertToFormat(QImage::Format_RGB32).mirrored();
-                I.resize(tipl::geometry<2>(in.width(),in.height()));
+                I.resize(tipl::shape<2>(in.width(),in.height()));
                 const uchar* ptr = buf.bits();
                 for(size_t j = 0;j < I.size();++j,ptr += 4)
                     I[j] = *ptr;
@@ -286,7 +286,7 @@ bool CustomSliceModel::initialize(const std::vector<std::string>& files,bool is_
             T[8] = -T[8];
             T[9] = -T[9];
             invT = tipl::inverse(T);
-            initial_LPS_nifti_srow(trans,source_images.geometry(),vs);
+            initial_LPS_nifti_srow(trans,source_images.shape(),vs);
             has_transform = true;
         }
     }
@@ -333,7 +333,7 @@ bool CustomSliceModel::initialize(const std::vector<std::string>& files,bool is_
         {
             bruker.get_voxel_size(vs);
             source_images = std::move(bruker.get_image());
-            initial_LPS_nifti_srow(trans,source_images.geometry(),vs);
+            initial_LPS_nifti_srow(trans,source_images.shape(),vs);
             QDir d = QFileInfo(files[0].c_str()).dir();
             if(d.cdUp() && d.cdUp())
             {
@@ -353,7 +353,7 @@ bool CustomSliceModel::initialize(const std::vector<std::string>& files,bool is_
         {
             volume.get_voxel_size(vs);
             volume >> source_images;
-            initial_LPS_nifti_srow(trans,source_images.geometry(),vs);
+            initial_LPS_nifti_srow(trans,source_images.shape(),vs);
         }
     }
 
@@ -365,7 +365,7 @@ bool CustomSliceModel::initialize(const std::vector<std::string>& files,bool is_
     // add image to the view item lists
     {
         update_image();
-        handle->view_item.push_back(item(name,&*source_images.begin(),source_images.geometry()));
+        handle->view_item.push_back(item(name,&*source_images.begin(),source_images.shape()));
         view_id = uint32_t(handle->view_item.size()-1);
         v2c.set_range(handle->view_item[view_id].contrast_min,handle->view_item[view_id].contrast_max);
         v2c.two_color(handle->view_item[view_id].min_color,handle->view_item[view_id].max_color);
@@ -373,7 +373,7 @@ bool CustomSliceModel::initialize(const std::vector<std::string>& files,bool is_
 
 
     // same dimension, no registration required.
-    if(source_images.geometry() == handle->dim)
+    if(source_images.shape() == handle->dim)
     {
         T.identity();
         invT.identity();
@@ -416,7 +416,7 @@ bool CustomSliceModel::initialize(const std::vector<std::string>& files,bool is_
 }
 void CustomSliceModel::update_image(void)
 {
-    dim = source_images.geometry();
+    dim = source_images.shape();
     slice_pos[0] = source_images.width() >> 1;
     slice_pos[1] = source_images.height() >> 1;
     slice_pos[2] = source_images.depth() >> 1;
@@ -445,7 +445,7 @@ void CustomSliceModel::argmin(tipl::reg::reg_type reg_type)
 
     auto from = handle->view_item[0].get_image();
     // align brain top
-    float z_shift = (float(handle->dim[2])*handle->vs[2]-float(to.geometry()[2])*vs[2])*0.1f;
+    float z_shift = (float(handle->dim[2])*handle->vs[2]-float(to.shape()[2])*vs[2])*0.1f;
     arg_min.translocation[2] = -z_shift*vs[2];
 
     tipl::reg::two_way_linear_mr(from,handle->vs,to,vs,M,reg_type,tipl::reg::mutual_information(),terminated,

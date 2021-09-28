@@ -181,7 +181,7 @@ int rec(void)
                 std::cout << "invalid or nonexisting nifti file:" << mask_file << std::endl;
                 return 1;
             }
-            if(src.voxel.mask.geometry() != src.voxel.dim)
+            if(src.voxel.mask.shape() != src.voxel.dim)
             {
                 std::cout << "The mask dimension is different. terminating..." << std::endl;
                 return 1;
@@ -209,7 +209,7 @@ int rec(void)
                        T,tipl::reg::rigid_body,tipl::reg::mutual_information(),
                         terminated,src.voxel.thread_count);
         std::cout << "DWI rotated." << std::endl;
-        src.rotate(I.geometry(),vs,T);
+        src.rotate(I.shape(),vs,T);
     }
 
     if(po.get("motion_correction",int(0)))
