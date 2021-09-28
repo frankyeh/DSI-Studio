@@ -207,7 +207,7 @@ bool load_bvec(const char* file_name,std::vector<double>& b_table)
         ++total_line;
     }
     if(total_line == 3)
-        tipl::mat::transpose(b_table.begin(),tipl::dyndim(3,b_table.size()/3));
+        tipl::mat::transpose(b_table.begin(),tipl::shape(3,b_table.size()/3));
     if(po.get("flip_by",1))
     {
         for(size_t index = 1;index < b_table.size();index += 3)

@@ -111,7 +111,7 @@ struct distortion_map{
             y.resize(size_t(n2));
             std::copy(v1p,v1p+n,y.begin());
             std::copy(v2p,v2p+n,y.begin()+n);
-            tipl::mat::pseudo_inverse_solve(&M[0],&y[0],&v[0]+pos,tipl::dyndim(uint32_t(n),uint32_t(n2)));
+            tipl::mat::pseudo_inverse_solve(&M[0],&y[0],&v[0]+pos,tipl::shape(uint32_t(n),uint32_t(n2)));
         });
     }
     void sample_gradient(const tipl::image<float,3>& g1,

@@ -127,7 +127,7 @@ public:
         }
         std::vector<float> new_data(new_q_count);
         data.space.swap(new_data);
-        tipl::mat::vector_product(trans.begin(),new_data.begin(),data.space.begin(),tipl::dyndim(new_q_count,old_q_count));
+        tipl::mat::vector_product(trans.begin(),new_data.begin(),data.space.begin(),tipl::shape(new_q_count,old_q_count));
     }
 };
 

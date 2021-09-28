@@ -45,11 +45,11 @@ public:
 
             }
             tipl::mat::vector_product(&*sinc_ql_.begin(),&*data.space.begin(),&*data.odf.begin(),
-                                          tipl::dyndim(uint32_t(data.odf.size()),uint32_t(data.space.size())));
+                                          tipl::shape(uint32_t(data.odf.size()),uint32_t(data.space.size())));
         }
         else
             tipl::mat::vector_product(&*sinc_ql.begin(),&*data.space.begin(),&*data.odf.begin(),
-                                    tipl::dyndim(uint32_t(data.odf.size()),uint32_t(data.space.size())));
+                                    tipl::shape(uint32_t(data.odf.size()),uint32_t(data.space.size())));
     }
 };
 
@@ -163,7 +163,7 @@ public:
         }
 
         tipl::mat::vector_product(&*sinc_ql.begin(),&*data.space.begin(),&*data.odf.begin(),
-                                    tipl::dyndim(uint32_t(data.odf.size()),uint32_t(data.space.size())));
+                                    tipl::shape(uint32_t(data.odf.size()),uint32_t(data.space.size())));
     }
     virtual void end(Voxel& voxel,gz_mat_write& mat_writer)
     {
@@ -225,15 +225,15 @@ public:
         b0.resize(voxel.dim.size());
 
         Rt.resize(dwi.size()*dwi.size());
-        tipl::mat::transpose(&*to.sinc_ql.begin(),&*Rt.begin(),tipl::dyndim(dwi.size(),dwi.size()));
+        tipl::mat::transpose(&*to.sinc_ql.begin(),&*Rt.begin(),tipl::shape(dwi.size(),dwi.size()));
         A.resize(dwi.size()*dwi.size());
         piv.resize(dwi.size());
         tipl::mat::product_transpose(&*Rt.begin(),&*Rt.begin(),&*A.begin(),
-                                       tipl::dyndim(dwi.size(),dwi.size()),tipl::dyndim(dwi.size(),dwi.size()));
+                                       tipl::shape(dwi.size(),dwi.size()),tipl::shape(dwi.size(),dwi.size()));
         float max_value = *std::max_element(A.begin(),A.end());
         for (unsigned int i = 0,index = 0; i < dwi.size(); ++i,index += dwi.size() + 1)
             A[index] += max_value*voxel.param[2];
-        tipl::mat::lu_decomposition(A.begin(),piv.begin(),tipl::dyndim(dwi.size(),dwi.size()));
+        tipl::mat::lu_decomposition(A.begin(),piv.begin(),tipl::shape(dwi.size(),dwi.size()));
 
         total_negative_value = 0;
         total_value = 0;
@@ -250,8 +250,8 @@ public:
         }
         from.run(voxel,data);
         std::vector<float> hardi_data(dwi.size()),tmp(dwi.size());
-        tipl::mat::vector_product(&*Rt.begin(),&*data.odf.begin(),&*tmp.begin(),tipl::dyndim(dwi.size(),dwi.size()));
-        tipl::mat::lu_solve(&*A.begin(),&*piv.begin(),&*tmp.begin(),&*hardi_data.begin(),tipl::dyndim(dwi.size(),dwi.size()));
+        tipl::mat::vector_product(&*Rt.begin(),&*data.odf.begin(),&*tmp.begin(),tipl::shape(dwi.size(),dwi.size()));
+        tipl::mat::lu_solve(&*A.begin(),&*piv.begin(),&*tmp.begin(),&*hardi_data.begin(),tipl::shape(dwi.size(),dwi.size()));
         for(unsigned int index = 0;index < dwi.size();++index)
         {
             if(hardi_data[index] < 0.0f)

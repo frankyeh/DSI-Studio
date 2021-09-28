@@ -3621,7 +3621,7 @@ void distance_bin(const matrix_type& bin,tipl::image<float,2>& D)
     for(unsigned int l = 2;1;++l)
     {
         tipl::image<unsigned int,2> t(A.geometry());
-        tipl::mat::product(Lpath.begin(),A.begin(),t.begin(),tipl::dyndim(n,n),tipl::dyndim(n,n));
+        tipl::mat::product(Lpath.begin(),A.begin(),t.begin(),tipl::shape(n,n),tipl::shape(n,n));
         std::swap(Lpath,t);
         bool con = false;
         for(unsigned int i = 0;i < D.size();++i)
@@ -3754,8 +3754,8 @@ void ConnectivityMatrix::network_property(std::string& report)
             root[j] = std::pow(root[j],(float)(1.0/3.0));
         // cyc3 = (W.^1/3)^3
         tipl::image<float,2> t(root.geometry());
-        tipl::mat::product(root.begin(),root.begin(),t.begin(),tipl::dyndim(n,n),tipl::dyndim(n,n));
-        tipl::mat::product(t.begin(),root.begin(),cyc3.begin(),tipl::dyndim(n,n),tipl::dyndim(n,n));
+        tipl::mat::product(root.begin(),root.begin(),t.begin(),tipl::shape(n,n),tipl::shape(n,n));
+        tipl::mat::product(t.begin(),root.begin(),cyc3.begin(),tipl::shape(n,n),tipl::shape(n,n));
         // wcc = diag(cyc3)/(K.*(K-1));
         for(unsigned int i = 0;i < n;++i)
         if(degree[i] >= 2)
@@ -3772,14 +3772,14 @@ void ConnectivityMatrix::network_property(std::string& report)
     {
         tipl::image<float,2> norm_matrix2(norm_matrix.geometry());
         tipl::image<float,2> norm_matrix3(norm_matrix.geometry());
-        tipl::mat::product(norm_matrix.begin(),norm_matrix.begin(),norm_matrix2.begin(),tipl::dyndim(n,n),tipl::dyndim(n,n));
-        tipl::mat::product(norm_matrix2.begin(),norm_matrix.begin(),norm_matrix3.begin(),tipl::dyndim(n,n),tipl::dyndim(n,n));
-        out << "transitivity(binary)\t" << tipl::mat::trace(norm_matrix3.begin(),tipl::dyndim(n,n)) /
-                (std::accumulate(norm_matrix2.begin(),norm_matrix2.end(),0.0) - tipl::mat::trace(norm_matrix2.begin(),tipl::dyndim(n,n))) << std::endl;
+        tipl::mat::product(norm_matrix.begin(),norm_matrix.begin(),norm_matrix2.begin(),tipl::shape(n,n),tipl::shape(n,n));
+        tipl::mat::product(norm_matrix2.begin(),norm_matrix.begin(),norm_matrix3.begin(),tipl::shape(n,n),tipl::shape(n,n));
+        out << "transitivity(binary)\t" << tipl::mat::trace(norm_matrix3.begin(),tipl::shape(n,n)) /
+                (std::accumulate(norm_matrix2.begin(),norm_matrix2.end(),0.0) - tipl::mat::trace(norm_matrix2.begin(),tipl::shape(n,n))) << std::endl;
         float k = 0;
         for(unsigned int i = 0;i < n;++i)
             k += degree[i]*(degree[i]-1);
-        out << "transitivity(weighted)\t" << (k == 0 ? 0 : tipl::mat::trace(cyc3.begin(),tipl::dyndim(n,n))/k) << std::endl;
+        out << "transitivity(weighted)\t" << (k == 0 ? 0 : tipl::mat::trace(cyc3.begin(),tipl::shape(n,n))/k) << std::endl;
     }
 
     std::vector<float> eccentricity_bin(n),eccentricity_wei(n);
@@ -3990,7 +3990,7 @@ void ConnectivityMatrix::network_property(std::string& report)
         for(;std::find(NSPd.begin(),NSPd.end(),1) != NSPd.end();++d)
         {
             tipl::image<unsigned int,2> t(binary_matrix.geometry());
-            tipl::mat::product(NPd.begin(),binary_matrix.begin(),t.begin(),tipl::dyndim(n,n),tipl::dyndim(n,n));
+            tipl::mat::product(NPd.begin(),binary_matrix.begin(),t.begin(),tipl::shape(n,n),tipl::shape(n,n));
             t.swap(NPd);
             for(unsigned int i = 0;i < L.size();++i)
             {
@@ -4013,7 +4013,7 @@ void ConnectivityMatrix::network_property(std::string& report)
                     t[i] = 0;
                 else
                     t[i] /= NSP[i];
-            tipl::mat::product(t.begin(),binary_matrix.begin(),DPd1.begin(),tipl::dyndim(n,n),tipl::dyndim(n,n));
+            tipl::mat::product(t.begin(),binary_matrix.begin(),DPd1.begin(),tipl::shape(n,n),tipl::shape(n,n));
             for(unsigned int i = 0;i < DPd1.size();++i)
                 if(L[i] != d-1)
                     DPd1[i] = 0;
@@ -4115,9 +4115,9 @@ void ConnectivityMatrix::network_property(std::string& report)
         tipl::image<float,2> bin;
         bin = binary_matrix;
         std::vector<float> V(binary_matrix.size()),d(n);
-        tipl::mat::eigen_decomposition_sym(bin.begin(),V.begin(),d.begin(),tipl::dyndim(n,n));
+        tipl::mat::eigen_decomposition_sym(bin.begin(),V.begin(),d.begin(),tipl::shape(n,n));
         std::copy(V.begin(),V.begin()+n,eigenvector_centrality_bin.begin());
-        tipl::mat::eigen_decomposition_sym(norm_matrix.begin(),V.begin(),d.begin(),tipl::dyndim(n,n));
+        tipl::mat::eigen_decomposition_sym(norm_matrix.begin(),V.begin(),d.begin(),tipl::shape(n,n));
         std::copy(V.begin(),V.begin()+n,eigenvector_centrality_wei.begin());
     }
 
@@ -4143,10 +4143,10 @@ void ConnectivityMatrix::network_property(std::string& report)
         std::vector<unsigned int> pivot(n);
         std::vector<float> b(n);
         std::fill(b.begin(),b.end(),(1.0-d)/n);
-        tipl::mat::lu_decomposition(B_bin.begin(),pivot.begin(),tipl::dyndim(n,n));
-        tipl::mat::lu_solve(B_bin.begin(),pivot.begin(),b.begin(),pagerank_centrality_bin.begin(),tipl::dyndim(n,n));
-        tipl::mat::lu_decomposition(B_wei.begin(),pivot.begin(),tipl::dyndim(n,n));
-        tipl::mat::lu_solve(B_wei.begin(),pivot.begin(),b.begin(),pagerank_centrality_wei.begin(),tipl::dyndim(n,n));
+        tipl::mat::lu_decomposition(B_bin.begin(),pivot.begin(),tipl::shape(n,n));
+        tipl::mat::lu_solve(B_bin.begin(),pivot.begin(),b.begin(),pagerank_centrality_bin.begin(),tipl::shape(n,n));
+        tipl::mat::lu_decomposition(B_wei.begin(),pivot.begin(),tipl::shape(n,n));
+        tipl::mat::lu_solve(B_wei.begin(),pivot.begin(),b.begin(),pagerank_centrality_wei.begin(),tipl::shape(n,n));
 
         float sum_bin = std::accumulate(pagerank_centrality_bin.begin(),pagerank_centrality_bin.end(),0.0);
         float sum_wei = std::accumulate(pagerank_centrality_wei.begin(),pagerank_centrality_wei.end(),0.0);
