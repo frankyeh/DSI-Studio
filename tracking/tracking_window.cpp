@@ -2497,13 +2497,18 @@ void tracking_window::on_actionSave_Slices_to_DICOM_triggered()
     for(int i = 0;i < files.size();++i)
         file_list.push_back(files[i].toStdString());
     tipl::io::volume volume;
-    if(volume.load_from_files(file_list,uint32_t(file_list.size())))
+    if(!volume.load_from_files(file_list))
+    {
+        QMessageBox::critical(this,"ERROR",volume.error_msg.c_str());
+        return;
+    }
+
     {
         tipl::image<float,3> I;
         volume >> I;
         if(I.shape() != slice->source_images.shape())
         {
-            QMessageBox::information(this,"Error","Selected DICOM files does not match the original slices. Please check if missing any files.");
+            QMessageBox::critical(this,"ERROR","Selected DICOM files does not match the original slices. Please check if missing any files.");
             return;
         }
     }

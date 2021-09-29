@@ -349,7 +349,7 @@ bool CustomSliceModel::initialize(const std::vector<std::string>& files,bool is_
     if(source_images.empty())
     {
         tipl::io::volume volume;
-        if(volume.load_from_files(files,files.size()))
+        if(volume.load_from_files(files))
         {
             volume.get_voxel_size(vs);
             volume >> source_images;
@@ -404,10 +404,15 @@ bool CustomSliceModel::initialize(const std::vector<std::string>& files,bool is_
     // handle registration
     {
         if(!has_transform)
+        {
+            std::cout << "no transformation. running registration..." << std::endl;
             thread.reset(new std::future<void>(
                         std::async(std::launch::async,[this](){argmin(tipl::reg::rigid_body);})));
+        }
         else
         {
+            std::cout << "apply transformation:" << std::endl;
+            std::cout << T << std::endl;
             handle->view_item.back().T = T;
             handle->view_item.back().iT = invT;
         }

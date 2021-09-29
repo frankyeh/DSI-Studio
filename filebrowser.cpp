@@ -180,13 +180,13 @@ void FileBrowser::on_subject_list_currentCellChanged(int currentRow, int , int p
                 for(unsigned int j = 0;j < dcm_file_list.size();++j)
                     dcm_file_list_full.push_back((sub_dir.absolutePath() + "/" + dcm_file_list[j]).toLocal8Bit().begin());
                 tipl::io::volume dcm;
-                if(!dcm.load_from_files(dcm_file_list_full,dcm_file_list_full.size()))
+                if(!dcm.load_from_files(dcm_file_list_full))
                     continue;
                 int row = ui->tableWidget->rowCount();
                 ui->tableWidget->setRowCount(row+1);
                 QStringList item_list;
                 item_list << sub_dir_list[i] + "(DICOM)";
-                item_list << QString("%1/%2/%3").arg(dcm.geo().width()).arg(dcm.geo().height()).arg(dcm.geo().depth());
+                item_list << QString("%1/%2/%3").arg(dcm.shape().width()).arg(dcm.shape().height()).arg(dcm.shape().depth());
                 tipl::vector<3,float> vs;
                 dcm.get_voxel_size(vs);
                 item_list << QString("%1/%2/%3").arg(vs[0]).arg(vs[1]).arg(vs[2]);
@@ -367,8 +367,9 @@ void FileBrowser::preview_image(QString file_name)
         for(unsigned int j = 0;j < dcm_file_list.size();++j)
             dcm_file_list_full.push_back((dir.absolutePath() + "/" + dcm_file_list[j]).toLocal8Bit().begin());
         tipl::io::volume dcm;
-        if(dcm.load_from_files(dcm_file_list_full,dcm_file_list_full.size()))
-            dcm >> preview_data;
+        if(!dcm.load_from_files(dcm_file_list_full))
+            return;
+        dcm >> preview_data;
         preview_loaded = true;
         return;
     }

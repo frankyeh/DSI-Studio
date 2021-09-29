@@ -181,7 +181,7 @@ bool load_image_from_files(QStringList filenames,tipl::image<float,3>& ref,tipl:
         std::vector<std::string> file_list;
         for(int i = 0;i < filenames.size();++i)
             file_list.push_back(filenames[i].toStdString());
-        v.load_from_files(file_list,file_list.size());
+        v.load_from_files(file_list);
         v >> ref;
         v.get_voxel_size(vs);
         return true;

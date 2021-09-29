@@ -133,7 +133,7 @@ void MainWindow::openFile(QString file_name)
             loadSrc(QStringList() << file_name);
         }
         else
-        if(QString(file_name).endsWith("nii.gz"))
+        if(QString(file_name).endsWith("nii.gz") || QString(file_name).endsWith(".dcm"))
         {
             view_image* dialog = new view_image(this);
             dialog->setAttribute(Qt::WA_DeleteOnClose);
@@ -1080,9 +1080,13 @@ bool dcm2src(QStringList files,std::ostream& out)
         tipl::io::dicom header;
         std::vector<std::string> file_list;
         for(int index = 0;index < files.size();++index)
-            file_list.push_back(files[index].toLocal8Bit().begin());
-        if(!v.load_from_files(file_list,file_list.size()) ||
-            !header.load_from_file(files[0].toLocal8Bit().begin()))
+            file_list.push_back(files[0].toStdString().c_str());
+        if(!v.load_from_files(file_list))
+        {
+            out << v.error_msg.c_str() << std::endl;
+            return false;
+        }
+        if(!header.load_from_file(files[0].toStdString().c_str()))
         {
             out << " [ERROR] cannot read image volume. Skip" << std::endl;
             return false;
