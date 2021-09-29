@@ -284,7 +284,6 @@ int run_cmd(int ac, char *av[])
 
 int main(int ac, char *av[])
 {
-    tipl::matrix
     if(ac > 2)
         return run_cmd(ac,av);
     if(QString(av[1]).endsWith(".txt") || QString(av[1]).endsWith(".log"))
