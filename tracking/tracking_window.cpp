@@ -2496,7 +2496,7 @@ void tracking_window::on_actionSave_Slices_to_DICOM_triggered()
     std::vector<std::string> file_list;
     for(int i = 0;i < files.size();++i)
         file_list.push_back(files[i].toStdString());
-    tipl::io::volume volume;
+    tipl::io::dicom_volume volume;
     if(!volume.load_from_files(file_list))
     {
         QMessageBox::critical(this,"ERROR",volume.error_msg.c_str());

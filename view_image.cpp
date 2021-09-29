@@ -177,7 +177,7 @@ bool load_image_from_files(QStringList filenames,tipl::image<float,3>& ref,tipl:
         }
     else
     {
-        tipl::io::volume v;
+        tipl::io::dicom_volume v;
         std::vector<std::string> file_list;
         for(int i = 0;i < filenames.size();++i)
             file_list.push_back(filenames[i].toStdString());

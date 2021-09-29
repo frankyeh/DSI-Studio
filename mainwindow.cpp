@@ -1076,7 +1076,7 @@ bool dcm2src(QStringList files,std::ostream& out)
     // Now handle T1W or T2FLAIR
     {
         std::sort(files.begin(),files.end(),compare_qstring());
-        tipl::io::volume v;
+        tipl::io::dicom_volume v;
         tipl::io::dicom header;
         std::vector<std::string> file_list;
         for(int index = 0;index < files.size();++index)

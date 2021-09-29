@@ -348,7 +348,7 @@ bool CustomSliceModel::initialize(const std::vector<std::string>& files,bool is_
     // dicom images
     if(source_images.empty())
     {
-        tipl::io::volume volume;
+        tipl::io::dicom_volume volume;
         if(volume.load_from_files(files))
         {
             volume.get_voxel_size(vs);

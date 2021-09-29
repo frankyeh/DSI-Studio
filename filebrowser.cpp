@@ -179,7 +179,7 @@ void FileBrowser::on_subject_list_currentCellChanged(int currentRow, int , int p
                 std::vector<std::string> dcm_file_list_full;
                 for(unsigned int j = 0;j < dcm_file_list.size();++j)
                     dcm_file_list_full.push_back((sub_dir.absolutePath() + "/" + dcm_file_list[j]).toLocal8Bit().begin());
-                tipl::io::volume dcm;
+                tipl::io::dicom_volume dcm;
                 if(!dcm.load_from_files(dcm_file_list_full))
                     continue;
                 int row = ui->tableWidget->rowCount();
@@ -366,7 +366,7 @@ void FileBrowser::preview_image(QString file_name)
         std::vector<std::string> dcm_file_list_full;
         for(unsigned int j = 0;j < dcm_file_list.size();++j)
             dcm_file_list_full.push_back((dir.absolutePath() + "/" + dcm_file_list[j]).toLocal8Bit().begin());
-        tipl::io::volume dcm;
+        tipl::io::dicom_volume dcm;
         if(!dcm.load_from_files(dcm_file_list_full))
             return;
         dcm >> preview_data;
