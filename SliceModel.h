@@ -34,7 +34,7 @@ public:
     virtual void get_slice(tipl::color_image& image,
                            unsigned char,
                            const std::vector<std::shared_ptr<SliceModel> >& overlay_slices) const;
-    tipl::const_pointer_image<float, 3> get_source(void) const;
+    tipl::const_pointer_image<3> get_source(void) const;
     std::string get_name(void) const;
     bool is_picture(void) const{return dim[0] == 1 || dim[1] == 1 || dim[2] == 1;}
 public:
@@ -140,8 +140,8 @@ public:
     bool load_mapping(const char* file_name);
 public:
     tipl::matrix<4,4> trans;
-    tipl::image<float, 3> source_images;
-    tipl::image<float, 3> skull_removed_images;
+    tipl::image<3> source_images;
+    tipl::image<3> skull_removed_images;
     tipl::color_image picture;
     void update_image(void);
     virtual void get_slice(tipl::color_image& image,

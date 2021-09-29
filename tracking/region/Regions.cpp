@@ -69,7 +69,7 @@ void ROIRegion::add_points(std::vector<tipl::vector<3,short> >& points, bool del
 
         geo_size = max_value-min_value;
         tipl::shape<3> mask_geo(geo_size[0]+1,geo_size[1]+1,geo_size[2]+1);
-        tipl::image<unsigned char,3> mask;
+        tipl::image<3,unsigned char> mask;
 
         try
         {
@@ -166,7 +166,7 @@ void ROIRegion::SaveToFile(const char* FileName)
     else if (ext == std::string(".mat")) {
         if(resolution_ratio > 8.0f)
             return;
-        tipl::image<unsigned char, 3> mask(dim);
+        tipl::image<3,unsigned char> mask(dim);
         if(resolution_ratio != 1.0f)
             mask.resize(get_buffer_dim());
         for (unsigned int index = 0; index < region.size(); ++index) {
@@ -183,7 +183,7 @@ void ROIRegion::SaveToFile(const char* FileName)
         if(resolution_ratio > 8.0f)
             return;
         unsigned int color = show_region.color.color & 0x00FFFFFF;
-        tipl::image<unsigned char, 3>mask;
+        tipl::image<3,unsigned char>mask;
         SaveToBuffer(mask);
         tipl::vector<3,float> rvs(vs);
         tipl::matrix<4,4> T(trans_to_mni);
@@ -235,7 +235,7 @@ bool ROIRegion::LoadFromFile(const char* FileName) {
         tipl::io::mat_read header;
         if(!header.load_from_file(FileName))
             return false;
-        tipl::image<short, 3>from;
+        tipl::image<3,short>from;
         header >> from;
         if(from.shape() != dim)
         {
@@ -263,7 +263,7 @@ bool ROIRegion::LoadFromFile(const char* FileName) {
             return false;
         }
         // use unsigned int to avoid the nan background problem
-        tipl::image<unsigned int, 3>from;
+        tipl::image<3,unsigned int> from;
         tipl::shape<3> nii_geo;
         header.get_image_dimension(nii_geo);
         if(nii_geo != dim)// use transformation information
@@ -287,7 +287,7 @@ bool ROIRegion::LoadFromFile(const char* FileName) {
             return true;
         }
         {
-            tipl::image<float, 3> tmp;
+            tipl::image<3> tmp;
             header.toLPS(tmp);
             tipl::add_constant(tmp,0.5);
             from = tmp;
@@ -307,7 +307,7 @@ void ROIRegion::makeMeshes(unsigned char smooth)
     show_region.load(region,resolution_ratio,smooth);
 }
 // ---------------------------------------------------------------------------
-void ROIRegion::SaveToBuffer(tipl::image<unsigned char, 3>& mask,
+void ROIRegion::SaveToBuffer(tipl::image<3,unsigned char>& mask,
                              float target_resolution)
 {
     if(target_resolution != 1.0f)
@@ -363,7 +363,7 @@ void ROIRegion::perform(const std::string& action)
 
     if(resolution_ratio > 8)
         return;
-    tipl::image<unsigned char, 3>mask;
+    tipl::image<3,unsigned char>mask;
     if(action == "smoothing")
     {
         SaveToBuffer(mask);
@@ -572,7 +572,7 @@ void ROIRegion::get_quantitative_data(std::shared_ptr<fib_data> handle,std::vect
             std::vector<std::vector<float> > fa_data;
             handle->db.get_subject_fa(subject_index,fa_data,normalize_qa);
             float mean,max,min;
-            tipl::const_pointer_image<float, 3> I(&fa_data[0][0],handle->dim);
+            tipl::const_pointer_image<3> I(&fa_data[0][0],handle->dim);
             calculate_region_stat(I,points,mean,max,min);
             data.push_back(mean);
             std::ostringstream out;

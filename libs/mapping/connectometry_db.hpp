@@ -31,12 +31,12 @@ public:// subject specific data
 public:
     std::list<std::vector<float> > subject_qa_buf;// merged from other db
     unsigned int subject_qa_length;
-    tipl::image<unsigned int,3> vi2si;
+    tipl::image<3,unsigned int> vi2si;
     std::vector<unsigned int> si2vi;
     std::string index_name;
 public://longitudinal studies
     std::vector<std::pair<int,int> > match;
-    void auto_match(const tipl::image<int,3>& fp_mask,float fiber_threshold,bool normalize_fp);
+    void auto_match(const tipl::image<3,int>& fp_mask,float fiber_threshold,bool normalize_fp);
     void calculate_change(unsigned char dif_type,bool norm);
 public:
     connectometry_db():num_subjects(0),modified(false){;}
@@ -49,21 +49,21 @@ public:
     bool add_subject_file(const std::string& file_name,
                             const std::string& subject_name);
     void get_subject_vector_pos(std::vector<int>& subject_vector_pos,
-                                const tipl::image<int,3>& fp_mask,float fiber_threshold) const;
+                                const tipl::image<3,int>& fp_mask,float fiber_threshold) const;
     void get_subject_vector(unsigned int from,unsigned int to,
                             std::vector<std::vector<float> >& subject_vector,
-                            const tipl::image<int,3>& fp_mask,float fiber_threshold,bool normalize_fp) const;
+                            const tipl::image<3,int>& fp_mask,float fiber_threshold,bool normalize_fp) const;
     void get_subject_vector(unsigned int subject_index,std::vector<float>& subject_vector,
-                            const tipl::image<int,3>& fp_mask,float fiber_threshold,bool normalize_fp) const;
-    void get_dif_matrix(std::vector<float>& matrix,const tipl::image<int,3>& fp_mask,float fiber_threshold,bool normalize_fp);
+                            const tipl::image<3,int>& fp_mask,float fiber_threshold,bool normalize_fp) const;
+    void get_dif_matrix(std::vector<float>& matrix,const tipl::image<3,int>& fp_mask,float fiber_threshold,bool normalize_fp);
     void save_subject_vector(const char* output_name,
-                             const tipl::image<int,3>& fp_mask,
+                             const tipl::image<3,int>& fp_mask,
                              float fiber_threshold,
                              bool normalize_fp) const;
     bool save_subject_data(const char* output_name);
     void get_subject_slice(unsigned int subject_index,unsigned char dim,unsigned int pos,
-                            tipl::image<float,2>& slice) const;
-    void get_subject_volume(unsigned int subject_index,tipl::image<float,3>& volume) const;
+                            tipl::image<2,float>& slice) const;
+    void get_subject_volume(unsigned int subject_index,tipl::image<3>& volume) const;
     void get_subject_fa(unsigned int subject_index,std::vector<std::vector<float> >& fa_data,bool normalize_qa) const;
     bool get_odf_profile(const char* file_name,std::vector<float>& cur_subject_data);
     bool get_qa_profile(const char* file_name,std::vector<std::vector<float> >& data);

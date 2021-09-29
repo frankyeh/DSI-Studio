@@ -344,7 +344,7 @@ void RegionTableWidget::draw_region(const tipl::color_image& slice_image,float d
 
         for (uint32_t roi_index = 0;roi_index < checked_regions.size();++roi_index)
         {
-            tipl::image<uint8_t,2> detect_edge(slice_image.shape());
+            tipl::image<2,uint8_t> detect_edge(slice_image.shape());
             auto color = checked_regions[roi_index]->show_region.color;
             float r = checked_regions[roi_index]->resolution_ratio;
             bool draw_region = (cur_tracking_window["roi_edge"].toInt() == 0 && color.a >= 128);
@@ -600,7 +600,7 @@ void get_roi_label(QString file_name,std::map<int,std::string>& label_map,
     }
     std::cout << "no label file found. Use default ROI numbering." << std::endl;
 }
-bool is_label_image(const tipl::image<float,3>& I);
+bool is_label_image(const tipl::image<3>& I);
 bool load_nii(std::shared_ptr<fib_data> handle,
               const std::string& file_name,
               std::vector<std::pair<tipl::shape<3>,tipl::matrix<4,4> > >& transform_lookup,
@@ -616,9 +616,9 @@ bool load_nii(std::shared_ptr<fib_data> handle,
         return false;
     }
 
-    tipl::image<unsigned int, 3> from;
+    tipl::image<3,unsigned int> from;
     {
-        tipl::image<float, 3> tmp;
+        tipl::image<3> tmp;
         header.toLPS(tmp);
         if(header.is_integer() || is_label_image(tmp))
             from = tmp;
@@ -685,7 +685,7 @@ bool load_nii(std::shared_ptr<fib_data> handle,
                         return false;
                     }
                     auto T = handle->view_item[index].native_trans;
-                    tipl::image<unsigned int, 3> new_from(handle->dim);
+                    tipl::image<3,unsigned int> new_from(handle->dim);
                     tipl::par_for(new_from.size(),[&](size_t i)
                     {
                         auto pos = handle->get_native_position()[i];
@@ -1126,7 +1126,7 @@ void RegionTableWidget::save_all_regions_to_4dnifti(void)
     save_region_label_file(checked_regions,filename);
 
     tipl::shape<3> geo = cur_tracking_window.handle->dim;
-    tipl::image<unsigned char,4> multiple_I(tipl::shape<4>(geo[0],geo[1],geo[2],uint32_t(checked_regions.size())));
+    tipl::image<4,unsigned char> multiple_I(tipl::shape<4>(geo[0],geo[1],geo[2],uint32_t(checked_regions.size())));
     tipl::par_for (checked_regions.size(),[&](unsigned int region_index)
     {
         size_t offset = region_index*geo.size();
@@ -1158,7 +1158,7 @@ void RegionTableWidget::save_all_regions(void)
     save_region_label_file(checked_regions,filename);
 
     tipl::shape<3> geo = cur_tracking_window.handle->dim;
-    tipl::image<unsigned short, 3> mask(geo);
+    tipl::image<3,unsigned short> mask(geo);
     for (unsigned int i = 0; i < checked_regions.size(); ++i)
         for (unsigned int j = 0; j < checked_regions[i]->size(); ++j)
         {
@@ -1170,7 +1170,7 @@ void RegionTableWidget::save_all_regions(void)
     bool result;
     if(checked_regions.size() <= 255)
     {
-        tipl::image<uint8_t, 3> i8mask(mask);
+        tipl::image<3,uint8_t> i8mask(mask);
         result = gz_nifti::save_to_file(filename.toStdString().c_str(),i8mask,
                            cur_tracking_window.current_slice->vs,
                            cur_tracking_window.handle->trans_to_mni);
@@ -1401,7 +1401,7 @@ void RegionTableWidget::do_action(QString action)
                 return;
             if(action == "A-B")
             {
-                tipl::image<unsigned char, 3> A,B;
+                tipl::image<3,unsigned char> A,B;
                 checked_regions[0]->SaveToBuffer(A);
                 for(size_t r = 1;r < checked_regions.size();++r)
                 {
@@ -1414,7 +1414,7 @@ void RegionTableWidget::do_action(QString action)
             }
             else
             {
-                tipl::image<unsigned char, 3> A,B;
+                tipl::image<3,unsigned char> A,B;
                 for(size_t r = 1;r < checked_regions.size();++r)
                 {
                     checked_regions[r]->SaveToBuffer(B);
@@ -1444,15 +1444,15 @@ void RegionTableWidget::do_action(QString action)
             int threshold = float(QInputDialog::getInt(this,"DSI Studio","Voxel distance",10,1,100,1,&ok));
             if(!ok)
                 return;
-            tipl::image<unsigned char,3> mask;
+            tipl::image<3,unsigned char> mask;
             cur_region.SaveToBuffer(mask);
             tipl::morphology::dilation2(mask,threshold);
             cur_region.LoadFromBuffer(mask);
         }
         if(action == "threshold")
         {
-            tipl::image<unsigned char, 3>mask;
-            tipl::const_pointer_image<float,3> I = cur_tracking_window.current_slice->get_source();
+            tipl::image<3,unsigned char>mask;
+            tipl::const_pointer_image<3,float> I = cur_tracking_window.current_slice->get_source();
             if(I.empty())
                 return;
             mask.resize(I.shape());
@@ -1481,7 +1481,7 @@ void RegionTableWidget::do_action(QString action)
         }
         if(action == "threshold_current")
         {
-            tipl::const_pointer_image<float,3> I = cur_tracking_window.current_slice->get_source();
+            tipl::const_pointer_image<3,float> I = cur_tracking_window.current_slice->get_source();
             if(I.empty())
                 return;
             double m = *std::max_element(I.begin(),I.end());
@@ -1538,10 +1538,10 @@ void RegionTableWidget::do_action(QString action)
         }
         if(action == "separate")
         {
-            tipl::image<unsigned char, 3>mask;
+            tipl::image<3,unsigned char>mask;
             cur_region.SaveToBuffer(mask);
             QString name = item(roi_index,0)->text();
-            tipl::image<unsigned int,3> labels;
+            tipl::image<3,unsigned int> labels;
             std::vector<std::vector<unsigned int> > r;
             tipl::morphology::connected_component_labeling(mask,labels,r);
             begin_update();

@@ -209,7 +209,7 @@ int atl(void)
                 output += ".";
                 output += atlas_list[i]->get_list()[j];
                 output += ".nii.gz";
-                tipl::image<unsigned char,3> roi(handle->dim);
+                tipl::image<3,unsigned char> roi(handle->dim);
                 for(unsigned int k = 0;k < mapping.size();++k)
                     if (atlas_list[i]->is_labeled_as(mapping[k], j))
                         roi[k] = 1;

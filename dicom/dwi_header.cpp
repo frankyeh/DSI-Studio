@@ -47,7 +47,7 @@ void get_report_from_bruker2(const tipl::io::bruker_info& header,std::string& re
         << header["IMND_diff_grad_dur"] << " ms.";
     report += out.str();
 }
-bool get_compressed_image(tipl::io::dicom& dicom,tipl::image<short,2>& I);
+bool get_compressed_image(tipl::io::dicom& dicom,tipl::image<2,short>& I);
 bool DwiHeader::open(const char* filename)
 {
     tipl::io::dicom header;
@@ -65,7 +65,7 @@ bool DwiHeader::open(const char* filename)
     header >> image;
     if(header.is_compressed)
     {
-        tipl::image<short,2> I;
+        tipl::image<2,short> I;
         if(!get_compressed_image(header,I))
         {
             std::cout << "Unsupported transfer syntax:" << header.encoding << std::endl;
@@ -332,7 +332,7 @@ void sort_dwi(std::vector<std::shared_ptr<DwiHeader> >& dwi_files)
         if (dwi_files[i]->bvalue == dwi_files[i-1]->bvalue &&
                 dwi_files[i]->bvec == dwi_files[i-1]->bvec)
         {
-            tipl::image<float,3> I = dwi_files[i]->image;
+            tipl::image<3> I = dwi_files[i]->image;
             I += dwi_files[i-1]->image;
             I *= 0.5f;
             dwi_files[i-1]->image = I;
@@ -573,7 +573,7 @@ bool DwiHeader::output_src(const char* di_file,std::vector<std::shared_ptr<DwiHe
     for (unsigned int index = 0;check_prog(index,(unsigned int)(dwi_files.size()));++index)
     {
         std::ostringstream name;
-        tipl::image<unsigned short,3> buffer;
+        tipl::image<3,unsigned short> buffer;
         const unsigned short* ptr = 0;
         name << "image" << index;
         ptr = (const unsigned short*)dwi_files[index]->begin();

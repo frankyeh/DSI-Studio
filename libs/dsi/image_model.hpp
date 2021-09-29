@@ -4,9 +4,9 @@
 #include "basic_voxel.hpp"
 struct distortion_map{
     const float pi_2 = 3.14159265358979323846f/2.0f;
-    tipl::image<int,3> i1,i2;
-    tipl::image<float,3> w1,w2;
-    void operator=(const tipl::image<float,3>& d)
+    tipl::image<3,int> i1,i2;
+    tipl::image<3> w1,w2;
+    void operator=(const tipl::image<3>& d)
     {
         int n = d.width();
         i1.resize(d.shape());
@@ -41,9 +41,9 @@ struct distortion_map{
             }
         });
     }
-    void calculate_displaced(tipl::image<float,3>& j1,
-                             tipl::image<float,3>& j2,
-                             const tipl::image<float,3>& v)
+    void calculate_displaced(tipl::image<3>& j1,
+                             tipl::image<3>& j2,
+                             const tipl::image<3>& v)
     {
         int n = v.width();
         j1.clear();
@@ -78,9 +78,9 @@ struct distortion_map{
 
     }
 
-    void calculate_original(const tipl::image<float,3>& v1,
-                const tipl::image<float,3>& v2,
-                tipl::image<float,3>& v)
+    void calculate_original(const tipl::image<3>& v1,
+                const tipl::image<3>& v2,
+                tipl::image<3>& v)
     {
         int n = v1.width();
         int n2 = n + n;
@@ -114,9 +114,9 @@ struct distortion_map{
             tipl::mat::pseudo_inverse_solve(&M[0],&y[0],&v[0]+pos,tipl::shape<2>(uint32_t(n),uint32_t(n2)));
         });
     }
-    void sample_gradient(const tipl::image<float,3>& g1,
-                         const tipl::image<float,3>& g2,
-                         tipl::image<float,3>& new_g)
+    void sample_gradient(const tipl::image<3>& g1,
+                         const tipl::image<3>& g2,
+                         tipl::image<3>& new_g)
     {
         int n = g1.width();
         new_g.clear();
@@ -173,7 +173,7 @@ void distortion_estimate(const image_type& v1,const image_type& v2,
     else
         d.resize(geo);
     int n = v1.width();
-    tipl::image<float,3> old_d(geo),v(geo),new_g(geo),j1(geo),j2(geo);
+    tipl::image<3> old_d(geo),v(geo),new_g(geo),j1(geo),j2(geo);
     float sum_dif = 0.0f;
     float s = 0.5f;
     distortion_map m;
@@ -206,7 +206,7 @@ void distortion_estimate(const image_type& v1,const image_type& v2,
         else
         {
             sum_dif = sum;
-            tipl::image<float,3> g1(geo),g2(geo);
+            tipl::image<3> g1(geo),g2(geo);
             tipl::gradient(j1.begin(),j1.end(),g1.begin(),2,1);
             tipl::gradient(j2.begin(),j2.end(),g2.begin(),2,1);
             for(size_t i = 0;i < g1.size();++i)
@@ -229,8 +229,8 @@ void distortion_estimate(const image_type& v1,const image_type& v2,
 struct ImageModel
 {
 public:
-    std::vector<tipl::image<unsigned short,3> > new_dwi; //used in rotated volume
-    std::vector<tipl::image<unsigned short,3> > nifti_dwi; // if load directly from nifti
+    std::vector<tipl::image<3,unsigned short> > new_dwi; //used in rotated volume
+    std::vector<tipl::image<3,unsigned short> > nifti_dwi; // if load directly from nifti
 public:
     Voxel voxel;
     std::string file_name,error_msg;
@@ -240,8 +240,8 @@ public:
 public:
     std::vector<float> src_bvalues;
     std::vector<const unsigned short*> src_dwi_data;
-    tipl::image<float,3> dwi_sum;
-    tipl::image<unsigned char, 3>dwi;
+    tipl::image<3> dwi_sum;
+    tipl::image<3,unsigned char>dwi;
     std::shared_ptr<ImageModel> study_src;
 public:
     void draw_mask(tipl::color_image& buffer,int position);
@@ -269,8 +269,8 @@ public:
     void rotate(const tipl::shape<3>& new_geo,
                 const tipl::vector<3>& new_vs,
                 const tipl::transformation_matrix<double>& affine,
-                const tipl::image<tipl::vector<3>,3>& cdm_dis = tipl::image<tipl::vector<3>,3>(),
-                const tipl::image<float,3>& super_reso_ref = tipl::image<float,3>(),double var = 3.0);
+                const tipl::image<3,tipl::vector<3> >& cdm_dis = tipl::image<3,tipl::vector<3> >(),
+                const tipl::image<3>& super_reso_ref = tipl::image<3>(),double var = 3.0);
     void resample(float nv);
     bool arg_to_mni(float resolution,tipl::vector<3>& vs,tipl::shape<3>& new_geo,tipl::affine_transform<float>& T);
     bool rotate_to_mni(float resolution);

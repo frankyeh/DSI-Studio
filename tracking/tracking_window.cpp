@@ -550,7 +550,7 @@ bool tracking_window::command(QString cmd,QString param,QString param2)
             auto I = reg_slice->source_images;
             tipl::lower_threshold(I,0);
             tipl::normalize(I,255);
-            tipl::image<unsigned char,3> II(I.shape());
+            tipl::image<3,unsigned char> II(I.shape());
             std::copy(I.begin(),I.end(),II.begin());
             gz_nifti::save_to_file((param+"/slices/" + ui->SliceModality->currentText() + ".nii.gz").toStdString().c_str(),
                                    II,reg_slice->vs,reg_slice->trans);
@@ -1722,7 +1722,7 @@ void tracking_window::stripSkull()
     if(!reg_slice || !reg_slice->skull_removed_images.empty())
         return;
     gz_nifti in1,in2;
-    tipl::image<float,3> It,Iw,J(reg_slice->get_source());
+    tipl::image<3> It,Iw,J(reg_slice->get_source());
     if(!in1.load_from_file(handle->t1w_template_file_name.c_str()) || !in1.toLPS(It))
         return;
     if(!in2.load_from_file(handle->mask_template_file_name.c_str()) || !in2.toLPS(Iw))
@@ -1747,7 +1747,7 @@ void tracking_window::stripSkull()
     tipl::filter::mean(Iw);
     tipl::filter::mean(Iw);
 
-    tipl::image<float,3> Iw_(reg_slice->source_images.shape());
+    tipl::image<3> Iw_(reg_slice->source_images.shape());
     tipl::resample_mt(Iw,Iw_,manual->get_iT(),tipl::linear);
 
     reg_slice->skull_removed_images = reg_slice->source_images;
@@ -1809,12 +1809,12 @@ void tracking_window::on_show_ruler_toggled(bool checked)
 }
 
 
-void get_iso_fa(std::shared_ptr<fib_data> handle, tipl::image<float,3>& iso_fa_)
+void get_iso_fa(std::shared_ptr<fib_data> handle, tipl::image<3>& iso_fa_)
 {
     size_t index = handle->get_name_index("iso");
     if(handle->view_item.size() == index)
         index = 0;
-    tipl::image<float,3> iso_fa(handle->view_item[index].get_image());
+    tipl::image<3> iso_fa(handle->view_item[index].get_image());
     tipl::add(iso_fa,handle->view_item[0].get_image());
     iso_fa.swap(iso_fa_);
 }
@@ -1828,7 +1828,7 @@ void tracking_window::on_actionAdjust_Mapping_triggered()
         return;
     }
     reg_slice->terminate();
-    tipl::image<float,3> iso_fa;
+    tipl::image<3> iso_fa;
     get_iso_fa(handle,iso_fa);
     std::shared_ptr<manual_alignment> manual(new manual_alignment(this,
         iso_fa,slices[0]->vs,
@@ -2205,7 +2205,7 @@ void tracking_window::on_actionOpen_Connectivity_Matrix_triggered()
             QMessageBox::information(this,"error","The connectivity matrix should be a square matrix");
             return;
         }
-        tipl::image<float,2> connectivity(tipl::shape<2>(row,col));
+        tipl::image<2,float> connectivity(tipl::shape<2>(row,col));
         std::copy(buf,buf+row*col,connectivity.begin());
         glWidget->connectivity = std::move(connectivity);
 
@@ -2429,12 +2429,12 @@ void tracking_window::on_actionMark_Region_on_T1W_T2W_triggered()
         return;
     auto current_region = regionWidget->regions[uint32_t(regionWidget->currentRow())];
     float mark_value = slice->get_value_range().second*float(ratio);
-    tipl::image<unsigned char, 3> mask;
+    tipl::image<3,unsigned char> mask;
     current_region->SaveToBuffer(mask);
     float resolution_ratio = current_region->resolution_ratio;
     tipl::matrix<4,4> T(slice->T);
     tipl::multiply_constant(&T[0],&T[0]+12,resolution_ratio);
-    tipl::image<unsigned char, 3> t_mask(slice->source_images.shape());
+    tipl::image<3,unsigned char> t_mask(slice->source_images.shape());
     tipl::resample(mask,t_mask,T,tipl::nearest);
     for(size_t i = 0;i < t_mask.size();++i)
         if(t_mask[i])
@@ -2443,7 +2443,7 @@ void tracking_window::on_actionMark_Region_on_T1W_T2W_triggered()
     glWidget->updateGL();
 }
 
-void paint_track_on_volume(tipl::image<unsigned char,3>& track_map,const std::vector<float>& tracks);
+void paint_track_on_volume(tipl::image<3,unsigned char>& track_map,const std::vector<float>& tracks);
 void tracking_window::on_actionMark_Tracts_on_T1W_T2W_triggered()
 {
     CustomSliceModel* slice = dynamic_cast<CustomSliceModel*>(current_slice.get());
@@ -2456,7 +2456,7 @@ void tracking_window::on_actionMark_Tracts_on_T1W_T2W_triggered()
             "Aissgn intensity (ratio to the maximum, e.g., 1.2 = 1.2*max)",1.0,0.0,10.0,1,&ok);
     if(!ok)
         return;
-    tipl::image<unsigned char, 3> t_mask(slice->source_images.shape());
+    tipl::image<3,unsigned char> t_mask(slice->source_images.shape());
     auto checked_tracks = tractWidget->get_checked_tracks();
     tipl::par_for(checked_tracks.size(),[&](size_t i){
         for(size_t j = 0;j < checked_tracks[i]->get_visible_track_count();++j)
@@ -2504,7 +2504,7 @@ void tracking_window::on_actionSave_Slices_to_DICOM_triggered()
     }
 
     {
-        tipl::image<float,3> I;
+        tipl::image<3> I;
         volume >> I;
         if(I.shape() != slice->source_images.shape())
         {
@@ -2520,7 +2520,7 @@ void tracking_window::on_actionSave_Slices_to_DICOM_triggered()
         new_dim_order[uint8_t(volume.dim_order[i])] = i;
         new_flip[uint8_t(volume.dim_order[i])] = uint8_t(volume.flip[i]);
     }
-    tipl::image<float,3> out;
+    tipl::image<3> out;
     tipl::reorder(slice->source_images,out,new_dim_order,new_flip);
 
     tipl::io::dicom header;
@@ -2764,7 +2764,7 @@ void tracking_window::on_actionAdjust_Atlas_Mapping_triggered()
 {
     if(!handle->load_template())
         return;
-    tipl::image<float,3> iso_fa;
+    tipl::image<3> iso_fa;
     get_iso_fa(handle,iso_fa);
     std::shared_ptr<manual_alignment> manual(new manual_alignment(this,
         iso_fa,slices[0]->vs,

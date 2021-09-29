@@ -81,7 +81,7 @@ bool RegionModel::load(const std::vector<tipl::vector<3,short> >& seeds, float r
     }
 
 
-    tipl::image<unsigned char, 3>buffer(geo);
+    tipl::image<3,unsigned char> buffer(geo);
     tipl::par_for(seeds.size(),[&](unsigned int index)
     {
         tipl::vector<3,short> point(seeds[index]);
@@ -97,7 +97,7 @@ bool RegionModel::load(const std::vector<tipl::vector<3,short> >& seeds, float r
         tipl::filter::mean(buffer);
         --smooth;
     }
-    object.reset(new tipl::march_cube(buffer, 20));
+    object.reset(new tipl::march_cube(buffer, uint8_t(20)));
     if (object->point_list.empty())
     {
         object.reset();
@@ -119,10 +119,10 @@ bool RegionModel::load(const std::vector<tipl::vector<3,short> >& seeds, float r
     return object.get();
 }
 
-bool RegionModel::load(const tipl::image<float, 3>& image_,
+bool RegionModel::load(const tipl::image<3>& image_,
                        float threshold)
 {
-    tipl::image<float, 3> image_buffer(image_);
+    tipl::image<3> image_buffer(image_);
 
     float scale = 1.0f;
     while(image_buffer.width() > 256 || image_buffer.height() > 256 || image_buffer.depth() > 256)
@@ -160,7 +160,7 @@ bool RegionModel::load(const tipl::image<float, 3>& image_,
 bool RegionModel::load(unsigned int* buffer, tipl::shape<3>geo,
                        unsigned int threshold)
 {
-    tipl::image<unsigned char, 3>re_buffer(geo);
+    tipl::image<3,unsigned char>re_buffer(geo);
     for (unsigned int index = 0; index < re_buffer.size(); ++index)
         re_buffer[index] = buffer[index] > threshold ? 200 : 0;
 

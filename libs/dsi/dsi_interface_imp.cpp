@@ -227,7 +227,7 @@ bool ImageModel::reconstruction(void)
 
             // obtain QA map for normalization
             {
-                std::vector<tipl::pointer_image<float,3> > tmp;
+                std::vector<tipl::pointer_image<3,float> > tmp;
                 auto mask = voxel.mask;
                 // clear mask to create whole volume QA map
                 std::fill(voxel.mask.begin(),voxel.mask.end(),1.0);
@@ -270,11 +270,11 @@ bool ImageModel::reconstruction(void)
 }
 
 
-bool output_odfs(const tipl::image<unsigned char,3>& mni_mask,
+bool output_odfs(const tipl::image<3,unsigned char>& mni_mask,
                  const char* out_name,
                  const char* ext,
                  std::vector<std::vector<float> >& odfs,
-                 std::vector<tipl::image<float,3> >& template_metrics,
+                 std::vector<tipl::image<3> >& template_metrics,
                  std::vector<std::string>& template_metrics_name,
                  const tessellated_icosahedron& ti,
                  const float* vs,
@@ -324,7 +324,7 @@ const char* odf_average(const char* out_name,std::vector<std::string>& file_name
     std::string file_name;
 
     std::vector<std::string> other_metrics_name;
-    std::vector<tipl::image<float,3> > other_metrics_images;
+    std::vector<tipl::image<3> > other_metrics_images;
     std::vector<size_t> other_metrics_count;
     std::locale loc;
 
@@ -371,7 +371,7 @@ const char* odf_average(const char* out_name,std::vector<std::string>& file_name
                             continue;
                         std::cout << "found metric:" << reader[i].get_name() << std::endl;
                         other_metrics_name.push_back(reader[i].get_name());
-                        other_metrics_images.push_back(tipl::image<float,3>(dim));
+                        other_metrics_images.push_back(tipl::image<3>(dim));
                         other_metrics_count.push_back(0);
                     }
             }
@@ -441,7 +441,7 @@ const char* odf_average(const char* out_name,std::vector<std::string>& file_name
         tipl::multiply_constant(other_metrics_images[i],1.0f/other_metrics_count[i]);
 
     // eliminate ODF if missing more than half of the population
-    tipl::image<unsigned char,3> mask(dim);
+    tipl::image<3,unsigned char> mask(dim);
     unsigned int odf_size = 0;
     for(unsigned int i = 0;i < mask.size();++i)
     {

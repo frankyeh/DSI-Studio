@@ -96,7 +96,7 @@ private: //glu
      std::shared_ptr<GluQua> RegionSpheres;
      std::shared_ptr<GluQua> DeviceQua;
 public:
-     tipl::image<float,2> connectivity;
+     tipl::image<2,float> connectivity;
      float max_connectivity = 0.0f;
      bool two_color_connectivity = false;
  private:

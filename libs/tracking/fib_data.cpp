@@ -126,7 +126,7 @@ const float* odf_data::get_odf_data(unsigned int index) const
     return nullptr;
 }
 
-tipl::const_pointer_image<float,3> item::get_image(void)
+tipl::const_pointer_image<3,float> item::get_image(void)
 {
     if(!image_ready)
     {
@@ -326,9 +326,9 @@ bool fiber_directions::set_dt_index(const std::string& name)
 {
     return set_dt_index(std::find(dt_index_name.begin(),dt_index_name.end(),name)-dt_index_name.begin());
 }
-void fiber_directions::add_dt_index(const std::string& name,tipl::image<float,3>&& I)
+void fiber_directions::add_dt_index(const std::string& name,tipl::image<3>&& I)
 {
-    new_dT.push_back(std::make_shared<tipl::image<float,3> >());
+    new_dT.push_back(std::make_shared<tipl::image<3> >());
     new_dT.back()->swap(I);
     std::vector<const float*> new_ptr(num_fiber);
     std::fill(new_ptr.begin(),new_ptr.end(),&*new_dT.back()->begin());
@@ -521,14 +521,14 @@ fib_data::fib_data(tipl::shape<3> dim_,tipl::vector<3> vs_,const tipl::matrix<4,
 {}
 
 bool load_fib_from_tracks(const char* file_name,
-                          tipl::image<float,3>& I,
+                          tipl::image<3>& I,
                           tipl::vector<3>& vs,
                           tipl::matrix<4,4>& trans_to_mni);
 void prepare_idx(const char* file_name,std::shared_ptr<gz_istream> in);
 void save_idx(const char* file_name,std::shared_ptr<gz_istream> in);
 bool fib_data::load_from_file(const char* file_name)
 {
-    tipl::image<float,3> I;
+    tipl::image<3> I;
     gz_nifti header;
     fib_file_name = file_name;
     if((QFileInfo(file_name).fileName().endsWith(".nii") ||
@@ -537,7 +537,7 @@ bool fib_data::load_from_file(const char* file_name)
     {
         if(header.dim(4) == 3)
         {
-            tipl::image<float,3> x,y,z;
+            tipl::image<3> x,y,z;
             header.get_voxel_size(vs);
             header.toLPS(x,false);
             header.toLPS(y,false);
@@ -580,7 +580,7 @@ bool fib_data::load_from_file(const char* file_name)
             uint32_t fib_num = header.dim(4)/3;
             for(uint32_t i = 0;i < fib_num;++i)
             {
-                tipl::image<float,3> x,y,z;
+                tipl::image<3> x,y,z;
                 header.get_voxel_size(vs);
                 header.toLPS(x,false);
                 header.toLPS(y,false);
@@ -698,7 +698,7 @@ bool fib_data::save_mapping(const std::string& index_name,const std::string& fil
 {
     if(index_name == "fiber" || index_name == "dirs") // command line exp use "dirs"
     {
-        tipl::image<float,4> buf(tipl::shape<4>(
+        tipl::image<4,float> buf(tipl::shape<4>(
                                  dim.width(),
                                  dim.height(),
                                  dim.depth(),3*uint32_t(dir.num_fiber)));
@@ -713,7 +713,7 @@ bool fib_data::save_mapping(const std::string& index_name,const std::string& fil
     if(index_name.length() == 4 && index_name.substr(0,3) == "dir" && index_name[3]-'0' >= 0 && index_name[3]-'0' < int(dir.num_fiber))
     {
         unsigned char dir_index = uint8_t(index_name[3]-'0');
-        tipl::image<float,4> buf(tipl::shape<4>(dim[0],dim[1],dim[2],3));
+        tipl::image<4,float> buf(tipl::shape<4>(dim[0],dim[1],dim[2],3));
         for(unsigned int j = 0,ptr = 0;j < 3;++j)
         for(unsigned int index = 0;index < dim.size();++index,++ptr)
             if(dir.get_fa(index,dir_index) > 0.0f)
@@ -722,7 +722,7 @@ bool fib_data::save_mapping(const std::string& index_name,const std::string& fil
     }
     if(index_name == "odfs" && odf.has_odfs())
     {
-        tipl::image<float,4> buf(tipl::shape<4>(
+        tipl::image<4,float> buf(tipl::shape<4>(
                                  dim.width(),
                                  dim.height(),
                                  dim.depth(),
@@ -742,7 +742,7 @@ bool fib_data::save_mapping(const std::string& index_name,const std::string& fil
 
     if(index_name == "color")
     {
-        tipl::image<tipl::rgb,3> buf(dim);
+        tipl::image<3,tipl::rgb> buf(dim);
         for(int z = 0;z < buf.depth();++z)
         {
             tipl::color_image I;
@@ -761,10 +761,10 @@ bool fib_data::save_mapping(const std::string& index_name,const std::string& fil
     }
     else
     {
-        tipl::image<float,3> buf(view_item[index].get_image());
+        tipl::image<3> buf(view_item[index].get_image());
         if(view_item[index].get_image().shape() != dim)
         {
-            tipl::image<float,3> new_buf(dim);
+            tipl::image<3> new_buf(dim);
             tipl::resample(buf,new_buf,view_item[index].iT,tipl::cubic);
             new_buf.swap(buf);
         }
@@ -864,7 +864,7 @@ bool fib_data::load_from_mat(void)
             if(!read.load_from_file(fa_template_list[index]))
                 continue;
             tipl::vector<3> Itvs;
-            tipl::image<float,3> dummy;
+            tipl::image<3> dummy;
             read.toLPS(dummy,true,false);
             read.get_voxel_size(Itvs);
             if(std::abs(dim[0]-read.nif_header2.dim[1]*Itvs[0]/vs[0]) < 2.0f)
@@ -906,7 +906,7 @@ void fib_data::match_template(void)
         set_template_id(::match_template(std::count_if(dir.fa[0],dir.fa[0]+dim.size(),[](float v){return v > 0.0f;})*2.0f*vs[0]*vs[1]*vs[2]));
 }
 
-const tipl::image<tipl::vector<3,float>,3 >& fib_data::get_native_position(void) const
+const tipl::image<3,tipl::vector<3,float> >& fib_data::get_native_position(void) const
 {
     if(native_position.empty() && mat_reader.has("mapping"))
     {
@@ -954,7 +954,7 @@ bool fib_data::add_dT_index(const std::string& index_name)
                post_fix == view_item[j].name+"_raw")
             {
                 bool raw = post_fix == view_item[j].name+"_raw";
-                tipl::image<float,3> Ibuf,Jbuf;
+                tipl::image<3> Ibuf,Jbuf;
                 auto J = view_item[j].get_image();
                 auto I = view_item[i].get_image();
                 if(J.shape() != dim)
@@ -974,7 +974,7 @@ bool fib_data::add_dT_index(const std::string& index_name)
                     I = Ibuf;
                 }
 
-                tipl::image<float,3> new_metrics(dim);
+                tipl::image<3> new_metrics(dim);
                 std::cout << "new metric: (" << view_item[i].name << " - " << view_item[j].name << ")/" << view_item[j].name << " x 100%" << std::endl;
                 if(!raw)
                 {
@@ -1031,7 +1031,7 @@ void fib_data::get_slice(unsigned int view_index,
     if(view_item[view_index].name == "color")
     {
         {
-            tipl::image<float,2> buf;
+            tipl::image<2,float> buf;
             tipl::volume2slice(view_item[0].get_image(), buf, d_index, pos);
             v2c.convert(buf,show_image);
         }
@@ -1042,7 +1042,7 @@ void fib_data::get_slice(unsigned int view_index,
             std::iota(view_item[view_index].color_map_buf.begin(),
                       view_item[view_index].color_map_buf.end(),0);
         }
-        tipl::image<unsigned int,2> buf;
+        tipl::image<2,unsigned int> buf;
         tipl::volume2slice(view_item[view_index].color_map_buf, buf, d_index, pos);
         for (unsigned int index = 0;index < buf.size();++index)
         {
@@ -1054,7 +1054,7 @@ void fib_data::get_slice(unsigned int view_index,
     }
     else
     {
-        tipl::image<float,2> buf;
+        tipl::image<2,float> buf;
         tipl::volume2slice(view_item[view_index].get_image(), buf, d_index, pos);
         v2c.convert(buf,show_image);
     }
@@ -1170,7 +1170,7 @@ bool fib_data::load_template(void)
     if(!template_I.empty())
         return true;
     gz_nifti read;
-    tipl::image<float,3> I;
+    tipl::image<3> I;
     tipl::vector<3> I_vs;
     if(!read.load_from_file(fa_template_list[template_id].c_str()))
     {
@@ -1447,8 +1447,8 @@ void fib_data::recognize_report(std::shared_ptr<TractModel>& trk,std::string& re
 }
 
 
-void animal_reg(const tipl::image<float,3>& from,tipl::vector<3> from_vs,
-          const tipl::image<float,3>& to,tipl::vector<3> to_vs,
+void animal_reg(const tipl::image<3>& from,tipl::vector<3> from_vs,
+          const tipl::image<3>& to,tipl::vector<3> to_vs,
           tipl::transformation_matrix<double>& T,bool& terminated)
 {
     float PI = 3.14159265358979323846f;
@@ -1538,8 +1538,8 @@ void fib_data::run_normalization(bool background,bool inv)
 
         auto It = template_I;
         auto It2 = template_I2;
-        tipl::image<float,3> Is(dir.fa[0],dim);
-        tipl::image<float,3> Is2;
+        tipl::image<3> Is(dir.fa[0],dim);
+        tipl::image<3> Is2;
 
         for(unsigned int i = 0;i < view_item.size();++i)
             if(view_item[i].name == std::string("iso"))
@@ -1585,13 +1585,13 @@ void fib_data::run_normalization(bool background,bool inv)
         if(terminated)
             return;
         prog = 2;
-        tipl::image<float,3> Iss(It.shape());
+        tipl::image<3> Iss(It.shape());
         tipl::resample_mt(Is,Iss,T,tipl::linear);
-        tipl::image<float,3> Iss2(It.shape());
+        tipl::image<3> Iss2(It.shape());
         if(!Is2.empty())
             tipl::resample_mt(Is2,Iss2,T,tipl::linear);
         prog = 3;
-        tipl::image<tipl::vector<3>,3> dis,inv_dis;
+        tipl::image<3,tipl::vector<3> > dis,inv_dis;
         tipl::reg::cdm_pre(It,It2,Iss,Iss2);
         if(Iss2.shape() == Iss.shape())
         {
@@ -1621,7 +1621,7 @@ void fib_data::run_normalization(bool background,bool inv)
         {
             prog = 4;
             set_title("calculating tempalte to subject warp field");
-            tipl::image<tipl::vector<3,float>,3 > pos;
+            tipl::image<3,tipl::vector<3,float> > pos;
             tipl::displacement_to_mapping(dis,pos,T);
             if(out)
                 out.write("to2from",&pos[0][0],3,pos.size());
@@ -1632,7 +1632,7 @@ void fib_data::run_normalization(bool background,bool inv)
         {
             prog = 5;
             set_title("calculating subject to template warp field");
-            tipl::image<tipl::vector<3,float>,3 > pos(dim);
+            tipl::image<3,tipl::vector<3,float> > pos(dim);
             iT = T;
             iT.inverse();
             pos.for_each_mt([&](tipl::vector<3,float>& v,const tipl::pixel_index<3>& index)
@@ -1767,7 +1767,7 @@ void fib_data::get_atlas_all_roi(std::shared_ptr<atlas> at,std::vector<std::vect
     }
 }
 
-const tipl::image<tipl::vector<3,float>,3 >& fib_data::get_sub2temp_mapping(void)
+const tipl::image<3,tipl::vector<3,float> >& fib_data::get_sub2temp_mapping(void)
 {
     if(!s2t.empty())
         return s2t;

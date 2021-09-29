@@ -28,9 +28,9 @@ public:
         }
 	const RegionModel& operator = (const RegionModel & rhs);
         // bool load_from_file(const char* file_name);
-        bool load(const tipl::image<float, 3>& image_, float threshold_);
+        bool load(const tipl::image<3>& image_, float threshold_);
         bool load(const std::vector<tipl::vector<3,short> >& region, float scale,unsigned char smooth);
-        //bool load(const tipl::image<unsigned char, 3>& mask,unsigned char threshold);
+        //bool load(const tipl::image<3,unsigned char>& mask,unsigned char threshold);
         bool load(unsigned int* buffer, tipl::shape<3>geo, unsigned int threshold);
         tipl::march_cube* get(void) {return object.get();}
         const std::vector<unsigned int>& getSortedIndex(unsigned char view) const

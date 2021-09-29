@@ -394,10 +394,10 @@ void DeviceTableWidget::detect_electrodes(void)
 
     // use intensity threshold to locate possible contact regions
     {
-        tipl::image<unsigned char,3> mask(I.shape());
+        tipl::image<3,unsigned char> mask(I.shape());
         tipl::threshold(I,mask,tipl::maximum(I)*0.98);
 
-        tipl::image<uint32_t,3> label(I.shape());
+        tipl::image<3,uint32_t> label(I.shape());
         tipl::morphology::connected_component_labeling(mask,label,regions);
 
         float voxel_size = vs[0]*vs[1]*vs[2];
@@ -426,7 +426,7 @@ void DeviceTableWidget::detect_electrodes(void)
             contact_list.push_back(i);
 
     // calculating distance between contacts
-    tipl::image<float,2> distance(tipl::shape<2>(uint32_t(contact_list.size()),uint32_t(contact_list.size())));
+    tipl::image<2,float> distance(tipl::shape<2>(uint32_t(contact_list.size()),uint32_t(contact_list.size())));
     for(tipl::pixel_index<2> p(distance.shape());p < int(distance.size());++p)
     {
         uint32_t i = uint32_t(p[0]);

@@ -782,7 +782,7 @@ void TractTableWidget::save_tracts_in_mni(void)
         QMessageBox::critical(this,"Error","File not saved. Please check write permission");
 }
 
-void paint_track_on_volume(tipl::image<unsigned char,3>& track_map,const std::vector<float>& tracks)
+void paint_track_on_volume(tipl::image<3,unsigned char>& track_map,const std::vector<float>& tracks)
 {
     for(size_t j = 0;j < tracks.size();j += 3)
     {
@@ -815,7 +815,7 @@ void TractTableWidget::deep_learning_train(void)
     // save atlas as a nifti file
     if(cur_tracking_window.handle->is_qsdr) //QSDR condition
     {
-        tipl::image<int,4> atlas(tipl::shape<4>(
+        tipl::image<4,int> atlas(tipl::shape<4>(
                 cur_tracking_window.handle->dim[0],
                 cur_tracking_window.handle->dim[1],
                 cur_tracking_window.handle->dim[2],
@@ -823,7 +823,7 @@ void TractTableWidget::deep_learning_train(void)
 
         for(unsigned int index = 0;check_prog(index,rowCount());++index)
         {
-            tipl::image<unsigned char,3> track_map(cur_tracking_window.handle->dim);
+            tipl::image<3,unsigned char> track_map(cur_tracking_window.handle->dim);
             for(unsigned int i = 0;i < tract_models[index]->get_tracts().size();++i)
                 paint_track_on_volume(track_map,tract_models[index]->get_tracts()[i]);
             while(tipl::morphology::smoothing_fill(track_map))

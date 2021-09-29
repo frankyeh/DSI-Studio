@@ -5,7 +5,7 @@
 #include "ui_regtoolbox.h"
 #include "libs/gzip_interface.hpp"
 #include "basic_voxel.hpp"
-bool is_label_image(const tipl::image<float,3>& I);
+bool is_label_image(const tipl::image<3>& I);
 
 void show_view(QGraphicsScene& scene,QImage I);
 RegToolBox::RegToolBox(QWidget *parent) :
@@ -163,7 +163,7 @@ void RegToolBox::on_OpenTemplate2_clicked()
 }
 
 
-void image2rgb(tipl::image<float,2>& tmp,tipl::color_image& buf,float contrast)
+void image2rgb(tipl::image<2,float>& tmp,tipl::color_image& buf,float contrast)
 {
     tmp *= contrast;
     tipl::upper_lower_threshold(tmp.begin(),tmp.end(),tmp.begin(),0.0f,255.0f);
@@ -171,7 +171,7 @@ void image2rgb(tipl::image<float,2>& tmp,tipl::color_image& buf,float contrast)
 }
 
 
-void show_slice_at(QGraphicsScene& scene,tipl::image<float,2>& tmp,tipl::color_image& buf,float ratio,float contrast,uint8_t cur_view)
+void show_slice_at(QGraphicsScene& scene,tipl::image<2,float>& tmp,tipl::color_image& buf,float ratio,float contrast,uint8_t cur_view)
 {
     image2rgb(tmp,buf,contrast);
     QImage I(reinterpret_cast<unsigned char*>(&*buf.begin()),buf.width(),buf.height(),QImage::Format_RGB32);
@@ -181,25 +181,25 @@ void show_slice_at(QGraphicsScene& scene,tipl::image<float,2>& tmp,tipl::color_i
 }
 
 
-void show_slice_at(QGraphicsScene& scene,const tipl::image<float,3>& source,
+void show_slice_at(QGraphicsScene& scene,const tipl::image<3>& source,
                    tipl::color_image& buf,int slice_pos,float ratio,float contrast,uint8_t cur_view)
 {
     if(source.empty())
         return;
-    tipl::image<float,2> tmp;
+    tipl::image<2,float> tmp;
     tipl::volume2slice(source,tmp,cur_view,slice_pos);
     show_slice_at(scene,tmp,buf,ratio,contrast,cur_view);
 }
 void show_mosaic_slice_at(QGraphicsScene& scene,
-                          const tipl::image<float,3>& source1,
-                          const tipl::image<float,3>& source2,
+                          const tipl::image<3>& source1,
+                          const tipl::image<3>& source2,
                           tipl::color_image& buf,size_t slice_pos,float ratio,
                           float contrast,
                           float contrast2,uint8_t cur_view,unsigned int mosaic_size)
 {
     if(source1.empty() || source2.empty())
         return;
-    tipl::image<float,2> tmp1,tmp2,tmp;
+    tipl::image<2,float> tmp1,tmp2,tmp;
     tipl::volume2slice(source1,tmp1,cur_view,slice_pos);
     tipl::volume2slice(source2,tmp2,cur_view,slice_pos);
     if(tmp1.shape() != tmp2.shape())
@@ -216,15 +216,15 @@ void show_mosaic_slice_at(QGraphicsScene& scene,
 }
 
 void show_blend_slice_at(QGraphicsScene& scene,
-                          const tipl::image<float,3>& source1,
-                          const tipl::image<float,3>& source2,
+                          const tipl::image<3>& source1,
+                          const tipl::image<3>& source2,
                           tipl::color_image& buf,size_t slice_pos,float ratio,
                           float contrast1,
                           float contrast2,uint8_t cur_view,bool flip)
 {
     if(source1.empty() || source2.empty())
         return;
-    tipl::image<float,2> tmp1,tmp2;
+    tipl::image<2,float> tmp1,tmp2;
     tipl::volume2slice(source1,tmp1,cur_view,slice_pos);
     tipl::volume2slice(source2,tmp2,cur_view,slice_pos);
     if(tmp1.shape() != tmp2.shape())
@@ -305,7 +305,7 @@ void RegToolBox::show_image(void)
     if(!J_view.empty())
     {
         int pos = std::min(J_view.depth()-1,J_view.depth()*ui->slice_pos->value()/ui->slice_pos->maximum());
-        tipl::image<float,2> J_view_slice;
+        tipl::image<2,float> J_view_slice;
         tipl::volume2slice(J_view,J_view_slice,cur_view,pos);
         image2rgb(J_view_slice,cJ,contrast1);
         QImage warp_image = QImage((unsigned char*)&*cJ.begin(),cJ.width(),cJ.height(),QImage::Format_RGB32).
@@ -316,7 +316,7 @@ void RegToolBox::show_image(void)
             QPainter paint(&warp_image);
             paint.setBrush(Qt::NoBrush);
             paint.setPen(Qt::red);
-            tipl::image<tipl::vector<3>,2> dis_slice;
+            tipl::image<2,tipl::vector<3> > dis_slice;
             tipl::volume2slice(dis_view,dis_slice,cur_view,pos);
             int cur_dis = 1 << (ui->dis_spacing->currentIndex()-1);
             for(int x = 0;x < dis_slice.width();x += cur_dis)
@@ -411,7 +411,7 @@ void RegToolBox::on_timer()
 void RegToolBox::linear_reg(tipl::reg::reg_type reg_type,int cost_type)
 {
     status = "linear registration";
-    tipl::image<float,3> J_(It.shape());
+    tipl::image<3> J_(It.shape());
     if(cost_type == 2) // skip nonlinear registration
     {
         if(I.shape() == It.shape())
@@ -421,7 +421,7 @@ void RegToolBox::linear_reg(tipl::reg::reg_type reg_type,int cost_type)
 
         if(I2.shape() == I.shape())
         {
-            tipl::image<float,3> J2_(It.shape());
+            tipl::image<3> J2_(It.shape());
             if(I.shape() == It.shape())
                 J2_ = I2;
             else
@@ -441,7 +441,7 @@ void RegToolBox::linear_reg(tipl::reg::reg_type reg_type,int cost_type)
         tipl::resample_mt(I,J_,T,tipl::cubic);
         if(I2.shape() == I.shape())
         {
-            tipl::image<float,3> J2_(It.shape());
+            tipl::image<3> J2_(It.shape());
             tipl::resample_mt(I2,J2_,T,tipl::cubic);
             tipl::normalize(J2,1.0f);
             J2.swap(J2_);
@@ -466,7 +466,7 @@ void RegToolBox::nonlinear_reg(void)
         param.iterations = uint32_t(ui->steps->value());
         if(ui->edge->isChecked())
         {
-            tipl::image<float,3> sIt(It),sJ(J);
+            tipl::image<3> sIt(It),sJ(J);
             tipl::filter::sobel(sIt);
             tipl::filter::sobel(sJ);
             tipl::filter::mean(sIt);
@@ -536,7 +536,7 @@ void RegToolBox::on_run_reg_clicked()
 
 bool apply_warping(const char* from,
                    const char* to,
-                   tipl::image<tipl::vector<3>,3>& to2from,
+                   tipl::image<3,tipl::vector<3> >& to2from,
                    tipl::vector<3> Itvs,
                    const tipl::matrix<4,4>& ItR,
                    std::string& error,
@@ -548,9 +548,9 @@ bool apply_warping(const char* from,
         error = nifti.error;
         return false;
     }
-    tipl::image<float,3> I3;
+    tipl::image<3> I3;
     nifti.toLPS(I3);
-    tipl::image<float,3> J3;
+    tipl::image<3> J3;
     tipl::compose_mapping(I3,to2from,J3,is_label_image(I3) ? tipl::nearest : interpo);
     if(!gz_nifti::save_to_file(to,J3,Itvs,ItR))
     {

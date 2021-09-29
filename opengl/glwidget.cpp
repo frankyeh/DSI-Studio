@@ -1532,7 +1532,7 @@ void GLWidget::makeTracts(void)
         }
     }
 
-    tipl::image<float,2> max_z_map, min_z_map, max_x_map, min_x_map, min_y_map, max_y_map;
+    tipl::image<2,float> max_z_map, min_z_map, max_x_map, min_x_map, min_y_map, max_y_map;
 
     if(tract_shader)
     {
@@ -2750,7 +2750,7 @@ bool GLWidget::command(QString cmd,QString param,QString param2)
     }
     if(cmd == "add_surface")
     {
-        tipl::image<float, 3> crop_image;
+        tipl::image<3> crop_image;
         CustomSliceModel* reg_slice = dynamic_cast<CustomSliceModel*>(cur_tracking_window.current_slice.get());
         if(reg_slice && !reg_slice->skull_removed_images.empty())
             crop_image = reg_slice->skull_removed_images;
@@ -2806,7 +2806,7 @@ bool GLWidget::command(QString cmd,QString param,QString param2)
                 break;
             case 2:
                 {
-                tipl::image<unsigned char,3> mask(crop_image);
+                tipl::image<3,unsigned char> mask(crop_image);
                 for(size_t i = 0;i < mask.size();++i)
                     mask[i] = (crop_image[i] > threshold? 1:0);
                 tipl::morphology::defragment(mask);

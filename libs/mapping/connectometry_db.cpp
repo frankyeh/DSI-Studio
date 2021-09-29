@@ -476,7 +476,7 @@ bool connectometry_db::add_subject_file(const std::string& file_name,
 
 void connectometry_db::get_subject_vector(unsigned int from,unsigned int to,
                                           std::vector<std::vector<float> >& subject_vector,
-                        const tipl::image<int,3>& fp_mask,float fiber_threshold,bool normalize_fp) const
+                        const tipl::image<3,int>& fp_mask,float fiber_threshold,bool normalize_fp) const
 {
     unsigned int total_count = to-from;
     subject_vector.clear();
@@ -503,7 +503,7 @@ void connectometry_db::get_subject_vector(unsigned int from,unsigned int to,
     });
 }
 void connectometry_db::get_subject_vector_pos(std::vector<int>& subject_vector_pos,
-                            const tipl::image<int,3>& fp_mask,float fiber_threshold) const
+                            const tipl::image<3,int>& fp_mask,float fiber_threshold) const
 {
     subject_vector_pos.clear();
     for(unsigned int s_index = 0;s_index < si2vi.size();++s_index)
@@ -517,7 +517,7 @@ void connectometry_db::get_subject_vector_pos(std::vector<int>& subject_vector_p
 }
 
 void connectometry_db::get_subject_vector(unsigned int subject_index,std::vector<float>& subject_vector,
-                        const tipl::image<int,3>& fp_mask,float fiber_threshold,bool normalize_fp) const
+                        const tipl::image<3,int>& fp_mask,float fiber_threshold,bool normalize_fp) const
 {
     subject_vector.clear();
     for(unsigned int s_index = 0;s_index < si2vi.size();++s_index)
@@ -536,7 +536,7 @@ void connectometry_db::get_subject_vector(unsigned int subject_index,std::vector
             tipl::multiply_constant(subject_vector.begin(),subject_vector.end(),1.0f/sd);
     }
 }
-void connectometry_db::get_dif_matrix(std::vector<float>& matrix,const tipl::image<int,3>& fp_mask,float fiber_threshold,bool normalize_fp)
+void connectometry_db::get_dif_matrix(std::vector<float>& matrix,const tipl::image<3,int>& fp_mask,float fiber_threshold,bool normalize_fp)
 {
     matrix.clear();
     matrix.resize(num_subjects*num_subjects);
@@ -558,7 +558,7 @@ void connectometry_db::get_dif_matrix(std::vector<float>& matrix,const tipl::ima
 }
 
 void connectometry_db::save_subject_vector(const char* output_name,
-                         const tipl::image<int,3>& fp_mask,
+                         const tipl::image<3,int>& fp_mask,
                          float fiber_threshold,
                          bool normalize_fp) const
 {
@@ -677,9 +677,9 @@ bool connectometry_db::save_subject_data(const char* output_name)
 }
 
 void connectometry_db::get_subject_slice(unsigned int subject_index,unsigned char dim,unsigned int pos,
-                        tipl::image<float,2>& slice) const
+                        tipl::image<2,float>& slice) const
 {
-    tipl::image<unsigned int,2> tmp;
+    tipl::image<2,unsigned int> tmp;
     tipl::volume2slice(vi2si, tmp, dim, pos);
     slice.clear();
     slice.resize(tmp.shape());
@@ -687,9 +687,9 @@ void connectometry_db::get_subject_slice(unsigned int subject_index,unsigned cha
         if(tmp[index])
             slice[index] = subject_qa[subject_index][tmp[index]];
 }
-void connectometry_db::get_subject_volume(unsigned int subject_index,tipl::image<float,3>& volume) const
+void connectometry_db::get_subject_volume(unsigned int subject_index,tipl::image<3>& volume) const
 {
-    tipl::image<float,3> I(handle->dim);
+    tipl::image<3> I(handle->dim);
     for(unsigned int index = 0;index < I.size();++index)
         if(vi2si[index])
             I[index] = subject_qa[subject_index][vi2si[index]];
@@ -832,7 +832,7 @@ void connectometry_db::move_down(int id)
     std::swap(subject_qa_sd[uint32_t(id)],subject_qa_sd[uint32_t(id+1)]);
 }
 
-void connectometry_db::auto_match(const tipl::image<int,3>& fp_mask,float fiber_threshold,bool normalize_fp)
+void connectometry_db::auto_match(const tipl::image<3,int>& fp_mask,float fiber_threshold,bool normalize_fp)
 {
     std::vector<float> dif;
     get_dif_matrix(dif,fp_mask,fiber_threshold,normalize_fp);

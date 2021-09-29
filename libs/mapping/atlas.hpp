@@ -5,7 +5,7 @@
 #include <string>
 class atlas{
 private:
-    tipl::image<uint32_t,3> I;
+    tipl::image<3,uint32_t> I;
     std::vector<uint32_t> region_value;
     std::vector<uint16_t> value2index;
     std::vector<std::string> labels;
@@ -17,7 +17,7 @@ private:// for talairach only
     std::vector<std::vector<size_t> > index2label;
     std::vector<std::vector<size_t> > label2index;
 private:// for multiple roi atlas only
-    tipl::image<char,4> multiple_I;
+    tipl::image<4,char> multiple_I;
     std::vector<uint32_t> multiple_I_pos;
 public:
     std::string name,filename,error_msg;

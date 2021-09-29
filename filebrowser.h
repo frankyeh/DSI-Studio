@@ -17,7 +17,7 @@ class FileBrowser : public QMainWindow
     QGraphicsScene scene;
 public:
     unsigned int cur_z;
-    tipl::image<float,3> data;
+    tipl::image<3> data;
     tipl::color_image slice_image;
     QImage view_image;
 public:
@@ -35,7 +35,7 @@ private:
     QString preview_file_name;
     float preview_voxel_size[3];
     bool preview_loaded;
-    tipl::image<float,3> preview_data;
+    tipl::image<3> preview_data;
     std::shared_ptr<std::future<void>> preview_thread;
     void preview_image(QString file_name);
 private slots:

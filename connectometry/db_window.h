@@ -21,7 +21,7 @@ private:
     tipl::color_bar color_bar;
     std::vector<float> fp_matrix;
     float fp_max_value;
-    tipl::image<char,3> fp_mask;
+    tipl::image<3,char> fp_mask;
 private:
     QGraphicsScene vbc_scene;
     QImage vbc_slice_image;

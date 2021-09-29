@@ -16,8 +16,8 @@ class manual_alignment : public QDialog
 {
     Q_OBJECT
 private:
-    tipl::image<float,3> from_original;
-    tipl::image<float,3> from,to,warped_from;
+    tipl::image<3> from_original;
+    tipl::image<3> from,to,warped_from;
     tipl::affine_transform<float> arg,b_upper,b_lower;
     tipl::vector<3> from_vs,to_vs;
     QGraphicsScene scene[3];
@@ -30,23 +30,23 @@ private:
     tipl::transformation_matrix<float> T,iT;
     void load_param(void);
 public:
-    std::vector<tipl::image<float,3> > other_images;
+    std::vector<tipl::image<3> > other_images;
     std::vector<std::string> other_images_name;
     tipl::matrix<4,4> nifti_srow;
     std::vector<tipl::transformation_matrix<float> > other_image_T;
 public:
     QTimer* timer;
     explicit manual_alignment(QWidget *parent,
-                              tipl::image<float,3> from_,
+                              tipl::image<3> from_,
                               const tipl::vector<3>& from_vs,
-                              tipl::image<float,3> to_,
+                              tipl::image<3> to_,
                               const tipl::vector<3>& to_vs,
                               tipl::reg::reg_type reg_type,
                               tipl::reg::cost_type cost_function);
     ~manual_alignment();
     void connect_arg_update();
     void disconnect_arg_update();
-    void add_image(const std::string& name,tipl::image<float,3> new_image,const tipl::transformation_matrix<float>& T)
+    void add_image(const std::string& name,tipl::image<3> new_image,const tipl::transformation_matrix<float>& T)
     {
         other_images_name.push_back(name);
         other_images.push_back(std::move(new_image));

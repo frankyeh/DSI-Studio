@@ -561,7 +561,7 @@ void group_connectometry::on_load_roi_from_file_clicked()
                                 "Report file (*.nii *nii.gz);;Text files (*.txt);;All files (*)");
     if(file.isEmpty())
         return;
-    tipl::image<float,3> I;
+    tipl::image<3> I;
     tipl::matrix<4,4> transform;
     gz_nifti nii;
     if(!nii.load_from_file(file.toLocal8Bit().begin()))

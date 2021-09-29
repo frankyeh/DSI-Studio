@@ -5,7 +5,7 @@
 #include "tracking/tracking_window.h"
 
 void show_view(QGraphicsScene& scene,QImage I);
-bool is_label_image(const tipl::image<float,3>& I)
+bool is_label_image(const tipl::image<3>& I)
 {
     for(size_t i = 0;i < I.size();++i)
         if(std::floor(I[i]) < I[i])
@@ -13,9 +13,9 @@ bool is_label_image(const tipl::image<float,3>& I)
     return true;
 }
 manual_alignment::manual_alignment(QWidget *parent,
-                                   tipl::image<float,3> from_,
+                                   tipl::image<3> from_,
                                    const tipl::vector<3>& from_vs_,
-                                   tipl::image<float,3> to_,
+                                   tipl::image<3> to_,
                                    const tipl::vector<3>& to_vs_,
                                    tipl::reg::reg_type reg_type_,
                                    tipl::reg::cost_type cost_function) :
@@ -27,7 +27,7 @@ manual_alignment::manual_alignment(QWidget *parent,
 
     while(tipl::minimum(to_vs) < tipl::minimum(from_vs)/2.0f)
     {
-        tipl::image<float,3> new_to;
+        tipl::image<3> new_to;
         tipl::downsample_with_padding2(to,new_to);
         to.swap(new_to);
         to_vs *= 2.0f;
@@ -36,7 +36,7 @@ manual_alignment::manual_alignment(QWidget *parent,
     }
     while(tipl::minimum(from_vs) < tipl::minimum(to_vs)/2.0f)
     {
-        tipl::image<float,3> new_from;
+        tipl::image<3> new_from;
         tipl::downsample_with_padding2(from,new_from);
         from.swap(new_from);
         from_vs *= 2.0f;
@@ -276,7 +276,7 @@ void manual_alignment::slice_pos_moved()
     w2 *= 255.0;
     for(unsigned char dim = 0;dim < 3;++dim)
     {
-        tipl::image<float,2> slice,slice2;
+        tipl::image<2,float> slice,slice2;
         tipl::volume2slice(warped_from,slice,dim,slice_pos[dim]);
         tipl::volume2slice(to,slice2,dim,slice_pos[dim]);
         buffer[dim].resize(slice.shape());
@@ -401,7 +401,7 @@ void manual_alignment::on_actionSave_Warpped_Image_triggered()
     if(filename.isEmpty())
         return;
 
-    tipl::image<float,3> I(to.shape());
+    tipl::image<3> I(to.shape());
     tipl::resample(from_original,I,iT,is_label_image(from_original) ? tipl::nearest : tipl::cubic);
     gz_nifti::save_to_file(filename.toStdString().c_str(),I,to_vs,nifti_srow);
 }

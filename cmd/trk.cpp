@@ -426,7 +426,7 @@ bool load_region(std::shared_ptr<fib_data> handle,
             std::cout << "ERROR: please assign region name of an atlas." << std::endl;
             return false;
         }
-        const tipl::image<tipl::vector<3,float>,3 >& s2t = handle->get_sub2temp_mapping();
+        const tipl::image<3,tipl::vector<3,float> >& s2t = handle->get_sub2temp_mapping();
         std::cout << "loading " << region_name << " from " << file_name << " atlas" << std::endl;
         tipl::vector<3> null;
         std::vector<tipl::vector<3,short> > cur_region;

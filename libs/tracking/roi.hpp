@@ -181,7 +181,7 @@ public:
             std::vector<tipl::vector<3,short> > seed;
             handle->track_atlas->to_voxel(seed,1.0f,int(track_id));
             std::vector<tipl::vector<3,short> > track_roa;
-            tipl::image<char,3> roa_mask(handle->dim);
+            tipl::image<3,char> roa_mask(handle->dim);
             const float *fa0 = handle->dir.fa[0];
             for(size_t index = 0;index < roa_mask.size();++index)
                 if(fa0[index] > 0.0f)

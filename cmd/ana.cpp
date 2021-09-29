@@ -262,7 +262,7 @@ int ana(void)
             return 0;
         }
         auto dim = handle->dim;
-        tipl::image<uint32_t,3> accumulate_map(dim);
+        tipl::image<3,uint32_t> accumulate_map(dim);
         for(size_t i = 0;i < tract_files.size();++i)
         {
             std::shared_ptr<TractModel> tract_model(new TractModel(handle));
@@ -271,7 +271,7 @@ int ana(void)
             std::cout << "accumulating " << tract_files[i] << "..." <<std::endl;
             std::vector<tipl::vector<3,short> > points;
             tract_model->to_voxel(points,1.0f);
-            tipl::image<char,3> tract_mask(dim);
+            tipl::image<3,char> tract_mask(dim);
             tipl::par_for(points.size(),[&](size_t j)
             {
                 tipl::vector<3,short> p = points[j];
@@ -280,7 +280,7 @@ int ana(void)
             });
             accumulate_map += tract_mask;
         }
-        tipl::image<float,3> pdi(accumulate_map);
+        tipl::image<3> pdi(accumulate_map);
         tipl::multiply_constant(pdi,1.0f/float(tract_files.size()));
         if(!gz_nifti::save_to_file(output.c_str(),pdi,handle->vs,handle->trans_to_mni))
         {

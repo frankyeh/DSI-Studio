@@ -261,8 +261,8 @@ public:
             }
             region.swap(points);
         }
-        void SaveToBuffer(tipl::image<unsigned char, 3>& mask,float target_resolution);
-        void SaveToBuffer(tipl::image<unsigned char, 3>& mask){SaveToBuffer(mask,resolution_ratio);}
+        void SaveToBuffer(tipl::image<3,unsigned char>& mask,float target_resolution);
+        void SaveToBuffer(tipl::image<3,unsigned char>& mask){SaveToBuffer(mask,resolution_ratio);}
         void perform(const std::string& action);
         void makeMeshes(unsigned char smooth);
         template<typename value_type>

@@ -10,10 +10,10 @@ class DwiHeader
 	typedef std::vector<short>::iterator image_iterator;
 public:
     std::string file_name, report;
-    tipl::image<unsigned short, 3> image;
+    tipl::image<3,unsigned short> image;
 public:// for HCP dataset
-    tipl::image<float, 4> grad_dev;
-    tipl::image<unsigned char, 3> mask;
+    tipl::image<4> grad_dev;
+    tipl::image<3,unsigned char> mask;
 public:
     tipl::vector<3,float> bvec;
     float bvalue,te;

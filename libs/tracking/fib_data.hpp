@@ -14,11 +14,11 @@ private:
     const float* odfs;
     unsigned int odfs_size;
 private:
-    tipl::image<unsigned int,3> voxel_index_map;
+    tipl::image<3,unsigned int> voxel_index_map;
     std::vector<const float*> odf_blocks;
     std::vector<unsigned int> odf_block_size;
-    tipl::image<unsigned int,3> odf_block_map1;
-    tipl::image<unsigned int,3> odf_block_map2;
+    tipl::image<3,unsigned int> odf_block_map1;
+    tipl::image<3,unsigned int> odf_block_map2;
     unsigned int half_odf_size;
 public:
     odf_data(void):odfs(nullptr){}
@@ -50,7 +50,7 @@ public:
     unsigned int half_odf_size;
     std::string error_msg;
 public: // for differential tractography
-    std::vector<std::shared_ptr<tipl::image<float,3> > > new_dT;
+    std::vector<std::shared_ptr<tipl::image<3> > > new_dT;
     std::vector<const float*> dt_fa;
     std::vector<std::string> dt_index_name;
     std::vector<std::vector<const float*> > dt_index_data;
@@ -61,7 +61,7 @@ public: // for differential tractography
     bool set_dt_index(int new_index);
     bool set_dt_index(const std::string& name);
     std::string get_dt_threshold_name(void) const{return dt_fa.empty() ? std::string() : dt_index_name[uint32_t(dt_cur_index)];}
-    void add_dt_index(const std::string& name,tipl::image<float,3>&& I);
+    void add_dt_index(const std::string& name,tipl::image<3>&& I);
 public:
     void check_index(unsigned int index);
     bool add_data(gz_mat_read& mat_reader);
@@ -117,8 +117,8 @@ public:
 struct item
 {
 private:
-    tipl::const_pointer_image<float,3> image_data;
-    tipl::image<float,3> dummy;
+    tipl::const_pointer_image<3> image_data;
+    tipl::image<3> dummy;
     gz_mat_read* mat_reader = nullptr;
     unsigned int image_index = 0;
 public:
@@ -133,8 +133,8 @@ public:
     {
         image_ready = false;
     }
-    tipl::const_pointer_image<float,3> get_image(void);
-    void set_image(tipl::const_pointer_image<float,3> new_image){image_data = new_image;}
+    tipl::const_pointer_image<3> get_image(void);
+    void set_image(tipl::const_pointer_image<3> new_image){image_data = new_image;}
 public:
     std::string name;
     bool image_ready = true;
@@ -145,7 +145,7 @@ public:
     float contrast_min;
     unsigned int max_color = 0x00FFFFFF;
     unsigned int min_color = 0;
-    tipl::image<unsigned int,3> color_map_buf;
+    tipl::image<3,unsigned int> color_map_buf;
 
     // for other slice in QSDR, allow for loading t1w-based ROIs in QSDR fib
     tipl::shape<3> native_geo;
@@ -189,17 +189,17 @@ public:
     mutable std::vector<item> view_item;
 public:
     int prog;
-    tipl::image<tipl::vector<3,float>,3 > s2t,t2s;
+    tipl::image<3,tipl::vector<3,float> > s2t,t2s;
 private:
-    mutable tipl::image<tipl::vector<3,float>,3 > native_position;
+    mutable tipl::image<3,tipl::vector<3,float> > native_position;
 public:
     tipl::shape<3> native_geo;
     tipl::vector<3> native_vs;
-    const tipl::image<tipl::vector<3,float>,3 >& get_native_position(void) const;
+    const tipl::image<3,tipl::vector<3,float> >& get_native_position(void) const;
 public:
     size_t template_id = 256;
     tipl::vector<3> template_vs;
-    tipl::image<float,3> template_I,template_I2;
+    tipl::image<3> template_I,template_I2;
     std::vector<std::shared_ptr<atlas> > atlas_list;
     tipl::matrix<4,4> template_to_mni;
     bool has_manual_atlas = false;
@@ -251,7 +251,7 @@ public:
         mni_image.swap(J);
         return true;
     }
-    const tipl::image<tipl::vector<3,float>,3 >& get_sub2temp_mapping(void);
+    const tipl::image<3,tipl::vector<3,float> >& get_sub2temp_mapping(void);
 
 public:
     fib_data(void)

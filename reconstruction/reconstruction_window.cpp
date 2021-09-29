@@ -169,7 +169,7 @@ void reconstruction_window::load_b_table(void)
 void reconstruction_window::on_b_table_itemSelectionChanged()
 {
     v2c.set_range(ui->min_value->value(),ui->max_value->value());
-    tipl::image<float,2> tmp;
+    tipl::image<2,float> tmp;
     tipl::volume2slice(tipl::make_image(handle->src_dwi_data[ui->b_table->currentRow()],handle->voxel.dim),tmp,view_orientation,ui->z_pos->value());
     buffer_source.resize(tmp.shape());
     for(int i = 0;i < tmp.size();++i)
@@ -569,7 +569,7 @@ void reconstruction_window::on_actionSave_bvecs_triggered()
 }
 
 
-bool load_image_from_files(QStringList filenames,tipl::image<float,3>& ref,tipl::vector<3>& vs,tipl::matrix<4,4>&);
+bool load_image_from_files(QStringList filenames,tipl::image<3>& ref,tipl::vector<3>& vs,tipl::matrix<4,4>&);
 void reconstruction_window::on_actionRotate_triggered()
 {
     QStringList filenames = QFileDialog::getOpenFileNames(
@@ -578,7 +578,7 @@ void reconstruction_window::on_actionRotate_triggered()
     if( filenames.isEmpty())
         return;
 
-    tipl::image<float,3> ref;
+    tipl::image<3> ref;
     tipl::vector<3> vs;
     tipl::matrix<4,4> t;
     if(!load_image_from_files(filenames,ref,vs,t))
@@ -592,7 +592,7 @@ void reconstruction_window::on_actionRotate_triggered()
         return;
 
     begin_prog("rotating");
-    tipl::image<float,3> ref2(ref);
+    tipl::image<3> ref2(ref);
     float m = tipl::median(ref2.begin(),ref2.end());
     tipl::multiply_constant_mt(ref,0.5f/m);
     handle->rotate(ref.shape(),vs,manual->get_iT());
@@ -650,7 +650,7 @@ void reconstruction_window::on_SlicePos_valueChanged(int position)
 void rec_motion_correction(ImageModel* handle)
 {
     begin_prog("correcting motion...",true);
-    tipl::image<float,3> from(handle->src_dwi_data[0],handle->voxel.dim);
+    tipl::image<3> from(handle->src_dwi_data[0],handle->voxel.dim);
     tipl::filter::sobel(from);
     tipl::normalize(from,1.0f);
     tipl::par_for2(handle->src_bvalues.size(),[&](unsigned int i,int id)
@@ -660,7 +660,7 @@ void rec_motion_correction(ImageModel* handle)
         if(id == 0)
             check_prog(i*99/handle->src_bvalues.size(),100);
 
-        tipl::image<float,3> to(handle->src_dwi_data[i],handle->voxel.dim);
+        tipl::image<3> to(handle->src_dwi_data[i],handle->voxel.dim);
         tipl::filter::sobel(to);
         tipl::normalize(to,1.0f);
 
@@ -679,7 +679,7 @@ void rec_motion_correction(ImageModel* handle)
 
 bool add_other_image(ImageModel* handle,QString name,QString filename)
 {
-    tipl::image<float,3> ref;
+    tipl::image<3> ref;
     tipl::vector<3> vs;
     gz_nifti in;
     if(!in.load_from_file(filename.toLocal8Bit().begin()) || !in.toLPS(ref))
@@ -702,7 +702,7 @@ bool add_other_image(ImageModel* handle,QString name,QString filename)
     {
         std::cout << " and register image with DWI." << std::endl;
         in.get_voxel_size(vs);
-        tipl::image<float,3> from(handle->dwi_sum),to(ref);
+        tipl::image<3> from(handle->dwi_sum),to(ref);
         tipl::normalize(from,1.0);
         tipl::normalize(to,1.0);
         bool terminated = false;
@@ -760,7 +760,7 @@ void reconstruction_window::on_actionReplace_b0_by_T2W_image_triggered()
             "Images (*.nii *nii.gz);;All files (*)" );
     if( filename.isEmpty())
         return;
-    tipl::image<float,3> ref;
+    tipl::image<3> ref;
     tipl::vector<3> vs;
     gz_nifti in;
     if(!in.load_from_file(filename.toLocal8Bit().begin()) || !in.toLPS(ref))
@@ -776,7 +776,7 @@ void reconstruction_window::on_actionReplace_b0_by_T2W_image_triggered()
 
     begin_prog("rotating");
     handle->rotate(ref.shape(),vs,manual->get_iT());
-    tipl::pointer_image<unsigned short,3> I = tipl::make_image((unsigned short*)handle->src_dwi_data[0],handle->voxel.dim);
+    tipl::pointer_image<3,unsigned short> I = tipl::make_image((unsigned short*)handle->src_dwi_data[0],handle->voxel.dim);
     ref *= (float)(*std::max_element(I.begin(),I.end()))/(*std::max_element(ref.begin(),ref.end()));
     std::copy(ref.begin(),ref.end(),I.begin());
     update_dimension();
@@ -786,7 +786,7 @@ void reconstruction_window::on_actionReplace_b0_by_T2W_image_triggered()
 bool get_src(std::string filename,ImageModel& src2,std::string& error_msg)
 {
     prog_init p("load ",filename.c_str());
-    tipl::image<unsigned short,3> I;
+    tipl::image<3,unsigned short> I;
     if(QString(filename.c_str()).endsWith(".dcm"))
     {
         tipl::io::dicom in;
@@ -860,7 +860,7 @@ void reconstruction_window::on_actionImage_upsample_to_T1W_TESTING_triggered()
     if( filenames.isEmpty())
         return;
 
-    tipl::image<float,3> ref;
+    tipl::image<3> ref;
     tipl::vector<3> vs;
     tipl::matrix<4,4> t;
     if(!load_image_from_files(filenames,ref,vs,t))
@@ -878,11 +878,11 @@ void reconstruction_window::on_actionImage_upsample_to_T1W_TESTING_triggered()
     if (!ok)
         return;
     begin_prog("rotating");
-    tipl::image<float,3> ref2(ref);
+    tipl::image<3> ref2(ref);
     float m = tipl::median(ref2.begin(),ref2.end());
     tipl::multiply_constant_mt(ref,0.5f/m);
 
-    handle->rotate(ref.shape(),vs,manual->get_iT(),tipl::image<tipl::vector<3>,3>(),ref,var);
+    handle->rotate(ref.shape(),vs,manual->get_iT(),tipl::image<3,tipl::vector<3> >(),ref,var);
     handle->voxel.report += " The diffusion images were rotated and scaled to the space of ";
     handle->voxel.report += QFileInfo(filenames[0]).baseName().toStdString();
     handle->voxel.report += ". The b-table was also rotated accordingly.";
@@ -990,8 +990,8 @@ void reconstruction_window::on_show_bad_slice_clicked()
 
 void reconstruction_window::on_align_slices_clicked()
 {
-    tipl::image<float,3> from(handle->voxel.dim);
-    tipl::image<float,3> to(handle->voxel.dim);
+    tipl::image<3> from(handle->voxel.dim);
+    tipl::image<3> to(handle->voxel.dim);
     std::copy(handle->src_dwi_data[0],handle->src_dwi_data[0]+to.size(),to.begin());
     std::copy(handle->src_dwi_data[ui->b_table->currentRow()],
               handle->src_dwi_data[ui->b_table->currentRow()]+from.size(),from.begin());
@@ -1037,11 +1037,11 @@ void reconstruction_window::on_actionOverwrite_Voxel_Size_triggered()
     ui->report->setText(handle->voxel.report.c_str());
 }
 
-void match_template_resolution(tipl::image<float,3>& VG,
-                               tipl::image<float,3>& VG2,
+void match_template_resolution(tipl::image<3>& VG,
+                               tipl::image<3>& VG2,
                                tipl::vector<3>& VGvs,
-                               tipl::image<float,3>& VF,
-                               tipl::image<float,3>& VF2,
+                               tipl::image<3>& VF,
+                               tipl::image<3>& VF2,
                                tipl::vector<3>& VFvs)
 {
     while(VFvs[0] > VGvs[0]*1.5f)   // if subject resolution is substantially lower, downsample template
@@ -1063,7 +1063,7 @@ void match_template_resolution(tipl::image<float,3>& VG,
 
 void reconstruction_window::on_qsdr_manual_clicked()
 {
-    tipl::image<float,3> VG,VG2,dummy,VF(handle->dwi);
+    tipl::image<3> VG,VG2,dummy,VF(handle->dwi);
     tipl::vector<3> VGvs,VFvs(handle->voxel.vs);
     {
         gz_nifti read,read2;

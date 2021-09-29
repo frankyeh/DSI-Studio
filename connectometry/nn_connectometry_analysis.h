@@ -14,7 +14,7 @@ public:
     std::string error_msg,report;
 public:
     int skip_slice = 4;
-    tipl::image<float,3> It;
+    tipl::image<3> It;
     tipl::color_image Ib;
 public:
     std::vector<tipl::pixel_index<3> > fp_index;

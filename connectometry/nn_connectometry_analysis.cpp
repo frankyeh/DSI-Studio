@@ -7,7 +7,7 @@ nn_connectometry_analysis::nn_connectometry_analysis(std::shared_ptr<fib_data> h
         gz_nifti in;
         if(in.load_from_file(handle->t1w_template_file_name.c_str()))
         {
-            tipl::image<float,3> I;
+            tipl::image<3> I;
             in.toLPS(I);
             tipl::matrix<4,4> tr,tr2;
             tr2.identity();
@@ -23,7 +23,7 @@ nn_connectometry_analysis::nn_connectometry_analysis(std::shared_ptr<fib_data> h
             // create Ib as the salient map background
             int plane_size = handle->dim.plane_size();
             // skip top 2 slices
-            tipl::image<float,2> Itt(tipl::shape<2>(handle->dim[0],handle->dim[1]*int(handle->dim[2]/skip_slice-1)));
+            tipl::image<2,float> Itt(tipl::shape<2>(handle->dim[0],handle->dim[1]*int(handle->dim[2]/skip_slice-1)));
             for(int z = 0,i = 0;z < It.depth() && i+plane_size <= Itt.size();z += skip_slice,i += plane_size)
             {
                 std::copy(It.begin()+z*plane_size,
@@ -102,7 +102,7 @@ bool nn_connectometry_analysis::run(const std::string& net_string_)
         std::cout << "set otsu=" << otsu << std::endl;
         float fp_threshold = otsu*tipl::segmentation::otsu_threshold(
                     tipl::make_image(handle->dir.fa[0],handle->dim));
-        tipl::image<int,3> fp_mask(handle->dim);
+        tipl::image<3,int> fp_mask(handle->dim);
         for(int i = 0;i < fp_mask.size();++i)
             if(handle->dir.get_fa(i,0) > fp_threshold)
                 fp_mask[i] = 1;

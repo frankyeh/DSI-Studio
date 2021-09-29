@@ -5,24 +5,24 @@
 #include "program_option.hpp"
 bool apply_warping(const char* from,
                    const char* to,
-                   tipl::image<tipl::vector<3>,3>& to2from,
+                   tipl::image<3,tipl::vector<3> >& to2from,
                    tipl::vector<3> Itvs,
                    const tipl::matrix<4,4>& ItR,
                    std::string& error,
                    tipl::interpolation_type interpo);
 bool apply_unwarping_tt(const char* from,
                         const char* to,
-                        const tipl::image<tipl::vector<3>,3>& from2to,
+                        const tipl::image<3,tipl::vector<3> >& from2to,
                         tipl::shape<3> new_geo,
                         tipl::vector<3> new_vs,
                         const tipl::matrix<4,4>& new_trans_to_mni,
                         std::string& error);
 void get_filenames_from(const std::string param,std::vector<std::string>& filenames);
-bool is_label_image(const tipl::image<float,3>& I);
+bool is_label_image(const tipl::image<3>& I);
 
 
-int after_warp(tipl::image<tipl::vector<3>,3>& to2from,
-               tipl::image<tipl::vector<3>,3>& from2to,
+int after_warp(tipl::image<3,tipl::vector<3> >& to2from,
+               tipl::image<3,tipl::vector<3> >& from2to,
                tipl::vector<3> to_vs,
                const tipl::matrix<4,4>& to_trans)
 {
@@ -70,10 +70,10 @@ class warping{
 
 int reg(void)
 {
-    tipl::image<float,3> from,to,from2,to2;
+    tipl::image<3> from,to,from2,to2;
     tipl::vector<3> from_vs,to_vs;
     tipl::matrix<4,4> from_trans,to_trans;
-    tipl::image<tipl::vector<3>,3> t2f_dis,f2t_dis,to2from,from2to;
+    tipl::image<3,tipl::vector<3> > t2f_dis,f2t_dis,to2from,from2to;
 
 
     if(po.has("warp"))
@@ -154,7 +154,7 @@ int reg(void)
                                  terminated);
 
     std::cout << T;
-    tipl::image<float,3> from_(to.shape()),from2_;
+    tipl::image<3> from_(to.shape()),from2_;
 
 
     tipl::resample_mt(from,from_,T,is_label_image(from) ? tipl::nearest : interpo_method);
@@ -210,7 +210,7 @@ int reg(void)
 
     {
         std::cout << "compose output images" << std::endl;
-        tipl::image<float,3> from_wp;
+        tipl::image<3> from_wp;
         tipl::compose_mapping(from,to2from,from_wp,is_label_image(from) ? tipl::nearest : interpo_method);
         float r = float(tipl::correlation(to.begin(),to.end(),from_wp.begin()));
         std::cout << "R2: " << r*r << std::endl;

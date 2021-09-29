@@ -814,7 +814,7 @@ void MainWindow::on_set_dir_clicked()
     QDir::setCurrent(dir);
 }
 
-bool load_image_from_files(QStringList filenames,tipl::image<float,3>& ref,tipl::vector<3>& vs,tipl::matrix<4,4>& trans);
+bool load_image_from_files(QStringList filenames,tipl::image<3>& ref,tipl::vector<3>& vs,tipl::matrix<4,4>& trans);
 
 void MainWindow::on_linear_reg_clicked()
 {
@@ -832,7 +832,7 @@ void MainWindow::on_linear_reg_clicked()
         return;
 
 
-    tipl::image<float,3> ref1,ref2;
+    tipl::image<3> ref1,ref2;
     tipl::vector<3> vs1,vs2;
     tipl::matrix<4,4> t1,t2;
     if(!load_image_from_files(filename1,ref1,vs1,t1) ||
@@ -1092,7 +1092,7 @@ bool dcm2src(QStringList files,std::ostream& out)
             return false;
         }
 
-        tipl::image<float,3> I;
+        tipl::image<3> I;
         tipl::vector<3> vs;
         v >> I;
         v.get_voxel_size(vs);
@@ -1103,7 +1103,7 @@ bool dcm2src(QStringList files,std::ostream& out)
         {
             float reso = *std::min_element(vs.begin(),vs.end());
             tipl::vector<3,float> new_vs(reso,reso,reso);
-            tipl::image<float,3> J(tipl::shape<3>(
+            tipl::image<3> J(tipl::shape<3>(
                     int(std::ceil(float(I.width())*vs[0]/new_vs[0])),
                     int(std::ceil(float(I.height())*vs[1]/new_vs[1])),
                     int(std::ceil(float(I.depth())*vs[2]/new_vs[2]))));

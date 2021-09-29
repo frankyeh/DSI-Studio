@@ -338,7 +338,7 @@ void FileBrowser::show_image(void)
         cur_z = 0;
 
     {
-        tipl::image<float,2> data_buffer;
+        tipl::image<2,float> data_buffer;
         tipl::volume2slice(data,data_buffer,2,cur_z);
         tipl::normalize(data_buffer,slice_image,255);
     }

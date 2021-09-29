@@ -5,29 +5,29 @@
 #include "basic_voxel.hpp"
 #include "basic_process.hpp"
 #include "gqi_process.hpp"
-void animal_reg(const tipl::image<float,3>& from,tipl::vector<3> from_vs,
-          const tipl::image<float,3>& to,tipl::vector<3> to_vs,
+void animal_reg(const tipl::image<3>& from,tipl::vector<3> from_vs,
+          const tipl::image<3>& to,tipl::vector<3> to_vs,
           tipl::transformation_matrix<double>& T,bool& terminated);
-void match_template_resolution(tipl::image<float,3>& VG,
-                               tipl::image<float,3>& VG2,
+void match_template_resolution(tipl::image<3>& VG,
+                               tipl::image<3>& VG2,
                                tipl::vector<3>& VGvs,
-                               tipl::image<float,3>& VF,
-                               tipl::image<float,3>& VF2,
+                               tipl::image<3>& VF,
+                               tipl::image<3>& VF2,
                                tipl::vector<3>& VFvs);
 class DWINormalization  : public BaseProcess
 {
 protected:
     tipl::shape<3> src_geo;
 protected:
-    tipl::image<tipl::vector<3>,3> cdm_dis,mapping;
+    tipl::image<3,tipl::vector<3> > cdm_dis,mapping;
 protected:
     tipl::transformation_matrix<double> affine;
 protected: // for warping other image modality
-    std::vector<tipl::image<float,3> > other_image;
+    std::vector<tipl::image<3> > other_image;
 protected:
     std::vector<float> jdet;
 protected:
-    typedef tipl::const_pointer_image<unsigned short,3> point_image_type;
+    typedef tipl::const_pointer_image<3,unsigned short> point_image_type;
     std::vector<point_image_type> ptr_images;
 
 public:
@@ -45,7 +45,7 @@ public:
         // VG: FA TEMPLATE
         // VF: SUBJECT QA
         // VF2: SUBJECT ISO
-        tipl::image<float,3> VG,VF(voxel.qa_map),VG2,VF2;
+        tipl::image<3> VG,VF(voxel.qa_map),VG2,VF2;
         tipl::vector<3> VGvs, VFvs(voxel.vs);
 
 
@@ -135,7 +135,7 @@ public:
                     throw std::runtime_error("reconstruction canceled");
             }
 
-            tipl::image<float,3> VFF(VG.shape()),VFF2;
+            tipl::image<3> VFF(VG.shape()),VFF2;
             tipl::resample(VF,VFF,affine,tipl::cubic);
             if(dual_modality)
             {
@@ -175,7 +175,7 @@ public:
                 },terminated))
                 throw std::runtime_error("reconstruction canceled");
 
-            tipl::image<float,3> VFFF;
+            tipl::image<3> VFFF;
             tipl::compose_displacement(VFF,cdm_dis,VFFF);
 
             if(export_intermediate)
@@ -246,8 +246,8 @@ public:
             new_geo[2] /= VG_ratio;
 
             // update VG,VFFF (for mask) and cdm_dis (for mapping)
-            tipl::image<float,3> new_VG(new_geo);
-            tipl::image<tipl::vector<3>,3> new_cdm_dis(new_geo);
+            tipl::image<3> new_VG(new_geo);
+            tipl::image<3,tipl::vector<3> > new_cdm_dis(new_geo);
             new_cdm_dis.for_each_mt([&](tipl::vector<3>& dis,tipl::pixel_index<3> pos)
             {
                 tipl::vector<3> p(pos);

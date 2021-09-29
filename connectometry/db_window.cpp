@@ -142,7 +142,7 @@ void db_window::on_subject_list_itemSelectionChanged()
     if(ui->view_z->isChecked())
         ui->z_pos->setValue(ui->slice_pos->value());
 
-    tipl::image<float,2> slice;
+    tipl::image<2,float> slice;
     vbc->handle->db.get_subject_slice(ui->subject_list->currentRow(),
                                    ui->view_x->isChecked() ? 0:(ui->view_y->isChecked() ? 1:2),
                                    ui->slice_pos->value(),slice);
@@ -319,7 +319,7 @@ void db_window::on_actionLoad_mask_triggered()
                                 "Report file (*.nii *nii.gz);;Text files (*.txt);;All files (*)");
     if(file.isEmpty())
         return;
-    tipl::image<float,3> I;
+    tipl::image<3> I;
     gz_nifti nii;
     if(!nii.load_from_file(file.toLocal8Bit().begin()))
     {
@@ -351,7 +351,7 @@ void db_window::on_actionSave_mask_triggered()
         return;
     float fiber_threshold = ui->fp_coverage->value()*tipl::segmentation::otsu_threshold(
                 tipl::make_image(vbc->handle->dir.fa[0],vbc->handle->dim));
-    tipl::image<float,3> mask(fp_mask);
+    tipl::image<3> mask(fp_mask);
     for(unsigned int index = 0;index < mask.size();++index)
         if(vbc->handle->dir.fa[0][index] < fiber_threshold)
             mask[index] = 0;
@@ -540,7 +540,7 @@ void db_window::on_actionCurrent_Subject_triggered()
                            "NIFTI files (*.nii *nii.gz);;All files (*)");
     if (filename.isEmpty())
         return;
-    tipl::image<float,3> I;
+    tipl::image<3> I;
     vbc->handle->db.get_subject_volume(uint32_t(ui->subject_list->currentRow()),I);
     gz_nifti out;
     out.set_voxel_size(vbc->handle->vs);
@@ -566,7 +566,7 @@ void db_window::on_actionAll_Subjects_triggered()
         QString file_name = dir + "\\"+
                 vbc->handle->db.subject_names[i].c_str()+"."+
                 vbc->handle->db.index_name.c_str()+".nii.gz";
-        tipl::image<float,3> I;
+        tipl::image<3> I;
         vbc->handle->db.get_subject_volume(uint32_t(i),I);
         gz_nifti out;
         out.set_voxel_size(vbc->handle->vs);

@@ -99,7 +99,7 @@ void SliceModel::get_slice(tipl::color_image& show_image,unsigned char cur_dim,
             apply_overlay(show_image,cur_dim,overlay_slice);
 }
 // ---------------------------------------------------------------------------
-tipl::const_pointer_image<float, 3> SliceModel::get_source(void) const
+tipl::const_pointer_image<3> SliceModel::get_source(void) const
 {
     return handle->view_item[view_id].get_image();
 }
@@ -239,7 +239,7 @@ bool CustomSliceModel::initialize(const std::vector<std::string>& files,bool is_
             begin_prog("loading images");
             for(unsigned int i = 0;check_prog(i,geo[2]);++i)
             {
-                tipl::image<short,2> I;
+                tipl::image<2,short> I;
                 QImage in;
                 unsigned int file_index = (slice_subsample == 1 ? i : (i << (slice_subsample-1)));
                 if(file_index >= files.size())
@@ -441,7 +441,7 @@ void CustomSliceModel::argmin(tipl::reg::reg_type reg_type)
 {
     terminated = false;
     running = true;
-    tipl::const_pointer_image<float,3> to = source_images;
+    tipl::const_pointer_image<3,float> to = source_images;
     tipl::transformation_matrix<float> M;
 
 

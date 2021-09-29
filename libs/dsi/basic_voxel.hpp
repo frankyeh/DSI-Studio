@@ -56,7 +56,7 @@ public:
     tipl::vector<3> vs;
 public:
 
-    tipl::image<unsigned char,3> mask;
+    tipl::image<3,unsigned char> mask;
 public:
     std::vector<const unsigned short*> dwi_data;
     std::vector<tipl::vector<3,float> > bvectors;
@@ -107,12 +107,12 @@ public:// used in QSDR
     tipl::vector<3,int> csf_pos1,csf_pos2,csf_pos3,csf_pos4;
     float R2;
 public: // for QSDR associated T1WT2W
-    std::vector<tipl::image<float,3> > other_image;
+    std::vector<tipl::image<3> > other_image;
     std::vector<std::string> other_image_name;
     std::vector<tipl::transformation_matrix<double> > other_image_trans;
 
 public: // for fib evaluation
-    tipl::image<float,3> fib_fa;
+    tipl::image<3> fib_fa;
     std::vector<tipl::vector<3> > fib_dir;
 public: // for DDI
     Voxel* compare_voxel = nullptr;
@@ -122,11 +122,11 @@ public:
     float z0 = 0.0;
     // other information for second pass processing
     std::vector<float> response_function,free_water_diffusion;
-    tipl::image<float,3> qa_map,iso_map;
+    tipl::image<3> qa_map,iso_map;
     float reponse_function_scaling;
 public:// for template creation
     std::vector<std::vector<float> > template_odfs;
-    std::vector<tipl::image<float,3> > template_metrics;
+    std::vector<tipl::image<3> > template_metrics;
     std::vector<std::string> template_metrics_name;
     std::string template_file_name;
 public:

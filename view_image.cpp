@@ -14,7 +14,7 @@
 
 std::map<std::string,std::string> dicom_dictionary;
 std::vector<view_image*> opened_images;
-bool img_command(tipl::image<float,3>& data,
+bool img_command(tipl::image<3>& data,
                  tipl::vector<3>& vs,
                  tipl::matrix<4,4>& T,
                  std::string cmd,
@@ -31,7 +31,7 @@ bool img_command(tipl::image<float,3>& data,
             error_msg += param1;
             return false;
         }
-        tipl::image<float,3> mask;
+        tipl::image<3> mask;
         nii.get_untouched_image(mask);
         if(mask.shape() != data.shape())
         {
@@ -148,7 +148,7 @@ bool view_image::command(std::string cmd,std::string param1,std::string param2)
 
 
 void show_view(QGraphicsScene& scene,QImage I);
-bool load_image_from_files(QStringList filenames,tipl::image<float,3>& ref,tipl::vector<3>& vs,tipl::matrix<4,4>& trans)
+bool load_image_from_files(QStringList filenames,tipl::image<3>& ref,tipl::vector<3>& vs,tipl::matrix<4,4>& trans)
 {
     if(filenames.size() == 1 && filenames[0].toLower().contains("nii"))
     {
@@ -256,7 +256,7 @@ bool view_image::eventFilter(QObject *obj, QEvent *event)
 }
 
 
-bool get_compressed_image(tipl::io::dicom& dicom,tipl::image<short,2>& I)
+bool get_compressed_image(tipl::io::dicom& dicom,tipl::image<2,short>& I)
 {
     QByteArray array((char*)&*dicom.compressed_buf.begin(),dicom.buf_size);
     QBuffer qbuff(&array);
@@ -345,7 +345,7 @@ bool view_image::open(QStringList file_names)
                     failed_list += QFileInfo(file_names[i]).fileName();
                     continue;
                 }
-                tipl::image<float,3> odata;
+                tipl::image<3> odata;
                 tipl::vector<3> ovs;
                 tipl::matrix<4,4> oT;
                 other_nifti.get_untouched_image(odata);
@@ -368,7 +368,7 @@ bool view_image::open(QStringList file_names)
             dicom >> data;
             if(dicom.is_compressed)
             {
-                tipl::image<short,2> I;
+                tipl::image<2,short> I;
                 if(!get_compressed_image(dicom,I))
                 {
                     QMessageBox::information(this,"Error",QString("Unsupported transfer syntax:") + QString(dicom.encoding.c_str()),0);
@@ -538,13 +538,13 @@ void view_image::show_image(void)
 {
     if(data.empty() || no_update)
         return;
-    tipl::image<float,2> buf;
+    tipl::image<2,float> buf;
     tipl::volume2slice(data, buf, cur_dim, size_t(slice_pos[cur_dim]));
     v2c.convert(buf,buffer);
 
     if(overlay.size() == data.size())
     {
-        tipl::image<float,2> buf_overlay;
+        tipl::image<2,float> buf_overlay;
         tipl::color_image buffer2;
         tipl::volume2slice(overlay, buf_overlay, cur_dim, size_t(slice_pos[cur_dim]));
         overlay_v2c.convert(buf_overlay,buffer2);
@@ -573,7 +573,7 @@ void view_image::on_zoom_out_clicked()
     show_image();
 }
 
-bool is_label_image(const tipl::image<float,3>& I);
+bool is_label_image(const tipl::image<3>& I);
 void view_image::on_actionResample_triggered()
 {
     bool ok;
@@ -582,7 +582,7 @@ void view_image::on_actionResample_triggered()
     if (!ok || nv == 0.0f)
         return;
     tipl::vector<3,float> new_vs(nv,nv,nv);
-    tipl::image<float,3> J(tipl::shape<3>(
+    tipl::image<3> J(tipl::shape<3>(
             int(std::ceil(float(data.width())*vs[0]/new_vs[0])),
             int(std::ceil(float(data.height())*vs[1]/new_vs[1])),
             int(std::ceil(float(data.depth())*vs[2]/new_vs[2]))));
@@ -625,7 +625,7 @@ void view_image::on_actionSave_as_Int8_triggered()
                            this,"Save image",file_name,"NIFTI file(*nii.gz *.nii)" );
     if (filename.isEmpty())
         return;
-    tipl::image<uint8_t,3> new_data = data;
+    tipl::image<3,uint8_t> new_data = data;
     gz_nifti nii;
     nii.set_image_transformation(T);
     nii.set_voxel_size(vs);
@@ -641,7 +641,7 @@ void view_image::on_actionSave_as_Int16_triggered()
                            this,"Save image",file_name,"NIFTI file(*nii.gz *.nii)" );
     if (filename.isEmpty())
         return;
-    tipl::image<uint16_t,3> new_data = data;
+    tipl::image<3,uint16_t> new_data = data;
     gz_nifti nii;
     nii.set_image_transformation(T);
     nii.set_voxel_size(vs);
@@ -664,7 +664,7 @@ void view_image::on_actionResize_triggered()
     std::istringstream in(result.toStdString());
     int w,h,d;
     in >> w >> h >> d;
-    tipl::image<float,3> new_data(tipl::shape<3>(w,h,d));
+    tipl::image<3> new_data(tipl::shape<3>(w,h,d));
     tipl::draw(data,new_data,tipl::vector<3>());
     data.swap(new_data);
     init_image();
@@ -682,7 +682,7 @@ void view_image::on_actionTranslocate_triggered()
     std::istringstream in(result.toStdString());
     int dx,dy,dz;
     in >> dx >> dy >> dz;
-    tipl::image<float,3> new_data(data.shape());
+    tipl::image<3> new_data(data.shape());
     tipl::draw(data,new_data,tipl::vector<3>(dx,dy,dz));
     data.swap(new_data);
     T[3] -= T[0]*dx;
@@ -704,7 +704,7 @@ void view_image::on_actionTrim_triggered()
     range_max -= range_min;
     range_max[0] += margin+margin;
     range_max[1] += margin+margin;
-    tipl::image<float,3> new_data(tipl::shape<3>(range_max[0],range_max[1],range_max[2]));
+    tipl::image<3> new_data(tipl::shape<3>(range_max[0],range_max[1],range_max[2]));
     tipl::draw(data,new_data,translocate);
     data.swap(new_data);
     T[3] -= T[0]*translocate[0];
@@ -825,12 +825,12 @@ void view_image::on_actionUpper_Threshold_triggered()
     init_image();
     show_image();
 }
-bool is_label_image(const tipl::image<float,3>& I);
+bool is_label_image(const tipl::image<3>& I);
 void view_image::on_actionSmoothing_triggered()
 {
-    tipl::image<float,3> new_data(data.shape());
+    tipl::image<3> new_data(data.shape());
     uint32_t m = uint32_t(*std::max_element(data.begin(),data.end()));
-    tipl::image<char,3> all_mask(data.shape());
+    tipl::image<3,char> all_mask(data.shape());
     for(size_t i = 0;i < data.size();++i)
         if(data[i] > 0.0f)
             all_mask[i] = 1;
@@ -839,7 +839,7 @@ void view_image::on_actionSmoothing_triggered()
     // smooth each region
     tipl::par_for(m,[&](uint32_t index)
     {
-        tipl::image<char,3> mask(data.shape());
+        tipl::image<3,char> mask(data.shape());
         for(size_t i = 0;i < data.size();++i)
             if(uint32_t(data[i]) == index)
                 mask[i] = 1;
@@ -853,7 +853,7 @@ void view_image::on_actionSmoothing_triggered()
     // fill up gaps
     tipl::par_for(m,[&](uint32_t index)
     {
-        tipl::image<char,3> mask(data.shape());
+        tipl::image<3,char> mask(data.shape());
         for(size_t i = 0;i < new_data.size();++i)
             if(uint32_t(new_data[i]) == index)
                 mask[i] = 1;
@@ -1002,7 +1002,7 @@ void view_image::on_dwi_volume_valueChanged(int value)
     {
         has_gui = false;
         nifti.select_volume(cur_dwi_volume);
-        tipl::image<float,3> new_data;
+        tipl::image<3> new_data;
         nifti.get_untouched_image(new_data);
         has_gui = true;
         if(new_data.empty())

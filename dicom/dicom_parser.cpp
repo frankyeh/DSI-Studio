@@ -76,7 +76,7 @@ bool load_dicom_multi_frame(const char* file_name,std::vector<std::shared_ptr<Dw
     tipl::io::dicom dicom_header;// multiple frame image
     if(!dicom_header.load_from_file(file_name))
         return false;
-    tipl::image<float,3> buf_image;
+    tipl::image<3> buf_image;
     dicom_header >> buf_image;
     unsigned int slice_num = dicom_header.get_int(0x2001,0x1018);
     std::vector<float> b_table;
@@ -289,7 +289,7 @@ bool find_bval_bvec(const char* file_name,QString& bval,QString& bvec)
 bool load_4d_nii(const char* file_name,std::vector<std::shared_ptr<DwiHeader> >& dwi_files,bool need_bvalbvec)
 {
     tipl::vector<3,float> vs;
-    std::vector<tipl::image<float,3> > dwi_data;
+    std::vector<tipl::image<3> > dwi_data;
     {
         gz_nifti nii;
         nii.input_stream->buffer_all = true;
@@ -308,7 +308,7 @@ bool load_4d_nii(const char* file_name,std::vector<std::shared_ptr<DwiHeader> >&
         // check data range
         for(unsigned int index = 0;index < nii.dim(4);++index)
         {
-            tipl::image<float,3> data;
+            tipl::image<3> data;
             if(!nii.toLPS(data,false))
             {
                 src_error_msg = "Incomplete file. Only ";
@@ -356,7 +356,7 @@ bool load_4d_nii(const char* file_name,std::vector<std::shared_ptr<DwiHeader> >&
             }
         }
     }
-    tipl::image<float,4> grad_dev;
+    tipl::image<4,float> grad_dev;
     if(QFileInfo(QFileInfo(file_name).absolutePath() + "/grad_dev.nii.gz").exists())
     {
         gz_nifti grad_header;
@@ -367,7 +367,7 @@ bool load_4d_nii(const char* file_name,std::vector<std::shared_ptr<DwiHeader> >&
         }
     }
 
-    tipl::image<unsigned char,3> mask;
+    tipl::image<3,unsigned char> mask;
     if(QFileInfo(QFileInfo(file_name).absolutePath() + "/nodif_brain_mask.nii.gz").exists())
     {
         gz_nifti mask_header;
@@ -422,7 +422,7 @@ bool load_4d_nii(const char* file_name,std::vector<std::shared_ptr<DwiHeader> >&
     for(unsigned int index = 0;index < dwi_data.size();++index)
     {
         std::shared_ptr<DwiHeader> new_file(new DwiHeader);
-        tipl::image<float,3> data;
+        tipl::image<3> data;
         data.swap(dwi_data[index]);
         new_file->image = data;
         new_file->file_name = file_name;
@@ -684,7 +684,7 @@ bool load_multiple_slice_dicom(QStringList file_list,std::vector<std::shared_ptr
     }
     return true;
 }
-void scale_image_buf_to_uint16(std::vector<tipl::image<float,3> >& image_buf)
+void scale_image_buf_to_uint16(std::vector<tipl::image<3> >& image_buf)
 {
     float max_value = 0.0f;
     for(size_t i = 0;i < image_buf.size();++i)
@@ -697,7 +697,7 @@ void scale_image_buf_to_uint16(std::vector<tipl::image<float,3> >& image_buf)
 }
 bool load_nhdr(QStringList file_list,std::vector<std::shared_ptr<DwiHeader> >& dwi_files)
 {
-    std::vector<tipl::image<float,3> > image_buf;
+    std::vector<tipl::image<3> > image_buf;
     tipl::shape<3> dim;
     tipl::vector<3> vs;
     image_buf.resize(file_list.size());
@@ -770,13 +770,13 @@ bool load_nhdr(QStringList file_list,std::vector<std::shared_ptr<DwiHeader> >& d
         dwi_files.back()->file_name = file_list[i].toStdString();
         dwi_files.back()->report = " The diffusion images were acquired on an Agilent scanner.";
         dwi_files.back()->image = image_buf[i];
-        image_buf[i] = tipl::image<float,3>();
+        image_buf[i] = tipl::image<3>();
     }
     return true;
 }
 bool load_4d_fdf(QStringList file_list,std::vector<std::shared_ptr<DwiHeader> >& dwi_files)
 {
-    std::vector<tipl::image<float,3> > image_buf;
+    std::vector<tipl::image<3> > image_buf;
     int plane_size = 0;
     for (unsigned int index = 0;check_prog(index,file_list.size());++index)
     {

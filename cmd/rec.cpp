@@ -198,7 +198,7 @@ int rec(void)
             std::cout << "failed to read " << file_name << std::endl;
             return 0;
         }
-        tipl::image<float,3> I;
+        tipl::image<3> I;
         tipl::vector<3> vs;
         in.get_voxel_size(vs);
         in.toLPS(I);
