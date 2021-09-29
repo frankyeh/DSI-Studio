@@ -50,17 +50,6 @@ int rec(void)
     std::cout << "src loaded" <<std::endl;
     if(!correct_phase_distortion(src))
         return 1;
-    if (po.has("cmd"))
-    {
-        QStringList cmd_list = QString(po.get("cmd").c_str()).split("+");
-        for(int i = 0;i < cmd_list.size();++i)
-        {
-            QStringList run_list = QString(cmd_list[i]).split("=");
-            if(!src.command(run_list[0].toStdString(),
-                                run_list.count() > 1 ? run_list[1].toStdString():std::string()))
-                return 1;
-        }
-    }
 
     // apply affine transformation
     if (po.has("affine"))
@@ -78,69 +67,6 @@ int rec(void)
         std::copy(T.begin(),T.end(),affine.begin());
         std::cout << "rotating images" << std::endl;
         src.rotate(src.voxel.dim,src.voxel.vs,affine);
-    }
-
-    unsigned char method_index = uint8_t(po.get("method",4));
-    if(method_index == 4)
-        src.voxel.param[0] = 1.25f;
-    if(method_index == 6) // Convert to HARDI
-    {
-        src.voxel.param[0] = 1.25f;
-        src.voxel.param[1] = 3000.0f;
-        src.voxel.param[2] = 0.05f;
-    }
-    if(method_index == 7) // QSDR
-    {
-        src.voxel.param[0] = 1.25f;
-        std::cout << "selecting template..." << std::endl;
-        for(size_t index = 0;index < fa_template_list.size();++index)
-            std::cout << index << ":" << fa_template_list[index] << std::endl;
-        if(po.has("template"))
-        {
-            src.voxel.primary_template = fa_template_list[size_t(po.get("template",0))];
-            src.voxel.secondary_template = iso_template_list[size_t(po.get("template",0))];
-        }
-        else
-        {
-            size_t index = match_template(src.voxel.vs[0]*src.voxel.vs[1]*src.voxel.vs[2]*src.voxel.dim.size());
-            src.voxel.primary_template = fa_template_list[index];
-            src.voxel.secondary_template = iso_template_list[index];
-        }
-        std::cout << "template: " << src.voxel.primary_template << std::endl;
-        std::cout << "template2: " << src.voxel.secondary_template << std::endl;
-    }
-    if(po.has("study_src")) // DDI
-        src.voxel.study_src_file_path = po.get("study_src");
-    if (po.has("param0"))
-        src.voxel.param[0] = po.get("param0",float(0));
-    if (po.has("param1"))
-        src.voxel.param[1] = po.get("param1",float(0));
-    if (po.has("param2"))
-        src.voxel.param[2] = po.get("param2",float(0));
-    if (po.has("param3"))
-        src.voxel.param[3] = po.get("param3",float(0));
-    if (po.has("param4"))
-        src.voxel.param[4] = po.get("param4",float(0));
-
-    src.voxel.method_id = method_index;
-    src.voxel.ti.init(uint16_t(po.get("odf_order",int(8))));
-    src.voxel.odf_resolving = po.get("odf_resolving",int(0));
-    src.voxel.output_odf = po.get("record_odf",int(0));
-    src.voxel.dti_no_high_b = po.get("dti_no_high_b",src.is_human_data());
-    src.voxel.check_btable = po.get("check_btable",int(src.voxel.dim[2] < src.voxel.dim[0]*2.0 ? 1:0));
-    src.voxel.other_output = po.get("other_output","fa,ad,rd,md,nqa,iso,rdi,nrdi");
-    src.voxel.max_fiber_number = uint32_t(po.get("num_fiber",int(5)));
-    src.voxel.r2_weighted = po.get("r2_weighted",int(0));
-    src.voxel.thread_count = po.get("thread_count",uint32_t(std::thread::hardware_concurrency()));
-    src.voxel.half_sphere = po.get("half_sphere",src.is_dsi_half_sphere() ? 1:0);
-    src.voxel.scheme_balance = po.get("scheme_balance",src.need_scheme_balance() ? 1:0);
-
-
-    {
-        if(src.voxel.output_odf)
-            std::cout << "record ODF in the fib file" << std::endl;
-        if(src.voxel.r2_weighted && method_index == 4)
-            std::cout << "r2 weighted is used for GQI" << std::endl;
     }
 
     if(po.has("other_image"))
@@ -218,6 +144,83 @@ int rec(void)
         rec_motion_correction(&src);
         std::cout << "done." <<std::endl;
     }
+
+    if (po.has("cmd"))
+    {
+        QStringList cmd_list = QString(po.get("cmd").c_str()).split("+");
+        for(int i = 0;i < cmd_list.size();++i)
+        {
+            QStringList run_list = QString(cmd_list[i]).split("=");
+            if(!src.command(run_list[0].toStdString(),
+                                run_list.count() > 1 ? run_list[1].toStdString():std::string()))
+                return 1;
+        }
+    }
+
+    unsigned char method_index = uint8_t(po.get("method",4));
+    if(method_index == 4)
+        src.voxel.param[0] = 1.25f;
+    if(method_index == 6) // Convert to HARDI
+    {
+        src.voxel.param[0] = 1.25f;
+        src.voxel.param[1] = 3000.0f;
+        src.voxel.param[2] = 0.05f;
+    }
+    if(method_index == 7) // QSDR
+    {
+        src.voxel.param[0] = 1.25f;
+        std::cout << "selecting template..." << std::endl;
+        for(size_t index = 0;index < fa_template_list.size();++index)
+            std::cout << index << ":" << fa_template_list[index] << std::endl;
+        if(po.has("template"))
+        {
+            src.voxel.primary_template = fa_template_list[size_t(po.get("template",0))];
+            src.voxel.secondary_template = iso_template_list[size_t(po.get("template",0))];
+        }
+        else
+        {
+            size_t index = match_template(src.voxel.vs[0]*src.voxel.vs[1]*src.voxel.vs[2]*src.voxel.dim.size());
+            src.voxel.primary_template = fa_template_list[index];
+            src.voxel.secondary_template = iso_template_list[index];
+        }
+        std::cout << "template: " << src.voxel.primary_template << std::endl;
+        std::cout << "template2: " << src.voxel.secondary_template << std::endl;
+    }
+    if(po.has("study_src")) // DDI
+        src.voxel.study_src_file_path = po.get("study_src");
+    if (po.has("param0"))
+        src.voxel.param[0] = po.get("param0",float(0));
+    if (po.has("param1"))
+        src.voxel.param[1] = po.get("param1",float(0));
+    if (po.has("param2"))
+        src.voxel.param[2] = po.get("param2",float(0));
+    if (po.has("param3"))
+        src.voxel.param[3] = po.get("param3",float(0));
+    if (po.has("param4"))
+        src.voxel.param[4] = po.get("param4",float(0));
+
+    src.voxel.method_id = method_index;
+    src.voxel.ti.init(uint16_t(po.get("odf_order",int(8))));
+    src.voxel.odf_resolving = po.get("odf_resolving",int(0));
+    src.voxel.output_odf = po.get("record_odf",int(0));
+    src.voxel.dti_no_high_b = po.get("dti_no_high_b",src.is_human_data());
+    src.voxel.check_btable = po.get("check_btable",int(src.voxel.dim[2] < src.voxel.dim[0]*2.0 ? 1:0));
+    src.voxel.other_output = po.get("other_output","fa,ad,rd,md,nqa,iso,rdi,nrdi");
+    src.voxel.max_fiber_number = uint32_t(po.get("num_fiber",int(5)));
+    src.voxel.r2_weighted = po.get("r2_weighted",int(0));
+    src.voxel.thread_count = po.get("thread_count",uint32_t(std::thread::hardware_concurrency()));
+    src.voxel.half_sphere = po.get("half_sphere",src.is_dsi_half_sphere() ? 1:0);
+    src.voxel.scheme_balance = po.get("scheme_balance",src.need_scheme_balance() ? 1:0);
+
+
+    {
+        if(src.voxel.output_odf)
+            std::cout << "record ODF in the fib file" << std::endl;
+        if(src.voxel.r2_weighted && method_index == 4)
+            std::cout << "r2 weighted is used for GQI" << std::endl;
+    }
+
+
     std::cout << "start reconstruction..." <<std::endl;
     if(po.has("output"))
     {
