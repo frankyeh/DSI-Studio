@@ -17,12 +17,12 @@ const unsigned char seed_id = 3;
 const unsigned char terminate_id = 4;
 const unsigned char not_ending_id = 5;
 const unsigned char default_id = 6;
-void initial_LPS_nifti_srow(tipl::matrix<4,4,float>& T,const tipl::shape<3>& geo,const tipl::vector<3>& vs);
+void initial_LPS_nifti_srow(tipl::matrix<4,4>& T,const tipl::shape<3>& geo,const tipl::vector<3>& vs);
 class ROIRegion {
 public:
         tipl::shape<3> dim;
         tipl::vector<3> vs;
-        tipl::matrix<4,4,float> trans_to_mni;
+        tipl::matrix<4,4> trans_to_mni;
 public:
         std::vector<tipl::vector<3,short> > region;
         std::vector<std::vector<tipl::vector<3,short> > > undo_backup;
@@ -41,7 +41,7 @@ public: // rendering options
         {
             initial_LPS_nifti_srow(trans_to_mni,dim,vs);
         }
-        ROIRegion(tipl::shape<3> dim_,tipl::vector<3> vs_,const tipl::matrix<4,4,float>& trans_to_mni_)
+        ROIRegion(tipl::shape<3> dim_,tipl::vector<3> vs_,const tipl::matrix<4,4>& trans_to_mni_)
             :dim(dim_),vs(vs_),trans_to_mni(trans_to_mni_){}
 
         ROIRegion(const ROIRegion& rhs)
@@ -215,7 +215,7 @@ public:
         bool shift(tipl::vector<3,float> dx);
 
         template<class image_type>
-        void LoadFromBuffer(const image_type& from,const tipl::matrix<4,4,float>& trans)
+        void LoadFromBuffer(const image_type& from,const tipl::matrix<4,4>& trans)
         {
             std::vector<tipl::vector<3,short> > points;
             image_type from2(tipl::shape<3>(uint32_t(dim[0]*resolution_ratio),

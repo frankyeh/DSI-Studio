@@ -194,7 +194,7 @@ const std::vector<tipl::vector<3,unsigned int> >& RegionModel::tri_list(void) co
     return object->tri_list;
 }
 
-void RegionModel::trasnform_point_list(const tipl::matrix<4,4,float>& T)
+void RegionModel::trasnform_point_list(const tipl::matrix<4,4>& T)
 {
     if(!object.get())
         return;

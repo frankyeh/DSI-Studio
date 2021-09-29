@@ -1184,7 +1184,7 @@ bool ask_TDI_options(int& rec,int& rec2)
 }
 void tracking_window::on_actionTDI_Diffusion_Space_triggered()
 {
-    tipl::matrix<4,4,float> tr;
+    tipl::matrix<4,4> tr;
     tr.identity();
     int rec,rec2;
     if(!ask_TDI_options(rec,rec2))
@@ -1204,7 +1204,7 @@ void tracking_window::on_actionTDI_Subvoxel_Diffusion_Space_triggered()
             "Input super-resolution ratio (e.g. 2, 3, or 4):",2,2,8,1,&ok);
     if(!ok)
         return;
-    tipl::matrix<4,4,float> tr;
+    tipl::matrix<4,4> tr;
     tr.identity();
     tr[0] = tr[5] = tr[10] = ratio;
     tipl::shape<3> new_geo(handle->dim[0]*ratio,handle->dim[1]*ratio,handle->dim[2]*ratio);
@@ -1215,7 +1215,7 @@ void tracking_window::on_actionTDI_Subvoxel_Diffusion_Space_triggered()
 
 void tracking_window::on_actionTDI_Import_Slice_Space_triggered()
 {
-    tipl::matrix<4,4,float> tr = current_slice->invT;
+    tipl::matrix<4,4> tr = current_slice->invT;
     tipl::shape<3> geo = current_slice->dim;
     tipl::vector<3,float> vs = current_slice->vs;
     int rec,rec2;
@@ -2432,7 +2432,7 @@ void tracking_window::on_actionMark_Region_on_T1W_T2W_triggered()
     tipl::image<unsigned char, 3> mask;
     current_region->SaveToBuffer(mask);
     float resolution_ratio = current_region->resolution_ratio;
-    tipl::matrix<4,4,float> T(slice->T);
+    tipl::matrix<4,4> T(slice->T);
     tipl::multiply_constant(&T[0],&T[0]+12,resolution_ratio);
     tipl::image<unsigned char, 3> t_mask(slice->source_images.shape());
     tipl::resample(mask,t_mask,T,tipl::nearest);

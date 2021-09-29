@@ -1528,10 +1528,10 @@ bool ImageModel::save_fib(const std::string& output_name)
     mat_writer.write("steps",final_steps);
     return true;
 }
-void initial_LPS_nifti_srow(tipl::matrix<4,4,float>& T,const tipl::shape<3>& geo,const tipl::vector<3>& vs);
+void initial_LPS_nifti_srow(tipl::matrix<4,4>& T,const tipl::shape<3>& geo,const tipl::vector<3>& vs);
 bool ImageModel::save_to_nii(const char* nifti_file_name) const
 {
-    tipl::matrix<4,4,float> trans;
+    tipl::matrix<4,4> trans;
     initial_LPS_nifti_srow(trans,voxel.dim,voxel.vs);
 
     tipl::shape<4> nifti_dim;
@@ -1549,7 +1549,7 @@ bool ImageModel::save_to_nii(const char* nifti_file_name) const
 }
 bool ImageModel::save_b0_to_nii(const char* nifti_file_name) const
 {
-    tipl::matrix<4,4,float> trans;
+    tipl::matrix<4,4> trans;
     initial_LPS_nifti_srow(trans,voxel.dim,voxel.vs);
     tipl::image<float,3> buffer(voxel.dim);
     std::copy(src_dwi_data[0],src_dwi_data[0]+buffer.size(),buffer.begin());
@@ -1558,7 +1558,7 @@ bool ImageModel::save_b0_to_nii(const char* nifti_file_name) const
 
 bool ImageModel::save_dwi_sum_to_nii(const char* nifti_file_name) const
 {
-    tipl::matrix<4,4,float> trans;
+    tipl::matrix<4,4> trans;
     initial_LPS_nifti_srow(trans,voxel.dim,voxel.vs);
     tipl::image<float,3> buffer(dwi_sum);
     return gz_nifti::save_to_file(nifti_file_name,buffer,voxel.vs,trans);

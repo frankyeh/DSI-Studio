@@ -500,7 +500,7 @@ bool tracking_data::is_white_matter(const tipl::vector<3,float>& pos,float t) co
 }
 
 size_t match_template(float volume);
-void initial_LPS_nifti_srow(tipl::matrix<4,4,float>& T,const tipl::shape<3>& geo,const tipl::vector<3>& vs)
+void initial_LPS_nifti_srow(tipl::matrix<4,4>& T,const tipl::shape<3>& geo,const tipl::vector<3>& vs)
 {
     std::fill(T.begin(),T.end(),0.0f);
     T[0] = -vs[0];
@@ -516,14 +516,14 @@ fib_data::fib_data(tipl::shape<3> dim_,tipl::vector<3> vs_):dim(dim_),vs(vs_)
     initial_LPS_nifti_srow(trans_to_mni,dim,vs);
 }
 
-fib_data::fib_data(tipl::shape<3> dim_,tipl::vector<3> vs_,const tipl::matrix<4,4,float>& trans_to_mni_):
+fib_data::fib_data(tipl::shape<3> dim_,tipl::vector<3> vs_,const tipl::matrix<4,4>& trans_to_mni_):
     dim(dim_),vs(vs_),trans_to_mni(trans_to_mni_)
 {}
 
 bool load_fib_from_tracks(const char* file_name,
                           tipl::image<float,3>& I,
                           tipl::vector<3>& vs,
-                          tipl::matrix<4,4,float>& trans_to_mni);
+                          tipl::matrix<4,4>& trans_to_mni);
 void prepare_idx(const char* file_name,std::shared_ptr<gz_istream> in);
 void save_idx(const char* file_name,std::shared_ptr<gz_istream> in);
 bool fib_data::load_from_file(const char* file_name)
@@ -1106,7 +1106,7 @@ extern std::vector<std::string> fa_template_list,iso_template_list,track_atlas_f
 extern std::vector<std::vector<std::string> > template_atlas_list;
 
 
-void apply_trans(tipl::vector<3>& pos,const tipl::matrix<4,4,float>& trans)
+void apply_trans(tipl::vector<3>& pos,const tipl::matrix<4,4>& trans)
 {
     if(trans[0] != 1.0f)
         pos[0] *= trans[0];
@@ -1119,7 +1119,7 @@ void apply_trans(tipl::vector<3>& pos,const tipl::matrix<4,4,float>& trans)
     pos[2] += trans[11];
 }
 /*
-void mni2temp(tipl::vector<3>& pos,const tipl::matrix<4,4,float>& trans)
+void mni2temp(tipl::vector<3>& pos,const tipl::matrix<4,4>& trans)
 {
     pos[0] -= trans[3];
     pos[1] -= trans[7];

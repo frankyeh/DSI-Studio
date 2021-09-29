@@ -16,7 +16,7 @@ std::map<std::string,std::string> dicom_dictionary;
 std::vector<view_image*> opened_images;
 bool img_command(tipl::image<float,3>& data,
                  tipl::vector<3>& vs,
-                 tipl::matrix<4,4,float>& T,
+                 tipl::matrix<4,4>& T,
                  std::string cmd,
                  std::string param1,
                  std::string,
@@ -148,7 +148,7 @@ bool view_image::command(std::string cmd,std::string param1,std::string param2)
 
 
 void show_view(QGraphicsScene& scene,QImage I);
-bool load_image_from_files(QStringList filenames,tipl::image<float,3>& ref,tipl::vector<3>& vs,tipl::matrix<4,4,float>& trans)
+bool load_image_from_files(QStringList filenames,tipl::image<float,3>& ref,tipl::vector<3>& vs,tipl::matrix<4,4>& trans)
 {
     if(filenames.size() == 1 && filenames[0].toLower().contains("nii"))
     {
@@ -347,7 +347,7 @@ bool view_image::open(QStringList file_names)
                 }
                 tipl::image<float,3> odata;
                 tipl::vector<3> ovs;
-                tipl::matrix<4,4,float> oT;
+                tipl::matrix<4,4> oT;
                 other_nifti.get_untouched_image(odata);
                 other_nifti.get_voxel_size(ovs);
                 other_nifti.get_image_transformation(oT);
@@ -589,7 +589,7 @@ void view_image::on_actionResample_triggered()
     if(J.empty())
         return;
     tipl::transformation_matrix<float> T1;
-    tipl::matrix<4,4,float> nT;
+    tipl::matrix<4,4> nT;
     nT.identity();
     nT[0] = T1.sr[0] = new_vs[0]/vs[0];
     nT[5] = T1.sr[4] = new_vs[1]/vs[1];
@@ -767,7 +767,7 @@ void view_image::on_actionLPS_RAS_swap_triggered()
 {
     if(data.empty())
         return;
-    tipl::matrix<4,4,float> T2;
+    tipl::matrix<4,4> T2;
     T2.identity();
     T2[0] = -1.0f;
     T2[3] = data.width();

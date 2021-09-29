@@ -56,7 +56,7 @@ bool check_other_slices(std::shared_ptr<fib_data> handle)
 bool get_t1t2_nifti(std::shared_ptr<fib_data> handle,
                     tipl::shape<3>& nifti_geo,
                     tipl::vector<3>& nifti_vs,
-                    tipl::matrix<4,4,float>& convert)
+                    tipl::matrix<4,4>& convert)
 {
     if(!po.has("t1t2"))
         return false;
@@ -162,7 +162,7 @@ void export_track_info(std::shared_ptr<fib_data> handle,
             bool output_color = QString(cmd.c_str()).endsWith("color");
             bool output_end = QString(cmd.c_str()).endsWith("end");
             file_name_stat += ".nii.gz";
-            tipl::matrix<4,4,float> tr;
+            tipl::matrix<4,4> tr;
             tipl::shape<3> dim;
             tipl::vector<3,float> vs;
             tr.identity();

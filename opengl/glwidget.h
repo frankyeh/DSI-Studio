@@ -190,7 +190,7 @@ public:
 
      int slice_pos[3] = {-1,-1,-1};
      QPoint lastPos,curPos,last_select_point;
-     tipl::matrix<4,4,float> mat,transformation_matrix,transformation_matrix2,rotation_matrix,rotation_matrix2;
+     tipl::matrix<4,4> mat,transformation_matrix,transformation_matrix2,rotation_matrix,rotation_matrix2;
      enum class view_mode_type { single, two, stereo} view_mode = view_mode_type::single;
 
      bool set_view_flip = false;

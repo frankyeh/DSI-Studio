@@ -65,7 +65,7 @@ class TinyTrack{
     static bool save_to_file(const char* file_name,
                              tipl::shape<3> geo,
                              tipl::vector<3> vs,
-                             const tipl::matrix<4,4,float>& trans_to_mni,
+                             const tipl::matrix<4,4>& trans_to_mni,
                              const std::vector<std::vector<float> >& tract_data,
                              const std::vector<uint16_t>& cluster,
                              const std::string& report,
@@ -187,7 +187,7 @@ class TinyTrack{
                                std::vector<std::vector<float> >& tract_data,
                                std::vector<uint16_t>& tract_cluster,
                                tipl::shape<3>& geo,tipl::vector<3>& vs,
-                               tipl::matrix<4,4,float>& trans_to_mni,
+                               tipl::matrix<4,4>& trans_to_mni,
                                std::string& report,std::string& parameter_id,unsigned int& color)
     {
         prog_init p("loading ",std::filesystem::path(file_name).filename().string().c_str());
@@ -493,7 +493,7 @@ bool tt2trk(const char* tt_file,const char* trk_file)
     std::string report,pid;
     tipl::vector<3> vs;
     tipl::shape<3> geo;
-    tipl::matrix<4,4,float> trans_to_mni;
+    tipl::matrix<4,4> trans_to_mni;
     unsigned int color = default_tract_color;
     if(!TinyTrack::load_from_file(tt_file,tract_data,cluster,geo,vs,trans_to_mni,report,pid,color))
     {
@@ -533,7 +533,7 @@ bool trk2tt(const char* trk_file,const char* tt_file)
         }
     std::string p_id;
     std::vector<uint16_t> cluster(loaded_tract_cluster.begin(),loaded_tract_cluster.end());
-    tipl::matrix<4,4,float> trans_to_mni;
+    tipl::matrix<4,4> trans_to_mni;
     initial_LPS_nifti_srow(trans_to_mni,geo,vs);
     return TinyTrack::save_to_file(tt_file,geo,vs,trans_to_mni,loaded_tract_data,cluster,info,p_id,color);
 }
@@ -569,7 +569,7 @@ void shift_track_for_tck(std::vector<std::vector<float> >& loaded_tract_data,tip
 bool load_fib_from_tracks(const char* file_name,
                           tipl::image<float,3>& I,
                           tipl::vector<3>& vs,
-                          tipl::matrix<4,4,float>& trans_to_mni)
+                          tipl::matrix<4,4>& trans_to_mni)
 {
     tipl::shape<3> geo;
     std::vector<std::vector<float> > loaded_tract_data;
@@ -656,7 +656,7 @@ bool apply_unwarping_tt(const char* from,
                         const tipl::image<tipl::vector<3>,3>& from2to,
                         tipl::shape<3> new_geo,
                         tipl::vector<3> new_vs,
-                        const tipl::matrix<4,4,float>& new_trans_to_mni,
+                        const tipl::matrix<4,4>& new_trans_to_mni,
                         std::string& error)
 {
     std::vector<std::vector<float> > loaded_tract_data;
@@ -664,7 +664,7 @@ bool apply_unwarping_tt(const char* from,
     unsigned int color;
     tipl::shape<3> geo;
     tipl::vector<3> vs;
-    tipl::matrix<4,4,float> trans_to_mni;
+    tipl::matrix<4,4> trans_to_mni;
     std::string report, parameter_id;
     if(!TinyTrack::load_from_file(from,loaded_tract_data,cluster,geo,vs,trans_to_mni,report,parameter_id,color))
     {
@@ -919,7 +919,7 @@ bool TractModel::save_tracts_in_template_space(std::shared_ptr<fib_data> handle,
 
 //---------------------------------------------------------------------------
 bool TractModel::save_transformed_tracts_to_file(const char* file_name,tipl::shape<3> new_dim,
-                                                 tipl::vector<3> new_vs,const tipl::matrix<4,4,float>& T,bool end_point)
+                                                 tipl::vector<3> new_vs,const tipl::matrix<4,4>& T,bool end_point)
 {
     std::shared_ptr<TractModel> tract_in_other_space(new TractModel(new_dim,new_vs));
     std::vector<std::vector<float> > new_tract_data(tract_data);
@@ -1511,7 +1511,7 @@ void TractModel::get_tract_points(std::vector<tipl::vector<3,float> >& points)
 }
 //---------------------------------------------------------------------------
 void TractModel::get_in_slice_tracts(unsigned char dim,int pos,
-                                     tipl::matrix<4,4,float>* pT,
+                                     tipl::matrix<4,4>* pT,
                                      std::vector<std::vector<tipl::vector<2,float> > >& lines,
                                      std::vector<unsigned int>& colors,
                                      unsigned int max_count)
@@ -1884,7 +1884,7 @@ void get_cut_points(const std::vector<std::vector<float> >& tract_data,
 
 void get_cut_points(const std::vector<std::vector<float> >& tract_data,
                     unsigned int dim, unsigned int pos,bool greater,
-                    const tipl::matrix<4,4,float>& T,
+                    const tipl::matrix<4,4>& T,
                     std::vector<std::vector<bool> >& has_cut)
 {
     has_cut.resize(tract_data.size());
@@ -1903,7 +1903,7 @@ void get_cut_points(const std::vector<std::vector<float> >& tract_data,
     });
 }
 
-void TractModel::cut_by_slice(unsigned int dim, unsigned int pos,bool greater,const tipl::matrix<4,4,float>* T)
+void TractModel::cut_by_slice(unsigned int dim, unsigned int pos,bool greater,const tipl::matrix<4,4>* T)
 {
     std::vector<std::vector<bool> > has_cut;
     if(T == nullptr)
@@ -2407,7 +2407,7 @@ void TractModel::add_tracts(std::vector<std::vector<float> >& new_tract, unsigne
 }
 //---------------------------------------------------------------------------
 void TractModel::get_density_map(tipl::image<unsigned int,3>& mapping,
-                                 const tipl::matrix<4,4,float>& transformation,bool endpoint)
+                                 const tipl::matrix<4,4>& transformation,bool endpoint)
 {
     tipl::shape<3> geo = mapping.shape();
     tipl::par_for(tract_data.size(),[&](unsigned int i)
@@ -2432,7 +2432,7 @@ void TractModel::get_density_map(tipl::image<unsigned int,3>& mapping,
 //---------------------------------------------------------------------------
 void TractModel::get_density_map(
         tipl::image<tipl::rgb,3>& mapping,
-        const tipl::matrix<4,4,float>& transformation,bool endpoint)
+        const tipl::matrix<4,4>& transformation,bool endpoint)
 {
     tipl::shape<3> geo = mapping.shape();
     tipl::image<float,3> map_r(geo),map_g(geo),map_b(geo);
@@ -2542,7 +2542,7 @@ bool TractModel::export_tdi(const char* filename,
                   std::vector<std::shared_ptr<TractModel> > tract_models,
                   tipl::shape<3>& dim,
                   tipl::vector<3,float> vs,
-                  tipl::matrix<4,4,float> transformation,bool color,bool end_point)
+                  tipl::matrix<4,4> transformation,bool color,bool end_point)
 {
     if(!QFileInfo(filename).fileName().endsWith(".nii") &&
        !QFileInfo(filename).fileName().endsWith(".nii.gz"))
@@ -2552,14 +2552,14 @@ bool TractModel::export_tdi(const char* filename,
         tipl::image<tipl::rgb,3> tdi(dim);
         for(unsigned int index = 0;index < tract_models.size();++index)
             tract_models[index]->get_density_map(tdi,transformation,end_point);
-        return gz_nifti::save_to_file(filename,tdi,vs,tipl::matrix<4,4,float>(tract_models[0]->trans_to_mni*transformation));
+        return gz_nifti::save_to_file(filename,tdi,vs,tipl::matrix<4,4>(tract_models[0]->trans_to_mni*transformation));
     }
     else
     {
         tipl::image<unsigned int,3> tdi(dim);
         for(unsigned int index = 0;index < tract_models.size();++index)
             tract_models[index]->get_density_map(tdi,transformation,end_point);
-        return gz_nifti::save_to_file(filename,tdi,vs,tipl::matrix<4,4,float>(tract_models[0]->trans_to_mni*transformation));
+        return gz_nifti::save_to_file(filename,tdi,vs,tipl::matrix<4,4>(tract_models[0]->trans_to_mni*transformation));
     }
 }
 void TractModel::to_voxel(std::vector<tipl::vector<3,short> >& points,float ratio,int id)

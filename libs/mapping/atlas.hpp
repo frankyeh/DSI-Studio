@@ -9,7 +9,7 @@ private:
     std::vector<uint32_t> region_value;
     std::vector<uint16_t> value2index;
     std::vector<std::string> labels;
-    tipl::matrix<4,4,float> T;
+    tipl::matrix<4,4> T;
     bool in_template_space = false;
     void load_label(void);
     size_t get_index(tipl::vector<3,float> atlas_space);
@@ -22,7 +22,7 @@ private:// for multiple roi atlas only
 public:
     std::string name,filename,error_msg;
     bool is_multiple_roi;
-    tipl::matrix<4,4,float> template_to_mni;
+    tipl::matrix<4,4> template_to_mni;
 public:
     bool load_from_file(void);
     const std::vector<std::string>& get_list(void)

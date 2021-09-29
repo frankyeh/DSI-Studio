@@ -107,7 +107,7 @@ private:
     tipl::image<float,3> data,overlay;
     float min_value,max_value;
     tipl::vector<3,float> vs;
-    tipl::matrix<4,4,float> T;
+    tipl::matrix<4,4> T;
     tipl::value_to_color<float> v2c,overlay_v2c;
 private:
     std::vector<tipl::image<float,3> > dwi_volume_buf;
@@ -116,7 +116,7 @@ private:// batch processing
     std::vector<tipl::image<float,3> > other_data;
     std::vector<std::string> other_file_name;
     std::vector<tipl::vector<3,float> > other_vs;
-    std::vector<tipl::matrix<4,4,float> > other_T;
+    std::vector<tipl::matrix<4,4> > other_T;
 private:
     bool no_update = true;
     unsigned char cur_dim = 2;

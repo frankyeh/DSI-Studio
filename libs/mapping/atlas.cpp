@@ -7,7 +7,7 @@
 
 
 
-void apply_trans(tipl::vector<3>& pos,const tipl::matrix<4,4,float>& trans);
+void apply_trans(tipl::vector<3>& pos,const tipl::matrix<4,4>& trans);
 
 void atlas::load_label(void)
 {

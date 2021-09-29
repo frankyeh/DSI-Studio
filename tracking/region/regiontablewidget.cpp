@@ -603,7 +603,7 @@ void get_roi_label(QString file_name,std::map<int,std::string>& label_map,
 bool is_label_image(const tipl::image<float,3>& I);
 bool load_nii(std::shared_ptr<fib_data> handle,
               const std::string& file_name,
-              std::vector<std::pair<tipl::shape<3>,tipl::matrix<4,4,float> > >& transform_lookup,
+              std::vector<std::pair<tipl::shape<3>,tipl::matrix<4,4> > >& transform_lookup,
               std::vector<std::shared_ptr<ROIRegion> >& regions,
               std::vector<std::string>& names,
               std::string& error_msg,
@@ -665,7 +665,7 @@ bool load_nii(std::shared_ptr<fib_data> handle,
     if(multiple_roi)
         get_roi_label(file_name.c_str(),label_map,label_color,des.find("FreeSurfer") == 0);
 
-    tipl::matrix<4,4,float> convert;
+    tipl::matrix<4,4> convert;
     bool has_transform = false;
     bool scale_image = false;
 
@@ -719,7 +719,7 @@ bool load_nii(std::shared_ptr<fib_data> handle,
         if(is_mni_image)
         {
             std::cout << "warpping the NIFTI file from MNI space to the native space." << std::endl;
-            tipl::matrix<4,4,float> trans;
+            tipl::matrix<4,4> trans;
             header.get_image_transformation(trans);
             if(!handle->mni2sub(from,trans,tipl::nearest))
             {
@@ -848,7 +848,7 @@ bool load_nii(std::shared_ptr<fib_data> handle,
 bool RegionTableWidget::load_multiple_roi_nii(QString file_name,bool is_mni_image)
 {
 
-    std::vector<std::pair<tipl::shape<3>,tipl::matrix<4,4,float> > > transform_lookup;
+    std::vector<std::pair<tipl::shape<3>,tipl::matrix<4,4> > > transform_lookup;
     // searching for T1/T2 mappings
     for(unsigned int index = 0;index < cur_tracking_window.slices.size();++index)
     {

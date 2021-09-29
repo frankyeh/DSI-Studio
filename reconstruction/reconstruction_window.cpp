@@ -569,7 +569,7 @@ void reconstruction_window::on_actionSave_bvecs_triggered()
 }
 
 
-bool load_image_from_files(QStringList filenames,tipl::image<float,3>& ref,tipl::vector<3>& vs,tipl::matrix<4,4,float>&);
+bool load_image_from_files(QStringList filenames,tipl::image<float,3>& ref,tipl::vector<3>& vs,tipl::matrix<4,4>&);
 void reconstruction_window::on_actionRotate_triggered()
 {
     QStringList filenames = QFileDialog::getOpenFileNames(
@@ -580,7 +580,7 @@ void reconstruction_window::on_actionRotate_triggered()
 
     tipl::image<float,3> ref;
     tipl::vector<3> vs;
-    tipl::matrix<4,4,float> t;
+    tipl::matrix<4,4> t;
     if(!load_image_from_files(filenames,ref,vs,t))
         return;
     std::shared_ptr<manual_alignment> manual(new manual_alignment(this,
@@ -862,7 +862,7 @@ void reconstruction_window::on_actionImage_upsample_to_T1W_TESTING_triggered()
 
     tipl::image<float,3> ref;
     tipl::vector<3> vs;
-    tipl::matrix<4,4,float> t;
+    tipl::matrix<4,4> t;
     if(!load_image_from_files(filenames,ref,vs,t))
         return;
     std::shared_ptr<manual_alignment> manual(new manual_alignment(this,

@@ -125,7 +125,7 @@ void CustomSliceModel::get_slice(tipl::color_image& image,
         return SliceModel::get_slice(image,cur_dim,overlay_slices);
 }
 // ---------------------------------------------------------------------------
-void initial_LPS_nifti_srow(tipl::matrix<4,4,float>& T,const tipl::shape<3>& geo,const tipl::vector<3>& vs);
+void initial_LPS_nifti_srow(tipl::matrix<4,4>& T,const tipl::shape<3>& geo,const tipl::vector<3>& vs);
 void prepare_idx(const char* file_name,std::shared_ptr<gz_istream> in);
 void save_idx(const char* file_name,std::shared_ptr<gz_istream> in);
 bool CustomSliceModel::initialize(const std::vector<std::string>& files,bool is_mni_image)
@@ -464,7 +464,7 @@ void CustomSliceModel::argmin(tipl::reg::reg_type reg_type)
     running = false;
 }
 // ---------------------------------------------------------------------------
-bool save_transform(const char* file_name,const tipl::matrix<4,4,float>& T,
+bool save_transform(const char* file_name,const tipl::matrix<4,4>& T,
                     const tipl::affine_transform<float>& argmin)
 {
     std::ofstream out(file_name);

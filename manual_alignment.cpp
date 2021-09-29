@@ -419,7 +419,7 @@ void manual_alignment::on_files_clicked()
     ui->menu_File->popup(QCursor::pos());
 }
 
-bool save_transform(const char* file_name,const tipl::matrix<4,4,float>& T,
+bool save_transform(const char* file_name,const tipl::matrix<4,4>& T,
                     const tipl::affine_transform<float>& argmin);
 
 void manual_alignment::on_actionSave_Transformation_triggered()
@@ -430,7 +430,7 @@ void manual_alignment::on_actionSave_Transformation_triggered()
             "Text files (*.txt);;All files (*)");
     if(filename.isEmpty())
         return;
-    tipl::matrix<4,4,float> T_;
+    tipl::matrix<4,4> T_;
     T.save_to_transform(T_.begin());
     if(!save_transform(filename.toStdString().c_str(),T_,arg))
         QMessageBox::critical(this,"ERROR","Cannot save mapping file.");

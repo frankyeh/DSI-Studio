@@ -9,7 +9,7 @@ nn_connectometry_analysis::nn_connectometry_analysis(std::shared_ptr<fib_data> h
         {
             tipl::image<float,3> I;
             in.toLPS(I);
-            tipl::matrix<4,4,float> tr,tr2;
+            tipl::matrix<4,4> tr,tr2;
             tr2.identity();
             in.get_image_transformation(tr);
             tr[15] = 1.0f;

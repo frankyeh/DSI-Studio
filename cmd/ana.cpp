@@ -30,10 +30,10 @@ bool load_region(std::shared_ptr<fib_data> handle,
 bool get_t1t2_nifti(std::shared_ptr<fib_data> handle,
                     tipl::shape<3>& nifti_geo,
                     tipl::vector<3>& nifti_vs,
-                    tipl::matrix<4,4,float>& convert);
+                    tipl::matrix<4,4>& convert);
 bool load_nii(std::shared_ptr<fib_data> handle,
               const std::string& file_name,
-              std::vector<std::pair<tipl::shape<3>,tipl::matrix<4,4,float> > >& transform_lookup,
+              std::vector<std::pair<tipl::shape<3>,tipl::matrix<4,4> > >& transform_lookup,
               std::vector<std::shared_ptr<ROIRegion> >& regions,
               std::vector<std::string>& names,
               std::string& error_msg,
@@ -45,12 +45,12 @@ bool load_nii(std::shared_ptr<fib_data> handle,
               std::vector<std::shared_ptr<ROIRegion> >& regions,
               std::vector<std::string>& names)
 {
-    std::vector<std::pair<tipl::shape<3>,tipl::matrix<4,4,float> > > transform_lookup;
+    std::vector<std::pair<tipl::shape<3>,tipl::matrix<4,4> > > transform_lookup;
     // --t1t2 provide registration
     {
         tipl::shape<3> t1t2_geo;
         tipl::vector<3> vs;
-        tipl::matrix<4,4,float> convert;
+        tipl::matrix<4,4> convert;
         if(get_t1t2_nifti(handle,t1t2_geo,vs,convert))
             transform_lookup.push_back(std::make_pair(t1t2_geo,convert));
     }

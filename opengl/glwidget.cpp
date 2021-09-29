@@ -196,7 +196,7 @@ void GLWidget::set_view(unsigned char view_option)
     transformation_matrix[12] = -transformation_matrix[0]*center_point[0];
     transformation_matrix[13] = -transformation_matrix[5]*center_point[1];
     transformation_matrix[14] = -transformation_matrix[10]*center_point[2];
-    tipl::matrix<4,4,float> m;
+    tipl::matrix<4,4> m;
     if(view_option != 2)
     {
         m.zero();
@@ -299,12 +299,12 @@ void setupMaterial(float emission,float specular,int shininess)
     check_error(__FUNCTION__);
 }
 
-unsigned char getCurView(const tipl::matrix<4,4,float>& m)
+unsigned char getCurView(const tipl::matrix<4,4>& m)
 {
     unsigned char cur_view = 0;
     {
         const float view_dirs[6][3] = {{1,0,0},{0,1,0},{0,0,1},{-1,0,0},{0,-1,0},{0,0,-1}};
-        tipl::matrix<4,4,float> mat = tipl::inverse(m);
+        tipl::matrix<4,4> mat = tipl::inverse(m);
         tipl::vector<3,float> dir(mat.begin()+8);
         float max_cos = 0;
         for (unsigned char index = 0;index < 6;++index)
@@ -525,7 +525,7 @@ void GLWidget::paintGL()
         case view_mode_type::stereo:
             glViewport(0,0, cur_width/2, cur_height);
             renderLR();
-            tipl::matrix<4,4,float> T(transformation_matrix);
+            tipl::matrix<4,4> T(transformation_matrix);
             // add a rotation to the transofrmation matrix
             glPushMatrix();
             glLoadIdentity();
@@ -1939,7 +1939,7 @@ void GLWidget::slice_location(unsigned char dim,std::vector<tipl::vector<3,float
 
 void GLWidget::get_view_dir(QPoint p,tipl::vector<3,float>& dir)
 {
-    tipl::matrix<4,4,float> m;
+    tipl::matrix<4,4> m;
     float v[3];
     glGetFloatv(GL_PROJECTION_MATRIX,m.begin());
     // Compute the vector of the pick ray in screen space
@@ -2077,7 +2077,7 @@ void GLWidget::get_pos(void)
 {
     //glMultMatrixf(transformation_matrix);
     glGetFloatv(GL_MODELVIEW_MATRIX,mat.begin());
-    tipl::matrix<4,4,float> view = (edit_right) ? transformation_matrix2*mat : transformation_matrix*mat;
+    tipl::matrix<4,4> view = (edit_right) ? transformation_matrix2*mat : transformation_matrix*mat;
     mat = tipl::inverse(view);
     pos[0] = mat[12];
     pos[1] = mat[13];

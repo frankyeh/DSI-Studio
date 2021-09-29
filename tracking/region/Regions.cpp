@@ -186,7 +186,7 @@ void ROIRegion::SaveToFile(const char* FileName)
         tipl::image<unsigned char, 3>mask;
         SaveToBuffer(mask);
         tipl::vector<3,float> rvs(vs);
-        tipl::matrix<4,4,float> T(trans_to_mni);
+        tipl::matrix<4,4> T(trans_to_mni);
         if(resolution_ratio != 1.0f)
         {
             rvs /= resolution_ratio;
@@ -281,7 +281,7 @@ bool ROIRegion::LoadFromFile(const char* FileName) {
                 }
             }
             header.get_untouched_image(from);
-            tipl::matrix<4,4,float> t;
+            tipl::matrix<4,4> t;
             header.get_image_transformation(t);
             LoadFromBuffer(from,tipl::from_space(trans_to_mni).to(t));
             return true;

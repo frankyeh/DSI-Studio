@@ -1454,7 +1454,7 @@ void TractTableWidget::trim_tracts(void)
 
 void TractTableWidget::export_tract_density(tipl::shape<3>& dim,
                                             tipl::vector<3,float> vs,
-                                            tipl::matrix<4,4,float> transformation,bool color,bool end_point)
+                                            tipl::matrix<4,4> transformation,bool color,bool end_point)
 {
     QString filename;
     if(color)

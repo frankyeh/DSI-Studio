@@ -7,7 +7,7 @@ bool apply_warping(const char* from,
                    const char* to,
                    tipl::image<tipl::vector<3>,3>& to2from,
                    tipl::vector<3> Itvs,
-                   const tipl::matrix<4,4,float>& ItR,
+                   const tipl::matrix<4,4>& ItR,
                    std::string& error,
                    tipl::interpolation_type interpo);
 bool apply_unwarping_tt(const char* from,
@@ -15,7 +15,7 @@ bool apply_unwarping_tt(const char* from,
                         const tipl::image<tipl::vector<3>,3>& from2to,
                         tipl::shape<3> new_geo,
                         tipl::vector<3> new_vs,
-                        const tipl::matrix<4,4,float>& new_trans_to_mni,
+                        const tipl::matrix<4,4>& new_trans_to_mni,
                         std::string& error);
 void get_filenames_from(const std::string param,std::vector<std::string>& filenames);
 bool is_label_image(const tipl::image<float,3>& I);
@@ -24,7 +24,7 @@ bool is_label_image(const tipl::image<float,3>& I);
 int after_warp(tipl::image<tipl::vector<3>,3>& to2from,
                tipl::image<tipl::vector<3>,3>& from2to,
                tipl::vector<3> to_vs,
-               const tipl::matrix<4,4,float>& to_trans)
+               const tipl::matrix<4,4>& to_trans)
 {
     std::string error;
     if(po.has("apply_warp"))
@@ -72,7 +72,7 @@ int reg(void)
 {
     tipl::image<float,3> from,to,from2,to2;
     tipl::vector<3> from_vs,to_vs;
-    tipl::matrix<4,4,float> from_trans,to_trans;
+    tipl::matrix<4,4> from_trans,to_trans;
     tipl::image<tipl::vector<3>,3> t2f_dis,f2t_dis,to2from,from2to;
 
 

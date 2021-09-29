@@ -6,7 +6,7 @@
 #include "fib_data.hpp"
 
 class RoiMgr;
-void initial_LPS_nifti_srow(tipl::matrix<4,4,float>& T,const tipl::shape<3>& geo,const tipl::vector<3>& vs);
+void initial_LPS_nifti_srow(tipl::matrix<4,4>& T,const tipl::shape<3>& geo,const tipl::vector<3>& vs);
 class TractModel{
 public:
         std::string report;
@@ -16,7 +16,7 @@ public:
 public:
         tipl::shape<3> geo;
         tipl::vector<3> vs;
-        tipl::matrix<4,4,float> trans_to_mni;
+        tipl::matrix<4,4> trans_to_mni;
 private:
         std::vector<std::vector<float> > tract_data;
         std::vector<std::vector<float> > deleted_tract_data;
@@ -54,7 +54,7 @@ public:
         {
             initial_LPS_nifti_srow(trans_to_mni,geo,vs);
         }
-        TractModel(tipl::shape<3> dim_,tipl::vector<3> vs_,const tipl::matrix<4,4,float>& trans_to_mni_)
+        TractModel(tipl::shape<3> dim_,tipl::vector<3> vs_,const tipl::matrix<4,4>& trans_to_mni_)
             :geo(dim_),vs(vs_),trans_to_mni(trans_to_mni_)
         {}
 
@@ -81,7 +81,7 @@ public:
         bool save_tracts_in_native_space(std::shared_ptr<fib_data> handle,const char* file_name);
         bool save_tracts_in_template_space(std::shared_ptr<fib_data> handle,const char* file_name);
         bool save_transformed_tracts_to_file(const char* file_name,tipl::shape<3> new_dim,
-                                             tipl::vector<3> new_vs,const tipl::matrix<4,4,float>& T,bool end_point);
+                                             tipl::vector<3> new_vs,const tipl::matrix<4,4>& T,bool end_point);
 
         void save_vrml(const std::string& file_name,
                        unsigned char tract_style,
@@ -109,7 +109,7 @@ public:
                   bool delete_track);
         void cut(float select_angle,const std::vector<tipl::vector<3,float> > & dirs,
                   const tipl::vector<3,float>& from_pos);
-        void cut_by_slice(unsigned int dim, unsigned int pos,bool greater,const tipl::matrix<4,4,float>* T = nullptr);
+        void cut_by_slice(unsigned int dim, unsigned int pos,bool greater,const tipl::matrix<4,4>* T = nullptr);
         void paint(float select_angle,const std::vector<tipl::vector<3,float> > & dirs,
                   const tipl::vector<3,float>& from_pos,
                   unsigned int color);
@@ -123,7 +123,7 @@ public:
         void resample(float new_step);
         void get_tract_points(std::vector<tipl::vector<3,float> >& points);
         void get_in_slice_tracts(unsigned char dim,int pos,
-                                 tipl::matrix<4,4,float>* T,
+                                 tipl::matrix<4,4>* T,
                                  std::vector<std::vector<tipl::vector<2,float> > >& lines,
                                  std::vector<unsigned int>& colors,
                                  unsigned int max_count);
@@ -145,14 +145,14 @@ public:
 
 public:
         void get_density_map(tipl::image<unsigned int,3>& mapping,
-             const tipl::matrix<4,4,float>& transformation,bool endpoint);
+             const tipl::matrix<4,4>& transformation,bool endpoint);
         void get_density_map(tipl::image<tipl::rgb,3>& mapping,
-             const tipl::matrix<4,4,float>& transformation,bool endpoint);
+             const tipl::matrix<4,4>& transformation,bool endpoint);
         static bool export_tdi(const char* file_name,
                           std::vector<std::shared_ptr<TractModel> > tract_models,
                           tipl::shape<3>& dim,
                           tipl::vector<3,float> vs,
-                          tipl::matrix<4,4,float> transformation,bool color,bool end_point);
+                          tipl::matrix<4,4> transformation,bool color,bool end_point);
         static bool export_pdi(const char* file_name,
                                const std::vector<std::shared_ptr<TractModel> >& tract_models);
         static bool export_end_pdi(const char* file_name,

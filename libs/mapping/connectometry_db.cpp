@@ -297,7 +297,7 @@ bool connectometry_db::sample_subject_profile(gz_mat_read& m,std::vector<float>&
     tipl::vector<3> shift;
     tipl::shape<3> subject_dim;
     {
-        tipl::matrix<4,4,float> subject_trans;
+        tipl::matrix<4,4> subject_trans;
         if(!m.read("trans",subject_trans))
         {
             handle->error_msg = "Not a QSDR reconstructed file: ";

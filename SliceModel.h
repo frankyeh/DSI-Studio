@@ -11,7 +11,7 @@ public:
     fib_data* handle = nullptr;
     uint32_t view_id = 0;
     bool is_diffusion_space = true;
-    tipl::matrix<4,4,float> T,invT; // T: image->diffusion iT: diffusion->image
+    tipl::matrix<4,4> T,invT; // T: image->diffusion iT: diffusion->image
     tipl::shape<3> dim;
     tipl::vector<3> vs;
 public:
@@ -139,7 +139,7 @@ public:
     bool save_mapping(const char* file_name);
     bool load_mapping(const char* file_name);
 public:
-    tipl::matrix<4,4,float> trans;
+    tipl::matrix<4,4> trans;
     tipl::image<float, 3> source_images;
     tipl::image<float, 3> skull_removed_images;
     tipl::color_image picture;

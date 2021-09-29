@@ -32,7 +32,7 @@ private:
 public:
     std::vector<tipl::image<float,3> > other_images;
     std::vector<std::string> other_images_name;
-    tipl::matrix<4,4,float> nifti_srow;
+    tipl::matrix<4,4> nifti_srow;
     std::vector<tipl::transformation_matrix<float> > other_image_T;
 public:
     QTimer* timer;

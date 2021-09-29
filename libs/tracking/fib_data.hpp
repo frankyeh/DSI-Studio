@@ -138,7 +138,7 @@ public:
 public:
     std::string name;
     bool image_ready = true;
-    tipl::matrix<4,4,float> T,iT;// T: image->diffusion iT: diffusion->image
+    tipl::matrix<4,4> T,iT;// T: image->diffusion iT: diffusion->image
     float max_value;
     float min_value;
     float contrast_max;
@@ -176,7 +176,7 @@ public:
 public:
     tipl::shape<3> dim;
     tipl::vector<3> vs;
-    tipl::matrix<4,4,float> trans_to_mni;
+    tipl::matrix<4,4> trans_to_mni;
     bool is_human_data = true;
     bool is_qsdr = false;
     bool is_mni_image = false;
@@ -201,7 +201,7 @@ public:
     tipl::vector<3> template_vs;
     tipl::image<float,3> template_I,template_I2;
     std::vector<std::shared_ptr<atlas> > atlas_list;
-    tipl::matrix<4,4,float> template_to_mni;
+    tipl::matrix<4,4> template_to_mni;
     bool has_manual_atlas = false;
     tipl::transformation_matrix<float> manual_template_T;
 public:
@@ -230,7 +230,7 @@ public:
     void get_atlas_all_roi(std::shared_ptr<atlas> at,std::vector<std::vector<tipl::vector<3,short> > >& points);
     template<typename image_type>
     bool mni2sub(image_type& mni_image,
-                 const tipl::matrix<4,4,float>& trans,tipl::interpolation_type interpo = tipl::linear)
+                 const tipl::matrix<4,4>& trans,tipl::interpolation_type interpo = tipl::linear)
     {
         const auto& s2t = get_sub2temp_mapping();
         if(s2t.empty())
@@ -260,7 +260,7 @@ public:
         trans_to_mni.identity();
     }
     fib_data(tipl::shape<3> dim_,tipl::vector<3> vs_);
-    fib_data(tipl::shape<3> dim_,tipl::vector<3> vs_,const tipl::matrix<4,4,float>& trans_to_mni_);
+    fib_data(tipl::shape<3> dim_,tipl::vector<3> vs_,const tipl::matrix<4,4>& trans_to_mni_);
 public:
     bool load_from_file(const char* file_name);
     bool load_from_mat(void);
