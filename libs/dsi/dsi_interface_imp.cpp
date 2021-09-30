@@ -364,7 +364,7 @@ const char* odf_average(const char* out_name,std::vector<std::string>& file_name
                 std::copy(mni_ptr,mni_ptr+16,mni);
 
                 for(size_t i = 0;i < reader.size();++i)
-                    if(reader[i].get_cols()*reader[i].get_rows() == dim.size())
+                    if(size_t(reader[i].get_cols())*size_t(reader[i].get_rows()) == dim.size())
                     {
                         std::string name = reader[i].get_name();
                         if(std::isdigit(name.back(),loc) && reader.has((name.substr(0,name.length()-1)+"0").c_str()))
