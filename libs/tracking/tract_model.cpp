@@ -3134,7 +3134,7 @@ void TractModel::get_tract_data(std::shared_ptr<fib_data> handle,unsigned int fi
                 float sum_value = 0.0f;
                 for (unsigned int index = 0;index < 8;++index)
                 {
-                    if ((value = handle->dir.get_track_specific_index(uint32_t(tri_interpo.dindex[index]),
+                    if ((value = handle->dir.get_track_specific_metrics(uint32_t(tri_interpo.dindex[index]),
                                                                handle->dir.index_data[index_num],gradient[point_index])) == 0.0f)
                         continue;
                     average_value += value*tri_interpo.ratio[index];

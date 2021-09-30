@@ -370,16 +370,17 @@ float fiber_directions::cos_angle(const tipl::vector<3>& cur_dir,unsigned int sp
 }
 
 
-float fiber_directions::get_track_specific_index(unsigned int space_index,const std::vector<const float*>& index,
+float fiber_directions::get_track_specific_metrics(unsigned int space_index,
+                         const std::vector<const float*>& metrics,
                          const tipl::vector<3,float>& dir) const
 {
-    if(fa[0][space_index] == 0.0)
+    if(fa[0][space_index] == 0.0f)
         return 0.0;
     unsigned char fib_order = 0;
     float max_value = std::abs(cos_angle(dir,space_index,0));
     for (unsigned char index = 1;index < fa.size();++index)
     {
-        if (fa[index][space_index] == 0.0)
+        if (fa[index][space_index] == 0.0f)
             continue;
         float value = cos_angle(dir,space_index,index);
         if (-value > max_value)
@@ -394,7 +395,7 @@ float fiber_directions::get_track_specific_index(unsigned int space_index,const 
                 fib_order = index;
             }
     }
-    return index[fib_order][space_index];
+    return metrics[fib_order][space_index];
 }
 
 
