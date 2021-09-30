@@ -61,8 +61,8 @@ void populate_templates(QComboBox* combo,size_t index)
 {
     if(!fa_template_list.empty())
     {
-        for(int index = 0;index < fa_template_list.size();++index)
-            combo->addItem(QFileInfo(fa_template_list[index].c_str()).baseName());
+        for(size_t i = 0;i < fa_template_list.size();++i)
+            combo->addItem(QFileInfo(fa_template_list[i].c_str()).baseName());
         combo->setCurrentIndex(int(index));
     }
 }
