@@ -21,14 +21,15 @@ nn_connectometry_analysis::nn_connectometry_analysis(std::shared_ptr<fib_data> h
             It.resize(handle->dim);
             tipl::resample(I,It,tr,tipl::nearest);
             // create Ib as the salient map background
-            int plane_size = handle->dim.plane_size();
+            size_t plane_size = handle->dim.plane_size();
             // skip top 2 slices
-            tipl::image<2,float> Itt(tipl::shape<2>(handle->dim[0],handle->dim[1]*int(handle->dim[2]/skip_slice-1)));
-            for(int z = 0,i = 0;z < It.depth() && i+plane_size <= Itt.size();z += skip_slice,i += plane_size)
+            tipl::image<2,float> Itt(tipl::shape<2>(handle->dim[0],handle->dim[1]*uint32_t(handle->dim[2]/skip_slice-1)));
+            for(size_t z = 0,i = 0;int(z) < It.depth() &&
+                                   i+plane_size <= Itt.size();z += skip_slice,i += plane_size)
             {
-                std::copy(It.begin()+z*plane_size,
-                          It.begin()+(z+1)*plane_size,
-                          Itt.begin()+i);
+                std::copy(It.begin()+int64_t(z*plane_size),
+                          It.begin()+int64_t((z+1)*plane_size),
+                          Itt.begin()+int64_t(i));
             }
             tipl::normalize(Itt,128);
             Ib = Itt;
