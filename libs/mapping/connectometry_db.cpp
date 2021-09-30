@@ -348,7 +348,7 @@ bool connectometry_db::sample_subject_profile(gz_mat_read& m,std::vector<float>&
                 return;
             float min_value = *std::min_element(odf, odf + handle->dir.half_odf_size);
             unsigned int pos = index;
-            for(unsigned char i = 0;i < handle->dir.num_fiber;++i,pos += uint32_t(si2vi.size()))
+            for(unsigned int i = 0;i < handle->dir.num_fiber;++i,pos += uint32_t(si2vi.size()))
             {
                 if(handle->dir.fa[i][cur_index] == 0.0f)
                     break;
@@ -379,7 +379,7 @@ bool connectometry_db::sample_subject_profile(gz_mat_read& m,std::vector<float>&
             if(subject_index >= subject_dim.size())
                 return;
             unsigned int pos = index;
-            for(unsigned char i = 0;i < handle->dir.num_fiber;++i,pos += uint32_t(si2vi.size()))
+            for(unsigned int i = 0;i < handle->dir.num_fiber;++i,pos += uint32_t(si2vi.size()))
             {
                 if(handle->dir.fa[i][cur_index] == 0.0f)
                     break;
@@ -539,7 +539,7 @@ void connectometry_db::get_subject_vector(unsigned int subject_index,std::vector
 void connectometry_db::get_dif_matrix(std::vector<float>& matrix,const tipl::image<3,int>& fp_mask,float fiber_threshold,bool normalize_fp)
 {
     matrix.clear();
-    matrix.resize(num_subjects*num_subjects);
+    matrix.resize(size_t(num_subjects)*size_t(num_subjects));
     std::vector<std::vector<float> > subject_vector;
     get_subject_vector(0,num_subjects,subject_vector,fp_mask,fiber_threshold,normalize_fp);
     prog_init p("calculating");
@@ -758,7 +758,7 @@ bool connectometry_db::get_qa_profile(const char* file_name,std::vector<std::vec
             if(!odf)
                 continue;
             float min_value = *std::min_element(odf, odf + handle->dir.half_odf_size);
-            for(unsigned char i = 0;i < handle->dir.num_fiber;++i)
+            for(unsigned int i = 0;i < handle->dir.num_fiber;++i)
             {
                 if(handle->dir.fa[i][index] == 0.0f)
                     break;
@@ -1192,18 +1192,18 @@ void stat_model::read_demo(const connectometry_db& db)
 
 void stat_model::select_variables(const std::vector<char>& sel)
 {
-    unsigned int subject_count = X.size()/feature_count;
+    auto subject_count = X.size()/feature_count;
     unsigned int new_feature_count = 0;
-    std::vector<int> feature_map;
-    for(int i = 0;i < sel.size();++i)
+    std::vector<size_t> feature_map;
+    for(size_t i = 0;i < sel.size();++i)
         if(sel[i])
         {
             ++new_feature_count;
             feature_map.push_back(i);
         }
-    std::vector<double> new_X(subject_count*new_feature_count);
-    for(int i = 0,index = 0;i < subject_count;++i)
-        for(int j = 0;j < new_feature_count;++j,++index)
+    std::vector<double> new_X(size_t(subject_count)*size_t(new_feature_count));
+    for(size_t i = 0,index = 0;i < subject_count;++i)
+        for(size_t j = 0;j < new_feature_count;++j,++index)
             new_X[index] = X[i*feature_count+feature_map[j]];
     feature_count = new_feature_count;
     X.swap(new_X);
