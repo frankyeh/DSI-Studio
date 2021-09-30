@@ -1502,7 +1502,7 @@ void tracking_window::on_actionImprove_Quality_triggered()
     {
         std::vector<std::vector<float> > new_fa(handle->dir.num_fiber);
         std::vector<std::vector<short> > new_index(handle->dir.num_fiber);
-        unsigned int size = handle->dim.size();
+        auto size = handle->dim.size();
         for(unsigned int i = 0 ;i < new_fa.size();++i)
         {
             new_fa[i].resize(size);
@@ -1570,11 +1570,11 @@ void tracking_window::on_actionImprove_Quality_triggered()
                     float max_value = 0.0;
                     for (unsigned int k = 0; k < handle->dir.half_odf_size; ++k)
                     {
-                        float value = std::abs(predict_dir*handle->dir.odf_table[k]);
-                        if (value > max_value)
+                        float v = std::abs(predict_dir*handle->dir.odf_table[k]);
+                        if (v > max_value)
                         {
-                            max_value = value;
-                            dir_index = k;
+                            max_value = v;
+                            dir_index = short(k);
                         }
                     }
 
@@ -1582,7 +1582,7 @@ void tracking_window::on_actionImprove_Quality_triggered()
                         new_index[fib_order][index.index()] = dir_index;
                     else
                     {
-                        float add_fa = (fib_fa[i]+fib_fa[j])*0.5;
+                        float add_fa = (fib_fa[i]+fib_fa[j])*0.5f;
                         for(unsigned char m = 0;m < new_fa.size();++m)
                         if(add_fa > new_fa[m][index.index()])
                         {
@@ -1596,8 +1596,8 @@ void tracking_window::on_actionImprove_Quality_triggered()
         });
         for(unsigned int i = 0 ;i < new_fa.size();++i)
         {
-            std::copy(new_fa[i].begin(),new_fa[i].begin()+size,(float*)handle->dir.fa[i]);
-            std::copy(new_index[i].begin(),new_index[i].begin()+size,(short*)handle->dir.findex[i]);
+            std::copy(new_fa[i].begin(),new_fa[i].begin()+size,const_cast<float*>(handle->dir.fa[i]));
+            std::copy(new_index[i].begin(),new_index[i].begin()+size,const_cast<short*>(handle->dir.findex[i]));
         }
     }
     slice_need_update = true;
