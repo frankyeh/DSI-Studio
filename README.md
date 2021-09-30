@@ -1,5 +1,7 @@
 ![dsi_Studio](http://dsi-studio.labsolver.org/_/rsrc/1468760876817/config/customLogo.gif?revision=17)
-# DSI-Studio <img src="https://img.shields.io/github/languages/top/frankyeh/DSI-Studio">
+# DSI-Studio 
+
+Code: <img src="https://img.shields.io/github/languages/top/frankyeh/DSI-Studio">[![Language grade: C/C++](https://img.shields.io/lgtm/grade/cpp/g/frankyeh/DSI-Studio.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/frankyeh/DSI-Studio/context:cpp)[![Total alerts](https://img.shields.io/lgtm/alerts/g/frankyeh/DSI-Studio.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/frankyeh/DSI-Studio/alerts/)
 
 Status: <a href="https://github.com/frankyeh/DSI-Studio/commits/master"><img src="https://img.shields.io/github/last-commit/frankyeh/DSI-Studio"></a><a href="https://circleci.com/gh/frankyeh/DSI-Studio/tree/master"><img src="https://img.shields.io/circleci/build/github/frankyeh/DSI-Studio"></a><a href="https://hub.docker.com/repository/docker/dsistudio/dsistudio"><img src="https://img.shields.io/docker/cloud/build/dsistudio/dsistudio"></a>
 
