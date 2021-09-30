@@ -39,9 +39,9 @@ public:
         unsigned char max_i(0);
         unsigned char max_j(0);
         float max_angle_cos = 0;
-        for(unsigned char i = 0;i < next_voxels_index.size();++i)
+        for(unsigned int i = 0;i < next_voxels_index.size();++i)
         {
-            for (unsigned char j = 0;j < info.trk->fib_num;++j)
+            for (unsigned int j = 0;j < info.trk->fib_num;++j)
             {
                 float fa_value = info.trk->fa[j][next_voxels_index[i]];
                 if (fa_value <= info.current_fa_threshold)
