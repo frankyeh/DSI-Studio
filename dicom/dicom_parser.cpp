@@ -159,13 +159,13 @@ bool load_dicom_multi_frame(const char* file_name,std::vector<std::shared_ptr<Dw
 
     if(!slice_num)
         slice_num = 1;
-    unsigned int num_gradient = uint32_t(buf_image.depth())/slice_num;
+    size_t num_gradient = uint32_t(buf_image.depth())/slice_num;
 
 
-    unsigned int plane_size = uint32_t(buf_image.width()*buf_image.height());
+    size_t plane_size = size_t(buf_image.width()*buf_image.height());
     b_table.resize(num_gradient*4);
     begin_prog("loading multi frame DICOM");
-    for(unsigned int index = 0;check_prog(index,num_gradient);++index)
+    for(size_t index = 0;check_prog(index,num_gradient);++index)
     {
         std::shared_ptr<DwiHeader> new_file(new DwiHeader);
         if(index == 0)
@@ -173,10 +173,10 @@ bool load_dicom_multi_frame(const char* file_name,std::vector<std::shared_ptr<Dw
         new_file->image.resize(tipl::shape<3>(uint32_t(buf_image.width()),
                                                  uint32_t(buf_image.height()),slice_num));
 
-        for(unsigned int j = 0;j < slice_num;++j)
-        std::copy(buf_image.begin()+(j*num_gradient + index)*plane_size,
-                  buf_image.begin()+(j*num_gradient + index+1)*plane_size,
-                  new_file->image.begin()+j*plane_size);
+        for(size_t j = 0;j < slice_num;++j)
+        std::copy(buf_image.begin()+int64_t((j*num_gradient + index)*plane_size),
+                  buf_image.begin()+int64_t((j*num_gradient + index+1)*plane_size),
+                  new_file->image.begin()+int64_t(j*plane_size));
         new_file->file_name = file_name;
         std::ostringstream out;
         out << index;
@@ -770,8 +770,8 @@ bool load_nhdr(QStringList file_list,std::vector<std::shared_ptr<DwiHeader> >& d
 bool load_4d_fdf(QStringList file_list,std::vector<std::shared_ptr<DwiHeader> >& dwi_files)
 {
     std::vector<tipl::image<3> > image_buf;
-    int plane_size = 0;
-    for (unsigned int index = 0;check_prog(index,file_list.size());++index)
+    int64_t plane_size = 0;
+    for (int index = 0;check_prog(index,file_list.size());++index)
     {
         std::map<std::string,std::string> value_list;
         {
@@ -803,22 +803,23 @@ bool load_4d_fdf(QStringList file_list,std::vector<std::shared_ptr<DwiHeader> >&
         // allocate all space
         if(index == 0)
         {
-            float dwi_num,width,height,depth,fov1,fov2,fov3;
+            float fov1(0),fov2(0),fov3(0);
+            unsigned int width(0),height(0),depth(0),dwi_num(0);
             if(!(std::istringstream(value_list["array_dim"]) >> dwi_num) ||
                !(std::istringstream(value_list["matrix[]"]) >> width >> height ) ||
                !(std::istringstream(value_list["slices"]) >> depth) ||
                !(std::istringstream(value_list["roi[]"]) >> fov1 >> fov2 >> fov3))
                 return false;
-            plane_size = width*height;
+            plane_size = int64_t(width*height);
             image_buf.resize(dwi_num);
             for(unsigned int i = 0;i < dwi_num;++i)
             {
                 image_buf[i].resize(tipl::shape<3>(width,height,depth));
                 dwi_files.push_back(std::make_shared<DwiHeader>());
                 dwi_files.back()->image.resize(tipl::shape<3>(width,height,depth));
-                dwi_files.back()->voxel_size[0] = fov1*10.0/width;
-                dwi_files.back()->voxel_size[1] = fov2*10.0/height;
-                dwi_files.back()->voxel_size[2] = fov3*100.0/depth;
+                dwi_files.back()->voxel_size[0] = fov1*10.0f/float(width);
+                dwi_files.back()->voxel_size[1] = fov2*10.0f/float(height);
+                dwi_files.back()->voxel_size[2] = fov3*100.0f/float(depth);
                 dwi_files.back()->file_name = value_list["*studyid"];
                 //dwi_files
             }
@@ -830,16 +831,18 @@ bool load_4d_fdf(QStringList file_list,std::vector<std::shared_ptr<DwiHeader> >&
             dwi_files.back()->report = " The diffusion images were acquired on a Varian scanner.";
         }
         // get DWI and slice location
-        int dwi_id,slice_id;
+        size_t dwi_id,slice_id;
         {
-            float v1,v2;
+            int v1(0),v2(0);
             if(!(std::istringstream(value_list["array_index"]) >> v1) ||
                !(std::istringstream(value_list["slice_no"]) >> v2))
                 return false;
-            dwi_id = v1 - 1.0;
-            slice_id = v2 - 1.0;
-            if(dwi_id < 0 || dwi_id >= dwi_files.size() || slice_id < 0 || slice_id >= dwi_files.front()->image.depth())
+            v1-=1;
+            v2-=1;
+            if(v1 < 0 || v1 >= int(dwi_files.size()) || v2 < 0 || v2 >= dwi_files.front()->image.depth())
                 return false;
+            dwi_id = size_t(v1);
+            slice_id = size_t(v2);
         }
         // get b_value
         if(slice_id == 0)
@@ -849,11 +852,11 @@ bool load_4d_fdf(QStringList file_list,std::vector<std::shared_ptr<DwiHeader> >&
                !(std::istringstream(value_list["dsl"]) >> dwi_files[dwi_id]->bvec[2]) ||
                !(std::istringstream(value_list["bvalue"]) >> dwi_files[dwi_id]->bvalue))
                 return false;
-            dwi_files[dwi_id]->bvec.normalize();
+            dwi_files[uint32_t(dwi_id)]->bvec.normalize();
         }
         std::ifstream in(file_list[index].toLocal8Bit().begin(),std::ifstream::binary);
-        in.seekg(-(int)plane_size*4,std::ios_base::end);
-        if(!in.read((char*)&*(image_buf[dwi_id].begin() + slice_id*plane_size),plane_size*4))
+        in.seekg(-plane_size*4,std::ios_base::end);
+        if(!in.read(reinterpret_cast<char*>(&*(image_buf[dwi_id].begin() + plane_size*int64_t(slice_id))),plane_size*4))
         {
             src_error_msg = "read image failed";
             return false;
@@ -862,7 +865,7 @@ bool load_4d_fdf(QStringList file_list,std::vector<std::shared_ptr<DwiHeader> >&
 
 
     scale_image_buf_to_uint16(image_buf);
-    for(int i = 0;i < image_buf.size();++i)
+    for(size_t i = 0;i < image_buf.size();++i)
         dwi_files[i]->image = image_buf[i];
     return true;
 }
