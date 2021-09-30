@@ -101,6 +101,7 @@ public: // individual
     float individual_data_sd;
 public:
     stat_model(void):individual_data(nullptr){}
+    stat_model(const stat_model& rhs){*this = rhs;}
 public:
     std::string error_msg;
     std::string cohort_report;
