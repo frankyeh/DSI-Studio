@@ -1434,7 +1434,7 @@ bool stat_model::select_feature(connectometry_db& db,std::string foi_text)
             if(!label.empty())
                 label.erase(label.begin()+index);
             if(!X.empty())
-                X.erase(X.begin()+uint32_t(index)*feature_count,X.begin()+(uint32_t(index)+1)*feature_count);
+                X.erase(X.begin()+int64_t(index)*feature_count,X.begin()+(int64_t(index)+1)*feature_count);
             subject_index.erase(subject_index.begin()+index);
         }
 
@@ -1483,10 +1483,11 @@ bool stat_model::resample(stat_model& rhs,bool null,bool bootstrap,unsigned int 
             X.resize(rhs.X.size());
             for(unsigned int index = 0,pos = 0;index < rhs.subject_index.size();++index,pos += feature_count)
             {
-                unsigned int new_index = bootstrap ? rand_gen(rhs.subject_index.size()) : index;
+                unsigned int new_index = bootstrap ?
+                            uint32_t(rand_gen(uint32_t(rhs.subject_index.size()))) : index;
                 subject_index[index] = rhs.subject_index[new_index];
-                std::copy(rhs.X.begin()+new_index*feature_count,
-                          rhs.X.begin()+new_index*feature_count+feature_count,X.begin()+pos);
+                std::copy(rhs.X.begin()+int64_t(new_index)*feature_count,
+                          rhs.X.begin()+int64_t(new_index)*feature_count+feature_count,X.begin()+pos);
             }
             if(nonparametric)
             {
