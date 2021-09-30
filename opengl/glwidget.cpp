@@ -1456,7 +1456,7 @@ void myglColor(const tipl::vector<3,float>& color,float alpha)
 }
 
 template<typename fun_type>
-void for_each_track(TractTableWidget* trackWidget,fun_type& fun)
+void for_each_track(TractTableWidget* trackWidget,fun_type fun)
 {
     for (int i = 0;i < trackWidget->rowCount();++i)
     {
