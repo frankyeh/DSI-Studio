@@ -3347,8 +3347,8 @@ void ConnectivityMatrix::save_to_connectogram(const char* file_name)
     out << "data\tdata\t";
     for(unsigned int i = 0;i < w;++i)
     {
-        sum[i] = std::max<unsigned int>(1,std::accumulate(matrix_value.begin()+int64_t(i)*w,
-                                                          matrix_value.begin()+int64_t(i)*w+w,0.0f)*2);
+        sum[i] = std::max(1.0f,std::accumulate(matrix_value.begin()+int64_t(i)*w,
+                                                          matrix_value.begin()+int64_t(i)*w+w,0.0f)*2.0f);
         out << sum[i] << "\t";
     }
     out << std::endl;
