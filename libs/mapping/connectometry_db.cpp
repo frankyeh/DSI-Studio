@@ -1568,8 +1568,8 @@ double stat_model::operator()(const std::vector<double>& original_population,uns
                     if(i != study_feature)
                     {
                         auto cur_b = b[i];
-                        for(size_t j = 0,pos = i;j < population.size();++j,pos += feature_count)
-                            population[j] -= mr.X[pos]*cur_b;
+                        for(size_t j = 0,p = i;j < population.size();++j,p += feature_count)
+                            population[j] -= mr.X[p]*cur_b;
                     }
 
                 auto rank = tipl::rank(population,std::less<double>());
