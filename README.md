@@ -1,6 +1,11 @@
 ![dsi_Studio](http://dsi-studio.labsolver.org/_/rsrc/1468760876817/config/customLogo.gif?revision=17)
-# DSI-Studio
-[![CircleCI](https://circleci.com/gh/frankyeh/DSI-Studio/tree/master.svg?style=svg)](https://circleci.com/gh/frankyeh/DSI-Studio/tree/master)
+# DSI-Studio <img src="https://img.shields.io/github/languages/top/frankyeh/DSI-Studio">
+
+Status: <a href="https://github.com/frankyeh/DSI-Studio/commits/master"><img src="https://img.shields.io/github/last-commit/frankyeh/DSI-Studio"></a><a href="https://circleci.com/gh/frankyeh/DSI-Studio/tree/master"><img src="https://img.shields.io/circleci/build/github/frankyeh/DSI-Studio"></a><a href="https://hub.docker.com/repository/docker/dsistudio/dsistudio"><img src="https://img.shields.io/docker/cloud/build/dsistudio/dsistudio"></a>
+
+Social: <a href="https://twitter.com/intent/follow?screen_name=FangChengYeh"><img src="https://img.shields.io/twitter/follow/FangChengYeh?style=social&logo=twitter" alt="follow on Twitter"></a><a href="https://www.youtube.com/c/FrankYeh"><img src="https://img.shields.io/youtube/channel/subscribers/UCN6gohY_zeBpK6SwJ7hnz1Q?style=social"></a>
+
+Download: <a href="https://github.com/frankyeh/DSI-Studio/releases"><img src="https://img.shields.io/github/v/release/frankyeh/DSI-Studio"></a><a href="https://github.com/frankyeh/DSI-Studio/releases"><img src="https://img.shields.io/github/downloads/frankyeh/DSI-STUDIO/total?style=social"></a>
 
 Documentation: http://dsi-studio.labsolver.org/Manual
 
