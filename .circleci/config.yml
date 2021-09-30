@@ -34,29 +34,23 @@ jobs:
               docker push dsistudio/dsistudio:latest
             fi
 
-
-
   build_windows:
-    executor:
-      name: win/default
+    machine:
+      image: windows-server-2019-vs2019:stable
+      shell: cmd.exe
+    resource_class: windows.medium
     steps:
-      # This needs to be replaced with the windows build
       - run:
-         command: $(echo hello | Out-Host; $?) -and $(echo world | Out-Host; $?)
-         shell: powershell.exe
-      - run:
-         command: echo hello && echo world
-         shell: bash.exe
-      - run:
-         command: echo hello & echo world
-         shell: cmd.exe
+          name: install
+          shell: cmd.exe --login -eo pipefail
+          command:
+            
 
   deployable:
     docker:
-      - image: busybox:latest
+      - image: dsistudio/dsistudio:latest
     steps:
       - run: echo Deployable!
-
 
 workflows:
   version: 2
