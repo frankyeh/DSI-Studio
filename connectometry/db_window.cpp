@@ -280,7 +280,7 @@ void db_window::on_actionSave_pair_wise_difference_as_triggered()
                 "MATLAB file (*.mat);;Figures (*.jpg *.png *.tif *.bmp;;All files (*)");
     if(filename.isEmpty())
         return;
-    if(fp_matrix.empty() || fp_matrix.size() != vbc->handle->db.num_subjects*vbc->handle->db.num_subjects)
+    if(fp_matrix.empty() || fp_matrix.size() != size_t(vbc->handle->db.num_subjects)*size_t(vbc->handle->db.num_subjects))
         on_calculate_dif_clicked();
     if(QFileInfo(filename).suffix().toLower() == "mat")
     {
@@ -432,7 +432,8 @@ void db_window::on_actionSave_DB_as_triggered()
 
 void db_window::on_subject_view_currentChanged(int index)
 {
-    if(index == 1 && (fp_matrix.empty() || fp_matrix.size() != vbc->handle->db.num_subjects*vbc->handle->db.num_subjects))
+    if(index == 1 && (fp_matrix.empty() ||
+                      fp_matrix.size() != size_t(vbc->handle->db.num_subjects)*size_t(vbc->handle->db.num_subjects)))
         on_calculate_dif_clicked();
 }
 
