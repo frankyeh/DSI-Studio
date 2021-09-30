@@ -354,8 +354,8 @@ std::vector<std::pair<int,int> > ImageModel::get_bad_slices(void)
             if(z == 0 || z + 2 >= size_t(voxel.dim.depth()))
                 continue;
             float v[4] = {0.0f,0.0f,0.0f,0.0f};
-            if(z > 0)
-                v[0] = cor_values[pos-1]-cor_values[pos];
+
+            v[0] = cor_values[pos-1]-cor_values[pos];
             if(z+1 < size_t(voxel.dim.depth()))
                 v[1] = cor_values[pos+1]-cor_values[pos];
             if(i > 0)
