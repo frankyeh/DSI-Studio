@@ -81,8 +81,8 @@ public:
 
             //calculate averaged b_value
             double avg_b = tipl::mean(voxel.bvalues.begin()+from,voxel.bvalues.begin()+to);
-            unsigned int trans_old_size = uint32_t(trans.size());
-            trans.resize(trans.size() + new_dir.half_vertices_count*b_count);
+            size_t trans_old_size = trans.size();
+            trans.resize(trans.size() + size_t(new_dir.half_vertices_count)*size_t(b_count));
             for(unsigned int i = 0; i < new_dir.half_vertices_count;++i)
             {
                 std::vector<double> t(b_count);
@@ -98,7 +98,7 @@ public:
                 tipl::multiply_constant(t,avg_b/1000.0/sum_t);
                 if(std::isnan(t[0])) // the sampling is too sparse
                     throw "Scheme balance failed due to insufficient sampling";
-                std::copy(t.begin(),t.end(),trans.begin() + trans_old_size + i * b_count);
+                std::copy(t.begin(),t.end(),trans.begin() + int64_t(trans_old_size + size_t(i) * size_t(b_count)));
                 new_bvalues.push_back(float(effective_b/sum_t));
                 new_bvectors.push_back(new_dir.vertices[i]);
             }
@@ -193,7 +193,7 @@ public:
                 }
                 odf_data.resize(size_list.size());
                 for (unsigned int index = 0;index < odf_data.size();++index)
-                    odf_data[index].resize(size_list[index]*(voxel.ti.half_vertices_count));
+                    odf_data[index].resize(size_t(size_list[index])*size_t(voxel.ti.half_vertices_count));
             }
             catch (...)
             {
@@ -660,7 +660,7 @@ struct SearchLocalMaximum
     void search(const std::vector<float>& old_odf,std::map<float,unsigned short,std::greater<float> >& max_table)
     {
         max_table.clear();
-        for (uint16_t index = 0;index < neighbor.size();++index)
+        for (uint32_t index = 0;index < neighbor.size();++index)
         {
             float value = old_odf[index];
             bool is_max = true;
