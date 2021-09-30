@@ -1125,12 +1125,14 @@ void dicom_parser::on_actionOpen_b_table_triggered()
     if(b_table.size()/4 != ui->tableWidget->rowCount() && (b_table.size()/4)%ui->tableWidget->rowCount() == 0)
     {
         unsigned int slice_num = (b_table.size()/4)/ui->tableWidget->rowCount();
-        for(unsigned int i = 0;i < ui->tableWidget->rowCount();++i)
+        for(int i = 0;i < ui->tableWidget->rowCount();++i)
         {
-            b_table[i*4] = b_table[i*4*slice_num];
-            b_table[i*4+1] = b_table[i*4*slice_num+1];
-            b_table[i*4+2] = b_table[i*4*slice_num+2];
-            b_table[i*4+3] = b_table[i*4*slice_num+3];
+            size_t i4 = size_t(i)*4;
+            size_t i4s = i4*slice_num;;
+            b_table[i4] = b_table[i4s];
+            b_table[i4+1] = b_table[i4s+1];
+            b_table[i4+2] = b_table[i4s+2];
+            b_table[i4+3] = b_table[i4s+3];
         }
         b_table.resize(ui->tableWidget->rowCount()*4);
     }
