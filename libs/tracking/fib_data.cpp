@@ -378,7 +378,7 @@ float fiber_directions::get_track_specific_metrics(unsigned int space_index,
         return 0.0;
     unsigned char fib_order = 0;
     float max_value = std::abs(cos_angle(dir,space_index,0));
-    for (unsigned char index = 1;index < fa.size();++index)
+    for (unsigned char index = 1;index < uint8_t(fa.size());++index)
     {
         if (fa[index][space_index] == 0.0f)
             continue;
@@ -1514,8 +1514,8 @@ void fib_data::run_normalization(bool background,bool inv)
         if(in.read("to2from",t2s_row,t2s_col,t2s_ptr) &&
            in.read("from2to",s2t_row,s2t_col,s2t_ptr))
         {
-            if(t2s_col*t2s_row == template_I.size()*3 &&
-               s2t_col*s2t_row == dim.size()*3)
+            if(size_t(t2s_col)*size_t(t2s_row) == template_I.size()*3 &&
+               size_t(s2t_col)*size_t(s2t_row) == dim.size()*3)
             {
                 std::cout << "loading mapping fields from " << output_file_name << std::endl;
                 t2s.clear();
