@@ -732,7 +732,7 @@ bool fib_data::save_mapping(const std::string& index_name,const std::string& fil
         {
             auto* ptr = odf.get_odf_data(pos);
             if(ptr!= nullptr)
-                std::copy(ptr,ptr+dir.half_odf_size,buf.begin()+pos*dir.half_odf_size);
+                std::copy(ptr,ptr+dir.half_odf_size,buf.begin()+int64_t(pos)*dir.half_odf_size);
 
         }
         return gz_nifti::save_to_file(file_name.c_str(),buf,vs,trans_to_mni);
