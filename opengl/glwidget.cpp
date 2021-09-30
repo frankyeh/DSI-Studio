@@ -785,7 +785,7 @@ void GLWidget::renderLR()
         std::vector<tipl::vector<3,float> > points(4);
 
         bool changed_slice = check_change("slice_match_bkcolor",slice_match_bkcolor);
-        for(unsigned char dim = 0;dim < slice_texture.size();++dim)
+        for(unsigned int dim = 0;dim < slice_texture.size();++dim)
         {
             if((dim == 0 && !cur_tracking_window.ui->glSagCheck->checkState()) ||
                (dim == 1 && !cur_tracking_window.ui->glCorCheck->checkState()) ||
@@ -2787,15 +2787,15 @@ bool GLWidget::command(QString cmd,QString param,QString param2)
             case 5: //anterior
                 for(unsigned int index = 0;index < crop_image.size();index += crop_image.plane_size())
                 {
-                    std::fill(crop_image.begin()+index+cur_tracking_window.current_slice->slice_pos[1]*crop_image.width(),
-                              crop_image.begin()+index+crop_image.plane_size(),crop_image[0]);
+                    std::fill(crop_image.begin()+index+int64_t(cur_tracking_window.current_slice->slice_pos[1])*crop_image.width(),
+                              crop_image.begin()+index+int64_t(crop_image.plane_size()),crop_image[0]);
                 }
                 break;
             case 6: // posterior
                 for(unsigned int index = 0;index < crop_image.size();index += crop_image.plane_size())
                 {
                     std::fill(crop_image.begin()+index,
-                              crop_image.begin()+index+cur_tracking_window.current_slice->slice_pos[1]*crop_image.width(),crop_image[0]);
+                              crop_image.begin()+index+int64_t(cur_tracking_window.current_slice->slice_pos[1])*crop_image.width(),crop_image[0]);
                 }
                 break;
             }
