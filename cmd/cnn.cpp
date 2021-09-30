@@ -4,7 +4,8 @@
 #include "tipl/tipl.hpp"
 #include "gzip_interface.hpp"
 #include "connectometry/group_connectometry_analysis.h"
-bool train_cnn(std::string network,
+bool train_cnn(tipl::ml::trainer& t,
+               std::string network,
                tipl::ml::network& nn,
                tipl::ml::network_data<unsigned char>& nn_data_,
                tipl::ml::network_data<unsigned char>& nn_test_,
@@ -20,13 +21,6 @@ bool train_cnn(std::string network,
         return false;
     }
     std::cout << "training network: " << network << std::endl;
-    tipl::ml::trainer t;
-    t.learning_rate = po.get("learning_rate",0.01f);
-    //t.w_decay_rate = po.get("w_decay_rate",0.0f);
-    t.momentum = po.get("momentum",0.5f);
-    t.batch_size = po.get("batch_size",64);
-    t.epoch = po.get("epoch",2000);
-
     std::cout << "learning rate=" << t.learning_rate << std::endl;
     //std::cout << "weight decay=" << t.w_decay_rate << std::endl;
     std::cout << "momentum=" << t.momentum << std::endl;
@@ -44,7 +38,7 @@ bool train_cnn(std::string network,
 }
 
 
-int cnn(void)
+int cnn(program_option& po)
 {
     std::shared_ptr<group_connectometry_analysis> gca(new group_connectometry_analysis);
     if(!gca->load_database(po.get("source").c_str()))
@@ -98,6 +92,13 @@ int cnn(void)
     }
     std::cout << "a network list is loaded with " << network_list.size() << " networks." << std::endl;
 
+    tipl::ml::trainer t;
+    t.learning_rate = po.get("learning_rate",0.01f);
+    //t.w_decay_rate = po.get("w_decay_rate",0.0f);
+    t.momentum = po.get("momentum",0.5f);
+    t.batch_size = po.get("batch_size",64);
+    t.epoch = po.get("epoch",2000);
+
     // run network list
     if(network_list.size() > 1)
     {       
@@ -122,7 +123,7 @@ int cnn(void)
                 }
                 float test_error = 0.0,train_error = 0.0;
                 tipl::ml::network nn;
-                if(!train_cnn(network_list[i],nn,nn_data,nn_test,test_error,train_error))
+                if(!train_cnn(t,network_list[i],nn,nn_data,nn_test,test_error,train_error))
                     continue;
                 std::cout << "training finished" << std::endl;
                 std::cout << test_error << "\t" << train_error << "\t" << network_list[i] << std::endl;
@@ -133,7 +134,7 @@ int cnn(void)
 
     float test_error = 0.0,train_error = 0.0;
     tipl::ml::network nn;
-    if(!train_cnn(network_list[0],nn,nn_data,nn_test,test_error,train_error))
+    if(!train_cnn(t,network_list[0],nn,nn_data,nn_test,test_error,train_error))
         return 1;
     std::cout << "training finished" << std::endl;
     std::cout << test_error << "," << train_error << "," << network_list[0] << std::endl;

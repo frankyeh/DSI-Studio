@@ -191,7 +191,7 @@ bool load_dicom_multi_frame(const char* file_name,std::vector<std::shared_ptr<Dw
 }
 
 
-bool load_bvec(const char* file_name,std::vector<double>& b_table)
+bool load_bvec(const char* file_name,std::vector<double>& b_table,bool flip_by = true)
 {
     std::ifstream in(file_name);
     if(!in)
@@ -208,7 +208,7 @@ bool load_bvec(const char* file_name,std::vector<double>& b_table)
     }
     if(total_line == 3)
         tipl::mat::transpose(b_table.begin(),tipl::shape<2>(3,b_table.size()/3));
-    if(po.get("flip_by",1))
+    if(flip_by)
     {
         for(size_t index = 1;index < b_table.size();index += 3)
                 b_table[index] = -b_table[index];
@@ -225,15 +225,8 @@ bool load_bval(const char* file_name,std::vector<double>& bval)
               std::back_inserter(bval));
     return true;
 }
-extern program_option po;
 bool find_bval_bvec(const char* file_name,QString& bval,QString& bvec)
 {
-    if(po.has("bval") && po.has("bvec"))
-    {
-        bval = po.get("bval").c_str();
-        bvec = po.get("bvec").c_str();
-        return QFileInfo(bval).exists() && QFileInfo(bvec).exists();
-    }
     std::vector<QString> bval_name(6),bvec_name(6);
     QString path = QFileInfo(file_name).absolutePath() + "/";
     bval_name[0] = path + QFileInfo(file_name).baseName() + ".bvals";

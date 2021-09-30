@@ -6,8 +6,8 @@
 #include "connectometry/group_connectometry.hpp"
 #include "ui_group_connectometry.h"
 #include "program_option.hpp"
-bool load_roi(std::shared_ptr<fib_data> handle,std::shared_ptr<RoiMgr> roi_mgr);
-int cnt(void)
+bool load_roi(program_option& po,std::shared_ptr<fib_data> handle,std::shared_ptr<RoiMgr> roi_mgr);
+int cnt(program_option& po)
 {
     std::shared_ptr<group_connectometry_analysis> vbc(new group_connectometry_analysis);
     if(!vbc->load_database(po.get("source").c_str()))
@@ -110,7 +110,7 @@ int cnt(void)
         if(po.get("exclude_cb",0))
             vbc->exclude_cerebellum();
 
-        if(!load_roi(vbc->handle,vbc->roi_mgr))
+        if(!load_roi(po,vbc->handle,vbc->roi_mgr))
             return 1;
 
         // if no seed assigned, assign whole brain
@@ -149,8 +149,8 @@ int cnt(void)
 
 std::shared_ptr<fib_data> cmd_load_fib(const std::string file_name);
 extern std::string fib_template_file_name_2mm;
-int trk(std::shared_ptr<fib_data> handle);
-int cnt_ind(void)
+int trk(program_option& po,std::shared_ptr<fib_data> handle);
+int cnt_ind(program_option& po)
 {
     std::shared_ptr<fib_data> handle = cmd_load_fib(po.get("source"));
     if(!handle.get())
@@ -204,7 +204,7 @@ int cnt_ind(void)
     {
         run:
         handle->report = handle->db.report + cnt_result.report;
-        trk(handle);
+        trk(po,handle);
         return 0;
     }
 

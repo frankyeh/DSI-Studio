@@ -21,23 +21,10 @@ bool is_dsi_half_sphere(const std::vector<unsigned int>& shell);
 bool is_dsi(const std::vector<unsigned int>& shell);
 bool need_scheme_balance(const std::vector<unsigned int>& shell);
 bool get_src(std::string filename,ImageModel& src2,std::string& error_msg);
-bool correct_phase_distortion(ImageModel& src)
-{
-    if(po.has("other_src"))
-    {
-        std::cout << "phase correction with " << po.get("other_src") << std::endl;
-        if(!src.distortion_correction(po.get("other_src").c_str()))
-        {
-            std::cout << "ERROR:" << src.error_msg << std::endl;
-            return false;
-        }
-    }
-    return true;
-}
 /**
  perform reconstruction
  */
-int rec(void)
+int rec(program_option& po)
 {
     std::string file_name = po.get("source");
     std::cout << "loading source..." <<std::endl;
@@ -48,8 +35,11 @@ int rec(void)
         return 1;
     }
     std::cout << "src loaded" <<std::endl;
-    if(!correct_phase_distortion(src))
+    if(po.has("other_src") && !src.distortion_correction(po.get("other_src").c_str()))
+    {
+        std::cout << "ERROR:" << src.error_msg << std::endl;
         return 1;
+    }
 
     // apply affine transformation
     if (po.has("affine"))

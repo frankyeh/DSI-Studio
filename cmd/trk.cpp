@@ -22,12 +22,12 @@ std::vector<std::shared_ptr<CustomSliceModel> > other_slices;
 
 bool atl_load_atlas(std::shared_ptr<fib_data> handle,const std::string atlas_name,std::vector<std::shared_ptr<atlas> >& atlas_list);
 void get_filenames_from(const std::string param,std::vector<std::string>& filenames);
-bool check_other_slices(std::shared_ptr<fib_data> handle)
+bool check_other_slices(const std::string& other_slices_name,std::shared_ptr<fib_data> handle)
 {
-    if(!po.has("other_slices") || !other_slices.empty())
+    if(!other_slices.empty())
         return true;
     std::vector<std::string> filenames;
-    get_filenames_from("other_slices",filenames);
+    get_filenames_from(other_slices_name,filenames);
     for(size_t i = 0;i < filenames.size();++i)
     {
         std::cout << "add slice: " << QFileInfo(filenames[i].c_str()).baseName().toStdString() << std::endl;
@@ -53,19 +53,18 @@ bool check_other_slices(std::shared_ptr<fib_data> handle)
     }
     return true;
 }
-bool get_t1t2_nifti(std::shared_ptr<fib_data> handle,
+bool get_t1t2_nifti(const std::string& t1t2,
+                    std::shared_ptr<fib_data> handle,
                     tipl::shape<3>& nifti_geo,
                     tipl::vector<3>& nifti_vs,
                     tipl::matrix<4,4>& convert)
 {
-    if(!po.has("t1t2"))
-        return false;
     if(!t1t2_slices.get())
     {
         t1t2_slices = std::make_shared<CustomSliceModel>(handle.get());
-        if(!t1t2_slices->initialize(po.get("t1t2")))
+        if(!t1t2_slices->initialize(t1t2))
         {
-            std::cout << "ERROR: fail to load " << po.get("t1t2") << std::endl;
+            std::cout << "ERROR: fail to load " << t1t2 << std::endl;
             return false;
         }
         handle->view_item.pop_back(); // remove the new item added by initialize
@@ -85,7 +84,7 @@ bool get_t1t2_nifti(std::shared_ptr<fib_data> handle,
     std::cout << "T1T2 voxel size: " << nifti_vs << std::endl;
     return true;
 }
-void export_track_info(std::shared_ptr<fib_data> handle,
+void export_track_info(program_option& po,std::shared_ptr<fib_data> handle,
                        std::string file_name,
                        std::shared_ptr<TractModel> tract_model)
 {
@@ -170,7 +169,22 @@ void export_track_info(std::shared_ptr<fib_data> handle,
             vs = handle->vs;
 
             // t1t2
-            if(!get_t1t2_nifti(handle,dim,vs,tr))
+            if(po.has("t1t2"))
+            {
+                if(!get_t1t2_nifti(po.get("t1t2"),handle,dim,vs,tr))
+                    return;
+                std::vector<std::shared_ptr<TractModel> > tract;
+                tract.push_back(tract_model);
+                std::cout << "export TDI to " << file_name_stat;
+                if(output_color)
+                    std::cout << " in RGB color";
+                if(output_end)
+                    std::cout << " end point only";
+                std::cout << std::endl;
+                if(!TractModel::export_tdi(file_name_stat.c_str(),tract,dim,vs,tr,output_color,output_end))
+                    std::cout << "ERROR: failed to save file. Please check write permission." << std::endl;
+            }
+            else
             {
                 unsigned int ratio = 1;
                 if(QString(cmd.c_str()).startsWith("tdi2"))
@@ -192,17 +206,6 @@ void export_track_info(std::shared_ptr<fib_data> handle,
                     std::cout << "voxel size: " << vs << std::endl;
                 }
             }
-            std::vector<std::shared_ptr<TractModel> > tract;
-            tract.push_back(tract_model);
-            std::cout << "export TDI to " << file_name_stat;
-            if(output_color)
-                std::cout << " in RGB color";
-            if(output_end)
-                std::cout << " end point only";
-            std::cout << std::endl;
-            if(!TractModel::export_tdi(file_name_stat.c_str(),tract,dim,vs,tr,output_color,output_end))
-                std::cout << "ERROR: failed to save file. Please check write permission." << std::endl;
-            continue;
         }
 
 
@@ -256,12 +259,14 @@ bool load_atlas_from_list(std::shared_ptr<fib_data> handle,
     }
     return true;
 }
-bool load_nii(std::shared_ptr<fib_data> handle,
+bool load_nii(program_option& po,
+              std::shared_ptr<fib_data> handle,
               const std::string& file_name,
               std::vector<std::shared_ptr<ROIRegion> >& regions,
               std::vector<std::string>& names);
 
-void get_connectivity_matrix(std::shared_ptr<fib_data> handle,
+void get_connectivity_matrix(program_option& po,
+                             std::shared_ptr<fib_data> handle,
                              std::string output_name,
                              std::shared_ptr<TractModel> tract_model)
 {
@@ -323,7 +328,7 @@ void get_connectivity_matrix(std::shared_ptr<fib_data> handle,
                 std::cout << "reading " << roi_file_name << " as a NIFTI regioin file" << std::endl;
                 std::vector<std::shared_ptr<ROIRegion> > regions;
                 std::vector<std::string> names;
-                if(!load_nii(handle,roi_file_name,regions,names))
+                if(!load_nii(po,handle,roi_file_name,regions,names))
                     return;
                 data.region_name = names;
                 data.set_regions(handle->dim,regions);
@@ -396,7 +401,40 @@ std::shared_ptr<fib_data> cmd_load_fib(const std::string file_name)
     return handle;
 }
 
-bool load_region(std::shared_ptr<fib_data> handle,
+bool load_region_from_atlas(std::shared_ptr<fib_data> handle,
+                            ROIRegion& roi,const std::string& file_name,const std::string& region_name)
+{
+    if(QString(file_name.c_str()).contains(".")) // is a file
+    {
+        std::cout << "ERROR: cannot find " << file_name << std::endl;
+        return false;
+    }
+    if(!load_atlas_from_list(handle,file_name,handle->atlas_list))
+        return false;
+    if(region_name.empty())
+    {
+        std::cout << "ERROR: please assign region name of an atlas." << std::endl;
+        return false;
+    }
+    const tipl::image<3,tipl::vector<3,float> >& s2t = handle->get_sub2temp_mapping();
+    std::cout << "loading " << region_name << " from " << file_name << " atlas" << std::endl;
+    tipl::vector<3> null;
+    std::vector<tipl::vector<3,short> > cur_region;
+    for(unsigned int i = 0;i < handle->atlas_list.size();++i)
+        if(handle->atlas_list[i]->name == file_name)
+            for (unsigned int label_index = 0; label_index < handle->atlas_list[i]->get_list().size(); ++label_index)
+                if(handle->atlas_list[i]->get_list()[label_index] == region_name)
+            {
+                for (tipl::pixel_index<3>index(s2t.shape());index < s2t.size();++index)
+                {
+                    if(handle->atlas_list[i]->is_labeled_as(s2t[index.index()],label_index))
+                        cur_region.push_back(tipl::vector<3,short>(index.begin()));
+                }
+            }
+    roi.add_points(cur_region,false);
+    return true;
+}
+bool load_region(program_option& po,std::shared_ptr<fib_data> handle,
                  ROIRegion& roi,const std::string& region_text)
 {
     std::cout << "read region from " << region_text << std::endl;
@@ -414,40 +452,14 @@ bool load_region(std::shared_ptr<fib_data> handle,
 
     if(!std::filesystem::exists(file_name))
     {
-        if(QString(file_name.c_str()).contains(".")) // is a file
-        {
-            std::cout << "ERROR: cannot find " << file_name << std::endl;
+        if(!load_region_from_atlas(handle,roi,file_name,region_name))
             return false;
-        }
-        if(!load_atlas_from_list(handle,file_name,handle->atlas_list))
-            return false;
-        if(region_name.empty())
-        {
-            std::cout << "ERROR: please assign region name of an atlas." << std::endl;
-            return false;
-        }
-        const tipl::image<3,tipl::vector<3,float> >& s2t = handle->get_sub2temp_mapping();
-        std::cout << "loading " << region_name << " from " << file_name << " atlas" << std::endl;
-        tipl::vector<3> null;
-        std::vector<tipl::vector<3,short> > cur_region;
-        for(unsigned int i = 0;i < handle->atlas_list.size();++i)
-            if(handle->atlas_list[i]->name == file_name)
-                for (unsigned int label_index = 0; label_index < handle->atlas_list[i]->get_list().size(); ++label_index)
-                    if(handle->atlas_list[i]->get_list()[label_index] == region_name)
-                {
-                    for (tipl::pixel_index<3>index(s2t.shape());index < s2t.size();++index)
-                    {
-                        if(handle->atlas_list[i]->is_labeled_as(s2t[index.index()],label_index))
-                            cur_region.push_back(tipl::vector<3,short>(index.begin()));
-                    }
-                }
-        roi.add_points(cur_region,false);
     }
     else
     {
         std::vector<std::shared_ptr<ROIRegion> > regions;
         std::vector<std::string> names;
-        if(!load_nii(handle,file_name,regions,names))
+        if(!load_nii(po,handle,file_name,regions,names))
             return false;
         if(region_name.empty())
             roi = *(regions[0].get());
@@ -480,7 +492,10 @@ bool load_region(std::shared_ptr<fib_data> handle,
     return true;
 }
 
-int trk_post(std::shared_ptr<fib_data> handle,std::shared_ptr<TractModel> tract_model,std::string tract_file_name,bool output_track)
+int trk_post(program_option& po,
+             std::shared_ptr<fib_data> handle,
+             std::shared_ptr<TractModel> tract_model,
+             std::string tract_file_name,bool output_track)
 {
     if(output_track)
     {
@@ -530,18 +545,18 @@ int trk_post(std::shared_ptr<fib_data> handle,std::shared_ptr<TractModel> tract_
         tract_model->save_end_points(po.get("end_point").c_str());
 
     // allow adding other slices for connectivity and statistics
-    if(!check_other_slices(handle))
+    if(po.has("other_slices") && !check_other_slices(po.get("other_slices"),handle))
         return 1;
 
     if(po.has("connectivity"))
-        get_connectivity_matrix(handle,tract_file_name,tract_model);
+        get_connectivity_matrix(po,handle,tract_file_name,tract_model);
 
     if(po.has("export"))
-        export_track_info(handle,tract_file_name,tract_model);
+        export_track_info(po,handle,tract_file_name,tract_model);
     return 0;
 }
 
-bool load_roi(std::shared_ptr<fib_data> handle,std::shared_ptr<RoiMgr> roi_mgr)
+bool load_roi(program_option& po,std::shared_ptr<fib_data> handle,std::shared_ptr<RoiMgr> roi_mgr)
 {
     const int total_count = 18;
     char roi_names[total_count][5] = {"roi","roi2","roi3","roi4","roi5","roa","roa2","roa3","roa4","roa5","end","end2","seed","ter","ter2","ter3","ter4","ter5"};
@@ -555,7 +570,7 @@ bool load_roi(std::shared_ptr<fib_data> handle,std::shared_ptr<RoiMgr> roi_mgr)
         for(int i = 0;i < roi_list.size();++i)
         {
             ROIRegion other_roi(handle);
-            if(!load_region(handle,i ? other_roi : roi,roi_list[i].toStdString()))
+            if(!load_region(po,handle,i ? other_roi : roi,roi_list[i].toStdString()))
                 return false;
             if(i)
             {
@@ -597,14 +612,14 @@ bool load_roi(std::shared_ptr<fib_data> handle,std::shared_ptr<RoiMgr> roi_mgr)
     return true;
 }
 
-int trk(std::shared_ptr<fib_data> handle);
-int trk(void)
+int trk(program_option& po,std::shared_ptr<fib_data> handle);
+int trk(program_option& po)
 {
     try{
         std::shared_ptr<fib_data> handle = cmd_load_fib(po.get("source"));
         if(!handle.get())
             return 1;
-        return trk(handle);
+        return trk(po,handle);
     }
     catch(std::exception const&  ex)
     {
@@ -616,7 +631,7 @@ int trk(void)
     }
     return 0;
 }
-int trk(std::shared_ptr<fib_data> handle)
+int trk(program_option& po,std::shared_ptr<fib_data> handle)
 {
     if (po.has("threshold_index"))
     {
@@ -638,8 +653,9 @@ int trk(std::shared_ptr<fib_data> handle)
             }
             std::cout << "adding " << dt_index << " as a new metrics" << std::endl;
             // allow adding other slices for creating new metrics
-            if(!check_other_slices(handle))
+            if(po.has("other_slices") && !check_other_slices(po.get("other_slices"),handle))
                 return 1;
+
             if(!handle->add_dT_index(po.get("dt_threshold_index")))
             {
                 std::cout << "ERROR:" << handle->error_msg << std::endl;
@@ -715,7 +731,7 @@ int trk(std::shared_ptr<fib_data> handle)
     if(po.has("parameter_id"))
         tracking_thread.param.set_code(po.get("parameter_id"));
 
-    if(!load_roi(handle,tracking_thread.roi_mgr))
+    if(!load_roi(po,handle,tracking_thread.roi_mgr))
         return 1;
 
     if (tracking_thread.roi_mgr->seeds.empty())
@@ -866,5 +882,5 @@ int trk(std::shared_ptr<fib_data> handle)
             tract_file_name = output;
     }
 
-    return trk_post(handle,tract_model,tract_file_name,output_track);
+    return trk_post(po,handle,tract_model,tract_file_name,output_track);
 }

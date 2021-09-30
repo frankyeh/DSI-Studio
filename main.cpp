@@ -24,20 +24,20 @@ std::vector<std::string> fa_template_list,
 std::vector<std::vector<std::string> > template_atlas_list;
 
 
-int rec(void);
-int trk(void);
-int src(void);
-int ana(void);
-int exp(void);
-int atl(void);
-int cnt(void);
-int cnt_ind(void);
-int vis(void);
-int ren(void);
-int cnn(void);
-int qc(void);
-int reg(void);
-int atk(void);
+int rec(program_option& po);
+int trk(program_option& po);
+int src(program_option& po);
+int ana(program_option& po);
+int exp(program_option& po);
+int atl(program_option& po);
+int cnt(program_option& po);
+int cnt_ind(program_option& po);
+int vis(program_option& po);
+int ren(program_option& po);
+int cnn(program_option& po);
+int qc(program_option& po);
+int reg(program_option& po);
+int atk(program_option& po);
 
 
 size_t match_template(float volume)
@@ -169,39 +169,38 @@ void init_application(void)
         "Cannot find FA template in the template folder. Please download dsi_studio_other_files.zip from DSI Studio website and place them with the DSI Studio executives.");
 }
 
-program_option po;
-int run_action(std::shared_ptr<QApplication> gui)
+int run_action(program_option& po,std::shared_ptr<QApplication> gui)
 {
     std::string action = po.get("action");
     if(action == std::string("rec"))
-        return rec();
+        return rec(po);
     if(action == std::string("trk"))
-        return trk();
+        return trk(po);
     if(action == std::string("atk"))
-        return atk();
+        return atk(po);
     if(action == std::string("src"))
-        return src();
+        return src(po);
     if(action == std::string("ana"))
-        return ana();
+        return ana(po);
     if(action == std::string("exp"))
-        return exp();
+        return exp(po);
     if(action == std::string("atl"))
-        return atl();
+        return atl(po);
     if(action == std::string("cnt"))
-        return cnt();
+        return cnt(po);
     if(action == std::string("cnt_ind"))
-        return cnt_ind();
+        return cnt_ind(po);
     if(action == std::string("ren"))
-        return ren();
+        return ren(po);
     if(action == std::string("cnn"))
-        return cnn();
+        return cnn(po);
     if(action == std::string("qc"))
-        return qc();
+        return qc(po);
     if(action == std::string("reg"))
-        return reg();
+        return reg(po);
     if(action == std::string("vis"))
     {
-        vis();
+        vis(po);
         if(po.get("stay_open") == std::string("1"))
             gui->exec();
         return 0;
@@ -212,6 +211,7 @@ int run_action(std::shared_ptr<QApplication> gui)
 void get_filenames_from(const std::string param,std::vector<std::string>& filenames);
 int run_cmd(int ac, char *av[])
 {
+    program_option po;
     try
     {
         std::cout << "DSI Studio " << __DATE__ << ", Fang-Cheng Yeh" << std::endl;
@@ -260,7 +260,7 @@ int run_cmd(int ac, char *av[])
                 std::cout << "Process file:" << source_files[i] << std::endl;
                 po.set("source",source_files[i]);
                 po.set_used(0);
-                if(run_action(gui) == 1)
+                if(run_action(po,gui) == 1)
                 {
                     std::cout << "Terminated due to error." << std::endl;
                     return 1;
@@ -268,7 +268,7 @@ int run_cmd(int ac, char *av[])
             }
         }
         else
-            return run_action(gui);
+            return run_action(po,gui);
     }
     catch(const std::exception& e ) {
         std::cout << e.what() << std::endl;

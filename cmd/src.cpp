@@ -8,9 +8,9 @@
 extern std::string src_error_msg;
 QStringList search_files(QString dir,QString filter);
 bool load_bval(const char* file_name,std::vector<double>& bval);
-bool load_bvec(const char* file_name,std::vector<double>& b_table);
+bool load_bvec(const char* file_name,std::vector<double>& b_table,bool flip_by = true);
 bool parse_dwi(QStringList file_list,std::vector<std::shared_ptr<DwiHeader> >& dwi_files);
-int src(void)
+int src(program_option& po)
 {
     std::string source = po.get("source");
     std::string ext;
@@ -93,7 +93,7 @@ int src(void)
             std::cout << "cannot find bval at " << po.get("bval") << std::endl;
             return 1;
         }
-        if(!load_bvec(po.get("bvec").c_str(),bvec))
+        if(!load_bvec(po.get("bvec").c_str(),bvec,po.get("flip_by",1)))
         {
             std::cout << "cannot find bvec at " << po.get("bvec") << std::endl;
             return 1;

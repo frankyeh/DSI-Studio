@@ -21,45 +21,44 @@ void get_filenames_from(const std::string param,std::vector<std::string>& filena
 bool is_label_image(const tipl::image<3>& I);
 
 
-int after_warp(tipl::image<3,tipl::vector<3> >& to2from,
+int after_warp(const std::string& warp_name,
+               tipl::image<3,tipl::vector<3> >& to2from,
                tipl::image<3,tipl::vector<3> >& from2to,
                tipl::vector<3> to_vs,
-               const tipl::matrix<4,4>& to_trans)
+               const tipl::matrix<4,4>& to_trans,
+               tipl::interpolation_type interpo)
 {
     std::string error;
-    if(po.has("apply_warp"))
+    std::vector<std::string> filenames;
+    get_filenames_from(warp_name,filenames);
+    for(auto filename: filenames)
     {
-        std::vector<std::string> filenames;
-        get_filenames_from("apply_warp",filenames);
-        for(auto filename: filenames)
+        if(QString(filename.c_str()).toLower().endsWith(".nii.gz"))
         {
-            if(QString(filename.c_str()).toLower().endsWith(".nii.gz"))
+            std::string filename_warp = filename+".wp.nii.gz";
+            std::cout << "apply warping to " << filename << std::endl;
+            if(!apply_warping(filename.c_str(),filename_warp.c_str(),to2from,to_vs,to_trans,error,interpo))
             {
-                std::string filename_warp = filename+".wp.nii.gz";
-                std::cout << "apply warping to " << filename << std::endl;
-                if(!apply_warping(filename.c_str(),filename_warp.c_str(),to2from,to_vs,to_trans,error,(po.get("interpolation",1) ? tipl::cubic : tipl::linear)))
-                {
-                    std::cout << "ERROR: " << error <<std::endl;
-                    return 1;
-                }
-            }
-            else
-            if(QString(filename.c_str()).toLower().endsWith(".tt.gz"))
-            {
-                std::string filename_warp = filename+".wp.tt.gz";
-                std::cout << "apply warping to " << filename << std::endl;
-                if(!apply_unwarping_tt(filename.c_str(),filename_warp.c_str(),from2to,
-                                       to2from.shape(),to_vs,to_trans,error))
-                {
-                    std::cout << "ERROR: " << error <<std::endl;
-                    return 1;
-                }
-            }
-            else
-            {
-                std::cout << "ERROR: unsupported format " << std::endl;
+                std::cout << "ERROR: " << error <<std::endl;
                 return 1;
             }
+        }
+        else
+        if(QString(filename.c_str()).toLower().endsWith(".tt.gz"))
+        {
+            std::string filename_warp = filename+".wp.tt.gz";
+            std::cout << "apply warping to " << filename << std::endl;
+            if(!apply_unwarping_tt(filename.c_str(),filename_warp.c_str(),from2to,
+                                   to2from.shape(),to_vs,to_trans,error))
+            {
+                std::cout << "ERROR: " << error <<std::endl;
+                return 1;
+            }
+        }
+        else
+        {
+            std::cout << "ERROR: unsupported format " << std::endl;
+            return 1;
         }
     }
     return 0;
@@ -68,7 +67,7 @@ class warping{
 
 };
 
-int reg(void)
+int reg(program_option& po)
 {
     tipl::image<3> from,to,from2,to2;
     tipl::vector<3> from_vs,to_vs;
@@ -104,7 +103,10 @@ int reg(void)
         std::copy(to2from_ptr,to2from_ptr+to2from.size()*3,&to2from[0][0]);
         from2to.resize(from_dim);
         std::copy(from2to_ptr,from2to_ptr+from2to.size()*3,&from2to[0][0]);
-        return after_warp(to2from,from2to,to_vs,to_trans);
+        if(po.has("apply_warp"))
+            return after_warp(po.get("apply_warp"),to2from,from2to,to_vs,to_trans,
+                                     (po.get("interpolation",1) ? tipl::cubic : tipl::linear));
+        return 0;
     }
     if(!gz_nifti::load_from_file(po.get("from").c_str(),from,from_vs,from_trans))
     {
@@ -246,7 +248,8 @@ int reg(void)
         std::cout << "save mapping to " << filename << std::endl;
     }
 
-
-    return after_warp(to2from,from2to,to_vs,to_trans);
-
+    if(po.has("apply_warp"))
+        return after_warp(po.get("apply_warp"),to2from,from2to,to_vs,to_trans,
+                                 (po.get("interpolation",1) ? tipl::cubic : tipl::linear));
+    return 0;
 }

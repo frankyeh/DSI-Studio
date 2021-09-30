@@ -18,15 +18,16 @@
 // test example
 // --action=ana --source=20100129_F026Y_WANFANGYUN.src.gz.odf8.f3rec.de0.dti.fib.gz --method=0 --fiber_count=5000
 bool atl_load_atlas(std::shared_ptr<fib_data> handle,std::string atlas_name,std::vector<std::shared_ptr<atlas> >& atlas_list);
-bool load_roi(std::shared_ptr<fib_data> handle,std::shared_ptr<RoiMgr> roi_mgr);
+bool load_roi(program_option& po,std::shared_ptr<fib_data> handle,std::shared_ptr<RoiMgr> roi_mgr);
 
 void get_regions_statistics(std::shared_ptr<fib_data> handle,
                             const std::vector<std::shared_ptr<ROIRegion> >& regions,
                             const std::vector<std::string>& region_name,
                             std::string& result);
-bool load_region(std::shared_ptr<fib_data> handle,
+bool load_region(program_option& po,std::shared_ptr<fib_data> handle,
                  ROIRegion& roi,const std::string& region_text);
-bool get_t1t2_nifti(std::shared_ptr<fib_data> handle,
+bool get_t1t2_nifti(const std::string& t1t2,
+                    std::shared_ptr<fib_data> handle,
                     tipl::shape<3>& nifti_geo,
                     tipl::vector<3>& nifti_vs,
                     tipl::matrix<4,4>& convert);
@@ -39,19 +40,22 @@ bool load_nii(std::shared_ptr<fib_data> handle,
               bool is_mni_image);
 
 
-bool load_nii(std::shared_ptr<fib_data> handle,
+bool load_nii(program_option& po,
+              std::shared_ptr<fib_data> handle,
               const std::string& region_text,
               std::vector<std::shared_ptr<ROIRegion> >& regions,
               std::vector<std::string>& names)
 {
     std::vector<std::pair<tipl::shape<3>,tipl::matrix<4,4> > > transform_lookup;
     // --t1t2 provide registration
+    if(po.has("t1t2"))
     {
         tipl::shape<3> t1t2_geo;
         tipl::vector<3> vs;
         tipl::matrix<4,4> convert;
-        if(get_t1t2_nifti(handle,t1t2_geo,vs,convert))
-            transform_lookup.push_back(std::make_pair(t1t2_geo,convert));
+        if(!get_t1t2_nifti(po.get("t1t2"),handle,t1t2_geo,vs,convert))
+            return false;
+        transform_lookup.push_back(std::make_pair(t1t2_geo,convert));
     }
 
     QStringList str_list = QString(region_text.c_str()).split(",");// splitting actions
@@ -79,9 +83,9 @@ bool load_nii(std::shared_ptr<fib_data> handle,
     return true;
 }
 
-void get_filenames_from(const std::string param,std::vector<std::string>& filenames)
+void get_filenames_from(const std::string name,std::vector<std::string>& filenames)
 {
-    std::istringstream in(po.get(param.c_str()));
+    std::istringstream in(name);
     std::string line;
     std::vector<std::string> file_list;
     while(std::getline(in,line,','))
@@ -117,7 +121,7 @@ void get_filenames_from(const std::string param,std::vector<std::string>& filena
         std::cout << "a total of " << filenames.size() << "files matching the search" << std::endl;
 }
 
-int trk_post(std::shared_ptr<fib_data> handle,std::shared_ptr<TractModel> tract_model,std::string tract_file_name,bool output_track);
+int trk_post(program_option& po,std::shared_ptr<fib_data> handle,std::shared_ptr<TractModel> tract_model,std::string tract_file_name,bool output_track);
 std::shared_ptr<fib_data> cmd_load_fib(const std::string file_name);
 
 bool load_tracts(const char* file_name,std::shared_ptr<TractModel> tract_model,std::shared_ptr<RoiMgr> roi_mgr)
@@ -139,8 +143,8 @@ bool load_tracts(const char* file_name,std::shared_ptr<TractModel> tract_model,s
     }
     return true;
 }
-bool check_other_slices(std::shared_ptr<fib_data> handle);
-int ana(void)
+bool check_other_slices(const std::string& other_slices,std::shared_ptr<fib_data> handle);
+int ana(program_option& po)
 {
     std::shared_ptr<fib_data> handle = cmd_load_fib(po.get("source"));
     if(!handle.get())
@@ -171,7 +175,7 @@ int ana(void)
                     std::string region_name = atlas_list[i]->name;
                     region_name += ":";
                     region_name += atlas_list[i]->get_list()[j];
-                    if(!load_region(handle,*region.get(),region_name))
+                    if(!load_region(po,handle,*region.get(),region_name))
                     {
                         std::cout << "fail to load the ROI file:" << region_name << std::endl;
                         return 1;
@@ -188,7 +192,7 @@ int ana(void)
             for(int i = 0;i < roi_list.size();++i)
             {
                 std::shared_ptr<ROIRegion> region(new ROIRegion(handle));
-                if(!load_region(handle,*region.get(),roi_list[i].toStdString()))
+                if(!load_region(po,handle,*region.get(),roi_list[i].toStdString()))
                 {
                     std::cout << "fail to load the ROI file." << std::endl;
                     return 1;
@@ -202,7 +206,7 @@ int ana(void)
             QStringList roi_list = QString(po.get("regions").c_str()).split("+");
             for(int i = 0;i < roi_list.size();++i)
             {
-                if(!load_nii(handle,po.get("regions"),regions,region_list))
+                if(!load_nii(po,handle,po.get("regions"),regions,region_list))
                     return 1;
             }
         }
@@ -213,7 +217,7 @@ int ana(void)
         }
 
         // allow adding other slices for connectivity and statistics
-        if(!check_other_slices(handle))
+        if(po.has("other_slices") && !check_other_slices(po.get("other_slices"),handle))
             return 1;
 
         std::string result;
@@ -245,11 +249,11 @@ int ana(void)
     }
 
     std::shared_ptr<RoiMgr> roi_mgr(new RoiMgr(handle));
-    if(!load_roi(handle,roi_mgr))
+    if(!load_roi(po,handle,roi_mgr))
         return 1;
 
     std::vector<std::string> tract_files;
-    get_filenames_from("tract",tract_files);
+    get_filenames_from(po.get("tract"),tract_files);
     std::string output = po.get("output");
 
     // convert tract to nii (not tdi)
@@ -338,8 +342,8 @@ int ana(void)
         return 1;
     }
     if(po.has("output") && QFileInfo(output.c_str()).isDir())
-        return trk_post(handle,tract_model,output + "/" + QFileInfo(tract_files[0].c_str()).baseName().toStdString(),false);
+        return trk_post(po,handle,tract_model,output + "/" + QFileInfo(tract_files[0].c_str()).baseName().toStdString(),false);
     if(po.has("output"))
-        return trk_post(handle,tract_model,output,true);
-    return trk_post(handle,tract_model,tract_files[0],false);
+        return trk_post(po,handle,tract_model,output,true);
+    return trk_post(po,handle,tract_model,tract_files[0],false);
 }

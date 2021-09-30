@@ -1,4 +1,3 @@
-
 #include <QApplication>
 #include <QFileInfo>
 #include "libs/tracking/tract_model.hpp"
@@ -8,7 +7,7 @@
 
 std::shared_ptr<fib_data> cmd_load_fib(const std::string file_name);
 
-int vis(void)
+int vis(program_option& po)
 {
     std::shared_ptr<fib_data> new_handle = cmd_load_fib(po.get("source"));
     if(!new_handle.get())

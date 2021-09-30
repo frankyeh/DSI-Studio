@@ -11,8 +11,6 @@
 #include "libs/tracking/fib_data.hpp"
 #include "tracking/atlasdialog.h"
 #include "tracking/roi.hpp"
-bool load_region(std::shared_ptr<fib_data> handle,
-                 ROIRegion& roi,const std::string& region_text);
 QWidget *ROIViewDelegate::createEditor(QWidget *parent,
                                      const QStyleOptionViewItem &option,
                                      const QModelIndex &index) const
@@ -528,6 +526,8 @@ void group_connectometry::add_new_roi(QString name,QString source,
     roi_list.push_back(new_roi);
 }
 
+bool load_region_from_atlas(std::shared_ptr<fib_data> handle,
+                            ROIRegion& roi,const std::string& file_name,const std::string& region_name);
 void group_connectometry::on_load_roi_from_atlas_clicked()
 {
     if(vbc->handle->atlas_list.empty())
@@ -538,7 +538,7 @@ void group_connectometry::on_load_roi_from_atlas_clicked()
         for(unsigned int i = 0;i < atlas_dialog->roi_list.size();++i)
         {
             ROIRegion roi(vbc->handle);
-            if(!load_region(vbc->handle,roi,atlas_dialog->atlas_name + ":" + atlas_dialog->roi_name[i]))
+            if(!load_region_from_atlas(vbc->handle,roi,atlas_dialog->atlas_name,atlas_dialog->roi_name[i]))
                 return;
             add_new_roi(atlas_dialog->roi_name[i].c_str(),atlas_dialog->atlas_name.c_str(),
                              roi.get_region_voxels_raw());

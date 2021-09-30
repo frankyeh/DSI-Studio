@@ -19,6 +19,7 @@ bool find_string_case_insensitive(const std::string & str1, const std::string & 
 }
 
 std::string run_auto_track(
+                    program_option& po,
                     const std::vector<std::string>& file_list,
                     const std::vector<unsigned int>& track_id,
                     float length_ratio,
@@ -34,10 +35,10 @@ std::string run_auto_track(
 
 extern std::string auto_track_report;
 void get_filenames_from(const std::string param,std::vector<std::string>& filenames);
-int atk(void)
+int atk(program_option& po)
 {
     std::vector<std::string> file_list;
-    get_filenames_from("source",file_list);
+    get_filenames_from(po.get("source"),file_list);
     if(file_list.empty())
     {
         std::cout << "no file listed in --source" << std::endl;
@@ -82,7 +83,7 @@ int atk(void)
 
 
     int progress;
-    std::string error = run_auto_track(file_list,track_id,
+    std::string error = run_auto_track(po,file_list,track_id,
                                 po.get("length_ratio",1.25f),
                                 po.get("tolerance","16,18,20"),
                                 po.get("track_voxel_ratio",2),

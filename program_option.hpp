@@ -144,7 +144,7 @@ public:
         return df_value;
     }
 
-    template<class value_type>
+    template<typename value_type>
     value_type get(const char* name,value_type df)
     {
         std::string str_name(name);
@@ -163,8 +163,5 @@ public:
         return df;
     }
 };
-
-
-extern program_option po;
 #endif // PROGRAM_OPTION_HPP
 

@@ -6,7 +6,7 @@
 #include "libs/tracking/tract_model.hpp"
 #include "libs/tracking/tracking_thread.hpp"
 #include "tracking/tracking_window.h"
-
+#include "program_option.hpp"
 group_connectometry_analysis::group_connectometry_analysis():handle(nullptr),normalize_qa(true)
 {
 
@@ -78,14 +78,15 @@ void cal_hist(const std::vector<std::vector<float> >& track,std::vector<unsigned
     }
 }
 
-bool load_region(std::shared_ptr<fib_data> handle,
-                 ROIRegion& roi,const std::string& region_text);
+bool load_region_from_atlas(std::shared_ptr<fib_data> handle,
+                            ROIRegion& roi,const std::string& file_name,const std::string& region_name);
 void group_connectometry_analysis::exclude_cerebellum(void)
 {
     if(handle->is_human_data)
     {
+        program_option po;
         ROIRegion roi(handle);
-        if(!load_region(handle,roi,"BrainSeg:Cerebellum"))
+        if(!load_region_from_atlas(handle,roi,"BrainSeg","Cerebellum"))
             return;
         roi_mgr->setRegions(roi.get_region_voxels_raw(),1.0f,4/*terminative*/,"Cerebellum");
         roi_mgr->report = " Cerebellum was excluded.";

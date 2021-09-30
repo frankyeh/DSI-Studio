@@ -101,7 +101,6 @@ void auto_track::on_open_dir_clicked()
     update_list();
 }
 extern std::string auto_track_report;
-extern program_option po;
 std::string auto_track_report;
 bool correct_phase_distortion(ImageModel& src);
 
@@ -122,6 +121,7 @@ struct file_holder{
 };
 
 std::string run_auto_track(
+                    program_option& po,
                     const std::vector<std::string>& file_list,
                     const std::vector<unsigned int>& track_id,
                     float length_ratio,
@@ -202,8 +202,8 @@ std::string run_auto_track(
                     return src.error_msg + " at " + cur_file_base_name;
                 if(!src.is_human_data())
                     return cur_file_base_name + " is not human data";
-                if(!correct_phase_distortion(src))
-                    return "cannot correct for phase distoration";
+                if(po.has("other_src") && !src.distortion_correction(po.get("other_src").c_str()))
+                    return src.error_msg;
                 if(interpolation == 1)
                     src.command("[Step T2][Edit][Rotate to MNI]");
                 if(interpolation == 2)
@@ -554,8 +554,8 @@ void auto_track::on_run_clicked()
     timer->start(5000);
     begin_prog("");
 
-
-    std::string error = run_auto_track(file_list2,track_id,
+    program_option po;
+    std::string error = run_auto_track(po,file_list2,track_id,
                    float(ui->gqi_l->value()),
                    ui->tolerance->text().toStdString(),
                    float(ui->track_voxel_ratio->value()),

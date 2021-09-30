@@ -34,18 +34,6 @@
 #include "program_option.hpp"
 #include "libs/dsi/image_model.hpp"
 #include "auto_track.h"
-int rec(void);
-int trk(void);
-int src(void);
-int ana(void);
-int exp(void);
-int atl(void);
-int cnt(void);
-int vis(void);
-int ren(void);
-int atk(void);
-int reg(void);
-extern program_option po;
 extern std::string arg_file_name;
 std::vector<tracking_window*> tracking_windows;
 MainWindow::MainWindow(QWidget *parent) :
@@ -614,7 +602,6 @@ void MainWindow::on_averagefib_clicked()
 }
 
 bool parse_dwi(QStringList file_list,std::vector<std::shared_ptr<DwiHeader> >& dwi_files);
-bool find_bval_bvec(const char* file_name,QString& bval,QString& bvec);
 bool load_4d_nii(const char* file_name,std::vector<std::shared_ptr<DwiHeader> >& dwi_files,bool need_bvalbvec);
 QString get_dicom_output_name(QString file_name,QString file_extension,bool add_path);
 
@@ -717,9 +704,20 @@ void MainWindow::on_group_connectometry_clicked()
     group_cnt->show();
 }
 
-
+int rec(program_option& po);
+int trk(program_option& po);
+int src(program_option& po);
+int ana(program_option& po);
+int exp(program_option& po);
+int atl(program_option& po);
+int cnt(program_option& po);
+int vis(program_option& po);
+int ren(program_option& po);
+int atk(program_option& po);
+int reg(program_option& po);
 void MainWindow::on_run_cmd_clicked()
 {
+    program_option po;
     if(!po.parse(ui->cmd_line->text().toStdString()))
     {
         QMessageBox::information(this,"Error",po.error_msg.c_str(),0);
@@ -732,27 +730,27 @@ void MainWindow::on_run_cmd_clicked()
     }
     QDir::setCurrent(QFileInfo(po.get("source").c_str()).absolutePath());
     if(po.get("action") == std::string("rec"))
-        rec();
+        rec(po);
     if(po.get("action") == std::string("trk"))
-        trk();
+        trk(po);
     if(po.get("action") == std::string("src"))
-        src();
+        src(po);
     if(po.get("action") == std::string("ana"))
-        ana();
+        ana(po);
     if(po.get("action") == std::string("exp"))
-        exp();
+        exp(po);
     if(po.get("action") == std::string("atl"))
-        atl();
+        atl(po);
     if(po.get("action") == std::string("cnt"))
-        cnt();
+        cnt(po);
     if(po.get("action") == std::string("vis"))
-        vis();
+        vis(po);
     if(po.get("action") == std::string("ren"))
-        ren();
+        ren(po);
     if(po.get("action") == std::string("atk"))
-        atk();
+        atk(po);
     if(po.get("action") == std::string("reg"))
-        reg();
+        reg(po);
 }
 
 
