@@ -635,9 +635,9 @@ bool tracking_window::command(QString cmd,QString param,QString param2)
         while(std::getline(in,line))
         {
             std::istringstream in2(line);
-            std::string cmd,param,param2;
-            in2 >> cmd >> param >> param2;
-            command(cmd.c_str(),param.empty() ? "":param.c_str(),param2.empty() ? "":param2.c_str());
+            std::string cmd_,param_,param2_;
+            in2 >> cmd_ >> param_ >> param2_;
+            command(cmd_.c_str(),param_.empty() ? "":param_.c_str(),param2_.empty() ? "":param2_.c_str());
         }
 
         std::string readme;
