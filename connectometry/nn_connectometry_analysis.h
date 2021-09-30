@@ -13,7 +13,7 @@ public:
     std::shared_ptr<fib_data> handle;
     std::string error_msg,report;
 public:
-    int skip_slice = 4;
+    uint32_t skip_slice = 4;
     tipl::image<3> It;
     tipl::color_image Ib;
 public:
