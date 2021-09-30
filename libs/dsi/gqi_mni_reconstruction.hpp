@@ -345,23 +345,6 @@ public:
         z /= voxel.vs[2];
         return tipl::vector<3,int>(x,y,z);
     }
-    template<class interpolation_type>
-    void interpolate_dwi(Voxel&, VoxelData& data,const tipl::vector<3,float>& Jpos,interpolation_type)
-    {
-        interpolation_type interpolation;
-
-        if(!interpolation.get_location(src_geo,Jpos))
-        {
-            std::fill(data.space.begin(),data.space.end(),0);
-            std::fill(data.jacobian.begin(),data.jacobian.end(),0.0);
-            return;
-        }
-        data.space.resize(ptr_images.size());
-        for (unsigned int i = 0; i < ptr_images.size(); ++i)
-            interpolation.estimate(ptr_images[i],data.space[i]);
-
-    }
-
     virtual void run(Voxel& voxel, VoxelData& data)
     {
         // calculate jacobian
@@ -376,7 +359,17 @@ public:
             }
         }
 
-        interpolate_dwi(voxel,data,mapping[data.voxel_index],tipl::cubic_interpolation<3>());
+        tipl::cubic_interpolation<3> interpolation;
+        if(!interpolation.get_location(src_geo,mapping[data.voxel_index]))
+        {
+            std::fill(data.space.begin(),data.space.end(),0);
+            std::fill(data.jacobian.begin(),data.jacobian.end(),0.0);
+            return;
+        }
+        data.space.resize(ptr_images.size());
+        for (unsigned int i = 0; i < ptr_images.size(); ++i)
+            interpolation.estimate(ptr_images[i],data.space[i]);
+
         if(!jdet.empty())
             jdet[data.voxel_index] = std::abs(data.jacobian.det());
     }
