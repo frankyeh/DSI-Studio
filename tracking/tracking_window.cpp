@@ -1524,7 +1524,7 @@ void tracking_window::on_actionImprove_Quality_triggered()
             std::vector<float> fib_fa(neighbors.size());
 
 
-            for(unsigned char i = 0;i < neighbors.size();++i)
+            for(unsigned int i = 0;i < neighbors.size();++i)
             {
                 dis[i] = neighbors[i];
                 dis[i] -= tipl::vector<3>(index);
@@ -1540,10 +1540,10 @@ void tracking_window::on_actionImprove_Quality_triggered()
             }
 
 
-            for(unsigned char i = 0;i < neighbors.size();++i)
+            for(unsigned int i = 0;i < neighbors.size();++i)
             if(fib_fa[i] > threshold)
             {
-                for(unsigned char j = i+1;j < neighbors.size();++j)
+                for(unsigned int j = i+1;j < neighbors.size();++j)
                 if(fib_fa[j] > threshold)
                 {
                     float angle = fib_dir[i]*fib_dir[j];
