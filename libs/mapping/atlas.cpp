@@ -164,7 +164,7 @@ void atlas::region_indices_at(const tipl::vector<3,float>& template_space,std::v
     size_t offset = get_index(template_space);
     if(!offset || offset >= I.size())
         return;
-    for(uint16_t region_index = 0;region_index < multiple_I_pos.size();++region_index)
+    for(uint32_t region_index = 0;region_index < multiple_I_pos.size();++region_index)
     {
         size_t pos = multiple_I_pos[region_index] + offset;
         if(pos < multiple_I.size() && multiple_I[pos])
