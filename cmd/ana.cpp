@@ -2,7 +2,6 @@
 #include <QFileInfo>
 #include <QDir>
 #include <QStringList>
-#include <QImage>
 #include <iostream>
 #include <iterator>
 #include <string>
