@@ -20,8 +20,8 @@ QWidget *DeviceTypeDelegate::createEditor(QWidget *parent,
             return QItemDelegate::createEditor(parent,option,index);
         QComboBox *comboBox = new QComboBox(parent);
         comboBox->addItem("Please Select Device");
-        for(size_t index = 0;index < device_types.size();++index)
-            comboBox->addItem(device_types[index].c_str());
+        for(size_t i = 0;index < device_types.size();++i)
+            comboBox->addItem(device_types[i].c_str());
         connect(comboBox, SIGNAL(activated(int)), this, SLOT(emitCommitData()));
         return comboBox;
     }
