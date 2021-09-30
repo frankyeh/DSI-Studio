@@ -1257,7 +1257,7 @@ void stat_model::remove_subject(unsigned int index)
     if(!label.empty())
         label.erase(label.begin()+index);
     if(!X.empty())
-        X.erase(X.begin()+index*feature_count,X.begin()+(index+1)*feature_count);
+        X.erase(X.begin()+int64_t(index)*feature_count,X.begin()+int64_t(index+1)*feature_count);
     subject_index.erase(subject_index.begin()+index);
 }
 
