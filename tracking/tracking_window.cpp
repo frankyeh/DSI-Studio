@@ -1583,7 +1583,7 @@ void tracking_window::on_actionImprove_Quality_triggered()
                     else
                     {
                         float add_fa = (fib_fa[i]+fib_fa[j])*0.5f;
-                        for(unsigned char m = 0;m < new_fa.size();++m)
+                        for(unsigned int m = 0;m < new_fa.size();++m)
                         if(add_fa > new_fa[m][index.index()])
                         {
                             std::swap(add_fa,new_fa[m][index.index()]);
@@ -2245,7 +2245,7 @@ void tracking_window::on_actionOpen_Connectivity_Matrix_triggered()
             buf.push_back(0.0f);
             ss >> buf.back();
         }
-        unsigned int dim = uint32_t(std::sqrt(buf.size()));
+        size_t dim = size_t(std::sqrt(buf.size()));
         if(dim*dim != buf.size())
         {
             QMessageBox::information(this,"error",
