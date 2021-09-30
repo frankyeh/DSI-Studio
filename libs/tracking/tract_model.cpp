@@ -207,7 +207,7 @@ class TinyTrack{
         const uint16_t* cluster = nullptr;
         if(in.read("cluster",row,col,cluster))
         {
-            tract_cluster.resize(row*col);
+            tract_cluster.resize(size_t(row)*size_t(col));
             std::copy(cluster,cluster+tract_cluster.size(),tract_cluster.begin());
         }
 
@@ -3342,26 +3342,27 @@ void ConnectivityMatrix::save_to_text(std::string& text)
 void ConnectivityMatrix::save_to_connectogram(const char* file_name)
 {
     std::ofstream out(file_name);
-    int w = matrix_value.width();
+    unsigned int w = uint32_t(matrix_value.width());
     std::vector<float> sum(w);
     out << "data\tdata\t";
-    for(int i = 0;i < w;++i)
+    for(unsigned int i = 0;i < w;++i)
     {
-        sum[i] = std::max<int>(1,std::accumulate(matrix_value.begin()+i*w,matrix_value.begin()+i*w+w,0.0)*2);
+        sum[i] = std::max<unsigned int>(1,std::accumulate(matrix_value.begin()+int64_t(i)*w,
+                                                          matrix_value.begin()+int64_t(i)*w+w,0.0f)*2);
         out << sum[i] << "\t";
     }
     out << std::endl;
     out << "data\tdata\t";
-    for(int i = 0;i < region_name.size();++i)
+    for(unsigned int i = 0;i < region_name.size();++i)
         std::replace(region_name[i].begin(),region_name[i].end(),' ','_');
-    for(int i = 0;i < w;++i)
+    for(unsigned int i = 0;i < w;++i)
         out << region_name[i] << "\t";
     out << std::endl;
 
-    for(int i = 0;i < w;++i)
+    for(unsigned int i = 0;i < w;++i)
     {
         out << sum[i] << "\t" << region_name[i] << "\t";
-        for(int j = 0;j < w;++j)
+        for(unsigned int j = 0;j < w;++j)
             out << matrix_value[i*w+j] << "\t";
         out << std::endl;
     }
