@@ -14,8 +14,6 @@ requirements:
     - {{ compiler('c') }}
     - {{ compiler('cxx') }}
     - git
-  run:
-    - qt5
 
 about:
   home: http://dsi-studio.labsolver.org
