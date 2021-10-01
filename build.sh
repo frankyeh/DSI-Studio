@@ -18,14 +18,14 @@ apt install -y --no-install-recommends \
   gcc-9 \
   g++-9
 
+echo "APT-GET CLEAN"
+
 apt-get clean
-
-source /opt/qt512/bin/qt512-env.sh
-
 rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-[ -d "/opt/dsi-studio" ] && rm -rf /opt/dsi-studio
+echo "INSTALL DSI STUDIO"
 
+[ -d "/opt/dsi-studio" ] && rm -rf /opt/dsi-studio
 
 mkdir /opt/dsi-studio
 cd /opt/dsi-studio
