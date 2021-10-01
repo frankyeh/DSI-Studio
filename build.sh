@@ -1,5 +1,8 @@
 apt update
 apt full-upgrade -y
+apt install --no-install-recommends -y software-properties-common
+add-apt-repository -y ppa:beineri/opt-qt-5.12.8-bionic
+add-apt-repository -y ppa:ubuntu-toolchain-r/test
 apt install -y --no-install-recommends \
   unzip \
   curl \
@@ -8,15 +11,30 @@ apt install -y --no-install-recommends \
   libboost-all-dev \
   zlib1g-dev \
   ca-certificates \
-  qt5-qmake \
-  qt5-default \
-  libqt5charts5-dev \
-  libqt5opengl5-dev \
-  gcc \
-  g++
+  qt512base \
+  qt512charts-no-lgpl \
+  mesa-common-dev \
+  libglu1-mesa-dev \
+  gcc-9 \
+  g++-9
 apt-get clean
 
 rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
+
+update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-9 \
+                    99 \
+                    --slave   /usr/bin/cc cc /usr/bin/gcc-9 \
+                    --slave   /usr/bin/c++ c++ /usr/bin/g++-9 \
+                    --slave   /usr/bin/g++ g++ /usr/bin/g++-9 \
+                    --slave   /usr/bin/gcov gcov /usr/bin/gcov-9 \
+                    --slave   /usr/bin/gcov-dump gcov-dump /usr/bin/gcov-dump-9 \
+                    --slave   /usr/bin/gcov-tool gcov-tool /usr/bin/gcov-tool-9 \
+                    --slave   /usr/bin/gcc-ar gcc-ar /usr/bin/gcc-ar-9 \
+                    --slave   /usr/bin/gcc-nm gcc-nm /usr/bin/gcc-nm-9 \
+                    --slave   /usr/bin/gcc-ranlib gcc-ranlib /usr/bin/gcc-ranlib-9
+
+source /opt/qt512/bin/qt512-env.sh
 
 mkdir /opt/dsi-studio
 cd /opt/dsi-studio
