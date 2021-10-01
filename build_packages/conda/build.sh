@@ -5,10 +5,6 @@ add-apt-repository -y ppa:beineri/opt-qt-5.12.8-bionic
 add-apt-repository -y ppa:ubuntu-toolchain-r/test
 apt install -y --no-install-recommends \
   unzip \
-  curl \
-  make \
-  git \
-  libboost-all-dev \
   zlib1g-dev \
   ca-certificates \
   qt512base \
@@ -31,15 +27,18 @@ update-alternatives --auto gcc
 echo "CHECK GCC G++ versions"
 gcc --version
 g++ --version
-
+qmake --version
 
 filepath=$(pwd)
 
 echo "COMPILE DSI STUDIO"
 
 cd $SRC_DIR
-/opt/qt512/bin/qmake ./src/dsi_studio.pro
+mkdir -p build
+cd build
+/opt/qt512/bin/qmake ../src/dsi_studio.pro
 make -k -j1
+cd ..
 
 echo "DOWNLOAD ATLAS PACKAGES"
 
@@ -53,7 +52,9 @@ rm -rf iconengines
 rm -rf imageformats
 rm -rf platforms
 rm -rf styles
+mv ../build/dsi_studio .
 cd ..
-mv ./dsi_studio dsi_studio_64
+rm -rf src build
+
 
 

@@ -15,6 +15,13 @@ requirements:
     - {{ compiler('c') }}
     - {{ compiler('cxx') }}
     - git
+    - curl
+    - make
+    - unzip
+  
+  run:
+  
+
 
 outputs:
   - name: dsistudio
