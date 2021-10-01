@@ -12,9 +12,10 @@ build:
 requirements:
   build:
     - {{ compiler('c') }}
+    - {{ compiler('cxx') }}
     - git
   run:
-    - qt >= 5.12.2
+    - qt=5.12.2
 
 about:
   home: http://dsi-studio.labsolver.org
