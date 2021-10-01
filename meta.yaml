@@ -2,8 +2,10 @@ package:
   name: dsistudio
   version: 2021.10
 source:
-  git_url: http://github.com/frankyeh/DSI-Studio.git
-
+  - git_url: http://github.com/frankyeh/DSI-Studio
+    folder: dsi-studio
+  - git_url: http://github.com/frankyeh/TIPL
+    folder: dsi-studio/tipl
 build:
   noarch: generic
 
@@ -13,7 +15,13 @@ requirements:
     - {{ compiler('cxx') }}
     - git
 
+outputs:
+  - name: dsistudio
+    version: 2021.10
+    files:
+      - /opt/dsi-studio/dsi_studio_64
 about:
   home: http://dsi-studio.labsolver.org
   license: GPL
   summary: "Diffusion MRI Tractography Tool"
+
