@@ -63,7 +63,3 @@ rm -rf platforms
 rm -rf styles
 mv ../build/dsi_studio .
 rm -rf /opt/dsi-studio/src /opt/dsi-studio/build
-
-echo "INSTALL DSI STUDIO at" $filepath
-rm -fr $filepath/*
-cp -r /opt/dsi-studio/dsi_studio_64/* $filepath
