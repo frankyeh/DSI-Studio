@@ -22,6 +22,8 @@ apt-get clean
 
 rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
+[ -d "/opt/dsi-studio" ] && rm -rf /opt/dsi-studio
+
 mkdir /opt/dsi-studio
 cd /opt/dsi-studio
 git clone https://github.com/frankyeh/DSI-Studio.git
