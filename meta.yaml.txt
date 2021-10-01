@@ -1,0 +1,24 @@
+package:
+  name: dsistudio
+  version: 2021.09
+  
+source:
+  git_rev: 2021.09
+  git_url: http://github.com/frankyeh/DSI-Studio.git
+
+build:
+  noarch: generic
+
+requirements:
+  build:
+    - git
+    - docker
+    - gcc
+    - g++
+  run:
+    - qt >= 5.12.2
+
+about:
+  home: http://dsi-studio.labsolver.org
+  license: GPL
+  summary: "Diffusion MRI Tractography Tool"
