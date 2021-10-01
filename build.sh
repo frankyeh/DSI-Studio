@@ -25,11 +25,13 @@ echo "Update alternatives"
 
 update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-9 \
                     99 \
-                    --slave   /usr/bin/cc cc /usr/bin/gcc-9 \
-                    --slave   /usr/bin/c++ c++ /usr/bin/g++-9 \
                     --slave   /usr/bin/g++ g++ /usr/bin/g++-9 \
 
 update-alternatives --auto gcc
+
+echo "CHECK GCC G++ versions"
+gcc --version
+g++ --version
 
 
 echo "INSTALL DSI STUDIO"
