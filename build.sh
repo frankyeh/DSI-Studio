@@ -34,9 +34,9 @@ gcc --version
 g++ --version
 
 
-filepath=$pwd
+filepath=$(pwd)
 
-echo "INSTALL DSI STUDIO at" $filepath
+echo "COMPILE DSI STUDIO"
 
 [ -d "/opt/dsi-studio" ] && rm -rf /opt/dsi-studio
 
@@ -61,5 +61,11 @@ rm -rf iconengines
 rm -rf imageformats
 rm -rf platforms
 rm -rf styles
-mv ../build/dsi_studio .
+
+mv ../build/dsi_studio $filepath
 rm -rf /opt/dsi-studio/src /opt/dsi-studio/build
+
+echo "INSTALL DSI STUDIO at" 
+cd $filepath
+rm -fr $filepath/*
+cp /opt/dsi-studio/dsi_studio_64 $filepath/*
