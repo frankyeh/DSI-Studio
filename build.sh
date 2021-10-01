@@ -23,8 +23,7 @@ rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 echo "Update alternatives"
 
-update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-9 \
-                    99 \
+update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-9 99 \
                     --slave   /usr/bin/g++ g++ /usr/bin/g++-9 \
 
 update-alternatives --auto gcc
@@ -38,28 +37,8 @@ filepath=$(pwd)
 
 echo "COMPILE DSI STUDIO"
 
-[ -d "/opt/dsi-studio" ] && rm -rf /opt/dsi-studio
-
-mkdir /opt/dsi-studio
-cd /opt/dsi-studio
-git clone https://github.com/frankyeh/DSI-Studio.git
-mv DSI-Studio src
-git clone https://github.com/frankyeh/TIPL.git
-mv TIPL src/tipl
-mkdir -p /opt/dsi-studio/build
-cd /opt/dsi-studio/build
-/opt/qt512/bin/qmake ../src/dsi_studio.pro
+cd $SRC_DIR/src
+/opt/qt512/bin/qmake dsi_studio.pro
 make -k -j1
-cd /opt/dsi-studio
-curl -sSLO 'https://www.dropbox.com/s/pib533irglhnwy7/dsi_studio_64.zip'
-unzip dsi_studio_64.zip
-rm dsi_studio_64.zip
-cd dsi_studio_64
-rm *.dll
-rm *.exe
-rm -rf iconengines
-rm -rf imageformats
-rm -rf platforms
-rm -rf styles
-mv ../build/dsi_studio .
-rm -rf /opt/dsi-studio/src /opt/dsi-studio/build
+
+
