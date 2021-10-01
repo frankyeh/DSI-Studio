@@ -34,7 +34,9 @@ gcc --version
 g++ --version
 
 
-echo "INSTALL DSI STUDIO"
+filepath=$pwd
+
+echo "INSTALL DSI STUDIO at" $filepath
 
 [ -d "/opt/dsi-studio" ] && rm -rf /opt/dsi-studio
 
