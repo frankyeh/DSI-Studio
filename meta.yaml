@@ -3,9 +3,12 @@ package:
   version: 2021.10
 source:
   - git_url: http://github.com/frankyeh/DSI-Studio
-    folder: dsi-studio
+    folder: src
   - git_url: http://github.com/frankyeh/TIPL
-    folder: dsi-studio/tipl
+    folder: src/tipl
+  - url: https://www.dropbox.com/s/pib533irglhnwy7/dsi_studio_64.zip
+    folder: dsi-studio-64
+
 build:
   noarch: generic
 
@@ -18,8 +21,7 @@ requirements:
 outputs:
   - name: dsistudio
     version: 2021.10
-    files:
-      - /opt/dsi-studio/dsi_studio_64
+
 about:
   home: http://dsi-studio.labsolver.org
   license: GPL
