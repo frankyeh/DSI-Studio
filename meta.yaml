@@ -1,6 +1,6 @@
 package:
   name: dsistudio
-  
+  version: 2021.10
 source:
   git_url: http://github.com/frankyeh/DSI-Studio.git
 
