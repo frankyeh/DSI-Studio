@@ -35,7 +35,7 @@ git clone https://github.com/frankyeh/TIPL.git
 mv TIPL src/tipl
 mkdir -p /opt/dsi-studio/build
 cd /opt/dsi-studio/build
-qmake ../src/dsi_studio.pro
+/opt/qt512/bin/qmake ../src/dsi_studio.pro
 make -k -j1
 cd /opt/dsi-studio
 curl -sSLO 'https://www.dropbox.com/s/pib533irglhnwy7/dsi_studio_64.zip'
