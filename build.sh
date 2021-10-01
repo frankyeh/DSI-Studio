@@ -37,8 +37,23 @@ filepath=$(pwd)
 
 echo "COMPILE DSI STUDIO"
 
-cd $SRC_DIR/src
-/opt/qt512/bin/qmake dsi_studio.pro
+cd $SRC_DIR
+/opt/qt512/bin/qmake ./src/dsi_studio.pro
 make -k -j1
+
+echo "DOWNLOAD ATLAS PACKAGES"
+
+-curl -sSLO 'https://www.dropbox.com/s/pib533irglhnwy7/dsi_studio_64.zip'
+unzip dsi_studio_64.zip
+rm dsi_studio_64.zip
+cd dsi_studio_64
+rm *.dll
+rm *.exe
+rm -rf iconengines
+rm -rf imageformats
+rm -rf platforms
+rm -rf styles
+cd ..
+mv ./dsi_studio dsi_studio_64
 
 
