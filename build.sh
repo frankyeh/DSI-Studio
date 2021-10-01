@@ -17,11 +17,20 @@ apt install -y --no-install-recommends \
   libglu1-mesa-dev \
   gcc-9 \
   g++-9
-
-echo "APT-GET CLEAN"
-
 apt-get clean
 rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
+
+echo "Update alternatives"
+
+update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-9 \
+                    99 \
+                    --slave   /usr/bin/cc cc /usr/bin/gcc-9 \
+                    --slave   /usr/bin/c++ c++ /usr/bin/g++-9 \
+                    --slave   /usr/bin/g++ g++ /usr/bin/g++-9 \
+
+update-alternatives --auto gcc
+
 
 echo "INSTALL DSI STUDIO"
 
