@@ -17,11 +17,10 @@ apt install -y --no-install-recommends \
   libglu1-mesa-dev \
   gcc-9 \
   g++-9
+
 apt-get clean
 
 rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
-
-source /opt/qt512/bin/qt512-env.sh
 
 mkdir /opt/dsi-studio
 cd /opt/dsi-studio
