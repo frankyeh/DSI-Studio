@@ -4,7 +4,6 @@ FROM ubuntu:16.04
 # Prepare environment
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
-                    curl \
                     ca-certificates \
                     xvfb \
                     build-essential \
@@ -23,11 +22,9 @@ RUN apt-get update && \
                     libxrandr2 \
                     libxrender1 \
                     libxt6 \
-                    wget \
                     libboost-all-dev \
                     zlib1g \
                     zlib1g-dev \
-                    unzip \
                     libgl1-mesa-dev \
                     libglu1-mesa-dev \
                     freeglut3-dev \
@@ -68,7 +65,7 @@ RUN add-apt-repository ppa:beineri/opt-qt-5.12.2-xenial \
 # Install DSI Studio
 ENV QT_BASE_DIR="/opt/qt512"
 ENV QTDIR="$QT_BASE_DIR" \
-    PATH="$QT_BASE_DIR/bin:$PATH:/opt/dsi-studio/dsi_studio_64" \
+    PATH="$QT_BASE_DIR/bin:$PATH:/opt/dsi-studio" \
     LD_LIBRARY_PATH="$QT_BASE_DIR/lib/x86_64-linux-gnu:$QT_BASE_DIR/lib:$LD_LIBRARY_PATH" \
     PKG_CONFIG_PATH="$QT_BASE_DIR/lib/pkgconfig:$PKG_CONFIG_PATH"
 
@@ -81,16 +78,8 @@ RUN mkdir /opt/dsi-studio \
   && mkdir build && cd build \
   && /opt/qt512/bin/qmake ../src && make \
   && cd /opt/dsi-studio \
-  && curl -sSLO 'https://www.dropbox.com/s/bulezl417g37ems/dsi_studio_64.zip' \
-  && unzip dsi_studio_64.zip \
-  && rm dsi_studio_64.zip \
-  && cd dsi_studio_64 \
-  && rm *.dll \
-  && rm *.exe \
-  && rm -rf iconengines \
-  && rm -rf imageformats \
-  && rm -rf platforms \
-  && rm -rf styles \
   && mv ../build/dsi_studio . \
   && chmod 755 dsi_studio \
   && rm -rf /opt/dsi-studio/src /opt/dsi-studio/build
+  && git clone https://github.com/frankyeh/DSI-Studio-atlas.git \
+  && mv DSI-Studio-atlas atlas

@@ -91,8 +91,8 @@ std::string find_full_path(QString name)
 
 bool load_file_name(void)
 {
-    fib_template_file_name_2mm = find_full_path("/hcp1065_2mm.fib.gz");
-    device_content_file = find_full_path("/device.txt");
+    fib_template_file_name_2mm = find_full_path("/atlas/ICBM152/ICBM152.fib.gz");
+    device_content_file = find_full_path("/atlas/device.txt");
 
     // search for all template
     {
