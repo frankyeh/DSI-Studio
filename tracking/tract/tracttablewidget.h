@@ -5,9 +5,8 @@
 #include <QTableWidget>
 #include <QTimer>
 #include <tipl/tipl.hpp>
-
+#include "tract_model.hpp"
 class tracking_window;
-class TractModel;
 struct ThreadData;
 
 
