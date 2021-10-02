@@ -1078,7 +1078,7 @@ bool connectometry_result::compare(std::shared_ptr<fib_data> handle,const std::v
     std::ostringstream out;
     if(normalization == 0) // no normalization
     {
-        for(unsigned char fib = 0;fib < handle->dir.num_fiber;++fib)
+        for(unsigned int fib = 0;fib < handle->dir.num_fiber;++fib)
         {
             for(unsigned int index = 0;index < handle->dim.size();++index)
                 if(fa1[fib][index] > 0.0 && fa2[fib][index] > 0.0)
@@ -1091,7 +1091,7 @@ bool connectometry_result::compare(std::shared_ptr<fib_data> handle,const std::v
         float max1 = *std::max_element(fa1[0],fa1[0] + handle->dim.size());
         float max2 = *std::max_element(fa2[0],fa2[0] + handle->dim.size());
 
-        for(unsigned char fib = 0;fib < handle->dir.num_fiber;++fib)
+        for(unsigned int fib = 0;fib < handle->dir.num_fiber;++fib)
         {
             for(unsigned int index = 0;index < handle->dim.size();++index)
                 if(fa1[fib][index] > 0.0 && fa2[fib][index] > 0.0)
@@ -1102,7 +1102,7 @@ bool connectometry_result::compare(std::shared_ptr<fib_data> handle,const std::v
     {
         out << " Normalization was conducted by a linear regression between the comparison scans.";
         std::pair<double,double> r = tipl::linear_regression(fa2[0],fa2[0] + handle->dim.size(),fa1[0]);
-        for(unsigned char fib = 0;fib < handle->dir.num_fiber;++fib)
+        for(unsigned int fib = 0;fib < handle->dir.num_fiber;++fib)
         {
             for(unsigned int index = 0;index < handle->dim.size();++index)
                 if(fa1[fib][index] > 0.0 && fa2[fib][index] > 0.0)
@@ -1114,7 +1114,7 @@ bool connectometry_result::compare(std::shared_ptr<fib_data> handle,const std::v
         out << " Normalization was conducted by scaling the variance to one.";
         float sd1 = tipl::standard_deviation(fa1[0],fa1[0] + handle->dim.size());
         float sd2 = tipl::standard_deviation(fa2[0],fa2[0] + handle->dim.size());
-        for(unsigned char fib = 0;fib < handle->dir.num_fiber;++fib)
+        for(unsigned int fib = 0;fib < handle->dir.num_fiber;++fib)
         {
             for(unsigned int index = 0;index < handle->dim.size();++index)
                 if(fa1[fib][index] > 0.0 && fa2[fib][index] > 0.0)
