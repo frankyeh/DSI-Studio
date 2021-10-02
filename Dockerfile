@@ -80,6 +80,6 @@ RUN mkdir /opt/dsi-studio \
   && cd /opt/dsi-studio \
   && mv build/dsi_studio . \
   && chmod 755 dsi_studio \
-  && rm -rf src build
+  && rm -rf src build \
   && git clone https://github.com/frankyeh/DSI-Studio-atlas.git \
   && mv DSI-Studio-atlas atlas
