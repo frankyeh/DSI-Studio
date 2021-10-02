@@ -1455,22 +1455,7 @@ void myglColor(const tipl::vector<3,float>& color,float alpha)
         glColor4f(color[0],color[1],color[2],alpha);
 }
 
-template<typename fun_type>
-void for_each_track(TractTableWidget* trackWidget,fun_type fun)
-{
-    for (int i = 0;i < trackWidget->rowCount();++i)
-    {
-        if(trackWidget->item(i,0)->checkState() != Qt::Checked)
-            continue;
-        auto active_tract_model = trackWidget->tract_models[size_t(i)];
-        if (active_tract_model->get_visible_track_count() == 0)
-            continue;
-        unsigned int tracks_count = active_tract_model->get_visible_track_count();
-        for (unsigned int data_index = 0; data_index < tracks_count; ++data_index)
-            fun(active_tract_model,data_index);
-    }
 
-}
 
 void GLWidget::makeTracts(void)
 {
@@ -1511,7 +1496,7 @@ void GLWidget::makeTracts(void)
     {
         if(tract_color_style == 3 || tract_color_style == 5)// mean value
         {
-            for_each_track(trackWidget,[&](std::shared_ptr<TractModel>& active_tract_model,unsigned int data_index)
+            trackWidget->for_each_track([&](std::shared_ptr<TractModel>& active_tract_model,unsigned int data_index)
             {
                 unsigned int vertex_count = active_tract_model->get_tract_length(data_index)/3;
                 if (vertex_count <= 1)
@@ -1550,7 +1535,7 @@ void GLWidget::makeTracts(void)
         std::fill(min_y_map.begin(),min_y_map.end(),cur_tracking_window.handle->dim.height());
         std::fill(min_z_map.begin(),min_z_map.end(),cur_tracking_window.handle->dim.depth());
         tipl::uniform_dist<float> uniform_gen(0.0f,1.0f);
-        for_each_track(trackWidget,[&](std::shared_ptr<TractModel>& active_tract_model,unsigned int data_index)
+        trackWidget->for_each_track([&](std::shared_ptr<TractModel>& active_tract_model,unsigned int data_index)
         {
             if(skip_rate < 1.0f && uniform_gen() > skip_rate)
                 return;
@@ -1607,7 +1592,7 @@ void GLWidget::makeTracts(void)
 
 
     tipl::uniform_dist<float> uniform_gen(0.0f,1.0f),random_size(-0.5f,0.5f),random_color(-0.05f,0.05f);
-    for_each_track(trackWidget,[&](std::shared_ptr<TractModel>& active_tract_model,unsigned int data_index)
+    trackWidget->for_each_track([&](std::shared_ptr<TractModel>& active_tract_model,unsigned int data_index)
     {
         if(skip_rate < 1.0f && uniform_gen() > skip_rate)
         {
