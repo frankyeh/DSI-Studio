@@ -78,8 +78,8 @@ RUN mkdir /opt/dsi-studio \
   && mkdir build && cd build \
   && /opt/qt512/bin/qmake ../src && make \
   && cd /opt/dsi-studio \
-  && mv ../build/dsi_studio . \
+  && mv build/dsi_studio . \
   && chmod 755 dsi_studio \
-  && rm -rf /opt/dsi-studio/src /opt/dsi-studio/build
+  && rm -rf src build
   && git clone https://github.com/frankyeh/DSI-Studio-atlas.git \
   && mv DSI-Studio-atlas atlas
