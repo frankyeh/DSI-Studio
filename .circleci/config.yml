@@ -9,7 +9,7 @@ jobs:
       TZ: "/usr/share/zoneinfo/America/New_York"
       SCRATCH: "/scratch"
     docker:
-      - image: docker:18.06.1-ce-git
+      - image: ubuntu-2004:202107-02
     working_directory: /tmp/src/DSI-Studio
     steps:
       - checkout
@@ -20,10 +20,7 @@ jobs:
           command: |
             # Build docker image
             e=1 && for i in {1..5}; do
-              docker build \
-                --rm=false \
-                -t dsistudio/dsistudio:latest . \
-              && e=0 && break || sleep 15
+              docker build --file build_packages/ubuntu_2004/Dockerfile --rm=false -t dsistudio/dsistudio:latest . && e=0 && break || sleep 15
             done && [ "$e" -eq "0" ]
       - run:
           name: Deploy to Docker Hub
