@@ -43,16 +43,15 @@ jobs:
          git clone https://github.com/frankyeh/DSI-Studio-atlas.git
          mv DSI-Studio-atlas  dsi_studio_ubuntu20.04/atlas   
          zip -r dsi_studio_ubuntu_20.04.zip  dsi_studio_ubuntu20.04 
-    - name: Update Release
-      uses: meeDamian/github-release@v2.0.3
+    - name: Create Release
+      uses: ncipollo/release-action@v1.8.9
       with:
-         token: ${{ secrets.ACCESS_TOKEN }}
-         files: dsi_studio_ubuntu_20.04.zip
+         allowUpdates: true
+         artifacts: dsi_studio_ubuntu_20.04.zip
          gzip: false
          name: "2021 October"
          tag: "2021.10.03"
          prerelease: false
-         allow_override: true
     
   macos-build:
 
