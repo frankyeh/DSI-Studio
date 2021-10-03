@@ -47,6 +47,14 @@ jobs:
          artifacts: dsi_studio_ubuntu_20.04.zip
          name: "2021 October"
          tag: "2021.10"
+    - name: Update Release
+      uses: johnwbyrd/update-release@v1.0.0
+      with:
+         token: ${{ secrets.ACCESS_TOKEN }}
+         files: dsi_studio_ubuntu_20.04.zip
+         release: "2021 October"
+         tag: "2021.10"
+         prerelease: false
     
   macos-build:
 
@@ -84,10 +92,11 @@ jobs:
          /usr/local/opt/qt@5/bin/macdeployqt dsi_studio.app
          rm -v !(dsi_studio.dmg)
 
-    - name: Create Release
-      uses: ncipollo/release-action@v1.8.9
+    - name: Update Release
+      uses: johnwbyrd/update-release@v1.0.0
       with:
-         allowUpdates: yes
-         artifacts: dsi_studio.dmg
-         name: "2021 October"
+         token: ${{ secrets.ACCESS_TOKEN }}
+         files: dsi_studio.dmg
+         release: "2021 October"
          tag: "2021.10"
+         prerelease: false
