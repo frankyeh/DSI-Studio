@@ -17,6 +17,10 @@ namespace std{
         {
             return QFileInfo(file_name.c_str()).exists();
         }
+        inline bool exists(const char* file_name)
+        {
+            return QFileInfo(file_name).exists();
+        }
         inline size_t file_size(const std::string& file_name)
         {
             return size_t(QFileInfo(file_name.c_str()).size());
