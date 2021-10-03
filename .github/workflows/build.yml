@@ -44,7 +44,7 @@ jobs:
       uses: ncipollo/release-action@v1.8.9
       with:
          allowUpdates: yes
-         bodyFile: dsi_studio_ubuntu_20.04.zip
+         artifact: dsi_studio_ubuntu_20.04.zip
          name: dsi_studio_ubuntu_20.04
          tag: 2021.10
     
@@ -64,8 +64,7 @@ jobs:
          brew info qt5
          brew install qt5
          brew install boost
-         brew install llvm
-         brew install tbb
+         brew install gcc
     - name: get TIPL
       run: |
          git clone https://github.com/frankyeh/TIPL.git
@@ -75,7 +74,7 @@ jobs:
          mkdir -p build
          cd build
          export PATH="/usr/local/opt/qt@5/bin:$PATH" && export LDFLAGS="-L/usr/local/opt/qt@5/lib" && export CPPFLAGS="-I/usr/local/opt/qt@5/include" && export PKG_CONFIG_PATH="/usr/local/opt/qt@5/lib/pkgconfig"
-         qmake ../dsi_studio.pro QMAKE_INCDIR=/usr/local/Cellar/boost/1.76.0/include
+         qmake ../dsi_studio.pro -spec macx-g++ QMAKE_INCDIR=/usr/local/Cellar/boost/1.76.0/include
          make
          cd ..
     - name: packaging
