@@ -44,7 +44,7 @@ jobs:
       uses: ncipollo/release-action@v1.8.9
       with:
          allowUpdates: yes
-         artifact: dsi_studio_ubuntu_20.04.zip
+         artifacts: dsi_studio_ubuntu_20.04.zip
          name: "2021 October"
          tag: "2021.10"
     
@@ -83,4 +83,11 @@ jobs:
          mv build/dsi_studio.app .
          macdeployqt dsi_studio.app
          rm -v !(dsi_studio.dmg)
-         
+
+    - name: Create Release
+      uses: ncipollo/release-action@v1.8.9
+      with:
+         allowUpdates: yes
+         artifacts: dsi_studio.dmg
+         name: "2021 October"
+         tag: "2021.10"
