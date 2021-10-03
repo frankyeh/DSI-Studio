@@ -3,7 +3,7 @@ name: Build on Linux, Mac, Windows
 on:
   release:
     types:
-      - created
+      - edited
 
 jobs:
   linux-gcc-build:
