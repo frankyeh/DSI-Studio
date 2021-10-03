@@ -66,6 +66,8 @@ jobs:
          brew install qt5
          brew install boost
          mv /usr/local/Cellar/boost/1.76.0/include /usr/local/Cellar/boost/1.76.0/boost
+         ls /usr/local/Cellar/boost/1.76.0
+         ls /usr/local/Cellar/boost/1.76.0/boost
     - name: get TIPL
       run: |
          git clone https://github.com/frankyeh/TIPL.git
