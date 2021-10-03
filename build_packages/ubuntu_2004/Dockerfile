@@ -37,7 +37,7 @@ RUN mkdir /opt/dsi-studio \
 RUN cd /opt/dsi-studio \
   && mv build/dsi_studio . \
   && chmod 755 dsi_studio \
-  && cp -R src\other\* .
+  && cp -R src\other\* . \
   && rm -rf src build \
   && git clone https://github.com/frankyeh/DSI-Studio-atlas.git \
   && mv DSI-Studio-atlas atlas
