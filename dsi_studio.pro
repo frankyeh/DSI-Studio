@@ -24,12 +24,13 @@ RC_ICONS = dsi_studio.ico
 
 linux* {
 QMAKE_CXXFLAGS += -fpermissive -Wno-sign-compare
-LIBS += -lglu -lz
+LIBS += -lGLU -lz
 }
 
 mac{
 INCLUDEPATH += /Users/admin/include
 ICON = dsi_studio.icns
+LIBS += -lz
 }
 
 
