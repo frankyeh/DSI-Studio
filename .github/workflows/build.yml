@@ -81,7 +81,7 @@ jobs:
          git clone https://github.com/frankyeh/DSI-Studio-atlas.git
          mv DSI-Studio-atlas build/dsi_studio.app/Contents/MacOS/atlas
          mv build/dsi_studio.app .
-         macdeployqt dsi_studio.app
+         /usr/local/opt/qt@5/bin/macdeployqt dsi_studio.app
          rm -v !(dsi_studio.dmg)
 
     - name: Create Release
