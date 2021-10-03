@@ -49,8 +49,8 @@ jobs:
          token: ${{ secrets.ACCESS_TOKEN }}
          files: dsi_studio_ubuntu_20.04.zip
          gzip: false
-         name: "2021 October Ubuntu 20.04"
-         tag: "2021.10"
+         name: "2021 October"
+         tag: "2021.10.03"
          prerelease: false
          allow_override: true
     
@@ -89,13 +89,13 @@ jobs:
          mv build/dsi_studio.app .
          /usr/local/opt/qt@5/bin/macdeployqt dsi_studio.app
 
-    - name: Update Release
-      uses: meeDamian/github-release@v2.0.3
+    - name: Create Release
+      uses: ncipollo/release-action@v1.8.9
       with:
-         token: ${{ secrets.ACCESS_TOKEN }}
-         files: dsi_studio.dmg
+         allowUpdates: true
+         artifacts: dsi_studio.dmg
          gzip: false
-         name: "2021 October Mac"
-         tag: "2021.10"
+         name: "2021 October"
+         tag: "2021.10.03"
          prerelease: false
-         allow_override: true
+         
