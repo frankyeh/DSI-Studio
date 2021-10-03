@@ -9,7 +9,7 @@ jobs:
       TZ: "/usr/share/zoneinfo/America/New_York"
       SCRATCH: "/scratch"
     docker:
-      - image: ubuntu-2004:202107-02
+      - image: ubuntu:20.04
     working_directory: /tmp/src/DSI-Studio
     steps:
       - checkout
