@@ -17,7 +17,8 @@ jobs:
 
     - name: install dependencies
       run: |
-         sudo apt update && apt full-upgrade -y 
+         sudo apt update
+         sudo apt full-upgrade -y 
          sudo apt install -y --no-install-recommends libboost-all-dev zlib1g-dev ca-certificates qt5-qmake qt5-default libqt5charts5-dev libqt5opengl5-dev gcc g++ 
          sudo apt-get clean
     - name: get TIPL
@@ -52,7 +53,8 @@ jobs:
     - name: install dependencies
       run: |
          brew update
-         brew install qt5.12
+         brew info qt
+         brew install qt 5.12
          brew link --force qt5.12
     - name: get TIPL
       run: |
