@@ -83,21 +83,17 @@ RUN mkdir /opt/dsi-studio \
   && git clone https://github.com/frankyeh/TIPL.git \
   && mv TIPL src/tipl \
   && mkdir build && cd build \
-  && /opt/qt512/bin/qmake ../src && make \
-  && cd /opt/dsi-studio \
-  && curl -sSLO 'https://www.dropbox.com/s/pib533irglhnwy7/dsi_studio_64.zip' \
-  && unzip dsi_studio_64.zip \
-  && rm dsi_studio_64.zip \
-  && cd dsi_studio_64 \
-  && rm *.dll \
-  && rm *.exe \
-  && rm -rf iconengines \
-  && rm -rf imageformats \
-  && rm -rf platforms \
-  && rm -rf styles \
-  && mv ../build/dsi_studio . \
-  && rm -rf /opt/dsi-studio/src /opt/dsi-studio/build
+  && /opt/qt512/bin/qmake ../src && make 
+
+RUN cd /opt/dsi-studio \
+  && mv build/dsi_studio . \
+  && chmod 755 dsi_studio \
+  && cp -R src\other\* .
+  && rm -rf src build \
+  && git clone https://github.com/frankyeh/DSI-Studio-atlas.git \
+  && mv DSI-Studio-atlas atlas
+ENV PATH="$PATH:/opt/dsi-studio" 
 
 #Create an empty container and transfer only the compiled software out
 FROM scratch
-COPY --from=builder-stage /opt/dsi-studio/dsi_studio_64 /
+COPY --from=builder-stage /opt/dsi-studio /

@@ -76,10 +76,13 @@ RUN mkdir /opt/dsi-studio \
   && git clone https://github.com/frankyeh/TIPL.git \
   && mv TIPL src/tipl \
   && mkdir build && cd build \
-  && /opt/qt512/bin/qmake ../src && make \
-  && cd /opt/dsi-studio \
+  && /opt/qt512/bin/qmake ../src && make
+
+RUN cd /opt/dsi-studio \
   && mv build/dsi_studio . \
   && chmod 755 dsi_studio \
+  && cp -R src\other\* .
   && rm -rf src build \
   && git clone https://github.com/frankyeh/DSI-Studio-atlas.git \
   && mv DSI-Studio-atlas atlas
+
