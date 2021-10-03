@@ -220,6 +220,8 @@ int run_cmd(int ac, char *av[])
             std::cout << po.error_msg << std::endl;
             return 1;
         }
+        if(po.has("version"))
+            return 0;
         std::shared_ptr<QApplication> gui;
         std::shared_ptr<QCoreApplication> cmd;
         for (int i = 1; i < ac; ++i)
