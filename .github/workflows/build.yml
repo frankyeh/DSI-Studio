@@ -5,12 +5,12 @@ on: [push]
 jobs:
   linux-gcc-build:
 
-    runs-on: ubuntu:20.04
+    runs-on: ubuntu-latest
 
     env:
       CXX: g++-9
       CFLAGS: -Werror
-      QT_SELECT: qt5.12
+      QT_SELECT: qt5
 
     steps:
     - uses: actions/checkout@v1
@@ -19,7 +19,7 @@ jobs:
       run: |
          sudo apt update
          sudo apt full-upgrade -y 
-         sudo apt install -y --no-install-recommends libboost-all-dev zlib1g-dev ca-certificates qt5-qmake qt5-default libqt5charts5-dev libqt5opengl5-dev gcc g++ 
+         sudo apt install -y --no-install-recommends libboost-all-dev zlib1g-dev ca-certificates libqt5charts5-dev libqt5opengl5-dev gcc9 g++9 
          sudo apt-get clean
     - name: get TIPL
       run: |
@@ -55,6 +55,10 @@ jobs:
          brew update
          brew info qt5
          brew install qt5
+         export PATH="/usr/local/opt/qt@5/bin:$PATH"
+         export LDFLAGS="-L/usr/local/opt/qt@5/lib"
+         export CPPFLAGS="-I/usr/local/opt/qt@5/include"
+         export PKG_CONFIG_PATH="/usr/local/opt/qt@5/lib/pkgconfig"
     - name: get TIPL
       run: |
          git clone https://github.com/frankyeh/TIPL.git
