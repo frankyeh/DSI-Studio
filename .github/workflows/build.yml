@@ -45,8 +45,8 @@ jobs:
       with:
          allowUpdates: yes
          artifact: dsi_studio_ubuntu_20.04.zip
-         name: dsi_studio_ubuntu_20.04
-         tag: 2021.10
+         name: "2021 October"
+         tag: "2021.10"
     
   macos-build:
 
@@ -61,10 +61,8 @@ jobs:
     - name: install dependencies
       run: |
          brew update
-         brew info qt5
          brew install qt5
          brew install boost
-         brew install gcc
     - name: get TIPL
       run: |
          git clone https://github.com/frankyeh/TIPL.git
