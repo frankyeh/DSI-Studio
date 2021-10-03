@@ -1717,8 +1717,7 @@ bool ImageModel::compare_src(const char* file_name)
             }
             */
         }
-        study_src->rotate(Ib.shape(),arg,cdm_dis);
-        study_src->voxel.vs = voxel.vs;
+        study_src->rotate(Ib.shape(),voxel.vs,arg,cdm_dis);
         study_src->voxel.mask = voxel.mask;
         check_prog(4,4);
     }
