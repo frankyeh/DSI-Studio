@@ -1,12 +1,7 @@
 #ifndef GZIP_INTERFACE_HPP
 #define GZIP_INTERFACE_HPP
-#ifdef WIN32
-#include "QtZlib/zlib.h"
-#else
 #include "zlib.h"
-#endif
 #include "tipl/tipl.hpp"
-#include "prog_interface_static_link.h"
 #include <stdio.h>
 
 #define WINSIZE 32768U      /* sliding window size */

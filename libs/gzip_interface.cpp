@@ -2,7 +2,7 @@
 #include <chrono>
 #include <stdio.h>
 #include "gzip_interface.hpp"
-
+#include "prog_interface_static_link.h"
 #define SPAN 8388608L       /* 8MB as the desired distance between access points */
 
 
