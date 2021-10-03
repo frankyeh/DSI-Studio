@@ -64,7 +64,8 @@ jobs:
          brew info qt5
          brew install qt5
          brew install boost
-         ls /usr/local/Cellar/boost/1.76.0/include/boost
+         brew install llvm
+         brew install tbb
     - name: get TIPL
       run: |
          git clone https://github.com/frankyeh/TIPL.git
