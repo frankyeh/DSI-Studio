@@ -34,30 +34,6 @@ jobs:
               docker push dsistudio/dsistudio:latest
             fi
 
-
-
-  build_windows:
-    executor:
-      name: win/default
-    steps:
-      # This needs to be replaced with the windows build
-      - run:
-         command: $(echo hello | Out-Host; $?) -and $(echo world | Out-Host; $?)
-         shell: powershell.exe
-      - run:
-         command: echo hello && echo world
-         shell: bash.exe
-      - run:
-         command: echo hello & echo world
-         shell: cmd.exe
-
-  deployable:
-    docker:
-      - image: busybox:latest
-    steps:
-      - run: echo Deployable!
-
-
 workflows:
   version: 2
   build_and_deploy:
@@ -67,17 +43,4 @@ workflows:
             tags:
               only: /.*/
 
-      - build_windows:
-          filters:
-            tags:
-              only: /.*/
 
-      - deployable:
-          requires:
-            - build_docker
-            - build_windows
-          filters:
-            branches:
-              only: master
-            tags:
-              only: /.*/
