@@ -1,4 +1,3 @@
-#include "mac_filesystem.hpp"
 #include <QFileInfo>
 #include <QApplication>
 #include <QDir>
@@ -8,6 +7,8 @@
 #include "program_option.hpp"
 #include "fib_data.hpp"
 #include "connectometry/group_connectometry_analysis.h"
+
+#include "mac_filesystem.hpp"
 
 extern std::string fib_template_file_name_2mm;
 const char* odf_average(const char* out_name,std::vector<std::string>& file_names);

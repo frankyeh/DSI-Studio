@@ -1,5 +1,4 @@
 #include <map>
-#include "mac_filesystem.hpp"
 #include <QTextStream>
 #include <QInputDialog>
 #include <QFileDialog>
@@ -11,7 +10,7 @@
 #include <QMessageBox>
 #include <QBuffer>
 #include <QImageReader>
-
+#include "mac_filesystem.hpp"
 std::map<std::string,std::string> dicom_dictionary;
 std::vector<view_image*> opened_images;
 bool img_command(tipl::image<3>& data,

@@ -1,4 +1,3 @@
-#include "mac_filesystem.hpp"
 #include <QSplitter>
 #include <QThread>
 #include "reconstruction_window.h"
@@ -15,6 +14,8 @@
 #include "libs/dsi/image_model.hpp"
 #include "gzip_interface.hpp"
 #include "manual_alignment.h"
+
+#include "mac_filesystem.hpp"
 
 extern std::vector<std::string> fa_template_list,iso_template_list;
 void show_view(QGraphicsScene& scene,QImage I);

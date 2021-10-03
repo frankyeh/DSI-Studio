@@ -1,7 +1,6 @@
 #include <QFileInfo>
 #include <QStringList>
 #include <QDir>
-#include "mac_filesystem.hpp"
 #include <iostream>
 #include <iterator>
 #include <string>
@@ -15,6 +14,7 @@
 #include "SliceModel.h"
 #include "connectometry/group_connectometry_analysis.h"
 #include "program_option.hpp"
+#include "mac_filesystem.hpp"
 extern std::shared_ptr<CustomSliceModel> t1t2_slices;
 std::shared_ptr<CustomSliceModel> t1t2_slices;
 extern std::vector<std::shared_ptr<CustomSliceModel> > other_slices;

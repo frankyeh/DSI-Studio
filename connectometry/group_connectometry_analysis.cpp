@@ -1,12 +1,14 @@
 #include <QFileInfo>
 #include <ctime>
-#include "mac_filesystem.hpp"
 #include "connectometry/group_connectometry_analysis.h"
 #include "fib_data.hpp"
 #include "libs/tracking/tract_model.hpp"
 #include "libs/tracking/tracking_thread.hpp"
 #include "tracking/tracking_window.h"
 #include "program_option.hpp"
+
+#include "mac_filesystem.hpp"
+
 group_connectometry_analysis::group_connectometry_analysis():handle(nullptr),normalize_qa(true)
 {
 

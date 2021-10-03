@@ -1,4 +1,3 @@
-#include "mac_filesystem.hpp"
 #include <QFileDialog>
 #include <QStringListModel>
 #include <QMessageBox>
@@ -8,6 +7,7 @@
 #include "fib_data.hpp"
 #include "libs/tracking/tracking_thread.hpp"
 #include "program_option.hpp"
+#include "mac_filesystem.hpp"
 extern std::vector<std::string> fa_template_list;
 auto_track::auto_track(QWidget *parent) :
     QMainWindow(parent),

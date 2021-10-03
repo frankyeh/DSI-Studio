@@ -1,10 +1,12 @@
-#include "mac_filesystem.hpp"
 #include <QCoreApplication>
 #include <QFileInfo>
 #include <QDateTime>
 #include "fib_data.hpp"
 #include "tessellated_icosahedron.hpp"
 #include "tract_model.hpp"
+
+#include "mac_filesystem.hpp"
+
 extern std::vector<std::string> fa_template_list;
 bool odf_data::read(gz_mat_read& mat_reader)
 {

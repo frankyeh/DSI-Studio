@@ -1,4 +1,3 @@
-#include "mac_filesystem.hpp"
 #include <QFileInfo>
 #include <QDir>
 #include <QInputDialog>
@@ -9,6 +8,8 @@
 #include "fib_data.hpp"
 #include "dwi_header.hpp"
 #include "tracking/region/Regions.h"
+
+#include "mac_filesystem.hpp"
 
 void ImageModel::draw_mask(tipl::color_image& buffer,int position)
 {

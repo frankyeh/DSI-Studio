@@ -3,7 +3,6 @@
 #include <QFileInfo>
 #include <QImage>
 #include <fstream>
-#include "mac_filesystem.hpp"
 #include <sstream>
 #include <iterator>
 #include <tuple>
@@ -20,6 +19,9 @@
 #include "tract_cluster.hpp"
 #include "../../tracking/region/Regions.h"
 #include "tracking_method.hpp"
+
+#include "mac_filesystem.hpp"
+
 void prepare_idx(const char* file_name,std::shared_ptr<gz_istream> in);
 void save_idx(const char* file_name,std::shared_ptr<gz_istream> in);
 const tipl::rgb default_tract_color(255,160,60);

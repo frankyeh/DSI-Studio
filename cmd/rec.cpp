@@ -2,7 +2,6 @@
 #include <QFileInfo>
 #include <QDir>
 #include <iostream>
-#include "mac_filesystem.hpp"
 #include <iterator>
 #include <string>
 #include "fib_data.hpp"
@@ -12,6 +11,8 @@
 #include "libs/gzip_interface.hpp"
 #include "reconstruction/reconstruction_window.h"
 #include "program_option.hpp"
+
+#include "mac_filesystem.hpp"
 
 extern std::vector<std::string> fa_template_list,iso_template_list;
 size_t match_template(float volume);

@@ -1,4 +1,3 @@
-#include "mac_filesystem.hpp"
 #include <QFileInfo>
 #include <QDir>
 #include <QFileDialog>
@@ -6,10 +5,12 @@
 #include <QGraphicsTextItem>
 #include <QGraphicsPixmapItem>
 #include <QMouseEvent>
-
 #include "db_window.h"
 #include "ui_db_window.h"
 #include "match_db.h"
+
+#include "mac_filesystem.hpp"
+
 void show_view(QGraphicsScene& scene,QImage I);
 
 db_window::db_window(QWidget *parent,std::shared_ptr<group_connectometry_analysis> vbc_) :

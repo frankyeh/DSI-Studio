@@ -1,4 +1,3 @@
-#include "mac_filesystem.hpp"
 #include <QFileDialog>
 #include <QDateTime>
 #include <QUrl>
@@ -34,6 +33,8 @@
 #include "program_option.hpp"
 #include "libs/dsi/image_model.hpp"
 #include "auto_track.h"
+#include "mac_filesystem.hpp"
+
 extern std::string arg_file_name;
 std::vector<tracking_window*> tracking_windows;
 MainWindow::MainWindow(QWidget *parent) :

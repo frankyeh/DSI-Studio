@@ -1,6 +1,5 @@
 #ifndef ODF_TRANSFORMATION_PROCESS_HPP
 #define ODF_TRANSFORMATION_PROCESS_HPP
-#include <boost/math/special_functions/sinc.hpp>
 #include "basic_process.hpp"
 #include "basic_voxel.hpp"
 

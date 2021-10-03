@@ -5,7 +5,7 @@
 #include <iostream>
 #include <iterator>
 #include <string>
-#include "mac_filesystem.hpp"
+
 #include "tipl/tipl.hpp"
 #include "tracking/region/Regions.h"
 #include "libs/tracking/tract_model.hpp"
@@ -14,6 +14,8 @@
 #include "libs/gzip_interface.hpp"
 #include "program_option.hpp"
 #include "atlas.hpp"
+
+#include "mac_filesystem.hpp"
 
 // test example
 // --action=ana --source=20100129_F026Y_WANFANGYUN.src.gz.odf8.f3rec.de0.dti.fib.gz --method=0 --fiber_count=5000
