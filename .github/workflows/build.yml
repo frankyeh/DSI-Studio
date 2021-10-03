@@ -1,0 +1,74 @@
+name: Build on Linux, Mac, Windows
+
+on: [push]
+
+jobs:
+  linux-gcc-build:
+
+    runs-on: ubuntu-latest
+
+    env:
+      CXX: g++-9
+      CFLAGS: -Werror
+      QT_SELECT: qt5.12
+
+    steps:
+    - uses: actions/checkout@v1
+
+    - name: install dependencies
+      run: |
+         sudo apt update && apt full-upgrade -y 
+         sudo apt install -y --no-install-recommends libboost-all-dev zlib1g-dev ca-certificates qt5-qmake qt5-default libqt5charts5-dev libqt5opengl5-dev gcc g++ 
+         sudo apt-get clean
+    - name: get TIPL
+      run: |
+         git clone https://github.com/frankyeh/TIPL.git
+         mv TIPL tipl
+    - name: build
+      run: |
+         mkdir -p build
+         cd build
+         qmake ../dsi_studio.pro
+         make ..
+    - name: packaging
+      run: |
+         mkdir package
+         cp -R other/* package     
+         chmod 755 build/dsi_studio
+         mv build/dsi_studio package 
+         git clone https://github.com/frankyeh/DSI-Studio-atlas.git
+         mv DSI-Studio-atlas package/atlas   
+  
+  macos-build:
+
+    runs-on: macos-latest
+
+    env:
+      CFLAGS: -Werror
+
+    steps:
+    - uses: actions/checkout@v1
+
+    - name: install dependencies
+      run: |
+         brew update
+         brew install qt5.12
+         brew link --force qt5.12
+    - name: get TIPL
+      run: |
+         git clone https://github.com/frankyeh/TIPL.git
+         mv TIPL tipl
+    - name: build
+      run: |
+         mkdir -p build
+         cd build
+         qmake ../dsi_studio.pro
+         make ..
+    - name: packaging
+      run: |
+         mkdir package
+         cp -R other/* package     
+         chmod 755 build/dsi_studio
+         mv build/dsi_studio package 
+         git clone https://github.com/frankyeh/DSI-Studio-atlas.git
+         mv DSI-Studio-atlas package/atlas   
