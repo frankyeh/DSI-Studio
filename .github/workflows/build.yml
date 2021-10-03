@@ -45,7 +45,8 @@ jobs:
       with:
          token: ${{ secrets.ACCESS_TOKEN }}
          files: dsi_studio_ubuntu_20.04.zip
-         name: "2021 October"
+         gzip: false
+         name: "2021 October Ubuntu 20.04"
          tag: "2021.10"
          prerelease: false
          allow_override: true
@@ -90,7 +91,8 @@ jobs:
       with:
          token: ${{ secrets.ACCESS_TOKEN }}
          files: dsi_studio.dmg
-         name: "2021 October"
+         gzip: false
+         name: "2021 October Mac"
          tag: "2021.10"
          prerelease: false
          allow_override: true
