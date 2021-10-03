@@ -55,6 +55,7 @@ jobs:
          brew update
          brew info qt5
          brew install qt5
+         brew install boost
     - name: get TIPL
       run: |
          git clone https://github.com/frankyeh/TIPL.git
@@ -66,11 +67,12 @@ jobs:
          export PATH="/usr/local/opt/qt@5/bin:$PATH" && export LDFLAGS="-L/usr/local/opt/qt@5/lib" && export CPPFLAGS="-I/usr/local/opt/qt@5/include" && export PKG_CONFIG_PATH="/usr/local/opt/qt@5/lib/pkgconfig"
          qmake ../dsi_studio.pro
          make
+         cd ..
     - name: packaging
       run: |
-         mkdir package
-         cp -R other/* package     
-         chmod 755 build/dsi_studio
-         mv build/dsi_studio package 
+         mv other/* build/dsi_studio.app/Contents/MacOS/
          git clone https://github.com/frankyeh/DSI-Studio-atlas.git
-         mv DSI-Studio-atlas package/atlas   
+         mv DSI-Studio-atlas build/dsi_studio.app/Contents/MacOS/atlas
+         mv build/dsi_studio.app .
+         macdeployqt dsi_studio.app
+         rm -v !(dsi_studio.dmg)
