@@ -28,7 +28,6 @@ QMAKE_CXXFLAGS += -fpermissive -Wno-sign-compare
 
 mac{
 INCLUDEPATH += /Users/admin/include
-LIBS += -lz
 ICON = dsi_studio.icns
 }
 
