@@ -40,21 +40,15 @@ jobs:
          git clone https://github.com/frankyeh/DSI-Studio-atlas.git
          mv DSI-Studio-atlas  dsi_studio_ubuntu20.04/atlas   
          zip -r dsi_studio_ubuntu_20.04.zip  dsi_studio_ubuntu20.04 
-    - name: Create Release
-      uses: ncipollo/release-action@v1.8.9
-      with:
-         allowUpdates: yes
-         artifacts: dsi_studio_ubuntu_20.04.zip
-         name: "2021 October"
-         tag: "2021.10"
     - name: Update Release
-      uses: johnwbyrd/update-release@v1.0.0
+      uses: meeDamian/github-release@v2.0.3
       with:
          token: ${{ secrets.ACCESS_TOKEN }}
          files: dsi_studio_ubuntu_20.04.zip
-         release: "2021 October"
+         name: "2021 October"
          tag: "2021.10"
          prerelease: false
+         allow_override: true
     
   macos-build:
 
@@ -90,13 +84,13 @@ jobs:
          mv DSI-Studio-atlas build/dsi_studio.app/Contents/MacOS/atlas
          mv build/dsi_studio.app .
          /usr/local/opt/qt@5/bin/macdeployqt dsi_studio.app
-         rm -v !(dsi_studio.dmg)
 
     - name: Update Release
-      uses: johnwbyrd/update-release@v1.0.0
+      uses: meeDamian/github-release@v2.0.3
       with:
          token: ${{ secrets.ACCESS_TOKEN }}
          files: dsi_studio.dmg
-         release: "2021 October"
+         name: "2021 October"
          tag: "2021.10"
          prerelease: false
+         allow_override: true
