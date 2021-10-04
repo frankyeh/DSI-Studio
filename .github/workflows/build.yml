@@ -84,12 +84,13 @@ jobs:
          mv DSI-Studio-atlas build/dsi_studio.app/Contents/MacOS/atlas
          mv build/dsi_studio.app .
          /usr/local/opt/qt@5/bin/macdeployqt dsi_studio.app
-
+         zip dsi_studio_mac.zip  dsi_studio.dmg 
+         
     - name: Create Release
       uses: ncipollo/release-action@v1.8.9
       with:
          allowUpdates: true
-         artifacts: dsi_studio.dmg
+         artifacts: dsi_studio_mac.zip
          gzip: false
          name: "2021 October"
          tag: "2021.10.03"
