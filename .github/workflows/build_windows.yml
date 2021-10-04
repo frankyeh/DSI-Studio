@@ -11,13 +11,19 @@ jobs:
     steps:
       - uses: actions/checkout@v1
       - name: Install Qt
-        uses: jurplel/install-qt-action@v2.14.0
+        uses: jurplel/install-qt-action@v2
         with:
           version: 5.12.0
           modules: |
             qtcharts
             qtcreator
-    
+      - name: Build
+        run: |
+          call "%programfiles(x86)%\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
+          qmake
+          nmake
+          nmake check
+        shell: cmd
       - name: Download and install Boost
         uses: MarkusJx/install-boost@v2.0.0      
         with:
