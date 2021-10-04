@@ -4,10 +4,7 @@ on: [push]
 
 jobs:
   test:
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [windows-latest]
+    runs-on: windows-latest
     steps:
       - uses: actions/checkout@v1
       
@@ -31,8 +28,7 @@ jobs:
           move ${{ github.workspace }}/boost__/boost ${{ github.workspace }}/boost
           dir ${{ github.workspace }}/boost
           
-      - name: Build DSI Studio (Windows)
-        if: startsWith(matrix.os, 'windows')
+      - name: Build DSI Studio
         run: |
           call "%programfiles(x86)%\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
           mkdir -p build
@@ -41,47 +37,21 @@ jobs:
           nmake
         shell: cmd
 
-      - name: Build DSI Studio
-        if: (!startsWith(matrix.os, 'windows'))
-        run: |
-          mv TIPL tipl
-          mkdir -p build
-          cd build
-          qmake ../dsi_studio.pro
-          make
-          
       - name: Packaging
-        if: startsWith(matrix.os, 'ubuntu')
-        run: |
-          mkdir dsi_studio_ubuntu
-          cp -R other/*  dsi_studio_ubuntu     
-          chmod 755 build/dsi_studio
-          mv build/dsi_studio  dsi_studio_ubuntu 
-          rm -fr DSI-Studio-atlas/.git
-          mv DSI-Studio-atlas  dsi_studio_ubuntu/atlas   
-          zip -r dsi_studio_${{ matrix.os }}.zip  dsi_studio_ubuntu
-      - name: Packaging
-        if: startsWith(matrix.os, 'mac')
-        run: |
-          mv other/* build/dsi_studio.app/Contents/MacOS/
-          rm -fr DSI-Studio-atlas/.git
-          mv DSI-Studio-atlas build/dsi_studio.app/Contents/MacOS/atlas
-          mv build/dsi_studio.app .
-          /usr/local/opt/qt@5/bin/macdeployqt dsi_studio.app
-          zip -r dsi_studio_${{ matrix.os }}.zip  dsi_studio.app    
-      - name: Packaging
-        if: startsWith(matrix.os, 'mac')
         run: |
           mkdir dsi_studio_win
-          move build\dsi_studio.exe dsi_studio_win\
+          move other\color_map dsi_studio_win   
+          move other\device.txt dsi_studio_win   
+          move build\dsi_studio.exe dsi_studio_win
           windeployqt dsi_studio_win\dsi_studio.exe
           move DSI-Studio-atlas dsi_studio_win\atlas
           zip -r dsi_studio_${{ matrix.os }}.zip  dsi_studio_win  
+      - name: Get git tag
+        uses: little-core-labs/get-git-tag@v3.0.2
       - name: Create Release
         uses: ncipollo/release-action@v1.8.9
         with:
           allowUpdates: true
           artifacts: "*.zip"
-          name: "2021 October"
-          tag: "2021.10.03"
-          prerelease: false      
+          tag: ${{ steps.tag_name.outputs.tag }}
+          prerelease: false   
