@@ -45,7 +45,6 @@ jobs:
       with:
          allowUpdates: true
          artifacts: dsi_studio_ubuntu_20.04.zip
-         gzip: false
          name: "2021 October"
          tag: "2021.10.03"
          prerelease: false
@@ -84,14 +83,12 @@ jobs:
          mv DSI-Studio-atlas build/dsi_studio.app/Contents/MacOS/atlas
          mv build/dsi_studio.app .
          /usr/local/opt/qt@5/bin/macdeployqt dsi_studio.app
-         zip dsi_studio_mac.zip  dsi_studio.dmg 
          
     - name: Create Release
       uses: ncipollo/release-action@v1.8.9
       with:
          allowUpdates: true
-         artifacts: dsi_studio_mac.zip
-         gzip: false
+         artifacts: dsi_studio.dmg
          name: "2021 October"
          tag: "2021.10.03"
          prerelease: false
