@@ -39,7 +39,7 @@ jobs:
     - name: Upload a Build Artifact
       uses: actions/upload-artifact@v2.2.4
       with:
-        name: "DSI Studio"
+        name: DSI_Studio_Latest_Ubuntu
         path: "*.zip"
         if-no-files-found: error
         retention-days: 90
@@ -80,7 +80,7 @@ jobs:
     - name: Upload a Build Artifact
       uses: actions/upload-artifact@v2.2.4
       with:
-        name: "DSI Studio"
+        name: DSI_Studio_Latest_Mac
         path: "*.zip"
         if-no-files-found: error
         retention-days: 90
@@ -134,7 +134,7 @@ jobs:
     - name: Upload a Build Artifact
       uses: actions/upload-artifact@v2.2.4
       with:
-        name: "DSI Studio"
+        name: DSI_Studio_Latest_Windows
         path: "*.zip"
         if-no-files-found: error
         retention-days: 90
