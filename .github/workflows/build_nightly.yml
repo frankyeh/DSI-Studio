@@ -11,7 +11,7 @@ jobs:
     env:
       CXX: g++-9
       CFLAGS: -Werror
-      QT_SELECT: qt5
+      QT_SELECT: opt-qt512
     steps:
     - uses: actions/checkout@v1
     - name: install dependencies
@@ -122,7 +122,7 @@ jobs:
         
     - name: Build DSI Studio
       run: |
-        call "%programfiles(x86)%\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
+        for /f "usebackq delims=#" %a in (`"%programfiles(x86)%\Microsoft Visual Studio\Installer\vswhere" -latest -property installationPath`) do "%a\Common7\Tools\VsDevCmd.bat"
         mkdir -p build
         cd build
         qmake ../dsi_studio.pro 
