@@ -27,6 +27,12 @@ jobs:
           git clone https://github.com/frankyeh/TIPL.git
           git clone https://github.com/frankyeh/DSI-Studio-atlas.git
 
+      - name: Set up Visual Studio shell
+        if: startsWith(matrix.os, 'windows')
+        uses: egor-tensin/vs-shell@v2
+        with:
+          arch: x64
+          
       - name: build DSI Studio
         if: (!startsWith(matrix.os, 'windows'))
         run: |
@@ -38,7 +44,6 @@ jobs:
       - name: build DSI Studio
         if: startsWith(matrix.os, 'windows')
         run: |
-          for /f "usebackq delims=#" %a in (`"%programfiles(x86)%\Microsoft Visual Studio\Installer\vswhere" -latest -property installationPath`) do "%a\VC\Auxiliary\Build\vcvars32.bat"
           mkdir -p build
           cd build
           qmake ../dsi_studio.pro
