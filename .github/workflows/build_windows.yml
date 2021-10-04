@@ -26,8 +26,7 @@ jobs:
         run: |
           git clone https://github.com/frankyeh/TIPL.git
           git clone https://github.com/frankyeh/DSI-Studio-atlas.git
-          dir ${{ github.workspace }}/boost/boost
-          dir ${{ github.workspace }}/boost/include
+          dir ${{ github.workspace }}/boost/boost/include
           
       - name: Build DSI Studio (Windows)
         if: startsWith(matrix.os, 'windows')
@@ -35,7 +34,7 @@ jobs:
           call "%programfiles(x86)%\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
           mkdir -p build
           cd build
-          qmake QMAKE_INCDIR=${{ github.workspace }}/boost ../dsi_studio.pro 
+          qmake QMAKE_INCDIR=${{ github.workspace }}/boost/boost/include ../dsi_studio.pro 
           nmake
         shell: cmd
 
