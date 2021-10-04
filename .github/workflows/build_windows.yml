@@ -17,27 +17,23 @@ jobs:
           modules: |
             qtcharts
             qtcreator
+      - name: get TIPL and DSI Studio atlas
+        run: |
+          git clone https://github.com/frankyeh/TIPL.git
+          git clone https://github.com/frankyeh/DSI-Studio-atlas.git
       - name: Build
+        if: startsWith(matrix.os, 'windows')
         run: |
           call "%programfiles(x86)%\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
-          qmake
+          mkdir -p build
+          cd build
+          qmake ../dsi_studio.pro
           nmake
-          nmake check
         shell: cmd
       - name: Download and install Boost
         uses: MarkusJx/install-boost@v2.0.0      
         with:
           boost_version: 1.76.0
-      - name: get TIPL and DSI Studio atlas
-        run: |
-          git clone https://github.com/frankyeh/TIPL.git
-          git clone https://github.com/frankyeh/DSI-Studio-atlas.git
-
-      - name: Set up Visual Studio shell
-        if: startsWith(matrix.os, 'windows')
-        uses: egor-tensin/vs-shell@v2
-        with:
-          arch: x64
           
       - name: build DSI Studio
         if: (!startsWith(matrix.os, 'windows'))
@@ -47,18 +43,7 @@ jobs:
           cd build
           qmake ../dsi_studio.pro
           make
-      - name: build DSI Studio
-        if: startsWith(matrix.os, 'windows')
-        run: |
-          echo make build dir
-          mkdir -p build
-          cd build
-          echo qmake
-          qmake ../dsi_studio.pro -spec win32-msvc
-          echo jom
-          jom
-        working-directory: Software/PC_Application
-        shell: cmd
+          
       - name: Packaging
         if: startsWith(matrix.os, 'ubuntu')
         run: |
