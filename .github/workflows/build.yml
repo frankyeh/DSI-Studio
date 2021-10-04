@@ -14,19 +14,24 @@ jobs:
 
     steps:
     - uses: actions/checkout@v1
-
+    - name: get TIPL
+      uses: actions/checkout@v2.3.4
+      with:
+         repository: frankyeh/TIPL
+    - name: get Atlas
+      uses: actions/checkout@v2.3.4
+      with:
+         repository: frankyeh/DSI-Studio-atlas
+    
     - name: install dependencies
       run: |
          sudo apt update
          sudo apt full-upgrade -y 
          sudo apt install -y --no-install-recommends libboost-all-dev zlib1g-dev ca-certificates libqt5charts5-dev libqt5opengl5-dev
          sudo apt-get clean
-    - name: get TIPL
-      run: |
-         git clone https://github.com/frankyeh/TIPL.git
-         mv TIPL tipl
     - name: build
       run: |
+         mv TIPL tipl
          mkdir -p build
          cd build
          qmake ../dsi_studio.pro
@@ -37,7 +42,6 @@ jobs:
          cp -R other/*  dsi_studio_ubuntu20.04     
          chmod 755 build/dsi_studio
          mv build/dsi_studio  dsi_studio_ubuntu20.04 
-         git clone https://github.com/frankyeh/DSI-Studio-atlas.git
          mv DSI-Studio-atlas  dsi_studio_ubuntu20.04/atlas   
          zip -r dsi_studio_ubuntu_20.04.zip  dsi_studio_ubuntu20.04 
     - name: Create Release
@@ -58,18 +62,23 @@ jobs:
 
     steps:
     - uses: actions/checkout@v1
+    - name: get TIPL
+      uses: actions/checkout@v2.3.4
+      with:
+         repository: frankyeh/TIPL
+    - name: get Atlas
+      uses: actions/checkout@v2.3.4
+      with:
+         repository: frankyeh/DSI-Studio-atlas
 
     - name: install dependencies
       run: |
          brew update
          brew install qt5
          brew install boost
-    - name: get TIPL
+    - name: Build DSI Studio
       run: |
-         git clone https://github.com/frankyeh/TIPL.git
          mv TIPL tipl
-    - name: build
-      run: |
          mkdir -p build
          cd build
          export PATH="/usr/local/opt/qt@5/bin:$PATH" && export LDFLAGS="-L/usr/local/opt/qt@5/lib" && export CPPFLAGS="-I/usr/local/opt/qt@5/include" && export PKG_CONFIG_PATH="/usr/local/opt/qt@5/lib/pkgconfig"
@@ -79,7 +88,6 @@ jobs:
     - name: packaging
       run: |
          mv other/* build/dsi_studio.app/Contents/MacOS/
-         git clone https://github.com/frankyeh/DSI-Studio-atlas.git
          mv DSI-Studio-atlas build/dsi_studio.app/Contents/MacOS/atlas
          mv build/dsi_studio.app .
          /usr/local/opt/qt@5/bin/macdeployqt dsi_studio.app
