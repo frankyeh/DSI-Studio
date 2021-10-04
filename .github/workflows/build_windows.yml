@@ -1,9 +1,13 @@
 name: build DSI Studio
 
-on: [push]
+on:
+  push:
+    paths:
+      - '**.cpp'
+      - '**.hpp'
 
 jobs:
-  test:
+  windows_build:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v1
