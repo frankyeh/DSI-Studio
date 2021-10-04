@@ -2,9 +2,8 @@ name: Build DSI Studio (Unix)
 
 on:
   push:
-    paths:
-      - '**.cpp'
-      - '**.hpp'
+    tags:
+      - "*"
 
 jobs:
   linux-gcc-build:
