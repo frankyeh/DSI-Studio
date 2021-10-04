@@ -52,7 +52,7 @@ jobs:
         uses: TheDoctor0/zip-release@0.6.0
         with:
           filename: dsi_studio_win.zip
-          directory: dsi_studio_win
+          path: dsi_studio_win
       - name: Get tag
         id: tag
         uses: dawidd6/action-get-tag@v1
