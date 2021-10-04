@@ -44,9 +44,12 @@ jobs:
       - name: build DSI Studio
         if: startsWith(matrix.os, 'windows')
         run: |
+          echo make build dir
           mkdir -p build
           cd build
-          qmake ../dsi_studio.pro
+          echo qmake
+          qmake ../dsi_studio.pro -spec win32-msvc
+          echo jom
           jom
         working-directory: Software/PC_Application
         shell: cmd
