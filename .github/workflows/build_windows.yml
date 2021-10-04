@@ -42,7 +42,7 @@ jobs:
           mkdir dsi_studio_win
           move other\color_map dsi_studio_win   
           move other\device.txt dsi_studio_win   
-          move build\dsi_studio.exe dsi_studio_win
+          move build\release\dsi_studio.exe dsi_studio_win
           windeployqt dsi_studio_win\dsi_studio.exe
           move DSI-Studio-atlas dsi_studio_win\atlas
           zip -r dsi_studio_${{ matrix.os }}.zip  dsi_studio_win  
