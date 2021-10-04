@@ -1,0 +1,84 @@
+name: Test Installing Qt
+
+on: [push]
+
+jobs:
+  test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [windows-latest]
+    steps:
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v2.14.0
+        with:
+          version: 5.12.0
+          modules: qtcharts
+    
+      - name: Download and install Boost
+        uses: MarkusJx/install-boost@v2.0.0      
+    
+      - name: get TIPL
+        if: (!startsWith(matrix.os, 'windows'))
+        run: |
+          git clone https://github.com/frankyeh/TIPL.git
+          mv TIPL tipl
+
+      - name: get TIPL
+        if: startsWith(matrix.os, 'windows')
+        run: |
+          git clone https://github.com/frankyeh/TIPL.git
+          move TIPL tipl
+
+      - name: build DSI Studio
+        if: (!startsWith(matrix.os, 'windows'))
+        run: |
+          mkdir -p build
+          cd build
+          qmake ../dsi_studio.pro
+          make
+      - name: build DSI Studio
+        if: startsWith(matrix.os, 'windows')
+        run: |
+          mkdir -p build
+          cd build
+          qmake ../dsi_studio.pro
+          jom
+      - name: Packaging
+        if: startsWith(matrix.os, 'ubuntu')
+        run: |
+          mkdir dsi_studio_ubuntu
+          cp -R other/*  dsi_studio_ubuntu     
+          chmod 755 build/dsi_studio
+          mv build/dsi_studio  dsi_studio_ubuntu 
+          git clone https://github.com/frankyeh/DSI-Studio-atlas.git
+          rm -fr DSI-Studio-atlas/.git
+          mv DSI-Studio-atlas  dsi_studio_ubuntu/atlas   
+          zip -r dsi_studio_${{ matrix.os }}.zip  dsi_studio_ubuntu
+      - name: Packaging
+        if: startsWith(matrix.os, 'mac')
+        run: |
+          mv other/* build/dsi_studio.app/Contents/MacOS/
+          git clone https://github.com/frankyeh/DSI-Studio-atlas.git
+          rm -fr DSI-Studio-atlas/.git
+          mv DSI-Studio-atlas build/dsi_studio.app/Contents/MacOS/atlas
+          mv build/dsi_studio.app .
+          /usr/local/opt/qt@5/bin/macdeployqt dsi_studio.app
+          zip -r dsi_studio_${{ matrix.os }}.zip  dsi_studio.app    
+      - name: Packaging
+        if: startsWith(matrix.os, 'mac')
+        run: |
+          mkdir dsi_studio_win
+          move build\dsi_studio.exe dsi_studio_win\
+          windeployqt dsi_studio_win\dsi_studio.exe
+          git clone https://github.com/frankyeh/DSI-Studio-atlas.git
+          move DSI-Studio-atlas dsi_studio_win\atlas
+          zip -r dsi_studio_${{ matrix.os }}.zip  dsi_studio_win  
+      - name: Create Release
+        uses: ncipollo/release-action@v1.8.9
+        with:
+          allowUpdates: true
+          artifacts: "*.zip"
+          name: "2021 October"
+          tag: "2021.10.03"
+          prerelease: false      
