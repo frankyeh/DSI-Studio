@@ -1,4 +1,4 @@
-name: Build Release 
+name: Build Nightly 
 on: [push]
 
 jobs:
@@ -40,7 +40,7 @@ jobs:
       uses: actions/upload-artifact@v2.2.4
       with:
         name: "DSI Studio"
-        path: *.zip
+        path: "*.zip"
         if-no-files-found: error
         retention-days: 90
 
@@ -81,7 +81,7 @@ jobs:
       uses: actions/upload-artifact@v2.2.4
       with:
         name: "DSI Studio"
-        path: *.zip
+        path: "*.zip"
         if-no-files-found: error
         retention-days: 90
   windows_build:
@@ -135,6 +135,6 @@ jobs:
       uses: actions/upload-artifact@v2.2.4
       with:
         name: "DSI Studio"
-        path: *.zip
+        path: "*.zip"
         if-no-files-found: error
         retention-days: 90
