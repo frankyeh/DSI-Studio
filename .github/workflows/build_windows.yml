@@ -26,6 +26,7 @@ jobs:
         run: |
           git clone https://github.com/frankyeh/TIPL.git
           git clone https://github.com/frankyeh/DSI-Studio-atlas.git
+          mv ${{ github.workspace }}/boost/boost/include/boost* ${{ github.workspace }}/boost/boost/include/boost
           dir ${{ github.workspace }}/boost/boost/include
           
       - name: Build DSI Studio (Windows)
