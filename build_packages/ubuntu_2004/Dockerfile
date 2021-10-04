@@ -40,6 +40,7 @@ RUN cd /opt/dsi-studio \
   && cp -R src/other/* . \
   && rm -rf src build \
   && git clone https://github.com/frankyeh/DSI-Studio-atlas.git \
+  && rm -fr DSI-Studio-atlas/.git \
   && mv DSI-Studio-atlas atlas
 ENV PATH="$PATH:/opt/dsi-studio" 
 
