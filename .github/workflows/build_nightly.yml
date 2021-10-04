@@ -3,7 +3,11 @@ on: [push]
 
 jobs:
   linux-build:
-    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os: [ubuntu-20.04, ubuntu-18.04]
+      fail-fast: false
+    runs-on: ${{ matrix.os }}
     env:
       CXX: g++-9
       CFLAGS: -Werror
@@ -28,24 +32,28 @@ jobs:
         make
     - name: packaging
       run: |
-        mkdir dsi_studio_ubuntu20.04
-        cp -R other/*  dsi_studio_ubuntu20.04     
+        mkdir dsi_studio_ubuntu
+        cp -R other/*  dsi_studio_ubuntu    
         chmod 755 build/dsi_studio
-        mv build/dsi_studio  dsi_studio_ubuntu20.04 
+        mv build/dsi_studio  dsi_studio_ubuntu
         git clone https://github.com/frankyeh/DSI-Studio-atlas.git
         rm -fr DSI-Studio-atlas/.git
-        mv DSI-Studio-atlas  dsi_studio_ubuntu20.04/atlas   
-        zip -r dsi_studio_ubuntu_20.04.zip  dsi_studio_ubuntu20.04 
+        mv DSI-Studio-atlas  dsi_studio_ubuntu/atlas   
+        zip -r dsi_studio_ubuntu_${{ matrix.os }}.zip  dsi_studio_ubuntu
     - name: Upload a Build Artifact
       uses: actions/upload-artifact@v2.2.4
       with:
-        name: DSI_Studio_Latest_Ubuntu
+        name: "dsi_studio_latest_${{ matrix.os }}"
         path: "*.zip"
         if-no-files-found: error
         retention-days: 90
 
   macos-build:
-    runs-on: macos-latest
+    strategy:
+      matrix:
+        os: [macos-10.5, macos-11]
+      fail-fast: false
+    runs-on: ${{ matrix.os }}
     env:
       CFLAGS: -Werror
     steps:
@@ -80,12 +88,16 @@ jobs:
     - name: Upload a Build Artifact
       uses: actions/upload-artifact@v2.2.4
       with:
-        name: DSI_Studio_Latest_Mac
+        name: "dsi_studio_latest_${{ matrix.os }}"
         path: "*.zip"
         if-no-files-found: error
         retention-days: 90
   windows_build:
-    runs-on: windows-latest
+    strategy:
+      matrix:
+        os: [windows-2016, windows-2019, windows-2022]
+      fail-fast: false
+    runs-on: ${{ matrix.os }}
     steps:
     - uses: actions/checkout@v1
     - name: Install Qt
@@ -134,7 +146,7 @@ jobs:
     - name: Upload a Build Artifact
       uses: actions/upload-artifact@v2.2.4
       with:
-        name: DSI_Studio_Latest_Windows
+        name: "dsi_studio_latest_${{ matrix.os }}"
         path: "*.zip"
         if-no-files-found: error
         retention-days: 90
