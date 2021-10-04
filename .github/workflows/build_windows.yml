@@ -21,19 +21,19 @@ jobs:
         uses: MarkusJx/install-boost@v2.0.0      
         with:
           boost_version: 1.76.0
-
+          boost_install_dir: ${{ github.workspace }}/boost
       - name: get TIPL and DSI Studio atlas
         run: |
           git clone https://github.com/frankyeh/TIPL.git
           git clone https://github.com/frankyeh/DSI-Studio-atlas.git
-          SET
+          dir ${{ github.workspace }}/boost
       - name: Build DSI Studio (Windows)
         if: startsWith(matrix.os, 'windows')
         run: |
           call "%programfiles(x86)%\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
           mkdir -p build
           cd build
-          qmake QMAKE_INCDIR=../ ../dsi_studio.pro 
+          qmake QMAKE_INCDIR=${{ github.workspace }}/boost/include ../dsi_studio.pro 
           nmake
         shell: cmd
 
