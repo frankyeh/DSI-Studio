@@ -8,8 +8,8 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Get git tag
-        uses: little-core-labs/get-git-tag@v3.0.2
-      - name: Test
-        run: |
-          echo ${{ steps.tag_name.outputs.tag }}
+    - name: Get tag
+      id: tag
+      uses: dawidd6/action-get-tag@v1
+    - name: Use tag
+      run: echo ${{steps.tag.outputs.tag}}
