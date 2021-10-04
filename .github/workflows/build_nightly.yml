@@ -18,13 +18,14 @@ jobs:
       uses: jurplel/install-qt-action@v2
       with:
         version: 5.12.0
-        modules: qtcharts    
+        modules: qtcharts,qtopengl    
     - name: Install Boost
       run: |
         sudo apt update
         sudo apt full-upgrade -y 
-        sudo apt install -y --no-install-recommends libboost-all-dev zlib1g-dev ca-certificates
+        sudo apt install -y --no-install-recommends libboost-all-dev zlib1g-dev ca-certificates gcc-9 g++-9
         sudo apt-get clean
+        update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-9 99 --slave /usr/bin/cc cc /usr/bin/gcc-9 --slave /usr/bin/c++ c++ /usr/bin/g++-9 --slave   /usr/bin/g++ g++ /usr/bin/g++-9
     - name: Download TIPL and Atlases
       run: |
         git clone https://github.com/frankyeh/TIPL.git
@@ -126,7 +127,7 @@ jobs:
         
     - name: Build DSI Studio
       run: |
-        for /f "usebackq delims=#" %a in (`"%programfiles(x86)%\Microsoft Visual Studio\Installer\vswhere" -latest -property installationPath`) do "call %a\Common7\Tools\VsDevCmd.bat"
+        for /f "usebackq delims=#" %%a in (`"%programfiles(x86)%\Microsoft Visual Studio\Installer\vswhere" -latest -property installationPath`) do "call %%a\Common7\Tools\VsDevCmd.bat"
         mkdir -p build
         cd build
         qmake ../dsi_studio.pro 
