@@ -10,22 +10,20 @@ jobs:
         os: [windows-latest]
     steps:
       - uses: actions/checkout@v1
-      - name: Install Qt
-        uses: jurplel/install-qt-action@v2
+      
+      - name: Run vcpkg
+        uses: lukka/run-vcpkg@v4
         with:
-          version: 5.12.0
-          modules: qtcharts
+          vcpkgArguments: 'boost qt5.12'
+          vcpkgDirectory: '${{ github.workspace }}/vcpkg'
         
-      - name: Download and Install Boost
-        uses: MarkusJx/install-boost@v2.0.0      
-        with:
-          boost_version: 1.76.0
+        
+
 
       - name: get TIPL and DSI Studio atlas
         run: |
           git clone https://github.com/frankyeh/TIPL.git
           git clone https://github.com/frankyeh/DSI-Studio-atlas.git
-          dir %BOOST_ROOT%
       
       - name: Build DSI Studio (Windows)
         if: startsWith(matrix.os, 'windows')
@@ -33,7 +31,7 @@ jobs:
           call "%programfiles(x86)%\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
           mkdir -p build
           cd build
-          qmake QMAKE_INCDIR=%BOOST_ROOT%\include ../dsi_studio.pro 
+          qmake QMAKE_INCDIR= ../dsi_studio.pro 
           nmake
         shell: cmd
 
