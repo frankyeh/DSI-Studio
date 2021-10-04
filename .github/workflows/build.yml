@@ -48,7 +48,7 @@ jobs:
       with:
          allowUpdates: true
          artifacts: "*.zip"
-         tag: ${{ steps.tagName.outputs.tag }}
+         tag: ${GIT_TAG_NAME}
          prerelease: false
     
   macos-build:
@@ -94,5 +94,5 @@ jobs:
       with:
          allowUpdates: true
          artifacts: "*.zip"
-         tag: ${{ steps.tagName.outputs.tag }}
+         tag: ${GIT_TAG_NAME}
          prerelease: false
