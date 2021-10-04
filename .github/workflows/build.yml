@@ -1,6 +1,10 @@
-name: Build on Linux, Mac, Windows
+name: Build DSI Studio (Unix)
 
 on:
+  push:
+    paths:
+      - '**.cpp'
+      - '**.hpp'
 
 jobs:
   linux-gcc-build:
@@ -48,7 +52,7 @@ jobs:
       with:
          allowUpdates: true
          artifacts: "*.zip"
-         tag: ${GIT_TAG_NAME}
+         tag: ${{ steps.tag_name.outputs.tag }}
          prerelease: false
     
   macos-build:
@@ -94,5 +98,5 @@ jobs:
       with:
          allowUpdates: true
          artifacts: "*.zip"
-         tag: ${GIT_TAG_NAME}
+         tag: ${{ steps.tag_name.outputs.tag }}
          prerelease: false
