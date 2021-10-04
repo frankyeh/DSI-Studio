@@ -37,8 +37,9 @@ jobs:
         run: |
           mkdir -p build
           cd build
+          dir -l
           qmake ../dsi_studio.pro
-          jom
+          nmake
       - name: Packaging
         if: startsWith(matrix.os, 'ubuntu')
         run: |
