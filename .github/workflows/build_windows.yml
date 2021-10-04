@@ -44,14 +44,13 @@ jobs:
           move other\device.txt dsi_studio_win   
           move build\release\dsi_studio.exe dsi_studio_win
           windeployqt dsi_studio_win\dsi_studio.exe
-          move DSI-Studio-atlas dsi_studio_win\atlas
-          zip -r dsi_studio_${{ matrix.os }}.zip  dsi_studio_win  
+          move DSI-Studio-atlas dsi_studio_win\atlas  
       - name: Get git tag
         uses: little-core-labs/get-git-tag@v3.0.2
       - name: Create Release
         uses: ncipollo/release-action@v1.8.9
         with:
           allowUpdates: true
-          artifacts: "*.zip"
+          artifacts: dsi_studio_win
           tag: ${{ steps.tag_name.outputs.tag }}
           prerelease: false   
