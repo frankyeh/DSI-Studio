@@ -1,9 +1,10 @@
 name: Docker Image CI
 
 on:
-  release:
-    types:
-      - created
+  push:
+    paths:
+      - '**.cpp'
+      - '**.hpp'
 
 jobs:
 

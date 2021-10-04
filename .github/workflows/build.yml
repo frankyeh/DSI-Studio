@@ -1,7 +1,10 @@
 name: Build on Linux, Mac, Windows
 
-on: [push]
-
+on:
+  push:
+    paths:
+      - '**.cpp'
+      - '**.hpp'
 jobs:
   linux-gcc-build:
 
