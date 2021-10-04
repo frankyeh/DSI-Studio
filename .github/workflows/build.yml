@@ -44,13 +44,14 @@ jobs:
          rm -fr DSI-Studio-atlas/.git
          mv DSI-Studio-atlas  dsi_studio_ubuntu20.04/atlas   
          zip -r dsi_studio_ubuntu_20.04.zip  dsi_studio_ubuntu20.04 
+    - name: Get git tag
+      uses: little-core-labs/get-git-tag@v3.0.2
     - name: Create Release
       uses: ncipollo/release-action@v1.8.9
       with:
          allowUpdates: true
          artifacts: "*.zip"
-         name: "2021 October"
-         tag: "2021.10.03"
+         tag: ${{ steps.tagName.outputs.tag }}
          prerelease: false
     
   macos-build:
@@ -89,11 +90,12 @@ jobs:
          mv build/dsi_studio.app .
          /usr/local/opt/qt@5/bin/macdeployqt dsi_studio.app
          zip -r dsi_studio_mac.zip  dsi_studio.app
+    - name: Get git tag
+      uses: little-core-labs/get-git-tag@v3.0.2
     - name: Create Release
       uses: ncipollo/release-action@v1.8.9
       with:
          allowUpdates: true
          artifacts: "*.zip"
-         name: "2021 October"
-         tag: "2021.10.03"
+         tag: ${{ steps.tagName.outputs.tag }}
          prerelease: false
