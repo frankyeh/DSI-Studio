@@ -18,22 +18,16 @@ jobs:
       - name: Download and install Boost
         uses: MarkusJx/install-boost@v2.0.0      
         with:
-          version: 1.76.0
-      - name: get TIPL
-        if: (!startsWith(matrix.os, 'windows'))
+          boost_version: 1.76.0
+      - name: get TIPL and DSI Studio atlas
         run: |
           git clone https://github.com/frankyeh/TIPL.git
-          mv TIPL tipl
-
-      - name: get TIPL
-        if: startsWith(matrix.os, 'windows')
-        run: |
-          git clone https://github.com/frankyeh/TIPL.git
-          move TIPL tipl
+          git clone https://github.com/frankyeh/DSI-Studio-atlas.git
 
       - name: build DSI Studio
         if: (!startsWith(matrix.os, 'windows'))
         run: |
+          mv TIPL tipl
           mkdir -p build
           cd build
           qmake ../dsi_studio.pro
@@ -52,7 +46,6 @@ jobs:
           cp -R other/*  dsi_studio_ubuntu     
           chmod 755 build/dsi_studio
           mv build/dsi_studio  dsi_studio_ubuntu 
-          git clone https://github.com/frankyeh/DSI-Studio-atlas.git
           rm -fr DSI-Studio-atlas/.git
           mv DSI-Studio-atlas  dsi_studio_ubuntu/atlas   
           zip -r dsi_studio_${{ matrix.os }}.zip  dsi_studio_ubuntu
@@ -60,7 +53,6 @@ jobs:
         if: startsWith(matrix.os, 'mac')
         run: |
           mv other/* build/dsi_studio.app/Contents/MacOS/
-          git clone https://github.com/frankyeh/DSI-Studio-atlas.git
           rm -fr DSI-Studio-atlas/.git
           mv DSI-Studio-atlas build/dsi_studio.app/Contents/MacOS/atlas
           mv build/dsi_studio.app .
@@ -72,7 +64,6 @@ jobs:
           mkdir dsi_studio_win
           move build\dsi_studio.exe dsi_studio_win\
           windeployqt dsi_studio_win\dsi_studio.exe
-          git clone https://github.com/frankyeh/DSI-Studio-atlas.git
           move DSI-Studio-atlas dsi_studio_win\atlas
           zip -r dsi_studio_${{ matrix.os }}.zip  dsi_studio_win  
       - name: Create Release
