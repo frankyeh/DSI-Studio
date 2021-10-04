@@ -21,7 +21,7 @@ jobs:
         uses: MarkusJx/install-boost@v2.0.0      
         with:
           boost_version: 1.76.0
-          boost_install_dir: ${{ github.workspace }}/boost
+          boost_install_dir: ${{ github.workspace }}
       - name: get TIPL and DSI Studio atlas
         run: |
           git clone https://github.com/frankyeh/TIPL.git
