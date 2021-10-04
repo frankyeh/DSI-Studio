@@ -14,9 +14,7 @@ jobs:
         uses: jurplel/install-qt-action@v2
         with:
           version: 5.12.0
-          modules: |
-            qtcharts
-            qtcreator
+          modules: qtcharts
       - name: get TIPL and DSI Studio atlas
         run: |
           git clone https://github.com/frankyeh/TIPL.git
