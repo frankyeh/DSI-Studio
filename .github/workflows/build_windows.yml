@@ -48,6 +48,11 @@ jobs:
           move build\release\dsi_studio.exe dsi_studio_win
           windeployqt dsi_studio_win\dsi_studio.exe
           move DSI-Studio-atlas dsi_studio_win\atlas  
+      - name: Zip Release
+        uses: TheDoctor0/zip-release@0.6.0
+        with:
+          filename: dsi_studio_win.zip
+          directory: dsi_studio_win
       - name: Get tag
         id: tag
         uses: dawidd6/action-get-tag@v1
@@ -55,6 +60,6 @@ jobs:
         uses: ncipollo/release-action@v1.8.9
         with:
           allowUpdates: true
-          artifacts: dsi_studio_win
+          artifacts: "*.zip"
           tag: ${{steps.tag.outputs.tag}}
           prerelease: false   
