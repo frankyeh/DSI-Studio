@@ -45,7 +45,7 @@ public:
     QString output_format(void);
     bool command(QString cmd,QString param = "",QString param2 = "");
     template<typename fun_type>
-    void for_each_track(fun_type fun)
+    void for_each_track(fun_type&& fun)
     {
         for (int i = 0;i < rowCount();++i)
         {
