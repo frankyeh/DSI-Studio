@@ -1,0 +1,15 @@
+name: C/C++ CI
+
+on: [push]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Get git tag
+        uses: little-core-labs/get-git-tag@v3.0.2
+      - name: Test
+        run: |
+          echo ${{ steps.tag_name.outputs.tag }}
