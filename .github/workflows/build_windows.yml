@@ -15,11 +15,19 @@ jobs:
         with:
           version: 5.12.0
           modules: qtcharts
+          
       - name: get TIPL and DSI Studio atlas
         run: |
           git clone https://github.com/frankyeh/TIPL.git
           git clone https://github.com/frankyeh/DSI-Studio-atlas.git
-      - name: Build
+          
+
+      - name: Download and install Boost
+        uses: MarkusJx/install-boost@v2.0.0      
+        with:
+          boost_version: 1.76.0
+          
+      - name: Build DSI Studio
         if: startsWith(matrix.os, 'windows')
         run: |
           call "%programfiles(x86)%\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
@@ -28,12 +36,8 @@ jobs:
           qmake ../dsi_studio.pro
           nmake
         shell: cmd
-      - name: Download and install Boost
-        uses: MarkusJx/install-boost@v2.0.0      
-        with:
-          boost_version: 1.76.0
-          
-      - name: build DSI Studio
+
+      - name: Build DSI Studio
         if: (!startsWith(matrix.os, 'windows'))
         run: |
           mv TIPL tipl
