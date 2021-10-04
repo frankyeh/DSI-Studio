@@ -1,4 +1,4 @@
-name: Test Installing Qt
+name: build DSI Studio
 
 on: [push]
 
@@ -43,6 +43,8 @@ jobs:
           cd build
           qmake ../dsi_studio.pro
           jom
+        working-directory: Software/PC_Application
+        shell: cmd
       - name: Packaging
         if: startsWith(matrix.os, 'ubuntu')
         run: |
