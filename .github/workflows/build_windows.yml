@@ -2,9 +2,8 @@ name: build DSI Studio
 
 on:
   push:
-    paths:
-      - '**.cpp'
-      - '**.hpp'
+    tags:
+      - "*"
 
 jobs:
   windows_build:
@@ -49,12 +48,13 @@ jobs:
           move build\release\dsi_studio.exe dsi_studio_win
           windeployqt dsi_studio_win\dsi_studio.exe
           move DSI-Studio-atlas dsi_studio_win\atlas  
-      - name: Get git tag
-        uses: little-core-labs/get-git-tag@v3.0.2
+      - name: Get tag
+        id: tag
+        uses: dawidd6/action-get-tag@v1
       - name: Create Release
         uses: ncipollo/release-action@v1.8.9
         with:
           allowUpdates: true
           artifacts: dsi_studio_win
-          tag: ${{ steps.tag_name.outputs.tag }}
+          tag: ${{steps.tag.outputs.tag}}
           prerelease: false   
