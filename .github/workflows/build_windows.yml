@@ -26,8 +26,8 @@ jobs:
         run: |
           git clone https://github.com/frankyeh/TIPL.git
           git clone https://github.com/frankyeh/DSI-Studio-atlas.git
-          mv ${{ github.workspace }}/boost/boost/include/boost* ${{ github.workspace }}/boost/boost/include/boost
-          dir ${{ github.workspace }}/boost/boost/include
+          mv ${{ github.workspace }}/boost/boost/include/boost* ${{ github.workspace }}/boost
+          dir ${{ github.workspace }}/boost
           
       - name: Build DSI Studio (Windows)
         if: startsWith(matrix.os, 'windows')
