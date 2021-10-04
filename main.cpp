@@ -65,14 +65,14 @@ QStringList search_files(QString dir,QString filter)
 {
     QStringList dir_list,src_list;
     dir_list << dir;
-    for(unsigned int i = 0;i < dir_list.size();++i)
+    for(int i = 0;i < dir_list.size();++i)
     {
         QDir cur_dir = dir_list[i];
         QStringList new_list = cur_dir.entryList(QStringList(""),QDir::AllDirs|QDir::NoDotAndDotDot);
-        for(unsigned int index = 0;index < new_list.size();++index)
+        for(int index = 0;index < new_list.size();++index)
             dir_list << cur_dir.absolutePath() + "/" + new_list[index];
         QStringList file_list = cur_dir.entryList(QStringList(filter),QDir::Files|QDir::NoSymLinks);
-        for (unsigned int index = 0;index < file_list.size();++index)
+        for (int index = 0;index < file_list.size();++index)
             src_list << dir_list[i] + "/" + file_list[index];
     }
     return src_list;
@@ -214,7 +214,7 @@ int run_cmd(int ac, char *av[])
     program_option po;
     try
     {
-        std::cout << "DSI Studio " << __DATE__ << ", Fang-Cheng Yeh" << std::endl;
+        std::cout << "DSI Studio " << __DATE__ << " Fang-Cheng Yeh" << std::endl;
         if(!po.parse(ac,av))
         {
             std::cout << po.error_msg << std::endl;
