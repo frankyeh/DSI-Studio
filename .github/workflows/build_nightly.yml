@@ -23,7 +23,7 @@ jobs:
       run: |
         sudo apt update
         sudo apt full-upgrade -y 
-        sudo apt install -y --no-install-recommends libboost-all-dev zlib1g-dev ca-certificates gcc-9 g++-9
+        sudo apt install -y --no-install-recommends libboost-all-dev zlib1g-dev ca-certificates mesa-common-dev libglu1-mesa-dev libqt5opengl5-dev gcc-9 g++-9
         sudo apt-get clean
         sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-9 9
         sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-9 9
