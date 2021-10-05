@@ -1,4 +1,4 @@
-name: Build Nightly 
+name: Build Self Hosted 
 
 on: workflow_dispatch
   
