@@ -392,14 +392,6 @@ bool CustomSliceModel::initialize(const std::vector<std::string>& files,bool is_
         has_transform = true;
     }
 
-    // has mapping.txt saved load it
-    if(std::filesystem::exists((files[0]+".mapping.txt")))
-    {
-        load_mapping((files[0]+".mapping.txt").c_str());
-        has_transform = true;
-    }
-
-
     // handle registration
     {
         if(!has_transform)
@@ -443,10 +435,6 @@ void CustomSliceModel::argmin(tipl::reg::reg_type reg_type)
     tipl::const_pointer_image<3,float> to = source_images;
     tipl::transformation_matrix<float> M;
 
-
-    tipl::affine_transform_2d<float> a;
-    tipl::transformation_matrix_2d<float> m;
-
     auto from = handle->view_item[0].get_image();
     // align brain top
     float z_shift = (float(handle->dim[2])*handle->vs[2]-float(to.shape()[2])*vs[2])*0.1f;
@@ -458,8 +446,6 @@ void CustomSliceModel::argmin(tipl::reg::reg_type reg_type)
     M.save_to_transform(invT.begin());
     handle->view_item[view_id].T = T = tipl::inverse(invT);
     handle->view_item[view_id].iT = invT;
-    if(!terminated)
-        save_mapping((source_file_name+".mapping.txt").c_str());
     running = false;
 }
 // ---------------------------------------------------------------------------
