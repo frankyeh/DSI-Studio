@@ -1,9 +1,5 @@
 name: Build Nightly 
-on:
-  push:
-    paths:
-      - '**.cpp'
-      - '**.hpp'
+
 jobs:
   linux-build:
     strategy:
