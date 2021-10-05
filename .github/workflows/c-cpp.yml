@@ -1,10 +1,7 @@
 name: C/C++ CI
 
-on:
-  push:
-    branches: [ master ]
-  pull_request:
-    branches: [ master ]
+on: workflow_dispatch
+
 
 jobs:
   build:
@@ -14,4 +11,5 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: test
-      dir /w
+      run: |
+        dir /w
