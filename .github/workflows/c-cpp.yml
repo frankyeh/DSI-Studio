@@ -1,9 +1,6 @@
 name: C/C++ CI
 
-on:
-  push:
-    paths:
-      - '*c-cpp.yml'
+on: [push] 
 
 jobs:
   build:
