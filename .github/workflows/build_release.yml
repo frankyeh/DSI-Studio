@@ -74,9 +74,6 @@ jobs:
         mv build/dsi_studio  dsi_studio_ubuntu
         mv DSI-Studio-atlas  dsi_studio_ubuntu/atlas   
         zip -r dsi_studio_ubuntu_${{ matrix.os }}.zip  dsi_studio_ubuntu
-    - name: Get tag
-      id: tag
-      uses: dawidd6/action-get-tag@v1
     - name: Create Release
       uses: ncipollo/release-action@v1.8.9
       with:
@@ -121,9 +118,6 @@ jobs:
         mv build/dsi_studio.app .
         /usr/local/opt/qt@5/bin/macdeployqt dsi_studio.app
         zip -r dsi_studio_mac.zip  dsi_studio.app
-    - name: Get tag
-      id: tag
-      uses: dawidd6/action-get-tag@v1
     - name: Create Release
       uses: ncipollo/release-action@v1.8.9
       with:
@@ -183,9 +177,6 @@ jobs:
         filename: dsi_studio_win.zip
         exclusions: .git
         path: dsi_studio_win
-    - name: Get tag
-      id: tag
-      uses: dawidd6/action-get-tag@v1
     - name: Create Release
       uses: ncipollo/release-action@v1.8.9
       with:
