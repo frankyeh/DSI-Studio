@@ -648,34 +648,34 @@ void reconstruction_window::on_SlicePos_valueChanged(int position)
     show_view(scene,slice_image);
 }
 
-void rec_motion_correction(ImageModel* handle)
+void rec_motion_correction(ImageModel* handle,bool eddy)
 {
     begin_prog("correcting motion...",true);
-    tipl::image<3> from(handle->src_dwi_data[0],handle->voxel.dim);
-    tipl::filter::sobel(from);
+    tipl::image<3> from(handle->dwi_sum);
     tipl::normalize(from,1.0f);
-    tipl::par_for2(handle->src_bvalues.size(),[&](unsigned int i,int id)
+    tipl::affine_transform<float> arg;
+    arg.rotation[0] = 0.01f;
+    arg.rotation[1] = 0.01f;
+    arg.rotation[2] = 0.01f;
+    arg.translocation[0] = 0.01f;
+    arg.translocation[0] = 0.01f;
+    arg.translocation[0] = 0.01f;
+    for(unsigned int i = 0;check_prog(i,handle->src_bvalues.size());++i)
     {
-        if(i == 0 || prog_aborted())
-            return;
-        if(id == 0)
-            check_prog(i*99/handle->src_bvalues.size(),100);
-
         tipl::image<3> to(handle->src_dwi_data[i],handle->voxel.dim);
-        tipl::filter::sobel(to);
+        tipl::filter::gaussian(to);
+        tipl::filter::gaussian(to);
         tipl::normalize(to,1.0f);
-
-        tipl::affine_transform<double> arg;
-        arg.translocation[0] = 0.05;
         bool terminated = false;
         tipl::reg::linear(from,handle->voxel.vs,to,handle->voxel.vs,
-                                  arg,tipl::reg::affine,tipl::reg::correlation(),terminated,0.01,0,tipl::reg::narrow_bound);
-        tipl::reg::linear(from,handle->voxel.vs,to,handle->voxel.vs,
-                                  arg,tipl::reg::affine,tipl::reg::correlation(),terminated,0.001,0,tipl::reg::narrow_bound);
+                                  arg,eddy ? tipl::reg::affine : tipl::reg::rigid_body,
+                                  tipl::reg::correlation(),terminated,0.001,0,tipl::reg::narrow_bound);
         handle->rotate_one_dwi(i,tipl::transformation_matrix<double>(arg,handle->voxel.dim,handle->voxel.vs,
                                                                      handle->voxel.dim,handle->voxel.vs));
-    });
-    check_prog(1,1);
+        std::cout << "registeration at dwi (" << i+1 << "/" << handle->src_bvalues.size() << ")=" << std::endl;
+        std::cout << arg << std::flush;
+    }
+
 }
 
 bool add_other_image(ImageModel* handle,QString name,QString filename)
@@ -954,8 +954,7 @@ void reconstruction_window::on_actionSave_SRC_file_as_triggered()
 
 void reconstruction_window::on_actionEddy_Motion_Correction_triggered()
 {
-    rec_motion_correction(handle.get());
-
+    rec_motion_correction(handle.get(),false);
     if(!prog_aborted())
     {
         handle->calculate_dwi_sum(true);

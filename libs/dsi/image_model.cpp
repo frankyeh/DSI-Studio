@@ -717,16 +717,21 @@ void ImageModel::flip_dwi(unsigned char type)
     voxel.dwi_data.clear();
 }
 // used in eddy correction for each dwi
-void ImageModel::rotate_one_dwi(unsigned int dwi_index,const tipl::transformation_matrix<double>& affine)
+void ImageModel::rotate_one_dwi(unsigned int dwi_index,const tipl::transformation_matrix<double>& T)
 {
     tipl::image<3> tmp(voxel.dim);
     auto I = tipl::make_image(const_cast<unsigned short*>(src_dwi_data[dwi_index]),voxel.dim);
-    tipl::resample(I,tmp,affine,tipl::cubic);
+    tipl::resample(I,tmp,T,tipl::cubic);
     tipl::lower_threshold(tmp,0);
     std::copy(tmp.begin(),tmp.end(),I.begin());
     // rotate b-table
-    tipl::matrix<3,3,float> iT = tipl::inverse(affine.sr);
-    src_bvectors[dwi_index].rotate(iT);
+    tipl::affine_transform<double> arg;
+    T.to_affine_transform(arg,dwi_sum.shape(),voxel.vs,dwi_sum.shape(),voxel.vs);
+    tipl::matrix<3,3,float> r;
+    tipl::rotation_matrix(arg.rotation,r.begin(),tipl::vdim<3>());
+    r.inv();
+
+    src_bvectors[dwi_index].rotate(r);
     src_bvectors[dwi_index].normalize();
 }
 

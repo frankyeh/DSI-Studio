@@ -16,7 +16,7 @@
 
 extern std::vector<std::string> fa_template_list,iso_template_list;
 size_t match_template(float volume);
-void rec_motion_correction(ImageModel* handle);
+void rec_motion_correction(ImageModel* handle,bool);
 void calculate_shell(const std::vector<float>& bvalues,std::vector<unsigned int>& shell);
 bool is_dsi_half_sphere(const std::vector<unsigned int>& shell);
 bool is_dsi(const std::vector<unsigned int>& shell);
@@ -129,10 +129,10 @@ int rec(program_option& po)
         src.rotate(I.shape(),vs,T);
     }
 
-    if(po.get("motion_correction",int(0)))
+    if(po.has("motion_correction"))
     {
-        std::cout << "correct for motion and eddy current..." << std::endl;
-        rec_motion_correction(&src);
+        std::cout << "correct for motion..." << std::endl;
+        rec_motion_correction(&src,po.get("motion_correction",0));
         std::cout << "done." <<std::endl;
     }
 
