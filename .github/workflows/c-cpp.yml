@@ -9,5 +9,6 @@ jobs:
 
     steps:
     - name: configure
-      run: call "%programfiles(x86)%\Microsoft Visual Studio\Installer\vswhere" -latest -property installationPath
+      run: |
+        "%programfiles(x86)%\Microsoft Visual Studio\Installer\vswhere" -latest -property installationPath
           
