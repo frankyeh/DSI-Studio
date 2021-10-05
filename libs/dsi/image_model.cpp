@@ -223,10 +223,18 @@ std::string ImageModel::check_b_table(void)
             tipl::vector<3> vs;
             tipl::shape<3> geo;
             tipl::affine_transform<float> arg;
-            if(!arg_to_mni(2.0f,vs,geo,arg))
-                template_fib.reset();
+            if(template_fib->dim == voxel.dim)
+            {
+                std::cout << "image already rotated ac-pc" << std::endl;
+                T.sr[0] = T.sr[4] = T.sr[8] = 1.0f;
+            }
             else
-                T = tipl::transformation_matrix<float>(arg,geo,vs,voxel.dim,voxel.vs);
+            {
+                if(!arg_to_mni(2.0f,vs,geo,arg))
+                    template_fib.reset();
+                else
+                    T = tipl::transformation_matrix<float>(arg,geo,vs,voxel.dim,voxel.vs);
+            }
         }
     }
     if(template_fib.get())
@@ -881,6 +889,42 @@ bool ImageModel::rotate_to_mni(float resolution)
     return true;
 }
 
+void ImageModel::correct_motion(bool eddy)
+{
+    if(is_human_data())
+        rotate_to_mni(2.0f);
+    begin_prog("correcting motion...",true);
+    tipl::image<3> from(dwi_sum);
+    tipl::normalize(from,1.0f);
+    tipl::affine_transform<float> arg;
+    arg.rotation[0] = 0.01f;
+    arg.rotation[1] = 0.01f;
+    arg.rotation[2] = 0.01f;
+    arg.translocation[0] = 0.01f;
+    arg.translocation[0] = 0.01f;
+    arg.translocation[0] = 0.01f;
+    for(unsigned int i = 0;check_prog(i,src_bvalues.size());++i)
+    {
+        tipl::image<3> to(src_dwi_data[i],voxel.dim);
+        tipl::filter::gaussian(to);
+        tipl::filter::gaussian(to);
+        tipl::normalize(to,1.0f);
+        bool terminated = false;
+        if(src_bvalues[i] > 500.0f)
+            tipl::reg::linear(from,voxel.vs,to,voxel.vs,
+                                  arg,eddy ? tipl::reg::affine : tipl::reg::rigid_body,
+                                  tipl::reg::correlation(),terminated,0.001,0,tipl::reg::narrow_bound);
+        else
+            tipl::reg::linear(from,voxel.vs,to,voxel.vs,
+                              arg,eddy ? tipl::reg::affine : tipl::reg::rigid_body,
+                              tipl::reg::mutual_information(),terminated,0.001,0,tipl::reg::narrow_bound);
+
+        rotate_one_dwi(i,tipl::transformation_matrix<double>(arg,voxel.dim,voxel.vs,
+                                                                     voxel.dim,voxel.vs));
+        std::cout << "registeration at dwi (" << i+1 << "/" << src_bvalues.size() << ")=" << std::endl;
+        std::cout << arg << std::flush;
+    }
+}
 void ImageModel::trim(void)
 {
     tipl::shape<3> range_min,range_max;

@@ -275,8 +275,10 @@ public:
     bool arg_to_mni(float resolution,tipl::vector<3>& vs,tipl::shape<3>& new_geo,tipl::affine_transform<float>& T);
     bool rotate_to_mni(float resolution);
     void trim(void);
+    void correct_motion(bool eddy);
     bool distortion_correction(const char* file_name);
     bool compare_src(const char* file_name);
+
 public:
     bool command(std::string cmd,std::string param = "");
     bool run_steps(std::string steps);
