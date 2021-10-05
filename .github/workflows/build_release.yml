@@ -1,7 +1,11 @@
 name: Build Release 
 on:
-  release:
-    types: [edited,published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag'
+        required: true
+        default: '2021.10.05'
 jobs:
   docker_build:
     runs-on: ubuntu-latest
@@ -78,7 +82,7 @@ jobs:
       with:
         allowUpdates: true
         artifacts: "*.zip"
-        tag: ${{steps.tag.outputs.tag}}
+        tag: ${{ github.event.inputs.tag }}
         prerelease: false  
     
   macos-build:
@@ -125,7 +129,7 @@ jobs:
       with:
         allowUpdates: true
         artifacts: "*.zip"
-        tag: ${{steps.tag.outputs.tag}}
+        tag: ${{ github.event.inputs.tag }}
         prerelease: false
 
   windows_build:
@@ -187,5 +191,5 @@ jobs:
       with:
         allowUpdates: true
         artifacts: "*.zip"
-        tag: ${{steps.tag.outputs.tag}}
+        tag: ${{ github.event.inputs.tag }}
         prerelease: false  
