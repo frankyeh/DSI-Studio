@@ -3,7 +3,7 @@ name: C/C++ CI
 on:
   push:
     paths:
-      - 'c-cpp.yml'
+      - '*c-cpp.yml'
 
 jobs:
   build:
