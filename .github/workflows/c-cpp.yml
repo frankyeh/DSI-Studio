@@ -10,5 +10,8 @@ jobs:
     steps:
     - name: configure
       run: |
-        "%programfiles(x86)%\Microsoft Visual Studio\Installer\vswhere" -latest -property installationPath
+        for /f "usebackq tokens=*" %%i in (`vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath`) do (
+          set InstallDir=%%i
+          call "%InstallDir%\Common7\Tools\vsdevcmd.bat"
+        )
           
