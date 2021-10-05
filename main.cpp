@@ -256,7 +256,7 @@ int run_cmd(int ac, char *av[])
             source.find(',') != std::string::npos))
         {
             std::vector<std::string> source_files;
-            get_filenames_from("source",source_files);
+            get_filenames_from(source,source_files);
             for (size_t i = 0;i < source_files.size();++i)
             {
                 std::cout << "Process file:" << source_files[i] << std::endl;
