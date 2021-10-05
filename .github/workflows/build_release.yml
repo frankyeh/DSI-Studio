@@ -1,8 +1,7 @@
 name: Build Release 
 on:
-  push:
-    tags:
-      - "*"
+  release:
+    types: [edited,published]
 jobs:
   docker_build:
     runs-on: ubuntu-latest
