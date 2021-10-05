@@ -1,5 +1,8 @@
 name: Build Nightly 
-on: [push]
+on:
+  push:
+    paths:
+    - 'build_nightly.yml'
 
 jobs:
   linux-build:
