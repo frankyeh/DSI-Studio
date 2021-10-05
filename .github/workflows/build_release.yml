@@ -1,7 +1,7 @@
 name: Build Release 
 on:
   release:
-    types: [edited]
+    types: [published]
 
 jobs:
   docker_build:
