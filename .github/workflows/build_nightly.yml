@@ -1,6 +1,9 @@
 name: Build Nightly 
-on: [push]
-
+on:
+  push:
+    paths:
+      - '**.cpp'
+      - '**.hpp'
 jobs:
   linux-build:
     strategy:
@@ -58,7 +61,7 @@ jobs:
   macos-build:
     strategy:
       matrix:
-        os: [macos-10.5, macos-11]
+        os: [macos-11]
       fail-fast: false
     runs-on: ${{ matrix.os }}
     env:
@@ -76,7 +79,7 @@ jobs:
         git clone https://github.com/frankyeh/DSI-Studio-atlas.git
         rm -fr DSI-Studio-atlas/.git
         mv TIPL tipl
-    - name: build
+    - name: Build DSI Studio
       run: |
         mkdir -p build
         cd build
@@ -84,7 +87,7 @@ jobs:
         qmake ../dsi_studio.pro QMAKE_INCDIR=/usr/local/Cellar/boost/1.76.0/include
         make
         cd ..
-    - name: packaging
+    - name: Packaging
       run: |
         mv other/* build/dsi_studio.app/Contents/MacOS/
         mv DSI-Studio-atlas build/dsi_studio.app/Contents/MacOS/atlas
@@ -101,7 +104,7 @@ jobs:
   windows_build:
     strategy:
       matrix:
-        os: [windows-2016, windows-2019]
+        os: [ windows-2019]
       fail-fast: false
     runs-on: ${{ matrix.os }}
     steps:
