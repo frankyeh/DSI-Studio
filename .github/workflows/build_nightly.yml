@@ -18,7 +18,9 @@ jobs:
       uses: jurplel/install-qt-action@v2
       with:
         version: 5.12.0
-        modules: qtcharts,qtopengl    
+        modules: |
+          qtcharts
+          qtopengl    
     - name: Install Boost
       run: |
         sudo apt update
