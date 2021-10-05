@@ -1,0 +1,16 @@
+name: C/C++ CI
+
+on:
+  push:
+    paths:
+      - 'c-cpp.yml'
+
+jobs:
+  build:
+
+    runs-on: windows-2022
+
+    steps:
+    - name: configure
+      run: call "%programfiles(x86)%\Microsoft Visual Studio\Installer\vswhere" -latest -property installationPath
+          
