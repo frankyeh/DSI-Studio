@@ -169,7 +169,7 @@ void export_track_info(program_option& po,std::shared_ptr<fib_data> handle,
             vs = handle->vs;
 
             // t1t2
-            if(po.has("t1t2"))
+            if(cmd == "tdi_t1t2")
             {
                 if(!get_t1t2_nifti(po.get("t1t2"),handle,dim,vs,tr))
                     return;
