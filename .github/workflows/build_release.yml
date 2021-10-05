@@ -1,7 +1,11 @@
 name: Build Release 
 on:
-  release:
-    types: [edited,published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag'
+        required: true
+        default: '2021.10.05'
 jobs:
   docker_build:
     runs-on: ubuntu-latest
@@ -70,15 +74,12 @@ jobs:
         mv build/dsi_studio  dsi_studio_ubuntu
         mv DSI-Studio-atlas  dsi_studio_ubuntu/atlas   
         zip -r dsi_studio_ubuntu_${{ matrix.os }}.zip  dsi_studio_ubuntu
-    - name: Get tag
-      id: tag
-      uses: dawidd6/action-get-tag@v1
     - name: Create Release
       uses: ncipollo/release-action@v1.8.9
       with:
         allowUpdates: true
         artifacts: "*.zip"
-        tag: ${{steps.tag.outputs.tag}}
+        tag: ${{ github.event.inputs.tag }}
         prerelease: false  
     
   macos-build:
@@ -117,15 +118,12 @@ jobs:
         mv build/dsi_studio.app .
         /usr/local/opt/qt@5/bin/macdeployqt dsi_studio.app
         zip -r dsi_studio_mac.zip  dsi_studio.app
-    - name: Get tag
-      id: tag
-      uses: dawidd6/action-get-tag@v1
     - name: Create Release
       uses: ncipollo/release-action@v1.8.9
       with:
         allowUpdates: true
         artifacts: "*.zip"
-        tag: ${{steps.tag.outputs.tag}}
+        tag: ${{ github.event.inputs.tag }}
         prerelease: false
 
   windows_build:
@@ -179,13 +177,10 @@ jobs:
         filename: dsi_studio_win.zip
         exclusions: .git
         path: dsi_studio_win
-    - name: Get tag
-      id: tag
-      uses: dawidd6/action-get-tag@v1
     - name: Create Release
       uses: ncipollo/release-action@v1.8.9
       with:
         allowUpdates: true
         artifacts: "*.zip"
-        tag: ${{steps.tag.outputs.tag}}
+        tag: ${{ github.event.inputs.tag }}
         prerelease: false  

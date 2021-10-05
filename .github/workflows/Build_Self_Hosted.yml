@@ -1,0 +1,63 @@
+name: Build Self Hosted 
+
+on: workflow_dispatch
+  
+jobs:
+  windows_build:
+    strategy:
+      matrix:
+        os: [self-hosted]
+      fail-fast: false
+    runs-on: ${{ matrix.os }}
+    steps:
+    - uses: actions/checkout@v1
+    - name: Install Qt
+      uses: jurplel/install-qt-action@v2
+      with:
+        version: 5.12.0
+        modules: qtcharts qtopengl    
+        
+    - name: Download and Install Boost
+      uses: MarkusJx/install-boost@v2.0.0      
+      with:
+        boost_version: 1.76.0
+        boost_install_dir: ${{ github.workspace }}
+    - name: get TIPL and DSI Studio atlas
+      run: |
+        git clone https://github.com/frankyeh/TIPL.git
+        git clone https://github.com/frankyeh/DSI-Studio-atlas.git
+        move ${{ github.workspace }}/boost ${{ github.workspace }}/boost_
+        move ${{ github.workspace }}/boost_/boost/include/boost* ${{ github.workspace }}/boost__
+        move ${{ github.workspace }}/boost__/boost ${{ github.workspace }}/boost
+        dir ${{ github.workspace }}/boost
+        
+    - name: Build DSI Studio
+      run: |
+        for /f "usebackq delims=#" %%a in (`"%programfiles(x86)%\Microsoft Visual Studio\Installer\vswhere" -latest -property installationPath`) do call "%%a\Common7\Tools\VsDevCmd.bat" -arch=x64
+        mkdir -p build
+        cd build
+        qmake ../dsi_studio.pro 
+        nmake
+      shell: cmd
+
+    - name: Packaging
+      run: |
+        mkdir dsi_studio_win
+        move other\color_map dsi_studio_win   
+        move other\device.txt dsi_studio_win   
+        move build\release\dsi_studio.exe dsi_studio_win
+        windeployqt dsi_studio_win\dsi_studio.exe
+        move DSI-Studio-atlas dsi_studio_win\atlas  
+    - name: Zip Release
+      uses: TheDoctor0/zip-release@0.6.0
+      with:
+        filename: dsi_studio_win.zip
+        exclusions: .git
+        path: dsi_studio_win
+    - name: Upload a Build Artifact
+      uses: actions/upload-artifact@v2.2.4
+      with:
+        name: "dsi_studio_latest_${{ matrix.os }}"
+        path: "*.zip"
+        if-no-files-found: error
+        retention-days: 90

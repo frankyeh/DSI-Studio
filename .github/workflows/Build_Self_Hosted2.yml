@@ -1,0 +1,12 @@
+name: Build Self Hosted2 
+on:
+  workflow_dispatch:
+
+jobs:
+  bridge:
+    runs-on: linux
+    steps:
+    - name: Bridge
+      run: |
+        ls -l
+
