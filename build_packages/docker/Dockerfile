@@ -8,7 +8,6 @@ RUN apt update && apt full-upgrade -y && \
   unzip \
   curl \
   make \
-  binutils \ 
   git \
   libboost-all-dev \
   zlib1g-dev \
@@ -25,7 +24,7 @@ ADD "https://api.github.com/repos/frankyeh/DSI-Studio/commits?per_page=1" latest
 ADD "https://api.github.com/repos/frankyeh/TIPL/commits?per_page=1" latest_commit
 
 # Fix issues: Singularity container cannot load libQt5Core.so.5 on CentOS 7
-RUN strip --remove-sectrion=.note.ABI-tag /usr/lib/x86_64-linux-gnu/libQt5Core.so.5
+RUN strip --remove-section=.note.ABI-tag /usr/lib/x86_64-linux-gnu/libQt5Core.so.5
 RUN ldconfig
 ENV PATH="$PATH:/opt/dsi-studio" 
 
