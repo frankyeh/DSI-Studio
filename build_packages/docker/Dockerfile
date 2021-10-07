@@ -44,7 +44,7 @@ RUN cd /opt/dsi-studio \
   && mv DSI-Studio-atlas atlas
 
 # Fix issues: Singularity container cannot load libQt5Core.so.5 on CentOS 7
-RUN strip  --remove-sectrion=.note.ABI-tag /usr/lib/x86_64-linux-gnu/libQt5Core.so.5
+RUN strip --remove-sectrion=.note.ABI-tag /usr/lib/x86_64-linux-gnu/libQt5Core.so.5
 RUN ldconfig
 
 ENV PATH="$PATH:/opt/dsi-studio" 
