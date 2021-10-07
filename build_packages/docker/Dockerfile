@@ -23,6 +23,12 @@ RUN apt update && apt full-upgrade -y && \
 ADD "https://api.github.com/repos/frankyeh/DSI-Studio/commits?per_page=1" latest_commit
 ADD "https://api.github.com/repos/frankyeh/TIPL/commits?per_page=1" latest_commit
 
+# Fix issues: Singularity container cannot load libQt5Core.so.5 on CentOS 7
+RUN strip --remove-sectrion=.note.ABI-tag /usr/lib/x86_64-linux-gnu/libQt5Core.so.5
+RUN ldconfig
+ENV PATH="$PATH:/opt/dsi-studio" 
+
+
 RUN mkdir /opt/dsi-studio \
   && cd /opt/dsi-studio \
   && git clone https://github.com/frankyeh/DSI-Studio.git \
@@ -43,10 +49,5 @@ RUN cd /opt/dsi-studio \
   && rm -fr DSI-Studio-atlas/.git \
   && mv DSI-Studio-atlas atlas
 
-# Fix issues: Singularity container cannot load libQt5Core.so.5 on CentOS 7
-RUN strip --remove-sectrion=.note.ABI-tag /usr/lib/x86_64-linux-gnu/libQt5Core.so.5
-RUN ldconfig
-
-ENV PATH="$PATH:/opt/dsi-studio" 
 
 
