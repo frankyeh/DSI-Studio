@@ -1,13 +1,14 @@
 FROM ubuntu:20.04
 
 ENV DEBIAN_FRONTEND noninteractive
-RUN strip
+
 # Prepare environment
 RUN apt update && apt full-upgrade -y && \
   apt install -y --no-install-recommends \
   unzip \
   curl \
   make \
+  binutils \ 
   git \
   libboost-all-dev \
   zlib1g-dev \
