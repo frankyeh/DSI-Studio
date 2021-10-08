@@ -27,4 +27,6 @@ jobs:
         context: .
         file: build_packages/docker/Dockerfile
         push: true
-        tags: dsistudio/dsistudio:latest
+        tags: |
+            dsistudio/dsistudio:latest
+            ghcr.io/frankyeh/dsistudio:latest
