@@ -1,0 +1,27 @@
+
+name: Build Docker
+on: workflow_dispatch
+jobs:
+  docker_build:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+    - name: Set up QEMU
+      uses: docker/setup-qemu-action@v1
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v1
+    - name: Build and push
+      uses: docker/build-push-action@v2
+      with:
+        context: .
+        file: build_packages/ubuntu_2004/Dockerfile
+        push: false
+        outputs: dsi-studio
+    - name: Packaging
+      run: |
+        zip -r dsi_studio_ubuntu_20.04.zip dsi_studio
+    - name: Upload a Build Artifact
+      uses: actions/upload-artifact@v2.2.4
+      with:
+        path: *.zip
