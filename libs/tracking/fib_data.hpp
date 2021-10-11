@@ -179,7 +179,7 @@ public:
     bool is_human_data = true;
     bool is_qsdr = false;
     bool is_mni_image = false;
-    bool is_template_space= false;
+    bool is_template_space = false;
     bool trackable = true;
 public:
     fiber_directions dir;
