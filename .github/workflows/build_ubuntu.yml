@@ -20,7 +20,8 @@ jobs:
         outputs: dsi-studio
     - name: Packaging
       run: |
-        zip -r dsi_studio_ubuntu_20.04.zip dsi_studio
+        ls -l
+        zip -r dsi_studio_ubuntu_20.04.zip dsi-studio
     - name: Upload a Build Artifact
       uses: actions/upload-artifact@v2.2.4
       with:
