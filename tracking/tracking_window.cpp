@@ -897,7 +897,7 @@ bool tracking_window::eventFilter(QObject *obj, QEvent *event)
                 .arg(std::round(pos[2]*10.0)/10.0);
     }
 
-    if(handle->is_template_space|| !handle->s2t.empty())
+    if(handle->is_template_space || !handle->s2t.empty())
     {
         tipl::vector<3,float> mni(pos);
         handle->sub2mni(mni);
@@ -2775,7 +2775,7 @@ void tracking_window::on_actionAdjust_Atlas_Mapping_triggered()
         return;
     handle->manual_template_T = manual->get_iT();
     handle->has_manual_atlas = true;
-    handle->is_template_space= false;
+    handle->is_template_space = false;
     handle->s2t.clear();
     handle->t2s.clear();
     handle->run_normalization(true,true);
