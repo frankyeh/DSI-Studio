@@ -10,56 +10,34 @@ jobs:
   linux-build:
     strategy:
       matrix:
-        os: [ubuntu-20.04, ubuntu-18.04]
+        os: [ubuntu_2004,ubuntu_1804,ubuntu_1604]
       fail-fast: false
-    runs-on: ${{ matrix.os }}
-    env:
-      CXX: g++-9
-      CFLAGS: -Werror
-      QT_SELECT: qt5
+    runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v1
-    - name: Install Qt
-      uses: jurplel/install-qt-action@v2
+    - name: Checkout
+      uses: actions/checkout@v2
+    - name: Set up QEMU
+      uses: docker/setup-qemu-action@v1
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v1
+    - name: Build and push
+      uses: docker/build-push-action@v2
       with:
-        version: 5.12.0
-        modules: qtcharts qtopengl    
-    - name: Install Boost
-      run: |
-        sudo apt update
-        sudo apt full-upgrade -y 
-        sudo apt install -y --no-install-recommends libboost-all-dev zlib1g-dev ca-certificates mesa-common-dev libglu1-mesa-dev libqt5opengl5-dev gcc-9 g++-9
-        sudo apt-get clean
-        sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-9 9
-        sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-9 9
-    - name: Download TIPL and Atlases
-      run: |
-        git clone https://github.com/frankyeh/TIPL.git
-        git clone https://github.com/frankyeh/DSI-Studio-atlas.git
-        rm -fr DSI-Studio-atlas/.git
-        mv TIPL tipl
-    - name: Build DSI Studio
-      run: |
-        mkdir -p build
-        cd build
-        qmake ../dsi_studio.pro
-        make
+        context: .
+        file: build_packages/${{ matrix.os }}/Dockerfile
+        push: false
+        outputs: dsi-studio
     - name: Packaging
       run: |
-        mkdir dsi_studio_ubuntu
-        cp -R other/*  dsi_studio_ubuntu    
-        chmod 755 build/dsi_studio
-        mv build/dsi_studio  dsi_studio_ubuntu
-        mv DSI-Studio-atlas  dsi_studio_ubuntu/atlas   
-        zip -r dsi_studio_ubuntu_${{ matrix.os }}.zip  dsi_studio_ubuntu
+        zip -r dsi_studio_${{ matrix.os }}.zip dsi-studio
     - name: Create Release
       uses: ncipollo/release-action@v1.8.9
       with:
         allowUpdates: true
         artifacts: "*.zip"
         tag: ${{ github.event.inputs.tag }}
-        prerelease: false  
-    
+        prerelease: false
+        
   macos-build:
     strategy:
       matrix:
