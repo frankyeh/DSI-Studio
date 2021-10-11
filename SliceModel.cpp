@@ -302,7 +302,7 @@ bool CustomSliceModel::initialize(const std::vector<std::string>& files,bool is_
             save_idx(files[0].c_str(),nifti.input_stream);
             nifti.get_voxel_size(vs);
             nifti.get_image_transformation(trans);
-            if(handle->is_template_space)
+            if(handle->is_qsdr)
             {
                 nifti.get_image_transformation(T);
                 invT = tipl::inverse(T = tipl::from_space(T).to(handle->trans_to_mni));
