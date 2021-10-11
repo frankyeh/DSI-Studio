@@ -11,7 +11,7 @@
 
 struct odf_data{
 private:
-    const float* odfs;
+    const float* odfs = nullptr;
     unsigned int odfs_size;
 private:
     tipl::image<3,unsigned int> voxel_index_map;
@@ -21,7 +21,6 @@ private:
     tipl::image<3,unsigned int> odf_block_map2;
     unsigned int half_odf_size;
 public:
-    odf_data(void):odfs(nullptr){}
     bool read(gz_mat_read& mat_reader);
     bool has_odfs(void) const
     {
