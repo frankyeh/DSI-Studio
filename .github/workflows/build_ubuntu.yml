@@ -1,5 +1,5 @@
 
-name: Build Docker
+name: Build Ubuntu
 on: workflow_dispatch
 jobs:
   docker_build:
@@ -24,4 +24,4 @@ jobs:
     - name: Upload a Build Artifact
       uses: actions/upload-artifact@v2.2.4
       with:
-        path: *.zip
+        path: '*.zip'
