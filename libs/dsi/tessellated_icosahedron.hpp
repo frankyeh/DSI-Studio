@@ -24,7 +24,7 @@ public:
     std::vector<std::vector<float> > icosa_cos;
 private:
     double face_dis,angle_res;
-    unsigned short cur_vertex;
+    unsigned short cur_vertex = 0;
     void add_vertex(const tipl::vector<3,float>& vertex)
     {
         vertices[cur_vertex] = vertex;
