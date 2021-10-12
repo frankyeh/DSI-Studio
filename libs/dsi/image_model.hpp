@@ -240,9 +240,9 @@ public:
 public:
     std::vector<float> src_bvalues;
     std::vector<const unsigned short*> src_dwi_data;
-    tipl::image<3> dwi_sum;
     tipl::image<3,unsigned char>dwi;
     std::shared_ptr<ImageModel> study_src;
+    bool rotated_to_mni = false;
 public:
     void draw_mask(tipl::color_image& buffer,int position);
     void calculate_dwi_sum(bool update_mask);
