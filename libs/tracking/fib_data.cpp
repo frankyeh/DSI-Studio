@@ -83,7 +83,7 @@ bool odf_data::read(gz_mat_read& mat_reader)
         odf_block_map1.resize(dim);
         odf_block_map2.resize(dim);
 
-        int voxel_index = 0;
+        unsigned int voxel_index = 0;
         for(unsigned int i = 0;i < odf_block_size.size();++i)
             for(unsigned int j = 0;j < odf_block_size[i];j += half_odf_size)
             {
