@@ -692,8 +692,8 @@ bool add_other_image(ImageModel* handle,QString name,QString filename)
     {
         std::cout << " and register image with DWI." << std::endl;
         in.get_voxel_size(vs);
-        tipl::image<3,unsigned char> to(ref.shape());
-        tipl::normalize(ref.begin(),ref.end(),to.begin());
+        tipl::image<3,unsigned char> to;
+        tipl::normalize(ref,to);
         bool terminated = false;
         tipl::affine_transform<float> arg;
         tipl::reg::linear_mr(handle->dwi,handle->voxel.vs,to,vs,arg,tipl::reg::rigid_body,tipl::reg::mutual_information(),terminated,0.1);
