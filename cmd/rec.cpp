@@ -105,6 +105,9 @@ int rec(program_option& po)
         }
     }
 
+    if(po.get("align_acpc",1))
+        src.rotate_to_mni(src.voxel.vs[0] < 1.5f ? 1.0f:2.0f);
+    else
     if(po.has("rotate_to"))
     {
         std::string file_name = po.get("rotate_to");
@@ -114,14 +117,14 @@ int rec(program_option& po)
             std::cout << "failed to read " << file_name << std::endl;
             return 0;
         }
-        tipl::image<3> I;
+        tipl::image<3,unsigned char> I;
         tipl::vector<3> vs;
         in.get_voxel_size(vs);
-        in.toLPS(I);
+        in >> I;
         std::cout << "running rigid body transformation" << std::endl;
         tipl::transformation_matrix<double> T;
         bool terminated = false;
-        tipl::reg::two_way_linear_mr(I,vs,src.dwi_sum,src.voxel.vs,
+        tipl::reg::two_way_linear_mr(I,vs,src.dwi,src.voxel.vs,
                        T,tipl::reg::rigid_body,tipl::reg::mutual_information(),
                         terminated,src.voxel.thread_count);
         std::cout << "DWI rotated." << std::endl;
