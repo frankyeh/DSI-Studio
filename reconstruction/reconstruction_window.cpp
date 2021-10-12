@@ -116,6 +116,10 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
     ui->report->setText(handle->voxel.report.c_str());
     ui->dti_no_high_b->setChecked(handle->is_human_data());
 
+    if(!handle->is_human_data())
+        ui->align_acpc->setVisible(false);
+
+
     max_source_value = *std::max_element(handle->src_dwi_data.back(),
                                          handle->src_dwi_data.back()+handle->voxel.dim.size());
 
@@ -279,6 +283,9 @@ void reconstruction_window::doReconstruction(unsigned char method_id,bool prompt
     else
         handle->voxel.scheme_balance = false;
 
+    if(ui->align_acpc->isChecked() && handle->is_human_data())
+        handle->rotate_to_mni(handle->voxel.vs[0] < 1.5f ? 1.0f : 2.0f);
+
     auto dim_backup = handle->voxel.dim; // for QSDR
     auto vs = handle->voxel.vs; // for QSDR
     if (!handle->reconstruction())
@@ -404,10 +411,13 @@ void reconstruction_window::on_DTI_toggled(bool checked)
 
     ui->open_ddi_study_src->setVisible(!checked);
     ui->ddi_file->setVisible(!checked);
+
     if(checked && (!ui->other_output->text().contains("rd") &&
                    !ui->other_output->text().contains("ad") &&
                    !ui->other_output->text().contains("md")))
         ui->other_output->setText("fa,rd,ad,md");
+    if(checked && handle->is_human_data())
+        ui->align_acpc->setVisible(true);
 }
 
 
@@ -424,6 +434,10 @@ void reconstruction_window::on_GQI_toggled(bool checked)
 
     ui->open_ddi_study_src->setVisible(checked);
     ui->ddi_file->setVisible(checked);
+
+    if(checked && handle->is_human_data())
+        ui->align_acpc->setVisible(true);
+
 }
 
 void reconstruction_window::on_QSDR_toggled(bool checked)
@@ -437,6 +451,10 @@ void reconstruction_window::on_QSDR_toggled(bool checked)
 
     ui->open_ddi_study_src->setVisible(!checked);
     ui->ddi_file->setVisible(!checked);
+
+    if(checked)
+        ui->align_acpc->setVisible(false);
+
 }
 
 void reconstruction_window::on_zoom_in_clicked()
@@ -640,11 +658,12 @@ void reconstruction_window::on_remove_below_clicked()
 void reconstruction_window::on_SlicePos_valueChanged(int position)
 {
     handle->draw_mask(buffer,position);
-    double ratio = std::max(1.0,
-        std::min(((double)ui->graphicsView->width()-5)/(double)buffer.width(),
-                 ((double)ui->graphicsView->height()-5)/(double)buffer.height()));
-    slice_image = QImage((unsigned char*)&*buffer.begin(),buffer.width(),buffer.height(),QImage::Format_RGB32).
-                    scaled(buffer.width()*ratio,buffer.height()*ratio);
+    double ratio =
+        std::min(double(ui->graphicsView->width()-5)/double(buffer.width()),
+                 double(ui->graphicsView->height()-5)/double(buffer.height()));
+    slice_image = QImage(reinterpret_cast<unsigned char*>(&*buffer.begin()),
+                         buffer.width(),buffer.height(),QImage::Format_RGB32).
+                            scaled(int(buffer.width()*ratio),int(buffer.height()*ratio));
     show_view(scene,slice_image);
 }
 
@@ -673,13 +692,12 @@ bool add_other_image(ImageModel* handle,QString name,QString filename)
     {
         std::cout << " and register image with DWI." << std::endl;
         in.get_voxel_size(vs);
-        tipl::image<3> from(handle->dwi_sum),to(ref);
-        tipl::normalize(from,1.0);
-        tipl::normalize(to,1.0);
+        tipl::image<3,unsigned char> to(ref.shape());
+        tipl::normalize(ref.begin(),ref.end(),to.begin());
         bool terminated = false;
         tipl::affine_transform<float> arg;
-        tipl::reg::linear_mr(from,handle->voxel.vs,to,vs,arg,tipl::reg::rigid_body,tipl::reg::mutual_information(),terminated,0.1);
-        tipl::reg::linear_mr(from,handle->voxel.vs,to,vs,arg,tipl::reg::rigid_body,tipl::reg::mutual_information(),terminated,0.01);
+        tipl::reg::linear_mr(handle->dwi,handle->voxel.vs,to,vs,arg,tipl::reg::rigid_body,tipl::reg::mutual_information(),terminated,0.1);
+        tipl::reg::linear_mr(handle->dwi,handle->voxel.vs,to,vs,arg,tipl::reg::rigid_body,tipl::reg::mutual_information(),terminated,0.01);
         affine = tipl::transformation_matrix<float>(arg,handle->voxel.dim,handle->voxel.vs,to.shape(),vs);
         std::cout << arg << std::endl;
     }

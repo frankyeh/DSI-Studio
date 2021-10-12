@@ -419,19 +419,6 @@
                <property name="spacing">
                 <number>0</number>
                </property>
-               <item row="0" column="8">
-                <spacer name="horizontalSpacer_2">
-                 <property name="orientation">
-                  <enum>Qt::Horizontal</enum>
-                 </property>
-                 <property name="sizeHint" stdset="0">
-                  <size>
-                   <width>40</width>
-                   <height>20</height>
-                  </size>
-                 </property>
-                </spacer>
-               </item>
                <item row="0" column="0">
                 <widget class="QWidget" name="mask_edit" native="true">
                  <property name="minimumSize">
@@ -529,6 +516,19 @@
                   <string>Edit&gt;&gt;</string>
                  </property>
                 </widget>
+               </item>
+               <item row="0" column="8">
+                <spacer name="horizontalSpacer_2">
+                 <property name="orientation">
+                  <enum>Qt::Horizontal</enum>
+                 </property>
+                 <property name="sizeHint" stdset="0">
+                  <size>
+                   <width>40</width>
+                   <height>20</height>
+                  </size>
+                 </property>
+                </spacer>
                </item>
               </layout>
              </item>
@@ -806,6 +806,16 @@
                    </property>
                    <property name="text">
                     <string>Check b-table</string>
+                   </property>
+                   <property name="checked">
+                    <bool>true</bool>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QCheckBox" name="align_acpc">
+                   <property name="text">
+                    <string> align AC-PC</string>
                    </property>
                    <property name="checked">
                     <bool>true</bool>
