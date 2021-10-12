@@ -89,6 +89,9 @@ public:
                 return true;
         return false;
     }
+public:
+    tipl::image<3,unsigned char> hist_image;
+    bool is_histology = false;
 public:// DTI
     bool dti_no_high_b = true;
 public://used in GQI
