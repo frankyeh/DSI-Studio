@@ -167,7 +167,10 @@ bool CustomSliceModel::initialize(const std::vector<std::string>& files,bool is_
                 picture[j] = tipl::rgb(*(ptr+2),*(ptr+1),*ptr);
             }
 
-            vs = handle->vs*0.5f*(handle->dim.width())/(in.width());
+            if(int(in.width()*handle->dim[1]/handle->dim[0])-int(in.height()) < 5) // histology
+                vs = handle->vs*(handle->dim.width())/(in.width());
+            else
+                vs = handle->vs*0.5f*(handle->dim.width())/(in.width());
             tipl::transformation_matrix<float> M(arg_min,handle->dim,handle->vs,source_images.shape(),vs);
             invT.identity();
             M.save_to_transform(invT.begin());
