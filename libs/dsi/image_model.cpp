@@ -1451,12 +1451,12 @@ bool ImageModel::load_from_file(const char* dwi_file_name)
             auto slice = voxel.mask.slice_at(0);
             tipl::morphology::dilation(slice);
         }
-        tipl::morphology::defragment(voxel.mask);
         for(int i = 0;i < int(dwi.width()/200);++i)
         {
             auto slice = voxel.mask.slice_at(0);
             tipl::morphology::erosion(slice);
         }
+        tipl::morphology::defragment(voxel.mask);
         return true;
     }
     if(QString(dwi_file_name).toLower().endsWith(".nii.gz"))
