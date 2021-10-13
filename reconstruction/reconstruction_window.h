@@ -31,7 +31,7 @@ private:
     QGraphicsScene source;
     tipl::color_image buffer_source;
     QImage source_image;
-    float max_source_value,source_ratio;
+    float source_ratio;
     void load_b_table(void);
 private:
     QGraphicsScene scene;

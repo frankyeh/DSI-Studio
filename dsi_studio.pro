@@ -93,7 +93,8 @@ HEADERS += mainwindow.h \
     auto_track.h \
     tracking/device.h \
     tracking/devicetablewidget.h \
-    mac_filesystem.hpp
+    mac_filesystem.hpp \
+    libs/dsi/hist_process.hpp
 
 FORMS += mainwindow.ui \
     tracking/tracking_window.ui \

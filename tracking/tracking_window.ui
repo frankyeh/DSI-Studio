@@ -2972,7 +2972,7 @@ Tracking</string>
      <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
    </property>
    <property name="text">
-    <string>Insert T1W/T2W Images...</string>
+    <string>Insert Other Images...</string>
    </property>
   </action>
   <action name="actionSave_mapping">

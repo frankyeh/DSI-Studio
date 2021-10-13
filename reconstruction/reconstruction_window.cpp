@@ -31,6 +31,8 @@ bool reconstruction_window::load_src(int index)
             QMessageBox::critical(this,"ERROR",QString("Cannot open ") + QFileInfo(filenames[index]).baseName() + " " +handle->error_msg.c_str());
         return false;
     }
+    if(handle->voxel.is_histology)
+        return true;
     double m = double(*std::max_element(handle->src_dwi_data[0],handle->src_dwi_data[0]+handle->voxel.dim.size()));
     double otsu = double(tipl::segmentation::otsu_threshold(tipl::make_image(handle->src_dwi_data[0],handle->voxel.dim)));
     ui->max_value->setMaximum(m*1.5);
@@ -73,7 +75,6 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
 
     populate_templates(ui->primary_template,match_template(
         handle->voxel.vs[0]*handle->voxel.vs[1]*handle->voxel.vs[2]*handle->voxel.dim.size()));
-
     if(ui->primary_template->currentIndex() == 0)
         ui->diffusion_sampling->setValue(1.25); // human studies
     else
@@ -119,11 +120,22 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
     if(!handle->is_human_data())
         ui->align_acpc->setVisible(false);
 
+    ui->method_group->setVisible(!handle->voxel.is_histology);
+    ui->param_group->setVisible(!handle->voxel.is_histology);
+    ui->hist_param_group->setVisible(handle->voxel.is_histology);
+    if(handle->voxel.is_histology)
+    {
+        delete ui->menuCorrections;
+        delete ui->menuB_table;
+        delete ui->menuFile;
+        ui->source_page->hide();
+        ui->toolBox->removeItem(0);
+        auto actions = ui->menuEdit->actions();
+        for(int i = 4;i < actions.size();++i)
+            actions[i]->setVisible(false);
 
-    max_source_value = *std::max_element(handle->src_dwi_data.back(),
-                                         handle->src_dwi_data.back()+handle->voxel.dim.size());
-
-
+        ui->hist_downsampling->setValue(std::ceil(std::log2(handle->voxel.hist_image.width()))-12);
+    }
 
 
     connect(ui->z_pos,SIGNAL(valueChanged(int)),this,SLOT(on_b_table_itemSelectionChanged()));
@@ -159,6 +171,8 @@ void reconstruction_window::update_dimension(void)
 
 void reconstruction_window::load_b_table(void)
 {
+    if(handle->src_bvalues.empty())
+        return;
     ui->b_table->clear();
     ui->b_table->setRowCount(handle->src_bvalues.size());
     for(unsigned int index = 0;index < handle->src_bvalues.size();++index)
@@ -173,6 +187,8 @@ void reconstruction_window::load_b_table(void)
 
 void reconstruction_window::on_b_table_itemSelectionChanged()
 {
+    if(handle->src_bvalues.empty())
+        return;
     v2c.set_range(ui->min_value->value(),ui->max_value->value());
     tipl::image<2,float> tmp;
     tipl::volume2slice(tipl::make_image(handle->src_dwi_data[ui->b_table->currentRow()],handle->voxel.dim),tmp,view_orientation,ui->z_pos->value());
@@ -277,6 +293,13 @@ void reconstruction_window::doReconstruction(unsigned char method_id,bool prompt
     handle->voxel.other_output = ui->other_output->text().toStdString();
     handle->voxel.thread_count = ui->ThreadCount->value();
 
+    if(handle->voxel.is_histology)
+    {
+        handle->voxel.vs[0] = handle->voxel.vs[1] = handle->voxel.vs[2] = float(ui->hist_resolution->value());
+        handle->voxel.hist_downsampling = uint32_t(ui->hist_downsampling->value());
+        handle->voxel.hist_raw_smoothing = uint32_t(ui->hist_raw_smoothing->value());
+        handle->voxel.hist_gaussian_kernel = uint32_t(ui->hist_gaussian->value());
+    }
 
     if(method_id == 7 || method_id == 4)
         handle->voxel.scheme_balance = ui->scheme_balance->isChecked() ? 1:0;

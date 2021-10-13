@@ -10,6 +10,15 @@
 #include "gqi_mni_reconstruction.hpp"
 #include "image_model.hpp"
 #include "fib_data.hpp"
+#include "hist_process.hpp"
+
+typedef boost::mpl::vector<
+    ReadImages,
+    CalculateGradient,
+    CalculateStructuralTensor,
+    EigenAnalysis
+> hist_process;
+
 
 typedef boost::mpl::vector<
     ReadDWIData,
@@ -82,6 +91,11 @@ typedef boost::mpl::vector<
 std::string ImageModel::get_file_ext(void)
 {
     std::ostringstream out;
+    if(voxel.is_histology)
+    {
+        out << ".hist.fib.gz";
+        return out.str();
+    }
     if(voxel.method_id != 1) // DTI
     {
         if (voxel.output_odf)
@@ -117,15 +131,63 @@ std::string ImageModel::get_file_ext(void)
     }
     return out.str();
 }
+
+
+
+
+
 bool is_human_size(tipl::shape<3> dim,tipl::vector<3> vs);
+bool ImageModel::reconstruction_hist(void)
+{
+    voxel.CreateProcesses<hist_process>();
+    voxel.init();
+    if(prog_aborted())
+    {
+        error_msg = "reconstruction canceled";
+        return false;
+    }
+    if(!voxel.run_hist())
+        return false;
+    if(prog_aborted())
+        error_msg = "reconstruction canceled";
+
+    voxel.recon_report << " The parallel procesing of histology image were done by tessellation whole slide image into smaller image block with overlapping margin to eliminate boundary effects (Yeh, et al. J Pathol Inform 2014,  5:1).";
+    voxel.recon_report << " A total of " << voxel.hist_raw_smoothing << " smoothing iterations were applied to raw image.";
+    voxel.recon_report << " Structural tensors were calculated to derive structural orientations and anisotropy (Zhang, IEEEE TMI 35, 294-306 2016, Schurr, Science, 2021) using a Guassician kernal of " << voxel.hist_gaussian_kernel << " pixel spacing.";
+    if(voxel.hist_downsampling)
+        voxel.recon_report << " The results were exported at 2^" << voxel.hist_downsampling << " of the original pixel spacing.";
+    // create layers
+    voxel.dim[2] = voxel.dim[2]*2;
+    std::string output_name = (file_name.find(".fib.gz") == std::string::npos ? file_name + get_file_ext():file_name);
+    gz_mat_write mat_writer(output_name.c_str());
+    if(!mat_writer)
+    {
+        error_msg = "Cannot save fib file";
+        return false;
+    }
+
+    voxel.end(mat_writer);
+
+    std::string final_report = voxel.report;
+    final_report += voxel.recon_report.str();
+    mat_writer.write("report",final_report);
+    std::string final_steps = voxel.steps;
+    final_steps += voxel.step_report.str();
+    final_steps += "[Step T2b][Run reconstruction]\n";
+    mat_writer.write("steps",final_steps);
+    return true;
+}
 bool ImageModel::reconstruction(void)
 {
+    voxel.recon_report.clear();
+    voxel.recon_report.str("");
+    voxel.step_report.clear();
+    voxel.step_report.str("");
+
+    if(voxel.is_histology)
+        return reconstruction_hist();
     try
     {
-        voxel.recon_report.clear();
-        voxel.recon_report.str("");
-        voxel.step_report.clear();
-        voxel.step_report.str("");
         if(voxel.method_id == 1) // DTI
         {
             voxel.output_odf = 0;
@@ -218,7 +280,7 @@ bool ImageModel::reconstruction(void)
             break;
         case 7:
             voxel.step_report << "[Step T2b(1)]=QSDR" << std::endl;
-            voxel.step_report << "[Step T2b(1)][Diffusion sampling length ratio]=" << (float)voxel.param[0] << std::endl;
+            voxel.step_report << "[Step T2b(1)][Diffusion sampling length ratio]=" << voxel.param[0] << std::endl;
             voxel.recon_report
             << " The diffusion data were reconstructed in the MNI space using q-space diffeomorphic reconstruction (Yeh et al., Neuroimage, 58(1):91-9, 2011) to obtain the spin distribution function (Yeh et al., IEEE TMI, ;29(9):1626-35, 2010). "
             << " A diffusion sampling length ratio of "

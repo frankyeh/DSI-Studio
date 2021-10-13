@@ -437,7 +437,7 @@ void MainWindow::on_Reconstruction_clicked()
                            this,
                            "Open Src files",
                            ui->workDir->currentText(),
-                           "Src files (*src.gz *.src);;All files (*)" );
+                           "Src files (*src.gz *.src);;Histology images (*.jpg *.tif);;All files (*)" );
     if (filenames.isEmpty())
         return;
     loadSrc(filenames);

@@ -10,14 +10,23 @@ float base_function(float theta)
 
 void Voxel::init(void)
 {
-    voxel_data.resize(thread_count);
-    for (unsigned int index = 0; index < thread_count; ++index)
+    if(is_histology)
     {
-        voxel_data[index].space.resize(bvalues.size());
-        voxel_data[index].odf.resize(ti.half_vertices_count);
-        voxel_data[index].fa.resize(max_fiber_number);
-        voxel_data[index].dir_index.resize(max_fiber_number);
-        voxel_data[index].dir.resize(max_fiber_number);
+        hist_data.resize(thread_count);
+        for (unsigned int index = 0; index < thread_count; ++index)
+            hist_data[index].init();
+    }
+    else
+    {
+        voxel_data.resize(thread_count);
+        for (unsigned int index = 0; index < thread_count; ++index)
+        {
+            voxel_data[index].space.resize(bvalues.size());
+            voxel_data[index].odf.resize(ti.half_vertices_count);
+            voxel_data[index].fa.resize(max_fiber_number);
+            voxel_data[index].dir_index.resize(max_fiber_number);
+            voxel_data[index].dir.resize(max_fiber_number);
+        }
     }
     for (unsigned int index = 0; index < process_list.size(); ++index)
         process_list[index]->init(*this);
@@ -74,7 +83,41 @@ void Voxel::load_from_src(ImageModel& image_model)
             dwi_data.push_back(image_model.src_dwi_data[sorted_index[i]]);
         }
 }
+bool Voxel::run_hist(void)
+{
 
+    std::vector<tipl::vector<2,int> > from_list;
+    std::vector<tipl::vector<2,int> > to_list;
+    for(int y = 0;y < hist_image.height(); y+= crop_size)
+        for(int x = 0;x < hist_image.width(); x+= crop_size)
+        {
+            tipl::vector<2,int> from(x-margin,y-margin),to(x+crop_size+margin,y+crop_size+margin);
+            if(from[0] < 0)
+                from[0] = 0;
+            if(from[1] < 0)
+                from[1] = 0;
+            if(to[0] >= hist_image.width())
+                to[0] = hist_image.width()-1;
+            if(to[1] >= hist_image.height())
+                to[1] = hist_image.height()-1;
+            from_list.push_back(from);
+            to_list.push_back(to);
+        }
+
+    tipl::par_for2(from_list.size(),[&](size_t i,size_t thread_id)
+    {
+        if(thread_id == 0)
+            check_prog(i,from_list.size());
+        if(prog_aborted())
+            return;
+        hist_data[thread_id].init();
+        hist_data[thread_id].from = from_list[i];
+        hist_data[thread_id].to = to_list[i];
+        for (unsigned int j = 0; j < process_list.size(); ++j)
+            process_list[j]->run_hist(*this,hist_data[thread_id]);
+    });
+    return !prog_aborted();
+}
 bool Voxel::run(void)
 {
     size_t total_voxel = std::accumulate(mask.begin(),mask.end(),size_t(0),[](size_t sum,unsigned char value){return value ? sum+1:sum;});

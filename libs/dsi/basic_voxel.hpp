@@ -12,12 +12,14 @@ struct ImageModel;
 struct VoxelParam;
 class Voxel;
 struct VoxelData;
+struct HistData;
 class BaseProcess
 {
 public:
     BaseProcess(void) {}
     virtual void init(Voxel&) {}
     virtual void run(Voxel&, VoxelData&) {}
+    virtual void run_hist(Voxel&,HistData&) {}
     virtual void end(Voxel&,gz_mat_write&) {}
     virtual ~BaseProcess(void) {}
 };
@@ -43,6 +45,24 @@ struct VoxelData
         std::fill(fa.begin(),fa.end(),0.0);
         std::fill(dir_index.begin(),dir_index.end(),0);
         std::fill(dir.begin(),dir.end(),tipl::vector<3,float>());
+    }
+};
+
+struct HistData
+{
+public:
+    tipl::image<2,unsigned char> I,I_mask;
+    tipl::vector<2,int> from,to;
+public:
+    enum {dx = 0,dy = 1,dxx = 2,dyy = 3,dxy = 4};
+    std::vector<tipl::image<2> > other_maps;
+public:
+    void init(void)
+    {
+        I.clear();
+        I_mask.clear();
+        other_maps.clear();
+        other_maps.resize(10);
     }
 };
 
@@ -90,8 +110,13 @@ public:
         return false;
     }
 public:
-    tipl::image<3,unsigned char> hist_image;
+    tipl::image<2,unsigned char> hist_image;
+    unsigned int hist_downsampling = 4;
+    unsigned int hist_raw_smoothing = 4;
+    unsigned int hist_gaussian_kernel = 16;
     bool is_histology = false;
+    int crop_size = 1024;
+    int margin = 128;
 public:// DTI
     bool dti_no_high_b = true;
 public://used in GQI
@@ -134,6 +159,7 @@ public:// for template creation
     std::string template_file_name;
 public:
     std::vector<VoxelData> voxel_data;
+    std::vector<HistData> hist_data;
 public:
     Voxel(void):param(5){}
     template<class ProcessList>
@@ -151,6 +177,7 @@ public:
 public:
     void init(void);
     bool run(void);
+    bool run_hist(void);
     void end(gz_mat_write& writer);
     BaseProcess* get(unsigned int index);
 };

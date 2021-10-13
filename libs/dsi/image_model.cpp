@@ -16,20 +16,16 @@ void ImageModel::draw_mask(tipl::color_image& buffer,int position)
 {
     if (!dwi.size())
         return;
-    buffer.resize(tipl::shape<2>(dwi.width(),dwi.height()));
-    long offset = long(position)*long(buffer.size());
-    std::copy(dwi.begin()+ offset,
-              dwi.begin()+ offset + long(buffer.size()),buffer.begin());
+    auto slice = dwi.slice_at(uint32_t(position));
+    auto mask_slice = voxel.mask.slice_at(uint32_t(position));
 
-    unsigned char* slice_image_ptr = &*dwi.begin() + long(buffer.size())*position;
-    unsigned char* slice_mask = &*voxel.mask.begin() + long(buffer.size())*position;
-
-    tipl::color_image buffer2(tipl::shape<2>(dwi.width()*2,dwi.height()));
-    tipl::draw(buffer,buffer2,tipl::vector<2,int>());
-    for (unsigned int index = 0; index < buffer.size(); ++index)
+    tipl::color_image buffer2(tipl::shape<2>(uint32_t(dwi.width())*2,uint32_t(dwi.height())));
+    tipl::draw(slice,buffer2,tipl::vector<2,int>());
+    buffer.resize(slice.shape());
+    for (size_t index = 0; index < buffer.size(); ++index)
     {
-        unsigned char value = slice_image_ptr[index];
-        if (slice_mask[index])
+        unsigned char value = slice[index];
+        if (mask_slice[index])
             buffer[index] = tipl::rgb(uint8_t(255), value, value);
         else
             buffer[index] = tipl::rgb(value, value, value);
@@ -42,7 +38,6 @@ void ImageModel::calculate_dwi_sum(bool update_mask)
 {
     if(src_dwi_data.empty())
         return;
-    if(src_dwi_data.size() > 1)
     {
         tipl::image<3> dwi_sum(voxel.dim);
         tipl::par_for(src_dwi_data.size(),[&](unsigned int index)
@@ -68,19 +63,9 @@ void ImageModel::calculate_dwi_sum(bool update_mask)
         dwi.resize(voxel.dim);
         tipl::normalize(dwi_sum,dwi);
     }
-    else
-    {
-        dwi.resize(voxel.dim);
-        tipl::normalize(tipl::make_image(src_dwi_data[0],voxel.dim),dwi);
-    }
 
     if(update_mask)
     {
-        if(dwi.depth() == 1)
-        {
-            tipl::segmentation::otsu(dwi,voxel.mask);
-            return;
-        }
         tipl::threshold(dwi,voxel.mask,50,1,0);
         if(dwi.depth() < 200)
         {
@@ -744,6 +729,9 @@ void ImageModel::flip_dwi(unsigned char type)
     tipl::flip(dwi,type);
     tipl::flip(voxel.mask,type);
     prog_init p("flip image");
+    if(voxel.is_histology)
+        tipl::flip(voxel.hist_image,type);
+    else
     tipl::par_for2(src_dwi_data.size(),[&](unsigned int index,unsigned id)
     {
         if(!id)
@@ -1403,7 +1391,74 @@ bool ImageModel::load_from_file(const char* dwi_file_name)
         error_msg += dwi_file_name;
         return false;
     }
+    if(QString(dwi_file_name).toLower().endsWith(".jpg") ||
+       QString(dwi_file_name).toLower().endsWith(".tif"))
+    {
+        tipl::image<2,unsigned char> raw;
+        {
+            QImage fig;
+            set_title("load picture");
+            if(!fig.load(dwi_file_name))
+            {
+                error_msg = "Unsupported image format";
+                return false;
+            }
+            set_title("converting to grascale");
+            int pixel_bytes = fig.bytesPerLine()/fig.width();
+            raw.resize(tipl::shape<2>(uint32_t(fig.width()),uint32_t(fig.height())));
+            tipl::par_for(raw.height(),[&](int y){
+                auto line = fig.scanLine(y);
+                auto out = raw.begin() + y*raw.width();
+                for(int x = 0;x < raw.width();++x,line += pixel_bytes)
+                    out[x] = uint8_t(*line);
+            });
+        }
+        set_title("generating mask");
+        auto raw_ = tipl::make_image(&*raw.begin(),tipl::shape<3>(raw.width(),raw.height(),1));
+        if(raw.width() > 2048)
+        {
+            tipl::downsample_with_padding2(raw_,dwi);
+            while(dwi.width() > 2048)
+                tipl::downsample_with_padding2(dwi);
+        }
+        else
+            dwi = raw_;
 
+        // increase contrast
+        dwi -= 128;
+        dwi *= 2;
+
+
+        voxel.is_histology = true;
+        voxel.vs = {0.05f,0.05f,0.05f};
+        voxel.dim = dwi.shape();
+        voxel.hist_image.swap(raw);
+        voxel.report = "Histology image was loaded at a size of ";
+        voxel.report += std::to_string(voxel.hist_image.width());
+        voxel.report += " by ";
+        voxel.report += std::to_string(voxel.hist_image.height());
+        voxel.report += " pixels.";
+
+        voxel.steps += "[Step T2][Reconstruction] open ";
+        voxel.steps += std::filesystem::path(dwi_file_name).filename().string();
+        voxel.steps += "\n";
+
+        set_title("generating mask");
+        tipl::segmentation::otsu(dwi,voxel.mask);
+        tipl::negate(voxel.mask);
+        for(int i = 0;i < int(dwi.width()/200);++i)
+        {
+            auto slice = voxel.mask.slice_at(0);
+            tipl::morphology::dilation(slice);
+        }
+        tipl::morphology::defragment(voxel.mask);
+        for(int i = 0;i < int(dwi.width()/200);++i)
+        {
+            auto slice = voxel.mask.slice_at(0);
+            tipl::morphology::erosion(slice);
+        }
+        return true;
+    }
     if(QString(dwi_file_name).toLower().endsWith(".nii.gz"))
     {
         QString bval,bvec;

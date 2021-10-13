@@ -1948,7 +1948,8 @@ void tracking_window::updateSlicesMenu(void)
 void tracking_window::on_actionInsert_MNI_images_triggered()
 {
     QString filename = QFileDialog::getOpenFileName(
-        this,"Open MNI Image",QFileInfo(windowTitle()).absolutePath(),"Image files (*.hdr *.nii *nii.gz);;All files (*)" );
+        this,"Open MNI Image",QFileInfo(windowTitle()).absolutePath(),
+                "Image files (*.hdr *.nii *nii.gz);;All files (*)" );
     if( filename.isEmpty() || !can_map_to_mni())
         return;
 
@@ -2114,7 +2115,8 @@ void tracking_window::on_track_style_currentIndexChanged(int index)
 void tracking_window::on_addSlices_clicked()
 {
     QStringList filenames = QFileDialog::getOpenFileNames(
-        this,"Open Images files",QFileInfo(windowTitle()).absolutePath(),"Image files (*.dcm *.hdr *.nii *nii.gz 2dseq);;All files (*)" );
+        this,"Open Images files",QFileInfo(windowTitle()).absolutePath(),
+                "Image files (*.dcm *.hdr *.nii *nii.gz 2dseq);;Histology (*.jpg *.tif);;All files (*)" );
     if( filenames.isEmpty())
         return;
     if(QFileInfo(filenames[0]).completeSuffix() == "dcm" && filenames.size() == 1)
