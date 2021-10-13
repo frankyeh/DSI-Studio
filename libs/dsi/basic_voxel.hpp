@@ -113,10 +113,10 @@ public:
     tipl::image<2,unsigned char> hist_image;
     unsigned int hist_downsampling = 4;
     unsigned int hist_raw_smoothing = 4;
-    unsigned int hist_gaussian_kernel = 16;
+    unsigned int hist_gaussian_kernel = 8;
     bool is_histology = false;
-    int crop_size = 1024;
-    int margin = 128;
+    unsigned int crop_size = 1024;
+    unsigned int margin = 128;
 public:// DTI
     bool dti_no_high_b = true;
 public://used in GQI
