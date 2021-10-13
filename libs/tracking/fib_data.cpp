@@ -776,7 +776,7 @@ bool fib_data::save_mapping(const std::string& index_name,const std::string& fil
 }
 bool is_human_size(tipl::shape<3> dim,tipl::vector<3> vs)
 {
-    return dim[0]*vs[0] > 130 && dim[1]*vs[1] > 180;
+    return dim[2] != 2 && dim[0]*vs[0] > 130 && dim[1]*vs[1] > 180;
 }
 bool fib_data::load_from_mat(void)
 {
@@ -841,6 +841,7 @@ bool fib_data::load_from_mat(void)
     }
 
     is_human_data = is_human_size(dim,vs); // 1 percentile head size in mm
+    is_histology = (dim[2] == 2 && dim[0] > 400 && dim[1] > 400);
     db.read_db(this);
 
     if(is_qsdr)
