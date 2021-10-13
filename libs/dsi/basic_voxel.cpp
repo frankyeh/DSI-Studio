@@ -85,13 +85,21 @@ void Voxel::load_from_src(ImageModel& image_model)
 }
 bool Voxel::run_hist(void)
 {
+    margin = 16;
+    auto ceil = hist_gaussian_kernel << hist_downsampling;
+    while(margin < ceil)
+        margin <<= 1;
+    std::cout << "margin=" << margin << std::endl;
+    crop_size = margin << 3;
+    std::cout << "crop_size=" << crop_size << std::endl;
+
 
     std::vector<tipl::vector<2,int> > from_list;
     std::vector<tipl::vector<2,int> > to_list;
     for(int y = 0;y < hist_image.height(); y+= crop_size)
         for(int x = 0;x < hist_image.width(); x+= crop_size)
         {
-            tipl::vector<2,int> from(x-margin,y-margin),to(x+crop_size+margin,y+crop_size+margin);
+            tipl::vector<2,int> from(x-int(margin),y-int(margin)),to(x+int(crop_size+margin),y+int(crop_size+margin));
             if(from[0] < 0)
                 from[0] = 0;
             if(from[1] < 0)
