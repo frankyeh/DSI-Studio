@@ -124,7 +124,7 @@ private:
     QGraphicsScene source;
     tipl::color_image buffer;
     QImage source_image;
-    float max_source_value,source_ratio;
+    float source_ratio;
 
 };
 
