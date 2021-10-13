@@ -146,6 +146,7 @@ bool ImageModel::reconstruction_hist(void)
         error_msg = "reconstruction canceled";
         return false;
     }
+
     if(!voxel.run_hist())
         return false;
     if(prog_aborted())
@@ -156,8 +157,10 @@ bool ImageModel::reconstruction_hist(void)
     voxel.recon_report << " Structural tensors were calculated to derive structural orientations and anisotropy (Zhang, IEEEE TMI 35, 294-306 2016, Schurr, Science, 2021) using a Guassician kernal of " << voxel.hist_gaussian_kernel << " pixel spacing.";
     if(voxel.hist_downsampling)
         voxel.recon_report << " The results were exported at 2^" << voxel.hist_downsampling << " of the original pixel spacing.";
+
+
+
     // create layers
-    voxel.dim[2] = voxel.dim[2]*2;
     std::string output_name = (file_name.find(".fib.gz") == std::string::npos ? file_name + get_file_ext():file_name);
     gz_mat_write mat_writer(output_name.c_str());
     if(!mat_writer)
@@ -165,16 +168,9 @@ bool ImageModel::reconstruction_hist(void)
         error_msg = "Cannot save fib file";
         return false;
     }
-
     voxel.end(mat_writer);
-
-    std::string final_report = voxel.report;
-    final_report += voxel.recon_report.str();
-    mat_writer.write("report",final_report);
-    std::string final_steps = voxel.steps;
-    final_steps += voxel.step_report.str();
-    final_steps += "[Step T2b][Run reconstruction]\n";
-    mat_writer.write("steps",final_steps);
+    mat_writer.write("report",voxel.report+voxel.recon_report.str());
+    mat_writer.write("steps",voxel.steps+voxel.step_report.str()+"[Step T2b][Run reconstruction]\n");
     return true;
 }
 bool ImageModel::reconstruction(void)
