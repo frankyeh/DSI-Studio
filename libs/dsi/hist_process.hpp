@@ -40,6 +40,22 @@ class CalculateGradient : public BaseProcess{
         tipl::gradient_2x(hist.I,dx);
         tipl::gradient_2y(hist.I,dy);
 
+        for(size_t i = 0;i < dx.size();++i)
+        {
+            if(dx[i] > 32 || dx[i] < -32)
+                dx[i] = 0;
+            if(dx[i] > 16)
+                dx[i] = 32-dx[i];
+            if(dx[i] < -16)
+                dx[i] = -32-dx[i];
+
+            if(dy[i] > 32 || dy[i] < -32)
+                dy[i] = 0;
+            if(dy[i] > 16)
+                dy[i] = 32-dx[i];
+            if(dy[i] < -16)
+                dy[i] = -32-dy[i];
+        }
         tipl::upper_lower_threshold(dx,-32.0f,32.0f);
         tipl::upper_lower_threshold(dy,-32.0f,32.0f);
 
@@ -158,6 +174,8 @@ public:
     }
     virtual void end(Voxel&,gz_mat_write& mat_writer)
     {
+        tipl::normalize(hist_fa,1.0f);
+
         // create additional layer
         hist_fa.resize(tipl::shape<3>(hist_fa.width(),hist_fa.height(),2));
         std::copy(hist_fa.begin(),hist_fa.begin()+int64_t(hist_fa.plane_size()),hist_fa.begin()+int64_t(hist_fa.plane_size()));
