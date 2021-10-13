@@ -731,7 +731,7 @@
                     <number>2</number>
                    </property>
                    <property name="value">
-                    <number>8</number>
+                    <number>4</number>
                    </property>
                   </widget>
                  </item>
@@ -754,7 +754,7 @@
                     <number>8</number>
                    </property>
                    <property name="value">
-                    <number>32</number>
+                    <number>8</number>
                    </property>
                   </widget>
                  </item>
