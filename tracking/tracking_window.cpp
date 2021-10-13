@@ -165,18 +165,38 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
                     addSlices(QStringList() << QString(handle->wm_template_file_name.c_str()),"wm",true);
                 handle->load_template();
             }
+            // setup fa threshold
+            initialize_tracking_index(0);
 
-            float largest_span = std::max(std::max(handle->dim[0]*handle->vs[0],handle->dim[1]*handle->vs[1]),handle->dim[2]*handle->vs[2]);
-            float min_length = largest_span/10.0f;
-            float min_length_digit = float(std::pow(10.0f,std::floor(std::log10(double(min_length)))));
-            float max_length = largest_span*1.5f;
-            float max_length_digit = float(std::pow(10.0f,std::floor(std::log10(double(max_length)))));
-            set_data("min_length",int(min_length/min_length_digit)*min_length_digit);
-            set_data("max_length",int(max_length/max_length_digit)*max_length_digit);
+            if(handle->is_histology || handle->dim[0] > 1024)
+            {
+                set_data("fa_threshold",0.1f);
+                set_data("step_size",handle->vs[0]*2.0f);
+
+                set_data("turning_angle",15);
+                set_data("tube_diameter",1.0f);
+
+                set_data("track_count",50000);
+                set_data("min_length",handle->vs[0]*10.0f);
+                set_data("max_length",handle->vs[0]*handle->dim[0]*2.0f);
+
+            }
+            else
+            {
+                set_data("fa_threshold",0.0f);
+                set_data("step_size",0.0f);
+                set_data("turning_angle",0.0f);
+                set_data("tube_diameter",0.15f);
+                float largest_span = std::max(std::max(handle->dim[0]*handle->vs[0],handle->dim[1]*handle->vs[1]),handle->dim[2]*handle->vs[2]);
+                float min_length = largest_span/10.0f;
+                float min_length_digit = float(std::pow(10.0f,std::floor(std::log10(double(min_length)))));
+                float max_length = largest_span*1.5f;
+                float max_length_digit = float(std::pow(10.0f,std::floor(std::log10(double(max_length)))));
+                set_data("min_length",int(min_length/min_length_digit)*min_length_digit);
+                set_data("max_length",int(max_length/max_length_digit)*max_length_digit);
+            }
         }
 
-        // setup fa threshold
-        initialize_tracking_index(0);
 
         report(handle->report.c_str());
 
