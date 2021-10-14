@@ -113,7 +113,7 @@ public:
     tipl::image<2,unsigned char> hist_image;
     unsigned int hist_downsampling = 4;
     unsigned int hist_raw_smoothing = 4;
-    unsigned int hist_gaussian_kernel = 8;
+    unsigned int hist_tensor_smoothing = 8;
     bool is_histology = false;
     unsigned int crop_size = 1024;
     unsigned int margin = 128;

@@ -298,7 +298,7 @@ void reconstruction_window::doReconstruction(unsigned char method_id,bool prompt
         handle->voxel.vs[0] = handle->voxel.vs[1] = handle->voxel.vs[2] = float(ui->hist_resolution->value());
         handle->voxel.hist_downsampling = uint32_t(ui->hist_downsampling->value());
         handle->voxel.hist_raw_smoothing = uint32_t(ui->hist_raw_smoothing->value());
-        handle->voxel.hist_gaussian_kernel = uint32_t(ui->hist_gaussian->value());
+        handle->voxel.hist_tensor_smoothing = uint32_t(ui->hist_tensor_smoothing->value());
     }
 
     if(method_id == 7 || method_id == 4)

@@ -154,7 +154,7 @@ bool ImageModel::reconstruction_hist(void)
 
     voxel.recon_report << " The parallel procesing of histology image were done by tessellation whole slide image into smaller image block with overlapping margin to eliminate boundary effects (Yeh, et al. J Pathol Inform 2014,  5:1).";
     voxel.recon_report << " A total of " << voxel.hist_raw_smoothing << " smoothing iterations were applied to raw image.";
-    voxel.recon_report << " Structural tensors were calculated to derive structural orientations and anisotropy (Zhang, IEEEE TMI 35, 294-306 2016, Schurr, Science, 2021) using a Guassician kernal of " << voxel.hist_gaussian_kernel << " pixel spacing.";
+    voxel.recon_report << " Structural tensors were calculated to derive structural orientations and anisotropy (Zhang, IEEEE TMI 35, 294-306 2016, Schurr, Science, 2021) using a Guassician kernal of " << voxel.hist_tensor_smoothing << " pixel spacing.";
     if(voxel.hist_downsampling)
         voxel.recon_report << " The results were exported at 2^" << voxel.hist_downsampling << " of the original pixel spacing.";
 

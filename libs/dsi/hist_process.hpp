@@ -84,7 +84,7 @@ class CalculateStructuralTensor : public BaseProcess{
             tipl::downsample_with_padding2(hist.I_mask);
         }
 
-        for(unsigned int i = 0;i < voxel.hist_gaussian_kernel;++i)
+        for(unsigned int i = 0;i < voxel.hist_tensor_smoothing;++i)
         {
             tipl::filter::gaussian(dxx);
             tipl::filter::gaussian(dyy);

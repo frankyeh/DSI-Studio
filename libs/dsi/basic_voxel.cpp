@@ -86,7 +86,7 @@ void Voxel::load_from_src(ImageModel& image_model)
 bool Voxel::run_hist(void)
 {
     margin = 16;
-    auto ceil = hist_gaussian_kernel << hist_downsampling;
+    auto ceil = hist_tensor_smoothing << hist_downsampling;
     while(margin < ceil)
         margin <<= 1;
     std::cout << "margin=" << margin << std::endl;

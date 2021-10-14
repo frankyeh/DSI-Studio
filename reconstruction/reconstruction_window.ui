@@ -738,12 +738,12 @@
                  <item>
                   <widget class="QLabel" name="label_4">
                    <property name="text">
-                    <string>Gaussian filter size (pixels)</string>
+                    <string>tensor smoothing (iterations)</string>
                    </property>
                   </widget>
                  </item>
                  <item>
-                  <widget class="QSpinBox" name="hist_gaussian">
+                  <widget class="QSpinBox" name="hist_tensor_smoothing">
                    <property name="minimum">
                     <number>4</number>
                    </property>
