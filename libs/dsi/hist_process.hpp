@@ -40,25 +40,6 @@ class CalculateGradient : public BaseProcess{
         tipl::gradient_2x(hist.I,dx);
         tipl::gradient_2y(hist.I,dy);
 
-        for(size_t i = 0;i < dx.size();++i)
-        {
-            if(dx[i] > 32 || dx[i] < -32)
-                dx[i] = 0;
-            if(dx[i] > 16)
-                dx[i] = 32-dx[i];
-            if(dx[i] < -16)
-                dx[i] = -32-dx[i];
-
-            if(dy[i] > 32 || dy[i] < -32)
-                dy[i] = 0;
-            if(dy[i] > 16)
-                dy[i] = 32-dx[i];
-            if(dy[i] < -16)
-                dy[i] = -32-dy[i];
-        }
-        tipl::upper_lower_threshold(dx,-32.0f,32.0f);
-        tipl::upper_lower_threshold(dy,-32.0f,32.0f);
-
         hist.other_maps[HistData::dx] = std::move(dx);
         hist.other_maps[HistData::dy] = std::move(dy);
     }
