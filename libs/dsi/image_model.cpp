@@ -840,7 +840,7 @@ bool ImageModel::arg_to_mni(float resolution,tipl::vector<3>& vs,tipl::shape<3>&
         }
         unsigned int row,col;
         const float* iso_ptr = nullptr;
-        if(!read.read("iso",row,col,iso_ptr) || row*col != new_geo.size())
+        if(!read.read("iso",row,col,iso_ptr) || row != new_geo.size()/col)
         {
             error_msg = "Failed to read image from fib template.";
             return false;
@@ -1408,7 +1408,7 @@ bool ImageModel::load_from_file(const char* dwi_file_name)
             raw.resize(tipl::shape<2>(uint32_t(fig.width()),uint32_t(fig.height())));
             tipl::par_for(raw.height(),[&](int y){
                 auto line = fig.scanLine(y);
-                auto out = raw.begin() + y*raw.width();
+                auto out = raw.begin() + int64_t(y)*raw.width();
                 for(int x = 0;x < raw.width();++x,line += pixel_bytes)
                     out[x] = uint8_t(*line);
             });
