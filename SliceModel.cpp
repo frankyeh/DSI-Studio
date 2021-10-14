@@ -150,27 +150,34 @@ bool CustomSliceModel::initialize(const std::vector<std::string>& files,bool is_
                 error_msg = "multiple jpg/bmp/png files are not supported";
                 return false;
             }
-            QImage in;
-            if(!in.load(files[0].c_str()))
             {
-                error_msg = "invalid image format: ";
-                error_msg += files[0];
-                return false;
-            }
-            QImage buf = in.convertToFormat(QImage::Format_RGB32);
-            picture.resize(tipl::shape<2>(uint32_t(in.width()),uint32_t(in.height())));
-            source_images.resize(tipl::shape<3>(uint32_t(in.width()),uint32_t(in.height()),1));
-            const uchar* ptr = buf.bits();
-            for(size_t j = 0;j < source_images.size();++j,ptr += 4)
-            {
-                source_images[j] = float(*ptr);
-                picture[j] = tipl::rgb(*(ptr+2),*(ptr+1),*ptr);
+                QImage in;
+                if(!in.load(files[0].c_str()))
+                {
+                    error_msg = "invalid image format: ";
+                    error_msg += files[0];
+                    return false;
+                }
+                QImage buf = in.convertToFormat(QImage::Format_RGB32);
+                picture.resize(tipl::shape<2>(uint32_t(in.width()),uint32_t(in.height())));
+                source_images.resize(tipl::shape<3>(uint32_t(in.width()),uint32_t(in.height()),1));
+                const uchar* ptr = buf.bits();
+                for(size_t j = 0;j < source_images.size();++j,ptr += 4)
+                {
+                    source_images[j] = float(*ptr);
+                    picture[j] = tipl::rgb(*(ptr+2),*(ptr+1),*ptr);
+                }
+                while(source_images.width() > 4096)
+                {
+                    tipl::downsample_with_padding2(source_images);
+                    tipl::downsample_with_padding2(picture);
+                }
             }
 
-            if(int(in.width()*handle->dim[1]/handle->dim[0])-int(in.height()) < 5) // histology
-                vs = handle->vs*(handle->dim.width())/(in.width());
+            if(int(source_images.width()*handle->dim[1]/handle->dim[0])-int(source_images.height()) < 5) // histology
+                vs = handle->vs*(handle->dim.width())/(source_images.width());
             else
-                vs = handle->vs*0.5f*(handle->dim.width())/(in.width());
+                vs = handle->vs*0.5f*(handle->dim.width())/(source_images.width());
             tipl::transformation_matrix<float> M(arg_min,handle->dim,handle->vs,source_images.shape(),vs);
             invT.identity();
             M.save_to_transform(invT.begin());
