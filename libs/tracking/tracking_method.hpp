@@ -213,7 +213,7 @@ public:
 		do
 		{
             if(get_buffer_size() > current_max_steps3 || buffer_back_pos + 3 >= track_buffer.size())
-				return false;
+                break;
             if(roi_mgr->is_excluded_point(position))
 				return false;
             track_buffer[buffer_back_pos] = position[0];
@@ -238,7 +238,7 @@ public:
             track(*this);
 
             if(get_buffer_size() > current_max_steps3 || buffer_front_pos < 3)
-				return false;			
+                break;
             if(terminated)
 				break;
 			buffer_front_pos -= 3;
