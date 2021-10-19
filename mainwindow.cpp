@@ -1079,7 +1079,7 @@ bool dcm2src(QStringList files,std::ostream& out)
         tipl::io::dicom header;
         std::vector<std::string> file_list;
         for(int index = 0;index < files.size();++index)
-            file_list.push_back(files[0].toStdString().c_str());
+            file_list.push_back(files[index].toStdString().c_str());
         if(!v.load_from_files(file_list))
         {
             out << v.error_msg.c_str() << std::endl;
