@@ -437,7 +437,6 @@ bool load_region_from_atlas(std::shared_ptr<fib_data> handle,
 bool load_region(program_option& po,std::shared_ptr<fib_data> handle,
                  ROIRegion& roi,const std::string& region_text)
 {
-    std::cout << "read region from " << region_text << std::endl;
     QStringList str_list = QString(region_text.c_str()).split(",");// splitting actions
     std::string file_name = str_list[0].toStdString();
     std::string region_name;
@@ -449,6 +448,11 @@ bool load_region(program_option& po,std::shared_ptr<fib_data> handle,
         region_name = file_name.substr(file_name.find_last_of(':')+1);
         file_name = file_name.substr(0,file_name.find_last_of(':'));
     }
+
+    std::cout << "read region from file:" << file_name;
+    if(!region_name.empty())
+        std::cout << " region:" << region_name;
+    std::cout << std::endl;
 
     if(!std::filesystem::exists(file_name))
     {
