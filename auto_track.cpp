@@ -186,7 +186,7 @@ std::string run_auto_track(
             src.voxel.method_id = 4; // GQI
             src.voxel.param[0] = length_ratio;
             src.voxel.ti.init(8); // odf order of 8
-            src.voxel.thread_count = std::thread::hardware_concurrency();
+            src.voxel.thread_count = po.get("thread_count",std::thread::hardware_concurrency());
             src.voxel.half_sphere = po.get("half_sphere",src.is_dsi_half_sphere() ? 1:0);
             src.voxel.scheme_balance = po.get("scheme_balance",src.need_scheme_balance() ? 1:0);
             src.voxel.check_btable = po.get("check_btable",1);
@@ -322,7 +322,7 @@ std::string run_auto_track(
 
                     // run tracking
                     prog_init p("tracking ",track_name.c_str());
-                    thread.run(std::thread::hardware_concurrency(),false);
+                    thread.run(po.get("thread_count",std::thread::hardware_concurrency()),false);
                     std::string report = tract_model.report + thread.report.str();
                     report += " Shape analysis (Yeh, Neuroimage, 2020) was conducted to derive shape metrics for tractography.";
                     if(reports[j].empty())
