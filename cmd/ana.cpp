@@ -138,10 +138,12 @@ bool load_tracts(const char* file_name,std::shared_ptr<TractModel> tract_model,s
         std::cout << "ERROR: cannot read or parse the tractography file :" << file_name << std::endl;
         return false;
     }
+    std::cout << "A total of " << tract_model->get_visible_track_count() << "tracks loaded" << std::endl;
     if(!roi_mgr->report.empty())
     {
         std::cout << "filtering tracts using roi/roa/end regions." << std::endl;
         tract_model->filter_by_roi(roi_mgr);
+        std::cout << "tract count:" << tract_model->get_visible_track_count() << std::endl;
     }
     return true;
 }
