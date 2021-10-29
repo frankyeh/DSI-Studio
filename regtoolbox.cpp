@@ -265,7 +265,7 @@ void RegToolBox::show_image(void)
     {
 
         const auto& I_show = (ui->show_second->isChecked() && It2.shape() == It.shape() ? It2 : It);
-        // show tempalte image on the right
+        // show template image on the right
         show_slice_at(It_scene,I_show,cIt,ui->slice_pos->value(),ratio,contrast2,cur_view);
 
         // show image in the middle
