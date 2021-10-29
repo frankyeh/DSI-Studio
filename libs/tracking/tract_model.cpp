@@ -898,7 +898,7 @@ bool TractModel::save_tracts_in_native_space(std::shared_ptr<fib_data> handle,
     return tract_in_native->save_tracts_to_file(file_name);
 }
 //---------------------------------------------------------------------------
-// Native space FIB save tracts to the tempalte space
+// Native space FIB save tracts to the template space
 bool TractModel::save_tracts_in_template_space(std::shared_ptr<fib_data> handle,const char* file_name)
 {
     if(!handle->can_map_to_mni())
