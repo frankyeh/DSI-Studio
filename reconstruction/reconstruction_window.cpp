@@ -1081,7 +1081,7 @@ void reconstruction_window::on_qsdr_manual_clicked()
         if(!read.load_from_file(fa_template_list[uint32_t(ui->primary_template->currentIndex())]) ||
            !read2.load_from_file(iso_template_list[uint32_t(ui->primary_template->currentIndex())]))
         {
-            QMessageBox::critical(this,"Error",QString("Cannot load tempalte:")+ui->primary_template->currentText());
+            QMessageBox::critical(this,"Error",QString("Cannot load template:")+ui->primary_template->currentText());
             return;
         }
         read.toLPS(VG);
