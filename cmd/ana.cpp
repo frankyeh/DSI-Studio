@@ -138,7 +138,7 @@ bool load_tracts(const char* file_name,std::shared_ptr<TractModel> tract_model,s
         std::cout << "ERROR: cannot read or parse the tractography file :" << file_name << std::endl;
         return false;
     }
-    std::cout << "A total of " << tract_model->get_visible_track_count() << "tracks loaded" << std::endl;
+    std::cout << "A total of " << tract_model->get_visible_track_count() << " tracks loaded" << std::endl;
     if(!roi_mgr->report.empty())
     {
         std::cout << "filtering tracts using roi/roa/end regions." << std::endl;
@@ -256,89 +256,84 @@ int ana(program_option& po)
     if(!load_roi(po,handle,roi_mgr))
         return 1;
 
+
     std::vector<std::string> tract_files;
+    std::vector<std::shared_ptr<TractModel> > tracts;
     get_filenames_from(po.get("tract"),tract_files);
+    if(tract_files.size() == 0)
+    {
+        std::cout << "No tract file assign to --tract" << std::endl;
+        return 1;
+    }
+
+    for(size_t i = 0;i < tract_files.size();++i)
+    {
+        tracts.push_back(std::make_shared<TractModel>(handle));
+        if(!load_tracts(tract_files[i].c_str(),tracts.back(),roi_mgr))
+            return 1;
+    }
+
+    std::cout << "a total of " << tract_files.size() << " tract file(s) loaded" << std::endl;
+
     std::string output = po.get("output");
 
-    // convert tract to nii (not tdi)
-    if(QString(output.c_str()).endsWith(".nii.gz"))
+    // load multiple track files and save as one multi-cluster tract file
+    if(tracts.size() > 1)
     {
-        if(std::filesystem::exists(output))
+        if(QString(output.c_str()).endsWith(".trk.gz") ||
+           QString(output.c_str()).endsWith(".tt.gz"))
         {
-            std::cout << "output file:" << output << " exists. terminating..." << std::endl;
+            std::cout << "save all tracts to " << output << std::endl;
+            if(!TractModel::save_all(output.c_str(),tracts,tract_files))
+            {
+                std::cout << "ERROR: cannot write to " << output << std::endl;
+                return 1;
+            }
+            std::cout << "file saved at " << output << std::endl;
             return 0;
         }
-        auto dim = handle->dim;
-        tipl::image<3,uint32_t> accumulate_map(dim);
-        for(size_t i = 0;i < tract_files.size();++i)
+
+        // accumulate tract prob
+        if(QString(output.c_str()).endsWith(".nii.gz"))
         {
-            std::shared_ptr<TractModel> tract_model(new TractModel(handle));
-            if(!load_tracts(tract_files[i].c_str(),tract_model,roi_mgr))
-                return 1;
-            std::cout << "accumulating " << tract_files[i] << "..." <<std::endl;
-            std::vector<tipl::vector<3,short> > points;
-            tract_model->to_voxel(points,1.0f);
-            tipl::image<3,char> tract_mask(dim);
-            tipl::par_for(points.size(),[&](size_t j)
+            std::cout << "computing tract probability to " << output << std::endl;
+            if(std::filesystem::exists(output))
             {
-                tipl::vector<3,short> p = points[j];
-                if(dim.is_valid(p))
-                    tract_mask[tipl::pixel_index<3>(p[0],p[1],p[2],dim).index()]=1;
-            });
-            accumulate_map += tract_mask;
-        }
-        tipl::image<3> pdi(accumulate_map);
-        tipl::multiply_constant(pdi,1.0f/float(tract_files.size()));
-        if(!gz_nifti::save_to_file(output.c_str(),pdi,handle->vs,handle->trans_to_mni))
-        {
-            std::cout << "ERROR: cannot write to " << output << std::endl;
-            return 1;
-        }
-        std::cout << "file saved at " << output << std::endl;
-        return 0;
-    }
-
-
-    if(QString(output.c_str()).endsWith(".trk.gz") ||
-       QString(output.c_str()).endsWith(".tt.gz"))
-    {
-
-        std::vector<std::shared_ptr<TractModel> > tracts;
-        for(size_t i = 0;i < tract_files.size();++i)
-        {
-            tracts.push_back(std::make_shared<TractModel>(handle));
-            if(!load_tracts(tract_files[i].c_str(),tracts.back(),roi_mgr))
+                std::cout << "output file:" << output << " exists. terminating..." << std::endl;
+                return 0;
+            }
+            auto dim = handle->dim;
+            tipl::image<3,uint32_t> accumulate_map(dim);
+            for(size_t i = 0;i < tracts.size();++i)
+            {
+                std::cout << "accumulating " << tract_files[i] << "..." <<std::endl;
+                std::vector<tipl::vector<3,short> > points;
+                tracts[i]->to_voxel(points,1.0f);
+                tipl::image<3,char> tract_mask(dim);
+                tipl::par_for(points.size(),[&](size_t j)
+                {
+                    tipl::vector<3,short> p = points[j];
+                    if(dim.is_valid(p))
+                        tract_mask[tipl::pixel_index<3>(p[0],p[1],p[2],dim).index()]=1;
+                });
+                accumulate_map += tract_mask;
+            }
+            tipl::image<3> pdi(accumulate_map);
+            tipl::multiply_constant(pdi,1.0f/float(tracts.size()));
+            if(!gz_nifti::save_to_file(output.c_str(),pdi,handle->vs,handle->trans_to_mni))
+            {
+                std::cout << "ERROR: cannot write to " << output << std::endl;
                 return 1;
-        }
-        std::cout << "save all tracts to " << output << std::endl;
-        if(!TractModel::save_all(output.c_str(),tracts,tract_files))
-        {
-            std::cout << "ERROR: cannot write to " << output << std::endl;
-            return 1;
-        }
-        std::cout << "file saved at " << output << std::endl;
-        return 0;
-    }
-
-
-    std::shared_ptr<TractModel> tract_model(new TractModel(handle));
-    for(unsigned int i = 0;i < tract_files.size();++i)
-    {
-        std::shared_ptr<TractModel> tract(new TractModel(handle));
-        std::string file_name = tract_files[i];
-        if(!load_tracts(tract_files[i].c_str(),tract,roi_mgr))
-            return 1;
-        if(i)
-        {
-            std::cout << file_name << " loaded and merged" << std::endl;
-            tract_model->add(*tract.get());
-        }
-        else
-        {
-            std::cout << file_name << " loaded" << std::endl;
-            tract_model = tract;
+            }
+            std::cout << "file saved at " << output << std::endl;
+            return 0;
         }
     }
+
+    // accumulate all tracts into one
+    std::shared_ptr<TractModel> tract_model = tracts[0];
+    for(unsigned int i = 1;i < tracts.size();++i)
+        tract_model->add(*tracts[i].get());
 
     if(po.has("output") && QFileInfo(output.c_str()).isDir())
         return trk_post(po,handle,tract_model,output + "/" + QFileInfo(tract_files[0].c_str()).baseName().toStdString(),false);
