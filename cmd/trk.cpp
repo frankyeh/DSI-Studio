@@ -501,6 +501,11 @@ int trk_post(program_option& po,
              std::shared_ptr<TractModel> tract_model,
              std::string tract_file_name,bool output_track)
 {
+    if(tract_model->get_visible_track_count() == 0)
+    {
+        std::cout << "No tract generated for further processing" << std::endl;
+        return 0;
+    }
     if(output_track)
     {
         if(po.has("ref")) // save track in T1W/T2W space
