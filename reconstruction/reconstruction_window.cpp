@@ -1078,22 +1078,27 @@ void reconstruction_window::on_qsdr_manual_clicked()
     tipl::vector<3> VGvs,VFvs(handle->voxel.vs);
     {
         gz_nifti read,read2;
-        if(!read.load_from_file(fa_template_list[uint32_t(ui->primary_template->currentIndex())]) ||
-           !read2.load_from_file(iso_template_list[uint32_t(ui->primary_template->currentIndex())]))
+        if(!read.load_from_file(fa_template_list[uint32_t(ui->primary_template->currentIndex())]))
         {
             QMessageBox::critical(this,"Error",QString("Cannot load template:")+ui->primary_template->currentText());
             return;
         }
         read.toLPS(VG);
         read.get_voxel_size(VGvs);
-        read2.toLPS(VG2);
-        VG += VG2;
+        if(read2.load_from_file(iso_template_list[uint32_t(ui->primary_template->currentIndex())]))
+        {
+            read2.toLPS(VG2);
+            VG += VG2;
+        }
     }
+
+    float slice_ratio = *std::max_element(handle->voxel.dim.begin(),handle->voxel.dim.end())/
+                        *std::min_element(handle->voxel.dim.begin(),handle->voxel.dim.end());
 
     match_template_resolution(VG,dummy,VGvs,VF,dummy,VFvs);
     std::shared_ptr<manual_alignment> manual(new manual_alignment(this,
                                                                 VF,VFvs,VG,VGvs,
-                                                                tipl::reg::rigid_body,
+                                                                slice_ratio < 2 ? tipl::reg::rigid_body : tipl::reg::translocation,
                                                                 tipl::reg::cost_type::mutual_info));
     manual->on_rerun_clicked();
     if(manual->exec() != QDialog::Accepted)
