@@ -818,6 +818,9 @@ bool TractModel::load_from_file(const char* file_name_,bool append)
 //---------------------------------------------------------------------------
 bool TractModel::save_data_to_file(std::shared_ptr<fib_data> handle,const char* file_name,const std::string& index_name)
 {
+    if(get_visible_track_count() == 0)
+        return false;
+
     std::vector<std::vector<float> > data;
     if(!get_tracts_data(handle,index_name,data) || data.empty())
         return false;
@@ -942,6 +945,8 @@ bool TractModel::save_tracts_to_file(const char* file_name_)
     std::string file_name(file_name_);
     std::string ext;
     saved = true;
+    if(get_visible_track_count() == 0)
+        return false;
     if(file_name.length() > 4)
         ext = std::string(file_name.end()-4,file_name.end());
     if(ext == std::string("t.gz"))
