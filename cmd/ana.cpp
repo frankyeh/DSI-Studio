@@ -143,7 +143,7 @@ bool load_tracts(const char* file_name,std::shared_ptr<TractModel> tract_model,s
     {
         std::cout << "filtering tracts using roi/roa/end regions." << std::endl;
         tract_model->filter_by_roi(roi_mgr);
-        std::cout << "tract count:" << tract_model->get_visible_track_count() << std::endl;
+        std::cout << "remaining tract count:" << tract_model->get_visible_track_count() << std::endl;
     }
     return true;
 }
@@ -340,11 +340,6 @@ int ana(program_option& po)
         }
     }
 
-    if(tract_model->get_visible_track_count() == 0)
-    {
-        std::cout << "no tracks remained after ROI selection." << std::endl;
-        return 1;
-    }
     if(po.has("output") && QFileInfo(output.c_str()).isDir())
         return trk_post(po,handle,tract_model,output + "/" + QFileInfo(tract_files[0].c_str()).baseName().toStdString(),false);
     if(po.has("output"))
