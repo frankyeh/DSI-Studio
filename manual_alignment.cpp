@@ -17,9 +17,9 @@ manual_alignment::manual_alignment(QWidget *parent,
                                    const tipl::vector<3>& from_vs_,
                                    tipl::image<3> to_,
                                    const tipl::vector<3>& to_vs_,
-                                   tipl::reg::reg_type reg_type_,
+                                   tipl::reg::reg_type reg_type,
                                    tipl::reg::cost_type cost_function) :
-    QDialog(parent),from_vs(from_vs_),to_vs(to_vs_),reg_type(reg_type_),timer(nullptr),ui(new Ui::manual_alignment)
+    QDialog(parent),from_vs(from_vs_),to_vs(to_vs_),timer(nullptr),ui(new Ui::manual_alignment)
 {
     from_original = from_;
     from.swap(from_);
@@ -46,11 +46,14 @@ manual_alignment::manual_alignment(QWidget *parent,
 
     tipl::normalize(from,1.0);
     tipl::normalize(to,1.0);
-    tipl::reg::get_bound(from,to,arg,b_upper,b_lower,reg_type,tipl::reg::large_bound);
     ui->setupUi(this);
     ui->options->hide();
     ui->menuBar->hide();
-    ui->reg_type->setCurrentIndex(reg_type == tipl::reg::rigid_body? 1: 2);
+    ui->reg_translocation->setChecked(reg_type & tipl::reg::translocation);
+    ui->reg_rotation->setChecked(reg_type & tipl::reg::rotation);
+    ui->reg_scaling->setChecked(reg_type & tipl::reg::scaling);
+    ui->reg_tilt->setChecked(reg_type & tipl::reg::tilt);
+
     ui->cost_type->setCurrentIndex(cost_function == tipl::reg::mutual_info ? 1 : 0);
     if(to.depth() == 1 || to.width() == 1 || to.height() == 1) // turn of search for slice wise registration
         ui->search_count->setValue(0);
@@ -142,6 +145,9 @@ manual_alignment::~manual_alignment()
 }
 void manual_alignment::load_param(void)
 {
+    tipl::affine_transform<float> b_upper,b_lower;
+    tipl::reg::get_bound(from,to,arg,b_upper,b_lower,tipl::reg::affine,tipl::reg::large_bound);
+
     // translocation
     disconnect_arg_update();
     ui->tx->setMaximum(b_upper.translocation[0]);
@@ -210,7 +216,6 @@ void manual_alignment::set_arg(const tipl::affine_transform<float>& arg_min,
     }
     else
         arg = arg_min;
-    tipl::reg::get_bound(from,to,arg,b_upper,b_lower,reg_type,tipl::reg::large_bound);
     check_reg();
 }
 tipl::transformation_matrix<float> manual_alignment::get_iT(void)
@@ -227,34 +232,22 @@ tipl::transformation_matrix<float> manual_alignment::get_iT(void)
 }
 void manual_alignment::param_changed()
 {
-    arg.translocation[0] = ui->tx->value();
-    arg.translocation[1] = ui->ty->value();
-    arg.translocation[2] = ui->tz->value();
+    arg.translocation[0] = float(ui->tx->value());
+    arg.translocation[1] = float(ui->ty->value());
+    arg.translocation[2] = float(ui->tz->value());
 
-    arg.rotation[0] = ui->rx->value();
-    arg.rotation[1] = ui->ry->value();
-    arg.rotation[2] = ui->rz->value();
+    arg.rotation[0] = float(ui->rx->value());
+    arg.rotation[1] = float(ui->ry->value());
+    arg.rotation[2] = float(ui->rz->value());
 
-    if(ui->reg_type->currentIndex() <= 1) // translocation or rigid
-    {
-        ui->sx->setValue(arg.scaling[0]);
-        ui->sy->setValue(arg.scaling[1]);
-        ui->sz->setValue(arg.scaling[2]);
+    arg.scaling[0] = float(ui->sx->value());
+    arg.scaling[1] = float(ui->sy->value());
+    arg.scaling[2] = float(ui->sz->value());
 
-        ui->xy->setValue(arg.affine[0]);
-        ui->xz->setValue(arg.affine[1]);
-        ui->yz->setValue(arg.affine[2]);
-    }
-    else
-    {
-        arg.scaling[0] = ui->sx->value();
-        arg.scaling[1] = ui->sy->value();
-        arg.scaling[2] = ui->sz->value();
+    arg.affine[0] = float(ui->xy->value());
+    arg.affine[1] = float(ui->xz->value());
+    arg.affine[2] = float(ui->yz->value());
 
-        arg.affine[0] = ui->xy->value();
-        arg.affine[1] = ui->xz->value();
-        arg.affine[2] = ui->yz->value();
-    }
     update_image();
     slice_pos_moved();
 }
@@ -337,33 +330,30 @@ void manual_alignment::on_buttonBox_rejected()
 void manual_alignment::on_rerun_clicked()
 {
     auto cost = ui->cost_type->currentIndex() == 0 ? tipl::reg::corr : tipl::reg::mutual_info;
-    if(ui->reg_type->currentIndex() == 0)
-        reg_type = tipl::reg::translocation;
-    if(ui->reg_type->currentIndex() == 1)
-        reg_type = tipl::reg::rigid_body;
-    if(ui->reg_type->currentIndex() == 2)
-        reg_type = tipl::reg::affine;
-    tipl::reg::get_bound(from,to,arg,b_upper,b_lower,reg_type,tipl::reg::large_bound);
-    if(ui->reg_type->currentIndex() <= 1) // translocation or rigid
-    {
-        ui->rotation_group->setEnabled(reg_type == tipl::reg::rigid_body);
-        arg.scaling[0] = arg.scaling[1] = arg.scaling[2] = 1.0f;
-        arg.affine[0] = arg.affine[1] = arg.affine[2] = 0.0f;
-    }
+    int reg_type = 0;
+    if(ui->reg_translocation->isChecked())
+        reg_type += int(tipl::reg::translocation);
+    if(ui->reg_rotation->isChecked())
+        reg_type += int(tipl::reg::rotation);
+    if(ui->reg_scaling->isChecked())
+        reg_type += int(tipl::reg::scaling);
+    if(ui->reg_tilt->isChecked())
+        reg_type += int(tipl::reg::tilt);
+
     load_param();
 
     int search_count = ui->search_count->value();
-    thread.run([this,cost,search_count]()
+    thread.run([this,cost,search_count,reg_type]()
     {
         if(cost == tipl::reg::mutual_info)
         {
-            tipl::reg::linear2(from,from_vs,to,to_vs,arg,reg_type,tipl::reg::faster<tipl::reg::mutual_information>(),thread.terminated,0.01,search_count,tipl::reg::large_bound);
-            tipl::reg::linear2(from,from_vs,to,to_vs,arg,reg_type,tipl::reg::faster<tipl::reg::mutual_information>(),thread.terminated,0.001,search_count,tipl::reg::large_bound);
+            tipl::reg::linear2(from,from_vs,to,to_vs,arg,tipl::reg::reg_type(reg_type),tipl::reg::faster<tipl::reg::mutual_information>(),thread.terminated,0.01,search_count,tipl::reg::large_bound);
+            tipl::reg::linear2(from,from_vs,to,to_vs,arg,tipl::reg::reg_type(reg_type),tipl::reg::faster<tipl::reg::mutual_information>(),thread.terminated,0.001,search_count,tipl::reg::large_bound);
         }
         else
         {
-            tipl::reg::linear2(from,from_vs,to,to_vs,arg,reg_type,tipl::reg::faster<tipl::reg::correlation>(),thread.terminated,0.01,search_count,tipl::reg::large_bound);
-            tipl::reg::linear2(from,from_vs,to,to_vs,arg,reg_type,tipl::reg::faster<tipl::reg::correlation>(),thread.terminated,0.001,search_count,tipl::reg::large_bound);
+            tipl::reg::linear2(from,from_vs,to,to_vs,arg,tipl::reg::reg_type(reg_type),tipl::reg::faster<tipl::reg::correlation>(),thread.terminated,0.01,search_count,tipl::reg::large_bound);
+            tipl::reg::linear2(from,from_vs,to,to_vs,arg,tipl::reg::reg_type(reg_type),tipl::reg::faster<tipl::reg::correlation>(),thread.terminated,0.001,search_count,tipl::reg::large_bound);
         }
     });
     if(timer)
@@ -375,24 +365,6 @@ void manual_alignment::on_switch_view_clicked()
 {
     ui->blend_pos->setValue(ui->blend_pos->value() > ui->blend_pos->maximum()/2 ? 0:ui->blend_pos->maximum());
 }
-
-void manual_alignment::on_reg_type_currentIndexChanged(int)
-{
-    if(ui->reg_type->currentIndex() <= 1) // translocation or rigid
-    {
-        tipl::reg::get_bound(from,to,arg,b_upper,b_lower,tipl::reg::rigid_body,tipl::reg::large_bound);
-        ui->scaling_group->setEnabled(false);
-        ui->tilting_group->setEnabled(false);
-    }
-    else
-    {
-        tipl::reg::get_bound(from,to,arg,b_upper,b_lower,tipl::reg::affine,tipl::reg::large_bound);
-        ui->scaling_group->setEnabled(true);
-        ui->tilting_group->setEnabled(true);
-    }
-    load_param();
-}
-
 
 void manual_alignment::on_actionSave_Warpped_Image_triggered()
 {

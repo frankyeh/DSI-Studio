@@ -18,12 +18,11 @@ class manual_alignment : public QDialog
 private:
     tipl::image<3> from_original;
     tipl::image<3> from,to,warped_from;
-    tipl::affine_transform<float> arg,b_upper,b_lower;
+    tipl::affine_transform<float> arg;
     tipl::vector<3> from_vs,to_vs;
     QGraphicsScene scene[3];
     tipl::color_image buffer[3];
     QImage slice_image[3];
-    tipl::reg::reg_type reg_type;
     float from_downsample = 1.0f;
     float to_downsample = 1.0f;
     tipl::thread thread;
@@ -64,9 +63,6 @@ private slots:
     void on_buttonBox_rejected();
 
     void on_switch_view_clicked();
-
-
-    void on_reg_type_currentIndexChanged(int index);
 
     void on_actionSave_Warpped_Image_triggered();
 
