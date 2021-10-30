@@ -951,16 +951,14 @@ bool TractModel::save_tracts_to_file(const char* file_name_)
         ext = std::string(file_name.end()-4,file_name.end());
     if(ext == std::string("t.gz"))
     {
-        std::vector<uint16_t> cluster;
         bool result = TinyTrack::save_to_file(file_name.c_str(),geo,vs,trans_to_mni,
-                                            tract_data,cluster,report,parameter_id,
+                                            tract_data,std::vector<uint16_t>(),report,parameter_id,
                                             color_changed ? tract_color.front():0);
         return result;
     }
     if (ext == std::string(".trk") || ext == std::string("k.gz"))
     {
-        std::vector<std::vector<float> > empty_scalar;
-        return TrackVis::save_to_file(file_name.c_str(),geo,vs,tract_data,empty_scalar,parameter_id,tract_color.front());
+        return TrackVis::save_to_file(file_name.c_str(),geo,vs,tract_data,std::vector<std::vector<float> >(),parameter_id,tract_color.front());
     }
     if(ext == std::string(".tck"))
     {
