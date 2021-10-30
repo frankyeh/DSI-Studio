@@ -123,7 +123,7 @@ int qc(program_option& po)
                                                          {return tipl::vector<3>(handle->dir.get_dir(size_t(pos),uint32_t(fib)));});
             std::ofstream out(report_file_name.c_str());
             out << "Fiber coherence index: " << result.first << std::endl;
-            out << "Fiber incoherent index: " << result.second << std::endl;;
+            out << "Fiber incoherent index: " << result.second << std::endl;
         }
         if(QString(file_name.c_str()).endsWith("src.gz") ||
            QString(file_name.c_str()).endsWith("nii.gz"))
