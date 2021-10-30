@@ -1011,8 +1011,7 @@ void view_image::on_dwi_volume_valueChanged(int value)
     else
         dwi_volume_buf[cur_dwi_volume].swap(data);
 
-    ui->dwi_label->setText(QString("DWI(%1/%2)").arg(value+1).arg(ui->dwi_volume->maximum()+1));
-    init_image();
+    ui->dwi_label->setText(QString("(%1/%2)").arg(value+1).arg(ui->dwi_volume->maximum()+1));
     show_image();
 }
 
