@@ -1042,6 +1042,29 @@ bool dcm2src(QStringList files,std::ostream& out)
         out << "Not DICOM. Skip." << std::endl;
         return false;
     }
+
+    // extract information
+    std::string manu,make,report,sequence;
+    {
+        tipl::io::dicom header;
+        if(!header.load_from_file(files[0].toStdString().c_str()))
+        {
+            out << " [ERROR] cannot read image volume. Skip" << std::endl;
+            return false;
+        }
+        header.get_sequence_id(sequence);
+        header.get_text(0x0008,0x0070,manu);//Manufacturer
+        header.get_text(0x0008,0x1090,make);
+        std::replace(manu.begin(),manu.end(),' ',char(0));
+        make.erase(std::remove(make.begin(),make.end(),' '),make.end());
+        std::ostringstream info;
+        info << manu.c_str() << " " << make.c_str() << " " << sequence
+            << ".TE=" << header.get_float(0x0018,0x0081) << ".TR=" << header.get_float(0x0018,0x0080)  << ".";
+        report = info.str();
+        if(report.size() < 80)
+            report.resize(80);
+    }
+
     if(dicom_files.size() > 1) //4D NIFTI
     {
         for(unsigned int index = 0;index < dicom_files.size();++index)
@@ -1057,13 +1080,40 @@ bool dcm2src(QStringList files,std::ostream& out)
                 return false;
             }
         }
-        std::string suffix("_dwi");
-        suffix += std::to_string(files.size());
-        suffix += ".src.gz";
-        QString src_name = get_dicom_output_name(files[0],suffix.c_str(),true);
-        out << "Create SRC file: " << std::filesystem::path(src_name.toStdString()).filename().string() << std::endl;
-        if(!DwiHeader::output_src(src_name.toStdString().c_str(),dicom_files,0,false))
-            out << "[ERROR]" << src_error_msg << std::endl;
+        if(DwiHeader::has_b_table(dicom_files))
+        {
+            QString src_name = get_dicom_output_name(files[0],(std::string("_")+sequence+".src.gz").c_str(),true);
+            out << "Create SRC file: " << std::filesystem::path(src_name.toStdString()).filename().string() << std::endl;
+            if(!DwiHeader::output_src(src_name.toStdString().c_str(),dicom_files,0,false))
+                out << "[ERROR]" << src_error_msg << std::endl;
+        }
+        else
+        {
+            if(!DwiHeader::consistent_dimension(dicom_files))
+                out << "[SKIPPED] Cannot save as 4D nifti due to different image dimension" << std::endl;
+            else
+            {
+                auto dicom = dicom_files[0];
+                tipl::matrix<4,4> trans;
+                initial_LPS_nifti_srow(trans,dicom->image.shape(),dicom->voxel_size);
+
+                tipl::shape<4> nifti_dim;
+                std::copy(dicom->image.shape().begin(),
+                          dicom->image.shape().end(),nifti_dim.begin());
+                nifti_dim[3] = uint32_t(dicom_files.size());
+
+                tipl::image<4,unsigned short> buffer(nifti_dim);
+                for(unsigned int index = 0;index < dicom_files.size();++index)
+                {
+                    std::copy(dicom_files[index]->image.begin(),
+                              dicom_files[index]->image.end(),
+                              buffer.begin() + long(index*dicom_files[index]->image.size()));
+                }
+                QString nii_name = get_dicom_output_name(files[0],(std::string("_")+sequence+".nii.gz").c_str(),true);
+                out << "Create 4D NII file: " << nii_name.toStdString() << std::endl;
+                return gz_nifti::save_to_file(nii_name.toStdString().c_str(),buffer,dicom->voxel_size,trans,report.c_str());
+            }
+        }
         return true;
     }
 
@@ -1076,18 +1126,12 @@ bool dcm2src(QStringList files,std::ostream& out)
     {
         std::sort(files.begin(),files.end(),compare_qstring());
         tipl::io::dicom_volume v;
-        tipl::io::dicom header;
         std::vector<std::string> file_list;
         for(int index = 0;index < files.size();++index)
             file_list.push_back(files[index].toStdString().c_str());
         if(!v.load_from_files(file_list))
         {
             out << v.error_msg.c_str() << std::endl;
-            return false;
-        }
-        if(!header.load_from_file(files[0].toStdString().c_str()))
-        {
-            out << " [ERROR] cannot read image volume. Skip" << std::endl;
             return false;
         }
 
@@ -1120,21 +1164,7 @@ bool dcm2src(QStringList files,std::ostream& out)
         tipl::flip_xy(I);
         nii_out << I;
         nii_out.set_voxel_size(vs);
-
-        std::string manu,make,report,sequence;
-        header.get_sequence_id(sequence);
-        header.get_text(0x0008,0x0070,manu);//Manufacturer
-        header.get_text(0x0008,0x1090,make);
-        std::replace(manu.begin(),manu.end(),' ',char(0));
-        make.erase(std::remove(make.begin(),make.end(),' '),make.end());
-        std::ostringstream info;
-        info << manu.c_str() << " " << make.c_str() << " " << sequence
-            << ".TE=" << header.get_float(0x0018,0x0081) << ".TR=" << header.get_float(0x0018,0x0080)  << ".";
-        report = info.str();
-        if(report.size() < 80)
-            report.resize(80);
         nii_out.set_descrip(report.c_str());
-
         std::string suffix("_");
         suffix += sequence;
         suffix += ".nii.gz";
