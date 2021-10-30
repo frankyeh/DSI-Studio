@@ -175,30 +175,12 @@ std::string ImageModel::check_b_table(void)
     fib_dir[0].swap(voxel.fib_dir);
 
     const unsigned char order[24][6] = {
-                            {0,1,2,0,0,0},
-                            {0,1,2,1,0,0},
-                            {0,1,2,0,1,0},
-                            {0,1,2,0,0,1},
-                            {0,2,1,0,0,0},
-                            {0,2,1,1,0,0},
-                            {0,2,1,0,1,0},
-                            {0,2,1,0,0,1},
-                            {1,0,2,0,0,0},
-                            {1,0,2,1,0,0},
-                            {1,0,2,0,1,0},
-                            {1,0,2,0,0,1},
-                            {1,2,0,0,0,0},
-                            {1,2,0,1,0,0},
-                            {1,2,0,0,1,0},
-                            {1,2,0,0,0,1},
-                            {2,1,0,0,0,0},
-                            {2,1,0,1,0,0},
-                            {2,1,0,0,1,0},
-                            {2,1,0,0,0,1},
-                            {2,0,1,0,0,0},
-                            {2,0,1,1,0,0},
-                            {2,0,1,0,1,0},
-                            {2,0,1,0,0,1}};
+                            {0,1,2,0,0,0},{0,1,2,1,0,0},{0,1,2,0,1,0},{0,1,2,0,0,1},
+                            {0,2,1,0,0,0},{0,2,1,1,0,0},{0,2,1,0,1,0},{0,2,1,0,0,1},
+                            {1,0,2,0,0,0},{1,0,2,1,0,0},{1,0,2,0,1,0},{1,0,2,0,0,1},
+                            {1,2,0,0,0,0},{1,2,0,1,0,0},{1,2,0,0,1,0},{1,2,0,0,0,1},
+                            {2,1,0,0,0,0},{2,1,0,1,0,0},{2,1,0,0,1,0},{2,1,0,0,0,1},
+                            {2,0,1,0,0,0},{2,0,1,1,0,0},{2,0,1,0,1,0},{2,0,1,0,0,1}};
     const char txt[24][7] = {".012",".012fx",".012fy",".012fz",
                              ".021",".021fx",".021fy",".021fz",
                              ".102",".102fx",".102fy",".102fz",
@@ -208,6 +190,8 @@ std::string ImageModel::check_b_table(void)
 
     std::shared_ptr<fib_data> template_fib;
     tipl::transformation_matrix<float> T;
+    tipl::matrix<3,3,float> r;
+
     if(is_human_data())
     {
         template_fib = std::make_shared<fib_data>();
@@ -215,21 +199,22 @@ std::string ImageModel::check_b_table(void)
             template_fib.reset();
         else
         {
-            tipl::vector<3> vs;
-            tipl::shape<3> geo;
+            tipl::image<3> iso_fa;
+            template_fib->get_iso_fa(iso_fa);
+            tipl::normalize(iso_fa,255.0f);
+            tipl::image<3,unsigned char> I;
+            I = iso_fa;
+
+            const float bound[8] = {1.0f,-1.0f,0.02f,-0.02f,1.2f,0.9f,0.1f,-0.1f};
+            double precision[3] = {0.1,0.01,0.001};
+            bool terminated = false;
             tipl::affine_transform<float> arg;
-            if(template_fib->dim == voxel.dim)
-            {
-                std::cout << "image already rotated ac-pc" << std::endl;
-                T.sr[0] = T.sr[4] = T.sr[8] = 1.0f;
-            }
-            else
-            {
-                if(!arg_to_mni(2.0f,vs,geo,arg))
-                    template_fib.reset();
-                else
-                    T = tipl::transformation_matrix<float>(arg,geo,vs,voxel.dim,voxel.vs);
-            }
+            for(int i = 0;i < 3; ++ i)
+                tipl::reg::linear_mr(I,template_fib->vs,dwi,voxel.vs,
+                        arg,tipl::reg::affine,tipl::reg::mutual_information(),terminated,precision[i],bound);
+            tipl::rotation_matrix(arg.rotation,r.begin(),tipl::vdim<3>());
+            r.inv();
+            T = tipl::transformation_matrix<float>(arg,template_fib->dim,template_fib->vs,voxel.dim,voxel.vs);
         }
     }
     if(template_fib.get())
@@ -268,6 +253,7 @@ std::string ImageModel::check_b_table(void)
                 if(subject_geo.is_valid(pos))
                 {
                     auto sub_dir = new_dir[0][tipl::pixel_index<3>(pos.begin(),subject_geo).index()];
+                    sub_dir.rotate(r);
                     sum_cos += std::abs(double(sub_dir*tipl::vector<3>(ptr)));
                     ++ncount;
                 }

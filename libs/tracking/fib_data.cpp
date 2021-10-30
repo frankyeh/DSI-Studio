@@ -1106,6 +1106,17 @@ void fib_data::get_voxel_information(int x,int y,int z,std::vector<float>& buf) 
             buf.push_back(view_item[i].get_image().size() ? view_item[i].get_image()[index] : 0.0);
     }
 }
+
+void fib_data::get_iso_fa(tipl::image<3>& iso_fa_) const
+{
+    size_t index = get_name_index("iso");
+    if(view_item.size() == index)
+        index = 0;
+    tipl::image<3> iso_fa(view_item[index].get_image());
+    tipl::add(iso_fa,view_item[0].get_image());
+    iso_fa.swap(iso_fa_);
+}
+
 extern std::vector<std::string> fa_template_list,iso_template_list,track_atlas_file_list;
 extern std::vector<std::vector<std::string> > template_atlas_list;
 
@@ -1257,38 +1268,70 @@ bool fib_data::load_track_atlas()
             error_msg = "failed to load tractography atlas";
             return false;
         }
-        return load_track_atlas(track_atlas);
-    }
-    return true;
-}
 
-bool fib_data::load_track_atlas(std::shared_ptr<TractModel> track)
-{
-    if(!load_template())
-        return false;
+        // find left right pairs
+        std::vector<unsigned int> pair(tractography_name_list.size(),uint32_t(tractography_name_list.size()));
+        for(unsigned int i = 0;i < tractography_name_list.size();++i)
+            for(unsigned int j = i + 1;j < tractography_name_list.size();++j)
+                if(tractography_name_list[i].size() == tractography_name_list[j].size() &&
+                   tractography_name_list[i].back() == 'L' && tractography_name_list[j].back() == 'R' &&
+                   tractography_name_list[i].substr(0,tractography_name_list[i].length()-1) ==
+                   tractography_name_list[j].substr(0,tractography_name_list[j].length()-1))
+                {
+                    pair[i] = j;
+                    pair[j] = i;
+                }
 
-    {
-        prog_init p("warping atlas tracks to subject space");
-        run_normalization(true,true);
-        if(prog_aborted())
+        // copy tract from one side to another
+        const auto& tracts = track_atlas->get_tracts();
+        auto& cluster = track_atlas->get_cluster_info();
+
+        std::vector<std::vector<float> > new_tracts;
+        std::vector<unsigned int> new_cluster;
+        for(size_t i = 0;i < tracts.size();++i)
+            if(pair[cluster[i]] < tractography_name_list.size())
+            {
+                new_tracts.push_back(tracts[i]);
+                auto& tract = new_tracts.back();
+                // mirror in the x
+                for(size_t pos = 0;pos < tract.size();pos += 3)
+                    tract[pos] = track_atlas->geo.width()-tract[pos];
+                new_cluster.push_back(pair[cluster[i]]);
+            }
+
+        // add adds
+        track_atlas->add_tracts(new_tracts);
+        cluster.insert(cluster.end(),new_cluster.begin(),new_cluster.end());
+
+        track_atlas->save_tracts_to_file("d:\\test.tt.gz");
+
+        if(!load_template())
             return false;
-    }
 
-    // warp tractography atlas to subject space
-    auto& tract_data = track->get_tracts();
-    auto T = tipl::from_space(track->trans_to_mni).to(template_to_mni);
-    tipl::par_for(tract_data.size(),[&](size_t i)
-    {
-        for(size_t j = 0;j < tract_data[i].size();j += 3)
         {
-            tipl::vector<3> p(&tract_data[i][j]);
-            apply_trans(p,T); // from tract atlas space to current template space
-            temp2sub(p);
-            tract_data[i][j] = p[0];
-            tract_data[i][j+1] = p[1];
-            tract_data[i][j+2] = p[2];
+            prog_init p("warping atlas tracks to subject space");
+            run_normalization(true,true);
+            if(prog_aborted())
+                return false;
         }
-    });
+
+        // warp tractography atlas to subject space
+        auto& tract_data = track_atlas->get_tracts();
+        auto T = tipl::from_space(track_atlas->trans_to_mni).to(template_to_mni);
+        tipl::par_for(tract_data.size(),[&](size_t i)
+        {
+            for(size_t j = 0;j < tract_data[i].size();j += 3)
+            {
+                tipl::vector<3> p(&tract_data[i][j]);
+                apply_trans(p,T); // from tract atlas space to current template space
+                temp2sub(p);
+                tract_data[i][j] = p[0];
+                tract_data[i][j+1] = p[1];
+                tract_data[i][j+2] = p[2];
+            }
+        });
+        return true;
+    }
     return true;
 }
 
@@ -1624,7 +1667,7 @@ void fib_data::run_normalization(bool background,bool inv)
 
         {
             prog = 4;
-            set_title("calculating tempalte to subject warp field");
+            set_title("calculating template to subject warp field");
             tipl::image<3,tipl::vector<3,float> > pos;
             tipl::displacement_to_mapping(dis,pos,T);
             if(out)

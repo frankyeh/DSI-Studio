@@ -1829,17 +1829,6 @@ void tracking_window::on_show_ruler_toggled(bool checked)
     slice_need_update = true;
 }
 
-
-void get_iso_fa(std::shared_ptr<fib_data> handle, tipl::image<3>& iso_fa_)
-{
-    size_t index = handle->get_name_index("iso");
-    if(handle->view_item.size() == index)
-        index = 0;
-    tipl::image<3> iso_fa(handle->view_item[index].get_image());
-    tipl::add(iso_fa,handle->view_item[0].get_image());
-    iso_fa.swap(iso_fa_);
-}
-
 void tracking_window::on_actionAdjust_Mapping_triggered()
 {
     CustomSliceModel* reg_slice = dynamic_cast<CustomSliceModel*>(current_slice.get());
@@ -1850,7 +1839,7 @@ void tracking_window::on_actionAdjust_Mapping_triggered()
     }
     reg_slice->terminate();
     tipl::image<3> iso_fa;
-    get_iso_fa(handle,iso_fa);
+    handle->get_iso_fa(iso_fa);
     std::shared_ptr<manual_alignment> manual(new manual_alignment(this,
         iso_fa,slices[0]->vs,
         reg_slice->get_source(),reg_slice->vs,
@@ -2788,7 +2777,7 @@ void tracking_window::on_actionAdjust_Atlas_Mapping_triggered()
     if(!handle->load_template())
         return;
     tipl::image<3> iso_fa;
-    get_iso_fa(handle,iso_fa);
+    handle->get_iso_fa(iso_fa);
     std::shared_ptr<manual_alignment> manual(new manual_alignment(this,
         iso_fa,slices[0]->vs,
         handle->template_I2.empty() ? handle->template_I2: handle->template_I,handle->template_vs,
