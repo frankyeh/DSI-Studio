@@ -1303,8 +1303,6 @@ bool fib_data::load_track_atlas()
         track_atlas->add_tracts(new_tracts);
         cluster.insert(cluster.end(),new_cluster.begin(),new_cluster.end());
 
-        track_atlas->save_tracts_to_file("d:\\test.tt.gz");
-
         if(!load_template())
             return false;
 
