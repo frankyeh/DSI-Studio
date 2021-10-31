@@ -306,7 +306,7 @@ void reconstruction_window::doReconstruction(unsigned char method_id,bool prompt
     else
         handle->voxel.scheme_balance = false;
 
-    if(ui->align_acpc->isChecked() && handle->is_human_data())
+    if(ui->align_acpc->isChecked() && handle->is_human_data() && method_id != 7)
         handle->rotate_to_mni(handle->voxel.vs[0] < 1.5f ? 1.0f : 2.0f);
 
     auto dim_backup = handle->voxel.dim; // for QSDR
