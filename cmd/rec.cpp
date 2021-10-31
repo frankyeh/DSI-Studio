@@ -87,51 +87,6 @@ int rec(program_option& po)
         }
     }
 
-    if(po.get("align_acpc",1))
-        src.rotate_to_mni(src.voxel.vs[0] < 1.5f ? 1.0f:2.0f);
-    else
-    {
-        if(po.has("rotate_to"))
-        {
-            std::string file_name = po.get("rotate_to");
-            gz_nifti in;
-            if(!in.load_from_file(file_name.c_str()))
-            {
-                std::cout << "failed to read " << file_name << std::endl;
-                return 1;
-            }
-            tipl::image<3,unsigned char> I;
-            tipl::vector<3> vs;
-            in.get_voxel_size(vs);
-            in >> I;
-            std::cout << "running rigid body transformation" << std::endl;
-            tipl::transformation_matrix<double> T;
-            bool terminated = false;
-            tipl::reg::two_way_linear_mr(I,vs,src.dwi,src.voxel.vs,
-                           T,tipl::reg::rigid_body,tipl::reg::mutual_information(),
-                            terminated,src.voxel.thread_count);
-            std::cout << "DWI rotated." << std::endl;
-            src.rotate(I.shape(),vs,T);
-        }
-        else
-            if (po.has("affine"))
-            {
-                std::cout << "reading transformation matrix" <<std::endl;
-                std::ifstream in(po.get("affine").c_str());
-                std::vector<double> T((std::istream_iterator<float>(in)),
-                                     (std::istream_iterator<float>()));
-                if(T.size() != 12)
-                {
-                    std::cout << "invalid transfformation matrix." <<std::endl;
-                    return 1;
-                }
-                tipl::transformation_matrix<double> affine;
-                std::copy(T.begin(),T.end(),affine.begin());
-                std::cout << "rotating images" << std::endl;
-                src.rotate(src.voxel.dim,src.voxel.vs,affine);
-            }
-    }
-
     if(po.has("motion_correction"))
     {
         std::cout << "correct for motion..." << std::endl;
@@ -192,6 +147,51 @@ int rec(program_option& po)
         src.voxel.param[3] = po.get("param3",float(0));
     if (po.has("param4"))
         src.voxel.param[4] = po.get("param4",float(0));
+
+    if(po.get("align_acpc",1) && method_index != 7)
+        src.rotate_to_mni(src.voxel.vs[0] < 1.5f ? 1.0f:2.0f);
+    else
+    {
+        if(po.has("rotate_to"))
+        {
+            std::string file_name = po.get("rotate_to");
+            gz_nifti in;
+            if(!in.load_from_file(file_name.c_str()))
+            {
+                std::cout << "failed to read " << file_name << std::endl;
+                return 1;
+            }
+            tipl::image<3,unsigned char> I;
+            tipl::vector<3> vs;
+            in.get_voxel_size(vs);
+            in >> I;
+            std::cout << "running rigid body transformation" << std::endl;
+            tipl::transformation_matrix<double> T;
+            bool terminated = false;
+            tipl::reg::two_way_linear_mr(I,vs,src.dwi,src.voxel.vs,
+                           T,tipl::reg::rigid_body,tipl::reg::mutual_information(),
+                            terminated,src.voxel.thread_count);
+            std::cout << "DWI rotated." << std::endl;
+            src.rotate(I.shape(),vs,T);
+        }
+        else
+            if (po.has("affine"))
+            {
+                std::cout << "reading transformation matrix" <<std::endl;
+                std::ifstream in(po.get("affine").c_str());
+                std::vector<double> T((std::istream_iterator<float>(in)),
+                                     (std::istream_iterator<float>()));
+                if(T.size() != 12)
+                {
+                    std::cout << "invalid transfformation matrix." <<std::endl;
+                    return 1;
+                }
+                tipl::transformation_matrix<double> affine;
+                std::copy(T.begin(),T.end(),affine.begin());
+                std::cout << "rotating images" << std::endl;
+                src.rotate(src.voxel.dim,src.voxel.vs,affine);
+            }
+    }
 
     src.voxel.method_id = method_index;
     src.voxel.ti.init(uint16_t(po.get("odf_order",int(8))));
