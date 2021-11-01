@@ -148,117 +148,101 @@ bool load_tracts(const char* file_name,std::shared_ptr<TractModel> tract_model,s
     return true;
 }
 bool check_other_slices(const std::string& other_slices,std::shared_ptr<fib_data> handle);
-int ana(program_option& po)
+int ana_region(program_option& po)
 {
     std::shared_ptr<fib_data> handle = cmd_load_fib(po.get("source"));
     if(!handle.get())
         return 1;
-    if(po.has("info"))
+    std::vector<std::string> region_list;
+    std::vector<std::shared_ptr<ROIRegion> > regions;
+    if(po.has("atlas"))
     {
-        float otsu = tipl::segmentation::otsu_threshold(tipl::make_image(handle->dir.fa[0],handle->dim))*0.6f;
-        auto result = evaluate_fib(handle->dim,otsu,handle->dir.fa,[handle](size_t pos,unsigned int fib)
-                                        {return tipl::vector<3>(handle->dir.get_dir(pos,fib));});
-        std::ofstream out(po.get("info"));
-        out << "fiber coherence index\t" << result.first << std::endl;
-    }
-
-    if(po.has("atlas") || po.has("region") || po.has("regions"))
-    {
-        std::vector<std::string> region_list;
-        std::vector<std::shared_ptr<ROIRegion> > regions;
-        if(po.has("atlas"))
+        std::vector<std::shared_ptr<atlas> > atlas_list;
+        if(!atl_load_atlas(handle,po.get("atlas"),atlas_list))
+            return 1;
+        for(unsigned int i = 0;i < atlas_list.size();++i)
         {
-            std::vector<std::shared_ptr<atlas> > atlas_list;
-            if(!atl_load_atlas(handle,po.get("atlas"),atlas_list))
-                return 1;
-            for(unsigned int i = 0;i < atlas_list.size();++i)
+            for(unsigned int j = 0;j < atlas_list[i]->get_list().size();++j)
             {
-                for(unsigned int j = 0;j < atlas_list[i]->get_list().size();++j)
+                std::shared_ptr<ROIRegion> region(std::make_shared<ROIRegion>(handle));
+                std::string region_name = atlas_list[i]->name;
+                region_name += ":";
+                region_name += atlas_list[i]->get_list()[j];
+                if(!load_region(po,handle,*region.get(),region_name))
                 {
-                    std::shared_ptr<ROIRegion> region(std::make_shared<ROIRegion>(handle));
-                    std::string region_name = atlas_list[i]->name;
-                    region_name += ":";
-                    region_name += atlas_list[i]->get_list()[j];
-                    if(!load_region(po,handle,*region.get(),region_name))
-                    {
-                        std::cout << "fail to load the ROI file:" << region_name << std::endl;
-                        return 1;
-                    }
-                    region_list.push_back(atlas_list[i]->get_list()[j]);
-                    regions.push_back(region);
-                }
-
-            }
-        }
-        if(po.has("region"))
-        {
-            QStringList roi_list = QString(po.get("region").c_str()).split("+");
-            for(int i = 0;i < roi_list.size();++i)
-            {
-                std::shared_ptr<ROIRegion> region(new ROIRegion(handle));
-                if(!load_region(po,handle,*region.get(),roi_list[i].toStdString()))
-                {
-                    std::cout << "fail to load the ROI file." << std::endl;
+                    std::cout << "fail to load the ROI file:" << region_name << std::endl;
                     return 1;
                 }
-                region_list.push_back(roi_list[i].toStdString());
+                region_list.push_back(atlas_list[i]->get_list()[j]);
                 regions.push_back(region);
             }
-        }
-        if(po.has("regions"))
-        {
-            QStringList roi_list = QString(po.get("regions").c_str()).split("+");
-            for(int i = 0;i < roi_list.size();++i)
-            {
-                if(!load_nii(po,handle,po.get("regions"),regions,region_list))
-                    return 1;
-            }
-        }
-        if(regions.empty())
-        {
-            std::cout << "ERROR: no region assigned" << std::endl;
-            return 1;
-        }
 
-        // allow adding other slices for connectivity and statistics
-        if(po.has("other_slices") && !check_other_slices(po.get("other_slices"),handle))
-            return 1;
-
-        std::string result;
-        std::cout << "calculating region statistics at a total of " << regions.size() << " regions" << std::endl;
-        get_regions_statistics(handle,regions,region_list,result);
-
-        std::string file_name(po.get("source"));
-        file_name += ".statistics.txt";
-        if(po.has("output"))
-        {
-            std::string output = po.get("output");
-            if(QFileInfo(output.c_str()).isDir())
-                file_name = output + std::string("/") + std::filesystem::path(file_name).filename().string();
-            else
-                file_name = output;
-            if(file_name.find(".txt") == std::string::npos)
-                file_name += ".txt";
         }
-        std::cout << "export ROI statistics to file:" << file_name << std::endl;
-        std::ofstream out(file_name.c_str());
-        out << result <<std::endl;
-        return 0;
     }
-
-    if(!po.has("tract"))
+    if(po.has("region"))
     {
-        std::cout << "no tract file or ROI file assigned." << std::endl;
+        QStringList roi_list = QString(po.get("region").c_str()).split("+");
+        for(int i = 0;i < roi_list.size();++i)
+        {
+            std::shared_ptr<ROIRegion> region(new ROIRegion(handle));
+            if(!load_region(po,handle,*region.get(),roi_list[i].toStdString()))
+            {
+                std::cout << "fail to load the ROI file." << std::endl;
+                return 1;
+            }
+            region_list.push_back(roi_list[i].toStdString());
+            regions.push_back(region);
+        }
+    }
+    if(po.has("regions"))
+    {
+        QStringList roi_list = QString(po.get("regions").c_str()).split("+");
+        for(int i = 0;i < roi_list.size();++i)
+        {
+            if(!load_nii(po,handle,po.get("regions"),regions,region_list))
+                return 1;
+        }
+    }
+    if(regions.empty())
+    {
+        std::cout << "ERROR: no region assigned" << std::endl;
         return 1;
     }
 
-    std::shared_ptr<RoiMgr> roi_mgr(new RoiMgr(handle));
-    if(!load_roi(po,handle,roi_mgr))
+    // allow adding other slices for connectivity and statistics
+    if(po.has("other_slices") && !check_other_slices(po.get("other_slices"),handle))
         return 1;
 
+    std::string result;
+    std::cout << "calculating region statistics at a total of " << regions.size() << " regions" << std::endl;
+    get_regions_statistics(handle,regions,region_list,result);
 
+    std::string file_name(po.get("source"));
+    file_name += ".statistics.txt";
+    if(po.has("output"))
+    {
+        std::string output = po.get("output");
+        if(QFileInfo(output.c_str()).isDir())
+            file_name = output + std::string("/") + std::filesystem::path(file_name).filename().string();
+        else
+            file_name = output;
+        if(file_name.find(".txt") == std::string::npos)
+            file_name += ".txt";
+    }
+    std::cout << "export ROI statistics to file:" << file_name << std::endl;
+    std::ofstream out(file_name.c_str());
+    out << result <<std::endl;
+    return 0;
+}
+int ana_tract(program_option& po)
+{
+    std::shared_ptr<fib_data> handle = cmd_load_fib(po.get("source"));
+    std::shared_ptr<RoiMgr> roi_mgr(new RoiMgr(handle));
+    std::string output = po.get("output");
     std::vector<std::string> tract_files;
-    std::vector<std::shared_ptr<TractModel> > tracts;
+    if(!handle.get() || !load_roi(po,handle,roi_mgr))
+        return 1;
+
     get_filenames_from(po.get("tract"),tract_files);
     if(tract_files.size() == 0)
     {
@@ -266,6 +250,47 @@ int ana(program_option& po)
         return 1;
     }
 
+    // accumulate multiple tracts into one probabilistic nifti volume
+    if(tract_files.size() > 1 && QString(output.c_str()).endsWith(".nii.gz"))
+    {
+        std::cout << "computing tract probability to " << output << std::endl;
+        if(std::filesystem::exists(output))
+        {
+            std::cout << "output file:" << output << " exists. terminating..." << std::endl;
+            return 0;
+        }
+        auto dim = handle->dim;
+        tipl::image<3,uint32_t> accumulate_map(dim);
+        for(size_t i = 0;i < tract_files.size();++i)
+        {
+            std::cout << "accumulating " << tract_files[i] << "..." <<std::endl;
+            std::shared_ptr<TractModel> tract(new TractModel(handle));
+            if(!load_tracts(tract_files[i].c_str(),tract,roi_mgr))
+                return 1;
+            std::vector<tipl::vector<3,short> > points;
+            tract->to_voxel(points,1.0f);
+            tipl::image<3,char> tract_mask(dim);
+            tipl::par_for(points.size(),[&](size_t j)
+            {
+                tipl::vector<3,short> p = points[j];
+                if(dim.is_valid(p))
+                    tract_mask[tipl::pixel_index<3>(p[0],p[1],p[2],dim).index()]=1;
+            });
+            accumulate_map += tract_mask;
+        }
+        tipl::image<3> pdi(accumulate_map);
+        tipl::multiply_constant(pdi,1.0f/float(tract_files.size()));
+        if(!gz_nifti::save_to_file(output.c_str(),pdi,handle->vs,handle->trans_to_mni))
+        {
+            std::cout << "ERROR: cannot write to " << output << std::endl;
+            return 1;
+        }
+        std::cout << "file saved at " << output << std::endl;
+        return 0;
+    }
+
+
+    std::vector<std::shared_ptr<TractModel> > tracts;
     for(size_t i = 0;i < tract_files.size();++i)
     {
         tracts.push_back(std::make_shared<TractModel>(handle));
@@ -274,9 +299,6 @@ int ana(program_option& po)
     }
 
     std::cout << "a total of " << tract_files.size() << " tract file(s) loaded" << std::endl;
-
-    std::string output = po.get("output");
-
     // load multiple track files and save as one multi-cluster tract file
     if(tracts.size() > 1)
     {
@@ -285,42 +307,6 @@ int ana(program_option& po)
         {
             std::cout << "save all tracts to " << output << std::endl;
             if(!TractModel::save_all(output.c_str(),tracts,tract_files))
-            {
-                std::cout << "ERROR: cannot write to " << output << std::endl;
-                return 1;
-            }
-            std::cout << "file saved at " << output << std::endl;
-            return 0;
-        }
-
-        // accumulate tract prob
-        if(QString(output.c_str()).endsWith(".nii.gz"))
-        {
-            std::cout << "computing tract probability to " << output << std::endl;
-            if(std::filesystem::exists(output))
-            {
-                std::cout << "output file:" << output << " exists. terminating..." << std::endl;
-                return 0;
-            }
-            auto dim = handle->dim;
-            tipl::image<3,uint32_t> accumulate_map(dim);
-            for(size_t i = 0;i < tracts.size();++i)
-            {
-                std::cout << "accumulating " << tract_files[i] << "..." <<std::endl;
-                std::vector<tipl::vector<3,short> > points;
-                tracts[i]->to_voxel(points,1.0f);
-                tipl::image<3,char> tract_mask(dim);
-                tipl::par_for(points.size(),[&](size_t j)
-                {
-                    tipl::vector<3,short> p = points[j];
-                    if(dim.is_valid(p))
-                        tract_mask[tipl::pixel_index<3>(p[0],p[1],p[2],dim).index()]=1;
-                });
-                accumulate_map += tract_mask;
-            }
-            tipl::image<3> pdi(accumulate_map);
-            tipl::multiply_constant(pdi,1.0f/float(tracts.size()));
-            if(!gz_nifti::save_to_file(output.c_str(),pdi,handle->vs,handle->trans_to_mni))
             {
                 std::cout << "ERROR: cannot write to " << output << std::endl;
                 return 1;
@@ -340,4 +326,26 @@ int ana(program_option& po)
     if(po.has("output"))
         return trk_post(po,handle,tract_model,output,true);
     return trk_post(po,handle,tract_model,tract_files[0],false);
+
+}
+int ana(program_option& po)
+{
+    if(po.has("atlas") || po.has("region") || po.has("regions"))
+        return ana_region(po);
+    if(po.has("tract"))
+        return ana_tract(po);
+    if(po.has("info"))
+    {
+        std::shared_ptr<fib_data> handle = cmd_load_fib(po.get("source"));
+        if(!handle.get())
+            return 1;
+        float otsu = tipl::segmentation::otsu_threshold(tipl::make_image(handle->dir.fa[0],handle->dim))*0.6f;
+        auto result = evaluate_fib(handle->dim,otsu,handle->dir.fa,[handle](size_t pos,unsigned int fib)
+                                        {return tipl::vector<3>(handle->dir.get_dir(pos,fib));});
+        std::ofstream out(po.get("info"));
+        out << "fiber coherence index\t" << result.first << std::endl;
+        return 0;
+    }
+    std::cout << "no tract file or ROI file assigned." << std::endl;
+    return 1;
 }
