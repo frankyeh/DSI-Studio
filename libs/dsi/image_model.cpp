@@ -929,6 +929,7 @@ void ImageModel::trim(void)
     tipl::shape<3> range_min,range_max;
     tipl::bounding_box(voxel.mask,range_min,range_max,0);
     prog_init p("Removing background region");
+    std::cout << "from:" << range_min << " to:" << range_max << std::endl;
     tipl::par_for2(src_dwi_data.size(),[&](unsigned int index,unsigned int id)
     {
         if(!id)
