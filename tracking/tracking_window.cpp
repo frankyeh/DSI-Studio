@@ -868,7 +868,7 @@ void tracking_window::update_scene_slice(void)
 bool tracking_window::eventFilter(QObject *obj, QEvent *event)
 {
     bool has_info = false;
-    tipl::vector<3,float> pos;
+    tipl::vector<3> pos;
     // update slice here
     if(slice_need_update)
     {
@@ -895,46 +895,44 @@ bool tracking_window::eventFilter(QObject *obj, QEvent *event)
     if(!has_info)
         return false;
 
-    QString status;
-
-    if(!current_slice->is_diffusion_space)
-    {
-        tipl::vector<3,float> pos_dwi(pos);
-        pos_dwi.to(current_slice->T);
-        status = QString("(%1,%2,%3) %4(%5,%6,%7)").arg(std::round(pos_dwi[0]*10.0)/10.0)
-                .arg(std::round(pos_dwi[1]*10.0)/10.0)
-                .arg(std::round(pos_dwi[2]*10.0)/10.0)
-                .arg(ui->SliceModality->currentText())
-                .arg(std::round(pos[0]*10.0)/10.0)
-                .arg(std::round(pos[1]*10.0)/10.0)
-                .arg(std::round(pos[2]*10.0)/10.0);
-        pos = pos_dwi;
-    }
-    else
-    {
-        status = QString("(%1,%2,%3) ").arg(std::round(pos[0]*10.0)/10.0)
-                .arg(std::round(pos[1]*10.0)/10.0)
-                .arg(std::round(pos[2]*10.0)/10.0);
-    }
+    QString status = QString("shape=(%1,%2,%3) vs=(%4,%5,%6)mm pos=(%7,%8,%9)")
+            .arg(handle->dim[0])
+            .arg(handle->dim[1])
+            .arg(handle->dim[2])
+            .arg(handle->vs[0])
+            .arg(handle->vs[1])
+            .arg(handle->vs[2])
+            .arg(std::round(pos[0]*10.0)/10.0)
+            .arg(std::round(pos[1]*10.0)/10.0)
+            .arg(std::round(pos[2]*10.0)/10.0);
 
     if(handle->is_template_space || !handle->s2t.empty())
     {
         tipl::vector<3,float> mni(pos);
         handle->sub2mni(mni);
-        status += QString("MNI(%1,%2,%3) ")
+        status += QString(" MNI=(%1,%2,%3)")
                 .arg(std::round(mni[0]*10.0)/10.0)
                 .arg(std::round(mni[1]*10.0)/10.0)
                 .arg(std::round(mni[2]*10.0)/10.0);
     }
-    status += " ";
+
+    if(!current_slice->is_diffusion_space)
+    {
+        pos.to(current_slice->T);
+        status += QString(" %4=(%5,%6,%7)")
+                .arg(ui->SliceModality->currentText())
+                .arg(std::round(pos[0]*10.0)/10.0)
+                .arg(std::round(pos[1]*10.0)/10.0)
+                .arg(std::round(pos[2]*10.0)/10.0);
+    }
+
     std::vector<float> data;
     pos.round();
     handle->get_voxel_information(pos[0],pos[1],pos[2], data);
     for(unsigned int index = 0,data_index = 0;index < handle->view_item.size() && data_index < data.size();++index)
         if(handle->view_item[index].name != "color" && handle->view_item[index].image_ready)
         {
-            status += handle->view_item[index].name.c_str();
-            status += QString("=%1 ").arg(data[data_index]);
+            status += QString(" %1=%2").arg(handle->view_item[index].name.c_str()).arg(data[data_index]);
             ++data_index;
         }
     ui->statusbar->showMessage(status);
