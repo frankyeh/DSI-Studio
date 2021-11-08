@@ -268,6 +268,11 @@ bool fiber_directions::add_data(gz_mat_read& mat_reader)
 
     }
 
+    if(num_fiber == 0)
+    {
+        error_msg = "Invalid FIB format";
+        return 0;
+    }
 
 
     // adding the primary fiber index
@@ -294,10 +299,6 @@ bool fiber_directions::add_data(gz_mat_read& mat_reader)
             dt_index_data.push_back(index_data[index]);
         }
     }
-
-
-    if(num_fiber == 0)
-        error_msg = "No image data found";
     return num_fiber;
 }
 
@@ -693,6 +694,137 @@ bool fib_data::load_from_file(const char* file_name)
     }
     save_idx(file_name,mat_reader.in);
 
+
+    // check if initiate surrogate analysis for large data
+    if(!mat_reader.has("odfs") && !mat_reader.has("odf0") && // not ODF FIB files
+       !mat_reader.has("subject_names") &&                        // not connectometry DB
+       !mat_reader.has("dirs") &&                        // 4D dirs matrix requires more implementation in surrogate mat_reader
+        mat_reader.read("dimension",dim) &&
+        mat_reader.read("voxel_size",vs) &&
+        (dim[0] > 512 || dim[1] > 512 || dim[2] > 512))
+    {
+        std::cout << "initiate surrogate analysis" << std::endl;
+        std::string sur_file_name = file_name;
+        sur_file_name.resize(sur_file_name.size()-7);
+        sur_file_name += ".sfib.gz";
+        // if no surrogate FIB or surrogate FIB is older, then generate one
+        if(!std::filesystem::exists(sur_file_name) || QFileInfo(sur_file_name.c_str()).lastModified() < QFileInfo(file_name).lastModified())
+        {
+            std::cout << "create surrogate FIB file" << std::endl;
+            size_t largest_dim = *std::max_element(dim.begin(),dim.end());
+            size_t downsampling = 0;
+            tipl::vector<3> sur_vs(vs);
+            tipl::shape<3> sur_dim(dim);
+            while(largest_dim > 512)
+            {
+                ++downsampling;
+                largest_dim >>= 1;
+                vs *= 2.0f;
+                sur_dim[0] = (sur_dim[0]+1) >> 1;
+                sur_dim[1] = (sur_dim[1]+1) >> 1;
+                sur_dim[2] = (sur_dim[2]+1) >> 1;
+            }
+            std::cout << "preparing surrogate FIB file" << std::endl;
+            gz_mat_write out(sur_file_name.c_str());
+            out.write("dimension",sur_dim);
+            out.write("voxel_size",sur_vs);
+            // output odf vertices and faces
+            {
+                tessellated_icosahedron ti;
+                ti.init(8);
+                std::vector<float> float_data;
+                std::vector<short> short_data;
+                ti.save_to_buffer(float_data,short_data);
+                out.write("odf_vertices",float_data,3);
+                out.write("odf_faces",short_data,3);
+            }
+            // QSDR
+            if(mat_reader.read("trans",trans_to_mni))
+            {
+                // downsample mapping matrix
+                if(!get_native_position().empty())
+                {
+                    tipl::image<3,tipl::vector<3,float> > new_mapping;
+                    for(size_t j = 0;j < downsampling;++j)
+                        if(j == 0)
+                            tipl::downsample_with_padding2(native_position,new_mapping);
+                        else
+                            tipl::downsample_with_padding2(new_mapping);
+                    out.write("mapping",&new_mapping[0][0],3,new_mapping.size());
+                }
+                // convert trans_to_mni
+                for(size_t j = 0;j < downsampling;++j)
+                {
+                    trans_to_mni[0] *= 2.0f;
+                    trans_to_mni[5] *= 2.0f;
+                    trans_to_mni[10] *= 2.0f;
+                }
+                out.write("trans",trans_to_mni.begin(),4,4);
+
+                tipl::shape<3> native_shape;
+                tipl::vector<3> native_vs;
+                if(mat_reader.read("native_dimension",native_shape) &&
+                   mat_reader.read("native_voxel_size",native_vs))
+                {
+                    out.write("native_dimension",native_shape);
+                    out.write("native_voxel_size",native_vs);
+                }
+            }
+            for(size_t index = 0;index < mat_reader.size();++index)
+            {
+                tipl::io::mat_matrix& matrix = mat_reader[index];
+                std::cout << "loading " << matrix.get_name() << std::endl;
+                if(matrix.is_type<char>()) // report, steps, ...etc
+                {
+                    std::string content;
+                    mat_reader.read(matrix.get_name().c_str(),content);
+                    out.write(matrix.get_name().c_str(),content);
+                    std::cout << "write " << matrix.get_name() << ":" << content << std::endl;
+                }
+
+                if(matrix.get_cols()*matrix.get_rows() == dim.size()) // image volumes, including fa, and fiber index
+                {
+                    std::cout << "write " << matrix.get_name() << " in downsampled volume" << std::endl;
+                    if(!matrix.read(*(mat_reader.in.get())))
+                    {
+                        error_msg = "failed to create surrogate FIB file";
+                        return false;
+                    }
+                    if(matrix.is_type<float>()) // qa, fa...etc.
+                    {
+                        auto I = tipl::make_image(reinterpret_cast<const float*>(matrix.get_data(tipl::io::mat_type_info<float>::type)),dim);
+                        tipl::image<3> new_image;
+                        for(size_t j = 0;j < downsampling;++j)
+                            if(j == 0)
+                                tipl::downsample_with_padding2(I,new_image);
+                            else
+                                tipl::downsample_with_padding2(new_image);
+                        out.write(matrix.get_name().c_str(),new_image);
+                    }
+                    if(matrix.is_type<short>()) // index0,index1
+                    {
+                        auto I = tipl::make_image(reinterpret_cast<const unsigned short*>(matrix.get_data(tipl::io::mat_type_info<unsigned short>::type)),dim);
+                        tipl::image<3,unsigned short> new_index;
+                        for(size_t j = 0;j < downsampling;++j)
+                            if(j == 0)
+                                tipl::downsample_no_average(I,new_index);
+                            else
+                                tipl::downsample_no_average(new_index,new_index);
+                        out.write(matrix.get_name().c_str(),new_index);
+                    }
+                }
+            }
+        }
+        std::cout << "load surrogate FIB file" << std::endl;
+        if(!sur_mat_reader.load_from_file(sur_file_name.c_str()))
+        {
+            error_msg = "failed to load surrogate FIB file";
+            return false;
+        }
+        sur_mat_reader.swap(mat_reader);
+        has_surrogate = true;
+    }
+
     if(!load_from_mat())
         return false;
     return true;
@@ -799,16 +931,9 @@ bool fib_data::load_from_mat(void)
     }
     if (mat_reader.read("trans",trans_to_mni))
         is_qsdr = true;
-
     if(!dir.add_data(mat_reader))
     {
         error_msg = dir.error_msg;
-        return false;
-    }
-
-    if(dir.fa.empty())
-    {
-        error_msg = "Empty FA matrix";
         return false;
     }
     odf.read(mat_reader);
@@ -1505,7 +1630,7 @@ void animal_reg(const tipl::image<3>& from,tipl::vector<3> from_vs,
         {PI*-0.5f,0.0f,PI}
     };
     float cost = std::numeric_limits<float>::max();
-    set_title("linear registratino for animal data");
+    set_title("linear registration for animal data");
     tipl::par_for(5,[&](int i)
     {
          tipl::affine_transform<double> arg;
