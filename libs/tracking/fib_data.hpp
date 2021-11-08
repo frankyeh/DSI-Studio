@@ -88,6 +88,10 @@ public:
     std::vector<const short*> findex;
     std::vector<std::vector<const float*> > other_index;
     std::vector<tipl::vector<3,float> > odf_table;
+public:
+    bool has_high_reso = false;
+    float high_reso_ratio = 1.0f;
+    std::shared_ptr<tracking_data> high_reso;
 private:
     const tracking_data& operator=(const tracking_data& rhs);
 public:
@@ -188,9 +192,8 @@ public:
     connectometry_db db;
     mutable std::vector<item> view_item;
 public:
-    bool has_surrogate = false;
-    gz_mat_read sur_mat_reader;
-    fiber_directions sur_dir;
+    bool has_high_reso = false;
+    std::shared_ptr<fib_data> high_reso;
 public:
     int prog;
     tipl::image<3,tipl::vector<3,float> > s2t,t2s;

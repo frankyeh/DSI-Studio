@@ -457,6 +457,13 @@ void tracking_data::read(std::shared_ptr<fib_data> fib)
         threshold_name = fib->dir.get_threshold_name();
     if(!dt_fa.empty())
         dt_threshold_name = fib->dir.get_dt_threshold_name();
+    if(fib->has_high_reso)
+    {
+        has_high_reso = true;
+        high_reso_ratio = fib->vs[0]/fib->high_reso->vs[0];
+        high_reso.reset(new tracking_data);
+        high_reso->read(fib->high_reso);
+    }
 }
 bool tracking_data::get_dir(unsigned int space_index,
                      const tipl::vector<3,float>& dir, // reference direction, should be unit vector
@@ -703,31 +710,32 @@ bool fib_data::load_from_file(const char* file_name)
         mat_reader.read("voxel_size",vs) &&
         (dim[0] > 512 || dim[1] > 512 || dim[2] > 512))
     {
+        high_reso.reset(new fib_data);
         std::cout << "initiate surrogate analysis" << std::endl;
-        std::string sur_file_name = file_name;
-        sur_file_name.resize(sur_file_name.size()-7);
-        sur_file_name += ".sfib.gz";
+        std::string high_reso_file_name = file_name;
+        high_reso_file_name.resize(high_reso_file_name.size()-7);
+        high_reso_file_name += ".sfib.gz";
         // if no surrogate FIB or surrogate FIB is older, then generate one
-        if(!std::filesystem::exists(sur_file_name) || QFileInfo(sur_file_name.c_str()).lastModified() < QFileInfo(file_name).lastModified())
+        if(!std::filesystem::exists(high_reso_file_name) || QFileInfo(high_reso_file_name.c_str()).lastModified() < QFileInfo(file_name).lastModified())
         {
             std::cout << "create surrogate FIB file" << std::endl;
             size_t largest_dim = *std::max_element(dim.begin(),dim.end());
             size_t downsampling = 0;
-            tipl::vector<3> sur_vs(vs);
-            tipl::shape<3> sur_dim(dim);
+            tipl::vector<3> low_reso_vs(vs);
+            tipl::shape<3> low_reso_dim(dim);
             while(largest_dim > 512)
             {
                 ++downsampling;
                 largest_dim >>= 1;
-                vs *= 2.0f;
-                sur_dim[0] = (sur_dim[0]+1) >> 1;
-                sur_dim[1] = (sur_dim[1]+1) >> 1;
-                sur_dim[2] = (sur_dim[2]+1) >> 1;
+                low_reso_vs *= 2.0f;
+                low_reso_dim[0] = (low_reso_dim[0]+1) >> 1;
+                low_reso_dim[1] = (low_reso_dim[1]+1) >> 1;
+                low_reso_dim[2] = (low_reso_dim[2]+1) >> 1;
             }
             std::cout << "preparing surrogate FIB file" << std::endl;
-            gz_mat_write out(sur_file_name.c_str());
-            out.write("dimension",sur_dim);
-            out.write("voxel_size",sur_vs);
+            gz_mat_write out(high_reso_file_name.c_str());
+            out.write("dimension",low_reso_dim);
+            out.write("voxel_size",low_reso_vs);
             // output odf vertices and faces
             {
                 tessellated_icosahedron ti;
@@ -815,18 +823,19 @@ bool fib_data::load_from_file(const char* file_name)
                 }
             }
         }
-        std::cout << "load surrogate FIB file" << std::endl;
-        if(!sur_mat_reader.load_from_file(sur_file_name.c_str()))
+        std::cout << "reading surrogate FIB file" << std::endl;
+        if(!high_reso->mat_reader.load_from_file(high_reso_file_name.c_str()))
         {
             error_msg = "failed to load surrogate FIB file";
             return false;
         }
-        sur_mat_reader.swap(mat_reader);
-        has_surrogate = true;
+        high_reso->mat_reader.swap(mat_reader);
+        has_high_reso = true;
     }
 
     if(!load_from_mat())
         return false;
+
     return true;
 }
 bool fib_data::save_mapping(const std::string& index_name,const std::string& file_name,const tipl::value_to_color<float>& v2c)
@@ -935,6 +944,15 @@ bool fib_data::load_from_mat(void)
     {
         error_msg = dir.error_msg;
         return false;
+    }
+    if(has_high_reso)
+    {
+        std::cout << "reading original mat file" << std::endl;
+        if(!high_reso->load_from_mat())
+        {
+            error_msg = high_reso->error_msg;
+            return false;
+        }
     }
     odf.read(mat_reader);
 
