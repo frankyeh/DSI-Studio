@@ -47,6 +47,12 @@ bool trilinear_interpolation::evaluate(std::shared_ptr<tracking_data> fib,
                                        float angle,
                                        float dt_threshold)
 {
+    if(fib->has_high_reso)
+    {
+        tipl::vector<3> new_pos(position);
+        new_pos *= fib->high_reso_ratio;
+        return evaluate(fib->high_reso,new_pos,ref_dir,result,threshold,angle,dt_threshold);
+    }
     tipl::interpolation<tipl::linear_weighting,3> tri_interpo;
     if (!tri_interpo.get_location(fib->dim,position))
         return false;
