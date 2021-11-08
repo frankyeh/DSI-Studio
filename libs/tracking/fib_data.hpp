@@ -188,6 +188,10 @@ public:
     connectometry_db db;
     mutable std::vector<item> view_item;
 public:
+    bool has_surrogate = false;
+    gz_mat_read sur_mat_reader;
+    fiber_directions sur_dir;
+public:
     int prog;
     tipl::image<3,tipl::vector<3,float> > s2t,t2s;
 private:
