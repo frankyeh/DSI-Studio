@@ -338,8 +338,8 @@ bool load_4d_nii(const char* file_name,std::vector<std::shared_ptr<DwiHeader> >&
         {
             std::cout << "The maximum singal is only " << max_value << std::endl;
             float scale = 1.0f;
-            while(max_value*scale < std::numeric_limits<unsigned short>::max())
-                scale*=32;
+            while(max_value*scale*32.0f < std::numeric_limits<unsigned short>::max())
+                scale *= 32.0f;
             if(scale != 1.0f)
             {
                 std::cout << "scaling the image by " << scale << std::endl;
