@@ -276,14 +276,6 @@ void slice_view_scene::get_view_image(QImage& new_view_image,float display_ratio
     if(slice_image.empty())
         return;
 
-    {
-        float grey = slice_image[0].r;
-        grey += slice_image[0].g;
-        grey += slice_image[0].b;
-        grey /= 3.0f;
-        line_color = grey < 128 ? Qt::white : Qt::black;
-    }
-
     QImage scaled_image;
     cur_tracking_window.regionWidget->draw_region(slice_image,display_ratio,scaled_image,
                             cur_tracking_window["roi_edge_width"].toInt(),
@@ -307,6 +299,12 @@ void slice_view_scene::get_view_image(QImage& new_view_image,float display_ratio
 
     if(cur_tracking_window["roi_layout"].toInt() <= 1) // not mosaic
     {
+        float grey = slice_image[0].r;
+        grey += slice_image[0].g;
+        grey += slice_image[0].b;
+        grey /= 3.0f;
+        line_color = grey < 128 ? Qt::white : Qt::black;
+
         QPainter painter2(&new_view_image);
         if(cur_tracking_window["roi_ruler"].toInt())
             show_ruler(painter2);
