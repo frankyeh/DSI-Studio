@@ -39,8 +39,11 @@ public:    // record the mouse press points
     bool move_slice = false;
     bool move_viewing_slice = false;
     int cX, cY;
-
+public:
     QImage view_image,annotated_image;
+    int view1_h = 0; // for 3 views updating 3D
+    int view1_w = 0; // for 3 views updating 3D
+public:
     void new_annotated_image(void);
     void show_ruler2(QPainter& painter);
     void show_ruler(QPainter& painter,std::shared_ptr<SliceModel> current_slice,unsigned char cur_dim);
@@ -50,6 +53,7 @@ public:    // record the mouse press points
     void add_R_label(QPainter& painter,unsigned char cur_dim);
     void manage_slice_orientation(QImage& slice,QImage& new_slice,unsigned char cur_dim);
     bool command(QString cmd,QString param = "",QString param2 = "");
+    void update_3d(QImage captured);
     // update cursor info
 protected:
     void mouseDoubleClickEvent ( QGraphicsSceneMouseEvent * mouseEvent );

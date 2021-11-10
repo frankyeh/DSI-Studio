@@ -1261,8 +1261,7 @@ void GLWidget::renderLR()
         if(!video_capturing)
         {
             video_capturing = true;
-            captured_image = grab_image();
-            cur_tracking_window.slice_need_update = true;
+            cur_tracking_window.scene.update_3d(grab_image());
             video_capturing = false;
         }
     }

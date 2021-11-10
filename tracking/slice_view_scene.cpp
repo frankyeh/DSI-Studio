@@ -450,6 +450,21 @@ bool slice_view_scene::to_3d_space(float x,float y,tipl::vector<3,float>& pos)
     //return geo.is_valid(pos);
 }
 
+void slice_view_scene::update_3d(QImage captured)
+{
+    if(cur_tracking_window["roi_layout"].toInt() != 1)// 3 slices
+        return;
+    int view3_h = view_image.height()-view1_h;
+    QImage I = captured.scaledToWidth(view1_w);
+    int dif = (I.height()-view3_h)/2;
+    QImage view4 = I.copy(QRect(0, dif, view1_w, dif+view3_h));
+    QPainter painter(&view_image);
+    if(cur_tracking_window["orientation_convention"].toInt())
+        painter.drawImage(view_image.width()-view1_w,view1_h,view4);
+    else
+        painter.drawImage(0,view1_h,view4);
+    show_view(*this,view_image);
+}
 void slice_view_scene::show_slice(void)
 {
     if(no_show)
@@ -463,34 +478,28 @@ void slice_view_scene::show_slice(void)
     else
     if(cur_tracking_window["roi_layout"].toInt() == 1)// 3 slices
     {
-        if(cur_tracking_window.glWidget->captured_image.isNull())
-            return;
         QImage view1,view2,view3;
         get_view_image(view1,current_slice,0,display_ratio);
         get_view_image(view2,current_slice,1,display_ratio);
         get_view_image(view3,current_slice,2,display_ratio);
         view_image = QImage(QSize(view1.width()+view2.width(),view1.height()+view3.height()),QImage::Format_RGB32);
+        view1_h = view1.height();
+        view1_w = view1.width();
         QPainter painter(&view_image);
         painter.fillRect(0,0,view_image.width(),view_image.height(),QColor(0,0,0));
 
-        QImage I = cur_tracking_window.glWidget->captured_image.scaledToWidth(view1.width());
-        int dif = (I.height()-view3.height())/2;
-        QImage view4 = I.copy(QRect(0, dif, view1.width(), dif+view3.height()));
 
         if(cur_tracking_window["orientation_convention"].toInt())
         {
             painter.drawImage(view2.width(),0,view1);
             painter.drawImage(0,0,view2);
             painter.drawImage(0,view2.height(),view3);
-            painter.drawImage(view2.width(),view2.height(),view4);
-
         }
         else
         {
             painter.drawImage(0,0,view1);
             painter.drawImage(view1.width(),0,view2);
             painter.drawImage(view1.width(),view1.height(),view3);
-            painter.drawImage(0,view1.height(),view4);
         }
         QPen pen(QColor(255,255,255));
         pen.setWidthF(std::max(1.0,double(display_ratio)/4.0));

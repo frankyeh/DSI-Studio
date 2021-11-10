@@ -40,10 +40,6 @@ Q_OBJECT
               QWidget *parent = nullptr);
      ~GLWidget();
      void clean_up(void);
-public:
-     //std::shared_ptr<QOpenGLShaderProgram> shader,shader2;
-     //int s_mvp,s_mvp2,s_depthMap;
-     QImage captured_image;
  public:// editing
      enum {none = 0,selecting = 1, moving = 2, dragging = 3} editing_option = none;
      tipl::vector<3,float> pos,dir1,dir2;
