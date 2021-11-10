@@ -103,8 +103,10 @@ public:
 public slots:
     void updateRegions(QTableWidgetItem* item);
 
-    void draw_region(const tipl::color_image& slice_image,float display_ratio,
-                     QImage& scaledimage,int line_width,unsigned char draw_edges);
+    void draw_region(std::shared_ptr<SliceModel> current_slice,
+                     unsigned char dim,int line_width,unsigned char draw_edges,
+                     const tipl::color_image& slice_image,float display_ratio,
+                     QImage& scaledimage);
     void new_region(void);
     void new_high_resolution_region(void);
     void copy_region(void);

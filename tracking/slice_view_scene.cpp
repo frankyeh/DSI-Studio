@@ -277,9 +277,11 @@ void slice_view_scene::get_view_image(QImage& new_view_image,float display_ratio
         return;
 
     QImage scaled_image;
-    cur_tracking_window.regionWidget->draw_region(slice_image,display_ratio,scaled_image,
-                            cur_tracking_window["roi_edge_width"].toInt(),
-                            cur_tracking_window["roi_edge"].toInt());
+    cur_tracking_window.regionWidget->draw_region(cur_tracking_window.current_slice,
+                                                  cur_tracking_window.cur_dim,
+                                                  cur_tracking_window["roi_edge_width"].toInt(),
+                                                  cur_tracking_window["roi_edge"].toInt(),
+                                                  slice_image,display_ratio,scaled_image);
 
     if(cur_tracking_window["roi_track"].toInt())
         cur_tracking_window.tractWidget->draw_tracts(cur_tracking_window.cur_dim,

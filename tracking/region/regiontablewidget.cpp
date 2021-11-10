@@ -311,7 +311,9 @@ void RegionTableWidget::move_slice_to_current_region(void)
 }
 
 
-void RegionTableWidget::draw_region(const tipl::color_image& slice_image,float display_ratio,QImage& scaled_image,int line_width,unsigned char draw_edges)
+void RegionTableWidget::draw_region(std::shared_ptr<SliceModel> current_slice,
+                                    unsigned char dim,int line_width,unsigned char draw_edges,
+                                    const tipl::color_image& slice_image,float display_ratio,QImage& scaled_image)
 {
     // during region removal, there will be a call with invalid currentRow
     auto checked_regions = get_checked_regions();
@@ -336,8 +338,7 @@ void RegionTableWidget::draw_region(const tipl::color_image& slice_image,float d
     std::vector<std::vector<tipl::vector<2,int> > > edge_x(checked_regions.size()),
                                                     edge_y(checked_regions.size());
     {
-        auto current_slice = cur_tracking_window.current_slice;
-        int slice_pos = current_slice->slice_pos[cur_tracking_window.cur_dim];
+        int slice_pos = current_slice->slice_pos[dim];
         std::vector<uint32_t> yw((size_t(h)));
         for(uint32_t y = 0;y < uint32_t(h);++y)
             yw[y] = y*uint32_t(w);
@@ -347,7 +348,7 @@ void RegionTableWidget::draw_region(const tipl::color_image& slice_image,float d
             tipl::image<2,uint8_t> detect_edge(slice_image.shape());
             auto color = checked_regions[roi_index]->show_region.color;
             float r = checked_regions[roi_index]->resolution_ratio;
-            bool draw_region = (cur_tracking_window["roi_edge"].toInt() == 0 && color.a >= 128);
+            bool draw_roi = (draw_edges == 0 && color.a >= 128);
             if(!current_slice->is_diffusion_space)
             {
                 // apply resolution ratio to iT
@@ -361,13 +362,13 @@ void RegionTableWidget::draw_region(const tipl::color_image& slice_image,float d
                 uint32_t y_range = 0;
                 uint32_t z_range = 0;
                 tipl::vector<3,float> p;
-                tipl::slice2space(cur_tracking_window.cur_dim,1.0f,0.0f,0.0f,p[0],p[1],p[2]);
+                tipl::slice2space(dim,1.0f,0.0f,0.0f,p[0],p[1],p[2]);
                 p.to(rT);
                 x_range = uint32_t(std::ceil(p.length()));
-                tipl::slice2space(cur_tracking_window.cur_dim,0.0f,1.0f,0.0f,p[0],p[1],p[2]);
+                tipl::slice2space(dim,0.0f,1.0f,0.0f,p[0],p[1],p[2]);
                 p.to(rT);
                 y_range = uint32_t(std::ceil(p.length()));
-                tipl::slice2space(cur_tracking_window.cur_dim,0.0f,0.0f,1.0f,p[0],p[1],p[2]);
+                tipl::slice2space(dim,0.0f,0.0f,1.0f,p[0],p[1],p[2]);
                 p.to(rT);
                 z_range = uint32_t(std::ceil(p.length()));
 
@@ -375,7 +376,7 @@ void RegionTableWidget::draw_region(const tipl::color_image& slice_image,float d
                 {
                     tipl::vector<3,float> p(checked_regions[roi_index]->region[index]),p2;
                     p.to(iT);
-                    tipl::space2slice(cur_tracking_window.cur_dim,p[0],p[1],p[2],p2[0],p2[1],p2[2]);
+                    tipl::space2slice(dim,p[0],p[1],p[2],p2[0],p2[1],p2[2]);
                     if (std::fabs(float(slice_pos)-p2[2]) >= z_range || p2[0] < 0.0f || p2[1] < 0.0f ||
                         int(p2[0]) >= w || int(p2[1]) >= h)
                         return;
@@ -385,7 +386,7 @@ void RegionTableWidget::draw_region(const tipl::color_image& slice_image,float d
                     for(uint32_t dy = 0;dy < y_range;++dy,pos += uint32_t(w))
                         for(uint32_t dx = 0,pos2 = pos;dx < x_range;++dx,++pos2)
                         {
-                            if(draw_region)
+                            if(draw_roi)
                                 slice_image_with_region[pos2] = color;
                             detect_edge[pos2] = 1;
                         }
@@ -401,17 +402,17 @@ void RegionTableWidget::draw_region(const tipl::color_image& slice_image,float d
                         tipl::vector<3,float> p(checked_regions[roi_index]->region[index]);
                         p /= r;
                         p.round();
-                        tipl::space2slice(cur_tracking_window.cur_dim,p[0],p[1],p[2],X,Y,Z);
+                        tipl::space2slice(dim,p[0],p[1],p[2],X,Y,Z);
                     }
                     else
                     {
                         auto p = checked_regions[roi_index]->region[index];
-                        tipl::space2slice(cur_tracking_window.cur_dim,p[0],p[1],p[2],X,Y,Z);
+                        tipl::space2slice(dim,p[0],p[1],p[2],X,Y,Z);
                     }
                     if (slice_pos != Z || X < 0 || Y < 0 || X >= w || Y >= h)
                         return;
                     auto pos = uint32_t(yw[uint32_t(Y)]+uint32_t(X));
-                    if(draw_region)
+                    if(draw_roi)
                         slice_image_with_region[pos] = color;
                     detect_edge[pos] = 1;
                 });
