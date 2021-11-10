@@ -7,6 +7,7 @@
 #include <QEvent>
 class fib_data;
 class tracking_window;
+class SliceModel;
 class slice_view_scene : public QGraphicsScene
 {
     Q_OBJECT
@@ -42,12 +43,12 @@ public:    // record the mouse press points
     QImage view_image,annotated_image;
     void new_annotated_image(void);
     void show_ruler2(QPainter& painter);
-    void show_ruler(QPainter& painter);
-    void show_pos(QPainter& painter);
-    void show_fiber(QPainter& painter);
-    void get_view_image(QImage& new_view_image,float display_ratio);
-    void add_R_label(QPainter& painter);
-    void manage_slice_orientation(QImage& slice,QImage& new_slice);
+    void show_ruler(QPainter& painter,std::shared_ptr<SliceModel> current_slice,unsigned char cur_dim);
+    void show_pos(QPainter& painter,std::shared_ptr<SliceModel> current_slice,unsigned char cur_dim);
+    void show_fiber(QPainter& painter,std::shared_ptr<SliceModel> current_slice,unsigned char cur_dim);
+    void get_view_image(QImage& new_view_image,std::shared_ptr<SliceModel> current_slice,unsigned char cur_dim,float display_ratio);
+    void add_R_label(QPainter& painter,unsigned char cur_dim);
+    void manage_slice_orientation(QImage& slice,QImage& new_slice,unsigned char cur_dim);
     bool command(QString cmd,QString param = "",QString param2 = "");
     // update cursor info
 protected:
