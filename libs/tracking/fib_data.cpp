@@ -790,7 +790,7 @@ bool fib_data::load_from_file(const char* file_name)
                     std::cout << "write " << matrix.get_name() << ":" << content << std::endl;
                 }
 
-                if(matrix.get_cols()*matrix.get_rows() == dim.size()) // image volumes, including fa, and fiber index
+                if(size_t(matrix.get_cols())*size_t(matrix.get_rows()) == dim.size()) // image volumes, including fa, and fiber index
                 {
                     std::cout << "write " << matrix.get_name() << " in downsampled volume" << std::endl;
                     if(!matrix.read(*(mat_reader.in.get())))
