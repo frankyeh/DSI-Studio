@@ -412,8 +412,6 @@ bool CustomSliceModel::initialize(const std::vector<std::string>& files,bool is_
         }
         else
         {
-            std::cout << "apply transformation:" << std::endl;
-            std::cout << T << std::endl;
             handle->view_item.back().T = T;
             handle->view_item.back().iT = invT;
         }
