@@ -707,13 +707,13 @@ bool fib_data::load_from_file(const char* file_name)
        !mat_reader.has("dirs") &&                        // 4D dirs matrix requires more implementation in surrogate mat_reader
         mat_reader.read("dimension",dim) &&
         mat_reader.read("voxel_size",vs) &&
-        (dim[0] > 512 || dim[1] > 512 || dim[2] > 512))
+        (dim[0] > 256 || dim[1] > 256 || dim[2] > 256))
     {
         high_reso.reset(new fib_data);
         std::cout << "initiate surrogate analysis" << std::endl;
         std::string high_reso_file_name = file_name;
         high_reso_file_name.resize(high_reso_file_name.size()-7);
-        high_reso_file_name += ".sfib.gz";
+        high_reso_file_name += ".fibs.gz";
         // if no surrogate FIB or surrogate FIB is older, then generate one
         if(!std::filesystem::exists(high_reso_file_name) || QFileInfo(high_reso_file_name.c_str()).lastModified() < QFileInfo(file_name).lastModified())
         {
@@ -722,7 +722,7 @@ bool fib_data::load_from_file(const char* file_name)
             size_t downsampling = 0;
             tipl::vector<3> low_reso_vs(vs);
             tipl::shape<3> low_reso_dim(dim);
-            while(largest_dim > 512)
+            while(largest_dim > 256)
             {
                 ++downsampling;
                 largest_dim >>= 1;
