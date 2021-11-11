@@ -2460,26 +2460,7 @@ void GLWidget::addSurface(void)
         4, &ok));
     if (!ok)
         return;
-    QAction* pAction = qobject_cast<QAction*>(sender());
-    int id = 0;
-    if(pAction)
-    {
-        if(pAction->text() == "Full")
-            id = 0;
-        if(pAction->text() == "Right")
-            id = 1;
-        if(pAction->text() == "Left")
-            id = 2;
-        if(pAction->text() == "Lower")
-            id = 3;
-        if(pAction->text() == "Upper")
-            id = 4;
-        if(pAction->text() == "Anterior")
-            id = 5;
-        if(pAction->text() == "Posterior")
-            id = 6;
-    }
-    command("add_surface",QString::number(id),QString::number(threshold));
+    command("add_surface",qobject_cast<QAction*>(sender())->text(),QString::number(threshold));
 }
 
 void GLWidget::copyToClipboard(void)
@@ -2743,46 +2724,55 @@ bool GLWidget::command(QString cmd,QString param,QString param2)
         float threshold = (param2.isEmpty()) ? tipl::segmentation::otsu_threshold(crop_image)*1.25f:param2.toFloat();
         {
             surface = std::make_shared<RegionModel>();
-            if(!param.isEmpty())
-            switch(param.toInt())
+            if(param != "Full")
             {
-            case 1: //right hemi
-                for(unsigned int index = 0;index < crop_image.size();index += crop_image.width())
+                tipl::image<3,unsigned char> remain_part(crop_image.shape());
+                if(param.contains("Left"))
                 {
-                    std::fill(crop_image.begin()+index+cur_tracking_window.current_slice->slice_pos[0],
-                              crop_image.begin()+index+crop_image.width(),crop_image[0]);
+                    for(unsigned int index = 0;index < remain_part.size();index += remain_part.width())
+                    {
+                        std::fill(remain_part.begin()+index+cur_tracking_window.current_slice->slice_pos[0],
+                                  remain_part.begin()+index+remain_part.width(),1);
+                    }
                 }
-                break;
-            case 2: // left hemi
-                for(unsigned int index = 0;index < crop_image.size();index += crop_image.width())
+                if(param.contains("Right"))
                 {
-                    std::fill(crop_image.begin()+index,
-                              crop_image.begin()+index+cur_tracking_window.current_slice->slice_pos[0],crop_image[0]);
+                    for(unsigned int index = 0;index < remain_part.size();index += remain_part.width())
+                    {
+                        std::fill(remain_part.begin()+index,
+                                  remain_part.begin()+index+cur_tracking_window.current_slice->slice_pos[0],1);
+                    }
                 }
-                break;
-            case 3: //lower
-                std::fill(crop_image.begin()+cur_tracking_window.current_slice->slice_pos[2]*crop_image.plane_size(),
-                          crop_image.end(),crop_image[0]);
-                break;
-            case 4: // higher
-                std::fill(crop_image.begin(),
-                          crop_image.begin()+cur_tracking_window.current_slice->slice_pos[2]*crop_image.plane_size(),crop_image[0]);
-                break;
-            case 5: //anterior
-                for(unsigned int index = 0;index < crop_image.size();index += crop_image.plane_size())
+                if(param.contains("Upper"))
                 {
-                    std::fill(crop_image.begin()+index+int64_t(cur_tracking_window.current_slice->slice_pos[1])*crop_image.width(),
-                              crop_image.begin()+index+int64_t(crop_image.plane_size()),crop_image[0]);
+                    std::fill(remain_part.begin()+cur_tracking_window.current_slice->slice_pos[2]*remain_part.plane_size(),
+                              remain_part.end(),1);
                 }
-                break;
-            case 6: // posterior
-                for(unsigned int index = 0;index < crop_image.size();index += crop_image.plane_size())
+                if(param.contains("Lower"))
                 {
-                    std::fill(crop_image.begin()+index,
-                              crop_image.begin()+index+int64_t(cur_tracking_window.current_slice->slice_pos[1])*crop_image.width(),crop_image[0]);
+                    std::fill(remain_part.begin(),
+                              remain_part.begin()+cur_tracking_window.current_slice->slice_pos[2]*remain_part.plane_size(),1);
                 }
-                break;
+                if(param.contains("Posterior"))
+                {
+                    for(unsigned int index = 0;index < remain_part.size();index += remain_part.plane_size())
+                    {
+                        std::fill(remain_part.begin()+index+int64_t(cur_tracking_window.current_slice->slice_pos[1])*remain_part.width(),
+                                  remain_part.begin()+index+int64_t(remain_part.plane_size()),1);
+                    }
+                }
+                if(param.contains("Anterior"))
+                {
+                    for(unsigned int index = 0;index < remain_part.size();index += remain_part.plane_size())
+                    {
+                        std::fill(remain_part.begin()+index,
+                                  remain_part.begin()+index+int64_t(cur_tracking_window.current_slice->slice_pos[1])*remain_part.width(),1);
+                    }
+                }
+                crop_image *= remain_part;
             }
+
+
             switch(get_param("surface_mesh_smoothed"))
             {
             case 1:

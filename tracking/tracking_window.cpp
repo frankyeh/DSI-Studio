@@ -245,6 +245,13 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         connect(ui->actionAnterior,SIGNAL(triggered()),this,SLOT(stripSkull()));
         connect(ui->actionPosterior,SIGNAL(triggered()),this,SLOT(stripSkull()));
 
+        connect(ui->actionRight_Lower,SIGNAL(triggered()),this,SLOT(stripSkull()));
+        connect(ui->actionLeft_Lower,SIGNAL(triggered()),this,SLOT(stripSkull()));
+        connect(ui->actionRight_Anterior_Lower,SIGNAL(triggered()),this,SLOT(stripSkull()));
+        connect(ui->actionLeft_Anterior_Lower,SIGNAL(triggered()),this,SLOT(stripSkull()));
+        connect(ui->actionRight_Posterior_Lower,SIGNAL(triggered()),this,SLOT(stripSkull()));
+        connect(ui->actionLeft_Posterior_Lower,SIGNAL(triggered()),this,SLOT(stripSkull()));
+
 
         connect(ui->actionFull,SIGNAL(triggered()),glWidget,SLOT(addSurface()));
         connect(ui->actionRight,SIGNAL(triggered()),glWidget,SLOT(addSurface()));
@@ -254,6 +261,12 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         connect(ui->actionAnterior,SIGNAL(triggered()),glWidget,SLOT(addSurface()));
         connect(ui->actionPosterior,SIGNAL(triggered()),glWidget,SLOT(addSurface()));
 
+        connect(ui->actionRight_Lower,SIGNAL(triggered()),glWidget,SLOT(addSurface()));
+        connect(ui->actionLeft_Lower,SIGNAL(triggered()),glWidget,SLOT(addSurface()));
+        connect(ui->actionRight_Anterior_Lower,SIGNAL(triggered()),glWidget,SLOT(addSurface()));
+        connect(ui->actionLeft_Anterior_Lower,SIGNAL(triggered()),glWidget,SLOT(addSurface()));
+        connect(ui->actionRight_Posterior_Lower,SIGNAL(triggered()),glWidget,SLOT(addSurface()));
+        connect(ui->actionLeft_Posterior_Lower,SIGNAL(triggered()),glWidget,SLOT(addSurface()));
 
         connect(ui->actionInsert_T1_T2,SIGNAL(triggered()),this,SLOT(on_addSlices_clicked()));
 

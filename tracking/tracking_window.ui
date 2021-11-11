@@ -1095,12 +1095,22 @@
       <string>Add Isosurface</string>
      </property>
      <addaction name="actionFull"/>
+     <addaction name="separator"/>
      <addaction name="actionRight"/>
      <addaction name="actionLeft"/>
      <addaction name="actionLower"/>
      <addaction name="actionUpper"/>
      <addaction name="actionAnterior"/>
      <addaction name="actionPosterior"/>
+     <addaction name="separator"/>
+     <addaction name="actionRight_Lower"/>
+     <addaction name="actionLeft_Lower"/>
+     <addaction name="separator"/>
+     <addaction name="actionRight_Anterior_Lower"/>
+     <addaction name="actionLeft_Anterior_Lower"/>
+     <addaction name="separator"/>
+     <addaction name="actionRight_Posterior_Lower"/>
+     <addaction name="actionLeft_Posterior_Lower"/>
     </widget>
     <widget class="QMenu" name="menuInsert_Picture">
      <property name="title">
@@ -4027,6 +4037,46 @@ Tracking</string>
   <action name="actionAdd_Tracking_Metrics">
    <property name="text">
     <string>Add Tracking Metrics...</string>
+   </property>
+  </action>
+  <action name="actionRight_Upper">
+   <property name="text">
+    <string>Right Upper</string>
+   </property>
+  </action>
+  <action name="actionRight_Lower">
+   <property name="text">
+    <string>Right Lower</string>
+   </property>
+  </action>
+  <action name="actionLeft_Upper">
+   <property name="text">
+    <string>Left Upper</string>
+   </property>
+  </action>
+  <action name="actionLeft_Lower">
+   <property name="text">
+    <string>Left Lower</string>
+   </property>
+  </action>
+  <action name="actionRight_Anterior_Lower">
+   <property name="text">
+    <string>Right Anterior Lower</string>
+   </property>
+  </action>
+  <action name="actionLeft_Anterior_Lower">
+   <property name="text">
+    <string>Left Anterior Lower</string>
+   </property>
+  </action>
+  <action name="actionRight_Posterior_Lower">
+   <property name="text">
+    <string>Right Posterior Lower</string>
+   </property>
+  </action>
+  <action name="actionLeft_Posterior_Lower">
+   <property name="text">
+    <string>Left Posterior Lower</string>
    </property>
   </action>
  </widget>
