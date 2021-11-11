@@ -272,8 +272,8 @@ void MainWindow::addSrc(QString filename)
 void shift_track_for_tck(std::vector<std::vector<float> >& loaded_tract_data,tipl::shape<3>& geo);
 void MainWindow::loadFib(QString filename,bool presentation_mode)
 {
-    std::string file_name = filename.toLocal8Bit().begin();
-    prog_init p("loading ",QFileInfo(file_name.c_str()).baseName().toStdString().c_str());
+    std::string file_name = filename.toStdString();
+    prog_init p("loading ",QFileInfo(filename).baseName().toStdString().c_str());
     std::shared_ptr<fib_data> new_handle(new fib_data);
     if (!new_handle->load_from_file(&*file_name.begin()))
     {
@@ -281,6 +281,16 @@ void MainWindow::loadFib(QString filename,bool presentation_mode)
             QMessageBox::information(this,"error",new_handle->error_msg.c_str(),0);
         return;
     }
+    if(new_handle->has_high_reso)
+    {
+        int result = QMessageBox::information(this,"DSI Studio","The FIB has large image data. Use surrogate interface to speed up?",
+                                 QMessageBox::Yes|QMessageBox::No|QMessageBox::Cancel);
+        if(result == QMessageBox::Cancel)
+            return;
+        if(result == QMessageBox::No)
+            new_handle = new_handle->high_reso;
+    }
+
     QDir::setCurrent(QFileInfo(filename).absolutePath());
 
     tracking_windows.push_back(new tracking_window(this,new_handle));
