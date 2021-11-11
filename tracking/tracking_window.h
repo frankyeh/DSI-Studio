@@ -61,7 +61,8 @@ public:
 public:
     slice_view_scene scene;
     bool slice_need_update = false;
-    float get_scene_zoom(void);
+    float get_scene_zoom(void){return get_scene_zoom(current_slice);}
+    float get_scene_zoom(std::shared_ptr<SliceModel> slice);
 public:
     unsigned char cur_dim = 2;
     std::vector<std::shared_ptr<SliceModel> > overlay_slices;

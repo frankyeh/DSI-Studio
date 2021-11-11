@@ -13,7 +13,13 @@ class slice_view_scene : public QGraphicsScene
     Q_OBJECT
 public:
     bool no_show = true;
-    slice_view_scene(tracking_window& cur_tracking_window_):cur_tracking_window(cur_tracking_window_){}
+    bool free_thread = false;
+    slice_view_scene(tracking_window& cur_tracking_window_):cur_tracking_window(cur_tracking_window_),paint_image_thread([&](void){paint_image();}){}
+    ~slice_view_scene(void)
+    {
+        free_thread = true;
+        paint_image_thread.join();
+    }
     unsigned char sel_mode = 0;
     QStatusBar* statusbar = nullptr;
 private:
@@ -40,17 +46,23 @@ public:    // record the mouse press points
     bool move_viewing_slice = false;
     int cX, cY;
 public:
-    QImage view_image,annotated_image;
+    std::thread paint_image_thread;
+
+    QImage view_image,complete_view_image,annotated_image;
+    bool need_complete_view = false;
+    bool complete_view_ready = false;
     int view1_h = 0; // for 3 views updating 3D
     int view1_w = 0; // for 3 views updating 3D
+    void paint_image(QImage& I,bool simple);
+    void paint_image(void);
 public:
     void new_annotated_image(void);
     void show_ruler2(QPainter& painter);
     void show_ruler(QPainter& painter,std::shared_ptr<SliceModel> current_slice,unsigned char cur_dim);
     void show_pos(QPainter& painter,std::shared_ptr<SliceModel> current_slice,unsigned char cur_dim);
     void show_fiber(QPainter& painter,std::shared_ptr<SliceModel> current_slice,unsigned char cur_dim);
-    void get_view_image(QImage& new_view_image,std::shared_ptr<SliceModel> current_slice,unsigned char cur_dim,float display_ratio);
-    void add_R_label(QPainter& painter,unsigned char cur_dim);
+    void get_view_image(QImage& new_view_image,std::shared_ptr<SliceModel> current_slice,unsigned char cur_dim,float display_ratio,bool simple);
+    void add_R_label(QPainter& painter,std::shared_ptr<SliceModel> current_slice,unsigned char cur_dim);
     void manage_slice_orientation(QImage& slice,QImage& new_slice,unsigned char cur_dim);
     bool command(QString cmd,QString param = "",QString param2 = "");
     void update_3d(QImage captured);
@@ -63,6 +75,7 @@ protected:
     void wheelEvent(QGraphicsSceneWheelEvent *wheelEvent);
 public slots:
     void show_slice();
+    void show_complete_slice();
     void catch_screen();
     void copyClipBoard();
     void center();

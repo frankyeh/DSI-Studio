@@ -318,15 +318,8 @@ void RegionTableWidget::draw_region(std::shared_ptr<SliceModel> current_slice,
     // during region removal, there will be a call with invalid currentRow
     auto checked_regions = get_checked_regions();
     if(checked_regions.empty() || currentRow() >= int(regions.size()) || currentRow() == -1)
-    {
-        QImage qimage(reinterpret_cast<const unsigned char*>(&*slice_image.begin()),
-                      slice_image.width(),slice_image.height(),QImage::Format_RGB32);
-        // make sure that qimage get a hard copy
-        qimage.detach();
-        scaled_image = qimage.scaled(int(slice_image.width()*display_ratio),
-                                            int(slice_image.height()*display_ratio));
         return;
-    }
+
     // draw region colors on the image
     tipl::color_image slice_image_with_region(slice_image);  //original slices for adding regions pixels
     std::vector<std::vector<int> > region_pixels_x_edges(checked_regions.size()),
@@ -440,7 +433,7 @@ void RegionTableWidget::draw_region(std::shared_ptr<SliceModel> current_slice,
     // now apply image scaling to the slice image
     QImage qimage(reinterpret_cast<unsigned char*>(&*slice_image_with_region.begin()),
                   slice_image_with_region.width(),slice_image_with_region.height(),QImage::Format_RGB32);
-    qimage.setPixel(0,0,qimage.pixel(0,0)); // make sure that qimage get a hard copy
+    qimage.detach();
     scaled_image = qimage.scaled(int(slice_image.width()*display_ratio),
                                         int(slice_image.height()*display_ratio));
 

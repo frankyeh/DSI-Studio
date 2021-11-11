@@ -701,7 +701,6 @@ bool fib_data::load_from_file(const char* file_name)
     }
     save_idx(file_name,mat_reader.in);
 
-
     // check if initiate surrogate analysis for large data
     if(!mat_reader.has("odfs") && !mat_reader.has("odf0") && // not ODF FIB files
        !mat_reader.has("subject_names") &&                        // not connectometry DB

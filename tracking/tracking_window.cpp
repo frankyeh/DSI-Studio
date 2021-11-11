@@ -875,6 +875,9 @@ bool tracking_window::eventFilter(QObject *obj, QEvent *event)
         slice_need_update = false;
         scene.show_slice();
     }
+    if(scene.complete_view_ready)
+        scene.show_complete_slice();
+
     if (event->type() == QEvent::MouseMove)
     {
         if (obj == glWidget)
@@ -965,11 +968,11 @@ void tracking_window::set_tracking_param(ThreadData& tracking_thread)
             renderWidget->getData("dt_index").toInt() > 0)
             ? renderWidget->getData("auto_tip").toInt() : 0;
 }
-float tracking_window::get_scene_zoom(void)
+float tracking_window::get_scene_zoom(std::shared_ptr<SliceModel> slice)
 {
     float display_ratio = (*this)["roi_zoom"].toFloat();
     if(!current_slice->is_diffusion_space)
-        display_ratio *= current_slice->vs[0]/handle->vs[0];
+        display_ratio *= slice->vs[0]/handle->vs[0];
     display_ratio = std::min<float>(display_ratio,4096.0/handle->dim[0]);
     return display_ratio;
 }

@@ -84,7 +84,7 @@ void slice_view_scene::show_ruler2(QPainter& paint)
 }
 void slice_view_scene::show_ruler(QPainter& paint,std::shared_ptr<SliceModel> current_slice,unsigned char cur_dim)
 {
-    float zoom = cur_tracking_window.get_scene_zoom();
+    float zoom = cur_tracking_window.get_scene_zoom(current_slice);
     float zoom_2 = zoom/2;
     int tic_dis = 5;
     while(zoom*float(tic_dis) < 20.0f)
@@ -177,7 +177,7 @@ void slice_view_scene::show_ruler(QPainter& paint,std::shared_ptr<SliceModel> cu
 }
 void slice_view_scene::show_fiber(QPainter& painter,std::shared_ptr<SliceModel> current_slice,unsigned char cur_dim)
 {
-    float display_ratio = cur_tracking_window.get_scene_zoom();
+    float display_ratio = cur_tracking_window.get_scene_zoom(current_slice);
     float r = display_ratio * cur_tracking_window["roi_fiber_length"].toFloat();
     float pen_w = display_ratio * cur_tracking_window["roi_fiber_width"].toFloat();
     int steps = 1;
@@ -249,7 +249,7 @@ void slice_view_scene::show_fiber(QPainter& painter,std::shared_ptr<SliceModel> 
 void slice_view_scene::show_pos(QPainter& painter,std::shared_ptr<SliceModel> current_slice,unsigned char cur_dim)
 {
     int x_pos,y_pos;
-    float display_ratio = cur_tracking_window.get_scene_zoom();
+    float display_ratio = cur_tracking_window.get_scene_zoom(current_slice);
     current_slice->get_other_slice_pos(cur_dim,x_pos, y_pos);
     x_pos = int((float(x_pos) + 0.5f)*display_ratio);
     y_pos = int((float(y_pos) + 0.5f)*display_ratio);
@@ -266,19 +266,29 @@ void slice_view_scene::manage_slice_orientation(QImage& slice,QImage& new_slice,
     bool flip_y = cur_tracking_window.slice_view_flip_y(cur_dim);
     new_slice = (!flip_x && !flip_y ? slice : slice.mirrored(flip_x,flip_y));
 }
-void slice_view_scene::get_view_image(QImage& new_view_image,std::shared_ptr<SliceModel> current_slice,unsigned char cur_dim,float display_ratio)
+void slice_view_scene::get_view_image(QImage& new_view_image,std::shared_ptr<SliceModel> current_slice,unsigned char cur_dim,float display_ratio,bool simple)
 {
     current_slice->get_slice(slice_image,cur_dim,cur_tracking_window.overlay_slices);
     if(slice_image.empty())
         return;
     QImage scaled_image;
-    cur_tracking_window.regionWidget->draw_region(current_slice,
+    if(!simple)
+        cur_tracking_window.regionWidget->draw_region(current_slice,
                                                   cur_dim,
                                                   cur_tracking_window["roi_edge_width"].toInt(),
                                                   cur_tracking_window["roi_edge"].toInt(),
                                                   slice_image,display_ratio,scaled_image);
+    if(scaled_image.isNull())
+    {
+        QImage qimage(reinterpret_cast<const unsigned char*>(&*slice_image.begin()),
+                      slice_image.width(),slice_image.height(),QImage::Format_RGB32);
+        // make sure that qimage get a hard copy
+        qimage.detach();
+        scaled_image = qimage.scaled(int(slice_image.width()*display_ratio),
+                                            int(slice_image.height()*display_ratio));
+    }
 
-    if(cur_tracking_window["roi_track"].toInt())
+    if(!simple && cur_tracking_window["roi_track"].toInt())
         cur_tracking_window.tractWidget->draw_tracts(cur_dim,
                                                  current_slice->slice_pos[cur_dim],
                                                  scaled_image,display_ratio,uint32_t(cur_tracking_window["roi_track_count"].toInt()));
@@ -286,7 +296,7 @@ void slice_view_scene::get_view_image(QImage& new_view_image,std::shared_ptr<Sli
     if(cur_tracking_window["roi_layout"].toInt() <= 1) // not mosaic
     {
         QPainter painter(&scaled_image);
-        if(cur_tracking_window["roi_fiber"].toInt())
+        if(!simple && cur_tracking_window["roi_fiber"].toInt())
             show_fiber(painter,current_slice,cur_dim);
         if(cur_tracking_window["roi_position"].toInt())
             show_pos(painter,current_slice,cur_dim);
@@ -306,17 +316,17 @@ void slice_view_scene::get_view_image(QImage& new_view_image,std::shared_ptr<Sli
         if(cur_tracking_window["roi_ruler"].toInt())
             show_ruler(painter2,current_slice,cur_dim);
         if(cur_tracking_window["roi_label"].toInt())
-            add_R_label(painter2,cur_dim);
+            add_R_label(painter2,current_slice,cur_dim);
     }
 }
 
-void slice_view_scene::add_R_label(QPainter& painter,unsigned char cur_dim)
+void slice_view_scene::add_R_label(QPainter& painter,std::shared_ptr<SliceModel> current_slice,unsigned char cur_dim)
 {
     if(cur_dim)
     {
         painter.setPen(QPen(line_color));
         QFont f = font();  // start out with MainWindow's font..
-        f.setPointSize(cur_tracking_window.get_scene_zoom()+10); // and make a bit smaller for legend
+        f.setPointSize(cur_tracking_window.get_scene_zoom(current_slice)+10); // and make a bit smaller for legend
         painter.setFont(f);
         painter.drawText(5,5,painter.window().width()-10,painter.window().height()-10,
                          cur_tracking_window["orientation_convention"].toInt() ? Qt::AlignTop|Qt::AlignRight: Qt::AlignTop|Qt::AlignLeft,"R");
@@ -465,28 +475,71 @@ void slice_view_scene::update_3d(QImage captured)
         painter.drawImage(0,view1_h,view4);
     show_view(*this,view_image);
 }
+
 void slice_view_scene::show_slice(void)
 {
     if(no_show)
         return;
+    need_complete_view = true;
+    paint_image(view_image,true);
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    if(complete_view_ready)
+        show_complete_slice();
+    else
+        show_view(*this,view_image);
+}
+
+void slice_view_scene::show_complete_slice(void)
+{
+    complete_view_ready = false;
+    if(no_show || need_complete_view)
+        return;
+    view_image = complete_view_image;
+    show_view(*this,view_image);
+}
+
+
+void slice_view_scene::paint_image(void)
+{
+    while(!free_thread)
+    {
+        if(!no_show && need_complete_view)
+        {
+            complete_view_ready = false;
+            need_complete_view = false;
+            if(need_complete_view)
+                continue;
+            paint_image(complete_view_image,false);
+            if(need_complete_view)
+                continue;
+            complete_view_ready = true;
+        }
+        while(!need_complete_view && !free_thread)
+            std::this_thread::sleep_for(std::chrono::milliseconds(50));
+    }
+}
+
+void slice_view_scene::paint_image(QImage& out,bool simple)
+{
+    QImage I;
     auto current_slice = cur_tracking_window.current_slice;
     unsigned char cur_dim = cur_tracking_window.cur_dim;
-    float display_ratio = cur_tracking_window.get_scene_zoom();
+    float display_ratio = cur_tracking_window.get_scene_zoom(current_slice);
 
     if(cur_tracking_window["roi_layout"].toInt() == 0)// single slice
-        get_view_image(view_image,current_slice,cur_dim,display_ratio);
+        get_view_image(I,current_slice,cur_dim,display_ratio,simple);
     else
     if(cur_tracking_window["roi_layout"].toInt() == 1)// 3 slices
     {
         QImage view1,view2,view3;
-        get_view_image(view1,current_slice,0,display_ratio);
-        get_view_image(view2,current_slice,1,display_ratio);
-        get_view_image(view3,current_slice,2,display_ratio);
-        view_image = QImage(QSize(view1.width()+view2.width(),view1.height()+view3.height()),QImage::Format_RGB32);
+        get_view_image(view1,current_slice,0,display_ratio,simple);
+        get_view_image(view2,current_slice,1,display_ratio,simple);
+        get_view_image(view3,current_slice,2,display_ratio,simple);
+        I = QImage(QSize(view1.width()+view2.width(),view1.height()+view3.height()),QImage::Format_RGB32);
         view1_h = view1.height();
         view1_w = view1.width();
-        QPainter painter(&view_image);
-        painter.fillRect(0,0,view_image.width(),view_image.height(),QColor(0,0,0));
+        QPainter painter(&I);
+        painter.fillRect(0,0,I.width(),I.height(),QColor(0,0,0));
 
 
         if(cur_tracking_window["orientation_convention"].toInt())
@@ -505,8 +558,8 @@ void slice_view_scene::show_slice(void)
         pen.setWidthF(std::max(1.0,double(display_ratio)/4.0));
         painter.setPen(pen);
         painter.drawLine(cur_tracking_window["orientation_convention"].toInt() ? view2.width() : view1.width(),0,
-                         cur_tracking_window["orientation_convention"].toInt() ? view2.width() : view1.width(),view_image.height());
-        painter.drawLine(0,view1.height(),view_image.width(),view1.height());
+                         cur_tracking_window["orientation_convention"].toInt() ? view2.width() : view1.width(),I.height());
+        painter.drawLine(0,view1.height(),I.width(),view1.height());
     }
     else
     // mosaic
@@ -527,10 +580,10 @@ void slice_view_scene::show_slice(void)
         float scale = display_ratio/float(mosaic_column_count);
         unsigned char dim_order[3][2]= {{1,2},{0,2},{0,1}};
 
-        view_image = QImage(QSize(
+        I = QImage(QSize(
                                 int(dim[dim_order[uint8_t(cur_dim)][0]]*scale*mosaic_column_count),
                                 int(dim[dim_order[uint8_t(cur_dim)][1]]*scale*mosaic_row_count)),QImage::Format_RGB32);
-        QPainter painter(&view_image);
+        QPainter painter(&I);
         tipl::shape<2> mosaic_tile_geo;
         {
             int old_z = current_slice->slice_pos[cur_dim];
@@ -541,9 +594,9 @@ void slice_view_scene::show_slice(void)
                     continue;
                 QImage view;
                 current_slice->slice_pos[cur_dim] = int(slice_pos);
-                get_view_image(view,current_slice,cur_dim,scale);
+                get_view_image(view,current_slice,cur_dim,scale,simple);
                 if(z == skip_slices)
-                    painter.fillRect(0,0,view_image.width(),view_image.height(),view.pixel(0,0));
+                    painter.fillRect(0,0,I.width(),I.height(),view.pixel(0,0));
                 int x = int(dim[dim_order[uint8_t(cur_dim)][0]]*((z-skip_slices)%mosaic_column_count));
                 int y = int(dim[dim_order[uint8_t(cur_dim)][1]]*((z-skip_slices)/mosaic_column_count));
                 x *= scale;
@@ -554,10 +607,12 @@ void slice_view_scene::show_slice(void)
         }
 
         if(cur_tracking_window["roi_label"].toInt()) // not sagittal view
-            add_R_label(painter,cur_dim);
+            add_R_label(painter,current_slice,cur_dim);
     }
-    show_view(*this,view_image);
+    out = I;
 }
+
+
 
 void slice_view_scene::save_slice_as()
 {
