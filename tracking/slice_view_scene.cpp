@@ -84,6 +84,7 @@ void slice_view_scene::show_ruler2(QPainter& paint)
 }
 void slice_view_scene::show_ruler(QPainter& paint,std::shared_ptr<SliceModel> current_slice,unsigned char cur_dim)
 {
+    int roi_index = cur_tracking_window["roi_label"].toInt();
     float zoom = cur_tracking_window.get_scene_zoom(current_slice);
     float zoom_2 = zoom/2;
     int tic_dis = 5;
@@ -161,7 +162,7 @@ void slice_view_scene::show_ruler(QPainter& paint,std::shared_ptr<SliceModel> cu
             if(flip_y)
                 Y = paint.window().height()-Y;
             else
-                if(tic == 0 && cur_tracking_window["roi_label"].toInt())
+                if(tic == 0 && roi_index)
                     continue;
             if(tic+tic_dis <= length)
                 paint.drawLine(X,Y,X,Y+(flip_y ? -tic_length: tic_length));
@@ -175,7 +176,7 @@ void slice_view_scene::show_ruler(QPainter& paint,std::shared_ptr<SliceModel> cu
         }
     }
 }
-void slice_view_scene::show_fiber(QPainter& painter,std::shared_ptr<SliceModel> current_slice,unsigned char cur_dim)
+void slice_view_scene::show_fiber(QPainter& painter,std::shared_ptr<SliceModel> current_slice,const tipl::color_image& slice_image,unsigned char cur_dim)
 {
     float display_ratio = cur_tracking_window.get_scene_zoom(current_slice);
     float r = display_ratio * cur_tracking_window["roi_fiber_length"].toFloat();
@@ -246,7 +247,7 @@ void slice_view_scene::show_fiber(QPainter& painter,std::shared_ptr<SliceModel> 
                     }
             }
 }
-void slice_view_scene::show_pos(QPainter& painter,std::shared_ptr<SliceModel> current_slice,unsigned char cur_dim)
+void slice_view_scene::show_pos(QPainter& painter,std::shared_ptr<SliceModel> current_slice,const tipl::color_image& slice_image,unsigned char cur_dim)
 {
     int x_pos,y_pos;
     float display_ratio = cur_tracking_window.get_scene_zoom(current_slice);
@@ -268,9 +269,11 @@ void slice_view_scene::manage_slice_orientation(QImage& slice,QImage& new_slice,
 }
 void slice_view_scene::get_view_image(QImage& new_view_image,std::shared_ptr<SliceModel> current_slice,unsigned char cur_dim,float display_ratio,bool simple)
 {
+    tipl::color_image slice_image;
     current_slice->get_slice(slice_image,cur_dim,cur_tracking_window.overlay_slices);
     if(slice_image.empty())
         return;
+
     QImage scaled_image;
     if(!simple)
         cur_tracking_window.regionWidget->draw_region(current_slice,
@@ -297,15 +300,16 @@ void slice_view_scene::get_view_image(QImage& new_view_image,std::shared_ptr<Sli
     {
         QPainter painter(&scaled_image);
         if(!simple && cur_tracking_window["roi_fiber"].toInt())
-            show_fiber(painter,current_slice,cur_dim);
+            show_fiber(painter,current_slice,slice_image,cur_dim);
         if(cur_tracking_window["roi_position"].toInt())
-            show_pos(painter,current_slice,cur_dim);
+            show_pos(painter,current_slice,slice_image,cur_dim);
     }
 
     manage_slice_orientation(scaled_image,new_view_image,cur_dim);
 
     if(cur_tracking_window["roi_layout"].toInt() <= 1) // not mosaic
     {
+
         float grey = slice_image[0].r;
         grey += slice_image[0].g;
         grey += slice_image[0].b;

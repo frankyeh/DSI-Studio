@@ -24,7 +24,6 @@ public:
     QStatusBar* statusbar = nullptr;
 private:
     tracking_window& cur_tracking_window;
-    tipl::color_image slice_image;
     QColor line_color = Qt::white;
 public:
     unsigned int mosaic_column_count,mosaic_row_count;
@@ -59,8 +58,8 @@ public:
     void new_annotated_image(void);
     void show_ruler2(QPainter& painter);
     void show_ruler(QPainter& painter,std::shared_ptr<SliceModel> current_slice,unsigned char cur_dim);
-    void show_pos(QPainter& painter,std::shared_ptr<SliceModel> current_slice,unsigned char cur_dim);
-    void show_fiber(QPainter& painter,std::shared_ptr<SliceModel> current_slice,unsigned char cur_dim);
+    void show_pos(QPainter& painter,std::shared_ptr<SliceModel> current_slice,const tipl::color_image& slice_image,unsigned char cur_dim);
+    void show_fiber(QPainter& painter,std::shared_ptr<SliceModel> current_slice,const tipl::color_image& slice_image,unsigned char cur_dim);
     void get_view_image(QImage& new_view_image,std::shared_ptr<SliceModel> current_slice,unsigned char cur_dim,float display_ratio,bool simple);
     void add_R_label(QPainter& painter,std::shared_ptr<SliceModel> current_slice,unsigned char cur_dim);
     void manage_slice_orientation(QImage& slice,QImage& new_slice,unsigned char cur_dim);
