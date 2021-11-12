@@ -537,6 +537,19 @@ bool load_fib_from_tracks(const char* file_name,
                           tipl::matrix<4,4>& trans_to_mni);
 void prepare_idx(const char* file_name,std::shared_ptr<gz_istream> in);
 void save_idx(const char* file_name,std::shared_ptr<gz_istream> in);
+bool read_fib_mat_with_idx(const char* file_name,gz_mat_read& mat_reader)
+{
+    prepare_idx(file_name,mat_reader.in);
+    if(mat_reader.in->has_access_points())
+    {
+        mat_reader.delay_read = true;
+        mat_reader.in->buffer_all = false;
+    }
+    if (!mat_reader.load_from_file(file_name) || prog_aborted())
+        return false;
+    save_idx(file_name,mat_reader.in);
+    return true;
+}
 bool fib_data::load_from_file(const char* file_name)
 {
     tipl::image<3> I;
@@ -687,19 +700,12 @@ bool fib_data::load_from_file(const char* file_name)
     }
 
 
-    //  prepare idx file
-    prepare_idx(file_name,mat_reader.in);
-    if(mat_reader.in->has_access_points())
-    {
-        mat_reader.delay_read = true;
-        mat_reader.in->buffer_all = false;
-    }
-    if (!mat_reader.load_from_file(file_name) || prog_aborted())
+    if(!read_fib_mat_with_idx(file_name,mat_reader))
     {
         error_msg = prog_aborted() ? "Loading process aborted" : "Invalid file format";
         return false;
     }
-    save_idx(file_name,mat_reader.in);
+
 
     // check if initiate surrogate analysis for large data
     if(!mat_reader.has("odfs") && !mat_reader.has("odf0") && // not ODF FIB files
@@ -711,11 +717,11 @@ bool fib_data::load_from_file(const char* file_name)
     {
         high_reso.reset(new fib_data);
         std::cout << "initiate surrogate analysis" << std::endl;
-        std::string high_reso_file_name = file_name;
-        high_reso_file_name.resize(high_reso_file_name.size()-7);
-        high_reso_file_name += ".fibs.gz";
+        std::string surrogate_file_name = file_name;
+        surrogate_file_name.resize(surrogate_file_name.size()-7);
+        surrogate_file_name += ".fibs.gz";
         // if no surrogate FIB or surrogate FIB is older, then generate one
-        if(!std::filesystem::exists(high_reso_file_name) || QFileInfo(high_reso_file_name.c_str()).lastModified() < QFileInfo(file_name).lastModified())
+        if(!std::filesystem::exists(surrogate_file_name) || QFileInfo(surrogate_file_name.c_str()).lastModified() < QFileInfo(file_name).lastModified())
         {
             std::cout << "create surrogate FIB file" << std::endl;
             size_t largest_dim = *std::max_element(dim.begin(),dim.end());
@@ -732,7 +738,7 @@ bool fib_data::load_from_file(const char* file_name)
                 low_reso_dim[2] = (low_reso_dim[2]+1) >> 1;
             }
             std::cout << "preparing surrogate FIB file" << std::endl;
-            gz_mat_write out(high_reso_file_name.c_str());
+            gz_mat_write out(surrogate_file_name.c_str());
             out.write("dimension",low_reso_dim);
             out.write("voxel_size",low_reso_vs);
             // output odf vertices and faces
@@ -823,12 +829,14 @@ bool fib_data::load_from_file(const char* file_name)
             }
         }
         std::cout << "reading surrogate FIB file" << std::endl;
-        if(!high_reso->mat_reader.load_from_file(high_reso_file_name.c_str()))
+        high_reso->mat_reader.swap(mat_reader);
+        high_reso->fib_file_name = fib_file_name;
+        if(!read_fib_mat_with_idx(surrogate_file_name.c_str(),mat_reader))
         {
             error_msg = "failed to load surrogate FIB file";
             return false;
         }
-        high_reso->mat_reader.swap(mat_reader);
+        fib_file_name = surrogate_file_name;
         has_high_reso = true;
     }
 
