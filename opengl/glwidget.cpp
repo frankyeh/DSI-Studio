@@ -604,7 +604,7 @@ void GLWidget::renderLR()
                         if (!slice->to3DSpace(cur_tracking_window.cur_dim,index[0],index[1],x,y,z))
                             continue;
                         tipl::pixel_index<3> pos(x,y,z,geo);
-                        if (handle->dir.get_fa(pos.index(),0) <= fa_threshold)
+                        if (handle->dir.fa[0][pos.index()] <= fa_threshold)
                             continue;
                         odf_pos.push_back(pos);
                     }
@@ -618,7 +618,7 @@ void GLWidget::renderLR()
                 for(tipl::pixel_index<3> index(geo);index < geo.size();++index)
                 {
                     if(((index[0] & mask) | (index[1] & mask) | (index[2] & mask)) ||
-                       handle->dir.get_fa(index.index(),0) <= fa_threshold)
+                       handle->dir.fa[0][index.index()] <= fa_threshold)
                         continue;
                     odf_pos.push_back(index);
                 }

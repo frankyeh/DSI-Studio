@@ -218,12 +218,12 @@ void slice_view_scene::show_fiber(QPainter& painter,std::shared_ptr<SliceModel> 
                 if(!dim.is_valid(X,Y,Z))
                     continue;
                 tipl::pixel_index<3> pos(X,Y,Z,dim);
-                if (pos.index() >= dim.size() || dir.get_fa(pos.index(),0) == 0.0f)
+                if (pos.index() >= dim.size() || dir.fa[0][pos.index()] == 0.0f)
                     continue;
                 for (int fiber = max_fiber; fiber >= 0; --fiber)
-                    if(dir.get_fa(pos.index(),uint8_t(fiber)) > threshold)
+                    if(dir.fa[fiber][pos.index()] > threshold)
                     {
-                        if(threshold2 != 0.0f && dir.get_dt_fa(pos.index(),uint8_t(fiber)) < threshold2)
+                        if(threshold2 != 0.0f && dir.dt_fa[fiber][pos.index()] < threshold2)
                             continue;
                         if((roi_fiber == 2 && fiber != 0) ||
                            (roi_fiber == 3 && fiber != 1))

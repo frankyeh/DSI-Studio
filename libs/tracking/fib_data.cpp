@@ -339,34 +339,20 @@ void fiber_directions::add_dt_index(const std::string& name,tipl::image<3>&& I)
     dt_index_name.push_back(name);
 }
 
-float fiber_directions::get_fa(size_t index,unsigned char order) const
-{
-    if(order >= fa.size())
-        return 0.0;
-    return fa[order][index];
-}
-float fiber_directions::get_dt_fa(size_t index,unsigned char order) const
-{
-    if(order >= dt_fa.size())
-        return 0.0;
-    return dt_fa[order][index];
-}
-
-
-const float* fiber_directions::get_fib(size_t index,unsigned int order) const
+const float* fiber_directions::get_fib(size_t space_index,unsigned int order) const
 {
     if(!dir.empty())
-        return dir[order] + index + (index << 1);
+        return dir[order] + space_index + space_index + space_index;
     if(order >= findex.size())
         return &*(odf_table[0].begin());
-    return &*(odf_table[findex[order][index]].begin());
+    return &*(odf_table[findex[order][space_index]].begin());
 }
 
 float fiber_directions::cos_angle(const tipl::vector<3>& cur_dir,size_t space_index,unsigned char fib_order) const
 {
     if(!dir.empty())
     {
-        const float* dir_at = dir[fib_order] + space_index + (space_index << 1);
+        const float* dir_at = dir[fib_order] + space_index + space_index + space_index;
         return cur_dir[0]*dir_at[0] + cur_dir[1]*dir_at[1] + cur_dir[2]*dir_at[2];
     }
     return cur_dir*odf_table[findex[fib_order][space_index]];
@@ -866,8 +852,8 @@ bool fib_data::save_mapping(const std::string& index_name,const std::string& fil
         unsigned char dir_index = uint8_t(index_name[3]-'0');
         tipl::image<4,float> buf(tipl::shape<4>(dim[0],dim[1],dim[2],3));
         for(unsigned int j = 0,ptr = 0;j < 3;++j)
-        for(unsigned int index = 0;index < dim.size();++index,++ptr)
-            if(dir.get_fa(index,dir_index) > 0.0f)
+        for(size_t index = 0;index < dim.size();++index,++ptr)
+            if(dir.fa[dir_index][index] > 0.0f)
                 buf[ptr] = dir.get_fib(index,dir_index)[j];
         return gz_nifti::save_to_file(file_name.c_str(),buf,vs,trans_to_mni);
     }
@@ -1215,13 +1201,15 @@ void fib_data::get_slice(unsigned int view_index,
 
 }
 
-void fib_data::get_voxel_info2(unsigned int x,unsigned int y,unsigned int z,std::vector<float>& buf) const
+void fib_data::get_voxel_info2(int x,int y,int z,std::vector<float>& buf) const
 {
-    unsigned int index = (z*dim[1]+y)*dim[0] + x;
-    if (index >= dim.size())
+    if(!dim.is_valid(x,y,z))
+        return;
+    size_t space_index = tipl::pixel_index<3>(x,y,z,dim).index();
+    if (space_index >= dim.size())
         return;
     for(unsigned int i = 0;i < dir.num_fiber;++i)
-        if(dir.get_fa(index,i) == 0.0f)
+        if(dir.fa[i][space_index] == 0.0f)
         {
             buf.push_back(0.0f);
             buf.push_back(0.0f);
@@ -1229,7 +1217,7 @@ void fib_data::get_voxel_info2(unsigned int x,unsigned int y,unsigned int z,std:
         }
         else
         {
-            const float* d = dir.get_fib(index,i);
+            const float* d = dir.get_fib(space_index,i);
             buf.push_back(d[0]);
             buf.push_back(d[1]);
             buf.push_back(d[2]);
@@ -1239,8 +1227,8 @@ void fib_data::get_voxel_information(int x,int y,int z,std::vector<float>& buf) 
 {
     if(!dim.is_valid(x,y,z))
         return;
-    int index = (z*dim[1]+y)*dim[0] + x;
-    if (index >= dim.size())
+    size_t space_index = tipl::pixel_index<3>(x,y,z,dim).index();
+    if (space_index >= dim.size())
         return;
     for(unsigned int i = 0;i < view_item.size();++i)
     {
@@ -1253,7 +1241,7 @@ void fib_data::get_voxel_information(int x,int y,int z,std::vector<float>& buf) 
             buf.push_back(tipl::estimate(view_item[i].get_image(),pos));
         }
         else
-            buf.push_back(view_item[i].get_image().size() ? view_item[i].get_image()[index] : 0.0);
+            buf.push_back(view_item[i].get_image().size() ? view_item[i].get_image()[space_index] : 0.0);
     }
 }
 

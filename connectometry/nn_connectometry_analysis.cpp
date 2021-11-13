@@ -104,8 +104,8 @@ bool nn_connectometry_analysis::run(const std::string& net_string_)
         float fp_threshold = otsu*tipl::segmentation::otsu_threshold(
                     tipl::make_image(handle->dir.fa[0],handle->dim));
         tipl::image<3,int> fp_mask(handle->dim);
-        for(int i = 0;i < fp_mask.size();++i)
-            if(handle->dir.get_fa(i,0) > fp_threshold)
+        for(size_t i = 0;i < fp_mask.size();++i)
+            if(handle->dir.fa[0][i] > fp_threshold)
                 fp_mask[i] = 1;
             else
                 fp_mask[i] = 0;
@@ -115,7 +115,7 @@ bool nn_connectometry_analysis::run(const std::string& net_string_)
             std::vector<int> pos;
             handle->db.get_subject_vector_pos(pos,fp_mask,fp_threshold);
             fp_index.resize(pos.size());
-            for(int i = 0;i < pos.size();++i)
+            for(size_t i = 0;i < pos.size();++i)
                 fp_index[i] = tipl::pixel_index<3>(pos[i],handle->dim);
         }
         // for smoothing

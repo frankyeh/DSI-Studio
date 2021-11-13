@@ -42,8 +42,8 @@ db_window::db_window(QWidget *parent,std::shared_ptr<group_connectometry_analysi
     connect(ui->add,SIGNAL(clicked()),this,SLOT(on_actionAdd_DB_triggered()));
 
     fp_mask.resize(vbc->handle->dim);
-    for(int i = 0;i < fp_mask.size();++i)
-        if(vbc->handle->dir.get_fa(i,0) > 0.0f)
+    for(size_t i = 0;i < fp_mask.size();++i)
+        if(vbc->handle->dir.fa[0][i] > 0.0f)
             fp_mask[i] = 1.0;
         else
             fp_mask[i] = 0.0;

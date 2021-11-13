@@ -56,7 +56,6 @@ public: // for differential tractography
     int dt_cur_index = 0;
 
     bool is_dt(void)const{return !dt_fa.empty();}
-    float get_dt_fa(size_t index,unsigned char order) const;
     bool set_dt_index(int new_index);
     bool set_dt_index(const std::string& name);
     std::string get_dt_threshold_name(void) const{return dt_fa.empty() ? std::string() : dt_index_name[uint32_t(dt_cur_index)];}
@@ -67,7 +66,6 @@ public:
     bool set_tracking_index(int new_index);
     bool set_tracking_index(const std::string& name);
     std::string get_threshold_name(void) const{return index_name[uint32_t(cur_index)];}
-    float get_fa(size_t space_index,unsigned char order) const;
     const float* get_fib(size_t space_index,unsigned int order) const;
     float cos_angle(const tipl::vector<3>& cur_dir,size_t space_index,unsigned char fib_order) const;
     float get_track_specific_metrics(size_t space_index,const std::vector<const float*>& index,
@@ -284,7 +282,7 @@ public:
     void get_slice(unsigned int view_index,
                    unsigned char d_index,unsigned int pos,
                    tipl::color_image& show_image,const tipl::value_to_color<float>& v2c);
-    void get_voxel_info2(unsigned int x,unsigned int y,unsigned int z,std::vector<float>& buf) const;
+    void get_voxel_info2(int x,int y,int z,std::vector<float>& buf) const;
     void get_voxel_information(int x,int y,int z,std::vector<float>& buf) const;
     void get_iso_fa(tipl::image<3>& iso_fa_) const;
 };
