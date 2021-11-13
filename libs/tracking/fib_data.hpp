@@ -67,10 +67,10 @@ public:
     bool set_tracking_index(int new_index);
     bool set_tracking_index(const std::string& name);
     std::string get_threshold_name(void) const{return index_name[uint32_t(cur_index)];}
-    float get_fa(size_t index,unsigned char order) const;
-    const float* get_fib(size_t index,unsigned int order) const;
-    float cos_angle(const tipl::vector<3>& cur_dir,unsigned int space_index,unsigned char fib_order) const;
-    float get_track_specific_metrics(unsigned int space_index,const std::vector<const float*>& index,
+    float get_fa(size_t space_index,unsigned char order) const;
+    const float* get_fib(size_t space_index,unsigned int order) const;
+    float cos_angle(const tipl::vector<3>& cur_dir,size_t space_index,unsigned char fib_order) const;
+    float get_track_specific_metrics(size_t space_index,const std::vector<const float*>& index,
                              const tipl::vector<3,float>& dir) const;
 };
 
@@ -95,22 +95,22 @@ public:
 private:
     const tracking_data& operator=(const tracking_data& rhs);
 public:
-    bool get_dir(unsigned int space_index,
-                         const tipl::vector<3,float>& ref_dir, // reference direction, should be unit vector
-                         unsigned char& fib_order_,
-                         unsigned char& reverse_,
-                             float threshold,
-                             float cull_cos_angle,
-                             float dt_threshold) const;
-    void read(std::shared_ptr<fib_data> fib);
-    bool get_dir(unsigned int space_index,
-                         const tipl::vector<3,float>& dir, // reference direction, should be unit vector
-                         tipl::vector<3,float>& main_dir,
+    bool get_dir(size_t space_index,
+                 const tipl::vector<3,float>& ref_dir, // reference direction, should be unit vector
+                 unsigned char& fib_order_,
+                 unsigned char& reverse_,
                  float threshold,
                  float cull_cos_angle,
                  float dt_threshold) const;
-    const float* get_fib(unsigned int space_index,unsigned char fib_order) const;
-    float cos_angle(const tipl::vector<3>& cur_dir,unsigned int space_index,unsigned char fib_order) const;
+    void read(std::shared_ptr<fib_data> fib);
+    bool get_dir(size_t space_index,
+                 const tipl::vector<3,float>& dir, // reference direction, should be unit vector
+                 tipl::vector<3,float>& main_dir,
+                 float threshold,
+                 float cull_cos_angle,
+                 float dt_threshold) const;
+    const float* get_fib(size_t space_index,unsigned char fib_order) const;
+    float cos_angle(const tipl::vector<3>& cur_dir,size_t space_index,unsigned char fib_order) const;
     bool is_white_matter(const tipl::vector<3,float>& pos,float t) const;
 
 };

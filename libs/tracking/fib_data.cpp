@@ -362,7 +362,7 @@ const float* fiber_directions::get_fib(size_t index,unsigned int order) const
     return &*(odf_table[findex[order][index]].begin());
 }
 
-float fiber_directions::cos_angle(const tipl::vector<3>& cur_dir,unsigned int space_index,unsigned char fib_order) const
+float fiber_directions::cos_angle(const tipl::vector<3>& cur_dir,size_t space_index,unsigned char fib_order) const
 {
     if(!dir.empty())
     {
@@ -373,7 +373,7 @@ float fiber_directions::cos_angle(const tipl::vector<3>& cur_dir,unsigned int sp
 }
 
 
-float fiber_directions::get_track_specific_metrics(unsigned int space_index,
+float fiber_directions::get_track_specific_metrics(size_t space_index,
                          const std::vector<const float*>& metrics,
                          const tipl::vector<3,float>& dir) const
 {
@@ -402,7 +402,7 @@ float fiber_directions::get_track_specific_metrics(unsigned int space_index,
 }
 
 
-bool tracking_data::get_dir(unsigned int space_index,
+bool tracking_data::get_dir(size_t space_index,
                      const tipl::vector<3,float>& ref_dir, // reference direction, should be unit vector
                      unsigned char& fib_order_,
                      unsigned char& reverse_,
@@ -465,9 +465,9 @@ void tracking_data::read(std::shared_ptr<fib_data> fib)
         high_reso->read(fib->high_reso);
     }
 }
-bool tracking_data::get_dir(unsigned int space_index,
-                     const tipl::vector<3,float>& dir, // reference direction, should be unit vector
-                     tipl::vector<3,float>& main_dir,
+bool tracking_data::get_dir(size_t space_index,
+                            const tipl::vector<3,float>& dir, // reference direction, should be unit vector
+                            tipl::vector<3,float>& main_dir,
                             float threshold,
                             float cull_cos_angle,
                             float dt_threshold) const
@@ -486,14 +486,14 @@ bool tracking_data::get_dir(unsigned int space_index,
     return true;
 }
 
-const float* tracking_data::get_fib(unsigned int space_index,unsigned char fib_order) const
+const float* tracking_data::get_fib(size_t space_index,unsigned char fib_order) const
 {
     if(!dir.empty())
         return dir[fib_order] + space_index + (space_index << 1);
     return &odf_table[findex[fib_order][space_index]][0];
 }
 
-float tracking_data::cos_angle(const tipl::vector<3>& cur_dir,unsigned int space_index,unsigned char fib_order) const
+float tracking_data::cos_angle(const tipl::vector<3>& cur_dir,size_t space_index,unsigned char fib_order) const
 {
     if(!dir.empty())
     {
