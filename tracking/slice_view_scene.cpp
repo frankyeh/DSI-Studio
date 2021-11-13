@@ -381,7 +381,7 @@ bool slice_view_scene::command(QString cmd,QString param,QString param2)
     {
         if(param.isEmpty())
             param = QFileInfo(cur_tracking_window.windowTitle()).baseName()+"_"+param2+".nii.gz";
-        return cur_tracking_window.handle->save_mapping(param2.toStdString(),param.toStdString(),cur_tracking_window.current_slice->v2c);
+        return cur_tracking_window.handle->save_mapping(param2.toStdString(),param.toStdString());
     }
     return false;
 }

@@ -1145,8 +1145,7 @@ void tracking_window::move_slice_to(tipl::vector<3,float> slice_position)
     ui->SlicePos->setRange(0,current_slice->dim[cur_dim]-1);
     ui->SlicePos->setValue(current_slice->slice_pos[cur_dim]);
 
-    glWidget->slice_pos[0] = glWidget->slice_pos[1] = glWidget->slice_pos[2] = -1;
-    glWidget->updateGL();
+    glWidget->update_slice();
     slice_need_update = true;
 }
 void tracking_window::change_contrast()
@@ -1155,9 +1154,8 @@ void tracking_window::change_contrast()
         return;
     current_slice->set_contrast_range(ui->min_value_gl->value(),ui->max_value_gl->value());
     current_slice->set_contrast_color(ui->min_color_gl->color().rgb(),ui->max_color_gl->color().rgb());
-    glWidget->slice_pos[0] = glWidget->slice_pos[1] = glWidget->slice_pos[2] = -1;
-    glWidget->updateGL();
     slice_need_update = true;
+    glWidget->update_slice();
 }
 
 void tracking_window::on_actionEndpoints_to_seeding_triggered()
@@ -2063,10 +2061,9 @@ void tracking_window::on_actionLoad_Color_Map_triggered()
           QMessageBox::information(this,"Error","Invalid color map format");
           return;
     }
-    current_slice->v2c.set_color_map(new_color_map);
-    glWidget->slice_pos[0] = glWidget->slice_pos[1] = glWidget->slice_pos[2] = -1;
-    glWidget->updateGL();
+    handle->view_item[current_slice->view_id].v2c.set_color_map(new_color_map);
     slice_need_update = true;
+    glWidget->update_slice();
 }
 
 void tracking_window::on_track_style_currentIndexChanged(int index)
@@ -2381,18 +2378,14 @@ void tracking_window::on_SliceModality_currentIndexChanged(int index)
         return;
 
     no_update = true;
+
     tipl::vector<3,float> slice_position(current_slice->slice_pos);
     if(!current_slice->is_diffusion_space)
         slice_position.to(current_slice->T);
     current_slice = slices[size_t(index)];
 
-    // invoke image reading and update contrast
     if(!handle->view_item[current_slice->view_id].image_ready)
-    {
         current_slice->get_source();
-        current_slice->update_contrast();
-    }
-
 
     ui->is_overlay->setChecked(current_slice->is_overlay);
     ui->glSagSlider->setRange(0,int(current_slice->dim[0]-1));
@@ -2422,10 +2415,10 @@ void tracking_window::on_SliceModality_currentIndexChanged(int index)
 
     if(!current_slice->is_diffusion_space)
         slice_position.to(current_slice->invT);
-
     move_slice_to(slice_position);
-    no_update = false;
 
+    no_update = false;
+    change_contrast();
 }
 
 

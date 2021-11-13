@@ -192,6 +192,11 @@ public:
      bool set_view_flip = false;
      void get3View(QImage& I,unsigned int type);
      QImage grab_image(void){updateGL();paintGL();paintGL();return grabFrameBuffer();}
+     void update_slice(void)
+     {
+         slice_pos[0] = slice_pos[1] = slice_pos[2] = -1;
+         updateGL();
+     }
      bool command(QString cmd,QString param = "",QString param2 = "");
  };
 

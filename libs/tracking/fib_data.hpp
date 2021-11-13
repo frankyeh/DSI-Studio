@@ -140,6 +140,9 @@ public:
     std::string name;
     bool image_ready = true;
     tipl::matrix<4,4> T,iT;// T: image->diffusion iT: diffusion->image
+
+public:
+    tipl::value_to_color<float> v2c;
     float max_value;
     float min_value;
     float contrast_max;
@@ -163,8 +166,10 @@ public:
             min_value = 0.0f;
             max_value = 1.0f;
         }
-
+        v2c.set_range(contrast_min,contrast_max);
+        v2c.two_color(min_color,max_color);
     }
+
 };
 
 class TractModel;
@@ -268,7 +273,7 @@ public:
 public:
     bool load_from_file(const char* file_name);
     bool load_from_mat(void);
-    bool save_mapping(const std::string& index_name,const std::string& file_name,const tipl::value_to_color<float>& v2c);
+    bool save_mapping(const std::string& index_name,const std::string& file_name);
 public:
     bool has_odfs(void) const{return odf.has_odfs();}
     const float* get_odf_data(unsigned int index) const{return odf.get_odf_data(index);}
@@ -281,7 +286,7 @@ public:
     std::pair<float,float> get_value_range(const std::string& view_name) const;
     void get_slice(unsigned int view_index,
                    unsigned char d_index,unsigned int pos,
-                   tipl::color_image& show_image,const tipl::value_to_color<float>& v2c);
+                   tipl::color_image& show_image);
     void get_voxel_info2(int x,int y,int z,std::vector<float>& buf) const;
     void get_voxel_information(int x,int y,int z,std::vector<float>& buf) const;
     void get_iso_fa(tipl::image<3>& iso_fa_) const;

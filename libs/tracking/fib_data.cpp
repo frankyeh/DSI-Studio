@@ -831,7 +831,7 @@ bool fib_data::load_from_file(const char* file_name)
 
     return true;
 }
-bool fib_data::save_mapping(const std::string& index_name,const std::string& file_name,const tipl::value_to_color<float>& v2c)
+bool fib_data::save_mapping(const std::string& index_name,const std::string& file_name)
 {
     if(index_name == "fiber" || index_name == "dirs") // command line exp use "dirs"
     {
@@ -883,7 +883,7 @@ bool fib_data::save_mapping(const std::string& index_name,const std::string& fil
         for(int z = 0;z < buf.depth();++z)
         {
             tipl::color_image I;
-            get_slice(uint32_t(index),uint8_t(2),uint32_t(z),I,v2c);
+            get_slice(uint32_t(index),uint8_t(2),uint32_t(z),I);
             std::copy(I.begin(),I.end(),buf.begin()+size_t(z)*buf.plane_size());
         }
         return gz_nifti::save_to_file(file_name.c_str(),buf,vs,trans_to_mni);
@@ -1166,14 +1166,14 @@ std::pair<float,float> fib_data::get_value_range(const std::string& view_name) c
 
 void fib_data::get_slice(unsigned int view_index,
                unsigned char d_index,unsigned int pos,
-               tipl::color_image& show_image,const tipl::value_to_color<float>& v2c)
+               tipl::color_image& show_image)
 {
     if(view_item[view_index].name == "color")
     {
         {
             tipl::image<2,float> buf;
             tipl::volume2slice(view_item[0].get_image(), buf, d_index, pos);
-            v2c.convert(buf,show_image);
+            view_item[view_index].v2c.convert(buf,show_image);
         }
 
         if(view_item[view_index].color_map_buf.empty())
@@ -1196,7 +1196,7 @@ void fib_data::get_slice(unsigned int view_index,
     {
         tipl::image<2,float> buf;
         tipl::volume2slice(view_item[view_index].get_image(), buf, d_index, pos);
-        v2c.convert(buf,show_image);
+        view_item[view_index].v2c.convert(buf,show_image);
     }
 
 }

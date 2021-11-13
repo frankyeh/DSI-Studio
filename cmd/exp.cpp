@@ -84,15 +84,11 @@ int exp(program_option& po)
             std::cout << "ERROR: " << handle->error_msg << std::endl;
             return 0;
         }
-        tipl::value_to_color<float> v2c;// used if "color" is wanted
-        v2c.set_range(handle->view_item[0].contrast_min,handle->view_item[0].contrast_max);
-        v2c.two_color(tipl::rgb(0,0,0),tipl::rgb(255,255,255));
-
         std::istringstream in(po.get("export"));
         std::string cmd;
         while(std::getline(in,cmd,','))
         {
-            if(!handle->save_mapping(cmd,file_name + "." + cmd + ".nii.gz",v2c))
+            if(!handle->save_mapping(cmd,file_name + "." + cmd + ".nii.gz"))
             {
                 std::cout << "ERROR: cannot find "<< cmd.c_str() <<" in " << file_name.c_str() <<std::endl;
                 return 1;

@@ -21,13 +21,6 @@ SliceModel::SliceModel(fib_data* handle_,uint32_t view_id_):handle(handle_),view
     slice_pos[0] = dim.width() >> 1;
     slice_pos[1] = dim.height() >> 1;
     slice_pos[2] = dim.depth() >> 1;
-    if(handle->view_item[view_id].image_ready)
-        update_contrast();
-}
-void SliceModel::update_contrast(void)
-{
-    v2c.set_range(handle->view_item[view_id].contrast_min,handle->view_item[view_id].contrast_max);
-    v2c.two_color(handle->view_item[view_id].min_color,handle->view_item[view_id].max_color);
 }
 // ---------------------------------------------------------------------------
 void SliceModel::apply_overlay(tipl::color_image& show_image,
@@ -37,6 +30,7 @@ void SliceModel::apply_overlay(tipl::color_image& show_image,
     if(show_image.empty())
         return;
     bool op = show_image[0][0] < 128;
+    const auto& v2c = other_slice->handle->view_item[other_slice->view_id].v2c;
     std::pair<float,float> range = other_slice->get_contrast_range();
     for(int y = 0,pos = 0;y < show_image.height();++y)
         for(int x = 0;x < show_image.width();++x,++pos)
@@ -50,9 +44,9 @@ void SliceModel::apply_overlay(tipl::color_image& show_image,
                (value < 0.0f && value < range.second))
             {
                 if(op)
-                    show_image[pos] |= other_slice->v2c[value];
+                    show_image[pos] |= v2c[value];
                 else
-                    show_image[pos] &= other_slice->v2c[value];
+                    show_image[pos] &= v2c[value];
             }
 
         }
@@ -79,20 +73,20 @@ void SliceModel::set_contrast_range(float min_v,float max_v)
 {
     handle->view_item[view_id].contrast_min = min_v;
     handle->view_item[view_id].contrast_max = max_v;
-    v2c.set_range(min_v,max_v);
+    handle->view_item[view_id].v2c.set_range(min_v,max_v);
 }
 // ---------------------------------------------------------------------------
 void SliceModel::set_contrast_color(unsigned int min_c,unsigned int max_c)
 {
     handle->view_item[view_id].min_color = min_c;
     handle->view_item[view_id].max_color = max_c;
-    v2c.two_color(min_c,max_c);
+    handle->view_item[view_id].v2c.two_color(min_c,max_c);
 }
 // ---------------------------------------------------------------------------
 void SliceModel::get_slice(tipl::color_image& show_image,unsigned char cur_dim,
                            const std::vector<std::shared_ptr<SliceModel> >& overlay_slices) const
 {
-    handle->get_slice(view_id,cur_dim, slice_pos[cur_dim],show_image,v2c);
+    handle->get_slice(view_id,cur_dim, slice_pos[cur_dim],show_image);
     for(auto overlay_slice : overlay_slices)
         if(this != overlay_slice.get())
             apply_overlay(show_image,cur_dim,overlay_slice);
@@ -101,7 +95,10 @@ void SliceModel::get_slice(tipl::color_image& show_image,unsigned char cur_dim,
 void SliceModel::get_high_reso_slice(tipl::color_image& show_image,unsigned char cur_dim) const
 {
     if(handle && handle->has_high_reso)
-        handle->high_reso->get_slice(view_id,cur_dim, slice_pos[cur_dim]*int(handle->high_reso->dim[cur_dim])/int(handle->dim[cur_dim]),show_image,v2c);
+    {
+        handle->high_reso->view_item[view_id].v2c = handle->view_item[view_id].v2c;
+        handle->high_reso->get_slice(view_id,cur_dim, slice_pos[cur_dim]*int(handle->high_reso->dim[cur_dim])/int(handle->dim[cur_dim]),show_image);
+    }
 }
 // ---------------------------------------------------------------------------
 tipl::const_pointer_image<3> SliceModel::get_source(void) const
@@ -382,8 +379,6 @@ bool CustomSliceModel::initialize(const std::vector<std::string>& files,bool is_
         update_image();
         handle->view_item.push_back(item(name,&*source_images.begin(),source_images.shape()));
         view_id = uint32_t(handle->view_item.size()-1);
-        v2c.set_range(handle->view_item[view_id].contrast_min,handle->view_item[view_id].contrast_max);
-        v2c.two_color(handle->view_item[view_id].min_color,handle->view_item[view_id].max_color);
     }
 
 

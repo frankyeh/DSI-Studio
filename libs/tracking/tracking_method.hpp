@@ -285,7 +285,6 @@ public:
                   const tipl::vector<3,float>& position_,
                   std::mt19937& seed)
         {
-            std::uniform_real_distribution<float> gen(0,1);
             position = position_;
             terminated = false;
             forward = true;
@@ -296,6 +295,8 @@ public:
             case 0:// main direction
                 return get_starting_dir(position,current_fa_threshold,0,dir);
             case 1:// random direction
+            {
+                std::uniform_real_distribution<float> gen(0,1);
                 for (unsigned int index = 0;index < 10;++index)
                 {
                     float txy = gen(seed);
@@ -307,6 +308,7 @@ public:
                         return true;
                 }
                 return false;
+            }
             case 2:// all direction
                 if (init_fib_index >= trk->fib_num ||
                     !get_starting_dir(position,current_fa_threshold,init_fib_index,dir))
