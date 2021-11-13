@@ -184,7 +184,32 @@ public:
                       const tipl::vector<3,float>& ref_dir,
                       tipl::vector<3,float>& result_dir)
     {
+        if(trk->has_high_reso)
+        {
+            tipl::vector<3> new_pos(position);
+            new_pos *= trk->high_reso_ratio;
+            return interpolation->evaluate(trk->high_reso,new_pos,ref_dir,result_dir,current_fa_threshold,current_tracking_angle,current_dt_threshold);
+        }
         return interpolation->evaluate(trk,position,ref_dir,result_dir,current_fa_threshold,current_tracking_angle,current_dt_threshold);
+    }
+    bool get_starting_dir(tipl::vector<3,float> pos,float fa_threshold,unsigned char fib_order,tipl::vector<3>& dir) const
+    {
+        if(trk->has_high_reso)
+        {
+            pos *= trk->high_reso_ratio;
+            pos.round();
+            size_t space_index = tipl::pixel_index<3>(pos[0],pos[1],pos[2],trk->high_reso->dim).index();
+            if(trk->high_reso->fa[fib_order][space_index] < fa_threshold)
+                return false;
+            dir = trk->high_reso->get_fib(space_index,fib_order);
+            return true;
+        }
+        pos.round();
+        size_t space_index = tipl::pixel_index<3>(pos[0],pos[1],pos[2],trk->dim).index();
+        if(trk->fa[fib_order][space_index] < fa_threshold)
+            return false;
+        dir = trk->get_fib(space_index,fib_order);
+        return true;
     }
 public:
     TrackingMethod(std::shared_ptr<tracking_data> trk_,
@@ -264,21 +289,12 @@ public:
             position = position_;
             terminated = false;
             forward = true;
-            tipl::pixel_index<3> pindex(std::round(position[0]),
-                                    std::round(position[1]),
-                                    std::round(position[2]),trk->dim);
-            if (!trk->dim.is_valid(pindex))
+            if (!trk->dim.is_valid(position))
                 return false;
-
             switch (initial_direction)
             {
             case 0:// main direction
-                {
-                    if(trk->fa[0][pindex.index()] < current_fa_threshold)
-                        return false;
-                    dir = trk->get_fib(uint32_t(pindex.index()),0);
-                }
-                return true;
+                return get_starting_dir(position,current_fa_threshold,0,dir);
             case 1:// random direction
                 for (unsigned int index = 0;index < 10;++index)
                 {
@@ -292,17 +308,13 @@ public:
                 }
                 return false;
             case 2:// all direction
+                if (init_fib_index >= trk->fib_num ||
+                    !get_starting_dir(position,current_fa_threshold,init_fib_index,dir))
                 {
-                    if (init_fib_index >= trk->fib_num ||
-                        trk->fa[init_fib_index][pindex.index()] < current_fa_threshold)
-                    {
-                        init_fib_index = 0;
-                        return false;
-                    }
-                    else
-                        dir = trk->get_fib(uint32_t(pindex.index()),init_fib_index);
-                    ++init_fib_index;
+                    init_fib_index = 0;
+                    return false;
                 }
+                ++init_fib_index;
                 return true;
             }
             return false;
@@ -322,9 +334,7 @@ public:
                     return nullptr;
                 break;
             case 2:
-                position[0] = std::round(position[0]);
-                position[1] = std::round(position[1]);
-                position[2] = std::round(position[2]);
+                position.round();
                 if (!start_tracking(VoxelTracking()))
                     return nullptr;
 
