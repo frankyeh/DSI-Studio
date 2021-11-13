@@ -402,7 +402,7 @@ float fiber_directions::get_track_specific_metrics(unsigned int space_index,
 }
 
 
-bool tracking_data::get_nearest_dir_fib(unsigned int space_index,
+bool tracking_data::get_dir(unsigned int space_index,
                      const tipl::vector<3,float>& ref_dir, // reference direction, should be unit vector
                      unsigned char& fib_order_,
                      unsigned char& reverse_,
@@ -474,9 +474,9 @@ bool tracking_data::get_dir(unsigned int space_index,
 {
     unsigned char fib_order;
     unsigned char reverse;
-    if (!get_nearest_dir_fib(space_index,dir,fib_order,reverse,threshold,cull_cos_angle,dt_threshold))
+    if (!get_dir(space_index,dir,fib_order,reverse,threshold,cull_cos_angle,dt_threshold))
         return false;
-    main_dir = get_dir(space_index,fib_order);
+    main_dir = get_fib(space_index,fib_order);
     if(reverse)
     {
         main_dir[0] = -main_dir[0];
@@ -486,7 +486,7 @@ bool tracking_data::get_dir(unsigned int space_index,
     return true;
 }
 
-const float* tracking_data::get_dir(unsigned int space_index,unsigned char fib_order) const
+const float* tracking_data::get_fib(unsigned int space_index,unsigned char fib_order) const
 {
     if(!dir.empty())
         return dir[fib_order] + space_index + (space_index << 1);

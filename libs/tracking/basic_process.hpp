@@ -64,7 +64,7 @@ public:
         }
 
 
-        info.dir = info.trk->get_dir(next_voxels_index[max_i],max_j);
+        info.dir = info.trk->get_fib(next_voxels_index[max_i],max_j);
         if(info.dir*next_voxels_dir[max_i] < 0)
             info.dir = -info.dir;
         info.position = next_voxels_pos[max_i];

@@ -1565,7 +1565,7 @@ void tracking_window::on_actionImprove_Quality_triggered()
                 dis[i] -= tipl::vector<3>(index);
                 dis[i].normalize();
                 unsigned char fib_order,reverse;
-                if(fib.get_nearest_dir_fib(neighbors[i].index(),dis[i],fib_order,reverse,threshold,cos_angle,0))
+                if(fib.get_dir(neighbors[i].index(),dis[i],fib_order,reverse,threshold,cos_angle,0))
                 {
                     fib_dir[i] = handle->dir.get_fib(neighbors[i].index(),fib_order);
                     if(reverse)
@@ -1592,7 +1592,7 @@ void tracking_window::on_actionImprove_Quality_triggered()
                     predict_dir.normalize();
                     unsigned char fib_order,reverse;
                     bool has_match = false;
-                    if(fib.get_nearest_dir_fib(index.index(),predict_dir,fib_order,reverse,threshold,cos_angle,0))
+                    if(fib.get_dir(index.index(),predict_dir,fib_order,reverse,threshold,cos_angle,0))
                     {
                         if(reverse)
                             predict_dir -= tipl::vector<3>(handle->dir.get_fib(index.index(),fib_order));

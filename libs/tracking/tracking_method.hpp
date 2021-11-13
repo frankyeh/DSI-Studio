@@ -276,7 +276,7 @@ public:
                 {
                     if(trk->fa[0][pindex.index()] < current_fa_threshold)
                         return false;
-                    dir = trk->get_dir(uint32_t(pindex.index()),0);
+                    dir = trk->get_fib(uint32_t(pindex.index()),0);
                 }
                 return true;
             case 1:// random direction
@@ -300,7 +300,7 @@ public:
                         return false;
                     }
                     else
-                        dir = trk->get_dir(uint32_t(pindex.index()),init_fib_index);
+                        dir = trk->get_fib(uint32_t(pindex.index()),init_fib_index);
                     ++init_fib_index;
                 }
                 return true;

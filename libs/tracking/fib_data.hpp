@@ -95,7 +95,7 @@ public:
 private:
     const tracking_data& operator=(const tracking_data& rhs);
 public:
-    bool get_nearest_dir_fib(unsigned int space_index,
+    bool get_dir(unsigned int space_index,
                          const tipl::vector<3,float>& ref_dir, // reference direction, should be unit vector
                          unsigned char& fib_order_,
                          unsigned char& reverse_,
@@ -109,7 +109,7 @@ public:
                  float threshold,
                  float cull_cos_angle,
                  float dt_threshold) const;
-    const float* get_dir(unsigned int space_index,unsigned char fib_order) const;
+    const float* get_fib(unsigned int space_index,unsigned char fib_order) const;
     float cos_angle(const tipl::vector<3>& cur_dir,unsigned int space_index,unsigned char fib_order) const;
     bool is_white_matter(const tipl::vector<3,float>& pos,float t) const;
 
