@@ -98,6 +98,12 @@ void SliceModel::get_slice(tipl::color_image& show_image,unsigned char cur_dim,
             apply_overlay(show_image,cur_dim,overlay_slice);
 }
 // ---------------------------------------------------------------------------
+void SliceModel::get_high_reso_slice(tipl::color_image& show_image,unsigned char cur_dim) const
+{
+    if(handle && handle->has_high_reso)
+        handle->high_reso->get_slice(view_id,cur_dim, slice_pos[cur_dim]*int(handle->high_reso->dim[cur_dim])/int(handle->dim[cur_dim]),show_image,v2c);
+}
+// ---------------------------------------------------------------------------
 tipl::const_pointer_image<3> SliceModel::get_source(void) const
 {
     return handle->view_item[view_id].get_image();

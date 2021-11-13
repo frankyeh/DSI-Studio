@@ -34,6 +34,7 @@ public:
     virtual void get_slice(tipl::color_image& image,
                            unsigned char,
                            const std::vector<std::shared_ptr<SliceModel> >& overlay_slices) const;
+    void get_high_reso_slice(tipl::color_image& image,unsigned char) const;
     tipl::const_pointer_image<3> get_source(void) const;
     std::string get_name(void) const;
     bool is_picture(void) const{return dim[0] == 1 || dim[1] == 1 || dim[2] == 1;}
