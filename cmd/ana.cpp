@@ -341,7 +341,7 @@ int ana(program_option& po)
             return 1;
         float otsu = tipl::segmentation::otsu_threshold(tipl::make_image(handle->dir.fa[0],handle->dim))*0.6f;
         auto result = evaluate_fib(handle->dim,otsu,handle->dir.fa,[handle](size_t pos,unsigned int fib)
-                                        {return tipl::vector<3>(handle->dir.get_dir(pos,fib));});
+                                        {return tipl::vector<3>(handle->dir.get_fib(pos,fib));});
         std::ofstream out(po.get("info"));
         out << "fiber coherence index\t" << result.first << std::endl;
         return 0;

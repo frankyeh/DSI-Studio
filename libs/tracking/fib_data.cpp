@@ -353,7 +353,7 @@ float fiber_directions::get_dt_fa(size_t index,unsigned char order) const
 }
 
 
-const float* fiber_directions::get_dir(size_t index,unsigned int order) const
+const float* fiber_directions::get_fib(size_t index,unsigned int order) const
 {
     if(!dir.empty())
         return dir[order] + index + (index << 1);
@@ -857,7 +857,7 @@ bool fib_data::save_mapping(const std::string& index_name,const std::string& fil
         for(unsigned int j = 0,index = 0;j < dir.num_fiber;++j)
         for(int k = 0;k < 3;++k)
         for(unsigned int i = 0;i < dim.size();++i,++index)
-            buf[index] = dir.get_dir(i,j)[k];
+            buf[index] = dir.get_fib(i,j)[k];
 
         return gz_nifti::save_to_file(file_name.c_str(),buf,vs,trans_to_mni);
     }
@@ -868,7 +868,7 @@ bool fib_data::save_mapping(const std::string& index_name,const std::string& fil
         for(unsigned int j = 0,ptr = 0;j < 3;++j)
         for(unsigned int index = 0;index < dim.size();++index,++ptr)
             if(dir.get_fa(index,dir_index) > 0.0f)
-                buf[ptr] = dir.get_dir(index,dir_index)[j];
+                buf[ptr] = dir.get_fib(index,dir_index)[j];
         return gz_nifti::save_to_file(file_name.c_str(),buf,vs,trans_to_mni);
     }
     if(index_name == "odfs" && odf.has_odfs())
@@ -1200,7 +1200,7 @@ void fib_data::get_slice(unsigned int view_index,
         tipl::volume2slice(view_item[view_index].color_map_buf, buf, d_index, pos);
         for (unsigned int index = 0;index < buf.size();++index)
         {
-            const float* d = dir.get_dir(buf[index],0);
+            const float* d = dir.get_fib(buf[index],0);
             show_image[index].r = std::abs((float)show_image[index].r*d[0]);
             show_image[index].g = std::abs((float)show_image[index].g*d[1]);
             show_image[index].b = std::abs((float)show_image[index].b*d[2]);
@@ -1229,7 +1229,7 @@ void fib_data::get_voxel_info2(unsigned int x,unsigned int y,unsigned int z,std:
         }
         else
         {
-            const float* d = dir.get_dir(index,i);
+            const float* d = dir.get_fib(index,i);
             buf.push_back(d[0]);
             buf.push_back(d[1]);
             buf.push_back(d[2]);

@@ -1517,7 +1517,7 @@ void tracking_window::on_actionQuality_Assessment_triggered()
                 tipl::segmentation::otsu_threshold(tipl::make_image(handle->dir.fa[0],handle->dim));
     std::pair<float,float> result = evaluate_fib(handle->dim,threshold,handle->dir.fa,
                                                  [&](int pos,char fib)
-                                                 {return tipl::vector<3>(handle->dir.get_dir(pos,fib));});
+                                                 {return tipl::vector<3>(handle->dir.get_fib(pos,fib));});
     std::ostringstream out;
     out << "Fiber coherence index: " << result.first << std::endl;
     out << "Fiber incoherent index: " << result.second << std::endl;
@@ -1567,7 +1567,7 @@ void tracking_window::on_actionImprove_Quality_triggered()
                 unsigned char fib_order,reverse;
                 if(fib.get_nearest_dir_fib(neighbors[i].index(),dis[i],fib_order,reverse,threshold,cos_angle,0))
                 {
-                    fib_dir[i] = handle->dir.get_dir(neighbors[i].index(),fib_order);
+                    fib_dir[i] = handle->dir.get_fib(neighbors[i].index(),fib_order);
                     if(reverse)
                         fib_dir[i] = -fib_dir[i];
                     fib_fa[i] = handle->dir.fa[fib_order][neighbors[i].index()];
@@ -1595,9 +1595,9 @@ void tracking_window::on_actionImprove_Quality_triggered()
                     if(fib.get_nearest_dir_fib(index.index(),predict_dir,fib_order,reverse,threshold,cos_angle,0))
                     {
                         if(reverse)
-                            predict_dir -= tipl::vector<3>(handle->dir.get_dir(index.index(),fib_order));
+                            predict_dir -= tipl::vector<3>(handle->dir.get_fib(index.index(),fib_order));
                         else
-                            predict_dir += tipl::vector<3>(handle->dir.get_dir(index.index(),fib_order));
+                            predict_dir += tipl::vector<3>(handle->dir.get_fib(index.index(),fib_order));
                         predict_dir.normalize();
                         has_match = true;
                     }

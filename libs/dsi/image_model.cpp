@@ -245,7 +245,7 @@ std::string ImageModel::check_b_table(void)
             const float* ptr = nullptr;
             for(tipl::pixel_index<3> index(template_geo);index < template_geo.size();++index)
             {
-                if(template_fib->dir.fa[0][index.index()] < 0.2f || !(ptr = template_fib->dir.get_dir(index.index(),0)))
+                if(template_fib->dir.fa[0][index.index()] < 0.2f || !(ptr = template_fib->dir.get_fib(index.index(),0)))
                     continue;
                 tipl::vector<3> pos(index);
                 T(pos);

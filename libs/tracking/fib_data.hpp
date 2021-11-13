@@ -68,7 +68,7 @@ public:
     bool set_tracking_index(const std::string& name);
     std::string get_threshold_name(void) const{return index_name[uint32_t(cur_index)];}
     float get_fa(size_t index,unsigned char order) const;
-    const float* get_dir(size_t index,unsigned int order) const;
+    const float* get_fib(size_t index,unsigned int order) const;
     float cos_angle(const tipl::vector<3>& cur_dir,unsigned int space_index,unsigned char fib_order) const;
     float get_track_specific_metrics(unsigned int space_index,const std::vector<const float*>& index,
                              const tipl::vector<3,float>& dir) const;

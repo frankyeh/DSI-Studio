@@ -120,7 +120,7 @@ int qc(program_option& po)
             float threshold = 0.6f*tipl::segmentation::otsu_threshold(tipl::make_image(handle->dir.fa[0],handle->dim));
             std::pair<float,float> result = evaluate_fib(handle->dim,threshold,handle->dir.fa,
                                                          [&](int pos,char fib)
-                                                         {return tipl::vector<3>(handle->dir.get_dir(size_t(pos),uint32_t(fib)));});
+                                                         {return tipl::vector<3>(handle->dir.get_fib(size_t(pos),uint32_t(fib)));});
             std::ofstream out(report_file_name.c_str());
             out << "Fiber coherence index: " << result.first << std::endl;
             out << "Fiber incoherent index: " << result.second << std::endl;
