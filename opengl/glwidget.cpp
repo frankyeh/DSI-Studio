@@ -795,7 +795,10 @@ void GLWidget::renderLR()
             if(dim < 3 && (slice_pos[dim] != current_slice->slice_pos[dim] || changed_slice))
             {
                 tipl::color_image texture;
-                current_slice->get_slice(texture,dim,
+                if(current_slice->handle && current_slice->handle->has_high_reso)
+                    current_slice->get_high_reso_slice(texture,dim);
+                else
+                    current_slice->get_slice(texture,dim,
                                          cur_tracking_window.overlay_slices);
 
                 if(get_param("slice_match_bkcolor"))
