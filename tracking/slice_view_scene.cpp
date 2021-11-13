@@ -275,26 +275,47 @@ void slice_view_scene::get_view_image(QImage& new_view_image,std::shared_ptr<Sli
         return;
 
     QImage scaled_image;
+    {
+        QImage slice_qimage;
+        tipl::color_image high_reso_slice_image;
+        if(!simple && current_slice->handle && current_slice->handle->has_high_reso)
+        {
+            current_slice->get_high_reso_slice(high_reso_slice_image,cur_dim);
+            slice_qimage = QImage(reinterpret_cast<const unsigned char*>(&*high_reso_slice_image.begin()),
+                                  high_reso_slice_image.width(),high_reso_slice_image.height(),QImage::Format_RGB32);
+
+        }
+        else
+            slice_qimage = QImage(reinterpret_cast<const unsigned char*>(&*slice_image.begin()),
+                          slice_image.width(),slice_image.height(),QImage::Format_RGB32);
+
+        scaled_image = slice_qimage.scaled(int(slice_image.width()*display_ratio),
+                                        int(slice_image.height()*display_ratio));
+        scaled_image.detach();
+    }
+
     if(!simple)
+    {
+        QImage region_image;
         cur_tracking_window.regionWidget->draw_region(current_slice,
                                                   cur_dim,
                                                   cur_tracking_window["roi_edge_width"].toInt(),
                                                   cur_tracking_window["roi_edge"].toInt(),
-                                                  slice_image,display_ratio,scaled_image);
-    if(scaled_image.isNull())
-    {
-        QImage qimage(reinterpret_cast<const unsigned char*>(&*slice_image.begin()),
-                      slice_image.width(),slice_image.height(),QImage::Format_RGB32);
-        // make sure that qimage get a hard copy
-        qimage.detach();
-        scaled_image = qimage.scaled(int(slice_image.width()*display_ratio),
-                                            int(slice_image.height()*display_ratio));
+                                                  slice_image,display_ratio,region_image);
+        if(!region_image.isNull())
+        {
+            QPainter painter(&scaled_image);
+            painter.setCompositionMode(QPainter::CompositionMode_Plus);
+            painter.drawImage(0,0,region_image);
+        }
+
+        if(cur_tracking_window["roi_track"].toInt())
+            cur_tracking_window.tractWidget->draw_tracts(cur_dim,
+                                                     current_slice->slice_pos[cur_dim],
+                                                     scaled_image,display_ratio,uint32_t(cur_tracking_window["roi_track_count"].toInt()));
     }
 
-    if(!simple && cur_tracking_window["roi_track"].toInt())
-        cur_tracking_window.tractWidget->draw_tracts(cur_dim,
-                                                 current_slice->slice_pos[cur_dim],
-                                                 scaled_image,display_ratio,uint32_t(cur_tracking_window["roi_track_count"].toInt()));
+
 
     if(cur_tracking_window["roi_layout"].toInt() <= 1) // not mosaic
     {

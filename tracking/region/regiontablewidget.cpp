@@ -321,7 +321,7 @@ void RegionTableWidget::draw_region(std::shared_ptr<SliceModel> current_slice,
         return;
 
     // draw region colors on the image
-    tipl::color_image slice_image_with_region(slice_image);  //original slices for adding regions pixels
+    tipl::color_image slice_image_with_region(slice_image.shape());  //original slices for adding regions pixels
     std::vector<std::vector<int> > region_pixels_x_edges(checked_regions.size()),
                                    region_pixels_y_edges(checked_regions.size());
     int w = slice_image.width();
