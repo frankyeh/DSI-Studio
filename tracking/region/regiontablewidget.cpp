@@ -1095,15 +1095,21 @@ void RegionTableWidget::save_all_regions_to_dir(void)
     command("save_all_regions_to_dir",dir);
 }
 
-void RegionTableWidget::save_region_label_file(std::vector<std::shared_ptr<ROIRegion> > checked_regions,QString filename)
+void RegionTableWidget::save_checked_region_label_file(QString filename)
 {
     QString base_name = QFileInfo(filename).completeBaseName();
     if(QFileInfo(base_name).suffix().toLower() == "nii")
         base_name = QFileInfo(base_name).completeBaseName();
     QString label_file = QFileInfo(filename).absolutePath()+"/"+base_name+".txt";
     std::ofstream out(label_file.toStdString().c_str());
-    for (unsigned int i = 0; i < checked_regions.size(); ++i)
-        out << i+1 << " " << item(int(i),0)->text().toStdString() << std::endl;
+    int id = 1;
+    for (unsigned int roi_index = 0;roi_index < regions.size();++roi_index)
+    {
+        if (item(int(roi_index),0)->checkState() != Qt::Checked)
+            continue;
+        out << id << " " << item(int(roi_index),0)->text().toStdString() << std::endl;
+        ++id;
+    }
 }
 
 void RegionTableWidget::save_all_regions_to_4dnifti(void)
@@ -1116,9 +1122,8 @@ void RegionTableWidget::save_all_regions_to_4dnifti(void)
     if (filename.isEmpty())
         return;
 
-    auto checked_regions = get_checked_regions();
-    save_region_label_file(checked_regions,filename);
 
+    auto checked_regions = get_checked_regions();
     tipl::shape<3> geo = cur_tracking_window.handle->dim;
     tipl::image<4,unsigned char> multiple_I(tipl::shape<4>(geo[0],geo[1],geo[2],uint32_t(checked_regions.size())));
     tipl::par_for (checked_regions.size(),[&](unsigned int region_index)
@@ -1134,7 +1139,10 @@ void RegionTableWidget::save_all_regions_to_4dnifti(void)
 
     if(gz_nifti::save_to_file(filename.toStdString().c_str(),multiple_I,
                               cur_tracking_window.current_slice->vs,cur_tracking_window.handle->trans_to_mni))
+    {
+        save_checked_region_label_file(filename);
         QMessageBox::information(this,"DSI Studio","saved");
+    }
     else
         QMessageBox::critical(this,"ERROR","cannot write to file");
 }
@@ -1149,8 +1157,6 @@ void RegionTableWidget::save_all_regions(void)
         return;
 
     auto checked_regions = get_checked_regions();
-    save_region_label_file(checked_regions,filename);
-
     tipl::shape<3> geo = cur_tracking_window.handle->dim;
     tipl::image<3,unsigned short> mask(geo);
     for (unsigned int i = 0; i < checked_regions.size(); ++i)
@@ -1176,7 +1182,10 @@ void RegionTableWidget::save_all_regions(void)
                            cur_tracking_window.handle->trans_to_mni);
     }
     if(result)
+    {
+        save_checked_region_label_file(filename);
         QMessageBox::information(this,"DSI Studio","saved");
+    }
     else
         QMessageBox::critical(this,"ERROR","cannot write to file");
 }

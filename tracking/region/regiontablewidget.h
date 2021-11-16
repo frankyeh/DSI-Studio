@@ -60,7 +60,7 @@ private:
         });
         return checked_regions;
     }
-    void save_region_label_file(std::vector<std::shared_ptr<ROIRegion> > checked_regions,QString filename);
+    void save_checked_region_label_file(QString filename);
 signals:
     void need_update(void);
 public:
