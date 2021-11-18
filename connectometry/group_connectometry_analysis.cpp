@@ -371,7 +371,8 @@ void group_connectometry_analysis::run_permutation(unsigned int thread_count,uns
             items.erase(items.begin()); // remove intercept
             if(model->nonparametric)
             {
-                items.erase(items.begin() + model->study_feature-1);
+                if(model->study_feature)
+                    items.erase(items.begin() + model->study_feature-1);
                 out << " A nonparametric Spearman" << (items.empty() ? " ":" partial ") << "correlation was used to derive the correlation";
                 if(items.empty())
                     out << ".";
