@@ -1090,10 +1090,8 @@ bool fib_data::add_dT_index(const std::string& index_name)
             continue;
         std::string post_fix = index_name.substr(view_item[i].name.length()+1);
         for(size_t j = 0;j < view_item.size();++j)
-            if(post_fix == view_item[j].name ||
-               post_fix == view_item[j].name+"_raw")
+            if(post_fix == view_item[j].name)
             {
-                bool raw = post_fix == view_item[j].name+"_raw";
                 tipl::image<3> Ibuf,Jbuf;
                 auto J = view_item[j].get_image();
                 auto I = view_item[i].get_image();
@@ -1115,7 +1113,8 @@ bool fib_data::add_dT_index(const std::string& index_name)
                 }
 
                 tipl::image<3> new_metrics(dim);
-                std::cout << "new metric: (" << view_item[i].name << " - " << view_item[j].name << ")/" << view_item[j].name << " x 100%" << std::endl;
+                std::cout << "new metric: (" << view_item[i].name << " - " << view_item[j].name << ")/" << view_item[i].name << " x 100%" << std::endl;
+                /*
                 if(!raw)
                 {
                     std::vector<float> x,y;
@@ -1133,11 +1132,12 @@ bool fib_data::add_dT_index(const std::string& index_name)
                         if(dir.fa[0][k] > 0.0f && I[k] > 0.0f && J[k] > 0.0f)
                             new_metrics[k] = (a*I[k]+b)/J[k]-1.0f;
                 }
-                else
+                // else
+                */
                 {
                     for(size_t k = 0;k < I.size();++k)
                         if(dir.fa[0][k] > 0.0f && I[k] > 0.0f && J[k] > 0.0f)
-                            new_metrics[k] = I[k]/J[k]-1.0f;
+                            new_metrics[k] = 1.0f-J[k]/I[k];
                 }
                 dir.add_dt_index(index_name,std::move(new_metrics));
                 return true;
