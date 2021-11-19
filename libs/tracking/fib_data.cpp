@@ -1770,8 +1770,8 @@ void fib_data::run_normalization(bool background,bool inv)
         prog = 2;
         tipl::image<3> Iss(It.shape());
         tipl::resample_mt(Is,Iss,T,tipl::linear);
-        tipl::image<3> Iss2(It.shape());
-        if(!Is2.empty())
+        tipl::image<3> Iss2(It2.shape());
+        if(!Is2.empty() && !It2.empty())
             tipl::resample_mt(Is2,Iss2,T,tipl::linear);
         prog = 3;
         tipl::image<3,tipl::vector<3> > dis,inv_dis;
