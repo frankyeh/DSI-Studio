@@ -1106,6 +1106,9 @@
      <addaction name="actionRight_Lower"/>
      <addaction name="actionLeft_Lower"/>
      <addaction name="separator"/>
+     <addaction name="actionPosterior_Lower"/>
+     <addaction name="actionAnterior_Lower"/>
+     <addaction name="separator"/>
      <addaction name="actionRight_Anterior_Lower"/>
      <addaction name="actionLeft_Anterior_Lower"/>
      <addaction name="separator"/>
@@ -4077,6 +4080,16 @@ Tracking</string>
   <action name="actionLeft_Posterior_Lower">
    <property name="text">
     <string>Left Posterior Lower</string>
+   </property>
+  </action>
+  <action name="actionAnterior_Lower">
+   <property name="text">
+    <string>Anterior Lower</string>
+   </property>
+  </action>
+  <action name="actionPosterior_Lower">
+   <property name="text">
+    <string>Posterior Lower</string>
    </property>
   </action>
  </widget>
