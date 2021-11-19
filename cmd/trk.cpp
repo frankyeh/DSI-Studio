@@ -84,7 +84,7 @@ bool get_t1t2_nifti(const std::string& t1t2,
     std::cout << "T1T2 voxel size: " << nifti_vs << std::endl;
     return true;
 }
-void export_track_info(program_option& po,std::shared_ptr<fib_data> handle,
+bool export_track_info(program_option& po,std::shared_ptr<fib_data> handle,
                        std::string file_name,
                        std::shared_ptr<TractModel> tract_model)
 {
@@ -106,17 +106,17 @@ void export_track_info(program_option& po,std::shared_ptr<fib_data> handle,
             if(index_name != "qa" && index_name != "fa" &&  handle->get_name_index(index_name) == handle->view_item.size())
             {
                 std::cout << "cannot find index name:" << index_name << std::endl;
-                continue;
+                return false;
             }
             if(bandwidth == 0)
             {
                 std::cout << "please specify bandwidth value" << std::endl;
-                continue;
+                return false;
             }
             if(profile_dir > 4)
             {
                 std::cout << "please specify a valid profile type" << std::endl;
-                continue;
+                return false;
             }
             std::cout << "calculating report" << std::endl;
             std::cout << "profile_dir:" << profile_dir << std::endl;
@@ -172,17 +172,7 @@ void export_track_info(program_option& po,std::shared_ptr<fib_data> handle,
             if(cmd == "tdi_t1t2")
             {
                 if(!get_t1t2_nifti(po.get("t1t2"),handle,dim,vs,tr))
-                    return;
-                std::vector<std::shared_ptr<TractModel> > tract;
-                tract.push_back(tract_model);
-                std::cout << "export TDI to " << file_name_stat;
-                if(output_color)
-                    std::cout << " in RGB color";
-                if(output_end)
-                    std::cout << " end point only";
-                std::cout << std::endl;
-                if(!TractModel::export_tdi(file_name_stat.c_str(),tract,dim,vs,tr,output_color,output_end))
-                    std::cout << "ERROR: failed to save file. Please check write permission." << std::endl;
+                    return false;
             }
             else
             {
@@ -206,6 +196,20 @@ void export_track_info(program_option& po,std::shared_ptr<fib_data> handle,
                     std::cout << "voxel size: " << vs << std::endl;
                 }
             }
+            std::vector<std::shared_ptr<TractModel> > tract;
+            tract.push_back(tract_model);
+            std::cout << "export TDI to " << file_name_stat;
+            if(output_color)
+                std::cout << " in RGB color";
+            if(output_end)
+                std::cout << " end point only";
+            std::cout << std::endl;
+            if(!TractModel::export_tdi(file_name_stat.c_str(),tract,dim,vs,tr,output_color,output_end))
+            {
+                std::cout << "ERROR: failed to save file. Please check write permission." << std::endl;
+                return false;
+            }
+            continue;
         }
 
 
@@ -217,7 +221,7 @@ void export_track_info(program_option& po,std::shared_ptr<fib_data> handle,
             if(!out_stat)
             {
                 std::cout << "Output statistics to file_name_stat failed. Please check write permission" << std::endl;
-                return;
+                return false;
             }
             std::string result;
             tract_model->get_quantitative_info(handle,result);
@@ -237,8 +241,9 @@ void export_track_info(program_option& po,std::shared_ptr<fib_data> handle,
             }
         }
         std::cout << "invalid export option:" << cmd << std::endl;
-        continue;
+        return false;
     }
+    return true;
 }
 
 bool load_atlas_from_list(std::shared_ptr<fib_data> handle,
@@ -265,7 +270,7 @@ bool load_nii(program_option& po,
               std::vector<std::shared_ptr<ROIRegion> >& regions,
               std::vector<std::string>& names);
 
-void get_connectivity_matrix(program_option& po,
+bool get_connectivity_matrix(program_option& po,
                              std::shared_ptr<fib_data> handle,
                              std::string output_name,
                              std::shared_ptr<TractModel> tract_model)
@@ -284,7 +289,7 @@ void get_connectivity_matrix(program_option& po,
         {
             std::vector<std::shared_ptr<atlas> > atlas_list;
             if(!load_atlas_from_list(handle,roi_file_name,atlas_list))
-                return;
+                return false;
             data.set_atlas(atlas_list[0],handle);
         }
         else
@@ -293,7 +298,7 @@ void get_connectivity_matrix(program_option& po,
             if(!std::filesystem::exists(roi_file_name))
             {
                 std::cout << "ERROR: file does not exist" << std::endl;
-                return;
+                return false;
             }
 
             if(QString(roi_file_name.c_str()).toLower().endsWith("txt")) // a roi list
@@ -315,7 +320,7 @@ void get_connectivity_matrix(program_option& po,
                     if(!region->LoadFromFile(fn.c_str()))
                     {
                         std::cout << "ERROR: failed to open file as a region:" << fn << std::endl;
-                        return;
+                        return false;
                     }
                     regions.push_back(region);
                     data.region_name.push_back(QFileInfo(line.c_str()).baseName().toStdString());
@@ -329,7 +334,7 @@ void get_connectivity_matrix(program_option& po,
                 std::vector<std::shared_ptr<ROIRegion> > regions;
                 std::vector<std::string> names;
                 if(!load_nii(po,handle,roi_file_name,regions,names))
-                    return;
+                    return false;
                 data.region_name = names;
                 data.set_regions(handle->dim,regions);
             }
@@ -347,7 +352,7 @@ void get_connectivity_matrix(program_option& po,
             if(!data.calculate(handle,*(tract_model.get()),connectivity_value,use_end_only,t))
             {
                 std::cout << "connectivity calculation error:" << data.error_msg << std::endl;
-                return;
+                return false;
             }
             if(data.overlap_ratio > 0.5f)
             {
@@ -355,7 +360,7 @@ void get_connectivity_matrix(program_option& po,
                           << data.overlap_ratio << "). The network measure calculated may not be reliable" << std::endl;
             }
             if(connectivity_value == "trk")
-                return;
+                continue;
             std::string file_name_stat(output_name);
             file_name_stat += ".";
             file_name_stat += (std::filesystem::exists(connectivity_roi)) ? QFileInfo(connectivity_roi.c_str()).baseName().toStdString():connectivity_roi;
@@ -378,6 +383,7 @@ void get_connectivity_matrix(program_option& po,
             out << report;
         }
     }
+    return true;
 }
 
 // test example
@@ -550,18 +556,15 @@ int trk_post(program_option& po,
         std::copy(tract_model->get_cluster_info().begin(),tract_model->get_cluster_info().end(),std::ostream_iterator<int>(out," "));
     }
 
-    if(po.has(("end_point")))
-        tract_model->save_end_points(po.get("end_point").c_str());
-
+    if(po.has(("end_point")) && !tract_model->save_end_points(po.get("end_point").c_str()))
+        return 1;
     // allow adding other slices for connectivity and statistics
     if(po.has("other_slices") && !check_other_slices(po.get("other_slices"),handle))
         return 1;
-
-    if(po.has("connectivity"))
-        get_connectivity_matrix(po,handle,tract_file_name,tract_model);
-
-    if(po.has("export"))
-        export_track_info(po,handle,tract_file_name,tract_model);
+    if(po.has("connectivity") && !get_connectivity_matrix(po,handle,tract_file_name,tract_model))
+        return 1;
+    if(po.has("export") && !export_track_info(po,handle,tract_file_name,tract_model))
+        return 1;
     return 0;
 }
 
