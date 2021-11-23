@@ -38,6 +38,7 @@ int cnn(program_option& po);
 int qc(program_option& po);
 int reg(program_option& po);
 int atk(program_option& po);
+int xnat(program_option& po);
 
 
 size_t match_template(float volume)
@@ -198,6 +199,8 @@ int run_action(program_option& po,std::shared_ptr<QApplication> gui)
         return qc(po);
     if(action == std::string("reg"))
         return reg(po);
+    if(action == std::string("xnat"))
+        return xnat(po);
     if(action == std::string("vis"))
     {
         vis(po);
@@ -281,7 +284,6 @@ int run_cmd(int ac, char *av[])
     }
     return 0;
 }
-
 
 
 int main(int ac, char *av[])

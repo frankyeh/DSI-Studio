@@ -1,7 +1,8 @@
 QT += core \
     gui \
     opengl \
-    charts
+    charts \
+    network
 greaterThan(QT_MAJOR_VERSION, 5): QT += widgets
 CONFIG += c++17
 #CONFIG += console
@@ -177,7 +178,8 @@ SOURCES += main.cpp \
     cmd/atk.cpp \
     tracking/device.cpp \
     tracking/devicetablewidget.cpp \
-    libs/gzip_interface.cpp
+    libs/gzip_interface.cpp \
+    cmd/xnat.cpp
 
 OTHER_FILES += \
     options.txt \
