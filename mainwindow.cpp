@@ -475,7 +475,7 @@ void check_name(std::string& name)
             name[index] = '_';
 }
 
-bool RenameDICOMToDir(QString FileName, QString ToDir)
+bool RenameDICOMToDir(QString FileName, QString ToDir,QString& NewName)
 {
     std::string person, sequence, imagename;
     {
@@ -493,7 +493,6 @@ bool RenameDICOMToDir(QString FileName, QString ToDir)
 
     QString Person(person.c_str()), Sequence(sequence.c_str()),
     ImageName(imagename.c_str());
-
     ToDir += "/";
     ToDir += Person;
     if (!QDir(ToDir).exists())
@@ -504,8 +503,6 @@ bool RenameDICOMToDir(QString FileName, QString ToDir)
             return false;
         }
     }
-
-
     ToDir += "/";
     ToDir += Sequence;
     if (!QDir(ToDir).exists())
@@ -516,14 +513,19 @@ bool RenameDICOMToDir(QString FileName, QString ToDir)
             return false;
         }
     }
-
     ToDir += "/";
     ToDir += ImageName;
-    std::cout << FileName.toStdString() << "->" << ToDir.toStdString() << std::endl;
-    return QFile(FileName).rename(FileName,ToDir);
+    NewName = ToDir;
+    return true;
 }
-
-
+bool RenameDICOMToDir(QString FileName, QString ToDir)
+{
+    QString NewName;
+    if(!RenameDICOMToDir(FileName,ToDir,NewName))
+        return false;
+    std::cout << FileName.toStdString() << "->" << NewName.toStdString() << std::endl;
+    return QFile::rename(FileName,NewName);
+}
 
 void MainWindow::on_RenameDICOM_clicked()
 {
@@ -1059,7 +1061,7 @@ bool dcm2src(QStringList files,std::ostream& out)
         tipl::io::dicom header;
         if(!header.load_from_file(files[0].toStdString().c_str()))
         {
-            out << " [ERROR] cannot read image volume. Skip" << std::endl;
+            out << "ERROR: cannot read image volume. Skip" << std::endl;
             return false;
         }
         header.get_sequence_id(sequence);
@@ -1095,7 +1097,7 @@ bool dcm2src(QStringList files,std::ostream& out)
             QString src_name = get_dicom_output_name(files[0],(std::string("_")+sequence+".src.gz").c_str(),true);
             out << "Create SRC file: " << std::filesystem::path(src_name.toStdString()).filename().string() << std::endl;
             if(!DwiHeader::output_src(src_name.toStdString().c_str(),dicom_files,0,false))
-                out << "[ERROR]" << src_error_msg << std::endl;
+                out << "ERROR: " << src_error_msg << std::endl;
         }
         else
         {
@@ -1184,21 +1186,12 @@ bool dcm2src(QStringList files,std::ostream& out)
     }
     return true;
 }
-void MainWindow::on_dicom2nii_clicked()
-{
-    QString dir = QFileDialog::getExistingDirectory(
-                                this,
-                                "Open directory",
-                                ui->workDir->currentText());
-    if(dir.isEmpty())
-        return;
-    add_work_dir(dir);
-    QStringList sub_dir = QDir(dir).entryList(QStringList("*"),
-                                            QDir::Dirs | QDir::NoSymLinks | QDir::NoDotAndDotDot);
 
+void dicom2src(std::string dir_,std::ostream& out)
+{
+    QString dir = dir_.c_str();
+    QStringList sub_dir = QDir(dir).entryList(QStringList("*"),QDir::Dirs | QDir::NoSymLinks | QDir::NoDotAndDotDot);
     begin_prog("batch creating src");
-    std::ofstream out((dir+"/log.txt").toStdString().c_str());
-    out << "directory:" << dir.toStdString() << std::endl;
     for(int j = 0;check_prog(j,sub_dir.size()) && !prog_aborted();++j)
     {
         QStringList dir_list = GetSubDir(dir + "/" + sub_dir[j],true);
@@ -1206,7 +1199,6 @@ void MainWindow::on_dicom2nii_clicked()
         for(int i = 0;i < dir_list.size();++i)
         {
             QDir cur_dir = dir_list[i];
-
             QStringList dicom_file_list = cur_dir.entryList(QStringList("*.dcm"),QDir::Files|QDir::NoSymLinks);
             if(dicom_file_list.empty())
                 continue;
@@ -1216,6 +1208,20 @@ void MainWindow::on_dicom2nii_clicked()
             dcm2src(dicom_file_list,out);
         }
     }
+}
+
+void MainWindow::on_dicom2nii_clicked()
+{
+    QString dir = QFileDialog::getExistingDirectory(
+                                this,
+                                "Open directory",
+                                ui->workDir->currentText());
+    if(dir.isEmpty())
+        return;
+    add_work_dir(dir);
+    std::ofstream out((dir+"/log.txt").toStdString().c_str());
+    out << "directory:" << dir.toStdString() << std::endl;
+    dicom2src(dir.toStdString(),out);
 }
 
 void MainWindow::on_clear_src_history_clicked()
