@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1033</width>
-    <height>655</height>
+    <width>1023</width>
+    <height>668</height>
    </rect>
   </property>
   <property name="font">
@@ -54,7 +54,7 @@
        </size>
       </property>
       <property name="currentIndex">
-       <number>2</number>
+       <number>1</number>
       </property>
       <property name="tabSpacing">
        <number>0</number>
@@ -65,7 +65,7 @@
          <x>0</x>
          <y>0</y>
          <width>400</width>
-         <height>589</height>
+         <height>602</height>
         </rect>
        </property>
        <attribute name="label">
@@ -224,7 +224,7 @@
          <x>0</x>
          <y>0</y>
          <width>400</width>
-         <height>589</height>
+         <height>602</height>
         </rect>
        </property>
        <attribute name="label">
@@ -246,6 +246,23 @@
         <property name="bottomMargin">
          <number>0</number>
         </property>
+        <item>
+         <widget class="QCommandLinkButton" name="xnat_download">
+          <property name="text">
+           <string>Step B0: XNAT Download</string>
+          </property>
+          <property name="description">
+           <string>connect to a XNAT server to download and process data</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="Line" name="line_10">
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
+          </property>
+         </widget>
+        </item>
         <item>
          <widget class="QCommandLinkButton" name="RenameDICOM">
           <property name="text">
@@ -296,7 +313,7 @@
         <item>
          <widget class="QCommandLinkButton" name="dicom2nii">
           <property name="text">
-           <string>Step B2c: DICOM to SRC</string>
+           <string>Step B2c: DICOM to SRC/NIFTI</string>
           </property>
           <property name="description">
            <string>Select a folder that contain DICOM files to generate SRC and NIFTI files.</string>
@@ -340,8 +357,20 @@
         <item>
          <widget class="QWidget" name="widget_2" native="true">
           <layout class="QVBoxLayout" name="verticalLayout_5">
+           <property name="spacing">
+            <number>0</number>
+           </property>
            <property name="leftMargin">
             <number>25</number>
+           </property>
+           <property name="topMargin">
+            <number>0</number>
+           </property>
+           <property name="rightMargin">
+            <number>25</number>
+           </property>
+           <property name="bottomMargin">
+            <number>0</number>
            </property>
            <item>
             <widget class="QGroupBox" name="groupBox">
@@ -356,7 +385,19 @@
               <string>Run command line</string>
              </property>
              <layout class="QVBoxLayout" name="verticalLayout_4">
+              <property name="spacing">
+               <number>0</number>
+              </property>
+              <property name="leftMargin">
+               <number>3</number>
+              </property>
               <property name="topMargin">
+               <number>0</number>
+              </property>
+              <property name="rightMargin">
+               <number>3</number>
+              </property>
+              <property name="bottomMargin">
                <number>0</number>
               </property>
               <item>
@@ -437,7 +478,7 @@
          <x>0</x>
          <y>0</y>
          <width>400</width>
-         <height>589</height>
+         <height>602</height>
         </rect>
        </property>
        <attribute name="label">

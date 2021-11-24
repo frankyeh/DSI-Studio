@@ -95,7 +95,8 @@ HEADERS += mainwindow.h \
     tracking/device.h \
     tracking/devicetablewidget.h \
     mac_filesystem.hpp \
-    libs/dsi/hist_process.hpp
+    libs/dsi/hist_process.hpp \
+    xnat_dialog.h
 
 FORMS += mainwindow.ui \
     tracking/tracking_window.ui \
@@ -115,7 +116,8 @@ FORMS += mainwindow.ui \
     connectometry/group_connectometry.ui \
     regtoolbox.ui \
     connectometry/nn_connectometry.ui \
-    auto_track.ui
+    auto_track.ui \
+    xnat_dialog.ui
 RESOURCES += \
     icons.qrc
 SOURCES += main.cpp \
@@ -179,7 +181,8 @@ SOURCES += main.cpp \
     tracking/device.cpp \
     tracking/devicetablewidget.cpp \
     libs/gzip_interface.cpp \
-    cmd/xnat.cpp
+    cmd/xnat.cpp \
+    xnat_dialog.cpp
 
 OTHER_FILES += \
     options.txt \

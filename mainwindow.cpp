@@ -34,6 +34,7 @@
 #include "libs/dsi/image_model.hpp"
 #include "auto_track.h"
 #include "mac_filesystem.hpp"
+#include "xnat_dialog.h"
 
 extern std::string arg_file_name;
 std::vector<tracking_window*> tracking_windows;
@@ -588,11 +589,11 @@ void MainWindow::on_RenameDICOMDir_clicked()
         return;
     QStringList dirs = GetSubDir(path);
     begin_prog("Renaming DICOM");
-    for(unsigned int index = 0;check_prog(index,dirs.size());++index)
+    for(int index = 0;check_prog(index,dirs.size());++index)
     {
         QStringList files = QDir(dirs[index]).entryList(QStringList("*"),
                                     QDir::Files | QDir::NoSymLinks);
-        for(unsigned int j = 0;j < files.size() && index < dirs.size();++j)
+        for(int j = 0;j < files.size() && index < dirs.size();++j)
         {
             set_title(files[j].toLocal8Bit().begin());
             RenameDICOMToDir(dirs[index] + "/" + files[j],path);
@@ -728,6 +729,7 @@ int vis(program_option& po);
 int ren(program_option& po);
 int atk(program_option& po);
 int reg(program_option& po);
+int xnat(program_option& po);
 void MainWindow::on_run_cmd_clicked()
 {
     program_option po;
@@ -764,6 +766,8 @@ void MainWindow::on_run_cmd_clicked()
         atk(po);
     if(po.get("action") == std::string("reg"))
         reg(po);
+    if(po.get("action") == std::string("xnat"))
+        xnat(po);
 }
 
 
@@ -1256,4 +1260,11 @@ void MainWindow::on_show_console_clicked()
     std::cout.clear();
     std::cin.clear();
     #endif
+}
+
+void MainWindow::on_xnat_download_clicked()
+{
+    auto* xnat = new xnat_dialog(this);
+    xnat->setAttribute(Qt::WA_DeleteOnClose);
+    xnat->showNormal();
 }

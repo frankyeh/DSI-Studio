@@ -66,6 +66,7 @@ private slots:
     void on_clear_fib_history_clicked();
     void on_styles_activated(const QString &arg1);
     void on_show_console_clicked();
+    void on_xnat_download_clicked();
 };
 
 #endif // MAINWINDOW_H
