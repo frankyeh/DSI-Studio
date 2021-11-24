@@ -49,6 +49,8 @@ bool xnat_facade::good(void)
             error_msg = "Authentication Failed";
         if(cur_response->error() == 11)
             error_msg = "Cannot login using guest";
+        if(cur_response->error() == 6)
+            error_msg = "SSL Failed. Please update SSL library";
         cur_response = nullptr;
     }
     return cur_response != nullptr;
