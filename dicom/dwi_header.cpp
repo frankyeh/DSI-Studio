@@ -578,7 +578,7 @@ bool DwiHeader::output_src(const char* di_file,std::vector<std::shared_ptr<DwiHe
         write_mat.write("mask",dwi_files[0]->mask,dwi_files[0]->mask.plane_size());
 
     //store images
-    begin_prog("Save Files");
+    prog_init prog("saving");
     for (unsigned int index = 0;check_prog(index,(unsigned int)(dwi_files.size()));++index)
     {
         std::ostringstream name;
