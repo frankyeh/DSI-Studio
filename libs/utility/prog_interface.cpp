@@ -34,7 +34,6 @@ void check_create(void)
 }
 void begin_prog(const char* title,bool always_show_dialog)
 {
-    std::cout << title << std::endl;
     if(title)
         current_title = title;
     if(!has_gui || !is_main_thread())
