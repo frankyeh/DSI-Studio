@@ -49,6 +49,8 @@ bool xnat_facade::good(void)
             error_msg = "Authentication Failed";
         if(cur_response->error() == 11)
             error_msg = "Cannot login using guest";
+        if(cur_response->error() == 3)
+            error_msg = "XNAT Server not found";
         if(cur_response->error() == 6)
             error_msg = "SSL Failed. Please update SSL library";
         cur_response = nullptr;
@@ -124,8 +126,10 @@ void xnat_facade::get_experiments_dicom(std::string site,std::string auth,const 
 
 void xnat_facade::get_experiments_data(std::string site,std::string auth,std::string experiment,std::string output_dir)
 {
+    if(site.back() == '/')
+        site.pop_back();
     clear();
-    get_html(site + "REST/experiments/" + experiment + "/scans/ALL/files",auth);
+    get_html(site + "/REST/experiments/" + experiment + "/scans/ALL/files",auth);
     if (!good())
         return;
     QObject::connect(cur_response, &QNetworkReply::finished,[=]{
@@ -145,8 +149,10 @@ void xnat_facade::get_experiments_data(std::string site,std::string auth,std::st
 
 void xnat_facade::get_experiments_info(std::string site,std::string auth)
 {
+    if(site.back() == '/')
+        site.pop_back();
     clear();
-    get_html(site + "REST/experiments/",auth);
+    get_html(site + "/REST/experiments/",auth);
     if (!good())
         return;
     QObject::connect(cur_response, &QNetworkReply::finished,
