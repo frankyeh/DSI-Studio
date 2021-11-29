@@ -233,7 +233,8 @@ public:
     std::vector<tipl::image<3,unsigned short> > nifti_dwi; // if load directly from nifti
 public:
     Voxel voxel;
-    std::string file_name,error_msg;
+    std::string file_name;
+    mutable std::string error_msg;
     gz_mat_read mat_reader;
 public:
     std::vector<tipl::vector<3,float> > src_bvectors;
@@ -276,6 +277,8 @@ public:
     bool rotate_to_mni(float resolution);
     void trim(void);
     void correct_motion(bool eddy);
+    void read_b0(tipl::image<3>& rev_b0) const;
+    bool read_rev_b0(const char* file_name,tipl::image<3>& rev_b0) const;
     bool distortion_correction(const char* file_name);
     bool compare_src(const char* file_name);
 

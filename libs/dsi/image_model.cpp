@@ -965,7 +965,7 @@ void get_distortion_map(const image_type& v1,
         std::vector<float> line1(v1.begin()+base_pos,v1.begin()+base_pos+w),
                            line2(v2.begin()+base_pos,v2.begin()+base_pos+w);
         float sum1 = std::accumulate(line1.begin(),line1.end(),0.0f);
-        float sum2 = std::accumulate(line1.begin(),line1.end(),0.0f);
+        float sum2 = std::accumulate(line2.begin(),line2.end(),0.0f);
         if(sum1 == 0.0f || sum2 == 0.0f)
             return;
         bool swap12 = sum2 > sum1;
@@ -1068,61 +1068,66 @@ void apply_distortion_map2(const image_type& v1,
     );
 }
 
-
-
+void ImageModel::read_b0(tipl::image<3>& rev_b0) const
+{
+    rev_b0 = (src_bvalues[0] == 0.0f) ?  tipl::make_image(src_dwi_data[0],voxel.dim):
+            tipl::make_image(src_dwi_data[size_t(std::min_element(src_bvalues.begin(),src_bvalues.end())-src_bvalues.begin())],voxel.dim);
+}
+bool ImageModel::read_rev_b0(const char* filename,tipl::image<3>& rev_b0) const
+{
+    tipl::image<3> v2;
+    if(QString(filename).endsWith(".nii.gz") || QString(filename).endsWith(".nii"))
+    {
+        gz_nifti nii;
+        if(!nii.load_from_file(filename))
+        {
+            error_msg = "Cannot load the image file";
+            return false;
+        }
+        nii.toLPS(v2);
+    }
+    if(QString(filename).endsWith(".src.gz"))
+    {
+        ImageModel src2;
+        if(!src2.load_from_file(filename))
+        {
+            error_msg = src2.error_msg;
+            return false;
+        }
+        src2.read_b0(v2);
+    }
+    if(voxel.dim != v2.shape())
+    {
+        error_msg = "inconsistent image dimension between original DWI and reverse-phase DWI";
+        return false;
+    }
+    rev_b0.swap(v2);
+    return true;
+}
+bool phase_direction_at_x(const tipl::image<3>& v1,const tipl::image<3>& v2)
+{
+    tipl::image<2,float> px1,px2,py1,py2;
+    tipl::project_x(v1,px1);
+    tipl::project_x(v2,px2);
+    tipl::project_y(v1,py1);
+    tipl::project_y(v2,py2);
+    float cx = float(tipl::correlation(px1.begin(),px1.end(),px2.begin()));
+    float cy = float(tipl::correlation(py1.begin(),py1.end(),py2.begin()));
+    return cx < cy;
+}
 
 bool ImageModel::distortion_correction(const char* filename)
 {
-    tipl::image<3> v2;
+    tipl::image<3> v1,v2;
+    if(!read_rev_b0(filename,v2))
+        return false;
+    read_b0(v1);
+
+    bool swap_xy = phase_direction_at_x(v1,v2);
+    if(swap_xy)
     {
-        if(QString(filename).endsWith(".nii.gz") || QString(filename).endsWith(".nii"))
-        {
-            gz_nifti nii;
-            if(!nii.load_from_file(filename))
-            {
-                error_msg = "Cannot load the image file";
-                return false;
-            }
-            nii.toLPS(v2);
-
-        }
-        if(QString(filename).endsWith(".src.gz"))
-        {
-            ImageModel src2;
-            if(!src2.load_from_file(filename))
-            {
-                error_msg = src2.error_msg;
-                return false;
-            }
-            v2 = tipl::make_image(src2.src_dwi_data[0],src2.voxel.dim);
-        }
-        if(voxel.dim != v2.shape())
-        {
-            error_msg = "inconsistent appa image dimension";
-            return false;
-        }
-    }
-
-    tipl::image<3> v1,vv1,vv2;
-    v1 = tipl::make_image(
-        src_dwi_data[size_t(std::min_element(src_bvalues.begin(),src_bvalues.end())-src_bvalues.begin())],voxel.dim);
-
-    bool swap_xy = false;
-    {
-        tipl::image<2,float> px1,px2,py1,py2;
-        tipl::project_x(v1,px1);
-        tipl::project_x(v2,px2);
-        tipl::project_y(v1,py1);
-        tipl::project_y(v2,py2);
-        float cx = float(tipl::correlation(px1.begin(),px1.end(),px2.begin()));
-        float cy = float(tipl::correlation(py1.begin(),py1.end(),py2.begin()));
-
-        if(cx < cy)
-        {
-            tipl::swap_xy(v1);
-            tipl::swap_xy(v2);
-            swap_xy = true;
-        }
+        tipl::swap_xy(v1);
+        tipl::swap_xy(v2);
     }
 
     tipl::image<3> dis_map(v1.shape()),df,gx(v1.shape()),v1_gx(v1.shape()),v2_gx(v2.shape());
@@ -1138,7 +1143,13 @@ bool ImageModel::distortion_correction(const char* filename)
     tipl::filter::gaussian(dis_map);
     tipl::filter::gaussian(dis_map);
 
+    tipl::image<3> vv1,vv2;
+    apply_distortion_map2(v1,dis_map,vv1,true);
+    apply_distortion_map2(v2,dis_map,vv2,false);
 
+    /*
+
+    tipl::image<3> vv1,vv2;
     for(int iter = 0;iter < 120;++iter)
     {
         apply_distortion_map2(v1,dis_map,vv1,true);
@@ -1155,7 +1166,7 @@ bool ImageModel::distortion_correction(const char* filename)
         tipl::filter::gaussian(gx);
         tipl::filter::gaussian(gx);
         dis_map += gx;
-    }
+    }*/
 
     std::vector<tipl::image<3,unsigned short> > dwi(src_dwi_data.size());
     for(size_t i = 0;i < src_dwi_data.size();++i)
