@@ -41,7 +41,7 @@ bool atl_load_atlas(std::shared_ptr<fib_data> handle,std::string atlas_name,std:
                 file_path = atlas_path;
             else
             {
-                std::cout << "ERROR: fail to open " << name_list[index].toStdString() << " failed. There is no such an atlas installed in the DSI Studio." << std::endl;
+                std::cout << "ERROR: did not find atlas at " << atlas_path << std::endl;
                 return false;
             }
         }
