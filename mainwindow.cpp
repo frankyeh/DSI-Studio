@@ -1052,6 +1052,7 @@ bool dcm2src(QStringList files,std::ostream& out)
 {
     if(files.empty())
         return false;
+    files.sort();
     std::vector<std::shared_ptr<DwiHeader> > dicom_files;
     if(!parse_dwi(files,dicom_files) || prog_aborted())
     {
