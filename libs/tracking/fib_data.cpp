@@ -783,7 +783,7 @@ bool fib_data::load_from_file(const char* file_name)
 
                 if(matrix.get_name() == "dir0")
                 {
-                    if(matrix.has_delay_read() &&!matrix.read(*(mat_reader.in.get())))
+                    if(matrix.has_delay_read() && !matrix.read(*(mat_reader.in.get())))
                     {
                         error_msg = "failed to create surrogate FIB file";
                         return false;
@@ -807,7 +807,7 @@ bool fib_data::load_from_file(const char* file_name)
                 if(size_t(matrix.get_cols())*size_t(matrix.get_rows()) == dim.size()) // image volumes, including fa, and fiber index
                 {
                     std::cout << "write " << matrix.get_name() << " in downsampled volume" << std::endl;
-                    if(matrix.has_delay_read() &&!matrix.read(*(mat_reader.in.get())))
+                    if(matrix.has_delay_read() && !matrix.read(*(mat_reader.in.get())))
                     {
                         error_msg = "failed to create surrogate FIB file";
                         return false;
