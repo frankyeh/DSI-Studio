@@ -275,11 +275,17 @@ public:
     void resample(float nv);
     bool arg_to_mni(float resolution,tipl::vector<3>& vs,tipl::shape<3>& new_geo,tipl::affine_transform<float>& T);
     bool rotate_to_mni(float resolution);
+    void crop(tipl::shape<3> range_min,tipl::shape<3> range_max);
     void trim(void);
     void correct_motion(bool eddy);
     void read_b0(tipl::image<3>& rev_b0) const;
     bool read_rev_b0(const char* file_name,tipl::image<3>& rev_b0) const;
     bool distortion_correction(const char* file_name);
+    bool run_plugin(std::string program_name,std::vector<std::string> param,std::string working_dir,std::string exec = std::string());
+    bool run_topup(std::string other_src,std::string exec = std::string());
+    bool run_applytopup(std::string exec = std::string());
+    bool run_eddy(std::string exec = std::string());
+    bool load_topup_eddy_result(void);
     bool compare_src(const char* file_name);
 
 public:
@@ -289,6 +295,8 @@ public:
     bool load_from_file(const char* dwi_file_name);
     bool save_to_file(const char* dwi_file_name);
     bool save_to_nii(const char* nifti_file_name) const;
+    bool save_to_nii_width_even_dimension(const char* nifti_file_name) const;
+    bool save_mask_nii(const char* nifti_file_name) const;
     bool save_b0_to_nii(const char* nifti_file_name) const;
     bool save_dwi_sum_to_nii(const char* nifti_file_name) const;
     bool save_b_table(const char* file_name) const;

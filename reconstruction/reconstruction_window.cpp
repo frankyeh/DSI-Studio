@@ -380,12 +380,15 @@ void reconstruction_window::on_actionFlip_bz_triggered()
     QMessageBox::information(this,"DSI Studio","B-table flipped",0);
 }
 
-void reconstruction_window::command(std::string cmd,std::string param)
+bool reconstruction_window::command(std::string cmd,std::string param)
 {
-    handle->command(cmd,param);
+    bool result = handle->command(cmd,param);
+    if(!result)
+        QMessageBox::critical(this,"ERROR",handle->error_msg.c_str());
     update_dimension();
     load_b_table();
     on_SlicePos_valueChanged(ui->SlicePos->value());
+    return result;
 }
 void reconstruction_window::on_doDTI_clicked()
 {
@@ -841,7 +844,7 @@ bool get_src(std::string filename,ImageModel& src2,std::string& error_msg)
 
 void reconstruction_window::on_actionCorrect_AP_PA_scans_triggered()
 {
-    QMessageBox::information(this,"DSI Studio","Please assign another SRC/DICOM/NIFTI file with an opposite phase encoding",0);
+    QMessageBox::information(this,"DSI Studio","Please specify another SRC/DICOM/NIFTI file with an opposite phase encoding",0);
     QString filename = QFileDialog::getOpenFileName(
             this,"Open SRC file",absolute_path,
             "Images (*src.gz *.nii *nii.gz);;DICOM image (*.dcm);;All files (*)" );
@@ -1104,4 +1107,40 @@ void reconstruction_window::on_qsdr_manual_clicked()
     if(manual->exec() != QDialog::Accepted)
         return;
     handle->voxel.qsdr_trans = manual->get_iT();
+}
+
+
+
+void reconstruction_window::on_actionRun_FSL_Topup_triggered()
+{
+    if(QFileInfo((handle->file_name+".preproc.nii.gz").c_str()).exists())
+    {
+        int result = QMessageBox::information(this,"DSI Studio","Load previous results?",QMessageBox::Yes|QMessageBox::No|QMessageBox::Cancel);
+        if(result == QMessageBox::Cancel)
+            return;
+        if(result == QMessageBox::Yes)
+        {
+            if(!handle->load_topup_eddy_result())
+            {
+                QMessageBox::critical(this,"ERROR",handle->error_msg.c_str());
+                return;
+            }
+            update_dimension();
+            load_b_table();
+            on_SlicePos_valueChanged(ui->SlicePos->value());
+            return;
+        }
+
+    }
+
+    QMessageBox::information(this,"DSI Studio","Please specify another SRC/DICOM/NIFTI file with an opposite phase encoding");
+    QString other_src = QFileDialog::getOpenFileName(
+            this,"Open SRC file",absolute_path,
+            "Images (*src.gz *.nii *nii.gz);;DICOM image (*.dcm);;All files (*)" );
+    if(other_src.isEmpty())
+        return;
+    prog_init prog("processing");
+    check_prog(0,1);
+    if(command("[Step T2][Corrections][TOPUP EDDY]",other_src.toStdString()))
+        QMessageBox::information(this,"DSI Studio","Preprocessed result loaded");
 }

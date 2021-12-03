@@ -53,7 +53,7 @@
     <item>
      <widget class="QToolBox" name="toolBox">
       <property name="currentIndex">
-       <number>1</number>
+       <number>0</number>
       </property>
       <property name="tabSpacing">
        <number>0</number>
@@ -1207,6 +1207,8 @@ Reconstruction</string>
     <property name="title">
      <string>Corrections</string>
     </property>
+    <addaction name="actionRun_FSL_Topup"/>
+    <addaction name="separator"/>
     <addaction name="actionCorrect_AP_PA_scans"/>
     <addaction name="actionEddy_Motion_Correction"/>
    </widget>
@@ -1412,6 +1414,11 @@ Reconstruction</string>
   <action name="actionOverwrite_Voxel_Size">
    <property name="text">
     <string>Overwrite Voxel Size...</string>
+   </property>
+  </action>
+  <action name="actionRun_FSL_Topup">
+   <property name="text">
+    <string>TOPUP/EDDY...</string>
    </property>
   </action>
  </widget>

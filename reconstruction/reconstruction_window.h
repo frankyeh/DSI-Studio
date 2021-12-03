@@ -22,7 +22,7 @@ public:
     QStringList filenames;
     explicit reconstruction_window(QStringList filenames_,QWidget *parent = nullptr);
     ~reconstruction_window();
-    void command(std::string cmd,std::string param=std::string());
+    bool command(std::string cmd,std::string param=std::string());
 protected:
     void resizeEvent ( QResizeEvent * event );
     void showEvent ( QShowEvent * event );
@@ -112,6 +112,7 @@ private slots:
     void on_edit_mask_clicked();
     void on_actionOverwrite_Voxel_Size_triggered();
     void on_qsdr_manual_clicked();
+    void on_actionRun_FSL_Topup_triggered();
 };
 
 #endif // RECONSTRUCTION_WINDOW_H

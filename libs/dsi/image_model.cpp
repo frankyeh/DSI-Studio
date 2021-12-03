@@ -3,6 +3,7 @@
 #include <QInputDialog>
 #include <QDateTime>
 #include <QImage>
+#include <QProcess>
 #include "image_model.hpp"
 #include "odf_process.hpp"
 #include "dti_process.hpp"
@@ -94,7 +95,6 @@ void ImageModel::remove(unsigned int index)
     src_bvalues.erase(src_bvalues.begin()+index);
     src_bvectors.erase(src_bvectors.begin()+index);
     shell.clear();
-    voxel.dwi_data.clear();
 }
 
 typedef boost::mpl::vector<
@@ -649,43 +649,56 @@ bool ImageModel::command(std::string cmd,std::string param)
     {
         resample(std::stof(param));
         voxel.steps += cmd+"="+param+"\n";
-        voxel.report += std::string(" The diffusion weighted images were resampled at ")+
-                        param+std::string(" mm isotropic.");
         return true;
     }
     if(cmd == "[Step T2][Edit][Rotate to MNI]")
     {
-        rotate_to_mni(1.0f);
+        if(!rotate_to_mni(1.0f))
+            return false;
         voxel.steps += cmd+"\n";
-        voxel.report += std::string(" The diffusion weighted images were rotated to the MNI space at 1mm.");
         return true;
     }
     if(cmd == "[Step T2][Edit][Rotate to MNI2]")
     {
-        rotate_to_mni(2.0f);
+        if(!rotate_to_mni(2.0f))
+            return false;
         voxel.steps += cmd+"\n";
-        voxel.report += std::string(" The diffusion weighted images were rotated to the MNI space at 2mm.");
         return true;
     }
-    if(cmd == "[Step T2][Edit][Change b-table:flip bx]")
+    if(cmd == "[Step T2][B-table][flip bx]")
     {
         for(size_t i = 0;i < src_bvectors.size();++i)
             src_bvectors[i][0] = -src_bvectors[i][0];
         voxel.steps += cmd+"\n";
         return true;
     }
-    if(cmd == "[Step T2][Edit][Change b-table:flip by]")
+    if(cmd == "[Step T2][B-table][flip by]")
     {
         for(size_t i = 0;i < src_bvectors.size();++i)
             src_bvectors[i][1] = -src_bvectors[i][1];
         voxel.steps += cmd+"\n";
         return true;
     }
-    if(cmd == "[Step T2][Edit][Change b-table:flip bz]")
+    if(cmd == "[Step T2][B-table][flip bz]")
     {
         for(size_t i = 0;i < src_bvectors.size();++i)
             src_bvectors[i][2] = -src_bvectors[i][2];
         voxel.steps += cmd+"\n";
+        return true;
+    }
+    if(cmd == "[Step T2][Corrections][TOPUP EDDY]")
+    {
+        if(is_dsi())
+        {
+            if(!run_topup(param) || !run_applytopup())
+                return false;
+        }
+        else
+        {
+            if(!run_topup(param) || !run_eddy())
+                return false;
+        }
+        voxel.steps += cmd+"="+param+"\n";
         return true;
     }
     std::cout << "Unknown command:" << cmd << std::endl;
@@ -726,7 +739,6 @@ void ImageModel::flip_dwi(unsigned char type)
         tipl::flip(I,type);
     });
     voxel.dim = voxel.mask.shape();
-    voxel.dwi_data.clear();
 }
 // used in eddy correction for each dwi
 void ImageModel::rotate_one_dwi(unsigned int dwi_index,const tipl::transformation_matrix<double>& T)
@@ -792,7 +804,6 @@ void ImageModel::rotate(const tipl::shape<3>& new_geo,
 
     voxel.dim = new_geo;
     voxel.vs = new_vs;
-    voxel.dwi_data.clear();
     calculate_dwi_sum(true);
 }
 void ImageModel::resample(float nv)
@@ -809,6 +820,9 @@ void ImageModel::resample(float nv)
     T.sr[4] = double(new_vs[1]/voxel.vs[1]);
     T.sr[8] = double(new_vs[2]/voxel.vs[2]);
     rotate(new_geo,new_vs,T);
+    voxel.report += " The images were resampled to ";
+    voxel.report += std::to_string(int(new_vs[0]));
+    voxel.report += " mm isotropic resolution.";
 }
 extern std::string fib_template_file_name_2mm;
 extern std::vector<std::string> iso_template_list;
@@ -885,7 +899,7 @@ bool ImageModel::rotate_to_mni(float resolution)
     if(!arg_to_mni(resolution,vs,geo,T))
         return false;
     rotate(geo,vs,tipl::transformation_matrix<float>(T,geo,vs,voxel.dim,voxel.vs));
-    voxel.report += " The diffusion MRI data were resampled to ";
+    voxel.report += " The diffusion MRI data were rotated to aligh AC-PC line at ";
     voxel.report += std::to_string(int(vs[0]));
     voxel.report += " mm isotropic resolution.";
     rotated_to_mni = true;
@@ -924,10 +938,8 @@ void ImageModel::correct_motion(bool eddy)
         std::cout << arg << std::flush;
     }
 }
-void ImageModel::trim(void)
+void ImageModel::crop(tipl::shape<3> range_min,tipl::shape<3> range_max)
 {
-    tipl::shape<3> range_min,range_max;
-    tipl::bounding_box(voxel.mask,range_min,range_max,0);
     prog_init p("Removing background region");
     std::cout << "from:" << range_min << " to:" << range_max << std::endl;
     tipl::par_for2(src_dwi_data.size(),[&](unsigned int index,unsigned int id)
@@ -943,7 +955,13 @@ void ImageModel::trim(void)
     tipl::crop(voxel.mask,range_min,range_max);
     tipl::crop(dwi,range_min,range_max);
     voxel.dim = voxel.mask.shape();
-    voxel.dwi_data.clear();
+    calculate_dwi_sum(true);
+}
+void ImageModel::trim(void)
+{
+    tipl::shape<3> range_min,range_max;
+    tipl::bounding_box(voxel.mask,range_min,range_max,0);
+    crop(range_min,range_max);
 }
 
 float interpo_pos(float v1,float v2,float u1,float u2)
@@ -1104,7 +1122,7 @@ bool ImageModel::read_rev_b0(const char* filename,tipl::image<3>& rev_b0) const
     rev_b0.swap(v2);
     return true;
 }
-bool phase_direction_at_x(const tipl::image<3>& v1,const tipl::image<3>& v2)
+bool phase_direction_at_AP_PA(const tipl::image<3>& v1,const tipl::image<3>& v2)
 {
     tipl::image<2,float> px1,px2,py1,py2;
     tipl::project_x(v1,px1);
@@ -1113,6 +1131,8 @@ bool phase_direction_at_x(const tipl::image<3>& v1,const tipl::image<3>& v2)
     tipl::project_y(v2,py2);
     float cx = float(tipl::correlation(px1.begin(),px1.end(),px2.begin()));
     float cy = float(tipl::correlation(py1.begin(),py1.end(),py2.begin()));
+    std::cout << "projected x correction:" << cx << std::endl;
+    std::cout << "projected y correction:" << cy << std::endl;
     return cx < cy;
 }
 
@@ -1123,7 +1143,7 @@ bool ImageModel::distortion_correction(const char* filename)
         return false;
     read_b0(v1);
 
-    bool swap_xy = phase_direction_at_x(v1,v2);
+    bool swap_xy = phase_direction_at_AP_PA(v1,v2);
     if(swap_xy)
     {
         tipl::swap_xy(v1);
@@ -1190,6 +1210,391 @@ bool ImageModel::distortion_correction(const char* filename)
     voxel.report += " The phase distortion was correlated using data from an opposiate phase encoding direction.";
     return true;
 }
+
+
+bool create_acqparam_file(const char* acq_param,const tipl::image<3>& b0,const tipl::image<3>& rev_b0)
+{
+    bool is_appa = phase_direction_at_AP_PA(b0,rev_b0);
+    std::cout << "phase encoding direction at " << (is_appa ? "anterior-posterior" : "left-right") << std::endl;
+    unsigned int phase_dim = (is_appa ? 1 : 0);
+    auto c1 = tipl::center_of_mass(b0);
+    auto c2 = tipl::center_of_mass(rev_b0);
+    bool phase_dir = c1[phase_dim] < c2[phase_dim];
+    char pe[2][2][3] = { {"RL","LR"},{"AP","PA"}};
+    std::cout << "source has phase encoding direction of " << pe[phase_dim][phase_dir ? 0:1] << std::endl;
+    std::cout << "other_src has phase encoding direction of " << pe[phase_dim][phase_dir ? 1:0] << std::endl;
+    std::cout << "create acqparams.txt" << std::endl;
+    std::ofstream out(acq_param);
+    if(!out)
+    {
+        std::cout << "ERROR: cannot write to acq param file " << acq_param << std::endl;
+        return 1;
+    }
+    if(is_appa)
+    {
+        // anterior or posterior
+        if(phase_dir)
+            out << "0 -1 0 0.05\r\n0 1 0 0.05" << std::endl;
+        else
+            out << "0 1 0 0.05\r\n0 -1 0 0.05" << std::endl;
+    }
+    else
+    {
+        // left or right
+        if(phase_dir)
+            out << "-1 0 0 0.05\r\n1 0 0 0.05" << std::endl;
+        else
+            out << "1 0 0 0.05\r\n-1 0 0 0.05" << std::endl;
+    }
+    return true;
+}
+
+bool create_b0_appa_file(const char* b0_appa_file,const ImageModel& src,const tipl::image<3>& b0,const tipl::image<3>& rev_b0)
+{
+    std::cout << "create b0_appa.nii.gz" << std::endl;
+    {
+        tipl::matrix<4,4> trans;
+        initial_LPS_nifti_srow(trans,b0.shape(),src.voxel.vs);
+
+        tipl::shape<4> nifti_dim;
+        std::copy(b0.shape().begin(),b0.shape().end(),nifti_dim.begin());
+        nifti_dim[3] = 2;
+
+        tipl::image<4,float> buffer(nifti_dim);
+        std::copy(b0.begin(),b0.end(),buffer.begin());
+        std::copy(rev_b0.begin(),rev_b0.end(),buffer.begin()+int64_t(b0.size()));
+        if(!gz_nifti::save_to_file(b0_appa_file,buffer,src.voxel.vs,trans))
+        {
+            std::cout << "ERROR: Cannot wrtie a temporary b0_appa image volume to " << b0_appa_file << std::endl;
+            return false;
+        }
+    }
+    return true;
+}
+
+
+//QFileInfo(file_name.c_str()).absolutePath()
+
+bool test_call_fsl(std::string command,std::string exec_name)
+{
+    QProcess program;
+    std::cout << "test calling " << exec_name << "..." << std::endl;
+    program.start(command.c_str());
+    if(program.waitForStarted())
+    {
+        std::cout << exec_name << " successfully initiated." << std::endl;
+        if(!program.waitForFinished(1000))
+            program.kill();
+        return true;
+    }
+    else
+    {
+        std::cout << "cannot initiate " << exec_name << std::endl;
+        return false;
+    }
+}
+#include <QCoreApplication>
+std::string get_plugin_executive(std::string exec_name,std::string command)
+{
+    // if a command is specified, call and return
+    if(!command.empty())
+        return test_call_fsl(command,exec_name) ? command : std::string();
+    // try direct calling
+    if(test_call_fsl(exec_name,exec_name))
+        return exec_name;
+    // now search for fsl executives
+    #ifdef _WIN32
+    if(QFileInfo(QCoreApplication::applicationDirPath() + "/plugin/" + exec_name.c_str() + ".exe").exists())
+    {
+        std::cout << "found " << exec_name << ".exe" << std::endl;
+        command = (QCoreApplication::applicationDirPath() +  + "/plugin/" + exec_name.c_str() + ".exe").toStdString();
+    }
+    else
+    {
+        std::cout << "Please download " << exec_name << ".exe (google \"" << exec_name << ".exe\" fsl) and copy it to " << QCoreApplication::applicationDirPath().toStdString() << "/plugin" << std::endl;
+        return std::string();
+    }
+    #else
+    std::string fsl_path;
+    auto env = QProcess::systemEnvironment();
+    for(int i =0;i < env.size();++i)
+        if(env[i].startsWith("FSLDIR="))
+        {
+            fsl_path = env[i].split("=")[1].toStdString();
+            std::cout << "FSL installation found at " << fsl_path << std::endl;
+            if(fsl_path.back() == '/')
+                fsl_path.pop_back();
+            command = fsl_path + "/bin/" + exec_name;
+            break;
+        }
+    if(fsl_path.empty())
+        std::cout << "cannot find FSL installation" << std::endl;
+    #endif
+    return test_call_fsl(command,exec_name) ? command : std::string();
+}
+
+bool ImageModel::run_plugin(std::string program_name,std::vector<std::string> param,std::string working_dir,std::string exec)
+{
+    exec = get_plugin_executive(program_name,exec);
+    if(exec.empty())
+    {
+        #ifdef _WIN32
+        error_msg = (QString("Please download win_fsl and extract it to %1\\plugin").arg(QCoreApplication::applicationDirPath())).toStdString();
+        #else
+        error_msg = "cannot locate ";
+        error_msg += program_name;
+        #endif
+        return false;
+    }
+    QProcess program;
+    program.setEnvironment(program.environment() << "FSLOUTPUTTYPE=NIFTI_GZ");
+    program.setWorkingDirectory(working_dir.c_str());
+    std::cout << "running " << program_name << " at " << working_dir << " with" << std::endl;
+    QStringList p;
+    for(auto s:param)
+    {
+        std::cout << s << std::endl;
+        p << s.c_str();
+    }
+    program.start(exec.c_str(),p);
+    if(!program.waitForStarted())
+    {
+        error_msg = program_name + " failed to initiate.";
+        return false;
+    }
+    if(program.waitForFinished(3000))
+    {
+        error_msg = QString::fromLocal8Bit(program.readAllStandardError()).toStdString()+QString::fromLocal8Bit(program.readAllStandardOutput()).toStdString();
+        if(error_msg.empty())
+            error_msg = program_name + " ended prematurely: unknown error";
+        return false;
+    }
+    unsigned int proc_time = 0;
+    while(!program.waitForFinished(1000) && check_prog((++proc_time)%360,360))
+    {
+        QString output = QString::fromLocal8Bit(program.readAllStandardOutput());
+        if(output.isEmpty())
+            continue;
+        QStringList output_lines = output.remove('\r').split('\n');
+        if(output_lines.back().isEmpty())
+            output_lines.pop_back();
+        for(int i = 0;i+1 < output_lines.size();++i)
+            std::cout << output_lines[i].toStdString() << std::endl;
+        set_title(output_lines.back().toStdString().c_str());
+    }
+    check_prog(1,1);
+    if(prog_aborted())
+    {
+        program.kill();
+        error_msg = "process aborted";
+        return false;
+    }
+    std::cout << "completed." << std::endl;
+    error_msg = QString::fromLocal8Bit(program.readAllStandardError()).toStdString();
+    return error_msg.empty();
+}
+
+bool ImageModel::run_topup(std::string other_src,std::string exec)
+{
+    if(voxel.report.find("rotated") != std::string::npos)
+    {
+        error_msg = "TOPUP cannot be applied to rotated images";
+        return false;
+    }
+    std::string topup_result = QFileInfo(file_name.c_str()).baseName().replace('.','_').toStdString();
+    std::string acqparam_file = QFileInfo(file_name.c_str()).baseName().toStdString() + ".topup.acqparams.txt";
+    std::string b0_appa_file = QFileInfo(file_name.c_str()).baseName().toStdString() + ".topup.b0_appa.nii.gz";
+
+    tipl::image<3> b0,rev_b0;
+    read_b0(b0);
+    if(!read_rev_b0(other_src.c_str(),rev_b0))
+        return false;
+
+    // trim background
+    {
+        std::cout << "trimming background to speed up topup/eddy" << std::endl;
+        auto temp_mask = voxel.mask;
+        tipl::morphology::dilation(temp_mask);
+        tipl::shape<3> range_min,range_max;
+        tipl::bounding_box(temp_mask,range_min,range_max,0);
+        // ensure even number in the dimension for topup
+        for(int d = 0;d < 3;++d)
+            if((range_max[d]-range_min[d]) % 2 != 0)
+                range_max[d]--;
+        crop(range_min,range_max);
+        tipl::crop(b0,range_min,range_max);
+        tipl::crop(rev_b0,range_min,range_max);
+    }
+
+    if(!create_acqparam_file(acqparam_file.c_str(),b0,rev_b0) ||
+       !create_b0_appa_file(b0_appa_file.c_str(),*this,b0,rev_b0))
+    {
+        error_msg = "Cannot create temporary processing files at ";
+        error_msg += QFileInfo(file_name.c_str()).absolutePath().toStdString();
+        error_msg += ". Please check write permission";
+        return false;
+    }
+
+    if(QFileInfo(QFileInfo(file_name.c_str()).absolutePath()+"/" + topup_result.c_str() + "_fieldcoef.nii.gz").exists())
+    {
+        std::cout << "found topup result.skipping" << std::endl;
+        return true;
+    }
+
+
+    std::vector<std::string> param = {
+        "--warpres=20,16,14,12,10,6,4,4,4",
+        "--subsamp=2,2,2,2,2,1,1,1,1",  // This causes an error in odd number of slices
+        "--fwhm=8,6,4,3,3,2,1,0,0",
+        "--miter=5,5,5,5,5,10,10,20,20",
+        "--lambda=0.005,0.001,0.0001,0.000015,0.000005,0.0000005,0.00000005,0.0000000005,0.00000000001",
+        "--estmov=1,1,1,1,1,0,0,0,0",
+        "--minmet=0,0,0,0,0,1,1,1,1",
+        "--scale=1",
+        QString("--imain=%1").arg(b0_appa_file.c_str()).toStdString().c_str(),
+        QString("--datain=%1").arg(acqparam_file.c_str()).toStdString().c_str(),
+        QString("--out=%1").arg(topup_result.c_str()).toStdString().c_str(),
+        QString("--verbose=1").toStdString().c_str()};
+
+    return run_plugin("topup",param,QFileInfo(file_name.c_str()).absolutePath().toStdString(),exec);
+}
+
+bool load_bvec(const char* file_name,std::vector<double>& b_table,bool flip_by = true);
+bool ImageModel::load_topup_eddy_result(void)
+{
+    std::string preproc_file = file_name+".preproc.nii.gz";
+    std::string bvec_file = file_name+".preproc.eddy_rotated_bvecs";
+
+    gz_nifti in;
+    if(!in.load_from_file(preproc_file))
+    {
+        error_msg = "failed to open result nifti files from ";
+        error_msg = file_name;
+        return false;
+    }
+    tipl::shape<3> dim;
+    for(size_t index = 0;index < src_bvalues.size();++index)
+    {
+        if(!in.input_stream->good())
+        {
+            error_msg = "invalid results. please reload SRC file and rerun the TOPUP/EDDY pipeline";
+            return false;
+        }
+        tipl::image<3> I;
+        in >> I;
+        tipl::lower_threshold(I,0);
+        dim = I.shape();
+        std::copy(I.begin(),I.end(),const_cast<unsigned short*>(src_dwi_data[index]));
+    }
+
+    std::vector<double> b_table;
+    if(load_bvec(bvec_file.c_str(),b_table))
+    {
+        std::cout << "load rotated bvce from " << bvec_file << std::endl;
+        for(size_t index = 0,i = 0;i < src_bvalues.size() && index+2 < b_table.size();++i,index += 3)
+        {
+            src_bvectors[i][0] = float(b_table[index]);
+            src_bvectors[i][1] = float(b_table[index+1]);
+            src_bvectors[i][2] = float(b_table[index+2]);
+        }
+    }
+    voxel.dim = dim;
+    voxel.report += " The suscetibility artifact was corrected using reversed phase-encoding b0 through FSL topup";
+    voxel.report += b_table.empty() ? ".":"/eddy.";
+    calculate_dwi_sum(true);
+    return true;
+}
+
+bool ImageModel::run_applytopup(std::string exec)
+{
+    std::string topup_result = QFileInfo(file_name.c_str()).baseName().replace('.','_').toStdString();
+    std::string acqparam_file = QFileInfo(file_name.c_str()).baseName().toStdString() + ".topup.acqparams.txt";
+    std::string temp_nifti = file_name+".nii.gz";
+    std::string preproc_file = file_name+".preproc";
+    if(!save_to_nii_width_even_dimension(temp_nifti.c_str()))
+        return false;
+
+    std::vector<std::string> param = {
+            QString("--imain=%1").arg(QFileInfo(temp_nifti.c_str()).fileName()).toStdString().c_str(),
+            QString("--datain=%1").arg(acqparam_file.c_str()).toStdString().c_str(),
+            QString("--topup=%1").arg(topup_result.c_str()).toStdString().c_str(),
+            QString("--out=%1").arg(QFileInfo(preproc_file.c_str()).fileName()).toStdString().c_str(),
+            "--inindex=1",
+            "--method=jac",
+            "--verbose=1"};
+
+    if(!run_plugin("applytopup",param,QFileInfo(file_name.c_str()).absolutePath().toStdString(),exec) ||
+       !load_topup_eddy_result())
+        return false;
+
+    QFile(temp_nifti.c_str()).remove();
+    calculate_dwi_sum(true);
+    return true;
+}
+
+bool ImageModel::run_eddy(std::string exec)
+{
+    std::string topup_result = QFileInfo(file_name.c_str()).baseName().replace('.','_').toStdString();
+    std::string acqparam_file = QFileInfo(file_name.c_str()).baseName().toStdString() + ".topup.acqparams.txt";
+    std::string temp_nifti = file_name+".nii.gz";
+    std::string mask_nifti = file_name+".mask.nii.gz";
+    std::string preproc_file = file_name+".preproc";
+    std::string index_file = file_name+".index.txt";
+    std::string bval_file = file_name+".bval";
+    std::string bvec_file = file_name+".bvec";
+
+    if(!save_to_nii_width_even_dimension(temp_nifti.c_str()))
+        return false;
+    if(!save_mask_nii(mask_nifti.c_str()))
+    {
+        error_msg = "cannot save mask file to ";
+        error_msg += mask_nifti;
+        return false;
+    }
+    if(!save_bval(bval_file.c_str()))
+    {
+        error_msg = "cannot save ";
+        error_msg += bval_file;
+        return false;
+    }
+    if(!save_bvec(bvec_file.c_str()))
+    {
+        error_msg = "cannot save ";
+        error_msg += bvec_file;
+        return false;
+    }
+    {
+        std::ofstream out(index_file);
+        for(size_t i = 0;i < src_bvalues.size();++i)
+            out << " 1";
+    }
+
+
+    std::vector<std::string> param = {
+            QString("--imain=%1").arg(QFileInfo(temp_nifti.c_str()).fileName()).toStdString().c_str(),
+            QString("--mask=%1").arg(QFileInfo(mask_nifti.c_str()).fileName()).toStdString().c_str(),
+            QString("--acqp=%1").arg(acqparam_file.c_str()).toStdString().c_str(),
+            QString("--index=%1").arg(QFileInfo(index_file.c_str()).fileName()).toStdString().c_str(),
+            QString("--bvecs=%1").arg(QFileInfo(bvec_file.c_str()).fileName()).toStdString().c_str(),
+            QString("--bvals=%1").arg(QFileInfo(bval_file.c_str()).fileName()).toStdString().c_str(),
+            QString("--topup=%1").arg(topup_result.c_str()).toStdString().c_str(),
+            QString("--out=%1").arg(QFileInfo(preproc_file.c_str()).fileName()).toStdString().c_str(),
+            "--verbose=1"
+            };
+
+    if(!run_plugin("eddy",param,QFileInfo(file_name.c_str()).absolutePath().toStdString(),exec))
+    {
+        std::cout << "eddy cannot process this data:" << std::endl;
+        std::cout << error_msg << std::endl;
+        return run_applytopup();
+    }
+    if(!load_topup_eddy_result())
+        return false;
+    QFile(temp_nifti.c_str()).remove();
+    calculate_dwi_sum(true);
+    return true;
+}
+
 
 void calculate_shell(const std::vector<float>& sorted_bvalues,
                      std::vector<unsigned int>& shell)
@@ -1666,13 +2071,51 @@ bool ImageModel::save_to_nii(const char* nifti_file_name) const
     nifti_dim[3] = uint32_t(src_bvalues.size());
 
     tipl::image<4,unsigned short> buffer(nifti_dim);
-    for(unsigned int index = 0;index < src_bvalues.size();++index)
+    tipl::par_for(src_bvalues.size(),[&](size_t index)
     {
         std::copy(src_dwi_data[index],
                   src_dwi_data[index]+voxel.dim.size(),
                   buffer.begin() + long(index*voxel.dim.size()));
-    }
+    });
     return gz_nifti::save_to_file(nifti_file_name,buffer,voxel.vs,trans);
+}
+bool ImageModel::save_to_nii_width_even_dimension(const char* nifti_file_name) const
+{
+    if(voxel.dim[0]%2 == 0 && voxel.dim[1]%2 == 0 && voxel.dim[2]%2 == 0)
+    {
+        if(!save_to_nii(nifti_file_name))
+        {
+            error_msg = "cannot save temporary nifti file";
+            return false;
+        }
+    }
+    else
+    // padding
+    {
+        std::cout << "saving padded nifti file to " << nifti_file_name << std::endl;
+        tipl::shape<3> new_dim(tipl::shape<3>(uint32_t(voxel.dim.width()+1)/2*2,uint32_t(voxel.dim.height()+1)/2*2,uint32_t(voxel.dim.depth()+1)/2*2));
+        tipl::matrix<4,4> trans;
+        initial_LPS_nifti_srow(trans,new_dim,voxel.vs);
+
+        tipl::shape<4> nifti_dim;
+        std::copy(new_dim.begin(),new_dim.end(),nifti_dim.begin());
+        nifti_dim[3] = uint32_t(src_bvalues.size());
+
+        // apply topup may output negative values
+        tipl::image<4> buffer(nifti_dim);
+        tipl::par_for(src_bvalues.size(),[&](size_t index)
+        {
+            auto I = buffer.slice_at(uint32_t(index));
+            tipl::draw(tipl::make_image(src_dwi_data[index],voxel.dim),I,
+                       tipl::vector<3>(0,0,0));
+        });
+        if(!gz_nifti::save_to_file(nifti_file_name,buffer,voxel.vs,trans))
+        {
+            error_msg = "cannot save temporary nifti file";
+            return false;
+        }
+    }
+    return true;
 }
 bool ImageModel::save_b0_to_nii(const char* nifti_file_name) const
 {
@@ -1681,6 +2124,12 @@ bool ImageModel::save_b0_to_nii(const char* nifti_file_name) const
     tipl::image<3> buffer(voxel.dim);
     std::copy(src_dwi_data[0],src_dwi_data[0]+buffer.size(),buffer.begin());
     return gz_nifti::save_to_file(nifti_file_name,buffer,voxel.vs,trans);
+}
+bool ImageModel::save_mask_nii(const char* nifti_file_name) const
+{
+    tipl::matrix<4,4> trans;
+    initial_LPS_nifti_srow(trans,voxel.dim,voxel.vs);
+    return gz_nifti::save_to_file(nifti_file_name,voxel.mask,voxel.vs,trans);
 }
 
 bool ImageModel::save_dwi_sum_to_nii(const char* nifti_file_name) const
