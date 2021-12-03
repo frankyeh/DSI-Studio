@@ -781,32 +781,55 @@ bool fib_data::load_from_file(const char* file_name)
                     std::cout << "write " << matrix.get_name() << ":" << content << std::endl;
                 }
 
+                if(matrix.get_name() == "dir0")
+                {
+                    if(matrix.has_delay_read() &&!matrix.read(*(mat_reader.in.get())))
+                    {
+                        error_msg = "failed to create surrogate FIB file";
+                        return false;
+                    }
+                    std::cout << "write dir0 in downsampled volume" << std::endl;
+                    auto ptr = reinterpret_cast<const float*>(matrix.get_data(tipl::io::mat_type_info<float>::type));
+                    tipl::image<3,tipl::vector<3> > new_image,J(dim);
+                    for(size_t j = 0;j < J.size();++j)
+                    {
+                        J[j] = tipl::vector<3>(*ptr,*(ptr+1),*(ptr+2));
+                        ptr += 3;
+                    }
+                    for(size_t j = 0;j < downsampling;++j)
+                        if(j == 0)
+                            tipl::downsample_no_average(J,new_image);
+                        else
+                            tipl::downsample_no_average(new_image,new_image);
+                    out.write(matrix.get_name().c_str(),&new_image[0][0],uint32_t(3*dim.plane_size()),uint32_t(dim.depth()));
+                }
+
                 if(size_t(matrix.get_cols())*size_t(matrix.get_rows()) == dim.size()) // image volumes, including fa, and fiber index
                 {
                     std::cout << "write " << matrix.get_name() << " in downsampled volume" << std::endl;
-                    if(!matrix.read(*(mat_reader.in.get())))
+                    if(matrix.has_delay_read() &&!matrix.read(*(mat_reader.in.get())))
                     {
                         error_msg = "failed to create surrogate FIB file";
                         return false;
                     }
                     if(matrix.is_type<float>()) // qa, fa...etc.
                     {
-                        auto I = tipl::make_image(reinterpret_cast<const float*>(matrix.get_data(tipl::io::mat_type_info<float>::type)),dim);
+                        auto J = tipl::make_image(reinterpret_cast<const float*>(matrix.get_data(tipl::io::mat_type_info<float>::type)),dim);
                         tipl::image<3> new_image;
                         for(size_t j = 0;j < downsampling;++j)
                             if(j == 0)
-                                tipl::downsample_with_padding2(I,new_image);
+                                tipl::downsample_with_padding2(J,new_image);
                             else
                                 tipl::downsample_with_padding2(new_image);
                         out.write(matrix.get_name().c_str(),new_image);
                     }
                     if(matrix.is_type<short>()) // index0,index1
                     {
-                        auto I = tipl::make_image(reinterpret_cast<const unsigned short*>(matrix.get_data(tipl::io::mat_type_info<unsigned short>::type)),dim);
+                        auto J = tipl::make_image(reinterpret_cast<const unsigned short*>(matrix.get_data(tipl::io::mat_type_info<unsigned short>::type)),dim);
                         tipl::image<3,unsigned short> new_index;
                         for(size_t j = 0;j < downsampling;++j)
                             if(j == 0)
-                                tipl::downsample_no_average(I,new_index);
+                                tipl::downsample_no_average(J,new_index);
                             else
                                 tipl::downsample_no_average(new_index,new_index);
                         out.write(matrix.get_name().c_str(),new_index);
