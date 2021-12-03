@@ -129,16 +129,13 @@ jobs:
 
     - name: Download the SSL files
       uses: suisei-cn/actions-download-file@v1
-      id: downloadfile  # Remember to give an ID if you need the output
       with:
         url: "https://indy.fulgan.com/SSL/openssl-1.0.2u-x64_86-win64.zip"
-    
     - name: Download TinyFSL
       uses: suisei-cn/actions-download-file@v1
-      id: downloadfile  # Remember to give an ID if you need the output
       with:
         url: "https://github.com/frankyeh/TinyFSL/releases/download/2021.12.00/tiny_fsl_win64.zip"
-    - name: Extract SSL zip files
+    - name: Extract zip files
       run: |
           7z e openssl-1.0.2u-x64_86-win64.zip
           move *.dll dsi_studio_win
