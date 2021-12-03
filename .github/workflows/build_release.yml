@@ -143,7 +143,7 @@ jobs:
           mkdir dsi_studio_win\plugin
           mv *.exe dsi_studio_win\plugin
           mv *.dll dsi_studio_win\plugin
-          
+          del *.zip
     - name: Zip Release
       uses: TheDoctor0/zip-release@0.6.0
       with:
