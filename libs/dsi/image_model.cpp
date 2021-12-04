@@ -1311,26 +1311,24 @@ std::string get_plugin_executive(std::string exec_name,std::string command)
     if(QFileInfo(QCoreApplication::applicationDirPath() + "/plugin/" + exec_name.c_str()).exists())
     {
         std::cout << "found " << exec_name << std::endl;
-        command = (QCoreApplication::applicationDirPath() +  + "/plugin/" + exec_name.c_str()).toStdString();
+        command = (QCoreApplication::applicationDirPath() + "/plugin/" + exec_name.c_str()).toStdString();
     }
-    #endif
-
+    if(QFileInfo(QString("/usr/local/fsl/bin/") + exec_name.c_str()).exists())
+    {
+        std::cout << "found " << exec_name << std::endl;
+        command = std::string("/usr/local/fsl/bin/") + exec_name;
+    }
     if(command.empty())
     {
-        std::string fsl_path;
-        auto env = QProcess::systemEnvironment();
-        for(int i =0;i < env.size();++i)
-            if(env[i].startsWith("FSLDIR="))
-            {
-                fsl_path = env[i].split("=")[1].toStdString();
-                std::cout << "FSL installation found at " << fsl_path << std::endl;
-                if(fsl_path.back() == '/')
-                    fsl_path.pop_back();
-                command = fsl_path + "/bin/" + exec_name;
-                break;
-            }
+        int index = QProcess::systemEnvironment().indexOf(QRegExp("^FSLDIR=.+"));
+        if(index != -1)
+        {
+            std::string fsl_path = QProcess::systemEnvironment()[index].split("=")[1].toStdString();
+            std::cout << "FSL installation found at " << fsl_path << std::endl;
+            command = fsl_path + "/bin/" + exec_name;
+        }
     }
-
+    #endif
     if(command.empty())
         command = exec_name;
 
@@ -1345,8 +1343,7 @@ bool ImageModel::run_plugin(std::string program_name,std::vector<std::string> pa
         #ifdef _WIN32
         error_msg = (QString("Please download win_fsl and extract it to %1\\plugin").arg(QCoreApplication::applicationDirPath())).toStdString();
         #else
-        error_msg = "cannot locate ";
-        error_msg += program_name;
+        error_msg = "Please install FSL at /usr/local/fsl/";
         #endif
         return false;
     }
