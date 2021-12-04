@@ -74,7 +74,7 @@ jobs:
         url: "https://github.com/frankyeh/TinyFSL/releases/download/2021.12.03/tiny_fsl_mac.zip"
     - name: Packaging
       run: |
-        7z e -y tiny_fsl_mac.zip -o build/dsi_studio.app/Contents/MacOS/plugin
+        7z e -y tiny_fsl_mac.zip -obuild/dsi_studio.app/Contents/MacOS/plugin
         mv other/* build/dsi_studio.app/Contents/MacOS/
         mv DSI-Studio-atlas build/dsi_studio.app/Contents/MacOS/atlas
         mv build/dsi_studio.app .
