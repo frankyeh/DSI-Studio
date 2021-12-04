@@ -75,6 +75,7 @@ jobs:
     - name: Packaging
       run: |
         7z e -y tiny_fsl_mac.zip -obuild/dsi_studio.app/Contents/MacOS/plugin
+        del *.zip
         mv other/* build/dsi_studio.app/Contents/MacOS/
         mv DSI-Studio-atlas build/dsi_studio.app/Contents/MacOS/atlas
         mv build/dsi_studio.app .
