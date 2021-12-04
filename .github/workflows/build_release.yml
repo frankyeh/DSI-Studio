@@ -143,9 +143,10 @@ jobs:
         url: "https://github.com/frankyeh/TinyFSL/releases/download/2021.12.03/tiny_fsl_win64.zip"
     - name: Extract zip files
       run: |
-          7z e openssl-1.0.2u-x64_86-win64.zip
-          move *.dll dsi_studio_win
-          7z e tiny_fsl_win64.zip -odsi_studio_win\plugin
+        7z e openssl-1.0.2u-x64_86-win64.zip
+        move *.dll dsi_studio_win
+        7z e tiny_fsl_win64.zip -odsi_studio_win\plugin
+        del *.zip
     - name: Zip Release
       uses: TheDoctor0/zip-release@0.6.0
       with:
