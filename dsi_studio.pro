@@ -9,8 +9,7 @@ CONFIG += c++17
 TARGET = dsi_studio
 TEMPLATE = app
 INCLUDEPATH += ./plot
-
-
+DEFINES += DSISTUDIO_RELEASE_NAME=\\\"Chen\\\"
 
 win32* {
 # GPU computation

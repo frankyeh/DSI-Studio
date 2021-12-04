@@ -217,7 +217,7 @@ int run_cmd(int ac, char *av[])
     program_option po;
     try
     {
-        std::cout << "DSI Studio " << __DATE__ << " Fang-Cheng Yeh" << std::endl;
+        std::cout << "DSI Studio \"" << DSISTUDIO_RELEASE_NAME << "\" " << __DATE__ << std::endl;
         if(!po.parse(ac,av))
         {
             std::cout << po.error_msg << std::endl;
@@ -313,7 +313,7 @@ int main(int ac, char *av[])
     else
     {
         w.show();
-        w.setWindowTitle(QString("DSI Studio ") + __DATE__ + " build");
+        w.setWindowTitle(QString("DSI Studio \"") + DSISTUDIO_RELEASE_NAME + "\" " + __DATE__ );
     }
     return a.exec();
 }
