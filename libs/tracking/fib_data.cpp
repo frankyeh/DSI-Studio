@@ -1124,7 +1124,7 @@ bool fib_data::add_dT_index(const std::string& index_name)
                                  " warpping to the DWI space..." << std::endl;
                     Jbuf.resize(dim);
                     tipl::resample_mt(J,Jbuf,view_item[j].iT);
-                    J = Jbuf;
+                    J = tipl::make_image(&*Jbuf.begin(),Jbuf.shape());
                 }
                 if(I.shape() != dim)
                 {
@@ -1132,7 +1132,7 @@ bool fib_data::add_dT_index(const std::string& index_name)
                                  " warpping to the DWI space..." << std::endl;
                     Ibuf.resize(dim);
                     tipl::resample_mt(I,Ibuf,view_item[i].iT);
-                    I = Ibuf;
+                    I = tipl::make_image(&*Ibuf.begin(),Ibuf.shape());
                 }
 
                 tipl::image<3> new_metrics(dim);
