@@ -1299,37 +1299,41 @@ std::string get_plugin_executive(std::string exec_name,std::string command)
     // if a command is specified, call and return
     if(!command.empty())
         return test_call_fsl(command,exec_name) ? command : std::string();
-    // try direct calling
-    if(test_call_fsl(exec_name,exec_name))
-        return exec_name;
-    // now search for fsl executives
+
+    // now search for plugin
     #ifdef _WIN32
     if(QFileInfo(QCoreApplication::applicationDirPath() + "/plugin/" + exec_name.c_str() + ".exe").exists())
     {
         std::cout << "found " << exec_name << ".exe" << std::endl;
         command = (QCoreApplication::applicationDirPath() +  + "/plugin/" + exec_name.c_str() + ".exe").toStdString();
     }
-    else
-    {
-        std::cout << "Please download " << exec_name << ".exe (google \"" << exec_name << ".exe\" fsl) and copy it to " << QCoreApplication::applicationDirPath().toStdString() << "/plugin" << std::endl;
-        return std::string();
-    }
     #else
-    std::string fsl_path;
-    auto env = QProcess::systemEnvironment();
-    for(int i =0;i < env.size();++i)
-        if(env[i].startsWith("FSLDIR="))
-        {
-            fsl_path = env[i].split("=")[1].toStdString();
-            std::cout << "FSL installation found at " << fsl_path << std::endl;
-            if(fsl_path.back() == '/')
-                fsl_path.pop_back();
-            command = fsl_path + "/bin/" + exec_name;
-            break;
-        }
-    if(fsl_path.empty())
-        std::cout << "cannot find FSL installation" << std::endl;
+    if(QFileInfo(QCoreApplication::applicationDirPath() + "/plugin/" + exec_name.c_str()).exists())
+    {
+        std::cout << "found " << exec_name << std::endl;
+        command = (QCoreApplication::applicationDirPath() +  + "/plugin/" + exec_name.c_str()).toStdString();
+    }
     #endif
+
+    if(command.empty())
+    {
+        std::string fsl_path;
+        auto env = QProcess::systemEnvironment();
+        for(int i =0;i < env.size();++i)
+            if(env[i].startsWith("FSLDIR="))
+            {
+                fsl_path = env[i].split("=")[1].toStdString();
+                std::cout << "FSL installation found at " << fsl_path << std::endl;
+                if(fsl_path.back() == '/')
+                    fsl_path.pop_back();
+                command = fsl_path + "/bin/" + exec_name;
+                break;
+            }
+    }
+
+    if(command.empty())
+        command = exec_name;
+
     return test_call_fsl(command,exec_name) ? command : std::string();
 }
 
