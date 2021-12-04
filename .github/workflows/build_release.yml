@@ -6,6 +6,10 @@ on:
         description: 'Tag'
         required: true
         default: '2021.12.03'
+      release_name:
+        description: 'Release Name'
+        required: true
+        default: '2021.12.03 "Chen" Release'
 jobs:
   linux-build:
     strategy:
@@ -36,6 +40,7 @@ jobs:
         allowUpdates: true
         artifacts: "*.zip"
         tag: ${{ github.event.inputs.tag }}
+        name: ${{ github.event.inputs.release_name }}
         prerelease: false
         
   macos-build:
@@ -81,6 +86,7 @@ jobs:
         allowUpdates: true
         artifacts: "*.zip"
         tag: ${{ github.event.inputs.tag }}
+        name: ${{ github.event.inputs.release_name }}
         prerelease: false
 
   windows_build:
@@ -154,4 +160,5 @@ jobs:
         allowUpdates: true
         artifacts: "*.zip"
         tag: ${{ github.event.inputs.tag }}
+        name: ${{ github.event.inputs.release_name }}
         prerelease: false  
