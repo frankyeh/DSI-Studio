@@ -22,7 +22,7 @@ void show_view(QGraphicsScene& scene,QImage I);
 void populate_templates(QComboBox* combo,size_t index);
 bool reconstruction_window::load_src(int index)
 {
-    prog_init p("load src");
+    prog_init prog("load src");
     check_prog(index,filenames.size());
     handle.reset(new ImageModel);
     if (!handle->load_from_file(filenames[index].toLocal8Bit().begin()))
@@ -520,7 +520,7 @@ void reconstruction_window::on_actionSave_4D_nifti_triggered()
             return;
         if(result == QMessageBox::Yes)
         {
-            prog_init p("loading");
+            prog_init prog("loading");
             for(int index = 0;check_prog(index,filenames.size());++index)
             {
                 ImageModel model;
@@ -800,7 +800,7 @@ void reconstruction_window::on_actionReplace_b0_by_T2W_image_triggered()
 
 bool get_src(std::string filename,ImageModel& src2,std::string& error_msg)
 {
-    prog_init p("load ",filename.c_str());
+    prog_init prog("load ",filename.c_str());
     tipl::image<3,unsigned short> I;
     if(QString(filename.c_str()).endsWith(".dcm"))
     {
@@ -961,7 +961,7 @@ void reconstruction_window::on_actionSave_SRC_file_as_triggered()
             "SRC files (*src.gz);;All files (*)" );
     if(filename.isEmpty())
         return;
-    prog_init p("saving ",std::filesystem::path(filename.toStdString()).filename().string().c_str());
+    prog_init prog("saving ",std::filesystem::path(filename.toStdString()).filename().string().c_str());
     handle->save_to_file(filename.toStdString().c_str());
 }
 

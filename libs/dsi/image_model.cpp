@@ -727,7 +727,7 @@ void ImageModel::flip_dwi(unsigned char type)
         swap_b_table(type-3);
     tipl::flip(dwi,type);
     tipl::flip(voxel.mask,type);
-    prog_init p("flip image");
+    prog_init prog("flip image");
     if(voxel.is_histology)
         tipl::flip(voxel.hist_image,type);
     else
@@ -766,7 +766,7 @@ void ImageModel::rotate(const tipl::shape<3>& new_geo,
                         const tipl::image<3>& super_reso_ref,double var)
 {
     std::vector<tipl::image<3,unsigned short> > dwi(src_dwi_data.size());
-    prog_init p("rotating");
+    prog_init prog("rotating");
     tipl::par_for2(src_dwi_data.size(),[&](unsigned int index,unsigned int id)
     {
         if(prog_aborted())
@@ -940,7 +940,7 @@ void ImageModel::correct_motion(bool eddy)
 }
 void ImageModel::crop(tipl::shape<3> range_min,tipl::shape<3> range_max)
 {
-    prog_init p("Removing background region");
+    prog_init prog("Removing background region");
     std::cout << "from:" << range_min << " to:" << range_max << std::endl;
     tipl::par_for2(src_dwi_data.size(),[&](unsigned int index,unsigned int id)
     {
@@ -1819,7 +1819,7 @@ bool ImageModel::save_to_file(const char* dwi_file_name)
         }
         mat_writer.write("b_table",b_table,4);
     }
-    prog_init p("saving ",std::filesystem::path(dwi_file_name).filename().string().c_str());
+    prog_init prog("saving ",std::filesystem::path(dwi_file_name).filename().string().c_str());
     for (unsigned int index = 0;check_prog(index,src_bvalues.size());++index)
     {
         std::ostringstream out;
@@ -2120,7 +2120,7 @@ bool ImageModel::load_from_file(const char* dwi_file_name)
 
 bool ImageModel::save_fib(const std::string& output_name)
 {
-    prog_init p("saving ",std::filesystem::path(output_name).filename().string().c_str());
+    prog_init prog("saving ",std::filesystem::path(output_name).filename().string().c_str());
     gz_mat_write mat_writer(output_name.c_str());
     if(!mat_writer)
     {

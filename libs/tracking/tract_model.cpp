@@ -91,7 +91,7 @@ class TinyTrack{
 
         std::vector<std::vector<int32_t> > track32(tract_data.size());
         std::vector<size_t> buf_size(track32.size());
-        prog_init p("compressing trajectories");
+        prog_init prog("compressing trajectories");
         check_prog(0,tract_data.size());
         tipl::par_for2(track32.size(),[&](size_t i,unsigned int id)
         {
@@ -192,7 +192,7 @@ class TinyTrack{
                                tipl::matrix<4,4>& trans_to_mni,
                                std::string& report,std::string& parameter_id,unsigned int& color)
     {
-        prog_init p("loading ",std::filesystem::path(file_name).filename().string().c_str());
+        prog_init prog("loading ",std::filesystem::path(file_name).filename().string().c_str());
         gz_mat_read in;
         prepare_idx(file_name,in.in);
         if (!in.load_from_file(file_name))
@@ -328,7 +328,7 @@ struct TrackVis
                 std::string& info,
                 tipl::vector<3> vs)
     {
-        prog_init p("loading ",std::filesystem::path(file_name).filename().string().c_str());
+        prog_init prog("loading ",std::filesystem::path(file_name).filename().string().c_str());
         gz_istream in;
         if (!in.open(file_name))
             return false;
@@ -379,7 +379,7 @@ struct TrackVis
                              const std::string& info,
                              unsigned int color)
     {
-        prog_init p("saving ",std::filesystem::path(file_name).filename().string().c_str());
+        prog_init prog("saving ",std::filesystem::path(file_name).filename().string().c_str());
         gz_ostream out;
         if (!out.open(file_name))
             return false;
@@ -1314,7 +1314,7 @@ bool TractModel::save_all(const char* file_name_,
         gz_ostream out;
         if (!out.open(file_name_))
             return false;
-        prog_init p("saving ",std::filesystem::path(file_name_).filename().string().c_str());
+        prog_init prog("saving ",std::filesystem::path(file_name_).filename().string().c_str());
         {
             TrackVis trk;
             trk.init(all[0]->geo,all[0]->vs);

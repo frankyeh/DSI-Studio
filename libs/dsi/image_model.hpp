@@ -321,7 +321,7 @@ public:
     }
 
     template<class ProcessType>
-    bool reconstruct(const char* prog)
+    bool reconstruct(const char* prog_title)
     {
         // initialization
         voxel.load_from_src(*this);
@@ -334,7 +334,7 @@ public:
         }
 
         // reconstruction
-        prog_init p(prog);
+        prog_init prog(prog_title);
         try
         {
             if(voxel.run())

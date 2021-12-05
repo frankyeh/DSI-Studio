@@ -427,7 +427,7 @@ void db_window::on_actionSave_DB_as_triggered()
                            "Database files (*db?fib.gz *fib.gz);;All files (*)");
     if (filename.isEmpty())
         return;
-    prog_init p("saving ",std::filesystem::path(filename.toStdString()).filename().string().c_str());
+    prog_init prog("saving ",std::filesystem::path(filename.toStdString()).filename().string().c_str());
     vbc->handle->db.save_subject_data(filename.toStdString().c_str());
 }
 
@@ -497,7 +497,7 @@ void db_window::on_actionAdd_DB_triggered()
         }
         if(handle->has_odfs())
         {
-            prog_init p(QFileInfo(filenames[i]).baseName().toStdString().c_str());
+            prog_init prog(QFileInfo(filenames[i]).baseName().toStdString().c_str());
             if(!vbc->handle->db.add_subject_file(filenames[i].toStdString(),QFileInfo(filenames[i]).baseName().toStdString()))
             {
                 QMessageBox::information(this,"error in loading subject fib files",vbc->handle->error_msg.c_str(),0);
@@ -562,7 +562,7 @@ void db_window::on_actionAll_Subjects_triggered()
                                 "");
     if(dir.isEmpty())
         return;
-    prog_init p("exporting ",dir.toStdString().c_str());
+    prog_init prog("exporting ",dir.toStdString().c_str());
     for(size_t i = 0;check_prog(i,vbc->handle->db.subject_names.size());++i)
     {
         QString file_name = dir + "\\"+

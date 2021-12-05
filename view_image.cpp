@@ -287,7 +287,7 @@ bool view_image::open(QStringList file_names)
     QString info;
     file_name = file_names[0];
     setWindowTitle(QFileInfo(file_name).fileName());
-    prog_init p("loading ",std::filesystem::path(file_name.toStdString()).filename().string().c_str());
+    prog_init prog("loading ",std::filesystem::path(file_name.toStdString()).filename().string().c_str());
     check_prog(0,1);
 
     if(file_names.size() > 1 && QString(file_name).endsWith(".bmp"))

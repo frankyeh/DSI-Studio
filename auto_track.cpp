@@ -284,7 +284,7 @@ std::string run_auto_track(
 
                 if (!fib_loaded)
                 {
-                    prog_init p("loading ",std::filesystem::path(fib_file_name).filename().string().c_str());
+                    prog_init prog("loading ",std::filesystem::path(fib_file_name).filename().string().c_str());
                     if(!handle->load_from_file(fib_file_name.c_str()))
                        return fib_file_name + ": Not human data. Check image resolution.";
                     fib_loaded = true;
@@ -306,7 +306,7 @@ std::string run_auto_track(
                     float cur_tolerance = tolerance[tracking_iteration];
                     ThreadData thread(handle);
                     {
-                        prog_init p("preparing tracking ",track_name.c_str());
+                        prog_init prog("preparing tracking ",track_name.c_str());
                         thread.param.tip_iteration = uint8_t(tip);
                         thread.param.check_ending = !QString(track_name.c_str()).contains("Cingulum");
                         thread.param.stop_by_tract = 1;
@@ -321,7 +321,7 @@ std::string run_auto_track(
                     }
 
                     // run tracking
-                    prog_init p("tracking ",track_name.c_str());
+                    prog_init prog("tracking ",track_name.c_str());
                     thread.run(po.get("thread_count",std::thread::hardware_concurrency()),false);
                     std::string report = tract_model.report + thread.report.str();
                     report += " Shape analysis (Yeh, Neuroimage, 2020) was conducted to derive shape metrics for tractography.";

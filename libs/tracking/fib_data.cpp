@@ -1468,7 +1468,7 @@ bool fib_data::load_track_atlas()
             return false;
 
         {
-            prog_init p("warping atlas tracks to subject space");
+            prog_init prog("warping atlas tracks to subject space");
             run_normalization(true,true);
             if(prog_aborted())
                 return false;
