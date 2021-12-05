@@ -1734,7 +1734,7 @@ void fib_data::run_normalization(bool background,bool inv)
             }
         }
     }
-    prog_init _prog("running normalization");
+    prog_init prog_("running normalization");
     prog = 0;
     bool terminated = false;
     auto lambda = [this,output_file_name,&terminated]()
