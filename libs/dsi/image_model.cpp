@@ -1622,11 +1622,17 @@ bool ImageModel::run_eddy(std::string exec)
     if(!save_nii_for_applytopup_or_eddy(true))
         return false;
 
-    if(!save_mask_nii(mask_nifti.c_str()))
     {
-        error_msg = "cannot save mask file to ";
-        error_msg += mask_nifti;
-        return false;
+        tipl::image<3,unsigned char> I;
+        tipl::crop(voxel.mask,I,topup_from,topup_to);
+        tipl::matrix<4,4> trans;
+        initial_LPS_nifti_srow(trans,voxel.dim,voxel.vs);
+        if(!gz_nifti::save_to_file(mask_nifti.c_str(),I,voxel.vs,trans))
+        {
+            error_msg = "cannot save mask file to ";
+            error_msg += mask_nifti;
+            return false;
+        }
     }
     if(!save_bval(bval_file.c_str()))
     {
