@@ -1133,7 +1133,7 @@ void reconstruction_window::on_actionRun_FSL_Topup_triggered()
 
     }
 
-    QMessageBox::information(this,"DSI Studio","Please specify another SRC/DICOM/NIFTI file with an opposite phase encoding");
+    QMessageBox::information(this,"DSI Studio","Please specify another NIFTI or SRC.GZ file with reversed phase encoding data");
     QString other_src = QFileDialog::getOpenFileName(
             this,"Open SRC file",absolute_path,
             "Images (*src.gz *.nii *nii.gz);;DICOM image (*.dcm);;All files (*)" );
