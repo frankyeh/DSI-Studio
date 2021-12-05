@@ -1109,20 +1109,24 @@ bool ImageModel::read_rev_b0(const char* filename,std::vector<tipl::image<3> >& 
             error_msg = "Cannot load the image file";
             return false;
         }
-        if(nii.dim(4) != 1)
-        {
-            error_msg = "Expecting one b0 image. If using 4D NIFTI, please convert it to the SRC.GZ file";
-            return false;
-        }
-        tipl::image<3> J;
-        nii >> J;
-        if(voxel.dim != J.shape())
-        {
-            error_msg = "inconsistent image dimension between b0 and reversed phase encoding b0";
-            return false;
-        }
         I.clear();
-        I.push_back(std::move(J));
+        while(nii.input_stream->good())
+        {
+            tipl::image<3> J;
+            nii >> J;
+            if(voxel.dim != J.shape())
+            {
+                error_msg = "inconsistent image dimension between b0 and reversed phase encoding b0";
+                return false;
+            }
+            if(!I.empty() && tipl::correlation(I[0].begin(),I[0].end(),J.begin()) < 0.9)
+            {
+                error_msg = "The NIFTI file contains non b0 images";
+                return false;
+            }
+            I.push_back(std::move(J));
+
+        }
         return true;
     }
     if(QString(filename).endsWith(".src.gz"))
