@@ -108,10 +108,10 @@ bool check_prog(unsigned int now,unsigned int total)
         progressDialog->setValue(now);
         QString label = current_title.c_str();
         if(expected_sec)
-            progressDialog->setLabelText(label + QString(": %1 of %2, estimated time: %3 min %4 sec").
+            progressDialog->setLabelText(label + QString("\n%1 of %2\n%3 min %4 sec").
                                              arg(now).arg(total).arg(expected_sec/60).arg(expected_sec%60));
         else
-            progressDialog->setLabelText(label + QString(": %1 of %2...").arg(now).arg(total));
+            progressDialog->setLabelText(label + QString("\n%1 of %2...").arg(now).arg(total));
         progressDialog->show();
         QApplication::processEvents();
     }
