@@ -31,14 +31,19 @@ int rec(program_option& po)
     ImageModel src;
     if (!src.load_from_file(file_name.c_str()))
     {
-        std::cout << "load src file failed:" << src.error_msg << std::endl;
+        std::cout << "ERROR: " << src.error_msg << std::endl;
         return 1;
     }
     std::cout << "src loaded" <<std::endl;
-    if(po.has("other_src") && !src.distortion_correction(po.get("other_src").c_str()))
+
+    if(po.has("rev_pe"))
     {
-        std::cout << "ERROR:" << src.error_msg << std::endl;
-        return 1;
+        std::cout << "run topup/eddy..." << std::endl;
+        if(!src.command("[Step T2][Corrections][TOPUP EDDY]",po.get("rev_pe")))
+        {
+            std::cout << "ERROR:" << src.error_msg << std::endl;
+            return 1;
+        }
     }
 
     if(po.has("other_image"))
@@ -94,6 +99,7 @@ int rec(program_option& po)
         std::cout << "done." <<std::endl;
     }
 
+
     if (po.has("cmd"))
     {
         QStringList cmd_list = QString(po.get("cmd").c_str()).split("+");
@@ -102,7 +108,10 @@ int rec(program_option& po)
             QStringList run_list = QString(cmd_list[i]).split("=");
             if(!src.command(run_list[0].toStdString(),
                                 run_list.count() > 1 ? run_list[1].toStdString():std::string()))
+            {
+                std::cout << "ERROR:" << src.error_msg << std::endl;
                 return 1;
+            }
         }
     }
 
