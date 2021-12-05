@@ -55,6 +55,10 @@ struct prog_init{
     {
         begin_prog(status);
     }
+    prog_init(const char* status,bool always_show_dialog)
+    {
+        begin_prog(status,always_show_dialog);
+    }
     prog_init(const char* status1,const char* status2)
     {
         std::string s(status1);
