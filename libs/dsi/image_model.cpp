@@ -10,8 +10,10 @@
 #include "fib_data.hpp"
 #include "dwi_header.hpp"
 #include "tracking/region/Regions.h"
-
 #include "mac_filesystem.hpp"
+
+extern std::string src_error_msg;
+bool load_4d_nii(const char* file_name,std::vector<std::shared_ptr<DwiHeader> >& dwi_files,bool need_bvalbvec);
 
 void ImageModel::draw_mask(tipl::color_image& buffer,int position)
 {
@@ -690,11 +692,13 @@ bool ImageModel::command(std::string cmd,std::string param)
     {
         if(is_dsi())
         {
+            std::cout << "run topup/applytopup for non-shell data" << std::endl;
             if(!run_topup(param) || !run_applytopup())
                 return false;
         }
         else
         {
+            std::cout << "run topup/eddy for shell data" << std::endl;
             if(!run_topup(param) || !run_eddy())
                 return false;
         }
@@ -727,7 +731,7 @@ void ImageModel::flip_dwi(unsigned char type)
         swap_b_table(type-3);
     tipl::flip(dwi,type);
     tipl::flip(voxel.mask,type);
-    prog_init prog("flip image");
+    prog_init prog_("flip image");
     if(voxel.is_histology)
         tipl::flip(voxel.hist_image,type);
     else
@@ -766,7 +770,7 @@ void ImageModel::rotate(const tipl::shape<3>& new_geo,
                         const tipl::image<3>& super_reso_ref,double var)
 {
     std::vector<tipl::image<3,unsigned short> > dwi(src_dwi_data.size());
-    prog_init prog("rotating");
+    prog_init prog_("rotating");
     tipl::par_for2(src_dwi_data.size(),[&](unsigned int index,unsigned int id)
     {
         if(prog_aborted())
@@ -862,7 +866,7 @@ bool ImageModel::arg_to_mni(float resolution,tipl::vector<3>& vs,tipl::shape<3>&
     else
         return false;
     bool terminated = false;
-    begin_prog("aligning with MNI ac-pc",true);
+    prog_init prog_("aligning with MNI ac-pc",true);
     check_prog(0,4);
     const float bound[8] = {1.0f,-1.0f,0.02f,-0.02f,1.2f,0.9f,0.1f,-0.1f};
     tipl::reg::linear_mr(I,vs,dwi,voxel.vs,
@@ -908,7 +912,7 @@ bool ImageModel::rotate_to_mni(float resolution)
 
 void ImageModel::correct_motion(bool eddy)
 {
-    begin_prog("correcting motion...",true);
+    prog_init prog_("correcting motion...",true);
     tipl::affine_transform<float> arg;
     arg.rotation[0] = 0.01f;
     arg.rotation[1] = 0.01f;
@@ -940,7 +944,7 @@ void ImageModel::correct_motion(bool eddy)
 }
 void ImageModel::crop(tipl::shape<3> range_min,tipl::shape<3> range_max)
 {
-    prog_init prog("Removing background region");
+    prog_init prog_("Removing background region");
     std::cout << "from:" << range_min << " to:" << range_max << std::endl;
     tipl::par_for2(src_dwi_data.size(),[&](unsigned int index,unsigned int id)
     {
@@ -1512,48 +1516,52 @@ bool ImageModel::run_topup(std::string other_src,std::string exec)
     return run_plugin("topup",200*(b0.size()+rev_b0.size()),param,QFileInfo(file_name.c_str()).absolutePath().toStdString(),exec);
 }
 
+bool load_bval(const char* file_name,std::vector<double>& bval);
 bool load_bvec(const char* file_name,std::vector<double>& b_table,bool flip_by = true);
 bool ImageModel::load_topup_eddy_result(void)
 {
     std::string preproc_file = file_name+".preproc.nii.gz";
+    std::string bval_file = file_name+".bval";
     std::string bvec_file = file_name+".preproc.eddy_rotated_bvecs";
+    bool is_eddy = QFileInfo(bvec_file.c_str()).exists();
 
-    gz_nifti in;
-    if(!in.load_from_file(preproc_file))
+    if(is_eddy)
     {
-        error_msg = "failed to open result nifti files from ";
-        error_msg = file_name;
-        return false;
-    }
-    tipl::shape<3> dim;
-    for(size_t index = 0;index < src_bvalues.size();++index)
-    {
-        if(!in.input_stream->good())
+        std::cout << "update b-table from eddy output" << std::endl;
+        std::vector<double> bval,bvec;
+        if(!load_bval(bval_file.c_str(),bval) || !load_bvec(bvec_file.c_str(),bvec))
         {
-            error_msg = "invalid results. please reload SRC file and rerun the TOPUP/EDDY pipeline";
+            error_msg = "cannot find bval and bvec. please run topup/eddy again";
             return false;
         }
-        tipl::image<3> I;
-        in >> I;
-        tipl::lower_threshold(I,0);
-        dim = I.shape();
-        std::copy(I.begin(),I.end(),const_cast<unsigned short*>(src_dwi_data[index]));
-    }
-
-    std::vector<double> b_table;
-    if(load_bvec(bvec_file.c_str(),b_table))
-    {
-        std::cout << "load rotated bvce from " << bvec_file << std::endl;
-        for(size_t index = 0,i = 0;i < src_bvalues.size() && index+2 < b_table.size();++i,index += 3)
+        std::copy(bval.begin(),bval.end(),src_bvalues.begin());
+        for(size_t index = 0,i = 0;i < src_bvalues.size() && index+2 < bvec.size();++i,index += 3)
         {
-            src_bvectors[i][0] = float(b_table[index]);
-            src_bvectors[i][1] = float(b_table[index+1]);
-            src_bvectors[i][2] = float(b_table[index+2]);
+            src_bvectors[i][0] = float(bvec[index]);
+            src_bvectors[i][1] = float(bvec[index+1]);
+            src_bvectors[i][2] = float(bvec[index+2]);
         }
     }
-    voxel.dim = dim;
+    std::cout << "load topup/eddy results" << std::endl;
+    std::vector<std::shared_ptr<DwiHeader> > dwi_files;
+    if(!load_4d_nii(preproc_file.c_str(),dwi_files,false))
+    {
+        error_msg = src_error_msg;
+        return false;
+    }
+    nifti_dwi.resize(dwi_files.size());
+    src_dwi_data.resize(dwi_files.size());
+    src_bvalues.resize(dwi_files.size());
+    src_bvectors.resize(dwi_files.size());
+    for(size_t index = 0;index < dwi_files.size();++index)
+    {
+        nifti_dwi[index].swap(dwi_files[index]->image);
+        src_dwi_data[index] = &nifti_dwi[index][0];
+    }
+    voxel.vs = dwi_files[0]->voxel_size;
+    voxel.dim = nifti_dwi[0].shape();
     voxel.report += " The suscetibility artifact was corrected using reversed phase-encoding b0 through FSL topup";
-    voxel.report += b_table.empty() ? ".":"/eddy.";
+    voxel.report += is_eddy ? "/eddy.":".";
     calculate_dwi_sum(true);
     return true;
 }
@@ -1603,7 +1611,6 @@ bool ImageModel::run_applytopup(std::string exec)
        !load_topup_eddy_result())
         return false;
 
-    QFile(temp_nifti.c_str()).remove();
     calculate_dwi_sum(true);
     return true;
 }
@@ -1634,25 +1641,34 @@ bool ImageModel::run_eddy(std::string exec)
             return false;
         }
     }
-    if(!save_bval(bval_file.c_str()))
+
     {
-        error_msg = "cannot save ";
-        error_msg += bval_file;
-        return false;
-    }
-    if(!save_bvec(bvec_file.c_str()))
-    {
-        error_msg = "cannot save ";
-        error_msg += bvec_file;
-        return false;
-    }
-    {
-        std::ofstream out(index_file);
+        std::ofstream index_out(index_file),bval_out(bval_file),bvec_out(bvec_file);
+        if(!index_out || !bval_out || !bvec_out)
+        {
+            error_msg = "cannot write temporary files to ";
+            error_msg += QFileInfo(file_name.c_str()).absolutePath().toStdString();
+            return false;
+        }
         for(size_t i = 0;i < src_bvalues.size();++i)
-            out << " 1";
+        {
+            index_out << " 1";
+            bval_out << src_bvalues[i] << " ";
+            bvec_out << src_bvectors[i][0] << " "
+                     << -src_bvectors[i][1] << " "
+                     << src_bvectors[i][2] << "\n";
+        }
         if(rev_pe_src.get())
+        {
             for(size_t i = 0;i < rev_pe_src->src_bvalues.size();++i)
-                out << " " << (1+b0.size());
+            {
+                index_out << " " << (1+b0.size());
+                bval_out << rev_pe_src->src_bvalues[i] << " ";
+                bvec_out << rev_pe_src->src_bvectors[i][0] << " "
+                         << -rev_pe_src->src_bvectors[i][1] << " "
+                         << rev_pe_src->src_bvectors[i][2] << "\n";
+            }
+        }
     }
 
 
@@ -1670,8 +1686,7 @@ bool ImageModel::run_eddy(std::string exec)
 
     if(!run_plugin("eddy",50*src_bvalues.size(),param,QFileInfo(file_name.c_str()).absolutePath().toStdString(),exec))
     {
-        std::cout << "eddy cannot process this data:" << std::endl;
-        std::cout << error_msg << std::endl;
+        std::cout << "eddy cannot process this data:" << error_msg << std::endl;
         return run_applytopup();
     }
     if(!load_topup_eddy_result())
@@ -1819,7 +1834,7 @@ bool ImageModel::save_to_file(const char* dwi_file_name)
         }
         mat_writer.write("b_table",b_table,4);
     }
-    prog_init prog("saving ",std::filesystem::path(dwi_file_name).filename().string().c_str());
+    prog_init prog_("saving ",std::filesystem::path(dwi_file_name).filename().string().c_str());
     for (unsigned int index = 0;check_prog(index,src_bvalues.size());++index)
     {
         std::ostringstream out;
@@ -1831,9 +1846,6 @@ bool ImageModel::save_to_file(const char* dwi_file_name)
     return true;
 }
 
-extern std::string src_error_msg;
-bool find_bval_bvec(const char* file_name,QString& bval,QString& bvec);
-bool load_4d_nii(const char* file_name,std::vector<std::shared_ptr<DwiHeader> >& dwi_files,bool need_bvalbvec);
 void prepare_idx(const char* file_name,std::shared_ptr<gz_istream> in)
 {
     if(!QString(file_name).endsWith(".gz"))
@@ -1950,12 +1962,6 @@ bool ImageModel::load_from_file(const char* dwi_file_name)
     }
     if(QString(dwi_file_name).toLower().endsWith(".nii.gz"))
     {
-        QString bval,bvec;
-        if(!find_bval_bvec(dwi_file_name,bval,bvec))
-        {
-            error_msg = "Cannot find bval bvec files for the NIFTI file";
-            return false;
-        }
         std::vector<std::shared_ptr<DwiHeader> > dwi_files;
         if(!load_4d_nii(dwi_file_name,dwi_files,true))
         {
@@ -2120,7 +2126,7 @@ bool ImageModel::load_from_file(const char* dwi_file_name)
 
 bool ImageModel::save_fib(const std::string& output_name)
 {
-    prog_init prog("saving ",std::filesystem::path(output_name).filename().string().c_str());
+    prog_init prog_("saving ",std::filesystem::path(output_name).filename().string().c_str());
     gz_mat_write mat_writer(output_name.c_str());
     if(!mat_writer)
     {
@@ -2167,7 +2173,7 @@ bool ImageModel::save_to_nii(const char* nifti_file_name) const
 }
 bool ImageModel::save_nii_for_applytopup_or_eddy(bool include_rev) const
 {
-    std::cout << "create trimmed volume for eddy or apply topup" << std::endl;
+    std::cout << "create trimmed volume for " << (include_rev ? "eddy":"applytopup") << std::endl;
     tipl::image<4,unsigned short> buffer(tipl::shape<4>(topup_to[0]-topup_from[0],topup_to[1]-topup_from[1],topup_to[2]-topup_from[2],
                                          uint32_t(src_bvalues.size()) + uint32_t(rev_pe_src.get() && include_rev ? rev_pe_src->src_bvalues.size():0)));
     tipl::par_for(src_bvalues.size(),[&](unsigned int index)
@@ -2255,7 +2261,7 @@ bool ImageModel::save_bvec(const char* file_name) const
 bool ImageModel::compare_src(const char* file_name)
 {
     std::shared_ptr<ImageModel> bl(new ImageModel);
-    begin_prog("reading");
+    prog_init prog_("reading");
     if(!bl->load_from_file(file_name))
     {
         error_msg = bl->error_msg;
@@ -2297,7 +2303,6 @@ bool ImageModel::compare_src(const char* file_name)
 
         voxel.mask.swap(mask);
         check_prog(0,0);
-        begin_prog("registration between longitudinal scans");
         auto& Ib = voxel.fib_fa; // baseline
         auto& If = study_src->voxel.fib_fa; // follow-up
         auto& Ib_vs = voxel.vs;
@@ -2310,7 +2315,7 @@ bool ImageModel::compare_src(const char* file_name)
             tipl::shape<3> geo;
             study_src->arg_to_mni(2.0f,vs,geo,T);
         }
-        begin_prog("registering longitudinal data",true);
+        prog_init prog_("registering longitudinal data",true);
         check_prog(0,4);
         tipl::reg::linear(Ib,Ib_vs,If,If_vs,
                 T,tipl::reg::rigid_body,tipl::reg::correlation(),terminated,0.01,0,tipl::reg::large_bound);
