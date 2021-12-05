@@ -313,8 +313,9 @@ int main(int ac, char *av[])
     else
     {
         w.show();
+        unsigned int code = DSISTUDIO_RELEASE_CODE;
         w.setWindowTitle(QString("DSI Studio      version: ") + DSISTUDIO_RELEASE_NAME + " \""+
-                                 QTextCodec::codecForName("UTF-8")->toUnicode(DSISTUDIO_RELEASE_CODE) +
+                                 QTextCodec::codecForName("UTF-8")->toUnicode(reinterpret_cast<const char*>(&code)) +
                                  "\"       build: " + __DATE__ );
     }
     return a.exec();
