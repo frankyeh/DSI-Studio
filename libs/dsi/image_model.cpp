@@ -45,7 +45,7 @@ void ImageModel::calculate_dwi_sum(bool update_mask)
         {
             if(index > 0 && src_bvalues[index] == 0.0f)
                 return;
-            dwi_sum += tipl::make_image(src_dwi_data[index],voxel.dim);
+            dwi_sum += dwi_at(index);
         });
         float otsu = tipl::segmentation::otsu_threshold(dwi_sum);
         float max_value = std::min<float>(*std::max_element(dwi_sum.begin(),dwi_sum.end()),otsu*3.0f);
@@ -309,7 +309,7 @@ std::vector<std::pair<int,int> > ImageModel::get_bad_slices(void)
 
     tipl::par_for(voxel.dwi_data.size(),[&](size_t index)
     {
-        auto I = tipl::make_image(voxel.dwi_data[index],voxel.dim);
+        auto I = dwi_at(index);
         size_t value_index = index*size_t(voxel.dim.depth());
         for(size_t z = 0,pos = 0;z < size_t(voxel.dim.depth());
                                 ++z,pos += voxel.dim.plane_size())
@@ -735,7 +735,7 @@ void ImageModel::flip_dwi(unsigned char type)
     {
         if(!id)
             check_prog(index,src_dwi_data.size());
-        auto I = tipl::make_image(const_cast<unsigned short*>(src_dwi_data[index]),voxel.dim);
+        auto I = dwi_at(index);
         tipl::flip(I,type);
     });
     voxel.dim = voxel.mask.shape();
@@ -744,7 +744,7 @@ void ImageModel::flip_dwi(unsigned char type)
 void ImageModel::rotate_one_dwi(unsigned int dwi_index,const tipl::transformation_matrix<double>& T)
 {
     tipl::image<3> tmp(voxel.dim);
-    auto I = tipl::make_image(const_cast<unsigned short*>(src_dwi_data[dwi_index]),voxel.dim);
+    auto I = dwi_at(dwi_index);
     tipl::resample(I,tmp,T,tipl::cubic);
     tipl::lower_threshold(tmp,0);
     std::copy(tmp.begin(),tmp.end(),I.begin());
@@ -774,7 +774,7 @@ void ImageModel::rotate(const tipl::shape<3>& new_geo,
         if(!id)
             check_prog(index,src_dwi_data.size());
         dwi[index].resize(new_geo);
-        auto I = tipl::make_image(const_cast<unsigned short*>(src_dwi_data[index]),voxel.dim);
+        auto I = dwi_at(index);
         if(!super_reso_ref.empty())
             tipl::resample_with_ref(I,super_reso_ref,dwi[index],T,var);
         else
@@ -919,7 +919,7 @@ void ImageModel::correct_motion(bool eddy)
     for(unsigned int i = 0;check_prog(i,src_bvalues.size());++i)
     {
         tipl::image<3,unsigned char> to;
-        tipl::normalize(tipl::make_image(src_dwi_data[i],voxel.dim),to);
+        tipl::normalize(dwi_at(i),to);
         tipl::filter::gaussian(to);
         tipl::filter::gaussian(to);
         bool terminated = false;
@@ -946,16 +946,15 @@ void ImageModel::crop(tipl::shape<3> range_min,tipl::shape<3> range_max)
     {
         if(!id)
             check_prog(index,src_dwi_data.size());
-        auto I = tipl::make_image(const_cast<unsigned short*>(src_dwi_data[index]),voxel.dim);
-        tipl::image<3,unsigned short> I0 = I;
-        tipl::crop(I0,range_min,range_max);
+        auto I = dwi_at(index);
+        tipl::image<3,unsigned short> I0;
+        tipl::crop(I,I0,range_min,range_max);
         std::fill(I.begin(),I.end(),0);
         std::copy(I0.begin(),I0.end(),I.begin());
     });
     tipl::crop(voxel.mask,range_min,range_max);
     tipl::crop(dwi,range_min,range_max);
     voxel.dim = voxel.mask.shape();
-    calculate_dwi_sum(true);
 }
 void ImageModel::trim(void)
 {
@@ -1086,14 +1085,22 @@ void apply_distortion_map2(const image_type& v1,
     );
 }
 
-void ImageModel::read_b0(tipl::image<3>& rev_b0) const
+bool ImageModel::read_b0(std::vector<tipl::image<3> >& I) const
 {
-    rev_b0 = (src_bvalues[0] == 0.0f) ?  tipl::make_image(src_dwi_data[0],voxel.dim):
-            tipl::make_image(src_dwi_data[size_t(std::min_element(src_bvalues.begin(),src_bvalues.end())-src_bvalues.begin())],voxel.dim);
+    I.clear();
+    for(size_t index = 0;index < src_bvalues.size();++index)
+        if(src_bvalues[index] == 0.0f)
+            I.push_back(dwi_at(index));
+    if(I.empty())
+    {
+        error_msg = "No b0 found in DWI data";
+        return false;
+    }
+    return true;
 }
-bool ImageModel::read_rev_b0(const char* filename,tipl::image<3>& rev_b0) const
+bool ImageModel::read_rev_b0(const char* filename,std::vector<tipl::image<3> >& I)
 {
-    tipl::image<3> v2;
+    rev_pe_src.reset();
     if(QString(filename).endsWith(".nii.gz") || QString(filename).endsWith(".nii"))
     {
         gz_nifti nii;
@@ -1102,48 +1109,72 @@ bool ImageModel::read_rev_b0(const char* filename,tipl::image<3>& rev_b0) const
             error_msg = "Cannot load the image file";
             return false;
         }
-        nii.toLPS(v2);
+        if(nii.dim(4) != 1)
+        {
+            error_msg = "Expecting one b0 image. If using 4D NIFTI, please convert it to the SRC.GZ file";
+            return false;
+        }
+        tipl::image<3> J;
+        nii >> J;
+        if(voxel.dim != J.shape())
+        {
+            error_msg = "inconsistent image dimension between b0 and reversed phase encoding b0";
+            return false;
+        }
+        I.clear();
+        I.push_back(std::move(J));
+        return true;
     }
     if(QString(filename).endsWith(".src.gz"))
     {
-        ImageModel src2;
-        if(!src2.load_from_file(filename))
+        std::shared_ptr<ImageModel> src2(new ImageModel);
+        if(!src2->load_from_file(filename))
         {
-            error_msg = src2.error_msg;
+            error_msg = src2->error_msg;
             return false;
         }
-        src2.read_b0(v2);
+        if(src2->voxel.dim != voxel.dim)
+        {
+            error_msg = "inconsistent image dimension between two SRC data";
+            return false;
+        }
+        if(!src2->read_b0(I))
+        {
+            error_msg = src2->error_msg;
+            return false;
+        }
+        rev_pe_src = src2;
+        return true;
     }
-    if(voxel.dim != v2.shape())
-    {
-        error_msg = "inconsistent image dimension between original DWI and reverse-phase DWI";
-        return false;
-    }
-    rev_b0.swap(v2);
-    return true;
+    error_msg = "unsupported file format";
+    return false;
 }
-bool phase_direction_at_AP_PA(const tipl::image<3>& v1,const tipl::image<3>& v2)
+tipl::vector<3> phase_direction_at_AP_PA(const tipl::image<3>& v1,const tipl::image<3>& v2)
 {
+    tipl::vector<3> c;
     tipl::image<2,float> px1,px2,py1,py2;
     tipl::project_x(v1,px1);
     tipl::project_x(v2,px2);
     tipl::project_y(v1,py1);
     tipl::project_y(v2,py2);
-    float cx = float(tipl::correlation(px1.begin(),px1.end(),px2.begin()));
-    float cy = float(tipl::correlation(py1.begin(),py1.end(),py2.begin()));
-    std::cout << "projected x correction:" << cx << std::endl;
-    std::cout << "projected y correction:" << cy << std::endl;
-    return cx < cy;
+    c[0] = float(tipl::correlation(px1.begin(),px1.end(),px2.begin()));
+    c[1] = float(tipl::correlation(py1.begin(),py1.end(),py2.begin()));
+    std::cout << "projected correction:" << c << std::endl;
+    return c;
 }
 
 bool ImageModel::distortion_correction(const char* filename)
 {
     tipl::image<3> v1,v2;
-    if(!read_rev_b0(filename,v2))
-        return false;
-    read_b0(v1);
+    {
+        if(!read_b0(b0) || !read_rev_b0(filename,rev_b0))
+            return false;
+        v2 = std::move(rev_b0.front());
+        v1 = std::move(b0.front());
+    }
 
-    bool swap_xy = phase_direction_at_AP_PA(v1,v2);
+    auto c = phase_direction_at_AP_PA(v1,v2);
+    bool swap_xy = c[0] < c[1];
     if(swap_xy)
     {
         tipl::swap_xy(v1);
@@ -1191,7 +1222,7 @@ bool ImageModel::distortion_correction(const char* filename)
     std::vector<tipl::image<3,unsigned short> > dwi(src_dwi_data.size());
     for(size_t i = 0;i < src_dwi_data.size();++i)
     {
-        v1 = tipl::make_image(src_dwi_data[i],voxel.dim);
+        v1 = dwi_at(i);
         if(swap_xy)
         {
             tipl::swap_xy(v1);
@@ -1208,67 +1239,6 @@ bool ImageModel::distortion_correction(const char* filename)
 
     calculate_dwi_sum(false);
     voxel.report += " The phase distortion was correlated using data from an opposiate phase encoding direction.";
-    return true;
-}
-
-
-bool create_acqparam_file(const char* acq_param,const tipl::image<3>& b0,const tipl::image<3>& rev_b0)
-{
-    bool is_appa = phase_direction_at_AP_PA(b0,rev_b0);
-    std::cout << "phase encoding direction at " << (is_appa ? "anterior-posterior" : "left-right") << std::endl;
-    unsigned int phase_dim = (is_appa ? 1 : 0);
-    auto c1 = tipl::center_of_mass(b0);
-    auto c2 = tipl::center_of_mass(rev_b0);
-    bool phase_dir = c1[phase_dim] < c2[phase_dim];
-    char pe[2][2][3] = { {"RL","LR"},{"AP","PA"}};
-    std::cout << "source has phase encoding direction of " << pe[phase_dim][phase_dir ? 0:1] << std::endl;
-    std::cout << "other_src has phase encoding direction of " << pe[phase_dim][phase_dir ? 1:0] << std::endl;
-    std::cout << "create acqparams.txt" << std::endl;
-    std::ofstream out(acq_param);
-    if(!out)
-    {
-        std::cout << "ERROR: cannot write to acq param file " << acq_param << std::endl;
-        return 1;
-    }
-    if(is_appa)
-    {
-        // anterior or posterior
-        if(phase_dir)
-            out << "0 -1 0 0.05\r\n0 1 0 0.05" << std::endl;
-        else
-            out << "0 1 0 0.05\r\n0 -1 0 0.05" << std::endl;
-    }
-    else
-    {
-        // left or right
-        if(phase_dir)
-            out << "-1 0 0 0.05\r\n1 0 0 0.05" << std::endl;
-        else
-            out << "1 0 0 0.05\r\n-1 0 0 0.05" << std::endl;
-    }
-    return true;
-}
-
-bool create_b0_appa_file(const char* b0_appa_file,const ImageModel& src,const tipl::image<3>& b0,const tipl::image<3>& rev_b0)
-{
-    std::cout << "create b0_appa.nii.gz" << std::endl;
-    {
-        tipl::matrix<4,4> trans;
-        initial_LPS_nifti_srow(trans,b0.shape(),src.voxel.vs);
-
-        tipl::shape<4> nifti_dim;
-        std::copy(b0.shape().begin(),b0.shape().end(),nifti_dim.begin());
-        nifti_dim[3] = 2;
-
-        tipl::image<4,float> buffer(nifti_dim);
-        std::copy(b0.begin(),b0.end(),buffer.begin());
-        std::copy(rev_b0.begin(),rev_b0.end(),buffer.begin()+int64_t(b0.size()));
-        if(!gz_nifti::save_to_file(b0_appa_file,buffer,src.voxel.vs,trans))
-        {
-            std::cout << "ERROR: Cannot wrtie a temporary b0_appa image volume to " << b0_appa_file << std::endl;
-            return false;
-        }
-    }
     return true;
 }
 
@@ -1335,7 +1305,7 @@ std::string get_plugin_executive(std::string exec_name,std::string command)
     return test_call_fsl(command,exec_name) ? command : std::string();
 }
 
-bool ImageModel::run_plugin(std::string program_name,std::vector<std::string> param,std::string working_dir,std::string exec)
+bool ImageModel::run_plugin(std::string program_name,size_t expected_time_in_sec,std::vector<std::string> param,std::string working_dir,std::string exec)
 {
     exec = get_plugin_executive(program_name,exec);
     if(exec.empty())
@@ -1371,7 +1341,7 @@ bool ImageModel::run_plugin(std::string program_name,std::vector<std::string> pa
         return false;
     }
     unsigned int proc_time = 0;
-    while(!program.waitForFinished(1000) && check_prog((++proc_time)%360,360))
+    while(!program.waitForFinished(1000) && check_prog((++proc_time)*expected_time_in_sec/(expected_time_in_sec+proc_time),expected_time_in_sec))
     {
         QString output = QString::fromLocal8Bit(program.readAllStandardOutput());
         if(output.isEmpty())
@@ -1395,6 +1365,91 @@ bool ImageModel::run_plugin(std::string program_name,std::vector<std::string> pa
     return error_msg.empty();
 }
 
+
+
+bool ImageModel::generate_topup_b0_acq_files(std::string& b0_appa_file)
+{
+    // DSI Studio use LPS ecoding wjereas and FSL use LAS
+    // The y direction is flipped
+    auto c = phase_direction_at_AP_PA(b0[0],rev_b0[0]);
+    if(c[0] == c[1])
+    {
+        error_msg = "Invalid phase encoding. Please select correct reversed phase encoding b0 file";
+        return false;
+    }
+    bool is_appa = c[0] < c[1];
+    unsigned int phase_dim = (is_appa ? 1 : 0);
+    auto c1 = tipl::center_of_mass(b0[0]);
+    auto c2 = tipl::center_of_mass(rev_b0[0]);
+    bool phase_dir = c1[phase_dim] < c2[phase_dim];
+    enum phase_encdoing {   RL=0,       LR=1,       AP=2,       PA=3};
+    char pe_id[4][3] =  {   "RL",       "LR",       "AP",       "PA" };
+    char pe_dir[4][10]= {   "1 0 0",    "-1 0 0",   "0 -1 0",   "0 1 0" }; // This is in FSL's LAS space, thus RL and PA = 1
+
+    phase_encdoing b0_pe,rev_b0_pe;
+    if(is_appa)
+    {
+        b0_pe = phase_dir ?     AP:PA;
+        rev_b0_pe = phase_dir ? PA:AP;
+    }
+    else
+    {
+        b0_pe = phase_dir ?     LR:RL;
+        rev_b0_pe = phase_dir ? RL:LR;
+    }
+
+
+    std::cout << "source phase encoding: " << pe_id[b0_pe] << std::endl;
+    std::cout << "rev b0 phase encoding: " << pe_id[rev_b0_pe] << std::endl;
+
+    {
+        std::cout << "create acqparams.txt" << std::endl;
+        std::string acqparam_file = QFileInfo(file_name.c_str()).baseName().toStdString() + ".topup.acqparams.txt";
+        std::ofstream out(acqparam_file.c_str());
+        if(!out)
+        {
+            std::cout << "cannot write to acq param file " << acqparam_file << std::endl;
+            return false;
+        }
+
+        for(size_t i = 0;i < b0.size();++i)
+            out << pe_dir[b0_pe] << " 0.05" << std::endl;
+        for(size_t i = 0;i < rev_b0.size();++i)
+            out << pe_dir[rev_b0_pe] << " 0.05" << std::endl;
+    }
+
+    {
+        std::cout << "create topup needed b0 nii.gz file from "
+                  << b0.size() << " " << pe_id[b0_pe] << " b0 and "
+                  << rev_b0.size() << " " << pe_id[rev_b0_pe] << "  b0" << std::endl;
+        tipl::matrix<4,4> trans;
+        initial_LPS_nifti_srow(trans,b0[0].shape(),voxel.vs);
+
+        tipl::image<4,float> buffer(tipl::shape<4>(uint32_t(b0[0].width()),
+                                    uint32_t(b0[0].height()),
+                                    uint32_t(b0[0].depth()),
+                                    uint32_t(b0.size())+uint32_t(rev_b0.size())));
+
+        tipl::par_for(buffer.shape()[3],[&](unsigned int i)
+        {
+            const auto& I = (i < b0.size() ? b0[i]:rev_b0[i-b0.size()]);
+            std::copy(I.begin(),I.end(),buffer.slice_at(i).begin());
+        });
+
+        b0_appa_file = QFileInfo(file_name.c_str()).baseName().toStdString() + ".topup.b0_" +
+                std::to_string(b0.size()) + pe_id[b0_pe] + "_" +
+                std::to_string(rev_b0.size()) + pe_id[rev_b0_pe] + ".nii.gz";
+
+        if(!gz_nifti::save_to_file(b0_appa_file.c_str(),buffer,voxel.vs,trans))
+        {
+            std::cout << "Cannot wrtie a temporary b0_appa image volume to " << b0_appa_file << std::endl;
+            return false;
+        }
+    }
+    return true;
+}
+
+
 bool ImageModel::run_topup(std::string other_src,std::string exec)
 {
     if(voxel.report.find("rotated") != std::string::npos)
@@ -1403,45 +1458,37 @@ bool ImageModel::run_topup(std::string other_src,std::string exec)
         return false;
     }
     std::string topup_result = QFileInfo(file_name.c_str()).baseName().replace('.','_').toStdString();
+    std::string check_me_file = QFileInfo(file_name.c_str()).baseName().toStdString() + ".topup.check_result";
     std::string acqparam_file = QFileInfo(file_name.c_str()).baseName().toStdString() + ".topup.acqparams.txt";
-    std::string b0_appa_file = QFileInfo(file_name.c_str()).baseName().toStdString() + ".topup.b0_appa.nii.gz";
 
-    tipl::image<3> b0,rev_b0;
-    read_b0(b0);
-    if(!read_rev_b0(other_src.c_str(),rev_b0))
+    if(!read_b0(b0) || !read_rev_b0(other_src.c_str(),rev_b0))
         return false;
 
-    // trim background
     {
-        std::cout << "trimming background to speed up topup/eddy" << std::endl;
+        std::cout << "get the bounding box for speeding up topup/eddy" << std::endl;
         auto temp_mask = voxel.mask;
-        tipl::morphology::dilation(temp_mask);
-        tipl::shape<3> range_min,range_max;
-        tipl::bounding_box(temp_mask,range_min,range_max,0);
+        tipl::morphology::dilation2(temp_mask,3);
+        tipl::bounding_box(temp_mask,topup_from,topup_to,0);
         // ensure even number in the dimension for topup
         for(int d = 0;d < 3;++d)
-            if((range_max[d]-range_min[d]) % 2 != 0)
-                range_max[d]--;
-        crop(range_min,range_max);
-        tipl::crop(b0,range_min,range_max);
-        tipl::crop(rev_b0,range_min,range_max);
+            if((topup_to[d]-topup_from[d]) % 2 != 0)
+                topup_to[d]--;
+
+        if(rev_pe_src.get())
+        {
+            rev_pe_src->topup_from = topup_from;
+            rev_pe_src->topup_to = topup_to;
+        }
+
+        for(auto& I: b0)
+            tipl::crop(I,topup_from,topup_to);
+        for(auto& I: rev_b0)
+            tipl::crop(I,topup_from,topup_to);
     }
 
-    if(!create_acqparam_file(acqparam_file.c_str(),b0,rev_b0) ||
-       !create_b0_appa_file(b0_appa_file.c_str(),*this,b0,rev_b0))
-    {
-        error_msg = "Cannot create temporary processing files at ";
-        error_msg += QFileInfo(file_name.c_str()).absolutePath().toStdString();
-        error_msg += ". Please check write permission";
+    std::string b0_appa_file;
+    if(!generate_topup_b0_acq_files(b0_appa_file))
         return false;
-    }
-
-    if(QFileInfo(QFileInfo(file_name.c_str()).absolutePath()+"/" + topup_result.c_str() + "_fieldcoef.nii.gz").exists())
-    {
-        std::cout << "found topup result.skipping" << std::endl;
-        return true;
-    }
-
 
     std::vector<std::string> param = {
         "--warpres=20,16,14,12,10,6,4,4,4",
@@ -1455,9 +1502,10 @@ bool ImageModel::run_topup(std::string other_src,std::string exec)
         QString("--imain=%1").arg(b0_appa_file.c_str()).toStdString().c_str(),
         QString("--datain=%1").arg(acqparam_file.c_str()).toStdString().c_str(),
         QString("--out=%1").arg(topup_result.c_str()).toStdString().c_str(),
+        QString("--iout=%1").arg(check_me_file.c_str()).toStdString().c_str(),
         QString("--verbose=1").toStdString().c_str()};
 
-    return run_plugin("topup",param,QFileInfo(file_name.c_str()).absolutePath().toStdString(),exec);
+    return run_plugin("topup",200*(b0.size()+rev_b0.size()),param,QFileInfo(file_name.c_str()).absolutePath().toStdString(),exec);
 }
 
 bool load_bvec(const char* file_name,std::vector<double>& b_table,bool flip_by = true);
@@ -1512,19 +1560,42 @@ bool ImageModel::run_applytopup(std::string exec)
     std::string acqparam_file = QFileInfo(file_name.c_str()).baseName().toStdString() + ".topup.acqparams.txt";
     std::string temp_nifti = file_name+".nii.gz";
     std::string preproc_file = file_name+".preproc";
-    if(!save_to_nii_width_even_dimension(temp_nifti.c_str()))
+    if(!save_nii_for_applytopup_or_eddy(false))
         return false;
+    std::vector<std::string> param;
+    if(rev_pe_src.get())
+    {
+        if(!rev_pe_src->save_nii_for_applytopup_or_eddy(false))
+        {
+            error_msg = rev_pe_src->error_msg;
+            return false;
+        }
+        //two full acq of DWI
+        param = {
+                QString("--imain=%1,%2").arg(QFileInfo(temp_nifti.c_str()).fileName())
+                                        .arg(QFileInfo((rev_pe_src->file_name+".nii.gz").c_str()).fileName()).toStdString().c_str(),
+                QString("--datain=%1").arg(acqparam_file.c_str()).toStdString().c_str(),
+                QString("--topup=%1").arg(topup_result.c_str()).toStdString().c_str(),
+                QString("--out=%1").arg(QFileInfo(preproc_file.c_str()).fileName()).toStdString().c_str(),
+                "--inindex=1,2",
+                "--method=jac",
+                "--verbose=1"};
+    }
+    else
+    {
+        // one full acq of DWI
+        param = {
+                QString("--imain=%1").arg(QFileInfo(temp_nifti.c_str()).fileName()).toStdString().c_str(),
+                QString("--datain=%1").arg(acqparam_file.c_str()).toStdString().c_str(),
+                QString("--topup=%1").arg(topup_result.c_str()).toStdString().c_str(),
+                QString("--out=%1").arg(QFileInfo(preproc_file.c_str()).fileName()).toStdString().c_str(),
+                "--inindex=1",
+                "--method=jac",
+                "--verbose=1"};
 
-    std::vector<std::string> param = {
-            QString("--imain=%1").arg(QFileInfo(temp_nifti.c_str()).fileName()).toStdString().c_str(),
-            QString("--datain=%1").arg(acqparam_file.c_str()).toStdString().c_str(),
-            QString("--topup=%1").arg(topup_result.c_str()).toStdString().c_str(),
-            QString("--out=%1").arg(QFileInfo(preproc_file.c_str()).fileName()).toStdString().c_str(),
-            "--inindex=1",
-            "--method=jac",
-            "--verbose=1"};
-
-    if(!run_plugin("applytopup",param,QFileInfo(file_name.c_str()).absolutePath().toStdString(),exec) ||
+    }
+    if(!run_plugin("applytopup",5*(src_bvalues.size()+(rev_pe_src.get() ? rev_pe_src->src_bvalues.size():0)),param,
+                   QFileInfo(file_name.c_str()).absolutePath().toStdString(),exec) ||
        !load_topup_eddy_result())
         return false;
 
@@ -1544,8 +1615,9 @@ bool ImageModel::run_eddy(std::string exec)
     std::string bval_file = file_name+".bval";
     std::string bvec_file = file_name+".bvec";
 
-    if(!save_to_nii_width_even_dimension(temp_nifti.c_str()))
+    if(!save_nii_for_applytopup_or_eddy(true))
         return false;
+
     if(!save_mask_nii(mask_nifti.c_str()))
     {
         error_msg = "cannot save mask file to ";
@@ -1568,6 +1640,9 @@ bool ImageModel::run_eddy(std::string exec)
         std::ofstream out(index_file);
         for(size_t i = 0;i < src_bvalues.size();++i)
             out << " 1";
+        if(rev_pe_src.get())
+            for(size_t i = 0;i < rev_pe_src->src_bvalues.size();++i)
+                out << " " << (1+b0.size());
     }
 
 
@@ -1583,7 +1658,7 @@ bool ImageModel::run_eddy(std::string exec)
             "--verbose=1"
             };
 
-    if(!run_plugin("eddy",param,QFileInfo(file_name.c_str()).absolutePath().toStdString(),exec))
+    if(!run_plugin("eddy",50*src_bvalues.size(),param,QFileInfo(file_name.c_str()).absolutePath().toStdString(),exec))
     {
         std::cout << "eddy cannot process this data:" << std::endl;
         std::cout << error_msg << std::endl;
@@ -2080,41 +2155,33 @@ bool ImageModel::save_to_nii(const char* nifti_file_name) const
     });
     return gz_nifti::save_to_file(nifti_file_name,buffer,voxel.vs,trans);
 }
-bool ImageModel::save_to_nii_width_even_dimension(const char* nifti_file_name) const
+bool ImageModel::save_nii_for_applytopup_or_eddy(bool include_rev) const
 {
-    if(voxel.dim[0]%2 == 0 && voxel.dim[1]%2 == 0 && voxel.dim[2]%2 == 0)
+    std::cout << "create trimmed volume for eddy or apply topup" << std::endl;
+    tipl::image<4,unsigned short> buffer(tipl::shape<4>(topup_to[0]-topup_from[0],topup_to[1]-topup_from[1],topup_to[2]-topup_from[2],
+                                         uint32_t(src_bvalues.size()) + uint32_t(rev_pe_src.get() && include_rev ? rev_pe_src->src_bvalues.size():0)));
+    tipl::par_for(src_bvalues.size(),[&](unsigned int index)
     {
-        if(!save_to_nii(nifti_file_name))
-        {
-            error_msg = "cannot save temporary nifti file";
-            return false;
-        }
-    }
-    else
-    // padding
-    {
-        std::cout << "saving padded nifti file to " << nifti_file_name << std::endl;
-        tipl::shape<3> new_dim(tipl::shape<3>(uint32_t(voxel.dim.width()+1)/2*2,uint32_t(voxel.dim.height()+1)/2*2,uint32_t(voxel.dim.depth()+1)/2*2));
-        tipl::matrix<4,4> trans;
-        initial_LPS_nifti_srow(trans,new_dim,voxel.vs);
+        auto I = buffer.slice_at(index);
+        tipl::crop(dwi_at(index),I,topup_from,topup_to);
+    });
 
-        tipl::shape<4> nifti_dim;
-        std::copy(new_dim.begin(),new_dim.end(),nifti_dim.begin());
-        nifti_dim[3] = uint32_t(src_bvalues.size());
-
-        // apply topup may output negative values
-        tipl::image<4> buffer(nifti_dim);
-        tipl::par_for(src_bvalues.size(),[&](size_t index)
+    if(rev_pe_src.get() && include_rev)
+        tipl::par_for(rev_pe_src->src_bvalues.size(),[&](unsigned int index)
         {
-            auto I = buffer.slice_at(uint32_t(index));
-            tipl::draw(tipl::make_image(src_dwi_data[index],voxel.dim),I,
-                       tipl::vector<3>(0,0,0));
+            auto I = buffer.slice_at(index+uint32_t(src_bvalues.size()));
+            tipl::crop(rev_pe_src->dwi_at(index),I,topup_from,topup_to);
         });
-        if(!gz_nifti::save_to_file(nifti_file_name,buffer,voxel.vs,trans))
-        {
-            error_msg = "cannot save temporary nifti file";
-            return false;
-        }
+
+    std::string temp_nifti = file_name+".nii.gz";
+    tipl::matrix<4,4> trans;
+    initial_LPS_nifti_srow(trans,tipl::shape<3>(buffer.shape().begin()),voxel.vs);
+    if(!gz_nifti::save_to_file(temp_nifti.c_str(),buffer,voxel.vs,trans))
+    {
+        error_msg = "failed to write a temporary nifti file: ";
+        error_msg += temp_nifti;
+        error_msg += ". Please check write permission.";
+        return false;
     }
     return true;
 }

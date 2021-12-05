@@ -228,6 +228,9 @@ void distortion_estimate(const image_type& v1,const image_type& v2,
 
 struct ImageModel
 {
+    ImageModel(void){}
+    ImageModel(const ImageModel&) = delete;
+    ImageModel operator=(const ImageModel&) = delete;
 public:
     std::vector<tipl::image<3,unsigned short> > new_dwi; //used in rotated volume
     std::vector<tipl::image<3,unsigned short> > nifti_dwi; // if load directly from nifti
@@ -244,6 +247,8 @@ public:
     tipl::image<3,unsigned char>dwi;
     std::shared_ptr<ImageModel> study_src;
     bool rotated_to_mni = false;
+    tipl::pointer_image<3,unsigned short> dwi_at(size_t index) {return tipl::make_image(const_cast<unsigned short*>(src_dwi_data[index]),voxel.dim);}
+    tipl::const_pointer_image<3,unsigned short> dwi_at(size_t index) const {return tipl::make_image(src_dwi_data[index],voxel.dim);}
 public:
     void draw_mask(tipl::color_image& buffer,int position);
     void calculate_dwi_sum(bool update_mask);
@@ -278,10 +283,16 @@ public:
     void crop(tipl::shape<3> range_min,tipl::shape<3> range_max);
     void trim(void);
     void correct_motion(bool eddy);
-    void read_b0(tipl::image<3>& rev_b0) const;
-    bool read_rev_b0(const char* file_name,tipl::image<3>& rev_b0) const;
+public:
+    std::vector<tipl::image<3> > b0,rev_b0;
+    std::shared_ptr<ImageModel> rev_pe_src;
+    tipl::shape<3> topup_from,topup_to;
+
+    bool read_b0(std::vector<tipl::image<3> >& rev_b0) const;
+    bool read_rev_b0(const char* file_name,std::vector<tipl::image<3> >& rev_b0);
     bool distortion_correction(const char* file_name);
-    bool run_plugin(std::string program_name,std::vector<std::string> param,std::string working_dir,std::string exec = std::string());
+    bool run_plugin(std::string program_name,size_t expected_time_in_sec,std::vector<std::string> param,std::string working_dir,std::string exec = std::string());
+    bool generate_topup_b0_acq_files(std::string& b0_appa_file);
     bool run_topup(std::string other_src,std::string exec = std::string());
     bool run_applytopup(std::string exec = std::string());
     bool run_eddy(std::string exec = std::string());
@@ -295,7 +306,7 @@ public:
     bool load_from_file(const char* dwi_file_name);
     bool save_to_file(const char* dwi_file_name);
     bool save_to_nii(const char* nifti_file_name) const;
-    bool save_to_nii_width_even_dimension(const char* nifti_file_name) const;
+    bool save_nii_for_applytopup_or_eddy(bool include_rev) const;
     bool save_mask_nii(const char* nifti_file_name) const;
     bool save_b0_to_nii(const char* nifti_file_name) const;
     bool save_dwi_sum_to_nii(const char* nifti_file_name) const;
