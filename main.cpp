@@ -313,7 +313,7 @@ int main(int ac, char *av[])
     else
     {
         w.show();
-        w.setWindowTitle(QString("DSI Studio \"") + DSISTUDIO_RELEASE_NAME + "\" " + __DATE__ );
+        w.setWindowTitle(QString("DSI Studio ") + DSISTUDIO_RELEASE_NAME + " \""+ QTextCodec::codecForName("UTF-8")->toUnicode(DSISTUDIO_RELEASE_CODE) +"\" " + __DATE__ );
     }
     return a.exec();
 }
