@@ -269,7 +269,7 @@ void CreateDBDialog::on_create_data_base_clicked()
             return;
         }
 
-        begin_prog("loading skeleton");
+        prog_init prog_("loading skeleton");
         std::shared_ptr<group_connectometry_analysis> data(new group_connectometry_analysis);
 
         if(!data->create_database(ui->skeleton->text().toLocal8Bit().begin()))
@@ -282,7 +282,7 @@ void CreateDBDialog::on_create_data_base_clicked()
 
         for (unsigned int index = 0;index < group.count();++index)
         {
-            prog_init prog(QFileInfo(group[index]).baseName().toStdString().c_str());
+            prog_init prog_(QFileInfo(group[index]).baseName().toStdString().c_str());
             if(!data->handle->db.add_subject_file(group[index].toStdString(),get_file_name(group[index]).toStdString()))
             {
                 QMessageBox::information(this,"error in loading subject fib files",data->handle->error_msg.c_str(),0);

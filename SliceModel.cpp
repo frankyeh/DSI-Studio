@@ -248,7 +248,7 @@ bool CustomSliceModel::initialize(const std::vector<std::string>& files,bool is_
                 return false;
             }
 
-            begin_prog("loading images");
+            prog_init prog_("loading images");
             for(unsigned int i = 0;check_prog(i,geo[2]);++i)
             {
                 tipl::image<2,short> I;

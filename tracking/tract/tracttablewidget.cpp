@@ -492,7 +492,7 @@ void TractTableWidget::recognize_rename(void)
         QMessageBox::information(this,"Error",cur_tracking_window.handle->error_msg.c_str());
         return;
     }
-    begin_prog("Recognize and rename");
+    prog_init prog_("Recognize and rename");
     for(unsigned int index = 0;check_prog(index,tract_models.size());++index)
         if(item(int(index),0)->checkState() == Qt::Checked)
         {
@@ -1005,7 +1005,7 @@ bool TractTableWidget::command(QString cmd,QString param,QString param2)
 {
     if(cmd == "save_all_tracts_to_dir")
     {
-        begin_prog("save files");
+        prog_init prog_("save files");
         auto selected_tracts = get_checked_tracks();
         for(size_t index = 0;index < selected_tracts.size();++index)
         {
@@ -1269,7 +1269,7 @@ void TractTableWidget::delete_repeated(void)
         "DSI Studio","Distance threshold (voxels)", distance,0,500,1,&ok);
     if (!ok)
         return;
-    begin_prog("deleting tracks");
+    prog_init prog_("deleting tracks");
     for(int i = 0;check_prog(i,tract_models.size());++i)
     {
         if(item(i,0)->checkState() == Qt::Checked)
@@ -1283,7 +1283,7 @@ void TractTableWidget::delete_repeated(void)
 
 void TractTableWidget::delete_branches(void)
 {
-    begin_prog("deleting branches");
+    prog_init prog_("deleting branches");
     for(int i = 0;check_prog(i,tract_models.size());++i)
     {
         if(item(i,0)->checkState() == Qt::Checked)
@@ -1305,7 +1305,7 @@ void TractTableWidget::resample_step_size(void)
     if (!ok)
         return;
 
-    begin_prog("resample tracks");
+    prog_init prog_("resample tracks");
     auto selected_tracts = get_checked_tracks();
     for(size_t i = 0;check_prog(i,selected_tracts.size());++i)
         selected_tracts[i]->resample(new_step);
@@ -1314,7 +1314,7 @@ void TractTableWidget::resample_step_size(void)
 
 void TractTableWidget::delete_by_length(void)
 {
-    begin_prog("filtering tracks");
+    prog_init prog_("filtering tracks");
 
     float threshold = 60;
     bool ok;

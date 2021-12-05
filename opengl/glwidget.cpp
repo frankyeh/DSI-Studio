@@ -2866,7 +2866,7 @@ bool GLWidget::command(QString cmd,QString param,QString param2)
             param = QFileInfo(cur_tracking_window.windowTitle()).completeBaseName()+".rotation_movie.avi";
         if(QFileInfo(param).suffix() == "avi")
         {
-            begin_prog("save video");
+            prog_init prog_("save video");
             int ow = width(),oh = height();
             tipl::io::avi avi;
             #ifndef __APPLE__
@@ -2890,7 +2890,7 @@ bool GLWidget::command(QString cmd,QString param,QString param2)
         }
         else
         {
-            begin_prog("save image");
+            prog_init prog_("save image");
             float angle = (param2.isEmpty()) ? 1 : param2.toFloat();
             for(float index = 0;check_prog(index,360);index += angle)
             {

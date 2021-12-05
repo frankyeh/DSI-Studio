@@ -542,7 +542,7 @@ void connectometry_db::get_dif_matrix(std::vector<float>& matrix,const tipl::ima
     matrix.resize(size_t(num_subjects)*size_t(num_subjects));
     std::vector<std::vector<float> > subject_vector;
     get_subject_vector(0,num_subjects,subject_vector,fp_mask,fiber_threshold,normalize_fp);
-    prog_init prog("calculating");
+    prog_init prog_("calculating");
     tipl::par_for2(num_subjects,[&](unsigned int i,int id){
         if(id == 0)
             check_prog(i,num_subjects);
@@ -565,7 +565,7 @@ void connectometry_db::save_subject_vector(const char* output_name,
     const unsigned int block_size = 400;
     std::string file_name = output_name;
     file_name = file_name.substr(0,file_name.length()-4); // remove .mat
-    prog_init prog("saving ","output_name");
+    prog_init prog_("saving ","output_name");
     for(unsigned int from = 0,iter = 0;from < num_subjects;from += block_size,++iter)
     {
         unsigned int to = std::min<unsigned int>(from+block_size,num_subjects);
@@ -876,7 +876,7 @@ void connectometry_db::calculate_change(unsigned char dif_type,bool norm)
 
     std::list<std::vector<float> > new_subject_qa_buf;
     std::vector<const float*> new_subject_qa;
-    begin_prog("calculating");
+    prog_init prog_("calculating");
     for(unsigned int index = 0;check_prog(index,match.size());++index)
     {
         auto first = uint32_t(match[index].first);

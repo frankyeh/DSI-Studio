@@ -164,7 +164,7 @@ bool load_dicom_multi_frame(const char* file_name,std::vector<std::shared_ptr<Dw
 
     size_t plane_size = size_t(buf_image.width()*buf_image.height());
     b_table.resize(num_gradient*4);
-    begin_prog("loading multi frame DICOM");
+    prog_init prog_("loading multi frame DICOM");
     for(size_t index = 0;check_prog(index,num_gradient);++index)
     {
         std::shared_ptr<DwiHeader> new_file(new DwiHeader);
@@ -636,7 +636,7 @@ bool load_multiple_slice_dicom(QStringList file_list,std::vector<std::shared_ptr
     }
 
 
-    begin_prog("loading images");
+    prog_init prog_("loading images");
     for (unsigned int index = 0,b_index = 0,slice_index = 0;check_prog(index,file_list.size());++index)
     {
         std::shared_ptr<DwiHeader> dwi(new DwiHeader);
@@ -694,7 +694,7 @@ bool load_nhdr(QStringList file_list,std::vector<std::shared_ptr<DwiHeader> >& d
     tipl::shape<3> dim;
     tipl::vector<3> vs;
     image_buf.resize(file_list.size());
-    begin_prog("Reading raw data");
+    prog_init prog_("Reading raw data");
     for (size_t i = 0;check_prog(i,file_list.size());++i)
     {
         std::map<std::string,std::string> value_list;
@@ -755,15 +755,17 @@ bool load_nhdr(QStringList file_list,std::vector<std::shared_ptr<DwiHeader> >& d
 
     scale_image_buf_to_uint16(image_buf);
 
-    begin_prog("Converting data");
-    for(size_t i = 0;check_prog(i,image_buf.size());++i)
     {
-        dwi_files.push_back(std::make_shared<DwiHeader>());
-        dwi_files.back()->voxel_size = vs;
-        dwi_files.back()->file_name = file_list[i].toStdString();
-        dwi_files.back()->report = " The diffusion images were acquired on an Agilent scanner.";
-        dwi_files.back()->image = image_buf[i];
-        image_buf[i] = tipl::image<3>();
+        prog_init prog_("Converting data");
+        for(size_t i = 0;check_prog(i,image_buf.size());++i)
+        {
+            dwi_files.push_back(std::make_shared<DwiHeader>());
+            dwi_files.back()->voxel_size = vs;
+            dwi_files.back()->file_name = file_list[i].toStdString();
+            dwi_files.back()->report = " The diffusion images were acquired on an Agilent scanner.";
+            dwi_files.back()->image = image_buf[i];
+            image_buf[i] = tipl::image<3>();
+        }
     }
     return true;
 }
@@ -872,7 +874,7 @@ bool load_4d_fdf(QStringList file_list,std::vector<std::shared_ptr<DwiHeader> >&
 
 bool load_3d_series(QStringList file_list,std::vector<std::shared_ptr<DwiHeader> >& dwi_files)
 {
-    begin_prog("loading images");
+    prog_init prog_("loading images");
     for (unsigned int index = 0;check_prog(index,file_list.size());++index)
     {
         std::shared_ptr<DwiHeader> new_file(new DwiHeader);
@@ -905,7 +907,7 @@ bool parse_dwi(QStringList file_list,
     if(QFileInfo(file_list[0]).fileName().endsWith(".nii") ||
             QFileInfo(file_list[0]).fileName().endsWith(".nii.gz"))
     {
-        prog_init prog("loading nifti");
+        prog_init prog_("loading nifti");
         for(int i = 0;i < file_list.size();++i)
             if(!load_4d_nii(file_list[i].toLocal8Bit().begin(),dwi_files,false))
                 return false;
@@ -931,7 +933,7 @@ bool parse_dwi(QStringList file_list,
         return !dwi_files.empty();
     }
 
-    prog_init prog("loading dicoms");
+    prog_init prog_("loading dicoms");
     std::sort(file_list.begin(),file_list.end(),compare_qstring());
     tipl::io::dicom dicom_header;// multiple frame image
     tipl::shape<3> geo;

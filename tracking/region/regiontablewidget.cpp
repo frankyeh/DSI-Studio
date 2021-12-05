@@ -242,7 +242,7 @@ bool RegionTableWidget::command(QString cmd,QString param,QString)
 {
     if(cmd == "save_all_regions_to_dir")
     {
-        begin_prog("save files...");
+        prog_init prog_("save files...");
         for(int index = 0;check_prog(index,rowCount());++index)
             if (item(index,0)->checkState() == Qt::Checked) // either roi roa end or seed
             {
@@ -859,7 +859,7 @@ bool RegionTableWidget::load_multiple_roi_nii(QString file_name,bool is_mni_imag
                  names,
                  error_msg,is_mni_image))
         return false;
-    begin_prog("loading ROIs");
+    prog_init prog_("loading ROIs");
     begin_update();
     for(uint32_t i = 0;check_prog(i,loaded_regions.size());++i)
         {

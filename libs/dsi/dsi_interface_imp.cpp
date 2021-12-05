@@ -341,7 +341,7 @@ bool output_odfs(const tipl::image<3,unsigned char>& mni_mask,
                  std::string& error_msg,
                  bool record_odf = true)
 {
-    begin_prog("generating template");
+    prog_init prog_("generating template");
     ImageModel image_model;
     auto swap_data = [&](void)
     {
@@ -391,7 +391,7 @@ const char* odf_average(const char* out_name,std::vector<std::string>& file_name
     std::vector<size_t> other_metrics_count;
 
     try {
-        begin_prog("loading data");
+        prog_init prog_("loading data");
         for (unsigned int index = 0;check_prog(index,file_names.size());++index)
         {
             file_name = file_names[index];
@@ -497,7 +497,7 @@ const char* odf_average(const char* out_name,std::vector<std::string>& file_name
             tipl::multiply_constant(other_metrics_images[i],1.0f/other_metrics_count[i]);
     });
 
-    begin_prog("averaging ODFs");
+    prog_init prog_("averaging ODFs");
     check_prog(0,3);
     tipl::par_for(dim.size(),[&](unsigned int i){
         if(odf_count[i] > 1)

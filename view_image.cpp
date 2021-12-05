@@ -129,7 +129,7 @@ bool view_image::command(std::string cmd,std::string param1,std::string param2)
             }
         }
 
-        begin_prog("applying to others");
+        prog_init prog_("applying to others");
         for(size_t i = 0;check_prog(i,other_data.size());++i)
         {
             if(!img_command(other_data[i],other_vs[i],other_T[i],cmd,other_params[i],param2,error_msg))
@@ -287,7 +287,7 @@ bool view_image::open(QStringList file_names)
     QString info;
     file_name = file_names[0];
     setWindowTitle(QFileInfo(file_name).fileName());
-    prog_init prog("loading ",std::filesystem::path(file_name.toStdString()).filename().string().c_str());
+    prog_init prog_("loading ",std::filesystem::path(file_name.toStdString()).filename().string().c_str());
     check_prog(0,1);
 
     if(file_names.size() > 1 && QString(file_name).endsWith(".bmp"))
@@ -332,7 +332,7 @@ bool view_image::open(QStringList file_names)
 
         if(file_names.size() > 1)
         {
-            begin_prog("reading");
+            prog_init prog_("reading");
             QString failed_list;
             for(int i = 1;check_prog(i,file_names.size());++i)
             {

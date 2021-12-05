@@ -2558,7 +2558,7 @@ void tracking_window::on_actionSave_Slices_to_DICOM_triggered()
     bool is_axial = row_orientation[0] > row_orientation[1];
     size_t read_size = is_axial ? I.plane_size():size_t(I.height()*I.depth());
 
-    begin_prog("Writing data");
+    prog_init prog_("Writing data");
     for(int i = 0,pos = 0;check_prog(i,files.size());++i,pos += read_size)
     {
         std::vector<char> buf;

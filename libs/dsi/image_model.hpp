@@ -334,7 +334,7 @@ public:
         }
 
         // reconstruction
-        prog_init prog(prog_title);
+        prog_init prog_(prog_title);
         try
         {
             if(voxel.run())

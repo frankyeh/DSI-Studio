@@ -1468,7 +1468,7 @@ bool fib_data::load_track_atlas()
             return false;
 
         {
-            prog_init prog("warping atlas tracks to subject space");
+            prog_init prog_("warping atlas tracks to subject space");
             run_normalization(true,true);
             if(prog_aborted())
                 return false;
@@ -1734,8 +1734,7 @@ void fib_data::run_normalization(bool background,bool inv)
             }
         }
     }
-    if(background)
-        begin_prog("running normalization");
+    prog_init _prog("running normalization");
     prog = 0;
     bool terminated = false;
     auto lambda = [this,output_file_name,&terminated]()
