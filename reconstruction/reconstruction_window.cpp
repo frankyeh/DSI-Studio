@@ -1113,7 +1113,7 @@ void reconstruction_window::on_qsdr_manual_clicked()
 
 void reconstruction_window::on_actionRun_FSL_Topup_triggered()
 {
-    if(QFileInfo((handle->file_name+".preproc.nii.gz").c_str()).exists())
+    if(QFileInfo((handle->file_name+".corrected.nii.gz").c_str()).exists())
     {
         int result = QMessageBox::information(this,"DSI Studio","Load previous results?",QMessageBox::Yes|QMessageBox::No|QMessageBox::Cancel);
         if(result == QMessageBox::Cancel)

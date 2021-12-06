@@ -1520,9 +1520,9 @@ bool load_bval(const char* file_name,std::vector<double>& bval);
 bool load_bvec(const char* file_name,std::vector<double>& b_table,bool flip_by = true);
 bool ImageModel::load_topup_eddy_result(void)
 {
-    std::string preproc_file = file_name+".preproc.nii.gz";
+    std::string corrected_file = file_name+".corrected.nii.gz";
     std::string bval_file = file_name+".bval";
-    std::string bvec_file = file_name+".preproc.eddy_rotated_bvecs";
+    std::string bvec_file = file_name+".corrected.eddy_rotated_bvecs";
     bool is_eddy = QFileInfo(bvec_file.c_str()).exists();
 
     if(is_eddy)
@@ -1534,6 +1534,8 @@ bool ImageModel::load_topup_eddy_result(void)
             error_msg = "cannot find bval and bvec. please run topup/eddy again";
             return false;
         }
+        src_bvalues.resize(bval.size());
+        src_bvectors.resize(bval.size());
         std::copy(bval.begin(),bval.end(),src_bvalues.begin());
         for(size_t index = 0,i = 0;i < src_bvalues.size() && index+2 < bvec.size();++i,index += 3)
         {
@@ -1544,7 +1546,7 @@ bool ImageModel::load_topup_eddy_result(void)
     }
     std::cout << "load topup/eddy results" << std::endl;
     std::vector<std::shared_ptr<DwiHeader> > dwi_files;
-    if(!load_4d_nii(preproc_file.c_str(),dwi_files,false))
+    if(!load_4d_nii(corrected_file.c_str(),dwi_files,false))
     {
         error_msg = src_error_msg;
         return false;
@@ -1571,7 +1573,7 @@ bool ImageModel::run_applytopup(std::string exec)
     std::string topup_result = QFileInfo(file_name.c_str()).baseName().replace('.','_').toStdString();
     std::string acqparam_file = QFileInfo(file_name.c_str()).baseName().toStdString() + ".topup.acqparams.txt";
     std::string temp_nifti = file_name+".nii.gz";
-    std::string preproc_file = file_name+".preproc";
+    std::string corrected_file = file_name+".corrected";
     if(!save_nii_for_applytopup_or_eddy(false))
         return false;
     std::vector<std::string> param;
@@ -1588,7 +1590,7 @@ bool ImageModel::run_applytopup(std::string exec)
                                         .arg(QFileInfo((rev_pe_src->file_name+".nii.gz").c_str()).fileName()).toStdString().c_str(),
                 QString("--datain=%1").arg(acqparam_file.c_str()).toStdString().c_str(),
                 QString("--topup=%1").arg(topup_result.c_str()).toStdString().c_str(),
-                QString("--out=%1").arg(QFileInfo(preproc_file.c_str()).fileName()).toStdString().c_str(),
+                QString("--out=%1").arg(QFileInfo(corrected_file.c_str()).fileName()).toStdString().c_str(),
                 "--inindex=1,2",
                 "--method=jac",
                 "--verbose=1"};
@@ -1600,7 +1602,7 @@ bool ImageModel::run_applytopup(std::string exec)
                 QString("--imain=%1").arg(QFileInfo(temp_nifti.c_str()).fileName()).toStdString().c_str(),
                 QString("--datain=%1").arg(acqparam_file.c_str()).toStdString().c_str(),
                 QString("--topup=%1").arg(topup_result.c_str()).toStdString().c_str(),
-                QString("--out=%1").arg(QFileInfo(preproc_file.c_str()).fileName()).toStdString().c_str(),
+                QString("--out=%1").arg(QFileInfo(corrected_file.c_str()).fileName()).toStdString().c_str(),
                 "--inindex=1",
                 "--method=jac",
                 "--verbose=1"};
@@ -1621,7 +1623,7 @@ bool ImageModel::run_eddy(std::string exec)
     std::string acqparam_file = QFileInfo(file_name.c_str()).baseName().toStdString() + ".topup.acqparams.txt";
     std::string temp_nifti = file_name+".nii.gz";
     std::string mask_nifti = file_name+".mask.nii.gz";
-    std::string preproc_file = file_name+".preproc";
+    std::string corrected_file = file_name+".corrected";
     std::string index_file = file_name+".index.txt";
     std::string bval_file = file_name+".bval";
     std::string bvec_file = file_name+".bvec";
@@ -1680,7 +1682,7 @@ bool ImageModel::run_eddy(std::string exec)
             QString("--bvecs=%1").arg(QFileInfo(bvec_file.c_str()).fileName()).toStdString().c_str(),
             QString("--bvals=%1").arg(QFileInfo(bval_file.c_str()).fileName()).toStdString().c_str(),
             QString("--topup=%1").arg(topup_result.c_str()).toStdString().c_str(),
-            QString("--out=%1").arg(QFileInfo(preproc_file.c_str()).fileName()).toStdString().c_str(),
+            QString("--out=%1").arg(QFileInfo(corrected_file.c_str()).fileName()).toStdString().c_str(),
             "--verbose=1"
             };
 
