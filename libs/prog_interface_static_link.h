@@ -8,7 +8,7 @@ bool is_main_thread(void);
 
 class progress{
 private:
-    static void update_prog(void);
+    static void update_prog(bool show_now = false);
     static void begin_prog(bool show_now = false);
     static std::string get_status(void);
     static bool check_prog(unsigned int now,unsigned int total);
@@ -28,8 +28,8 @@ public:
         status_list.push_back(s);
         begin_prog();
     }
-    static void show(const char* status);
-    static void show(const std::string& str){return show(str.c_str());}
+    static void show(const char* status,bool show_now = false);
+    static void show(const std::string& str,bool show_now = false){return show(str.c_str(),show_now);}
     static bool running(void) {return !status_list.empty();}
     static bool aborted(void);
     template<typename value_type1,typename value_type2>

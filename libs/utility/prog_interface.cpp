@@ -19,10 +19,10 @@ bool is_main_thread(void)
 {
     return main_thread_id == std::this_thread::get_id();
 }
-void progress::update_prog(void)
+void progress::update_prog(bool show_now)
 {
-    if(std::chrono::duration_cast<std::chrono::milliseconds>(
-       std::chrono::high_resolution_clock::now() - start_time).count() < 500)
+    if(!show_now && std::chrono::duration_cast<std::chrono::milliseconds>(
+       std::chrono::high_resolution_clock::now() - start_time).count() < 250)
         return;
     if(!progressDialog.get())
         progressDialog.reset(new QProgressDialog(get_status().c_str(),"Cancel",0,100));
@@ -47,20 +47,14 @@ void progress::begin_prog(bool show_now)
 {
     if(!has_gui || !is_main_thread())
         return;
-    if(show_now && !progressDialog.get())
-    {
-        progressDialog.reset(new QProgressDialog(get_status().c_str(),"Cancel",0,100));
-        progressDialog->show();
-        QApplication::processEvents();
-    }
     start_time = std::chrono::high_resolution_clock::now();
     t_total.start();
     t_last.start();
     prog_aborted_ = false;
-    update_prog();
+    update_prog(show_now);
 }
 
-void progress::show(const char* status)
+void progress::show(const char* status,bool show_now)
 {
     std::cout << status << std::endl;
     if(status_list.empty())
@@ -68,7 +62,7 @@ void progress::show(const char* status)
     status_list.back() = status;
     if(!has_gui || !is_main_thread())
         return;
-    update_prog();
+    update_prog(show_now);
 }
 progress::~progress(void)
 {
@@ -96,12 +90,8 @@ bool progress::check_prog(unsigned int now,unsigned int total)
         update_prog();
     if(!progressDialog.get())
         return now < total;
-
     if(now >= total || progressDialog->wasCanceled())
-    {
-        progressDialog->hide();
         return false;
-    }
     if(now == 0 || now == total)
         t_total.start();
     if(t_last.elapsed() > 500)
