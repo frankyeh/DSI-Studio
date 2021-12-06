@@ -709,7 +709,7 @@ bool fib_data::load_from_file(const char* file_name)
         // if no surrogate FIB or surrogate FIB is older, then generate one
         if(!std::filesystem::exists(surrogate_file_name) || QFileInfo(surrogate_file_name.c_str()).lastModified() < QFileInfo(file_name).lastModified())
         {
-            std::cout << "create surrogate FIB file" << std::endl;
+            progress prog_("create surrogate FIB file");
             size_t largest_dim = *std::max_element(dim.begin(),dim.end());
             size_t downsampling = 0;
             tipl::vector<3> low_reso_vs(vs);
@@ -769,7 +769,8 @@ bool fib_data::load_from_file(const char* file_name)
                     out.write("native_voxel_size",native_vs);
                 }
             }
-            for(size_t index = 0;index < mat_reader.size();++index)
+
+            for(size_t index = 0;progress::at(index,mat_reader.size());++index)
             {
                 tipl::io::mat_matrix& matrix = mat_reader[index];
                 std::cout << "loading " << matrix.get_name() << std::endl;
@@ -835,6 +836,12 @@ bool fib_data::load_from_file(const char* file_name)
                         out.write(matrix.get_name().c_str(),new_index);
                     }
                 }
+            }
+
+            if(progress::aborted())
+            {
+                error_msg = "failed to load surrogate FIB file";
+                return false;
             }
         }
         std::cout << "reading surrogate FIB file" << std::endl;
