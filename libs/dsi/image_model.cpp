@@ -692,6 +692,7 @@ bool ImageModel::command(std::string cmd,std::string param)
     }
     if(cmd == "[Step T2][Corrections][TOPUP EDDY]")
     {
+        progress::show(cmd,true);
         if(is_dsi())
         {
             std::cout << "run topup/applytopup for non-shell data" << std::endl;
