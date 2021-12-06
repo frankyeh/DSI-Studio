@@ -461,7 +461,7 @@ bool ImageModel::command(std::string cmd,std::string param)
 {
     progress prog_(cmd.c_str());
     if(!param.empty())
-        std::cout << " param:" << param << std::endl;
+        std::cout << "param:" << param << std::endl;
     if(cmd == "[Step T2a][Open]")
     {
         if(!std::filesystem::exists(param))
