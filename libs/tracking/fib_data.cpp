@@ -773,7 +773,7 @@ bool fib_data::load_from_file(const char* file_name)
             for(size_t index = 0;progress::at(index,mat_reader.size());++index)
             {
                 tipl::io::mat_matrix& matrix = mat_reader[index];
-                std::cout << "loading " << matrix.get_name() << std::endl;
+                progress::show(std::string("loading ") + matrix.get_name());
                 if(matrix.is_type<char>()) // report, steps, ...etc
                 {
                     std::string content;
@@ -789,7 +789,7 @@ bool fib_data::load_from_file(const char* file_name)
                         error_msg = "failed to create surrogate FIB file";
                         return false;
                     }
-                    std::cout << "write dir0 in downsampled volume" << std::endl;
+                    progress::show("write dir0 in downsampled volume");
                     auto ptr = reinterpret_cast<const float*>(matrix.get_data(tipl::io::mat_type_info<float>::type));
                     tipl::image<3,tipl::vector<3> > new_image,J(dim);
                     for(size_t j = 0;j < J.size();++j)
@@ -807,7 +807,7 @@ bool fib_data::load_from_file(const char* file_name)
 
                 if(size_t(matrix.get_cols())*size_t(matrix.get_rows()) == dim.size()) // image volumes, including fa, and fiber index
                 {
-                    std::cout << "write " << matrix.get_name() << " in downsampled volume" << std::endl;
+                    progress::show(std::string("write ") + matrix.get_name() + " in downsampled volume");
                     if(matrix.has_delay_read() && !matrix.read(*(mat_reader.in.get())))
                     {
                         error_msg = "failed to create surrogate FIB file";
@@ -844,7 +844,7 @@ bool fib_data::load_from_file(const char* file_name)
                 return false;
             }
         }
-        std::cout << "reading surrogate FIB file" << std::endl;
+        progress::show("reading surrogate FIB file");
         high_reso->mat_reader.swap(mat_reader);
         high_reso->fib_file_name = fib_file_name;
         if(!read_fib_mat_with_idx(surrogate_file_name.c_str(),mat_reader))
