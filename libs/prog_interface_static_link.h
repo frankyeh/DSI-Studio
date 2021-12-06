@@ -29,6 +29,7 @@ public:
         begin_prog();
     }
     static void show(const char* status);
+    static void show(const std::string& str){return show(str.c_str());}
     static bool running(void) {return !status_list.empty();}
     static bool aborted(void);
     template<typename value_type1,typename value_type2>
