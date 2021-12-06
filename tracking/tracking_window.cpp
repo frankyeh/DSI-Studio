@@ -617,7 +617,7 @@ bool tracking_window::command(QString cmd,QString param,QString param2)
     }
     if(cmd == "load_workspace")
     {
-        unique_prog workspace("loading data");
+        progress prog_("loading data");
         if(QDir(param+"/tracts").exists())
         {
             if(tractWidget->rowCount())
@@ -628,7 +628,7 @@ bool tracking_window::command(QString cmd,QString param,QString param2)
                 tractWidget->load_tracts(tract_list);
         }
 
-        workspace(1,5);
+        progress::at(1,5);
 
         if(QDir(param+"/regions").exists())
         {
@@ -640,7 +640,7 @@ bool tracking_window::command(QString cmd,QString param,QString param2)
                 regionWidget->command("load_region",region_list[i]);
         }
 
-        workspace(2,5);
+        progress::at(2,5);
 
         if(QDir(param+"/devices").exists())
         {
@@ -652,7 +652,7 @@ bool tracking_window::command(QString cmd,QString param,QString param2)
                 deviceWidget->load_device(device_list);
         }
 
-        workspace(3,5);
+        progress::at(3,5);
 
         if(QDir(param+"/slices").exists())
         {
@@ -662,7 +662,7 @@ bool tracking_window::command(QString cmd,QString param,QString param2)
                 addSlices(QStringList(slice_list[i]),QFileInfo(slice_list[0]).baseName(),true);
         }
 
-        workspace(4,5);
+        progress::at(4,5);
 
         QDir::setCurrent(param);
         command("load_setting",param + "/setting.ini");
@@ -1535,7 +1535,7 @@ void tracking_window::on_actionImprove_Quality_triggered()
                 tipl::segmentation::otsu_threshold(tipl::make_image(handle->dir.fa[0],handle->dim));
     if(!fib.dir.empty())
         return;
-    for(float cos_angle = 0.99f;check_prog(1000-cos_angle*1000,1000-866);cos_angle -= 0.005f)
+    for(float cos_angle = 0.99f;progress::at(1000-cos_angle*1000,1000-866);cos_angle -= 0.005f)
     {
         std::vector<std::vector<float> > new_fa(handle->dir.num_fiber);
         std::vector<std::vector<short> > new_index(handle->dir.num_fiber);
@@ -2558,8 +2558,8 @@ void tracking_window::on_actionSave_Slices_to_DICOM_triggered()
     bool is_axial = row_orientation[0] > row_orientation[1];
     size_t read_size = is_axial ? I.plane_size():size_t(I.height()*I.depth());
 
-    prog_init prog_("Writing data");
-    for(int i = 0,pos = 0;check_prog(i,files.size());++i,pos += read_size)
+    progress prog_("Writing data");
+    for(int i = 0,pos = 0;progress::at(i,files.size());++i,pos += read_size)
     {
         std::vector<char> buf;
         {

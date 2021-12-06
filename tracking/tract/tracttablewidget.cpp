@@ -383,7 +383,7 @@ void TractTableWidget::save_all_tracts_to_dir(void)
     if(dir.isEmpty())
         return;
     command("save_all_tracts_to_dir",dir);
-    if(!prog_aborted())
+    if(!progress::aborted())
         QMessageBox::information(this,"DSI Studio","file saved");
 }
 void TractTableWidget::save_all_tracts_as(void)
@@ -492,8 +492,8 @@ void TractTableWidget::recognize_rename(void)
         QMessageBox::information(this,"Error",cur_tracking_window.handle->error_msg.c_str());
         return;
     }
-    prog_init prog_("Recognize and rename");
-    for(unsigned int index = 0;check_prog(index,tract_models.size());++index)
+    progress prog_("Recognize and rename");
+    for(unsigned int index = 0;progress::at(index,tract_models.size());++index)
         if(item(int(index),0)->checkState() == Qt::Checked)
         {
             std::map<float,std::string,std::greater<float> > sorted_list;
@@ -821,7 +821,7 @@ void TractTableWidget::deep_learning_train(void)
                 cur_tracking_window.handle->dim[2],
                 rowCount()));
 
-        for(unsigned int index = 0;check_prog(index,rowCount());++index)
+        for(unsigned int index = 0;progress::at(index,rowCount());++index)
         {
             tipl::image<3,unsigned char> track_map(cur_tracking_window.handle->dim);
             for(unsigned int i = 0;i < tract_models[index]->get_tracts().size();++i)
@@ -1005,7 +1005,7 @@ bool TractTableWidget::command(QString cmd,QString param,QString param2)
 {
     if(cmd == "save_all_tracts_to_dir")
     {
-        prog_init prog_("save files");
+        progress prog_("save files");
         auto selected_tracts = get_checked_tracks();
         for(size_t index = 0;index < selected_tracts.size();++index)
         {
@@ -1242,7 +1242,7 @@ void TractTableWidget::move_down(void)
 
 void TractTableWidget::delete_tract(void)
 {
-    if(is_running())
+    if(progress::running())
     {
         QMessageBox::information(this,"Error","Please wait for the termination of data processing",0);
         return;
@@ -1253,7 +1253,7 @@ void TractTableWidget::delete_tract(void)
 
 void TractTableWidget::delete_all_tract(void)
 {
-    if(is_running())
+    if(progress::running())
     {
         QMessageBox::information(this,"Error","Please wait for the termination of data processing",0);
         return;
@@ -1269,8 +1269,8 @@ void TractTableWidget::delete_repeated(void)
         "DSI Studio","Distance threshold (voxels)", distance,0,500,1,&ok);
     if (!ok)
         return;
-    prog_init prog_("deleting tracks");
-    for(int i = 0;check_prog(i,tract_models.size());++i)
+    progress prog_("deleting tracks");
+    for(int i = 0;progress::at(i,tract_models.size());++i)
     {
         if(item(i,0)->checkState() == Qt::Checked)
             tract_models[i]->delete_repeated(distance);
@@ -1283,8 +1283,8 @@ void TractTableWidget::delete_repeated(void)
 
 void TractTableWidget::delete_branches(void)
 {
-    prog_init prog_("deleting branches");
-    for(int i = 0;check_prog(i,tract_models.size());++i)
+    progress prog_("deleting branches");
+    for(int i = 0;progress::at(i,tract_models.size());++i)
     {
         if(item(i,0)->checkState() == Qt::Checked)
             tract_models[i]->delete_branch();
@@ -1305,16 +1305,16 @@ void TractTableWidget::resample_step_size(void)
     if (!ok)
         return;
 
-    prog_init prog_("resample tracks");
+    progress prog_("resample tracks");
     auto selected_tracts = get_checked_tracks();
-    for(size_t i = 0;check_prog(i,selected_tracts.size());++i)
+    for(size_t i = 0;progress::at(i,selected_tracts.size());++i)
         selected_tracts[i]->resample(new_step);
     emit need_update();
 }
 
 void TractTableWidget::delete_by_length(void)
 {
-    prog_init prog_("filtering tracks");
+    progress prog_("filtering tracks");
 
     float threshold = 60;
     bool ok;
@@ -1323,7 +1323,7 @@ void TractTableWidget::delete_by_length(void)
     if (!ok)
         return;
 
-    for(int i = 0;check_prog(i,tract_models.size());++i)
+    for(int i = 0;progress::at(i,tract_models.size());++i)
     {
         if(item(i,0)->checkState() == Qt::Checked)
             tract_models[i]->delete_by_length(threshold);

@@ -115,8 +115,8 @@ bool Voxel::run_hist(void)
     tipl::par_for2(from_list.size(),[&](size_t i,size_t thread_id)
     {
         if(thread_id == 0)
-            check_prog(i,from_list.size());
-        if(prog_aborted())
+            progress::at(i,from_list.size());
+        if(progress::aborted())
             return;
         hist_data[thread_id].init();
         hist_data[thread_id].from = from_list[i];
@@ -124,7 +124,7 @@ bool Voxel::run_hist(void)
         for (unsigned int j = 0; j < process_list.size(); ++j)
             process_list[j]->run_hist(*this,hist_data[thread_id]);
     });
-    return !prog_aborted();
+    return !progress::aborted();
 }
 bool Voxel::run(void)
 {
@@ -138,25 +138,25 @@ bool Voxel::run(void)
         ++total;
         if(thread_id == 0)
         {
-            if(prog_aborted())
+            if(progress::aborted())
             {
                 terminated = true;
                 return;
             }
-            check_prog(uint32_t(total*100/total_voxel),100);
+            progress::at(uint32_t(total*100/total_voxel),100);
         }
         voxel_data[thread_id].init();
         voxel_data[thread_id].voxel_index = voxel_index;
         for (size_t index = 0; index < process_list.size(); ++index)
             process_list[index]->run(*this,voxel_data[thread_id]);
     },thread_count);
-    return !prog_aborted();
+    return !progress::aborted();
 }
 
 
 void Voxel::end(gz_mat_write& writer)
 {
-    for (size_t index = 0; check_prog(uint32_t(index),uint32_t(process_list.size())); ++index)
+    for (size_t index = 0;progress::at(uint32_t(index),uint32_t(process_list.size())); ++index)
         process_list[index]->end(*this,writer);
 }
 

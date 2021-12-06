@@ -13,92 +13,98 @@ std::shared_ptr<QProgressDialog> progressDialog;
 QTime t_total,t_last;
 bool prog_aborted_ = false;
 auto start_time = std::chrono::high_resolution_clock::now();
-std::string current_title;
+std::vector<std::string> progress::status_list;
 std::thread::id main_thread_id = std::this_thread::get_id();
 bool is_main_thread(void)
 {
     return main_thread_id == std::this_thread::get_id();
 }
-void check_create(void)
+void progress::update_prog(void)
+{
+    if(std::chrono::duration_cast<std::chrono::milliseconds>(
+       std::chrono::high_resolution_clock::now() - start_time).count() < 500)
+        return;
+    if(!progressDialog.get())
+        progressDialog.reset(new QProgressDialog(get_status().c_str(),"Cancel",0,100));
+    else
+        progressDialog->setLabelText(get_status().c_str());
+
+    progressDialog->show();
+    QApplication::processEvents();
+}
+std::string progress::get_status(void)
+{
+    std::string result;
+    for(size_t i = 0;i < status_list.size();++i)
+    {
+        if(i)
+            result += "\n";
+        result += status_list[i];
+    }
+    return result;
+}
+void progress::begin_prog(bool show_now)
 {
     if(!has_gui || !is_main_thread())
         return;
-    auto cur = std::chrono::high_resolution_clock::now();
-    if(!progressDialog.get() &&
-       std::chrono::duration_cast<std::chrono::milliseconds>(cur - start_time).count() > 500)
+    if(show_now && !progressDialog.get())
     {
-        progressDialog.reset(new QProgressDialog(current_title.c_str(),"Cancel",0,100));
+        progressDialog.reset(new QProgressDialog(get_status().c_str(),"Cancel",0,100));
         progressDialog->show();
         QApplication::processEvents();
     }
-}
-void begin_prog(const char* title,bool always_show_dialog)
-{
-    if(title)
-        current_title = title;
-    if(!has_gui || !is_main_thread())
-        return;
-    if(progressDialog.get())
-    {
-        progressDialog->setLabelText(title);
-        progressDialog->show();
-    }
-    else
-    if(always_show_dialog)
-    {
-        progressDialog.reset(new QProgressDialog(current_title.c_str(),"Cancel",0,100));
-        progressDialog->show();
-    }
     start_time = std::chrono::high_resolution_clock::now();
-    QApplication::processEvents();
     t_total.start();
     t_last.start();
     prog_aborted_ = false;
+    update_prog();
 }
 
-bool is_running(void)
+void progress::show(const char* status)
 {
-    if(!progressDialog.get())
-        return false;
-    return progressDialog->isVisible();
-}
-
-void set_title(const char* title)
-{
-    std::cout << title << std::endl;
-    current_title = title;
+    std::cout << status << std::endl;
+    if(status_list.empty())
+        return;
+    status_list.back() = status;
     if(!has_gui || !is_main_thread())
         return;
+    update_prog();
+}
+progress::~progress(void)
+{
+    status_list.pop_back();
+    if(!has_gui || !is_main_thread())
+        return;
+    if(!status_list.empty())
+    {
+        update_prog();
+        return;
+    }
     if(progressDialog.get())
     {
-        progressDialog->setLabelText(title);
-        QApplication::processEvents();
+        prog_aborted_ = progressDialog->wasCanceled();
+        progressDialog->close();
+        progressDialog.reset();
     }
-}
-void close_prog(void)
-{
-    if(!progressDialog.get())
-        return;
-    start_time = std::chrono::high_resolution_clock::now();
-    prog_aborted_ = progressDialog->wasCanceled();
-    progressDialog.reset();
     QApplication::processEvents();
 }
-bool check_prog(unsigned int now,unsigned int total)
+bool progress::check_prog(unsigned int now,unsigned int total)
 {
-    if(!has_gui || !is_main_thread())
+    if(!has_gui || !is_main_thread() || status_list.empty())
         return now < total;
-    check_create();
+    if(!progressDialog.get())
+        update_prog();
     if(!progressDialog.get())
         return now < total;
+
     if(now >= total || progressDialog->wasCanceled())
     {
-        close_prog();
+        progressDialog->hide();
         return false;
     }
     if(now == 0 || now == total)
         t_total.start();
-    if(progressDialog.get() && (t_last.elapsed() > 500))
+    if(t_last.elapsed() > 500)
     {
         t_last.start();
         long expected_sec = 0;
@@ -106,7 +112,7 @@ bool check_prog(unsigned int now,unsigned int total)
             expected_sec = ((double)t_total.elapsed()*(double)(total-now)/(double)now/1000.0);
         progressDialog->setRange(0, total);
         progressDialog->setValue(now);
-        QString label = current_title.c_str();
+        QString label = get_status().c_str();
         if(expected_sec)
             progressDialog->setLabelText(label + QString("\n%1 of %2\n%3 min %4 sec").
                                              arg(now).arg(total).arg(expected_sec/60).arg(expected_sec%60));
@@ -118,14 +124,14 @@ bool check_prog(unsigned int now,unsigned int total)
     return now < total;
 }
 
-bool prog_aborted(void)
+bool progress::aborted(void)
 {
     if(!has_gui || !is_main_thread())
         return false;
-    if(prog_aborted_)
-        return true;
     if(progressDialog.get())
         return progressDialog->wasCanceled();
+    if(prog_aborted_)
+        return true;
     return false;
 }
 

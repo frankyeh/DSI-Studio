@@ -242,8 +242,8 @@ bool RegionTableWidget::command(QString cmd,QString param,QString)
 {
     if(cmd == "save_all_regions_to_dir")
     {
-        prog_init prog_("save files...");
-        for(int index = 0;check_prog(index,rowCount());++index)
+        progress prog_("save files...");
+        for(int index = 0;progress::at(index,rowCount());++index)
             if (item(index,0)->checkState() == Qt::Checked) // either roi roa end or seed
             {
                 std::string filename = param.toStdString();
@@ -859,9 +859,9 @@ bool RegionTableWidget::load_multiple_roi_nii(QString file_name,bool is_mni_imag
                  names,
                  error_msg,is_mni_image))
         return false;
-    prog_init prog_("loading ROIs");
+    progress prog_("loading ROIs");
     begin_update();
-    for(uint32_t i = 0;check_prog(i,loaded_regions.size());++i)
+    for(uint32_t i = 0;progress::at(i,loaded_regions.size());++i)
         {
             add_region(names[i].c_str(),loaded_regions[i]->regions_feature,loaded_regions[i]->show_region.color);
             unsigned int color = regions.back()->show_region.color;

@@ -22,12 +22,12 @@ void show_view(QGraphicsScene& scene,QImage I);
 void populate_templates(QComboBox* combo,size_t index);
 bool reconstruction_window::load_src(int index)
 {
-    prog_init prog_("load src");
-    check_prog(index,filenames.size());
+    progress prog_("load src");
+    progress::at(index,filenames.size());
     handle.reset(new ImageModel);
     if (!handle->load_from_file(filenames[index].toLocal8Bit().begin()))
     {
-        if(!prog_aborted())
+        if(!progress::aborted())
             QMessageBox::critical(this,"ERROR",QString("Cannot open ") + QFileInfo(filenames[index]).baseName() + " " +handle->error_msg.c_str());
         return false;
     }
@@ -252,8 +252,9 @@ reconstruction_window::~reconstruction_window()
     delete ui;
 }
 
-void reconstruction_window::doReconstruction(unsigned char method_id,bool prompt)
+void reconstruction_window::Reconstruction(unsigned char method_id,bool prompt)
 {
+    progress prog_(__func__,true);
     if(!handle.get())
         return;
 
@@ -283,7 +284,6 @@ void reconstruction_window::doReconstruction(unsigned char method_id,bool prompt
     settings.setValue("other_output",ui->other_output->text());
     settings.setValue("check_btable",ui->check_btable->isChecked() ? 1 : 0);
 
-    prog_init prog_("reconstruction");
     handle->voxel.method_id = method_id;
     handle->voxel.ti.init(8);
     handle->voxel.odf_resolving = ui->odf_resolving->isChecked();
@@ -398,7 +398,7 @@ void reconstruction_window::on_doDTI_clicked()
         if(index)
         {
             std::string steps = handle->voxel.steps;
-            prog_init prog_("load src");
+            progress prog_("load src");
             if(!load_src(index))
                 break;
             if(!handle->run_steps(steps))
@@ -409,18 +409,18 @@ void reconstruction_window::on_doDTI_clicked()
         }
         std::fill(handle->voxel.param.begin(),handle->voxel.param.end(),0.0);
         if(ui->DTI->isChecked())
-            doReconstruction(1,index+1 == filenames.size());
+            Reconstruction(1,index+1 == filenames.size());
         else
         if(ui->GQI->isChecked() || ui->QSDR->isChecked())
         {
             handle->voxel.param[0] = ui->diffusion_sampling->value();
             settings.setValue("rec_gqi_sampling",ui->diffusion_sampling->value());
             if(ui->QSDR->isChecked())
-                doReconstruction(7,index+1 == filenames.size());
+                Reconstruction(7,index+1 == filenames.size());
             else
-                doReconstruction(4,index+1 == filenames.size());
+                Reconstruction(4,index+1 == filenames.size());
         }
-        if(prog_aborted())
+        if(progress::aborted())
             break;
     }
 
@@ -520,8 +520,8 @@ void reconstruction_window::on_actionSave_4D_nifti_triggered()
             return;
         if(result == QMessageBox::Yes)
         {
-            prog_init prog_("loading");
-            for(int index = 0;check_prog(index,filenames.size());++index)
+            progress prog_("loading");
+            for(int index = 0;progress::at(index,filenames.size());++index)
             {
                 ImageModel model;
                 if (!model.load_from_file(filenames[index].toStdString().c_str()) ||
@@ -636,7 +636,7 @@ void reconstruction_window::on_actionRotate_triggered()
     if(manual->exec() != QDialog::Accepted)
         return;
 
-    prog_init prog_("rotating");
+    progress prog_("rotating");
     tipl::image<3> ref2(ref);
     float m = tipl::median(ref2.begin(),ref2.end());
     tipl::multiply_constant_mt(ref,0.5f/m);
@@ -759,7 +759,7 @@ void reconstruction_window::on_actionManual_Rotation_triggered()
                 new manual_alignment(this,handle->dwi,handle->voxel.vs,handle->dwi,handle->voxel.vs,tipl::reg::rigid_body,tipl::reg::cost_type::mutual_info));
     if(manual->exec() != QDialog::Accepted)
         return;
-    prog_init prog_("rotating");
+    progress prog_("rotating");
     handle->rotate(handle->dwi.shape(),handle->voxel.vs,manual->get_iT());
     load_b_table();
     update_dimension();
@@ -789,7 +789,7 @@ void reconstruction_window::on_actionReplace_b0_by_T2W_image_triggered()
     if(manual->exec() != QDialog::Accepted)
         return;
 
-    prog_init prog_("rotating");
+    progress prog_("rotating");
     handle->rotate(ref.shape(),vs,manual->get_iT());
     tipl::pointer_image<3,unsigned short> I = tipl::make_image((unsigned short*)handle->src_dwi_data[0],handle->voxel.dim);
     ref *= (float)(*std::max_element(I.begin(),I.end()))/(*std::max_element(ref.begin(),ref.end()));
@@ -800,7 +800,7 @@ void reconstruction_window::on_actionReplace_b0_by_T2W_image_triggered()
 
 bool get_src(std::string filename,ImageModel& src2,std::string& error_msg)
 {
-    prog_init prog_("load ",filename.c_str());
+    progress prog_("load ",filename.c_str());
     tipl::image<3,unsigned short> I;
     if(QString(filename.c_str()).endsWith(".dcm"))
     {
@@ -892,7 +892,7 @@ void reconstruction_window::on_actionImage_upsample_to_T1W_TESTING_triggered()
         "DSI Studio","Variance",3,0.5,10,1,&ok);
     if (!ok)
         return;
-    prog_init prog_("rotating");
+    progress prog_("rotating");
     tipl::image<3> ref2(ref);
     float m = tipl::median(ref2.begin(),ref2.end());
     tipl::multiply_constant_mt(ref,0.5f/m);
@@ -961,7 +961,7 @@ void reconstruction_window::on_actionSave_SRC_file_as_triggered()
             "SRC files (*src.gz);;All files (*)" );
     if(filename.isEmpty())
         return;
-    prog_init prog_("saving ",std::filesystem::path(filename.toStdString()).filename().string().c_str());
+    progress prog_("saving ",std::filesystem::path(filename.toStdString()).filename().string().c_str());
     handle->save_to_file(filename.toStdString().c_str());
 }
 
@@ -969,7 +969,7 @@ void reconstruction_window::on_actionSave_SRC_file_as_triggered()
 void reconstruction_window::on_actionEddy_Motion_Correction_triggered()
 {
     handle->correct_motion(false);
-    if(!prog_aborted())
+    if(!progress::aborted())
     {
         handle->calculate_dwi_sum(true);
         load_b_table();
@@ -1139,7 +1139,7 @@ void reconstruction_window::on_actionRun_FSL_Topup_triggered()
             "Images (*src.gz *.nii *nii.gz);;DICOM image (*.dcm);;All files (*)" );
     if(other_src.isEmpty())
         return;
-    prog_init prog_("processing",true);
+    progress prog_("topup/eddy",true);
     if(command("[Step T2][Corrections][TOPUP EDDY]",other_src.toStdString()))
         QMessageBox::information(this,"DSI Studio","Preprocessed result loaded");
 }

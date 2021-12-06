@@ -91,12 +91,12 @@ class TinyTrack{
 
         std::vector<std::vector<int32_t> > track32(tract_data.size());
         std::vector<size_t> buf_size(track32.size());
-        prog_init prog_("compressing trajectories");
-        check_prog(0,tract_data.size());
+        progress prog_("compressing trajectories");
+        progress::at(0,tract_data.size());
         tipl::par_for2(track32.size(),[&](size_t i,unsigned int id)
         {
             if(id == 0)
-                check_prog(i,tract_data.size());
+                progress::at(i,tract_data.size());
             auto& t32 = track32[i];
             t32.resize(tract_data[i].size());
             // all coordinates multiply by 32 and convert to integer
@@ -147,8 +147,8 @@ class TinyTrack{
             }
             buf_size[i] = sizeof(tract_header)+t32.size()-3;
         });
-        set_title((std::string("saving to ")+std::filesystem::path(file_name).filename().string()).c_str());
-        for(size_t block = 0,cur_track_block = 0;check_prog(cur_track_block,track32.size());++block)
+        progress::show((std::string("saving to ")+std::filesystem::path(file_name).filename().string()).c_str());
+        for(size_t block = 0,cur_track_block = 0;progress::at(cur_track_block,track32.size());++block)
         {
             // record write position for each track
             size_t total_size = 0;
@@ -192,7 +192,7 @@ class TinyTrack{
                                tipl::matrix<4,4>& trans_to_mni,
                                std::string& report,std::string& parameter_id,unsigned int& color)
     {
-        prog_init prog_("loading ",std::filesystem::path(file_name).filename().string().c_str());
+        progress prog_("loading ",std::filesystem::path(file_name).filename().string().c_str());
         gz_mat_read in;
         prepare_idx(file_name,in.in);
         if (!in.load_from_file(file_name))
@@ -328,7 +328,7 @@ struct TrackVis
                 std::string& info,
                 tipl::vector<3> vs)
     {
-        prog_init prog_("loading ",std::filesystem::path(file_name).filename().string().c_str());
+        progress prog_("loading ",std::filesystem::path(file_name).filename().string().c_str());
         gz_istream in;
         if (!in.open(file_name))
             return false;
@@ -339,7 +339,7 @@ struct TrackVis
             info.clear();
         if(!track_number) // number is not stored
             track_number = 100000000;
-        for (unsigned int index = 0;!(!in) && check_prog(index,track_number);++index)
+        for (unsigned int index = 0;!(!in) && progress::at(index,track_number);++index)
         {
             unsigned int n_point;
             in.read((char*)&n_point,sizeof(int));
@@ -379,7 +379,7 @@ struct TrackVis
                              const std::string& info,
                              unsigned int color)
     {
-        prog_init prog_("saving ",std::filesystem::path(file_name).filename().string().c_str());
+        progress prog_("saving ",std::filesystem::path(file_name).filename().string().c_str());
         gz_ostream out;
         if (!out.open(file_name))
             return false;
@@ -392,7 +392,7 @@ struct TrackVis
         if(info.length())
             std::copy(info.begin(),info.begin()+std::min<int>(439,info.length()),trk.reserved);
         out.write((const char*)&trk,1000);
-        for (unsigned int i = 0;check_prog(i,tract_data.size());++i)
+        for (unsigned int i = 0;progress::at(i,tract_data.size());++i)
         {
             int n_point = tract_data[i].size()/3;
             std::vector<float> buffer(trk.n_scalars ? tract_data[i].size()+scalar[i].size() : tract_data[i].size());
@@ -415,7 +415,7 @@ struct TrackVis
             out.write((const char*)&n_point,sizeof(int));
             out.write((const char*)&*buffer.begin(),sizeof(float)*buffer.size());
         }
-        if(prog_aborted())
+        if(progress::aborted())
             return false;
         return true;
     }
@@ -1314,7 +1314,7 @@ bool TractModel::save_all(const char* file_name_,
         gz_ostream out;
         if (!out.open(file_name_))
             return false;
-        prog_init prog_("saving ",std::filesystem::path(file_name_).filename().string().c_str());
+        progress prog_("saving ",std::filesystem::path(file_name_).filename().string().c_str());
         {
             TrackVis trk;
             trk.init(all[0]->geo,all[0]->vs);
@@ -1327,7 +1327,7 @@ bool TractModel::save_all(const char* file_name_,
             out.write((const char*)&trk,1000);
 
         }
-        for(unsigned int index = 0;check_prog(index,all.size());++index)
+        for(unsigned int index = 0;progress::at(index,all.size());++index)
         for (unsigned int i = 0;i < all[index]->tract_data.size();++i)
         {
             int n_point = all[index]->tract_data[i].size()/3;
@@ -1359,7 +1359,7 @@ bool TractModel::save_all(const char* file_name_,
         std::vector<float> buf;
         std::vector<unsigned int> length;
         std::vector<unsigned int> cluster;
-        for(unsigned int index = 0;check_prog(index,all.size());++index)
+        for(unsigned int index = 0; index < all.size();++index)
         for (unsigned int i = 0;i < all[index]->tract_data.size();++i)
         {
             cluster.push_back(index);
@@ -1371,7 +1371,7 @@ bool TractModel::save_all(const char* file_name_,
         out.write("cluster",cluster);
         return true;
     }
-    if(prog_aborted())
+    if(progress::aborted())
         return false;
     // output label file
     std::ofstream out((file_name+".txt").c_str());
@@ -1420,8 +1420,8 @@ bool TractModel::save_data_to_mat(const char* file_name,int index,const char* da
     MatWriter mat_writer(file_name);
     if(!mat_writer.opened())
         return false;
-    prog_init prog_("saving");
-        for (unsigned int i = 0;check_prog(i,tract_data.size());++i)
+    progress prog_("saving");
+        for (unsigned int i = 0;progress::at(i,tract_data.size());++i)
     {
         unsigned int count;
         const float* ptr = get_data(tract_data[i],index,count);
@@ -2150,7 +2150,7 @@ void TractModel::cut_by_mask(const char*)
                   (std::istream_iterator<tipl::vector<3,short> > (in)),
                   (std::istream_iterator<tipl::vector<3,short> > ()));
     std::vector<std::vector<float> > new_data;
-    for (unsigned int index = 0;check_prog(index,tract_data.size());++index)
+    for (unsigned int index = 0;progress::at(index,tract_data.size());++index)
     {
         bool on = false;
         std::vector<float>::const_iterator iter = tract_data[index].begin();

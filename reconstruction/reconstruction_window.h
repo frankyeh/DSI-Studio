@@ -47,7 +47,7 @@ private:
     std::shared_ptr<ImageModel> handle;
     bool load_src(int index);
     void update_dimension(void);
-    void doReconstruction(unsigned char method_id,bool prompt);
+    void Reconstruction(unsigned char method_id,bool prompt);
 private slots:
     void on_QSDR_toggled(bool checked);
     void on_GQI_toggled(bool checked);

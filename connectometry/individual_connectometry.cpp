@@ -106,7 +106,7 @@ void individual_connectometry::on_compare_clicked()
         return;
     }
 
-    prog_init prog_("reading");
+    progress prog_("reading");
     std::shared_ptr<fib_data> baseline(std::make_shared<fib_data>());
     if (!baseline->load_from_file(ui->File1->text().toStdString().c_str()))
     {

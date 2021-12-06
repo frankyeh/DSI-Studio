@@ -248,8 +248,8 @@ bool CustomSliceModel::initialize(const std::vector<std::string>& files,bool is_
                 return false;
             }
 
-            prog_init prog_("loading images");
-            for(unsigned int i = 0;check_prog(i,geo[2]);++i)
+            progress prog_("loading images");
+            for(unsigned int i = 0;progress::at(i,geo[2]);++i)
             {
                 tipl::image<2,short> I;
                 QImage in;
@@ -279,7 +279,7 @@ bool CustomSliceModel::initialize(const std::vector<std::string>& files,bool is_
                 }
                 std::copy(I.begin(),I.end(),source_images.begin() + long(i*source_images.plane_size()));
             }
-            if(prog_aborted())
+            if(progress::aborted())
                 return false;
             tipl::io::nifti nii;
             nii.set_dim(geo);

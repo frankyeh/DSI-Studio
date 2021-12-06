@@ -14,9 +14,9 @@ auto_track::auto_track(QWidget *parent) :
     ui(new Ui::auto_track)
 {
     ui->setupUi(this);
-    progress = new QProgressBar(this);
-    progress->setVisible(false);
-    ui->statusbar->addPermanentWidget(progress);
+    progress_bar = new QProgressBar(this);
+    progress_bar->setVisible(false);
+    ui->statusbar->addPermanentWidget(progress_bar);
 
     fib_data fib;
     fib.set_template_id(0);
@@ -133,7 +133,7 @@ std::string run_auto_track(
                     bool overwrite,
                     bool default_mask,
                     bool export_template_trk,
-                    int& progress)
+                    int& prog)
 {
     std::vector<float> tolerance;
     {
@@ -168,11 +168,11 @@ std::string run_auto_track(
     }
 
     std::vector<std::string> names;
-    for(size_t i = 0;i < file_list.size() && !prog_aborted();++i)
+    for(size_t i = 0;i < file_list.size() && !progress::aborted();++i)
     {
         std::string cur_file_base_name = QFileInfo(file_list[i].c_str()).baseName().toStdString();
         names.push_back(cur_file_base_name);
-        progress = int(i);
+        prog = int(i);
         std::cout << "processing " << cur_file_base_name << std::endl;
         std::string fib_file_name;
         if(!std::filesystem::exists(file_list[i]))
@@ -210,7 +210,7 @@ std::string run_auto_track(
                     src.command("[Step T2][Edit][Rotate to MNI2]");
                 if(!default_mask)
                     src.command("[Step T2a][Threshold]","0");
-                prog_init prog_("reconstruct DWI");
+                progress prog_("reconstruct DWI");
                 if (!src.reconstruction())
                     return src.error_msg + (" at ") + cur_file_base_name;
 
@@ -236,7 +236,7 @@ std::string run_auto_track(
         // fiber tracking on fib file
         std::shared_ptr<fib_data> handle(new fib_data);
         bool fib_loaded = false;
-        for(size_t j = 0;j < track_id.size() && !prog_aborted();++j)
+        for(size_t j = 0;j < track_id.size() && !progress::aborted();++j)
         {
             std::string track_name = fib.tractography_name_list[track_id[j]];
             std::string output_path = dir + "/" + track_name;
@@ -284,7 +284,7 @@ std::string run_auto_track(
 
                 if (!fib_loaded)
                 {
-                    prog_init prog_("loading ",std::filesystem::path(fib_file_name).filename().string().c_str());
+                    progress prog_("loading ",std::filesystem::path(fib_file_name).filename().string().c_str());
                     if(!handle->load_from_file(fib_file_name.c_str()))
                        return fib_file_name + ": Not human data. Check image resolution.";
                     fib_loaded = true;
@@ -306,7 +306,7 @@ std::string run_auto_track(
                     float cur_tolerance = tolerance[tracking_iteration];
                     ThreadData thread(handle);
                     {
-                        prog_init prog_("preparing tracking ",track_name.c_str());
+                        progress prog_("preparing tracking ",track_name.c_str());
                         thread.param.tip_iteration = uint8_t(tip);
                         thread.param.check_ending = !QString(track_name.c_str()).contains("Cingulum");
                         thread.param.stop_by_tract = 1;
@@ -321,7 +321,7 @@ std::string run_auto_track(
                     }
 
                     // run tracking
-                    prog_init prog_("tracking ",track_name.c_str());
+                    progress prog_("tracking ",track_name.c_str());
                     thread.run(po.get("thread_count",std::thread::hardware_concurrency()),false);
                     std::string report = tract_model.report + thread.report.str();
                     report += " Shape analysis (Yeh, Neuroimage, 2020) was conducted to derive shape metrics for tractography.";
@@ -346,9 +346,9 @@ std::string run_auto_track(
                     }
                     bool no_result = false;
                     const unsigned int low_yield_threshold = 100000;
-                    while(!thread.is_ended() && !prog_aborted())
+                    while(!thread.is_ended() && !progress::aborted())
                     {
-                        check_prog(thread.get_total_tract_count(),
+                        progress::at(thread.get_total_tract_count(),
                                    thread.param.termination_count);
                         thread.fetchTracks(&tract_model);
                         std::this_thread::sleep_for(std::chrono::seconds(2));
@@ -361,7 +361,7 @@ std::string run_auto_track(
                             break;
                         }
                     }
-                    if(prog_aborted())
+                    if(progress::aborted())
                         return std::string();
                     thread.fetchTracks(&tract_model);
                     thread.apply_tip(&tract_model);
@@ -522,7 +522,7 @@ std::string run_auto_track(
 }
 void auto_track::check_status()
 {
-    progress->setValue(prog);
+    progress_bar->setValue(prog);
     ui->file_list_view->setCurrentRow(prog);
     if(!auto_track_report.empty())
         ui->report->setText(auto_track_report.c_str());
@@ -547,12 +547,12 @@ void auto_track::on_run_clicked()
         return;
     }
     ui->run->setEnabled(false);
-    progress->setValue(0);
-    progress->setVisible(true);
-    progress->setMaximum(file_list.size()-1);
+    progress_bar->setValue(0);
+    progress_bar->setVisible(true);
+    progress_bar->setMaximum(file_list.size()-1);
     prog = 0;
     timer->start(5000);
-    prog_init prog_("");
+    progress prog_("");
     program_option po;
     std::string error = run_auto_track(po,file_list2,track_id,
                    float(ui->gqi_l->value()),
@@ -567,16 +567,15 @@ void auto_track::on_run_clicked()
                    prog);
     timer->stop();
     ui->run->setEnabled(true);
-    progress->setVisible(false);
+    progress_bar->setVisible(false);
 
-    if(!prog_aborted())
+    if(!progress::aborted())
     {
         if(error.empty())
             QMessageBox::information(this,"DSI Studio","Completed");
         else
             QMessageBox::information(this,"DSI Studio",error.c_str());
     }
-    close_prog();
     raise(); //  for mac
 }
 

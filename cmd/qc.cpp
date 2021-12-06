@@ -56,7 +56,7 @@ std::string quality_check_src_files(QString dir)
 
     std::vector<std::vector<std::string> > output;
     std::vector<float> ndc;
-    for(int i = 0;check_prog(i,filenames.size());++i)
+    for(int i = 0;progress::at(i,filenames.size());++i)
     {
         bool has_gui_ = has_gui;
         has_gui = false;

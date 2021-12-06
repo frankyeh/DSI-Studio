@@ -531,7 +531,7 @@ bool read_fib_mat_with_idx(const char* file_name,gz_mat_read& mat_reader)
         mat_reader.delay_read = true;
         mat_reader.in->buffer_all = false;
     }
-    if (!mat_reader.load_from_file(file_name) || prog_aborted())
+    if (!mat_reader.load_from_file(file_name) || progress::aborted())
         return false;
     save_idx(file_name,mat_reader.in);
     return true;
@@ -688,7 +688,7 @@ bool fib_data::load_from_file(const char* file_name)
 
     if(!read_fib_mat_with_idx(file_name,mat_reader))
     {
-        error_msg = prog_aborted() ? "Loading process aborted" : "Invalid file format";
+        error_msg = progress::aborted() ? "Loading process aborted" : "Invalid file format";
         return false;
     }
 
@@ -1468,9 +1468,9 @@ bool fib_data::load_track_atlas()
             return false;
 
         {
-            prog_init prog_("warping atlas tracks to subject space");
+            progress prog_("warping atlas tracks to subject space");
             run_normalization(true,true);
-            if(prog_aborted())
+            if(progress::aborted())
                 return false;
         }
 
@@ -1666,7 +1666,7 @@ void animal_reg(const tipl::image<3>& from,tipl::vector<3> from_vs,
         {PI*-0.5f,0.0f,PI}
     };
     float cost = std::numeric_limits<float>::max();
-    set_title("linear registration for animal data");
+    progress::show("linear registration for animal data");
     tipl::par_for(5,[&](int i)
     {
          tipl::affine_transform<double> arg;
@@ -1734,7 +1734,7 @@ void fib_data::run_normalization(bool background,bool inv)
             }
         }
     }
-    prog_init prog_("running normalization");
+    progress prog_("running normalization");
     prog = 0;
     bool terminated = false;
     auto lambda = [this,output_file_name,&terminated]()
@@ -1800,12 +1800,12 @@ void fib_data::run_normalization(bool background,bool inv)
         tipl::reg::cdm_pre(It,It2,Iss,Iss2);
         if(Iss2.shape() == Iss.shape())
         {
-            set_title("dual modality normalization");
+            progress::show("dual modality normalization");
             tipl::reg::cdm2(It,It2,Iss,Iss2,dis,terminated);
         }
         else
         {
-            set_title("single modality normalization");
+            progress::show("single modality normalization");
             tipl::reg::cdm(It,Iss,dis,terminated);
         }
 
@@ -1825,7 +1825,7 @@ void fib_data::run_normalization(bool background,bool inv)
 
         {
             prog = 4;
-            set_title("calculating template to subject warp field");
+            progress::show("calculating template to subject warp field");
             tipl::image<3,tipl::vector<3,float> > pos;
             tipl::displacement_to_mapping(dis,pos,T);
             if(out)
@@ -1836,7 +1836,7 @@ void fib_data::run_normalization(bool background,bool inv)
             return;
         {
             prog = 5;
-            set_title("calculating subject to template warp field");
+            progress::show("calculating subject to template warp field");
             tipl::image<3,tipl::vector<3,float> > pos(dim);
             iT = T;
             iT.inverse();
@@ -1858,11 +1858,10 @@ void fib_data::run_normalization(bool background,bool inv)
     if(background)
     {
         std::thread t(lambda);
-        while(check_prog(prog,6))
+        while(progress::at(prog,6))
             std::this_thread::sleep_for(std::chrono::milliseconds(200));
-        if(prog_aborted())
+        if(progress::aborted())
             terminated = true;
-        check_prog(0,0);
         t.join();
     }
     else
@@ -1877,7 +1876,7 @@ bool fib_data::can_map_to_mni(void)
     if(!load_template())
         return false;
     run_normalization(true,false);
-    if(prog_aborted())
+    if(progress::aborted())
     {
         error_msg = "action aborted by user";
         return false;

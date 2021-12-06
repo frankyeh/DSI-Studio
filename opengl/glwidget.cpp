@@ -2866,14 +2866,14 @@ bool GLWidget::command(QString cmd,QString param,QString param2)
             param = QFileInfo(cur_tracking_window.windowTitle()).completeBaseName()+".rotation_movie.avi";
         if(QFileInfo(param).suffix() == "avi")
         {
-            prog_init prog_("save video");
+            progress prog_("save video");
             int ow = width(),oh = height();
             tipl::io::avi avi;
             #ifndef __APPLE__
                 resize(1980,1080);
                 resizeGL(1980,1080);
             #endif
-            for(float index = 0.0f;check_prog(index,360);index += 0.2f)
+            for(float index = 0.0f;progress::at(index,360);index += 0.2f)
             {
                 rotate_angle(0.2f,0,1.0,0.0);
                 QBuffer buffer;
@@ -2890,9 +2890,9 @@ bool GLWidget::command(QString cmd,QString param,QString param2)
         }
         else
         {
-            prog_init prog_("save image");
+            progress prog_("save image");
             float angle = (param2.isEmpty()) ? 1 : param2.toFloat();
-            for(float index = 0;check_prog(index,360);index += angle)
+            for(float index = 0;progress::at(index,360);index += angle)
             {
                 QString file_name = QFileInfo(param).absolutePath()+"//"+
                         QFileInfo(param).completeBaseName()+"_"+QString::number(index)+"."+

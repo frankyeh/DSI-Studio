@@ -274,11 +274,11 @@ void shift_track_for_tck(std::vector<std::vector<float> >& loaded_tract_data,tip
 void MainWindow::loadFib(QString filename,bool presentation_mode)
 {
     std::string file_name = filename.toStdString();
-    prog_init prog_("loading ",QFileInfo(filename).baseName().toStdString().c_str());
+    progress prog_("loading ",QFileInfo(filename).baseName().toStdString().c_str());
     std::shared_ptr<fib_data> new_handle(new fib_data);
     if (!new_handle->load_from_file(&*file_name.begin()))
     {
-        if(!prog_aborted())
+        if(!progress::aborted())
             QMessageBox::information(this,"error",new_handle->error_msg.c_str(),0);
         return;
     }
@@ -537,8 +537,8 @@ void MainWindow::on_RenameDICOM_clicked()
                                 "All files (*)" );
     if ( filenames.isEmpty() )
         return;
-    prog_init prog_("Rename DICOM Files");
-    for (unsigned int index = 0;check_prog(index,filenames.size());++index)
+    progress prog_("Rename DICOM Files");
+    for (unsigned int index = 0;progress::at(index,filenames.size());++index)
         RenameDICOMToDir(filenames[index],QFileInfo(filenames[index]).absolutePath());
 }
 
@@ -588,14 +588,14 @@ void MainWindow::on_RenameDICOMDir_clicked()
     if ( path.isEmpty() )
         return;
     QStringList dirs = GetSubDir(path);
-    prog_init prog_("Renaming DICOM");
-    for(int index = 0;check_prog(index,dirs.size());++index)
+    progress prog_("Renaming DICOM");
+    for(int index = 0;progress::at(index,dirs.size());++index)
     {
         QStringList files = QDir(dirs[index]).entryList(QStringList("*"),
                                     QDir::Files | QDir::NoSymLinks);
         for(int j = 0;j < files.size() && index < dirs.size();++j)
         {
-            set_title(files[j].toLocal8Bit().begin());
+            progress::show(files[j].toLocal8Bit().begin());
             RenameDICOMToDir(dirs[index] + "/" + files[j],path);
         }
     }
@@ -686,7 +686,7 @@ bool MainWindow::load_db(std::shared_ptr<group_connectometry_analysis>& database
     QDir::setCurrent(QFileInfo(filename).absolutePath());
     add_work_dir(QFileInfo(filename).absolutePath());
     database = std::make_shared<group_connectometry_analysis>();
-    prog_init prog_("reading connectometry db");
+    progress prog_("reading connectometry db");
     if(!database->load_database(filename.toLocal8Bit().begin()))
     {
         QMessageBox::information(this,"Error",database->error_msg.c_str(),0);
@@ -876,7 +876,7 @@ void MainWindow::on_SRC_qc_clicked()
                                 ui->workDir->currentText());
     if(dir.isEmpty())
         return;
-    prog_init prog_("checking SRC files");
+    progress prog_("checking SRC files");
     show_info_dialog("SRC report",quality_check_src_files(dir));
 }
 
@@ -998,10 +998,10 @@ void MainWindow::on_nii2src_bids_clicked()
     add_work_dir(dir);
     QStringList sub_dir = QDir(dir).entryList(QStringList("*"),
                                                 QDir::Dirs | QDir::NoSymLinks | QDir::NoDotAndDotDot);
-    prog_init prog_("batch creating src");
+    progress prog_("batch creating src");
     std::ofstream out((dir+"/log.txt").toStdString().c_str());
     out << "directory:" << dir.toStdString() << std::endl;
-    for(int j = 0;check_prog(j,sub_dir.size()) && !prog_aborted();++j)
+    for(int j = 0;progress::at(j,sub_dir.size()) && !progress::aborted();++j)
     {
         out << "Process " << sub_dir[j].toStdString() << std::endl;
         QString dwi_folder = dir + "/" + sub_dir[j] + "/dwi";
@@ -1034,10 +1034,10 @@ void MainWindow::on_nii2src_sf_clicked()
     QStringList nifti_file_list = QDir(dir).
             entryList(QStringList("*.nii.gz") << "*.nii",QDir::Files|QDir::NoSymLinks);
 
-    prog_init prog_("batch creating src");
+    progress prog_("batch creating src");
     std::ofstream out((dir+"/log.txt").toStdString().c_str());
     out << "directory:" << dir.toStdString() << std::endl;
-    for(int j = 0;check_prog(j,nifti_file_list.size()) && !prog_aborted();++j)
+    for(int j = 0;progress::at(j,nifti_file_list.size()) && !progress::aborted();++j)
     {
         out << nifti_file_list[j].toStdString() << "->";
         std::vector<std::shared_ptr<DwiHeader> > dwi_files;
@@ -1054,7 +1054,7 @@ bool dcm2src(QStringList files,std::ostream& out)
         return false;
     files.sort();
     std::vector<std::shared_ptr<DwiHeader> > dicom_files;
-    if(!parse_dwi(files,dicom_files) || prog_aborted())
+    if(!parse_dwi(files,dicom_files) || progress::aborted())
     {
         out << "Not DICOM. Skip." << std::endl;
         return false;
@@ -1196,8 +1196,8 @@ void dicom2src(std::string dir_,std::ostream& out)
 {
     QString dir = dir_.c_str();
     QStringList sub_dir = QDir(dir).entryList(QStringList("*"),QDir::Dirs | QDir::NoSymLinks | QDir::NoDotAndDotDot);
-    prog_init prog_("batch creating src");
-    for(int j = 0;check_prog(j,sub_dir.size()) && !prog_aborted();++j)
+    progress prog_("process dicom");
+    for(int j = 0;progress::at(j,sub_dir.size()) && !progress::aborted();++j)
     {
         QStringList dir_list = GetSubDir(dir + "/" + sub_dir[j],true);
         dir_list << dir;

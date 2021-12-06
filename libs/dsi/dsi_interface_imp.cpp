@@ -141,7 +141,7 @@ bool ImageModel::reconstruction_hist(void)
 {
     voxel.CreateProcesses<hist_process>();
     voxel.init();
-    if(prog_aborted())
+    if(progress::aborted())
     {
         error_msg = "reconstruction canceled";
         return false;
@@ -149,7 +149,7 @@ bool ImageModel::reconstruction_hist(void)
 
     if(!voxel.run_hist())
         return false;
-    if(prog_aborted())
+    if(progress::aborted())
         error_msg = "reconstruction canceled";
 
     voxel.recon_report << " The parallel procesing of histology image were done by tessellation whole slide image into smaller image block with overlapping margin to eliminate boundary effects (Yeh, et al. J Pathol Inform 2014,  5:1).";
@@ -213,7 +213,7 @@ bool ImageModel::reconstruction(void)
         {
         case 1://DTI
             voxel.step_report << "[Step T2b(1)]=DTI" << std::endl;
-            if (!reconstruct<dti_process>("DTI reconstruction"))
+            if (!reconstruct<dti_process>("DTI"))
                 return false;
             break;
         case 4://GQI
@@ -265,7 +265,7 @@ bool ImageModel::reconstruction(void)
                 break;
             }
 
-            if (!reconstruct<gqi_process>("GQI reconstruction"))
+            if (!reconstruct<gqi_process>("GQI"))
                 return false;
             break;
         case 6:
@@ -291,7 +291,7 @@ bool ImageModel::reconstruction(void)
                 std::fill(voxel.mask.begin(),voxel.mask.end(),1.0);
                 if (!reconstruct<qa_map>("GQI for QSDR"))
                     return false;
-                if (!reconstruct<qsdr_process>("QSDR reconstruction"))
+                if (!reconstruct<qsdr_process>("QSDR"))
                     return false;
                 voxel.mask = mask;
             }
@@ -341,7 +341,7 @@ bool output_odfs(const tipl::image<3,unsigned char>& mni_mask,
                  std::string& error_msg,
                  bool record_odf = true)
 {
-    prog_init prog_("generating template");
+    progress prog_("generating template");
     ImageModel image_model;
     auto swap_data = [&](void)
     {
@@ -389,14 +389,14 @@ const char* odf_average(const char* out_name,std::vector<std::string>& file_name
     std::vector<std::string> other_metrics_name;
     std::vector<tipl::image<3> > other_metrics_images;
     std::vector<size_t> other_metrics_count;
+    progress prog_("loading data");
 
     try {
-        prog_init prog_("loading data");
-        for (unsigned int index = 0;check_prog(index,file_names.size());++index)
+        for (unsigned int index = 0;progress::at(index,file_names.size());++index)
         {
             file_name = file_names[index];
             fib_data fib;
-            set_title("reading file");
+            progress::show("reading file");
             if(!fib.load_from_file(file_name.c_str()))
                 throw std::runtime_error(fib.error_msg);
             if(!fib.is_qsdr)
@@ -444,7 +444,7 @@ const char* odf_average(const char* out_name,std::vector<std::string>& file_name
                 }
             }
 
-            set_title("loading ODFs");
+            progress::show("loading ODFs");
             if(index == 0)
             {
                 odfs.resize(dim.size());
@@ -465,8 +465,8 @@ const char* odf_average(const char* out_name,std::vector<std::string>& file_name
             });
 
 
-            set_title("accumulate metrics");
-            for(size_t i = 0;check_prog(i,other_metrics_name.size());++i)
+            progress::show("accumulate metrics");
+            for(size_t i = 0;progress::at(i,other_metrics_name.size());++i)
             {
                 auto metric_index = fib.get_name_index(other_metrics_name[i]);
                 if(metric_index < fib.view_item.size())
@@ -479,34 +479,32 @@ const char* odf_average(const char* out_name,std::vector<std::string>& file_name
                 }
             }
         }
-        if (prog_aborted())
+        if (progress::aborted())
             return nullptr;
     } catch (const std::exception& e) {
         error_msg = e.what();
         error_msg += " at ";
         error_msg += file_name;
-        check_prog(0,0);
         return error_msg.c_str();
     }
 
-    set_title("averaging other metrics");
-    check_prog(1,3);
+    progress::show("averaging other metrics");
+    progress::at(1,3);
     tipl::par_for(other_metrics_name.size(),[&](unsigned int i)
     {
         if(other_metrics_count[i])
             tipl::multiply_constant(other_metrics_images[i],1.0f/other_metrics_count[i]);
     });
 
-    prog_init prog_("averaging ODFs");
-    check_prog(0,3);
+    progress::at(0,3);
     tipl::par_for(dim.size(),[&](unsigned int i){
         if(odf_count[i] > 1)
             tipl::divide_constant(odfs[i].begin(),odfs[i].end(),float(odf_count[i]));
     });
 
     // eliminate ODF if missing more than half of the population
-    set_title("preparing ODFs");
-    check_prog(2,3);
+    progress::show("preparing ODFs");
+    progress::at(2,3);
     tipl::image<3,unsigned char> mask(dim);
     size_t odf_size = 0;
     for(size_t i = 0;i < mask.size();++i)
@@ -519,7 +517,7 @@ const char* odf_average(const char* out_name,std::vector<std::string>& file_name
         }
     }
     odfs.resize(odf_size);
-    check_prog(3,3);
+    progress::at(3,3);
     std::ostringstream out;
     out << "A group average template was constructed from a total of " << file_names.size() << " subjects." << report.c_str();
     report = out.str();

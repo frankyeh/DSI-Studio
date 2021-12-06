@@ -459,7 +459,9 @@ bool ImageModel::run_steps(std::string steps)
 }
 bool ImageModel::command(std::string cmd,std::string param)
 {
-    std::cout << cmd << (param.empty() ? "":" param:") << param << std::endl;
+    progress prog_(cmd.c_str());
+    if(!param.empty())
+        std::cout << " param:" << param << std::endl;
     if(cmd == "[Step T2a][Open]")
     {
         if(!std::filesystem::exists(param))
@@ -731,14 +733,14 @@ void ImageModel::flip_dwi(unsigned char type)
         swap_b_table(type-3);
     tipl::flip(dwi,type);
     tipl::flip(voxel.mask,type);
-    prog_init prog_("flip image");
+    progress prog_("flip image");
     if(voxel.is_histology)
         tipl::flip(voxel.hist_image,type);
     else
     tipl::par_for2(src_dwi_data.size(),[&](unsigned int index,unsigned id)
     {
         if(!id)
-            check_prog(index,src_dwi_data.size());
+            progress::at(index,src_dwi_data.size());
         auto I = dwi_at(index);
         tipl::flip(I,type);
     });
@@ -770,13 +772,13 @@ void ImageModel::rotate(const tipl::shape<3>& new_geo,
                         const tipl::image<3>& super_reso_ref,double var)
 {
     std::vector<tipl::image<3,unsigned short> > dwi(src_dwi_data.size());
-    prog_init prog_("rotating");
+    progress prog_("rotating");
     tipl::par_for2(src_dwi_data.size(),[&](unsigned int index,unsigned int id)
     {
-        if(prog_aborted())
+        if(progress::aborted())
             return;
         if(!id)
-            check_prog(index,src_dwi_data.size());
+            progress::at(index,src_dwi_data.size());
         dwi[index].resize(new_geo);
         auto I = dwi_at(index);
         if(!super_reso_ref.empty())
@@ -790,7 +792,7 @@ void ImageModel::rotate(const tipl::shape<3>& new_geo,
         }
         src_dwi_data[index] = &(dwi[index][0]);
     });
-    if(prog_aborted())
+    if(progress::aborted())
         return;
     dwi.swap(new_dwi);
     // rotate b-table
@@ -866,27 +868,27 @@ bool ImageModel::arg_to_mni(float resolution,tipl::vector<3>& vs,tipl::shape<3>&
     else
         return false;
     bool terminated = false;
-    prog_init prog_("aligning with MNI ac-pc",true);
-    check_prog(0,4);
+    progress prog_("aligning with MNI ac-pc",true);
+    progress::at(0,4);
     const float bound[8] = {1.0f,-1.0f,0.02f,-0.02f,1.2f,0.9f,0.1f,-0.1f};
     tipl::reg::linear_mr(I,vs,dwi,voxel.vs,
             T,tipl::reg::affine,tipl::reg::mutual_information(),terminated,0.1,bound);
-    check_prog(1,4);
+    progress::at(1,4);
     tipl::reg::linear_mr(I,vs,dwi,voxel.vs,
             T,tipl::reg::affine,tipl::reg::mutual_information(),terminated,0.01,bound);
-    check_prog(2,4);
+    progress::at(2,4);
     tipl::reg::linear_mr(I,vs,dwi,voxel.vs,
             T,tipl::reg::affine,tipl::reg::mutual_information(),terminated,0.001,bound);
     T.scaling[0] = T.scaling[1] = T.scaling[2] = 1.0f;
     T.affine[0] = T.affine[1] = T.affine[2] = 0.0f;
-    check_prog(3,4);
+    progress::at(3,4);
 
     tipl::image<3,unsigned char> I2(I.shape());
     tipl::resample(dwi,I2,tipl::transformation_matrix<float>(T,I.shape(),vs,voxel.dim,voxel.vs),tipl::cubic);
     float r = float(tipl::correlation(I.begin(),I.end(),I2.begin()));
     std::cout << T;
     std::cout << "R2 for ac-pc alignment=" << r*r << std::endl;
-    check_prog(4,4);
+    progress::at(4,4);
     if(r*r < 0.3f)
         return false;
     new_geo = I.shape();
@@ -912,7 +914,7 @@ bool ImageModel::rotate_to_mni(float resolution)
 
 void ImageModel::correct_motion(bool eddy)
 {
-    prog_init prog_("correcting motion...",true);
+    progress prog_("correcting motion...",true);
     tipl::affine_transform<float> arg;
     arg.rotation[0] = 0.01f;
     arg.rotation[1] = 0.01f;
@@ -920,7 +922,7 @@ void ImageModel::correct_motion(bool eddy)
     arg.translocation[0] = 0.01f;
     arg.translocation[0] = 0.01f;
     arg.translocation[0] = 0.01f;
-    for(unsigned int i = 0;check_prog(i,src_bvalues.size());++i)
+    for(unsigned int i = 0;progress::at(i,src_bvalues.size());++i)
     {
         tipl::image<3,unsigned char> to;
         tipl::normalize(dwi_at(i),to);
@@ -944,12 +946,12 @@ void ImageModel::correct_motion(bool eddy)
 }
 void ImageModel::crop(tipl::shape<3> range_min,tipl::shape<3> range_max)
 {
-    prog_init prog_("Removing background region");
+    progress prog_("Removing background region");
     std::cout << "from:" << range_min << " to:" << range_max << std::endl;
     tipl::par_for2(src_dwi_data.size(),[&](unsigned int index,unsigned int id)
     {
         if(!id)
-            check_prog(index,src_dwi_data.size());
+            progress::at(index,src_dwi_data.size());
         auto I = dwi_at(index);
         tipl::image<3,unsigned short> I0;
         tipl::crop(I,I0,range_min,range_max);
@@ -1349,7 +1351,7 @@ bool ImageModel::run_plugin(std::string program_name,size_t expected_time_in_sec
         return false;
     }
     unsigned int proc_time = 0;
-    while(!program.waitForFinished(1000) && check_prog((++proc_time)*expected_time_in_sec/(expected_time_in_sec+proc_time),expected_time_in_sec))
+    while(!program.waitForFinished(1000) && progress::at((++proc_time)*expected_time_in_sec/(expected_time_in_sec+proc_time),expected_time_in_sec))
     {
         QString output = QString::fromLocal8Bit(program.readAllStandardOutput());
         if(output.isEmpty())
@@ -1359,10 +1361,9 @@ bool ImageModel::run_plugin(std::string program_name,size_t expected_time_in_sec
             output_lines.pop_back();
         for(int i = 0;i+1 < output_lines.size();++i)
             std::cout << output_lines[i].toStdString() << std::endl;
-        set_title(output_lines.back().toStdString().c_str());
+        progress::show(output_lines.back().toStdString().c_str());
     }
-    check_prog(1,1);
-    if(prog_aborted())
+    if(progress::aborted())
     {
         program.kill();
         error_msg = "process aborted";
@@ -1840,8 +1841,8 @@ bool ImageModel::save_to_file(const char* dwi_file_name)
         }
         mat_writer.write("b_table",b_table,4);
     }
-    prog_init prog_("saving ",std::filesystem::path(dwi_file_name).filename().string().c_str());
-    for (unsigned int index = 0;check_prog(index,src_bvalues.size());++index)
+    progress prog_("saving ",std::filesystem::path(dwi_file_name).filename().string().c_str());
+    for (unsigned int index = 0;progress::at(index,src_bvalues.size());++index)
     {
         std::ostringstream out;
         out << "image" << index;
@@ -1904,13 +1905,13 @@ bool ImageModel::load_from_file(const char* dwi_file_name)
         tipl::image<2,unsigned char> raw;
         {
             QImage fig;
-            set_title("load picture");
+            progress::show("load picture");
             if(!fig.load(dwi_file_name))
             {
                 error_msg = "Unsupported image format";
                 return false;
             }
-            set_title("converting to grascale");
+            progress::show("converting to grascale");
             int pixel_bytes = fig.bytesPerLine()/fig.width();
             raw.resize(tipl::shape<2>(uint32_t(fig.width()),uint32_t(fig.height())));
             tipl::par_for(raw.height(),[&](int y){
@@ -1920,7 +1921,7 @@ bool ImageModel::load_from_file(const char* dwi_file_name)
                     out[x] = uint8_t(*line);
             });
         }
-        set_title("generating mask");
+        progress::show("generating mask");
         auto raw_ = tipl::make_image(&*raw.begin(),tipl::shape<3>(raw.width(),raw.height(),1));
         if(raw.width() > 2048)
         {
@@ -1950,7 +1951,7 @@ bool ImageModel::load_from_file(const char* dwi_file_name)
         voxel.steps += std::filesystem::path(dwi_file_name).filename().string();
         voxel.steps += "\n";
 
-        set_title("generating mask");
+        progress::show("generating mask");
         tipl::segmentation::otsu(dwi,voxel.mask);
         tipl::negate(voxel.mask);
         for(int i = 0;i < int(dwi.width()/200);++i)
@@ -2007,9 +2008,9 @@ bool ImageModel::load_from_file(const char* dwi_file_name)
     }
 
     prepare_idx(dwi_file_name,mat_reader.in);
-    if(!mat_reader.load_from_file(dwi_file_name) || prog_aborted())
+    if(!mat_reader.load_from_file(dwi_file_name) || progress::aborted())
     {
-        if(!prog_aborted())
+        if(!progress::aborted())
         {
             error_msg = QFileInfo(dwi_file_name).baseName().toStdString();
             error_msg = " is an invalid SRC file";
@@ -2089,7 +2090,7 @@ bool ImageModel::load_from_file(const char* dwi_file_name)
             }
             // correct signals
             {
-                set_title("apply gradient deviation correction");
+                progress::show("apply gradient deviation correction");
                 tipl::par_for(voxel.dim.size(),[&](size_t voxel_index)
                 {
                     tipl::matrix<3,3,float> G;
@@ -2132,7 +2133,7 @@ bool ImageModel::load_from_file(const char* dwi_file_name)
 
 bool ImageModel::save_fib(const std::string& output_name)
 {
-    prog_init prog_("saving ",std::filesystem::path(output_name).filename().string().c_str());
+    progress prog_("saving ",std::filesystem::path(output_name).filename().string().c_str());
     gz_mat_write mat_writer(output_name.c_str());
     if(!mat_writer)
     {
@@ -2267,7 +2268,7 @@ bool ImageModel::save_bvec(const char* file_name) const
 bool ImageModel::compare_src(const char* file_name)
 {
     std::shared_ptr<ImageModel> bl(new ImageModel);
-    prog_init prog_("reading");
+    progress prog_("reading");
     if(!bl->load_from_file(file_name))
     {
         error_msg = bl->error_msg;
@@ -2296,7 +2297,6 @@ bool ImageModel::compare_src(const char* file_name)
     voxel.study_name = QFileInfo(file_name).baseName().toStdString();
     voxel.compare_voxel = &(study_src->voxel);
     {
-        check_prog(0,0);
         // temporary store the mask
         auto mask = voxel.mask;
         // set all mask=1 for baseline and follow-up
@@ -2308,24 +2308,22 @@ bool ImageModel::compare_src(const char* file_name)
         // restore mask
 
         voxel.mask.swap(mask);
-        check_prog(0,0);
         auto& Ib = voxel.fib_fa; // baseline
         auto& If = study_src->voxel.fib_fa; // follow-up
         auto& Ib_vs = voxel.vs;
         auto& If_vs = study_src->voxel.vs;
         bool terminated = false;
-        check_prog(0,4);
+        progress::at(0,4);
         tipl::affine_transform<float> T;
         {
             tipl::vector<3> vs;
             tipl::shape<3> geo;
             study_src->arg_to_mni(2.0f,vs,geo,T);
         }
-        prog_init prog_("registering longitudinal data",true);
-        check_prog(0,4);
+        progress::at(0,4);
         tipl::reg::linear(Ib,Ib_vs,If,If_vs,
                 T,tipl::reg::rigid_body,tipl::reg::correlation(),terminated,0.01,0,tipl::reg::large_bound);
-        check_prog(1,4);
+        progress::at(1,4);
         tipl::reg::linear(Ib,Ib_vs,If,If_vs,
                 T,tipl::reg::rigid_body,tipl::reg::correlation(),terminated,0.001,0,tipl::reg::large_bound);
         tipl::transformation_matrix<float> arg(T,Ib.shape(),Ib_vs,If.shape(),If_vs);
@@ -2334,8 +2332,8 @@ bool ImageModel::compare_src(const char* file_name)
 
         //if(voxel.dt_deform)
         {
-            set_title("nonlinear warping");
-            check_prog(2,4);
+            progress::show("nonlinear warping");
+            progress::at(2,4);
             tipl::image<3> Iff(Ib.shape());
             tipl::resample(If,Iff,arg,tipl::cubic);
             tipl::match_signal(Ib,Iff);
@@ -2346,8 +2344,8 @@ bool ImageModel::compare_src(const char* file_name)
             tipl::reg::cdm(Ib,Iff,cdm_dis,terminated,param);
 
 
-            set_title("subvoxel nonlinear warping");
-            check_prog(3,4);
+            progress::show("subvoxel nonlinear warping");
+            progress::at(3,4);
 
             tipl::image<3> If2Ib(Ib.shape());
             tipl::resample_dis(If,If2Ib,arg,cdm_dis,tipl::cubic);
@@ -2383,7 +2381,6 @@ bool ImageModel::compare_src(const char* file_name)
         }
         study_src->rotate(Ib.shape(),voxel.vs,arg,cdm_dis);
         study_src->voxel.mask = voxel.mask;
-        check_prog(4,4);
     }
 
     // Signal match on b0 to allow for quantitative MRI in DDI

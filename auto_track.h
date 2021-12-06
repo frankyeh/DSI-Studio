@@ -42,7 +42,7 @@ private slots:
 
 private:
     Ui::auto_track *ui;
-    QProgressBar* progress;
+    QProgressBar* progress_bar;
 };
 
 #endif // AUTO_TRACK_H

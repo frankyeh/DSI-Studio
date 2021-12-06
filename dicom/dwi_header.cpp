@@ -300,8 +300,8 @@ if (sort_and_merge)
 {
 
     // merge files of the same bvec
-    prog_init prog_("Merge bvalue Files");
-    for (unsigned int i = 0;check_prog(i,dwi_files.size());++i)
+    progress prog_("Merge bvalue Files");
+    for (unsigned int i = 0;progress::at(i,dwi_files.size());++i)
     {
         unsigned int j = i + 1;
         for (;j < dwi_files.size() && dwi_files[i] == dwi_files[j];++j)
@@ -368,7 +368,7 @@ void correct_t2(std::vector<std::shared_ptr<DwiHeader> >& dwi_files)
     {
         std::vector<double> neg_inv_T2(geo.size());//-1/T2
         {
-            //prog_init prog_("Eliminating T2 effect");
+            //progress prog_("Eliminating T2 effect");
             for (tipl::pixel_index<3> index(geo);index < geo.size();++index)
             {
                 std::vector<float> te_samples;
@@ -578,8 +578,8 @@ bool DwiHeader::output_src(const char* di_file,std::vector<std::shared_ptr<DwiHe
         write_mat.write("mask",dwi_files[0]->mask,dwi_files[0]->mask.plane_size());
 
     //store images
-    prog_init prog_("saving");
-    for (unsigned int index = 0;check_prog(index,(unsigned int)(dwi_files.size()));++index)
+    progress prog_("saving");
+    for (unsigned int index = 0;progress::at(index,(unsigned int)(dwi_files.size()));++index)
     {
         std::ostringstream name;
         tipl::image<3,unsigned short> buffer;
@@ -609,7 +609,7 @@ bool DwiHeader::output_src(const char* di_file,std::vector<std::shared_ptr<DwiHe
         write_mat.write(name.str().c_str(),ptr,output_dim.plane_size(),output_dim.depth());
     }
 
-    if(prog_aborted())
+    if(progress::aborted())
     {
         src_error_msg = "output aborted";
         return false;

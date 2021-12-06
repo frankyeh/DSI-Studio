@@ -327,14 +327,14 @@ public:
         voxel.load_from_src(*this);
         voxel.CreateProcesses<ProcessType>();
         voxel.init();
-        if(prog_aborted())
+        if(progress::aborted())
         {
             error_msg = "reconstruction canceled";
             return false;
         }
 
         // reconstruction
-        prog_init prog_(prog_title);
+        progress prog_(prog_title);
         try
         {
             if(voxel.run())
@@ -348,7 +348,7 @@ public:
         {
             error_msg = "unknown error";
         }
-        if(prog_aborted())
+        if(progress::aborted())
             error_msg = "reconstruction canceled";
         std::cout << error_msg << std::endl;
         return false;

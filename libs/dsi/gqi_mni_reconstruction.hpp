@@ -105,7 +105,7 @@ public:
             else
             {
                 bool terminated = false;
-                if(!run_prog("linear registration",[&]()
+                if(!progress::run("linear registration",[&]()
                 {
                     if(!is_human_template) // animal recon
                     {
@@ -154,7 +154,7 @@ public:
 
             bool terminated = false;
 
-            if(!run_prog("normalization",[&]()
+            if(!progress::run("normalization",[&]()
                 {
                     tipl::reg::cdm_param param;
                     if(VFvs[0] < VGvs[0])

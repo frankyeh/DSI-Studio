@@ -252,7 +252,7 @@ bool gz_istream::read(void* buf,size_t len)
 {
     if(!is_gz)
     {
-        if(!good() || prog_aborted())
+        if(!good() || progress::aborted())
             return false;
         in.read(reinterpret_cast<char*>(buf),uint32_t(len));
         return true;
@@ -342,7 +342,7 @@ bool gz_istream::read(void* buf,size_t len)
             return false;
 
         int ret = istrm->process(cur_uncompressed,cur_compressed,get_access_point);
-        check_prog(cur_compressed*100/file_size,100);
+        progress::at(cur_compressed*100/file_size,100);
 
         if(ret == Z_STREAM_END)
         {
@@ -358,7 +358,7 @@ bool gz_istream::read(void* buf,size_t len)
         }
 
         // ret != Z_OK usually due to data corruption
-        if(ret != Z_OK || prog_aborted())
+        if(ret != Z_OK || progress::aborted())
             return false;
 
         if(get_access_point && istrm->at_block_end() && len > istrm->size_to_extract() + WINSIZE)
@@ -456,7 +456,6 @@ void gz_istream::close(void)
         flush();
         terminate_readfile_thread();
     }
-    check_prog(0,0);
 }
 
 
@@ -515,5 +514,4 @@ void gz_ostream::close(void)
     }
     if(out)
         out.close();
-    check_prog(0,0);
 }

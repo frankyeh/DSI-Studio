@@ -427,7 +427,7 @@ void db_window::on_actionSave_DB_as_triggered()
                            "Database files (*db?fib.gz *fib.gz);;All files (*)");
     if (filename.isEmpty())
         return;
-    prog_init prog_("saving ",std::filesystem::path(filename.toStdString()).filename().string().c_str());
+    progress prog_("saving ",std::filesystem::path(filename.toStdString()).filename().string().c_str());
     vbc->handle->db.save_subject_data(filename.toStdString().c_str());
 }
 
@@ -474,7 +474,7 @@ void db_window::on_actionAdd_DB_triggered()
     for(int i =0;i < filenames.count();++i)
     {
         std::shared_ptr<fib_data> handle(new fib_data);
-        prog_init prog_("adding data");
+        progress prog_("adding data");
         if(!handle->load_from_file(filenames[i].toStdString().c_str()))
         {
             QMessageBox::information(this,"Error",handle->error_msg.c_str(),0);
@@ -497,13 +497,13 @@ void db_window::on_actionAdd_DB_triggered()
         }
         if(handle->has_odfs())
         {
-            prog_init prog_(QFileInfo(filenames[i]).baseName().toStdString().c_str());
+            progress prog_(QFileInfo(filenames[i]).baseName().toStdString().c_str());
             if(!vbc->handle->db.add_subject_file(filenames[i].toStdString(),QFileInfo(filenames[i]).baseName().toStdString()))
             {
                 QMessageBox::information(this,"error in loading subject fib files",vbc->handle->error_msg.c_str(),0);
                 break;
             }
-            if(prog_aborted())
+            if(progress::aborted())
                 break;
         }
     }
@@ -562,8 +562,8 @@ void db_window::on_actionAll_Subjects_triggered()
                                 "");
     if(dir.isEmpty())
         return;
-    prog_init prog_("exporting ",dir.toStdString().c_str());
-    for(size_t i = 0;check_prog(i,vbc->handle->db.subject_names.size());++i)
+    progress prog_("exporting ",dir.toStdString().c_str());
+    for(size_t i = 0;progress::at(i,vbc->handle->db.subject_names.size());++i)
     {
         QString file_name = dir + "\\"+
                 vbc->handle->db.subject_names[i].c_str()+"."+

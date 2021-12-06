@@ -164,8 +164,8 @@ bool load_dicom_multi_frame(const char* file_name,std::vector<std::shared_ptr<Dw
 
     size_t plane_size = size_t(buf_image.width()*buf_image.height());
     b_table.resize(num_gradient*4);
-    prog_init prog_("loading multi frame DICOM");
-    for(size_t index = 0;check_prog(index,num_gradient);++index)
+    progress prog_("loading multi frame DICOM");
+    for(size_t index = 0;progress::at(index,num_gradient);++index)
     {
         std::shared_ptr<DwiHeader> new_file(new DwiHeader);
         if(index == 0)
@@ -314,7 +314,7 @@ bool load_4d_nii(const char* file_name,std::vector<std::shared_ptr<DwiHeader> >&
             std::replace_if(data.begin(),data.end(),[](float v){return std::isnan(v) || std::isinf(v) || v < 0.0f;},0.0f);
             dwi_data[index].swap(data);
         }
-        if(prog_aborted())
+        if(progress::aborted())
         {
             src_error_msg = "Aborted by user.";
             return false;
@@ -636,8 +636,8 @@ bool load_multiple_slice_dicom(QStringList file_list,std::vector<std::shared_ptr
     }
 
 
-    prog_init prog_("loading images");
-    for (unsigned int index = 0,b_index = 0,slice_index = 0;check_prog(index,file_list.size());++index)
+    progress prog_("loading images");
+    for (unsigned int index = 0,b_index = 0,slice_index = 0;progress::at(index,file_list.size());++index)
     {
         std::shared_ptr<DwiHeader> dwi(new DwiHeader);
         if(!dwi->open(file_list[index].toLocal8Bit().begin()))
@@ -694,8 +694,8 @@ bool load_nhdr(QStringList file_list,std::vector<std::shared_ptr<DwiHeader> >& d
     tipl::shape<3> dim;
     tipl::vector<3> vs;
     image_buf.resize(file_list.size());
-    prog_init prog_("Reading raw data");
-    for (size_t i = 0;check_prog(i,file_list.size());++i)
+    progress prog_("Reading raw data");
+    for (size_t i = 0;progress::at(i,file_list.size());++i)
     {
         std::map<std::string,std::string> value_list;
         {
@@ -756,8 +756,8 @@ bool load_nhdr(QStringList file_list,std::vector<std::shared_ptr<DwiHeader> >& d
     scale_image_buf_to_uint16(image_buf);
 
     {
-        prog_init prog_("Converting data");
-        for(size_t i = 0;check_prog(i,image_buf.size());++i)
+        progress prog_("Converting data");
+        for(size_t i = 0;progress::at(i,image_buf.size());++i)
         {
             dwi_files.push_back(std::make_shared<DwiHeader>());
             dwi_files.back()->voxel_size = vs;
@@ -773,7 +773,7 @@ bool load_4d_fdf(QStringList file_list,std::vector<std::shared_ptr<DwiHeader> >&
 {
     std::vector<tipl::image<3> > image_buf;
     int64_t plane_size = 0;
-    for (int index = 0;check_prog(index,file_list.size());++index)
+    for (int index = 0;progress::at(index,file_list.size());++index)
     {
         std::map<std::string,std::string> value_list;
         {
@@ -874,8 +874,8 @@ bool load_4d_fdf(QStringList file_list,std::vector<std::shared_ptr<DwiHeader> >&
 
 bool load_3d_series(QStringList file_list,std::vector<std::shared_ptr<DwiHeader> >& dwi_files)
 {
-    prog_init prog_("loading images");
-    for (unsigned int index = 0;check_prog(index,file_list.size());++index)
+    progress prog_("loading images");
+    for (unsigned int index = 0;progress::at(index,file_list.size());++index)
     {
         std::shared_ptr<DwiHeader> new_file(new DwiHeader);
         if (!new_file->open(file_list[index].toLocal8Bit().begin()))
@@ -907,7 +907,7 @@ bool parse_dwi(QStringList file_list,
     if(QFileInfo(file_list[0]).fileName().endsWith(".nii") ||
             QFileInfo(file_list[0]).fileName().endsWith(".nii.gz"))
     {
-        prog_init prog_("loading nifti");
+        progress prog_("loading nifti");
         for(int i = 0;i < file_list.size();++i)
             if(!load_4d_nii(file_list[i].toLocal8Bit().begin(),dwi_files,false))
                 return false;
@@ -933,7 +933,7 @@ bool parse_dwi(QStringList file_list,
         return !dwi_files.empty();
     }
 
-    prog_init prog_("loading dicoms");
+    progress prog_("loading dicoms");
     std::sort(file_list.begin(),file_list.end(),compare_qstring());
     tipl::io::dicom dicom_header;// multiple frame image
     tipl::shape<3> geo;
@@ -984,7 +984,7 @@ void dicom_parser::load_files(QStringList file_list)
         close();
         return;
     }
-    if(prog_aborted())
+    if(progress::aborted())
     {
         close();
         return;
