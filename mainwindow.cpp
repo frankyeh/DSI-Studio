@@ -274,7 +274,7 @@ void shift_track_for_tck(std::vector<std::vector<float> >& loaded_tract_data,tip
 void MainWindow::loadFib(QString filename,bool presentation_mode)
 {
     std::string file_name = filename.toStdString();
-    progress prog_("loading ",QFileInfo(filename).baseName().toStdString().c_str());
+    progress prog_("loading ",QFileInfo(filename).baseName().toStdString().c_str(),true);
     std::shared_ptr<fib_data> new_handle(new fib_data);
     if (!new_handle->load_from_file(&*file_name.begin()))
     {
