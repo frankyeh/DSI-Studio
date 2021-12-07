@@ -10,19 +10,26 @@
 #include "prog_interface_static_link.h"
 bool has_gui = false;
 std::shared_ptr<QProgressDialog> progressDialog;
-QTime t_total,t_last;
+QTime t_last;
+static std::vector<QTime> process_time;
 bool prog_aborted_ = false;
 auto start_time = std::chrono::high_resolution_clock::now();
 std::vector<std::string> progress::status_list;
+std::vector<std::string> progress::at_list;
 std::thread::id main_thread_id = std::this_thread::get_id();
 bool is_main_thread(void)
 {
     return main_thread_id == std::this_thread::get_id();
 }
+
+inline bool processing_time_less_than(int time)
+{
+    return std::chrono::duration_cast<std::chrono::milliseconds>(
+           std::chrono::high_resolution_clock::now() - start_time).count() < time;
+}
 void progress::update_prog(bool show_now)
 {
-    if(!show_now && std::chrono::duration_cast<std::chrono::milliseconds>(
-       std::chrono::high_resolution_clock::now() - start_time).count() < 250)
+    if(!show_now && processing_time_less_than(250))
         return;
     if(!progressDialog.get())
         progressDialog.reset(new QProgressDialog(get_status().c_str(),"Cancel",0,100));
@@ -40,6 +47,11 @@ std::string progress::get_status(void)
         if(i)
             result += "\n";
         result += status_list[i];
+        if(i < at_list.size())
+        {
+            result += " ";
+            result += at_list[i];
+        }
     }
     return result;
 }
@@ -48,7 +60,8 @@ void progress::begin_prog(bool show_now)
     if(!has_gui || !is_main_thread())
         return;
     start_time = std::chrono::high_resolution_clock::now();
-    t_total.start();
+    process_time.resize(status_list.size());
+    process_time.back().start();
     t_last.start();
     prog_aborted_ = false;
     update_prog(show_now);
@@ -67,6 +80,7 @@ void progress::show(const char* status,bool show_now)
 progress::~progress(void)
 {
     status_list.pop_back();
+    process_time.pop_back();
     if(!has_gui || !is_main_thread())
         return;
     if(!status_list.empty())
@@ -74,6 +88,7 @@ progress::~progress(void)
         update_prog();
         return;
     }
+    at_list.clear();
     if(progressDialog.get())
     {
         prog_aborted_ = progressDialog->wasCanceled();
@@ -84,32 +99,27 @@ progress::~progress(void)
 }
 bool progress::check_prog(unsigned int now,unsigned int total)
 {
-    if(!has_gui || !is_main_thread() || status_list.empty())
+    if(!has_gui || !is_main_thread() || status_list.empty() || processing_time_less_than(250))
         return now < total;
-    if(!progressDialog.get())
-        update_prog();
-    if(!progressDialog.get())
-        return now < total;
-    if(now >= total || progressDialog->wasCanceled())
-        return false;
-    if(now == 0 || now == total)
-        t_total.start();
-    if(t_last.elapsed() > 500)
+    if(now == 0)
+        process_time.back().start();
+    if(now == total || t_last.elapsed() > 1000)
     {
         t_last.start();
-        long expected_sec = 0;
-        if(now)
-            expected_sec = ((double)t_total.elapsed()*(double)(total-now)/(double)now/1000.0);
-        progressDialog->setRange(0, total);
-        progressDialog->setValue(now);
-        QString label = get_status().c_str();
+        int expected_sec = (process_time.back().elapsed()*int(total-now)/int(now+1)/1000/60);
+        at_list.resize(status_list.size());
+        at_list.back() = QString("(%1/%2)").arg(now).arg(total).toStdString();
         if(expected_sec)
-            progressDialog->setLabelText(label + QString("\n%1 of %2\n%3 min %4 sec").
-                                             arg(now).arg(total).arg(expected_sec/60).arg(expected_sec%60));
-        else
-            progressDialog->setLabelText(label + QString("\n%1 of %2...").arg(now).arg(total));
-        progressDialog->show();
-        QApplication::processEvents();
+            at_list.back() += QString(" %1 min").arg(expected_sec).toStdString();
+        update_prog();
+        if(progressDialog.get())
+        {
+            progressDialog->setRange(0, int(total));
+            progressDialog->setValue(int(now));
+            if(progressDialog->wasCanceled())
+                return false;
+            QApplication::processEvents();
+        }
     }
     return now < total;
 }

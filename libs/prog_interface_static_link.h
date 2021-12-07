@@ -12,7 +12,7 @@ private:
     static void begin_prog(bool show_now = false);
     static std::string get_status(void);
     static bool check_prog(unsigned int now,unsigned int total);
-    static std::vector<std::string> status_list;
+    static std::vector<std::string> status_list,at_list;
 public:
     progress(const char* status,bool show_now = false)
     {
