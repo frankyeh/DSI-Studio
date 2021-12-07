@@ -27,7 +27,7 @@ int xnat(program_option& po)
             return 1;
         }
         std::cout << "writing output to " << output << std::endl;
-        xnat_connection.get_experiments_data(po.get("source","https://central.xnat.org/"),po.get("auth"),po.get("id"),output);
+        xnat_connection.get_scans_data(po.get("source","https://central.xnat.org/"),po.get("auth"),po.get("id"),output);
     }
 
     while(xnat_connection.is_running())

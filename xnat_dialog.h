@@ -17,9 +17,16 @@ public:
     std::string result,error_msg;
 public:
     void get_html(std::string url,std::string auth);
-    void get_experiments_dicom(std::string site,std::string auth,const std::vector<std::string>& dicom_urls,std::string output_dir);
-    void get_experiments_data(std::string site,std::string auth,std::string experiment,std::string output_dir);
-    void get_experiments_info(std::string site,std::string auth);
+    void get_data(std::string site,std::string auth,const std::vector<std::string>& urls,std::string output_dir);
+    void get_scans_data(std::string site,std::string auth,std::string experiment,std::string output_dir,std::string filter = "ALL");
+public:
+    void get_info(std::string site,std::string auth,std::string path);
+    void get_experiments_info(std::string site,std::string auth)
+    {get_info(site,auth,"/REST/experiments/");}
+    void get_scans_info(std::string site,std::string auth,std::string experiment_id)
+    {get_info(site,auth,std::string("/REST/experiments/") + experiment_id + "/scans");}
+    void get_resources_info(std::string site,std::string auth,std::string experiment_id)
+    {get_info(site,auth,std::string("/REST/experiments/") + experiment_id + "/resources");}
 public:
     bool good(void);
     void clear(void);

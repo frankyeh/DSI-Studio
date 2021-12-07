@@ -81,32 +81,32 @@ void xnat_facade::get_html(std::string url,std::string auth)
     cur_response = xnat_manager.get(xnat_request);
 }
 void check_name(std::string& name);
-void xnat_facade::get_experiments_dicom(std::string site,std::string auth,const std::vector<std::string>& dicom_urls,std::string output_dir)
+void xnat_facade::get_data(std::string site,std::string auth,
+                                        const std::vector<std::string>& urls,
+                                        std::string output_dir)
 {
     if(site.back() == '/')
         site.pop_back();
     if(output_dir.back() == '/')
         output_dir.pop_back();
 
-    total = dicom_urls.size();
+    total = urls.size();
     for(progress = 0;progress < total;++progress)
     {
-        std::string cur_dicom_url = dicom_urls[progress];
-        std::string dicom_name = cur_dicom_url.substr(cur_dicom_url.find_last_of('/')+1);
-        std::string download_name = (output_dir+"/"+dicom_name).c_str();
+        std::string download_name = (output_dir+"/"+
+                                     urls[progress].substr(urls[progress].find_last_of('/')+1)).c_str();
         if(QFileInfo(download_name.c_str()).exists())
             continue;
-        std::cout << "downloading " << cur_dicom_url << std::endl;
-        get_html(site + cur_dicom_url,auth);
+        get_html(site + urls[progress],auth);
         if (!good())
             return;
         {
-            bool dicom_downloading = true;
-            QObject::connect(cur_response, &QNetworkReply::finished,[&dicom_downloading]
+            bool downloading = true;
+            QObject::connect(cur_response, &QNetworkReply::finished,[&downloading]
             {
-                dicom_downloading = false;
+                downloading = false;
             });
-            while(dicom_downloading)
+            while(downloading)
                 QApplication::processEvents();
             if (!good())
                 break;
@@ -124,12 +124,12 @@ void xnat_facade::get_experiments_dicom(std::string site,std::string auth,const 
     cur_response = nullptr;
 }
 
-void xnat_facade::get_experiments_data(std::string site,std::string auth,std::string experiment,std::string output_dir)
+void xnat_facade::get_scans_data(std::string site,std::string auth,std::string experiment,std::string output_dir,std::string filter)
 {
     if(site.back() == '/')
         site.pop_back();
     clear();
-    get_html(site + "/REST/experiments/" + experiment + "/scans/ALL/files",auth);
+    get_html(site + "/REST/experiments/" + experiment + "/scans/" + filter + "/files",auth);
     if (!good())
         return;
     QObject::connect(cur_response, &QNetworkReply::finished,[=]{
@@ -138,21 +138,20 @@ void xnat_facade::get_experiments_data(std::string site,std::string auth,std::st
         std::cout << "receive content type: " << cur_response->header(QNetworkRequest::ContentTypeHeader).toString().toStdString() << std::endl;
         //auto const html = QString::fromUtf8(response->readAll());
         auto data = QJsonDocument::fromJson(cur_response->readAll()).object()["ResultSet"].toObject()["Result"].toArray();
-        std::vector<std::string> dicom_urls;
+        std::vector<std::string> urls;
         for(int i = 0;i < data.size();++i)
-            dicom_urls.push_back(data[i].toObject().value("URI").toString().toStdString());
-        std::cout << "download a total of " << dicom_urls.size() << " files to " << output_dir << std::endl;
-        get_experiments_dicom(site,auth,dicom_urls,output_dir);
+            urls.push_back(data[i].toObject().value("URI").toString().toStdString());
+        std::cout << "download a total of " << urls.size() << " files to " << output_dir << std::endl;
+        get_data(site,auth,urls,output_dir);
         cur_response = nullptr;
     });
 }
-
-void xnat_facade::get_experiments_info(std::string site,std::string auth)
+void xnat_facade::get_info(std::string site,std::string auth,std::string path)
 {
     if(site.back() == '/')
         site.pop_back();
     clear();
-    get_html(site + "/REST/experiments/",auth);
+    get_html(site + path,auth);
     if (!good())
         return;
     QObject::connect(cur_response, &QNetworkReply::finished,
@@ -164,7 +163,6 @@ void xnat_facade::get_experiments_info(std::string site,std::string auth)
        cur_response = nullptr;
     });
 }
-
 
 xnat_dialog::xnat_dialog(QWidget *parent) :
     QMainWindow(parent),
@@ -410,7 +408,7 @@ void xnat_dialog::download_status()
         }
         QString auth = ui->username->text() + ":" + ui->password->text();
         output_dirs.push_back(output_dir.toStdString());
-        xnat_connection.get_experiments_data(ui->url->text().toStdString(),
+        xnat_connection.get_scans_data(ui->url->text().toStdString(),
                                              auth == ":" ? std::string():auth.toStdString(),
                                              ui->experiment_list->item(ui->experiment_list->selectionModel()->selectedRows()[cur_download_index].row(),4/*ID*/)->text().toStdString(),
                                              output_dir.toStdString());
