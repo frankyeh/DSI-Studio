@@ -142,19 +142,21 @@ bool load_dicom_multi_frame(const char* file_name,std::vector<std::shared_ptr<Dw
             }
     }
 
-    // Philips multiframe
+    // multiframe DICOM
     // The b-table should be multiplied with the image rotation matrix
     tipl::matrix<3,3,float> T;
     {
         tipl::vector<3> x,y,z;
-        dicom_header.get_image_row_orientation(x.begin());
-        dicom_header.get_image_col_orientation(y.begin());
-        z = x.cross_product(y);
-        std::copy(x.begin(),x.end(),T.begin());
-        std::copy(y.begin(),y.end(),T.begin()+3);
-        std::copy(z.begin(),z.end(),T.begin()+6);
-        std::cout << "b-table multiplied by DICOM image rotation matrix" << std::endl;
-        std::cout << T << std::endl;
+        if(dicom_header.get_image_row_orientation(x.begin()) &&
+           dicom_header.get_image_col_orientation(y.begin()))
+        {
+            z = x.cross_product(y);
+            std::copy(x.begin(),x.end(),T.begin());
+            std::copy(y.begin(),y.end(),T.begin()+3);
+            std::copy(z.begin(),z.end(),T.begin()+6);
+        }
+        else
+            T.identity();
     }
 
     if(!slice_num)
@@ -164,7 +166,6 @@ bool load_dicom_multi_frame(const char* file_name,std::vector<std::shared_ptr<Dw
 
     size_t plane_size = size_t(buf_image.width()*buf_image.height());
     b_table.resize(num_gradient*4);
-    progress prog_("loading multi frame DICOM");
     for(size_t index = 0;progress::at(index,num_gradient);++index)
     {
         std::shared_ptr<DwiHeader> new_file(new DwiHeader);
@@ -635,8 +636,6 @@ bool load_multiple_slice_dicom(QStringList file_list,std::vector<std::shared_ptr
         }
     }
 
-
-    progress prog_("loading images");
     for (unsigned int index = 0,b_index = 0,slice_index = 0;progress::at(index,file_list.size());++index)
     {
         std::shared_ptr<DwiHeader> dwi(new DwiHeader);
@@ -874,7 +873,6 @@ bool load_4d_fdf(QStringList file_list,std::vector<std::shared_ptr<DwiHeader> >&
 
 bool load_3d_series(QStringList file_list,std::vector<std::shared_ptr<DwiHeader> >& dwi_files)
 {
-    progress prog_("loading images");
     for (unsigned int index = 0;progress::at(index,file_list.size());++index)
     {
         std::shared_ptr<DwiHeader> new_file(new DwiHeader);
@@ -889,6 +887,7 @@ bool load_3d_series(QStringList file_list,std::vector<std::shared_ptr<DwiHeader>
 bool parse_dwi(QStringList file_list,
                     std::vector<std::shared_ptr<DwiHeader> >& dwi_files)
 {
+    progress prog_("reading ",QFileInfo(file_list[0]).fileName().toStdString().c_str());
     src_error_msg.clear();
     if(QFileInfo(file_list[0]).fileName() == "2dseq")
     {
@@ -907,7 +906,6 @@ bool parse_dwi(QStringList file_list,
     if(QFileInfo(file_list[0]).fileName().endsWith(".nii") ||
             QFileInfo(file_list[0]).fileName().endsWith(".nii.gz"))
     {
-        progress prog_("loading nifti");
         for(int i = 0;i < file_list.size();++i)
             if(!load_4d_nii(file_list[i].toLocal8Bit().begin(),dwi_files,false))
                 return false;
@@ -933,7 +931,6 @@ bool parse_dwi(QStringList file_list,
         return !dwi_files.empty();
     }
 
-    progress prog_("loading dicoms");
     std::sort(file_list.begin(),file_list.end(),compare_qstring());
     tipl::io::dicom dicom_header;// multiple frame image
     tipl::shape<3> geo;
