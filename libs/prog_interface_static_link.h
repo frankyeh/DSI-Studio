@@ -20,13 +20,13 @@ public:
         status_list.push_back(status);
         begin_prog(show_now);
     }
-    progress(const char* status1,const char* status2)
+    progress(const char* status1,const char* status2,bool show_now = false)
     {
         std::string s(status1);
         s += status2;
         std::cout << s << std::endl;
         status_list.push_back(s);
-        begin_prog();
+        begin_prog(show_now);
     }
     static void show(const char* status,bool show_now = false);
     static void show(const std::string& str,bool show_now = false){return show(str.c_str(),show_now);}
