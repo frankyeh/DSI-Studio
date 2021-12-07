@@ -103,7 +103,9 @@ bool progress::check_prog(unsigned int now,unsigned int total)
         return now < total;
     if(now == 0)
         process_time.back().start();
-    if(now == total || t_last.elapsed() > 1000)
+    if(now >= total)
+        return false;
+    if(t_last.elapsed() > 1000)
     {
         t_last.start();
         int expected_sec = (process_time.back().elapsed()*int(total-now)/int(now+1)/1000/60);
