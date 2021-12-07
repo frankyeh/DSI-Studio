@@ -125,7 +125,7 @@ private:
     tipl::color_image buffer;
     QImage source_image;
     float source_ratio;
-
+    std::string error_msg;
 };
 
 #endif // VIEW_IMAGE_H

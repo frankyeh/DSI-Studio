@@ -67,14 +67,42 @@ bool img_command(tipl::image<3>& data,
     return false;
 }
 
+bool match_files(std::string file_path1_others,std::string file_path2,std::string& file_path2_gen)
+{
+    std::string file_path2_others;
+    auto name1_others = std::filesystem::path(file_path1_others).filename().string();
+    auto path2 = QFileInfo(file_path2.c_str()).absolutePath().toStdString();
+
+    auto file_list = QFileInfo(path2.c_str()).dir().
+            entryList(QStringList() << QString("*.") + QFileInfo(file_path2.c_str()).completeSuffix(),QDir::Files);
+    size_t max_common = name1_others.length()/2;
+    for(int i = 0;i < file_list.size();++i)
+    {
+        std::string name2_others = file_list[i].toStdString();
+        auto cure_file = path2 + "/" + name2_others;
+        if(cure_file == file_path1_others)
+            continue;
+        size_t cur = 0;
+        for(;cur < name1_others.length() && cur < name2_others.length();++cur)
+            if(name1_others[cur] != name2_others[cur])
+                break;
+        if(cur > max_common)
+        {
+            max_common = cur;
+            file_path2_others = cure_file;
+        }
+    }
+    if(file_path2_others.empty())
+        return false;
+    file_path2_gen = file_path2_others;
+    std::cout << "mtching " << file_path1_others << " with " << file_path2_others << std::endl;
+    return true;
+}
 bool view_image::command(std::string cmd,std::string param1,std::string param2)
 {
-    std::string error_msg;
+    error_msg.clear();
     if(!img_command(data,vs,T,cmd,param1,param2,error_msg))
-    {
-        QMessageBox::information(this,"Error",error_msg.c_str());
         return false;
-    }
     show_image();
 
     if(!other_data.empty())
@@ -88,44 +116,17 @@ bool view_image::command(std::string cmd,std::string param1,std::string param2)
             std::string filename2 = std::filesystem::path(param1).filename().string();
             for(size_t i = 0;i < other_data.size();++i)
             {
+                other_params[i] = param1;
                 // if param1 is file name, then try to generalize
-                if(param1.find('.') != std::string::npos)
+                if(param1.find(".gz") != std::string::npos)
                 {
-                    std::string filename1_others = std::filesystem::path(other_file_name[i]).filename().string();
-                    // directory is the only difference
-                    if(filename1 == filename2)
-                        other_params[i] = QString(param1.c_str()).
-                                replace(filename1.c_str(),QFileInfo(other_file_name[i].c_str()).fileName()).toStdString();
-                    else
-                    // common postfix
+                    if(!match_files(other_file_name[i],param1,other_params[i]))
                     {
-                        size_t common_prefix = 0;
-                        for(;common_prefix < filename1.length() && common_prefix < filename2.length();++common_prefix)
-                            if(filename1[common_prefix] != filename2[common_prefix])
-                                break;
-                        if(common_prefix == 0) // consider prefix different
-                        {
-                            QMessageBox::critical(this,"Error",QString("Cannot apply the same for ")+
-                                                  QFileInfo(other_file_name[i].c_str()).fileName());
-                            return false;
-                        }
-                        else
-                        {
-                            size_t postfix_length = filename1.length()-common_prefix;
-                            other_params[i] = other_file_name[i].substr(0,other_file_name[i].length()-postfix_length)
-                                                    + filename2.substr(common_prefix);
-                        }
-
-                        if(other_params[i] == other_file_name[i])
-                        {
-                            QMessageBox::critical(this,"Error",QString("Cannot apply the same for ")+
-                                                  QFileInfo(other_file_name[i].c_str()).fileName());
-                            return false;
-                        }
+                        error_msg = "cannot find a matched file for ";
+                        error_msg += other_file_name[i];
+                        return false;
                     }
                 }
-                else
-                    other_params[i] = param1;
             }
         }
 
@@ -134,13 +135,11 @@ bool view_image::command(std::string cmd,std::string param1,std::string param2)
         {
             if(!img_command(other_data[i],other_vs[i],other_T[i],cmd,other_params[i],param2,error_msg))
             {
-                QMessageBox::critical(this,"Error",QString("Operation stopped at ")+
-                                      QFileInfo(other_file_name[i].c_str()).fileName() + " error:" +
-                                      error_msg.c_str());
+                error_msg += " when processing ";
+                error_msg += QFileInfo(other_file_name[i].c_str()).fileName().toStdString();
                 return false;
             }
         }
-        QMessageBox::information(this,"DSI Studio","Operation applied to other images");
     }
     return true;
 }
@@ -605,6 +604,8 @@ void view_image::on_actionSave_triggered()
 {
     if(command("save",file_name.toStdString()))
         QMessageBox::information(this,"DSI Studio","Saved");
+    else
+        QMessageBox::critical(this,"ERROR",error_msg.c_str());
 }
 
 void view_image::on_action_Save_as_triggered()
@@ -614,9 +615,13 @@ void view_image::on_action_Save_as_triggered()
     if (filename.isEmpty())
         return;
     if(command("save",filename.toStdString()))
+    {
         QMessageBox::information(this,"DSI Studio","Saved");
-    file_name = filename;
-    setWindowTitle(QFileInfo(file_name).fileName());
+        file_name = filename;
+        setWindowTitle(QFileInfo(file_name).fileName());
+    }
+    else
+        QMessageBox::critical(this,"ERROR",error_msg.c_str());
 }
 void view_image::on_actionSave_as_Int8_triggered()
 {
@@ -973,7 +978,8 @@ void view_image::on_actionImageAddition_triggered()
                            this,"Open other another image to apply",QFileInfo(file_name).absolutePath(),"NIFTI file(*nii.gz *.nii)" );
     if (filename.isEmpty())
         return;
-    command("image_addition",filename.toStdString(),std::string());
+    if(!command("image_addition",filename.toStdString(),std::string()))
+        QMessageBox::critical(this,"ERROR",error_msg.c_str());
 }
 
 void view_image::on_actionImageMultiplication_triggered()
@@ -982,7 +988,8 @@ void view_image::on_actionImageMultiplication_triggered()
                            this,"Open other another image to apply",QFileInfo(file_name).absolutePath(),"NIFTI file(*nii.gz *.nii)" );
     if (filename.isEmpty())
         return;
-    command("image_multiplication",filename.toStdString(),std::string());
+    if(!command("image_multiplication",filename.toStdString(),std::string()))
+        QMessageBox::critical(this,"ERROR",error_msg.c_str());
 }
 
 void view_image::on_actionSignal_Smoothing_triggered()
