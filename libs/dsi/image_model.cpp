@@ -738,10 +738,9 @@ void ImageModel::flip_dwi(unsigned char type)
     if(voxel.is_histology)
         tipl::flip(voxel.hist_image,type);
     else
-    tipl::par_for2(src_dwi_data.size(),[&](unsigned int index,unsigned id)
+    tipl::par_for(src_dwi_data.size(),[&](unsigned int index)
     {
-        if(!id)
-            progress::at(index,src_dwi_data.size());
+        progress::at(index,src_dwi_data.size());
         auto I = dwi_at(index);
         tipl::flip(I,type);
     });
@@ -774,12 +773,11 @@ void ImageModel::rotate(const tipl::shape<3>& new_geo,
 {
     std::vector<tipl::image<3,unsigned short> > dwi(src_dwi_data.size());
     progress prog_("rotating");
-    tipl::par_for2(src_dwi_data.size(),[&](unsigned int index,unsigned int id)
+    tipl::par_for(src_dwi_data.size(),[&](unsigned int index)
     {
         if(progress::aborted())
             return;
-        if(!id)
-            progress::at(index,src_dwi_data.size());
+        progress::at(index,src_dwi_data.size());
         dwi[index].resize(new_geo);
         auto I = dwi_at(index);
         if(!super_reso_ref.empty())
@@ -949,10 +947,9 @@ void ImageModel::crop(tipl::shape<3> range_min,tipl::shape<3> range_max)
 {
     progress prog_("Removing background region");
     std::cout << "from:" << range_min << " to:" << range_max << std::endl;
-    tipl::par_for2(src_dwi_data.size(),[&](unsigned int index,unsigned int id)
+    tipl::par_for(src_dwi_data.size(),[&](unsigned int index)
     {
-        if(!id)
-            progress::at(index,src_dwi_data.size());
+        progress::at(index,src_dwi_data.size());
         auto I = dwi_at(index);
         tipl::image<3,unsigned short> I0;
         tipl::crop(I,I0,range_min,range_max);
@@ -1572,6 +1569,7 @@ bool ImageModel::load_topup_eddy_result(void)
 
 bool ImageModel::run_applytopup(std::string exec)
 {
+    progress::show("applytopup");
     std::string topup_result = QFileInfo(file_name.c_str()).baseName().replace('.','_').toStdString();
     std::string acqparam_file = QFileInfo(file_name.c_str()).baseName().toStdString() + ".topup.acqparams.txt";
     std::string temp_nifti = file_name+".nii.gz";
@@ -1623,6 +1621,7 @@ bool ImageModel::run_applytopup(std::string exec)
 
 bool ImageModel::run_eddy(std::string exec)
 {
+    progress::show("eddy");
     std::string topup_result = QFileInfo(file_name.c_str()).baseName().replace('.','_').toStdString();
     std::string acqparam_file = QFileInfo(file_name.c_str()).baseName().toStdString() + ".topup.acqparams.txt";
     std::string temp_nifti = file_name+".nii.gz";
@@ -2186,6 +2185,7 @@ bool ImageModel::save_nii_for_applytopup_or_eddy(bool include_rev) const
                                          uint32_t(src_bvalues.size()) + uint32_t(rev_pe_src.get() && include_rev ? rev_pe_src->src_bvalues.size():0)));
     tipl::par_for(src_bvalues.size(),[&](unsigned int index)
     {
+        progress::at(index,src_bvalues.size());
         auto I = buffer.slice_at(index);
         tipl::crop(dwi_at(index),I,topup_from,topup_to);
     });
@@ -2193,6 +2193,7 @@ bool ImageModel::save_nii_for_applytopup_or_eddy(bool include_rev) const
     if(rev_pe_src.get() && include_rev)
         tipl::par_for(rev_pe_src->src_bvalues.size(),[&](unsigned int index)
         {
+            progress::at(index,rev_pe_src->src_bvalues.size());
             auto I = buffer.slice_at(index+uint32_t(src_bvalues.size()));
             tipl::crop(rev_pe_src->dwi_at(index),I,topup_from,topup_to);
         });

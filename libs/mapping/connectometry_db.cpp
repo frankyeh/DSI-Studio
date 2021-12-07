@@ -543,9 +543,8 @@ void connectometry_db::get_dif_matrix(std::vector<float>& matrix,const tipl::ima
     std::vector<std::vector<float> > subject_vector;
     get_subject_vector(0,num_subjects,subject_vector,fp_mask,fiber_threshold,normalize_fp);
     progress prog_("calculating");
-    tipl::par_for2(num_subjects,[&](unsigned int i,int id){
-        if(id == 0)
-            progress::at(i,num_subjects);
+    tipl::par_for(num_subjects,[&](unsigned int i){
+        progress::at(i,num_subjects);
         for(unsigned int j = i+1; j < num_subjects;++j)
         {
             float result = float(tipl::root_mean_suqare_error(

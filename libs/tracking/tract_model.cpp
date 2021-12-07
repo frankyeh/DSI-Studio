@@ -93,10 +93,9 @@ class TinyTrack{
         std::vector<size_t> buf_size(track32.size());
         progress prog_("compressing trajectories");
         progress::at(0,tract_data.size());
-        tipl::par_for2(track32.size(),[&](size_t i,unsigned int id)
+        tipl::par_for(track32.size(),[&](size_t i)
         {
-            if(id == 0)
-                progress::at(i,tract_data.size());
+            progress::at(i,tract_data.size());
             auto& t32 = track32[i];
             t32.resize(tract_data[i].size());
             // all coordinates multiply by 32 and convert to integer
