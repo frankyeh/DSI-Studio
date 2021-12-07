@@ -1,3 +1,4 @@
+#include <QFileInfo>
 #include <sstream>
 #include <string>
 #include "tipl/tipl.hpp"
@@ -494,6 +495,7 @@ extern std::string src_error_msg;
 bool DwiHeader::output_src(const char* di_file,std::vector<std::shared_ptr<DwiHeader> >& dwi_files,
                            int upsampling,bool sort_btable)
 {
+    progress prog_("save ",QFileInfo(di_file).fileName().toStdString().c_str());
     if(!has_b_table(dwi_files))
     {
         src_error_msg = "invalid b-table";
@@ -578,7 +580,6 @@ bool DwiHeader::output_src(const char* di_file,std::vector<std::shared_ptr<DwiHe
         write_mat.write("mask",dwi_files[0]->mask,dwi_files[0]->mask.plane_size());
 
     //store images
-    progress prog_("saving");
     for (unsigned int index = 0;progress::at(index,(unsigned int)(dwi_files.size()));++index)
     {
         std::ostringstream name;
