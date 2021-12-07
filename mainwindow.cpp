@@ -1196,9 +1196,10 @@ void dicom2src(std::string dir_,std::ostream& out)
 {
     QString dir = dir_.c_str();
     QStringList sub_dir = QDir(dir).entryList(QStringList("*"),QDir::Dirs | QDir::NoSymLinks | QDir::NoDotAndDotDot);
-    progress prog_("process dicom");
+    progress prog_("process folder");
     for(int j = 0;progress::at(j,sub_dir.size()) && !progress::aborted();++j)
     {
+        progress::show(QString("process %1").arg(sub_dir[j]).toStdString());
         QStringList dir_list = GetSubDir(dir + "/" + sub_dir[j],true);
         dir_list << dir;
         for(int i = 0;i < dir_list.size();++i)
@@ -1223,6 +1224,7 @@ void MainWindow::on_dicom2nii_clicked()
                                 ui->workDir->currentText());
     if(dir.isEmpty())
         return;
+    progress prog("DICOM to SRC or NIFTI",true);
     add_work_dir(dir);
     std::ofstream out((dir+"/log.txt").toStdString().c_str());
     out << "directory:" << dir.toStdString() << std::endl;
