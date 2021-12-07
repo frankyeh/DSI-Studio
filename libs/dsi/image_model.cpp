@@ -429,7 +429,7 @@ bool ImageModel::is_human_data(void) const
 {
     return voxel.dim[2] > 1 && is_human_size(voxel.dim,voxel.vs);
 }
-
+bool match_files(std::string file_path1_others,std::string file_path2,std::string& file_path2_gen);
 bool ImageModel::run_steps(std::string steps)
 {
     std::istringstream in(steps);
@@ -448,6 +448,17 @@ bool ImageModel::run_steps(std::string steps)
             cmd = step.substr(0,pos);
             param = step.substr(pos+1,step.size()-pos-1);
         }
+        if(param.find(".gz") != std::string::npos) // nii.gz src.gz
+        {
+            if(!match_files(file_name,param,param))
+            {
+                error_msg = step;
+                error_msg += " cannot find a mtched file for ";
+                error_msg += file_name;
+                return false;
+            }
+        }
+
         if(!command(cmd,param))
         {
             error_msg = "processing failed at ";
@@ -568,36 +579,8 @@ bool ImageModel::command(std::string cmd,std::string param)
     }
     if(cmd == "[Step T2b(2)][Compare SRC]")
     {
-        if(param.empty()) // try to find the best match in the same directory
-        {
-            auto file_list = QFileInfo(file_name.c_str()).dir().entryList(QStringList("*.src.gz"),QDir::Files);
-            int64_t min_dif = std::numeric_limits<int64_t>::max();
-            for(int i = 0;i < file_list.size();++i)
-            {
-                QString cur_file_name = QFileInfo(file_name.c_str()).absolutePath() + "/" + file_list[i];
-                if(file_list[i] == QFileInfo(file_name.c_str()).fileName())
-                    continue;
-                std::string name1 = QFileInfo(file_name.c_str()).baseName().toStdString();
-                std::string name2 = QFileInfo(file_list[i]).baseName().toStdString();
-                int64_t cur_dif = 0;
-                for(int j = int(std::min(name1.length(),name2.length()))-1,k = 0;j >= 0 && k < 60; --j,k += 3)
-                {
-                    int dir = std::abs(int(name1[uint32_t(j)])-int(name2[uint32_t(j)]));
-                    if(k)
-                        dir <<= k;
-                    cur_dif += dir;
-                }
-                if(cur_dif < min_dif)
-                {
-                    min_dif = cur_dif;
-                    voxel.study_src_file_path = cur_file_name.toStdString();
-                }
-
-            }
-        }
-        else
-            voxel.study_src_file_path = param;
-        voxel.steps += cmd+" open " + std::filesystem::path(voxel.study_src_file_path).filename().string()+"\n";
+        voxel.study_src_file_path = param;
+        voxel.steps += cmd+"="+param+"\n";
         return true;
     }
     if(cmd == "[Step T2][Edit][Overwrite Voxel Size]")
