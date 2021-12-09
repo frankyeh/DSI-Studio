@@ -429,12 +429,14 @@ bool ImageModel::is_human_data(void) const
 {
     return voxel.dim[2] > 1 && is_human_size(voxel.dim,voxel.vs);
 }
-bool match_files(std::string file_path1_others,std::string file_path2,std::string& file_path2_gen);
-bool ImageModel::run_steps(std::string steps)
+bool match_files(std::string file_path1,std::string file_path2,
+                 std::string file_path1_others,std::string& file_path2_gen);
+bool ImageModel::run_steps(const std::string& reg_file_name,const std::string& steps)
 {
     std::istringstream in(steps);
     std::string step;
     std::getline(in,step); // ignore the first step [Step T2][Reconstruction]
+    std::vector<std::string> cmds,params;
     while(std::getline(in,step))
     {
         size_t pos = step.find('=');
@@ -450,7 +452,7 @@ bool ImageModel::run_steps(std::string steps)
         }
         if(param.find(".gz") != std::string::npos) // nii.gz src.gz
         {
-            if(!match_files(file_name,param,param))
+            if(!match_files(reg_file_name,param,file_name,param))
             {
                 error_msg = step;
                 error_msg += " cannot find a mtched file for ";
@@ -458,14 +460,17 @@ bool ImageModel::run_steps(std::string steps)
                 return false;
             }
         }
-
-        if(!command(cmd,param))
+        cmds.push_back(cmd);
+        params.push_back(param);
+    }
+    progress prog_("apply operations");
+    for(size_t index = 0;progress::at(index,cmds.size());++index)
+        if(!command(cmds[index],params[index]))
         {
-            error_msg = "processing failed at ";
-            error_msg += step;
+            error_msg +=  "at ";
+            error_msg += cmds[index];
             return false;
         }
-    }
     return true;
 }
 bool ImageModel::command(std::string cmd,std::string param)
@@ -676,6 +681,17 @@ bool ImageModel::command(std::string cmd,std::string param)
     if(cmd == "[Step T2][Corrections][TOPUP EDDY]")
     {
         progress::show(cmd,true);
+        if(QFileInfo((file_name+".corrected.nii.gz").c_str()).exists())
+        {
+            std::cout << "load previous results from " << file_name << ".corrected.nii.gz" <<std::endl;
+            if(load_topup_eddy_result())
+            {
+                voxel.steps += cmd+"="+param+"\n";
+                return true;
+            }
+            std::cout << error_msg << std::endl;
+            std::cout << "run correction from scratch" << std::endl;
+        }
         if(is_dsi())
         {
             std::cout << "run topup/applytopup for non-shell data" << std::endl;

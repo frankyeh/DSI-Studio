@@ -301,7 +301,7 @@ public:
 
 public:
     bool command(std::string cmd,std::string param = "");
-    bool run_steps(std::string steps);
+    bool run_steps(const std::string& reg_file_name,const std::string& steps);
 public:
     bool load_from_file(const char* dwi_file_name);
     bool save_to_file(const char* dwi_file_name);
