@@ -100,10 +100,8 @@ progress::~progress(void)
 }
 bool progress::check_prog(unsigned int now,unsigned int total)
 {
-    if(!has_gui || !is_main_thread() || status_list.empty() || processing_time_less_than(250))
+    if(!has_gui || !is_main_thread() || status_list.empty())
         return now < total;
-    if(now == 0)
-        process_time.back().start();
     if(now >= total)
     {
         if(at_list.size() == status_list.size())
