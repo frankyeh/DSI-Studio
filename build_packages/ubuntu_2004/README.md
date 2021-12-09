@@ -1,6 +1,6 @@
 # Building packages for Ubuntu 20.04
 
-Use build.sh to build package in a clean Ubuntu Bionic 20.04 environment.
+Use build.sh to build package in a clean Ubuntu Focal 20.04 environment.
 
 Generates  dsi_studio_ubuntu_20.04.zip
 
