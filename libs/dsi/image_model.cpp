@@ -1124,7 +1124,9 @@ bool ImageModel::read_rev_b0(const char* filename,std::vector<tipl::image<3> >& 
             }
             if(!I.empty() && tipl::correlation(I[0].begin(),I[0].end(),J.begin()) < 0.9)
             {
-                error_msg = "The NIFTI file contains non b0 images";
+                error_msg = "Please convert ";
+                error_msg += QFileInfo(filename).fileName().toStdString();
+                error_msg += " to an SRC file";
                 return false;
             }
             I.push_back(std::move(J));

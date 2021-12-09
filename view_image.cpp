@@ -67,34 +67,90 @@ bool img_command(tipl::image<3>& data,
     return false;
 }
 
-bool match_files(std::string file_path1_others,std::string file_path2,std::string& file_path2_gen)
+
+std::string common_prefix(const std::string& str1,const std::string& str2)
+{
+    std::string result;
+    for(size_t cur = 0;cur < str1.length() && cur < str2.length();++cur)
+    {
+        if(str1[cur] != str2[cur])
+            break;
+        result.push_back(str1[cur]);
+    }
+    return result;
+}
+
+bool match_strings(const std::string& str1,const std::string& str1_match,
+                   const std::string& str2,std::string& str2_match)
+{
+    // A->A
+    // B->B
+    if(str1 == str1_match)
+    {
+        str2_match = str2;
+        return true;
+    }
+    // A->B
+    // A->B
+    if(str1 == str2)
+    {
+        str2_match = str1_match;
+    }
+    auto cp1_1 = common_prefix(str1,str1_match);
+    auto cp1_2 = common_prefix(str1,str2);
+    // A_B->A_C
+    // D_B->D_C
+    if(cp1_1.size() > cp1_2.size() && str2.length() > cp1_1.size() && str1.substr(cp1_1.size()) == str2.substr(cp1_1.size()))
+    {
+        str2_match = str2.substr(0,cp1_1.size()) + str1_match.substr(cp1_1.size());
+        return true;
+    }
+    // A_B->D_B
+    // A_C->D_C
+    if(cp1_2.size() > cp1_1.size() && str1_match.length() > cp1_2.size() && str1.substr(cp1_2.size()) == str1_match.substr(cp1_2.size()))
+    {
+        str2_match = str1_match.substr(0,cp1_2.size()) + str2.substr(cp1_2.size());
+        return true;
+    }
+    return false;
+}
+
+bool match_strings_two_way(const std::string& str1,const std::string& str1_match,
+                           const std::string& str2,std::string& str2_match)
+
+{
+    if(match_strings(str1,str1_match,str2,str2_match))
+        return true;
+    std::string rev;
+    if(match_strings(std::string(str1.rbegin(),str1.rend()),
+                     std::string(str1_match.rbegin(),str1_match.rend()),
+                     std::string(str2.rbegin(),str2.rend()),rev))
+    {
+        str2_match = std::string(rev.rbegin(),rev.rend());
+        return true;
+    }
+    return false;
+}
+
+bool match_files(std::string file_path1,std::string file_path2,
+                 std::string file_path1_others,std::string& file_path2_gen)
 {
     std::string file_path2_others;
+    auto name1 = std::filesystem::path(file_path1).filename().string();
+    auto name2 = std::filesystem::path(file_path2).filename().string();
     auto name1_others = std::filesystem::path(file_path1_others).filename().string();
+    auto path1 = QFileInfo(file_path1.c_str()).absolutePath().toStdString();
     auto path2 = QFileInfo(file_path2.c_str()).absolutePath().toStdString();
+    auto path1_others = QFileInfo(file_path1_others.c_str()).absolutePath().toStdString();
 
-    auto file_list = QFileInfo(path2.c_str()).dir().
-            entryList(QStringList() << QString("*.") + QFileInfo(file_path2.c_str()).completeSuffix(),QDir::Files);
-    size_t max_common = name1_others.length()/2;
-    for(int i = 0;i < file_list.size();++i)
-    {
-        std::string name2_others = file_list[i].toStdString();
-        auto cure_file = path2 + "/" + name2_others;
-        if(cure_file == file_path1_others)
-            continue;
-        size_t cur = 0;
-        for(;cur < name1_others.length() && cur < name2_others.length();++cur)
-            if(name1_others[cur] != name2_others[cur])
-                break;
-        if(cur > max_common)
-        {
-            max_common = cur;
-            file_path2_others = cure_file;
-        }
-    }
-    if(file_path2_others.empty())
+    std::string name2_others,path2_others;
+    if(!match_strings_two_way(name1,name2,name1_others,name2_others) ||
+       !match_strings_two_way(path1,path2,path1_others,path2_others))
         return false;
-    file_path2_gen = file_path2_others;
+
+    file_path2_gen = path2_others + "/" + name2_others;
+    if(!QFileInfo(file_path2_gen.c_str()).exists())
+        return false;
     std::cout << "mtching " << file_path1_others << " with " << file_path2_others << std::endl;
     return true;
 }
@@ -120,7 +176,7 @@ bool view_image::command(std::string cmd,std::string param1,std::string param2)
                 // if param1 is file name, then try to generalize
                 if(param1.find(".gz") != std::string::npos)
                 {
-                    if(!match_files(other_file_name[i],param1,other_params[i]))
+                    if(!match_files(file_name.toStdString(),param1,other_file_name[i],other_params[i]))
                     {
                         error_msg = "cannot find a matched file for ";
                         error_msg += other_file_name[i];

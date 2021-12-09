@@ -22,15 +22,10 @@ void show_view(QGraphicsScene& scene,QImage I);
 void populate_templates(QComboBox* combo,size_t index);
 bool reconstruction_window::load_src(int index)
 {
-    progress prog_("load src");
-    progress::at(index,filenames.size());
-    handle.reset(new ImageModel);
+    progress prog_("read SRC file");
+    handle = std::make_shared<ImageModel>();
     if (!handle->load_from_file(filenames[index].toLocal8Bit().begin()))
-    {
-        if(!progress::aborted())
-            QMessageBox::critical(this,"ERROR",QString("Cannot open ") + QFileInfo(filenames[index]).baseName() + " " +handle->error_msg.c_str());
         return false;
-    }
     if(handle->voxel.is_histology)
         return true;
     double m = double(*std::max_element(handle->src_dwi_data[0],handle->src_dwi_data[0]+handle->voxel.dim.size()));
@@ -254,7 +249,7 @@ reconstruction_window::~reconstruction_window()
 
 void reconstruction_window::Reconstruction(unsigned char method_id,bool prompt)
 {
-    progress prog_(__func__,true);
+    progress prog_("reconstruction");
     if(!handle.get())
         return;
 
@@ -392,19 +387,19 @@ bool reconstruction_window::command(std::string cmd,std::string param)
 }
 void reconstruction_window::on_doDTI_clicked()
 {
-
-    for(int index = 0;index < filenames.size();++index)
+    std::string ref_file_name = handle->file_name;
+    std::shared_ptr<ImageModel> ref_handle = handle;;
+    progress prog_("SRC files");
+    for(int index = 0;progress::at(index,filenames.size());++index)
     {
         if(index)
         {
             std::string steps = handle->voxel.steps;
-            progress prog_("load src");
-            if(!load_src(index))
-                break;
-            if(!handle->run_steps(steps))
+            if(!load_src(index) || !handle->run_steps(ref_file_name,steps))
             {
-                QMessageBox::critical(this,"ERROR",QFileInfo(filenames[index]).fileName() + " : " + handle->error_msg.c_str());
-                return;
+                if(!progress::aborted())
+                    QMessageBox::critical(this,"ERROR",QFileInfo(filenames[index]).fileName() + " : " + handle->error_msg.c_str());
+                break;
             }
         }
         std::fill(handle->voxel.param.begin(),handle->voxel.param.end(),0.0);
@@ -420,10 +415,8 @@ void reconstruction_window::on_doDTI_clicked()
             else
                 Reconstruction(4,index+1 == filenames.size());
         }
-        if(progress::aborted())
-            break;
     }
-
+    handle = ref_handle;
 }
 
 void reconstruction_window::on_DTI_toggled(bool checked)
@@ -525,7 +518,7 @@ void reconstruction_window::on_actionSave_4D_nifti_triggered()
             {
                 ImageModel model;
                 if (!model.load_from_file(filenames[index].toStdString().c_str()) ||
-                    !model.run_steps(handle->voxel.steps))
+                    !model.run_steps(handle->file_name,handle->voxel.steps))
                 {
                     QMessageBox::critical(this,"ERROR",QFileInfo(filenames[index]).fileName() + " : " + model.error_msg.c_str());
                     return;
@@ -1113,33 +1106,17 @@ void reconstruction_window::on_qsdr_manual_clicked()
 
 void reconstruction_window::on_actionRun_FSL_Topup_triggered()
 {
-    if(QFileInfo((handle->file_name+".corrected.nii.gz").c_str()).exists())
+    QString other_src;
+    if(!QFileInfo((handle->file_name+".corrected.nii.gz").c_str()).exists())
     {
-        int result = QMessageBox::information(this,"DSI Studio","Load previous results?",QMessageBox::Yes|QMessageBox::No|QMessageBox::Cancel);
-        if(result == QMessageBox::Cancel)
+        QMessageBox::information(this,"DSI Studio","Please specify another NIFTI or SRC.GZ file with reversed phase encoding data");
+        other_src = QFileDialog::getOpenFileName(
+                this,"Open SRC file",absolute_path,
+                "Images (*src.gz *.nii *nii.gz);;DICOM image (*.dcm);;All files (*)" );
+        if(other_src.isEmpty())
             return;
-        if(result == QMessageBox::Yes)
-        {
-            if(!handle->load_topup_eddy_result())
-            {
-                QMessageBox::critical(this,"ERROR",handle->error_msg.c_str());
-                return;
-            }
-            update_dimension();
-            load_b_table();
-            on_SlicePos_valueChanged(ui->SlicePos->value());
-            return;
-        }
-
     }
-
-    QMessageBox::information(this,"DSI Studio","Please specify another NIFTI or SRC.GZ file with reversed phase encoding data");
-    QString other_src = QFileDialog::getOpenFileName(
-            this,"Open SRC file",absolute_path,
-            "Images (*src.gz *.nii *nii.gz);;DICOM image (*.dcm);;All files (*)" );
-    if(other_src.isEmpty())
-        return;
     progress prog_("topup/eddy",true);
     if(command("[Step T2][Corrections][TOPUP EDDY]",other_src.toStdString()))
-        QMessageBox::information(this,"DSI Studio","Preprocessed result loaded");
+        QMessageBox::information(this,"DSI Studio","Correction result loaded");
 }
