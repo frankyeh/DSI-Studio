@@ -2598,7 +2598,6 @@ void tracking_window::on_zoom_valueChanged(double arg1)
     if(float(arg1) == (*this)["roi_zoom"].toFloat())
         return;
     set_data("roi_zoom",arg1);
-    scene.center();
     slice_need_update = true;
 }
 
