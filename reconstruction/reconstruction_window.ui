@@ -1223,10 +1223,10 @@ Reconstruction</string>
     <addaction name="actionFlip_xz"/>
     <addaction name="actionFlip_yz"/>
     <addaction name="separator"/>
-    <addaction name="actionManual_Rotation"/>
     <addaction name="actionRotate_to_MNI"/>
     <addaction name="actionRotate_to_MNI_2mm"/>
     <addaction name="separator"/>
+    <addaction name="actionManual_Rotation"/>
     <addaction name="actionResample"/>
     <addaction name="actionRotate"/>
     <addaction name="actionOverwrite_Voxel_Size"/>
@@ -1355,7 +1355,7 @@ Reconstruction</string>
   </action>
   <action name="actionRotate_to_MNI">
    <property name="text">
-    <string>Rotate to MNI (1mm)...</string>
+    <string>Align AC-PC (1mm)...</string>
    </property>
   </action>
   <action name="actionFlip_bx">
@@ -1408,7 +1408,7 @@ Reconstruction</string>
   </action>
   <action name="actionRotate_to_MNI_2mm">
    <property name="text">
-    <string>Rotate to MNI (2mm)...</string>
+    <string>Align AC-PC (2mm)...</string>
    </property>
   </action>
   <action name="actionOverwrite_Voxel_Size">
