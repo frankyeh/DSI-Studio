@@ -136,6 +136,7 @@ void TractTableWidget::draw_tracts(unsigned char dim,int pos,
     tipl::par_for(lines.size(),[&](unsigned int i)
     {
         auto& line = lines[i];
+        tipl::add_constant(line,0.5f);
         tipl::multiply_constant(line,display_ratio);
         if(line.size() >= 2)
         {
