@@ -108,7 +108,7 @@ bool progress::check_prog(unsigned int now,unsigned int total)
             at_list.back().clear();
         return false;
     }
-    if(t_last.back().elapsed() > std::min<int>(int(total),1000))
+    if(t_last.back().elapsed() > std::min<int>(int(total)*100,1000))
     {
         t_last.back().start();
         int expected_sec = (process_time.back().elapsed()*int(total-now)/int(now+1)/1000/60);
