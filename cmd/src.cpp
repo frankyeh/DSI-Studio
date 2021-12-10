@@ -20,7 +20,7 @@ int src(program_option& po)
     std::vector<std::shared_ptr<DwiHeader> > dwi_files;
     QStringList file_list;
     if(ext ==".nii" || ext == ".dcm" || ext == "dseq" || ext == "i.gz")
-        file_list << source.c_str();
+        file_list = QString(source.c_str()).split(',');
     else
     {
 
@@ -41,7 +41,7 @@ int src(program_option& po)
             for (int index = 0;index < file_list.size();++index)
                 file_list[index] = QString(source.c_str()) + "/" + file_list[index];
         }
-        std::cout << "a total of " << file_list.size() <<" files found in the directory" << std::endl;
+        std::cout << "a total of " << file_list.size() << " files found in the directory" << std::endl;
     }
 
     if(file_list.empty())
@@ -88,24 +88,34 @@ int src(program_option& po)
     if(po.has("bval") && po.has("bvec"))
     {
         std::vector<double> bval,bvec;
-        if(!load_bval(po.get("bval").c_str(),bval))
-        {
-            std::cout << "cannot find bval at " << po.get("bval") << std::endl;
-            return 1;
-        }
-        if(!load_bvec(po.get("bvec").c_str(),bvec,po.get("flip_by",1)))
-        {
-            std::cout << "cannot find bvec at " << po.get("bvec") << std::endl;
-            return 1;
-        }
+        QStringList bval_files = QString(po.get("bval").c_str()).split(',');
+        QStringList bvec_files = QString(po.get("bvec").c_str()).split(',');
+
+        for(auto path : bval_files)
+            if(!load_bval(path.toStdString().c_str(),bval))
+            {
+                std::cout << "cannot find bval at " << path.toStdString() << std::endl;
+                return 1;
+            }
+        for(auto path : bvec_files)
+            if(!load_bvec(path.toStdString().c_str(),bvec,po.get("flip_by",1)))
+            {
+                std::cout << "cannot find bvec at " << path.toStdString() << std::endl;
+                return 1;
+            }
+
         if(bval.size() != dwi_files.size())
         {
             std::cout << "mismatch between bval file and the loaded images" << std::endl;
+            std::cout << "dwi number:" << dwi_files.size() << std::endl;;
+            std::cout << "bval number:" << bval.size() << std::endl;;
             return 1;
         }
         if(bvec.size() != dwi_files.size()*3)
         {
             std::cout << "mismatch between bvec file and the loaded images" << std::endl;
+            std::cout << "dwi number:" << dwi_files.size() << std::endl;;
+            std::cout << "bvec number:" << bvec.size() << std::endl;;
             return 1;
         }
         for(unsigned int index = 0;index < dwi_files.size();++index)

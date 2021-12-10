@@ -255,6 +255,7 @@ int run_cmd(int ac, char *av[])
         }
         std::string source = po.get("source");
         if(po.get("action") != std::string("atk") && // atk handle * by itself
+           po.get("action") != std::string("src") && // src handle , by itself
            (source.find('*') != std::string::npos ||
             source.find(',') != std::string::npos))
         {
