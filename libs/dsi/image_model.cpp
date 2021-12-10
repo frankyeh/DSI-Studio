@@ -72,21 +72,12 @@ void ImageModel::calculate_dwi_sum(bool update_mask)
         tipl::threshold(dwi,voxel.mask,50,1,0);
         if(dwi.depth() < 200)
         {
-            tipl::par_for(voxel.mask.depth(),[&](int i)
-            {
-                tipl::pointer_image<2,unsigned char> I(&voxel.mask[0]+size_t(i)*voxel.mask.plane_size(),
-                        tipl::shape<2>(uint32_t(voxel.mask.width()),uint32_t(voxel.mask.height())));
-                tipl::morphology::defragment(I);
-                tipl::morphology::recursive_smoothing(I,10);
-                tipl::morphology::defragment(I);
-                tipl::morphology::negate(I);
-                tipl::morphology::defragment(I);
-                tipl::morphology::negate(I);
-
-            });
-            tipl::morphology::recursive_smoothing(voxel.mask,10);
             tipl::morphology::defragment(voxel.mask);
             tipl::morphology::recursive_smoothing(voxel.mask,10);
+            tipl::morphology::defragment(voxel.mask);
+            tipl::morphology::negate(voxel.mask);
+            tipl::morphology::defragment(voxel.mask);
+            tipl::morphology::negate(voxel.mask);
         }
     }
 }
