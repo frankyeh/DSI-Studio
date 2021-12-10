@@ -469,6 +469,19 @@ bool ImageModel::command(std::string cmd,std::string param)
     progress prog_(cmd.c_str());
     if(!param.empty())
         std::cout << "param:" << param << std::endl;
+    if(cmd == "[Step T2][File][Save 4D NIFTI]")
+    {
+        if(param.empty())
+        {
+            error_msg = " please assign file name ";
+            return false;
+        }
+        save_to_nii(param.c_str());
+        param = param.substr(0,param.size()-7);
+        save_bval((param+".bval").c_str());
+        save_bvec((param+".bvec").c_str());
+        return true;
+    }
     if(cmd == "[Step T2a][Open]")
     {
         if(!std::filesystem::exists(param))
