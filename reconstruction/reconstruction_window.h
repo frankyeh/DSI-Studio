@@ -22,6 +22,7 @@ public:
     QStringList filenames;
     explicit reconstruction_window(QStringList filenames_,QWidget *parent = nullptr);
     ~reconstruction_window();
+    void batch_command(std::string cmd,std::string param);
     bool command(std::string cmd,std::string param=std::string());
 protected:
     void resizeEvent ( QResizeEvent * event );

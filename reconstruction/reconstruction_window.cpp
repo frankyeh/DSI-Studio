@@ -374,7 +374,29 @@ void reconstruction_window::on_actionFlip_bz_triggered()
     ui->check_btable->setChecked(false);
     QMessageBox::information(this,"DSI Studio","B-table flipped",0);
 }
-
+void reconstruction_window::batch_command(std::string cmd,std::string param)
+{
+    command(cmd,param);
+    if(filenames.size() > 1 && QMessageBox::information(this,"DSI Studio","Apply to other SRC files?",
+                                    QMessageBox::Yes|QMessageBox::No|QMessageBox::Cancel) == QMessageBox::Yes)
+    {
+        progress prog_("apply to other SRC files");
+        auto steps = handle->voxel.steps;
+        steps += "\n";
+        steps += cmd;
+        steps += param;
+        for(int index = 0;progress::at(index,filenames.size());++index)
+        {
+            ImageModel model;
+            if (!model.load_from_file(filenames[index].toStdString().c_str()) ||
+                !model.run_steps(handle->file_name,steps))
+            {
+                QMessageBox::critical(this,"ERROR",QFileInfo(filenames[index]).fileName() + " : " + model.error_msg.c_str());
+                return;
+            }
+        }
+    }
+}
 bool reconstruction_window::command(std::string cmd,std::string param)
 {
     bool result = handle->command(cmd,param);
@@ -505,33 +527,6 @@ void reconstruction_window::on_AdvancedOptions_clicked()
 
 void reconstruction_window::on_actionSave_4D_nifti_triggered()
 {
-    if(filenames.size() > 1)
-    {
-        int result = QMessageBox::information(this,"DSI Studio","Also save 4D NIFTI for each SRC file?",
-                                 QMessageBox::Yes|QMessageBox::No|QMessageBox::Cancel);
-        if(result == QMessageBox::Cancel)
-            return;
-        if(result == QMessageBox::Yes)
-        {
-            progress prog_("loading");
-            for(int index = 0;progress::at(index,filenames.size());++index)
-            {
-                ImageModel model;
-                if (!model.load_from_file(filenames[index].toStdString().c_str()) ||
-                    !model.run_steps(handle->file_name,handle->voxel.steps))
-                {
-                    QMessageBox::critical(this,"ERROR",QFileInfo(filenames[index]).fileName() + " : " + model.error_msg.c_str());
-                    return;
-                }
-                QString file_prefix = filenames[index];
-                file_prefix.chop(7); // remove .src.gz
-                model.save_to_nii((file_prefix+".nii.gz").toStdString().c_str());
-                model.save_bval((file_prefix+".bval").toStdString().c_str());
-                model.save_bvec((file_prefix+".bvec").toStdString().c_str());
-            }
-        }
-        return;
-    }
     QString filename = QFileDialog::getSaveFileName(
                                 this,
                                 "Save image as...",
@@ -539,11 +534,9 @@ void reconstruction_window::on_actionSave_4D_nifti_triggered()
                                 "All files (*)" );
     if ( filename.isEmpty() )
         return;
-    handle->save_to_nii(filename.toLocal8Bit().begin());
-    QString basename = filename;
-    basename.chop(7);
-    handle->save_bval((basename+".bval").toLocal8Bit().begin());
-    handle->save_bvec((basename+".bvec").toLocal8Bit().begin());
+
+    batch_command("[Step T2][File][Save 4D NIFTI]",filename.toStdString());
+
 }
 
 void reconstruction_window::on_actionSave_b0_triggered()
@@ -954,8 +947,7 @@ void reconstruction_window::on_actionSave_SRC_file_as_triggered()
             "SRC files (*src.gz);;All files (*)" );
     if(filename.isEmpty())
         return;
-    progress prog_("saving ",std::filesystem::path(filename.toStdString()).filename().string().c_str());
-    handle->save_to_file(filename.toStdString().c_str());
+    batch_command("[Step T2][File][Save Src File]",filename.toStdString());
 }
 
 
