@@ -476,11 +476,20 @@ bool ImageModel::command(std::string cmd,std::string param)
             error_msg = " please assign file name ";
             return false;
         }
-        save_to_nii(param.c_str());
+        if(!save_to_nii(param.c_str()))
+            return false;
         param = param.substr(0,param.size()-7);
-        save_bval((param+".bval").c_str());
-        save_bvec((param+".bvec").c_str());
-        return true;
+        return save_bval((param+".bval").c_str()) && save_bvec((param+".bvec").c_str());
+    }
+    if(cmd == "[Step T2][File][Save Src File]")
+    {
+        if(param.empty())
+        {
+            error_msg = " please assign file name ";
+            return false;
+        }
+        progress prog_("saving ",std::filesystem::path(param).filename().string().c_str());
+        return save_to_file(param.c_str());
     }
     if(cmd == "[Step T2a][Open]")
     {
