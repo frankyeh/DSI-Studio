@@ -25,11 +25,38 @@ QPixmap fromImage(const QImage &I)
     #endif
 }
 
-void show_view(QGraphicsScene& scene,QImage I)
+void show_plain_view(QGraphicsScene& scene,QImage I)
 {
     scene.setSceneRect(0, 0, I.width(),I.height());
     scene.clear();
     scene.addPixmap(fromImage(I));
+}
+
+// show image on scene and keep the original scroll bar position if zoom in/out
+void show_view(QGraphicsScene& scene,QImage I)
+{       
+    if(!scene.views().size())
+    {
+        show_plain_view(scene,I);
+        return;
+    }
+    auto* vb = scene.views()[0]->verticalScrollBar();
+    auto* hb = scene.views()[0]->horizontalScrollBar();
+    float vb_ratio = 0.0f;
+    float hb_ratio = 0.0f;
+    if(int(float(scene.sceneRect().width())/float(scene.sceneRect().height())*100.0f) ==
+       int(float(I.width())/float(I.height())*100.0f))
+    {
+        if(vb->isVisible())
+            vb_ratio = float((vb->value()+vb->pageStep()/2))/float(vb->maximum()+vb->pageStep());
+        if(hb->isVisible())
+            hb_ratio = float((hb->value()+hb->pageStep()/2))/float(hb->maximum()+hb->pageStep());
+    }
+    show_plain_view(scene,I);
+    if(vb_ratio != 0.0f)
+        vb->setValue(int(vb_ratio*(vb->maximum()+vb->pageStep())-vb->pageStep()/2));
+    if(hb_ratio != 0.0f)
+        hb->setValue(int(hb_ratio*(hb->maximum()+hb->pageStep())-hb->pageStep()/2));
 }
 void slice_view_scene::show_ruler2(QPainter& paint)
 {
@@ -685,42 +712,25 @@ void slice_view_scene::wheelEvent(QGraphicsSceneWheelEvent *wheelEvent)
 {
     if(views().size() == 0)
         return;
-    bool vb_visible = views()[0]->verticalScrollBar()->isVisible();
-    bool hb_visible = views()[0]->horizontalScrollBar()->isVisible();
     auto* vb = views()[0]->verticalScrollBar();
-    auto* hb = views()[0]->horizontalScrollBar();
-    if(vb_visible)
+    bool no_scroll = wheelEvent->modifiers() & Qt::ControlModifier;
+    if(vb->isVisible() && !no_scroll)
     {
         if((wheelEvent->delta() < 0 && vb->maximum() != vb->value()) ||
             (wheelEvent->delta() > 0 && vb->value() > 0))
-            return;
+            return; //let default wheel event handle it by change the vertical scroll
     }
     tipl::vector<3,float> pos;
-    float Y = wheelEvent->scenePos().y();
-    float X = wheelEvent->scenePos().x();
-    if(click_on_3D(X,Y))
+    // 3 view condition, tranfer event to 3D window
+    if(click_on_3D(float(wheelEvent->scenePos().x()),float(wheelEvent->scenePos().y())))
     {
         QWheelEvent we(wheelEvent->pos(),wheelEvent->delta(),wheelEvent->buttons(),wheelEvent->modifiers());
         cur_tracking_window.glWidget->wheelEvent(&we);
     }
 
-    float hb_ratio = 0.0f;
-    if(hb_visible)
-        hb_ratio = float(hb->value())/(hb->maximum());
-    if(wheelEvent->delta() < 0)
-    {
-        cur_tracking_window.set_roi_zoom(cur_tracking_window["roi_zoom"].toFloat()-0.5f);
-        if(views().size() > 0 && views()[0]->verticalScrollBar()->isVisible())
-            views()[0]->verticalScrollBar()->setValue(views()[0]->verticalScrollBar()->maximum());
-    }
-    else
-    {
-        cur_tracking_window.set_roi_zoom(cur_tracking_window["roi_zoom"].toFloat()+0.5f);
-        if(views().size() > 0 && views()[0]->verticalScrollBar()->isVisible())
-            views()[0]->verticalScrollBar()->setValue(0);
-    }
-    if(hb_visible)
-        hb->setValue(hb->maximum()*hb_ratio);
+    // zoom in or out
+    cur_tracking_window.set_roi_zoom(cur_tracking_window["roi_zoom"].toFloat()+ ((wheelEvent->delta() > 0) ? 0.5f:-0.5f));
+    wheelEvent->accept();
 }
 void slice_view_scene::mouseDoubleClickEvent ( QGraphicsSceneMouseEvent * mouseEvent )
 {
