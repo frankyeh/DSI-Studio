@@ -192,13 +192,14 @@ bool load_dicom_multi_frame(const char* file_name,std::vector<std::shared_ptr<Dw
 }
 
 
-bool load_bvec(const char* file_name,std::vector<double>& b_table,bool flip_by = true)
+bool load_bvec(const char* file_name,std::vector<double>& b_table_,bool flip_by = true)
 {
     std::ifstream in(file_name);
     if(!in)
         return false;
     std::string line;
     unsigned int total_line = 0;
+    std::vector<double> b_table;
     while(std::getline(in,line))
     {
         std::istringstream read_line(line);
@@ -214,6 +215,7 @@ bool load_bvec(const char* file_name,std::vector<double>& b_table,bool flip_by =
         for(size_t index = 1;index < b_table.size();index += 3)
                 b_table[index] = -b_table[index];
     }
+    b_table_.insert(b_table_.end(),b_table.begin(),b_table.end());
     return true;
 }
 bool load_bval(const char* file_name,std::vector<double>& bval)
