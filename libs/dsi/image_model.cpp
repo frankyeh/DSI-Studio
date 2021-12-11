@@ -1439,6 +1439,40 @@ bool ImageModel::generate_topup_b0_acq_files(std::string& b0_appa_file)
             out << pe_dir[rev_b0_pe] << " 0.05" << std::endl;
     }
 
+
+    {
+        std::cout << "get the bounding box for speeding up topup/eddy" << std::endl;
+        auto temp_mask = voxel.mask;
+        if(rev_pe_src.get())
+            temp_mask += rev_pe_src->voxel.mask;
+        tipl::morphology::dilation2(temp_mask,3);
+        tipl::bounding_box(temp_mask,topup_from,topup_to,0);
+
+
+        // allow for more space in the PE direction
+
+        int pe_dim = is_appa ? 1:0;
+        int space = int(topup_to[pe_dim]-topup_from[pe_dim])/5;
+        topup_from[pe_dim] = uint32_t(std::max<int>(0,int(topup_from[pe_dim])-space));
+        topup_to[pe_dim] = uint32_t(std::min<int>(int(temp_mask.shape()[pe_dim]),int(topup_to[pe_dim])+space));
+
+        // ensure even number in the dimension for topup
+        for(int d = 0;d < 3;++d)
+            if((topup_to[d]-topup_from[d]) % 2 != 0)
+                topup_to[d]--;
+
+        if(rev_pe_src.get())
+        {
+            rev_pe_src->topup_from = topup_from;
+            rev_pe_src->topup_to = topup_to;
+        }
+
+        for(auto& I: b0)
+            tipl::crop(I,topup_from,topup_to);
+        for(auto& I: rev_b0)
+            tipl::crop(I,topup_from,topup_to);
+    }
+
     {
         std::cout << "create topup needed b0 nii.gz file from "
                   << b0.size() << " " << pe_id[b0_pe] << " b0 and "
@@ -1481,34 +1515,8 @@ bool ImageModel::run_topup(std::string other_src,std::string exec)
     std::string topup_result = QFileInfo(file_name.c_str()).baseName().replace('.','_').toStdString();
     std::string check_me_file = QFileInfo(file_name.c_str()).baseName().toStdString() + ".topup.check_result";
     std::string acqparam_file = QFileInfo(file_name.c_str()).baseName().toStdString() + ".topup.acqparams.txt";
-
-    if(!read_b0(b0) || !read_rev_b0(other_src.c_str(),rev_b0))
-        return false;
-
-    {
-        std::cout << "get the bounding box for speeding up topup/eddy" << std::endl;
-        auto temp_mask = voxel.mask;
-        tipl::morphology::dilation2(temp_mask,3);
-        tipl::bounding_box(temp_mask,topup_from,topup_to,0);
-        // ensure even number in the dimension for topup
-        for(int d = 0;d < 3;++d)
-            if((topup_to[d]-topup_from[d]) % 2 != 0)
-                topup_to[d]--;
-
-        if(rev_pe_src.get())
-        {
-            rev_pe_src->topup_from = topup_from;
-            rev_pe_src->topup_to = topup_to;
-        }
-
-        for(auto& I: b0)
-            tipl::crop(I,topup_from,topup_to);
-        for(auto& I: rev_b0)
-            tipl::crop(I,topup_from,topup_to);
-    }
-
     std::string b0_appa_file;
-    if(!generate_topup_b0_acq_files(b0_appa_file))
+    if(!read_b0(b0) || !read_rev_b0(other_src.c_str(),rev_b0) || !generate_topup_b0_acq_files(b0_appa_file))
         return false;
 
     std::vector<std::string> param = {

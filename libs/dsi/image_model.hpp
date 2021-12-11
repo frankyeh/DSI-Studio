@@ -287,7 +287,6 @@ public:
     std::vector<tipl::image<3> > b0,rev_b0;
     std::shared_ptr<ImageModel> rev_pe_src;
     tipl::shape<3> topup_from,topup_to;
-
     bool read_b0(std::vector<tipl::image<3> >& rev_b0) const;
     bool read_rev_b0(const char* file_name,std::vector<tipl::image<3> >& rev_b0);
     bool distortion_correction(const char* file_name);
