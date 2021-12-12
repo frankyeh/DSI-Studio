@@ -1516,6 +1516,15 @@ bool ImageModel::run_topup(std::string other_src,std::string exec)
     std::string check_me_file = QFileInfo(file_name.c_str()).baseName().toStdString() + ".topup.check_result";
     std::string acqparam_file = QFileInfo(file_name.c_str()).baseName().toStdString() + ".topup.acqparams.txt";
     std::string b0_appa_file;
+    if(QFileInfo(acqparam_file.c_str()).exists() &&
+       QFileInfo((check_me_file+".nii.gz").c_str()).exists() &&
+       QFileInfo((topup_result+"_fieldcoef.nii.gz").c_str()).exists())
+    {
+        std::cout << "find existing topup results. skipping topup." << std::endl;
+        return true;
+    }
+
+
     if(!read_b0(b0) || !read_rev_b0(other_src.c_str(),rev_b0) || !generate_topup_b0_acq_files(b0_appa_file))
         return false;
 
