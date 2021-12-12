@@ -2189,8 +2189,14 @@ bool ImageModel::save_to_nii(const char* nifti_file_name) const
 bool ImageModel::save_nii_for_applytopup_or_eddy(bool include_rev) const
 {
     std::cout << "create trimmed volume for " << (include_rev ? "eddy":"applytopup") << std::endl;
+    std::cout << "range: " << topup_from << " to " << topup_to << std::endl;
     tipl::image<4,unsigned short> buffer(tipl::shape<4>(topup_to[0]-topup_from[0],topup_to[1]-topup_from[1],topup_to[2]-topup_from[2],
                                          uint32_t(src_bvalues.size()) + uint32_t(rev_pe_src.get() && include_rev ? rev_pe_src->src_bvalues.size():0)));
+    if(buffer.empty())
+    {
+        error_msg = "cannot create trimmed volume for applytopup or eddy";
+        return false;
+    }
     tipl::par_for(src_bvalues.size(),[&](unsigned int index)
     {
         progress::at(index,src_bvalues.size());
