@@ -168,9 +168,11 @@ std::string run_auto_track(
     }
 
     std::vector<std::string> names;
-    for(size_t i = 0;i < file_list.size() && !progress::aborted();++i)
+    progress prog_("automatic fiber tracking");
+    for(size_t i = 0;progress::at(i,file_list.size());++i)
     {
         std::string cur_file_base_name = QFileInfo(file_list[i].c_str()).baseName().toStdString();
+        progress::show(cur_file_base_name);
         names.push_back(cur_file_base_name);
         prog = int(i);
         std::cout << "processing " << cur_file_base_name << std::endl;
@@ -198,31 +200,16 @@ std::string run_auto_track(
             fib_file_name = file_list[i]+src.get_file_ext();
             if(!std::filesystem::exists(fib_file_name) || overwrite)
             {
-                if(!src.load_from_file(file_list[i].c_str()))
+                if(!src.load_from_file(file_list[i].c_str()) ||
+                   (po.has("rev_pe") && !src.run_topup_eddy(po.get("rev_pe"))))
                     return src.error_msg + " at " + cur_file_base_name;
-                if(!src.is_human_data())
-                    return cur_file_base_name + " is not human data";
-                if(po.has("other_src") && !src.distortion_correction(po.get("other_src").c_str()))
-                    return src.error_msg;
-                if(interpolation == 1)
-                    src.command("[Step T2][Edit][Rotate to MNI]");
-                if(interpolation == 2)
-                    src.command("[Step T2][Edit][Rotate to MNI2]");
+                src.align_acpc();
                 if(!default_mask)
                     src.command("[Step T2a][Threshold]","0");
                 progress prog_("reconstruct DWI");
                 if (!src.reconstruction())
                     return src.error_msg + (" at ") + cur_file_base_name;
-
-                std::string mapping_file_name(fib_file_name);
-                mapping_file_name += ".";
-                mapping_file_name += QFileInfo(fa_template_list[0].c_str()).baseName().toLower().toStdString();
-                mapping_file_name += ".inv.mapping.gz";
-                if(std::filesystem::exists(mapping_file_name))
-                    QFile::remove(mapping_file_name.c_str());
             }
-            if(!std::filesystem::exists(fib_file_name))
-                return std::string("fib file not generated for ") + file_list[i];
         }
         else
         {
@@ -232,14 +219,16 @@ std::string run_auto_track(
                 return std::string("unsupported file format :") + file_list[i];
         }
 
-
         // fiber tracking on fib file
         std::shared_ptr<fib_data> handle(new fib_data);
         bool fib_loaded = false;
-        for(size_t j = 0;j < track_id.size() && !progress::aborted();++j)
+        progress prog_("tracking pathways");
+        for(size_t j = 0;progress::at(j,track_id.size());++j)
         {
             std::string track_name = fib.tractography_name_list[track_id[j]];
             std::string output_path = dir + "/" + track_name;
+            progress::show(track_name);
+
             // create storing directory
             {
                 QDir dir(output_path.c_str());
@@ -306,7 +295,6 @@ std::string run_auto_track(
                     float cur_tolerance = tolerance[tracking_iteration];
                     ThreadData thread(handle);
                     {
-                        progress prog_("preparing tracking ",track_name.c_str());
                         thread.param.tip_iteration = uint8_t(tip);
                         thread.param.check_ending = !QString(track_name.c_str()).contains("Cingulum");
                         thread.param.stop_by_tract = 1;
@@ -321,7 +309,6 @@ std::string run_auto_track(
                     }
 
                     // run tracking
-                    progress prog_("tracking ",track_name.c_str());
                     thread.run(po.get("thread_count",std::thread::hardware_concurrency()),false);
                     std::string report = tract_model.report + thread.report.str();
                     report += " Shape analysis (Yeh, Neuroimage, 2020) was conducted to derive shape metrics for tractography.";
@@ -346,6 +333,7 @@ std::string run_auto_track(
                     }
                     bool no_result = false;
                     const unsigned int low_yield_threshold = 100000;
+                    progress prog_("tracking");
                     while(!thread.is_ended() && !progress::aborted())
                     {
                         progress::at(thread.get_total_tract_count(),

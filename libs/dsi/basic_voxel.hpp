@@ -129,7 +129,7 @@ public://used in GQI
     bool scheme_balance = false;
 public:// used in QSDR
     tipl::matrix<4,4> trans_to_mni;
-    std::string primary_template,secondary_template;
+    size_t template_id = 0;
     tipl::transformation_matrix<double> qsdr_trans;
     bool qsdr = false;
     tipl::vector<3,int> csf_pos1,csf_pos2,csf_pos3,csf_pos4;

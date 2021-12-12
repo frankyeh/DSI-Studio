@@ -53,7 +53,7 @@
     <item>
      <widget class="QToolBox" name="toolBox">
       <property name="currentIndex">
-       <number>0</number>
+       <number>1</number>
       </property>
       <property name="tabSpacing">
        <number>0</number>
@@ -633,6 +633,16 @@
                    </property>
                   </spacer>
                  </item>
+                 <item>
+                  <widget class="QLabel" name="label_15">
+                   <property name="text">
+                    <string> Template  </string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QComboBox" name="primary_template"/>
+                 </item>
                 </layout>
                </item>
               </layout>
@@ -895,16 +905,6 @@
                          <property name="spacing">
                           <number>0</number>
                          </property>
-                         <item alignment="Qt::AlignRight">
-                          <widget class="QLabel" name="label_15">
-                           <property name="text">
-                            <string> Template  </string>
-                           </property>
-                          </widget>
-                         </item>
-                         <item>
-                          <widget class="QComboBox" name="primary_template"/>
-                         </item>
                          <item>
                           <widget class="QPushButton" name="qsdr_manual">
                            <property name="text">
@@ -1223,9 +1223,7 @@ Reconstruction</string>
     <addaction name="actionFlip_xz"/>
     <addaction name="actionFlip_yz"/>
     <addaction name="separator"/>
-    <addaction name="actionRotate_to_MNI"/>
-    <addaction name="actionRotate_to_MNI_2mm"/>
-    <addaction name="separator"/>
+    <addaction name="actionAlign_ACPC"/>
     <addaction name="actionManual_Rotation"/>
     <addaction name="actionResample"/>
     <addaction name="actionRotate"/>
@@ -1353,9 +1351,9 @@ Reconstruction</string>
     <string>Image Upsample to T1W (TESTING)...</string>
    </property>
   </action>
-  <action name="actionRotate_to_MNI">
+  <action name="actionAlign_ACPC">
    <property name="text">
-    <string>Align AC-PC (1mm)...</string>
+    <string>Align AC-PC...</string>
    </property>
   </action>
   <action name="actionFlip_bx">
@@ -1404,11 +1402,6 @@ Reconstruction</string>
    </property>
    <property name="text">
     <string>Save DWI Sum...</string>
-   </property>
-  </action>
-  <action name="actionRotate_to_MNI_2mm">
-   <property name="text">
-    <string>Align AC-PC (2mm)...</string>
    </property>
   </action>
   <action name="actionOverwrite_Voxel_Size">

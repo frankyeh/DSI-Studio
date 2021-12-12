@@ -656,16 +656,9 @@ bool ImageModel::command(std::string cmd,std::string param)
         voxel.steps += cmd+"="+param+"\n";
         return true;
     }
-    if(cmd == "[Step T2][Edit][Rotate to MNI]")
+    if(cmd == "[Step T2][Edit][Align APPC]")
     {
-        if(!rotate_to_mni(1.0f))
-            return false;
-        voxel.steps += cmd+"\n";
-        return true;
-    }
-    if(cmd == "[Step T2][Edit][Rotate to MNI2]")
-    {
-        if(!rotate_to_mni(2.0f))
+        if(!align_acpc())
             return false;
         voxel.steps += cmd+"\n";
         return true;
@@ -693,30 +686,8 @@ bool ImageModel::command(std::string cmd,std::string param)
     }
     if(cmd == "[Step T2][Corrections][TOPUP EDDY]")
     {
-        progress::show(cmd,true);
-        if(QFileInfo((file_name+".corrected.nii.gz").c_str()).exists())
-        {
-            std::cout << "load previous results from " << file_name << ".corrected.nii.gz" <<std::endl;
-            if(load_topup_eddy_result())
-            {
-                voxel.steps += cmd+"="+param+"\n";
-                return true;
-            }
-            std::cout << error_msg << std::endl;
-            std::cout << "run correction from scratch" << std::endl;
-        }
-        if(is_dsi())
-        {
-            std::cout << "run topup/applytopup for non-shell data" << std::endl;
-            if(!run_topup(param) || !run_applytopup())
-                return false;
-        }
-        else
-        {
-            std::cout << "run topup/eddy for shell data" << std::endl;
-            if(!run_topup(param) || !run_eddy())
-                return false;
-        }
+        if(!run_topup_eddy(param))
+            return false;
         voxel.steps += cmd+"="+param+"\n";
         return true;
     }
@@ -841,45 +812,32 @@ void ImageModel::resample(float nv)
     voxel.report += std::to_string(int(new_vs[0]));
     voxel.report += " mm isotropic resolution.";
 }
-extern std::string fib_template_file_name_2mm;
-extern std::vector<std::string> iso_template_list;
-bool ImageModel::arg_to_mni(float resolution,tipl::vector<3>& vs,tipl::shape<3>& new_geo,tipl::affine_transform<float>& T)
+extern std::vector<std::string> fa_template_list,iso_template_list;
+bool ImageModel::get_acpc_transform(tipl::shape<3>& new_geo,tipl::affine_transform<float>& T_)
 {
+    tipl::affine_transform<float> T;
     tipl::image<3,unsigned char> I;
-    if(resolution == 2.0f)
+    tipl::vector<3> vs;
+    std::string template_name;
     {
-        std::string file_name = fib_template_file_name_2mm;
-        gz_mat_read read;
-        if(!read.load_from_file(file_name.c_str()) || !read.get_voxel_size(vs) || !read.get_dimension(new_geo))
-        {
-            error_msg = "Failed to load/find fib template.";
-            return false;
-        }
-        unsigned int row,col;
-        const float* iso_ptr = nullptr;
-        if(!read.read("iso",row,col,iso_ptr) || row != new_geo.size()/col)
-        {
-            error_msg = "Failed to read image from fib template.";
-            return false;
-        }
-        tipl::normalize(tipl::make_image(iso_ptr,new_geo),I);
-    }
-    else
-    if(resolution == 1.0f)
-    {
-        gz_nifti nii;
-        if(!nii.load_from_file(iso_template_list.front()))
+        template_name = QFileInfo(fa_template_list[voxel.template_id].c_str()).baseName().toStdString();
+        std::cout << "align ap-pc using template:" << template_name << std::endl;
+        // resample template to resolution of vs[0]
+        tipl::image<3> I_;
+        if(!gz_nifti::load_from_file(iso_template_list[voxel.template_id].c_str(),I_,vs) && !
+                gz_nifti::load_from_file(fa_template_list[voxel.template_id].c_str(),I_,vs))
         {
             error_msg = "Failed to load/find MNI template.";
             return false;
         }
-        nii >> I;
-        nii.get_voxel_size(vs);
+        tipl::normalize(I_);
+        auto ratio = vs / voxel.vs[0];
+        tipl::scale(I_,I,ratio,tipl::linear);
+        vs = voxel.vs[0];
     }
-    else
-        return false;
+
     bool terminated = false;
-    progress prog_("aligning with MNI ac-pc",true);
+    progress prog_((std::string("aligning with ac-pc at ")+template_name).c_str(),true);
     progress::at(0,4);
     const float bound[8] = {1.0f,-1.0f,0.02f,-0.02f,1.2f,0.9f,0.1f,-0.1f};
     tipl::reg::linear_mr(I,vs,dwi,voxel.vs,
@@ -903,22 +861,24 @@ bool ImageModel::arg_to_mni(float resolution,tipl::vector<3>& vs,tipl::shape<3>&
     if(r*r < 0.3f)
         return false;
     new_geo = I.shape();
+    T_ = T;
     return true;
 }
 
-bool ImageModel::rotate_to_mni(float resolution)
+bool ImageModel::align_acpc(void)
 {
     if(rotated_to_mni)
         return true;
-    tipl::vector<3> vs;
-    tipl::shape<3> geo;
+    tipl::shape<3> new_geo;
     tipl::affine_transform<float> T;
-    if(!arg_to_mni(resolution,vs,geo,T))
+    if(!get_acpc_transform(new_geo,T))
+    {
+        error_msg = "cannot align ac-pc to template";
         return false;
-    rotate(geo,vs,tipl::transformation_matrix<float>(T,geo,vs,voxel.dim,voxel.vs));
-    voxel.report += " The diffusion MRI data were rotated to aligh AC-PC line at ";
-    voxel.report += std::to_string(int(vs[0]));
-    voxel.report += " mm isotropic resolution.";
+    }
+    tipl::vector<3> new_vs(voxel.vs[0],voxel.vs[0],voxel.vs[0]); // new volume size will be isotropic
+    rotate(new_geo,new_vs,tipl::transformation_matrix<float>(T,new_geo,new_vs,voxel.dim,voxel.vs));
+    voxel.report += " The diffusion MRI data were rotated to aligh with the AC-PC line.";
     rotated_to_mni = true;
     return true;
 }
@@ -1505,7 +1465,7 @@ bool ImageModel::generate_topup_b0_acq_files(std::string& b0_appa_file)
 }
 
 
-bool ImageModel::run_topup(std::string other_src,std::string exec)
+bool ImageModel::run_topup(const std::string& other_src,std::string exec)
 {
     if(voxel.report.find("rotated") != std::string::npos)
     {
@@ -1734,6 +1694,31 @@ bool ImageModel::run_eddy(std::string exec)
     return true;
 }
 
+bool ImageModel::run_topup_eddy(const std::string& other_src)
+{
+    progress::show("topup/eddy",true);
+    if(QFileInfo((file_name+".corrected.nii.gz").c_str()).exists())
+    {
+        std::cout << "load previous results from " << file_name << ".corrected.nii.gz" <<std::endl;
+        if(load_topup_eddy_result())
+            return true;
+        std::cout << error_msg << std::endl;
+        std::cout << "run correction from scratch" << std::endl;
+    }
+    if(is_dsi())
+    {
+        std::cout << "run topup/applytopup for non-shell data" << std::endl;
+        if(!run_topup(other_src) || !run_applytopup())
+            return false;
+    }
+    else
+    {
+        std::cout << "run topup/eddy for shell data" << std::endl;
+        if(!run_topup(other_src) || !run_eddy())
+            return false;
+    }
+    return true;
+}
 
 void calculate_shell(const std::vector<float>& sorted_bvalues,
                      std::vector<unsigned int>& shell)
@@ -1792,7 +1777,6 @@ bool ImageModel::is_multishell(void)
         calculate_shell();
     return (shell.size() > 1) && !is_dsi();
 }
-
 
 void ImageModel::get_report(std::string& report)
 {
@@ -1920,7 +1904,7 @@ void save_idx(const char* file_name,std::shared_ptr<gz_istream> in)
         in->save_index(idx_name.c_str());
     }
 }
-
+size_t match_template(float volume);
 bool ImageModel::load_from_file(const char* dwi_file_name)
 {
     file_name = dwi_file_name;
@@ -2030,98 +2014,97 @@ bool ImageModel::load_from_file(const char* dwi_file_name)
         voxel.steps += "\n";
         return true;
     }
-
-    if (!QString(dwi_file_name).toLower().endsWith(".src.gz") &&
-        !QString(dwi_file_name).toLower().endsWith(".src"))
+    else
     {
-        error_msg = "Unsupported file format";
-        return false;
-    }
-
-    prepare_idx(dwi_file_name,mat_reader.in);
-    if(!mat_reader.load_from_file(dwi_file_name) || progress::aborted())
-    {
-        if(!progress::aborted())
+        if (!QString(dwi_file_name).toLower().endsWith(".src.gz") &&
+            !QString(dwi_file_name).toLower().endsWith(".src"))
         {
-            error_msg = QFileInfo(dwi_file_name).baseName().toStdString();
-            error_msg = " is an invalid SRC file";
-        }
-        return false;
-    }
-    save_idx(dwi_file_name,mat_reader.in);
-
-
-    if (!mat_reader.read("dimension",voxel.dim))
-    {
-        error_msg = "Cannot find dimension matrix";
-        return false;
-    }
-    if (!mat_reader.read("voxel_size",voxel.vs))
-    {
-        error_msg = "Cannot find voxel_size matrix";
-        return false;
-    }
-
-    if (voxel.dim[0]*voxel.dim[1]*voxel.dim[2] <= 0)
-    {
-        error_msg = "Invalid dimension setting";
-        return false;
-    }
-
-    unsigned int row,col;
-    const float* table;
-    if (!mat_reader.read("b_table",row,col,table))
-    {
-        error_msg = "Cannot find b_table matrix";
-        return false;
-    }
-    src_bvalues.resize(col);
-    src_bvectors.resize(col);
-    for (unsigned int index = 0;index < col;++index)
-    {
-        src_bvalues[index] = table[0];
-        src_bvectors[index][0] = table[1];
-        src_bvectors[index][1] = table[2];
-        src_bvectors[index][2] = table[3];
-        src_bvectors[index].normalize();
-        table += 4;
-    }
-
-    if(!mat_reader.read("report",voxel.report))
-        get_report(voxel.report);
-
-    src_dwi_data.resize(src_bvalues.size());
-    for (size_t index = 0;index < src_bvalues.size();++index)
-    {
-        std::ostringstream out;
-        out << "image" << index;
-        mat_reader.read(out.str().c_str(),row,col,src_dwi_data[index]);
-        if (!src_dwi_data[index])
-        {
-            error_msg = "Cannot find image matrix";
+            error_msg = "Unsupported file format";
             return false;
         }
-    }
 
-    {
-        const float* grad_dev_ptr = nullptr;
-        std::vector<tipl::pointer_image<3,float> > grad_dev;
-        size_t b0_pos = size_t(std::min_element(src_bvalues.begin(),src_bvalues.end())-src_bvalues.begin());
-        if(src_bvalues[b0_pos] == 0.0f &&
-           mat_reader.read("grad_dev",row,col,grad_dev_ptr) &&
-           size_t(row)*size_t(col) == voxel.dim.size()*9)
+        prepare_idx(dwi_file_name,mat_reader.in);
+        if(!mat_reader.load_from_file(dwi_file_name) || progress::aborted())
         {
-            for(unsigned int index = 0;index < 9;index++)
-                grad_dev.push_back(tipl::make_image(const_cast<float*>(grad_dev_ptr+index*voxel.dim.size()),voxel.dim));
-            if(std::fabs(grad_dev[0][0])+std::fabs(grad_dev[4][0])+std::fabs(grad_dev[8][0]) < 1.0f)
+            if(!progress::aborted())
             {
-                tipl::add_constant(grad_dev[0].begin(),grad_dev[0].end(),1.0);
-                tipl::add_constant(grad_dev[4].begin(),grad_dev[4].end(),1.0);
-                tipl::add_constant(grad_dev[8].begin(),grad_dev[8].end(),1.0);
+                error_msg = QFileInfo(dwi_file_name).baseName().toStdString();
+                error_msg = " is an invalid SRC file";
             }
-            // correct signals
+            return false;
+        }
+        save_idx(dwi_file_name,mat_reader.in);
+
+
+        if (!mat_reader.read("dimension",voxel.dim) ||
+            !mat_reader.read("voxel_size",voxel.vs) ||
+             voxel.dim[0]*voxel.dim[1]*voxel.dim[2] <= 0)
+        {
+            error_msg = "Invalid SRC format";
+            return false;
+        }
+
+        if(!mat_reader.read("report",voxel.report))
+            get_report(voxel.report);
+
+        unsigned int row,col;
+        const float* table;
+        if (!mat_reader.read("b_table",row,col,table))
+        {
+            error_msg = "Cannot find b_table matrix";
+            return false;
+        }
+        src_bvalues.resize(col);
+        src_bvectors.resize(col);
+        for (unsigned int index = 0;index < col;++index)
+        {
+            src_bvalues[index] = table[0];
+            src_bvectors[index][0] = table[1];
+            src_bvectors[index][1] = table[2];
+            src_bvectors[index][2] = table[3];
+            src_bvectors[index].normalize();
+            table += 4;
+        }
+        src_dwi_data.resize(src_bvalues.size());
+        for (size_t index = 0;index < src_bvalues.size();++index)
+        {
+            std::ostringstream out;
+            out << "image" << index;
+            mat_reader.read(out.str().c_str(),row,col,src_dwi_data[index]);
+            if (!src_dwi_data[index])
+            {
+                error_msg = "Cannot find image matrix";
+                return false;
+            }
+        }
+
+        const unsigned char* mask_ptr = nullptr;
+        if(mat_reader.read("mask",row,col,mask_ptr))
+        {
+            voxel.mask.resize(voxel.dim);
+            if(size_t(row)*size_t(col) == voxel.dim.size())
+                std::copy(mask_ptr,mask_ptr+size_t(row)*size_t(col),voxel.mask.begin());
+        }
+
+        {
+            const float* grad_dev_ptr = nullptr;
+            std::vector<tipl::pointer_image<3,float> > grad_dev;
+            size_t b0_pos = size_t(std::min_element(src_bvalues.begin(),src_bvalues.end())-src_bvalues.begin());
+            if(src_bvalues[b0_pos] == 0.0f &&
+               mat_reader.read("grad_dev",row,col,grad_dev_ptr) &&
+               size_t(row)*size_t(col) == voxel.dim.size()*9)
             {
                 progress::show("apply gradient deviation correction");
+
+                for(unsigned int index = 0;index < 9;index++)
+                    grad_dev.push_back(tipl::make_image(const_cast<float*>(grad_dev_ptr+index*voxel.dim.size()),voxel.dim));
+                if(std::fabs(grad_dev[0][0])+std::fabs(grad_dev[4][0])+std::fabs(grad_dev[8][0]) < 1.0f)
+                {
+                    tipl::add_constant(grad_dev[0].begin(),grad_dev[0].end(),1.0);
+                    tipl::add_constant(grad_dev[4].begin(),grad_dev[4].end(),1.0);
+                    tipl::add_constant(grad_dev[8].begin(),grad_dev[8].end(),1.0);
+                }
+                // correct signals
                 tipl::par_for(voxel.dim.size(),[&](size_t voxel_index)
                 {
                     tipl::matrix<3,3,float> G;
@@ -2146,19 +2129,15 @@ bool ImageModel::load_from_file(const char* dwi_file_name)
         }
     }
 
-    // create mask;
-    calculate_dwi_sum(true);
 
-    const unsigned char* mask_ptr = nullptr;
-    if(mat_reader.read("mask",row,col,mask_ptr))
-    {
-        voxel.mask.resize(voxel.dim);
-        if(size_t(row)*size_t(col) == voxel.dim.size())
-            std::copy(mask_ptr,mask_ptr+size_t(row)*size_t(col),voxel.mask.begin());
-    }
+
+    // create mask if not loaded from SRC file
+    calculate_dwi_sum(voxel.mask.empty());
     voxel.steps += "[Step T2][Reconstruction] open ";
     voxel.steps += std::filesystem::path(dwi_file_name).filename().string();
     voxel.steps += "\n";
+    voxel.template_id = ::match_template(std::count_if(voxel.mask.begin(),voxel.mask.end(),[](unsigned char v){return v > 0;})*
+                                   2.0f*voxel.vs[0]*voxel.vs[1]*voxel.vs[2]);
     return true;
 }
 
@@ -2311,21 +2290,14 @@ bool ImageModel::compare_src(const char* file_name)
     // correct b_table first
     if(voxel.check_btable)
         study_src->check_b_table();
-    // apply preprocessing steps
+    // apply the same preprocessing steps to the SRC files
+    if(!study_src->run_steps(file_name,voxel.steps))
     {
-        std::istringstream commands(voxel.steps);
-        std::string cmd;
-        std::cout << "applying following commands to comapred SRC" << std::endl;
-        while(std::getline(commands,cmd))
-        {
-            if(cmd.find("[Edit]") != std::string::npos &&
-               cmd.find('=') == std::string::npos)
-            {
-                std::cout << cmd << std::endl;
-                    study_src->command(cmd);
-            }
-        }
+        error_msg = "Cannot apply the preprocessing to the comparing SRC:";
+        error_msg += study_src->error_msg;
+        return false;
     }
+    study_src->align_acpc();
 
     voxel.study_name = QFileInfo(file_name).baseName().toStdString();
     voxel.compare_voxel = &(study_src->voxel);
@@ -2348,10 +2320,10 @@ bool ImageModel::compare_src(const char* file_name)
         bool terminated = false;
         progress::at(0,4);
         tipl::affine_transform<float> T;
+
         {
-            tipl::vector<3> vs;
-            tipl::shape<3> geo;
-            study_src->arg_to_mni(2.0f,vs,geo,T);
+            tipl::shape<3> new_geo;
+            get_acpc_transform(new_geo,T);
         }
         progress::at(0,4);
         tipl::reg::linear(Ib,Ib_vs,If,If_vs,

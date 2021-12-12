@@ -5,6 +5,7 @@
 #include "basic_voxel.hpp"
 #include "basic_process.hpp"
 #include "gqi_process.hpp"
+extern std::vector<std::string> fa_template_list,iso_template_list;
 void animal_reg(const tipl::image<3>& from,tipl::vector<3> from_vs,
           const tipl::image<3>& to,tipl::vector<3> to_vs,
           tipl::transformation_matrix<double>& T,bool& terminated);
@@ -49,19 +50,19 @@ public:
         tipl::vector<3> VGvs, VFvs(voxel.vs);
 
 
-        bool is_human_template = QFileInfo(voxel.primary_template.c_str()).baseName().contains("ICBM");
+        bool is_human_template = QFileInfo(fa_template_list[voxel.template_id].c_str()).baseName().contains("ICBM");
         bool manual_alignment = voxel.qsdr_trans.data[0] != 0.0;
         bool export_intermediate = false;
         bool partial_reconstruction = false;
         bool dual_modality = false;
 
-        if(voxel.primary_template.empty())
+        if(fa_template_list[voxel.template_id].empty())
             throw std::runtime_error("Invalid external template");
         {
             voxel.step_report << "[Step T2b(1)][Template]=" <<
-                                 QFileInfo(voxel.primary_template.c_str()).baseName().toStdString() << std::endl;
+                                 QFileInfo(fa_template_list[voxel.template_id].c_str()).baseName().toStdString() << std::endl;
             gz_nifti read;
-            if(!read.load_from_file(voxel.primary_template.c_str()))
+            if(!read.load_from_file(fa_template_list[voxel.template_id].c_str()))
                 throw std::runtime_error("Cannot load template");
 
             read.toLPS(VG);
@@ -69,10 +70,10 @@ public:
             read.get_image_transformation(voxel.trans_to_mni);
 
         }
-        if(!voxel.secondary_template.empty())
+        if(!iso_template_list[voxel.template_id].empty())
         {
             gz_nifti read2;
-            if(read2.load_from_file(voxel.secondary_template.c_str()))
+            if(read2.load_from_file(iso_template_list[voxel.template_id].c_str()))
             {
                 read2.toLPS(VG2);
                 VF2.swap(voxel.iso_map);

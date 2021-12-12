@@ -17,7 +17,7 @@
 
 #include "mac_filesystem.hpp"
 
-extern std::vector<std::string> fa_template_list,iso_template_list;
+
 void show_view(QGraphicsScene& scene,QImage I);
 void populate_templates(QComboBox* combo,size_t index);
 bool reconstruction_window::load_src(int index)
@@ -49,8 +49,7 @@ bool is_dsi_half_sphere(const std::vector<unsigned int>& shell);
 bool is_dsi(const std::vector<unsigned int>& shell);
 bool is_multishell(const std::vector<unsigned int>& shell);
 bool need_scheme_balance(const std::vector<unsigned int>& shell);
-size_t match_template(float volume);
-extern std::vector<std::string> fa_template_list;
+extern std::vector<std::string> fa_template_list,iso_template_list;
 reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *parent) :
     QMainWindow(parent),filenames(filenames_),ui(new Ui::reconstruction_window)
 {
@@ -68,8 +67,7 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
     ui->b_table->setColumnWidth(3,80);
     ui->b_table->setHorizontalHeaderLabels(QStringList() << "b value" << "bx" << "by" << "bz");
 
-    populate_templates(ui->primary_template,match_template(
-        handle->voxel.vs[0]*handle->voxel.vs[1]*handle->voxel.vs[2]*handle->voxel.dim.size()));
+    populate_templates(ui->primary_template,handle->voxel.template_id);
     if(ui->primary_template->currentIndex() == 0)
         ui->diffusion_sampling->setValue(1.25); // human studies
     else
@@ -267,8 +265,6 @@ void reconstruction_window::Reconstruction(unsigned char method_id,bool prompt)
             QMessageBox::information(this,"error","Cannot find template files",0);
             return;
         }
-        handle->voxel.primary_template = fa_template_list[ui->primary_template->currentIndex()];
-        handle->voxel.secondary_template = iso_template_list[ui->primary_template->currentIndex()];
     }
 
     settings.setValue("rec_method_id",method_id);
@@ -301,8 +297,8 @@ void reconstruction_window::Reconstruction(unsigned char method_id,bool prompt)
     else
         handle->voxel.scheme_balance = false;
 
-    if(ui->align_acpc->isChecked() && handle->is_human_data() && method_id != 7)
-        handle->rotate_to_mni(handle->voxel.vs[0] < 1.5f ? 1.0f : 2.0f);
+    if(ui->align_acpc->isChecked() && method_id != 7)
+        handle->align_acpc();
 
     auto dim_backup = handle->voxel.dim; // for QSDR
     auto vs = handle->voxel.vs; // for QSDR
@@ -1111,4 +1107,10 @@ void reconstruction_window::on_actionRun_FSL_Topup_triggered()
     progress prog_("topup/eddy",true);
     if(command("[Step T2][Corrections][TOPUP EDDY]",other_src.toStdString()))
         QMessageBox::information(this,"DSI Studio","Correction result loaded");
+}
+
+
+void reconstruction_window::on_primary_template_currentIndexChanged(int index)
+{
+    handle->voxel.template_id = size_t(index);
 }

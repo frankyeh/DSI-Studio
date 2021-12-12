@@ -71,9 +71,7 @@ private slots:
     void on_actionFlip_xy_triggered(){command("[Step T2][Edit][Image swap xy]");}
     void on_actionFlip_yz_triggered(){command("[Step T2][Edit][Image swap yz]");}
     void on_actionFlip_xz_triggered(){command("[Step T2][Edit][Image swap xz]");}
-    void on_actionRotate_to_MNI_triggered(){command("[Step T2][Edit][Rotate to MNI]");}
-    void on_actionRotate_to_MNI_2mm_triggered(){command("[Step T2][Edit][Rotate to MNI2]");}
-
+    void on_actionAlign_ACPC_triggered(){command("[Step T2][Edit][Align APPC]");}
     void on_actionTrim_image_triggered(){command("[Step T2][Edit][Crop Background]");}
     void on_actionFlip_bx_triggered();
     void on_actionFlip_by_triggered();
@@ -114,6 +112,7 @@ private slots:
     void on_actionOverwrite_Voxel_Size_triggered();
     void on_qsdr_manual_clicked();
     void on_actionRun_FSL_Topup_triggered();
+    void on_primary_template_currentIndexChanged(int index);
 };
 
 #endif // RECONSTRUCTION_WINDOW_H

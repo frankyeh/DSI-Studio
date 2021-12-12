@@ -278,8 +278,8 @@ public:
                 const tipl::image<3,tipl::vector<3> >& cdm_dis = tipl::image<3,tipl::vector<3> >(),
                 const tipl::image<3>& super_reso_ref = tipl::image<3>(),double var = 3.0);
     void resample(float nv);
-    bool arg_to_mni(float resolution,tipl::vector<3>& vs,tipl::shape<3>& new_geo,tipl::affine_transform<float>& T);
-    bool rotate_to_mni(float resolution);
+    bool get_acpc_transform(tipl::shape<3>& new_geo,tipl::affine_transform<float>& T);
+    bool align_acpc(void);
     void crop(tipl::shape<3> range_min,tipl::shape<3> range_max);
     void trim(void);
     void correct_motion(bool eddy);
@@ -292,10 +292,12 @@ public:
     bool distortion_correction(const char* file_name);
     bool run_plugin(std::string program_name,size_t expected_time_in_sec,std::vector<std::string> param,std::string working_dir,std::string exec = std::string());
     bool generate_topup_b0_acq_files(std::string& b0_appa_file);
-    bool run_topup(std::string other_src,std::string exec = std::string());
+    bool run_topup(const std::string& other_src,std::string exec = std::string());
     bool run_applytopup(std::string exec = std::string());
     bool run_eddy(std::string exec = std::string());
     bool load_topup_eddy_result(void);
+    bool run_topup_eddy(const std::string& other_src);
+public:
     bool compare_src(const char* file_name);
 
 public:

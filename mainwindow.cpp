@@ -803,8 +803,6 @@ void MainWindow::on_ReconstructSRC_clicked()
         handle->voxel.output_odf = true; // output ODF
         handle->voxel.other_output = "all";
         handle->voxel.thread_count = std::thread::hardware_concurrency();
-        handle->voxel.primary_template = fa_template_list[0];
-        handle->voxel.secondary_template = iso_template_list[0];
 
         //checking half shell
         {

@@ -88,6 +88,7 @@ typedef boost::mpl::vector<
     SaveDirIndex
 > reprocess_odf;
 
+extern std::vector<std::string> fa_template_list;
 std::string ImageModel::get_file_ext(void)
 {
     std::ostringstream out;
@@ -123,7 +124,7 @@ std::string ImageModel::get_file_ext(void)
             << ".reg" << voxel.param[2] << ".src.gz";
         break;
     case 7:
-        out << "." << QFileInfo(voxel.primary_template.c_str()).baseName().toLower().toStdString();
+        out << "." << QFileInfo(fa_template_list[voxel.template_id].c_str()).baseName().toLower().toStdString();
         out << (voxel.r2_weighted ? ".qsdr2.":".qsdr.");
         out << voxel.param[0];
         out << ".R" << int(std::floor(voxel.R2*100.0f)) << ".fib.gz";
@@ -236,8 +237,6 @@ bool ImageModel::reconstruction(void)
             if(!voxel.study_src_file_path.empty())
             {
                 std::cout << "SRC compared with=" << voxel.study_src_file_path << std::endl;
-                if(is_human_size(voxel.dim,voxel.vs))
-                    rotate_to_mni(2.0f);
                 if(!compare_src(voxel.study_src_file_path.c_str()))
                 {
                     error_msg = "Failed to load SRC file.";

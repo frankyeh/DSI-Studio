@@ -15,7 +15,6 @@
 #include "mac_filesystem.hpp"
 
 extern std::vector<std::string> fa_template_list,iso_template_list;
-size_t match_template(float volume);
 void calculate_shell(const std::vector<float>& bvalues,std::vector<unsigned int>& shell);
 bool is_dsi_half_sphere(const std::vector<unsigned int>& shell);
 bool is_dsi(const std::vector<unsigned int>& shell);
@@ -36,15 +35,12 @@ int rec(program_option& po)
     }
     std::cout << "src loaded" <<std::endl;
 
-    if(po.has("rev_pe"))
+    if(po.has("rev_pe") && !src.run_topup_eddy(po.get("rev_pe")))
     {
-        std::cout << "run topup/eddy..." << std::endl;
-        if(!src.command("[Step T2][Corrections][TOPUP EDDY]",po.get("rev_pe")))
-        {
-            std::cout << "ERROR:" << src.error_msg << std::endl;
-            return 1;
-        }
+        std::cout << "ERROR:" << src.error_msg << std::endl;
+        return 1;
     }
+
 
     if(po.has("other_image"))
     {
@@ -127,22 +123,7 @@ int rec(program_option& po)
     if(method_index == 7) // QSDR
     {
         src.voxel.param[0] = 1.25f;
-        std::cout << "selecting template..." << std::endl;
-        for(size_t index = 0;index < fa_template_list.size();++index)
-            std::cout << index << ":" << fa_template_list[index] << std::endl;
-        if(po.has("template"))
-        {
-            src.voxel.primary_template = fa_template_list[size_t(po.get("template",0))];
-            src.voxel.secondary_template = iso_template_list[size_t(po.get("template",0))];
-        }
-        else
-        {
-            size_t index = match_template(src.voxel.vs[0]*src.voxel.vs[1]*src.voxel.vs[2]*src.voxel.dim.size());
-            src.voxel.primary_template = fa_template_list[index];
-            src.voxel.secondary_template = iso_template_list[index];
-        }
-        std::cout << "template: " << src.voxel.primary_template << std::endl;
-        std::cout << "template2: " << src.voxel.secondary_template << std::endl;
+        src.voxel.template_id = size_t(po.get("template",src.voxel.template_id));
     }
     if(po.has("study_src")) // DDI
         src.voxel.study_src_file_path = po.get("study_src");
@@ -158,7 +139,7 @@ int rec(program_option& po)
         src.voxel.param[4] = po.get("param4",float(0));
 
     if(po.get("align_acpc",1) && method_index != 7)
-        src.rotate_to_mni(src.voxel.vs[0] < 1.5f ? 1.0f:2.0f);
+        src.align_acpc();
     else
     {
         if(po.has("rotate_to"))
