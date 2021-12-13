@@ -1297,7 +1297,7 @@ bool ImageModel::run_plugin(std::string program_name,size_t expected_time_in_sec
     if(exec.empty())
     {
         #ifdef _WIN32
-        error_msg = (QString("Please download win_fsl and extract it to %1\\plugin").arg(QCoreApplication::applicationDirPath())).toStdString();
+        error_msg = QString("Please double click on %1.exe at %2\\plugin to allow it to run.").arg(program_name.c_str()).arg(QCoreApplication::applicationDirPath()).toStdString();
         #else
         error_msg = "Please install FSL at /usr/local/fsl/";
         #endif
