@@ -1092,7 +1092,7 @@ bool ImageModel::read_rev_b0(const char* filename,std::vector<tipl::image<3> >& 
         while(nii.input_stream->good())
         {
             tipl::image<3> J;
-            nii >> J;
+            nii.toLPS(J,false);
             if(voxel.dim != J.shape())
             {
                 error_msg = "inconsistent image dimension between b0 and reversed phase encoding b0";
@@ -1106,7 +1106,6 @@ bool ImageModel::read_rev_b0(const char* filename,std::vector<tipl::image<3> >& 
                 return false;
             }
             I.push_back(std::move(J));
-
         }
         return true;
     }
