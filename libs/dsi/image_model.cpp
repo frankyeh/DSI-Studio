@@ -1249,6 +1249,14 @@ bool ImageModel::run_plugin(std::string exec_name,size_t expected_time_in_sec,st
             std::string fsl_path = QProcess::systemEnvironment()[index].split("=")[1].toStdString();
             std::cout << "FSL installation found at " << fsl_path << std::endl;
             exec = fsl_path + "/bin/" + exec_name;
+            if(exec_name == "eddy" && !QFileInfo(exec.c_str()).exists())
+                exec = fsl_path + "/bin/eddy_openmp";
+            if(!QFileInfo(exec.c_str()).exists())
+            {
+                error_msg = "cannot find ";
+                error_msg += exec;
+                return false;
+            }
         }
         else
         {
