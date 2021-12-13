@@ -292,7 +292,6 @@ public:
     bool distortion_correction(const char* file_name);
     bool run_plugin(std::string program_name,size_t expected_time_in_sec,std::vector<std::string> param,std::string working_dir,std::string exec = std::string());
     bool generate_topup_b0_acq_files(std::string& b0_appa_file);
-    bool run_topup(const std::string& other_src,std::string exec = std::string());
     bool run_applytopup(std::string exec = std::string());
     bool run_eddy(std::string exec = std::string());
     bool load_topup_eddy_result(void);

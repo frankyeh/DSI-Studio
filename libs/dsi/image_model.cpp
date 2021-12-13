@@ -1467,45 +1467,6 @@ bool ImageModel::generate_topup_b0_acq_files(std::string& b0_appa_file)
 }
 
 
-bool ImageModel::run_topup(const std::string& other_src,std::string exec)
-{
-    if(voxel.report.find("rotated") != std::string::npos)
-    {
-        error_msg = "TOPUP cannot be applied to rotated images";
-        return false;
-    }
-    std::string topup_result = QFileInfo(file_name.c_str()).baseName().replace('.','_').toStdString();
-    std::string check_me_file = QFileInfo(file_name.c_str()).baseName().toStdString() + ".topup.check_result";
-    std::string acqparam_file = QFileInfo(file_name.c_str()).baseName().toStdString() + ".topup.acqparams.txt";
-    std::string b0_appa_file;
-
-    if(!read_b0(b0) || !read_rev_b0(other_src.c_str(),rev_b0) || !generate_topup_b0_acq_files(b0_appa_file))
-        return false;
-
-    if(QFileInfo((check_me_file+".nii.gz").c_str()).exists() &&
-       QFileInfo((topup_result+"_fieldcoef.nii.gz").c_str()).exists())
-    {
-        std::cout << "find existing topup results. skipping topup." << std::endl;
-        return true;
-    }
-    std::vector<std::string> param = {
-        "--warpres=20,16,14,12,10,6,4,4,4",
-        "--subsamp=2,2,2,2,2,1,1,1,1",  // This causes an error in odd number of slices
-        "--fwhm=8,6,4,3,3,2,1,0,0",
-        "--miter=5,5,5,5,5,10,10,20,20",
-        "--lambda=0.005,0.001,0.0001,0.000015,0.000005,0.0000005,0.00000005,0.0000000005,0.00000000001",
-        "--estmov=1,1,1,1,1,0,0,0,0",
-        "--minmet=0,0,0,0,0,1,1,1,1",
-        "--scale=1",
-        QString("--imain=%1").arg(b0_appa_file.c_str()).toStdString().c_str(),
-        QString("--datain=%1").arg(acqparam_file.c_str()).toStdString().c_str(),
-        QString("--out=%1").arg(topup_result.c_str()).toStdString().c_str(),
-        QString("--iout=%1").arg(check_me_file.c_str()).toStdString().c_str(),
-        QString("--verbose=1").toStdString().c_str()};
-
-    return run_plugin("topup",200*(b0.size()+rev_b0.size()),param,QFileInfo(file_name.c_str()).absolutePath().toStdString(),exec);
-}
-
 bool load_bval(const char* file_name,std::vector<double>& bval);
 bool load_bvec(const char* file_name,std::vector<double>& b_table,bool flip_by = true);
 bool ImageModel::load_topup_eddy_result(void)
@@ -1600,13 +1561,11 @@ bool ImageModel::run_applytopup(std::string exec)
 
     }
     if(!run_plugin("applytopup",5*(src_bvalues.size()+(rev_pe_src.get() ? rev_pe_src->src_bvalues.size():0)),param,
-                   QFileInfo(file_name.c_str()).absolutePath().toStdString(),exec) ||
-       !load_topup_eddy_result())
+                   QFileInfo(file_name.c_str()).absolutePath().toStdString(),exec))
         return false;
     QFile(temp_nifti.c_str()).remove();
     if(rev_pe_src.get())
         QFile((rev_pe_src->file_name+".nii.gz").c_str()).remove();
-    calculate_dwi_sum(true);
     return true;
 }
 
@@ -1687,10 +1646,6 @@ bool ImageModel::run_eddy(std::string exec)
     }
     QFile(temp_nifti.c_str()).remove();
     QFile(mask_nifti.c_str()).remove();
-
-    if(!load_topup_eddy_result())
-        return false;
-    calculate_dwi_sum(true);
     return true;
 }
 
@@ -1705,8 +1660,48 @@ bool ImageModel::run_topup_eddy(const std::string& other_src)
         std::cout << error_msg << std::endl;
         std::cout << "run correction from scratch" << std::endl;
     }
-    if(!run_topup(other_src))
-        return false;
+    // run topup
+    {
+        if(voxel.report.find("rotated") != std::string::npos)
+        {
+            error_msg = "TOPUP cannot be applied to rotated images";
+            return false;
+        }
+        std::string topup_result = QFileInfo(file_name.c_str()).baseName().replace('.','_').toStdString();
+        std::string check_me_file = QFileInfo(file_name.c_str()).baseName().toStdString() + ".topup.check_result";
+        std::string acqparam_file = QFileInfo(file_name.c_str()).baseName().toStdString() + ".topup.acqparams.txt";
+        std::string b0_appa_file;
+
+        if(!read_b0(b0) || !read_rev_b0(other_src.c_str(),rev_b0) || !generate_topup_b0_acq_files(b0_appa_file))
+            return false;
+
+        if(QFileInfo((check_me_file+".nii.gz").c_str()).exists() &&
+           QFileInfo((topup_result+"_fieldcoef.nii.gz").c_str()).exists())
+        {
+            std::cout << "find existing topup results. skipping topup." << std::endl;
+        }
+        else
+        {
+            std::vector<std::string> param = {
+                "--warpres=20,16,14,12,10,6,4,4,4",
+                "--subsamp=2,2,2,2,2,1,1,1,1",  // This causes an error in odd number of slices
+                "--fwhm=8,6,4,3,3,2,1,0,0",
+                "--miter=5,5,5,5,5,10,10,20,20",
+                "--lambda=0.005,0.001,0.0001,0.000015,0.000005,0.0000005,0.00000005,0.0000000005,0.00000000001",
+                "--estmov=1,1,1,1,1,0,0,0,0",
+                "--minmet=0,0,0,0,0,1,1,1,1",
+                "--scale=1",
+                QString("--imain=%1").arg(b0_appa_file.c_str()).toStdString().c_str(),
+                QString("--datain=%1").arg(acqparam_file.c_str()).toStdString().c_str(),
+                QString("--out=%1").arg(topup_result.c_str()).toStdString().c_str(),
+                QString("--iout=%1").arg(check_me_file.c_str()).toStdString().c_str(),
+                QString("--verbose=1").toStdString().c_str()};
+            if(!run_plugin("topup",200*(b0.size()+rev_b0.size()),param,
+                QFileInfo(file_name.c_str()).absolutePath().toStdString(),std::string()))
+                return false;
+        }
+    }
+
     if(is_dsi())
     {
         std::cout << "run topup/applytopup for non-shell data" << std::endl;
@@ -1719,6 +1714,9 @@ bool ImageModel::run_topup_eddy(const std::string& other_src)
         if(!run_eddy())
             return false;
     }
+    if(!load_topup_eddy_result())
+        return false;
+    calculate_dwi_sum(true);
     return true;
 }
 
