@@ -1060,7 +1060,10 @@ void apply_distortion_map2(const image_type& v1,
     }
     );
 }
-
+size_t ImageModel::b0_count(void) const
+{
+    return size_t(std::count(src_bvalues.begin(),src_bvalues.end(),0.0f));
+}
 bool ImageModel::read_b0(std::vector<tipl::image<3> >& I) const
 {
     I.clear();
@@ -1149,6 +1152,7 @@ bool ImageModel::distortion_correction(const char* filename)
 {
     tipl::image<3> v1,v2;
     {
+        std::vector<tipl::image<3> > b0,rev_b0;
         if(!read_b0(b0) || !read_rev_b0(filename,rev_b0))
             return false;
         v2 = std::move(rev_b0.front());
@@ -1348,7 +1352,9 @@ bool ImageModel::run_plugin(std::string program_name,size_t expected_time_in_sec
 
 
 
-bool ImageModel::generate_topup_b0_acq_files(std::string& b0_appa_file)
+bool ImageModel::generate_topup_b0_acq_files(std::vector<tipl::image<3> >& b0,
+                                             std::vector<tipl::image<3> >& rev_b0,
+                                             std::string& b0_appa_file)
 {
     // DSI Studio use LPS ecoding wjereas and FSL use LAS
     // The y direction is flipped
@@ -1543,7 +1549,7 @@ bool ImageModel::run_applytopup(std::string exec)
                 QString("--datain=%1").arg(acqparam_file.c_str()).toStdString().c_str(),
                 QString("--topup=%1").arg(topup_result.c_str()).toStdString().c_str(),
                 QString("--out=%1").arg(QFileInfo(corrected_file.c_str()).fileName()).toStdString().c_str(),
-                "--inindex=1,2",
+                QString("--inindex=1,%1").arg(b0_count()+1).toStdString().c_str(),
                 "--method=jac",
                 "--verbose=1"};
     }
@@ -1617,7 +1623,7 @@ bool ImageModel::run_eddy(std::string exec)
         {
             for(size_t i = 0;i < rev_pe_src->src_bvalues.size();++i)
             {
-                index_out << " " << (1+b0.size());
+                index_out << " " << (1+b0_count());
                 bval_out << rev_pe_src->src_bvalues[i] << " ";
                 bvec_out << rev_pe_src->src_bvectors[i][0] << " "
                          << -rev_pe_src->src_bvectors[i][1] << " "
@@ -1671,12 +1677,11 @@ bool ImageModel::run_topup_eddy(const std::string& other_src)
         std::string check_me_file = QFileInfo(file_name.c_str()).baseName().toStdString() + ".topup.check_result";
         std::string acqparam_file = QFileInfo(file_name.c_str()).baseName().toStdString() + ".topup.acqparams.txt";
         std::string b0_appa_file;
-
-        if(!read_b0(b0) || !read_rev_b0(other_src.c_str(),rev_b0) || !generate_topup_b0_acq_files(b0_appa_file))
+        std::vector<tipl::image<3> > b0,rev_b0;
+        if(!read_b0(b0) || !read_rev_b0(other_src.c_str(),rev_b0) || !generate_topup_b0_acq_files(b0,rev_b0,b0_appa_file))
             return false;
 
-        if(QFileInfo((check_me_file+".nii.gz").c_str()).exists() &&
-           QFileInfo((topup_result+"_fieldcoef.nii.gz").c_str()).exists())
+        if(QFileInfo((topup_result+"_fieldcoef.nii.gz").c_str()).exists())
         {
             std::cout << "find existing topup results. skipping topup." << std::endl;
         }

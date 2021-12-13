@@ -284,14 +284,16 @@ public:
     void trim(void);
     void correct_motion(bool eddy);
 public:
-    std::vector<tipl::image<3> > b0,rev_b0;
     std::shared_ptr<ImageModel> rev_pe_src;
     tipl::shape<3> topup_from,topup_to;
+    size_t b0_count(void) const;
     bool read_b0(std::vector<tipl::image<3> >& rev_b0) const;
     bool read_rev_b0(const char* file_name,std::vector<tipl::image<3> >& rev_b0);
     bool distortion_correction(const char* file_name);
     bool run_plugin(std::string program_name,size_t expected_time_in_sec,std::vector<std::string> param,std::string working_dir,std::string exec = std::string());
-    bool generate_topup_b0_acq_files(std::string& b0_appa_file);
+    bool generate_topup_b0_acq_files(std::vector<tipl::image<3> >& b0,
+                                     std::vector<tipl::image<3> >& rev_b0,
+                                     std::string& b0_appa_file);
     bool run_applytopup(std::string exec = std::string());
     bool run_eddy(std::string exec = std::string());
     bool load_topup_eddy_result(void);
