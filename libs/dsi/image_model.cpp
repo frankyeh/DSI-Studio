@@ -1569,6 +1569,8 @@ bool ImageModel::run_applytopup(std::string exec)
     if(!run_plugin("applytopup",5*(src_bvalues.size()+(rev_pe_src.get() ? rev_pe_src->src_bvalues.size():0)),param,
                    QFileInfo(file_name.c_str()).absolutePath().toStdString(),exec))
         return false;
+    if(!load_topup_eddy_result())
+        return false;
     QFile(temp_nifti.c_str()).remove();
     if(rev_pe_src.get())
         QFile((rev_pe_src->file_name+".nii.gz").c_str()).remove();
@@ -1650,6 +1652,9 @@ bool ImageModel::run_eddy(std::string exec)
         std::cout << "eddy cannot process this data:" << error_msg << std::endl;
         return run_applytopup();
     }
+    if(!load_topup_eddy_result())
+        return false;
+
     QFile(temp_nifti.c_str()).remove();
     QFile(mask_nifti.c_str()).remove();
     return true;
@@ -1714,9 +1719,6 @@ bool ImageModel::run_topup_eddy(const std::string& other_src)
         if(!run_eddy())
             return false;
     }
-    if(!load_topup_eddy_result())
-        return false;
-    calculate_dwi_sum(true);
     return true;
 }
 
