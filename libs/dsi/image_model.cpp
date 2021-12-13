@@ -1511,7 +1511,8 @@ bool ImageModel::run_applytopup(std::string exec)
     if(!save_nii_for_applytopup_or_eddy(false))
         return false;
     std::vector<std::string> param;
-    if(rev_pe_src.get())
+    // to use blipup and blipdown, both must have the same DWI count
+    if(rev_pe_src.get() && rev_pe_src->src_bvalues.size() == src_bvalues.size())
     {
         if(!rev_pe_src->save_nii_for_applytopup_or_eddy(false))
         {
