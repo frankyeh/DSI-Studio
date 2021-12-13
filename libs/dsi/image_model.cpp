@@ -1405,16 +1405,18 @@ bool ImageModel::generate_topup_b0_acq_files(std::string& b0_appa_file)
         auto temp_mask = voxel.mask;
         if(rev_pe_src.get())
             temp_mask += rev_pe_src->voxel.mask;
-        tipl::morphology::dilation2(temp_mask,3);
+        tipl::morphology::dilation2(temp_mask,std::max<int>(voxel.dim[0]/20,2));
         tipl::bounding_box(temp_mask,topup_from,topup_to,0);
 
 
         // allow for more space in the PE direction
-
-        int pe_dim = is_appa ? 1:0;
-        int space = int(topup_to[pe_dim]-topup_from[pe_dim])/5;
-        topup_from[pe_dim] = uint32_t(std::max<int>(0,int(topup_from[pe_dim])-space));
-        topup_to[pe_dim] = uint32_t(std::min<int>(int(temp_mask.shape()[pe_dim]),int(topup_to[pe_dim])+space));
+        if(!rev_pe_src.get())
+        {
+            int pe_dim = is_appa ? 1:0;
+            int space = int(topup_to[pe_dim]-topup_from[pe_dim])/5;
+            topup_from[pe_dim] = uint32_t(std::max<int>(0,int(topup_from[pe_dim])-space));
+            topup_to[pe_dim] = uint32_t(std::min<int>(int(temp_mask.shape()[pe_dim]),int(topup_to[pe_dim])+space));
+        }
 
         // ensure even number in the dimension for topup
         for(int d = 0;d < 3;++d)
