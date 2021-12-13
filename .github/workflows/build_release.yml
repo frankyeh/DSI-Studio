@@ -146,7 +146,10 @@ jobs:
       run: |
         7z e openssl-1.0.2u-x64_86-win64.zip
         move *.dll dsi_studio_win
-        7z e tiny_fsl_win64.zip -odsi_studio_win\plugin
+        7z e tiny_fsl_win64.zip 
+        move *.exe dsi_studio_win\plugin
+        move *.dll dsi_studio_win\plugin
+        move FSL_LICENSE dsi_studio_win\plugin
         del *.zip
     - name: Zip Release
       uses: TheDoctor0/zip-release@0.6.0
