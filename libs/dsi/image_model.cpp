@@ -1705,16 +1705,18 @@ bool ImageModel::run_topup_eddy(const std::string& other_src)
         std::cout << error_msg << std::endl;
         std::cout << "run correction from scratch" << std::endl;
     }
+    if(!run_topup(other_src))
+        return false;
     if(is_dsi())
     {
         std::cout << "run topup/applytopup for non-shell data" << std::endl;
-        if(!run_topup(other_src) || !run_applytopup())
+        if(!run_applytopup())
             return false;
     }
     else
     {
         std::cout << "run topup/eddy for shell data" << std::endl;
-        if(!run_topup(other_src) || !run_eddy())
+        if(!run_eddy())
             return false;
     }
     return true;
