@@ -1229,84 +1229,47 @@ bool ImageModel::distortion_correction(const char* filename)
 }
 
 
-//QFileInfo(file_name.c_str()).absolutePath()
-
-bool test_call_fsl(std::string command,std::string exec_name)
-{
-    QProcess program;
-    std::cout << "test calling " << exec_name << "..." << std::endl;
-    program.start(command.c_str());
-    if(program.waitForStarted())
-    {
-        std::cout << exec_name << " successfully initiated." << std::endl;
-        if(!program.waitForFinished(1000))
-            program.kill();
-        return true;
-    }
-    else
-    {
-        std::cout << "cannot initiate " << exec_name << std::endl;
-        return false;
-    }
-}
 #include <QCoreApplication>
-std::string get_plugin_executive(std::string exec_name,std::string command)
+bool ImageModel::run_plugin(std::string exec_name,size_t expected_time_in_sec,std::vector<std::string> param,std::string working_dir,std::string exec)
 {
-    // if a command is specified, call and return
-    if(!command.empty())
-        return test_call_fsl(command,exec_name) ? command : std::string();
-
-    // now search for plugin
-    #ifdef _WIN32
-    if(QFileInfo(QCoreApplication::applicationDirPath() + "/plugin/" + exec_name.c_str() + ".exe").exists())
+    if(exec.empty())
     {
-        std::cout << "found " << exec_name << ".exe" << std::endl;
-        command = (QCoreApplication::applicationDirPath() +  + "/plugin/" + exec_name.c_str() + ".exe").toStdString();
-    }
-    #else
-    if(QFileInfo(QCoreApplication::applicationDirPath() + "/plugin/" + exec_name.c_str()).exists())
-    {
-        std::cout << "found " << exec_name << std::endl;
-        command = (QCoreApplication::applicationDirPath() + "/plugin/" + exec_name.c_str()).toStdString();
-    }
-    if(QFileInfo(QString("/usr/local/fsl/bin/") + exec_name.c_str()).exists())
-    {
-        std::cout << "found " << exec_name << std::endl;
-        command = std::string("/usr/local/fsl/bin/") + exec_name;
-    }
-    if(command.empty())
-    {
+        #ifdef _WIN32
+        // search for plugin
+        exec = (QCoreApplication::applicationDirPath() +  + "/plugin/" + exec_name.c_str() + ".exe").toStdString();
+        if(!QFileInfo(exec.c_str()).exists())
+        {
+            error_msg = QString("Cannot find %1").arg(exec.c_str()).toStdString();
+            return false;
+        }
+        #else
         int index = QProcess::systemEnvironment().indexOf(QRegExp("^FSLDIR=.+"));
         if(index != -1)
         {
             std::string fsl_path = QProcess::systemEnvironment()[index].split("=")[1].toStdString();
             std::cout << "FSL installation found at " << fsl_path << std::endl;
-            command = fsl_path + "/bin/" + exec_name;
+            exec = fsl_path + "/bin/" + exec_name;
         }
-    }
-    #endif
-    if(command.empty())
-        command = exec_name;
-
-    return test_call_fsl(command,exec_name) ? command : std::string();
-}
-
-bool ImageModel::run_plugin(std::string program_name,size_t expected_time_in_sec,std::vector<std::string> param,std::string working_dir,std::string exec)
-{
-    exec = get_plugin_executive(program_name,exec);
-    if(exec.empty())
-    {
-        #ifdef _WIN32
-        error_msg = QString("Please double click on %1.exe at %2\\plugin to allow it to run.").arg(program_name.c_str()).arg(QCoreApplication::applicationDirPath()).toStdString();
-        #else
-        error_msg = "Please install FSL at /usr/local/fsl/";
+        else
+        {
+            exec = (QCoreApplication::applicationDirPath() +  + "/plugin/" + exec_name.c_str()).toStdString();
+            if(!QFileInfo(exec.c_str()).exists())
+            {
+                exec = std::string("/usr/local/fsl/bin/") + exec_name;
+                if(!QFileInfo(exec.c_str()).exists())
+                {
+                    error_msg = "Cannot find FSL";
+                    return false;
+                }
+            }
+        }
         #endif
-        return false;
     }
+
     QProcess program;
     program.setEnvironment(program.environment() << "FSLOUTPUTTYPE=NIFTI_GZ");
     program.setWorkingDirectory(working_dir.c_str());
-    std::cout << "running " << program_name << " at " << working_dir << " with" << std::endl;
+    std::cout << "run " << exec << " at " << working_dir << " with" << std::endl;
     QStringList p;
     for(auto s:param)
     {
@@ -1316,14 +1279,19 @@ bool ImageModel::run_plugin(std::string program_name,size_t expected_time_in_sec
     program.start(exec.c_str(),p);
     if(!program.waitForStarted())
     {
-        error_msg = program_name + " failed to initiate.";
+        error_msg = "failed to initiate ";
+        error_msg = exec_name;
+        error_msg = ".";
+        #ifdef _WIN32
+        error_msg = QString("Please double click on %1 to enable it to run.").arg(exec.c_str()).toStdString();
+        #endif
         return false;
     }
     if(program.waitForFinished(3000))
     {
         error_msg = QString::fromLocal8Bit(program.readAllStandardError()).toStdString()+QString::fromLocal8Bit(program.readAllStandardOutput()).toStdString();
         if(error_msg.empty())
-            error_msg = program_name + " ended prematurely: unknown error";
+            error_msg = exec_name + " ended prematurely: unknown error";
         return false;
     }
     unsigned int proc_time = 0;
