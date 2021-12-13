@@ -6,6 +6,10 @@ ENV DEBIAN_FRONTEND noninteractive
 RUN apt update && apt full-upgrade -y && \
   apt install -y --no-install-recommends \
   libopenblas-dev \
+  file \
+  libquadmath0 \
+  tclsh \
+  wish \ 
   unzip \
   curl \
   make \
@@ -52,14 +56,32 @@ RUN cd /opt/dsi-studio \
 
 
 # FSL
-ENV OS="Linux"
-ENV FSLDIR=/opt/tinyfsl
-ENV FSL_DIR="$FSLDIR"
-ENV FSLOUTPUTTYPE="NIFTI_GZ"
-ENV FSLMULTIFILEQUIT="TRUE"
-ENV LD_LIBRARY_PATH="$FSLDIR/lib:$LD_LIBRARY_PATH"
-ENV PATH="$FSLDIR/bin:$PATH"
+RUN curl -sSL https://fsl.fmrib.ox.ac.uk/fsldownloads/fsl-6.0.4-centos7_64.tar.gz | tar zxv --no-same-owner -C /opt \
+    --exclude='fsl/doc' \
+    --exclude='fsl/refdoc' \
+    --exclude='fsl/python/oxford_asl' \
+    --exclude='fsl/data/possum' \
+    --exclude='fsl/data/first' \
+    --exclude='fsl/data/mist' \
+    --exclude='fsl/data/atlases' \
+    --exclude='fsl/data/xtract_data' \
+    --exclude='fsl/extras/doc' \
+    --exclude='fsl/extras/man' \
+    --exclude='fsl/extras/src' \
+    --exclude='fsl/src'
 
+ENV OS="Linux" \
+    FSLDIR="/opt/fsl" \
+    FSL_DIR="$FSLDIR" \
+    FSLOUTPUTTYPE="NIFTI_GZ" \
+    FSLMULTIFILEQUIT="TRUE" \
+    LD_LIBRARY_PATH="$FSLDIR/lib:$LD_LIBRARY_PATH" \
+    FSLTCLSH="/usr/bin/tclsh" \
+    FSLWISH="/usr/bin/wish" \
+    PATH="$FSLDIR/bin:$PATH"
+
+
+# TINYFSL
 
 RUN cd /opt \
   && git clone https://github.com/frankyeh/TIPL.git \
@@ -122,5 +144,7 @@ RUN cd /opt \
   && mkdir tinyfsl \
   && mv tinyfsl_bin tinyfsl \
   && cd /opt/tinyfsl \
-  && mv tinyfsl_bin bin
+  && mv tinyfsl_bin bin \
+  && cp -fr /opt/tinyfsl/bin/topup /opt/fsl/bin
+
 
