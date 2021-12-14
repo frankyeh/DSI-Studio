@@ -1610,9 +1610,8 @@ bool ImageModel::run_topup_eddy(const std::string& other_src)
         std::cout << error_msg << std::endl;
         if(!QFileInfo(other_src.c_str()).exists())
         {
-            error_msg = "failed to load previous results. please remove ";
-            error_msg += file_name;
-            error_msg += ".corrected.nii.gz and re-run correction.";
+            error_msg = "failed to load previous results. please re-run correction again.";
+            QFile((file_name+".corrected.nii.gz").c_str()).remove();
             return false;
         }
         std::cout << "run correction from scratch with " << other_src << std::endl;
