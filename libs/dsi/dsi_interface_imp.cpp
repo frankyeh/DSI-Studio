@@ -307,11 +307,8 @@ bool ImageModel::reconstruction(void)
             return false;
         }
 
-        if(!voxel.dti_no_high_b)
+        if(voxel.dti_no_high_b)
             voxel.recon_report << " The tensor metrics were calculated using DWI with b-value lower than 1750 s/mm².";
-        else
-            voxel.recon_report << " The tensor metrics were calculated.";
-
         return save_fib(file_name.find(".fib.gz") == std::string::npos ? file_name + get_file_ext():file_name);
     }
     catch (std::exception& e)
