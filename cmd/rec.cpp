@@ -188,13 +188,13 @@ int rec(program_option& po)
     src.voxel.odf_resolving = po.get("odf_resolving",int(0));
     src.voxel.output_odf = po.get("record_odf",int(0));
     src.voxel.dti_no_high_b = po.get("dti_no_high_b",src.is_human_data());
-    src.voxel.check_btable = po.get("check_btable",int(src.voxel.dim[2] < src.voxel.dim[0]*2.0 ? 1:0));
+    src.voxel.check_btable = po.get("check_btable",src.voxel.dim[2] < src.voxel.dim[0]*2.0);
     src.voxel.other_output = po.get("other_output","fa,ad,rd,md,nqa,iso,rdi,nrdi");
     src.voxel.max_fiber_number = uint32_t(po.get("num_fiber",int(5)));
     src.voxel.r2_weighted = po.get("r2_weighted",int(0));
     src.voxel.thread_count = po.get("thread_count",uint32_t(std::thread::hardware_concurrency()));
-    src.voxel.half_sphere = po.get("half_sphere",src.is_dsi_half_sphere() ? 1:0);
-    src.voxel.scheme_balance = po.get("scheme_balance",src.need_scheme_balance() ? 1:0);
+    src.voxel.half_sphere = po.get("half_sphere",src.is_dsi_half_sphere());
+    src.voxel.scheme_balance = po.get("scheme_balance",src.need_scheme_balance());
 
 
     {
