@@ -383,34 +383,35 @@ bool load_4d_nii(const char* file_name,std::vector<std::shared_ptr<DwiHeader> >&
             {
                 src_error_msg = "cannot find bval at ";
                 src_error_msg += bval_name.toStdString();
-                return false;
             }
             if(!load_bvec(bvec_name.toLocal8Bit().begin(),bvecs))
             {
                 src_error_msg = "cannot find bvec at ";
                 src_error_msg += bvec_name.toStdString();
-                return false;
             }
-            if(!bval_name.isEmpty() && dwi_data.size() != bvals.size())
+            if(!bvals.empty() && dwi_data.size() != bvals.size())
             {
                 std::ostringstream out;
                 out << "bval number does not match DWI: " << dwi_data.size()
                           << " DWI in the nifti file, but " << bvals.size()
                           << " in " << bval_name.toStdString() << std::endl;
                 src_error_msg = out.str();
-                return false;
+                bvals.clear();
+                bvecs.clear();
             }
             if(bvals.size()*3 != bvecs.size())
             {
                 std::ostringstream out;
                 out << "b-table " << bval_name.toStdString() << " and " << bvec_name.toStdString() << " do not match " << std::endl;
                 src_error_msg = out.str();
-                return false;
+                bvals.clear();
+                bvecs.clear();
             }
         }
         if(need_bvalbvec && (bvals.empty() || *std::max_element(bvals.begin(),bvals.end()) == 0.0))
         {
-            src_error_msg = "cannot find bval or bvec file";
+            if(src_error_msg.empty())
+                src_error_msg = bvals.empty() ? "cannot find bval/bvec file" : "incorrect bval file";
             return false;
         }
     }
