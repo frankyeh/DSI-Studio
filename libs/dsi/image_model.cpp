@@ -1615,7 +1615,7 @@ bool ImageModel::run_topup_eddy(const std::string& other_src)
             error_msg += ".corrected.nii.gz and re-run correction.";
             return false;
         }
-        std::cout << "run correction from scratch" << std::endl;
+        std::cout << "run correction from scratch with " << other_src << std::endl;
     }
     // run topup
     {
