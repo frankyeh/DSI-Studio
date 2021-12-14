@@ -1060,26 +1060,20 @@ void apply_distortion_map2(const image_type& v1,
     }
     );
 }
-size_t ImageModel::b0_count(void) const
+
+bool ImageModel::read_b0(tipl::image<3>& b0) const
 {
-    return size_t(std::count(src_bvalues.begin(),src_bvalues.end(),0.0f));
-}
-bool ImageModel::read_b0(std::vector<tipl::image<3> >& I) const
-{
-    I.clear();
     for(size_t index = 0;index < src_bvalues.size();++index)
         if(src_bvalues[index] == 0.0f)
-            I.push_back(dwi_at(index));
-    if(I.empty())
-    {
-        error_msg = "No b0 found in DWI data";
-        return false;
-    }
-    return true;
+        {
+            b0 = dwi_at(index);
+            return true;
+        }
+    error_msg = "No b0 found in DWI data";
+    return false;
 }
-bool ImageModel::read_rev_b0(const char* filename,std::vector<tipl::image<3> >& I)
+bool ImageModel::read_rev_b0(const char* filename,tipl::image<3>& rev_b0)
 {
-    rev_pe_src.reset();
     if(QString(filename).endsWith(".nii.gz") || QString(filename).endsWith(".nii"))
     {
         gz_nifti nii;
@@ -1088,25 +1082,7 @@ bool ImageModel::read_rev_b0(const char* filename,std::vector<tipl::image<3> >& 
             error_msg = "Cannot load the image file";
             return false;
         }
-        I.clear();
-        while(nii.input_stream->good())
-        {
-            tipl::image<3> J;
-            nii.toLPS(J,false);
-            if(voxel.dim != J.shape())
-            {
-                error_msg = "inconsistent image dimension between b0 and reversed phase encoding b0";
-                return false;
-            }
-            if(!I.empty() && tipl::correlation(I[0].begin(),I[0].end(),J.begin()) < 0.9)
-            {
-                error_msg = "Please convert ";
-                error_msg += QFileInfo(filename).fileName().toStdString();
-                error_msg += " to an SRC file";
-                return false;
-            }
-            I.push_back(std::move(J));
-        }
+        nii >> rev_b0;
         return true;
     }
     if(QString(filename).endsWith(".src.gz"))
@@ -1122,7 +1098,7 @@ bool ImageModel::read_rev_b0(const char* filename,std::vector<tipl::image<3> >& 
             error_msg = "inconsistent image dimension between two SRC data";
             return false;
         }
-        if(!src2->read_b0(I))
+        if(!src2->read_b0(rev_b0))
         {
             error_msg = src2->error_msg;
             return false;
@@ -1150,13 +1126,8 @@ tipl::vector<3> phase_direction_at_AP_PA(const tipl::image<3>& v1,const tipl::im
 bool ImageModel::distortion_correction(const char* filename)
 {
     tipl::image<3> v1,v2;
-    {
-        std::vector<tipl::image<3> > b0,rev_b0;
-        if(!read_b0(b0) || !read_rev_b0(filename,rev_b0))
-            return false;
-        v2 = std::move(rev_b0.front());
-        v1 = std::move(b0.front());
-    }
+    if(!read_b0(v1) || !read_rev_b0(filename,v2))
+        return false;
 
     auto c = phase_direction_at_AP_PA(v1,v2);
     bool swap_xy = c[0] < c[1];
@@ -1229,7 +1200,9 @@ bool ImageModel::distortion_correction(const char* filename)
 
 
 #include <QCoreApplication>
-bool ImageModel::run_plugin(std::string exec_name,size_t expected_time_in_sec,std::vector<std::string> param,std::string working_dir,std::string exec)
+bool ImageModel::run_plugin(std::string exec_name,
+                            std::string keyword,
+                            size_t total_keyword_count,std::vector<std::string> param,std::string working_dir,std::string exec)
 {
     if(exec.empty())
     {
@@ -1301,18 +1274,22 @@ bool ImageModel::run_plugin(std::string exec_name,size_t expected_time_in_sec,st
             error_msg = exec_name + " ended prematurely: unknown error";
         return false;
     }
-    unsigned int proc_time = 0;
-    while(!program.waitForFinished(1000) && progress::at((++proc_time)*expected_time_in_sec/(expected_time_in_sec+proc_time),expected_time_in_sec))
+    unsigned int keyword_seen = 0;
+    while(!program.waitForFinished(1000) && !progress::aborted())
     {
         QString output = QString::fromLocal8Bit(program.readAllStandardOutput());
         if(output.isEmpty())
             continue;
+        if(output.contains(keyword.c_str()))
+            ++keyword_seen;
         QStringList output_lines = output.remove('\r').split('\n');
-        if(output_lines.back().isEmpty())
-            output_lines.pop_back();
+        output_lines.removeAll("");
         for(int i = 0;i+1 < output_lines.size();++i)
             std::cout << output_lines[i].toStdString() << std::endl;
         progress::show(output_lines.back().toStdString().c_str());
+        if(keyword_seen >= total_keyword_count)
+            ++total_keyword_count;
+        progress::at(keyword_seen,total_keyword_count);
     }
     if(progress::aborted())
     {
@@ -1327,13 +1304,13 @@ bool ImageModel::run_plugin(std::string exec_name,size_t expected_time_in_sec,st
 
 
 
-bool ImageModel::generate_topup_b0_acq_files(std::vector<tipl::image<3> >& b0,
-                                             std::vector<tipl::image<3> >& rev_b0,
+bool ImageModel::generate_topup_b0_acq_files(tipl::image<3>& b0,
+                                             tipl::image<3>& rev_b0,
                                              std::string& b0_appa_file)
 {
     // DSI Studio use LPS ecoding wjereas and FSL use LAS
     // The y direction is flipped
-    auto c = phase_direction_at_AP_PA(b0[0],rev_b0[0]);
+    auto c = phase_direction_at_AP_PA(b0,rev_b0);
     if(c[0] == c[1])
     {
         error_msg = "Invalid phase encoding. Please select correct reversed phase encoding b0 file";
@@ -1341,8 +1318,8 @@ bool ImageModel::generate_topup_b0_acq_files(std::vector<tipl::image<3> >& b0,
     }
     bool is_appa = c[0] < c[1];
     unsigned int phase_dim = (is_appa ? 1 : 0);
-    auto c1 = tipl::center_of_mass(b0[0]);
-    auto c2 = tipl::center_of_mass(rev_b0[0]);
+    auto c1 = tipl::center_of_mass(b0);
+    auto c2 = tipl::center_of_mass(rev_b0);
     bool phase_dir = c1[phase_dim] < c2[phase_dim];
     enum phase_encdoing {   RL=0,       LR=1,       AP=2,       PA=3};
     char pe_id[4][3] =  {   "RL",       "LR",       "AP",       "PA" };
@@ -1374,10 +1351,8 @@ bool ImageModel::generate_topup_b0_acq_files(std::vector<tipl::image<3> >& b0,
             return false;
         }
 
-        for(size_t i = 0;i < b0.size();++i)
-            out << pe_dir[b0_pe] << " 0.05" << std::endl;
-        for(size_t i = 0;i < rev_b0.size();++i)
-            out << pe_dir[rev_b0_pe] << " 0.05" << std::endl;
+        out << pe_dir[b0_pe] << " 0.05" << std::endl;
+        out << pe_dir[rev_b0_pe] << " 0.05" << std::endl;
     }
 
 
@@ -1410,34 +1385,23 @@ bool ImageModel::generate_topup_b0_acq_files(std::vector<tipl::image<3> >& b0,
             rev_pe_src->topup_to = topup_to;
         }
 
-        for(auto& I: b0)
-            tipl::crop(I,topup_from,topup_to);
-        for(auto& I: rev_b0)
-            tipl::crop(I,topup_from,topup_to);
+        tipl::crop(b0,topup_from,topup_to);
+        tipl::crop(rev_b0,topup_from,topup_to);
     }
 
     {
-        std::cout << "create topup needed b0 nii.gz file from "
-                  << b0.size() << " " << pe_id[b0_pe] << " b0 and "
-                  << rev_b0.size() << " " << pe_id[rev_b0_pe] << "  b0" << std::endl;
+        std::cout << "create topup needed b0 nii.gz file from " << pe_id[b0_pe] << " and " << pe_id[rev_b0_pe] << " b0" << std::endl;
         tipl::matrix<4,4> trans;
-        initial_LPS_nifti_srow(trans,b0[0].shape(),voxel.vs);
+        initial_LPS_nifti_srow(trans,b0.shape(),voxel.vs);
 
-        tipl::image<4,float> buffer(tipl::shape<4>(uint32_t(b0[0].width()),
-                                    uint32_t(b0[0].height()),
-                                    uint32_t(b0[0].depth()),
-                                    uint32_t(b0.size())+uint32_t(rev_b0.size())));
+        tipl::image<4,float> buffer(tipl::shape<4>(uint32_t(b0.width()),
+                                    uint32_t(b0.height()),
+                                    uint32_t(b0.depth()),2));
 
-        tipl::par_for(buffer.shape()[3],[&](unsigned int i)
-        {
-            const auto& I = (i < b0.size() ? b0[i]:rev_b0[i-b0.size()]);
-            std::copy(I.begin(),I.end(),buffer.slice_at(i).begin());
-        });
+        std::copy(b0.begin(),b0.end(),buffer.begin());
+        std::copy(rev_b0.begin(),rev_b0.end(),buffer.begin()+int64_t(b0.size()));
 
-        b0_appa_file = QFileInfo(file_name.c_str()).baseName().toStdString() + ".topup.b0_" +
-                std::to_string(b0.size()) + pe_id[b0_pe] + "_" +
-                std::to_string(rev_b0.size()) + pe_id[rev_b0_pe] + ".nii.gz";
-
+        b0_appa_file = QFileInfo(file_name.c_str()).baseName().toStdString() + ".topup." + pe_id[b0_pe] + "_" + pe_id[rev_b0_pe] + ".nii.gz";
         if(!gz_nifti::save_to_file(b0_appa_file.c_str(),buffer,voxel.vs,trans))
         {
             std::cout << "Cannot wrtie a temporary b0_appa image volume to " << b0_appa_file << std::endl;
@@ -1525,7 +1489,7 @@ bool ImageModel::run_applytopup(std::string exec)
                 QString("--datain=%1").arg(acqparam_file.c_str()).toStdString().c_str(),
                 QString("--topup=%1").arg(topup_result.c_str()).toStdString().c_str(),
                 QString("--out=%1").arg(QFileInfo(corrected_file.c_str()).fileName()).toStdString().c_str(),
-                QString("--inindex=1,%1").arg(b0_count()+1).toStdString().c_str(),
+                "--inindex=1,2",
                 "--method=jac",
                 "--verbose=1"};
     }
@@ -1542,8 +1506,7 @@ bool ImageModel::run_applytopup(std::string exec)
                 "--verbose=1"};
 
     }
-    if(!run_plugin("applytopup",5*(src_bvalues.size()+(rev_pe_src.get() ? rev_pe_src->src_bvalues.size():0)),param,
-                   QFileInfo(file_name.c_str()).absolutePath().toStdString(),exec))
+    if(!run_plugin("applytopup"," ",10,param,QFileInfo(file_name.c_str()).absolutePath().toStdString(),exec))
         return false;
     if(!load_topup_eddy_result())
         return false;
@@ -1601,7 +1564,7 @@ bool ImageModel::run_eddy(std::string exec)
         {
             for(size_t i = 0;i < rev_pe_src->src_bvalues.size();++i)
             {
-                index_out << " " << (1+b0_count());
+                index_out << " 2";
                 bval_out << rev_pe_src->src_bvalues[i] << " ";
                 bvec_out << rev_pe_src->src_bvectors[i][0] << " "
                          << -rev_pe_src->src_bvectors[i][1] << " "
@@ -1623,7 +1586,7 @@ bool ImageModel::run_eddy(std::string exec)
             "--verbose=1"
             };
 
-    if(!run_plugin("eddy",50*src_bvalues.size(),param,QFileInfo(file_name.c_str()).absolutePath().toStdString(),exec))
+    if(!run_plugin("eddy","model",16,param,QFileInfo(file_name.c_str()).absolutePath().toStdString(),exec))
     {
         std::cout << "eddy cannot process this data:" << error_msg << std::endl;
         return run_applytopup();
@@ -1645,6 +1608,13 @@ bool ImageModel::run_topup_eddy(const std::string& other_src)
         if(load_topup_eddy_result())
             return true;
         std::cout << error_msg << std::endl;
+        if(!QFileInfo(other_src.c_str()).exists())
+        {
+            error_msg = "failed to load previous results. please remove ";
+            error_msg += file_name;
+            error_msg += ".corrected.nii.gz and re-run correction.";
+            return false;
+        }
         std::cout << "run correction from scratch" << std::endl;
     }
     // run topup
@@ -1658,7 +1628,7 @@ bool ImageModel::run_topup_eddy(const std::string& other_src)
         std::string check_me_file = QFileInfo(file_name.c_str()).baseName().toStdString() + ".topup.check_result";
         std::string acqparam_file = QFileInfo(file_name.c_str()).baseName().toStdString() + ".topup.acqparams.txt";
         std::string b0_appa_file;
-        std::vector<tipl::image<3> > b0,rev_b0;
+        tipl::image<3> b0,rev_b0;
         if(!read_b0(b0) || !read_rev_b0(other_src.c_str(),rev_b0) || !generate_topup_b0_acq_files(b0,rev_b0,b0_appa_file))
             return false;
 
@@ -1676,7 +1646,7 @@ bool ImageModel::run_topup_eddy(const std::string& other_src)
             QString("--out=%1").arg(topup_result.c_str()).toStdString().c_str(),
             QString("--iout=%1").arg(check_me_file.c_str()).toStdString().c_str(),
             QString("--verbose=1").toStdString().c_str()};
-        if(!run_plugin("topup",200*(b0.size()+rev_b0.size()),param,
+        if(!run_plugin("topup","level",9,param,
             QFileInfo(file_name.c_str()).absolutePath().toStdString(),std::string()))
             return false;
 
