@@ -878,7 +878,7 @@ bool ImageModel::align_acpc(void)
     }
     tipl::vector<3> new_vs(voxel.vs[0],voxel.vs[0],voxel.vs[0]); // new volume size will be isotropic
     rotate(new_geo,new_vs,tipl::transformation_matrix<float>(T,new_geo,new_vs,voxel.dim,voxel.vs));
-    voxel.report += " The diffusion MRI data were rotated to aligh with the AC-PC line.";
+    voxel.report += " The diffusion MRI data were rotated to align with the AC-PC line.";
     rotated_to_mni = true;
     return true;
 }
@@ -1458,8 +1458,17 @@ bool ImageModel::load_topup_eddy_result(void)
     }
     voxel.vs = dwi_files[0]->voxel_size;
     voxel.dim = nifti_dwi[0].shape();
-    voxel.report += " The suscetibility artifact was corrected using reversed phase-encoding b0 through FSL topup";
-    voxel.report += is_eddy ? "/eddy.":".";
+    voxel.report += " The susceptibility artifact was estimated using reversed phase-encoding b0 by";
+    #ifdef _WIN32
+    voxel.report += " Tiny FSL (http://github.com/frankyeh/TinyFSL), a re-compilied version of FSL TOPUP (FMRIB, Oxford) with multi-thread support.";
+    #else
+    voxel.report += " FSL's TOPUP (FMRIB, Oxford).";
+    #endif
+    if(is_eddy)
+        voxel.report += " FSL eddy was used to correct for eddy current distortion.";
+    voxel.report += " The correction was conducted through the integrated interface in DSI Studio (\"";
+    voxel.report += DSISTUDIO_RELEASE_NAME;
+    voxel.report += "\" release).";
     calculate_dwi_sum(true);
     return true;
 }
