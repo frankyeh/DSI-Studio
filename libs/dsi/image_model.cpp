@@ -1854,7 +1854,7 @@ void save_idx(const char* file_name,std::shared_ptr<gz_istream> in)
         return;
     std::string idx_name = file_name;
     idx_name += ".idx";
-    if(in->has_access_points() && in->sample_access_point)
+    if(in->has_access_points() && in->sample_access_point && !QFileInfo(idx_name.c_str()).exists())
     {
         std::cout << "saving index file for accelerated loading: " << idx_name << std::endl;
         in->save_index(idx_name.c_str());
