@@ -29,5 +29,4 @@ jobs:
         context: .
         file: build_packages/docker/Dockerfile
         push: true
-        tags: |
-            dsistudio/dsistudio:chen-${{ steps.date.outputs.date }}
+        tags: dsistudio/dsistudio:chen-${{ steps.date.outputs.date }}
