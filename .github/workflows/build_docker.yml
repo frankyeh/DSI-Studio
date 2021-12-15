@@ -7,7 +7,7 @@ jobs:
     - name: Current Time
       uses: srfrnk/current-time@v1.1.0
       with: 
-        format: YYYY-MM-DD
+        format: 'YYYY-MM-DD'
     - name: Check time
       run: echo "dsistudio/dsistudio:chen-${{ steps.current-time.outputs.formattedTime }}"
     - name: Checkout
