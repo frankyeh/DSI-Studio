@@ -5,11 +5,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Current Time
-      uses: srfrnk/current-time@v1.1.0
-      with: 
-        format: 'YYYY-MM-DD'
+      run: echo "OUTPUT=$(date "+%Y-%m-%d")" >> $GITHUB_ENV
     - name: Check time
-      run: echo "dsistudio/dsistudio:chen-${{ steps.current-time.outputs.formattedTime }}"
+      run: echo "dsistudio/dsistudio:chen-${{ env.OUTPUT }}"
     - name: Checkout
       uses: actions/checkout@v2
     - name: Set up QEMU
