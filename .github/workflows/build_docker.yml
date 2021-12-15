@@ -4,11 +4,12 @@ jobs:
   docker_build:
     runs-on: ubuntu-latest
     steps:
-    - name: Get current time
-      uses: gerred/actions/current-time@master  
-      id: current-time
+    - name: Current Time
+      uses: srfrnk/current-time@v1.1.0
+      with: 
+        format: YYYY-MM-DD
     - name: Check time
-      run: echo "dsistudio/dsistudio:chen-${{ steps.current-time.outputs.time }}"
+      run: echo "dsistudio/dsistudio:chen-${{ steps.current-time.outputs.formattedTime }}"
     - name: Checkout
       uses: actions/checkout@v2
     - name: Set up QEMU
@@ -33,4 +34,4 @@ jobs:
         context: .
         file: build_packages/docker/Dockerfile
         push: true
-        tags: "dsistudio/dsistudio:chen-${{ steps.current-time.outputs.time }}"
+        tags: "dsistudio/dsistudio:chen-${{ steps.current-time.outputs.formattedTime }}"
