@@ -4,6 +4,10 @@ jobs:
   docker_build:
     runs-on: ubuntu-latest
     steps:
+    - name: Get current time
+      uses: gerred/actions/current-time@master  
+    - name: Check time
+      run: echo "dsistudio/dsistudio-chen:${{ steps.current-time.outputs.time }}"
     - name: Checkout
       uses: actions/checkout@v2
     - name: Set up QEMU
@@ -21,12 +25,11 @@ jobs:
         registry: ghcr.io
         username: ${{ github.repository_owner }}
         password: ${{ secrets.GITHUB_TOKEN }}
-    - name: Get current time
-      uses: gerred/actions/current-time@master  
+
     - name: Build and push
       uses: docker/build-push-action@v2
       with:
         context: .
         file: build_packages/docker/Dockerfile
         push: true
-        tags: "dsistudio/dsistudio:chen-${{ steps.current-time.outputs.time }}"
+        tags: "dsistudio/dsistudio-chen:${{ steps.current-time.outputs.time }}"
