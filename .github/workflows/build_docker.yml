@@ -21,6 +21,8 @@ jobs:
         registry: ghcr.io
         username: ${{ github.repository_owner }}
         password: ${{ secrets.GITHUB_TOKEN }}
+    - name: Current Time
+      run: echo "DATE_TAG=$(date "+%Y-%m-%d")" >> $GITHUB_ENV
     - name: Build and push
       uses: docker/build-push-action@v2
       with:
@@ -28,4 +30,5 @@ jobs:
         file: build_packages/docker/Dockerfile
         push: true
         tags: |
-            dsistudio/dsistudio:latest
+          "dsistudio/dsistudio:chen-${{ env.DATE_TAG }}"
+          dsistudio/dsistudio:latest
