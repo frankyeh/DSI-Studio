@@ -4,10 +4,6 @@ jobs:
   docker_build:
     runs-on: ubuntu-latest
     steps:
-    - name: Current Time
-      run: echo "OUTPUT=$(date "+%Y-%m-%d")" >> $GITHUB_ENV
-    - name: Check time
-      run: echo "dsistudio/dsistudio:chen-${{ env.OUTPUT }}"
     - name: Checkout
       uses: actions/checkout@v2
     - name: Set up QEMU
@@ -25,11 +21,12 @@ jobs:
         registry: ghcr.io
         username: ${{ github.repository_owner }}
         password: ${{ secrets.GITHUB_TOKEN }}
-
+    - name: Current Time
+      run: echo "DATE_TAG=$(date "+%Y-%m-%d")" >> $GITHUB_ENV
     - name: Build and push
       uses: docker/build-push-action@v2
       with:
         context: .
         file: build_packages/docker/Dockerfile
         push: true
-        tags: "dsistudio/dsistudio:chen-${{ steps.current-time.outputs.formattedTime }}"
+        tags: "dsistudio/dsistudio:chen-${{ env.DATE_TAG }}"
