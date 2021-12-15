@@ -271,7 +271,6 @@ void save_idx(const char* file_name,std::shared_ptr<gz_istream> in);
 view_image::~view_image()
 {
     opened_images.erase(std::remove(opened_images.begin(),opened_images.end(),this),opened_images.end());
-    save_idx(file_name.toStdString().c_str(),nifti.input_stream);
     qApp->removeEventFilter(this);
     delete ui;
 }
