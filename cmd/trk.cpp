@@ -349,6 +349,9 @@ bool get_connectivity_matrix(program_option& po,
             bool use_end_only = connectivity_type_list[j].toLower() == QString("end");
             std::cout << "count tracks by " << (use_end_only ? "ending":"passing") << std::endl;
             std::cout << "calculate matrix using " << connectivity_value << std::endl;
+            QDir pwd = QDir::current();
+            if(connectivity_value == "trk")
+                QDir::setCurrent(QFileInfo(output_name.c_str()).absolutePath());
             if(!data.calculate(handle,*(tract_model.get()),connectivity_value,use_end_only,t))
             {
                 std::cout << "connectivity calculation error:" << data.error_msg << std::endl;
@@ -360,7 +363,11 @@ bool get_connectivity_matrix(program_option& po,
                           << data.overlap_ratio << "). The network measure calculated may not be reliable" << std::endl;
             }
             if(connectivity_value == "trk")
+            {
+                // restore previous working directory
+                QDir::setCurrent(pwd.path());
                 continue;
+            }
             std::string file_name_stat(output_name);
             file_name_stat += ".";
             file_name_stat += (std::filesystem::exists(connectivity_roi)) ? QFileInfo(connectivity_roi.c_str()).baseName().toStdString():connectivity_roi;
