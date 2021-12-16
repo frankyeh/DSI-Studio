@@ -1432,6 +1432,7 @@ bool ImageModel::load_topup_eddy_result(void)
     std::string bval_file = file_name+".bval";
     std::string bvec_file = file_name+".corrected.eddy_rotated_bvecs";
     bool is_eddy = QFileInfo(bvec_file.c_str()).exists();
+    bool has_topup = QFileInfo(QFileInfo(file_name.c_str()).baseName().replace('.','_')+"_fieldcoef.nii.gz").exists();
 
     if(is_eddy)
     {
@@ -1470,12 +1471,15 @@ bool ImageModel::load_topup_eddy_result(void)
     }
     voxel.vs = dwi_files[0]->voxel_size;
     voxel.dim = nifti_dwi[0].shape();
-    voxel.report += " The susceptibility artifact was estimated using reversed phase-encoding b0 by";
-    #ifdef _WIN32
-    voxel.report += " Tiny FSL (http://github.com/frankyeh/TinyFSL), a re-compilied version of FSL TOPUP (FMRIB, Oxford) with multi-thread support.";
-    #else
-    voxel.report += " FSL's TOPUP (FMRIB, Oxford).";
-    #endif
+    if(has_topup)
+    {
+        voxel.report += " The susceptibility artifact was estimated using reversed phase-encoding b0 by";
+        #ifdef _WIN32
+        voxel.report += " TOPUP from the Tiny FSL package (http://github.com/frankyeh/TinyFSL), a re-compilied version of FSL TOPUP (FMRIB, Oxford) with multi-thread support.";
+        #else
+        voxel.report += " FSL's TOPUP (FMRIB, Oxford).";
+        #endif
+    }
     if(is_eddy)
         voxel.report += " FSL eddy was used to correct for eddy current distortion.";
     voxel.report += " The correction was conducted through the integrated interface in DSI Studio (\"";
