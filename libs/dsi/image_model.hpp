@@ -286,6 +286,7 @@ public:
 public:
     std::shared_ptr<ImageModel> rev_pe_src;
     tipl::shape<3> topup_from,topup_to;
+    void get_volume_range(size_t dim = 0,int extra_space = 0);
     bool distortion_correction(const char* file_name);
     bool run_topup_eddy(const std::string& other_src);
 private:

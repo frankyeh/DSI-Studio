@@ -1114,3 +1114,10 @@ void reconstruction_window::on_primary_template_currentIndexChanged(int index)
 {
     handle->voxel.template_id = size_t(index);
 }
+
+void reconstruction_window::on_actionEDDY_triggered()
+{
+    progress prog_("eddy",true);
+    if(command("[Step T2][Corrections][EDDY]"))
+        QMessageBox::information(this,"DSI Studio","Correction result loaded");
+}

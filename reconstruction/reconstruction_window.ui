@@ -1208,6 +1208,7 @@ Reconstruction</string>
      <string>Corrections</string>
     </property>
     <addaction name="actionRun_FSL_Topup"/>
+    <addaction name="actionEDDY"/>
     <addaction name="separator"/>
     <addaction name="actionCorrect_AP_PA_scans"/>
     <addaction name="actionEddy_Motion_Correction"/>
@@ -1412,6 +1413,11 @@ Reconstruction</string>
   <action name="actionRun_FSL_Topup">
    <property name="text">
     <string>TOPUP/EDDY...</string>
+   </property>
+  </action>
+  <action name="actionEDDY">
+   <property name="text">
+    <string>EDDY...</string>
    </property>
   </action>
  </widget>

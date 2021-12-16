@@ -691,6 +691,13 @@ bool ImageModel::command(std::string cmd,std::string param)
         voxel.steps += cmd+"="+param+"\n";
         return true;
     }
+    if(cmd == "[Step T2][Corrections][EDDY]")
+    {
+        if(!run_eddy())
+            return false;
+        voxel.steps += cmd+"\n";
+        return true;
+    }
     std::cout << "Unknown command:" << cmd << std::endl;
     return false;
 }
@@ -1302,7 +1309,32 @@ bool ImageModel::run_plugin(std::string exec_name,
     return error_msg.empty();
 }
 
+void ImageModel::get_volume_range(size_t dim,int extra_space)
+{
+    std::cout << "get the bounding box for speeding up topup/eddy" << std::endl;
+    auto temp_mask = voxel.mask;
+    if(rev_pe_src.get())
+        temp_mask += rev_pe_src->voxel.mask;
+    tipl::morphology::dilation2(temp_mask,std::max<int>(voxel.dim[0]/20,2));
+    tipl::bounding_box(temp_mask,topup_from,topup_to,0);
 
+    if(extra_space)
+    {
+        topup_from[dim] = uint32_t(std::max<int>(0,int(topup_from[dim])-extra_space));
+        topup_to[dim] = uint32_t(std::min<int>(int(temp_mask.shape()[dim]),int(topup_to[dim])+extra_space));
+    }
+
+    // ensure even number in the dimension for topup
+    for(int d = 0;d < 3;++d)
+        if((topup_to[d]-topup_from[d]) % 2 != 0)
+            topup_to[d]--;
+
+    if(rev_pe_src.get())
+    {
+        rev_pe_src->topup_from = topup_from;
+        rev_pe_src->topup_to = topup_to;
+    }
+}
 
 bool ImageModel::generate_topup_b0_acq_files(tipl::image<3>& b0,
                                              tipl::image<3>& rev_b0,
@@ -1357,34 +1389,14 @@ bool ImageModel::generate_topup_b0_acq_files(tipl::image<3>& b0,
 
 
     {
-        std::cout << "get the bounding box for speeding up topup/eddy" << std::endl;
-        auto temp_mask = voxel.mask;
-        if(rev_pe_src.get())
-            temp_mask += rev_pe_src->voxel.mask;
-        tipl::morphology::dilation2(temp_mask,std::max<int>(voxel.dim[0]/20,2));
-        tipl::bounding_box(temp_mask,topup_from,topup_to,0);
-
-
         // allow for more space in the PE direction
         if(!rev_pe_src.get())
         {
-            int pe_dim = is_appa ? 1:0;
-            int space = int(topup_to[pe_dim]-topup_from[pe_dim])/5;
-            topup_from[pe_dim] = uint32_t(std::max<int>(0,int(topup_from[pe_dim])-space));
-            topup_to[pe_dim] = uint32_t(std::min<int>(int(temp_mask.shape()[pe_dim]),int(topup_to[pe_dim])+space));
+            size_t dim = is_appa ? 1:0;
+            get_volume_range(dim,int(topup_to[dim]-topup_from[dim])/5);
         }
-
-        // ensure even number in the dimension for topup
-        for(int d = 0;d < 3;++d)
-            if((topup_to[d]-topup_from[d]) % 2 != 0)
-                topup_to[d]--;
-
-        if(rev_pe_src.get())
-        {
-            rev_pe_src->topup_from = topup_from;
-            rev_pe_src->topup_to = topup_to;
-        }
-
+        else
+            get_volume_range();
         tipl::crop(b0,topup_from,topup_to);
         tipl::crop(rev_b0,topup_from,topup_to);
     }
@@ -1480,6 +1492,12 @@ bool ImageModel::run_applytopup(std::string exec)
     std::string acqparam_file = QFileInfo(file_name.c_str()).baseName().toStdString() + ".topup.acqparams.txt";
     std::string temp_nifti = file_name+".nii.gz";
     std::string corrected_file = file_name+".corrected";
+    if(!QFileInfo((topup_result+"_fieldcoef.nii.gz").c_str()).exists())
+    {
+        error_msg = "no topup result for applytopup";
+        return false;
+    }
+
     if(!save_nii_for_applytopup_or_eddy(false))
         return false;
     std::vector<std::string> param;
@@ -1536,7 +1554,14 @@ bool ImageModel::run_eddy(std::string exec)
     std::string index_file = file_name+".index.txt";
     std::string bval_file = file_name+".bval";
     std::string bvec_file = file_name+".bvec";
-
+    bool has_topup = QFileInfo((topup_result+"_fieldcoef.nii.gz").c_str()).exists();
+    if(!has_topup)
+    {
+        std::cout << "eddy without topup" << std::endl;
+        get_volume_range();
+        std::ofstream out(acqparam_file);
+        out << "0 -1 0 0.05" << std::endl;
+    }
     if(!save_nii_for_applytopup_or_eddy(true))
         return false;
 
@@ -1590,14 +1615,17 @@ bool ImageModel::run_eddy(std::string exec)
             QString("--index=%1").arg(QFileInfo(index_file.c_str()).fileName()).toStdString().c_str(),
             QString("--bvecs=%1").arg(QFileInfo(bvec_file.c_str()).fileName()).toStdString().c_str(),
             QString("--bvals=%1").arg(QFileInfo(bval_file.c_str()).fileName()).toStdString().c_str(),
-            QString("--topup=%1").arg(topup_result.c_str()).toStdString().c_str(),
             QString("--out=%1").arg(QFileInfo(corrected_file.c_str()).fileName()).toStdString().c_str(),
             "--verbose=1"
             };
+    if(has_topup)
+        param.push_back(QString("--topup=%1").arg(topup_result.c_str()).toStdString().c_str());
 
     if(!run_plugin("eddy","model",16,param,QFileInfo(file_name.c_str()).absolutePath().toStdString(),exec))
     {
         std::cout << "eddy cannot process this data:" << error_msg << std::endl;
+        if(!has_topup)
+            return false;
         return run_applytopup();
     }
     if(!load_topup_eddy_result())
