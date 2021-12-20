@@ -406,14 +406,14 @@ bool reconstruction_window::command(std::string cmd,std::string param)
 void reconstruction_window::on_doDTI_clicked()
 {
     std::string ref_file_name = handle->file_name;
+    std::string ref_steps = handle->voxel.steps;
     std::shared_ptr<ImageModel> ref_handle = handle;;
     progress prog_("SRC files");
     for(int index = 0;progress::at(index,filenames.size());++index)
     {
         if(index)
         {
-            std::string steps = handle->voxel.steps;
-            if(!load_src(index) || !handle->run_steps(ref_file_name,steps))
+            if(!load_src(index) || !handle->run_steps(ref_file_name,ref_steps))
             {
                 if(!progress::aborted())
                     QMessageBox::critical(this,"ERROR",QFileInfo(filenames[index]).fileName() + " : " + handle->error_msg.c_str());
@@ -426,7 +426,7 @@ void reconstruction_window::on_doDTI_clicked()
         else
         if(ui->GQI->isChecked() || ui->QSDR->isChecked())
         {
-            handle->voxel.param[0] = ui->diffusion_sampling->value();
+            handle->voxel.param[0] = float(ui->diffusion_sampling->value());
             settings.setValue("rec_gqi_sampling",ui->diffusion_sampling->value());
             if(ui->QSDR->isChecked())
                 Reconstruction(7,index+1 == filenames.size());
