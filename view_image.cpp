@@ -132,8 +132,8 @@ bool match_strings_two_way(const std::string& str1,const std::string& str1_match
     return false;
 }
 
-bool match_files(std::string file_path1,std::string file_path2,
-                 std::string file_path1_others,std::string& file_path2_gen)
+bool match_files(const std::string& file_path1,const std::string& file_path2,
+                 const std::string& file_path1_others,std::string& file_path2_gen)
 {
     std::string file_path2_others;
     auto name1 = std::filesystem::path(file_path1).filename().string();
@@ -147,11 +147,8 @@ bool match_files(std::string file_path1,std::string file_path2,
     if(!match_strings_two_way(name1,name2,name1_others,name2_others) ||
        !match_strings_two_way(path1,path2,path1_others,path2_others))
         return false;
-
     file_path2_gen = path2_others + "/" + name2_others;
-    if(!QFileInfo(file_path2_gen.c_str()).exists())
-        return false;
-    std::cout << "mtching " << file_path1_others << " with " << file_path2_others << std::endl;
+    std::cout << "matching " << file_path1_others << " with " << file_path2_others << std::endl;
     return true;
 }
 bool view_image::command(std::string cmd,std::string param1,std::string param2)
@@ -179,6 +176,14 @@ bool view_image::command(std::string cmd,std::string param1,std::string param2)
                     if(!match_files(file_name.toStdString(),param1,other_file_name[i],other_params[i]))
                     {
                         error_msg = "cannot find a matched file for ";
+                        error_msg += other_file_name[i];
+                        return false;
+                    }
+                    if(!QFileInfo(other_params[i].c_str()).exists())
+                    {
+                        error_msg = "cannot find ";
+                        error_msg += other_params[i];
+                        error_msg += " for processing ";
                         error_msg += other_file_name[i];
                         return false;
                     }
