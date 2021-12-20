@@ -135,7 +135,6 @@ bool match_strings_two_way(const std::string& str1,const std::string& str1_match
 bool match_files(const std::string& file_path1,const std::string& file_path2,
                  const std::string& file_path1_others,std::string& file_path2_gen)
 {
-    std::string file_path2_others;
     auto name1 = std::filesystem::path(file_path1).filename().string();
     auto name2 = std::filesystem::path(file_path2).filename().string();
     auto name1_others = std::filesystem::path(file_path1_others).filename().string();
@@ -148,7 +147,7 @@ bool match_files(const std::string& file_path1,const std::string& file_path2,
        !match_strings_two_way(path1,path2,path1_others,path2_others))
         return false;
     file_path2_gen = path2_others + "/" + name2_others;
-    std::cout << "matching " << file_path1_others << " with " << file_path2_others << std::endl;
+    std::cout << "matching " << file_path1_others << " with " << file_path2_gen << std::endl;
     return true;
 }
 bool view_image::command(std::string cmd,std::string param1,std::string param2)
