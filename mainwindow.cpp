@@ -989,22 +989,36 @@ void MainWindow::on_nii2src_bids_clicked()
 {
     QString dir = QFileDialog::getExistingDirectory(
                                     this,
-                                    "Open directory",
+                                    "Open BIDS Folder",
                                     ui->workDir->currentText());
     if(dir.isEmpty())
         return;
+    QString output_dir = QFileDialog::getExistingDirectory(
+                                    this,
+                                    "Please Specify the Output Folder",
+                                    QDir(dir).path()+"/derivatives");
+    if(output_dir.isEmpty())
+        return;
     add_work_dir(dir);
-    QStringList sub_dir = QDir(dir).entryList(QStringList("*"),
+    QStringList sub_dir = QDir(dir).entryList(QStringList("sub-*"),
                                                 QDir::Dirs | QDir::NoSymLinks | QDir::NoDotAndDotDot);
+
+    if(!QDir(output_dir).exists() && !QDir().mkdir(output_dir))
+    {
+        QMessageBox::critical(this,"ERROR","Cannot create the output folder. Please check write privileges");
+        return;
+    }
     progress prog_("batch creating src");
     std::ofstream out((dir+"/log.txt").toStdString().c_str());
     out << "directory:" << dir.toStdString() << std::endl;
+    int subject_num = sub_dir.size();
     for(int j = 0;progress::at(j,sub_dir.size()) && !progress::aborted();++j)
     {
+        QString cur_dir = dir + "/" + sub_dir[j];
         out << "Process " << sub_dir[j].toStdString() << std::endl;
-        QString dwi_folder = dir + "/" + sub_dir[j] + "/dwi";
+        QString dwi_folder = cur_dir + "/dwi";
         if(!QDir(dwi_folder).exists())
-            dwi_folder = dir + "/" + sub_dir[j];
+            dwi_folder = cur_dir;
         QStringList nifti_file_list = QDir(dwi_folder).
                 entryList(QStringList("*.nii.gz") << "*.nii",QDir::Files|QDir::NoSymLinks);
         if(nifti_file_list.size() > 1)
@@ -1013,9 +1027,17 @@ void MainWindow::on_nii2src_bids_clicked()
         {
             out << "\t" << nifti_file_list[index].toStdString() << "->";
             std::string nii_name = dwi_folder.toStdString() + "/" + nifti_file_list[index].toStdString();
-            std::string src_name = dwi_folder.toStdString() + "/" +
+            std::string src_name = output_dir.toStdString() + "/" +
                     QFileInfo(nifti_file_list[index]).baseName().toStdString() + ".src.gz";
             nii2src(nii_name,src_name,out);
+        }
+        // look for sessions
+        if(j < subject_num)
+        {
+            QStringList ses_dir = QDir(cur_dir).entryList(QStringList("ses-*"),
+                                                        QDir::Dirs | QDir::NoSymLinks | QDir::NoDotAndDotDot);
+            for(auto s: ses_dir)
+                sub_dir.push_back(sub_dir[j] + "/" + s);
         }
     }
 }
