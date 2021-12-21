@@ -14,6 +14,8 @@ auto_track::auto_track(QWidget *parent) :
     ui(new Ui::auto_track)
 {
     ui->setupUi(this);
+    ui->thread_count->setMaximum(std::thread::hardware_concurrency()*2);
+    ui->thread_count->setValue(std::thread::hardware_concurrency());
     progress_bar = new QProgressBar(this);
     progress_bar->setVisible(false);
     ui->statusbar->addPermanentWidget(progress_bar);
@@ -133,6 +135,7 @@ std::string run_auto_track(
                     bool overwrite,
                     bool default_mask,
                     bool export_template_trk,
+                    size_t thread_count,
                     int& prog)
 {
     std::vector<float> tolerance;
@@ -188,7 +191,7 @@ std::string run_auto_track(
             src.voxel.method_id = 4; // GQI
             src.voxel.param[0] = length_ratio;
             src.voxel.ti.init(8); // odf order of 8
-            src.voxel.thread_count = po.get("thread_count",std::thread::hardware_concurrency());
+            src.voxel.thread_count = thread_count;
             src.voxel.half_sphere = po.get("half_sphere",src.is_dsi_half_sphere() ? 1:0);
             src.voxel.scheme_balance = po.get("scheme_balance",src.need_scheme_balance() ? 1:0);
             src.voxel.check_btable = po.get("check_btable",1);
@@ -309,7 +312,7 @@ std::string run_auto_track(
                     }
 
                     // run tracking
-                    thread.run(po.get("thread_count",std::thread::hardware_concurrency()),false);
+                    thread.run(thread_count,false);
                     std::string report = tract_model.report + thread.report.str();
                     report += " Shape analysis (Yeh, Neuroimage, 2020) was conducted to derive shape metrics for tractography.";
                     if(reports[j].empty())
@@ -552,6 +555,7 @@ void auto_track::on_run_clicked()
                    ui->overwrite->isChecked(),
                    ui->default_mask->isChecked(),
                    ui->output_template_trk->isChecked(),
+                   size_t(ui->thread_count->value()),
                    prog);
     timer->stop();
     ui->run->setEnabled(true);

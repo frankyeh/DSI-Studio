@@ -31,6 +31,7 @@ std::string run_auto_track(
                     bool overwrite,
                     bool default_mask,
                     bool export_template_trk,
+                    size_t thread_count,
                     int& progress);
 
 extern std::string auto_track_report;
@@ -92,7 +93,8 @@ int atk(program_option& po)
                                 po.get("export_trk",1),
                                 po.get("overwrite",0),
                                 po.get("default_mask",0),
-                                po.get("export_template_trk",0),progress);
+                                po.get("export_template_trk",0),
+                                po.get("thread_count",std::thread::hardware_concurrency()),progress);
     if(error.empty())
     {
         if(po.has("report"))
