@@ -380,8 +380,12 @@ void reconstruction_window::batch_command(std::string cmd,std::string param)
         auto steps = handle->voxel.steps;
         steps += "\n";
         steps += cmd;
-        steps += param;
-        for(int index = 0;progress::at(index,filenames.size());++index)
+        if(!param.empty())
+        {
+            steps += "=";
+            steps += param;
+        }
+        for(int index = 1;progress::at(index,filenames.size());++index)
         {
             ImageModel model;
             if (!model.load_from_file(filenames[index].toStdString().c_str()) ||
