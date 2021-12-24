@@ -441,24 +441,14 @@ bool ImageModel::run_steps(const std::string& reg_file_name,const std::string& s
             cmd = step.substr(0,pos);
             param = step.substr(pos+1,step.size()-pos-1);
         }
-        if(param.find(".gz") != std::string::npos) // nii.gz src.gz
+        if(param.find(".gz") != std::string::npos && !match_files(reg_file_name,param,file_name,param))
         {
-            if(!match_files(reg_file_name,param,file_name,param))
-            {
-                error_msg = step;
-                error_msg += " cannot find a matched file for ";
-                error_msg += file_name;
-                return false;
-            }
-            if(!QFileInfo(param.c_str()).exists())
-            {
-                error_msg = "cannot find ";
-                error_msg += param;
-                error_msg += " for processing ";
-                error_msg += file_name;
-                return false;
-            }
+            error_msg = step;
+            error_msg += " cannot find a matched file for ";
+            error_msg += file_name;
+            return false;
         }
+
         cmds.push_back(cmd);
         params.push_back(param);
     }
