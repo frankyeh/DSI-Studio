@@ -696,7 +696,8 @@ bool ImageModel::command(std::string cmd,std::string param)
         voxel.steps += cmd+"\n";
         return true;
     }
-    std::cout << "Unknown command:" << cmd << std::endl;
+    error_msg = "Unknown command:";
+    error_msg += cmd;
     return false;
 }
 void ImageModel::flip_b_table(unsigned char dim)
