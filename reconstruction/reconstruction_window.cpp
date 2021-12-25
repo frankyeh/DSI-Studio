@@ -378,12 +378,12 @@ void reconstruction_window::batch_command(std::string cmd,std::string param)
     {
         progress prog_("apply to other SRC files");
         auto steps = handle->voxel.steps;
-        steps += "\n";
         steps += cmd;
         if(!param.empty())
         {
             steps += "=";
             steps += param;
+            steps += "\n";
         }
         for(int index = 1;progress::at(index,filenames.size());++index)
         {
