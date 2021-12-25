@@ -36,6 +36,13 @@ void progress::update_prog(bool show_now)
         progressDialog->setLabelText(get_status().c_str());
 
     progressDialog->show();
+    if(!progressDialog->property("raised").toInt())
+    {
+        progressDialog->setWindowFlags(Qt::WindowStaysOnTopHint);
+        progressDialog->raise();
+        progressDialog->activateWindow();
+        progressDialog->setProperty("raised",1);
+    }
     QApplication::processEvents();
 }
 std::string progress::get_status(void)
@@ -64,6 +71,8 @@ void progress::begin_prog(bool show_now)
     t_last.resize(status_list.size());
     t_last.back().start();
     prog_aborted_ = false;
+    if(progressDialog.get())
+        progressDialog->setProperty("raised",0);
     update_prog(show_now);
 }
 
