@@ -81,8 +81,9 @@ std::string common_prefix(const std::string& str1,const std::string& str2)
 }
 
 bool match_strings(const std::string& str1,const std::string& str1_match,
-                   const std::string& str2,std::string& str2_match)
+                   const std::string& str2,std::string& str2_match,bool try_reverse = true,bool try_swap = true)
 {
+    //std::cout << "if " << str1 << "->" << str1_match << ", then " << str2 << "->?" << std::endl;
     // A->A
     // B->B
     if(str1 == str1_match)
@@ -101,33 +102,30 @@ bool match_strings(const std::string& str1,const std::string& str1_match,
     auto cp1_2 = common_prefix(str1,str2);
     // A_B->A_C
     // D_B->D_C
-    if(cp1_1.size() > cp1_2.size() && str2.length() > cp1_1.size())
+    if(!cp1_1.empty())
     {
-        std::string str2_match_remain;
-        if(!match_strings(str1.substr(cp1_1.size()),str1_match.substr(cp1_1.size()),str2.substr(cp1_1.size()),str2_match_remain))
-            return false;
-        str2_match = str2.substr(0,cp1_1.size()) + str2_match_remain;
-        return true;
-    }
-    // A_B->D_B
-    // A_C->D_C
-    if(cp1_2.size() > cp1_1.size() && str1_match.length() > cp1_2.size())
-    {
-        std::string str2_match_remain;
-        if(!match_strings(str1.substr(cp1_2.size()),str1_match.substr(cp1_2.size()),str2.substr(cp1_2.size()),str2_match_remain))
-            return false;
-        str2_match = str1_match.substr(0,cp1_2.size()) + str2_match_remain;
-        return true;
+        // A->A_C
+        // D->D_C
+        if(cp1_1 == str1)
+        {
+            str2_match = str2 + str1_match.substr(cp1_1.size());
+            return true;
+        }
+        if(match_strings(str1.substr(cp1_1.size()),str1_match.substr(cp1_1.size()),str2,str2_match))
+            return true;
     }
     // try reversed
     std::string rev;
-    if(match_strings(std::string(str1.rbegin(),str1.rend()),
+    if(try_reverse && match_strings(std::string(str1.rbegin(),str1.rend()),
                      std::string(str1_match.rbegin(),str1_match.rend()),
-                     std::string(str2.rbegin(),str2.rend()),rev))
+                     std::string(str2.rbegin(),str2.rend()),rev,false,try_swap))
     {
         str2_match = std::string(rev.rbegin(),rev.rend());
         return true;
     }
+    // try swap
+    if(try_swap)
+        return match_strings(str1,str2,str1_match,str2_match,try_reverse,false);
     return false;
 }
 
