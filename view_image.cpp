@@ -95,32 +95,31 @@ bool match_strings(const std::string& str1,const std::string& str1_match,
     if(str1 == str2)
     {
         str2_match = str1_match;
+        return true;
     }
     auto cp1_1 = common_prefix(str1,str1_match);
     auto cp1_2 = common_prefix(str1,str2);
     // A_B->A_C
     // D_B->D_C
-    if(cp1_1.size() > cp1_2.size() && str2.length() > cp1_1.size() && str1.substr(cp1_1.size()) == str2.substr(cp1_1.size()))
+    if(cp1_1.size() > cp1_2.size() && str2.length() > cp1_1.size())
     {
-        str2_match = str2.substr(0,cp1_1.size()) + str1_match.substr(cp1_1.size());
+        std::string str2_match_remain;
+        if(!match_strings(str1.substr(cp1_1.size()),str1_match.substr(cp1_1.size()),str2.substr(cp1_1.size()),str2_match_remain))
+            return false;
+        str2_match = str2.substr(0,cp1_1.size()) + str2_match_remain;
         return true;
     }
     // A_B->D_B
     // A_C->D_C
-    if(cp1_2.size() > cp1_1.size() && str1_match.length() > cp1_2.size() && str1.substr(cp1_2.size()) == str1_match.substr(cp1_2.size()))
+    if(cp1_2.size() > cp1_1.size() && str1_match.length() > cp1_2.size())
     {
-        str2_match = str1_match.substr(0,cp1_2.size()) + str2.substr(cp1_2.size());
+        std::string str2_match_remain;
+        if(!match_strings(str1.substr(cp1_2.size()),str1_match.substr(cp1_2.size()),str2.substr(cp1_2.size()),str2_match_remain))
+            return false;
+        str2_match = str1_match.substr(0,cp1_2.size()) + str2_match_remain;
         return true;
     }
-    return false;
-}
-
-bool match_strings_two_way(const std::string& str1,const std::string& str1_match,
-                           const std::string& str2,std::string& str2_match)
-
-{
-    if(match_strings(str1,str1_match,str2,str2_match))
-        return true;
+    // try reversed
     std::string rev;
     if(match_strings(std::string(str1.rbegin(),str1.rend()),
                      std::string(str1_match.rbegin(),str1_match.rend()),
@@ -143,8 +142,8 @@ bool match_files(const std::string& file_path1,const std::string& file_path2,
     auto path1_others = QFileInfo(file_path1_others.c_str()).absolutePath().toStdString();
 
     std::string name2_others,path2_others;
-    if(!match_strings_two_way(name1,name2,name1_others,name2_others) ||
-       !match_strings_two_way(path1,path2,path1_others,path2_others))
+    if(!match_strings(name1,name2,name1_others,name2_others) ||
+       !match_strings(path1,path2,path1_others,path2_others))
         return false;
     file_path2_gen = path2_others + "/" + name2_others;
     std::cout << "matching " << file_path1_others << " with " << file_path2_gen << std::endl;
