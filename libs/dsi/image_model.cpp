@@ -430,6 +430,8 @@ bool ImageModel::run_steps(const std::string& reg_file_name,const std::string& s
     std::vector<std::string> cmds,params;
     while(std::getline(in,step))
     {
+        if(step.empty())
+            continue;
         size_t pos = step.find('=');
         std::string cmd,param;
         if(pos == std::string::npos)
@@ -448,7 +450,6 @@ bool ImageModel::run_steps(const std::string& reg_file_name,const std::string& s
             error_msg += file_name;
             return false;
         }
-
         cmds.push_back(cmd);
         params.push_back(param);
     }
