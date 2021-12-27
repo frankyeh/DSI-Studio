@@ -1033,7 +1033,7 @@ bool TractModel::save_tracts_to_file(const char* file_name_)
         region.SaveToFile(file_name_);
         return true;
     }
-    return false;
+    return save_tracts_to_file((std::string(file_name_) + ".tt.gz").c_str());
 }
 void TractModel::save_vrml(const std::string& file_name,
                            unsigned char tract_style,
