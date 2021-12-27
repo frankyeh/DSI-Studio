@@ -895,10 +895,15 @@ int trk(program_option& po,std::shared_ptr<fib_data> handle)
         if(output == "no_file")
             output_track = false;
         else
-        if(QFileInfo(output.c_str()).isDir())
-            tract_file_name = output+"/"+QFileInfo(po.get("source").c_str()).baseName().toStdString() + ".tt.gz";
-        else
-            tract_file_name = output;
+        {
+            if(QFileInfo(output.c_str()).isDir())
+                tract_file_name = output+"/"+QFileInfo(po.get("source").c_str()).baseName().toStdString() + ".tt.gz";
+            else
+            {
+                if(output.find(".tt.gz") != std::string::npos && output.find(".trk.gz") != std::string::npos)
+                    tract_file_name = output + ".tt.gz";
+            }
+        }
     }
 
     return trk_post(po,handle,tract_model,tract_file_name,output_track);
