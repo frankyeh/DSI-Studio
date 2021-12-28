@@ -38,7 +38,6 @@ void progress::update_prog(bool show_now)
     progressDialog->show();
     if(!progressDialog->property("raised").toInt())
     {
-        progressDialog->setWindowFlags(Qt::WindowStaysOnTopHint);
         progressDialog->raise();
         progressDialog->activateWindow();
         progressDialog->setProperty("raised",1);
