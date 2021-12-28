@@ -5,7 +5,7 @@ project(DSI_Studio VERSION "202112.03" LANGUAGES CXX;C)
 find_package(Qt5 COMPONENTS Core Gui OpenGL Charts Network Widgets REQUIRED)
 find_package(ZLIB REQUIRED)
 find_package(OpenGL REQUIRED)
-find_package(Boost 1.57.0 EXACT REQUIRED)
+find_package(Boost REQUIRED)
 find_package(TIPL REQUIRED)
 
 set(CMAKE_AUTOUIC ON)
