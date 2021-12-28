@@ -110,8 +110,7 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
     ui->report->setText(handle->voxel.report.c_str());
     ui->dti_no_high_b->setChecked(handle->is_human_data());
 
-    if(!handle->is_human_data())
-        ui->align_acpc->setVisible(false);
+    ui->align_acpc->setChecked(handle->is_human_data());
 
     ui->method_group->setVisible(!handle->voxel.is_histology);
     ui->param_group->setVisible(!handle->voxel.is_histology);
