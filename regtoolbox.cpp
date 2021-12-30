@@ -536,6 +536,8 @@ void RegToolBox::on_run_reg_clicked()
 
 bool apply_warping(const char* from,
                    const char* to,
+                   const tipl::shape<3>& I_shape,
+                   const tipl::matrix<4,4>& IR,
                    tipl::image<3,tipl::vector<3> >& to2from,
                    tipl::vector<3> Itvs,
                    const tipl::matrix<4,4>& ItR,
@@ -550,8 +552,24 @@ bool apply_warping(const char* from,
     }
     tipl::image<3> I3;
     nifti.toLPS(I3);
+    bool is_label = is_label_image(I3);
+
+    if(I_shape != I3.shape())
+    {
+        tipl::matrix<4,4> T;
+        nifti.get_image_transformation(T);
+        tipl::image<3> I3_(I_shape);
+        if(!tipl::resample(I3,I3_,T,IR,is_label ? tipl::nearest : interpo))
+        {
+            error = "invalid srow matrix in ";
+            error += from;
+            return false;
+        }
+        I3_.swap(I3);
+    }
+
     tipl::image<3> J3;
-    tipl::compose_mapping(I3,to2from,J3,is_label_image(I3) ? tipl::nearest : interpo);
+    tipl::compose_mapping(I3,to2from,J3,is_label ? tipl::nearest : interpo);
     if(!gz_nifti::save_to_file(to,J3,Itvs,ItR))
     {
         error = "cannot write to file ";
@@ -575,7 +593,7 @@ void RegToolBox::on_actionApply_Warpping_triggered()
     std::string error;
     if(!apply_warping(from.toStdString().c_str(),
                       to.toStdString().c_str(),
-                      to2from,Itvs,ItR,error,tipl::cubic))
+                      I.shape(),IR,to2from,Itvs,ItR,error,tipl::cubic))
         QMessageBox::critical(this,"ERROR",error.c_str());
     else
         QMessageBox::information(this,"DSI Studio","Saved");

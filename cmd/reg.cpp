@@ -5,6 +5,8 @@
 #include "program_option.hpp"
 bool apply_warping(const char* from,
                    const char* to,
+                   const tipl::shape<3>& I_shape,
+                   const tipl::matrix<4,4>& IR,
                    tipl::image<3,tipl::vector<3> >& to2from,
                    tipl::vector<3> Itvs,
                    const tipl::matrix<4,4>& ItR,
@@ -25,6 +27,7 @@ int after_warp(const std::string& warp_name,
                tipl::image<3,tipl::vector<3> >& to2from,
                tipl::image<3,tipl::vector<3> >& from2to,
                tipl::vector<3> to_vs,
+               const tipl::matrix<4,4>& from_trans,
                const tipl::matrix<4,4>& to_trans,
                tipl::interpolation_type interpo)
 {
@@ -37,7 +40,8 @@ int after_warp(const std::string& warp_name,
         {
             std::string filename_warp = filename+".wp.nii.gz";
             std::cout << "apply warping to " << filename << std::endl;
-            if(!apply_warping(filename.c_str(),filename_warp.c_str(),to2from,to_vs,to_trans,error,interpo))
+            if(!apply_warping(filename.c_str(),filename_warp.c_str(),from2to.shape(),from_trans,
+                              to2from,to_vs,to_trans,error,interpo))
             {
                 std::cout << "ERROR: " << error <<std::endl;
                 return 1;
@@ -104,7 +108,7 @@ int reg(program_option& po)
         from2to.resize(from_dim);
         std::copy(from2to_ptr,from2to_ptr+from2to.size()*3,&from2to[0][0]);
         if(po.has("apply_warp"))
-            return after_warp(po.get("apply_warp"),to2from,from2to,to_vs,to_trans,
+            return after_warp(po.get("apply_warp"),to2from,from2to,to_vs,from_trans,to_trans,
                                      (po.get("interpolation",1) ? tipl::cubic : tipl::linear));
         return 0;
     }
@@ -249,7 +253,7 @@ int reg(program_option& po)
     }
 
     if(po.has("apply_warp"))
-        return after_warp(po.get("apply_warp"),to2from,from2to,to_vs,to_trans,
+        return after_warp(po.get("apply_warp"),to2from,from2to,to_vs,from_trans,to_trans,
                                  (po.get("interpolation",1) ? tipl::cubic : tipl::linear));
     return 0;
 }
