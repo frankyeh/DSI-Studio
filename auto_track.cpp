@@ -56,9 +56,9 @@ void auto_track::on_open_clicked()
 {
     QStringList filenames = QFileDialog::getOpenFileNames(
                                      this,
-                                     "Open SRC files",
+                                     "Open FIB files",
                                      "",
-                                     "SRC files (*src.gz);;FIB files (*fib.gz);;4D NIFTI files (*nii.gz);;All files (*)" );
+                                     "FIB files (*fib.gz);;SRC files (*src.gz);;4D NIFTI files (*nii.gz);;All files (*)" );
     if (filenames.isEmpty())
         return;
     file_list << filenames;
