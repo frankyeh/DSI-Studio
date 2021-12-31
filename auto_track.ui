@@ -404,7 +404,7 @@
                <item>
                 <widget class="QLabel" name="label_6">
                  <property name="text">
-                  <string>Error Tolerance</string>
+                  <string>Tolerance</string>
                  </property>
                 </widget>
                </item>
@@ -451,7 +451,7 @@
                <item>
                 <widget class="QLabel" name="label_4">
                  <property name="text">
-                  <string>Pruning Count:</string>
+                  <string>Pruning:</string>
                  </property>
                 </widget>
                </item>
@@ -540,7 +540,7 @@
              <item>
               <widget class="QCheckBox" name="output_template_trk">
                <property name="text">
-                <string>Output Tractography in HCP1065 Space</string>
+                <string>Output Tractography in ICBM152 Space</string>
                </property>
               </widget>
              </item>
