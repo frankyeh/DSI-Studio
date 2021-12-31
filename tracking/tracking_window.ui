@@ -1252,9 +1252,9 @@
      <addaction name="actionSeparate"/>
      <addaction name="actionThreshold_2"/>
      <addaction name="separator"/>
+     <addaction name="actionAB"/>
      <addaction name="actionB_A"/>
      <addaction name="actionA_B"/>
-     <addaction name="actionAB"/>
      <addaction name="separator"/>
      <addaction name="actionDilation_by_voxel"/>
     </widget>
@@ -3652,7 +3652,7 @@ Tracking</string>
   </action>
   <action name="actionB_A">
    <property name="text">
-    <string>All Excludes First</string>
+    <string>All Exclude First</string>
    </property>
    <property name="shortcut">
     <string>Ctrl+Shift+2</string>
@@ -3660,7 +3660,7 @@ Tracking</string>
   </action>
   <action name="actionAB">
    <property name="text">
-    <string>All Intersects First</string>
+    <string>All Intersect First</string>
    </property>
    <property name="shortcut">
     <string>Ctrl+Shift+3</string>
