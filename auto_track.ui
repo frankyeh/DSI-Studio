@@ -34,7 +34,7 @@
            </sizepolicy>
           </property>
           <property name="title">
-           <string> Step B4(a): Specify 4DNIFTI/SRC/FIB Files</string>
+           <string> Step B4(a): Specify FIB Files</string>
           </property>
           <layout class="QVBoxLayout" name="verticalLayout_7">
            <property name="spacing">
