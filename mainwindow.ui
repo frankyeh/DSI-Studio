@@ -121,7 +121,7 @@
         <item>
          <widget class="QCommandLinkButton" name="FiberTracking">
           <property name="text">
-           <string>Step T3: Fiber tracking</string>
+           <string>Step T3: Fiber Tracking &amp;&amp; Visualization</string>
           </property>
           <property name="description">
            <string>Open an FIB file for fiber tracking and analysis
