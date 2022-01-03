@@ -10,6 +10,7 @@ QStringList search_files(QString dir,QString filter);
 bool load_bval(const char* file_name,std::vector<double>& bval);
 bool load_bvec(const char* file_name,std::vector<double>& b_table,bool flip_by = true);
 bool parse_dwi(QStringList file_list,std::vector<std::shared_ptr<DwiHeader> >& dwi_files);
+void dicom2src(std::string dir_,std::ostream& out);
 int src(program_option& po)
 {
     std::string source = po.get("source");
@@ -24,15 +25,16 @@ int src(program_option& po)
     else
     {
 
-        std::cout << "load files in directory " << source.c_str() << std::endl;
-        QDir directory = QString(source.c_str());
+        std::cout << "load files in directory " << source.c_str() << std::endl;     
         if(po.has("recursive"))
         {
             std::cout << "search recursively in the subdir" << std::endl;
-            file_list = search_files(source.c_str(),"*.dcm");
+            dicom2src(source,std::cout);
+            return 0;
         }
         else
         {
+            QDir directory = QString(source.c_str());
             file_list = directory.entryList(QStringList("*.dcm"),QDir::Files|QDir::NoSymLinks);
             if(file_list.empty())
                 file_list = directory.entryList(QStringList("*.nii.gz"),QDir::Files|QDir::NoSymLinks);
