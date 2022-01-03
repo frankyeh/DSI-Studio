@@ -227,37 +227,37 @@ public:
     {
         switch(type)
         {
-        case 0: //ROI
+        case roi_id:
             inclusive.push_back(std::make_shared<Roi>(handle->dim,r));
             for(unsigned int index = 0; index < points.size(); ++index)
                 inclusive.back()->addPoint(points[index]);
             report += " An ROI was placed at ";
             break;
-        case 1: //ROA
+        case roa_id:
             exclusive.push_back(std::make_shared<Roi>(handle->dim,r));
             for(unsigned int index = 0; index < points.size(); ++index)
                 exclusive.back()->addPoint(points[index]);
             report += " An ROA was placed at ";
             break;
-        case 2: //End
+        case end_id:
             end.push_back(std::make_shared<Roi>(handle->dim,r));
             for(unsigned int index = 0; index < points.size(); ++index)
                 end.back()->addPoint(points[index]);
             report += " An ending region was placed at ";
             break;
-        case 4: //Terminate
+        case terminate_id:
             terminate.push_back(std::make_shared<Roi>(handle->dim,r));
             for(unsigned int index = 0; index < points.size(); ++index)
                 terminate.back()->addPoint(points[index]);
             report += " A terminative region was placed at ";
             break;
-        case 5: //No ending region
+        case not_end_id:
             no_end.push_back(std::make_shared<Roi>(handle->dim,r));
             for(unsigned int index = 0; index < points.size(); ++index)
                 no_end.back()->addPoint(points[index]);
             report += " A no ending region was placed at ";
             break;
-        case 3: //seed
+        case seed_id:
             for (unsigned int index = 0;index < points.size();++index)
             {
                 seeds.push_back(points[index]);
