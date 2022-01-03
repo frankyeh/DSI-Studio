@@ -26,7 +26,7 @@ int src(program_option& po)
     {
 
         std::cout << "load files in directory " << source.c_str() << std::endl;     
-        if(po.has("recursive"))
+        if(po.get("recursive",0))
         {
             std::cout << "search recursively in the subdir" << std::endl;
             dicom2src(source,std::cout);
