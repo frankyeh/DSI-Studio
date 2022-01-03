@@ -15,7 +15,7 @@ const unsigned char roa_id = 1;
 const unsigned char end_id = 2;
 const unsigned char seed_id = 3;
 const unsigned char terminate_id = 4;
-const unsigned char not_ending_id = 5;
+const unsigned char not_end_id = 5;
 const unsigned char default_id = 6;
 void initial_LPS_nifti_srow(tipl::matrix<4,4>& T,const tipl::shape<3>& geo,const tipl::vector<3>& vs);
 class ROIRegion {
