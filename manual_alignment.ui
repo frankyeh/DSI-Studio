@@ -817,7 +817,7 @@
      <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
    </property>
    <property name="text">
-    <string>Save Warpped Image...</string>
+    <string>Save Transformed Image...</string>
    </property>
   </action>
   <action name="actionSave_Transformation">
@@ -826,7 +826,7 @@
      <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
    </property>
    <property name="text">
-    <string>Save Transformation...</string>
+    <string>Save Transformation Matrix...</string>
    </property>
   </action>
   <action name="actionLoad_Transformation">
