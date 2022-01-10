@@ -607,6 +607,13 @@
           </widget>
          </item>
          <item>
+          <widget class="QCheckBox" name="large_deform">
+           <property name="text">
+            <string>Large Deform</string>
+           </property>
+          </widget>
+         </item>
+         <item>
           <widget class="QComboBox" name="cost_fun">
            <item>
             <property name="text">
