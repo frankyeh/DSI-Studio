@@ -55,8 +55,7 @@ manual_alignment::manual_alignment(QWidget *parent,
     ui->reg_tilt->setChecked(reg_type & tipl::reg::tilt);
 
     ui->cost_type->setCurrentIndex(cost_function == tipl::reg::mutual_info ? 1 : 0);
-    if(to.depth() == 1 || to.width() == 1 || to.height() == 1) // turn of search for slice wise registration
-        ui->search_count->setValue(0);
+
     ui->sag_view->setScene(&scene[0]);
     ui->cor_view->setScene(&scene[1]);
     ui->axi_view->setScene(&scene[2]);
@@ -342,18 +341,17 @@ void manual_alignment::on_rerun_clicked()
 
     load_param();
 
-    int search_count = ui->search_count->value();
-    thread.run([this,cost,search_count,reg_type]()
+    thread.run([this,cost,reg_type]()
     {
         if(cost == tipl::reg::mutual_info)
         {
-            tipl::reg::linear2(from,from_vs,to,to_vs,arg,tipl::reg::reg_type(reg_type),tipl::reg::faster<tipl::reg::mutual_information>(),thread.terminated,0.01,search_count,tipl::reg::large_bound);
-            tipl::reg::linear2(from,from_vs,to,to_vs,arg,tipl::reg::reg_type(reg_type),tipl::reg::faster<tipl::reg::mutual_information>(),thread.terminated,0.001,search_count,tipl::reg::large_bound);
+            tipl::reg::linear(from,from_vs,to,to_vs,arg,tipl::reg::reg_type(reg_type),tipl::reg::faster<tipl::reg::mutual_information>(),thread.terminated,0.01,true,tipl::reg::large_bound);
+            tipl::reg::linear(from,from_vs,to,to_vs,arg,tipl::reg::reg_type(reg_type),tipl::reg::faster<tipl::reg::mutual_information>(),thread.terminated,0.001,true,tipl::reg::large_bound);
         }
         else
         {
-            tipl::reg::linear2(from,from_vs,to,to_vs,arg,tipl::reg::reg_type(reg_type),tipl::reg::faster<tipl::reg::correlation>(),thread.terminated,0.01,search_count,tipl::reg::large_bound);
-            tipl::reg::linear2(from,from_vs,to,to_vs,arg,tipl::reg::reg_type(reg_type),tipl::reg::faster<tipl::reg::correlation>(),thread.terminated,0.001,search_count,tipl::reg::large_bound);
+            tipl::reg::linear(from,from_vs,to,to_vs,arg,tipl::reg::reg_type(reg_type),tipl::reg::faster<tipl::reg::correlation>(),thread.terminated,0.01,true,tipl::reg::large_bound);
+            tipl::reg::linear(from,from_vs,to,to_vs,arg,tipl::reg::reg_type(reg_type),tipl::reg::faster<tipl::reg::correlation>(),thread.terminated,0.001,true,tipl::reg::large_bound);
         }
     });
     if(timer)

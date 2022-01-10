@@ -432,12 +432,13 @@ void RegToolBox::linear_reg(tipl::reg::reg_type reg_type,int cost_type)
     else
     {
         if(cost_type == 0)// mutual information
-            tipl::reg::two_way_linear_mr(It,Itvs,I,Ivs,T,reg_type,tipl::reg::mutual_information(),thread.terminated,
-                                      std::thread::hardware_concurrency(),&arg,tipl::reg::large_bound);
+            tipl::reg::two_way_linear_mr(It,Itvs,I,Ivs,T,reg_type,tipl::reg::mutual_information(),thread.terminated,&arg,
+                                         ui->large_deform->isChecked() ? tipl::reg::large_bound : tipl::reg::reg_bound);
         else
         if(cost_type == 1)// correlation
-            tipl::reg::two_way_linear_mr(It,Itvs,I,Ivs,T,reg_type,tipl::reg::correlation(),thread.terminated,
-                                      std::thread::hardware_concurrency(),&arg,tipl::reg::large_bound);
+            tipl::reg::two_way_linear_mr(It,Itvs,I,Ivs,T,reg_type,tipl::reg::correlation(),thread.terminated,&arg,
+                                         ui->large_deform->isChecked() ? tipl::reg::large_bound : tipl::reg::reg_bound);
+        //T = tipl::transformation_matrix<double>(arg,It.shape(),Itvs,I.shape(),Ivs);
         tipl::resample_mt(I,J_,T,tipl::cubic);
         if(I2.shape() == I.shape())
         {
@@ -454,14 +455,12 @@ void RegToolBox::linear_reg(tipl::reg::reg_type reg_type,int cost_type)
 }
 
 
-
 void RegToolBox::nonlinear_reg(void)
 {
     status = "nonlinear registration";
     {
         tipl::reg::cdm_param param;
         param.resolution = ui->resolution->value();
-        param.cdm_smoothness = float(ui->smoothness->value());
         param.contraint = float(ui->constraint->value());
         param.iterations = uint32_t(ui->steps->value());
         if(ui->edge->isChecked())

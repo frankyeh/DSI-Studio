@@ -159,8 +159,7 @@ int rec(program_option& po)
             tipl::transformation_matrix<double> T;
             bool terminated = false;
             tipl::reg::two_way_linear_mr(I,vs,src.dwi,src.voxel.vs,
-                           T,tipl::reg::rigid_body,tipl::reg::mutual_information(),
-                            terminated,src.voxel.thread_count);
+                           T,tipl::reg::rigid_body,tipl::reg::mutual_information(),terminated);
             std::cout << "DWI rotated." << std::endl;
             src.rotate(I.shape(),vs,T);
         }

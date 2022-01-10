@@ -449,8 +449,7 @@ void CustomSliceModel::argmin(tipl::reg::reg_type reg_type)
     float z_shift = (float(handle->dim[2])*handle->vs[2]-float(to.shape()[2])*vs[2])*0.1f;
     arg_min.translocation[2] = -z_shift*vs[2];
 
-    tipl::reg::two_way_linear_mr(from,handle->vs,to,vs,M,reg_type,tipl::reg::mutual_information(),terminated,
-                                  std::thread::hardware_concurrency(),&arg_min);
+    tipl::reg::two_way_linear_mr(from,handle->vs,to,vs,M,reg_type,tipl::reg::mutual_information(),terminated,&arg_min);
 
     M.save_to_transform(invT.begin());
     handle->view_item[view_id].T = T = tipl::inverse(invT);

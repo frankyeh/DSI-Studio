@@ -120,7 +120,7 @@ public:
                         if(!dual_modality)
                         {
                             tipl::reg::two_way_linear_mr(VG,VGvs,VF,VFvs,affine,
-                                tipl::reg::affine,tipl::reg::correlation(),terminated,voxel.thread_count);
+                                tipl::reg::affine,tipl::reg::correlation(),terminated);
                         }
                         else
                         {
@@ -129,7 +129,7 @@ public:
                             VG3 += VG2;
                             VF3 += VF2;
                             tipl::reg::two_way_linear_mr(VG3,VGvs,VF3,VFvs,affine,
-                                 tipl::reg::affine,tipl::reg::mutual_information(),terminated,voxel.thread_count);
+                                 tipl::reg::affine,tipl::reg::mutual_information(),terminated);
                         }
                     }
                 },terminated))

@@ -910,11 +910,11 @@ void ImageModel::correct_motion(bool eddy)
         if(src_bvalues[i] > 500.0f)
             tipl::reg::linear(dwi,voxel.vs,to,voxel.vs,
                                   arg,eddy ? tipl::reg::affine : tipl::reg::rigid_body,
-                                  tipl::reg::correlation(),terminated,0.001,0,tipl::reg::narrow_bound);
+                                  tipl::reg::correlation(),terminated,0.001,false,tipl::reg::narrow_bound);
         else
             tipl::reg::linear(dwi,voxel.vs,to,voxel.vs,
                               arg,eddy ? tipl::reg::affine : tipl::reg::rigid_body,
-                              tipl::reg::mutual_information(),terminated,0.001,0,tipl::reg::narrow_bound);
+                              tipl::reg::mutual_information(),terminated,0.001,false,tipl::reg::narrow_bound);
 
         rotate_one_dwi(i,tipl::transformation_matrix<double>(arg,voxel.dim,voxel.vs,
                                                                      voxel.dim,voxel.vs));
@@ -2338,8 +2338,6 @@ bool ImageModel::compare_src(const char* file_name)
             tipl::match_signal(Ib,Iff);
             bool terminated = false;
             tipl::reg::cdm_param param;
-            param.cdm_smoothness = 0.2f;
-            param.iterations = 120;
             tipl::reg::cdm(Ib,Iff,cdm_dis,terminated,param);
 
 
