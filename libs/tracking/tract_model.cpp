@@ -3463,13 +3463,20 @@ void for_each_connectivity(const T& end_list1,
     {
         const auto& r1 = end_list1[index];
         const auto& r2 = end_list2[index];
+        std::vector<std::pair<uint32_t,uint32_t> > region_pair;
         for(unsigned int i = 0;i < r1.size();++i)
             for(unsigned int j = 0;j < r2.size();++j)
                 if(r1[i] != r2[j])
                 {
-                    lambda_fun(index,uint32_t(r1[i]),uint32_t(r2[j]));
-                    lambda_fun(index,uint32_t(r2[j]),uint32_t(r1[i]));
+                    region_pair.push_back(std::make_pair(uint32_t(r1[i]),uint32_t(r2[j])));
+                    region_pair.push_back(std::make_pair(uint32_t(r2[j]),uint32_t(r1[i])));
                 }
+        // remove duplicates
+        std::sort(region_pair.begin(), region_pair.end());
+        region_pair.erase(std::unique(region_pair.begin(), region_pair.end()), region_pair.end());
+
+        for(const auto& pair : region_pair)
+            lambda_fun(index,pair.first,pair.second);
     }
 }
 
