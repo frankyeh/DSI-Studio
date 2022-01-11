@@ -725,7 +725,7 @@
                   <number>128</number>
                  </property>
                  <property name="value">
-                  <number>8</number>
+                  <number>16</number>
                  </property>
                 </widget>
                </item>
@@ -751,7 +751,7 @@
                   <double>0.100000000000000</double>
                  </property>
                  <property name="value">
-                  <double>1.000000000000000</double>
+                  <double>2.000000000000000</double>
                  </property>
                 </widget>
                </item>
@@ -787,8 +787,11 @@
                </item>
                <item>
                 <widget class="QDoubleSpinBox" name="speed">
+                 <property name="decimals">
+                  <number>1</number>
+                 </property>
                  <property name="minimum">
-                  <double>0.050000000000000</double>
+                  <double>0.100000000000000</double>
                  </property>
                  <property name="maximum">
                   <double>10.000000000000000</double>
