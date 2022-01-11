@@ -1679,7 +1679,7 @@ void animal_reg(const tipl::image<3>& from,tipl::vector<3> from_vs,
          tipl::affine_transform<double> arg;
          std::copy(directions[i],directions[i]+3,arg.rotation);
          float cur_cost = tipl::reg::linear_mr(from,from_vs,to,to_vs,arg,
-            tipl::reg::affine,tipl::reg::mutual_information(),terminated,0.01,tipl::reg::large_bound);
+            tipl::reg::affine,tipl::reg::mutual_information(),terminated,0.001,tipl::reg::large_bound);
          if(cur_cost < cost)
          {
              cost = cur_cost;
