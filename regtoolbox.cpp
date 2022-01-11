@@ -55,8 +55,12 @@ void RegToolBox::clear(void)
     thread.clear();
     reg_done = false;
     J.clear();
+    JJ.clear();
+    J2.clear();
     J_view.clear();
     J_view2.clear();
+    dis_view.clear();
+
     t2f_dis.clear();
     to2from.clear();
     f2t_dis.clear();
@@ -461,8 +465,10 @@ void RegToolBox::nonlinear_reg(void)
     {
         tipl::reg::cdm_param param;
         param.resolution = ui->resolution->value();
-        param.contraint = float(ui->constraint->value());
+        param.constraint = float(ui->constraint->value());
         param.iterations = uint32_t(ui->steps->value());
+        param.min_dimension = uint32_t(ui->min_reso->value());
+        param.speed = float(ui->speed->value());
         if(ui->edge->isChecked())
         {
             tipl::image<3> sIt(It),sJ(J);
@@ -585,7 +591,7 @@ void RegToolBox::on_actionApply_Warpping_triggered()
     if(from.isEmpty())
         return;
     QString to = QFileDialog::getSaveFileName(
-            this,"Save Warpped Image",from,
+            this,"Save Transformed Image",from,
             "Images (*.nii *nii.gz);;All files (*)" );
     if(to.isEmpty())
         return;
@@ -637,7 +643,7 @@ void RegToolBox::on_actionSave_Warpping_triggered()
     if(to2from.empty())
         return;
     QString filename = QFileDialog::getSaveFileName(
-            this,"Save Warpping","",
+            this,"Save Mapping","",
             "Images (*map.gz);;All files (*)" );
     if(filename.isEmpty())
         return;
@@ -687,3 +693,33 @@ void RegToolBox::on_sag_view_clicked()
     show_image();
 }
 
+
+void RegToolBox::on_actionSmooth_Subject_triggered()
+{
+    if(!I.empty())
+    {
+        tipl::filter::gaussian(I);
+        tipl::normalize(I,1.0f);
+    }
+    if(!I2.empty())
+    {
+        tipl::filter::gaussian(I2);
+        tipl::normalize(I2,1.0f);
+    }
+    clear();
+    J_view = I;
+    show_image();
+}
+
+void RegToolBox::on_actionSave_Transformed_Image_triggered()
+{
+    if(JJ.empty())
+        return;
+    QString to = QFileDialog::getSaveFileName(
+            this,"Save Transformed Image","",
+            "Images (*.nii *nii.gz);;All files (*)" );
+    if(to.isEmpty())
+        return;
+    gz_nifti::save_to_file(to.toStdString().c_str(),JJ,Itvs,ItR);
+
+}

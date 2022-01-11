@@ -80,6 +80,10 @@ private slots:
 
     void on_sag_view_clicked();
 
+    void on_actionSmooth_Subject_triggered();
+
+    void on_actionSave_Transformed_Image_triggered();
+
 private:
     Ui::RegToolBox *ui;
     QGraphicsScene It_scene,I_scene,It_mix_scene;

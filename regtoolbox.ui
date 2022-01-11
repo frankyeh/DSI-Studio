@@ -690,32 +690,6 @@
                 <number>0</number>
                </property>
                <item>
-                <widget class="QLabel" name="label">
-                 <property name="toolTip">
-                  <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Smoothness of the mapping. Higher values lead to smoother results.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-                 </property>
-                 <property name="text">
-                  <string>Smoothness:</string>
-                 </property>
-                </widget>
-               </item>
-               <item>
-                <widget class="QDoubleSpinBox" name="smoothness">
-                 <property name="minimum">
-                  <double>0.010000000000000</double>
-                 </property>
-                 <property name="maximum">
-                  <double>5.000000000000000</double>
-                 </property>
-                 <property name="singleStep">
-                  <double>0.500000000000000</double>
-                 </property>
-                 <property name="value">
-                  <double>0.500000000000000</double>
-                 </property>
-                </widget>
-               </item>
-               <item>
                 <widget class="QLabel" name="label_5">
                  <property name="toolTip">
                   <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Registration resolution. Smaller values will increase registration details but takes more time.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
@@ -732,6 +706,26 @@
                  </property>
                  <property name="value">
                   <number>2</number>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QLabel" name="label_10">
+                 <property name="text">
+                  <string>Min Dimension</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QSpinBox" name="min_reso">
+                 <property name="minimum">
+                  <number>4</number>
+                 </property>
+                 <property name="maximum">
+                  <number>128</number>
+                 </property>
+                 <property name="value">
+                  <number>8</number>
                  </property>
                 </widget>
                </item>
@@ -757,7 +751,7 @@
                   <double>0.100000000000000</double>
                  </property>
                  <property name="value">
-                  <double>0.500000000000000</double>
+                  <double>1.000000000000000</double>
                  </property>
                 </widget>
                </item>
@@ -780,7 +774,37 @@
                   <number>500</number>
                  </property>
                  <property name="value">
-                  <number>60</number>
+                  <number>200</number>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QLabel" name="label">
+                 <property name="text">
+                  <string>Speed</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QDoubleSpinBox" name="speed">
+                 <property name="minimum">
+                  <double>0.050000000000000</double>
+                 </property>
+                 <property name="maximum">
+                  <double>10.000000000000000</double>
+                 </property>
+                 <property name="singleStep">
+                  <double>0.500000000000000</double>
+                 </property>
+                 <property name="value">
+                  <double>0.500000000000000</double>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QLabel" name="label_9">
+                 <property name="text">
+                  <string/>
                  </property>
                 </widget>
                </item>
@@ -886,8 +910,10 @@
     <property name="title">
      <string>&amp;File</string>
     </property>
-    <addaction name="actionSave_Warpping"/>
+    <addaction name="actionSave_Transformed_Image"/>
     <addaction name="actionApply_Warpping"/>
+    <addaction name="separator"/>
+    <addaction name="actionSave_Warpping"/>
    </widget>
    <widget class="QMenu" name="menuEdit">
     <property name="title">
@@ -896,7 +922,7 @@
     <addaction name="actionRemove_Skull"/>
     <addaction name="actionMatch_Intensity"/>
     <addaction name="actionRemove_Background"/>
-    <addaction name="actionTOPUP"/>
+    <addaction name="actionSmooth_Subject"/>
    </widget>
    <addaction name="menu_Open"/>
    <addaction name="menuEdit"/>
@@ -923,12 +949,22 @@
   </action>
   <action name="actionApply_Warpping">
    <property name="text">
-    <string>Apply Warpping...</string>
+    <string>Apply Mapping to Other Image...</string>
    </property>
   </action>
   <action name="actionSave_Warpping">
    <property name="text">
-    <string>Save Warpping...</string>
+    <string>Save Mapping...</string>
+   </property>
+  </action>
+  <action name="actionSmooth_Subject">
+   <property name="text">
+    <string>Smooth Subject</string>
+   </property>
+  </action>
+  <action name="actionSave_Transformed_Image">
+   <property name="text">
+    <string>Save Transformed Image...</string>
    </property>
   </action>
  </widget>
