@@ -43,12 +43,16 @@ void ImageModel::calculate_dwi_sum(bool update_mask)
         return;
     {
         tipl::image<3> dwi_sum(voxel.dim);
-        tipl::par_for(src_dwi_data.size(),[&](unsigned int index)
+        tipl::par_for(dwi_sum.size(),[&](size_t i)
         {
-            if(index > 0 && src_bvalues[index] == 0.0f)
-                return;
-            dwi_sum += dwi_at(index);
+            for(size_t j = 0;j < src_dwi_data.size();++j)
+            {
+                if(j && src_bvalues[j] == 0.0f)
+                    continue;
+                dwi_sum[i] += src_dwi_data[j][i];
+            }
         });
+
         float otsu = tipl::segmentation::otsu_threshold(dwi_sum);
         float max_value = std::min<float>(*std::max_element(dwi_sum.begin(),dwi_sum.end()),otsu*3.0f);
         float min_value = max_value;
@@ -823,16 +827,16 @@ extern std::vector<std::string> fa_template_list,iso_template_list;
 bool ImageModel::get_acpc_transform(tipl::shape<3>& new_geo,tipl::affine_transform<float>& T_)
 {
     tipl::affine_transform<float> T;
-    tipl::image<3,unsigned char> I;
+    tipl::image<3,unsigned char> I,J(dwi);
     tipl::vector<3> vs;
     std::string template_name;
     {
-        template_name = QFileInfo(fa_template_list[voxel.template_id].c_str()).baseName().toStdString();
+        template_name = QFileInfo(fa_template_list[0].c_str()).baseName().toStdString();
         std::cout << "align ap-pc using template:" << template_name << std::endl;
         // resample template to resolution of vs[0]
         tipl::image<3> I_;
-        if(!gz_nifti::load_from_file(iso_template_list[voxel.template_id].c_str(),I_,vs) && !
-                gz_nifti::load_from_file(fa_template_list[voxel.template_id].c_str(),I_,vs))
+        if(!gz_nifti::load_from_file(iso_template_list[0].c_str(),I_,vs) && !
+                gz_nifti::load_from_file(fa_template_list[0].c_str(),I_,vs))
         {
             error_msg = "Failed to load/find MNI template.";
             return false;
@@ -843,30 +847,27 @@ bool ImageModel::get_acpc_transform(tipl::shape<3>& new_geo,tipl::affine_transfo
         vs = voxel.vs[0];
     }
 
+    {
+        tipl::filter::gaussian(J);
+        tipl::normalize(J);
+    }
+
     bool terminated = false;
     progress prog_((std::string("aligning with ac-pc at ")+template_name).c_str(),true);
-    progress::at(0,4);
-    const float bound[8] = {1.0f,-1.0f,0.02f,-0.02f,1.2f,0.9f,0.1f,-0.1f};
-    tipl::reg::linear_mr(I,vs,dwi,voxel.vs,
-            T,tipl::reg::affine,tipl::reg::mutual_information(),terminated,0.1,bound);
-    progress::at(1,4);
-    tipl::reg::linear_mr(I,vs,dwi,voxel.vs,
-            T,tipl::reg::affine,tipl::reg::mutual_information(),terminated,0.01,bound);
-    progress::at(2,4);
-    tipl::reg::linear_mr(I,vs,dwi,voxel.vs,
-            T,tipl::reg::affine,tipl::reg::mutual_information(),terminated,0.001,bound);
+    progress::at(0,3);
+    T.rotation[0] = 0.001f;
+    tipl::reg::linear_mr(I,vs,J,voxel.vs,T,tipl::reg::affine,tipl::reg::correlation(),terminated,0.001);
+    std::cout << T;
+    progress::at(1,3);
+    tipl::image<3,unsigned char> I2(I.shape());
+    tipl::resample(J,I2,tipl::transformation_matrix<float>(T,I.shape(),vs,voxel.dim,voxel.vs),tipl::cubic);
+    float r = float(tipl::correlation(I.begin(),I.end(),I2.begin()));
+    std::cout << "R2 for ac-pc alignment=" << r*r << std::endl;
+    progress::at(2,3);
+    if(r*r < 0.6f)
+        return false;
     T.scaling[0] = T.scaling[1] = T.scaling[2] = 1.0f;
     T.affine[0] = T.affine[1] = T.affine[2] = 0.0f;
-    progress::at(3,4);
-
-    tipl::image<3,unsigned char> I2(I.shape());
-    tipl::resample(dwi,I2,tipl::transformation_matrix<float>(T,I.shape(),vs,voxel.dim,voxel.vs),tipl::cubic);
-    float r = float(tipl::correlation(I.begin(),I.end(),I2.begin()));
-    std::cout << T;
-    std::cout << "R2 for ac-pc alignment=" << r*r << std::endl;
-    progress::at(4,4);
-    if(r*r < 0.3f)
-        return false;
     new_geo = I.shape();
     T_ = T;
     return true;
@@ -908,13 +909,13 @@ void ImageModel::correct_motion(bool eddy)
         tipl::filter::gaussian(to);
         bool terminated = false;
         if(src_bvalues[i] > 500.0f)
-            tipl::reg::linear(dwi,voxel.vs,to,voxel.vs,
+            tipl::reg::linear_mr(dwi,voxel.vs,to,voxel.vs,
                                   arg,eddy ? tipl::reg::affine : tipl::reg::rigid_body,
-                                  tipl::reg::correlation(),terminated,0.001,false,tipl::reg::narrow_bound);
+                                  tipl::reg::correlation(),terminated,0.001,tipl::reg::narrow_bound);
         else
-            tipl::reg::linear(dwi,voxel.vs,to,voxel.vs,
+            tipl::reg::linear_mr(dwi,voxel.vs,to,voxel.vs,
                               arg,eddy ? tipl::reg::affine : tipl::reg::rigid_body,
-                              tipl::reg::mutual_information(),terminated,0.001,false,tipl::reg::narrow_bound);
+                              tipl::reg::mutual_information(),terminated,0.001,tipl::reg::narrow_bound);
 
         rotate_one_dwi(i,tipl::transformation_matrix<double>(arg,voxel.dim,voxel.vs,
                                                                      voxel.dim,voxel.vs));
