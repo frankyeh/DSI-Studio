@@ -264,62 +264,35 @@ class TinyTrack{
 
 struct TrackVis
 {
-    char id_string[6];//ID string for track file. The first 5 characters must be "TRACK".
+    char id_string[6] = {'T','R','A','C','K',0};//ID string for track file. The first 5 characters must be "TRACK".
     short int dim[3];//Dimension of the image volume.
     float voxel_size[3];//Voxel size of the image volume.
-    float origin[3];//Origin of the image volume. This field is not yet being used by TrackVis. That means the origin is always (0, 0, 0).
-    short int n_scalars;//Number of scalars saved at each track point (besides x, y and z coordinates).
-    char scalar_name[10][20];//Name of each scalar. Can not be longer than 20 characters each. Can only store up to 10 names.
-    short int n_properties	;//Number of properties saved at each track.
-    char property_name[10][20];//Name of each property. Can not be longer than 20 characters each. Can only store up to 10 names.
-    float vox_to_ras[4][4];
-    char reserved[444];//Reserved space for future version.
-    char voxel_order[4];//Storing order of the original image data. Explained here.
-    char pad2[4];//Paddings.
-    float image_orientation_patient[6];//Image orientation of the original image. As defined in the DICOM header.
-    char pad1[2];//Paddings.
-    unsigned char invert[6];//Inversion/rotation flags used to generate this track file. For internal use only.
-    int n_count;//Number of tract stored in this track file. 0 means the number was NOT stored.
-    int version;//Version number. Current version is 1.
-    int hdr_size;//Size of the header. Used to determine byte swap. Should be 1000.
+    float origin[3] = {};//Origin of the image volume. This field is not yet being used by TrackVis. That means the origin is always (0, 0, 0).
+    short int n_scalars = 0;//Number of scalars saved at each track point (besides x, y and z coordinates).
+    char scalar_name[10][20] = {};//Name of each scalar. Can not be longer than 20 characters each. Can only store up to 10 names.
+    short int n_properties = 0;//Number of properties saved at each track.
+    char property_name[10][20] = {};//Name of each property. Can not be longer than 20 characters each. Can only store up to 10 names.
+    float vox_to_ras[4][4] = {};
+    char reserved[444] = {0};//Reserved space for future version.
+    char voxel_order[4] = {'L','P','S',0};//Storing order of the original image data. Explained here.
+    char pad2[4] = {};//Paddings.
+    float image_orientation_patient[6] = {1,0,0,0,1,0};//Image orientation of the original image. As defined in the DICOM header.
+    char pad1[2] = {};//Paddings.
+    unsigned char invert[6] = {};//Inversion/rotation flags used to generate this track file. For internal use only.
+    int n_count = 0;//Number of tract stored in this track file. 0 means the number was NOT stored.
+    int version = 2;//Version number. Current version is 1.
+    int hdr_size = 1000;//Size of the header. Used to determine byte swap. Should be 1000.
     void init(tipl::shape<3> geo_,const tipl::vector<3>& voxel_size_)
     {
-        id_string[0] = 'T';
-        id_string[1] = 'R';
-        id_string[2] = 'A';
-        id_string[3] = 'C';
-        id_string[4] = 'K';
-        id_string[5] = 0;
         std::copy(geo_.begin(),geo_.end(),dim);
         std::copy(voxel_size_.begin(),voxel_size_.end(),voxel_size);
-        //voxel_size
-        origin[0] = origin[1] = origin[2] = 0;
-        n_scalars = 0;
-        std::fill((char*)scalar_name,(char*)scalar_name+200,0);
-        n_properties = 0;
-        std::fill((char*)property_name,(char*)property_name+200,0);
-        std::fill((float*)vox_to_ras,(float*)vox_to_ras+16,(float)0.0);
         vox_to_ras[0][0] = -voxel_size[0]; // L to R
         vox_to_ras[1][1] = -voxel_size[1]; // P to A
         vox_to_ras[2][2] = voxel_size[2];
         vox_to_ras[3][3] = 1;
-        std::fill(reserved,reserved+sizeof(reserved),0);
-        voxel_order[0] = 'L';
-        voxel_order[1] = 'P';
-        voxel_order[2] = 'S';
-        voxel_order[3] = 0;
+        vox_to_ras[0][3] = geo_[0]-1;
+        vox_to_ras[1][3] = geo_[1]-1;
         std::copy(voxel_order,voxel_order+4,pad2);
-        image_orientation_patient[0] = 1.0;
-        image_orientation_patient[1] = 0.0;
-        image_orientation_patient[2] = 0.0;
-        image_orientation_patient[3] = 0.0;
-        image_orientation_patient[4] = 1.0;
-        image_orientation_patient[5] = 0.0;
-        std::fill(pad1,pad1+2,0);
-        std::fill(invert,invert+6,0);
-        n_count = 0;
-        version = 2;
-        hdr_size = 1000;
     }
     bool load_from_file(const char* file_name,
                 std::vector<std::vector<float> >& loaded_tract_data,
