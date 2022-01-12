@@ -864,7 +864,7 @@ bool ImageModel::get_acpc_transform(tipl::shape<3>& new_geo,tipl::affine_transfo
     float r = float(tipl::correlation(I.begin(),I.end(),I2.begin()));
     std::cout << "R2 for ac-pc alignment=" << r*r << std::endl;
     progress::at(2,3);
-    if(r*r < 0.6f)
+    if(r*r < 0.4f)
         return false;
     T.scaling[0] = T.scaling[1] = T.scaling[2] = 1.0f;
     T.affine[0] = T.affine[1] = T.affine[2] = 0.0f;
