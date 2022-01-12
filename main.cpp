@@ -16,9 +16,8 @@
 
 #ifdef STATIC
 #include <QtPlugin>
-Q_IMPORT_PLUGIN(qjpeg)
-Q_IMPORT_PLUGIN(qjp2)
-Q_IMPORT_PLUGIN(qtiff)
+Q_IMPORT_PLUGIN(QJpegPlugin)
+Q_IMPORT_PLUGIN(QTiffPlugin)
 #endif
 
 std::string arg_file_name;
