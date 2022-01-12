@@ -45,6 +45,8 @@ SHELL ["/bin/bash", "-c"]
 ADD "https://api.github.com/repos/frankyeh/DSI-Studio/commits?per_page=1" latest_commit
 ADD "https://api.github.com/repos/frankyeh/TIPL/commits?per_page=1" latest_commit
 
+ENV QTDIR=/opt/qt512
+
 RUN source /opt/qt512/bin/qt512-env.sh \
   && mkdir /opt/dsi-studio \
   && cd /opt/dsi-studio \
