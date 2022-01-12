@@ -33,7 +33,7 @@ jobs:
         outputs: dsi-studio
     - name: Packaging
       run: |
-        zip -r dsi_studio_${{ matrix.os }}.zip dsi-studio
+        zip -r dsi_studio_${{ matrix.os }}_static.zip dsi-studio
     - name: Create Release
       uses: ncipollo/release-action@v1.8.9
       with:
