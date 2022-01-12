@@ -65,6 +65,12 @@ RUN cd /opt/dsi-studio \
   && git clone https://github.com/frankyeh/DSI-Studio-atlas.git \
   && rm -fr DSI-Studio-atlas/.git \
   && mv DSI-Studio-atlas atlas
+
+RUN curl -sL https://github.com/probonopd/linuxdeployqt/releases/download/7/linuxdeployqt-7-x86_64.AppImage > linuxdeployqt \
+  && chmod a+x linuxdeployqt \
+  && ./linuxdeployqt dsi_studio \
+  && rm -fr linuxdeployqt
+
 ENV PATH="$PATH:/opt/dsi-studio" 
 
 
