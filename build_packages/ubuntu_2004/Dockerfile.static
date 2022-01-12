@@ -32,7 +32,7 @@ RUN \
 RUN \
     cd /opt/qt-everywhere-src-5.15.2 && \
     ./configure -opensource -confirm-license -release -static -nomake tests -nomake examples -skip qtwebengine \
-    -qt-zlib -qt-libjpeg -qt-libpng -xcb -qt-freetype -qt-pcre -qt-harfbuzz -qt-charts && \
+    -qt-zlib -qt-libjpeg -qt-libpng -xcb -qt-freetype -qt-pcre -qt-harfbuzz && \
     make -j $(($(nproc)+4)) && \
     make install && \
     cd /opt && \
