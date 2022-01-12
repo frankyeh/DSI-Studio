@@ -9,7 +9,7 @@ RUN mkdir /opt/dsi-studio \
   && mv TIPL src/tipl \
   && mkdir -p /opt/dsi-studio/build \
   && cd /opt/dsi-studio/build \
-  && qmake "QMAKE_CXXFLAGS+=-std=c++17" "CONFIG-=c++17"../src/dsi_studio.pro \
+  && qmake "QMAKE_CXXFLAGS+=-std=c++17" "CONFIG-=c++17" ../src/dsi_studio.pro \
   && make
 
 RUN cd /opt/dsi-studio \
