@@ -12,7 +12,8 @@ INCLUDEPATH += ./plot
 DEFINES += DSISTUDIO_RELEASE_NAME=\\\"Chen\\\"
 DEFINES += DSISTUDIO_RELEASE_CODE=11770345
 static {
-    QTPLUGIN += qjpeg qjp2 qtiff
+    LIBS += $(QTDIR)/plugins/imageformats
+    QTPLUGIN += qjpeg qtiff
     DEFINES += STATIC
 }
 win32* {
