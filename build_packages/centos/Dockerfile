@@ -1,8 +1,5 @@
 FROM juangburgos/jenkins-centos7-qt5.13.2 as builder-stage
 
-RUN yum -y install centos-release-scl \
-  && yum -y install devtoolset-8-gcc devtoolset-8-gcc-c++ \
-  && scl enable devtoolset-8 bash
 
 RUN mkdir /opt/dsi-studio \
   && cd /opt/dsi-studio \
@@ -12,7 +9,7 @@ RUN mkdir /opt/dsi-studio \
   && mv TIPL src/tipl \
   && mkdir -p /opt/dsi-studio/build \
   && cd /opt/dsi-studio/build \
-  && qmake ../src/dsi_studio.pro \
+  && qmake "QMAKE_CXXFLAGS+=-std=c++17" "CONFIG-=c++17"../src/dsi_studio.pro \
   && make
 
 RUN cd /opt/dsi-studio \
