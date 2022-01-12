@@ -14,12 +14,6 @@
 #include "program_option.hpp"
 #include "cmd/cnt.cpp" // Qt project cannot build cnt.cpp without adding this.
 
-#ifdef STATIC
-#include <QtPlugin>
-Q_IMPORT_PLUGIN(qjpeg)
-Q_IMPORT_PLUGIN(qtiff)
-#endif
-
 std::string arg_file_name;
 std::string
         fib_template_file_name_2mm,
