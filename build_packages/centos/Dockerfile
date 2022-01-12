@@ -1,7 +1,8 @@
 FROM juangburgos/jenkins-centos7-qt5.13.2 as builder-stage
 
-RUN yum install devtoolset-9-toolchain \
-  && scl enable devtoolset-9 bash
+RUN yum install centos-release-scl \
+  && yum install devtoolset-8-gcc devtoolset-8-gcc-c++ \
+  && scl enable devtoolset-8 bash
 
 RUN mkdir /opt/dsi-studio \
   && cd /opt/dsi-studio \
