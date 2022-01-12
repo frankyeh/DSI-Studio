@@ -1,7 +1,5 @@
 FROM juangburgos/jenkins-centos7-qt5.13.2 as builder-stage
 
-
-
 RUN mkdir /opt/dsi-studio \
   && cd /opt/dsi-studio \
   && git clone https://github.com/frankyeh/DSI-Studio.git \
