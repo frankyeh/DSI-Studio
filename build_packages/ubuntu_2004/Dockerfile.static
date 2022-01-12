@@ -27,11 +27,12 @@ RUN mkdir /opt/dsi-studio \
   && mv TIPL src/tipl \
   && mkdir -p /opt/dsi-studio/build \
   && cd /opt/dsi-studio/build \
-  && qmake "CONFIG+=static" ../src/dsi_studio.pro \
+  && qmake "CONFIG += static" "QMAKE_LFLAGS += -static -static-libgcc" ../src/dsi_studio.pro -config release \
   && make
 
 RUN cd /opt/dsi-studio \
   && mv build/dsi_studio . \
+  && ldd dsi_studio \
   && chmod 755 dsi_studio \
   && cp -R src/other/* . \
   && rm -rf src build \
