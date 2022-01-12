@@ -353,21 +353,21 @@ void reconstruction_window::on_save_mask_clicked()
 }
 void reconstruction_window::on_actionFlip_bx_triggered()
 {
-    command("[Step T2][Edit][Change b-table:flip bx]");
+    command("[Step T2][B-table][flip bx]");
     ui->check_btable->setChecked(false);
-    QMessageBox::information(this,"DSI Studio","B-table flipped",0);
+    QMessageBox::information(this,"DSI Studio","B-table flipped");
 }
 void reconstruction_window::on_actionFlip_by_triggered()
 {
-    command("[Step T2][Edit][Change b-table:flip by]");
+    command("[Step T2][B-table][flip by]");
     ui->check_btable->setChecked(false);
-    QMessageBox::information(this,"DSI Studio","B-table flipped",0);
+    QMessageBox::information(this,"DSI Studio","B-table flipped");
 }
 void reconstruction_window::on_actionFlip_bz_triggered()
 {
-    command("[Step T2][Edit][Change b-table:flip bz]");
+    command("[Step T2][B-table][flip bz]");
     ui->check_btable->setChecked(false);
-    QMessageBox::information(this,"DSI Studio","B-table flipped",0);
+    QMessageBox::information(this,"DSI Studio","B-table flipped");
 }
 void reconstruction_window::batch_command(std::string cmd,std::string param)
 {
