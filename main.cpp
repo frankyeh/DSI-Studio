@@ -14,6 +14,13 @@
 #include "program_option.hpp"
 #include "cmd/cnt.cpp" // Qt project cannot build cnt.cpp without adding this.
 
+#ifdef STATIC
+#include <QtPlugin>
+Q_IMPORT_PLUGIN(qjpeg)
+Q_IMPORT_PLUGIN(qjp2)
+Q_IMPORT_PLUGIN(qtiff)
+#endif
+
 std::string arg_file_name;
 std::string
         fib_template_file_name_2mm,
@@ -95,7 +102,7 @@ bool load_file_name(void)
     fib_template_file_name_2mm = find_full_path("/atlas/ICBM152/ICBM152.fib.gz");
     device_content_file = find_full_path("/device.txt");
 
-    // search for all template
+    std::cout << "search templates and atlases" << std::endl;
     {
         QDir dir = QCoreApplication::applicationDirPath()+ "/atlas";
         if(!dir.exists())

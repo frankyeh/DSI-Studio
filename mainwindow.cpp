@@ -60,6 +60,7 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->recentSrc->setAlternatingRowColors(true);
     QObject::connect(ui->recentFib,SIGNAL(cellDoubleClicked(int,int)),this,SLOT(open_fib_at(int,int)));
     QObject::connect(ui->recentSrc,SIGNAL(cellDoubleClicked(int,int)),this,SLOT(open_src_at(int,int)));
+    std::cout << "load file lists" << std::endl;
     updateRecentList();
 
     if (settings.contains("WORK_PATH"))
@@ -196,18 +197,11 @@ MainWindow::~MainWindow()
 
 }
 
-\
+
 void MainWindow::updateRecentList(void)
 {
     {
         QStringList file_list = settings.value("recentFibFileList").toStringList();
-        for (int index = 0;index < file_list.size();)
-        {
-            if(!QFileInfo(file_list[index]).exists())
-                file_list.removeAt(index);
-            else
-                ++index;
-        }
         ui->recentFib->clear();
         ui->recentFib->setRowCount(file_list.size());
         for (int index = 0;index < file_list.size();++index)
@@ -223,11 +217,6 @@ void MainWindow::updateRecentList(void)
     }
     {
         QStringList file_list = settings.value("recentSrcFileList").toStringList();
-        for (int index = 0;index < file_list.size();)
-            if(!QFileInfo(file_list[index]).exists())
-                file_list.removeAt(index);
-            else
-                ++index;
         ui->recentSrc->clear();
         ui->recentSrc->setRowCount(file_list.size());
         for (int index = 0;index < file_list.size();++index)
