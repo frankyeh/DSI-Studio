@@ -1,0 +1,86 @@
+FROM ubuntu:20.04 as builder-stage
+
+ENV DEBIAN_FRONTEND noninteractive
+
+
+
+RUN \
+    export DEBIAN_FRONTEND=noninteractive && \
+    apt -y update && \
+    apt -y upgrade && \
+    apt -y install \
+        build-essential cmake freeglut3-dev gdb git iputils-ping libgl1-mesa-dev \
+        libglu1-mesa-dev libjpeg-dev libmysqlclient-dev libnss3-dev libopus-dev \
+        libpng-dev libsqlite3-dev libssl-dev libx11-xcb-dev libxcb-xinerama0-dev \
+        libxcb-xkb-dev libxcb1-dev libxcursor-dev libxi-dev libxml2-dev libxrender-dev \
+        libxslt-dev lzip mesa-common-dev nano perl python valgrind wget zlib1g-dev \
+        '^libxcb.*-dev' libxkbcommon-dev libxkbcommon-x11-dev && \
+    apt -y autoremove && \
+    apt -y autoclean && \
+    apt -y clean && \
+    rm -rf /var/lib/apt/lists/* && \
+    exit 0
+
+RUN \
+    set -eux && \
+    cd /opt && \
+    wget -q http://download.qt.io/official_releases/qt/5.15/5.15.2/single/qt-everywhere-src-5.15.2.tar.xz && \
+    tar xf qt-everywhere-src-5.15.2.tar.xz && \
+    rm qt-everywhere-src-5.15.2.tar.xz && \
+    exit 0
+
+RUN \
+    cd /opt/qt-everywhere-src-5.15.2 && \
+    ./configure -opensource -confirm-license -release -static -nomake tests -nomake examples -skip qtwebengine \
+    -qt-zlib -qt-libjpeg -qt-libpng -xcb -qt-freetype -qt-pcre -qt-harfbuzz -qt-charts && \
+    make -j $(($(nproc)+4)) && \
+    make install && \
+    cd /opt && \
+    rm -rf qt-everywhere-src-5.15.2 && \
+    exit 0
+
+ENV PATH="${PATH}:/usr/local/Qt-5.15.2/bin"
+
+
+# Prepare environment
+RUN apt update && apt full-upgrade -y && \
+  apt install -y --no-install-recommends \
+  unzip \
+  curl \
+  make \
+  git \
+  libboost-all-dev \
+  zlib1g-dev \
+  ca-certificates \
+  libqt5charts5-dev \
+  libqt5opengl5-dev \
+  gcc \
+  g++ && \
+  apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
+RUN mkdir /opt/dsi-studio \
+  && cd /opt/dsi-studio \
+  && git clone https://github.com/frankyeh/DSI-Studio.git \
+  && mv DSI-Studio src \
+  && git clone https://github.com/frankyeh/TIPL.git \
+  && mv TIPL src/tipl \
+  && mkdir -p /opt/dsi-studio/build \
+  && cd /opt/dsi-studio/build \
+  && qmake "CONFIG+=static" ../src/dsi_studio.pro \
+  && make
+
+RUN cd /opt/dsi-studio \
+  && mv build/dsi_studio . \
+  && chmod 755 dsi_studio \
+  && cp -R src/other/* . \
+  && rm -rf src build \
+  && git clone https://github.com/frankyeh/DSI-Studio-atlas.git \
+  && rm -fr DSI-Studio-atlas/.git \
+  && mv DSI-Studio-atlas atlas
+
+
+ENV PATH="$PATH:/opt/dsi-studio" 
+
+#Create an empty container and transfer only the compiled software out
+FROM scratch
+COPY --from=builder-stage /opt/dsi-studio /
