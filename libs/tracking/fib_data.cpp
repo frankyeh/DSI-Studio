@@ -1976,6 +1976,14 @@ bool fib_data::get_atlas_roi(std::shared_ptr<atlas> at,unsigned int roi_index,st
     }
     unsigned int thread_count = std::thread::hardware_concurrency();
     std::vector<std::vector<tipl::vector<3,short> > > buf(thread_count);
+
+    // trigger atlas loading to avoid crash in multi thread
+    if(!at->load_from_file())
+    {
+        error_msg = "cannot read atlas file ";
+        error_msg += at->filename;
+        return false;
+    }
     s2t.for_each_mt2([&](const tipl::vector<3>& pos,const tipl::pixel_index<3>& index,size_t id)
     {
         if (at->is_labeled_as(pos, roi_index))
@@ -1987,10 +1995,19 @@ bool fib_data::get_atlas_roi(std::shared_ptr<atlas> at,unsigned int roi_index,st
     return true;
 }
 
-void fib_data::get_atlas_all_roi(std::shared_ptr<atlas> at,std::vector<std::vector<tipl::vector<3,short> > >& points)
+bool fib_data::get_atlas_all_roi(std::shared_ptr<atlas> at,std::vector<std::vector<tipl::vector<3,short> > >& points)
 {
     if(get_sub2temp_mapping().empty() || !at->load_from_file())
-        return;
+        return false;
+
+    // trigger atlas loading to avoid crash in multi thread
+    if(!at->load_from_file())
+    {
+        error_msg = "cannot read atlas file ";
+        error_msg += at->filename;
+        return false;
+    }
+
     points.clear();
     points.resize(at->get_list().size());
     std::vector<std::mutex> push_back_mutex(points.size());
@@ -2022,6 +2039,7 @@ void fib_data::get_atlas_all_roi(std::shared_ptr<atlas> at,std::vector<std::vect
             points[uint32_t(region_index)].push_back(tipl::vector<3,short>(index.begin()));
         });
     }
+    return true;
 }
 
 const tipl::image<3,tipl::vector<3,float> >& fib_data::get_sub2temp_mapping(void)
