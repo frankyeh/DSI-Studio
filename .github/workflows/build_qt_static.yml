@@ -1,11 +1,5 @@
 name: Build Qt Static Binaries
-
-on:
-  push:
-    branches:
-    # Change this to the branch name which you are developing on to trigger the workflow
-    - generateqt
-
+on: workflow_dispatch
 jobs:
   GenerateLinuxStaticBinaries:
     runs-on: ubuntu-18.04
