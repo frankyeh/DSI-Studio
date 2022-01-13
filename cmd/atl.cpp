@@ -16,55 +16,17 @@ const char* odf_average(const char* out_name,std::vector<std::string>& file_name
 bool atl_load_atlas(std::shared_ptr<fib_data> handle,std::string atlas_name,std::vector<std::shared_ptr<atlas> >& atlas_list)
 {
     QStringList name_list = QString(atlas_name.c_str()).split(",");
-
-
     for(int index = 0;index < name_list.size();++index)
     {
-        bool has_atlas = false;
-        for(unsigned int i = 0;i < atlas_list.size();++i)
-            if(atlas_list[i]->name == name_list[index].toStdString())
-                has_atlas = true;
-        if(has_atlas)
-            continue;
-        std::string file_path;
-        if(QFileInfo(name_list[index]).exists())
+        auto at = handle->get_atlas(name_list[index].toStdString());
+        if(!at.get())
         {
-            file_path = name_list[index].toStdString();
-            name_list[index] = QFileInfo(name_list[index]).baseName();
+            std::cout << "ERROR: " << handle->error_msg << std::endl;
+            return false;
         }
-        else
-        {
-            const auto& atlas_list = template_atlas_list[handle->template_id];
-            for(size_t j = 0;j < atlas_list.size();++j)
-            {
-                if(QFileInfo(atlas_list[j].c_str()).baseName().toLower() == name_list[index].toLower())
-                {
-                    file_path = atlas_list[j];
-                    break;
-                }
-            }
-            if(!std::filesystem::exists(file_path))
-            {
-                std::cout << "ERROR: did not find atlas at " << QFileInfo(template_atlas_list[handle->template_id][0].c_str()).absolutePath().toStdString() << std::endl;
-                return false;
-            }
-        }
-
-        {
-            std::cout << "loading " << name_list[index].toStdString() << "..." << std::endl;
-            atlas_list.push_back(std::make_shared<atlas>());
-            atlas_list.back()->filename = file_path;
-            atlas_list.back()->name = name_list[index].toStdString();
-            if(atlas_list.back()->get_num().empty())
-            {
-                std::cout << "ERROR: fail to open " << name_list[index].toStdString() << ":" << atlas_list.back()->error_msg << std::endl;
-                return false;
-            }
-            continue;
-        }
+        atlas_list.push_back(at);
     }
-    handle->atlas_list = atlas_list;
-    return !atlas_list.empty();
+    return true;
 }
 
 std::shared_ptr<fib_data> cmd_load_fib(const std::string file_name);
