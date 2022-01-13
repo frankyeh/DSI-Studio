@@ -1,4 +1,4 @@
-FROM ubuntu:18.04
+FROM ubuntu:20.04
 
 ENV DEBIAN_FRONTEND noninteractive
 
@@ -18,7 +18,7 @@ RUN apt update && apt full-upgrade -y && \
 ENV PATH="$PATH:/opt/dsi-studio" 
 
 RUN cd /opt \
-  && curl -sSL https://github.com/frankyeh/DSI-Studio/releases/download/2021.12.03/dsi_studio_ubuntu_1804_static.zip -o dsi-studio.zip \
+  && curl -sSL https://github.com/frankyeh/DSI-Studio/releases/download/2021.12.03/dsi_studio_ubuntu_2004.zip -o dsi-studio.zip \
   && unzip dsi-studio.zip \
   && chmod 755 dsi-studio \
   && rm dsi-studio.zip
