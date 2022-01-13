@@ -3383,15 +3383,20 @@ bool ConnectivityMatrix::set_atlas(std::shared_ptr<atlas> data,
                                    std::shared_ptr<fib_data> handle)
 {
     if(!handle->can_map_to_mni() && !handle->get_sub2temp_mapping().empty())
+    {
+        error_msg = handle->error_msg;
         return false;
-    tipl::vector<3> null;
+    }
     region_count = data->get_list().size();
-    region_name.clear();
-    for (unsigned int label_index = 0; label_index < region_count; ++label_index)
-        region_name.push_back(data->get_list()[label_index]);
+    region_name = data->get_list();
 
-    // trigger atlas loading to aoivd crash in multi thread
-    data->is_labeled_as(tipl::vector<3>(0.0f,0.0f,0.0f),0);
+    // trigger atlas loading to avoid crash in multi thread
+    if(!data->load_from_file())
+    {
+        error_msg = "cannot read atlas file ";
+        error_msg += data->filename;
+        return false;
+    }
 
     const auto& s2t = handle->get_sub2temp_mapping();
     region_map.clear();
