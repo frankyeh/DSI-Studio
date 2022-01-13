@@ -1,7 +1,6 @@
-FROM tjego/ubuntu-qt_from_sources:5.15.0_static_release as builder-stage
+FROM ubuntu:20.04 as builder-stage
 
 ENV DEBIAN_FRONTEND noninteractive
-
 
 # Prepare environment
 RUN apt update && apt full-upgrade -y && \
@@ -9,13 +8,21 @@ RUN apt update && apt full-upgrade -y && \
   unzip \
   curl \
   make \
+  wget \
   git \
+  libjpeg-dev \
   libboost-all-dev \
   zlib1g-dev \
   ca-certificates \
   gcc \
   g++ && \
   apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
+RUN wget -O qt5_5152_static_binaries_linux.tar.gz https://www.dropbox.com/s/o0aw8p8kqqnmwcp/qt5_5152_static_binaries_linux.tar.gz?dl=1 \
+ && mkdir /opt/Qt5_binaries \
+ && tar xvzf qt5_5152_static_binaries_linux.tar.gz -C /opt/ -P
+
+ENV PATH="$PATH:/opt/Qt5_binaries/bin" 
 
 RUN mkdir /opt/dsi-studio \
   && cd /opt/dsi-studio \
@@ -25,12 +32,11 @@ RUN mkdir /opt/dsi-studio \
   && mv TIPL src/tipl \
   && mkdir -p /opt/dsi-studio/build \
   && cd /opt/dsi-studio/build \
-  && qmake "CONFIG += static" "QMAKE_LFLAGS += -static -static-libgcc" "QT -= core gui opengl charts network" ../src/dsi_studio.pro -config release \
+  && qmake "CONFIG += static" ../src/dsi_studio.pro \
   && make
 
 RUN cd /opt/dsi-studio \
   && mv build/dsi_studio . \
-  && ldd dsi_studio \
   && chmod 755 dsi_studio \
   && cp -R src/other/* . \
   && rm -rf src build \
@@ -38,8 +44,12 @@ RUN cd /opt/dsi-studio \
   && rm -fr DSI-Studio-atlas/.git \
   && mv DSI-Studio-atlas atlas
 
-
-ENV PATH="$PATH:/opt/dsi-studio" 
+RUN curl -sL https://github.com/probonopd/linuxdeployqt/releases/download/7/linuxdeployqt-7-x86_64.AppImage > linuxdeployqt \
+  && chmod a+x linuxdeployqt \
+  && ./linuxdeployqt --appimage-extract \
+  && ./squashfs-root/AppRun /opt/dsi-studio/dsi_studio -unsupported-bundle-everything -no-translations -bundle-non-qt-libs \
+  && rm -fr squashfs-root \
+  && rm -fr linuxdeployqt
 
 #Create an empty container and transfer only the compiled software out
 FROM scratch
