@@ -20,7 +20,6 @@ std::shared_ptr<CustomSliceModel> t1t2_slices;
 extern std::vector<std::shared_ptr<CustomSliceModel> > other_slices;
 std::vector<std::shared_ptr<CustomSliceModel> > other_slices;
 
-bool atl_load_atlas(std::shared_ptr<fib_data> handle,const std::string atlas_name,std::vector<std::shared_ptr<atlas> >& atlas_list);
 void get_filenames_from(const std::string param,std::vector<std::string>& filenames);
 bool check_other_slices(const std::string& other_slices_name,std::shared_ptr<fib_data> handle)
 {
