@@ -14,7 +14,7 @@ jobs:
   linux-build:
     strategy:
       matrix:
-        os: [ubuntu_1804]
+        os: [ubuntu_1804,ubuntu_2004]
       fail-fast: false
     runs-on: ubuntu-latest
     steps:
@@ -40,5 +40,5 @@ jobs:
         allowUpdates: true
         artifacts: "*.zip"
         tag: ${{ github.event.inputs.tag }}
-        name: ${{ github.event.inputs.release_name }}-static
+        name: ${{ github.event.inputs.release_name }}
         prerelease: false
