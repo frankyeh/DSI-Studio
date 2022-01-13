@@ -276,7 +276,7 @@ bool get_connectivity_matrix(program_option& po,
                              std::shared_ptr<TractModel> tract_model)
 {
     QStringList connectivity_list = QString(po.get("connectivity").c_str()).split(",");
-    QStringList connectivity_type_list = QString(po.get("connectivity_type","end").c_str()).split(",");
+    QStringList connectivity_type_list = QString(po.get("connectivity_type","pass").c_str()).split(",");
     QStringList connectivity_value_list = QString(po.get("connectivity_value","count").c_str()).split(",");
     for(int i = 0;i < connectivity_list.size();++i)
     {
