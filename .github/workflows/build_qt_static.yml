@@ -110,7 +110,7 @@ jobs:
       run: |
         Invoke-WebRequest https://www.dropbox.com/s/gbf8sdx8wqxcrnd/jom.zip?dl=1 -OutFile .\jom.zip
         expand-archive -path "jom.zip"
-        echo "D:\a\mne-cpp\mne-cpp\jom" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+        echo "D:\a\DSI-Studio\DSI-Studio\jom" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
     - name: Compile static Qt version
       run: |
         # Clone Qt5 repo
@@ -127,7 +127,7 @@ jobs:
         Get-Content "$env:temp\vcvars.txt" | Foreach-Object { if ($_ -match "^(.*?)=(.*)$") { Set-Content "env:\$($matches[1])" $matches[2] } }
         # Configure Qt5
         ..\qt5\configure.bat -release -static -no-pch -optimize-size -opengl desktop -platform win32-msvc -prefix "..\Qt5_binaries" -skip webengine -nomake tools -nomake tests -nomake examples -opensource -confirm-license
-        nmake
+        jom -j4
         nmake install
     - name: Package binaries
       run: |
