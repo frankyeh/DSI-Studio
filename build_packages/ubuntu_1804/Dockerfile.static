@@ -58,7 +58,7 @@ RUN mkdir /opt/dsi-studio \
   && mv TIPL src/tipl \
   && mkdir -p /opt/dsi-studio/build \
   && cd /opt/dsi-studio/build \
-  && qmake ../src/dsi_studio.pro \
+  && qmake "CONFIG += static" ../src/dsi_studio.pro -config release \
   && make
 
 RUN cd /opt/dsi-studio \
