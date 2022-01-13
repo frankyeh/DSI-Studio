@@ -27,7 +27,7 @@ jobs:
     - name: Package binaries
       run: |
         # Create archive of the pre-built Qt binaries
-        tar cfvz qt5_5152_static_binaries_linux.tar.gz ../Qt5_binaries/.
+        tar cfvz Qt5Static_Ubuntu_1804.tar.gz ../Qt5_binaries/.
     - uses: actions/upload-artifact@v1
       with:
         name: Qt5Static_Ubuntu_1804.tar.gz
@@ -59,7 +59,7 @@ jobs:
     - name: Package binaries
       run: |
         # Create archive of the pre-built Qt binaries
-        tar cfvz qt5_5152_static_binaries_linux.tar.gz ../Qt5_binaries/.
+        tar cfvz Qt5Static_Ubuntu_2004.tar.gz ../Qt5_binaries/.
     - uses: actions/upload-artifact@v1
       with:
         name: Qt5Static_Ubuntu_2004.tar.gz
@@ -89,7 +89,7 @@ jobs:
     - name: Package binaries
       run: |
         # Create archive of the pre-built Qt binaries
-        tar cfvz qt5_5152_static_binaries_macos.tar.gz ../Qt5_binaries/.
+        tar cfvz Qt5Static_Mac.tar.gz ../Qt5_binaries/.
     - uses: actions/upload-artifact@v1
       with:
         name: Qt5Static_Mac.tar.gz
@@ -132,7 +132,7 @@ jobs:
     - name: Package binaries
       run: |
         # Create archive of the pre-built Qt binaries
-        7z a qt5_5152_static_binaries_win.zip ..\Qt5_binaries
+        7z a Qt5Static_Win.zip ..\Qt5_binaries
     - uses: actions/upload-artifact@v1
       with:
         name: Qt5Static_Win.zip
