@@ -18,9 +18,9 @@ RUN apt update && apt full-upgrade -y && \
 ENV PATH="$PATH:/opt/dsi-studio" 
 
 RUN cd /opt \
-  && curl -sSL https://github.com/frankyeh/DSI-Studio/releases/download/2021.12.03/dsi_studio_ubuntu_1804_static.zip -o dsi_studio.zip \
-  && unzip dsi_studio.zip \
-  && rm dsi_studio.zip \
+  && curl -sSL https://github.com/frankyeh/DSI-Studio/releases/download/2021.12.03/dsi_studio_ubuntu_1804_static.zip -o dsi-studio.zip \
+  && unzip dsi-studio.zip \
+  && rm dsi-studio.zip \
   && cd dsi-studio \
   && chmod 755 dsi_studio
 
@@ -37,6 +37,7 @@ RUN curl -sSL https://fsl.fmrib.ox.ac.uk/fsldownloads/fsl-6.0.4-centos7_64.tar.g
     --exclude='fsl/extras/doc' \
     --exclude='fsl/extras/man' \
     --exclude='fsl/extras/src' \
+    --exclude='fsl/extras/include' \
     --exclude='fsl/src'
 
 ENV OS="Linux" \
