@@ -1348,6 +1348,7 @@ void fib_data::set_template_id(size_t new_id)
         mask_template_file_name = QString(fa_template_list[template_id].c_str()).replace(".QA.nii.gz",".mask.nii.gz").toStdString();
     }
 }
+
 bool fib_data::load_template(void)
 {
     if(!template_I.empty())
@@ -1924,10 +1925,55 @@ void fib_data::sub2mni(tipl::vector<3>& pos)
     apply_trans(pos,template_to_mni);
 }
 
-void fib_data::get_atlas_roi(std::shared_ptr<atlas> at,unsigned int roi_index,std::vector<tipl::vector<3,short> >& points)
+std::shared_ptr<atlas> fib_data::get_atlas(const std::string atlas_name)
+{
+    std::string name_list;
+    for(auto at : atlas_list)
+        if(at->name == atlas_name)
+            return at;
+        else {
+            if(!name_list.empty())
+                name_list += ",";
+            name_list += at->name;
+        }
+    error_msg = atlas_name;
+    error_msg += " is not one of the following built-in atlases:";
+    error_msg += name_list;
+    return std::shared_ptr<atlas>();
+}
+
+bool fib_data::get_atlas_roi(const std::string& atlas_name,const std::string& region_name,std::vector<tipl::vector<3,short> >& points)
+{
+    if(region_name.empty())
+    {
+        error_msg = "please assign region name of an atlas.";
+        return false;
+    }
+    auto at = get_atlas(atlas_name);
+    if(!at.get())
+        return false;
+    auto roi_index = uint32_t(std::find(at->get_list().begin(),at->get_list().end(),region_name)-at->get_list().begin());
+    if(roi_index == at->get_list().size())
+    {
+        bool ok = false;
+        roi_index = uint32_t(QString(region_name.c_str()).toInt(&ok));
+        if(!ok)
+        {
+            error_msg = region_name;
+            error_msg += " is not one of the regions in ";
+            error_msg += atlas_name;
+            return false;
+        }
+    }
+    return get_atlas_roi(at,roi_index,points);
+}
+bool fib_data::get_atlas_roi(std::shared_ptr<atlas> at,unsigned int roi_index,std::vector<tipl::vector<3,short> >& points)
 {
     if(get_sub2temp_mapping().empty() || !at->load_from_file())
-        return;
+    {
+        error_msg = "no mni mapping";
+        return false;
+    }
     unsigned int thread_count = std::thread::hardware_concurrency();
     std::vector<std::vector<tipl::vector<3,short> > > buf(thread_count);
     s2t.for_each_mt2([&](const tipl::vector<3>& pos,const tipl::pixel_index<3>& index,size_t id)
@@ -1938,7 +1984,7 @@ void fib_data::get_atlas_roi(std::shared_ptr<atlas> at,unsigned int roi_index,st
     points.clear();
     for(size_t i = 0;i < buf.size();++i)
         points.insert(points.end(),buf[i].begin(),buf[i].end());
-
+    return true;
 }
 
 void fib_data::get_atlas_all_roi(std::shared_ptr<atlas> at,std::vector<std::vector<tipl::vector<3,short> > >& points)

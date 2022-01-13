@@ -214,6 +214,7 @@ public:
     tipl::matrix<4,4> template_to_mni;
     bool has_manual_atlas = false;
     tipl::transformation_matrix<float> manual_template_T;
+
 public:
     std::string t1w_template_file_name,wm_template_file_name,mask_template_file_name;
 public:
@@ -235,7 +236,9 @@ public:
     void temp2sub(tipl::vector<3>& pos);
     void sub2temp(tipl::vector<3>& pos);
     void sub2mni(tipl::vector<3>& pos);
-    void get_atlas_roi(std::shared_ptr<atlas> at,unsigned int roi_index,std::vector<tipl::vector<3,short> >& points);
+    std::shared_ptr<atlas> get_atlas(const std::string atlas_name);
+    bool get_atlas_roi(const std::string& atlas_name,const std::string& region_name,std::vector<tipl::vector<3,short> >& points);
+    bool get_atlas_roi(std::shared_ptr<atlas> at,unsigned int roi_index,std::vector<tipl::vector<3,short> >& points);
     void get_atlas_all_roi(std::shared_ptr<atlas> at,std::vector<std::vector<tipl::vector<3,short> > >& points);
     template<typename image_type>
     bool mni2sub(image_type& mni_image,
