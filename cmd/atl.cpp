@@ -11,6 +11,7 @@
 #include "mac_filesystem.hpp"
 
 extern std::string fib_template_file_name_2mm;
+extern std::vector<std::vector<std::string> > template_atlas_list;
 const char* odf_average(const char* out_name,std::vector<std::string>& file_names);
 bool atl_load_atlas(std::shared_ptr<fib_data> handle,std::string atlas_name,std::vector<std::shared_ptr<atlas> >& atlas_list)
 {
@@ -33,15 +34,18 @@ bool atl_load_atlas(std::shared_ptr<fib_data> handle,std::string atlas_name,std:
         }
         else
         {
-            std::string atlas_path = QCoreApplication::applicationDirPath().toStdString();
-            atlas_path += "/atlas/";
-            atlas_path += name_list[index].toStdString();
-            atlas_path += ".nii.gz";
-            if(std::filesystem::exists(atlas_path))
-                file_path = atlas_path;
-            else
+            const auto& atlas_list = template_atlas_list[handle->template_id];
+            for(size_t j = 0;j < atlas_list.size();++j)
             {
-                std::cout << "ERROR: did not find atlas at " << atlas_path << std::endl;
+                if(QFileInfo(atlas_list[j].c_str()).baseName().toLower() == name_list[index].toLower())
+                {
+                    file_path = atlas_list[j];
+                    break;
+                }
+            }
+            if(!std::filesystem::exists(file_path))
+            {
+                std::cout << "ERROR: did not find atlas at " << QFileInfo(template_atlas_list[handle->template_id][0].c_str()).absolutePath().toStdString() << std::endl;
                 return false;
             }
         }
