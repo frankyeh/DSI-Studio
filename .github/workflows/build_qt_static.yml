@@ -1,9 +1,8 @@
 name: Build Qt Static Binaries
 on: workflow_dispatch
 jobs:
-  GenerateLinuxStaticBinaries:
-    runs-on: ubuntu-18.04
-    
+  Qt5Static_Ubuntu_1804:
+    runs-on: ubuntu-18.04   
     steps:
     - name: Clone repository
       uses: actions/checkout@v2
@@ -31,10 +30,42 @@ jobs:
         tar cfvz qt5_5152_static_binaries_linux.tar.gz ../Qt5_binaries/.
     - uses: actions/upload-artifact@v1
       with:
-        name: qt5_5152_static_binaries_linux.tar.gz
-        path: qt5_5152_static_binaries_linux.tar.gz
+        name: Qt5Static_Ubuntu_1804.tar.gz
+        path: Qt5Static_Ubuntu_1804.tar.gz
 
-  GenerateMacOSStaticBinaries:
+  Qt5Static_Ubuntu_2004:
+    runs-on: ubuntu-20.04   
+    steps:
+    - name: Clone repository
+      uses: actions/checkout@v2
+    - name: Install OpenGL
+      run: |
+        sudo apt-get install build-essential libgl1-mesa-dev
+    - name: Compile static Qt version
+      run: |
+        # Clone Qt5 repo
+        cd ..
+        git clone https://code.qt.io/qt/qt5.git -b 5.15.2
+        cd qt5
+        ./init-repository -f --module-subset=qtbase,qtcharts,qtsvg,qt3d
+        # Create shadow build folder
+        cd ..
+        mkdir qt5_shadow
+        cd qt5_shadow
+        # Configure Qt5
+        ../qt5/configure -static -release -prefix "../Qt5_binaries" -skip webengine -nomake tools -nomake tests -nomake examples -no-dbus -no-ssl -no-pch -opensource -confirm-license -bundled-xcb-xinput -qt-libpng -qt-pcre
+        make module-qtbase module-qtsvg module-qtcharts module-qt3d -j4
+        make install -j4
+    - name: Package binaries
+      run: |
+        # Create archive of the pre-built Qt binaries
+        tar cfvz qt5_5152_static_binaries_linux.tar.gz ../Qt5_binaries/.
+    - uses: actions/upload-artifact@v1
+      with:
+        name: Qt5Static_Ubuntu_2004.tar.gz
+        path: Qt5Static_Ubuntu_2004.tar.gz
+        
+  Qt5Static_Mac:
     runs-on: macos-latest
     
     steps:
@@ -64,7 +95,7 @@ jobs:
         name: qt5_5152_static_binaries_macos.tar.gz
         path: qt5_5152_static_binaries_macos.tar.gz
 
-  GenerateWinStaticBinaries:
+  Qt5Static_Windows:
     runs-on: windows-2019
 
     steps:
