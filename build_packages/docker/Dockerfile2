@@ -18,11 +18,10 @@ RUN apt update && apt full-upgrade -y && \
 ENV PATH="$PATH:/opt/dsi-studio" 
 
 RUN cd /opt \
-  && curl -sSL https://github.com/frankyeh/DSI-Studio/releases/download/2021.12.03/dsi_studio_ubuntu_1804_static.zip \
-  && unzip dsi_studio_ubuntu_1804_static.zip \
-  && rm dsi_studio_ubuntu_1804_static.zip \
-  && mv dsi_studio_ubuntu_1804_static dsi-studio \
-  && cd /opt/dsi-studio \
+  && curl -sSL https://github.com/frankyeh/DSI-Studio/releases/download/2021.12.03/dsi_studio_ubuntu_1804_static.zip -o dsi_studio.zip \
+  && unzip dsi_studio.zip \
+  && rm dsi_studio.zip \
+  && cd dsi-studio \
   && chmod 755 dsi_studio
 
 # FSL
