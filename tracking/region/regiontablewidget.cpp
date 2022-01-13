@@ -149,7 +149,11 @@ void RegionTableWidget::add_region_from_atlas(std::shared_ptr<atlas> at,unsigned
 void RegionTableWidget::add_all_regions_from_atlas(std::shared_ptr<atlas> at)
 {
     std::vector<std::vector<tipl::vector<3,short> > > points;
-    cur_tracking_window.handle->get_atlas_all_roi(at,points);
+    if(!cur_tracking_window.handle->get_atlas_all_roi(at,points))
+    {
+        QMessageBox::critical(this,"ERROR",cur_tracking_window.handle->error_msg.c_str());
+        return;
+    }
     for(unsigned int i = 0;i < points.size();++i)
     {
         if(points.empty())
