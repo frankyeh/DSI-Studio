@@ -246,24 +246,6 @@ bool export_track_info(program_option& po,std::shared_ptr<fib_data> handle,
     return true;
 }
 
-bool load_atlas_from_list(std::shared_ptr<fib_data> handle,
-                          const std::string& atlas_name,
-                          std::vector<std::shared_ptr<atlas> >& atlas_list)
-{
-    std::cout << "searching " << atlas_name << " from the atlas pool..." << std::endl;
-    if(!atl_load_atlas(handle,atlas_name,atlas_list))
-    {
-        std::cout << "ERROR: file or atlas does not exist:" << atlas_name << std::endl;
-        return false;
-    }
-    std::cout << "loading atlas " << atlas_name << " from the atlas list." << std::endl;
-    if(!handle->can_map_to_mni())
-    {
-        std::cout << "ERROR: no mni mapping" << std::endl;
-        return false;
-    }
-    return true;
-}
 bool load_nii(program_option& po,
               std::shared_ptr<fib_data> handle,
               const std::string& file_name,
@@ -287,17 +269,20 @@ bool get_connectivity_matrix(program_option& po,
         // specify atlas name (e.g. --connectivity=AAL2)
         if(!QString(roi_file_name.c_str()).contains("."))
         {
-            std::vector<std::shared_ptr<atlas> > atlas_list;
-            if(!load_atlas_from_list(handle,roi_file_name,atlas_list))
+            auto at = handle->get_atlas(roi_file_name);
+            if(!at.get())
+            {
+                std::cout << "ERROR: " << handle->error_msg << std::endl;
                 return false;
-            data.set_atlas(atlas_list[0],handle);
+            }
+            data.set_atlas(at,handle);
         }
         else
         // specify atlas file (e.g. --connectivity=subject_file.nii.gz)
         {
             if(!std::filesystem::exists(roi_file_name))
             {
-                std::cout << "ERROR: file does not exist" << std::endl;
+                std::cout << "ERROR: cannot open file " << roi_file_name << std::endl;
                 return false;
             }
 
@@ -414,39 +399,6 @@ std::shared_ptr<fib_data> cmd_load_fib(const std::string file_name)
     return handle;
 }
 
-bool load_region_from_atlas(std::shared_ptr<fib_data> handle,
-                            ROIRegion& roi,const std::string& file_name,const std::string& region_name)
-{
-    if(QString(file_name.c_str()).contains(".")) // is a file
-    {
-        std::cout << "ERROR: cannot find " << file_name << std::endl;
-        return false;
-    }
-    if(!load_atlas_from_list(handle,file_name,handle->atlas_list))
-        return false;
-    if(region_name.empty())
-    {
-        std::cout << "ERROR: please assign region name of an atlas." << std::endl;
-        return false;
-    }
-    const tipl::image<3,tipl::vector<3,float> >& s2t = handle->get_sub2temp_mapping();
-    std::cout << "loading " << region_name << " from " << file_name << " atlas" << std::endl;
-    tipl::vector<3> null;
-    std::vector<tipl::vector<3,short> > cur_region;
-    for(unsigned int i = 0;i < handle->atlas_list.size();++i)
-        if(handle->atlas_list[i]->name == file_name)
-            for (unsigned int label_index = 0; label_index < handle->atlas_list[i]->get_list().size(); ++label_index)
-                if(handle->atlas_list[i]->get_list()[label_index] == region_name)
-            {
-                for (tipl::pixel_index<3>index(s2t.shape());index < s2t.size();++index)
-                {
-                    if(handle->atlas_list[i]->is_labeled_as(s2t[index.index()],label_index))
-                        cur_region.push_back(tipl::vector<3,short>(index.begin()));
-                }
-            }
-    roi.add_points(cur_region,false);
-    return true;
-}
 bool load_region(program_option& po,std::shared_ptr<fib_data> handle,
                  ROIRegion& roi,const std::string& region_text)
 {
@@ -469,8 +421,15 @@ bool load_region(program_option& po,std::shared_ptr<fib_data> handle,
 
     if(!std::filesystem::exists(file_name))
     {
-        if(!load_region_from_atlas(handle,roi,file_name,region_name))
+        std::cout << "loading " << region_name << " from " << file_name << std::endl;
+        std::vector<tipl::vector<3,short> > points;
+        if(!handle->get_atlas_roi(file_name,region_name,points))
+        {
+            std::cout << "ERROR: " << handle->error_msg << std::endl;
             return false;
+        }
+        roi.add_points(points,false);
+        return true;
     }
     else
     {
