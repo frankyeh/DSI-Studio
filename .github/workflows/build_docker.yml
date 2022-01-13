@@ -27,7 +27,7 @@ jobs:
       uses: docker/build-push-action@v2
       with:
         context: .
-        file: build_packages/docker/Dockerfile
+        file: build_packages/docker/Dockerfile2
         push: true
         tags: |
           "dsistudio/dsistudio:chen-${{ env.DATE_TAG }}"
