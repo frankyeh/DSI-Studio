@@ -46,9 +46,6 @@ RUN update-alternatives --auto gcc
 #Need to use a different shell so the QT ENV script works
 SHELL ["/bin/bash", "-c"]
 
-ADD "https://api.github.com/repos/frankyeh/DSI-Studio/commits?per_page=1" latest_commit
-ADD "https://api.github.com/repos/frankyeh/TIPL/commits?per_page=1" latest_commit
-
 ENV PATH="$PATH:/opt/Qt5_binaries/bin" 
 
 RUN mkdir /opt/dsi-studio \
@@ -59,7 +56,7 @@ RUN mkdir /opt/dsi-studio \
   && mv TIPL src/tipl \
   && mkdir -p /opt/dsi-studio/build \
   && cd /opt/dsi-studio/build \
-  && qmake "CONFIG += static" ../src/dsi_studio.pro -config release \
+  && qmake "CONFIG += static" ../src/dsi_studio.pro \
   && make
 
 RUN cd /opt/dsi-studio \
@@ -78,8 +75,6 @@ RUN curl -sL https://github.com/probonopd/linuxdeployqt/releases/download/7/linu
   && ./squashfs-root/AppRun /opt/dsi-studio/dsi_studio -unsupported-bundle-everything -no-translations -bundle-non-qt-libs \
   && rm -fr squashfs-root \
   && rm -fr linuxdeployqt
-
-ENV PATH="$PATH:/opt/dsi-studio" 
 
 
 #Create an empty container and transfer only the compiled software out
