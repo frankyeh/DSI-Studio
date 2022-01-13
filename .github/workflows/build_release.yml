@@ -131,7 +131,7 @@ jobs:
         move other\color_map dsi_studio_win   
         move other\device.txt dsi_studio_win   
         move build\release\dsi_studio.exe dsi_studio_win
-        windeployqt dsi_studio_win\dsi_studio.exe
+        windeployqt --no-angle --no-quick-import --no-translations --no-system-d3d-compiler --compiler-runtime --no-opengl-sw dsi_studio_win\dsi_studio.exe
         move DSI-Studio-atlas dsi_studio_win\atlas  
 
     - name: Download the SSL files
