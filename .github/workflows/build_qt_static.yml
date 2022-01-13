@@ -75,7 +75,7 @@ jobs:
       run: |
         # Clone Qt5 repo
         cd ..
-        git clone https://code.qt.io/qt/qt5.git -b 5.15.2
+        git clone https://code.qt.io/qt/qt5.git -b 5.12.12
         cd qt5
         ./init-repository -f --module-subset=qtbase,qtcharts,qtsvg,qt3d
         # Create shadow build folder
