@@ -80,17 +80,14 @@ void cal_hist(const std::vector<std::vector<float> >& track,std::vector<unsigned
     }
 }
 
-bool load_region_from_atlas(std::shared_ptr<fib_data> handle,
-                            ROIRegion& roi,const std::string& file_name,const std::string& region_name);
 void group_connectometry_analysis::exclude_cerebellum(void)
 {
     if(handle->is_human_data)
     {
-        program_option po;
-        ROIRegion roi(handle);
-        if(!load_region_from_atlas(handle,roi,"BrainSeg","Cerebellum"))
+        std::vector<tipl::vector<3,short> > points;
+        if(!handle->get_atlas_roi("BrainSeg","Cerebellum",points))
             return;
-        roi_mgr->setRegions(roi.get_region_voxels_raw(),1.0f,4/*terminative*/,"Cerebellum");
+        roi_mgr->setRegions(points,1.0f,4/*terminative*/,"Cerebellum");
         roi_mgr->report = " Cerebellum was excluded.";
     }
 }
