@@ -1,5 +1,14 @@
 FROM juangburgos/jenkins-centos7-qt5.13.2 as builder-stage
 
+RUN yum -y install centos-release-scl \
+  && yum -y install devtoolset-9-gcc*
+
+RUN yum -y install zlib-devel
+RUN yum -y install boost-devel
+RUN yum -y install freeglut-devel
+
+SHELL [ "/usr/bin/scl", "enable", "devtoolset-9"]
+RUN gcc --version
 
 RUN mkdir /opt/dsi-studio \
   && cd /opt/dsi-studio \
@@ -9,7 +18,7 @@ RUN mkdir /opt/dsi-studio \
   && mv TIPL src/tipl \
   && mkdir -p /opt/dsi-studio/build \
   && cd /opt/dsi-studio/build \
-  && qmake "QMAKE_CXXFLAGS+=-std=c++17" "CONFIG-=c++17" ../src/dsi_studio.pro \
+  && qmake ../src/dsi_studio.pro \
   && make
 
 RUN cd /opt/dsi-studio \
@@ -21,7 +30,12 @@ RUN cd /opt/dsi-studio \
   && rm -fr DSI-Studio-atlas/.git \
   && mv DSI-Studio-atlas atlas
 
-RUN /linuxdeployqt /opt/dsi-studio/dsi_studio -unsupported-bundle-everything -no-translations -bundle-non-qt-libs
+RUN curl -sL https://github.com/probonopd/linuxdeployqt/releases/download/7/linuxdeployqt-7-x86_64.AppImage > linuxdeployqt \
+  && chmod a+x linuxdeployqt \
+  && ./linuxdeployqt --appimage-extract \
+  && ./squashfs-root/AppRun /opt/dsi-studio/dsi_studio -unsupported-bundle-everything -no-translations -bundle-non-qt-libs \
+  && rm -fr squashfs-root \
+  && rm -fr linuxdeployqt
 
 ENV PATH="$PATH:/opt/dsi-studio" 
 
