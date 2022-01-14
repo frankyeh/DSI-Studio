@@ -316,7 +316,11 @@ int main(int ac, char *av[])
         w.show();
         unsigned int code = DSISTUDIO_RELEASE_CODE;
         w.setWindowTitle(QString("DSI Studio      version: ") + DSISTUDIO_RELEASE_NAME + " \""+
-                                 QTextCodec::codecForName("UTF-8")->toUnicode(reinterpret_cast<const char*>(&code)) +
+        #ifdef QT6_PATCH
+                        QStringDecoder(QStringDecoder::Utf8)(reinterpret_cast<const char*>(&code)) +
+        #else
+                        QTextCodec::codecForName("UTF-8")->toUnicode(reinterpret_cast<const char*>(&code)) +
+        #endif
                                  "\"       build: " + __DATE__ );
     }
     return a.exec();
