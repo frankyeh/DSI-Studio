@@ -76,7 +76,7 @@ void xnat_facade::get_html(std::string url,std::string auth)
         cur_response->abort();
     std::cout << "request " << url << std::endl;
     QNetworkRequest xnat_request(QUrl(url.c_str()));
-    xnat_request.setAttribute(QNetworkRequest::FollowRedirectsAttribute, true);
+    xnat_request.setAttribute(QNetworkRequest::RedirectionTargetAttribute, true);
     xnat_request.setRawHeader("Authorization", QString("Basic " + QString(auth.c_str()).toLocal8Bit().toBase64()).toLocal8Bit());
     cur_response = xnat_manager.get(xnat_request);
 }
