@@ -698,7 +698,7 @@ bool tracking_window::command(QString cmd,QString param,QString param2)
             for(int index = 0;index < param_list.size();++index)
                 if(s.contains(param_list[index]))
                     set_data(param_list[index],s.value(param_list[index]));
-            glWidget->paintGL();
+            glWidget->update();
         }
     }
     if(cmd == "save_setting")
@@ -780,7 +780,7 @@ bool tracking_window::command(QString cmd,QString param,QString param2)
         renderWidget->setDefault("show_surface");
         renderWidget->setDefault("show_label");
         renderWidget->setDefault("show_odf");
-        glWidget->paintGL();
+        glWidget->update();
         return true;
     }
     if(cmd == "set_roi_view")
@@ -828,7 +828,7 @@ bool tracking_window::command(QString cmd,QString param,QString param2)
     if(cmd == "set_param")
     {
         set_data(param,param2);
-        glWidget->paintGL();
+        glWidget->update();
         slice_need_update = true;
         return true;
     }
@@ -842,7 +842,7 @@ bool tracking_window::command(QString cmd,QString param,QString param2)
         if(regionWidget->regions.empty())
             return true;
         regionWidget->regions.back()->show_region.color = param.toInt();
-        glWidget->paintGL();
+        glWidget->update();
         slice_need_update = true;
         return true;
     }
