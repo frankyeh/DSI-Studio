@@ -727,6 +727,7 @@ void slice_view_scene::wheelEvent(QGraphicsSceneWheelEvent *wheelEvent)
         QWheelEvent we(wheelEvent->pos(),wheelEvent->screenPos(),QPoint(),QPoint(0,wheelEvent->delta()),
                        wheelEvent->buttons(),wheelEvent->modifiers(),Qt::NoScrollPhase,false);
         cur_tracking_window.glWidget->wheelEvent(&we);
+        return;
     }
 
     // zoom in or out
