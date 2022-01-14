@@ -10,7 +10,7 @@
 #include "prog_interface_static_link.h"
 bool has_gui = false;
 std::shared_ptr<QProgressDialog> progressDialog;
-static std::vector<QTime> process_time,t_last;
+static std::vector<std::chrono::high_resolution_clock::time_point> process_time,t_last;
 bool prog_aborted_ = false;
 auto start_time = std::chrono::high_resolution_clock::now();
 std::vector<std::string> progress::status_list;
@@ -66,9 +66,9 @@ void progress::begin_prog(bool show_now)
         return;
     start_time = std::chrono::high_resolution_clock::now();
     process_time.resize(status_list.size());
-    process_time.back().start();
     t_last.resize(status_list.size());
-    t_last.back().start();
+    t_last.back() = std::chrono::high_resolution_clock::now();
+    process_time.back() = std::chrono::high_resolution_clock::now();
     prog_aborted_ = false;
     if(progressDialog.get())
         progressDialog->setProperty("raised",0);
@@ -116,10 +116,13 @@ bool progress::check_prog(unsigned int now,unsigned int total)
             at_list.back().clear();
         return false;
     }
-    if(t_last.back().elapsed() > std::min<int>(int(total)*50,500))
+    if(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() -
+        t_last.back()).count() > std::min<int>(int(total)*50,500))
     {
-        t_last.back().start();
-        int expected_sec = (process_time.back().elapsed()*int(total-now)/int(now+1)/1000/60);
+        t_last.back() = std::chrono::high_resolution_clock::now();
+        int expected_sec = (
+                    std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() -
+                            process_time.back()).count()*int(total-now)/int(now+1)/1000/60);
         at_list.resize(status_list.size());
         at_list.back() = QString("(%1/%2)").arg(now).arg(total).toStdString();
         if(expected_sec)
