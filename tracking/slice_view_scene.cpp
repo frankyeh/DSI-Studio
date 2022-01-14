@@ -724,7 +724,8 @@ void slice_view_scene::wheelEvent(QGraphicsSceneWheelEvent *wheelEvent)
     // 3 view condition, tranfer event to 3D window
     if(click_on_3D(float(wheelEvent->scenePos().x()),float(wheelEvent->scenePos().y())))
     {
-        QWheelEvent we(wheelEvent->pos(),wheelEvent->delta(),wheelEvent->buttons(),wheelEvent->modifiers());
+        QWheelEvent we(wheelEvent->pos(),wheelEvent->screenPos(),QPoint(),QPoint(0,wheelEvent->delta()),
+                       wheelEvent->buttons(),wheelEvent->modifiers(),Qt::NoScrollPhase,false);
         cur_tracking_window.glWidget->wheelEvent(&we);
     }
 
@@ -740,7 +741,7 @@ void slice_view_scene::mouseDoubleClickEvent ( QGraphicsSceneMouseEvent * mouseE
         return;
     }
 
-    if (mouseEvent->button() == Qt::MidButton)
+    if (mouseEvent->button() == Qt::MiddleButton)
         return;
     if(sel_mode == 4)
     {
@@ -861,7 +862,7 @@ void slice_view_scene::mousePressEvent ( QGraphicsSceneMouseEvent * mouseEvent )
     if(!to_3d_space(X,Y,pos))
         return;
     adjust_xy_to_layout(X,Y);
-    if(mouseEvent->button() == Qt::MidButton || sel_mode == 5)// move object
+    if(mouseEvent->button() == Qt::MiddleButton || sel_mode == 5)// move object
     {
         auto slice = cur_tracking_window.current_slice;
         tipl::vector<3,float> p(pos);
