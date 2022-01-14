@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>1023</width>
-    <height>668</height>
+    <height>683</height>
    </rect>
   </property>
   <property name="font">
@@ -47,14 +47,20 @@
     </property>
     <item>
      <widget class="QToolBox" name="toolBox">
+      <property name="minimumSize">
+       <size>
+        <width>300</width>
+        <height>0</height>
+       </size>
+      </property>
       <property name="maximumSize">
        <size>
-        <width>400</width>
+        <width>300</width>
         <height>16777215</height>
        </size>
       </property>
       <property name="currentIndex">
-       <number>1</number>
+       <number>2</number>
       </property>
       <property name="tabSpacing">
        <number>0</number>
@@ -64,9 +70,15 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>400</width>
-         <height>602</height>
+         <width>300</width>
+         <height>617</height>
         </rect>
+       </property>
+       <property name="maximumSize">
+        <size>
+         <width>16777215</width>
+         <height>16777215</height>
+        </size>
        </property>
        <attribute name="label">
         <string>Diffusion MRI Analysis</string>
@@ -149,7 +161,7 @@
         <item>
          <widget class="QCommandLinkButton" name="ReconstructSRC">
           <property name="text">
-           <string>Step C1: Reconstruct SRC files for Connectometry</string>
+           <string>Step C1: Reconstruct SRC for Connectometry</string>
           </property>
           <property name="description">
            <string>Select a root folder containing the SRC files</string>
@@ -223,8 +235,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>400</width>
-         <height>602</height>
+         <width>300</width>
+         <height>617</height>
         </rect>
        </property>
        <attribute name="label">
@@ -296,7 +308,7 @@
            <string>Step B2a: NIFTI to SRC (BIDS)</string>
           </property>
           <property name="description">
-           <string>Specify a root directory that contains multiple subdirectory arranged in BIDS format to generate SRC files.</string>
+           <string>Specify a root directory in BIDS format to generate SRC files.</string>
           </property>
          </widget>
         </item>
@@ -457,19 +469,6 @@
           </layout>
          </widget>
         </item>
-        <item>
-         <spacer name="verticalSpacer_2">
-          <property name="orientation">
-           <enum>Qt::Vertical</enum>
-          </property>
-          <property name="sizeHint" stdset="0">
-           <size>
-            <width>20</width>
-            <height>40</height>
-           </size>
-          </property>
-         </spacer>
-        </item>
        </layout>
       </widget>
       <widget class="QWidget" name="page_2">
@@ -477,8 +476,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>400</width>
-         <height>602</height>
+         <width>300</width>
+         <height>617</height>
         </rect>
        </property>
        <attribute name="label">
