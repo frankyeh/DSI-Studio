@@ -521,10 +521,18 @@ void slice_view_scene::update_3d(QImage captured)
     int dif = (I.height()-view3_h)/2;
     QImage view4 = I.copy(QRect(0, dif, view1_w, dif+view3_h));
     QPainter painter(&view_image);
+    painter.setPen(Qt::black);
+    painter.setBrush(Qt::black);
     if(cur_tracking_window["orientation_convention"].toInt())
+    {
+        painter.drawRect(view_image.width()-view1_w,view1_h,view4.width(),view4.height()); // this avoid alpha corrupts the output
         painter.drawImage(view_image.width()-view1_w,view1_h,view4);
+    }
     else
+    {
+        painter.drawRect(0,view1_h,view4.width(),view4.height()); // this avoid alpha corrupts the output
         painter.drawImage(0,view1_h,view4);
+    }
     show_view(*this,view_image);
 }
 
