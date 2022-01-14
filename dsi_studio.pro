@@ -4,6 +4,7 @@ QT += core \
     charts \
     network
 greaterThan(QT_MAJOR_VERSION, 5): QT += widgets
+equals(QT_MAJOR_VERSION, 6): DEFINES += QT6_PATCH
 CONFIG += c++17
 #CONFIG += console
 TARGET = dsi_studio
