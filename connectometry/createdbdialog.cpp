@@ -135,7 +135,11 @@ void CreateDBDialog::on_moveup_clicked()
     QModelIndexList indexes = ui->group_list->selectionModel()->selectedRows();
     if(!indexes.count() || indexes.first().row() == 0)
         return;
-    group.swap(indexes.first().row(),indexes.first().row()-1);
+    #ifdef QT6_PATCH
+        group.swapItemsAt(indexes.first().row(),indexes.first().row()-1);
+    #else
+        group.swap(indexes.first().row(),indexes.first().row()-1);
+    #endif
     update_list();
     ui->group_list->selectionModel()->select(ui->group_list->model()->index(indexes.first().row()-1,0),
                                              QItemSelectionModel::Select);
@@ -146,7 +150,11 @@ void CreateDBDialog::on_movedown_clicked()
     QModelIndexList indexes = ui->group_list->selectionModel()->selectedRows();
     if(!indexes.count() || indexes.first().row() == group.size()-1)
         return;
-    group.swap(indexes.first().row(),indexes.first().row()+1);
+    #ifdef QT6_PATCH
+        group.swapItemsAt(indexes.first().row(),indexes.first().row()+1);
+    #else
+        group.swap(indexes.first().row(),indexes.first().row()+1);
+    #endif
     update_list();
     ui->group_list->selectionModel()->select(ui->group_list->model()->index(indexes.first().row()+1,0),
                                              QItemSelectionModel::Select);
