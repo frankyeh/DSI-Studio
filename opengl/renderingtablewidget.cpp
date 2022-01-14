@@ -546,5 +546,5 @@ void RenderingTableWidget::dataChanged(const QModelIndex &, const QModelIndex &b
         return;
     }
     else
-        cur_tracking_window.glWidget->updateGL();
+        cur_tracking_window.glWidget->update();
 }

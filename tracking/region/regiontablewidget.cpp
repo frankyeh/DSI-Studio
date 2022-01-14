@@ -166,15 +166,15 @@ void RegionTableWidget::add_all_regions_from_atlas(std::shared_ptr<atlas> at)
 void RegionTableWidget::begin_update(void)
 {
     cur_tracking_window.scene.no_show = true;
-    cur_tracking_window.disconnect(cur_tracking_window.regionWidget,SIGNAL(need_update()),cur_tracking_window.glWidget,SLOT(updateGL()));
-    cur_tracking_window.disconnect(cur_tracking_window.regionWidget,SIGNAL(cellChanged(int,int)),cur_tracking_window.glWidget,SLOT(updateGL()));
+    cur_tracking_window.disconnect(cur_tracking_window.regionWidget,SIGNAL(need_update()),cur_tracking_window.glWidget,SLOT(update()));
+    cur_tracking_window.disconnect(cur_tracking_window.regionWidget,SIGNAL(cellChanged(int,int)),cur_tracking_window.glWidget,SLOT(update()));
 }
 
 void RegionTableWidget::end_update(void)
 {
     cur_tracking_window.scene.no_show = false;
-    cur_tracking_window.connect(cur_tracking_window.regionWidget,SIGNAL(need_update()),cur_tracking_window.glWidget,SLOT(updateGL()));
-    cur_tracking_window.connect(cur_tracking_window.regionWidget,SIGNAL(cellChanged(int,int)),cur_tracking_window.glWidget,SLOT(updateGL()));
+    cur_tracking_window.connect(cur_tracking_window.regionWidget,SIGNAL(need_update()),cur_tracking_window.glWidget,SLOT(update()));
+    cur_tracking_window.connect(cur_tracking_window.regionWidget,SIGNAL(cellChanged(int,int)),cur_tracking_window.glWidget,SLOT(update()));
 }
 
 void RegionTableWidget::add_row(int row,QString name,unsigned char feature,unsigned int color)
