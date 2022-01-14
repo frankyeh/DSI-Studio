@@ -1,3 +1,3 @@
 build_packages/*/dsi_studio
 build_packages/*/*.zip
-*.pro.user
+*.pro.user*
