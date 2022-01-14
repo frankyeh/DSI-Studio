@@ -80,8 +80,8 @@ Q_OBJECT
 
  public://surface
      std::shared_ptr<RegionModel> surface;
-private:
-     std::shared_ptr<QTimer> timer;
+     std::shared_ptr<QTimer> video_timer,rotate_timer;
+ private:
      std::shared_ptr<tipl::io::avi> video_handle;
      bool video_capturing = false;
      size_t video_frames = 0;
