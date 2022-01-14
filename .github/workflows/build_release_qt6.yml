@@ -1,4 +1,4 @@
-name: Build Release 
+name: Build Release QT6
 on:
   workflow_dispatch:
     inputs:
