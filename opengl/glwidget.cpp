@@ -1965,8 +1965,12 @@ void GLWidget::scale_by(float scalefactor)
 }
 void GLWidget::wheelEvent ( QWheelEvent * event )
 {
-    // event->position().x();
-    edit_right = (view_mode != view_mode_type::single && (event->x() > cur_width / 2));
+    #ifdef QT6_PATCH
+        auto x = event->position().x();
+    #else
+        auto x = event->x();
+    #endif
+    edit_right = (view_mode != view_mode_type::single && (x > cur_width / 2));
     double scalefactor = event->angleDelta().y();
     scalefactor /= 1200.0;
     scalefactor = 1.0+scalefactor;
