@@ -616,7 +616,7 @@ void group_connectometry::on_show_cohort_clicked()
         if(!model->remove_list[i])
             selected_count++;
         for(int j = 0;j < ui->subject_demo->columnCount();++j)
-            ui->subject_demo->item(int(i),j)->setBackgroundColor(model->remove_list[i] ? Qt::white : QColor(255,255,200));
+            ui->subject_demo->item(int(i),j)->setBackground(model->remove_list[i] ? Qt::white : QColor(255,255,200));
     }
     ui->subject_demo->setUpdatesEnabled(true);
     ui->cohort_report->setText(QString("n=%1").arg(selected_count));
