@@ -517,6 +517,7 @@ void tracking_window::closeEvent(QCloseEvent *event)
             }
             break;
         }
+
     QMainWindow::closeEvent(event);
     // clean up texture here when makeCurrent is still working
     glWidget->clean_up();
@@ -1646,13 +1647,13 @@ void tracking_window::on_actionAuto_Rotate_triggered(bool checked)
         {
             glWidget->time = std::chrono::high_resolution_clock::now();
             glWidget->last_time = 0;
-            timer.reset(new QTimer());
-            timer->setInterval(1);
-            connect(timer.get(), SIGNAL(timeout()), glWidget, SLOT(rotate()));
-            timer->start();
+            glWidget->rotate_timer.reset(new QTimer());
+            glWidget->rotate_timer->setInterval(1);
+            connect(glWidget->rotate_timer.get(), SIGNAL(timeout()), glWidget, SLOT(rotate()));
+            glWidget->rotate_timer->start();
         }
     else
-        timer->stop();
+        glWidget->rotate_timer->stop();
 }
 
 void tracking_window::on_action3D_Screen_3_Views_triggered()

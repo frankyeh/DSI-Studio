@@ -71,7 +71,7 @@ public:
 public:
     connectometry_result cnt_result;
 public:
-    std::shared_ptr<QTimer> timer,timer2;
+    std::shared_ptr<QTimer> timer2;
     void set_tracking_param(ThreadData& tracking_thread);
 public:
     std::shared_ptr<tract_report> tact_report_imp;
