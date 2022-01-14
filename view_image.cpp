@@ -282,7 +282,7 @@ bool view_image::eventFilter(QObject *obj, QEvent *event)
         QWheelEvent* we = dynamic_cast<QWheelEvent*>(event);
         if(!we)
             return false;
-        if(we->delta() < 0)
+        if(we->angleDelta().y() < 0)
             on_zoom_in_clicked();
         else
             on_zoom_out_clicked();
