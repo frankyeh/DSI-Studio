@@ -6,7 +6,7 @@
 //#include <QOpenGLShaderProgram>
 #define NOMINMAX
 #include <memory>
-#include "QtOpenGL/QGLWidget"
+#include <QGLWidget>
 #ifdef __APPLE__
 #include <OpenGL/glu.h>
 #else
@@ -38,7 +38,11 @@ Q_OBJECT
               tracking_window& cur_tracking_window_,
               RenderingTableWidget* renderWidget_,
               QWidget *parent = nullptr);
-     ~GLWidget();
+     ~GLWidget() override
+     {
+         clean_up();
+     }
+
      void clean_up(void);
  public:// editing
      enum {none = 0,selecting = 1, moving = 2, dragging = 3} editing_option = none;
@@ -68,7 +72,7 @@ Q_OBJECT
      float object_distance;
      bool select_object(void);
  public:// other slices
-     QTime time;
+     std::chrono::high_resolution_clock::time_point time;
      int last_time;
      bool get_mouse_pos(QMouseEvent *mouseEvent,tipl::vector<3,float>& position);
      void paintGL();
@@ -156,6 +160,8 @@ public:
      float get_param_float(const char* name);
      bool check_change(const char* name,unsigned char& var);
      bool check_change(const char* name,float& var);
+     //void renderText(double x,double y,QString text,QFont font){}
+     //void renderText(double x,double y,double z,QString text,QFont font){}
  private:
      float tract_alpha;
      float tract_color_saturation;
@@ -191,11 +197,11 @@ public:
 
      bool set_view_flip = false;
      void get3View(QImage& I,unsigned int type);
-     QImage grab_image(void){updateGL();paintGL();paintGL();return grabFrameBuffer();}
+     QImage grab_image(void){paintGL();return grabFrameBuffer();}
      void update_slice(void)
      {
          slice_pos[0] = slice_pos[1] = slice_pos[2] = -1;
-         updateGL();
+         update();
      }
      bool command(QString cmd,QString param = "",QString param2 = "");
  };

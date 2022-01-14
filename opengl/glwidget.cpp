@@ -3,6 +3,7 @@
 #include <QtGui>
 #include <QMessageBox>
 #include <QInputDialog>
+#include <QFileDialog>
 #include <QSettings>
 #include <QTimer>
 #include <QClipboard>
@@ -91,9 +92,6 @@ GLWidget::GLWidget(bool samplebuffer,
         }
     }
 }
-
-GLWidget::~GLWidget(){}
-
 
 void GLWidget::clean_up(void)
 {
@@ -1905,13 +1903,13 @@ void GLWidget::scale_by(float scalefactor)
         cur_tracking_window.ui->zoom_3d->setValue(std::pow(transformation_matrix.det(),1.0/3.0));
     }
     glPopMatrix();
-    updateGL();
+    update();
 }
-
 void GLWidget::wheelEvent ( QWheelEvent * event )
 {
+    // event->position().x();
     edit_right = (view_mode != view_mode_type::single && (event->x() > cur_width / 2));
-    double scalefactor = event->delta();
+    double scalefactor = event->angleDelta().y();
     scalefactor /= 1200.0;
     scalefactor = 1.0+scalefactor;
     scale_by(scalefactor);
@@ -2160,7 +2158,7 @@ void GLWidget::mousePressEvent(QMouseEvent *event)
 {
     setFocus();// for key stroke to work
     makeCurrent();
-    edit_right = (view_mode != view_mode_type::single && (event->x() > cur_width / 2));
+    edit_right = (view_mode != view_mode_type::single && (event->pos().x() > cur_width / 2));
     lastPos = convert_pos(event);
     if(editing_option != none)
         get_pos();
@@ -2210,7 +2208,7 @@ void GLWidget::mousePressEvent(QMouseEvent *event)
                 return;
             }
             accumulated_dis = tipl::zero<float>();
-            updateGL();
+            update();
         }
 }
 void GLWidget::mouseReleaseEvent(QMouseEvent *event)
@@ -2227,7 +2225,7 @@ void GLWidget::mouseReleaseEvent(QMouseEvent *event)
     if(device_selected)
     {
         device_selected = false;
-        updateGL();
+        update();
     }
     editing_option = none;
     setCursor(Qt::ArrowCursor);
@@ -2249,7 +2247,7 @@ void GLWidget::move_by(int x,int y)
         glGetFloatv(GL_MODELVIEW_MATRIX,transformation_matrix.begin());
     }
     glPopMatrix();
-    updateGL();
+    update();
 }
 void handle_rotate(bool circular,bool only_y,float fx,float fy,float dx,float dy)
 {
@@ -2285,7 +2283,7 @@ void GLWidget::mouseMoveEvent(QMouseEvent *event)
             dirs.push_back(tipl::vector<3,float>());
             get_view_dir(last_select_point,dirs.back());
         }
-        updateGL();
+        update();
         return;
     }
 
@@ -2306,7 +2304,7 @@ void GLWidget::mouseMoveEvent(QMouseEvent *event)
         {
             cur_tracking_window.deviceWidget->devices[selected_index]->move(device_selected_length,dis);
             accumulated_dis += dis;
-            updateGL();
+            update();
             return;
         }
 
@@ -2338,7 +2336,7 @@ void GLWidget::mouseMoveEvent(QMouseEvent *event)
             }
             emit region_edited();
             slice->update_transform();
-            updateGL();
+            update();
             accumulated_dis += dis;
         }
         return;
@@ -2427,7 +2425,7 @@ void GLWidget::mouseMoveEvent(QMouseEvent *event)
 
 
     glPopMatrix();
-    updateGL();
+    update();
     lastPos = curPos;
 }
 
@@ -2991,10 +2989,10 @@ void GLWidget::rotate_angle(float angle,float x,float y,float z)
 
 void GLWidget::rotate(void)
 {
-    int now_time = time.elapsed();
+    int now_time = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now()-time).count();
     rotate_angle((now_time-last_time)/100.0,0,1.0,0.0);
     last_time = now_time;
-    updateGL();
+    update();
 }
 void GLWidget::record_video(void)
 {
