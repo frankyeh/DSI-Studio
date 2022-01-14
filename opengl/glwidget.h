@@ -6,7 +6,8 @@
 //#include <QOpenGLShaderProgram>
 #define NOMINMAX
 #include <memory>
-#include <QGLWidget>
+#include <QOpenGLWidget>
+#include <QOpenGLFunctions>
 #ifdef __APPLE__
 #include <OpenGL/glu.h>
 #else
@@ -14,6 +15,7 @@
 #endif
 #include "tracking/region/RegionModel.h"
 #include "tracking/tracking_window.h"
+
 class RenderingTableWidget;
 class GluQua{
 private:
@@ -29,13 +31,12 @@ public:
     GLUquadricObj* get(void) {return ptr;}
 };
 
-class GLWidget : public QGLWidget
+class GLWidget :  public QOpenGLWidget, protected QOpenGLFunctions
 {
 Q_OBJECT
 
  public:
-     GLWidget(bool samplebuffer,
-              tracking_window& cur_tracking_window_,
+     GLWidget(tracking_window& cur_tracking_window_,
               RenderingTableWidget* renderWidget_,
               QWidget *parent = nullptr);
      ~GLWidget() override
@@ -75,7 +76,7 @@ Q_OBJECT
      std::chrono::high_resolution_clock::time_point time;
      int last_time;
      bool get_mouse_pos(QMouseEvent *mouseEvent,tipl::vector<3,float>& position);
-     void paintGL();
+     void paintGL() override;
      bool no_update = true;
 
  public://surface
@@ -121,17 +122,17 @@ public:
      void edited();
      void region_edited();
  protected:
-     void initializeGL();
-     void resizeGL(int width, int height);
+     void initializeGL() override;
+     void resizeGL(int width, int height) override;
      void setFrustum(void);
  public:
      bool edit_right;
      QPoint convert_pos(QMouseEvent *event);
-     void mousePressEvent(QMouseEvent *event);
-     void mouseReleaseEvent(QMouseEvent *event);
-     void mouseMoveEvent(QMouseEvent *event);
-     void mouseDoubleClickEvent(QMouseEvent *event);
-     void wheelEvent ( QWheelEvent * event );
+     void mousePressEvent(QMouseEvent *event) override;
+     void mouseReleaseEvent(QMouseEvent *event) override;
+     void mouseMoveEvent(QMouseEvent *event) override;
+     void mouseDoubleClickEvent(QMouseEvent *event) override;
+     void wheelEvent ( QWheelEvent * event ) override;
  private:
      tracking_window& cur_tracking_window;
      RenderingTableWidget* renderWidget;
@@ -160,8 +161,13 @@ public:
      float get_param_float(const char* name);
      bool check_change(const char* name,unsigned char& var);
      bool check_change(const char* name,float& var);
-     //void renderText(double x,double y,QString text,QFont font){}
-     //void renderText(double x,double y,double z,QString text,QFont font){}
+ private:
+     std::vector<tipl::vector<2> > text_pos;
+     std::vector<QColor> text_color;
+     std::vector<QFont> text_font;
+     std::vector<QString> text_str;
+     void renderText(float x,float y, const QString &str, const QFont & font = QFont());
+     void renderText(float x, float y, float z, const QString &str, const QFont & font = QFont());
  private:
      float tract_alpha;
      float tract_color_saturation;
@@ -197,7 +203,7 @@ public:
 
      bool set_view_flip = false;
      void get3View(QImage& I,unsigned int type);
-     QImage grab_image(void){update();paintGL();return grabFrameBuffer();}
+     QImage grab_image(void){update();return grabFramebuffer();}
      void update_slice(void)
      {
          slice_pos[0] = slice_pos[1] = slice_pos[2] = -1;

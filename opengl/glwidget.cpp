@@ -61,11 +61,9 @@ GLenum BlendFunc2[8] = {GL_ZERO,GL_ONE,GL_SRC_COLOR,
                       GL_ONE_MINUS_SRC_ALPHA,GL_DST_ALPHA,
                       GL_ONE_MINUS_DST_ALPHA};
 
-GLWidget::GLWidget(bool samplebuffer,
-                   tracking_window& cur_tracking_window_,
+GLWidget::GLWidget(tracking_window& cur_tracking_window_,
                    RenderingTableWidget* renderWidget_,
-                   QWidget *parent)
-                       : QGLWidget(samplebuffer ? QGLFormat(QGL::SampleBuffers):QGLFormat(),parent),
+                   QWidget *parent) : QOpenGLWidget(parent),
         cur_tracking_window(cur_tracking_window_),
         renderWidget(renderWidget_),
         slice_texture(3)
@@ -91,6 +89,7 @@ GLWidget::GLWidget(bool samplebuffer,
             odf_color3.push_back(0.1f);
         }
     }
+
 }
 
 void GLWidget::clean_up(void)
@@ -414,8 +413,36 @@ void GLWidget::setFrustum(void)
     my_gluLookAt(0.0f,0.0f,-200.0f*float(perspective),0.0f,0.0f,0.0f,0.0f,-1.0f,0.0f);
 }
 
+
+void GLWidget::renderText(float x,float y, const QString &str, const QFont & font)
+{
+    GLdouble glColor[4];
+    glGetDoublev(GL_CURRENT_COLOR, glColor);
+    text_pos.push_back(tipl::vector<2>(x,y));
+    text_color.push_back(QColor());
+    text_color.back().setRgbF(glColor[0], glColor[1], glColor[2], glColor[3]);
+    text_font.push_back(font);
+    text_str.push_back(str);
+}
+void GLWidget::renderText(float x, float y, float z, const QString &str, const QFont & font)
+{
+    tipl::matrix<4,4> proj,model;
+    tipl::matrix<4,1> view;
+    glGetFloatv(GL_MODELVIEW_MATRIX,model.begin());
+    glGetFloatv(GL_PROJECTION_MATRIX, proj.begin());
+    glGetFloatv(GL_VIEWPORT, view.begin());
+    tipl::matrix<1,4> in = {x,y,z,1.0f};
+    in = tipl::matrix<1,4>(in*model)*proj;
+    if (in[3] == 0.0f)
+        return;
+    renderText(view[0] + (1 + in[0]/in[3]) * view[2] * 0.5f,
+               cur_height - (view[1] + (1 + in[1]/in[3]) * view[3] * 0.5f),
+               str,font);
+}
+
 void GLWidget::initializeGL()
 {
+    initializeOpenGLFunctions();
     if(!isValid() || !glGetString(GL_VERSION))
     {
         QMessageBox::critical(this,"ERROR","System has no OpenGL support. 3D visualization is disabled. Please update or install graphic card driver.");
@@ -434,6 +461,8 @@ void GLWidget::initializeGL()
     tract_alpha = -1; // ensure that make_track is called
     odf_position = 255;//ensure ODFs is renderred
     no_update = false;
+
+    scale_by(0.5);
 }
 void GLWidget::paintGL()
 {
@@ -444,14 +473,20 @@ void GLWidget::paintGL()
         no_update = true;
         return;
     }
-    glDrawBuffer(GL_BACK);
+
+    QPainter painter(this);
+    painter.beginNativePainting();
+    glEnable(GL_DEPTH_TEST);
+
+
     int color = get_param("bkg_color");
     glClearColor(float((color & 0x00FF0000) >> 16)/255.0f,
                   float((color & 0x0000FF00) >> 8)/255.0f,
                   float(color & 0x000000FF)/255.0f,1.0);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     setFrustum();
-    check_error("basic");
+    if(check_error("basic"))
+        return;
     {
         if(check_change("scale_voxel",scale_voxel))
         {
@@ -540,6 +575,50 @@ void GLWidget::paintGL()
             break;
 
     }
+
+    painter.endNativePainting();
+    painter.end();
+
+    // draw text here
+    {
+        QPainter text_painter(this);
+        for(size_t i = 0;i < text_str.size();++i)
+        {
+            text_painter.setPen(text_color[i]);
+            text_painter.setFont(text_font[i]);
+            text_painter.drawText(text_pos[i].x(), text_pos[i].y(), text_str[i]);
+        }
+        text_painter.end();
+        text_pos.clear();
+        text_color.clear();
+        text_font.clear();
+        text_str.clear();
+    }
+    // provide 3D view to ROI window
+    if(cur_tracking_window["roi_layout"].toInt() == 1)// 3 slice
+    {
+        if(!video_capturing)
+        {
+            video_capturing = true;
+            cur_tracking_window.scene.update_3d(grabFramebuffer());
+            video_capturing = false;
+        }
+    }
+    // handle capture video
+    if(!video_capturing && video_handle.get())
+    {
+        video_capturing = true;
+        QBuffer buffer;
+        QImageWriter writer(&buffer, "JPG");
+        QImage I = grabFramebuffer();
+        writer.write(I);
+        QByteArray data = buffer.data();
+        video_handle->add_frame(data.begin(),uint32_t(data.size()),true);
+        video_capturing = false;
+        if(video_frames > 10000)
+            record_video();
+    }
+
 }
 
 void CylinderGL(GLUquadricObj* ptr,const tipl::vector<3>& p1,const tipl::vector<3>& p2,double r)
@@ -1177,10 +1256,10 @@ void GLWidget::renderLR()
                         const auto& p2 = regions[i]->show_region.center;
                         tipl::vector<3> p3(p2);
                         p3 /= regions[i]->resolution_ratio;
-                        renderText(double(p3[0]),double(p3[1]),double(p3[2]),item->text(),font);
+                        renderText(p3[0],p3[1],p3[2],item->text(),font);
                     }
                     else
-                        renderText(double(p[0]),double(p[1]),double(p[2]),item->text(),font);
+                        renderText(p[0],p[1],p[2],item->text(),font);
                 }
         }
         if (get_param("show_device_label"))
@@ -1195,7 +1274,7 @@ void GLWidget::renderLR()
                 if(cur_tracking_window.deviceWidget->item(int(i),0)->checkState() == Qt::Checked)
                 {
                     auto p = devices[i]->pos + devices[i]->dir*(devices[i]->length/cur_tracking_window.handle->vs[0]);
-                    renderText(double(p[0]),double(p[1]),double(p[2]),cur_tracking_window.deviceWidget->item(int(i),0)->text(),font);
+                    renderText(p[0],p[1],p[2],cur_tracking_window.deviceWidget->item(int(i),0)->text(),font);
                 }
         }
         glPopMatrix();
@@ -1256,28 +1335,6 @@ void GLWidget::renderLR()
         glPopMatrix();
         glMatrixMode(GL_MODELVIEW);
         check_error("axis");
-    }
-    if(cur_tracking_window["roi_layout"].toInt() == 1)// 3 slice
-    {
-        if(!video_capturing)
-        {
-            video_capturing = true;
-            cur_tracking_window.scene.update_3d(grab_image());
-            video_capturing = false;
-        }
-    }
-    if(!video_capturing && video_handle.get())
-    {
-        video_capturing = true;
-        QBuffer buffer;
-        QImageWriter writer(&buffer, "JPG");
-        QImage I = grab_image();
-        writer.write(I);
-        QByteArray data = buffer.data();
-        video_handle->add_frame(data.begin(),uint32_t(data.size()),true);
-        video_capturing = false;
-        if(video_frames > 10000)
-            record_video();
     }
 
     if(editing_option == selecting)
@@ -1887,6 +1944,8 @@ void GLWidget::resizeGL(int width_, int height_)
 }
 void GLWidget::scale_by(float scalefactor)
 {
+    if(no_update)
+        return;
     makeCurrent();
     glPushMatrix();
     glLoadIdentity();
@@ -1903,7 +1962,6 @@ void GLWidget::scale_by(float scalefactor)
         cur_tracking_window.ui->zoom_3d->setValue(std::pow(transformation_matrix.det(),1.0/3.0));
     }
     glPopMatrix();
-    update();
 }
 void GLWidget::wheelEvent ( QWheelEvent * event )
 {
@@ -1913,6 +1971,7 @@ void GLWidget::wheelEvent ( QWheelEvent * event )
     scalefactor /= 1200.0;
     scalefactor = 1.0+scalefactor;
     scale_by(scalefactor);
+    update();
     event->ignore();
 
 }
@@ -2270,7 +2329,6 @@ void handle_rotate(bool circular,bool only_y,float fx,float fy,float dx,float dy
 void GLWidget::mouseMoveEvent(QMouseEvent *event)
 {
     curPos = convert_pos(event);
-    makeCurrent();
     if(editing_option == selecting)
     {
         if(event->modifiers() & Qt::ShiftModifier)
@@ -2612,8 +2670,7 @@ bool GLWidget::command(QString cmd,QString param,QString param2)
                       std::istream_iterator<float>(),std::back_inserter(data));
             data.resize(16);
             std::copy(data.begin(),data.end(),transformation_matrix.begin());
-            paintGL();
-
+            update();
         }
         return true;
     }
@@ -2629,7 +2686,7 @@ bool GLWidget::command(QString cmd,QString param,QString param2)
         if(zoom < 0.99 || zoom > 1.01)
         {
             scale_by(zoom);
-            paintGL();
+            update();
         }
         return true;
     }
@@ -2639,14 +2696,14 @@ bool GLWidget::command(QString cmd,QString param,QString param2)
             return true;
         makeCurrent();
         set_view(param.toInt());
-        paintGL();
+        update();
         return true;
     }
     if(cmd == "set_stereoscopic")
     {
         makeCurrent();
         view_mode = GLWidget::view_mode_type::stereo;
-        paintGL();
+        update();
         return true;
     }
     if(cmd == "move_slice")
@@ -2686,7 +2743,7 @@ bool GLWidget::command(QString cmd,QString param,QString param2)
             cur_tracking_window.ui->glAxiCheck->setChecked(false);
             break;
         }
-        paintGL();
+        update();
         return true;
 
     }
@@ -2711,7 +2768,7 @@ bool GLWidget::command(QString cmd,QString param,QString param2)
             cur_tracking_window.ui->glAxiCheck->setChecked(true);
             break;
         }
-        paintGL();
+        update();
         return true;
     }
     if(cmd == "add_surface")
@@ -2807,7 +2864,7 @@ bool GLWidget::command(QString cmd,QString param,QString param2)
         if(!cur_tracking_window.current_slice->is_diffusion_space)
             surface->trasnform_point_list(cur_tracking_window.current_slice->T);
 
-        paintGL();
+        update();
         return true;
     }
     if(cmd == "save_image")
@@ -2984,7 +3041,7 @@ void GLWidget::rotate_angle(float angle,float x,float y,float z)
     glGetFloatv(GL_MODELVIEW_MATRIX,transformation_matrix2.begin());
     glPopMatrix();
 
-    paintGL();
+    update();
 }
 
 void GLWidget::rotate(void)
@@ -3013,13 +3070,13 @@ void GLWidget::record_video(void)
         if(file.isEmpty())
             return;
         QMessageBox::information(this,"DSI Studio","Press Ctrl+Shift+R again to stop recoding.");
-        QImage I = grab_image();
+        QImage I = grabFramebuffer();
         video_handle = std::make_shared<tipl::io::avi>();
         video_handle->open(file.toStdString().c_str(),I.width(),I.height(), "MJPG", 10/*fps*/);
         video_frames = 0;
         video_timer = std::make_shared<QTimer>(this);
         video_timer->stop();
-        connect(video_timer.get(),SIGNAL(timeout()),this,SLOT(renderLR()));
+        connect(video_timer.get(),SIGNAL(timeout()),this,SLOT(update()));
         video_timer->setInterval(100);
         video_timer->start(100);
     }

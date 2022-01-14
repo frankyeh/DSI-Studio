@@ -100,7 +100,7 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
             ui->regionDockWidget->setMinimumWidth(0);
             ui->ROIdockWidget->setMinimumWidth(0);
             ui->renderingLayout->addWidget(renderWidget = new RenderingTableWidget(*this,ui->renderingWidgetHolder));
-            ui->glLayout->addWidget(glWidget = new GLWidget(renderWidget->getData("anti_aliasing").toInt(),*this,renderWidget));
+            ui->glLayout->addWidget(glWidget = new GLWidget(*this,renderWidget));
             ui->verticalLayout_3->addWidget(regionWidget = new RegionTableWidget(*this,ui->regionDockWidget));
             ui->track_verticalLayout->addWidget(tractWidget = new TractTableWidget(*this,ui->TractWidgetHolder));
             ui->deviceLayout->addWidget(deviceWidget = new DeviceTableWidget(*this,ui->TractWidgetHolder));
