@@ -68,7 +68,7 @@ jobs:
     - name: Install Qt
       uses: jurplel/install-qt-action@v2
       with:
-        version: 6.2
+        version: 6.2.0
         modules: qtcharts qtopengl    
     - name: Download and Install Boost
       uses: MarkusJx/install-boost@v2.0.0      
