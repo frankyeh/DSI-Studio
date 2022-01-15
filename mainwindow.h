@@ -64,9 +64,9 @@ private slots:
     void on_dicom2nii_clicked();
     void on_clear_src_history_clicked();
     void on_clear_fib_history_clicked();
-    void on_styles_activated(const QString &arg1);
     void on_show_console_clicked();
     void on_xnat_download_clicked();
+    void on_styles_activated(int index);
 };
 
 #endif // MAINWINDOW_H

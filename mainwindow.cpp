@@ -1252,15 +1252,6 @@ void MainWindow::on_clear_fib_history_clicked()
 }
 
 
-void MainWindow::on_styles_activated(const QString&)
-{
-    if(ui->styles->currentText() != settings.value("styles","Fusion").toString())
-    {
-        settings.setValue("styles",ui->styles->currentText());
-        QMessageBox::information(this,"DSI Studio","You will need to restart DSI Studio to see the change");
-    }
-}
-
 void MainWindow::on_show_console_clicked()
 {
     #ifdef _WIN32
@@ -1279,3 +1270,14 @@ void MainWindow::on_xnat_download_clicked()
     xnat->setAttribute(Qt::WA_DeleteOnClose);
     xnat->showNormal();
 }
+
+
+void MainWindow::on_styles_activated(int index)
+{
+    if(ui->styles->currentText() != settings.value("styles","Fusion").toString())
+    {
+        settings.setValue("styles",ui->styles->currentText());
+        QMessageBox::information(this,"DSI Studio","You will need to restart DSI Studio to see the change");
+    }
+}
+
