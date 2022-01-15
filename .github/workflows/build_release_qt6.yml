@@ -14,7 +14,7 @@ jobs:
   linux-build:
     strategy:
       matrix:
-        os: ubuntu_2004
+        os: [ubuntu_2004]
       fail-fast: false
     runs-on: ubuntu-latest
     steps:
