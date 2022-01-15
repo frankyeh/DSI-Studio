@@ -11,6 +11,38 @@ on:
         required: true
         default: '2021.12.03 "Chen" Release'
 jobs:
+  linux-build:
+    strategy:
+      matrix:
+        os: [ubuntu_2004,ubuntu_1804,ubuntu_1604,centos7]
+      fail-fast: false
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+    - name: Set up QEMU
+      uses: docker/setup-qemu-action@v1
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v1
+    - name: Build and push
+      uses: docker/build-push-action@v2
+      with:
+        context: .
+        file: build_packages/${{ matrix.os }}/DockerfileQt6
+        push: false
+        outputs: dsi-studio
+    - name: Packaging
+      run: |
+        zip -r dsi_studio_${{ matrix.os }}qt6.zip dsi-studio
+    - name: Create Release
+      uses: ncipollo/release-action@v1.8.9
+      with:
+        allowUpdates: true
+        artifacts: "*.zip"
+        tag: ${{ github.event.inputs.tag }}
+        name: ${{ github.event.inputs.release_name }}
+        prerelease: false
+
   macos-build:
     strategy:
       matrix:
@@ -99,7 +131,7 @@ jobs:
         move other\color_map dsi_studio_win   
         move other\device.txt dsi_studio_win   
         move build\release\dsi_studio.exe dsi_studio_win
-        windeployqt --no-angle --no-quick-import --no-translations --no-system-d3d-compiler --compiler-runtime --no-opengl-sw dsi_studio_win\dsi_studio.exe
+        windeployqt --no-translations --no-system-d3d-compiler --compiler-runtime --no-opengl-sw dsi_studio_win\dsi_studio.exe
         move DSI-Studio-atlas dsi_studio_win\atlas  
 
     - name: Download the SSL files
