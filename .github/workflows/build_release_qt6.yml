@@ -1,4 +1,4 @@
-name: Build Release 
+name: Build Release QT6
 on:
   workflow_dispatch:
     inputs:
@@ -68,8 +68,8 @@ jobs:
     - name: Install Qt
       uses: jurplel/install-qt-action@v2
       with:
-        version: 6.2
-        modules: qtcharts qtopengl    
+        version: 6.2.0
+        modules: addon.qtcharts qtopengl    
     - name: Download and Install Boost
       uses: MarkusJx/install-boost@v2.0.0      
       with:
