@@ -1208,6 +1208,7 @@ bool ImageModel::distortion_correction(const char* filename)
 
 
 #include <QCoreApplication>
+#include <QRegularExpression>
 bool ImageModel::run_plugin(std::string exec_name,
                             std::string keyword,
                             size_t total_keyword_count,std::vector<std::string> param,std::string working_dir,std::string exec)
@@ -1223,7 +1224,7 @@ bool ImageModel::run_plugin(std::string exec_name,
             return false;
         }
         #else
-        int index = QProcess::systemEnvironment().indexOf(QRegExp("^FSLDIR=.+"));
+        auto index = QProcess::systemEnvironment().indexOf(QRegularExpression("^FSLDIR=.+"));
         if(index != -1)
         {
             std::string fsl_path = QProcess::systemEnvironment()[index].split("=")[1].toStdString();
