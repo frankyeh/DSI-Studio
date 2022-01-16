@@ -1900,6 +1900,13 @@ void save_idx(const char* file_name,std::shared_ptr<gz_istream> in)
 size_t match_template(float volume);
 bool ImageModel::load_from_file(const char* dwi_file_name)
 {
+    if(voxel.steps.empty())
+    {
+        voxel.steps += "[Step T2][Reconstruction] open ";
+        voxel.steps += std::filesystem::path(dwi_file_name).filename().string();
+        voxel.steps += "\n";
+    }
+
     file_name = dwi_file_name;
     if(!QFileInfo(dwi_file_name).exists())
     {
@@ -1955,10 +1962,6 @@ bool ImageModel::load_from_file(const char* dwi_file_name)
         voxel.report += std::to_string(voxel.hist_image.height());
         voxel.report += " pixels.";
 
-        voxel.steps += "[Step T2][Reconstruction] open ";
-        voxel.steps += std::filesystem::path(dwi_file_name).filename().string();
-        voxel.steps += "\n";
-
         progress::show("generating mask");
         tipl::segmentation::otsu(dwi,voxel.mask);
         tipl::negate(voxel.mask);
@@ -2002,9 +2005,6 @@ bool ImageModel::load_from_file(const char* dwi_file_name)
 
         get_report(voxel.report);
         calculate_dwi_sum(true);
-        voxel.steps += "[Step T2][Reconstruction] open ";
-        voxel.steps += std::filesystem::path(dwi_file_name).filename().string();
-        voxel.steps += "\n";
         return true;
     }
     else
@@ -2126,9 +2126,6 @@ bool ImageModel::load_from_file(const char* dwi_file_name)
 
     // create mask if not loaded from SRC file
     calculate_dwi_sum(voxel.mask.empty());
-    voxel.steps += "[Step T2][Reconstruction] open ";
-    voxel.steps += std::filesystem::path(dwi_file_name).filename().string();
-    voxel.steps += "\n";
     voxel.template_id = ::match_template(std::count_if(voxel.mask.begin(),voxel.mask.end(),[](unsigned char v){return v > 0;})*
                                    2.0f*voxel.vs[0]*voxel.vs[1]*voxel.vs[2]);
     return true;
