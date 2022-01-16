@@ -46,7 +46,7 @@ private slots:
     void on_view_image_clicked();
     void on_workDir_currentTextChanged(const QString &arg1);
     void on_bruker_browser_clicked();
-    void on_individual_connectometry_clicked();
+
     void on_open_db_clicked();
     void on_group_connectometry_clicked();
 
@@ -57,7 +57,6 @@ private slots:
     void on_nonlinear_reg_clicked();
     void on_SRC_qc_clicked();
     void on_parse_network_measures_clicked();
-    void on_connectometry_nn_clicked();
     void on_auto_track_clicked();
     void on_nii2src_bids_clicked();
     void on_nii2src_sf_clicked();

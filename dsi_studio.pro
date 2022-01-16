@@ -83,14 +83,11 @@ HEADERS += mainwindow.h \
     qcompletelineedit.h \
     libs/mapping/connectometry_db.hpp \
     connectometry/createdbdialog.h \
-    connectometry/individual_connectometry.hpp \
     connectometry/match_db.h \
     connectometry/db_window.h \
     connectometry/group_connectometry.hpp \
     connectometry/group_connectometry_analysis.h \
     regtoolbox.h \
-    connectometry/nn_connectometry.h \
-    connectometry/nn_connectometry_analysis.h \
     auto_track.h \
     tracking/device.h \
     tracking/devicetablewidget.h \
@@ -110,12 +107,10 @@ FORMS += mainwindow.ui \
     tracking/atlasdialog.ui \
     filebrowser.ui \
     connectometry/createdbdialog.ui \
-    connectometry/individual_connectometry.ui \
     connectometry/match_db.ui \
     connectometry/db_window.ui \
     connectometry/group_connectometry.ui \
     regtoolbox.ui \
-    connectometry/nn_connectometry.ui \
     auto_track.ui \
     xnat_dialog.ui
 RESOURCES += \
@@ -163,7 +158,6 @@ SOURCES += main.cpp \
     cmd/ren.cpp \
     libs/mapping/connectometry_db.cpp \
     connectometry/createdbdialog.cpp \
-    connectometry/individual_connectometry.cpp \
     connectometry/match_db.cpp \
     connectometry/db_window.cpp \
     connectometry/group_connectometry.cpp \
@@ -173,8 +167,6 @@ SOURCES += main.cpp \
     cmd/qc.cpp \
     libs/dsi/basic_voxel.cpp \
     libs/dsi/image_model.cpp \
-    connectometry/nn_connectometry.cpp \
-    connectometry/nn_connectometry_analysis.cpp \
     cmd/reg.cpp \
     auto_track.cpp \
     cmd/atk.cpp \

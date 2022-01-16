@@ -6,25 +6,29 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1023</width>
+    <width>1072</width>
     <height>683</height>
    </rect>
   </property>
+  <property name="maximumSize">
+   <size>
+    <width>16777215</width>
+    <height>16777215</height>
+   </size>
+  </property>
   <property name="font">
-   <font>
-    <family>Arial</family>
-   </font>
+   <font/>
   </property>
   <property name="windowTitle">
    <string>DSI Studio</string>
   </property>
   <property name="windowIcon">
-   <iconset resource="icons.qrc">
+   <iconset>
     <normaloff>:/icons/dsi_studio.ico</normaloff>:/icons/dsi_studio.ico</iconset>
   </property>
   <widget class="QWidget" name="centralWidget">
    <property name="sizePolicy">
-    <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+    <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
      <horstretch>0</horstretch>
      <verstretch>0</verstretch>
     </sizepolicy>
@@ -55,12 +59,12 @@
       </property>
       <property name="maximumSize">
        <size>
-        <width>300</width>
+        <width>320</width>
         <height>16777215</height>
        </size>
       </property>
       <property name="currentIndex">
-       <number>2</number>
+       <number>0</number>
       </property>
       <property name="tabSpacing">
        <number>0</number>
@@ -70,7 +74,7 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>300</width>
+         <width>320</width>
          <height>617</height>
         </rect>
        </property>
@@ -151,7 +155,7 @@
         <item>
          <widget class="QLabel" name="label_5">
           <property name="text">
-           <string>Connectometry</string>
+           <string>Correlational Tractography</string>
           </property>
           <property name="alignment">
            <set>Qt::AlignCenter</set>
@@ -179,9 +183,19 @@
          </widget>
         </item>
         <item>
+         <widget class="QCommandLinkButton" name="open_db">
+          <property name="text">
+           <string>Step C2a: Modify a Connectometry Database</string>
+          </property>
+          <property name="description">
+           <string>Add or remove subjects, calculate longitudinal change, fingerprinting</string>
+          </property>
+         </widget>
+        </item>
+        <item>
          <widget class="QCommandLinkButton" name="group_connectometry">
           <property name="text">
-           <string>Step C3: Group Connectometry Analysis</string>
+           <string>Step C3: Connectometry </string>
           </property>
           <property name="description">
            <string>Correlate study variables with tracks</string>
@@ -235,7 +249,7 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>300</width>
+         <width>320</width>
          <height>617</height>
         </rect>
        </property>
@@ -389,7 +403,6 @@
              <property name="font">
               <font>
                <pointsize>8</pointsize>
-               <weight>50</weight>
                <bold>false</bold>
               </font>
              </property>
@@ -449,7 +462,7 @@
                    <string>Set Directory</string>
                   </property>
                   <property name="icon">
-                   <iconset resource="icons.qrc">
+                   <iconset>
                     <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
                   </property>
                  </widget>
@@ -476,7 +489,7 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>300</width>
+         <width>320</width>
          <height>617</height>
         </rect>
        </property>
@@ -507,46 +520,6 @@
          </widget>
         </item>
         <item>
-         <widget class="QLabel" name="label_6">
-          <property name="text">
-           <string>Connectometry and Local Connectome Fingerprint</string>
-          </property>
-          <property name="alignment">
-           <set>Qt::AlignCenter</set>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QCommandLinkButton" name="open_db">
-          <property name="text">
-           <string>O1: Open a Connectometry Database</string>
-          </property>
-          <property name="description">
-           <string>Add subjects, calculate change, fingerprinting</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QCommandLinkButton" name="individual_connectometry">
-          <property name="text">
-           <string>O2: Individual Connectometry Analysis</string>
-          </property>
-          <property name="description">
-           <string>Compare logitudinal scans of an individual</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QCommandLinkButton" name="connectometry_nn">
-          <property name="text">
-           <string>O3: Connectometry Neural Network Analysis</string>
-          </property>
-          <property name="description">
-           <string>Neural Network Prediction on Local Connectome Fingerprint</string>
-          </property>
-         </widget>
-        </item>
-        <item>
          <widget class="Line" name="line_2">
           <property name="orientation">
            <enum>Qt::Horizontal</enum>
@@ -566,7 +539,7 @@
         <item>
          <widget class="QCommandLinkButton" name="view_image">
           <property name="text">
-           <string>O4: View Images (NIFTI/DICOM/2dseq)</string>
+           <string>O1: View Images (NIFTI/DICOM/2dseq)</string>
           </property>
           <property name="description">
            <string>Open image and header information</string>
@@ -576,7 +549,7 @@
         <item>
          <widget class="QCommandLinkButton" name="bruker_browser">
           <property name="text">
-           <string>O5: Image Browser</string>
+           <string>O2: Image Browser</string>
           </property>
           <property name="description">
            <string>File Browser</string>
@@ -603,14 +576,14 @@
         <item>
          <widget class="QCommandLinkButton" name="linear_reg">
           <property name="text">
-           <string>O6: Linear Registration Toolbox</string>
+           <string>R1: Linear Registration Toolbox</string>
           </property>
          </widget>
         </item>
         <item>
          <widget class="QCommandLinkButton" name="nonlinear_reg">
           <property name="text">
-           <string>O7: Nonlinear Registration Toolbox</string>
+           <string>R2: Nonlinear Registration Toolbox</string>
           </property>
           <property name="description">
            <string>Spatially transform images (testing)</string>
@@ -637,7 +610,7 @@
         <item>
          <widget class="QCommandLinkButton" name="averagefib">
           <property name="text">
-           <string>O8: Create template/skeleton</string>
+           <string>P1: Create template/skeleton</string>
           </property>
           <property name="description">
            <string>Average the ODFs to create a template</string>
@@ -674,7 +647,7 @@
     <item>
      <widget class="QWidget" name="widget" native="true">
       <property name="sizePolicy">
-       <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+       <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
         <horstretch>0</horstretch>
         <verstretch>0</verstretch>
        </sizepolicy>
@@ -708,7 +681,7 @@
            <item>
             <widget class="QLabel" name="label_3">
              <property name="sizePolicy">
-              <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
+              <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
                <horstretch>0</horstretch>
                <verstretch>0</verstretch>
               </sizepolicy>
@@ -733,6 +706,12 @@
            </item>
            <item>
             <widget class="QPushButton" name="clear_src_history">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
              <property name="text">
               <string>Clear</string>
              </property>
@@ -783,7 +762,7 @@
            <item>
             <widget class="QLabel" name="label_2">
              <property name="sizePolicy">
-              <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
+              <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
                <horstretch>0</horstretch>
                <verstretch>0</verstretch>
               </sizepolicy>
@@ -808,6 +787,12 @@
            </item>
            <item>
             <widget class="QPushButton" name="clear_fib_history">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
              <property name="text">
               <string>Clear</string>
              </property>
@@ -854,6 +839,12 @@
            </property>
            <item>
             <widget class="QLabel" name="label_11">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
              <property name="text">
               <string>Style</string>
              </property>
@@ -864,6 +855,12 @@
            </item>
            <item>
             <widget class="QPushButton" name="show_console">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
              <property name="text">
               <string>Console...</string>
              </property>
@@ -885,7 +882,7 @@
            <item>
             <widget class="QComboBox" name="workDir">
              <property name="sizePolicy">
-              <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+              <sizepolicy hsizetype="Ignored" vsizetype="Fixed">
                <horstretch>0</horstretch>
                <verstretch>0</verstretch>
               </sizepolicy>
@@ -902,13 +899,16 @@
              <property name="currentIndex">
               <number>-1</number>
              </property>
-             <property name="sizeAdjustPolicy">
-              <enum>QComboBox::AdjustToMinimumContentsLength</enum>
-             </property>
             </widget>
            </item>
            <item>
             <widget class="QPushButton" name="browseDir">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
              <property name="maximumSize">
               <size>
                <width>100</width>
@@ -919,7 +919,7 @@
               <string>Browse...</string>
              </property>
              <property name="icon">
-              <iconset resource="icons.qrc">
+              <iconset>
                <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
              </property>
             </widget>
@@ -935,8 +935,6 @@
   </widget>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
- <resources>
-  <include location="icons.qrc"/>
- </resources>
+ <resources/>
  <connections/>
 </ui>

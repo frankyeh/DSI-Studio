@@ -25,11 +25,9 @@
 #include "connectometry/group_connectometry_analysis.h"
 #include "libs/tracking/fib_data.hpp"
 #include "manual_alignment.h"
-#include "connectometry/individual_connectometry.hpp"
 #include "connectometry/createdbdialog.h"
 #include "connectometry/db_window.h"
 #include "connectometry/group_connectometry.hpp"
-#include "connectometry/nn_connectometry.h"
 #include "program_option.hpp"
 #include "libs/dsi/image_model.hpp"
 #include "auto_track.h"
@@ -647,20 +645,6 @@ void MainWindow::on_workDir_currentTextChanged(const QString &arg1)
     QDir::setCurrent(arg1);
 }
 
-void MainWindow::on_bruker_browser_clicked()
-{
-    FileBrowser* bw = new FileBrowser(this);
-    bw->setAttribute(Qt::WA_DeleteOnClose);
-    bw->showNormal();
-}
-
-void MainWindow::on_individual_connectometry_clicked()
-{
-    individual_connectometry* indi = new individual_connectometry(this);
-        indi->setAttribute(Qt::WA_DeleteOnClose);
-        indi->showNormal();
-}
-
 
 bool MainWindow::load_db(std::shared_ptr<group_connectometry_analysis>& database,QString& filename)
 {
@@ -941,15 +925,11 @@ void MainWindow::on_parse_network_measures_clicked()
 
 }
 
-void MainWindow::on_connectometry_nn_clicked()
+void MainWindow::on_bruker_browser_clicked()
 {
-    QString filename;
-    std::shared_ptr<group_connectometry_analysis> database;
-    if(!load_db(database,filename))
-        return;
-    nn_connectometry* nn_cnt = new nn_connectometry(this,database->handle,filename,true);
-    nn_cnt->setAttribute(Qt::WA_DeleteOnClose);
-    nn_cnt->show();
+    FileBrowser* bw = new FileBrowser(this);
+    bw->setAttribute(Qt::WA_DeleteOnClose);
+    bw->showNormal();
 }
 
 void MainWindow::on_auto_track_clicked()
