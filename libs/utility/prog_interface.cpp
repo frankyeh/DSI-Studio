@@ -31,17 +31,15 @@ void progress::update_prog(bool show_now)
     if(!show_now && processing_time_less_than(250))
         return;
     if(!progressDialog.get())
+    {
         progressDialog.reset(new QProgressDialog(get_status().c_str(),"Cancel",0,100));
+        progressDialog->raise();
+        progressDialog->activateWindow();
+    }
     else
         progressDialog->setLabelText(get_status().c_str());
 
     progressDialog->show();
-    if(!progressDialog->property("raised").toInt())
-    {
-        progressDialog->raise();
-        progressDialog->activateWindow();
-        progressDialog->setProperty("raised",1);
-    }
     QApplication::processEvents();
 }
 std::string progress::get_status(void)
@@ -70,8 +68,6 @@ void progress::begin_prog(bool show_now)
     t_last.back() = std::chrono::high_resolution_clock::now();
     process_time.back() = std::chrono::high_resolution_clock::now();
     prog_aborted_ = false;
-    if(progressDialog.get())
-        progressDialog->setProperty("raised",0);
     update_prog(show_now);
 }
 
