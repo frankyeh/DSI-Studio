@@ -430,7 +430,6 @@ bool ImageModel::run_steps(const std::string& reg_file_name,const std::string& s
 {
     std::istringstream in(steps);
     std::string step;
-    std::getline(in,step); // ignore the first step [Step T2][Reconstruction]
     std::vector<std::string> cmds,params;
     while(std::getline(in,step))
     {
@@ -469,6 +468,8 @@ bool ImageModel::run_steps(const std::string& reg_file_name,const std::string& s
 }
 bool ImageModel::command(std::string cmd,std::string param)
 {
+    if(cmd == "[Step T2][Reconstruction]")
+        return true;
     progress prog_(cmd.c_str());
     if(!param.empty())
         std::cout << "param:" << param << std::endl;
