@@ -1,4 +1,3 @@
-![dsi_Studio](http://dsi-studio.labsolver.org/_/rsrc/1468760876817/config/customLogo.gif?revision=17)
 # DSI-Studio 
 
 Code: <img src="https://img.shields.io/github/languages/top/frankyeh/DSI-Studio">[![Language grade: C/C++](https://img.shields.io/lgtm/grade/cpp/g/frankyeh/DSI-Studio.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/frankyeh/DSI-Studio/context:cpp)[![Total alerts](https://img.shields.io/lgtm/alerts/g/frankyeh/DSI-Studio.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/frankyeh/DSI-Studio/alerts/)
