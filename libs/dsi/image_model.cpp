@@ -1855,6 +1855,8 @@ bool ImageModel::save_to_file(const char* dwi_file_name)
                          uint32_t(voxel.dim.plane_size()),uint32_t(voxel.dim.depth()));
     }
     mat_writer.write("mask",voxel.mask,uint32_t(voxel.dim.plane_size()));
+    mat_writer.write("report",voxel.report);
+    mat_writer.write("steps",voxel.steps);
     return true;
 }
 
@@ -2033,7 +2035,7 @@ bool ImageModel::load_from_file(const char* dwi_file_name)
             error_msg = "Invalid SRC format";
             return false;
         }
-
+        mat_reader.read("steps",voxel.steps);
         if(!mat_reader.read("report",voxel.report))
             get_report(voxel.report);
 
