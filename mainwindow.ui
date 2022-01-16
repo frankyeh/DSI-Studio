@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1072</width>
+    <width>1000</width>
     <height>683</height>
    </rect>
   </property>
@@ -119,8 +119,18 @@
            <string>Step T1: Open Source Images</string>
           </property>
           <property name="description">
-           <string>Open diffusion MR images to create SRC file
+           <string>Open diffusion MR images to create a SRC file
 (DICOM, NIFTI, Bruker 2dseq, Varian fdf) </string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QCommandLinkButton" name="SRC_qc">
+          <property name="text">
+           <string>Step T1a: Quality Control</string>
+          </property>
+          <property name="description">
+           <string>Select a directory of SRC files to run a quality check</string>
           </property>
          </widget>
         </item>
@@ -206,26 +216,6 @@
          <widget class="Line" name="line_3">
           <property name="orientation">
            <enum>Qt::Horizontal</enum>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QLabel" name="label_10">
-          <property name="text">
-           <string>Quality Control</string>
-          </property>
-          <property name="alignment">
-           <set>Qt::AlignCenter</set>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QCommandLinkButton" name="SRC_qc">
-          <property name="text">
-           <string>QC1: SRC files Quality Control</string>
-          </property>
-          <property name="description">
-           <string>Select a root directory that stores subjects SRC file and run a quality check on them</string>
           </property>
          </widget>
         </item>
@@ -514,13 +504,6 @@
         </property>
         <item>
          <widget class="Line" name="line">
-          <property name="orientation">
-           <enum>Qt::Horizontal</enum>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="Line" name="line_2">
           <property name="orientation">
            <enum>Qt::Horizontal</enum>
           </property>
