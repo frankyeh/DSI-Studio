@@ -9,11 +9,11 @@ __I have not tested this on any other system than my Mac so far. Your Mileage Ma
 
 ## Getting the dependent libraries.
 
-* Get Qt Open Source Distribution version 5.12.2 from [The Qt Company](https://www.qt.io/download-open-source) and install
+* Get Qt Open Source Distribution version 6.2.2 from [The Qt Company](https://www.qt.io/download-open-source) and install
   using the GUI Installer
 
   On my Mac the installation left several versions on my computer in `~/Qt`. To get to the right version I needed to use 
-  `~Qt/5.12.2/clang_64` as the root directory for Qt or (I will refer to it as `<QT_ROOT>` and ignore the other stuff there
+  `~Qt/6.2.2/clang_64` as the root directory for Qt or (I will refer to it as `<QT_ROOT>` and ignore the other stuff there
    (there were also IOS and Android versions).
 
 * Get TIPL from [The TIPL GitHub Repository](https://github.com/frankyeh/TIPL.git) -- Install this using CMake 
