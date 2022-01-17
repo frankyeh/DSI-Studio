@@ -14,7 +14,6 @@ RUN apt update && apt full-upgrade -y && \
   curl \
   make \
   git \
-  libboost-all-dev \
   zlib1g-dev \
   ca-certificates \
   qt5-qmake \

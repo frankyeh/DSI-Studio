@@ -89,7 +89,6 @@ jobs:
       run: |
         brew update
         brew install qt5
-        brew install boost
     - name: Download TIPL and Atlases
       run: |
         git clone https://github.com/frankyeh/TIPL.git
@@ -101,7 +100,7 @@ jobs:
         mkdir -p build
         cd build
         export PATH="/usr/local/opt/qt@5/bin:$PATH" && export LDFLAGS="-L/usr/local/opt/qt@5/lib" && export CPPFLAGS="-I/usr/local/opt/qt@5/include" && export PKG_CONFIG_PATH="/usr/local/opt/qt@5/lib/pkgconfig"
-        qmake ../dsi_studio.pro QMAKE_INCDIR=/usr/local/Cellar/boost/1.76.0/include
+        qmake ../dsi_studio.pro
         make
         cd ..
         
@@ -134,20 +133,10 @@ jobs:
       with:
         version: 5.12.0
         modules: qtcharts qtopengl    
-    - name: Download and Install Boost
-      uses: MarkusJx/install-boost@v2.0.0      
-      with:
-        boost_version: 1.76.0
-        boost_install_dir: ${{ github.workspace }}
     - name: get TIPL and DSI Studio atlas
       run: |
         git clone https://github.com/frankyeh/TIPL.git
-        git clone https://github.com/frankyeh/DSI-Studio-atlas.git
-        move ${{ github.workspace }}/boost ${{ github.workspace }}/boost_
-        move ${{ github.workspace }}/boost_/boost/include/boost* ${{ github.workspace }}/boost__
-        move ${{ github.workspace }}/boost__/boost ${{ github.workspace }}/boost
-        dir ${{ github.workspace }}/boost
-        
+        git clone https://github.com/frankyeh/DSI-Studio-atlas.git        
     - name: Build DSI Studio
       run: |
         for /f "usebackq delims=#" %%a in (`"%programfiles(x86)%\Microsoft Visual Studio\Installer\vswhere" -latest -property installationPath`) do call "%%a\Common7\Tools\VsDevCmd.bat" -arch=x64

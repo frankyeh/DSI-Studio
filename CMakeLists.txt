@@ -5,7 +5,6 @@ project(DSI_Studio VERSION "202112.03" LANGUAGES CXX;C)
 find_package(Qt5 COMPONENTS Core Gui OpenGL Charts Network Widgets REQUIRED)
 find_package(ZLIB REQUIRED)
 find_package(OpenGL REQUIRED)
-find_package(Boost REQUIRED)
 find_package(TIPL REQUIRED)
 
 set(CMAKE_AUTOUIC ON)
@@ -185,5 +184,5 @@ target_include_directories(dsi_studio PUBLIC
   ${CMAKE_SOURCE_DIR}
   ${CMAKE_BINARY_DIR})
 
-target_link_libraries(dsi_studio TIPL::tipl Qt5::Core Qt5::Gui Qt5::OpenGL Qt5::Charts Qt5::Network Qt5::Widgets ZLIB::ZLIB OpenGL::GL OpenGL::GLU Boost::boost)
+target_link_libraries(dsi_studio TIPL::tipl Qt5::Core Qt5::Gui Qt5::OpenGL Qt5::Charts Qt5::Network Qt5::Widgets ZLIB::ZLIB OpenGL::GL OpenGL::GLU)
 

@@ -23,7 +23,6 @@ RUN apt-get update && \
                     libxrender1 \
                     libxt6 \
                     wget \
-                    libboost-all-dev \
                     zlib1g \
                     zlib1g-dev \
                     unzip \

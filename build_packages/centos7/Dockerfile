@@ -4,7 +4,6 @@ RUN yum -y install centos-release-scl \
   && yum -y install devtoolset-9-gcc*
 
 RUN yum -y install zlib-devel
-RUN yum -y install boost-devel
 RUN yum -y install freeglut-devel
 
 SHELL [ "/usr/bin/scl", "enable", "devtoolset-9"]
