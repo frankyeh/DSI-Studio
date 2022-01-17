@@ -1,6 +1,3 @@
-#include <boost/mpl/vector.hpp>
-#include <boost/mpl/insert_range.hpp>
-#include <boost/mpl/begin_end.hpp>
 #include "tessellated_icosahedron.hpp"
 #include "prog_interface_static_link.h"
 #include "basic_voxel.hpp"
@@ -11,82 +8,6 @@
 #include "image_model.hpp"
 #include "fib_data.hpp"
 #include "hist_process.hpp"
-
-typedef boost::mpl::vector<
-    ReadImages,
-    CalculateGradient,
-    CalculateStructuralTensor,
-    EigenAnalysis
-> hist_process;
-
-
-typedef boost::mpl::vector<
-    ReadDWIData,
-    Dwi2Tensor
-> dti_process;
-
-typedef boost::mpl::vector<
-    ReadDWIData,
-    HGQI_Recon,
-    DetermineFiberDirections,
-    SaveMetrics,
-    SaveDirIndex,
-    OutputODF
-> hgqi_process;
-
-typedef boost::mpl::vector<
-    DWINormalization,
-    Dwi2Tensor,
-    BalanceScheme,
-    GQI_Recon,
-    RDI_Recon,
-    EstimateZ0_MNI,
-    DetermineFiberDirections,
-    SaveMetrics,
-    SaveDirIndex,
-    OutputODF
-> qsdr_process;
-
-typedef boost::mpl::vector<
-    ReadDWIData,
-    Dwi2Tensor,
-    BalanceScheme,
-    GQI_Recon,
-    RDI_Recon,
-    dGQI_Recon,
-    DetermineFiberDirections,
-    SaveMetrics,
-    SaveDirIndex,
-    OutputODF
-> gqi_process;
-
-typedef boost::mpl::vector<
-    ReadDWIData,
-    QSpaceSpectral
-> gqi_spectral_process;
-
-typedef boost::mpl::vector<
-    ReadDWIData,
-    SchemeConverter
-> hardi_convert_process;
-
-
-typedef boost::mpl::vector<
-    ReadDWIData,
-    BalanceScheme,
-    GQI_Recon,
-    DetermineFiberDirections,
-    RecordQA
-> qa_map;
-
-
-
-typedef boost::mpl::vector<
-    ODFLoader,
-    DetermineFiberDirections,
-    SaveMetrics,
-    SaveDirIndex
-> reprocess_odf;
 
 extern std::vector<std::string> fa_template_list;
 std::string ImageModel::get_file_ext(void)
@@ -140,8 +61,11 @@ std::string ImageModel::get_file_ext(void)
 bool is_human_size(tipl::shape<3> dim,tipl::vector<3> vs);
 bool ImageModel::reconstruction_hist(void)
 {
-    voxel.CreateProcesses<hist_process>();
-    voxel.init();
+    voxel.init_process<
+            ReadImages,
+            CalculateGradient,
+            CalculateStructuralTensor,
+            EigenAnalysis>();
     if(progress::aborted())
     {
         error_msg = "reconstruction canceled";
@@ -214,7 +138,8 @@ bool ImageModel::reconstruction(void)
         {
         case 1://DTI
             voxel.step_report << "[Step T2b(1)]=DTI" << std::endl;
-            if (!reconstruct<dti_process>("DTI"))
+            if (!reconstruct2<ReadDWIData,
+                    Dwi2Tensor>("DTI"))
                 return false;
             break;
         case 4://GQI
@@ -224,7 +149,8 @@ bool ImageModel::reconstruction(void)
             {
                 voxel.recon_report <<
                 " The diffusion data were reconstructed using generalized q-sampling imaging (Yeh et al., IEEE TMI, ;29(9):1626-35, 2010).";
-                if (!reconstruct<gqi_spectral_process>("spectral GQI reconstruction"))
+                if (!reconstruct2<ReadDWIData,
+                        QSpaceSpectral>("spectral GQI reconstruction"))
                     return false;
                 break;
             }
@@ -246,7 +172,9 @@ bool ImageModel::reconstruction(void)
                 " The diffusion data were compared with baseline scan using differential tractography with a diffusion sampling length ratio of "
                 << float(voxel.param[0]) << " to study neuronal change.";
                 // to get study fa
-                if (!study_src->reconstruct<dti_process>("Reconstruction"))
+                if (!study_src->reconstruct2<
+                        ReadDWIData,
+                        Dwi2Tensor>("Reconstruction"))
                     return false;
             }
             else
@@ -259,18 +187,35 @@ bool ImageModel::reconstruction(void)
 
             if(src_dwi_data.size() == 1)
             {
-                if (!reconstruct<hgqi_process>("Reconstruction"))
+                if (!reconstruct2<
+                        ReadDWIData,
+                        HGQI_Recon,
+                        DetermineFiberDirections,
+                        SaveMetrics,
+                        SaveDirIndex,
+                        OutputODF>("Reconstruction"))
                     return false;
                 break;
             }
 
-            if (!reconstruct<gqi_process>("GQI"))
+            if (!reconstruct2<
+                    ReadDWIData,
+                    Dwi2Tensor,
+                    BalanceScheme,
+                    GQI_Recon,
+                    RDI_Recon,
+                    dGQI_Recon,
+                    DetermineFiberDirections,
+                    SaveMetrics,
+                    SaveDirIndex,
+                    OutputODF>("GQI"))
                 return false;
             break;
         case 6:
             voxel.recon_report
                     << " The diffusion data were converted to HARDI using generalized q-sampling method with a regularization parameter of " << voxel.param[2] << ".";
-            if (!reconstruct<hardi_convert_process>("HARDI reconstruction"))
+            if (!reconstruct2<ReadDWIData,
+                    SchemeConverter>("HARDI reconstruction"))
                 return false;
             break;
         case 7:
@@ -288,9 +233,23 @@ bool ImageModel::reconstruction(void)
                 auto mask = voxel.mask;
                 // clear mask to create whole volume QA map
                 std::fill(voxel.mask.begin(),voxel.mask.end(),1.0);
-                if (!reconstruct<qa_map>("GQI for QSDR"))
+                if (!reconstruct2<
+                        ReadDWIData,
+                        BalanceScheme,
+                        GQI_Recon,
+                        DetermineFiberDirections,
+                        RecordQA>("GQI for QSDR"))
                     return false;
-                if (!reconstruct<qsdr_process>("QSDR"))
+                if (!reconstruct2<DWINormalization,
+                        Dwi2Tensor,
+                        BalanceScheme,
+                        GQI_Recon,
+                        RDI_Recon,
+                        EstimateZ0_MNI,
+                        DetermineFiberDirections,
+                        SaveMetrics,
+                        SaveDirIndex,
+                        OutputODF>("QSDR"))
                     return false;
                 voxel.mask = mask;
             }
@@ -359,7 +318,10 @@ bool output_odfs(const tipl::image<3,unsigned char>& mni_mask,
     image_model.voxel.vs = vs;
     image_model.voxel.other_output="all";
     swap_data();
-    if (!image_model.reconstruct<reprocess_odf>("template reconstruction"))
+    if (!image_model.reconstruct2<ODFLoader,
+            DetermineFiberDirections,
+            SaveMetrics,
+            SaveDirIndex>("template reconstruction"))
     {
         error_msg = image_model.error_msg;
         swap_data();

@@ -1,8 +1,5 @@
 #ifndef BASIC_VOXEL_HPP
 #define BASIC_VOXEL_HPP
-#include <boost/mpl/vector.hpp>
-#include <boost/mpl/for_each.hpp>
-#include <boost/mpl/inherit_linearly.hpp>
 #include <tipl/tipl.hpp>
 #include <string>
 #include "tessellated_icosahedron.hpp"
@@ -162,17 +159,20 @@ public:
     std::vector<HistData> hist_data;
 public:
     Voxel(void):param(5){}
-    template<class ProcessList>
-    void CreateProcesses(void)
+    template<typename T,typename ...Ts>
+    void add_process(void)
+    {
+        process_list.push_back(std::make_shared<T>());
+        if constexpr (sizeof...(Ts) > 0) {
+            add_process<Ts...>();
+        }
+    }
+    template<typename ...Ts>
+    void init_process(void)
     {
         process_list.clear();
-        boost::mpl::for_each<ProcessList>(boost::ref(*this));
-    }
-
-    template<class Process>
-    void operator()(Process&)
-    {
-        process_list.push_back(std::make_shared<Process>());
+        add_process<Ts...>();
+        init();
     }
 public:
     void init(void);

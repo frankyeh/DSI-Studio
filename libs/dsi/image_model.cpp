@@ -94,12 +94,6 @@ void ImageModel::remove(unsigned int index)
     shell.clear();
 }
 
-typedef boost::mpl::vector<
-    ReadDWIData,
-    Dwi2Tensor
-> check_btable_process;
-
-
 void flip_fib_dir(std::vector<tipl::vector<3> >& fib_dir,const unsigned char* order)
 {
     for(size_t j = 0;j < fib_dir.size();++j)
@@ -158,7 +152,8 @@ std::string ImageModel::check_b_table(void)
         auto other_output = voxel.other_output;
         voxel.other_output = std::string();
 
-        reconstruct<check_btable_process>("checking b-table");
+        reconstruct2<ReadDWIData,
+                Dwi2Tensor>("checking b-table");
 
         voxel.other_output = other_output;
 
@@ -2304,8 +2299,8 @@ bool ImageModel::compare_src(const char* file_name)
         std::fill(voxel.mask.begin(),voxel.mask.end(),1);
         std::fill(study_src->voxel.mask.begin(),study_src->voxel.mask.end(),1);
 
-        reconstruct<check_btable_process>("calculating fa map1");
-        study_src->reconstruct<check_btable_process>("calculating fa map2");
+        reconstruct2<ReadDWIData,Dwi2Tensor>("calculating fa map1");
+        study_src->reconstruct2<ReadDWIData,Dwi2Tensor>("calculating fa map2");
         // restore mask
 
         voxel.mask.swap(mask);

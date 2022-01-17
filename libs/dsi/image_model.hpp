@@ -324,19 +324,17 @@ public:
         return CheckType::check(voxel);
     }
 
-    template<class ProcessType>
-    bool reconstruct(const char* prog_title)
+    template<typename ...ProcessList>
+    bool reconstruct2(const char* prog_title)
     {
         // initialization
         voxel.load_from_src(*this);
-        voxel.CreateProcesses<ProcessType>();
-        voxel.init();
+        voxel.init_process<ProcessList...>();
         if(progress::aborted())
         {
             error_msg = "reconstruction canceled";
             return false;
         }
-
         // reconstruction
         progress prog_(prog_title);
         try
