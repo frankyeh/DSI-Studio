@@ -22,62 +22,59 @@ set(CMAKE_AUTOUIC_SEARCH_PATHS ${CMAKE_SOURCE_DIR}
   ${CMAKE_SOURCE_DIR}/dicom
   ${CMAKE_SOURCE_DIR}/connectometry)
 
-set(DSI_STUDIO_HEADERS mainwindow.h 
-    dicom/dicom_parser.h 
-    dicom/dwi_header.hpp 
-    libs/dsi/tessellated_icosahedron.hpp 
-    libs/dsi/odf_process.hpp 
-    libs/dsi/image_model.hpp 
-    libs/dsi/gqi_process.hpp 
-    libs/dsi/gqi_mni_reconstruction.hpp 
-    libs/dsi/dti_process.hpp 
-    libs/dsi/basic_voxel.hpp 
-    SliceModel.h 
-    tracking/tracking_window.h 
-    reconstruction/reconstruction_window.h 
-    tracking/slice_view_scene.h 
-    opengl/glwidget.h 
-    libs/tracking/tracking_method.hpp 
-    libs/tracking/roi.hpp 
-    libs/tracking/interpolation_process.hpp 
-    libs/tracking/fib_data.hpp 
-    libs/tracking/basic_process.hpp 
-    libs/tracking/tract_cluster.hpp 
-    tracking/region/regiontablewidget.h 
-    tracking/region/Regions.h 
-    tracking/region/RegionModel.h 
-    libs/tracking/tract_model.hpp 
-    tracking/tract/tracttablewidget.h 
-    opengl/renderingtablewidget.h 
-    qcolorcombobox.h 
-    libs/tracking/tracking_thread.hpp 
-    libs/prog_interface_static_link.h 
-    libs/mapping/atlas.hpp 
-    view_image.h 
-    libs/gzip_interface.hpp 
-    manual_alignment.h 
-    tracking/tract_report.hpp 
-    tracking/color_bar_dialog.hpp 
-    tracking/connectivity_matrix_dialog.h 
-    tracking/atlasdialog.h 
-    filebrowser.h 
-    program_option.hpp 
-    qcompletelineedit.h 
-    libs/mapping/connectometry_db.hpp 
-    connectometry/createdbdialog.h 
-    connectometry/individual_connectometry.hpp 
-    connectometry/match_db.h 
-    connectometry/db_window.h 
-    connectometry/group_connectometry.hpp 
-    connectometry/group_connectometry_analysis.h 
+set(DSI_STUDIO_HEADERS mainwindow.h
+    dicom/dicom_parser.h
+    dicom/dwi_header.hpp
+    libs/dsi/tessellated_icosahedron.hpp
+    libs/dsi/odf_process.hpp
+    libs/dsi/image_model.hpp
+    libs/dsi/gqi_process.hpp
+    libs/dsi/gqi_mni_reconstruction.hpp
+    libs/dsi/dti_process.hpp
+    libs/dsi/basic_voxel.hpp
+    SliceModel.h
+    tracking/tracking_window.h
+    reconstruction/reconstruction_window.h
+    tracking/slice_view_scene.h
+    opengl/glwidget.h
+    libs/tracking/tracking_method.hpp
+    libs/tracking/roi.hpp
+    libs/tracking/interpolation_process.hpp
+    libs/tracking/fib_data.hpp
+    libs/tracking/basic_process.hpp
+    libs/tracking/tract_cluster.hpp
+    tracking/region/regiontablewidget.h
+    tracking/region/Regions.h
+    tracking/region/RegionModel.h
+    libs/tracking/tract_model.hpp
+    tracking/tract/tracttablewidget.h
+    opengl/renderingtablewidget.h
+    qcolorcombobox.h
+    libs/tracking/tracking_thread.hpp
+    libs/prog_interface_static_link.h
+    libs/mapping/atlas.hpp
+    view_image.h
+    libs/gzip_interface.hpp
+    manual_alignment.h
+    tracking/tract_report.hpp
+    tracking/color_bar_dialog.hpp
+    tracking/connectivity_matrix_dialog.h
+    tracking/atlasdialog.h
+    filebrowser.h
+    program_option.hpp
+    qcompletelineedit.h
+    libs/mapping/connectometry_db.hpp
+    connectometry/createdbdialog.h
+    connectometry/match_db.h
+    connectometry/db_window.h
+    connectometry/group_connectometry.hpp
+    connectometry/group_connectometry_analysis.h
     regtoolbox.h
-    connectometry/nn_connectometry.h 
-    connectometry/nn_connectometry_analysis.h 
-    auto_track.h 
-    tracking/device.h 
-    tracking/devicetablewidget.h 
-    mac_filesystem.hpp 
-    libs/dsi/hist_process.hpp 
+    auto_track.h
+    tracking/device.h
+    tracking/devicetablewidget.h
+    mac_filesystem.hpp
+    libs/dsi/hist_process.hpp
     xnat_dialog.h)
 
 set(DSI_STUDIO_FORMS mainwindow.ui 
@@ -166,7 +163,7 @@ set(DSI_STUDIO_OTHER_FILES options.txt
     FreeSurferColorLUT.txt)
 
 
-add_executable(dsi_studio ${DSI_STUDIO_SOURCES} ${DSI_STUDIO_FORMS} ${DSI_STUDIO_RESOURCES})
+add_executable(dsi_studio ${DSI_STUDIO_SOURCES} ${DSI_STUDIO_FORMS} ${DSI_STUDIO_HEADERS} ${DSI_STUDIO_RESOURCES})
 set_target_properties(dsi_studio PROPERTIES CXX_STANDARD 17 CXX_EXTENSIONS NONE)
 target_compile_definitions(dsi_studio PUBLIC DSISTUDIO_RELEASE_NAME="Chen")
 target_compile_definitions(dsi_studio PUBLIC DSISTUDIO_RELEASE_CODE=11770345)
