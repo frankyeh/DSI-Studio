@@ -11,6 +11,38 @@ on:
         required: true
         default: '2021.12.03 "Chen" Release'
 jobs:
+  docker_build:
+    needs: linux-build
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+    - name: Set up QEMU
+      uses: docker/setup-qemu-action@v1
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v1
+    - name: Login to DockerHub
+      uses: docker/login-action@v1
+      with:
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+    - name: Log in to the Container registry
+      uses: docker/login-action@v1 
+      with:
+        registry: ghcr.io
+        username: ${{ github.repository_owner }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    - name: Current Time
+      run: echo "DATE_TAG=$(date "+%Y-%m-%d")" >> $GITHUB_ENV
+    - name: Build and push
+      uses: docker/build-push-action@v2
+      with:
+        context: .
+        file: build_packages/docker/Dockerfile2
+        push: true
+        tags: |
+          "dsistudio/dsistudio:chen-${{ env.DATE_TAG }}"
+          dsistudio/dsistudio:latest
   linux-build:
     strategy:
       matrix:
