@@ -37,7 +37,7 @@ RegToolBox::RegToolBox(QWidget *parent) :
     connect(flash_timer.get(), SIGNAL(timeout()), this, SLOT(flash_image()));
     flash_timer->setInterval(1000);
     flash_timer->start();
-    QMovie *movie = new QMovie(":/data/icons/ajax-loader.gif");
+    QMovie *movie = new QMovie(":/icons/ajax-loader.gif");
     ui->running_label->setMovie(movie);
     ui->running_label->hide();
     ui->stop->hide();

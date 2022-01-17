@@ -34,15 +34,11 @@
         <file>icons/add_surface.xpm</file>
         <file>icons/atlas.xpm</file>
         <file>icons/slice.xpm</file>
+	<file>icons/ajax-loader.gif</file>
     </qresource>
     <qresource prefix="/data">
         <file>options.txt</file>
-        <file>shader_fragment.txt</file>
-        <file>shader_vertex.txt</file>
-        <file>icons/ajax-loader.gif</file>
         <file>FreeSurferColorLUT.txt</file>
-        <file>shader_fragment2.txt</file>
-        <file>shader_vertex2.txt</file>
         <file>dicom_tag.txt</file>
     </qresource>
 </RCC>

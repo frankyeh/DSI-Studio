@@ -179,12 +179,8 @@ SOURCES += main.cpp \
 OTHER_FILES += \
     options.txt \
     dicom_tag.txt \
-    FreeSurferColorLUT.txt \
-    shader_fragment.txt \
-    shader_vertex.txt
+    FreeSurferColorLUT.txt
 
 DISTFILES += \
-    shader_fragment2.txt \
-    shader_vertex2.txt \
     LICENSE
 
