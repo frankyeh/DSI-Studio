@@ -16,11 +16,6 @@ __I have not tested this on any other system than my Mac so far. Your Mileage Ma
   `~Qt/5.12.2/clang_64` as the root directory for Qt or (I will refer to it as `<QT_ROOT>` and ignore the other stuff there
    (there were also IOS and Android versions).
 
-* Get Boost 1.57.0 -- this was a bit old to install with Brew so I got it from (as the original DSI Studio install guide suggests)
-  [The Boost Older Releases Release History Page](https://www.boost.org/users/history/). The link eventually redirected me to
-  Sourceforge. Once downloaded just unzip Boost. This version does not work with CMake yet, but can be found by CMake. We will call 
-  path of the unzipped Boost directory as `<BOOST_ROOT>`
-
 * Get TIPL from [The TIPL GitHub Repository](https://github.com/frankyeh/TIPL.git) -- Install this using CMake 
   into some directory (we will call the installation directory `<TIPL_ROOT>`) as follows
   ```bash$
