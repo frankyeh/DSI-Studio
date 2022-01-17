@@ -1252,7 +1252,7 @@ void MainWindow::on_xnat_download_clicked()
 }
 
 
-void MainWindow::on_styles_activated(int index)
+void MainWindow::on_styles_activated(int)
 {
     if(ui->styles->currentText() != settings.value("styles","Fusion").toString())
     {
