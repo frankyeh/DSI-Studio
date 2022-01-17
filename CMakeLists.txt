@@ -1,20 +1,26 @@
 cmake_minimum_required(VERSION 3.19)
-project(DSI_Studio VERSION "202112.03" LANGUAGES CXX;C)
+project(DSI_Studio VERSION "2022.01.17" LANGUAGES CXX;C)
 
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_AUTOMOC ON)
+set(CMAKE_AUTORCC ON)
+set(CMAKE_AUTOUIC ON)
 
-find_package(Qt5 COMPONENTS Core Gui OpenGL Charts Network Widgets REQUIRED)
+find_package(Qt6 COMPONENTS Core Gui OpenGL Charts Network Widgets REQUIRED)
 find_package(ZLIB REQUIRED)
 find_package(OpenGL REQUIRED)
-find_package(TIPL REQUIRED)
+if(EXISTS "${TIPL_DIR}")
+    include_directories(${TIPL_DIR})
+else(EXISTS "${TIPL_DIR}")
+    find_package(TIPL REQUIRED)
+endif(EXISTS "${TIPL_DIR}")
 
-set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTOUIC_SEARCH_PATHS ${CMAKE_SOURCE_DIR}
   ${CMAKE_SOURCE_DIR}/tracking
   ${CMAKE_SOURCE_DIR}/reconstruction
   ${CMAKE_SOURCE_DIR}/dicom
   ${CMAKE_SOURCE_DIR}/connectometry)
-
-set(CMAKE_AUTOMOC ON)
 
 set(DSI_STUDIO_HEADERS mainwindow.h 
     dicom/dicom_parser.h 
@@ -86,13 +92,11 @@ set(DSI_STUDIO_FORMS mainwindow.ui
     tracking/atlasdialog.ui 
     filebrowser.ui 
     connectometry/createdbdialog.ui 
-    connectometry/individual_connectometry.ui 
-    connectometry/match_db.ui 
+    connectometry/match_db.ui
     connectometry/db_window.ui 
     connectometry/group_connectometry.ui 
     regtoolbox.ui 
-    connectometry/nn_connectometry.ui 
-    auto_track.ui 
+    auto_track.ui
     xnat_dialog.ui)
 
 set(DSI_STUDIO_RESOURCES icons.qrc)
@@ -139,7 +143,6 @@ set(DSI_STUDIO_SOURCES main.cpp
     cmd/ren.cpp 
     libs/mapping/connectometry_db.cpp 
     connectometry/createdbdialog.cpp 
-    connectometry/individual_connectometry.cpp 
     connectometry/match_db.cpp 
     connectometry/db_window.cpp 
     connectometry/group_connectometry.cpp 
@@ -149,8 +152,6 @@ set(DSI_STUDIO_SOURCES main.cpp
     cmd/qc.cpp 
     libs/dsi/basic_voxel.cpp 
     libs/dsi/image_model.cpp 
-    connectometry/nn_connectometry.cpp 
-    connectometry/nn_connectometry_analysis.cpp 
     cmd/reg.cpp 
     auto_track.cpp 
     cmd/atk.cpp 
@@ -162,20 +163,15 @@ set(DSI_STUDIO_SOURCES main.cpp
 
 set(DSI_STUDIO_OTHER_FILES options.txt 
     dicom_tag.txt 
-    FreeSurferColorLUT.txt 
-    shader_fragment.txt 
-    shader_vertex.txt)
-
-set(DIS_STUDIO_DISTFILES shader_fragment2.txt 
-    shader_vertex2.txt 
-    LICENSE)
+    FreeSurferColorLUT.txt)
 
 
-add_executable(dsi_studio ${DSI_STUDIO_SOURCES})
+add_executable(dsi_studio ${DSI_STUDIO_SOURCES} ${DSI_STUDIO_FORMS} ${DSI_STUDIO_RESOURCES})
 set_target_properties(dsi_studio PROPERTIES CXX_STANDARD 17 CXX_EXTENSIONS NONE)
 target_compile_definitions(dsi_studio PUBLIC DSISTUDIO_RELEASE_NAME="Chen")
 target_compile_definitions(dsi_studio PUBLIC DSISTUDIO_RELEASE_CODE=11770345)
-target_include_directories(dsi_studio PUBLIC 
+target_compile_definitions(dsi_studio PUBLIC QT6_PATCH)
+target_include_directories(dsi_studio PUBLIC
   ${CMAKE_SOURCE_DIR}/libs 
   ${CMAKE_SOURCE_DIR}/libs/dsi 
   ${CMAKE_SOURCE_DIR}/libs/tracking 
@@ -184,5 +180,5 @@ target_include_directories(dsi_studio PUBLIC
   ${CMAKE_SOURCE_DIR}
   ${CMAKE_BINARY_DIR})
 
-target_link_libraries(dsi_studio TIPL::tipl Qt5::Core Qt5::Gui Qt5::OpenGL Qt5::Charts Qt5::Network Qt5::Widgets ZLIB::ZLIB OpenGL::GL OpenGL::GLU)
+target_link_libraries(dsi_studio Qt6::Core Qt6::Gui Qt6::OpenGL Qt6::Charts Qt6::Network Qt6::Widgets ZLIB::ZLIB OpenGL::GL OpenGL::GLU)
 
