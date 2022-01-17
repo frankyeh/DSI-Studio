@@ -2,7 +2,6 @@
 #define DDI_PROCESS_HPP
 #define _USE_MATH_DEFINES
 #include <math.h>
-#include <boost/math/special_functions/sinc.hpp>
 #include "basic_process.hpp"
 #include "basic_voxel.hpp"
 #include "image_model.hpp"
@@ -41,7 +40,7 @@ public:
                         sinc_ql_[index] = base_function(q_vectors_time[i]*from);
                 else
                     for (unsigned int i = 0; i < data.space.size(); ++i,++index)
-                        sinc_ql_[index] = boost::math::sinc_pi(q_vectors_time[i]*from);
+                        sinc_ql_[index] = sinc_pi_imp(q_vectors_time[i]*from);
 
             }
             tipl::mat::vector_product(&*sinc_ql_.begin(),&*data.space.begin(),&*data.odf.begin(),
@@ -391,7 +390,7 @@ public:
             {
                 // 2pi*L*q = sigma*sqrt(6D*b_value)
                 float lq_2pi = sigma*std::sqrt(voxel.bvalues[index]*0.018f);
-                disw[n][index] = boost::math::sinc_pi(lq_2pi);
+                disw[n][index] = sinc_pi_imp(lq_2pi);
                 cdfw[n][index] = (voxel.bvalues[index] == 0.0f ?
                                  sigma : sinint(lq_2pi)/std::sqrt(voxel.bvalues[index]*0.018f));
             }

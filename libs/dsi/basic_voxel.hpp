@@ -5,6 +5,10 @@
 #include "tessellated_icosahedron.hpp"
 #include "gzip_interface.hpp"
 #include "prog_interface_static_link.h"
+
+float sinc_pi_imp(float);
+
+
 struct ImageModel;
 struct VoxelParam;
 class Voxel;

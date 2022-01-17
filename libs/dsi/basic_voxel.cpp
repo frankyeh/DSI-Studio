@@ -1,4 +1,3 @@
-#include <boost/math/special_functions/sinc.hpp>
 #include "basic_voxel.hpp"
 #include "image_model.hpp"
 float base_function(float theta)
@@ -7,6 +6,29 @@ float base_function(float theta)
         return 1.0f/3.0f;
     return (2.0f*std::cos(theta)+(theta-2.0f/theta)*std::sin(theta))/theta/theta;
 }
+
+float const taylor_0_bound = std::ldexp(1.0f, 1-std::numeric_limits<float>::digits);;
+float const taylor_2_bound = std::sqrt(taylor_0_bound);
+float const taylor_n_bound = std::sqrt(taylor_2_bound);
+
+float sinc_pi_imp(float x)
+{
+    if (std::abs(x) >= taylor_n_bound)
+        return(sin(x)/x);
+    else
+    {
+        float result(1);
+        if(std::abs(x) >= taylor_0_bound)
+        {
+            float x2(x*x);
+            result -= x2/6.0f;
+            if(std::abs(x) >= taylor_2_bound)
+                result += (x2*x2)/120.0f;
+        }
+        return(result);
+    }
+}
+
 
 void Voxel::init(void)
 {
@@ -43,10 +65,13 @@ void Voxel::calculate_sinc_ql(std::vector<float>& sinc_ql)
                          tipl::vector<3,float>(ti.vertices[j])*
                            std::sqrt(bvalues[i]*0.01506f);
 
+    std::cout << "ddd" << std::endl;
     for (unsigned int index = 0; index < sinc_ql.size(); ++index)
+    {
         sinc_ql[index] = r2_weighted ?
                      base_function(sinc_ql[index]*sigma):
-                     boost::math::sinc_pi(sinc_ql[index]*sigma);
+                     sinc_pi_imp(sinc_ql[index]*sigma);
+    }
 }
 void Voxel::calculate_q_vec_t(std::vector<tipl::vector<3,float> >& q_vectors_time)
 {
