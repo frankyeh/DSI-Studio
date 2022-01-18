@@ -102,9 +102,6 @@ MainWindow::MainWindow(QWidget *parent) :
 
     if(!arg_file_name.empty())
         openFile(arg_file_name.c_str());
-    #ifndef WIN32
-        ui->show_console->hide();
-    #endif
 }
 void MainWindow::openFile(QString file_name)
 {
