@@ -3,17 +3,34 @@
 
 #include <QMainWindow>
 #include <QSettings>
-#include "connectometry/group_connectometry_analysis.h"
+#include <iosfwd>
+
+class QTextEdit;
+class console_stream :  public std::basic_streambuf<char>
+{
+public:
+    console_stream(QTextEdit* text_edit);
+protected:
+    virtual int_type overflow(int_type v);
+    virtual std::streamsize xsputn(const char *p, std::streamsize n);
+
+private:
+    QString buf;
+    QTextEdit* log_window;
+};
+
 
 namespace Ui {
     class MainWindow;
 }
+class group_connectometry_analysis;
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
     enum { MaxRecentFiles = 50 };
     void updateRecentList(void);
     QSettings settings;
+    std::shared_ptr<console_stream> cs;
 public:
     explicit MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
@@ -63,9 +80,9 @@ private slots:
     void on_dicom2nii_clicked();
     void on_clear_src_history_clicked();
     void on_clear_fib_history_clicked();
-    void on_show_console_clicked();
     void on_xnat_download_clicked();
     void on_styles_activated(int index);
+    void on_tabWidget_currentChanged(int index);
 };
 
 #endif // MAINWINDOW_H

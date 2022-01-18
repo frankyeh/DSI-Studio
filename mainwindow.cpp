@@ -34,6 +34,38 @@
 #include "mac_filesystem.hpp"
 #include "xnat_dialog.h"
 
+
+
+console_stream::console_stream(QTextEdit* text_edit)
+    :std::basic_streambuf<char>(),log_window(text_edit)
+{
+    std::cout.rdbuf(this);
+}
+
+bool is_main_thread(void);
+std::basic_streambuf<char>::int_type console_stream::overflow(std::basic_streambuf<char>::int_type v)
+{
+    if (v == '\n' && is_main_thread())
+    {
+        QString buf2;
+        buf2.swap(buf);
+        QStringList strSplitted = buf2.split("\n");
+        log_window->moveCursor (QTextCursor::End);
+        for(int i = 0; i < strSplitted.size(); i++)
+            log_window->append(strSplitted.at(i));
+        return v;
+    }
+    buf.push_back(char(v));
+    return v;
+}
+
+std::streamsize console_stream::xsputn(const char *p, std::streamsize n)
+{
+    buf += p;
+    return n;
+}
+
+
 extern std::string arg_file_name;
 std::vector<tracking_window*> tracking_windows;
 MainWindow::MainWindow(QWidget *parent) :
@@ -42,7 +74,8 @@ MainWindow::MainWindow(QWidget *parent) :
 {
     setAcceptDrops(true);
     ui->setupUi(this);
-
+    ui->tabWidget->setCurrentIndex(0);
+    cs.reset(new console_stream(ui->console));
     ui->styles->addItems(QStringList("default") << QStyleFactory::keys());
     ui->styles->setCurrentText(settings.value("styles","Fusion").toString());
 
@@ -797,6 +830,7 @@ void MainWindow::on_set_dir_clicked()
     if ( dir.isEmpty() )
         return;
     QDir::setCurrent(dir);
+    ui->pwd->setText(QString("[%1]$ ./dsi_studio ").arg(QDir().current().absolutePath()));
 }
 
 bool load_image_from_files(QStringList filenames,tipl::image<3>& ref,tipl::vector<3>& vs,tipl::matrix<4,4>& trans);
@@ -1232,18 +1266,6 @@ void MainWindow::on_clear_fib_history_clicked()
 }
 
 
-void MainWindow::on_show_console_clicked()
-{
-    #ifdef _WIN32
-    if(!AllocConsole())
-        return;
-    FILE *d;
-    freopen_s(&d,"CONOUT$", "w", stdout);
-    std::cout.clear();
-    std::cin.clear();
-    #endif
-}
-
 void MainWindow::on_xnat_download_clicked()
 {
     auto* xnat = new xnat_dialog(this);
@@ -1261,3 +1283,9 @@ void MainWindow::on_styles_activated(int)
     }
 }
 
+
+void MainWindow::on_tabWidget_currentChanged(int index)
+{
+    if(index)
+        ui->pwd->setText(QString("[%1]$ ./dsi_studio ").arg(QDir().current().absolutePath()));
+}
