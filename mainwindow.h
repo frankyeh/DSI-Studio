@@ -3,8 +3,8 @@
 
 #include <QMainWindow>
 #include <QSettings>
-#include <iosfwd>
-
+#include <iostream>
+#include <memory>
 class QTextEdit;
 class console_stream :  public std::basic_streambuf<char>
 {
