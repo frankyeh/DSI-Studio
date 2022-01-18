@@ -15,6 +15,7 @@ RUN apt update && apt full-upgrade -y && \
   make \
   git \
   zlib1g-dev \
+  libboost-all-dev \
   ca-certificates \
   qt5-qmake \
   qt5-default \
