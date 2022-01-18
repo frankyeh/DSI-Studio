@@ -162,8 +162,11 @@ set(DSI_STUDIO_OTHER_FILES options.txt
     dicom_tag.txt 
     FreeSurferColorLUT.txt)
 
-
-add_executable(dsi_studio ${DSI_STUDIO_SOURCES} ${DSI_STUDIO_FORMS} ${DSI_STUDIO_HEADERS} ${DSI_STUDIO_RESOURCES})
+if(WIN32)
+    add_executable(dsi_studio WIN32 ${DSI_STUDIO_SOURCES} ${DSI_STUDIO_FORMS} ${DSI_STUDIO_HEADERS} ${DSI_STUDIO_RESOURCES})
+else()
+    add_executable(dsi_studio ${DSI_STUDIO_SOURCES} ${DSI_STUDIO_FORMS} ${DSI_STUDIO_HEADERS} ${DSI_STUDIO_RESOURCES})
+endif()
 set_target_properties(dsi_studio PROPERTIES CXX_STANDARD 17 CXX_EXTENSIONS NONE)
 target_compile_definitions(dsi_studio PUBLIC DSISTUDIO_RELEASE_NAME="Chen")
 target_compile_definitions(dsi_studio PUBLIC DSISTUDIO_RELEASE_CODE=11770345)
