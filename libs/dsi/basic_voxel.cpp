@@ -64,8 +64,6 @@ void Voxel::calculate_sinc_ql(std::vector<float>& sinc_ql)
             sinc_ql[index] = bvectors[i]*
                          tipl::vector<3,float>(ti.vertices[j])*
                            std::sqrt(bvalues[i]*0.01506f);
-
-    std::cout << "ddd" << std::endl;
     for (unsigned int index = 0; index < sinc_ql.size(); ++index)
     {
         sinc_ql[index] = r2_weighted ?
