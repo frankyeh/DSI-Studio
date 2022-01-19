@@ -1786,7 +1786,7 @@ void tracking_window::stripSkull()
     tipl::filter::mean(Iw);
 
     tipl::image<3> Iw_(reg_slice->source_images.shape());
-    tipl::resample_mt(Iw,Iw_,manual->get_iT(),tipl::linear);
+    tipl::resample_mt(Iw,Iw_,manual->get_iT());
 
     reg_slice->skull_removed_images = reg_slice->source_images;
     reg_slice->skull_removed_images *= Iw_;
@@ -2459,7 +2459,7 @@ void tracking_window::on_actionMark_Region_on_T1W_T2W_triggered()
     tipl::matrix<4,4> T(slice->T);
     tipl::multiply_constant(&T[0],&T[0]+12,resolution_ratio);
     tipl::image<3,unsigned char> t_mask(slice->source_images.shape());
-    tipl::resample(mask,t_mask,T,tipl::nearest);
+    tipl::resample_mt<tipl::interpolation::nearest>(mask,t_mask,T);
     for(size_t i = 0;i < t_mask.size();++i)
         if(t_mask[i])
             slice->source_images[i] = mark_value;

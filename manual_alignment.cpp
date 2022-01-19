@@ -198,7 +198,7 @@ void manual_alignment::update_image(void)
     iT.inverse();
     warped_from.clear();
     warped_from.resize(to.shape());
-    tipl::resample(from,warped_from,iT,tipl::linear);
+    tipl::resample(from,warped_from,iT);
 }
 
 void manual_alignment::set_arg(const tipl::affine_transform<float>& arg_min,
@@ -372,7 +372,10 @@ void manual_alignment::on_actionSave_Warpped_Image_triggered()
         return;
 
     tipl::image<3> I(to.shape());
-    tipl::resample(from_original,I,iT,is_label_image(from_original) ? tipl::nearest : tipl::cubic);
+    if(is_label_image(from_original))
+        tipl::resample_mt<tipl::interpolation::nearest>(from_original,I,iT);
+    else
+        tipl::resample_mt<tipl::interpolation::cubic>(from_original,I,iT);
     gz_nifti::save_to_file(filename.toStdString().c_str(),I,to_vs,nifti_srow);
 }
 

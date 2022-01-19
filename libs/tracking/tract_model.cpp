@@ -3103,7 +3103,7 @@ void TractModel::get_tract_data(std::shared_ptr<fib_data> handle,unsigned int fi
         for (unsigned int point_index = 0,tract_index = 0;
              point_index < count;++point_index,tract_index += 3)
         {
-            tipl::interpolation<tipl::linear_weighting,3> tri_interpo;
+            tipl::interpolation::linear<3> tri_interpo;
             gradient[point_index].normalize();
             if (tri_interpo.get_location(handle->dim,&(tract_data[fiber_index][tract_index])))
             {
@@ -3120,10 +3120,10 @@ void TractModel::get_tract_data(std::shared_ptr<fib_data> handle,unsigned int fi
                 if (sum_value > 0.5f)
                     data[point_index] = average_value/sum_value;
                 else
-                    tipl::estimate(base_image,&(tract_data[fiber_index][tract_index]),data[point_index],tipl::linear);
+                    tipl::estimate(base_image,&(tract_data[fiber_index][tract_index]),data[point_index]);
             }
             else
-                tipl::estimate(base_image,&(tract_data[fiber_index][tract_index]),data[point_index],tipl::linear);
+                tipl::estimate(base_image,&(tract_data[fiber_index][tract_index]),data[point_index]);
         }
     }
     else
@@ -3135,12 +3135,12 @@ void TractModel::get_tract_data(std::shared_ptr<fib_data> handle,unsigned int fi
             {
                 tipl::vector<3> pos(&(tract_data[fiber_index][index]));
                 pos.to(handle->view_item[index_num].iT);
-                tipl::estimate(handle->view_item[index_num].get_image(),pos,data[data_index],tipl::linear);
+                tipl::estimate(handle->view_item[index_num].get_image(),pos,data[data_index]);
             }
         }
         else
         for (unsigned int data_index = 0,index = 0;index < tract_data[fiber_index].size();index += 3,++data_index)
-            tipl::estimate(handle->view_item[index_num].get_image(),&(tract_data[fiber_index][index]),data[data_index],tipl::linear);
+            tipl::estimate(handle->view_item[index_num].get_image(),&(tract_data[fiber_index][index]),data[data_index]);
     }
 }
 

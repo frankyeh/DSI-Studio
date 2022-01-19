@@ -564,8 +564,8 @@ void view_image::add_overlay(void)
         return;
     overlay.clear();
     overlay.resize(data.shape());
-    tipl::resample(opened_images[index]->data,overlay,
-                   tipl::from_space(T).to(opened_images[index]->T),tipl::cubic);
+    tipl::resample_mt<tipl::interpolation::cubic>(opened_images[index]->data,overlay,
+                   tipl::from_space(T).to(opened_images[index]->T));
     overlay_v2c = opened_images[index]->v2c;
     show_image();
 }
@@ -648,7 +648,10 @@ void view_image::on_actionResample_triggered()
     nT[0] = T1.sr[0] = new_vs[0]/vs[0];
     nT[5] = T1.sr[4] = new_vs[1]/vs[1];
     nT[10] = T1.sr[8] = new_vs[2]/vs[2];
-    tipl::resample_mt(data,J,T1,is_label_image(data) ? tipl::nearest : tipl::cubic);
+    if(is_label_image(data))
+        tipl::resample_mt<tipl::interpolation::nearest>(data,J,T1);
+    else
+        tipl::resample_mt<tipl::interpolation::cubic>(data,J,T1);
     data.swap(J);
     vs = new_vs;
     T = T*nT;

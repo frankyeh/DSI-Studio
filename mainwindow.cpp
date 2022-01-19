@@ -1191,7 +1191,7 @@ bool dcm2src(QStringList files,std::ostream& out)
             T1.sr[0] = new_vs[0]/vs[0];
             T1.sr[4] = new_vs[1]/vs[1];
             T1.sr[8] = new_vs[2]/vs[2];
-            tipl::resample_mt(I,J,T1,tipl::cubic);
+            tipl::resample_mt<tipl::interpolation::cubic>(I,J,T1);
             vs = new_vs;
             I.swap(J);
         }

@@ -932,7 +932,7 @@ bool fib_data::save_mapping(const std::string& index_name,const std::string& fil
         if(view_item[index].get_image().shape() != dim)
         {
             tipl::image<3> new_buf(dim);
-            tipl::resample(buf,new_buf,view_item[index].iT,tipl::cubic);
+            tipl::resample_mt<tipl::interpolation::cubic>(buf,new_buf,view_item[index].iT);
             new_buf.swap(buf);
         }
         return gz_nifti::save_to_file(file_name.c_str(),buf,vs,trans_to_mni);
@@ -1799,10 +1799,10 @@ void fib_data::run_normalization(bool background,bool inv)
             return;
         prog = 2;
         tipl::image<3> Iss(It.shape());
-        tipl::resample_mt(Is,Iss,T,tipl::linear);
+        tipl::resample_mt(Is,Iss,T);
         tipl::image<3> Iss2(It2.shape());
         if(!Is2.empty() && !It2.empty())
-            tipl::resample_mt(Is2,Iss2,T,tipl::linear);
+            tipl::resample_mt(Is2,Iss2,T);
         prog = 3;
         tipl::image<3,tipl::vector<3> > dis,inv_dis;
         tipl::reg::cdm_pre(It,It2,Iss,Iss2);
@@ -1853,7 +1853,7 @@ void fib_data::run_normalization(bool background,bool inv)
                 tipl::vector<3> p(index),d;
                 iT(p);
                 v = p;
-                tipl::estimate(inv_dis,v,d,tipl::linear);
+                tipl::estimate(inv_dis,v,d);
                 v += d;
             });
             if(out)

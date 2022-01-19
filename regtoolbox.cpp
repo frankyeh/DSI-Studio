@@ -368,7 +368,7 @@ void RegToolBox::on_timer()
         {
             J_view.resize(It.shape());
             tipl::resample_mt((ui->show_second->isChecked() && I2.shape() == I.shape() ? I2 : I),
-                              J_view,tipl::transformation_matrix<double>(arg,It.shape(),Itvs,I.shape(),Ivs),tipl::linear);
+                              J_view,tipl::transformation_matrix<double>(arg,It.shape(),Itvs,I.shape(),Ivs));
 
             show_image();
         }
@@ -443,11 +443,11 @@ void RegToolBox::linear_reg(tipl::reg::reg_type reg_type,int cost_type)
             tipl::reg::two_way_linear_mr(It,Itvs,I,Ivs,T,reg_type,tipl::reg::correlation(),thread.terminated,&arg,
                                          ui->large_deform->isChecked() ? tipl::reg::large_bound : tipl::reg::reg_bound);
         //T = tipl::transformation_matrix<double>(arg,It.shape(),Itvs,I.shape(),Ivs);
-        tipl::resample_mt(I,J_,T,tipl::cubic);
+        tipl::resample_mt<tipl::interpolation::cubic>(I,J_,T);
         if(I2.shape() == I.shape())
         {
             tipl::image<3> J2_(It.shape());
-            tipl::resample_mt(I2,J2_,T,tipl::cubic);
+            tipl::resample_mt<tipl::interpolation::cubic>(I2,J2_,T);
             tipl::normalize(J2,1.0f);
             J2.swap(J2_);
         }
@@ -546,8 +546,7 @@ bool apply_warping(const char* from,
                    tipl::image<3,tipl::vector<3> >& to2from,
                    tipl::vector<3> Itvs,
                    const tipl::matrix<4,4>& ItR,
-                   std::string& error,
-                   tipl::interpolation_type interpo)
+                   std::string& error)
 {
     gz_nifti nifti;
     if(!nifti.load_from_file(from))
@@ -564,17 +563,21 @@ bool apply_warping(const char* from,
         tipl::matrix<4,4> T;
         nifti.get_image_transformation(T);
         tipl::image<3> I3_(I_shape);
-        if(!tipl::resample(I3,I3_,T,IR,is_label ? tipl::nearest : interpo))
-        {
-            error = "invalid srow matrix in ";
-            error += from;
+        if(!T.inv())
             return false;
-        }
+        T *= IR;
+        if(is_label)
+            tipl::resample_mt<tipl::interpolation::nearest>(I3,I3_,T);
+        else
+            tipl::resample_mt<tipl::interpolation::cubic>(I3,I3_,T);
         I3_.swap(I3);
     }
 
     tipl::image<3> J3;
-    tipl::compose_mapping(I3,to2from,J3,is_label ? tipl::nearest : interpo);
+    if(is_label)
+        tipl::compose_mapping<tipl::interpolation::nearest>(I3,to2from,J3);
+    else
+        tipl::compose_mapping<tipl::interpolation::cubic>(I3,to2from,J3);
     if(!gz_nifti::save_to_file(to,J3,Itvs,ItR))
     {
         error = "cannot write to file ";
@@ -598,7 +601,7 @@ void RegToolBox::on_actionApply_Warpping_triggered()
     std::string error;
     if(!apply_warping(from.toStdString().c_str(),
                       to.toStdString().c_str(),
-                      I.shape(),IR,to2from,Itvs,ItR,error,tipl::cubic))
+                      I.shape(),IR,to2from,Itvs,ItR,error))
         QMessageBox::critical(this,"ERROR",error.c_str());
     else
         QMessageBox::information(this,"DSI Studio","Saved");

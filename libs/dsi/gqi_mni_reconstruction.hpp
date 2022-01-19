@@ -138,11 +138,11 @@ public:
             }
 
             tipl::image<3> VFF(VG.shape()),VFF2;
-            tipl::resample(VF,VFF,affine,tipl::cubic);
+            tipl::resample_mt<tipl::interpolation::cubic>(VF,VFF,affine);
             if(dual_modality)
             {
                 VFF2.resize(VG.shape());
-                tipl::resample(VF2,VFF2,affine,tipl::cubic);
+                tipl::resample_mt<tipl::interpolation::cubic>(VF2,VFF2,affine);
             }
 
             if(export_intermediate)
@@ -254,7 +254,7 @@ public:
             {
                 tipl::vector<3> p(pos);
                 p *= VG_ratio;
-                tipl::interpolation<tipl::linear_weighting,3> interp;
+                tipl::interpolation::linear<3> interp;
                 if(!interp.get_location(VG.shape(),p))
                     return;
                 interp.estimate(cdm_dis,dis);
@@ -361,7 +361,7 @@ public:
             }
         }
 
-        tipl::cubic_interpolation<3> interpolation;
+        tipl::interpolation::cubic<3> interpolation;
         if(!interpolation.get_location(src_geo,mapping[data.voxel_index]))
         {
             std::fill(data.space.begin(),data.space.end(),0);

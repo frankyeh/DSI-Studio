@@ -688,7 +688,7 @@ bool load_nii(std::shared_ptr<fib_data> handle,
                     {
                         auto pos = handle->get_native_position()[i];
                         T(pos);
-                        tipl::estimate(from,pos,new_from[i],tipl::nearest);
+                        tipl::estimate<tipl::interpolation::nearest>(from,pos,new_from[i]);
                     });
                     std::cout << "applying QSDR warpping to the native space NIFTI file" << std::endl;
                     new_from.swap(from);
@@ -719,7 +719,7 @@ bool load_nii(std::shared_ptr<fib_data> handle,
             std::cout << "warpping the NIFTI file from MNI space to the native space." << std::endl;
             tipl::matrix<4,4> trans;
             header.get_image_transformation(trans);
-            if(!handle->mni2sub(from,trans,tipl::nearest))
+            if(!handle->mni2sub<tipl::interpolation::nearest>(from,trans))
             {
                 error_msg = handle->error_msg;
                 return false;

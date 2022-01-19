@@ -741,7 +741,7 @@ void ImageModel::rotate_one_dwi(unsigned int dwi_index,const tipl::transformatio
 {
     tipl::image<3> tmp(voxel.dim);
     auto I = dwi_at(dwi_index);
-    tipl::resample(I,tmp,T,tipl::cubic);
+    tipl::resample<tipl::interpolation::cubic>(I,tmp,T);
     tipl::lower_threshold(tmp,0);
     std::copy(tmp.begin(),tmp.end(),I.begin());
     // rotate b-table
@@ -770,15 +770,10 @@ void ImageModel::rotate(const tipl::shape<3>& new_geo,
         progress::at(index,src_dwi_data.size());
         dwi[index].resize(new_geo);
         auto I = dwi_at(index);
-        if(!super_reso_ref.empty())
-            tipl::resample_with_ref(I,super_reso_ref,dwi[index],T,var);
+        if(cdm_dis.empty())
+            tipl::resample<tipl::interpolation::cubic>(I,dwi[index],T);
         else
-        {
-            if(cdm_dis.empty())
-                tipl::resample(I,dwi[index],T,tipl::cubic);
-            else
-                tipl::resample_dis(I,dwi[index],T,cdm_dis,tipl::cubic);
-        }
+            tipl::resample_dis<tipl::interpolation::cubic>(I,dwi[index],T,cdm_dis);
         src_dwi_data[index] = &(dwi[index][0]);
     });
     if(progress::aborted())
@@ -839,7 +834,7 @@ bool ImageModel::get_acpc_transform(tipl::shape<3>& new_geo,tipl::affine_transfo
         }
         tipl::normalize(I_);
         auto ratio = vs / voxel.vs[0];
-        tipl::scale(I_,I,ratio,tipl::linear);
+        tipl::scale(I_,I,ratio);
         vs = voxel.vs[0];
     }
 
@@ -856,7 +851,7 @@ bool ImageModel::get_acpc_transform(tipl::shape<3>& new_geo,tipl::affine_transfo
     std::cout << T;
     progress::at(1,3);
     tipl::image<3,unsigned char> I2(I.shape());
-    tipl::resample(J,I2,tipl::transformation_matrix<float>(T,I.shape(),vs,voxel.dim,voxel.vs),tipl::cubic);
+    tipl::resample_mt<tipl::interpolation::cubic>(J,I2,tipl::transformation_matrix<float>(T,I.shape(),vs,voxel.dim,voxel.vs));
     float r = float(tipl::correlation(I.begin(),I.end(),I2.begin()));
     std::cout << "R2 for ac-pc alignment:" << r*r << std::endl;
     progress::at(2,3);
@@ -2331,7 +2326,7 @@ bool ImageModel::compare_src(const char* file_name)
             progress::show("nonlinear warping");
             progress::at(2,4);
             tipl::image<3> Iff(Ib.shape());
-            tipl::resample(If,Iff,arg,tipl::cubic);
+            tipl::resample_mt<tipl::interpolation::cubic>(If,Iff,arg);
             tipl::match_signal(Ib,Iff);
             bool terminated = false;
             tipl::reg::cdm_param param;
@@ -2342,7 +2337,7 @@ bool ImageModel::compare_src(const char* file_name)
             progress::at(3,4);
 
             tipl::image<3> If2Ib(Ib.shape());
-            tipl::resample_dis(If,If2Ib,arg,cdm_dis,tipl::cubic);
+            tipl::resample_dis<tipl::interpolation::cubic>(If,If2Ib,arg,cdm_dis);
             tipl::image<3,tipl::vector<3> > cdm_dis2;
 
             param.multi_resolution = false;
