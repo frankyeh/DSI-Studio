@@ -36,12 +36,9 @@ void ThreadData::run_thread(unsigned int thread_count,
         interpo_method.reset(new trilinear_interpolation);
         break;
     case 1:
-        interpo_method.reset(new trilinear_interpolation_with_gaussian_basis);
-        break;
     case 2:
         interpo_method.reset(new nearest_direction);
         break;
-
     }
     std::shared_ptr<TrackingMethod> method(new TrackingMethod(trk,interpo_method,roi_mgr));
     method->current_fa_threshold = param.threshold;

@@ -31,7 +31,7 @@ Tracking_dT/Threshold/dt_threshold/float:0.0:1.0:0.05:2/0.2/0.05 means tracking 
 Tracking/Advanced Options/Tracking_adv
 Tracking_adv/Tracking Algorithm/tracking_method/Stremline(Euler):RK4:Voxel tracking/0
 Tracking_adv/Smoothing (1=random)/smoothing/float:-1.5:1:0.1:2/0
-Tracking_adv/Direction Interpoation/interpolation/Trilinear:Gaussian radial basis:nearest/0
+Tracking_adv/Direction Interpoation/interpolation/Trilinear:nearest/0
 Tracking_adv/Seed Orientation/initial_direction/Primary:Random:All/0
 Tracking_adv/Seed Position/seed_plan/Subvoxel:Voxel Center/0
 Tracking_adv/Randomize Seeding/random_seed/Off:On/0
