@@ -254,7 +254,7 @@ public:
             {
                 tipl::vector<3> p(pos);
                 p *= VG_ratio;
-                tipl::interpolation::linear<3> interp;
+                tipl::interpolator::linear<3> interp;
                 if(!interp.get_location(VG.shape(),p))
                     return;
                 interp.estimate(cdm_dis,dis);
@@ -324,7 +324,7 @@ public:
                         tipl::vector<3,float> Jpos(mapping[index]);
                         if(voxel.other_image[i].shape() != src_geo)
                             voxel.other_image_trans[i](Jpos);
-                        tipl::estimate(voxel.other_image[i],Jpos,other_image[i][index]);
+                        tipl::estimate<tipl::interpolation::cubic>(voxel.other_image[i],Jpos,other_image[i][index]);
                     });
                 }
             }
@@ -361,7 +361,7 @@ public:
             }
         }
 
-        tipl::interpolation::cubic<3> interpolation;
+        tipl::interpolator::cubic<3> interpolation;
         if(!interpolation.get_location(src_geo,mapping[data.voxel_index]))
         {
             std::fill(data.space.begin(),data.space.end(),0);

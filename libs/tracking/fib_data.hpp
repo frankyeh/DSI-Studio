@@ -240,7 +240,7 @@ public:
     bool get_atlas_roi(const std::string& atlas_name,const std::string& region_name,std::vector<tipl::vector<3,short> >& points);
     bool get_atlas_roi(std::shared_ptr<atlas> at,unsigned int roi_index,std::vector<tipl::vector<3,short> >& points);
     bool get_atlas_all_roi(std::shared_ptr<atlas> at,std::vector<std::vector<tipl::vector<3,short> > >& points);
-    template<template<int> typename interpotype = tipl::interpolation::linear,typename image_type>
+    template<tipl::interpolation Type = tipl::interpolation::linear,typename image_type>
     bool mni2sub(image_type& mni_image,const tipl::matrix<4,4>& trans)
     {
         const auto& s2t = get_sub2temp_mapping();
@@ -257,7 +257,7 @@ public:
         {
             tipl::vector<3> pos(s2t[index]);
             pos.to(T);
-            tipl::estimate<interpotype>(mni_image,pos,J[index]);
+            tipl::estimate<Type>(mni_image,pos,J[index]);
         });
         mni_image.swap(J);
         return true;

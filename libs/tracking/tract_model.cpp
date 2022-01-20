@@ -3103,7 +3103,7 @@ void TractModel::get_tract_data(std::shared_ptr<fib_data> handle,unsigned int fi
         for (unsigned int point_index = 0,tract_index = 0;
              point_index < count;++point_index,tract_index += 3)
         {
-            tipl::interpolation::linear<3> tri_interpo;
+            tipl::interpolator::linear<3> tri_interpo;
             gradient[point_index].normalize();
             if (tri_interpo.get_location(handle->dim,&(tract_data[fiber_index][tract_index])))
             {

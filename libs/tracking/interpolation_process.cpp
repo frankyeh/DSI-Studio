@@ -14,7 +14,7 @@ bool trilinear_interpolation::evaluate(std::shared_ptr<tracking_data> fib,
                                        float angle,
                                        float dt_threshold)
 {
-    tipl::interpolation::linear<3> tri_interpo;
+    tipl::interpolator::linear<3> tri_interpo;
     if (!tri_interpo.get_location(fib->dim,position))
         return false;
     tipl::vector<3,float> new_dir,main_dir;
