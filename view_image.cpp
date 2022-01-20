@@ -565,7 +565,7 @@ void view_image::add_overlay(void)
     overlay.clear();
     overlay.resize(data.shape());
     tipl::resample_mt<tipl::interpolation::cubic>(opened_images[index]->data,overlay,
-                   tipl::from_space(T).to(opened_images[index]->T));
+                      tipl::transformation_matrix<float>(tipl::from_space(T).to(opened_images[index]->T)));
     overlay_v2c = opened_images[index]->v2c;
     show_image();
 }

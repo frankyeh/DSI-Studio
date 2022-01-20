@@ -741,7 +741,7 @@ void ImageModel::rotate_one_dwi(unsigned int dwi_index,const tipl::transformatio
 {
     tipl::image<3> tmp(voxel.dim);
     auto I = dwi_at(dwi_index);
-    tipl::resample<tipl::interpolation::cubic>(I,tmp,T);
+    tipl::resample_mt<tipl::interpolation::cubic>(I,tmp,T);
     tipl::lower_threshold(tmp,0);
     std::copy(tmp.begin(),tmp.end(),I.begin());
     // rotate b-table

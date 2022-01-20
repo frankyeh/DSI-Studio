@@ -932,7 +932,7 @@ bool fib_data::save_mapping(const std::string& index_name,const std::string& fil
         if(view_item[index].get_image().shape() != dim)
         {
             tipl::image<3> new_buf(dim);
-            tipl::resample_mt<tipl::interpolation::cubic>(buf,new_buf,view_item[index].iT);
+            tipl::resample_mt<tipl::interpolation::cubic>(buf,new_buf,tipl::transformation_matrix<float>(view_item[index].iT));
             new_buf.swap(buf);
         }
         return gz_nifti::save_to_file(file_name.c_str(),buf,vs,trans_to_mni);
@@ -1130,7 +1130,7 @@ bool fib_data::add_dT_index(const std::string& index_name)
                     std::cout << view_item[j].name << " has a dimension of " << J.shape() <<
                                  " warpping to the DWI space..." << std::endl;
                     Jbuf.resize(dim);
-                    tipl::resample_mt(J,Jbuf,view_item[j].iT);
+                    tipl::resample_mt(J,Jbuf,tipl::transformation_matrix<float>(view_item[j].iT));
                     J = tipl::make_image(&*Jbuf.begin(),Jbuf.shape());
                 }
                 if(I.shape() != dim)
@@ -1138,7 +1138,7 @@ bool fib_data::add_dT_index(const std::string& index_name)
                     std::cout << view_item[i].name << " has a dimension of " << I.shape() <<
                                  " warpping to the DWI space..." << std::endl;
                     Ibuf.resize(dim);
-                    tipl::resample_mt(I,Ibuf,view_item[i].iT);
+                    tipl::resample_mt(I,Ibuf,tipl::transformation_matrix<float>(view_item[i].iT));
                     I = tipl::make_image(&*Ibuf.begin(),Ibuf.shape());
                 }
 
@@ -1848,7 +1848,7 @@ void fib_data::run_normalization(bool background,bool inv)
             tipl::image<3,tipl::vector<3,float> > pos(dim);
             iT = T;
             iT.inverse();
-            pos.for_each_mt([&](tipl::vector<3,float>& v,const tipl::pixel_index<3>& index)
+            pos.for_each<tipl::backend::mt>([&](tipl::vector<3,float>& v,const tipl::pixel_index<3>& index)
             {
                 tipl::vector<3> p(index),d;
                 iT(p);
@@ -2013,7 +2013,7 @@ bool fib_data::get_atlas_all_roi(std::shared_ptr<atlas> at,std::vector<std::vect
     std::vector<std::mutex> push_back_mutex(points.size());
     if(at->is_multiple_roi)
     {
-        s2t.for_each_mt([&](const tipl::vector<3>& pos,const tipl::pixel_index<3>& index)
+        s2t.for_each<tipl::backend::mt>([&](const tipl::vector<3>& pos,const tipl::pixel_index<3>& index)
         {
             std::vector<uint16_t> region_indicies;
             at->region_indices_at(pos,region_indicies);
@@ -2030,7 +2030,7 @@ bool fib_data::get_atlas_all_roi(std::shared_ptr<atlas> at,std::vector<std::vect
     }
     else
     {
-        s2t.for_each_mt([&](const tipl::vector<3>& pos,const tipl::pixel_index<3>& index)
+        s2t.for_each<tipl::backend::mt>([&](const tipl::vector<3>& pos,const tipl::pixel_index<3>& index)
         {
             int region_index = at->region_index_at(pos);
             if(region_index < 0 || region_index >= int(points.size()))
@@ -2049,7 +2049,7 @@ const tipl::image<3,tipl::vector<3,float> >& fib_data::get_sub2temp_mapping(void
     if(is_template_space)
     {
         s2t.resize(dim);
-        s2t.for_each_mt([&](tipl::vector<3>& pos,const tipl::pixel_index<3>& index)
+        s2t.for_each<tipl::backend::mt>([&](tipl::vector<3>& pos,const tipl::pixel_index<3>& index)
         {
             pos = index.begin();
         });

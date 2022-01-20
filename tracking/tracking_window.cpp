@@ -1550,7 +1550,7 @@ void tracking_window::on_actionImprove_Quality_triggered()
         }
 
         auto I = tipl::make_image(handle->dir.fa[0],handle->dim);
-        I.for_each_mt([&](float value,tipl::pixel_index<3> index)
+        I.for_each<tipl::backend::mt>([&](float value,tipl::pixel_index<3> index)
         {
             if(value < threshold)
                 return;
@@ -2459,7 +2459,7 @@ void tracking_window::on_actionMark_Region_on_T1W_T2W_triggered()
     tipl::matrix<4,4> T(slice->T);
     tipl::multiply_constant(&T[0],&T[0]+12,resolution_ratio);
     tipl::image<3,unsigned char> t_mask(slice->source_images.shape());
-    tipl::resample_mt<tipl::interpolation::nearest>(mask,t_mask,T);
+    tipl::resample_mt<tipl::interpolation::nearest>(mask,t_mask,tipl::transformation_matrix<float>(T));
     for(size_t i = 0;i < t_mask.size();++i)
         if(t_mask[i])
             slice->source_images[i] = mark_value;

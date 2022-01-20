@@ -228,7 +228,7 @@ public:
                 tipl::multiply_constant(iT.begin()+4,iT.begin()+7,1.0f/resolution_ratio);
                 tipl::multiply_constant(iT.begin()+8,iT.begin()+11,1.0f/resolution_ratio);
             }
-            tipl::resample_mt<tipl::interpolation::nearest>(from,from2,iT);
+            tipl::resample_mt<tipl::interpolation::nearest>(from,from2,tipl::transformation_matrix<float>(iT));
             LoadFromBuffer(from2);
         }
 

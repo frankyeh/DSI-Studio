@@ -317,7 +317,7 @@ void evaluate_connection(
         dis[i].normalize();
     }
     auto I = tipl::make_image(&fib_fa[0][0],dim);
-    I.for_each_mt([&](float fa_value,tipl::pixel_index<3> index)
+    I.for_each<tipl::backend::mt>([&](float fa_value,tipl::pixel_index<3> index)
     {
         if(fa_value <= otsu)
             return;

@@ -250,7 +250,7 @@ public:
             // update VG,VFFF (for mask) and cdm_dis (for mapping)
             tipl::image<3> new_VG(new_geo);
             tipl::image<3,tipl::vector<3> > new_cdm_dis(new_geo);
-            new_cdm_dis.for_each_mt([&](tipl::vector<3>& dis,tipl::pixel_index<3> pos)
+            new_cdm_dis.for_each<tipl::backend::mt>([&](tipl::vector<3>& dis,tipl::pixel_index<3> pos)
             {
                 tipl::vector<3> p(pos);
                 p *= VG_ratio;
@@ -281,7 +281,7 @@ public:
         // compute mappings
         {
             mapping.resize(cdm_dis.shape());
-            mapping.for_each_mt([&](tipl::vector<3>& mapping,tipl::pixel_index<3> pos)
+            mapping.for_each<tipl::backend::mt>([&](tipl::vector<3>& mapping,tipl::pixel_index<3> pos)
             {
                 tipl::vector<3> Jpos(pos);
                 if(VG_ratio != 1.0f) // if upsampled due to subject high resolution
