@@ -101,7 +101,7 @@ void ROIRegion::add_points(std::vector<tipl::vector<3,short> >& points, bool del
 
         points.clear();
         region.clear();
-        for(tipl::pixel_index<3> index(mask.shape());index.is_valid(mask.shape());++index)
+        for(tipl::pixel_index<3> index(mask.shape());index < mask.size();++index)
             if(mask[index.index()])
                 region.push_back(tipl::vector<3,short>(index[0]+min_value[0],
                                                     index[1]+min_value[1],
