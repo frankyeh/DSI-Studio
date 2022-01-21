@@ -523,7 +523,7 @@ bool DwiHeader::output_src(const char* di_file,std::vector<std::shared_ptr<DwiHe
     //store dimension
     tipl::shape<3> output_dim(geo);
     {
-        tipl::vector<3,uint16_t> dimension(geo.begin());
+        tipl::vector<3,uint16_t> dimension(geo);
         tipl::vector<3> voxel_size(dwi_files.front()->voxel_size);
 
         if(upsampling == 1) // upsampling 2
