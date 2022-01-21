@@ -1939,8 +1939,8 @@ void GLWidget::makeTracts(void)
 }
 void GLWidget::resizeGL(int width_, int height_)
 {
-    cur_width = width_ * QApplication::desktop()->devicePixelRatio();
-    cur_height = height_ * QApplication::desktop()->devicePixelRatio();
+    cur_width = width_ *  devicePixelRatio();
+    cur_height = height_ *  devicePixelRatio();
 }
 void GLWidget::scale_by(float scalefactor)
 {
