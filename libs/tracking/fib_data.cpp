@@ -1848,13 +1848,13 @@ void fib_data::run_normalization(bool background,bool inv)
             tipl::image<3,tipl::vector<3,float> > pos(dim);
             iT = T;
             iT.inverse();
-            pos.for_each<tipl::backend::mt>([&](tipl::vector<3,float>& v,const tipl::pixel_index<3>& index)
+            tipl::par_for(tipl::begin_index(dim),tipl::end_index(dim),
+                        [&](const tipl::pixel_index<3>& index)
             {
-                tipl::vector<3> p(index),d;
-                iT(p);
-                v = p;
-                tipl::estimate(inv_dis,v,d);
-                v += d;
+                tipl::vector<3> p;
+                iT(index,p);
+                p += tipl::estimate(inv_dis,p);
+                pos[index.index()] = p;
             });
             if(out)
                 out.write("from2to",&pos[0][0],3,pos.size());
@@ -1984,9 +1984,10 @@ bool fib_data::get_atlas_roi(std::shared_ptr<atlas> at,unsigned int roi_index,st
         error_msg += at->filename;
         return false;
     }
-    s2t.for_each_mt2([&](const tipl::vector<3>& pos,const tipl::pixel_index<3>& index,size_t id)
+    tipl::par_for2(tipl::begin_index(s2t.shape()),tipl::end_index(s2t.shape()),
+        [&](const tipl::pixel_index<3>& index,size_t id)
     {
-        if (at->is_labeled_as(pos, roi_index))
+        if (at->is_labeled_as(s2t[index.index()], roi_index))
             buf[id].push_back(tipl::vector<3,short>(index.begin()));
     });
     points.clear();
@@ -2013,10 +2014,11 @@ bool fib_data::get_atlas_all_roi(std::shared_ptr<atlas> at,std::vector<std::vect
     std::vector<std::mutex> push_back_mutex(points.size());
     if(at->is_multiple_roi)
     {
-        s2t.for_each<tipl::backend::mt>([&](const tipl::vector<3>& pos,const tipl::pixel_index<3>& index)
+        tipl::par_for(tipl::begin_index(s2t.shape()),tipl::end_index(s2t.shape()),
+                    [&](const tipl::pixel_index<3>& index)
         {
             std::vector<uint16_t> region_indicies;
-            at->region_indices_at(pos,region_indicies);
+            at->region_indices_at(s2t[index.index()],region_indicies);
             if(region_indicies.empty())
                 return;
             tipl::vector<3,short> point(index.begin());
@@ -2030,9 +2032,10 @@ bool fib_data::get_atlas_all_roi(std::shared_ptr<atlas> at,std::vector<std::vect
     }
     else
     {
-        s2t.for_each<tipl::backend::mt>([&](const tipl::vector<3>& pos,const tipl::pixel_index<3>& index)
+        tipl::par_for(tipl::begin_index(s2t.shape()),tipl::end_index(s2t.shape()),
+            [&](const tipl::pixel_index<3>& index)
         {
-            int region_index = at->region_index_at(pos);
+            int region_index = at->region_index_at(s2t[index.index()]);
             if(region_index < 0 || region_index >= int(points.size()))
                 return;
             std::lock_guard<std::mutex> lock(push_back_mutex[uint32_t(region_index)]);
@@ -2049,9 +2052,10 @@ const tipl::image<3,tipl::vector<3,float> >& fib_data::get_sub2temp_mapping(void
     if(is_template_space)
     {
         s2t.resize(dim);
-        s2t.for_each<tipl::backend::mt>([&](tipl::vector<3>& pos,const tipl::pixel_index<3>& index)
+        tipl::par_for(tipl::begin_index(s2t.shape()),tipl::end_index(s2t.shape()),
+                      [&](const tipl::pixel_index<3>& index)
         {
-            pos = index.begin();
+            s2t[index.index()] = index.begin();
         });
         return s2t;
     }
