@@ -1747,7 +1747,7 @@ void fib_data::run_normalization(bool background,bool inv)
     bool terminated = false;
     auto lambda = [this,output_file_name,&terminated]()
     {
-        tipl::transformation_matrix<double> T,iT;
+        tipl::transformation_matrix<double> T;
 
         auto It = template_I;
         auto It2 = template_I2;
@@ -1846,16 +1846,7 @@ void fib_data::run_normalization(bool background,bool inv)
             prog = 5;
             progress::show("calculating subject to template warp field");
             tipl::image<3,tipl::vector<3,float> > pos(dim);
-            iT = T;
-            iT.inverse();
-            tipl::par_for(tipl::begin_index(dim),tipl::end_index(dim),
-                        [&](const tipl::pixel_index<3>& index)
-            {
-                tipl::vector<3> p;
-                iT(index,p);
-                p += tipl::estimate(inv_dis,p);
-                pos[index.index()] = p;
-            });
+            tipl::inv_displacement_to_mapping(inv_dis,pos,T);
             if(out)
                 out.write("from2to",&pos[0][0],3,pos.size());
             s2t.swap(pos);
