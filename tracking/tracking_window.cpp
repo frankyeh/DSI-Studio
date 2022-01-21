@@ -1549,9 +1549,10 @@ void tracking_window::on_actionImprove_Quality_triggered()
             std::copy(handle->dir.findex[i],handle->dir.findex[i]+size,new_index[i].begin());
         }
 
-        auto I = tipl::make_image(handle->dir.fa[0],handle->dim);
-        I.for_each<tipl::backend::mt>([&](float value,tipl::pixel_index<3> index)
+        tipl::par_for(tipl::begin_index(handle->dim),tipl::end_index(handle->dim),
+                      [&](const tipl::pixel_index<3>& index)
         {
+            float value = handle->dir.fa[0][index.index()];
             if(value < threshold)
                 return;
             std::vector<tipl::pixel_index<3> > neighbors;
