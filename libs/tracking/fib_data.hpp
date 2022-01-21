@@ -316,10 +316,10 @@ void evaluate_connection(
         dis[i] = tipl::vector<3>(dx[i],dy[i],dz[i]);
         dis[i].normalize();
     }
-    auto I = tipl::make_image(&fib_fa[0][0],dim);
-    I.for_each<tipl::backend::mt>([&](float fa_value,tipl::pixel_index<3> index)
+    tipl::par_for(tipl::begin_index(dim),tipl::end_index(dim),
+                [&](const tipl::pixel_index<3>& index)
     {
-        if(fa_value <= otsu)
+        if(fib_fa[0][index.index()] <= otsu)
             return;
         for(unsigned char fib1 = 0;fib1 < num_fib;++fib1)
         {
