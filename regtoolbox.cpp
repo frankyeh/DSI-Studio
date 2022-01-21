@@ -210,12 +210,13 @@ void show_mosaic_slice_at(QGraphicsScene& scene,
         return;
     tmp.resize(tmp1.shape());
     float c = contrast2/contrast;
-    tmp.for_each([&](float& v,tipl::pixel_index<2>& index)
-    {
-        int x = index[0] >> mosaic_size;
-        int y = index[1] >> mosaic_size;
-        v = ((x&1) ^ (y&1)) ? tmp1[index.index()] : tmp2[index.index()]*c;
-    });
+    tipl::par_for(tipl::begin_index(tmp.shape()),tipl::end_index(tmp.shape()),
+        [&](const tipl::pixel_index<2>& index)
+        {
+            int x = index[0] >> mosaic_size;
+            int y = index[1] >> mosaic_size;
+            tmp[index.index()] = ((x&1) ^ (y&1)) ? tmp1[index.index()] : tmp2[index.index()]*c;
+        });
     show_slice_at(scene,tmp,buf,ratio,contrast,cur_view);
 }
 
