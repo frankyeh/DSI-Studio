@@ -1225,7 +1225,7 @@ void GLWidget::renderLR()
                     continue;
                 if(get_param("show_track_label_location"))
                 {
-                    renderText(width()/2-font_size*cur_tracking_window.tractWidget->item(i,0)->text().size()/3.5,
+                    renderText(cur_width/2-font_size*cur_tracking_window.tractWidget->item(i,0)->text().size()/3.5,
                                get_param("show_track_label_location") == 2 ? height()-font_size : height()/2,
                             cur_tracking_window.tractWidget->item(i,0)->text(),font);
                 }
@@ -1348,7 +1348,7 @@ void GLWidget::renderLR()
         glPushMatrix();
         {
             glLoadIdentity();
-            glOrtho(0,width(),height(),0,0.0,100.0);
+            glOrtho(0,cur_width,height(),0,0.0,100.0);
 
             glDisable(GL_DEPTH_TEST);
 
@@ -1939,8 +1939,8 @@ void GLWidget::makeTracts(void)
 }
 void GLWidget::resizeGL(int width_, int height_)
 {
-    cur_width = width_;
-    cur_height = height_;
+    cur_width = width_ * QApplication::desktop()->devicePixelRatio();
+    cur_height = height_ * QApplication::desktop()->devicePixelRatio();
 }
 void GLWidget::scale_by(float scalefactor)
 {
