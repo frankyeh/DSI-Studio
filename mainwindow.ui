@@ -70,7 +70,7 @@
        </size>
       </property>
       <property name="currentIndex">
-       <number>0</number>
+       <number>2</number>
       </property>
       <property name="tabSpacing">
        <number>0</number>
@@ -81,7 +81,7 @@
          <x>0</x>
          <y>0</y>
          <width>350</width>
-         <height>628</height>
+         <height>637</height>
         </rect>
        </property>
        <property name="maximumSize">
@@ -246,7 +246,7 @@
          <x>0</x>
          <y>0</y>
          <width>350</width>
-         <height>628</height>
+         <height>637</height>
         </rect>
        </property>
        <attribute name="label">
@@ -418,7 +418,7 @@
          <x>0</x>
          <y>0</y>
          <width>350</width>
-         <height>628</height>
+         <height>637</height>
         </rect>
        </property>
        <attribute name="label">
@@ -531,7 +531,7 @@
         <item>
          <widget class="QCommandLinkButton" name="averagefib">
           <property name="text">
-           <string>P1: Create template/skeleton</string>
+           <string>P1: Create Template/Skeleton</string>
           </property>
           <property name="description">
            <string>Average the ODFs to create a template</string>
