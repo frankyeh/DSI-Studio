@@ -145,15 +145,6 @@ bool ImageModel::reconstruction(void)
         case 4://GQI
             voxel.step_report << "[Step T2b(1)]=GQI" << std::endl;
             voxel.step_report << "[Step T2b(1)][Diffusion sampling length ratio]=" << float(voxel.param[0]) << std::endl;
-            if(voxel.param[0] == 0.0f) // spectral analysis
-            {
-                voxel.recon_report <<
-                " The diffusion data were reconstructed using generalized q-sampling imaging (Yeh et al., IEEE TMI, ;29(9):1626-35, 2010).";
-                if (!reconstruct2<ReadDWIData,
-                        QSpaceSpectral>("spectral GQI reconstruction"))
-                    return false;
-                break;
-            }
 
             if(voxel.needs("rdi"))
                 voxel.recon_report <<
