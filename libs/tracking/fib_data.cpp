@@ -1975,7 +1975,7 @@ bool fib_data::get_atlas_roi(std::shared_ptr<atlas> at,unsigned int roi_index,st
         error_msg += at->filename;
         return false;
     }
-    tipl::par_for2(tipl::begin_index(s2t.shape()),tipl::end_index(s2t.shape()),
+    tipl::par_for(tipl::begin_index(s2t.shape()),tipl::end_index(s2t.shape()),
         [&](const tipl::pixel_index<3>& index,size_t id)
     {
         if (at->is_labeled_as(s2t[index.index()], roi_index))

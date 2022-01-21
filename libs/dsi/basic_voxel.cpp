@@ -135,7 +135,7 @@ bool Voxel::run_hist(void)
             to_list.push_back(to);
         }
 
-    tipl::par_for2(from_list.size(),[&](size_t i,size_t thread_id)
+    tipl::par_for(from_list.size(),[&](size_t i,size_t thread_id)
     {
         if(thread_id == 0)
             progress::at(i,from_list.size());
@@ -154,7 +154,7 @@ bool Voxel::run(void)
     size_t total_voxel = std::accumulate(mask.begin(),mask.end(),size_t(0),[](size_t sum,unsigned char value){return value ? sum+1:sum;});
     size_t total = 0;
     bool terminated = false;
-    tipl::par_for2(mask.size(),[&](size_t voxel_index,size_t thread_id)
+    tipl::par_for(mask.size(),[&](size_t voxel_index,size_t thread_id)
     {
         if(terminated || !mask[voxel_index])
             return;

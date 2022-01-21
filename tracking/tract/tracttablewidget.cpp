@@ -89,7 +89,7 @@ void TractTableWidget::draw_tracts(unsigned char dim,int pos,
     auto iT = cur_tracking_window.current_slice->invT;
     max_count /= selected_tracts.size();
 
-    tipl::par_for2(selected_tracts.size(),[&](unsigned int index,unsigned int thread)
+    tipl::par_for(selected_tracts.size(),[&](unsigned int index,unsigned int thread)
     {
         if(cur_tracking_window.current_slice->is_diffusion_space)
             selected_tracts[index]->get_in_slice_tracts(dim,pos,nullptr,lines_threaded[thread],colors_threaded[thread],max_count);

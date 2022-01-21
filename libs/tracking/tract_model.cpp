@@ -2543,7 +2543,7 @@ void TractModel::to_voxel(std::vector<tipl::vector<3,short> >& points,float rati
 {
     float voxel_length_2 = 0.5f/ratio;
     std::vector<std::set<tipl::vector<3,short> > > pass_map(std::thread::hardware_concurrency());
-    tipl::par_for2(tract_data.size(),[&](size_t i,size_t thread)
+    tipl::par_for(tract_data.size(),[&](size_t i,size_t thread)
     {
         if(tract_data[i].size() < 6)
             return;
