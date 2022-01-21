@@ -250,14 +250,15 @@ public:
             // update VG,VFFF (for mask) and cdm_dis (for mapping)
             tipl::image<3> new_VG(new_geo);
             tipl::image<3,tipl::vector<3> > new_cdm_dis(new_geo);
-            new_cdm_dis.for_each<tipl::backend::mt>([&](tipl::vector<3>& dis,tipl::pixel_index<3> pos)
+            tipl::par_for(tipl::begin_index(new_geo),tipl::end_index(new_geo),
+                          [&](const tipl::pixel_index<3> pos)
             {
                 tipl::vector<3> p(pos);
                 p *= VG_ratio;
                 tipl::interpolator::linear<3> interp;
                 if(!interp.get_location(VG.shape(),p))
                     return;
-                interp.estimate(cdm_dis,dis);
+                interp.estimate(cdm_dis,new_cdm_dis[pos.index()]);
                 // here the displacement values are still in the VGvs resolution
                 interp.estimate(VG,new_VG[pos.index()]);
             });
@@ -281,14 +282,15 @@ public:
         // compute mappings
         {
             mapping.resize(cdm_dis.shape());
-            mapping.for_each<tipl::backend::mt>([&](tipl::vector<3>& mapping,tipl::pixel_index<3> pos)
+            tipl::par_for(tipl::begin_index(cdm_dis.shape()),tipl::end_index(cdm_dis.shape()),
+            [&](const tipl::pixel_index<3>& pos)
             {
                 tipl::vector<3> Jpos(pos);
                 if(VG_ratio != 1.0f) // if upsampled due to subject high resolution
                     Jpos *= VG_ratio;
                 Jpos += cdm_dis[pos.index()]; // VFF space
                 affine(Jpos);// VFF to VF space
-                mapping = Jpos;
+                mapping[pos.index()] = Jpos;
             });
         }
 
