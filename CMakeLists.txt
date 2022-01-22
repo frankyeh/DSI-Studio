@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.19)
-project(DSI_Studio VERSION "2022.01.17" LANGUAGES CXX;C)
+project(DSI_Studio VERSION "2022.01.17" LANGUAGES CUDA CXX;C)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -10,6 +10,8 @@ set(CMAKE_AUTOUIC ON)
 find_package(Qt6 COMPONENTS Core Gui OpenGL Charts Network Widgets REQUIRED)
 find_package(ZLIB REQUIRED)
 find_package(OpenGL REQUIRED)
+find_package(CUDA)
+
 if(EXISTS "${TIPL_DIR}")
     include_directories(${TIPL_DIR})
 else(EXISTS "${TIPL_DIR}")
@@ -98,13 +100,15 @@ set(DSI_STUDIO_FORMS mainwindow.ui
 
 set(DSI_STUDIO_RESOURCES icons.qrc)
 
-set(DSI_STUDIO_SOURCES main.cpp 
+set(DSI_STUDIO_SOURCES
+    main.cpp
     mainwindow.cpp 
     dicom/dicom_parser.cpp 
     dicom/dwi_header.cpp 
     libs/utility/prog_interface.cpp 
     libs/dsi/dsi_interface_imp.cpp 
-    libs/tracking/interpolation_process.cpp 
+    libs/dsi/gqi_process.cpp
+    libs/tracking/interpolation_process.cpp
     libs/tracking/tract_cluster.cpp 
     SliceModel.cpp 
     tracking/tracking_window.cpp 
@@ -162,15 +166,16 @@ set(DSI_STUDIO_OTHER_FILES options.txt
     dicom_tag.txt 
     FreeSurferColorLUT.txt)
 
-if(WIN32)
-    add_executable(dsi_studio WIN32 ${DSI_STUDIO_SOURCES} ${DSI_STUDIO_FORMS} ${DSI_STUDIO_HEADERS} ${DSI_STUDIO_RESOURCES})
-else()
-    add_executable(dsi_studio ${DSI_STUDIO_SOURCES} ${DSI_STUDIO_FORMS} ${DSI_STUDIO_HEADERS} ${DSI_STUDIO_RESOURCES})
-endif()
+add_executable(dsi_studio ${DSI_STUDIO_SOURCES} ${DSI_STUDIO_FORMS} ${DSI_STUDIO_HEADERS} ${DSI_STUDIO_RESOURCES})
 set_target_properties(dsi_studio PROPERTIES CXX_STANDARD 17 CXX_EXTENSIONS NONE)
 target_compile_definitions(dsi_studio PUBLIC DSISTUDIO_RELEASE_NAME="Chen")
 target_compile_definitions(dsi_studio PUBLIC DSISTUDIO_RELEASE_CODE=11770345)
 target_compile_definitions(dsi_studio PUBLIC QT6_PATCH)
+if(CUDA_FOUND)
+    set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -allow-unsupported-compiler --extended-lambda")
+    target_compile_definitions(dsi_studio PUBLIC TIPL_USE_CUDA)
+endif(CUDA_FOUND)
+
 target_include_directories(dsi_studio PUBLIC
   ${CMAKE_SOURCE_DIR}/libs 
   ${CMAKE_SOURCE_DIR}/libs/dsi 
@@ -181,4 +186,6 @@ target_include_directories(dsi_studio PUBLIC
   ${CMAKE_BINARY_DIR})
 
 target_link_libraries(dsi_studio Qt6::Core Qt6::Gui Qt6::OpenGL Qt6::Charts Qt6::Network Qt6::Widgets ZLIB::ZLIB OpenGL::GL OpenGL::GLU)
-
+if(CUDA_FOUND)
+    target_link_libraries(dsi_studio ${CUDA_LIBRARIES} ${CUDA_CUBLAS_LIBRARIES})
+endif(CUDA_FOUND)
