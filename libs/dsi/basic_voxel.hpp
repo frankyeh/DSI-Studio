@@ -6,9 +6,6 @@
 #include "gzip_interface.hpp"
 #include "prog_interface_static_link.h"
 
-float sinc_pi_imp(float);
-
-
 struct ImageModel;
 struct VoxelParam;
 class Voxel;
@@ -124,8 +121,6 @@ public://used in GQI
     bool odf_resolving = false;
     bool r2_weighted = false;// used in GQI only
     bool half_sphere = true;
-    void calculate_sinc_ql(std::vector<float>& sinc_ql);
-    void calculate_q_vec_t(std::vector<tipl::vector<3,float> >& q_vector_time);
 public://used in GQI
     bool scheme_balance = false;
 public:// used in QSDR

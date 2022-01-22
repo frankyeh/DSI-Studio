@@ -1,34 +1,5 @@
 #include "basic_voxel.hpp"
 #include "image_model.hpp"
-float base_function(float theta)
-{
-    if(std::fabs(theta) < 0.000001f)
-        return 1.0f/3.0f;
-    return (2.0f*std::cos(theta)+(theta-2.0f/theta)*std::sin(theta))/theta/theta;
-}
-
-float const taylor_0_bound = std::ldexp(1.0f, 1-std::numeric_limits<float>::digits);;
-float const taylor_2_bound = std::sqrt(taylor_0_bound);
-float const taylor_n_bound = std::sqrt(taylor_2_bound);
-
-float sinc_pi_imp(float x)
-{
-    if (std::abs(x) >= taylor_n_bound)
-        return(sin(x)/x);
-    else
-    {
-        float result(1);
-        if(std::abs(x) >= taylor_0_bound)
-        {
-            float x2(x*x);
-            result -= x2/6.0f;
-            if(std::abs(x) >= taylor_2_bound)
-                result += (x2*x2)/120.0f;
-        }
-        return(result);
-    }
-}
-
 
 void Voxel::init(void)
 {
@@ -52,35 +23,6 @@ void Voxel::init(void)
     }
     for (unsigned int index = 0; index < process_list.size(); ++index)
         process_list[index]->init(*this);
-}
-
-void Voxel::calculate_sinc_ql(std::vector<float>& sinc_ql)
-{
-    unsigned int odf_size = ti.half_vertices_count;
-    float sigma = param[0];
-    sinc_ql.resize(odf_size*bvalues.size());
-    for (unsigned int j = 0,index = 0; j < odf_size; ++j)
-        for (unsigned int i = 0; i < bvalues.size(); ++i,++index)
-            sinc_ql[index] = bvectors[i]*
-                         tipl::vector<3,float>(ti.vertices[j])*
-                           std::sqrt(bvalues[i]*0.01506f);
-    for (unsigned int index = 0; index < sinc_ql.size(); ++index)
-    {
-        sinc_ql[index] = r2_weighted ?
-                     base_function(sinc_ql[index]*sigma):
-                     sinc_pi_imp(sinc_ql[index]*sigma);
-    }
-}
-void Voxel::calculate_q_vec_t(std::vector<tipl::vector<3,float> >& q_vectors_time)
-{
-    float sigma = param[0];
-    q_vectors_time.resize(bvalues.size());
-    for (unsigned int index = 0; index < bvalues.size(); ++index)
-    {
-        q_vectors_time[index] = bvectors[index];
-        q_vectors_time[index] *= std::sqrt(bvalues[index]*0.01506f);// get q in (mm) -1
-        q_vectors_time[index] *= sigma;
-    }
 }
 
 void Voxel::load_from_src(ImageModel& image_model)

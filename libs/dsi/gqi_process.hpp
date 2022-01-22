@@ -6,57 +6,54 @@
 #include "basic_voxel.hpp"
 #include "image_model.hpp"
 #include "odf_process.hpp"
+template<typename value_type>
+value_type base_function(value_type theta)
+{
+    return (std::fabs(theta) < 0.000001f) ?
+            1.0f/3.0f:
+            (2.0f*std::cos(theta)+(theta-2.0f/theta)*std::sin(theta))/theta/theta;
+}
 
-float base_function(float theta);
+template<typename value_type>
+value_type sinc_pi_imp(value_type x)
+{
+    static const float taylor_0_bound = std::ldexp(1.0f, 1-std::numeric_limits<float>::digits);
+    static const float taylor_2_bound = std::sqrt(taylor_0_bound);
+    static const float taylor_n_bound = std::sqrt(taylor_2_bound);
+    if (std::abs(x) >= taylor_n_bound)
+        return(sin(x)/x);
+    else
+    {
+        value_type result(1);
+        if(std::abs(x) >= taylor_0_bound)
+        {
+            value_type x2(x*x);
+            result -= x2/value_type(6.0);
+            if(std::abs(x) >= taylor_2_bound)
+                result += (x2*x2)/value_type(120.0);
+        }
+        return(result);
+    }
+}
+
 class GQI_Recon  : public BaseProcess
 {
-public:// recorded for scheme balanced
+public:
     std::vector<tipl::vector<3,float> > q_vectors_time;
-public:
     std::vector<float> sinc_ql;
+private:
+    void calculate_sinc_ql(Voxel& voxel);
+    void calculate_q_vec_t(Voxel& voxel);
 public:
-    virtual void init(Voxel& voxel)
-    {
-        if(voxel.qsdr)
-            voxel.calculate_q_vec_t(q_vectors_time);
-        else
-            voxel.calculate_sinc_ql(sinc_ql);
-    }
-    virtual void run(Voxel& voxel, VoxelData& data)
-    {
-        if(voxel.half_sphere)
-            data.space[0] *= 0.5f;
-        // add rotation from QSDR or gradient nonlinearity
-        if(voxel.qsdr)
-        {
-            std::vector<float> sinc_ql_(data.odf.size()*data.space.size());
-            for (unsigned int j = 0,index = 0; j < data.odf.size(); ++j)
-            {
-                tipl::vector<3,float> from(voxel.ti.vertices[j]);
-                from.rotate(data.jacobian);
-                from.normalize();
-                if(voxel.r2_weighted)
-                    for (unsigned int i = 0; i < data.space.size(); ++i,++index)
-                        sinc_ql_[index] = base_function(q_vectors_time[i]*from);
-                else
-                    for (unsigned int i = 0; i < data.space.size(); ++i,++index)
-                        sinc_ql_[index] = sinc_pi_imp(q_vectors_time[i]*from);
-
-            }
-            tipl::mat::vector_product(&*sinc_ql_.begin(),&*data.space.begin(),&*data.odf.begin(),
-                                          tipl::shape<2>(uint32_t(data.odf.size()),uint32_t(data.space.size())));
-        }
-        else
-            tipl::mat::vector_product(&*sinc_ql.begin(),&*data.space.begin(),&*data.odf.begin(),
-                                    tipl::shape<2>(uint32_t(data.odf.size()),uint32_t(data.space.size())));
-    }
+    virtual void init(Voxel& voxel) override;
+    virtual void run(Voxel& voxel, VoxelData& data) override;
 };
 
 class dGQI_Recon : public BaseProcess{
     BalanceScheme bs;
     GQI_Recon gr;
 public:
-    virtual void init(Voxel& v)
+    virtual void init(Voxel& v) override
     {
         if(!v.compare_voxel)
             return;
@@ -65,7 +62,7 @@ public:
         bs.init(v);
         gr.init(v);
     }
-    virtual void run(Voxel& voxel, VoxelData& data)
+    virtual void run(Voxel& voxel, VoxelData& data) override
     {
         if(!voxel.compare_voxel)
             return;
@@ -98,20 +95,19 @@ public:
         //    voxel.z0 = qa; // z0 is the maximum qa in the baseline
 
     }
-    virtual void end(Voxel&,gz_mat_write&) {}
 };
 
 class HGQI_Recon  : public BaseProcess
 {
 public:
-    std::vector<float> sinc_ql;
+    GQI_Recon gr;
 public:
     bool hgqi = false;
     std::vector<float> hraw;
     std::vector<int> offset;
     std::vector<float> scaling;
 public:
-    virtual void init(Voxel& voxel)
+    virtual void init(Voxel& voxel) override
     {
         if(voxel.bvalues.size() != 1)
         {
@@ -133,9 +129,9 @@ public:
                     offset.push_back(dx + dy*int(voxel.dim.width()) + dz*int(voxel.dim.plane_size()));
                     scaling.push_back(float(std::exp(-r2)));
                 }
-        voxel.calculate_sinc_ql(sinc_ql);
+        gr.init(voxel);
     }
-    virtual void run(Voxel& voxel, VoxelData& data)
+    virtual void run(Voxel& voxel, VoxelData& data) override
     {
         if(!hgqi)
             return;
@@ -161,10 +157,9 @@ public:
             data.space[i] = std::fabs(data.space[0]-(I[pos1]+I[pos2])/2.0f)*scaling[i-1];
         }
 
-        tipl::mat::vector_product(&*sinc_ql.begin(),&*data.space.begin(),&*data.odf.begin(),
-                                    tipl::shape<2>(uint32_t(data.odf.size()),uint32_t(data.space.size())));
+        gr.run(voxel,data);
     }
-    virtual void end(Voxel& voxel,gz_mat_write& mat_writer)
+    virtual void end(Voxel& voxel,gz_mat_write& mat_writer) override
     {
         if(hgqi)
             mat_writer.write("hraw",&hraw[0],voxel.dim.plane_size(),voxel.dim.depth());
@@ -287,157 +282,74 @@ public:
     }
 };
 
-float sinint(float x)
-{
-    bool sgn = x > 0;
-    x = std::fabs(x);
-    float eps = 1e-15f;
-    float x2 = x*x;
-    float si;
-    if(x == 0.0f)
-        return 0.0f;
-    if(x <= 16.0f)
-    {
-        float xr = x;
-        si = x;
-        for(unsigned int k = 1;k <= 40;++k)
-        {
-            si += (xr *= -0.5f*float(2*k-1)/float(k)/float(4*k*(k+1)+1)*x2);
-            if(std::fabs(xr) < std::fabs(si)*eps)
-                break;
-        }
-        return sgn ? si:-si;
-    }
 
-    if(x <= 32.0f)
-    {
-        unsigned int m = uint32_t(std::floor(47.2f+0.82f*x));
-        std::vector<float> bj(m+1);
-        float xa1 = 0.0f;
-        float xa0 = 1.0e-40f;
-        for(unsigned int k=m;k>=1;--k)
-        {
-            float xa = 4.0f*float(k)*xa0/x-xa1;
-            bj[k-1] = xa;
-            xa1 = xa0;
-            xa0 = xa;
-        }
-        float xs = bj[0];
-        for(unsigned int k=3;k <= m;k += 2)
-            xs += 2.0f*bj[k-1];
-        for(unsigned int k=0;k < m;++k)
-            bj[k] /= xs;
-        float xr = 1.0f;
-        float xg1 = bj[0];
-        for(unsigned int k=2;k <= m;++k)
-            xg1 += bj[k-1]*(xr *= 0.25f*(2*k-3)*(2*k-3)/((k-1)*(2*k-1)*(2*k-1))*x);
-        xr = 1.0;
-        float xg2 = bj[0];
-        for(unsigned int k=2;k <= m;++k)
-            xg2 += bj[k-1]*(xr *= 0.25f*(2*k-5)*(2*k-5)/((k-1)*(2*k-3)*(2*k-3))*x);
-        si = x*std::cos(x/2.0f)*xg1+2.0f*std::sin(x/2.0f)*xg2-std::sin(x);
-        return sgn ? si:-si;
-    }
-
-    float xr = 1.0f;
-    float xf = 1.0f;
-    for(unsigned int k=1;k <= 9;++k)
-        xf += (xr *= -2.0f*k*(2*k-1)/x2);
-    xr = 1.0f/x;
-    float xg = xr;
-    for(unsigned int k=1;k <= 8;++k)
-        xg += (xr *= -2.0f*(2*k+1)*k/x2);
-    si = 1.570796326794897f-xf*std::cos(x)/x-xg*std::sin(x)/x;
-    return sgn ? si:-si;
-}
-
-
-class QSpaceSpectral  : public BaseProcess
-{
-public:
-    static const int max_length = 50; // 50 microns
-    std::vector<unsigned int> b0_images;
-    std::vector<std::vector<float> > cdf,dis,cdfw,disw;
-public:
-    virtual void init(Voxel& voxel)
-    {
-        b0_images.clear();
-        for(unsigned int index = 0;index < voxel.bvalues.size();++index)
-            if(voxel.bvalues[index] == 0.0f)
-                b0_images.push_back(index);
-
-        float diffusion_time = voxel.param[1];
-        float diffusion_length = std::sqrt(6.0f*3.0f*diffusion_time); // sqrt(6Dt)
-        dis.clear();
-        cdf.clear();
-        disw.clear();
-        cdfw.clear();
-        dis.resize(max_length);
-        cdf.resize(max_length);
-        disw.resize(max_length);
-        cdfw.resize(max_length);
-        for(unsigned int n = 0;n < max_length;++n) // from 0 micron to 49 microns
-        {
-            // calculate the diffusion length ratio
-            float sigma = float(n)/diffusion_length;
-
-            dis[n].resize(voxel.dim.size());
-            cdf[n].resize(voxel.dim.size());
-
-            disw[n].resize(voxel.bvalues.size());
-            cdfw[n].resize(voxel.bvalues.size());
-            for(unsigned int index = 0;index < voxel.bvalues.size();++index)
-            {
-                // 2pi*L*q = sigma*sqrt(6D*b_value)
-                float lq_2pi = sigma*std::sqrt(voxel.bvalues[index]*0.018f);
-                disw[n][index] = sinc_pi_imp(lq_2pi);
-                cdfw[n][index] = (voxel.bvalues[index] == 0.0f ?
-                                 sigma : sinint(lq_2pi)/std::sqrt(voxel.bvalues[index]*0.018f));
-            }
-        }
-    }
-    virtual void run(Voxel& voxel, VoxelData& data)
-    {
-        if(b0_images.size() == 1 && voxel.half_sphere)
-            data.space[b0_images.front()] *= 0.5f;
-        for(unsigned int index = 0;index < max_length;++index)
-        {
-            dis[index][data.voxel_index] =
-                    tipl::vec::dot(data.space.begin(),data.space.end(),disw[index].begin());
-            cdf[index][data.voxel_index] =
-                    tipl::vec::dot(data.space.begin(),data.space.end(),cdfw[index].begin());
-            // make sure that cdf is increamental
-            if(index && cdf[index][data.voxel_index] < cdf[index-1][data.voxel_index])
-                cdf[index][data.voxel_index] = cdf[index-1][data.voxel_index];
-            // make sure that dis is positive
-            if(dis[index][data.voxel_index] < 0.0f)
-                dis[index][data.voxel_index] = 0.0f;
-        }
-    }
-    virtual void end(Voxel& voxel,gz_mat_write& mat_writer)
-    {
-        for(unsigned int index = 0;index < max_length;++index)
-        {
-            std::ostringstream out;
-            out << "pdf_" << index << "um";
-            mat_writer.write(out.str().c_str(),dis[index],uint32_t(voxel.dim.plane_size()));
-
-        }
-        for(unsigned int index = 0;index < max_length;++index)
-        {
-            std::ostringstream out;
-            out << "cdf_" << index << "um";
-            mat_writer.write(out.str().c_str(),cdf[index],uint32_t(voxel.dim.plane_size()));
-        }
-        mat_writer.write("fa0",dis[0],uint32_t(voxel.dim.plane_size()));
-        std::vector<short> index0(voxel.dim.size());
-        mat_writer.write("index0",index0,uint32_t(voxel.dim.plane_size()));
-    }
-};
 
 class RDI_Recon  : public BaseProcess
 {
 private:
+    static float sinint(float x)
+    {
+        bool sgn = x > 0;
+        x = std::fabs(x);
+        float eps = 1e-15f;
+        float x2 = x*x;
+        float si;
+        if(x == 0.0f)
+            return 0.0f;
+        if(x <= 16.0f)
+        {
+            float xr = x;
+            si = x;
+            for(unsigned int k = 1;k <= 40;++k)
+            {
+                si += (xr *= -0.5f*float(2*k-1)/float(k)/float(4*k*(k+1)+1)*x2);
+                if(std::fabs(xr) < std::fabs(si)*eps)
+                    break;
+            }
+            return sgn ? si:-si;
+        }
+
+        if(x <= 32.0f)
+        {
+            unsigned int m = uint32_t(std::floor(47.2f+0.82f*x));
+            std::vector<float> bj(m+1);
+            float xa1 = 0.0f;
+            float xa0 = 1.0e-40f;
+            for(unsigned int k=m;k>=1;--k)
+            {
+                float xa = 4.0f*float(k)*xa0/x-xa1;
+                bj[k-1] = xa;
+                xa1 = xa0;
+                xa0 = xa;
+            }
+            float xs = bj[0];
+            for(unsigned int k=3;k <= m;k += 2)
+                xs += 2.0f*bj[k-1];
+            for(unsigned int k=0;k < m;++k)
+                bj[k] /= xs;
+            float xr = 1.0f;
+            float xg1 = bj[0];
+            for(unsigned int k=2;k <= m;++k)
+                xg1 += bj[k-1]*(xr *= 0.25f*(2*k-3)*(2*k-3)/((k-1)*(2*k-1)*(2*k-1))*x);
+            xr = 1.0;
+            float xg2 = bj[0];
+            for(unsigned int k=2;k <= m;++k)
+                xg2 += bj[k-1]*(xr *= 0.25f*(2*k-5)*(2*k-5)/((k-1)*(2*k-3)*(2*k-3))*x);
+            si = x*std::cos(x/2.0f)*xg1+2.0f*std::sin(x/2.0f)*xg2-std::sin(x);
+            return sgn ? si:-si;
+        }
+
+        float xr = 1.0f;
+        float xf = 1.0f;
+        for(unsigned int k=1;k <= 9;++k)
+            xf += (xr *= -2.0f*k*(2*k-1)/x2);
+        xr = 1.0f/x;
+        float xg = xr;
+        for(unsigned int k=1;k <= 8;++k)
+            xg += (xr *= -2.0f*(2*k+1)*k/x2);
+        si = 1.570796326794897f-xf*std::cos(x)/x-xg*std::sin(x)/x;
+        return sgn ? si:-si;
+    }
     std::vector<std::vector<float> > rdi_weightings;
 public:
     virtual void init(Voxel& voxel)

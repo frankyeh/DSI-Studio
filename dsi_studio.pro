@@ -121,6 +121,7 @@ SOURCES += main.cpp \
     dicom/dwi_header.cpp \
     libs/utility/prog_interface.cpp \
     libs/dsi/dsi_interface_imp.cpp \
+    libs/dsi/gqi_process.cpp \
     libs/tracking/interpolation_process.cpp \
     libs/tracking/tract_cluster.cpp \
     SliceModel.cpp \
