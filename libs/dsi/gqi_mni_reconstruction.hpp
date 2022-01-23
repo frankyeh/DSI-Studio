@@ -120,8 +120,8 @@ public:
                     {
                         if(!dual_modality)
                         {
-                            tipl::reg::two_way_linear_mr(VG,VGvs,VF,VFvs,affine,
-                                tipl::reg::affine,tipl::reg::correlation(),terminated);
+                            tipl::reg::two_way_linear_mr<tipl::reg::correlation>(VG,VGvs,VF,VFvs,affine,
+                                tipl::reg::affine,terminated);
                         }
                         else
                         {
@@ -129,8 +129,8 @@ public:
                             auto VF3 = VF;
                             VG3 += VG2;
                             VF3 += VF2;
-                            tipl::reg::two_way_linear_mr(VG3,VGvs,VF3,VFvs,affine,
-                                 tipl::reg::affine,tipl::reg::mutual_information(),terminated);
+                            tipl::reg::two_way_linear_mr<tipl::reg::mutual_information>(VG3,VGvs,VF3,VFvs,affine,
+                                 tipl::reg::affine,terminated);
                         }
                     }
                 },terminated))

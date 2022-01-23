@@ -149,10 +149,9 @@ int reg(program_option& po)
     tipl::transformation_matrix<double> T;
     std::cout << "running linear registration." << std::endl;
 
-    tipl::reg::two_way_linear_mr(to,to_vs,from,from_vs,T,
+    tipl::reg::two_way_linear_mr<tipl::reg::mutual_information>(to,to_vs,from,from_vs,T,
                                  po.get("reg_type",1) == 0 ? tipl::reg::rigid_body : tipl::reg::affine,
                                  // 0: rigid body rotation 1:nonlinear
-                                 tipl::reg::mutual_information(),
                                  terminated);
 
     std::cout << T;

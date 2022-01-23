@@ -158,8 +158,8 @@ int rec(program_option& po)
             std::cout << "running rigid body transformation" << std::endl;
             tipl::transformation_matrix<double> T;
             bool terminated = false;
-            tipl::reg::two_way_linear_mr(I,vs,src.dwi,src.voxel.vs,
-                           T,tipl::reg::rigid_body,tipl::reg::mutual_information(),terminated);
+            tipl::reg::two_way_linear_mr<tipl::reg::mutual_information>(I,vs,src.dwi,src.voxel.vs,
+                           T,tipl::reg::rigid_body,terminated);
             std::cout << "DWI rotated." << std::endl;
             src.rotate(I.shape(),vs,T);
         }

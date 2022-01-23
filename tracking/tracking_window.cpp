@@ -587,8 +587,7 @@ bool tracking_window::command(QString cmd,QString param,QString param2)
             if(!QDir(param+"/slices").exists() && !QDir().mkdir(param+"/slices"))
                 return true;
             auto I = reg_slice->source_images;
-            tipl::lower_threshold(I,0);
-            tipl::normalize(I,255);
+            tipl::normalize_upper_lower(I);
             tipl::image<3,unsigned char> II(I.shape());
             std::copy(I.begin(),I.end(),II.begin());
             gz_nifti::save_to_file((param+"/slices/" + ui->SliceModality->currentText() + ".nii.gz").toStdString().c_str(),

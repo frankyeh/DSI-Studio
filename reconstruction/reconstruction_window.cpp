@@ -705,9 +705,9 @@ bool add_other_image(ImageModel* handle,QString name,QString filename)
         in.get_voxel_size(vs);
         bool terminated = false;
         tipl::affine_transform<float> arg;
-        tipl::reg::linear_mr(handle->dwi,handle->voxel.vs,ref,vs,arg,tipl::reg::rigid_body,tipl::reg::mutual_information(),terminated,0.1);
-        tipl::reg::linear_mr(handle->dwi,handle->voxel.vs,ref,vs,arg,tipl::reg::rigid_body,tipl::reg::mutual_information(),terminated,0.01);
-        affine = tipl::transformation_matrix<float>(arg,handle->voxel.dim,handle->voxel.vs,to.shape(),vs);
+        tipl::reg::linear_mr<tipl::reg::mutual_information>(handle->dwi,handle->voxel.vs,ref,vs,arg,tipl::reg::rigid_body,terminated,0.1);
+        tipl::reg::linear_mr<tipl::reg::mutual_information>(handle->dwi,handle->voxel.vs,ref,vs,arg,tipl::reg::rigid_body,terminated,0.01);
+        affine = tipl::transformation_matrix<float>(arg,handle->voxel.dim,handle->voxel.vs,ref.shape(),vs);
         std::cout << arg << std::endl;
     }
     else {

@@ -68,7 +68,7 @@ void ImageModel::calculate_dwi_sum(bool update_mask)
         }
         tipl::upper_threshold(dwi_sum,max_value);
         dwi.resize(voxel.dim);
-        tipl::normalize(dwi_sum,dwi);
+        tipl::normalize_upper_lower(dwi_sum,dwi);
     }
 
     if(update_mask)
@@ -193,7 +193,7 @@ std::string ImageModel::check_b_table(void)
         {
             tipl::image<3> iso_fa;
             template_fib->get_iso_fa(iso_fa);
-            tipl::normalize(iso_fa,255.0f);
+            tipl::normalize(iso_fa);
             tipl::image<3,unsigned char> I;
             I = iso_fa;
 
@@ -202,8 +202,8 @@ std::string ImageModel::check_b_table(void)
             bool terminated = false;
             tipl::affine_transform<float> arg;
             for(int i = 0;i < 3; ++ i)
-                tipl::reg::linear_mr(I,template_fib->vs,dwi,voxel.vs,
-                        arg,tipl::reg::affine,tipl::reg::mutual_information(),terminated,precision[i],bound);
+                tipl::reg::linear_mr<tipl::reg::mutual_information>(I,template_fib->vs,dwi,voxel.vs,
+                        arg,tipl::reg::affine,terminated,precision[i],bound);
             tipl::rotation_matrix(arg.rotation,r.begin(),tipl::vdim<3>());
             r.inv();
             T = tipl::transformation_matrix<float>(arg,template_fib->dim,template_fib->vs,voxel.dim,voxel.vs);
@@ -847,7 +847,7 @@ bool ImageModel::get_acpc_transform(tipl::shape<3>& new_geo,tipl::affine_transfo
     progress prog_((std::string("aligning with ac-pc at ")+template_name).c_str(),true);
     progress::at(0,3);
     T.rotation[0] = 0.001f;
-    tipl::reg::linear_mr(I,vs,J,voxel.vs,T,tipl::reg::affine,tipl::reg::correlation(),terminated,0.001);
+    tipl::reg::linear_mr<tipl::reg::correlation>(I,vs,J,voxel.vs,T,tipl::reg::affine,terminated,0.001);
     std::cout << T;
     progress::at(1,3);
     tipl::image<3,unsigned char> I2(I.shape());
@@ -895,18 +895,18 @@ void ImageModel::correct_motion(bool eddy)
     for(unsigned int i = 0;progress::at(i,src_bvalues.size());++i)
     {
         tipl::image<3,unsigned char> to;
-        tipl::normalize(dwi_at(i),to);
+        tipl::normalize_upper_lower(dwi_at(i),to);
         tipl::filter::gaussian(to);
         tipl::filter::gaussian(to);
         bool terminated = false;
         if(src_bvalues[i] > 500.0f)
-            tipl::reg::linear_mr(dwi,voxel.vs,to,voxel.vs,
+            tipl::reg::linear_mr<tipl::reg::correlation>(dwi,voxel.vs,to,voxel.vs,
                                   arg,eddy ? tipl::reg::affine : tipl::reg::rigid_body,
-                                  tipl::reg::correlation(),terminated,0.001,tipl::reg::narrow_bound);
+                                  terminated,0.001,tipl::reg::narrow_bound);
         else
-            tipl::reg::linear_mr(dwi,voxel.vs,to,voxel.vs,
+            tipl::reg::linear_mr<tipl::reg::mutual_information>(dwi,voxel.vs,to,voxel.vs,
                               arg,eddy ? tipl::reg::affine : tipl::reg::rigid_body,
-                              tipl::reg::mutual_information(),terminated,0.001,tipl::reg::narrow_bound);
+                              terminated,0.001,tipl::reg::narrow_bound);
 
         rotate_one_dwi(i,tipl::transformation_matrix<double>(arg,voxel.dim,voxel.vs,
                                                                      voxel.dim,voxel.vs));
@@ -2312,11 +2312,11 @@ bool ImageModel::compare_src(const char* file_name)
             get_acpc_transform(new_geo,T);
         }
         progress::at(0,4);
-        tipl::reg::linear(Ib,Ib_vs,If,If_vs,
-                T,tipl::reg::rigid_body,tipl::reg::correlation(),terminated,0.01,0,tipl::reg::large_bound);
+        tipl::reg::linear<tipl::reg::correlation>(Ib,Ib_vs,If,If_vs,
+                T,tipl::reg::rigid_body,terminated,0.01,0,tipl::reg::large_bound);
         progress::at(1,4);
-        tipl::reg::linear(Ib,Ib_vs,If,If_vs,
-                T,tipl::reg::rigid_body,tipl::reg::correlation(),terminated,0.001,0,tipl::reg::large_bound);
+        tipl::reg::linear<tipl::reg::correlation>(Ib,Ib_vs,If,If_vs,
+                T,tipl::reg::rigid_body,terminated,0.001,0,tipl::reg::large_bound);
         tipl::transformation_matrix<float> arg(T,Ib.shape(),Ib_vs,If.shape(),If_vs);
         // nonlinear part
         tipl::image<3,tipl::vector<3> > cdm_dis;

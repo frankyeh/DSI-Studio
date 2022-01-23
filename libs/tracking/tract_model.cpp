@@ -3285,7 +3285,7 @@ void ConnectivityMatrix::save_to_image(tipl::color_image& cm)
     cm.resize(matrix_value.shape());
     std::vector<float> values(matrix_value.size());
     std::copy(matrix_value.begin(),matrix_value.end(),values.begin());
-    tipl::normalize(values,255.99f);
+    tipl::normalize(values);
     for(unsigned int index = 0;index < values.size();++index)
     {
         cm[index] = tipl::rgb((unsigned char)values[index],(unsigned char)values[index],(unsigned char)values[index]);

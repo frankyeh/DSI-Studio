@@ -345,13 +345,13 @@ void manual_alignment::on_rerun_clicked()
     {
         if(cost == tipl::reg::mutual_info)
         {
-            tipl::reg::linear(from,from_vs,to,to_vs,arg,tipl::reg::reg_type(reg_type),tipl::reg::faster<tipl::reg::mutual_information>(),thread.terminated,0.01,true,tipl::reg::large_bound);
-            tipl::reg::linear(from,from_vs,to,to_vs,arg,tipl::reg::reg_type(reg_type),tipl::reg::faster<tipl::reg::mutual_information>(),thread.terminated,0.001,true,tipl::reg::large_bound);
+            tipl::reg::linear<tipl::reg::mutual_information>(from,from_vs,to,to_vs,arg,tipl::reg::reg_type(reg_type),thread.terminated,0.01,true,tipl::reg::large_bound);
+            tipl::reg::linear<tipl::reg::mutual_information>(from,from_vs,to,to_vs,arg,tipl::reg::reg_type(reg_type),thread.terminated,0.001,true,tipl::reg::large_bound);
         }
         else
         {
-            tipl::reg::linear(from,from_vs,to,to_vs,arg,tipl::reg::reg_type(reg_type),tipl::reg::faster<tipl::reg::correlation>(),thread.terminated,0.01,true,tipl::reg::large_bound);
-            tipl::reg::linear(from,from_vs,to,to_vs,arg,tipl::reg::reg_type(reg_type),tipl::reg::faster<tipl::reg::correlation>(),thread.terminated,0.001,true,tipl::reg::large_bound);
+            tipl::reg::linear<tipl::reg::correlation>(from,from_vs,to,to_vs,arg,tipl::reg::reg_type(reg_type),thread.terminated,0.01,true,tipl::reg::large_bound);
+            tipl::reg::linear<tipl::reg::correlation>(from,from_vs,to,to_vs,arg,tipl::reg::reg_type(reg_type),thread.terminated,0.001,true,tipl::reg::large_bound);
         }
     });
     if(timer)

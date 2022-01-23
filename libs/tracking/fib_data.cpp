@@ -1679,8 +1679,8 @@ void animal_reg(const tipl::image<3>& from,tipl::vector<3> from_vs,
     {
          tipl::affine_transform<double> arg;
          std::copy(directions[i],directions[i]+3,arg.rotation);
-         float cur_cost = tipl::reg::linear_mr(from,from_vs,to,to_vs,arg,
-            tipl::reg::affine,tipl::reg::mutual_information(),terminated,0.001,tipl::reg::large_bound);
+         float cur_cost = tipl::reg::linear_mr<tipl::reg::mutual_information>(from,from_vs,to,to_vs,arg,
+                                                    tipl::reg::affine,terminated,0.001,tipl::reg::large_bound);
          if(cur_cost < cost)
          {
              cost = cur_cost;
@@ -1786,8 +1786,7 @@ void fib_data::run_normalization(bool background,bool inv)
                     animal_reg(It2,template_vs,Is2,tvs,T,terminated);
             }
             else
-                tipl::reg::two_way_linear_mr(It,template_vs,Is,tvs,T,tipl::reg::affine,
-                                             tipl::reg::mutual_information(),terminated);
+                tipl::reg::two_way_linear_mr<tipl::reg::mutual_information>(It,template_vs,Is,tvs,T,tipl::reg::affine,terminated);
 
             for(unsigned int i = 0;i < downsampling;++i)
                 tipl::multiply_constant(T.data,T.data+12,2.0f);
