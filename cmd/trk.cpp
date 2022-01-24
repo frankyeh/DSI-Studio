@@ -157,8 +157,17 @@ bool export_track_info(program_option& po,std::shared_ptr<fib_data> handle,
         // export statistics
         if(QString(cmd.c_str()).startsWith("tdi"))
         {
-            bool output_color = QString(cmd.c_str()).endsWith("color");
-            bool output_end = QString(cmd.c_str()).endsWith("end");
+            float ratio = 1.0f;
+            if(cmd.find(':') != std::string::npos)
+            {
+                std::replace(cmd.begin(),cmd.end(),':',' ');
+                std::istringstream in(cmd);
+                in >> cmd >> ratio;
+                std::cout << "export " << cmd << " at x" << ratio << " resolution" << std::endl;
+            }
+
+            bool output_color = QString(cmd.c_str()).contains("color");
+            bool output_end = QString(cmd.c_str()).contains("end");
             file_name_stat += ".nii.gz";
             tipl::matrix<4,4> tr;
             tipl::shape<3> dim;
@@ -168,31 +177,20 @@ bool export_track_info(program_option& po,std::shared_ptr<fib_data> handle,
             vs = handle->vs;
 
             // t1t2
-            if(cmd == "tdi_t1t2")
+            if(QString(cmd.c_str()).contains("t1t2"))
             {
                 if(!get_t1t2_nifti(po.get("t1t2"),handle,dim,vs,tr))
                     return false;
             }
             else
             {
-                unsigned int ratio = 1;
-                if(QString(cmd.c_str()).startsWith("tdi2"))
-                    ratio = 2;
-                if(QString(cmd.c_str()).startsWith("tdi3"))
-                    ratio = 3;
-                if(QString(cmd.c_str()).startsWith("tdi4"))
-                    ratio = 4;
-
-                if(ratio != 1)
+                if(ratio != 1.0f)
                 {
                     tr[0] = tr[5] = tr[10] = ratio;
-                    dim = tipl::shape<3>(handle->dim[0]*ratio,
-                                            handle->dim[1]*ratio,
-                                            handle->dim[2]*ratio);
-                    vs /= float(ratio);
-                    std::cout << "Output TDI with dimension scaled by " << ratio << std::endl;
-                    std::cout << "dimension: " << dim << std::endl;
-                    std::cout << "voxel size: " << vs << std::endl;
+                    dim = tipl::shape<3>(uint32_t(handle->dim[0]*ratio),
+                                         uint32_t(handle->dim[1]*ratio),
+                                         uint32_t(handle->dim[2]*ratio));
+                    vs /= ratio;
                 }
             }
             std::vector<std::shared_ptr<TractModel> > tract;
@@ -202,6 +200,8 @@ bool export_track_info(program_option& po,std::shared_ptr<fib_data> handle,
                 std::cout << " in RGB color";
             if(output_end)
                 std::cout << " end point only";
+            std::cout << "TDI dimension: " << dim << std::endl;
+            std::cout << "TDI voxel size: " << vs << std::endl;
             std::cout << std::endl;
             if(!TractModel::export_tdi(file_name_stat.c_str(),tract,dim,vs,tr,output_color,output_end))
             {
