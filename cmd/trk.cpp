@@ -158,12 +158,12 @@ bool export_track_info(program_option& po,std::shared_ptr<fib_data> handle,
         if(QString(cmd.c_str()).startsWith("tdi"))
         {
             float ratio = 1.0f;
-            if(cmd.find(':') != std::string::npos)
             {
-                std::replace(cmd.begin(),cmd.end(),':',' ');
-                std::istringstream in(cmd);
-                in >> cmd >> ratio;
-                std::cout << "export " << cmd << " at x" << ratio << " resolution" << std::endl;
+                std::string digit(cmd);
+                digit.erase(std::remove_if(digit.begin(),digit.end(),[](char ch){return (ch < '0' || ch > '9') && ch != '.';}),digit.end());
+                if(!digit.empty())
+                    (std::istringstream(digit)) >> ratio;
+                std::cout << "export tdi at x" << ratio << " resolution" << std::endl;
             }
 
             bool output_color = QString(cmd.c_str()).contains("color");
