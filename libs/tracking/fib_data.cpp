@@ -694,7 +694,8 @@ bool fib_data::load_from_file(const char* file_name)
 
 
     // check if initiate surrogate analysis for large data
-    if(!mat_reader.has("odfs") && !mat_reader.has("odf0") && // not ODF FIB files
+    if(has_gui &&
+       !mat_reader.has("odfs") && !mat_reader.has("odf0") && // not ODF FIB files
        !mat_reader.has("subject_names") &&                        // not connectometry DB
        !mat_reader.has("dirs") &&                        // 4D dirs matrix requires more implementation in surrogate mat_reader
         mat_reader.read("dimension",dim) &&
