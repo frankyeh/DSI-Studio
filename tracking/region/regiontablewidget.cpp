@@ -552,8 +552,7 @@ void load_jason_label(const char* filename,std::map<int,std::string>& label_map)
     }
 }
 
-void get_roi_label(QString file_name,std::map<int,std::string>& label_map,
-                          std::map<int,tipl::rgb>& label_color,bool is_free_surfer)
+void get_roi_label(QString file_name,std::map<int,std::string>& label_map,std::map<int,tipl::rgb>& label_color)
 {
     label_map.clear();
     label_color.clear();
@@ -574,7 +573,7 @@ void get_roi_label(QString file_name,std::map<int,std::string>& label_map,
         std::cout << "jason file loaded:" << label_file.toStdString() << std::endl;
         return;
     }
-    if(base_name.contains("aparc+aseg") || is_free_surfer) // FreeSurfer
+    if(base_name.contains("aparc+aseg")) // FreeSurfer
     {
         std::cout << "using freesurfer labels." << std::endl;
         QFile data(":/data/FreeSurferColorLUT.txt");
@@ -661,7 +660,7 @@ bool load_nii(std::shared_ptr<fib_data> handle,
 
     std::string des(header.get_descrip());
     if(multiple_roi)
-        get_roi_label(file_name.c_str(),label_map,label_color,des.find("FreeSurfer") == 0);
+        get_roi_label(file_name.c_str(),label_map,label_color);
 
     tipl::matrix<4,4> convert;
     bool has_transform = false;
