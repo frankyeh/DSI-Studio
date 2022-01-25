@@ -2172,6 +2172,7 @@ void GLWidget::mouseDoubleClickEvent(QMouseEvent *event)
 
 bool GLWidget::get_mouse_pos(QMouseEvent *event,tipl::vector<3,float>& position)
 {
+    makeCurrent();
     QPoint cur_pos = event->pos();
     if(edit_right)
         cur_pos.setX(cur_pos.x() - cur_width / 2);
