@@ -897,7 +897,10 @@ bool tracking_window::eventFilter(QObject *obj, QEvent *event)
 
     if (event->type() == QEvent::MouseMove)
     {
-        if (obj == glWidget)
+        if (obj == glWidget && glWidget->editing_option == GLWidget::none &&
+                (ui->glSagCheck->checkState() ||
+                 ui->glCorCheck->checkState() ||
+                 ui->glAxiCheck->checkState()))
         {
             has_info = glWidget->get_mouse_pos(static_cast<QMouseEvent*>(event),pos);
         }
