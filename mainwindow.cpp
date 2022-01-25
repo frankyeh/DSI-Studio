@@ -800,7 +800,6 @@ void MainWindow::on_ReconstructSRC_clicked()
         }
 
         handle->voxel.method_id = 7; // QSDR
-        handle->voxel.param[0] = 1.25f;
         handle->voxel.ti.init(8); // odf order of 8
         handle->voxel.output_odf = true; // output ODF
         handle->voxel.other_output = "all";
