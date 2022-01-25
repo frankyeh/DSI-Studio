@@ -86,7 +86,7 @@ public:
     void load_from_src(ImageModel& image_model);
 public:
     unsigned char method_id;
-    std::vector<float> param;
+    float param[3] = {1.25f,3000.0f,0.05f};
     tessellated_icosahedron ti;
 public:
     std::string file_name;
@@ -157,7 +157,6 @@ public:
     std::vector<VoxelData> voxel_data;
     std::vector<HistData> hist_data;
 public:
-    Voxel(void):param(5){}
     template<typename T,typename ...Ts>
     void add_process(void)
     {
