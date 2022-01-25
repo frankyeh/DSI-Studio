@@ -423,7 +423,6 @@ void reconstruction_window::on_doDTI_clicked()
                 break;
             }
         }
-        std::fill(handle->voxel.param.begin(),handle->voxel.param.end(),0.0);
         if(ui->DTI->isChecked())
             Reconstruction(1,index+1 == filenames.size());
         else
