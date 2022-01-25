@@ -2212,7 +2212,7 @@ QPoint GLWidget::convert_pos(QMouseEvent *event)
     QPoint p = event->pos();
     if(edit_right)
         p.setX(p.x() - cur_width / 2);
-    if(view_mode == view_mode_type::stereo)
+    if(view_mode != view_mode_type::single)
         p.setX(p.x()*2);
     return p;
 }
