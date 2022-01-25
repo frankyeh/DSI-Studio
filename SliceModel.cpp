@@ -437,6 +437,14 @@ void CustomSliceModel::update_transform(void)
     handle->view_item[view_id].iT = invT;
 }
 // ---------------------------------------------------------------------------
+void two_way_linear_cuda(tipl::const_pointer_image<3,float> I,
+                         const tipl::vector<3>& Ivs,
+                         tipl::const_pointer_image<3,float> J,
+                         const tipl::vector<3>& Jvs,
+                         tipl::transformation_matrix<float>& T,
+                         tipl::reg::reg_type reg_type,
+                         bool& terminated,
+                         tipl::affine_transform<float>* arg_min);
 void CustomSliceModel::argmin(tipl::reg::reg_type reg_type)
 {
     terminated = false;
@@ -448,8 +456,10 @@ void CustomSliceModel::argmin(tipl::reg::reg_type reg_type)
     // align brain top
     float z_shift = (float(handle->dim[2])*handle->vs[2]-float(to.shape()[2])*vs[2])*0.1f;
     arg_min.translocation[2] = -z_shift*vs[2];
-
-    tipl::reg::two_way_linear_mr<tipl::reg::mutual_information>(from,handle->vs,to,vs,M,reg_type,terminated,&arg_min);
+    if constexpr (tipl::use_cuda)
+        two_way_linear_cuda(from,handle->vs,to,vs,M,reg_type,terminated,&arg_min);
+    else
+        tipl::reg::two_way_linear_mr<tipl::reg::mutual_information>(from,handle->vs,to,vs,M,reg_type,terminated,&arg_min);
 
     M.save_to_transform(invT.begin());
     handle->view_item[view_id].T = T = tipl::inverse(invT);
