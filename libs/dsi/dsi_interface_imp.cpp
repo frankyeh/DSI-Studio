@@ -29,14 +29,6 @@ std::string ImageModel::get_file_ext(void)
         out << ".dti.fib.gz";
         break;
     case 4://GQI
-        if(voxel.param[0] == 0.0f) // spectral analysis
-        {
-            out << (voxel.r2_weighted ? ".gqi2.spec.fib.gz":".gqi.spec.fib.gz");
-            break;
-        }
-        if(!voxel.study_src_file_path.empty())
-            out << ".df." << voxel.study_name << ".R" << int(voxel.R2*100.0f);
-
         out << (voxel.r2_weighted ? ".gqi2.":".gqi.") << voxel.param[0] << ".fib.gz";
         break;
     case 6:
@@ -151,25 +143,7 @@ bool ImageModel::reconstruction(void)
                     " The restricted diffusion was quantified using restricted diffusion imaging (Yeh et al., MRM, 77:603–612 (2017)).";
 
 
-            if(!voxel.study_src_file_path.empty())
-            {
-                std::cout << "SRC compared with=" << voxel.study_src_file_path << std::endl;
-                if(!compare_src(voxel.study_src_file_path.c_str()))
-                {
-                    error_msg = "Failed to load SRC file.";
-                    return false;
-                }
-                voxel.recon_report <<
-                " The diffusion data were compared with baseline scan using differential tractography with a diffusion sampling length ratio of "
-                << float(voxel.param[0]) << " to study neuronal change.";
-                // to get study fa
-                if (!study_src->reconstruct2<
-                        ReadDWIData,
-                        Dwi2Tensor>("Reconstruction"))
-                    return false;
-            }
-            else
-                voxel.recon_report <<
+            voxel.recon_report <<
                 " The diffusion data were reconstructed using generalized q-sampling imaging (Yeh et al., IEEE TMI, ;29(9):1626-35, 2010) with a diffusion sampling length ratio of "
                 << float(voxel.param[0]) << ".";
 
@@ -195,7 +169,6 @@ bool ImageModel::reconstruction(void)
                     BalanceScheme,
                     GQI_Recon,
                     RDI_Recon,
-                    dGQI_Recon,
                     DetermineFiberDirections,
                     SaveMetrics,
                     SaveDirIndex,

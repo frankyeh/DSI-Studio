@@ -49,54 +49,6 @@ public:
     virtual void run(Voxel& voxel, VoxelData& data) override;
 };
 
-class dGQI_Recon : public BaseProcess{
-    BalanceScheme bs;
-    GQI_Recon gr;
-public:
-    virtual void init(Voxel& v) override
-    {
-        if(!v.compare_voxel)
-            return;
-        v.bvalues = v.compare_voxel->bvalues;
-        v.bvectors = v.compare_voxel->bvectors;
-        bs.init(v);
-        gr.init(v);
-    }
-    virtual void run(Voxel& voxel, VoxelData& data) override
-    {
-        if(!voxel.compare_voxel)
-            return;
-        if(voxel.compare_voxel->dwi_data[0][data.voxel_index] == 0) // no data in the compared dataset
-        {
-            data.odf1.clear();
-            data.odf1.resize(data.odf.size());
-            data.odf = data.odf1;
-            data.odf2 = data.odf1;
-            return;
-        }
-        data.space.resize(voxel.compare_voxel->dwi_data.size());
-        for (unsigned int index = 0; index < data.space.size(); ++index)
-            data.space[index] = voxel.compare_voxel->dwi_data[index][data.voxel_index];
-
-        //temporarily store baseline odf here
-        data.odf1 = data.odf;
-        tipl::minus_constant(data.odf1,*std::min_element(data.odf1.begin(),data.odf1.end()));
-
-        bs.run(voxel,data);
-        gr.run(voxel,data);
-
-        data.odf2 = data.odf;
-        tipl::minus_constant(data.odf2,*std::min_element(data.odf2.begin(),data.odf2.end()));
-
-        tipl::add(data.odf,data.odf1);
-        tipl::multiply_constant(data.odf,0.5f);
-        //float qa = *std::max_element(data.odf.begin(),data.odf.end());
-        //if(qa > voxel.z0)
-        //    voxel.z0 = qa; // z0 is the maximum qa in the baseline
-
-    }
-};
-
 class HGQI_Recon  : public BaseProcess
 {
 public:

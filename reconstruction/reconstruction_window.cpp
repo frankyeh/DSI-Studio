@@ -448,9 +448,6 @@ void reconstruction_window::on_DTI_toggled(bool checked)
 
     ui->RecordODF->setVisible(!checked);
 
-    ui->open_ddi_study_src->setVisible(!checked);
-    ui->ddi_file->setVisible(!checked);
-
     if(checked && (!ui->other_output->text().contains("rd") &&
                    !ui->other_output->text().contains("ad") &&
                    !ui->other_output->text().contains("md")))
@@ -471,9 +468,6 @@ void reconstruction_window::on_GQI_toggled(bool checked)
 
     ui->RecordODF->setVisible(checked);
 
-    ui->open_ddi_study_src->setVisible(checked);
-    ui->ddi_file->setVisible(checked);
-
     if(checked && handle->is_human_data())
         ui->align_acpc->setVisible(true);
 
@@ -487,9 +481,6 @@ void reconstruction_window::on_QSDR_toggled(bool checked)
     ui->AdvancedOptions->setVisible(checked);
 
     ui->RecordODF->setVisible(checked);
-
-    ui->open_ddi_study_src->setVisible(!checked);
-    ui->ddi_file->setVisible(!checked);
 
     if(checked)
         ui->align_acpc->setVisible(false);
@@ -888,18 +879,6 @@ void reconstruction_window::on_actionImage_upsample_to_T1W_TESTING_triggered()
     update_dimension();
     load_b_table();
     on_SlicePos_valueChanged(ui->SlicePos->value());
-}
-
-
-void reconstruction_window::on_open_ddi_study_src_clicked()
-{
-    QString filename = QFileDialog::getOpenFileName(
-            this,"Open Study SRC file",absolute_path,
-            "Images (*src.gz);;All files (*)" );
-    if( filename.isEmpty())
-        return;
-    command("[Step T2b(2)][Compare SRC]",filename.toStdString());
-    ui->ddi_file->setText(QString("Compared with ") + QFileInfo(filename).baseName());
 }
 
 void reconstruction_window::on_SagView_clicked()

@@ -138,10 +138,6 @@ public: // for QSDR associated T1WT2W
 public: // for fib evaluation
     tipl::image<3> fib_fa;
     std::vector<tipl::vector<3> > fib_dir;
-public: // for DDI
-    Voxel* compare_voxel = nullptr;
-    std::string study_name;
-    std::string study_src_file_path;
 public:
     float z0 = 0.0;
     // other information for second pass processing

@@ -604,13 +604,6 @@
                   </widget>
                  </item>
                  <item>
-                  <widget class="QLabel" name="ddi_file">
-                   <property name="text">
-                    <string/>
-                   </property>
-                  </widget>
-                 </item>
-                 <item>
                   <widget class="QRadioButton" name="QSDR">
                    <property name="enabled">
                     <bool>true</bool>
@@ -967,16 +960,6 @@
                    </property>
                    <property name="text">
                     <string>Output ODFs</string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item>
-                  <widget class="QPushButton" name="open_ddi_study_src">
-                   <property name="statusTip">
-                    <string>Compare longitudinal scans for differential tractography</string>
-                   </property>
-                   <property name="text">
-                    <string>Compare SRC...</string>
                    </property>
                   </widget>
                  </item>

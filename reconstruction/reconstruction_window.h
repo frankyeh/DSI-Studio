@@ -96,7 +96,6 @@ private slots:
     void on_actionSave_b0_triggered();
     void on_actionEnable_TEST_features_triggered();
     void on_actionImage_upsample_to_T1W_TESTING_triggered();
-    void on_open_ddi_study_src_clicked();
     void on_SagView_clicked();
     void on_CorView_clicked();
     void on_AxiView_clicked();

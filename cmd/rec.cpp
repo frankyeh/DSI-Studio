@@ -113,8 +113,6 @@ int rec(program_option& po)
     }
 
     unsigned char method_index = uint8_t(po.get("method",4));
-    if(po.has("study_src")) // DDI
-        src.voxel.study_src_file_path = po.get("study_src");
     if (po.has("param0"))
         src.voxel.param[0] = po.get("param0",src.voxel.param[0]);
     if (po.has("param1"))
