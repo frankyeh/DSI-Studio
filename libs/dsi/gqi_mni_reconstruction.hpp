@@ -8,7 +8,7 @@
 extern std::vector<std::string> fa_template_list,iso_template_list;
 void animal_reg(const tipl::image<3>& from,tipl::vector<3> from_vs,
           const tipl::image<3>& to,tipl::vector<3> to_vs,
-          tipl::transformation_matrix<double>& T,bool& terminated);
+          tipl::transformation_matrix<float>& T,bool& terminated);
 void match_template_resolution(tipl::image<3>& VG,
                                tipl::image<3>& VG2,
                                tipl::vector<3>& VGvs,
@@ -22,7 +22,7 @@ protected:
 protected:
     tipl::image<3,tipl::vector<3> > cdm_dis,mapping;
 protected:
-    tipl::transformation_matrix<double> affine;
+    tipl::transformation_matrix<float> affine;
 protected: // for warping other image modality
     std::vector<tipl::image<3> > other_image;
 protected:

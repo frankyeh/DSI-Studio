@@ -1661,10 +1661,18 @@ void fib_data::recognize_report(std::shared_ptr<TractModel>& trk,std::string& re
     report += out.str();
 }
 
+void two_way_linear_cuda(tipl::const_pointer_image<3,float> I,
+                         const tipl::vector<3>& Ivs,
+                         tipl::const_pointer_image<3,float> J,
+                         const tipl::vector<3>& Jvs,
+                         tipl::transformation_matrix<float>& T,
+                         tipl::reg::reg_type reg_type,
+                         bool& terminated,
+                         tipl::affine_transform<float>* arg_min);
 
 void animal_reg(const tipl::image<3>& from,tipl::vector<3> from_vs,
           const tipl::image<3>& to,tipl::vector<3> to_vs,
-          tipl::transformation_matrix<double>& T,bool& terminated)
+          tipl::transformation_matrix<float>& T,bool& terminated)
 {
     float PI = 3.14159265358979323846f;
     float directions[5][3]={
@@ -1685,7 +1693,7 @@ void animal_reg(const tipl::image<3>& from,tipl::vector<3> from_vs,
          if(cur_cost < cost)
          {
              cost = cur_cost;
-             T = tipl::transformation_matrix<double>(arg,from.shape(),from_vs,to.shape(),to_vs);
+             T = tipl::transformation_matrix<float>(arg,from.shape(),from_vs,to.shape(),to_vs);
          }
     });
 }
@@ -1748,7 +1756,7 @@ void fib_data::run_normalization(bool background,bool inv)
     bool terminated = false;
     auto lambda = [this,output_file_name,&terminated]()
     {
-        tipl::transformation_matrix<double> T;
+        tipl::transformation_matrix<float> T;
 
         auto It = template_I;
         auto It2 = template_I2;
@@ -1787,8 +1795,12 @@ void fib_data::run_normalization(bool background,bool inv)
                     animal_reg(It2,template_vs,Is2,tvs,T,terminated);
             }
             else
-                tipl::reg::two_way_linear_mr<tipl::reg::mutual_information>(It,template_vs,Is,tvs,T,tipl::reg::affine,terminated);
-
+            {
+                if constexpr (tipl::use_cuda)
+                    two_way_linear_cuda(It,template_vs,Is,tvs,T,tipl::reg::affine,terminated,nullptr);
+                else
+                    tipl::reg::two_way_linear_mr<tipl::reg::mutual_information>(It,template_vs,Is,tvs,T,tipl::reg::affine,terminated);
+            }
             for(unsigned int i = 0;i < downsampling;++i)
                 tipl::multiply_constant(T.data,T.data+12,2.0f);
         }
