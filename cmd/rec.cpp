@@ -33,6 +33,7 @@ int rec(program_option& po)
         std::cout << "ERROR: " << src.error_msg << std::endl;
         return 1;
     }
+    src.voxel.template_id = size_t(po.get("template",src.voxel.template_id));
     std::cout << "src loaded" <<std::endl;
 
     if(po.has("rev_pe") && !src.run_topup_eddy(po.get("rev_pe")))
@@ -112,31 +113,14 @@ int rec(program_option& po)
     }
 
     unsigned char method_index = uint8_t(po.get("method",4));
-    if(method_index == 4)
-        src.voxel.param[0] = 1.25f;
-    if(method_index == 6) // Convert to HARDI
-    {
-        src.voxel.param[0] = 1.25f;
-        src.voxel.param[1] = 3000.0f;
-        src.voxel.param[2] = 0.05f;
-    }
-    if(method_index == 7) // QSDR
-    {
-        src.voxel.param[0] = 1.25f;
-        src.voxel.template_id = size_t(po.get("template",src.voxel.template_id));
-    }
     if(po.has("study_src")) // DDI
         src.voxel.study_src_file_path = po.get("study_src");
     if (po.has("param0"))
-        src.voxel.param[0] = po.get("param0",float(0));
+        src.voxel.param[0] = po.get("param0",src.voxel.param[0]);
     if (po.has("param1"))
-        src.voxel.param[1] = po.get("param1",float(0));
+        src.voxel.param[1] = po.get("param1",src.voxel.param[1]);
     if (po.has("param2"))
-        src.voxel.param[2] = po.get("param2",float(0));
-    if (po.has("param3"))
-        src.voxel.param[3] = po.get("param3",float(0));
-    if (po.has("param4"))
-        src.voxel.param[4] = po.get("param4",float(0));
+        src.voxel.param[2] = po.get("param2",src.voxel.param[2]);
 
     if(po.get("align_acpc",1) && method_index != 7)
         src.align_acpc();
