@@ -2219,8 +2219,8 @@ QPoint GLWidget::convert_pos(QMouseEvent *event)
 
 void GLWidget::mousePressEvent(QMouseEvent *event)
 {
-    setFocus();// for key stroke to work
     makeCurrent();
+    setFocus();// for key stroke to work
     edit_right = (view_mode != view_mode_type::single && (event->pos().x() > cur_width / 2));
     lastPos = convert_pos(event);
     if(editing_option != none)
@@ -2332,6 +2332,7 @@ void handle_rotate(bool circular,bool only_y,float fx,float fy,float dx,float dy
 
 void GLWidget::mouseMoveEvent(QMouseEvent *event)
 {
+    makeCurrent();
     curPos = convert_pos(event);
     if(editing_option == selecting)
     {
