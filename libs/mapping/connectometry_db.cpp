@@ -1080,7 +1080,7 @@ bool connectometry_result::compare(std::shared_ptr<fib_data> handle,const std::v
         for(unsigned int fib = 0;fib < handle->dir.num_fiber;++fib)
         {
             for(unsigned int index = 0;index < handle->dim.size();++index)
-                if(fa1[fib][index] > 0.0 && fa2[fib][index] > 0.0)
+                if(fa1[fib][index] > 0.0f && fa2[fib][index] > 0.0f)
                     calculate_dif(pos_corr[fib][index],neg_corr[fib][index],fa1[fib][index],fa2[fib][index]);
         }
     }
@@ -1093,7 +1093,7 @@ bool connectometry_result::compare(std::shared_ptr<fib_data> handle,const std::v
         for(unsigned int fib = 0;fib < handle->dir.num_fiber;++fib)
         {
             for(unsigned int index = 0;index < handle->dim.size();++index)
-                if(fa1[fib][index] > 0.0 && fa2[fib][index] > 0.0)
+                if(fa1[fib][index] > 0.0f && fa2[fib][index] > 0.0f)
                     calculate_dif(pos_corr[fib][index],neg_corr[fib][index],fa1[fib][index]/max1,fa2[fib][index]/max2);
         }
     }
@@ -1116,7 +1116,7 @@ bool connectometry_result::compare(std::shared_ptr<fib_data> handle,const std::v
         for(unsigned int fib = 0;fib < handle->dir.num_fiber;++fib)
         {
             for(unsigned int index = 0;index < handle->dim.size();++index)
-                if(fa1[fib][index] > 0.0 && fa2[fib][index] > 0.0)
+                if(fa1[fib][index] > 0.0f && fa2[fib][index] > 0.0f)
                     calculate_dif(pos_corr[fib][index],neg_corr[fib][index],fa1[fib][index]/sd1,fa2[fib][index]/sd2);
         }
     }
