@@ -747,9 +747,9 @@ bool fib_data::load_from_file(const char* file_name)
                     tipl::image<3,tipl::vector<3,float> > new_mapping;
                     for(size_t j = 0;j < downsampling;++j)
                         if(j == 0)
-                            tipl::downsample_with_padding2(native_position,new_mapping);
+                            tipl::downsample_with_padding(native_position,new_mapping);
                         else
-                            tipl::downsample_with_padding2(new_mapping);
+                            tipl::downsample_with_padding(new_mapping);
                     out.write("mapping",&new_mapping[0][0],3,new_mapping.size());
                 }
                 // convert trans_to_mni
@@ -820,9 +820,9 @@ bool fib_data::load_from_file(const char* file_name)
                         tipl::image<3> new_image;
                         for(size_t j = 0;j < downsampling;++j)
                             if(j == 0)
-                                tipl::downsample_with_padding2(J,new_image);
+                                tipl::downsample_with_padding(J,new_image);
                             else
-                                tipl::downsample_with_padding2(new_image);
+                                tipl::downsample_with_padding(new_image);
                         out.write(matrix.get_name().c_str(),new_image);
                     }
                     if(matrix.is_type<short>()) // index0,index1
