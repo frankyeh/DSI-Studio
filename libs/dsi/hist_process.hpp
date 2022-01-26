@@ -59,10 +59,10 @@ class CalculateStructuralTensor : public BaseProcess{
 
         for(unsigned int i = 0;i < voxel.hist_downsampling;++i)
         {
-            tipl::downsample_with_padding2(dxx);
-            tipl::downsample_with_padding2(dyy);
-            tipl::downsample_with_padding2(dxy);
-            tipl::downsample_with_padding2(hist.I_mask);
+            tipl::downsample_with_padding(dxx);
+            tipl::downsample_with_padding(dyy);
+            tipl::downsample_with_padding(dxy);
+            tipl::downsample_with_padding(hist.I_mask);
         }
 
         for(unsigned int i = 0;i < voxel.hist_tensor_smoothing;++i)
