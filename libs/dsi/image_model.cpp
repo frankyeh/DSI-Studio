@@ -1924,9 +1924,9 @@ bool ImageModel::load_from_file(const char* dwi_file_name)
         auto raw_ = tipl::make_image(&*raw.begin(),tipl::shape<3>(raw.width(),raw.height(),1));
         if(raw.width() > 2048)
         {
-            tipl::downsample_with_padding2(raw_,dwi);
+            tipl::downsample_with_padding(raw_,dwi);
             while(dwi.width() > 2048)
-                tipl::downsample_with_padding2(dwi);
+                tipl::downsample_with_padding(dwi);
         }
         else
             dwi = raw_;
