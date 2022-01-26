@@ -1661,7 +1661,7 @@ void fib_data::recognize_report(std::shared_ptr<TractModel>& trk,std::string& re
     report += out.str();
 }
 
-void two_way_linear_cuda(tipl::const_pointer_image<3,float> I,
+float two_way_linear_cuda(tipl::const_pointer_image<3,float> I,
                          const tipl::vector<3>& Ivs,
                          tipl::const_pointer_image<3,float> J,
                          const tipl::vector<3>& Jvs,
@@ -1796,13 +1796,10 @@ void fib_data::run_normalization(bool background,bool inv)
             }
             else
             {
-                auto t = std::chrono::high_resolution_clock::now();
                 if constexpr (tipl::use_cuda)
                     two_way_linear_cuda(It,template_vs,Is,tvs,T,tipl::reg::affine,terminated,nullptr);
                 else
                     tipl::reg::two_way_linear_mr<tipl::reg::mutual_information>(It,template_vs,Is,tvs,T,tipl::reg::affine,terminated);
-                std::cout << "reg time: " <<
-                             std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now()-t).count() << " ms" << std::endl;
             }
             for(unsigned int i = 0;i < downsampling;++i)
                 tipl::multiply_constant(T.data,T.data+12,2.0f);
