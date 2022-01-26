@@ -172,8 +172,8 @@ bool CustomSliceModel::initialize(const std::vector<std::string>& files,bool is_
                 }
                 while(source_images.width() > 4096)
                 {
-                    tipl::downsample_with_padding2(source_images);
-                    tipl::downsample_with_padding2(picture);
+                    tipl::downsample_with_padding(source_images);
+                    tipl::downsample_with_padding(picture);
                 }
             }
 
