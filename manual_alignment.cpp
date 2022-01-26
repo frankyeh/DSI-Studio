@@ -28,7 +28,7 @@ manual_alignment::manual_alignment(QWidget *parent,
     while(tipl::minimum(to_vs) < tipl::minimum(from_vs)/2.0f)
     {
         tipl::image<3> new_to;
-        tipl::downsample_with_padding2(to,new_to);
+        tipl::downsample_with_padding(to,new_to);
         to.swap(new_to);
         to_vs *= 2.0f;
         to_downsample *= 0.5f;
@@ -37,7 +37,7 @@ manual_alignment::manual_alignment(QWidget *parent,
     while(tipl::minimum(from_vs) < tipl::minimum(to_vs)/2.0f)
     {
         tipl::image<3> new_from;
-        tipl::downsample_with_padding2(from,new_from);
+        tipl::downsample_with_padding(from,new_from);
         from.swap(new_from);
         from_vs *= 2.0f;
         from_downsample *= 2.0f;
