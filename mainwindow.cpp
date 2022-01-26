@@ -43,24 +43,34 @@ console_stream::console_stream(QTextEdit* text_edit)
 }
 
 bool is_main_thread(void);
+void console_stream::update_text_edit(void)
+{
+    if(has_new_line)
+    {
+        has_new_line = false;
+        QStringList strSplitted;
+        {
+            std::lock_guard<std::mutex> lock(edit_buf);
+            strSplitted = buf.split("\n");
+            buf = strSplitted.back();
+        }
+        log_window->moveCursor (QTextCursor::End);
+        for(int i = 0; i+1 < strSplitted.size(); i++)
+            log_window->append(strSplitted.at(i));
+    }
+}
 std::basic_streambuf<char>::int_type console_stream::overflow(std::basic_streambuf<char>::int_type v)
 {
-    if (v == '\n' && is_main_thread())
-    {
-        QString buf2;
-        buf2.swap(buf);
-        QStringList strSplitted = buf2.split("\n");
-        log_window->moveCursor (QTextCursor::End);
-        for(int i = 0; i < strSplitted.size(); i++)
-            log_window->append(strSplitted.at(i));
-        return v;
-    }
+    std::lock_guard<std::mutex> lock(edit_buf);
     buf.push_back(char(v));
+    if (v == '\n')
+        has_new_line = true;
     return v;
 }
 
 std::streamsize console_stream::xsputn(const char *p, std::streamsize n)
 {
+    std::lock_guard<std::mutex> lock(edit_buf);
     buf += p;
     return n;
 }
@@ -75,7 +85,6 @@ MainWindow::MainWindow(QWidget *parent) :
     setAcceptDrops(true);
     ui->setupUi(this);
     ui->tabWidget->setCurrentIndex(0);
-    cs.reset(new console_stream(ui->console));
     ui->styles->addItems(QStringList("default") << QStyleFactory::keys());
     ui->styles->setCurrentText(settings.value("styles","Fusion").toString());
 
@@ -102,6 +111,14 @@ MainWindow::MainWindow(QWidget *parent) :
 
     if(!arg_file_name.empty())
         openFile(arg_file_name.c_str());
+    cs.reset(new console_stream(ui->console));
+    qApp->installEventFilter(this);
+}
+bool MainWindow::eventFilter(QObject*, QEvent*)
+{
+    if(cs.get())
+        cs->update_text_edit();
+    return false;
 }
 void MainWindow::openFile(QString file_name)
 {

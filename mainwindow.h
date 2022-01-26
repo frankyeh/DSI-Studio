@@ -5,16 +5,19 @@
 #include <QSettings>
 #include <iostream>
 #include <memory>
+#include <mutex>
 class QTextEdit;
 class console_stream :  public std::basic_streambuf<char>
 {
 public:
     console_stream(QTextEdit* text_edit);
+    void update_text_edit(void);
 protected:
-    virtual int_type overflow(int_type v);
-    virtual std::streamsize xsputn(const char *p, std::streamsize n);
-
+    virtual int_type overflow(int_type v) override;
+    virtual std::streamsize xsputn(const char *p, std::streamsize n) override;
 private:
+    bool has_new_line = false;
+    std::mutex edit_buf;
     QString buf;
     QTextEdit* log_window;
 };
@@ -41,6 +44,7 @@ public:
     void dragEnterEvent(QDragEnterEvent *event);
     void dropEvent(QDropEvent *event);
     void openFile(QString file_name);
+    bool eventFilter(QObject *obj, QEvent *event) override;
 public:
     void loadFib(QString Filename,bool presentation_mode = false);
     void loadSrc(QStringList filenames);

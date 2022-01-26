@@ -86,7 +86,7 @@ public:
     float get_fa_threshold(void);
     bool no_update = false;
 public:
-    bool eventFilter(QObject *obj, QEvent *event);
+    bool eventFilter(QObject *obj, QEvent *event) override;
     QVariant operator[](QString name)const;
     void set_data(QString name, QVariant value);
     void on_tracking_index_currentIndexChanged(int index);
