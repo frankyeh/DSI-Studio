@@ -892,7 +892,7 @@ bool is_label_image(const tipl::image<3>& I);
 void view_image::on_actionSmoothing_triggered()
 {
     tipl::image<3> new_data(data.shape());
-    uint32_t m = uint32_t(*std::max_element(data.begin(),data.end()));
+    uint32_t m = uint32_t(tipl::max_value(data));
     tipl::image<3,char> all_mask(data.shape());
     for(size_t i = 0;i < data.size();++i)
         if(data[i] > 0.0f)

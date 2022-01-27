@@ -79,7 +79,7 @@ bool atlas::load_from_file(void)
 
     if(label2index.empty() && !is_multiple_roi) // not talairach not tracks
     {
-        std::vector<unsigned char> hist(1+*std::max_element(I.begin(),I.end()));
+        std::vector<unsigned char> hist(1+tipl::max_value(I));
         for(size_t index = 0;index < I.size();++index)
             hist[size_t(I[index])] = 1;
         if(labels.empty())

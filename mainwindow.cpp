@@ -1194,9 +1194,9 @@ bool dcm2src(QStringList files,std::ostream& out)
 
         //non isotropic
         if((vs[0] < vs[2] || vs[1] < vs[2]) &&
-           (*std::min_element(vs.begin(),vs.end()))/(*std::max_element(vs.begin(),vs.end())) > 0.5f)
+           (tipl::min_value(vs))/(tipl::max_value(vs)) > 0.5f)
         {
-            float reso = *std::min_element(vs.begin(),vs.end());
+            float reso = tipl::min_value(vs);
             tipl::vector<3,float> new_vs(reso,reso,reso);
             tipl::image<3> J(tipl::shape<3>(
                     int(std::ceil(float(I.width())*vs[0]/new_vs[0])),

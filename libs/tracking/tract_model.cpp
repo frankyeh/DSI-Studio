@@ -3700,7 +3700,7 @@ void ConnectivityMatrix::network_property(std::string& report)
     tipl::image<2,unsigned char> binary_matrix(matrix_value.shape());
     tipl::image<2,float> norm_matrix(matrix_value.shape());
 
-    float max_value = *std::max_element(matrix_value.begin(),matrix_value.end());
+    float max_value = tipl::max_value(matrix_value);
     for(unsigned int i = 0;i < binary_matrix.size();++i)
     {
         binary_matrix[i] = matrix_value[i] > 0 ? 1 : 0;
@@ -3795,10 +3795,8 @@ void ConnectivityMatrix::network_property(std::string& report)
 
         for(unsigned int i = 0,ipos = 0;i < n;++i,ipos += n)
         {
-            eccentricity_bin[i] = *std::max_element(dis_bin.begin()+ipos,
-                                                 dis_bin.begin()+ipos+n);
-            eccentricity_wei[i] = *std::max_element(dis_wei.begin()+ipos,
-                                                 dis_wei.begin()+ipos+n);
+            eccentricity_bin[i] = tipl::max_value(dis_bin.begin()+ipos,dis_bin.begin()+ipos+n);
+            eccentricity_wei[i] = tipl::max_value(dis_wei.begin()+ipos,dis_wei.begin()+ipos+n);
 
         }
         out << "diameter_of_graph(binary)\t" << *std::max_element(eccentricity_bin.begin(),eccentricity_bin.end()) <<std::endl;
@@ -3807,8 +3805,8 @@ void ConnectivityMatrix::network_property(std::string& report)
 
         std::replace(eccentricity_bin.begin(),eccentricity_bin.end(),(float)0,std::numeric_limits<float>::max());
         std::replace(eccentricity_wei.begin(),eccentricity_wei.end(),(float)0,std::numeric_limits<float>::max());
-        out << "radius_of_graph(binary)\t" << *std::min_element(eccentricity_bin.begin(),eccentricity_bin.end()) <<std::endl;
-        out << "radius_of_graph(weighted)\t" << *std::min_element(eccentricity_wei.begin(),eccentricity_wei.end()) <<std::endl;
+        out << "radius_of_graph(binary)\t" << tipl::min_value(eccentricity_bin) <<std::endl;
+        out << "radius_of_graph(weighted)\t" << tipl::min_value(eccentricity_wei) <<std::endl;
         std::replace(eccentricity_bin.begin(),eccentricity_bin.end(),std::numeric_limits<float>::max(),(float)0);
         std::replace(eccentricity_wei.begin(),eccentricity_wei.end(),std::numeric_limits<float>::max(),(float)0);
     }

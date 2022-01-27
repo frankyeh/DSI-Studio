@@ -54,7 +54,7 @@ void ImageModel::calculate_dwi_sum(bool update_mask)
         });
 
         float otsu = tipl::segmentation::otsu_threshold(dwi_sum);
-        float max_value = std::min<float>(*std::max_element(dwi_sum.begin(),dwi_sum.end()),otsu*3.0f);
+        float max_value = std::min<float>(tipl::max_value(dwi_sum),otsu*3.0f);
         float min_value = max_value;
         // handle 0 strip with background value condition
         {
@@ -567,8 +567,8 @@ bool ImageModel::command(std::string cmd,std::string param)
             threshold = (voxel.dim[2] < 200) ?
                     QInputDialog::getInt(nullptr,"DSI Studio","Please assign the threshold",
                                                          int(tipl::segmentation::otsu_threshold(dwi)),
-                                                         int(*std::min_element(dwi.begin(),dwi.end())),
-                                                         int(*std::max_element(dwi.begin(),dwi.end()))+1,1,&ok)
+                                                         int(tipl::min_value(dwi)),
+                                                         int(tipl::max_value(dwi))+1,1,&ok)
                     :QInputDialog::getInt(nullptr,"DSI Studio","Please assign the threshold");
             if (!ok)
                 return true;

@@ -329,7 +329,7 @@ bool load_4d_nii(const char* file_name,std::vector<std::shared_ptr<DwiHeader> >&
     {
         float max_value = 0.0f;
         for(unsigned int index = 0;index < dwi_data.size();++index)
-            max_value = std::max<float>(max_value,*std::max_element(dwi_data[index].begin(),dwi_data[index].end()));
+            max_value = std::max<float>(max_value,tipl::max_value(dwi_data[index]));
         if(max_value > float(std::numeric_limits<unsigned short>::max()-1))
         {
             float scale = float(std::numeric_limits<unsigned short>::max()-1)/max_value;
@@ -408,7 +408,7 @@ bool load_4d_nii(const char* file_name,std::vector<std::shared_ptr<DwiHeader> >&
                 bvecs.clear();
             }
         }
-        if(need_bvalbvec && (bvals.empty() || *std::max_element(bvals.begin(),bvals.end()) == 0.0))
+        if(need_bvalbvec && (bvals.empty() || tipl::max_value(bvals) == 0.0))
         {
             if(src_error_msg.empty())
                 src_error_msg = bvals.empty() ? "cannot find bval/bvec file" : "incorrect bval file";

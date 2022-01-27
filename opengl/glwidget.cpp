@@ -1411,7 +1411,7 @@ void GLWidget::add_odf(const std::vector<tipl::pixel_index<3> >& odf_pos_)
 
         const float* odf_buffer = odf_buffers[i];
 
-        float odf_min = *std::min_element(odf_buffer,odf_buffer+half_odf);
+        float odf_min = tipl::min_value(odf_buffer,odf_buffer+half_odf);
         if(odf_min < 0 || !odf_min_max)
             odf_min = 0;
         // smooth the odf a bit
@@ -1568,7 +1568,7 @@ void GLWidget::makeTracts(void)
                     mean_fa.push_back(sum);
                 }
                 if(tract_color_style == 5)
-                    mean_fa.push_back(*std::max_element(fa_values.begin(),fa_values.end()));
+                    mean_fa.push_back(tipl::max_value(fa_values));
             });
 
         }
@@ -2520,8 +2520,8 @@ void GLWidget::addSurface(void)
     bool ok;
     threshold = float(QInputDialog::getDouble(this,
         "DSI Studio","Threshold:", double(threshold),
-        double(*std::min_element(slice->get_source().begin(),slice->get_source().end())),
-        double(*std::max_element(slice->get_source().begin(),slice->get_source().end())),
+        double(tipl::min_value(slice->get_source())),
+        double(tipl::max_value(slice->get_source())),
         4, &ok));
     if (!ok)
         return;

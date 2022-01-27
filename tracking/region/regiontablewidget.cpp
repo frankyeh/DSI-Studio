@@ -1462,7 +1462,7 @@ void RegionTableWidget::do_action(QString action)
             if(I.empty())
                 return;
             mask.resize(I.shape());
-            double m = *std::max_element(I.begin(),I.end());
+            double m = tipl::max_value(I);
             bool ok;
             bool flip = false;
             float threshold = float(QInputDialog::getDouble(this,
@@ -1490,7 +1490,7 @@ void RegionTableWidget::do_action(QString action)
             tipl::const_pointer_image<3,float> I = cur_tracking_window.current_slice->get_source();
             if(I.empty())
                 return;
-            double m = *std::max_element(I.begin(),I.end());
+            double m = tipl::max_value(I);
             bool ok;
             bool flip = false;
             float threshold = float(QInputDialog::getDouble(this,

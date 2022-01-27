@@ -33,7 +33,7 @@ bool check_src(std::string file_name,std::vector<std::string>& output,float& ndc
     output.push_back(std::to_string(cur_dwi_count));
 
     // output max_b
-    output.push_back(std::to_string(*std::max_element(handle.src_bvalues.begin(),handle.src_bvalues.end())));
+    output.push_back(std::to_string(tipl::max_value(handle.src_bvalues)));
 
     // calculate neighboring DWI correlation
     ndc = handle.quality_control_neighboring_dwi_corr();

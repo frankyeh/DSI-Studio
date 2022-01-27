@@ -711,7 +711,7 @@ bool fib_data::load_from_file(const char* file_name)
         if(!std::filesystem::exists(surrogate_file_name) || QFileInfo(surrogate_file_name.c_str()).lastModified() < QFileInfo(file_name).lastModified())
         {
             progress prog_("create surrogate FIB file");
-            size_t largest_dim = *std::max_element(dim.begin(),dim.end());
+            size_t largest_dim = tipl::max_value(dim);
             size_t downsampling = 0;
             tipl::vector<3> low_reso_vs(vs);
             tipl::shape<3> low_reso_dim(dim);

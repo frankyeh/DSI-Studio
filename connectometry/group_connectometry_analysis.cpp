@@ -438,7 +438,7 @@ void group_connectometry_analysis::run_permutation(unsigned int thread_count,uns
         }
     }
 
-    size_t max_dimension = *std::max_element(handle->dim.begin(),handle->dim.end());
+    size_t max_dimension = tipl::max_value(handle->dim);
 
     subject_pos_corr_null.clear();
     subject_pos_corr_null.resize(max_dimension);
@@ -506,9 +506,9 @@ void group_connectometry_analysis::calculate_FDR(void)
         fdr_pos_corr[size_t(index)] = float((sum_pos_corr > 0.0) ? std::min<double>(1.0,sum_pos_corr_null/sum_pos_corr): 1.0);
         fdr_neg_corr[size_t(index)] = float((sum_neg_corr > 0.0) ? std::min<double>(1.0,sum_neg_corr_null/sum_neg_corr): 1.0);
     }
-    if(*std::min_element(fdr_pos_corr.begin(),fdr_pos_corr.end()) < 0.05f)
+    if(tipl::min_value(fdr_pos_corr) < 0.05f)
         std::replace(fdr_pos_corr.begin(),fdr_pos_corr.end(),1.0f,0.0f);
-    if(*std::min_element(fdr_neg_corr.begin(),fdr_neg_corr.end()) < 0.05f)
+    if(tipl::min_value(fdr_neg_corr) < 0.05f)
         std::replace(fdr_neg_corr.begin(),fdr_neg_corr.end(),1.0f,0.0f);
 }
 

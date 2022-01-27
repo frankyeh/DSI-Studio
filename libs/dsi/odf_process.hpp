@@ -396,7 +396,7 @@ public:
         {
             float max_qa = 0.0;
             for (unsigned int i = 0;i < voxel.max_fiber_number;++i)
-                max_qa = std::max<float>(*std::max_element(fa[i].begin(),fa[i].end()),max_qa);
+                max_qa = std::max<float>(tipl::max_value(fa[i]),max_qa);
 
             if(max_qa != 0.0f)
             {
@@ -640,7 +640,7 @@ public:
 
     virtual void run(Voxel& voxel,VoxelData& data)
     {
-        data.min_odf = *std::min_element(data.odf.begin(),data.odf.end());
+        data.min_odf = tipl::min_value(data.odf);
         if(voxel.odf_resolving)
         {
             std::vector<float> odf(data.odf);

@@ -1277,7 +1277,7 @@ void tracking_window::on_tracking_index_currentIndexChanged(int index)
     if(index < 0)
             return;
     handle->dir.set_tracking_index(index);
-    float max_value = *std::max_element(handle->dir.fa[0],handle->dir.fa[0]+handle->dim.size());
+    float max_value = tipl::max_value(handle->dir.fa[0],handle->dir.fa[0]+handle->dim.size());
     renderWidget->setMinMax("fa_threshold",0.0,max_value*1.1f,max_value/50.0f);
     if(renderWidget->getData("fa_threshold").toFloat() != 0.0f)
         set_data("fa_threshold",

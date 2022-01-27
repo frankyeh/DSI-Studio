@@ -421,14 +421,14 @@ public:
                 if(voxel.r2_weighted) // multishell GQI2 gives negative ODF, use b0 as the scaling reference
                     samples.push_back(data.space[0]);
                 else
-                    samples.push_back(*std::min_element(data.odf.begin(),data.odf.end()));
+                    samples.push_back(tipl::min_value(data.odf));
                 //std::fill(data.odf.begin(),data.odf.end(),0.0f);
             }
         }
         else
         // if other template is used
         {
-            voxel.z0 = std::max<float>(voxel.z0,*std::min_element(data.odf.begin(),data.odf.end()));
+            voxel.z0 = std::max<float>(voxel.z0,tipl::min_value(data.odf));
         }
     }
     void end(Voxel& voxel,gz_mat_write&)

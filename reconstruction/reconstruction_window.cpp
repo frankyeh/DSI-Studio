@@ -28,8 +28,9 @@ bool reconstruction_window::load_src(int index)
         return false;
     if(handle->voxel.is_histology)
         return true;
-    double m = double(*std::max_element(handle->src_dwi_data[0],handle->src_dwi_data[0]+handle->voxel.dim.size()));
-    double otsu = double(tipl::segmentation::otsu_threshold(tipl::make_image(handle->src_dwi_data[0],handle->voxel.dim)));
+    auto I = tipl::make_image(handle->src_dwi_data[0],handle->voxel.dim);
+    double m = double(tipl::max_value(I));
+    double otsu = double(tipl::segmentation::otsu_threshold(I));
     ui->max_value->setMaximum(m*1.5);
     ui->max_value->setMinimum(0.0);
     ui->max_value->setSingleStep(m*0.05);
@@ -250,7 +251,7 @@ void reconstruction_window::Reconstruction(unsigned char method_id,bool prompt)
     if(!handle.get())
         return;
 
-    if (*std::max_element(handle->voxel.mask.begin(),handle->voxel.mask.end()) == 0)
+    if (tipl::max_value(handle->voxel.mask) == 0)
     {
         QMessageBox::information(this,"error","Please select mask for reconstruction",0);
         return;
@@ -764,8 +765,8 @@ void reconstruction_window::on_actionReplace_b0_by_T2W_image_triggered()
 
     progress prog_("rotating");
     handle->rotate(ref.shape(),vs,manual->get_iT());
-    tipl::pointer_image<3,unsigned short> I = tipl::make_image((unsigned short*)handle->src_dwi_data[0],handle->voxel.dim);
-    ref *= (float)(*std::max_element(I.begin(),I.end()))/(*std::max_element(ref.begin(),ref.end()));
+    auto I = tipl::make_image((unsigned short*)handle->src_dwi_data[0],handle->voxel.dim);
+    ref *= float(tipl::max_value(I))/float(tipl::max_value(ref));
     std::copy(ref.begin(),ref.end(),I.begin());
     update_dimension();
     on_SlicePos_valueChanged(ui->SlicePos->value());
@@ -1055,8 +1056,7 @@ void reconstruction_window::on_qsdr_manual_clicked()
         }
     }
 
-    float slice_ratio = *std::max_element(handle->voxel.dim.begin(),handle->voxel.dim.end())/
-                        *std::min_element(handle->voxel.dim.begin(),handle->voxel.dim.end());
+    float slice_ratio = tipl::max_value(handle->voxel.dim)/tipl::min_value(handle->voxel.dim);
 
     match_template_resolution(VG,dummy,VGvs,VF,dummy,VFvs);
     std::shared_ptr<manual_alignment> manual(new manual_alignment(this,

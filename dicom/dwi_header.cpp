@@ -365,7 +365,7 @@ void correct_t2(std::vector<std::shared_ptr<DwiHeader> >& dwi_files)
     }
 
     // if multiple TE, then we can perform T2 correction
-    if (*std::max_element(b0_te.begin(),b0_te.end()) != *std::min_element(b0_te.begin(),b0_te.end()))
+    if (tipl::max_value(b0_te) != tipl::min_value(b0_te))
     {
         std::vector<double> neg_inv_T2(geo.size());//-1/T2
         {

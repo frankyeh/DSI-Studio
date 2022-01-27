@@ -107,7 +107,7 @@ public:
                                            tipl::shape<2>(6,b_count),tipl::shape<2>(6,b_count));
             if(i)
             {
-                double w = 0.005*std::pow(2.0,double(i))*(*std::max_element(iKtK[i].begin(),iKtK[i].end()));
+                double w = 0.005*std::pow(2.0,double(i))*(tipl::max_value(iKtK[i]));
                 for(unsigned int j = 0;j < 36;j += 7)
                     iKtK[i][j] += w;
             }
@@ -124,7 +124,7 @@ public:
             double logs0 = std::log(std::max<double>(1.0,double(data.space.front())));
             for (size_t i = 0;i < b_count;++i)
                 signal[i] = std::log(std::max<double>(1.0,double(data.space[b_location[i]])));
-            logs0 = std::max<double>(logs0,*std::max_element(signal.begin(),signal.end()));
+            logs0 = std::max<double>(logs0,tipl::max_value(signal));
             if(logs0 == 0.0)
                 return;
             for (size_t i = 0;i < b_count;++i)

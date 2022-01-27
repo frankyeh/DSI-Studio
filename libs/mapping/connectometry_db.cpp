@@ -346,7 +346,7 @@ bool connectometry_db::sample_subject_profile(gz_mat_read& m,std::vector<float>&
             const float* odf = subject_odf.get_odf_data(uint32_t(subject_index));
             if(odf == nullptr)
                 return;
-            float min_value = *std::min_element(odf, odf + handle->dir.half_odf_size);
+            float min_value = tipl::min_value(odf, odf + handle->dir.half_odf_size);
             unsigned int pos = index;
             for(unsigned int i = 0;i < handle->dir.num_fiber;++i,pos += uint32_t(si2vi.size()))
             {
@@ -756,7 +756,7 @@ bool connectometry_db::get_qa_profile(const char* file_name,std::vector<std::vec
             const float* odf = subject_odf.get_odf_data(index);
             if(!odf)
                 continue;
-            float min_value = *std::min_element(odf, odf + handle->dir.half_odf_size);
+            float min_value = tipl::min_value(odf, odf + handle->dir.half_odf_size);
             for(unsigned int i = 0;i < handle->dir.num_fiber;++i)
             {
                 if(handle->dir.fa[i][index] == 0.0f)
@@ -1087,8 +1087,8 @@ bool connectometry_result::compare(std::shared_ptr<fib_data> handle,const std::v
     if(normalization == 1) // max to one
     {
         out << " Normalization was conducted to make the highest anisotropy to one.";
-        float max1 = *std::max_element(fa1[0],fa1[0] + handle->dim.size());
-        float max2 = *std::max_element(fa2[0],fa2[0] + handle->dim.size());
+        float max1 = tipl::max_value(fa1[0],fa1[0] + handle->dim.size());
+        float max2 = tipl::max_value(fa2[0],fa2[0] + handle->dim.size());
 
         for(unsigned int fib = 0;fib < handle->dir.num_fiber;++fib)
         {

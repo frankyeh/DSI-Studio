@@ -172,8 +172,8 @@ void db_window::on_subject_list_itemSelectionChanged()
         fp_image_buf.clear();
         fp_image_buf.resize(tipl::shape<2>(ui->fp_zoom->value()*25,ui->fp_zoom->value()*100));// rotated
 
-        tipl::minus_constant(fp.begin(),fp.end(),*std::min_element(fp.begin(),fp.end()));
-        float max_fp = *std::max_element(fp.begin(),fp.end());
+        tipl::minus_constant(fp.begin(),fp.end(),tipl::min_value(fp));
+        float max_fp = tipl::max_value(fp);
         if(max_fp == 0)
             return;
         tipl::multiply_constant(fp,(float)fp_image_buf.width()/max_fp);
@@ -196,7 +196,7 @@ void db_window::on_subject_list_itemSelectionChanged()
             }
         }
         base = (unsigned int*)&fp_image_buf[0];
-        unsigned int max_value = *std::max_element(base,base+fp_image_buf.size());
+        unsigned int max_value = tipl::max_value(base,base+fp_image_buf.size());
         if(max_value)
         for(unsigned int index = 0;index < fp_image_buf.size();++index)
             fp_image_buf[index] = tipl::rgb((unsigned char)(255-std::min<int>(255,(fp_image_buf[index].color*512/max_value))));
@@ -373,7 +373,7 @@ void db_window::on_calculate_dif_clicked()
     float threshold = ui->fp_coverage->value()*tipl::segmentation::otsu_threshold(
                     tipl::make_image(vbc->handle->dir.fa[0],vbc->handle->dim));
     vbc->handle->db.get_dif_matrix(fp_matrix,fp_mask,threshold,ui->normalize_fp->isChecked());
-    fp_max_value = *std::max_element(fp_matrix.begin(),fp_matrix.end());
+    fp_max_value = tipl::max_value(fp_matrix);
     fp_dif_map.resize(tipl::shape<2>(vbc->handle->db.num_subjects,vbc->handle->db.num_subjects));
     for(unsigned int index = 0;index < fp_matrix.size();++index)
         fp_dif_map[index] = color_map[fp_matrix[index]*255.0/fp_max_value];

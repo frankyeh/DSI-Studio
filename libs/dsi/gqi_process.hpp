@@ -176,7 +176,7 @@ public:
         piv.resize(dwi.size());
         tipl::mat::product_transpose(&*Rt.begin(),&*Rt.begin(),&*A.begin(),
                                        tipl::shape<2>(dwi.size(),dwi.size()),tipl::shape<2>(dwi.size(),dwi.size()));
-        float max_value = *std::max_element(A.begin(),A.end());
+        float max_value = tipl::max_value(A);
         for (unsigned int i = 0,index = 0; i < dwi.size(); ++i,index += dwi.size() + 1)
             A[index] += max_value*voxel.param[2];
         tipl::mat::lu_decomposition(A.begin(),piv.begin(),tipl::shape<2>(dwi.size(),dwi.size()));
