@@ -80,7 +80,6 @@ public: // rendering options
             std::swap(resolution_ratio,rhs.resolution_ratio);
         }
 
-        tipl::shape<3> get_buffer_dim(void) const;
         tipl::vector<3,short> get_region_voxel(unsigned int index) const
         {
             tipl::vector<3,short> result = region[index];
@@ -218,9 +217,7 @@ public:
         void LoadFromBuffer(const image_type& from,const tipl::matrix<4,4>& trans)
         {
             std::vector<tipl::vector<3,short> > points;
-            image_type from2(tipl::shape<3>(uint32_t(dim[0]*resolution_ratio),
-                                      uint32_t(dim[1]*resolution_ratio),
-                                      uint32_t(dim[2]*resolution_ratio)));
+            image_type from2(dim*resolution_ratio);
             auto iT = trans;
             if(resolution_ratio != 1.0f)
             {
