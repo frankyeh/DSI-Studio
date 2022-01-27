@@ -9,19 +9,9 @@ private:
     float ratio;
     tipl::shape<3> dim;
     std::vector<std::vector<std::vector<unsigned char> > > roi_filter;
-    bool in_range(int x,int y,int z) const
-    {
-        return dim.is_valid(x,y,z);
-    }
 public:
-    Roi(const tipl::shape<3>& geo,float r):ratio(r)
-    {
-        if(r == 1.0f)
-            dim = geo;
-        else
-            dim = tipl::shape<3>(uint32_t(geo[0]*r),uint32_t(geo[1]*r),uint32_t(geo[2]*r));
-        roi_filter.resize(uint16_t(dim[0]));
-    }
+    Roi(const tipl::shape<3>& geo,float r):
+        ratio(r),dim(r == 1.0f ? geo:geo*r),roi_filter(geo[0])    {}
     void clear(void)
     {
         roi_filter.clear();
@@ -29,7 +19,7 @@ public:
     }
     void addPoint(const tipl::vector<3,short>& new_point)
     {
-        if(in_range(new_point.x(),new_point.y(),new_point.z()))
+        if(dim.is_valid(new_point.x(),new_point.y(),new_point.z()))
         {
             if(roi_filter[uint16_t(new_point.x())].empty())
                 roi_filter[uint16_t(new_point.x())].resize(uint16_t(dim[1]));
@@ -53,7 +43,7 @@ public:
             y = short(std::round(dy));
             z = short(std::round(dz));
         }
-        if(!in_range(x,y,z))
+        if(!dim.is_valid(x,y,z))
             return false;
         if(roi_filter[uint16_t(x)].empty())
             return false;
