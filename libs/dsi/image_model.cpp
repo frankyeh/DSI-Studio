@@ -146,7 +146,7 @@ std::string ImageModel::check_b_table(void)
     // reconstruct DTI using original data and b-table
     {
         tipl::image<3,unsigned char> mask(voxel.mask.shape());
-        std::fill(mask.begin(),mask.end(),1);
+        mask = 1;
         mask.swap(voxel.mask);
 
         auto other_output = voxel.other_output;
@@ -918,7 +918,7 @@ void ImageModel::crop(tipl::shape<3> range_min,tipl::shape<3> range_max)
         auto I = dwi_at(index);
         tipl::image<3,unsigned short> I0;
         tipl::crop(I,I0,range_min,range_max);
-        std::fill(I.begin(),I.end(),0);
+        I = 0;
         std::copy(I0.begin(),I0.end(),I.begin());
     });
     tipl::crop(voxel.mask,range_min,range_max);
