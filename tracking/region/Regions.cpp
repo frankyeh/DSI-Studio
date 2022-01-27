@@ -6,13 +6,6 @@
 #include "SliceModel.h"
 #include "libs/gzip_interface.hpp"
 
-tipl::shape<3> ROIRegion::get_buffer_dim(void) const
-{
-    return tipl::shape<3>(dim[0]*resolution_ratio,
-                                      dim[1]*resolution_ratio,
-                                      dim[2]*resolution_ratio);
-}
-
 void ROIRegion::add_points(std::vector<tipl::vector<3,float> >& points,bool del,float point_resolution)
 {
     change_resolution(points,point_resolution);
@@ -43,7 +36,7 @@ void ROIRegion::add_points(std::vector<tipl::vector<3,short> >& points, bool del
     }
     else
     {
-        tipl::shape<3> new_geo = get_buffer_dim();
+        tipl::shape<3> new_geo = dim*resolution_ratio;
         for(unsigned int index = 0; index < points.size();)
         if (!new_geo.is_valid(points[index][0], points[index][1], points[index][2]))
         {
@@ -166,9 +159,7 @@ void ROIRegion::SaveToFile(const char* FileName)
     else if (ext == std::string(".mat")) {
         if(resolution_ratio > 8.0f)
             return;
-        tipl::image<3,unsigned char> mask(dim);
-        if(resolution_ratio != 1.0f)
-            mask.resize(get_buffer_dim());
+        tipl::image<3,unsigned char> mask(dim*resolution_ratio);
         for (unsigned int index = 0; index < region.size(); ++index) {
             if (dim.is_valid(region[index][0], region[index][1],
                              region[index][2]))
@@ -310,14 +301,8 @@ void ROIRegion::makeMeshes(unsigned char smooth)
 void ROIRegion::SaveToBuffer(tipl::image<3,unsigned char>& mask,
                              float target_resolution)
 {
-    if(target_resolution != 1.0f)
-        mask.resize(tipl::shape<3>(
-                    dim[0]*target_resolution,
-                    dim[1]*target_resolution,
-                    dim[2]*target_resolution));
-    else
-        mask.resize(dim);
-    std::fill(mask.begin(), mask.end(), 0);
+    mask.resize(dim*target_resolution);
+    mask = 0;
     if(target_resolution == resolution_ratio)
         tipl::par_for (region.size(),[&](unsigned int index)
         {
