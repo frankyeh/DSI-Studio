@@ -1453,7 +1453,7 @@ void TractTableWidget::trim_tracts(void)
     emit need_update();
 }
 
-void TractTableWidget::export_tract_density(tipl::shape<3>& dim,
+void TractTableWidget::export_tract_density(tipl::shape<3> dim,
                                             tipl::vector<3,float> vs,
                                             tipl::matrix<4,4> transformation,bool color,bool end_point)
 {

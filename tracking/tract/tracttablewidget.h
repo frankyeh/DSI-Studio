@@ -34,7 +34,7 @@ public:
     void addNewTracts(QString tract_name,bool checked = true);
     void addConnectometryResults(std::vector<std::vector<std::vector<float> > >& greater,
                                  std::vector<std::vector<std::vector<float> > >& lesser);
-    void export_tract_density(tipl::shape<3>& dim,
+    void export_tract_density(tipl::shape<3> dim,
                               tipl::vector<3,float> vs,
                               tipl::matrix<4,4> transformation,bool color,bool endpoint);
     void load_tracts(QStringList filenames);
