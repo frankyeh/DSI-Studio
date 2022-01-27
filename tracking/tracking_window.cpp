@@ -1247,10 +1247,9 @@ void tracking_window::on_actionTDI_Subvoxel_Diffusion_Space_triggered()
     tipl::matrix<4,4> tr;
     tr.identity();
     tr[0] = tr[5] = tr[10] = ratio;
-    tipl::shape<3> new_geo(handle->dim[0]*ratio,handle->dim[1]*ratio,handle->dim[2]*ratio);
-    tipl::vector<3,float> new_vs(handle->vs);
-    new_vs /= (float)ratio;
-    tractWidget->export_tract_density(new_geo,new_vs,tr,rec == QMessageBox::Yes,rec2 != QMessageBox::Yes);
+    tractWidget->export_tract_density(handle->dim*ratio,
+                                      handle->vs/float(ratio),
+                                      tr,rec == QMessageBox::Yes,rec2 != QMessageBox::Yes);
 }
 
 void tracking_window::on_actionTDI_Import_Slice_Space_triggered()
