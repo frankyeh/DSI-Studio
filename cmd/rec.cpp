@@ -72,7 +72,7 @@ int rec(program_option& po)
         std::string mask_file = po.get("mask");
 
         if(mask_file == "1")
-            std::fill(src.voxel.mask.begin(),src.voxel.mask.end(),1);
+            src.voxel.mask = 1;
         else
         {
             gz_nifti nii;
