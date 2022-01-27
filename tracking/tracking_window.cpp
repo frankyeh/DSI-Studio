@@ -2296,8 +2296,8 @@ void tracking_window::on_actionOpen_Connectivity_Matrix_triggered()
                 arg(regionWidget->regions.size()));
         return;
     }
-    float max = tipl::maximum(glWidget->connectivity);
-    float min = tipl::minimum(glWidget->connectivity);
+    float max = tipl::max_value(glWidget->connectivity);
+    float min = tipl::min_value(glWidget->connectivity);
 
     glWidget->two_color_connectivity = (min < 0.0f);
     glWidget->max_connectivity = std::max<float>(max,-min);

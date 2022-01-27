@@ -25,7 +25,7 @@ manual_alignment::manual_alignment(QWidget *parent,
     from.swap(from_);
     to.swap(to_);
 
-    while(tipl::minimum(to_vs) < tipl::minimum(from_vs)/2.0f)
+    while(tipl::min_value(to_vs) < tipl::min_value(from_vs)/2.0f)
     {
         tipl::image<3> new_to;
         tipl::downsample_with_padding(to,new_to);
@@ -34,7 +34,7 @@ manual_alignment::manual_alignment(QWidget *parent,
         to_downsample *= 0.5f;
         std::cout << "downsampling template image by 2 dim=" << to.shape() << std::endl;
     }
-    while(tipl::minimum(from_vs) < tipl::minimum(to_vs)/2.0f)
+    while(tipl::min_value(from_vs) < tipl::min_value(to_vs)/2.0f)
     {
         tipl::image<3> new_from;
         tipl::downsample_with_padding(from,new_from);

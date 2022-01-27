@@ -532,8 +532,8 @@ bool view_image::open(QStringList file_names)
 void view_image::init_image(void)
 {
     no_update = true;
-    max_value = tipl::maximum(data);
-    min_value = tipl::minimum(data);
+    max_value = tipl::max_value(data);
+    min_value = tipl::min_value(data);
     float range = max_value-min_value;
     QString dim_text = QString("%1,%2,%3").arg(data.width()).arg(data.height()).arg(data.depth());
     if(!dwi_volume_buf.empty())
