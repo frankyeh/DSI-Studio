@@ -187,9 +187,7 @@ bool export_track_info(program_option& po,std::shared_ptr<fib_data> handle,
                 if(ratio != 1.0f)
                 {
                     tr[0] = tr[5] = tr[10] = ratio;
-                    dim = tipl::shape<3>(uint32_t(handle->dim[0]*ratio),
-                                         uint32_t(handle->dim[1]*ratio),
-                                         uint32_t(handle->dim[2]*ratio));
+                    dim = handle->dim*ratio;
                     vs /= ratio;
                 }
             }
