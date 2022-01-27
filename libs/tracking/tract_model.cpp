@@ -282,16 +282,13 @@ struct TrackVis
     int n_count = 0;//Number of tract stored in this track file. 0 means the number was NOT stored.
     int version = 2;//Version number. Current version is 1.
     int hdr_size = 1000;//Size of the header. Used to determine byte swap. Should be 1000.
-    void init(tipl::shape<3> geo_,const tipl::vector<3>& voxel_size_)
+    void init(tipl::shape<3> geo_,
+              tipl::vector<3> voxel_size_,
+              const tipl::matrix<4,4>& trans)
     {
         std::copy(geo_.begin(),geo_.end(),dim);
         std::copy(voxel_size_.begin(),voxel_size_.end(),voxel_size);
-        vox_to_ras[0][0] = -voxel_size[0]; // L to R
-        vox_to_ras[1][1] = -voxel_size[1]; // P to A
-        vox_to_ras[2][2] = voxel_size[2];
-        vox_to_ras[3][3] = 1;
-        vox_to_ras[0][3] = geo_[0]-1;
-        vox_to_ras[1][3] = geo_[1]-1;
+        std::copy(trans.begin(),trans.end(),&vox_to_ras[0][0]);
         std::copy(voxel_order,voxel_order+4,pad2);
     }
     bool load_from_file(const char* file_name,
@@ -346,6 +343,7 @@ struct TrackVis
     static bool save_to_file(const char* file_name,
                              tipl::shape<3> geo,
                              tipl::vector<3> vs,
+                             const tipl::matrix<4,4>& trans_to_mni,
                              const std::vector<std::vector<float> >& tract_data,
                              const std::vector<std::vector<float> >& scalar,
                              const std::string& info,
@@ -356,7 +354,7 @@ struct TrackVis
         if (!out.open(file_name))
             return false;
         TrackVis trk;
-        trk.init(geo,vs);
+        trk.init(geo,vs,trans_to_mni);
         trk.n_count = tract_data.size();
         *(uint32_t*)(trk.reserved+440) = color;
         if(!scalar.empty())
@@ -475,7 +473,7 @@ bool tt2trk(const char* tt_file,const char* trk_file)
         return false;
     }
     std::vector<std::vector<float> > scalar;
-    return TrackVis::save_to_file(trk_file,geo,vs,tract_data,scalar,report,color);
+    return TrackVis::save_to_file(trk_file,geo,vs,trans_to_mni,tract_data,scalar,report,color);
 }
 
 bool trk2tt(const char* trk_file,const char* tt_file)
@@ -812,7 +810,7 @@ bool TractModel::save_data_to_file(std::shared_ptr<fib_data> handle,const char* 
     {
         if(ext == std::string(".trk"))
             file_name_s += ".gz";
-        return TrackVis::save_to_file(file_name_s.c_str(),geo,vs,tract_data,data,parameter_id,tract_color.front());
+        return TrackVis::save_to_file(file_name_s.c_str(),geo,vs,trans_to_mni,tract_data,data,parameter_id,tract_color.front());
     }
     if (ext == std::string(".txt"))
     {
@@ -930,7 +928,8 @@ bool TractModel::save_tracts_to_file(const char* file_name_)
     }
     if (ext == std::string(".trk") || ext == std::string("k.gz"))
     {
-        return TrackVis::save_to_file(file_name.c_str(),geo,vs,tract_data,std::vector<std::vector<float> >(),parameter_id,tract_color.front());
+        return TrackVis::save_to_file(file_name.c_str(),geo,vs,trans_to_mni,
+                tract_data,std::vector<std::vector<float> >(),parameter_id,tract_color.front());
     }
     if(ext == std::string(".tck"))
     {
@@ -1289,7 +1288,7 @@ bool TractModel::save_all(const char* file_name_,
         progress prog_("saving ",std::filesystem::path(file_name_).filename().string().c_str());
         {
             TrackVis trk;
-            trk.init(all[0]->geo,all[0]->vs);
+            trk.init(all[0]->geo,all[0]->vs,all[0]->trans_to_mni);
             trk.n_count = 0;
             trk.n_properties = 1;
             std::copy(all[0]->report.begin(),all[0]->report.begin()+
