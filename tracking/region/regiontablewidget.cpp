@@ -1554,7 +1554,7 @@ void RegionTableWidget::do_action(QString action)
             for(unsigned int j = 0,total_count = 0;j < r.size() && total_count < 256;++j)
                 if(!r[j].empty())
                 {
-                    std::fill(mask.begin(),mask.end(),0);
+                    mask = 0;
                     for(unsigned int i = 0;i < r[j].size();++i)
                         mask[r[j][i]] = 1;
                     ROIRegion region(cur_tracking_window.handle);
