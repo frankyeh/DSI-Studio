@@ -196,7 +196,7 @@ bool ImageModel::reconstruction(void)
                 std::vector<tipl::pointer_image<3,float> > tmp;
                 auto mask = voxel.mask;
                 // clear mask to create whole volume QA map
-                std::fill(voxel.mask.begin(),voxel.mask.end(),1.0);
+                voxel.mask = 1;
                 if (!reconstruct2<
                         ReadDWIData,
                         BalanceScheme,
