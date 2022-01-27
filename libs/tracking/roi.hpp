@@ -74,6 +74,116 @@ public:
     }
 };
 
+template<typename T,typename U>
+__DEVICE_HOST__ unsigned int find_nearest(const float* trk,unsigned int length,
+                          const T& tract_data,// = track_atlas->get_tracts();
+                          const U& tract_cluster,// = track_atlas->get_cluster_info();
+                          bool contain,float false_distance)
+{
+    struct norm1_imp{
+        inline float operator()(const float* v1,const float* v2)
+        {
+            return std::fabs(v1[0]-v2[0])+std::fabs(v1[1]-v2[1])+std::fabs(v1[2]-v2[2]);
+        }
+    } norm1;
+
+    struct min_min_imp{
+        inline float operator()(float min_dis,const float* v1,const float* v2)
+        {
+            float d1 = std::fabs(v1[0]-v2[0]);
+            if(d1 > min_dis)                    return min_dis;
+            d1 += std::fabs(v1[1]-v2[1]);
+            if(d1 > min_dis)                    return min_dis;
+            d1 += std::fabs(v1[2]-v2[2]);
+            if(d1 > min_dis)                    return min_dis;
+            return d1;
+        }
+    }min_min;
+    if(length <= 6)
+        return 9999;
+    float best_distance = contain ? 50.0f : false_distance;
+    size_t best_index = tract_data.size();
+    if(contain)
+    {
+        for(size_t i = 0;i < tract_data.size();++i)
+        {
+            bool skip = false;
+            float max_dis = 0.0f;
+            for(size_t n = 0;n < length;n += 6)
+            {
+                float min_dis = norm1(&tract_data[i][0],trk+n);
+                for(size_t m = 0;m < tract_data[i].size() && min_dis > max_dis;m += 3)
+                    min_dis = min_min(min_dis,&tract_data[i][m],trk+n);
+                if(min_dis > max_dis)
+                    max_dis = max_dis;
+                if(max_dis > best_distance)
+                {
+                    skip = true;
+                    break;
+                }
+            }
+            if(!skip)
+            {
+                best_distance = max_dis;
+                best_index = i;
+            }
+        }
+    }
+    else
+    {
+        for(size_t i = 0;i < tract_data.size();++i)
+        {
+            if(min_min(best_distance,&tract_data[i][0],trk) >= best_distance ||
+                min_min(best_distance,&tract_data[i][tract_data[i].size()-3],trk+length-3) >= best_distance ||
+                min_min(best_distance,&tract_data[i][tract_data[i].size()/3/2*3],trk+(length/3/2*3)) >= best_distance)
+                continue;
+
+            bool skip = false;
+            float max_dis = 0.0f;
+            for(size_t m = 0;m < tract_data[i].size();m += 3)
+            {
+                const float* tim = &tract_data[i][m];
+                const float* trk_length = trk+length;
+                float min_dis = norm1(tim,trk);
+                for(const float* trk_n = trk;trk_n < trk_length && min_dis > max_dis;trk_n += 3)
+                    min_dis = min_min(min_dis,tim,trk_n);
+                if(min_dis > max_dis)
+                    max_dis = max_dis;
+                if(max_dis > best_distance)
+                {
+                    skip = true;
+                    break;
+                }
+            }
+            if(!skip)
+            for(size_t n = 0;n < length;n += 3)
+            {
+                const float* ti0 = &tract_data[i][0];
+                const float* ti_end = ti0+tract_data[i].size();
+                const float* trk_n = trk+n;
+                float min_dis = norm1(ti0,trk_n);
+                for(const float* tim = ti0;tim < ti_end && min_dis > max_dis;tim += 3)
+                    min_dis = min_min(min_dis,tim,trk_n);
+                if(min_dis > max_dis)
+                    max_dis = max_dis;
+                if(max_dis > best_distance)
+                {
+                    skip = true;
+                    break;
+                }
+            }
+            if(!skip)
+            {
+                best_distance = max_dis;
+                best_index = i;
+            }
+        }
+    }
+    if(best_index == tract_data.size())
+        return 9999;
+    return tract_cluster[best_index];
+}
+
 class RoiMgr {
 public:
     std::shared_ptr<fib_data> handle;
@@ -174,7 +284,7 @@ public:
             region.perform("smoothing");
             region.perform("smoothing");
             setRegions(region.get_region_voxels_raw(),1.0,3/*seed i*/,
-                handle->tractography_name_list[size_t(track_id)].c_str());
+            handle->tractography_name_list[size_t(track_id)].c_str());
         }
         // add tolerance roa to speed up tracking
         {

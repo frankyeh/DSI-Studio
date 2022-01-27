@@ -4,7 +4,7 @@
 #include "fib_data.hpp"
 #include "tessellated_icosahedron.hpp"
 #include "tract_model.hpp"
-
+#include "roi.hpp"
 #include "mac_filesystem.hpp"
 
 extern std::vector<std::string> fa_template_list;
@@ -1506,104 +1506,7 @@ bool fib_data::load_track_atlas()
 //---------------------------------------------------------------------------
 unsigned int fib_data::find_nearest(const float* trk,unsigned int length,bool contain,float false_distance)
 {
-    auto norm1 = [](const float* v1,const float* v2){return std::fabs(v1[0]-v2[0])+std::fabs(v1[1]-v2[1])+std::fabs(v1[2]-v2[2]);};
-    struct min_min{
-        inline float operator()(float min_dis,const float* v1,const float* v2)
-        {
-            float d1 = std::fabs(v1[0]-v2[0]);
-            if(d1 > min_dis)
-                return min_dis;
-            d1 += std::fabs(v1[1]-v2[1]);
-            if(d1 > min_dis)
-                return min_dis;
-            d1 += std::fabs(v1[2]-v2[2]);
-            if(d1 > min_dis)
-                return min_dis;
-            return d1;
-        }
-    }min_min_fun;
-    if(length <= 6)
-        return 9999;
-    float best_distance = contain ? 50.0f : false_distance;
-    const auto& tract_data = track_atlas->get_tracts();
-    const auto& tract_cluster = track_atlas->get_cluster_info();
-    size_t best_index = tract_data.size();
-    if(contain)
-    {
-        for(size_t i = 0;i < tract_data.size();++i)
-        {
-            bool skip = false;
-            float max_dis = 0.0f;
-            for(size_t n = 0;n < length;n += 6)
-            {
-                float min_dis = norm1(&tract_data[i][0],trk+n);
-                for(size_t m = 0;m < tract_data[i].size() && min_dis > max_dis;m += 3)
-                    min_dis = min_min_fun(min_dis,&tract_data[i][m],trk+n);
-                max_dis = std::max<float>(min_dis,max_dis);
-                if(max_dis > best_distance)
-                {
-                    skip = true;
-                    break;
-                }
-            }
-            if(!skip)
-            {
-                best_distance = max_dis;
-                best_index = i;
-            }
-        }
-    }
-    else
-    {
-        for(size_t i = 0;i < tract_data.size();++i)
-        {
-            if(min_min_fun(best_distance,&tract_data[i][0],trk) >= best_distance ||
-                min_min_fun(best_distance,&tract_data[i][tract_data[i].size()-3],trk+length-3) >= best_distance ||
-                min_min_fun(best_distance,&tract_data[i][tract_data[i].size()/3/2*3],trk+(length/3/2*3)) >= best_distance)
-                continue;
-
-            bool skip = false;
-            float max_dis = 0.0f;
-            for(size_t m = 0;m < tract_data[i].size();m += 3)
-            {
-                const float* tim = &tract_data[i][m];
-                const float* trk_length = trk+length;
-                float min_dis = norm1(tim,trk);
-                for(const float* trk_n = trk;trk_n < trk_length && min_dis > max_dis;trk_n += 3)
-                    min_dis = min_min_fun(min_dis,tim,trk_n);
-                max_dis = std::max<float>(min_dis,max_dis);
-                if(max_dis > best_distance)
-                {
-                    skip = true;
-                    break;
-                }
-            }
-            if(!skip)
-            for(size_t n = 0;n < length;n += 3)
-            {
-                const float* ti0 = &tract_data[i][0];
-                const float* ti_end = ti0+tract_data[i].size();
-                const float* trk_n = trk+n;
-                float min_dis = norm1(ti0,trk_n);
-                for(const float* tim = ti0;tim < ti_end && min_dis > max_dis;tim += 3)
-                    min_dis = min_min_fun(min_dis,tim,trk_n);
-                max_dis = std::max<float>(min_dis,max_dis);
-                if(max_dis > best_distance)
-                {
-                    skip = true;
-                    break;
-                }
-            }
-            if(!skip)
-            {
-                best_distance = max_dis;
-                best_index = i;
-            }
-        }
-    }
-    if(best_index == tract_data.size())
-        return 9999;
-    return tract_cluster[best_index];
+    return ::find_nearest(trk,length,track_atlas->get_tracts(),track_atlas->get_cluster_info(),contain,false_distance);
 }
 //---------------------------------------------------------------------------
 
