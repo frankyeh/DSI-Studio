@@ -334,7 +334,7 @@ bool load_4d_nii(const char* file_name,std::vector<std::shared_ptr<DwiHeader> >&
         {
             float scale = float(std::numeric_limits<unsigned short>::max()-1)/max_value;
             tipl::par_for(dwi_data.size(),[&](unsigned int index){
-                tipl::multiply_constant(dwi_data[index],scale);
+                dwi_data[index] *= scale;
             });
         }
         if(max_value < 256.0f)
@@ -347,7 +347,7 @@ bool load_4d_nii(const char* file_name,std::vector<std::shared_ptr<DwiHeader> >&
             {
                 std::cout << "scaling the image by " << scale << std::endl;
                 tipl::par_for(dwi_data.size(),[&](unsigned int index){
-                    tipl::multiply_constant(dwi_data[index],scale);
+                    dwi_data[index] *= scale;
                 });
             }
         }
