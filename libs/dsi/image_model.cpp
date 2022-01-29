@@ -722,12 +722,15 @@ void ImageModel::flip_dwi(unsigned char type)
     if(voxel.is_histology)
         tipl::flip(voxel.hist_image,type);
     else
-    tipl::par_for(src_dwi_data.size(),[&](unsigned int index)
     {
-        progress::at(index,src_dwi_data.size());
-        auto I = dwi_at(index);
-        tipl::flip(I,type);
-    });
+        size_t prog = 0;
+        tipl::par_for(src_dwi_data.size(),[&](unsigned int index)
+        {
+            progress::at(prog++,src_dwi_data.size());
+            auto I = dwi_at(index);
+            tipl::flip(I,type);
+        });
+    }
     voxel.dim = voxel.mask.shape();
 }
 // used in eddy correction for each dwi
@@ -757,11 +760,12 @@ void ImageModel::rotate(const tipl::shape<3>& new_geo,
 {
     std::vector<tipl::image<3,unsigned short> > dwi(src_dwi_data.size());
     progress prog_("rotating");
+    size_t prog = 0;
     tipl::par_for(src_dwi_data.size(),[&](unsigned int index)
     {
         if(progress::aborted())
             return;
-        progress::at(index,src_dwi_data.size());
+        progress::at(prog++,src_dwi_data.size());
         dwi[index].resize(new_geo);
         auto I = dwi_at(index);
         if(cdm_dis.empty())
@@ -911,10 +915,11 @@ void ImageModel::correct_motion(bool eddy)
 void ImageModel::crop(tipl::shape<3> range_min,tipl::shape<3> range_max)
 {
     progress prog_("Removing background region");
+    size_t prog = 0;
     std::cout << "from:" << range_min << " to:" << range_max << std::endl;
     tipl::par_for(src_dwi_data.size(),[&](unsigned int index)
     {
-        progress::at(index,src_dwi_data.size());
+        progress::at(prog++,src_dwi_data.size());
         auto I = dwi_at(index);
         tipl::image<3,unsigned short> I0;
         tipl::crop(I,I0,range_min,range_max);
@@ -2173,17 +2178,19 @@ bool ImageModel::save_nii_for_applytopup_or_eddy(bool include_rev) const
         error_msg = "cannot create trimmed volume for applytopup or eddy";
         return false;
     }
+    size_t prog = 0;
     tipl::par_for(src_bvalues.size(),[&](unsigned int index)
     {
-        progress::at(index,src_bvalues.size());
+        progress::at(prog++,src_bvalues.size());
         auto I = buffer.slice_at(index);
         tipl::crop(dwi_at(index),I,topup_from,topup_to);
     });
 
+    prog = 0;
     if(rev_pe_src.get() && include_rev)
         tipl::par_for(rev_pe_src->src_bvalues.size(),[&](unsigned int index)
         {
-            progress::at(index,rev_pe_src->src_bvalues.size());
+            progress::at(prog++,rev_pe_src->src_bvalues.size());
             auto I = buffer.slice_at(index+uint32_t(src_bvalues.size()));
             tipl::crop(rev_pe_src->dwi_at(index),I,topup_from,topup_to);
         });
