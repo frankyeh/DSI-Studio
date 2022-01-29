@@ -884,7 +884,11 @@ void view_image::on_actionUpper_Threshold_triggered()
     float value = result.toFloat(&ok);
     if(!ok)
         return;
-    tipl::upper_threshold(data,value);
+
+    (data[data > value] = value)
+
+            >> tipl::backend::mt();
+
     init_image();
     show_image();
 }
