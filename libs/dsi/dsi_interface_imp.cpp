@@ -415,13 +415,13 @@ const char* odf_average(const char* out_name,std::vector<std::string>& file_name
     tipl::par_for(other_metrics_name.size(),[&](unsigned int i)
     {
         if(other_metrics_count[i])
-            tipl::multiply_constant(other_metrics_images[i],1.0f/other_metrics_count[i]);
+            other_metrics_images[i] *= 1.0f/other_metrics_count[i];
     });
 
     progress::at(0,3);
     tipl::par_for(dim.size(),[&](unsigned int i){
         if(odf_count[i] > 1)
-            tipl::divide_constant(odfs[i].begin(),odfs[i].end(),float(odf_count[i]));
+            tipl::divide_constant(odfs[i],float(odf_count[i]));
     });
 
     // eliminate ODF if missing more than half of the population
