@@ -272,14 +272,14 @@ int ana_tract(program_option& po)
             tipl::image<3,char> tract_mask(dim);
             tipl::par_for(points.size(),[&](size_t j)
             {
-                tipl::vector<3,short> p = points[j];
+                auto p = points[j];
                 if(dim.is_valid(p))
                     tract_mask[tipl::pixel_index<3>(p[0],p[1],p[2],dim).index()]=1;
             });
             accumulate_map += tract_mask;
         }
         tipl::image<3> pdi(accumulate_map);
-        tipl::multiply_constant(pdi,1.0f/float(tract_files.size()));
+        pdi *= 1.0f/float(tract_files.size());
         if(!gz_nifti::save_to_file(output.c_str(),pdi,handle->vs,handle->trans_to_mni))
         {
             std::cout << "ERROR: cannot write to " << output << std::endl;
