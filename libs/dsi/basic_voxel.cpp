@@ -77,10 +77,10 @@ bool Voxel::run_hist(void)
             to_list.push_back(to);
         }
 
+    size_t prog = 0;
     tipl::par_for(from_list.size(),[&](size_t i,size_t thread_id)
     {
-        if(thread_id == 0)
-            progress::at(i,from_list.size());
+        progress::at(prog++,from_list.size());
         if(progress::aborted())
             return;
         hist_data[thread_id].init();
