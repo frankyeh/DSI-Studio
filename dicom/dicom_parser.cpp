@@ -686,8 +686,8 @@ void scale_image_buf_to_uint16(std::vector<tipl::image<3> >& image_buf)
         max_value = std::max<float>(max_value,tipl::max_value(image_buf[i]));
     tipl::par_for(image_buf.size(),[&](int i)
     {
-        tipl::multiply_constant(image_buf[i],float(std::numeric_limits<unsigned short>::max()-1)/max_value);
-        tipl::lower_threshold(image_buf[i],0.0f);
+        image_buf[i] *= float(std::numeric_limits<unsigned short>::max()-1)/max_value;
+        tipl::lower_threshold(image_buf[i],0);
     });
 }
 bool load_nhdr(QStringList file_list,std::vector<std::shared_ptr<DwiHeader> >& dwi_files)
