@@ -1761,12 +1761,19 @@ void tracking_window::stripSkull()
     CustomSliceModel* reg_slice = dynamic_cast<CustomSliceModel*>(current_slice.get());
     if(!reg_slice || !reg_slice->skull_removed_images.empty())
         return;
+
     gz_nifti in1,in2;
     tipl::image<3> It,Iw,J(reg_slice->get_source());
     if(!in1.load_from_file(handle->t1w_template_file_name.c_str()) || !in1.toLPS(It))
         return;
     if(!in2.load_from_file(handle->mask_template_file_name.c_str()) || !in2.toLPS(Iw))
         return;
+    if(QMessageBox::information(this,"DSI Studio",
+                                QString("Does %1 need to remove tissues outside the brain?").
+                                arg(ui->SliceModality->currentText()),
+                                QMessageBox::Yes|QMessageBox::No) == QMessageBox::No)
+        return;
+
     tipl::vector<3> vs,vsJ(reg_slice->vs);
     in1.get_voxel_size(vs);
 
@@ -1776,7 +1783,8 @@ void tracking_window::stripSkull()
     tipl::downsampling(Iw);
     vs *= 4.0f;
 
-    QMessageBox::information(this,"DSI Studio","Please align brain images to visualize isosurface.");
+
+
     std::shared_ptr<manual_alignment> manual(new manual_alignment(this,
             It,vs,J,vsJ,tipl::reg::affine,tipl::reg::cost_type::mutual_info));
 
