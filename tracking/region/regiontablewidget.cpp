@@ -1452,7 +1452,7 @@ void RegionTableWidget::do_action(QString action)
                 return;
             tipl::image<3,unsigned char> mask;
             cur_region.SaveToBuffer(mask);
-            tipl::morphology::dilation2(mask,threshold);
+            tipl::morphology::dilation2_mt(mask,threshold);
             cur_region.LoadFromBuffer(mask);
         }
         if(action == "threshold")
