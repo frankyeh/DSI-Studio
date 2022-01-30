@@ -241,7 +241,7 @@ public:
     bool get_atlas_roi(std::shared_ptr<atlas> at,unsigned int roi_index,std::vector<tipl::vector<3,short> >& points);
     bool get_atlas_all_roi(std::shared_ptr<atlas> at,std::vector<std::vector<tipl::vector<3,short> > >& points);
     template<tipl::interpolation Type = tipl::interpolation::linear,typename image_type>
-    bool mni2sub(image_type& mni_image,const tipl::matrix<4,4>& trans)
+    bool mni2sub(image_type& mni_image,const tipl::matrix<4,4>& trans,float ratio = 1.0f)
     {
         const auto& s2t = get_sub2temp_mapping();
         if(s2t.empty())
@@ -249,15 +249,20 @@ public:
             error_msg = "No spatial mapping found for warpping MNI images";
             return false;
         }
-        image_type J(s2t.shape()); // subject space image
+        image_type J(s2t.shape()*ratio); // subject space image
 
         // from template space to mni image's space
         auto T = tipl::from_space(template_to_mni).to(trans);
-        tipl::par_for(J.size(),[&](size_t index)
+        tipl::par_for(tipl::begin_index(J.shape()),tipl::end_index(J.shape()),
+        [&](const tipl::pixel_index<3>& index)
         {
-            tipl::vector<3> pos(s2t[index]);
+            tipl::vector<3> pos;
+            if(ratio == 1.0f)
+                pos = s2t[index.index()];
+            else
+                tipl::estimate<Type>(s2t,tipl::vector<3>(index)/ratio,pos);
             pos.to(T);
-            tipl::estimate<Type>(mni_image,pos,J[index]);
+            tipl::estimate<Type>(mni_image,pos,J[index.index()]);
         });
         mni_image.swap(J);
         return true;
