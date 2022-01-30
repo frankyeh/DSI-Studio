@@ -168,7 +168,9 @@ void MainWindow::openFile(QString file_name)
             loadSrc(QStringList() << file_name);
         }
         else
-        if(QString(file_name).endsWith("nii.gz") || QString(file_name).endsWith(".dcm"))
+        if(QString(file_name).endsWith(".nii") ||
+           QString(file_name).endsWith(".nii.gz") ||
+                QString(file_name).endsWith(".dcm"))
         {
             view_image* dialog = new view_image(this);
             dialog->setAttribute(Qt::WA_DeleteOnClose);
