@@ -2768,6 +2768,7 @@ bool GLWidget::command(QString cmd,QString param,QString param2)
     if(cmd == "add_surface")
     {
         tipl::image<3> crop_image;
+        float resolution_ratio = 1.0;
         bool is_wm = (cur_tracking_window.current_slice->get_name().find("WM") != std::string::npos);
         float threshold = 0.1f;
         CustomSliceModel* reg_slice = dynamic_cast<CustomSliceModel*>(cur_tracking_window.current_slice.get());
@@ -2785,10 +2786,14 @@ bool GLWidget::command(QString cmd,QString param,QString param2)
                 tipl::matrix<4,4,float> trans;
                 nifti.toLPS(crop_image);
                 nifti.get_image_transformation(trans);
-                if(cur_tracking_window.handle->mni2sub(crop_image,trans))
+                resolution_ratio = cur_tracking_window.handle->vs[0];
+                if(cur_tracking_window.handle->mni2sub(crop_image,trans,resolution_ratio))
                     is_wm = true;
                 else
+                {
                     crop_image.clear();
+                    resolution_ratio = 1.0f;
+                }
             }
         }
         if(crop_image.empty())
@@ -2886,6 +2891,13 @@ bool GLWidget::command(QString cmd,QString param,QString param2)
             {
                 surface.reset();
                 return true;
+            }
+            if(resolution_ratio != 1.0f)
+            {
+                tipl::matrix<4,4> T;
+                T.identity();
+                T[0] = T[5] = T[10] = 1.0f/resolution_ratio;
+                surface->trasnform_point_list(T);
             }
         }
 
