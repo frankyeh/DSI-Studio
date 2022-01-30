@@ -2513,19 +2513,7 @@ void GLWidget::loadCamera(void)
 }
 void GLWidget::addSurface(void)
 {
-    auto slice = cur_tracking_window.current_slice;
-    float threshold = 0.1f;
-    if(slice->get_name().find("WM") == std::string::npos)
-        threshold = tipl::segmentation::otsu_threshold(slice->get_source())*1.25f;
-    bool ok;
-    threshold = float(QInputDialog::getDouble(this,
-        "DSI Studio","Threshold:", double(threshold),
-        double(tipl::min_value(slice->get_source())),
-        double(tipl::max_value(slice->get_source())),
-        4, &ok));
-    if (!ok)
-        return;
-    command("add_surface",qobject_cast<QAction*>(sender())->text(),QString::number(threshold));
+    command("add_surface",qobject_cast<QAction*>(sender())->text());
 }
 
 void GLWidget::copyToClipboard(void)
@@ -2780,12 +2768,49 @@ bool GLWidget::command(QString cmd,QString param,QString param2)
     if(cmd == "add_surface")
     {
         tipl::image<3> crop_image;
+        bool is_wm = (cur_tracking_window.current_slice->get_name().find("WM") != std::string::npos);
+        float threshold = 0.1f;
         CustomSliceModel* reg_slice = dynamic_cast<CustomSliceModel*>(cur_tracking_window.current_slice.get());
-        if(reg_slice && !reg_slice->skull_removed_images.empty())
-            crop_image = reg_slice->skull_removed_images;
+        if(reg_slice)
+        {
+            if(!reg_slice->skull_removed_images.empty())
+                crop_image = reg_slice->skull_removed_images;
+        }
         else
+        {
+            // use ICBM152 wm as the surface
+            gz_nifti nifti;
+            if(nifti.load_from_file(cur_tracking_window.handle->wm_template_file_name.c_str()))
+            {
+                tipl::matrix<4,4,float> trans;
+                nifti.toLPS(crop_image);
+                nifti.get_image_transformation(trans);
+                if(cur_tracking_window.handle->mni2sub(crop_image,trans))
+                    is_wm = true;
+                else
+                    crop_image.clear();
+            }
+        }
+        if(crop_image.empty())
             crop_image = cur_tracking_window.current_slice->get_source();
-        float threshold = (param2.isEmpty()) ? tipl::segmentation::otsu_threshold(crop_image)*1.25f:param2.toFloat();
+        if(!is_wm)
+            threshold = tipl::segmentation::otsu_threshold(crop_image)*1.25f;
+
+        if(!param2.isEmpty())
+            threshold = param2.toFloat();
+        else
+        if(has_gui)
+        {
+            bool ok;
+            threshold = float(QInputDialog::getDouble(this,
+                "DSI Studio","Threshold:", double(threshold),
+                double(tipl::min_value(crop_image)),
+                double(tipl::max_value(crop_image)),
+                4, &ok));
+            if (!ok)
+                return true;
+        }
+
         {
             surface = std::make_shared<RegionModel>();
             if(param != "Full")
@@ -2845,17 +2870,14 @@ bool GLWidget::command(QString cmd,QString param,QString param2)
             case 2:
                 {
                 tipl::image<3,unsigned char> mask(crop_image);
-                for(size_t i = 0;i < mask.size();++i)
-                    mask[i] = (crop_image[i] > threshold? 1:0);
+                mask[crop_image > threshold] = 1;
                 tipl::morphology::defragment(mask);
                 tipl::morphology::negate(mask);
                 tipl::morphology::defragment(mask);
                 tipl::morphology::negate(mask);
-                tipl::morphology::smoothing(mask);
-                tipl::morphology::dilation(mask);
-                for(size_t i = 0;i < mask.size();++i)
-                    if(mask[i] == 0)
-                        crop_image[i] *= 0.2f;
+                tipl::morphology::smoothing_mt(mask);
+                tipl::morphology::dilation_mt(mask);
+                crop_image[mask == 0] *= 0.2f;
                 tipl::filter::gaussian(crop_image);
                 }
                 break;
