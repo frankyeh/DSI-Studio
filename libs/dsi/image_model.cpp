@@ -521,10 +521,10 @@ bool ImageModel::command(std::string cmd,std::string param)
         if(voxel.mask.depth() == 1)
         {
             auto slice = voxel.mask.slice_at(0);
-            tipl::morphology::dilation(slice);
+            tipl::morphology::dilation_mt(slice);
         }
         else
-            tipl::morphology::dilation(voxel.mask);
+            tipl::morphology::dilation_mt(voxel.mask);
         voxel.steps += cmd+"\n";
         return true;
     }
@@ -545,10 +545,10 @@ bool ImageModel::command(std::string cmd,std::string param)
         if(voxel.mask.depth() == 1)
         {
             auto slice = voxel.mask.slice_at(0);
-            tipl::morphology::smoothing(slice);
+            tipl::morphology::smoothing_mt(slice);
         }
         else
-            tipl::morphology::smoothing(voxel.mask);
+            tipl::morphology::smoothing_mt(voxel.mask);
         voxel.steps += cmd+"\n";
         return true;
     }
@@ -1307,7 +1307,7 @@ void ImageModel::get_volume_range(size_t dim,int extra_space)
     auto temp_mask = voxel.mask;
     if(rev_pe_src.get())
         temp_mask += rev_pe_src->voxel.mask;
-    tipl::morphology::dilation2(temp_mask,std::max<int>(voxel.dim[0]/20,2));
+    tipl::morphology::dilation2_mt(temp_mask,std::max<int>(voxel.dim[0]/20,2));
     tipl::bounding_box(temp_mask,topup_from,topup_to,0);
 
     if(extra_space)
@@ -1957,7 +1957,7 @@ bool ImageModel::load_from_file(const char* dwi_file_name)
         for(int i = 0;i < int(dwi.width()/200);++i)
         {
             auto slice = voxel.mask.slice_at(0);
-            tipl::morphology::dilation(slice);
+            tipl::morphology::dilation_mt(slice);
         }
         for(int i = 0;i < int(dwi.width()/200);++i)
         {
