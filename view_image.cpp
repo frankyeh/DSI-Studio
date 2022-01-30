@@ -821,7 +821,11 @@ void view_image::on_actionLower_threshold_triggered()
     float value = result.toFloat(&ok);
     if(!ok)
         return;
-    tipl::lower_threshold(data,value);
+
+    (data[data < value] = value)
+
+            >> tipl::backend::mt();
+
     init_image();
     show_image();
 }
@@ -854,7 +858,10 @@ void view_image::on_actionIntensity_shift_triggered()
     float value = result.toFloat(&ok);
     if(!ok)
         return;
-    tipl::add_constant(data,value);
+
+    (data += value)
+            >> tipl::backend::mt();
+
     init_image();
     show_image();
 }
@@ -869,7 +876,10 @@ void view_image::on_actionIntensity_scale_triggered()
     float value = result.toFloat(&ok);
     if(!ok)
         return;
-    tipl::multiply_constant(data,value);
+
+    (data *= value)
+            >> tipl::backend::mt();
+
     init_image();
     show_image();
 }
@@ -897,38 +907,27 @@ void view_image::on_actionSmoothing_triggered()
 {
     tipl::image<3> new_data(data.shape());
     uint32_t m = uint32_t(tipl::max_value(data));
-    tipl::image<3,char> all_mask(data.shape());
-    for(size_t i = 0;i < data.size();++i)
-        if(data[i] > 0.0f)
-            all_mask[i] = 1;
-    tipl::morphology::smoothing(all_mask);
 
     // smooth each region
     tipl::par_for(m,[&](uint32_t index)
     {
+        if(!index)
+            return;
         tipl::image<3,char> mask(data.shape());
-        for(size_t i = 0;i < data.size();++i)
-            if(uint32_t(data[i]) == index)
-                mask[i] = 1;
+        mask[data == index] = 1;
         tipl::morphology::smoothing(mask);
-        float value = float(index);
-        for(size_t i = 0;i < data.size();++i)
-            if(mask[i])
-                new_data[i] = value;
+        new_data[mask > 0 && new_data < index] = index;
     });
 
     // fill up gaps
     tipl::par_for(m,[&](uint32_t index)
     {
+        if(!index)
+            return;
         tipl::image<3,char> mask(data.shape());
-        for(size_t i = 0;i < new_data.size();++i)
-            if(uint32_t(new_data[i]) == index)
-                mask[i] = 1;
+        mask[new_data == index] = 1;
         tipl::morphology::dilation(mask);
-        float value = float(index);
-        for(size_t i = 0;i < data.size();++i)
-            if(new_data[i] == 0.0f && mask[i])
-                new_data[i] = value;
+        new_data[mask > 0 && new_data < index] = index;
     });
 
     new_data.swap(data);
