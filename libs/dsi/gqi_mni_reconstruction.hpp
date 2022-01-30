@@ -251,7 +251,7 @@ public:
             tipl::image<3> new_VG(new_geo);
             tipl::image<3,tipl::vector<3> > new_cdm_dis(new_geo);
             tipl::par_for(tipl::begin_index(new_geo),tipl::end_index(new_geo),
-                          [&](const tipl::pixel_index<3> pos)
+                          [&](const tipl::pixel_index<3>& pos)
             {
                 tipl::vector<3> p(pos);
                 p *= VG_ratio;
