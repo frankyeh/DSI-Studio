@@ -120,7 +120,7 @@ int rec(program_option& po)
     if (po.has("param2"))
         src.voxel.param[2] = po.get("param2",src.voxel.param[2]);
 
-    if(po.get("align_acpc",1) && method_index != 7)
+    if(po.get("align_acpc",src.is_human_data() && method_index != 7 ? 1:0))
         src.align_acpc();
     else
     {
