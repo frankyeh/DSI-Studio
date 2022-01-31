@@ -2,8 +2,7 @@ name: Test Release
 on:
   workflow_dispatch:
 jobs:
-  docker_build:
-    needs: linux-build
+  test_dsistudio:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout
