@@ -1,0 +1,19 @@
+name: Test Release 
+on:
+  workflow_dispatch:
+jobs:
+  docker_build:
+    needs: linux-build
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+    - name: Download DSI Studio
+      uses: suisei-cn/actions-download-file@v1
+      with:
+        url: "https://github.com/frankyeh/DSI-Studio/releases/download/2021.12.03/dsi_studio_ubuntu_2004.zip"
+    - name: Unzip DSI Studio
+      run: |
+        unzip dsi_studio_ubuntu_2004.zip
+        ls -l
+    
