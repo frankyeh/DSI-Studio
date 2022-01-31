@@ -1484,6 +1484,27 @@ void tracking_window::on_addRegionFromAtlas_clicked()
         raise();
         return;
     }
+
+    std::string output_file_name(handle->fib_file_name);
+    output_file_name += ".";
+    output_file_name += QFileInfo(fa_template_list[handle->template_id].c_str()).
+                        baseName().toLower().toStdString();
+    output_file_name += ".map.gz";
+    if(QFileInfo(output_file_name.c_str()).exists())
+    {
+        QMessageBox::StandardButton r = QMessageBox::question( this, "DSI Studio",
+                    "Load previous registration result?",
+                    QMessageBox::Cancel | QMessageBox::No | QMessageBox::Yes,QMessageBox::Yes);
+        if(r == QMessageBox::Cancel)
+            return;
+        if(r == QMessageBox::No)
+        {
+            handle->s2t.clear();
+            handle->t2s.clear();
+            QFile(output_file_name.c_str()).remove();
+        }
+    }
+
     if(!handle->can_map_to_mni())
     {
         QMessageBox::information(this,"Error",handle->error_msg.c_str());
@@ -2848,18 +2869,3 @@ void tracking_window::on_actionAdd_Tracking_Metrics_triggered()
     scene.center();
     QMessageBox::information(this,"DSI Studio","New metric added");
 }
-
-
-void tracking_window::on_actionOpenAtlas_triggered()
-{
-    handle->s2t.clear();
-    handle->t2s.clear();
-
-    std::string output_file_name(handle->fib_file_name);
-    output_file_name += ".";
-    output_file_name += QFileInfo(fa_template_list[handle->template_id].c_str()).baseName().toLower().toStdString();
-    output_file_name += ".map.gz";
-    QFile(output_file_name.c_str()).remove();
-    on_addRegionFromAtlas_clicked();
-}
-
