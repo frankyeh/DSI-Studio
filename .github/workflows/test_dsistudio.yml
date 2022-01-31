@@ -5,8 +5,6 @@ jobs:
   test_dsistudio:
     runs-on: ubuntu-latest
     steps:
-    - name: Checkout
-      uses: actions/checkout@v2
     - name: Download DSI Studio
       uses: suisei-cn/actions-download-file@v1
       with:
@@ -15,4 +13,5 @@ jobs:
       run: |
         unzip dsi_studio_ubuntu_2004.zip
         ls -l
+        GITHUB_ACTION_PATH/dsi_studio/dsi_studio --source=*.src --action=rec
     
