@@ -1607,21 +1607,10 @@ void fib_data::run_normalization(bool background,bool inv)
        (!inv && !s2t.empty()) ||
        (inv && !t2s.empty()))
         return;
-    std::string output_file_name1(fib_file_name),output_file_name2;
-    output_file_name1 += ".";
-    output_file_name1 += QFileInfo(fa_template_list[template_id].c_str()).baseName().toLower().toStdString();
-    output_file_name2 = output_file_name1;
-    std::string output_file_name(output_file_name1);
-    output_file_name1 += ".inv.mapping.gz";
-    output_file_name2 += ".mapping.gz";
+    std::string output_file_name(fib_file_name);
+    output_file_name += ".";
+    output_file_name += QFileInfo(fa_template_list[template_id].c_str()).baseName().toLower().toStdString();
     output_file_name += ".map.gz";
-
-    // older version will save .inv.mapping.gz
-    // remove them here
-    if(QFileInfo(output_file_name1.c_str()).exists())
-        QFile(output_file_name1.c_str()).remove();
-    if(QFileInfo(output_file_name2.c_str()).exists())
-        QFile(output_file_name2.c_str()).remove();
 
     gz_mat_read in;
 
