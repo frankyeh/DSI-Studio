@@ -14,9 +14,9 @@ jobs:
         rm -fr *.zip
     - name: Test Recon
       run: |
-        ./dsi-studio/dsi_studio --source=./animal_src/*.src.gz --action=rec --method=1 >> log.txt
-        ./dsi-studio/dsi_studio --source=./animal_src/*.src.gz --action=rec >> log.txt
-        ./dsi-studio/dsi_studio --source=./animal_src/*.src.gz --action=rec --method=7 >> log.txt
+        ./dsi-studio/dsi_studio --source=./animal_src/*.src.gz --action=rec --method=1 |& tee -a log.txt
+        ./dsi-studio/dsi_studio --source=./animal_src/*.src.gz --action=rec |& tee -a log.txt
+        ./dsi-studio/dsi_studio --source=./animal_src/*.src.gz --action=rec --method=7 |& tee -a log.txt
     - name: List output
       run: |  
         ls -l ./animal_src/*.fib.gz
@@ -34,9 +34,9 @@ jobs:
         rm -fr *.zip
     - name: Test Recon
       run: |
-        ./dsi-studio/dsi_studio --source=./human_src/*.src.gz --action=rec --method=1 >> log.txt
-        ./dsi-studio/dsi_studio --source=./human_src/*.src.gz --action=rec >> log.txt
-        ./dsi-studio/dsi_studio --source=./human_src/*.src.gz --action=rec --method=7 --template=0 >> log.txt
+        ./dsi-studio/dsi_studio --source=./human_src/*.src.gz --action=rec --method=1 |& tee -a log.txt
+        ./dsi-studio/dsi_studio --source=./human_src/*.src.gz --action=rec |& tee -a log.txt
+        ./dsi-studio/dsi_studio --source=./human_src/*.src.gz --action=rec --method=7 --template=0 |& tee -a log.txt
     - name: List output
       run: |  
         ls -l ./human_src/*.fib.gz
