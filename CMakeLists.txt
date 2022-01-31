@@ -12,12 +12,6 @@ find_package(ZLIB REQUIRED)
 find_package(OpenGL REQUIRED)
 find_package(CUDA)
 
-if(EXISTS "${TIPL_DIR}")
-    include_directories(${TIPL_DIR})
-else(EXISTS "${TIPL_DIR}")
-    find_package(TIPL REQUIRED)
-endif(EXISTS "${TIPL_DIR}")
-
 set(CMAKE_AUTOUIC_SEARCH_PATHS ${CMAKE_SOURCE_DIR}
   ${CMAKE_SOURCE_DIR}/tracking
   ${CMAKE_SOURCE_DIR}/reconstruction
@@ -184,6 +178,13 @@ target_include_directories(dsi_studio PUBLIC
   ${CMAKE_SOURCE_DIR}/dicom
   ${CMAKE_SOURCE_DIR}
   ${CMAKE_BINARY_DIR})
+
+if(EXISTS "${TIPL_DIR}")
+  include_directories(dsi_studio ${TIPL_DIR})
+else()
+  find_package(TIPL REQUIRED)
+  target_link_libraries(dsi_studio TIPL::tipl)
+endif()
 
 target_link_libraries(dsi_studio Qt6::Core Qt6::Gui Qt6::OpenGL Qt6::Charts Qt6::Network Qt6::Widgets ZLIB::ZLIB OpenGL::GL OpenGL::GLU)
 if(CUDA_FOUND)
