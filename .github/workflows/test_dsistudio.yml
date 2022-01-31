@@ -2,7 +2,7 @@ name: Test Release
 on:
   workflow_dispatch:
 jobs:
-  test_dsistudio:
+  Recon:
     runs-on: ubuntu-latest
     steps:
     - name: Download DSI Studio
@@ -18,8 +18,13 @@ jobs:
         unzip dsi_studio_ubuntu_2004.zip
         unzip DSI-Studio-Test.zip
         
-    - name: Test Recon
+    - name: Test DTI Recon
       run: |
-        ./dsi-studio/dsi_studio --source=./src/*.src.gz --action=c 
+        ./dsi-studio/dsi_studio --source=./src/*.src.gz --action=rec --method=1
+    - name: Test GQI Recon
+      run: |
         ./dsi-studio/dsi_studio --source=./src/*.src.gz --action=rec
-    
+    - name: Test QSDR Recon
+      run: |
+        ./dsi-studio/dsi_studio --source=./src/*.src.gz --action=rec --method=7
+
