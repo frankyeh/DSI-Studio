@@ -13,5 +13,5 @@ jobs:
       run: |
         unzip dsi_studio_ubuntu_2004.zip
         ls -l
-        GITHUB_ACTION_PATH/dsi-studio/dsi_studio --source=*.src --action=rec
+        ./dsi-studio/dsi_studio --source=*.src --action=rec
     
