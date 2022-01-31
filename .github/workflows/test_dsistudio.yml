@@ -20,5 +20,6 @@ jobs:
         
     - name: Test Recon
       run: |
-        ./dsi-studio/dsi_studio --source=./src/*.src.gz --action=rec --rotate_to=test
+        ./dsi-studio/dsi_studio --source=./src/*.src.gz --action=c 
+        ./dsi-studio/dsi_studio --source=./src/*.src.gz --action=rec
     
