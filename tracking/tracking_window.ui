@@ -17,9 +17,7 @@
    </sizepolicy>
   </property>
   <property name="font">
-   <font>
-    <family>Arial</family>
-   </font>
+   <font/>
   </property>
   <property name="mouseTracking">
    <bool>false</bool>
@@ -531,7 +529,7 @@
    </property>
    <property name="minimumSize">
     <size>
-     <width>362</width>
+     <width>364</width>
      <height>48</height>
     </size>
    </property>
@@ -543,7 +541,6 @@
    </property>
    <property name="font">
     <font>
-     <weight>50</weight>
      <bold>false</bold>
     </font>
    </property>
@@ -801,7 +798,7 @@
    </property>
    <property name="minimumSize">
     <size>
-     <width>267</width>
+     <width>285</width>
      <height>47</height>
     </size>
    </property>
@@ -900,7 +897,7 @@
      <x>0</x>
      <y>0</y>
      <width>1200</width>
-     <height>21</height>
+     <height>20</height>
     </rect>
    </property>
    <property name="sizePolicy">
@@ -910,9 +907,7 @@
     </sizepolicy>
    </property>
    <property name="font">
-    <font>
-     <family>Arial</family>
-    </font>
+    <font/>
    </property>
    <property name="defaultUp">
     <bool>false</bool>
@@ -941,6 +936,7 @@
     <addaction name="actionUndo_Edit"/>
     <addaction name="actionRedo_Edit"/>
     <addaction name="separator"/>
+    <addaction name="actionOpenAtlas"/>
     <addaction name="actionMerge_All_2"/>
     <addaction name="actionRegion_statistics"/>
    </widget>
@@ -1327,7 +1323,7 @@
    </property>
    <property name="minimumSize">
     <size>
-     <width>309</width>
+     <width>324</width>
      <height>161</height>
     </size>
    </property>
@@ -1728,9 +1724,6 @@ Tracking</string>
    </property>
    <property name="floating">
     <bool>false</bool>
-   </property>
-   <property name="features">
-    <set>QDockWidget::AllDockWidgetFeatures</set>
    </property>
    <property name="windowTitle">
     <string>Step T3b: Draw Regions</string>
@@ -2408,9 +2401,6 @@ Tracking</string>
    <property name="floating">
     <bool>false</bool>
    </property>
-   <property name="features">
-    <set>QDockWidget::AllDockWidgetFeatures</set>
-   </property>
    <property name="allowedAreas">
     <set>Qt::LeftDockWidgetArea|Qt::RightDockWidgetArea</set>
    </property>
@@ -2649,9 +2639,7 @@ Tracking</string>
     <string>&amp;Delete</string>
    </property>
    <property name="font">
-    <font>
-     <family>Arial</family>
-    </font>
+    <font/>
    </property>
    <property name="shortcut">
     <string>Ctrl+Shift+X</string>
@@ -2684,9 +2672,7 @@ Tracking</string>
     <string>Delete All</string>
    </property>
    <property name="font">
-    <font>
-     <family>Arial</family>
-    </font>
+    <font/>
    </property>
   </action>
   <action name="actionDeleteTract">
@@ -4090,6 +4076,11 @@ Tracking</string>
   <action name="actionPosterior_Lower">
    <property name="text">
     <string>Posterior Lower</string>
+   </property>
+  </action>
+  <action name="actionOpenAtlas">
+   <property name="text">
+    <string>Open Atlas...</string>
    </property>
   </action>
  </widget>

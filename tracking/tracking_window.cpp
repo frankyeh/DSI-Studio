@@ -2848,3 +2848,18 @@ void tracking_window::on_actionAdd_Tracking_Metrics_triggered()
     scene.center();
     QMessageBox::information(this,"DSI Studio","New metric added");
 }
+
+
+void tracking_window::on_actionOpenAtlas_triggered()
+{
+    handle->s2t.clear();
+    handle->t2s.clear();
+
+    std::string output_file_name(handle->fib_file_name);
+    output_file_name += ".";
+    output_file_name += QFileInfo(fa_template_list[handle->template_id].c_str()).baseName().toLower().toStdString();
+    output_file_name += ".map.gz";
+    QFile(output_file_name.c_str()).remove();
+    on_addRegionFromAtlas_clicked();
+}
+

@@ -207,6 +207,7 @@ private slots:
     void on_actionAdjust_Atlas_Mapping_triggered();
     void on_template_box_currentIndexChanged(int index);
     void on_actionAdd_Tracking_Metrics_triggered();
+    void on_actionOpenAtlas_triggered();
 };
 
 #endif // TRACKING_WINDOW_H
