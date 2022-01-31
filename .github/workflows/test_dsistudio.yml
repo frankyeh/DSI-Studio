@@ -27,4 +27,10 @@ jobs:
     - name: Test QSDR Recon
       run: |
         ./dsi-studio/dsi_studio --source=./src/*.src.gz --action=rec --method=7
-
+        ls -l ./src/*.fib.gz
+        if [ 'ls -l ./src/*.fib.gz | wc -l' -eq 15 ] then
+           echo "Fib files generated" 
+        else
+           echo "Some fib files were not generated"
+           exit 1
+        fi
