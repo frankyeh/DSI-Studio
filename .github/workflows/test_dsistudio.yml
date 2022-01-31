@@ -9,9 +9,13 @@ jobs:
       uses: suisei-cn/actions-download-file@v1
       with:
         url: "https://github.com/frankyeh/DSI-Studio/releases/download/2021.12.03/dsi_studio_ubuntu_2004.zip"
-    - name: Unzip DSI Studio
+    - name: Download Test File
+      uses: suisei-cn/actions-download-file@v1
+      with:
+        url: "${{ secrets.TEST_FILE }}"
+    - name: Unzip Files
       run: |
-        unzip dsi_studio_ubuntu_2004.zip
+        unzip *.zip
         ls -l
-        ./dsi-studio/dsi_studio --source=*.src --action=rec
+        ./dsi-studio/dsi_studio --source=./src/*.src.gz --action=rec
     
