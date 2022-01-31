@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1100</width>
+    <width>1048</width>
     <height>700</height>
    </rect>
   </property>
@@ -81,7 +81,7 @@
          <x>0</x>
          <y>0</y>
          <width>350</width>
-         <height>637</height>
+         <height>628</height>
         </rect>
        </property>
        <property name="maximumSize">
@@ -246,7 +246,7 @@
          <x>0</x>
          <y>0</y>
          <width>350</width>
-         <height>637</height>
+         <height>628</height>
         </rect>
        </property>
        <attribute name="label">
@@ -418,7 +418,7 @@
          <x>0</x>
          <y>0</y>
          <width>350</width>
-         <height>637</height>
+         <height>628</height>
         </rect>
        </property>
        <attribute name="label">
@@ -856,6 +856,9 @@
             </property>
             <property name="currentIndex">
              <number>-1</number>
+            </property>
+            <property name="sizeAdjustPolicy">
+             <enum>QComboBox::AdjustToMinimumContentsLengthWithIcon</enum>
             </property>
            </widget>
           </item>
