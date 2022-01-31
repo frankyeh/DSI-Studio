@@ -35,7 +35,7 @@ jobs:
       run: |
         ./dsi-studio/dsi_studio --source=./human_src/*.src.gz --action=rec --method=1
         ./dsi-studio/dsi_studio --source=./human_src/*.src.gz --action=rec
-        ./dsi-studio/dsi_studio --source=./human_src/*.src.gz --action=rec --method=7
+        ./dsi-studio/dsi_studio --source=./human_src/*.src.gz --action=rec --method=7 --template=0
     - name: List output
       run: |  
         ls -l ./human_src/*.fib.gz        
