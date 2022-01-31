@@ -17,6 +17,8 @@ jobs:
       run: |
         unzip dsi_studio_ubuntu_2004.zip
         unzip DSI-Studio-Test.zip
-        ls -l
-        ./dsi-studio/dsi_studio --source=./src/*.src.gz --action=rec
+        
+    - name: Test Recon
+      run: |
+        ./dsi-studio/dsi_studio --source=./src/*.src.gz --action=rec --rotate_to=test
     
