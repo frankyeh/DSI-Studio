@@ -822,9 +822,9 @@ void view_image::on_actionLower_threshold_triggered()
     if(!ok)
         return;
 
-    (data[data < value] = value)
-
-            >> tipl::backend::mt();
+    for(size_t index = 0;index < data.size();++index)
+        if(data[index] < value)
+            data[index] = value;
 
     init_image();
     show_image();
@@ -893,9 +893,9 @@ void view_image::on_actionUpper_Threshold_triggered()
     if(!ok)
         return;
 
-    (data[data > value] = value)
-
-            >> tipl::backend::mt();
+    for(size_t index = 0;index < data.size();++index)
+        if(data[index] > value)
+            data[index] = value;
 
     init_image();
     show_image();
@@ -903,7 +903,7 @@ void view_image::on_actionUpper_Threshold_triggered()
 bool is_label_image(const tipl::image<3>& I);
 void view_image::on_actionSmoothing_triggered()
 {
-    tipl::image<3> new_data(data.shape());
+    tipl::image<3,size_t> new_data(data.shape());
     uint32_t m = uint32_t(tipl::max_value(data));
 
     // smooth each region
@@ -912,9 +912,13 @@ void view_image::on_actionSmoothing_triggered()
         if(!index)
             return;
         tipl::image<3,char> mask(data.shape());
-        mask[data == index] = 1;
+        for(size_t index = 0;index < mask.size();++index)
+            if(data[index] == index)
+                mask[index] = 1;
         tipl::morphology::smoothing(mask);
-        new_data[mask > 0 && new_data < index] = index;
+        for(size_t index = 0;index < mask.size();++index)
+            if(mask[index] > 0 && new_data[index] < index)
+                new_data[index] = index;
     });
 
     // fill up gaps
@@ -923,12 +927,15 @@ void view_image::on_actionSmoothing_triggered()
         if(!index)
             return;
         tipl::image<3,char> mask(data.shape());
-        mask[new_data == index] = 1;
+        for(size_t index = 0;index < mask.size();++index)
+            if(new_data[index] == index)
+                mask[index] = 1;
         tipl::morphology::dilation(mask);
-        new_data[mask > 0 && new_data < index] = index;
+        for(size_t index = 0;index < mask.size();++index)
+            if(mask[index] > 0 && new_data[index] < index)
+                new_data[index] = index;
     });
-
-    new_data.swap(data);
+    data = new_data;
     init_image();
     show_image();
 }
