@@ -204,7 +204,6 @@ private slots:
     void on_actionInsert_Coronal_Pictures_triggered();
     void on_show_track_toggled(bool checked);
     void on_actionInsert_Sagittal_Picture_triggered();
-    void on_actionAdjust_Atlas_Mapping_triggered();
     void on_template_box_currentIndexChanged(int index);
     void on_actionAdd_Tracking_Metrics_triggered();
 };

@@ -1484,6 +1484,13 @@ void tracking_window::on_addRegionFromAtlas_clicked()
         raise();
         return;
     }
+    if(!handle->load_template())
+    {
+        QMessageBox::information(this,"Error","no template data");
+        raise();
+        return;
+    }
+
 
     std::string output_file_name(handle->fib_file_name);
     output_file_name += ".";
@@ -1499,9 +1506,27 @@ void tracking_window::on_addRegionFromAtlas_clicked()
             return;
         if(r == QMessageBox::No)
         {
+            QMessageBox::StandardButton r = QMessageBox::question( this, "DSI Studio",
+                        "Manually adjust result?",
+                        QMessageBox::Cancel | QMessageBox::No | QMessageBox::Yes,QMessageBox::Yes);
+            if(r == QMessageBox::Cancel)
+                return;
+            if(r == QMessageBox::Yes)
+            {
+                tipl::image<3> iso_fa;
+                handle->get_iso_fa(iso_fa);
+                std::shared_ptr<manual_alignment> manual(new manual_alignment(this,
+                    iso_fa,slices[0]->vs,
+                    handle->template_I2.empty() ? handle->template_I2: handle->template_I,handle->template_vs,
+                    tipl::reg::affine,tipl::reg::cost_type::mutual_info));
+                if(manual->exec() != QDialog::Accepted)
+                    return;
+                handle->manual_template_T = manual->get_iT();
+                handle->has_manual_atlas = true;
+            }
             handle->s2t.clear();
             handle->t2s.clear();
-            QFile(output_file_name.c_str()).remove();
+            QFile(output_file_name.c_str()).remove();            
         }
     }
 
@@ -2812,27 +2837,6 @@ void tracking_window::on_actionInsert_Sagittal_Picture_triggered()
     ui->SliceModality->setCurrentIndex(0);
     ui->SliceModality->setCurrentIndex(int(handle->view_item.size())-1);
     on_glSagView_clicked();
-}
-
-void tracking_window::on_actionAdjust_Atlas_Mapping_triggered()
-{
-    if(!handle->load_template())
-        return;
-    tipl::image<3> iso_fa;
-    handle->get_iso_fa(iso_fa);
-    std::shared_ptr<manual_alignment> manual(new manual_alignment(this,
-        iso_fa,slices[0]->vs,
-        handle->template_I2.empty() ? handle->template_I2: handle->template_I,handle->template_vs,
-        tipl::reg::affine,tipl::reg::cost_type::mutual_info));
-    if(manual->exec() != QDialog::Accepted)
-        return;
-    handle->manual_template_T = manual->get_iT();
-    handle->has_manual_atlas = true;
-    handle->is_template_space = false;
-    handle->s2t.clear();
-    handle->t2s.clear();
-    handle->run_normalization(true,true);
-    handle->run_normalization(true,false);
 }
 
 void tracking_window::on_template_box_currentIndexChanged(int index)
