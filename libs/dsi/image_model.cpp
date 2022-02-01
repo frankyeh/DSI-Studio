@@ -1858,7 +1858,8 @@ void prepare_idx(const char* file_name,std::shared_ptr<gz_istream> in)
     {
         in->buffer_all = true;
         if(std::filesystem::exists(idx_name) &&
-           QFileInfo(idx_name.c_str()).lastModified() > QFileInfo(file_name).lastModified())
+           std::filesystem::last_write_time(idx_name) >
+           std::filesystem::last_write_time(file_name))
         {
             std::cout << "using index file for accelerated loading:" << idx_name << std::endl;
             in->load_index(idx_name.c_str());
