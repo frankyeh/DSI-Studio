@@ -1,3 +1,4 @@
+#include "prog_interface_static_link.h"
 #include "connectometry_db.hpp"
 #include "fib_data.hpp"
 
