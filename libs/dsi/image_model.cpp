@@ -1532,9 +1532,9 @@ bool ImageModel::run_applytopup(std::string exec)
         return false;
     if(!load_topup_eddy_result())
         return false;
-    std::filesystem::.remove(temp_nifti);
+    std::filesystem::remove(temp_nifti);
     if(rev_pe_src.get())
-        std::filesystem::.remove(rev_pe_src->file_name+".nii.gz");
+        std::filesystem::remove(rev_pe_src->file_name+".nii.gz");
     return true;
 }
 
@@ -1626,8 +1626,8 @@ bool ImageModel::run_eddy(std::string exec)
     if(!load_topup_eddy_result())
         return false;
 
-    std::filesystem::.remove(temp_nifti);
-    std::filesystem::.remove(mask_nifti);
+    std::filesystem::remove(temp_nifti);
+    std::filesystem::remove(mask_nifti);
     return true;
 }
 
