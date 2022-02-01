@@ -1207,7 +1207,7 @@ bool ImageModel::run_plugin(std::string exec_name,
         #ifdef _WIN32
         // search for plugin
         exec = (QCoreApplication::applicationDirPath() +  + "/plugin/" + exec_name.c_str() + ".exe").toStdString();
-        if(!QFileInfo(exec.c_str()).exists())
+        if(!std::filesystem::exists(exec))
         {
             error_msg = QString("Cannot find %1").arg(exec.c_str()).toStdString();
             return false;
@@ -1219,9 +1219,9 @@ bool ImageModel::run_plugin(std::string exec_name,
             std::string fsl_path = QProcess::systemEnvironment()[index].split("=")[1].toStdString();
             std::cout << "FSL installation found at " << fsl_path << std::endl;
             exec = fsl_path + "/bin/" + exec_name;
-            if(exec_name == "eddy" && !QFileInfo(exec.c_str()).exists())
+            if(exec_name == "eddy" && !std::filesystem::exists(exec))
                 exec = fsl_path + "/bin/eddy_openmp";
-            if(!QFileInfo(exec.c_str()).exists())
+            if(!std::filesystem::exists(exec))
             {
                 error_msg = "cannot find ";
                 error_msg += exec;
@@ -1231,10 +1231,10 @@ bool ImageModel::run_plugin(std::string exec_name,
         else
         {
             exec = (QCoreApplication::applicationDirPath() +  + "/plugin/" + exec_name.c_str()).toStdString();
-            if(!QFileInfo(exec.c_str()).exists())
+            if(!std::filesystem::exists(exec))
             {
                 exec = std::string("/usr/local/fsl/bin/") + exec_name;
-                if(!QFileInfo(exec.c_str()).exists())
+                if(!std::filesystem::exists(exec))
                 {
                     error_msg = "Cannot find FSL";
                     return false;
@@ -1422,7 +1422,7 @@ bool ImageModel::load_topup_eddy_result(void)
     std::string corrected_file = file_name+".corrected.nii.gz";
     std::string bval_file = file_name+".bval";
     std::string bvec_file = file_name+".corrected.eddy_rotated_bvecs";
-    bool is_eddy = QFileInfo(bvec_file.c_str()).exists();
+    bool is_eddy = std::filesystem::exists(bvec_file);
     bool has_topup = QFileInfo(QFileInfo(file_name.c_str()).baseName().replace('.','_')+"_fieldcoef.nii.gz").exists();
 
     if(is_eddy)
@@ -1487,7 +1487,7 @@ bool ImageModel::run_applytopup(std::string exec)
     std::string acqparam_file = QFileInfo(file_name.c_str()).baseName().toStdString() + ".topup.acqparams.txt";
     std::string temp_nifti = file_name+".nii.gz";
     std::string corrected_file = file_name+".corrected";
-    if(!QFileInfo((topup_result+"_fieldcoef.nii.gz").c_str()).exists())
+    if(!std::filesystem::exists(topup_result+"_fieldcoef.nii.gz"))
     {
         error_msg = "no topup result for applytopup";
         return false;
@@ -1532,9 +1532,9 @@ bool ImageModel::run_applytopup(std::string exec)
         return false;
     if(!load_topup_eddy_result())
         return false;
-    QFile(temp_nifti.c_str()).remove();
+    std::filesystem::.remove(temp_nifti);
     if(rev_pe_src.get())
-        QFile((rev_pe_src->file_name+".nii.gz").c_str()).remove();
+        std::filesystem::.remove(rev_pe_src->file_name+".nii.gz");
     return true;
 }
 
@@ -1549,7 +1549,7 @@ bool ImageModel::run_eddy(std::string exec)
     std::string index_file = file_name+".index.txt";
     std::string bval_file = file_name+".bval";
     std::string bvec_file = file_name+".bvec";
-    bool has_topup = QFileInfo((topup_result+"_fieldcoef.nii.gz").c_str()).exists();
+    bool has_topup = std::filesystem::exists(topup_result+"_fieldcoef.nii.gz");
     if(!has_topup)
     {
         std::cout << "eddy without topup" << std::endl;
@@ -1626,24 +1626,24 @@ bool ImageModel::run_eddy(std::string exec)
     if(!load_topup_eddy_result())
         return false;
 
-    QFile(temp_nifti.c_str()).remove();
-    QFile(mask_nifti.c_str()).remove();
+    std::filesystem::.remove(temp_nifti);
+    std::filesystem::.remove(mask_nifti);
     return true;
 }
 
 bool ImageModel::run_topup_eddy(const std::string& other_src)
 {
     progress::show("topup/eddy",true);
-    if(QFileInfo((file_name+".corrected.nii.gz").c_str()).exists())
+    if(std::filesystem::exists(file_name+".corrected.nii.gz"))
     {
         std::cout << "load previous results from " << file_name << ".corrected.nii.gz" <<std::endl;
         if(load_topup_eddy_result())
             return true;
         std::cout << error_msg << std::endl;
-        if(!QFileInfo(other_src.c_str()).exists())
+        if(!std::filesystem::exists(other_src))
         {
             error_msg = "failed to load previous results. please re-run correction again.";
-            QFile((file_name+".corrected.nii.gz").c_str()).remove();
+            std::filesystem::remove(file_name+".corrected.nii.gz");
             return false;
         }
         std::cout << "run correction from scratch with " << other_src << std::endl;
@@ -1879,7 +1879,7 @@ void save_idx(const char* file_name,std::shared_ptr<gz_istream> in)
         return;
     std::string idx_name = file_name;
     idx_name += ".idx";
-    if(in->has_access_points() && in->sample_access_point && !QFileInfo(idx_name.c_str()).exists())
+    if(in->has_access_points() && in->sample_access_point && !std::filesystem::exists(idx_name))
     {
         std::cout << "saving index file for accelerated loading: " << idx_name << std::endl;
         in->save_index(idx_name.c_str());
