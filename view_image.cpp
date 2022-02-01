@@ -175,7 +175,7 @@ bool view_image::command(std::string cmd,std::string param1,std::string param2)
                         error_msg += other_file_name[i];
                         return false;
                     }
-                    if(!QFileInfo(other_params[i].c_str()).exists())
+                    if(!std::filesystem::exists(other_params[i]))
                     {
                         error_msg = "cannot find ";
                         error_msg += other_params[i];
