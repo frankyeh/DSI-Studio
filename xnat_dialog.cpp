@@ -94,7 +94,7 @@ void xnat_facade::get_data(std::string site,std::string auth,
     {
         std::string download_name = (output_dir+"/"+
                                      urls[progress].substr(urls[progress].find_last_of('/')+1)).c_str();
-        if(QFileInfo(download_name.c_str()).exists())
+        if(std::filesystem::exists(download_name))
             continue;
         get_html(site + urls[progress],auth);
         if (!good())
