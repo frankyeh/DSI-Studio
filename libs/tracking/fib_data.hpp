@@ -3,7 +3,6 @@
 #include <fstream>
 #include <sstream>
 #include <string>
-#include "prog_interface_static_link.h"
 #include "tipl/tipl.hpp"
 #include "gzip_interface.hpp"
 #include "connectometry_db.hpp"
