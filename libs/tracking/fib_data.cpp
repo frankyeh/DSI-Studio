@@ -1698,9 +1698,6 @@ void fib_data::run_normalization(bool background,bool inv)
         else
             T = manual_template_T;
 
-        std::cout << "T:" << std::endl;
-        std::cout << T;
-
         if(terminated)
             return;
         prog = 2;
@@ -1720,9 +1717,9 @@ void fib_data::run_normalization(bool background,bool inv)
         else
         {
             progress::show("dual modality normalization");
-            if constexpr (tipl::use_cuda)
-                cdm2_cuda(It,It2,Iss,Iss2,dis,terminated,tipl::reg::cdm_param());
-            else
+            //if constexpr (tipl::use_cuda)
+            //    cdm2_cuda(It,It2,Iss,Iss2,dis,terminated,tipl::reg::cdm_param());
+            //else
                 tipl::reg::cdm2(It,It2,Iss,Iss2,dis,terminated);
         }
 
