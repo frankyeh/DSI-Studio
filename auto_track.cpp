@@ -408,7 +408,7 @@ std::string run_auto_track(
                    !std::filesystem::file_size(stat_files[i][j]))
                 {
                     std::cout << "remove empty file:" << stat_files[i][j] << std::endl;
-                    QFile::remove(stat_files[i][j].c_str());
+                    std::filesystem::remove(stat_files[i][j]);
                     has_incomplete = true;
                 }
             }
