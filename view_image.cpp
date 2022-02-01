@@ -859,8 +859,7 @@ void view_image::on_actionIntensity_shift_triggered()
     if(!ok)
         return;
 
-    (data += value)
-            >> tipl::backend::mt();
+    data += value;
 
     init_image();
     show_image();
@@ -877,8 +876,7 @@ void view_image::on_actionIntensity_scale_triggered()
     if(!ok)
         return;
 
-    (data *= value)
-            >> tipl::backend::mt();
+    data *= value;
 
     init_image();
     show_image();
