@@ -1074,7 +1074,7 @@ void reconstruction_window::on_qsdr_manual_clicked()
 void reconstruction_window::on_actionRun_FSL_Topup_triggered()
 {
     QString other_src;
-    if(!QFileInfo((handle->file_name+".corrected.nii.gz").c_str()).exists())
+    if(!std::filesystem::exists(handle->file_name+".corrected.nii.gz"))
     {
         QMessageBox::information(this,"DSI Studio","Please specify another NIFTI or SRC.GZ file with reversed phase encoding data");
         other_src = QFileDialog::getOpenFileName(
