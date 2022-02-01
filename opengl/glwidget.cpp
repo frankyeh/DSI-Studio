@@ -2875,14 +2875,18 @@ bool GLWidget::command(QString cmd,QString param,QString param2)
             case 2:
                 {
                 tipl::image<3,unsigned char> mask(crop_image);
-                mask[crop_image > threshold] = 1;
+                for(size_t index = 0;index < crop_image.size();++index)
+                    if(crop_image[index] > threshold)
+                        mask[index] = 1;
                 tipl::morphology::defragment(mask);
                 tipl::morphology::negate(mask);
                 tipl::morphology::defragment(mask);
                 tipl::morphology::negate(mask);
                 tipl::morphology::smoothing_mt(mask);
                 tipl::morphology::dilation_mt(mask);
-                crop_image[mask == 0] *= 0.2f;
+                for(size_t index = 0;index < crop_image.size();++index)
+                    if(mask[index] == 0)
+                        crop_image[index] *= 0.2f;
                 tipl::filter::gaussian(crop_image);
                 }
                 break;
