@@ -1497,7 +1497,7 @@ void tracking_window::on_addRegionFromAtlas_clicked()
     output_file_name += QFileInfo(fa_template_list[handle->template_id].c_str()).
                         baseName().toLower().toStdString();
     output_file_name += ".map.gz";
-    if(QFileInfo(output_file_name.c_str()).exists())
+    if(std::filesystem::exists(output_file_name))
     {
         QMessageBox::StandardButton r = QMessageBox::question( this, "DSI Studio",
                     "Load previous registration result?",
@@ -1526,7 +1526,7 @@ void tracking_window::on_addRegionFromAtlas_clicked()
             }
             handle->s2t.clear();
             handle->t2s.clear();
-            QFile(output_file_name.c_str()).remove();            
+            std::filesystem::remove(output_file_name);
         }
     }
 
