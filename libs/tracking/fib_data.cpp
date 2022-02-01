@@ -1280,6 +1280,8 @@ void fib_data::get_iso_fa(tipl::image<3>& iso_fa_) const
 {
     size_t index = get_name_index("iso");
     if(view_item.size() == index)
+        index = get_name_index("md");
+    if(view_item.size() == index)
         index = 0;
     tipl::image<3> iso_fa(view_item[index].get_image());
     tipl::add(iso_fa,view_item[0].get_image());
@@ -1655,49 +1657,41 @@ void fib_data::run_normalization(bool background,bool inv)
         tipl::image<3> Is(dir.fa[0],dim);
         tipl::image<3> Is2;
 
-        for(unsigned int i = 0;i < view_item.size();++i)
-            if(view_item[i].name == std::string("iso"))
-                Is2 = view_item[i].get_image();
-        if(Is2.empty()) // DTI reconstruction
-        for(unsigned int i = 0;i < view_item.size();++i)
-            if(view_item[i].name == std::string("md"))
-                Is2 = view_item[i].get_image();
-
-        unsigned int downsampling = 0;
-
-        while(Is.size() > It.size()*2.0f)
         {
-            tipl::downsampling(Is);
-            ++downsampling;
+            size_t iso_index = get_name_index("iso");
+            if(view_item.size() == iso_index)
+                iso_index = get_name_index("md");
+            if(view_item.size() != iso_index)
+                Is2 = view_item[iso_index].get_image();
         }
+        bool no_iso = Is2.empty() || It2.empty();
 
-        if(!downsampling)
-            tipl::filter::gaussian(Is);
         prog = 1;
         if(!has_manual_atlas)
         {
-            auto tvs = vs;
-            tvs *= std::sqrt((It.plane_size()*template_vs[0]*template_vs[1])/
-                    (Is.plane_size()*vs[0]*vs[1]));
-            if(template_vs[0] < 1.0f) // animal
+            if(is_human_data)
             {
-                if(Is2.empty() || It2.empty())
+                if constexpr (tipl::use_cuda)
+                    two_way_linear_cuda(It,template_vs,Is,vs,T,tipl::reg::affine,terminated,nullptr);
+                else
+                    tipl::reg::two_way_linear_mr<tipl::reg::mutual_information>(It,template_vs,Is,vs,T,tipl::reg::affine,terminated);
+            }
+            else
+            {
+                auto tvs = vs;
+                tvs *= std::sqrt((It.plane_size()*template_vs[0]*template_vs[1])/
+                                                        (Is.plane_size()*vs[0]*vs[1]));
+                if(no_iso)
                     animal_reg(It,template_vs,Is,tvs,T,terminated);
                 else
                     animal_reg(It2,template_vs,Is2,tvs,T,terminated);
             }
-            else
-            {
-                if constexpr (tipl::use_cuda)
-                    two_way_linear_cuda(It,template_vs,Is,tvs,T,tipl::reg::affine,terminated,nullptr);
-                else
-                    tipl::reg::two_way_linear_mr<tipl::reg::mutual_information>(It,template_vs,Is,tvs,T,tipl::reg::affine,terminated);
-            }
-            for(unsigned int i = 0;i < downsampling;++i)
-                tipl::multiply_constant(T.data,T.data+12,2.0f);
         }
         else
             T = manual_template_T;
+
+        std::cout << "T:" << std::endl;
+        std::cout << T;
 
         if(terminated)
             return;
@@ -1705,20 +1699,20 @@ void fib_data::run_normalization(bool background,bool inv)
         tipl::image<3> Iss(It.shape());
         tipl::resample_mt(Is,Iss,T);
         tipl::image<3> Iss2(It2.shape());
-        if(!Is2.empty() && !It2.empty())
+        if(!no_iso)
             tipl::resample_mt(Is2,Iss2,T);
         prog = 3;
         tipl::image<3,tipl::vector<3> > dis,inv_dis;
         tipl::reg::cdm_pre(It,It2,Iss,Iss2);
-        if(Iss2.shape() == Iss.shape())
-        {
-            progress::show("dual modality normalization");
-            tipl::reg::cdm2(It,It2,Iss,Iss2,dis,terminated);
-        }
-        else
+        if(no_iso)
         {
             progress::show("single modality normalization");
             tipl::reg::cdm(It,Iss,dis,terminated);
+        }
+        else
+        {
+            progress::show("dual modality normalization");
+            tipl::reg::cdm2(It,It2,Iss,Iss2,dis,terminated);
         }
 
         tipl::invert_displacement(dis,inv_dis);
