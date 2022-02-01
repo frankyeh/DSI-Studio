@@ -8,7 +8,7 @@
 #include "fib_data.hpp"
 #include "connectometry/group_connectometry_analysis.h"
 
-#include "mac_filesystem.hpp"
+#include <filesystem>
 
 extern std::string fib_template_file_name_2mm;
 extern std::vector<std::vector<std::string> > template_atlas_list;

@@ -14,7 +14,7 @@
 #include "SliceModel.h"
 #include "connectometry/group_connectometry_analysis.h"
 #include "program_option.hpp"
-#include "mac_filesystem.hpp"
+#include <filesystem>
 extern std::shared_ptr<CustomSliceModel> t1t2_slices;
 std::shared_ptr<CustomSliceModel> t1t2_slices;
 extern std::vector<std::shared_ptr<CustomSliceModel> > other_slices;

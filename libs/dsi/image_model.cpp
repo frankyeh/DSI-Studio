@@ -10,7 +10,7 @@
 #include "fib_data.hpp"
 #include "dwi_header.hpp"
 #include "tracking/region/Regions.h"
-#include "mac_filesystem.hpp"
+#include <filesystem>
 
 extern std::string src_error_msg;
 bool load_4d_nii(const char* file_name,std::vector<std::shared_ptr<DwiHeader> >& dwi_files,bool need_bvalbvec);
