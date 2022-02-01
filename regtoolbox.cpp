@@ -390,9 +390,9 @@ void RegToolBox::on_timer()
                 tipl::compose_displacement(J_view,dis_view,J_view2);
                 while(!geo_stack.empty())
                 {
-                    tipl::upsample_with_padding(J_view,J_view,geo_stack.back());
-                    tipl::upsample_with_padding(J_view2,J_view2,geo_stack.back());
-                    tipl::upsample_with_padding(dis_view,dis_view,geo_stack.back());
+                    tipl::upsample_with_padding(J_view,geo_stack.back());
+                    tipl::upsample_with_padding(J_view2,geo_stack.back());
+                    tipl::upsample_with_padding(dis_view,geo_stack.back());
                     dis_view *= 2.0f;
                     geo_stack.pop_back();
                 }
