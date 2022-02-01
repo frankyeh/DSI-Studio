@@ -1,6 +1,7 @@
 #include <QCoreApplication>
 #include <QFileInfo>
 #include <QDateTime>
+#include "prog_interface_static_link.h"
 #include "fib_data.hpp"
 #include "tessellated_icosahedron.hpp"
 #include "tract_model.hpp"
@@ -1603,6 +1604,13 @@ void animal_reg(const tipl::image<3>& from,tipl::vector<3> from_vs,
     });
 }
 
+void cdm2_cuda(const tipl::image<3>& It,
+               const tipl::image<3>& It2,
+               const tipl::image<3>& Is,
+               const tipl::image<3>& Is2,
+               tipl::image<3,tipl::vector<3> >& d,
+               bool& terminated,
+               tipl::reg::cdm_param param);
 void fib_data::run_normalization(bool background,bool inv)
 {
     if(is_template_space||
@@ -1712,7 +1720,10 @@ void fib_data::run_normalization(bool background,bool inv)
         else
         {
             progress::show("dual modality normalization");
-            tipl::reg::cdm2(It,It2,Iss,Iss2,dis,terminated);
+            if constexpr (tipl::use_cuda)
+                cdm2_cuda(It,It2,Iss,Iss2,dis,terminated,tipl::reg::cdm_param());
+            else
+                tipl::reg::cdm2(It,It2,Iss,Iss2,dis,terminated);
         }
 
         tipl::invert_displacement(dis,inv_dis);
