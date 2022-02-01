@@ -1,3 +1,4 @@
+#include <filesystem>
 #include "xnat_dialog.h"
 #include "ui_xnat_dialog.h"
 #include <QMessageBox>
