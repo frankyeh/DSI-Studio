@@ -2398,7 +2398,7 @@ void TractModel::get_density_map(tipl::image<3,unsigned int>& mapping,
             pos.round();
             tipl::vector<3,int> ipos(pos);
             if (geo.is_valid(ipos))
-                point_set.insert(tipl::pixel_index<3>::voxel2index(ipos.begin(),mapping.shape()));
+                point_set.insert(tipl::voxel2index(ipos.begin(),mapping.shape()));
         }
 
         for(auto pos : point_set)
@@ -2429,7 +2429,7 @@ void TractModel::get_density_map(
             tipl::vector<3,int> ipos(pos);
             if (!geo.is_valid(ipos))
                 continue;
-            size_t ptr = tipl::pixel_index<3>::voxel2index(ipos.begin(),mapping.shape());
+            size_t ptr = tipl::voxel2index(ipos.begin(),mapping.shape());
             map_r[ptr] += std::fabs(dir[0]);
             map_g[ptr] += std::fabs(dir[1]);
             map_b[ptr] += std::fabs(dir[2]);
