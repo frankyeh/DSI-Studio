@@ -68,7 +68,7 @@ template<typename T,typename U>
 __DEVICE_HOST__ unsigned int find_nearest(const float* trk,unsigned int length,
                           const T& tract_data,// = track_atlas->get_tracts();
                           const U& tract_cluster,// = track_atlas->get_cluster_info();
-                          bool contain,float false_distance)
+                          bool contain,float tolerance_distance)
 {
     struct norm1_imp{
         inline float operator()(const float* v1,const float* v2)
@@ -91,7 +91,7 @@ __DEVICE_HOST__ unsigned int find_nearest(const float* trk,unsigned int length,
     }min_min;
     if(length <= 6)
         return 9999;
-    float best_distance = contain ? 50.0f : false_distance;
+    float best_distance = contain ? 50.0f : tolerance_distance;
     size_t best_index = tract_data.size();
     if(contain)
     {
@@ -186,7 +186,7 @@ public:
     std::vector<std::shared_ptr<Roi> > terminate;
     std::vector<std::shared_ptr<Roi> > no_end;
 public:
-    float false_distance = 0.0f;
+    float tolerance_distance = 0.0f;
     unsigned int track_id = 0;
 public:
     RoiMgr(std::shared_ptr<fib_data> handle_):handle(handle_){}
@@ -241,11 +241,11 @@ public:
         for(unsigned int index = 0; index < inclusive.size(); ++index)
             if(!inclusive[index]->included(track,buffer_size))
                 return false;
-        if(false_distance != 0.0f)
-            return handle->find_nearest(track,buffer_size,false,false_distance) == track_id;
+        if(tolerance_distance != 0.0f)
+            return handle->find_nearest(track,buffer_size,false,tolerance_distance) == track_id;
         return true;
     }
-    bool setAtlas(unsigned int track_id_,float false_distance_)
+    bool setAtlas(unsigned int track_id_,float tolerance_distance_mm_in_icbm152)
     {
         if(!handle->load_track_atlas())
             return false;
@@ -254,13 +254,13 @@ public:
             handle->error_msg = "invalid track_id";
             return false;
         }
-        false_distance = false_distance_;
+        tolerance_distance = tolerance_distance_mm_in_icbm152/handle->vs[0];
         track_id = track_id_;
         report += " The anatomy prior of a tractography atlas (Yeh et al., Neuroimage 178, 57-68, 2018) was used to map ";
         report += handle->tractography_name_list[size_t(track_id)];
         report += "  with a distance tolerance of ";
-        report += std::to_string(int(false_distance_*handle->vs[0]));
-        report += " (mm).";
+        report += std::to_string(tolerance_distance_mm_in_icbm152);
+        report += " (mm) in the ICBM152 space.";
         // place seed at the atlas track region
         if(seeds.empty())
         {
@@ -288,7 +288,7 @@ public:
                     roa_mask[index] = 1;
 
             // build a shift vector
-            tipl::neighbor_index_shift<3> shift(handle->dim,int(false_distance_)+1);
+            tipl::neighbor_index_shift<3> shift(handle->dim,int(tolerance_distance)+1);
             for(size_t i = 0;i < seed.size();++i)
             {
                 int index = int(tipl::pixel_index<3>(seed[i][0],

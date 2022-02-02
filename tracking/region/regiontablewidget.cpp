@@ -1353,7 +1353,7 @@ void RegionTableWidget::setROIs(ThreadData* data)
     if(cur_tracking_window.ui->target->currentIndex() > 0 &&
        cur_tracking_window.handle->track_atlas.get())
         data->roi_mgr->setAtlas(uint32_t(cur_tracking_window.ui->target->currentIndex()-1),
-                                cur_tracking_window["autotrack_tolerance"].toFloat()/cur_tracking_window.handle->vs[0]);
+                                cur_tracking_window["autotrack_tolerance"].toFloat());
 
     if(data->roi_mgr->seeds.empty())
         data->roi_mgr->setWholeBrainSeed(cur_tracking_window.get_fa_threshold());

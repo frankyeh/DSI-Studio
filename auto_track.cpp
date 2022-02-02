@@ -301,7 +301,7 @@ std::string run_auto_track(
                         thread.param.tip_iteration = uint8_t(tip);
                         thread.param.check_ending = !QString(track_name.c_str()).contains("Cingulum");
                         thread.param.stop_by_tract = 1;
-                        if(!thread.roi_mgr->setAtlas(track_id[j],cur_tolerance/handle->vs[0]))
+                        if(!thread.roi_mgr->setAtlas(track_id[j],cur_tolerance))
                             return handle->error_msg + " at " + fib_file_name;
                         thread.param.termination_count = uint32_t(track_voxel_ratio*thread.roi_mgr->seeds.size());
                         thread.param.max_seed_count = thread.param.termination_count*5000; //yield rate easy:1/100 hard:1/5000

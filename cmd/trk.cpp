@@ -577,7 +577,7 @@ bool load_roi(program_option& po,std::shared_ptr<fib_data> handle,std::shared_pt
             std::cout << "cannot find " << name << " in " << handle->tractography_atlas_file_name << std::endl;
             return false;
         }
-        if(!roi_mgr->setAtlas(uint32_t(track_id),po.get("tolerance",16.0f)/handle->vs[0]))
+        if(!roi_mgr->setAtlas(uint32_t(track_id),po.get("tolerance",16.0f)))
         {
             std::cout << handle->error_msg << std::endl;
             return false;
