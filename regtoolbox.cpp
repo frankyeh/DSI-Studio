@@ -1,6 +1,7 @@
 #include <QMessageBox>
 #include <QMovie>
 #include <QFileDialog>
+#include "reg.hpp"
 #include "regtoolbox.h"
 #include "ui_regtoolbox.h"
 #include "libs/gzip_interface.hpp"
@@ -369,7 +370,7 @@ void RegToolBox::on_timer()
         {
             J_view.resize(It.shape());
             tipl::resample_mt((ui->show_second->isChecked() && I2.shape() == I.shape() ? I2 : I),
-                              J_view,tipl::transformation_matrix<double>(arg,It.shape(),Itvs,I.shape(),Ivs));
+                              J_view,tipl::transformation_matrix<float>(arg,It.shape(),Itvs,I.shape(),Ivs));
 
             show_image();
         }
@@ -437,13 +438,13 @@ void RegToolBox::linear_reg(tipl::reg::reg_type reg_type,int cost_type)
     else
     {
         if(cost_type == 0)// mutual information
-            tipl::reg::two_way_linear_mr<tipl::reg::mutual_information>(It,Itvs,I,Ivs,T,reg_type,thread.terminated,&arg,
+            linear_common(It,Itvs,I,Ivs,T,reg_type,thread.terminated,&arg,
                                          ui->large_deform->isChecked() ? tipl::reg::large_bound : tipl::reg::reg_bound);
         else
         if(cost_type == 1)// correlation
             tipl::reg::two_way_linear_mr<tipl::reg::correlation>(It,Itvs,I,Ivs,T,reg_type,thread.terminated,&arg,
                                          ui->large_deform->isChecked() ? tipl::reg::large_bound : tipl::reg::reg_bound);
-        //T = tipl::transformation_matrix<double>(arg,It.shape(),Itvs,I.shape(),Ivs);
+
         tipl::resample_mt<tipl::interpolation::cubic>(I,J_,T);
         if(I2.shape() == I.shape())
         {
@@ -472,29 +473,33 @@ void RegToolBox::nonlinear_reg(void)
         param.speed = float(ui->speed->value());
         if(ui->edge->isChecked())
         {
-            tipl::image<3> sIt(It),sJ(J);
+            tipl::image<3> sIt(It),sJ(J),sIt2(It2),sJ2(J2);
             tipl::filter::sobel(sIt);
             tipl::filter::sobel(sJ);
             tipl::filter::mean(sIt);
             tipl::filter::mean(sJ);
-            tipl::reg::cdm(sIt,sJ,t2f_dis,thread.terminated,param);
+            if(!sIt2.empty())
+            {
+                tipl::filter::sobel(sIt2);
+                tipl::filter::mean(sIt2);
+            }
+            if(!sJ2.empty())
+            {
+                tipl::filter::sobel(sJ2);
+                tipl::filter::mean(sJ2);
+            }
+            cdm_common(sIt,sIt2,sJ,sJ2,t2f_dis,thread.terminated,param);
         }
         else
-        {
-            //tipl::reg::cdm_pre(It,It2,J,J2);
-            if(It2.shape() == It.shape() && J2.shape() == J.shape())
-                tipl::reg::cdm2(It,It2,J,J2,t2f_dis,thread.terminated,param);
-            else
-                tipl::reg::cdm(It,J,t2f_dis,thread.terminated,param);
-        }
+            cdm_common(It,It2,J,J2,t2f_dis,thread.terminated,param);
     }
-    tipl::displacement_to_mapping(t2f_dis,to2from,T);
 
     // calculate inverted to2from
     {
-        from2to.resize(I.shape());
         tipl::invert_displacement(t2f_dis,f2t_dis);
+        from2to.resize(I.shape());
         tipl::inv_displacement_to_mapping(f2t_dis,from2to,T);
+        tipl::displacement_to_mapping(t2f_dis,to2from,T);
     }
 
 
