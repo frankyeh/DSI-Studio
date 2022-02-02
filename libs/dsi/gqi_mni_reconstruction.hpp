@@ -5,6 +5,7 @@
 #include "basic_voxel.hpp"
 #include "basic_process.hpp"
 #include "gqi_process.hpp"
+#include "reg.hpp"
 extern std::vector<std::string> fa_template_list,iso_template_list;
 void animal_reg(const tipl::image<3>& from,tipl::vector<3> from_vs,
           const tipl::image<3>& to,tipl::vector<3> to_vs,
@@ -119,18 +120,14 @@ public:
                     else
                     {
                         if(!dual_modality)
-                        {
-                            tipl::reg::two_way_linear_mr<tipl::reg::correlation>(VG,VGvs,VF,VFvs,affine,
-                                tipl::reg::affine,terminated);
-                        }
+                            linear_common(VG,VGvs,VF,VFvs,affine,tipl::reg::affine,terminated);
                         else
                         {
                             auto VG3 = VG;
                             auto VF3 = VF;
                             VG3 += VG2;
                             VF3 += VF2;
-                            tipl::reg::two_way_linear_mr<tipl::reg::mutual_information>(VG3,VGvs,VF3,VFvs,affine,
-                                 tipl::reg::affine,terminated);
+                            linear_common(VG3,VGvs,VF3,VFvs,affine,tipl::reg::affine,terminated);
                         }
                     }
                 },terminated))
@@ -161,19 +158,10 @@ public:
                     tipl::reg::cdm_param param;
                     if(VFvs[0] < VGvs[0])
                         param.resolution = 1.0f;
-                    if(dual_modality)
-                    {
-                        std::cout << "using dual QA/ISO templates" << std::endl;
-                        tipl::reg::cdm2(VFF,VFF2,VG,VG2,cdm_dis,terminated,param);
-                        tipl::invert_displacement(cdm_dis);
-                        //tipl::reg::cdm2(VG,VG2,VFF,VFF2,cdm_dis,terminated,param);
-                    }
-                    else
-                    {
-                        //tipl::reg::cdm(VG,VFF,cdm_dis,terminated,param);
-                        tipl::reg::cdm(VFF,VG,cdm_dis,terminated,param);
-                        tipl::invert_displacement(cdm_dis);
-                    }
+
+                    cdm_common(VFF,VFF2,VG,VG2,cdm_dis,terminated,param);
+                    tipl::invert_displacement(cdm_dis);
+
                 },terminated))
                 throw std::runtime_error("reconstruction canceled");
 
