@@ -437,9 +437,9 @@ void CustomSliceModel::update_transform(void)
     handle->view_item[view_id].iT = invT;
 }
 // ---------------------------------------------------------------------------
-float two_way_linear_cuda(tipl::const_pointer_image<3,float> I,
-                         const tipl::vector<3>& Ivs,
-                         tipl::const_pointer_image<3,float> J,
+float two_way_linear_cuda(const tipl::image<3,float>& I,
+                          const tipl::vector<3>& Ivs,
+                         const tipl::image<3,float>& J,
                          const tipl::vector<3>& Jvs,
                          tipl::transformation_matrix<float>& T,
                          tipl::reg::reg_type reg_type,
