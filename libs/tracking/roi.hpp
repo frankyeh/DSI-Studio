@@ -254,7 +254,13 @@ public:
             handle->error_msg = "invalid track_id";
             return false;
         }
-        tolerance_distance = tolerance_distance_mm_in_icbm152/handle->vs[0];
+        {
+            std::cout << "convert tolerance distance of " << tolerance_distance_mm_in_icbm152 << " from ICBM mm to subject voxels" << std::endl;
+            std::cout << "subject space tolerance: " <<
+                    (tolerance_distance =
+                     tolerance_distance_mm_in_icbm152/(handle->template_vs[0]*(handle->s2t[0]-handle->s2t[1]).length()))
+                      << " voxels" << std::endl;
+        }
         track_id = track_id_;
         report += " The anatomy prior of a tractography atlas (Yeh et al., Neuroimage 178, 57-68, 2018) was used to map ";
         report += handle->tractography_name_list[size_t(track_id)];
@@ -288,7 +294,7 @@ public:
                     roa_mask[index] = 1;
 
             // build a shift vector
-            tipl::neighbor_index_shift<3> shift(handle->dim,int(tolerance_distance)+1);
+            tipl::neighbor_index_shift<3> shift(handle->dim,int(std::round(tolerance_distance))+1);
             for(size_t i = 0;i < seed.size();++i)
             {
                 int index = int(tipl::pixel_index<3>(seed[i][0],
