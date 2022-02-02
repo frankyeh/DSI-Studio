@@ -1,12 +1,13 @@
+#include <filesystem>
 #include <QCoreApplication>
 #include <QFileInfo>
 #include <QDateTime>
+#include "reg.hpp"
 #include "prog_interface_static_link.h"
 #include "fib_data.hpp"
 #include "tessellated_icosahedron.hpp"
 #include "tract_model.hpp"
 #include "roi.hpp"
-#include <filesystem>
 
 extern std::vector<std::string> fa_template_list;
 bool odf_data::read(gz_mat_read& mat_reader)
@@ -1567,15 +1568,6 @@ void fib_data::recognize_report(std::shared_ptr<TractModel>& trk,std::string& re
     report += out.str();
 }
 
-float two_way_linear_cuda(const tipl::image<3,float>& I,
-                          const tipl::vector<3>& Ivs,
-                         const tipl::image<3,float>& J,
-                         const tipl::vector<3>& Jvs,
-                         tipl::transformation_matrix<float>& T,
-                         tipl::reg::reg_type reg_type,
-                         bool& terminated,
-                         tipl::affine_transform<float>* arg_min);
-
 void animal_reg(const tipl::image<3>& from,tipl::vector<3> from_vs,
           const tipl::image<3>& to,tipl::vector<3> to_vs,
           tipl::transformation_matrix<float>& T,bool& terminated)
@@ -1604,13 +1596,7 @@ void animal_reg(const tipl::image<3>& from,tipl::vector<3> from_vs,
     });
 }
 
-void cdm2_cuda(const tipl::image<3>& It,
-               const tipl::image<3>& It2,
-               const tipl::image<3>& Is,
-               const tipl::image<3>& Is2,
-               tipl::image<3,tipl::vector<3> >& d,
-               bool& terminated,
-               tipl::reg::cdm_param param);
+
 void fib_data::run_normalization(bool background,bool inv)
 {
     if(is_template_space||
@@ -1678,12 +1664,7 @@ void fib_data::run_normalization(bool background,bool inv)
         if(!has_manual_atlas)
         {
             if(is_human_data)
-            {
-                if constexpr (tipl::use_cuda)
-                    two_way_linear_cuda(It,template_vs,Is,vs,T,tipl::reg::affine,terminated,nullptr);
-                else
-                    tipl::reg::two_way_linear_mr<tipl::reg::mutual_information>(It,template_vs,Is,vs,T,tipl::reg::affine,terminated);
-            }
+                linear_common(It,template_vs,Is,vs,T,tipl::reg::affine,terminated);
             else
             {
                 auto tvs = vs;
@@ -1709,21 +1690,13 @@ void fib_data::run_normalization(bool background,bool inv)
         prog = 3;
         tipl::image<3,tipl::vector<3> > dis,inv_dis;
         tipl::reg::cdm_pre(It,It2,Iss,Iss2);
-        if(no_iso)
-        {
-            progress::show("single modality normalization");
-            tipl::reg::cdm(It,Iss,dis,terminated);
-        }
-        else
-        {
-            progress::show("dual modality normalization");
-            if constexpr (tipl::use_cuda)
-                cdm2_cuda(It,It2,Iss,Iss2,dis,terminated,tipl::reg::cdm_param());
-            else
-                tipl::reg::cdm2(It,It2,Iss,Iss2,dis,terminated);
-        }
+
+        cdm_common(It,It2,Iss,Iss2,dis,terminated);
 
         tipl::invert_displacement(dis,inv_dis);
+        tipl::displacement_to_mapping(dis,t2s,T);
+        s2t.resize(dim);
+        tipl::inv_displacement_to_mapping(inv_dis,s2t,T);
 
         if(terminated)
             return;
@@ -1735,28 +1708,14 @@ void fib_data::run_normalization(bool background,bool inv)
             out.write("from_dim",dim);
             out.write("from_vs",vs);
             out.write("steps",steps);
-        }
-
-        {
             prog = 4;
             progress::show("calculating template to subject warp field");
-            tipl::image<3,tipl::vector<3,float> > pos;
-            tipl::displacement_to_mapping(dis,pos,T);
-            if(out)
-                out.write("to2from",&pos[0][0],3,pos.size());
-            t2s.swap(pos);
-        }
-        if(terminated)
-            return;
-        {
+            out.write("to2from",&t2s[0][0],3,t2s.size());
             prog = 5;
             progress::show("calculating subject to template warp field");
-            tipl::image<3,tipl::vector<3,float> > pos(dim);
-            tipl::inv_displacement_to_mapping(inv_dis,pos,T);
-            if(out)
-                out.write("from2to",&pos[0][0],3,pos.size());
-            s2t.swap(pos);
+            out.write("from2to",&s2t[0][0],3,s2t.size());
         }
+
         tipl::compose_mapping(tipl::make_image(dir.fa[0],dim),t2s,Iss);
         std::cout << "nonlinear:" << tipl::correlation(Iss.begin(),Iss.end(),It.begin()) << std::endl;
         prog = 6;
