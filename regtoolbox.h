@@ -22,11 +22,11 @@ public:
     tipl::vector<3> Itvs,Ivs;
     tipl::matrix<4,4> ItR,IR;
 public:
-    tipl::transformation_matrix<double> T;
+    tipl::transformation_matrix<float> T;
     tipl::image<3> J_view,J_view2;
     tipl::image<3,tipl::vector<3> > dis_view;
 public:
-    tipl::affine_transform<double> arg;
+    tipl::affine_transform<float> arg;
     tipl::thread thread;
     std::shared_ptr<QTimer> timer,flash_timer;
     std::string status;
