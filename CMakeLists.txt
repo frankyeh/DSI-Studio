@@ -69,98 +69,109 @@ set(DSI_STUDIO_HEADERS mainwindow.h
     auto_track.h
     tracking/device.h
     tracking/devicetablewidget.h
-    mac_filesystem.hpp
     libs/dsi/hist_process.hpp
-    xnat_dialog.h)
+    xnat_dialog.h
+    reg.hpp)
 
-set(DSI_STUDIO_FORMS mainwindow.ui 
-    tracking/tracking_window.ui 
-    reconstruction/reconstruction_window.ui 
-    dicom/dicom_parser.ui 
-    view_image.ui 
-    manual_alignment.ui 
-    tracking/tract_report.ui 
-    tracking/color_bar_dialog.ui 
-    tracking/connectivity_matrix_dialog.ui 
-    tracking/atlasdialog.ui 
-    filebrowser.ui 
-    connectometry/createdbdialog.ui 
+set(DSI_STUDIO_FORMS mainwindow.ui
+    tracking/tracking_window.ui
+    reconstruction/reconstruction_window.ui
+    dicom/dicom_parser.ui
+    view_image.ui
+    manual_alignment.ui
+    tracking/tract_report.ui
+    tracking/color_bar_dialog.ui
+    tracking/connectivity_matrix_dialog.ui
+    tracking/atlasdialog.ui
+    filebrowser.ui
+    connectometry/createdbdialog.ui
     connectometry/match_db.ui
-    connectometry/db_window.ui 
-    connectometry/group_connectometry.ui 
-    regtoolbox.ui 
+    connectometry/db_window.ui
+    connectometry/group_connectometry.ui
+    regtoolbox.ui
     auto_track.ui
     xnat_dialog.ui)
 
 set(DSI_STUDIO_RESOURCES icons.qrc)
 
 set(DSI_STUDIO_SOURCES
+    cuda/reg.cu
     main.cpp
-    mainwindow.cpp 
-    dicom/dicom_parser.cpp 
-    dicom/dwi_header.cpp 
-    libs/utility/prog_interface.cpp 
-    libs/dsi/dsi_interface_imp.cpp 
+    mainwindow.cpp
+    dicom/dicom_parser.cpp
+    dicom/dwi_header.cpp
+    libs/utility/prog_interface.cpp
+    libs/dsi/dsi_interface_imp.cpp
     libs/dsi/gqi_process.cpp
     libs/tracking/interpolation_process.cpp
-    libs/tracking/tract_cluster.cpp 
-    SliceModel.cpp 
-    tracking/tracking_window.cpp 
-    reconstruction/reconstruction_window.cpp 
-    tracking/slice_view_scene.cpp 
-    opengl/glwidget.cpp 
-    tracking/region/regiontablewidget.cpp 
-    tracking/region/Regions.cpp 
-    tracking/region/RegionModel.cpp 
-    libs/tracking/tract_model.cpp 
-    tracking/tract/tracttablewidget.cpp 
-    opengl/renderingtablewidget.cpp 
-    qcolorcombobox.cpp 
-    cmd/trk.cpp 
-    cmd/rec.cpp 
-    cmd/src.cpp 
-    libs/mapping/atlas.cpp 
-    cmd/ana.cpp 
-    view_image.cpp 
-    manual_alignment.cpp 
-    tracking/tract_report.cpp 
-    tracking/color_bar_dialog.cpp 
-    cmd/exp.cpp 
-    tracking/connectivity_matrix_dialog.cpp 
-    libs/dsi/tessellated_icosahedron.cpp 
-    cmd/atl.cpp 
-    tracking/atlasdialog.cpp 
-    cmd/vis.cpp 
-    filebrowser.cpp 
-    qcompletelineedit.cpp 
-    libs/tracking/fib_data.cpp 
-    libs/tracking/tracking_thread.cpp 
-    cmd/ren.cpp 
-    libs/mapping/connectometry_db.cpp 
-    connectometry/createdbdialog.cpp 
-    connectometry/match_db.cpp 
-    connectometry/db_window.cpp 
-    connectometry/group_connectometry.cpp 
-    connectometry/group_connectometry_analysis.cpp 
-    regtoolbox.cpp 
-    cmd/cnn.cpp 
-    cmd/qc.cpp 
-    libs/dsi/basic_voxel.cpp 
-    libs/dsi/image_model.cpp 
-    cmd/reg.cpp 
-    auto_track.cpp 
-    cmd/atk.cpp 
-    tracking/device.cpp 
-    tracking/devicetablewidget.cpp 
-    libs/gzip_interface.cpp 
-    cmd/xnat.cpp 
+    libs/tracking/tract_cluster.cpp
+    SliceModel.cpp
+    tracking/tracking_window.cpp
+    reconstruction/reconstruction_window.cpp
+    tracking/slice_view_scene.cpp
+    opengl/glwidget.cpp
+    tracking/region/regiontablewidget.cpp
+    tracking/region/Regions.cpp
+    tracking/region/RegionModel.cpp
+    libs/tracking/tract_model.cpp
+    tracking/tract/tracttablewidget.cpp
+    opengl/renderingtablewidget.cpp
+    qcolorcombobox.cpp
+    cmd/trk.cpp
+    cmd/rec.cpp
+    cmd/src.cpp
+    libs/mapping/atlas.cpp
+    cmd/ana.cpp
+    view_image.cpp
+    manual_alignment.cpp
+    tracking/tract_report.cpp
+    tracking/color_bar_dialog.cpp
+    cmd/exp.cpp
+    tracking/connectivity_matrix_dialog.cpp
+    libs/dsi/tessellated_icosahedron.cpp
+    cmd/atl.cpp
+    tracking/atlasdialog.cpp
+    cmd/vis.cpp
+    filebrowser.cpp
+    qcompletelineedit.cpp
+    libs/tracking/fib_data.cpp
+    libs/tracking/tracking_thread.cpp
+    cmd/ren.cpp
+    libs/mapping/connectometry_db.cpp
+    connectometry/createdbdialog.cpp
+    connectometry/match_db.cpp
+    connectometry/db_window.cpp
+    connectometry/group_connectometry.cpp
+    connectometry/group_connectometry_analysis.cpp
+    regtoolbox.cpp
+    cmd/cnn.cpp
+    cmd/qc.cpp
+    libs/dsi/basic_voxel.cpp
+    libs/dsi/image_model.cpp
+    cmd/reg.cpp
+    auto_track.cpp
+    cmd/atk.cpp
+    tracking/device.cpp
+    tracking/devicetablewidget.cpp
+    libs/gzip_interface.cpp
+    cmd/xnat.cpp
     xnat_dialog.cpp)
 
-set(DSI_STUDIO_OTHER_FILES options.txt 
-    dicom_tag.txt 
+set(DSI_STUDIO_OTHER_FILES options.txt
+    dicom_tag.txt
     FreeSurferColorLUT.txt)
 
-add_executable(dsi_studio ${DSI_STUDIO_SOURCES} ${DSI_STUDIO_FORMS} ${DSI_STUDIO_HEADERS} ${DSI_STUDIO_RESOURCES})
+if(WIN32)
+    set(DSI_STUDIO_EXEC
+        WIN32)
+endif()
+if(APPLE)
+    set(DSI_STUDIO_EXEC
+        MACOSX_BUNDLE)
+endif()
+
+
+add_executable(dsi_studio ${DSI_STUDIO_EXEC} ${DSI_STUDIO_SOURCES} ${DSI_STUDIO_FORMS} ${DSI_STUDIO_HEADERS} ${DSI_STUDIO_RESOURCES})
 set_target_properties(dsi_studio PROPERTIES CXX_STANDARD 17 CXX_EXTENSIONS NONE)
 target_compile_definitions(dsi_studio PUBLIC DSISTUDIO_RELEASE_NAME="Chen")
 target_compile_definitions(dsi_studio PUBLIC DSISTUDIO_RELEASE_CODE=11770345)
@@ -171,10 +182,10 @@ if(CUDA_FOUND)
 endif(CUDA_FOUND)
 
 target_include_directories(dsi_studio PUBLIC
-  ${CMAKE_SOURCE_DIR}/libs 
-  ${CMAKE_SOURCE_DIR}/libs/dsi 
-  ${CMAKE_SOURCE_DIR}/libs/tracking 
-  ${CMAKE_SOURCE_DIR}/libs/mapping 
+  ${CMAKE_SOURCE_DIR}/libs
+  ${CMAKE_SOURCE_DIR}/libs/dsi
+  ${CMAKE_SOURCE_DIR}/libs/tracking
+  ${CMAKE_SOURCE_DIR}/libs/mapping
   ${CMAKE_SOURCE_DIR}/dicom
   ${CMAKE_SOURCE_DIR}
   ${CMAKE_BINARY_DIR})
