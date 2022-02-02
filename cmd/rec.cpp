@@ -11,7 +11,7 @@
 #include "libs/gzip_interface.hpp"
 #include "reconstruction/reconstruction_window.h"
 #include "program_option.hpp"
-
+#include "reg.hpp"
 #include <filesystem>
 
 extern std::vector<std::string> fa_template_list,iso_template_list;
@@ -138,10 +138,11 @@ int rec(program_option& po)
             in.get_voxel_size(vs);
             in >> I;
             std::cout << "running rigid body transformation" << std::endl;
-            tipl::transformation_matrix<double> T;
+            tipl::transformation_matrix<float> T;
             bool terminated = false;
-            tipl::reg::two_way_linear_mr<tipl::reg::mutual_information>(I,vs,src.dwi,src.voxel.vs,
-                           T,tipl::reg::rigid_body,terminated);
+
+            linear_common(I,vs,src.dwi,src.voxel.vs,T,tipl::reg::rigid_body,terminated);
+
             std::cout << "DWI rotated." << std::endl;
             src.rotate(I.shape(),vs,T);
         }
