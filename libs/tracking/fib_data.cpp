@@ -1567,9 +1567,9 @@ void fib_data::recognize_report(std::shared_ptr<TractModel>& trk,std::string& re
     report += out.str();
 }
 
-float two_way_linear_cuda(tipl::const_pointer_image<3,float> I,
-                         const tipl::vector<3>& Ivs,
-                         tipl::const_pointer_image<3,float> J,
+float two_way_linear_cuda(const tipl::image<3,float>& I,
+                          const tipl::vector<3>& Ivs,
+                         const tipl::image<3,float>& J,
                          const tipl::vector<3>& Jvs,
                          tipl::transformation_matrix<float>& T,
                          tipl::reg::reg_type reg_type,
@@ -1717,9 +1717,9 @@ void fib_data::run_normalization(bool background,bool inv)
         else
         {
             progress::show("dual modality normalization");
-            //if constexpr (tipl::use_cuda)
-            //    cdm2_cuda(It,It2,Iss,Iss2,dis,terminated,tipl::reg::cdm_param());
-            //else
+            if constexpr (tipl::use_cuda)
+                cdm2_cuda(It,It2,Iss,Iss2,dis,terminated,tipl::reg::cdm_param());
+            else
                 tipl::reg::cdm2(It,It2,Iss,Iss2,dis,terminated);
         }
 
