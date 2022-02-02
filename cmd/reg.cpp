@@ -1,5 +1,6 @@
 #include <QString>
 #include "tipl/tipl.hpp"
+#include "reg.hpp"
 #include "libs/gzip_interface.hpp"
 #include "tract_model.hpp"
 #include "program_option.hpp"
@@ -193,26 +194,12 @@ int reg(program_option& po)
     param.iterations = po.get("iteration",param.iterations);
     param.min_dimension = po.get("min_dimension",param.min_dimension);
 
-    if(!from2_.empty())
-    {
-        std::cout << "nonlinear registration using dual image modalities" << std::endl;
-        tipl::reg::cdm2(to,to2,from_,from2_,t2f_dis,terminated,param);
-    }
-    else
-    {
-        std::cout << "nonlinear registration using single image modality" << std::endl;
-        tipl::reg::cdm(to,from_,t2f_dis,terminated);
-    }
-
+    cdm_common(to,to2,from_,from2_,t2f_dis,terminated,param);
 
     tipl::displacement_to_mapping(t2f_dis,to2from,T);
-
-    // calculate inverted to2from
-    {
-        from2to.resize(from.shape());
-        tipl::invert_displacement(t2f_dis,f2t_dis);
-        tipl::inv_displacement_to_mapping(f2t_dis,from2to,T);
-    }
+    tipl::invert_displacement(t2f_dis,f2t_dis);
+    from2to.resize(from.shape());
+    tipl::inv_displacement_to_mapping(f2t_dis,from2to,T);
 
     {
         std::cout << "compose output images" << std::endl;
