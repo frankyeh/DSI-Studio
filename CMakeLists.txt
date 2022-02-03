@@ -178,7 +178,9 @@ target_compile_definitions(dsi_studio PUBLIC DSISTUDIO_RELEASE_CODE=11770345)
 target_compile_definitions(dsi_studio PUBLIC QT6_PATCH)
 if(CUDA_FOUND)
     set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -allow-unsupported-compiler --extended-lambda")
+    set(CMAKE_CUDA_RUNTIME_LIBRARY "Static")
     target_compile_definitions(dsi_studio PUBLIC TIPL_USE_CUDA)
+    set_property(TARGET dsi_studio PROPERTY CUDA_ARCHITECTURES 60 70 75)
 endif(CUDA_FOUND)
 
 target_include_directories(dsi_studio PUBLIC
@@ -199,5 +201,5 @@ endif()
 
 target_link_libraries(dsi_studio Qt6::Core Qt6::Gui Qt6::OpenGL Qt6::Charts Qt6::Network Qt6::Widgets ZLIB::ZLIB OpenGL::GL OpenGL::GLU)
 if(CUDA_FOUND)
-    target_link_libraries(dsi_studio ${CUDA_LIBRARIES} ${CUDA_CUBLAS_LIBRARIES})
+    target_link_libraries(dsi_studio ${CUDA_LIBRARIES})
 endif(CUDA_FOUND)
