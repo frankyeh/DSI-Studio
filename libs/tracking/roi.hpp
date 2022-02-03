@@ -4,23 +4,16 @@
 #include "tipl/tipl.hpp"
 #include "tract_model.hpp"
 #include "tracking/region/Regions.h"
+template<typename hash_type = std::vector<uint32_t> >
 class Roi {
-private:
     float ratio;
     tipl::shape<3> dim;
-    uint16_t zlength;
-    std::vector<uint32_t> xyz_hash;
+    hash_type xyz_hash;
 public:
-    Roi(const tipl::shape<3>& sp_,float r):ratio(r),dim(r == 1.0f ? sp_:sp_*r),
-        zlength(uint16_t((dim[2]+31)/32)),xyz_hash(dim[0])
-    {
-    }
-    void clear(void)
-    {
-        xyz_hash.clear();
-        xyz_hash.resize(dim[0]);
-    }
-    void addPoint(const tipl::vector<3,short>& new_point)
+    __INLINE__ Roi(const tipl::shape<3>& sp_,float r):ratio(r),dim(r == 1.0f ? sp_:sp_*r),xyz_hash(dim[0]){}
+    __INLINE__ ~Roi(){}
+public:
+    __HOST__ void addPoint(const tipl::vector<3,short>& new_point)
     {
         if(!dim.is_valid(new_point))
             return;
@@ -37,11 +30,20 @@ public:
         if(!z_base)
         {
             z_base = uint32_t(xyz_hash.size());
-            xyz_hash.resize(xyz_hash.size()+zlength);
+            xyz_hash.resize(xyz_hash.size()+uint16_t((dim[2]+31) >> 5));
         }
         xyz_hash[z_base+(z >> 5)] |= (1 << (z & 31));
     }
-    bool havePoint(float dx,float dy,float dz) const
+    template<typename T>
+    __INLINE__ Roi& operator=(Roi<T>& rhs)
+    {
+        ratio = rhs.ratio;
+        dim = rhs.dim;
+        xyz_hash = rhs.xyz_hash;
+        return *this;
+    }
+public:
+    __INLINE__ bool havePoint(float dx,float dy,float dz) const
     {
         if(ratio != 1.0f)
         {
@@ -62,11 +64,11 @@ public:
             return false;
         return (xyz_hash[z_base+(uint16_t(z) >> 5)] & (1 << (z & 31)));
     }
-    bool havePoint(const tipl::vector<3,float>& point) const
+    __INLINE__ bool havePoint(const tipl::vector<3,float>& point) const
     {
         return havePoint(point[0],point[1],point[2]);
     }
-    bool included(const float* track,unsigned int buffer_size) const
+    __INLINE__ bool included(const float* track,unsigned int buffer_size) const
     {
         for(unsigned int index = 0; index < buffer_size; index += 3)
             if(havePoint(track[index],track[index+1],track[index+2]))
@@ -191,11 +193,11 @@ public:
     std::string report;
     std::vector<tipl::vector<3,short> > seeds;
     std::vector<float> seeds_r;
-    std::vector<std::shared_ptr<Roi> > inclusive;
-    std::vector<std::shared_ptr<Roi> > end;
-    std::vector<std::shared_ptr<Roi> > exclusive;
-    std::vector<std::shared_ptr<Roi> > terminate;
-    std::vector<std::shared_ptr<Roi> > no_end;
+    std::vector<std::shared_ptr<Roi<> > > inclusive;
+    std::vector<std::shared_ptr<Roi<> > > end;
+    std::vector<std::shared_ptr<Roi<> > > exclusive;
+    std::vector<std::shared_ptr<Roi<> > > terminate;
+    std::vector<std::shared_ptr<Roi<> > > no_end;
 public:
     float tolerance_distance = 0.0f;
     unsigned int track_id = 0;
@@ -253,7 +255,9 @@ public:
             if(!inclusive[index]->included(track,buffer_size))
                 return false;
         if(tolerance_distance != 0.0f)
-            return handle->find_nearest(track,buffer_size,false,tolerance_distance) == track_id;
+            return find_nearest(track,buffer_size,
+                                handle->track_atlas->get_tracts(),handle->track_atlas->get_cluster_info(),
+                                false,tolerance_distance) == track_id;
         return true;
     }
     bool setAtlas(unsigned int track_id_,float tolerance_distance_mm_in_icbm152)
@@ -345,31 +349,31 @@ public:
         switch(type)
         {
         case roi_id:
-            inclusive.push_back(std::make_shared<Roi>(handle->dim,r));
+            inclusive.push_back(std::make_shared<Roi<> >(handle->dim,r));
             for(unsigned int index = 0; index < points.size(); ++index)
                 inclusive.back()->addPoint(points[index]);
             report += " An ROI was placed at ";
             break;
         case roa_id:
-            exclusive.push_back(std::make_shared<Roi>(handle->dim,r));
+            exclusive.push_back(std::make_shared<Roi<> >(handle->dim,r));
             for(unsigned int index = 0; index < points.size(); ++index)
                 exclusive.back()->addPoint(points[index]);
             report += " An ROA was placed at ";
             break;
         case end_id:
-            end.push_back(std::make_shared<Roi>(handle->dim,r));
+            end.push_back(std::make_shared<Roi<> >(handle->dim,r));
             for(unsigned int index = 0; index < points.size(); ++index)
                 end.back()->addPoint(points[index]);
             report += " An ending region was placed at ";
             break;
         case terminate_id:
-            terminate.push_back(std::make_shared<Roi>(handle->dim,r));
+            terminate.push_back(std::make_shared<Roi<> >(handle->dim,r));
             for(unsigned int index = 0; index < points.size(); ++index)
                 terminate.back()->addPoint(points[index]);
             report += " A terminative region was placed at ";
             break;
         case not_end_id:
-            no_end.push_back(std::make_shared<Roi>(handle->dim,r));
+            no_end.push_back(std::make_shared<Roi<> >(handle->dim,r));
             for(unsigned int index = 0; index < points.size(); ++index)
                 no_end.back()->addPoint(points[index]);
             report += " A no ending region was placed at ";
