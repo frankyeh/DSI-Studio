@@ -145,8 +145,6 @@ public:// Parameters
     tipl::vector<3,float> position;
     tipl::vector<3,float> dir;
     tipl::vector<3,float> next_dir;
-    bool terminated;
-    bool forward;
 public:
     std::shared_ptr<tracking_data> trk;
     float current_fa_threshold;
@@ -217,11 +215,19 @@ public:
                    std::shared_ptr<RoiMgr> roi_mgr_):
                     interpolation(interpolation_),trk(trk_),roi_mgr(roi_mgr_),init_fib_index(0)
     {}
+private:
+    inline bool tracking_continue(void) const
+    {
+        return !roi_mgr->is_terminate_point(position) &&
+               get_buffer_size() < current_max_steps3;
+    }
 public:
 
 
 	std::vector<float>& get_track_buffer(void){return track_buffer;}
 	std::vector<float>& get_reverse_buffer(void){return reverse_buffer;}
+
+
 
     template<typename tracking_algo>
     bool start_tracking(tracking_algo track)
@@ -234,46 +240,38 @@ public:
         buffer_front_pos = uint32_t(current_max_steps3);
         buffer_back_pos = uint32_t(current_max_steps3);
         tipl::vector<3,float> end_point1;
-        terminated = false;
-		do
-		{
-            if(get_buffer_size() > current_max_steps3 || buffer_back_pos + 3 >= track_buffer.size())
-                break;
+
+        while(tracking_continue())
+        {
             if(roi_mgr->is_excluded_point(position))
 				return false;
             track_buffer[buffer_back_pos] = position[0];
             track_buffer[buffer_back_pos+1] = position[1];
             track_buffer[buffer_back_pos+2] = position[2];
             buffer_back_pos += 3;
-            if(roi_mgr->is_terminate_point(position))
+            if(!track(*this))
                 break;
-
-            track(*this);
-			
 		}
-        while(!terminated);
-		
+
         end_point1 = position;
-        terminated = false;
         position = seed_pos;
         dir = -begin_dir;
-        forward = false;
-		do
-		{
-            track(*this);
-
-            if(get_buffer_size() > current_max_steps3 || buffer_front_pos < 3)
-                break;
-            if(terminated)
-				break;
-			buffer_front_pos -= 3;
-            if(roi_mgr->is_excluded_point(position))
-				return false;
-            track_buffer[buffer_front_pos] = position[0];
-            track_buffer[buffer_front_pos+1] = position[1];
-            track_buffer[buffer_front_pos+2] = position[2];
+        if(tracking_continue() && track(*this))
+        {
+            while(tracking_continue())
+            {
+                if(roi_mgr->is_excluded_point(position))
+                    return false;
+                buffer_front_pos -= 3;
+                track_buffer[buffer_front_pos] = position[0];
+                track_buffer[buffer_front_pos+1] = position[1];
+                track_buffer[buffer_front_pos+2] = position[2];
+                if(!track(*this))
+                    break;
+            }
         }
-        while(!roi_mgr->is_terminate_point(position));
+
+
 
         return get_buffer_size() > current_min_steps3 &&
                roi_mgr->have_include(get_result(),get_buffer_size()) &&
@@ -286,8 +284,6 @@ public:
                   std::mt19937& seed)
         {
             position = position_;
-            terminated = false;
-            forward = true;
             if (!trk->dim.is_valid(position))
                 return false;
             switch (initial_direction)
@@ -373,10 +369,10 @@ public:
 
 	const float* get_result(void) const
 	{
-                tipl::vector<3,float> head(&*(track_buffer.begin() + buffer_front_pos));
-                tipl::vector<3,float> tail(&*(track_buffer.begin() + buffer_back_pos-3));
+        tipl::vector<3,float> head(&*(track_buffer.begin() + buffer_front_pos));
+        tipl::vector<3,float> tail(&*(track_buffer.begin() + buffer_back_pos-3));
 		tail -= head;
-                tipl::vector<3,float> abs_dis(std::abs(tail[0]),std::abs(tail[1]),std::abs(tail[2]));
+        tipl::vector<3,float> abs_dis(std::abs(tail[0]),std::abs(tail[1]),std::abs(tail[2]));
 		
 		if((abs_dis[0] > abs_dis[1] && abs_dis[0] > abs_dis[2] && tail[0] < 0) ||
 		   (abs_dis[1] > abs_dis[0] && abs_dis[1] > abs_dis[2] && tail[1] < 0) ||

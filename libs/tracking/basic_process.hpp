@@ -10,7 +10,7 @@ struct VoxelTracking{
 
 public:
     template<class method>
-    void operator()(method& info)
+    bool operator()(method& info)
     {
         tipl::vector<3,short> cur_pos(info.position);
         std::vector<tipl::vector<3,float> > next_voxels_dir;
@@ -58,16 +58,14 @@ public:
             }
         }
         if(max_angle_cos == 0.0f)
-        {
-            info.terminated = true;
-            return;
-        }
+            return false;
 
 
         info.dir = info.trk->get_fib(next_voxels_index[max_i],max_j);
         if(info.dir*next_voxels_dir[max_i] < 0)
             info.dir = -info.dir;
         info.position = next_voxels_pos[max_i];
+        return true;
     }
 };
 
@@ -76,43 +74,31 @@ struct RungeKutta4
 {
 public:
     template<class method>
-    void operator()(method& info)
+    bool operator()(method& info)
     {
         tipl::vector<3,float> y;
         tipl::vector<3,float> k1,k2,k3,k4;
         if (!info.get_dir(info.position,info.dir,k1))
-        {
-            info.terminated = true;
-            return;
-        }
+            return false;
 
         y = k1;
         y *= 0.5;
         info.scaling_in_voxel(y);
         y += info.position;
         if (!info.get_dir(y,k1,k2))
-        {
-            info.terminated = true;
-            return;
-        }
+            return false;
         y = k2;
         y *= 0.5;
         info.scaling_in_voxel(y);
         y += info.position;
         if (!info.get_dir(y,k2,k3))
-        {
-            info.terminated = true;
-            return;
-        }
+            return false;
 
         y = k3;
         info.scaling_in_voxel(y);
         y += info.position;
         if (!info.get_dir(y,k3,k4))
-        {
-            info.terminated = true;
-            return;
-        }
+            return false;
 
         y = k2;
         y += k3;
@@ -127,6 +113,7 @@ public:
         info.scaling_in_voxel(step);
         info.position += step;
         info.dir = info.next_dir;
+        return true;
     }
 };
 
@@ -136,10 +123,10 @@ struct EulerTracking
 public:
 
     template<class method>
-    void operator()(method& info)
+    bool operator()(method& info)
     {
         if (!info.get_dir(info.position,info.dir,info.next_dir))
-            info.terminated = true;
+            return false;
 
         if(info.current_tracking_smoothing != 0.0f)
         {
@@ -152,6 +139,7 @@ public:
         info.scaling_in_voxel(step);
         info.position += step;
         info.dir = info.next_dir;
+        return true;
     }
 };
 
