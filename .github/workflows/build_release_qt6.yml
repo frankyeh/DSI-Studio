@@ -64,6 +64,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
     - uses: actions/checkout@v1
+    - name: cuda-toolkit
+      uses: Jimver/cuda-toolkit@v0.2.5
     - name: Install Ninja and CMake
       run: |    
         choco install ninja cmake
