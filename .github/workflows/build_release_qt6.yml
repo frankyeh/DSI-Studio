@@ -64,6 +64,11 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
     - uses: actions/checkout@v1
+    - name: Install Ninja and CMake
+      run: |    
+        choco install ninja cmake
+        ninja --version
+        cmake --version
     - name: Install Qt
       uses: jurplel/install-qt-action@v2
       with:
@@ -73,8 +78,6 @@ jobs:
       run: |
         git clone https://github.com/frankyeh/TIPL.git
         git clone https://github.com/frankyeh/DSI-Studio-atlas.git
-        ninja --version
-        cmake --version
     - name: Build DSI Studio
       run: |
         for /f "usebackq delims=#" %%a in (`"%programfiles(x86)%\Microsoft Visual Studio\Installer\vswhere" -latest -property installationPath`) do call "%%a\Common7\Tools\VsDevCmd.bat" -arch=x64
