@@ -8,48 +8,59 @@ class Roi {
 private:
     float ratio;
     tipl::shape<3> dim;
-    std::vector<std::vector<std::vector<unsigned char> > > roi_filter;
+    uint16_t zlength;
+    std::vector<uint32_t> xyz_hash;
 public:
-    Roi(const tipl::shape<3>& geo,float r):
-        ratio(r),dim(r == 1.0f ? geo:geo*r),roi_filter(geo[0])    {}
+    Roi(const tipl::shape<3>& sp_,float r):ratio(r),dim(r == 1.0f ? sp_:sp_*r),
+        zlength(uint16_t((dim[2]+31)/32)),xyz_hash(dim[0])
+    {
+    }
     void clear(void)
     {
-        roi_filter.clear();
-        roi_filter.resize(uint16_t(dim[0]));
+        xyz_hash.clear();
+        xyz_hash.resize(dim[0]);
     }
     void addPoint(const tipl::vector<3,short>& new_point)
     {
-        if(dim.is_valid(new_point.x(),new_point.y(),new_point.z()))
+        if(!dim.is_valid(new_point))
+            return;
+        auto x = uint16_t(new_point.x());
+        auto y = uint16_t(new_point.y());
+        auto z = uint16_t(new_point.z());
+        auto& y_base = xyz_hash[x];
+        if(!y_base)
         {
-            if(roi_filter[uint16_t(new_point.x())].empty())
-                roi_filter[uint16_t(new_point.x())].resize(uint16_t(dim[1]));
-            if(roi_filter[uint16_t(new_point.x())][uint16_t(new_point.y())].empty())
-                roi_filter[uint16_t(new_point.x())][uint16_t(new_point.y())].resize(uint16_t(dim[2]));
-            roi_filter[uint16_t(new_point.x())][uint16_t(new_point.y())][uint16_t(new_point.z())] = 1;
+            y_base = uint32_t(xyz_hash.size());
+            xyz_hash.resize(xyz_hash.size()+dim[1]);
         }
+        auto& z_base = xyz_hash[y_base+y];
+        if(!z_base)
+        {
+            z_base = uint32_t(xyz_hash.size());
+            xyz_hash.resize(xyz_hash.size()+zlength);
+        }
+        xyz_hash[z_base+(z >> 5)] |= (1 << (z & 31));
     }
     bool havePoint(float dx,float dy,float dz) const
     {
-        short x,y,z;
         if(ratio != 1.0f)
         {
-            x = short(std::round(dx*ratio));
-            y = short(std::round(dy*ratio));
-            z = short(std::round(dz*ratio));
+            dx *= ratio;
+            dy *= ratio;
+            dz *= ratio;
         }
-        else
-        {
-            x = short(std::round(dx));
-            y = short(std::round(dy));
-            z = short(std::round(dz));
-        }
+        auto x = short(std::round(dx));
+        auto y = short(std::round(dy));
+        auto z = short(std::round(dz));
         if(!dim.is_valid(x,y,z))
             return false;
-        if(roi_filter[uint16_t(x)].empty())
+        auto y_base = xyz_hash[uint16_t(x)];
+        if(!y_base)
             return false;
-        if(roi_filter[uint16_t(x)][uint16_t(y)].empty())
+        auto z_base = xyz_hash[y_base+uint16_t(y)];
+        if(!z_base)
             return false;
-        return roi_filter[uint16_t(x)][uint16_t(y)][uint16_t(z)] != 0;
+        return (xyz_hash[z_base+(uint16_t(z) >> 5)] & (1 << (z & 31)));
     }
     bool havePoint(const tipl::vector<3,float>& point) const
     {
