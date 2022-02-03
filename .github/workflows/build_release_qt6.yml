@@ -64,6 +64,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
     - uses: actions/checkout@v1
+    - name: Install Zlib
+      run: powershell -Command "(Invoke-WebRequest -Uri https://git.io/JnHTY -OutFile install_zlib.bat)"; ./install_zlib.bat; del install_zlib.bat
     - name: cuda-toolkit
       uses: Jimver/cuda-toolkit@v0.2.5
     - name: Install Ninja and CMake
