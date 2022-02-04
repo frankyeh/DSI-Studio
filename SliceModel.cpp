@@ -445,7 +445,8 @@ void CustomSliceModel::argmin(tipl::reg::reg_type reg_type)
     tipl::const_pointer_image<3,float> to = source_images;
     tipl::transformation_matrix<float> M;
 
-    auto from = handle->view_item[0].get_image();
+    tipl::image<3> from;
+    handle->get_iso_fa(from);
     // align brain top
     float z_shift = (float(handle->dim[2])*handle->vs[2]-float(to.shape()[2])*vs[2])*0.1f;
     arg_min.translocation[2] = -z_shift*vs[2];
