@@ -86,7 +86,7 @@ jobs:
         for /f "usebackq delims=#" %%a in (`"%programfiles(x86)%\Microsoft Visual Studio\Installer\vswhere" -latest -property installationPath`) do call "%%a\Common7\Tools\VsDevCmd.bat" -arch=x64
         mkdir -p build
         cmake -S . -B ./build -DCMAKE_BUILD_TYPE=Release -DTIPL_DIR=. -G "Visual Studio 16 2019"
-        cmake --build ./build --parallel --target all --config Release
+        cmake --build ./build --parallel
       shell: cmd
 
     - name: Packaging
