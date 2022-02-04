@@ -903,7 +903,7 @@ void view_image::on_actionUpper_Threshold_triggered()
 bool is_label_image(const tipl::image<3>& I);
 void view_image::on_actionSmoothing_triggered()
 {
-    tipl::image<3,size_t> new_data(data.shape());
+    tipl::image<3,uint32_t> new_data(data);
     uint32_t m = uint32_t(tipl::max_value(data));
 
     // smooth each region
@@ -911,14 +911,14 @@ void view_image::on_actionSmoothing_triggered()
     {
         if(!index)
             return;
-        tipl::image<3,char> mask(data.shape());
-        for(size_t index = 0;index < mask.size();++index)
-            if(data[index] == index)
-                mask[index] = 1;
+        tipl::image<3,char> mask(new_data.shape());
+        for(size_t i = 0;i < mask.size();++i)
+            if(new_data[i] == index)
+                mask[i] = 1;
         tipl::morphology::smoothing(mask);
-        for(size_t index = 0;index < mask.size();++index)
-            if(mask[index] > 0 && new_data[index] < index)
-                new_data[index] = index;
+        for(size_t i = 0;i < mask.size();++index)
+            if(mask[i] && new_data[i] < index)
+                new_data[i] = index;
     });
 
     // fill up gaps
@@ -927,13 +927,13 @@ void view_image::on_actionSmoothing_triggered()
         if(!index)
             return;
         tipl::image<3,char> mask(data.shape());
-        for(size_t index = 0;index < mask.size();++index)
-            if(new_data[index] == index)
-                mask[index] = 1;
+        for(size_t i = 0;i < mask.size();++i)
+            if(new_data[i] == index)
+                mask[i] = 1;
         tipl::morphology::dilation(mask);
-        for(size_t index = 0;index < mask.size();++index)
-            if(mask[index] > 0 && new_data[index] < index)
-                new_data[index] = index;
+        for(size_t i = 0;i < mask.size();++i)
+            if(mask[i] && new_data[i] < index)
+                new_data[i] = index;
     });
     data = new_data;
     init_image();
