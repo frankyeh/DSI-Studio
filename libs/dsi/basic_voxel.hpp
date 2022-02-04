@@ -133,7 +133,7 @@ public:// used in QSDR
 public: // for QSDR associated T1WT2W
     std::vector<tipl::image<3> > other_image;
     std::vector<std::string> other_image_name;
-    std::vector<tipl::transformation_matrix<double> > other_image_trans;
+    std::vector<tipl::transformation_matrix<float> > other_image_trans;
 
 public: // for fib evaluation
     tipl::image<3> fib_fa;
