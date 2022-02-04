@@ -28,6 +28,7 @@ float two_way_linear_cuda(const tipl::image<3,float>& I,
         result = tipl::reg::two_way_linear_mr<tipl::reg::mutual_information>
                     (I,Ivs,J,Jvs,T,reg_type,terminated,arg_min,bound);
     }
+    std::cout << "MI:" << size_t(result) << std::endl;
     std::cout << "T:" << T;
     return result;
 }
