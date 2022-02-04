@@ -3,6 +3,7 @@
 #include "reconstruction_window.h"
 #include "ui_reconstruction_window.h"
 #include "tipl/tipl.hpp"
+#include "reg.hpp"
 #include "mainwindow.h"
 #include <QImage>
 #include <QMessageBox>
@@ -682,7 +683,7 @@ bool add_other_image(ImageModel* handle,QString name,QString filename)
 
     std::cout << "add " << filename.toStdString() << " as " << name.toStdString();
 
-    tipl::transformation_matrix<double> affine;
+    tipl::transformation_matrix<float> affine;
     bool has_registered = false;
     for(unsigned int index = 0;index < handle->voxel.other_image.size();++index)
         if(ref.shape() == handle->voxel.other_image[index].shape())
@@ -694,12 +695,9 @@ bool add_other_image(ImageModel* handle,QString name,QString filename)
     {
         std::cout << " and register image with DWI." << std::endl;
         in.get_voxel_size(vs);
+        tipl::image<3> iso_fa(handle->dwi);
         bool terminated = false;
-        tipl::affine_transform<float> arg;
-        tipl::reg::linear_mr<tipl::reg::mutual_information>(handle->dwi,handle->voxel.vs,ref,vs,arg,tipl::reg::rigid_body,terminated,0.1);
-        tipl::reg::linear_mr<tipl::reg::mutual_information>(handle->dwi,handle->voxel.vs,ref,vs,arg,tipl::reg::rigid_body,terminated,0.01);
-        affine = tipl::transformation_matrix<float>(arg,handle->voxel.dim,handle->voxel.vs,ref.shape(),vs);
-        std::cout << arg << std::endl;
+        linear_common(iso_fa,handle->voxel.vs,ref,vs,affine,tipl::reg::rigid_body,terminated);
     }
     else {
         if(has_registered)
