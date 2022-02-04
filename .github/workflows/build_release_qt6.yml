@@ -35,11 +35,10 @@ jobs:
       run: |
         mkdir -p build
         export PATH="/usr/local/opt/qt@5/bin:$PATH" && export LDFLAGS="-L/usr/local/opt/qt@5/lib" && export CPPFLAGS="-I/usr/local/opt/qt@5/include" && export PKG_CONFIG_PATH="/usr/local/opt/qt@5/lib/pkgconfig"
-        cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DTIPL_DIR=.
+        cmake -S . -B build -GNinja "-DCMAKE_BUILD_TYPE:STRING=Release" "-DCMAKE_C_COMPILER:STRING=cc" "-DCMAKE_CXX_COMPILER:STRING=c++" -DTIPL_DIR=. 
         cmake --build build --parallel --config Release
     - name: Packaging
       run: |
-        dir build/*
         mv other/* build/dsi_studio.app/Contents/MacOS/
         mv DSI-Studio-atlas build/dsi_studio.app/Contents/MacOS/atlas
         mv build/dsi_studio.app .
@@ -91,7 +90,6 @@ jobs:
 
     - name: Packaging
       run: |
-        dir *
         mkdir dsi_studio_win
         move other\color_map dsi_studio_win   
         move other\device.txt dsi_studio_win   
