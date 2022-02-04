@@ -21,12 +21,10 @@ jobs:
       CFLAGS: -Werror
     steps:
     - uses: actions/checkout@v1
-    - name: Install Cuda
-      uses: Jimver/cuda-toolkit@v0.2.5
-    - name: Install Qt
+    - name: Install Qt CMake Ninja Cuda
       run: |
         brew update
-        brew install qt6 cmake ninja
+        brew install qt6 cmake ninja cuda
     - name: Download TIPL and Atlases
       run: |
         git clone https://github.com/frankyeh/TIPL.git
