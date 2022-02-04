@@ -1717,7 +1717,7 @@ void fib_data::run_normalization(bool background,bool inv)
         }
 
         tipl::compose_mapping(tipl::make_image(dir.fa[0],dim),t2s,Iss);
-        std::cout << "nonlinear:" << tipl::correlation(Iss.begin(),Iss.end(),It.begin()) << std::endl;
+        std::cout << "R2:" << tipl::correlation(Iss.begin(),Iss.end(),It.begin()) << std::endl;
         prog = 6;
     };
 
