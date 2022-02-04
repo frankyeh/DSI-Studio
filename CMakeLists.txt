@@ -180,7 +180,7 @@ if(CUDA_FOUND)
     set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -allow-unsupported-compiler --extended-lambda")
     set(CMAKE_CUDA_RUNTIME_LIBRARY "Static")
     target_compile_definitions(dsi_studio PUBLIC TIPL_USE_CUDA)
-    set_property(TARGET dsi_studio PROPERTY CUDA_ARCHITECTURES 60 70 75)
+    set_property(TARGET dsi_studio PROPERTY CUDA_ARCHITECTURES 52 60 70 75)
 endif(CUDA_FOUND)
 
 target_include_directories(dsi_studio PUBLIC
