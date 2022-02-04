@@ -21,10 +21,12 @@ jobs:
       CFLAGS: -Werror
     steps:
     - uses: actions/checkout@v1
+    - name: Install Cuda
+      uses: Jimver/cuda-toolkit@v0.2.5
     - name: Install Qt
       run: |
         brew update
-        brew install qt6
+        brew install qt6 cmake ninja
     - name: Download TIPL and Atlases
       run: |
         git clone https://github.com/frankyeh/TIPL.git
@@ -34,14 +36,12 @@ jobs:
     - name: Build DSI Studio
       run: |
         mkdir -p build
-        cd build
         export PATH="/usr/local/opt/qt@5/bin:$PATH" && export LDFLAGS="-L/usr/local/opt/qt@5/lib" && export CPPFLAGS="-I/usr/local/opt/qt@5/include" && export PKG_CONFIG_PATH="/usr/local/opt/qt@5/lib/pkgconfig"
-        qmake ../dsi_studio.pro
-        make
-        cd ..
-        
+        cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DTIPL_DIR=.
+        cmake --build build --parallel --target all --config Release
     - name: Packaging
       run: |
+        dir build/*
         mv other/* build/dsi_studio.app/Contents/MacOS/
         mv DSI-Studio-atlas build/dsi_studio.app/Contents/MacOS/atlas
         mv build/dsi_studio.app .
