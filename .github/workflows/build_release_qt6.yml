@@ -34,7 +34,7 @@ jobs:
     - name: Build DSI Studio
       run: |
         mkdir -p build
-        export PATH="/usr/local/opt/qt@5/bin:$PATH" && export LDFLAGS="-L/usr/local/opt/qt@5/lib" && export CPPFLAGS="-I/usr/local/opt/qt@5/include" && export PKG_CONFIG_PATH="/usr/local/opt/qt@5/lib/pkgconfig"
+        export PATH="/usr/local/opt/qt@6/bin:$PATH" && export LDFLAGS="-L/usr/local/opt/qt@6/lib" && export CPPFLAGS="-I/usr/local/opt/qt@6/include" && export PKG_CONFIG_PATH="/usr/local/opt/qt@6/lib/pkgconfig"
         cmake -S . -B build -GNinja "-DCMAKE_BUILD_TYPE:STRING=Release" "-DCMAKE_C_COMPILER:STRING=cc" "-DCMAKE_CXX_COMPILER:STRING=c++" -DTIPL_DIR=. 
         cmake --build build --parallel --config Release
     - name: Packaging
@@ -92,30 +92,24 @@ jobs:
       run: |
         mkdir dsi_studio_win
         move other\color_map dsi_studio_win   
+        move other\LICENSE dsi_studio_win   
         move other\device.txt dsi_studio_win   
         move build\dsi_studio.exe dsi_studio_win
         windeployqt --no-translations --no-system-d3d-compiler --compiler-runtime --no-opengl-sw dsi_studio_win\dsi_studio.exe
         move DSI-Studio-atlas dsi_studio_win\atlas  
-
-    - name: Download the SSL files
-      uses: suisei-cn/actions-download-file@v1
-      with:
-        url: "https://indy.fulgan.com/SSL/openssl-1.0.2u-x64_86-win64.zip"
     - name: Download TinyFSL
       uses: suisei-cn/actions-download-file@v1
       with:
         url: "https://github.com/frankyeh/TinyFSL/releases/download/2021.12.03/tiny_fsl_win64.zip"
     - name: Extract zip files
       run: |
-        7z e openssl-1.0.2u-x64_86-win64.zip
-        move *.dll dsi_studio_win
         7z e tiny_fsl_win64.zip -odsi_studio_win\plugin
         rd dsi_studio_win\plugin\tiny_fsl
         del *.zip
     - name: Zip Release
       uses: TheDoctor0/zip-release@0.6.0
       with:
-        filename: dsi_studio_win_qt6.zip
+        filename: dsi_studio_win_cuda.zip
         exclusions: .git
         path: dsi_studio_win
     - name: Create Release
