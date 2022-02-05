@@ -854,6 +854,8 @@ int trk(program_option& po,std::shared_ptr<fib_data> handle)
         {
             if(QFileInfo(output.c_str()).isDir())
                 tract_file_name = output+"/"+QFileInfo(po.get("source").c_str()).baseName().toStdString() + ".tt.gz";
+            else
+                tract_file_name = output;
         }
     }
 
