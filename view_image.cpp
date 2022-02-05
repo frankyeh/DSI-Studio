@@ -830,23 +830,6 @@ void view_image::on_actionLower_threshold_triggered()
     show_image();
 }
 
-void view_image::on_actionLPS_RAS_swap_triggered()
-{
-    if(data.empty())
-        return;
-    tipl::matrix<4,4> T2;
-    T2.identity();
-    T2[0] = -1.0f;
-    T2[3] = data.width();
-    T2[5] = -1.0f;
-    T2[7] = data.height();
-    T = T2*T;
-    tipl::flip_x(data);
-    tipl::flip_y(data);
-    init_image();
-    show_image();
-}
-
 
 void view_image::on_actionIntensity_shift_triggered()
 {
@@ -1102,3 +1085,89 @@ void view_image::on_actionUpsample_by_2_triggered()
     init_image();
     show_image();
 }
+
+
+
+void view_image::on_actionFlip_X_triggered()
+{
+    if(data.empty())
+        return;
+    T = tipl::matrix<4,4>({-1,0,0,data.width(),
+                           0,1,0,0,
+                           0,0,1,0,
+                           0,0,0,1})*T;
+    tipl::flip_x(data);
+    init_image();
+    show_image();
+}
+
+
+void view_image::on_actionFlip_Y_triggered()
+{
+    if(data.empty())
+        return;
+    T = tipl::matrix<4,4>({1,0,0,0,
+                           0,-1,0,data.height(),
+                           0,0,1,0,
+                           0,0,0,1})*T;
+    tipl::flip_y(data);
+    init_image();
+    show_image();
+}
+
+
+void view_image::on_actionFlip_Z_triggered()
+{
+    if(data.empty())
+        return;
+    T = tipl::matrix<4,4>({1,0,0,0,
+                           0,1,0,0,
+                           0,0,-1,data.depth(),
+                           0,0,0,1})*T;
+    tipl::flip_z(data);
+    init_image();
+    show_image();
+}
+
+
+void view_image::on_actionSwap_XY_triggered()
+{
+    if(data.empty())
+        return;
+    T = tipl::matrix<4,4>({0,1,0,0,
+                           1,0,0,0,
+                           0,0,1,0,
+                           0,0,0,1})*T;
+    tipl::swap_xy(data);
+    init_image();
+    show_image();
+}
+
+
+void view_image::on_actionSwap_XZ_triggered()
+{
+    if(data.empty())
+        return;
+    T = tipl::matrix<4,4>({0,0,1,0,
+                           0,1,0,0,
+                           1,0,0,0,
+                           0,0,0,1})*T;
+    tipl::swap_xz(data);
+    init_image();
+    show_image();
+}
+
+
+void view_image::on_actionSwap_YZ_triggered()
+{
+    if(data.empty())
+        return;
+    T = tipl::matrix<4,4>({1,0,0,0,
+                           0,0,1,0,
+                           0,1,0,0,
+                           0,0,0,1})*T;
+    tipl::swap_yz(data);
+    init_image();
+    show_image();
+}
+

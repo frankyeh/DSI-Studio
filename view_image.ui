@@ -297,7 +297,7 @@
      <x>0</x>
      <y>0</y>
      <width>640</width>
-     <height>21</height>
+     <height>22</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu_File">
@@ -318,10 +318,17 @@
     <addaction name="actionTrim"/>
     <addaction name="separator"/>
     <addaction name="actionTranslocate"/>
-    <addaction name="actionLPS_RAS_swap"/>
     <addaction name="separator"/>
     <addaction name="actionDownsample_by_2"/>
     <addaction name="actionUpsample_by_2"/>
+    <addaction name="separator"/>
+    <addaction name="actionFlip_X"/>
+    <addaction name="actionFlip_Y"/>
+    <addaction name="actionFlip_Z"/>
+    <addaction name="separator"/>
+    <addaction name="actionSwap_XY"/>
+    <addaction name="actionSwap_XZ"/>
+    <addaction name="actionSwap_YZ"/>
    </widget>
    <widget class="QMenu" name="menu_Header">
     <property name="title">
@@ -412,7 +419,7 @@
   </action>
   <action name="actionLPS_RAS_swap">
    <property name="text">
-    <string>LPS/RAS swap</string>
+    <string>Swap XY</string>
    </property>
   </action>
   <action name="actionSet_Transformation">
@@ -506,6 +513,36 @@
   <action name="actionUpsample_by_2">
    <property name="text">
     <string>Upsample by 2</string>
+   </property>
+  </action>
+  <action name="actionFlip_X">
+   <property name="text">
+    <string>Flip X</string>
+   </property>
+  </action>
+  <action name="actionFlip_Y">
+   <property name="text">
+    <string>Flip Y</string>
+   </property>
+  </action>
+  <action name="actionFlip_Z">
+   <property name="text">
+    <string>Flip Z</string>
+   </property>
+  </action>
+  <action name="actionSwap_XY">
+   <property name="text">
+    <string>Swap XY</string>
+   </property>
+  </action>
+  <action name="actionSwap_XZ">
+   <property name="text">
+    <string>Swap XZ</string>
+   </property>
+  </action>
+  <action name="actionSwap_YZ">
+   <property name="text">
+    <string>Swap YZ</string>
    </property>
   </action>
  </widget>

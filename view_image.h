@@ -43,8 +43,6 @@ private slots:
 
     void on_actionLower_threshold_triggered();
 
-    void on_actionLPS_RAS_swap_triggered();
-
     void on_actionSet_Transformation_triggered();
 
     void on_actionIntensity_shift_triggered();
@@ -101,6 +99,18 @@ private slots:
     void on_actionDownsample_by_2_triggered();
 
     void on_actionUpsample_by_2_triggered();
+
+    void on_actionFlip_X_triggered();
+
+    void on_actionFlip_Y_triggered();
+
+    void on_actionFlip_Z_triggered();
+
+    void on_actionSwap_XY_triggered();
+
+    void on_actionSwap_XZ_triggered();
+
+    void on_actionSwap_YZ_triggered();
 
 private:
     Ui::view_image *ui;
