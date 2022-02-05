@@ -1,5 +1,9 @@
 cmake_minimum_required(VERSION 3.19)
-project(DSI_Studio VERSION "2022.01.17" LANGUAGES CUDA CXX;C)
+if(CUDA_ARCH)
+    project(DSI_Studio VERSION "2022.01.17" LANGUAGES CUDA CXX;C)
+else()
+    project(DSI_Studio VERSION "2022.01.17" LANGUAGES CXX;C)
+endif()
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -10,7 +14,9 @@ set(CMAKE_AUTOUIC ON)
 find_package(Qt6 COMPONENTS Core Gui OpenGL Charts Network Widgets REQUIRED)
 find_package(ZLIB REQUIRED)
 find_package(OpenGL REQUIRED)
-find_package(CUDA)
+if(CUDA_ARCH)
+    find_package(CUDA REQUIRED)
+endif()
 
 set(CMAKE_AUTOUIC_SEARCH_PATHS ${CMAKE_SOURCE_DIR}
   ${CMAKE_SOURCE_DIR}/tracking
@@ -95,7 +101,6 @@ set(DSI_STUDIO_FORMS mainwindow.ui
 set(DSI_STUDIO_RESOURCES icons.qrc)
 
 set(DSI_STUDIO_SOURCES
-    cuda/reg.cu
     main.cpp
     mainwindow.cpp
     dicom/dicom_parser.cpp
@@ -170,18 +175,24 @@ if(APPLE)
         MACOSX_BUNDLE)
 endif()
 
+if(CUDA_ARCH)
+    set(DSI_STUDIO_CUDA
+        cuda/reg.cu)
+endif()
 
-add_executable(dsi_studio ${DSI_STUDIO_EXEC} ${DSI_STUDIO_SOURCES} ${DSI_STUDIO_FORMS} ${DSI_STUDIO_HEADERS} ${DSI_STUDIO_RESOURCES})
+
+add_executable(dsi_studio ${DSI_STUDIO_EXEC} ${DSI_STUDIO_SOURCES} ${DSI_STUDIO_CUDA} ${DSI_STUDIO_FORMS} ${DSI_STUDIO_HEADERS} ${DSI_STUDIO_RESOURCES})
 set_target_properties(dsi_studio PROPERTIES CXX_STANDARD 17 CXX_EXTENSIONS NONE)
 target_compile_definitions(dsi_studio PUBLIC DSISTUDIO_RELEASE_NAME="Chen")
 target_compile_definitions(dsi_studio PUBLIC DSISTUDIO_RELEASE_CODE=11770345)
 target_compile_definitions(dsi_studio PUBLIC QT6_PATCH)
-if(CUDA_FOUND)
+if(CUDA_ARCH)
     set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -allow-unsupported-compiler --extended-lambda")
     set(CMAKE_CUDA_RUNTIME_LIBRARY "Static")
     target_compile_definitions(dsi_studio PUBLIC TIPL_USE_CUDA)
-    set_property(TARGET dsi_studio PROPERTY CUDA_ARCHITECTURES 52 60 70 75)
-endif(CUDA_FOUND)
+    target_compile_definitions(dsi_studio PUBLIC CUDA_ARCH=${CUDA_ARCH})
+    set_property(TARGET dsi_studio PROPERTY CUDA_ARCHITECTURES ${CUDA_ARCH}-real)
+endif(CUDA_ARCH)
 
 target_include_directories(dsi_studio PUBLIC
   ${CMAKE_SOURCE_DIR}/libs
@@ -200,6 +211,6 @@ else()
 endif()
 
 target_link_libraries(dsi_studio Qt6::Core Qt6::Gui Qt6::OpenGL Qt6::Charts Qt6::Network Qt6::Widgets ZLIB::ZLIB OpenGL::GL OpenGL::GLU)
-if(CUDA_FOUND)
+if(CUDA_ARCH)
     target_link_libraries(dsi_studio ${CUDA_LIBRARIES})
-endif(CUDA_FOUND)
+endif(CUDA_ARCH)
