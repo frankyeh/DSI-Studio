@@ -315,9 +315,10 @@ int main(int ac, char *av[])
     else
     {
         QString base = "DSI Studio      version: ";
+        #ifdef CUDA_ARCH
         if constexpr(tipl::use_cuda)
             base = QString("DSI Studio (CUDA SM%1) version: ").arg(CUDA_ARCH);
-
+        #endif
         w.show();
         unsigned int code = DSISTUDIO_RELEASE_CODE;
         w.setWindowTitle(base + DSISTUDIO_RELEASE_NAME + " \""+
