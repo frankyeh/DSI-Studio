@@ -15,12 +15,6 @@ bool check_cuda(std::string& error_msg)
         error_msg = "Cannot obtain GPU driver and device information. Please install a Nvidia driver";
         return false;
     }
-    std::cout << "Driver Version: " << Ver << " DSI Studio CUDA Version: " << CUDART_VERSION << std::endl;
-    if (Ver < CUDART_VERSION)
-    {
-        error_msg = "Older version of CUDA driver found. Some functions may not be supported. Please consider update your Nvidia driver";
-        return false;
-    }
 
     std::cout << "Device Count:" << nDevices << std::endl;
     for (int i = 0; i < nDevices; i++) {
@@ -48,6 +42,14 @@ bool check_cuda(std::string& error_msg)
             return false;
         }
     }
+
+    std::cout << "Driver Version: " << Ver << " DSI Studio CUDA Version: " << CUDART_VERSION << std::endl;
+    if (Ver < CUDART_VERSION)
+    {
+        error_msg = "Older version of CUDA driver found. Some functions may not be supported. Please consider update your Nvidia driver";
+        return false;
+    }
+
 
     return true;
 }
