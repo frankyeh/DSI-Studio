@@ -5,6 +5,54 @@
 #include <cuda.h>
 #include <cuda_runtime.h>
 
+
+bool check_cuda(std::string& error_msg)
+{
+    int nDevices,Ver;
+    if(cudaGetDeviceCount(&nDevices) != cudaSuccess ||
+       cudaDriverGetVersion(&Ver) != cudaSuccess)
+    {
+        error_msg = "Cannot obtain GPU driver and device information. Please install a Nvidia driver";
+        return false;
+    }
+    std::cout << "Driver Version: " << Ver << " DSI Studio CUDA Version: " << CUDART_VERSION << std::endl;
+    if (Ver < CUDART_VERSION)
+    {
+        error_msg = "Older version of CUDA driver found. Some functions may not be supported. Please consider update your Nvidia driver";
+        return false;
+    }
+
+    std::cout << "Device Count:" << nDevices << std::endl;
+    for (int i = 0; i < nDevices; i++) {
+        cudaDeviceProp prop;
+        if(cudaGetDeviceProperties(&prop, i) != cudaSuccess)
+        {
+            error_msg = "Cannot obtain device information. Please update Nvidia driver";
+            return false;
+        }
+        auto arch = prop.major*10+prop.minor;
+        std::cout << "Device Number: " << i << std::endl;
+        std::cout << "  Arch: " << arch << std::endl;
+        std::cout << "  Device name: " << prop.name << std::endl;
+        std::cout << "  Memory Clock Rate (KHz): " << prop.memoryClockRate << std::endl;
+        std::cout << "  Memory Bus Width (bits): " << prop.memoryBusWidth << std::endl;
+        std::cout << "  Peak Memory Bandwidth (GB/s): " << 2.0*prop.memoryClockRate*(prop.memoryBusWidth/8)/1.0e6 << std::endl;
+
+        if(i == 0 && arch != 52 && arch != 60 && arch != 70 && arch != 75)
+        {
+            error_msg = "Current DSI Studio (SM";
+            error_msg += std::to_string(CUDA_ARCH);
+            error_msg += ") does not match your GPU (SM";
+            error_msg += std::to_string(arch);
+            error_msg += "). Please download the correct SM version ";
+            return false;
+        }
+    }
+
+    return true;
+}
+
+
 float two_way_linear_cuda(const tipl::image<3,float>& I,
                           const tipl::vector<3>& Ivs,
                          const tipl::image<3,float>& J,
