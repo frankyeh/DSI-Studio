@@ -1,4 +1,4 @@
-name: Build Release QT6
+name: Build Release CUDA
 on:
   workflow_dispatch:
     inputs:
