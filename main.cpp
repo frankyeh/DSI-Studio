@@ -287,7 +287,7 @@ int run_cmd(int ac, char *av[])
     return 0;
 }
 
-
+bool check_cuda(std::string& error_msg);
 int main(int ac, char *av[])
 {
     if(ac > 2)
@@ -314,15 +314,27 @@ int main(int ac, char *av[])
     }
     else
     {
+        QString base = "DSI Studio      version: ";
+        if constexpr(tipl::use_cuda)
+            base = QString("DSI Studio (CUDA SM%1) version: ").arg(CUDA_ARCH);
+
         w.show();
         unsigned int code = DSISTUDIO_RELEASE_CODE;
-        w.setWindowTitle(QString("DSI Studio      version: ") + DSISTUDIO_RELEASE_NAME + " \""+
+        w.setWindowTitle(base + DSISTUDIO_RELEASE_NAME + " \""+
         #ifdef QT6_PATCH
                         QStringDecoder(QStringDecoder::Utf8)(reinterpret_cast<const char*>(&code)) +
         #else
                         QTextCodec::codecForName("UTF-8")->toUnicode(reinterpret_cast<const char*>(&code)) +
         #endif
-                                 "\"       build: " + __DATE__ );
+                                 "\" build: " + __DATE__);
+
+        if constexpr(tipl::use_cuda)
+        {
+            std::string msg;
+            if(!check_cuda(msg))
+                QMessageBox::critical(&w,"ERROR",msg.c_str());
+        }
+
     }
     return a.exec();
 }
