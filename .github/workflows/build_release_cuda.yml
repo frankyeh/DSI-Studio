@@ -58,7 +58,7 @@ jobs:
     - name: Download TinyFSL
       uses: suisei-cn/actions-download-file@v1
       with:
-        url: "https://github.com/frankyeh/TinyFSL/releases/download/2021.12.03/tiny_fsl_win64.zip"
+        url: "https://github.com/frankyeh/TinyFSL/releases/download/2021.12.03/tiny_fsl_win64_cuda_sm${{ matrix.arch }}.zip"
     - name: Extract zip files
       run: |
         7z e tiny_fsl_win64.zip -odsi_studio_win\plugin
@@ -67,7 +67,7 @@ jobs:
     - name: Zip Release
       uses: TheDoctor0/zip-release@0.6.0
       with:
-        filename: dsi_studio_win_cuda_SM${{ matrix.arch }}.zip
+        filename: dsi_studio_win_cuda_sm${{ matrix.arch }}.zip
         exclusions: .git
         path: dsi_studio_win
     - name: Create Release
