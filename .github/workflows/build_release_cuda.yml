@@ -42,7 +42,7 @@ jobs:
       run: |
         for /f "usebackq delims=#" %%a in (`"%programfiles(x86)%\Microsoft Visual Studio\Installer\vswhere" -latest -property installationPath`) do call "%%a\Common7\Tools\VsDevCmd.bat" -arch=x64
         mkdir -p build
-        cmake -S . -B build -GNinja "-DCMAKE_BUILD_TYPE:STRING=Release" "-DCMAKE_C_COMPILER:STRING=cl" "-DCMAKE_CXX_COMPILER:STRING=cl" -DCUDA_ARCH=${{ matrix.arch }} -DTIPL_DIR=. "-DCMAKE_CXX_FLAGS:STRING=/DWIN32 /D_WINDOWS /GR /EHsc -DQT_QML_DEBUG" "-DCMAKE_CXX_FLAGS_DEBUG:STRING=/Zi /Ob0 /Od /RTC1 -DQT_QML_DEBUG" "-DCMAKE_CXX_FLAGS_RELWITHDEBINFO:STRING=/Zi /O2 /Ob1 /DNDEBUG -DQ_QML_DEBUG"
+        cmake -S . -B build -GNinja "-DCMAKE_BUILD_TYPE:STRING=Release" "-DCMAKE_C_COMPILER:STRING=cl" "-DCMAKE_CXX_COMPILER:STRING=cl" -DCUDA_ARCH=${{ matrix.arch }} -DTIPL_DIR=.
         cmake --build ./build --parallel --config Release
       shell: cmd
 
@@ -58,7 +58,7 @@ jobs:
     - name: Download TinyFSL
       uses: suisei-cn/actions-download-file@v1
       with:
-        url: "https://github.com/frankyeh/TinyFSL/releases/download/2021.12.03/tiny_fsl_win64.zip"
+        url: "https://github.com/frankyeh/TinyFSL/releases/download/2021.12.03/tiny_fsl_win64_cuda_sm${{ matrix.arch }}.zip"
     - name: Extract zip files
       run: |
         7z e tiny_fsl_win64.zip -odsi_studio_win\plugin
@@ -67,7 +67,7 @@ jobs:
     - name: Zip Release
       uses: TheDoctor0/zip-release@0.6.0
       with:
-        filename: dsi_studio_win_cuda_SM${{ matrix.arch }}.zip
+        filename: dsi_studio_win_cuda_sm${{ matrix.arch }}.zip
         exclusions: .git
         path: dsi_studio_win
     - name: Create Release
