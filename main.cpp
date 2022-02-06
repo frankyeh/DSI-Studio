@@ -212,12 +212,24 @@ int run_action(program_option& po,std::shared_ptr<QApplication> gui)
     return 1;
 }
 void get_filenames_from(const std::string param,std::vector<std::string>& filenames);
+bool check_cuda(std::string& error_msg);
 int run_cmd(int ac, char *av[])
 {
     program_option po;
     try
     {
         std::cout << "DSI Studio \"" << DSISTUDIO_RELEASE_NAME << "\" " << __DATE__ << std::endl;
+
+        if constexpr(tipl::use_cuda)
+        {
+            std::string msg;
+            if(!check_cuda(msg))
+            {
+                std::cout << "WARNING:" << msg <<std::endl;
+                std::cout << "WARNING: The GPU computation may not work in this version." <<std::endl;
+            }
+        }
+
         if(!po.parse(ac,av))
         {
             std::cout << po.error_msg << std::endl;
@@ -287,7 +299,6 @@ int run_cmd(int ac, char *av[])
     return 0;
 }
 
-bool check_cuda(std::string& error_msg);
 int main(int ac, char *av[])
 {
     if(ac > 2)
