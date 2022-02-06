@@ -61,7 +61,7 @@ jobs:
         url: "https://github.com/frankyeh/TinyFSL/releases/download/2021.12.03/tiny_fsl_win64_cuda_sm${{ matrix.arch }}.zip"
     - name: Extract zip files
       run: |
-        7z e tiny_fsl_win64.zip -odsi_studio_win\plugin
+        7z e tiny_fsl_win64_cuda_sm${{ matrix.arch }}.zip -odsi_studio_win\plugin
         rd dsi_studio_win\plugin\tiny_fsl
         del *.zip
     - name: Zip Release
