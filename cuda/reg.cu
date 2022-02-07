@@ -1,6 +1,6 @@
-#include "tipl/tipl.hpp"
-#include "tipl/cuda/mem.hpp"
-#include "tipl/cuda/basic_image.hpp"
+#include "TIPL/tipl.hpp"
+#include "TIPL/cuda/mem.hpp"
+#include "TIPL/cuda/basic_image.hpp"
 #include <iostream>
 #include <cuda.h>
 #include <cuda_runtime.h>
