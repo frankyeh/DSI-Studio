@@ -37,11 +37,9 @@ bool check_cuda(std::string& error_msg)
 
         if(i == 0 && arch != CUDA_ARCH)
         {
-            error_msg = "Current DSI Studio (SM";
-            error_msg += std::to_string(CUDA_ARCH);
-            error_msg += ") does not match your GPU (SM";
+            error_msg = "Incorrect CUDA Architecture. Please use DSI Studio (CUDA SM";
             error_msg += std::to_string(arch);
-            error_msg += "). Please download the correct SM version ";
+            error_msg += ").";
             return false;
         }
     }
