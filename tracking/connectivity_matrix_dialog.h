@@ -2,7 +2,7 @@
 #define CONNECTIVITY_MATRIX_DIALOG_H
 #include <QDialog>
 #include <QGraphicsScene>
-#include "tipl/tipl.hpp"
+#include "TIPL/tipl.hpp"
 #include "libs/tracking/tract_model.hpp"
 
 class TractModel;

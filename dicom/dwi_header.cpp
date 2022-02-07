@@ -1,7 +1,7 @@
 #include <QFileInfo>
 #include <sstream>
 #include <string>
-#include "tipl/tipl.hpp"
+#include "TIPL/tipl.hpp"
 #include "dwi_header.hpp"
 #include "gzip_interface.hpp"
 #include "prog_interface_static_link.h"

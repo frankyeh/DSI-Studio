@@ -1,7 +1,7 @@
 #ifndef INTERPOLATION_PROCESS_HPP
 #define INTERPOLATION_PROCESS_HPP
 #include <cstdlib>
-#include "tipl/tipl.hpp"
+#include "TIPL/tipl.hpp"
 class tracking_data;
 class basic_interpolation
 {

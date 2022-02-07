@@ -2,7 +2,7 @@
 #include <QThread>
 #include "reconstruction_window.h"
 #include "ui_reconstruction_window.h"
-#include "tipl/tipl.hpp"
+#include "TIPL/tipl.hpp"
 #include "reg.hpp"
 #include "mainwindow.h"
 #include <QImage>

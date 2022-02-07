@@ -4,7 +4,7 @@
 #include <iostream>
 #include "program_option.hpp"
 #include <QApplication>
-#include "tipl/tipl.hpp"
+#include "TIPL/tipl.hpp"
 #include <QMainWindow>
 #include <QTimer>
 

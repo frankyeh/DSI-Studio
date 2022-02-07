@@ -2,7 +2,7 @@
 #define DWI_HEADER_HPP
 #include <vector>
 #include <string>
-#include "tipl/tipl.hpp"
+#include "TIPL/tipl.hpp"
 
 
 class DwiHeader

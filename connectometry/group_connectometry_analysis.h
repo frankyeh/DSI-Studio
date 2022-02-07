@@ -2,7 +2,7 @@
 #define GROUP_CONNECTOMETRY_DB_H
 #include <vector>
 #include <iostream>
-#include "tipl/tipl.hpp"
+#include "TIPL/tipl.hpp"
 #include "gzip_interface.hpp"
 #include "prog_interface_static_link.h"
 #include "libs/tracking/tract_model.hpp"

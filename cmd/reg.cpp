@@ -1,5 +1,5 @@
 #include <QString>
-#include "tipl/tipl.hpp"
+#include "TIPL/tipl.hpp"
 #include "reg.hpp"
 #include "libs/gzip_interface.hpp"
 #include "tract_model.hpp"

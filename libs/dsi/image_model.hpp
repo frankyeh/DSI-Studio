@@ -1,6 +1,6 @@
 #ifndef IMAGE_MODEL_HPP
 #define IMAGE_MODEL_HPP
-#include "tipl/tipl.hpp"
+#include "TIPL/tipl.hpp"
 #include "basic_voxel.hpp"
 struct distortion_map{
     const float pi_2 = 3.14159265358979323846f/2.0f;

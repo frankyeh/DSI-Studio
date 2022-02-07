@@ -7,7 +7,7 @@
 #include <QStyleFactory>
 #include <QDir>
 #include "mainwindow.h"
-#include "tipl/tipl.hpp"
+#include "TIPL/tipl.hpp"
 #include "mapping/atlas.hpp"
 #include <iostream>
 #include <iterator>

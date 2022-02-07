@@ -6,7 +6,7 @@
 #include <string>
 #include "fib_data.hpp"
 #include "tracking/region/Regions.h"
-#include "tipl/tipl.hpp"
+#include "TIPL/tipl.hpp"
 #include "libs/dsi/image_model.hpp"
 #include "libs/gzip_interface.hpp"
 #include "reconstruction/reconstruction_window.h"

@@ -4,7 +4,7 @@
 #include <QSettings>
 #include <QFileDialog>
 #include <QInputDialog>
-#include "tipl/tipl.hpp"
+#include "TIPL/tipl.hpp"
 #include "filebrowser.h"
 #include "ui_filebrowser.h"
 #include "dicom/dicom_parser.h"

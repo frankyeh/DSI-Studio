@@ -1,6 +1,6 @@
 #include <set>
 #include "tract_cluster.hpp"
-#include "tipl/tipl.hpp"
+#include "TIPL/tipl.hpp"
 
 struct compare_cluster
 {

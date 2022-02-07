@@ -3,7 +3,7 @@
 #include <vector>
 #include <string>
 #include "gzip_interface.hpp"
-#include "tipl/tipl.hpp"
+#include "TIPL/tipl.hpp"
 class fib_data;
 class connectometry_db
 {

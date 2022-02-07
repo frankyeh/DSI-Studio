@@ -2,7 +2,7 @@
 #include <iostream>
 #include <iterator>
 #include <string>
-#include "tipl/tipl.hpp"
+#include "TIPL/tipl.hpp"
 #include "dicom/dwi_header.hpp"
 #include "program_option.hpp"
 extern std::string src_error_msg;

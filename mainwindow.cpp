@@ -9,7 +9,7 @@
 #include <QStyleFactory>
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
-#include "tipl/tipl.hpp"
+#include "TIPL/tipl.hpp"
 #include <regtoolbox.h>
 #include <qmessagebox.h>
 #include "filebrowser.h"

@@ -1,7 +1,7 @@
 #ifndef TRACT_CLUSTER_HPP
 #define TRACT_CLUSTER_HPP
 #include <vector>
-#include "tipl/tipl.hpp"
+#include "TIPL/tipl.hpp"
 #include <map>
 
 struct Cluster

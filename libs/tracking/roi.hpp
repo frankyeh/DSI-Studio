@@ -1,7 +1,7 @@
 #ifndef ROI_HPP
 #include <functional>
 #include <set>
-#include "tipl/tipl.hpp"
+#include "TIPL/tipl.hpp"
 #include "tract_model.hpp"
 #include "tracking/region/Regions.h"
 template<typename hash_type = std::vector<uint32_t> >

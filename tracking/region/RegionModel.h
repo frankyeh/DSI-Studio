@@ -4,7 +4,7 @@
 #define RegionModelH
 #include <vector>
 #include <map>
-#include "tipl/tipl.hpp"
+#include "TIPL/tipl.hpp"
 
 namespace tipl{
     class march_cube;

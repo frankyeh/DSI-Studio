@@ -4,7 +4,7 @@
 #include <iostream>
 #include <iterator>
 #include <string>
-#include "tipl/tipl.hpp"
+#include "TIPL/tipl.hpp"
 #include "tracking/region/Regions.h"
 #include "libs/tracking/tract_model.hpp"
 #include "libs/tracking/tracking_thread.hpp"

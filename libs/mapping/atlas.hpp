@@ -1,6 +1,6 @@
 #ifndef ATLAS_HPP
 #define ATLAS_HPP
-#include "tipl/tipl.hpp"
+#include "TIPL/tipl.hpp"
 #include <vector>
 #include <string>
 class atlas{

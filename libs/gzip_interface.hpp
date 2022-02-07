@@ -1,7 +1,7 @@
 #ifndef GZIP_INTERFACE_HPP
 #define GZIP_INTERFACE_HPP
 #include "zlib.h"
-#include "tipl/tipl.hpp"
+#include "TIPL/tipl.hpp"
 #include <stdio.h>
 
 #define WINSIZE 32768U      /* sliding window size */

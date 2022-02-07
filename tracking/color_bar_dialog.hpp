@@ -1,6 +1,6 @@
 #ifndef COLOR_BAR_DIALOG_HPP
 #define COLOR_BAR_DIALOG_HPP
-#include "tipl/tipl.hpp"
+#include "TIPL/tipl.hpp"
 #include <QDialog>
 #include <QGraphicsScene>
 

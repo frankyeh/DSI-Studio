@@ -1,7 +1,7 @@
 #ifndef SliceModelH
 #define SliceModelH
 #include <future>
-#include "tipl/tipl.hpp"
+#include "TIPL/tipl.hpp"
 #include "libs/gzip_interface.hpp"
 
 // ---------------------------------------------------------------------------

@@ -4,7 +4,7 @@
 #include <QDialog>
 #include <QTimer>
 #include <QGraphicsScene>
-#include "tipl/tipl.hpp"
+#include "TIPL/tipl.hpp"
 #include "fib_data.hpp"
 namespace Ui {
 class manual_alignment;

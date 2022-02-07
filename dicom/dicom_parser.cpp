@@ -4,7 +4,7 @@
 #include <QSettings>
 #include "dicom_parser.h"
 #include "ui_dicom_parser.h"
-#include "tipl/tipl.hpp"
+#include "TIPL/tipl.hpp"
 #include "mainwindow.h"
 #include "prog_interface_static_link.h"
 #include "libs/gzip_interface.hpp"

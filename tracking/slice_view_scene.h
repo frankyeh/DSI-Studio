@@ -2,7 +2,7 @@
 #define SLICE_VIEW_SCENE_H
 #include <QGraphicsScene>
 #include <vector>
-#include "tipl/tipl.hpp"
+#include "TIPL/tipl.hpp"
 #include <QStatusBar>
 #include <QEvent>
 class fib_data;

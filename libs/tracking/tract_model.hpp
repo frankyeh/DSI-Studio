@@ -2,7 +2,7 @@
 #define TRACT_MODEL_HPP
 #include <vector>
 #include <iosfwd>
-#include "tipl/tipl.hpp"
+#include "TIPL/tipl.hpp"
 #include "fib_data.hpp"
 
 class RoiMgr;

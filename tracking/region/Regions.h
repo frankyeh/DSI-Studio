@@ -4,7 +4,7 @@
 #include <vector>
 #include <map>
 
-#include "tipl/tipl.hpp"
+#include "TIPL/tipl.hpp"
 #include "RegionModel.h"
 #include "fib_data.hpp"
 // ---------------------------------------------------------------------------

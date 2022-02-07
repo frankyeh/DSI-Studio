@@ -5,7 +5,7 @@
 #include <QItemDelegate>
 #include <QTimer>
 #include <QtCharts/QtCharts>
-#include "tipl/tipl.hpp"
+#include "TIPL/tipl.hpp"
 #include "group_connectometry_analysis.h"
 #include "atlas.hpp"
 namespace Ui {

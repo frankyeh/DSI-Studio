@@ -1,6 +1,6 @@
 #ifndef BASIC_PROCESS_HPP
 #define BASIC_PROCESS_HPP
-#include "tipl/tipl.hpp"
+#include "TIPL/tipl.hpp"
 
 extern char fib_dx[80];
 extern char fib_dy[80];

@@ -1,7 +1,7 @@
 #ifndef REG_HPP
 #define REG_HPP
 #include <iostream>
-#include "tipl/tipl.hpp"
+#include "TIPL/tipl.hpp"
 void cdm2_cuda(const tipl::image<3>& It,
                const tipl::image<3>& It2,
                const tipl::image<3>& Is,

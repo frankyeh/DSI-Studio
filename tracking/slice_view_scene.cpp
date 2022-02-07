@@ -1,4 +1,4 @@
-#include "tipl/tipl.hpp"
+#include "TIPL/tipl.hpp"
 #include "slice_view_scene.h"
 #include <QGraphicsSceneMouseEvent>
 #include <QPainter>

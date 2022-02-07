@@ -3,7 +3,7 @@
 #include <fstream>
 #include <sstream>
 #include <string>
-#include "tipl/tipl.hpp"
+#include "TIPL/tipl.hpp"
 #include "gzip_interface.hpp"
 #include "connectometry_db.hpp"
 #include "atlas.hpp"

@@ -2,7 +2,7 @@
 #define DTI_PROCESS_HPP
 #include <cmath>
 #include "basic_voxel.hpp"
-#include "tipl/tipl.hpp"
+#include "TIPL/tipl.hpp"
 
 class Dwi2Tensor : public BaseProcess
 {
