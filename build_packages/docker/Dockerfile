@@ -87,7 +87,6 @@ RUN cd /opt \
   && git clone https://github.com/frankyeh/TIPL.git \
   && git clone https://github.com/frankyeh/TinyFSL.git \
   && mv TinyFSL tinyfsl \
-  && mv TIPL tipl \
   && mkdir -p /opt/tinyfsl/include/ \
   && mv tipl /opt/tinyfsl/include/
 

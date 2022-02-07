@@ -80,7 +80,7 @@ RUN mkdir /opt/dsi-studio \
   && git clone https://github.com/frankyeh/DSI-Studio.git \
   && mv DSI-Studio src \
   && git clone https://github.com/frankyeh/TIPL.git \
-  && mv TIPL src/tipl \
+  && mv TIPL src/TIPL \
   && mkdir build && cd build \
   && /opt/qt512/bin/qmake ../src && make 
 
