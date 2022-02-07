@@ -1508,9 +1508,9 @@ bool fib_data::load_track_atlas()
 }
 
 //---------------------------------------------------------------------------
-unsigned int fib_data::find_nearest(const float* trk,unsigned int length,bool contain,float tolerance_distance)
+unsigned int fib_data::find_nearest(const float* trk,unsigned int length,bool contain,float tolerance_dis_in_subject_voxels)
 {
-    return ::find_nearest(trk,length,track_atlas->get_tracts(),track_atlas->get_cluster_info(),contain,tolerance_distance);
+    return ::find_nearest(trk,length,track_atlas->get_tracts(),track_atlas->get_cluster_info(),contain,tolerance_dis_in_subject_voxels);
 }
 //---------------------------------------------------------------------------
 

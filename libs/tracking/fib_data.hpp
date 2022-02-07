@@ -223,7 +223,7 @@ public:
     bool recognize(std::shared_ptr<TractModel>& trk,std::vector<unsigned int>& result,float tolerance);
     bool recognize(std::shared_ptr<TractModel>& trk,std::map<float,std::string,std::greater<float> >& result,bool contain);
     void recognize_report(std::shared_ptr<TractModel>& trk,std::string& report);
-    unsigned int find_nearest(const float* trk,unsigned int length,bool contain,float tolerance_distance);
+    unsigned int find_nearest(const float* trk,unsigned int length,bool contain,float tolerance_dis_in_subject_voxels);
 public:
     void match_template(void);
     void set_template_id(size_t new_id);
