@@ -5,6 +5,9 @@
 #include <cuda.h>
 #include <cuda_runtime.h>
 
+__global__ void cuda_test(){
+    ;
+}
 
 bool check_cuda(std::string& error_msg)
 {
@@ -44,12 +47,14 @@ bool check_cuda(std::string& error_msg)
     }
 
     std::cout << "Driver Version: " << Ver << " DSI Studio CUDA Version: " << CUDART_VERSION << std::endl;
-    if (Ver < CUDART_VERSION)
+    cuda_test<<<1,1>>>();
+    if(cudaPeekAtLastError() != cudaSuccess)
     {
-        error_msg = "Older version of CUDA driver found. Some functions may not be supported. Please consider update your Nvidia driver";
+        error_msg = "Failed to lauch cuda kernel:";
+        error_msg += cudaGetErrorName(cudaGetLastError());
+        error_msg += ". Please update Nvidia driver.";
         return false;
     }
-
 
     return true;
 }
