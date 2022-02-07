@@ -225,8 +225,8 @@ int run_cmd(int ac, char *av[])
             std::string msg;
             if(!check_cuda(msg))
             {
-                std::cout << "WARNING:" << msg <<std::endl;
-                std::cout << "WARNING: The GPU computation may not work in this version." <<std::endl;
+                std::cout << "ERROR:" << msg <<std::endl;
+                return 1;
             }
         }
 
@@ -344,7 +344,10 @@ int main(int ac, char *av[])
         {
             std::string msg;
             if(!check_cuda(msg))
+            {
                 QMessageBox::critical(&w,"ERROR",msg.c_str());
+                return 1;
+            }
         }
 
     }
