@@ -88,7 +88,7 @@ RUN cd /opt \
   && git clone https://github.com/frankyeh/TinyFSL.git \
   && mv TinyFSL tinyfsl \
   && mkdir -p /opt/tinyfsl/include/ \
-  && mv tipl /opt/tinyfsl/include/
+  && mv TIPL /opt/tinyfsl/include/
 
 RUN cd /opt/tinyfsl \
   && curl https://fsl.fmrib.ox.ac.uk/fsldownloads/fslconda/public/linux-64/fsl-armawrap-0.6.0-h2bc3f7f_0.tar.bz2 --output fsl-armawrap-0.6.0-h2bc3f7f_0.tar.bz2 \
