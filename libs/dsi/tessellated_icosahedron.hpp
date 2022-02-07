@@ -1,6 +1,6 @@
 #ifndef TESSELLATED_ICOSAHEDRON_HPP
 #define TESSELLATED_ICOSAHEDRON_HPP
-#include <tipl/tipl.hpp>
+#include "TIPL/tipl.hpp"
 #include <cmath>
 #include <vector>
 #include <functional>

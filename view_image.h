@@ -3,7 +3,7 @@
 
 #include <QMainWindow>
 #include <QGraphicsScene>
-#include <tipl/tipl.hpp>
+#include "TIPL/tipl.hpp"
 #include "libs/gzip_interface.hpp"
 namespace Ui {
 class view_image;

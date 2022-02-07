@@ -1,7 +1,7 @@
 #ifndef DEVICE_H
 #define DEVICE_H
 #include <string>
-#include <tipl/tipl.hpp>
+#include "TIPL/tipl.hpp"
 class Device
 {
 public:

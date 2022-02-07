@@ -6,7 +6,7 @@
 #include <QGraphicsScene>
 #include <QDockWidget>
 #include <QTextBrowser>
-#include <tipl/tipl.hpp>
+#include "TIPL/tipl.hpp"
 #include <vector>
 #include "SliceModel.h"
 #include "slice_view_scene.h"

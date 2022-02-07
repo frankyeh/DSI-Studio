@@ -4,7 +4,7 @@
 #include <QItemDelegate>
 #include <QTableWidget>
 #include <QTimer>
-#include <tipl/tipl.hpp>
+#include "TIPL/tipl.hpp"
 #include "tract_model.hpp"
 class tracking_window;
 struct ThreadData;

@@ -4,7 +4,7 @@
 #include <QMainWindow>
 #include <QGraphicsScene>
 #include <memory>
-#include <tipl/tipl.hpp>
+#include "TIPL/tipl.hpp"
 #include <QTableWidget>
 
 

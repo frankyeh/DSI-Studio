@@ -1,6 +1,6 @@
 #ifndef PROG_INTERFACE_STATIC_LINKH
 #define PROG_INTERFACE_STATIC_LINKH
-#include <tipl/tipl.hpp>
+#include "TIPL/tipl.hpp"
 #include <string>
 extern bool has_gui;
 

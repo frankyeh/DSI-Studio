@@ -4,7 +4,7 @@
 #include <QMainWindow>
 #include <QGraphicsScene>
 #include <QSettings>
-#include <tipl/tipl.hpp>
+#include "TIPL/tipl.hpp"
 
 
 namespace Ui {

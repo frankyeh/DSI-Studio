@@ -1,7 +1,7 @@
 #ifndef BASIC_VOXEL_HPP
 #define BASIC_VOXEL_HPP
-#include <tipl/tipl.hpp>
 #include <string>
+#include "TIPL/tipl.hpp"
 #include "tessellated_icosahedron.hpp"
 #include "gzip_interface.hpp"
 #include "prog_interface_static_link.h"
