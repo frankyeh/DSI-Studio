@@ -1255,21 +1255,12 @@ bool ImageModel::run_plugin(std::string exec_name,
         p << s.c_str();
     }
     program.start(exec.c_str(),p);
-    if(!program.waitForStarted())
+    if(!program.waitForStarted() || program.waitForFinished(3000))
     {
-        error_msg = "failed to initiate ";
+        error_msg = "failed to run ";
         error_msg = exec_name;
         error_msg = ".";
-        #ifdef _WIN32
-        error_msg = QString("Please double click on %1 to enable it to run.").arg(exec.c_str()).toStdString();
-        #endif
-        return false;
-    }
-    if(program.waitForFinished(3000))
-    {
-        error_msg = QString::fromLocal8Bit(program.readAllStandardError()).toStdString()+QString::fromLocal8Bit(program.readAllStandardOutput()).toStdString();
-        if(error_msg.empty())
-            error_msg = exec_name + " ended prematurely: unknown error";
+        error_msg = QString("Please click on %1 to activate running privilege.").arg(exec.c_str()).toStdString();
         return false;
     }
     unsigned int keyword_seen = 0;
@@ -1541,6 +1532,21 @@ bool ImageModel::run_applytopup(std::string exec)
 bool ImageModel::run_eddy(std::string exec)
 {
     progress::show("eddy");
+
+    if(std::filesystem::exists(file_name+".corrected.nii.gz"))
+    {
+        std::cout << "load previous results from " << file_name << ".corrected.nii.gz" <<std::endl;
+        if(load_topup_eddy_result())
+            return true;
+        else
+        {
+            error_msg = "failed to load previous results. please re-run correction again.";
+            std::filesystem::remove(file_name+".corrected.nii.gz");
+            return false;
+        }
+    }
+
+
     std::string topup_result = QFileInfo(file_name.c_str()).baseName().replace('.','_').toStdString();
     std::string acqparam_file = QFileInfo(file_name.c_str()).baseName().toStdString() + ".topup.acqparams.txt";
     std::string temp_nifti = file_name+".nii.gz";
