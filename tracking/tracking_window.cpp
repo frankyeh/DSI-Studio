@@ -974,10 +974,7 @@ void tracking_window::set_tracking_param(ThreadData& tracking_thread)
 
     tracking_thread.param.tracking_method = renderWidget->getData("tracking_method").toInt();
     tracking_thread.param.initial_direction = renderWidget->getData("initial_direction").toInt();
-    tracking_thread.param.interpolation_strategy = renderWidget->getData("interpolation").toInt();
     tracking_thread.param.stop_by_tract = renderWidget->getData("tracking_plan").toInt();
-    tracking_thread.param.center_seed = renderWidget->getData("seed_plan").toInt();
-    tracking_thread.param.random_seed = renderWidget->getData("random_seed").toInt();
     tracking_thread.param.check_ending = renderWidget->getData("check_ending").toInt();
     tracking_thread.param.termination_count = renderWidget->getData("track_count").toInt();
     tracking_thread.param.default_otsu = renderWidget->getData("otsu_threshold").toFloat();
@@ -2705,10 +2702,7 @@ void tracking_window::on_actionLoad_Parameter_ID_triggered()
 
     set_data("tracking_method",int(param.tracking_method));
     set_data("initial_direction",int(param.initial_direction));
-    set_data("interpolation",int(param.interpolation_strategy));
     set_data("tracking_plan",int(param.stop_by_tract));
-    set_data("seed_plan",int(param.center_seed));
-    set_data("random_seed",int(param.random_seed));
     set_data("check_ending",int(param.check_ending));
     set_data("track_count",int(param.termination_count));
 
