@@ -16,8 +16,8 @@ QWidget *DeviceTypeDelegate::createEditor(QWidget *parent,
 {
     if (index.column() == 1)
     {
-        if(device_types.empty() && !load_device_content())
-            return QItemDelegate::createEditor(parent,option,index);
+        if(device_types.empty())
+            load_device_content();
         QComboBox *comboBox = new QComboBox(parent);
         comboBox->addItem("Please Select Device");
         for(size_t i = 0;i < device_types.size();++i)
@@ -170,6 +170,13 @@ void DeviceTableWidget::check_status(int row, int col)
 void DeviceTableWidget::newDevice()
 {
     static unsigned int device_num = 1;
+    static bool show_hint = true;
+    if(show_hint)
+    {
+        QMessageBox::information(this,"DSI Studio","Click Ctrl+A and Press on Tip/Shaft to Rotate/Move");
+        show_hint = false;
+    }
+
     if(new_device_str.isEmpty())
     {
         QAction* pAction = qobject_cast<QAction*>(sender());
