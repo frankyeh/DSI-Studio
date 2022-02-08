@@ -212,7 +212,7 @@ void TractTableWidget::start_tracking(void)
     }
     cur_tracking_window.set_tracking_param(*thread_data.back());
     cur_tracking_window.regionWidget->setROIs(thread_data.back().get());
-    thread_data.back()->run(cur_tracking_window["thread_count"].toInt(),false);
+    thread_data.back()->run(cur_tracking_window.ui->thread_count->value(),false);
     tract_models.back()->report = cur_tracking_window.handle->report + thread_data.back()->report.str();
     show_report();
     timer->start(1000);

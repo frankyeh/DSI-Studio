@@ -529,8 +529,8 @@
    </property>
    <property name="minimumSize">
     <size>
-     <width>364</width>
-     <height>48</height>
+     <width>0</width>
+     <height>0</height>
     </size>
    </property>
    <property name="maximumSize">
@@ -742,13 +742,6 @@
         </spacer>
        </item>
        <item>
-        <widget class="QLabel" name="label_3">
-         <property name="text">
-          <string>Template:</string>
-         </property>
-        </widget>
-       </item>
-       <item>
         <widget class="QComboBox" name="template_box"/>
        </item>
        <item>
@@ -798,8 +791,8 @@
    </property>
    <property name="minimumSize">
     <size>
-     <width>285</width>
-     <height>47</height>
+     <width>0</width>
+     <height>0</height>
     </size>
    </property>
    <property name="windowTitle">
@@ -897,7 +890,7 @@
      <x>0</x>
      <y>0</y>
      <width>1200</width>
-     <height>20</height>
+     <height>22</height>
     </rect>
    </property>
    <property name="sizePolicy">
@@ -1323,8 +1316,8 @@
    </property>
    <property name="minimumSize">
     <size>
-     <width>324</width>
-     <height>161</height>
+     <width>0</width>
+     <height>0</height>
     </size>
    </property>
    <property name="maximumSize">
@@ -1539,6 +1532,26 @@
                </property>
               </spacer>
              </item>
+             <item>
+              <widget class="QLabel" name="label_6">
+               <property name="text">
+                <string>CPU:</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QSpinBox" name="thread_count">
+               <property name="minimum">
+                <number>1</number>
+               </property>
+               <property name="maximum">
+                <number>64</number>
+               </property>
+               <property name="singleStep">
+                <number>2</number>
+               </property>
+              </widget>
+             </item>
             </layout>
            </item>
            <item>
@@ -1552,7 +1565,7 @@
              <item>
               <widget class="QPushButton" name="enable_auto_track">
                <property name="text">
-                <string>Enable autotrack...</string>
+                <string>Autotrack...</string>
                </property>
               </widget>
              </item>
@@ -1570,7 +1583,11 @@
               </widget>
              </item>
              <item>
-              <widget class="QComboBox" name="target"/>
+              <widget class="QComboBox" name="target">
+               <property name="sizeAdjustPolicy">
+                <enum>QComboBox::AdjustToMinimumContentsLengthWithIcon</enum>
+               </property>
+              </widget>
              </item>
             </layout>
            </item>
@@ -1718,8 +1735,8 @@ Tracking</string>
    </property>
    <property name="minimumSize">
     <size>
-     <width>356</width>
-     <height>173</height>
+     <width>0</width>
+     <height>0</height>
     </size>
    </property>
    <property name="floating">
@@ -2398,6 +2415,12 @@ Tracking</string>
      <verstretch>0</verstretch>
     </sizepolicy>
    </property>
+   <property name="minimumSize">
+    <size>
+     <width>0</width>
+     <height>0</height>
+    </size>
+   </property>
    <property name="floating">
     <bool>false</bool>
    </property>
@@ -2468,7 +2491,7 @@ Tracking</string>
          </property>
          <property name="maximumSize">
           <size>
-           <width>32</width>
+           <width>37</width>
            <height>16777215</height>
           </size>
          </property>
@@ -2581,7 +2604,7 @@ Tracking</string>
        <item>
         <widget class="QLabel" name="label_5">
          <property name="text">
-          <string>Ctrl+A and drag tip/shaft to move/rotate</string>
+          <string/>
          </property>
         </widget>
        </item>
