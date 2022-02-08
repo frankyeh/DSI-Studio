@@ -1348,7 +1348,7 @@ void GLWidget::renderLR()
         glPushMatrix();
         {
             glLoadIdentity();
-            glOrtho(0,cur_width,height(),0,0.0,100.0);
+            glOrtho(0,cur_width,cur_height,0,0.0,100.0);
 
             glDisable(GL_DEPTH_TEST);
 
