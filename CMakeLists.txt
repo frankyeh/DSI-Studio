@@ -41,7 +41,6 @@ set(DSI_STUDIO_HEADERS mainwindow.h
     opengl/glwidget.h
     libs/tracking/tracking_method.hpp
     libs/tracking/roi.hpp
-    libs/tracking/interpolation_process.hpp
     libs/tracking/fib_data.hpp
     libs/tracking/basic_process.hpp
     libs/tracking/tract_cluster.hpp
@@ -108,7 +107,6 @@ set(DSI_STUDIO_SOURCES
     libs/utility/prog_interface.cpp
     libs/dsi/dsi_interface_imp.cpp
     libs/dsi/gqi_process.cpp
-    libs/tracking/interpolation_process.cpp
     libs/tracking/tract_cluster.cpp
     SliceModel.cpp
     tracking/tracking_window.cpp

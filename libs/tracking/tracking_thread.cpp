@@ -1,17 +1,20 @@
-#ifndef M_PI
-#define M_PI        3.14159265358979323846
-#endif
+
 #include "tracking_thread.hpp"
 #include "fib_data.hpp"
+
+// generated from x^2+y^2+z^2 < 6 . first 40 at x > 0
+char fib_dx[80] = {0,0,1,0,0,1,1,1,1,1,1,1,1,0,0,2,0,0,0,0,1,1,1,1,2,2,2,2,1,1,1,1,1,1,1,1,2,2,2,2,0,0,-1,0,0,-1,-1,-1,-1,-1,-1,-1,-1,0,0,-2,0,0,0,0,-1,-1,-1,-1,-2,-2,-2,-2,-1,-1,-1,-1,-1,-1,-1,-1,-2,-2,-2,-2};
+char fib_dy[80] = {1,0,0,1,1,1,0,0,-1,1,1,-1,-1,2,0,0,2,2,1,1,2,0,0,-2,1,0,0,-1,2,2,1,1,-1,-1,-2,-2,1,1,-1,-1,-1,0,0,-1,-1,-1,0,0,1,-1,-1,1,1,-2,0,0,-2,-2,-1,-1,-2,0,0,2,-1,0,0,1,-2,-2,-1,-1,1,1,2,2,-1,-1,1,1};
+char fib_dz[80] = {0,1,0,1,-1,0,1,-1,0,1,-1,1,-1,0,2,0,1,-1,2,-2,0,2,-2,0,0,1,-1,0,1,-1,2,-2,2,-2,1,-1,1,-1,1,-1,0,-1,0,-1,1,0,-1,1,0,-1,1,-1,1,0,-2,0,-1,1,-2,2,0,-2,2,0,0,-1,1,0,-1,1,-2,2,-2,2,-1,1,-1,1,-1,1};
+
+
+
 void ThreadData::push_tracts(std::vector<std::vector<float> >& local_tract_buffer)
 {
     std::lock_guard<std::mutex> lock(lock_feed_function);
     pushing_data = true;
     for(unsigned int index = 0;index < local_tract_buffer.size();++index)
-    {
-        track_buffer.push_back(std::vector<float>());
-        track_buffer.back().swap(local_tract_buffer[index]);
-    }
+        track_buffer.push_back(std::move(local_tract_buffer[index]));
     local_tract_buffer.clear();
     pushing_data = false;
 }
@@ -26,21 +29,9 @@ void ThreadData::end_thread(void)
     }
 }
 
-void ThreadData::run_thread(unsigned int thread_count,
-                            unsigned int thread_id)
+void ThreadData::run_thread(unsigned int thread_id)
 {
-    std::shared_ptr<basic_interpolation> interpo_method;
-    switch (param.interpolation_strategy)
-    {
-    case 0:
-        interpo_method.reset(new trilinear_interpolation);
-        break;
-    case 1:
-    case 2:
-        interpo_method.reset(new nearest_direction);
-        break;
-    }
-    std::shared_ptr<TrackingMethod> method(new TrackingMethod(trk,interpo_method,roi_mgr));
+    std::shared_ptr<TrackingMethod> method(new TrackingMethod(trk,roi_mgr));
     method->current_fa_threshold = param.threshold;
     method->current_dt_threshold = param.dt_threshold;
     method->current_tracking_angle = param.cull_cos_angle;
@@ -53,15 +44,6 @@ void ThreadData::run_thread(unsigned int thread_count,
         method->current_max_steps3 = uint32_t(std::round(3.0f*param.max_length/param.step_size));
         method->current_min_steps3 = uint32_t(std::round(3.0f*param.min_length/param.step_size));
     }
-
-
-
-    std::uniform_real_distribution<float> rand_gen(0,1),
-            angle_gen(float(15.0*M_PI/180.0),float(90.0*M_PI/180.0)),
-            smoothing_gen(0.0f,0.95f),
-            step_gen(method->trk->vs[0]*0.5f,method->trk->vs[0]*1.5f),
-            threshold_gen(0.0,1.0);
-    unsigned int iteration = thread_id; // for center seed
     float white_matter_t = param.threshold*1.2f;
     if(!roi_mgr->seeds.empty())
     try{
@@ -73,44 +55,46 @@ void ThreadData::run_thread(unsigned int thread_count,
         {
             if(!local_track_buffer.empty() && !pushing_data)
                 push_tracts(local_track_buffer);
-            if(param.threshold == 0.0f)
-            {
-                float w = threshold_gen(seed);
-                method->current_fa_threshold = w*fa_threshold1 + (1.0f-w)*fa_threshold2;
-                white_matter_t = method->current_fa_threshold*1.2f;
-            }
-            if(param.cull_cos_angle == 1.0f)
-                method->current_tracking_angle = std::cos(angle_gen(seed));
-            if(param.smooth_fraction == 1.0f)
-                method->current_tracking_smoothing = smoothing_gen(seed);
-            if(param.step_size == 0.0f)
-            {
-                float step_size_in_mm = step_gen(seed);
-                method->current_step_size_in_voxel[0] = step_size_in_mm/method->trk->vs[0];
-                method->current_step_size_in_voxel[1] = step_size_in_mm/method->trk->vs[1];
-                method->current_step_size_in_voxel[2] = step_size_in_mm/method->trk->vs[2];
-                method->current_max_steps3 = uint32_t(std::round(3.0f*param.max_length/step_size_in_mm));
-                method->current_min_steps3 = uint32_t(std::round(3.0f*param.min_length/step_size_in_mm));
-            }
+
             ++seed_count[thread_id];
+            tipl::vector<3,float> pos;
+            uint32_t seed_id;
             {
                 // this ensure consistency
                 std::lock_guard<std::mutex> lock(lock_seed_function);
-                iteration+=thread_count;
-                unsigned int i = uint32_t(rand_gen(seed)*(float(roi_mgr->seeds.size())-1.0f));
-                tipl::vector<3,float> pos(roi_mgr->seeds[i]);
-                if(!param.center_seed)
+                if(param.threshold == 0.0f)
                 {
-                    pos[0] += rand_gen(seed);
-                    pos[1] += rand_gen(seed);
-                    pos[2] += rand_gen(seed);
-                    pos -= 0.5f;
+                    float w = threshold_gen(seed);
+                    method->current_fa_threshold = w*fa_threshold1 + (1.0f-w)*fa_threshold2;
+                    white_matter_t = method->current_fa_threshold*1.2f;
                 }
-                if(roi_mgr->seeds_r[i] != 1.0f)
-                    pos /= roi_mgr->seeds_r[i];
-                if(!method->init(param.initial_direction,pos,seed))
-                    continue;
+                if(param.cull_cos_angle == 1.0f)
+                    method->current_tracking_angle = std::cos(angle_gen(seed));
+                if(param.smooth_fraction == 1.0f)
+                    method->current_tracking_smoothing = smoothing_gen(seed);
+                if(param.step_size == 0.0f)
+                {
+                    float step_size_in_voxel = step_gen(seed);
+                    float step_size_in_mm = step_size_in_voxel*method->trk->vs[0];
+                    method->current_step_size_in_voxel[0] = step_size_in_voxel;
+                    method->current_step_size_in_voxel[1] = step_size_in_voxel;
+                    method->current_step_size_in_voxel[2] = step_size_in_voxel;
+                    method->current_max_steps3 = uint32_t(std::round(3.0f*param.max_length/step_size_in_mm));
+                    method->current_min_steps3 = uint32_t(std::round(3.0f*param.min_length/step_size_in_mm));
+                }
+
+                seed_id = std::min<uint32_t>(uint32_t(roi_mgr->seeds.size()-1),uint32_t(rand_gen(seed)*float(roi_mgr->seeds.size())));
+                pos = roi_mgr->seeds[seed_id];
+                pos[0] += subvoxel_gen(seed);
+                pos[1] += subvoxel_gen(seed);
+                pos[2] += subvoxel_gen(seed);
             }
+
+            if(roi_mgr->seeds_r[seed_id] != 1.0f)
+                pos /= roi_mgr->seeds_r[seed_id];
+            if(!method->init(param.initial_direction,pos,seed))
+                continue;
+
             unsigned int point_count;
             const float *result = method->tracking(param.tracking_method,point_count);
             if(!result)
@@ -234,8 +218,6 @@ void ThreadData::run(std::shared_ptr<tracking_data> trk_,unsigned int thread_cou
     // to ensure consistency, seed initialization with all orientation only fits with single thread
     if(param.initial_direction == 2)
         thread_count = 1;
-    if(param.center_seed)
-        std::shuffle(roi_mgr->seeds.begin(),roi_mgr->seeds.end(),std::mt19937(0));
 
     end_thread();
 
@@ -265,18 +247,18 @@ void ThreadData::run(std::shared_ptr<tracking_data> trk_,unsigned int thread_cou
 
     joinning = false;
     pushing_data = false;
-    seed = std::mt19937(param.random_seed ? std::random_device()():0);
+    seed = std::mt19937(0);
     for (unsigned int index = 0;index < thread_count-1;++index)
         threads.push_back(std::make_shared<std::future<void> >(std::async(std::launch::async,
-                [&,thread_count,index](){run_thread(thread_count,index);})));
+                [&,thread_count,index](){run_thread(index);})));
 
     if(wait)
     {
-        run_thread(thread_count,thread_count-1);
+        run_thread(thread_count-1);
         for(size_t i = 0;i < threads.size();++i)
             threads[i]->wait();
     }
     else
         threads.push_back(std::make_shared<std::future<void> >(std::async(std::launch::async,
-                [&,thread_count](){run_thread(thread_count,thread_count-1);})));
+                [&,thread_count](){run_thread(thread_count-1);})));
 }

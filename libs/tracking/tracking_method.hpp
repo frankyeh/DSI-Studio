@@ -5,7 +5,6 @@
 #include <deque>
 #include <vector>
 #include "TIPL/tipl.hpp"
-#include "interpolation_process.hpp"
 #include "basic_process.hpp"
 #include "roi.hpp"
 #include "fib_data.hpp"
@@ -23,13 +22,13 @@ struct TrackingParam
     unsigned int termination_count = 100000;
     unsigned int max_seed_count = 0;
     unsigned char stop_by_tract = 1;
-    unsigned char center_seed = 0;
+    unsigned char reserved0 = 0; // center_seed DEPRECATED
     unsigned char check_ending = 0;
-    unsigned char interpolation_strategy = 0;
+    unsigned char reserved5 = 0; // interpolation_strategy DEPRECATED
 
     unsigned char tracking_method = 0;
     unsigned char initial_direction = 0;
-    unsigned char random_seed = 0;
+    unsigned char reserved6 = 0; // random_seed DEPRECATED
     unsigned char tip_iteration = 0;
 
     float dt_threshold = 0;
@@ -139,8 +138,6 @@ struct TrackingParam
 
 
 class TrackingMethod{
-private:
-    std::shared_ptr<basic_interpolation> interpolation;
 public:// Parameters
     tipl::vector<3,float> position;
     tipl::vector<3,float> dir;
@@ -169,6 +166,32 @@ private:
 
 private:
     unsigned char init_fib_index;
+    bool evaluate(std::shared_ptr<tracking_data> fib,
+                  const tipl::vector<3,float>& position,
+                  const tipl::vector<3,float>& ref_dir,
+                  tipl::vector<3,float>& result)
+    {
+        tipl::interpolator::linear<3> tri_interpo;
+        if (!tri_interpo.get_location(fib->dim,position))
+            return false;
+        tipl::vector<3,float> new_dir,main_dir;
+        float total_weighting = 0.0f;
+        for (unsigned int index = 0;index < 8;++index)
+        {
+            size_t odf_space_index = tri_interpo.dindex[index];
+            if (!fib->get_dir(odf_space_index,ref_dir,main_dir,current_fa_threshold,current_tracking_angle,current_dt_threshold))
+                continue;
+            float w = tri_interpo.ratio[index];
+            main_dir *= w;
+            new_dir += main_dir;
+            total_weighting += w;
+        }
+        if (total_weighting < 0.5f)
+            return false;
+        new_dir.normalize();
+        result = new_dir;
+        return true;
+    }
 public:
     unsigned int get_buffer_size(void) const
 	{
@@ -186,9 +209,9 @@ public:
         {
             tipl::vector<3> new_pos(position);
             new_pos *= trk->high_reso_ratio;
-            return interpolation->evaluate(trk->high_reso,new_pos,ref_dir,result_dir,current_fa_threshold,current_tracking_angle,current_dt_threshold);
+            return evaluate(trk->high_reso,new_pos,ref_dir,result_dir);
         }
-        return interpolation->evaluate(trk,position,ref_dir,result_dir,current_fa_threshold,current_tracking_angle,current_dt_threshold);
+        return evaluate(trk,position,ref_dir,result_dir);
     }
     bool get_starting_dir(tipl::vector<3,float> pos,float fa_threshold,unsigned char fib_order,tipl::vector<3>& dir) const
     {
@@ -211,9 +234,8 @@ public:
     }
 public:
     TrackingMethod(std::shared_ptr<tracking_data> trk_,
-                   std::shared_ptr<basic_interpolation> interpolation_,
                    std::shared_ptr<RoiMgr> roi_mgr_):
-                    interpolation(interpolation_),trk(trk_),roi_mgr(roi_mgr_),init_fib_index(0)
+                   trk(trk_),roi_mgr(roi_mgr_),init_fib_index(0)
     {}
 private:
     inline bool tracking_continue(void) const

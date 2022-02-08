@@ -9,12 +9,14 @@
 #include "tracking_method.hpp"
 #include "fib_data.hpp"
 #include "tract_model.hpp"
-
+#ifndef M_PI
+#define M_PI        3.14159265358979323846
+#endif
 struct ThreadData
 {
 private:
     std::mt19937 seed;
-
+    std::uniform_real_distribution<float> rand_gen,subvoxel_gen,angle_gen,smoothing_gen,step_gen,threshold_gen;
 public:
     std::shared_ptr<tracking_data> trk;
     std::shared_ptr<RoiMgr> roi_mgr;
@@ -24,7 +26,10 @@ public:
     float fa_threshold1,fa_threshold2;// use only if fa_threshold=0
 
 public:
-    ThreadData(std::shared_ptr<fib_data> handle):seed(0),roi_mgr(new RoiMgr(handle)){}
+    ThreadData(std::shared_ptr<fib_data> handle):seed(0),
+        rand_gen(0,1),subvoxel_gen(-0.5f,0.5f),angle_gen(float(15.0*M_PI/180.0),float(90.0*M_PI/180.0)),
+        smoothing_gen(0.0f,0.95f),step_gen(0.5f,1.5f),threshold_gen(0.0,1.0),
+        roi_mgr(new RoiMgr(handle)){}
     ~ThreadData(void)
     {
         end_thread();
@@ -63,7 +68,7 @@ public:
     void end_thread(void);
 
 public:
-    void run_thread(unsigned int thread_count,unsigned int thread_id);
+    void run_thread(unsigned int thread_id);
     bool fetchTracks(TractModel* handle);
     void apply_tip(TractModel* handle);
     void run(std::shared_ptr<tracking_data> trk,unsigned int thread_count,bool wait);
