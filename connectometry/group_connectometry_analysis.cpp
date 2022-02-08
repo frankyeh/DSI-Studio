@@ -54,10 +54,7 @@ int group_connectometry_analysis::run_track(std::shared_ptr<tracking_data> fib,
     tracking_thread.param.max_length = 2.0f*float(std::max<unsigned int>(handle->dim[0],std::max<unsigned int>(handle->dim[1],handle->dim[2])))*handle->vs[0];
     tracking_thread.param.tracking_method = 0;// streamline fiber tracking
     tracking_thread.param.initial_direction = 0;// main directions
-    tracking_thread.param.interpolation_strategy = 0; // trilinear interpolation
     tracking_thread.param.stop_by_tract = 0;// stop by seed
-    tracking_thread.param.center_seed = 0;// subvoxel seeding
-    tracking_thread.param.random_seed = 0;
     tracking_thread.param.termination_count = uint32_t(seed_count);
     tracking_thread.roi_mgr = roi_mgr;
     tracking_thread.run(fib,thread_count,true);
