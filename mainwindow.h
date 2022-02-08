@@ -7,20 +7,6 @@
 #include <memory>
 #include <mutex>
 class QTextEdit;
-class console_stream :  public std::basic_streambuf<char>
-{
-public:
-    console_stream(QTextEdit* text_edit);
-    void update_text_edit(void);
-protected:
-    virtual int_type overflow(int_type v) override;
-    virtual std::streamsize xsputn(const char *p, std::streamsize n) override;
-private:
-    bool has_new_line = false;
-    std::mutex edit_buf;
-    QString buf;
-    QTextEdit* log_window;
-};
 
 
 namespace Ui {
@@ -33,7 +19,6 @@ class MainWindow : public QMainWindow
     enum { MaxRecentFiles = 50 };
     void updateRecentList(void);
     QSettings settings;
-    std::shared_ptr<console_stream> cs;
 public:
     explicit MainWindow(QWidget *parent = nullptr);
     ~MainWindow();

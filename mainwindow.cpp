@@ -34,16 +34,31 @@
 #include <filesystem>
 #include "xnat_dialog.h"
 
+class console_stream :  public std::basic_streambuf<char>
+{
+public:
+    console_stream(void);
+    ~console_stream(void){}
+    void update_text_edit(QTextEdit* log_window);
+protected:
+    virtual int_type overflow(int_type v) override;
+    virtual std::streamsize xsputn(const char *p, std::streamsize n) override;
+public:
+    bool has_new_line = false;
+    std::mutex edit_buf;
+    QString buf;
+};
+extern console_stream console;
+console_stream console;
 
-
-console_stream::console_stream(QTextEdit* text_edit)
-    :std::basic_streambuf<char>(),log_window(text_edit)
+console_stream::console_stream(void)
+    :std::basic_streambuf<char>()
 {
     std::cout.rdbuf(this);
 }
 
 bool is_main_thread(void);
-void console_stream::update_text_edit(void)
+void console_stream::update_text_edit(QTextEdit* log_window)
 {
     if(has_new_line)
     {
@@ -111,13 +126,11 @@ MainWindow::MainWindow(QWidget *parent) :
 
     if(!arg_file_name.empty())
         openFile(arg_file_name.c_str());
-    cs.reset(new console_stream(ui->console));
     qApp->installEventFilter(this);
 }
 bool MainWindow::eventFilter(QObject*, QEvent*)
 {
-    if(cs.get())
-        cs->update_text_edit();
+    console.update_text_edit(ui->console);
     return false;
 }
 void MainWindow::openFile(QString file_name)
