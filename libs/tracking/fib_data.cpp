@@ -1693,8 +1693,11 @@ void fib_data::run_normalization(bool background,bool inv)
 
         cdm_common(It,It2,Iss,Iss2,dis,terminated);
 
-        tipl::invert_displacement(dis,inv_dis);
         tipl::displacement_to_mapping(dis,t2s,T);
+        tipl::compose_mapping(Is,t2s,Iss);
+        std::cout << "R2:" << tipl::correlation(Iss.begin(),Iss.end(),It.begin()) << std::endl;
+
+        tipl::invert_displacement(dis,inv_dis);
         s2t.resize(dim);
         tipl::inv_displacement_to_mapping(inv_dis,s2t,T);
 
@@ -1716,8 +1719,6 @@ void fib_data::run_normalization(bool background,bool inv)
             out.write("from2to",&s2t[0][0],3,s2t.size());
         }
 
-        tipl::compose_mapping(tipl::make_image(dir.fa[0],dim),t2s,Iss);
-        std::cout << "R2:" << tipl::correlation(Iss.begin(),Iss.end(),It.begin()) << std::endl;
         prog = 6;
     };
 
