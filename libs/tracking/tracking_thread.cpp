@@ -41,8 +41,8 @@ void ThreadData::run_thread(unsigned int thread_id)
     method->current_step_size_in_voxel[2] = param.step_size/method->trk->vs[2];
     if(param.step_size != 0.0f)
     {
-        method->current_max_steps3 = uint32_t(std::round(3.0f*param.max_length/param.step_size));
-        method->current_min_steps3 = uint32_t(std::round(3.0f*param.min_length/param.step_size));
+        method->current_max_steps3 = 3*uint32_t(std::round(param.max_length/param.step_size));
+        method->current_min_steps3 = 3*uint32_t(std::round(param.min_length/param.step_size));
     }
     float white_matter_t = param.threshold*1.2f;
     if(!roi_mgr->seeds.empty())
@@ -79,8 +79,8 @@ void ThreadData::run_thread(unsigned int thread_id)
                     method->current_step_size_in_voxel[0] = step_size_in_voxel;
                     method->current_step_size_in_voxel[1] = step_size_in_voxel;
                     method->current_step_size_in_voxel[2] = step_size_in_voxel;
-                    method->current_max_steps3 = uint32_t(std::round(3.0f*param.max_length/step_size_in_mm));
-                    method->current_min_steps3 = uint32_t(std::round(3.0f*param.min_length/step_size_in_mm));
+                    method->current_max_steps3 = 3*uint32_t(std::round(param.max_length/step_size_in_mm));
+                    method->current_min_steps3 = 3*uint32_t(std::round(param.min_length/step_size_in_mm));
                 }
 
                 seed_id = std::min<uint32_t>(uint32_t(roi_mgr->seeds.size()-1),uint32_t(rand_gen(seed)*float(roi_mgr->seeds.size())));
