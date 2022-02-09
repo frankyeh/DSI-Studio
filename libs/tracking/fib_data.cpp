@@ -1691,13 +1691,12 @@ void fib_data::run_normalization(bool background,bool inv)
         tipl::image<3,tipl::vector<3> > dis,inv_dis;
         tipl::reg::cdm_pre(It,It2,Iss,Iss2);
 
-        cdm_common(It,It2,Iss,Iss2,dis,terminated);
+        cdm_common(It,It2,Iss,Iss2,dis,inv_dis,terminated);
 
         tipl::displacement_to_mapping(dis,t2s,T);
         tipl::compose_mapping(Is,t2s,Iss);
         std::cout << "R2:" << tipl::correlation(Iss.begin(),Iss.end(),It.begin()) << std::endl;
 
-        tipl::invert_displacement(dis,inv_dis);
         s2t.resize(dim);
         tipl::inv_displacement_to_mapping(inv_dis,s2t,T);
 

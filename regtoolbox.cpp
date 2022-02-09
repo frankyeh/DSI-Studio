@@ -488,15 +488,14 @@ void RegToolBox::nonlinear_reg(void)
                 tipl::filter::sobel(sJ2);
                 tipl::filter::mean(sJ2);
             }
-            cdm_common(sIt,sIt2,sJ,sJ2,t2f_dis,thread.terminated,param);
+            cdm_common(sIt,sIt2,sJ,sJ2,t2f_dis,f2t_dis,thread.terminated,param);
         }
         else
-            cdm_common(It,It2,J,J2,t2f_dis,thread.terminated,param);
+            cdm_common(It,It2,J,J2,t2f_dis,f2t_dis,thread.terminated,param);
     }
 
     // calculate inverted to2from
     {
-        tipl::invert_displacement(t2f_dis,f2t_dis);
         from2to.resize(I.shape());
         tipl::inv_displacement_to_mapping(f2t_dis,from2to,T);
         tipl::displacement_to_mapping(t2f_dis,to2from,T);

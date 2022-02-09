@@ -92,6 +92,7 @@ void cdm2_cuda(const tipl::image<3>& It,
                const tipl::image<3>& Is,
                const tipl::image<3>& Is2,
                tipl::image<3,tipl::vector<3> >& d,
+               tipl::image<3,tipl::vector<3> >& inv_d,
                bool& terminated,
                tipl::reg::cdm_param param)
 {
@@ -112,6 +113,13 @@ void cdm2_cuda(const tipl::image<3>& It,
     }
     d.resize(It.shape());
     dd.vector().copy_to(d);
+
+    tipl::invert_displacement_cuda(dd);
+
+    inv_d.resize(It.shape());
+    dd.vector().copy_to(inv_d);
+    cudaDeviceSynchronize();
+
 }
 
 float linear_mr(tipl::const_pointer_image<3,float> I,

@@ -7,6 +7,7 @@ void cdm2_cuda(const tipl::image<3>& It,
                const tipl::image<3>& Is,
                const tipl::image<3>& Is2,
                tipl::image<3,tipl::vector<3> >& d,
+               tipl::image<3,tipl::vector<3> >& inv_d,
                bool& terminated,
                tipl::reg::cdm_param param);
 
@@ -15,6 +16,7 @@ inline void cdm_common(const tipl::image<3>& It,
                const tipl::image<3>& Is,
                const tipl::image<3>& Is2,
                tipl::image<3,tipl::vector<3> >& dis,
+               tipl::image<3,tipl::vector<3> >& inv_dis,
                bool& terminated,
                tipl::reg::cdm_param param = tipl::reg::cdm_param())
 {
@@ -22,14 +24,18 @@ inline void cdm_common(const tipl::image<3>& It,
     {
         std::cout << "dual modality normalization" << std::endl;
         if constexpr (tipl::use_cuda)
-            cdm2_cuda(It,It2,Is,Is2,dis,terminated,param);
+            cdm2_cuda(It,It2,Is,Is2,dis,inv_dis,terminated,param);
         else
+        {
             tipl::reg::cdm2(It,It2,Is,Is2,dis,terminated,param);
+            tipl::invert_displacement(dis,inv_dis);
+        }
     }
     else
     {
         std::cout << "single modality normalization" << std::endl;
         tipl::reg::cdm(It,Is,dis,terminated,param);
+        tipl::invert_displacement(dis,inv_dis);
     }
 
 }

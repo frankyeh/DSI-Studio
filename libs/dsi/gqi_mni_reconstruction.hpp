@@ -159,8 +159,8 @@ public:
                     if(VFvs[0] < VGvs[0])
                         param.resolution = 1.0f;
 
-                    cdm_common(VFF,VFF2,VG,VG2,cdm_dis,terminated,param);
-                    tipl::invert_displacement(cdm_dis);
+                    tipl::image<3,tipl::vector<3> > temp;
+                    cdm_common(VFF,VFF2,VG,VG2,temp,cdm_dis,terminated,param);
 
                 },terminated))
                 throw std::runtime_error("reconstruction canceled");

@@ -194,10 +194,9 @@ int reg(program_option& po)
     param.iterations = po.get("iteration",param.iterations);
     param.min_dimension = po.get("min_dimension",param.min_dimension);
 
-    cdm_common(to,to2,from_,from2_,t2f_dis,terminated,param);
+    cdm_common(to,to2,from_,from2_,t2f_dis,f2t_dis,terminated,param);
 
     tipl::displacement_to_mapping(t2f_dis,to2from,T);
-    tipl::invert_displacement(t2f_dis,f2t_dis);
     from2to.resize(from.shape());
     tipl::inv_displacement_to_mapping(f2t_dis,from2to,T);
 
