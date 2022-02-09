@@ -245,12 +245,6 @@ private:
     }
 public:
 
-
-	std::vector<float>& get_track_buffer(void){return track_buffer;}
-	std::vector<float>& get_reverse_buffer(void){return reverse_buffer;}
-
-
-
     template<typename tracking_algo>
     bool start_tracking(tracking_algo track)
     {
@@ -258,7 +252,6 @@ public:
         tipl::vector<3,float> begin_dir(dir);
         // floatd for full backward or full forward
         track_buffer.resize(current_max_steps3 << 1);
-        reverse_buffer.resize(current_max_steps3 << 1);
         buffer_front_pos = uint32_t(current_max_steps3);
         buffer_back_pos = uint32_t(current_max_steps3);
         tipl::vector<3,float> end_point1;
@@ -295,7 +288,7 @@ public:
 
 
 
-        return get_buffer_size() > current_min_steps3 &&
+        return get_buffer_size() >= current_min_steps3 &&
                roi_mgr->have_include(get_result(),get_buffer_size()) &&
                roi_mgr->fulfill_end_point(position,end_point1);
 
@@ -400,6 +393,7 @@ public:
 		   (abs_dis[1] > abs_dis[0] && abs_dis[1] > abs_dis[2] && tail[1] < 0) ||
 		   (abs_dis[2] > abs_dis[1] && abs_dis[2] > abs_dis[0] && tail[2] < 0))
 		{
+            reverse_buffer.resize(track_buffer.size());
 			std::vector<float>::const_iterator src = track_buffer.begin() + buffer_back_pos-3;
 			std::vector<float>::iterator iter = reverse_buffer.begin();
 			std::vector<float>::iterator end = reverse_buffer.begin()+buffer_back_pos-buffer_front_pos;
