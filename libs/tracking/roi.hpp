@@ -20,16 +20,17 @@ public:
         auto x = uint16_t(new_point.x());
         auto y = uint16_t(new_point.y());
         auto z = uint16_t(new_point.z());
-        auto& y_base = xyz_hash[x];
+        uint32_t y_base = xyz_hash[x];
         if(!y_base)
         {
-            y_base = uint32_t(xyz_hash.size());
+            xyz_hash[x] = y_base = uint32_t(xyz_hash.size());
             xyz_hash.resize(xyz_hash.size()+dim[1]);
+
         }
-        auto& z_base = xyz_hash[y_base+y];
+        uint32_t z_base = xyz_hash[y_base+y];
         if(!z_base)
         {
-            z_base = uint32_t(xyz_hash.size());
+            xyz_hash[y_base+y] = z_base = uint32_t(xyz_hash.size());
             xyz_hash.resize(xyz_hash.size()+uint16_t((dim[2]+31) >> 5));
         }
         xyz_hash[z_base+(z >> 5)] |= (1 << (z & 31));
