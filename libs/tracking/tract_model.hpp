@@ -29,6 +29,7 @@ private:
         unsigned int cur_cut_id = 1;
         std::vector<std::pair<unsigned int,unsigned int> > redo_size;
         // offset, size
+        std::mutex lock_tract_fetch;
         void erase_empty(void);
 private:
         // for loading multiple clusters
