@@ -1503,6 +1503,7 @@ void TractModel::get_in_slice_tracts(unsigned char dim,int pos,
         line.clear();
     };
     unsigned int skip = std::max<unsigned int>(1,uint32_t(tract_data.size())/max_count);
+    std::lock_guard<std::mutex> lock(lock_tract_fetch);
     if(!pT) // native space
     {
         for (unsigned int index = 0;index < tract_data.size() && lines.size() < max_count;add_line(index),index += skip)
