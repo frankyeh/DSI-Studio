@@ -260,6 +260,8 @@ void TractTableWidget::fetch_tracts(void)
                 QString::number(thread_data[index]->get_total_seed_count()));
             if(thread_data[index]->is_ended())
             {
+                has_tracts = thread_data[index]->fetchTracks(tract_models[index].get()) ||
+                             thread_data[index]->fetchTracks(tract_models[index].get()); // clear both front and back buffer
                 thread_data[index]->apply_tip(tract_models[index].get());
                 item(int(index),1)->setText(QString::number(tract_models[index]->get_visible_track_count()));
                 item(int(index),2)->setText(QString::number(tract_models[index]->get_deleted_track_count()));
