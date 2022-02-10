@@ -58,7 +58,10 @@ int group_connectometry_analysis::run_track(std::shared_ptr<tracking_data> fib,
     tracking_thread.param.termination_count = uint32_t(seed_count);
     tracking_thread.roi_mgr = roi_mgr;
     tracking_thread.run(fib,thread_count,true);
-    tracking_thread.track_buffer.swap(tracks);
+    for(auto& tracts_per_thread : tracking_thread.track_buffer_front)
+        for(auto& tract : tracts_per_thread)
+            if(!tract.empty())
+                tracks.push_back(std::move(tract));
     return int(tracks.size());
 }
 

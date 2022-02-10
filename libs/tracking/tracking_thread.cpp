@@ -9,15 +9,6 @@ char fib_dz[80] = {0,1,0,1,-1,0,1,-1,0,1,-1,1,-1,0,2,0,1,-1,2,-2,0,2,-2,0,0,1,-1
 
 
 
-void ThreadData::push_tracts(std::vector<std::vector<float> >& local_tract_buffer)
-{
-    std::lock_guard<std::mutex> lock(lock_feed_function);
-    pushing_data = true;
-    for(unsigned int index = 0;index < local_tract_buffer.size();++index)
-        track_buffer.push_back(std::move(local_tract_buffer[index]));
-    local_tract_buffer.clear();
-    pushing_data = false;
-}
 void ThreadData::end_thread(void)
 {
     if (!threads.empty())
@@ -47,15 +38,11 @@ void ThreadData::run_thread(unsigned int thread_id)
     float white_matter_t = param.threshold*1.2f;
     if(!roi_mgr->seeds.empty())
     try{
-        std::vector<std::vector<float> > local_track_buffer;
         while(!joinning &&
               !(param.stop_by_tract == 1 && tract_count[thread_id] >= end_count[thread_id]) &&
               !(param.stop_by_tract == 0 && seed_count[thread_id] >= end_count[thread_id]) &&
               !(param.max_seed_count > 0 && seed_count[thread_id] >= param.max_seed_count))
         {
-            if(!local_track_buffer.empty() && !pushing_data)
-                push_tracts(local_track_buffer);
-
             ++seed_count[thread_id];
             tipl::vector<3,float> pos;
             uint32_t seed_id;
@@ -123,9 +110,11 @@ void ThreadData::run_thread(unsigned int thread_id)
             }
 
             ++tract_count[thread_id];
-            local_track_buffer.push_back(std::vector<float>(result,end));
+            if(buffer_switch)
+                track_buffer_front[thread_id].push_back(std::vector<float>(result,end));
+            else
+                track_buffer_back[thread_id].push_back(std::vector<float>(result,end));
         }
-        push_tracts(local_track_buffer);
     }
     catch(...)
     {
@@ -136,14 +125,19 @@ void ThreadData::run_thread(unsigned int thread_id)
 
 bool ThreadData::fetchTracks(TractModel* handle)
 {
-    if (track_buffer.empty())
-        return false;
+    bool has_track = false;
     if(handle->parameter_id.empty())
         handle->parameter_id = param.get_code();
-    std::lock_guard<std::mutex> lock(lock_feed_function);
-    handle->add_tracts(track_buffer);
-    track_buffer.clear();
-    return true;
+    auto& buffer_at_rest = buffer_switch ? track_buffer_back : track_buffer_front;
+    for(auto& tract_per_thread : buffer_at_rest)
+        if(!tract_per_thread.empty())
+        {
+            handle->add_tracts(tract_per_thread);
+            tract_per_thread.clear();
+            has_track = true;
+        }
+    buffer_switch = !buffer_switch;
+    return has_track;
 
 }
 
@@ -246,8 +240,10 @@ void ThreadData::run(std::shared_ptr<tracking_data> trk_,unsigned int thread_cou
 
 
     joinning = false;
-    pushing_data = false;
     seed = std::mt19937(0);
+
+    track_buffer_back.resize(thread_count);
+    track_buffer_front.resize(thread_count);
     for (unsigned int index = 0;index < thread_count-1;++index)
         threads.push_back(std::make_shared<std::future<void> >(std::async(std::launch::async,
                 [&,thread_count,index](){run_thread(index);})));

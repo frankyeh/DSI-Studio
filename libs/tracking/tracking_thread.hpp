@@ -36,35 +36,27 @@ public:
     }
 public:
     bool joinning = false;
-    bool pushing_data = false;
     std::vector<std::shared_ptr<std::future<void> > > threads;
     std::vector<unsigned int> seed_count;
     std::vector<unsigned int> tract_count;
     std::vector<unsigned int> end_count;
     std::vector<unsigned char> running;
-    std::mutex  lock_feed_function,lock_seed_function;
+    std::mutex lock_seed_function;
     unsigned int get_total_seed_count(void)const
     {
-        if(seed_count.empty())
-            return 0;
-        return std::accumulate(seed_count.begin(),seed_count.end(),0);
+        return seed_count.empty() ? 0 : std::accumulate(seed_count.begin(),seed_count.end(),uint32_t(0));
     }
     unsigned int get_total_tract_count(void)const
     {
-        if(tract_count.empty())
-            return 0;
-        return std::accumulate(tract_count.begin(),tract_count.end(),0);
+        return tract_count.empty() ? 0 : std::accumulate(tract_count.begin(),tract_count.end(),uint32_t(0));
     }
     bool is_ended(void)
     {
-        if(running.empty())
-            return true;
-        return std::find(running.begin(),running.end(),1) == running.end();
+        return running.empty() ? true : std::find(running.begin(),running.end(),1) == running.end();
     }
-
 public:
-    std::vector<std::vector<float> > track_buffer;
-    void push_tracts(std::vector<std::vector<float> >& local_tract_buffer);
+    bool buffer_switch = true;
+    std::vector<std::vector<std::vector<float> > > track_buffer_back,track_buffer_front;
     void end_thread(void);
 
 public:
