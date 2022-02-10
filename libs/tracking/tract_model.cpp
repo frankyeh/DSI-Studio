@@ -2355,6 +2355,7 @@ void TractModel::add_tracts(std::vector<std::vector<float> >& new_tracks)
 //---------------------------------------------------------------------------
 void TractModel::add_tracts(std::vector<std::vector<float> >& new_tract,tipl::rgb color)
 {
+    std::lock_guard<std::mutex> lock(lock_tract_fetch);
     tract_data.reserve(tract_data.size()+new_tract.size());
 
     for (unsigned int index = 0;index < new_tract.size();++index)
@@ -2370,6 +2371,7 @@ void TractModel::add_tracts(std::vector<std::vector<float> >& new_tract,tipl::rg
 
 void TractModel::add_tracts(std::vector<std::vector<float> >& new_tract, unsigned int length_threshold,tipl::rgb color)
 {
+    std::lock_guard<std::mutex> lock(lock_tract_fetch);
     tract_data.reserve(tract_data.size()+new_tract.size()/2.0);
     for (unsigned int index = 0;index < new_tract.size();++index)
     {
