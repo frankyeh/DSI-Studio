@@ -91,11 +91,17 @@ void TractTableWidget::draw_tracts(unsigned char dim,int pos,
 
     tipl::par_for(selected_tracts.size(),[&](unsigned int index,unsigned int thread)
     {
+        if(cur_tracking_window.slice_need_update)
+            return;
         if(cur_tracking_window.current_slice->is_diffusion_space)
-            selected_tracts[index]->get_in_slice_tracts(dim,pos,nullptr,lines_threaded[thread],colors_threaded[thread],max_count);
+            selected_tracts[index]->get_in_slice_tracts(dim,pos,nullptr,lines_threaded[thread],colors_threaded[thread],max_count,
+                            cur_tracking_window.slice_need_update);
         else
-            selected_tracts[index]->get_in_slice_tracts(dim,pos,&iT,lines_threaded[thread],colors_threaded[thread],max_count);
+            selected_tracts[index]->get_in_slice_tracts(dim,pos,&iT,lines_threaded[thread],colors_threaded[thread],max_count,
+                            cur_tracking_window.slice_need_update);
     });
+    if(cur_tracking_window.slice_need_update)
+        return;
 
     std::vector<std::vector<tipl::vector<2,float> > > lines(std::move(lines_threaded[0]));
     std::vector<unsigned int> colors(std::move(colors_threaded[0]));
