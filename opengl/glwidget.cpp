@@ -1355,15 +1355,15 @@ void GLWidget::renderLR()
             glLineWidth(4);
             glBegin (GL_LINES);
             glColor3f (0.5f,0.2f,0.2f);
-            glVertex3f(lastPos.x(),lastPos.y(),0);
-            glVertex3f(curPos.x(),curPos.y(),0);
+            glVertex3f(lastPos.x()*devicePixelRatio(),lastPos.y()*devicePixelRatio(),0);
+            glVertex3f(curPos.x()*devicePixelRatio(),curPos.y()*devicePixelRatio(),0);
             glEnd();
 
             glLineWidth(2);
             glBegin (GL_LINES);
             glColor3f (0.8f,0.5f,0.5f);
-            glVertex3f(lastPos.x(),lastPos.y(),0);
-            glVertex3f(curPos.x(),curPos.y(),0);
+            glVertex3f(lastPos.x()*devicePixelRatio(),lastPos.y()*devicePixelRatio(),0);
+            glVertex3f(curPos.x()*devicePixelRatio(),curPos.y()*devicePixelRatio(),0);
             glEnd();
 
         // This keep shade on other regions black
@@ -2223,7 +2223,7 @@ void GLWidget::mousePressEvent(QMouseEvent *event)
     makeCurrent();
     setFocus();// for key stroke to work
     edit_right = (view_mode != view_mode_type::single && (event->pos().x() > cur_width / 2));
-    lastPos = convert_pos(event);
+    lastPos = curPos = convert_pos(event);
     if(editing_option != none)
         get_pos();
     if(editing_option == selecting)
