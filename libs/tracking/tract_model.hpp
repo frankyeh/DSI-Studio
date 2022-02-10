@@ -126,7 +126,8 @@ public:
                                  tipl::matrix<4,4>* T,
                                  std::vector<std::vector<tipl::vector<2,float> > >& lines,
                                  std::vector<unsigned int>& colors,
-                                 unsigned int max_count);
+                                 unsigned int max_count,
+                                 bool& terminated);
         void to_voxel(std::vector<tipl::vector<3,short> >& points,float ratio,int id = -1);
         void to_end_point_voxels(std::vector<tipl::vector<3,short> >& points1,
                                 std::vector<tipl::vector<3,short> >& points2,float ratio);
