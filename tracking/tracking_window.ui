@@ -529,8 +529,8 @@
    </property>
    <property name="minimumSize">
     <size>
-     <width>0</width>
-     <height>0</height>
+     <width>317</width>
+     <height>50</height>
     </size>
    </property>
    <property name="maximumSize">
@@ -791,8 +791,8 @@
    </property>
    <property name="minimumSize">
     <size>
-     <width>0</width>
-     <height>0</height>
+     <width>280</width>
+     <height>50</height>
     </size>
    </property>
    <property name="windowTitle">
@@ -1243,6 +1243,7 @@
      <addaction name="separator"/>
      <addaction name="actionAB"/>
      <addaction name="actionB_A"/>
+     <addaction name="actionAll_To_First"/>
      <addaction name="actionA_B"/>
      <addaction name="separator"/>
      <addaction name="actionDilation_by_voxel"/>
@@ -1316,8 +1317,8 @@
    </property>
    <property name="minimumSize">
     <size>
-     <width>0</width>
-     <height>0</height>
+     <width>343</width>
+     <height>158</height>
     </size>
    </property>
    <property name="maximumSize">
@@ -1735,8 +1736,8 @@ Tracking</string>
    </property>
    <property name="minimumSize">
     <size>
-     <width>0</width>
-     <height>0</height>
+     <width>275</width>
+     <height>149</height>
     </size>
    </property>
    <property name="floating">
@@ -2417,8 +2418,8 @@ Tracking</string>
    </property>
    <property name="minimumSize">
     <size>
-     <width>0</width>
-     <height>0</height>
+     <width>185</width>
+     <height>50</height>
     </size>
    </property>
    <property name="floating">
@@ -4104,6 +4105,11 @@ Tracking</string>
   <action name="actionOpenAtlas">
    <property name="text">
     <string>Open Atlas...</string>
+   </property>
+  </action>
+  <action name="actionAll_To_First">
+   <property name="text">
+    <string>All To First</string>
    </property>
   </action>
  </widget>

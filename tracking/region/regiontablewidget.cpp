@@ -1403,49 +1403,107 @@ void RegionTableWidget::do_action(QString action)
             cur_region.perform(action.toStdString());
 
 
-        if(action == "A-B" || action == "B-A" || action == "A*B")
+        if(action == "A-B" || action == "B-A" || action == "A*B" || action == "A<<B")
         {
             auto checked_regions = get_checked_regions();
             if(checked_regions.size() < 2)
                 return;
-            if(action == "A-B")
+
+            tipl::image<3,unsigned char> A;
+            tipl::image<3,uint16_t> A_labels;
+            checked_regions[0]->SaveToBuffer(A);
+            if(action == "A<<B")
+                A_labels.resize(A.shape());
+
+            tipl::par_for(checked_regions.size(),[&](size_t r)
             {
-                tipl::image<3,unsigned char> A,B;
-                checked_regions[0]->SaveToBuffer(A);
-                for(size_t r = 1;r < checked_regions.size();++r)
+                if(r == 0)
+                    return;
+                tipl::image<3,unsigned char> B;
+                checked_regions[r]->SaveToBuffer(B,checked_regions[0]->resolution_ratio);
+                if(action == "A-B")
                 {
-                    checked_regions[r]->SaveToBuffer(B,checked_regions[0]->resolution_ratio);
                     for(size_t i = 0;i < A.size();++i)
                         if(B[i])
                             A[i] = 0;
                 }
-                checked_regions[0]->LoadFromBuffer(A);
-            }
-            else
-            {
-                tipl::image<3,unsigned char> A,B;
-                for(size_t r = 1;r < checked_regions.size();++r)
+                if(action == "B-A")
                 {
-                    checked_regions[r]->SaveToBuffer(B);
-                    if(B.shape() != A.shape())
-                        checked_regions[0]->SaveToBuffer(A,checked_regions[r]->resolution_ratio);
-
-                    if(action == "B-A")
-                    {
-                        for(size_t i = 0;i < B.size();++i)
-                            if(A[i])
-                                B[i] = 0;
-                        checked_regions[r]->LoadFromBuffer(B);
-                    }
-                    if(action == "A*B")
-                    {
-                        for(size_t i = 0;i < B.size();++i)
-                            B[i] = (A[i] & B[i]);
-                        checked_regions[r]->LoadFromBuffer(B);
-                    }
+                    for(size_t i = 0;i < B.size();++i)
+                        if(A[i])
+                            B[i] = 0;
+                    checked_regions[r]->LoadFromBuffer(B);
                 }
-            }
+                if(action == "A*B")
+                {
+                    for(size_t i = 0;i < B.size();++i)
+                        B[i] = (A[i] & B[i]);
+                    checked_regions[r]->LoadFromBuffer(B);
+                }
+                if(action == "A<<B")
+                {
+                    for(size_t i = 0;i < A.size();++i)
+                        if(A[i] && B[i] && A_labels[i] < r)
+                            A_labels[i] = uint16_t(r);
+                }
+            });
+            if(action == "A-B")
+                checked_regions[0]->LoadFromBuffer(A);
 
+            if(action == "A<<B")
+            {
+                tipl::par_for(tipl::begin_index(A.shape()),
+                              tipl::end_index(A.shape()),[&](const tipl::pixel_index<3>& index)
+                {
+                    if(!A[index.index()] || A_labels[index.index()])
+                        return;
+                    float min_dis = std::numeric_limits<float>::max();
+                    size_t min_r = 1;
+                    tipl::vector<3> pos(index);
+                    for(size_t r = 1;r < checked_regions.size();++r)
+                    {
+                        float ratio = checked_regions[0]->resolution_ratio/checked_regions[r]->resolution_ratio;
+                        auto& points = checked_regions[r]->get_region_voxels_raw();
+                        for(size_t i = 0;i < points.size();++i)
+                        {
+                            tipl::vector<3> pos2(points[i]);
+                            if(ratio != 1.0f)
+                            {
+                                if(std::abs(pos2[0]*=ratio-pos[0]) > min_dis ||
+                                   std::abs(pos2[1]*=ratio-pos[1]) > min_dis ||
+                                   std::abs(pos2[2]*=ratio-pos[2]) > min_dis)
+                                       continue;
+                            }
+                            else
+                            {
+                                if(std::abs(pos2[0]-pos[0]) > min_dis ||
+                                   std::abs(pos2[1]-pos[1]) > min_dis ||
+                                   std::abs(pos2[2]-pos[2]) > min_dis)
+                                       continue;
+                            }
+                            pos2 -= pos;
+                            float L = float(pos2.length());
+                            if(L < min_dis)
+                            {
+                                min_dis = L;
+                                min_r = r;
+                            }
+                        }
+                    }
+                    A_labels[index.index()] = min_r;
+                });
+
+                tipl::par_for(checked_regions.size(),[&](size_t r)
+                {
+                    if(r == 0)
+                        return;
+                    tipl::image<3,unsigned char> B(A_labels.shape());
+                    for(size_t i = 0;i < A_labels.size();++i)
+                        if(A_labels[i] == r)
+                            B[i] = 1;
+                    checked_regions[r]->LoadFromBuffer(B);
+                });
+            }
         }
         if(action == "dilation_by_voxel")
         {
