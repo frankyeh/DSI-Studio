@@ -3656,24 +3656,15 @@ Tracking</string>
    <property name="text">
     <string>First Excludes All</string>
    </property>
-   <property name="shortcut">
-    <string>Ctrl+Shift+1</string>
-   </property>
   </action>
   <action name="actionB_A">
    <property name="text">
     <string>All Exclude First</string>
    </property>
-   <property name="shortcut">
-    <string>Ctrl+Shift+2</string>
-   </property>
   </action>
   <action name="actionAB">
    <property name="text">
     <string>All Intersect First</string>
-   </property>
-   <property name="shortcut">
-    <string>Ctrl+Shift+3</string>
    </property>
   </action>
   <action name="actionBy_Size">
