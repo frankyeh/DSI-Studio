@@ -1647,7 +1647,9 @@ void RegionTableWidget::do_action(QString action)
                 arg = tipl::arg_sort(regions.size(),[&]
                 (int lhs,int rhs)
                 {
-                    return negate ^ (item(lhs,0)->text() < item(rhs,0)->text());
+                    auto lstr = item(lhs,0)->text();
+                    auto rstr = item(rhs,0)->text();
+                    return negate ^ (lstr.length() == rstr.length() ? lstr < rstr : lstr.length() < rstr.length());
                 });
             }
             else
