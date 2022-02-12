@@ -332,7 +332,7 @@ void slice_view_scene::get_view_image(QImage& new_view_image,std::shared_ptr<Sli
         if(!region_image.isNull())
         {
             QPainter painter(&scaled_image);
-            painter.setCompositionMode(QPainter::CompositionMode_Plus);
+            painter.setCompositionMode(CompositionMode_SourceAtop);
             painter.drawImage(0,0,region_image);
         }
 
