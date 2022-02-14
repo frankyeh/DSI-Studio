@@ -386,10 +386,23 @@ bool CustomSliceModel::initialize(const std::vector<std::string>& files,bool is_
     // same dimension, no registration required.
     if(source_images.shape() == handle->dim)
     {
-        T.identity();
-        invT.identity();
-        is_diffusion_space = true;
-        has_transform = true;
+        QMessageBox::StandardButton r = QMessageBox::No;
+        if(has_gui)
+            r = QMessageBox::question(nullptr,"DSI Studio","Apply registration?",
+                                QMessageBox::Cancel | QMessageBox::No | QMessageBox::Yes,QMessageBox::Yes);
+        if(r == QMessageBox::Cancel)
+        {
+            error_msg = "Canceled";
+            return false;
+        }
+        if(r == QMessageBox::No)
+        {
+            T.identity();
+            invT.identity();
+            is_diffusion_space = true;
+            has_transform = true;
+            return false;
+        }
     }
 
     if(!has_transform && handle->dim.depth() < 10) // 2d assume FOV is the same
