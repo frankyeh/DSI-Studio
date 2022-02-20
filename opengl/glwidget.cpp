@@ -2556,7 +2556,7 @@ void GLWidget::copyToClipboardEach(QTableWidget* widget,unsigned int col_size)
     height += 5;
     QImage I(images.size() >= col_size ? width*int(col_size): width*int(images.size()),
              height*int(1+images.size()/col_size),QImage::Format_RGB32);
-    all.fill(images[0].pixel(0,0));
+    I.fill(images[0].pixel(0,0));
     QPainter painter(&I);
     painter.setCompositionMode(QPainter::CompositionMode_Source);
     for (size_t i = 0,j = 0;i < images.size();++i,++j)
