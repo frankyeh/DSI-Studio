@@ -2556,8 +2556,9 @@ void GLWidget::copyToClipboardEach(QTableWidget* widget,unsigned int col_size)
     height += 5;
     QImage I(images.size() >= col_size ? width*int(col_size): width*int(images.size()),
              height*int(1+images.size()/col_size),QImage::Format_RGB32);
+    all.fill(images[0].pixel(0,0));
     QPainter painter(&I);
-    painter.fillRect(I.rect(),images[0].pixel(0,0));
+    painter.setCompositionMode(QPainter::CompositionMode_Source);
     for (size_t i = 0,j = 0;i < images.size();++i,++j)
         painter.drawImage(int(j%col_size)*width+(width-images[i].width())/2,
                           int(i/col_size)*height+(height-images[i].height())/2,images[i]);
@@ -2622,8 +2623,9 @@ void GLWidget::get3View(QImage& I,unsigned int type)
         get_bounding_box(image2);
         int height_shift = (image2.height()-image0.height())/2;
         QImage all(image0.width()+image00.width()+image1.width()+image2.width(),image2.height(),QImage::Format_RGB32);
+        all.fill(image0.pixel(0,0));
         QPainter painter(&all);
-        painter.fillRect(all.rect(),image0.pixel(0,0));
+        painter.setCompositionMode(QPainter::CompositionMode_Source);
         painter.drawImage(0,height_shift,image0);
         painter.drawImage(image0.width(),height_shift,image00);
         painter.drawImage(image0.width()+image00.width(),height_shift,image1);
