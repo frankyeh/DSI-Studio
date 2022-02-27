@@ -12,3 +12,4 @@ runs:
         unzip 1.zip
         unzip 2.zip
         rm -fr *.zip
+      shell: bash
