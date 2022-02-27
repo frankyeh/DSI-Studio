@@ -1,18 +1,14 @@
 name: Setup Test Environment
-on:
-  workflow_call:
-    secrets:
-      TEST_FILE:
-        required: true
-jobs:
-  download_data:
-    name: Download DSI Studio and Test Data
-    runs-on: ubuntu-latest
-    steps:
+inputs:
+  test_file:
+    required: true
+runs:
+  using: "composite"
+  steps:
     - name: Download and Unzip
       run: |
         curl -L "https://github.com/frankyeh/DSI-Studio/releases/download/2021.12.03/dsi_studio_ubuntu_2004.zip" -o 1.zip
-        curl -L "${{ secrets.TEST_FILE }}" -o 2.zip
+        curl -L "${{ inputs.test_file }}" -o 2.zip
         unzip 1.zip
         unzip 2.zip
         rm -fr *.zip
