@@ -6,7 +6,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Setup Environment
-      uses: ./.github/workflows/test_env.yml@main
+      uses: ./.github/workflows/test_env.yml
     - name: Test Recon
       run: |
         ./dsi-studio/dsi_studio --source=./animal_src/*.src.gz --action=rec --method=1 |& tee -a log.txt
@@ -21,7 +21,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Setup Environment
-      uses: ./.github/workflows/test_env.yml@main
+      uses: ./.github/workflows/test_env.yml
     - name: Test Recon
       run: |
         ./dsi-studio/dsi_studio --source=./human_src/*.src.gz --action=rec --method=1 |& tee -a log.txt
