@@ -1,6 +1,9 @@
 name: Setup Test Environment
 on:
   workflow_call:
+    secrets:
+      TEST_FILE:
+        required: true
 jobs:
   download_data:
     name: Download DSI Studio and Test Data
