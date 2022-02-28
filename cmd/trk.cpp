@@ -198,6 +198,7 @@ bool export_track_info(program_option& po,std::shared_ptr<fib_data> handle,
                 std::cout << " in RGB color";
             if(output_end)
                 std::cout << " end point only";
+            std::cout << std::endl;
             std::cout << "TDI dimension: " << dim << std::endl;
             std::cout << "TDI voxel size: " << vs << std::endl;
             std::cout << std::endl;
