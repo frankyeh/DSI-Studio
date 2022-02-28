@@ -150,7 +150,7 @@ int atl(program_option& po)
             std::vector<std::shared_ptr<atlas> > atlas_list;
             if(!atl_load_atlas(handle,po.get("atlas"),atlas_list))
                 return 1;
-            if(!handle->can_map_to_mni() || handle->get_sub2temp_mapping().empty())
+            if(handle->get_sub2temp_mapping().empty())
             {
                 std::cout << "ERROR: cannot output connectivity: no mni mapping" << std::endl;
                 return 1;
