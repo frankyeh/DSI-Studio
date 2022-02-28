@@ -13,16 +13,16 @@ jobs:
         test_file: ${{ secrets.TEST_FILE }}
     - name: Test DTI Recon
       run: |  
-        ./dsi-studio/dsi_studio --source=./animal_src/*.src.gz --action=rec --method=1 |& tee -a log.txt
         cd animal_src
+        ./dsi-studio/dsi_studio --source=*.src.gz --action=rec --method=1
         if [[ -f Chipamzee.src.gz.dti.fib.gz ]]; then exit 1 fi
         if [[ -f Marmoset.src.gz.dti.fib.gz ]]; then exit 1 fi
         if [[ -f Rat.src.gz.dti.fib.gz ]]; then exit 1 fi
         if [[ -f Rhesus.src.gz.dti.fib.gz ]]; then exit 1 fi
     - name: Test GQI Recon
       run: |  
-        ./dsi-studio/dsi_studio --source=./animal_src/*.src.gz --action=rec |& tee -a log.txt
         cd animal_src
+        ./dsi-studio/dsi_studio --source=*.src.gz --action=rec
         if [[ -f Chipamzee.src.gz.gqi.1.25.fib.gz ]]; then exit 1 fi
         if [[ -f Marmoset.src.gz.gqi.1.25.fib.gz ]]; then exit 1 fi
         if [[ -f Rat.src.gz.gqi.1.25.fib.gz ]]; then exit 1 fi
@@ -37,12 +37,8 @@ jobs:
       uses: ./.github/workflows/test_env
       with:
         test_file: ${{ secrets.TEST_FILE }}
-    - name: Test Recon
+    - name: Test GQI Recon
       run: |
-        ./dsi-studio/dsi_studio --source=./human_src/*.src.gz --action=rec --method=1 |& tee -a log.txt
-        ./dsi-studio/dsi_studio --source=./human_src/*.src.gz --action=rec |& tee -a log.txt
-        ./dsi-studio/dsi_studio --source=./human_src/*.src.gz --action=rec --method=7 --template=0 |& tee -a log.txt
-    - name: List output
-      run: |  
-        ls -l ./human_src/*.fib.gz   
-        cat log.txt
+        cd animal_src
+        ./dsi-studio/dsi_studio --source=*.src.gz --action=rec
+        if [[ -f dHCP.src.gz.gqi.1.25.fib.gz ]]; then exit 1 fi
