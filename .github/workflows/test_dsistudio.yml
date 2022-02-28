@@ -10,6 +10,7 @@ jobs:
     - name: Setup Environment
       run: |
         curl -L "https://github.com/frankyeh/DSI-Studio/releases/download/2021.12.03/dsi_studio_ubuntu_2004.zip" | jar xv
+        chmod 777 ./dsi-studio/dsi_studio
         curl -L ${{ secrets.TEST_FILE }} | jar xv
     - name: Test DTI/GQI Recon
       run: |  
@@ -35,6 +36,7 @@ jobs:
     - name: Setup Environment
       run: |
         curl -L "https://github.com/frankyeh/DSI-Studio/releases/download/2021.12.03/dsi_studio_ubuntu_2004.zip" | jar xv
+        chmod 777 ./dsi-studio/dsi_studio
         curl -L ${{ secrets.TEST_FILE }} | jar xv
     - name: Test GQI Recon
       run: |
@@ -50,6 +52,7 @@ jobs:
     - name: Setup Environment
       run: |
         curl -L "https://github.com/frankyeh/DSI-Studio/releases/download/2021.12.03/dsi_studio_ubuntu_2004.zip" | jar xv
+        chmod 777 ./dsi-studio/dsi_studio
     - name: Test Tracking
       run: |
         curl -L https://figshare.com/ndownloader/files/1222774 -o cmu60.fib.gz
