@@ -13,10 +13,12 @@ jobs:
         test_file: ${{ secrets.TEST_FILE }}
     - name: Test DTI Recon
       run: |  
-        ./dsi-studio/dsi_studio --source=./animal_src/*.src.gz --action=rec --method=1
+        ./dsi-studio/dsi_studio --source=./animal_src/*.src.gz --action=rec --method=1 |& tee -a log.txt
+        cat log.txt
     - name: Test GQI Recon
       run: |  
-        ./dsi-studio/dsi_studio --source=./animal_src/*.src.gz --action=rec
+        ./dsi-studio/dsi_studio --source=./animal_src/*.src.gz --action=rec |& tee -a log.txt
+        cat log.txt
         
   Human_Recon:
     runs-on: ubuntu-latest
@@ -31,4 +33,6 @@ jobs:
       run: |
         cd animal_src
         ../dsi-studio/dsi_studio --source=*.src.gz --action=rec
-        if [[ -f dHCP.src.gz.gqi.1.25.fib.gz ]]; then exit 1 fi;
+        if [[ -f dHCP.src.gz.gqi.1.25.fib.gz ]]; then 
+          exit 1;
+        fi
