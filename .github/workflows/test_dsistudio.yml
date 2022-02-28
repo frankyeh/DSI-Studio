@@ -13,16 +13,24 @@ jobs:
         test_file: ${{ secrets.TEST_FILE }}
     - name: Test DTI Recon
       run: |  
-        ./dsi-studio/dsi_studio --source=./animal_src/*.src.gz --action=rec --method=1 |& tee -a log.txt
+        cd animal_src
+        ../dsi-studio/dsi_studio --source=*.src.gz --action=rec --method=1 |& tee -a log.txt
+        ls Chipamzee.src.gz.dti.fib.gz
+        ls Marmoset.src.gz.dti.fib.gz
+        ls Rat.src.gz.dti.fib.gz
+        ls Rhesus.src.gz.dti.fib.gz
     - name: Test GQI Recon
       run: |  
-        ./dsi-studio/dsi_studio --source=./animal_src/*.src.gz --action=rec |& tee -a log.txt
-        ls ./animal_src/*
+        cd animal_src
+        ../dsi-studio/dsi_studio --source=*.src.gz --action=rec |& tee -a log.txt
+        ls Chipamzee.src.gz.gqi.1.25.fib.gz
+        ls Marmoset.src.gz.gqi.1.25.fib.gz
+        ls Rat.src.gz.dti.gqi.1.25.fib.gz
+        ls Rhesus.src.gz.gqi.1.25.fib.gz
     - name: Upload Results
       uses: actions/upload-artifact@v2.3.1
       with:
-        name: log.txt
-        path: .
+        name: ./animal_src/log.txt
     
   Human_Recon:
     runs-on: ubuntu-latest
@@ -37,8 +45,8 @@ jobs:
       run: |
         cd human_src
         ../dsi-studio/dsi_studio --source=*.src.gz --action=rec
-        ls ./human_src/*
-    - name: File Existence
-      uses: andstor/file-existence-action@v1.1.0
+        ls dHCP.src.gz.gqi.1.25.fib.gz
+    - name: Upload Results
+      uses: actions/upload-artifact@v2.3.1
       with:
-        files: ./human_src/dHCP
+        name: ./human_src/log.txt
