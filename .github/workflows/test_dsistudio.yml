@@ -14,7 +14,7 @@ jobs:
     - name: Test DTI Recon
       run: |  
         cd animal_src
-        ./dsi-studio/dsi_studio --source=*.src.gz --action=rec --method=1
+        ../dsi-studio/dsi_studio --source=*.src.gz --action=rec --method=1
         if [[ -f Chipamzee.src.gz.dti.fib.gz ]]; then exit 1 fi
         if [[ -f Marmoset.src.gz.dti.fib.gz ]]; then exit 1 fi
         if [[ -f Rat.src.gz.dti.fib.gz ]]; then exit 1 fi
@@ -22,7 +22,7 @@ jobs:
     - name: Test GQI Recon
       run: |  
         cd animal_src
-        ./dsi-studio/dsi_studio --source=*.src.gz --action=rec
+        ../dsi-studio/dsi_studio --source=*.src.gz --action=rec
         if [[ -f Chipamzee.src.gz.gqi.1.25.fib.gz ]]; then exit 1 fi
         if [[ -f Marmoset.src.gz.gqi.1.25.fib.gz ]]; then exit 1 fi
         if [[ -f Rat.src.gz.gqi.1.25.fib.gz ]]; then exit 1 fi
@@ -40,5 +40,5 @@ jobs:
     - name: Test GQI Recon
       run: |
         cd animal_src
-        ./dsi-studio/dsi_studio --source=*.src.gz --action=rec
+        ../dsi-studio/dsi_studio --source=*.src.gz --action=rec
         if [[ -f dHCP.src.gz.gqi.1.25.fib.gz ]]; then exit 1 fi
