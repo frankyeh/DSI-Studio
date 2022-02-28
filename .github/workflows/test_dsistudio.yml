@@ -27,11 +27,7 @@ jobs:
         ls Marmoset.src.gz.gqi.1.25.fib.gz
         ls Rat.src.gz.gqi.1.25.fib.gz
         ls Rhesus.src.gz.gqi.1.25.fib.gz
-    - name: Upload Results
-      uses: actions/upload-artifact@v2.3.1
-      with:
-        name: animal_src_log
-        path: ./animal_src/log.txt
+
     
   Human_Recon:
     runs-on: ubuntu-latest
@@ -47,8 +43,27 @@ jobs:
         cd human_src
         ../dsi-studio/dsi_studio --source=*.src.gz --action=rec
         ls dHCP.src.gz.gqi.1.25.fib.gz
-    - name: Upload Results
-      uses: actions/upload-artifact@v2.3.1
+
+  Human_Tracking:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+    - name: Setup Environment
+      uses: ./.github/workflows/test_env
       with:
-        name: human_src_log
-        path: ./human_src/log.txt
+        test_file: ${{ secrets.TEST_FILE }}
+    - name: Test Tracking
+      run: |
+        cd human_fib
+        ../dsi-studio/dsi_studio --source=HCA.gqi.1.25.fib.gz --action=trk --output=HCA.tt.gz --export=stat,tdi
+        ls HCA.tt.gz
+        ../dsi-studio/dsi_studio --source=HCA.gqi.1.25.fib.gz --action=trk --track_id=Arcuate_Fasciculus_L --output=AF_L.tt.gz
+        ls AF_L.tt.gz
+        ../dsi-studio/dsi_studio --source=HCA.gqi.1.25.fib.gz --action=trk --roi=FreeSurferDKT_Cortical:left_precentral,dilate,dilate,smoothing --roi2=FreeSurferDKT_Cortical:right_precentral,dilate,dilate,smoothing --output=LR.tt.gz
+        ls LR.tt.gz
+        ../dsi-studio/dsi_studio --source=HCA.gqi.1.25.fib.gz --action=trk --fiber_count=1000000 --output=no_file --connectivity=HCP-MMP,AAL3 --connectivity_value=count,qa,trk
+        ls *
+        
+        
+         
