@@ -11,16 +11,23 @@ jobs:
       uses: ./.github/workflows/test_env
       with:
         test_file: ${{ secrets.TEST_FILE }}
-    - name: Test Recon
-      run: |
-        ./dsi-studio/dsi_studio --source=./animal_src/*.src.gz --action=rec --method=1 |& tee -a log.txt
-        ./dsi-studio/dsi_studio --source=./animal_src/*.src.gz --action=rec |& tee -a log.txt
-        ./dsi-studio/dsi_studio --source=./animal_src/*.src.gz --action=rec --method=7 |& tee -a log.txt
-    - name: List output
+    - name: Test DTI Recon
       run: |  
-        ls -l ./animal_src/*.fib.gz
-        cat log.txt
-        
+        ./dsi-studio/dsi_studio --source=./animal_src/*.src.gz --action=rec --method=1 |& tee -a log.txt
+        cd animal_src
+        if [[ -f Chipamzee.src.gz.dti.fib.gz ]]; then exit 1 fi
+        if [[ -f Marmoset.src.gz.dti.fib.gz ]]; then exit 1 fi
+        if [[ -f Rat.src.gz.dti.fib.gz ]]; then exit 1 fi
+        if [[ -f Rhesus.src.gz.dti.fib.gz ]]; then exit 1 fi
+    - name: Test GQI Recon
+      run: |  
+        ./dsi-studio/dsi_studio --source=./animal_src/*.src.gz --action=rec |& tee -a log.txt
+        cd animal_src
+        if [[ -f Chipamzee.src.gz.gqi.1.25.fib.gz ]]; then exit 1 fi
+        if [[ -f Marmoset.src.gz.gqi.1.25.fib.gz ]]; then exit 1 fi
+        if [[ -f Rat.src.gz.gqi.1.25.fib.gz ]]; then exit 1 fi
+        if [[ -f Rhesus.src.gz.gqi.1.25.fib.gz ]]; then exit 1 fi
+
   Human_Recon:
     runs-on: ubuntu-latest
     steps:
