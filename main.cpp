@@ -299,15 +299,16 @@ int run_cmd(int ac, char *av[])
     return 0;
 }
 
+extern console_stream console;
 int main(int ac, char *av[])
 {
-    if(ac > 2)
-        return run_cmd(ac,av);
-    if(QString(av[1]).endsWith(".txt") || QString(av[1]).endsWith(".log"))
+    if(ac > 2 || QString(av[1]).endsWith(".txt") || QString(av[1]).endsWith(".log"))
         return run_cmd(ac,av);
     if(ac == 2)
         arg_file_name = av[1];
 
+    // replace default std::cout buffer
+    std::cout.rdbuf(&console);
 
     QApplication a(ac,av);
     init_application();

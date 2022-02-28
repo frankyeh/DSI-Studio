@@ -8,6 +8,23 @@
 #include <mutex>
 class QTextEdit;
 
+class console_stream :  public std::basic_streambuf<char>
+{
+public:
+    console_stream(void):std::basic_streambuf<char>(){}
+    ~console_stream(void){}
+    void update_text_edit(QTextEdit* log_window);
+protected:
+    virtual int_type overflow(int_type v) override;
+    virtual std::streamsize xsputn(const char *p, std::streamsize n) override;
+public:
+    bool has_new_line = false;
+    std::mutex edit_buf;
+    QString buf;
+};
+extern console_stream console;
+
+
 
 namespace Ui {
     class MainWindow;
