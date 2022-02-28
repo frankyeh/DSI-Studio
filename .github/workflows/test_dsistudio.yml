@@ -14,12 +14,16 @@ jobs:
     - name: Test DTI Recon
       run: |  
         ./dsi-studio/dsi_studio --source=./animal_src/*.src.gz --action=rec --method=1 |& tee -a log.txt
-        cat log.txt
     - name: Test GQI Recon
       run: |  
         ./dsi-studio/dsi_studio --source=./animal_src/*.src.gz --action=rec |& tee -a log.txt
-        cat log.txt
-        
+        ls ./animal_src/*
+    - name: Upload Results
+      uses: actions/upload-artifact@v2.3.1
+      with:
+        name: log.txt
+        path: .
+    
   Human_Recon:
     runs-on: ubuntu-latest
     steps:
@@ -31,8 +35,10 @@ jobs:
         test_file: ${{ secrets.TEST_FILE }}
     - name: Test GQI Recon
       run: |
-        cd animal_src
+        cd human_src
         ../dsi-studio/dsi_studio --source=*.src.gz --action=rec
-        if [[ -f dHCP.src.gz.gqi.1.25_.fib.gz ]]; then 
-          exit 1;
-        fi
+        ls ./human_src/*
+    - name: File Existence
+      uses: andstor/file-existence-action@v1.1.0
+      with:
+        files: ./human_src/dHCP
