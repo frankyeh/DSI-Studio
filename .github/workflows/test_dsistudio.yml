@@ -62,7 +62,7 @@ jobs:
         ls AF_L.tt.gz
         ../dsi-studio/dsi_studio --source=HCA.gqi.1.25.fib.gz --action=trk --roi=FreeSurferDKT_Cortical:left_precentral,dilate,dilate,smoothing --roi2=FreeSurferDKT_Cortical:right_precentral,dilate,dilate,smoothing --output=LR.tt.gz
         ls LR.tt.gz
-        ../dsi-studio/dsi_studio --source=HCA.gqi.1.25.fib.gz --action=trk --fiber_count=1000000 --output=no_file --connectivity=HCP-MMP,AAL3 --connectivity_value=count,qa,trk
+        ../dsi-studio/dsi_studio --source=HCA.gqi.1.25.fib.gz --action=trk --fiber_count=1000000 --output=no_file --connectivity=AAL3_1mm --connectivity_value=count,qa,trk
         ls *
         
         
