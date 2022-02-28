@@ -25,7 +25,7 @@ jobs:
         ../dsi-studio/dsi_studio --source=*.src.gz --action=rec |& tee -a log.txt
         ls Chipamzee.src.gz.gqi.1.25.fib.gz
         ls Marmoset.src.gz.gqi.1.25.fib.gz
-        ls Rat.src.gz.dti.gqi.1.25.fib.gz
+        ls Rat.src.gz.gqi.1.25.fib.gz
         ls Rhesus.src.gz.gqi.1.25.fib.gz
     - name: Upload Results
       uses: actions/upload-artifact@v2.3.1
