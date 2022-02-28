@@ -19,7 +19,6 @@ jobs:
     - name: List output
       run: |  
         ls -l ./animal_src/*.fib.gz
-        grep -E 'source=|saving|R2:' log.txt
         
   Human_Recon:
     runs-on: ubuntu-latest
@@ -37,5 +36,4 @@ jobs:
         ./dsi-studio/dsi_studio --source=./human_src/*.src.gz --action=rec --method=7 --template=0 |& tee -a log.txt
     - name: List output
       run: |  
-        ls -l ./human_src/*.fib.gz
-        grep -E 'source=|saving|R2:' log.txt      
+        ls -l ./human_src/*.fib.gz   
