@@ -13,21 +13,11 @@ jobs:
         test_file: ${{ secrets.TEST_FILE }}
     - name: Test DTI Recon
       run: |  
-        cd animal_src
-        ../dsi-studio/dsi_studio --source=*.src.gz --action=rec --method=1
-        if [[ -f Chipamzee.src.gz.dti.fib.gz ]]; then exit 1 fi
-        if [[ -f Marmoset.src.gz.dti.fib.gz ]]; then exit 1 fi
-        if [[ -f Rat.src.gz.dti.fib.gz ]]; then exit 1 fi
-        if [[ -f Rhesus.src.gz.dti.fib.gz ]]; then exit 1 fi
+        ./dsi-studio/dsi_studio --source=./animal_src/*.src.gz --action=rec --method=1
     - name: Test GQI Recon
       run: |  
-        cd animal_src
-        ../dsi-studio/dsi_studio --source=*.src.gz --action=rec
-        if [[ -f Chipamzee.src.gz.gqi.1.25.fib.gz ]]; then exit 1 fi
-        if [[ -f Marmoset.src.gz.gqi.1.25.fib.gz ]]; then exit 1 fi
-        if [[ -f Rat.src.gz.gqi.1.25.fib.gz ]]; then exit 1 fi
-        if [[ -f Rhesus.src.gz.gqi.1.25.fib.gz ]]; then exit 1 fi
-
+        ./dsi-studio/dsi_studio --source=./animal_src/*.src.gz --action=rec
+        
   Human_Recon:
     runs-on: ubuntu-latest
     steps:
@@ -41,4 +31,4 @@ jobs:
       run: |
         cd animal_src
         ../dsi-studio/dsi_studio --source=*.src.gz --action=rec
-        if [[ -f dHCP.src.gz.gqi.1.25.fib.gz ]]; then exit 1 fi
+        if [[ -f dHCP.src.gz.gqi.1.25.fib.gz ]]; then exit 1 fi;
