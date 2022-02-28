@@ -30,7 +30,8 @@ jobs:
     - name: Upload Results
       uses: actions/upload-artifact@v2.3.1
       with:
-        name: ./animal_src/log.txt
+        name: animal_src_log
+        path: ./animal_src/log.txt
     
   Human_Recon:
     runs-on: ubuntu-latest
@@ -49,4 +50,5 @@ jobs:
     - name: Upload Results
       uses: actions/upload-artifact@v2.3.1
       with:
-        name: ./human_src/log.txt
+        name: human_src_log
+        path: ./human_src/log.txt
