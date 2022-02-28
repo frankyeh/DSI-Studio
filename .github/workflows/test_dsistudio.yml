@@ -11,7 +11,7 @@ jobs:
       uses: ./.github/workflows/test_env
       with:
         test_file: ${{ secrets.TEST_FILE }}
-    - name: Test DTI Recon
+    - name: Test DTI/GQI Recon
       run: |  
         cd animal_src
         ../dsi-studio/dsi_studio --source=*.src.gz --action=rec --method=1 |& tee -a log.txt
@@ -19,9 +19,7 @@ jobs:
         ls Marmoset.src.gz.dti.fib.gz
         ls Rat.src.gz.dti.fib.gz
         ls Rhesus.src.gz.dti.fib.gz
-    - name: Test GQI Recon
-      run: |  
-        cd animal_src
+        echo --------------------------------------------------------------------------------------------------
         ../dsi-studio/dsi_studio --source=*.src.gz --action=rec |& tee -a log.txt
         ls Chipamzee.src.gz.gqi.1.25.fib.gz
         ls Marmoset.src.gz.gqi.1.25.fib.gz
@@ -58,10 +56,15 @@ jobs:
         cd human_fib
         ../dsi-studio/dsi_studio --source=HCA.gqi.1.25.fib.gz --action=trk --output=HCA.tt.gz --export=stat,tdi
         ls HCA.tt.gz
+        ls HCA.tt.gz.tdi.nii.gz
+        ls HCA.tt.gz.stat.txt
+        echo --------------------------------------------------------------------------------------------------
         ../dsi-studio/dsi_studio --source=HCA.gqi.1.25.fib.gz --action=trk --track_id=Arcuate_Fasciculus_L --output=AF_L.tt.gz
         ls AF_L.tt.gz
+        echo --------------------------------------------------------------------------------------------------
         ../dsi-studio/dsi_studio --source=HCA.gqi.1.25.fib.gz --action=trk --roi=FreeSurferDKT_Cortical:left_precentral,dilate,dilate,smoothing --roi2=FreeSurferDKT_Cortical:right_precentral,dilate,dilate,smoothing --output=LR.tt.gz
         ls LR.tt.gz
+        echo --------------------------------------------------------------------------------------------------
         ../dsi-studio/dsi_studio --source=HCA.gqi.1.25.fib.gz --action=trk --fiber_count=1000000 --output=no_file --connectivity=FreeSurferDKT_Cortical --connectivity_value=count,qa
         ls HCA.gqi.1.25.fib.gz.tt.gz.FreeSurferDKT_Cortical.count.pass.connectivity.mat
         ls HCA.gqi.1.25.fib.gz.tt.gz.FreeSurferDKT_Cortical.count.pass.connectogram.txt
