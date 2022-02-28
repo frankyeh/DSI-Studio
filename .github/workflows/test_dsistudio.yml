@@ -45,8 +45,8 @@ jobs:
         ls dHCP.src.gz.dti.fib.gz 
         ../dsi-studio/dsi_studio --source=*.src.gz --action=rec
         ls dHCP.src.gz.gqi.1.25.fib.gz
-        ../dsi-studio/dsi_studio --source=*.src.gz --action=rec --method=7
-        ls dHCP.src.gz.qsdr.*.fib.gz
+        ../dsi-studio/dsi_studio --source=*.src.gz --action=rec --method=7 --template_id=0
+        ls dHCP.src.gz.ICBM152.qsdr.1.25.fib.gz
         
   Human_Tracking_QSDR:
     runs-on: ubuntu-latest
