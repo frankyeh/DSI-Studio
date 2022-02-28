@@ -230,8 +230,7 @@ public:
     bool load_template(void);
     bool load_track_atlas(void);
 public:
-    void run_normalization(bool background,bool inv);
-    bool can_map_to_mni(void);
+    bool map_to_mni(bool background = true);
     void temp2sub(tipl::vector<3>& pos);
     void sub2temp(tipl::vector<3>& pos);
     void sub2mni(tipl::vector<3>& pos);

@@ -1477,13 +1477,9 @@ bool fib_data::load_track_atlas()
         track_atlas->add_tracts(new_tracts);
         cluster.insert(cluster.end(),new_cluster.begin(),new_cluster.end());
 
-        if(!load_template())
-            return false;
-
         {
             progress prog_("warping atlas tracks to subject space");
-            run_normalization(true,true);
-            if(progress::aborted())
+            if(!map_to_mni())
                 return false;
         }
 
@@ -1597,12 +1593,14 @@ void animal_reg(const tipl::image<3>& from,tipl::vector<3> from_vs,
 }
 
 
-void fib_data::run_normalization(bool background,bool inv)
+bool fib_data::map_to_mni(bool background)
 {
-    if(is_template_space||
-       (!inv && !s2t.empty()) ||
-       (inv && !t2s.empty()))
-        return;
+    if(!load_template())
+        return false;
+    if(is_template_space)
+        return true;
+    if(!s2t.empty() && !t2s.empty())
+        return true;
     std::string output_file_name(fib_file_name);
     output_file_name += ".";
     output_file_name += QFileInfo(fa_template_list[template_id].c_str()).baseName().toLower().toStdString();
@@ -1635,7 +1633,7 @@ void fib_data::run_normalization(bool background,bool inv)
                 std::copy(t2s_ptr,t2s_ptr+t2s_col*t2s_row,&t2s[0][0]);
                 std::copy(s2t_ptr,s2t_ptr+s2t_col*s2t_row,&s2t[0][0]);
                 prog = 5;
-                return;
+                return true;
             }
         }
     }
@@ -1725,27 +1723,21 @@ void fib_data::run_normalization(bool background,bool inv)
     {
         std::thread t(lambda);
         while(progress::at(prog,6))
+        {
             std::this_thread::sleep_for(std::chrono::milliseconds(200));
-        if(progress::aborted())
-            terminated = true;
+            if(progress::aborted())
+            {
+                error_msg = "aborted.";
+                terminated = true;
+            }
+        }
         t.join();
+        return !progress::aborted();
     }
     else
     {
         std::cout << "Subject normalization to MNI space." << std::endl;
         lambda();
-    }
-}
-
-bool fib_data::can_map_to_mni(void)
-{
-    if(!load_template())
-        return false;
-    run_normalization(true,false);
-    if(progress::aborted())
-    {
-        error_msg = "action aborted by user";
-        return false;
     }
     return true;
 }
@@ -1907,7 +1899,9 @@ const tipl::image<3,tipl::vector<3,float> >& fib_data::get_sub2temp_mapping(void
 {
     if(!s2t.empty())
         return s2t;
-    if(is_template_space)
+    if(!map_to_mni(false))
+        return s2t;
+    if(is_template_space && s2t.empty())
     {
         s2t.resize(dim);
         tipl::par_for(tipl::begin_index(s2t.shape()),tipl::end_index(s2t.shape()),
@@ -1915,9 +1909,6 @@ const tipl::image<3,tipl::vector<3,float> >& fib_data::get_sub2temp_mapping(void
         {
             s2t[index.index()] = index.begin();
         });
-        return s2t;
     }
-    if(load_template())
-        run_normalization(false,false);
     return s2t;
 }

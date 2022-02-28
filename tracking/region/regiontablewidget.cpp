@@ -958,14 +958,8 @@ void RegionTableWidget::load_mni_region(void)
 {
     QStringList filenames = QFileDialog::getOpenFileNames(
                                 this,"Open region",QFileInfo(cur_tracking_window.windowTitle()).absolutePath(),"NIFTI files (*.nii *nii.gz);;All files (*)" );
-    if (filenames.isEmpty())
+    if (filenames.isEmpty() || !cur_tracking_window.map_to_mni())
         return;
-
-    if(!cur_tracking_window.can_map_to_mni())
-    {
-        QMessageBox::information(this,"Error",cur_tracking_window.handle->error_msg.c_str(),0);
-        return;
-    }
 
     for (int index = 0;index < filenames.size();++index)
         if(!command("load_mni_region",filenames[index]))

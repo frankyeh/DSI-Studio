@@ -871,7 +871,7 @@ bool TractModel::save_tracts_in_native_space(std::shared_ptr<fib_data> handle,
 // Native space FIB save tracts to the template space
 bool TractModel::save_tracts_in_template_space(std::shared_ptr<fib_data> handle,const char* file_name)
 {
-    if(!handle->can_map_to_mni())
+    if(!handle->map_to_mni())
         return false;
     std::shared_ptr<TractModel> tract_in_template(
                 new TractModel(handle->template_I.shape(),handle->template_vs,handle->template_to_mni));
@@ -3389,7 +3389,7 @@ void ConnectivityMatrix::set_regions(const tipl::shape<3>& geo,
 bool ConnectivityMatrix::set_atlas(std::shared_ptr<atlas> data,
                                    std::shared_ptr<fib_data> handle)
 {
-    if(!handle->can_map_to_mni() && !handle->get_sub2temp_mapping().empty())
+    if(handle->get_sub2temp_mapping().empty())
     {
         error_msg = handle->error_msg;
         return false;

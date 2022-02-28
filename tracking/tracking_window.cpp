@@ -159,11 +159,10 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
             populate_templates(ui->template_box,handle->template_id);
             if(handle->is_qsdr)
             {
-                if(QFileInfo(QString(handle->t1w_template_file_name.c_str())).exists())
+                if(std::filesystem::exists(handle->t1w_template_file_name.c_str()))
                     addSlices(QStringList() << QString(handle->t1w_template_file_name.c_str()),"t1w",true);
-                if(QFileInfo(QString(handle->wm_template_file_name.c_str())).exists())
+                if(std::filesystem::exists(handle->wm_template_file_name.c_str()))
                     addSlices(QStringList() << QString(handle->wm_template_file_name.c_str()),"wm",true);
-                handle->load_template();
             }
             // setup fa threshold
             initialize_tracking_index(0);
@@ -1311,9 +1310,14 @@ void tracking_window::on_deleteSlice_clicked()
 }
 
 
-bool tracking_window::can_map_to_mni(void)
+bool tracking_window::map_to_mni(void)
 {
-    return handle->can_map_to_mni();
+    if(!handle->map_to_mni())
+    {
+        QMessageBox::critical(this,"Error",handle->error_msg.c_str());
+        return false;
+    }
+    return true;
 }
 
 void tracking_window::keyPressEvent ( QKeyEvent * event )
@@ -1483,14 +1487,6 @@ void tracking_window::on_addRegionFromAtlas_clicked()
         raise();
         return;
     }
-    if(!handle->load_template())
-    {
-        QMessageBox::information(this,"Error","no template data");
-        raise();
-        return;
-    }
-
-
     std::string output_file_name(handle->fib_file_name);
     output_file_name += ".";
     output_file_name += QFileInfo(fa_template_list[handle->template_id].c_str()).
@@ -1529,12 +1525,8 @@ void tracking_window::on_addRegionFromAtlas_clicked()
         }
     }
 
-    if(!handle->can_map_to_mni())
-    {
-        QMessageBox::information(this,"Error",handle->error_msg.c_str());
-        raise();
+    if(!map_to_mni())
         return;
-    }
     std::shared_ptr<AtlasDialog> atlas_dialog(new AtlasDialog(this,handle));
     atlas_dialog->exec();
 }
@@ -2031,14 +2023,14 @@ void tracking_window::on_actionInsert_MNI_images_triggered()
     QString filename = QFileDialog::getOpenFileName(
         this,"Open MNI Image",QFileInfo(windowTitle()).absolutePath(),
                 "Image files (*.hdr *.nii *nii.gz);;All files (*)" );
-    if( filename.isEmpty() || !can_map_to_mni())
+    if( filename.isEmpty() || !map_to_mni())
         return;
 
     CustomSliceModel* reg_slice_ptr = nullptr;
     std::shared_ptr<SliceModel> new_slice(reg_slice_ptr = new CustomSliceModel(handle.get()));
     if(!reg_slice_ptr->initialize(filename.toStdString(),true/* mni-space image*/))
     {
-        QMessageBox::information(this,"DSI Studio",reg_slice_ptr->error_msg.c_str(),0);
+        QMessageBox::information(this,"DSI Studio",reg_slice_ptr->error_msg.c_str());
         return;
     }
     slices.push_back(new_slice);

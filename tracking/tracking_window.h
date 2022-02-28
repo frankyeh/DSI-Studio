@@ -95,7 +95,7 @@ public:
     void initialize_tracking_index(int index);
     void report(QString string);
     void move_slice_to(tipl::vector<3,float> pos);
-    bool can_map_to_mni(void);
+    bool map_to_mni(void);
     void set_roi_zoom(float zoom);
     bool command(QString cmd,QString param = "",QString param2 = "");
 
