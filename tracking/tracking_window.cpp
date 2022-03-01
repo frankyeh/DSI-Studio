@@ -546,7 +546,7 @@ void tracking_window::report(QString string)
 
 bool tracking_window::command(QString cmd,QString param,QString param2)
 {
-    std::cout << "run " << param.toStdString() << " " << param2.toStdString() << std::endl;
+    std::cout << "run " << cmd.toStdString() << " with " << param.toStdString() << " " << param2.toStdString() << std::endl;
     if(glWidget->command(cmd,param,param2) ||
        scene.command(cmd,param,param2) ||
        tractWidget->command(cmd,param,param2) ||
@@ -848,7 +848,10 @@ bool tracking_window::command(QString cmd,QString param,QString param2)
     if(cmd == "add_slice")
     {
         if(!addSlices(QStringList() << param,param,true))
+        {
+            std::cout << "cannot add slice " << param.toStdString() << std::endl;
             return false;
+        }
         std::cout << "register image to the DWI space" << std::endl;
         CustomSliceModel* cur_slice = (CustomSliceModel*)slices.back().get();
         if(cur_slice->thread.get())
@@ -1357,7 +1360,7 @@ void tracking_window::keyPressEvent ( QKeyEvent * event )
                 << ui->glAxiSlider->value() << " ";
             std::copy(glWidget->transformation_matrix.begin(),glWidget->transformation_matrix.end(),std::ostream_iterator<float>(out," "));
             settings.setValue(key_str,QString(out.str().c_str()));
-            QMessageBox::information(this,"DSI Studio","View position and slice location memorized",0);
+            QMessageBox::information(this,"DSI Studio","View position and slice location memorized");
         }
         else
         {
@@ -1397,7 +1400,7 @@ void tracking_window::on_actionConnectivity_matrix_triggered()
 {
     if(!tractWidget->tract_models.size())
     {
-        QMessageBox::information(this,"DSI Studio","Run fiber tracking first",0);
+        QMessageBox::information(this,"DSI Studio","Run fiber tracking first");
         return;
     }
     std::ostringstream out;
@@ -1437,7 +1440,7 @@ void tracking_window::on_actionFloat_3D_window_triggered()
         gLdock->show();
         gLdock->resize(w,h+44);
         connect(gLdock,SIGNAL(closedSignal()),this,SLOT(restore_3D_window()));
-        QMessageBox::information(this,"DSI Studio","Float 3D window again to maximize it",0);
+        QMessageBox::information(this,"DSI Studio","Float 3D window again to maximize it");
     }
 }
 
@@ -2052,7 +2055,7 @@ bool tracking_window::addSlices(QStringList filenames,QString name,bool cmd)
     if(!reg_slice_ptr->initialize(files))
     {
         if(!cmd)
-            QMessageBox::information(this,"DSI Studio",reg_slice_ptr->error_msg.c_str(),0);
+            QMessageBox::information(this,"DSI Studio",reg_slice_ptr->error_msg.c_str());
         else
             std::cout << reg_slice_ptr->error_msg << std::endl;
         return false;
@@ -2303,7 +2306,7 @@ void tracking_window::on_actionOpen_Connectivity_Matrix_triggered()
     }
     if(regionWidget->regions.empty())
     {
-        QMessageBox::information(this,"error","Please load the regions first for visualization",0);
+        QMessageBox::information(this,"error","Please load the regions first for visualization");
         return;
     }
     if(filename.endsWith(".txt"))
