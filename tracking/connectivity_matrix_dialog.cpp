@@ -198,5 +198,5 @@ void connectivity_matrix_dialog::on_copy_to_clipboard_clicked()
     std::string text;
     data.save_to_text(text);
     QApplication::clipboard()->setText(text.c_str());
-    QMessageBox::information(this,"DSI Studio","Results copied to clipboard",0);
+    QMessageBox::information(this,"DSI Studio","Results copied to clipboard");
 }

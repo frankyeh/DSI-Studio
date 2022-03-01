@@ -43,7 +43,7 @@ void match_db::on_buttonBox_accepted()
 {
     if(vbc->handle->db.match.empty())
     {
-        QMessageBox::information(this,"Error","Match data first before calculating change",0);
+        QMessageBox::information(this,"Error","Match data first before calculating change");
         accept();
     }
     unsigned char dif_type = 0;
@@ -52,7 +52,7 @@ void match_db::on_buttonBox_accepted()
     if(ui->change_dif_percentage->isChecked())
         dif_type = 1;
     vbc->handle->db.calculate_change(dif_type,ui->match_normalize->isChecked());
-    QMessageBox::information(this,"DSI Studio","Connectometry DB updated",0);
+    QMessageBox::information(this,"DSI Studio","Connectometry DB updated");
     accept();
 }
 

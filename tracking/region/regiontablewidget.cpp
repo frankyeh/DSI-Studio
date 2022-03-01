@@ -278,7 +278,7 @@ bool RegionTableWidget::command(QString cmd,QString param,QString)
         ROIRegion region(cur_tracking_window.handle);
         if(!region.LoadFromFile(param.toLocal8Bit().begin()))
         {
-            QMessageBox::information(this,"error","Unknown file format",0);
+            QMessageBox::information(this,"error","Unknown file format");
             return true;
         }
         add_region(QFileInfo(param).baseName(),default_id,region.show_region.color.color);

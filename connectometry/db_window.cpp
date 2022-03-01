@@ -324,13 +324,13 @@ void db_window::on_actionLoad_mask_triggered()
     gz_nifti nii;
     if(!nii.load_from_file(file.toLocal8Bit().begin()))
     {
-        QMessageBox::information(this,"Error","Invalid nifti file format",0);
+        QMessageBox::information(this,"Error","Invalid nifti file format");
         return;
     }
     nii.toLPS(I);
     if(I.shape() != fp_mask.shape())
     {
-        QMessageBox::information(this,"Error","Inconsistent image dimension. Please use DSI Studio to output the mask.",0);
+        QMessageBox::information(this,"Error","Inconsistent image dimension. Please use DSI Studio to output the mask.");
         return;
     }
     for(unsigned int i = 0;i < I.size();++i)
@@ -477,12 +477,12 @@ void db_window::on_actionAdd_DB_triggered()
         progress prog_("adding data");
         if(!handle->load_from_file(filenames[i].toStdString().c_str()))
         {
-            QMessageBox::information(this,"Error",handle->error_msg.c_str(),0);
+            QMessageBox::information(this,"Error",handle->error_msg.c_str());
             return;
         }
         if(!handle->is_qsdr)
         {
-            QMessageBox::information(this,"Error",filenames[i] + " is not from the QSDR reconstruction.",0);
+            QMessageBox::information(this,"Error",filenames[i] + " is not from the QSDR reconstruction.");
             break;
         }
 
@@ -490,7 +490,7 @@ void db_window::on_actionAdd_DB_triggered()
         {
             if(!vbc->handle->db.add_db(handle->db))
             {
-                QMessageBox::information(this,"Error",vbc->handle->error_msg.c_str(),0);
+                QMessageBox::information(this,"Error",vbc->handle->error_msg.c_str());
                 break;
             }
             continue;
@@ -500,7 +500,7 @@ void db_window::on_actionAdd_DB_triggered()
             progress prog_(QFileInfo(filenames[i]).baseName().toStdString().c_str());
             if(!vbc->handle->db.add_subject_file(filenames[i].toStdString(),QFileInfo(filenames[i]).baseName().toStdString()))
             {
-                QMessageBox::information(this,"error in loading subject fib files",vbc->handle->error_msg.c_str(),0);
+                QMessageBox::information(this,"error in loading subject fib files",vbc->handle->error_msg.c_str());
                 break;
             }
             if(progress::aborted())

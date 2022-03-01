@@ -425,7 +425,7 @@ bool view_image::open(QStringList file_names)
                 tipl::image<2,short> I;
                 if(!get_compressed_image(dicom,I))
                 {
-                    QMessageBox::information(this,"Error",QString("Unsupported transfer syntax:") + QString(dicom.encoding.c_str()),0);
+                    QMessageBox::information(this,"Error",QString("Unsupported transfer syntax:") + QString(dicom.encoding.c_str()));
                     return false;
                 }
                 if(I.size() == data.size())

@@ -308,7 +308,7 @@ void MainWindow::loadFib(QString filename,bool presentation_mode)
     if (!new_handle->load_from_file(&*file_name.begin()))
     {
         if(!progress::aborted())
-            QMessageBox::information(this,"error",new_handle->error_msg.c_str(),0);
+            QMessageBox::information(this,"error",new_handle->error_msg.c_str());
         return;
     }
     if(new_handle->has_high_reso)
@@ -431,7 +431,7 @@ void MainWindow::on_OpenDICOM_clicked()
         }
         if(filenames.size() == 0)
         {
-            QMessageBox::information(this,"Error","No diffusion data in this subject",0);
+            QMessageBox::information(this,"Error","No diffusion data in this subject");
             return;
         }
         std::string file_name(subject_file["SUBJECT_study_name"]);
@@ -704,7 +704,7 @@ bool MainWindow::load_db(std::shared_ptr<group_connectometry_analysis>& database
     progress prog_("reading connectometry db");
     if(!database->load_database(filename.toLocal8Bit().begin()))
     {
-        QMessageBox::information(this,"Error",database->error_msg.c_str(),0);
+        QMessageBox::information(this,"Error",database->error_msg.c_str());
         return false;
     }
     return true;
@@ -750,7 +750,7 @@ void MainWindow::on_run_cmd_clicked()
     program_option po;
     if(!po.parse(ui->cmd_line->text().toStdString()))
     {
-        QMessageBox::information(this,"Error",po.error_msg.c_str(),0);
+        QMessageBox::information(this,"Error",po.error_msg.c_str());
         return;
     }
     if (!po.has("action"))
@@ -964,7 +964,7 @@ void MainWindow::on_parse_network_measures_clicked()
     for(size_t i = 0;i < line_output.size();++i)
         out << line_output[i] << std::endl;
 
-    QMessageBox::information(this,"DSI Studio",QString("File saved to")+filename[0]+".collected.txt",0);
+    QMessageBox::information(this,"DSI Studio",QString("File saved to")+filename[0]+".collected.txt");
 
 }
 

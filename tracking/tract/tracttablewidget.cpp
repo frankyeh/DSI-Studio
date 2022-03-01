@@ -308,7 +308,7 @@ void TractTableWidget::load_tracts(QStringList filenames)
         {
             QMessageBox::information(this,"Error",
                                      QString("Fail to load tracks from %1. \
-                                Please check file access privelige or move file to other location.").arg(QFileInfo(filename).baseName()),0);
+                                Please check file access privelige or move file to other location.").arg(QFileInfo(filename).baseName()));
             continue;
         }
         if(tract_models.back()->get_cluster_info().empty()) // not multiple cluster file
@@ -1238,7 +1238,7 @@ void TractTableWidget::delete_tract(void)
 {
     if(progress::running())
     {
-        QMessageBox::information(this,"Error","Please wait for the termination of data processing",0);
+        QMessageBox::information(this,"Error","Please wait for the termination of data processing");
         return;
     }
     delete_row(currentRow());
@@ -1249,7 +1249,7 @@ void TractTableWidget::delete_all_tract(void)
 {
     if(progress::running())
     {
-        QMessageBox::information(this,"Error","Please wait for the termination of data processing",0);
+        QMessageBox::information(this,"Error","Please wait for the termination of data processing");
         return;
     }
     command("delete_all_tract");

@@ -77,13 +77,13 @@ void CreateDBDialog::update_list(void)
         fib_data fib;
         if(!fib.load_from_file(sample_fib.toLocal8Bit().begin()))
         {
-            QMessageBox::information(this,"Error","Invalid FIB file format",0);
+            QMessageBox::information(this,"Error","Invalid FIB file format");
             raise(); // for Mac
             return;
         }
         if(!fib.is_qsdr)
         {
-            QMessageBox::information(this,"Error","The FIB file was not reconstructed by QSDR.",0);
+            QMessageBox::information(this,"Error","The FIB file was not reconstructed by QSDR.");
             raise(); // for Mac
             return;
         }
@@ -260,12 +260,12 @@ void CreateDBDialog::on_create_data_base_clicked()
 {
     if(ui->output_file_name->text().isEmpty())
     {
-        QMessageBox::information(this,"Error","Please assign output file",0);
+        QMessageBox::information(this,"Error","Please assign output file");
         return;
     }
     if(group.empty())
     {
-        QMessageBox::information(this,"Error","Please assign subject files",0);
+        QMessageBox::information(this,"Error","Please assign subject files");
         return;
     }
 
@@ -273,7 +273,7 @@ void CreateDBDialog::on_create_data_base_clicked()
     {
         if(ui->skeleton->text().isEmpty())
         {
-            QMessageBox::information(this,"error","Please assign skeleton file",0);
+            QMessageBox::information(this,"error","Please assign skeleton file");
             return;
         }
 
@@ -282,7 +282,7 @@ void CreateDBDialog::on_create_data_base_clicked()
 
         if(!data->create_database(ui->skeleton->text().toLocal8Bit().begin()))
         {
-            QMessageBox::information(this,"error in creating database",data->error_msg.c_str(),0);
+            QMessageBox::information(this,"error in creating database",data->error_msg.c_str());
             return;
         }
 
@@ -293,7 +293,7 @@ void CreateDBDialog::on_create_data_base_clicked()
             progress prog_(QFileInfo(group[index]).baseName().toStdString().c_str());
             if(!data->handle->db.add_subject_file(group[index].toStdString(),get_file_name(group[index]).toStdString()))
             {
-                QMessageBox::information(this,"error in loading subject fib files",data->handle->error_msg.c_str(),0);
+                QMessageBox::information(this,"error in loading subject fib files",data->handle->error_msg.c_str());
                 raise(); // for Mac
                 return;
             }
@@ -304,7 +304,7 @@ void CreateDBDialog::on_create_data_base_clicked()
             }
         }
         data->handle->db.save_subject_data(ui->output_file_name->text().toStdString().c_str());
-        QMessageBox::information(this,"completed","Connectometry database created",0);
+        QMessageBox::information(this,"completed","Connectometry database created");
     }
     else
     {

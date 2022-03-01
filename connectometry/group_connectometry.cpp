@@ -242,7 +242,7 @@ void group_connectometry::on_open_mr_files_clicked()
         return;
     std::string error_msg;
     if(!load_demographic_file(filename,error_msg))
-        QMessageBox::information(this,"Error",error_msg.c_str(),0);
+        QMessageBox::information(this,"Error",error_msg.c_str());
 }
 
 
@@ -361,9 +361,9 @@ void group_connectometry::calculate_FDR(void)
 
         if(vbc->pos_corr_track->get_visible_track_count() ||
            vbc->neg_corr_track->get_visible_track_count())
-            QMessageBox::information(this,"Finished","Trk files saved.",0);
+            QMessageBox::information(this,"Finished","Trk files saved.");
         else
-            QMessageBox::information(this,"Finished","No significant finding.",0);
+            QMessageBox::information(this,"Finished","No significant finding.");
 
         // save report in text
         {
@@ -563,7 +563,7 @@ void group_connectometry::on_load_roi_from_file_clicked()
     gz_nifti nii;
     if(!nii.load_from_file(file.toLocal8Bit().begin()))
     {
-        QMessageBox::information(this,"Error","Invalid nifti file format",0);
+        QMessageBox::information(this,"Error","Invalid nifti file format");
         return;
     }
     nii.toLPS(I);
@@ -582,7 +582,7 @@ void group_connectometry::on_load_roi_from_file_clicked()
     }
     if(new_roi.empty())
     {
-        QMessageBox::information(this,"Error","The nifti contain no voxel with value greater than 0.",0);
+        QMessageBox::information(this,"Error","The nifti contain no voxel with value greater than 0.");
         return;
     }
     add_new_roi(QFileInfo(file).baseName(),"Local File",new_roi);

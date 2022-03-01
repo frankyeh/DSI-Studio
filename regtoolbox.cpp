@@ -510,7 +510,7 @@ void RegToolBox::on_run_reg_clicked()
 {
     if(I.empty() || It.empty())
     {
-        QMessageBox::information(this,"Error","Please load image first",0);
+        QMessageBox::information(this,"Error","Please load image first");
         return;
     }
     clear();

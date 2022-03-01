@@ -254,7 +254,7 @@ void reconstruction_window::Reconstruction(unsigned char method_id,bool prompt)
 
     if (tipl::max_value(handle->voxel.mask) == 0)
     {
-        QMessageBox::information(this,"error","Please select mask for reconstruction",0);
+        QMessageBox::information(this,"error","Please select mask for reconstruction");
         return;
     }
 
@@ -263,7 +263,7 @@ void reconstruction_window::Reconstruction(unsigned char method_id,bool prompt)
     {
         if(fa_template_list.empty())
         {
-            QMessageBox::information(this,"error","Cannot find template files",0);
+            QMessageBox::information(this,"error","Cannot find template files");
             return;
         }
     }
@@ -752,7 +752,7 @@ void reconstruction_window::on_actionReplace_b0_by_T2W_image_triggered()
     gz_nifti in;
     if(!in.load_from_file(filename.toLocal8Bit().begin()) || !in.toLPS(ref))
     {
-        QMessageBox::information(this,"Error","Not a valid nifti file",0);
+        QMessageBox::information(this,"Error","Not a valid nifti file");
         return;
     }
     in.get_voxel_size(vs);
@@ -816,7 +816,7 @@ bool get_src(std::string filename,ImageModel& src2,std::string& error_msg)
 
 void reconstruction_window::on_actionCorrect_AP_PA_scans_triggered()
 {
-    QMessageBox::information(this,"DSI Studio","Please specify another SRC/DICOM/NIFTI file with an opposite phase encoding",0);
+    QMessageBox::information(this,"DSI Studio","Please specify another SRC/DICOM/NIFTI file with an opposite phase encoding");
     QString filename = QFileDialog::getOpenFileName(
             this,"Open SRC file",absolute_path,
             "Images (*src.gz *.nii *nii.gz);;DICOM image (*.dcm);;All files (*)" );
