@@ -859,7 +859,7 @@ void TractTableWidget::recog_tracks(void)
     std::map<float,std::string,std::greater<float> > sorted_list;
     if(!cur_tracking_window.handle->recognize(tract_models[uint32_t(currentRow())],sorted_list,false))
     {
-        QMessageBox::information(this,"Error","Cannot recognize tracks.",0);
+        QMessageBox::information(this,"Error","Cannot recognize tracks.");
         return;
     }
     std::ostringstream out;
