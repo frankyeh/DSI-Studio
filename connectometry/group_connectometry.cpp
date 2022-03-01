@@ -92,9 +92,9 @@ group_connectometry::group_connectometry(QWidget *parent,std::shared_ptr<group_c
     ui->dist_table->setColumnWidth(6,100);
 
     ui->dist_table->setHorizontalHeaderLabels(
-                QStringList() << "length (mm)" << "FDR greater" << "FDR lesser"
-                                               << "null greater pdf" << "null lesser pdf"
-                                               << "greater pdf" << "lesser pdf");
+                QStringList() << "length (mm)" << "FDR positive" << "FDR negative"
+                                               << "null positive pdf" << "null negative pdf"
+                                               << "positive pdf" << "negative pdf");
 
 
 
