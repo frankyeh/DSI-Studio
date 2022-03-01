@@ -5,8 +5,6 @@ jobs:
   Animal_Recon:
     runs-on: ubuntu-latest
     steps:
-    - name: Checkout
-      uses: actions/checkout@v2
     - name: Setup Environment
       run: |
         curl -L "https://github.com/frankyeh/DSI-Studio/releases/download/2021.12.03/dsi_studio_ubuntu_2004.zip" | jar xv
@@ -32,8 +30,6 @@ jobs:
   Human_Recon:
     runs-on: ubuntu-latest
     steps:
-    - name: Checkout
-      uses: actions/checkout@v2
     - name: Setup Environment
       run: |
         curl -L "https://github.com/frankyeh/DSI-Studio/releases/download/2021.12.03/dsi_studio_ubuntu_2004.zip" | jar xv
@@ -59,8 +55,6 @@ jobs:
   Human_Tracking_QSDR:
     runs-on: ubuntu-latest
     steps:
-    - name: Checkout
-      uses: actions/checkout@v2
     - name: Setup Environment
       run: |
         curl -L "https://github.com/frankyeh/DSI-Studio/releases/download/2021.12.03/dsi_studio_ubuntu_2004.zip" | jar xv
@@ -90,8 +84,6 @@ jobs:
   Human_Tracking_GQI:
     runs-on: ubuntu-latest
     steps:
-    - name: Checkout
-      uses: actions/checkout@v2
     - name: Setup Environment
       run: |
         curl -L "https://github.com/frankyeh/DSI-Studio/releases/download/2021.12.03/dsi_studio_ubuntu_2004.zip" | jar xv
@@ -125,8 +117,6 @@ jobs:
   Automatic_Tracking:
     runs-on: ubuntu-latest
     steps:
-    - name: Checkout
-      uses: actions/checkout@v2
     - name: Setup Environment
       run: |
         curl -L "https://github.com/frankyeh/DSI-Studio/releases/download/2021.12.03/dsi_studio_ubuntu_2004.zip" | jar xv
@@ -137,5 +127,10 @@ jobs:
     - name: Tracking
       run: |
         ./dsi-studio/dsi_studio --source=*.fib.gz --action=atk --track_id=Optic,Arcuate,spinal
-        ls -l
-      
+        ls Arcuate_Fasciculus_L.stat.txt
+        ls Arcuate_Fasciculus_R.stat.txt
+        ls Optic_Radiation_L.stat.txt
+        ls Optic_Radiation_R.stat.txt
+        ls Corticospinal_Tract_L.stat.txt
+        ls Corticospinal_Tract_R.stat.txt
+
