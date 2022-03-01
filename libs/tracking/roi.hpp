@@ -82,7 +82,7 @@ template<typename T,typename U>
 __DEVICE_HOST__ unsigned int find_nearest(const float* trk,unsigned int length,
                           const T& tract_data,// = track_atlas->get_tracts();
                           const U& tract_cluster,// = track_atlas->get_cluster_info();
-                          bool contain,float tolerance_dis_in_subject_voxels)
+                          float tolerance_dis_in_subject_voxels)
 {
     struct norm1_imp{
         inline float operator()(const float* v1,const float* v2)
@@ -105,35 +105,8 @@ __DEVICE_HOST__ unsigned int find_nearest(const float* trk,unsigned int length,
     }min_min;
     if(length <= 6)
         return 9999;
-    float best_distance = contain ? 50.0f : tolerance_dis_in_subject_voxels;
+    float best_distance = tolerance_dis_in_subject_voxels;
     size_t best_index = tract_data.size();
-    if(contain)
-    {
-        for(size_t i = 0;i < tract_data.size();++i)
-        {
-            bool skip = false;
-            float max_dis = 0.0f;
-            for(size_t n = 0;n < length;n += 6)
-            {
-                float min_dis = norm1(&tract_data[i][0],trk+n);
-                for(size_t m = 0;m < tract_data[i].size() && min_dis > max_dis;m += 3)
-                    min_dis = min_min(min_dis,&tract_data[i][m],trk+n);
-                if(min_dis > max_dis)
-                    max_dis = max_dis;
-                if(max_dis > best_distance)
-                {
-                    skip = true;
-                    break;
-                }
-            }
-            if(!skip)
-            {
-                best_distance = max_dis;
-                best_index = i;
-            }
-        }
-    }
-    else
     {
         for(size_t i = 0;i < tract_data.size();++i)
         {
@@ -258,7 +231,7 @@ public:
         if(tolerance_dis_in_subject_voxels != 0.0f)
             return find_nearest(track,buffer_size,
                                 handle->track_atlas->get_tracts(),handle->track_atlas->get_cluster_info(),
-                                false,tolerance_dis_in_subject_voxels) == track_id;
+                                tolerance_dis_in_subject_voxels) == track_id;
         return true;
     }
     bool setAtlas(unsigned int track_id_,float tolerance_dis_in_icbm152_mm)

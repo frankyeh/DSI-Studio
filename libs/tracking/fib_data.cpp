@@ -1504,9 +1504,64 @@ bool fib_data::load_track_atlas()
 }
 
 //---------------------------------------------------------------------------
+template<typename T,typename U>
+unsigned int find_nearest_contain(const float* trk,unsigned int length,
+                          const T& tract_data,// = track_atlas->get_tracts();
+                          const U& tract_cluster)
+{
+    struct norm1_imp{
+        inline float operator()(const float* v1,const float* v2)
+        {
+            return std::fabs(v1[0]-v2[0])+std::fabs(v1[1]-v2[1])+std::fabs(v1[2]-v2[2]);
+        }
+    } norm1;
+
+    struct min_min_imp{
+        inline float operator()(float min_dis,const float* v1,const float* v2)
+        {
+            float d1 = std::fabs(v1[0]-v2[0]);
+            if(d1 > min_dis)                    return min_dis;
+            d1 += std::fabs(v1[1]-v2[1]);
+            if(d1 > min_dis)                    return min_dis;
+            d1 += std::fabs(v1[2]-v2[2]);
+            if(d1 > min_dis)                    return min_dis;
+            return d1;
+        }
+    }min_min;
+    size_t best_index = tract_data.size();
+    float best_distance = std::numeric_limits<float>::max();
+    for(size_t i = 0;i < tract_data.size();++i)
+    {
+        bool skip = false;
+        float max_dis = 0;
+        for(size_t n = 0;n < length;n += 6)
+        {
+            float min_dis = norm1(&tract_data[i][0],trk+n);
+            for(size_t m = 0;m < tract_data[i].size() && min_dis > max_dis;m += 3)
+                min_dis = min_min(min_dis,&tract_data[i][m],trk+n);
+            if(min_dis > max_dis)
+                max_dis = min_dis;
+            if(max_dis > best_distance)
+            {
+                skip = true;
+                break;
+            }
+        }
+        if(!skip && max_dis < best_distance)
+        {
+            best_distance = max_dis;
+            best_index = i;
+        }
+    }
+    return tract_cluster[best_index];
+}
+
 unsigned int fib_data::find_nearest(const float* trk,unsigned int length,bool contain,float tolerance_dis_in_subject_voxels)
 {
-    return ::find_nearest(trk,length,track_atlas->get_tracts(),track_atlas->get_cluster_info(),contain,tolerance_dis_in_subject_voxels);
+    if(contain)
+        return find_nearest_contain(trk,length,track_atlas->get_tracts(),track_atlas->get_cluster_info());
+    else
+        return ::find_nearest(trk,length,track_atlas->get_tracts(),track_atlas->get_cluster_info(),tolerance_dis_in_subject_voxels);
 }
 //---------------------------------------------------------------------------
 
@@ -1533,7 +1588,7 @@ bool fib_data::recognize(std::shared_ptr<TractModel>& trk,std::map<float,std::st
     {
         if(trk->get_tracts()[i].empty())
             return;
-        unsigned int index = find_nearest(&(trk->get_tracts()[i][0]),uint32_t(trk->get_tracts()[i].size()),contain,50.0f);
+        unsigned int index = find_nearest(&(trk->get_tracts()[i][0]),uint32_t(trk->get_tracts()[i].size()),contain,16.0f/vs[0]);
         if(index < count.size())
             ++count[index];
     });
