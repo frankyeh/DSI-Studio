@@ -89,6 +89,7 @@ jobs:
       run: |
         curl -L "https://github.com/frankyeh/DSI-Studio/releases/download/2021.12.03/dsi_studio_ubuntu_2004.zip" | jar xv
         curl -L https://zenodo.org/record/6307812/files/100206.src.gz.gqi.1.7.fib.gz?download=1 -o 100206.fib.gz
+        curl -L https://github.com/frankyeh/DSI-Studio-atlas/blob/main/ICBM152/ICBM152.QA.nii.gz?raw=true -o template_qa.nii.gz
         chmod 777 ./dsi-studio/dsi_studio
     - name: Tracking
       run: |
@@ -110,7 +111,10 @@ jobs:
         ls 100206.fib.gz.tt.gz.FreeSurferDKT_Cortical.qa.pass.connectivity.mat
         ls 100206.fib.gz.tt.gz.FreeSurferDKT_Cortical.qa.pass.connectogram.txt
         ls 100206.fib.gz.tt.gz.FreeSurferDKT_Cortical.qa.pass.network_measures.txt
-
+        echo --------------------------------------------------------------------------------------------------
+        ./dsi-studio/dsi_studio --source=100206.fib.gz --action=trk --other_slices=template_qa.nii.gz --dt_threshold_index=template_qa.nii.gz-qa --dt_threshold=0.2 --output=dt.tt.gz
+        ls dt.tt.gz
+        
   Automatic_Tracking:
     runs-on: ubuntu-latest
     steps:
