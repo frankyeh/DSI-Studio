@@ -125,6 +125,6 @@ jobs:
         chmod 777 ./dsi-studio/dsi_studio
     - name: Tracking
       run: |
-        ./dsi-studio/dsi_studio --source=×.fib.gz --action=atk
+        ./dsi-studio/dsi_studio --source=*.fib.gz --action=atk
         ls -l
       
