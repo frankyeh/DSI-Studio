@@ -37,17 +37,24 @@ jobs:
     - name: Setup Environment
       run: |
         curl -L "https://github.com/frankyeh/DSI-Studio/releases/download/2021.12.03/dsi_studio_ubuntu_2004.zip" | jar xv
-        curl -L ${{ secrets.TEST_FILE }} | jar xv
+        curl -L https://zenodo.org/record/6320992/files/20081006_M025Y_DSI_203.src.gz?download=1 -o DSI.src.gz
+        curl -L https://zenodo.org/record/6320992/files/20081006_M025Y_DTI64.src.gz?download=1 -o DTI.src.gz
+        curl -L https://zenodo.org/record/6320992/files/20081006_M025Y_HARDI.src.gz?download=1 -o HARDI.src.gz
         chmod 777 ./dsi-studio/dsi_studio
     - name: Test GQI Recon
       run: |
-        cd human_src
-        ../dsi-studio/dsi_studio --source=*.src.gz --action=rec --method=1
-        ls dHCP.src.gz.dti.fib.gz 
-        ../dsi-studio/dsi_studio --source=*.src.gz --action=rec
-        ls dHCP.src.gz.gqi.1.25.fib.gz
-        ../dsi-studio/dsi_studio --source=*.src.gz --action=rec --method=7 --template=0
-        ls dHCP.src.gz.icbm152.qsdr.1.25.*
+        ./dsi-studio/dsi_studio --source=*.src.gz --action=rec --method=1
+        ls DSI.src.gz.dti.fib.gz 
+        ls DTI.src.gz.dti.fib.gz 
+        ls HARDI.src.gz.dti.fib.gz 
+        ./dsi-studio/dsi_studio --source=*.src.gz --action=rec
+        ls DSI.src.gz.gqi.1.25.fib.gz
+        ls DTI.src.gz.gqi.1.25.fib.gz
+        ls HARDI.src.gz.gqi.1.25.fib.gz
+        ./dsi-studio/dsi_studio --source=*.src.gz --action=rec --method=7 --template=0
+        ls DSI.src.gz.icbm152.qsdr.1.25.*
+        ls DTI.src.gz.icbm152.qsdr.1.25.*
+        ls HARDI.src.gz.icbm152.qsdr.1.25.*
         
   Human_Tracking_QSDR:
     runs-on: ubuntu-latest
