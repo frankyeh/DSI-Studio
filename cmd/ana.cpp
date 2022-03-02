@@ -280,7 +280,7 @@ int ana_tract(program_option& po)
         }
         tipl::image<3> pdi(accumulate_map);
         pdi *= 1.0f/float(tract_files.size());
-        if(!gz_nifti::save_to_file(output.c_str(),pdi,handle->vs,handle->trans_to_mni))
+        if(!gz_nifti::save_to_file(output.c_str(),pdi,handle->vs,handle->trans_to_mni,handle->is_qsdr))
         {
             std::cout << "ERROR: cannot write to " << output << std::endl;
             return 1;
