@@ -190,7 +190,7 @@ void ROIRegion::SaveToFile(const char* FileName)
         std::string tmp = out.str();
         if(tmp.size() < 80)
             tmp.resize(80);
-        gz_nifti::save_to_file(FileName,mask,rvs,T,tmp.c_str());
+        gz_nifti::save_to_file(FileName,mask,rvs,T,is_mni,tmp.c_str());
 
     }
 }
@@ -257,6 +257,7 @@ bool ROIRegion::LoadFromFile(const char* FileName) {
         tipl::image<3,unsigned int> from;
         tipl::shape<3> nii_geo;
         header.get_image_dimension(nii_geo);
+        is_mni = header.is_mni();
         if(nii_geo != dim)// use transformation information
         {
             {
