@@ -316,6 +316,7 @@ bool CustomSliceModel::initialize(const std::vector<std::string>& files,bool is_
             save_idx(files[0].c_str(),nifti.input_stream);
             nifti.get_voxel_size(vs);
             nifti.get_image_transformation(trans);
+            is_mni = nifti.is_mni() || is_mni_image;
             if(handle->is_qsdr)
             {
                 nifti.get_image_transformation(T);
@@ -323,7 +324,7 @@ bool CustomSliceModel::initialize(const std::vector<std::string>& files,bool is_
                 has_transform = true;
             }
             else
-            if(is_mni_image)
+            if(is_mni)
             {
                 if(!handle->mni2sub(source_images,trans))
                 {
