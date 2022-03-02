@@ -177,7 +177,7 @@ int atl(program_option& po)
                     if(multiple)
                     {
                         std::cout << "save " << output << std::endl;
-                        if(!gz_nifti::save_to_file(output.c_str(),roi,handle->vs,handle->trans_to_mni))
+                        if(!gz_nifti::save_to_file(output.c_str(),roi,handle->vs,handle->trans_to_mni,handle->is_qsdr))
                             std::cout << "cannot write output to file:" << output << std::endl;
                     }
                 }
