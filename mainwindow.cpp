@@ -1159,7 +1159,7 @@ bool dcm2src(QStringList files,std::ostream& out)
                 }
                 QString nii_name = get_dicom_output_name(files[0],(std::string("_")+sequence+".nii.gz").c_str(),true);
                 out << "Create 4D NII file: " << nii_name.toStdString() << std::endl;
-                return gz_nifti::save_to_file(nii_name.toStdString().c_str(),buffer,dicom->voxel_size,trans,report.c_str());
+                return gz_nifti::save_to_file(nii_name.toStdString().c_str(),buffer,dicom->voxel_size,trans,false,report.c_str());
             }
         }
         return true;
