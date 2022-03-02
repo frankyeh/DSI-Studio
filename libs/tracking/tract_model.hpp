@@ -17,6 +17,7 @@ public:
         tipl::shape<3> geo;
         tipl::vector<3> vs;
         tipl::matrix<4,4> trans_to_mni;
+        bool is_mni = false;
 private:
         std::vector<std::vector<float> > tract_data;
         std::vector<std::vector<float> > deleted_tract_data;
@@ -49,7 +50,7 @@ public:
         void delete_branch(void);
         void delete_by_length(float length);
 public:
-        TractModel(std::shared_ptr<fib_data> handle):geo(handle->dim),vs(handle->vs),trans_to_mni(handle->trans_to_mni){}
+        TractModel(std::shared_ptr<fib_data> handle):geo(handle->dim),vs(handle->vs),trans_to_mni(handle->trans_to_mni),is_mni(handle->is_qsdr){}
         TractModel(tipl::shape<3> dim_,tipl::vector<3> vs_):geo(dim_),vs(vs_)
         {
             initial_LPS_nifti_srow(trans_to_mni,geo,vs);
@@ -67,6 +68,7 @@ public:
             geo = rhs.geo;
             vs = rhs.vs;
             trans_to_mni = rhs.trans_to_mni;
+            is_mni = rhs.is_mni;
             tract_data = rhs.tract_data;
             tract_color = rhs.tract_color;
             tract_tag = rhs.tract_tag;
