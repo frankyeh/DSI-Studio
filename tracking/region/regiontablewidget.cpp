@@ -713,7 +713,7 @@ bool load_nii(std::shared_ptr<fib_data> handle,
             goto end;
         }
 
-        if(is_mni_image)
+        if(header.is_mni() || is_mni_image)
         {
             std::cout << "warpping the NIFTI file from MNI space to the native space." << std::endl;
             tipl::matrix<4,4> trans;
@@ -1135,7 +1135,9 @@ void RegionTableWidget::save_all_regions_to_4dnifti(void)
     });
 
     if(gz_nifti::save_to_file(filename.toStdString().c_str(),multiple_I,
-                              cur_tracking_window.current_slice->vs,cur_tracking_window.handle->trans_to_mni))
+                              cur_tracking_window.current_slice->vs,
+                              cur_tracking_window.handle->trans_to_mni,
+                              cur_tracking_window.handle->is_qsdr))
     {
         save_checked_region_label_file(filename);
         QMessageBox::information(this,"DSI Studio","saved");
@@ -1170,13 +1172,15 @@ void RegionTableWidget::save_all_regions(void)
         tipl::image<3,uint8_t> i8mask(mask);
         result = gz_nifti::save_to_file(filename.toStdString().c_str(),i8mask,
                            cur_tracking_window.current_slice->vs,
-                           cur_tracking_window.handle->trans_to_mni);
+                           cur_tracking_window.handle->trans_to_mni,
+                           cur_tracking_window.handle->is_qsdr);
     }
     else
     {
         result = gz_nifti::save_to_file(filename.toStdString().c_str(),mask,
                            cur_tracking_window.current_slice->vs,
-                           cur_tracking_window.handle->trans_to_mni);
+                           cur_tracking_window.handle->trans_to_mni,
+                           cur_tracking_window.handle->is_qsdr);
     }
     if(result)
     {
