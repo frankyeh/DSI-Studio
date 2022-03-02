@@ -23,6 +23,7 @@ public:
         tipl::shape<3> dim;
         tipl::vector<3> vs;
         tipl::matrix<4,4> trans_to_mni;
+        bool is_mni = false;
 public:
         std::vector<tipl::vector<3,short> > region;
         std::vector<std::vector<tipl::vector<3,short> > > undo_backup;
@@ -36,7 +37,7 @@ public: // rendering options
         bool modified = true;
 public: // rendering options
         ROIRegion(std::shared_ptr<fib_data> handle):
-            dim(handle->dim),vs(handle->vs),trans_to_mni(handle->trans_to_mni){}
+            dim(handle->dim),vs(handle->vs),trans_to_mni(handle->trans_to_mni),is_mni(handle->is_qsdr){}
         ROIRegion(tipl::shape<3> dim_,tipl::vector<3> vs_):dim(dim_),vs(vs_)
         {
             initial_LPS_nifti_srow(trans_to_mni,dim,vs);
@@ -54,6 +55,7 @@ public: // rendering options
             dim = rhs.dim;
             vs = rhs.vs;
             trans_to_mni = rhs.trans_to_mni;
+            is_mni = rhs.is_mni;
 
             region = rhs.region;
             undo_backup = rhs.undo_backup;
