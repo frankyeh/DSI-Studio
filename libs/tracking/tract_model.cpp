@@ -2468,6 +2468,7 @@ bool TractModel::export_end_pdi(
     auto dim = tract_models.front()->geo;
     auto vs = tract_models.front()->vs;
     auto trans_to_mni = tract_models.front()->trans_to_mni;
+    auto is_mni = tract_models.front()->is_mni;
     tipl::image<3,uint32_t> p1_map(dim),p2_map(dim);
     for(size_t index = 0;index < tract_models.size();++index)
     {
@@ -2494,8 +2495,8 @@ bool TractModel::export_end_pdi(
     }
     QString f1 = QFileInfo(file_name).absolutePath() + "/"+ QFileInfo(file_name).baseName() + "_1.nii.gz";
     QString f2 = QFileInfo(file_name).absolutePath() + "/"+ QFileInfo(file_name).baseName() + "_2.nii.gz";
-    return gz_nifti::save_to_file(f1.toStdString().c_str(),pdi1,vs,trans_to_mni) &&
-           gz_nifti::save_to_file(f2.toStdString().c_str(),pdi2,vs,trans_to_mni);
+    return gz_nifti::save_to_file(f1.toStdString().c_str(),pdi1,vs,trans_to_mni,is_mni) &&
+           gz_nifti::save_to_file(f2.toStdString().c_str(),pdi2,vs,trans_to_mni,is_mni);
 }
 bool TractModel::export_pdi(const char* file_name,
                             const std::vector<std::shared_ptr<TractModel> >& tract_models)
@@ -2505,6 +2506,7 @@ bool TractModel::export_pdi(const char* file_name,
     auto dim = tract_models.front()->geo;
     auto vs = tract_models.front()->vs;
     auto trans_to_mni = tract_models.front()->trans_to_mni;
+    auto is_mni = tract_models.front()->is_mni;
     tipl::image<3,uint32_t> accumulate_map(dim);
     for(size_t index = 0;index < tract_models.size();++index)
     {
@@ -2520,7 +2522,7 @@ bool TractModel::export_pdi(const char* file_name,
     tipl::image<3> pdi(accumulate_map);
     if(tract_models.size() > 1)
         tipl::multiply_constant(pdi,1.0f/float(tract_models.size()));
-    return gz_nifti::save_to_file(file_name,pdi,vs,trans_to_mni);
+    return gz_nifti::save_to_file(file_name,pdi,vs,trans_to_mni,is_mni);
 }
 bool TractModel::export_tdi(const char* filename,
                   std::vector<std::shared_ptr<TractModel> > tract_models,
@@ -2536,14 +2538,14 @@ bool TractModel::export_tdi(const char* filename,
         tipl::image<3,tipl::rgb> tdi(dim);
         for(unsigned int index = 0;index < tract_models.size();++index)
             tract_models[index]->get_density_map(tdi,transformation,end_point);
-        return gz_nifti::save_to_file(filename,tdi,vs,tipl::matrix<4,4>(tract_models[0]->trans_to_mni*transformation));
+        return gz_nifti::save_to_file(filename,tdi,vs,tipl::matrix<4,4>(tract_models[0]->trans_to_mni*transformation),tract_models[0]->is_mni);
     }
     else
     {
         tipl::image<3,unsigned int> tdi(dim);
         for(unsigned int index = 0;index < tract_models.size();++index)
             tract_models[index]->get_density_map(tdi,transformation,end_point);
-        return gz_nifti::save_to_file(filename,tdi,vs,tipl::matrix<4,4>(tract_models[0]->trans_to_mni*transformation));
+        return gz_nifti::save_to_file(filename,tdi,vs,tipl::matrix<4,4>(tract_models[0]->trans_to_mni*transformation),tract_models[0]->is_mni);
     }
 }
 void TractModel::to_voxel(std::vector<tipl::vector<3,short> >& points,float ratio,int id)
