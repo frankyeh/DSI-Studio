@@ -1,5 +1,9 @@
 name: Test Release 
 on:
+  workflow_run:
+    workflows: [Build Release]
+    types: [completed]
+    
   workflow_dispatch:
 jobs:
   Animal_Recon:
