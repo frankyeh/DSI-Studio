@@ -50,8 +50,8 @@ size_t match_template(float volume)
         gz_nifti read;
         if(!read.load_from_file(fa_template_list[i].c_str()))
             continue;
-        float v = float(read.nif_header2.dim[1]*read.nif_header2.dim[2]*read.nif_header2.dim[3])*
-                float(read.nif_header2.pixdim[1]*read.nif_header2.pixdim[2]*read.nif_header2.pixdim[3]);
+        float v = float(read.nif_header.dim[1]*read.nif_header.dim[2]*read.nif_header.dim[3])*
+                float(read.nif_header.pixdim[1]*read.nif_header.pixdim[2]*read.nif_header.pixdim[3]);
         v = std::fabs(v-volume);
         if(v < min_dif)
         {
