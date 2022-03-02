@@ -385,7 +385,7 @@ bool CustomSliceModel::initialize(const std::vector<std::string>& files,bool is_
 
 
     // same dimension, no registration required.
-    if(source_images.shape() == handle->dim)
+    if(source_images.shape() == handle->dim && !has_transform)
     {
         QMessageBox::StandardButton r = QMessageBox::No;
         if(has_gui)
@@ -402,7 +402,6 @@ bool CustomSliceModel::initialize(const std::vector<std::string>& files,bool is_
             invT.identity();
             is_diffusion_space = true;
             has_transform = true;
-            return false;
         }
     }
 
