@@ -139,6 +139,7 @@ public:
     bool load_mapping(const char* file_name);
 public:
     tipl::matrix<4,4> trans;
+    bool is_mni = false;
     tipl::image<3> source_images;
     tipl::image<3> skull_removed_images;
     tipl::color_image picture;
