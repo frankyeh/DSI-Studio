@@ -166,8 +166,7 @@ void init_application(void)
         QApplication::setStyle(style);
 
     if(!load_file_name())
-        QMessageBox::information(nullptr,"Error",
-        "Cannot find FA template in the template folder. Please download dsi_studio_other_files.zip from DSI Studio website and place them with the DSI Studio executives.");
+        QMessageBox::information(nullptr,"Error","Cannot find template data.");
 }
 
 int run_action(program_option& po,std::shared_ptr<QApplication> gui)
@@ -244,31 +243,30 @@ int run_cmd(int ac, char *av[])
             std::cout << "invalid command, use --help for more detail" << std::endl;
             return 1;
         }
+
         std::string source = po.get("source");
         std::string action = po.get("action");
 
 
         std::shared_ptr<QApplication> gui;
         std::shared_ptr<QCoreApplication> cmd;
-        for (int i = 1; i < ac; ++i)
-            if ((action == "cnt" && po.get("no_tractogram",1) != 1) || action == "vis")
-            {
-                gui.reset(new QApplication(ac, av));
-                init_application();
-                std::cout << "Starting GUI-based command line interface." << std::endl;
-                break;
-            }
 
-        if(!gui.get())
+        if ((action == "cnt" && po.get("no_tractogram",1) == 0) || action == "vis")
+        {
+            std::cout << "Starting GUI-based command line interface." << std::endl;
+            gui.reset(new QApplication(ac, av));
+            init_application();
+        }
+        else
         {
             cmd.reset(new QCoreApplication(ac, av));
-            if(!load_file_name())
-            {
-                std::cout << "Cannot find FA template in the template folder. Please download dsi_studio_other_files.zip from DSI Studio website and place them with the DSI Studio executives." << std::endl;
-                return 1;
-            }
             cmd->setOrganizationName("LabSolver");
             cmd->setApplicationName("DSI Studio");
+            if(!load_file_name())
+            {
+                std::cout << "ERROR: Cannot find template data." << std::endl;
+                return 1;
+            }
         }
 
         if(action != "atk" && // atk handle * by itself
