@@ -181,12 +181,15 @@ bool connectometry_db::parse_demo(const std::string& filename)
     items.erase(items.begin(),items.begin()+int(col_count));
 
     // convert special characters
+    std::cout << "demographic columns:";
     for(size_t i = 0;i < titles.size();++i)
     {
         std::replace(titles[i].begin(),titles[i].end(),' ','_');
         std::replace(titles[i].begin(),titles[i].end(),'/','_');
         std::replace(titles[i].begin(),titles[i].end(),'\\','_');
+        std::cout << "\t" << titles[i];
     }
+    std::cout << std::endl;
 
     // find which column can be used as features
     feature_location.clear();
@@ -196,9 +199,11 @@ bool connectometry_db::parse_demo(const std::string& filename)
         std::vector<char> not_number(titles.size());
         for(size_t i = 0;i < items.size();++i)
         {
-            if(items[i] == " ")
+            if(not_number[i%titles.size()])
+                continue;
+            if(items[i] == " " || items[i] == "\r")
                 items[i].clear();
-            if(items[i].empty() || not_number[i%titles.size()])
+            if(items[i].empty())
                 continue;
             try{
                 std::stof(items[i]);
