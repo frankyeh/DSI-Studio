@@ -107,7 +107,7 @@ int cnt(program_option& po)
     // setup roi
     {
         vbc->roi_mgr = std::make_shared<RoiMgr>(vbc->handle);
-        if(po.get("exclude_cb",0))
+        if(po.get("exclude_cb",1))
             vbc->exclude_cerebellum();
 
         if(!load_roi(po,vbc->handle,vbc->roi_mgr))
