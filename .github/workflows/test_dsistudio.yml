@@ -123,7 +123,7 @@ jobs:
     - name: Connectometry
       run: |
         cat CMU60.demo.csv
-        ./dsi-studio/dsi_studio --source=CMU60.db.fib.gz --action=cnt --demo=CMU60.demo.csv --t_threshold=2.5 --permutation=200 --variable_list=0,1,2 --voi=1
+        ./dsi-studio/dsi_studio --source=CMU60.db.fib.gz --action=cnt --demo=CMU60.demo.csv --t_threshold=2.5 --permutation=200 --variable_list=0,1 --voi=1
         ls * -l
         
   Automatic_Tracking:
