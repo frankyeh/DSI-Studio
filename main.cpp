@@ -213,6 +213,8 @@ int run_action(program_option& po,std::shared_ptr<QApplication> gui)
 }
 void get_filenames_from(const std::string param,std::vector<std::string>& filenames);
 bool check_cuda(std::string& error_msg);
+bool match_files(const std::string& file_path1,const std::string& file_path2,
+                 const std::string& file_path1_others,std::string& file_path2_gen);
 int run_cmd(int ac, char *av[])
 {
     program_option po;
@@ -237,11 +239,19 @@ int run_cmd(int ac, char *av[])
         }
         if(po.has("version"))
             return 0;
+        if (!po.has("action"))
+        {
+            std::cout << "invalid command, use --help for more detail" << std::endl;
+            return 1;
+        }
+        std::string source = po.get("source");
+        std::string action = po.get("action");
+
+
         std::shared_ptr<QApplication> gui;
         std::shared_ptr<QCoreApplication> cmd;
         for (int i = 1; i < ac; ++i)
-            if ((std::string(av[i]) == std::string("--action=cnt") && po.get("no_tractogram",1) != 1) ||
-                std::string(av[i]) == std::string("--action=vis"))
+            if ((action == "cnt" && po.get("no_tractogram",1) != 1) || action == "vis")
             {
                 gui.reset(new QApplication(ac, av));
                 init_application();
@@ -260,24 +270,39 @@ int run_cmd(int ac, char *av[])
             cmd->setOrganizationName("LabSolver");
             cmd->setApplicationName("DSI Studio");
         }
-        if (!po.has("action"))
-        {
-            std::cout << "invalid command, use --help for more detail" << std::endl;
-            return 1;
-        }
-        std::string source = po.get("source");
-        if(po.get("action") != std::string("atk") && // atk handle * by itself
-           po.get("action") != std::string("atl") && // atl handle * by itself
-           po.get("action") != std::string("src") && // src handle , by itself
+
+        if(action != "atk" && // atk handle * by itself
+           action != "atl" && // atl handle * by itself
+           action != "src" && // src handle , by itself
            (source.find('*') != std::string::npos ||
             source.find(',') != std::string::npos))
         {
             std::vector<std::string> source_files;
             get_filenames_from(source,source_files);
+
+            std::vector<std::pair<std::string,std::string> > wildcard_list;
+            po.get_wildcard_list(wildcard_list);
+
             for (size_t i = 0;i < source_files.size();++i)
             {
                 std::cout << "Process file:" << source_files[i] << std::endl;
                 po.set("source",source_files[i]);
+
+                // apply '*' to other arguments
+                for(const auto& wildcard : wildcard_list)
+                {
+                    if(wildcard.first == "source")
+                        continue;
+                    std::string apply_wildcard;
+                    if(!match_files(source,source_files[i],wildcard.second,apply_wildcard))
+                    {
+                        std::cout << "ERROR: cannot translate " << wildcard.second <<
+                                     " at --" << wildcard.first << std::endl;
+                        return 1;
+                    }
+                    std::cout << wildcard.second << "->" << apply_wildcard << std::endl;
+                    po.set(wildcard.first.c_str(),apply_wildcard);
+                }
                 po.set_used(0);
                 if(run_action(po,gui) == 1)
                 {
