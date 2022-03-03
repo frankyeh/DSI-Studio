@@ -1,3 +1,4 @@
+#include <filesystem>
 #include "prog_interface_static_link.h"
 #include "connectometry_db.hpp"
 #include "fib_data.hpp"
@@ -89,7 +90,7 @@ bool connectometry_db::parse_demo(const std::string& filename)
     size_t col_count = 0;
     {
         size_t row_count = 0,last_item_size = 0;
-        bool is_csv = (filename.substr(filename.length()-4,4) == std::string(".csv"));
+        bool is_csv = std::filesystem::path(filename).extension() == ".csv";
         std::ifstream in(filename.c_str());
         if(!in)
         {
@@ -107,9 +108,10 @@ bool connectometry_db::parse_demo(const std::string& filename)
         {
             if(is_csv)
             {
-                std::regex re(",");
-                std::sregex_token_iterator first{line.begin(), line.end(),re, -1},last;
-                std::copy(first,last,std::back_inserter(items));
+                std::string col;
+                std::istringstream in2(line);
+                while(std::getline(in2,col,','))
+                    items.push_back(col);
                 if(line.back() == ',')
                     items.push_back(std::string());
             }
