@@ -12,22 +12,15 @@ jobs:
     - name: Setup Environment
       run: |
         curl -L "https://github.com/frankyeh/DSI-Studio/releases/download/2021.12.03/dsi_studio_ubuntu_2004.zip" | jar xv
-        curl -L ${{ secrets.TEST_FILE }} | jar xv
+        curl -L https://zenodo.org/record/6321169/files/mountsinai-S-sub-032156_dwi.src.gz?download=1 -o Rhesus.src.gz
         chmod 777 ./dsi-studio/dsi_studio
-        
     - name: Test DTI/GQI Recon
       run: |  
         cd animal_src
         ../dsi-studio/dsi_studio --source=*.src.gz --action=rec --method=1 |& tee -a log.txt
-        ls Chipamzee.src.gz.dti.fib.gz
-        ls Marmoset.src.gz.dti.fib.gz
-        ls Rat.src.gz.dti.fib.gz
         ls Rhesus.src.gz.dti.fib.gz
         echo --------------------------------------------------------------------------------------------------
         ../dsi-studio/dsi_studio --source=*.src.gz --action=rec |& tee -a log.txt
-        ls Chipamzee.src.gz.gqi.1.25.fib.gz
-        ls Marmoset.src.gz.gqi.1.25.fib.gz
-        ls Rat.src.gz.gqi.1.25.fib.gz
         ls Rhesus.src.gz.gqi.1.25.fib.gz
 
     
