@@ -166,7 +166,8 @@ set(DSI_STUDIO_OTHER_FILES options.txt
 
 if(WIN32)
     set(DSI_STUDIO_EXEC
-        WIN32)
+        WIN32
+        dsi_studio.rc)
 endif()
 if(APPLE)
     set(DSI_STUDIO_EXEC
