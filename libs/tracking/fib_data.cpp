@@ -1718,18 +1718,12 @@ bool fib_data::map_to_mni(bool background)
         prog = 1;
         if(!has_manual_atlas)
         {
-            if(is_human_data)
-                linear_common(It,template_vs,Is,vs,T,tipl::reg::affine,terminated);
-            else
-            {
-                auto tvs = vs;
+            auto tvs = vs;
+            if(!is_human_data)
                 tvs *= std::sqrt((It.plane_size()*template_vs[0]*template_vs[1])/
                                                         (Is.plane_size()*vs[0]*vs[1]));
-                if(no_iso)
-                    animal_reg(It,template_vs,Is,tvs,T,terminated);
-                else
-                    animal_reg(It2,template_vs,Is2,tvs,T,terminated);
-            }
+            linear_common(It,template_vs,Is,tvs,T,tipl::reg::affine,terminated);
+
         }
         else
             T = manual_template_T;
