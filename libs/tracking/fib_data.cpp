@@ -696,6 +696,7 @@ bool fib_data::load_from_file(const char* file_name)
 
 
     // check if initiate surrogate analysis for large data
+    /*
     if(has_gui &&
        !mat_reader.has("odfs") && !mat_reader.has("odf0") && // not ODF FIB files
        !mat_reader.has("subject_names") &&                        // not connectometry DB
@@ -858,6 +859,7 @@ bool fib_data::load_from_file(const char* file_name)
         fib_file_name = surrogate_file_name;
         has_high_reso = true;
     }
+    */
 
     if(!load_from_mat())
         return false;
