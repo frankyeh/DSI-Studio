@@ -11,8 +11,8 @@ jobs:
     steps:
     - name: Setup Environment
       run: |
-        curl -L "https://github.com/frankyeh/DSI-Studio/releases/download/2021.12.03/dsi_studio_ubuntu_2004.zip" | jar xv
-        curl -L https://zenodo.org/record/6321169/files/mountsinai-S-sub-032156_dwi.src.gz?download=1 -o Rhesus.src.gz
+        curl -sL "https://github.com/frankyeh/DSI-Studio/releases/download/2021.12.03/dsi_studio_ubuntu_2004.zip" | jar xv
+        curl -sL https://zenodo.org/record/6321169/files/mountsinai-S-sub-032156_dwi.src.gz?download=1 -o Rhesus.src.gz
         chmod 777 ./dsi-studio/dsi_studio
     - name: Test DTI/GQI Recon
       run: |  
@@ -28,10 +28,10 @@ jobs:
     steps:
     - name: Setup Environment
       run: |
-        curl -L "https://github.com/frankyeh/DSI-Studio/releases/download/2021.12.03/dsi_studio_ubuntu_2004.zip" | jar xv
-        curl -L https://zenodo.org/record/6320992/files/20081006_M025Y_DSI_203.src.gz?download=1 -o DSI.src.gz
-        curl -L https://zenodo.org/record/6320992/files/20081006_M025Y_DTI64.src.gz?download=1 -o DTI.src.gz
-        curl -L https://zenodo.org/record/6320992/files/20081006_M025Y_HARDI.src.gz?download=1 -o HARDI.src.gz
+        curl -sL "https://github.com/frankyeh/DSI-Studio/releases/download/2021.12.03/dsi_studio_ubuntu_2004.zip" | jar xv
+        curl -sL https://zenodo.org/record/6320992/files/20081006_M025Y_DSI_203.src.gz?download=1 -o DSI.src.gz
+        curl -sL https://zenodo.org/record/6320992/files/20081006_M025Y_DTI64.src.gz?download=1 -o DTI.src.gz
+        curl -sL https://zenodo.org/record/6320992/files/20081006_M025Y_HARDI.src.gz?download=1 -o HARDI.src.gz
         chmod 777 ./dsi-studio/dsi_studio
     - name: Test GQI Recon
       run: |
@@ -53,8 +53,8 @@ jobs:
     steps:
     - name: Setup Environment
       run: |
-        curl -L "https://github.com/frankyeh/DSI-Studio/releases/download/2021.12.03/dsi_studio_ubuntu_2004.zip" | jar xv
-        curl -L https://github.com/frankyeh/DSI-Studio-atlas/blob/main/ICBM152/ICBM152.fib.gz?raw=true -o ICBM152.fib.gz
+        curl -sL "https://github.com/frankyeh/DSI-Studio/releases/download/2021.12.03/dsi_studio_ubuntu_2004.zip" | jar xv
+        curl -sL https://github.com/frankyeh/DSI-Studio-atlas/blob/main/ICBM152/ICBM152.fib.gz?raw=true -o ICBM152.fib.gz
         chmod 777 ./dsi-studio/dsi_studio
     - name: Tracking
       run: |
@@ -82,9 +82,9 @@ jobs:
     steps:
     - name: Setup Environment
       run: |
-        curl -L "https://github.com/frankyeh/DSI-Studio/releases/download/2021.12.03/dsi_studio_ubuntu_2004.zip" | jar xv
-        curl -L https://zenodo.org/record/6307812/files/100206.src.gz.gqi.1.7.fib.gz?download=1 -o 100206.fib.gz
-        curl -L https://github.com/frankyeh/DSI-Studio-atlas/blob/main/ICBM152/ICBM152.QA.nii.gz?raw=true -o template_qa.nii.gz
+        curl -sL "https://github.com/frankyeh/DSI-Studio/releases/download/2021.12.03/dsi_studio_ubuntu_2004.zip" | jar xv
+        curl -sL https://zenodo.org/record/6307812/files/100206.src.gz.gqi.1.7.fib.gz?download=1 -o 100206.fib.gz
+        curl -sL https://github.com/frankyeh/DSI-Studio-atlas/blob/main/ICBM152/ICBM152.QA.nii.gz?raw=true -o template_qa.nii.gz
         chmod 777 ./dsi-studio/dsi_studio
     - name: Tracking
       run: |
@@ -116,9 +116,9 @@ jobs:
     steps:
     - name: Setup Environment
       run: |
-        curl -L "https://github.com/frankyeh/DSI-Studio/releases/download/2021.12.03/dsi_studio_ubuntu_2004.zip" | jar xv
-        curl -L https://zenodo.org/record/6324701/files/CMU60.db.fib.gz?download=1 -o CMU60.db.fib.gz
-        curl -L https://zenodo.org/record/6324701/files/CMU60.demo.csv?download=1 -o CMU60.demo.csv
+        curl -sL "https://github.com/frankyeh/DSI-Studio/releases/download/2021.12.03/dsi_studio_ubuntu_2004.zip" | jar xv
+        curl -sL https://zenodo.org/record/6324701/files/CMU60.db.fib.gz?download=1 -o CMU60.db.fib.gz
+        curl -sL https://zenodo.org/record/6324701/files/CMU60.demo.csv?download=1 -o CMU60.demo.csv
         chmod 777 ./dsi-studio/dsi_studio
     - name: Connectometry
       run: |
@@ -131,10 +131,10 @@ jobs:
     steps:
     - name: Setup Environment
       run: |
-        curl -L "https://github.com/frankyeh/DSI-Studio/releases/download/2021.12.03/dsi_studio_ubuntu_2004.zip" | jar xv
-        curl -L https://zenodo.org/record/6307812/files/100206.src.gz.gqi.1.7.fib.gz?download=1 -o 100206.fib.gz
-        curl -L https://zenodo.org/record/6307812/files/100307.src.gz.gqi.1.7.fib.gz?download=1 -o 100307.fib.gz
-        curl -L https://zenodo.org/record/6307812/files/100408.src.gz.gqi.1.7.fib.gz?download=1 -o 100408.fib.gz
+        curl -sL "https://github.com/frankyeh/DSI-Studio/releases/download/2021.12.03/dsi_studio_ubuntu_2004.zip" | jar xv
+        curl -sL https://zenodo.org/record/6307812/files/100206.src.gz.gqi.1.7.fib.gz?download=1 -o 100206.fib.gz
+        curl -sL https://zenodo.org/record/6307812/files/100307.src.gz.gqi.1.7.fib.gz?download=1 -o 100307.fib.gz
+        curl -sL https://zenodo.org/record/6307812/files/100408.src.gz.gqi.1.7.fib.gz?download=1 -o 100408.fib.gz
         chmod 777 ./dsi-studio/dsi_studio
     - name: Tracking
       run: |
