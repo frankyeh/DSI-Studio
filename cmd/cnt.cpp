@@ -35,7 +35,7 @@ int cnt(program_option& po)
         return 1;
     }
 
-    std::cout << "demographics include ";
+    std::cout << "selectable variables include ";
     // show features readed
     for(size_t i = 0;i < db.feature_titles.size();++i)
          std::cout << "(" << i << ")" << db.feature_titles[i] << " ";
@@ -48,10 +48,10 @@ int cnt(program_option& po)
         voi_index = po.get("voi",uint32_t(0));
         if(voi_index >= db.feature_titles.size())
         {
-            std::cout << "invalid voi value: " << voi_index << std::endl;
+            std::cout << "invalid variable of interest: " << voi_index << std::endl;
             return 1;
         }
-        std::cout << "feature selected (study variable): " << db.feature_titles[voi_index] << std::endl;
+        std::cout << "variable to study: " << db.feature_titles[voi_index] << std::endl;
 
         std::string var_text = po.get("variable_list");
         std::replace(var_text.begin(),var_text.end(),',',' ');
@@ -72,7 +72,7 @@ int cnt(program_option& po)
         }
 
         std::fill(db.feature_selected.begin(),db.feature_selected.end(),false);
-        std::cout << "variables considered in regression: ";
+        std::cout << "variable(s) to be considered in regression: ";
         for(auto index : variable_list)
         {
             std::cout << "(" << index << ")" << db.feature_titles[index] << " ";
