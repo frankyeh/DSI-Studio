@@ -109,6 +109,27 @@ jobs:
         echo --------------------------------------------------------------------------------------------------
         ./dsi-studio/dsi_studio --source=100206.fib.gz --action=trk --other_slices=template_qa.nii.gz --dt_threshold_index=template_qa-qa --seed_count=1000000 --dt_threshold=0.1 --output=dt.tt.gz
         ls dt.tt.gz
+  Export_Registration:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Setup Environment
+      run: |
+        curl -sL "https://github.com/frankyeh/DSI-Studio/releases/download/2021.12.03/dsi_studio_ubuntu_2004.zip" | jar x
+        curl -sL https://zenodo.org/record/6307812/files/100206.src.gz.gqi.1.7.fib.gz?download=1 -o 100206.fib.gz
+        chmod 777 ./dsi-studio/dsi_studio
+    - name: Export
+      run: |
+        ./dsi-studio/dsi_studio --source=100206.fib.gz --action=exp --export=qa,iso 
+        ls 100206.fib.gz.qa.nii.gz
+        ls 100206.fib.gz.iso.nii.gz
+    - name: Registration
+      run: |
+        curl -sL https://zenodo.org/record/6324701/files/HCP1065_qa.nii.gz?download=1 -o HCP1065_qa.nii.gz
+        curl -sL https://zenodo.org/record/6324701/files/HCP1065_iso.nii.gz?download=1 -o HCP1065_iso.nii.gz
+        ./dsi-studio/dsi_studio --action=reg --from=100206.fib.gz.qa.nii.gz --to=HCP1065_qa.nii.gz
+        ls * -l
+        ./dsi-studio/dsi_studio --action=reg --from=100206.fib.gz.qa.nii.gz --to=HCP1065_qa.nii.gz --from2=100206.fib.gz.iso.nii.gz --to2=HCP1065_iso.nii.gz
+        ls * -l
 
 
   Connectometry:
