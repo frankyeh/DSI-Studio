@@ -459,6 +459,7 @@ void TractTableWidget::load_cluster_label(const std::vector<unsigned int>& label
         tract_models.back()->report = report;
         item(int(tract_models.size())-1,1)->setText(QString::number(tract_models.back()->get_visible_track_count()));
     }
+    emit need_update();
 }
 
 void TractTableWidget::open_cluster_label(void)
@@ -478,6 +479,32 @@ void TractTableWidget::open_cluster_label(void)
     load_cluster_label(labels);
     assign_colors();
 }
+
+
+void TractTableWidget::recog_tracks(void)
+{
+    if(currentRow() >= int(tract_models.size()) || tract_models[uint32_t(currentRow())]->get_tracts().size() == 0)
+        return;
+    if(!cur_tracking_window.handle->load_track_atlas())
+    {
+        QMessageBox::information(this,"Error",cur_tracking_window.handle->error_msg.c_str());
+        return;
+    }
+    std::map<float,std::string,std::greater<float> > sorted_list;
+    if(!cur_tracking_window.handle->recognize(tract_models[uint32_t(currentRow())],sorted_list))
+    {
+        QMessageBox::information(this,"Error","Cannot recognize tracks.");
+        return;
+    }
+    std::ostringstream out;
+    auto beg = sorted_list.begin();
+    for(size_t i = 0;i < sorted_list.size();++i,++beg)
+        if(beg->first != 0.0f)
+            out << beg->first*100.0f << "% " << beg->second << std::endl;
+    show_info_dialog("Tract Recognition Result",out.str());
+}
+
+
 void TractTableWidget::auto_recognition(void)
 {
     if(!cur_tracking_window.handle->load_track_atlas())
@@ -485,13 +512,29 @@ void TractTableWidget::auto_recognition(void)
         QMessageBox::information(this,"Error",cur_tracking_window.handle->error_msg.c_str());
         return;
     }
-    std::vector<unsigned int> c;
-    cur_tracking_window.handle->recognize(tract_models[uint32_t(currentRow())],c,
-                    cur_tracking_window["autotrack_tolerance"].toFloat());
+    std::vector<unsigned int> c,new_c;
+    cur_tracking_window.handle->recognize(tract_models[uint32_t(currentRow())],c);
+    std::vector<unsigned int> count(cur_tracking_window.handle->tractography_name_list.size());
+    for(auto l : c)
+        if(l < count.size())
+            ++count[l];
+    std::multimap<unsigned int,unsigned int,std::greater<unsigned int> > tract_list;
+    for(unsigned int i = 0;i < count.size();++i)
+        if(count[i])
+            tract_list.insert(std::make_pair(count[i],i));
+
     QStringList Names;
-    for(int i = 0;i < cur_tracking_window.handle->tractography_name_list.size();++i)
-        Names << cur_tracking_window.handle->tractography_name_list[i].c_str();
-    load_cluster_label(c,Names);
+    unsigned int index = 0;
+    new_c.resize(c.size());
+    for(auto p : tract_list)
+    {
+        for(size_t j = 0;j < c.size();++j)
+            if(c[j] == p.second)
+                new_c[j] = index;
+        Names << cur_tracking_window.handle->tractography_name_list[p.second].c_str();
+        ++index;
+    }
+    load_cluster_label(new_c,Names);
 }
 
 void TractTableWidget::recognize_rename(void)
@@ -506,7 +549,7 @@ void TractTableWidget::recognize_rename(void)
         if(item(int(index),0)->checkState() == Qt::Checked)
         {
             std::map<float,std::string,std::greater<float> > sorted_list;
-            if(!cur_tracking_window.handle->recognize(tract_models[index],sorted_list,true))
+            if(!cur_tracking_window.handle->recognize(tract_models[index],sorted_list))
                 return;
             item(int(index),0)->setText(sorted_list.begin()->second.c_str());
         }
@@ -845,29 +888,6 @@ void TractTableWidget::deep_learning_train(void)
         }
     }
 
-}
-
-void TractTableWidget::recog_tracks(void)
-{
-    if(currentRow() >= int(tract_models.size()) || tract_models[uint32_t(currentRow())]->get_tracts().size() == 0)
-        return;
-    if(!cur_tracking_window.handle->load_track_atlas())
-    {
-        QMessageBox::information(this,"Error",cur_tracking_window.handle->error_msg.c_str());
-        return;
-    }
-    std::map<float,std::string,std::greater<float> > sorted_list;
-    if(!cur_tracking_window.handle->recognize(tract_models[uint32_t(currentRow())],sorted_list,false))
-    {
-        QMessageBox::information(this,"Error","Cannot recognize tracks.");
-        return;
-    }
-    std::ostringstream out;
-    auto beg = sorted_list.begin();
-    for(size_t i = 0;i < sorted_list.size();++i,++beg)
-        if(beg->first != 0.0f)
-            out << beg->first*100.0f << "% " << beg->second << std::endl;
-    show_info_dialog("Tract Recognition Result",out.str());
 }
 
 

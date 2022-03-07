@@ -1563,54 +1563,47 @@ unsigned int find_nearest_contain(const float* trk,unsigned int length,
     return tract_cluster[best_index];
 }
 
-unsigned int fib_data::find_nearest(const float* trk,unsigned int length,bool contain,float tolerance_dis_in_subject_voxels)
-{
-    if(contain)
-        return find_nearest_contain(trk,length,track_atlas->get_tracts(),track_atlas->get_cluster_info());
-    else
-        return ::find_nearest(trk,length,track_atlas->get_tracts(),track_atlas->get_cluster_info(),tolerance_dis_in_subject_voxels);
-}
 //---------------------------------------------------------------------------
 
-bool fib_data::recognize(std::shared_ptr<TractModel>& trk,std::vector<unsigned int>& result,float tolerance)
+bool fib_data::recognize(std::shared_ptr<TractModel>& trk,std::vector<unsigned int>& label)
 {
     if(!load_track_atlas())
         return false;
-    result.resize(trk->get_tracts().size());
+    label.resize(trk->get_tracts().size());
     tipl::par_for(trk->get_tracts().size(),[&](size_t i)
     {
         if(trk->get_tracts()[i].empty())
             return;
-        result[i] = find_nearest(&(trk->get_tracts()[i][0]),uint32_t(trk->get_tracts()[i].size()),false,tolerance);
+        label[i] = find_nearest_contain(&(trk->get_tracts()[i][0]),uint32_t(trk->get_tracts()[i].size()),track_atlas->get_tracts(),track_atlas->get_cluster_info());
     });
     return true;
 }
 
-bool fib_data::recognize(std::shared_ptr<TractModel>& trk,std::map<float,std::string,std::greater<float> >& result,bool contain)
+bool fib_data::recognize(std::shared_ptr<TractModel>& trk,std::map<float,std::string,std::greater<float> >& result)
 {
     if(!load_track_atlas())
         return false;
-    std::vector<float> count(tractography_name_list.size());
-    tipl::par_for(trk->get_tracts().size(),[&](size_t i)
+    std::vector<unsigned int> label;
+    if(!recognize(trk,label))
+        return false;
+
+    std::vector<unsigned int> count(tractography_name_list.size());
+    for(auto l : label)
     {
-        if(trk->get_tracts()[i].empty())
-            return;
-        unsigned int index = find_nearest(&(trk->get_tracts()[i][0]),uint32_t(trk->get_tracts()[i].size()),contain,16.0f/vs[0]);
-        if(index < count.size())
-            ++count[index];
-    });
-    float sum = std::accumulate(count.begin(),count.end(),0.0f);
-    if(sum != 0.0f)
-        tipl::multiply_constant(count,1.0f/sum);
+        if(l < count.size())
+            ++count[l];
+    }
+    auto sum = std::accumulate(count.begin(),count.end(),0);
     result.clear();
     for(size_t i = 0;i < count.size();++i)
-        result[count[i]] = tractography_name_list[i];
+        if(count[i])
+            result[float(count[i])/float(sum)] = tractography_name_list[i];
     return true;
 }
 void fib_data::recognize_report(std::shared_ptr<TractModel>& trk,std::string& report)
 {
     std::map<float,std::string,std::greater<float> > result;
-    if(!recognize(trk,result,true)) // true: connectometry may only show part of pathways. enable containing condition
+    if(!recognize(trk,result)) // true: connectometry may only show part of pathways. enable containing condition
         return;
     size_t n = 0;
     std::ostringstream out;
