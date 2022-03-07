@@ -1435,7 +1435,9 @@ bool fib_data::load_track_atlas()
 {
     if(tractography_atlas_file_name.empty() || tractography_name_list.empty())
     {
-        error_msg = "no tractography atlas associated with the current template";
+        error_msg = "no tractography atlas in ";
+        error_msg += QFileInfo(fa_template_list[template_id].c_str()).baseName().toStdString();
+        error_msg += " template";
         return false;
     }
     if(!track_atlas.get())
@@ -1443,7 +1445,8 @@ bool fib_data::load_track_atlas()
         track_atlas = std::make_shared<TractModel>(dim,vs,trans_to_mni);
         if(!track_atlas->load_from_file(tractography_atlas_file_name.c_str()))
         {
-            error_msg = "failed to load tractography atlas";
+            error_msg = "failed to load tractography atlas: ";
+            error_msg += tractography_atlas_file_name;
             return false;
         }
 
