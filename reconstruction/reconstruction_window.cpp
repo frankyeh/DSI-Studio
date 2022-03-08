@@ -859,17 +859,8 @@ void reconstruction_window::on_actionImage_upsample_to_T1W_TESTING_triggered()
     manual->on_rerun_clicked();
     if(manual->exec() != QDialog::Accepted)
         return;
-    bool ok;
-    double var = QInputDialog::getDouble(this,
-        "DSI Studio","Variance",3,0.5,10,1,&ok);
-    if (!ok)
-        return;
     progress prog_("rotating");
-    tipl::image<3> ref2(ref);
-    float m = tipl::median(ref2.begin(),ref2.end());
-    tipl::multiply_constant_mt(ref,0.5f/m);
-
-    handle->rotate(ref.shape(),vs,manual->get_iT(),tipl::image<3,tipl::vector<3> >(),ref,var);
+    handle->rotate(ref.shape(),vs,manual->get_iT(),tipl::image<3,tipl::vector<3> >());
     handle->voxel.report += " The diffusion images were rotated and scaled to the space of ";
     handle->voxel.report += QFileInfo(filenames[0]).baseName().toStdString();
     handle->voxel.report += ". The b-table was also rotated accordingly.";
