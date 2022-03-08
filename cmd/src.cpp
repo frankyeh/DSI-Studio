@@ -1,5 +1,6 @@
 #include <QDir>
 #include <iostream>
+#include <filesystem>
 #include <iterator>
 #include <string>
 #include "TIPL/tipl.hpp"
@@ -11,21 +12,18 @@ bool load_bval(const char* file_name,std::vector<double>& bval);
 bool load_bvec(const char* file_name,std::vector<double>& b_table,bool flip_by = true);
 bool parse_dwi(QStringList file_list,std::vector<std::shared_ptr<DwiHeader> >& dwi_files);
 void dicom2src(std::string dir_,std::ostream& out);
+bool nii2src_bids(QString dir,QString output_dir,std::string& error_msg);
 int src(program_option& po)
 {
     std::string source = po.get("source");
-    std::string ext;
-    if(source.size() > 4)
-        ext = std::string(source.end()-4,source.end());
-
-    std::vector<std::shared_ptr<DwiHeader> > dwi_files;
     QStringList file_list;
-    if(ext ==".nii" || ext == ".dcm" || ext == "dseq" || ext == "i.gz")
-        file_list = QString(source.c_str()).split(',');
-    else
+    if(std::filesystem::is_directory(source))
     {
-
-        std::cout << "load files in directory " << source.c_str() << std::endl;     
+        std::string error_msg;
+        std::cout << "look for BIDS structure at " << source.c_str() << std::endl;
+        if(nii2src_bids(source.c_str(),po.get("output",source).c_str(),error_msg))
+            return true;
+        std::cout << "load files in directory " << source.c_str() << std::endl;
         if(po.get("recursive",0))
         {
             std::cout << "search recursively in the subdir" << std::endl;
@@ -45,13 +43,17 @@ int src(program_option& po)
         }
         std::cout << "a total of " << file_list.size() << " files found in the directory" << std::endl;
     }
-
+    else
+    {
+        file_list = QString(source.c_str()).split(',');
+    }
     if(file_list.empty())
     {
         std::cout << "no file found for creating src" << std::endl;
         return 1;
     }
 
+    std::vector<std::shared_ptr<DwiHeader> > dwi_files;
     if(!parse_dwi(file_list,dwi_files))
     {
         std::cout << "ERROR loading dwi file:" << src_error_msg << std::endl;

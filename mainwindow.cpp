@@ -996,28 +996,20 @@ void nii2src(std::string nii_name,std::string src_name,std::ostream& out)
     if(!DwiHeader::output_src(src_name.c_str(),dwi_files,0,false))
         out << "ERROR: " << src_error_msg << std::endl;
 }
-void MainWindow::on_nii2src_bids_clicked()
+
+bool nii2src_bids(QString dir,QString output_dir,std::string& error_msg)
 {
-    QString dir = QFileDialog::getExistingDirectory(
-                                    this,
-                                    "Open BIDS Folder",
-                                    ui->workDir->currentText());
-    if(dir.isEmpty())
-        return;
-    QString output_dir = QFileDialog::getExistingDirectory(
-                                    this,
-                                    "Please Specify the Output Folder",
-                                    QDir(dir).path()+"/derivatives");
-    if(output_dir.isEmpty())
-        return;
-    add_work_dir(dir);
     QStringList sub_dir = QDir(dir).entryList(QStringList("sub-*"),
                                                 QDir::Dirs | QDir::NoSymLinks | QDir::NoDotAndDotDot);
-
+    if(sub_dir.isEmpty())
+    {
+        error_msg = "No subject folder found.";
+        return false;
+    }
     if(!QDir(output_dir).exists() && !QDir().mkdir(output_dir))
     {
-        QMessageBox::critical(this,"ERROR","Cannot create the output folder. Please check write privileges");
-        return;
+        error_msg = "Cannot create the output folder. Please check write privileges";
+        return false;
     }
     progress prog_("batch creating src");
     std::ofstream out((dir+"/log.txt").toStdString().c_str());
@@ -1050,6 +1042,29 @@ void MainWindow::on_nii2src_bids_clicked()
             for(auto s: ses_dir)
                 sub_dir.push_back(sub_dir[j] + "/" + s);
         }
+    }
+    return true;
+}
+void MainWindow::on_nii2src_bids_clicked()
+{
+    QString dir = QFileDialog::getExistingDirectory(
+                                    this,
+                                    "Open BIDS Folder",
+                                    ui->workDir->currentText());
+    if(dir.isEmpty())
+        return;
+    QString output_dir = QFileDialog::getExistingDirectory(
+                                    this,
+                                    "Please Specify the Output Folder",
+                                    QDir(dir).path()+"/derivatives");
+    if(output_dir.isEmpty())
+        return;
+    add_work_dir(dir);
+    std::string error_msg;
+    if(!nii2src_bids(dir,output_dir,error_msg))
+    {
+        QMessageBox::critical(this,"ERROR",error_msg.c_str());
+        return;
     }
 }
 
