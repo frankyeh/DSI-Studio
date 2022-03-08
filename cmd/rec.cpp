@@ -165,6 +165,14 @@ int rec(program_option& po)
             }
     }
 
+    if(po.has("save_src"))
+    {
+        std::string new_src_file = po.get("save_src");
+        std::cout << "saving to " << new_src_file << std::endl;
+        src.save_to_file(new_src_file.c_str());
+        return 0;
+    }
+
     src.voxel.method_id = method_index;
     src.voxel.ti.init(uint16_t(po.get("odf_order",int(8))));
     src.voxel.odf_resolving = po.get("odf_resolving",int(0));
@@ -187,7 +195,6 @@ int rec(program_option& po)
     }
 
 
-    std::cout << "start reconstruction..." <<std::endl;
     if(po.has("output"))
     {
         std::string output = po.get("output");
@@ -196,13 +203,7 @@ int rec(program_option& po)
         else
             src.file_name = output;
     }
-    if(po.has("save_src"))
-    {
-        std::string new_src_file = po.get("save_src");
-        std::cout << "saving to " << new_src_file << std::endl;
-        src.save_to_file(new_src_file.c_str());
-        return 0;
-    }
+    std::cout << "start reconstruction..." <<std::endl;
     if (src.reconstruction())
         std::cout << "reconstruction finished." << std::endl;
     else
