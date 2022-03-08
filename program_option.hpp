@@ -94,7 +94,7 @@ public:
     void get_wildcard_list(std::vector<std::pair<std::string,std::string> >& wlist) const
     {
         for(size_t i = 0;i < names.size();++i)
-            if(names[i].find('*') != std::string::npos)
+            if(values[i].find('*') != std::string::npos)
                 wlist.push_back(std::make_pair(names[i],values[i]));
     }
 
