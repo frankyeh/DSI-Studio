@@ -22,7 +22,7 @@ int src(program_option& po)
         std::string error_msg;
         std::cout << "look for BIDS structure at " << source.c_str() << std::endl;
         if(nii2src_bids(source.c_str(),po.get("output",source).c_str(),error_msg))
-            return true;
+            return 0;
         std::cout << "load files in directory " << source.c_str() << std::endl;
         if(po.get("recursive",0))
         {
