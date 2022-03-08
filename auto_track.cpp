@@ -278,7 +278,7 @@ std::string run_auto_track(
                 {
                     progress prog_("loading ",std::filesystem::path(fib_file_name).filename().string().c_str());
                     if(!handle->load_from_file(fib_file_name.c_str()))
-                       return fib_file_name + ": Not human data. Check image resolution.";
+                       return fib_file_name + ":" + handle->error_msg;
                     fib_loaded = true;
                 }
                 if(handle->template_id != 0)
