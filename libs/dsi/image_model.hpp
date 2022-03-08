@@ -245,7 +245,6 @@ public:
     std::vector<float> src_bvalues;
     std::vector<const unsigned short*> src_dwi_data;
     tipl::image<3,unsigned char>dwi;
-    bool rotated_to_mni = false;
     tipl::pointer_image<3,unsigned short> dwi_at(size_t index) {return tipl::make_image(const_cast<unsigned short*>(src_dwi_data[index]),voxel.dim);}
     tipl::const_pointer_image<3,unsigned short> dwi_at(size_t index) const {return tipl::make_image(src_dwi_data[index],voxel.dim);}
 public:
@@ -274,10 +273,8 @@ public:
     void rotate(const tipl::shape<3>& new_geo,
                 const tipl::vector<3>& new_vs,
                 const tipl::transformation_matrix<double>& affine,
-                const tipl::image<3,tipl::vector<3> >& cdm_dis = tipl::image<3,tipl::vector<3> >(),
-                const tipl::image<3>& super_reso_ref = tipl::image<3>(),double var = 3.0);
+                const tipl::image<3,tipl::vector<3> >& cdm_dis = tipl::image<3,tipl::vector<3> >());
     void resample(float nv);
-    bool get_acpc_transform(tipl::shape<3>& new_geo,tipl::affine_transform<float>& T);
     bool align_acpc(void);
     void crop(tipl::shape<3> range_min,tipl::shape<3> range_max);
     void trim(void);

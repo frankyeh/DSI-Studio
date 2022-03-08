@@ -11,6 +11,7 @@
 #include "dwi_header.hpp"
 #include "tracking/region/Regions.h"
 #include <filesystem>
+#include "reg.hpp"
 
 extern std::string src_error_msg;
 bool load_4d_nii(const char* file_name,std::vector<std::shared_ptr<DwiHeader> >& dwi_files,bool need_bvalbvec);
@@ -754,8 +755,7 @@ void ImageModel::rotate_one_dwi(unsigned int dwi_index,const tipl::transformatio
 void ImageModel::rotate(const tipl::shape<3>& new_geo,
                         const tipl::vector<3>& new_vs,
                         const tipl::transformation_matrix<double>& T,
-                        const tipl::image<3,tipl::vector<3> >& cdm_dis,
-                        const tipl::image<3>& super_reso_ref,double var)
+                        const tipl::image<3,tipl::vector<3> >& cdm_dis)
 {
     std::vector<tipl::image<3,unsigned short> > dwi(src_dwi_data.size());
     progress prog_("rotating");
@@ -812,70 +812,65 @@ void ImageModel::resample(float nv)
     voxel.report += " mm isotropic resolution.";
 }
 extern std::vector<std::string> fa_template_list,iso_template_list;
-bool ImageModel::get_acpc_transform(tipl::shape<3>& new_geo,tipl::affine_transform<float>& T_)
-{
-    tipl::affine_transform<float> T;
-    tipl::image<3,unsigned char> I,J(dwi);
-    tipl::vector<3> vs;
-    std::string template_name;
-    {
-        template_name = QFileInfo(fa_template_list[0].c_str()).baseName().toStdString();
-        std::cout << "align ap-pc using template:" << template_name << std::endl;
-        // resample template to resolution of vs[0]
-        tipl::image<3> I_;
-        if(!gz_nifti::load_from_file(iso_template_list[0].c_str(),I_,vs) && !
-                gz_nifti::load_from_file(fa_template_list[0].c_str(),I_,vs))
-        {
-            error_msg = "Failed to load/find MNI template.";
-            return false;
-        }
-        tipl::normalize(I_);
-        auto ratio = vs / voxel.vs[0];
-        tipl::scale(I_,I,ratio);
-        vs = voxel.vs[0];
-    }
-
-    {
-        tipl::filter::gaussian(J);
-        tipl::normalize(J);
-    }
-
-    bool terminated = false;
-    progress prog_((std::string("aligning with ac-pc at ")+template_name).c_str(),true);
-    progress::at(0,3);
-    T.rotation[0] = 0.001f;
-    tipl::reg::linear_mr<tipl::reg::correlation>(I,vs,J,voxel.vs,T,tipl::reg::affine,terminated,0.001);
-    std::cout << T;
-    progress::at(1,3);
-    tipl::image<3,unsigned char> I2(I.shape());
-    tipl::resample_mt<tipl::interpolation::cubic>(J,I2,tipl::transformation_matrix<float>(T,I.shape(),vs,voxel.dim,voxel.vs));
-    float r = float(tipl::correlation(I.begin(),I.end(),I2.begin()));
-    std::cout << "R2 for ac-pc alignment:" << r*r << std::endl;
-    progress::at(2,3);
-    if(r*r < 0.4f)
-        return false;
-    T.scaling[0] = T.scaling[1] = T.scaling[2] = 1.0f;
-    T.affine[0] = T.affine[1] = T.affine[2] = 0.0f;
-    new_geo = I.shape();
-    T_ = T;
-    return true;
-}
-
 bool ImageModel::align_acpc(void)
 {
-    if(rotated_to_mni)
-        return true;
     tipl::shape<3> new_geo;
-    tipl::affine_transform<float> T;
-    if(!get_acpc_transform(new_geo,T))
-    {
-        error_msg = "cannot align ac-pc to template";
-        return false;
-    }
     tipl::vector<3> new_vs(voxel.vs[0],voxel.vs[0],voxel.vs[0]); // new volume size will be isotropic
-    rotate(new_geo,new_vs,tipl::transformation_matrix<float>(T,new_geo,new_vs,voxel.dim,voxel.vs));
+
+    tipl::transformation_matrix<float> T;
+    {
+        tipl::image<3> I,J(dwi);
+        tipl::vector<3> vs;
+        // resample template to resolution of vs[0]
+        {
+            std::cout << "align ap-pc" << std::endl;
+            tipl::image<3> I_;
+            if(!gz_nifti::load_from_file(iso_template_list[0].c_str(),I_,vs) && !
+                    gz_nifti::load_from_file(fa_template_list[0].c_str(),I_,vs))
+            {
+                error_msg = "Failed to load/find MNI template.";
+                return false;
+            }
+            auto ratio = vs / voxel.vs[0];
+            tipl::scale(I_,I,ratio);
+            vs = voxel.vs[0];
+            new_geo = I.shape();
+        }
+
+        if(I.shape() == voxel.dim) // already aligned with ap-pc
+            return true;
+
+
+        bool terminated = false;
+        progress prog_("aligning with ac-pc at ",true);
+        progress::at(0,3);
+        tipl::filter::gaussian(J);
+        linear_common(I,vs,J,voxel.vs,T,tipl::reg::affine,terminated);
+        progress::at(1,3);
+        tipl::image<3> I2(I.shape());
+        tipl::resample_mt<tipl::interpolation::cubic>(J,I2,T);
+        float r = float(tipl::correlation(I.begin(),I.end(),I2.begin()));
+        std::cout << "R2 for ac-pc alignment:" << r*r << std::endl;
+
+        progress::at(2,3);
+        if(r*r < 0.4f)
+        {
+            error_msg = "Failed to align subject data to template.";
+            return false;
+        }
+
+        // removing scaling and affine component
+        std::cout << "removing non-rigid component:" << std::endl;
+        tipl::affine_transform<float> arg;
+        T.to_affine_transform(arg,new_geo,new_vs,voxel.dim,voxel.vs);
+        arg.scaling[0] = arg.scaling[1] = arg.scaling[2] = 1.0f;
+        arg.affine[0] = arg.affine[1] = arg.affine[2] = 0.0f;
+        T = tipl::transformation_matrix<float>(arg,new_geo,new_vs,voxel.dim,voxel.vs);
+        std::cout << T;
+    }
+
+    rotate(new_geo,new_vs,T);
     voxel.report += " The diffusion MRI data were rotated to align with the AC-PC line.";
-    rotated_to_mni = true;
     return true;
 }
 
