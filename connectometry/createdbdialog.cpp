@@ -303,7 +303,7 @@ void CreateDBDialog::on_create_data_base_clicked()
                 return;
             }
         }
-        data->handle->db.save_subject_data(ui->output_file_name->text().toStdString().c_str());
+        data->handle->db.save_db(ui->output_file_name->text().toStdString().c_str());
         QMessageBox::information(this,"completed","Connectometry database created");
     }
     else

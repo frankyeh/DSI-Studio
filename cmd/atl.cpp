@@ -126,7 +126,7 @@ int atl(program_option& po)
                                              std::mismatch(name_list.front().begin(),name_list.front().begin()+
                                              int64_t(std::min(name_list.front().length(),name_list.back().length())),
                                                name_list.back().begin()).first) + "." + index_name[i] + ".db.fib.gz";
-            if(!data->handle->db.save_subject_data(po.get("output",output).c_str()))
+            if(!data->handle->db.save_db(po.get("output",output).c_str()))
             {
                 std::cout << "ERROR saving the db file:" << data->handle->error_msg << std::endl;
                 return 1;

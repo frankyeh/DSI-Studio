@@ -81,7 +81,7 @@ bool connectometry_db::read_db(fib_data* handle_)
 
     if(handle->mat_reader.has("demo"))
     {
-        handle->mat_reader.read("demo",raw_demo);
+        handle->mat_reader.read("demo",demo);
         if(!parse_demo())
         {
             handle->error_msg = error_msg;
@@ -107,13 +107,13 @@ bool connectometry_db::parse_demo(const std::string& filename)
         in.read(dummy,3);
     }
 
-    raw_demo = std::string((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
+    demo = std::string((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
     return parse_demo();
 }
 
 bool connectometry_db::parse_demo(void)
 {
-    std::istringstream in(raw_demo);
+    std::istringstream in(demo);
     titles.clear();
     items.clear();
     size_t col_count = 0;
@@ -659,7 +659,7 @@ void connectometry_db::save_subject_vector(const char* output_name,
         }
     }
 }
-bool connectometry_db::save_subject_data(const char* output_name)
+bool connectometry_db::save_db(const char* output_name)
 {
     // store results
     gz_mat_write matfile(output_name);
@@ -699,6 +699,8 @@ bool connectometry_db::save_subject_data(const char* output_name)
         matfile.write("subject_report",subject_report);
         matfile.write("report",report);
     }
+    if(!demo.empty())
+        matfile.write("demo",demo);
     modified = false;
     return true;
 }

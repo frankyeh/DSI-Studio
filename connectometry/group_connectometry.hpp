@@ -49,7 +49,6 @@ private:
     void show_dis_table(void);
 public:
     QString db_file_name,work_dir;
-    std::string demo_file_name;
 public:
     std::vector<std::vector<tipl::vector<3,short> > > roi_list;
     void add_new_roi(QString name,QString source,const std::vector<tipl::vector<3,short> >& new_roi,int type = 0);
@@ -64,7 +63,7 @@ public:
     ~group_connectometry();
 
 public:
-    bool load_demographic_file(QString filename,std::string& error_msg);
+    void load_demographics(void);
 public slots:
 
     void show_report();

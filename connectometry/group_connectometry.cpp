@@ -140,6 +140,9 @@ group_connectometry::group_connectometry(QWidget *parent,std::shared_ptr<group_c
         ui->subject_demo->setItem(row,0,new QTableWidgetItem(QString(db.subject_names[row].c_str())));
 
     ui->advanced_options->setCurrentIndex(0);
+
+    if(!db.demo.empty())
+        load_demographics();
 }
 
 group_connectometry::~group_connectometry()
@@ -240,9 +243,10 @@ void group_connectometry::on_open_mr_files_clicked()
                 "Text or CSV file (*.txt *.csv);;All files (*)");
     if(filename.isEmpty())
         return;
-    std::string error_msg;
-    if(!load_demographic_file(filename,error_msg))
-        QMessageBox::information(this,"Error",error_msg.c_str());
+    if(!db.parse_demo(filename.toStdString()))
+        QMessageBox::information(this,"ERROR",db.error_msg.c_str());
+    else
+        load_demographics();
 }
 
 
@@ -271,15 +275,8 @@ void fill_demo_table(const connectometry_db& db,
     }
 }
 
-bool group_connectometry::load_demographic_file(QString filename,std::string& error_msg)
+void group_connectometry::load_demographics(void)
 {
-    // read demographic file
-    if(!db.parse_demo(filename.toStdString()))
-    {
-        error_msg = db.error_msg;
-        return false;
-    }
-    demo_file_name = filename.toStdString();
     model.reset(new stat_model);
     model->read_demo(db);
     // fill up regression values
@@ -302,7 +299,6 @@ bool group_connectometry::load_demographic_file(QString filename,std::string& er
     }
     on_variable_list_clicked(QModelIndex());
     fill_demo_table(db,ui->subject_demo);
-    return true;
 }
 
 void group_connectometry::calculate_FDR(void)

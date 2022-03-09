@@ -428,7 +428,7 @@ void db_window::on_actionSave_DB_as_triggered()
     if (filename.isEmpty())
         return;
     progress prog_("saving ",std::filesystem::path(filename.toStdString()).filename().string().c_str());
-    vbc->handle->db.save_subject_data(filename.toStdString().c_str());
+    vbc->handle->db.save_db(filename.toStdString().c_str());
 }
 
 void db_window::on_subject_view_currentChanged(int index)

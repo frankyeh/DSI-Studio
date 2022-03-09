@@ -20,7 +20,7 @@ public: // demographi infomation
     std::vector<std::string> feature_titles;
     std::vector<bool> feature_selected;
     std::vector<double> X;
-    std::string raw_demo;
+    std::string demo;
     bool parse_demo(const std::string& filename);
     bool parse_demo(void);
 public:// subject specific data
@@ -61,7 +61,7 @@ public:
                              const tipl::image<3,int>& fp_mask,
                              float fiber_threshold,
                              bool normalize_fp) const;
-    bool save_subject_data(const char* output_name);
+    bool save_db(const char* output_name);
     void get_subject_slice(unsigned int subject_index,unsigned char dim,unsigned int pos,
                             tipl::image<2,float>& slice) const;
     void get_subject_volume(unsigned int subject_index,tipl::image<3>& volume) const;
