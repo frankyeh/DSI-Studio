@@ -41,6 +41,9 @@ int src(program_option& po)
         }
         std::cout << "a total of " << file_list.size() << " files found in the directory" << std::endl;
     }
+    else
+        file_list << source.c_str();
+
     if(po.has("other_source"))
         file_list << QString(po.get("other_source").c_str()).split(',');
 
