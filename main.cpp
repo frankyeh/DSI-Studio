@@ -268,49 +268,42 @@ int run_cmd(int ac, char *av[])
                 return 1;
             }
         }
+        if(action == "atk" || action == "atl" || source.find('*') == std::string::npos) // atk, atl handle * by itself
+            return run_action(po,gui);
 
-        if(action != "atk" && // atk handle * by itself
-           action != "atl" && // atl handle * by itself
-           action != "src" && // src handle , by itself
-           (source.find('*') != std::string::npos ||
-            source.find(',') != std::string::npos))
+        // handle source having wildcard
+        std::vector<std::string> source_files;
+        get_filenames_from(source,source_files);
+
+        std::vector<std::pair<std::string,std::string> > wildcard_list;
+        po.get_wildcard_list(wildcard_list);
+
+        for (size_t i = 0;i < source_files.size();++i)
         {
-            std::vector<std::string> source_files;
-            get_filenames_from(source,source_files);
-
-            std::vector<std::pair<std::string,std::string> > wildcard_list;
-            po.get_wildcard_list(wildcard_list);
-
-            for (size_t i = 0;i < source_files.size();++i)
+            std::cout << "Process file:" << source_files[i] << std::endl;
+            po.set("source",source_files[i]);
+            // apply '*' to other arguments
+            for(const auto& wildcard : wildcard_list)
             {
-                std::cout << "Process file:" << source_files[i] << std::endl;
-                po.set("source",source_files[i]);
-
-                // apply '*' to other arguments
-                for(const auto& wildcard : wildcard_list)
+                if(wildcard.first == "source")
+                    continue;
+                std::string apply_wildcard;
+                if(!match_files(source,source_files[i],wildcard.second,apply_wildcard))
                 {
-                    if(wildcard.first == "source")
-                        continue;
-                    std::string apply_wildcard;
-                    if(!match_files(source,source_files[i],wildcard.second,apply_wildcard))
-                    {
-                        std::cout << "ERROR: cannot translate " << wildcard.second <<
-                                     " at --" << wildcard.first << std::endl;
-                        return 1;
-                    }
-                    std::cout << wildcard.second << "->" << apply_wildcard << std::endl;
-                    po.set(wildcard.first.c_str(),apply_wildcard);
-                }
-                po.set_used(0);
-                if(run_action(po,gui) == 1)
-                {
-                    std::cout << "Terminated due to error." << std::endl;
+                    std::cout << "ERROR: cannot translate " << wildcard.second <<
+                                 " at --" << wildcard.first << std::endl;
                     return 1;
                 }
+                std::cout << wildcard.second << "->" << apply_wildcard << std::endl;
+                po.set(wildcard.first.c_str(),apply_wildcard);
+            }
+            po.set_used(0);
+            if(run_action(po,gui) == 1)
+            {
+                std::cout << "Terminated due to error." << std::endl;
+                return 1;
             }
         }
-        else
-            return run_action(po,gui);
     }
     catch(const std::exception& e ) {
         std::cout << e.what() << std::endl;
