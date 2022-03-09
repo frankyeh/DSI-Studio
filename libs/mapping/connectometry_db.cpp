@@ -3,7 +3,7 @@
 #include "connectometry_db.hpp"
 #include "fib_data.hpp"
 
-void connectometry_db::read_db(fib_data* handle_)
+bool connectometry_db::read_db(fib_data* handle_)
 {
     handle = handle_;
     subject_qa.clear();
@@ -47,65 +47,84 @@ void connectometry_db::read_db(fib_data* handle_)
     subject_names.resize(num_subjects);
     R2.resize(num_subjects);
     if(!num_subjects)
-        return;
-    {
-        if(handle->mat_reader.read("report",report))
-        {
-            if(report.find(" sdf ") != std::string::npos)
-            {
-                report.resize(report.find(" sdf "));
-                report += " local connectome fingerprint (LCF, Yeh et al. PLoS Comput Biol 12(11): e1005203) values were extracted from the data and used in the connectometry analysis.";
-            }
-        }
-        handle->mat_reader.read("subject_report",subject_report);
+        return true;
 
-        std::string str;
-        handle->mat_reader.read("subject_names",str);
-        if(str.size())
+    std::string subject_names_str;
+    if(!handle->mat_reader.read("subject_names",subject_names_str) ||
+       !handle->mat_reader.read("R2",R2))
+    {
+        handle->error_msg = "Invalid connectometry DB format.";
+        num_subjects = 0;
+        subject_qa.clear();
+        return false;
+    }
+    // optional
+    handle->mat_reader.read("report",report);
+    handle->mat_reader.read("subject_report",subject_report);
+    handle->mat_reader.read("index_name",index_name);
+
+    // update report
+    if(report.find(" sdf ") != std::string::npos)
+    {
+        report.resize(report.find(" sdf "));
+        report += " local connectome fingerprint (LCF, Yeh et al. PLoS Comput Biol 12(11): e1005203) values were extracted from the data and used in the connectometry analysis.";
+    }
+    // process subject names
+    {
+        std::istringstream in(subject_names_str);
+        for(unsigned int index = 0;in && index < num_subjects;++index)
+            std::getline(in,subject_names[index]);
+    }
+    // update index name
+    if(index_name == "sdf")
+        index_name = "qa";
+
+    if(handle->mat_reader.has("demo"))
+    {
+        handle->mat_reader.read("demo",raw_demo);
+        if(!parse_demo())
         {
-            std::istringstream in(str);
-            for(unsigned int index = 0;in && index < num_subjects;++index)
-                std::getline(in,subject_names[index]);
-        }
-        handle->mat_reader.read("index_name",index_name);
-        if(index_name.empty() || index_name.find("sdf") != std::string::npos)
-            index_name = "qa";
-        R2.resize(num_subjects);
-        if(!handle->mat_reader.read("R2",R2))
-        {
-            handle->error_msg = "Memory insufficiency. Use 64-bit program instead";
-            num_subjects = 0;
-            subject_qa.clear();
-            return;
+            handle->error_msg = error_msg;
+            return false;
         }
     }
     calculate_si2vi();
+    return true;
 }
-
 
 bool connectometry_db::parse_demo(const std::string& filename)
 {
+    std::ifstream in(filename.c_str());
+    if(!in)
+    {
+        error_msg = "Cannot open the demographic file";
+        return false;
+    }
+    // CSV BOM at the front
+    if(std::filesystem::path(filename).extension() == ".csv" && in.peek() == 0xEF)
+    {
+        char dummy[3];
+        in.read(dummy,3);
+    }
+
+    raw_demo = std::string((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
+    return parse_demo();
+}
+
+bool connectometry_db::parse_demo(void)
+{
+    std::istringstream in(raw_demo);
     titles.clear();
     items.clear();
     size_t col_count = 0;
     {
         size_t row_count = 0,last_item_size = 0;
-        bool is_csv = std::filesystem::path(filename).extension() == ".csv";
-        std::ifstream in(filename.c_str());
-        if(!in)
-        {
-            error_msg = "Cannot open the demographic file";
-            return false;
-        }
-        // CSV BOM at the front
-        if(is_csv && in.peek() == 0xEF)
-        {
-            char dummy[3];
-            in.read(dummy,3);
-        }
         std::string line;
+        bool is_csv = true;
         while(std::getline(in,line))
         {
+            if(row_count == 0)
+                is_csv = line.find(',') != std::string::npos;
             if(is_csv)
             {
                 std::string col;
@@ -142,7 +161,7 @@ bool connectometry_db::parse_demo(const std::string& filename)
 
         if(items.size()/col_count < 2)
         {
-            error_msg = "Invalid demographic file format";
+            error_msg = "Invalid demographic format";
             return false;
         }
         // check subject count

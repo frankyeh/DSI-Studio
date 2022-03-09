@@ -8,10 +8,10 @@ class fib_data;
 class connectometry_db
 {
 public:
-    fib_data* handle;
+    fib_data* handle = nullptr;
     std::string report,subject_report,error_msg;
-    unsigned int num_subjects;
-    bool modified;
+    unsigned int num_subjects = 0;
+    bool modified = false;
 
 public: // demographi infomation
     std::vector<std::string> titles;
@@ -20,8 +20,9 @@ public: // demographi infomation
     std::vector<std::string> feature_titles;
     std::vector<bool> feature_selected;
     std::vector<double> X;
+    std::string raw_demo;
     bool parse_demo(const std::string& filename);
-
+    bool parse_demo(void);
 public:// subject specific data
     std::vector<std::string> subject_names;
     std::vector<float> R2;
@@ -33,15 +34,15 @@ public:
     unsigned int subject_qa_length;
     tipl::image<3,unsigned int> vi2si;
     std::vector<unsigned int> si2vi;
-    std::string index_name;
+    std::string index_name = "qa";
 public://longitudinal studies
     std::vector<std::pair<int,int> > match;
     void auto_match(const tipl::image<3,int>& fp_mask,float fiber_threshold,bool normalize_fp);
     void calculate_change(unsigned char dif_type,bool norm);
 public:
-    connectometry_db():num_subjects(0),modified(false){;}
+    connectometry_db(){}
     bool has_db(void)const{return num_subjects > 0;}
-    void read_db(fib_data* handle);
+    bool read_db(fib_data* handle);
     void remove_subject(unsigned int index);
     void calculate_si2vi(void);
     bool sample_subject_profile(gz_mat_read& m,std::vector<float>& data);

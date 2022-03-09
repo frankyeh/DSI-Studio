@@ -1013,7 +1013,9 @@ bool fib_data::load_from_mat(void)
 
     is_human_data = is_human_size(dim,vs); // 1 percentile head size in mm
     is_histology = (dim[2] == 2 && dim[0] > 400 && dim[1] > 400);
-    db.read_db(this);
+
+    if(!db.read_db(this))
+        return false;
 
     if(is_qsdr)
     {
