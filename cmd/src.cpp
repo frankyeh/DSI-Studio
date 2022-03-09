@@ -35,18 +35,15 @@ int src(program_option& po)
             QDir directory = QString(source.c_str());
             file_list = directory.entryList(QStringList("*.dcm"),QDir::Files|QDir::NoSymLinks);
             if(file_list.empty())
-                file_list = directory.entryList(QStringList("*.nii.gz"),QDir::Files|QDir::NoSymLinks);
-            if(file_list.empty())
                 file_list = directory.entryList(QStringList("*.fdf"),QDir::Files|QDir::NoSymLinks);
             for (int index = 0;index < file_list.size();++index)
                 file_list[index] = QString(source.c_str()) + "/" + file_list[index];
         }
         std::cout << "a total of " << file_list.size() << " files found in the directory" << std::endl;
     }
-    else
-    {
-        file_list = QString(source.c_str()).split(',');
-    }
+    if(po.has("other_source"))
+        file_list << QString(po.get("other_source").c_str()).split(',');
+
     if(file_list.empty())
     {
         std::cout << "no file found for creating src" << std::endl;
