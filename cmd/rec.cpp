@@ -64,12 +64,11 @@ int rec(program_option& po)
                 return 1;
         }
     }
-    if(po.has("mask"))
     {
         std::shared_ptr<fib_data> fib_handle(new fib_data);
         fib_handle->dim = src.voxel.dim;
         fib_handle->vs = src.voxel.vs;
-        std::string mask_file = po.get("mask");
+        std::string mask_file = po.get("mask","1");
 
         if(mask_file == "1")
             src.voxel.mask = 1;
@@ -178,7 +177,7 @@ int rec(program_option& po)
     src.voxel.odf_resolving = po.get("odf_resolving",int(0));
     src.voxel.output_odf = po.get("record_odf",int(0));
     src.voxel.dti_no_high_b = po.get("dti_no_high_b",src.is_human_data());
-    src.voxel.check_btable = po.get("check_btable",src.voxel.dim[2] < src.voxel.dim[0]*2.0);
+    src.voxel.check_btable = po.get("check_btable",0);
     src.voxel.other_output = po.get("other_output","fa,ad,rd,md,nqa,iso,rdi,nrdi");
     src.voxel.max_fiber_number = uint32_t(po.get("num_fiber",int(5)));
     src.voxel.r2_weighted = po.get("r2_weighted",int(0));
