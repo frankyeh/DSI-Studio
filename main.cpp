@@ -188,8 +188,6 @@ int run_action(program_option& po,std::shared_ptr<QApplication> gui)
         return atl(po);
     if(action == std::string("cnt"))
         return cnt(po);
-    if(action == std::string("cnt_ind"))
-        return cnt_ind(po);
     if(action == std::string("ren"))
         return ren(po);
     if(action == std::string("cnn"))
