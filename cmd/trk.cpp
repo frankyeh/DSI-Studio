@@ -679,23 +679,6 @@ int trk(program_option& po,std::shared_ptr<fib_data> handle)
         tracking_thread.param.stop_by_tract = 0;
     }
 
-
-
-    QStringList cnt_file_name;
-    QString cnt_type;
-
-    if(po.has("connectometry_source"))
-    {
-        std::string names = po.get("connectometry_source").c_str();
-        cnt_file_name = QString(names.c_str()).split(",");
-        if(!po.has("connectometry_type"))
-        {
-            std::cout << "please assign the connectometry analysis type." << std::endl;
-            return 1;
-        }
-        cnt_type = po.get("connectometry_type").c_str();
-    }
-
     if(po.get("thread_count",int(std::thread::hardware_concurrency())) < 1)
     {
         std::cout << "invalid thread_count number" << std::endl;
@@ -714,68 +697,6 @@ int trk(program_option& po,std::shared_ptr<fib_data> handle)
                         otsu*tracking_thread.param.default_otsu:tracking_thread.param.threshold);
     }
     std::shared_ptr<TractModel> tract_model(new TractModel(handle));
-
-    if(!cnt_file_name.empty())
-    {
-        QStringList connectometry_threshold;
-        if(!po.has("connectometry_threshold"))
-        {
-            std::cout << "please assign the connectometry threshold." << std::endl;
-            return 1;
-        }
-        connectometry_threshold = QString(po.get("connectometry_threshold").c_str()).split(",");
-        for(int i = 0;i < cnt_file_name.size();++i)
-        {
-            connectometry_result cnt;
-            std::cout << "loading individual file:" << cnt_file_name[i].toStdString() << std::endl;
-            if(cnt_type == "iva" && !cnt.individual_vs_atlas(handle,cnt_file_name[i].toLocal8Bit().begin(),0))
-            {
-                std::cout << "ERROR loading connectometry file:" << cnt.error_msg <<std::endl;
-                return 1;
-            }
-            if(cnt_type == "ivp" && !cnt.individual_vs_db(handle,cnt_file_name[i].toLocal8Bit().begin()))
-            {
-                std::cout << "ERROR loading connectometry file:" << cnt.error_msg <<std::endl;
-                return 1;
-            }
-            if(cnt_type == "ivi")
-            {
-                std::cout << "loading individual file:" << cnt_file_name[i+1].toStdString() << std::endl;
-                if(!cnt.individual_vs_individual(handle,cnt_file_name[i].toLocal8Bit().begin(),
-                                                              cnt_file_name[i+1].toLocal8Bit().begin(),0))
-                {
-                    std::cout << "ERROR loading connectometry file:" << cnt.error_msg <<std::endl;
-                    return 1;
-                }
-                ++i;
-            }
-            for(int j = 0;j < connectometry_threshold.size();++j)
-            {
-                double t = connectometry_threshold[j].toDouble();
-                handle->dir.set_tracking_index(int(handle->dir.index_data.size()-((t > 0) ? 2:1)));
-                std::cout << "mapping track with " << ((t > 0) ? "increased":"decreased") << " connectivity at " << std::fabs(t) << std::endl;
-                std::cout << "start tracking." << std::endl;
-                tracking_thread.param.threshold = float(std::fabs(t));
-                tracking_thread.run(po.get("thread_count",uint32_t(std::thread::hardware_concurrency())),true);
-                tract_model->report += tracking_thread.report.str();
-                tracking_thread.fetchTracks(tract_model.get());
-                std::ostringstream out;
-                out << cnt_file_name[i].toStdString() << "." << cnt_type.toStdString()
-                        << ((t > 0) ? "inc":"dec") << std::fabs(t) << ".tt.gz" << std::endl;
-                if(!tract_model->save_tracts_to_file(out.str().c_str()))
-                {
-                    std::cout << "cannot save file to " << out.str()
-                              << ". Please check write permission, directory, and disk space." << std::endl;
-                    return 1;
-                }
-                std::vector<std::vector<float> > tmp;
-                tract_model->release_tracts(tmp);
-            }
-        }
-        return 0;
-    }
-
-
     std::cout << "start tracking." << std::endl;
     tracking_thread.run(uint32_t(po.get("thread_count",int(std::thread::hardware_concurrency()))),true);
     tract_model->report += tracking_thread.report.str();
