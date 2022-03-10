@@ -584,11 +584,12 @@
      <property name="title">
       <string>Export</string>
      </property>
-     <addaction name="actionCurrent_Subject"/>
-     <addaction name="actionAll_Subjects"/>
     </widget>
     <addaction name="actionAdd_DB"/>
     <addaction name="actionSave_DB_as"/>
+    <addaction name="separator"/>
+    <addaction name="actionCurrent_Subject"/>
+    <addaction name="actionAll_Subjects"/>
     <addaction name="separator"/>
     <addaction name="actionSave_Subject_Name_as"/>
     <addaction name="action_Save_R2_values_as"/>
@@ -703,13 +704,21 @@
    </property>
   </action>
   <action name="actionCurrent_Subject">
+   <property name="icon">
+    <iconset resource="../icons.qrc">
+     <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
+   </property>
    <property name="text">
-    <string>Current Subject</string>
+    <string>Save Subject Image as...</string>
    </property>
   </action>
   <action name="actionAll_Subjects">
+   <property name="icon">
+    <iconset resource="../icons.qrc">
+     <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
+   </property>
    <property name="text">
-    <string>All Subjects...</string>
+    <string>Save All Subjects Image as...</string>
    </property>
   </action>
   <action name="actionAdd_Demographics">
