@@ -604,8 +604,36 @@ void db_window::on_actionSave_Demographics_triggered()
 {
     if(vbc->handle->db.demo.empty())
     {
-        QMessageBox::information(this,"ERROR","No demographic data in the database");
-        return;
+        auto& names = vbc->handle->db.subject_names;
+        std::string demo;
+        demo += "Age,Sex\n";
+        for(size_t i = 0;i < names.size();++i)
+        {
+            bool found = false;
+            // look for _M020Y_
+            for(size_t j = 0;j+6 < names[i].size();++j)
+                if(names[i][j] == '_' &&
+                   (names[i][j+1] == 'M' || names[i][j+1] == 'F') &&
+                   names[i][j+2] >= '0' && names[i][j+2] <= '9' &&
+                   names[i][j+3] >= '0' && names[i][j+3] <= '9' &&
+                   names[i][j+4] >= '0' && names[i][j+4] <= '9' &&
+                   names[i][j+5] == 'Y' &&
+                   names[i][j+6] == '_')// find two underscore
+                {
+                    demo += std::string(names[i].begin()+j+2,names[i].begin()+j+5); // age
+                    demo += ",";
+                    demo += (names[i][j+1] == 'M' ? "1":"0");
+                    demo += "\n";
+                    found = true;
+                    break;
+                }
+            if(!found)
+            {
+                QMessageBox::information(this,"ERROR","No demographic data in the database");
+                return;
+            }
+        }
+        vbc->handle->db.demo = demo;
     }
     QString filename = QFileDialog::getSaveFileName(
                 this,
