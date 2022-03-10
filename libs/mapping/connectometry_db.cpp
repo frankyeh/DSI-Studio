@@ -758,6 +758,13 @@ void connectometry_db::get_subject_slice(unsigned int subject_index,unsigned cha
 }
 bool connectometry_db::get_demo_matched_volume(const std::string& matched_demo,tipl::image<3>& volume) const
 {
+    if(demo.empty())
+    {
+        handle->error_msg = "no demographic data found in the database";
+        return false;
+    }
+    stat_model info;
+    info.read_demo(handle->db);
     return true;
 }
 void connectometry_db::get_subject_volume(unsigned int subject_index,tipl::image<3>& volume) const
@@ -1028,7 +1035,7 @@ void connectometry_db::calculate_change(unsigned char dif_type,bool norm)
 void calculate_spm(std::shared_ptr<fib_data> handle,connectometry_result& data,stat_model& info,
                    float fiber_threshold,bool normalize_qa,bool& terminated)
 {
-    data.initialize(handle);
+    data.clear_result(handle->dir.num_fiber,handle->dim.size());
     std::vector<double> population(handle->db.subject_qa.size());
     for(unsigned int s_index = 0;s_index < handle->db.si2vi.size() && !terminated;++s_index)
     {
@@ -1058,79 +1065,22 @@ void calculate_spm(std::shared_ptr<fib_data> handle,connectometry_result& data,s
 }
 
 
-void connectometry_result::initialize(std::shared_ptr<fib_data> handle)
+void connectometry_result::clear_result(size_t num_fiber,size_t image_size)
 {
-    unsigned char num_fiber = handle->dir.num_fiber;
     pos_corr.resize(num_fiber);
     neg_corr.resize(num_fiber);
-    for(unsigned char fib = 0;fib < num_fiber;++fib)
-    {
-        pos_corr[fib].resize(handle->dim.size());
-        neg_corr[fib].resize(handle->dim.size());
-    }
     pos_corr_ptr.resize(num_fiber);
     neg_corr_ptr.resize(num_fiber);
-    for(unsigned char fib = 0;fib < num_fiber;++fib)
+    for(size_t fib = 0;fib < num_fiber;++fib)
     {
-        pos_corr_ptr[fib] = &pos_corr[fib][0];
-        neg_corr_ptr[fib] = &neg_corr[fib][0];
-    }
-    for(unsigned char fib = 0;fib < num_fiber;++fib)
-    {
+        pos_corr[fib].resize(image_size);
+        neg_corr[fib].resize(image_size);
         std::fill(pos_corr[fib].begin(),pos_corr[fib].end(),0.0);
         std::fill(neg_corr[fib].begin(),neg_corr[fib].end(),0.0);
-    }
-}
-void connectometry_result::remove_old_index(std::shared_ptr<fib_data> handle)
-{
-    for(unsigned int index = 0;index < handle->dir.index_name.size();++index)
-        if(handle->dir.index_name[index] == "inc" ||
-           handle->dir.index_name[index] == "dec")
-        {
-            handle->dir.index_name.erase(handle->dir.index_name.begin()+index);
-            handle->dir.index_data.erase(handle->dir.index_data.begin()+index);
-            index = 0;
-        }
-}
+        pos_corr_ptr[fib] = &pos_corr[fib][0];
+        neg_corr_ptr[fib] = &neg_corr[fib][0];
 
-void connectometry_result::add_mapping_for_tracking(std::shared_ptr<fib_data> handle,const char* t1,const char* t2)
-{
-    remove_old_index(handle);
-    handle->dir.dt_index_name.push_back(t1);
-    handle->dir.dt_index_data.push_back(std::vector<const float*>());
-    handle->dir.dt_index_data.back() = pos_corr_ptr;
-    handle->dir.dt_index_name.push_back(t2);
-    handle->dir.dt_index_data.push_back(std::vector<const float*>());
-    handle->dir.dt_index_data.back() = neg_corr_ptr;
-}
-
-bool connectometry_result::individual_vs_db(std::shared_ptr<fib_data> handle,const char* file_name)
-{
-    report = " Individual connectometry was conducted by comparing individuals to a group of subjects.";
-    if(!handle->db.has_db())
-    {
-        error_msg = "Please open a connectometry database first.";
-        return false;
     }
-    handle->dir.set_tracking_index(0);
-    std::vector<float> data;
-    if(!handle->db.get_odf_profile(file_name,data))
-    {
-        error_msg = handle->error_msg;
-        return false;
-    }
-    bool normalize_qa = false;
-    bool terminated = false;
-    stat_model info;
-    info.read_demo(handle->db);
-    info.type = 2;
-    info.individual_data = &(data[0]);
-    //info.individual_data_sd = normalize_qa ? individual_data_sd[subject_id]:1.0;
-    info.individual_data_sd = 1.0;
-    float fa_threshold = 0.6*tipl::segmentation::otsu_threshold(tipl::make_image(handle->dir.fa[0],handle->dim));
-    calculate_spm(handle,*this,info,fa_threshold,normalize_qa,terminated);
-    add_mapping_for_tracking(handle,"inc_db","dec_db");
-    return true;
 }
 
 inline void calculate_dif(float& pos_corr,
@@ -1145,113 +1095,6 @@ inline void calculate_dif(float& pos_corr,
     else
         pos_corr = (f2-f1)/mean; // subject increased study index
 }
-bool connectometry_result::compare(std::shared_ptr<fib_data> handle,const std::vector<const float*>& fa1,
-                                        const std::vector<const float*>& fa2,unsigned char normalization)
-{
-    std::ostringstream out;
-    if(normalization == 0) // no normalization
-    {
-        for(unsigned int fib = 0;fib < handle->dir.num_fiber;++fib)
-        {
-            for(unsigned int index = 0;index < handle->dim.size();++index)
-                if(fa1[fib][index] > 0.0f && fa2[fib][index] > 0.0f)
-                    calculate_dif(pos_corr[fib][index],neg_corr[fib][index],fa1[fib][index],fa2[fib][index]);
-        }
-    }
-    if(normalization == 1) // max to one
-    {
-        out << " Normalization was conducted to make the highest anisotropy to one.";
-        float max1 = tipl::max_value(fa1[0],fa1[0] + handle->dim.size());
-        float max2 = tipl::max_value(fa2[0],fa2[0] + handle->dim.size());
-
-        for(unsigned int fib = 0;fib < handle->dir.num_fiber;++fib)
-        {
-            for(unsigned int index = 0;index < handle->dim.size();++index)
-                if(fa1[fib][index] > 0.0f && fa2[fib][index] > 0.0f)
-                    calculate_dif(pos_corr[fib][index],neg_corr[fib][index],fa1[fib][index]/max1,fa2[fib][index]/max2);
-        }
-    }
-    if(normalization == 2) // linear regression
-    {
-        out << " Normalization was conducted by a linear regression between the comparison scans.";
-        std::pair<double,double> r = tipl::linear_regression(fa2[0],fa2[0] + handle->dim.size(),fa1[0]);
-        for(unsigned int fib = 0;fib < handle->dir.num_fiber;++fib)
-        {
-            for(unsigned int index = 0;index < handle->dim.size();++index)
-                if(fa1[fib][index] > 0.0 && fa2[fib][index] > 0.0)
-                    calculate_dif(pos_corr[fib][index],neg_corr[fib][index],fa1[fib][index],fa2[fib][index]*r.first+r.second);
-        }
-    }
-    if(normalization == 3) // variance to one
-    {
-        out << " Normalization was conducted by scaling the variance to one.";
-        float sd1 = tipl::standard_deviation(fa1[0],fa1[0] + handle->dim.size());
-        float sd2 = tipl::standard_deviation(fa2[0],fa2[0] + handle->dim.size());
-        for(unsigned int fib = 0;fib < handle->dir.num_fiber;++fib)
-        {
-            for(unsigned int index = 0;index < handle->dim.size();++index)
-                if(fa1[fib][index] > 0.0f && fa2[fib][index] > 0.0f)
-                    calculate_dif(pos_corr[fib][index],neg_corr[fib][index],fa1[fib][index]/sd1,fa2[fib][index]/sd2);
-        }
-    }
-    report += out.str();
-    return true;
-}
-
-bool connectometry_result::individual_vs_atlas(std::shared_ptr<fib_data> handle,
-                                               const char* file_name,unsigned char normalization)
-{
-    report = " Individual connectometry was conducted by comparing individuals to a group-averaged template.";
-    // restore fa0 to QA
-    handle->dir.set_tracking_index(0);
-    std::vector<std::vector<float> > fa_data;
-    if(!handle->db.get_qa_profile(file_name,fa_data))
-    {
-        error_msg = handle->error_msg;
-        return false;
-    }
-    std::vector<const float*> ptr(fa_data.size());
-    for(unsigned int i = 0;i < ptr.size();++i)
-        ptr[i] = &(fa_data[i][0]);
-    initialize(handle);
-    if(!compare(handle,handle->dir.fa,ptr,normalization))
-        return false;
-    add_mapping_for_tracking(handle,"inc_qa","dec_qa");
-    return true;
-}
-
-bool connectometry_result::individual_vs_individual(std::shared_ptr<fib_data> handle,
-                                                    const char* file_name1,const char* file_name2,
-                                                    unsigned char normalization)
-{
-    report = " Individual connectometry was conducted by comparing individual scans (Yeh, NeuroImage: Clinical 2,912-921,2013).";
-    // restore fa0 to QA
-    handle->dir.set_tracking_index(0);
-    std::vector<std::vector<float> > data1,data2;
-    if(!handle->db.get_qa_profile(file_name1,data1))
-    {
-        error_msg = handle->error_msg;
-        return false;
-    }
-    if(!handle->db.get_qa_profile(file_name2,data2))
-    {
-        error_msg = handle->error_msg;
-        return false;
-    }
-    initialize(handle);
-    std::vector<const float*> ptr1(data1.size()),ptr2(data2.size());
-    for(unsigned int i = 0;i < ptr1.size();++i)
-    {
-        ptr1[i] = &(data1[i][0]);
-        ptr2[i] = &(data2[i][0]);
-    }
-    if(!compare(handle,ptr1,ptr2,normalization))
-        return false;
-    add_mapping_for_tracking(handle,"inc_qa","dec_qa");
-    return true;
-}
-
-
 
 void stat_model::read_demo(const connectometry_db& db)
 {
