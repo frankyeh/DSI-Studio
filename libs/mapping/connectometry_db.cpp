@@ -352,7 +352,7 @@ bool connectometry_db::sample_subject_profile(gz_mat_read& m,std::vector<float>&
     }
 
 
-    if(index_name == "qa" || index_name.empty())
+    if(index_name == "qa" || index_name == "nqa" || index_name.empty())
     {
         if(!is_odf_consistent(m))
             return false;
@@ -384,6 +384,13 @@ bool connectometry_db::sample_subject_profile(gz_mat_read& m,std::vector<float>&
                 data[pos] = odf[handle->dir.findex[i][cur_index]]-min_value;
             }
         });
+        if(index_name == "nqa")
+        {
+            float m = tipl::max_value(data);
+            if(m != 0.0f)
+                m = 1.0f/m;
+            tipl::multiply_constant(data,m);
+        }
         return true;
     }
     else

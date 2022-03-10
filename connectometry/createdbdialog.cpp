@@ -89,7 +89,10 @@ void CreateDBDialog::update_list(void)
         }
         ui->index_of_interest->clear();
         if(fib.has_odfs())
+        {
             ui->index_of_interest->addItem("qa");
+            ui->index_of_interest->addItem("nqa");
+        }
         std::vector<std::string> item_list;
         fib.get_index_list(item_list);
         for(unsigned int i = fib.dir.index_name.size();i < item_list.size();++i)
