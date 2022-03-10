@@ -79,14 +79,46 @@ bool connectometry_db::read_db(fib_data* handle_)
     if(index_name == "sdf")
         index_name = "qa";
 
-    if(handle->mat_reader.has("demo"))
+    if(handle->mat_reader.read("demo",demo))
     {
-        handle->mat_reader.read("demo",demo);
         if(!parse_demo())
         {
             handle->error_msg = error_msg;
             return false;
         }
+    }
+    else
+    {
+        // try to get demo from subject bame
+        demo += "Age,Sex\n";
+        for(size_t i = 0;i < subject_names.size();++i)
+        {
+            bool found = false;
+            // look for _M020Y_
+            for(size_t j = 0;j+6 < subject_names[i].size();++j)
+                if(subject_names[i][j] == '_' &&
+                   (subject_names[i][j+1] == 'M' || subject_names[i][j+1] == 'F') &&
+                   subject_names[i][j+2] >= '0' && subject_names[i][j+2] <= '9' &&
+                   subject_names[i][j+3] >= '0' && subject_names[i][j+3] <= '9' &&
+                   subject_names[i][j+4] >= '0' && subject_names[i][j+4] <= '9' &&
+                   subject_names[i][j+5] == 'Y' &&
+                   subject_names[i][j+6] == '_')// find two underscore
+                {
+                    demo += std::string(subject_names[i].begin()+j+2,subject_names[i].begin()+j+5); // age
+                    demo += ",";
+                    demo += (subject_names[i][j+1] == 'M' ? "1":"0");
+                    demo += "\n";
+                    found = true;
+                    break;
+                }
+            if(!found)
+            {
+                demo.clear();
+                break;
+            }
+        }
+        if(!demo.empty() && !parse_demo())
+            demo.clear();
     }
     calculate_si2vi();
     return true;
@@ -723,6 +755,10 @@ void connectometry_db::get_subject_slice(unsigned int subject_index,unsigned cha
     for(unsigned int index = 0;index < slice.size();++index)
         if(tmp[index])
             slice[index] = subject_qa[subject_index][tmp[index]];
+}
+bool connectometry_db::get_demo_matched_volume(const std::string& matched_demo,tipl::image<3>& volume) const
+{
+    return true;
 }
 void connectometry_db::get_subject_volume(unsigned int subject_index,tipl::image<3>& volume) const
 {
