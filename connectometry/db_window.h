@@ -69,6 +69,10 @@ private slots:
 
     void on_actionAll_Subjects_triggered();
 
+    void on_actionOpen_Demographics_triggered();
+
+    void on_actionSave_Demographics_triggered();
+
 private:
     Ui::db_window *ui;
 };

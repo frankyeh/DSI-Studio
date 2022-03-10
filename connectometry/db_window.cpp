@@ -428,6 +428,9 @@ void db_window::on_actionSave_DB_as_triggered()
     if (filename.isEmpty())
         return;
     progress prog_("saving ",std::filesystem::path(filename.toStdString()).filename().string().c_str());
+    if(!vbc->handle->db.demo.empty() && !vbc->handle->db.parse_demo())
+        QMessageBox::information(this,"DSI Studio",
+        QString("demographics not saved due to mismatch: ") + vbc->handle->db.error_msg.c_str());
     vbc->handle->db.save_db(filename.toStdString().c_str());
 }
 
@@ -582,3 +585,36 @@ void db_window::on_actionAll_Subjects_triggered()
     }
     QMessageBox::information(this,"DSI Studio","Files exported");
 }
+
+void db_window::on_actionOpen_Demographics_triggered()
+{
+    QString filename = QFileDialog::getOpenFileName(
+                this,
+                "Open demographics",
+                QFileInfo(vbc->handle->fib_file_name.c_str()).absoluteDir().absolutePath(),
+                "Text or CSV file (*.txt *.csv);;All files (*)");
+    if(filename.isEmpty())
+        return;
+    if(!vbc->handle->db.parse_demo(filename.toStdString()))
+        QMessageBox::information(this,"ERROR",vbc->handle->db.error_msg.c_str());
+}
+
+
+void db_window::on_actionSave_Demographics_triggered()
+{
+    if(vbc->handle->db.demo.empty())
+    {
+        QMessageBox::information(this,"ERROR","No demographic data in the database");
+        return;
+    }
+    QString filename = QFileDialog::getSaveFileName(
+                this,
+                "Save demographics",
+                QFileInfo(vbc->handle->fib_file_name.c_str()).absoluteDir().absolutePath(),
+                "Text or CSV file (*.txt *.csv);;All files (*)");
+    if(filename.isEmpty())
+        return;
+    std::ofstream out(filename.toStdString().c_str());
+    out << vbc->handle->db.demo;
+}
+

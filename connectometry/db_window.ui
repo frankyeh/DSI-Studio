@@ -573,7 +573,7 @@
      <x>0</x>
      <y>0</y>
      <width>699</width>
-     <height>21</height>
+     <height>22</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -592,6 +592,9 @@
     <addaction name="separator"/>
     <addaction name="actionSave_Subject_Name_as"/>
     <addaction name="action_Save_R2_values_as"/>
+    <addaction name="separator"/>
+    <addaction name="actionOpen_Demographics"/>
+    <addaction name="actionSave_Demographics"/>
     <addaction name="separator"/>
     <addaction name="menuExport"/>
    </widget>
@@ -707,6 +710,33 @@
   <action name="actionAll_Subjects">
    <property name="text">
     <string>All Subjects...</string>
+   </property>
+  </action>
+  <action name="actionAdd_Demographics">
+   <property name="icon">
+    <iconset resource="../icons.qrc">
+     <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+   </property>
+   <property name="text">
+    <string>Add Demographics...</string>
+   </property>
+  </action>
+  <action name="actionSave_Demographics">
+   <property name="icon">
+    <iconset resource="../icons.qrc">
+     <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
+   </property>
+   <property name="text">
+    <string>Save Demographics...</string>
+   </property>
+  </action>
+  <action name="actionOpen_Demographics">
+   <property name="icon">
+    <iconset resource="../icons.qrc">
+     <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+   </property>
+   <property name="text">
+    <string>Open Demographics...</string>
    </property>
   </action>
  </widget>
