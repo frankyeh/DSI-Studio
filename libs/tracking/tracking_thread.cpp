@@ -179,7 +179,7 @@ void ThreadData::run(std::shared_ptr<tracking_data> trk_,unsigned int thread_cou
     report.str("");
     if(!trk->dt_threshold_name.empty())
     {
-        report << " Differential tractography (Yeh et al., 2019) was applied to map pathways with ";
+        report << " Differential tractography (Yeh et al., Neuroimage, 2019 Nov 15;202:116131.) was applied to map pathways with ";
         if(trk->dt_threshold_name.substr(0,4) == "inc_" || trk->dt_threshold_name.substr(0,4) == "dec_")
         {
             if(trk->dt_threshold_name.substr(0,4) == "inc_")
@@ -202,7 +202,7 @@ void ThreadData::run(std::shared_ptr<tracking_data> trk_,unsigned int thread_cou
     else {
         report << " A deterministic fiber tracking algorithm (Yeh et al., PLoS ONE 8(11): e80713, 2013) was used";
         if(param.threshold == 0.0f && param.cull_cos_angle == 1.0f && param.step_size == 0.0f) // parameter saturation, pruning
-            report << " with augmented tracking strategies (Yeh, Neuroimage, 2020) to improve reproducibility.";
+            report << " with augmented tracking strategies (Yeh, Neuroimage, 2020 Dec;223:117329) to improve reproducibility.";
         else
             report << ".";
     }
