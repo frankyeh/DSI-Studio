@@ -114,6 +114,7 @@ bool connectometry_db::parse_demo(const std::string& filename)
 bool connectometry_db::parse_demo(void)
 {
     std::istringstream in(demo);
+    std::string saved_demo(std::move(demo));
     titles.clear();
     items.clear();
     size_t col_count = 0;
@@ -156,41 +157,40 @@ bool connectometry_db::parse_demo(void)
                 }
             last_item_size = items.size();
         }
-        if(row_count == 1)
-            col_count = items.size()/(num_subjects+1);
-
-        if(items.size()/col_count < 2)
+        if(items.size() < 2*col_count)
         {
             error_msg = "Invalid demographic format";
             return false;
         }
-        // check subject count
-        if(items.size()/col_count > num_subjects+1) // matching subjects +1 for title
+        // select demographics by matching subject name
+        if(items.size() > (num_subjects+1)*col_count)
         {
             std::vector<std::string> new_items;
             // copy titles
             std::copy(items.begin(),items.begin()+int(col_count),std::back_inserter(new_items));
+
             for(size_t i = 0;i < num_subjects;++i)
             {
                 bool find = false;
+                // find first column for subject name
                 for(size_t j = col_count;j+col_count <= items.size();j += col_count)
-                    if(items[j].find(subject_names[i]) != std::string::npos ||
-                       subject_names[i].find(items[j]) != std::string::npos)
+                    if(items[j] == subject_names[i])
                     {
                         find = true;
                         std::copy(items.begin()+int(j),items.begin()+int(j+col_count),std::back_inserter(new_items));
                         break;
                     }
                 if(!find)
-                    new_items.resize((i+2)*col_count);
+                    break;
             }
-            items.swap(new_items);
+            if(new_items.size() == (num_subjects+1)*col_count)
+                items.swap(new_items);
         }
-        else
-        if(items.size()/col_count < num_subjects+1) //
+
+        if(items.size() != (num_subjects+1)*col_count)
         {
             std::ostringstream out;
-            out << "Subject number mismatch. The demographic file has " << row_count-1 << " subjects, but the database has " << num_subjects << " subjects.";
+            out << "Subject number mismatch. The demographic file has " << row_count-1 << " subject rows, but the database has " << num_subjects << " subjects.";
             error_msg = out.str();
             return false;
         }
@@ -272,6 +272,7 @@ bool connectometry_db::parse_demo(void)
             }
         }
     }
+    demo.swap(saved_demo);
     return true;
 }
 
