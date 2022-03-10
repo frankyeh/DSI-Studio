@@ -303,9 +303,8 @@ bool CustomSliceModel::initialize(const std::vector<std::string>& files,bool is_
             has_transform = true;
         }
     }
-
     // load nifti file
-    if(source_images.empty())
+    if(source_images.empty() && files[0].find(".nii") != std::string::npos)
     {
         gz_nifti nifti;
         //  prepare idx file
