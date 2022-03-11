@@ -115,6 +115,7 @@ private slots:
 private:
     Ui::view_image *ui;
     tipl::image<3> data,overlay;
+    bool is_mni = false;
     float min_value,max_value;
     tipl::vector<3,float> vs;
     tipl::matrix<4,4> T;
@@ -127,6 +128,7 @@ private:// batch processing
     std::vector<std::string> other_file_name;
     std::vector<tipl::vector<3,float> > other_vs;
     std::vector<tipl::matrix<4,4> > other_T;
+    std::vector<bool> other_is_mni;
 private:
     bool no_update = true;
     unsigned char cur_dim = 2;
