@@ -60,10 +60,14 @@ inline float linear_common(const tipl::image<3,float>& I,
                          tipl::affine_transform<float>* arg_min = nullptr,
                          const float* bound = tipl::reg::reg_bound)
 {
+    auto Jvs2 = Jvs;
+    if(reg_type == tipl::reg::affine)
+        Jvs2 *= std::sqrt((float(I.plane_size())*Ivs[0]*Ivs[1])/(float(J.plane_size())*Jvs[0]*Jvs[1]));
+
     if constexpr (tipl::use_cuda)
-        return two_way_linear_cuda(I,Ivs,J,Jvs,T,reg_type,terminated,arg_min,bound);
+        return two_way_linear_cuda(I,Ivs,J,Jvs2,T,reg_type,terminated,arg_min,bound);
     else
-        return tipl::reg::two_way_linear_mr<tipl::reg::mutual_information>(I,Ivs,J,Jvs,T,reg_type,terminated,arg_min,bound);
+        return tipl::reg::two_way_linear_mr<tipl::reg::mutual_information>(I,Ivs,J,Jvs2,T,reg_type,terminated,arg_min,bound);
 }
 
 #endif//REG_HPP
