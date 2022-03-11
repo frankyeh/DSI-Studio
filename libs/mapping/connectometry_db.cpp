@@ -763,8 +763,43 @@ bool connectometry_db::get_demo_matched_volume(const std::string& matched_demo,t
         handle->error_msg = "no demographic data found in the database";
         return false;
     }
-    stat_model info;
-    info.read_demo(handle->db);
+    std::vector<double> v;
+
+    {
+        std::istringstream in(matched_demo);
+        std::string str;
+        std::copy(std::istream_iterator<double>(in),
+                  std::istream_iterator<double>(),
+                  std::back_inserter(v));
+        if(v.size() != feature_location.size())
+        {
+            handle->error_msg = "invalid demographic input: ";
+            handle->error_msg += matched_demo;
+            return false;
+        }
+    }
+    size_t feature_size = 1+feature_location.size(); // +1 for intercept
+    tipl::multiple_regression<double> mr;
+    mr.set_variables(X.begin(),uint32_t(feature_size),uint32_t(subject_qa.size()));
+
+    tipl::image<3> I(handle->dim);
+    tipl::par_for(I.size(),[&](unsigned int index)
+    {
+        if(vi2si[index])
+        {
+            //I[index] = subject_qa[subject_index][vi2si[index]];
+            std::vector<double> y(subject_qa.size());
+            for(size_t s = 0;s < subject_qa.size();++s)
+                y[s] = double(subject_qa[s][vi2si[index]]);
+            std::vector<double> b(feature_size);
+            mr.regress(y.begin(),b.begin());
+            double predict = b[0];
+            for(size_t i = 1;i < b.size();++i)
+                predict += b[i]*v[i-1];
+            I[index] = std::max<float>(0.0f,float(predict));
+        }
+    });
+    volume.swap(I);
     return true;
 }
 void connectometry_db::get_subject_volume(unsigned int subject_index,tipl::image<3>& volume) const

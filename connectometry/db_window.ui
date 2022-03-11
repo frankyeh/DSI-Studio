@@ -580,11 +580,6 @@
     <property name="title">
      <string>File&amp;</string>
     </property>
-    <widget class="QMenu" name="menuExport">
-     <property name="title">
-      <string>Export</string>
-     </property>
-    </widget>
     <addaction name="actionAdd_DB"/>
     <addaction name="actionSave_DB_as"/>
     <addaction name="separator"/>
@@ -596,8 +591,7 @@
     <addaction name="separator"/>
     <addaction name="actionOpen_Demographics"/>
     <addaction name="actionSave_Demographics"/>
-    <addaction name="separator"/>
-    <addaction name="menuExport"/>
+    <addaction name="actionSave_DemoMatched_Image_as"/>
    </widget>
    <widget class="QMenu" name="menuTools">
     <property name="title">
@@ -746,6 +740,15 @@
    </property>
    <property name="text">
     <string>Open Demographics...</string>
+   </property>
+  </action>
+  <action name="actionSave_DemoMatched_Image_as">
+   <property name="icon">
+    <iconset resource="../icons.qrc">
+     <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
+   </property>
+   <property name="text">
+    <string>Save Matched Image as...</string>
    </property>
   </action>
  </widget>

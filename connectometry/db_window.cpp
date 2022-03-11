@@ -1,4 +1,5 @@
 #include <QFileInfo>
+#include <QInputDialog>
 #include <QDir>
 #include <QFileDialog>
 #include <QMessageBox>
@@ -616,5 +617,62 @@ void db_window::on_actionSave_Demographics_triggered()
         return;
     std::ofstream out(filename.toStdString().c_str());
     out << vbc->handle->db.demo;
+}
+
+
+void db_window::on_actionSave_DemoMatched_Image_as_triggered()
+{
+    if(vbc->handle->db.demo.empty())
+    {
+        QMessageBox::information(this,"ERROR","No demographic data in the database");
+        return;
+    }
+
+    QString param;
+    {
+        std::string demo_cap, demo_sample;
+        for(auto str: vbc->handle->db.feature_titles)
+        {
+            demo_cap += str;
+            demo_cap += " ";
+        }
+        std::ostringstream out;
+        // X +1 to skip intercept
+        for(size_t i = 0;i < vbc->handle->db.feature_location.size() && i+1 < vbc->handle->db.X.size();++i)
+            out << vbc->handle->db.X[i+1] << " ";
+        demo_sample = out.str();
+        demo_sample.pop_back();
+
+        bool ok;
+        param = QInputDialog::getText(this,"Specify demographics",
+            QString("Input demographic values for %1separated by space").arg(demo_cap.c_str()),
+                                              QLineEdit::Normal,demo_sample.c_str(),&ok);
+        if(!ok)
+            return;
+    }
+
+    QString filename = QFileDialog::getSaveFileName(
+                           this,
+                           "Open Selection Text files",
+                           QFileInfo(windowTitle()).absoluteDir().absolutePath()+"\\"+
+                           vbc->handle->fib_file_name.c_str()+"."+QString(param).replace(' ','_').replace(',','_')+"."+
+                           vbc->handle->db.index_name.c_str()+".nii.gz",
+                           "NIFTI files (*.nii *nii.gz);;All files (*)");
+    if (filename.isEmpty())
+        return;
+    tipl::image<3> I;
+    if(!vbc->handle->db.get_demo_matched_volume(param.toStdString(),I))
+    {
+        QMessageBox::critical(this,"DSI Studio",vbc->handle->error_msg.c_str());
+        return;
+    }
+    gz_nifti out;
+    out.set_voxel_size(vbc->handle->vs);
+    out.set_image_transformation(vbc->handle->trans_to_mni);
+    out << I;
+    if(out.save_to_file(filename.toLocal8Bit().begin()))
+        QMessageBox::information(this,"DSI Studio","File exported");
+    else
+        QMessageBox::information(this,"Error","Cannot save file.");
 }
 

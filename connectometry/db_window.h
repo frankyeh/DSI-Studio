@@ -73,6 +73,8 @@ private slots:
 
     void on_actionSave_Demographics_triggered();
 
+    void on_actionSave_DemoMatched_Image_as_triggered();
+
 private:
     Ui::db_window *ui;
 };
