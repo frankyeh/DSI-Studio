@@ -1621,33 +1621,6 @@ void fib_data::recognize_report(std::shared_ptr<TractModel>& trk,std::string& re
     report += out.str();
 }
 
-void animal_reg(const tipl::image<3>& from,tipl::vector<3> from_vs,
-          const tipl::image<3>& to,tipl::vector<3> to_vs,
-          tipl::transformation_matrix<float>& T,bool& terminated)
-{
-    float PI = 3.14159265358979323846f;
-    float directions[5][3]={
-        {0.0f,0.0f,0.0f},
-        {PI*0.5f,0.0f,0.0f},
-        {PI*-0.5f,0.0f,0.0f},
-        {PI*0.5f,0.0f,PI},
-        {PI*-0.5f,0.0f,PI}
-    };
-    float cost = std::numeric_limits<float>::max();
-    progress::show("linear registration for animal data");
-    tipl::par_for(5,[&](int i)
-    {
-         tipl::affine_transform<double> arg;
-         std::copy(directions[i],directions[i]+3,arg.rotation);
-         float cur_cost = tipl::reg::linear_mr<tipl::reg::mutual_information>(from,from_vs,to,to_vs,arg,
-                                                    tipl::reg::affine,terminated,0.001,tipl::reg::large_bound);
-         if(cur_cost < cost)
-         {
-             cost = cur_cost;
-             T = tipl::transformation_matrix<float>(arg,from.shape(),from_vs,to.shape(),to_vs);
-         }
-    });
-}
 
 
 bool fib_data::map_to_mni(bool background)
@@ -1717,14 +1690,7 @@ bool fib_data::map_to_mni(bool background)
 
         prog = 1;
         if(!has_manual_atlas)
-        {
-            auto tvs = vs;
-            if(!is_human_data)
-                tvs *= std::sqrt((It.plane_size()*template_vs[0]*template_vs[1])/
-                                                        (Is.plane_size()*vs[0]*vs[1]));
-            linear_common(It,template_vs,Is,tvs,T,tipl::reg::affine,terminated);
-
-        }
+            linear_common(It,template_vs,Is,vs,T,tipl::reg::affine,terminated);
         else
             T = manual_template_T;
 
