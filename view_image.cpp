@@ -16,11 +16,35 @@ std::vector<view_image*> opened_images;
 bool img_command(tipl::image<3>& data,
                  tipl::vector<3>& vs,
                  tipl::matrix<4,4>& T,
+                 bool& is_mni,
                  std::string cmd,
                  std::string param1,
                  std::string,
                  std::string& error_msg)
 {
+    if(cmd == "translocation")
+    {
+        std::istringstream in(param1);
+        int dx,dy,dz;
+        in >> dx >> dy >> dz;
+        tipl::image<3> new_data(data.shape());
+        tipl::draw(data,new_data,tipl::vector<3,int>(dx,dy,dz));
+        data.swap(new_data);
+        T[3] -= T[0]*float(dx);
+        T[7] -= T[5]*float(dy);
+        T[11] -= T[10]*float(dz);
+        return true;
+    }
+    if(cmd == "resize")
+    {
+        std::istringstream in(param1);
+        int w,h,d;
+        in >> w >> h >> d;
+        tipl::image<3> new_data(tipl::shape<3>(w,h,d));
+        tipl::draw(data,new_data,tipl::vector<3,int>(0,0,0));
+        data.swap(new_data);
+        return true;
+    }
     if(cmd == "image_multiplication" || cmd == "image_addition")
     {
         gz_nifti nii;
@@ -51,7 +75,7 @@ bool img_command(tipl::image<3>& data,
     if(cmd == "save")
     {
         gz_nifti nii;
-        nii.set_image_transformation(T);
+        nii.set_image_transformation(T,is_mni);
         nii.set_voxel_size(vs);
         nii << data;
         return nii.save_to_file(param1.c_str());
@@ -59,10 +83,12 @@ bool img_command(tipl::image<3>& data,
     if(cmd == "open")
     {
         gz_nifti nii;
-        nii.set_image_transformation(T);
-        nii.set_voxel_size(vs);
-        nii << data;
-        return nii.save_to_file(param1.c_str());
+        if(!nii.load_from_file(param1.c_str()))
+            return false;
+        nii.get_image_transformation(T);
+        nii.get_voxel_size(vs);
+        is_mni = nii.is_mni();
+        nii >> data;
     }
     return false;
 }
@@ -150,7 +176,7 @@ bool match_files(const std::string& file_path1,const std::string& file_path2,
 bool view_image::command(std::string cmd,std::string param1,std::string param2)
 {
     error_msg.clear();
-    if(!img_command(data,vs,T,cmd,param1,param2,error_msg))
+    if(!img_command(data,vs,T,is_mni,cmd,param1,param2,error_msg))
         return false;
     show_image();
 
@@ -190,12 +216,14 @@ bool view_image::command(std::string cmd,std::string param1,std::string param2)
         progress prog_("applying to others");
         for(size_t i = 0;progress::at(i,other_data.size());++i)
         {
-            if(!img_command(other_data[i],other_vs[i],other_T[i],cmd,other_params[i],param2,error_msg))
+            bool mni = other_is_mni[i];
+            if(!img_command(other_data[i],other_vs[i],other_T[i],mni,cmd,other_params[i],param2,error_msg))
             {
                 error_msg += " when processing ";
                 error_msg += QFileInfo(other_file_name[i].c_str()).fileName().toStdString();
                 return false;
             }
+            other_is_mni[i] = mni;
         }
     }
     return true;
@@ -337,6 +365,7 @@ bool view_image::open(QStringList file_names)
     tipl::io::bruker_2dseq seq;
     gz_mat_read mat;
     data.clear();
+    is_mni = false;
     T.identity();
 
     QString info;
@@ -381,6 +410,7 @@ bool view_image::open(QStringList file_names)
         nifti.get_untouched_image(data);
         nifti.get_voxel_size(vs);
         nifti.get_image_transformation(T);
+        is_mni = nifti.is_mni();
         std::ostringstream out;
         out << nifti;
         info = out.str().c_str();
@@ -409,6 +439,7 @@ bool view_image::open(QStringList file_names)
                 other_data.push_back(odata);
                 other_vs.push_back(ovs);
                 other_T.push_back(oT);
+                other_is_mni.push_back(other_nifti.is_mni());
             }
             if(!failed_list.isEmpty())
                 QMessageBox::critical(this,"Error",QString("Some files could not be opened:")+failed_list);
@@ -719,17 +750,15 @@ void view_image::on_actionResize_triggered()
     std::ostringstream out;
     out << data.width() << " " << data.height() << " " << data.depth();
     bool ok;
-    QString result = QInputDialog::getText(this,"DSI Studio","Assign image dimension (width height depth)",QLineEdit::Normal,
+    QString param = QInputDialog::getText(this,"DSI Studio","Assign image dimension (width height depth)",QLineEdit::Normal,
                                            out.str().c_str(),&ok);
 
     if(!ok)
         return;
-    std::istringstream in(result.toStdString());
-    int w,h,d;
-    in >> w >> h >> d;
-    tipl::image<3> new_data(tipl::shape<3>(w,h,d));
-    tipl::draw(data,new_data,tipl::vector<3>());
-    data.swap(new_data);
+
+    if(!command("resize",param.toStdString()))
+        QMessageBox::critical(this,"ERROR",error_msg.c_str());
+
     init_image();
     show_image();
 }
@@ -737,42 +766,47 @@ void view_image::on_actionResize_triggered()
 void view_image::on_actionTranslocate_triggered()
 {
     bool ok;
-    QString result = QInputDialog::getText(this,"DSI Studio","Assign image translocation (x y z)",QLineEdit::Normal,
+    QString param = QInputDialog::getText(this,"DSI Studio","Assign image translocation (x y z)",QLineEdit::Normal,
                                            "0 0 0",&ok);
 
     if(!ok)
-        return;
-    std::istringstream in(result.toStdString());
-    int dx,dy,dz;
-    in >> dx >> dy >> dz;
-    tipl::image<3> new_data(data.shape());
-    tipl::draw(data,new_data,tipl::vector<3>(dx,dy,dz));
-    data.swap(new_data);
-    T[3] -= T[0]*dx;
-    T[7] -= T[5]*dy;
-    T[11] -= T[10]*dz;
+        return;    
+    if(!command("translocation",param.toStdString()))
+        QMessageBox::critical(this,"ERROR",error_msg.c_str());
     init_image();
     show_image();
 }
 
 void view_image::on_actionTrim_triggered()
 {
-    tipl::vector<3,int> range_min,range_max;
+    bool ok;
+    QString param = QInputDialog::getText(this,"DSI Studio","Assign margin at (x y z)",QLineEdit::Normal,
+                                           "10 10 0",&ok);
+
+    if(!ok)
+        return;
+    tipl::vector<3,int> range_min,range_max,margin;
     tipl::bounding_box(data,range_min,range_max,data[0]);
-    int margin = 1;
-    tipl::vector<3,int> translocate(margin,margin,0);
-    range_min[2] += 1;
-    range_max[2] -= 1;
-    translocate -= range_min;
+    std::istringstream in(param.toStdString());
+    in >> margin[0] >> margin[1] >> margin[2];
+    range_min[0] = std::max<int>(0,range_min[0]-margin[0]);
+    range_min[1] = std::max<int>(0,range_min[1]-margin[1]);
+    range_min[2] = std::max<int>(0,range_min[2]-margin[2]);
+    range_max[0] = std::min<int>(data.width(),range_max[0]+margin[0]);
+    range_max[1] = std::min<int>(data.height(),range_max[1]+margin[1]);
+    range_max[2] = std::min<int>(data.depth(),range_max[2]+margin[2]);
+
     range_max -= range_min;
-    range_max[0] += margin+margin;
-    range_max[1] += margin+margin;
-    tipl::image<3> new_data(tipl::shape<3>(range_max[0],range_max[1],range_max[2]));
-    tipl::draw(data,new_data,translocate);
-    data.swap(new_data);
-    T[3] -= T[0]*translocate[0];
-    T[7] -= T[5]*translocate[1];
-    T[11] -= T[10]*translocate[2];
+    if(!command("translocation",std::to_string(-range_min[0]) + " " +
+                                std::to_string(-range_min[1]) + " " +
+                                std::to_string(-range_min[2])))
+        QMessageBox::critical(this,"ERROR",error_msg.c_str());
+
+    if(!command("resize",std::to_string(range_max[0]) + " " +
+                                std::to_string(range_max[1]) + " " +
+                                std::to_string(range_max[2])))
+        QMessageBox::critical(this,"ERROR",error_msg.c_str());
+
     init_image();
     show_image();
 }
