@@ -1009,14 +1009,15 @@ void match_template_resolution(tipl::image<3>& VG,
                                tipl::vector<3>& VFvs)
 {
     float ratio = float(VF.width())/float(VG.width());
-    while(ratio < 0.75f)   // if subject resolution is substantially lower, downsample template
+    std::cout << "width ratio (subject/template):" << ratio << std::endl;
+    while(ratio < 0.5f)   // if subject resolution is substantially lower, downsample template
     {
         tipl::downsampling(VG);
         if(!VG2.empty())
             tipl::downsampling(VG2);
         VGvs *= 2.0f;
         ratio *= 2.0f;
-        std::cout << "downsampling template to " << VGvs[0] << " mm resolution" << std::endl;
+        std::cout << "ratio lower than 0.5, downsampling template to " << VGvs[0] << " mm resolution" << std::endl;
     }
     while(ratio > 2.5f)  // if subject resolution is higher, downsample it for registration
     {
@@ -1025,6 +1026,7 @@ void match_template_resolution(tipl::image<3>& VG,
             tipl::downsampling(VF2);
         VFvs *= 2.0f;
         ratio /= 2.0f;
+        std::cout << "ratio larger than 2.5, register using subject resolution of " << VFvs[0] << " mm resolution" << std::endl;
     }
 }
 
