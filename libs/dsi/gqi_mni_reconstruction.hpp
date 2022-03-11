@@ -7,9 +7,6 @@
 #include "gqi_process.hpp"
 #include "reg.hpp"
 extern std::vector<std::string> fa_template_list,iso_template_list;
-void animal_reg(const tipl::image<3>& from,tipl::vector<3> from_vs,
-          const tipl::image<3>& to,tipl::vector<3> to_vs,
-          tipl::transformation_matrix<float>& T,bool& terminated);
 void match_template_resolution(tipl::image<3>& VG,
                                tipl::image<3>& VG2,
                                tipl::vector<3>& VGvs,
@@ -110,26 +107,8 @@ public:
                 bool terminated = false;
                 if(!progress::run("linear registration",[&]()
                 {
-                    if(!is_human_template) // animal recon
-                    {
-                        if(!dual_modality)
-                            animal_reg(VG,VGvs,VF,VFvs,affine,terminated);
-                        else
-                            animal_reg(VG2,VGvs,VF2,VFvs,affine,terminated);
-                    }
-                    else
-                    {
-                        if(!dual_modality)
-                            linear_common(VG,VGvs,VF,VFvs,affine,tipl::reg::affine,terminated);
-                        else
-                        {
-                            auto VG3 = VG;
-                            auto VF3 = VF;
-                            VG3 += VG2;
-                            VF3 += VF2;
-                            linear_common(VG3,VGvs,VF3,VFvs,affine,tipl::reg::affine,terminated);
-                        }
-                    }
+                    linear_common(VG,VGvs,VF,VFvs,affine,tipl::reg::affine,terminated);
+
                 },terminated))
                     throw std::runtime_error("reconstruction canceled");
             }
@@ -224,7 +203,7 @@ public:
         }
 
         // if subject resolution is higher than template, upsampled to its resolution
-        float VG_ratio = 1.0f;  // < 1.0 if upsampled
+        /*float VG_ratio = 1.0f;  // < 1.0 if upsampled
         if(voxel.vs[0] < VGvs[0])
         {
             std::cout << "output resolution changed to " << voxel.vs[0] << std::endl;
@@ -253,7 +232,7 @@ public:
             new_cdm_dis.swap(cdm_dis);
             new_VG.swap(VG);
             VGvs[0] = VGvs[1] = VGvs[2] = voxel.vs[0];
-        }
+        } */
 
 
 
@@ -274,8 +253,6 @@ public:
             [&](const tipl::pixel_index<3>& pos)
             {
                 tipl::vector<3> Jpos(pos);
-                if(VG_ratio != 1.0f) // if upsampled due to subject high resolution
-                    Jpos *= VG_ratio;
                 Jpos += cdm_dis[pos.index()]; // VFF space
                 affine(Jpos);// VFF to VF space
                 mapping[pos.index()] = Jpos;
