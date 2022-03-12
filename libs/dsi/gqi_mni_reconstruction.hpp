@@ -205,7 +205,7 @@ public:
         }
 
         // if subject resolution is higher than template, upsampled to its resolution
-        /*float VG_ratio = 1.0f;  // < 1.0 if upsampled
+        float VG_ratio = 1.0f;  // < 1.0 if upsampled
         if(voxel.vs[0] < VGvs[0])
         {
             std::cout << "output resolution changed to " << voxel.vs[0] << std::endl;
@@ -234,10 +234,7 @@ public:
             new_cdm_dis.swap(cdm_dis);
             new_VG.swap(VG);
             VGvs[0] = VGvs[1] = VGvs[2] = voxel.vs[0];
-        } */
-
-
-
+        }
 
         // assign mask
         {
@@ -255,6 +252,8 @@ public:
             [&](const tipl::pixel_index<3>& pos)
             {
                 tipl::vector<3> Jpos(pos);
+                if(VG_ratio != 1.0f) // if upsampled due to subject high resolution
+                    Jpos *= VG_ratio;
                 Jpos += cdm_dis[pos.index()]; // VFF space
                 affine(Jpos);// VFF to VF space
                 mapping[pos.index()] = Jpos;
