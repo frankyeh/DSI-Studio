@@ -553,20 +553,21 @@ bool apply_warping(const char* from,
                    const tipl::matrix<4,4>& ItR,
                    std::string& error)
 {
-    gz_nifti nifti;
-    if(!nifti.load_from_file(from))
+    gz_nifti nii;
+    if(!nii.load_from_file(from))
     {
-        error = nifti.error;
+        error = nii.error;
         return false;
     }
     tipl::image<3> I3;
-    nifti.toLPS(I3);
+    tipl::matrix<4,4> T;
+    nii.toLPS(I3);
+    nii.get_image_transformation(T);
+
     bool is_label = is_label_image(I3);
 
-    if(I_shape != I3.shape())
+    if(I_shape != I3.shape() || IR != T)
     {
-        tipl::matrix<4,4> T;
-        nifti.get_image_transformation(T);
         tipl::image<3> I3_(I_shape);
         if(!T.inv())
             return false;
