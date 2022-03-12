@@ -45,7 +45,7 @@ bool img_command(tipl::image<3>& data,
         data.swap(new_data);
         return true;
     }
-    if(cmd == "image_multiplication" || cmd == "image_addition")
+    if(cmd == "image_multiplication" || cmd == "image_addition" || cmd == "image_substraction")
     {
         gz_nifti nii;
         if(!nii.load_from_file(param1.c_str()))
@@ -70,6 +70,8 @@ bool img_command(tipl::image<3>& data,
             data *= mask;
         if(cmd == "image_addition")
             data += mask;
+        if(cmd == "image_substraction")
+            data -= mask;
         return true;
     }
     if(cmd == "save")
@@ -1058,12 +1060,30 @@ void view_image::on_actionMorphology_XZ_triggered()
 
 void view_image::on_actionImageAddition_triggered()
 {
-    QString filename = QFileDialog::getOpenFileName(
+    QStringList filenames = QFileDialog::getOpenFileNames(
                            this,"Open other another image to apply",QFileInfo(file_name).absolutePath(),"NIFTI file(*nii.gz *.nii)" );
-    if (filename.isEmpty())
+    if (filenames.isEmpty())
         return;
-    if(!command("image_addition",filename.toStdString(),std::string()))
-        QMessageBox::critical(this,"ERROR",error_msg.c_str());
+    for(auto filename : filenames)
+        if(!command("image_addition",filename.toStdString(),std::string()))
+        {
+            QMessageBox::critical(this,"ERROR",error_msg.c_str());
+            return;
+        }
+}
+
+void view_image::on_actionMinus_Image_triggered()
+{
+    QStringList filenames = QFileDialog::getOpenFileNames(
+                           this,"Open other another image to apply",QFileInfo(file_name).absolutePath(),"NIFTI file(*nii.gz *.nii)" );
+    if (filenames.isEmpty())
+        return;
+    for(auto filename : filenames)
+        if(!command("image_substraction",filename.toStdString(),std::string()))
+        {
+            QMessageBox::critical(this,"ERROR",error_msg.c_str());
+            return;
+        }
 }
 
 void view_image::on_actionImageMultiplication_triggered()
@@ -1206,4 +1226,6 @@ void view_image::on_actionSwap_YZ_triggered()
     init_image();
     show_image();
 }
+
+
 

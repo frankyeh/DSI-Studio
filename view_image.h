@@ -112,6 +112,8 @@ private slots:
 
     void on_actionSwap_YZ_triggered();
 
+    void on_actionMinus_Image_triggered();
+
 private:
     Ui::view_image *ui;
     tipl::image<3> data,overlay;
