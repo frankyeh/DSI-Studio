@@ -497,8 +497,6 @@ bool tracking_data::is_white_matter(const tipl::vector<3,float>& pos,float t) co
 {
     return tipl::estimate(tipl::make_image(fa[0],dim),pos) > t && pos[2] > 0.5;
 }
-
-size_t match_template(float volume);
 void initial_LPS_nifti_srow(tipl::matrix<4,4>& T,const tipl::shape<3>& geo,const tipl::vector<3>& vs)
 {
     std::fill(T.begin(),T.end(),0.0f);
@@ -1075,12 +1073,13 @@ bool fib_data::load_from_mat(void)
     match_template();
     return true;
 }
+size_t match_volume(float volume);
 void fib_data::match_template(void)
 {
     if(is_human_size(dim,vs))
         set_template_id(0);
     else
-        set_template_id(::match_template(std::count_if(dir.fa[0],dir.fa[0]+dim.size(),[](float v){return v > 0.0f;})*2.0f*vs[0]*vs[1]*vs[2]));
+        set_template_id(match_volume(std::count_if(dir.fa[0],dir.fa[0]+dim.size(),[](float v){return v > 0.0f;})*2.0f*vs[0]*vs[1]*vs[2]));
 }
 
 const tipl::image<3,tipl::vector<3,float> >& fib_data::get_native_position(void) const

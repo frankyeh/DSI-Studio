@@ -418,7 +418,7 @@ float ImageModel::quality_control_neighboring_dwi_corr(void)
 bool is_human_size(tipl::shape<3> dim,tipl::vector<3> vs);
 bool ImageModel::is_human_data(void) const
 {
-    return voxel.dim[2] > 1 && is_human_size(voxel.dim,voxel.vs);
+    return is_human_size(voxel.dim,voxel.vs);
 }
 bool match_files(const std::string& file_path1,const std::string& file_path2,
                  const std::string& file_path1_others,std::string& file_path2_gen);
@@ -1887,7 +1887,7 @@ void save_idx(const char* file_name,std::shared_ptr<gz_istream> in)
         in->save_index(idx_name.c_str());
     }
 }
-size_t match_template(float volume);
+size_t match_volume(float volume);
 bool ImageModel::load_from_file(const char* dwi_file_name)
 {
     if(voxel.steps.empty())
@@ -2116,7 +2116,10 @@ bool ImageModel::load_from_file(const char* dwi_file_name)
 
     // create mask if not loaded from SRC file
     calculate_dwi_sum(voxel.mask.empty());
-    voxel.template_id = ::match_template(std::count_if(voxel.mask.begin(),voxel.mask.end(),[](unsigned char v){return v > 0;})*
+    if(is_human_size(voxel.dim,voxel.vs))
+        voxel.template_id = 0;
+    else
+        voxel.template_id = match_volume(std::count_if(voxel.mask.begin(),voxel.mask.end(),[](unsigned char v){return v > 0;})*
                                    2.0f*voxel.vs[0]*voxel.vs[1]*voxel.vs[2]);
     return true;
 }

@@ -41,7 +41,7 @@ int atk(program_option& po);
 int xnat(program_option& po);
 
 
-size_t match_template(float volume)
+size_t match_volume(float volume)
 {
     float min_dif = std::numeric_limits<float>::max();
     size_t matched_index = 0;
