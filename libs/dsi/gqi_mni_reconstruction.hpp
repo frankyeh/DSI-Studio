@@ -49,8 +49,8 @@ public:
 
 
         bool is_human_template = QFileInfo(fa_template_list[voxel.template_id].c_str()).baseName().contains("ICBM");
-        bool manual_alignment = voxel.qsdr_trans.data[0] != 0.0;
-        bool export_intermediate = false;
+        bool manual_alignment = voxel.qsdr_trans.data[0] != 0.0f;
+        bool export_intermediate = voxel.needs("debug");
         bool partial_reconstruction = false;
         bool dual_modality = false;
 
@@ -137,12 +137,29 @@ public:
             if(!progress::run("normalization",[&]()
                 {
                     tipl::reg::cdm_param param;
-                    if(VFvs[0] < VGvs[0])
-                        param.resolution = 1.0f;
-
-                    tipl::image<3,tipl::vector<3> > temp;
-                    cdm_common(VFF,VFF2,VG,VG2,temp,cdm_dis,terminated,param);
-
+                    tipl::image<3,tipl::vector<3> > cdm_dis_inv;
+                    cdm_common(VG,VG2,VFF,VFF2,cdm_dis,cdm_dis_inv,terminated,param);
+                    if(export_intermediate)
+                    {
+                        tipl::image<4> buffer(tipl::shape<4>(VG.width(),VG.height(),VG.depth(),6));
+                        tipl::par_for(6,[&](unsigned int d)
+                        {
+                            if(d < 3)
+                            {
+                                size_t shift = d*VG.size();
+                                for(size_t i = 0;i < VG.size();++i)
+                                    buffer[i+shift] = cdm_dis_inv[i][d];
+                            }
+                            else
+                            {
+                                size_t shift = d*VG.size();
+                                d -= 3;
+                                for(size_t i = 0;i < VG.size();++i)
+                                    buffer[i+shift] = cdm_dis[i][d];
+                            }
+                        });
+                        gz_nifti::save_to_file("Subject_displacement.nii.gz",buffer,voxel.vs,voxel.trans_to_mni);
+                    }
                 },terminated))
                 throw std::runtime_error("reconstruction canceled");
 
