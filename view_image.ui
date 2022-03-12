@@ -341,31 +341,25 @@
     <property name="title">
      <string>&amp;Signals</string>
     </property>
-    <widget class="QMenu" name="menuEdge_Detector">
-     <property name="title">
-      <string>Edge Detector</string>
-     </property>
-     <addaction name="actionSobel"/>
-     <addaction name="actionMorphology"/>
-     <addaction name="actionMorphology_Thin"/>
-     <addaction name="actionMorphology_XY"/>
-     <addaction name="actionMorphology_XZ"/>
-    </widget>
-    <addaction name="separator"/>
     <addaction name="actionIntensity_shift"/>
     <addaction name="actionIntensity_scale"/>
     <addaction name="actionNormalize_Intensity"/>
-    <addaction name="actionSignal_Smoothing"/>
     <addaction name="separator"/>
+    <addaction name="actionImageAddition"/>
+    <addaction name="actionMinus_Image"/>
+    <addaction name="actionImageMultiplication"/>
+    <addaction name="separator"/>
+    <addaction name="actionSignal_Smoothing"/>
+    <addaction name="actionSobel"/>
+    <addaction name="separator"/>
+    <addaction name="actionThreshold"/>
     <addaction name="actionUpper_Threshold"/>
     <addaction name="actionLower_threshold"/>
     <addaction name="separator"/>
-    <addaction name="actionSmoothing"/>
-    <addaction name="menuEdge_Detector"/>
-    <addaction name="separator"/>
-    <addaction name="actionImageMultiplication"/>
-    <addaction name="actionImageAddition"/>
-    <addaction name="actionMinus_Image"/>
+    <addaction name="actionMorphology_Dilation"/>
+    <addaction name="actionMorphology_Thin"/>
+    <addaction name="actionMorphology_XY"/>
+    <addaction name="actionMorphology_XZ"/>
    </widget>
    <widget class="QMenu" name="menuOverlay">
     <property name="title">
@@ -389,6 +383,10 @@
    </property>
   </action>
   <action name="actionImageMultiplication">
+   <property name="icon">
+    <iconset resource="icons.qrc">
+     <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+   </property>
    <property name="text">
     <string>Multiply Image...</string>
    </property>
@@ -416,11 +414,6 @@
   <action name="actionLower_threshold">
    <property name="text">
     <string>Lower Threshold</string>
-   </property>
-  </action>
-  <action name="actionLPS_RAS_swap">
-   <property name="text">
-    <string>Swap XY</string>
    </property>
   </action>
   <action name="actionSet_Transformation">
@@ -453,11 +446,6 @@
     <string>Upper Threshold</string>
    </property>
   </action>
-  <action name="actionSmoothing">
-   <property name="text">
-    <string>Morphology Smoothing</string>
-   </property>
-  </action>
   <action name="actionNormalize_Intensity">
    <property name="text">
     <string>Normalize Intensity</string>
@@ -465,12 +453,7 @@
   </action>
   <action name="actionSobel">
    <property name="text">
-    <string>Sobel</string>
-   </property>
-  </action>
-  <action name="actionMorphology">
-   <property name="text">
-    <string>Morphology</string>
+    <string>Edge</string>
    </property>
   </action>
   <action name="actionMorphology_Thin">
@@ -497,6 +480,10 @@
    </property>
   </action>
   <action name="actionImageAddition">
+   <property name="icon">
+    <iconset resource="icons.qrc">
+     <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+   </property>
    <property name="text">
     <string>Add Image...</string>
    </property>
@@ -547,8 +534,22 @@
    </property>
   </action>
   <action name="actionMinus_Image">
+   <property name="icon">
+    <iconset resource="icons.qrc">
+     <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+   </property>
    <property name="text">
     <string>Minus Image...</string>
+   </property>
+  </action>
+  <action name="actionMorphology_Dilation">
+   <property name="text">
+    <string>Morphology Dilation</string>
+   </property>
+  </action>
+  <action name="actionThreshold">
+   <property name="text">
+    <string>Threshold</string>
    </property>
   </action>
  </widget>

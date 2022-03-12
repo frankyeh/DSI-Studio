@@ -13,6 +13,30 @@
 #include <filesystem>
 std::map<std::string,std::string> dicom_dictionary;
 std::vector<view_image*> opened_images;
+bool is_label_image(const tipl::image<3>& I);
+
+template<typename F>
+void for_each_label(tipl::image<3>& data,F&& fun)
+{
+    tipl::image<3> result_data(data.shape());
+    uint32_t m = uint32_t(tipl::max_value(data))+1;
+    tipl::par_for(m,[&](uint32_t index)
+    {
+        if(!index)
+            return;
+        tipl::image<3,char> mask(data.shape());
+        for(size_t i = 0;i < mask.size();++i)
+            if(uint32_t(data[i]) == index)
+                mask[i] = 1;
+        fun(mask);
+        for(size_t i = 0;i < mask.size();++i)
+            if(mask[i] && result_data[i] < float(index))
+                result_data[i] = float(index);
+    });
+    data.swap(result_data);
+}
+
+
 bool img_command(tipl::image<3>& data,
                  tipl::vector<3>& vs,
                  tipl::matrix<4,4>& T,
@@ -577,16 +601,25 @@ void view_image::init_image(void)
             arg(double(T[0])).arg(double(T[1])).arg(double(T[2])).arg(double(T[3])).
             arg(double(T[4])).arg(double(T[5])).arg(double(T[6])).arg(double(T[7])).
             arg(double(T[8])).arg(double(T[9])).arg(double(T[10])).arg(double(T[11])));
-    ui->min->setRange(double(min_value-range/3),double(max_value));
-    ui->max->setRange(double(min_value),double(max_value+range/3));
-    ui->min->setSingleStep(double(range/20));
-    ui->max->setSingleStep(double(range/20));
-    ui->min->setValue(double(min_value));
-    ui->max->setValue(double(max_value));
-    slice_pos[0] = data.width()/2;
-    slice_pos[1] = data.height()/2;
-    slice_pos[2] = data.depth()/2;
-    on_AxiView_clicked();
+
+    if(ui->min->maximum() != double(max_value) ||
+       ui->max->minimum() != double(min_value))
+    {
+        ui->min->setRange(double(min_value-range/3),double(max_value));
+        ui->max->setRange(double(min_value),double(max_value+range/3));
+        ui->min->setSingleStep(double(range/20));
+        ui->max->setSingleStep(double(range/20));
+        ui->min->setValue(double(min_value));
+        ui->max->setValue(double(max_value));
+    }
+
+    if(ui->slice_pos->maximum() != int(data.shape()[cur_dim]-1))
+    {
+        slice_pos[0] = data.width()/2;
+        slice_pos[1] = data.height()/2;
+        slice_pos[2] = data.depth()/2;
+        on_AxiView_clicked();
+    }
     no_update = false;
 }
 void view_image::add_overlay(void)
@@ -919,41 +952,10 @@ void view_image::on_actionUpper_Threshold_triggered()
     init_image();
     show_image();
 }
-bool is_label_image(const tipl::image<3>& I);
-void view_image::on_actionSmoothing_triggered()
-{
-    tipl::image<3,uint32_t> new_data(data);
-    uint32_t m = uint32_t(tipl::max_value(data))+1;
-    // smooth each region
-    tipl::par_for(m,[&](uint32_t index)
-    {
-        if(!index)
-            return;
-        tipl::image<3,char> mask(new_data.shape());
-        for(size_t i = 0;i < mask.size();++i)
-            if(new_data[i] == index)
-                mask[i] = 1;
-        tipl::morphology::smoothing(mask);
-        for(size_t i = 0;i < mask.size();++i)
-            if(mask[i] && new_data[i] < index)
-                new_data[i] = index;
-    });
 
-    // fill up gaps
-    tipl::par_for(m,[&](uint32_t index)
-    {
-        if(!index)
-            return;
-        tipl::image<3,char> mask(data.shape());
-        for(size_t i = 0;i < mask.size();++i)
-            if(new_data[i] == index)
-                mask[i] = 1;
-        tipl::morphology::dilation(mask);
-        for(size_t i = 0;i < mask.size();++i)
-            if(mask[i] && new_data[i] < i)
-                new_data[i] = index;
-    });
-    data = new_data;
+void view_image::on_actionMorphology_Dilation_triggered()
+{
+    for_each_label(data,[](tipl::image<3,char>& mask){tipl::morphology::dilation(mask);});
     init_image();
     show_image();
 }
@@ -1023,35 +1025,31 @@ void view_image::on_slice_pos_valueChanged(int value)
 
 void view_image::on_actionSobel_triggered()
 {
-    tipl::filter::sobel(data);
-    init_image();
-    show_image();
-}
-
-void view_image::on_actionMorphology_triggered()
-{
-    tipl::morphology::edge(data);
+    if(is_label_image(data))
+        for_each_label(data,[](tipl::image<3,char>& mask){tipl::morphology::edge(mask);});
+    else
+        tipl::filter::sobel(data);
     init_image();
     show_image();
 }
 
 void view_image::on_actionMorphology_Thin_triggered()
 {
-    tipl::morphology::edge_thin(data);
+    for_each_label(data,[](tipl::image<3,char>& mask){tipl::morphology::edge_thin(mask);});
     init_image();
     show_image();
 }
 
 void view_image::on_actionMorphology_XY_triggered()
 {
-    tipl::morphology::edge_xy(data);
+    for_each_label(data,[](tipl::image<3,char>& mask){tipl::morphology::edge_xy(mask);});
     init_image();
     show_image();
 }
 
 void view_image::on_actionMorphology_XZ_triggered()
 {
-    tipl::morphology::edge_xz(data);
+    for_each_label(data,[](tipl::image<3,char>& mask){tipl::morphology::edge_xz(mask);});
     init_image();
     show_image();
 }
@@ -1097,7 +1095,10 @@ void view_image::on_actionImageMultiplication_triggered()
 
 void view_image::on_actionSignal_Smoothing_triggered()
 {
-    tipl::filter::mean(data);
+    if(is_label_image(data))
+        for_each_label(data,[](tipl::image<3,char>& mask){tipl::morphology::smoothing(mask);});
+    else
+        tipl::filter::mean(data);
     init_image();
     show_image();
 }
@@ -1226,5 +1227,19 @@ void view_image::on_actionSwap_YZ_triggered()
     show_image();
 }
 
+void view_image::on_actionThreshold_triggered()
+{
+    bool ok;
+    QString result = QInputDialog::getText(this,"DSI Studio","Assign threshold value",QLineEdit::Normal,"0",&ok);
+    if(!ok)
+        return;
+    float value = result.toFloat(&ok);
+    if(!ok)
+        return;
 
+    for(size_t i = 0;i < data.size();++i)
+        data[i] = data[i] < value ? 0.0f : 1.0f;
+    init_image();
+    show_image();
+}
 

@@ -55,8 +55,6 @@ private slots:
 
     void on_actionUpper_Threshold_triggered();
 
-    void on_actionSmoothing_triggered();
-
     void on_actionNormalize_Intensity_triggered();
 
     void change_contrast();
@@ -77,8 +75,6 @@ private slots:
     void on_slice_pos_valueChanged(int value);
 
     void on_actionSobel_triggered();
-
-    void on_actionMorphology_triggered();
 
     void on_actionMorphology_Thin_triggered();
 
@@ -113,6 +109,10 @@ private slots:
     void on_actionSwap_YZ_triggered();
 
     void on_actionMinus_Image_triggered();
+
+    void on_actionMorphology_Dilation_triggered();
+
+    void on_actionThreshold_triggered();
 
 private:
     Ui::view_image *ui;
