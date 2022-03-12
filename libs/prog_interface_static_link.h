@@ -59,14 +59,17 @@ public:
             }
             else
             {
+                size_t i = 0;
                 while(!ended)
                 {
-                    progress::at(1,2);
+                    std::this_thread::sleep_for(std::chrono::milliseconds(200));
+                    progress::at(i,i+1);
                     if(progress::aborted())
                     {
                         terminated = true;
                         ended = true;
                     }
+                    ++i;
                 }
             }
         });
