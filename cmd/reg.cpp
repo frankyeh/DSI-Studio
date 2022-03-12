@@ -174,7 +174,7 @@ int reg(program_option& po)
     linear_common(to,to_vs,from,from_vs,T,
                   po.get("reg_type",1) == 0 ? tipl::reg::rigid_body : tipl::reg::affine,terminated);
 
-    std::cout << T;
+
     tipl::image<3> from_(to.shape()),from2_;
 
 
@@ -230,13 +230,6 @@ int reg(program_option& po)
 
         float r = float(tipl::correlation(to.begin(),to.end(),from_wp.begin()));
         std::cout << "R2: " << r*r << std::endl;
-        if(!gz_nifti::save_to_file(output_wp_image.c_str(),from_wp,to_vs,to_trans))
-        {
-            std::cout << "ERROR: cannot write warpped image to " << output_wp_image << std::endl;
-            return 0;
-        }
-        else
-            std::cout << "output warpped image to " << output_wp_image << std::endl;
     }
 
     if(po.has("output_warp"))
