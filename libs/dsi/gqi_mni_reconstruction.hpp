@@ -46,7 +46,7 @@ public:
         // VF2: SUBJECT ISO
         tipl::image<3> VG,VF(voxel.qa_map),VG2,VF2;
         tipl::vector<3> VGvs, VFvs(voxel.vs);
-        tipl::filter::gaussian(VF);
+
 
         bool is_human_template = QFileInfo(fa_template_list[voxel.template_id].c_str()).baseName().contains("ICBM");
         bool manual_alignment = voxel.qsdr_trans.data[0] != 0.0;
@@ -75,7 +75,6 @@ public:
             {
                 read2.toLPS(VG2);
                 VF2.swap(voxel.iso_map);
-                tipl::filter::gaussian(VF2);
                 dual_modality = true;
             }
         }
@@ -99,6 +98,9 @@ public:
                     VF2.save_to_file<gz_nifti>("Subject_ISO.nii.gz");
             }
 
+            tipl::filter::gaussian(VF);
+            if(dual_modality)
+                tipl::filter::gaussian(VF2);
 
             if(manual_alignment)
                 affine = voxel.qsdr_trans;
