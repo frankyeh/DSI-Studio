@@ -923,8 +923,7 @@ bool is_label_image(const tipl::image<3>& I);
 void view_image::on_actionSmoothing_triggered()
 {
     tipl::image<3,uint32_t> new_data(data);
-    uint32_t m = uint32_t(tipl::max_value(data));
-
+    uint32_t m = uint32_t(tipl::max_value(data))+1;
     // smooth each region
     tipl::par_for(m,[&](uint32_t index)
     {
@@ -935,7 +934,7 @@ void view_image::on_actionSmoothing_triggered()
             if(new_data[i] == index)
                 mask[i] = 1;
         tipl::morphology::smoothing(mask);
-        for(size_t i = 0;i < mask.size();++index)
+        for(size_t i = 0;i < mask.size();++i)
             if(mask[i] && new_data[i] < index)
                 new_data[i] = index;
     });
@@ -951,7 +950,7 @@ void view_image::on_actionSmoothing_triggered()
                 mask[i] = 1;
         tipl::morphology::dilation(mask);
         for(size_t i = 0;i < mask.size();++i)
-            if(mask[i] && new_data[i] < index)
+            if(mask[i] && new_data[i] < i)
                 new_data[i] = index;
     });
     data = new_data;
