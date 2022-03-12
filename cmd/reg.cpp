@@ -33,7 +33,7 @@ int after_warp(const std::string& warp_name,
     std::string error;
     std::vector<std::string> filenames;
     get_filenames_from(warp_name,filenames);
-    for(auto filename: filenames)
+    for(auto& filename: filenames)
     {
         if(QString(filename.c_str()).toLower().endsWith(".nii.gz"))
         {
@@ -66,9 +66,44 @@ int after_warp(const std::string& warp_name,
     }
     return 0;
 }
-class warping{
 
-};
+
+bool load_nifti_file(std::string file_name_cmd,
+                     tipl::image<3>& data,
+                     tipl::vector<3>& vs,
+                     tipl::matrix<4,4>& trans)
+{
+    std::istringstream in(file_name_cmd);
+    std::string file_name,cmd;
+    std::getline(in,file_name,',');
+    if(!gz_nifti::load_from_file(file_name.c_str(),data,vs,trans))
+    {
+        std::cout << "ERROR: cannot load file " << file_name << std::endl;
+        return false;
+    }
+    while(std::getline(in,cmd,','))
+    {
+        std::cout << "apply " << cmd << std::endl;
+        if(cmd == "gaussian")
+            tipl::filter::gaussian(data);
+        else
+        if(cmd == "sobel")
+            tipl::filter::sobel(data);
+        else
+        {
+            std::cout << "ERROR: unknown command " << cmd << std::endl;
+            return false;
+        }
+    }
+    return true;
+}
+inline bool load_nifti_file(std::string file_name_cmd,
+                     tipl::image<3>& data,
+                     tipl::vector<3>& vs)
+{
+    tipl::matrix<4,4> trans;
+    return load_nifti_file(file_name_cmd,data,vs,trans);
+}
 
 int reg(program_option& po)
 {
@@ -76,7 +111,6 @@ int reg(program_option& po)
     tipl::vector<3> from_vs,to_vs;
     tipl::matrix<4,4> from_trans,to_trans;
     tipl::image<3,tipl::vector<3> > t2f_dis,f2t_dis,to2from,from2to;
-
 
     if(po.has("warp"))
     {
@@ -110,50 +144,35 @@ int reg(program_option& po)
             return after_warp(po.get("apply_warp"),to2from,from2to,to_vs,from_trans,to_trans);
         return 0;
     }
-    if(!gz_nifti::load_from_file(po.get("from").c_str(),from,from_vs,from_trans))
-    {
-        std::cout << "cannot load from file" << std::endl;
+    if(!load_nifti_file(po.get("from").c_str(),from,from_vs,from_trans) ||
+       !load_nifti_file(po.get("to").c_str(),to,to_vs,to_trans))
         return 1;
-    }
-    if(!gz_nifti::load_from_file(po.get("to").c_str(),to,to_vs,to_trans))
-    {
-        std::cout << "cannot load template file" << std::endl;
-        return 1;
-    }
+
     if(po.has("from2") && po.has("to2"))
     {
-        if(!gz_nifti::load_from_file(po.get("from2").c_str(),from2,from_vs))
-        {
-            std::cout << "cannot load from2 file" << std::endl;
+        if(!load_nifti_file(po.get("from2").c_str(),from2,from_vs) ||
+           !load_nifti_file(po.get("to2").c_str(),to2,to_vs))
             return 1;
-        }
-        if(!gz_nifti::load_from_file(po.get("to2").c_str(),to2,to_vs))
-        {
-            std::cout << "cannot load template file" << std::endl;
-            return 1;
-        }
     }
 
     if(!from2.empty() && from.shape() != from2.shape())
     {
-        std::cout << "from2 image has a dimension different from from image" << std::endl;
+        std::cout << "--from2 and --from images have different dimension" << std::endl;
         return 1;
     }
     if(!to2.empty() && to.shape() != to2.shape())
     {
-        std::cout << "to2 image has a dimension different from tolate image" << std::endl;
+        std::cout << "--to2 and --to images have different dimension" << std::endl;
         return 1;
     }
 
     std::string output_wp_image = po.get("output",po.get("from")+".wp.nii.gz");
     bool terminated = false;
-    tipl::transformation_matrix<double> T;
     std::cout << "running linear registration." << std::endl;
 
-    tipl::reg::two_way_linear_mr<tipl::reg::mutual_information>(to,to_vs,from,from_vs,T,
-                                 po.get("reg_type",1) == 0 ? tipl::reg::rigid_body : tipl::reg::affine,
-                                 // 0: rigid body rotation 1:nonlinear
-                                 terminated);
+    tipl::transformation_matrix<float> T;
+    linear_common(to,to_vs,from,from_vs,T,
+                  po.get("reg_type",1) == 0 ? tipl::reg::rigid_body : tipl::reg::affine,terminated);
 
     std::cout << T;
     tipl::image<3> from_(to.shape()),from2_;
