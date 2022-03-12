@@ -98,7 +98,7 @@ public:
     std::string other_output;
     bool needs(const char* metric)
     {
-        if(other_output == "all")
+        if(other_output == "all" && std::string(metric) != "debug")
             return true;
         std::istringstream in(other_output);
         std::string m;
