@@ -1010,7 +1010,7 @@ void match_template_resolution(tipl::image<3>& VG,
 {
     float ratio = float(VF.width())/float(VG.width());
     std::cout << "width ratio (subject/template):" << ratio << std::endl;
-    while(ratio < 0.5f)   // if subject resolution is substantially lower, downsample template
+    while(ratio < 0.75f)   // if subject resolution is substantially lower, downsample template
     {
         tipl::downsampling(VG);
         if(!VG2.empty())
