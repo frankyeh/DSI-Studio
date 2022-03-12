@@ -126,9 +126,9 @@ jobs:
       run: |
         curl -sL https://zenodo.org/record/6324701/files/HCP1065_qa.nii.gz?download=1 -o HCP1065_qa.nii.gz
         curl -sL https://zenodo.org/record/6324701/files/HCP1065_iso.nii.gz?download=1 -o HCP1065_iso.nii.gz
-        ./dsi-studio/dsi_studio --action=reg --from=100206.fib.gz.qa.nii.gz --to=HCP1065_qa.nii.gz
+        ./dsi-studio/dsi_studio --action=reg --from=100206.fib.gz.qa.nii.gz --to=HCP1065_qa.nii.gz --apply_warp=100206.fib.gz.qa.nii.gz
         ls 100206.fib.gz.qa.nii.gz.wp.nii.gz
-        ./dsi-studio/dsi_studio --action=reg --from=100206.fib.gz.qa.nii.gz --to=HCP1065_qa.nii.gz --from2=100206.fib.gz.iso.nii.gz --to2=HCP1065_iso.nii.gz
+        ./dsi-studio/dsi_studio --action=reg --from=100206.fib.gz.qa.nii.gz --to=HCP1065_qa.nii.gz --from2=100206.fib.gz.iso.nii.gz --to2=HCP1065_iso.nii.gz --apply_warp=100206.fib.gz.qa.nii.gz
         ls 100206.fib.gz.qa.nii.gz.wp.nii.gz
 
 
