@@ -204,17 +204,15 @@ public:
 
         }
 
-        // if subject resolution is higher than template, upsampled to its resolution
-        float VG_ratio = 1.0f;  // < 1.0 if upsampled
-        if(voxel.vs[0] < VGvs[0])
-        {
-            std::cout << "output resolution changed to " << voxel.vs[0] << std::endl;
+        // output resolution = acquisition resoloution
+        float VG_ratio = voxel.vs[0]/VGvs[0];
 
-            VG_ratio = voxel.vs[0]/VGvs[0];
-            tipl::shape<3> new_geo(VG.shape());
-            new_geo[0] /= VG_ratio;
-            new_geo[1] /= VG_ratio;
-            new_geo[2] /= VG_ratio;
+        // update registration results;
+        if(VG_ratio != 1.0f)
+        {
+            tipl::shape<3> new_geo(uint32_t(float(VG.width())/VG_ratio),
+                                   uint32_t(float(VG.height())/VG_ratio),
+                                   uint32_t(float(VG.depth())/VG_ratio));
 
             // update VG,VFFF (for mask) and cdm_dis (for mapping)
             tipl::image<3> new_VG(new_geo);
