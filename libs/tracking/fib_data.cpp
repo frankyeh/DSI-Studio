@@ -1622,7 +1622,6 @@ void fib_data::recognize_report(std::shared_ptr<TractModel>& trk,std::string& re
 }
 
 
-
 bool fib_data::map_to_mni(bool background)
 {
     if(!load_template())
@@ -1687,6 +1686,10 @@ bool fib_data::map_to_mni(bool background)
                 Is2 = view_item[iso_index].get_image();
         }
         bool no_iso = Is2.empty() || It2.empty();
+
+        tipl::filter::gaussian(Is);
+        if(!no_iso)
+            tipl::filter::gaussian(Is2);
 
         prog = 1;
         if(!has_manual_atlas)
