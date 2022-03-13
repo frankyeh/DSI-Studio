@@ -93,27 +93,24 @@ bool Voxel::run_hist(void)
 }
 bool Voxel::run(void)
 {
-    size_t total_voxel = std::accumulate(mask.begin(),mask.end(),size_t(0),[](size_t sum,unsigned char value){return value ? sum+1:sum;});
-    size_t total = 0;
     bool terminated = false;
-    tipl::par_for(mask.size(),[&](size_t voxel_index,size_t thread_id)
+    tipl::par_for(thread_count,[&](size_t thread_id)
     {
-        if(terminated || !mask[voxel_index])
-            return;
-        ++total;
-        if(thread_id == 0)
+        for(size_t voxel_index = thread_id;
+            voxel_index < mask.size() && !terminated;
+            voxel_index += thread_count)
         {
-            if(progress::aborted())
-            {
+            if(!mask[voxel_index])
+                continue;
+            if(thread_id == 0 && 
+               progress::at(voxel_index,mask.size()) &&
+               progress::aborted())
                 terminated = true;
-                return;
-            }
-            progress::at(uint32_t(total*100/total_voxel),100);
+            voxel_data[thread_id].init();
+            voxel_data[thread_id].voxel_index = voxel_index;
+            for (size_t index = 0; index < process_list.size(); ++index)
+                process_list[index]->run(*this,voxel_data[thread_id]);
         }
-        voxel_data[thread_id].init();
-        voxel_data[thread_id].voxel_index = voxel_index;
-        for (size_t index = 0; index < process_list.size(); ++index)
-            process_list[index]->run(*this,voxel_data[thread_id]);
     },thread_count);
     return !progress::aborted();
 }
