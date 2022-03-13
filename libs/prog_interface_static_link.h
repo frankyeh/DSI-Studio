@@ -52,7 +52,7 @@ public:
         bool ended = false;
         tipl::par_for(2,[&](int i)
         {
-            if(i)
+            if(!i)
             {
                 fun();
                 ended = true;
