@@ -102,7 +102,7 @@ bool Voxel::run(void)
         {
             if(!mask[voxel_index])
                 continue;
-            if(thread_id == 0 && 
+            if(thread_id == thread_count-1 &&
                progress::at(voxel_index,mask.size()) &&
                progress::aborted())
                 terminated = true;
