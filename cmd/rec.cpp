@@ -33,7 +33,6 @@ int rec(program_option& po)
         std::cout << "ERROR: " << src.error_msg << std::endl;
         return 1;
     }
-    src.voxel.template_id = size_t(po.get("template",src.voxel.template_id));
     std::cout << "src loaded" <<std::endl;
 
     if(po.has("rev_pe") && !src.run_topup_eddy(po.get("rev_pe")))
@@ -112,12 +111,21 @@ int rec(program_option& po)
     }
 
     unsigned char method_index = uint8_t(po.get("method",4));
+
     if (po.has("param0"))
         src.voxel.param[0] = po.get("param0",src.voxel.param[0]);
     if (po.has("param1"))
         src.voxel.param[1] = po.get("param1",src.voxel.param[1]);
     if (po.has("param2"))
         src.voxel.param[2] = po.get("param2",src.voxel.param[2]);
+    if(method_index == 7)
+    {
+        for(size_t id = 0;id < fa_template_list.size();++id)
+            std::cout << "template_id " << id << ":" <<
+            QFileInfo(fa_template_list[id].c_str()).baseName().toStdString() << std::endl;
+    }
+    src.voxel.template_id = size_t(po.get("template",src.voxel.template_id));
+
 
     if(po.get("align_acpc",src.is_human_data() && method_index != 7 ? 1:0))
         src.align_acpc();
