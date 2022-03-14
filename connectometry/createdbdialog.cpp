@@ -99,7 +99,7 @@ void CreateDBDialog::update_list(void)
             ui->index_of_interest->addItem(item_list[i].c_str());
     }
     if(ui->output_file_name->text().isEmpty())
-        on_index_of_interest_currentIndexChanged(QString());
+        on_index_of_interest_currentTextChanged(QString());
 
     QStringList filenames;
     for(unsigned int index = 0;index < group.size();++index)
@@ -120,7 +120,7 @@ void CreateDBDialog::on_group1open_clicked()
         return;
     group << filenames;
     update_list();
-    on_index_of_interest_currentIndexChanged(QString());
+    on_index_of_interest_currentTextChanged(QString());
 }
 
 void CreateDBDialog::on_group1delete_clicked()
@@ -325,17 +325,20 @@ void CreateDBDialog::on_create_data_base_clicked()
 
 
 
-
-void CreateDBDialog::on_index_of_interest_currentIndexChanged(const QString &)
-{       
+void CreateDBDialog::on_index_of_interest_currentTextChanged(const QString &arg1)
+{
     if(!group.empty())
     {
-        QString path = QFileInfo(group[0]).absolutePath();
-        if(dir_length && ui->output_file_name->text().isEmpty())
-            path = group[0].left(dir_length-1);
+        std::string front = group.front().toStdString();
+        std::string back = group.back().toStdString();
+        QString base_name = std::string(front.begin(),
+                        std::mismatch(front.begin(),front.begin()+
+                        int64_t(std::min(front.length(),back.length())),back.begin()).first).c_str();
+
         if(create_db)
-            ui->output_file_name->setText(path + "/connectometry." + ui->index_of_interest->currentText() + ".db.fib.gz");
+            ui->output_file_name->setText(base_name + "." + ui->index_of_interest->currentText() + ".db.fib.gz");
         else
-            ui->output_file_name->setText(path + "/template.fib.gz");
+            ui->output_file_name->setText(base_name + ".avg.fib.gz");
     }
 }
+
