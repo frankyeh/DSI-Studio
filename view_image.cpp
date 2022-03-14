@@ -953,6 +953,15 @@ void view_image::on_actionUpper_Threshold_triggered()
     show_image();
 }
 
+
+void view_image::on_actionMorphology_Defragment_triggered()
+{
+    for_each_label(data,[](tipl::image<3,char>& mask){tipl::morphology::defragment(mask);});
+    init_image();
+    show_image();
+}
+
+
 void view_image::on_actionMorphology_Dilation_triggered()
 {
     for_each_label(data,[](tipl::image<3,char>& mask){tipl::morphology::dilation(mask);});
@@ -1033,19 +1042,22 @@ void view_image::on_actionSobel_triggered()
     show_image();
 }
 
-void view_image::on_actionMorphology_Thin_triggered()
-{
-    for_each_label(data,[](tipl::image<3,char>& mask){tipl::morphology::edge_thin(mask);});
-    init_image();
-    show_image();
-}
-
 void view_image::on_actionMorphology_XY_triggered()
 {
     for_each_label(data,[](tipl::image<3,char>& mask){tipl::morphology::edge_xy(mask);});
     init_image();
     show_image();
 }
+
+
+
+void view_image::on_actionMorphology_Erosion_triggered()
+{
+    for_each_label(data,[](tipl::image<3,char>& mask){tipl::morphology::erosion(mask);});
+    init_image();
+    show_image();
+}
+
 
 void view_image::on_actionMorphology_XZ_triggered()
 {
@@ -1242,4 +1254,5 @@ void view_image::on_actionThreshold_triggered()
     init_image();
     show_image();
 }
+
 

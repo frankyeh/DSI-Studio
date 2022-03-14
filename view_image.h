@@ -76,8 +76,6 @@ private slots:
 
     void on_actionSobel_triggered();
 
-    void on_actionMorphology_Thin_triggered();
-
     void on_actionMorphology_XY_triggered();
 
     void on_actionMorphology_XZ_triggered();
@@ -113,6 +111,10 @@ private slots:
     void on_actionMorphology_Dilation_triggered();
 
     void on_actionThreshold_triggered();
+
+    void on_actionMorphology_Defragment_triggered();
+
+    void on_actionMorphology_Erosion_triggered();
 
 private:
     Ui::view_image *ui;

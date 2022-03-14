@@ -356,10 +356,12 @@
     <addaction name="actionUpper_Threshold"/>
     <addaction name="actionLower_threshold"/>
     <addaction name="separator"/>
+    <addaction name="actionMorphology_Defragment"/>
     <addaction name="actionMorphology_Dilation"/>
-    <addaction name="actionMorphology_Thin"/>
+    <addaction name="actionMorphology_Erosion"/>
     <addaction name="actionMorphology_XY"/>
     <addaction name="actionMorphology_XZ"/>
+    <addaction name="separator"/>
    </widget>
    <widget class="QMenu" name="menuOverlay">
     <property name="title">
@@ -463,12 +465,12 @@
   </action>
   <action name="actionMorphology_XY">
    <property name="text">
-    <string>Morphology XY</string>
+    <string>Morphology XY Edge</string>
    </property>
   </action>
   <action name="actionMorphology_XZ">
    <property name="text">
-    <string>Morphology XZ</string>
+    <string>Morphology XZ Edge</string>
    </property>
   </action>
   <action name="actionSave">
@@ -550,6 +552,16 @@
   <action name="actionThreshold">
    <property name="text">
     <string>Threshold</string>
+   </property>
+  </action>
+  <action name="actionMorphology_Defragment">
+   <property name="text">
+    <string>Morphology Defragment</string>
+   </property>
+  </action>
+  <action name="actionMorphology_Erosion">
+   <property name="text">
+    <string>Morphology Erosion</string>
    </property>
   </action>
  </widget>
