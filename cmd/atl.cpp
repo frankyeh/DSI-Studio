@@ -93,11 +93,17 @@ int atl(program_option& po)
             std::vector<std::string> item_list;
             fib.get_index_list(item_list);
             index_name.push_back("qa");
+            index_name.push_back("nqa");
             for(size_t i = fib.dir.index_name.size();i < item_list.size();++i)
                 index_name.push_back(item_list[i]);
         }
         else
-            index_name.push_back(po.get("index_name","qa"));
+        {
+            std::istringstream in(po.get("index_name","qa"));
+            std::string line;
+            while(std::getline(in,line,','))
+                index_name.push_back(line);
+        }
 
         for(size_t i = 0; i < index_name.size();++i)
         {
@@ -111,7 +117,8 @@ int atl(program_option& po)
             data->handle->db.index_name = index_name[i];
             for (unsigned int index = 0;index < name_list.size();++index)
             {
-                if(name_list[index].find(".db.fib.gz") != std::string::npos)
+                if(name_list[index].find(".db.fib.gz") != std::string::npos ||
+                   name_list[index].find(tm) != std::string::npos)
                     continue;
                 std::cout << "reading " << name_list[index] << std::endl;
                 if(!data->handle->db.add_subject_file(name_list[index],
