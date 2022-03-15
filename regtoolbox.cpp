@@ -103,6 +103,8 @@ void RegToolBox::on_OpenTemplate_clicked()
         J_view = I;
     show_image();
     ui->template_filename->setText(QFileInfo(filename).baseName());
+
+    ui->cost_fun->setCurrentIndex(It.shape() == I.shape() ? 2:0);
 }
 
 void RegToolBox::on_OpenSubject_clicked()
@@ -128,6 +130,7 @@ void RegToolBox::on_OpenSubject_clicked()
     J_view = I;
     show_image();
     ui->subject_filename->setText(QFileInfo(filename).baseName());
+    ui->cost_fun->setCurrentIndex(It.shape() == I.shape() ? 2:0);
 }
 
 
