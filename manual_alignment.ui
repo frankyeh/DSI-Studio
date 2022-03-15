@@ -33,6 +33,7 @@
        <string>&amp;File</string>
       </property>
       <addaction name="actionLoad_Transformation"/>
+      <addaction name="actionApply_Transformation"/>
       <addaction name="separator"/>
       <addaction name="actionSave_Warpped_Image"/>
       <addaction name="actionSave_Transformation"/>
@@ -809,6 +810,15 @@
    </property>
    <property name="text">
     <string>Load Transformation...</string>
+   </property>
+  </action>
+  <action name="actionApply_Transformation">
+   <property name="icon">
+    <iconset resource="icons.qrc">
+     <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+   </property>
+   <property name="text">
+    <string>Apply Transformation...</string>
    </property>
   </action>
  </widget>

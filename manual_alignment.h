@@ -74,6 +74,8 @@ private slots:
 
     void on_actionLoad_Transformation_triggered();
 
+    void on_actionApply_Transformation_triggered();
+
 public slots:
     void on_rerun_clicked();
     void check_reg();

@@ -346,12 +346,14 @@ void manual_alignment::on_rerun_clicked()
         if(cost == tipl::reg::mutual_info)
         {
             tipl::reg::linear<tipl::reg::mutual_information>(from,from_vs,to,to_vs,arg,tipl::reg::reg_type(reg_type),thread.terminated,0.01,true,tipl::reg::large_bound);
-            tipl::reg::linear<tipl::reg::mutual_information>(from,from_vs,to,to_vs,arg,tipl::reg::reg_type(reg_type),thread.terminated,0.001,true,tipl::reg::large_bound);
+            tipl::reg::linear<tipl::reg::mutual_information>(from,from_vs,to,to_vs,arg,tipl::reg::reg_type(reg_type),thread.terminated,0.005,false,tipl::reg::large_bound);
+            tipl::reg::linear<tipl::reg::mutual_information>(from,from_vs,to,to_vs,arg,tipl::reg::reg_type(reg_type),thread.terminated,0.001,false,tipl::reg::large_bound);
         }
         else
         {
             tipl::reg::linear<tipl::reg::correlation>(from,from_vs,to,to_vs,arg,tipl::reg::reg_type(reg_type),thread.terminated,0.01,true,tipl::reg::large_bound);
-            tipl::reg::linear<tipl::reg::correlation>(from,from_vs,to,to_vs,arg,tipl::reg::reg_type(reg_type),thread.terminated,0.001,true,tipl::reg::large_bound);
+            tipl::reg::linear<tipl::reg::correlation>(from,from_vs,to,to_vs,arg,tipl::reg::reg_type(reg_type),thread.terminated,0.005,false,tipl::reg::large_bound);
+            tipl::reg::linear<tipl::reg::correlation>(from,from_vs,to,to_vs,arg,tipl::reg::reg_type(reg_type),thread.terminated,0.001,false,tipl::reg::large_bound);
         }
     });
     if(timer)
@@ -426,3 +428,41 @@ void manual_alignment::on_actionLoad_Transformation_triggered()
     }
     update_image();
 }
+
+void manual_alignment::on_actionApply_Transformation_triggered()
+{
+    QString filename = QFileDialog::getOpenFileName(
+            this,"Open NIFTI image","","Images (*.nii *nii.gz);;All files (*)");
+    if(filename.isEmpty())
+        return;
+
+
+    QString to_filename = QFileDialog::getSaveFileName(
+            this,"Save Warpping Image",filename+".wp.nii.gz","Images (*.nii *nii.gz);;All files (*)" );
+    if(to_filename.isEmpty())
+        return;
+
+    tipl::image<3> from;
+    tipl::vector<3> vs;
+    if(!gz_nifti::load_from_file(filename.toStdString().c_str(),from,vs))
+    {
+        QMessageBox::critical(this,"ERROR","Cannot read the file");
+        return;
+    }
+    if(from.shape() != from_original.shape())
+    {
+        QMessageBox::critical(this,"ERROR","The NIFTI file has different dimension");
+        return;
+    }
+
+    tipl::image<3> I(to.shape());
+    if(is_label_image(from))
+        tipl::resample_mt<tipl::interpolation::nearest>(from,I,iT);
+    else
+        tipl::resample_mt<tipl::interpolation::cubic>(from,I,iT);
+    gz_nifti::save_to_file(to_filename.toStdString().c_str(),I,to_vs,nifti_srow);
+
+
+
+}
+
