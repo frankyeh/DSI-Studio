@@ -43,7 +43,7 @@ float linear_with_cc(const tipl::image<3,float>& from,
                               tipl::affine_transform<float>& arg,
                               tipl::reg::reg_type reg_type,
                               bool& terminated,
-                              const float* bound = tipl::reg::large_bound);
+                              const float* bound = tipl::reg::reg_bound);
 
 float linear_with_mi(const tipl::image<3,float>& from,
                               tipl::vector<3> from_vs,
@@ -52,7 +52,7 @@ float linear_with_mi(const tipl::image<3,float>& from,
                               tipl::affine_transform<float>& arg,
                               tipl::reg::reg_type reg_type,
                               bool& terminated,
-                              const float* bound = tipl::reg::large_bound);
+                              const float* bound = tipl::reg::reg_bound);
 
 
 float linear_with_mi(const tipl::image<3,float>& from,
@@ -62,7 +62,7 @@ float linear_with_mi(const tipl::image<3,float>& from,
                               tipl::transformation_matrix<float>& T,
                               tipl::reg::reg_type reg_type,
                               bool& terminated,
-                              const float* bound = tipl::reg::large_bound);
+                              const float* bound = tipl::reg::reg_bound);
 
 
 #endif//REG_HPP
