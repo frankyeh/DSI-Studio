@@ -206,6 +206,7 @@ private slots:
     void on_actionInsert_Sagittal_Picture_triggered();
     void on_template_box_currentIndexChanged(int index);
     void on_actionAdd_Tracking_Metrics_triggered();
+    void on_actionManual_Atlas_Alignment_triggered();
 };
 
 #endif // TRACKING_WINDOW_H

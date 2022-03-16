@@ -1504,24 +1504,6 @@ void tracking_window::on_addRegionFromAtlas_clicked()
             return;
         if(r == QMessageBox::No)
         {
-            QMessageBox::StandardButton r = QMessageBox::question( this, "DSI Studio",
-                        "Manually adjust result?",
-                        QMessageBox::Cancel | QMessageBox::No | QMessageBox::Yes,QMessageBox::Yes);
-            if(r == QMessageBox::Cancel)
-                return;
-            if(r == QMessageBox::Yes)
-            {
-                tipl::image<3> iso_fa;
-                handle->get_iso_fa(iso_fa);
-                std::shared_ptr<manual_alignment> manual(new manual_alignment(this,
-                    iso_fa,slices[0]->vs,
-                    handle->template_I2.empty() ? handle->template_I2: handle->template_I,handle->template_vs,
-                    tipl::reg::affine,tipl::reg::cost_type::mutual_info));
-                if(manual->exec() != QDialog::Accepted)
-                    return;
-                handle->manual_template_T = manual->get_iT();
-                handle->has_manual_atlas = true;
-            }
             handle->s2t.clear();
             handle->t2s.clear();
             std::filesystem::remove(output_file_name);
@@ -2864,3 +2846,43 @@ void tracking_window::on_actionAdd_Tracking_Metrics_triggered()
     scene.center();
     QMessageBox::information(this,"DSI Studio","New metric added");
 }
+
+
+
+void tracking_window::on_actionManual_Atlas_Alignment_triggered()
+{
+    if(!handle->load_template())
+    {
+        QMessageBox::information(this,"ERROR",handle->error_msg.c_str());
+        return ;
+    }
+    tipl::image<3> iso_fa;
+    handle->get_iso_fa(iso_fa);
+    std::shared_ptr<manual_alignment> manual(new manual_alignment(this,
+        iso_fa,handle->vs,
+        handle->template_I2.empty() ? handle->template_I: handle->template_I2,handle->template_vs,
+        tipl::reg::affine,tipl::reg::cost_type::mutual_info));
+    if(manual->exec() != QDialog::Accepted)
+        return;
+    handle->manual_template_T = manual->get_iT();
+    handle->has_manual_atlas = true;
+
+
+    std::string output_file_name(handle->fib_file_name);
+    output_file_name += ".";
+    output_file_name += QFileInfo(fa_template_list[handle->template_id].c_str()).
+                        baseName().toLower().toStdString();
+    output_file_name += ".map.gz";
+    if(handle->s2t.empty() && std::filesystem::exists(output_file_name))
+    {
+        handle->s2t.clear();
+        handle->t2s.clear();
+        std::filesystem::remove(output_file_name);
+    }
+
+    if(!map_to_mni())
+        return;
+    std::shared_ptr<AtlasDialog> atlas_dialog(new AtlasDialog(this,handle));
+    atlas_dialog->exec();
+}
+

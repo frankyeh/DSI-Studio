@@ -929,7 +929,6 @@
     <addaction name="actionUndo_Edit"/>
     <addaction name="actionRedo_Edit"/>
     <addaction name="separator"/>
-    <addaction name="actionOpenAtlas"/>
     <addaction name="actionMerge_All_2"/>
     <addaction name="actionRegion_statistics"/>
    </widget>
@@ -1253,7 +1252,7 @@
     <addaction name="separator"/>
     <addaction name="actionLoad_Region_Color"/>
     <addaction name="actionOpen_MNI_Region"/>
-    <addaction name="actionAdjust_Atlas_Mapping"/>
+    <addaction name="actionManual_Atlas_Alignment"/>
     <addaction name="separator"/>
     <addaction name="actionSave_Region_Color"/>
     <addaction name="actionSave_Voxel_Data_As"/>
@@ -4093,14 +4092,14 @@ Tracking</string>
     <string>Posterior Lower</string>
    </property>
   </action>
-  <action name="actionOpenAtlas">
-   <property name="text">
-    <string>Open Atlas...</string>
-   </property>
-  </action>
   <action name="actionAll_To_First">
    <property name="text">
     <string>All To First</string>
+   </property>
+  </action>
+  <action name="actionManual_Atlas_Alignment">
+   <property name="text">
+    <string>Manual Atlas Alignment...</string>
    </property>
   </action>
  </widget>
