@@ -88,115 +88,18 @@ void cdm2_cuda(const tipl::image<3>& It,
 
 }
 
-void adjust_vs(const tipl::image<3,float>& from,
-               const tipl::vector<3>& from_vs,
-               const tipl::image<3,float>& to,
-               tipl::vector<3>& to_vs)
-{
-    std::cout << "FOV width:" << float(from.width())*from_vs[0] << " to " << float(to.width())*to_vs[0] << std::endl;
-    if(float(from.width())*from_vs[0]*0.75f > float(to.width())*to_vs[0])
-    {
-        std::cout << "adjust voxel size due to match FOV" << std::endl;
-        to_vs *= std::sqrt((float(from.plane_size())*from_vs[0]*from_vs[1])/
-                           (float(to.plane_size())*to_vs[0]*to_vs[1]));
-    }
-}
 
-float linear_with_cc(const tipl::image<3,float>& from,
+float linear_cuda(const tipl::image<3,float>& from,
                               tipl::vector<3> from_vs,
                               const tipl::image<3,float>& to,
                               tipl::vector<3> to_vs,
                               tipl::affine_transform<float>& arg,
                               tipl::reg::reg_type reg_type,
                               bool& terminated,
-                              const float* bound)
+                              const float* bound = tipl::reg::reg_bound)
 {
-    size_t iterations = 3;
-    if(reg_type == tipl::reg::affine)
-    {
-        std::cout << "affine registration using correlation" << std::endl;
-        iterations = 5;
-        adjust_vs(from,from_vs,to,to_vs);
-    }
-    else
-        std::cout << "rigid body registration using correlation" << std::endl;
-
-
-    float result = tipl::reg::linear<tipl::reg::correlation>(from,from_vs,to,to_vs,arg,tipl::reg::reg_type(reg_type),terminated,0.01,true,bound);
-    std::cout << "R:" << -result << std::endl;
-    std::cout << "T:" << arg;
-    return -result;
+    std::cout << "registration using GPU" << std::endl;
+    return tipl::reg::linear<tipl::reg::mutual_information_cuda>(from,from_vs,to,to_vs,arg,reg_type,terminated,0.01,true,bound);
 }
 
-float linear_with_mi(const tipl::image<3,float>& from,
-                              tipl::vector<3> from_vs,
-                              const tipl::image<3,float>& to,
-                              tipl::vector<3> to_vs,
-                              tipl::affine_transform<float>& arg,
-                              tipl::reg::reg_type reg_type,
-                              bool& terminated,
-                              const float* bound)
-{
-
-    size_t iterations = 3;
-    if(reg_type == tipl::reg::affine)
-    {
-        std::cout << "affine registration using mutual information" << std::endl;
-        iterations = 5;
-        adjust_vs(from,from_vs,to,to_vs);
-    }
-    else
-        std::cout << "rigid body registration using mutual information" << std::endl;
-
-
-    float result = 0.0f;
-    if constexpr (tipl::use_cuda)
-    {
-        std::cout << "registration using GPU" << std::endl;
-        result = tipl::reg::linear<tipl::reg::mutual_information_cuda>(from,from_vs,to,to_vs,arg,tipl::reg::reg_type(reg_type),terminated,0.01,true,bound,iterations);
-    }
-    else
-    {
-        result = tipl::reg::linear<tipl::reg::mutual_information>(from,from_vs,to,to_vs,arg,tipl::reg::reg_type(reg_type),terminated,0.01,true,bound,iterations);
-    }
-    std::cout << "MI:" << size_t(result) << std::endl;
-    std::cout << "T:" << arg;
-    return result;
-}
-
-float linear_with_mi(const tipl::image<3,float>& from,
-                              tipl::vector<3> from_vs,
-                              const tipl::image<3,float>& to,
-                              tipl::vector<3> to_vs,
-                              tipl::transformation_matrix<float>& T,
-                              tipl::reg::reg_type reg_type,
-                              bool& terminated,
-                              const float* bound)
-{
-    size_t iterations = 3;
-    if(reg_type == tipl::reg::affine)
-    {
-        std::cout << "affine registration using mutual information" << std::endl;
-        iterations = 5;
-        adjust_vs(from,from_vs,to,to_vs);
-    }
-    else
-        std::cout << "rigid body registration using mutual information" << std::endl;
-
-    float result = 0.0f;
-    tipl::affine_transform<float> arg;
-    if constexpr (tipl::use_cuda)
-    {
-        std::cout << "registration using GPU" << std::endl;
-        tipl::reg::linear<tipl::reg::mutual_information_cuda>(from,from_vs,to,to_vs,arg,tipl::reg::reg_type(reg_type),terminated,0.01,true,bound,iterations);
-    }
-    else
-    {
-        tipl::reg::linear<tipl::reg::mutual_information>(from,from_vs,to,to_vs,arg,tipl::reg::reg_type(reg_type),terminated,0.01,true,bound,iterations);
-    }
-    T = tipl::transformation_matrix<float>(arg,from.shape(),from_vs,to.shape(),to_vs);
-    std::cout << "MI:" << size_t(result) << std::endl;
-    std::cout << "T:" << arg;
-    return result;
-}
 
