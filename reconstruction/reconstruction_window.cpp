@@ -697,7 +697,12 @@ bool add_other_image(ImageModel* handle,QString name,QString filename)
         in.get_voxel_size(vs);
         tipl::image<3> iso_fa(handle->dwi);
         bool terminated = false;
-        linear_common(iso_fa,handle->voxel.vs,ref,vs,affine,tipl::reg::rigid_body,terminated);
+        auto smoothed_ref = ref;
+        tipl::filter::gaussian(iso_fa);
+        tipl::filter::gaussian(iso_fa);
+        tipl::filter::gaussian(smoothed_ref);
+        tipl::filter::gaussian(smoothed_ref);
+        linear_with_mi(iso_fa,handle->voxel.vs,smoothed_ref,vs,affine,tipl::reg::rigid_body,terminated);
     }
     else {
         if(has_registered)
@@ -705,8 +710,8 @@ bool add_other_image(ImageModel* handle,QString name,QString filename)
         else
             std::cout << " treated as DWI space images." << std::endl;
     }
-    handle->voxel.other_image.push_back(ref);
-    handle->voxel.other_image_name.push_back(name.toLocal8Bit().begin());
+    handle->voxel.other_image.push_back(std::move(ref));
+    handle->voxel.other_image_name.push_back(name.toStdString());
     handle->voxel.other_image_trans.push_back(affine);
     return true;
 }

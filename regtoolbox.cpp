@@ -441,12 +441,11 @@ void RegToolBox::linear_reg(tipl::reg::reg_type reg_type,int cost_type)
     else
     {
         if(cost_type == 0)// mutual information
-            linear_common(It,Itvs,I,Ivs,T,reg_type,thread.terminated,&arg,
-                                         ui->large_deform->isChecked() ? tipl::reg::large_bound : tipl::reg::reg_bound);
+            linear_with_mi(It,Itvs,I,Ivs,arg,reg_type,thread.terminated,ui->large_deform->isChecked() ? tipl::reg::large_bound : tipl::reg::reg_bound);
         else
         if(cost_type == 1)// correlation
-            tipl::reg::two_way_linear_mr<tipl::reg::correlation>(It,Itvs,I,Ivs,T,reg_type,thread.terminated,&arg,
-                                         ui->large_deform->isChecked() ? tipl::reg::large_bound : tipl::reg::reg_bound);
+            linear_with_cc(It,Itvs,I,Ivs,arg,reg_type,thread.terminated,ui->large_deform->isChecked() ? tipl::reg::large_bound : tipl::reg::reg_bound);
+        T = tipl::transformation_matrix<float>(arg,It.shape(),Itvs,I.shape(),Ivs);
 
         tipl::resample_mt<tipl::interpolation::cubic>(I,J_,T);
         if(I2.shape() == I.shape())

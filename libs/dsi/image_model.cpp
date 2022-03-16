@@ -845,7 +845,8 @@ bool ImageModel::align_acpc(void)
         progress prog_("aligning with ac-pc at ",true);
         progress::at(0,3);
         tipl::filter::gaussian(J);
-        linear_common(I,vs,J,voxel.vs,T,tipl::reg::affine,terminated);
+        tipl::filter::gaussian(J);
+        linear_with_mi(I,vs,J,voxel.vs,T,tipl::reg::affine,terminated);
         progress::at(1,3);
         tipl::image<3> I2(I.shape());
         tipl::resample_mt<tipl::interpolation::cubic>(J,I2,T);

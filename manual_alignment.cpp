@@ -1,5 +1,6 @@
 #include <QFileDialog>
 #include <QMessageBox>
+#include "reg.hpp"
 #include "manual_alignment.h"
 #include "ui_manual_alignment.h"
 #include "tracking/tracking_window.h"
@@ -12,6 +13,10 @@ bool is_label_image(const tipl::image<3>& I)
             return false;
     return true;
 }
+void adjust_vs(const tipl::image<3,float>& from,
+               const tipl::vector<3>& from_vs,
+               const tipl::image<3,float>& to,
+               tipl::vector<3>& to_vs);
 manual_alignment::manual_alignment(QWidget *parent,
                                    tipl::image<3> from_,
                                    const tipl::vector<3>& from_vs_,
@@ -24,8 +29,10 @@ manual_alignment::manual_alignment(QWidget *parent,
     from_original = from_;
     from.swap(from_);
     to.swap(to_);
+    if(reg_type == tipl::reg::affine)
+        adjust_vs(to,to_vs,from,from_vs);
 
-    while(tipl::min_value(to_vs) < tipl::min_value(from_vs)/2.0f)
+    while(from.size() < to.size()/4)
     {
         tipl::image<3> new_to;
         tipl::downsample_with_padding(to,new_to);
@@ -34,7 +41,7 @@ manual_alignment::manual_alignment(QWidget *parent,
         to_downsample *= 0.5f;
         std::cout << "downsampling template image by 2 dim=" << to.shape() << std::endl;
     }
-    while(tipl::min_value(from_vs) < tipl::min_value(to_vs)/2.0f)
+    while(to.size() < from.size()/4)
     {
         tipl::image<3> new_from;
         tipl::downsample_with_padding(from,new_from);
@@ -344,17 +351,9 @@ void manual_alignment::on_rerun_clicked()
     thread.run([this,cost,reg_type]()
     {
         if(cost == tipl::reg::mutual_info)
-        {
-            tipl::reg::linear<tipl::reg::mutual_information>(from,from_vs,to,to_vs,arg,tipl::reg::reg_type(reg_type),thread.terminated,0.01,true,tipl::reg::large_bound);
-            tipl::reg::linear<tipl::reg::mutual_information>(from,from_vs,to,to_vs,arg,tipl::reg::reg_type(reg_type),thread.terminated,0.005,false,tipl::reg::large_bound);
-            tipl::reg::linear<tipl::reg::mutual_information>(from,from_vs,to,to_vs,arg,tipl::reg::reg_type(reg_type),thread.terminated,0.001,false,tipl::reg::large_bound);
-        }
+            linear_with_mi(from,from_vs,to,to_vs,arg,tipl::reg::reg_type(reg_type),thread.terminated);
         else
-        {
-            tipl::reg::linear<tipl::reg::correlation>(from,from_vs,to,to_vs,arg,tipl::reg::reg_type(reg_type),thread.terminated,0.01,true,tipl::reg::large_bound);
-            tipl::reg::linear<tipl::reg::correlation>(from,from_vs,to,to_vs,arg,tipl::reg::reg_type(reg_type),thread.terminated,0.005,false,tipl::reg::large_bound);
-            tipl::reg::linear<tipl::reg::correlation>(from,from_vs,to,to_vs,arg,tipl::reg::reg_type(reg_type),thread.terminated,0.001,false,tipl::reg::large_bound);
-        }
+            linear_with_cc(from,from_vs,to,to_vs,arg,tipl::reg::reg_type(reg_type),thread.terminated);
     });
     if(timer)
         timer->start();

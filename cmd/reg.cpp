@@ -171,7 +171,7 @@ int reg(program_option& po)
     std::cout << "running linear registration." << std::endl;
 
     tipl::transformation_matrix<float> T;
-    linear_common(to,to_vs,from,from_vs,T,
+    linear_with_mi(to,to_vs,from,from_vs,T,
                   po.get("reg_type",1) == 0 ? tipl::reg::rigid_body : tipl::reg::affine,terminated);
 
 

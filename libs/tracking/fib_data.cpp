@@ -1687,12 +1687,16 @@ bool fib_data::map_to_mni(bool background)
         bool no_iso = Is2.empty() || It2.empty();
 
         tipl::filter::gaussian(Is);
+        tipl::filter::gaussian(Is);
         if(!no_iso)
+        {
             tipl::filter::gaussian(Is2);
+            tipl::filter::gaussian(Is2);
+        }
 
         prog = 1;
         if(!has_manual_atlas)
-            linear_common(It,template_vs,Is,vs,T,tipl::reg::affine,terminated);
+            linear_with_mi(It,template_vs,Is,vs,T,tipl::reg::affine,terminated,tipl::reg::reg_bound);
         else
             T = manual_template_T;
 

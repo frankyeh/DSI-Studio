@@ -99,8 +99,12 @@ public:
             }
 
             tipl::filter::gaussian(VF);
+            tipl::filter::gaussian(VF);
             if(dual_modality)
+            {
                 tipl::filter::gaussian(VF2);
+                tipl::filter::gaussian(VF2);
+            }
 
             if(manual_alignment)
                 affine = voxel.qsdr_trans;
@@ -109,8 +113,7 @@ public:
                 bool terminated = false;
                 if(!progress::run("linear registration",[&]()
                 {
-                    linear_common(VG,VGvs,VF,VFvs,affine,tipl::reg::affine,terminated);
-
+                    linear_with_mi(VG,VGvs,VF,VFvs,affine,tipl::reg::affine,terminated);
                 },terminated))
                     throw std::runtime_error("reconstruction canceled");
             }

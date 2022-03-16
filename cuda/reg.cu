@@ -57,36 +57,6 @@ bool check_cuda(std::string& error_msg)
     return true;
 }
 
-
-float two_way_linear_cuda(const tipl::image<3,float>& I,
-                          const tipl::vector<3>& Ivs,
-                         const tipl::image<3,float>& J,
-                         const tipl::vector<3>& Jvs,
-                         tipl::transformation_matrix<float>& T,
-                         tipl::reg::reg_type reg_type,
-                         bool& terminated,
-                         tipl::affine_transform<float>* arg_min,
-                         const float* bound)
-{    
-    float result(0);
-    std::cout << "linear registration using GPU" << std::endl;
-    try{
-        result = tipl::reg::two_way_linear_mr<tipl::reg::mutual_information_cuda>
-                (I,Ivs,J,Jvs,T,reg_type,terminated,arg_min,bound);
-    }
-    catch(std::runtime_error& er)
-    {
-        std::cout << "ERROR: " << er.what() << std::endl;
-        std::cout << "switch to CPU" << std::endl;
-        result = tipl::reg::two_way_linear_mr<tipl::reg::mutual_information>
-                    (I,Ivs,J,Jvs,T,reg_type,terminated,arg_min,bound);
-    }
-    std::cout << "MI:" << size_t(result) << std::endl;
-    std::cout << "T:" << T;
-    return result;
-}
-
-
 void cdm2_cuda(const tipl::image<3>& It,
                const tipl::image<3>& It2,
                const tipl::image<3>& Is,
@@ -98,54 +68,135 @@ void cdm2_cuda(const tipl::image<3>& It,
 {
     std::cout << "normalization using GPU" << std::endl;
     tipl::device_image<3> dIt(It),dIt2(It2),dIs(Is),dIs2(Is2);
-    tipl::device_image<3,tipl::vector<3> > dd(It.shape());
-    tipl::reg::cdm2_cuda(dIt,dIt2,dIs,dIs2,dd,terminated,param);
-
+    tipl::device_image<3,tipl::vector<3> > dd(It.shape()),inv_dd(It.shape());
     try{
-        tipl::reg::cdm2_cuda(dIt,dIt2,dIs,dIs2,dd,terminated,param);
+        tipl::reg::cdm2_cuda(dIt,dIt2,dIs,dIs2,dd,inv_dd,terminated,param);
     }
     catch(std::runtime_error& er)
     {
         std::cout << "ERROR: " << er.what() << std::endl;
         std::cout << "switch to CPU" << std::endl;
-        tipl::reg::cdm2(It,It2,Is,Is2,d,terminated,param);
+        tipl::reg::cdm2(It,It2,Is,Is2,d,inv_d,terminated,param);
         return;
     }
     d.resize(It.shape());
     dd.vector().copy_to(d);
-
-    tipl::invert_displacement_cuda(dd);
-
     inv_d.resize(It.shape());
-    dd.vector().copy_to(inv_d);
+    inv_dd.vector().copy_to(inv_d);
+
     cudaDeviceSynchronize();
 
 }
 
-float linear_mr(tipl::const_pointer_image<3,float> I,
-                         const tipl::vector<3>& Ivs,
-                         tipl::const_pointer_image<3,float> J,
-                         const tipl::vector<3>& Jvs,
-                         tipl::affine_transform<float>& T,
-                         tipl::reg::reg_type reg_type,
-                         bool& terminated,
-                         double precision,
-                         const float* bound)
+void adjust_vs(const tipl::image<3,float>& from,
+               const tipl::vector<3>& from_vs,
+               const tipl::image<3,float>& to,
+               tipl::vector<3>& to_vs)
 {
-    std::cout << "linear registration using GPU" << std::endl;
-    return tipl::reg::linear_mr<tipl::reg::mutual_information_cuda>(I,Ivs,J,Jvs,T,reg_type,terminated,precision,bound);
+    std::cout << "FOV width:" << float(from.width())*from_vs[0] << " to " << float(to.width())*to_vs[0] << std::endl;
+    if(float(from.width())*from_vs[0]*0.75f > float(to.width())*to_vs[0])
+    {
+        std::cout << "adjust voxel size due to match FOV" << std::endl;
+        to_vs *= std::sqrt((float(from.plane_size())*from_vs[0]*from_vs[1])/
+                           (float(to.plane_size())*to_vs[0]*to_vs[1]));
+    }
 }
 
-float linear_mr_uint8(tipl::const_pointer_image<3,unsigned char> I,
-                         const tipl::vector<3>& Ivs,
-                         tipl::const_pointer_image<3,unsigned char> J,
-                         const tipl::vector<3>& Jvs,
-                         tipl::affine_transform<float>& T,
-                         tipl::reg::reg_type reg_type,
-                         bool& terminated,
-                         double precision,
-                         const float* bound)
+float linear_with_cc(const tipl::image<3,float>& from,
+                              tipl::vector<3> from_vs,
+                              const tipl::image<3,float>& to,
+                              tipl::vector<3> to_vs,
+                              tipl::affine_transform<float>& arg,
+                              tipl::reg::reg_type reg_type,
+                              bool& terminated,
+                              const float* bound)
 {
-    std::cout << "linear registration using GPU" << std::endl;
-    return tipl::reg::linear_mr<tipl::reg::mutual_information_cuda>(I,Ivs,J,Jvs,T,reg_type,terminated,precision,bound);
+    size_t iterations = 3;
+    if(reg_type == tipl::reg::affine)
+    {
+        std::cout << "affine registration using correlation" << std::endl;
+        iterations = 5;
+        adjust_vs(from,from_vs,to,to_vs);
+    }
+    else
+        std::cout << "rigid body registration using correlation" << std::endl;
+
+
+    float result = tipl::reg::linear<tipl::reg::correlation>(from,from_vs,to,to_vs,arg,tipl::reg::reg_type(reg_type),terminated,0.01,true,bound);
+    std::cout << "R:" << -result << std::endl;
+    std::cout << "T:" << arg;
+    return -result;
 }
+
+float linear_with_mi(const tipl::image<3,float>& from,
+                              tipl::vector<3> from_vs,
+                              const tipl::image<3,float>& to,
+                              tipl::vector<3> to_vs,
+                              tipl::affine_transform<float>& arg,
+                              tipl::reg::reg_type reg_type,
+                              bool& terminated,
+                              const float* bound)
+{
+
+    size_t iterations = 3;
+    if(reg_type == tipl::reg::affine)
+    {
+        std::cout << "affine registration using mutual information" << std::endl;
+        iterations = 5;
+        adjust_vs(from,from_vs,to,to_vs);
+    }
+    else
+        std::cout << "rigid body registration using mutual information" << std::endl;
+
+
+    float result = 0.0f;
+    if constexpr (tipl::use_cuda)
+    {
+        std::cout << "registration using GPU" << std::endl;
+        result = tipl::reg::linear<tipl::reg::mutual_information_cuda>(from,from_vs,to,to_vs,arg,tipl::reg::reg_type(reg_type),terminated,0.01,true,bound,iterations);
+    }
+    else
+    {
+        result = tipl::reg::linear<tipl::reg::mutual_information>(from,from_vs,to,to_vs,arg,tipl::reg::reg_type(reg_type),terminated,0.01,true,bound,iterations);
+    }
+    std::cout << "MI:" << size_t(result) << std::endl;
+    std::cout << "T:" << arg;
+    return result;
+}
+
+float linear_with_mi(const tipl::image<3,float>& from,
+                              tipl::vector<3> from_vs,
+                              const tipl::image<3,float>& to,
+                              tipl::vector<3> to_vs,
+                              tipl::transformation_matrix<float>& T,
+                              tipl::reg::reg_type reg_type,
+                              bool& terminated,
+                              const float* bound)
+{
+    size_t iterations = 3;
+    if(reg_type == tipl::reg::affine)
+    {
+        std::cout << "affine registration using mutual information" << std::endl;
+        iterations = 5;
+        adjust_vs(from,from_vs,to,to_vs);
+    }
+    else
+        std::cout << "rigid body registration using mutual information" << std::endl;
+
+    float result = 0.0f;
+    tipl::affine_transform<float> arg;
+    if constexpr (tipl::use_cuda)
+    {
+        std::cout << "registration using GPU" << std::endl;
+        tipl::reg::linear<tipl::reg::mutual_information_cuda>(from,from_vs,to,to_vs,arg,tipl::reg::reg_type(reg_type),terminated,0.01,true,bound,iterations);
+    }
+    else
+    {
+        tipl::reg::linear<tipl::reg::mutual_information>(from,from_vs,to,to_vs,arg,tipl::reg::reg_type(reg_type),terminated,0.01,true,bound,iterations);
+    }
+    T = tipl::transformation_matrix<float>(arg,from.shape(),from_vs,to.shape(),to_vs);
+    std::cout << "MI:" << size_t(result) << std::endl;
+    std::cout << "T:" << arg;
+    return result;
+}
+

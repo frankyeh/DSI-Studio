@@ -463,16 +463,10 @@ void CustomSliceModel::argmin(tipl::reg::reg_type reg_type)
     tipl::filter::gaussian(to);
     tipl::filter::gaussian(to);
     tipl::filter::gaussian(from);
-
+    tipl::filter::gaussian(from);
     // align brain top
-    float z_shift = (float(handle->dim[2])*handle->vs[2]-float(to.shape()[2])*vs[2])*0.1f;
-    arg_min.translocation[2] = -z_shift*vs[2];
-
-    linear_common(from,handle->vs,to,vs,M,reg_type,terminated,&arg_min);
-
-    M.save_to_transform(invT.begin());
-    handle->view_item[view_id].T = T = tipl::inverse(invT);
-    handle->view_item[view_id].iT = invT;
+    linear_with_mi(from,handle->vs,to,vs,arg_min,reg_type,terminated);
+    update_transform();
     running = false;
 }
 // ---------------------------------------------------------------------------

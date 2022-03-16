@@ -148,7 +148,11 @@ int rec(program_option& po)
             tipl::transformation_matrix<float> T;
             bool terminated = false;
 
-            linear_common(I,vs,src.dwi,src.voxel.vs,T,tipl::reg::rigid_body,terminated);
+            tipl::filter::gaussian(I);
+            tipl::filter::gaussian(I);
+            tipl::filter::gaussian(src.dwi);
+            tipl::filter::gaussian(src.dwi);
+            linear_with_mi(I,vs,src.dwi,src.voxel.vs,T,tipl::reg::rigid_body,terminated);
 
             std::cout << "DWI rotated." << std::endl;
             src.rotate(I.shape(),vs,T);
