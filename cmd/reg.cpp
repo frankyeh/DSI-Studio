@@ -209,7 +209,6 @@ int reg(program_option& po)
 
     tipl::reg::cdm_param param;
     param.resolution = po.get("resolution",param.resolution);
-    param.constraint = po.get("constraint",param.constraint);
     param.speed = po.get("speed",param.speed);
     param.iterations = po.get("iteration",param.iterations);
     param.min_dimension = po.get("min_dimension",param.min_dimension);
