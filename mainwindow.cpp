@@ -36,31 +36,20 @@
 
 console_stream console;
 
-
-
 bool is_main_thread(void);
-void console_stream::update_text_edit(QTextEdit* log_window)
-{
-    if(has_new_line)
-    {
-        has_new_line = false;
-        QStringList strSplitted;
-        {
-            std::lock_guard<std::mutex> lock(edit_buf);
-            strSplitted = buf.split("\n");
-            buf = strSplitted.back();
-        }
-        log_window->moveCursor (QTextCursor::End);
-        for(int i = 0; i+1 < strSplitted.size(); i++)
-            log_window->append(strSplitted.at(i));
-    }
-}
+
 std::basic_streambuf<char>::int_type console_stream::overflow(std::basic_streambuf<char>::int_type v)
 {
     std::lock_guard<std::mutex> lock(edit_buf);
     buf.push_back(char(v));
-    if (v == '\n')
-        has_new_line = true;
+    if (v == '\n' && is_main_thread() && log_window)
+    {
+        QStringList strSplitted = buf.split("\n");
+        buf = strSplitted.back();
+        log_window->moveCursor (QTextCursor::End);
+        for(int i = 0; i+1 < strSplitted.size(); i++)
+            log_window->append(strSplitted.at(i));
+    }
     return v;
 }
 
@@ -107,13 +96,10 @@ MainWindow::MainWindow(QWidget *parent) :
 
     if(!arg_file_name.empty())
         openFile(arg_file_name.c_str());
-    qApp->installEventFilter(this);
+
+    console.log_window = ui->console;
 }
-bool MainWindow::eventFilter(QObject*, QEvent*)
-{
-    console.update_text_edit(ui->console);
-    return false;
-}
+
 void MainWindow::openFile(QString file_name)
 {
     if(QFileInfo(file_name).isDir())
@@ -228,6 +214,7 @@ void MainWindow::closeEvent(QCloseEvent *event)
 }
 MainWindow::~MainWindow()
 {
+    console.log_window = nullptr;
     QStringList workdir_list;
     for (int index = 0;index < 10 && index < ui->workDir->count();++index)
         workdir_list << ui->workDir->itemText(index);
