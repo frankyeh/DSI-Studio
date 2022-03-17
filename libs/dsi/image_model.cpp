@@ -1967,6 +1967,7 @@ bool ImageModel::load_from_file(const char* dwi_file_name)
             tipl::morphology::erosion(slice);
         }
         tipl::morphology::defragment(voxel.mask);
+        std::cout << "image file loaded" << std::endl;
         return true;
     }
     if(QString(dwi_file_name).toLower().endsWith(".nii.gz"))
@@ -1996,6 +1997,7 @@ bool ImageModel::load_from_file(const char* dwi_file_name)
 
         get_report(voxel.report);
         calculate_dwi_sum(true);
+        std::cout << "NIFTI file loaded" << std::endl;
         return true;
     }
     else
@@ -2122,6 +2124,7 @@ bool ImageModel::load_from_file(const char* dwi_file_name)
     else
         voxel.template_id = match_volume(std::count_if(voxel.mask.begin(),voxel.mask.end(),[](unsigned char v){return v > 0;})*
                                    2.0f*voxel.vs[0]*voxel.vs[1]*voxel.vs[2]);
+    std::cout << "SRC file loaded" << std::endl;
     return true;
 }
 
