@@ -45,7 +45,7 @@ manual_alignment::manual_alignment(QWidget *parent,
     if(reg_type == tipl::reg::affine)
         adjust_vs(to,to_vs,from,from_vs);
 
-    while(from.size() < to.size()/4)
+    while(from.size() < to.size()/8)
     {
         tipl::image<3> new_to;
         tipl::downsample_with_padding(to,new_to);
@@ -54,7 +54,7 @@ manual_alignment::manual_alignment(QWidget *parent,
         to_downsample *= 0.5f;
         std::cout << "downsampling template image by 2 dim=" << to.shape() << std::endl;
     }
-    while(to.size() < from.size()/4)
+    while(to.size() < from.size()/8)
     {
         tipl::image<3> new_from;
         tipl::downsample_with_padding(from,new_from);
