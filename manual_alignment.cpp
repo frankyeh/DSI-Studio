@@ -14,7 +14,7 @@ bool is_label_image(const tipl::image<3>& I)
     return true;
 }
 
-void adjust_vs(const tipl::image<3,float>& from,
+bool adjust_vs(const tipl::image<3,float>& from,
                const tipl::vector<3>& from_vs,
                const tipl::image<3,float>& to,
                tipl::vector<3>& to_vs)
@@ -25,7 +25,9 @@ void adjust_vs(const tipl::image<3,float>& from,
         std::cout << "adjust voxel size due to match FOV" << std::endl;
         to_vs *= std::sqrt((float(from.plane_size())*from_vs[0]*from_vs[1])/
                            (float(to.plane_size())*to_vs[0]*to_vs[1]));
+        return true;
     }
+    return false;
 }
 
 manual_alignment::manual_alignment(QWidget *parent,
