@@ -582,6 +582,7 @@ bool fib_data::load_from_file(const char* file_name)
 
             view_item.push_back(item("fiber",dir.fa[0],dim));
             match_template();
+            std::cout << "NIFTI file loaded" << std::endl;
             return true;
         }
         else
@@ -630,6 +631,7 @@ bool fib_data::load_from_file(const char* file_name)
             dir.index_data.push_back(dir.fa);
             view_item.push_back(item("fiber",dir.fa[0],dim));
             match_template();
+            std::cout << "NIFTI file loaded" << std::endl;
             return true;
         }
         else
@@ -677,6 +679,7 @@ bool fib_data::load_from_file(const char* file_name)
         dir.index_name[0] = "image";
         view_item[0].name = "image";
         trackable = false;
+        std::cout << "image file loaded" << std::endl;
         return true;
     }
     if(!QFileInfo(file_name).exists())
@@ -861,7 +864,7 @@ bool fib_data::load_from_file(const char* file_name)
 
     if(!load_from_mat())
         return false;
-
+    std::cout << "FIB file loaded" << std::endl;
     return true;
 }
 bool fib_data::save_mapping(const std::string& index_name,const std::string& file_name)
