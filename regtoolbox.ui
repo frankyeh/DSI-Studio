@@ -597,6 +597,16 @@
           <number>0</number>
          </property>
          <item>
+          <widget class="QCheckBox" name="use_cuda">
+           <property name="text">
+            <string>Use CUDA</string>
+           </property>
+           <property name="checked">
+            <bool>true</bool>
+           </property>
+          </widget>
+         </item>
+         <item>
           <widget class="QCheckBox" name="edge">
            <property name="toolTip">
             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Edge-based registration for cross modalities mapping&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
@@ -726,32 +736,6 @@
                  </property>
                  <property name="value">
                   <number>16</number>
-                 </property>
-                </widget>
-               </item>
-               <item>
-                <widget class="QLabel" name="label_7">
-                 <property name="text">
-                  <string>Constraint:</string>
-                 </property>
-                </widget>
-               </item>
-               <item>
-                <widget class="QDoubleSpinBox" name="constraint">
-                 <property name="decimals">
-                  <number>1</number>
-                 </property>
-                 <property name="minimum">
-                  <double>0.100000000000000</double>
-                 </property>
-                 <property name="maximum">
-                  <double>10.000000000000000</double>
-                 </property>
-                 <property name="singleStep">
-                  <double>0.100000000000000</double>
-                 </property>
-                 <property name="value">
-                  <double>2.000000000000000</double>
                  </property>
                 </widget>
                </item>
@@ -906,7 +890,7 @@
      <x>0</x>
      <y>0</y>
      <width>1082</width>
-     <height>21</height>
+     <height>22</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu_Open">

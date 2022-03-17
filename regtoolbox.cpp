@@ -43,6 +43,8 @@ RegToolBox::RegToolBox(QWidget *parent) :
     ui->running_label->hide();
     ui->stop->hide();
 
+    if constexpr (!tipl::use_cuda)
+        ui->use_cuda->hide();
 }
 
 RegToolBox::~RegToolBox()
@@ -374,20 +376,20 @@ void RegToolBox::on_timer()
             J_view.resize(It.shape());
             tipl::resample_mt((ui->show_second->isChecked() && I2.shape() == I.shape() ? I2 : I),
                               J_view,tipl::transformation_matrix<float>(arg,It.shape(),Itvs,I.shape(),Ivs));
-
-            show_image();
         }
         else // nonlinear
         {
+
             if(!t2f_dis.empty())
             {
                 dis_view = t2f_dis;
                 J_view = (ui->show_second->isChecked() && J2.shape() == J.shape() ? J2 : J);
+
                 std::vector<tipl::shape<3> > geo_stack;
                 while(J_view.width() > dis_view.width())
                 {
                     geo_stack.push_back(J_view.shape());
-                    tipl::downsample_with_padding(J_view,J_view);
+                    tipl::downsample_with_padding(J_view);
                 }
                 if(J_view.shape() != dis_view.shape())
                     return;
@@ -402,9 +404,9 @@ void RegToolBox::on_timer()
                 }
                 tipl::normalize(J_view,1.0f);
                 tipl::normalize(J_view2,1.0f);
-                show_image();
             }
         }
+        show_image();
         if(reg_done)
         {
             timer->stop();
@@ -469,7 +471,6 @@ void RegToolBox::nonlinear_reg(void)
     {
         tipl::reg::cdm_param param;
         param.resolution = ui->resolution->value();
-        param.constraint = float(ui->constraint->value());
         param.iterations = uint32_t(ui->steps->value());
         param.min_dimension = uint32_t(ui->min_reso->value());
         param.speed = float(ui->speed->value());
@@ -490,10 +491,10 @@ void RegToolBox::nonlinear_reg(void)
                 tipl::filter::sobel(sJ2);
                 tipl::filter::mean(sJ2);
             }
-            cdm_common(sIt,sIt2,sJ,sJ2,t2f_dis,f2t_dis,thread.terminated,param);
+            cdm_common(sIt,sIt2,sJ,sJ2,t2f_dis,f2t_dis,thread.terminated,param,ui->use_cuda->isChecked());
         }
         else
-            cdm_common(It,It2,J,J2,t2f_dis,f2t_dis,thread.terminated,param);
+            cdm_common(It,It2,J,J2,t2f_dis,f2t_dis,thread.terminated,param,ui->use_cuda->isChecked());
     }
 
     // calculate inverted to2from
