@@ -522,8 +522,6 @@ void RegToolBox::on_run_reg_clicked()
     thread.run([this]()
     {
         // adjust Ivs for affine
-        Ivs *= std::sqrt((It.plane_size()*Itvs[0]*Itvs[1])/
-                    (I.plane_size()*Ivs[0]*Ivs[1]));
         linear_reg(tipl::reg::affine,ui->cost_fun->currentIndex());
         /*
         // This skip affine registration
