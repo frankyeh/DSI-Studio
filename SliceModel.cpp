@@ -442,10 +442,10 @@ void CustomSliceModel::update_image(void)
 // ---------------------------------------------------------------------------
 void CustomSliceModel::update_transform(void)
 {
-    tipl::transformation_matrix<float> M(arg_min,handle->dim,handle->vs,dim,vs);
-    invT.identity();
-    M.save_to_transform(invT.begin());
-    T = tipl::inverse(invT);
+    tipl::transformation_matrix<float> M(arg_min,dim,vs,handle->dim,handle->vs);
+    T.identity();
+    M.save_to_transform(T.begin());
+    invT = tipl::inverse(T);
     handle->view_item[view_id].T = T;
     handle->view_item[view_id].iT = invT;
 }
@@ -455,6 +455,7 @@ void CustomSliceModel::argmin(tipl::reg::reg_type reg_type)
     terminated = false;
     running = true;
     tipl::image<3,float> to = source_images;
+    tipl::upper_threshold(to,tipl::max_value(to)*0.5f);
     tipl::transformation_matrix<float> M;
 
     tipl::image<3> from;
@@ -464,8 +465,9 @@ void CustomSliceModel::argmin(tipl::reg::reg_type reg_type)
     tipl::filter::gaussian(to);
     tipl::filter::gaussian(from);
     tipl::filter::gaussian(from);
-    // align brain top
-    linear_with_mi(from,handle->vs,to,vs,arg_min,reg_type,terminated);
+    const float bound[8] = {1.0f,-1.0f,0.15f,-0.15f,0.0f,0.0f,0.0f,0.0f};
+    linear_with_mi(to,vs,from,handle->vs,arg_min,reg_type,terminated,bound);
+
     update_transform();
     running = false;
 }

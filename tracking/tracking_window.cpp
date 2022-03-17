@@ -1890,13 +1890,13 @@ void tracking_window::on_actionAdjust_Mapping_triggered()
     tipl::image<3> iso_fa;
     handle->get_iso_fa(iso_fa);
     std::shared_ptr<manual_alignment> manual(new manual_alignment(this,
-        iso_fa,slices[0]->vs,
         reg_slice->get_source(),reg_slice->vs,
+        iso_fa,slices[0]->vs,
         (reg_slice->is_picture() ? tipl::reg::affine : tipl::reg::rigid_body),tipl::reg::cost_type::mutual_info));
 
     {
         reg_slice->update_transform();
-        manual->set_arg(reg_slice->arg_min,reg_slice->T);
+        manual->set_arg(reg_slice->arg_min,reg_slice->invT);
         manual->check_reg();
     }
 
@@ -1905,7 +1905,7 @@ void tracking_window::on_actionAdjust_Mapping_triggered()
 
     tipl::transformation_matrix<float> T = manual->get_iT();
     T.inverse();
-    T.to_affine_transform(reg_slice->arg_min,handle->dim,handle->vs,reg_slice->dim,reg_slice->vs);
+    T.to_affine_transform(reg_slice->arg_min,reg_slice->dim,reg_slice->vs,handle->dim,handle->vs);
     reg_slice->update_transform();
     reg_slice->is_diffusion_space = false;
     glWidget->update();
