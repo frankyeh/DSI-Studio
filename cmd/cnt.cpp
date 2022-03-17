@@ -12,7 +12,7 @@ int cnt(program_option& po)
     std::shared_ptr<group_connectometry_analysis> vbc(new group_connectometry_analysis);
     if(!vbc->load_database(po.get("source").c_str()))
     {
-        std::cout << "invalid database format" << std::endl;
+        std::cout << "ERROR:" << vbc->error_msg << std::endl;
         return 1;
     }
 
