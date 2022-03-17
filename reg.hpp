@@ -18,22 +18,18 @@ inline void cdm_common(const tipl::image<3>& It,
                tipl::image<3,tipl::vector<3> >& dis,
                tipl::image<3,tipl::vector<3> >& inv_dis,
                bool& terminated,
-               tipl::reg::cdm_param param = tipl::reg::cdm_param())
+               tipl::reg::cdm_param param = tipl::reg::cdm_param(),
+               bool use_cuda = true)
 {
-    if(It2.shape() == It.shape() && Is.shape() == Is2.shape())
+    if(use_cuda)
     {
-        std::cout << "dual modality normalization" << std::endl;
         if constexpr (tipl::use_cuda)
+        {
             cdm2_cuda(It,It2,Is,Is2,dis,inv_dis,terminated,param);
-        else
-            tipl::reg::cdm2(It,It2,Is,Is2,dis,inv_dis,terminated,param);
+            return;
+        }
     }
-    else
-    {
-        std::cout << "single modality normalization" << std::endl;
-        tipl::reg::cdm(It,Is,dis,inv_dis,terminated,param);
-    }
-
+    tipl::reg::cdm2(It,It2,Is,Is2,dis,inv_dis,terminated,param);
 }
 
 
