@@ -1,0 +1,78 @@
+name: Build Windows Release 
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag'
+        required: true
+        default: '2021.12.03'
+      release_name:
+        description: 'Release Name'
+        required: true
+        default: '2021.12.03 "Chen" Release'
+jobs:
+  windows_build:
+    strategy:
+      matrix:
+        os: [ windows-2019]
+      fail-fast: false
+    runs-on: ${{ matrix.os }}
+    steps:
+    - uses: actions/checkout@v1
+    - name: Install Qt
+      uses: jurplel/install-qt-action@v2
+      with:
+        version: 5.12.0
+        modules: qtcharts qtopengl    
+    - name: get TIPL and DSI Studio atlas
+      run: |
+        git clone https://github.com/frankyeh/TIPL.git
+        git clone https://github.com/frankyeh/DSI-Studio-atlas.git        
+    - name: Build DSI Studio
+      run: |
+        for /f "usebackq delims=#" %%a in (`"%programfiles(x86)%\Microsoft Visual Studio\Installer\vswhere" -latest -property installationPath`) do call "%%a\Common7\Tools\VsDevCmd.bat" -arch=x64
+        mkdir -p build
+        cd build
+        qmake ../dsi_studio.pro 
+        nmake
+      shell: cmd
+
+    - name: Packaging
+      run: |
+        mkdir dsi_studio_win
+        move other\color_map dsi_studio_win   
+        move other\device.txt dsi_studio_win   
+        move other\LICENSE dsi_studio_win   
+        move build\release\dsi_studio.exe dsi_studio_win
+        windeployqt --no-angle --no-quick-import --no-translations --no-system-d3d-compiler --compiler-runtime --no-opengl-sw dsi_studio_win\dsi_studio.exe
+        move DSI-Studio-atlas dsi_studio_win\atlas  
+
+    - name: Download the SSL files
+      uses: suisei-cn/actions-download-file@v1
+      with:
+        url: "https://indy.fulgan.com/SSL/openssl-1.0.2u-x64_86-win64.zip"
+    - name: Download TinyFSL
+      uses: suisei-cn/actions-download-file@v1
+      with:
+        url: "https://github.com/frankyeh/TinyFSL/releases/download/2021.12.03/tiny_fsl_win64.zip"
+    - name: Extract zip files
+      run: |
+        7z e openssl-1.0.2u-x64_86-win64.zip
+        move *.dll dsi_studio_win
+        7z e tiny_fsl_win64.zip -odsi_studio_win\plugin
+        rd dsi_studio_win\plugin\tiny_fsl
+        del *.zip
+    - name: Zip Release
+      uses: TheDoctor0/zip-release@0.6.0
+      with:
+        filename: dsi_studio_win.zip
+        exclusions: .git
+        path: dsi_studio_win
+    - name: Create Release
+      uses: ncipollo/release-action@v1.8.9
+      with:
+        allowUpdates: true
+        artifacts: "*.zip"
+        tag: ${{ github.event.inputs.tag }}
+        name: ${{ github.event.inputs.release_name }}
+        prerelease: false  
