@@ -19,11 +19,13 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
     - uses: actions/checkout@v1
-    - name: Install Qt
-      uses: jurplel/install-qt-action@v2.14.0
-      with:
-        version: 5.12.0
-        modules: qtcharts qtopengl    
+    - name: Install Qt5/Qt6 (yaqti)
+      uses: WillBrennan/yaqti@2021.07.29
+      with: 
+        version: 5.15.2
+        os: windows
+        platform: desktop
+        modules: qtcharts, qtopengl  
     - name: get TIPL and DSI Studio atlas
       run: |
         git clone https://github.com/frankyeh/TIPL.git
