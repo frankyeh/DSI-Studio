@@ -22,7 +22,7 @@ jobs:
     - name: Install Qt5/Qt6 (yaqti)
       uses: WillBrennan/yaqti@2021.07.29
       with: 
-        version: 6.2.1
+        version: 6.2.0
         os: windows
         platform: desktop
         modules: qtcharts  
