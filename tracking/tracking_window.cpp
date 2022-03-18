@@ -1292,6 +1292,7 @@ void tracking_window::on_dt_index_currentIndexChanged(int index)
     set_data("min_length",30);
     set_data("tracking_plan",0); // use seed instead of tracks for dT
     set_data("track_count",1000000);
+    set_data("check_ending",0); // no check ending
     slice_need_update = true;
 }
 
