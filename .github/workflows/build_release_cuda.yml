@@ -19,13 +19,23 @@ jobs:
     runs-on: windows-2019
     steps:
     - uses: actions/checkout@v1
-    - name: Install Qt5/Qt6 (yaqti)
-      uses: WillBrennan/yaqti@2021.07.29
-      with: 
+    - name: Install Qt
+      uses: jurplel/install-qt-action@v2
+      with:
         version: 6.2.0
-        os: windows
-        platform: desktop
-        modules: qtcharts
+        modules: addons.qtcharts qtopengl
+    - name: Install Qt
+      if: ${{ failure() }}
+      uses: jurplel/install-qt-action@v2
+      with:
+        version: 6.2.0
+        modules: addons.qtcharts qtopengl
+    - name: Install Qt
+      if: ${{ failure() }}
+      uses: jurplel/install-qt-action@v2
+      with:
+        version: 6.2.0
+        modules: addons.qtcharts qtopengl        
     - name: Install Zlib
       run: |
         powershell -Command "(Invoke-WebRequest -Uri https://git.io/JnHTY -OutFile install_zlib.bat)"; ./install_zlib.bat; del install_zlib.bat
