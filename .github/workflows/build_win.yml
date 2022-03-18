@@ -25,7 +25,7 @@ jobs:
         version: 5.15.2
         os: windows
         platform: desktop
-        modules: qtcharts, qtopengl  
+        modules: qtcharts  
     - name: get TIPL and DSI Studio atlas
       run: |
         git clone https://github.com/frankyeh/TIPL.git
