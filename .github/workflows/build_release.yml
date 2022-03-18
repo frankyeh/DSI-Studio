@@ -138,13 +138,6 @@ jobs:
       with:
         version: 5.12.0
         modules: qtcharts qtopengl    
-    - name: Step To run on failure
-      if: ${{ failure() }}
-      uses: jurplel/install-qt-action@v2
-      with:
-        version: 5.12.0
-        modules: qtcharts qtopengl    
-        
     - name: get TIPL and DSI Studio atlas
       run: |
         git clone https://github.com/frankyeh/TIPL.git

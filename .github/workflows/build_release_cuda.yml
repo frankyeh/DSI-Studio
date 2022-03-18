@@ -24,18 +24,12 @@ jobs:
       with:
         version: 6.2.0
         modules: addons.qtcharts qtopengl
-    - name: Install Qt
+    - name: Step to run when failed
       if: ${{ failure() }}
       uses: jurplel/install-qt-action@v2
       with:
         version: 6.2.0
-        modules: addons.qtcharts qtopengl
-    - name: Install Qt
-      if: ${{ failure() }}
-      uses: jurplel/install-qt-action@v2
-      with:
-        version: 6.2.0
-        modules: addons.qtcharts qtopengl        
+        modules: addons.qtcharts qtopengl       
     - name: Install Zlib
       run: |
         powershell -Command "(Invoke-WebRequest -Uri https://git.io/JnHTY -OutFile install_zlib.bat)"; ./install_zlib.bat; del install_zlib.bat
