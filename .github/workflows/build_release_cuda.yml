@@ -19,6 +19,13 @@ jobs:
     runs-on: windows-2019
     steps:
     - uses: actions/checkout@v1
+    - name: Install Qt5/Qt6 (yaqti)
+      uses: WillBrennan/yaqti@2021.07.29
+      with: 
+        version: 6.2.1
+        os: windows
+        platform: desktop
+        modules: qtcharts  
     - name: Install Zlib
       run: |
         powershell -Command "(Invoke-WebRequest -Uri https://git.io/JnHTY -OutFile install_zlib.bat)"; ./install_zlib.bat; del install_zlib.bat
@@ -29,11 +36,6 @@ jobs:
     - name: Install Ninja and CMake
       run: |    
         choco install ninja cmake
-    - name: Install Qt
-      uses: jurplel/install-qt-action@v2
-      with:
-        version: 6.2.0
-        modules: addons.qtcharts qtopengl    
     - name: get TIPL and DSI Studio atlas
       run: |
         git clone https://github.com/frankyeh/TIPL.git
