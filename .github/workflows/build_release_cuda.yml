@@ -25,7 +25,7 @@ jobs:
         version: 6.2.0
         os: windows
         platform: desktop
-        modules: qtcharts  
+        modules: qtcharts
     - name: Install Zlib
       run: |
         powershell -Command "(Invoke-WebRequest -Uri https://git.io/JnHTY -OutFile install_zlib.bat)"; ./install_zlib.bat; del install_zlib.bat
