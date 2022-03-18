@@ -825,8 +825,8 @@ bool ImageModel::align_acpc(void)
         {
             std::cout << "align ap-pc" << std::endl;
             tipl::image<3> I_;
-            if(!gz_nifti::load_from_file(iso_template_list[0].c_str(),I_,vs) && !
-                    gz_nifti::load_from_file(fa_template_list[0].c_str(),I_,vs))
+            if(!gz_nifti::load_from_file(iso_template_list[voxel.template_id].c_str(),I_,vs) && !
+                    gz_nifti::load_from_file(fa_template_list[voxel.template_id].c_str(),I_,vs))
             {
                 error_msg = "Failed to load/find MNI template.";
                 return false;
