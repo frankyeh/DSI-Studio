@@ -23,9 +23,7 @@
    </size>
   </property>
   <property name="font">
-   <font>
-    <family>Arial</family>
-   </font>
+   <font/>
   </property>
   <property name="windowTitle">
    <string>Reconstruction</string>
@@ -64,7 +62,7 @@
          <x>0</x>
          <y>0</y>
          <width>848</width>
-         <height>643</height>
+         <height>636</height>
         </rect>
        </property>
        <attribute name="label">
@@ -396,7 +394,7 @@
          <x>0</x>
          <y>0</y>
          <width>848</width>
-         <height>643</height>
+         <height>636</height>
         </rect>
        </property>
        <attribute name="label">
@@ -625,6 +623,16 @@
                     </size>
                    </property>
                   </spacer>
+                 </item>
+                 <item>
+                  <widget class="QLabel" name="label_15">
+                   <property name="text">
+                    <string> Template  </string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QComboBox" name="primary_template"/>
                  </item>
                 </layout>
                </item>
@@ -889,16 +897,6 @@
                           <number>0</number>
                          </property>
                          <item>
-                          <widget class="QLabel" name="label_15">
-                           <property name="text">
-                            <string> Template  </string>
-                           </property>
-                          </widget>
-                         </item>
-                         <item>
-                          <widget class="QComboBox" name="primary_template"/>
-                         </item>
-                         <item>
                           <widget class="QPushButton" name="qsdr_manual">
                            <property name="text">
                             <string>Manual Align...</string>
@@ -1126,7 +1124,6 @@
               <property name="font">
                <font>
                 <pointsize>10</pointsize>
-                <weight>75</weight>
                 <bold>true</bold>
                </font>
               </property>
@@ -1162,7 +1159,7 @@ Reconstruction</string>
      <x>0</x>
      <y>0</y>
      <width>848</width>
-     <height>21</height>
+     <height>22</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
