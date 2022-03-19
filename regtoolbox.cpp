@@ -471,8 +471,8 @@ void RegToolBox::nonlinear_reg(void)
     {
         tipl::reg::cdm_param param;
         param.resolution = ui->resolution->value();
-        param.iterations = uint32_t(ui->steps->value());
         param.min_dimension = uint32_t(ui->min_reso->value());
+        param.smoothing = float(ui->smoothing->value());
         param.speed = float(ui->speed->value());
         if(ui->edge->isChecked())
         {
