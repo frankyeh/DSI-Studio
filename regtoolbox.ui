@@ -722,7 +722,7 @@
                <item>
                 <widget class="QLabel" name="label_10">
                  <property name="text">
-                  <string>Min Dimension</string>
+                  <string>Min Dim</string>
                  </property>
                 </widget>
                </item>
@@ -740,25 +740,22 @@
                 </widget>
                </item>
                <item>
-                <widget class="QLabel" name="label_6">
-                 <property name="toolTip">
-                  <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Registeration iterations. Increase this value for mapping larger differences&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-                 </property>
+                <widget class="QLabel" name="label_7">
                  <property name="text">
-                  <string>Steps:</string>
+                  <string>Smoothing</string>
                  </property>
                 </widget>
                </item>
                <item>
-                <widget class="QSpinBox" name="steps">
-                 <property name="minimum">
-                  <number>1</number>
+                <widget class="QDoubleSpinBox" name="smoothing">
+                 <property name="decimals">
+                  <number>2</number>
                  </property>
                  <property name="maximum">
-                  <number>500</number>
+                  <double>0.900000000000000</double>
                  </property>
                  <property name="value">
-                  <number>200</number>
+                  <double>0.100000000000000</double>
                  </property>
                 </widget>
                </item>
