@@ -38,17 +38,32 @@ console_stream console;
 
 bool is_main_thread(void);
 
+void console_stream::show_output(void)
+{
+    if(!is_main_thread() || !log_window || !has_output)
+        return;
+    QStringList strSplitted;
+    {
+        std::lock_guard<std::mutex> lock(edit_buf);
+        strSplitted = buf.split("\n");
+        buf = strSplitted.back();
+    }
+    log_window->moveCursor (QTextCursor::End);
+    for(int i = 0; i+1 < strSplitted.size(); i++)
+        log_window->append(strSplitted.at(i));
+    has_output = false;
+}
 std::basic_streambuf<char>::int_type console_stream::overflow(std::basic_streambuf<char>::int_type v)
 {
-    std::lock_guard<std::mutex> lock(edit_buf);
-    buf.push_back(char(v));
-    if (v == '\n' && is_main_thread() && log_window)
     {
-        QStringList strSplitted = buf.split("\n");
-        buf = strSplitted.back();
-        log_window->moveCursor (QTextCursor::End);
-        for(int i = 0; i+1 < strSplitted.size(); i++)
-            log_window->append(strSplitted.at(i));
+        std::lock_guard<std::mutex> lock(edit_buf);
+        buf.push_back(char(v));
+    }
+
+    if (v == '\n')
+    {
+        has_output = true;
+        show_output();
     }
     return v;
 }
@@ -98,6 +113,12 @@ MainWindow::MainWindow(QWidget *parent) :
         openFile(arg_file_name.c_str());
 
     console.log_window = ui->console;
+    qApp->installEventFilter(this);
+}
+bool MainWindow::eventFilter(QObject*, QEvent*)
+{
+    console.show_output();
+    return false;
 }
 
 void MainWindow::openFile(QString file_name)

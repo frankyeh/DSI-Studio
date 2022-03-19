@@ -16,9 +16,11 @@ protected:
     virtual int_type overflow(int_type v) override;
     virtual std::streamsize xsputn(const char *p, std::streamsize n) override;
 public:
+    void show_output(void);
     std::mutex edit_buf;
     QString buf;
     QTextEdit* log_window = nullptr;
+    bool has_output = false;
 };
 extern console_stream console;
 
@@ -34,6 +36,7 @@ class MainWindow : public QMainWindow
     enum { MaxRecentFiles = 50 };
     void updateRecentList(void);
     QSettings settings;
+    bool eventFilter(QObject *obj, QEvent *event) override;
 public:
     explicit MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
