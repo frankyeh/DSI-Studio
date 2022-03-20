@@ -193,10 +193,8 @@ bool ImageModel::reconstruction(void)
 
             // obtain QA map for normalization
             {
-                std::vector<tipl::pointer_image<3,float> > tmp;
                 auto mask = voxel.mask;
                 // clear mask to create whole volume QA map
-                voxel.mask = 1;
                 if (!reconstruct2<
                         ReadDWIData,
                         BalanceScheme,
