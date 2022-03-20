@@ -93,18 +93,16 @@ public:
             if(export_intermediate)
             {
                 VG.save_to_file<gz_nifti>("Template_QA.nii.gz");
+                if(!VG2.empty())
+                    VG2.save_to_file<gz_nifti>("Template_ISO.nii.gz");
                 VF.save_to_file<gz_nifti>("Subject_QA.nii.gz");
                 if(!VF2.empty())
                     VF2.save_to_file<gz_nifti>("Subject_ISO.nii.gz");
             }
 
             tipl::filter::gaussian(VF);
-            tipl::filter::gaussian(VF);
             if(dual_modality)
-            {
                 tipl::filter::gaussian(VF2);
-                tipl::filter::gaussian(VF2);
-            }
 
             if(manual_alignment)
                 affine = voxel.qsdr_trans;
@@ -120,6 +118,8 @@ public:
 
             tipl::image<3> VFF(VG.shape()),VFF2;
             tipl::resample_mt<tipl::interpolation::cubic>(VF,VFF,affine);
+            std::cout << "linear r:" << tipl::correlation(VFF.begin(),VFF.end(),VG.begin()) << std::endl;
+
             if(dual_modality)
             {
                 VFF2.resize(VG.shape());
@@ -169,6 +169,12 @@ public:
             tipl::image<3> VFFF;
             tipl::compose_displacement(VFF,cdm_dis,VFFF);
 
+            float r = float(tipl::correlation(VG.begin(),VG.end(),VFFF.begin()));
+            voxel.R2 = r*r;
+            std::cout << "R2:" << voxel.R2 << std::endl;
+            if(!manual_alignment && voxel.R2 < 0.3f)
+                throw std::runtime_error("ERROR: Poor R2 found. Please check image orientation or use manual alignment.");
+
             if(export_intermediate)
                 VFFF.save_to_file<gz_nifti>("Subject_QA_nonlinear_reg.nii.gz");
 
@@ -188,11 +194,7 @@ public:
             }
             partial_reconstruction = float(subject_voxel_count)/float(total_voxel_count) < 0.25f;
 
-            float r = float(tipl::correlation(VG.begin(),VG.end(),VFFF.begin()));
-            voxel.R2 = r*r;
-            std::cout << "R2:" << voxel.R2 << std::endl;
-            if(!manual_alignment && voxel.R2 < 0.3f)
-                throw std::runtime_error("ERROR: Poor R2 found. Please check image orientation or use manual alignment.");
+
 
             // if subject's data were downsampled, then apply it to affine to get the right mapping matrix
             if(VFratio != 1.0f)
