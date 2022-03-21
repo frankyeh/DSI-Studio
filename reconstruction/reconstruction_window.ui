@@ -1211,6 +1211,7 @@ Reconstruction</string>
     <addaction name="actionOverwrite_Voxel_Size"/>
     <addaction name="actionImage_upsample_to_T1W_TESTING"/>
     <addaction name="separator"/>
+    <addaction name="actionSmooth_Signals"/>
     <addaction name="actionErase_Background_Signals"/>
     <addaction name="actionTrim_image"/>
     <addaction name="separator"/>
@@ -1295,7 +1296,7 @@ Reconstruction</string>
   </action>
   <action name="actionTrim_image">
    <property name="text">
-    <string>Crop Background</string>
+    <string>Crop Background Volume</string>
    </property>
   </action>
   <action name="actionManual_Rotation">
@@ -1398,6 +1399,11 @@ Reconstruction</string>
   <action name="actionEDDY">
    <property name="text">
     <string>EDDY...</string>
+   </property>
+  </action>
+  <action name="actionSmooth_Signals">
+   <property name="text">
+    <string>Smooth Signals</string>
    </property>
   </action>
  </widget>
