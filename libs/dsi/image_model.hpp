@@ -275,6 +275,7 @@ public:
                 const tipl::transformation_matrix<double>& affine,
                 const tipl::image<3,tipl::vector<3> >& cdm_dis = tipl::image<3,tipl::vector<3> >());
     void resample(float nv);
+    void smoothing(void);
     bool align_acpc(void);
     void crop(tipl::shape<3> range_min,tipl::shape<3> range_max);
     void trim(void);
