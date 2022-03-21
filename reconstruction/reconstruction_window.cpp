@@ -1097,3 +1097,9 @@ void reconstruction_window::on_actionEDDY_triggered()
     if(command("[Step T2][Corrections][EDDY]"))
         QMessageBox::information(this,"DSI Studio","Correction result loaded");
 }
+
+void reconstruction_window::on_actionSmooth_Signals_triggered()
+{
+    command("[Step T2][Edit][Smooth Signals]");
+}
+
