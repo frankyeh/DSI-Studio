@@ -601,6 +601,12 @@ bool ImageModel::command(std::string cmd,std::string param)
         voxel.steps += cmd+"="+param+"\n";
         return true;
     }
+    if(cmd == "[Step T2][Edit][Smooth Signals]")
+    {
+        smoothing();
+        voxel.steps += cmd+"\n";
+        return true;
+    }
     if(cmd == "[Step T2][Edit][Crop Background]")
     {
         trim();
@@ -810,6 +816,17 @@ void ImageModel::resample(float nv)
     voxel.report += " The images were resampled to ";
     voxel.report += std::to_string(int(new_vs[0]));
     voxel.report += " mm isotropic resolution.";
+}
+void ImageModel::smoothing(void)
+{
+    size_t prog = 0;
+    tipl::par_for(src_dwi_data.size(),[&](unsigned int index)
+    {
+        progress::at(prog++,src_dwi_data.size());
+        auto I = dwi_at(index);
+        tipl::filter::gaussian(I);
+    });
+    calculate_dwi_sum(true);
 }
 extern std::vector<std::string> fa_template_list,iso_template_list;
 bool ImageModel::align_acpc(void)
