@@ -48,7 +48,6 @@ void console_stream::show_output(void)
         strSplitted = buf.split("\n");
         buf = strSplitted.back();
     }
-    log_window->moveCursor (QTextCursor::End);
     for(int i = 0; i+1 < strSplitted.size(); i++)
         log_window->append(strSplitted.at(i));
     has_output = false;
