@@ -106,6 +106,7 @@ jobs:
     - name: Packaging
       run: |
         mv other/* build/dsi_studio.app/Contents/MacOS/
+        mv dsi_studio.icns build/dsi_studio.app/Contents/Resources/
         mv DSI-Studio-atlas build/dsi_studio.app/Contents/MacOS/atlas
         mv build/dsi_studio.app .
         /usr/local/opt/qt@5/bin/macdeployqt dsi_studio.app
