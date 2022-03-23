@@ -942,16 +942,6 @@
                   </widget>
                  </item>
                  <item>
-                  <widget class="QCheckBox" name="align_acpc">
-                   <property name="text">
-                    <string> align AC-PC</string>
-                   </property>
-                   <property name="checked">
-                    <bool>true</bool>
-                   </property>
-                  </widget>
-                 </item>
-                 <item>
                   <widget class="QCheckBox" name="RecordODF">
                    <property name="statusTip">
                     <string>Output ODFs in the FIB file (will increase file size)</string>
