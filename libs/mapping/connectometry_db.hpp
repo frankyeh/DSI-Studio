@@ -45,8 +45,9 @@ public:
     bool read_db(fib_data* handle);
     void remove_subject(unsigned int index);
     void calculate_si2vi(void);
-    bool sample_subject_profile(gz_mat_read& m,std::vector<float>& data);
     bool is_odf_consistent(gz_mat_read& m);
+    void sample_from_image(const float* buf,const tipl::shape<3>& shape,
+                           const tipl::matrix<4,4>& trans,std::vector<float>& data);
     bool add_subject_file(const std::string& file_name,
                             const std::string& subject_name);
     void get_subject_vector_pos(std::vector<int>& subject_vector_pos,
@@ -67,7 +68,6 @@ public:
     bool get_demo_matched_volume(const std::string& matched_demo,tipl::image<3>& volume) const;
     void get_subject_volume(unsigned int subject_index,tipl::image<3>& volume) const;
     void get_subject_fa(unsigned int subject_index,std::vector<std::vector<float> >& fa_data,bool normalize_qa) const;
-    bool get_odf_profile(const char* file_name,std::vector<float>& cur_subject_data);
     bool get_qa_profile(const char* file_name,std::vector<std::vector<float> >& data);
     bool is_db_compatible(const connectometry_db& rhs);
     void read_subject_qa(std::vector<std::vector<float> >&data) const;
