@@ -1,4 +1,5 @@
 #include <QFileDialog>
+#include <QInputDialog>
 #include <QStringListModel>
 #include <QMessageBox>
 #include <fstream>
@@ -26,7 +27,8 @@ CreateDBDialog::CreateDBDialog(QWidget *parent,bool create_db_) :
         ui->skeleton_widget->hide();
         ui->movedown->hide();
         ui->moveup->hide();
-        ui->create_data_base->setText("Create skeleton");
+        ui->create_data_base->setText("Create template");
+        ui->subject_list_group->setTitle("Select subject FIB files");
         ui->index_label->hide();
     }
 }
@@ -74,29 +76,43 @@ void CreateDBDialog::update_list(void)
     if(!group.empty() && sample_fib != group[0])
     {
         sample_fib = group[0];
-        fib_data fib;
-        if(!fib.load_from_file(sample_fib.toLocal8Bit().begin()))
+
+        if(group[0].endsWith("nii") || group[0].endsWith("nii.gz"))
         {
-            QMessageBox::information(this,"Error","Invalid FIB file format");
-            raise(); // for Mac
-            return;
+            bool ok;
+            QString metrics = QInputDialog::getText(this,"DSI Studio","Please specify the name of the metrics",QLineEdit::Normal,"metrics",&ok);
+            if(!ok)
+                metrics = "metrics";
+            ui->index_of_interest->clear();
+            ui->index_of_interest->addItem(metrics);
+            ui->index_of_interest->setCurrentIndex(0);
         }
-        if(!fib.is_qsdr)
+        else
         {
-            QMessageBox::information(this,"Error","The FIB file was not reconstructed by QSDR.");
-            raise(); // for Mac
-            return;
+            fib_data fib;
+            if(!fib.load_from_file(sample_fib.toLocal8Bit().begin()))
+            {
+                QMessageBox::information(this,"Error","Invalid FIB file format");
+                raise(); // for Mac
+                return;
+            }
+            if(!fib.is_qsdr)
+            {
+                QMessageBox::information(this,"Error","The FIB file was not reconstructed by QSDR.");
+                raise(); // for Mac
+                return;
+            }
+            ui->index_of_interest->clear();
+            if(fib.has_odfs())
+            {
+                ui->index_of_interest->addItem("qa");
+                ui->index_of_interest->addItem("nqa");
+            }
+            std::vector<std::string> item_list;
+            fib.get_index_list(item_list);
+            for(unsigned int i = fib.dir.index_name.size();i < item_list.size();++i)
+                ui->index_of_interest->addItem(item_list[i].c_str());
         }
-        ui->index_of_interest->clear();
-        if(fib.has_odfs())
-        {
-            ui->index_of_interest->addItem("qa");
-            ui->index_of_interest->addItem("nqa");
-        }
-        std::vector<std::string> item_list;
-        fib.get_index_list(item_list);
-        for(unsigned int i = fib.dir.index_name.size();i < item_list.size();++i)
-            ui->index_of_interest->addItem(item_list[i].c_str());
     }
     if(ui->output_file_name->text().isEmpty())
         on_index_of_interest_currentTextChanged(QString());
@@ -115,7 +131,8 @@ void CreateDBDialog::on_group1open_clicked()
                                      this,
                                      "Open Fib files",
                                      "",
-                                     "Fib files (*fib.gz);;All files (*)" );
+                                     create_db ? "Fib Files (*fib.gz);;NIFTI Files (*nii *nii.gz);;All Files (*)":
+                                                 "Fib Files (*fib.gz);;All Files (*)");
     if (filenames.isEmpty())
         return;
     group << filenames;
@@ -276,11 +293,11 @@ void CreateDBDialog::on_create_data_base_clicked()
     {
         if(ui->skeleton->text().isEmpty())
         {
-            QMessageBox::information(this,"error","Please assign skeleton file");
+            QMessageBox::information(this,"error","Please assign template FIB file");
             return;
         }
 
-        progress prog_("loading skeleton");
+        progress prog_("creating database");
         std::shared_ptr<group_connectometry_analysis> data(new group_connectometry_analysis);
 
         if(!data->create_database(ui->skeleton->text().toLocal8Bit().begin()))
