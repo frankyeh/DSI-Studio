@@ -206,7 +206,6 @@ std::string run_auto_track(
                 if(!src.load_from_file(file_list[i].c_str()) ||
                    (po.has("rev_pe") && !src.run_topup_eddy(po.get("rev_pe"))))
                     return src.error_msg + " at " + cur_file_base_name;
-                src.align_acpc();
                 if(!default_mask)
                     src.command("[Step T2a][Threshold]","0");
                 progress prog_("reconstruct DWI");
