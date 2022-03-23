@@ -102,9 +102,9 @@ size_t linear_cuda(const tipl::image<3,float>& from,
     tipl::affine_transform<float> arg2;
     size_t result = tipl::reg::linear_mr<tipl::reg::mutual_information_cuda>(to,to_vs,from,from_vs,arg2,reg_type,[&](void){return terminated;},0.01,bound);
     size_t result2 = tipl::reg::linear_mr<tipl::reg::mutual_information_cuda>(from,from_vs,to,to_vs,arg,reg_type,[&](void){return terminated;},0.01,bound);
-    std::cout << "MI: " << result << " " << result2 << std::endl;
     if(result < result2)
     {
+        std::cout << "using reverse registration results" << std::endl;
         auto T = tipl::transformation_matrix<float>(arg2,to.shape(),to_vs,from.shape(),from_vs);
         T.inverse();
         T.to_affine_transform(arg,from.shape(),from_vs,to.shape(),to_vs);
