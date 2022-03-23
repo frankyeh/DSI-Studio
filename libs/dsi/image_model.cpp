@@ -200,11 +200,10 @@ std::string ImageModel::check_b_table(void)
 
             const float bound[8] = {1.0f,-1.0f,0.02f,-0.02f,1.2f,0.9f,0.1f,-0.1f};
             double precision[3] = {0.1,0.01,0.001};
-            bool terminated = false;
             tipl::affine_transform<float> arg;
             for(int i = 0;i < 3; ++ i)
                 tipl::reg::linear_mr<tipl::reg::mutual_information>(I,template_fib->vs,dwi,voxel.vs,
-                        arg,tipl::reg::affine,terminated,precision[i],bound);
+                        arg,tipl::reg::affine,[&](void){return !progress::aborted();},precision[i],bound);
             tipl::rotation_matrix(arg.rotation,r.begin(),tipl::vdim<3>());
             r.inv();
             T = tipl::transformation_matrix<float>(arg,template_fib->dim,template_fib->vs,voxel.dim,voxel.vs);
@@ -908,15 +907,14 @@ void ImageModel::correct_motion(bool eddy)
         tipl::normalize_upper_lower(dwi_at(i),to);
         tipl::filter::gaussian(to);
         tipl::filter::gaussian(to);
-        bool terminated = false;
         if(src_bvalues[i] > 500.0f)
             tipl::reg::linear_mr<tipl::reg::correlation>(dwi,voxel.vs,to,voxel.vs,
                                   arg,eddy ? tipl::reg::affine : tipl::reg::rigid_body,
-                                  terminated,0.001,tipl::reg::narrow_bound);
+                                  [&](void){return !progress::aborted();},0.001,tipl::reg::narrow_bound);
         else
             tipl::reg::linear_mr<tipl::reg::mutual_information>(dwi,voxel.vs,to,voxel.vs,
                               arg,eddy ? tipl::reg::affine : tipl::reg::rigid_body,
-                              terminated,0.001,tipl::reg::narrow_bound);
+                              [&](void){return !progress::aborted();},0.001,tipl::reg::narrow_bound);
 
         rotate_one_dwi(i,tipl::transformation_matrix<double>(arg,voxel.dim,voxel.vs,
                                                                      voxel.dim,voxel.vs));
