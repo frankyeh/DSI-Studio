@@ -1897,16 +1897,14 @@ void tracking_window::on_actionAdjust_Mapping_triggered()
 
     {
         reg_slice->update_transform();
-        manual->set_arg(reg_slice->arg_min,reg_slice->invT);
+        manual->arg = reg_slice->arg_min;
         manual->check_reg();
     }
 
     if(manual->exec() != QDialog::Accepted)
         return;
 
-    tipl::transformation_matrix<float> T = manual->get_iT();
-    T.inverse();
-    T.to_affine_transform(reg_slice->arg_min,reg_slice->dim,reg_slice->vs,handle->dim,handle->vs);
+    reg_slice->arg_min = manual->arg;
     reg_slice->update_transform();
     reg_slice->is_diffusion_space = false;
     glWidget->update();
