@@ -127,9 +127,6 @@ int rec(program_option& po)
     src.voxel.template_id = size_t(po.get("template",src.voxel.template_id));
 
 
-    if(po.get("align_acpc",src.is_human_data() && method_index != 7 ? 1:0))
-        src.align_acpc();
-    else
     {
         if(po.has("rotate_to"))
         {
