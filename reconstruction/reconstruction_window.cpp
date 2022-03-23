@@ -112,8 +112,6 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
     ui->report->setText(handle->voxel.report.c_str());
     ui->dti_no_high_b->setChecked(handle->is_human_data());
 
-    ui->align_acpc->setChecked(handle->is_human_data());
-
     ui->method_group->setVisible(!handle->voxel.is_histology);
     ui->param_group->setVisible(!handle->voxel.is_histology);
     ui->hist_param_group->setVisible(handle->voxel.is_histology);
@@ -298,9 +296,6 @@ void reconstruction_window::Reconstruction(unsigned char method_id,bool prompt)
     else
         handle->voxel.scheme_balance = false;
 
-    if(ui->align_acpc->isChecked() && method_id != 7)
-        handle->align_acpc();
-
     auto dim_backup = handle->voxel.dim; // for QSDR
     auto vs = handle->voxel.vs; // for QSDR
     if (!handle->reconstruction())
@@ -454,8 +449,7 @@ void reconstruction_window::on_DTI_toggled(bool checked)
                    !ui->other_output->text().contains("ad") &&
                    !ui->other_output->text().contains("md")))
         ui->other_output->setText("fa,rd,ad,md");
-    if(checked && handle->is_human_data())
-        ui->align_acpc->setVisible(true);
+
 }
 
 
@@ -470,8 +464,6 @@ void reconstruction_window::on_GQI_toggled(bool checked)
 
     ui->RecordODF->setVisible(checked);
 
-    if(checked && handle->is_human_data())
-        ui->align_acpc->setVisible(true);
 
 }
 
@@ -484,8 +476,6 @@ void reconstruction_window::on_QSDR_toggled(bool checked)
 
     ui->RecordODF->setVisible(checked);
 
-    if(checked)
-        ui->align_acpc->setVisible(false);
 
 }
 
