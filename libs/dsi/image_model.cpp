@@ -862,7 +862,7 @@ bool ImageModel::align_acpc(void)
         progress::at(0,3);
         tipl::filter::gaussian(J);
         tipl::filter::gaussian(J);
-        linear_with_mi(I,vs,J,voxel.vs,T,tipl::reg::affine,terminated);
+        linear_with_mi(I,vs,J,voxel.vs,T,tipl::reg::affine,terminated,tipl::reg::narrow_bound);
         progress::at(1,3);
         tipl::image<3> I2(I.shape());
         tipl::resample_mt<tipl::interpolation::cubic>(J,I2,T);
