@@ -18,7 +18,6 @@ class manual_alignment : public QDialog
 private:
     tipl::image<3> from_original;
     tipl::image<3> from,to,warped_from;
-    tipl::affine_transform<float> arg;
     tipl::vector<3> from_vs,to_vs;
     QGraphicsScene scene[3];
     tipl::color_image buffer[3];
@@ -29,6 +28,7 @@ private:
     tipl::transformation_matrix<float> T,iT;
     void load_param(void);
 public:
+    tipl::affine_transform<float> arg;
     std::vector<tipl::image<3> > other_images;
     std::vector<std::string> other_images_name;
     tipl::matrix<4,4> nifti_srow;
@@ -52,8 +52,6 @@ public:
         other_image_T.push_back(T);
     }
     void add_images(std::shared_ptr<fib_data> handle);
-    void set_arg(const tipl::affine_transform<float>& arg_min,
-                 tipl::transformation_matrix<float> iT);
     tipl::transformation_matrix<float> get_iT(void);
 private slots:
     void slice_pos_moved();
