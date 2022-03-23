@@ -165,7 +165,7 @@ manual_alignment::~manual_alignment()
 void manual_alignment::load_param(void)
 {
     tipl::affine_transform<float> b_upper,b_lower;
-    tipl::reg::get_bound(from,to,arg,b_upper,b_lower,tipl::reg::affine,tipl::reg::large_bound);
+    tipl::reg::get_bound(from,to,from_vs,to_vs,arg,b_upper,b_lower,tipl::reg::affine,tipl::reg::large_bound);
 
     // translocation
     disconnect_arg_update();
@@ -221,22 +221,6 @@ void manual_alignment::update_image(void)
     tipl::resample(from,warped_from,iT);
 }
 
-void manual_alignment::set_arg(const tipl::affine_transform<float>& arg_min,
-                               tipl::transformation_matrix<float> iT)
-{
-    if(to_downsample != 1.0f || from_downsample != 1.0f)
-    {
-        if(to_downsample != 1.0f)
-            tipl::multiply_constant(iT.sr,iT.sr+9,1.0f/to_downsample);
-        if(from_downsample != 1.0f)
-            tipl::multiply_constant(iT.data,iT.data+12,1.0f/from_downsample);
-        iT.inverse();
-        iT.to_affine_transform(arg,from.shape(),from_vs,to.shape(),to_vs);
-    }
-    else
-        arg = arg_min;
-    check_reg();
-}
 tipl::transformation_matrix<float> manual_alignment::get_iT(void)
 {
     update_image();
