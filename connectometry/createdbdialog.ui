@@ -15,9 +15,9 @@
   </property>
   <layout class="QVBoxLayout" name="verticalLayout_3">
    <item>
-    <widget class="QGroupBox" name="method_group">
+    <widget class="QGroupBox" name="subject_list_group">
      <property name="title">
-      <string> Select subject FIB files</string>
+      <string> Select Subject Files (*.fib.gz, *.nii.gz)</string>
      </property>
      <layout class="QVBoxLayout" name="verticalLayout_7">
       <property name="spacing">
@@ -264,7 +264,7 @@
      <item>
       <widget class="QLabel" name="index_label">
        <property name="text">
-        <string>Index of interest:</string>
+        <string>Index of Interest:</string>
        </property>
       </widget>
      </item>
@@ -286,7 +286,7 @@
      <item>
       <widget class="QLabel" name="ODF_label">
        <property name="text">
-        <string>Output file name:</string>
+        <string>Output File Name:</string>
        </property>
       </widget>
      </item>
