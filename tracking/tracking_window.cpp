@@ -80,8 +80,8 @@ void tracking_window::set_data(QString name, QVariant value)
 }
 
 tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_handle) :
-        QMainWindow(parent),ui(new Ui::tracking_window),scene(*this),handle(new_handle)
-
+        QMainWindow(parent),ui(new Ui::tracking_window),scene(*this),
+        color_bar(new color_bar_dialog(this)),handle(new_handle)
 {
     std::cout << "initiate image/slices" << std::endl;
     fib_data& fib = *new_handle;
@@ -96,6 +96,7 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
     {
         {
             std::cout << "create GUI objects" << std::endl;
+            scene.statusbar = ui->statusbar;
             setGeometry(10,10,800,600);
             ui->regionDockWidget->setMinimumWidth(0);
             ui->ROIdockWidget->setMinimumWidth(0);
@@ -107,9 +108,6 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
             ui->graphicsView->setScene(&scene);
             ui->graphicsView->setCursor(Qt::CrossCursor);
             ui->DeviceDockWidget->hide();
-            scene.statusbar = ui->statusbar;
-            color_bar.reset(new color_bar_dialog(this));
-
         }
         {
             std::cout << "recall previous settings" << std::endl;
@@ -495,6 +493,7 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
     // now begin visualization
     std::cout << "begin visualization" << std::endl;
     {
+        glWidget->no_update = false;
         scene.no_show = false;
         on_glAxiView_clicked();
         if((*this)["orientation_convention"].toInt() == 1)
