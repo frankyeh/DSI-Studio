@@ -1010,7 +1010,7 @@ bool nii2src_bids(QString dir,QString output_dir,std::string& error_msg)
                                                 QDir::Dirs | QDir::NoSymLinks | QDir::NoDotAndDotDot);
     if(sub_dir.isEmpty())
     {
-        error_msg = "No subject folder found.";
+        error_msg = "No subject folder (sub-*) found.";
         return false;
     }
     if(!QDir(output_dir).exists() && !QDir().mkdir(output_dir))
