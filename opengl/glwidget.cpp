@@ -458,10 +458,6 @@ void GLWidget::initializeGL()
     glColorMaterial(GL_FRONT_AND_BACK, GL_DIFFUSE);
     glBlendFunc (GL_DST_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     tracts = glGenLists(1);
-    tract_alpha = -1; // ensure that make_track is called
-    odf_position = 255;//ensure ODFs is renderred
-    no_update = false;
-
     scale_by(0.5);
 }
 void GLWidget::paintGL()
@@ -798,7 +794,8 @@ void GLWidget::renderLR()
 
 
 
-        if(get_param("tract_color_style") != tract_color_style)
+        if(get_param("tract_color_style") != tract_color_style &&
+           cur_tracking_window.color_bar.get())
         {
             if(get_param("tract_color_style") > 1)
                 cur_tracking_window.color_bar->show();
