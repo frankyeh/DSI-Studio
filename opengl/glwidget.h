@@ -169,26 +169,26 @@ public:
      void renderText(float x,float y, const QString &str, const QFont & font = QFont());
      void renderText(float x, float y, float z, const QString &str, const QFont & font = QFont());
  private:
-     float tract_alpha;
-     float tract_color_saturation;
-     float tract_color_brightness;
-     unsigned char scale_voxel;
+     float tract_alpha = -1.0f; // ensure that make_track is called
+     float tract_color_saturation = 0.0f;
+     float tract_color_brightness = 0.0f;
+     unsigned char scale_voxel = 0;
      unsigned char slice_match_bkcolor = 0;
-     unsigned char tract_alpha_style;
-     unsigned char tract_style;
-     unsigned char tract_color_style;
-     float tube_diameter;
-     unsigned char tract_color_contrast;
-     unsigned char tract_tube_detail;
-     unsigned char tract_variant_size;
-     unsigned char tract_variant_color;
-     unsigned char tract_shader;
-     unsigned char end_point_shift;
-     unsigned char odf_position;
-     unsigned char odf_skip;
+     unsigned char tract_alpha_style = 0;
+     unsigned char tract_style = 0;
+     unsigned char tract_color_style = 0;
+     float tube_diameter = 0.0f;
+     unsigned char tract_color_contrast = 0;
+     unsigned char tract_tube_detail = 0;
+     unsigned char tract_variant_size = 0;
+     unsigned char tract_variant_color = 0;
+     unsigned char tract_shader = 0;
+     unsigned char end_point_shift = 0;
+     unsigned char odf_position = 255;
+     unsigned char odf_skip = 0;
      unsigned char odf_shape = 0;
-     unsigned char odf_color;
-     float odf_scale;
+     unsigned char odf_color = 0;
+     float odf_scale = 0.0f;
 public:
      bool keep_slice = false;
      std::vector<tipl::vector<3,float> > keep_slice_points;
