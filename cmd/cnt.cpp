@@ -91,7 +91,7 @@ int cnt(program_option& po)
         vbc->tip = po.get("tip",uint32_t(4));
         vbc->fdr_threshold = po.get("fdr_threshold",0.0f);
         vbc->tracking_threshold = po.get("t_threshold",2.5f);
-        vbc->output_file_name = po.get("output");
+        vbc->output_file_name = po.get("output",po.get("demo")+"."+db.feature_titles[voi_index]);
     }
 
     // select cohort and feature
