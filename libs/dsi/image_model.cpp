@@ -1268,10 +1268,24 @@ bool ImageModel::run_plugin(std::string exec_name,
     program.start(exec.c_str(),p);
     if(!program.waitForStarted() || program.waitForFinished(3000))
     {
-        error_msg = "failed to run ";
-        error_msg = exec_name;
-        error_msg = ".";
-        error_msg = QString("Please click on %1 to activate running privilege.").arg(exec.c_str()).toStdString();
+        switch(program.error())
+        {
+        case QProcess::FailedToStart:
+            error_msg = "The process failed to start. Either the invoked program is missing, or you may have insufficient permissions to invoke the program.";
+        break;
+        case QProcess::Crashed:
+            error_msg = "The process crashed some time after starting successfully.";
+        break;
+        case QProcess::WriteError:
+            error_msg = "An error occurred when attempting to write to the process. For example, the process may not be running, or it may have closed its input channel.";
+        break;
+        case QProcess::ReadError:
+            error_msg = "An error occurred when attempting to read from the process. For example, the process may not be running.";
+        break;
+        default:
+            error_msg = "Unknown error";
+        break;
+        }
         return false;
     }
     unsigned int keyword_seen = 0;
