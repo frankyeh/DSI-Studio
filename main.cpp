@@ -8,11 +8,10 @@
 #include <QDir>
 #include "mainwindow.h"
 #include "TIPL/tipl.hpp"
+#include "gzip_interface.hpp"
+#include "prog_interface_static_link.h"
 #include "mapping/atlas.hpp"
-#include <iostream>
-#include <iterator>
 #include "program_option.hpp"
-#include "cmd/cnt.cpp" // Qt project cannot build cnt.cpp without adding this.
 
 std::string arg_file_name;
 std::string

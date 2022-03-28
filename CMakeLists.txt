@@ -148,6 +148,7 @@ set(DSI_STUDIO_SOURCES
     connectometry/group_connectometry_analysis.cpp
     regtoolbox.cpp
     cmd/cnn.cpp
+    cmd/cnt.cpp
     cmd/qc.cpp
     libs/dsi/basic_voxel.cpp
     libs/dsi/image_model.cpp
