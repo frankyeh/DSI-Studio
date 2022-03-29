@@ -1357,9 +1357,17 @@ bool ImageModel::generate_topup_b0_acq_files(tipl::image<3>& b0,
     }
     bool is_appa = c[0] < c[1];
     unsigned int phase_dim = (is_appa ? 1 : 0);
-    auto c1 = tipl::center_of_mass(b0);
-    auto c2 = tipl::center_of_mass(rev_b0);
-    bool phase_dir = c1[phase_dim] < c2[phase_dim];
+    tipl::vector<3> c1,c2;
+    {
+        tipl::image<3,unsigned char> mb0,rev_mb0;
+        tipl::threshold(b0,mb0,tipl::max_value(b0)*0.8f,1,0);
+        tipl::threshold(rev_b0,rev_mb0,tipl::max_value(rev_b0)*0.8f,1,0);
+        c1 = tipl::center_of_mass(mb0);
+        c2 = tipl::center_of_mass(rev_mb0);
+    }
+    std::cout << "source com:" << c1 << std::endl;
+    std::cout << "rev pe com:" << c2 << std::endl;
+    bool phase_dir = c1[phase_dim] > c2[phase_dim];
     std::string acqstr,pe_id;
     if(is_appa)
     {
