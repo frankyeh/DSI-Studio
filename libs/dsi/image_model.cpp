@@ -1389,9 +1389,7 @@ bool ImageModel::generate_topup_b0_acq_files(tipl::image<3>& b0,
             std::cout << "cannot write to acq param file " << acqparam_file << std::endl;
             return false;
         }
-
-        out << pe_dir[b0_pe] << " 0.05" << std::endl;
-        out << pe_dir[rev_b0_pe] << " 0.05" << std::endl;
+        out << pe_dir[b0_pe] << " 0.05\n" << pe_dir[rev_b0_pe] << " 0.05\n";
     }
 
 
