@@ -5,6 +5,7 @@
 #include <QApplication>
 #include <QMessageBox>
 #include <QStyleFactory>
+#include <QFileInfo>
 #include <QDir>
 #include "mainwindow.h"
 #include "TIPL/tipl.hpp"
@@ -12,6 +13,10 @@
 #include "prog_interface_static_link.h"
 #include "mapping/atlas.hpp"
 #include "program_option.hpp"
+
+#ifndef QT6_PATCH
+#include <QTextCodec>
+#endif
 
 std::string arg_file_name;
 std::string
