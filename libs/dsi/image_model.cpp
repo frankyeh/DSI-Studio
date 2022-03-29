@@ -1360,36 +1360,48 @@ bool ImageModel::generate_topup_b0_acq_files(tipl::image<3>& b0,
     auto c1 = tipl::center_of_mass(b0);
     auto c2 = tipl::center_of_mass(rev_b0);
     bool phase_dir = c1[phase_dim] < c2[phase_dim];
-    enum phase_encdoing {   RL=0,       LR=1,       AP=2,       PA=3};
-    char pe_id[4][3] =  {   "RL",       "LR",       "AP",       "PA" };
-    char pe_dir[4][10]= {   "1 0 0",    "-1 0 0",   "0 -1 0",   "0 1 0" }; // This is in FSL's LAS space, thus RL and PA = 1
-
-    phase_encdoing b0_pe,rev_b0_pe;
+    std::string acqstr,pe_id;
     if(is_appa)
     {
-        b0_pe = phase_dir ?     AP:PA;
-        rev_b0_pe = phase_dir ? PA:AP;
+        if(phase_dir)
+        {
+            acqstr = "0 -1 0 0.05\n0 1 0 0.05";
+            pe_id = "AP_PA";
+        }
+        else
+        {
+            acqstr = "0 1 0 0.05\n0 -1 0 0.05";
+            pe_id = "PA_AP";
+        }
     }
     else
     {
-        b0_pe = phase_dir ?     LR:RL;
-        rev_b0_pe = phase_dir ? RL:LR;
+        if(phase_dir)
+        {
+            acqstr = "-1 0 0 0.05\n1 0 0 0.05";
+            pe_id = "LR_RL";
+        }
+        else
+        {
+            acqstr = "1 0 0 0.05\n-1 0 0 0.05";
+            pe_id = "RL_LR";
+        }
     }
 
 
-    std::cout << "source phase encoding: " << pe_id[b0_pe] << std::endl;
-    std::cout << "rev b0 phase encoding: " << pe_id[rev_b0_pe] << std::endl;
+    std::cout << "source and reverse phase encoding: " << pe_id << std::endl;
 
     {
-        std::cout << "create acqparams.txt" << std::endl;
         std::string acqparam_file = QFileInfo(file_name.c_str()).baseName().toStdString() + ".topup.acqparams.txt";
+        std::cout << "create acq params at " << acqparam_file << std::endl;
         std::ofstream out(acqparam_file.c_str());
         if(!out)
         {
             std::cout << "cannot write to acq param file " << acqparam_file << std::endl;
             return false;
         }
-        out << pe_dir[b0_pe] << " 0.05\n" << pe_dir[rev_b0_pe] << " 0.05\n";
+        std::cout << acqstr << std::endl;
+        out << acqstr;
     }
 
 
@@ -1407,7 +1419,7 @@ bool ImageModel::generate_topup_b0_acq_files(tipl::image<3>& b0,
     }
 
     {
-        std::cout << "create topup needed b0 nii.gz file from " << pe_id[b0_pe] << " and " << pe_id[rev_b0_pe] << " b0" << std::endl;
+        std::cout << "create topup needed b0 nii.gz file from " << pe_id << " b0" << std::endl;
         tipl::matrix<4,4> trans;
         initial_LPS_nifti_srow(trans,b0.shape(),voxel.vs);
 
@@ -1418,7 +1430,7 @@ bool ImageModel::generate_topup_b0_acq_files(tipl::image<3>& b0,
         std::copy(b0.begin(),b0.end(),buffer.begin());
         std::copy(rev_b0.begin(),rev_b0.end(),buffer.begin()+int64_t(b0.size()));
 
-        b0_appa_file = QFileInfo(file_name.c_str()).baseName().toStdString() + ".topup." + pe_id[b0_pe] + "_" + pe_id[rev_b0_pe] + ".nii.gz";
+        b0_appa_file = QFileInfo(file_name.c_str()).baseName().toStdString() + ".topup." + pe_id + ".nii.gz";
         if(!gz_nifti::save_to_file(b0_appa_file.c_str(),buffer,voxel.vs,trans))
         {
             std::cout << "Cannot wrtie a temporary b0_appa image volume to " << b0_appa_file << std::endl;
