@@ -1373,12 +1373,12 @@ bool ImageModel::generate_topup_b0_acq_files(tipl::image<3>& b0,
     {
         if(phase_dir)
         {
-            acqstr = "0 -1 0 0.05\n0 1 0 0.05";
+            acqstr = "0 -1 0 0.05\n0 1 0 0.05\n";
             pe_id = "AP_PA";
         }
         else
         {
-            acqstr = "0 1 0 0.05\n0 -1 0 0.05";
+            acqstr = "0 1 0 0.05\n0 -1 0 0.05\n";
             pe_id = "PA_AP";
         }
     }
@@ -1386,12 +1386,12 @@ bool ImageModel::generate_topup_b0_acq_files(tipl::image<3>& b0,
     {
         if(phase_dir)
         {
-            acqstr = "-1 0 0 0.05\n1 0 0 0.05";
+            acqstr = "-1 0 0 0.05\n1 0 0 0.05\n";
             pe_id = "LR_RL";
         }
         else
         {
-            acqstr = "1 0 0 0.05\n-1 0 0 0.05";
+            acqstr = "1 0 0 0.05\n-1 0 0 0.05\n";
             pe_id = "RL_LR";
         }
     }
@@ -1409,7 +1409,8 @@ bool ImageModel::generate_topup_b0_acq_files(tipl::image<3>& b0,
             return false;
         }
         std::cout << acqstr << std::endl;
-        out << acqstr;
+        out << acqstr << std::flush;
+        out.close();
     }
 
 
