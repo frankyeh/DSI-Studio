@@ -91,7 +91,6 @@ int cnt(program_option& po)
         vbc->tip = po.get("tip",uint32_t(4));
         vbc->fdr_threshold = po.get("fdr_threshold",0.0f);
         vbc->tracking_threshold = po.get("t_threshold",2.5f);
-        vbc->output_file_name = po.get("output",po.get("demo")+"."+db.feature_titles[voi_index]);
     }
 
     // select cohort and feature
@@ -119,6 +118,7 @@ int cnt(program_option& po)
     }
 
     std::cout << "running connectometry" << std::endl;
+    vbc->output_file_name = po.get("output",po.get("demo")+"."+vbc->get_file_post_fix());
     vbc->run_permutation(std::thread::hardware_concurrency(),po.get("permutation",uint32_t(2000)));
     vbc->wait();
     std::cout << "analysis completed" << std::endl;
