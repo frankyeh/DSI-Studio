@@ -345,6 +345,38 @@ std::string iterate_items(const std::vector<std::string>& item)
     }
     return result;
 }
+std::string group_connectometry_analysis::get_file_post_fix(void)
+{
+    std::string postfix;
+    if(model->type == 1) // run regression model
+    {
+        postfix += foi_str;
+        postfix += ".t";
+        postfix += std::to_string((int)tracking_threshold);
+    }
+    if(model->type == 3) // longitudinal change
+    {
+        postfix += ".sd";
+        postfix += std::to_string((int)tracking_threshold);
+    }
+
+    if(normalize_qa)
+        postfix += ".nqa";
+
+    if(fdr_threshold == 0.0f)
+    {
+        postfix += ".length";
+        postfix += std::to_string(length_threshold_voxels);
+    }
+    else
+    {
+        postfix += ".fdr";
+        std::string value = std::to_string(fdr_threshold);
+        value.resize(4);
+        postfix += value;
+    }
+    return postfix;
+}
 void group_connectometry_analysis::run_permutation(unsigned int thread_count,unsigned int permutation_count)
 {
     clear();
@@ -408,35 +440,7 @@ void group_connectometry_analysis::run_permutation(unsigned int thread_count,uns
 
     // setup output file name
     if(output_file_name.empty())
-    {
-        if(model->type == 1) // run regression model
-        {
-            output_file_name += foi_str;
-            output_file_name += ".t";
-            output_file_name += std::to_string((int)tracking_threshold);
-        }
-        if(model->type == 3) // longitudinal change
-        {
-            output_file_name += ".sd";
-            output_file_name += std::to_string((int)tracking_threshold);
-        }
-
-        if(normalize_qa)
-            output_file_name += ".nqa";
-
-        if(fdr_threshold == 0.0f)
-        {
-            output_file_name += ".length";
-            output_file_name += std::to_string(length_threshold_voxels);
-        }
-        else
-        {
-            output_file_name += ".fdr";
-            std::string value = std::to_string(fdr_threshold);
-            value.resize(4);
-            output_file_name += value;
-        }
-    }
+        output_file_name = get_file_post_fix();
 
     size_t max_dimension = tipl::max_value(handle->dim);
 
