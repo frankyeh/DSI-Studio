@@ -468,19 +468,7 @@ bool ImageModel::command(std::string cmd,std::string param)
     progress prog_(cmd.c_str());
     if(!param.empty())
         std::cout << "param:" << param << std::endl;
-    if(cmd == "[Step T2][File][Save 4D NIFTI]")
-    {
-        if(param.empty())
-        {
-            error_msg = " please assign file name ";
-            return false;
-        }
-        if(!save_to_nii(param.c_str()))
-            return false;
-        param = param.substr(0,param.size()-7);
-        return save_bval((param+".bval").c_str()) && save_bvec((param+".bvec").c_str());
-    }
-    if(cmd == "[Step T2][File][Save Src File]")
+    if(cmd == "[Step T2][File][Save Src File]" || cmd == "[Step T2][File][Save 4D NIFTI]")
     {
         if(param.empty())
         {
@@ -1408,7 +1396,7 @@ bool ImageModel::generate_topup_b0_acq_files(tipl::image<3>& b0,
             std::cout << "cannot write to acq param file " << acqparam_file << std::endl;
             return false;
         }
-        std::cout << acqstr << std::endl;
+        std::cout << acqstr << std::flush;
         out << acqstr << std::flush;
         out.close();
     }
@@ -1863,40 +1851,75 @@ void ImageModel::get_report(std::string& report)
 }
 bool ImageModel::save_to_file(const char* dwi_file_name)
 {
-    gz_mat_write mat_writer(dwi_file_name);
-    if(!mat_writer)
-        return false;
+    std::string filename(dwi_file_name);
+    std::string ext = filename.substr(std::max<int>(0,int(filename.length())-7));
+    if(ext == ".nii.gz")
     {
-        uint16_t dim[3];
-        dim[0] = uint16_t(voxel.dim[0]);
-        dim[1] = uint16_t(voxel.dim[1]);
-        dim[2] = uint16_t(voxel.dim[2]);
-        mat_writer.write("dimension",dim,1,3);
-        mat_writer.write("voxel_size",voxel.vs);
-    }
-    {
-        std::vector<float> b_table;
-        for (unsigned int index = 0;index < src_bvalues.size();++index)
+        tipl::matrix<4,4> trans;
+        initial_LPS_nifti_srow(trans,voxel.dim,voxel.vs);
+
+        tipl::shape<4> nifti_dim;
+        std::copy(voxel.dim.begin(),voxel.dim.end(),nifti_dim.begin());
+        nifti_dim[3] = uint32_t(src_bvalues.size());
+
+        tipl::image<4,unsigned short> buffer(nifti_dim);
+        tipl::par_for(src_bvalues.size(),[&](size_t index)
         {
-            b_table.push_back(src_bvalues[index]);
-            b_table.push_back(src_bvectors[index][0]);
-            b_table.push_back(src_bvectors[index][1]);
-            b_table.push_back(src_bvectors[index][2]);
+            std::copy(src_dwi_data[index],
+                      src_dwi_data[index]+voxel.dim.size(),
+                      buffer.begin() + long(index*voxel.dim.size()));
+        });
+        progress prog_("saving ",std::filesystem::path(dwi_file_name).filename().string().c_str());
+        if(!gz_nifti::save_to_file(dwi_file_name,buffer,voxel.vs,trans))
+        {
+            error_msg = "Cannot save file to ";
+            error_msg += dwi_file_name;
+            return false;
         }
-        mat_writer.write("b_table",b_table,4);
+
+        filename = filename.substr(0,filename.size()-7);
+        return save_bval((filename+".bval").c_str()) && save_bvec((filename+".bvec").c_str());
     }
-    progress prog_("saving ",std::filesystem::path(dwi_file_name).filename().string().c_str());
-    for (unsigned int index = 0;progress::at(index,src_bvalues.size());++index)
+    if(ext == ".src.gz")
     {
-        std::ostringstream out;
-        out << "image" << index;
-        mat_writer.write(out.str().c_str(),src_dwi_data[index],
-                         uint32_t(voxel.dim.plane_size()),uint32_t(voxel.dim.depth()));
+        gz_mat_write mat_writer(dwi_file_name);
+        if(!mat_writer)
+            return false;
+        {
+            uint16_t dim[3];
+            dim[0] = uint16_t(voxel.dim[0]);
+            dim[1] = uint16_t(voxel.dim[1]);
+            dim[2] = uint16_t(voxel.dim[2]);
+            mat_writer.write("dimension",dim,1,3);
+            mat_writer.write("voxel_size",voxel.vs);
+        }
+        {
+            std::vector<float> b_table;
+            for (unsigned int index = 0;index < src_bvalues.size();++index)
+            {
+                b_table.push_back(src_bvalues[index]);
+                b_table.push_back(src_bvectors[index][0]);
+                b_table.push_back(src_bvectors[index][1]);
+                b_table.push_back(src_bvectors[index][2]);
+            }
+            mat_writer.write("b_table",b_table,4);
+        }
+        progress prog_("saving ",std::filesystem::path(dwi_file_name).filename().string().c_str());
+        for (unsigned int index = 0;progress::at(index,src_bvalues.size());++index)
+        {
+            std::ostringstream out;
+            out << "image" << index;
+            mat_writer.write(out.str().c_str(),src_dwi_data[index],
+                             uint32_t(voxel.dim.plane_size()),uint32_t(voxel.dim.depth()));
+        }
+        mat_writer.write("mask",voxel.mask,uint32_t(voxel.dim.plane_size()));
+        mat_writer.write("report",voxel.report);
+        mat_writer.write("steps",voxel.steps);
+        return true;
     }
-    mat_writer.write("mask",voxel.mask,uint32_t(voxel.dim.plane_size()));
-    mat_writer.write("report",voxel.report);
-    mat_writer.write("steps",voxel.steps);
-    return true;
+    error_msg = "unsupported file extension:";
+    error_msg += ext;
+    return false;
 }
 
 void prepare_idx(const char* file_name,std::shared_ptr<gz_istream> in)
@@ -2205,24 +2228,6 @@ bool ImageModel::save_fib(const std::string& output_name)
     return true;
 }
 void initial_LPS_nifti_srow(tipl::matrix<4,4>& T,const tipl::shape<3>& geo,const tipl::vector<3>& vs);
-bool ImageModel::save_to_nii(const char* nifti_file_name) const
-{
-    tipl::matrix<4,4> trans;
-    initial_LPS_nifti_srow(trans,voxel.dim,voxel.vs);
-
-    tipl::shape<4> nifti_dim;
-    std::copy(voxel.dim.begin(),voxel.dim.end(),nifti_dim.begin());
-    nifti_dim[3] = uint32_t(src_bvalues.size());
-
-    tipl::image<4,unsigned short> buffer(nifti_dim);
-    tipl::par_for(src_bvalues.size(),[&](size_t index)
-    {
-        std::copy(src_dwi_data[index],
-                  src_dwi_data[index]+voxel.dim.size(),
-                  buffer.begin() + long(index*voxel.dim.size()));
-    });
-    return gz_nifti::save_to_file(nifti_file_name,buffer,voxel.vs,trans);
-}
 bool ImageModel::save_nii_for_applytopup_or_eddy(bool include_rev) const
 {
     std::cout << "create trimmed volume for " << (include_rev ? "eddy":"applytopup") << std::endl;

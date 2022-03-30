@@ -303,7 +303,6 @@ public:
 public:
     bool load_from_file(const char* dwi_file_name);
     bool save_to_file(const char* dwi_file_name);
-    bool save_to_nii(const char* nifti_file_name) const;
     bool save_nii_for_applytopup_or_eddy(bool include_rev) const;
     bool save_mask_nii(const char* nifti_file_name) const;
     bool save_b0_to_nii(const char* nifti_file_name) const;
