@@ -110,7 +110,6 @@ int rec(program_option& po)
         }
     }
 
-    unsigned char method_index = uint8_t(po.get("method",4));
 
     if (po.has("param0"))
         src.voxel.param[0] = po.get("param0",src.voxel.param[0]);
@@ -118,13 +117,6 @@ int rec(program_option& po)
         src.voxel.param[1] = po.get("param1",src.voxel.param[1]);
     if (po.has("param2"))
         src.voxel.param[2] = po.get("param2",src.voxel.param[2]);
-    if(method_index == 7)
-    {
-        for(size_t id = 0;id < fa_template_list.size();++id)
-            std::cout << "template_id " << id << ":" <<
-            QFileInfo(fa_template_list[id].c_str()).baseName().toStdString() << std::endl;
-    }
-    src.voxel.template_id = size_t(po.get("template",src.voxel.template_id));
 
 
     {
@@ -173,14 +165,27 @@ int rec(program_option& po)
             }
     }
 
-    if(po.has("save_src"))
+    if(po.has("save_src") || po.has("save_nii"))
     {
-        std::string new_src_file = po.get("save_src");
+        std::string new_src_file = po.has("save_src") ? po.get("save_src") : po.get("save_nii");
         std::cout << "saving to " << new_src_file << std::endl;
-        src.save_to_file(new_src_file.c_str());
+        if(!src.save_to_file(new_src_file.c_str()))
+        {
+            std::cout << "ERROR:" << src.error_msg << std::endl;
+            return -1;
+        }
         return 0;
     }
+    unsigned char method_index = uint8_t(po.get("method",4));
 
+    if(method_index == 7)
+    {
+        for(size_t id = 0;id < fa_template_list.size();++id)
+            std::cout << "template_id " << id << ":" <<
+            QFileInfo(fa_template_list[id].c_str()).baseName().toStdString() << std::endl;
+    }
+
+    src.voxel.template_id = size_t(po.get("template",src.voxel.template_id));
     src.voxel.method_id = method_index;
     src.voxel.ti.init(uint16_t(po.get("odf_order",int(8))));
     src.voxel.odf_resolving = po.get("odf_resolving",int(0));
