@@ -104,7 +104,7 @@ manual_alignment::manual_alignment(QWidget *parent,
 
     timer = new QTimer(this);
     timer->stop();
-    timer->setInterval(1000);
+    timer->setInterval(500);
     connect(timer, SIGNAL(timeout()), this, SLOT(check_reg()));
 
     ui->zoom->setValue(400.0/std::max(from.width(),to.width()));
@@ -291,6 +291,7 @@ void manual_alignment::slice_pos_moved()
 
 void manual_alignment::check_reg()
 {
+    ui->rerun->setText(thread.running ? "Stop" : "Run registration");
     {
         disconnect_arg_update();
         ui->tx->setValue(arg.translocation[0]);
@@ -332,6 +333,13 @@ void manual_alignment::on_buttonBox_rejected()
 
 void manual_alignment::on_rerun_clicked()
 {
+    if(thread.running)
+    {
+        thread.clear();
+        ui->rerun->setText("Run registration");
+        return;
+    }
+
     auto cost = ui->cost_type->currentIndex() == 0 ? tipl::reg::corr : tipl::reg::mutual_info;
     int reg_type = 0;
     if(ui->reg_translocation->isChecked())
@@ -351,7 +359,9 @@ void manual_alignment::on_rerun_clicked()
             linear_with_mi(from,from_vs,to,to_vs,arg,tipl::reg::reg_type(reg_type),thread.terminated);
         else
             linear_with_cc(from,from_vs,to,to_vs,arg,tipl::reg::reg_type(reg_type),thread.terminated);
+        thread.running = false;
     });
+    ui->rerun->setText("Stop");
     if(timer)
         timer->start();
 
@@ -460,5 +470,27 @@ void manual_alignment::on_actionApply_Transformation_triggered()
 
 
 
+}
+
+
+void manual_alignment::on_actionSmooth_Signals_triggered()
+{
+    tipl::filter::gaussian(from);
+    tipl::filter::gaussian(to);
+    update_image();
+}
+
+
+void manual_alignment::on_actionSobel_triggered()
+{
+    tipl::filter::sobel(from);
+    tipl::filter::sobel(to);
+    update_image();
+}
+
+
+void manual_alignment::on_pushButton_clicked()
+{
+    ui->menu_Edit->popup(QCursor::pos());
 }
 

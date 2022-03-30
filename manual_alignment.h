@@ -74,6 +74,12 @@ private slots:
 
     void on_actionApply_Transformation_triggered();
 
+    void on_actionSmooth_Signals_triggered();
+
+    void on_actionSobel_triggered();
+
+    void on_pushButton_clicked();
+
 public slots:
     void on_rerun_clicked();
     void check_reg();
