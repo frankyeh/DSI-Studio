@@ -56,25 +56,6 @@ int exp(program_option& po)
         return 1;
     }
     std::string export_name = po.get("export");
-    if(export_name == "4dnii")
-    {
-        ImageModel handle;
-        if(!handle.load_from_file(file_name.c_str()))
-        {
-            std::cout << "ERROR: " << handle.error_msg << std::endl;
-            return 1;
-        }
-        std::cout << "exporting " << file_name << ".nii.gz" << std::endl;
-        handle.save_to_nii((file_name+".nii.gz").c_str());
-        std::cout << "exporting " << file_name << ".b_table.txt" << std::endl;
-        handle.save_b_table((file_name+".b_table.txt").c_str());
-        std::cout << "exporting " << file_name << ".bvec" << std::endl;
-        handle.save_bvec((file_name+".bvec").c_str());
-        std::cout << "exporting " << file_name << ".bval" << std::endl;
-        handle.save_bval((file_name+".bval").c_str());
-        return 1;
-    }
-
     if(QString(file_name.c_str()).endsWith(".fib.gz"))
     {
         std::shared_ptr<fib_data> handle;
