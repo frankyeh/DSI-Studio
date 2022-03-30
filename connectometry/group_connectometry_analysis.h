@@ -66,6 +66,7 @@ public:// Multiple regression
     float fdr_threshold;
     unsigned int tip;
     std::string foi_str;
+    std::string get_file_post_fix(void);
     void run_permutation_multithread(unsigned int id,unsigned int thread_count,unsigned int permutation_count);
     void run_permutation(unsigned int thread_count,unsigned int permutation_count);
     void calculate_FDR(void);
