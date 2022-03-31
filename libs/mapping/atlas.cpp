@@ -118,7 +118,7 @@ size_t atlas::get_index(tipl::vector<3,float> p)
     p.round();
     if(!I.shape().is_valid(p))
         return 0;
-    return size_t((int(p[2])*I.height()+int(p[1]))*I.width()+int(p[0]));
+    return size_t((int64_t(p[2])*int64_t(I.height())+int64_t(p[1]))*int64_t(I.width())+int64_t(p[0]));
 }
 
 bool atlas::is_labeled_as(const tipl::vector<3,float>& template_space,unsigned int region_index)
