@@ -181,7 +181,7 @@ int rec(program_option& po)
     if(method_index == 7)
     {
         for(size_t id = 0;id < fa_template_list.size();++id)
-            std::cout << "template_id " << id << ":" <<
+            std::cout << "template " << id << ":" <<
             QFileInfo(fa_template_list[id].c_str()).baseName().toStdString() << std::endl;
     }
 
