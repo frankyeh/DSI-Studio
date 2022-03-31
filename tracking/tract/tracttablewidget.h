@@ -40,7 +40,7 @@ public:
     void load_tracts(QStringList filenames);
     void cut_by_slice(unsigned char dim,bool greater);
     void draw_tracts(unsigned char dim,int pos,
-                     QImage& scaledimage,float display_ratio,unsigned int max_count);
+                     QImage& scaledimage,float display_ratio);
 
     QString output_format(void);
     bool command(QString cmd,QString param = "",QString param2 = "");

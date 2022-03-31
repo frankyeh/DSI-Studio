@@ -1489,26 +1489,42 @@ void TractModel::get_tract_points(std::vector<tipl::vector<3,float> >& points)
 void TractModel::get_in_slice_tracts(unsigned char dim,int pos,
                                      tipl::matrix<4,4>* pT,
                                      std::vector<std::vector<tipl::vector<2,float> > >& lines,
-                                     std::vector<unsigned int>& colors,
+                                     std::vector<std::vector<unsigned int> >& colors,
                                      unsigned int max_count,
+                                     int track_color_style,
                                      bool& terminated)
 {
 
     std::vector<tipl::vector<2,float> > line;
+    std::vector<unsigned int> color;
+
     auto add_line = [&](unsigned int index)
     {
         if(line.empty() || index >= tract_color.size())
             return;
         lines.push_back(std::move(line));
-        colors.push_back(tract_color[index]);
+        colors.push_back(std::move(color));
         line.clear();
     };
+
+    auto add_color = [&](tipl::vector<3>&& pos,tipl::vector<3>& prev_pos)
+    {
+        prev_pos -= pos;
+        prev_pos.abs();
+        prev_pos *= 200.0f/float(prev_pos.length());
+        color.push_back(uint32_t(tipl::rgb(uint8_t(prev_pos[0]),uint8_t(prev_pos[1]),uint8_t(prev_pos[2]))));
+        prev_pos = pos;
+    };
+
     unsigned int skip = std::max<unsigned int>(1,uint32_t(tract_data.size())/max_count);
     if(!pT) // native space
     {
         for (unsigned int index = 0;!terminated && index < tract_data.size();add_line(index),index += skip)
         {
             const auto& tract = tract_data[index];
+            if(tract.size() < 6)
+                continue;
+            tipl::vector<3> prev_pos(&tract[3]);
             for (unsigned int j = 0;j < tract.size();j += 3)
             {
                 if(int(std::round(tract[j+dim])) == pos)
@@ -1516,6 +1532,10 @@ void TractModel::get_in_slice_tracts(unsigned char dim,int pos,
                     tipl::vector<2,float> p;
                     tipl::space2slice(dim,tract[j],tract[j+1],tract[j+2],p[0],p[1]);
                     line.push_back(p);
+                    if(track_color_style)
+                        color.push_back(tract_color[index]);
+                    else
+                        add_color(tipl::vector<3>(&tract[j]),prev_pos);
                 }
                 else
                     add_line(index);
@@ -1533,6 +1553,9 @@ void TractModel::get_in_slice_tracts(unsigned char dim,int pos,
             for (unsigned int index = 0;!terminated && index < tract_data.size();add_line(index),index += skip)
             {
                 const auto& tract = tract_data[index];
+                if(tract.size() < 6)
+                    continue;
+                tipl::vector<3> prev_pos(&tract[3]);
                 for (unsigned int j = 0;j < tract.size();j += 3)
                 {
                     if(int(std::round(tract[j+dim]*scale)) == pos)
@@ -1543,6 +1566,10 @@ void TractModel::get_in_slice_tracts(unsigned char dim,int pos,
                         tipl::vector<2,float> p;
                         tipl::space2slice(dim,t[0],t[1],t[2],p[0],p[1]);
                         line.push_back(p);
+                        if(track_color_style)
+                            color.push_back(tract_color[index]);
+                        else
+                            add_color(tipl::vector<3>(&tract[j]),prev_pos);
                     }
                     else
                         add_line(index);

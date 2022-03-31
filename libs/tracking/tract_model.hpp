@@ -127,8 +127,9 @@ public:
         void get_in_slice_tracts(unsigned char dim,int pos,
                                  tipl::matrix<4,4>* T,
                                  std::vector<std::vector<tipl::vector<2,float> > >& lines,
-                                 std::vector<unsigned int>& colors,
+                                 std::vector<std::vector<unsigned int> >& colors,
                                  unsigned int max_count,
+                                 int track_color_style,
                                  bool& terminated);
         void to_voxel(std::vector<tipl::vector<3,short> >& points,float ratio,int id = -1);
         void to_end_point_voxels(std::vector<tipl::vector<3,short> >& points1,

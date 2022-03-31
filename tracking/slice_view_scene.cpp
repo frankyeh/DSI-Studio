@@ -339,7 +339,7 @@ void slice_view_scene::get_view_image(QImage& new_view_image,std::shared_ptr<Sli
         if(cur_tracking_window["roi_track"].toInt())
             cur_tracking_window.tractWidget->draw_tracts(cur_dim,
                                                      current_slice->slice_pos[cur_dim],
-                                                     scaled_image,display_ratio,uint32_t(cur_tracking_window["roi_track_count"].toInt()));
+                                                     scaled_image,display_ratio);
     }
 
 
