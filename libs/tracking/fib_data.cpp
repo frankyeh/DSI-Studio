@@ -1850,8 +1850,7 @@ bool fib_data::get_atlas_roi(std::shared_ptr<atlas> at,unsigned int roi_index,st
         error_msg = "no mni mapping";
         return false;
     }
-    unsigned int thread_count = std::thread::hardware_concurrency();
-    std::vector<std::vector<tipl::vector<3,short> > > buf(thread_count);
+    std::vector<std::vector<tipl::vector<3,short> > > buf(std::thread::hardware_concurrency());
 
     // trigger atlas loading to avoid crash in multi thread
     if(!at->load_from_file())
@@ -1885,13 +1884,18 @@ bool fib_data::get_atlas_all_roi(std::shared_ptr<atlas> at,std::vector<std::vect
         return false;
     }
 
-    points.clear();
-    points.resize(at->get_list().size());
-    std::vector<std::mutex> push_back_mutex(points.size());
+
+    std::vector<std::vector<std::vector<tipl::vector<3,short> > > > region_voxels(std::thread::hardware_concurrency());
+    for(auto& region : region_voxels)
+    {
+        region.clear();
+        region.resize(at->get_list().size());
+    }
+
     if(at->is_multiple_roi)
     {
         tipl::par_for(tipl::begin_index(s2t.shape()),tipl::end_index(s2t.shape()),
-                    [&](const tipl::pixel_index<3>& index)
+                    [&](const tipl::pixel_index<3>& index,size_t id)
         {
             std::vector<uint16_t> region_indicies;
             at->region_indices_at(s2t[index.index()],region_indicies);
@@ -1901,23 +1905,30 @@ bool fib_data::get_atlas_all_roi(std::shared_ptr<atlas> at,std::vector<std::vect
             for(unsigned int i = 0;i < region_indicies.size();++i)
             {
                 auto region_index = region_indicies[i];
-                std::lock_guard<std::mutex> lock(push_back_mutex[region_index]);
-                points[region_index].push_back(point);
+                region_voxels[id][region_index].push_back(point);
             }
         });
     }
     else
     {
         tipl::par_for(tipl::begin_index(s2t.shape()),tipl::end_index(s2t.shape()),
-            [&](const tipl::pixel_index<3>& index)
+            [&](const tipl::pixel_index<3>& index,size_t id)
         {
             int region_index = at->region_index_at(s2t[index.index()]);
-            if(region_index < 0 || region_index >= int(points.size()))
+            if(region_index < 0 || region_index >= int(region_voxels[id].size()))
                 return;
-            std::lock_guard<std::mutex> lock(push_back_mutex[uint32_t(region_index)]);
-            points[uint32_t(region_index)].push_back(tipl::vector<3,short>(index.begin()));
+            region_voxels[id][uint32_t(region_index)].push_back(tipl::vector<3,short>(index.begin()));
         });
     }
+
+    // aggregating results from all threads
+    tipl::par_for(at->get_list().size(),[&](size_t i)
+    {
+        for(size_t j = 1;j < region_voxels.size();++j)
+            region_voxels[0][i].insert(region_voxels[0][i].end(),
+                    std::make_move_iterator(region_voxels[j][i].begin()),std::make_move_iterator(region_voxels[j][i].end()));
+    });
+    region_voxels[0].swap(points);
     return true;
 }
 
