@@ -774,7 +774,7 @@ bool load_nhdr(QStringList file_list,std::vector<std::shared_ptr<DwiHeader> >& d
 bool load_4d_fdf(QStringList file_list,std::vector<std::shared_ptr<DwiHeader> >& dwi_files)
 {
     std::vector<tipl::image<3> > image_buf;
-    int64_t plane_size = 0;
+    bool scan_2d = true;
     for (int index = 0;progress::at(index,file_list.size());++index)
     {
         std::map<std::string,std::string> value_list;
@@ -807,64 +807,106 @@ bool load_4d_fdf(QStringList file_list,std::vector<std::shared_ptr<DwiHeader> >&
         // allocate all space
         if(index == 0)
         {
-            float fov1(0),fov2(0),fov3(0);
-            unsigned int width(0),height(0),depth(0),dwi_num(0);
-            if(!(std::istringstream(value_list["array_dim"]) >> dwi_num) ||
-               !(std::istringstream(value_list["matrix[]"]) >> width >> height ) ||
-               !(std::istringstream(value_list["slices"]) >> depth) ||
-               !(std::istringstream(value_list["roi[]"]) >> fov1 >> fov2 >> fov3))
+            unsigned int dwi_num(0);
+            tipl::shape<3> shape;
+            tipl::vector<3> fov;
+            // 2D acquisition
+            if(std::istringstream(value_list["slices"]) >> shape[2])
+            {
+                if(!(std::istringstream(value_list["matrix[]"]) >> shape[0] >> shape[1]))
+                {
+                    src_error_msg = "cannot read matrix information";
+                    return false;
+                }
+            }
+            else
+            // 3D acquisition
+            {
+                scan_2d = false;
+                if(!(std::istringstream(value_list["matrix[]"]) >> shape[0] >> shape[1] >> shape[2]))
+                {
+                    src_error_msg = "cannot read matrix information";
+                    return false;
+                }
+            }
+
+            if(!(std::istringstream(value_list["array_dim"]) >> dwi_num) || dwi_num == 0 ||
+               !(std::istringstream(value_list["roi[]"]) >> fov[0] >> fov[1] >> fov[2]))
+            {
+                src_error_msg = "no array_dim or roi data";
                 return false;
-            plane_size = int64_t(width*height);
+            }
+
+            // calculate voxel size
+            {
+                fov *= 10.0f;
+                fov[0] /= float(shape[0]);
+                fov[1] /= float(shape[1]);
+                fov[2] /= float(shape[2]);
+                if(scan_2d)
+                    fov[2] *= 10.0f;
+            }
+
             image_buf.resize(dwi_num);
             for(unsigned int i = 0;i < dwi_num;++i)
             {
-                image_buf[i].resize(tipl::shape<3>(width,height,depth));
+                image_buf[i].resize(shape);
                 dwi_files.push_back(std::make_shared<DwiHeader>());
-                dwi_files.back()->image.resize(tipl::shape<3>(width,height,depth));
-                dwi_files.back()->voxel_size[0] = fov1*10.0f/float(width);
-                dwi_files.back()->voxel_size[1] = fov2*10.0f/float(height);
-                dwi_files.back()->voxel_size[2] = fov3*100.0f/float(depth);
+                dwi_files.back()->image.resize(shape);
+                dwi_files.back()->voxel_size = fov;
                 dwi_files.back()->file_name = value_list["*studyid"];
-                //dwi_files
-            }
-            if(dwi_files.empty())
-            {
-                src_error_msg = "no dwi image loaded";
-                return false;
             }
             dwi_files.back()->report = " The diffusion images were acquired on a Varian scanner.";
         }
-        // get DWI and slice location
-        size_t dwi_id,slice_id;
+        // get DWI location
+        size_t dwi_id;
+        if(!(std::istringstream(value_list["array_index"]) >> dwi_id) || (--dwi_id) >= dwi_files.size())
         {
-            int v1(0),v2(0);
-            if(!(std::istringstream(value_list["array_index"]) >> v1) ||
-               !(std::istringstream(value_list["slice_no"]) >> v2))
-                return false;
-            v1-=1;
-            v2-=1;
-            if(v1 < 0 || v1 >= int(dwi_files.size()) || v2 < 0 || v2 >= dwi_files.front()->image.depth())
-                return false;
-            dwi_id = size_t(v1);
-            slice_id = size_t(v2);
+            src_error_msg = "error reading array_index";
+            return false;
         }
         // get b_value
-        if(slice_id == 0)
+        if(dwi_files[uint32_t(dwi_id)]->bvalue == 0.0f)
         {
             if(!(std::istringstream(value_list["dro"]) >> dwi_files[dwi_id]->bvec[0]) ||
                !(std::istringstream(value_list["dpe"]) >> dwi_files[dwi_id]->bvec[1]) ||
                !(std::istringstream(value_list["dsl"]) >> dwi_files[dwi_id]->bvec[2]) ||
                !(std::istringstream(value_list["bvalue"]) >> dwi_files[dwi_id]->bvalue))
+            {
+                src_error_msg = "no btable information";
                 return false;
+            }
             dwi_files[uint32_t(dwi_id)]->bvec.normalize();
         }
-        std::ifstream in(file_list[index].toLocal8Bit().begin(),std::ifstream::binary);
-        in.seekg(-plane_size*4,std::ios_base::end);
-        if(!in.read(reinterpret_cast<char*>(&*(image_buf[dwi_id].begin() + plane_size*int64_t(slice_id))),plane_size*4))
+
+        std::ifstream in(file_list[index].toStdString().c_str(),std::ifstream::binary);
+        if(scan_2d)
         {
-            src_error_msg = "read image failed";
-            return false;
+            // get DWI and slice location
+            size_t slice_id;
+            if(!(std::istringstream(value_list["slice_no"]) >> slice_id) || (--slice_id >= size_t(dwi_files[dwi_id]->image.depth())))
+            {
+                src_error_msg = "invalid slice no";
+                return false;
+            }
+            int64_t plane_size = int64_t(image_buf[dwi_id].plane_size());
+            in.seekg(-plane_size*4,std::ios_base::end);
+            if(!in.read(reinterpret_cast<char*>(&*(image_buf[dwi_id].begin() + plane_size*int64_t(slice_id))),plane_size*4))
+            {
+                src_error_msg = "read image failed";
+                return false;
+            }
         }
+        else
+        {
+            in.seekg(-int64_t(image_buf[dwi_id].size()*4),std::ios_base::end);
+            if(!in.read(reinterpret_cast<char*>(&*(image_buf[dwi_id].begin())),image_buf[dwi_id].size()*4))
+            {
+                src_error_msg = "read image failed";
+                return false;
+            }
+        }
+
     }
 
 
