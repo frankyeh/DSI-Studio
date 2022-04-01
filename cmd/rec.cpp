@@ -119,50 +119,34 @@ int rec(program_option& po)
         src.voxel.param[2] = po.get("param2",src.voxel.param[2]);
 
 
+    if(po.has("rotate_to") || po.has("align_to"))
     {
-        if(po.has("rotate_to"))
+        std::string file_name = po.has("rotate_to") ? po.get("rotate_to"):po.get("align_to");
+        gz_nifti in;
+        if(!in.load_from_file(file_name.c_str()))
         {
-            std::string file_name = po.get("rotate_to");
-            gz_nifti in;
-            if(!in.load_from_file(file_name.c_str()))
-            {
-                std::cout << "failed to read " << file_name << std::endl;
-                return 1;
-            }
-            tipl::image<3,unsigned char> I;
-            tipl::vector<3> vs;
-            in.get_voxel_size(vs);
-            in >> I;
-            std::cout << "running rigid body transformation" << std::endl;
-            tipl::transformation_matrix<float> T;
-            bool terminated = false;
-
-            tipl::filter::gaussian(I);
-            tipl::filter::gaussian(I);
-            tipl::filter::gaussian(src.dwi);
-            tipl::filter::gaussian(src.dwi);
-            linear_with_mi(I,vs,src.dwi,src.voxel.vs,T,tipl::reg::rigid_body,terminated);
-
-            std::cout << "DWI rotated." << std::endl;
-            src.rotate(I.shape(),vs,T);
+            std::cout << "failed to read " << file_name << std::endl;
+            return 1;
         }
+        tipl::image<3,unsigned char> I;
+        tipl::vector<3> vs;
+        in.get_voxel_size(vs);
+        in >> I;
+        if(po.has("rotate_to"))
+            std::cout << "running rigid body transformation" << std::endl;
         else
-            if (po.has("affine"))
-            {
-                std::cout << "reading transformation matrix" <<std::endl;
-                std::ifstream in(po.get("affine").c_str());
-                std::vector<double> T((std::istream_iterator<float>(in)),
-                                     (std::istream_iterator<float>()));
-                if(T.size() != 12)
-                {
-                    std::cout << "invalid transfformation matrix." <<std::endl;
-                    return 1;
-                }
-                tipl::transformation_matrix<double> affine;
-                std::copy(T.begin(),T.end(),affine.begin());
-                std::cout << "rotating images" << std::endl;
-                src.rotate(src.voxel.dim,src.voxel.vs,affine);
-            }
+            std::cout << "running affine transformation" << std::endl;
+
+        tipl::transformation_matrix<float> T;
+        bool terminated = false;
+
+        tipl::filter::gaussian(I);
+        tipl::filter::gaussian(src.dwi);
+
+        linear_with_mi(I,vs,src.dwi,src.voxel.vs,T,po.has("rotate_to") ? tipl::reg::rigid_body : tipl::reg::affine,terminated);
+
+        std::cout << "DWI rotated." << std::endl;
+        src.rotate(I.shape(),vs,T);
     }
 
     if(po.has("save_src") || po.has("save_nii"))
