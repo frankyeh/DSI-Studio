@@ -1571,19 +1571,13 @@ void GLWidget::makeTracts(void)
         }
     }
 
-    tipl::image<2,float> max_z_map, min_z_map, max_x_map, min_x_map, min_y_map, max_y_map;
+    tipl::shape<2> map_shape(64,64);
+    auto dim = cur_tracking_window.handle->dim;
+    tipl::image<2,float> max_z_map(map_shape), min_z_map(map_shape), max_x_map(map_shape),
+                         min_x_map(map_shape), min_y_map(map_shape), max_y_map(map_shape);
 
     if(tract_shader)
     {
-        max_x_map.resize(tipl::shape<2>(cur_tracking_window.handle->dim.height(),
-                                           cur_tracking_window.handle->dim.depth()));
-        max_y_map.resize(tipl::shape<2>(cur_tracking_window.handle->dim.width(),
-                                           cur_tracking_window.handle->dim.depth()));
-        max_z_map.resize(tipl::shape<2>(cur_tracking_window.handle->dim.width(),
-                                           cur_tracking_window.handle->dim.height()));
-        min_x_map.resize(max_x_map.shape());
-        min_y_map.resize(max_y_map.shape());
-        min_z_map.resize(max_z_map.shape());
 
         std::fill(min_x_map.begin(),min_x_map.end(),cur_tracking_window.handle->dim.width());
         std::fill(min_y_map.begin(),min_y_map.end(),cur_tracking_window.handle->dim.height());
@@ -1598,26 +1592,26 @@ void GLWidget::makeTracts(void)
             if (vertex_count <= 1)
                 return;
             const float* data_iter = &*(active_tract_model->get_tract(data_index).begin());
-            for (unsigned int j = 0, index = 0; index < vertex_count;j += 3, data_iter += 3, ++index)
+            for (unsigned int index = 0; index < vertex_count;data_iter += 3, ++index)
             {
-                int x = int(data_iter[0]);
-                int y = int(data_iter[1]);
-                int z = int(data_iter[2]);
+                int x = (int(data_iter[0]) << 6)/int(dim[0]);
+                int y = (int(data_iter[1]) << 6)/int(dim[1]);
+                int z = (int(data_iter[2]) << 6)/int(dim[2]);
                 if(max_x_map.shape().is_valid(y,z))
                 {
-                    size_t pos = size_t(y + z*max_x_map.width());
+                    size_t pos = size_t(y + (z << 6));
                     max_x_map[pos] = std::max<float>(max_x_map[pos],data_iter[0]);
                     min_x_map[pos] = std::min<float>(min_x_map[pos],data_iter[0]);
                 }
                 if(max_y_map.shape().is_valid(x,z))
                 {
-                    size_t pos = size_t(x + z*max_y_map.width());
+                    size_t pos = size_t(x + (z << 6));
                     max_y_map[pos] = std::max<float>(max_y_map[pos],data_iter[1]);
                     min_y_map[pos] = std::min<float>(min_y_map[pos],data_iter[1]);
                 }
                 if(max_z_map.shape().is_valid(x,y))
                 {
-                    size_t pos = size_t(x + y*max_z_map.width());
+                    size_t pos = size_t(x + (y << 6));
                     max_z_map[pos] = std::max<float>(max_z_map[pos],data_iter[2]);
                     min_z_map[pos] = std::min<float>(min_z_map[pos],data_iter[2]);
                 }
@@ -1738,29 +1732,29 @@ void GLWidget::makeTracts(void)
 
             if(tract_shader)
             {
-                int x = int(data_iter[0]);
-                int y = int(data_iter[1]);
-                int z = int(data_iter[2]);
+                int x = (int(data_iter[0]) << 6)/int(dim[0]);
+                int y = (int(data_iter[1]) << 6)/int(dim[1]);
+                int z = (int(data_iter[2]) << 6)/int(dim[2]);
                 float d = 1.0f;
                 if(max_x_map.shape().is_valid(y,z))
                 {
                     size_t pos = size_t(y + z*max_x_map.width());
                     d += std::min<float>(4.0f,
-                                    std::min<float>(std::max<float>(0.0f,max_x_map[pos]-data_iter[0]),
+                                         std::min<float>(std::max<float>(0.0f,max_x_map[pos]-data_iter[0]),
                                                     std::max<float>(0.0f,data_iter[0]-min_x_map[pos])));
                 }
                 if(max_y_map.shape().is_valid(x,z))
                 {
                     size_t pos = size_t(x + z*max_y_map.width());
                     d += std::min<float>(4.0f,
-                                    std::min<float>(std::max<float>(0.0f,max_y_map[pos]-data_iter[1]),
+                                         std::min<float>(std::max<float>(0.0f,max_y_map[pos]-data_iter[1]),
                                                     std::max<float>(0.0f,data_iter[1]-min_y_map[pos])));
                 }
                 if(max_z_map.shape().is_valid(x,y))
                 {
                     size_t pos = size_t(x + y*max_z_map.width());
                     d += std::min<float>(4.0f,
-                                    std::min<float>(std::max<float>(0.0f,max_z_map[pos]-data_iter[2]),
+                                         std::min<float>(std::max<float>(0.0f,max_z_map[pos]-data_iter[2]),
                                                     std::max<float>(0.0f,data_iter[2]-min_z_map[pos])));
                 }
                 cur_color *= 1.0f-std::min<float>(d*tract_shaderf,0.95f);
