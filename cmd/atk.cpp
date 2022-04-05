@@ -21,18 +21,7 @@ bool find_string_case_insensitive(const std::string & str1, const std::string & 
 std::string run_auto_track(
                     program_option& po,
                     const std::vector<std::string>& file_list,
-                    const std::vector<unsigned int>& track_id,
-                    float length_ratio,
-                    std::string tolerance_string,
-                    float track_voxel_ratio,
-                    int tip,
-                    bool export_stat,
-                    bool export_trk,
-                    bool overwrite,
-                    bool default_mask,
-                    bool export_template_trk,
-                    size_t thread_count,
-                    int& progress);
+                    const std::vector<unsigned int>& track_id,int& progress);
 
 extern std::string auto_track_report;
 void get_filenames_from(const std::string param,std::vector<std::string>& filenames);
@@ -89,17 +78,7 @@ int atk(program_option& po)
                      track_id))
         return 1;
     int progress;
-    std::string error = run_auto_track(po,file_list,track_id,
-                                po.get("length_ratio",1.25f),
-                                po.get("tolerance","16,18,20"),
-                                po.get("track_voxel_ratio",2),
-                                po.get("tip",32),
-                                po.get("export_stat",1),
-                                po.get("export_trk",1),
-                                po.get("overwrite",0),
-                                po.get("default_mask",0),
-                                po.get("export_template_trk",0),
-                                po.get("thread_count",std::thread::hardware_concurrency()),progress);
+    std::string error = run_auto_track(po,file_list,track_id,progress);
     if(error.empty())
     {
         if(po.has("report"))

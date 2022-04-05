@@ -122,22 +122,22 @@ struct file_holder{
     }
 };
 
-std::string run_auto_track(
-                    program_option& po,
-                    const std::vector<std::string>& file_list,
-                    const std::vector<unsigned int>& track_id,
-                    float length_ratio,
-                    std::string tolerance_string,
-                    float track_voxel_ratio,
-                    int tip,
-                    bool export_stat,
-                    bool export_trk,
-                    bool overwrite,
-                    bool default_mask,
-                    bool export_template_trk,
-                    size_t thread_count,
-                    int& prog)
+std::string run_auto_track(program_option& po,const std::vector<std::string>& file_list,const std::vector<unsigned int>& track_id,int& prog)
 {
+
+    float length_ratio = po.get("length_ratio",1.25f);
+    std::string tolerance_string = po.get("tolerance","16,18,20");
+    float track_voxel_ratio = po.get("track_voxel_ratio",2.0f);
+    int tip = po.get("tip",32);
+    bool export_stat = po.get("export_stat",1);
+    bool export_trk = po.get("export_trk",1);
+    bool overwrite = po.get("overwrite",0);
+    bool default_mask = po.get("default_mask",0);
+    bool export_template_trk = po.get("export_template_trk",0);
+    bool check_ending = po.get("check_ending",1);
+    uint32_t thread_count = uint32_t(po.get("thread_count",std::thread::hardware_concurrency()));
+
+
     std::vector<float> tolerance;
     {
         std::istringstream in(tolerance_string);
@@ -298,7 +298,7 @@ std::string run_auto_track(
                     ThreadData thread(handle);
                     {
                         thread.param.tip_iteration = uint8_t(tip);
-                        thread.param.check_ending = !QString(track_name.c_str()).contains("Cingulum");
+                        thread.param.check_ending = check_ending && !QString(track_name.c_str()).contains("Cingulum");
                         thread.param.stop_by_tract = 1;
                         if(!thread.roi_mgr->setAtlas(track_id[j],cur_tolerance))
                             return handle->error_msg + " at " + fib_file_name;
@@ -543,19 +543,20 @@ void auto_track::on_run_clicked()
     prog = 0;
     timer->start(5000);
     progress prog_("");
+
     program_option po;
-    std::string error = run_auto_track(po,file_list2,track_id,
-                   float(ui->gqi_l->value()),
-                   ui->tolerance->text().toStdString(),
-                   float(ui->track_voxel_ratio->value()),
-                   ui->pruning->value(),
-                   ui->export_stat->isChecked(),
-                   ui->export_trk->isChecked(),
-                   ui->overwrite->isChecked(),
-                   ui->default_mask->isChecked(),
-                   ui->output_template_trk->isChecked(),
-                   size_t(ui->thread_count->value()),
-                   prog);
+    po["length_ratio"] = float(ui->gqi_l->value());
+    po["tolerance"] = ui->tolerance->text().toStdString();
+    po["track_voxel_ratio"] = float(ui->track_voxel_ratio->value());
+    po["tip"] = ui->pruning->value();
+    po["export_stat"] = ui->export_stat->isChecked() ? 1 : 0;
+    po["export_trk"] = ui->export_trk->isChecked()? 1 : 0;
+    po["overwrite"] = ui->overwrite->isChecked()? 1 : 0;
+    po["default_mask"] = ui->default_mask->isChecked()? 1 : 0;
+    po["export_template_trk"] = ui->output_template_trk->isChecked()? 1 : 0;
+    po["thread_count"] = ui->thread_count->value();
+
+    std::string error = run_auto_track(po,file_list2,track_id,prog);
     timer->stop();
     ui->run->setEnabled(true);
     progress_bar->setVisible(false);
