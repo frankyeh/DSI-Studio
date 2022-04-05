@@ -21,7 +21,14 @@ class program_option{
         used.push_back(0);
         return true;
     }
-
+public:
+    struct program_option_assign{
+        const char* name = nullptr;
+        program_option* po = nullptr;
+        program_option_assign(const char* name_,program_option* po_):name(name_),po(po_){}
+        template<typename T> void operator=(const T& rhs)         {po->set(name,(std::ostringstream() << rhs).str());}
+    };
+    inline program_option_assign operator[](const char* name)     {return program_option_assign(name,this);}
 public:
     std::string error_msg;
 
