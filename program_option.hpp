@@ -26,7 +26,12 @@ public:
         const char* name = nullptr;
         program_option* po = nullptr;
         program_option_assign(const char* name_,program_option* po_):name(name_),po(po_){}
-        template<typename T> void operator=(const T& rhs)         {po->set(name,(std::ostringstream() << rhs).str());}
+        template<typename T> void operator=(const T& rhs)
+        {
+            std::ostringstream out;
+            out << rhs;
+            po->set(name,out.str());
+        }
     };
     inline program_option_assign operator[](const char* name)     {return program_option_assign(name,this);}
 public:
