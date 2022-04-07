@@ -1517,87 +1517,29 @@ void TractModel::get_in_slice_tracts(unsigned char dim,int pos,
     };
 
     unsigned int skip = std::max<unsigned int>(1,uint32_t(tract_data.size())/max_count);
-    if(!pT) // native space
+    for (unsigned int index = 0;!terminated && index < tract_data.size();add_line(index),index += skip)
     {
-        for (unsigned int index = 0;!terminated && index < tract_data.size();add_line(index),index += skip)
+        const auto& tract = tract_data[index];
+        if(tract.size() < 6)
+            continue;
+        tipl::vector<3> prev_pos(&tract[3]);
+        for (unsigned int j = 0;j < tract.size();j += 3)
         {
-            const auto& tract = tract_data[index];
-            if(tract.size() < 6)
-                continue;
-            tipl::vector<3> prev_pos(&tract[3]);
-            for (unsigned int j = 0;j < tract.size();j += 3)
+            tipl::vector<3> t(&tract[j]);
+            if(pT)
+                t.to(*pT);
+            if(int(std::round(t[dim])) == pos)
             {
-                if(int(std::round(tract[j+dim])) == pos)
-                {
-                    tipl::vector<2,float> p;
-                    tipl::space2slice(dim,tract[j],tract[j+1],tract[j+2],p[0],p[1]);
-                    line.push_back(p);
-                    if(track_color_style)
-                        color.push_back(tract_color[index]);
-                    else
-                        add_color(tipl::vector<3>(&tract[j]),prev_pos);
-                }
+                tipl::vector<2,float> p;
+                tipl::space2slice(dim,t[0],t[1],t[2],p[0],p[1]);
+                line.push_back(p);
+                if(track_color_style)
+                    color.push_back(tract_color[index]);
                 else
-                    add_line(index);
+                    add_color(std::move(t),prev_pos);
             }
-        }
-    }
-    else
-    {
-        auto& T = *pT;
-        if(T[1]*T[2]*T[4]*T[6]*T[8]*T[9] == 0.0f) // simple transform
-        {
-            float scale = T[0];
-            tipl::vector<3,float> shift(T[3],T[7],T[11]);
-            pos -= shift[dim];
-            for (unsigned int index = 0;!terminated && index < tract_data.size();add_line(index),index += skip)
-            {
-                const auto& tract = tract_data[index];
-                if(tract.size() < 6)
-                    continue;
-                tipl::vector<3> prev_pos(&tract[3]);
-                for (unsigned int j = 0;j < tract.size();j += 3)
-                {
-                    if(int(std::round(tract[j+dim]*scale)) == pos)
-                    {
-                        tipl::vector<3> t(&tract[j]);
-                        t *= scale;
-                        t += shift;
-                        tipl::vector<2,float> p;
-                        tipl::space2slice(dim,t[0],t[1],t[2],p[0],p[1]);
-                        line.push_back(p);
-                        if(track_color_style)
-                            color.push_back(tract_color[index]);
-                        else
-                            add_color(tipl::vector<3>(&tract[j]),prev_pos);
-                    }
-                    else
-                        add_line(index);
-                }
-            }
-        }
-        else
-        // more complicated transformation
-        {
-            tipl::vector<3,float> rotate(&T[0]+dim*4);
-            pos -= T[dim*4+3];
-            for (unsigned int index = 0;!terminated && index < tract_data.size();add_line(index),index += skip)
-            {
-                const auto& tract = tract_data[index];
-                for (unsigned int j = 0;j < tract.size();j += 3)
-                {
-                    tipl::vector<3> t(&tract[j]);
-                    if(int(std::round(rotate*t)) == pos)
-                    {
-                        t.to(T);
-                        tipl::vector<2,float> p;
-                        tipl::space2slice(dim,t[0],t[1],t[2],p[0],p[1]);
-                        line.push_back(p);
-                    }
-                    else
-                        add_line(index);
-                }
-            }
+            else
+                add_line(index);
         }
     }
 }
