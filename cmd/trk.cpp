@@ -607,6 +607,7 @@ int trk(program_option& po)
     }
     return 0;
 }
+extern std::vector<std::string> fa_template_list;
 int trk(program_option& po,std::shared_ptr<fib_data> handle)
 {
     if (po.has("threshold_index"))
@@ -643,6 +644,12 @@ int trk(program_option& po,std::shared_ptr<fib_data> handle)
                 return 1;
             }
         }
+    }
+    if(po.has("template"))
+    {
+        for(size_t id = 0;id < fa_template_list.size();++id)
+            std::cout << "template " << id << ":" << std::filesystem::path(fa_template_list[id]).stem() << std::endl;
+        handle->set_template_id(po.get("template",size_t(0)));
     }
 
     tipl::shape<3> shape = handle->dim;
