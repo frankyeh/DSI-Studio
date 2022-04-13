@@ -122,7 +122,7 @@ void CustomSliceModel::get_slice(tipl::color_image& image,
                            unsigned char cur_dim,
                            const std::vector<std::shared_ptr<SliceModel> >& overlay_slices) const
 {
-    if(!picture.empty() && dim[cur_dim] == 1)
+    if(!picture.empty() && (dim[cur_dim] != picture.width() && dim[cur_dim] != picture.height()))
         image = picture;
     else
         return SliceModel::get_slice(image,cur_dim,overlay_slices);
@@ -149,6 +149,7 @@ bool CustomSliceModel::initialize(const std::vector<std::string>& files,bool is_
         QString info_file = QString(files[0].c_str()) + ".info.txt";
         if(!QFileInfo(info_file).exists())
         {
+            uint32_t slices_count = 10;
             if(files.size() != 1)
             {
                 error_msg = "multiple jpg/bmp/png files are not supported";
@@ -164,29 +165,22 @@ bool CustomSliceModel::initialize(const std::vector<std::string>& files,bool is_
                 }
                 QImage buf = in.convertToFormat(QImage::Format_RGB32);
                 picture.resize(tipl::shape<2>(uint32_t(in.width()),uint32_t(in.height())));
-                source_images.resize(tipl::shape<3>(uint32_t(in.width()),uint32_t(in.height()),1));
+                source_images.resize(tipl::shape<3>(uint32_t(in.width()),uint32_t(in.height()),slices_count));
                 const uchar* ptr = buf.bits();
-                for(size_t j = 0;j < source_images.size();++j,ptr += 4)
+                for(size_t j = 0;j < source_images.plane_size();++j,ptr += 4)
                 {
-                    source_images[j] = float(*ptr);
                     picture[j] = tipl::rgb(*(ptr+2),*(ptr+1),*ptr);
-                }
-                while(source_images.width() > 4096)
-                {
-                    tipl::downsample_with_padding(source_images);
-                    tipl::downsample_with_padding(picture);
+                    for(size_t k = 0,pos = j;k < slices_count;++k,pos += source_images.plane_size())
+                        source_images[pos] = float(*ptr);
                 }
             }
 
-            if(int(source_images.width()*handle->dim[1]/handle->dim[0])-int(source_images.height()) < 5) // histology
-                vs = handle->vs*(handle->dim.width())/(source_images.width());
-            else
-                vs = handle->vs*0.5f*(handle->dim.width())/(source_images.width());
+            vs = handle->vs*(handle->dim.width())/(source_images.width());
+
             tipl::transformation_matrix<float> M(arg_min,handle->dim,handle->vs,source_images.shape(),vs);
             invT.identity();
             M.save_to_transform(invT.begin());
             T = tipl::inverse(invT);
-            has_transform = true;
         }
         else
         {
