@@ -2238,7 +2238,8 @@ void GLWidget::mousePressEvent(QMouseEvent *event)
             // if only slice is selected or slice is at the front, then move slice
             // if the slice is the picture, then the slice will be moved.
             if(slice_selected && object_distance > slice_distance &&
-                    !cur_tracking_window.current_slice->is_picture())
+                    dynamic_cast<CustomSliceModel*>(cur_tracking_window.current_slice.get()) &&
+                    !dynamic_cast<CustomSliceModel*>(cur_tracking_window.current_slice.get())->picture.empty())
             {
                 editing_option = dragging;
                 return;
