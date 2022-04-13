@@ -1892,7 +1892,7 @@ void tracking_window::on_actionAdjust_Mapping_triggered()
     std::shared_ptr<manual_alignment> manual(new manual_alignment(this,
         reg_slice->get_source(),reg_slice->vs,
         iso_fa,slices[0]->vs,
-        (reg_slice->is_picture() ? tipl::reg::affine : tipl::reg::rigid_body),tipl::reg::cost_type::mutual_info));
+        tipl::reg::rigid_body,tipl::reg::cost_type::mutual_info));
 
     {
         reg_slice->update_transform();
