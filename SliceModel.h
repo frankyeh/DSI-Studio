@@ -35,7 +35,6 @@ public:
     void get_high_reso_slice(tipl::color_image& image,unsigned char) const;
     tipl::const_pointer_image<3> get_source(void) const;
     std::string get_name(void) const;
-    bool is_picture(void) const{return dim[0] == 1 || dim[1] == 1 || dim[2] == 1;}
 public:
     template<typename value_type1,typename value_type2>
     void toDiffusionSpace(unsigned char cur_dim,value_type1 x, value_type1 y,
