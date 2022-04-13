@@ -165,8 +165,7 @@ int rec(program_option& po)
     if(method_index == 7)
     {
         for(size_t id = 0;id < fa_template_list.size();++id)
-            std::cout << "template " << id << ":" <<
-            QFileInfo(fa_template_list[id].c_str()).baseName().toStdString() << std::endl;
+            std::cout << "template " << id << ":" << std::filesystem::path(fa_template_list[id]).stem() << std::endl;
     }
 
     src.voxel.template_id = size_t(po.get("template",src.voxel.template_id));
