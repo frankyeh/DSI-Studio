@@ -80,6 +80,8 @@ private slots:
 
     void on_pushButton_clicked();
 
+    void on_refine_clicked();
+
 public slots:
     void on_rerun_clicked();
     void check_reg();
