@@ -57,13 +57,13 @@ inline float linear_with_cc(const tipl::image<3,float>& from,
 }
 
 size_t linear_cuda(const tipl::image<3,float>& from,
-                  tipl::vector<3> from_vs,
-                  const tipl::image<3,float>& to,
-                  tipl::vector<3> to_vs,
-                  tipl::affine_transform<float>& arg,
-                  tipl::reg::reg_type reg_type,
-                  bool& terminated,
-                  const float* bound = tipl::reg::reg_bound);
+                              tipl::vector<3> from_vs,
+                              const tipl::image<3,float>& to,
+                              tipl::vector<3> to_vs,
+                              tipl::affine_transform<float>& arg,
+                              tipl::reg::reg_type reg_type,
+                              bool& terminated,
+                              const float* bound = tipl::reg::reg_bound);
 
 
 inline size_t linear_with_mi(const tipl::image<3,float>& from,
@@ -81,7 +81,7 @@ inline size_t linear_with_mi(const tipl::image<3,float>& from,
     if constexpr (tipl::use_cuda)
         result = linear_cuda(from,from_vs,to,to_vs,arg,tipl::reg::reg_type(reg_type),terminated,bound);
     else
-        result = tipl::reg::linear_mr<tipl::reg::mutual_information>(from,from_vs,to,to_vs,arg,tipl::reg::reg_type(reg_type),[&](void){return terminated;},0.01,bound);
+        result = tipl::reg::linear_two_way<tipl::reg::mutual_information>(from,from_vs,to,to_vs,arg,tipl::reg::reg_type(reg_type),[&](void){return terminated;},bound);
     std::cout << "MI:" << result << std::endl;
     std::cout << arg;
     return result;
