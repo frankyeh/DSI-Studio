@@ -626,9 +626,20 @@
                  </spacer>
                 </item>
                 <item>
+                 <widget class="QPushButton" name="refine">
+                  <property name="text">
+                   <string>Refine</string>
+                  </property>
+                  <property name="icon">
+                   <iconset resource="icons.qrc">
+                    <normaloff>:/icons/icons/run.xpm</normaloff>:/icons/icons/run.xpm</iconset>
+                  </property>
+                 </widget>
+                </item>
+                <item>
                  <widget class="QPushButton" name="rerun">
                   <property name="text">
-                   <string>Run Registration</string>
+                   <string>Re-Run Registration</string>
                   </property>
                   <property name="icon">
                    <iconset resource="icons.qrc">
