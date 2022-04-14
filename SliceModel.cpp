@@ -181,6 +181,7 @@ bool CustomSliceModel::initialize(const std::vector<std::string>& files,bool is_
             invT.identity();
             M.save_to_transform(invT.begin());
             T = tipl::inverse(invT);
+            has_transform = true;
         }
         else
         {
@@ -459,8 +460,7 @@ void CustomSliceModel::argmin(tipl::reg::reg_type reg_type)
     tipl::filter::gaussian(to);
     tipl::filter::gaussian(from);
     tipl::filter::gaussian(from);
-    const float bound[8] = {1.0f,-1.0f,0.15f,-0.15f,0.0f,0.0f,0.0f,0.0f};
-    linear_with_mi(to,vs,from,handle->vs,arg_min,reg_type,terminated,bound);
+    linear_with_mi(to,vs,from,handle->vs,arg_min,reg_type,terminated);
 
     update_transform();
     running = false;
