@@ -291,7 +291,6 @@ void manual_alignment::slice_pos_moved()
 
 void manual_alignment::check_reg()
 {
-    ui->rerun->setText(thread.running ? "Stop" : "Run registration");
     {
         disconnect_arg_update();
         ui->tx->setValue(arg.translocation[0]);
@@ -310,6 +309,16 @@ void manual_alignment::check_reg()
         update_image();
     }
     slice_pos_moved();
+
+    if(!thread.running)
+    {
+        ui->rerun->setText("Run registration");
+        ui->refine->setText("Refine");
+        ui->rerun->setEnabled(true);
+        ui->refine->setEnabled(true);
+        timer->stop();
+    }
+
 }
 
 
@@ -336,7 +345,7 @@ void manual_alignment::on_rerun_clicked()
     if(thread.running)
     {
         thread.clear();
-        ui->rerun->setText("Run registration");
+        check_reg();
         return;
     }
 
@@ -362,10 +371,49 @@ void manual_alignment::on_rerun_clicked()
         thread.running = false;
     });
     ui->rerun->setText("Stop");
+    ui->refine->setEnabled(false);
     if(timer)
         timer->start();
 
 }
+
+
+void manual_alignment::on_refine_clicked()
+{
+    if(thread.running)
+    {
+        thread.clear();
+        check_reg();
+        return;
+    }
+
+    auto cost = ui->cost_type->currentIndex() == 0 ? tipl::reg::corr : tipl::reg::mutual_info;
+    int reg_type = 0;
+    if(ui->reg_translocation->isChecked())
+        reg_type += int(tipl::reg::translocation);
+    if(ui->reg_rotation->isChecked())
+        reg_type += int(tipl::reg::rotation);
+    if(ui->reg_scaling->isChecked())
+        reg_type += int(tipl::reg::scaling);
+    if(ui->reg_tilt->isChecked())
+        reg_type += int(tipl::reg::tilt);
+
+    load_param();
+
+    thread.run([this,cost,reg_type]()
+    {
+        if(cost == tipl::reg::mutual_info)
+            linear_with_mi_refine(from,from_vs,to,to_vs,arg,tipl::reg::reg_type(reg_type),thread.terminated);
+        else
+            linear_with_cc(from,from_vs,to,to_vs,arg,tipl::reg::reg_type(reg_type),thread.terminated);
+        thread.running = false;
+    });
+    ui->refine->setText("Stop");
+    ui->rerun->setEnabled(false);
+    if(timer)
+        timer->start();
+}
+
 
 void manual_alignment::on_switch_view_clicked()
 {
@@ -493,4 +541,5 @@ void manual_alignment::on_pushButton_clicked()
 {
     ui->menu_Edit->popup(QCursor::pos());
 }
+
 
