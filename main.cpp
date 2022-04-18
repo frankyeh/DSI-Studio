@@ -154,10 +154,32 @@ bool load_file_name(void)
     return true;
 }
 
+QString version_string(void)
+{
+    QString base = "DSI Studio version: ";
+    #ifdef CUDA_ARCH
+    if constexpr(tipl::use_cuda)
+        base = QString("DSI Studio (CUDA SM%1) version: ").arg(CUDA_ARCH);
+    #endif
+
+    base += DSISTUDIO_RELEASE_NAME;
+
+    base += "\"";
+    unsigned int code = DSISTUDIO_RELEASE_CODE;
+    #ifdef QT6_PATCH
+        base += QStringDecoder(QStringDecoder::Utf8)(reinterpret_cast<const char*>(&code));
+    #else
+        base += QTextCodec::codecForName("UTF-8")->toUnicode(reinterpret_cast<const char*>(&code));
+    #endif
+    base += "\" ";
+    base += __DATE__;
+    return base;
+}
+
 void init_application(void)
 {
     QApplication::setOrganizationName("LabSolver");
-    QApplication::setApplicationName("DSI Studio");
+    QApplication::setApplicationName(version_string());
 
     #ifdef __APPLE__
     QFont font;
@@ -263,7 +285,7 @@ int run_cmd(int ac, char *av[])
         {
             cmd.reset(new QCoreApplication(ac, av));
             cmd->setOrganizationName("LabSolver");
-            cmd->setApplicationName("DSI Studio");
+            cmd->setApplicationName(version_string());
             if(!load_file_name())
             {
                 std::cout << "ERROR: Cannot find template data." << std::endl;
@@ -318,6 +340,7 @@ int run_cmd(int ac, char *av[])
 }
 
 extern console_stream console;
+
 int main(int ac, char *av[])
 {
     if(ac > 2 || QString(av[1]).endsWith(".txt") || QString(av[1]).endsWith(".log"))
@@ -331,8 +354,20 @@ int main(int ac, char *av[])
     QApplication a(ac,av);
     init_application();
     MainWindow w;
-
+    w.setWindowTitle(version_string());
     has_gui = true;
+
+    {
+        if constexpr(tipl::use_cuda)
+        {
+            std::string msg;
+            if(!check_cuda(msg))
+            {
+                QMessageBox::critical(&w,"ERROR",msg.c_str());
+                return 1;
+            }
+        }
+    }
 
     // presentation mode
     QStringList fib_list = QDir(QCoreApplication::applicationDirPath()+ "/presentation").
@@ -343,32 +378,6 @@ int main(int ac, char *av[])
         w.loadFib(QCoreApplication::applicationDirPath() + "/presentation/" + fib_list[0],true);
     }
     else
-    {
-        QString base = "DSI Studio      version: ";
-        #ifdef CUDA_ARCH
-        if constexpr(tipl::use_cuda)
-            base = QString("DSI Studio (CUDA SM%1) version: ").arg(CUDA_ARCH);
-        #endif
         w.show();
-        unsigned int code = DSISTUDIO_RELEASE_CODE;
-        w.setWindowTitle(base + DSISTUDIO_RELEASE_NAME + " \""+
-        #ifdef QT6_PATCH
-                        QStringDecoder(QStringDecoder::Utf8)(reinterpret_cast<const char*>(&code)) +
-        #else
-                        QTextCodec::codecForName("UTF-8")->toUnicode(reinterpret_cast<const char*>(&code)) +
-        #endif
-                                 "\" build: " + __DATE__);
-
-        if constexpr(tipl::use_cuda)
-        {
-            std::string msg;
-            if(!check_cuda(msg))
-            {
-                QMessageBox::critical(&w,"ERROR",msg.c_str());
-                return 1;
-            }
-        }
-
-    }
     return a.exec();
 }
