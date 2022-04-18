@@ -1320,3 +1320,10 @@ void MainWindow::on_tabWidget_currentChanged(int index)
     if(index)
         ui->pwd->setText(QString("[%1]$ ./dsi_studio ").arg(QDir().current().absolutePath()));
 }
+
+void MainWindow::on_clear_settings_clicked()
+{
+    QSettings(QSettings::SystemScope,"LabSolver").clear();
+    QMessageBox::information(this,"DSI Studio","Setting Cleared");
+}
+
