@@ -404,12 +404,14 @@ bool load_region(program_option& po,std::shared_ptr<fib_data> handle,
     std::string file_name = str_list[0].toStdString();
     std::string region_name;
 
-    // --roi=file_name:value
-    if(file_name.find_last_of(':') != std::string::npos &&
-       file_name.at(file_name.find_last_of(':')+1) != '\\')
+    // --roi=file_name:value but avoid windows path that includes drive letter
     {
-        region_name = file_name.substr(file_name.find_last_of(':')+1);
-        file_name = file_name.substr(0,file_name.find_last_of(':'));
+        auto pos = file_name.find_last_of(':');
+        if(pos != std::string::npos && pos != 1) // Windows path
+        {
+            region_name = file_name.substr(pos+1);
+            file_name = file_name.substr(0,pos);
+        }
     }
 
     std::cout << "read region from file:" << file_name;
