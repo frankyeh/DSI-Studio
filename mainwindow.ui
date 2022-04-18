@@ -589,6 +589,13 @@
             </property>
            </spacer>
           </item>
+          <item>
+           <widget class="QPushButton" name="clear_settings">
+            <property name="text">
+             <string>Reset All</string>
+            </property>
+           </widget>
+          </item>
          </layout>
         </item>
         <item>
