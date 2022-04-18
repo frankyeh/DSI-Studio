@@ -89,6 +89,7 @@ private slots:
     void on_xnat_download_clicked();
     void on_styles_activated(int index);
     void on_tabWidget_currentChanged(int index);
+    void on_clear_settings_clicked();
 };
 
 #endif // MAINWINDOW_H
