@@ -1149,13 +1149,14 @@ void RegionTableWidget::save_all_regions(void)
 {
     if (regions.empty())
         return;
+    auto checked_regions = get_checked_regions();
+    if(checked_regions.empty())
+        return;
     QString filename = QFileDialog::getSaveFileName(
                            this,"Save region",item(currentRow(),0)->text() + output_format(),
                            "Region file(*nii.gz *.nii *.mat);;Text file (*.txt);;All file types (*)" );
     if (filename.isEmpty())
         return;
-
-    auto checked_regions = get_checked_regions();
     tipl::shape<3> geo = cur_tracking_window.handle->dim;
     tipl::image<3,unsigned short> mask(geo);
     for (unsigned int i = 0; i < checked_regions.size(); ++i)
