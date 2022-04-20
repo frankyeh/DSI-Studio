@@ -119,34 +119,47 @@ int rec(program_option& po)
         src.voxel.param[2] = po.get("param2",src.voxel.param[2]);
 
 
-    if(po.has("rotate_to") || po.has("align_to"))
+    unsigned char method_index = uint8_t(po.get("method",4));
+
+    if(method_index == 7)
     {
-        std::string file_name = po.has("rotate_to") ? po.get("rotate_to"):po.get("align_to");
-        gz_nifti in;
-        if(!in.load_from_file(file_name.c_str()))
+        for(size_t id = 0;id < fa_template_list.size();++id)
+            std::cout << "template " << id << ":" << std::filesystem::path(fa_template_list[id]).stem() << std::endl;
+    }
+    else
+    {
+        if(po.has("rotate_to") || po.has("align_to"))
         {
-            std::cout << "failed to read " << file_name << std::endl;
-            return 1;
+            std::string file_name = po.has("rotate_to") ? po.get("rotate_to"):po.get("align_to");
+            gz_nifti in;
+            if(!in.load_from_file(file_name.c_str()))
+            {
+                std::cout << "failed to read " << file_name << std::endl;
+                return 1;
+            }
+            tipl::image<3,unsigned char> I;
+            tipl::vector<3> vs;
+            in.get_voxel_size(vs);
+            in >> I;
+            if(po.has("rotate_to"))
+                std::cout << "running rigid body transformation" << std::endl;
+            else
+                std::cout << "running affine transformation" << std::endl;
+
+            tipl::transformation_matrix<float> T;
+            bool terminated = false;
+
+            tipl::filter::gaussian(I);
+            tipl::filter::gaussian(src.dwi);
+
+            linear_with_mi(I,vs,src.dwi,src.voxel.vs,T,po.has("rotate_to") ? tipl::reg::rigid_body : tipl::reg::affine,terminated);
+
+            std::cout << "DWI rotated." << std::endl;
+            src.rotate(I.shape(),vs,T);
         }
-        tipl::image<3,unsigned char> I;
-        tipl::vector<3> vs;
-        in.get_voxel_size(vs);
-        in >> I;
-        if(po.has("rotate_to"))
-            std::cout << "running rigid body transformation" << std::endl;
         else
-            std::cout << "running affine transformation" << std::endl;
-
-        tipl::transformation_matrix<float> T;
-        bool terminated = false;
-
-        tipl::filter::gaussian(I);
-        tipl::filter::gaussian(src.dwi);
-
-        linear_with_mi(I,vs,src.dwi,src.voxel.vs,T,po.has("rotate_to") ? tipl::reg::rigid_body : tipl::reg::affine,terminated);
-
-        std::cout << "DWI rotated." << std::endl;
-        src.rotate(I.shape(),vs,T);
+        if(po.get("align_acpc",src.is_human_data() && src.voxel.vs[0] == src.voxel.vs[2]))
+            src.align_acpc();
     }
 
     if(po.has("save_src") || po.has("save_nii"))
@@ -159,13 +172,6 @@ int rec(program_option& po)
             return -1;
         }
         return 0;
-    }
-    unsigned char method_index = uint8_t(po.get("method",4));
-
-    if(method_index == 7)
-    {
-        for(size_t id = 0;id < fa_template_list.size();++id)
-            std::cout << "template " << id << ":" << std::filesystem::path(fa_template_list[id]).stem() << std::endl;
     }
 
     src.voxel.template_id = size_t(po.get("template",src.voxel.template_id));
