@@ -18,7 +18,6 @@
 #include <QTextCodec>
 #endif
 
-std::string arg_file_name;
 std::string
         fib_template_file_name_2mm,
         device_content_file;
@@ -344,8 +343,6 @@ int main(int ac, char *av[])
 {
     if(ac > 2 || QString(av[1]).endsWith(".txt") || QString(av[1]).endsWith(".log"))
         return run_cmd(ac,av);
-    if(ac == 2)
-        arg_file_name = av[1];
 
     // replace default std::cout buffer
     std::cout.rdbuf(&console);
@@ -378,5 +375,9 @@ int main(int ac, char *av[])
     }
     else
         w.show();
+
+    if(ac == 2)
+        w.openFile(av[1]);
+
     return a.exec();
 }
