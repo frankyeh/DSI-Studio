@@ -80,8 +80,7 @@ void tracking_window::set_data(QString name, QVariant value)
 }
 
 tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_handle) :
-        QMainWindow(parent),ui(new Ui::tracking_window),scene(*this),
-        color_bar(new color_bar_dialog(this)),handle(new_handle)
+        QMainWindow(parent),ui(new Ui::tracking_window),scene(*this),handle(new_handle)
 {
     std::cout << "initiate image/slices" << std::endl;
     fib_data& fib = *new_handle;
@@ -108,6 +107,8 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
             ui->graphicsView->setScene(&scene);
             ui->graphicsView->setCursor(Qt::CrossCursor);
             ui->DeviceDockWidget->hide();
+
+            color_bar.reset(new color_bar_dialog(this)); // need to initiate after glwidget for connect makeTract
         }
         {
             std::cout << "recall previous settings" << std::endl;
@@ -386,7 +387,6 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
     {
         connect(ui->perform_tracking,SIGNAL(clicked()),tractWidget,SLOT(start_tracking()));
         connect(ui->stop_tracking,SIGNAL(clicked()),tractWidget,SLOT(stop_tracking()));
-
         connect(tractWidget,SIGNAL(need_update()),glWidget,SLOT(makeTracts()));
         connect(tractWidget,SIGNAL(need_update()),glWidget,SLOT(update()));
         connect(tractWidget,SIGNAL(cellChanged(int,int)),glWidget,SLOT(update())); //update label
