@@ -1056,8 +1056,12 @@ bool fib_data::load_from_mat(void)
         return true;
     }
 
-    if(!is_mni_image)
-        initial_LPS_nifti_srow(trans_to_mni,dim,vs);
+    {
+        tipl::matrix<4,4,float> ind;
+        ind.identity();
+        if(trans_to_mni == ind)
+            initial_LPS_nifti_srow(trans_to_mni,dim,vs);
+    }
 
     // template matching
     // check if there is any mapping files exist
