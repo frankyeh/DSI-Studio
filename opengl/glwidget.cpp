@@ -2237,12 +2237,14 @@ void GLWidget::mousePressEvent(QMouseEvent *event)
             }
             // if only slice is selected or slice is at the front, then move slice
             // if the slice is the picture, then the slice will be moved.
-            if(slice_selected && object_distance > slice_distance &&
-                    dynamic_cast<CustomSliceModel*>(cur_tracking_window.current_slice.get()) &&
-                    !dynamic_cast<CustomSliceModel*>(cur_tracking_window.current_slice.get())->picture.empty())
+            if(slice_selected && object_distance > slice_distance)
             {
-                editing_option = dragging;
-                return;
+                if(!dynamic_cast<CustomSliceModel*>(cur_tracking_window.current_slice.get()) ||
+                   dynamic_cast<CustomSliceModel*>(cur_tracking_window.current_slice.get())->picture.empty())
+                {
+                    editing_option = dragging;
+                    return;
+                }
             }
             if(region_selected)
                 cur_tracking_window.regionWidget->selectRow(int(selected_index));
@@ -2380,9 +2382,9 @@ void GLWidget::mouseMoveEvent(QMouseEvent *event)
             auto slice = dynamic_cast<CustomSliceModel*>(cur_tracking_window.current_slice.get());
             if (event->buttons() & Qt::LeftButton)
             {
-                slice->arg_min.translocation[0] -= dis[0]*0.5f;
-                slice->arg_min.translocation[1] -= dis[1]*0.5f;
-                slice->arg_min.translocation[2] -= dis[2]*0.5f;
+                slice->arg_min.translocation[0] += dis[0]*0.05f;
+                slice->arg_min.translocation[1] += dis[1]*0.05f;
+                slice->arg_min.translocation[2] += dis[2]*0.05f;
             }
             else
             {
