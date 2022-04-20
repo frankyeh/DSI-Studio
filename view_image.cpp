@@ -49,14 +49,33 @@ bool img_command(tipl::image<3>& data,
     if(cmd == "translocation")
     {
         std::istringstream in(param1);
-        int dx,dy,dz;
-        in >> dx >> dy >> dz;
         tipl::image<3> new_data(data.shape());
-        tipl::draw(data,new_data,tipl::vector<3,int>(dx,dy,dz));
+
+        if(param1.find(".") != std::string::npos)
+        {
+            tipl::transformation_matrix<float> m;
+            m.sr[0] = m.sr[4] = m.sr[8] = 1.0f;
+            in >> m.shift[0] >> m.shift[1] >> m.shift[2];
+            T[3] -= T[0]*m.shift[0];
+            T[7] -= T[5]*m.shift[1];
+            T[11] -= T[10]*m.shift[2];
+            // invert m
+            m.shift[0] = -m.shift[0];
+            m.shift[1] = -m.shift[1];
+            m.shift[2] = -m.shift[2];
+            tipl::resample(data,new_data,m);
+
+        }
+        else
+        {
+            int dx,dy,dz;
+            in >> dx >> dy >> dz;
+            tipl::draw(data,new_data,tipl::vector<3,int>(dx,dy,dz));
+            T[3] -= T[0]*float(dx);
+            T[7] -= T[5]*float(dy);
+            T[11] -= T[10]*float(dz);
+        }
         data.swap(new_data);
-        T[3] -= T[0]*float(dx);
-        T[7] -= T[5]*float(dy);
-        T[11] -= T[10]*float(dz);
         return true;
     }
     if(cmd == "resize")
