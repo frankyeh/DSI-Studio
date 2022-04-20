@@ -3213,7 +3213,7 @@ Tracking</string>
      <normaloff>:/icons/icons/save_all.xpm</normaloff>:/icons/icons/save_all.xpm</iconset>
    </property>
    <property name="text">
-    <string>Save All Regions in One File...</string>
+    <string>Save Checked Regions to One File...</string>
    </property>
   </action>
   <action name="actionFloat_3D_window">
@@ -3285,7 +3285,7 @@ Tracking</string>
      <normaloff>:/icons/icons/save_all.xpm</normaloff>:/icons/icons/save_all.xpm</iconset>
    </property>
    <property name="text">
-    <string>Save All Regions in Multiple Files...</string>
+    <string>Save Checked Regions in Multiple Files...</string>
    </property>
   </action>
   <action name="actionRestore_Settings">
