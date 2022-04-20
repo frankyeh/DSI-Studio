@@ -929,6 +929,13 @@
                <item>
                 <layout class="QHBoxLayout" name="horizontalLayout_4">
                  <item>
+                  <widget class="QCheckBox" name="align_acpc">
+                   <property name="text">
+                    <string>Align AC-PC</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
                   <widget class="QCheckBox" name="check_btable">
                    <property name="statusTip">
                     <string>Check whether b-table is flipped and correct it</string>
