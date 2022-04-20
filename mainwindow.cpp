@@ -7,72 +7,30 @@
 #include <QMimeData>
 #include <QAction>
 #include <QStyleFactory>
+#include <filesystem>
+#include "TIPL/tipl.hpp"
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
-#include "TIPL/tipl.hpp"
-#include <regtoolbox.h>
-#include <qmessagebox.h>
+#include "regtoolbox.h"
 #include "filebrowser.h"
 #include "reconstruction/reconstruction_window.h"
 #include "prog_interface_static_link.h"
 #include "tracking/tracking_window.h"
-#include "mainwindow.h"
 #include "dicom/dicom_parser.h"
-#include "ui_mainwindow.h"
 #include "view_image.h"
 #include "mapping/atlas.hpp"
 #include "libs/gzip_interface.hpp"
-#include "connectometry/group_connectometry_analysis.h"
 #include "libs/tracking/fib_data.hpp"
-#include "manual_alignment.h"
+#include "connectometry/group_connectometry_analysis.h"
 #include "connectometry/createdbdialog.h"
 #include "connectometry/db_window.h"
 #include "connectometry/group_connectometry.hpp"
-#include "program_option.hpp"
 #include "libs/dsi/image_model.hpp"
+#include "manual_alignment.h"
 #include "auto_track.h"
-#include <filesystem>
 #include "xnat_dialog.h"
+#include "console.h"
 
-console_stream console;
-
-bool is_main_thread(void);
-
-void console_stream::show_output(void)
-{
-    if(!is_main_thread() || !log_window || !has_output)
-        return;
-    QStringList strSplitted;
-    {
-        std::lock_guard<std::mutex> lock(edit_buf);
-        strSplitted = buf.split("\n");
-        buf = strSplitted.back();
-    }
-    for(int i = 0; i+1 < strSplitted.size(); i++)
-        log_window->append(strSplitted.at(i));
-    has_output = false;
-}
-std::basic_streambuf<char>::int_type console_stream::overflow(std::basic_streambuf<char>::int_type v)
-{
-    {
-        std::lock_guard<std::mutex> lock(edit_buf);
-        buf.push_back(char(v));
-    }
-
-    if (v == '\n')
-    {
-        has_output = true;
-        show_output();
-    }
-    return v;
-}
-
-std::streamsize console_stream::xsputn(const char *p, std::streamsize n)
-{
-    std::lock_guard<std::mutex> lock(edit_buf);
-    buf += p;
-    return n;
-}
 
 std::vector<tracking_window*> tracking_windows;
 MainWindow::MainWindow(QWidget *parent) :
@@ -81,7 +39,6 @@ MainWindow::MainWindow(QWidget *parent) :
 {
     setAcceptDrops(true);
     ui->setupUi(this);
-    ui->tabWidget->setCurrentIndex(0);
     ui->styles->addItems(QStringList("default") << QStyleFactory::keys());
     ui->styles->setCurrentText(settings.value("styles","Fusion").toString());
 
@@ -106,14 +63,8 @@ MainWindow::MainWindow(QWidget *parent) :
 
     ui->toolBox->setCurrentIndex(0);
 
-    console.log_window = ui->console;
-    qApp->installEventFilter(this);
 }
-bool MainWindow::eventFilter(QObject*, QEvent*)
-{
-    console.show_output();
-    return false;
-}
+
 
 void MainWindow::openFile(QString file_name)
 {
@@ -735,59 +686,6 @@ void MainWindow::on_group_connectometry_clicked()
     group_cnt->show();
 }
 
-int rec(program_option& po);
-int trk(program_option& po);
-int src(program_option& po);
-int ana(program_option& po);
-int exp(program_option& po);
-int atl(program_option& po);
-int cnt(program_option& po);
-int vis(program_option& po);
-int ren(program_option& po);
-int atk(program_option& po);
-int reg(program_option& po);
-int xnat(program_option& po);
-void MainWindow::on_run_cmd_clicked()
-{
-    program_option po;
-    if(!po.parse(ui->cmd_line->text().toStdString()))
-    {
-        QMessageBox::information(this,"Error",po.error_msg.c_str());
-        return;
-    }
-    if (!po.has("action"))
-    {
-        std::cout << "invalid command, use --help for more detail" << std::endl;
-        return;
-    }
-    QDir::setCurrent(QFileInfo(po.get("source").c_str()).absolutePath());
-    if(po.get("action") == std::string("rec"))
-        rec(po);
-    if(po.get("action") == std::string("trk"))
-        trk(po);
-    if(po.get("action") == std::string("src"))
-        src(po);
-    if(po.get("action") == std::string("ana"))
-        ana(po);
-    if(po.get("action") == std::string("exp"))
-        exp(po);
-    if(po.get("action") == std::string("atl"))
-        atl(po);
-    if(po.get("action") == std::string("cnt"))
-        cnt(po);
-    if(po.get("action") == std::string("vis"))
-        vis(po);
-    if(po.get("action") == std::string("ren"))
-        ren(po);
-    if(po.get("action") == std::string("atk"))
-        atk(po);
-    if(po.get("action") == std::string("reg"))
-        reg(po);
-    if(po.get("action") == std::string("xnat"))
-        xnat(po);
-}
-
-
 void calculate_shell(const std::vector<float>& bvalues,std::vector<unsigned int>& shell);
 bool is_dsi_half_sphere(const std::vector<unsigned int>& shell);
 bool need_scheme_balance(const std::vector<unsigned int>& shell);
@@ -832,16 +730,6 @@ void MainWindow::on_ReconstructSRC_clicked()
             return;
         }
     }
-}
-
-void MainWindow::on_set_dir_clicked()
-{
-    QString dir =
-        QFileDialog::getExistingDirectory(this,"Browse Directory","");
-    if ( dir.isEmpty() )
-        return;
-    QDir::setCurrent(dir);
-    ui->pwd->setText(QString("[%1]$ ./dsi_studio ").arg(QDir().current().absolutePath()));
 }
 
 bool load_image_from_files(QStringList filenames,tipl::image<3>& ref,tipl::vector<3>& vs,tipl::matrix<4,4>& trans);
@@ -1309,16 +1197,17 @@ void MainWindow::on_styles_activated(int)
     }
 }
 
-
-void MainWindow::on_tabWidget_currentChanged(int index)
-{
-    if(index)
-        ui->pwd->setText(QString("[%1]$ ./dsi_studio ").arg(QDir().current().absolutePath()));
-}
-
 void MainWindow::on_clear_settings_clicked()
 {
     QSettings(QSettings::SystemScope,"LabSolver").clear();
     QMessageBox::information(this,"DSI Studio","Setting Cleared");
+}
+
+
+void MainWindow::on_console_clicked()
+{
+    auto* con= new Console(this);
+    con->setAttribute(Qt::WA_DeleteOnClose);
+    con->showNormal();
 }
 

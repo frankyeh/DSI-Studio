@@ -76,6 +76,7 @@ set(DSI_STUDIO_HEADERS mainwindow.h
     tracking/devicetablewidget.h
     libs/dsi/hist_process.hpp
     xnat_dialog.h
+    console.h
     reg.hpp)
 
 set(DSI_STUDIO_FORMS mainwindow.ui
@@ -95,6 +96,7 @@ set(DSI_STUDIO_FORMS mainwindow.ui
     connectometry/group_connectometry.ui
     regtoolbox.ui
     auto_track.ui
+    console.ui
     xnat_dialog.ui)
 
 set(DSI_STUDIO_RESOURCES icons.qrc)
@@ -159,7 +161,8 @@ set(DSI_STUDIO_SOURCES
     tracking/devicetablewidget.cpp
     libs/gzip_interface.cpp
     cmd/xnat.cpp
-    xnat_dialog.cpp)
+    xnat_dialog.cpp
+    console.cpp)
 
 set(DSI_STUDIO_OTHER_FILES options.txt
     dicom_tag.txt

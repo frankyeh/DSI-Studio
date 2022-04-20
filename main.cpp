@@ -7,12 +7,13 @@
 #include <QStyleFactory>
 #include <QFileInfo>
 #include <QDir>
-#include "mainwindow.h"
 #include "TIPL/tipl.hpp"
 #include "gzip_interface.hpp"
 #include "prog_interface_static_link.h"
 #include "mapping/atlas.hpp"
 #include "program_option.hpp"
+#include "mainwindow.h"
+#include "console.h"
 
 #ifndef QT6_PATCH
 #include <QTextCodec>
@@ -345,7 +346,7 @@ int main(int ac, char *av[])
         return run_cmd(ac,av);
 
     // replace default std::cout buffer
-    std::cout.rdbuf(&console);
+    console.attach();
 
     QApplication a(ac,av);
     init_application();

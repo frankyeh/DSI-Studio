@@ -42,6 +42,7 @@ INCLUDEPATH += libs \
     libs/mapping \
     dicom
 HEADERS += mainwindow.h \
+    console.h \
     dicom/dicom_parser.h \
     dicom/dwi_header.hpp \
     libs/dsi/tessellated_icosahedron.hpp \
@@ -96,6 +97,7 @@ HEADERS += mainwindow.h \
     xnat_dialog.h
 
 FORMS += mainwindow.ui \
+    console.ui \
     tracking/tracking_window.ui \
     reconstruction/reconstruction_window.ui \
     dicom/dicom_parser.ui \
@@ -116,6 +118,7 @@ FORMS += mainwindow.ui \
 RESOURCES += \
     icons.qrc
 SOURCES += main.cpp \
+    console.cpp \
     mainwindow.cpp \
     dicom/dicom_parser.cpp \
     dicom/dwi_header.cpp \

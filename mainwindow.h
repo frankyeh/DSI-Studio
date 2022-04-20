@@ -3,28 +3,7 @@
 
 #include <QMainWindow>
 #include <QSettings>
-#include <iostream>
 #include <memory>
-#include <mutex>
-class QTextEdit;
-
-class console_stream :  public std::basic_streambuf<char>
-{
-public:
-    console_stream(void):std::basic_streambuf<char>(){}
-protected:
-    virtual int_type overflow(int_type v) override;
-    virtual std::streamsize xsputn(const char *p, std::streamsize n) override;
-public:
-    void show_output(void);
-    std::mutex edit_buf;
-    QString buf;
-    QTextEdit* log_window = nullptr;
-    bool has_output = false;
-};
-extern console_stream console;
-
-
 
 namespace Ui {
     class MainWindow;
@@ -36,7 +15,6 @@ class MainWindow : public QMainWindow
     enum { MaxRecentFiles = 50 };
     void updateRecentList(void);
     QSettings settings;
-    bool eventFilter(QObject *obj, QEvent *event) override;
 public:
     explicit MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
@@ -73,8 +51,6 @@ private slots:
     void on_open_db_clicked();
     void on_group_connectometry_clicked();
 
-    void on_run_cmd_clicked();
-    void on_set_dir_clicked();
     void on_ReconstructSRC_clicked();
     void on_linear_reg_clicked();
     void on_nonlinear_reg_clicked();
@@ -88,8 +64,8 @@ private slots:
     void on_clear_fib_history_clicked();
     void on_xnat_download_clicked();
     void on_styles_activated(int index);
-    void on_tabWidget_currentChanged(int index);
     void on_clear_settings_clicked();
+    void on_console_clicked();
 };
 
 #endif // MAINWINDOW_H
