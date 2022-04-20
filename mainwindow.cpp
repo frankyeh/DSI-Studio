@@ -74,8 +74,6 @@ std::streamsize console_stream::xsputn(const char *p, std::streamsize n)
     return n;
 }
 
-
-extern std::string arg_file_name;
 std::vector<tracking_window*> tracking_windows;
 MainWindow::MainWindow(QWidget *parent) :
         QMainWindow(parent),
@@ -107,9 +105,6 @@ MainWindow::MainWindow(QWidget *parent) :
         ui->workDir->addItem(QDir::currentPath());
 
     ui->toolBox->setCurrentIndex(0);
-
-    if(!arg_file_name.empty())
-        openFile(arg_file_name.c_str());
 
     console.log_window = ui->console;
     qApp->installEventFilter(this);
