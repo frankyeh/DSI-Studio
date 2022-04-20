@@ -1173,14 +1173,14 @@ void RegionTableWidget::save_all_regions(void)
         result = gz_nifti::save_to_file(filename.toStdString().c_str(),i8mask,
                            cur_tracking_window.current_slice->vs,
                            cur_tracking_window.handle->trans_to_mni,
-                           cur_tracking_window.handle->is_qsdr);
+                           cur_tracking_window.handle->is_qsdr || cur_tracking_window.handle->is_mni_image);
     }
     else
     {
         result = gz_nifti::save_to_file(filename.toStdString().c_str(),mask,
                            cur_tracking_window.current_slice->vs,
                            cur_tracking_window.handle->trans_to_mni,
-                           cur_tracking_window.handle->is_qsdr);
+                           cur_tracking_window.handle->is_qsdr || cur_tracking_window.handle->is_mni_image);
     }
     if(result)
     {
