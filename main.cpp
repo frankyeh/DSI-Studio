@@ -171,8 +171,7 @@ QString version_string(void)
     #else
         base += QTextCodec::codecForName("UTF-8")->toUnicode(reinterpret_cast<const char*>(&code));
     #endif
-    base += "\" ";
-    base += __DATE__;
+    base += "\"";
     return base;
 }
 
@@ -354,7 +353,7 @@ int main(int ac, char *av[])
     QApplication a(ac,av);
     init_application();
     MainWindow w;
-    w.setWindowTitle(version_string());
+    w.setWindowTitle(version_string() + " " + __DATE__);
     has_gui = true;
 
     {
