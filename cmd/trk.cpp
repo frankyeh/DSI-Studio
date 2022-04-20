@@ -688,11 +688,6 @@ int trk(program_option& po,std::shared_ptr<fib_data> handle)
         tracking_thread.param.stop_by_tract = 0;
     }
 
-    if(po.get("thread_count",int(std::thread::hardware_concurrency())) < 1)
-    {
-        std::cout << "invalid thread_count number" << std::endl;
-        return 1;
-    }
     if(po.has("parameter_id"))
         tracking_thread.param.set_code(po.get("parameter_id"));
 
