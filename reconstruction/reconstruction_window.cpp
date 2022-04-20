@@ -97,6 +97,9 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
         break;
     }
 
+
+    ui->align_acpc->setChecked(handle->is_human_data() &&
+                               handle->voxel.vs[0] == handle->voxel.vs[2]);
     ui->odf_resolving->setVisible(false);
 
     ui->AdvancedWidget->setVisible(false);
@@ -265,6 +268,9 @@ void reconstruction_window::Reconstruction(unsigned char method_id,bool prompt)
             return;
         }
     }
+    else
+        if(ui->align_acpc->isChecked())
+            handle->align_acpc();
 
     settings.setValue("rec_method_id",method_id);
     settings.setValue("rec_thread_count",ui->ThreadCount->value());
