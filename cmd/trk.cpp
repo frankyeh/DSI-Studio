@@ -480,6 +480,7 @@ int trk_post(program_option& po,
     }
     if(output_track)
     {
+        bool failed = false;
         if(po.has("ref")) // save track in T1W/T2W space
         {
             CustomSliceModel new_slice(handle.get());
@@ -494,13 +495,16 @@ int trk_post(program_option& po,
             std::cout << new_slice.T[0] << " " << new_slice.T[1] << " " << new_slice.T[2] << " " << new_slice.T[3] << std::endl;
             std::cout << new_slice.T[4] << " " << new_slice.T[5] << " " << new_slice.T[6] << " " << new_slice.T[7] << std::endl;
             std::cout << new_slice.T[8] << " " << new_slice.T[9] << " " << new_slice.T[10] << " " << new_slice.T[11] << std::endl;
-            tract_model->save_transformed_tracts_to_file(tract_file_name.c_str(),new_slice.dim,new_slice.vs,new_slice.invT,false);
+            if(!tract_model->save_transformed_tracts_to_file(tract_file_name.c_str(),new_slice.dim,new_slice.vs,new_slice.invT,false))
+                failed = true;
         }
-
+        else
         if (!tract_model->save_tracts_to_file(tract_file_name.c_str()))
+            failed = false;
+
+        if(failed)
         {
-            std::cout << "ERROR: cannot save tracks as " << tract_file_name
-                      << ". Please check write permission, directory, and disk space." << std::endl;
+            std::cout << "ERROR: cannot save tracks as " << tract_file_name << ". Please check write permission, directory, and disk space." << std::endl;
             return 1;
         }
     }
