@@ -500,7 +500,7 @@ int trk_post(program_option& po,
         }
         else
         if (!tract_model->save_tracts_to_file(tract_file_name.c_str()))
-            failed = false;
+            failed = true;
 
         if(failed)
         {
