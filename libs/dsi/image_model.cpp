@@ -874,9 +874,9 @@ void ImageModel::correct_motion(bool eddy)
         tipl::lower_threshold(I,0.05f);
         I -= 0.05f;
     };
+
+
     std::vector<tipl::affine_transform<float> > args(src_bvalues.size());
-
-
     {
         tipl::image<3> from(dwi);
         preproc(from);
@@ -942,9 +942,6 @@ void ImageModel::correct_motion(bool eddy)
             tipl::image<3> to(dwi_at(i));
             preproc(from);
             preproc(to);
-
-            //from.save_to_file<gz_nifti>((std::string("d:/from") + std::to_string(i) + ".nii.gz").c_str());
-            //to.save_to_file<gz_nifti>((std::string("d:/to") + std::to_string(i) + ".nii.gz").c_str());
 
             bool terminated = false;
             linear_with_mi(from,voxel.vs,to,voxel.vs,new_args[i],eddy ? tipl::reg::affine : tipl::reg::rigid_body,terminated);
