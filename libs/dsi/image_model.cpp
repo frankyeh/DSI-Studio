@@ -935,10 +935,8 @@ void ImageModel::correct_motion(bool eddy)
                     tipl::image<3> from_(dwi.shape());
                     tipl::resample(dwi_at(i),from_,tipl::transformation_matrix<double>(args[j],voxel.dim,voxel.vs,voxel.dim,voxel.vs));
                     from += from_;
-                    std::cout << j << " ";
                 }
             }
-            std::cout << std::endl;
             tipl::image<3> to(dwi_at(i));
             preproc(from);
             preproc(to);
