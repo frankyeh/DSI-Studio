@@ -90,8 +90,6 @@ inline size_t linear_with_mi(const tipl::image<3,float>& from,
         result = linear_cuda(from,from_vs,to,to_vs,arg,tipl::reg::reg_type(reg_type),terminated,bound);
     else
         result = tipl::reg::linear_two_way<tipl::reg::mutual_information>(from,from_vs,to,to_vs,arg,tipl::reg::reg_type(reg_type),[&](void){return terminated;},bound);
-    std::cout << "MI:" << result << std::endl;
-    std::cout << arg;
     return result;
 }
 
