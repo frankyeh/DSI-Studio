@@ -739,8 +739,6 @@ void ImageModel::rotate_one_dwi(unsigned int dwi_index,const tipl::transformatio
     T.to_affine_transform(arg,voxel.dim,voxel.vs,voxel.dim,voxel.vs);
     tipl::matrix<3,3,float> r;
     tipl::rotation_matrix(arg.rotation,r.begin(),tipl::vdim<3>());
-    r.inv();
-
     src_bvectors[dwi_index].rotate(r);
     src_bvectors[dwi_index].normalize();
 }
@@ -774,8 +772,6 @@ void ImageModel::rotate(const tipl::shape<3>& new_geo,
     T.to_affine_transform(arg,new_geo,new_vs,voxel.dim,voxel.vs);
     tipl::matrix<3,3,float> r;
     tipl::rotation_matrix(arg.rotation,r.begin(),tipl::vdim<3>());
-    //r.inv();
-
     for (auto& vec : src_bvectors)
         {
             vec.rotate(r);
