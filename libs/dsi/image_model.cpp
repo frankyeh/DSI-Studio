@@ -774,7 +774,7 @@ void ImageModel::rotate(const tipl::shape<3>& new_geo,
     T.to_affine_transform(arg,new_geo,new_vs,voxel.dim,voxel.vs);
     tipl::matrix<3,3,float> r;
     tipl::rotation_matrix(arg.rotation,r.begin(),tipl::vdim<3>());
-    r.inv();
+    //r.inv();
 
     for (auto& vec : src_bvectors)
         {
@@ -871,33 +871,104 @@ bool ImageModel::align_acpc(void)
 
 void ImageModel::correct_motion(bool eddy)
 {
-    progress prog_("correcting motion...",true);
-    tipl::affine_transform<float> arg;
-    arg.rotation[0] = 0.01f;
-    arg.rotation[1] = 0.01f;
-    arg.rotation[2] = 0.01f;
-    arg.translocation[0] = 0.01f;
-    arg.translocation[0] = 0.01f;
-    arg.translocation[0] = 0.01f;
-    for(unsigned int i = 0;progress::at(i,src_bvalues.size());++i)
+    auto preproc = [&](tipl::image<3>& I)
     {
-        tipl::image<3,unsigned char> to;
-        tipl::normalize_upper_lower(dwi_at(i),to);
-        tipl::filter::gaussian(to);
-        tipl::filter::gaussian(to);
-        if(src_bvalues[i] > 500.0f)
-            tipl::reg::linear_mr<tipl::reg::correlation>(dwi,voxel.vs,to,voxel.vs,
-                                  arg,eddy ? tipl::reg::affine : tipl::reg::rigid_body,
-                                  [&](void){return !progress::aborted();},0.001,tipl::reg::narrow_bound);
-        else
-            tipl::reg::linear_mr<tipl::reg::mutual_information>(dwi,voxel.vs,to,voxel.vs,
-                              arg,eddy ? tipl::reg::affine : tipl::reg::rigid_body,
-                              [&](void){return !progress::aborted();},0.001,tipl::reg::narrow_bound);
+        tipl::filter::gaussian(I);
+        tipl::normalize(I,1.0f);
+        tipl::lower_threshold(I,0.05f);
+        I -= 0.05f;
+    };
+    std::vector<tipl::affine_transform<float> > args(src_bvalues.size());
 
-        rotate_one_dwi(i,tipl::transformation_matrix<double>(arg,voxel.dim,voxel.vs,
-                                                                     voxel.dim,voxel.vs));
-        std::cout << "registeration at dwi (" << i+1 << "/" << src_bvalues.size() << ")=" << std::endl;
-        std::cout << arg << std::flush;
+
+    {
+        tipl::image<3> from(dwi);
+        preproc(from);
+        args[0].translocation[2] = 0.005f;
+        args[0].translocation[1] = 0.005f;
+        progress prog("registering...");
+        for(size_t i = 0;progress::at(i,src_bvalues.size());++i)
+        {
+            if(i)
+                args[i] = args[i-1];
+            tipl::image<3> to(dwi_at(i));
+            preproc(to);
+            bool terminated = false;
+            linear_with_mi(from,voxel.vs,to,voxel.vs,args[i],eddy ? tipl::reg::affine : tipl::reg::rigid_body,terminated);
+            std::cout << "dwi (" << i+1 << "/" << src_bvalues.size() << ")" <<
+                         " shift=" << tipl::vector<3>(args[i].translocation) <<
+                         " rotation=" << tipl::vector<3>(args[i].rotation) << std::endl;
+        }
+        if(progress::aborted())
+            return;
+    }
+
+
+    // get ndc list
+    std::vector<tipl::affine_transform<float> > new_args(args);
+    {
+        progress prog("estimate and registering...");
+        for(size_t i = 0;progress::at(i,src_bvalues.size());++i)
+        {
+            if(src_bvalues[i] == 0.0f)
+                continue;
+            // get the minimum q space distance
+            float min_dis = std::numeric_limits<float>::max();
+            std::vector<float> dis_list(src_bvalues.size());
+            for(size_t j = 0;j < src_bvalues.size();++j)
+            {
+                if(j == i)
+                    continue;
+                tipl::vector<3> v1(src_bvectors[i]),v2(src_bvectors[j]);
+                v1 *= std::sqrt(src_bvalues[i]);
+                v2 *= std::sqrt(src_bvalues[j]);
+                float dis = std::min<float>(float((v1-v2).length()),
+                                            float((v1+v2).length()));
+                dis_list[j] = dis;
+                if(dis < min_dis)
+                    min_dis = dis;
+            }
+            min_dis *= 1.5f;
+            tipl::image<3> from(dwi.shape());
+            for(size_t j = 0;j < dis_list.size();++j)
+            {
+                if(j == i)
+                    continue;
+                if(dis_list[j] < min_dis)
+                {
+                    tipl::image<3> from_(dwi.shape());
+                    tipl::resample(dwi_at(i),from_,tipl::transformation_matrix<double>(args[j],voxel.dim,voxel.vs,voxel.dim,voxel.vs));
+                    from += from_;
+                    std::cout << j << " ";
+                }
+            }
+            std::cout << std::endl;
+            tipl::image<3> to(dwi_at(i));
+            preproc(from);
+            preproc(to);
+
+            //from.save_to_file<gz_nifti>((std::string("d:/from") + std::to_string(i) + ".nii.gz").c_str());
+            //to.save_to_file<gz_nifti>((std::string("d:/to") + std::to_string(i) + ".nii.gz").c_str());
+
+            bool terminated = false;
+            linear_with_mi(from,voxel.vs,to,voxel.vs,new_args[i],eddy ? tipl::reg::affine : tipl::reg::rigid_body,terminated);
+            std::cout << "dwi (" << i+1 << "/" << src_bvalues.size() << ") = "
+                      << " shift=" << tipl::vector<3>(new_args[i].translocation)
+                      << " rotation=" << tipl::vector<3>(new_args[i].rotation) << std::endl;
+
+        }
+        if(progress::aborted())
+            return;
+    }
+    // get ndc list
+    {
+        progress prog("estimate and registering...");
+        tipl::par_for(src_bvalues.size(),[&](size_t i,size_t id)
+        {
+            if(!id)
+                progress::at(i,src_bvalues.size());
+            rotate_one_dwi(i,tipl::transformation_matrix<double>(args[i],voxel.dim,voxel.vs,voxel.dim,voxel.vs));
+        });
     }
 }
 void ImageModel::crop(tipl::shape<3> range_min,tipl::shape<3> range_max)
