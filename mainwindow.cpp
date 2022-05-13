@@ -874,17 +874,26 @@ void MainWindow::on_auto_track_clicked()
 
 
 extern std::string src_error_msg;
-void nii2src(std::string nii_name,std::string src_name,std::ostream& out)
+void nii2src(const std::vector<std::string>& nii_names,std::string src_name,std::ostream& out)
 {
     std::vector<std::shared_ptr<DwiHeader> > dwi_files;
-    if(!load_4d_nii(nii_name.c_str(),dwi_files,true))
+    for(auto& nii_name : nii_names)
     {
-        out << "ERROR: " << src_error_msg << std::endl;
-        return;
+        if(!load_4d_nii(nii_name.c_str(),dwi_files,true))
+        {
+            out << "ERROR: " << src_error_msg << std::endl;
+            return;
+        }
     }
     out << std::filesystem::path(src_name).filename().string() << std::endl;
     if(!DwiHeader::output_src(src_name.c_str(),dwi_files,0,false))
         out << "ERROR: " << src_error_msg << std::endl;
+}
+void nii2src(std::string nii_name,std::string src_name,std::ostream& out)
+{
+    std::vector<std::string> nii_names;
+    nii_names.push_back(nii_name);
+    nii2src(nii_names,src_name,out);
 }
 
 bool nii2src_bids(QString dir,QString output_dir,std::string& error_msg)
