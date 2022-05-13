@@ -672,6 +672,23 @@ bool ImageModel::command(std::string cmd,std::string param)
     }
     if(cmd == "[Step T2][Corrections][TOPUP EDDY]")
     {
+        if(param.empty())
+        {
+            std::string rev_file_name = file_name.substr(0,file_name.length()-6)+"rsrc.gz";
+            if(std::filesystem::exists(rev_file_name))
+            {
+                std::cout << "Using reversed phase encoding RSRC file: " << rev_file_name << std::endl;
+                param = rev_file_name;
+            }
+            else
+            {
+                std::cout << "Cannot find reversed phase encoding RSRC file. Run eddy without topup..." << std::endl;
+                if(!run_eddy())
+                    return false;
+                voxel.steps += cmd+"\n";
+                return true;
+            }
+        }
         if(!run_topup_eddy(param))
             return false;
         voxel.steps += cmd+"="+param+"\n";
@@ -1131,7 +1148,7 @@ bool ImageModel::read_rev_b0(const char* filename,tipl::image<3>& rev_b0)
         nii >> rev_b0;
         return true;
     }
-    if(QString(filename).endsWith(".src.gz"))
+    if(QString(filename).endsWith("src.gz"))
     {
         std::shared_ptr<ImageModel> src2(new ImageModel);
         if(!src2->load_from_file(filename))
@@ -1149,7 +1166,8 @@ bool ImageModel::read_rev_b0(const char* filename,tipl::image<3>& rev_b0)
             error_msg = src2->error_msg;
             return false;
         }
-        rev_pe_src = src2;
+        if(tipl::max_value(src2->src_bvalues) > 100)
+            rev_pe_src = src2;
         return true;
     }
     error_msg = "unsupported file format";
@@ -2123,7 +2141,7 @@ bool ImageModel::load_from_file(const char* dwi_file_name)
     }
     else
     {
-        if (!QString(dwi_file_name).toLower().endsWith(".src.gz") &&
+        if (!QString(dwi_file_name).toLower().endsWith("src.gz") &&
             !QString(dwi_file_name).toLower().endsWith(".src"))
         {
             error_msg = "Unsupported file format";
