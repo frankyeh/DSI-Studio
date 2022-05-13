@@ -896,6 +896,71 @@ void nii2src(std::string nii_name,std::string src_name,std::ostream& out)
     nii2src(nii_names,src_name,out);
 }
 
+void nii2src(const std::vector<std::string>& nii1,
+             const std::vector<std::string>& nii2,
+             std::string src_name,
+             std::ostream& out)
+{
+    std::vector<std::shared_ptr<DwiHeader> > dwi_files1,dwi_files2;
+    for(auto& nii_name : nii1)
+    {
+        if(!load_4d_nii(nii_name.c_str(),dwi_files1,true))
+        {
+            out << "ERROR: " << src_error_msg << std::endl;
+            return;
+        }
+    }
+    for(auto& nii_name : nii2)
+    {
+        if(!load_4d_nii(nii_name.c_str(),dwi_files2,true))
+        {
+            out << "ERROR: " << src_error_msg << std::endl;
+            return;
+        }
+    }
+    if(dwi_files2.size() > dwi_files1.size())
+        dwi_files1.swap(dwi_files2);
+
+    {
+        out << std::filesystem::path(src_name).filename().string() << ".src.gz" << std::endl;
+        if(!DwiHeader::output_src((src_name+".src.gz").c_str(),dwi_files1,0,false))
+            out << "ERROR: " << src_error_msg << std::endl;
+    }
+    {
+        out << "\t" << std::filesystem::path(src_name).filename().string() << ".rsrc.gz" << std::endl;
+        if(!DwiHeader::output_src((src_name+".rsrc.gz").c_str(),dwi_files2,0,false))
+            out << "ERROR: " << src_error_msg << std::endl;
+    }
+}
+
+bool get_pe_dir(const std::string& nii_name,size_t& pe_dir,bool& is_neg)
+{
+    const char pe_coding[3][2][5] = { { "\"i\"","\"i-\"" },
+                                       { "\"j\"","\"j-\"" },
+                                       { "\"k\"","\"k-\"" }};
+    std::string jason_name = nii_name.substr(0,nii_name.find_last_of(".nii")-4) + ".json";
+    if(!std::filesystem::exists(jason_name))
+        return false;
+
+    std::stringstream buffer;
+    buffer << std::ifstream(jason_name).rdbuf();
+    std::string jason_content(buffer.str());
+    for(pe_dir = 0;pe_dir < 3;++pe_dir)
+    {
+        if(jason_content.find(pe_coding[pe_dir][0]) != std::string::npos)
+        {
+            is_neg = false;
+            return true;
+        }
+        if(jason_content.find(pe_coding[pe_dir][1]) != std::string::npos)
+        {
+            is_neg = true;
+            return true;
+        }
+    }
+    return false;
+}
+
 bool nii2src_bids(QString dir,QString output_dir,std::string& error_msg)
 {
     QStringList sub_dir = QDir(dir).entryList(QStringList("sub-*"),
@@ -913,7 +978,8 @@ bool nii2src_bids(QString dir,QString output_dir,std::string& error_msg)
     progress prog_("batch creating src");
     std::ofstream out((dir+"/log.txt").toStdString().c_str());
     out << "directory:" << dir.toStdString() << std::endl;
-    int subject_num = sub_dir.size();
+    auto subject_num = sub_dir.size();
+
     for(int j = 0;progress::at(j,sub_dir.size()) && !progress::aborted();++j)
     {
         QString cur_dir = dir + "/" + sub_dir[j];
@@ -923,16 +989,61 @@ bool nii2src_bids(QString dir,QString output_dir,std::string& error_msg)
             dwi_folder = cur_dir;
         QStringList nifti_file_list = QDir(dwi_folder).
                 entryList(QStringList("*.nii.gz") << "*.nii",QDir::Files|QDir::NoSymLinks);
+        std::vector<std::string> nii1,nii2;
+
         if(nifti_file_list.size() > 1)
-            out << "[WARNING] Multiple NIFTI files found" << std::endl;
-        for (int index = 0;index < nifti_file_list.size();++index)
         {
-            out << "\t" << nifti_file_list[index].toStdString() << "->";
-            std::string nii_name = dwi_folder.toStdString() + "/" + nifti_file_list[index].toStdString();
-            std::string src_name = output_dir.toStdString() + "/" +
-                    QFileInfo(nifti_file_list[index]).baseName().toStdString() + ".src.gz";
-            nii2src(nii_name,src_name,out);
+            size_t pe_dir = 4;
+            out << "\tParsing phase encoding directions" << std::endl;
+            for (QString nii_file_name : nifti_file_list)
+            {
+                std::string nii_name = dwi_folder.toStdString() + "/" + nii_file_name.toStdString();
+                size_t cur_pe_dir;
+                bool is_neg;
+                if(!get_pe_dir(nii_name,cur_pe_dir,is_neg))
+                {
+                    out << "\tCannot parse phase encoding direction for " << nii_file_name.toStdString() << std::endl;
+                    nii1.clear();
+                    break;
+                }
+                if(pe_dir == 4)
+                    pe_dir = cur_pe_dir;
+                else
+                {
+                    if(pe_dir != cur_pe_dir)
+                    {
+                        out << "\t[WARNING] Inconsistent phase encoding directions found at " << nii_file_name.toStdString() << std::endl;
+                        nii1.clear();
+                        break;
+                    }
+                }
+                out << "\t" << nii_file_name.toStdString() << " pe dir=" << cur_pe_dir << " neg=" << (is_neg ? "true":"false") << std::endl;
+                if(is_neg)
+                    nii1.push_back(nii_name);
+                else
+                    nii2.push_back(nii_name);
+            }
         }
+
+        if(nii1.empty() || nii2.empty())
+        {
+            if(nifti_file_list.size() > 1)
+                out << "\tNo reversed phase encoding direction dataset found. Create SRC files for all NIFTI files..." << std::endl;
+            nii1.clear();
+            for (int index = 0;index < nifti_file_list.size();++index)
+            {
+                nii1.push_back(dwi_folder.toStdString() + "/" + nifti_file_list[index].toStdString());
+                out << "\t" << nifti_file_list[index].toStdString();
+            }
+            out << "->";
+            nii2src(nii1,output_dir.toStdString() + "/" + QFileInfo(nifti_file_list[0]).baseName().toStdString() + ".src.gz",out);
+        }
+        else
+        {
+            out << "\tReversed phase encoding direction data found. Create SRC and RSRC files->";
+            nii2src(nii1,nii2,output_dir.toStdString() + "/" + QFileInfo(nifti_file_list[0]).baseName().toStdString(),out);
+        }
+
         // look for sessions
         if(j < subject_num)
         {
