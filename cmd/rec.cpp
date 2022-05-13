@@ -87,14 +87,6 @@ int rec(program_option& po)
         }
     }
 
-    if(po.has("motion_correction"))
-    {
-        std::cout << "correct for motion..." << std::endl;
-        src.correct_motion(po.get("motion_correction",0));
-        std::cout << "done." <<std::endl;
-    }
-
-
     if (po.has("cmd"))
     {
         QStringList cmd_list = QString(po.get("cmd").c_str()).split("+");
@@ -110,6 +102,12 @@ int rec(program_option& po)
         }
     }
 
+    if(po.has("motion_correction"))
+    {
+        std::cout << "correct for motion..." << std::endl;
+        src.correct_motion(po.get("motion_correction",0));
+        std::cout << "done." <<std::endl;
+    }
 
     if (po.has("param0"))
         src.voxel.param[0] = po.get("param0",src.voxel.param[0]);
