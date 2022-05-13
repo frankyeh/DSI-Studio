@@ -906,8 +906,6 @@ void ImageModel::correct_motion(bool eddy)
         progress prog("estimate and registering...");
         for(size_t i = 0;progress::at(i,src_bvalues.size());++i)
         {
-            if(src_bvalues[i] == 0.0f)
-                continue;
             // get the minimum q space distance
             float min_dis = std::numeric_limits<float>::max();
             std::vector<float> dis_list(src_bvalues.size());
