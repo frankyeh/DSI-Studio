@@ -1028,15 +1028,13 @@ bool nii2src_bids(QString dir,QString output_dir,std::string& error_msg)
         if(nii1.empty() || nii2.empty())
         {
             if(nifti_file_list.size() > 1)
-                out << "\tNo reversed phase encoding direction dataset found. Create SRC files for all NIFTI files..." << std::endl;
-            nii1.clear();
-            for (int index = 0;index < nifti_file_list.size();++index)
+                out << "\tNo reversed phase encoding direction dataset found. Create one SRC file for each NIFTI file:" << std::endl;
+            for (QString nii_file_name : nifti_file_list)
             {
-                nii1.push_back(dwi_folder.toStdString() + "/" + nifti_file_list[index].toStdString());
-                out << "\t" << nifti_file_list[index].toStdString();
+                out << "\t" << nii_file_name.toStdString();
+                nii2src(dwi_folder.toStdString() + "/" + nii_file_name.toStdString(),
+                        output_dir.toStdString() + "/" + QFileInfo(nii_file_name).baseName().toStdString() + ".src.gz",out);
             }
-            out << "->";
-            nii2src(nii1,output_dir.toStdString() + "/" + QFileInfo(nifti_file_list[0]).baseName().toStdString() + ".src.gz",out);
         }
         else
         {
