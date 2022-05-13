@@ -1511,6 +1511,12 @@ bool load_bvec(const char* file_name,std::vector<double>& b_table,bool flip_by =
 bool ImageModel::load_topup_eddy_result(void)
 {
     std::string corrected_file = file_name+".corrected.nii.gz";
+    if(!std::filesystem::exists(corrected_file))
+    {
+        error_msg = "eddy failed to process data";
+        return false;
+    }
+
     std::string bval_file = file_name+".bval";
     std::string bvec_file = file_name+".corrected.eddy_rotated_bvecs";
     bool is_eddy = std::filesystem::exists(bvec_file);
@@ -1629,6 +1635,57 @@ bool ImageModel::run_applytopup(std::string exec)
     return true;
 }
 
+bool eddy_check_shell(const std::vector<float>& bvalues)
+{
+    std::vector<float> shell_bvalue;
+    std::vector<size_t> shells;
+    shells.push_back(0);
+    for (size_t i = 1; i < bvalues.size(); i++)
+    {
+        size_t j;
+        for(j = 0; j < shells.size(); j++)
+            if (std::abs(bvalues[shells[j]]-bvalues[i]) < 100)
+                break;
+        if(j == shells.size())
+            shells.push_back(i);
+    }
+
+    shell_bvalue.resize(shells.size());
+    std::vector<size_t> shell_count(shells.size(),1);
+    for(size_t s = 0; s < shells.size(); s++)
+    {
+        shell_bvalue[s] = bvalues[shells[s]];
+        for (size_t i = 0; i < bvalues.size(); i++)
+        {
+            if (std::abs(bvalues[shells[s]]-bvalues[i]) < 100 && i != shells[s])
+            {
+                shell_bvalue[s] += bvalues[i];
+                shell_count[s]++;
+            }
+        }
+        shell_bvalue[s] /= shell_count[s];
+    }
+
+    std::sort(shell_bvalue.begin(),shell_bvalue.end());
+    for (unsigned int j = 0; j< shell_bvalue.size(); j++)
+    {
+        shell_count[j] = 0;
+        for (unsigned int i=0; i< bvalues.size(); i++)
+            if (std::abs(bvalues[i]-shell_bvalue[j]) <= 100)
+                    shell_count[j]++;
+    }
+    {
+        if(shell_bvalue.size() >= 7)
+            return false;
+        auto scans_per_shell = uint32_t((double(bvalues.size() - shell_count[0]) / double(shell_bvalue.size() - 1)) + 0.5);
+        if(tipl::max_value(shell_count.begin()+1,shell_count.end()) >= 2 * scans_per_shell)
+            return false;
+        if(3 * tipl::min_value(shell_count.begin()+1,shell_count.end()) < scans_per_shell)
+            return false;
+    }
+    return true;
+}
+
 bool ImageModel::run_eddy(std::string exec)
 {
     progress::show("eddy");
@@ -1645,7 +1702,11 @@ bool ImageModel::run_eddy(std::string exec)
             return false;
         }
     }
-
+    if(!eddy_check_shell(src_bvalues))
+    {
+        error_msg = "FSL eddy cannot process this data due to shell requirements";
+        return false;
+    }
 
     std::string topup_result = QFileInfo(file_name.c_str()).baseName().replace('.','_').toStdString();
     std::string acqparam_file = QFileInfo(file_name.c_str()).baseName().toStdString() + ".topup.acqparams.txt";
@@ -1790,7 +1851,7 @@ bool ImageModel::run_topup_eddy(const std::string& other_src)
 
     }
 
-    if(is_dsi())
+    if(!eddy_check_shell(src_bvalues))
     {
         std::cout << "run topup/applytopup for non-shell data" << std::endl;
         if(!run_applytopup())
