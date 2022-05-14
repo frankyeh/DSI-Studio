@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1255</width>
-    <height>900</height>
+    <width>964</width>
+    <height>658</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -106,7 +106,6 @@
              <widget class="QLabel" name="open_instruction_2">
               <property name="font">
                <font>
-                <weight>75</weight>
                 <bold>true</bold>
                </font>
               </property>
@@ -219,7 +218,6 @@
               </property>
               <property name="font">
                <font>
-                <weight>75</weight>
                 <bold>true</bold>
                </font>
               </property>
@@ -251,7 +249,6 @@
               </property>
               <property name="font">
                <font>
-                <weight>75</weight>
                 <bold>true</bold>
                </font>
               </property>
@@ -359,7 +356,7 @@
             <property name="minimumSize">
              <size>
               <width>0</width>
-              <height>0</height>
+              <height>120</height>
              </size>
             </property>
             <property name="maximumSize">
@@ -369,7 +366,7 @@
              </size>
             </property>
             <property name="currentIndex">
-             <number>2</number>
+             <number>0</number>
             </property>
             <widget class="QWidget" name="tab_6">
              <attribute name="title">
@@ -1093,7 +1090,6 @@
            </property>
            <property name="font">
             <font>
-             <weight>75</weight>
              <bold>true</bold>
             </font>
            </property>
@@ -1143,7 +1139,6 @@
                </property>
                <property name="font">
                 <font>
-                 <weight>75</weight>
                  <bold>true</bold>
                 </font>
                </property>
