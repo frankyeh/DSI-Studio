@@ -68,6 +68,7 @@ jobs:
     - name: Extract zip files
       run: |
         7z e tiny_fsl_win64_cuda_sm${{ matrix.arch }}.zip -odsi_studio_win\plugin
+        rm dsi_studio_win\plugin\cublas*
         rd dsi_studio_win\plugin\tiny_fsl
         del *.zip
     - name: Zip Release
