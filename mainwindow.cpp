@@ -963,57 +963,62 @@ bool get_pe_dir(const std::string& nii_name,size_t& pe_dir,bool& is_neg)
 
 void nii2src(QStringList nifti_file_list,QString output_dir,std::ofstream& out)
 {
+    std::string output_file_base_name = output_dir.toStdString() + "/" + QFileInfo(nifti_file_list[0]).baseName().toStdString();
+    if(nifti_file_list.size() == 1)
+    {
+        out << "\t" << nifti_file_list[0].toStdString() << " -> " << output_file_base_name + ".src.gz" << std::endl;
+        nii2src(nifti_file_list[0].toStdString(),output_file_base_name + ".src.gz",out);
+        return;
+    }
     std::vector<std::string> nii1,nii2;
 
-    if(nifti_file_list.size() > 1)
+    size_t pe_dir = 4;
+    out << "\tParsing phase encoding directions" << std::endl;
+    for (QString nii_file_name : nifti_file_list)
     {
-        size_t pe_dir = 4;
-        out << "\tParsing phase encoding directions" << std::endl;
-        for (QString nii_file_name : nifti_file_list)
+        std::string nii_name = nii_file_name.toStdString();
+        size_t cur_pe_dir;
+        bool is_neg;
+        if(!get_pe_dir(nii_name,cur_pe_dir,is_neg))
         {
-            std::string nii_name = nii_file_name.toStdString();
-            size_t cur_pe_dir;
-            bool is_neg;
-            if(!get_pe_dir(nii_name,cur_pe_dir,is_neg))
+            out << "\tCannot parse phase encoding direction for " << nii_file_name.toStdString() << std::endl;
+            nii1.clear();
+            break;
+        }
+        if(pe_dir == 4)
+            pe_dir = cur_pe_dir;
+        else
+        {
+            if(pe_dir != cur_pe_dir)
             {
-                out << "\tCannot parse phase encoding direction for " << nii_file_name.toStdString() << std::endl;
+                out << "\t[WARNING] Inconsistent phase encoding directions found at " << nii_file_name.toStdString() << std::endl;
                 nii1.clear();
                 break;
             }
-            if(pe_dir == 4)
-                pe_dir = cur_pe_dir;
-            else
-            {
-                if(pe_dir != cur_pe_dir)
-                {
-                    out << "\t[WARNING] Inconsistent phase encoding directions found at " << nii_file_name.toStdString() << std::endl;
-                    nii1.clear();
-                    break;
-                }
-            }
-            out << "\t" << nii_file_name.toStdString() << " pe dir=" << cur_pe_dir << " neg=" << (is_neg ? "true":"false") << std::endl;
-            if(is_neg)
-                nii1.push_back(nii_name);
-            else
-                nii2.push_back(nii_name);
         }
+        out << "\t" << nii_file_name.toStdString() << " pe dir=" << cur_pe_dir << " neg=" << (is_neg ? "true":"false") << std::endl;
+        if(is_neg)
+            nii1.push_back(nii_name);
+        else
+            nii2.push_back(nii_name);
     }
 
     if(nii1.empty() || nii2.empty())
     {
-        if(nifti_file_list.size() > 1)
-            out << "\tNo reversed phase encoding direction dataset found. Create one SRC file for each NIFTI file:" << std::endl;
-        for (QString nii_file_name : nifti_file_list)
+        nii1.clear();
+        for(auto& file : nifti_file_list)
         {
-            out << "\t" << nii_file_name.toStdString() << "->";
-            nii2src(nii_file_name.toStdString(),
-                    output_dir.toStdString() + "/" + QFileInfo(nii_file_name).baseName().toStdString() + ".src.gz",out);
+            nii1.push_back(file.toStdString());
+            out << "\t" << nii1.back() << std::endl;
         }
+
+        out << "\tNo reversed phase encoding direction dataset found. Create one SRC file -> ";
+        nii2src(nii1,output_file_base_name + ".src.gz",out);
     }
     else
     {
-        out << "\tReversed phase encoding direction data found. Create SRC and RSRC files->";
-        nii2src(nii1,nii2,output_dir.toStdString() + "/" + QFileInfo(nifti_file_list[0]).baseName().toStdString(),out);
+        out << "\tReversed phase encoding direction data found. Create SRC and RSRC files -> ";
+        nii2src(nii1,nii2,output_file_base_name,out);
     }
 }
 
@@ -1031,6 +1036,16 @@ bool nii2src_bids(QString dir,QString output_dir,std::string& error_msg)
         error_msg = "Cannot create the output folder. Please check write privileges";
         return false;
     }
+
+    auto get_nifti_dim = [&](QString file_name)
+    {
+        gz_nifti nii;
+        tipl::shape<3> dim;
+        if(nii.load_from_file(file_name.toStdString().c_str()))
+            nii.get_image_dimension(dim);
+        return dim;
+    };
+
     progress prog_("batch creating src");
     std::ofstream out((dir+"/log.txt").toStdString().c_str());
     out << "directory:" << dir.toStdString() << std::endl;
@@ -1052,37 +1067,21 @@ bool nii2src_bids(QString dir,QString output_dir,std::string& error_msg)
             if(nifti_all[k].isEmpty())
                 continue;
             QString file_name = dwi_folder + "/" + nifti_all[k];
-            gz_nifti nii;
-            if(!nii.load_from_file(file_name.toStdString().c_str()))
-            {
-                out << "\tcannot parse " << nifti_all[k].toStdString() << std::endl;
-                continue;
-            }
-            tipl::shape<3> dim;
-            nii.get_image_dimension(dim);
-
-
+            tipl::shape<3> dim = get_nifti_dim(file_name);
             QStringList nifti_file_list;
             nifti_file_list << file_name;
             for(int k2 = k + 1;k2 < nifti_all.size();++k2)
             {
                 if(nifti_all[k2].isEmpty())
                     continue;
-                QString file_name2 = dwi_folder + "/" + nifti_all[k2];
-                gz_nifti nii2;
-                if(!nii2.load_from_file(file_name2.toStdString().c_str()))
-                {
-                    out << "\tcannot parse " << nifti_all[k2].toStdString() << std::endl;
-                    continue;
-                }
-                tipl::shape<3> dim2;
-                nii.get_image_dimension(dim2);
-                if(dim2 == dim)
+                file_name = dwi_folder + "/" + nifti_all[k2];
+                if(get_nifti_dim(file_name) == dim)
                 {
                     nifti_all[k2].clear();
-                    nifti_file_list << file_name2;
+                    nifti_file_list << file_name;
                 }
             }
+            out << "\tDWI dim=" << dim << std::endl;
             nii2src(nifti_file_list,output_dir,out);
         }
 
