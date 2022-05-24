@@ -961,6 +961,62 @@ bool get_pe_dir(const std::string& nii_name,size_t& pe_dir,bool& is_neg)
     return false;
 }
 
+void nii2src(QStringList nifti_file_list,QString output_dir,std::ofstream& out)
+{
+    std::vector<std::string> nii1,nii2;
+
+    if(nifti_file_list.size() > 1)
+    {
+        size_t pe_dir = 4;
+        out << "\tParsing phase encoding directions" << std::endl;
+        for (QString nii_file_name : nifti_file_list)
+        {
+            std::string nii_name = nii_file_name.toStdString();
+            size_t cur_pe_dir;
+            bool is_neg;
+            if(!get_pe_dir(nii_name,cur_pe_dir,is_neg))
+            {
+                out << "\tCannot parse phase encoding direction for " << nii_file_name.toStdString() << std::endl;
+                nii1.clear();
+                break;
+            }
+            if(pe_dir == 4)
+                pe_dir = cur_pe_dir;
+            else
+            {
+                if(pe_dir != cur_pe_dir)
+                {
+                    out << "\t[WARNING] Inconsistent phase encoding directions found at " << nii_file_name.toStdString() << std::endl;
+                    nii1.clear();
+                    break;
+                }
+            }
+            out << "\t" << nii_file_name.toStdString() << " pe dir=" << cur_pe_dir << " neg=" << (is_neg ? "true":"false") << std::endl;
+            if(is_neg)
+                nii1.push_back(nii_name);
+            else
+                nii2.push_back(nii_name);
+        }
+    }
+
+    if(nii1.empty() || nii2.empty())
+    {
+        if(nifti_file_list.size() > 1)
+            out << "\tNo reversed phase encoding direction dataset found. Create one SRC file for each NIFTI file:" << std::endl;
+        for (QString nii_file_name : nifti_file_list)
+        {
+            out << "\t" << nii_file_name.toStdString() << "->";
+            nii2src(nii_file_name.toStdString(),
+                    output_dir.toStdString() + "/" + QFileInfo(nii_file_name).baseName().toStdString() + ".src.gz",out);
+        }
+    }
+    else
+    {
+        out << "\tReversed phase encoding direction data found. Create SRC and RSRC files->";
+        nii2src(nii1,nii2,output_dir.toStdString() + "/" + QFileInfo(nifti_file_list[0]).baseName().toStdString(),out);
+    }
+}
+
 bool nii2src_bids(QString dir,QString output_dir,std::string& error_msg)
 {
     QStringList sub_dir = QDir(dir).entryList(QStringList("sub-*"),
@@ -987,59 +1043,47 @@ bool nii2src_bids(QString dir,QString output_dir,std::string& error_msg)
         QString dwi_folder = cur_dir + "/dwi";
         if(!QDir(dwi_folder).exists())
             dwi_folder = cur_dir;
-        QStringList nifti_file_list = QDir(dwi_folder).
+
+        QStringList nifti_all = QDir(dwi_folder).
                 entryList(QStringList("*.nii.gz") << "*.nii",QDir::Files|QDir::NoSymLinks);
-        std::vector<std::string> nii1,nii2;
 
-        if(nifti_file_list.size() > 1)
+        for(int k = 0;k < nifti_all.size();++k)
         {
-            size_t pe_dir = 4;
-            out << "\tParsing phase encoding directions" << std::endl;
-            for (QString nii_file_name : nifti_file_list)
+            if(nifti_all[k].isEmpty())
+                continue;
+            QString file_name = dwi_folder + "/" + nifti_all[k];
+            gz_nifti nii;
+            if(!nii.load_from_file(file_name.toStdString().c_str()))
             {
-                std::string nii_name = dwi_folder.toStdString() + "/" + nii_file_name.toStdString();
-                size_t cur_pe_dir;
-                bool is_neg;
-                if(!get_pe_dir(nii_name,cur_pe_dir,is_neg))
-                {
-                    out << "\tCannot parse phase encoding direction for " << nii_file_name.toStdString() << std::endl;
-                    nii1.clear();
-                    break;
-                }
-                if(pe_dir == 4)
-                    pe_dir = cur_pe_dir;
-                else
-                {
-                    if(pe_dir != cur_pe_dir)
-                    {
-                        out << "\t[WARNING] Inconsistent phase encoding directions found at " << nii_file_name.toStdString() << std::endl;
-                        nii1.clear();
-                        break;
-                    }
-                }
-                out << "\t" << nii_file_name.toStdString() << " pe dir=" << cur_pe_dir << " neg=" << (is_neg ? "true":"false") << std::endl;
-                if(is_neg)
-                    nii1.push_back(nii_name);
-                else
-                    nii2.push_back(nii_name);
+                out << "\tcannot parse " << nifti_all[k].toStdString() << std::endl;
+                continue;
             }
-        }
+            tipl::shape<3> dim;
+            nii.get_image_dimension(dim);
 
-        if(nii1.empty() || nii2.empty())
-        {
-            if(nifti_file_list.size() > 1)
-                out << "\tNo reversed phase encoding direction dataset found. Create one SRC file for each NIFTI file:" << std::endl;
-            for (QString nii_file_name : nifti_file_list)
+
+            QStringList nifti_file_list;
+            nifti_file_list << file_name;
+            for(int k2 = k + 1;k2 < nifti_all.size();++k2)
             {
-                out << "\t" << nii_file_name.toStdString() << "->";
-                nii2src(dwi_folder.toStdString() + "/" + nii_file_name.toStdString(),
-                        output_dir.toStdString() + "/" + QFileInfo(nii_file_name).baseName().toStdString() + ".src.gz",out);
+                if(nifti_all[k2].isEmpty())
+                    continue;
+                QString file_name2 = dwi_folder + "/" + nifti_all[k2];
+                gz_nifti nii2;
+                if(!nii2.load_from_file(file_name2.toStdString().c_str()))
+                {
+                    out << "\tcannot parse " << nifti_all[k2].toStdString() << std::endl;
+                    continue;
+                }
+                tipl::shape<3> dim2;
+                nii.get_image_dimension(dim2);
+                if(dim2 == dim)
+                {
+                    nifti_all[k2].clear();
+                    nifti_file_list << file_name2;
+                }
             }
-        }
-        else
-        {
-            out << "\tReversed phase encoding direction data found. Create SRC and RSRC files->";
-            nii2src(nii1,nii2,output_dir.toStdString() + "/" + QFileInfo(nifti_file_list[0]).baseName().toStdString(),out);
+            nii2src(nifti_file_list,output_dir,out);
         }
 
         // look for sessions
