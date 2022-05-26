@@ -421,14 +421,14 @@ bool ImageModel::is_human_data(void) const
 }
 bool match_files(const std::string& file_path1,const std::string& file_path2,
                  const std::string& file_path1_others,std::string& file_path2_gen);
-bool ImageModel::run_steps(const std::string& reg_file_name,const std::string& steps)
+bool ImageModel::run_steps(const std::string& reg_file_name,const std::string& ref_steps)
 {
-    std::istringstream in(steps);
-    std::string step;
+    std::istringstream in(ref_steps),in2(voxel.steps);
+    std::string step,step2;
     std::vector<std::string> cmds,params;
     while(std::getline(in,step))
     {
-        if(step.empty())
+        if(step.empty() || std::getline(in2,step2))
             continue;
         size_t pos = step.find('=');
         std::string cmd,param;
