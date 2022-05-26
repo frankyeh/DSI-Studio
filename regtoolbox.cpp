@@ -439,6 +439,8 @@ void RegToolBox::linear_reg(tipl::reg::reg_type reg_type,int cost_type)
                 tipl::draw(I2,J2_,tipl::vector<3,int>(0,0,0));
             J2.swap(J2_);
         }
+        arg.clear();
+        T = tipl::transformation_matrix<float>(arg,It.shape(),Itvs,I.shape(),Ivs);
     }
     else
     {
