@@ -413,7 +413,7 @@ void reconstruction_window::on_doDTI_clicked()
 {
     std::string ref_file_name = handle->file_name;
     std::string ref_steps = handle->voxel.steps;
-    std::shared_ptr<ImageModel> ref_handle = handle;;
+    std::shared_ptr<ImageModel> ref_handle = handle;
     progress prog_("SRC files");
     for(int index = 0;progress::at(index,filenames.size());++index)
     {
