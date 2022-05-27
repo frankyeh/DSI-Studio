@@ -965,7 +965,7 @@ void get_track_statistics(std::shared_ptr<fib_data> handle,
     if(tract_models.empty())
         return;
     std::vector<std::vector<std::string> > track_results(tract_models.size());
-    tipl::par_for(tract_models.size(),[&](unsigned int index)
+    for(size_t index = 0;index < tract_models.size();++index)
     {
         std::string tmp,line;
         tract_models[index]->get_quantitative_info(handle,tmp);
@@ -976,7 +976,7 @@ void get_track_statistics(std::shared_ptr<fib_data> handle,
                 continue;
             track_results[index].push_back(line);
         }
-    });
+    }
 
     std::ostringstream out;
     out << "Tract Name\t";
