@@ -126,11 +126,13 @@ public:
     item(const std::string& name_,const value_type* pointer,const tipl::shape<3>& dim_):
         image_data(tipl::make_image(pointer,dim_)),name(name_)
     {
+        T.identity();iT.identity();
         set_scale(image_data.begin(),image_data.end());
     }
     item(const std::string& name_,const tipl::shape<3>& dim_,gz_mat_read* mat_reader_,unsigned int index_):
         image_data(tipl::make_image((const float*)nullptr,dim_)),mat_reader(mat_reader_),image_index(index_),name(name_)
     {
+        T.identity();iT.identity();
         image_ready = false;
     }
     tipl::const_pointer_image<3> get_image(void);
@@ -138,6 +140,7 @@ public:
 public:
     std::string name;
     bool image_ready = true;
+    bool registering = false;
     tipl::matrix<4,4> T,iT;// T: image->diffusion iT: diffusion->image
 
 public:
