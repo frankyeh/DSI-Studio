@@ -383,7 +383,7 @@ bool CustomSliceModel::initialize(const std::vector<std::string>& files,bool is_
     {
         QMessageBox::StandardButton r = QMessageBox::No;
         if(has_gui)
-            r = QMessageBox::question(nullptr,"DSI Studio","Apply registration?",
+            r = QMessageBox::question(nullptr,"DSI Studio","need alignment?",
                                 QMessageBox::Cancel | QMessageBox::No | QMessageBox::Yes,QMessageBox::Yes);
         if(r == QMessageBox::Cancel)
         {
@@ -449,6 +449,7 @@ void CustomSliceModel::argmin(tipl::reg::reg_type reg_type)
 {
     terminated = false;
     running = true;
+    handle->view_item[view_id].registering = true;
     tipl::image<3,float> to = source_images;
     tipl::upper_threshold(to,tipl::max_value(to)*0.5f);
     tipl::transformation_matrix<float> M;
@@ -463,6 +464,7 @@ void CustomSliceModel::argmin(tipl::reg::reg_type reg_type)
     linear_with_mi(to,vs,from,handle->vs,arg_min,reg_type,terminated);
 
     update_transform();
+    handle->view_item[view_id].registering = false;
     running = false;
 }
 // ---------------------------------------------------------------------------
