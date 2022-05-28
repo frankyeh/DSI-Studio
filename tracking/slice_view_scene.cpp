@@ -250,7 +250,8 @@ void slice_view_scene::show_fiber(QPainter& painter,std::shared_ptr<SliceModel> 
                 for (int fiber = max_fiber; fiber >= 0; --fiber)
                     if(dir.fa[fiber][pos.index()] > threshold)
                     {
-                        if(threshold2 != 0.0f && dir.dt_fa[fiber][pos.index()] < threshold2)
+                        if(threshold2 != 0.0f && fiber < dir.dt_fa.size() &&
+                                 dir.dt_fa[fiber][pos.index()] < threshold2)
                             continue;
                         if((roi_fiber == 2 && fiber != 0) ||
                            (roi_fiber == 3 && fiber != 1))
