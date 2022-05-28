@@ -1121,6 +1121,8 @@ void fib_data::get_index_list(std::vector<std::string>& index_list) const
 bool fib_data::add_dT_index(const std::string& index_name)
 {
     std::string metrics;
+    tipl::matrix<4,4> ind;
+    ind.identity();
     for(size_t i = 0;i < view_item.size();++i)
     {
         if(i)
@@ -1135,48 +1137,24 @@ bool fib_data::add_dT_index(const std::string& index_name)
         for(size_t j = 0;j < view_item.size();++j)
             if(post_fix == view_item[j].name)
             {
-                tipl::image<3> Ibuf,Jbuf;
-                auto J = view_item[j].get_image();
-                auto I = view_item[i].get_image();
-                if(J.shape() != dim)
+                if(view_item[i].registering || view_item[j].registering)
                 {
-                    std::cout << view_item[j].name << " has a dimension of " << J.shape() <<
-                                 " warpping to the DWI space..." << std::endl;
-                    Jbuf.resize(dim);
-                    tipl::resample_mt(J,Jbuf,tipl::transformation_matrix<float>(view_item[j].iT));
-                    J = tipl::make_image(&*Jbuf.begin(),Jbuf.shape());
+                    error_msg = "Registration undergoing. Please wait until registration complete.";
+                    return false;
                 }
-                if(I.shape() != dim)
-                {
-                    std::cout << view_item[i].name << " has a dimension of " << I.shape() <<
-                                 " warpping to the DWI space..." << std::endl;
-                    Ibuf.resize(dim);
-                    tipl::resample_mt(I,Ibuf,tipl::transformation_matrix<float>(view_item[i].iT));
-                    I = tipl::make_image(&*Ibuf.begin(),Ibuf.shape());
-                }
+                tipl::image<3> I(dim),J(dim);
+                if(J.shape() != dim || view_item[j].iT != ind)
+                    tipl::resample_mt(view_item[j].get_image(),J,tipl::transformation_matrix<float>(view_item[j].iT));
+                else
+                    J = view_item[j].get_image();
+
+                if(I.shape() != dim || view_item[i].iT != ind)
+                    tipl::resample_mt(view_item[i].get_image(),I,tipl::transformation_matrix<float>(view_item[i].iT));
+                else
+                    I = view_item[i].get_image();
 
                 tipl::image<3> new_metrics(dim);
                 std::cout << "new metric: (" << view_item[i].name << " - " << view_item[j].name << ")/" << view_item[i].name << " x 100%" << std::endl;
-                /*
-                if(!raw)
-                {
-                    std::vector<float> x,y;
-                    for(size_t k = 0;k < I.size();++k)
-                        if(dir.fa[0][k] > 0.0f && I[k] > 0.0f && J[k] > 0.0f)
-                        {
-                            x.push_back(I[k]); // x = I
-                            y.push_back(J[k]); // y = J
-                        }
-                    float a,b,r2; // I ~ a*J+b
-                    tipl::linear_regression(x.begin(),x.end(),y.begin(),a,b,r2);
-                    std::cout << "matching " << view_item[j].name << " ~ a*" << view_item[i].name << " + b" << std::endl;
-                    std::cout << "a:" << a << " b:" << b << " r2:" << r2 << std::endl;
-                    for(size_t k = 0;k < I.size();++k)
-                        if(dir.fa[0][k] > 0.0f && I[k] > 0.0f && J[k] > 0.0f)
-                            new_metrics[k] = (a*I[k]+b)/J[k]-1.0f;
-                }
-                // else
-                */
                 {
                     for(size_t k = 0;k < I.size();++k)
                         if(dir.fa[0][k] > 0.0f && I[k] > 0.0f && J[k] > 0.0f)
