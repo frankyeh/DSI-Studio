@@ -96,7 +96,7 @@ std::string find_full_path(QString name)
 
 bool load_file_name(void)
 {
-    fib_template_file_name_2mm = find_full_path("/atlas/ICBM152/ICBM152.fib.gz");
+    fib_template_file_name_2mm = find_full_path("/atlas/ICBM152_adult/ICBM152_adult.fib.gz");
     device_content_file = find_full_path("/device.txt");
 
     //std::cout << "search templates and atlases" << std::endl;
