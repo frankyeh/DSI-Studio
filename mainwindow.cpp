@@ -114,7 +114,8 @@ void MainWindow::openFile(QString file_name)
             loadSrc(QStringList() << file_name);
         }
         else
-        if(QString(file_name).endsWith(".nii") ||
+        if(QString(file_name).endsWith(".nhdr") ||
+           QString(file_name).endsWith(".nii") ||
            QString(file_name).endsWith(".nii.gz") ||
                 QString(file_name).endsWith(".dcm"))
         {
