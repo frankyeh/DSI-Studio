@@ -408,6 +408,7 @@ bool view_image::open(QStringList file_names)
 {
     tipl::io::dicom dicom;
     tipl::io::bruker_2dseq seq;
+    tipl::io::nrrd nrrd;
     gz_mat_read mat;
     data.clear();
     is_mni = false;
@@ -434,6 +435,16 @@ bool view_image::open(QStringList file_names)
             for(unsigned int j = 0;j < I.size();++j)
                 data[pos+j] = ((float)I[j].r+(float)I[j].r+(float)I[j].r)/3.0;
         }
+    }
+    if(QString(file_name).endsWith(".nhdr"))
+    {
+        if(!nrrd.load_from_file(file_name.toStdString().c_str()) || !(nrrd >> data))
+        {
+            QMessageBox::critical(this,"Error",nrrd.error_msg.c_str());
+            return false;
+        }
+        nrrd.get_voxel_size(vs);
+        nrrd.get_image_transformation(T);
     }
     else
     if(QString(file_name).endsWith(".nii.gz") || QString(file_name).endsWith(".nii"))
