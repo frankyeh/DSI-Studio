@@ -1033,7 +1033,8 @@ bool fib_data::load_from_mat(void)
         // matching templates
         for(size_t index = 0;index < fa_template_list.size();++index)
         {
-            if(QString(fib_file_name.c_str()).contains(QFileInfo(fa_template_list[index].c_str()).baseName(),Qt::CaseInsensitive))
+            if(QString(fib_file_name.c_str()).contains(QFileInfo(fa_template_list[index].c_str()).baseName(),Qt::CaseInsensitive) ||
+               QString(fa_template_list[index].c_str()).contains(QFileInfo(fib_file_name.c_str()).baseName(),Qt::CaseInsensitive))
             {
                 set_template_id(index);
                 return true;
