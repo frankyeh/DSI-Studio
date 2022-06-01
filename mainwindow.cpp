@@ -687,51 +687,6 @@ void MainWindow::on_group_connectometry_clicked()
     group_cnt->show();
 }
 
-void calculate_shell(const std::vector<float>& bvalues,std::vector<unsigned int>& shell);
-bool is_dsi_half_sphere(const std::vector<unsigned int>& shell);
-bool need_scheme_balance(const std::vector<unsigned int>& shell);
-
-extern std::vector<std::string> fa_template_list,iso_template_list;
-void MainWindow::on_ReconstructSRC_clicked()
-{
-    QString dir = QFileDialog::getExistingDirectory(
-                                this,
-                                "Open directory",
-                                ui->workDir->currentText());
-    if(dir.isEmpty())
-        return;
-
-    QStringList list = search_files(dir,"*src.gz");
-
-    for(int i = 0;i < list.size();++i)
-    {
-        std::shared_ptr<ImageModel> handle(std::make_shared<ImageModel>());
-        if (!handle->load_from_file(list[i].toLocal8Bit().begin()))
-        {
-            if(!handle->error_msg.empty())
-                QMessageBox::critical(this,"ERROR",handle->error_msg.c_str());
-            return;
-        }
-
-        handle->voxel.method_id = 7; // QSDR
-        handle->voxel.ti.init(8); // odf order of 8
-        handle->voxel.output_odf = true; // output ODF
-        handle->voxel.other_output = "all";
-        handle->voxel.thread_count = std::thread::hardware_concurrency();
-
-        //checking half shell
-        {
-            handle->voxel.half_sphere = handle->is_dsi_half_sphere();
-            handle->voxel.scheme_balance = handle->need_scheme_balance();
-        }
-
-        if (!handle->reconstruction())
-        {
-            QMessageBox::information(this,"ERROR",handle->error_msg.c_str());
-            return;
-        }
-    }
-}
 
 bool load_image_from_files(QStringList filenames,tipl::image<3>& ref,tipl::vector<3>& vs,tipl::matrix<4,4>& trans);
 
