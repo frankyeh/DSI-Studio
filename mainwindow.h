@@ -51,7 +51,6 @@ private slots:
     void on_open_db_clicked();
     void on_group_connectometry_clicked();
 
-    void on_ReconstructSRC_clicked();
     void on_linear_reg_clicked();
     void on_nonlinear_reg_clicked();
     void on_SRC_qc_clicked();
