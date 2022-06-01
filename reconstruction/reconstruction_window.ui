@@ -949,16 +949,6 @@
                   </widget>
                  </item>
                  <item>
-                  <widget class="QCheckBox" name="RecordODF">
-                   <property name="statusTip">
-                    <string>Output ODFs in the FIB file (will increase file size)</string>
-                   </property>
-                   <property name="text">
-                    <string>Output ODFs</string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item>
                   <spacer name="horizontalSpacer_6">
                    <property name="orientation">
                     <enum>Qt::Horizontal</enum>
@@ -1023,6 +1013,16 @@
                       </property>
                       <property name="checked">
                        <bool>true</bool>
+                      </property>
+                     </widget>
+                    </item>
+                    <item>
+                     <widget class="QCheckBox" name="RecordODF">
+                      <property name="statusTip">
+                       <string>Output ODFs in the FIB file (will increase file size)</string>
+                      </property>
+                      <property name="text">
+                       <string>Output ODFs</string>
                       </property>
                      </widget>
                     </item>
