@@ -1646,7 +1646,7 @@ bool fib_data::map_to_mni(bool background)
                 s2t.resize(dim);
                 std::copy(t2s_ptr,t2s_ptr+t2s_col*t2s_row,&t2s[0][0]);
                 std::copy(s2t_ptr,s2t_ptr+s2t_col*s2t_row,&s2t[0][0]);
-                prog = 5;
+                prog = 6;
                 return true;
             }
         }
