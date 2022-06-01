@@ -392,11 +392,11 @@ bool connectometry_db::is_odf_consistent(gz_mat_read& m)
     }*/
     return true;
 }
-void connectometry_db::sample_from_image(const float* buf,const tipl::shape<3>& shape,
+void connectometry_db::sample_from_image(tipl::const_pointer_image<3,float> I,
                        const tipl::matrix<4,4>& trans,std::vector<float>& data)
 {
     tipl::image<3> J(handle->dim);
-    tipl::resample_mt<tipl::interpolation::cubic>(tipl::make_image(buf,shape),J,
+    tipl::resample_mt<tipl::interpolation::cubic>(I,J,
             tipl::transformation_matrix<float>(tipl::from_space(handle->trans_to_mni).to(trans)));
 
     data.clear();
@@ -432,50 +432,30 @@ bool connectometry_db::add_subject_file(const std::string& file_name,
             handle->error_msg += file_name;
             return false;
         }
-        sample_from_image(&I[0],I.shape(),trans,data);
+        sample_from_image(tipl::make_image(&I[0],I.shape()),trans,data);
     }
     else
     {
-        gz_mat_read m;
-        if(!m.load_from_file(file_name.c_str()))
+        fib_data fib;
+        if(!fib.load_from_file(file_name.c_str()))
         {
-            handle->error_msg = "failed to load file ";
-            handle->error_msg += file_name;
-            return false;
-        }
-        tipl::shape<3> subject_dim;
-        tipl::matrix<4,4> subject_trans;
-
-        if(!m.read("trans",subject_trans) || !m.read("dimension",subject_dim))
-        {
-            handle->error_msg = "Invalid FIB format: ";
+            handle->error_msg = fib.error_msg;
             return false;
         }
         if(subject_report.empty())
-            m.read("report",subject_report);
-        // load R2
-        {
-            const float* value= nullptr;
-            unsigned int row,col;
-            m.read("R2",row,col,value);
-            if(!value || *value != *value)
-            {
-                handle->error_msg = "Invalid R2 value in ";
-                handle->error_msg += file_name;
-                return false;
-            }
-            subject_R2 = *value;
-        }
+            subject_report = fib.report;
+        fib.mat_reader.read("R2",subject_R2);
 
-        if(index_name == "qa" || index_name == "nqa" || index_name.empty())
+        if(fib.is_qsdr && fib.has_odfs() &&
+           (index_name == "qa" || index_name == "nqa" || index_name.empty()))
         {
             odf_data subject_odf;
-            if(!is_odf_consistent(m) || !subject_odf.read(m))
+            if(!is_odf_consistent(fib.mat_reader) || !subject_odf.read(fib.mat_reader))
             {
                 handle->error_msg = "failed to read odf";
                 return false;
             }
-            tipl::transformation_matrix<float> template2subject(tipl::from_space(handle->trans_to_mni).to(subject_trans));
+            tipl::transformation_matrix<float> template2subject(tipl::from_space(handle->trans_to_mni).to(fib.trans_to_mni));
 
             progress::show("loading");
             data.clear();
@@ -489,9 +469,9 @@ bool connectometry_db::add_subject_file(const std::string& file_name,
                 tipl::vector<3> pos(tipl::pixel_index<3>(vi,handle->dim));
                 template2subject(pos);
                 pos.round();
-                if(!subject_dim.is_valid(pos))
+                if(!fib.dim.is_valid(pos))
                     return;
-                tipl::pixel_index<3> subject_pos(pos[0],pos[1],pos[2],subject_dim);
+                tipl::pixel_index<3> subject_pos(pos[0],pos[1],pos[2],fib.dim);
                 const float* odf = subject_odf.get_odf_data(uint32_t(subject_pos.index()));
                 if(odf == nullptr)
                     return;
@@ -514,19 +494,38 @@ bool connectometry_db::add_subject_file(const std::string& file_name,
         }
         else
         {
-            const float* buf = nullptr;
-            unsigned int row,col;
-            if(!m.read(index_name.c_str(),row,col,buf))
+            auto index = fib.get_name_index(index_name);
+            if(index < fib.view_item.size())
             {
-                handle->error_msg = "failed to sample ";
-                handle->error_msg += index_name;
-                return false;
+                if(fib.is_qsdr)
+                    sample_from_image(fib.view_item[index].get_image(),fib.trans_to_mni,data);
+                else
+                {
+                    fib.set_template_id(handle->template_id);
+                    fib.map_to_mni();
+                    while(!progress::aborted() && fib.prog != 6)
+                        std::this_thread::sleep_for(std::chrono::seconds(2));
+                    if(progress::aborted())
+                    {
+                        handle->error_msg = "aborted";
+                        return false;
+                    }
+                    tipl::image<3> Iss(fib.t2s.shape());
+                    tipl::compose_mapping(fib.view_item[index].get_image(),fib.t2s,Iss);
+                    sample_from_image(tipl::make_image(&Iss[0],Iss.shape()),fib.template_to_mni,data);
+                }
             }
-            sample_from_image(buf,subject_dim,subject_trans,data);
         }
     }
 
-
+    if(data.empty())
+    {
+        handle->error_msg = "failed to sample ";
+        handle->error_msg += index_name;
+        handle->error_msg += " in ";
+        handle->error_msg += file_name;
+        return false;
+    }
 
     R2.push_back(subject_R2);
 

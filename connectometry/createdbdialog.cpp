@@ -96,18 +96,9 @@ void CreateDBDialog::update_list(void)
                 raise(); // for Mac
                 return;
             }
-            if(!fib.is_qsdr)
-            {
-                QMessageBox::information(this,"Error","The FIB file was not reconstructed by QSDR.");
-                raise(); // for Mac
-                return;
-            }
             ui->index_of_interest->clear();
-            if(fib.has_odfs())
-            {
-                ui->index_of_interest->addItem("qa");
-                ui->index_of_interest->addItem("nqa");
-            }
+            ui->index_of_interest->addItem("qa");
+            ui->index_of_interest->addItem("nqa");
             std::vector<std::string> item_list;
             fib.get_index_list(item_list);
             for(unsigned int i = fib.dir.index_name.size();i < item_list.size();++i)
@@ -293,36 +284,38 @@ void CreateDBDialog::on_create_data_base_clicked()
     {
         if(ui->skeleton->text().isEmpty())
         {
-            QMessageBox::information(this,"error","Please assign template FIB file");
+            QMessageBox::critical(this,"ERROR","Please assign template FIB file");
             return;
         }
 
         progress prog_("creating database");
         std::shared_ptr<group_connectometry_analysis> data(new group_connectometry_analysis);
 
-        if(!data->create_database(ui->skeleton->text().toLocal8Bit().begin()))
+        if(!data->create_database(ui->skeleton->text().toStdString().c_str()))
         {
-            QMessageBox::information(this,"error in creating database",data->error_msg.c_str());
+            QMessageBox::critical(this,"ERROR",data->error_msg.c_str());
             return;
         }
-
+        if(!data->handle->is_qsdr)
+        {
+            QMessageBox::critical(this,"ERROR","the template has to be QSDR reconstructed FIB file");
+            return;
+        }
         data->handle->db.index_name = ui->index_of_interest->currentText().toStdString();
 
-        for (unsigned int index = 0;index < group.count();++index)
+        progress prog("reading data");
+        for (unsigned int index = 0;progress::at(index,group.count());++index)
         {
-            progress prog_(QFileInfo(group[index]).baseName().toStdString().c_str());
+            progress::show(QFileInfo(group[index]).baseName().toStdString().c_str());
             if(!data->handle->db.add_subject_file(group[index].toStdString(),get_file_name(group[index]).toStdString()))
             {
-                QMessageBox::information(this,"error in loading subject fib files",data->handle->error_msg.c_str());
-                raise(); // for Mac
-                return;
-            }
-            if(progress::aborted())
-            {
+                QMessageBox::critical(this,"ERROR",data->handle->error_msg.c_str());
                 raise(); // for Mac
                 return;
             }
         }
+        if(progress::aborted())
+            return;
         data->handle->db.save_db(ui->output_file_name->text().toStdString().c_str());
         QMessageBox::information(this,"completed","Connectometry database created");
     }
@@ -333,7 +326,7 @@ void CreateDBDialog::on_create_data_base_clicked()
             name_list[index] = group[index].toLocal8Bit().begin();
         const char* error_msg = odf_average(ui->output_file_name->text().toLocal8Bit().begin(),name_list);
         if(error_msg)
-            QMessageBox::information(this,"error",error_msg);
+            QMessageBox::critical(this,"ERROR",error_msg);
         else
             QMessageBox::information(this,"completed","File created");
     }
