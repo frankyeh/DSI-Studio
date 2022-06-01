@@ -70,7 +70,7 @@
        </size>
       </property>
       <property name="currentIndex">
-       <number>2</number>
+       <number>0</number>
       </property>
       <property name="tabSpacing">
        <number>0</number>
@@ -179,29 +179,19 @@
          </widget>
         </item>
         <item>
-         <widget class="QCommandLinkButton" name="ReconstructSRC">
-          <property name="text">
-           <string>Step C1: Reconstruct SRC for Connectometry</string>
-          </property>
-          <property name="description">
-           <string>Select a root folder containing the SRC files</string>
-          </property>
-         </widget>
-        </item>
-        <item>
          <widget class="QCommandLinkButton" name="vbc">
           <property name="text">
-           <string>Step C2: Create a Connectometry Database</string>
+           <string>Step C1: Create a Connectometry Database</string>
           </property>
           <property name="description">
-           <string>Load a group of subjects to create a connectometry dataset</string>
+           <string>Aggregate FIB files to create a database</string>
           </property>
          </widget>
         </item>
         <item>
          <widget class="QCommandLinkButton" name="open_db">
           <property name="text">
-           <string>Step C2a: Modify a Connectometry Database</string>
+           <string>Step C2: View/Modify a Connectometry Database</string>
           </property>
           <property name="description">
            <string>Add or remove subjects, calculate longitudinal change, fingerprinting</string>
@@ -214,7 +204,7 @@
            <string>Step C3: Connectometry </string>
           </property>
           <property name="description">
-           <string>Correlate study variables with tracks</string>
+           <string>Correlational tractography and connectometry analysis</string>
           </property>
          </widget>
         </item>
