@@ -185,7 +185,7 @@ int rec(program_option& po)
     src.voxel.thread_count = po.get("thread_count",uint32_t(std::thread::hardware_concurrency()));
     src.voxel.half_sphere = po.get("half_sphere",src.is_dsi_half_sphere());
     src.voxel.scheme_balance = po.get("scheme_balance",src.need_scheme_balance());
-
+    src.voxel.qsdr_reso = po.get("qsdr_reso",src.voxel.vs[0]);
 
     {
         if(src.voxel.output_odf)
