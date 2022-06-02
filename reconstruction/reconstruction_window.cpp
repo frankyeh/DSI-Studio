@@ -118,6 +118,9 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
     ui->method_group->setVisible(!handle->voxel.is_histology);
     ui->param_group->setVisible(!handle->voxel.is_histology);
     ui->hist_param_group->setVisible(handle->voxel.is_histology);
+
+    ui->qsdr_reso->setValue(handle->voxel.vs[0]);
+
     if(handle->voxel.is_histology)
     {
         delete ui->menuCorrections;
@@ -259,19 +262,6 @@ void reconstruction_window::Reconstruction(unsigned char method_id,bool prompt)
         return;
     }
 
-    //QSDR
-    if(method_id == 7)
-    {
-        if(fa_template_list.empty())
-        {
-            QMessageBox::information(this,"error","Cannot find template files");
-            return;
-        }
-    }
-    else
-        if(ui->align_acpc->isChecked())
-            handle->align_acpc();
-
     settings.setValue("rec_method_id",method_id);
     settings.setValue("rec_thread_count",ui->ThreadCount->value());
 
@@ -288,6 +278,7 @@ void reconstruction_window::Reconstruction(unsigned char method_id,bool prompt)
     handle->voxel.check_btable = ui->check_btable->isChecked();
     handle->voxel.other_output = ui->other_output->text().toStdString();
     handle->voxel.thread_count = ui->ThreadCount->value();
+    handle->voxel.template_id = ui->primary_template->currentIndex();
 
     if(handle->voxel.is_histology)
     {
@@ -301,6 +292,19 @@ void reconstruction_window::Reconstruction(unsigned char method_id,bool prompt)
         handle->voxel.scheme_balance = ui->scheme_balance->isChecked() ? 1:0;
     else
         handle->voxel.scheme_balance = false;
+
+    if(method_id == 7)
+    {
+        if(fa_template_list.empty())
+        {
+            QMessageBox::information(this,"error","Cannot find template files");
+            return;
+        }
+        handle->voxel.qsdr_reso = ui->qsdr_reso->value();
+    }
+    else
+        if(ui->align_acpc->isChecked())
+            handle->align_acpc();
 
     auto dim_backup = handle->voxel.dim; // for QSDR
     auto vs = handle->voxel.vs; // for QSDR
@@ -450,7 +454,8 @@ void reconstruction_window::on_DTI_toggled(bool checked)
     ui->AdvancedOptions->setVisible(checked);
 
     ui->RecordODF->setVisible(!checked);
-
+    ui->qsdr_reso->setVisible(!checked);
+    ui->qsdr_reso_label->setVisible(!checked);
     if(checked && (!ui->other_output->text().contains("rd") &&
                    !ui->other_output->text().contains("ad") &&
                    !ui->other_output->text().contains("md")))
@@ -470,7 +475,8 @@ void reconstruction_window::on_GQI_toggled(bool checked)
 
     ui->RecordODF->setVisible(checked);
 
-
+    ui->qsdr_reso->setVisible(!checked);
+    ui->qsdr_reso_label->setVisible(!checked);
 }
 
 void reconstruction_window::on_QSDR_toggled(bool checked)
@@ -482,6 +488,8 @@ void reconstruction_window::on_QSDR_toggled(bool checked)
 
     ui->RecordODF->setVisible(checked);
 
+    ui->qsdr_reso->setVisible(checked);
+    ui->qsdr_reso_label->setVisible(checked);
 
 }
 
@@ -1081,11 +1089,6 @@ void reconstruction_window::on_actionRun_FSL_Topup_triggered()
         QMessageBox::information(this,"DSI Studio","Correction result loaded");
 }
 
-
-void reconstruction_window::on_primary_template_currentIndexChanged(int index)
-{
-    handle->voxel.template_id = size_t(index);
-}
 
 void reconstruction_window::on_actionEDDY_triggered()
 {
