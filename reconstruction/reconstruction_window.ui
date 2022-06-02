@@ -607,7 +607,30 @@
                     <bool>true</bool>
                    </property>
                    <property name="text">
-                    <string>QSDR (MNI space)</string>
+                    <string>QSDR</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QDoubleSpinBox" name="qsdr_reso">
+                   <property name="decimals">
+                    <number>3</number>
+                   </property>
+                   <property name="maximum">
+                    <double>3.000000000000000</double>
+                   </property>
+                   <property name="singleStep">
+                    <double>0.500000000000000</double>
+                   </property>
+                   <property name="value">
+                    <double>1.000000000000000</double>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QLabel" name="qsdr_reso_label">
+                   <property name="text">
+                    <string>mm</string>
                    </property>
                   </widget>
                  </item>
