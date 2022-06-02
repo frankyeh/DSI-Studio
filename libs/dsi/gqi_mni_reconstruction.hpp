@@ -83,9 +83,6 @@ public:
 
         {
             match_template_resolution(VG,VG2,VGvs,VF,VF2,VFvs);
-            float VFratio = VFvs[0]/voxel.vs[0]; // if subject data are downsampled, then VFratio=2, 4, 8, ...etc
-            if(VFratio != 1.0f)
-                std::cout << "data have a much higher resolution than template's at " << VGvs[0] << " mm,  registration will be performed at " << VFvs[0] << std::endl;
             tipl::normalize(VG,1.0);
             tipl::normalize(VF,1.0);
             if(dual_modality)
@@ -194,11 +191,10 @@ public:
             }
             partial_reconstruction = float(subject_voxel_count)/float(total_voxel_count) < 0.25f;
 
-
-
-            // if subject's data were downsampled, then apply it to affine to get the right mapping matrix
+            float VFratio = VFvs[0]/voxel.vs[0]; // if subject data are downsampled, then VFratio=2, 4, 8, ...etc
             if(VFratio != 1.0f)
                 tipl::multiply_constant(affine.data,affine.data+12,VFratio);
+
         }       
         // if subject data is only a fragment of FOV, crop images
         if(partial_reconstruction)
@@ -227,7 +223,7 @@ public:
         }
 
         // output resolution = acquisition resoloution
-        float VG_ratio = voxel.vs[0]/VGvs[0];
+        float VG_ratio = voxel.qsdr_reso/VGvs[0];
 
         // update registration results;
         if(VG_ratio != 1.0f)
@@ -253,8 +249,10 @@ public:
             });
             new_cdm_dis.swap(cdm_dis);
             new_VG.swap(VG);
-            VGvs[0] = VGvs[1] = VGvs[2] = voxel.vs[0];
+            VGvs[0] = VGvs[1] = VGvs[2] = voxel.qsdr_reso;
         }
+
+
 
         // assign mask
         {
