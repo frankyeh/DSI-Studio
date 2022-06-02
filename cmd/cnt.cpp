@@ -42,16 +42,10 @@ int cnt(program_option& po)
     std::cout << std::endl;
 
     std::vector<unsigned int> variable_list;
-    unsigned int voi_index = 0;
+    std::string foi_str;
+
 
     {
-        voi_index = po.get("voi",uint32_t(0));
-        if(voi_index >= db.feature_titles.size())
-        {
-            std::cout << "invalid variable of interest: " << voi_index << std::endl;
-            return 1;
-        }
-        std::cout << "variable to study: " << db.feature_titles[voi_index] << std::endl;
 
         std::string var_text = po.get("variable_list");
         std::replace(var_text.begin(),var_text.end(),',',' ');
@@ -64,9 +58,31 @@ int cnt(program_option& po)
                 return 1;
             }
 
-        // sort and variables, make them unique, and make sure voi is included
+
+        if(po.get("voi") == "Intercept")
         {
+            if(!db.is_longitudinal)
+            {
+                std::cout << "[ERROR] Intercept can only be studied in a longitudinal database." << std::endl;
+                return 1;
+            }
+            foi_str = "Intercept";
+        }
+        else
+        {
+            unsigned int voi_index = po.get("voi",uint32_t(0));
+            if(voi_index >= db.feature_titles.size())
+            {
+                std::cout << "invalid variable of interest: " << voi_index << std::endl;
+                return 1;
+            }
+            // the variable to study needs to be included in the model
             variable_list.push_back(voi_index);
+            foi_str = db.feature_titles[voi_index];
+        }
+
+        {
+            // sort and variables, make them unique
             std::set<unsigned int> s(variable_list.begin(),variable_list.end());
             variable_list.assign(s.begin(),s.end());
         }
@@ -79,6 +95,8 @@ int cnt(program_option& po)
             db.feature_selected[index] = true;
         }
         std::cout << std::endl;
+        std::cout << "variable to study: " << foi_str << std::endl;
+
     }
 
 
@@ -86,7 +104,7 @@ int cnt(program_option& po)
     {
         vbc->no_tractogram = (po.get("no_tractogram",1) == 1);
         vbc->normalize_qa = po.get("normalize_qa",(db.index_name == "sdf" || db.index_name == "qa") ? 1:0);
-        vbc->foi_str = db.feature_titles[voi_index];
+        vbc->foi_str = foi_str;
         vbc->length_threshold_voxels = po.get("length_threshold",uint32_t(20));
         vbc->tip = po.get("tip",uint32_t(4));
         vbc->fdr_threshold = po.get("fdr_threshold",0.0f);
