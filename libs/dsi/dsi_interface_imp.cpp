@@ -184,6 +184,8 @@ bool ImageModel::reconstruction(void)
             break;
         case 7:
             voxel.step_report << "[Step T2b(1)]=QSDR" << std::endl;
+            voxel.step_report << "[Step T2b(1)][QSDR resolution]=" << voxel.qsdr_reso << std::endl;
+            voxel.step_report << "[Step T2b(1)][Template]=" << QFileInfo(fa_template_list[voxel.template_id].c_str()).baseName().toLower().toStdString() << std::endl;
             voxel.step_report << "[Step T2b(1)][Diffusion sampling length ratio]=" << voxel.param[0] << std::endl;
             voxel.recon_report
             << " The diffusion data were reconstructed in the MNI space using q-space diffeomorphic reconstruction (Yeh et al., Neuroimage, 58(1):91-9, 2011) to obtain the spin distribution function (Yeh et al., IEEE TMI, ;29(9):1626-35, 2010). "
@@ -217,7 +219,7 @@ bool ImageModel::reconstruction(void)
             }
 
             voxel.recon_report
-            << " The output resolution in diffeomorphic reconstruction was " << voxel.vs[0] << " mm isotorpic.";
+            << " The output resolution in diffeomorphic reconstruction was " << voxel.qsdr_reso << " mm isotropic.";
             if(voxel.needs("rdi"))
                 voxel.recon_report <<
                     " The restricted diffusion was quantified using restricted diffusion imaging (Yeh et al., MRM, 77:603–612 (2017)).";
