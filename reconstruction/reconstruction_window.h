@@ -111,7 +111,6 @@ private slots:
     void on_actionOverwrite_Voxel_Size_triggered();
     void on_qsdr_manual_clicked();
     void on_actionRun_FSL_Topup_triggered();
-    void on_primary_template_currentIndexChanged(int index);
     void on_actionEDDY_triggered();
     void on_actionSmooth_Signals_triggered();
 };
