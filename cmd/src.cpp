@@ -111,15 +111,15 @@ int src(program_option& po)
         if(bval.size() != dwi_files.size())
         {
             std::cout << "mismatch between bval file and the loaded images" << std::endl;
-            std::cout << "dwi number:" << dwi_files.size() << std::endl;;
-            std::cout << "bval number:" << bval.size() << std::endl;;
+            std::cout << "dwi number:" << dwi_files.size() << std::endl;
+            std::cout << "bval number:" << bval.size() << std::endl;
             return 1;
         }
         if(bvec.size() != dwi_files.size()*3)
         {
             std::cout << "mismatch between bvec file and the loaded images" << std::endl;
-            std::cout << "dwi number:" << dwi_files.size() << std::endl;;
-            std::cout << "bvec number:" << bvec.size() << std::endl;;
+            std::cout << "dwi number:" << dwi_files.size() << std::endl;
+            std::cout << "bvec number:" << bvec.size() << std::endl;
             return 1;
         }
         for(unsigned int index = 0;index < dwi_files.size();++index)
