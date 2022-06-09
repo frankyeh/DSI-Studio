@@ -21,6 +21,9 @@ public:
     bool open(QStringList file_name);
     bool eventFilter(QObject *obj, QEvent *event);
     bool command(std::string cmd,std::string param1 = std::string(),std::string param2 = std::string());
+private:
+    bool has_flip_x(void);
+    bool has_flip_y(void);
 private slots:
     void show_image(void);
     void init_image(void);
