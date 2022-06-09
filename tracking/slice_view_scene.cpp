@@ -146,11 +146,15 @@ void draw_ruler(QPainter& paint,
                 float zoom,
                 bool grid = false)
 {
-    float zoom_2 = zoom/2;
+    float zoom_2 = zoom*0.5f;
 
     float tic_dis = 10.0f; // in mm
-    if(std::fabs(qsdr_scale[0]) < 0.05f)
+    if(std::fabs(qsdr_scale[0]) < 1.0f)
+        tic_dis = 5.0f; // in mm
+    if(std::fabs(qsdr_scale[0]) < 0.2f)
         tic_dis = 1.0f;
+    if(std::fabs(qsdr_scale[0]) < 0.1f)
+        tic_dis = 0.5f;
 
     float tic_length = zoom*tic_dis/std::fabs(qsdr_scale[0]);
 
@@ -173,6 +177,8 @@ void draw_ruler(QPainter& paint,
 
     get_tic_pos(tic_pos_h,tic_value_h,shape[dim_h],zoom,tic_dis,qsdr_shift[dim_h],qsdr_scale[dim_h],flip_x);
     get_tic_pos(tic_pos_v,tic_value_v,shape[dim_v],zoom,tic_dis,qsdr_shift[dim_v],qsdr_scale[dim_v],flip_y);
+    if(tic_pos_h.empty() || tic_pos_v.empty())
+        return;
     auto min_Y = std::min(tic_pos_v.front(),tic_pos_v.back());
     auto max_Y = std::max(tic_pos_v.front(),tic_pos_v.back());
     auto min_X = std::min(tic_pos_h.front(),tic_pos_h.back());
