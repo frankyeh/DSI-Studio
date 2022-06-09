@@ -331,6 +331,8 @@ view_image::view_image(QWidget *parent) :
     ui->dwi_label->hide();
     connect(ui->max_color,SIGNAL(clicked()),this,SLOT(change_contrast()));
     connect(ui->min_color,SIGNAL(clicked()),this,SLOT(change_contrast()));
+    connect(ui->orientation,SIGNAL(currentIndexChanged(int)),this,SLOT(change_contrast()));
+    connect(ui->axis_grid,SIGNAL(currentIndexChanged(int)),this,SLOT(change_contrast()));
     connect(ui->menuOverlay, SIGNAL(aboutToShow()),this, SLOT(update_overlay_menu()));
 
     source_ratio = 2.0;
@@ -369,9 +371,16 @@ bool view_image::eventFilter(QObject *obj, QEvent *event)
     QMouseEvent *mouseEvent = static_cast<QMouseEvent*>(event);
     QPointF point = ui->view->mapToScene(mouseEvent->pos().x(),mouseEvent->pos().y());
     tipl::vector<3,float> pos,mni;
+    auto x = point.x();
+    auto y = point.y();
+    if(has_flip_x())
+        x = source.width() - x;
+    if(has_flip_y())
+        y = source.height() - y;
+
     tipl::slice2space(cur_dim,
-                      std::round(float(point.x()) / source_ratio),
-                      std::round(float(point.y()) / source_ratio),ui->slice_pos->value(),pos[0],pos[1],pos[2]);
+                      std::round(float(x) / source_ratio),
+                      std::round(float(y) / source_ratio),ui->slice_pos->value(),pos[0],pos[1],pos[2]);
     if(!data.shape().is_valid(pos))
         return true;
     mni = pos;
@@ -684,6 +693,52 @@ void view_image::update_overlay_menu(void)
         ui->menuOverlay->actions()[index]->setText(opened_images[index]->windowTitle());
     }
 }
+bool view_image::has_flip_x(void)
+{
+    bool flip_x = false;
+    if(ui->orientation->currentIndex())
+    {
+        flip_x = cur_dim;
+        // this handles the "to LPS"
+        if(T[0] > 0)
+        {
+            if(cur_dim == 2)
+                flip_x = !flip_x;
+            if(cur_dim == 1)
+                flip_x = !flip_x;
+        }
+        if(T[5] > 0)
+        {
+            if(cur_dim == 0)
+                flip_x = !flip_x;
+        }
+    }
+    return flip_x;
+}
+bool view_image::has_flip_y(void)
+{
+    bool flip_y = false;
+    if(ui->orientation->currentIndex())
+    {
+        flip_y = (cur_dim != 2);
+        if(T[5] > 0)
+        {
+            if(cur_dim == 2)
+                flip_y = !flip_y;
+        }
+    }
+    return flip_y;
+}
+
+void draw_ruler(QPainter& paint,
+                tipl::shape<3> shape,
+                tipl::vector<3> qsdr_scale,
+                tipl::vector<3> qsdr_shift,
+                unsigned char cur_dim,
+                bool flip_x,
+                bool flip_y,
+                float zoom,
+                bool grid = false);
 void view_image::show_image(void)
 {
     if(data.empty() || no_update)
@@ -703,6 +758,32 @@ void view_image::show_image(void)
     }
     QImage I(reinterpret_cast<unsigned char*>(&*buffer.begin()),buffer.width(),buffer.height(),QImage::Format_RGB32);
     source_image = I.scaled(buffer.width()*source_ratio,buffer.height()*source_ratio);
+
+    bool flip_x = has_flip_x();
+    bool flip_y = has_flip_y();
+    if(flip_y || flip_x)
+        source_image = source_image.mirrored(flip_x,flip_y);
+
+    {
+        QPainter paint(&source_image);
+
+        QPen pen;
+        pen.setColor(Qt::white);
+        paint.setPen(pen);
+        paint.setFont(font());
+
+        tipl::vector<3> qsdr_scale(1.0f,1.0f,1.0f);
+        tipl::vector<3> qsdr_shift(0.0f,0.0f,0.0f);
+
+        if(ui->orientation->currentIndex())
+        {
+            qsdr_scale = tipl::vector<3>(T[0],T[5],T[10]);
+            qsdr_shift = tipl::vector<3>(T[3],T[7],T[11]);
+        }
+        draw_ruler(paint,data.shape(),qsdr_scale,qsdr_shift,cur_dim,
+                        has_flip_x(),has_flip_y(),source_ratio,ui->axis_grid->currentIndex());
+    }
+
     show_view(source,source_image);
 }
 void view_image::change_contrast()
@@ -713,8 +794,8 @@ void view_image::change_contrast()
 }
 void view_image::on_zoom_in_clicked()
 {
-     source_ratio *= 1.1f;
-     show_image();
+    source_ratio *= 1.1f;
+    show_image();
 }
 
 void view_image::on_zoom_out_clicked()
@@ -1188,10 +1269,13 @@ void view_image::on_actionFlip_X_triggered()
 {
     if(data.empty())
         return;
-    T[3] += T[0]*float(data.width()-1);
-    T[0] = -T[0];
-    T[4] = -T[4];
-    T[8] = -T[8];
+    if(ui->orientation->currentIndex() == 0)
+    {
+        T[3] += T[0]*float(data.width()-1);
+        T[0] = -T[0];
+        T[4] = -T[4];
+        T[8] = -T[8];
+    }
     tipl::flip_x(data);
     init_image();
     show_image();
@@ -1202,11 +1286,13 @@ void view_image::on_actionFlip_Y_triggered()
 {
     if(data.empty())
         return;
-    T[7] += T[5]*float(data.height()-1);
-    T[1] = -T[1];
-    T[5] = -T[5];
-    T[9] = -T[9];
-
+    if(ui->orientation->currentIndex() == 0)
+    {
+        T[7] += T[5]*float(data.height()-1);
+        T[1] = -T[1];
+        T[5] = -T[5];
+        T[9] = -T[9];
+    }
     tipl::flip_y(data);
     init_image();
     show_image();
@@ -1217,11 +1303,13 @@ void view_image::on_actionFlip_Z_triggered()
 {
     if(data.empty())
         return;
-    T[11] += T[10]*float(data.depth()-1);
-    T[2] = -T[2];
-    T[6] = -T[6];
-    T[10] = -T[10];
-
+    if(ui->orientation->currentIndex() == 0)
+    {
+        T[11] += T[10]*float(data.depth()-1);
+        T[2] = -T[2];
+        T[6] = -T[6];
+        T[10] = -T[10];
+    }
     tipl::flip_z(data);
     init_image();
     show_image();
