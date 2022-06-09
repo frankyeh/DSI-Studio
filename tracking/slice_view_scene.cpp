@@ -109,99 +109,125 @@ void slice_view_scene::show_ruler2(QPainter& paint)
 
     }
 }
-void slice_view_scene::show_ruler(QPainter& paint,std::shared_ptr<SliceModel> current_slice,unsigned char cur_dim)
-{
-    int roi_index = cur_tracking_window["roi_label"].toInt();
-    float zoom = cur_tracking_window.get_scene_zoom(current_slice);
-    float zoom_2 = zoom/2;
-    int tic_dis = 5;
-    while(zoom*float(tic_dis) < 20.0f)
-        tic_dis *= 2;
-    int tic_length = int(zoom*float(tic_dis));
 
-    QPen pen;  // creates a default pen
-    pen.setWidth(int(zoom_2));
+void get_tic_pos(std::vector<float>& tic_pos,
+                 std::vector<float>& tic_value,
+                 unsigned int shape_length,
+                 float zoom,
+                 float tic_dis,
+                 float shift,float scale,
+                 bool flip)
+{
+    float tic_length = zoom*tic_dis/std::fabs(scale);
+    float window_length = zoom*float(shape_length);
+    float from = shift;
+    float to = float(shape_length)*scale+from;
+    if(from > to)
+        std::swap(from,to);
+    from = std::ceil(from/tic_dis)*tic_dis;
+    to = std::floor(to/tic_dis)*tic_dis;
+    for(float pos = from;pos < to;pos += tic_dis)
+    {
+        float pos_in_voxel = float(pos-shift)/scale;
+        pos_in_voxel = zoom*float(flip ? float(shape_length)-pos_in_voxel : pos_in_voxel);
+        if(pos_in_voxel < tic_length || pos_in_voxel + tic_length > window_length)
+            continue;
+        tic_pos.push_back(pos_in_voxel);
+        tic_value.push_back(pos);
+    }
+}
+void draw_ruler(QPainter& paint,
+                tipl::shape<3> shape,
+                tipl::vector<3> qsdr_scale,
+                tipl::vector<3> qsdr_shift,
+                unsigned char cur_dim,
+                bool flip_x,
+                bool flip_y,
+                float zoom,
+                bool grid = false)
+{
+    float zoom_2 = zoom/2;
+
+    float tic_dis = 10.0f; // in mm
+    if(std::fabs(qsdr_scale[0]) < 0.05f)
+        tic_dis = 1.0f;
+
+    float tic_length = zoom*tic_dis/std::fabs(qsdr_scale[0]);
+
+    auto pen = paint.pen();  // creates a default pen
+    pen.setWidth(std::max<int>(1,int(zoom_2)));
     pen.setCapStyle(Qt::RoundCap);
     pen.setJoinStyle(Qt::RoundJoin);
-    pen.setColor(line_color);
     paint.setPen(pen);
 
-    QFont f = font();
-    f.setPointSize(tic_length/4);
+    auto f = paint.font();
+    f.setPointSize(std::max<int>(1,int(tic_length/2.5f)));
     paint.setFont(f);
-    // for qsdr
-    bool is_qsdr = cur_tracking_window.handle->is_qsdr;
-    auto trans = cur_tracking_window.handle->trans_to_mni;
-    if(!current_slice->is_diffusion_space)
-        trans *= current_slice->T;
-    tipl::vector<3,int> qsdr_origin;
-    tipl::vector<3> qsdr_scale(trans[0],trans[5],trans[10]);
-    tipl::vector<3> qsdr_shift(trans[3],trans[7],trans[11]);
-    if(is_qsdr)
-    {
-        qsdr_origin[0] = int(std::round(-trans[3]/trans[0]));
-        qsdr_origin[1] = int(std::round(-trans[7]/trans[5]));
-        qsdr_origin[2] = int(std::round(-trans[11]/trans[10]));
-    }
-    // horizontal direction
-    int space_x = 0;
-    {
-        bool flip_x = cur_tracking_window.slice_view_flip_x(cur_dim);
-        uint8_t dim = (cur_dim == 0 ? 1:0);
-        int Y = paint.window().height()-tic_length;
-        int pad_x =  (is_qsdr ? qsdr_origin[dim]%tic_dis:0);
-        if(pad_x == 0)
-            pad_x = tic_dis;
-        int length = (current_slice->dim[dim]-pad_x-pad_x)
-                        /tic_dis*tic_dis;
-        space_x = int(float(pad_x)*zoom+zoom_2);
-        for(int tic = 0;tic <= length;tic += tic_dis)
-        {
-            int X = int(float(pad_x+tic)*zoom+zoom_2);
-            if(flip_x)
-                X = paint.window().width()-X;
-            if(tic+tic_dis <= length)
-                paint.drawLine(X,Y,X+(flip_x ? -tic_length:tic_length),Y);
-            paint.drawLine(X,Y,X,Y+int(zoom));
 
-            float axis_label = tic+pad_x;
-            if(is_qsdr)
-                axis_label = axis_label*qsdr_scale[dim]+qsdr_shift[dim];
-            paint.drawText(X-40,Y+tic_length/2-40,80,80,
-                               Qt::AlignHCenter|Qt::AlignVCenter,
-                               QString::number(double(std::round(axis_label*100.0f)/100.0f)));
+
+    std::vector<float> tic_pos_h,tic_pos_v;
+    std::vector<float> tic_value_h,tic_value_v;
+
+    uint8_t dim_h = (cur_dim == 0 ? 1:0);
+    uint8_t dim_v = (cur_dim == 2 ? 1:2);
+
+    get_tic_pos(tic_pos_h,tic_value_h,shape[dim_h],zoom,tic_dis,qsdr_shift[dim_h],qsdr_scale[dim_h],flip_x);
+    get_tic_pos(tic_pos_v,tic_value_v,shape[dim_v],zoom,tic_dis,qsdr_shift[dim_v],qsdr_scale[dim_v],flip_y);
+    auto min_Y = std::min(tic_pos_v.front(),tic_pos_v.back());
+    auto max_Y = std::max(tic_pos_v.front(),tic_pos_v.back());
+    auto min_X = std::min(tic_pos_h.front(),tic_pos_h.back());
+    auto max_X = std::max(tic_pos_h.front(),tic_pos_h.back());
+
+    {
+        auto Y = max_Y+zoom_2;
+        paint.drawLine(int(min_X-zoom_2),int(Y),int(max_X+zoom_2),int(Y));
+        for(size_t i = 0;i < tic_pos_h.size();++i)
+        {
+            auto X = tic_pos_h[i]+zoom_2;
+            paint.drawLine(int(X),int(grid ? min_Y+zoom_2 : Y),int(X),int(Y+zoom));
+            paint.drawText(int(X-40),int(Y+tic_length/2-40),80,80,
+                           Qt::AlignHCenter|Qt::AlignVCenter,QString::number(tic_value_h[i]));
         }
     }
     {
-        bool flip_y = cur_dim != 2;
-        uint8_t dim = (cur_dim == 2 ? 1:2);
-        int X = space_x;
-        int pad_y = (is_qsdr ? int(qsdr_origin[dim]%tic_dis):0);
-        if(pad_y == 0)
-            pad_y = tic_dis;
-        if(flip_y && pad_y < tic_dis)
-            pad_y += tic_dis;
-        int length = (current_slice->dim[dim]-pad_y-tic_dis)
-                        /tic_dis*tic_dis;
-        for(int tic = 0;tic <= length;tic += tic_dis)
+
+        auto X = min_X+zoom_2;
+        paint.drawLine(int(X),int(min_Y-zoom_2),int(X),int(max_Y+zoom_2));
+        for(size_t i = 0;i < tic_pos_v.size();++i)
         {
-            int Y = int(float(pad_y+tic)*zoom+zoom_2);
-            if(flip_y)
-                Y = paint.window().height()-Y;
-            else
-                if(tic == 0 && roi_index)
-                    continue;
-            if(tic+tic_dis <= length)
-                paint.drawLine(X,Y,X,Y+(flip_y ? -tic_length: tic_length));
-            paint.drawLine(X,Y,X-int(zoom),Y);
-            float axis_label = tic+pad_y;
-            if(is_qsdr)
-                axis_label = axis_label*qsdr_scale[dim]+qsdr_shift[dim];
-            paint.drawText(2,Y-40,X-int(zoom)-2,80,
-                               Qt::AlignRight|Qt::AlignVCenter,
-                               QString::number(double(std::round(axis_label*100.0f)/100.0f)));
+            auto Y = tic_pos_v[i]+zoom_2;
+            paint.drawLine(int(grid ? max_X : X),int(Y),int(X-zoom),int(Y));
+            paint.drawText(2,int(Y-40),int(X-zoom)-2,80,
+                           Qt::AlignRight|Qt::AlignVCenter,QString::number(tic_value_v[i]));
         }
     }
+}
+
+void slice_view_scene::show_ruler(QPainter& paint,std::shared_ptr<SliceModel> current_slice,unsigned char cur_dim)
+{
+    tipl::vector<3> qsdr_scale(1.0f,1.0f,1.0f);
+    tipl::vector<3> qsdr_shift(0.0f,0.0f,0.0f);
+    if(cur_tracking_window.handle->is_qsdr)
+    {
+        auto trans = cur_tracking_window.handle->trans_to_mni;
+        if(!current_slice->is_diffusion_space)
+            trans *= current_slice->T;
+        qsdr_scale = tipl::vector<3>(trans[0],trans[5],trans[10]);
+        qsdr_shift = tipl::vector<3>(trans[3],trans[7],trans[11]);
+    }
+
+    QPen pen;
+    pen.setColor(line_color);
+    paint.setPen(pen);
+    paint.setFont(font());
+
+    draw_ruler(paint,
+               current_slice->dim,
+               qsdr_scale,qsdr_shift,cur_dim,
+               cur_tracking_window.slice_view_flip_x(cur_dim),
+               cur_tracking_window.slice_view_flip_y(cur_dim),
+               cur_tracking_window.get_scene_zoom(current_slice));
+
 }
 void slice_view_scene::show_fiber(QPainter& painter,std::shared_ptr<SliceModel> current_slice,const tipl::color_image& slice_image,unsigned char cur_dim)
 {
