@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>640</width>
-    <height>517</height>
+    <width>754</width>
+    <height>632</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -73,6 +73,37 @@
              <iconset resource="icons.qrc">
               <normaloff>:/icons/icons/down.xpm</normaloff>:/icons/icons/down.xpm</iconset>
             </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QComboBox" name="orientation">
+            <property name="currentIndex">
+             <number>1</number>
+            </property>
+            <item>
+             <property name="text">
+              <string>(I,J,K)</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>(X,Y,Z)</string>
+             </property>
+            </item>
+           </widget>
+          </item>
+          <item>
+           <widget class="QComboBox" name="axis_grid">
+            <item>
+             <property name="text">
+              <string>Axis</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>Grid</string>
+             </property>
+            </item>
            </widget>
           </item>
           <item>
@@ -296,7 +327,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>640</width>
+     <width>754</width>
      <height>22</height>
     </rect>
    </property>
