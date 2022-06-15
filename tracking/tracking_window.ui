@@ -918,6 +918,7 @@
     <addaction name="actionSaveRegionAs"/>
     <addaction name="actionSave_All_Regions_As"/>
     <addaction name="actionSave_All_Regions_As_Multiple_Files"/>
+    <addaction name="actionSave_All_Regions_as_4D_NIFTI"/>
     <addaction name="separator"/>
     <addaction name="actionCheck_all_regions"/>
     <addaction name="actionUnckech_all_regions"/>
@@ -931,6 +932,7 @@
     <addaction name="separator"/>
     <addaction name="actionMerge_All_2"/>
     <addaction name="actionRegion_statistics"/>
+    <addaction name="separator"/>
    </widget>
    <widget class="QMenu" name="menuTracts">
     <property name="title">
@@ -1256,7 +1258,6 @@
     <addaction name="separator"/>
     <addaction name="actionSave_Region_Color"/>
     <addaction name="actionSave_Voxel_Data_As"/>
-    <addaction name="actionSave_All_Regions_as_4D_NIFTI"/>
     <addaction name="separator"/>
     <addaction name="actionWhole_brain_seeding"/>
     <addaction name="separator"/>
@@ -2650,7 +2651,7 @@ Tracking</string>
      <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
    </property>
    <property name="text">
-    <string>Save Region &amp;As...</string>
+    <string>Save Current Region &amp;As...</string>
    </property>
   </action>
   <action name="actionDeleteRegion">
@@ -3213,7 +3214,7 @@ Tracking</string>
      <normaloff>:/icons/icons/save_all.xpm</normaloff>:/icons/icons/save_all.xpm</iconset>
    </property>
    <property name="text">
-    <string>Save Checked Regions to One File...</string>
+    <string>Save Checked Regions to one 3D NIFTI...</string>
    </property>
   </action>
   <action name="actionFloat_3D_window">
@@ -3285,7 +3286,7 @@ Tracking</string>
      <normaloff>:/icons/icons/save_all.xpm</normaloff>:/icons/icons/save_all.xpm</iconset>
    </property>
    <property name="text">
-    <string>Save Checked Regions in Multiple Files...</string>
+    <string>Save Checked Regions to multiple 3D NIFTIs...</string>
    </property>
   </action>
   <action name="actionRestore_Settings">
@@ -4034,7 +4035,7 @@ Tracking</string>
      <normaloff>:/icons/icons/save_all.xpm</normaloff>:/icons/icons/save_all.xpm</iconset>
    </property>
    <property name="text">
-    <string>Save All Regions as 4D NIFTI...</string>
+    <string>Save Checked Regions to one 4D NIFTI...</string>
    </property>
   </action>
   <action name="actionAdd_Tracking_Metrics">
