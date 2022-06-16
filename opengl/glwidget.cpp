@@ -1252,7 +1252,6 @@ void GLWidget::renderLR()
                     {
                         const auto& p2 = regions[i]->show_region.center;
                         tipl::vector<3> p3(p2);
-                        p3 /= regions[i]->resolution_ratio;
                         renderText(p3[0],p3[1],p3[2],item->text(),font);
                     }
                     else
