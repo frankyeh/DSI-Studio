@@ -87,7 +87,8 @@ bool RegionModel::load(const std::vector<tipl::vector<3,short> >& seeds, tipl::m
         tipl::vector<3,short> point(seeds[index]);
         point -= min_value;
         point /= cur_scale;
-        buffer[tipl::pixel_index<3>(point[0], point[1], point[2],
+        if(buffer.shape().is_valid(point))
+            buffer[tipl::pixel_index<3>(point[0], point[1], point[2],
                                      buffer.shape()).index()] = 200;
     });
 
