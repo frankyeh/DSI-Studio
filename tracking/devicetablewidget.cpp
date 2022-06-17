@@ -673,13 +673,11 @@ void DeviceTableWidget::detect_electrodes(void)
     }
 
     // add contacts as regions
-    float resotluion_ratio = cur_tracking_window.handle->vs[0]/vs[0];
     cur_tracking_window.regionWidget->begin_update();
     std::vector<std::shared_ptr<ROIRegion> > new_regions;
     for(unsigned int i = 0;i < contact_group.size();++i)
     {
         cur_tracking_window.regionWidget->add_region((std::string("Electrode ") + std::to_string(i+1)).c_str());
-        cur_tracking_window.regionWidget->regions.back()->resolution_ratio = resotluion_ratio;
         new_regions.push_back(cur_tracking_window.regionWidget->regions.back());
     }
     tipl::par_for(contact_group.size(),[&](unsigned int i)
@@ -692,10 +690,9 @@ void DeviceTableWidget::detect_electrodes(void)
             {
                 voxels.push_back(tipl::vector<3>(tipl::pixel_index<3>(regions[region_id][j],I.shape())));
                 voxels.back().to(slice->T);
-                voxels.back() *= resotluion_ratio;
             }
         }
-        new_regions[i]->add_points(voxels,false,resotluion_ratio);
+        new_regions[i]->add_points(std::move(voxels));
     });
     cur_tracking_window.regionWidget->end_update();
 
