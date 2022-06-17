@@ -75,8 +75,8 @@ void ThreadData::run_thread(unsigned int thread_id)
                 pos[0] += subvoxel_gen(seed);
                 pos[1] += subvoxel_gen(seed);
                 pos[2] += subvoxel_gen(seed);
-                if(roi_mgr->seed_needs_transform[roi_mgr->seed_space[seed_id]])
-                    pos.to(roi_mgr->seed_trans[roi_mgr->seed_space[seed_id]]);
+                if(roi_mgr->need_trans[roi_mgr->seed_space[seed_id]])
+                    pos.to(roi_mgr->to_diffusion_space[roi_mgr->seed_space[seed_id]]);
 
             }
 
