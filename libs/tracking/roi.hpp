@@ -4,13 +4,16 @@
 #include "TIPL/tipl.hpp"
 #include "tract_model.hpp"
 #include "tracking/region/Regions.h"
-template<typename hash_type = std::vector<uint32_t> >
 class Roi {
-    float ratio;
     tipl::shape<3> dim;
-    hash_type xyz_hash;
+    std::vector<uint32_t> xyz_hash;
 public:
-    __INLINE__ Roi(const tipl::shape<3>& sp_,float r):ratio(r),dim(r == 1.0f ? sp_:sp_*r),xyz_hash(dim[0]){}
+    bool need_trans = false;
+    tipl::matrix<4,4> from_diffusion_space = tipl::identity_matrix();
+public:
+    __INLINE__ Roi(const tipl::shape<3>& dim_,const tipl::matrix<4,4>& from_diffusion_space_):
+        dim(dim_),xyz_hash(dim_[0]),need_trans(true),from_diffusion_space(from_diffusion_space_){}
+    __INLINE__ Roi(const tipl::shape<3>& dim_):dim(dim_),xyz_hash(dim_[0]){}
     __INLINE__ ~Roi(){}
 public:
     __HOST__ void addPoint(const tipl::vector<3,short>& new_point)
@@ -35,26 +38,22 @@ public:
         }
         xyz_hash[z_base+(z >> 5)] |= (1 << (z & 31));
     }
-    template<typename T>
-    __INLINE__ Roi& operator=(Roi<T>& rhs)
+    __INLINE__ Roi& operator=(Roi& rhs)
     {
-        ratio = rhs.ratio;
         dim = rhs.dim;
         xyz_hash = rhs.xyz_hash;
+        need_trans = rhs.need_trans;
+        from_diffusion_space = rhs.from_diffusion_space;
         return *this;
     }
 public:
-    __INLINE__ bool havePoint(float dx,float dy,float dz) const
+    __INLINE__ bool havePoint(tipl::vector<3> p) const
     {
-        if(ratio != 1.0f)
-        {
-            dx *= ratio;
-            dy *= ratio;
-            dz *= ratio;
-        }
-        auto x = short(std::round(dx));
-        auto y = short(std::round(dy));
-        auto z = short(std::round(dz));
+        if(need_trans)
+            p.to(from_diffusion_space);
+        short x = short(std::round(p[0]));
+        short y = short(std::round(p[1]));
+        short z = short(std::round(p[2]));
         if(!dim.is_valid(x,y,z))
             return false;
         auto y_base = xyz_hash[uint16_t(x)];
@@ -65,14 +64,11 @@ public:
             return false;
         return (xyz_hash[z_base+(uint16_t(z) >> 5)] & (1 << (z & 31)));
     }
-    __INLINE__ bool havePoint(const tipl::vector<3,float>& point) const
-    {
-        return havePoint(point[0],point[1],point[2]);
-    }
     __INLINE__ bool included(const float* track,unsigned int buffer_size) const
     {
-        for(unsigned int index = 0; index < buffer_size; index += 3)
-            if(havePoint(track[index],track[index+1],track[index+2]))
+        auto end = track + buffer_size;
+        for(;track < end ; track += 3)
+            if(havePoint(tipl::vector<3>(track)))
                 return true;
         return false;
     }
@@ -165,13 +161,16 @@ class RoiMgr {
 public:
     std::shared_ptr<fib_data> handle;
     std::string report;
+    std::vector<std::shared_ptr<Roi> > inclusive;
+    std::vector<std::shared_ptr<Roi> > end;
+    std::vector<std::shared_ptr<Roi> > exclusive;
+    std::vector<std::shared_ptr<Roi> > terminate;
+    std::vector<std::shared_ptr<Roi> > no_end;
+public:
     std::vector<tipl::vector<3,short> > seeds;
-    std::vector<float> seeds_r;
-    std::vector<std::shared_ptr<Roi<> > > inclusive;
-    std::vector<std::shared_ptr<Roi<> > > end;
-    std::vector<std::shared_ptr<Roi<> > > exclusive;
-    std::vector<std::shared_ptr<Roi<> > > terminate;
-    std::vector<std::shared_ptr<Roi<> > > no_end;
+    std::vector<uint16_t> seed_space;
+    std::vector<bool> need_trans;
+    std::vector<tipl::matrix<4,4> > to_diffusion_space;
 public:
     float tolerance_dis_in_subject_voxels = 0.0f;
     unsigned int track_id = 0;
@@ -181,14 +180,14 @@ public:
     bool is_excluded_point(const tipl::vector<3,float>& point) const
     {
         for(unsigned int index = 0; index < exclusive.size(); ++index)
-            if(exclusive[index]->havePoint(point[0],point[1],point[2]))
+            if(exclusive[index]->havePoint(point))
                 return true;
         return false;
     }
     bool is_terminate_point(const tipl::vector<3,float>& point) const
     {
         for(unsigned int index = 0; index < terminate.size(); ++index)
-            if(terminate[index]->havePoint(point[0],point[1],point[2]))
+            if(terminate[index]->havePoint(point))
                 return true;
         return false;
     }
@@ -214,9 +213,9 @@ public:
         bool end_point2 = false;
         for(unsigned int index = 0; index < end.size(); ++index)
         {
-            if(end[index]->havePoint(point1[0],point1[1],point1[2]))
+            if(end[index]->havePoint(point1))
                 end_point1 = true;
-            else if(end[index]->havePoint(point2[0],point2[1],point2[2]))
+            else if(end[index]->havePoint(point2))
                 end_point2 = true;
             if(end_point1 && end_point2)
                 return true;
@@ -264,13 +263,13 @@ public:
             std::vector<tipl::vector<3,short> > seed;
             handle->track_atlas->to_voxel(seed,1.0f,int(track_id));
             ROIRegion region(handle);
-            region.add_points(seed,false);
+            region.add_points(std::move(seed));
             region.perform("dilation");
             region.perform("dilation");
             region.perform("dilation");
             region.perform("smoothing");
             region.perform("smoothing");
-            setRegions(region.get_region_voxels_raw(),1.0,3/*seed i*/,
+            setRegions(region.get_region_voxels_raw(),3/*seed i*/,
             handle->tractography_name_list[size_t(track_id)].c_str());
         }
         // add tolerance roa to speed up tracking
@@ -303,7 +302,7 @@ public:
             for(tipl::pixel_index<3> index(handle->dim);index < handle->dim.size();++index)
                 if(roa_mask[index.index()])
                     roa_points.push_back(tipl::vector<3,short>(short(index.x()),short(index.y()),short(index.z())));
-            setRegions(roa_points,1.0f,1,"track tolerance region");
+            setRegions(roa_points,1,"track tolerance region");
         }
         return true;
     }
@@ -315,73 +314,83 @@ public:
         for(tipl::pixel_index<3> index(handle->dim);index < handle->dim.size();++index)
             if(fa0[index.index()] > threashold)
                 seed.push_back(tipl::vector<3,short>(short(index.x()),short(index.y()),short(index.z())));
-        setRegions(seed,1.0,3/*seed i*/,"whole brain");
+        setRegions(seed,3/*seed i*/,"whole brain");
+    }
+
+    auto createRegion(const std::vector<tipl::vector<3,short> >& points,
+                      const tipl::shape<3>& dim,
+                      const tipl::matrix<4,4>& trans)
+    {
+        auto region = (handle->dim != dim || trans != tipl::identity_matrix()) ?
+                    std::make_shared<Roi>(dim,trans) : std::make_shared<Roi>(handle->dim);
+        for(unsigned int index = 0; index < points.size(); ++index)
+            region->addPoint(points[index]);
+        return region;
     }
     void setRegions(const std::vector<tipl::vector<3,short> >& points,
-                    float r,
                     unsigned char type,
                     const char* roi_name)
     {
-        switch(type)
+        setRegions(points,handle->dim,tipl::identity_matrix(),type,roi_name);
+    }
+    void setRegions(const std::vector<tipl::vector<3,short> >& points,
+                    const tipl::shape<3>& dim,
+                    const tipl::matrix<4,4>& to_diffusion_space_,
+                    unsigned char type,
+                    const char* roi_name)
+    {
+        if(type == seed_id)
         {
-        case roi_id:
-            inclusive.push_back(std::make_shared<Roi<> >(handle->dim,r));
-            for(unsigned int index = 0; index < points.size(); ++index)
-                inclusive.back()->addPoint(points[index]);
-            report += " An ROI was placed at ";
-            break;
-        case roa_id:
-            exclusive.push_back(std::make_shared<Roi<> >(handle->dim,r));
-            for(unsigned int index = 0; index < points.size(); ++index)
-                exclusive.back()->addPoint(points[index]);
-            report += " An ROA was placed at ";
-            break;
-        case end_id:
-            end.push_back(std::make_shared<Roi<> >(handle->dim,r));
-            for(unsigned int index = 0; index < points.size(); ++index)
-                end.back()->addPoint(points[index]);
-            report += " An ending region was placed at ";
-            break;
-        case terminate_id:
-            terminate.push_back(std::make_shared<Roi<> >(handle->dim,r));
-            for(unsigned int index = 0; index < points.size(); ++index)
-                terminate.back()->addPoint(points[index]);
-            report += " A terminative region was placed at ";
-            break;
-        case not_end_id:
-            no_end.push_back(std::make_shared<Roi<> >(handle->dim,r));
-            for(unsigned int index = 0; index < points.size(); ++index)
-                no_end.back()->addPoint(points[index]);
-            report += " A no ending region was placed at ";
-            break;
-        case seed_id:
+            uint16_t seed_space_id = uint16_t(to_diffusion_space.size());
+            need_trans.push_back(handle->dim != dim || to_diffusion_space_ != tipl::identity_matrix());
+            to_diffusion_space.push_back(to_diffusion_space_);
             for (unsigned int index = 0;index < points.size();++index)
             {
                 seeds.push_back(points[index]);
-                seeds_r.push_back(r);
-            };
+                seed_space.push_back(seed_space_id);
+            }
             report += " A seeding region was placed at ";
-            break;
-        default:
-            return;
         }
-        report += roi_name;
-        if(type != 3 && handle->vs[0]*handle->vs[1]*handle->vs[2] != 0.0f)
+        else
         {
-            tipl::vector<3,float> center;
-            for(size_t i = 0;i < points.size();++i)
-                center += points[i];
-            center /= points.size();
-            center /= r;
-            std::ostringstream out;
-            out << std::setprecision(2) << " (" << center[0] << "," << center[1] << "," << center[2]
-                << ") with a volume size of " << float(points.size())*handle->vs[0]*handle->vs[1]*handle->vs[2]/r/r/r << " mm cubic";
-            if(r != 1.0f)
-                out << " and a super resolution factor of " << r;
-            report += out.str();
+            auto region = createRegion(points,dim,tipl::inverse(to_diffusion_space_));
+            switch(type)
+            {
+            case roi_id:
+                inclusive.push_back(region);
+                report += " An ROI was placed at ";
+                break;
+            case roa_id:
+                exclusive.push_back(region);
+                report += " An ROA was placed at ";
+                break;
+            case end_id:
+                end.push_back(region);
+                report += " An ending region was placed at ";
+                break;
+            case terminate_id:
+                terminate.push_back(region);
+                report += " A terminative region was placed at ";
+                break;
+            case not_end_id:
+                no_end.push_back(region);
+                report += " A no ending region was placed at ";
+                break;
+            default:
+                return;
+            }
         }
-        report += ".";
 
+        report += roi_name;
+        tipl::vector<3> center;
+        for(size_t i = 0;i < points.size();++i)
+            center += points[i];
+        center /= points.size();
+        std::ostringstream out;
+        out << std::setprecision(2) << " (" << center[0] << "," << center[1] << "," << center[2]
+            << ") ";
+        report += out.str();
+        report += ".";
     }
 };
 
