@@ -53,21 +53,21 @@ void RegionModel::sortIndices(void)
 
 
 
-bool RegionModel::load(const std::vector<tipl::vector<3,short> >& seeds, float resolution_ratio,unsigned char smooth)
+bool RegionModel::load(const std::vector<tipl::vector<3,short> >& seeds, tipl::matrix<4,4>& trans,unsigned char smooth)
 {
     if(seeds.empty())
     {
         object.reset();
         return false;
     }
+    bool need_trans = (trans != tipl::matrix<4,4>(tipl::identity_matrix()));
+
     tipl::vector<3,short> max_value(seeds[0]), min_value(seeds[0]);
     tipl::bounding_box_mt(seeds,max_value,min_value);
 
     center = max_value;
     center += min_value;
     center *= 0.5f;
-    center /= resolution_ratio;
-
     max_value += tipl::vector<3,short>(5, 5, 5);
     min_value -= tipl::vector<3,short>(5, 5, 5);
     tipl::shape<3> geo(uint32_t(max_value[0] - min_value[0]),
@@ -104,16 +104,13 @@ bool RegionModel::load(const std::vector<tipl::vector<3,short> >& seeds, float r
         return false;
     }
     tipl::vector<3,float> shift(min_value);
-    if (resolution_ratio != 1.0f)
-    {
-        cur_scale /= resolution_ratio;
-        shift /= resolution_ratio;
-    }
     tipl::par_for(object->point_list.size(),[&](unsigned int index)
     {
         if (cur_scale != 1.0f)
             object->point_list[index] *= cur_scale;
         object->point_list[index] += shift;
+        if(need_trans)
+            object->point_list[index].to(trans);
     });
     sortIndices();
     return object.get();
