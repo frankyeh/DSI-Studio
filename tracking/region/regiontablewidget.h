@@ -68,6 +68,7 @@ public:
     int color_gen = 10;
     std::string error_msg;
     bool command(QString cmd,QString param = "",QString param2 = "");
+    void check_row(size_t index,bool checked);
 public:
     explicit RegionTableWidget(tracking_window& cur_tracking_window,QWidget *parent = nullptr);
 
