@@ -54,10 +54,11 @@ bool load_nii(program_option& po,
     {
         tipl::shape<3> t1t2_geo;
         tipl::vector<3> vs;
-        tipl::matrix<4,4> convert;
-        if(!get_t1t2_nifti(po.get("t1t2"),handle,t1t2_geo,vs,convert))
+        tipl::matrix<4,4> T;
+        if(!get_t1t2_nifti(po.get("t1t2"),handle,t1t2_geo,vs,T))
             return false;
-        transform_lookup.push_back(std::make_pair(t1t2_geo,convert));
+        T.inv();
+        transform_lookup.push_back(std::make_pair(t1t2_geo,T));
     }
 
     QStringList str_list = QString(region_text.c_str()).split(",");// splitting actions
