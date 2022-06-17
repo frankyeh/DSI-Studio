@@ -75,10 +75,11 @@ void ThreadData::run_thread(unsigned int thread_id)
                 pos[0] += subvoxel_gen(seed);
                 pos[1] += subvoxel_gen(seed);
                 pos[2] += subvoxel_gen(seed);
+                if(roi_mgr->seed_needs_transform[roi_mgr->seed_space[seed_id]])
+                    pos.to(roi_mgr->seed_trans[roi_mgr->seed_space[seed_id]]);
+
             }
 
-            if(roi_mgr->seeds_r[seed_id] != 1.0f)
-                pos /= roi_mgr->seeds_r[seed_id];
             if(!method->init(param.initial_direction,pos,seed))
                 continue;
 
