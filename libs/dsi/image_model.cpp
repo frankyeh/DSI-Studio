@@ -1855,13 +1855,13 @@ bool ImageModel::run_topup_eddy(const std::string& other_src)
 
     if(!eddy_check_shell(src_bvalues))
     {
-        std::cout << "run topup/applytopup for non-shell data" << std::endl;
+        std::cout << "Eddy cannot be applied to this dataset. Run topup/applytopup only." << std::endl;
         if(!run_applytopup())
             return false;
     }
     else
     {
-        std::cout << "run topup/eddy for shell data" << std::endl;
+        std::cout << "Run topup/eddy for shell data" << std::endl;
         if(!run_eddy())
             return false;
     }
