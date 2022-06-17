@@ -9,7 +9,7 @@ void show_view(QGraphicsScene& scene,QImage I);
 bool is_label_image(const tipl::image<3>& I)
 {
     for(size_t i = 0;i < I.size();++i)
-        if(std::floor(I[i]) < I[i])
+        if(std::floor(I[i]) < I[i] || I[i] > 10000.0f)
             return false;
     return true;
 }
