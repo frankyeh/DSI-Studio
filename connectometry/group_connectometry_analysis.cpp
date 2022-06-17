@@ -87,7 +87,7 @@ void group_connectometry_analysis::exclude_cerebellum(void)
         std::vector<tipl::vector<3,short> > points;
         if(!handle->get_atlas_roi("BrainSeg","Cerebellum",points))
             return;
-        roi_mgr->setRegions(points,1.0f,4/*terminative*/,"Cerebellum");
+        roi_mgr->setRegions(points,4/*terminative*/,"Cerebellum");
         roi_mgr->report = " Cerebellum was excluded.";
     }
 }
