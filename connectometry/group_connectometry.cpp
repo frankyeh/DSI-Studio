@@ -446,7 +446,7 @@ void group_connectometry::on_run_clicked()
                 roi_name[index] = ui->roi_table->item(int(index),0)->text().toStdString();
             }
             for(unsigned int index = 0;index < roi_list.size();++index)
-                vbc->roi_mgr->setRegions(roi_list[index],1.0f,roi_type[index],roi_name[index].c_str());
+                vbc->roi_mgr->setRegions(roi_list[index],roi_type[index],roi_name[index].c_str());
         }
 
         // if no seed assigned, assign whole brain
