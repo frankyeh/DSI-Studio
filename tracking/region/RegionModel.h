@@ -29,7 +29,7 @@ public:
 	const RegionModel& operator = (const RegionModel & rhs);
         // bool load_from_file(const char* file_name);
         bool load(const tipl::image<3>& image_, float threshold_);
-        bool load(const std::vector<tipl::vector<3,short> >& region, float scale,unsigned char smooth);
+        bool load(const std::vector<tipl::vector<3,short> >& region, tipl::matrix<4,4>& trans,unsigned char smooth);
         //bool load(const tipl::image<3,unsigned char>& mask,unsigned char threshold);
         bool load(unsigned int* buffer, tipl::shape<3>geo, unsigned int threshold);
         tipl::march_cube* get(void) {return object.get();}
