@@ -74,31 +74,12 @@ public:
     QColor currentRowColor(void);
     void add_region_from_atlas(std::shared_ptr<atlas> at,unsigned int roi_is);
     void add_all_regions_from_atlas(std::shared_ptr<atlas> at);
-    void add_row(int row,QString name,unsigned char type,unsigned int color = 0x00FFFFFF);
+    void add_row(int row,QString name);
     void add_region(QString name,unsigned char type = default_id,unsigned int color = 0x00FFFFFF);
     void begin_update(void);
     void end_update(void);
     void setROIs(ThreadData* data);
     QString getROIname(void);
-    template<typename type>
-    void add_points(std::vector<tipl::vector<3,type> >& points,bool erase,bool all,float resolution = 1.0)
-    {
-        if (currentRow() < 0 || currentRow() >= int(regions.size()) ||
-            item(currentRow(),0)->checkState() != Qt::Checked)
-            return;
-        if(all)
-        {
-            auto regions = get_checked_regions();
-            tipl::par_for(regions.size(),[&](int i)
-            {
-                std::vector<tipl::vector<3,type> > p = points;
-                regions[i]->add_points(p,erase,resolution);
-            });
-        }
-        else
-            regions[currentRow()]->add_points(points,erase,resolution);
-    }
-
     QString output_format(void);
 public slots:
     void updateRegions(QTableWidgetItem* item);
@@ -108,7 +89,6 @@ public slots:
                      const tipl::color_image& slice_image,float display_ratio,
                      QImage& scaledimage);
     void new_region(void);
-    void new_high_resolution_region(void);
     void copy_region(void);
     void save_region(void);
     void save_all_regions(void);
