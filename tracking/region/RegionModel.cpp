@@ -60,7 +60,7 @@ bool RegionModel::load(const std::vector<tipl::vector<3,short> >& seeds, tipl::m
         object.reset();
         return false;
     }
-    bool need_trans = (trans != tipl::matrix<4,4>(tipl::identity_matrix()));
+    bool need_trans = (trans != tipl::identity_matrix());
 
     tipl::vector<3,short> max_value(seeds[0]), min_value(seeds[0]);
     tipl::bounding_box_mt(seeds,max_value,min_value);
