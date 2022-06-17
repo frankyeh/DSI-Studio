@@ -428,7 +428,7 @@ bool load_region(program_option& po,std::shared_ptr<fib_data> handle,
             std::cout << "ERROR: " << handle->error_msg << std::endl;
             return false;
         }
-        roi.add_points(points,false);
+        roi.add_points(std::move(points));
         return true;
     }
     else
@@ -556,12 +556,13 @@ bool load_roi(program_option& po,std::shared_ptr<fib_data> handle,std::shared_pt
                 return false;
             if(i)
             {
-                roi.add(other_roi);
+                auto points = other_roi.get_region_voxels_raw();
+                roi.add_points(std::move(points));
                 region_name += ",";
             }
             region_name += roi_list[0].toStdString();
         }
-        roi_mgr->setRegions(roi.get_region_voxels_raw(),roi.resolution_ratio,type[index],region_name.c_str());
+        roi_mgr->setRegions(roi.get_region_voxels_raw(),type[index],region_name.c_str());
     }
     if(po.has("track_id"))
     {
@@ -728,7 +729,7 @@ int trk(program_option& po,std::shared_ptr<fib_data> handle)
         std::vector<tipl::vector<3,short> > points;
         tract_model->to_voxel(points,1.0f);
         tract_model->clear();
-        tracking_thread.roi_mgr->setRegions(points,1.0f,3/*seed*/,"refine seeding region");
+        tracking_thread.roi_mgr->setRegions(points,3/*seed*/,"refine seeding region");
 
 
         std::cout << "restart tracking..." << std::endl;
