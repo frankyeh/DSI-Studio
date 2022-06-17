@@ -488,7 +488,7 @@ bool ImageModel::command(std::string cmd,std::string param)
         }
         ROIRegion region(voxel.dim,voxel.vs);
         region.LoadFromFile(param.c_str());
-        region.SaveToBuffer(voxel.mask,1.0f);
+        region.SaveToBuffer(voxel.mask);
         voxel.steps += std::string("[Step T2a][Open]=") + param + "\n";
         return true;
     }
