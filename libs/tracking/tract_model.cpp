@@ -1760,8 +1760,8 @@ void TractModel::delete_branch(void)
 
     std::shared_ptr<fib_data> handle(new fib_data(geo,vs,trans_to_mni));
     std::shared_ptr<RoiMgr> roi_mgr(new RoiMgr(handle));
-    roi_mgr->setRegions(r1.get_region_voxels_raw(),end_id,"end1");
-    roi_mgr->setRegions(r2.get_region_voxels_raw(),end_id,"end2");
+    roi_mgr->setRegions(r1.region,end_id,"end1");
+    roi_mgr->setRegions(r2.region,end_id,"end2");
     filter_by_roi(roi_mgr);
 }
 //---------------------------------------------------------------------------
@@ -3320,6 +3320,12 @@ void ConnectivityMatrix::save_to_connectogram(const char* file_name)
     }
 }
 
+void convert_region(std::vector<tipl::vector<3,short> >& points,
+                    const tipl::shape<3>& dim_from,
+                    const tipl::matrix<4,4>& trans_from,
+                    const tipl::shape<3>& dim_to,
+                    const tipl::matrix<4,4>& trans_to);
+
 void ConnectivityMatrix::set_regions(const tipl::shape<3>& geo,
                                      const std::vector<std::shared_ptr<ROIRegion> >& regions)
 {
@@ -3330,11 +3336,12 @@ void ConnectivityMatrix::set_regions(const tipl::shape<3>& geo,
     std::vector<std::set<uint16_t> > regions_set(geo.size());
     for(size_t roi = 0;roi < regions.size();++roi)
     {
-        std::vector<tipl::vector<3,short> > points;
-        regions[roi]->get_region_voxels(points);
-        for(size_t index = 0;index < points.size();++index)
+        auto points = regions[roi]->region;
+        convert_region(points,regions[roi]->dim,
+                              regions[roi]->to_diffusion_space,
+                              geo,tipl::matrix<4,4>(tipl::identity_matrix()));
+        for(auto& pos : points)
         {
-            tipl::vector<3,short> pos = points[index];
             if(geo.is_valid(pos))
                 regions_set[tipl::pixel_index<3>(pos[0],pos[1],pos[2],geo).index()].insert(uint16_t(roi));
         }
