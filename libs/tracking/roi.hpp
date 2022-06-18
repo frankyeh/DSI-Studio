@@ -269,7 +269,7 @@ public:
             region.perform("dilation");
             region.perform("smoothing");
             region.perform("smoothing");
-            setRegions(region.get_region_voxels_raw(),3/*seed i*/,
+            setRegions(region.region,3/*seed i*/,
             handle->tractography_name_list[size_t(track_id)].c_str());
         }
         // add tolerance roa to speed up tracking
