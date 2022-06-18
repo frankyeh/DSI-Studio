@@ -463,7 +463,7 @@ bool load_region(program_option& po,std::shared_ptr<fib_data> handle,
         std::cout << str_list[i].toStdString() << " applied." << std::endl;
         roi.perform(str_list[i].toStdString());
     }
-    if(roi.empty())
+    if(roi.region.empty())
         std::cout << "WARNING: " << file_name << " is an empty region file" << std::endl;
     return true;
 }
@@ -556,13 +556,12 @@ bool load_roi(program_option& po,std::shared_ptr<fib_data> handle,std::shared_pt
                 return false;
             if(i)
             {
-                auto points = other_roi.get_region_voxels_raw();
-                roi.add_points(std::move(points));
+                roi.add_points(std::move(other_roi.region));
                 region_name += ",";
             }
             region_name += roi_list[0].toStdString();
         }
-        roi_mgr->setRegions(roi.get_region_voxels_raw(),type[index],region_name.c_str());
+        roi_mgr->setRegions(roi.region,type[index],region_name.c_str());
     }
     if(po.has("track_id"))
     {
