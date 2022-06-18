@@ -387,7 +387,7 @@ bool view_image::eventFilter(QObject *obj, QEvent *event)
     mni.to(T);
     ui->info_label->setText(QString("(i,j,k)=(%1,%2,%3) (x,y,z)=(%4,%5,%6) value=%7").arg(pos[0]).arg(pos[1]).arg(pos[2])
                                                                     .arg(mni[0]).arg(mni[1]).arg(mni[2])
-                                                                    .arg(data.at(pos[0],pos[1],pos[2])));
+                                                                    .arg(data.at(pos)));
     return true;
 }
 
