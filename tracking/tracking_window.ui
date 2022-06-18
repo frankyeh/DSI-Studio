@@ -1249,7 +1249,6 @@
      <addaction name="separator"/>
      <addaction name="actionDilation_by_voxel"/>
     </widget>
-    <addaction name="actionNew_Super_Resolution_Region"/>
     <addaction name="actionThreshold"/>
     <addaction name="separator"/>
     <addaction name="actionLoad_Region_Color"/>
@@ -3599,15 +3598,6 @@ Tracking</string>
   <action name="actionPosterior">
    <property name="text">
     <string>Posterior</string>
-   </property>
-  </action>
-  <action name="actionNew_Super_Resolution_Region">
-   <property name="icon">
-    <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/new.xpm</normaloff>:/icons/icons/new.xpm</iconset>
-   </property>
-   <property name="text">
-    <string>New Super Resolution Region</string>
    </property>
   </action>
   <action name="actionRecognize_Clustering">
