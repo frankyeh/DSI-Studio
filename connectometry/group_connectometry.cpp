@@ -572,7 +572,7 @@ void group_connectometry::on_load_roi_from_file_clicked()
         tipl::vector<3> pos(index);
         pos.to(transform);
         pos.round();
-        if(!I.shape().is_valid(pos) || I.at(pos[0],pos[1],pos[2]) == 0)
+        if(!I.shape().is_valid(pos) || I.at(pos) == 0)
             continue;
         new_roi.push_back(tipl::vector<3,short>((const unsigned int*)index.begin()));
     }
