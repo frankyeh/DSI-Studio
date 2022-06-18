@@ -2067,21 +2067,24 @@ bool GLWidget::select_object(void)
         // select object
         for(object_distance = 0.0f;object_distance < 2000.0f && !region_selected;object_distance += 1.0f)
         {
-        tipl::vector<3,float> p(dir1);
-        p *= object_distance;
-        p += pos;
-        tipl::vector<3,short> voxel(p);
-        if(!cur_tracking_window.handle->dim.is_valid(voxel))
-            continue;
-        for(size_t index = 0;index < cur_tracking_window.regionWidget->regions.size();++index)
-            if(cur_tracking_window.regionWidget->regions[index]->has_point(voxel) &&
-               cur_tracking_window.regionWidget->item(int(index),0)->checkState() == Qt::Checked)
+            tipl::vector<3,float> p(dir1);
+            p *= object_distance;
+            p += pos;
+            tipl::vector<3,short> voxel(p);
+            if(!cur_tracking_window.handle->dim.is_valid(voxel))
+                continue;
+            tipl::par_for(cur_tracking_window.regionWidget->regions.size(),[&](size_t index)
             {
-                selected_index = index;
-                region_selected = true;
-                slice_distance = object_distance;
-                break;
-            }
+                if(region_selected ||
+                   cur_tracking_window.regionWidget->item(int(index),0)->checkState() != Qt::Checked)
+                    return;
+                if(cur_tracking_window.regionWidget->regions[index]->has_point(voxel) && !region_selected)
+                {
+                    region_selected = true;
+                    selected_index = index;
+                    slice_distance = object_distance;
+                }
+            });
         }
     }
     // select slices to move
