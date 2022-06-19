@@ -18,6 +18,8 @@ const unsigned char terminate_id = 4;
 const unsigned char not_end_id = 5;
 const unsigned char default_id = 6;
 void initial_LPS_nifti_srow(tipl::matrix<4,4>& T,const tipl::shape<3>& geo,const tipl::vector<3>& vs);
+void merge_regions(std::vector<std::vector<tipl::vector<3,short> > >&& points,
+                   std::vector<tipl::vector<3,short> >& region);
 class ROIRegion {
 public:
         tipl::shape<3> dim;
@@ -29,8 +31,8 @@ public:
         std::vector<std::vector<tipl::vector<3,short> > > undo_backup;
         std::vector<std::vector<tipl::vector<3,short> > > redo_backup;
 public:
-        bool super_resolution = false;
-        float resolution_ratio = 1.0;
+        bool is_diffusion_space = true;
+        tipl::matrix<4,4> to_diffusion_space = tipl::identity_matrix();
 public: // rendering options
         RegionModel show_region;
         unsigned char regions_feature = default_id;
@@ -63,8 +65,8 @@ public: // rendering options
             regions_feature = rhs.regions_feature;
             show_region = rhs.show_region;
             modified = true;
-            super_resolution = rhs.super_resolution;
-            resolution_ratio = rhs.resolution_ratio;
+            is_diffusion_space = rhs.is_diffusion_space;
+            to_diffusion_space = rhs.to_diffusion_space;
             return *this;
         }
         void swap(ROIRegion & rhs) {
@@ -78,114 +80,29 @@ public: // rendering options
             std::swap(regions_feature,rhs.regions_feature);
             show_region.swap(rhs.show_region);
             std::swap(modified,rhs.modified);
-            std::swap(super_resolution,rhs.super_resolution);
-            std::swap(resolution_ratio,rhs.resolution_ratio);
+            std::swap(is_diffusion_space,rhs.is_diffusion_space);
+            std::swap(to_diffusion_space,rhs.to_diffusion_space);
         }
 
-        tipl::vector<3,short> get_region_voxel(unsigned int index) const
+        tipl::vector<3> get_center(void) const
         {
-            tipl::vector<3,short> result = region[index];
-            if(resolution_ratio == 1.0f)
-                return result;
-            result[0] = short(float(result[0])/resolution_ratio);
-            result[1] = short(float(result[1])/resolution_ratio);
-            result[2] = short(float(result[2])/resolution_ratio);
-            return result;
-        }
-        tipl::vector<3,float> get_center(void) const
-        {
-            tipl::vector<3,float> c;
+            tipl::vector<3> c;
             if(region.size())
             {
                 c = region.front();
                 c += region.back();
                 c *= 0.5;
-                c /= resolution_ratio;
+                if(!is_diffusion_space)
+                    c.to(to_diffusion_space);
             }
             return c;
         }
-        void get_region_voxels(std::vector<tipl::vector<3,short> >& output) const
-        {
-            output = region;
-            if(resolution_ratio == 1.0f)
-                return;
-            for(size_t i = 0;i < region.size();++i)
-            {
-                output[i][0] = short(std::round(float(region[i][0])/resolution_ratio));
-                output[i][1] = short(std::round(float(region[i][1])/resolution_ratio));
-                output[i][2] = short(std::round(float(region[i][2])/resolution_ratio));
-            }
-        }
-        const std::vector<tipl::vector<3,short> >& get_region_voxels_raw(void) const {return region;}
-        void assign(const std::vector<tipl::vector<3,short> >& region_,float r)
-        {
-            if(!region.empty())
-                undo_backup.push_back(region);
-            region = region_;
-            resolution_ratio = r;
-            modified = true;
-        }
-
-        bool empty(void) const {return region.empty();}
-
-        void clear(void)
-        {
-            modified = true;
-            region.clear();
-        }
-
-        void erase(unsigned int index)
-        {
-            modified = true;
-            region.erase(region.begin()+index);
-        }
-
-        unsigned int size(void) const {return (unsigned int)region.size();}
-        std::vector<tipl::vector<3,short> >::const_iterator
-                begin(void) const {return region.begin();}
-
 public:
-        void add(const ROIRegion & rhs)
-        {
-            std::vector<tipl::vector<3,short> > tmp(rhs.region);
-            add_points(tmp,false,rhs.resolution_ratio);
-        }
-        template<typename value_type>
-        void change_resolution(std::vector<tipl::vector<3,value_type> >& points,float point_resolution)
-        {
-            if(point_resolution == resolution_ratio)
-                return;
-            float ratio = resolution_ratio/point_resolution;
-            if(resolution_ratio > point_resolution)
-            {
-                short limit = short(std::ceil(ratio));
-                std::vector<tipl::vector<3,short> > new_points;
-                for(short dz = -limit;dz <= limit;++dz)
-                    for(short dy = -limit;dy <= limit;++dy)
-                        for(short dx = -limit;dx <= limit;++dx)
-                            new_points.push_back(tipl::vector<3,short>(dx,dy,dz));
-
-
-                std::vector<tipl::vector<3,value_type> > pp(points.size()*new_points.size());
-                tipl::par_for(points.size(),[&](int i)
-                {
-                    points[i] *= ratio;
-                    points[i].round();
-                    unsigned int pos = i*new_points.size();
-                    for(int j = 0;j < new_points.size();++j)// 1 for skip 0 0 0
-                    {
-                        tipl::vector<3,short> p(new_points[j]);
-                        p += points[i];
-                        pp[pos + j] = p;
-                    }
-                });
-                pp.swap(points);
-            }
-            else
-                tipl::multiply_constant(points,ratio);
-        }
-        void add_points(std::vector<tipl::vector<3,float> >& points,bool del,float point_resolution = 1.0);
-        void add_points(std::vector<tipl::vector<3,short> >& points,bool del,float point_resolution = 1.0);
+        void add_points(std::vector<tipl::vector<3,float> >&& points,bool del = false);
+        void add_points(std::vector<tipl::vector<3,short> >&& points,bool del = false);
+        void add_points(std::vector<tipl::vector<3,short> >&& points,
+                        const tipl::shape<3>& slice_dim,
+                        const tipl::matrix<4,4>& slice_trans,bool del = false);
         void undo(void)
         {
             if(region.empty() && undo_backup.empty())
@@ -215,78 +132,23 @@ public:
         void Flip(unsigned int dimension);
         bool shift(tipl::vector<3,float> dx);
 
-        template<class image_type>
-        void LoadFromBuffer(const image_type& from,const tipl::matrix<4,4>& trans)
-        {
-            std::vector<tipl::vector<3,short> > points;
-            image_type from2(dim*resolution_ratio);
-            auto iT = trans;
-            if(resolution_ratio != 1.0f)
-            {
-                tipl::multiply_constant(iT.begin(),iT.begin()+3,1.0f/resolution_ratio);
-                tipl::multiply_constant(iT.begin()+4,iT.begin()+7,1.0f/resolution_ratio);
-                tipl::multiply_constant(iT.begin()+8,iT.begin()+11,1.0f/resolution_ratio);
-            }
-            tipl::resample_mt<tipl::interpolation::nearest>(from,from2,tipl::transformation_matrix<float>(iT));
-            LoadFromBuffer(from2);
-        }
-
-        template<class image_type>
-        void LoadFromBuffer(const image_type& mask)
-        {
-            modified = true;
-            if(!region.empty())
-                undo_backup.push_back(std::move(region));
-            std::vector<tipl::vector<3,short> > points;
-            if(mask.width() != dim[0])
-                resolution_ratio = float(mask.width())/float(dim[0]);
-            if(resolution_ratio < 1.0f)
-            {
-                for (tipl::pixel_index<3>index(dim);index < dim.size();++index)
-                {
-                    tipl::vector<3> pos(index);
-                    pos *= resolution_ratio;
-                    pos.round();
-                    if(mask.shape().is_valid(pos) &&
-                       mask.at(pos[0],pos[1],pos[2]))
-                        points.push_back(tipl::vector<3,short>(index.x(), index.y(),index.z()));
-                }
-                resolution_ratio = 1.0f;
-            }
-            else {
-                for (tipl::pixel_index<3>index(mask.shape());index < mask.size();++index)
-                    if (mask[index.index()] != 0)
-                        points.push_back(tipl::vector<3,short>(index.x(), index.y(),index.z()));
-            }
-            region.swap(points);
-        }
-        void SaveToBuffer(tipl::image<3,unsigned char>& mask,float target_resolution);
-        void SaveToBuffer(tipl::image<3,unsigned char>& mask){SaveToBuffer(mask,resolution_ratio);}
+        void LoadFromBuffer(tipl::image<3,unsigned char>& mask);
+        void SaveToBuffer(tipl::image<3,unsigned char>& mask);
         void perform(const std::string& action);
         void makeMeshes(unsigned char smooth);
         template<typename value_type>
-        bool has_point(const tipl::vector<3,value_type>& point) const
+        bool has_point(tipl::vector<3,value_type> point_in_dwi_space) const
         {
-            if(resolution_ratio != 1.0f)
-            {
-                tipl::vector<3,short> p(std::round(point[0]*resolution_ratio),
-                                         std::round(point[1]*resolution_ratio),
-                                         std::round(point[2]*resolution_ratio));
-                return std::binary_search(region.begin(),region.end(),p);
-            }
-            tipl::vector<3,short> p(std::round(point[0]),
-                                     std::round(point[1]),
-                                     std::round(point[2]));
-            return std::binary_search(region.begin(),region.end(),p);
+            if(!is_diffusion_space)
+                point_in_dwi_space.to(tipl::matrix<4,4>(tipl::inverse(to_diffusion_space)));
+            return std::find(region.begin(),region.end(),
+                             tipl::vector<3,short>(std::round(point_in_dwi_space[0]),
+                                                   std::round(point_in_dwi_space[1]),
+                                                   std::round(point_in_dwi_space[2]))) != region.end();
         }
-        template<typename value_type>
-        bool has_points(const std::vector<tipl::vector<3,value_type> >& points) const
-        {
-            for(unsigned int index = 0; index < points.size(); ++index)
-                if(has_point(points[index]))
-                    return true;
-            return false;
-        }
+        bool is_same_space(const ROIRegion& rhs) const
+        {   return dim == rhs.dim && to_diffusion_space == rhs.to_diffusion_space;}
+
     public:
         float get_volume(void) const;
         tipl::vector<3> get_pos(void) const;
