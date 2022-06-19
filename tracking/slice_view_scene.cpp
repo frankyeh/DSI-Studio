@@ -116,21 +116,21 @@ void get_tic_pos(std::vector<float>& tic_pos,
                  float zoom,
                  float tic_dis,
                  float shift,float scale,
+                 float margin1,float margin2,
                  bool flip)
 {
-    float tic_length = zoom*tic_dis/std::fabs(scale);
     float window_length = zoom*float(shape_length);
     float from = shift;
     float to = float(shape_length)*scale+from;
     if(from > to)
         std::swap(from,to);
-    from = std::ceil(from/tic_dis)*tic_dis;
-    to = std::floor(to/tic_dis)*tic_dis;
+    from = std::floor(from/tic_dis)*tic_dis;
+    to = std::ceil(to/tic_dis)*tic_dis;
     for(float pos = from;pos < to;pos += tic_dis)
     {
         float pos_in_voxel = float(pos-shift)/scale;
         pos_in_voxel = zoom*float(flip ? float(shape_length)-pos_in_voxel : pos_in_voxel);
-        if(pos_in_voxel < tic_length || pos_in_voxel + tic_length > window_length)
+        if(pos_in_voxel < margin1 || pos_in_voxel + margin2 > window_length)
             continue;
         tic_pos.push_back(pos_in_voxel);
         tic_value.push_back(pos);
@@ -156,7 +156,7 @@ void draw_ruler(QPainter& paint,
     if(std::fabs(qsdr_scale[0]) < 0.1f)
         tic_dis = 0.5f;
 
-    float tic_length = zoom*tic_dis/std::fabs(qsdr_scale[0]);
+    float tic_length = zoom*float(shape[0])/20.0f;
 
     auto pen = paint.pen();  // creates a default pen
     pen.setWidth(std::max<int>(1,int(zoom_2)));
@@ -165,7 +165,7 @@ void draw_ruler(QPainter& paint,
     paint.setPen(pen);
 
     auto f = paint.font();
-    f.setPointSize(std::max<int>(1,int(tic_length/2.5f)));
+    f.setPointSize(std::max<int>(1,tic_length*0.5f));
     paint.setFont(f);
 
 
@@ -175,8 +175,13 @@ void draw_ruler(QPainter& paint,
     uint8_t dim_h = (cur_dim == 0 ? 1:0);
     uint8_t dim_v = (cur_dim == 2 ? 1:2);
 
-    get_tic_pos(tic_pos_h,tic_value_h,shape[dim_h],zoom,tic_dis,qsdr_shift[dim_h],qsdr_scale[dim_h],flip_x);
-    get_tic_pos(tic_pos_v,tic_value_v,shape[dim_v],zoom,tic_dis,qsdr_shift[dim_v],qsdr_scale[dim_v],flip_y);
+    get_tic_pos(tic_pos_h,tic_value_h,
+                shape[dim_h],zoom,tic_dis,qsdr_shift[dim_h],qsdr_scale[dim_h],
+                tic_length,tic_length,flip_x);
+    get_tic_pos(tic_pos_v,tic_value_v,
+                shape[dim_v],zoom,tic_dis,qsdr_shift[dim_v],qsdr_scale[dim_v],
+                cur_dim == 0 ? tic_length/2:tic_length,tic_length,flip_y);
+
     if(tic_pos_h.empty() || tic_pos_v.empty())
         return;
     auto min_Y = std::min(tic_pos_v.front(),tic_pos_v.back());
@@ -191,7 +196,7 @@ void draw_ruler(QPainter& paint,
         {
             auto X = tic_pos_h[i]+zoom_2;
             paint.drawLine(int(X),int(grid ? min_Y+zoom_2 : Y),int(X),int(Y+zoom));
-            paint.drawText(int(X-40),int(Y+tic_length/2-40),80,80,
+            paint.drawText(int(X-40),int(Y-30+zoom),80,80,
                            Qt::AlignHCenter|Qt::AlignVCenter,QString::number(tic_value_h[i]));
         }
     }
@@ -203,7 +208,7 @@ void draw_ruler(QPainter& paint,
         {
             auto Y = tic_pos_v[i]+zoom_2;
             paint.drawLine(int(grid ? max_X : X),int(Y),int(X-zoom),int(Y));
-            paint.drawText(2,int(Y-40),int(X-zoom)-2,80,
+            paint.drawText(2,int(Y-40),int(X-zoom)-5,80,
                            Qt::AlignRight|Qt::AlignVCenter,QString::number(tic_value_v[i]));
         }
     }
@@ -926,18 +931,24 @@ void slice_view_scene::mousePressEvent ( QGraphicsSceneMouseEvent * mouseEvent )
         {
             move_slice = false;
             bool find_region = false;
-            for(unsigned int index = 0;index <
-                cur_tracking_window.regionWidget->regions.size();++index)
-                if(cur_tracking_window.regionWidget->item(index,0)->checkState() == Qt::Checked &&
-                   cur_tracking_window.regionWidget->regions[index]->has_point(p))
+            size_t found_index = 0;
+            tipl::par_for(cur_tracking_window.regionWidget->regions.size(),[&](size_t index)
+            {
+                if(find_region || cur_tracking_window.regionWidget->item(int(index),0)->checkState() != Qt::Checked)
+                    return;
+
+                if(cur_tracking_window.regionWidget->regions[index]->has_point(p) && !find_region)
                 {
                     find_region = true;
-                    cur_tracking_window.regionWidget->selectRow(index);
-                    std::vector<tipl::vector<3,float> > dummy;
-                    cur_tracking_window.regionWidget->add_points(dummy,true,false); // create a undo point
-                    break;
+                    found_index = index;
                 }
-            if(!find_region)
+            });
+            if(find_region)
+            {
+                cur_tracking_window.regionWidget->selectRow(found_index);
+                cur_tracking_window.regionWidget->regions[found_index]->add_points(std::vector<tipl::vector<3,short> >());
+            }
+            else
                 move_viewing_slice = true;
         }
         mid_down = true;
@@ -1051,7 +1062,9 @@ void slice_view_scene::mouseMoveEvent ( QGraphicsSceneMouseEvent * mouseEvent )
         if(!cur_tracking_window.regionWidget->regions.empty() &&
                 !sel_coord.empty() && pos != sel_coord.back())
             {
+                auto cur_region = cur_tracking_window.regionWidget->regions[cur_tracking_window.regionWidget->currentRow()];
                 tipl::vector<3,float> p1(pos),p2(sel_coord.back());
+
                 if(!slice->is_diffusion_space)
                 {
                     p1.to(slice->T);
@@ -1061,7 +1074,16 @@ void slice_view_scene::mouseMoveEvent ( QGraphicsSceneMouseEvent * mouseEvent )
                 p1.round();
                 if(p1.length() != 0)
                 {
-                    cur_tracking_window.regionWidget->regions[cur_tracking_window.regionWidget->currentRow()]->shift(p1);
+                    if(!cur_region->is_diffusion_space)
+                    {
+                        tipl::matrix<4,4> iT(tipl::inverse(cur_region->to_diffusion_space));
+                        p2 = p1;
+                        p2.rotate(tipl::transformation_matrix<float>(iT).sr);
+                        cur_region->shift(p2);
+                    }
+                    else
+                        cur_region->shift(p1);
+
                     p1.to(slice->invT);
                     tipl::vector<3> zero;
                     zero.to(slice->invT);
@@ -1172,7 +1194,14 @@ void slice_view_scene::mouseReleaseEvent ( QGraphicsSceneMouseEvent * mouseEvent
 
     tipl::shape<3> geo(cur_tracking_window.current_slice->dim);
     float display_ratio = cur_tracking_window.get_scene_zoom();
-
+    auto regionWidget = cur_tracking_window.regionWidget;
+    if (regionWidget->currentRow() < 0 || regionWidget->currentRow() >= int(regionWidget->regions.size()))
+    {
+        need_update();
+        return;
+    }
+    if(regionWidget->item(regionWidget->currentRow(),0)->checkState() != Qt::Checked)
+        regionWidget->check_row(regionWidget->currentRow(),true);
 
     std::vector<tipl::vector<3,float> >points;
     switch (sel_mode)
@@ -1310,26 +1339,14 @@ void slice_view_scene::mouseReleaseEvent ( QGraphicsSceneMouseEvent * mouseEvent
     }
     }
 
-    float resolution = display_ratio;
-    if(!cur_tracking_window.current_slice->is_diffusion_space)
-    {
-        // resolution difference between DWI and current slices;
-        resolution = std::min<float>(16.0f,display_ratio*std::floor(cur_tracking_window.handle->vs[0]/cur_tracking_window.current_slice->vs[0]));
-        tipl::par_for(points.size(),[&](int index)
-        {
-            points[index].to(cur_tracking_window.current_slice->T);
-            points[index] *= resolution;
-        });
-    }
-    else
-    {
-        tipl::par_for(points.size(),[&](int index)
-        {
-            points[index] *= resolution;
-        });
-    }
 
-    cur_tracking_window.regionWidget->add_points(points,mouseEvent->button() == Qt::RightButton,false,resolution);
+    std::vector<tipl::vector<3,short> > points_int16(points.size());
+
+    std::copy(points.begin(),points.end(),points_int16.begin());
+    regionWidget->regions[regionWidget->currentRow()]->add_points(std::move(points_int16),
+                cur_tracking_window.current_slice->dim,
+                cur_tracking_window.current_slice->T,mouseEvent->button() == Qt::RightButton);
+
     need_update();
 }
 
