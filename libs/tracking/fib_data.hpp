@@ -238,8 +238,17 @@ public:
     void sub2mni(tipl::vector<3>& pos);
     std::shared_ptr<atlas> get_atlas(const std::string atlas_name);
     bool get_atlas_roi(const std::string& atlas_name,const std::string& region_name,std::vector<tipl::vector<3,short> >& points);
-    bool get_atlas_roi(std::shared_ptr<atlas> at,unsigned int roi_index,std::vector<tipl::vector<3,short> >& points);
-    bool get_atlas_all_roi(std::shared_ptr<atlas> at,std::vector<std::vector<tipl::vector<3,short> > >& points);
+    bool get_atlas_roi(std::shared_ptr<atlas> at,unsigned int roi_index,
+                       const tipl::shape<3>& new_geo,const tipl::matrix<4,4>& new_trans,
+                       std::vector<tipl::vector<3,short> >& points);
+    bool get_atlas_roi(std::shared_ptr<atlas> at,unsigned int roi_index,
+                       std::vector<tipl::vector<3,short> >& points)
+    {
+        return get_atlas_roi(at,roi_index,dim,tipl::matrix<4,4>(tipl::identity_matrix()),points);
+    }
+    bool get_atlas_all_roi(std::shared_ptr<atlas> at,
+                           const tipl::shape<3>& new_geo,const tipl::matrix<4,4>& new_trans,
+                           std::vector<std::vector<tipl::vector<3,short> > >& points);
     template<tipl::interpolation Type = tipl::interpolation::linear,typename image_type>
     bool mni2sub(image_type& mni_image,const tipl::matrix<4,4>& trans,float ratio = 1.0f)
     {
