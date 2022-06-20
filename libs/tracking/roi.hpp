@@ -261,7 +261,7 @@ public:
         if(seeds.empty())
         {
             std::vector<tipl::vector<3,short> > seed;
-            handle->track_atlas->to_voxel(seed,1.0f,int(track_id));
+            handle->track_atlas->to_voxel(seed,tipl::identity_matrix(),int(track_id));
             ROIRegion region(handle);
             region.add_points(std::move(seed));
             region.perform("dilation");
@@ -275,7 +275,7 @@ public:
         // add tolerance roa to speed up tracking
         {
             std::vector<tipl::vector<3,short> > seed;
-            handle->track_atlas->to_voxel(seed,1.0f,int(track_id));
+            handle->track_atlas->to_voxel(seed,tipl::identity_matrix(),int(track_id));
             std::vector<tipl::vector<3,short> > track_roa;
             tipl::image<3,char> roa_mask(handle->dim);
             const float *fa0 = handle->dir.fa[0];
