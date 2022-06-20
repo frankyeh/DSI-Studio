@@ -703,7 +703,7 @@ void TractTableWidget::save_end_point_in_mni(void)
         return;
 
     std::vector<tipl::vector<3,short> > points1,points2;
-    tract_models[size_t(currentRow())]->to_end_point_voxels(points1,points2,tipl::identity_matrix());
+    tract_models[size_t(currentRow())]->to_end_point_voxels(points1,points2);
     points1.insert(points1.end(),points2.begin(),points2.end());
 
     std::vector<tipl::vector<3> > points(points1.begin(),points1.end());
