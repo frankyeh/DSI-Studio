@@ -689,7 +689,7 @@ void DeviceTableWidget::detect_electrodes(void)
             for(unsigned int j = 0;j < regions[region_id].size();++j)
             {
                 voxels.push_back(tipl::vector<3>(tipl::pixel_index<3>(regions[region_id][j],I.shape())));
-                voxels.back().to(slice->T);
+                voxels.back().to(slice->invT);
             }
         }
         new_regions[i]->add_points(std::move(voxels));
