@@ -269,7 +269,7 @@ int ana_tract(program_option& po)
             if(!load_tracts(tract_files[i].c_str(),tract,roi_mgr))
                 return 1;
             std::vector<tipl::vector<3,short> > points;
-            tract->to_voxel(points,1.0f);
+            tract->to_voxel(points);
             tipl::image<3,char> tract_mask(dim);
             tipl::par_for(points.size(),[&](size_t j)
             {
