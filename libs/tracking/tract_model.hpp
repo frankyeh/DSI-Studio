@@ -131,9 +131,9 @@ public:
                                  unsigned int max_count,
                                  int track_color_style,
                                  bool& terminated);
-        void to_voxel(std::vector<tipl::vector<3,short> >& points,float ratio,int id = -1);
+        void to_voxel(std::vector<tipl::vector<3,short> >& points,const tipl::matrix<4,4>& trans = tipl::identity_matrix(),int id = -1);
         void to_end_point_voxels(std::vector<tipl::vector<3,short> >& points1,
-                                std::vector<tipl::vector<3,short> >& points2,const tipl::matrix<4,4>& trans);
+                                std::vector<tipl::vector<3,short> >& points2,const tipl::matrix<4,4>& trans = tipl::identity_matrix());
         void to_end_point_voxels(std::vector<tipl::vector<3,short> >& points1,
                                 std::vector<tipl::vector<3,short> >& points2,const tipl::matrix<4,4>& trans,float end_dis);
 
