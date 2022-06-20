@@ -1744,7 +1744,7 @@ void TractModel::delete_repeated(float d)
 void TractModel::delete_branch(void)
 {
     std::vector<tipl::vector<3,short> > p1,p2;
-    to_end_point_voxels(p1,p2,tipl::identity_matrix());
+    to_end_point_voxels(p1,p2);
     tipl::image<3,unsigned char>mask;
     ROIRegion r1(geo,vs,trans_to_mni),r2(geo,vs,trans_to_mni);
     r1.add_points(std::move(p1));
@@ -2477,7 +2477,7 @@ bool TractModel::export_pdi(const char* file_name,
     for(size_t index = 0;index < tract_models.size();++index)
     {
         std::vector<tipl::vector<3,short> > points;
-        tract_models[index]->to_voxel(points,1.0f);
+        tract_models[index]->to_voxel(points);
         tipl::par_for(points.size(),[&](size_t j)
         {
             tipl::vector<3,short> p = points[j];
@@ -2514,9 +2514,19 @@ bool TractModel::export_tdi(const char* filename,
         return gz_nifti::save_to_file(filename,tdi,vs,tipl::matrix<4,4>(tract_models[0]->trans_to_mni*transformation),tract_models[0]->is_mni);
     }
 }
-void TractModel::to_voxel(std::vector<tipl::vector<3,short> >& points,float ratio,int id)
+void TractModel::to_voxel(std::vector<tipl::vector<3,short> >& points,const tipl::matrix<4,4>& trans,int id)
 {
-    float voxel_length_2 = 0.5f/ratio;
+    bool need_trans = (trans != tipl::identity_matrix());
+    float voxel_length_2 = 0.5f;
+
+    if(need_trans)
+    {
+        tipl::transformation_matrix<float> m(tipl::matrix<4,4>(tipl::inverse(trans)));
+        tipl::vector<3> L(0.5f,0.0f,0.0f); // in the point space.
+        L.rotate(m.sr);
+        voxel_length_2 = float(L.length());
+    }
+
     std::vector<std::set<tipl::vector<3,short> > > pass_map(std::thread::hardware_concurrency());
     tipl::par_for(tract_data.size(),[&](size_t i,size_t thread)
     {
@@ -2534,7 +2544,8 @@ void TractModel::to_voxel(std::vector<tipl::vector<3,short> >& points,float rati
                 tipl::vector<3> cur(dir);
                 cur *= d/step_size;
                 cur += tipl::vector<3>(&tract_data[i][j-3]);
-                cur *= ratio;
+                if(need_trans)
+                    cur.to(trans);
                 cur.round();
                 pass_map[thread].insert(tipl::vector<3,short>(cur));
             }
@@ -2730,7 +2741,7 @@ void TractModel::get_quantitative_info(std::shared_ptr<fib_data> handle,std::str
     std::vector<float> data;
     {
         const float resolution_ratio = 2.0f;
-        tipl::matrix<4,4> resolution_trans(tipl::identity_matrix());
+        tipl::matrix<4,4> resolution_trans((tipl::identity_matrix()));
         resolution_trans[0] = resolution_trans[5] = resolution_trans[10] = 2.0f;
         float voxel_volume = vs[0]*vs[1]*vs[2];
         const float PI = 3.14159265358979323846f;
@@ -2769,7 +2780,7 @@ void TractModel::get_quantitative_info(std::shared_ptr<fib_data> handle,std::str
 
         {
             std::vector<tipl::vector<3,short> > points;
-            to_voxel(points,resolution_ratio);
+            to_voxel(points,resolution_trans);
             tract_volume = points.size()*voxel_volume/resolution_ratio/resolution_ratio/resolution_ratio;
             bundle_diameter = 2.0f*float(std::sqrt(tract_volume/tract_length/PI));
 
@@ -2794,7 +2805,7 @@ void TractModel::get_quantitative_info(std::shared_ptr<fib_data> handle,std::str
             });
 
             delete_branch();
-            to_voxel(points,resolution_ratio);
+            to_voxel(points,resolution_trans);
             undo();
             trunk_volume = points.size()*voxel_volume/resolution_ratio/resolution_ratio/resolution_ratio;
 
