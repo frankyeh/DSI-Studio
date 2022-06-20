@@ -1744,7 +1744,7 @@ void TractModel::delete_repeated(float d)
 void TractModel::delete_branch(void)
 {
     std::vector<tipl::vector<3,short> > p1,p2;
-    to_end_point_voxels(p1,p2,1.0f);
+    to_end_point_voxels(p1,p2,tipl::identity_matrix());
     tipl::image<3,unsigned char>mask;
     ROIRegion r1(geo,vs,trans_to_mni),r2(geo,vs,trans_to_mni);
     r1.add_points(std::move(p1));
@@ -2439,7 +2439,7 @@ bool TractModel::export_end_pdi(
     for(size_t index = 0;index < tract_models.size();++index)
     {
         std::vector<tipl::vector<3,short> > p1,p2;
-        tract_models[index]->to_end_point_voxels(p1,p2,1.0f,end_distance);
+        tract_models[index]->to_end_point_voxels(p1,p2,tipl::identity_matrix(),end_distance);
         tipl::par_for(p1.size(),[&](size_t j)
         {
             tipl::vector<3,short> p = p1[j];
@@ -2612,17 +2612,18 @@ void check_order(tipl::shape<3> geo,
         s1.swap(s2);
 
 }
-inline tipl::vector<3,short> get_rounded_voxel(const float* ptr,float ratio)
+inline tipl::vector<3> get_rounded_voxel(const float* ptr,bool need_trans,const tipl::matrix<4,4>& trans)
 {
-    tipl::vector<3,float> p(ptr);
-    if(ratio != 1.0f)
-        p *= ratio;
+    tipl::vector<3> p(ptr);
+    if(need_trans)
+        p.to(trans);
     p.round();
-    return tipl::vector<3,short>(p[0],p[1],p[2]);
+    return p;
 }
 void TractModel::to_end_point_voxels(std::vector<tipl::vector<3,short> >& points1,
-                               std::vector<tipl::vector<3,short> >& points2,float ratio)
+                               std::vector<tipl::vector<3,short> >& points2,const tipl::matrix<4,4>& trans)
 {
+    bool need_trans = (trans != tipl::identity_matrix());
     std::vector<char> dir;
     get_tract_dir(tract_data,dir);
 
@@ -2632,8 +2633,8 @@ void TractModel::to_end_point_voxels(std::vector<tipl::vector<3,short> >& points
     {
         if(tract_data[i].size() < 6)
             continue;
-        tipl::vector<3,short> p1(get_rounded_voxel(&tract_data[i][0],ratio));
-        tipl::vector<3,short> p2(get_rounded_voxel(&tract_data[i][tract_data[i].size()-3],ratio));
+        tipl::vector<3,short> p1(get_rounded_voxel(&tract_data[i][0],need_trans,trans));
+        tipl::vector<3,short> p2(get_rounded_voxel(&tract_data[i][tract_data[i].size()-3],need_trans,trans));
         if(dir[i])
         {
             s1.push_back(p1);
@@ -2655,8 +2656,10 @@ void TractModel::to_end_point_voxels(std::vector<tipl::vector<3,short> >& points
 }
 
 void TractModel::to_end_point_voxels(std::vector<tipl::vector<3,short> >& points1,
-                        std::vector<tipl::vector<3,short> >& points2,float ratio,float end_dis)
+                                     std::vector<tipl::vector<3,short> >& points2,
+                                     const tipl::matrix<4,4>& trans,float end_dis)
 {
+    bool need_trans = (trans != tipl::identity_matrix());
     std::vector<char> dir;
     get_tract_dir(tract_data,dir);
 
@@ -2673,7 +2676,7 @@ void TractModel::to_end_point_voxels(std::vector<tipl::vector<3,short> >& points
             size_t j = 0;
             for(float dis = 0.0f;dis < end_dis;)
             {
-                p1.push_back(get_rounded_voxel(&tract_data[i][j],ratio));
+                p1.push_back(get_rounded_voxel(&tract_data[i][j],need_trans,trans));
                 j += 3;
                 if(j >= tract_data[i].size())
                     break;
@@ -2687,7 +2690,7 @@ void TractModel::to_end_point_voxels(std::vector<tipl::vector<3,short> >& points
             size_t j = tract_data[i].size()-3;
             for(float dis = 0.0f;dis < end_dis;)
             {
-                p2.push_back(get_rounded_voxel(&tract_data[i][j],ratio));
+                p2.push_back(get_rounded_voxel(&tract_data[i][j],need_trans,trans));
                 if(j < 3)
                     break;
                 j -= 3;
@@ -2727,6 +2730,8 @@ void TractModel::get_quantitative_info(std::shared_ptr<fib_data> handle,std::str
     std::vector<float> data;
     {
         const float resolution_ratio = 2.0f;
+        tipl::matrix<4,4> resolution_trans(tipl::identity_matrix());
+        resolution_trans[0] = resolution_trans[5] = resolution_trans[10] = 2.0f;
         float voxel_volume = vs[0]*vs[1]*vs[2];
         const float PI = 3.14159265358979323846f;
         float tract_volume, trunk_volume, tract_area, tract_length, span, curl, bundle_diameter;
@@ -2809,7 +2814,7 @@ void TractModel::get_quantitative_info(std::shared_ptr<fib_data> handle,std::str
         float end_area1,end_area2,radius1,radius2;
         {
             std::vector<tipl::vector<3,short> > endpoint1,endpoint2;
-            to_end_point_voxels(endpoint1,endpoint2,resolution_ratio);
+            to_end_point_voxels(endpoint1,endpoint2,resolution_trans);
             // end point surface 1 and 2
             end_area1 = float(endpoint1.size())*vs[0]*vs[1]/resolution_ratio/resolution_ratio;
             end_area2 = float(endpoint2.size())*vs[0]*vs[1]/resolution_ratio/resolution_ratio;
