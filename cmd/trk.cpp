@@ -726,7 +726,7 @@ int trk(program_option& po,std::shared_ptr<fib_data> handle)
         std::cout << "convert tracks to seed regions" << std::endl;
         tracking_thread.roi_mgr->seeds.clear();
         std::vector<tipl::vector<3,short> > points;
-        tract_model->to_voxel(points,1.0f);
+        tract_model->to_voxel(points);
         tract_model->clear();
         tracking_thread.roi_mgr->setRegions(points,3/*seed*/,"refine seeding region");
 
