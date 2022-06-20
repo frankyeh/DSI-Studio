@@ -296,7 +296,6 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         connect(regionWidget,SIGNAL(need_update()),glWidget,SLOT(update()));
 
         connect(ui->actionNewRegion,SIGNAL(triggered()),regionWidget,SLOT(new_region()));
-        connect(ui->actionNew_Super_Resolution_Region,SIGNAL(triggered()),regionWidget,SLOT(new_high_resolution_region()));
         connect(ui->actionOpenRegion,SIGNAL(triggered()),regionWidget,SLOT(load_region()));
         connect(ui->actionOpen_MNI_Region,SIGNAL(triggered()),regionWidget,SLOT(load_mni_region()));
         connect(ui->actionSaveRegionAs,SIGNAL(triggered()),regionWidget,SLOT(save_region()));
@@ -920,13 +919,7 @@ bool tracking_window::eventFilter(QObject *obj, QEvent *event)
     if(!has_info)
         return false;
 
-    QString status = QString("shape=(%1,%2,%3) vs=(%4,%5,%6)mm pos=(%7,%8,%9)")
-            .arg(handle->dim[0])
-            .arg(handle->dim[1])
-            .arg(handle->dim[2])
-            .arg(handle->vs[0])
-            .arg(handle->vs[1])
-            .arg(handle->vs[2])
+    QString status = QString("pos=(%1,%2,%3)")
             .arg(std::round(pos[0]*10.0)/10.0)
             .arg(std::round(pos[1]*10.0)/10.0)
             .arg(std::round(pos[2]*10.0)/10.0);
@@ -1169,21 +1162,23 @@ void tracking_window::on_actionEndpoints_to_seeding_triggered()
     std::vector<tipl::vector<3,short> > points1,points2;
     if(tractWidget->tract_models.empty() || tractWidget->currentRow() < 0)
         return;
-    const float resolution_ratio = 2.0f;
-    tractWidget->tract_models[size_t(tractWidget->currentRow())]->to_end_point_voxels(points1,points2,resolution_ratio);
+
+    tractWidget->tract_models[size_t(tractWidget->currentRow())]->
+            to_end_point_voxels(points1,points2,
+                current_slice->is_diffusion_space ? tipl::matrix<4,4>(tipl::identity_matrix()) :current_slice->invT);
 
     regionWidget->begin_update();
     regionWidget->add_region(
             tractWidget->item(tractWidget->currentRow(),0)->text()+
             QString(" endpoints1"));
-    regionWidget->regions.back()->resolution_ratio = resolution_ratio;
-    regionWidget->regions.back()->add_points(points1,false,resolution_ratio);
+
+
+    regionWidget->regions.back()->add_points(std::move(points1));
 
     regionWidget->add_region(
             tractWidget->item(tractWidget->currentRow(),0)->text()+
             QString(" endpoints2"));
-    regionWidget->regions.back()->resolution_ratio = resolution_ratio;
-    regionWidget->regions.back()->add_points(points2,false,resolution_ratio);
+    regionWidget->regions.back()->add_points(std::move(points2));
     regionWidget->end_update();
     slice_need_update = true;
     glWidget->update();
@@ -1194,11 +1189,11 @@ void tracking_window::on_actionTracts_to_seeds_triggered()
     if(tractWidget->tract_models.empty()|| tractWidget->currentRow() < 0)
         return;
     std::vector<tipl::vector<3,short> > points;
-    tractWidget->tract_models[tractWidget->currentRow()]->to_voxel(points,2.0f);
+    tractWidget->tract_models[tractWidget->currentRow()]->to_voxel(points,
+        current_slice->is_diffusion_space ? tipl::matrix<4,4>(tipl::identity_matrix()) : current_slice->invT);
     regionWidget->add_region(
             tractWidget->item(tractWidget->currentRow(),0)->text());
-    regionWidget->regions.back()->resolution_ratio = 2.0;
-    regionWidget->add_points(points,false,false,2.0);
+    regionWidget->regions.back()->add_points(std::move(points));
     slice_need_update = true;
     glWidget->update();
 }
@@ -1490,26 +1485,6 @@ void tracking_window::on_addRegionFromAtlas_clicked()
         raise();
         return;
     }
-    std::string output_file_name(handle->fib_file_name);
-    output_file_name += ".";
-    output_file_name += QFileInfo(fa_template_list[handle->template_id].c_str()).
-                        baseName().toLower().toStdString();
-    output_file_name += ".map.gz";
-    if(handle->s2t.empty() && std::filesystem::exists(output_file_name))
-    {
-        QMessageBox::StandardButton r = QMessageBox::question( this, "DSI Studio",
-                    "Load previous registration result?",
-                    QMessageBox::Cancel | QMessageBox::No | QMessageBox::Yes,QMessageBox::Yes);
-        if(r == QMessageBox::Cancel)
-            return;
-        if(r == QMessageBox::No)
-        {
-            handle->s2t.clear();
-            handle->t2s.clear();
-            std::filesystem::remove(output_file_name);
-        }
-    }
-
     if(!map_to_mni())
         return;
     std::shared_ptr<AtlasDialog> atlas_dialog(new AtlasDialog(this,handle));
@@ -2485,13 +2460,16 @@ void tracking_window::on_actionMark_Region_on_T1W_T2W_triggered()
     float mark_value = slice->get_value_range().second*float(ratio);
     tipl::image<3,unsigned char> mask;
     current_region->SaveToBuffer(mask);
-    float resolution_ratio = current_region->resolution_ratio;
-    tipl::matrix<4,4> T(slice->T);
-    tipl::multiply_constant(&T[0],&T[0]+12,resolution_ratio);
-    tipl::image<3,unsigned char> t_mask(slice->source_images.shape());
-    tipl::resample_mt<tipl::interpolation::nearest>(mask,t_mask,tipl::transformation_matrix<float>(T));
-    for(size_t i = 0;i < t_mask.size();++i)
-        if(t_mask[i])
+    if(current_region->to_diffusion_space != slice->T)
+    {
+        tipl::image<3,unsigned char> new_mask(slice->dim);
+        tipl::resample_mt<tipl::interpolation::nearest>(mask,new_mask,
+            tipl::transformation_matrix<float>(tipl::from_space(slice->T).to(current_region->to_diffusion_space)));
+        mask.swap(new_mask);
+    }
+
+    for(size_t i = 0;i < mask.size();++i)
+        if(mask[i])
             slice->source_images[i] = mark_value;
     slice_need_update = true;
     glWidget->update();
