@@ -133,9 +133,9 @@ public:
                                  bool& terminated);
         void to_voxel(std::vector<tipl::vector<3,short> >& points,float ratio,int id = -1);
         void to_end_point_voxels(std::vector<tipl::vector<3,short> >& points1,
-                                std::vector<tipl::vector<3,short> >& points2,float ratio);
+                                std::vector<tipl::vector<3,short> >& points2,const tipl::matrix<4,4>& trans);
         void to_end_point_voxels(std::vector<tipl::vector<3,short> >& points1,
-                                std::vector<tipl::vector<3,short> >& points2,float ratio,float end_dis);
+                                std::vector<tipl::vector<3,short> >& points2,const tipl::matrix<4,4>& trans,float end_dis);
 
         size_t get_deleted_track_count(void) const{return deleted_tract_data.size();}
         size_t get_visible_track_count(void) const{return tract_data.size();}
