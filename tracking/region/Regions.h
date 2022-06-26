@@ -18,8 +18,6 @@ const unsigned char terminate_id = 4;
 const unsigned char not_end_id = 5;
 const unsigned char default_id = 6;
 void initial_LPS_nifti_srow(tipl::matrix<4,4>& T,const tipl::shape<3>& geo,const tipl::vector<3>& vs);
-void merge_regions(std::vector<std::vector<tipl::vector<3,short> > >&& points,
-                   std::vector<tipl::vector<3,short> >& region);
 class ROIRegion {
 public:
         tipl::shape<3> dim;
