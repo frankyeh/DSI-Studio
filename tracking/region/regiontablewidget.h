@@ -59,7 +59,7 @@ private:
         });
         return checked_regions;
     }
-    void save_checked_region_label_file(QString filename);
+    void save_checked_region_label_file(QString filename,int first_index);
 signals:
     void need_update(void);
 public:
