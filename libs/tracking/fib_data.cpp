@@ -1826,21 +1826,6 @@ bool fib_data::get_atlas_roi(const std::string& atlas_name,const std::string& re
     }
     return get_atlas_roi(at,roi_index,points);
 }
-void merge_regions(std::vector<std::vector<tipl::vector<3,short> > >&& points,
-                   std::vector<tipl::vector<3,short> >& all)
-{
-    std::vector<size_t> insert_pos;
-    insert_pos.push_back(0);
-    for(size_t i = 0;i < points.size();++i)
-        insert_pos.push_back(insert_pos.back() + points[i].size());
-
-    all.clear();
-    all.resize(insert_pos.back());
-    tipl::par_for(points.size(),[&](unsigned int index)
-    {
-        std::copy(points[index].begin(),points[index].end(),all.begin()+int64_t(insert_pos[index]));
-    });
-}
 bool fib_data::get_atlas_roi(std::shared_ptr<atlas> at,unsigned int roi_index,
                              const tipl::shape<3>& new_geo,const tipl::matrix<4,4>& to_diffusion_space,
                              std::vector<tipl::vector<3,short> >& points)
@@ -1881,13 +1866,14 @@ bool fib_data::get_atlas_roi(std::shared_ptr<atlas> at,unsigned int roi_index,
                 buf[id].push_back(tipl::vector<3,short>(index.begin()));
         });
     }
-    merge_regions(std::move(buf),points);
+    tipl::aggregate_results(std::move(buf),points);
     return true;
 }
 
 bool fib_data::get_atlas_all_roi(std::shared_ptr<atlas> at,
                                  const tipl::shape<3>& new_geo,const tipl::matrix<4,4>& to_diffusion_space,
-                                 std::vector<std::vector<tipl::vector<3,short> > >& points)
+                                 std::vector<std::vector<tipl::vector<3,short> > >& points,
+                                 std::vector<std::string>& labels)
 {
     if(get_sub2temp_mapping().empty() || !at->load_from_file())
         return false;
@@ -1947,11 +1933,14 @@ bool fib_data::get_atlas_all_roi(std::shared_ptr<atlas> at,
     });
 
     // aggregating results from all threads
+    labels.resize(at->get_list().size());
     tipl::par_for(at->get_list().size(),[&](size_t i)
     {
+        labels[i] = at->get_list()[i];
         for(size_t j = 1;j < region_voxels.size();++j)
             region_voxels[0][i].insert(region_voxels[0][i].end(),
                     std::make_move_iterator(region_voxels[j][i].begin()),std::make_move_iterator(region_voxels[j][i].end()));
+        std::sort(region_voxels[0][i].begin(),region_voxels[0][i].end());
     });
     region_voxels[0].swap(points);
     return true;
