@@ -248,7 +248,8 @@ public:
     }
     bool get_atlas_all_roi(std::shared_ptr<atlas> at,
                            const tipl::shape<3>& new_geo,const tipl::matrix<4,4>& new_trans,
-                           std::vector<std::vector<tipl::vector<3,short> > >& points);
+                           std::vector<std::vector<tipl::vector<3,short> > >& points,
+                           std::vector<std::string>& labels);
     template<tipl::interpolation Type = tipl::interpolation::linear,typename image_type>
     bool mni2sub(image_type& mni_image,const tipl::matrix<4,4>& trans,float ratio = 1.0f)
     {
