@@ -98,7 +98,7 @@ void ROIRegion::add_points(std::vector<tipl::vector<3,short> >&& points, bool de
                                                                  index[1]+min_value[1],
                                                                  index[2]+min_value[2]));
     });
-    merge_regions(std::move(region_at_thread),region);
+    tipl::aggregate_results(std::move(region_at_thread),region);
 
 
 
@@ -232,7 +232,7 @@ void ROIRegion::LoadFromBuffer(tipl::image<3,unsigned char>& mask)
         if (mask[index.index()])
             points[thread_id].push_back(tipl::vector<3,short>(index.x(), index.y(),index.z()));
     });
-    merge_regions(std::move(points),region);
+    tipl::aggregate_results(std::move(points),region);
 }
 // ---------------------------------------------------------------------------
 void ROIRegion::SaveToBuffer(tipl::image<3,unsigned char>& mask)
