@@ -37,9 +37,8 @@ void atlas::load_label(void)
         if(num >= value2index.size())
             value2index.resize(num+1);
 
-        value2index[num] = uint16_t(region_value.size());
-
         region_value.push_back(num);
+        value2index[num] = uint16_t(region_value.size());
         labels.push_back(txt);
     }
 }
@@ -109,7 +108,7 @@ bool atlas::load_from_file(void)
                 ++i;
             if(modified_atlas)
                 for(size_t i = 0;i < region_value.size();++i)
-                    value2index[region_value[i]] = uint16_t(i);
+                    value2index[region_value[i]] = uint16_t(i+1);
         }
     }
     return true;
@@ -158,7 +157,7 @@ int atlas::region_index_at(const tipl::vector<3,float>& template_space)
     auto value = I[offset];
     if(value >= value2index.size())
         return -1;
-    return int(value2index[value]);
+    return int(value2index[value])-1;
 }
 void atlas::region_indices_at(const tipl::vector<3,float>& template_space,std::vector<uint16_t>& indices)
 {
