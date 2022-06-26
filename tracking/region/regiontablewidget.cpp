@@ -151,19 +151,16 @@ void RegionTableWidget::add_region_from_atlas(std::shared_ptr<atlas> at,unsigned
 void RegionTableWidget::add_all_regions_from_atlas(std::shared_ptr<atlas> at)
 {
     std::vector<std::vector<tipl::vector<3,short> > > points;
+    std::vector<std::string> labels;
     if(!cur_tracking_window.handle->get_atlas_all_roi(at,
             cur_tracking_window.current_slice->dim,
-            cur_tracking_window.current_slice->T,points))
+            cur_tracking_window.current_slice->T,points,labels))
     {
         QMessageBox::critical(this,"ERROR",cur_tracking_window.handle->error_msg.c_str());
         return;
     }
-    for(unsigned int i = 0;i < points.size();++i)
-    {
-        if(points.empty())
-            continue;
-        add_region(at->get_list()[i].c_str());
-    }
+    for(unsigned int i = 0;i < labels.size();++i)
+        add_region(labels[i].c_str());
 
     tipl::par_for(points.size(),[&](unsigned int i)
     {
@@ -289,24 +286,8 @@ bool RegionTableWidget::command(QString cmd,QString param,QString)
     }
     if(cmd == "load_region")
     {
-        // check for multiple nii
-        if(QFileInfo(param).suffix() == "gz" ||
-            QFileInfo(param).suffix() == "nii" ||
-            QFileInfo(param).suffix() == "hdr")
-        {
-            if(!load_multiple_roi_nii(param,false))
-                return false;
-            emit need_update();
-            return true;
-        }
-        ROIRegion region(cur_tracking_window.handle);
-        if(!region.LoadFromFile(param.toLocal8Bit().begin()))
-        {
-            QMessageBox::information(this,"error","Unknown file format");
-            return true;
-        }
-        add_region(QFileInfo(param).baseName(),default_id,region.show_region.color.color);
-        regions.back()->swap(region);
+        if(!load_multiple_roi_nii(param,false))
+            return false;
         emit need_update();
         return true;
     }
@@ -600,8 +581,12 @@ bool load_nii(std::shared_ptr<fib_data> handle,
         error_msg = "cannot load the file. Please check access permision.";
         return false;
     }
-
+    bool is_4d = header.dim(4) > 1;
     tipl::image<3,unsigned int> from;
+
+    if(is_4d)
+        from.resize(tipl::shape<3>(header.dim(1),header.dim(2),header.dim(3)));
+    else
     {
         tipl::image<3> tmp;
         header.toLPS(tmp);
@@ -627,6 +612,16 @@ bool load_nii(std::shared_ptr<fib_data> handle,
     std::vector<unsigned short> value_list;
     std::vector<unsigned short> value_map(std::numeric_limits<unsigned short>::max()+1);
 
+    if(is_4d)
+    {
+        value_list.resize(header.dim(4));
+        for(unsigned int index = 0;index <value_list.size();++index)
+        {
+            value_list[index] = uint16_t(index);
+            value_map[uint16_t(index)] = 0;
+        }
+    }
+    else
     {
         unsigned short max_value = 0;
         for (tipl::pixel_index<3>index(from.shape());index < from.size();++index)
@@ -761,9 +756,23 @@ bool load_nii(std::shared_ptr<fib_data> handle,
     }
 
     std::vector<std::vector<tipl::vector<3,short> > > region_points(value_list.size());
-    for (tipl::pixel_index<3>index(from.shape());index < from.size();++index)
-        if(from[index.index()])
-            region_points[value_map[from[index.index()]]].push_back(index);
+    if(is_4d)
+    {
+        progress prog_("loading");
+        for(size_t region_index = 0;progress::at(region_index,region_points.size());++region_index)
+        {
+            header.toLPS(from);
+            for (tipl::pixel_index<3> index(from.shape());index < from.size();++index)
+                if(from[index.index()])
+                    region_points[region_index].push_back(index);
+        }
+    }
+    else
+    {
+        for (tipl::pixel_index<3>index(from.shape());index < from.size();++index)
+            if(from[index.index()])
+                region_points[value_map[from[index.index()]]].push_back(index);
+    }
 
     for(uint32_t i = 0;i < region_points.size();++i)
         {
@@ -794,7 +803,7 @@ bool load_nii(std::shared_ptr<fib_data> handle,
 
 bool RegionTableWidget::load_multiple_roi_nii(QString file_name,bool is_mni_image)
 {
-
+    QStringList files = file_name.split(",");
     std::vector<std::pair<tipl::shape<3>,tipl::matrix<4,4> > > transform_lookup;
     // searching for T1/T2 mappings
     for(unsigned int index = 0;index < cur_tracking_window.slices.size();++index)
@@ -803,24 +812,68 @@ bool RegionTableWidget::load_multiple_roi_nii(QString file_name,bool is_mni_imag
         if(!slice->is_diffusion_space)
             transform_lookup.push_back(std::make_pair(slice->dim,slice->T));
     }
-    std::vector<std::shared_ptr<ROIRegion> > loaded_regions;
-    std::vector<std::string> names;
-    if(!load_nii(cur_tracking_window.handle,
-                 file_name.toStdString(),
-                 transform_lookup,
-                 loaded_regions,
-                 names,
-                 error_msg,is_mni_image))
-        return false;
-    progress prog_("loading ROIs");
-    begin_update();
-    for(uint32_t i = 0;progress::at(i,loaded_regions.size());++i)
+    std::vector<std::vector<std::shared_ptr<ROIRegion> > > loaded_regions(files.size());
+    std::vector<std::vector<std::string> > names(files.size());
+
+    {
+        progress prog_("reading");
+        size_t prog = 0;
+        bool failed = false;
+        tipl::par_for(files.size(),[&](unsigned int i)
         {
-            regions.push_back(loaded_regions[i]);
-            add_row(int(regions.size()-1),names[i].c_str());
-            check_row(currentRow(),loaded_regions.size() == 1);
-        }
-    end_update();
+            if(progress::aborted() || failed)
+                return;
+            progress::at(prog++,files.size());
+            if(QFileInfo(files[i]).suffix() == "gz" ||
+                QFileInfo(files[i]).suffix() == "nii" ||
+                QFileInfo(files[i]).suffix() == "hdr")
+            {
+                if(!load_nii(cur_tracking_window.handle,
+                         files[i].toStdString(),
+                         transform_lookup,
+                         loaded_regions[i],
+                         names[i],
+                         error_msg,is_mni_image))
+                {
+                    failed = true;
+                    return;
+                }
+            }
+            else
+            {
+                std::shared_ptr<ROIRegion> region(new ROIRegion(cur_tracking_window.handle));
+                if(!region->LoadFromFile(files[i].toStdString().c_str()))
+                {
+                    error_msg = "Cannot read file:";
+                    error_msg += files[i].toStdString();
+                    failed = true;
+                    return;
+                }
+                loaded_regions[i].push_back(region);
+                names[i].push_back(QFileInfo(files[i]).baseName().toStdString());
+            }
+        });
+
+        if(progress::aborted())
+            return true;
+        if(failed)
+            return false;
+    }
+
+    tipl::aggregate_results(std::move(loaded_regions),loaded_regions[0]);
+    tipl::aggregate_results(std::move(names),names[0]);
+
+    {
+        progress prog_("loading ROIs");
+        begin_update();
+        for(uint32_t i = 0;progress::at(i,loaded_regions[0].size());++i)
+            {
+                regions.push_back(loaded_regions[0][i]);
+                add_row(int(regions.size()-1),names[0][i].c_str());
+                check_row(currentRow(),loaded_regions.size() == 1);
+            }
+        end_update();
+    }
     return true;
 }
 
@@ -890,13 +943,8 @@ void RegionTableWidget::load_region(void)
                                 this,"Open region",QFileInfo(cur_tracking_window.windowTitle()).absolutePath(),"Region files (*.nii *.hdr *nii.gz *.mat);;Text files (*.txt);;All files (*)" );
     if (filenames.isEmpty())
         return;
-
-    for (int index = 0;index < filenames.size();++index)
-        if(!command("load_region",filenames[index]))
-        {
-            QMessageBox::critical(this,"ERROR",error_msg.c_str());
-            break;
-        }
+    if(!command("load_region",filenames.join(",")))
+        QMessageBox::critical(this,"ERROR",error_msg.c_str());
     emit need_update();
 }
 
@@ -931,13 +979,13 @@ void RegionTableWidget::merge_all(void)
         return;
 
     tipl::image<3,unsigned char> mask(regions[merge_list[0]]->dim);
-    progress prog("merging regions",true);
+    progress prog_("merging regions",true);
+    size_t prog = 0;
     tipl::par_for(merge_list.size(),[&](size_t index,unsigned int id)
     {
         if(progress::aborted())
             return;
-        if(id == 0)
-            progress::at(index,merge_list.size());
+        progress::at(prog++,merge_list.size());
         if(regions[merge_list[0]]->to_diffusion_space != regions[merge_list[index]]->to_diffusion_space)
                 convert_region(regions[merge_list[index]]->region,
                                regions[merge_list[index]]->dim,
@@ -1073,20 +1121,19 @@ void RegionTableWidget::save_all_regions_to_dir(void)
     command("save_all_regions_to_dir",dir);
 }
 
-void RegionTableWidget::save_checked_region_label_file(QString filename)
+void RegionTableWidget::save_checked_region_label_file(QString filename,int first_index)
 {
     QString base_name = QFileInfo(filename).completeBaseName();
     if(QFileInfo(base_name).suffix().toLower() == "nii")
         base_name = QFileInfo(base_name).completeBaseName();
     QString label_file = QFileInfo(filename).absolutePath()+"/"+base_name+".txt";
     std::ofstream out(label_file.toStdString().c_str());
-    int id = 1;
     for (unsigned int roi_index = 0;roi_index < regions.size();++roi_index)
     {
         if (item(int(roi_index),0)->checkState() != Qt::Checked)
             continue;
-        out << id << " " << item(int(roi_index),0)->text().toStdString() << std::endl;
-        ++id;
+        out << first_index << " " << item(int(roi_index),0)->text().toStdString() << std::endl;
+        ++first_index;
     }
 }
 
@@ -1103,8 +1150,13 @@ void RegionTableWidget::save_all_regions_to_4dnifti(void)
 
     tipl::shape<3> dim = checked_regions[0]->dim;
     tipl::image<4,unsigned char> multiple_I(tipl::shape<4>(dim[0],dim[1],dim[2],uint32_t(checked_regions.size())));
+    progress prog_("aggregating regions");
+    size_t prog = 0;
     tipl::par_for (checked_regions.size(),[&](unsigned int region_index)
     {
+        if(progress::aborted())
+            return;
+        progress::at(prog++,checked_regions.size());
         size_t offset = region_index*dim.size();
         auto points = checked_regions[region_index]->region;
         convert_region(points,
@@ -1119,12 +1171,15 @@ void RegionTableWidget::save_all_regions_to_4dnifti(void)
         }
     });
 
+    if(progress::aborted())
+        return;
+
     if(gz_nifti::save_to_file(filename.toStdString().c_str(),multiple_I,
                               checked_regions[0]->vs,
                               checked_regions[0]->trans_to_mni,
                               cur_tracking_window.handle->is_qsdr))
     {
-        save_checked_region_label_file(filename);
+        save_checked_region_label_file(filename,0);  // 4d nifti index starts from 0
         QMessageBox::information(this,"DSI Studio","saved");
     }
     else
@@ -1178,7 +1233,7 @@ void RegionTableWidget::save_all_regions(void)
     }
     if(result)
     {
-        save_checked_region_label_file(filename);
+        save_checked_region_label_file(filename,1); // 3d nifti index starts from 1
         QMessageBox::information(this,"DSI Studio","saved");
     }
     else
