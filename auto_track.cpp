@@ -340,8 +340,10 @@ std::string run_auto_track(program_option& po,const std::vector<std::string>& fi
                     {
                         progress::at(thread.get_total_tract_count(),
                                    thread.param.termination_count);
+                        std::this_thread::sleep_for(std::chrono::seconds(2));
                         thread.fetchTracks(&tract_model);
                         std::this_thread::sleep_for(std::chrono::seconds(2));
+                        thread.fetchTracks(&tract_model);
                         // terminate if yield rate is very low, likely quality problem
                         if(thread.get_total_seed_count() > low_yield_threshold &&
                            thread.get_total_tract_count() < thread.get_total_seed_count()/low_yield_threshold)
@@ -353,6 +355,8 @@ std::string run_auto_track(program_option& po,const std::vector<std::string>& fi
                     }
                     if(progress::aborted())
                         return std::string();
+                    // fetch both front and back buffer
+                    thread.fetchTracks(&tract_model);
                     thread.fetchTracks(&tract_model);
                     thread.apply_tip(&tract_model);
 
