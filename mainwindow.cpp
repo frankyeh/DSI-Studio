@@ -100,10 +100,21 @@ void MainWindow::openFile(QString file_name)
     }
     else
     {
-        if(QString(file_name).endsWith("fib.gz") ||
-           QString(file_name).endsWith("trk.gz") ||
-           QString(file_name).endsWith("tt.gz") ||
+        if(QString(file_name).endsWith("tt.gz") ||
            QString(file_name).endsWith("trk") ||
+           QString(file_name).endsWith("trk.gz"))
+        {
+            QStringList file_list = QFileInfo(file_name).dir().entryList(QStringList("*fib.gz"),QDir::Files|QDir::NoSymLinks);
+            if(file_list.size() == 1)
+            {
+                loadFib(file_list[0]);
+                tracking_windows.back()->tractWidget->load_tracts(QStringList() << file_name);
+            }
+            else
+                loadFib(file_name);
+        }
+        else
+        if(QString(file_name).endsWith("fib.gz") ||
            QString(file_name).endsWith("tck"))
         {
             loadFib(file_name);
