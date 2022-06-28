@@ -53,7 +53,7 @@ bool connectometry_db::read_db(fib_data* handle_)
     if(!handle->mat_reader.read("subject_names",subject_names_str) ||
        !handle->mat_reader.read("R2",R2))
     {
-        handle->error_msg = "Invalid connectometry DB format.";
+        error_msg = "Invalid connectometry DB format.";
         num_subjects = 0;
         subject_qa.clear();
         return false;
@@ -82,10 +82,7 @@ bool connectometry_db::read_db(fib_data* handle_)
     if(handle->mat_reader.read("demo",demo))
     {
         if(!parse_demo())
-        {
-            handle->error_msg = error_msg;
             return false;
-        }
     }
     else
     {
@@ -357,12 +354,12 @@ bool connectometry_db::is_odf_consistent(gz_mat_read& m)
     m.read("odf_vertices",row,col,odf_buffer);
     if (!odf_buffer)
     {
-        handle->error_msg = "No odf_vertices matrix in ";
+        error_msg = "No odf_vertices matrix in ";
         return false;
     }
     if(col != handle->dir.odf_table.size())
     {
-        handle->error_msg = "Inconsistent ODF dimension in ";
+        error_msg = "Inconsistent ODF dimension in ";
         return false;
     }
     for (unsigned int index = 0;index < col;++index,odf_buffer += 3)
@@ -371,7 +368,7 @@ bool connectometry_db::is_odf_consistent(gz_mat_read& m)
            handle->dir.odf_table[index][1] != odf_buffer[1] ||
            handle->dir.odf_table[index][2] != odf_buffer[2])
         {
-            handle->error_msg = "Inconsistent ODF in ";
+            error_msg = "Inconsistent ODF in ";
             return false;
         }
     }
@@ -380,14 +377,14 @@ bool connectometry_db::is_odf_consistent(gz_mat_read& m)
     m.read("voxel_size",row,col,voxel_size);
     if(!voxel_size)
     {
-        handle->error_msg = "No voxel_size matrix in ";
+        error_msg = "No voxel_size matrix in ";
         return false;
     }
     if(voxel_size[0] != handle->vs[0])
     {
         std::ostringstream out;
         out << "Inconsistency in image resolution. Please use a correct atlas. The atlas resolution (" << handle->vs[0] << " mm) is different from that in ";
-        handle->error_msg = out.str();
+        error_msg = out.str();
         return false;
     }*/
     return true;
@@ -428,8 +425,8 @@ bool connectometry_db::add_subject_file(const std::string& file_name,
         tipl::matrix<4,4> trans;
         if(!gz_nifti::load_from_file(file_name.c_str(),I,vs,trans))
         {
-            handle->error_msg = "Cannot read file ";
-            handle->error_msg += file_name;
+            error_msg = "Cannot read file ";
+            error_msg += file_name;
             return false;
         }
         sample_from_image(tipl::make_image(&I[0],I.shape()),trans,data);
@@ -439,7 +436,7 @@ bool connectometry_db::add_subject_file(const std::string& file_name,
         fib_data fib;
         if(!fib.load_from_file(file_name.c_str()))
         {
-            handle->error_msg = fib.error_msg;
+            error_msg = fib.error_msg;
             return false;
         }
         if(subject_report.empty())
@@ -450,9 +447,11 @@ bool connectometry_db::add_subject_file(const std::string& file_name,
            (index_name == "qa" || index_name == "nqa" || index_name.empty()))
         {
             odf_data subject_odf;
-            if(!is_odf_consistent(fib.mat_reader) || !subject_odf.read(fib.mat_reader))
+            if(!is_odf_consistent(fib.mat_reader))
+                return false;
+            if(!subject_odf.read(fib.mat_reader))
             {
-                handle->error_msg = "failed to read odf";
+                error_msg = "failed to read odf";
                 return false;
             }
             tipl::transformation_matrix<float> template2subject(tipl::from_space(handle->trans_to_mni).to(fib.trans_to_mni));
@@ -507,7 +506,7 @@ bool connectometry_db::add_subject_file(const std::string& file_name,
                         std::this_thread::sleep_for(std::chrono::seconds(2));
                     if(progress::aborted())
                     {
-                        handle->error_msg = "aborted";
+                        error_msg = "aborted";
                         return false;
                     }
                     tipl::image<3> Iss(fib.t2s.shape());
@@ -520,10 +519,10 @@ bool connectometry_db::add_subject_file(const std::string& file_name,
 
     if(data.empty())
     {
-        handle->error_msg = "failed to sample ";
-        handle->error_msg += index_name;
-        handle->error_msg += " in ";
-        handle->error_msg += file_name;
+        error_msg = "failed to sample ";
+        error_msg += index_name;
+        error_msg += " in ";
+        error_msg += file_name;
         return false;
     }
 
@@ -627,7 +626,7 @@ void connectometry_db::get_dif_matrix(std::vector<float>& matrix,const tipl::ima
     });
 }
 
-void connectometry_db::save_subject_vector(const char* output_name,
+bool connectometry_db::save_subject_vector(const char* output_name,
                          const tipl::image<3,int>& fp_mask,
                          float fiber_threshold,
                          bool normalize_fp) const
@@ -645,8 +644,9 @@ void connectometry_db::save_subject_vector(const char* output_name,
         gz_mat_write matfile(out_name.c_str());
         if(!matfile)
         {
-            handle->error_msg = "Cannot output file";
-            return;
+            error_msg = "Cannot save file ";
+            error_msg += out_name;
+            return false;
         }
         std::string name_string;
         for(unsigned int index = from;index < to;++index)
@@ -701,6 +701,7 @@ void connectometry_db::save_subject_vector(const char* output_name,
             matfile.write("fiber_direction",fiber_direction,3);
         }
     }
+    return true;
 }
 bool connectometry_db::save_db(const char* output_name)
 {
@@ -708,7 +709,8 @@ bool connectometry_db::save_db(const char* output_name)
     gz_mat_write matfile(output_name);
     if(!matfile)
     {
-        handle->error_msg = "Cannot output file";
+        error_msg = "Cannot save file ";
+        error_msg += output_name;
         return false;
     }
     for(unsigned int index = 0;index < handle->mat_reader.size();++index)
@@ -763,7 +765,7 @@ bool connectometry_db::get_demo_matched_volume(const std::string& matched_demo,t
 {
     if(demo.empty())
     {
-        handle->error_msg = "no demographic data found in the database";
+        error_msg = "no demographic data found in the database";
         return false;
     }
     std::vector<double> v;
@@ -776,8 +778,8 @@ bool connectometry_db::get_demo_matched_volume(const std::string& matched_demo,t
                   std::back_inserter(v));
         if(v.size() != feature_location.size())
         {
-            handle->error_msg = "invalid demographic input: ";
-            handle->error_msg += matched_demo;
+            error_msg = "invalid demographic input: ";
+            error_msg += matched_demo;
             return false;
         }
     }
@@ -812,8 +814,8 @@ bool connectometry_db::save_demo_matched_image(const std::string& matched_demo,c
         return false;
     if(!gz_nifti::save_to_file(filename.c_str(),I,handle->vs,handle->trans_to_mni,true,matched_demo.c_str()))
     {
-        handle->error_msg = "Cannot save file to ";
-        handle->error_msg += filename;
+        error_msg = "Cannot save file to ";
+        error_msg += filename;
         return false;
     }
     return true;
@@ -848,7 +850,7 @@ bool connectometry_db::get_qa_profile(const char* file_name,std::vector<std::vec
     gz_mat_read single_subject;
     if(!single_subject.load_from_file(file_name))
     {
-        handle->error_msg = "fail to load the fib file";
+        error_msg = "fail to load the fib file";
         return false;
     }
     if(!is_odf_consistent(single_subject))
@@ -856,7 +858,7 @@ bool connectometry_db::get_qa_profile(const char* file_name,std::vector<std::vec
     odf_data subject_odf;
     if(!subject_odf.read(single_subject))
     {
-        handle->error_msg = "The fib file contains no ODF information. Please reconstruct the SRC file again with ODF output.";
+        error_msg = "The fib file contains no ODF information. Please reconstruct the SRC file again with ODF output.";
         return false;
     }
     data.clear();
@@ -885,13 +887,13 @@ bool connectometry_db::is_db_compatible(const connectometry_db& rhs)
 {
     if(rhs.handle->dim != handle->dim || subject_qa_length != rhs.subject_qa_length)
     {
-        handle->error_msg = "Image dimension does not match";
+        error_msg = "Image dimension does not match";
         return false;
     }
     for(unsigned int index = 0;index < handle->dim.size();++index)
         if(handle->dir.fa[0][index] != rhs.handle->dir.fa[0][index])
         {
-            handle->error_msg = "The connectometry db was created using a different template.";
+            error_msg = "The connectometry db was created using a different template.";
             return false;
         }
     return true;
