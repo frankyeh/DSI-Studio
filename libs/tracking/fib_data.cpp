@@ -1016,7 +1016,10 @@ bool fib_data::load_from_mat(void)
     is_histology = (dim[2] == 2 && dim[0] > 400 && dim[1] > 400);
 
     if(!db.read_db(this))
+    {
+        error_msg = db.error_msg;
         return false;
+    }
 
     if(is_qsdr)
     {
