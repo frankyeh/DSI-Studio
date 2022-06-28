@@ -269,7 +269,10 @@ void db_window::on_actionSave_fingerprints_triggered()
 
     float threshold = ui->fp_coverage->value()*tipl::segmentation::otsu_threshold(
                 tipl::make_image(vbc->handle->dir.fa[0],vbc->handle->dim));
-    vbc->handle->db.save_subject_vector(filename.toLocal8Bit().begin(),fp_mask,threshold,ui->normalize_fp->isChecked());
+    if(vbc->handle->db.save_subject_vector(filename.toLocal8Bit().begin(),fp_mask,threshold,ui->normalize_fp->isChecked()))
+        QMessageBox::information(this,"File saved",filename);
+    else
+        QMessageBox::critical(this,"ERROR",vbc->handle->db.error_msg.c_str());
 
 }
 
@@ -432,7 +435,11 @@ void db_window::on_actionSave_DB_as_triggered()
     if(!vbc->handle->db.demo.empty() && !vbc->handle->db.parse_demo())
         QMessageBox::information(this,"DSI Studio",
         QString("demographics not saved due to mismatch: ") + vbc->handle->db.error_msg.c_str());
-    vbc->handle->db.save_db(filename.toStdString().c_str());
+
+    if(vbc->handle->db.save_db(filename.toStdString().c_str()))
+        QMessageBox::information(this,"File saved",filename);
+    else
+        QMessageBox::critical(this,"ERROR",vbc->handle->db.error_msg.c_str());
 }
 
 void db_window::on_subject_view_currentChanged(int index)
@@ -481,12 +488,12 @@ void db_window::on_actionAdd_DB_triggered()
         progress prog_("adding data");
         if(!handle->load_from_file(filenames[i].toStdString().c_str()))
         {
-            QMessageBox::information(this,"Error",handle->error_msg.c_str());
+            QMessageBox::information(this,"ERROR",handle->error_msg.c_str());
             return;
         }
         if(!handle->is_qsdr)
         {
-            QMessageBox::information(this,"Error",filenames[i] + " is not from the QSDR reconstruction.");
+            QMessageBox::information(this,"ERROR",filenames[i] + " is not from the QSDR reconstruction.");
             break;
         }
 
@@ -494,7 +501,7 @@ void db_window::on_actionAdd_DB_triggered()
         {
             if(!vbc->handle->db.add_db(handle->db))
             {
-                QMessageBox::information(this,"Error",vbc->handle->error_msg.c_str());
+                QMessageBox::information(this,"ERROR",vbc->handle->db.error_msg.c_str());
                 break;
             }
             continue;
@@ -504,7 +511,7 @@ void db_window::on_actionAdd_DB_triggered()
             progress prog_(QFileInfo(filenames[i]).baseName().toStdString().c_str());
             if(!vbc->handle->db.add_subject_file(filenames[i].toStdString(),QFileInfo(filenames[i]).baseName().toStdString()))
             {
-                QMessageBox::information(this,"error in loading subject fib files",vbc->handle->error_msg.c_str());
+                QMessageBox::information(this,"error in loading subject fib files",vbc->handle->db.error_msg.c_str());
                 break;
             }
             if(progress::aborted())
@@ -660,19 +667,10 @@ void db_window::on_actionSave_DemoMatched_Image_as_triggered()
                            "NIFTI files (*.nii *nii.gz);;All files (*)");
     if (filename.isEmpty())
         return;
-    tipl::image<3> I;
-    if(!vbc->handle->db.get_demo_matched_volume(param.toStdString(),I))
-    {
-        QMessageBox::critical(this,"DSI Studio",vbc->handle->error_msg.c_str());
-        return;
-    }
-    gz_nifti out;
-    out.set_voxel_size(vbc->handle->vs);
-    out.set_image_transformation(vbc->handle->trans_to_mni);
-    out << I;
-    if(out.save_to_file(filename.toLocal8Bit().begin()))
+    if(vbc->handle->db.save_demo_matched_image(param.toStdString(),filename.toStdString()))
         QMessageBox::information(this,"DSI Studio","File exported");
     else
-        QMessageBox::information(this,"Error","Cannot save file.");
+        QMessageBox::critical(this,"ERROR",vbc->handle->db.error_msg.c_str());
+
 }
 
