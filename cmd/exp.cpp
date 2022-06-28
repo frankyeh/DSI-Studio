@@ -55,7 +55,6 @@ int exp(program_option& po)
         std::cout << "unsupported file format" << std::endl;
         return 1;
     }
-    std::string export_name = po.get("export");
     if(QString(file_name.c_str()).endsWith(".fib.gz"))
     {
         std::shared_ptr<fib_data> handle;
@@ -63,8 +62,28 @@ int exp(program_option& po)
         if(!handle.get())
         {
             std::cout << "ERROR: " << handle->error_msg << std::endl;
+            return 1;
+        }
+        if(po.has("match"))
+        {
+            if(!handle->db.has_db())
+            {
+                std::cout << "ERROR: the FIB file is not a connectometry database" << std::endl;
+                return 1;
+            }
+            if(handle->db.demo.empty())
+            {
+                std::cout << "ERROR: the connectometry database does not include demographics for matching." << std::endl;
+                return 1;
+            }
+            if(!handle->db.save_demo_matched_image(po.get("match"),po.get("output",po.get("source")+".matched.nii.gz")))
+            {
+                std::cout << "ERROR:" << handle->db.error_msg << std::endl;
+                return 1;
+            }
             return 0;
         }
+
         std::istringstream in(po.get("export"));
         std::string cmd;
         while(std::getline(in,cmd,','))
