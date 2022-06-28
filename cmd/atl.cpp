@@ -124,7 +124,7 @@ int atl(program_option& po)
                 if(!data->handle->db.add_subject_file(name_list[index],
                     QFileInfo(name_list[index].c_str()).baseName().toStdString()))
                 {
-                    std::cout << "ERROR loading subject fib files:" << data->handle->error_msg << std::endl;
+                    std::cout << "ERROR loading subject fib files:" << data->handle->db.error_msg << std::endl;
                     return 1;
                 }
             }
@@ -135,7 +135,7 @@ int atl(program_option& po)
                                                name_list.back().begin()).first) + "." + index_name[i] + ".db.fib.gz";
             if(!data->handle->db.save_db(po.get("output",output).c_str()))
             {
-                std::cout << "ERROR saving the db file:" << data->handle->error_msg << std::endl;
+                std::cout << "ERROR saving the db file:" << data->handle->db.error_msg << std::endl;
                 return 1;
             }
             std::cout << "connectometry db created:" << output << std::endl;
