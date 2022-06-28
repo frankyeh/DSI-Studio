@@ -13,13 +13,21 @@ int vis(program_option& po)
     if(!new_handle.get())
         return 1;
     std::cout << "starting gui" << std::endl;
-    tracking_window* new_mdi = new tracking_window(0,new_handle);
+    tracking_window* new_mdi = new tracking_window(nullptr,new_handle);
     new_mdi->setAttribute(Qt::WA_DeleteOnClose);
     new_mdi->setWindowTitle(po.get("source").c_str());
-    new_mdi->showMaximized();
+    new_mdi->show();
+    new_mdi->resize(1980,1000);
 
     if(po.has("track"))
+    {
+        if(!std::filesystem::exists(po.get("track")))
+        {
+            std::cout << "ERROR:" << po.get("track") << " does not exist" << std::endl;
+            return 1;
+        }
         new_mdi->tractWidget->load_tracts(QString(po.get("track").c_str()).split(","));
+    }
     QStringList cmd = QString(po.get("cmd").c_str()).split('+');
     for(unsigned int index = 0;index < cmd.size();++index)
     {
@@ -29,6 +37,7 @@ int vis(program_option& po)
             std::cout << "unknown command:" << param[0].toStdString() << std::endl;
             break;
         }
+
     }
 
     if(!po.has("stay_open"))
