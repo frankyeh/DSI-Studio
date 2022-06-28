@@ -83,7 +83,7 @@ void Console::on_run_cmd_clicked()
     program_option po;
     if(!po.parse(ui->cmd_line->text().toStdString()))
     {
-        QMessageBox::information(this,"Error",po.error_msg.c_str());
+        QMessageBox::critical(this,"ERROR",po.error_msg.c_str());
         return;
     }
     if (!po.has("action"))

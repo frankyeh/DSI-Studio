@@ -310,7 +310,7 @@ void TractTableWidget::load_tracts(QStringList filenames)
         addNewTracts(label);
         if(!tract_models.back()->load_from_file(&*sfilename.begin(),false))
         {
-            QMessageBox::information(this,"Error",
+            QMessageBox::critical(this,"ERROR",
                                      QString("Fail to load tracks from %1. \
                                 Please check file access privelige or move file to other location.").arg(QFileInfo(filename).baseName()));
             continue;
@@ -491,13 +491,13 @@ void TractTableWidget::recog_tracks(void)
         return;
     if(!cur_tracking_window.handle->load_track_atlas())
     {
-        QMessageBox::information(this,"Error",cur_tracking_window.handle->error_msg.c_str());
+        QMessageBox::critical(this,"ERROR",cur_tracking_window.handle->error_msg.c_str());
         return;
     }
     std::map<float,std::string,std::greater<float> > sorted_list;
     if(!cur_tracking_window.handle->recognize(tract_models[uint32_t(currentRow())],sorted_list))
     {
-        QMessageBox::information(this,"Error","Cannot recognize tracks.");
+        QMessageBox::critical(this,"ERROR","Cannot recognize tracks.");
         return;
     }
     std::ostringstream out;
@@ -513,7 +513,7 @@ void TractTableWidget::auto_recognition(void)
 {
     if(!cur_tracking_window.handle->load_track_atlas())
     {
-        QMessageBox::information(this,"Error",cur_tracking_window.handle->error_msg.c_str());
+        QMessageBox::critical(this,"ERROR",cur_tracking_window.handle->error_msg.c_str());
         return;
     }
     std::vector<unsigned int> c,new_c;
@@ -545,7 +545,7 @@ void TractTableWidget::recognize_rename(void)
 {
     if(!cur_tracking_window.handle->load_track_atlas())
     {
-        QMessageBox::information(this,"Error",cur_tracking_window.handle->error_msg.c_str());
+        QMessageBox::critical(this,"ERROR",cur_tracking_window.handle->error_msg.c_str());
         return;
     }
     progress prog_("Recognize and rename");
@@ -1260,7 +1260,7 @@ void TractTableWidget::delete_tract(void)
 {
     if(progress::running())
     {
-        QMessageBox::information(this,"Error","Please wait for the termination of data processing");
+        QMessageBox::critical(this,"ERROR","Please wait for the termination of data processing");
         return;
     }
     delete_row(currentRow());
@@ -1271,7 +1271,7 @@ void TractTableWidget::delete_all_tract(void)
 {
     if(progress::running())
     {
-        QMessageBox::information(this,"Error","Please wait for the termination of data processing");
+        QMessageBox::critical(this,"ERROR","Please wait for the termination of data processing");
         return;
     }
     command("delete_all_tract");

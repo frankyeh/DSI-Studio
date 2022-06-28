@@ -95,7 +95,7 @@ void MainWindow::openFile(QString file_name)
     {
         if(file_name[0] == '-') // Mac pass a variable
             return;
-        QMessageBox::information(this,"Error",QString("Cannot find ") +
+        QMessageBox::critical(this,"ERROR",QString("Cannot find ") +
         file_name + " at current dir: " + QDir::current().dirName());
     }
     else
@@ -319,7 +319,7 @@ void MainWindow::loadSrc(QStringList filenames)
 {
     if(filenames.empty())
     {
-        QMessageBox::information(this,"Error","Cannot find SRC.gz files in the directory. Please create SRC files first.");
+        QMessageBox::critical(this,"ERROR","Cannot find SRC.gz files in the directory. Please create SRC files first.");
         return;
     }
     try
@@ -396,7 +396,7 @@ void MainWindow::on_OpenDICOM_clicked()
         }
         if(filenames.size() == 0)
         {
-            QMessageBox::information(this,"Error","No diffusion data in this subject");
+            QMessageBox::critical(this,"ERROR","No diffusion data in this subject");
             return;
         }
         std::string file_name(subject_file["SUBJECT_study_name"]);
@@ -669,7 +669,7 @@ bool MainWindow::load_db(std::shared_ptr<group_connectometry_analysis>& database
     progress prog_("reading connectometry db");
     if(!database->load_database(filename.toLocal8Bit().begin()))
     {
-        QMessageBox::information(this,"Error",database->error_msg.c_str());
+        QMessageBox::critical(this,"ERROR",database->error_msg.c_str());
         return false;
     }
     return true;

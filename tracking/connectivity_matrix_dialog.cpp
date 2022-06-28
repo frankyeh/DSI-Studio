@@ -107,7 +107,7 @@ void connectivity_matrix_dialog::on_recalculate_clicked()
             }
             if(regions.empty())
             {
-                QMessageBox::information(this,"Error","No checked ROI in the region list. Please assign/check ROIs.");
+                QMessageBox::critical(this,"ERROR","No checked ROI in the region list. Please assign/check ROIs.");
                 return;
             }
             data.set_regions(cur_tracking_window->handle->dim,regions);
@@ -122,7 +122,7 @@ void connectivity_matrix_dialog::on_recalculate_clicked()
                        ui->end_only->currentIndex(),
                        ui->apply_threshold->isChecked() ? ui->network_threshold->value() : 0.0))
     {
-        QMessageBox::information(this,"Error",data.error_msg.c_str());
+        QMessageBox::critical(this,"ERROR",data.error_msg.c_str());
         return;
     }
     data.save_to_image(cm);

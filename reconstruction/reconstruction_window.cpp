@@ -730,7 +730,7 @@ void reconstruction_window::on_add_t1t2_clicked()
     if(add_other_image(handle.get(),QFileInfo(filename).baseName(),filename))
         QMessageBox::information(this,"DSI Studio","File added");
     else
-        QMessageBox::information(this,"Error","Not a valid nifti file");
+        QMessageBox::critical(this,"ERROR","Not a valid nifti file");
 
 }
 
@@ -761,7 +761,7 @@ void reconstruction_window::on_actionReplace_b0_by_T2W_image_triggered()
     gz_nifti in;
     if(!in.load_from_file(filename.toLocal8Bit().begin()) || !in.toLPS(ref))
     {
-        QMessageBox::information(this,"Error","Not a valid nifti file");
+        QMessageBox::critical(this,"ERROR","Not a valid nifti file");
         return;
     }
     in.get_voxel_size(vs);

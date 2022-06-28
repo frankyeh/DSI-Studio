@@ -1020,9 +1020,9 @@ void dicom_parser::load_files(QStringList file_list)
     if(!parse_dwi(file_list,dwi_files))
     {
         if(!src_error_msg.empty())
-            QMessageBox::information(this,"Error",src_error_msg.c_str());
+            QMessageBox::critical(this,"ERROR",src_error_msg.c_str());
         else
-            QMessageBox::information(this,"Error","invalid file format");
+            QMessageBox::critical(this,"ERROR","invalid file format");
         close();
         return;
     }

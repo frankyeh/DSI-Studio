@@ -559,7 +559,7 @@ void group_connectometry::on_load_roi_from_file_clicked()
     gz_nifti nii;
     if(!nii.load_from_file(file.toLocal8Bit().begin()))
     {
-        QMessageBox::information(this,"Error","Invalid nifti file format");
+        QMessageBox::critical(this,"ERROR","Invalid nifti file format");
         return;
     }
     nii.toLPS(I);
@@ -578,7 +578,7 @@ void group_connectometry::on_load_roi_from_file_clicked()
     }
     if(new_roi.empty())
     {
-        QMessageBox::information(this,"Error","The nifti contain no voxel with value greater than 0.");
+        QMessageBox::critical(this,"ERROR","The nifti contain no voxel with value greater than 0.");
         return;
     }
     add_new_roi(QFileInfo(file).baseName(),"Local File",new_roi);

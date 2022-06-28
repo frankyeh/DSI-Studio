@@ -328,13 +328,13 @@ void db_window::on_actionLoad_mask_triggered()
     gz_nifti nii;
     if(!nii.load_from_file(file.toLocal8Bit().begin()))
     {
-        QMessageBox::information(this,"Error","Invalid nifti file format");
+        QMessageBox::critical(this,"ERROR","Invalid nifti file format");
         return;
     }
     nii.toLPS(I);
     if(I.shape() != fp_mask.shape())
     {
-        QMessageBox::information(this,"Error","Inconsistent image dimension. Please use DSI Studio to output the mask.");
+        QMessageBox::critical(this,"ERROR","Inconsistent image dimension. Please use DSI Studio to output the mask.");
         return;
     }
     for(unsigned int i = 0;i < I.size();++i)
@@ -555,14 +555,10 @@ void db_window::on_actionCurrent_Subject_triggered()
         return;
     tipl::image<3> I;
     vbc->handle->db.get_subject_volume(uint32_t(ui->subject_list->currentRow()),I);
-    gz_nifti out;
-    out.set_voxel_size(vbc->handle->vs);
-    out.set_image_transformation(vbc->handle->trans_to_mni);
-    out << I;
-    if(out.save_to_file(filename.toLocal8Bit().begin()))
-        QMessageBox::information(this,"DSI Studio","File exported");
+    if(gz_nifti::save_to_file(filename.toStdString().c_str(),I,vbc->handle->vs,vbc->handle->trans_to_mni,true))
+        QMessageBox::information(this,"File saved",filename);
     else
-        QMessageBox::information(this,"Error","Cannot save file.");
+        QMessageBox::information(this,"ERROR","Cannot save file.");
 }
 
 void db_window::on_actionAll_Subjects_triggered()
@@ -587,7 +583,7 @@ void db_window::on_actionAll_Subjects_triggered()
         out << I;
         if(!out.save_to_file(file_name.toLocal8Bit().begin()))
         {
-            QMessageBox::information(this,"Error","Cannot save file.");
+            QMessageBox::critical(this,"ERROR","Cannot save file.");
             return;
         }
     }
@@ -603,8 +599,10 @@ void db_window::on_actionOpen_Demographics_triggered()
                 "Text or CSV file (*.txt *.csv);;All files (*)");
     if(filename.isEmpty())
         return;
-    if(!vbc->handle->db.parse_demo(filename.toStdString()))
-        QMessageBox::information(this,"ERROR",vbc->handle->db.error_msg.c_str());
+    if(vbc->handle->db.parse_demo(filename.toStdString()))
+        QMessageBox::information(this,"File Saved",filename);
+    else
+        QMessageBox::critical(this,"ERROR",vbc->handle->db.error_msg.c_str());
 }
 
 
@@ -668,7 +666,7 @@ void db_window::on_actionSave_DemoMatched_Image_as_triggered()
     if (filename.isEmpty())
         return;
     if(vbc->handle->db.save_demo_matched_image(param.toStdString(),filename.toStdString()))
-        QMessageBox::information(this,"DSI Studio","File exported");
+        QMessageBox::information(this,"File Saved",param);
     else
         QMessageBox::critical(this,"ERROR",vbc->handle->db.error_msg.c_str());
 

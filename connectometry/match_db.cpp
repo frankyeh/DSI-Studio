@@ -43,7 +43,7 @@ void match_db::on_buttonBox_accepted()
 {
     if(vbc->handle->db.match.empty())
     {
-        QMessageBox::information(this,"Error","Match data first before calculating change");
+        QMessageBox::critical(this,"ERROR","Match data first before calculating change");
         accept();
     }
     unsigned char dif_type = 0;

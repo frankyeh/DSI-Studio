@@ -118,7 +118,7 @@ void tract_report::on_save_report_clicked()
     std::ofstream out(filename.toLocal8Bit().begin());
     if(!out)
     {
-        QMessageBox::information(this,"Error","Cannot write to file");
+        QMessageBox::critical(this,"ERROR","Cannot write to file");
         return;
     }
 

@@ -24,7 +24,7 @@ auto_track::auto_track(QWidget *parent) :
     fib.set_template_id(0);
     if(fib.tractography_name_list.empty())
     {
-        QMessageBox::information(this,"Error",
+        QMessageBox::critical(this,"ERROR",
             QString("Cannot find the template track file ")+QFileInfo(fa_template_list[0].c_str()).baseName()+".tt.gz"
             + " at folder " + QCoreApplication::applicationDirPath()+ "/track Please re-install the DSI Studio package");
     }
@@ -568,9 +568,9 @@ void auto_track::on_run_clicked()
     if(!progress::aborted())
     {
         if(error.empty())
-            QMessageBox::information(this,"DSI Studio","Completed");
+            QMessageBox::information(this,"AutoTrack","Completed");
         else
-            QMessageBox::information(this,"DSI Studio",error.c_str());
+            QMessageBox::critical(this,"ERROR",error.c_str());
     }
     raise(); //  for mac
 }

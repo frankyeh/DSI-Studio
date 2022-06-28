@@ -59,7 +59,7 @@ void AtlasDialog::on_add_atlas_clicked()
 
     if(!handle->atlas_list[atlas_index]->load_from_file())
     {
-        QMessageBox::information(this,"Error",handle->atlas_list[atlas_index]->error_msg.c_str());
+        QMessageBox::critical(this,"ERROR",handle->atlas_list[atlas_index]->error_msg.c_str());
         return;
     }
     progress prog_("adding regions");

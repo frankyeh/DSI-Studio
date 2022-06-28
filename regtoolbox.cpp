@@ -91,7 +91,7 @@ void RegToolBox::on_OpenTemplate_clicked()
     gz_nifti nifti;
     if(!nifti.load_from_file(filename.toStdString()))
     {
-        QMessageBox::information(this,"Error","Invalid file format");
+        QMessageBox::critical(this,"ERROR","Invalid file format");
         return;
     }
     nifti.toLPS(It);
@@ -120,7 +120,7 @@ void RegToolBox::on_OpenSubject_clicked()
     gz_nifti nifti;
     if(!nifti.load_from_file(filename.toStdString()))
     {
-        QMessageBox::information(this,"Error","Invalid file format");
+        QMessageBox::critical(this,"ERROR","Invalid file format");
         return;
     }
     nifti.toLPS(I);
@@ -147,7 +147,7 @@ void RegToolBox::on_OpenSubject2_clicked()
     gz_nifti nifti;
     if(!nifti.load_from_file(filename.toStdString()))
     {
-        QMessageBox::information(this,"Error","Invalid file format");
+        QMessageBox::critical(this,"ERROR","Invalid file format");
         return;
     }
     nifti.toLPS(I2);
@@ -165,7 +165,7 @@ void RegToolBox::on_OpenTemplate2_clicked()
     gz_nifti nifti;
     if(!nifti.load_from_file(filename.toStdString()))
     {
-        QMessageBox::information(this,"Error","Invalid file format");
+        QMessageBox::critical(this,"ERROR","Invalid file format");
         return;
     }
     nifti.toLPS(It2);
@@ -515,7 +515,7 @@ void RegToolBox::on_run_reg_clicked()
 {
     if(I.empty() || It.empty())
     {
-        QMessageBox::information(this,"Error","Please load image first");
+        QMessageBox::critical(this,"ERROR","Please load image first");
         return;
     }
     clear();

@@ -1481,7 +1481,7 @@ void tracking_window::on_addRegionFromAtlas_clicked()
 {
     if(handle->atlas_list.empty())
     {
-        QMessageBox::information(this,"Error","no atlas data");
+        QMessageBox::critical(this,"ERROR","no atlas data");
         raise();
         return;
     }
@@ -1858,7 +1858,7 @@ void tracking_window::on_actionAdjust_Mapping_triggered()
     CustomSliceModel* reg_slice = dynamic_cast<CustomSliceModel*>(current_slice.get());
     if(!reg_slice || !ui->SliceModality->currentIndex())
     {
-        QMessageBox::information(this,"Error","In the region window to the left, select the inserted slides to adjust mapping");
+        QMessageBox::critical(this,"ERROR","In the region window to the left, select the inserted slides to adjust mapping");
         return;
     }
     reg_slice->terminate();
@@ -2068,7 +2068,7 @@ void tracking_window::on_actionLoad_Color_Map_triggered()
     tipl::color_map_rgb new_color_map;
     if(!new_color_map.load_from_file(filename.toStdString().c_str()))
     {
-          QMessageBox::information(this,"Error","Invalid color map format");
+          QMessageBox::critical(this,"ERROR","Invalid color map format");
           return;
     }
     handle->view_item[current_slice->view_id].v2c.set_color_map(new_color_map);
@@ -2223,7 +2223,7 @@ void tracking_window::on_actionOpen_Connectivity_Matrix_triggered()
         tipl::io::mat_read in;
         if(!in.load_from_file(filename.toStdString().c_str()))
         {
-            QMessageBox::information(this,"Error","Please save the MAT file using -v4 option");
+            QMessageBox::critical(this,"ERROR","Please save the MAT file using -v4 option");
             return;
         }
         unsigned int row,col;
@@ -2337,7 +2337,7 @@ void tracking_window::on_enable_auto_track_clicked()
 {
     if(!handle->load_track_atlas())
     {
-        QMessageBox::information(this,"Error",handle->error_msg.c_str());
+        QMessageBox::critical(this,"ERROR",handle->error_msg.c_str());
         return;
     }
     ui->enable_auto_track->setVisible(false);
@@ -2578,12 +2578,12 @@ void tracking_window::on_actionSave_Slices_to_DICOM_triggered()
             in.seekg(0,in.beg);
             if(read_size*sizeof(short) > buf.size())
             {
-                QMessageBox::information(this,"Error","Compressed DICOM is not supported. Please convert DICOM to uncompressed format.");
+                QMessageBox::critical(this,"ERROR","Compressed DICOM is not supported. Please convert DICOM to uncompressed format.");
                 return;
             }
             if(!in.read(&buf[0],int64_t(buf.size())))
             {
-                QMessageBox::information(this,"Error","Read DICOM failed");
+                QMessageBox::critical(this,"ERROR","Read DICOM failed");
                 return;
             }
         }
@@ -2595,7 +2595,7 @@ void tracking_window::on_actionSave_Slices_to_DICOM_triggered()
         std::ofstream out(output_name.toStdString().c_str(),std::ios::binary);
         if(!out)
         {
-            QMessageBox::information(this,"Error","Cannot output DICOM. Please check disk space or output permission.");
+            QMessageBox::critical(this,"ERROR","Cannot output DICOM. Please check disk space or output permission.");
             return;
         }
         out.write(&buf[0],int64_t(buf.size()));
