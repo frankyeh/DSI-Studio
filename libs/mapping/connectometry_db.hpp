@@ -9,7 +9,8 @@ class connectometry_db
 {
 public:
     fib_data* handle = nullptr;
-    std::string report,subject_report,error_msg;
+    std::string report,subject_report;
+    mutable std::string error_msg;
     unsigned int num_subjects = 0;
     bool modified = false;
 
@@ -58,7 +59,7 @@ public:
     void get_subject_vector(unsigned int subject_index,std::vector<float>& subject_vector,
                             const tipl::image<3,int>& fp_mask,float fiber_threshold,bool normalize_fp) const;
     void get_dif_matrix(std::vector<float>& matrix,const tipl::image<3,int>& fp_mask,float fiber_threshold,bool normalize_fp);
-    void save_subject_vector(const char* output_name,
+    bool save_subject_vector(const char* output_name,
                              const tipl::image<3,int>& fp_mask,
                              float fiber_threshold,
                              bool normalize_fp) const;
