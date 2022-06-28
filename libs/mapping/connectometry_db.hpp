@@ -66,6 +66,7 @@ public:
     void get_subject_slice(unsigned int subject_index,unsigned char dim,unsigned int pos,
                             tipl::image<2,float>& slice) const;
     bool get_demo_matched_volume(const std::string& matched_demo,tipl::image<3>& volume) const;
+    bool save_demo_matched_image(const std::string& matched_demo,const std::string& filename) const;
     void get_subject_volume(unsigned int subject_index,tipl::image<3>& volume) const;
     void get_subject_fa(unsigned int subject_index,std::vector<std::vector<float> >& fa_data,bool normalize_qa) const;
     bool get_qa_profile(const char* file_name,std::vector<std::vector<float> >& data);
