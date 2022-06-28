@@ -309,15 +309,17 @@ void CreateDBDialog::on_create_data_base_clicked()
             progress::show(QFileInfo(group[index]).baseName().toStdString().c_str());
             if(!data->handle->db.add_subject_file(group[index].toStdString(),get_file_name(group[index]).toStdString()))
             {
-                QMessageBox::critical(this,"ERROR",data->handle->error_msg.c_str());
+                QMessageBox::critical(this,"ERROR",data->handle->db.error_msg.c_str());
                 raise(); // for Mac
                 return;
             }
         }
         if(progress::aborted())
             return;
-        data->handle->db.save_db(ui->output_file_name->text().toStdString().c_str());
-        QMessageBox::information(this,"completed","Connectometry database created");
+        if(!data->handle->db.save_db(ui->output_file_name->text().toStdString().c_str()))
+            QMessageBox::critical(this,"ERROR",data->handle->db.error_msg.c_str());
+        else
+            QMessageBox::information(this,"Connectometry database created",ui->output_file_name->text());
     }
     else
     {
