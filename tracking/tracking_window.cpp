@@ -2829,7 +2829,7 @@ void tracking_window::on_actionManual_Atlas_Alignment_triggered()
 {
     if(!handle->load_template())
     {
-        QMessageBox::information(this,"ERROR",handle->error_msg.c_str());
+        QMessageBox::critical(this,"ERROR",handle->error_msg.c_str());
         return ;
     }
     tipl::image<3> iso_fa;

@@ -488,12 +488,12 @@ void db_window::on_actionAdd_DB_triggered()
         progress prog_("adding data");
         if(!handle->load_from_file(filenames[i].toStdString().c_str()))
         {
-            QMessageBox::information(this,"ERROR",handle->error_msg.c_str());
+            QMessageBox::critical(this,"ERROR",handle->error_msg.c_str());
             return;
         }
         if(!handle->is_qsdr)
         {
-            QMessageBox::information(this,"ERROR",filenames[i] + " is not from the QSDR reconstruction.");
+            QMessageBox::critical(this,"ERROR",filenames[i] + " is not from the QSDR reconstruction.");
             break;
         }
 
@@ -501,7 +501,7 @@ void db_window::on_actionAdd_DB_triggered()
         {
             if(!vbc->handle->db.add_db(handle->db))
             {
-                QMessageBox::information(this,"ERROR",vbc->handle->db.error_msg.c_str());
+                QMessageBox::critical(this,"ERROR",vbc->handle->db.error_msg.c_str());
                 break;
             }
             continue;
@@ -558,7 +558,7 @@ void db_window::on_actionCurrent_Subject_triggered()
     if(gz_nifti::save_to_file(filename.toStdString().c_str(),I,vbc->handle->vs,vbc->handle->trans_to_mni,true))
         QMessageBox::information(this,"File saved",filename);
     else
-        QMessageBox::information(this,"ERROR","Cannot save file.");
+        QMessageBox::critical(this,"ERROR","Cannot save file.");
 }
 
 void db_window::on_actionAll_Subjects_triggered()
@@ -610,7 +610,7 @@ void db_window::on_actionSave_Demographics_triggered()
 {
     if(vbc->handle->db.demo.empty())
     {
-        QMessageBox::information(this,"ERROR","No demographic data in the database");
+        QMessageBox::critical(this,"ERROR","No demographic data in the database");
         return;
     }
     QString filename = QFileDialog::getSaveFileName(
@@ -629,7 +629,7 @@ void db_window::on_actionSave_DemoMatched_Image_as_triggered()
 {
     if(vbc->handle->db.demo.empty())
     {
-        QMessageBox::information(this,"ERROR","No demographic data in the database");
+        QMessageBox::critical(this,"ERROR","No demographic data in the database");
         return;
     }
 

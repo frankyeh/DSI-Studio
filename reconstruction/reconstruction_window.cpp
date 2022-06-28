@@ -310,7 +310,7 @@ void reconstruction_window::Reconstruction(unsigned char method_id,bool prompt)
     auto vs = handle->voxel.vs; // for QSDR
     if (!handle->reconstruction())
     {
-        QMessageBox::information(this,"ERROR",handle->error_msg.c_str());
+        QMessageBox::critical(this,"ERROR",handle->error_msg.c_str());
         return;
     }
     handle->voxel.dim = dim_backup;
