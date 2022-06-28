@@ -805,6 +805,19 @@ bool connectometry_db::get_demo_matched_volume(const std::string& matched_demo,t
     volume.swap(I);
     return true;
 }
+bool connectometry_db::save_demo_matched_image(const std::string& matched_demo,const std::string& filename) const
+{
+    tipl::image<3> I;
+    if(!get_demo_matched_volume(matched_demo,I))
+        return false;
+    if(!gz_nifti::save_to_file(filename.c_str(),I,handle->vs,handle->trans_to_mni,true,matched_demo.c_str()))
+    {
+        handle->error_msg = "Cannot save file to ";
+        handle->error_msg += filename;
+        return false;
+    }
+    return true;
+}
 void connectometry_db::get_subject_volume(unsigned int subject_index,tipl::image<3>& volume) const
 {
     tipl::image<3> I(handle->dim);
