@@ -41,7 +41,7 @@ jobs:
     - name: Install Cuda
       uses: Jimver/cuda-toolkit@v0.2.5
       with:
-        cuda: '10.0'
+        cuda: '10.2.89'
     - name: Install Ninja and CMake
       run: |    
         choco install ninja cmake
@@ -79,7 +79,7 @@ jobs:
     - name: Zip Release
       uses: TheDoctor0/zip-release@0.6.0
       with:
-        filename: dsi_studio_win_cuda10_sm${{ matrix.arch }}.zip
+        filename: dsi_studio_win_cuda10.2.89_sm${{ matrix.arch }}.zip
         exclusions: .git
         path: dsi_studio_win
     - name: Create Release
