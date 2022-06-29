@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 3.19)
 if(CUDA_ARCH)
+    set(CMAKE_CUDA_STANDARD 14)
     project(DSI_Studio VERSION "2022.01.17" LANGUAGES CUDA CXX;C)
 else()
     project(DSI_Studio VERSION "2022.01.17" LANGUAGES CXX;C)
