@@ -259,8 +259,6 @@ int run_cmd(int ac, char *av[])
             std::cout << po.error_msg << std::endl;
             return 1;
         }
-        if(po.has("version"))
-            return 0;
         if (!po.has("action"))
         {
             std::cout << "invalid command, use --help for more detail" << std::endl;
