@@ -126,15 +126,15 @@ Label/Show Track Label/show_track_label/Off:On/1
 Label/Track Label Location/show_track_label_location/With Track:Middle:Middle Bottom/0
 Label/Track Label Color/track_label_color/color/9868955
 Label/Track Label Bold/track_label_bold/Off:On/1
-Label/Tract Label Size/track_label_size/int:2:24:2/12
+Label/Tract Label Size/track_label_size/int:2:100:2/12
 Label/Show Region Label/show_region_label/Off:On/1
 Label/Region Label Color/region_label_color/color/9868955
 Label/Region Label Bold/region_label_bold/Off:On/1
-Label/Region Label Size/region_label_size/int:2:24:2/12
+Label/Region Label Size/region_label_size/int:2:100:2/12
 Label/Show Device Label/show_device_label/Off:On/1
 Label/Device Color/device_label_color/color/9868955
 Label/Device Bold/device_label_bold/Off:On/1
-Label/Device Size/device_label_size/int:2:24:2/12
+Label/Device Size/device_label_size/int:2:100:2/12
 Label/Axis/show_directional_axis/Off:On/0
 Label/Axis Line Thickness/axis_line_thickness/float:1.0:20.0:0.5:1/10
 Label/Axis Line Length/axis_line_length/float:1.0:10.0:0.5:1/5
