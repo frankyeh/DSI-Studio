@@ -274,7 +274,6 @@ bool output_odfs(const tipl::image<3,unsigned char>& mni_mask,
     image_model.voxel.dim = mni_mask.shape();
     image_model.voxel.ti = ti;
     image_model.voxel.max_fiber_number = 5;
-    image_model.voxel.odf_resolving = true;
     image_model.voxel.output_odf = record_odf;
     image_model.file_name = out_name;
     image_model.voxel.mask = mni_mask;
