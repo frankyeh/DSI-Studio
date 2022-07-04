@@ -3,6 +3,27 @@
 #include "connectometry_db.hpp"
 #include "fib_data.hpp"
 
+bool parse_age_sex(const std::string& file_name,std::string& age,std::string& sex)
+{
+    // look for _M020Y_
+    for(size_t j = 0;j+6 < file_name.size();++j)
+    {
+        if(file_name[j] == '_' &&
+           (file_name[j+1] == 'M' || file_name[j+1] == 'F') &&
+           file_name[j+2] >= '0' && file_name[j+2] <= '9' &&
+           file_name[j+3] >= '0' && file_name[j+3] <= '9' &&
+           file_name[j+4] >= '0' && file_name[j+4] <= '9' &&
+           file_name[j+5] == 'Y' &&
+           file_name[j+6] == '_')// find two underscore
+        {
+            age = std::string(file_name.begin()+int(j)+2,file_name.begin()+int(j)+5); // age
+            sex = (file_name[j+1] == 'M' ? "1":"0");
+            return true;
+        }
+    }
+    return false;
+}
+
 bool connectometry_db::read_db(fib_data* handle_)
 {
     handle = handle_;
@@ -90,29 +111,16 @@ bool connectometry_db::read_db(fib_data* handle_)
         demo += "Age,Sex\n";
         for(size_t i = 0;i < subject_names.size();++i)
         {
-            bool found = false;
-            // look for _M020Y_
-            for(size_t j = 0;j+6 < subject_names[i].size();++j)
-                if(subject_names[i][j] == '_' &&
-                   (subject_names[i][j+1] == 'M' || subject_names[i][j+1] == 'F') &&
-                   subject_names[i][j+2] >= '0' && subject_names[i][j+2] <= '9' &&
-                   subject_names[i][j+3] >= '0' && subject_names[i][j+3] <= '9' &&
-                   subject_names[i][j+4] >= '0' && subject_names[i][j+4] <= '9' &&
-                   subject_names[i][j+5] == 'Y' &&
-                   subject_names[i][j+6] == '_')// find two underscore
-                {
-                    demo += std::string(subject_names[i].begin()+j+2,subject_names[i].begin()+j+5); // age
-                    demo += ",";
-                    demo += (subject_names[i][j+1] == 'M' ? "1":"0");
-                    demo += "\n";
-                    found = true;
-                    break;
-                }
-            if(!found)
+            std::string age,sex;
+            if(!parse_age_sex(subject_names[i],age,sex))
             {
                 demo.clear();
                 break;
             }
+            demo += age;
+            demo += ",";
+            demo += sex;
+            demo += "\n";
         }
         if(!demo.empty() && !parse_demo())
             demo.clear();
@@ -761,6 +769,7 @@ void connectometry_db::get_subject_slice(unsigned int subject_index,unsigned cha
         if(tmp[index])
             slice[index] = subject_qa[subject_index][tmp[index]];
 }
+
 bool connectometry_db::get_demo_matched_volume(const std::string& matched_demo,tipl::image<3>& volume) const
 {
     if(demo.empty())
@@ -769,19 +778,33 @@ bool connectometry_db::get_demo_matched_volume(const std::string& matched_demo,t
         return false;
     }
     std::vector<double> v;
+    std::string age,sex;
 
+    if(feature_location.size() == 2 && parse_age_sex(matched_demo,age,sex))
+    {
+        v.push_back(std::stoi(age));
+        v.push_back(std::stoi(sex));
+        std::cout << "matching " << feature_titles[0] << ":" << age << " " <<
+                                    feature_titles[1] << ":" << sex << std::endl;
+    }
+    else
     {
         std::istringstream in(matched_demo);
         std::string str;
         std::copy(std::istream_iterator<double>(in),
                   std::istream_iterator<double>(),
                   std::back_inserter(v));
+
         if(v.size() != feature_location.size())
         {
             error_msg = "invalid demographic input: ";
             error_msg += matched_demo;
             return false;
         }
+        std::cout << "matching ";
+        for(size_t i = 0;i < feature_titles.size();++i)
+            std::cout << feature_titles[i] << ":" << v[i] << " ";
+        std::cout << std::endl;
     }
     size_t feature_size = 1+feature_location.size(); // +1 for intercept
     tipl::multiple_regression<double> mr;
