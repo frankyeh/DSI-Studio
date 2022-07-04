@@ -27,6 +27,11 @@ std::vector<std::string> fa_template_list,
                          track_atlas_file_list;
 std::vector<std::vector<std::string> > template_atlas_list;
 
+class CustomSliceModel;
+extern std::shared_ptr<CustomSliceModel> t1t2_slices;
+std::shared_ptr<CustomSliceModel> t1t2_slices;
+extern std::vector<std::shared_ptr<CustomSliceModel> > other_slices;
+std::vector<std::shared_ptr<CustomSliceModel> > other_slices;
 
 int rec(program_option& po);
 int trk(program_option& po);
@@ -302,6 +307,8 @@ int run_cmd(int ac, char *av[])
         for (size_t i = 0;i < source_files.size();++i)
         {
             std::cout << "Process file:" << source_files[i] << std::endl;
+            t1t2_slices.reset();
+            other_slices.clear();
             po.set("source",source_files[i]);
             // apply '*' to other arguments
             for(const auto& wildcard : wildcard_list)
