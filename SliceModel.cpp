@@ -298,6 +298,40 @@ bool CustomSliceModel::initialize(const std::vector<std::string>& files,bool is_
             has_transform = true;
         }
     }
+    // load and match demographics DB file
+    if(source_images.empty() && files[0].find(".db.fib.gz") != std::string::npos)
+    {
+        std::shared_ptr<fib_data> db_handle(new fib_data);
+        if(!db_handle->load_from_file(files[0].c_str()) || !db_handle->db.has_db())
+        {
+            error_msg = db_handle->error_msg;
+            return false;
+        }
+        if(handle->fib_file_name.find("_M") == std::string::npos ||
+           handle->fib_file_name.find("Y_") == std::string::npos)
+        {
+            error_msg = "FIB file name does not provide age and sex information.";
+            return false;
+        }
+        if(!db_handle->db.get_demo_matched_volume(QFileInfo(handle->fib_file_name.c_str()).baseName().toStdString(),source_images))
+        {
+            error_msg = db_handle->db.error_msg;
+            return false;
+        }
+        vs = db_handle->vs;
+        trans = db_handle->trans_to_mni;
+        if(!handle->mni2sub(source_images,trans))
+        {
+            error_msg = handle->error_msg;
+            return false;
+        }
+        T.identity();
+        invT.identity();
+        is_diffusion_space = true;
+        has_transform = true;
+    }
+
+
     // load nifti file
     if(source_images.empty() && files[0].find(".nii") != std::string::npos)
     {
