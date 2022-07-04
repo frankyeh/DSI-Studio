@@ -2010,7 +2010,7 @@ bool tracking_window::addSlices(QStringList filenames,QString name,bool cmd)
     if(!reg_slice_ptr->initialize(files))
     {
         if(!cmd)
-            QMessageBox::information(this,"DSI Studio",reg_slice_ptr->error_msg.c_str());
+            QMessageBox::critical(this,"ERROR",reg_slice_ptr->error_msg.c_str());
         else
             std::cout << reg_slice_ptr->error_msg << std::endl;
         return false;
@@ -2146,7 +2146,7 @@ void tracking_window::on_addSlices_clicked()
 {
     QStringList filenames = QFileDialog::getOpenFileNames(
         this,"Open Images files",QFileInfo(windowTitle()).absolutePath(),
-                "Image files (*.dcm *.hdr *.nii *nii.gz 2dseq);;Histology (*.jpg *.tif);;All files (*)" );
+                "Image files (*.dcm *.hdr *.nii *nii.gz *db.fib.gz 2dseq);;Histology (*.jpg *.tif);;All files (*)" );
     if( filenames.isEmpty())
         return;
     if(QFileInfo(filenames[0]).completeSuffix() == "dcm" && filenames.size() == 1)
