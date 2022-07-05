@@ -307,8 +307,10 @@ int run_cmd(int ac, char *av[])
         for (size_t i = 0;i < source_files.size();++i)
         {
             std::cout << "Process file:" << source_files[i] << std::endl;
+            // clear --t1t2 and --other_slices
             t1t2_slices.reset();
             other_slices.clear();
+
             po.set("source",source_files[i]);
             // apply '*' to other arguments
             for(const auto& wildcard : wildcard_list)
@@ -326,6 +328,11 @@ int run_cmd(int ac, char *av[])
                 po.set(wildcard.first.c_str(),apply_wildcard);
             }
             po.set_used(0);
+            if(po.has("output") && std::filesystem::exists(po.get("output")))
+            {
+                std::cout << "output " << po.get("output") << " exists. Skipping..." << std::endl;
+                continue;
+            }
             if(run_action(po,gui) == 1)
             {
                 std::cout << "Terminated due to error." << std::endl;
