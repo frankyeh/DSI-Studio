@@ -308,8 +308,8 @@ bool CustomSliceModel::initialize(const std::vector<std::string>& files,bool is_
             return false;
         }
         auto fib_file_name = QFileInfo(handle->fib_file_name.c_str()).baseName().toStdString();
-        if(fib_file_name.find("_M") == std::string::npos ||
-           fib_file_name.find("Y_") == std::string::npos)
+        if(fib_file_name.find("_M") == std::string::npos &&
+           fib_file_name.find("_F") == std::string::npos)
         {
             error_msg = "The FIB file name ";
             error_msg += fib_file_name;
