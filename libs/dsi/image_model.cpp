@@ -975,7 +975,7 @@ void ImageModel::correct_motion(bool eddy)
         {
             if(!id)
                 progress::at(i,src_bvalues.size());
-            rotate_one_dwi(i,tipl::transformation_matrix<double>(args[i],voxel.dim,voxel.vs,voxel.dim,voxel.vs));
+            rotate_one_dwi(i,tipl::transformation_matrix<double>(new_args[i],voxel.dim,voxel.vs,voxel.dim,voxel.vs));
         });
     }
 }
