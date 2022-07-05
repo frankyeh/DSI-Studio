@@ -41,7 +41,7 @@ bool check_other_slices(const std::string& other_slices_name,std::shared_ptr<fib
         }
         if(!new_slice->initialize(filenames[i],QFileInfo(filenames[i].c_str()).baseName().toLower().contains("mni")))
         {
-            std::cout << "ERROR: fail to load " << filenames[i] << std::endl;
+            std::cout << "ERROR: fail to load " << filenames[i] << ":" << new_slice->error_msg << std::endl;
             return false;
         }
         if(new_slice->thread.get())
