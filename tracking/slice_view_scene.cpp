@@ -129,7 +129,7 @@ void get_tic_pos(std::vector<float>& tic_pos,
     for(float pos = from;pos < to;pos += tic_dis)
     {
         float pos_in_voxel = float(pos-shift)/scale;
-        pos_in_voxel = zoom*float(flip ? float(shape_length)-pos_in_voxel : pos_in_voxel);
+        pos_in_voxel = zoom*float(flip ? float(shape_length)-pos_in_voxel-1 : pos_in_voxel);
         if(pos_in_voxel < margin1 || pos_in_voxel + margin2 > window_length)
             continue;
         tic_pos.push_back(pos_in_voxel);
@@ -348,11 +348,12 @@ void slice_view_scene::show_pos(QPainter& painter,std::shared_ptr<SliceModel> cu
     current_slice->get_other_slice_pos(cur_dim,x_pos, y_pos);
     x_pos = int((float(x_pos) + 0.5f)*display_ratio);
     y_pos = int((float(y_pos) + 0.5f)*display_ratio);
-    painter.setPen(QColor(255,move_slice?255:0,move_slice ? 255:0));
-    painter.drawLine(x_pos,0,x_pos,std::max<int>(0,y_pos-20));
-    painter.drawLine(x_pos,std::min<int>(y_pos+20,int(slice_image.height()*display_ratio)),x_pos,int(slice_image.height()*display_ratio));
-    painter.drawLine(0,y_pos,std::max<int>(0,x_pos-20),y_pos);
-    painter.drawLine(std::min<int>(x_pos+20,int(slice_image.width()*display_ratio)),y_pos,int(slice_image.width()*display_ratio),y_pos);
+    auto pen = painter.pen();
+    pen.setColor(QColor(255,move_slice?255:0,move_slice ? 255:0,0x70));
+    pen.setWidth(display_ratio);
+    painter.setPen(pen);
+    painter.drawLine(x_pos,0,x_pos,int(slice_image.height()*display_ratio));
+    painter.drawLine(0,y_pos,int(slice_image.width()*display_ratio),y_pos);
 }
 
 void slice_view_scene::manage_slice_orientation(QImage& slice,QImage& new_slice,unsigned char cur_dim)
