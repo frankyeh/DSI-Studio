@@ -256,6 +256,13 @@ void manual_alignment::param_changed()
 }
 
 
+void draw_ruler(QPainter& paint,
+                const tipl::shape<3>& shape,
+                const tipl::matrix<4,4>& trans,
+                unsigned char cur_dim,
+                bool flip_x,bool flip_y,
+                float zoom,
+                bool grid = false);
 
 void manual_alignment::slice_pos_moved()
 {
@@ -285,6 +292,9 @@ void manual_alignment::slice_pos_moved()
                         scaled(buffer[dim].width()*ratio,buffer[dim].height()*ratio);
         if(dim != 2)
             slice_image[dim] = slice_image[dim].mirrored();
+        QPainter painter(&slice_image[dim]);
+        draw_ruler(painter,to.shape(),nifti_srow,
+                        dim,dim,dim != 2,ratio,true);
         show_view(scene[dim],slice_image[dim]);
     }
 }
