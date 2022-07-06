@@ -731,12 +731,10 @@ bool view_image::has_flip_y(void)
 }
 
 void draw_ruler(QPainter& paint,
-                tipl::shape<3> shape,
-                tipl::vector<3> qsdr_scale,
-                tipl::vector<3> qsdr_shift,
+                const tipl::shape<3>& shape,
+                const tipl::matrix<4,4>& trans,
                 unsigned char cur_dim,
-                bool flip_x,
-                bool flip_y,
+                bool flip_x,bool flip_y,
                 float zoom,
                 bool grid = false);
 void view_image::show_image(void)
@@ -772,15 +770,7 @@ void view_image::show_image(void)
         paint.setPen(pen);
         paint.setFont(font());
 
-        tipl::vector<3> qsdr_scale(1.0f,1.0f,1.0f);
-        tipl::vector<3> qsdr_shift(0.0f,0.0f,0.0f);
-
-        if(ui->orientation->currentIndex())
-        {
-            qsdr_scale = tipl::vector<3>(T[0],T[5],T[10]);
-            qsdr_shift = tipl::vector<3>(T[3],T[7],T[11]);
-        }
-        draw_ruler(paint,data.shape(),qsdr_scale,qsdr_shift,cur_dim,
+        draw_ruler(paint,data.shape(),(ui->orientation->currentIndex()) ? T : tipl::matrix<4,4>(tipl::identity_matrix()),cur_dim,
                         has_flip_x(),has_flip_y(),source_ratio,ui->axis_grid->currentIndex());
     }
 
