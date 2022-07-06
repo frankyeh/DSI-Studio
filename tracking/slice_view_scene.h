@@ -55,6 +55,7 @@ public:
     void paint_image(QImage& I,bool simple);
     void paint_image(void);
 public:
+    bool show_grid = false;
     void new_annotated_image(void);
     void show_ruler2(QPainter& painter);
     void show_ruler(QPainter& painter,std::shared_ptr<SliceModel> current_slice,unsigned char cur_dim);
