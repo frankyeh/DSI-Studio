@@ -1849,7 +1849,11 @@ void tracking_window::on_show_ruler_toggled(bool checked)
 {
     ui->show_ruler->setChecked(checked);
     if(ui->show_ruler->isChecked() ^ (*this)["roi_ruler"].toBool())
+    {
+        if(ui->show_ruler->isChecked())
+            scene.show_grid = !scene.show_grid;
         set_data("roi_ruler",ui->show_ruler->isChecked());
+    }
     slice_need_update = true;
 }
 
