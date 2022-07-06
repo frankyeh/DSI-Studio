@@ -176,7 +176,7 @@ void draw_ruler(QPainter& paint,
     pen1.setCapStyle(Qt::RoundCap);
     pen1.setJoinStyle(Qt::RoundJoin);
     pen2.setColor(QColor(0xFF, 0xFF, 0xFF, 0x70));
-    pen2.setWidth(std::max<int>(1,int(zoom_2))*3);
+    pen2.setWidth(std::max<int>(1,int(zoom)));
     pen2.setCapStyle(Qt::RoundCap);
     pen2.setJoinStyle(Qt::RoundJoin);
     paint.setPen(pen1);
@@ -266,7 +266,7 @@ void slice_view_scene::show_ruler(QPainter& paint,std::shared_ptr<SliceModel> cu
     draw_ruler(paint,current_slice->dim,trans,cur_dim,
                cur_tracking_window.slice_view_flip_x(cur_dim),
                cur_tracking_window.slice_view_flip_y(cur_dim),
-               cur_tracking_window.get_scene_zoom(current_slice));
+               cur_tracking_window.get_scene_zoom(current_slice),show_grid);
 
 }
 void slice_view_scene::show_fiber(QPainter& painter,std::shared_ptr<SliceModel> current_slice,const tipl::color_image& slice_image,unsigned char cur_dim)
