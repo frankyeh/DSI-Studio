@@ -342,12 +342,11 @@
    </widget>
    <widget class="QMenu" name="menuResize">
     <property name="title">
-     <string>&amp;Edit</string>
+     <string>&amp;Volume</string>
     </property>
     <addaction name="actionResample"/>
     <addaction name="actionResize"/>
     <addaction name="actionTrim"/>
-    <addaction name="separator"/>
     <addaction name="actionTranslocate"/>
     <addaction name="separator"/>
     <addaction name="actionDownsample_by_2"/>
@@ -370,7 +369,7 @@
    </widget>
    <widget class="QMenu" name="menu_Intensity">
     <property name="title">
-     <string>&amp;Signals</string>
+     <string>&amp;Values</string>
     </property>
     <addaction name="actionIntensity_shift"/>
     <addaction name="actionIntensity_scale"/>
@@ -380,28 +379,33 @@
     <addaction name="actionMinus_Image"/>
     <addaction name="actionImageMultiplication"/>
     <addaction name="separator"/>
-    <addaction name="actionSignal_Smoothing"/>
-    <addaction name="actionSobel"/>
-    <addaction name="separator"/>
     <addaction name="actionThreshold"/>
     <addaction name="actionUpper_Threshold"/>
     <addaction name="actionLower_threshold"/>
-    <addaction name="separator"/>
-    <addaction name="actionMorphology_Defragment"/>
-    <addaction name="actionMorphology_Dilation"/>
-    <addaction name="actionMorphology_Erosion"/>
-    <addaction name="actionMorphology_XY"/>
-    <addaction name="actionMorphology_XZ"/>
-    <addaction name="separator"/>
    </widget>
    <widget class="QMenu" name="menuOverlay">
     <property name="title">
      <string>Overlay</string>
     </property>
    </widget>
+   <widget class="QMenu" name="menuMorphology">
+    <property name="title">
+     <string>&amp;Morphology</string>
+    </property>
+    <addaction name="actionSignal_Smoothing"/>
+    <addaction name="separator"/>
+    <addaction name="actionMorphology_Defragment"/>
+    <addaction name="actionMorphology_Dilation"/>
+    <addaction name="actionMorphology_Erosion"/>
+    <addaction name="separator"/>
+    <addaction name="actionSobel"/>
+    <addaction name="actionMorphology_XY"/>
+    <addaction name="actionMorphology_XZ"/>
+   </widget>
    <addaction name="menu_File"/>
    <addaction name="menuResize"/>
    <addaction name="menu_Intensity"/>
+   <addaction name="menuMorphology"/>
    <addaction name="menu_Header"/>
    <addaction name="menuOverlay"/>
   </widget>
@@ -431,7 +435,7 @@
   </action>
   <action name="actionTranslocate">
    <property name="text">
-    <string>Translocate...</string>
+    <string>Translocation</string>
    </property>
   </action>
   <action name="actionTrim">
@@ -481,12 +485,12 @@
   </action>
   <action name="actionNormalize_Intensity">
    <property name="text">
-    <string>Normalize Intensity</string>
+    <string>Normalize</string>
    </property>
   </action>
   <action name="actionSobel">
    <property name="text">
-    <string>Edge</string>
+    <string>Sobel</string>
    </property>
   </action>
   <action name="actionMorphology_Thin">
@@ -496,12 +500,12 @@
   </action>
   <action name="actionMorphology_XY">
    <property name="text">
-    <string>Morphology XY Edge</string>
+    <string>Edge XY</string>
    </property>
   </action>
   <action name="actionMorphology_XZ">
    <property name="text">
-    <string>Morphology XZ Edge</string>
+    <string>Edge XZ</string>
    </property>
   </action>
   <action name="actionSave">
@@ -528,12 +532,12 @@
   </action>
   <action name="actionDownsample_by_2">
    <property name="text">
-    <string>Downsample by 2</string>
+    <string>Downsampling</string>
    </property>
   </action>
   <action name="actionUpsample_by_2">
    <property name="text">
-    <string>Upsample by 2</string>
+    <string>Upsampling</string>
    </property>
   </action>
   <action name="actionFlip_X">
@@ -577,7 +581,7 @@
   </action>
   <action name="actionMorphology_Dilation">
    <property name="text">
-    <string>Morphology Dilation</string>
+    <string>Dilation</string>
    </property>
   </action>
   <action name="actionThreshold">
@@ -587,12 +591,12 @@
   </action>
   <action name="actionMorphology_Defragment">
    <property name="text">
-    <string>Morphology Defragment</string>
+    <string>Defragment</string>
    </property>
   </action>
   <action name="actionMorphology_Erosion">
    <property name="text">
-    <string>Morphology Erosion</string>
+    <string>Erosion</string>
    </property>
   </action>
  </widget>
