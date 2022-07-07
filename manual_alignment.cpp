@@ -6,14 +6,6 @@
 #include "tracking/tracking_window.h"
 
 void show_view(QGraphicsScene& scene,QImage I);
-bool is_label_image(const tipl::image<3>& I)
-{
-    for(size_t i = 0;i < I.size();++i)
-        if(std::floor(I[i]) < I[i] || I[i] > 10000.0f)
-            return false;
-    return true;
-}
-
 bool adjust_vs(const tipl::image<3,float>& from,
                const tipl::vector<3>& from_vs,
                const tipl::image<3,float>& to,
@@ -438,7 +430,7 @@ void manual_alignment::on_actionSave_Warpped_Image_triggered()
         return;
 
     tipl::image<3> I(to.shape());
-    if(is_label_image(from_original))
+    if(tipl::is_label_image(from_original))
         tipl::resample_mt<tipl::interpolation::nearest>(from_original,I,iT);
     else
         tipl::resample_mt<tipl::interpolation::cubic>(from_original,I,iT);
@@ -520,7 +512,7 @@ void manual_alignment::on_actionApply_Transformation_triggered()
     }
 
     tipl::image<3> I(to.shape());
-    if(is_label_image(from))
+    if(tipl::is_label_image(from))
         tipl::resample_mt<tipl::interpolation::nearest>(from,I,iT);
     else
         tipl::resample_mt<tipl::interpolation::cubic>(from,I,iT);
