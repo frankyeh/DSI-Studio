@@ -566,7 +566,6 @@ void get_roi_label(QString file_name,std::map<int,std::string>& label_map,std::m
     }
     std::cout << "no label file found. Use default ROI numbering." << std::endl;
 }
-bool is_label_image(const tipl::image<3>& I);
 bool load_nii(std::shared_ptr<fib_data> handle,
               const std::string& file_name,
               std::vector<std::pair<tipl::shape<3>,tipl::matrix<4,4> > >& transform_lookup,
@@ -590,7 +589,7 @@ bool load_nii(std::shared_ptr<fib_data> handle,
     {
         tipl::image<3> tmp;
         header.toLPS(tmp);
-        if(header.is_integer() || is_label_image(tmp))
+        if(header.is_integer() || tipl::is_label_image(tmp))
             from = tmp;
         else
         {
