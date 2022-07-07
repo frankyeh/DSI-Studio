@@ -13,130 +13,6 @@
 #include <filesystem>
 std::map<std::string,std::string> dicom_dictionary;
 std::vector<view_image*> opened_images;
-bool is_label_image(const tipl::image<3>& I);
-
-template<typename F>
-void for_each_label(tipl::image<3>& data,F&& fun)
-{
-    tipl::image<3> result_data(data.shape());
-    uint32_t m = uint32_t(tipl::max_value(data))+1;
-    tipl::par_for(m,[&](uint32_t index)
-    {
-        if(!index)
-            return;
-        tipl::image<3,char> mask(data.shape());
-        for(size_t i = 0;i < mask.size();++i)
-            if(uint32_t(data[i]) == index)
-                mask[i] = 1;
-        fun(mask);
-        for(size_t i = 0;i < mask.size();++i)
-            if(mask[i] && result_data[i] < float(index))
-                result_data[i] = float(index);
-    });
-    data.swap(result_data);
-}
-
-
-bool img_command(tipl::image<3>& data,
-                 tipl::vector<3>& vs,
-                 tipl::matrix<4,4>& T,
-                 bool& is_mni,
-                 std::string cmd,
-                 std::string param1,
-                 std::string,
-                 std::string& error_msg)
-{
-    if(cmd == "translocation")
-    {
-        std::istringstream in(param1);
-        tipl::image<3> new_data(data.shape());
-
-        if(param1.find(".") != std::string::npos)
-        {
-            tipl::transformation_matrix<float> m;
-            m.sr[0] = m.sr[4] = m.sr[8] = 1.0f;
-            in >> m.shift[0] >> m.shift[1] >> m.shift[2];
-            T[3] -= T[0]*m.shift[0];
-            T[7] -= T[5]*m.shift[1];
-            T[11] -= T[10]*m.shift[2];
-            // invert m
-            m.shift[0] = -m.shift[0];
-            m.shift[1] = -m.shift[1];
-            m.shift[2] = -m.shift[2];
-            tipl::resample(data,new_data,m);
-
-        }
-        else
-        {
-            int dx,dy,dz;
-            in >> dx >> dy >> dz;
-            tipl::draw(data,new_data,tipl::vector<3,int>(dx,dy,dz));
-            T[3] -= T[0]*float(dx);
-            T[7] -= T[5]*float(dy);
-            T[11] -= T[10]*float(dz);
-        }
-        data.swap(new_data);
-        return true;
-    }
-    if(cmd == "resize")
-    {
-        std::istringstream in(param1);
-        int w,h,d;
-        in >> w >> h >> d;
-        tipl::image<3> new_data(tipl::shape<3>(w,h,d));
-        tipl::draw(data,new_data,tipl::vector<3,int>(0,0,0));
-        data.swap(new_data);
-        return true;
-    }
-    if(cmd == "image_multiplication" || cmd == "image_addition" || cmd == "image_substraction")
-    {
-        gz_nifti nii;
-        if(!nii.load_from_file(param1.c_str()))
-        {
-            error_msg = "cannot open file:";
-            error_msg += param1;
-            return false;
-        }
-        tipl::image<3> mask;
-        nii.get_untouched_image(mask);
-        if(mask.shape() != data.shape())
-        {
-            error_msg = "invalid mask file:";
-            error_msg += param1;
-            error_msg += " The dimension does not match:";
-            std::ostringstream out;
-            out << mask.shape() << " vs " << data.shape();
-            error_msg += out.str();
-            return false;
-        }
-        if(cmd == "image_multiplication")
-            data *= mask;
-        if(cmd == "image_addition")
-            data += mask;
-        if(cmd == "image_substraction")
-            data -= mask;
-        return true;
-    }
-    if(cmd == "save")
-    {
-        gz_nifti nii;
-        nii.set_image_transformation(T,is_mni);
-        nii.set_voxel_size(vs);
-        nii << data;
-        return nii.save_to_file(param1.c_str());
-    }
-    if(cmd == "open")
-    {
-        gz_nifti nii;
-        if(!nii.load_from_file(param1.c_str()))
-            return false;
-        nii.get_image_transformation(T);
-        nii.get_voxel_size(vs);
-        is_mni = nii.is_mni();
-        nii >> data;
-    }
-    return false;
-}
 
 
 std::string common_prefix(const std::string& str1,const std::string& str2)
@@ -218,11 +94,14 @@ bool match_files(const std::string& file_path1,const std::string& file_path2,
     std::cout << "matching " << file_path1_others << " with " << file_path2_gen << std::endl;
     return true;
 }
-bool view_image::command(std::string cmd,std::string param1,std::string param2)
+bool view_image::command(std::string cmd,std::string param1)
 {
+    if(data.empty())
+        return true;
     error_msg.clear();
-    if(!img_command(data,vs,T,is_mni,cmd,param1,param2,error_msg))
+    if(!tipl::command<gz_nifti>(data,vs,T,is_mni,cmd,param1,error_msg))
         return false;
+    init_image();
     show_image();
 
     if(!other_data.empty())
@@ -262,7 +141,7 @@ bool view_image::command(std::string cmd,std::string param1,std::string param2)
         for(size_t i = 0;progress::at(i,other_data.size());++i)
         {
             bool mni = other_is_mni[i];
-            if(!img_command(other_data[i],other_vs[i],other_T[i],mni,cmd,other_params[i],param2,error_msg))
+            if(!tipl::command<gz_nifti>(other_data[i],other_vs[i],other_T[i],mni,cmd,other_params[i],error_msg))
             {
                 error_msg += " when processing ";
                 error_msg += QFileInfo(other_file_name[i].c_str()).fileName().toStdString();
@@ -334,6 +213,26 @@ view_image::view_image(QWidget *parent) :
     connect(ui->orientation,SIGNAL(currentIndexChanged(int)),this,SLOT(change_contrast()));
     connect(ui->axis_grid,SIGNAL(currentIndexChanged(int)),this,SLOT(change_contrast()));
     connect(ui->menuOverlay, SIGNAL(aboutToShow()),this, SLOT(update_overlay_menu()));
+
+
+
+    connect(ui->actionMorphology_Defragment, SIGNAL(triggered()),this, SLOT(run_action()));
+    connect(ui->actionMorphology_Dilation, SIGNAL(triggered()),this, SLOT(run_action()));
+    connect(ui->actionMorphology_Erosion, SIGNAL(triggered()),this, SLOT(run_action()));
+    connect(ui->actionSobel, SIGNAL(triggered()),this, SLOT(run_action()));
+    connect(ui->actionMorphology_XY, SIGNAL(triggered()),this, SLOT(run_action()));
+    connect(ui->actionMorphology_XZ, SIGNAL(triggered()),this, SLOT(run_action()));
+    connect(ui->actionFlip_X, SIGNAL(triggered()),this, SLOT(run_action()));
+    connect(ui->actionFlip_Y, SIGNAL(triggered()),this, SLOT(run_action()));
+    connect(ui->actionFlip_Z, SIGNAL(triggered()),this, SLOT(run_action()));
+    connect(ui->actionSwap_XY, SIGNAL(triggered()),this, SLOT(run_action()));
+    connect(ui->actionSwap_XZ, SIGNAL(triggered()),this, SLOT(run_action()));
+    connect(ui->actionSwap_YZ, SIGNAL(triggered()),this, SLOT(run_action()));
+    connect(ui->actionDownsample_by_2, SIGNAL(triggered()),this, SLOT(run_action()));
+    connect(ui->actionUpsample_by_2, SIGNAL(triggered()),this, SLOT(run_action()));
+    connect(ui->actionSignal_Smoothing, SIGNAL(triggered()),this, SLOT(run_action()));
+    connect(ui->actionNormalize_Intensity, SIGNAL(triggered()),this, SLOT(run_action()));
+
 
     source_ratio = 2.0;
     ui->tabWidget->setCurrentIndex(0);
@@ -793,8 +692,6 @@ void view_image::on_zoom_out_clicked()
     source_ratio *= 0.9f;
     show_image();
 }
-
-bool is_label_image(const tipl::image<3>& I);
 void view_image::on_actionResample_triggered()
 {
     bool ok;
@@ -802,29 +699,8 @@ void view_image::on_actionResample_triggered()
         "DSI Studio","Assign output resolution in (mm):", double(vs[0]),0.0,3.0,4, &ok));
     if (!ok || nv == 0.0f)
         return;
-    tipl::vector<3,float> new_vs(nv,nv,nv);
-    tipl::image<3> J(tipl::shape<3>(
-            int(std::ceil(float(data.width())*vs[0]/new_vs[0])),
-            int(std::ceil(float(data.height())*vs[1]/new_vs[1])),
-            int(std::ceil(float(data.depth())*vs[2]/new_vs[2]))));
-    if(J.empty())
-        return;
-    tipl::transformation_matrix<float> T1;
-    tipl::matrix<4,4> nT;
-    nT.identity();
-    nT[0] = T1.sr[0] = new_vs[0]/vs[0];
-    nT[5] = T1.sr[4] = new_vs[1]/vs[1];
-    nT[10] = T1.sr[8] = new_vs[2]/vs[2];
-    if(is_label_image(data))
-        tipl::resample_mt<tipl::interpolation::nearest>(data,J,T1);
-    else
-        tipl::resample_mt<tipl::interpolation::cubic>(data,J,T1);
-    data.swap(J);
-    vs = new_vs;
-    T = T*nT;
-
-    init_image();
-    show_image();
+    if(!command("regrid",std::to_string(nv)))
+        QMessageBox::critical(this,"ERROR",error_msg.c_str());
 }
 void view_image::on_actionSave_triggered()
 {
@@ -891,12 +767,8 @@ void view_image::on_actionResize_triggered()
 
     if(!ok)
         return;
-
     if(!command("resize",param.toStdString()))
         QMessageBox::critical(this,"ERROR",error_msg.c_str());
-
-    init_image();
-    show_image();
 }
 
 void view_image::on_actionTranslocate_triggered()
@@ -909,8 +781,6 @@ void view_image::on_actionTranslocate_triggered()
         return;    
     if(!command("translocation",param.toStdString()))
         QMessageBox::critical(this,"ERROR",error_msg.c_str());
-    init_image();
-    show_image();
 }
 
 void view_image::on_actionTrim_triggered()
@@ -981,102 +851,51 @@ void view_image::on_actionSet_Transformation_triggered()
     show_image();
 }
 
-void view_image::on_actionLower_threshold_triggered()
-{
-    bool ok;
-    QString result = QInputDialog::getText(this,"DSI Studio","Assign lower threshold value ",QLineEdit::Normal,
-                                           "0",&ok);
-    if(!ok)
-        return;
-    float value = result.toFloat(&ok);
-    if(!ok)
-        return;
-
-    for(size_t index = 0;index < data.size();++index)
-        if(data[index] < value)
-            data[index] = value;
-
-    init_image();
-    show_image();
-}
-
-
 void view_image::on_actionIntensity_shift_triggered()
 {
     bool ok;
-    QString result = QInputDialog::getText(this,"DSI Studio","Assign shift value",QLineEdit::Normal,
+    QString value = QInputDialog::getText(this,"DSI Studio","Assign shift value",QLineEdit::Normal,
                                            "0",&ok);
     if(!ok)
         return;
-    float value = result.toFloat(&ok);
-    if(!ok)
-        return;
-
-    data += value;
-
-    init_image();
-    show_image();
+    if(!command("intensity_shift",value.toStdString()))
+        QMessageBox::critical(this,"ERROR",error_msg.c_str());
 }
 
 void view_image::on_actionIntensity_scale_triggered()
 {
     bool ok;
-    QString result = QInputDialog::getText(this,"DSI Studio","Assign scale value",QLineEdit::Normal,
+    QString value = QInputDialog::getText(this,"DSI Studio","Assign scale value",QLineEdit::Normal,
                                            "0",&ok);
     if(!ok)
         return;
-    float value = result.toFloat(&ok);
+    if(!command("intensity_scale",value.toStdString()))
+        QMessageBox::critical(this,"ERROR",error_msg.c_str());
+}
+
+void view_image::on_actionLower_threshold_triggered()
+{
+    bool ok;
+    QString value = QInputDialog::getText(this,"DSI Studio","Assign lower threshold value ",QLineEdit::Normal,
+                                           "0",&ok);
     if(!ok)
         return;
-
-    data *= value;
-
-    init_image();
-    show_image();
+    if(!command("lower_threshold",value.toStdString()))
+        QMessageBox::critical(this,"ERROR",error_msg.c_str());
 }
 
 void view_image::on_actionUpper_Threshold_triggered()
 {
     bool ok;
-    QString result = QInputDialog::getText(this,"DSI Studio","Assign upper threshold value ",QLineEdit::Normal,
+    QString value = QInputDialog::getText(this,"DSI Studio","Assign upper threshold value ",QLineEdit::Normal,
                                            "0",&ok);
     if(!ok)
         return;
-    float value = result.toFloat(&ok);
-    if(!ok)
-        return;
-
-    for(size_t index = 0;index < data.size();++index)
-        if(data[index] > value)
-            data[index] = value;
-
-    init_image();
-    show_image();
+    if(!command("upper_threshold",value.toStdString()))
+        QMessageBox::critical(this,"ERROR",error_msg.c_str());
 }
 
 
-void view_image::on_actionMorphology_Defragment_triggered()
-{
-    for_each_label(data,[](tipl::image<3,char>& mask){tipl::morphology::defragment(mask);});
-    init_image();
-    show_image();
-}
-
-
-void view_image::on_actionMorphology_Dilation_triggered()
-{
-    for_each_label(data,[](tipl::image<3,char>& mask){tipl::morphology::dilation(mask);});
-    init_image();
-    show_image();
-}
-
-
-void view_image::on_actionNormalize_Intensity_triggered()
-{
-    tipl::normalize(data,1.0f);
-    init_image();
-    show_image();
-}
 
 void view_image::on_min_slider_sliderMoved(int)
 {
@@ -1133,39 +952,7 @@ void view_image::on_slice_pos_valueChanged(int value)
     show_image();
 }
 
-void view_image::on_actionSobel_triggered()
-{
-    if(is_label_image(data))
-        for_each_label(data,[](tipl::image<3,char>& mask){tipl::morphology::edge(mask);});
-    else
-        tipl::filter::sobel(data);
-    init_image();
-    show_image();
-}
 
-void view_image::on_actionMorphology_XY_triggered()
-{
-    for_each_label(data,[](tipl::image<3,char>& mask){tipl::morphology::edge_xy(mask);});
-    init_image();
-    show_image();
-}
-
-
-
-void view_image::on_actionMorphology_Erosion_triggered()
-{
-    for_each_label(data,[](tipl::image<3,char>& mask){tipl::morphology::erosion(mask);});
-    init_image();
-    show_image();
-}
-
-
-void view_image::on_actionMorphology_XZ_triggered()
-{
-    for_each_label(data,[](tipl::image<3,char>& mask){tipl::morphology::edge_xz(mask);});
-    init_image();
-    show_image();
-}
 
 
 void view_image::on_actionImageAddition_triggered()
@@ -1175,7 +962,7 @@ void view_image::on_actionImageAddition_triggered()
     if (filenames.isEmpty())
         return;
     for(auto filename : filenames)
-        if(!command("image_addition",filename.toStdString(),std::string()))
+        if(!command("image_addition",filename.toStdString()))
         {
             QMessageBox::critical(this,"ERROR",error_msg.c_str());
             return;
@@ -1189,7 +976,7 @@ void view_image::on_actionMinus_Image_triggered()
     if (filenames.isEmpty())
         return;
     for(auto filename : filenames)
-        if(!command("image_substraction",filename.toStdString(),std::string()))
+        if(!command("image_substraction",filename.toStdString()))
         {
             QMessageBox::critical(this,"ERROR",error_msg.c_str());
             return;
@@ -1202,18 +989,19 @@ void view_image::on_actionImageMultiplication_triggered()
                            this,"Open other another image to apply",QFileInfo(file_name).absolutePath(),"NIFTI file(*nii.gz *.nii)" );
     if (filename.isEmpty())
         return;
-    if(!command("image_multiplication",filename.toStdString(),std::string()))
+    if(!command("image_multiplication",filename.toStdString()))
         QMessageBox::critical(this,"ERROR",error_msg.c_str());
 }
 
-void view_image::on_actionSignal_Smoothing_triggered()
+void view_image::on_actionThreshold_triggered()
 {
-    if(is_label_image(data))
-        for_each_label(data,[](tipl::image<3,char>& mask){tipl::morphology::smoothing(mask);});
-    else
-        tipl::filter::mean(data);
-    init_image();
-    show_image();
+    bool ok;
+    QString value = QInputDialog::getText(this,"DSI Studio","Assign threshold value",QLineEdit::Normal,"0",&ok);
+    if(!ok)
+        return;
+    if(!command("threshold",value.toStdString()))
+        QMessageBox::critical(this,"ERROR",error_msg.c_str());
+
 }
 
 void view_image::on_dwi_volume_valueChanged(int value)
@@ -1239,128 +1027,15 @@ void view_image::on_dwi_volume_valueChanged(int value)
     show_image();
 }
 
-void view_image::on_actionDownsample_by_2_triggered()
+
+void view_image::run_action()
 {
-    tipl::downsample_with_padding(data);
-    init_image();
-    show_image();
-}
-
-void view_image::on_actionUpsample_by_2_triggered()
-{
-    tipl::upsampling(data);
-    init_image();
-    show_image();
-}
-
-
-
-void view_image::on_actionFlip_X_triggered()
-{
-    if(data.empty())
+    QAction *action = qobject_cast<QAction *>(sender());
+    if(!action)
         return;
-    if(ui->orientation->currentIndex() == 0)
-    {
-        T[3] += T[0]*float(data.width()-1);
-        T[0] = -T[0];
-        T[4] = -T[4];
-        T[8] = -T[8];
-    }
-    tipl::flip_x(data);
-    init_image();
-    show_image();
+    if(!command(action->text().toLower().replace(' ','_').toStdString()))
+        QMessageBox::critical(this,"ERROR",error_msg.c_str());
 }
 
-
-void view_image::on_actionFlip_Y_triggered()
-{
-    if(data.empty())
-        return;
-    if(ui->orientation->currentIndex() == 0)
-    {
-        T[7] += T[5]*float(data.height()-1);
-        T[1] = -T[1];
-        T[5] = -T[5];
-        T[9] = -T[9];
-    }
-    tipl::flip_y(data);
-    init_image();
-    show_image();
-}
-
-
-void view_image::on_actionFlip_Z_triggered()
-{
-    if(data.empty())
-        return;
-    if(ui->orientation->currentIndex() == 0)
-    {
-        T[11] += T[10]*float(data.depth()-1);
-        T[2] = -T[2];
-        T[6] = -T[6];
-        T[10] = -T[10];
-    }
-    tipl::flip_z(data);
-    init_image();
-    show_image();
-}
-
-
-void view_image::on_actionSwap_XY_triggered()
-{
-    if(data.empty())
-        return;
-    T = tipl::matrix<4,4>({0,1,0,0,
-                           1,0,0,0,
-                           0,0,1,0,
-                           0,0,0,1})*T;
-    tipl::swap_xy(data);
-    init_image();
-    show_image();
-}
-
-
-void view_image::on_actionSwap_XZ_triggered()
-{
-    if(data.empty())
-        return;
-    T = tipl::matrix<4,4>({0,0,1,0,
-                           0,1,0,0,
-                           1,0,0,0,
-                           0,0,0,1})*T;
-    tipl::swap_xz(data);
-    init_image();
-    show_image();
-}
-
-
-void view_image::on_actionSwap_YZ_triggered()
-{
-    if(data.empty())
-        return;
-    T = tipl::matrix<4,4>({1,0,0,0,
-                           0,0,1,0,
-                           0,1,0,0,
-                           0,0,0,1})*T;
-    tipl::swap_yz(data);
-    init_image();
-    show_image();
-}
-
-void view_image::on_actionThreshold_triggered()
-{
-    bool ok;
-    QString result = QInputDialog::getText(this,"DSI Studio","Assign threshold value",QLineEdit::Normal,"0",&ok);
-    if(!ok)
-        return;
-    float value = result.toFloat(&ok);
-    if(!ok)
-        return;
-
-    for(size_t i = 0;i < data.size();++i)
-        data[i] = data[i] < value ? 0.0f : 1.0f;
-    init_image();
-    show_image();
-}
 
 

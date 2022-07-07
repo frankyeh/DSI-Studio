@@ -20,7 +20,7 @@ public:
     ~view_image();
     bool open(QStringList file_name);
     bool eventFilter(QObject *obj, QEvent *event);
-    bool command(std::string cmd,std::string param1 = std::string(),std::string param2 = std::string());
+    bool command(std::string cmd,std::string param1 = std::string());
 private:
     bool has_flip_x(void);
     bool has_flip_y(void);
@@ -58,8 +58,6 @@ private slots:
 
     void on_actionUpper_Threshold_triggered();
 
-    void on_actionNormalize_Intensity_triggered();
-
     void change_contrast();
     void on_min_slider_sliderMoved(int position);
 
@@ -77,47 +75,20 @@ private slots:
 
     void on_slice_pos_valueChanged(int value);
 
-    void on_actionSobel_triggered();
-
-    void on_actionMorphology_XY_triggered();
-
-    void on_actionMorphology_XZ_triggered();
-
     void on_actionSave_triggered();
 
     void on_actionImageAddition_triggered();
 
     void on_actionImageMultiplication_triggered();
 
-    void on_actionSignal_Smoothing_triggered();
-
     void on_dwi_volume_valueChanged(int value);
-
-    void on_actionDownsample_by_2_triggered();
-
-    void on_actionUpsample_by_2_triggered();
-
-    void on_actionFlip_X_triggered();
-
-    void on_actionFlip_Y_triggered();
-
-    void on_actionFlip_Z_triggered();
-
-    void on_actionSwap_XY_triggered();
-
-    void on_actionSwap_XZ_triggered();
-
-    void on_actionSwap_YZ_triggered();
 
     void on_actionMinus_Image_triggered();
 
-    void on_actionMorphology_Dilation_triggered();
-
     void on_actionThreshold_triggered();
 
-    void on_actionMorphology_Defragment_triggered();
 
-    void on_actionMorphology_Erosion_triggered();
+    void run_action();
 
 private:
     Ui::view_image *ui;
