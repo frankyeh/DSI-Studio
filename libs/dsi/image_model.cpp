@@ -428,6 +428,7 @@ bool ImageModel::run_steps(const std::string& reg_file_name,const std::string& r
     std::vector<std::string> cmds,params;
     while(std::getline(in,step))
     {
+        // This skip steps already done as recorded in voxel.steps
         if(step.empty() || std::getline(in2,step2))
             continue;
         size_t pos = step.find('=');
