@@ -6,8 +6,6 @@
 #include "ui_regtoolbox.h"
 #include "libs/gzip_interface.hpp"
 #include "basic_voxel.hpp"
-bool is_label_image(const tipl::image<3>& I);
-
 void show_view(QGraphicsScene& scene,QImage I);
 RegToolBox::RegToolBox(QWidget *parent) :
     QMainWindow(parent),
@@ -125,7 +123,7 @@ void RegToolBox::on_OpenSubject_clicked()
     }
     nifti.toLPS(I);
     nifti.get_image_transformation(IR);
-    ui->edge->setChecked(is_label_image(I));
+    ui->edge->setChecked(tipl::is_label_image(I));
     tipl::normalize(I,1.0f);
     nifti.get_voxel_size(Ivs);
     clear();
@@ -567,7 +565,7 @@ bool apply_warping(const char* from,
     nii.toLPS(I3);
     nii.get_image_transformation(T);
 
-    bool is_label = is_label_image(I3);
+    bool is_label = tipl::is_label_image(I3);
 
     if(I_shape != I3.shape() || IR != T)
     {
@@ -597,24 +595,37 @@ bool apply_warping(const char* from,
 }
 void RegToolBox::on_actionApply_Warpping_triggered()
 {
-    QString from = QFileDialog::getOpenFileName(
+    QStringList from = QFileDialog::getOpenFileNames(
             this,"Open Subject Image","",
             "Images (*.nii *nii.gz);;All files (*)" );
     if(from.isEmpty())
         return;
-    QString to = QFileDialog::getSaveFileName(
-            this,"Save Transformed Image",from,
-            "Images (*.nii *nii.gz);;All files (*)" );
-    if(to.isEmpty())
-        return;
-    std::string error;
-    if(!apply_warping(from.toStdString().c_str(),
-                      to.toStdString().c_str(),
-                      I.shape(),IR,to2from,Itvs,ItR,error))
-        QMessageBox::critical(this,"ERROR",error.c_str());
+    if(from.size() == 1)
+    {
+        QString to = QFileDialog::getSaveFileName(
+                this,"Save Transformed Image",from[0],
+                "Images (*.nii *nii.gz);;All files (*)" );
+        if(to.isEmpty())
+            return;
+        std::string error;
+        if(!apply_warping(from[0].toStdString().c_str(),
+                          to.toStdString().c_str(),
+                          I.shape(),IR,to2from,Itvs,ItR,error))
+            QMessageBox::critical(this,"ERROR",error.c_str());
+        else
+            QMessageBox::information(this,"DSI Studio","Saved");
+    }
     else
-        QMessageBox::information(this,"DSI Studio","Saved");
+    {
+        std::string error;
+        tipl::par_for(from.size(),[&](unsigned int i)
+        {
+            apply_warping(from[i].toStdString().c_str(),
+                          (from[i]+".wp.nii.gz").toStdString().c_str(),
+                          I.shape(),IR,to2from,Itvs,ItR,error);
 
+        });
+    }
 }
 
 void RegToolBox::on_stop_clicked()
