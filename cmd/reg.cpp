@@ -20,8 +20,6 @@ bool apply_unwarping_tt(const char* from,
                         const tipl::matrix<4,4>& new_trans_to_mni,
                         std::string& error);
 void get_filenames_from(const std::string param,std::vector<std::string>& filenames);
-bool is_label_image(const tipl::image<3>& I);
-
 
 int after_warp(const std::string& warp_name,
                tipl::image<3,tipl::vector<3> >& to2from,
@@ -178,7 +176,7 @@ int reg(program_option& po)
     tipl::image<3> from_(to.shape()),from2_;
 
 
-    if(is_label_image(from))
+    if(tipl::is_label_image(from))
         tipl::resample_mt<tipl::interpolation::nearest>(from,from_,T);
     else
         tipl::resample_mt<tipl::interpolation::cubic>(from,from_,T);
@@ -187,7 +185,7 @@ int reg(program_option& po)
     if(!from2.empty())
     {
         from2_.resize(to.shape());
-        if(is_label_image(from2))
+        if(tipl::is_label_image(from2))
             tipl::resample_mt<tipl::interpolation::nearest>(from2,from2_,T);
         else
             tipl::resample_mt<tipl::interpolation::cubic>(from2,from2_,T);
@@ -222,7 +220,7 @@ int reg(program_option& po)
     {
         std::cout << "compose output images" << std::endl;
         tipl::image<3> from_wp;
-        if(is_label_image(from))
+        if(tipl::is_label_image(from))
             tipl::compose_mapping<tipl::interpolation::nearest>(from,to2from,from_wp);
         else
             tipl::compose_mapping<tipl::interpolation::cubic>(from,to2from,from_wp);
