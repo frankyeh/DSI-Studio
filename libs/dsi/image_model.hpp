@@ -279,7 +279,7 @@ public:
     bool align_acpc(void);
     void crop(tipl::shape<3> range_min,tipl::shape<3> range_max);
     void trim(void);
-    void correct_motion(bool eddy);
+    void correct_motion(void);
 public:
     std::shared_ptr<ImageModel> rev_pe_src;
     tipl::shape<3> topup_from,topup_to;
