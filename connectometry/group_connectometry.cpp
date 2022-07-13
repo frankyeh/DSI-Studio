@@ -147,7 +147,6 @@ group_connectometry::group_connectometry(QWidget *parent,std::shared_ptr<group_c
 
 group_connectometry::~group_connectometry()
 {
-    qApp->removeEventFilter(this);
     delete ui;
 }
 
