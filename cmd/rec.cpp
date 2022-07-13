@@ -102,10 +102,10 @@ int rec(program_option& po)
         }
     }
 
-    if(po.has("motion_correction"))
+    if(po.get("motion_correction",0))
     {
         std::cout << "correct for motion..." << std::endl;
-        src.correct_motion(po.get("motion_correction",0));
+        src.correct_motion();
         std::cout << "done." <<std::endl;
     }
 
