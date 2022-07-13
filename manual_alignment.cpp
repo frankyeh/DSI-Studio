@@ -29,7 +29,7 @@ manual_alignment::manual_alignment(QWidget *parent,
                                    const tipl::vector<3>& to_vs_,
                                    tipl::reg::reg_type reg_type,
                                    tipl::reg::cost_type cost_function) :
-    QDialog(parent),from_vs(from_vs_),to_vs(to_vs_),timer(nullptr),ui(new Ui::manual_alignment)
+    QDialog(parent),from_vs(from_vs_),to_vs(to_vs_),timer(nullptr),ui(new Ui::manual_alignment),warp_image_thread([&](void){warp_image();})
 {
     from_original = from_;
     from.swap(from_);
@@ -55,6 +55,9 @@ manual_alignment::manual_alignment(QWidget *parent,
         from_downsample *= 2.0f;
         std::cout << "downsampling subject image by 2 dim=" << from.shape() << std::endl;
     }
+
+    warped_from.resize(to.shape());
+
 
     tipl::normalize(from,1.0);
     tipl::normalize(to,1.0);
@@ -105,6 +108,21 @@ manual_alignment::manual_alignment(QWidget *parent,
 
 }
 
+void manual_alignment::warp_image(void)
+{
+    while(!free_thread)
+    {
+        if(image_need_update && warped_from.shape() == to.shape())
+        {
+            warp_image_ready = false;
+            tipl::resample_mt(from,warped_from,iT);
+            image_need_update = false;
+            warp_image_ready = true;
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(250));
+    }
+}
+
 void manual_alignment::add_images(std::shared_ptr<fib_data> handle)
 {
     for(size_t i = 0;i < handle->view_item.size();++i)
@@ -150,10 +168,15 @@ void manual_alignment::disconnect_arg_update()
 
 manual_alignment::~manual_alignment()
 {
+    free_thread = true;
+    warp_image_thread.join();
     if(timer)
         timer->stop();
     delete ui;
+
 }
+
+
 void manual_alignment::load_param(void)
 {
     tipl::affine_transform<float> b_upper,b_lower;
@@ -208,9 +231,7 @@ void manual_alignment::update_image(void)
     T = tipl::transformation_matrix<float>(arg,from.shape(),from_vs,to.shape(),to_vs);
     iT = T;
     iT.inverse();
-    warped_from.clear();
-    warped_from.resize(to.shape());
-    tipl::resample(from,warped_from,iT);
+    image_need_update = true;
 }
 
 tipl::transformation_matrix<float> manual_alignment::get_iT(void)
