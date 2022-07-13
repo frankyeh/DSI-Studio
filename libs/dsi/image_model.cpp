@@ -885,7 +885,7 @@ bool ImageModel::align_acpc(void)
     return true;
 }
 
-void ImageModel::correct_motion(bool eddy)
+void ImageModel::correct_motion(void)
 {
     auto preproc = [&](tipl::image<3>& I)
     {
@@ -910,7 +910,7 @@ void ImageModel::correct_motion(bool eddy)
             tipl::image<3> to(dwi_at(i));
             preproc(to);
             bool terminated = false;
-            linear_with_mi(from,voxel.vs,to,voxel.vs,args[i],eddy ? tipl::reg::affine : tipl::reg::rigid_body,terminated);
+            linear_with_mi(from,voxel.vs,to,voxel.vs,args[i],tipl::reg::rigid_body,terminated,tipl::reg::narrow_bound);
             std::cout << "dwi (" << i+1 << "/" << src_bvalues.size() << ")" <<
                          " shift=" << tipl::vector<3>(args[i].translocation) <<
                          " rotation=" << tipl::vector<3>(args[i].rotation) << std::endl;
@@ -926,6 +926,8 @@ void ImageModel::correct_motion(bool eddy)
         progress prog("estimate and registering...");
         for(size_t i = 0;progress::at(i,src_bvalues.size());++i)
         {
+            if(src_bvalues[i] < 200)
+                continue;
             // get the minimum q space distance
             float min_dis = std::numeric_limits<float>::max();
             std::vector<float> dis_list(src_bvalues.size());
@@ -960,7 +962,7 @@ void ImageModel::correct_motion(bool eddy)
             preproc(to);
 
             bool terminated = false;
-            linear_with_mi(from,voxel.vs,to,voxel.vs,new_args[i],eddy ? tipl::reg::affine : tipl::reg::rigid_body,terminated);
+            linear_with_mi(from,voxel.vs,to,voxel.vs,new_args[i],tipl::reg::rigid_body,terminated,tipl::reg::narrow_bound);
             std::cout << "dwi (" << i+1 << "/" << src_bvalues.size() << ") = "
                       << " shift=" << tipl::vector<3>(new_args[i].translocation)
                       << " rotation=" << tipl::vector<3>(new_args[i].rotation) << std::endl;
