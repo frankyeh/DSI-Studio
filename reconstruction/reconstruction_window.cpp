@@ -927,7 +927,7 @@ void reconstruction_window::on_actionSave_SRC_file_as_triggered()
 
 void reconstruction_window::on_actionEddy_Motion_Correction_triggered()
 {
-    handle->correct_motion(false);
+    handle->correct_motion();
     if(!progress::aborted())
     {
         handle->calculate_dwi_sum(true);
