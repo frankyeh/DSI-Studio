@@ -58,6 +58,7 @@ Console::Console(QWidget *parent) :
 
 Console::~Console()
 {
+    qApp->removeEventFilter(this);
     console.log_window = nullptr;
     delete ui;
 }
