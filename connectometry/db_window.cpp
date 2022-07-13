@@ -58,6 +58,7 @@ db_window::db_window(QWidget *parent,std::shared_ptr<group_connectometry_analysi
 
 db_window::~db_window()
 {
+    qApp->removeEventFilter(this);
     delete ui;
 }
 
