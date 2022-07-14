@@ -95,6 +95,7 @@ manual_alignment::manual_alignment(QWidget *parent,
     connect(ui->cor_slice_pos,SIGNAL(valueChanged(int)),this,SLOT(slice_pos_moved()));
     connect(ui->axi_slice_pos,SIGNAL(valueChanged(int)),this,SLOT(slice_pos_moved()));
     connect(ui->zoom,SIGNAL(valueChanged(double)),this,SLOT(slice_pos_moved()));
+    connect(ui->contrast,SIGNAL(valueChanged(int)),this,SLOT(slice_pos_moved()));
     connect(ui->blend_pos,SIGNAL(valueChanged(int)),this,SLOT(slice_pos_moved()));
 
     timer = new QTimer(this);
@@ -288,8 +289,10 @@ void manual_alignment::slice_pos_moved()
     double ratio = ui->zoom->value();
     float w1 = ui->blend_pos->value()/10.0;
     float w2 = 1.0-w1;
-    w1*= 255.0;
+    w1 *= 255.0;
     w2 *= 255.0;
+    w1 *= 1.0+(ui->contrast->value()*0.2f);
+    w2 *= 1.0+(ui->contrast->value()*0.2f);
     for(unsigned char dim = 0;dim < 3;++dim)
     {
         tipl::image<2,float> slice,slice2;
@@ -299,6 +302,7 @@ void manual_alignment::slice_pos_moved()
         for (unsigned int index = 0; index < slice.size(); ++index)
         {
             float value = slice[index]*w2+slice2[index]*w1;
+            value = std::min<float>(255,value);
             buffer[dim][index] = tipl::rgb(value,value,value);
         }
         slice_image[dim] = QImage((unsigned char*)&*buffer[dim].begin(),buffer[dim].width(),buffer[dim].height(),QImage::Format_RGB32).
