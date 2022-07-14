@@ -898,12 +898,10 @@ void ImageModel::correct_motion(void)
 
     std::vector<tipl::affine_transform<float> > args(src_bvalues.size());
     {
-        tipl::image<3> from(dwi);
+        tipl::image<3> from(dwi_at(0));
         preproc(from);
-        args[0].translocation[2] = 0.005f;
-        args[0].translocation[1] = 0.005f;
         progress prog("registering...");
-        for(size_t i = 0;progress::at(i,src_bvalues.size());++i)
+        for(size_t i = 1;progress::at(i,src_bvalues.size());++i)
         {
             if(i)
                 args[i] = args[i-1];
@@ -922,12 +920,11 @@ void ImageModel::correct_motion(void)
 
     // get ndc list
     std::vector<tipl::affine_transform<float> > new_args(args);
+
     {
         progress prog("estimate and registering...");
-        for(size_t i = 0;progress::at(i,src_bvalues.size());++i)
+        for(size_t i = 1;progress::at(i,src_bvalues.size());++i)
         {
-            if(src_bvalues[i] < 200)
-                continue;
             // get the minimum q space distance
             float min_dis = std::numeric_limits<float>::max();
             std::vector<float> dis_list(src_bvalues.size());
@@ -950,10 +947,11 @@ void ImageModel::correct_motion(void)
             {
                 if(j == i)
                     continue;
-                if(dis_list[j] < min_dis)
+                if(dis_list[j] <= min_dis)
                 {
                     tipl::image<3> from_(dwi.shape());
-                    tipl::resample(dwi_at(i),from_,tipl::transformation_matrix<double>(args[j],voxel.dim,voxel.vs,voxel.dim,voxel.vs));
+                    tipl::resample_mt<tipl::interpolation::cubic>(dwi_at(j),from_,
+                        tipl::transformation_matrix<double>(args[j],voxel.dim,voxel.vs,voxel.dim,voxel.vs));
                     from += from_;
                 }
             }
@@ -971,6 +969,7 @@ void ImageModel::correct_motion(void)
         if(progress::aborted())
             return;
     }
+
     // get ndc list
     {
         progress prog("estimate and registering...");
