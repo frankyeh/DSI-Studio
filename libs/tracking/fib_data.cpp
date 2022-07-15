@@ -445,13 +445,6 @@ void tracking_data::read(std::shared_ptr<fib_data> fib)
         threshold_name = fib->dir.get_threshold_name();
     if(!dt_fa.empty())
         dt_threshold_name = fib->dir.get_dt_threshold_name();
-    if(fib->has_high_reso)
-    {
-        has_high_reso = true;
-        high_reso_ratio = fib->vs[0]/fib->high_reso->vs[0];
-        high_reso.reset(new tracking_data);
-        high_reso->read(fib->high_reso);
-    }
 }
 bool tracking_data::get_dir(size_t space_index,
                             const tipl::vector<3,float>& dir, // reference direction, should be unit vector

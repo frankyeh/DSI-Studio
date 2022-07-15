@@ -85,10 +85,6 @@ public:
     std::vector<const short*> findex;
     std::vector<std::vector<const float*> > other_index;
     std::vector<tipl::vector<3,float> > odf_table;
-public:
-    bool has_high_reso = false;
-    float high_reso_ratio = 1.0f;
-    std::shared_ptr<tracking_data> high_reso;
 private:
     const tracking_data& operator=(const tracking_data& rhs);
 public:

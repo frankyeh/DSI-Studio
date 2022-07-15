@@ -163,23 +163,21 @@ private:
 	mutable std::vector<float> reverse_buffer;
     unsigned int buffer_front_pos;
     unsigned int buffer_back_pos;
-
-private:
     unsigned char init_fib_index;
-    bool evaluate(std::shared_ptr<tracking_data> fib,
-                  const tipl::vector<3,float>& position,
-                  const tipl::vector<3,float>& ref_dir,
-                  tipl::vector<3,float>& result)
+public:
+    bool get_dir(const tipl::vector<3,float>& position,
+                 const tipl::vector<3,float>& ref_dir,
+                 tipl::vector<3,float>& result)
     {
         tipl::interpolator::linear<3> tri_interpo;
-        if (!tri_interpo.get_location(fib->dim,position))
+        if (!tri_interpo.get_location(trk->dim,position))
             return false;
         tipl::vector<3,float> new_dir,main_dir;
         float total_weighting = 0.0f;
         for (unsigned int index = 0;index < 8;++index)
         {
             size_t odf_space_index = tri_interpo.dindex[index];
-            if (!fib->get_dir(odf_space_index,ref_dir,main_dir,current_fa_threshold,current_tracking_angle,current_dt_threshold))
+            if (!trk->get_dir(odf_space_index,ref_dir,main_dir,current_fa_threshold,current_tracking_angle,current_dt_threshold))
                 continue;
             float w = tri_interpo.ratio[index];
             main_dir *= w;
@@ -201,30 +199,8 @@ public:
 	{
 		return (buffer_back_pos-buffer_front_pos)/3;
 	}
-    bool get_dir(const tipl::vector<3,float>& position,
-                      const tipl::vector<3,float>& ref_dir,
-                      tipl::vector<3,float>& result_dir)
-    {
-        if(trk->has_high_reso)
-        {
-            tipl::vector<3> new_pos(position);
-            new_pos *= trk->high_reso_ratio;
-            return evaluate(trk->high_reso,new_pos,ref_dir,result_dir);
-        }
-        return evaluate(trk,position,ref_dir,result_dir);
-    }
     bool get_starting_dir(tipl::vector<3,float> pos,float fa_threshold,unsigned char fib_order,tipl::vector<3>& dir) const
     {
-        if(trk->has_high_reso)
-        {
-            pos *= trk->high_reso_ratio;
-            pos.round();
-            size_t space_index = tipl::pixel_index<3>(pos[0],pos[1],pos[2],trk->high_reso->dim).index();
-            if(trk->high_reso->fa[fib_order][space_index] < fa_threshold)
-                return false;
-            dir = trk->high_reso->get_fib(space_index,fib_order);
-            return true;
-        }
         pos.round();
         size_t space_index = tipl::pixel_index<3>(pos[0],pos[1],pos[2],trk->dim).index();
         if(trk->fa[fib_order][space_index] < fa_threshold)
