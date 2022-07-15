@@ -44,21 +44,14 @@ private slots:
 
     void on_actionSet_Translocation_triggered();
 
-    void on_actionLower_threshold_triggered();
-
     void on_actionSet_Transformation_triggered();
-
-    void on_actionIntensity_shift_triggered();
-
-    void on_actionIntensity_scale_triggered();
 
     void on_actionSave_as_Int8_triggered();
 
     void on_actionSave_as_Int16_triggered();
 
-    void on_actionUpper_Threshold_triggered();
-
     void change_contrast();
+
     void on_min_slider_sliderMoved(int position);
 
     void on_min_valueChanged(double arg1);
@@ -85,10 +78,9 @@ private slots:
 
     void on_actionMinus_Image_triggered();
 
-    void on_actionThreshold_triggered();
-
-
     void run_action();
+
+    void run_action2();
 
 private:
     Ui::view_image *ui;

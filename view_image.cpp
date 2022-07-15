@@ -233,6 +233,12 @@ view_image::view_image(QWidget *parent) :
     connect(ui->actionSignal_Smoothing, SIGNAL(triggered()),this, SLOT(run_action()));
     connect(ui->actionNormalize_Intensity, SIGNAL(triggered()),this, SLOT(run_action()));
 
+    // ask for a value and run action
+    connect(ui->actionIntensity_shift, SIGNAL(triggered()),this, SLOT(run_action2()));
+    connect(ui->actionIntensity_scale, SIGNAL(triggered()),this, SLOT(run_action2()));
+    connect(ui->actionLower_threshold, SIGNAL(triggered()),this, SLOT(run_action2()));
+    connect(ui->actionUpper_Threshold, SIGNAL(triggered()),this, SLOT(run_action2()));
+    connect(ui->actionThreshold, SIGNAL(triggered()),this, SLOT(run_action2()));
 
     source_ratio = 2.0;
     ui->tabWidget->setCurrentIndex(0);
@@ -851,50 +857,6 @@ void view_image::on_actionSet_Transformation_triggered()
     show_image();
 }
 
-void view_image::on_actionIntensity_shift_triggered()
-{
-    bool ok;
-    QString value = QInputDialog::getText(this,"DSI Studio","Assign shift value",QLineEdit::Normal,
-                                           "0",&ok);
-    if(!ok)
-        return;
-    if(!command("intensity_shift",value.toStdString()))
-        QMessageBox::critical(this,"ERROR",error_msg.c_str());
-}
-
-void view_image::on_actionIntensity_scale_triggered()
-{
-    bool ok;
-    QString value = QInputDialog::getText(this,"DSI Studio","Assign scale value",QLineEdit::Normal,
-                                           "0",&ok);
-    if(!ok)
-        return;
-    if(!command("intensity_scale",value.toStdString()))
-        QMessageBox::critical(this,"ERROR",error_msg.c_str());
-}
-
-void view_image::on_actionLower_threshold_triggered()
-{
-    bool ok;
-    QString value = QInputDialog::getText(this,"DSI Studio","Assign lower threshold value ",QLineEdit::Normal,
-                                           "0",&ok);
-    if(!ok)
-        return;
-    if(!command("lower_threshold",value.toStdString()))
-        QMessageBox::critical(this,"ERROR",error_msg.c_str());
-}
-
-void view_image::on_actionUpper_Threshold_triggered()
-{
-    bool ok;
-    QString value = QInputDialog::getText(this,"DSI Studio","Assign upper threshold value ",QLineEdit::Normal,
-                                           "0",&ok);
-    if(!ok)
-        return;
-    if(!command("upper_threshold",value.toStdString()))
-        QMessageBox::critical(this,"ERROR",error_msg.c_str());
-}
-
 
 
 void view_image::on_min_slider_sliderMoved(int)
@@ -993,16 +955,6 @@ void view_image::on_actionImageMultiplication_triggered()
         QMessageBox::critical(this,"ERROR",error_msg.c_str());
 }
 
-void view_image::on_actionThreshold_triggered()
-{
-    bool ok;
-    QString value = QInputDialog::getText(this,"DSI Studio","Assign threshold value",QLineEdit::Normal,"0",&ok);
-    if(!ok)
-        return;
-    if(!command("threshold",value.toStdString()))
-        QMessageBox::critical(this,"ERROR",error_msg.c_str());
-
-}
 
 void view_image::on_dwi_volume_valueChanged(int value)
 {
@@ -1036,6 +988,21 @@ void view_image::run_action()
     if(!command(action->text().toLower().replace(' ','_').toStdString()))
         QMessageBox::critical(this,"ERROR",error_msg.c_str());
 }
+
+
+void view_image::run_action2()
+{
+    QAction *action = qobject_cast<QAction *>(sender());
+    if(!action)
+        return;
+    bool ok;
+    QString value = QInputDialog::getText(this,"DSI Studio",QString("Assign %1 value").arg(action->text()),QLineEdit::Normal,"0",&ok);
+    if(!ok)
+        return;
+    if(!command(action->text().toLower().replace(' ','_').toStdString(),value.toStdString()))
+        QMessageBox::critical(this,"ERROR",error_msg.c_str());
+}
+
 
 
 
