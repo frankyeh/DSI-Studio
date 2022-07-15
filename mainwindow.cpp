@@ -107,7 +107,7 @@ void MainWindow::openFile(QString file_name)
             QStringList file_list = QFileInfo(file_name).dir().entryList(QStringList("*fib.gz"),QDir::Files|QDir::NoSymLinks);
             if(file_list.size() == 1)
             {
-                loadFib(file_list[0]);
+                loadFib(QFileInfo(file_name).absolutePath() + "/" + file_list[0]);
                 tracking_windows.back()->tractWidget->load_tracts(QStringList() << file_name);
             }
             else
@@ -273,7 +273,7 @@ void MainWindow::loadFib(QString filename,bool presentation_mode)
     if (!new_handle->load_from_file(&*file_name.begin()))
     {
         if(!progress::aborted())
-            QMessageBox::information(this,"error",new_handle->error_msg.c_str());
+            QMessageBox::information(this,"ERROR",new_handle->error_msg.c_str());
         return;
     }
     if(new_handle->has_high_reso)
