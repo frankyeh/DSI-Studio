@@ -635,7 +635,7 @@ void MainWindow::on_view_image_clicked()
                                 this,
                                 "Open Image",
                                 ui->workDir->currentText(),
-                                "image files (*.nii *nii.gz *.dcm 2dseq *fib.gz *src.gz)" );
+                                "image files (*.nii *nii.gz *.dcm *.nhdr 2dseq *fib.gz *src.gz)" );
     if(filename.isEmpty())
         return;
     view_image* dialog = new view_image(this);
