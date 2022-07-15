@@ -968,8 +968,8 @@ void reconstruction_window::on_align_slices_clicked()
     std::copy(handle->src_dwi_data[0],handle->src_dwi_data[0]+to.size(),to.begin());
     std::copy(handle->src_dwi_data[ui->b_table->currentRow()],
               handle->src_dwi_data[ui->b_table->currentRow()]+from.size(),from.begin());
-    tipl::normalize(from,1.0f);
-    tipl::normalize(to,1.0f);
+    tipl::normalize(from);
+    tipl::normalize(to);
     std::shared_ptr<manual_alignment> manual(new manual_alignment(this,
                                                                 from,handle->voxel.vs,
                                                                 to,handle->voxel.vs,
