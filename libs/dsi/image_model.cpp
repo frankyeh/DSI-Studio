@@ -194,7 +194,7 @@ std::string ImageModel::check_b_table(void)
         {
             tipl::image<3> iso_fa;
             template_fib->get_iso_fa(iso_fa);
-            tipl::normalize(iso_fa);
+            tipl::normalize(iso_fa,255.9f);
             tipl::image<3,unsigned char> I;
             I = iso_fa;
 
@@ -890,7 +890,7 @@ void ImageModel::correct_motion(void)
     auto preproc = [&](tipl::image<3>& I)
     {
         tipl::filter::gaussian(I);
-        tipl::normalize(I,1.0f);
+        tipl::normalize(I);
         tipl::lower_threshold(I,0.05f);
         I -= 0.05f;
     };
