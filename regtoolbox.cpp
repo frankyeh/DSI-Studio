@@ -95,7 +95,7 @@ void RegToolBox::on_OpenTemplate_clicked()
     nifti.toLPS(It);
     //tipl::swap_xy(It);
     nifti.get_image_transformation(ItR);
-    tipl::normalize(It,1.0f);
+    tipl::normalize(It);
     nifti.get_voxel_size(Itvs);
     setup_slice_pos();
     clear();
@@ -124,7 +124,7 @@ void RegToolBox::on_OpenSubject_clicked()
     nifti.toLPS(I);
     nifti.get_image_transformation(IR);
     ui->edge->setChecked(tipl::is_label_image(I));
-    tipl::normalize(I,1.0f);
+    tipl::normalize(I);
     nifti.get_voxel_size(Ivs);
     clear();
     J_view = I;
@@ -149,7 +149,7 @@ void RegToolBox::on_OpenSubject2_clicked()
         return;
     }
     nifti.toLPS(I2);
-    tipl::normalize(I2,1.0f);
+    tipl::normalize(I2);
 }
 
 void RegToolBox::on_OpenTemplate2_clicked()
@@ -167,7 +167,7 @@ void RegToolBox::on_OpenTemplate2_clicked()
         return;
     }
     nifti.toLPS(It2);
-    tipl::normalize(It2,1.0f);
+    tipl::normalize(It2);
 }
 
 
@@ -400,8 +400,8 @@ void RegToolBox::on_timer()
                     dis_view *= 2.0f;
                     geo_stack.pop_back();
                 }
-                tipl::normalize(J_view,1.0f);
-                tipl::normalize(J_view2,1.0f);
+                tipl::normalize(J_view);
+                tipl::normalize(J_view2);
             }
         }
         show_image();
@@ -454,7 +454,7 @@ void RegToolBox::linear_reg(tipl::reg::reg_type reg_type,int cost_type)
         {
             tipl::image<3> J2_(It.shape());
             tipl::resample_mt<tipl::interpolation::cubic>(I2,J2_,T);
-            tipl::normalize(J2,1.0f);
+            tipl::normalize(J2);
             J2.swap(J2_);
         }
 
@@ -654,7 +654,7 @@ void RegToolBox::on_actionRemove_Background_triggered()
     {
         I -= tipl::segmentation::otsu_threshold(I);
         tipl::lower_threshold(I,0.0);
-        tipl::normalize(I,1.0);
+        tipl::normalize(I);
         show_image();
     }
 }
@@ -722,12 +722,12 @@ void RegToolBox::on_actionSmooth_Subject_triggered()
     if(!I.empty())
     {
         tipl::filter::gaussian(I);
-        tipl::normalize(I,1.0f);
+        tipl::normalize(I);
     }
     if(!I2.empty())
     {
         tipl::filter::gaussian(I2);
-        tipl::normalize(I2,1.0f);
+        tipl::normalize(I2);
     }
     clear();
     J_view = I;
