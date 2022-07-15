@@ -83,10 +83,10 @@ public:
 
         {
             match_template_resolution(VG,VG2,VGvs,VF,VF2,VFvs);
-            tipl::normalize(VG,1.0);
-            tipl::normalize(VF,1.0);
+            tipl::normalize(VG);
+            tipl::normalize(VF);
             if(dual_modality)
-                tipl::normalize(VF2,1.0);
+                tipl::normalize(VF2);
             if(export_intermediate)
             {
                 VG.save_to_file<gz_nifti>("Template_QA.nii.gz");
