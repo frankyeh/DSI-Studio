@@ -155,7 +155,7 @@ public:
     }
     virtual void end(Voxel&,gz_mat_write& mat_writer)
     {
-        tipl::normalize(hist_fa,1.0f);
+        tipl::normalize(hist_fa);
 
         // create additional layer
         hist_fa.resize(tipl::shape<3>(hist_fa.width(),hist_fa.height(),2));
