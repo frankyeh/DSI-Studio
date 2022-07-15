@@ -1272,7 +1272,7 @@ void fib_data::get_iso_fa(tipl::image<3>& iso_fa_) const
         index = 0;
     tipl::image<3> fa_(view_item[0].get_image()),iso_(view_item[index].get_image());
     tipl::normalize(fa_,2.0f);
-    tipl::normalize(iso_,1.0f);
+    tipl::normalize(iso_);
     fa_ += iso_;
     iso_fa_.swap(fa_);
 }
