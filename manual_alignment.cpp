@@ -59,8 +59,8 @@ manual_alignment::manual_alignment(QWidget *parent,
     warped_from.resize(to.shape());
 
 
-    tipl::normalize(from,1.0);
-    tipl::normalize(to,1.0);
+    tipl::normalize(from);
+    tipl::normalize(to);
     ui->setupUi(this);
     ui->options->hide();
     ui->menuBar->hide();
