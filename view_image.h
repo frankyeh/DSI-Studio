@@ -22,13 +22,14 @@ public:
     bool eventFilter(QObject *obj, QEvent *event);
     bool command(std::string cmd,std::string param1 = std::string());
 private:
+    void update_other_images(void);
     bool has_flip_x(void);
     bool has_flip_y(void);
 private slots:
-    void show_image(void);
+    void show_image(bool update_others);
     void init_image(void);
     void update_overlay_menu(void);
-    void add_overlay(void);
+    void set_overlay(void);
     void on_zoom_in_clicked();
     void on_zoom_out_clicked();
 
@@ -84,12 +85,15 @@ private slots:
 
 private:
     Ui::view_image *ui;
-    tipl::image<3> data,overlay;
+    tipl::image<3> data;
     bool is_mni = false;
     float min_value,max_value;
     tipl::vector<3,float> vs;
     tipl::matrix<4,4> T;
-    tipl::value_to_color<float> v2c,overlay_v2c;
+    tipl::value_to_color<float> v2c;
+    std::vector<size_t> overlay_images;
+    std::vector<bool> overlay_images_visible;
+    size_t this_index = 0;
 private:
     std::vector<tipl::image<3> > dwi_volume_buf;
     size_t cur_dwi_volume = 0;
@@ -104,7 +108,6 @@ private:
     unsigned char cur_dim = 2;
     int slice_pos[3];
     QGraphicsScene source;
-    tipl::color_image buffer;
     QImage source_image;
     float source_ratio;
     std::string error_msg;

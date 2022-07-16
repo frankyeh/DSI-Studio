@@ -76,6 +76,33 @@
            </widget>
           </item>
           <item>
+           <widget class="QComboBox" name="type">
+            <property name="sizeAdjustPolicy">
+             <enum>QComboBox::AdjustToContentsOnFirstShow</enum>
+            </property>
+            <item>
+             <property name="text">
+              <string>8 bit integer</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>16 bit integer</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>32 bit integer</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>32 bit float</string>
+             </property>
+            </item>
+           </widget>
+          </item>
+          <item>
            <widget class="QComboBox" name="orientation">
             <property name="currentIndex">
              <number>1</number>

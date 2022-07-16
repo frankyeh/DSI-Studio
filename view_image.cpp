@@ -102,7 +102,6 @@ bool view_image::command(std::string cmd,std::string param1)
     if(!tipl::command<gz_nifti>(data,vs,T,is_mni,cmd,param1,error_msg))
         return false;
     init_image();
-    show_image();
 
     if(!other_data.empty())
     {
@@ -245,13 +244,15 @@ view_image::view_image(QWidget *parent) :
 
 
     qApp->installEventFilter(this);
+    this_index = opened_images.size();
     opened_images.push_back(this);
 }
 
 void save_idx(const char* file_name,std::shared_ptr<gz_istream> in);
 view_image::~view_image()
 {
-    opened_images.erase(std::remove(opened_images.begin(),opened_images.end(),this),opened_images.end());
+    opened_images[this_index] = nullptr;
+    update_other_images();
     qApp->removeEventFilter(this);
     delete ui;
 }
@@ -523,10 +524,7 @@ bool view_image::open(QStringList file_names)
     ui->info->selectRow(0);
 
     if(!data.empty())
-    {
         init_image();
-        show_image();
-    }
     return !data.empty() || !info.isEmpty();
 }
 
@@ -565,37 +563,47 @@ void view_image::init_image(void)
         on_AxiView_clicked();
     }
     no_update = false;
+    show_image(true);
 }
-void view_image::add_overlay(void)
+void view_image::set_overlay(void)
 {
     QAction *action = qobject_cast<QAction *>(sender());
-    size_t index = size_t(action->data().toInt());
-    if(index >= opened_images.size())
-        return;
-    overlay.clear();
-    overlay.resize(data.shape());
-    tipl::resample_mt<tipl::interpolation::cubic>(opened_images[index]->data,overlay,
-                      tipl::transformation_matrix<float>(tipl::from_space(T).to(opened_images[index]->T)));
-    overlay_v2c = opened_images[index]->v2c;
-    show_image();
+    overlay_images_visible[action->data().toInt()] = action->isChecked();
+    show_image(false);
 }
 void view_image::update_overlay_menu(void)
 {
-    while(ui->menuOverlay->actions().size() > int(opened_images.size()))
     {
-        ui->menuOverlay->removeAction(ui->menuOverlay->actions()[ui->menuOverlay->actions().size()-1]);
+        std::vector<size_t> new_overlay_images;
+        std::vector<bool> new_overlay_images_visible;
+        for(size_t i = 0;i < opened_images.size();++i)
+            if(opened_images[i] && this_index != i &&
+               opened_images[i]->data.shape() == data.shape())
+            {
+                new_overlay_images.push_back(i);
+                auto pos = std::find(overlay_images.begin(),overlay_images.end(),i);
+                new_overlay_images_visible.push_back(pos != overlay_images.end() && overlay_images_visible[pos-overlay_images.begin()]);
+            }
+        overlay_images.swap(new_overlay_images);
+        overlay_images_visible.swap(new_overlay_images_visible);
     }
-    for (size_t index = 0; index < opened_images.size(); ++index)
+
+    while(ui->menuOverlay->actions().size() > int(overlay_images.size()))
+        ui->menuOverlay->removeAction(ui->menuOverlay->actions()[ui->menuOverlay->actions().size()-1]);
+    for (size_t index = 0; index < overlay_images.size(); ++index)
     {
         if(index >= size_t(ui->menuOverlay->actions().size()))
         {
             QAction* Item = new QAction(this);
             Item->setVisible(true);
             Item->setData(int(index));
-            connect(Item, SIGNAL(triggered()),this, SLOT(add_overlay()));
+            Item->setCheckable(true);
+            connect(Item, SIGNAL(triggered()),this, SLOT(set_overlay()));
             ui->menuOverlay->addAction(Item);
         }
-        ui->menuOverlay->actions()[index]->setText(opened_images[index]->windowTitle());
+        auto action = ui->menuOverlay->actions()[index];
+        action->setText(opened_images[overlay_images[index]]->windowTitle());
+        action->setChecked(overlay_images_visible[index]);
     }
 }
 bool view_image::has_flip_x(void)
@@ -642,23 +650,30 @@ void draw_ruler(QPainter& paint,
                 bool flip_x,bool flip_y,
                 float zoom,
                 bool grid = false);
-void view_image::show_image(void)
+void view_image::show_image(bool update_others)
 {
     if(data.empty() || no_update)
         return;
-    tipl::image<2,float> buf;
-    tipl::volume2slice(data, buf, cur_dim, size_t(slice_pos[cur_dim]));
-    v2c.convert(buf,buffer);
 
-    if(overlay.size() == data.size())
+    tipl::color_image buffer;
     {
-        tipl::image<2,float> buf_overlay;
-        tipl::color_image buffer2;
-        tipl::volume2slice(overlay, buf_overlay, cur_dim, size_t(slice_pos[cur_dim]));
-        overlay_v2c.convert(buf_overlay,buffer2);
-        for(size_t i = 0;i < buffer.size();++i)
-            buffer[i] |= buffer2[i];
+        tipl::image<2,float> buf;
+        tipl::volume2slice(data, buf, cur_dim, size_t(slice_pos[cur_dim]));
+        v2c.convert(buf,buffer);
     }
+
+    // draw overlay
+    for(size_t i = 0;i < overlay_images.size();++i)
+    if(overlay_images_visible[i] && opened_images[overlay_images[i]])
+    {
+        tipl::color_image buffer2;
+        tipl::image<2,float> buf2;
+        tipl::volume2slice(opened_images[overlay_images[i]]->data, buf2, cur_dim, size_t(slice_pos[cur_dim]));
+        opened_images[overlay_images[i]]->v2c.convert(buf2,buffer2);
+        for(size_t j = 0;j < buffer.size();++j)
+            buffer[j] |= buffer2[j];
+    }
+
     QImage I(reinterpret_cast<unsigned char*>(&*buffer.begin()),buffer.width(),buffer.height(),QImage::Format_RGB32);
     source_image = I.scaled(buffer.width()*source_ratio,buffer.height()*source_ratio);
 
@@ -680,23 +695,34 @@ void view_image::show_image(void)
     }
 
     show_view(source,source_image);
+    if(update_others)
+        update_other_images();
+}
+void view_image::update_other_images(void)
+{
+    for(size_t i = 0;i < opened_images.size();++i)
+    if(i != this_index && opened_images[i])
+        for(size_t j = 0;j < opened_images[i]->overlay_images.size();++j)
+            if(opened_images[i]->overlay_images_visible[j] &&
+               opened_images[i]->overlay_images[j] == this_index)
+                opened_images[i]->show_image(false);
 }
 void view_image::change_contrast()
 {
     v2c.set_range(float(ui->min->value()),float(ui->max->value()));
     v2c.two_color(ui->min_color->color().rgb(),ui->max_color->color().rgb());
-    show_image();
+    show_image(true);
 }
 void view_image::on_zoom_in_clicked()
 {
     source_ratio *= 1.1f;
-    show_image();
+    show_image(false);
 }
 
 void view_image::on_zoom_out_clicked()
 {
     source_ratio *= 0.9f;
-    show_image();
+    show_image(false);
 }
 void view_image::on_actionResample_triggered()
 {
@@ -820,7 +846,6 @@ void view_image::on_actionTrim_triggered()
         QMessageBox::critical(this,"ERROR",error_msg.c_str());
 
     init_image();
-    show_image();
 }
 
 void view_image::on_actionSet_Translocation_triggered()
@@ -836,7 +861,6 @@ void view_image::on_actionSet_Translocation_triggered()
     std::istringstream in(result.toStdString());
     in >> T[3] >> T[7] >> T[11];
     init_image();
-    show_image();
 }
 
 void view_image::on_actionSet_Transformation_triggered()
@@ -854,7 +878,6 @@ void view_image::on_actionSet_Transformation_triggered()
     for(int i = 0;i < 16;++i)
         in >> T[i];
     init_image();
-    show_image();
 }
 
 
@@ -911,7 +934,7 @@ void view_image::on_slice_pos_valueChanged(int value)
     if(data.empty())
         return;
     slice_pos[cur_dim] = value;
-    show_image();
+    show_image(false);
 }
 
 
@@ -976,7 +999,7 @@ void view_image::on_dwi_volume_valueChanged(int value)
         dwi_volume_buf[cur_dwi_volume].swap(data);
 
     ui->dwi_label->setText(QString("(%1/%2)").arg(value+1).arg(ui->dwi_volume->maximum()+1));
-    show_image();
+    show_image(false);
 }
 
 
