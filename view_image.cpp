@@ -102,7 +102,7 @@ bool view_image::command(std::string cmd,std::string param1)
     if(!tipl::command<gz_nifti>(data,vs,T,is_mni,cmd,param1,error_msg))
         return false;
     init_image();
-
+    /*
     if(!other_data.empty())
     {
 
@@ -149,6 +149,7 @@ bool view_image::command(std::string cmd,std::string param1)
             other_is_mni[i] = mni;
         }
     }
+    */
     return true;
 }
 
@@ -386,6 +387,7 @@ bool view_image::open(QStringList file_names)
         out << nifti;
         info = out.str().c_str();
 
+        /*
         if(file_names.size() > 1)
         {
             progress prog_("reading");
@@ -417,6 +419,7 @@ bool view_image::open(QStringList file_names)
             else
                 QMessageBox::information(this,"DSI Studio",QString("Other files read in memory for operation"));
         }
+        */
     }
     else
         if(dicom.load_from_file(file_name.toStdString()))
@@ -531,8 +534,9 @@ bool view_image::open(QStringList file_names)
 void view_image::init_image(void)
 {
     no_update = true;
-    max_value = tipl::max_value(data);
-    min_value = tipl::min_value(data);
+    auto minmax = tipl::minmax_value_mt(data);
+    auto min_value = minmax.first;
+    auto max_value = minmax.second;
     float range = max_value-min_value;
     QString dim_text = QString("%1,%2,%3").arg(data.width()).arg(data.height()).arg(data.depth());
     if(!dwi_volume_buf.empty())

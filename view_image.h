@@ -85,12 +85,12 @@ private slots:
 
 private:
     Ui::view_image *ui;
+private:
     tipl::image<3> data;
     bool is_mni = false;
-    float min_value,max_value;
     tipl::vector<3,float> vs;
     tipl::matrix<4,4> T;
-    tipl::value_to_color<float> v2c;
+private: //overlay
     std::vector<size_t> overlay_images;
     std::vector<bool> overlay_images_visible;
     size_t this_index = 0;
@@ -98,13 +98,16 @@ private:
     std::vector<tipl::image<3> > dwi_volume_buf;
     size_t cur_dwi_volume = 0;
 private:// batch processing
+    /*
     std::vector<tipl::image<3> > other_data;
     std::vector<std::string> other_file_name;
     std::vector<tipl::vector<3,float> > other_vs;
     std::vector<tipl::matrix<4,4> > other_T;
     std::vector<bool> other_is_mni;
-private:
+    */
+private: // visualization
     bool no_update = true;
+    tipl::value_to_color<float> v2c;
     unsigned char cur_dim = 2;
     int slice_pos[3];
     QGraphicsScene source;
