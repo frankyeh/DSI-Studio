@@ -47,10 +47,6 @@ private slots:
 
     void on_actionSet_Transformation_triggered();
 
-    void on_actionSave_as_Int8_triggered();
-
-    void on_actionSave_as_Int16_triggered();
-
     void change_contrast();
 
     void on_min_slider_sliderMoved(int position);
@@ -83,19 +79,72 @@ private slots:
 
     void run_action2();
 
+    void on_type_currentIndexChanged(int index);
+
 private:
     Ui::view_image *ui;
 private:
-    tipl::image<3> data;
+    std::vector<unsigned char> data_buf;
+    tipl::shape<3> shape;
+    enum {uint8 = 0,uint16 = 1,uint32 = 2,float32 = 3} data_type = uint8;
+    size_t pixelbit[4] = {1,2,4,4};
     bool is_mni = false;
     tipl::vector<3,float> vs;
     tipl::matrix<4,4> T;
+    template <typename T>
+    void apply(T&& fun)
+    {
+        switch(data_type)
+        {
+            case uint8:
+                {
+                    tipl::image<3,unsigned char,tipl::buffer_container> I;
+                    I.buf() = std::move(data_buf);
+                    I.resize(shape);
+                    fun(I);
+                    shape = I.shape();
+                    I.buf().swap(data_buf);
+                    return;
+                }
+            case uint16:
+                {
+                    tipl::image<3,unsigned short,tipl::buffer_container> I;
+                    I.buf() = std::move(data_buf);
+                    I.resize(shape);
+                    fun(I);
+                    shape = I.shape();
+                    I.buf().swap(data_buf);
+                    return;
+                }
+            case uint32:
+                {
+                    tipl::image<3,unsigned int,tipl::buffer_container> I;
+                    I.buf() = std::move(data_buf);
+                    I.resize(shape);
+                    fun(I);
+                    shape = I.shape();
+                    I.buf().swap(data_buf);
+                    return;
+                }
+            case float32:
+                {
+                    tipl::image<3,float,tipl::buffer_container> I;
+                    I.buf() = std::move(data_buf);
+                    I.resize(shape);
+                    fun(I);
+                    shape = I.shape();
+                    I.buf().swap(data_buf);
+                    return;
+                }
+        }
+        return;
+    }
 private: //overlay
     std::vector<size_t> overlay_images;
     std::vector<bool> overlay_images_visible;
     size_t this_index = 0;
 private:
-    std::vector<tipl::image<3> > dwi_volume_buf;
+    std::vector<std::vector<unsigned char> > dwi_volume_buf;
     size_t cur_dwi_volume = 0;
 private:// batch processing
     /*

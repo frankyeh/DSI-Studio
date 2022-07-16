@@ -364,8 +364,6 @@
     </property>
     <addaction name="actionSave"/>
     <addaction name="action_Save_as"/>
-    <addaction name="actionSave_as_Int8"/>
-    <addaction name="actionSave_as_Int16"/>
    </widget>
    <widget class="QMenu" name="menuResize">
     <property name="title">
@@ -438,7 +436,7 @@
   </widget>
   <action name="action_Save_as">
    <property name="text">
-    <string>Save as Float...</string>
+    <string>Save as...</string>
    </property>
   </action>
   <action name="actionResample">
