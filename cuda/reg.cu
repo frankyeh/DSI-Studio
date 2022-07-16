@@ -83,9 +83,9 @@ void cdm2_cuda(const tipl::image<3>& It,
         return;
     }
     d.resize(It.shape());
-    dd.vector().copy_to(d);
+    dd.buf().copy_to(d);
     inv_d.resize(It.shape());
-    inv_dd.vector().copy_to(inv_d);
+    inv_dd.buf().copy_to(inv_d);
 
     cudaDeviceSynchronize();
 
