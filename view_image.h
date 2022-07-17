@@ -84,10 +84,12 @@ private slots:
 private:
     Ui::view_image *ui;
 private:
-    std::vector<unsigned char> data_buf;
-    tipl::shape<3> shape;
+    tipl::image<3,unsigned char,tipl::buffer_container> I_uint8;
+    tipl::image<3,unsigned short,tipl::buffer_container> I_uint16;
+    tipl::image<3,unsigned int,tipl::buffer_container> I_uint32;
+    tipl::image<3,float,tipl::buffer_container> I_float32;
     enum {uint8 = 0,uint16 = 1,uint32 = 2,float32 = 3} data_type = uint8;
-    size_t pixelbit[4] = {1,2,4,4};
+    tipl::shape<3> shape;
     bool is_mni = false;
     tipl::vector<3,float> vs;
     tipl::matrix<4,4> T;
@@ -96,48 +98,11 @@ private:
     {
         switch(data_type)
         {
-            case uint8:
-                {
-                    tipl::image<3,unsigned char,tipl::buffer_container> I;
-                    I.buf() = std::move(data_buf);
-                    I.resize(shape);
-                    fun(I);
-                    shape = I.shape();
-                    I.buf().swap(data_buf);
-                    return;
-                }
-            case uint16:
-                {
-                    tipl::image<3,unsigned short,tipl::buffer_container> I;
-                    I.buf() = std::move(data_buf);
-                    I.resize(shape);
-                    fun(I);
-                    shape = I.shape();
-                    I.buf().swap(data_buf);
-                    return;
-                }
-            case uint32:
-                {
-                    tipl::image<3,unsigned int,tipl::buffer_container> I;
-                    I.buf() = std::move(data_buf);
-                    I.resize(shape);
-                    fun(I);
-                    shape = I.shape();
-                    I.buf().swap(data_buf);
-                    return;
-                }
-            case float32:
-                {
-                    tipl::image<3,float,tipl::buffer_container> I;
-                    I.buf() = std::move(data_buf);
-                    I.resize(shape);
-                    fun(I);
-                    shape = I.shape();
-                    I.buf().swap(data_buf);
-                    return;
-                }
+            case uint8:fun(I_uint8);return;
+            case uint16:fun(I_uint16);return;
+            case uint32:fun(I_uint32);return;
+            case float32:fun(I_float32);return;
         }
-        return;
     }
 private: //overlay
     std::vector<size_t> overlay_images;

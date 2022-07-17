@@ -99,7 +99,7 @@ bool match_files(const std::string& file_path1,const std::string& file_path2,
 
 bool view_image::command(std::string cmd,std::string param1)
 {
-    if(data_buf.empty())
+    if(!shape.size())
         return true;
     error_msg.clear();
 
@@ -341,7 +341,6 @@ bool view_image::open(QStringList file_names)
     tipl::io::bruker_2dseq seq;
     tipl::io::nrrd nrrd;
     gz_mat_read mat;
-    data_buf.clear();
     is_mni = false;
     T.identity();
 
@@ -364,11 +363,11 @@ bool view_image::open(QStringList file_names)
             if(i == 0)
             {
                 shape = tipl::shape<3>(I.width(),I.height(),file_names.size());
-                data_buf.resize(shape.size());
+                I_uint8.resize(shape);
             }
             unsigned int pos = i*I.size();
             for(unsigned int j = 0;j < I.size();++j)
-                data_buf[pos+j] = ((float)I[j].r+(float)I[j].r+(float)I[j].r)/3.0;
+                I_uint8[pos+j] = ((float)I[j].r+(float)I[j].r+(float)I[j].r)/3.0;
         }
     }
     if(QString(file_name).endsWith(".nhdr"))
@@ -387,7 +386,6 @@ bool view_image::open(QStringList file_names)
             data_type = uint16;
         if(nrrd.values["type"] == "uchar")
             data_type = uint8;
-        data_buf.resize(shape.size()*pixelbit[data_type]);
         apply([&](auto& data)
         {
             nrrd >> data;
@@ -399,6 +397,11 @@ bool view_image::open(QStringList file_names)
         }
         nrrd.get_voxel_size(vs);
         nrrd.get_image_transformation(T);
+
+        info.clear();
+        for(auto iter : nrrd.values)
+            info += QString("%1=%2\n").arg(iter.first.c_str()).arg(iter.second.c_str());
+
     }
     else
     if(QString(file_name).endsWith(".nii.gz") || QString(file_name).endsWith(".nii"))
@@ -445,7 +448,6 @@ bool view_image::open(QStringList file_names)
         if(std::floor(nifti.nif_header.scl_inter) != nifti.nif_header.scl_inter ||
            std::floor(nifti.nif_header.scl_slope) != nifti.nif_header.scl_slope)
             data_type = float32;
-        data_buf.resize(shape.size()*pixelbit[data_type]);
         apply([&](auto& data){nifti.get_untouched_image(data);});
         nifti.get_voxel_size(vs);
         nifti.get_image_transformation(T);
@@ -493,7 +495,6 @@ bool view_image::open(QStringList file_names)
         {
             data_type = uint16;
             dicom.get_image_dimension(shape);
-            data_buf.resize(shape.size()*pixelbit[data_type]);
             apply([&](auto& data){dicom >> data;});
 
             if(dicom.is_compressed)
@@ -504,8 +505,8 @@ bool view_image::open(QStringList file_names)
                     QMessageBox::critical(this,"ERROR",QString("Unsupported transfer syntax:") + QString(dicom.encoding.c_str()));
                     return false;
                 }
-                if(I.size() == data_buf.size())
-                    std::copy(I.begin(),I.end(),data_buf.begin());
+                if(I.size() == shape.size())
+                    std::copy(I.begin(),I.end(),I_uint16.begin());
             }
             dicom.get_voxel_size(vs);
             std::string info_;
@@ -558,15 +559,11 @@ bool view_image::open(QStringList file_names)
             {
                 data_type = float32;
                 mat.read("dimension",shape);
-                data_buf.resize(shape.size()*pixelbit[data_type]);
-
-                apply([&](auto& data)
-                {
-                    if((mat.has("fa0") || mat.has("image0")))
-                        mat.read(mat.has("fa0") ? "fa0":"image0",data);
-                    else
-                        mat >> data;
-                });
+                I_float32.resize(shape);
+                if((mat.has("fa0") || mat.has("image0")))
+                    mat.read(mat.has("fa0") ? "fa0":"image0",I_float32);
+                else
+                    mat >> I_float32;
 
                 if(mat.has("trans"))
                     mat.read("trans",T);
@@ -586,9 +583,7 @@ bool view_image::open(QStringList file_names)
             {
                 data_type = float32;
                 shape = seq.get_image().shape();
-                data_buf.resize(shape.size()*pixelbit[data_type]);
-                auto I = tipl::make_image(reinterpret_cast<float*>(&data_buf[0]),shape);
-                I = seq.get_image();
+                I_float32 = seq.get_image();
                 seq.get_voxel_size(vs);
             }
     ui->type->setCurrentIndex(data_type);
@@ -605,9 +600,9 @@ bool view_image::open(QStringList file_names)
     }
     ui->info->selectRow(0);
 
-    if(!data_buf.empty())
+    if(shape.size())
         init_image();
-    return !data_buf.empty() || !info.isEmpty();
+    return shape.size() || !info.isEmpty();
 }
 
 void view_image::init_image(void)
@@ -741,7 +736,7 @@ void draw_ruler(QPainter& paint,
                 bool grid = false);
 void view_image::show_image(bool update_others)
 {
-    if(data_buf.empty() || no_update)
+    if(!shape.size() || no_update)
         return;
 
     tipl::color_image buffer;
@@ -989,7 +984,7 @@ void view_image::on_SagView_clicked()
 
 void view_image::on_slice_pos_valueChanged(int value)
 {
-    if(data_buf.empty())
+    if(!shape.size())
         return;
     slice_pos[cur_dim] = value;
     show_image(false);
@@ -1039,18 +1034,20 @@ void view_image::on_actionImageMultiplication_triggered()
 
 void view_image::on_dwi_volume_valueChanged(int value)
 {
-    dwi_volume_buf[cur_dwi_volume].swap(data_buf); // return image data to buffer
-
-    cur_dwi_volume = size_t(value);
-    if(dwi_volume_buf[cur_dwi_volume].empty())
+    apply([&](auto& I)
     {
-        has_gui = false;
-        nifti.select_volume(cur_dwi_volume);
-        apply([&](auto& data){return nifti.get_untouched_image(data);});
-        has_gui = true;
-    }
-    else
-        dwi_volume_buf[cur_dwi_volume].swap(data_buf);
+        I.buf().swap(dwi_volume_buf[cur_dwi_volume]);
+        cur_dwi_volume = size_t(value);
+        if(dwi_volume_buf[cur_dwi_volume].empty())
+        {
+            has_gui = false;
+            nifti.select_volume(cur_dwi_volume);
+            nifti.get_untouched_image(I);
+            has_gui = true;
+        }
+        else
+            I.buf().swap(dwi_volume_buf[cur_dwi_volume]);
+    });
 
     ui->dwi_label->setText(QString("(%1/%2)").arg(value+1).arg(ui->dwi_volume->maximum()+1));
     show_image(false);
@@ -1083,50 +1080,59 @@ void view_image::run_action2()
 
 void view_image::on_type_currentIndexChanged(int index)
 {
-    if(data_buf.empty() || data_type == index)
+    if(!shape.size() || data_type == index)
         return;
+    std::vector<unsigned char> buf;
     if(index < data_type)
     {
-        apply([&](auto& data)
+        apply([&](auto& I)
         {
             switch(index)
             {
                 case uint8:
-                    std::copy(data.begin(),data.end(),reinterpret_cast<unsigned char*>(&data[0]));
+                    std::copy(I.begin(),I.end(),reinterpret_cast<unsigned char*>(I.begin()));
                     break;
                 case uint16:
-                    std::copy(data.begin(),data.end(),reinterpret_cast<unsigned short*>(&data[0]));
+                    std::copy(I.begin(),I.end(),reinterpret_cast<unsigned short*>(I.begin()));
                     break;
                 case uint32:
-                    std::copy(data.begin(),data.end(),reinterpret_cast<unsigned int*>(&data[0]));
+                    std::copy(I.begin(),I.end(),reinterpret_cast<unsigned int*>(I.begin()));
                     break;
                 break;
             }
+            I.buf().swap(buf);
+            I.clear();
         });
-        data_type = decltype(data_type)(index);
-        data_buf.resize(shape.size()*pixelbit[data_type]);
+
     }
     else
     {
-        std::vector<unsigned char> new_buffer(shape.size()*pixelbit[index]);
-        apply([&](auto& data)
+        size_t pixelbit[4] = {1,2,4,4};
+        buf.resize(shape.size()*pixelbit[index]);
+        apply([&](auto& I)
         {
             switch(index)
             {
                 case uint16:
-                    tipl::copy_mt(data.begin(),data.end(),reinterpret_cast<unsigned short*>(&new_buffer[0]));
+                    tipl::copy_mt(I.begin(),I.end(),reinterpret_cast<unsigned short*>(&buf[0]));
                     break;
                 case uint32:
-                    tipl::copy_mt(data.begin(),data.end(),reinterpret_cast<unsigned int*>(&new_buffer[0]));
+                    tipl::copy_mt(I.begin(),I.end(),reinterpret_cast<unsigned int*>(&buf[0]));
                     break;
                 case float32:
-                    tipl::copy_mt(data.begin(),data.end(),reinterpret_cast<float*>(&new_buffer[0]));
+                    tipl::copy_mt(I.begin(),I.end(),reinterpret_cast<float*>(&buf[0]));
                     break;
             }
+            I.clear();
         });
-        data_type = decltype(data_type)(index);
-        data_buf.swap(new_buffer);
     }
+
+    data_type = decltype(data_type)(index);
+    apply([&](auto& I)
+    {
+        I.buf().swap(buf);
+        I.resize(shape);
+    });
     init_image();
 }
 
