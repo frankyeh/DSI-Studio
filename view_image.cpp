@@ -250,7 +250,6 @@ view_image::view_image(QWidget *parent) :
     connect(ui->actionUpper_Threshold, SIGNAL(triggered()),this, SLOT(run_action2()));
     connect(ui->actionThreshold, SIGNAL(triggered()),this, SLOT(run_action2()));
 
-    source_ratio = 2.0;
     ui->tabWidget->setCurrentIndex(0);
 
 
@@ -275,9 +274,9 @@ bool view_image::eventFilter(QObject *obj, QEvent *event)
         if(!we)
             return false;
         if(we->angleDelta().y() < 0)
-            on_zoom_in_clicked();
+            ui->zoom->setValue(ui->zoom->value()*0.8f);
         else
-            on_zoom_out_clicked();
+            ui->zoom->setValue(ui->zoom->value()*1.2f);
         event->accept();
 
         return true;
@@ -296,8 +295,8 @@ bool view_image::eventFilter(QObject *obj, QEvent *event)
         y = source.height() - y;
 
     tipl::slice2space(cur_dim,
-                      std::round(float(x) / source_ratio),
-                      std::round(float(y) / source_ratio),ui->slice_pos->value(),pos[0],pos[1],pos[2]);
+                      std::round(float(x) / ui->zoom->value()),
+                      std::round(float(y) / ui->zoom->value()),ui->slice_pos->value(),pos[0],pos[1],pos[2]);
     if(!shape.is_valid(pos))
         return true;
     mni = pos;
@@ -761,7 +760,7 @@ void view_image::show_image(bool update_others)
         });
 
     QImage I(reinterpret_cast<unsigned char*>(&*buffer.begin()),buffer.width(),buffer.height(),QImage::Format_RGB32);
-    source_image = I.scaled(buffer.width()*source_ratio,buffer.height()*source_ratio);
+    source_image = I.scaled(buffer.width()*ui->zoom->value(),buffer.height()*ui->zoom->value());
 
     bool flip_x = has_flip_x();
     bool flip_y = has_flip_y();
@@ -777,7 +776,7 @@ void view_image::show_image(bool update_others)
         paint.setFont(font());
 
         draw_ruler(paint,shape,(ui->orientation->currentIndex()) ? T : tipl::matrix<4,4>(tipl::identity_matrix()),cur_dim,
-                        has_flip_x(),has_flip_y(),source_ratio,ui->axis_grid->currentIndex());
+                        has_flip_x(),has_flip_y(),ui->zoom->value(),ui->axis_grid->currentIndex());
     }
 
     show_view(source,source_image);
@@ -798,17 +797,6 @@ void view_image::change_contrast()
     v2c.set_range(float(ui->min->value()),float(ui->max->value()));
     v2c.two_color(ui->min_color->color().rgb(),ui->max_color->color().rgb());
     show_image(true);
-}
-void view_image::on_zoom_in_clicked()
-{
-    source_ratio *= 1.1f;
-    show_image(false);
-}
-
-void view_image::on_zoom_out_clicked()
-{
-    source_ratio *= 0.9f;
-    show_image(false);
 }
 void view_image::on_actionResample_triggered()
 {
@@ -1133,6 +1121,14 @@ void view_image::on_type_currentIndexChanged(int index)
         I.buf().swap(buf);
         I.resize(shape);
     });
+    if(!dwi_volume_buf.empty())
+        dwi_volume_buf = std::move(std::vector<std::vector<unsigned char> >(dwi_volume_buf.size()));
     init_image();
+}
+
+
+void view_image::on_zoom_valueChanged(double arg1)
+{
+    show_image(false);
 }
 

@@ -30,8 +30,6 @@ private slots:
     void init_image(void);
     void update_overlay_menu(void);
     void set_overlay(void);
-    void on_zoom_in_clicked();
-    void on_zoom_out_clicked();
 
     void on_actionResample_triggered();
 
@@ -81,6 +79,8 @@ private slots:
 
     void on_type_currentIndexChanged(int index);
 
+    void on_zoom_valueChanged(double arg1);
+
 private:
     Ui::view_image *ui;
 private:
@@ -126,7 +126,6 @@ private: // visualization
     int slice_pos[3];
     QGraphicsScene source;
     QImage source_image;
-    float source_ratio;
     std::string error_msg;
 };
 
