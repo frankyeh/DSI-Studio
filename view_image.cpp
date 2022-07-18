@@ -628,6 +628,7 @@ void view_image::init_image(void)
         min_value = minmax.first;
         max_value = minmax.second;
     });
+    std::cout << "image contrast range: " << min_value << " to " << max_value << std::endl;
 
     float range = max_value-min_value;
     QString dim_text = QString("%1,%2,%3").arg(shape.width()).arg(shape.height()).arg(shape.depth());
