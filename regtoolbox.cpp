@@ -179,13 +179,14 @@ void image2rgb(tipl::image<2,float>& tmp,tipl::color_image& buf,float contrast)
 }
 
 
-void show_slice_at(QGraphicsScene& scene,tipl::image<2,float>& tmp,tipl::color_image& buf,float ratio,float contrast,uint8_t cur_view)
+void show_slice_at(QGraphicsScene& scene,tipl::image<2,float>& tmp,tipl::color_image& buf,float contrast,uint8_t cur_view)
 {
     image2rgb(tmp,buf,contrast);
     QImage I(reinterpret_cast<unsigned char*>(&*buf.begin()),buf.width(),buf.height(),QImage::Format_RGB32);
     if(cur_view != 2)
         I = I.mirrored(false,true);
-    show_view(scene,I.scaled(int(buf.width()*ratio),int(buf.height()*ratio)));
+    I.detach();
+    show_view(scene,I);
 }
 
 
@@ -195,8 +196,8 @@ void show_slice_at(QGraphicsScene& scene,const tipl::image<3>& source,
     if(source.empty())
         return;
     tipl::image<2,float> tmp;
-    tipl::volume2slice(source,tmp,cur_view,slice_pos);
-    show_slice_at(scene,tmp,buf,ratio,contrast,cur_view);
+    tipl::volume2slice_scaled(source,tmp,cur_view,slice_pos,ratio);
+    show_slice_at(scene,tmp,buf,contrast,cur_view);
 }
 void show_mosaic_slice_at(QGraphicsScene& scene,
                           const tipl::image<3>& source1,
@@ -208,8 +209,8 @@ void show_mosaic_slice_at(QGraphicsScene& scene,
     if(source1.empty() || source2.empty())
         return;
     tipl::image<2,float> tmp1,tmp2,tmp;
-    tipl::volume2slice(source1,tmp1,cur_view,slice_pos);
-    tipl::volume2slice(source2,tmp2,cur_view,slice_pos);
+    tipl::volume2slice_scaled(source1,tmp1,cur_view,slice_pos,ratio);
+    tipl::volume2slice_scaled(source2,tmp2,cur_view,slice_pos,ratio);
     if(tmp1.shape() != tmp2.shape())
         return;
     tmp.resize(tmp1.shape());
@@ -221,7 +222,7 @@ void show_mosaic_slice_at(QGraphicsScene& scene,
             int y = index[1] >> mosaic_size;
             tmp[index.index()] = ((x&1) ^ (y&1)) ? tmp1[index.index()] : tmp2[index.index()]*c;
         });
-    show_slice_at(scene,tmp,buf,ratio,contrast,cur_view);
+    show_slice_at(scene,tmp,buf,contrast,cur_view);
 }
 
 void show_blend_slice_at(QGraphicsScene& scene,
@@ -234,8 +235,8 @@ void show_blend_slice_at(QGraphicsScene& scene,
     if(source1.empty() || source2.empty())
         return;
     tipl::image<2,float> tmp1,tmp2;
-    tipl::volume2slice(source1,tmp1,cur_view,slice_pos);
-    tipl::volume2slice(source2,tmp2,cur_view,slice_pos);
+    tipl::volume2slice_scaled(source1,tmp1,cur_view,slice_pos,ratio);
+    tipl::volume2slice_scaled(source2,tmp2,cur_view,slice_pos,ratio);
     if(tmp1.shape() != tmp2.shape())
         return;
     tipl::color_image buf1,buf2;
@@ -256,7 +257,8 @@ void show_blend_slice_at(QGraphicsScene& scene,
     QImage I(reinterpret_cast<unsigned char*>(&*buf.begin()),buf.width(),buf.height(),QImage::Format_RGB32);
     if(cur_view != 2)
         I = I.mirrored(false,true);
-    show_view(scene,I.scaled(int(buf.width()*ratio),int(buf.height()*ratio)));
+    I.detach();
+    show_view(scene,I);
 }
 
 void RegToolBox::flash_image()
@@ -315,10 +317,9 @@ void RegToolBox::show_image(void)
     {
         int pos = std::min(J_view.depth()-1,J_view.depth()*ui->slice_pos->value()/ui->slice_pos->maximum());
         tipl::image<2,float> J_view_slice;
-        tipl::volume2slice(J_view,J_view_slice,cur_view,pos);
+        tipl::volume2slice_scaled(J_view,J_view_slice,cur_view,pos,ratio);
         image2rgb(J_view_slice,cJ,contrast1);
-        QImage warp_image = QImage((unsigned char*)&*cJ.begin(),cJ.width(),cJ.height(),QImage::Format_RGB32).
-                      scaled(cJ.width()*ratio,cJ.height()*ratio);
+        QImage warp_image = QImage((unsigned char*)&*cJ.begin(),cJ.width(),cJ.height(),QImage::Format_RGB32).copy();
 
         if(ui->show_warp->isChecked() && ui->dis_spacing->currentIndex() && !dis_view.empty())
         {
@@ -326,7 +327,7 @@ void RegToolBox::show_image(void)
             paint.setBrush(Qt::NoBrush);
             paint.setPen(Qt::red);
             tipl::image<2,tipl::vector<3> > dis_slice;
-            tipl::volume2slice(dis_view,dis_slice,cur_view,pos);
+            tipl::volume2slice_scaled(dis_view,dis_slice,cur_view,pos,ratio);
             int cur_dis = 1 << (ui->dis_spacing->currentIndex()-1);
             for(int x = 0;x < dis_slice.width();x += cur_dis)
             {
