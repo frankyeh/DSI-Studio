@@ -22,6 +22,7 @@ void console_stream::show_output(void)
     }
     for(int i = 0; i+1 < strSplitted.size(); i++)
         log_window->append(strSplitted.at(i));
+    QApplication::processEvents();
     has_output = false;
 }
 std::basic_streambuf<char>::int_type console_stream::overflow(std::basic_streambuf<char>::int_type v)
@@ -53,20 +54,16 @@ Console::Console(QWidget *parent) :
     ui->setupUi(this);
     ui->pwd->setText(QString("[%1]$ ./dsi_studio ").arg(QDir().current().absolutePath()));
     console.log_window = ui->console;
-    qApp->installEventFilter(this);
+    console.show_output();
+
 }
 
 Console::~Console()
 {
-    qApp->removeEventFilter(this);
     console.log_window = nullptr;
     delete ui;
 }
-bool Console::eventFilter(QObject*, QEvent*)
-{
-    console.show_output();
-    return false;
-}
+
 int rec(program_option& po);
 int trk(program_option& po);
 int src(program_option& po);

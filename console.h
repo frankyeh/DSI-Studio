@@ -41,7 +41,6 @@ class Console;
 class Console : public QMainWindow
 {
     Q_OBJECT
-    bool eventFilter(QObject *obj, QEvent *event) override;
 public:
     explicit Console(QWidget *parent = nullptr);
     ~Console();
