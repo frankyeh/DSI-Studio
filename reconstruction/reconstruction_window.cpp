@@ -189,7 +189,8 @@ void reconstruction_window::on_b_table_itemSelectionChanged()
         return;
     v2c.set_range(ui->min_value->value(),ui->max_value->value());
     tipl::image<2,float> tmp;
-    tipl::volume2slice(tipl::make_image(handle->src_dwi_data[ui->b_table->currentRow()],handle->voxel.dim),tmp,view_orientation,ui->z_pos->value());
+    tipl::volume2slice_scaled(tipl::make_image(handle->src_dwi_data[ui->b_table->currentRow()],handle->voxel.dim),
+                              tmp,view_orientation,ui->z_pos->value(),source_ratio);
     buffer_source.resize(tmp.shape());
     for(int i = 0;i < tmp.size();++i)
         buffer_source[i] = v2c[tmp[i]];
@@ -219,11 +220,10 @@ void reconstruction_window::on_b_table_itemSelectionChanged()
             }
     }
 
-    source_image = QImage((unsigned char*)&*buffer_source.begin(),tmp.width(),tmp.height(),QImage::Format_RGB32).
-                    scaled(tmp.width()*source_ratio,tmp.height()*source_ratio);
-
+    source_image = QImage((unsigned char*)&*buffer_source.begin(),tmp.width(),tmp.height(),QImage::Format_RGB32);
     if(view_orientation != 2)
         source_image = source_image.mirrored();
+    source_image.detach();
     show_view(source,source_image);
 }
 
