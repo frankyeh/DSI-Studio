@@ -106,10 +106,16 @@ bool view_image::command(std::string cmd,std::string param1)
     bool result = true;
     apply([&](auto& I)
     {
+        std::cout << "run command: " << cmd << " " << param1;
         result = tipl::command<gz_nifti>(I,vs,T,is_mni,cmd,param1,error_msg);
+        std::cout << " result:" << (result ? "succeeded":"failed") << std::endl;
+        shape = I.shape();
     });
     if(!result)
+    {
+        std::cout << "ERROR:" << error_msg << std::endl;
         return false;
+    }
 
     init_image();
     /*
@@ -398,7 +404,7 @@ bool view_image::open(QStringList file_names)
         nrrd.get_image_transformation(T);
 
         info.clear();
-        for(auto iter : nrrd.values)
+        for(const auto& iter : nrrd.values)
             info += QString("%1=%2\n").arg(iter.first.c_str()).arg(iter.second.c_str());
 
     }
@@ -448,6 +454,8 @@ bool view_image::open(QStringList file_names)
            std::floor(nifti.nif_header.scl_slope) != nifti.nif_header.scl_slope)
             data_type = float32;
         apply([&](auto& data){nifti.get_untouched_image(data);});
+        if(nifti.dim(4) == 1)
+            save_idx(file_name.toStdString().c_str(),nifti.input_stream);
         nifti.get_voxel_size(vs);
         nifti.get_image_transformation(T);
         is_mni = nifti.is_mni();
@@ -885,8 +893,6 @@ void view_image::on_actionTrim_triggered()
                                 std::to_string(range_max[1]) + " " +
                                 std::to_string(range_max[2])))
         QMessageBox::critical(this,"ERROR",error_msg.c_str());
-
-    init_image();
 }
 
 void view_image::on_actionSet_Translocation_triggered()
