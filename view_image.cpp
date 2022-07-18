@@ -593,7 +593,8 @@ bool view_image::open(QStringList file_names)
                 I_float32 = seq.get_image();
                 seq.get_voxel_size(vs);
             }
-    ui->type->setCurrentIndex(data_type);
+
+
     QStringList list = info.split("\n");
     ui->info->clear();
     ui->info->setRowCount(list.size());
@@ -607,8 +608,11 @@ bool view_image::open(QStringList file_names)
     }
     ui->info->selectRow(0);
 
+    no_update = true;
+    ui->type->setCurrentIndex(data_type);
+    ui->zoom->setValue(width()/shape.width()*0.9f);
     if(shape.size())
-        init_image();
+        init_image();  
     return shape.size() || !info.isEmpty();
 }
 
