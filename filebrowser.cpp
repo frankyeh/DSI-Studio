@@ -342,7 +342,7 @@ void FileBrowser::show_image(void)
         tipl::volume2slice(data,data_buffer,2,cur_z);
         tipl::normalize_upper_lower(data_buffer,slice_image,255);
     }
-    view_image = QImage((unsigned char*)&*slice_image.begin(),slice_image.width(),slice_image.height(),QImage::Format_RGB32);
+    view_image = QImage((unsigned char*)&*slice_image.begin(),slice_image.width(),slice_image.height(),QImage::Format_RGB32).copy();
     show_view(scene,view_image);
 
 }
