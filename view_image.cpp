@@ -106,9 +106,10 @@ bool view_image::command(std::string cmd,std::string param1)
     bool result = true;
     apply([&](auto& I)
     {
-        std::cout << "run command: " << cmd << " " << param1;
+        tipl::time t("elapsed time: ");
+        std::cout << "run command: " << cmd << " " << param1 << std::endl;
         result = tipl::command<gz_nifti>(I,vs,T,is_mni,cmd,param1,error_msg);
-        std::cout << " result:" << (result ? "succeeded":"failed") << std::endl;
+        std::cout << "result: " << (result ? "succeeded":"failed") << std::endl;
         shape = I.shape();
     });
     if(!result)
@@ -610,7 +611,7 @@ bool view_image::open(QStringList file_names)
 
     no_update = true;
     ui->type->setCurrentIndex(data_type);
-    ui->zoom->setValue(width()/shape.width()*0.9f);
+    ui->zoom->setValue(0.9f*width()/shape.width());
     if(shape.size())
         init_image();  
     return shape.size() || !info.isEmpty();
@@ -754,7 +755,7 @@ void view_image::show_image(bool update_others)
     apply([&](auto& data)
     {
         tipl::image<2,float> buf;
-        tipl::volume2slice(data, buf, cur_dim, size_t(slice_pos[cur_dim]));
+        tipl::volume2slice_scaled(data, buf, cur_dim, size_t(slice_pos[cur_dim]),ui->zoom->value());
         v2c.convert(buf,buffer);
     });
 
@@ -765,19 +766,16 @@ void view_image::show_image(bool update_others)
         {
             tipl::color_image buffer2;
             tipl::image<2,float> buf2;
-            tipl::volume2slice(data, buf2, cur_dim, size_t(slice_pos[cur_dim]));
+            tipl::volume2slice_scaled(data, buf2, cur_dim, size_t(slice_pos[cur_dim]),ui->zoom->value());
             opened_images[overlay_images[i]]->v2c.convert(buf2,buffer2);
             for(size_t j = 0;j < buffer.size();++j)
                 buffer[j] |= buffer2[j];
         });
 
-    QImage I(reinterpret_cast<unsigned char*>(&*buffer.begin()),buffer.width(),buffer.height(),QImage::Format_RGB32);
-    source_image = I.scaled(buffer.width()*ui->zoom->value(),buffer.height()*ui->zoom->value());
-
-    bool flip_x = has_flip_x();
-    bool flip_y = has_flip_y();
-    if(flip_y || flip_x)
-        source_image = source_image.mirrored(flip_x,flip_y);
+    source_image = QImage(reinterpret_cast<unsigned char*>(&*buffer.begin()),buffer.width(),buffer.height(),QImage::Format_RGB32);
+    if(has_flip_y() || has_flip_x())
+        source_image = source_image.mirrored(has_flip_x(),has_flip_y());
+    source_image.detach();
 
     {
         QPainter paint(&source_image);
