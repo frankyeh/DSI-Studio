@@ -1079,50 +1079,28 @@ void view_image::on_type_currentIndexChanged(int index)
 {
     if(!shape.size() || data_type == index)
         return;
-    std::vector<unsigned char> buf;
-    if(index < data_type)
+    std::vector<unsigned char> buf,empty_buf;
+    size_t pixelbit[4] = {1,2,4,4};
+    buf.resize(shape.size()*pixelbit[index]);
+    apply([&](auto& I)
     {
-        apply([&](auto& I)
+        switch(index)
         {
-            switch(index)
-            {
-                case uint8:
-                    std::copy(I.begin(),I.end(),reinterpret_cast<unsigned char*>(I.begin()));
-                    break;
-                case uint16:
-                    std::copy(I.begin(),I.end(),reinterpret_cast<unsigned short*>(I.begin()));
-                    break;
-                case uint32:
-                    std::copy(I.begin(),I.end(),reinterpret_cast<unsigned int*>(I.begin()));
-                    break;
+            case uint8:
+                tipl::copy_mt(I.begin(),I.end(),reinterpret_cast<unsigned char*>(&buf[0]));
                 break;
-            }
-            I.buf().swap(buf);
-            I.clear();
-        });
-
-    }
-    else
-    {
-        size_t pixelbit[4] = {1,2,4,4};
-        buf.resize(shape.size()*pixelbit[index]);
-        apply([&](auto& I)
-        {
-            switch(index)
-            {
-                case uint16:
-                    tipl::copy_mt(I.begin(),I.end(),reinterpret_cast<unsigned short*>(&buf[0]));
-                    break;
-                case uint32:
-                    tipl::copy_mt(I.begin(),I.end(),reinterpret_cast<unsigned int*>(&buf[0]));
-                    break;
-                case float32:
-                    tipl::copy_mt(I.begin(),I.end(),reinterpret_cast<float*>(&buf[0]));
-                    break;
-            }
-            I.clear();
-        });
-    }
+            case uint16:
+                tipl::copy_mt(I.begin(),I.end(),reinterpret_cast<unsigned short*>(&buf[0]));
+                break;
+            case uint32:
+                tipl::copy_mt(I.begin(),I.end(),reinterpret_cast<unsigned int*>(&buf[0]));
+                break;
+            case float32:
+                tipl::copy_mt(I.begin(),I.end(),reinterpret_cast<float*>(&buf[0]));
+                break;
+        }
+        I.buf().swap(empty_buf);
+    });
 
     data_type = decltype(data_type)(index);
     apply([&](auto& I)
