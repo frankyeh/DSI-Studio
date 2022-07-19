@@ -4,15 +4,13 @@
 #include "console.h"
 #include "ui_console.h"
 #include "program_option.hpp"
-
+#include "TIPL/tipl.hpp"
 
 console_stream console;
 
-bool is_main_thread(void);
-
 void console_stream::show_output(void)
 {
-    if(!is_main_thread() || !log_window || !has_output)
+    if(!tipl::is_main_thread<0>() || !log_window || !has_output)
         return;
     QStringList strSplitted;
     {
