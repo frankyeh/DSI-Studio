@@ -26,13 +26,13 @@ void convert_region(std::vector<tipl::vector<3,short> >& points,
 {
     if(dim_from == dim_to && trans_from == trans_to)
         return;
-    ROIRegion region_from(dim_from,tipl::vector<3>(1,1,1)),region_to(dim_to,tipl::vector<3>(1,1,1));
+    ROIRegion region_from(dim_from,tipl::vector<3>(1,1,1)),
+              region_to(dim_to,tipl::vector<3>(1,1,1));
     region_from.region.swap(points);
-    tipl::image<3,unsigned char> mask_from,mask_to(dim_to);
-    region_from.SaveToBuffer(mask_from);
-    tipl::resample_mt<tipl::interpolation::nearest>(mask_from,mask_to,
-            tipl::transformation_matrix<float>(tipl::from_space(trans_to).to(trans_from)));
-    region_to.LoadFromBuffer(mask_to);
+    region_from.to_diffusion_space = trans_from;
+    tipl::image<3,unsigned char> mask;
+    region_from.SaveToBuffer(mask,dim_to,trans_to);
+    region_to.LoadFromBuffer(mask);
     region_to.region.swap(points);
 }
 void ROIRegion::add_points(std::vector<tipl::vector<3,short> >&& points,
@@ -244,6 +244,20 @@ void ROIRegion::SaveToBuffer(tipl::image<3,unsigned char>& mask)
         if (mask.shape().is_valid(region[index]))
             mask.at(region[index]) = 1;
     });
+}
+// ---------------------------------------------------------------------------
+void ROIRegion::SaveToBuffer(tipl::image<3,unsigned char>& mask,const tipl::shape<3>& dim_to,const tipl::matrix<4,4>& trans_to)
+{
+    tipl::image<3,unsigned char> m;
+    SaveToBuffer(m);
+    if(dim == dim_to && to_diffusion_space == trans_to)
+    {
+        m.swap(mask);
+        return;
+    }
+    mask.resize(dim_to);
+    tipl::resample_mt<tipl::interpolation::nearest>(m,mask,
+            tipl::transformation_matrix<float>(tipl::from_space(trans_to).to(to_diffusion_space)));
 }
 // ---------------------------------------------------------------------------
 void ROIRegion::perform(const std::string& action)
