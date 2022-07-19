@@ -15,11 +15,6 @@ bool prog_aborted_ = false;
 auto start_time = std::chrono::high_resolution_clock::now();
 std::vector<std::string> progress::status_list;
 std::vector<std::string> progress::at_list;
-std::thread::id main_thread_id = std::this_thread::get_id();
-bool is_main_thread(void)
-{
-    return main_thread_id == std::this_thread::get_id();
-}
 
 inline bool processing_time_less_than(int time)
 {
@@ -60,12 +55,12 @@ std::string progress::get_status(void)
 }
 void progress::begin_prog(bool show_now)
 {
-    if(!has_gui || !is_main_thread())
+    if(!has_gui || !tipl::is_main_thread<0>())
         return;
     start_time = std::chrono::high_resolution_clock::now();
     process_time.resize(status_list.size());
     t_last.resize(status_list.size());
-    t_last.back() = std::chrono::high_resolution_clock::now();
+    t_last.back() = std::chrono::high_resolution_clock::now()+std::chrono::milliseconds(200);
     process_time.back() = std::chrono::high_resolution_clock::now();
     prog_aborted_ = false;
     update_prog(show_now);
@@ -77,7 +72,7 @@ void progress::show(const char* status,bool show_now)
     if(status_list.empty())
         return;
     status_list.back() = status;
-    if(!has_gui || !is_main_thread())
+    if(!has_gui || !tipl::is_main_thread<0>())
         return;
     update_prog(show_now);
 }
@@ -86,7 +81,7 @@ progress::~progress(void)
     status_list.pop_back();
     process_time.pop_back();
     t_last.pop_back();
-    if(!has_gui || !is_main_thread())
+    if(!has_gui || !tipl::is_main_thread<0>())
         return;
     if(!status_list.empty())
     {
@@ -104,7 +99,7 @@ progress::~progress(void)
 }
 bool progress::check_prog(unsigned int now,unsigned int total)
 {
-    if(!has_gui || !is_main_thread() || status_list.empty())
+    if(!has_gui || !tipl::is_main_thread<0>() || status_list.empty())
         return now < total;
     if(now >= total)
     {
@@ -112,9 +107,9 @@ bool progress::check_prog(unsigned int now,unsigned int total)
             at_list.back().clear();
         return false;
     }
-    if(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - t_last.back()).count() > 200)
+    if(std::chrono::high_resolution_clock::now() > t_last.back())
     {
-        t_last.back() = std::chrono::high_resolution_clock::now();
+        t_last.back() = std::chrono::high_resolution_clock::now()+std::chrono::milliseconds(200);
         int expected_sec = (
                     std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() -
                             process_time.back()).count()*int(total-now)/int(now+1)/1000/60);
@@ -137,7 +132,7 @@ bool progress::check_prog(unsigned int now,unsigned int total)
 
 bool progress::aborted(void)
 {
-    if(!has_gui || !is_main_thread())
+    if(!has_gui || !tipl::is_main_thread<0>())
         return false;
     if(progressDialog.get())
         return progressDialog->wasCanceled();
