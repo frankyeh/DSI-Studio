@@ -1451,6 +1451,7 @@ void RegionTableWidget::do_action(QString action)
 {
     if(regions.empty() || currentRow() < 0)
         return;
+    std::vector<int> rows_to_be_updated;
     size_t roi_index = currentRow();
 
     {
@@ -1466,97 +1467,143 @@ void RegionTableWidget::do_action(QString action)
 
         if(action == "A-B" || action == "B-A" || action == "A*B" || action == "A<<B")
         {
+            auto handle = cur_tracking_window.handle;
+            std::vector<unsigned int> checked_row;
+            for (unsigned int roi_index = 0;roi_index < regions.size();++roi_index)
+            {
+                if (item(roi_index,0)->checkState() != Qt::Checked)
+                    continue;
+                checked_row.push_back(roi_index);
+            }
+            auto to_dwi_space = [&](auto region)
+            {
+                region->vs = handle->vs;
+                region->dim = handle->dim;
+                region->is_diffusion_space = true;
+                region->to_diffusion_space = tipl::identity_matrix();
+                region->trans_to_mni = handle->trans_to_mni;
+                region->is_mni = handle->is_qsdr;
+                region->region.clear();
+                region->undo_backup.clear();
+                region->redo_backup.clear();
+            };
             auto checked_regions = get_checked_regions();
             if(checked_regions.size() < 2)
                 return;
-            for(auto r : checked_regions)
-                if(!checked_regions[0]->is_same_space(*r.get()))
-                {
-                    QMessageBox::critical(this,"ERROR","Please resample regions to the same space");
-                    return;
-                }
             tipl::image<3,unsigned char> A;
             tipl::image<3,uint16_t> A_labels;
-            checked_regions[0]->SaveToBuffer(A);
+            checked_regions[0]->SaveToBuffer(A,handle->dim,tipl::identity_matrix());
             if(action == "A<<B")
-                A_labels.resize(A.shape());
+                A_labels.resize(handle->dim);
 
-            tipl::par_for(checked_regions.size(),[&](size_t r)
             {
-                if(r == 0)
-                    return;
-                tipl::image<3,unsigned char> B;
-                checked_regions[r]->SaveToBuffer(B);
-                if(action == "A-B")
-                {
-                    for(size_t i = 0;i < A.size();++i)
-                        if(B[i])
-                            A[i] = 0;
-                }
-                if(action == "B-A")
-                {
-                    for(size_t i = 0;i < B.size();++i)
-                        if(A[i])
-                            B[i] = 0;
-                    checked_regions[r]->LoadFromBuffer(B);
-                }
-                if(action == "A*B")
-                {
-                    for(size_t i = 0;i < B.size();++i)
-                        B[i] = (A[i] & B[i]);
-                    checked_regions[r]->LoadFromBuffer(B);
-                }
-                if(action == "A<<B")
-                {
-                    for(size_t i = 0;i < A.size();++i)
-                        if(A[i] && B[i] && A_labels[i] < r)
-                            A_labels[i] = uint16_t(r);
-                }
-            });
-            if(action == "A-B")
-                checked_regions[0]->LoadFromBuffer(A);
-
-            if(action == "A<<B")
-            {
-                tipl::par_for(tipl::begin_index(A.shape()),
-                              tipl::end_index(A.shape()),[&](const tipl::pixel_index<3>& index)
-                {
-                    if(!A[index.index()] || A_labels[index.index()])
-                        return;
-                    float min_dis = std::numeric_limits<float>::max();
-                    size_t min_r = 1;
-                    tipl::vector<3> pos(index);
-                    for(size_t r = 1;r < checked_regions.size();++r)
-                    {
-                        for(auto& pos2 : checked_regions[r]->region)
-                        {
-                            {
-                                if(std::abs(pos2[0]-pos[0]) > min_dis ||
-                                   std::abs(pos2[1]-pos[1]) > min_dis ||
-                                   std::abs(pos2[2]-pos[2]) > min_dis)
-                                       continue;
-                            }
-                            pos2 -= pos;
-                            float L = float(pos2.length());
-                            if(L < min_dis)
-                            {
-                                min_dis = L;
-                                min_r = r;
-                            }
-                        }
-                    }
-                    A_labels[index.index()] = min_r;
-                });
-
+                progress prog("processing regions");
+                size_t prog_count = 0;
                 tipl::par_for(checked_regions.size(),[&](size_t r)
                 {
+                    progress::at(prog_count++,checked_regions.size());
+                    if(r == 0)
+                        return;
+                    tipl::image<3,unsigned char> B;
+                    checked_regions[r]->SaveToBuffer(B,handle->dim,tipl::identity_matrix());
+                    if(action == "A-B")
+                    {
+                        for(size_t i = 0;i < A.size();++i)
+                            if(B[i])
+                                A[i] = 0;
+                        return;
+                    }
+                    if(action == "B-A")
+                    {
+                        for(size_t i = 0;i < B.size();++i)
+                            if(A[i])
+                                B[i] = 0;
+                        to_dwi_space(checked_regions[r]);
+                        checked_regions[r]->LoadFromBuffer(B);
+                        rows_to_be_updated.push_back(checked_row[r]);
+                    }
+                    if(action == "A*B")
+                    {
+                        for(size_t i = 0;i < B.size();++i)
+                            B[i] = (A[i] & B[i]);
+                        to_dwi_space(checked_regions[r]);
+                        checked_regions[r]->LoadFromBuffer(B);
+                        rows_to_be_updated.push_back(checked_row[r]);
+                    }
+                    if(action == "A<<B")
+                    {
+                        for(size_t i = 0;i < A.size();++i)
+                            if(A[i] && B[i] && A_labels[i] < r)
+                                A_labels[i] = uint16_t(r);
+                    }
+                });
+            }
+            if(action == "A-B")
+            {
+                to_dwi_space(checked_regions[0]);
+                checked_regions[0]->LoadFromBuffer(A);
+                rows_to_be_updated.push_back(checked_row[0]);
+            }
+            if(action == "A<<B")
+            {
+                std::vector<size_t> need_fill_up;
+                {
+                    std::vector<std::vector<size_t> > need_fill_ups(std::thread::hardware_concurrency());
+                    tipl::par_for(A.size(),[&](size_t index,int id)
+                    {
+                        if(A[index] && !A_labels[index])
+                            need_fill_ups[id].push_back(index);
+                    });
+                    tipl::aggregate_results(std::move(need_fill_ups),need_fill_up);
+                }
+                {
+                    progress prog("assign labels",true);
+                    size_t prog_count = 0;
+                    tipl::par_for(need_fill_up.size(),[&](size_t i)
+                    {
+                        progress::at(prog_count++,need_fill_up.size());
+                        tipl::pixel_index<3> index(need_fill_up[i],A.shape());
+                        float min_dis = std::numeric_limits<float>::max();
+                        size_t min_r = 1;
+                        tipl::vector<3> pos(index);
+                        for(size_t r = 1;r < checked_regions.size();++r)
+                        {
+                            for(auto pos2 : checked_regions[r]->region)
+                            {
+                                if(!checked_regions[r]->is_diffusion_space)
+                                    pos2.to(checked_regions[r]->to_diffusion_space);
+                                {
+                                    if(std::abs(pos2[0]-pos[0]) > min_dis ||
+                                       std::abs(pos2[1]-pos[1]) > min_dis ||
+                                       std::abs(pos2[2]-pos[2]) > min_dis)
+                                           continue;
+                                }
+                                pos2 -= pos;
+                                float L = float(pos2.length());
+                                if(L < min_dis)
+                                {
+                                    min_dis = L;
+                                    min_r = r;
+                                }
+                            }
+                        }
+                        A_labels[index.index()] = min_r;
+                    });
+                }
+                progress prog("loading regions",true);
+                size_t prog_count = 0;
+                tipl::par_for(checked_regions.size(),[&](size_t r)
+                {
+                    progress::at(prog_count++,checked_regions.size());
                     if(r == 0)
                         return;
                     tipl::image<3,unsigned char> B(A_labels.shape());
                     for(size_t i = 0;i < A_labels.size();++i)
                         if(A_labels[i] == r)
                             B[i] = 1;
+                    to_dwi_space(checked_regions[r]);
                     checked_regions[r]->LoadFromBuffer(B);
+                    rows_to_be_updated.push_back(checked_row[r]);
                 });
             }
         }
@@ -1717,14 +1764,26 @@ void RegionTableWidget::do_action(QString action)
             {
                 check_row(i,new_region_checked[uint32_t(i)]);
                 item(i,0)->setText(new_region_names[uint32_t(i)].c_str());
-                closePersistentEditor(item(i,1));
-                closePersistentEditor(item(i,2));
-                item(i,1)->setData(Qt::DisplayRole,regions[uint32_t(i)]->regions_feature);
-                item(i,2)->setData(Qt::UserRole,regions[uint32_t(i)]->show_region.color.color);
-                openPersistentEditor(item(i,1));
-                openPersistentEditor(item(i,2));
+                rows_to_be_updated.push_back(i);
             }
         }
+    }
+
+    for(int i : rows_to_be_updated)
+    {
+        closePersistentEditor(item(i,1));
+        closePersistentEditor(item(i,2));
+        item(i,1)->setData(Qt::DisplayRole,regions[uint32_t(i)]->regions_feature);
+        item(i,2)->setData(Qt::UserRole,regions[uint32_t(i)]->show_region.color.color);
+        item(i,3)->setText(QString("(%1,%2,%3)x(%4,%5,%6)")
+                           .arg(regions[i]->dim[0])
+                           .arg(regions[i]->dim[1])
+                           .arg(regions[i]->dim[2])
+                           .arg(regions[i]->vs[0])
+                           .arg(regions[i]->vs[1])
+                           .arg(regions[i]->vs[2]));
+        openPersistentEditor(item(i,1));
+        openPersistentEditor(item(i,2));
     }
     emit need_update();
 }
