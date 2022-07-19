@@ -30,9 +30,8 @@ protected:
     void closeEvent(QCloseEvent *event);
 private:
     QGraphicsScene source;
-    tipl::color_image buffer_source;
     QImage source_image;
-    float source_ratio;
+    float source_ratio = 1.0f;
     void load_b_table(void);
 private:
     QGraphicsScene scene;

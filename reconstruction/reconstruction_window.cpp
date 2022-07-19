@@ -29,13 +29,13 @@ bool reconstruction_window::load_src(int index)
         return false;
     if(handle->voxel.is_histology)
         return true;
+    update_dimension();
     auto I = tipl::make_image(handle->src_dwi_data[0],handle->voxel.dim);
-    double m = double(tipl::max_value(I));
-    double otsu = double(tipl::segmentation::otsu_threshold(I));
+    double m = double(tipl::max_value_mt(I));
     ui->max_value->setMaximum(m*1.5);
     ui->max_value->setMinimum(0.0);
     ui->max_value->setSingleStep(m*0.05);
-    ui->max_value->setValue(otsu*3.0);
+    ui->max_value->setValue(m*0.2f);
     ui->min_value->setMaximum(m*1.5);
     ui->min_value->setMinimum(0.0);
     ui->min_value->setSingleStep(m*0.05);
@@ -76,7 +76,6 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
         ui->diffusion_sampling->setValue(0.6);  // animal studies (likely ex-vivo)
 
     v2c.two_color(tipl::rgb(0,0,0),tipl::rgb(255,255,255));
-    update_dimension();
 
     absolute_path = QFileInfo(filenames[0]).absolutePath();
 
@@ -154,6 +153,7 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
 }
 void reconstruction_window::update_dimension(void)
 {
+    source_ratio = std::max(1.0,500/(double)handle->voxel.dim.height());
     if(ui->SlicePos->maximum() != handle->voxel.dim[2]-1)
     {
         ui->SlicePos->setRange(0,handle->voxel.dim[2]-1);
@@ -164,7 +164,6 @@ void reconstruction_window::update_dimension(void)
         ui->z_pos->setRange(0,handle->voxel.dim[view_orientation]-1);
         ui->z_pos->setValue((handle->voxel.dim[view_orientation]-1) >> 1);
     }
-    source_ratio = std::max(1.0,500/(double)handle->voxel.dim.height());
 }
 
 void reconstruction_window::load_b_table(void)
@@ -191,38 +190,31 @@ void reconstruction_window::on_b_table_itemSelectionChanged()
     tipl::image<2,float> tmp;
     tipl::volume2slice_scaled(tipl::make_image(handle->src_dwi_data[ui->b_table->currentRow()],handle->voxel.dim),
                               tmp,view_orientation,ui->z_pos->value(),source_ratio);
-    buffer_source.resize(tmp.shape());
+    tipl::color_image buffer_source(tmp.shape());
     for(int i = 0;i < tmp.size();++i)
         buffer_source[i] = v2c[tmp[i]];
 
-    // show bad_slices
-    if(view_orientation != 2 && bad_slice_analzed)
-    {
-        std::vector<size_t> mark_slices;
-        for(size_t index = 0;index < bad_slices.size();++index)
-            if(bad_slices[index].first == ui->b_table->currentRow())
-                mark_slices.push_back(bad_slices[index].second);
-        for(size_t index = 0;index < mark_slices.size();++index)
-        {
-            for(size_t x = 0,pos = mark_slices[index]*buffer_source.width();x < buffer_source.width();++x,++pos)
-                buffer_source[pos].r |= 64;
-        }
-    }
-    if(view_orientation == 2 && bad_slice_analzed)
-    {
-        std::vector<size_t> mark_slices;
-        for(size_t index = 0;index < bad_slices.size();++index)
-            if(bad_slices[index].first == ui->b_table->currentRow() && ui->z_pos->value() == bad_slices[index].second)
-            {
-                for(size_t i = 0;i < buffer_source.size();++i)
-                    buffer_source[i].r |= 64;
-                break;
-            }
-    }
+    source_image = QImage((unsigned char*)&*buffer_source.begin(),buffer_source.width(),buffer_source.height(),QImage::Format_RGB32);
 
-    source_image = QImage((unsigned char*)&*buffer_source.begin(),tmp.width(),tmp.height(),QImage::Format_RGB32);
     if(view_orientation != 2)
+    {
+        // show bad_slices
+        if(bad_slice_analzed)
+        {
+            std::vector<size_t> mark_slices;
+            for(size_t index = 0;index < bad_slices.size();++index)
+                if(bad_slices[index].first == ui->b_table->currentRow())
+                    mark_slices.push_back(bad_slices[index].second);
+            for(size_t index = 0;index < mark_slices.size();++index)
+            {
+                QPainter paint(&source_image);
+                paint.setPen(Qt::red);
+                paint.drawLine(0,source_ratio*mark_slices[index],
+                               source_image.width(),source_ratio*mark_slices[index]);
+            }
+        }
         source_image = source_image.mirrored();
+    }
     source_image.detach();
     show_view(source,source_image);
 }
