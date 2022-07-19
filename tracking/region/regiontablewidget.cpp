@@ -1640,7 +1640,7 @@ void RegionTableWidget::do_action(QString action)
             cur_region.SaveToBuffer(mask);
             QString name = item(roi_index,0)->text();
             tipl::image<3,unsigned int> labels;
-            std::vector<std::vector<unsigned int> > r;
+            std::vector<std::vector<size_t> > r;
             tipl::morphology::connected_component_labeling(mask,labels,r);
             begin_update();
             for(unsigned int j = 0,total_count = 0;j < r.size() && total_count < 256;++j)
