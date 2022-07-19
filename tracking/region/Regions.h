@@ -132,6 +132,7 @@ public:
 
         void LoadFromBuffer(tipl::image<3,unsigned char>& mask);
         void SaveToBuffer(tipl::image<3,unsigned char>& mask);
+        void SaveToBuffer(tipl::image<3,unsigned char>& mask,const tipl::shape<3>& dim_to,const tipl::matrix<4,4>& trans_to);
         void perform(const std::string& action);
         void makeMeshes(unsigned char smooth);
         template<typename value_type>
