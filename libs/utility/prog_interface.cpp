@@ -112,8 +112,7 @@ bool progress::check_prog(unsigned int now,unsigned int total)
             at_list.back().clear();
         return false;
     }
-    if(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() -
-        t_last.back()).count() > std::min<int>(int(total)*50,500))
+    if(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - t_last.back()).count() > 200)
     {
         t_last.back() = std::chrono::high_resolution_clock::now();
         int expected_sec = (
