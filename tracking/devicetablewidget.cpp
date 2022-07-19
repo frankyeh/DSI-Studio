@@ -397,7 +397,7 @@ void DeviceTableWidget::detect_electrodes(void)
 
 
     auto& I = slice->source_images;
-    std::vector<std::vector<unsigned int> > regions;
+    std::vector<std::vector<size_t> > regions;
 
     // use intensity threshold to locate possible contact regions
     {
