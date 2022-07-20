@@ -30,13 +30,10 @@ protected:
     void closeEvent(QCloseEvent *event);
 private:
     QGraphicsScene source;
-    QImage source_image;
     float source_ratio = 1.0f;
     void load_b_table(void);
 private:
     QGraphicsScene scene;
-    tipl::color_image buffer;
-    QImage slice_image;
     tipl::value_to_color<float> v2c;
     unsigned char view_orientation = 2;
 private: //bad slices
