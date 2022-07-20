@@ -384,7 +384,6 @@ void slice_view_scene::get_view_image(QImage& new_view_image,std::shared_ptr<Sli
 
         scaled_image = slice_qimage.scaled(int(slice_image.width()*display_ratio),
                                         int(slice_image.height()*display_ratio));
-        scaled_image.detach();
     }
 
     if(!simple)
