@@ -20,8 +20,6 @@ private:
     tipl::image<3> from,to,warped_from;
     tipl::vector<3> from_vs,to_vs;
     QGraphicsScene scene[3];
-    tipl::color_image buffer[3];
-    QImage slice_image[3];
     float from_downsample = 1.0f;
     float to_downsample = 1.0f;
     tipl::thread thread;
