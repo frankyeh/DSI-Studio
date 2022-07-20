@@ -31,15 +31,7 @@ private slots:
     void update_overlay_menu(void);
     void set_overlay(void);
 
-    void on_actionResample_triggered();
-
     void on_action_Save_as_triggered();
-
-    void on_actionResize_triggered();
-
-    void on_actionTranslocate_triggered();
-
-    void on_actionTrim_triggered();
 
     void on_actionSet_Translocation_triggered();
 
@@ -65,13 +57,7 @@ private slots:
 
     void on_actionSave_triggered();
 
-    void on_actionImageAddition_triggered();
-
-    void on_actionImageMultiplication_triggered();
-
     void on_dwi_volume_valueChanged(int value);
-
-    void on_actionMinus_Image_triggered();
 
     void run_action();
 

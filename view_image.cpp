@@ -231,14 +231,15 @@ view_image::view_image(QWidget *parent) :
     connect(ui->axis_grid,SIGNAL(currentIndexChanged(int)),this,SLOT(change_contrast()));
     connect(ui->menuOverlay, SIGNAL(aboutToShow()),this, SLOT(update_overlay_menu()));
 
-
-
+    connect(ui->actionMorphology_Smoothing, SIGNAL(triggered()),this, SLOT(run_action()));
     connect(ui->actionMorphology_Defragment, SIGNAL(triggered()),this, SLOT(run_action()));
     connect(ui->actionMorphology_Dilation, SIGNAL(triggered()),this, SLOT(run_action()));
     connect(ui->actionMorphology_Erosion, SIGNAL(triggered()),this, SLOT(run_action()));
-    connect(ui->actionSobel, SIGNAL(triggered()),this, SLOT(run_action()));
+    connect(ui->actionMorphology_Edge, SIGNAL(triggered()),this, SLOT(run_action()));
     connect(ui->actionMorphology_XY, SIGNAL(triggered()),this, SLOT(run_action()));
     connect(ui->actionMorphology_XZ, SIGNAL(triggered()),this, SLOT(run_action()));
+
+
     connect(ui->actionFlip_X, SIGNAL(triggered()),this, SLOT(run_action()));
     connect(ui->actionFlip_Y, SIGNAL(triggered()),this, SLOT(run_action()));
     connect(ui->actionFlip_Z, SIGNAL(triggered()),this, SLOT(run_action()));
@@ -247,15 +248,26 @@ view_image::view_image(QWidget *parent) :
     connect(ui->actionSwap_YZ, SIGNAL(triggered()),this, SLOT(run_action()));
     connect(ui->actionDownsample_by_2, SIGNAL(triggered()),this, SLOT(run_action()));
     connect(ui->actionUpsample_by_2, SIGNAL(triggered()),this, SLOT(run_action()));
-    connect(ui->actionSignal_Smoothing, SIGNAL(triggered()),this, SLOT(run_action()));
+
     connect(ui->actionNormalize_Intensity, SIGNAL(triggered()),this, SLOT(run_action()));
+    connect(ui->actionMean_Filter, SIGNAL(triggered()),this, SLOT(run_action()));
+    connect(ui->actionGaussian_Filter, SIGNAL(triggered()),this, SLOT(run_action()));
+    connect(ui->actionSobel_Filter, SIGNAL(triggered()),this, SLOT(run_action()));
 
     // ask for a value and run action
     connect(ui->actionIntensity_shift, SIGNAL(triggered()),this, SLOT(run_action2()));
     connect(ui->actionIntensity_scale, SIGNAL(triggered()),this, SLOT(run_action2()));
     connect(ui->actionLower_threshold, SIGNAL(triggered()),this, SLOT(run_action2()));
     connect(ui->actionUpper_Threshold, SIGNAL(triggered()),this, SLOT(run_action2()));
+    connect(ui->actionRegrid, SIGNAL(triggered()),this, SLOT(run_action2()));
     connect(ui->actionThreshold, SIGNAL(triggered()),this, SLOT(run_action2()));
+    connect(ui->actionTranslocate, SIGNAL(triggered()),this, SLOT(run_action2()));
+    connect(ui->actionResize, SIGNAL(triggered()),this, SLOT(run_action2()));
+    connect(ui->actionMultiplyImage, SIGNAL(triggered()),this, SLOT(run_action2()));
+    connect(ui->actionAddImage, SIGNAL(triggered()),this, SLOT(run_action2()));
+    connect(ui->actionMinusImage, SIGNAL(triggered()),this, SLOT(run_action2()));
+    connect(ui->actionCropToFit, SIGNAL(triggered()),this, SLOT(run_action2()));
+
 
     ui->tabWidget->setCurrentIndex(0);
 
@@ -654,10 +666,12 @@ void view_image::init_image(void)
 
     if(ui->slice_pos->maximum() != int(shape[cur_dim]-1))
     {
+        ui->slice_pos->setRange(0,shape[cur_dim]-1);
         slice_pos[0] = shape.width()/2;
         slice_pos[1] = shape.height()/2;
         slice_pos[2] = shape.depth()/2;
-        on_AxiView_clicked();
+        ui->slice_pos->setValue(slice_pos[cur_dim]);
+        ui->actionResize->setStatusTip(QString("%1 %2 %3").arg(shape.width()).arg(shape.height()).arg(shape.depth()));
     }
     no_update = false;
     show_image(true);
@@ -804,16 +818,7 @@ void view_image::change_contrast()
     v2c.two_color(ui->min_color->color().rgb(),ui->max_color->color().rgb());
     show_image(true);
 }
-void view_image::on_actionResample_triggered()
-{
-    bool ok;
-    float nv = float(QInputDialog::getDouble(this,
-        "DSI Studio","Assign output resolution in (mm):", double(vs[0]),0.0,3.0,4, &ok));
-    if (!ok || nv == 0.0f)
-        return;
-    if(!command("regrid",std::to_string(nv)))
-        QMessageBox::critical(this,"ERROR",error_msg.c_str());
-}
+
 void view_image::on_actionSave_triggered()
 {
     if(command("save",file_name.toStdString()))
@@ -831,66 +836,6 @@ void view_image::on_action_Save_as_triggered()
     file_name = filename;
     setWindowTitle(QFileInfo(file_name).fileName());
     on_actionSave_triggered();
-}
-
-void view_image::on_actionResize_triggered()
-{
-    std::ostringstream out;
-    out << shape.width() << " " << shape.height() << " " << shape.depth();
-    bool ok;
-    QString param = QInputDialog::getText(this,"DSI Studio","Assign image dimension (width height depth)",QLineEdit::Normal,
-                                           out.str().c_str(),&ok);
-
-    if(!ok)
-        return;
-    if(!command("resize",param.toStdString()))
-        QMessageBox::critical(this,"ERROR",error_msg.c_str());
-}
-
-void view_image::on_actionTranslocate_triggered()
-{
-    bool ok;
-    QString param = QInputDialog::getText(this,"DSI Studio","Assign image translocation (x y z)",QLineEdit::Normal,
-                                           "0 0 0",&ok);
-
-    if(!ok)
-        return;    
-    if(!command("translocation",param.toStdString()))
-        QMessageBox::critical(this,"ERROR",error_msg.c_str());
-}
-
-void view_image::on_actionTrim_triggered()
-{
-    bool ok;
-    QString param = QInputDialog::getText(this,"DSI Studio","Assign margin at (x y z)",QLineEdit::Normal,
-                                           "10 10 0",&ok);
-
-    if(!ok)
-        return;
-    tipl::vector<3,int> range_min,range_max,margin;
-    apply([&](auto& data)
-    {
-        tipl::bounding_box(data,range_min,range_max,data[0]);
-    });
-    std::istringstream in(param.toStdString());
-    in >> margin[0] >> margin[1] >> margin[2];
-    range_min[0] = std::max<int>(0,range_min[0]-margin[0]);
-    range_min[1] = std::max<int>(0,range_min[1]-margin[1]);
-    range_min[2] = std::max<int>(0,range_min[2]-margin[2]);
-    range_max[0] = std::min<int>(shape.width(),range_max[0]+margin[0]);
-    range_max[1] = std::min<int>(shape.height(),range_max[1]+margin[1]);
-    range_max[2] = std::min<int>(shape.depth(),range_max[2]+margin[2]);
-
-    range_max -= range_min;
-    if(!command("translocation",std::to_string(-range_min[0]) + " " +
-                                std::to_string(-range_min[1]) + " " +
-                                std::to_string(-range_min[2])))
-        QMessageBox::critical(this,"ERROR",error_msg.c_str());
-
-    if(!command("resize",std::to_string(range_max[0]) + " " +
-                                std::to_string(range_max[1]) + " " +
-                                std::to_string(range_max[2])))
-        QMessageBox::critical(this,"ERROR",error_msg.c_str());
 }
 
 void view_image::on_actionSet_Translocation_triggered()
@@ -983,47 +928,6 @@ void view_image::on_slice_pos_valueChanged(int value)
 }
 
 
-
-
-void view_image::on_actionImageAddition_triggered()
-{
-    QStringList filenames = QFileDialog::getOpenFileNames(
-                           this,"Open other another image to apply",QFileInfo(file_name).absolutePath(),"NIFTI file(*nii.gz *.nii)" );
-    if (filenames.isEmpty())
-        return;
-    for(auto filename : filenames)
-        if(!command("image_addition",filename.toStdString()))
-        {
-            QMessageBox::critical(this,"ERROR",error_msg.c_str());
-            return;
-        }
-}
-
-void view_image::on_actionMinus_Image_triggered()
-{
-    QStringList filenames = QFileDialog::getOpenFileNames(
-                           this,"Open other another image to apply",QFileInfo(file_name).absolutePath(),"NIFTI file(*nii.gz *.nii)" );
-    if (filenames.isEmpty())
-        return;
-    for(auto filename : filenames)
-        if(!command("image_substraction",filename.toStdString()))
-        {
-            QMessageBox::critical(this,"ERROR",error_msg.c_str());
-            return;
-        }
-}
-
-void view_image::on_actionImageMultiplication_triggered()
-{
-    QString filename = QFileDialog::getOpenFileName(
-                           this,"Open other another image to apply",QFileInfo(file_name).absolutePath(),"NIFTI file(*nii.gz *.nii)" );
-    if (filename.isEmpty())
-        return;
-    if(!command("image_multiplication",filename.toStdString()))
-        QMessageBox::critical(this,"ERROR",error_msg.c_str());
-}
-
-
 void view_image::on_dwi_volume_valueChanged(int value)
 {
     apply([&](auto& I)
@@ -1061,10 +965,48 @@ void view_image::run_action2()
     QAction *action = qobject_cast<QAction *>(sender());
     if(!action)
         return;
-    bool ok;
-    QString value = QInputDialog::getText(this,"DSI Studio",QString("Assign %1 value").arg(action->text()),QLineEdit::Normal,"0",&ok);
-    if(!ok)
+    QString value;
+    if(action->statusTip() == "file")
+    {
+        value = QFileDialog::getOpenFileName(
+                               this,"Open other another image to apply",QFileInfo(file_name).absolutePath(),"NIFTI file(*nii.gz *.nii)" );
+    }
+    else
+    {
+        bool ok;
+        value = QInputDialog::getText(this,"DSI Studio",action->toolTip(),QLineEdit::Normal,action->statusTip(),&ok);
+        if(!ok || value.isEmpty())
+            return;
+    }
+    if(value.isEmpty())
         return;
+    if(action->text().contains("Morphology") && data_type == float32)
+    {
+        auto result = QMessageBox::information(this,"DSI Studio",
+                "Morphology operation only applies to label image. Convert pixel type to integer?",
+                                    QMessageBox::Yes|QMessageBox::No|QMessageBox::Cancel);
+        if(result == QMessageBox::Cancel)
+            return;
+        if(result == QMessageBox::Yes)
+        {
+            if(ui->min->maximum() <= 255.0)
+                ui->type->setCurrentIndex(uint8);
+            else
+                ui->type->setCurrentIndex(uint16);
+        }
+    }
+    if(value.contains(".") && data_type != float32 &&
+            action->statusTip() != "file" &&
+            action->text() != "Regrid")
+    {
+        auto result = QMessageBox::information(this,"DSI Studio",
+                "Current integer pixels cannot achieve floating point precision. Switch to float32 type?",
+                                    QMessageBox::Yes|QMessageBox::No|QMessageBox::Cancel);
+        if(result == QMessageBox::Cancel)
+            return;
+        if(result == QMessageBox::Yes)
+            ui->type->setCurrentIndex(float32);
+    }
     if(!command(action->text().toLower().replace(' ','_').toStdString(),value.toStdString()))
         QMessageBox::critical(this,"ERROR",error_msg.c_str());
 }
