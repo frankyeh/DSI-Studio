@@ -194,7 +194,8 @@ void reconstruction_window::on_b_table_itemSelectionChanged()
     for(int i = 0;i < tmp.size();++i)
         buffer_source[i] = v2c[tmp[i]];
 
-    source_image = QImage((unsigned char*)&*buffer_source.begin(),buffer_source.width(),buffer_source.height(),QImage::Format_RGB32);
+
+    auto source_image = QImage((unsigned char*)&*buffer_source.begin(),buffer_source.width(),buffer_source.height(),QImage::Format_RGB32).copy();
 
     if(view_orientation != 2)
     {
@@ -215,7 +216,6 @@ void reconstruction_window::on_b_table_itemSelectionChanged()
         }
         source_image = source_image.mirrored();
     }
-    source_image.detach();
     show_view(source,source_image);
 }
 
@@ -656,14 +656,13 @@ void reconstruction_window::on_remove_below_clicked()
 
 void reconstruction_window::on_SlicePos_valueChanged(int position)
 {
+    tipl::color_image buffer;
     handle->draw_mask(buffer,position);
     double ratio =
         std::min(double(ui->graphicsView->width()-5)/double(buffer.width()),
                  double(ui->graphicsView->height()-5)/double(buffer.height()));
-    slice_image = QImage(reinterpret_cast<unsigned char*>(&*buffer.begin()),
-                         buffer.width(),buffer.height(),QImage::Format_RGB32).
-                            scaled(int(buffer.width()*ratio),int(buffer.height()*ratio));
-    show_view(scene,slice_image);
+    show_view(scene,QImage(reinterpret_cast<unsigned char*>(&*buffer.begin()),
+                           buffer.width(),buffer.height(),QImage::Format_RGB32).scaled(int(buffer.width()*ratio),int(buffer.height()*ratio)));
 }
 
 bool add_other_image(ImageModel* handle,QString name,QString filename)
