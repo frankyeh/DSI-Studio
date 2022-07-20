@@ -298,21 +298,19 @@ void manual_alignment::slice_pos_moved()
         tipl::image<2,float> slice,slice2;
         tipl::volume2slice_scaled(warped_from,slice,dim,slice_pos[dim],ratio);
         tipl::volume2slice_scaled(to,slice2,dim,slice_pos[dim],ratio);
-        buffer[dim].resize(slice.shape());
+
+        tipl::color_image buffer(slice.shape());
         for (unsigned int index = 0; index < slice.size(); ++index)
         {
             float value = slice[index]*w2+slice2[index]*w1;
             value = std::min<float>(255,value);
-            buffer[dim][index] = tipl::rgb(value,value,value);
+            buffer[index] = tipl::rgb(value,value,value);
         }
-        slice_image[dim] = QImage((unsigned char*)&*buffer[dim].begin(),buffer[dim].width(),buffer[dim].height(),QImage::Format_RGB32);
-        if(dim != 2)
-            slice_image[dim] = slice_image[dim].mirrored();
-        slice_image[dim].detach();
-        QPainter painter(&slice_image[dim]);
+        auto slice_image = QImage((unsigned char*)&*buffer.begin(),buffer.width(),buffer.height(),QImage::Format_RGB32).copy().mirrored(false,dim != 2);
+        QPainter painter(&slice_image);
         draw_ruler(painter,to.shape(),nifti_srow,
                         dim,dim,dim != 2,ratio,true);
-        show_view(scene[dim],slice_image[dim]);
+        show_view(scene[dim],slice_image);
     }
 }
 
