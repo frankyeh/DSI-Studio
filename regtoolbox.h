@@ -87,8 +87,6 @@ private slots:
 private:
     Ui::RegToolBox *ui;
     QGraphicsScene It_scene,I_scene,It_mix_scene;
-private:
-    tipl::color_image cIt,cI,cJ,cIt_mix;
 };
 
 #endif // REGTOOLBOX_H
