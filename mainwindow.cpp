@@ -825,13 +825,6 @@ void MainWindow::on_parse_network_measures_clicked()
 
 }
 
-void MainWindow::on_bruker_browser_clicked()
-{
-    FileBrowser* bw = new FileBrowser(this);
-    bw->setAttribute(Qt::WA_DeleteOnClose);
-    bw->showNormal();
-}
-
 void MainWindow::on_auto_track_clicked()
 {
     auto_track* at = new auto_track(this);
