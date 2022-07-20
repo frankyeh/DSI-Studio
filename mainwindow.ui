@@ -70,7 +70,7 @@
        </size>
       </property>
       <property name="currentIndex">
-       <number>0</number>
+       <number>2</number>
       </property>
       <property name="tabSpacing">
        <number>0</number>
@@ -450,20 +450,10 @@
         <item>
          <widget class="QCommandLinkButton" name="view_image">
           <property name="text">
-           <string>O1: View Images (NIFTI/DICOM/2dseq)</string>
+           <string>O1: View Images</string>
           </property>
           <property name="description">
-           <string>Open image and header information</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QCommandLinkButton" name="bruker_browser">
-          <property name="text">
-           <string>O2: Image Browser</string>
-          </property>
-          <property name="description">
-           <string>File Browser</string>
+           <string>Open NIFTI/DICOM/NRRD/2dseq images for inspection and editing</string>
           </property>
          </widget>
         </item>
