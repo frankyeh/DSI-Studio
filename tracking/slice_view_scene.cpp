@@ -358,9 +358,7 @@ void slice_view_scene::show_pos(QPainter& painter,std::shared_ptr<SliceModel> cu
 
 void slice_view_scene::manage_slice_orientation(QImage& slice,QImage& new_slice,unsigned char cur_dim)
 {
-    bool flip_x = cur_tracking_window.slice_view_flip_x(cur_dim);
-    bool flip_y = cur_tracking_window.slice_view_flip_y(cur_dim);
-    new_slice = (!flip_x && !flip_y ? slice : slice.mirrored(flip_x,flip_y));
+    new_slice = slice.mirrored(cur_tracking_window.slice_view_flip_x(cur_dim),cur_tracking_window.slice_view_flip_y(cur_dim));
 }
 void slice_view_scene::get_view_image(QImage& new_view_image,std::shared_ptr<SliceModel> current_slice,unsigned char cur_dim,float display_ratio,bool simple)
 {
