@@ -23,8 +23,7 @@ public:
     tipl::matrix<4,4> ItR,IR;
 public:
     tipl::transformation_matrix<float> T;
-    tipl::image<3> J_view,J_view2;
-    tipl::image<3,tipl::vector<3> > dis_view;
+    tipl::value_to_color<float> v2c_I,v2c_It;
 public:
     tipl::affine_transform<float> arg;
     tipl::thread thread;
@@ -45,6 +44,8 @@ public:
     ~RegToolBox();
 
 private slots:
+
+    void change_contrast();
     void on_OpenTemplate_clicked();
 
     void on_OpenSubject_clicked();

@@ -18,15 +18,16 @@ RegToolBox::RegToolBox(QWidget *parent) :
     ui->I_view->setScene(&I_scene);
     connect(ui->rb_mosaic, SIGNAL(clicked()), this, SLOT(show_image()));
     connect(ui->rb_flash, SIGNAL(clicked()), this, SLOT(show_image()));
-    connect(ui->rb_blend1, SIGNAL(clicked()), this, SLOT(show_image()));
-    connect(ui->rb_blend2, SIGNAL(clicked()), this, SLOT(show_image()));
+    connect(ui->rb_blend, SIGNAL(clicked()), this, SLOT(show_image()));
     connect(ui->show_warp, SIGNAL(clicked()), this, SLOT(show_image()));
     connect(ui->dis_spacing, SIGNAL(currentIndexChanged(int)), this, SLOT(show_image()));
     connect(ui->mosaic_size, SIGNAL(valueChanged(int)), this, SLOT(show_image()));
     connect(ui->slice_pos, SIGNAL(sliderMoved(int)), this, SLOT(show_image()));
-    connect(ui->contrast1, SIGNAL(sliderMoved(int)), this, SLOT(show_image()));
-    connect(ui->contrast2, SIGNAL(sliderMoved(int)), this, SLOT(show_image()));
-    connect(ui->main_zoom, SIGNAL(sliderMoved(int)), this, SLOT(show_image()));
+    connect(ui->zoom, SIGNAL(valueChanged(double)), this, SLOT(show_image()));
+    connect(ui->min1, SIGNAL(valueChanged(double)), this, SLOT(change_contrast()));
+    connect(ui->min2, SIGNAL(valueChanged(double)), this, SLOT(change_contrast()));
+    connect(ui->max1, SIGNAL(valueChanged(double)), this, SLOT(change_contrast()));
+    connect(ui->max2, SIGNAL(valueChanged(double)), this, SLOT(change_contrast()));
 
     timer.reset(new QTimer());
     connect(timer.get(), SIGNAL(timeout()), this, SLOT(on_timer()));
@@ -43,6 +44,10 @@ RegToolBox::RegToolBox(QWidget *parent) :
 
     if constexpr (!tipl::use_cuda)
         ui->use_cuda->hide();
+
+    v2c_I.two_color(tipl::rgb(0,0,0),tipl::rgb(255,255,255));
+    v2c_It.two_color(tipl::rgb(0,0,0),tipl::rgb(255,255,255));
+    change_contrast();
 }
 
 RegToolBox::~RegToolBox()
@@ -58,9 +63,6 @@ void RegToolBox::clear(void)
     J.clear();
     JJ.clear();
     J2.clear();
-    J_view.clear();
-    J_view2.clear();
-    dis_view.clear();
 
     t2f_dis.clear();
     to2from.clear();
@@ -77,6 +79,12 @@ void RegToolBox::setup_slice_pos(void)
         ui->slice_pos->setMaximum(range-1);
         ui->slice_pos->setValue(range/2);
     }
+}
+void RegToolBox::change_contrast()
+{
+    v2c_I.set_range(float(ui->min1->value()),float(ui->max1->value()));
+    v2c_It.set_range(float(ui->min2->value()),float(ui->max2->value()));
+    show_image();
 }
 void RegToolBox::on_OpenTemplate_clicked()
 {
@@ -99,8 +107,6 @@ void RegToolBox::on_OpenTemplate_clicked()
     nifti.get_voxel_size(Itvs);
     setup_slice_pos();
     clear();
-    if(!I.empty())
-        J_view = I;
     show_image();
     ui->template_filename->setText(QFileInfo(filename).baseName());
 
@@ -127,7 +133,6 @@ void RegToolBox::on_OpenSubject_clicked()
     tipl::normalize(I);
     nifti.get_voxel_size(Ivs);
     clear();
-    J_view = I;
     show_image();
     ui->subject_filename->setText(QFileInfo(filename).baseName());
     ui->cost_fun->setCurrentIndex(It.shape() == I.shape() ? 2:0);
@@ -171,90 +176,103 @@ void RegToolBox::on_OpenTemplate2_clicked()
 }
 
 
-void image2rgb(tipl::image<2,float>& tmp,tipl::color_image& buf,float contrast)
+
+struct image_fascade{
+
+    const tipl::image<3>& I;
+    const tipl::image<3>& It;
+    const tipl::image<3,tipl::vector<3> >& t2f_dis;
+    tipl::transformation_matrix<float> T;
+    image_fascade(const tipl::image<3>& I_,
+                  const tipl::image<3>& It_,
+                  const tipl::image<3,tipl::vector<3> >& t2f_dis_,
+                  const tipl::transformation_matrix<float>& T_):I(I_),It(It_),t2f_dis(t2f_dis_),T(T_){;}
+
+    float at(float x,float y, float z) const
+    {
+        if(!It.shape().is_valid(x,y,z))
+            return 0.0f;
+        tipl::vector<3> pos;
+        if(!t2f_dis.empty())
+        {
+            if(!tipl::estimate(t2f_dis,tipl::vector<3>(x,y,z),pos))
+                return 0.0f;
+        }
+        pos[0] += x;
+        pos[1] += y;
+        pos[2] += z;
+        T(pos);
+        return tipl::estimate(I,pos);
+    }
+    auto width(void) const{return It.width();}
+    auto height(void) const{return It.height();}
+    auto depth(void) const{return It.depth();}
+    const auto& shape(void) const{return It.shape();}
+    bool empty(void) const{return It.empty();}
+};
+
+template<typename T>
+void show_slice_at(QGraphicsScene& scene,const T& source,
+                   const tipl::value_to_color<float>& v2c,
+                   int slice_pos,float ratio,uint8_t cur_view)
 {
-    tmp *= contrast;
-    tipl::upper_lower_threshold(tmp.begin(),tmp.end(),tmp.begin(),0.0f,255.0f);
-    buf = tmp;
-}
-
-
-void show_slice_at(QGraphicsScene& scene,tipl::image<2,float>& tmp,float contrast,uint8_t cur_view)
-{
-    tipl::color_image buf;
-    image2rgb(tmp,buf,contrast);
-    show_view(scene,QImage(reinterpret_cast<unsigned char*>(&*buf.begin()),buf.width(),buf.height(),QImage::Format_RGB32)
-              .copy().mirrored(false,(cur_view != 2)));
-}
-
-
-void show_slice_at(QGraphicsScene& scene,const tipl::image<3>& source,
-                   int slice_pos,float ratio,float contrast,uint8_t cur_view)
-{
-    if(source.empty())
-        return;
     tipl::image<2,float> tmp;
     tipl::volume2slice_scaled(source,tmp,cur_view,slice_pos,ratio);
-    show_slice_at(scene,tmp,contrast,cur_view);
-}
-void show_mosaic_slice_at(QGraphicsScene& scene,
-                          const tipl::image<3>& source1,
-                          const tipl::image<3>& source2,
-                          size_t slice_pos,float ratio,
-                          float contrast,
-                          float contrast2,uint8_t cur_view,unsigned int mosaic_size)
-{
-    if(source1.empty() || source2.empty())
-        return;
-    tipl::image<2,float> tmp1,tmp2,tmp;
-    tipl::volume2slice_scaled(source1,tmp1,cur_view,slice_pos,ratio);
-    tipl::volume2slice_scaled(source2,tmp2,cur_view,slice_pos,ratio);
-    if(tmp1.shape() != tmp2.shape())
-        return;
-    tmp.resize(tmp1.shape());
-    float c = contrast2/contrast;
-    tipl::par_for(tipl::begin_index(tmp.shape()),tipl::end_index(tmp.shape()),
-        [&](const tipl::pixel_index<2>& index)
-        {
-            int x = index[0] >> mosaic_size;
-            int y = index[1] >> mosaic_size;
-            tmp[index.index()] = ((x&1) ^ (y&1)) ? tmp1[index.index()] : tmp2[index.index()]*c;
-        });
-    show_slice_at(scene,tmp,contrast,cur_view);
+    tipl::color_image buf;
+    v2c.convert(tmp,buf);
+    show_view(scene,QImage(reinterpret_cast<unsigned char*>(&*buf.begin()),buf.width(),buf.height(),QImage::Format_RGB32).copy().mirrored(false,(cur_view != 2)));
 }
 
-void show_blend_slice_at(QGraphicsScene& scene,
-                          const tipl::image<3>& source1,
-                          const tipl::image<3>& source2,
+template<typename T,typename U>
+void show_mosaic_slice_at(QGraphicsScene& scene,
+                          const T& source1,const U& source2,
+                          const tipl::value_to_color<float>& v2c1,
+                          const tipl::value_to_color<float>& v2c2,
                           size_t slice_pos,float ratio,
-                          float contrast1,
-                          float contrast2,uint8_t cur_view,bool flip)
+                          uint8_t cur_view,unsigned int mosaic_size)
 {
     if(source1.empty() || source2.empty())
         return;
     tipl::image<2,float> tmp1,tmp2;
     tipl::volume2slice_scaled(source1,tmp1,cur_view,slice_pos,ratio);
     tipl::volume2slice_scaled(source2,tmp2,cur_view,slice_pos,ratio);
-    if(tmp1.shape() != tmp2.shape())
+    tipl::color_image buf1,buf2,buf(tmp1.shape());
+    v2c1.convert(tmp1,buf1);
+    v2c2.convert(tmp2,buf2);
+
+    tipl::par_for(tipl::begin_index(buf1.shape()),tipl::end_index(buf1.shape()),
+        [&](const tipl::pixel_index<2>& index)
+        {
+            int x = index[0] >> mosaic_size;
+            int y = index[1] >> mosaic_size;
+            buf[index.index()] = ((x&1) ^ (y&1)) ? buf1[index.index()] : buf2[index.index()];
+        });
+    show_view(scene,QImage(reinterpret_cast<unsigned char*>(&*buf.begin()),buf.width(),buf.height(),QImage::Format_RGB32).copy().mirrored(false,(cur_view != 2)));
+}
+
+template<typename T,typename U>
+void show_blend_slice_at(QGraphicsScene& scene,
+                         const T& source1,const U& source2,
+                         const tipl::value_to_color<float>& v2c1,
+                         const tipl::value_to_color<float>& v2c2,
+                         size_t slice_pos,float ratio,
+                         uint8_t cur_view)
+{
+    if(source1.empty() || source2.empty())
         return;
-    tipl::color_image buf;
-    tipl::color_image buf1,buf2;
-    image2rgb(tmp1,buf1,contrast1);
-    image2rgb(tmp2,buf2,contrast2);
-    if(flip)
+    tipl::image<2,float> tmp1,tmp2;
+    tipl::volume2slice_scaled(source1,tmp1,cur_view,slice_pos,ratio);
+    tipl::volume2slice_scaled(source2,tmp2,cur_view,slice_pos,ratio);
+    tipl::color_image buf2,buf;
+    v2c1.convert(tmp1,buf);
+    v2c2.convert(tmp2,buf2);
+    for(size_t i = 0;i < buf.size();++i)
     {
-        buf1.swap(buf);
-        for(size_t i = 0;i < buf.size();++i)
-            buf[i][2] |= buf2[i][2];
+        buf[i][0] |= buf2[i][0];
+        buf[i][1] |= buf2[i][1];
+        buf[i][2] |= buf2[i][2];
     }
-    else
-    {
-        buf2.swap(buf);
-        for(size_t i = 0;i < buf.size();++i)
-            buf[i][2] |= buf1[i][2];
-    }
-    show_view(scene,
-              QImage(reinterpret_cast<unsigned char*>(&*buf.begin()),buf.width(),buf.height(),QImage::Format_RGB32).copy().mirrored(false,cur_view != 2));
+    show_view(scene,QImage(reinterpret_cast<unsigned char*>(&*buf.begin()),buf.width(),buf.height(),QImage::Format_RGB32).copy().mirrored(false,(cur_view != 2)));
 }
 
 void RegToolBox::flash_image()
@@ -265,66 +283,48 @@ void RegToolBox::flash_image()
 }
 void RegToolBox::show_image(void)
 {
-    float ratio = float(ui->main_zoom->value())/10.0f;
-    float contrast1 = float(ui->contrast1->value())*5.0f;
-    float contrast2 = float(ui->contrast2->value())*5.0f;
+    float ratio = ui->zoom->value();
     if(!It.empty())
     {
-
-        const auto& I_show = (ui->show_second->isChecked() && It2.shape() == It.shape() ? It2 : It);
+        image_fascade I_to_show(I,It,t2f_dis,tipl::transformation_matrix<float>(arg,It.shape(),Itvs,I.shape(),Ivs));
+        const auto& It_to_show = (ui->show_second->isChecked() && It2.shape() == It.shape() ? It2 : It);
         // show template image on the right
-        show_slice_at(It_scene,I_show,ui->slice_pos->value(),ratio,contrast2,cur_view);
+        show_slice_at(It_scene,It_to_show,v2c_It,ui->slice_pos->value(),ratio,cur_view);
 
         // show image in the middle
         if(ui->rb_mosaic->isChecked())
-        {
-            if(!J_view2.empty())
-                show_mosaic_slice_at(It_mix_scene,J_view2,I_show,ui->slice_pos->value(),ratio,contrast1,contrast2,cur_view,ui->mosaic_size->value());
-            else
-                show_mosaic_slice_at(It_mix_scene,J_view,I_show,ui->slice_pos->value(),ratio,contrast1,contrast2,cur_view,ui->mosaic_size->value());
-        }
+            show_mosaic_slice_at(It_mix_scene,I_to_show,It_to_show,v2c_I,v2c_It,
+                                 ui->slice_pos->value(),ratio,cur_view,ui->mosaic_size->value());
         if(ui->rb_flash->isChecked())
         {
-            if(flash && (!J_view2.empty() || (!J_view.empty())))
-            {
-                if(!J_view2.empty())
-                    show_slice_at(It_mix_scene,J_view2,ui->slice_pos->value(),ratio,contrast1,cur_view);
-                else
-                    show_slice_at(It_mix_scene,J_view,ui->slice_pos->value(),ratio,contrast1,cur_view);
-            }
+            if(flash)
+                show_slice_at(It_mix_scene,I_to_show,v2c_I,ui->slice_pos->value(),ratio,cur_view);
             else
-            {
-                show_slice_at(It_mix_scene,I_show,ui->slice_pos->value(),ratio,contrast2,cur_view);
-            }
+                show_slice_at(It_mix_scene,It_to_show,v2c_It,ui->slice_pos->value(),ratio,cur_view);
         }
-        if(ui->rb_blend1->isChecked() || ui->rb_blend2->isChecked())
-        {
-            if(!J_view2.empty())
-                show_blend_slice_at(It_mix_scene,J_view2,I_show,ui->slice_pos->value(),ratio,contrast1,contrast2,cur_view,ui->rb_blend1->isChecked());
-            else
-                show_blend_slice_at(It_mix_scene,J_view,I_show,ui->slice_pos->value(),ratio,contrast1,contrast2,cur_view,ui->rb_blend1->isChecked());
-        }
-
+        if(ui->rb_blend->isChecked())
+            show_blend_slice_at(It_mix_scene,I_to_show,It_to_show,v2c_I,v2c_It,ui->slice_pos->value(),ratio,cur_view);
     }
 
 
     // Show subject image on the left
-    if(!J_view.empty())
+    if(!I.empty())
     {
-        int pos = std::min(J_view.depth()-1,J_view.depth()*ui->slice_pos->value()/ui->slice_pos->maximum());
-        tipl::image<2,float> J_view_slice;
-        tipl::volume2slice_scaled(J_view,J_view_slice,cur_view,pos,ratio);
+        const auto& I_to_show = (J.empty() ? I:J);
+        int pos = std::min(I_to_show.depth()-1,I_to_show.depth()*ui->slice_pos->value()/ui->slice_pos->maximum());
+        tipl::image<2,float> tmp;
+        tipl::volume2slice_scaled(I_to_show,tmp,cur_view,pos,ratio);
         tipl::color_image cJ;
-        image2rgb(J_view_slice,cJ,contrast1);
+        v2c_I.convert(tmp,cJ);
         QImage warp_image = QImage((unsigned char*)&*cJ.begin(),cJ.width(),cJ.height(),QImage::Format_RGB32).copy();
 
-        if(ui->show_warp->isChecked() && ui->dis_spacing->currentIndex() && !dis_view.empty())
+        if(ui->show_warp->isChecked() && ui->dis_spacing->currentIndex() && !t2f_dis.empty())
         {
             QPainter paint(&warp_image);
             paint.setBrush(Qt::NoBrush);
             paint.setPen(Qt::red);
             tipl::image<2,tipl::vector<3> > dis_slice;
-            tipl::volume2slice_scaled(dis_view,dis_slice,cur_view,pos,ratio);
+            tipl::volume2slice_scaled(t2f_dis,dis_slice,cur_view,pos,ratio);
             int cur_dis = 1 << (ui->dis_spacing->currentIndex()-1);
             for(int x = 0;x < dis_slice.width();x += cur_dis)
             {
@@ -366,52 +366,15 @@ void RegToolBox::show_image(void)
 
 void RegToolBox::on_timer()
 {
+    show_image();
+    if(reg_done)
     {
-        if(J.empty()) // linear registration
-        {
-            J_view.resize(It.shape());
-            tipl::resample_mt((ui->show_second->isChecked() && I2.shape() == I.shape() ? I2 : I),
-                              J_view,tipl::transformation_matrix<float>(arg,It.shape(),Itvs,I.shape(),Ivs));
-        }
-        else // nonlinear
-        {
-
-            if(!t2f_dis.empty())
-            {
-                dis_view = t2f_dis;
-                J_view = (ui->show_second->isChecked() && J2.shape() == J.shape() ? J2 : J);
-
-                std::vector<tipl::shape<3> > geo_stack;
-                while(J_view.width() > dis_view.width())
-                {
-                    geo_stack.push_back(J_view.shape());
-                    tipl::downsample_with_padding(J_view);
-                }
-                if(J_view.shape() != dis_view.shape())
-                    return;
-                tipl::compose_displacement(J_view,dis_view,J_view2);
-                while(!geo_stack.empty())
-                {
-                    tipl::upsample_with_padding(J_view,geo_stack.back());
-                    tipl::upsample_with_padding(J_view2,geo_stack.back());
-                    tipl::upsample_with_padding(dis_view,geo_stack.back());
-                    dis_view *= 2.0f;
-                    geo_stack.pop_back();
-                }
-                tipl::normalize(J_view);
-                tipl::normalize(J_view2);
-            }
-        }
-        show_image();
-        if(reg_done)
-        {
-            timer->stop();
-            ui->running_label->movie()->stop();
-            ui->running_label->hide();
-            ui->stop->hide();
-            ui->run_reg->show();
-            ui->run_reg->setText("re-run");
-        }
+        timer->stop();
+        ui->running_label->movie()->stop();
+        ui->running_label->hide();
+        ui->stop->hide();
+        ui->run_reg->show();
+        ui->run_reg->setText("re-run");
     }
 }
 
@@ -459,7 +422,6 @@ void RegToolBox::linear_reg(tipl::reg::reg_type reg_type,int cost_type)
     }
     std::cout << "linear:" << tipl::correlation(J_.begin(),J_.end(),It.begin()) << std::endl;
     J.swap(J_);
-    J_view = J;
 }
 
 
@@ -728,7 +690,6 @@ void RegToolBox::on_actionSmooth_Subject_triggered()
         tipl::normalize(I2);
     }
     clear();
-    J_view = I;
     show_image();
 }
 

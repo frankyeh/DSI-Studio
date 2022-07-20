@@ -186,7 +186,7 @@
                </size>
               </property>
               <property name="currentIndex">
-               <number>2</number>
+               <number>3</number>
               </property>
               <item>
                <property name="text">
@@ -221,25 +221,52 @@
              </widget>
             </item>
             <item>
+             <spacer name="horizontalSpacer_2">
+              <property name="orientation">
+               <enum>Qt::Horizontal</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>40</width>
+                <height>20</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+            <item>
              <widget class="QLabel" name="label_3">
               <property name="text">
-               <string>Contrast</string>
+               <string>min:</string>
               </property>
              </widget>
             </item>
             <item>
-             <widget class="QSlider" name="contrast1">
+             <widget class="QDoubleSpinBox" name="min1">
               <property name="maximum">
-               <number>150</number>
+               <double>1.000000000000000</double>
               </property>
               <property name="singleStep">
-               <number>5</number>
+               <double>0.050000000000000</double>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QLabel" name="label_6">
+              <property name="text">
+               <string>max:</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QDoubleSpinBox" name="max1">
+              <property name="maximum">
+               <double>1.200000000000000</double>
+              </property>
+              <property name="singleStep">
+               <double>0.050000000000000</double>
               </property>
               <property name="value">
-               <number>100</number>
-              </property>
-              <property name="orientation">
-               <enum>Qt::Horizontal</enum>
+               <double>1.000000000000000</double>
               </property>
              </widget>
             </item>
@@ -293,7 +320,7 @@
                <number>10</number>
               </property>
               <property name="value">
-               <number>4</number>
+               <number>6</number>
               </property>
              </widget>
             </item>
@@ -305,16 +332,9 @@
              </widget>
             </item>
             <item>
-             <widget class="QRadioButton" name="rb_blend1">
+             <widget class="QRadioButton" name="rb_blend">
               <property name="text">
-               <string>Blend1</string>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QRadioButton" name="rb_blend2">
-              <property name="text">
-               <string>Blend2</string>
+               <string>Blend</string>
               </property>
              </widget>
             </item>
@@ -426,25 +446,52 @@
              </widget>
             </item>
             <item>
+             <spacer name="horizontalSpacer_3">
+              <property name="orientation">
+               <enum>Qt::Horizontal</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>40</width>
+                <height>20</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+            <item>
              <widget class="QLabel" name="label_2">
               <property name="text">
-               <string>Contrast</string>
+               <string>min:</string>
               </property>
              </widget>
             </item>
             <item>
-             <widget class="QSlider" name="contrast2">
+             <widget class="QDoubleSpinBox" name="min2">
               <property name="maximum">
-               <number>150</number>
+               <double>1.000000000000000</double>
               </property>
               <property name="singleStep">
-               <number>5</number>
+               <double>0.050000000000000</double>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QLabel" name="label_11">
+              <property name="text">
+               <string>max:</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QDoubleSpinBox" name="max2">
+              <property name="maximum">
+               <double>1.200000000000000</double>
+              </property>
+              <property name="singleStep">
+               <double>0.050000000000000</double>
               </property>
               <property name="value">
-               <number>100</number>
-              </property>
-              <property name="orientation">
-               <enum>Qt::Horizontal</enum>
+               <double>1.000000000000000</double>
               </property>
              </widget>
             </item>
@@ -528,24 +575,18 @@
        </widget>
       </item>
       <item>
-       <widget class="QSlider" name="main_zoom">
-        <property name="maximumSize">
-         <size>
-          <width>100</width>
-          <height>16777215</height>
-         </size>
-        </property>
+       <widget class="QDoubleSpinBox" name="zoom">
         <property name="minimum">
-         <number>1</number>
+         <double>0.010000000000000</double>
         </property>
         <property name="maximum">
-         <number>50</number>
+         <double>5.000000000000000</double>
+        </property>
+        <property name="singleStep">
+         <double>0.100000000000000</double>
         </property>
         <property name="value">
-         <number>20</number>
-        </property>
-        <property name="orientation">
-         <enum>Qt::Horizontal</enum>
+         <double>1.000000000000000</double>
         </property>
        </widget>
       </item>
