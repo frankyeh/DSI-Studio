@@ -2,11 +2,10 @@
 #define GZIP_INTERFACE_HPP
 #include "zlib.h"
 #include "TIPL/tipl.hpp"
+#include "prog_interface_static_link.h"
 #include <stdio.h>
 
 #define WINSIZE 32768U      /* sliding window size */
-
-extern bool prog_aborted_;
 
 struct access_point {
     uint64_t uncompressed_pos = 0;
@@ -106,6 +105,14 @@ public:
     {
         return cur_uncompressed;
     }
+    size_t cur_size(void) const
+    {
+        return cur_compressed;
+    }
+    size_t size(void) const
+    {
+        return file_size;
+    }
     bool good(void) const
     {
         return (is_gz ? cur_compressed+8 < file_size : in.good());
@@ -135,7 +142,7 @@ public:
     }
 public:
     bool open(const char* file_name);
-    void write(const void* buf_,size_t size);
+    bool write(const void* buf_,size_t size);
     void flush(void);
     void close(void);
     bool good(void) const {return handle ? !gzeof(handle):out.good();}
@@ -145,8 +152,8 @@ public:
 };
 
 
-typedef tipl::io::nifti_base<gz_istream,gz_ostream> gz_nifti;
+typedef tipl::io::nifti_base<gz_istream,gz_ostream,progress> gz_nifti;
 typedef tipl::io::mat_write_base<gz_ostream> gz_mat_write;
-typedef tipl::io::mat_read_base<gz_istream> gz_mat_read;
+typedef tipl::io::mat_read_base<gz_istream,progress> gz_mat_read;
 
 #endif // GZIP_INTERFACE_HPP
