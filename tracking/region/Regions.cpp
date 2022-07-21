@@ -190,14 +190,13 @@ bool ROIRegion::LoadFromFile(const char* FileName) {
     if (ext == std::string(".nii") || ext == std::string(".hdr") || ext == std::string("i.gz"))
     {
         gz_nifti header;
-        if (!header.load_from_file(FileName))
+        tipl::image<3> I;
+        if (!header.load_from_file(FileName) || !header.toLPS(I))
         {
-            std::cout << header.error << std::endl;
+            std::cout << header.error_msg << std::endl;
             return false;
         }
         // use unsigned int to avoid the nan background problem
-        tipl::image<3> I;
-        header.toLPS(I);
         dim = I.shape();
         is_mni = header.is_mni();
         header.get_voxel_size(vs);
