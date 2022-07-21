@@ -84,6 +84,8 @@ private slots:
 
     void on_actionSave_Transformed_Image_triggered();
 
+    void on_switch_view_clicked();
+
 private:
     Ui::RegToolBox *ui;
     QGraphicsScene It_scene,I_scene,It_mix_scene;
