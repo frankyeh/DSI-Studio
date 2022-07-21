@@ -16,8 +16,8 @@ private:
 public:
     progress(void)
     {
-        status_list.push_back("processing");
-        begin_prog("processing");
+        status_list.push_back("loading");
+        begin_prog("loading");
     }
 
     progress(const char* status,bool show_now = false)
@@ -44,7 +44,7 @@ public:
         return check_prog(uint32_t(now),uint32_t(total));
     }
     template<typename value_type1,typename value_type2>
-    bool operator()(value_type1 now,value_type2 total)
+    bool operator()(value_type1 now,value_type2 total) const
     {
         return check_prog(uint32_t(now),uint32_t(total));
     }
