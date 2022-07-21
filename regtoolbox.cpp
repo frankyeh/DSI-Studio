@@ -507,7 +507,7 @@ bool apply_warping(const char* from,
     gz_nifti nii;
     if(!nii.load_from_file(from))
     {
-        error = nii.error;
+        error = nii.error_msg;
         return false;
     }
     tipl::image<3> I3;
