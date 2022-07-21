@@ -70,15 +70,16 @@ int rec(program_option& po)
             src.voxel.mask = 1;
         else
         {
+            std::cout << "reading mask file: " << mask_file << std::endl;
             gz_nifti nii;
             if(!nii.load_from_file(mask_file) || !nii.toLPS(src.voxel.mask))
             {
-                std::cout << "invalid or nonexisting nifti file:" << mask_file << std::endl;
+                std::cout << "ERROR:" << nii.error_msg << std::endl;
                 return 1;
             }
             if(src.voxel.mask.shape() != src.voxel.dim)
             {
-                std::cout << "The mask dimension is different. terminating..." << std::endl;
+                std::cout << "ERROR: The mask dimension is different. terminating..." << std::endl;
                 return 1;
             }
         }
