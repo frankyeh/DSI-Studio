@@ -356,9 +356,6 @@ void prepare_idx(const char* file_name,std::shared_ptr<gz_istream> in);
 bool view_image::open(QStringList file_names)
 {
     tipl::io::dicom dicom;
-    tipl::io::bruker_2dseq seq;
-    tipl::io::nrrd nrrd;
-    gz_mat_read mat;
     is_mni = false;
     T.identity();
 
@@ -390,9 +387,11 @@ bool view_image::open(QStringList file_names)
     }
     if(QString(file_name).endsWith(".nhdr"))
     {
+        tipl::io::nrrd<progress> nrrd;
+        progress::show("reading");
         if(!nrrd.load_from_file(file_name.toStdString().c_str()))
         {
-            QMessageBox::critical(this,"Error",nrrd.error_msg.c_str());
+            QMessageBox::critical(this,"ERROR",nrrd.error_msg.c_str());
             return false;
         }
 
@@ -404,13 +403,18 @@ bool view_image::open(QStringList file_names)
             data_type = uint16;
         if(nrrd.values["type"] == "uchar")
             data_type = uint8;
+
         apply([&](auto& data)
         {
             nrrd >> data;
         });
+
+        if(progress::aborted())
+            return false;
+
         if(!nrrd.error_msg.empty())
         {
-            QMessageBox::critical(this,"Error",nrrd.error_msg.c_str());
+            QMessageBox::critical(this,"ERROR",nrrd.error_msg.c_str());
             return false;
         }
         nrrd.get_voxel_size(vs);
@@ -575,10 +579,20 @@ bool view_image::open(QStringList file_names)
             info = info_.c_str();
         }
         else
-            if(mat.load_from_file(file_name.toLocal8Bit().begin()) && mat.has("dimension"))
+            if(QString(file_name).endsWith(".mat") || QString(file_name).endsWith("fib.gz") || QString(file_name).endsWith("src.gz"))
             {
+                gz_mat_read mat;
+                if(!mat.load_from_file(file_name.toStdString().c_str()))
+                {
+                    error_msg = "invalid format";
+                    return false;
+                }
                 data_type = float32;
-                mat.read("dimension",shape);
+                if(!mat.read("dimension",shape))
+                {
+                    error_msg = "cannot find dimension matrix";
+                    return false;
+                }
                 I_float32.resize(shape);
                 if((mat.has("fa0") || mat.has("image0")))
                     mat.read(mat.has("fa0") ? "fa0":"image0",I_float32);
@@ -599,12 +613,23 @@ bool view_image::open(QStringList file_names)
                 }
             }
             else
-            if(seq.load_from_file(file_name.toLocal8Bit().begin()))
+            if(QString(file_name).endsWith("2dseq"))
             {
+                tipl::io::bruker_2dseq seq;
+                if(seq.load_from_file(file_name.toLocal8Bit().begin()))
+                {
+                    error_msg = "cannot parse file";
+                    return false;
+                }
                 data_type = float32;
                 shape = seq.get_image().shape();
                 I_float32 = seq.get_image();
                 seq.get_voxel_size(vs);
+            }
+            else
+            {
+                error_msg = "unsupported file format";
+                return false;
             }
 
 
