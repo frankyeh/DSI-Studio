@@ -431,7 +431,7 @@ bool view_image::open(QStringList file_names)
         prepare_idx(file_name.toStdString().c_str(),nifti.input_stream);
         if(!nifti.load_from_file(file_name.toStdString().c_str()))
         {
-            QMessageBox::critical(this,"Error","Invalid NIFTI file");
+            QMessageBox::critical(this,"ERROR",nifti.error_msg.c_str());
             return false;
         }
         if(nifti.dim(4) > 1)
@@ -470,7 +470,17 @@ bool view_image::open(QStringList file_names)
         if(std::floor(nifti.nif_header.scl_inter) != nifti.nif_header.scl_inter ||
            std::floor(nifti.nif_header.scl_slope) != nifti.nif_header.scl_slope)
             data_type = float32;
-        apply([&](auto& data){nifti.get_untouched_image(data);});
+
+        bool succeed = true;
+        apply([&](auto& data)
+        {
+            succeed = nifti.get_untouched_image(data);
+        });
+        if(!succeed)
+        {
+            QMessageBox::critical(this,"ERROR",nifti.error_msg.c_str());
+            return false;
+        }
         if(nifti.dim(4) == 1)
             save_idx(file_name.toStdString().c_str(),nifti.input_stream);
         nifti.get_voxel_size(vs);
