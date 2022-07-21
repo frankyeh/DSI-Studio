@@ -17,7 +17,7 @@ RegToolBox::RegToolBox(QWidget *parent) :
     ui->It_mix_view->setScene(&It_mix_scene);
     ui->I_view->setScene(&I_scene);
     connect(ui->rb_mosaic, SIGNAL(clicked()), this, SLOT(show_image()));
-    connect(ui->rb_flash, SIGNAL(clicked()), this, SLOT(show_image()));
+    connect(ui->rb_switch, SIGNAL(clicked()), this, SLOT(show_image()));
     connect(ui->rb_blend, SIGNAL(clicked()), this, SLOT(show_image()));
     connect(ui->show_warp, SIGNAL(clicked()), this, SLOT(show_image()));
     connect(ui->dis_spacing, SIGNAL(currentIndexChanged(int)), this, SLOT(show_image()));
@@ -33,9 +33,8 @@ RegToolBox::RegToolBox(QWidget *parent) :
     connect(timer.get(), SIGNAL(timeout()), this, SLOT(on_timer()));
     timer->setInterval(2000);
 
-    QMovie *movie = new QMovie(":/icons/ajax-loader.gif");
+    QMovie *movie = new QMovie(":/icons/icons/ajax-loader.gif");
     ui->running_label->setMovie(movie);
-    ui->running_label->hide();
     ui->stop->hide();
 
     if constexpr (!tipl::use_cuda)
@@ -284,7 +283,7 @@ void RegToolBox::show_image(void)
         if(ui->rb_mosaic->isChecked())
             show_mosaic_slice_at(It_mix_scene,I_to_show,It_to_show,v2c_I,v2c_It,
                                  ui->slice_pos->value(),ratio,cur_view,ui->mosaic_size->value());
-        if(ui->rb_flash->isChecked())
+        if(ui->rb_switch->isChecked())
         {
             if(flash)
                 show_slice_at(It_mix_scene,I_to_show,v2c_I,ui->slice_pos->value(),ratio,cur_view);
@@ -355,7 +354,6 @@ void RegToolBox::show_image(void)
 
 void RegToolBox::on_timer()
 {
-    flash = !flash;
     if(J.empty())
         std::cout << arg << std::endl;
     show_image();
@@ -697,3 +695,11 @@ void RegToolBox::on_actionSave_Transformed_Image_triggered()
     gz_nifti::save_to_file(to.toStdString().c_str(),JJ,Itvs,ItR);
 
 }
+
+void RegToolBox::on_switch_view_clicked()
+{
+    ui->rb_switch->setChecked(true);
+    flash = !flash;
+    show_image();
+}
+
