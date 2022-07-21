@@ -14,6 +14,12 @@ private:
     static bool check_prog(unsigned int now,unsigned int total);
     static std::vector<std::string> status_list,at_list;
 public:
+    progress(void)
+    {
+        status_list.push_back("processing");
+        begin_prog("processing");
+    }
+
     progress(const char* status,bool show_now = false)
     {
         std::cout << status << std::endl;
@@ -34,6 +40,11 @@ public:
     static bool aborted(void);
     template<typename value_type1,typename value_type2>
     static bool at(value_type1 now,value_type2 total)
+    {
+        return check_prog(uint32_t(now),uint32_t(total));
+    }
+    template<typename value_type1,typename value_type2>
+    bool operator()(value_type1 now,value_type2 total)
     {
         return check_prog(uint32_t(now),uint32_t(total));
     }
@@ -76,8 +87,6 @@ public:
         return !progress::aborted();
     }
 };
-
-
 
 
 
