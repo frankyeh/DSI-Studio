@@ -1157,7 +1157,8 @@ bool ImageModel::read_rev_b0(const char* filename,tipl::image<3>& rev_b0)
         gz_nifti nii;
         if(!nii.load_from_file(filename))
         {
-            error_msg = "Cannot load the image file";
+            error_msg = "cannot read the reverse b0: ";
+            error_msg += nii.error_msg;
             return false;
         }
         nii >> rev_b0;
@@ -1909,7 +1910,8 @@ bool ImageModel::preprocessing(void)
                 continue;
             std::cout << "candidate found. checking correlations..." << std::endl;
             tipl::image<3> b0_op;
-            nii >> b0_op;
+            if(!(nii >> b0_op))
+                continue;
             auto c = phase_direction_at_AP_PA(b0,b0_op);
             if(c[0] + c[1] < 1.8f) // 0.9 + 0.9
                 std::cout << "correlation with b0 is low. skipping..." << std::endl;
