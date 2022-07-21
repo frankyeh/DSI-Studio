@@ -291,7 +291,7 @@ bool load_4d_nii(const char* file_name,std::vector<std::shared_ptr<DwiHeader> >&
         nii.input_stream->buffer_all = true;
         if(!nii.load_from_file(file_name))
         {
-            src_error_msg = nii.error;
+            src_error_msg = nii.error_msg;
             return false;
         }
         if(nii.dim(4) <= 1)
