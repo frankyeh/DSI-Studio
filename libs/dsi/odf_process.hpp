@@ -15,7 +15,7 @@ public:
     virtual void end(Voxel&,gz_mat_write&) {}
 };
 
-void calculate_shell(const std::vector<float>& sorted_bvalues,
+void calculate_shell(std::vector<float> sorted_bvalues,
                      std::vector<unsigned int>& shell);
 class BalanceScheme : public BaseProcess{
     std::vector<float> trans;

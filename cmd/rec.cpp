@@ -15,9 +15,6 @@
 #include <filesystem>
 
 extern std::vector<std::string> fa_template_list,iso_template_list;
-void calculate_shell(const std::vector<float>& bvalues,std::vector<unsigned int>& shell);
-bool is_dsi_half_sphere(const std::vector<unsigned int>& shell);
-bool is_dsi(const std::vector<unsigned int>& shell);
 bool need_scheme_balance(const std::vector<unsigned int>& shell);
 bool get_src(std::string filename,ImageModel& src2,std::string& error_msg);
 /**
@@ -108,6 +105,9 @@ int rec(program_option& po)
         src.correct_motion();
         std::cout << "done." <<std::endl;
     }
+
+    if(po.get("preprocessing",0))
+        src.preprocessing();
 
     if (po.has("param0"))
         src.voxel.param[0] = po.get("param0",src.voxel.param[0]);

@@ -46,11 +46,6 @@ bool reconstruction_window::load_src(int index)
     return true;
 }
 
-void calculate_shell(const std::vector<float>& bvalues,std::vector<unsigned int>& shell);
-bool is_dsi_half_sphere(const std::vector<unsigned int>& shell);
-bool is_dsi(const std::vector<unsigned int>& shell);
-bool is_multishell(const std::vector<unsigned int>& shell);
-bool need_scheme_balance(const std::vector<unsigned int>& shell);
 extern std::vector<std::string> fa_template_list,iso_template_list;
 reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *parent) :
     QMainWindow(parent),filenames(filenames_),ui(new Ui::reconstruction_window)
@@ -96,9 +91,11 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
         break;
     }
 
-
-    ui->align_acpc->setChecked(handle->is_human_data() &&
-                               handle->voxel.vs[0] == handle->voxel.vs[2]);
+    if(!handle->is_human_data())
+    {
+        ui->preprocessing->setChecked(false);
+        ui->preprocessing->hide();
+    }
     ui->odf_resolving->setVisible(false);
 
     ui->AdvancedWidget->setVisible(false);
@@ -248,9 +245,9 @@ void reconstruction_window::Reconstruction(unsigned char method_id,bool prompt)
     if(!handle.get())
         return;
 
-    if (tipl::max_value(handle->voxel.mask) == 0)
+    if (tipl::max_value_mt(handle->voxel.mask) == 0)
     {
-        QMessageBox::information(this,"error","Please select mask for reconstruction");
+        QMessageBox::critical(this,"ERROR","Please select mask for reconstruction");
         return;
     }
 
@@ -261,6 +258,15 @@ void reconstruction_window::Reconstruction(unsigned char method_id,bool prompt)
     settings.setValue("rec_record_odf",ui->RecordODF->isChecked() ? 1 : 0);
     settings.setValue("other_output",ui->other_output->text());
     settings.setValue("check_btable",ui->check_btable->isChecked() ? 1 : 0);
+
+    if(ui->preprocessing->isChecked())
+    {
+        if(!handle->preprocessing())
+        {
+            QMessageBox::critical(this,"ERROR",handle->error_msg.c_str());
+            return;
+        }
+    }
 
     handle->voxel.method_id = method_id;
     handle->voxel.ti.init(8);
@@ -294,9 +300,7 @@ void reconstruction_window::Reconstruction(unsigned char method_id,bool prompt)
         }
         handle->voxel.qsdr_reso = ui->qsdr_reso->value();
     }
-    else
-        if(ui->align_acpc->isChecked())
-            handle->align_acpc();
+
 
     auto dim_backup = handle->voxel.dim; // for QSDR
     auto vs = handle->voxel.vs; // for QSDR
@@ -733,42 +737,12 @@ void reconstruction_window::on_actionManual_Rotation_triggered()
         return;
     progress prog_("rotating");
     handle->rotate(handle->dwi.shape(),handle->voxel.vs,manual->get_iT());
+    handle->voxel.report += " The diffusion images were manually rotated.";
     load_b_table();
     update_dimension();
     on_SlicePos_valueChanged(ui->SlicePos->value());
 }
 
-
-
-void reconstruction_window::on_actionReplace_b0_by_T2W_image_triggered()
-{
-    QString filename = QFileDialog::getOpenFileName(
-            this,"Open Images files",absolute_path,
-            "Images (*.nii *nii.gz);;All files (*)" );
-    if( filename.isEmpty())
-        return;
-    tipl::image<3> ref;
-    tipl::vector<3> vs;
-    gz_nifti in;
-    if(!in.load_from_file(filename.toLocal8Bit().begin()) || !in.toLPS(ref))
-    {
-        QMessageBox::critical(this,"ERROR","Not a valid nifti file");
-        return;
-    }
-    in.get_voxel_size(vs);
-    std::shared_ptr<manual_alignment> manual(new manual_alignment(this,handle->dwi,handle->voxel.vs,ref,vs,tipl::reg::rigid_body,tipl::reg::cost_type::corr));
-    manual->on_rerun_clicked();
-    if(manual->exec() != QDialog::Accepted)
-        return;
-
-    progress prog_("rotating");
-    handle->rotate(ref.shape(),vs,manual->get_iT());
-    auto I = tipl::make_image((unsigned short*)handle->src_dwi_data[0],handle->voxel.dim);
-    ref *= float(tipl::max_value(I))/float(tipl::max_value(ref));
-    std::copy(ref.begin(),ref.end(),I.begin());
-    update_dimension();
-    on_SlicePos_valueChanged(ui->SlicePos->value());
-}
 
 bool get_src(std::string filename,ImageModel& src2,std::string& error_msg)
 {
@@ -918,8 +892,7 @@ void reconstruction_window::on_actionSave_SRC_file_as_triggered()
 
 void reconstruction_window::on_actionEddy_Motion_Correction_triggered()
 {
-    handle->correct_motion();
-    if(!progress::aborted())
+    if(handle->correct_motion())
     {
         handle->calculate_dwi_sum(true);
         load_b_table();

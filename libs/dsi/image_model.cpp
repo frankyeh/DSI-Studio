@@ -92,7 +92,6 @@ void ImageModel::remove(unsigned int index)
     src_dwi_data.erase(src_dwi_data.begin()+index);
     src_bvalues.erase(src_bvalues.begin()+index);
     src_bvectors.erase(src_bvectors.begin()+index);
-    shell.clear();
 }
 
 void flip_fib_dir(std::vector<tipl::vector<3> >& fib_dir,const unsigned char* order)
@@ -834,6 +833,10 @@ void ImageModel::smoothing(void)
 extern std::vector<std::string> fa_template_list,iso_template_list;
 bool ImageModel::align_acpc(void)
 {
+    std::string msg = " The diffusion MRI data were rotated to align with the AC-PC line.";
+    if(voxel.report.find(msg) != std::string::npos)
+        return true;
+
     tipl::shape<3> new_geo;
     tipl::vector<3> new_vs(voxel.vs[0],voxel.vs[0],voxel.vs[0]); // new volume size will be isotropic
 
@@ -857,10 +860,6 @@ bool ImageModel::align_acpc(void)
             new_geo = I.shape();
         }
 
-        if(I.shape() == voxel.dim) // already aligned with ap-pc
-            return true;
-
-
         bool terminated = false;
         progress prog_("aligning with ac-pc at ",true);
         progress::at(0,3);
@@ -881,12 +880,16 @@ bool ImageModel::align_acpc(void)
     }
 
     rotate(new_geo,new_vs,T);
-    voxel.report += " The diffusion MRI data were rotated to align with the AC-PC line.";
+    voxel.report += msg;
     return true;
 }
 
-void ImageModel::correct_motion(void)
+bool ImageModel::correct_motion(void)
 {
+    std::string msg = " Motion correction was conducted with b-table rotated.";
+    if(voxel.report.find(msg) != std::string::npos)
+        return true;
+
     auto preproc = [&](tipl::image<3>& I)
     {
         tipl::filter::gaussian(I);
@@ -900,7 +903,7 @@ void ImageModel::correct_motion(void)
     {
         tipl::image<3> from(dwi_at(0));
         preproc(from);
-        progress prog("registering...");
+        progress prog("apply motion correction...");
         for(size_t i = 1;progress::at(i,src_bvalues.size());++i)
         {
             if(i)
@@ -914,7 +917,10 @@ void ImageModel::correct_motion(void)
                          " rotation=" << tipl::vector<3>(args[i].rotation) << std::endl;
         }
         if(progress::aborted())
-            return;
+        {
+            error_msg = "aborted";
+            return false;
+        }
     }
 
 
@@ -967,7 +973,10 @@ void ImageModel::correct_motion(void)
 
         }
         if(progress::aborted())
-            return;
+        {
+            error_msg = "aborted";
+            return false;
+        }
     }
 
     // get ndc list
@@ -980,6 +989,8 @@ void ImageModel::correct_motion(void)
             rotate_one_dwi(i,tipl::transformation_matrix<double>(new_args[i],voxel.dim,voxel.vs,voxel.dim,voxel.vs));
         });
     }
+    voxel.report += msg;
+    return true;
 }
 void ImageModel::crop(tipl::shape<3> range_min,tipl::shape<3> range_max)
 {
@@ -1692,8 +1703,12 @@ bool eddy_check_shell(const std::vector<float>& bvalues)
 
 bool ImageModel::run_eddy(std::string exec)
 {
+    if(voxel.report.find("rotated") != std::string::npos)
+    {
+        error_msg = "TOPUP/EDDY cannot be applied to motion corrected or rotated images";
+        return false;
+    }
     progress::show("eddy");
-
     if(std::filesystem::exists(file_name+".corrected.nii.gz"))
     {
         std::cout << "load previous results from " << file_name << ".corrected.nii.gz" <<std::endl;
@@ -1804,6 +1819,11 @@ bool ImageModel::run_eddy(std::string exec)
 
 bool ImageModel::run_topup_eddy(const std::string& other_src)
 {
+    if(voxel.report.find("rotated") != std::string::npos)
+    {
+        error_msg = "TOPUP/EDDY cannot be applied to motion corrected or rotated images";
+        return false;
+    }
     progress::show("topup/eddy",true);
     if(std::filesystem::exists(file_name+".corrected.nii.gz"))
     {
@@ -1821,11 +1841,6 @@ bool ImageModel::run_topup_eddy(const std::string& other_src)
     }
     // run topup
     {
-        if(voxel.report.find("rotated") != std::string::npos)
-        {
-            error_msg = "TOPUP cannot be applied to rotated images";
-            return false;
-        }
         std::string topup_result = QFileInfo(file_name.c_str()).baseName().replace('.','_').toStdString();
         std::string check_me_file = QFileInfo(file_name.c_str()).baseName().toStdString() + ".topup.check_result";
         std::string acqparam_file = QFileInfo(file_name.c_str()).baseName().toStdString() + ".topup.acqparams.txt";
@@ -1870,9 +1885,70 @@ bool ImageModel::run_topup_eddy(const std::string& other_src)
     return true;
 }
 
-void calculate_shell(const std::vector<float>& sorted_bvalues,
+bool ImageModel::preprocessing(void)
+{
+    std::string msg(" Preprocessing was conducted using DSI Studio.");
+    if(voxel.report.find(msg) != std::string::npos)
+        return true;
+    if(std::filesystem::exists((file_name+".proc.src.gz")))
+    {
+        progress prog_("read SRC file");
+        gz_mat_read new_reader;
+        mat_reader.swap(new_reader);
+        if (!load_from_file((file_name+".proc.src.gz").c_str()))
+            return false;
+        return true;
+    }
+
+    std::map<float,std::string,std::greater<float> > candidates;
+    std::cout << "searching for opposite direction scans.." << std::endl;
+    {
+        tipl::image<3> b0;
+        read_b0(b0);
+        QStringList nii_files = QFileInfo(file_name.c_str()).dir().entryList(QStringList("*nii.gz"),QDir::Files|QDir::NoSymLinks);
+
+        for(QString file : nii_files)
+        {
+            std::string path = (QFileInfo(file_name.c_str()).absolutePath() + "/" + file).toStdString();
+            std::cout << "checking " << path << std::endl;
+            gz_nifti nii;
+            if(!nii.load_from_file(path.c_str()))
+                continue;
+            if(nii.dim(4) != 1 || nii.width()*nii.height()*nii.depth() != dwi.size())
+                continue;
+            std::cout << "candidate found. checking correlations..." << std::endl;
+            tipl::image<3> b0_op;
+            nii >> b0_op;
+            auto c = phase_direction_at_AP_PA(b0,b0_op);
+            if(c[0] + c[1] < 1.8f) // 0.9 + 0.9
+                std::cout << "correlation with b0 is low. skipping..." << std::endl;
+            else
+                candidates[std::fabs(c[0]-c[1])] = path;
+        }
+    }
+
+    if(!candidates.empty())
+    {
+        std::cout << "apply topup using " << candidates.begin()->second << std::endl;
+        if(!run_topup_eddy(candidates.begin()->second))
+            return false;
+    }
+    else
+        std::cout << "no opposite phase encoding direction found. apply motion correction." <<std::endl;
+
+    if(voxel.report.find(" eddy ") == std::string::npos) // if FSL eddy not applied
+    {
+        if(!correct_motion())
+            return false;
+    }
+    voxel.report += msg;
+    save_to_file((file_name+".proc.src.gz").c_str());
+    return true;
+}
+void calculate_shell(std::vector<float> sorted_bvalues,
                      std::vector<unsigned int>& shell)
 {
+    std::sort(sorted_bvalues.begin(),sorted_bvalues.end());
     for(uint32_t i = 0;i < sorted_bvalues.size();++i)
         if(sorted_bvalues[i] > 100.0f)
             {
@@ -1886,29 +1962,23 @@ void calculate_shell(const std::vector<float>& sorted_bvalues,
             shell.push_back(index);
 }
 
-void ImageModel::calculate_shell(void)
-{
-    std::vector<float> sorted_bvalues(src_bvalues);
-    std::sort(sorted_bvalues.begin(),sorted_bvalues.end());
-    ::calculate_shell(sorted_bvalues,shell);
-}
 bool ImageModel::is_dsi_half_sphere(void)
 {
-    if(shell.empty())
-        calculate_shell();
+    std::vector<unsigned int> shell;
+    calculate_shell(src_bvalues,shell);
     return is_dsi() && (!shell.empty() && shell[1] - shell[0] <= 3);
 }
 
 bool ImageModel::is_dsi(void)
 {
-    if(shell.empty())
-        calculate_shell();
+    std::vector<unsigned int> shell;
+    calculate_shell(src_bvalues,shell);
     return shell.size() > 4 && (!shell.empty() && shell[1] - shell[0] <= 6);
 }
 bool ImageModel::need_scheme_balance(void)
 {
-    if(shell.empty())
-        calculate_shell();
+    std::vector<unsigned int> shell;
+    calculate_shell(src_bvalues,shell);
     if(is_dsi() || shell.size() > 6)
         return false;
     for(size_t i = 0;i < shell.size();++i)
@@ -1923,8 +1993,8 @@ bool ImageModel::need_scheme_balance(void)
 
 bool ImageModel::is_multishell(void)
 {
-    if(shell.empty())
-        calculate_shell();
+    std::vector<unsigned int> shell;
+    calculate_shell(src_bvalues,shell);
     return (shell.size() > 1) && !is_dsi();
 }
 
@@ -1937,6 +2007,8 @@ void ImageModel::get_report(std::string& report)
         if(src_bvalues[i] > 50)
             ++num_dir;
     std::ostringstream out;
+    std::vector<unsigned int> shell;
+    calculate_shell(src_bvalues,shell);
     if(is_dsi())
     {
         out << " A diffusion spectrum imaging scheme was used, and a total of " << num_dir
@@ -2097,7 +2169,7 @@ bool ImageModel::load_from_file(const char* dwi_file_name)
 {
     if(voxel.steps.empty())
     {
-        voxel.steps += "[Step T2][Reconstruction] open ";
+        voxel.steps = "[Step T2][Reconstruction] open ";
         voxel.steps += std::filesystem::path(dwi_file_name).filename().string();
         voxel.steps += "\n";
     }
@@ -2218,12 +2290,13 @@ bool ImageModel::load_from_file(const char* dwi_file_name)
         {
             if(!progress::aborted())
             {
-                error_msg = QFileInfo(dwi_file_name).baseName().toStdString();
+                error_msg = dwi_file_name;
                 error_msg += " is an invalid SRC file";
             }
             return false;
         }
         save_idx(dwi_file_name,mat_reader.in);
+        mat_reader.in->close();
 
 
         if (!mat_reader.read("dimension",voxel.dim) ||

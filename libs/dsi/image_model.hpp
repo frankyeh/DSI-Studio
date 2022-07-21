@@ -253,8 +253,6 @@ public:
     void remove(unsigned int index);
     std::string check_b_table(void);
 public:
-    std::vector<unsigned int> shell;
-    void calculate_shell(void);
     bool is_dsi_half_sphere(void);
     bool is_dsi(void);
     bool need_scheme_balance(void);
@@ -279,13 +277,14 @@ public:
     bool align_acpc(void);
     void crop(tipl::shape<3> range_min,tipl::shape<3> range_max);
     void trim(void);
-    void correct_motion(void);
+    bool correct_motion(void);
 public:
     std::shared_ptr<ImageModel> rev_pe_src;
     tipl::shape<3> topup_from,topup_to;
     void get_volume_range(size_t dim = 0,int extra_space = 0);
     bool distortion_correction(const char* file_name);
     bool run_topup_eddy(const std::string& other_src);
+    bool preprocessing(void);
 private:
     bool read_b0(tipl::image<3>& b0) const;
     bool read_rev_b0(const char* file_name,tipl::image<3>& rev_b0);

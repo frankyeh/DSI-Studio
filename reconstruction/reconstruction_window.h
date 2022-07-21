@@ -87,7 +87,6 @@ private slots:
     void on_SlicePos_valueChanged(int value);
     void on_add_t1t2_clicked();
     void on_actionManual_Rotation_triggered();
-    void on_actionReplace_b0_by_T2W_image_triggered();
     void on_actionCorrect_AP_PA_scans_triggered();
     void on_actionSave_b0_triggered();
     void on_actionEnable_TEST_features_triggered();

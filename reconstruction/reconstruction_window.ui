@@ -952,9 +952,9 @@
                <item>
                 <layout class="QHBoxLayout" name="horizontalLayout_4">
                  <item>
-                  <widget class="QCheckBox" name="align_acpc">
+                  <widget class="QCheckBox" name="preprocessing">
                    <property name="text">
-                    <string>Align AC-PC</string>
+                    <string>Preprocessing (correction and align ac-pc) </string>
                    </property>
                   </widget>
                  </item>
@@ -1210,7 +1210,6 @@ Reconstruction</string>
     <addaction name="actionRun_FSL_Topup"/>
     <addaction name="actionEDDY"/>
     <addaction name="separator"/>
-    <addaction name="actionCorrect_AP_PA_scans"/>
     <addaction name="actionEddy_Motion_Correction"/>
    </widget>
    <widget class="QMenu" name="menuEdit">
@@ -1235,7 +1234,6 @@ Reconstruction</string>
     <addaction name="actionErase_Background_Signals"/>
     <addaction name="actionTrim_image"/>
     <addaction name="separator"/>
-    <addaction name="actionReplace_b0_by_T2W_image"/>
     <addaction name="actionEnable_TEST_features"/>
    </widget>
    <addaction name="menuFile"/>
