@@ -1890,15 +1890,6 @@ bool ImageModel::preprocessing(void)
     std::string msg(" Preprocessing was conducted using DSI Studio.");
     if(voxel.report.find(msg) != std::string::npos)
         return true;
-    if(std::filesystem::exists((file_name+".proc.src.gz")))
-    {
-        progress prog_("read SRC file");
-        gz_mat_read new_reader;
-        mat_reader.swap(new_reader);
-        if (!load_from_file((file_name+".proc.src.gz").c_str()))
-            return false;
-        return true;
-    }
 
     std::map<float,std::string,std::greater<float> > candidates;
     std::cout << "searching for opposite direction scans.." << std::endl;
@@ -1927,6 +1918,18 @@ bool ImageModel::preprocessing(void)
         }
     }
 
+    auto new_file_name = (file_name+(candidates.empty() ? ".mo_corrected.src.gz" : ".pe_mo_corrected.src.gz"));
+
+    // load previous run results
+    if(std::filesystem::exists(new_file_name))
+    {
+        std::cout << "found previous corrected result at " << new_file_name << " loading..." << std::endl;
+        progress prog_("read SRC file");
+        gz_mat_read new_reader;
+        mat_reader.swap(new_reader);
+        return load_from_file(new_file_name.c_str());
+    }
+
     if(!candidates.empty())
     {
         std::cout << "apply topup using " << candidates.begin()->second << std::endl;
@@ -1942,7 +1945,7 @@ bool ImageModel::preprocessing(void)
             return false;
     }
     voxel.report += msg;
-    save_to_file((file_name+".proc.src.gz").c_str());
+    save_to_file(new_file_name.c_str());
     return true;
 }
 void calculate_shell(std::vector<float> sorted_bvalues,
