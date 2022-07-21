@@ -388,7 +388,6 @@ bool view_image::open(QStringList file_names)
     if(QString(file_name).endsWith(".nhdr"))
     {
         tipl::io::nrrd<progress> nrrd;
-        progress::show("reading");
         if(!nrrd.load_from_file(file_name.toStdString().c_str()))
         {
             QMessageBox::critical(this,"ERROR",nrrd.error_msg.c_str());
