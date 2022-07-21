@@ -50,7 +50,7 @@ bool atlas::load_from_file(void)
     gz_nifti nii;
     if(!nii.load_from_file(filename.c_str()))
     {
-        error_msg = nii.error;
+        error_msg = nii.error_msg;
         return false;
     }
     if(name.empty())
