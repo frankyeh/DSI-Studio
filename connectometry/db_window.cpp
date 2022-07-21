@@ -327,12 +327,12 @@ void db_window::on_actionLoad_mask_triggered()
         return;
     tipl::image<3> I;
     gz_nifti nii;
-    if(!nii.load_from_file(file.toLocal8Bit().begin()))
+    if(!nii.load_from_file(file.toLocal8Bit().begin()) || !nii.toLPS(I))
     {
-        QMessageBox::critical(this,"ERROR","Invalid nifti file format");
+        QMessageBox::critical(this,"ERROR",nii.error_msg.c_str());
         return;
     }
-    nii.toLPS(I);
+    ;
     if(I.shape() != fp_mask.shape())
     {
         QMessageBox::critical(this,"ERROR","Inconsistent image dimension. Please use DSI Studio to output the mask.");
