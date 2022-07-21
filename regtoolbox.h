@@ -27,7 +27,7 @@ public:
 public:
     tipl::affine_transform<float> arg;
     tipl::thread thread;
-    std::shared_ptr<QTimer> timer,flash_timer;
+    std::shared_ptr<QTimer> timer;
     std::string status;
 public:
     std::shared_ptr<tipl::reg::bfnorm_mapping<float,3> > bnorm_data;
@@ -54,7 +54,6 @@ private slots:
     void on_run_reg_clicked();
     void on_timer();
 
-    void flash_image();
     void show_image();
 
 
