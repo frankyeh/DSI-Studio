@@ -33,10 +33,6 @@ RegToolBox::RegToolBox(QWidget *parent) :
     connect(timer.get(), SIGNAL(timeout()), this, SLOT(on_timer()));
     timer->setInterval(2000);
 
-    flash_timer.reset(new QTimer());
-    connect(flash_timer.get(), SIGNAL(timeout()), this, SLOT(flash_image()));
-    flash_timer->setInterval(1000);
-    flash_timer->start();
     QMovie *movie = new QMovie(":/icons/ajax-loader.gif");
     ui->running_label->setMovie(movie);
     ui->running_label->hide();
@@ -274,13 +270,6 @@ void show_blend_slice_at(QGraphicsScene& scene,
     }
     show_view(scene,QImage(reinterpret_cast<unsigned char*>(&*buf.begin()),buf.width(),buf.height(),QImage::Format_RGB32).copy().mirrored(false,(cur_view != 2)));
 }
-
-void RegToolBox::flash_image()
-{
-    flash = !flash;
-    if(ui->rb_flash->isChecked())
-        show_image();
-}
 void RegToolBox::show_image(void)
 {
     float ratio = ui->zoom->value();
@@ -366,6 +355,9 @@ void RegToolBox::show_image(void)
 
 void RegToolBox::on_timer()
 {
+    flash = !flash;
+    if(J.empty())
+        std::cout << arg << std::endl;
     show_image();
     if(reg_done)
     {
