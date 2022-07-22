@@ -42,6 +42,7 @@ private: //bad slices
 private:
     Ui::reconstruction_window *ui;
     std::shared_ptr<ImageModel> handle;
+    std::string existing_steps;
     bool load_src(int index);
     void update_dimension(void);
     void Reconstruction(unsigned char method_id,bool prompt);
