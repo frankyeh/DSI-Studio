@@ -344,7 +344,7 @@ public:
         }
         if(progress::aborted())
             error_msg = "reconstruction canceled";
-        std::cout << error_msg << std::endl;
+        std::ostringstream() << error_msg << show_progress();
         return false;
     }
     std::string get_file_ext(void);
