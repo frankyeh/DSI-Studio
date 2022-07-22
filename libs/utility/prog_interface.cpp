@@ -68,7 +68,7 @@ void progress::begin_prog(bool show_now)
 
 void progress::show(const char* status,bool show_now)
 {
-    std::cout << status << std::endl;
+    print_status(status,false);
     if(status_list.empty())
         return;
     status_list.back() = status;
