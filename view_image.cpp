@@ -91,7 +91,7 @@ bool match_files(const std::string& file_path1,const std::string& file_path2,
        !match_strings(path1,path2,path1_others,path2_others))
         return false;
     file_path2_gen = path2_others + "/" + name2_others;
-    std::cout << "matching " << file_path1_others << " with " << file_path2_gen << std::endl;
+    std::ostringstream() << "matching " << file_path1_others << " with " << file_path2_gen << show_progress();
     return true;
 }
 
@@ -101,20 +101,21 @@ bool view_image::command(std::string cmd,std::string param1)
 {
     if(!shape.size())
         return true;
+    progress prog(cmd.c_str());
     error_msg.clear();
 
     bool result = true;
     apply([&](auto& I)
     {
         tipl::time t("elapsed time: ");
-        std::cout << "run command: " << cmd << " " << param1 << std::endl;
+        std::ostringstream() << "run command: " << cmd << " " << param1 << show_progress();
         result = tipl::command<gz_nifti>(I,vs,T,is_mni,cmd,param1,error_msg);
-        std::cout << "result: " << (result ? "succeeded":"failed") << std::endl;
+        std::ostringstream() << "result: " << (result ? "succeeded":"failed") << show_progress();
         shape = I.shape();
     });
     if(!result)
     {
-        std::cout << "ERROR:" << error_msg << std::endl;
+        std::ostringstream() << "ERROR:" << error_msg << show_progress();
         return false;
     }
 
@@ -362,8 +363,7 @@ bool view_image::open(QStringList file_names)
     QString info;
     file_name = file_names[0];
     setWindowTitle(QFileInfo(file_name).fileName());
-    progress prog_("loading ",std::filesystem::path(file_name.toStdString()).filename().string().c_str());
-    progress::at(0,1);
+    progress prog("reading ",std::filesystem::path(file_name.toStdString()).filename().string().c_str());
 
     if(file_names.size() > 1 && QString(file_name).endsWith(".bmp"))
     {
@@ -674,8 +674,6 @@ void view_image::init_image(void)
         min_value = minmax.first;
         max_value = minmax.second;
     });
-    std::cout << "image contrast range: " << min_value << " to " << max_value << std::endl;
-
     float range = max_value-min_value;
     QString dim_text = QString("%1,%2,%3").arg(shape.width()).arg(shape.height()).arg(shape.depth());
     if(!dwi_volume_buf.empty())
