@@ -171,11 +171,11 @@ std::string run_auto_track(program_option& po,const std::vector<std::string>& fi
     }
 
     std::vector<std::string> names;
-    progress prog_("automatic fiber tracking");
+    progress prog0("automatic fiber tracking");
     for(size_t i = 0;progress::at(i,file_list.size());++i)
     {
         std::string cur_file_base_name = QFileInfo(file_list[i].c_str()).baseName().toStdString();
-        progress::show(cur_file_base_name);
+        progress prog1(cur_file_base_name.c_str());
         names.push_back(cur_file_base_name);
         prog = int(i);
         std::ostringstream() << "processing " << cur_file_base_name << show_progress();
@@ -224,12 +224,12 @@ std::string run_auto_track(program_option& po,const std::vector<std::string>& fi
         // fiber tracking on fib file
         std::shared_ptr<fib_data> handle(new fib_data);
         bool fib_loaded = false;
-        progress prog_("tracking pathways");
+        progress prog2("tracking pathways");
         for(size_t j = 0;progress::at(j,track_id.size());++j)
         {
             std::string track_name = fib.tractography_name_list[track_id[j]];
             std::string output_path = dir + "/" + track_name;
-            progress::show(track_name);
+            progress prog3(track_name.c_str());
 
             // create storing directory
             {
@@ -576,12 +576,6 @@ void auto_track::on_run_clicked()
     raise(); //  for mac
 }
 
-
-void auto_track::on_interpolation_currentIndexChanged(int)
-{
-    QMessageBox::information(this,"DSI Studio","You may need to remove existing *.fib.gz and *.mapping.gz files to take effect");
-
-}
 
 void auto_track::select_tracts()
 {
