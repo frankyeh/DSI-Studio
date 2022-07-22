@@ -69,7 +69,6 @@ void cdm2_cuda(const tipl::image<3>& It,
                bool& terminated,
                tipl::reg::cdm_param param)
 {
-    std::cout << "normalization using GPU" << std::endl;
     tipl::device_image<3> dIt(It),dIt2(It2),dIs(Is),dIs2(Is2);
     tipl::device_image<3,tipl::vector<3> > dd(It.shape()),inv_dd(It.shape());
     try{
