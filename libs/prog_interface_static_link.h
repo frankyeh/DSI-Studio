@@ -20,7 +20,9 @@ private:
         while(std::getline(in,line))
         {
             for(size_t i = 0;i < status_list.size();++i)
-                std::cout << (node ? (i+1 != status_list.size() ? "  ":" └") : "  ");
+                std::cout << "│";
+            if(node)
+                std::cout << "┌";
             std::cout << line << std::endl;
             node = false;
         }
