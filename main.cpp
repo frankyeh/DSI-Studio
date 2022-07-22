@@ -357,6 +357,8 @@ int main(int ac, char *av[])
     if(ac > 2 || QString(av[1]).endsWith(".txt") || QString(av[1]).endsWith(".log"))
         return run_cmd(ac,av);
 
+    try{
+
     // replace default std::cout buffer
     console.attach();
 
@@ -393,4 +395,15 @@ int main(int ac, char *av[])
         w.openFile(av[1]);
 
     return a.exec();
+
+    }
+    catch(const std::bad_alloc&)
+    {
+        QMessageBox::critical(0,"ERROR","Crash due to insufficient memory.");
+    }
+    catch(const std::runtime_error& error)
+    {
+        QMessageBox::critical(0,"ERROR",error.what());
+    }
+    return 1;
 }
