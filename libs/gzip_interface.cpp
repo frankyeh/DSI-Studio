@@ -2,7 +2,6 @@
 #include <chrono>
 #include <stdio.h>
 #include "gzip_interface.hpp"
-#include "prog_interface_static_link.h"
 #define SPAN 8388608L       /* 8MB as the desired distance between access points */
 
 
@@ -78,7 +77,6 @@ void inflate_stream::output(void* buf,size_t len)
 
 bool gz_istream::open(const char* file_name)
 {
-    prog_aborted_ = false;
     in.open(file_name,std::ios::binary);
     if(!in)
         return false;
@@ -252,7 +250,7 @@ bool gz_istream::read(void* buf,size_t len)
 {
     if(!is_gz)
     {
-        if(!good() || progress::aborted())
+        if(!good())
             return false;
         in.read(reinterpret_cast<char*>(buf),uint32_t(len));
         return true;
@@ -342,7 +340,6 @@ bool gz_istream::read(void* buf,size_t len)
             return false;
 
         int ret = istrm->process(cur_uncompressed,cur_compressed,get_access_point);
-        progress::at(cur_compressed*100/file_size,100);
 
         if(ret == Z_STREAM_END)
         {
@@ -358,7 +355,7 @@ bool gz_istream::read(void* buf,size_t len)
         }
 
         // ret != Z_OK usually due to data corruption
-        if(ret != Z_OK || progress::aborted())
+        if(ret != Z_OK)
             return false;
 
         if(get_access_point && istrm->at_block_end() && len > istrm->size_to_extract() + WINSIZE)
@@ -474,28 +471,29 @@ bool gz_ostream::open(const char* file_name)
     out.open(file_name,std::ios::binary);
     return out.good();
 }
-void gz_ostream::write(const void* buf_,size_t size)
+bool gz_ostream::write(const void* buf_,size_t size)
 {
     const char* buf = reinterpret_cast<const char*>(buf_);
-    if(handle)
+    if(!handle)
+        return out.write(buf,uint32_t(size)).good();
+
+    const size_t block_size = 104857600;// 100mb
+    while(size > block_size)
     {
-        const size_t block_size = 104857600;// 100mb
-        while(size > block_size)
+        if(gzwrite(handle,buf,block_size) <= 0)
         {
-            if(gzwrite(handle,buf,block_size) <= 0)
-            {
-                close();
-                throw std::runtime_error("Cannot output gz file");
-            }
-            size -= block_size;
-            buf = buf + block_size;
-        }
-        if(gzwrite(handle,buf,uint32_t(size)) <= 0)
             close();
+            return false;
+        }
+        size -= block_size;
+        buf = buf + block_size;
     }
-    else
-        if(out)
-            out.write(buf,uint32_t(size));
+    if(gzwrite(handle,buf,uint32_t(size)) <= 0)
+    {
+        close();
+        return false;
+    }
+    return true;
 }
 void gz_ostream::flush(void)
 {
