@@ -247,9 +247,9 @@ public:
             if(s2t.empty())
                 return false;
             float tolerance_dis_in_icbm_voxels = tolerance_dis_in_icbm152_mm/handle->template_vs[0];
-            std::cout << "convert tolerance distance of " << tolerance_dis_in_icbm152_mm << " from ICBM mm to subject voxels" << std::endl;
-            std::cout << "subject space tolerance: " <<
-                    (tolerance_dis_in_subject_voxels = tolerance_dis_in_icbm_voxels/float((s2t[0]-s2t[1]).length())) << " voxels" << std::endl;
+            std::ostringstream() << "convert tolerance distance of " << tolerance_dis_in_icbm152_mm << " from ICBM mm to subject voxels" << show_progress();
+            std::ostringstream() << "subject space tolerance: " <<
+                    (tolerance_dis_in_subject_voxels = tolerance_dis_in_icbm_voxels/float((s2t[0]-s2t[1]).length())) << " voxels" << show_progress();
         }
         track_id = track_id_;
         report += " The anatomy prior of a tractography atlas (Yeh et al., Neuroimage 178, 57-68, 2018) was used to map ";
