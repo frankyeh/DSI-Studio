@@ -335,22 +335,24 @@ std::string run_auto_track(program_option& po,const std::vector<std::string>& fi
                     }
                     bool no_result = false;
                     const unsigned int low_yield_threshold = 100000;
-                    progress prog_("tracking");
-                    while(!thread.is_ended() && !progress::aborted())
                     {
-                        progress::at(thread.get_total_tract_count(),
-                                   thread.param.termination_count);
-                        std::this_thread::sleep_for(std::chrono::seconds(2));
-                        thread.fetchTracks(&tract_model);
-                        std::this_thread::sleep_for(std::chrono::seconds(2));
-                        thread.fetchTracks(&tract_model);
-                        // terminate if yield rate is very low, likely quality problem
-                        if(thread.get_total_seed_count() > low_yield_threshold &&
-                           thread.get_total_tract_count() < thread.get_total_seed_count()/low_yield_threshold)
+                        progress prog_("tracking");
+                        while(!thread.is_ended() && !progress::aborted())
                         {
-                            no_result = true;
-                            thread.end_thread();
-                            break;
+                            progress::at(thread.get_total_tract_count(),
+                                       thread.param.termination_count);
+                            std::this_thread::sleep_for(std::chrono::seconds(2));
+                            thread.fetchTracks(&tract_model);
+                            std::this_thread::sleep_for(std::chrono::seconds(2));
+                            thread.fetchTracks(&tract_model);
+                            // terminate if yield rate is very low, likely quality problem
+                            if(thread.get_total_seed_count() > low_yield_threshold &&
+                               thread.get_total_tract_count() < thread.get_total_seed_count()/low_yield_threshold)
+                            {
+                                no_result = true;
+                                thread.end_thread();
+                                break;
+                            }
                         }
                     }
                     if(progress::aborted())
@@ -370,6 +372,7 @@ std::string run_auto_track(program_option& po,const std::vector<std::string>& fi
 
                     if(export_trk)
                     {
+                        progress prog("export tracts");
                         tract_model.report = report;
                         if(!tract_model.save_tracts_to_file(trk_file_name.c_str()))
                             return std::string("fail to save tractography file:")+trk_file_name;
@@ -389,6 +392,7 @@ std::string run_auto_track(program_option& po,const std::vector<std::string>& fi
                 if(export_stat &&
                    (overwrite || !std::filesystem::exists(stat_file_name) || !std::filesystem::file_size(stat_file_name)))
                 {
+                    progress prog("export tracts statistics");
                     std::ostringstream() << "saving " << stat_file_name << show_progress();
                     std::ofstream out_stat(stat_file_name.c_str());
                     std::string result;
@@ -400,8 +404,8 @@ std::string run_auto_track(program_option& po,const std::vector<std::string>& fi
     }
     if(progress::aborted())
         return std::string();
-    // check if there is any incomplete task
     {
+        progress prog("check if there is any incomplete task");
         bool has_incomplete = false;
         for(size_t i = 0;i < stat_files.size();++i)
         {
@@ -421,9 +425,9 @@ std::string run_auto_track(program_option& po,const std::vector<std::string>& fi
             return "Incomplete tasked found. Please rerun the analysis.";
     }
 
-    // aggregating
     if(file_list.size() != 1)
     {
+        progress prog("aggregating results from multiple subjects");
         std::string column_title("Subjects");
         for(size_t s = 0;s < names.size();++s) // for each scan
         {
