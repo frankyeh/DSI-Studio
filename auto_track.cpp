@@ -178,7 +178,7 @@ std::string run_auto_track(program_option& po,const std::vector<std::string>& fi
         progress::show(cur_file_base_name);
         names.push_back(cur_file_base_name);
         prog = int(i);
-        std::cout << "processing " << cur_file_base_name << std::endl;
+        std::ostringstream() << "processing " << cur_file_base_name << show_progress();
         std::string fib_file_name;
         if(!std::filesystem::exists(file_list[i]))
             return std::string("cannot find file:")+file_list[i];
@@ -235,7 +235,7 @@ std::string run_auto_track(program_option& po,const std::vector<std::string>& fi
             {
                 QDir dir(output_path.c_str());
                 if (!dir.exists() && !dir.mkpath("."))
-                    std::cout << std::string("cannot create directory:") + output_path;
+                    std::ostringstream() << std::string("cannot create directory:") + output_path << show_progress();
             }
             std::string fib_base = QFileInfo(fib_file_name.c_str()).baseName().toStdString();
             std::string no_result_file_name = output_path + "/" + fib_base+"."+track_name+".no_result.txt";
@@ -248,7 +248,7 @@ std::string run_auto_track(program_option& po,const std::vector<std::string>& fi
 
             if(std::filesystem::exists(no_result_file_name) && !overwrite)
             {
-                std::cout << "skip " << track_name << " due to no result" << std::endl;
+                std::ostringstream() << "skip " << track_name << " due to no result" << show_progress();
                 continue;
             }
 
@@ -256,13 +256,13 @@ std::string run_auto_track(program_option& po,const std::vector<std::string>& fi
             bool has_trk_file = std::filesystem::exists(trk_file_name) &&
                     (!export_template_trk || std::filesystem::exists(template_trk_file_name));
             if(has_stat_file)
-                std::cout << "found stat file:" << stat_file_name << std::endl;
+                std::ostringstream() << "found stat file:" << stat_file_name << show_progress();
             if(has_trk_file)
-                std::cout << "found track file:" << trk_file_name << std::endl;
+                std::ostringstream() << "found track file:" << trk_file_name << show_progress();
 
             if(!overwrite && (!export_stat || has_stat_file) && (!export_trk || has_trk_file))
             {
-                std::cout << "skip " << track_name << std::endl;
+                std::ostringstream() << "skip " << track_name << show_progress();
                 continue;
             }
 
@@ -282,7 +282,7 @@ std::string run_auto_track(program_option& po,const std::vector<std::string>& fi
                 }
                 if(handle->template_id != 0)
                 {
-                    std::cout << "Not adult human data. Enforce registration." << std::endl;
+                    std::ostringstream() << "Not adult human data. Enforce registration." << show_progress();
                     handle->set_template_id(0);
                 }
 
@@ -389,7 +389,7 @@ std::string run_auto_track(program_option& po,const std::vector<std::string>& fi
                 if(export_stat &&
                    (overwrite || !std::filesystem::exists(stat_file_name) || !std::filesystem::file_size(stat_file_name)))
                 {
-                    std::cout << "saving " << stat_file_name << std::endl;
+                    std::ostringstream() << "saving " << stat_file_name << show_progress();
                     std::ofstream out_stat(stat_file_name.c_str());
                     std::string result;
                     tract_model.get_quantitative_info(handle,result);
@@ -406,11 +406,11 @@ std::string run_auto_track(program_option& po,const std::vector<std::string>& fi
         {
             for(size_t j = 0;j < stat_files[i].size();++j)
             {
-                std::cout << "checking file:" << stat_files[i][j] << std::endl;
+                std::ostringstream() << "checking file:" << stat_files[i][j] << show_progress();
                 if(std::filesystem::exists(stat_files[i][j]) &&
                    !std::filesystem::file_size(stat_files[i][j]))
                 {
-                    std::cout << "remove empty file:" << stat_files[i][j] << std::endl;
+                    std::ostringstream() << "remove empty file:" << stat_files[i][j] << show_progress();
                     std::filesystem::remove(stat_files[i][j]);
                     has_incomplete = true;
                 }
@@ -447,7 +447,7 @@ std::string run_auto_track(program_option& po,const std::vector<std::string>& fi
             std::vector<std::vector<std::string> > output(names.size());
             for(size_t s = 0;s < output.size();++s) // for each scan
             {
-                std::cout << "reading " << stat_files[t][s] << std::endl;
+                std::ostringstream() << "reading " << stat_files[t][s] << show_progress();
                 std::ifstream in(stat_files[t][s].c_str());
                 if(!in)
                     continue;
