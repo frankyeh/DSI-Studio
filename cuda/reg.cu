@@ -112,7 +112,7 @@ size_t linear_cuda_refine(const tipl::image<3,float>& from,
                               bool& terminated,
                               double precision)
 {
-    return tipl::reg::linear<tipl::reg::mutual_information_cuda>(from,from_vs,to,to_vs,arg,reg_type,[&](void){return terminated;},precision,false,tipl::reg::reg_bound,10);
+    return tipl::reg::linear<tipl::reg::mutual_information_cuda>(from,from_vs,to,to_vs,arg,reg_type,[&](void){return terminated;},precision,false,tipl::reg::narrow_bound,10);
 }
 
 
