@@ -25,7 +25,7 @@ public:
     tipl::transformation_matrix<float> T;
     tipl::value_to_color<float> v2c_I,v2c_It;
 public:
-    tipl::affine_transform<float> arg;
+    tipl::affine_transform<float> arg,old_arg;
     tipl::thread thread;
     std::shared_ptr<QTimer> timer;
     std::string status;
