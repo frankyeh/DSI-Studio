@@ -23,10 +23,11 @@ void show_view(QGraphicsScene& scene,QImage I);
 void populate_templates(QComboBox* combo,size_t index);
 bool reconstruction_window::load_src(int index)
 {
-    progress prog_("read SRC file");
+    progress prog("read SRC file");
     handle = std::make_shared<ImageModel>();
     if (!handle->load_from_file(filenames[index].toLocal8Bit().begin()))
         return false;
+    existing_steps = handle->voxel.steps;
     if(handle->voxel.is_histology)
         return true;
     update_dimension();
@@ -379,7 +380,7 @@ void reconstruction_window::batch_command(std::string cmd,std::string param)
                                     QMessageBox::Yes|QMessageBox::No|QMessageBox::Cancel) == QMessageBox::Yes)
     {
         progress prog_("apply to other SRC files");
-        auto steps = handle->voxel.steps;
+        std::string steps(handle->voxel.steps.begin()+existing_steps.length(),handle->voxel.steps.end());
         steps += cmd;
         if(!param.empty())
         {
@@ -412,11 +413,12 @@ bool reconstruction_window::command(std::string cmd,std::string param)
 void reconstruction_window::on_doDTI_clicked()
 {
     std::string ref_file_name = handle->file_name;
-    std::string ref_steps = handle->voxel.steps;
+    std::string ref_steps(handle->voxel.steps.begin()+existing_steps.length(),handle->voxel.steps.end());
     std::shared_ptr<ImageModel> ref_handle = handle;
-    progress prog_("SRC files");
+    progress prog_("process SRC files");
     for(int index = 0;progress::at(index,filenames.size());++index)
     {
+        progress prog2("processing ",filenames[index].toStdString().c_str());
         if(index)
         {
             if(!load_src(index) || !handle->run_steps(ref_file_name,ref_steps))
@@ -676,7 +678,7 @@ bool add_other_image(ImageModel* handle,QString name,QString filename)
     gz_nifti in;
     if(!in.load_from_file(filename.toLocal8Bit().begin()) || !in.toLPS(ref))
     {
-        std::cout << "not a valid nifti file:" << filename.toStdString() << std::endl;
+        std::cout << "ERROR: not a valid nifti file:" << filename.toStdString() << std::endl;
         return false;
     }
 
@@ -982,7 +984,7 @@ void match_template_resolution(tipl::image<3>& VG,
                                tipl::vector<3>& VFvs)
 {
     float ratio = float(VF.width())/float(VG.width());
-    std::cout << "width ratio (subject/template):(" << VF.width() << "/" << VG.width() << ") " << ratio << std::endl;
+    std::ostringstream() << "width ratio (subject/template):(" << VF.width() << "/" << VG.width() << ") " << ratio << show_progress();
     while(ratio < 0.5f)   // if subject resolution is substantially lower, downsample template
     {
         tipl::downsampling(VG);
@@ -990,7 +992,7 @@ void match_template_resolution(tipl::image<3>& VG,
             tipl::downsampling(VG2);
         VGvs *= 2.0f;
         ratio *= 2.0f;
-        std::cout << "ratio lower than 0.5, downsampling template to " << VGvs[0] << " mm resolution" << std::endl;
+        std::ostringstream() << "ratio lower than 0.5, downsampling template to " << VGvs[0] << " mm resolution" << show_progress();
     }
     while(ratio > 2.5f)  // if subject resolution is higher, downsample it for registration
     {
@@ -999,7 +1001,7 @@ void match_template_resolution(tipl::image<3>& VG,
             tipl::downsampling(VF2);
         VFvs *= 2.0f;
         ratio /= 2.0f;
-        std::cout << "ratio larger than 2.5, register using subject resolution of " << VFvs[0] << " mm resolution" << std::endl;
+        std::ostringstream() << "ratio larger than 2.5, register using subject resolution of " << VFvs[0] << " mm resolution" << show_progress();
     }
 }
 
