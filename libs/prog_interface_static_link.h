@@ -13,16 +13,23 @@ private:
     static std::string get_status(void);
     static bool check_prog(unsigned int now,unsigned int total);
     static std::vector<std::string> status_list,at_list;
-public:
-    progress(void)
+    static void print_status(const char* status,bool node = true)
     {
-        status_list.push_back("loading");
-        begin_prog("loading");
+        std::istringstream in(status);
+        std::string line;
+        while(std::getline(in,line))
+        {
+            for(size_t i = 0;i < status_list.size();++i)
+                std::cout << (node ? (i+1 != status_list.size() ? "  ":" └") : "  ");
+            std::cout << line << std::endl;
+            node = false;
+        }
     }
-
+public:
+    progress(void){}
     progress(const char* status,bool show_now = false)
     {
-        std::cout << status << std::endl;
+        print_status(status);
         status_list.push_back(status);
         begin_prog(show_now);
     }
@@ -30,7 +37,7 @@ public:
     {
         std::string s(status1);
         s += status2;
-        std::cout << s << std::endl;
+        print_status(s.c_str());
         status_list.push_back(s);
         begin_prog(show_now);
     }
@@ -88,7 +95,14 @@ public:
     }
 };
 
-
+class show_progress{
+public:
+    friend std::ostringstream& operator<<(std::ostringstream& out,const show_progress& prog)
+    {
+        progress::show(out.str().c_str());
+        return out;
+    }
+};
 
 #endif
 
