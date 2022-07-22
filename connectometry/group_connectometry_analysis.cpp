@@ -153,7 +153,7 @@ void group_connectometry_analysis::run_permutation_multithread(unsigned int id,u
                 if(preproces > 100 && total_track() < 100 &&
                    (seed_count < 640000))
                 {
-                    std::cout << "total track=" << total_track() << " analysis restarted with higher seed count..." << std::endl;
+                    std::ostringstream() << "total track=" << total_track() << " analysis restarted with higher seed count..." << show_progress();
                     if(terminated)
                         return;
                     // stop other threads
@@ -170,7 +170,7 @@ void group_connectometry_analysis::run_permutation_multithread(unsigned int id,u
                     std::fill(subject_pos_corr.begin(),subject_pos_corr.end(),0);
                     // adjust parameters
                     seed_count*= 2;
-                    std::cout << "now running seed count=" << seed_count << std::endl;
+                    std::ostringstream() << "now running seed count=" << seed_count << show_progress();
                     threads.resize(1);
                     for(unsigned int index = 1;index < thread_count;++index)
                         threads.push_back(std::make_shared<std::future<void> >(std::async(std::launch::async,
