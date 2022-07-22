@@ -100,13 +100,13 @@ inline size_t linear_with_mi_refine(const tipl::image<3,float>& from,
                               tipl::affine_transform<float>& arg,
                               tipl::reg::reg_type reg_type,
                               bool& terminated,
-                              double precision = 0.1)
+                              double precision = 0.01)
 {
     size_t result = 0;
     if constexpr (tipl::use_cuda)
         result = linear_cuda_refine(from,from_vs,to,to_vs,arg,tipl::reg::reg_type(reg_type),terminated,precision);
     else
-        result = tipl::reg::linear<tipl::reg::mutual_information>(from,from_vs,to,to_vs,arg,tipl::reg::reg_type(reg_type),[&](void){return terminated;},precision,false,tipl::reg::reg_bound,10);
+        result = tipl::reg::linear<tipl::reg::mutual_information>(from,from_vs,to,to_vs,arg,tipl::reg::reg_type(reg_type),[&](void){return terminated;},precision,false,tipl::reg::narrow_bound,10);
     return result;
 }
 
