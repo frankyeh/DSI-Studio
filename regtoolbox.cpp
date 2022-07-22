@@ -354,9 +354,12 @@ void RegToolBox::show_image(void)
 
 void RegToolBox::on_timer()
 {
-    if(J.empty())
+    if(old_arg != arg)
+    {
         std::cout << arg << std::endl;
-    show_image();
+        show_image();
+        old_arg = arg;
+    }
     if(reg_done)
     {
         timer->stop();
@@ -398,19 +401,20 @@ void RegToolBox::linear_reg(tipl::reg::reg_type reg_type,int cost_type)
         else
         if(cost_type == 1)// correlation
             linear_with_cc(It,Itvs,I,Ivs,arg,reg_type,thread.terminated,ui->large_deform->isChecked() ? tipl::reg::large_bound : tipl::reg::reg_bound);
+        std::cout << "linear registration completed" << std::endl;
         T = tipl::transformation_matrix<float>(arg,It.shape(),Itvs,I.shape(),Ivs);
-
         tipl::resample_mt<tipl::interpolation::cubic>(I,J_,T);
         if(I2.shape() == I.shape())
         {
             tipl::image<3> J2_(It.shape());
             tipl::resample_mt<tipl::interpolation::cubic>(I2,J2_,T);
-            tipl::normalize(J2);
+            tipl::normalize_mt(J2);
             J2.swap(J2_);
         }
 
     }
-    std::cout << "linear:" << tipl::correlation(J_.begin(),J_.end(),It.begin()) << std::endl;
+    auto r = tipl::correlation_mt(J_.begin(),J_.end(),It.begin());
+    std::cout << "linear:" << r << std::endl;
     J.swap(J_);
 }
 
@@ -418,6 +422,7 @@ void RegToolBox::linear_reg(tipl::reg::reg_type reg_type,int cost_type)
 void RegToolBox::nonlinear_reg(void)
 {
     status = "nonlinear registration";
+    std::cout << "begin nonlinear registration" << std::endl;
     {
         tipl::reg::cdm_param param;
         param.resolution = ui->resolution->value();
@@ -446,17 +451,16 @@ void RegToolBox::nonlinear_reg(void)
         else
             cdm_common(It,It2,J,J2,t2f_dis,f2t_dis,thread.terminated,param,ui->use_cuda->isChecked());
     }
-
+    std::cout << "nonlinear registration completed." << std::endl;
     // calculate inverted to2from
     {
         from2to.resize(I.shape());
         tipl::inv_displacement_to_mapping(f2t_dis,from2to,T);
         tipl::displacement_to_mapping(t2f_dis,to2from,T);
     }
-
-
     tipl::compose_mapping(I,to2from,JJ);
-    std::cout << "nonlinear:" << tipl::correlation(JJ.begin(),JJ.end(),It.begin()) << std::endl;
+    auto r = tipl::correlation_mt(JJ.begin(),JJ.end(),It.begin());
+    std::cout << "nonlinear:" << r << std::endl;
 }
 
 void RegToolBox::on_run_reg_clicked()
