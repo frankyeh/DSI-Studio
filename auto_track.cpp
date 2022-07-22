@@ -398,7 +398,8 @@ std::string run_auto_track(program_option& po,const std::vector<std::string>& fi
             }
         }
     }
-
+    if(progress::aborted())
+        return std::string();
     // check if there is any incomplete task
     {
         bool has_incomplete = false;
