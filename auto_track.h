@@ -36,8 +36,6 @@ private slots:
 
     void on_run_clicked();
 
-    void on_interpolation_currentIndexChanged(int index);
-
     void select_tracts();
 
 private:
