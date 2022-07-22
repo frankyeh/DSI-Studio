@@ -11,10 +11,10 @@ bool adjust_vs(const tipl::image<3,float>& from,
                const tipl::image<3,float>& to,
                tipl::vector<3>& to_vs)
 {
-    std::cout << "FOV width:" << float(from.width())*from_vs[0] << " to " << float(to.width())*to_vs[0] << std::endl;
+    std::ostringstream() << "FOV width:" << float(from.width())*from_vs[0] << " to " << float(to.width())*to_vs[0] << show_progress();
     if(float(from.width())*from_vs[0]*0.75f > float(to.width())*to_vs[0])
     {
-        std::cout << "adjust voxel size due to match FOV" << std::endl;
+        std::ostringstream() << "adjust voxel size due to match FOV" << show_progress();
         to_vs *= std::sqrt((float(from.plane_size())*from_vs[0]*from_vs[1])/
                            (float(to.plane_size())*to_vs[0]*to_vs[1]));
         return true;
