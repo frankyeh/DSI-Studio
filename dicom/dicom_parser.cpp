@@ -339,13 +339,13 @@ bool load_4d_nii(const char* file_name,std::vector<std::shared_ptr<DwiHeader> >&
         }
         if(max_value < 256.0f)
         {
-            std::cout << "The maximum singal is only " << max_value << std::endl;
+            std::ostringstream() << "The maximum singal is only " << max_value << show_progress();
             float scale = 1.0f;
             while(max_value*scale*32.0f < std::numeric_limits<unsigned short>::max())
                 scale *= 32.0f;
             if(scale != 1.0f)
             {
-                std::cout << "scaling the image by " << scale << std::endl;
+                std::ostringstream() << "scaling the image by " << scale << show_progress();
                 tipl::par_for(dwi_data.size(),[&](unsigned int index){
                     dwi_data[index] *= scale;
                 });
@@ -359,7 +359,7 @@ bool load_4d_nii(const char* file_name,std::vector<std::shared_ptr<DwiHeader> >&
         if(grad_header.load_from_file(QString(QFileInfo(file_name).absolutePath() + "/grad_dev.nii.gz").toLocal8Bit().begin()))
         {
             grad_header.toLPS(grad_dev);
-            std::cout << "grad_dev used" << std::endl;
+            std::ostringstream() << "grad_dev used" << show_progress();
         }
     }
 
@@ -370,7 +370,7 @@ bool load_4d_nii(const char* file_name,std::vector<std::shared_ptr<DwiHeader> >&
         if(mask_header.load_from_file(QString(QFileInfo(file_name).absolutePath() + "/nodif_brain_mask.nii.gz").toLocal8Bit().begin()))
         {
             mask_header.toLPS(mask);
-            std::cout << "mask used" << std::endl;
+            std::ostringstream() << "mask used" << show_progress();
         }
     }
 
@@ -747,7 +747,7 @@ bool load_nhdr(QStringList file_list,std::vector<std::shared_ptr<DwiHeader> >& d
         raw_file_name = raw_file_name.substr(0,raw_file_name.length()-4);
         raw_file_name += "raw";
         std::ifstream in(raw_file_name,std::ifstream::binary);
-        std::cout << "reading" << raw_file_name << std::endl;
+        std::ostringstream() << "reading" << raw_file_name << show_progress();
         if(!in.read((char*)&image_buf[i][0],image_buf[i].size()*sizeof(float)))
         {
             src_error_msg = "failed to read image file";
