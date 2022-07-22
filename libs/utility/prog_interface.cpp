@@ -78,7 +78,31 @@ void progress::show(const char* status,bool show_now)
 }
 progress::~progress(void)
 {
+    std::ostringstream out;
+
+    {
+        std::string unit("ms");
+        float count = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - process_time.back()).count();
+        if(count > 1000.0f)
+        {
+            count /= 1000.0f;
+            unit = "s";
+            if(count > 60.0f)
+            {
+                count /= 60.0;
+                unit = "min";
+                if(count > 60.0f)
+                {
+                    count /= 60.0f;
+                    unit = "hr";
+                }
+            }
+        }
+        out << "└elapsed time: " << count << " " << unit;
+    }
     status_list.pop_back();
+    print_status(out.str().c_str(),false);
+
     process_time.pop_back();
     t_last.pop_back();
     if(!has_gui || !tipl::is_main_thread<0>())
