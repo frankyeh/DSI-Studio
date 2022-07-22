@@ -100,7 +100,7 @@ void GLWidget::clean_up(void)
         glDeleteLists(tracts, 1);
     tracts = 0;
     doneCurrent();
-    //std::cout << __FUNCTION__ << " " << __FILE__ << std::endl;
+    //std::ostringstream() << __FUNCTION__ << " " << __FILE__ << show_progress();
 }
 
 
@@ -146,25 +146,24 @@ bool check_error(const char* line)
         switch(code)
         {
         case GL_INVALID_ENUM:
-            std::cout << "GL_INVALID_ENUM";
+            std::ostringstream() << "GL_INVALID_ENUM at " << line << show_progress();
             break;
         case GL_INVALID_VALUE:
-            std::cout << "GL_INVALID_VALUE";
+            std::ostringstream() << "GL_INVALID_VALUE at " << line << show_progress();
             break;
         case GL_INVALID_OPERATION:
-            std::cout << "GL_INVALID_OPERATION";
+            std::ostringstream() << "GL_INVALID_OPERATION at " << line << show_progress();
             break;
         case GL_STACK_OVERFLOW:
-            std::cout << "GL_STACK_OVERFLOW";
+            std::ostringstream() << "GL_STACK_OVERFLOW at " << line << show_progress();
             break;
         case GL_STACK_UNDERFLOW:
-            std::cout << "GL_STACK_UNDERFLOW";
+            std::ostringstream() << "GL_STACK_UNDERFLOW at " << line << show_progress();
             break;
         case GL_OUT_OF_MEMORY:
-            std::cout << "GL_OUT_OF_MEMORY";
+            std::ostringstream() << "GL_OUT_OF_MEMORY at " << line << show_progress();
             break;
         }
-        std::cout << " at " << line << std::endl;
     }
     return true;
 }
@@ -448,10 +447,10 @@ void GLWidget::initializeGL()
         QMessageBox::critical(this,"ERROR","System has no OpenGL support. 3D visualization is disabled. Please update or install graphic card driver.");
         return;
     }
-    std::cout << "openGL information" << std::endl;
-    std::cout << "version:" << glGetString(GL_VERSION) << std::endl;
-    std::cout << "vender:" << glGetString(GL_VENDOR) << std::endl;
-    std::cout << "renderer:" << glGetString(GL_RENDERER) << std::endl;
+    std::ostringstream() << "openGL information" << show_progress();
+    std::ostringstream() << "version:" << glGetString(GL_VERSION) << show_progress();
+    std::ostringstream() << "vender:" << glGetString(GL_VENDOR) << show_progress();
+    std::ostringstream() << "renderer:" << glGetString(GL_RENDERER) << show_progress();
 
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_NORMALIZE);
@@ -2644,13 +2643,7 @@ bool GLWidget::command(QString cmd,QString param,QString param2)
 {
     if(cmd == "save_camera")
     {
-        std::ofstream out(param.toStdString().c_str());
-        for(unsigned int row = 0,index = 0;row < 4;++row)
-        {
-            for(int col = 0;col < 4;++col,++index)
-                out << transformation_matrix[index] << " ";
-            out << std::endl;
-        }
+        std::ofstream(param.toStdString().c_str()) << transformation_matrix;
     }
     if(cmd == "load_camera")
     {
@@ -2994,7 +2987,7 @@ bool GLWidget::command(QString cmd,QString param,QString param2)
                 QString file_name = QFileInfo(param).absolutePath()+"//"+
                         QFileInfo(param).completeBaseName()+"_"+QString::number(index)+"."+
                         QFileInfo(param).suffix();
-                std::cout << file_name.toStdString() << std::endl;
+                std::ostringstream() << file_name.toStdString() << show_progress();
                 rotate_angle(angle,0,1.0,0.0);
                 QImage I = grab_image();
                 I.save(file_name);
