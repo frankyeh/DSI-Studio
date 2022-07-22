@@ -75,7 +75,7 @@ void xnat_facade::get_html(std::string url,std::string auth)
 {
     if(cur_response)
         cur_response->abort();
-    std::cout << "request " << url << std::endl;
+    std::ostringstream() << "request " << url << show_progress();
     QNetworkRequest xnat_request(QUrl(url.c_str()));
     xnat_request.setRawHeader("Authorization", QString("Basic " + QString(auth.c_str()).toLocal8Bit().toBase64()).toLocal8Bit());
     cur_response = xnat_manager.get(xnat_request);
@@ -135,13 +135,13 @@ void xnat_facade::get_scans_data(std::string site,std::string auth,std::string e
     QObject::connect(cur_response, &QNetworkReply::finished,[=]{
         if (!good())
             return;
-        std::cout << "receive content type: " << cur_response->header(QNetworkRequest::ContentTypeHeader).toString().toStdString() << std::endl;
+        std::ostringstream() << "receive content type: " << cur_response->header(QNetworkRequest::ContentTypeHeader).toString().toStdString() << show_progress();
         //auto const html = QString::fromUtf8(response->readAll());
         auto data = QJsonDocument::fromJson(cur_response->readAll()).object()["ResultSet"].toObject()["Result"].toArray();
         std::vector<std::string> urls;
         for(int i = 0;i < data.size();++i)
             urls.push_back(data[i].toObject().value("URI").toString().toStdString());
-        std::cout << "download a total of " << urls.size() << " files to " << output_dir << std::endl;
+        std::ostringstream() << "download a total of " << urls.size() << " files to " << output_dir << show_progress();
         get_data(site,auth,urls,output_dir);
         cur_response = nullptr;
     });
@@ -158,7 +158,7 @@ void xnat_facade::get_info(std::string site,std::string auth,std::string path)
     [this]{
        if (!good())
            return;
-       std::cout << "receive content type: " << cur_response->header(QNetworkRequest::ContentTypeHeader).toString().toStdString() << std::endl;
+       std::ostringstream() << "receive content type: " << cur_response->header(QNetworkRequest::ContentTypeHeader).toString().toStdString() << show_progress();
        result = jsonarray2tsv(QJsonDocument::fromJson(cur_response->readAll()).object()["ResultSet"].toObject()["Result"].toArray());
        cur_response = nullptr;
     });
