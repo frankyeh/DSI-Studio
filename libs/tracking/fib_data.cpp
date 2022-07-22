@@ -145,13 +145,13 @@ tipl::const_pointer_image<3,float> item::get_image(void)
         has_gui = false;
         if (!mat_reader->read(image_index,row,col,buf))
         {
-            std::cout << "ERROR: reading " << name << std::endl;
+            std::ostringstream() << "ERROR: reading " << name << show_progress();
             dummy.resize(image_data.shape());
             image_data = tipl::make_image(&*dummy.begin(),dummy.shape());
         }
         else
         {
-            std::cout << name << " loaded" << std::endl;
+            std::ostringstream() << name << " loaded" << show_progress();
             mat_reader->in->flush();
             image_data = tipl::make_image(buf,image_data.shape());
         }
@@ -575,7 +575,7 @@ bool fib_data::load_from_file(const char* file_name)
 
             view_item.push_back(item("fiber",dir.fa[0],dim));
             match_template();
-            std::cout << "NIFTI file loaded" << std::endl;
+            std::ostringstream() << "NIFTI file loaded" << show_progress();
             return true;
         }
         else
@@ -624,7 +624,7 @@ bool fib_data::load_from_file(const char* file_name)
             dir.index_data.push_back(dir.fa);
             view_item.push_back(item("fiber",dir.fa[0],dim));
             match_template();
-            std::cout << "NIFTI file loaded" << std::endl;
+            std::ostringstream() << "NIFTI file loaded" << show_progress();
             return true;
         }
         else
@@ -672,7 +672,7 @@ bool fib_data::load_from_file(const char* file_name)
         dir.index_name[0] = "image";
         view_item[0].name = "image";
         trackable = false;
-        std::cout << "image file loaded" << std::endl;
+        std::ostringstream() << "image file loaded" << show_progress();
         return true;
     }
     if(!QFileInfo(file_name).exists())
@@ -700,7 +700,7 @@ bool fib_data::load_from_file(const char* file_name)
         (dim[0] > 256 || dim[1] > 256 || dim[2] > 256))
     {
         high_reso.reset(new fib_data);
-        std::cout << "initiate surrogate analysis" << std::endl;
+        std::ostringstream() << "initiate surrogate analysis" << show_progress();
         std::string surrogate_file_name = file_name;
         surrogate_file_name.resize(surrogate_file_name.size()-7);
         surrogate_file_name += ".fibs.gz";
@@ -721,7 +721,7 @@ bool fib_data::load_from_file(const char* file_name)
                 low_reso_dim[1] = (low_reso_dim[1]+1) >> 1;
                 low_reso_dim[2] = (low_reso_dim[2]+1) >> 1;
             }
-            std::cout << "preparing surrogate FIB file" << std::endl;
+            std::ostringstream() << "preparing surrogate FIB file" << show_progress();
             gz_mat_write out(surrogate_file_name.c_str());
             out.write("dimension",low_reso_dim);
             out.write("voxel_size",low_reso_vs);
@@ -777,7 +777,7 @@ bool fib_data::load_from_file(const char* file_name)
                     std::string content;
                     mat_reader.read(matrix.get_name().c_str(),content);
                     out.write(matrix.get_name().c_str(),content);
-                    std::cout << "write " << matrix.get_name() << ":" << content << std::endl;
+                    std::ostringstream() << "write " << matrix.get_name() << ":" << content << show_progress();
                 }
 
                 if(matrix.get_name() == "dir0")
@@ -857,7 +857,7 @@ bool fib_data::load_from_file(const char* file_name)
 
     if(!load_from_mat())
         return false;
-    std::cout << "FIB file loaded" << std::endl;
+    std::ostringstream() << "FIB file loaded" << show_progress();
     return true;
 }
 bool fib_data::save_mapping(const std::string& index_name,const std::string& file_name)
@@ -969,7 +969,7 @@ bool fib_data::load_from_mat(void)
     }
     if(has_high_reso)
     {
-        std::cout << "reading original mat file" << std::endl;
+        std::ostringstream() << "reading original mat file" << show_progress();
         if(!high_reso->load_from_mat())
         {
             error_msg = high_reso->error_msg;
@@ -1151,7 +1151,7 @@ bool fib_data::add_dT_index(const std::string& index_name)
                     I = view_item[i].get_image();
 
                 tipl::image<3> new_metrics(dim);
-                std::cout << "new metric: (" << view_item[i].name << " - " << view_item[j].name << ")/" << view_item[i].name << " x 100%" << std::endl;
+                std::ostringstream() << "new metric: (" << view_item[i].name << " - " << view_item[j].name << ")/" << view_item[i].name << " x 100%" << show_progress();
                 {
                     for(size_t k = 0;k < I.size();++k)
                         if(dir.fa[0][k] > 0.0f && I[k] > 0.0f && J[k] > 0.0f)
@@ -1383,7 +1383,7 @@ bool fib_data::load_template(void)
     while((!is_human_data && template_I.width()/3 > int(dim[0])) ||
           (is_human_data && template_vs[0]*2.0f <= int(vs[0])))
     {
-        std::cout << "downsampling template by 2x to match subject resolution" << std::endl;
+        std::ostringstream() << "downsampling template by 2x to match subject resolution" << show_progress();
         template_vs *= 2.0f;
         template_to_mni[0] *= 2.0f;
         template_to_mni[5] *= 2.0f;
@@ -1635,7 +1635,7 @@ bool fib_data::map_to_mni(bool background)
             if(size_t(t2s_col)*size_t(t2s_row) == template_I.size()*3 &&
                size_t(s2t_col)*size_t(s2t_row) == dim.size()*3)
             {
-                std::cout << "loading mapping fields from " << output_file_name << std::endl;
+                std::ostringstream() << "loading mapping fields from " << output_file_name << show_progress();
                 t2s.clear();
                 t2s.resize(template_I.shape());
                 s2t.clear();
@@ -1698,7 +1698,7 @@ bool fib_data::map_to_mni(bool background)
 
         tipl::displacement_to_mapping(dis,t2s,T);
         tipl::compose_mapping(Is,t2s,Iss);
-        std::cout << "R2:" << tipl::correlation(Iss.begin(),Iss.end(),It.begin()) << std::endl;
+        std::ostringstream() << "R2:" << tipl::correlation(Iss.begin(),Iss.end(),It.begin()) << show_progress();
 
         s2t.resize(dim);
         tipl::inv_displacement_to_mapping(inv_dis,s2t,T);
@@ -1741,7 +1741,7 @@ bool fib_data::map_to_mni(bool background)
     }
     else
     {
-        std::cout << "Subject normalization to MNI space." << std::endl;
+        std::ostringstream() << "Subject normalization to MNI space." << show_progress();
         lambda();
     }
     return true;
