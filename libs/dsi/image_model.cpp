@@ -450,14 +450,18 @@ bool ImageModel::run_steps(const std::string& reg_file_name,const std::string& r
         cmds.push_back(cmd);
         params.push_back(param);
     }
-    progress prog_("apply operations");
-    for(size_t index = 0;progress::at(index,cmds.size());++index)
-        if(!command(cmds[index],params[index]))
-        {
-            error_msg +=  "at ";
-            error_msg += cmds[index];
-            return false;
-        }
+
+    if(!cmds.empty())
+    {
+        progress prog_("apply operations");
+        for(size_t index = 0;progress::at(index,cmds.size());++index)
+            if(!command(cmds[index],params[index]))
+            {
+                error_msg +=  "at ";
+                error_msg += cmds[index];
+                return false;
+            }
+    }
     return true;
 }
 bool ImageModel::command(std::string cmd,std::string param)
