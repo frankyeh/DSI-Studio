@@ -452,7 +452,7 @@ bool CustomSliceModel::initialize(const std::vector<std::string>& files,bool is_
     {
         if(!has_transform)
         {
-            std::cout << "no transformation. running registration..." << std::endl;
+            progress::show("running slice registration...");
             thread.reset(new std::future<void>(
                         std::async(std::launch::async,[this](){argmin(tipl::reg::rigid_body);})));
         }
