@@ -784,8 +784,8 @@ bool connectometry_db::get_demo_matched_volume(const std::string& matched_demo,t
     {
         v.push_back(std::stoi(age));
         v.push_back(std::stoi(sex));
-        std::cout << "matching " << feature_titles[0] << ":" << age << " " <<
-                                    feature_titles[1] << ":" << sex << std::endl;
+        std::ostringstream() << "matching " << feature_titles[0] << ":" << age << " " <<
+                                    feature_titles[1] << ":" << sex << show_progress();
     }
     else
     {
@@ -801,10 +801,11 @@ bool connectometry_db::get_demo_matched_volume(const std::string& matched_demo,t
             error_msg += matched_demo;
             return false;
         }
-        std::cout << "matching ";
+        std::ostringstream out;
+        out << "matching ";
         for(size_t i = 0;i < feature_titles.size();++i)
-            std::cout << feature_titles[i] << ":" << v[i] << " ";
-        std::cout << std::endl;
+            out << feature_titles[i] << ":" << v[i] << " ";
+        out << show_progress();
     }
     size_t feature_size = 1+feature_location.size(); // +1 for intercept
     tipl::multiple_regression<double> mr;
