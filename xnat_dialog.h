@@ -3,6 +3,7 @@
 #include <QtNetwork>
 #include <iostream>
 #include "program_option.hpp"
+#include "prog_interface_static_link.h"
 #include <QApplication>
 #include "TIPL/tipl.hpp"
 #include <QMainWindow>
@@ -12,7 +13,8 @@ class xnat_facade{
 public:
     QNetworkAccessManager xnat_manager;
     QNetworkReply* cur_response = nullptr;
-    size_t progress = 0;
+    std::shared_ptr<progress> download_prog;
+    size_t prog = 0;
     size_t total = 0;
     std::string result,error_msg;
 public:
