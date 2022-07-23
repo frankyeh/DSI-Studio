@@ -39,7 +39,6 @@ std::string jsonarray2tsv(QJsonArray data)
     return result;
 }
 
-
 bool xnat_facade::good(void)
 {
     if (cur_response && cur_response->error() != QNetworkReply::NoError)
@@ -54,6 +53,7 @@ bool xnat_facade::good(void)
             error_msg = "XNAT Server not found";
         if(cur_response->error() == 6)
             error_msg = "SSL Failed. Please update SSL library";
+        progress::show(error_msg.c_str());
         cur_response = nullptr;
     }
     return cur_response != nullptr;
@@ -62,22 +62,23 @@ bool xnat_facade::good(void)
 void xnat_facade::clear(void)
 {
     if(cur_response)
-    {
-        cur_response->abort();
-        cur_response = nullptr;
-    }
-    progress = 0;
+        {
+            cur_response->abort();
+            cur_response = nullptr;
+        }
+    prog = 0;
     total = 0;
     error_msg.clear();
 }
 
 void xnat_facade::get_html(std::string url,std::string auth)
 {
-    if(cur_response)
+    if(cur_response && cur_response->isRunning())
         cur_response->abort();
-    std::ostringstream() << "request " << url << show_progress();
+    download_prog = std::make_shared<progress>("downloading ",url.c_str());
     QNetworkRequest xnat_request(QUrl(url.c_str()));
     xnat_request.setRawHeader("Authorization", QString("Basic " + QString(auth.c_str()).toLocal8Bit().toBase64()).toLocal8Bit());
+    error_msg.clear();
     cur_response = xnat_manager.get(xnat_request);
 }
 void check_name(std::string& name);
@@ -91,36 +92,47 @@ void xnat_facade::get_data(std::string site,std::string auth,
         output_dir.pop_back();
 
     total = urls.size();
-    for(progress = 0;progress < total;++progress)
+    progress p("download data from ",site.c_str());
+    std::ostringstream() << "a total of " << urls.size() << " files" << show_progress();
+    for(prog = 0;progress::at(prog,total);++prog)
     {
         std::string download_name = (output_dir+"/"+
-                                     urls[progress].substr(urls[progress].find_last_of('/')+1)).c_str();
+                                     urls[prog].substr(urls[prog].find_last_of('/')+1)).c_str();
         if(std::filesystem::exists(download_name))
+        {
+            std::ostringstream() << "file exists, skipping: " << download_name.c_str() << show_progress();
             continue;
-        get_html(site + urls[progress],auth);
-        if (!good())
-            return;
+        }
+        get_html(site + urls[prog],auth);
         {
             bool downloading = true;
-            QObject::connect(cur_response, &QNetworkReply::finished,[&downloading]
+            QObject::connect(cur_response, &QNetworkReply::finished,[this,&downloading]
             {
+                download_prog.reset();
                 downloading = false;
             });
             while(downloading)
                 QApplication::processEvents();
-            if (!good())
-                break;
         }
-
-        std::shared_ptr<QFile> file(new QFile);
-        file->setFileName(download_name.c_str());
-        if (!file->open(QIODevice::WriteOnly))
+        if (!good())
+            break;
+        if(progress::aborted())
         {
-            error_msg = "no write permission";
+            error_msg = "download aborted";
             break;
         }
-        file->write(cur_response->readAll());
+
+        progress p3("save to ",download_name.c_str());
+        QByteArray buf = cur_response->readAll();
+        std::ofstream out(download_name.c_str(),std::ios::binary);
+        if(!tipl::io::save_stream_with_prog<progress>(out,buf.begin(),buf.size(),error_msg))
+        {
+            std::remove(download_name.c_str());
+            break;
+        }
     }
+    if(progress::aborted())
+        error_msg = "download aborted";
     cur_response = nullptr;
 }
 
@@ -128,39 +140,36 @@ void xnat_facade::get_scans_data(std::string site,std::string auth,std::string e
 {
     if(site.back() == '/')
         site.pop_back();
-    clear();
     get_html(site + "/REST/experiments/" + experiment + "/scans/" + filter + "/files",auth);
-    if (!good())
-        return;
-    QObject::connect(cur_response, &QNetworkReply::finished,[=]{
-        if (!good())
-            return;
-        std::ostringstream() << "receive content type: " << cur_response->header(QNetworkRequest::ContentTypeHeader).toString().toStdString() << show_progress();
-        //auto const html = QString::fromUtf8(response->readAll());
-        auto data = QJsonDocument::fromJson(cur_response->readAll()).object()["ResultSet"].toObject()["Result"].toArray();
+    QObject::connect(cur_response, &QNetworkReply::finished,[=]{        
         std::vector<std::string> urls;
-        for(int i = 0;i < data.size();++i)
-            urls.push_back(data[i].toObject().value("URI").toString().toStdString());
-        std::ostringstream() << "download a total of " << urls.size() << " files to " << output_dir << show_progress();
-        get_data(site,auth,urls,output_dir);
-        cur_response = nullptr;
+        if (good())
+        {
+            //auto const html = QString::fromUtf8(response->readAll());
+            auto data = QJsonDocument::fromJson(cur_response->readAll()).object()["ResultSet"].toObject()["Result"].toArray();
+            for(int i = 0;i < data.size();++i)
+                urls.push_back(data[i].toObject().value("URI").toString().toStdString());
+            std::ostringstream() << "a total of " << urls.size() << " files identified " << show_progress();
+        }
+        download_prog.reset();
+        if(!urls.empty())
+            get_data(site,auth,urls,output_dir);
     });
 }
 void xnat_facade::get_info(std::string site,std::string auth,std::string path)
 {
     if(site.back() == '/')
         site.pop_back();
-    clear();
     get_html(site + path,auth);
-    if (!good())
-        return;
     QObject::connect(cur_response, &QNetworkReply::finished,
     [this]{
-       if (!good())
-           return;
-       std::ostringstream() << "receive content type: " << cur_response->header(QNetworkRequest::ContentTypeHeader).toString().toStdString() << show_progress();
-       result = jsonarray2tsv(QJsonDocument::fromJson(cur_response->readAll()).object()["ResultSet"].toObject()["Result"].toArray());
+       if (good())
+       {
+           std::ostringstream() << "receive content type: " << cur_response->header(QNetworkRequest::ContentTypeHeader).toString().toStdString() << show_progress();
+           result = jsonarray2tsv(QJsonDocument::fromJson(cur_response->readAll()).object()["ResultSet"].toObject()["Result"].toArray());
+       }
        cur_response = nullptr;
+       download_prog.reset();
     });
 }
 
@@ -329,10 +338,11 @@ void xnat_dialog::on_experiment_list_itemSelectionChanged()
 
 void xnat_dialog::on_download_clicked()
 {
+    xnat_connection.clear();
+
     if(ui->download->text() == "Abort")
     {
-        download_timer.reset();
-        xnat_connection.clear();
+        download_timer.reset();        
         ui->experiment_list->setEnabled(true);
         ui->connection_group->setEnabled(true);
         ui->download_settings->setEnabled(true);
@@ -378,7 +388,6 @@ void xnat_dialog::download_status()
     }
     if(!xnat_connection.is_running())
     {
-
         ++cur_download_index;
         if(cur_download_index >= ui->experiment_list->selectionModel()->selectedRows().size())
         {
@@ -414,6 +423,6 @@ void xnat_dialog::download_status()
                                              output_dir.toStdString());
 
     }
-    ui->statusbar->showMessage(QString("Downloading %1 (%2/%3) ").arg(ui->experiment_list->item(ui->experiment_list->selectionModel()->selectedRows()[cur_download_index].row(),2/*label*/)->text()).arg(xnat_connection.progress).arg(xnat_connection.total));
+    ui->statusbar->showMessage(QString("Downloading %1 (%2/%3) ").arg(ui->experiment_list->item(ui->experiment_list->selectionModel()->selectedRows()[cur_download_index].row(),2/*label*/)->text()).arg(xnat_connection.prog).arg(xnat_connection.total));
 }
 
