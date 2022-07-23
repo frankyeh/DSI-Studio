@@ -1253,10 +1253,9 @@ void dicom2src(std::string dir_,std::ostream& out)
 {
     QString dir = dir_.c_str();
     QStringList sub_dir = QDir(dir).entryList(QStringList("*"),QDir::Dirs | QDir::NoSymLinks | QDir::NoDotAndDotDot);
-    progress prog_("process folder");
     for(int j = 0;progress::at(j,sub_dir.size()) && !progress::aborted();++j)
     {
-        progress::show(QString("process %1").arg(sub_dir[j]).toStdString());
+        progress prog1("process ",sub_dir[j].toStdString().c_str());
         QStringList dir_list = GetSubDir(dir + "/" + sub_dir[j],true);
         dir_list << dir;
         for(int i = 0;i < dir_list.size();++i)
