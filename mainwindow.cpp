@@ -494,7 +494,7 @@ bool RenameDICOMToDir(QString FileName, QString ToDir,QString& NewName)
     {
         if(!QDir(ToDir).mkdir(ToDir))
         {
-            std::ostringstream() << "cannot create dir " << ToDir.toStdString() << show_progress();
+            show_progress() << "cannot create dir " << ToDir.toStdString() << std::endl;
             return false;
         }
     }
@@ -504,7 +504,7 @@ bool RenameDICOMToDir(QString FileName, QString ToDir,QString& NewName)
     {
         if(!QDir(ToDir).mkdir(ToDir))
         {
-            std::ostringstream() << "cannot create dir " << ToDir.toStdString() << show_progress();
+            show_progress() << "cannot create dir " << ToDir.toStdString() << std::endl;
             return false;
         }
     }
@@ -518,7 +518,7 @@ bool RenameDICOMToDir(QString FileName, QString ToDir)
     QString NewName;
     if(!RenameDICOMToDir(FileName,ToDir,NewName))
         return false;
-    std::ostringstream() << FileName.toStdString() << "->" << NewName.toStdString() << show_progress();
+    show_progress() << FileName.toStdString() << "->" << NewName.toStdString() << std::endl;
     return QFile::rename(FileName,NewName);
 }
 

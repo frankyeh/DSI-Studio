@@ -55,8 +55,8 @@ inline float linear_with_cc(const tipl::image<3,float>& from,
         bound = tipl::reg::large_bound;
     progress::show("linear registration using CPU");
     float result = tipl::reg::linear_mr<tipl::reg::correlation>(from,from_vs,to,to_vs,arg,tipl::reg::reg_type(reg_type),[&](void){return terminated;},0.01,bound);
-    std::ostringstream() << "R:" << -result << show_progress();
-    std::ostringstream() << "T:" << show_progress();
+    show_progress() << "R:" << -result << std::endl;
+    show_progress() << "T:" << std::endl;
     return -result;
 }
 
@@ -135,7 +135,7 @@ inline size_t linear_with_mi(const tipl::image<3,float>& from,
     tipl::affine_transform<float> arg;
     size_t result = linear_with_mi(from,from_vs,to,to_vs,arg,reg_type,terminated,bound);
     T = tipl::transformation_matrix<float>(arg,from.shape(),from_vs,to.shape(),to_vs);
-    std::ostringstream() << T << show_progress();
+    show_progress() << T << std::endl;
     return result;
 }
 

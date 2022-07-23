@@ -11,10 +11,10 @@ bool adjust_vs(const tipl::image<3,float>& from,
                const tipl::image<3,float>& to,
                tipl::vector<3>& to_vs)
 {
-    std::ostringstream() << "FOV width:" << float(from.width())*from_vs[0] << " to " << float(to.width())*to_vs[0] << show_progress();
+    show_progress() << "FOV width:" << float(from.width())*from_vs[0] << " to " << float(to.width())*to_vs[0] << std::endl;
     if(float(from.width())*from_vs[0]*0.75f > float(to.width())*to_vs[0])
     {
-        std::ostringstream() << "adjust voxel size due to match FOV" << show_progress();
+        show_progress() << "adjust voxel size due to match FOV" << std::endl;
         to_vs *= std::sqrt((float(from.plane_size())*from_vs[0]*from_vs[1])/
                            (float(to.plane_size())*to_vs[0]*to_vs[1]));
         return true;
@@ -44,7 +44,7 @@ manual_alignment::manual_alignment(QWidget *parent,
         to.swap(new_to);
         to_vs *= 2.0f;
         to_downsample *= 0.5f;
-        std::ostringstream() << "downsampling template image by 2 dim=" << to.shape() << show_progress();
+        show_progress() << "downsampling template image by 2 dim=" << to.shape() << std::endl;
     }
     while(to.size() < from.size()/8)
     {
@@ -53,7 +53,7 @@ manual_alignment::manual_alignment(QWidget *parent,
         from.swap(new_from);
         from_vs *= 2.0f;
         from_downsample *= 2.0f;
-        std::ostringstream() << "downsampling subject image by 2 dim=" << from.shape() << show_progress();
+        show_progress() << "downsampling subject image by 2 dim=" << from.shape() << std::endl;
     }
 
     warped_from.resize(to.shape());
@@ -243,8 +243,8 @@ tipl::transformation_matrix<float> manual_alignment::get_iT(void)
         tipl::multiply_constant(result.sr,result.sr+9,to_downsample);
     if(from_downsample != 1.0f)
         tipl::multiply_constant(result.data,result.data+12,from_downsample);
-    std::ostringstream() << "iT:" << show_progress();
-    std::ostringstream() << result << show_progress();
+    show_progress() << "iT:" << std::endl;
+    show_progress() << result << std::endl;
     return result;
 }
 void manual_alignment::param_changed()

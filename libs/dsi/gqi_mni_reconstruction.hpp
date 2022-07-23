@@ -115,7 +115,7 @@ public:
 
             tipl::image<3> VFF(VG.shape()),VFF2;
             tipl::resample_mt<tipl::interpolation::cubic>(VF,VFF,affine);
-            std::ostringstream() << "linear r:" << tipl::correlation(VFF.begin(),VFF.end(),VG.begin()) << show_progress();
+            show_progress() << "linear r:" << tipl::correlation(VFF.begin(),VFF.end(),VG.begin()) << std::endl;
 
             if(dual_modality)
             {
@@ -168,7 +168,7 @@ public:
 
             float r = float(tipl::correlation(VG.begin(),VG.end(),VFFF.begin()));
             voxel.R2 = r*r;
-            std::ostringstream() << "R2:" << voxel.R2 << show_progress();
+            show_progress() << "R2:" << voxel.R2 << std::endl;
             if(!manual_alignment && voxel.R2 < 0.3f)
                 throw std::runtime_error("ERROR: Poor R2 found. Please check image orientation or use manual alignment.");
 
@@ -199,7 +199,7 @@ public:
         // if subject data is only a fragment of FOV, crop images
         if(partial_reconstruction)
         {
-            std::ostringstream() << "partial reconstruction" << show_progress();
+            show_progress() << "partial reconstruction" << std::endl;
             tipl::vector<3,int> bmin,bmax;
             tipl::bounding_box(VG,bmin,bmax,0.0f);
             for(unsigned char dim = 0;dim < 3;++dim)
@@ -287,8 +287,8 @@ public:
             voxel.trans_to_mni[0] = -VGvs[0];
             voxel.trans_to_mni[5] = -VGvs[1];
             voxel.trans_to_mni[10] = VGvs[2];
-            std::ostringstream() << "output resolution:" << VGvs[0] << show_progress();
-            std::ostringstream() << "output dimension:" << VG.shape() << show_progress();
+            show_progress() << "output resolution:" << VGvs[0] << std::endl;
+            show_progress() << "output dimension:" << VG.shape() << std::endl;
 
 
             if(is_human_template && !partial_reconstruction) // if default template is used

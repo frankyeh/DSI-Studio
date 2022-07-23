@@ -93,14 +93,14 @@ void xnat_facade::get_data(std::string site,std::string auth,
 
     total = urls.size();
     progress p("download data from ",site.c_str());
-    std::ostringstream() << "a total of " << urls.size() << " files" << show_progress();
+    show_progress() << "a total of " << urls.size() << " files" << std::endl;
     for(prog = 0;progress::at(prog,total);++prog)
     {
         std::string download_name = (output_dir+"/"+
                                      urls[prog].substr(urls[prog].find_last_of('/')+1)).c_str();
         if(std::filesystem::exists(download_name))
         {
-            std::ostringstream() << "file exists, skipping: " << download_name.c_str() << show_progress();
+            show_progress() << "file exists, skipping: " << download_name.c_str() << std::endl;
             continue;
         }
         get_html(site + urls[prog],auth);
@@ -149,7 +149,7 @@ void xnat_facade::get_scans_data(std::string site,std::string auth,std::string e
             auto data = QJsonDocument::fromJson(cur_response->readAll()).object()["ResultSet"].toObject()["Result"].toArray();
             for(int i = 0;i < data.size();++i)
                 urls.push_back(data[i].toObject().value("URI").toString().toStdString());
-            std::ostringstream() << "a total of " << urls.size() << " files identified " << show_progress();
+            show_progress() << "a total of " << urls.size() << " files identified " << std::endl;
         }
         download_prog.reset();
         if(!urls.empty())
@@ -165,7 +165,7 @@ void xnat_facade::get_info(std::string site,std::string auth,std::string path)
     [this]{
        if (good())
        {
-           std::ostringstream() << "receive content type: " << cur_response->header(QNetworkRequest::ContentTypeHeader).toString().toStdString() << show_progress();
+           show_progress() << "receive content type: " << cur_response->header(QNetworkRequest::ContentTypeHeader).toString().toStdString() << std::endl;
            result = jsonarray2tsv(QJsonDocument::fromJson(cur_response->readAll()).object()["ResultSet"].toObject()["Result"].toArray());
        }
        cur_response = nullptr;

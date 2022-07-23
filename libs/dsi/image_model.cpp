@@ -680,12 +680,12 @@ bool ImageModel::command(std::string cmd,std::string param)
             std::string rev_file_name = file_name.substr(0,file_name.length()-6)+"rsrc.gz";
             if(std::filesystem::exists(rev_file_name))
             {
-                std::ostringstream() << "Using reversed phase encoding RSRC file: " << rev_file_name << show_progress();
+                show_progress() << "Using reversed phase encoding RSRC file: " << rev_file_name << std::endl;
                 param = rev_file_name;
             }
             else
             {
-                std::ostringstream() << "Cannot find reversed phase encoding RSRC file. Run eddy without topup..." << show_progress();
+                show_progress() << "Cannot find reversed phase encoding RSRC file. Run eddy without topup..." << std::endl;
                 if(!run_eddy())
                     return false;
                 voxel.steps += cmd+"\n";
@@ -915,9 +915,9 @@ bool ImageModel::correct_motion(void)
             preproc(to);
             bool terminated = false;
             linear_with_mi(from,voxel.vs,to,voxel.vs,args[i],tipl::reg::rigid_body,terminated,tipl::reg::narrow_bound);
-            std::ostringstream() << "dwi (" << i+1 << "/" << src_bvalues.size() << ")" <<
+            show_progress() << "dwi (" << i+1 << "/" << src_bvalues.size() << ")" <<
                          " shift=" << tipl::vector<3>(args[i].translocation) <<
-                         " rotation=" << tipl::vector<3>(args[i].rotation) << show_progress();
+                         " rotation=" << tipl::vector<3>(args[i].rotation) << std::endl;
         }
         if(progress::aborted())
         {
@@ -2147,14 +2147,14 @@ void prepare_idx(const char* file_name,std::shared_ptr<gz_istream> in)
            std::filesystem::last_write_time(idx_name) >
            std::filesystem::last_write_time(file_name))
         {
-            std::ostringstream() << "using index file for accelerated loading:" << idx_name << show_progress();
+            show_progress() << "using index file for accelerated loading:" << idx_name << std::endl;
             in->load_index(idx_name.c_str());
         }
         else
         {
             if(QFileInfo(file_name).size() > 134217728) // 128mb
             {
-                std::ostringstream() << "prepare index file for future accelerated loading" << show_progress();
+                show_progress() << "prepare index file for future accelerated loading" << std::endl;
                 in->sample_access_point = true;
             }
         }

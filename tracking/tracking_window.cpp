@@ -82,7 +82,7 @@ void tracking_window::set_data(QString name, QVariant value)
 tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_handle) :
         QMainWindow(parent),ui(new Ui::tracking_window),scene(*this),handle(new_handle)
 {
-    std::ostringstream() << "initiate image/slices" << show_progress();
+    show_progress() << "initiate image/slices" << std::endl;
     fib_data& fib = *new_handle;
     for (unsigned int index = 0;index < fib.view_item.size(); ++index)
         slices.push_back(std::make_shared<SliceModel>(handle.get(),index));
@@ -94,7 +94,7 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
     // setup GUI
     {
         {
-            std::ostringstream() << "create GUI objects" << show_progress();
+            show_progress() << "create GUI objects" << std::endl;
             scene.statusbar = ui->statusbar;
             setGeometry(10,10,800,600);
             ui->regionDockWidget->setMinimumWidth(0);
@@ -111,7 +111,7 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
             color_bar.reset(new color_bar_dialog(this)); // need to initiate after glwidget for connect makeTract
         }
         {
-            std::ostringstream() << "recall previous settings" << show_progress();
+            show_progress() << "recall previous settings" << std::endl;
             QSettings settings;
             if(!default_geo.size())
                 default_geo = saveGeometry();
@@ -145,7 +145,7 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
                 ui->enable_auto_track->hide();
             }            
         }
-        std::ostringstream() << "initialize slices" << show_progress();
+        show_progress() << "initialize slices" << std::endl;
         {
             ui->SliceModality->clear();
             for (unsigned int index = 0;index < fib.view_item.size(); ++index)
@@ -153,7 +153,7 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
             ui->SliceModality->setCurrentIndex(-1);
             updateSlicesMenu();
         }
-        std::ostringstream() << "prepare template and atlases" << show_progress();
+        show_progress() << "prepare template and atlases" << std::endl;
         {
             populate_templates(ui->template_box,handle->template_id);
             if(handle->is_qsdr)
@@ -206,7 +206,7 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
 
     }
 
-    std::ostringstream() << "connect signal and slots " << show_progress();
+    show_progress() << "connect signal and slots " << std::endl;
     // opengl
     {
         connect(ui->glSagSlider,SIGNAL(valueChanged(int)),this,SLOT(SliderValueChanged()));
@@ -490,7 +490,7 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
 
     qApp->installEventFilter(this);
     // now begin visualization
-    std::ostringstream() << "begin visualization" << show_progress();
+    show_progress() << "begin visualization" << std::endl;
     {
         glWidget->no_update = false;
         scene.no_show = false;
@@ -499,7 +499,7 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
             glWidget->set_view(2);
         ui->SliceModality->setCurrentIndex(0);
     }
-    std::ostringstream() << "GUI initialization complete" << show_progress();
+    show_progress() << "GUI initialization complete" << std::endl;
 }
 
 void tracking_window::closeEvent(QCloseEvent *event)
@@ -535,7 +535,7 @@ tracking_window::~tracking_window()
     QSettings settings;
     settings.setValue("rendering_quality",ui->rendering_efficiency->currentIndex());
     delete ui;
-    //std::ostringstream() << __FUNCTION__ << " " << __FILE__ << show_progress();
+    //show_progress() << __FUNCTION__ << " " << __FILE__ << std::endl;
 }
 void tracking_window::report(QString string)
 {
@@ -544,7 +544,7 @@ void tracking_window::report(QString string)
 
 bool tracking_window::command(QString cmd,QString param,QString param2)
 {
-    std::ostringstream() << "run " << cmd.toStdString() << " with " << param.toStdString() << " " << param2.toStdString() << show_progress();
+    show_progress() << "run " << cmd.toStdString() << " with " << param.toStdString() << " " << param2.toStdString() << std::endl;
     if(glWidget->command(cmd,param,param2) ||
        scene.command(cmd,param,param2) ||
        tractWidget->command(cmd,param,param2) ||
@@ -802,7 +802,7 @@ bool tracking_window::command(QString cmd,QString param,QString param2)
         index = ui->SliceModality->findText(param);
         if(index == -1)
         {
-            std::ostringstream() << "cannot find index:" << param.toStdString() << show_progress();
+            show_progress() << "cannot find index:" << param.toStdString() << std::endl;
             return false;
         }
         ui->SliceModality->setCurrentIndex(index);
@@ -847,10 +847,10 @@ bool tracking_window::command(QString cmd,QString param,QString param2)
     {
         if(!addSlices(QStringList() << param,param,true))
         {
-            std::ostringstream() << "cannot add slice " << param.toStdString() << show_progress();
+            show_progress() << "cannot add slice " << param.toStdString() << std::endl;
             return false;
         }
-        std::ostringstream() << "register image to the DWI space" << show_progress();
+        show_progress() << "register image to the DWI space" << std::endl;
         CustomSliceModel* cur_slice = (CustomSliceModel*)slices.back().get();
         if(cur_slice->thread.get())
             cur_slice->thread->wait();
@@ -2016,7 +2016,7 @@ bool tracking_window::addSlices(QStringList filenames,QString name,bool cmd)
         if(!cmd)
             QMessageBox::critical(this,"ERROR",reg_slice_ptr->error_msg.c_str());
         else
-            std::ostringstream() << reg_slice_ptr->error_msg << show_progress();
+            show_progress() << reg_slice_ptr->error_msg << std::endl;
         return false;
     }
     slices.push_back(new_slice);

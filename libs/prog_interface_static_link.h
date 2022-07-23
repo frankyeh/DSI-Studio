@@ -98,16 +98,20 @@ public:
 };
 
 class show_progress{
+    std::ostringstream s;
 public:
-    friend std::ostream& operator<<(std::ostringstream& out,const show_progress& prog);
-
+    show_progress& operator<<(std::ostream& (*var)(std::ostream&))
+    {
+        progress::show(s.str().c_str());
+        return *this;
+    }
+    template<typename type>
+    show_progress& operator<<(const type& v)
+    {
+        s << v;
+        return *this;
+    }
 };
-
-inline std::ostream& operator<<(std::ostringstream& out,const show_progress& prog)
-{
-    progress::show(out.str().c_str());
-    return out;
-}
 
 #endif
 

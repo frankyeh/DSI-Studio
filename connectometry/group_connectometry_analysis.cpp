@@ -153,7 +153,7 @@ void group_connectometry_analysis::run_permutation_multithread(unsigned int id,u
                 if(preproces > 100 && total_track() < 100 &&
                    (seed_count < 640000))
                 {
-                    std::ostringstream() << "total track=" << total_track() << " analysis restarted with higher seed count..." << show_progress();
+                    show_progress() << "total track=" << total_track() << " analysis restarted with higher seed count..." << std::endl;
                     if(terminated)
                         return;
                     // stop other threads
@@ -170,7 +170,7 @@ void group_connectometry_analysis::run_permutation_multithread(unsigned int id,u
                     std::fill(subject_pos_corr.begin(),subject_pos_corr.end(),0);
                     // adjust parameters
                     seed_count*= 2;
-                    std::ostringstream() << "now running seed count=" << seed_count << show_progress();
+                    show_progress() << "now running seed count=" << seed_count << std::endl;
                     threads.resize(1);
                     for(unsigned int index = 1;index < thread_count;++index)
                         threads.push_back(std::make_shared<std::future<void> >(std::async(std::launch::async,
@@ -252,36 +252,18 @@ void group_connectometry_analysis::run_permutation_multithread(unsigned int id,u
         neg_corr_track->delete_repeated(1.0);
 
         if(pos_corr_track->get_visible_track_count())
-        {
-            std::ostringstream out1;
-            out1 << output_file_name << ".pos_corr.tt.gz";
-            pos_corr_track->save_tracts_to_file(out1.str().c_str());
-        }
+            pos_corr_track->save_tracts_to_file((output_file_name+".pos_corr.tt.gz").c_str());
         else
-        {
-            std::ostringstream out1;
-            out1 << output_file_name << ".pos_corr.no_tract.txt";
-            std::ofstream(out1.str().c_str());
-        }
+            std::ofstream((output_file_name+".pos_corr.no_tract.txt").c_str());
 
         if(neg_corr_track->get_visible_track_count())
-        {
-            std::ostringstream out1;
-            out1 << output_file_name << ".neg_corr.tt.gz";
-            neg_corr_track->save_tracts_to_file(out1.str().c_str());
-        }
+            neg_corr_track->save_tracts_to_file((output_file_name+".neg_corr.tt.gz").c_str());
         else
-        {
-            std::ostringstream out1;
-            out1 << output_file_name << ".neg_corr.no_tract.txt";
-            std::ofstream(out1.str().c_str());
-        }
+            std::ofstream((output_file_name+".neg_corr.no_tract.txt").c_str());
 
 
         {
-            std::ostringstream out1;
-            out1 << output_file_name << ".t_statistics.fib.gz";
-            gz_mat_write mat_write(out1.str().c_str());
+            gz_mat_write mat_write((output_file_name+".t_statistics.fib.gz").c_str());
             for(unsigned int i = 0;i < handle->mat_reader.size();++i)
             {
                 std::string name = handle->mat_reader.name(i);

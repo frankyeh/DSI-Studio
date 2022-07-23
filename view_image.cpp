@@ -91,7 +91,7 @@ bool match_files(const std::string& file_path1,const std::string& file_path2,
        !match_strings(path1,path2,path1_others,path2_others))
         return false;
     file_path2_gen = path2_others + "/" + name2_others;
-    std::ostringstream() << "matching " << file_path1_others << " with " << file_path2_gen << show_progress();
+    show_progress() << "matching " << file_path1_others << " with " << file_path2_gen << std::endl;
     return true;
 }
 
@@ -108,14 +108,14 @@ bool view_image::command(std::string cmd,std::string param1)
     apply([&](auto& I)
     {
         tipl::time t("elapsed time: ");
-        std::ostringstream() << "run command: " << cmd << " " << param1 << show_progress();
+        show_progress() << "run command: " << cmd << " " << param1 << std::endl;
         result = tipl::command<gz_nifti>(I,vs,T,is_mni,cmd,param1,error_msg);
-        std::ostringstream() << "result: " << (result ? "succeeded":"failed") << show_progress();
+        show_progress() << "result: " << (result ? "succeeded":"failed") << std::endl;
         shape = I.shape();
     });
     if(!result)
     {
-        std::ostringstream() << "ERROR:" << error_msg << show_progress();
+        show_progress() << "ERROR:" << error_msg << std::endl;
         return false;
     }
 
