@@ -23,7 +23,8 @@ inline bool processing_time_less_than(int time)
 }
 void progress::update_prog(bool show_now)
 {
-    if(!show_now && processing_time_less_than(250))
+    if(!has_gui || !tipl::is_main_thread<0>() ||
+        (!show_now && processing_time_less_than(250)))
         return;
     if(!progressDialog.get())
     {
@@ -55,7 +56,7 @@ std::string progress::get_status(void)
 }
 void progress::begin_prog(bool show_now)
 {
-    if(!has_gui || !tipl::is_main_thread<0>())
+    if(!tipl::is_main_thread<0>())
         return;
     start_time = std::chrono::high_resolution_clock::now();
     process_time.resize(status_list.size());
@@ -72,8 +73,6 @@ void progress::show(const char* status,bool show_now)
     if(status_list.empty())
         return;
     status_list.back() = status;
-    if(!has_gui || !tipl::is_main_thread<0>())
-        return;
     update_prog(show_now);
 }
 progress::~progress(void)
