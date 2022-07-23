@@ -99,12 +99,15 @@ public:
 
 class show_progress{
 public:
-    friend std::ostringstream& operator<<(std::ostringstream& out,const show_progress& prog)
-    {
-        progress::show(out.str().c_str());
-        return out;
-    }
+    friend std::ostream& operator<<(std::ostringstream& out,const show_progress& prog);
+
 };
+
+inline std::ostream& operator<<(std::ostringstream& out,const show_progress& prog)
+{
+    progress::show(out.str().c_str());
+    return out;
+}
 
 #endif
 
