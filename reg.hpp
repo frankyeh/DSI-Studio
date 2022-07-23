@@ -98,7 +98,9 @@ inline size_t linear_with_mi(const tipl::image<3,float>& from,
     else
     {
         progress::show("linear registration using CPU");
-        result = tipl::reg::linear_two_way<tipl::reg::mutual_information>(from,from_vs,to,to_vs,arg,tipl::reg::reg_type(reg_type),[&](void){return terminated;},bound);
+        result = tipl::reg::linear_mr<tipl::reg::mutual_information>
+                (from,from_vs,to,to_vs,arg,tipl::reg::reg_type(reg_type),[&](void){return terminated;},
+                    0.01,bound != tipl::reg::narrow_bound,bound);
     }
     return result;
 }
