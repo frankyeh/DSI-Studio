@@ -9,7 +9,7 @@ bool is_main_thread(void);
 class progress{
 private:
     static void update_prog(bool show_now = false);
-    static void begin_prog(bool show_now = false);
+    static void begin_prog(const char* status,bool show_now = false);
     static std::string get_status(void);
     static bool check_prog(unsigned int now,unsigned int total);
     static std::vector<std::string> status_list,at_list;
@@ -32,16 +32,14 @@ public:
     progress(const char* status,bool show_now = false)
     {
         print_status(status);
-        status_list.push_back(status);
-        begin_prog(show_now);
+        begin_prog(status,show_now);
     }
     progress(const char* status1,const char* status2,bool show_now = false)
     {
         std::string s(status1);
         s += status2;
         print_status(s.c_str());
-        status_list.push_back(s);
-        begin_prog(show_now);
+        begin_prog(s.c_str(),show_now);
     }
     static void show(const char* status,bool show_now = false);
     static void show(const std::string& str,bool show_now = false){return show(str.c_str(),show_now);}
