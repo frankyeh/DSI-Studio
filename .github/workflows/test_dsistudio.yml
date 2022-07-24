@@ -12,7 +12,11 @@ on:
         default: '2021.12.03 "Chen" Release'
 jobs:
   build_pre_release:
-    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os: [ubuntu_2004]
+      fail-fast: false
+    runs-on: ubuntu-latest    
     steps:
     - name: Checkout
       uses: actions/checkout@v2
