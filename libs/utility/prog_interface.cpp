@@ -12,14 +12,13 @@ bool has_gui = false;
 std::shared_ptr<QProgressDialog> progressDialog;
 static std::vector<std::chrono::high_resolution_clock::time_point> process_time,t_last;
 bool prog_aborted_ = false;
-auto start_time = std::chrono::high_resolution_clock::now();
 std::vector<std::string> progress::status_list;
 std::vector<std::string> progress::at_list;
 
 inline bool processing_time_less_than(int time)
 {
     return std::chrono::duration_cast<std::chrono::milliseconds>(
-           std::chrono::high_resolution_clock::now() - start_time).count() < time;
+           std::chrono::high_resolution_clock::now() - process_time.back()).count() < time;
 }
 void progress::update_prog(bool show_now)
 {
@@ -54,11 +53,11 @@ std::string progress::get_status(void)
     }
     return result;
 }
-void progress::begin_prog(bool show_now)
+void progress::begin_prog(const char* status,bool show_now)
 {
     if(!tipl::is_main_thread<0>())
         return;
-    start_time = std::chrono::high_resolution_clock::now();
+    status_list.push_back(status);
     process_time.resize(status_list.size());
     t_last.resize(status_list.size());
     t_last.back() = std::chrono::high_resolution_clock::now()+std::chrono::milliseconds(200);
@@ -77,6 +76,9 @@ void progress::show(const char* status,bool show_now)
 }
 progress::~progress(void)
 {
+    if(!tipl::is_main_thread<0>())
+        return;
+
     std::ostringstream out;
 
     {
@@ -104,7 +106,7 @@ progress::~progress(void)
 
     process_time.pop_back();
     t_last.pop_back();
-    if(!has_gui || !tipl::is_main_thread<0>())
+    if(!has_gui)
         return;
     if(!status_list.empty())
     {
