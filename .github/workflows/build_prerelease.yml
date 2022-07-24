@@ -1,0 +1,43 @@
+name: Build Pre-Release 
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag'
+        required: true
+        default: '2021.12.03'
+      release_name:
+        description: 'Release Name'
+        required: true
+        default: '2021.12.03 "Chen" Release'
+jobs:
+  linux-build:
+    strategy:
+      fail-fast: false
+    runs-on: ubuntu_2004
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+    - name: Set up QEMU
+      uses: docker/setup-qemu-action@v1
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v1
+    - name: Build and push
+      uses: docker/build-push-action@v2
+      with:
+        context: .
+        file: build_packages/ubuntu_2004/Dockerfile
+        push: false
+        outputs: dsi-studio
+    - name: Packaging
+      run: |
+        zip -r dsi_studio_ubuntu_2004_pre-release.zip dsi-studio
+    - name: Create Release
+      uses: ncipollo/release-action@v1.8.9
+      with:
+        allowUpdates: true
+        artifacts: "*.zip"
+        tag: ${{ github.event.inputs.tag }}
+        name: ${{ github.event.inputs.release_name }}
+        prerelease: false
+        
