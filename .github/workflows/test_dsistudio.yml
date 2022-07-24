@@ -11,7 +11,7 @@ on:
         required: true
         default: '2021.12.03 "Chen" Release'
 jobs:
-  build_pre_release:
+  build_prerelease:
     strategy:
       matrix:
         os: [ubuntu_2004]
@@ -44,7 +44,7 @@ jobs:
         prerelease: false
         
   Animal_Recon:
-    needs: build_pre_release
+    needs: build_prerelease
     runs-on: ubuntu-latest
     steps:
     - name: Setup Environment
@@ -62,7 +62,7 @@ jobs:
 
     
   Human_Recon:
-    needs: build_pre_release
+    needs: build_prerelease
     runs-on: ubuntu-latest
     steps:
     - name: Setup Environment
@@ -88,7 +88,7 @@ jobs:
         ls HARDI.src.gz.icbm152_adult.qsdr.1.25.*
         
   Human_Tracking_QSDR:
-    needs: build_pre_release
+    needs: build_prerelease
     runs-on: ubuntu-latest
     steps:
     - name: Setup Environment
@@ -118,7 +118,7 @@ jobs:
         ls ICBM152_adult.fib.gz.tt.gz.FreeSurferDKT_Cortical.qa.pass.network_measures.txt
 
   Human_Tracking_GQI:
-    needs: build_pre_release
+    needs: build_prerelease
     runs-on: ubuntu-latest
     steps:
     - name: Setup Environment
@@ -151,7 +151,7 @@ jobs:
         ./dsi-studio/dsi_studio --source=100206.fib.gz --action=trk --other_slices=template_qa.nii.gz --dt_threshold_index=template_qa-qa --seed_count=1000000 --dt_threshold=0.1 --output=dt.tt.gz
         ls dt.tt.gz
   Export_Registration:
-    needs: build_pre_release
+    needs: build_prerelease
     runs-on: ubuntu-latest
     steps:
     - name: Setup Environment
@@ -175,7 +175,7 @@ jobs:
 
 
   Connectometry:
-    needs: build_pre_release
+    needs: build_prerelease
     runs-on: ubuntu-latest
     steps:
     - name: Setup Environment
@@ -191,7 +191,7 @@ jobs:
         ls * -l
         
   Automatic_Tracking:
-    needs: build_pre_release
+    needs: build_prerelease
     runs-on: ubuntu-latest
     steps:
     - name: Setup Environment
@@ -363,7 +363,7 @@ jobs:
         name: ${{ github.event.inputs.release_name }}
         prerelease: false  
 
-docker_build:
+  docker_build:
     needs: linux-build
     runs-on: ubuntu-latest
     steps:
