@@ -43,7 +43,7 @@ jobs:
         name: ${{ github.event.inputs.release_name }}
         prerelease: false
         
-  Animal_Recon:
+  test_animal_recon:
     needs: build_prerelease
     runs-on: ubuntu-latest
     steps:
@@ -61,7 +61,7 @@ jobs:
         ls Rhesus.src.gz.gqi.1.25.fib.gz
 
     
-  Human_Recon:
+  test_human_recon:
     needs: build_prerelease
     runs-on: ubuntu-latest
     steps:
@@ -87,7 +87,7 @@ jobs:
         ls DTI.src.gz.icbm152_adult.qsdr.1.25.*
         ls HARDI.src.gz.icbm152_adult.qsdr.1.25.*
         
-  Human_Tracking_QSDR:
+  test_human_tracking_qsdr:
     needs: build_prerelease
     runs-on: ubuntu-latest
     steps:
@@ -117,7 +117,7 @@ jobs:
         ls ICBM152_adult.fib.gz.tt.gz.FreeSurferDKT_Cortical.qa.pass.connectogram.txt
         ls ICBM152_adult.fib.gz.tt.gz.FreeSurferDKT_Cortical.qa.pass.network_measures.txt
 
-  Human_Tracking_GQI:
+  test_human_tracking_gqi:
     needs: build_prerelease
     runs-on: ubuntu-latest
     steps:
@@ -150,7 +150,7 @@ jobs:
         echo --------------------------------------------------------------------------------------------------
         ./dsi-studio/dsi_studio --source=100206.fib.gz --action=trk --other_slices=template_qa.nii.gz --dt_threshold_index=template_qa-qa --seed_count=1000000 --dt_threshold=0.1 --output=dt.tt.gz
         ls dt.tt.gz
-  Export_Registration:
+  test_export_registration:
     needs: build_prerelease
     runs-on: ubuntu-latest
     steps:
@@ -174,7 +174,7 @@ jobs:
         ls 100206.fib.gz.qa.nii.gz.wp.nii.gz
 
 
-  Connectometry:
+  test_connectometry:
     needs: build_prerelease
     runs-on: ubuntu-latest
     steps:
@@ -190,7 +190,7 @@ jobs:
         ls CMU60.demo.csv.BMI.t2.nqa.length20.report.html
         ls * -l
         
-  Automatic_Tracking:
+  test_automatic_tracking:
     needs: build_prerelease
     runs-on: ubuntu-latest
     steps:
@@ -199,20 +199,13 @@ jobs:
         curl -sL "https://github.com/frankyeh/DSI-Studio/releases/download/2021.12.03/dsi_studio_ubuntu_2004_pre_release.zip" | jar x
         curl -sL https://zenodo.org/record/6307812/files/100206.src.gz.gqi.1.7.fib.gz?download=1 -o 100206.fib.gz
         curl -sL https://zenodo.org/record/6307812/files/100307.src.gz.gqi.1.7.fib.gz?download=1 -o 100307.fib.gz
-        curl -sL https://zenodo.org/record/6307812/files/100408.src.gz.gqi.1.7.fib.gz?download=1 -o 100408.fib.gz
         chmod 777 ./dsi-studio/dsi_studio
     - name: Tracking
       run: |
-        ./dsi-studio/dsi_studio --source=*.fib.gz --action=atk --track_id=Optic,Arcuate,spinal
+        ./dsi-studio/dsi_studio --source=*.fib.gz --action=atk --track_id=Arcuate_Fasciculus_L
         ls Arcuate_Fasciculus_L.stat.txt
-        ls Arcuate_Fasciculus_R.stat.txt
-        ls Optic_Radiation_L.stat.txt
-        ls Optic_Radiation_R.stat.txt
-        ls Corticospinal_Tract_L.stat.txt
-        ls Corticospinal_Tract_R.stat.txt
-
   linux-build:
-    needs: [Animal_Recon, Human_Tracking_QSDR, Human_Tracking_GQI, Connectometry]
+    needs: [test_animal_recon, test_human_tracking_qsdr, test_human_tracking_gqi, test_connectometry]
     strategy:
       matrix:
         os: [ubuntu_2004,ubuntu_1804,ubuntu_1604,centos7]
@@ -245,7 +238,7 @@ jobs:
         prerelease: false
         
   macos-build:
-    needs: [Animal_Recon, Human_Tracking_QSDR, Human_Tracking_GQI, Connectometry]
+    needs: [test_animal_recon, test_human_tracking_qsdr, test_human_tracking_gqi, test_connectometry]
     strategy:
       matrix:
         os: [macos-11,macos-10.15]
@@ -291,7 +284,7 @@ jobs:
         prerelease: false
 
   windows_build:
-    needs: [Animal_Recon, Human_Tracking_QSDR, Human_Tracking_GQI, Connectometry]
+    needs: [test_animal_recon, test_human_tracking_qsdr, test_human_tracking_gqi, test_connectometry]
     strategy:
       matrix:
         os: [ windows-2019]
