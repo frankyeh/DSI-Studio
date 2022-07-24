@@ -12,8 +12,6 @@ on:
         default: '2021.12.03 "Chen" Release'
 jobs:
   build_pre_release:
-    strategy:
-      fail-fast: false
     runs-on: ubuntu-latest
     steps:
     - name: Checkout
