@@ -19,6 +19,8 @@ private:
         std::string line;
         while(std::getline(in,line))
         {
+            if(line.empty())
+                continue;
             for(size_t i = 0;i < status_list.size();++i)
                 std::cout << "│";
             if(node)
@@ -98,9 +100,13 @@ public:
 class show_progress{
     std::ostringstream s;
 public:
-    show_progress& operator<<(std::ostream& (*var)(std::ostream&))
+    ~show_progress()
     {
         progress::show(s.str().c_str());
+    }
+    show_progress& operator<<(std::ostream& (*var)(std::ostream&))
+    {
+        s << var;
         return *this;
     }
     template<typename type>
