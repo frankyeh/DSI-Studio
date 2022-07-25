@@ -40,7 +40,7 @@ int cnt(program_option& po)
         pout << "selectable variables include ";
         // show features readed
         for(size_t i = 0;i < db.feature_titles.size();++i)
-             pout << "(" << i << ")" << db.feature_titles[i] << " ";
+             pout << "\t(" << i << ")" << db.feature_titles[i];
         pout << std::endl;
     }
 
@@ -95,7 +95,7 @@ int cnt(program_option& po)
         pout << "variable(s) to be considered in regression: ";
         for(auto index : variable_list)
         {
-            pout << "(" << index << ")" << db.feature_titles[index] << " ";
+            pout << "\t(" << index << ")" << db.feature_titles[index];
             db.feature_selected[index] = true;
         }
         pout << std::endl;
