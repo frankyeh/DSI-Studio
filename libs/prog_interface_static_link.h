@@ -62,13 +62,12 @@ public:
     template<typename fun_type,typename terminated_class>
     static bool run(const char* msg,fun_type fun,terminated_class& terminated)
     {
+        progress prog(msg);
         if(!has_gui)
         {
-            std::cout << msg << std::endl;
             fun();
             return true;
         }
-        progress prog_(msg);
         bool ended = false;
         tipl::par_for(2,[&](int i)
         {
