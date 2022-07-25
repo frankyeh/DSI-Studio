@@ -101,7 +101,8 @@ void Console::on_run_cmd_clicked()
         return;
     }
     progress prog("run action ",po.get("action").c_str());
-    move_current_dir_to(po.get("source"));
+    if(!std::filesystem::is_directory(po.get("source")))
+        move_current_dir_to(po.get("source"));
     if(po.get("action") == std::string("rec"))
         rec(po);
     if(po.get("action") == std::string("trk"))
