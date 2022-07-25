@@ -26,12 +26,10 @@ inline void cdm_common(const tipl::image<3>& It,
     {
         if constexpr (tipl::use_cuda)
         {
-            progress::show("normalization using GPU");
             cdm2_cuda(It,It2,Is,Is2,dis,inv_dis,terminated,param);
             return;
         }
     }
-    progress::show("normalization using CPU");
     tipl::reg::cdm2(It,It2,Is,Is2,dis,inv_dis,terminated,param);
 }
 
@@ -53,7 +51,6 @@ inline float linear_with_cc(const tipl::image<3,float>& from,
 {
     if(reg_type == tipl::reg::affine && adjust_vs(from,from_vs,to,to_vs))
         bound = tipl::reg::large_bound;
-    progress::show("linear registration using CPU");
     float result = tipl::reg::linear_mr<tipl::reg::correlation>(from,from_vs,to,to_vs,arg,tipl::reg::reg_type(reg_type),[&](void){return terminated;},0.01,bound);
     show_progress() << "R:" << -result << std::endl;
     show_progress() << "T:" << std::endl;
@@ -92,12 +89,10 @@ inline size_t linear_with_mi(const tipl::image<3,float>& from,
     size_t result = 0;
     if constexpr (tipl::use_cuda)
     {
-        progress::show("linear registration using GPU");
         result = linear_cuda(from,from_vs,to,to_vs,arg,tipl::reg::reg_type(reg_type),terminated,bound);
     }
     else
     {
-        progress::show("linear registration using CPU");
         result = tipl::reg::linear_mr<tipl::reg::mutual_information>
                 (from,from_vs,to,to_vs,arg,tipl::reg::reg_type(reg_type),[&](void){return terminated;},
                     0.01,bound != tipl::reg::narrow_bound,bound);
