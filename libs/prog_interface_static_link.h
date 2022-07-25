@@ -25,7 +25,11 @@ private:
                 std::cout << "│";
             if(node)
                 std::cout << "┌";
-            std::cout << line << std::endl;
+
+            if(node && !has_gui)
+                std::cout << "\033[1;31m" << line << "\033[0m" << std::endl;
+            else
+                std::cout << line << std::endl;
             node = false;
         }
     }
@@ -101,7 +105,12 @@ class show_progress{
 public:
     ~show_progress()
     {
-        progress::show(s.str().c_str());
+        auto str = s.str();
+        if(str.empty())
+            return;
+        if(str.back() == '\n')
+            str.pop_back();
+        progress::show(str.c_str());
     }
     show_progress& operator<<(std::ostream& (*var)(std::ostream&))
     {
