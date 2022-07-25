@@ -87,7 +87,8 @@ void Console::on_run_cmd_clicked()
         std::cout << "invalid command, use --help for more detail" << std::endl;
         return;
     }
-    QDir::setCurrent(QFileInfo(po.get("source").c_str()).absolutePath());
+    std::cout << "change current directory to " << std::filesystem::path(po.get("source")).parent_path() << std::endl;
+    std::filesystem::current_path(std::filesystem::path(po.get("source")).parent_path());
     if(po.get("action") == std::string("rec"))
         rec(po);
     if(po.get("action") == std::string("trk"))
