@@ -2174,6 +2174,7 @@ void save_idx(const char* file_name,std::shared_ptr<gz_istream> in)
     }
 }
 size_t match_volume(float volume);
+void move_current_dir_to(const std::string& file_name);
 bool ImageModel::load_from_file(const char* dwi_file_name)
 {
     progress p("open ",dwi_file_name);
@@ -2254,8 +2255,7 @@ bool ImageModel::load_from_file(const char* dwi_file_name)
         }
         tipl::morphology::defragment(voxel.mask);
         show_progress() << "image file loaded" << std::endl;
-        show_progress() << "change current directory to " << std::filesystem::path(file_name).parent_path() << std::endl;
-        std::filesystem::current_path(std::filesystem::path(file_name).parent_path());
+        move_current_dir_to(file_name);
         return true;
     }
     if(QString(dwi_file_name).toLower().endsWith(".nii.gz"))
@@ -2286,8 +2286,7 @@ bool ImageModel::load_from_file(const char* dwi_file_name)
         get_report(voxel.report);
         calculate_dwi_sum(true);
         show_progress() << "NIFTI file loaded" << std::endl;
-        show_progress() << "change current directory to " << std::filesystem::path(file_name).parent_path() << std::endl;
-        std::filesystem::current_path(std::filesystem::path(file_name).parent_path());
+        move_current_dir_to(file_name);
         return true;
     }
     else
@@ -2416,8 +2415,7 @@ bool ImageModel::load_from_file(const char* dwi_file_name)
         voxel.template_id = match_volume(std::count_if(voxel.mask.begin(),voxel.mask.end(),[](unsigned char v){return v > 0;})*
                                    2.0f*voxel.vs[0]*voxel.vs[1]*voxel.vs[2]);
     progress::show("SRC file loaded");
-    show_progress() << "change current directory to " << std::filesystem::path(file_name).parent_path() << std::endl;
-    std::filesystem::current_path(std::filesystem::path(file_name).parent_path());
+    move_current_dir_to(file_name);
     return true;
 }
 
