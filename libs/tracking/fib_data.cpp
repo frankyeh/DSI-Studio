@@ -529,7 +529,6 @@ bool read_fib_mat_with_idx(const char* file_name,gz_mat_read& mat_reader)
     save_idx(file_name,mat_reader.in);
     return true;
 }
-void move_current_dir_to(const std::string& file_name);
 bool fib_data::load_from_file(const char* file_name)
 {
     progress p("open ",file_name);
@@ -578,7 +577,6 @@ bool fib_data::load_from_file(const char* file_name)
             view_item.push_back(item("fiber",dir.fa[0],dim));
             match_template();
             show_progress() << "NIFTI file loaded" << std::endl;
-            move_current_dir_to(fib_file_name);
             return true;
         }
         else
@@ -628,7 +626,6 @@ bool fib_data::load_from_file(const char* file_name)
             view_item.push_back(item("fiber",dir.fa[0],dim));
             match_template();
             show_progress() << "NIFTI file loaded" << std::endl;
-            move_current_dir_to(fib_file_name);
             return true;
         }
         else
@@ -677,7 +674,6 @@ bool fib_data::load_from_file(const char* file_name)
         view_item[0].name = "image";
         trackable = false;
         show_progress() << "image file loaded" << std::endl;
-        move_current_dir_to(fib_file_name);
         return true;
     }
     if(!QFileInfo(file_name).exists())
@@ -863,7 +859,6 @@ bool fib_data::load_from_file(const char* file_name)
     if(!load_from_mat())
         return false;
     show_progress() << "FIB file loaded" << std::endl;
-    move_current_dir_to(fib_file_name);
     return true;
 }
 bool fib_data::save_mapping(const std::string& index_name,const std::string& file_name)
