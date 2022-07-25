@@ -1,0 +1,469 @@
+name: Build DSI Studio
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag'
+        required: true
+        default: '2021.12.03'
+      release_name:
+        description: 'Release Name'
+        required: true
+        default: '2021.12.03 "Chen" Release'
+jobs:
+  build_prerelease:
+    strategy:
+      matrix:
+        os: [ubuntu_2004]
+      fail-fast: false
+    runs-on: ubuntu-latest    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+    - name: Set up QEMU
+      uses: docker/setup-qemu-action@v1
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v1
+    - name: Build and push
+      uses: docker/build-push-action@v2
+      with:
+        context: .
+        file: build_packages/ubuntu_2004/Dockerfile
+        push: false
+        outputs: dsi-studio
+    - name: Packaging
+      run: |
+        zip -r dsi_studio_ubuntu_2004_pre_release.zip dsi-studio
+    - name: Create Release
+      uses: ncipollo/release-action@v1.8.9
+      with:
+        allowUpdates: true
+        artifacts: "*.zip"
+        tag: ${{ github.event.inputs.tag }}
+        name: ${{ github.event.inputs.release_name }}
+        prerelease: false
+        
+  test_animal_recon:
+    needs: build_prerelease
+    runs-on: ubuntu-latest
+    steps:
+    - name: Setup Environment
+      run: |
+        curl -sL "https://github.com/frankyeh/DSI-Studio/releases/download/2021.12.03/dsi_studio_ubuntu_2004_pre_release.zip" | jar x
+        curl -sL https://zenodo.org/record/6321169/files/mountsinai-S-sub-032156_dwi.src.gz?download=1 -o Rhesus.src.gz
+        chmod 777 ./dsi-studio/dsi_studio
+    - name: Test DTI/GQI Recon
+      run: |  
+        ./dsi-studio/dsi_studio --source=*.src.gz --action=rec --method=1 |& tee -a log.txt
+        ls Rhesus.src.gz.dti.fib.gz
+        echo --------------------------------------------------------------------------------------------------
+        ./dsi-studio/dsi_studio --source=*.src.gz --action=rec |& tee -a log.txt
+        ls Rhesus.src.gz.gqi.1.25.fib.gz
+
+    
+  test_human_recon:
+    needs: build_prerelease
+    runs-on: ubuntu-latest
+    steps:
+    - name: Setup Environment
+      run: |
+        curl -sL "https://github.com/frankyeh/DSI-Studio/releases/download/2021.12.03/dsi_studio_ubuntu_2004_pre_release.zip" | jar x
+        curl -sL https://zenodo.org/record/6320992/files/20081006_M025Y_DSI_203.src.gz?download=1 -o DSI.src.gz
+        curl -sL https://zenodo.org/record/6320992/files/20081006_M025Y_DTI64.src.gz?download=1 -o DTI.src.gz
+        curl -sL https://zenodo.org/record/6320992/files/20081006_M025Y_HARDI.src.gz?download=1 -o HARDI.src.gz
+        chmod 777 ./dsi-studio/dsi_studio
+    - name: Test GQI Recon
+      run: |
+        ./dsi-studio/dsi_studio --source=*.src.gz --action=rec --method=1
+        ls DSI.src.gz.dti.fib.gz 
+        ls DTI.src.gz.dti.fib.gz 
+        ls HARDI.src.gz.dti.fib.gz 
+        ./dsi-studio/dsi_studio --source=*.src.gz --action=rec
+        ls DSI.src.gz.gqi.1.25.fib.gz
+        ls DTI.src.gz.gqi.1.25.fib.gz
+        ls HARDI.src.gz.gqi.1.25.fib.gz
+        ./dsi-studio/dsi_studio --source=*.src.gz --action=rec --method=7 --template=0
+        ls DSI.src.gz.icbm152_adult.qsdr.1.25.*
+        ls DTI.src.gz.icbm152_adult.qsdr.1.25.*
+        ls HARDI.src.gz.icbm152_adult.qsdr.1.25.*
+        
+  test_human_tracking_qsdr:
+    needs: build_prerelease
+    runs-on: ubuntu-latest
+    steps:
+    - name: Setup Environment
+      run: |
+        curl -sL "https://github.com/frankyeh/DSI-Studio/releases/download/2021.12.03/dsi_studio_ubuntu_2004_pre_release.zip" | jar x
+        curl -sL https://github.com/frankyeh/DSI-Studio-atlas/blob/main/ICBM152_adult/ICBM152_adult.fib.gz?raw=true -o ICBM152_adult.fib.gz
+        chmod 777 ./dsi-studio/dsi_studio
+    - name: Tracking
+      run: |
+        ./dsi-studio/dsi_studio --source=ICBM152_adult.fib.gz --action=trk --output=icbm152.tt.gz --export=stat,tdi
+        ls icbm152.tt.gz
+        ls icbm152.tt.gz.tdi.nii.gz
+        ls icbm152.tt.gz.stat.txt
+        echo --------------------------------------------------------------------------------------------------
+        ./dsi-studio/dsi_studio --source=ICBM152_adult.fib.gz --action=trk --track_id=Arcuate_Fasciculus_L --output=AF_L.tt.gz
+        ls AF_L.tt.gz
+        echo --------------------------------------------------------------------------------------------------
+        ./dsi-studio/dsi_studio --source=ICBM152_adult.fib.gz --action=trk --roi=FreeSurferDKT_Cortical:left_precentral,dilate,dilate,smoothing --roi2=FreeSurferDKT_Cortical:right_precentral,dilate,dilate,smoothing --output=LR.tt.gz
+        ls LR.tt.gz
+        echo --------------------------------------------------------------------------------------------------
+        ./dsi-studio/dsi_studio --source=ICBM152_adult.fib.gz --action=trk --fiber_count=1000000 --output=no_file --connectivity=FreeSurferDKT_Cortical --connectivity_value=count,qa
+        ls ICBM152_adult.fib.gz.tt.gz.FreeSurferDKT_Cortical.count.pass.connectivity.mat
+        ls ICBM152_adult.fib.gz.tt.gz.FreeSurferDKT_Cortical.count.pass.connectogram.txt
+        ls ICBM152_adult.fib.gz.tt.gz.FreeSurferDKT_Cortical.count.pass.network_measures.txt
+        ls ICBM152_adult.fib.gz.tt.gz.FreeSurferDKT_Cortical.qa.pass.connectivity.mat
+        ls ICBM152_adult.fib.gz.tt.gz.FreeSurferDKT_Cortical.qa.pass.connectogram.txt
+        ls ICBM152_adult.fib.gz.tt.gz.FreeSurferDKT_Cortical.qa.pass.network_measures.txt
+
+  test_human_tracking_gqi:
+    needs: build_prerelease
+    runs-on: ubuntu-latest
+    steps:
+    - name: Setup Environment
+      run: |
+        curl -sL "https://github.com/frankyeh/DSI-Studio/releases/download/2021.12.03/dsi_studio_ubuntu_2004_pre_release.zip" | jar x
+        curl -sL https://zenodo.org/record/6307812/files/100206.src.gz.gqi.1.7.fib.gz?download=1 -o 100206.fib.gz
+        curl -sL https://github.com/frankyeh/DSI-Studio-atlas/blob/main/ICBM152_adult/ICBM152_adult.QA.nii.gz?raw=true -o template_qa.nii.gz
+        chmod 777 ./dsi-studio/dsi_studio
+    - name: Tracking
+      run: |
+        ./dsi-studio/dsi_studio --source=100206.fib.gz --action=trk --output=100206.tt.gz --export=stat,tdi
+        ls 100206.tt.gz
+        ls 100206.tt.gz.tdi.nii.gz
+        ls 100206.tt.gz.stat.txt
+        echo --------------------------------------------------------------------------------------------------
+        ./dsi-studio/dsi_studio --source=100206.fib.gz --action=trk --track_id=Arcuate_Fasciculus_L --output=AF_L.tt.gz
+        ls AF_L.tt.gz
+        echo --------------------------------------------------------------------------------------------------
+        ./dsi-studio/dsi_studio --source=100206.fib.gz --action=trk --roi=FreeSurferDKT_Cortical:left_precentral,dilate,dilate,smoothing --roi2=FreeSurferDKT_Cortical:right_precentral,dilate,dilate,smoothing --output=LR.tt.gz
+        ls LR.tt.gz
+        echo --------------------------------------------------------------------------------------------------
+        ./dsi-studio/dsi_studio --source=100206.fib.gz --action=trk --fiber_count=1000000 --output=no_file --connectivity=FreeSurferDKT_Cortical --connectivity_value=count,qa
+        ls 100206.fib.gz.tt.gz.FreeSurferDKT_Cortical.count.pass.connectivity.mat
+        ls 100206.fib.gz.tt.gz.FreeSurferDKT_Cortical.count.pass.connectogram.txt
+        ls 100206.fib.gz.tt.gz.FreeSurferDKT_Cortical.count.pass.network_measures.txt
+        ls 100206.fib.gz.tt.gz.FreeSurferDKT_Cortical.qa.pass.connectivity.mat
+        ls 100206.fib.gz.tt.gz.FreeSurferDKT_Cortical.qa.pass.connectogram.txt
+        ls 100206.fib.gz.tt.gz.FreeSurferDKT_Cortical.qa.pass.network_measures.txt
+        echo --------------------------------------------------------------------------------------------------
+        ./dsi-studio/dsi_studio --source=100206.fib.gz --action=trk --other_slices=template_qa.nii.gz --dt_threshold_index=template_qa-qa --seed_count=1000000 --dt_threshold=0.1 --output=dt.tt.gz
+        ls dt.tt.gz
+  test_export_registration:
+    needs: build_prerelease
+    runs-on: ubuntu-latest
+    steps:
+    - name: Setup Environment
+      run: |
+        curl -sL "https://github.com/frankyeh/DSI-Studio/releases/download/2021.12.03/dsi_studio_ubuntu_2004_pre_release.zip" | jar x
+        curl -sL https://zenodo.org/record/6307812/files/100206.src.gz.gqi.1.7.fib.gz?download=1 -o 100206.fib.gz
+        chmod 777 ./dsi-studio/dsi_studio
+    - name: Export
+      run: |
+        ./dsi-studio/dsi_studio --source=100206.fib.gz --action=exp --export=qa,iso 
+        ls 100206.fib.gz.qa.nii.gz
+        ls 100206.fib.gz.iso.nii.gz
+    - name: Registration
+      run: |
+        curl -sL https://zenodo.org/record/6324701/files/HCP1065_qa.nii.gz?download=1 -o HCP1065_qa.nii.gz
+        curl -sL https://zenodo.org/record/6324701/files/HCP1065_iso.nii.gz?download=1 -o HCP1065_iso.nii.gz
+        ./dsi-studio/dsi_studio --action=reg --from=100206.fib.gz.qa.nii.gz --to=HCP1065_qa.nii.gz --apply_warp=100206.fib.gz.qa.nii.gz
+        ls 100206.fib.gz.qa.nii.gz.wp.nii.gz
+        ./dsi-studio/dsi_studio --action=reg --from=100206.fib.gz.qa.nii.gz --to=HCP1065_qa.nii.gz --from2=100206.fib.gz.iso.nii.gz --to2=HCP1065_iso.nii.gz --apply_warp=100206.fib.gz.qa.nii.gz
+        ls 100206.fib.gz.qa.nii.gz.wp.nii.gz
+
+
+  test_connectometry:
+    needs: build_prerelease
+    runs-on: ubuntu-latest
+    steps:
+    - name: Setup Environment
+      run: |
+        curl -sL "https://github.com/frankyeh/DSI-Studio/releases/download/2021.12.03/dsi_studio_ubuntu_2004_pre_release.zip" | jar x
+        curl -sL https://zenodo.org/record/6324701/files/CMU60.db.fib.gz?download=1 -o CMU60.db.fib.gz
+        curl -sL https://zenodo.org/record/6324701/files/CMU60.demo.csv?download=1 -o CMU60.demo.csv
+        chmod 777 ./dsi-studio/dsi_studio
+    - name: Connectometry
+      run: |
+        ./dsi-studio/dsi_studio --source=CMU60.db.fib.gz --action=cnt --demo=CMU60.demo.csv --t_threshold=2.5 --permutation=200 --variable_list=0,1,2 --voi=1
+        ls CMU60.demo.csv.BMI.t2.nqa.length20.report.html
+        ls * -l
+        
+  test_automatic_tracking:
+    needs: build_prerelease
+    runs-on: ubuntu-latest
+    steps:
+    - name: Setup Environment
+      run: |
+        curl -sL "https://github.com/frankyeh/DSI-Studio/releases/download/2021.12.03/dsi_studio_ubuntu_2004_pre_release.zip" | jar x
+        curl -sL https://zenodo.org/record/6307812/files/100206.src.gz.gqi.1.7.fib.gz?download=1 -o 100206.fib.gz
+        curl -sL https://zenodo.org/record/6307812/files/100307.src.gz.gqi.1.7.fib.gz?download=1 -o 100307.fib.gz
+        chmod 777 ./dsi-studio/dsi_studio
+    - name: Tracking
+      run: |
+        ./dsi-studio/dsi_studio --source=*.fib.gz --action=atk --track_id=Arcuate_Fasciculus_L
+        ls Arcuate_Fasciculus_L.stat.txt
+  linux-build:
+    needs: [test_animal_recon, test_human_tracking_qsdr, test_human_tracking_gqi, test_connectometry]
+    strategy:
+      matrix:
+        os: [ubuntu_2004,ubuntu_1804,ubuntu_1604,centos7]
+      fail-fast: false
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+    - name: Set up QEMU
+      uses: docker/setup-qemu-action@v1
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v1
+    - name: Build and push
+      uses: docker/build-push-action@v2
+      with:
+        context: .
+        file: build_packages/${{ matrix.os }}/Dockerfile
+        push: false
+        outputs: dsi-studio
+    - name: Packaging
+      run: |
+        zip -r dsi_studio_${{ matrix.os }}.zip dsi-studio
+    - name: Create Release
+      uses: ncipollo/release-action@v1.8.9
+      with:
+        allowUpdates: true
+        artifacts: "*.zip"
+        tag: ${{ github.event.inputs.tag }}
+        name: ${{ github.event.inputs.release_name }}
+        prerelease: false
+        
+  macos-build:
+    needs: [test_animal_recon, test_human_tracking_qsdr, test_human_tracking_gqi, test_connectometry]
+    strategy:
+      matrix:
+        os: [macos-11,macos-10.15]
+      fail-fast: false
+    runs-on: ${{ matrix.os }}
+    env:
+      CFLAGS: -Werror
+    steps:
+    - uses: actions/checkout@v1
+    - name: Install Qt
+      run: |
+        brew update
+        brew install qt5
+    - name: Download TIPL and Atlases
+      run: |
+        git clone https://github.com/frankyeh/TIPL.git
+        git clone https://github.com/frankyeh/DSI-Studio-atlas.git
+        rm -fr DSI-Studio-atlas/.git
+    - name: Build DSI Studio
+      run: |
+        mkdir -p build
+        cd build
+        export PATH="/usr/local/opt/qt@5/bin:$PATH" && export LDFLAGS="-L/usr/local/opt/qt@5/lib" && export CPPFLAGS="-I/usr/local/opt/qt@5/include" && export PKG_CONFIG_PATH="/usr/local/opt/qt@5/lib/pkgconfig"
+        qmake ../dsi_studio.pro
+        make
+        cd ..
+        
+    - name: Packaging
+      run: |
+        mv other/* build/dsi_studio.app/Contents/MacOS/
+        mv dsi_studio.icns build/dsi_studio.app/Contents/Resources/
+        mv DSI-Studio-atlas build/dsi_studio.app/Contents/MacOS/atlas
+        mv build/dsi_studio.app .
+        /usr/local/opt/qt@5/bin/macdeployqt dsi_studio.app
+        zip -r dsi_studio_${{ matrix.os }}.zip dsi_studio.app
+    - name: Create Release
+      uses: ncipollo/release-action@v1.8.9
+      with:
+        allowUpdates: true
+        artifacts: "*.zip"
+        tag: ${{ github.event.inputs.tag }}
+        name: ${{ github.event.inputs.release_name }}
+        prerelease: false
+
+  windows_build:
+    needs: [test_animal_recon, test_human_tracking_qsdr, test_human_tracking_gqi, test_connectometry]
+    strategy:
+      matrix:
+        os: [ windows-2019]
+      fail-fast: false
+    runs-on: ${{ matrix.os }}
+    steps:
+    - uses: actions/checkout@v1
+    - name: Install Qt
+      uses: jurplel/install-qt-action@v2
+      with:
+        version: 5.12.0
+        modules: qtcharts qtopengl    
+    - name: Step To run on failure
+      if: ${{ failure() }}
+      uses: jurplel/install-qt-action@v2
+      with:
+        version: 5.12.0
+        modules: qtcharts qtopengl    
+    - name: get TIPL and DSI Studio atlas
+      run: |
+        git clone https://github.com/frankyeh/TIPL.git
+        git clone https://github.com/frankyeh/DSI-Studio-atlas.git        
+    - name: Build DSI Studio
+      run: |
+        for /f "usebackq delims=#" %%a in (`"%programfiles(x86)%\Microsoft Visual Studio\Installer\vswhere" -latest -property installationPath`) do call "%%a\Common7\Tools\VsDevCmd.bat" -arch=x64
+        mkdir -p build
+        cd build
+        qmake ../dsi_studio.pro 
+        nmake
+      shell: cmd
+
+    - name: Packaging
+      run: |
+        mkdir dsi_studio_win
+        move other\color_map dsi_studio_win   
+        move other\device.txt dsi_studio_win   
+        move other\LICENSE dsi_studio_win   
+        move build\release\dsi_studio.exe dsi_studio_win
+        windeployqt --no-angle --no-quick-import --no-translations --no-system-d3d-compiler --compiler-runtime --no-opengl-sw dsi_studio_win\dsi_studio.exe
+        move DSI-Studio-atlas dsi_studio_win\atlas  
+
+    - name: Download the SSL files
+      uses: suisei-cn/actions-download-file@v1
+      with:
+        url: "https://indy.fulgan.com/SSL/openssl-1.0.2u-x64_86-win64.zip"
+    - name: Download TinyFSL
+      uses: suisei-cn/actions-download-file@v1
+      with:
+        url: "https://github.com/frankyeh/TinyFSL/releases/download/2021.12.03/tiny_fsl_win64.zip"
+    - name: Extract zip files
+      run: |
+        7z e openssl-1.0.2u-x64_86-win64.zip
+        move *.dll dsi_studio_win
+        7z e tiny_fsl_win64.zip -odsi_studio_win\plugin
+        rd dsi_studio_win\plugin\tiny_fsl
+        del *.zip
+    - name: Zip Release
+      uses: TheDoctor0/zip-release@0.6.0
+      with:
+        filename: dsi_studio_win.zip
+        exclusions: .git
+        path: dsi_studio_win
+    - name: Create Release
+      uses: ncipollo/release-action@v1.8.9
+      with:
+        allowUpdates: true
+        artifacts: "*.zip"
+        tag: ${{ github.event.inputs.tag }}
+        name: ${{ github.event.inputs.release_name }}
+        prerelease: false  
+
+  docker_build:
+    needs: linux-build
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+    - name: Set up QEMU
+      uses: docker/setup-qemu-action@v1
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v1
+    - name: Login to DockerHub
+      uses: docker/login-action@v1
+      with:
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+    - name: Log in to the Container registry
+      uses: docker/login-action@v1 
+      with:
+        registry: ghcr.io
+        username: ${{ github.repository_owner }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    - name: Current Time
+      run: echo "DATE_TAG=$(date "+%Y-%m-%d")" >> $GITHUB_ENV
+    - name: Build and push
+      uses: docker/build-push-action@v2
+      with:
+        context: .
+        file: build_packages/docker/Dockerfile
+        push: true
+        tags: |
+          "dsistudio/dsistudio:chen-${{ env.DATE_TAG }}"
+          dsistudio/dsistudio:latest
+
+  windows_build_cuda:
+    needs: windows_build
+    strategy:
+      matrix:
+        arch: [35,37,50,52,53,60,61,62,70,72,75,80,86]
+      fail-fast: false
+    runs-on: windows-2019
+    steps:
+    - uses: actions/checkout@v1
+    - name: Install Qt
+      uses: jurplel/install-qt-action@v2
+      with:
+        version: 6.2.0
+        modules: addons.qtcharts qtopengl
+    - name: Step to run when failed
+      if: ${{ failure() }}
+      uses: jurplel/install-qt-action@v2
+      with:
+        version: 6.2.0
+        modules: addons.qtcharts qtopengl       
+    - name: Install Zlib
+      run: |
+        powershell -Command "(Invoke-WebRequest -Uri https://git.io/JnHTY -OutFile install_zlib.bat)"; 
+        powershell -Command "(gc install_zlib.bat) -replace '1.2.11', '1.2.12' | Out-File -encoding ASCII install_zlib.bat"
+        ./install_zlib.bat
+        del install_zlib.bat
+        del "C:/Program Files/zlib/lib/zlib.lib"
+        del "C:/Program Files/zlib/bin/zlib.dll"
+    - name: Install Cuda
+      uses: Jimver/cuda-toolkit@v0.2.5
+    - name: Install Ninja and CMake
+      run: |    
+        choco install ninja cmake
+    - name: get TIPL and DSI Studio atlas
+      run: |
+        git clone https://github.com/frankyeh/TIPL.git
+        git clone https://github.com/frankyeh/DSI-Studio-atlas.git
+    - name: Build DSI Studio
+      run: |
+        for /f "usebackq delims=#" %%a in (`"%programfiles(x86)%\Microsoft Visual Studio\Installer\vswhere" -latest -property installationPath`) do call "%%a\Common7\Tools\VsDevCmd.bat" -arch=x64
+        mkdir -p build
+        cmake -S . -B build -GNinja "-DCMAKE_BUILD_TYPE:STRING=Release" "-DCMAKE_C_COMPILER:STRING=cl" "-DCMAKE_CXX_COMPILER:STRING=cl" -DCUDA_ARCH=${{ matrix.arch }} -DTIPL_DIR=.
+        cmake --build ./build --parallel --config Release
+      shell: cmd
+
+    - name: Packaging
+      run: |
+        mkdir dsi_studio_win
+        move other\color_map dsi_studio_win   
+        move other\LICENSE dsi_studio_win   
+        move other\device.txt dsi_studio_win   
+        move build\dsi_studio.exe dsi_studio_win
+        windeployqt --no-translations --no-system-d3d-compiler --compiler-runtime --no-opengl-sw dsi_studio_win\dsi_studio.exe
+        move DSI-Studio-atlas dsi_studio_win\atlas  
+    - name: Download TinyFSL
+      uses: suisei-cn/actions-download-file@v1
+      with:
+        url: "https://github.com/frankyeh/TinyFSL/releases/download/2021.12.03/tiny_fsl_win64_cuda_sm${{ matrix.arch }}.zip"
+    - name: Extract zip files
+      run: |
+        7z e tiny_fsl_win64_cuda_sm${{ matrix.arch }}.zip -odsi_studio_win\plugin
+        rm dsi_studio_win\plugin\cublas*
+        rd dsi_studio_win\plugin\tiny_fsl
+        del *.zip
+    - name: Zip Release
+      uses: TheDoctor0/zip-release@0.6.0
+      with:
+        filename: dsi_studio_win_cuda_sm${{ matrix.arch }}.zip
+        exclusions: .git
+        path: dsi_studio_win
+    - name: Create Release
+      uses: ncipollo/release-action@v1.8.9
+      with:
+        allowUpdates: true
+        artifacts: "*.zip"
+        tag: ${{ github.event.inputs.tag }}
+        name: ${{ github.event.inputs.release_name }}
+        prerelease: false  
