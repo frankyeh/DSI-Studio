@@ -268,7 +268,6 @@ void shift_track_for_tck(std::vector<std::vector<float> >& loaded_tract_data,tip
 void MainWindow::loadFib(QString filename,bool presentation_mode)
 {
     std::string file_name = filename.toStdString();
-    progress prog_("loading ",QFileInfo(filename).baseName().toStdString().c_str(),true);
     std::shared_ptr<fib_data> new_handle(new fib_data);
     if (!new_handle->load_from_file(&*file_name.begin()))
     {
@@ -285,9 +284,7 @@ void MainWindow::loadFib(QString filename,bool presentation_mode)
         if(result == QMessageBox::No)
             new_handle = new_handle->high_reso;
     }
-
-    QDir::setCurrent(QFileInfo(filename).absolutePath());
-
+    progress prog_("start fiber tracking GUI");
     tracking_windows.push_back(new tracking_window(this,new_handle));
     tracking_windows.back()->setAttribute(Qt::WA_DeleteOnClose);
     tracking_windows.back()->setWindowTitle(filename);
@@ -327,7 +324,6 @@ void MainWindow::loadSrc(QStringList filenames)
         reconstruction_window* new_mdi = new reconstruction_window(filenames,this);
         new_mdi->setAttribute(Qt::WA_DeleteOnClose);
         new_mdi->show();
-        QDir::setCurrent(QFileInfo(filenames[0]).absolutePath());
         if(filenames.size() == 1)
         {
             addSrc(filenames[0]);
@@ -362,7 +358,6 @@ void MainWindow::on_OpenDICOM_clicked()
                                 "Image files (*.dcm *.hdr *.nii *nii.gz *.fdf *.nhdr 2dseq subject);;All files (*)" );
     if ( filenames.isEmpty() )
         return;
-
     add_work_dir(QFileInfo(filenames[0]).absolutePath());
     if(QFileInfo(filenames[0]).completeBaseName() == "subject")
     {
@@ -445,6 +440,7 @@ void MainWindow::on_Reconstruction_clicked()
                            "Src files (*src.gz *.src);;Histology images (*.jpg *.tif);;All files (*)" );
     if (filenames.isEmpty())
         return;
+    add_work_dir(QFileInfo(filenames[0]).absolutePath());
     loadSrc(filenames);
 }
 
@@ -457,6 +453,7 @@ void MainWindow::on_FiberTracking_clicked()
                            "Fib files (*fib.gz *.fib);;Image files (*nii.gz *.nii 2dseq);;All files (*)");
     if (filename.isEmpty())
         return;
+    add_work_dir(QFileInfo(filename).absolutePath());
     loadFib(filename);
 }
 
@@ -531,6 +528,7 @@ void MainWindow::on_RenameDICOM_clicked()
                                 "All files (*)" );
     if ( filenames.isEmpty() )
         return;
+    add_work_dir(QFileInfo(filenames[0]).absolutePath());
     progress prog_("Rename DICOM Files");
     for (unsigned int index = 0;progress::at(index,filenames.size());++index)
         RenameDICOMToDir(filenames[index],QFileInfo(filenames[index]).absolutePath());
@@ -581,6 +579,7 @@ void MainWindow::on_RenameDICOMDir_clicked()
                                           ui->workDir->currentText());
     if ( path.isEmpty() )
         return;
+    add_work_dir(path);
     QStringList dirs = GetSubDir(path);
     progress prog_("Renaming DICOM");
     for(int index = 0;progress::at(index,dirs.size());++index)
@@ -625,7 +624,7 @@ void MainWindow::on_batch_reconstruction_clicked()
                                 ui->workDir->currentText());
     if(dir.isEmpty())
         return;
-
+    add_work_dir(dir);
     loadSrc(search_files(dir,"*src.gz"));
 }
 
@@ -638,6 +637,7 @@ void MainWindow::on_view_image_clicked()
                                 "image files (*.nii *nii.gz *.dcm *.nhdr 2dseq *fib.gz *src.gz)" );
     if(filename.isEmpty())
         return;
+    add_work_dir(QFileInfo(filename[0]).absolutePath());
     view_image* dialog = new view_image(this);
     dialog->setAttribute(Qt::WA_DeleteOnClose);
     if(!dialog->open(filename))
@@ -663,7 +663,6 @@ bool MainWindow::load_db(std::shared_ptr<group_connectometry_analysis>& database
                            "Database files (*db?fib.gz);;All files (*)");
     if (filename.isEmpty())
         return false;
-    QDir::setCurrent(QFileInfo(filename).absolutePath());
     add_work_dir(QFileInfo(filename).absolutePath());
     database = std::make_shared<group_connectometry_analysis>();
     progress prog_("reading connectometry db");
@@ -1280,8 +1279,8 @@ void MainWindow::on_dicom2nii_clicked()
                                 ui->workDir->currentText());
     if(dir.isEmpty())
         return;
-    progress prog("DICOM to SRC or NIFTI",true);
     add_work_dir(dir);
+    progress prog("DICOM to SRC or NIFTI",true);
     std::ofstream out((dir+"/log.txt").toStdString().c_str());
     out << "directory:" << dir.toStdString() << std::endl;
     dicom2src(dir.toStdString(),out);
