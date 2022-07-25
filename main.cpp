@@ -104,7 +104,6 @@ bool load_file_name(void)
     fib_template_file_name_2mm = find_full_path("/atlas/ICBM152_adult/ICBM152_adult.fib.gz");
     device_content_file = find_full_path("/device.txt");
 
-    //std::cout << "search templates and atlases" << std::endl;
     {
         QDir dir = QCoreApplication::applicationDirPath()+ "/atlas";
         if(!dir.exists())
@@ -202,6 +201,7 @@ void init_application(void)
 int run_action(program_option& po,std::shared_ptr<QApplication> gui)
 {
     std::string action = po.get("action");
+    progress prog("run ",action.c_str());
     if(action == std::string("rec"))
         return rec(po);
     if(action == std::string("trk"))
@@ -235,7 +235,7 @@ int run_action(program_option& po,std::shared_ptr<QApplication> gui)
             gui->exec();
         return 0;
     }
-    std::cout << "Unknown action:" << action << std::endl;
+    show_progress() << "Unknown action:" << action << std::endl;
     return 1;
 }
 void get_filenames_from(const std::string param,std::vector<std::string>& filenames);
@@ -247,26 +247,26 @@ int run_cmd(int ac, char *av[])
     program_option po;
     try
     {
-        std::cout << "DSI Studio \"" << DSISTUDIO_RELEASE_NAME << "\" " << __DATE__ << std::endl;
-
+        progress prog("DSI Studio command line");
+        show_progress() << "DSI Studio \"" << DSISTUDIO_RELEASE_NAME << "\" " << __DATE__ << std::endl;
         if constexpr(tipl::use_cuda)
         {
             std::string msg;
             if(!check_cuda(msg))
             {
-                std::cout << "ERROR:" << msg <<std::endl;
+                show_progress() << "ERROR:" << msg <<std::endl;
                 return 1;
             }
         }
 
         if(!po.parse(ac,av))
         {
-            std::cout << po.error_msg << std::endl;
+            show_progress() << po.error_msg << std::endl;
             return 1;
         }
         if (!po.has("action"))
         {
-            std::cout << "invalid command, use --help for more detail" << std::endl;
+            show_progress() << "invalid command, use --help for more detail" << std::endl;
             return 1;
         }
 
@@ -279,7 +279,7 @@ int run_cmd(int ac, char *av[])
 
         if ((action == "cnt" && po.get("no_tractogram",1) == 0) || action == "vis")
         {
-            std::cout << "Starting GUI-based command line interface." << std::endl;
+            show_progress() << "Starting GUI-based command line interface." << std::endl;
             gui.reset(new QApplication(ac, av));
             init_application();
         }
@@ -290,7 +290,7 @@ int run_cmd(int ac, char *av[])
             cmd->setApplicationName(version_string());
             if(!load_file_name())
             {
-                std::cout << "ERROR: Cannot find template data." << std::endl;
+                show_progress() << "ERROR: Cannot find template data." << std::endl;
                 return 1;
             }
         }
@@ -306,7 +306,7 @@ int run_cmd(int ac, char *av[])
 
         for (size_t i = 0;i < source_files.size();++i)
         {
-            std::cout << "Process file:" << source_files[i] << std::endl;
+            progress prog("process file: ",source_files[i].c_str());
             // clear --t1t2 and --other_slices
             t1t2_slices.reset();
             other_slices.clear();
@@ -320,22 +320,22 @@ int run_cmd(int ac, char *av[])
                 std::string apply_wildcard;
                 if(!match_files(source,source_files[i],wildcard.second,apply_wildcard))
                 {
-                    std::cout << "ERROR: cannot translate " << wildcard.second <<
+                    show_progress() << "ERROR: cannot translate " << wildcard.second <<
                                  " at --" << wildcard.first << std::endl;
                     return 1;
                 }
-                std::cout << wildcard.second << "->" << apply_wildcard << std::endl;
+                show_progress() << wildcard.second << "->" << apply_wildcard << std::endl;
                 po.set(wildcard.first.c_str(),apply_wildcard);
             }
             po.set_used(0);
             if(po.has("output") && std::filesystem::exists(po.get("output")))
             {
-                std::cout << "output " << po.get("output") << " exists. Skipping..." << std::endl;
+                show_progress() << "output " << po.get("output") << " exists. Skipping..." << std::endl;
                 continue;
             }
             if(run_action(po,gui) == 1)
             {
-                std::cout << "Terminated due to error." << std::endl;
+                show_progress() << "Terminated due to error." << std::endl;
                 return 1;
             }
         }

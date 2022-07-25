@@ -130,7 +130,7 @@ group_connectometry::group_connectometry(QWidget *parent,std::shared_ptr<group_c
         if(has_gui)
             QMessageBox::information(this,"Warning",check_quality.c_str());
         else
-            std::cout << check_quality << std::endl;
+            show_progress() << check_quality << std::endl;
     }
     ui->subject_demo->clear();
     ui->subject_demo->setColumnCount(1);

@@ -23,18 +23,18 @@ bool get_src(std::string filename,ImageModel& src2,std::string& error_msg);
 int rec(program_option& po)
 {
     std::string file_name = po.get("source");
-    std::cout << "loading source..." <<std::endl;
+    show_progress() << "loading source..." <<std::endl;
     ImageModel src;
     if (!src.load_from_file(file_name.c_str()))
     {
-        std::cout << "ERROR: " << src.error_msg << std::endl;
+        show_progress() << "ERROR: " << src.error_msg << std::endl;
         return 1;
     }
-    std::cout << "src loaded" <<std::endl;
+    show_progress() << "src loaded" <<std::endl;
 
     if(po.has("rev_pe") && !src.run_topup_eddy(po.get("rev_pe")))
     {
-        std::cout << "ERROR:" << src.error_msg << std::endl;
+        show_progress() << "ERROR:" << src.error_msg << std::endl;
         return 1;
     }
 
@@ -47,7 +47,7 @@ int rec(program_option& po)
             QStringList name_value = file_list[i].split(":");
             if(name_value.size() == 1)
             {
-                std::cout << "invalid parameter: " << file_list[i].toStdString() << std::endl;
+                show_progress() << "invalid parameter: " << file_list[i].toStdString() << std::endl;
                 return 1;
             }
             if(name_value.size() == 3) // handle windows directory with drive letter
@@ -55,7 +55,7 @@ int rec(program_option& po)
                 name_value[1] += ":";
                 name_value[1] += name_value[2];
             }
-            std::cout << name_value[0].toStdString() << ":" << name_value[1].toStdString() << std::endl;
+            show_progress() << name_value[0].toStdString() << ":" << name_value[1].toStdString() << std::endl;
             if(!add_other_image(&src,name_value[0],name_value[1]))
                 return 1;
         }
@@ -70,16 +70,16 @@ int rec(program_option& po)
             src.voxel.mask = 1;
         else
         {
-            std::cout << "reading mask file: " << mask_file << std::endl;
+            show_progress() << "reading mask file: " << mask_file << std::endl;
             gz_nifti nii;
             if(!nii.load_from_file(mask_file) || !nii.toLPS(src.voxel.mask))
             {
-                std::cout << "ERROR:" << nii.error_msg << std::endl;
+                show_progress() << "ERROR:" << nii.error_msg << std::endl;
                 return 1;
             }
             if(src.voxel.mask.shape() != src.voxel.dim)
             {
-                std::cout << "ERROR: The mask dimension is different. terminating..." << std::endl;
+                show_progress() << "ERROR: The mask dimension is different. terminating..." << std::endl;
                 return 1;
             }
         }
@@ -94,7 +94,7 @@ int rec(program_option& po)
             if(!src.command(run_list[0].toStdString(),
                                 run_list.count() > 1 ? run_list[1].toStdString():std::string()))
             {
-                std::cout << "ERROR:" << src.error_msg << std::endl;
+                show_progress() << "ERROR:" << src.error_msg << std::endl;
                 return 1;
             }
         }
@@ -102,9 +102,9 @@ int rec(program_option& po)
 
     if(po.get("motion_correction",0))
     {
-        std::cout << "correct for motion..." << std::endl;
+        show_progress() << "correct for motion..." << std::endl;
         src.correct_motion();
-        std::cout << "done." <<std::endl;
+        show_progress() << "done." <<std::endl;
     }
 
     if(po.get("preprocessing",0))
@@ -123,7 +123,7 @@ int rec(program_option& po)
     if(method_index == 7)
     {
         for(size_t id = 0;id < fa_template_list.size();++id)
-            std::cout << "template " << id << ":" << std::filesystem::path(fa_template_list[id]).stem() << std::endl;
+            show_progress() << "template " << id << ":" << std::filesystem::path(fa_template_list[id]).stem() << std::endl;
     }
     else
     {
@@ -133,7 +133,7 @@ int rec(program_option& po)
             gz_nifti in;
             if(!in.load_from_file(file_name.c_str()))
             {
-                std::cout << "failed to read " << file_name << std::endl;
+                show_progress() << "failed to read " << file_name << std::endl;
                 return 1;
             }
             tipl::image<3,unsigned char> I;
@@ -141,9 +141,9 @@ int rec(program_option& po)
             in.get_voxel_size(vs);
             in >> I;
             if(po.has("rotate_to"))
-                std::cout << "running rigid body transformation" << std::endl;
+                show_progress() << "running rigid body transformation" << std::endl;
             else
-                std::cout << "running affine transformation" << std::endl;
+                show_progress() << "running affine transformation" << std::endl;
 
             tipl::transformation_matrix<float> T;
             bool terminated = false;
@@ -153,7 +153,7 @@ int rec(program_option& po)
 
             linear_with_mi(I,vs,src.dwi,src.voxel.vs,T,po.has("rotate_to") ? tipl::reg::rigid_body : tipl::reg::affine,terminated);
 
-            std::cout << "DWI rotated." << std::endl;
+            show_progress() << "DWI rotated." << std::endl;
             src.rotate(I.shape(),vs,T);
         }
         else
@@ -164,10 +164,10 @@ int rec(program_option& po)
     if(po.has("save_src") || po.has("save_nii"))
     {
         std::string new_src_file = po.has("save_src") ? po.get("save_src") : po.get("save_nii");
-        std::cout << "saving to " << new_src_file << std::endl;
+        show_progress() << "saving to " << new_src_file << std::endl;
         if(!src.save_to_file(new_src_file.c_str()))
         {
-            std::cout << "ERROR:" << src.error_msg << std::endl;
+            show_progress() << "ERROR:" << src.error_msg << std::endl;
             return -1;
         }
         return 0;
@@ -190,9 +190,9 @@ int rec(program_option& po)
 
     {
         if(src.voxel.output_odf)
-            std::cout << "record ODF in the fib file" << std::endl;
+            show_progress() << "record ODF in the fib file" << std::endl;
         if(src.voxel.r2_weighted && method_index == 4)
-            std::cout << "r2 weighted is used for GQI" << std::endl;
+            show_progress() << "r2 weighted is used for GQI" << std::endl;
     }
 
 
@@ -204,12 +204,12 @@ int rec(program_option& po)
         else
             src.file_name = output;
     }
-    std::cout << "start reconstruction..." <<std::endl;
+    show_progress() << "start reconstruction..." <<std::endl;
     if (src.reconstruction())
-        std::cout << "reconstruction finished." << std::endl;
+        show_progress() << "reconstruction finished." << std::endl;
     else
     {
-        std::cout << "ERROR:" << src.error_msg << std::endl;
+        show_progress() << "ERROR:" << src.error_msg << std::endl;
         return 1;
     }
     return 0;

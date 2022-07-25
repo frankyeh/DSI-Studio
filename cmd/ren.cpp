@@ -18,9 +18,9 @@ int ren(program_option& po)
                                     QDir::Files | QDir::NoSymLinks);
         for (int j = 0;j < files.size();++j)
         {
-            std::cout << "renaming " << dirs[i].toStdString() << "/" << files[j].toStdString() << std::endl;
+            show_progress() << "renaming " << dirs[i].toStdString() << "/" << files[j].toStdString() << std::endl;
             if(!RenameDICOMToDir(dirs[i] + "/" + files[j],output))
-                std::cout << "cannot rename the file." << std::endl;
+                show_progress() << "cannot rename the file." << std::endl;
         }
     }
     if(po.get("to_src_nii",0))

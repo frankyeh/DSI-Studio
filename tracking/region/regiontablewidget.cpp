@@ -524,25 +524,25 @@ void get_roi_label(QString file_name,std::map<int,std::string>& label_map,std::m
     label_map.clear();
     label_color.clear();
     QString base_name = QFileInfo(file_name).baseName();
-    std::cout << "looking for region label file" << std::endl;
+    show_progress() <<"looking for region label file" << std::endl;
 
     QString label_file = QFileInfo(file_name).absolutePath()+"/"+base_name+".txt";
     if(QFileInfo(label_file).exists())
     {
         load_nii_label(label_file.toLocal8Bit().begin(),label_map);
-        std::cout << "label file loaded:" << label_file.toStdString() << std::endl;
+        show_progress() <<"label file loaded:" << label_file.toStdString() << std::endl;
         return;
     }
     label_file = QFileInfo(file_name).absolutePath()+"/"+base_name+".json";
     if(QFileInfo(label_file).exists())
     {
         load_jason_label(label_file.toLocal8Bit().begin(),label_map);
-        std::cout << "jason file loaded:" << label_file.toStdString() << std::endl;
+        show_progress() <<"jason file loaded:" << label_file.toStdString() << std::endl;
         return;
     }
     if(base_name.contains("aparc") || base_name.contains("aseg")) // FreeSurfer
     {
-        std::cout << "using freesurfer labels." << std::endl;
+        show_progress() <<"using freesurfer labels." << std::endl;
         QFile data(":/data/FreeSurferColorLUT.txt");
         if (data.open(QIODevice::ReadOnly | QIODevice::Text))
         {
@@ -562,7 +562,7 @@ void get_roi_label(QString file_name,std::map<int,std::string>& label_map,std::m
             return;
         }
     }
-    std::cout << "no label file found. Use default ROI numbering." << std::endl;
+    show_progress() <<"no label file found. Use default ROI numbering." << std::endl;
 }
 bool load_nii(std::shared_ptr<fib_data> handle,
               const std::string& file_name,
@@ -572,6 +572,7 @@ bool load_nii(std::shared_ptr<fib_data> handle,
               std::string& error_msg,
               bool is_mni_image)
 {
+    progress prog("load NIFTI file");
     gz_nifti header;
     if (!header.load_from_file(file_name.c_str()))
     {
@@ -603,8 +604,8 @@ bool load_nii(std::shared_ptr<fib_data> handle,
     header.get_voxel_size(vs);
 
     {
-        std::cout << "DWI : " << handle->dim << " at " << handle->vs << std::endl;
-        std::cout << "NIFTI : " << from.shape() << " at " << vs << std::endl;
+        show_progress() <<"DWI : " << handle->dim << " at " << handle->vs << std::endl;
+        show_progress() <<"NIFTI : " << from.shape() << " at " << vs << std::endl;
     }
     std::vector<unsigned short> value_list;
     std::vector<unsigned short> value_map(std::numeric_limits<unsigned short>::max()+1);
@@ -638,7 +639,7 @@ bool load_nii(std::shared_ptr<fib_data> handle,
 
     bool multiple_roi = value_list.size() > 1;
 
-    std::cout << (multiple_roi ? "nifti loaded as multiple ROI file":"nifti loaded as single ROI file") << std::endl;
+    show_progress() <<(multiple_roi ? "nifti loaded as multiple ROI file":"nifti loaded as single ROI file") << std::endl;
 
     std::map<int,std::string> label_map;
     std::map<int,tipl::rgb> label_color;
@@ -652,7 +653,7 @@ bool load_nii(std::shared_ptr<fib_data> handle,
 
     if(from.shape() != handle->dim)
     {
-        std::cout << "NIFTI file has a different dimension from DWI." << std::endl;
+        show_progress() <<"NIFTI file has a different dimension from DWI." << std::endl;
 
         if(handle->is_qsdr)
         {
@@ -672,7 +673,7 @@ bool load_nii(std::shared_ptr<fib_data> handle,
                         T(pos);
                         tipl::estimate<tipl::interpolation::nearest>(from,pos,new_from[i]);
                     });
-                    std::cout << "applying QSDR warpping to the native space NIFTI file" << std::endl;
+                    show_progress() <<"applying QSDR warpping to the native space NIFTI file" << std::endl;
                     new_from.swap(from);
                     goto end;
                 }
@@ -681,7 +682,7 @@ bool load_nii(std::shared_ptr<fib_data> handle,
         for(unsigned int index = 0;index < transform_lookup.size();++index)
             if(from.shape() == transform_lookup[index].first)
             {
-                std::cout << "applying loaded t1wt2w transformation." << std::endl;
+                show_progress() <<"applying loaded t1wt2w transformation." << std::endl;
                 to_diffusion_space = transform_lookup[index].second;
                 need_trans = true;
                 goto end;
@@ -689,7 +690,7 @@ bool load_nii(std::shared_ptr<fib_data> handle,
 
         if(handle->is_qsdr || handle->is_mni_image)
         {
-            std::cout << "loaded NIFTI file used as MNI space image." << std::endl;
+            show_progress() <<"loaded NIFTI file used as MNI space image." << std::endl;
             to_diffusion_space = tipl::from_space(T).to(handle->trans_to_mni);
             need_trans = true;
             goto end;
@@ -697,7 +698,7 @@ bool load_nii(std::shared_ptr<fib_data> handle,
 
         if(header.is_mni() || is_mni_image)
         {
-            std::cout << "warpping the NIFTI file from MNI space to the native space." << std::endl;
+            show_progress() <<"warpping the NIFTI file from MNI space to the native space." << std::endl;
             if(!handle->mni2sub<tipl::interpolation::nearest>(from,T))
             {
                 error_msg = handle->error_msg;
@@ -789,7 +790,7 @@ bool load_nii(std::shared_ptr<fib_data> handle,
             if(!region_points[i].empty())
                 regions.back()->add_points(std::move(region_points[i]));
         }
-    std::cout << "a total of " << regions.size() << " regions are loaded." << std::endl;
+    show_progress() <<"a total of " << regions.size() << " regions are loaded." << std::endl;
     if(regions.empty())
     {
         error_msg = "empty region file";

@@ -24,16 +24,16 @@ int exp(program_option& po)
         {
             if(trk2tt(file_name.c_str(),output_name.c_str()))
             {
-                std::cout << "file converted." << std::endl;
+                show_progress() << "file converted." << std::endl;
                 return 0;
             }
             else
             {
-                std::cout << "Cannot write to file:" << output_name << std::endl;
+                show_progress() << "Cannot write to file:" << output_name << std::endl;
                 return 1;
             }
         }
-        std::cout << "unsupported file format" << std::endl;
+        show_progress() << "unsupported file format" << std::endl;
         return 1;
     }
     if(QString(file_name.c_str()).endsWith(".tt.gz"))
@@ -43,16 +43,16 @@ int exp(program_option& po)
         {
             if(tt2trk(file_name.c_str(),output_name.c_str()))
             {
-                std::cout << "file converted." << std::endl;
+                show_progress() << "file converted." << std::endl;
                 return 0;
             }
             else
             {
-                std::cout << "Cannot write to file:" << output_name << std::endl;
+                show_progress() << "Cannot write to file:" << output_name << std::endl;
                 return 1;
             }
         }
-        std::cout << "unsupported file format" << std::endl;
+        show_progress() << "unsupported file format" << std::endl;
         return 1;
     }
     if(QString(file_name.c_str()).endsWith(".fib.gz"))
@@ -61,24 +61,24 @@ int exp(program_option& po)
         handle = cmd_load_fib(po.get("source"));
         if(!handle.get())
         {
-            std::cout << "ERROR: " << handle->error_msg << std::endl;
+            show_progress() << "ERROR: " << handle->error_msg << std::endl;
             return 1;
         }
         if(po.has("match"))
         {
             if(!handle->db.has_db())
             {
-                std::cout << "ERROR: the FIB file is not a connectometry database" << std::endl;
+                show_progress() << "ERROR: the FIB file is not a connectometry database" << std::endl;
                 return 1;
             }
             if(handle->db.demo.empty())
             {
-                std::cout << "ERROR: the connectometry database does not include demographics for matching." << std::endl;
+                show_progress() << "ERROR: the connectometry database does not include demographics for matching." << std::endl;
                 return 1;
             }
             if(!handle->db.save_demo_matched_image(po.get("match"),po.get("output",po.get("source")+".matched.nii.gz")))
             {
-                std::cout << "ERROR:" << handle->db.error_msg << std::endl;
+                show_progress() << "ERROR:" << handle->db.error_msg << std::endl;
                 return 1;
             }
             return 0;
@@ -90,14 +90,14 @@ int exp(program_option& po)
         {
             if(!handle->save_mapping(cmd,file_name + "." + cmd + ".nii.gz"))
             {
-                std::cout << "ERROR: cannot find "<< cmd.c_str() <<" in " << file_name.c_str() <<std::endl;
+                show_progress() << "ERROR: cannot find "<< cmd.c_str() <<" in " << file_name.c_str() <<std::endl;
                 return 1;
             }
-            std::cout << cmd << ".nii.gz saved " << std::endl;
+            show_progress() << cmd << ".nii.gz saved " << std::endl;
         }
         return 0;
     }
 
-    std::cout << "unsupported file format" << std::endl;
+    show_progress() << "unsupported file format" << std::endl;
     return 1;
 }

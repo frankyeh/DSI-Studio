@@ -12,7 +12,7 @@ int vis(program_option& po)
     std::shared_ptr<fib_data> new_handle = cmd_load_fib(po.get("source"));
     if(!new_handle.get())
         return 1;
-    std::cout << "starting gui" << std::endl;
+    show_progress() << "starting gui" << std::endl;
     tracking_window* new_mdi = new tracking_window(nullptr,new_handle);
     new_mdi->setAttribute(Qt::WA_DeleteOnClose);
     new_mdi->setWindowTitle(po.get("source").c_str());
@@ -23,7 +23,7 @@ int vis(program_option& po)
     {
         if(!std::filesystem::exists(po.get("track")))
         {
-            std::cout << "ERROR:" << po.get("track") << " does not exist" << std::endl;
+            show_progress() << "ERROR:" << po.get("track") << " does not exist" << std::endl;
             return 1;
         }
         new_mdi->tractWidget->load_tracts(QString(po.get("track").c_str()).split(","));
@@ -34,7 +34,7 @@ int vis(program_option& po)
         QStringList param = cmd[index].split(',');
         if(!new_mdi->command(param[0],param.size() > 1 ? param[1]:QString(),param.size() > 2 ? param[2]:QString()))
         {
-            std::cout << "unknown command:" << param[0].toStdString() << std::endl;
+            show_progress() << "unknown command:" << param[0].toStdString() << std::endl;
             break;
         }
 

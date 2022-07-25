@@ -145,16 +145,6 @@ struct distortion_map{
 };
 
 
-
-template<typename vector_type>
-void print_v(const char* name,const vector_type& p)
-{
-    std::cout << name << "=[" << std::endl;
-    for(int i = 0;i < p.size();++i)
-        std::cout << p[i] << " ";
-    std::cout << "];" << std::endl;
-}
-
 template<typename image_type>
 void distortion_estimate(const image_type& v1,const image_type& v2,
                          image_type& d)

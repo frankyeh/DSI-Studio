@@ -49,7 +49,7 @@ bool get_track_id(std::string track_id_text,std::vector<unsigned int>& track_id)
                 }
             if(!find)
             {
-                std::cout << "ERROR: track_id: cannot find track name containing " << str << std::endl;
+                show_progress() << "ERROR: track_id: cannot find track name containing " << str << std::endl;
                 return false;
             }
         }
@@ -58,10 +58,11 @@ bool get_track_id(std::string track_id_text,std::vector<unsigned int>& track_id)
     std::sort(track_id.begin(),track_id.end());
     track_id.erase(std::unique(track_id.begin(), track_id.end()), track_id.end());
 
-    std::cout << "target tracks:";
+    show_progress pout;
+    pout << "target tracks:";
     for(unsigned int index = 0;index < track_id.size();++index)
-        std::cout << " " << fib.tractography_name_list[track_id[index]];
-    std::cout << std::endl;
+        pout << " " << fib.tractography_name_list[track_id[index]];
+    pout << std::endl;
     return true;
 }
 int atk(program_option& po)
@@ -70,7 +71,7 @@ int atk(program_option& po)
     get_filenames_from(po.get("source"),file_list);
     if(file_list.empty())
     {
-        std::cout << "no file listed in --source" << std::endl;
+        show_progress() << "no file listed in --source" << std::endl;
         return 1;
     }
     std::vector<unsigned int> track_id;
@@ -88,6 +89,6 @@ int atk(program_option& po)
         }
         return 0;
     }
-    std::cout << "ERROR:" << error << std::endl;
+    show_progress() << "ERROR:" << error << std::endl;
     return 1;
 }

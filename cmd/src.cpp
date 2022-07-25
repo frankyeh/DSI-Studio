@@ -20,13 +20,13 @@ int src(program_option& po)
     if(std::filesystem::is_directory(source))
     {
         std::string error_msg;
-        std::cout << "look for BIDS structure at " << source.c_str() << std::endl;
+        show_progress() << "look for BIDS structure at " << source.c_str() << std::endl;
         if(nii2src_bids(source.c_str(),po.get("output",source).c_str(),error_msg))
             return 0;
-        std::cout << "load files in directory " << source.c_str() << std::endl;
+        show_progress() << "load files in directory " << source.c_str() << std::endl;
         if(po.get("recursive",0))
         {
-            std::cout << "search recursively in the subdir" << std::endl;
+            show_progress() << "search recursively in the subdir" << std::endl;
             dicom2src(source,std::cout);
             return 0;
         }
@@ -39,7 +39,7 @@ int src(program_option& po)
             for (int index = 0;index < file_list.size();++index)
                 file_list[index] = QString(source.c_str()) + "/" + file_list[index];
         }
-        std::cout << "a total of " << file_list.size() << " files found in the directory" << std::endl;
+        show_progress() << "a total of " << file_list.size() << " files found in the directory" << std::endl;
     }
     else
         file_list << source.c_str();
@@ -49,14 +49,14 @@ int src(program_option& po)
 
     if(file_list.empty())
     {
-        std::cout << "no file found for creating src" << std::endl;
+        show_progress() << "no file found for creating src" << std::endl;
         return 1;
     }
 
     std::vector<std::shared_ptr<DwiHeader> > dwi_files;
     if(!parse_dwi(file_list,dwi_files))
     {
-        std::cout << "ERROR loading dwi file:" << src_error_msg << std::endl;
+        show_progress() << "ERROR loading dwi file:" << src_error_msg << std::endl;
         return 1;
     }
     if(po.has("b_table"))
@@ -65,7 +65,7 @@ int src(program_option& po)
         std::ifstream in(table_file_name.c_str());
         if(!in)
         {
-            std::cout << "failed to open b-table" <<std::endl;
+            show_progress() << "failed to open b-table" <<std::endl;
             return 1;
         }
         std::string line;
@@ -79,7 +79,7 @@ int src(program_option& po)
         }
         if(b_table.size() != dwi_files.size()*4)
         {
-            std::cout << "mismatch between b-table and the loaded images" << std::endl;
+            show_progress() << "mismatch between b-table and the loaded images" << std::endl;
             return 1;
         }
         for(unsigned int index = 0,b_index = 0;index < dwi_files.size();++index,b_index += 4)
@@ -87,7 +87,7 @@ int src(program_option& po)
             dwi_files[index]->bvalue = float(b_table[b_index]);
             dwi_files[index]->bvec = tipl::vector<3>(b_table[b_index+1],b_table[b_index+2],b_table[b_index+3]);
         }
-        std::cout << "b-table " << table_file_name << " loaded" << std::endl;
+        show_progress() << "b-table " << table_file_name << " loaded" << std::endl;
     }
     if(po.has("bval") && po.has("bvec"))
     {
@@ -98,28 +98,28 @@ int src(program_option& po)
         for(auto path : bval_files)
             if(!load_bval(path.toStdString().c_str(),bval))
             {
-                std::cout << "cannot find bval at " << path.toStdString() << std::endl;
+                show_progress() << "cannot find bval at " << path.toStdString() << std::endl;
                 return 1;
             }
         for(auto path : bvec_files)
             if(!load_bvec(path.toStdString().c_str(),bvec,po.get("flip_by",1)))
             {
-                std::cout << "cannot find bvec at " << path.toStdString() << std::endl;
+                show_progress() << "cannot find bvec at " << path.toStdString() << std::endl;
                 return 1;
             }
 
         if(bval.size() != dwi_files.size())
         {
-            std::cout << "mismatch between bval file and the loaded images" << std::endl;
-            std::cout << "dwi number:" << dwi_files.size() << std::endl;
-            std::cout << "bval number:" << bval.size() << std::endl;
+            show_progress() << "mismatch between bval file and the loaded images" << std::endl;
+            show_progress() << "dwi number:" << dwi_files.size() << std::endl;
+            show_progress() << "bval number:" << bval.size() << std::endl;
             return 1;
         }
         if(bvec.size() != dwi_files.size()*3)
         {
-            std::cout << "mismatch between bvec file and the loaded images" << std::endl;
-            std::cout << "dwi number:" << dwi_files.size() << std::endl;
-            std::cout << "bvec number:" << bvec.size() << std::endl;
+            show_progress() << "mismatch between bvec file and the loaded images" << std::endl;
+            show_progress() << "dwi number:" << dwi_files.size() << std::endl;
+            show_progress() << "bvec number:" << bvec.size() << std::endl;
             return 1;
         }
         for(unsigned int index = 0;index < dwi_files.size();++index)
@@ -130,7 +130,7 @@ int src(program_option& po)
     }
     if(dwi_files.empty())
     {
-        std::cout << "no file readed. Abort." << std::endl;
+        show_progress() << "no file readed. Abort." << std::endl;
         return 1;
     }
 
@@ -143,7 +143,7 @@ int src(program_option& po)
     }
     if(max_b == 0.0)
     {
-        std::cout << "cannot find b-table from the header. You may need to load an external b-table using--b_table or --bval and --bvec." << std::endl;
+        show_progress() << "cannot find b-table from the header. You may need to load an external b-table using--b_table or --bval and --bvec." << std::endl;
         return 1;
     }
 
@@ -164,12 +164,12 @@ int src(program_option& po)
         else
             output = file_list.front().toStdString() + ".src.gz";
     }
-    std::cout << "output src to " << output << std::endl;
+    show_progress() << "output src to " << output << std::endl;
     if(!DwiHeader::output_src(output.c_str(),dwi_files,
                           po.get<int>("up_sampling",0),
                           po.get<int>("sort_b_table",0)))
     {
-        std::cout << "ERROR: " << src_error_msg << std::endl;
+        show_progress() << "ERROR: " << src_error_msg << std::endl;
         return 1;
     }
     return 0;

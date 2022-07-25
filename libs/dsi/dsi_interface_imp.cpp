@@ -445,7 +445,7 @@ const char* odf_average(const char* out_name,std::vector<std::string>& file_name
     if(!output_odfs(mask,out_name,".mean.fib.gz",odfs,other_metrics_images,other_metrics_name,ti,vs.begin(),mni.begin(),report,error_msg,false) ||
        !output_odfs(mask,out_name,".mean.odf.fib.gz",odfs,other_metrics_images,other_metrics_name,ti,vs.begin(),mni.begin(),report,error_msg))
     {
-        std::cout << error_msg << std::endl;
+        progress::show(error_msg.c_str());
         return nullptr;
     }
     return nullptr;

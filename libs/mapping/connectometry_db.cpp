@@ -237,15 +237,16 @@ bool connectometry_db::parse_demo(void)
     items.erase(items.begin(),items.begin()+int(col_count));
 
     // convert special characters
-    std::cout << "demographic columns:";
+    show_progress pout;
+    pout << "demographic columns:";
     for(size_t i = 0;i < titles.size();++i)
     {
         std::replace(titles[i].begin(),titles[i].end(),' ','_');
         std::replace(titles[i].begin(),titles[i].end(),'/','_');
         std::replace(titles[i].begin(),titles[i].end(),'\\','_');
-        std::cout << "\t" << titles[i];
+        pout << "\t" << titles[i];
     }
-    std::cout << std::endl;
+    pout << std::endl;
 
     // find which column can be used as features
     feature_location.clear();
@@ -995,8 +996,6 @@ void connectometry_db::auto_match(const tipl::image<3,int>& fp_mask,float fiber_
             t *= 0.5f;
         }
     }
-    std::cout << std::endl;
-
     match.clear();
     for(unsigned int i = 0,index = 0;i < handle->db.num_subjects;++i)
         for(unsigned int j = i+1;j < handle->db.num_subjects;++j,++index)

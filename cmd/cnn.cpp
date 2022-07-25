@@ -17,18 +17,18 @@ bool train_cnn(tipl::ml::trainer& t,
 
     if(!(nn << network))
     {
-        std::cout << "invalid network: " << nn.error_msg << std::endl;
+        show_progress() << "invalid network: " << nn.error_msg << std::endl;
         return false;
     }
-    std::cout << "training network: " << network << std::endl;
-    std::cout << "learning rate=" << t.learning_rate << std::endl;
-    //std::cout << "weight decay=" << t.w_decay_rate << std::endl;
-    std::cout << "momentum=" << t.momentum << std::endl;
-    std::cout << "batch size=" << t.batch_size << std::endl;
-    std::cout << "epoch=" << t.epoch << std::endl;
+    show_progress() << "training network: " << network << std::endl;
+    show_progress() << "learning rate=" << t.learning_rate << std::endl;
+    //show_progress() << "weight decay=" << t.w_decay_rate << std::endl;
+    show_progress() << "momentum=" << t.momentum << std::endl;
+    show_progress() << "batch size=" << t.batch_size << std::endl;
+    show_progress() << "epoch=" << t.epoch << std::endl;
 
     auto on_enumerate_epoch = [&](){
-        std::cout << "training error:" << (train_error = t.get_training_error()) << "%" << std::endl;
+        show_progress() << "training error:" << (train_error = t.get_training_error()) << "%" << std::endl;
         };
     nn.init_weights();
     bool terminated = false;
@@ -43,14 +43,14 @@ int cnn(program_option& po)
     std::shared_ptr<group_connectometry_analysis> gca(new group_connectometry_analysis);
     if(!gca->load_database(po.get("source").c_str()))
     {
-        std::cout << "invalid database format" << std::endl;
+        show_progress() << "invalid database format" << std::endl;
         return 1;
     }
 
 
     if(!gca->handle->db.parse_demo(po.get("demo").c_str()))
     {
-        std::cout << gca->handle->db.error_msg << std::endl;
+        show_progress() << gca->handle->db.error_msg << std::endl;
         return 1;
     }
 
@@ -61,20 +61,20 @@ int cnn(program_option& po)
     tipl::ml::network_data<unsigned char> nn_data,nn_test;
     if(!nn_data.load_from_file<gz_istream>(train_file_name.c_str()))
     {
-        std::cout << "cannot load training data at " << train_file_name << std::endl;
+        show_progress() << "cannot load training data at " << train_file_name << std::endl;
         return 1;
     }
-    std::cout << "a total of "<< nn_data.size() << " training data are loaded." << std::endl;
+    show_progress() << "a total of "<< nn_data.size() << " training data are loaded." << std::endl;
     if(po.has("test"))
     {
         std::string test_file_name = po.get("test");
         if(!nn_test.load_from_file<gz_istream>(test_file_name.c_str()))
         {
-            std::cout << "cannot load testing data at " << test_file_name << std::endl;
+            show_progress() << "cannot load testing data at " << test_file_name << std::endl;
             return 1;
         }
     }
-    std::cout << "a total of "<< nn_test.size() << " testing data are loaded." << std::endl;
+    show_progress() << "a total of "<< nn_test.size() << " testing data are loaded." << std::endl;
 
     std::vector<std::string> network_list;
     {
@@ -82,7 +82,7 @@ int cnn(program_option& po)
         std::ifstream in(network.c_str());
         if(!in)
         {
-            std::cout << "cannot open " << network << std::endl;
+            show_progress() << "cannot open " << network << std::endl;
             return 1;
         }
         std::string line;
@@ -90,7 +90,7 @@ int cnn(program_option& po)
         if(line.size() > 5)
             network_list.push_back(line);
     }
-    std::cout << "a network list is loaded with " << network_list.size() << " networks." << std::endl;
+    show_progress() << "a network list is loaded with " << network_list.size() << " networks." << std::endl;
 
     tipl::ml::trainer t;
     t.learning_rate = po.get("learning_rate",0.01f);
@@ -117,7 +117,7 @@ int cnn(program_option& po)
             {
                 if(start_count)
                 {
-                    std::cout << "skipping network:" << network_list[i] << std::endl;
+                    show_progress() << "skipping network:" << network_list[i] << std::endl;
                     --start_count;
                     continue;
                 }
@@ -125,8 +125,8 @@ int cnn(program_option& po)
                 tipl::ml::network nn;
                 if(!train_cnn(t,network_list[i],nn,nn_data,nn_test,test_error,train_error))
                     continue;
-                std::cout << "training finished" << std::endl;
-                std::cout << test_error << "\t" << train_error << "\t" << network_list[i] << std::endl;
+                show_progress() << "training finished" << std::endl;
+                show_progress() << test_error << "\t" << train_error << "\t" << network_list[i] << std::endl;
                 out << test_error << "\t" << train_error << "\t" << network_list[i] << std::endl;
             }
         return 1;
@@ -136,8 +136,8 @@ int cnn(program_option& po)
     tipl::ml::network nn;
     if(!train_cnn(t,network_list[0],nn,nn_data,nn_test,test_error,train_error))
         return 1;
-    std::cout << "training finished" << std::endl;
-    std::cout << test_error << "," << train_error << "," << network_list[0] << std::endl;
+    show_progress() << "training finished" << std::endl;
+    show_progress() << test_error << "," << train_error << "," << network_list[0] << std::endl;
 
     if(po.has("output_nn"))
         nn.save_to_file<gz_ostream>(po.get("output_nn").c_str());

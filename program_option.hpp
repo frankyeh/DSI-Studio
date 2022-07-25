@@ -4,6 +4,7 @@
 #include <fstream>
 #include <vector>
 #include <iostream>
+#include "prog_interface_static_link.h"
 class program_option{
     std::vector<std::string> names;
     std::vector<std::string> values;
@@ -41,7 +42,7 @@ public:
     {
         for(size_t i = 0;i < used.size();++i)
             if(!used[i])
-                std::cout << "Warning: --" << names[i] << " is not used. Please check command line syntax." << std::endl;
+                show_progress() << "Warning: --" << names[i] << " is not used. Please check command line syntax." << std::endl;
     }
     void clear(void)
     {
@@ -138,7 +139,7 @@ public:
                 if(!used[i])
                 {
                     used[i] = 1;
-                    std::cout << name << "=" << values[i] << std::endl;
+                    show_progress() << name << "=" << values[i] << std::endl;
                 }
                 return values[i];
             }
@@ -155,11 +156,11 @@ public:
                 if(!used[i])
                 {
                     used[i] = 1;
-                    std::cout << name << "=" << values[i] << std::endl;
+                    show_progress() << name << "=" << values[i] << std::endl;
                 }
                 return values[i];
             }
-        std::cout << name << "=" << df_value << std::endl;
+        show_progress() << name << "=" << df_value << std::endl;
         return df_value;
     }
 
@@ -173,12 +174,12 @@ public:
                 if(!used[i])
                 {
                     used[i] = 1;
-                    std::cout << name << "=" << values[i] << std::endl;
+                    show_progress() << name << "=" << values[i] << std::endl;
                 }
                 std::istringstream(values[i]) >> df;
                 return df;
             }
-        std::cout << name << "=" << df << std::endl;
+        show_progress() << name << "=" << df << std::endl;
         return df;
     }
 };

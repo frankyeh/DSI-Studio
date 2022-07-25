@@ -8,12 +8,12 @@
 QStringList search_files(QString dir,QString filter);
 bool check_src(std::string file_name,std::vector<std::string>& output,float& ndc)
 {
-    std::cout << "checking " << file_name << std::endl;
+    show_progress() << "checking " << file_name << std::endl;
     output.push_back(QFileInfo(file_name.c_str()).baseName().toStdString());
     ImageModel handle;
     if (!handle.load_from_file(file_name.c_str()))
     {
-        std::cout << "cannot read SRC file" << std::endl;
+        show_progress() << "cannot read SRC file" << std::endl;
         return false;
     }
     // output image dimension
@@ -48,11 +48,11 @@ std::string quality_check_src_files(QString dir)
     out << "Directory:" << dir.toStdString() << std::endl;
     if(filenames.empty())
     {
-        std::cout << "no SRC file found in the directory" << std::endl;
+        show_progress() << "no SRC file found in the directory" << std::endl;
         return "no SRC file found in the directory";
     }
     out << "FileName\tImage dimension\tResolution\tDWI count\tMax b-value\tNeighboring DWI correlation\t# Bad Slices" << std::endl;
-    std::cout << "a total of " << filenames.size() << " SRC file(s) were found."<< std::endl;
+    show_progress() << "a total of " << filenames.size() << " SRC file(s) were found."<< std::endl;
 
     std::vector<std::vector<std::string> > output;
     std::vector<float> ndc;
@@ -105,10 +105,10 @@ int qc(program_option& po)
     if(QFileInfo(file_name.c_str()).isDir())
     {
         std::string report_file_name = po.get("output",file_name + "/qc.txt");
-        std::cout << "quality control checking src files in " << file_name << std::endl;
+        show_progress() << "quality control checking src files in " << file_name << std::endl;
         std::ofstream out(report_file_name.c_str());
         out << quality_check_src_files(file_name.c_str());
-        std::cout << "report saved to " << report_file_name << std::endl;
+        show_progress() << "report saved to " << report_file_name << std::endl;
     }
     else {
         std::string report_file_name = po.get("output",file_name.substr(0,file_name.size()-7) + ".qc.txt");
@@ -134,7 +134,7 @@ int qc(program_option& po)
             float ndc_each;
             if(!check_src(file_name,output_each,ndc_each))
             {
-                std::cout << "cannot load file " << file_name << std::endl;
+                show_progress() << "cannot load file " << file_name << std::endl;
                 return 1;
             }
             for(size_t j = 0 ;j < output_each.size();++j)

@@ -66,19 +66,19 @@ bool load_nii(program_option& po,
     std::string error_msg;
     if(QFileInfo(file_name).baseName().toLower().contains("mni"))
     {
-        std::cout << QFileInfo(file_name).baseName().toStdString() <<
+        show_progress() << QFileInfo(file_name).baseName().toStdString() <<
                      " has mni in the file name. It will be loaded as an MNI space image" << std::endl;
     }
     if(!load_nii(handle,file_name.toStdString(),transform_lookup,regions,names,error_msg,QFileInfo(file_name).baseName().toLower().contains("mni")))
     {
-        std::cout << "ERROR:" << error_msg << std::endl;
+        show_progress() << "ERROR:" << error_msg << std::endl;
         return false;
     }
 
     // now perform actions
     for(int i = 1;i < str_list.size();++i)
     {
-        std::cout << str_list[i].toStdString() << " applied." << std::endl;
+        show_progress() << str_list[i].toStdString() << " applied." << std::endl;
         for(size_t j = 0;j < regions.size();++j)
             regions[j]->perform(str_list[i].toStdString());
     }
@@ -104,16 +104,16 @@ void get_filenames_from(const std::string name,std::vector<std::string>& filenam
             {
                 search_path = cur_file.substr(0,cur_file.find_last_of('/'));
                 std::string filter = cur_file.substr(cur_file.find_last_of('/')+1);
-                std::cout << "searching " << filter << " in directory " << search_path << std::endl;
+                show_progress() << "searching " << filter << " in directory " << search_path << std::endl;
                 new_list = QDir(search_path.c_str()).entryList(QStringList(filter.c_str()),QDir::Files);
                 search_path += "/";
             }
             else
             {
-                std::cout << "searching " << cur_file << std::endl;
+                show_progress() << "searching " << cur_file << std::endl;
                 new_list = QDir().entryList(QStringList(cur_file.c_str()),QDir::Files);
             }
-            std::cout << "found " << new_list.size() << " files." << std::endl;
+            show_progress() << "found " << new_list.size() << " files." << std::endl;
             for(int i = 0;i < new_list.size();++i)
                 file_list.push_back(search_path + new_list[i].toStdString());
         }
@@ -121,7 +121,7 @@ void get_filenames_from(const std::string name,std::vector<std::string>& filenam
             filenames.push_back(file_list[index]);
     }
     if(filenames.size() > file_list.size())
-        std::cout << "a total of " << filenames.size() << "files matching the search" << std::endl;
+        show_progress() << "a total of " << filenames.size() << "files matching the search" << std::endl;
 }
 
 int trk_post(program_option& po,std::shared_ptr<fib_data> handle,std::shared_ptr<TractModel> tract_model,std::string tract_file_name,bool output_track);
@@ -131,20 +131,20 @@ bool load_tracts(const char* file_name,std::shared_ptr<TractModel> tract_model,s
 {
     if(!std::filesystem::exists(file_name))
     {
-        std::cout << "ERROR:" << file_name << " does not exist. terminating..." << std::endl;
+        show_progress() << "ERROR:" << file_name << " does not exist. terminating..." << std::endl;
         return 1;
     }
     if(!tract_model->load_from_file(file_name))
     {
-        std::cout << "ERROR: cannot read or parse the tractography file :" << file_name << std::endl;
+        show_progress() << "ERROR: cannot read or parse the tractography file :" << file_name << std::endl;
         return false;
     }
-    std::cout << "A total of " << tract_model->get_visible_track_count() << " tracks loaded" << std::endl;
+    show_progress() << "A total of " << tract_model->get_visible_track_count() << " tracks loaded" << std::endl;
     if(!roi_mgr->report.empty())
     {
-        std::cout << "filtering tracts using roi/roa/end regions." << std::endl;
+        show_progress() << "filtering tracts using roi/roa/end regions." << std::endl;
         tract_model->filter_by_roi(roi_mgr);
-        std::cout << "remaining tract count:" << tract_model->get_visible_track_count() << std::endl;
+        show_progress() << "remaining tract count:" << tract_model->get_visible_track_count() << std::endl;
     }
     return true;
 }
@@ -171,7 +171,7 @@ int ana_region(program_option& po)
                 region_name += atlas_list[i]->get_list()[j];
                 if(!load_region(po,handle,*region.get(),region_name))
                 {
-                    std::cout << "fail to load the ROI file:" << region_name << std::endl;
+                    show_progress() << "fail to load the ROI file:" << region_name << std::endl;
                     return 1;
                 }
                 region_list.push_back(atlas_list[i]->get_list()[j]);
@@ -188,7 +188,7 @@ int ana_region(program_option& po)
             std::shared_ptr<ROIRegion> region(new ROIRegion(handle));
             if(!load_region(po,handle,*region.get(),roi_list[i].toStdString()))
             {
-                std::cout << "fail to load the ROI file." << std::endl;
+                show_progress() << "fail to load the ROI file." << std::endl;
                 return 1;
             }
             region_list.push_back(roi_list[i].toStdString());
@@ -206,7 +206,7 @@ int ana_region(program_option& po)
     }
     if(regions.empty())
     {
-        std::cout << "ERROR: no region assigned" << std::endl;
+        show_progress() << "ERROR: no region assigned" << std::endl;
         return 1;
     }
 
@@ -215,7 +215,7 @@ int ana_region(program_option& po)
         return 1;
 
     std::string result;
-    std::cout << "calculating region statistics at a total of " << regions.size() << " regions" << std::endl;
+    show_progress() << "calculating region statistics at a total of " << regions.size() << " regions" << std::endl;
     get_regions_statistics(handle,regions,region_list,result);
 
     std::string file_name(po.get("source"));
@@ -230,7 +230,7 @@ int ana_region(program_option& po)
         if(file_name.find(".txt") == std::string::npos)
             file_name += ".txt";
     }
-    std::cout << "export ROI statistics to file:" << file_name << std::endl;
+    show_progress() << "export ROI statistics to file:" << file_name << std::endl;
     std::ofstream out(file_name.c_str());
     out << result <<std::endl;
     return 0;
@@ -247,24 +247,24 @@ int ana_tract(program_option& po)
     get_filenames_from(po.get("tract"),tract_files);
     if(tract_files.size() == 0)
     {
-        std::cout << "No tract file assign to --tract" << std::endl;
+        show_progress() << "No tract file assign to --tract" << std::endl;
         return 1;
     }
 
     // accumulate multiple tracts into one probabilistic nifti volume
     if(tract_files.size() > 1 && QString(output.c_str()).endsWith(".nii.gz"))
     {
-        std::cout << "computing tract probability to " << output << std::endl;
+        show_progress() << "computing tract probability to " << output << std::endl;
         if(std::filesystem::exists(output))
         {
-            std::cout << "output file:" << output << " exists. terminating..." << std::endl;
+            show_progress() << "output file:" << output << " exists. terminating..." << std::endl;
             return 0;
         }
         auto dim = handle->dim;
         tipl::image<3,uint32_t> accumulate_map(dim);
         for(size_t i = 0;i < tract_files.size();++i)
         {
-            std::cout << "accumulating " << tract_files[i] << "..." <<std::endl;
+            show_progress() << "accumulating " << tract_files[i] << "..." <<std::endl;
             std::shared_ptr<TractModel> tract(new TractModel(handle));
             if(!load_tracts(tract_files[i].c_str(),tract,roi_mgr))
                 return 1;
@@ -283,10 +283,10 @@ int ana_tract(program_option& po)
         pdi *= 1.0f/float(tract_files.size());
         if(!gz_nifti::save_to_file(output.c_str(),pdi,handle->vs,handle->trans_to_mni,handle->is_qsdr))
         {
-            std::cout << "ERROR: cannot write to " << output << std::endl;
+            show_progress() << "ERROR: cannot write to " << output << std::endl;
             return 1;
         }
-        std::cout << "file saved at " << output << std::endl;
+        show_progress() << "file saved at " << output << std::endl;
         return 0;
     }
 
@@ -299,20 +299,20 @@ int ana_tract(program_option& po)
             return 1;
     }
 
-    std::cout << "a total of " << tract_files.size() << " tract file(s) loaded" << std::endl;
+    show_progress() << "a total of " << tract_files.size() << " tract file(s) loaded" << std::endl;
     // load multiple track files and save as one multi-cluster tract file
     if(tracts.size() > 1)
     {
         if(QString(output.c_str()).endsWith(".trk.gz") ||
            QString(output.c_str()).endsWith(".tt.gz"))
         {
-            std::cout << "save all tracts to " << output << std::endl;
+            show_progress() << "save all tracts to " << output << std::endl;
             if(!TractModel::save_all(output.c_str(),tracts,tract_files))
             {
-                std::cout << "ERROR: cannot write to " << output << std::endl;
+                show_progress() << "ERROR: cannot write to " << output << std::endl;
                 return 1;
             }
-            std::cout << "file saved at " << output << std::endl;
+            show_progress() << "file saved at " << output << std::endl;
             return 0;
         }
     }
@@ -347,6 +347,6 @@ int ana(program_option& po)
         out << "fiber coherence index\t" << result.first << std::endl;
         return 0;
     }
-    std::cout << "no tract file or ROI file assigned." << std::endl;
+    show_progress() << "no tract file or ROI file assigned." << std::endl;
     return 1;
 }

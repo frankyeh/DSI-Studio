@@ -14,7 +14,7 @@ int xnat(program_option& po)
             output = "data.txt";
         if(!QString(output.c_str()).endsWith(".txt"))
             output += ".txt";
-        std::cout << "writing output to " << output << std::endl;
+        show_progress() << "writing output to " << output << std::endl;
         xnat_connection.get_experiments_info(po.get("source","https://central.xnat.org/"),po.get("auth"));
     }
     else
@@ -23,10 +23,10 @@ int xnat(program_option& po)
             output = QDir::current().path().toStdString();
         if(!QFileInfo(output.c_str()).isDir())
         {
-            std::cout << "ERROR: please specify output directory using --output" << std::endl;
+            show_progress() << "ERROR: please specify output directory using --output" << std::endl;
             return 1;
         }
-        std::cout << "writing output to " << output << std::endl;
+        show_progress() << "writing output to " << output << std::endl;
         xnat_connection.get_scans_data(po.get("source","https://central.xnat.org/"),po.get("auth"),po.get("id"),output);
     }
 
@@ -35,18 +35,18 @@ int xnat(program_option& po)
 
     if (xnat_connection.has_error())
     {
-        std::cout << "ERROR: " << xnat_connection.error_msg << std::endl;
+        show_progress() << "ERROR: " << xnat_connection.error_msg << std::endl;
         return 1;
     }
 
     if(!po.has("id"))
     {
-        std::cout << "write experiment info to " << output << std::endl;
+        show_progress() << "write experiment info to " << output << std::endl;
         std::ofstream(output) << xnat_connection.result;
     }
     else
     {
-        std::cout << "data saved to " << output << std::endl;
+        show_progress() << "data saved to " << output << std::endl;
     }
     return 0;
 }
