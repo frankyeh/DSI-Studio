@@ -21,11 +21,13 @@
 
 void show_view(QGraphicsScene& scene,QImage I);
 void populate_templates(QComboBox* combo,size_t index);
+void move_current_dir_to(const std::string& file_name);
 bool reconstruction_window::load_src(int index)
 {
     handle = std::make_shared<ImageModel>();
     if (!handle->load_from_file(filenames[index].toLocal8Bit().begin()))
         return false;
+    move_current_dir_to(filenames[index].toStdString());
     progress prog("initiate interface");
     existing_steps = handle->voxel.steps;
     if(handle->voxel.is_histology)
