@@ -28,13 +28,14 @@ void progress::update_prog(bool show_now)
     if(!progressDialog.get())
     {
         progressDialog.reset(new QProgressDialog(get_status().c_str(),"Cancel",0,100));
-        progressDialog->raise();
+        progressDialog->setAttribute(Qt::WA_ShowWithoutActivating);
         progressDialog->activateWindow();
     }
     else
         progressDialog->setLabelText(get_status().c_str());
 
     progressDialog->show();
+    progressDialog->raise();
     QApplication::processEvents();
 }
 std::string progress::get_status(void)
@@ -42,9 +43,11 @@ std::string progress::get_status(void)
     std::string result;
     for(size_t i = 0;i < status_list.size();++i)
     {
+        if(status_list[i].empty())
+            continue;
         if(i)
             result += "\n";
-        result += status_list[i];
+        result += QStringList(status_list[i].c_str())[0].toStdString();
         if(i < at_list.size())
         {
             result += " ";
@@ -59,9 +62,9 @@ void progress::begin_prog(const char* status,bool show_now)
         return;
     status_list.push_back(status);
     process_time.resize(status_list.size());
+    process_time.back() = std::chrono::high_resolution_clock::now();
     t_last.resize(status_list.size());
     t_last.back() = std::chrono::high_resolution_clock::now()+std::chrono::milliseconds(200);
-    process_time.back() = std::chrono::high_resolution_clock::now();
     prog_aborted_ = false;
     update_prog(show_now);
 }
