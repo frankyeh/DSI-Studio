@@ -256,21 +256,22 @@ std::string ImageModel::check_b_table(void)
             result[i] = evaluate_fib(subject_geo,otsu,fib_fa,[&](uint32_t pos,uint8_t fib){return new_dir[fib][pos];}).first;
     }
     long best = long(std::max_element(result,result+24)-result);
+    show_progress sp;
     for(int i = 0;i < 24;++i)
     {
         if(i == best)
-            std::cout << (txt[i]+1) << "=BEST";
+            sp << (txt[i]+1) << "=BEST";
         else
-            std::cout << (txt[i]+1) << "=-" << int(100.0f*(result[best]-result[i])/(result[best]+1.0f)) << "%";
+            sp << (txt[i]+1) << "=-" << int(100.0f*(result[best]-result[i])/(result[best]+1.0f)) << "%";
         if(i % 8 == 7)
-            std::cout << std::endl;
+            sp << std::endl;
         else
-            std::cout << ",";
+            sp << ",";
     }
 
     if(result[best] > result[0])
     {
-        std::cout << "b-table corrected by " << txt[best] << " for " << file_name << std::endl;
+        sp << "b-table corrected by " << txt[best] << " for " << file_name << std::endl;
         flip_b_table(order[best]);
         voxel.load_from_src(*this);
         return txt[best];
@@ -470,7 +471,7 @@ bool ImageModel::command(std::string cmd,std::string param)
         return true;
     progress prog_(cmd.c_str());
     if(!param.empty())
-        std::cout << "param:" << param << std::endl;
+        show_progress() << "param:" << param << std::endl;
     if(cmd == "[Step T2][File][Save Src File]" || cmd == "[Step T2][File][Save 4D NIFTI]")
     {
         if(param.empty())
@@ -849,7 +850,7 @@ bool ImageModel::align_acpc(void)
         tipl::vector<3> vs;
         // resample template to resolution of vs[0]
         {
-            std::cout << "align ap-pc" << std::endl;
+            show_progress() << "align ap-pc" << std::endl;
             tipl::image<3> I_;
             if(!gz_nifti::load_from_file(iso_template_list[voxel.template_id].c_str(),I_,vs) && !
                     gz_nifti::load_from_file(fa_template_list[voxel.template_id].c_str(),I_,vs))
@@ -872,7 +873,7 @@ bool ImageModel::align_acpc(void)
         tipl::image<3> I2(I.shape());
         tipl::resample_mt<tipl::interpolation::cubic>(J,I2,T);
         float r = float(tipl::correlation(I.begin(),I.end(),I2.begin()));
-        std::cout << "R2 for ac-pc alignment:" << r*r << std::endl;
+        show_progress() << "R2 for ac-pc alignment:" << r*r << std::endl;
         progress::at(2,3);
         if(r*r < 0.4f)
         {
@@ -970,7 +971,7 @@ bool ImageModel::correct_motion(void)
 
             bool terminated = false;
             linear_with_mi(from,voxel.vs,to,voxel.vs,new_args[i],tipl::reg::rigid_body,terminated,tipl::reg::narrow_bound);
-            std::cout << "dwi (" << i+1 << "/" << src_bvalues.size() << ") = "
+            show_progress() << "dwi (" << i+1 << "/" << src_bvalues.size() << ") = "
                       << " shift=" << tipl::vector<3>(new_args[i].translocation)
                       << " rotation=" << tipl::vector<3>(new_args[i].rotation) << std::endl;
 
@@ -999,7 +1000,7 @@ void ImageModel::crop(tipl::shape<3> range_min,tipl::shape<3> range_max)
 {
     progress prog_("Removing background region");
     size_t prog = 0;
-    std::cout << "from:" << range_min << " to:" << range_max << std::endl;
+    show_progress() << "from:" << range_min << " to:" << range_max << std::endl;
     tipl::par_for(src_dwi_data.size(),[&](unsigned int index)
     {
         progress::at(prog++,src_dwi_data.size());
@@ -1202,7 +1203,7 @@ tipl::vector<3> phase_direction_at_AP_PA(const tipl::image<3>& v1,const tipl::im
     tipl::project_y(v2,py2);
     c[0] = float(tipl::correlation(px1.begin(),px1.end(),px2.begin()));
     c[1] = float(tipl::correlation(py1.begin(),py1.end(),py2.begin()));
-    std::cout << "projected correction:" << c << std::endl;
+    show_progress() << "projected correction:" << c << std::endl;
     return c;
 }
 
@@ -1303,7 +1304,7 @@ bool ImageModel::run_plugin(std::string exec_name,
         if(index != -1)
         {
             std::string fsl_path = QProcess::systemEnvironment()[index].split("=")[1].toStdString();
-            std::cout << "FSL installation found at " << fsl_path << std::endl;
+            show_progress() << "FSL installation found at " << fsl_path << std::endl;
             exec = fsl_path + "/bin/" + exec_name;
             if(exec_name == "eddy" && !std::filesystem::exists(exec))
                 exec = fsl_path + "/bin/eddy_openmp";
@@ -1333,11 +1334,11 @@ bool ImageModel::run_plugin(std::string exec_name,
     QProcess program;
     program.setEnvironment(program.environment() << "FSLOUTPUTTYPE=NIFTI_GZ");
     program.setWorkingDirectory(working_dir.c_str());
-    std::cout << "run " << exec << " at " << working_dir << " with" << std::endl;
+    show_progress() << "run " << exec << " at " << working_dir << " with" << std::endl;
     QStringList p;
     for(auto s:param)
     {
-        std::cout << s << std::endl;
+        show_progress() << s << std::endl;
         p << s.c_str();
     }
     program.start(exec.c_str(),p);
@@ -1374,7 +1375,7 @@ bool ImageModel::run_plugin(std::string exec_name,
         QStringList output_lines = output.remove('\r').split('\n');
         output_lines.removeAll("");
         for(int i = 0;i+1 < output_lines.size();++i)
-            std::cout << output_lines[i].toStdString() << std::endl;
+            show_progress() << output_lines[i].toStdString() << std::endl;
         progress::show(output_lines.back().toStdString().c_str());
         if(keyword_seen >= total_keyword_count)
             ++total_keyword_count;
@@ -1386,14 +1387,14 @@ bool ImageModel::run_plugin(std::string exec_name,
         error_msg = "process aborted";
         return false;
     }
-    std::cout << "completed." << std::endl;
+    show_progress() << "completed." << std::endl;
     error_msg = QString::fromLocal8Bit(program.readAllStandardError()).toStdString();
     return error_msg.empty();
 }
 
 void ImageModel::get_volume_range(size_t dim,int extra_space)
 {
-    std::cout << "get the bounding box for speeding up topup/eddy" << std::endl;
+    show_progress() << "get the bounding box for speeding up topup/eddy" << std::endl;
     auto temp_mask = voxel.mask;
     if(rev_pe_src.get())
         temp_mask += rev_pe_src->voxel.mask;
@@ -1440,8 +1441,8 @@ bool ImageModel::generate_topup_b0_acq_files(tipl::image<3>& b0,
         c1 = tipl::center_of_mass(mb0);
         c2 = tipl::center_of_mass(rev_mb0);
     }
-    std::cout << "source com:" << c1 << std::endl;
-    std::cout << "rev pe com:" << c2 << std::endl;
+    show_progress() << "source com:" << c1 << std::endl;
+    show_progress() << "rev pe com:" << c2 << std::endl;
     bool phase_dir = c1[phase_dim] > c2[phase_dim];
     std::string acqstr,pe_id;
     if(is_appa)
@@ -1472,18 +1473,18 @@ bool ImageModel::generate_topup_b0_acq_files(tipl::image<3>& b0,
     }
 
 
-    std::cout << "source and reverse phase encoding: " << pe_id << std::endl;
+    show_progress() << "source and reverse phase encoding: " << pe_id << std::endl;
 
     {
         std::string acqparam_file = QFileInfo(file_name.c_str()).baseName().toStdString() + ".topup.acqparams.txt";
-        std::cout << "create acq params at " << acqparam_file << std::endl;
+        show_progress() << "create acq params at " << acqparam_file << std::endl;
         std::ofstream out(acqparam_file.c_str());
         if(!out)
         {
-            std::cout << "cannot write to acq param file " << acqparam_file << std::endl;
+            show_progress() << "cannot write to acq param file " << acqparam_file << std::endl;
             return false;
         }
-        std::cout << acqstr << std::flush;
+        show_progress() << acqstr << std::flush;
         out << acqstr << std::flush;
         out.close();
     }
@@ -1503,7 +1504,7 @@ bool ImageModel::generate_topup_b0_acq_files(tipl::image<3>& b0,
     }
 
     {
-        std::cout << "create topup needed b0 nii.gz file from " << pe_id << " b0" << std::endl;
+        show_progress() << "create topup needed b0 nii.gz file from " << pe_id << " b0" << std::endl;
         tipl::matrix<4,4> trans;
         initial_LPS_nifti_srow(trans,b0.shape(),voxel.vs);
 
@@ -1517,7 +1518,7 @@ bool ImageModel::generate_topup_b0_acq_files(tipl::image<3>& b0,
         b0_appa_file = QFileInfo(file_name.c_str()).baseName().toStdString() + ".topup." + pe_id + ".nii.gz";
         if(!gz_nifti::save_to_file(b0_appa_file.c_str(),buffer,voxel.vs,trans))
         {
-            std::cout << "Cannot wrtie a temporary b0_appa image volume to " << b0_appa_file << std::endl;
+            show_progress() << "Cannot wrtie a temporary b0_appa image volume to " << b0_appa_file << std::endl;
             return false;
         }
     }
@@ -1543,7 +1544,7 @@ bool ImageModel::load_topup_eddy_result(void)
 
     if(is_eddy)
     {
-        std::cout << "update b-table from eddy output" << std::endl;
+        show_progress() << "update b-table from eddy output" << std::endl;
         std::vector<double> bval,bvec;
         if(!load_bval(bval_file.c_str(),bval) || !load_bvec(bvec_file.c_str(),bvec))
         {
@@ -1560,7 +1561,7 @@ bool ImageModel::load_topup_eddy_result(void)
             src_bvectors[i][2] = float(bvec[index+2]);
         }
     }
-    std::cout << "load topup/eddy results" << std::endl;
+    show_progress() << "load topup/eddy results" << std::endl;
     std::vector<std::shared_ptr<DwiHeader> > dwi_files;
     if(!load_4d_nii(corrected_file.c_str(),dwi_files,false))
     {
@@ -1715,7 +1716,7 @@ bool ImageModel::run_eddy(std::string exec)
     progress::show("eddy");
     if(std::filesystem::exists(file_name+".corrected.nii.gz"))
     {
-        std::cout << "load previous results from " << file_name << ".corrected.nii.gz" <<std::endl;
+        show_progress() << "load previous results from " << file_name << ".corrected.nii.gz" <<std::endl;
         if(load_topup_eddy_result())
             return true;
         else
@@ -1742,7 +1743,7 @@ bool ImageModel::run_eddy(std::string exec)
     bool has_topup = std::filesystem::exists(topup_result+"_fieldcoef.nii.gz");
     if(!has_topup)
     {
-        std::cout << "eddy without topup" << std::endl;
+        show_progress() << "eddy without topup" << std::endl;
         get_volume_range();
         std::ofstream out(acqparam_file);
         out << "0 -1 0 0.05" << std::endl;
@@ -1808,7 +1809,7 @@ bool ImageModel::run_eddy(std::string exec)
 
     if(!run_plugin("eddy","model",16,param,QFileInfo(file_name.c_str()).absolutePath().toStdString(),exec))
     {
-        std::cout << "eddy cannot process this data:" << error_msg << std::endl;
+        show_progress() << "eddy cannot process this data:" << error_msg << std::endl;
         if(!has_topup)
             return false;
         return run_applytopup();
@@ -1831,17 +1832,17 @@ bool ImageModel::run_topup_eddy(const std::string& other_src)
     progress::show("topup/eddy",true);
     if(std::filesystem::exists(file_name+".corrected.nii.gz"))
     {
-        std::cout << "load previous results from " << file_name << ".corrected.nii.gz" <<std::endl;
+        show_progress() << "load previous results from " << file_name << ".corrected.nii.gz" <<std::endl;
         if(load_topup_eddy_result())
             return true;
-        std::cout << error_msg << std::endl;
+        show_progress() << error_msg << std::endl;
         if(!std::filesystem::exists(other_src))
         {
             error_msg = "failed to load previous results. please re-run correction again.";
             std::filesystem::remove(file_name+".corrected.nii.gz");
             return false;
         }
-        std::cout << "run correction from scratch with " << other_src << std::endl;
+        show_progress() << "run correction from scratch with " << other_src << std::endl;
     }
     // run topup
     {
@@ -1876,13 +1877,13 @@ bool ImageModel::run_topup_eddy(const std::string& other_src)
 
     if(!eddy_check_shell(src_bvalues))
     {
-        std::cout << "Eddy cannot be applied to this dataset. Run topup/applytopup only." << std::endl;
+        show_progress() << "Eddy cannot be applied to this dataset. Run topup/applytopup only." << std::endl;
         if(!run_applytopup())
             return false;
     }
     else
     {
-        std::cout << "Run topup/eddy for shell data" << std::endl;
+        show_progress() << "Run topup/eddy for shell data" << std::endl;
         if(!run_eddy())
             return false;
     }
@@ -1896,7 +1897,7 @@ bool ImageModel::preprocessing(void)
         return true;
 
     std::map<float,std::string,std::greater<float> > candidates;
-    std::cout << "searching for opposite direction scans.." << std::endl;
+    show_progress() << "searching for opposite direction scans.." << std::endl;
     {
         tipl::image<3> b0;
         read_b0(b0);
@@ -1905,19 +1906,19 @@ bool ImageModel::preprocessing(void)
         for(QString file : nii_files)
         {
             std::string path = (QFileInfo(file_name.c_str()).absolutePath() + "/" + file).toStdString();
-            std::cout << "checking " << path << std::endl;
+            show_progress() << "checking " << path << std::endl;
             gz_nifti nii;
             if(!nii.load_from_file(path.c_str()))
                 continue;
             if(nii.dim(4) != 1 || nii.width()*nii.height()*nii.depth() != dwi.size())
                 continue;
-            std::cout << "candidate found. checking correlations..." << std::endl;
+            show_progress() << "candidate found. checking correlations..." << std::endl;
             tipl::image<3> b0_op;
             if(!(nii >> b0_op))
                 continue;
             auto c = phase_direction_at_AP_PA(b0,b0_op);
             if(c[0] + c[1] < 1.8f) // 0.9 + 0.9
-                std::cout << "correlation with b0 is low. skipping..." << std::endl;
+                show_progress() << "correlation with b0 is low. skipping..." << std::endl;
             else
                 candidates[std::fabs(c[0]-c[1])] = path;
         }
@@ -1928,7 +1929,7 @@ bool ImageModel::preprocessing(void)
     // load previous run results
     if(std::filesystem::exists(new_file_name))
     {
-        std::cout << "found previous corrected result at " << new_file_name << " loading..." << std::endl;
+        show_progress() << "found previous corrected result at " << new_file_name << " loading..." << std::endl;
         progress prog_("read SRC file");
         gz_mat_read new_reader;
         mat_reader.swap(new_reader);
@@ -1937,12 +1938,12 @@ bool ImageModel::preprocessing(void)
 
     if(!candidates.empty())
     {
-        std::cout << "apply topup using " << candidates.begin()->second << std::endl;
+        show_progress() << "apply topup using " << candidates.begin()->second << std::endl;
         if(!run_topup_eddy(candidates.begin()->second))
             return false;
     }
     else
-        std::cout << "no opposite phase encoding direction found. apply motion correction." <<std::endl;
+        show_progress() << "no opposite phase encoding direction found. apply motion correction." <<std::endl;
 
     if(voxel.report.find(" eddy ") == std::string::npos) // if FSL eddy not applied
     {
@@ -2168,13 +2169,14 @@ void save_idx(const char* file_name,std::shared_ptr<gz_istream> in)
     idx_name += ".idx";
     if(in->has_access_points() && in->sample_access_point && !std::filesystem::exists(idx_name))
     {
-        std::cout << "saving index file for accelerated loading: " << idx_name << std::endl;
+        show_progress() << "saving index file for accelerated loading: " << idx_name << std::endl;
         in->save_index(idx_name.c_str());
     }
 }
 size_t match_volume(float volume);
 bool ImageModel::load_from_file(const char* dwi_file_name)
 {
+    progress p("open ",dwi_file_name);
     if(voxel.steps.empty())
     {
         voxel.steps = "[Step T2][Reconstruction] open ";
@@ -2251,7 +2253,9 @@ bool ImageModel::load_from_file(const char* dwi_file_name)
             tipl::morphology::erosion(slice);
         }
         tipl::morphology::defragment(voxel.mask);
-        std::cout << "image file loaded" << std::endl;
+        show_progress() << "image file loaded" << std::endl;
+        show_progress() << "change current directory to " << std::filesystem::path(file_name).parent_path() << std::endl;
+        std::filesystem::current_path(std::filesystem::path(file_name).parent_path());
         return true;
     }
     if(QString(dwi_file_name).toLower().endsWith(".nii.gz"))
@@ -2281,7 +2285,9 @@ bool ImageModel::load_from_file(const char* dwi_file_name)
 
         get_report(voxel.report);
         calculate_dwi_sum(true);
-        std::cout << "NIFTI file loaded" << std::endl;
+        show_progress() << "NIFTI file loaded" << std::endl;
+        show_progress() << "change current directory to " << std::filesystem::path(file_name).parent_path() << std::endl;
+        std::filesystem::current_path(std::filesystem::path(file_name).parent_path());
         return true;
     }
     else
@@ -2410,6 +2416,8 @@ bool ImageModel::load_from_file(const char* dwi_file_name)
         voxel.template_id = match_volume(std::count_if(voxel.mask.begin(),voxel.mask.end(),[](unsigned char v){return v > 0;})*
                                    2.0f*voxel.vs[0]*voxel.vs[1]*voxel.vs[2]);
     progress::show("SRC file loaded");
+    show_progress() << "change current directory to " << std::filesystem::path(file_name).parent_path() << std::endl;
+    std::filesystem::current_path(std::filesystem::path(file_name).parent_path());
     return true;
 }
 
@@ -2444,8 +2452,8 @@ bool ImageModel::save_fib(const std::string& output_name)
 void initial_LPS_nifti_srow(tipl::matrix<4,4>& T,const tipl::shape<3>& geo,const tipl::vector<3>& vs);
 bool ImageModel::save_nii_for_applytopup_or_eddy(bool include_rev) const
 {
-    std::cout << "create trimmed volume for " << (include_rev ? "eddy":"applytopup") << std::endl;
-    std::cout << "range: " << topup_from << " to " << topup_to << std::endl;
+    show_progress() << "create trimmed volume for " << (include_rev ? "eddy":"applytopup") << std::endl;
+    show_progress() << "range: " << topup_from << " to " << topup_to << std::endl;
     tipl::image<4,unsigned short> buffer(tipl::shape<4>(topup_to[0]-topup_from[0],topup_to[1]-topup_from[1],topup_to[2]-topup_from[2],
                                          uint32_t(src_bvalues.size()) + uint32_t(rev_pe_src.get() && include_rev ? rev_pe_src->src_bvalues.size():0)));
     if(buffer.empty())
