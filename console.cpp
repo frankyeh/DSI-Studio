@@ -5,6 +5,7 @@
 #include "ui_console.h"
 #include "program_option.hpp"
 #include "TIPL/tipl.hpp"
+#include "prog_interface_static_link.h"
 
 console_stream console;
 
@@ -74,6 +75,18 @@ int ren(program_option& po);
 int atk(program_option& po);
 int reg(program_option& po);
 int xnat(program_option& po);
+
+void move_current_dir_to(const std::string& file_name)
+{
+    auto dir = std::filesystem::path(file_name).parent_path();
+    if(dir.empty())
+    {
+        show_progress() << "current directory is " << std::filesystem::current_path() << std::endl;
+        return;
+    }
+    show_progress() << "change current directory to " << dir << std::endl;
+    std::filesystem::current_path(dir);
+}
 void Console::on_run_cmd_clicked()
 {
     program_option po;
@@ -87,8 +100,8 @@ void Console::on_run_cmd_clicked()
         std::cout << "invalid command, use --help for more detail" << std::endl;
         return;
     }
-    std::cout << "change current directory to " << std::filesystem::path(po.get("source")).parent_path() << std::endl;
-    std::filesystem::current_path(std::filesystem::path(po.get("source")).parent_path());
+    progress prog("run action ",po.get("action").c_str());
+    move_current_dir_to(po.get("source"));
     if(po.get("action") == std::string("rec"))
         rec(po);
     if(po.get("action") == std::string("trk"))
