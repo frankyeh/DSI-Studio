@@ -388,8 +388,7 @@ std::shared_ptr<fib_data> cmd_load_fib(const std::string file_name)
     }
     if (!handle->load_from_file(file_name.c_str()))
     {
-        show_progress() << "open file " << file_name << " failed" << std::endl;
-        show_progress() << "msg:" << handle->error_msg << std::endl;
+        show_progress() << "ERROR:" << handle->error_msg << std::endl;
         return std::shared_ptr<fib_data>();
     }
     return handle;
@@ -471,6 +470,7 @@ int trk_post(program_option& po,
              std::shared_ptr<TractModel> tract_model,
              std::string tract_file_name,bool output_track)
 {
+    progress prog("post-tracking analysis");
     if(tract_model->get_visible_track_count() == 0)
     {
         show_progress() << "No tract generated for further processing" << std::endl;
@@ -662,111 +662,125 @@ int trk(program_option& po,std::shared_ptr<fib_data> handle)
 
 
     ThreadData tracking_thread(handle);
-    tracking_thread.param.default_otsu = po.get("otsu_threshold",0.6f);
-    tracking_thread.param.threshold = po.get("fa_threshold",0.0f);
-    tracking_thread.param.dt_threshold = po.get("dt_threshold",0.2f);
-    tracking_thread.param.cull_cos_angle = float(std::cos(po.get("turning_angle",0.0)*3.14159265358979323846/180.0));
-    tracking_thread.param.step_size = po.get("step_size",0.0f);
-    tracking_thread.param.smooth_fraction = po.get("smoothing",0.0f);
-    tracking_thread.param.min_length = po.get("min_length",30.0f);
-    tracking_thread.param.max_length = std::max<float>(tracking_thread.param.min_length,po.get("max_length",300.0f));
 
-    tracking_thread.param.tracking_method = uint8_t(po.get("method",int(0)));
-    tracking_thread.param.initial_direction  = uint8_t(po.get("initial_dir",int(0)));
-    tracking_thread.param.check_ending = uint8_t(po.get("check_ending",int(0))) && !(po.has("dt_threshold_index"));
-    tracking_thread.param.tip_iteration = uint8_t(po.get("tip_iteration",
+    {
+        progress prog("tracking parameters:");
+        tracking_thread.param.default_otsu = po.get("otsu_threshold",0.6f);
+        tracking_thread.param.threshold = po.get("fa_threshold",0.0f);
+        tracking_thread.param.dt_threshold = po.get("dt_threshold",0.2f);
+        tracking_thread.param.cull_cos_angle = float(std::cos(po.get("turning_angle",0.0)*3.14159265358979323846/180.0));
+        tracking_thread.param.step_size = po.get("step_size",0.0f);
+        tracking_thread.param.smooth_fraction = po.get("smoothing",0.0f);
+        tracking_thread.param.min_length = po.get("min_length",30.0f);
+        tracking_thread.param.max_length = std::max<float>(tracking_thread.param.min_length,po.get("max_length",300.0f));
+
+        tracking_thread.param.tracking_method = uint8_t(po.get("method",int(0)));
+        tracking_thread.param.initial_direction  = uint8_t(po.get("initial_dir",int(0)));
+        tracking_thread.param.check_ending = uint8_t(po.get("check_ending",int(0))) && !(po.has("dt_threshold_index"));
+        tracking_thread.param.tip_iteration = uint8_t(po.get("tip_iteration",
                                                   (po.has("track_id") | po.has("dt_threshold_index") ) ? 16 : 0));
 
-    if (po.has("fiber_count"))
-    {
-        tracking_thread.param.termination_count = po.get("fiber_count",uint32_t(tracking_thread.param.termination_count));
-        tracking_thread.param.stop_by_tract = 1;
-        tracking_thread.param.max_seed_count = po.get("seed_count",uint32_t(0));
-    }
-    else
-    {
-        if (po.has("seed_count"))
-            tracking_thread.param.termination_count = po.get("seed_count",uint32_t(tracking_thread.param.termination_count));
-        tracking_thread.param.stop_by_tract = 0;
+        if (po.has("fiber_count"))
+        {
+            tracking_thread.param.termination_count = po.get("fiber_count",uint32_t(tracking_thread.param.termination_count));
+            tracking_thread.param.stop_by_tract = 1;
+            tracking_thread.param.max_seed_count = po.get("seed_count",uint32_t(0));
+        }
+        else
+        {
+            if (po.has("seed_count"))
+                tracking_thread.param.termination_count = po.get("seed_count",uint32_t(tracking_thread.param.termination_count));
+            tracking_thread.param.stop_by_tract = 0;
+        }
+
+        if(po.has("parameter_id"))
+            tracking_thread.param.set_code(po.get("parameter_id"));
     }
 
-    if(po.has("parameter_id"))
-        tracking_thread.param.set_code(po.get("parameter_id"));
-
-    if(!load_roi(po,handle,tracking_thread.roi_mgr))
-        return 1;
-
-    if (tracking_thread.roi_mgr->seeds.empty())
     {
-        tracking_thread.roi_mgr->setWholeBrainSeed(
-                    tracking_thread.param.threshold == 0.0f ?
-                        otsu*tracking_thread.param.default_otsu:tracking_thread.param.threshold);
+        progress prog("setting up regions");
+        if(!load_roi(po,handle,tracking_thread.roi_mgr))
+            return 1;
+
+        if (tracking_thread.roi_mgr->seeds.empty())
+        {
+            tracking_thread.roi_mgr->setWholeBrainSeed(
+                        tracking_thread.param.threshold == 0.0f ?
+                            otsu*tracking_thread.param.default_otsu:tracking_thread.param.threshold);
+        }
     }
+
     std::shared_ptr<TractModel> tract_model(new TractModel(handle));
-    show_progress() << "start tracking." << std::endl;
-    tracking_thread.run(uint32_t(po.get("thread_count",int(std::thread::hardware_concurrency()))),true);
-    tract_model->report += tracking_thread.report.str();
-
-    tracking_thread.fetchTracks(tract_model.get());
-    show_progress() << "finished tracking." << std::endl;
-
-    if(po.has("report"))
     {
-        std::ofstream out(po.get("report").c_str());
-        out << tract_model->report;
+        progress prog("start fiber tracking");
+        tracking_thread.run(uint32_t(po.get("thread_count",int(std::thread::hardware_concurrency()))),true);
+        tract_model->report += tracking_thread.report.str();
+        if(po.has("report"))
+        {
+            std::ofstream out(po.get("report").c_str());
+            out << tract_model->report;
+        }
+
+        tracking_thread.fetchTracks(tract_model.get());
     }
 
-    if(tract_model->get_visible_track_count() && po.has("refine") && (po.get("refine",1) >= 1))
+
     {
-        for(int i = 0;i < po.get("refine",1);++i)
-            tract_model->trim();
-        show_progress() << "refine tracking result..." << std::endl;
-        show_progress() << "convert tracks to seed regions" << std::endl;
-        tracking_thread.roi_mgr->seeds.clear();
-        std::vector<tipl::vector<3,short> > points;
-        tract_model->to_voxel(points);
-        tract_model->clear();
-        tracking_thread.roi_mgr->setRegions(points,3/*seed*/,"refine seeding region");
+        progress prog("post-tracking processing");
+
+        if(tract_model->get_visible_track_count() && po.has("refine") && (po.get("refine",1) >= 1))
+        {
+            for(int i = 0;i < po.get("refine",1);++i)
+                tract_model->trim();
+            show_progress() << "refine tracking result..." << std::endl;
+            show_progress() << "convert tracks to seed regions" << std::endl;
+            tracking_thread.roi_mgr->seeds.clear();
+            std::vector<tipl::vector<3,short> > points;
+            tract_model->to_voxel(points);
+            tract_model->clear();
+            tracking_thread.roi_mgr->setRegions(points,3/*seed*/,"refine seeding region");
 
 
-        show_progress() << "restart tracking..." << std::endl;
-        tracking_thread.run(po.get("thread_count",uint32_t(std::thread::hardware_concurrency())),true);
-        tracking_thread.fetchTracks(tract_model.get());
-        show_progress() << "finished tracking." << std::endl;
+            show_progress() << "restart tracking..." << std::endl;
+            tracking_thread.run(po.get("thread_count",uint32_t(std::thread::hardware_concurrency())),true);
+            tracking_thread.fetchTracks(tract_model.get());
+            show_progress() << "finished tracking." << std::endl;
+
+            if(tract_model->get_visible_track_count() == 0)
+            {
+                show_progress() << "no tract generated. Terminating..." << std::endl;
+                return 0;
+            }
+        }
+        show_progress() << tract_model->get_visible_track_count() << " tracts are generated using " << tracking_thread.get_total_seed_count() << " seeds."<< std::endl;
+        tracking_thread.apply_tip(tract_model.get());
+        show_progress() << tract_model->get_deleted_track_count() << " tracts are removed by pruning." << std::endl;
+
 
         if(tract_model->get_visible_track_count() == 0)
         {
-            show_progress() << "no tract generated. Terminating..." << std::endl;
+            show_progress() << "no tract to process. Terminating..." << std::endl;
             return 0;
         }
-    }
-    show_progress() << tract_model->get_visible_track_count() << " tracts are generated using " << tracking_thread.get_total_seed_count() << " seeds."<< std::endl;
-    tracking_thread.apply_tip(tract_model.get());
-    show_progress() << tract_model->get_deleted_track_count() << " tracts are removed by pruning." << std::endl;
+        show_progress() << "The final analysis results in " << tract_model->get_visible_track_count() << " tracts." << std::endl;
 
 
-    if(tract_model->get_visible_track_count() == 0)
-    {
-        show_progress() << "no tract to process. Terminating..." << std::endl;
-        return 0;
+        if (po.has("delete_repeat"))
+        {
+            show_progress() << "deleting repeat tracks..." << std::endl;
+            float distance = po.get("delete_repeat",float(1));
+            tract_model->delete_repeated(distance);
+            show_progress() << "repeat tracks with distance smaller than " << distance <<" voxel distance are deleted" << std::endl;
+        }
+        if(po.has("trim"))
+        {
+            show_progress() << "trimming tracks..." << std::endl;
+            int trim = po.get("trim",int(1));
+            for(int i = 0;i < trim;++i)
+                tract_model->trim();
+        }
     }
-    show_progress() << "The final analysis results in " << tract_model->get_visible_track_count() << " tracts." << std::endl;
 
-
-    if (po.has("delete_repeat"))
-    {
-        show_progress() << "deleting repeat tracks..." << std::endl;
-        float distance = po.get("delete_repeat",float(1));
-        tract_model->delete_repeated(distance);
-        show_progress() << "repeat tracks with distance smaller than " << distance <<" voxel distance are deleted" << std::endl;
-    }
-    if(po.has("trim"))
-    {
-        show_progress() << "trimming tracks..." << std::endl;
-        int trim = po.get("trim",int(1));
-        for(int i = 0;i < trim;++i)
-            tract_model->trim();
-    }
 
     std::string tract_file_name = po.get("source")+".tt.gz";
     bool output_track = true;

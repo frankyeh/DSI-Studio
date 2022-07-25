@@ -16,16 +16,8 @@ int cnt(program_option& po)
         return 1;
     }
 
-    if(!po.has("demo"))
-    {
-        show_progress() << "please assign --demo" << std::endl;
+    if(!po.check("demo") || !po.has("voi") || !po.has("variable_list"))
         return 1;
-    }
-    if(!po.has("voi") || !po.has("variable_list"))
-    {
-        show_progress() << "please assign --voi and --variable_list" << std::endl;
-        return 1;
-    }
 
     // read demographic file
     auto& db = vbc->handle->db;
@@ -104,8 +96,9 @@ int cnt(program_option& po)
     }
 
 
-    // setup parameters
+
     {
+        progress prog("connectometry parameters:");
         vbc->no_tractogram = (po.get("no_tractogram",1) == 1);
         vbc->normalize_qa = po.get("normalize_qa",(db.index_name == "sdf" || db.index_name == "qa") ? 1:0);
         vbc->foi_str = foi_str;
@@ -113,20 +106,18 @@ int cnt(program_option& po)
         vbc->tip = po.get("tip",uint32_t(4));
         vbc->fdr_threshold = po.get("fdr_threshold",0.0f);
         vbc->tracking_threshold = po.get("t_threshold",2.5f);
-    }
 
-    // select cohort and feature
-    vbc->model.reset(new stat_model);
-    vbc->model->read_demo(db);
-    vbc->model->nonparametric = po.get("nonparametric",1);
-    if(!vbc->model->select_cohort(db,po.get("select")) || !vbc->model->select_feature(db,vbc->foi_str))
-    {
-        show_progress() << "ERROR:" << vbc->model->error_msg.c_str() << std::endl;
-        return 1;
-    }
+        // select cohort and feature
+        vbc->model.reset(new stat_model);
+        vbc->model->read_demo(db);
+        vbc->model->nonparametric = po.get("nonparametric",1);
+        if(!vbc->model->select_cohort(db,po.get("select")) || !vbc->model->select_feature(db,vbc->foi_str))
+        {
+            show_progress() << "ERROR:" << vbc->model->error_msg.c_str() << std::endl;
+            return 1;
+        }
 
-    // setup roi
-    {
+        // setup roi
         vbc->roi_mgr = std::make_shared<RoiMgr>(vbc->handle);
         if(po.get("exclude_cb",1))
             vbc->exclude_cerebellum();
@@ -137,13 +128,17 @@ int cnt(program_option& po)
         // if no seed assigned, assign whole brain
         if(vbc->roi_mgr->seeds.empty())
             vbc->roi_mgr->setWholeBrainSeed(vbc->fiber_threshold);
+
     }
 
-    show_progress() << "running connectometry" << std::endl;
-    vbc->output_file_name = po.get("output",po.get("demo")+"."+vbc->get_file_post_fix());
-    vbc->run_permutation(std::thread::hardware_concurrency(),po.get("permutation",uint32_t(2000)));
-    vbc->wait();
-    show_progress() << "analysis completed" << std::endl;
+
+
+    {
+        progress prog("running connectometry");
+        vbc->output_file_name = po.get("output",po.get("demo")+"."+vbc->get_file_post_fix());
+        vbc->run_permutation(std::thread::hardware_concurrency(),po.get("permutation",uint32_t(2000)));
+        vbc->wait();
+    }
 
     if(vbc->pos_corr_track->get_visible_track_count() ||
             vbc->neg_corr_track->get_visible_track_count())

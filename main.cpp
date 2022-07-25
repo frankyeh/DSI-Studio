@@ -264,11 +264,8 @@ int run_cmd(int ac, char *av[])
             show_progress() << po.error_msg << std::endl;
             return 1;
         }
-        if (!po.has("action"))
-        {
-            show_progress() << "invalid command, use --help for more detail" << std::endl;
+        if (!po.check("action"))
             return 1;
-        }
 
         std::string source = po.get("source");
         std::string action = po.get("action");

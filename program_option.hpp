@@ -95,6 +95,16 @@ public:
         return true;
     }
 
+    bool check(const char* name)
+    {
+        if(!has(name))
+        {
+            show_progress() << "please specify --" << name << std::endl;
+            return false;
+        }
+        return true;
+    }
+
     bool has(const char* name)
     {
         std::string str_name(name);
