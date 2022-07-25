@@ -23,10 +23,10 @@ void show_view(QGraphicsScene& scene,QImage I);
 void populate_templates(QComboBox* combo,size_t index);
 bool reconstruction_window::load_src(int index)
 {
-    progress prog("read SRC file");
     handle = std::make_shared<ImageModel>();
     if (!handle->load_from_file(filenames[index].toLocal8Bit().begin()))
         return false;
+    progress prog("initiate interface");
     existing_steps = handle->voxel.steps;
     if(handle->voxel.is_histology)
         return true;
