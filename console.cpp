@@ -97,7 +97,7 @@ void Console::on_run_cmd_clicked()
     }
     if (!po.has("action"))
     {
-        std::cout << "invalid command, use --help for more detail" << std::endl;
+        std::cout << "ERROR: invalid command, use --help for more detail" << std::endl;
         return;
     }
     progress prog("run action ",po.get("action").c_str());
