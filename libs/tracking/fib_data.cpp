@@ -531,6 +531,7 @@ bool read_fib_mat_with_idx(const char* file_name,gz_mat_read& mat_reader)
 }
 bool fib_data::load_from_file(const char* file_name)
 {
+    progress p("open ",file_name);
     tipl::image<3> I;
     gz_nifti header;
     fib_file_name = file_name;
@@ -576,6 +577,8 @@ bool fib_data::load_from_file(const char* file_name)
             view_item.push_back(item("fiber",dir.fa[0],dim));
             match_template();
             show_progress() << "NIFTI file loaded" << std::endl;
+            show_progress() << "change current directory to " << std::filesystem::path(fib_file_name).parent_path() << std::endl;
+            std::filesystem::current_path(std::filesystem::path(fib_file_name).parent_path());
             return true;
         }
         else
@@ -625,6 +628,8 @@ bool fib_data::load_from_file(const char* file_name)
             view_item.push_back(item("fiber",dir.fa[0],dim));
             match_template();
             show_progress() << "NIFTI file loaded" << std::endl;
+            show_progress() << "change current directory to " << std::filesystem::path(fib_file_name).parent_path() << std::endl;
+            std::filesystem::current_path(std::filesystem::path(fib_file_name).parent_path());
             return true;
         }
         else
@@ -673,6 +678,8 @@ bool fib_data::load_from_file(const char* file_name)
         view_item[0].name = "image";
         trackable = false;
         show_progress() << "image file loaded" << std::endl;
+        show_progress() << "change current directory to " << std::filesystem::path(fib_file_name).parent_path() << std::endl;
+        std::filesystem::current_path(std::filesystem::path(fib_file_name).parent_path());
         return true;
     }
     if(!QFileInfo(file_name).exists())
@@ -858,6 +865,8 @@ bool fib_data::load_from_file(const char* file_name)
     if(!load_from_mat())
         return false;
     show_progress() << "FIB file loaded" << std::endl;
+    show_progress() << "change current directory to " << std::filesystem::path(fib_file_name).parent_path() << std::endl;
+    std::filesystem::current_path(std::filesystem::path(fib_file_name).parent_path());
     return true;
 }
 bool fib_data::save_mapping(const std::string& index_name,const std::string& file_name)
