@@ -1280,7 +1280,7 @@ void MainWindow::on_dicom2nii_clicked()
     if(dir.isEmpty())
         return;
     add_work_dir(dir);
-    progress prog("DICOM to SRC or NIFTI",true);
+    progress prog("DICOM to SRC/NIFTI",true);
     std::ofstream out((dir+"/log.txt").toStdString().c_str());
     out << "directory:" << dir.toStdString() << std::endl;
     dicom2src(dir.toStdString(),out);
