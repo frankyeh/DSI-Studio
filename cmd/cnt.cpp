@@ -140,12 +140,6 @@ int cnt(program_option& po)
         vbc->wait();
     }
 
-    if(vbc->pos_corr_track->get_visible_track_count() ||
-            vbc->neg_corr_track->get_visible_track_count())
-        show_progress() << "trk files saved" << std::endl;
-    else
-        show_progress() << "no significant finding" << std::endl;
-
     vbc->calculate_FDR();
     std::string output;
     vbc->generate_report(output);
