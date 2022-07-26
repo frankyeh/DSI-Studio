@@ -163,12 +163,10 @@ bool progress::check_prog(unsigned int now,unsigned int total)
 bool progress::aborted(void)
 {
     if(!has_gui || !tipl::is_main_thread<0>())
-        return false;
+        return prog_aborted_;
     if(progressDialog.get())
         return progressDialog->wasCanceled();
-    if(prog_aborted_)
-        return true;
-    return false;
+    return prog_aborted_;
 }
 
 
