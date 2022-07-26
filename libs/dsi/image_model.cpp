@@ -1859,7 +1859,8 @@ bool ImageModel::run_topup_eddy(const std::string& other_src)
     {
         show_progress() << "load previous results from " << file_name << ".corrected.nii.gz" <<std::endl;
         if(load_topup_eddy_result())
-            return true;
+            return eddy_check_shell(src_bvalues) ? true : correct_motion(); // if not eddy corrected, then run motion correction.
+
         show_progress() << error_msg << std::endl;
         if(!std::filesystem::exists(other_src))
         {
@@ -1934,7 +1935,8 @@ bool ImageModel::preprocessing(void)
         mat_reader.swap(new_reader);
         return load_from_file(new_file_name.c_str());
     }   
-    run_topup_eddy(reverse_pe);
+    if(!run_topup_eddy(reverse_pe))
+        return false;
     voxel.report += msg;
     save_to_file(new_file_name.c_str());
     return true;
