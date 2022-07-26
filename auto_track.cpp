@@ -275,7 +275,6 @@ std::string run_auto_track(program_option& po,const std::vector<std::string>& fi
 
                 if (!fib_loaded)
                 {
-                    progress prog_("loading ",std::filesystem::path(fib_file_name).filename().string().c_str());
                     if(!handle->load_from_file(fib_file_name.c_str()))
                        return fib_file_name + ":" + handle->error_msg;
                     fib_loaded = true;
@@ -372,7 +371,6 @@ std::string run_auto_track(program_option& po,const std::vector<std::string>& fi
 
                     if(export_trk)
                     {
-                        progress prog("export tracts");
                         tract_model.report = report;
                         if(!tract_model.save_tracts_to_file(trk_file_name.c_str()))
                             return std::string("fail to save tractography file:")+trk_file_name;
