@@ -954,7 +954,7 @@
                  <item>
                   <widget class="QCheckBox" name="preprocessing">
                    <property name="text">
-                    <string>Preprocessing (correction and align ac-pc) </string>
+                    <string>Preprocessing (topup/eddy/motioin correction) </string>
                    </property>
                   </widget>
                  </item>
