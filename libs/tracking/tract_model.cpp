@@ -91,7 +91,7 @@ class TinyTrack{
 
         std::vector<std::vector<int32_t> > track32(tract_data.size());
         std::vector<size_t> buf_size(track32.size());
-        progress prog_("compressing trajectories");
+        progress prog_("save trajectories as tt.gz file");
         size_t prog = 0;
         tipl::par_for(track32.size(),[&](size_t i)
         {
