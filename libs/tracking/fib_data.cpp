@@ -1468,10 +1468,10 @@ bool fib_data::load_track_atlas()
         track_atlas->add_tracts(new_tracts);
         cluster.insert(cluster.end(),new_cluster.begin(),new_cluster.end());
 
-        progress prog_("warping atlas tracks to subject space");
         if(!map_to_mni())
             return false;
         // warp tractography atlas to subject space
+        progress prog_("warping atlas tracks to subject space");
         auto& tract_data = track_atlas->get_tracts();
         auto T = tipl::from_space(track_atlas->trans_to_mni).to(template_to_mni);
         tipl::par_for(tract_data.size(),[&](size_t i)
