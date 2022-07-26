@@ -77,6 +77,7 @@ class TinyTrack{
         gz_mat_write out(file_name);
         if (!out)
             return false;
+        progress prog("save trajectories to ",std::filesystem::path(file_name).filename().string().c_str());
 
         out.write("dimension",geo);
         out.write("voxel_size",vs);
@@ -91,97 +92,106 @@ class TinyTrack{
 
         std::vector<std::vector<int32_t> > track32(tract_data.size());
         std::vector<size_t> buf_size(track32.size());
-        progress prog_("save trajectories as tt.gz file");
-        size_t prog = 0;
-        tipl::par_for(track32.size(),[&](size_t i)
-        {
-            progress::at(prog++,tract_data.size());
-            auto& t32 = track32[i];
-            t32.resize(tract_data[i].size());
-            // all coordinates multiply by 32 and convert to integer
-            for(size_t j = 0;j < t32.size();j++)
-                t32[j] = int(std::round(std::ldexp(tract_data[i][j],5)));
-            // Calculate coordinate displacement, skipping the first coordinate
-            for(size_t j = t32.size()-1;j >= 3;j--)
-                t32[j] -= t32[j-3];
 
-            // check if there is a leap, skipping the first coordinate
-            bool has_leap = false;
-            for(size_t j = 3;j < t32.size();j++)
-                if(t32[j] < -127 || t32[j] > 127)
-                {
-                    has_leap = true;
-                    break;
-                }
-            // if there is a leap, interpolate it
-            if(has_leap)
-            {
-                std::vector<int32_t> new_t32;
-                new_t32.reserve(t32.size());
-                for(size_t j = 0;j < t32.size();j += 3)
-                {
-                    int32_t x = t32[j];
-                    int32_t y = t32[j+1];
-                    int32_t z = t32[j+2];
-                    bool interpolated = false;
-                    while(j && (x < -127 || x > 127 || y < -127 || y > 127 || z < -127 || z > 127))
-                    {
-                        x /= 2;
-                        y /= 2;
-                        z /= 2;
-                        interpolated = true;
-                    }
-                    if(interpolated)
-                    {
-                        t32[j] -= x;
-                        t32[j+1] -= y;
-                        t32[j+2] -= z;
-                        j -= 3;
-                    }
-                    new_t32.push_back(x);
-                    new_t32.push_back(y);
-                    new_t32.push_back(z);
-                }
-                new_t32.swap(t32);
-            }
-            buf_size[i] = sizeof(tract_header)+t32.size()-3;
-        });
-        progress::show((std::string("saving to ")+std::filesystem::path(file_name).filename().string()).c_str());
-        for(size_t block = 0,cur_track_block = 0;progress::at(cur_track_block,track32.size());++block)
         {
-            // record write position for each track
-            size_t total_size = 0;
-            std::vector<size_t> pos;
-            for(size_t i = cur_track_block;i < track32.size();++i)
+            progress p("compressing trajectories");
+            size_t count = 0;
+            tipl::par_for(track32.size(),[&](size_t i)
             {
-                pos.push_back(total_size);
-                total_size += buf_size[i];
-                if(total_size > 134217728) // 128 mb
-                    break;
-            }
+                progress::at(count++,tract_data.size());
+                auto& t32 = track32[i];
+                t32.resize(tract_data[i].size());
+                // all coordinates multiply by 32 and convert to integer
+                for(size_t j = 0;j < t32.size();j++)
+                    t32[j] = int(std::round(std::ldexp(tract_data[i][j],5)));
+                // Calculate coordinate displacement, skipping the first coordinate
+                for(size_t j = t32.size()-1;j >= 3;j--)
+                    t32[j] -= t32[j-3];
 
-            std::vector<char> out_buf(total_size);
-            tipl::par_for(pos.size(),[&](size_t i)
-            {
-                auto& t32 = track32[cur_track_block+i];
-                auto out = &out_buf[pos[i]];
-                tract_header hr;
-                hr.h.count = uint32_t(t32.size());
-                hr.h.x = t32[0];
-                hr.h.y = t32[1];
-                hr.h.z = t32[2];
-                std::copy(hr.buf,hr.buf+16,out);
-                out += sizeof(tract_header)-3;
+                // check if there is a leap, skipping the first coordinate
+                bool has_leap = false;
                 for(size_t j = 3;j < t32.size();j++)
-                    out[j] = char(t32[j]);
+                    if(t32[j] < -127 || t32[j] > 127)
+                    {
+                        has_leap = true;
+                        break;
+                    }
+                // if there is a leap, interpolate it
+                if(has_leap)
+                {
+                    std::vector<int32_t> new_t32;
+                    new_t32.reserve(t32.size());
+                    for(size_t j = 0;j < t32.size();j += 3)
+                    {
+                        int32_t x = t32[j];
+                        int32_t y = t32[j+1];
+                        int32_t z = t32[j+2];
+                        bool interpolated = false;
+                        while(j && (x < -127 || x > 127 || y < -127 || y > 127 || z < -127 || z > 127))
+                        {
+                            x /= 2;
+                            y /= 2;
+                            z /= 2;
+                            interpolated = true;
+                        }
+                        if(interpolated)
+                        {
+                            t32[j] -= x;
+                            t32[j+1] -= y;
+                            t32[j+2] -= z;
+                            j -= 3;
+                        }
+                        new_t32.push_back(x);
+                        new_t32.push_back(y);
+                        new_t32.push_back(z);
+                    }
+                    new_t32.swap(t32);
+                }
+                buf_size[i] = sizeof(tract_header)+t32.size()-3;
             });
-
-            if(block == 0)
-                out.write("track",&out_buf[0],total_size,1);
-            else
-                out.write((std::string("track")+std::to_string(block)).c_str(),&out_buf[0],total_size,1);
-            cur_track_block += pos.size();
         }
+        if(progress::aborted())
+            return false;
+        {
+            progress p("saving file");
+            for(size_t block = 0,cur_track_block = 0;progress::at(cur_track_block,track32.size());++block)
+            {
+                // record write position for each track
+                size_t total_size = 0;
+                std::vector<size_t> pos;
+                for(size_t i = cur_track_block;i < track32.size();++i)
+                {
+                    pos.push_back(total_size);
+                    total_size += buf_size[i];
+                    if(total_size > 134217728) // 128 mb
+                        break;
+                }
+
+                std::vector<char> out_buf(total_size);
+                tipl::par_for(pos.size(),[&](size_t i)
+                {
+                    auto& t32 = track32[cur_track_block+i];
+                    auto out = &out_buf[pos[i]];
+                    tract_header hr;
+                    hr.h.count = uint32_t(t32.size());
+                    hr.h.x = t32[0];
+                    hr.h.y = t32[1];
+                    hr.h.z = t32[2];
+                    std::copy(hr.buf,hr.buf+16,out);
+                    out += sizeof(tract_header)-3;
+                    for(size_t j = 3;j < t32.size();j++)
+                        out[j] = char(t32[j]);
+                });
+
+                if(block == 0)
+                    out.write("track",&out_buf[0],total_size,1);
+                else
+                    out.write((std::string("track")+std::to_string(block)).c_str(),&out_buf[0],total_size,1);
+                cur_track_block += pos.size();
+            }
+        }
+        if(progress::aborted())
+            return false;
         return true;
     }
     static bool load_from_file(const char* file_name,
@@ -191,7 +201,7 @@ class TinyTrack{
                                tipl::matrix<4,4>& trans_to_mni,
                                std::string& report,std::string& parameter_id,unsigned int& color)
     {
-        progress prog_("loading ",std::filesystem::path(file_name).filename().string().c_str());
+        progress prog_("loading ",std::filesystem::path(file_name).filename().c_str());
         gz_mat_read in;
         prepare_idx(file_name,in.in);
         if (!in.load_from_file(file_name))
