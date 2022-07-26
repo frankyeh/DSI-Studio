@@ -318,7 +318,7 @@ public:
             return false;
         }
         // reconstruction
-        progress prog_(prog_title);
+        progress prog("reconstructing ",prog_title);
         try
         {
             if(voxel.run())
