@@ -46,7 +46,7 @@ public:// for FDR analysis
     std::vector<unsigned int> subject_pos_corr;
     std::vector<unsigned int> subject_neg_corr;
     std::vector<float> fdr_pos_corr,fdr_neg_corr;
-    unsigned int progress;// 0~100
+    unsigned int prog;// 0~100
     bool terminated = false;
     bool no_tractogram = false;
     unsigned int preproces = 0;
@@ -70,6 +70,7 @@ public:// Multiple regression
     void run_permutation_multithread(unsigned int id,unsigned int thread_count,unsigned int permutation_count);
     void run_permutation(unsigned int thread_count,unsigned int permutation_count);
     void calculate_FDR(void);
+    void save_result(void);
     void generate_report(std::string& output);
 };
 

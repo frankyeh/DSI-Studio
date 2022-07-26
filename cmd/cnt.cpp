@@ -139,7 +139,7 @@ int cnt(program_option& po)
         vbc->run_permutation(std::thread::hardware_concurrency(),po.get("permutation",uint32_t(2000)));
         vbc->wait();
     }
-
+    vbc->save_result();
     vbc->calculate_FDR();
     std::string output;
     vbc->generate_report(output);

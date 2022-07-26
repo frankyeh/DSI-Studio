@@ -179,7 +179,7 @@ void group_connectometry_analysis::run_permutation_multithread(unsigned int id,u
                     preproces = 0;
                     i = 0;
                 }
-                progress = uint32_t(i*95/permutation_count);
+                prog = uint32_t(i*95/permutation_count);
             }
         }
         null = !null;
@@ -188,107 +188,111 @@ void group_connectometry_analysis::run_permutation_multithread(unsigned int id,u
     {
         for(size_t index = 1;index < threads.size();++index)
             threads[index]->wait();
-        for(size_t index = 0;index < tip;++index)
-        {
-            neg_null_corr_track->trim();
-            pos_null_corr_track->trim();
-            neg_corr_track->trim();
-            pos_corr_track->trim();
-        }
-        // update fdr table
-        std::fill(subject_neg_corr_null.begin(),subject_neg_corr_null.end(),0);
-        std::fill(subject_pos_corr_null.begin(),subject_pos_corr_null.end(),0);
-        std::fill(subject_neg_corr.begin(),subject_neg_corr.end(),0);
-        std::fill(subject_pos_corr.begin(),subject_pos_corr.end(),0);
-        cal_hist(neg_corr_track->get_tracts(),subject_neg_corr);
-        cal_hist(neg_null_corr_track->get_tracts(),subject_neg_corr_null);
-        cal_hist(pos_corr_track->get_tracts(),subject_pos_corr);
-        cal_hist(pos_null_corr_track->get_tracts(),subject_pos_corr_null);
-        calculate_FDR();
+        prog = 100;
 
-        // output distribution values
+    }
+}
+void group_connectometry_analysis::save_result(void)
+{
+    progress p("save connectomet results");
+    for(size_t index = 0;index < tip;++index)
+    {
+        neg_null_corr_track->trim();
+        pos_null_corr_track->trim();
+        neg_corr_track->trim();
+        pos_corr_track->trim();
+    }
+    // update fdr table
+    std::fill(subject_neg_corr_null.begin(),subject_neg_corr_null.end(),0);
+    std::fill(subject_pos_corr_null.begin(),subject_pos_corr_null.end(),0);
+    std::fill(subject_neg_corr.begin(),subject_neg_corr.end(),0);
+    std::fill(subject_pos_corr.begin(),subject_pos_corr.end(),0);
+    cal_hist(neg_corr_track->get_tracts(),subject_neg_corr);
+    cal_hist(neg_null_corr_track->get_tracts(),subject_neg_corr_null);
+    cal_hist(pos_corr_track->get_tracts(),subject_pos_corr);
+    cal_hist(pos_null_corr_track->get_tracts(),subject_pos_corr_null);
+    calculate_FDR();
+
+    // output distribution values
+    {
+        std::ofstream out((output_file_name+".fdr_dist.values.txt").c_str());
+        out << "voxel_dis\tfdr_pos_cor\tfdr_neg_corr\t#track_pos_corr_null\t#track_neg_corr_null\t#track_pos_corr\t#track_neg_corr" << std::endl;
+        for(size_t index = length_threshold_voxels;index < fdr_pos_corr.size()-1;++index)
         {
-            std::ofstream out((output_file_name+".fdr_dist.values.txt").c_str());
-            out << "voxel_dis\tfdr_pos_cor\tfdr_neg_corr\t#track_pos_corr_null\t#track_neg_corr_null\t#track_pos_corr\t#track_neg_corr" << std::endl;
-            for(size_t index = length_threshold_voxels;index < fdr_pos_corr.size()-1;++index)
+            out << index
+                << "\t" << fdr_pos_corr[index]
+                << "\t" << fdr_neg_corr[index]
+                << "\t" << subject_pos_corr_null[index]
+                << "\t" << subject_neg_corr_null[index]
+                << "\t" << subject_pos_corr[index]
+                << "\t" << subject_neg_corr[index] << std::endl;
+        }
+    }
+
+    if(fdr_threshold != 0.0f)
+    {
+        bool has_result = false;
+        for(size_t length = length_threshold_voxels;length < fdr_pos_corr.size();++length)
+            if(fdr_pos_corr[length] <= fdr_threshold)
             {
-                out << index
-                    << "\t" << fdr_pos_corr[index]
-                    << "\t" << fdr_neg_corr[index]
-                    << "\t" << subject_pos_corr_null[index]
-                    << "\t" << subject_neg_corr_null[index]
-                    << "\t" << subject_pos_corr[index]
-                    << "\t" << subject_neg_corr[index] << std::endl;
+                pos_corr_track->delete_by_length(length);
+                pos_corr_track->clear_deleted();
+                has_result = true;
+                break;
             }
-        }
-
-        if(fdr_threshold != 0.0f)
-        {
-            bool has_result = false;
-            for(size_t length = length_threshold_voxels;length < fdr_pos_corr.size();++length)
-                if(fdr_pos_corr[length] <= fdr_threshold)
-                {
-                    pos_corr_track->delete_by_length(length);
-                    pos_corr_track->clear_deleted();
-                    has_result = true;
-                    break;
-                }
-            if(!has_result)
-                pos_corr_track->clear();
-            has_result = false;
-            for(size_t length = length_threshold_voxels;length < fdr_neg_corr.size();++length)
-                if(fdr_neg_corr[length] <= fdr_threshold)
-                {
-                    neg_corr_track->delete_by_length(length);
-                    neg_corr_track->clear_deleted();
-                    has_result = true;
-                    break;
-                }
-            if(!has_result)
-                neg_corr_track->clear();
-        }
-
-        pos_corr_track->delete_repeated(1.0);
-        neg_corr_track->delete_repeated(1.0);
-
-        if(pos_corr_track->get_visible_track_count())
-            pos_corr_track->save_tracts_to_file((output_file_name+".pos_corr.tt.gz").c_str());
-        else
-            std::ofstream((output_file_name+".pos_corr.no_tract.txt").c_str());
-
-        if(neg_corr_track->get_visible_track_count())
-            neg_corr_track->save_tracts_to_file((output_file_name+".neg_corr.tt.gz").c_str());
-        else
-            std::ofstream((output_file_name+".neg_corr.no_tract.txt").c_str());
-
-
-        {
-            gz_mat_write mat_write((output_file_name+".t_statistics.fib.gz").c_str());
-            for(unsigned int i = 0;i < handle->mat_reader.size();++i)
+        if(!has_result)
+            pos_corr_track->clear();
+        has_result = false;
+        for(size_t length = length_threshold_voxels;length < fdr_neg_corr.size();++length)
+            if(fdr_neg_corr[length] <= fdr_threshold)
             {
-                std::string name = handle->mat_reader.name(i);
-                if(name == "dimension" || name == "voxel_size" ||
-                        name == "odf_vertices" || name == "odf_faces" || name == "trans")
-                    mat_write.write(handle->mat_reader[i]);
-                if(name == "fa0")
-                    mat_write.write("qa_map",handle->dir.fa[0],handle->dim.plane_size(),handle->dim.depth());
+                neg_corr_track->delete_by_length(length);
+                neg_corr_track->clear_deleted();
+                has_result = true;
+                break;
             }
-            for(unsigned int i = 0;i < spm_map->pos_corr_ptr.size();++i)
-            {
-                std::ostringstream out1,out2,out3,out4;
-                out1 << "fa" << i;
-                out2 << "index" << i;
-                out3 << "inc_t" << i;
-                out4 << "dec_t" << i;
-                mat_write.write(out1.str().c_str(),handle->dir.fa[i],1,handle->dim.size());
-                mat_write.write(out2.str().c_str(),handle->dir.findex[i],1,handle->dim.size());
-                mat_write.write(out3.str().c_str(),spm_map->pos_corr_ptr[i],1,handle->dim.size());
-                mat_write.write(out4.str().c_str(),spm_map->neg_corr_ptr[i],1,handle->dim.size());
-            }
+        if(!has_result)
+            neg_corr_track->clear();
+    }
+
+    pos_corr_track->delete_repeated(1.0);
+    neg_corr_track->delete_repeated(1.0);
+
+    if(pos_corr_track->get_visible_track_count())
+        pos_corr_track->save_tracts_to_file((output_file_name+".pos_corr.tt.gz").c_str());
+    else
+        std::ofstream((output_file_name+".pos_corr.no_tract.txt").c_str());
+
+    if(neg_corr_track->get_visible_track_count())
+        neg_corr_track->save_tracts_to_file((output_file_name+".neg_corr.tt.gz").c_str());
+    else
+        std::ofstream((output_file_name+".neg_corr.no_tract.txt").c_str());
+
+
+    {
+        progress p2("save statistics.fib.gz");
+        gz_mat_write mat_write((output_file_name+".t_statistics.fib.gz").c_str());
+        for(unsigned int i = 0;i < handle->mat_reader.size();++i)
+        {
+            std::string name = handle->mat_reader.name(i);
+            if(name == "dimension" || name == "voxel_size" ||
+                    name == "odf_vertices" || name == "odf_faces" || name == "trans")
+                mat_write.write(handle->mat_reader[i]);
+            if(name == "fa0")
+                mat_write.write("qa_map",handle->dir.fa[0],handle->dim.plane_size(),handle->dim.depth());
         }
-
-        progress = 100;
-
+        for(unsigned int i = 0;i < spm_map->pos_corr_ptr.size();++i)
+        {
+            std::ostringstream out1,out2,out3,out4;
+            out1 << "fa" << i;
+            out2 << "index" << i;
+            out3 << "inc_t" << i;
+            out4 << "dec_t" << i;
+            mat_write.write(out1.str().c_str(),handle->dir.fa[i],1,handle->dim.size());
+            mat_write.write(out2.str().c_str(),handle->dir.findex[i],1,handle->dim.size());
+            mat_write.write(out3.str().c_str(),spm_map->pos_corr_ptr[i],1,handle->dim.size());
+            mat_write.write(out4.str().c_str(),spm_map->neg_corr_ptr[i],1,handle->dim.size());
+        }
     }
 }
 void group_connectometry_analysis::clear(void)
@@ -446,7 +450,7 @@ void group_connectometry_analysis::run_permutation(unsigned int thread_count,uns
     spm_map = std::make_shared<connectometry_result>();
 
     terminated = false;
-    progress = 0;
+    prog = 0;
     // need to be initialized
     seed_count = 10000;
 
@@ -595,7 +599,7 @@ void group_connectometry_analysis::generate_report(std::string& output)
         return false;
     };
 
-    if(progress == 100)
+    if(prog == 100)
     {
         output_track_image("pos_corr",track_hypothesis_pos,fdr_result_pos);
         pos_corr_tracks_result = get_track_name(pos_corr_track);
@@ -605,14 +609,14 @@ void group_connectometry_analysis::generate_report(std::string& output)
     // Negative correlation results
     html_report << "<h3>Tracks with " << track_hypothesis_neg << "</h3>" << std::endl;
 
-    if(progress == 100)
+    if(prog == 100)
     {
         output_track_image("neg_corr",track_hypothesis_neg,fdr_result_neg);
         neg_corr_tracks_result = get_track_name(neg_corr_track);
     }
     report_fdr(has_neg_corr_finding(),track_hypothesis_neg,neg_corr_tracks_result,fdr_result_neg);
 
-    if(progress == 100)
+    if(prog == 100)
     {
         if(fdr_pos_corr[length_threshold_voxels] < 0.2f || fdr_neg_corr[length_threshold_voxels] < 0.2f)
         {
@@ -646,9 +650,9 @@ void group_connectometry_analysis::generate_report(std::string& output)
     output = html_report.str();
 
 
-    // output track images
-    if(progress == 100 && !no_tractogram)
+    if(prog == 100 && !no_tractogram)
     {
+        progress p3("create tract figures");
         std::shared_ptr<fib_data> new_data(new fib_data);
         *(new_data.get()) = *(handle);
         tracking_window* new_mdi = new tracking_window(nullptr,new_data);
