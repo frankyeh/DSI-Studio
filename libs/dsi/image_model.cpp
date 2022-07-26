@@ -196,13 +196,9 @@ std::string ImageModel::check_b_table(void)
             tipl::normalize(iso_fa,255.9f);
             tipl::image<3,unsigned char> I;
             I = iso_fa;
-
-            const float bound[8] = {1.0f,-1.0f,0.02f,-0.02f,1.2f,0.9f,0.1f,-0.1f};
-            double precision[3] = {0.1,0.01,0.001};
             tipl::affine_transform<float> arg;
-            for(int i = 0;i < 3; ++ i)
-                tipl::reg::linear_mr<tipl::reg::mutual_information>(I,template_fib->vs,dwi,voxel.vs,
-                        arg,tipl::reg::affine,[&](void){return !progress::aborted();},precision[i],bound);
+            tipl::reg::linear_mr<tipl::reg::mutual_information>(I,template_fib->vs,dwi,voxel.vs,
+                        arg,tipl::reg::affine,[&](void){return !progress::aborted();});
             tipl::rotation_matrix(arg.rotation,r.begin(),tipl::vdim<3>());
             r.inv();
             T = tipl::transformation_matrix<float>(arg,template_fib->dim,template_fib->vs,voxel.dim,voxel.vs);
