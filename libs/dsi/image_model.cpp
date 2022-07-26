@@ -1938,7 +1938,9 @@ bool ImageModel::preprocessing(void)
     if(!run_topup_eddy(reverse_pe))
         return false;
     voxel.report += msg;
-    save_to_file(new_file_name.c_str());
+    if(!save_to_file(new_file_name.c_str()))
+        return false;
+    file_name = new_file_name;
     return true;
 }
 void calculate_shell(std::vector<float> sorted_bvalues,
