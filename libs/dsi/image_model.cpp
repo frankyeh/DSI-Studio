@@ -2065,6 +2065,7 @@ void ImageModel::get_report(std::string& report)
 }
 bool ImageModel::save_to_file(const char* dwi_file_name)
 {
+    progress prog_("saving ",std::filesystem::path(dwi_file_name).filename().string().c_str());
     std::string filename(dwi_file_name);
     std::string ext = filename.substr(std::max<int>(0,int(filename.length())-7));
     if(ext == ".nii.gz")
@@ -2083,7 +2084,6 @@ bool ImageModel::save_to_file(const char* dwi_file_name)
                       src_dwi_data[index]+voxel.dim.size(),
                       buffer.begin() + long(index*voxel.dim.size()));
         });
-        progress prog_("saving ",std::filesystem::path(dwi_file_name).filename().string().c_str());
         if(!gz_nifti::save_to_file(dwi_file_name,buffer,voxel.vs,trans))
         {
             error_msg = "Cannot save file to ";
@@ -2118,7 +2118,6 @@ bool ImageModel::save_to_file(const char* dwi_file_name)
             }
             mat_writer.write("b_table",b_table,4);
         }
-        progress prog_("saving ",std::filesystem::path(dwi_file_name).filename().string().c_str());
         for (unsigned int index = 0;progress::at(index,src_bvalues.size());++index)
         {
             std::ostringstream out;
@@ -2411,7 +2410,6 @@ bool ImageModel::load_from_file(const char* dwi_file_name)
     else
         voxel.template_id = match_volume(std::count_if(voxel.mask.begin(),voxel.mask.end(),[](unsigned char v){return v > 0;})*
                                    2.0f*voxel.vs[0]*voxel.vs[1]*voxel.vs[2]);
-    progress::show("SRC file loaded");
     return true;
 }
 
