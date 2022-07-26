@@ -27,11 +27,13 @@ private:
                 std::cout << "┌";
 
             std::string highlight;
-            if(node && !has_gui)
-                highlight = "\033[1;34m"; // blue
-            if(line[0] == 'E') // Error
-                highlight = "\033[1;31m"; // red
-
+            if(!has_gui) // enable color output in command line
+            {
+                if(node)
+                    highlight = "\033[1;34m"; // blue
+                if(line[0] == 'E') // Error
+                    highlight = "\033[1;31m"; // red
+            }
             if(!highlight.empty())
                 std::cout << highlight << line << "\033[0m" << std::endl;
             else
