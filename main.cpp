@@ -198,7 +198,19 @@ void init_application(void)
         QMessageBox::information(nullptr,"Error","Cannot find template data.");
 }
 
-int run_action(program_option& po,std::shared_ptr<QApplication> gui)
+void move_current_dir_to(const std::string& file_name)
+{
+    auto dir = std::filesystem::path(file_name).parent_path();
+    if(dir.empty())
+    {
+        show_progress() << "current directory is " << std::filesystem::current_path() << std::endl;
+        return;
+    }
+    show_progress() << "change current directory to " << dir << std::endl;
+    std::filesystem::current_path(dir);
+}
+
+int run_action(program_option& po)
 {
     std::string action = po.get("action");
     progress prog("run ",action.c_str());
@@ -229,13 +241,8 @@ int run_action(program_option& po,std::shared_ptr<QApplication> gui)
     if(action == std::string("xnat"))
         return xnat(po);
     if(action == std::string("vis"))
-    {
-        vis(po);
-        if(po.get("stay_open") == std::string("1"))
-            gui->exec();
-        return 0;
-    }
-    show_progress() << "Unknown action:" << action << std::endl;
+        return vis(po);
+    show_progress() << "ERROR: unknown action: " << action << std::endl;
     return 1;
 }
 void get_filenames_from(const std::string param,std::vector<std::string>& filenames);
@@ -293,50 +300,55 @@ int run_cmd(int ac, char *av[])
             }
         }
         if(action == "atk" || action == "atl" || source.find('*') == std::string::npos) // atk, atl handle * by itself
-            return run_action(po,gui);
-
-        // handle source having wildcard
-        std::vector<std::string> source_files;
-        get_filenames_from(source,source_files);
-
-        std::vector<std::pair<std::string,std::string> > wildcard_list;
-        po.get_wildcard_list(wildcard_list);
-
-        for (size_t i = 0;i < source_files.size();++i)
         {
-            progress prog("process file: ",source_files[i].c_str());
-            // clear --t1t2 and --other_slices
-            t1t2_slices.reset();
-            other_slices.clear();
-
-            po.set("source",source_files[i]);
-            // apply '*' to other arguments
-            for(const auto& wildcard : wildcard_list)
-            {
-                if(wildcard.first == "source")
-                    continue;
-                std::string apply_wildcard;
-                if(!match_files(source,source_files[i],wildcard.second,apply_wildcard))
-                {
-                    show_progress() << "ERROR: cannot translate " << wildcard.second <<
-                                 " at --" << wildcard.first << std::endl;
-                    return 1;
-                }
-                show_progress() << wildcard.second << "->" << apply_wildcard << std::endl;
-                po.set(wildcard.first.c_str(),apply_wildcard);
-            }
-            po.set_used(0);
-            if(po.has("output") && std::filesystem::exists(po.get("output")))
-            {
-                show_progress() << "output " << po.get("output") << " exists. Skipping..." << std::endl;
-                continue;
-            }
-            if(run_action(po,gui) == 1)
-            {
-                show_progress() << "Terminated due to error." << std::endl;
+            if(run_action(po))
                 return 1;
+        }
+        else
+        {
+            // handle source having wildcard
+            std::vector<std::string> source_files;
+            get_filenames_from(source,source_files);
+
+            std::vector<std::pair<std::string,std::string> > wildcard_list;
+            po.get_wildcard_list(wildcard_list);
+
+            for (size_t i = 0;i < source_files.size();++i)
+            {
+                progress prog("process file: ",source_files[i].c_str());
+                // clear --t1t2 and --other_slices
+                t1t2_slices.reset();
+                other_slices.clear();
+
+                po.set("source",source_files[i]);
+                // apply '*' to other arguments
+                for(const auto& wildcard : wildcard_list)
+                {
+                    if(wildcard.first == "source")
+                        continue;
+                    std::string apply_wildcard;
+                    if(!match_files(source,source_files[i],wildcard.second,apply_wildcard))
+                    {
+                        show_progress() << "ERROR: cannot translate " << wildcard.second <<
+                                     " at --" << wildcard.first << std::endl;
+                        return 1;
+                    }
+                    show_progress() << wildcard.second << "->" << apply_wildcard << std::endl;
+                    po.set(wildcard.first.c_str(),apply_wildcard);
+                }
+                po.set_used(0);
+                if(po.has("output") && std::filesystem::exists(po.get("output")))
+                {
+                    show_progress() << "output " << po.get("output") << " exists. Skipping..." << std::endl;
+                    continue;
+                }
+                if(run_action(po))
+                    return 1;
             }
         }
+
+        if(gui.get() && po.get("stay_open",0))
+            gui->exec();
     }
     catch(const std::exception& e ) {
         std::cout << e.what() << std::endl;
