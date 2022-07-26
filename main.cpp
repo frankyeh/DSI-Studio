@@ -247,8 +247,6 @@ int run_cmd(int ac, char *av[])
     program_option po;
     try
     {
-        progress prog("DSI Studio command line");
-        show_progress() << "DSI Studio \"" << DSISTUDIO_RELEASE_NAME << "\" " << __DATE__ << std::endl;
         if constexpr(tipl::use_cuda)
         {
             std::string msg;
@@ -258,6 +256,9 @@ int run_cmd(int ac, char *av[])
                 return 1;
             }
         }
+
+        progress prog("DSI Studio command line");
+        show_progress() << "DSI Studio \"" << DSISTUDIO_RELEASE_NAME << "\" " << __DATE__ << std::endl;
 
         if(!po.parse(ac,av))
         {
