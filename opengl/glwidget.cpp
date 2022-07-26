@@ -668,11 +668,11 @@ void GLWidget::renderLR()
                 {
                     tipl::shape<2> geo2(slice->dim[odf_dim==0?1:0],
                                            slice->dim[odf_dim==2?1:2]);
+                    int x(0),y(0),z(0);
                     for(tipl::pixel_index<2> index(geo2);index < geo2.size();++index)
                     {
                         if((index[0] & mask) | (index[1] & mask))
                             continue;
-                        int x,y,z;
                         if (!slice->to3DSpace(cur_tracking_window.cur_dim,index[0],index[1],x,y,z))
                             continue;
                         tipl::pixel_index<3> pos(x,y,z,geo);
