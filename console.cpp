@@ -76,17 +76,7 @@ int atk(program_option& po);
 int reg(program_option& po);
 int xnat(program_option& po);
 
-void move_current_dir_to(const std::string& file_name)
-{
-    auto dir = std::filesystem::path(file_name).parent_path();
-    if(dir.empty())
-    {
-        show_progress() << "current directory is " << std::filesystem::current_path() << std::endl;
-        return;
-    }
-    show_progress() << "change current directory to " << dir << std::endl;
-    std::filesystem::current_path(dir);
-}
+int run_action(program_option& po);
 void Console::on_run_cmd_clicked()
 {
     program_option po;
@@ -100,33 +90,7 @@ void Console::on_run_cmd_clicked()
         std::cout << "ERROR: invalid command, use --help for more detail" << std::endl;
         return;
     }
-    progress prog("run action ",po.get("action").c_str());
-    if(!std::filesystem::is_directory(po.get("source")))
-        move_current_dir_to(po.get("source"));
-    if(po.get("action") == std::string("rec"))
-        rec(po);
-    if(po.get("action") == std::string("trk"))
-        trk(po);
-    if(po.get("action") == std::string("src"))
-        src(po);
-    if(po.get("action") == std::string("ana"))
-        ana(po);
-    if(po.get("action") == std::string("exp"))
-        exp(po);
-    if(po.get("action") == std::string("atl"))
-        atl(po);
-    if(po.get("action") == std::string("cnt"))
-        cnt(po);
-    if(po.get("action") == std::string("vis"))
-        vis(po);
-    if(po.get("action") == std::string("ren"))
-        ren(po);
-    if(po.get("action") == std::string("atk"))
-        atk(po);
-    if(po.get("action") == std::string("reg"))
-        reg(po);
-    if(po.get("action") == std::string("xnat"))
-        xnat(po);
+    run_action(po);
 }
 
 
