@@ -672,26 +672,19 @@ bool ImageModel::command(std::string cmd,std::string param)
     }
     if(cmd == "[Step T2][Corrections][TOPUP EDDY]")
     {
+        auto step = param.empty() ? (cmd+"\n") : (cmd+"="+param+"\n");
+        if(param.empty())
+            param = find_topup_reverse_pe();
         if(param.empty())
         {
-            std::string rev_file_name = file_name.substr(0,file_name.length()-6)+"rsrc.gz";
-            if(std::filesystem::exists(rev_file_name))
-            {
-                show_progress() << "Using reversed phase encoding RSRC file: " << rev_file_name << std::endl;
-                param = rev_file_name;
-            }
-            else
-            {
-                show_progress() << "Cannot find reversed phase encoding RSRC file. Run eddy without topup..." << std::endl;
-                if(!run_eddy())
-                    return false;
-                voxel.steps += cmd+"\n";
-                return true;
-            }
+            show_progress() << "cannot find reversed phase encoding files. run eddy without topup..." << std::endl;
+            if(!run_eddy())
+                return false;
         }
+        else
         if(!run_topup_eddy(param))
             return false;
-        voxel.steps += cmd+"="+param+"\n";
+        voxel.steps += step;
         return true;
     }
     if(cmd == "[Step T2][Corrections][EDDY]")
@@ -1595,7 +1588,7 @@ bool ImageModel::load_topup_eddy_result(void)
 
 bool ImageModel::run_applytopup(std::string exec)
 {
-    progress::show("applytopup");
+    progress::show("run applytopup");
     std::string topup_result = QFileInfo(file_name.c_str()).baseName().replace('.','_').toStdString();
     std::string acqparam_file = QFileInfo(file_name.c_str()).baseName().toStdString() + ".topup.acqparams.txt";
     std::string temp_nifti = file_name+".nii.gz";
@@ -1709,7 +1702,7 @@ bool ImageModel::run_eddy(std::string exec)
         error_msg = "TOPUP/EDDY cannot be applied to motion corrected or rotated images";
         return false;
     }
-    progress::show("eddy");
+    progress::show("run eddy");
     if(std::filesystem::exists(file_name+".corrected.nii.gz"))
     {
         show_progress() << "load previous results from " << file_name << ".corrected.nii.gz" <<std::endl;
@@ -1817,83 +1810,16 @@ bool ImageModel::run_eddy(std::string exec)
     std::filesystem::remove(mask_nifti);
     return true;
 }
-
-bool ImageModel::run_topup_eddy(const std::string& other_src)
+std::string ImageModel::find_topup_reverse_pe(void)
 {
-    if(voxel.report.find("rotated") != std::string::npos)
-    {
-        error_msg = "TOPUP/EDDY cannot be applied to motion corrected or rotated images";
-        return false;
-    }
-    progress::show("topup/eddy",true);
-    if(std::filesystem::exists(file_name+".corrected.nii.gz"))
-    {
-        show_progress() << "load previous results from " << file_name << ".corrected.nii.gz" <<std::endl;
-        if(load_topup_eddy_result())
-            return true;
-        show_progress() << error_msg << std::endl;
-        if(!std::filesystem::exists(other_src))
-        {
-            error_msg = "failed to load previous results. please re-run correction again.";
-            std::filesystem::remove(file_name+".corrected.nii.gz");
-            return false;
-        }
-        show_progress() << "run correction from scratch with " << other_src << std::endl;
-    }
-    // run topup
-    {
-        std::string topup_result = QFileInfo(file_name.c_str()).baseName().replace('.','_').toStdString();
-        std::string check_me_file = QFileInfo(file_name.c_str()).baseName().toStdString() + ".topup.check_result";
-        std::string acqparam_file = QFileInfo(file_name.c_str()).baseName().toStdString() + ".topup.acqparams.txt";
-        std::string b0_appa_file;
-        tipl::image<3> b0,rev_b0;
-        if(!read_b0(b0) || !read_rev_b0(other_src.c_str(),rev_b0) || !generate_topup_b0_acq_files(b0,rev_b0,b0_appa_file))
-            return false;
+    progress prog("searching for opposite direction scans..");
+    // locate rsrc.gz file
+    std::string rev_file_name = file_name.substr(0,file_name.length()-6)+"rsrc.gz";
+    if(std::filesystem::exists(rev_file_name))
+        return rev_file_name;
 
-        std::vector<std::string> param = {
-            "--warpres=20,16,14,12,10,6,4,4,4",
-            "--subsamp=2,2,2,2,2,1,1,1,1",  // This causes an error in odd number of slices
-            "--fwhm=8,6,4,3,3,2,1,0,0",
-            "--miter=5,5,5,5,5,10,10,20,20",
-            "--lambda=0.005,0.001,0.0001,0.000015,0.000005,0.0000005,0.00000005,0.0000000005,0.00000000001",
-            "--estmov=1,1,1,1,1,0,0,0,0",
-            "--minmet=0,0,0,0,0,1,1,1,1",
-            "--scale=1",
-            QString("--imain=%1").arg(b0_appa_file.c_str()).toStdString().c_str(),
-            QString("--datain=%1").arg(acqparam_file.c_str()).toStdString().c_str(),
-            QString("--out=%1").arg(topup_result.c_str()).toStdString().c_str(),
-            QString("--iout=%1").arg(check_me_file.c_str()).toStdString().c_str(),
-            QString("--verbose=1").toStdString().c_str()};
-        if(!run_plugin("topup","level",9,param,
-            QFileInfo(file_name.c_str()).absolutePath().toStdString(),std::string()))
-            return false;
-
-
-    }
-
-    if(!eddy_check_shell(src_bvalues))
-    {
-        show_progress() << "Eddy cannot be applied to this dataset. Run topup/applytopup only." << std::endl;
-        if(!run_applytopup())
-            return false;
-    }
-    else
-    {
-        show_progress() << "Run topup/eddy for shell data" << std::endl;
-        if(!run_eddy())
-            return false;
-    }
-    return true;
-}
-
-bool ImageModel::preprocessing(void)
-{
-    std::string msg(" Preprocessing was conducted using DSI Studio.");
-    if(voxel.report.find(msg) != std::string::npos)
-        return true;
-
+    // locate reverse pe nifti files
     std::map<float,std::string,std::greater<float> > candidates;
-    show_progress() << "searching for opposite direction scans.." << std::endl;
     {
         tipl::image<3> b0;
         read_b0(b0);
@@ -1919,9 +1845,86 @@ bool ImageModel::preprocessing(void)
                 candidates[std::fabs(c[0]-c[1])] = path;
         }
     }
+    return candidates.empty() ? std::string() : candidates.begin()->second;
+}
+bool ImageModel::run_topup_eddy(const std::string& other_src)
+{
+    progress prog("run topup/eddy");
+    if(voxel.report.find("rotated") != std::string::npos)
+    {
+        error_msg = "topup/eddy cannot be applied to motion corrected or rotated images";
+        return false;
+    }  
+    if(std::filesystem::exists(file_name+".corrected.nii.gz"))
+    {
+        show_progress() << "load previous results from " << file_name << ".corrected.nii.gz" <<std::endl;
+        if(load_topup_eddy_result())
+            return true;
+        show_progress() << error_msg << std::endl;
+        if(!std::filesystem::exists(other_src))
+        {
+            error_msg = "failed to load previous results. please re-run correction again.";
+            std::filesystem::remove(file_name+".corrected.nii.gz");
+            return false;
+        }
+        show_progress() << "run correction from scratch with " << other_src << std::endl;
+    }
+    if(!other_src.empty() && !std::filesystem::exists(other_src))
+    {
+        error_msg = "find not exist: ";
+        error_msg += other_src;
+        return false;
+    }
+    // run topup
+    if(!other_src.empty())
+    {
+        progress prog("run topup");
+        std::string topup_result = QFileInfo(file_name.c_str()).baseName().replace('.','_').toStdString();
+        std::string check_me_file = QFileInfo(file_name.c_str()).baseName().toStdString() + ".topup.check_result";
+        std::string acqparam_file = QFileInfo(file_name.c_str()).baseName().toStdString() + ".topup.acqparams.txt";
+        std::string b0_appa_file;
+        tipl::image<3> b0,rev_b0;
+        if(!read_b0(b0) || !read_rev_b0(other_src.c_str(),rev_b0) || !generate_topup_b0_acq_files(b0,rev_b0,b0_appa_file))
+            return false;
 
-    auto new_file_name = (file_name+(candidates.empty() ? ".mo_corrected.src.gz" : ".pe_mo_corrected.src.gz"));
+        std::vector<std::string> param = {
+            "--warpres=20,16,14,12,10,6,4,4,4",
+            "--subsamp=2,2,2,2,2,1,1,1,1",  // This causes an error in odd number of slices
+            "--fwhm=8,6,4,3,3,2,1,0,0",
+            "--miter=5,5,5,5,5,10,10,20,20",
+            "--lambda=0.005,0.001,0.0001,0.000015,0.000005,0.0000005,0.00000005,0.0000000005,0.00000000001",
+            "--estmov=1,1,1,1,1,0,0,0,0",
+            "--minmet=0,0,0,0,0,1,1,1,1",
+            "--scale=1",
+            QString("--imain=%1").arg(b0_appa_file.c_str()).toStdString().c_str(),
+            QString("--datain=%1").arg(acqparam_file.c_str()).toStdString().c_str(),
+            QString("--out=%1").arg(topup_result.c_str()).toStdString().c_str(),
+            QString("--iout=%1").arg(check_me_file.c_str()).toStdString().c_str(),
+            QString("--verbose=1").toStdString().c_str()};
+        if(!run_plugin("topup","level",9,param,
+            QFileInfo(file_name.c_str()).absolutePath().toStdString(),std::string()))
+            return false;
+    }
 
+    if(eddy_check_shell(src_bvalues))
+        return run_eddy();
+
+    if(!run_applytopup())
+        return false;
+
+    show_progress() << "eddy cannot be applied to this dataset. run motion correction on DSI Studio instead." << std::endl;
+    return correct_motion();
+
+}
+
+bool ImageModel::preprocessing(void)
+{
+    std::string msg(" Preprocessing was conducted using DSI Studio.");
+    if(voxel.report.find(msg) != std::string::npos)
+        return true;
+
+    std::string reverse_pe = find_topup_reverse_pe();
+    auto new_file_name = (file_name+(reverse_pe.empty() ? ".mo_corrected.src.gz" : ".pe_mo_corrected.src.gz"));
     // load previous run results
     if(std::filesystem::exists(new_file_name))
     {
@@ -1930,22 +1933,8 @@ bool ImageModel::preprocessing(void)
         gz_mat_read new_reader;
         mat_reader.swap(new_reader);
         return load_from_file(new_file_name.c_str());
-    }
-
-    if(!candidates.empty())
-    {
-        show_progress() << "apply topup using " << candidates.begin()->second << std::endl;
-        if(!run_topup_eddy(candidates.begin()->second))
-            return false;
-    }
-    else
-        show_progress() << "no opposite phase encoding direction found. apply motion correction." <<std::endl;
-
-    if(voxel.report.find(" eddy ") == std::string::npos) // if FSL eddy not applied
-    {
-        if(!correct_motion())
-            return false;
-    }
+    }   
+    run_topup_eddy(reverse_pe);
     voxel.report += msg;
     save_to_file(new_file_name.c_str());
     return true;
