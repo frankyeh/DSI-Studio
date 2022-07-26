@@ -762,7 +762,7 @@ int trk(program_option& po,std::shared_ptr<fib_data> handle)
             show_progress() << "no tract to process. Terminating..." << std::endl;
             return 0;
         }
-        show_progress() << "The final analysis results in " << tract_model->get_visible_track_count() << " tracts." << std::endl;
+        show_progress() << "Total tract count after post-tracking processing is " << tract_model->get_visible_track_count() << " tracts." << std::endl;
 
 
         if (po.has("delete_repeat"))
