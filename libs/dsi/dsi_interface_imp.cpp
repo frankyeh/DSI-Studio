@@ -202,7 +202,7 @@ bool ImageModel::reconstruction(void)
                         BalanceScheme,
                         GQI_Recon,
                         DetermineFiberDirections,
-                        RecordQA>("GQI for QSDR"))
+                        RecordQA>("QA/ISO map"))
                     return false;
                 if (!reconstruct2<DWINormalization,
                         Dwi2Tensor,
