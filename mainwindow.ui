@@ -70,7 +70,7 @@
        </size>
       </property>
       <property name="currentIndex">
-       <number>2</number>
+       <number>0</number>
       </property>
       <property name="tabSpacing">
        <number>0</number>
@@ -201,10 +201,10 @@
         <item>
          <widget class="QCommandLinkButton" name="group_connectometry">
           <property name="text">
-           <string>Step C3: Connectometry </string>
+           <string>Step C3: Correlational Tractography</string>
           </property>
           <property name="description">
-           <string>Correlational tractography and connectometry analysis</string>
+           <string>Generate correlational tractography and test the results using connectometry analysis</string>
           </property>
          </widget>
         </item>
@@ -276,6 +276,16 @@
          </widget>
         </item>
         <item>
+         <widget class="QLabel" name="label_6">
+          <property name="text">
+           <string>DICOM Files</string>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignCenter</set>
+          </property>
+         </widget>
+        </item>
+        <item>
          <widget class="QCommandLinkButton" name="RenameDICOM">
           <property name="text">
            <string>Step B1a: Rename DICOM Files</string>
@@ -296,9 +306,29 @@
          </widget>
         </item>
         <item>
+         <widget class="QCommandLinkButton" name="dicom2nii">
+          <property name="text">
+           <string>Step B1c: DICOM to SRC/NIFTI</string>
+          </property>
+          <property name="description">
+           <string>Select a folder that contain DICOM files to generate SRC and NIFTI files.</string>
+          </property>
+         </widget>
+        </item>
+        <item>
          <widget class="Line" name="line_8">
           <property name="orientation">
            <enum>Qt::Horizontal</enum>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLabel" name="label_10">
+          <property name="text">
+           <string>NIFTI Files</string>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignCenter</set>
           </property>
          </widget>
         </item>
@@ -323,19 +353,19 @@
          </widget>
         </item>
         <item>
-         <widget class="QCommandLinkButton" name="dicom2nii">
-          <property name="text">
-           <string>Step B2c: DICOM to SRC/NIFTI</string>
-          </property>
-          <property name="description">
-           <string>Select a folder that contain DICOM files to generate SRC and NIFTI files.</string>
+         <widget class="Line" name="line_9">
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
           </property>
          </widget>
         </item>
         <item>
-         <widget class="Line" name="line_9">
-          <property name="orientation">
-           <enum>Qt::Horizontal</enum>
+         <widget class="QLabel" name="label_12">
+          <property name="text">
+           <string>SRC Files</string>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignCenter</set>
           </property>
          </widget>
         </item>
@@ -487,7 +517,7 @@
            <string>R2: Nonlinear Registration Toolbox</string>
           </property>
           <property name="description">
-           <string>Spatially transform images (testing)</string>
+           <string/>
           </property>
          </widget>
         </item>
@@ -501,7 +531,7 @@
         <item>
          <widget class="QLabel" name="label_9">
           <property name="text">
-           <string>Diffusion MRI Processing</string>
+           <string>Others</string>
           </property>
           <property name="alignment">
            <set>Qt::AlignCenter</set>
