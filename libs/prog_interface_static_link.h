@@ -26,8 +26,14 @@ private:
             if(node)
                 std::cout << "┌";
 
+            std::string highlight;
             if(node && !has_gui)
-                std::cout << "\033[1;31m" << line << "\033[0m" << std::endl;
+                highlight = "\033[1;34m"; // blue
+            if(line[0] == 'E') // Error
+                highlight = "\033[1;31m"; // red
+
+            if(!highlight.empty())
+                std::cout << highlight << line << "\033[0m" << std::endl;
             else
                 std::cout << line << std::endl;
             node = false;
