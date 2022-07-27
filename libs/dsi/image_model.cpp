@@ -1323,7 +1323,8 @@ bool ImageModel::run_plugin(std::string exec_name,
     QProcess program;
     program.setEnvironment(program.environment() << "FSLOUTPUTTYPE=NIFTI_GZ");
     program.setWorkingDirectory(working_dir.c_str());
-    show_progress() << "run " << exec << " at " << working_dir << " with" << std::endl;
+    show_progress() << "run " << exec << std::endl;
+    show_progress() << "path:" << working_dir << std::endl;
     QStringList p;
     for(auto s:param)
     {
@@ -1356,6 +1357,7 @@ bool ImageModel::run_plugin(std::string exec_name,
     unsigned int keyword_seen = 0;
     while(!program.waitForFinished(1000) && !progress::aborted())
     {
+        progress::at(keyword_seen,total_keyword_count);
         QString output = QString::fromLocal8Bit(program.readAllStandardOutput());
         if(output.isEmpty())
             continue;
@@ -1368,7 +1370,6 @@ bool ImageModel::run_plugin(std::string exec_name,
         progress::show(output_lines.back().toStdString().c_str());
         if(keyword_seen >= total_keyword_count)
             ++total_keyword_count;
-        progress::at(keyword_seen,total_keyword_count);
     }
     if(progress::aborted())
     {
@@ -1816,7 +1817,10 @@ std::string ImageModel::find_topup_reverse_pe(void)
     // locate rsrc.gz file
     std::string rev_file_name = file_name.substr(0,file_name.length()-6)+"rsrc.gz";
     if(std::filesystem::exists(rev_file_name))
+    {
+        show_progress() << "reversed pe SRC file found: " << rev_file_name << std::endl;
         return rev_file_name;
+    }
 
     // locate reverse pe nifti files
     std::map<float,std::string,std::greater<float> > candidates;
@@ -1824,17 +1828,24 @@ std::string ImageModel::find_topup_reverse_pe(void)
         tipl::image<3> b0;
         read_b0(b0);
         QStringList nii_files = QFileInfo(file_name.c_str()).dir().entryList(QStringList("*nii.gz"),QDir::Files|QDir::NoSymLinks);
-
+        progress p("searching for reversed phase encoding b0");
         for(QString file : nii_files)
         {
             std::string path = (QFileInfo(file_name.c_str()).absolutePath() + "/" + file).toStdString();
-            show_progress() << "checking " << path << std::endl;
             gz_nifti nii;
             if(!nii.load_from_file(path.c_str()))
                 continue;
-            if(nii.dim(4) != 1 || nii.width()*nii.height()*nii.depth() != dwi.size())
+            if(nii.width()*nii.height()*nii.depth() != dwi.size())
+            {
+                show_progress() << path << " not in DWI space" << std::endl;
                 continue;
-            show_progress() << "candidate found. checking correlations..." << std::endl;
+            }
+            if(nii.dim(4) != 1)
+            {
+                show_progress() << path << " is 4d nifti, skipping (need to extract only the b0)" << std::endl;
+                continue;
+            }
+            show_progress() << "candidate found: " << path << std::endl;
             tipl::image<3> b0_op;
             if(!(nii >> b0_op))
                 continue;
@@ -1845,7 +1856,10 @@ std::string ImageModel::find_topup_reverse_pe(void)
                 candidates[std::fabs(c[0]-c[1])] = path;
         }
     }
-    return candidates.empty() ? std::string() : candidates.begin()->second;
+    if(candidates.empty())
+        return std::string();
+    show_progress() << "reverse phase encoding image selected: " << candidates.begin()->second << std::endl;
+    return candidates.begin()->second;
 }
 bool ImageModel::run_topup_eddy(const std::string& other_src)
 {
@@ -2164,7 +2178,7 @@ void save_idx(const char* file_name,std::shared_ptr<gz_istream> in)
 size_t match_volume(float volume);
 bool ImageModel::load_from_file(const char* dwi_file_name)
 {
-    progress p("open ",dwi_file_name);
+    progress p("open ",std::filesystem::path(dwi_file_name).filename().string().c_str());
     if(voxel.steps.empty())
     {
         voxel.steps = "[Step T2][Reconstruction] open ";
@@ -2433,7 +2447,7 @@ bool ImageModel::save_fib(const std::string& output_name)
 void initial_LPS_nifti_srow(tipl::matrix<4,4>& T,const tipl::shape<3>& geo,const tipl::vector<3>& vs);
 bool ImageModel::save_nii_for_applytopup_or_eddy(bool include_rev) const
 {
-    show_progress() << "create trimmed volume for " << (include_rev ? "eddy":"applytopup") << std::endl;
+    show_progress() << "trim " << std::filesystem::path(file_name).filename() << " for " << (include_rev ? "eddy":"applytopup") << std::endl;
     show_progress() << "range: " << topup_from << " to " << topup_to << std::endl;
     tipl::image<4,unsigned short> buffer(tipl::shape<4>(topup_to[0]-topup_from[0],topup_to[1]-topup_from[1],topup_to[2]-topup_from[2],
                                          uint32_t(src_bvalues.size()) + uint32_t(rev_pe_src.get() && include_rev ? rev_pe_src->src_bvalues.size():0)));
