@@ -1884,14 +1884,15 @@ bool ImageModel::run_topup_eddy(const std::string& other_src)
         }
         show_progress() << "run correction from scratch with " << other_src << std::endl;
     }
-    if(!other_src.empty() && !std::filesystem::exists(other_src))
+    bool has_reversed_pe = !other_src.empty();
+    if(has_reversed_pe && !std::filesystem::exists(other_src))
     {
         error_msg = "find not exist: ";
         error_msg += other_src;
         return false;
     }
     // run topup
-    if(!other_src.empty())
+    if(has_reversed_pe)
     {
         progress prog("run topup");
         std::string topup_result = QFileInfo(file_name.c_str()).baseName().replace('.','_').toStdString();
@@ -1924,7 +1925,7 @@ bool ImageModel::run_topup_eddy(const std::string& other_src)
     if(eddy_check_shell(src_bvalues))
         return run_eddy();
 
-    if(!run_applytopup())
+    if(has_reversed_pe && !run_applytopup())
         return false;
 
     show_progress() << "eddy cannot be applied to this dataset. run motion correction on DSI Studio instead." << std::endl;
