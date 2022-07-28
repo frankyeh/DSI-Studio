@@ -57,9 +57,6 @@ int rec(program_option& po)
     }
     {
         progress prog("specify mask");
-        std::shared_ptr<fib_data> fib_handle(new fib_data);
-        fib_handle->dim = src.voxel.dim;
-        fib_handle->vs = src.voxel.vs;
         std::string mask_file = po.get("mask","1");
 
         if(mask_file == "1")
