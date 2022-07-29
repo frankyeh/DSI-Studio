@@ -125,7 +125,7 @@ void xnat_facade::get_data(std::string site,std::string auth,
         progress p3("save to ",download_name.c_str());
         QByteArray buf = cur_response->readAll();
         std::ofstream out(download_name.c_str(),std::ios::binary);
-        if(!tipl::io::save_stream_with_prog<progress>(out,buf.begin(),buf.size(),error_msg))
+        if(!tipl::io::save_stream_with_prog(p,out,buf.begin(),buf.size(),error_msg))
         {
             std::remove(download_name.c_str());
             break;
