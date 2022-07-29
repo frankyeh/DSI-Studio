@@ -24,7 +24,6 @@ public:
 public:
     std::vector<std::string> command_list;
     std::vector<std::string> param_list;
-    std::vector<bool> generalized;
     bool command(std::string cmd,std::string param1 = std::string());
 private:
     void update_other_images(void);

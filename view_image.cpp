@@ -26,11 +26,24 @@ std::string common_prefix(const std::string& str1,const std::string& str2)
     }
     return result;
 }
+std::string common_prefix(const std::string& str1,const std::string& str2,const std::string& str3)
+{
+    std::string result;
+    for(size_t cur = 0;cur < str1.length() && cur < str2.length() && cur < str3.length();++cur)
+    {
+        if(str1[cur] != str2[cur] || str1[cur] != str3[cur])
+            break;
+        result.push_back(str1[cur]);
+    }
+    return result;
+}
+
+
 
 bool match_strings(const std::string& str1,const std::string& str1_match,
                    const std::string& str2,std::string& str2_match,bool try_reverse = true,bool try_swap = true)
 {
-    //std::cout << "if " << str1 << "->" << str1_match << ", then " << str2 << "->?" << std::endl;
+
     // A->A
     // B->B
     if(str1 == str1_match)
@@ -45,12 +58,45 @@ bool match_strings(const std::string& str1,const std::string& str1_match,
         str2_match = str1_match;
         return true;
     }
+
+    // remove common prefix
+    {
+        auto cprefix = common_prefix(str1,str1_match,str2);
+        if(!cprefix.empty())
+        {
+            if(!match_strings(str1.substr(cprefix.length()),str1_match.substr(cprefix.length()),
+                              str2.substr(cprefix.length()),str2_match))
+                return false;
+            str2_match = cprefix+str2_match;
+            return true;
+        }
+    }
+
+    // remove common postfix
+    {
+        auto cpostfix = common_prefix(std::string(str1.rbegin(),str1.rend()),
+                                      std::string(str1_match.rbegin(),str1_match.rend()),
+                                      std::string(str2.rbegin(),str2.rend()));
+        if(!cpostfix.empty())
+        {
+            if(!match_strings(str1.substr(0,str1.length()-cpostfix.length()),
+                              str1_match.substr(0,str1_match.length()-cpostfix.length()),
+                              str2.substr(0,str2.length()-cpostfix.length()),str2_match))
+                return false;
+            str2_match += std::string(cpostfix.rbegin(),cpostfix.rend());
+            return true;
+        }
+    }
+
+
     auto cp1_1 = common_prefix(str1,str1_match);
     auto cp1_2 = common_prefix(str1,str2);
+
+
     // A_B->A_C
     // D_B->D_C
-    if(!cp1_1.empty())
-    {
+    if(cp1_1.length() > cp1_2.length())
+    {        
         // A->A_C
         // D->D_C
         if(cp1_1 == str1)
@@ -58,7 +104,19 @@ bool match_strings(const std::string& str1,const std::string& str1_match,
             str2_match = str2 + str1_match.substr(cp1_1.size());
             return true;
         }
-        if(match_strings(str1.substr(cp1_1.size()),str1_match.substr(cp1_1.size()),str2,str2_match))
+
+        if(str1.length() == str2.length())
+        {
+            if(match_strings(str1.substr(cp1_1.size()),str1_match.substr(cp1_1.size()),
+                             str2.substr(cp1_1.size()),str2_match))
+            {
+                str2_match = str2.substr(0,cp1_1.size()) + str2_match;
+                return true;
+            }
+        }
+
+        if(match_strings(str1.substr(cp1_1.size()),str1_match.substr(cp1_1.size()),
+                         str2,str2_match))
             return true;
     }
     // try reversed
@@ -82,16 +140,14 @@ bool match_files(const std::string& file_path1,const std::string& file_path2,
     auto name1 = std::filesystem::path(file_path1).filename().string();
     auto name2 = std::filesystem::path(file_path2).filename().string();
     auto name1_others = std::filesystem::path(file_path1_others).filename().string();
-    auto path1 = QFileInfo(file_path1.c_str()).absolutePath().toStdString();
-    auto path2 = QFileInfo(file_path2.c_str()).absolutePath().toStdString();
-    auto path1_others = QFileInfo(file_path1_others.c_str()).absolutePath().toStdString();
-
+    auto path1 = std::filesystem::path(file_path1).parent_path().string();
+    auto path2 = std::filesystem::path(file_path2).parent_path().string();
+    auto path1_others = std::filesystem::path(file_path1_others).parent_path().string();
     std::string name2_others,path2_others;
     if(!match_strings(name1,name2,name1_others,name2_others) ||
        !match_strings(path1,path2,path1_others,path2_others))
         return false;
     file_path2_gen = path2_others + "/" + name2_others;
-    show_progress() << "matching " << file_path1_others << " with " << file_path2_gen << std::endl;
     return true;
 }
 
@@ -101,10 +157,44 @@ bool view_image::command(std::string cmd,std::string param1)
 {
     if(!shape.size())
         return true;
-    progress prog(cmd.c_str());
     error_msg.clear();
-
     bool result = true;
+
+    progress prog(cmd.c_str());
+    if(!param1.empty())
+        progress::show((std::string("param: ")+param1).c_str());
+
+    if(cmd =="change_type")
+    {
+        auto new_type = decltype(data_type)(std::stoi(param1));
+        if(data_type != new_type)
+        {
+            std::vector<unsigned char> buf,empty_buf;
+            size_t pixelbit[4] = {1,2,4,4};
+            buf.resize(shape.size()*pixelbit[new_type]);
+            apply([&](auto& I)
+            {
+                switch(new_type)
+                {
+                    case uint8:     tipl::copy_mt(I.begin(),I.end(),reinterpret_cast<unsigned char*>(&buf[0]));break;
+                    case uint16:    tipl::copy_mt(I.begin(),I.end(),reinterpret_cast<unsigned short*>(&buf[0]));break;
+                    case uint32:    tipl::copy_mt(I.begin(),I.end(),reinterpret_cast<unsigned int*>(&buf[0]));break;
+                    case float32:   tipl::copy_mt(I.begin(),I.end(),reinterpret_cast<float*>(&buf[0]));break;
+                }
+                I.buf().swap(empty_buf);
+            });
+
+            data_type = new_type;
+            apply([&](auto& I)
+            {
+                I.buf().swap(buf);
+                I.resize(shape);
+            });
+            if(!dwi_volume_buf.empty())
+                dwi_volume_buf = std::move(std::vector<std::vector<unsigned char> >(dwi_volume_buf.size()));
+        }
+    }
+    else
     apply([&](auto& I)
     {
         tipl::time t("elapsed time: ");
@@ -113,61 +203,81 @@ bool view_image::command(std::string cmd,std::string param1)
         show_progress() << "result: " << (result ? "succeeded":"failed") << std::endl;
         shape = I.shape();
     });
+
     if(!result)
     {
         show_progress() << "ERROR:" << error_msg << std::endl;
         return false;
     }
-
     init_image();
-    /*
-    if(!other_data.empty())
+
+    command_list.push_back(cmd);
+    param_list.push_back(param1);
+
+
+    if(cmd == "save" && !file_names.empty())
     {
-
-        std::vector<std::string> other_params(other_data.size());
-
-        // generalized file names
+        if(QMessageBox::question(nullptr,"DSI Studio","Applying processing to other images and save them?",
+                                 QMessageBox::No | QMessageBox::Yes,QMessageBox::Yes) == QMessageBox::No)
         {
-            std::string filename1 = std::filesystem::path(file_name.toStdString()).filename().string();
-            std::string filename2 = std::filesystem::path(param1).filename().string();
-            for(size_t i = 0;i < other_data.size();++i)
+            file_names.clear();
+            return true;
+        }
+
+        progress p1("apply to other images");
+        int file_index = 0;
+        for(;progress::at(file_index,file_names.size());++file_index)
+        {
+            auto file_name2 = file_names[file_index];
+            progress p2("processing ",file_name2.toStdString().c_str());
+
+            std::shared_ptr<view_image> dialog(new view_image(parentWidget()));
+            dialog->setAttribute(Qt::WA_DeleteOnClose);
+            if(!dialog->open(QStringList() << file_name2))
             {
-                other_params[i] = param1;
-                // if param1 is file name, then try to generalize
-                if(param1.find(".gz") != std::string::npos)
+                QMessageBox::critical(this,"ERROR",QString("Cannot open ")+file_name2);
+                break;
+            }
+            for(size_t i = 0;i < param_list.size();++i)
+            {
+                std::string param2 = param_list[i];
+                if(command_list[i] == "save" ||
+                   command_list[i] == "multiply_image" ||
+                   command_list[i] == "add_image" ||
+                   command_list[i] == "minus_image")
                 {
-                    if(!match_files(file_name.toStdString(),param1,other_file_name[i],other_params[i]))
+                    if(match_files(original_file_name.toStdString(),param_list[i],
+                                file_name2.toStdString(),param2))
                     {
-                        error_msg = "cannot find a matched file for ";
-                        error_msg += other_file_name[i];
-                        return false;
+                        show_progress() << "matched path: " << std::filesystem::path(param2).parent_path().string() << std::endl;
+                        show_progress() << "matched file name: " << std::filesystem::path(param2).filename().string() << std::endl;
                     }
-                    if(!std::filesystem::exists(other_params[i]))
-                    {
-                        error_msg = "cannot find ";
-                        error_msg += other_params[i];
-                        error_msg += " for processing ";
-                        error_msg += other_file_name[i];
-                        return false;
-                    }
+                }
+                if(!dialog->command(command_list[i],param2))
+                {
+                    QMessageBox::critical(this,"ERROR",QString(dialog->error_msg.c_str()) + "\n"
+                                          + command_list[i].c_str() + " at\n"
+                                          + file_name2);
+                    goto end;
                 }
             }
         }
-
-        progress prog_("applying to others");
-        for(size_t i = 0;progress::at(i,other_data.size());++i)
+        end:
+        if(file_index < file_names.size() && // The processed is aborted, or there is an error happened
+           file_index && // Some files were processed without a problem. file_index=0 is current image, file_index = 1 is the first to-be processed image.
+           original_file_name.toStdString() == param1) // those files were overwritten to original file
         {
-            bool mni = other_is_mni[i];
-            if(!tipl::command<gz_nifti>(other_data[i],other_vs[i],other_T[i],mni,cmd,other_params[i],error_msg))
-            {
-                error_msg += " when processing ";
-                error_msg += QFileInfo(other_file_name[i].c_str()).fileName().toStdString();
-                return false;
-            }
-            other_is_mni[i] = mni;
+            QMessageBox::critical(this,"ERROR","Some files were processed and overwritten. They will be ignored in the next analyses");
+            file_names.remove(0,file_index);
+            // remove the last save command
+            command_list.pop_back();
+            param_list.pop_back();
+            return true;
         }
+
+        command_list.clear();
+        param_list.clear();
     }
-    */
     return true;
 }
 
@@ -354,36 +464,43 @@ bool get_compressed_image(tipl::io::dicom& dicom,tipl::image<2,short>& I)
     return true;
 }
 void prepare_idx(const char* file_name,std::shared_ptr<gz_istream> in);
-bool view_image::open(QStringList file_names)
+bool view_image::open(QStringList file_names_)
 {
+    if(file_names_.empty())
+        return false;
+
+
+    file_names = file_names_;
+    original_file_name = file_name = file_names[0];
+    file_names.remove(0);
+
     tipl::io::dicom dicom;
     is_mni = false;
     T.identity();
-
     QString info;
-    file_name = file_names[0];
+
     setWindowTitle(QFileInfo(file_name).fileName());
     progress prog("reading ",std::filesystem::path(file_name.toStdString()).filename().string().c_str());
-
-    if(file_names.size() > 1 && QString(file_name).endsWith(".bmp"))
+    if(file_names_.size() > 1 && QString(file_name).endsWith(".bmp"))
     {
-        for(unsigned int i = 0;progress::at(i,file_names.size());++i)
+        for(unsigned int i = 0;progress::at(i,file_names_.size());++i)
         {
             tipl::color_image I;
             tipl::io::bitmap bmp;
-            if(!bmp.load_from_file(file_names[i].toStdString().c_str()))
+            if(!bmp.load_from_file(file_names_[i].toStdString().c_str()))
                 return false;
             bmp >> I;
             data_type = uint8;
             if(i == 0)
             {
-                shape = tipl::shape<3>(I.width(),I.height(),file_names.size());
+                shape = tipl::shape<3>(I.width(),I.height(),file_names_.size());
                 I_uint8.resize(shape);
             }
             unsigned int pos = i*I.size();
             for(unsigned int j = 0;j < I.size();++j)
                 I_uint8[pos+j] = ((float)I[j].r+(float)I[j].r+(float)I[j].r)/3.0;
         }
+        file_names.clear();
     }
     if(QString(file_name).endsWith(".nhdr"))
     {
@@ -488,40 +605,6 @@ bool view_image::open(QStringList file_names)
         std::ostringstream out;
         out << nifti;
         info = out.str().c_str();
-
-        /*
-        if(file_names.size() > 1)
-        {
-            progress prog_("reading");
-            QString failed_list;
-            for(int i = 1;progress::at(i,file_names.size());++i)
-            {
-                gz_nifti other_nifti;
-                if(!other_nifti.load_from_file(file_names[i].toStdString()))
-                {
-                    if(!failed_list.isEmpty())
-                        failed_list += ",";
-                    failed_list += QFileInfo(file_names[i]).fileName();
-                    continue;
-                }
-                tipl::image<3> odata;
-                tipl::vector<3> ovs;
-                tipl::matrix<4,4> oT;
-                other_nifti.get_untouched_image(odata);
-                other_nifti.get_voxel_size(ovs);
-                other_nifti.get_image_transformation(oT);
-                other_file_name.push_back(file_names[i].toStdString());
-                other_data.push_back(odata);
-                other_vs.push_back(ovs);
-                other_T.push_back(oT);
-                other_is_mni.push_back(other_nifti.is_mni());
-            }
-            if(!failed_list.isEmpty())
-                QMessageBox::critical(this,"Error",QString("Some files could not be opened:")+failed_list);
-            else
-                QMessageBox::information(this,"DSI Studio",QString("Other files read in memory for operation"));
-        }
-        */
     }
     else
         if(dicom.load_from_file(file_name.toStdString()))
@@ -688,8 +771,8 @@ void view_image::init_image(void)
     if(ui->min->maximum() != double(max_value) ||
        ui->max->minimum() != double(min_value))
     {
-        ui->min->setRange(double(min_value-range/3),double(max_value));
-        ui->max->setRange(double(min_value),double(max_value+range/3));
+        ui->min->setRange(double(min_value),double(max_value));
+        ui->max->setRange(double(min_value),double(max_value));
         ui->min->setSingleStep(double(range/20));
         ui->max->setSingleStep(double(range/20));
         ui->min->setValue(double(min_value));
@@ -1046,39 +1129,7 @@ void view_image::run_action2()
 
 void view_image::on_type_currentIndexChanged(int index)
 {
-    if(!shape.size() || data_type == index)
-        return;
-    std::vector<unsigned char> buf,empty_buf;
-    size_t pixelbit[4] = {1,2,4,4};
-    buf.resize(shape.size()*pixelbit[index]);
-    apply([&](auto& I)
-    {
-        switch(index)
-        {
-            case uint8:
-                tipl::copy_mt(I.begin(),I.end(),reinterpret_cast<unsigned char*>(&buf[0]));
-                break;
-            case uint16:
-                tipl::copy_mt(I.begin(),I.end(),reinterpret_cast<unsigned short*>(&buf[0]));
-                break;
-            case uint32:
-                tipl::copy_mt(I.begin(),I.end(),reinterpret_cast<unsigned int*>(&buf[0]));
-                break;
-            case float32:
-                tipl::copy_mt(I.begin(),I.end(),reinterpret_cast<float*>(&buf[0]));
-                break;
-        }
-        I.buf().swap(empty_buf);
-    });
-
-    data_type = decltype(data_type)(index);
-    apply([&](auto& I)
-    {
-        I.buf().swap(buf);
-        I.resize(shape);
-    });
-    if(!dwi_volume_buf.empty())
-        dwi_volume_buf = std::move(std::vector<std::vector<unsigned char> >(dwi_volume_buf.size()));
+    command("change_type",std::to_string(index));
     init_image();
 }
 
