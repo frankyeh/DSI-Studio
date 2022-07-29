@@ -2172,7 +2172,7 @@ void save_idx(const char* file_name,std::shared_ptr<gz_istream> in)
     idx_name += ".idx";
     if(in->has_access_points() && in->sample_access_point && !std::filesystem::exists(idx_name))
     {
-        show_progress() << "saving index file for accelerated loading: " << idx_name << std::endl;
+        show_progress() << "saving index file for accelerated loading: " << std::filesystem::path(idx_name).filename().string() << std::endl;
         in->save_index(idx_name.c_str());
     }
 }
