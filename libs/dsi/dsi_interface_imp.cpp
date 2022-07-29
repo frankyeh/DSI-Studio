@@ -322,7 +322,7 @@ const char* odf_average(const char* out_name,std::vector<std::string>& file_name
                 throw std::runtime_error(fib.error_msg);
             if(!fib.is_qsdr)
                 throw std::runtime_error("not QSDR fib file");
-            if(!fib.odf.has_odfs())
+            if(!fib.has_odfs())
                 throw std::runtime_error("cannot find ODF data in fib file");
 
             if(index == 0)
