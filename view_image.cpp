@@ -268,7 +268,12 @@ bool view_image::command(std::string cmd,std::string param1)
            original_file_name.toStdString() == param1) // those files were overwritten to original file
         {
             QMessageBox::critical(this,"ERROR","Some files were processed and overwritten. They will be ignored in the next analyses");
+            #ifdef QT6_PATCH
             file_names.remove(0,file_index);
+            #else
+            for(int i = 0;i < file_index;++i)
+                file_names.removeFirst();
+            #endif
             // remove the last save command
             command_list.pop_back();
             param_list.pop_back();
@@ -472,7 +477,7 @@ bool view_image::open(QStringList file_names_)
 
     file_names = file_names_;
     original_file_name = file_name = file_names[0];
-    file_names.remove(0);
+    file_names.removeFirst();
 
     tipl::io::dicom dicom;
     is_mni = false;
