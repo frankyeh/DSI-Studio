@@ -14,12 +14,17 @@ class view_image : public QMainWindow
     Q_OBJECT
     
 public:
-    QString file_name;
+    QString file_name,original_file_name;
+    QStringList file_names;
     gz_nifti nifti;
     explicit view_image(QWidget *parent = nullptr);
     ~view_image();
     bool open(QStringList file_name);
     bool eventFilter(QObject *obj, QEvent *event);
+public:
+    std::vector<std::string> command_list;
+    std::vector<std::string> param_list;
+    std::vector<bool> generalized;
     bool command(std::string cmd,std::string param1 = std::string());
 private:
     void update_other_images(void);
