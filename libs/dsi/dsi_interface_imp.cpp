@@ -373,7 +373,7 @@ const char* odf_average(const char* out_name,std::vector<std::string>& file_name
             }
             odf_data odf;
             if(!odf.read(fib.mat_reader))
-                throw std::runtime_error("cannot read ODF data");
+                throw std::runtime_error(odf.error_msg);
             tipl::par_for(dim.size(),[&](unsigned int i){
                 if(fib.dir.fa[0][i] == 0.0f)
                     return;
