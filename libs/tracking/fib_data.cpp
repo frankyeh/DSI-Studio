@@ -160,10 +160,14 @@ bool fiber_directions::add_data(gz_mat_read& mat_reader)
             }
         }
     }
-
+    tipl::shape<3> dim;
+    mat_reader.read("dimension",dim);
     for (unsigned int index = 0;prog(index,mat_reader.size());++index)
     {
         std::string matrix_name = mat_reader.name(index);
+        size_t total_size = mat_reader[index].get_cols()*mat_reader[index].get_rows();
+        if(total_size != dim.size() && total_size != dim.size()*3)
+            continue;
         if (matrix_name == "image")
         {
             check_index(0);
