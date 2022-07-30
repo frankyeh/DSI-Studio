@@ -2190,7 +2190,7 @@ bool ImageModel::load_from_file(const char* dwi_file_name)
     file_name = dwi_file_name;
     if(!QFileInfo(dwi_file_name).exists())
     {
-        error_msg = "File does not exist:";
+        error_msg = "file does not exist:";
         error_msg += dwi_file_name;
         return false;
     }
