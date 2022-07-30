@@ -1377,13 +1377,16 @@ void GLWidget::renderLR()
 
 void GLWidget::add_odf(const std::vector<tipl::pixel_index<3> >& odf_pos_)
 {
+    if(!odf.get())
+        odf.reset(new odf_data);
+    if(!odf->read(cur_tracking_window.handle->mat_reader))
+        return;
     std::shared_ptr<fib_data> handle = cur_tracking_window.handle;
     std::vector<const float*> odf_buffers;
     std::vector<tipl::pixel_index<3> > odf_pos;
     for(size_t i = 0;i < odf_pos_.size();++i)
     {
-        const float* odf_buffer =
-            handle->get_odf_data(uint32_t(odf_pos_[i].index()));
+        const float* odf_buffer = odf->get_odf_data(uint32_t(odf_pos_[i].index()));
         if(!odf_buffer)
             continue;
         odf_buffers.push_back(odf_buffer);
@@ -1401,6 +1404,7 @@ void GLWidget::add_odf(const std::vector<tipl::pixel_index<3> >& odf_pos_)
     tessellated_icosahedron ti;
     ti.init(8);
     shaping.init(ti);
+
     tipl::par_for(odf_pos.size(),[&](size_t i)
     {
 
