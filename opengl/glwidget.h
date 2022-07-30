@@ -87,6 +87,7 @@ Q_OBJECT
      bool video_capturing = false;
      size_t video_frames = 0;
  private://odf
+     std::shared_ptr<odf_data> odf;
      std::vector<tipl::vector<3,float> >odf_points;
      std::vector<tipl::vector<3,float> >odf_norm;
      std::vector<float> odf_color1,odf_color2,odf_color3;
