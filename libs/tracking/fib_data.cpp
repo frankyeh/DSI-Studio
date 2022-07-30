@@ -15,37 +15,64 @@ bool odf_data::read(gz_mat_read& mat_reader)
     if(!odf_blocks.empty())
         return true;
     progress prog("reading odf data");
-    size_t odf_block_count = 0;
     unsigned int row,col;
     const float* fa0 = nullptr;
     tipl::shape<3> dim;
     if (!mat_reader.read("fa0",row,col,fa0) || !mat_reader.read("dimension",dim))
+    {
+        error_msg = "invalid FIB file format";
         return false;
-    while(mat_reader.has((std::string("odf")+std::to_string(odf_block_count)).c_str()))
+    }
+    size_t odf_block_count = 0;
+    size_t odf_count = 0;
+    while(mat_reader.get_col_row((std::string("odf")+std::to_string(odf_block_count)).c_str(),row,col))
+    {
         ++odf_block_count;
+        odf_count += col;
+    }
     if (!odf_block_count)
+    {
+        error_msg = "no ODF data found";
         return false;
+    }
 
     odf_blocks.resize(odf_block_count);
     odf_block_map1.resize(dim);
     odf_block_map2.resize(dim);
 
-    unsigned int voxel_index = 0;
-    for(unsigned int i = 0;prog(i,odf_block_count);++i)
+    show_progress() << "odf count: " << odf_count << std::endl;
+
+    {
+        progress prog("checking odf count");
+        size_t mask_count = 0;
+        for(size_t i = 0;i < dim.size();++i)
+            if(fa0[i] != 0.0f)
+                ++mask_count;
+        show_progress() << "mask count: " << mask_count << std::endl;
+        if(odf_count < mask_count)
+        {
+            error_msg = "incomplete ODF data";
+            return false;
+        }
+    }
+
+    size_t voxel_index = 0;
+    for(size_t i = 0;prog(i,odf_block_count);++i)
     {
         if(!mat_reader.read((std::string("odf")+std::to_string(i)).c_str(),row,col,odf_blocks[i]))
         {
+            error_msg = "failed to read ODF data";
             odf_blocks.clear();
             return false;
         }
-        // row: hald_odf_size
+        // row: half_odf_size
         // col: odf count
         size_t block_size = row*col;
-        for(unsigned int j = 0;j < block_size;j += row)
+        for(size_t j = 0;j < block_size;j += row)
         {
-            unsigned int k_end = j + row;
+            size_t k_end = j + row;
             bool is_odf_zero = true;
-            for(unsigned int k = j;k < k_end;++k)
+            for(size_t k = j;k < k_end;++k)
                 if(odf_blocks[i][k] != 0.0f)
                 {
                     is_odf_zero = false;
@@ -847,7 +874,10 @@ bool fib_data::save_mapping(const std::string& index_name,const std::string& fil
                                  dir.half_odf_size));
         odf_data odf;
         if(!odf.read(mat_reader))
+        {
+            error_msg = odf.error_msg;
             return false;
+        }
         for(size_t pos = 0;pos < dim.size();++pos)
         {
             auto* ptr = odf.get_odf_data(pos);
