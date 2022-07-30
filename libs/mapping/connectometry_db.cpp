@@ -458,7 +458,7 @@ bool connectometry_db::add_subject_file(const std::string& file_name,
                 return false;
             if(!subject_odf.read(fib.mat_reader))
             {
-                error_msg = "failed to read odf";
+                error_msg = subject_odf.error_msg;
                 return false;
             }
             tipl::transformation_matrix<float> template2subject(tipl::from_space(handle->trans_to_mni).to(fib.trans_to_mni));
@@ -881,7 +881,7 @@ bool connectometry_db::get_qa_profile(const char* file_name,std::vector<std::vec
     odf_data subject_odf;
     if(!subject_odf.read(single_subject))
     {
-        error_msg = "The fib file contains no ODF information. Please reconstruct the SRC file again with ODF output.";
+        error_msg = subject_odf.error_msg;
         return false;
     }
     data.clear();
