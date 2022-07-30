@@ -485,7 +485,7 @@ bool view_image::open(QStringList file_names_)
     QString info;
 
     setWindowTitle(QFileInfo(file_name).fileName());
-    progress prog("reading ",std::filesystem::path(file_name.toStdString()).filename().string().c_str());
+    progress prog("open image file ",std::filesystem::path(file_name.toStdString()).filename().string().c_str());
     if(file_names_.size() > 1 && QString(file_name).endsWith(".bmp"))
     {
         for(unsigned int i = 0;progress::at(i,file_names_.size());++i)
