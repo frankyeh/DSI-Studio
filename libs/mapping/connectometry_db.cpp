@@ -891,7 +891,7 @@ bool connectometry_db::get_qa_profile(const char* file_name,std::vector<std::vec
     for(unsigned int index = 0;index < data.size();++index)
         data[index].resize(handle->dim.size());
 
-    for(unsigned int index = 0;index < handle->dim.size();++index)
+    for(size_t index = 0;index < handle->dim.size();++index)
         if(handle->dir.fa[0][index] != 0.0f)
         {
             const float* odf = subject_odf.get_odf_data(index);
