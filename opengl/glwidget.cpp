@@ -1380,7 +1380,10 @@ void GLWidget::add_odf(const std::vector<tipl::pixel_index<3> >& odf_pos_)
     if(!odf.get())
         odf.reset(new odf_data);
     if(!odf->read(cur_tracking_window.handle->mat_reader))
+    {
+        QMessageBox::critical(this,"ERROR",odf->error_msg.c_str());
         return;
+    }
     std::shared_ptr<fib_data> handle = cur_tracking_window.handle;
     std::vector<const float*> odf_buffers;
     std::vector<tipl::pixel_index<3> > odf_pos;
