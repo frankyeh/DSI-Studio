@@ -10,22 +10,14 @@
 
 struct odf_data{
 private:
-    const float* odfs = nullptr;
-    unsigned int odfs_size;
-private:
-    tipl::image<3,unsigned int> voxel_index_map;
     std::vector<const float*> odf_blocks;
-    std::vector<unsigned int> odf_block_size;
+private:
     tipl::image<3,unsigned int> odf_block_map1;
     tipl::image<3,unsigned int> odf_block_map2;
-    unsigned int half_odf_size;
 public:
     bool read(gz_mat_read& mat_reader);
-    bool has_odfs(void) const
-    {
-        return odfs != nullptr || !odf_blocks.empty();
-    }
-    const float* get_odf_data(unsigned int index) const;
+    bool has_odfs(void) const {return !odf_blocks.empty();}
+    const float* get_odf_data(unsigned int index);
 };
 
 class fiber_directions
@@ -189,7 +181,6 @@ public:
     bool trackable = true;
 public:
     fiber_directions dir;
-    odf_data odf;
     connectometry_db db;
     mutable std::vector<item> view_item;
 public:
@@ -288,8 +279,7 @@ public:
     bool load_from_mat(void);
     bool save_mapping(const std::string& index_name,const std::string& file_name);
 public:
-    bool has_odfs(void) const{return odf.has_odfs();}
-    const float* get_odf_data(unsigned int index) const{return odf.get_odf_data(index);}
+    bool has_odfs(void) const{return mat_reader.has("odf0");}
 public:
     size_t get_name_index(const std::string& index_name) const;
     void get_index_list(std::vector<std::string>& index_list) const;

@@ -12,115 +12,62 @@
 extern std::vector<std::string> fa_template_list;
 bool odf_data::read(gz_mat_read& mat_reader)
 {
+    if(!odf_blocks.empty())
+        return true;
+    progress prog("reading odf data");
+    size_t odf_block_count = 0;
     unsigned int row,col;
-    {
-        if(mat_reader.read("odfs",row,col,odfs))
-            odfs_size = row*col;
-        else
-        {
-            for(unsigned int index = 0;1;++index)
-            {
-                const float* odf = nullptr;
-                std::ostringstream out;
-                out << "odf" << index;
-                std::string name = out.str();
-                if(!mat_reader.read(name.c_str(),row,col,odf))
-                    break;
-                if(odf_blocks.size() <= index)
-                {
-                    odf_blocks.resize(index+1);
-                    odf_block_size.resize(index+1);
-                }
-                odf_blocks[index] = odf;
-                odf_block_size[index] = row*col;
-            }
-        }
-    }
-    if(!has_odfs())
-        return false;
-
-    // dimension
-    tipl::shape<3> dim;
-    if (!mat_reader.read("dimension",dim))
-        return false;
-    // odf_vertices
-    {
-        const float* odf_buffer;
-        if (!mat_reader.read("odf_vertices",row,col,odf_buffer))
-            return false;
-        half_odf_size = col / 2;
-    }
     const float* fa0 = nullptr;
-    if (!mat_reader.read("fa0",row,col,fa0))
+    tipl::shape<3> dim;
+    if (!mat_reader.read("fa0",row,col,fa0) || !mat_reader.read("dimension",dim))
+        return false;
+    while(mat_reader.has((std::string("odf")+std::to_string(odf_block_count)).c_str()))
+        ++odf_block_count;
+    if (!odf_block_count)
         return false;
 
-    if (odfs)
+    odf_blocks.resize(odf_block_count);
+    odf_block_map1.resize(dim);
+    odf_block_map2.resize(dim);
+
+    unsigned int voxel_index = 0;
+    for(unsigned int i = 0;prog(i,odf_block_count);++i)
     {
-        voxel_index_map.resize(dim);
-        for (unsigned int index = 0,j = 0;index < voxel_index_map.size();++index)
+        if(!mat_reader.read((std::string("odf")+std::to_string(i)).c_str(),row,col,odf_blocks[i]))
         {
-            if (fa0[index] == 0.0f)
-            {
-                unsigned int from = j*(half_odf_size);
-                unsigned int to = from + half_odf_size;
-                if (to > odfs_size)
+            odf_blocks.clear();
+            return false;
+        }
+        // row: hald_odf_size
+        // col: odf count
+        size_t block_size = row*col;
+        for(unsigned int j = 0;j < block_size;j += row)
+        {
+            unsigned int k_end = j + row;
+            bool is_odf_zero = true;
+            for(unsigned int k = j;k < k_end;++k)
+                if(odf_blocks[i][k] != 0.0f)
+                {
+                    is_odf_zero = false;
                     break;
-                bool odf_is_zero = true;
-                for (;from < to;++from)
-                    if (odfs[from] != 0.0f)
-                    {
-                        odf_is_zero = false;
+                }
+            if(!is_odf_zero)
+                for(;voxel_index < odf_block_map1.size();++voxel_index)
+                    if(fa0[voxel_index] != 0.0f)
                         break;
-                    }
-                if (!odf_is_zero)
-                    continue;
-            }
-            ++j;
-            voxel_index_map[index] = j;
+            if(voxel_index >= odf_block_map1.size())
+                break;
+            odf_block_map1[voxel_index] = i;
+            odf_block_map2[voxel_index] = j;
+            ++voxel_index;
         }
     }
-
-    if (!odf_blocks.empty())
-    {
-        odf_block_map1.resize(dim);
-        odf_block_map2.resize(dim);
-
-        unsigned int voxel_index = 0;
-        for(unsigned int i = 0;i < odf_block_size.size();++i)
-            for(unsigned int j = 0;j < odf_block_size[i];j += half_odf_size)
-            {
-                unsigned int k_end = j + half_odf_size;
-                bool is_odf_zero = true;
-                for(unsigned int k = j;k < k_end;++k)
-                    if(odf_blocks[i][k] != 0.0f)
-                    {
-                        is_odf_zero = false;
-                        break;
-                    }
-                if(!is_odf_zero)
-                    for(;voxel_index < odf_block_map1.size();++voxel_index)
-                        if(fa0[voxel_index] != 0.0f)
-                            break;
-                if(voxel_index >= odf_block_map1.size())
-                    break;
-                odf_block_map1[voxel_index] = i;
-                odf_block_map2[voxel_index] = j;
-                ++voxel_index;
-            }
-    }
-    return true;
+    return !progress::aborted();
 }
 
 
-const float* odf_data::get_odf_data(unsigned int index) const
+const float* odf_data::get_odf_data(unsigned int index)
 {
-    if (odfs != nullptr)
-    {
-        if (index >= voxel_index_map.size() || voxel_index_map[index] == 0)
-            return nullptr;
-        return odfs+(voxel_index_map[index]-1)*half_odf_size;
-    }
-
     if (!odf_blocks.empty())
     {
         if (index >= odf_block_map2.size())
@@ -872,7 +819,7 @@ bool fib_data::save_mapping(const std::string& index_name,const std::string& fil
 
         for(unsigned int j = 0,index = 0;j < dir.num_fiber;++j)
         for(int k = 0;k < 3;++k)
-        for(unsigned int i = 0;i < dim.size();++i,++index)
+        for(size_t i = 0;i < dim.size();++i,++index)
             buf[index] = dir.get_fib(i,j)[k];
 
         return gz_nifti::save_to_file(file_name.c_str(),buf,vs,trans_to_mni,is_qsdr);
@@ -887,14 +834,17 @@ bool fib_data::save_mapping(const std::string& index_name,const std::string& fil
                 buf[ptr] = dir.get_fib(index,dir_index)[j];
         return gz_nifti::save_to_file(file_name.c_str(),buf,vs,trans_to_mni,is_qsdr);
     }
-    if(index_name == "odfs" && odf.has_odfs())
+    if(index_name == "odfs")
     {
         tipl::image<4,float> buf(tipl::shape<4>(
                                  dim.width(),
                                  dim.height(),
                                  dim.depth(),
                                  dir.half_odf_size));
-        for(unsigned int pos = 0;pos < dim.size();++pos)
+        odf_data odf;
+        if(!odf.read(mat_reader))
+            return false;
+        for(size_t pos = 0;pos < dim.size();++pos)
         {
             auto* ptr = odf.get_odf_data(pos);
             if(ptr!= nullptr)
@@ -977,7 +927,6 @@ bool fib_data::load_from_mat(void)
             return false;
         }
     }
-    odf.read(mat_reader);
 
     view_item.push_back(item(dir.fa.size() == 1 ? "fa":"qa",dir.fa[0],dim));
     for(unsigned int index = 1;index < dir.index_name.size();++index)
