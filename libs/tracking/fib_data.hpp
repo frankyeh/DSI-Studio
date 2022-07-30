@@ -15,6 +15,7 @@ private:
     tipl::image<3,unsigned int> odf_block_map1;
     tipl::image<3,unsigned int> odf_block_map2;
 public:
+    std::string error_msg;
     bool read(gz_mat_read& mat_reader);
     bool has_odfs(void) const {return !odf_blocks.empty();}
     const float* get_odf_data(unsigned int index);
