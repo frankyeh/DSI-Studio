@@ -365,7 +365,7 @@ const char* odf_average(const char* out_name,std::vector<std::string>& file_name
                 }
             }
 
-            progress::show("loading ODFs");
+            progress::show("accumulating ODFs");
             if(index == 0)
             {
                 odfs.resize(dim.size());
@@ -388,7 +388,7 @@ const char* odf_average(const char* out_name,std::vector<std::string>& file_name
             });
 
 
-            progress::show("accumulate metrics");
+            progress::show("accumulating other metrics");
             for(size_t i = 0;progress::at(i,other_metrics_name.size());++i)
             {
                 auto metric_index = fib.get_name_index(other_metrics_name[i]);
