@@ -625,14 +625,12 @@ bool fib_data::load_from_file(const char* file_name)
     }
     if(!QFileInfo(file_name).exists())
     {
-        error_msg = "File not exist";
+        error_msg = "file does not exist";
         return false;
     }
-
-
     if(!read_fib_mat_with_idx(file_name,mat_reader))
     {
-        error_msg = progress::aborted() ? "Loading process aborted" : "Invalid file format";
+        error_msg = progress::aborted() ? "process aborted" : "invalid FIB file";
         return false;
     }
 
