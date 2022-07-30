@@ -371,11 +371,13 @@ const char* odf_average(const char* out_name,std::vector<std::string>& file_name
                 odfs.resize(dim.size());
                 odf_count.resize(dim);
             }
-
+            odf_data odf;
+            if(!odf.read(fib.mat_reader))
+                throw std::runtime_error("cannot read ODF data");
             tipl::par_for(dim.size(),[&](unsigned int i){
                 if(fib.dir.fa[0][i] == 0.0f)
                     return;
-                const float* odf_data = fib.odf.get_odf_data(i);
+                const float* odf_data = odf.get_odf_data(i);
                 if(odf_data == nullptr)
                     return;
                 if(odfs[i].empty())
