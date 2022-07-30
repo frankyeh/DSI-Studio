@@ -122,6 +122,7 @@ void fiber_directions::check_index(unsigned int index)
 
 bool fiber_directions::add_data(gz_mat_read& mat_reader)
 {
+    progress prog("loading image volumes");
     unsigned int row,col;
 
     // odf_vertices
@@ -160,7 +161,7 @@ bool fiber_directions::add_data(gz_mat_read& mat_reader)
         }
     }
 
-    for (unsigned int index = 0;index < mat_reader.size();++index)
+    for (unsigned int index = 0;prog(index,mat_reader.size());++index)
     {
         std::string matrix_name = mat_reader.name(index);
         if (matrix_name == "image")
@@ -216,7 +217,8 @@ bool fiber_directions::add_data(gz_mat_read& mat_reader)
         mat_reader.read(index,row,col,index_data[prefix_name_index][store_index]);
 
     }
-
+    if(progress::aborted())
+        return 0;
     if(num_fiber == 0)
     {
         error_msg = "Invalid FIB format";
@@ -892,6 +894,7 @@ bool is_human_size(tipl::shape<3> dim,tipl::vector<3> vs)
 }
 bool fib_data::load_from_mat(void)
 {
+    progress prog("loading fiber and image data");
     mat_reader.read("report",report);
     mat_reader.read("steps",steps);
     if (!mat_reader.read("dimension",dim))
@@ -916,6 +919,7 @@ bool fib_data::load_from_mat(void)
         error_msg = dir.error_msg;
         return false;
     }
+    progress p2("initiating data");
     if(has_high_reso)
     {
         show_progress() << "reading original mat file" << std::endl;
@@ -931,7 +935,6 @@ bool fib_data::load_from_mat(void)
         view_item.push_back(item(dir.index_name[index],dir.index_data[index][0],dim));
     view_item.push_back(item("color",dir.fa[0],dim));
 
-    // read other DWI space volume
     for (unsigned int index = 0;index < mat_reader.size();++index)
     {
         std::string matrix_name = mat_reader.name(index);
