@@ -32,11 +32,8 @@ bool connectometry_db::read_db(fib_data* handle_)
     unsigned int row,col;
     for(unsigned int index = 0;1;++index)
     {
-        std::ostringstream out;
-        out << "subject" << index;
         const float* buf = nullptr;
-        handle->mat_reader.read(out.str().c_str(),row,col,buf);
-        if (!buf)
+        if (!handle->mat_reader.read((std::string("subject")+std::to_string(index)).c_str(),row,col,buf))
             break;
         if(!index)
         {
@@ -70,6 +67,7 @@ bool connectometry_db::read_db(fib_data* handle_)
     if(!num_subjects)
         return true;
 
+    progress prog("loading databse");
     std::string subject_names_str;
     if(!handle->mat_reader.read("subject_names",subject_names_str) ||
        !handle->mat_reader.read("R2",R2))
