@@ -160,55 +160,68 @@ bool view_image::command(std::string cmd,std::string param1)
     error_msg.clear();
     bool result = true;
 
-    progress prog(cmd.c_str());
-    if(!param1.empty())
-        progress::show((std::string("param: ")+param1).c_str());
-
-    if(cmd =="change_type")
     {
-        auto new_type = decltype(data_type)(std::stoi(param1));
-        if(data_type != new_type)
-        {
-            std::vector<unsigned char> buf,empty_buf;
-            size_t pixelbit[4] = {1,2,4,4};
-            buf.resize(shape.size()*pixelbit[new_type]);
-            apply([&](auto& I)
-            {
-                switch(new_type)
-                {
-                    case uint8:     tipl::copy_mt(I.begin(),I.end(),reinterpret_cast<unsigned char*>(&buf[0]));break;
-                    case uint16:    tipl::copy_mt(I.begin(),I.end(),reinterpret_cast<unsigned short*>(&buf[0]));break;
-                    case uint32:    tipl::copy_mt(I.begin(),I.end(),reinterpret_cast<unsigned int*>(&buf[0]));break;
-                    case float32:   tipl::copy_mt(I.begin(),I.end(),reinterpret_cast<float*>(&buf[0]));break;
-                }
-                I.buf().swap(empty_buf);
-            });
+        progress prog(cmd.c_str());
+        if(!param1.empty())
+            progress::show((std::string("param: ")+param1).c_str());
 
-            data_type = new_type;
-            apply([&](auto& I)
+        if(cmd =="change_type")
+        {
+            auto new_type = decltype(data_type)(std::stoi(param1));
+            if(data_type != new_type)
             {
-                I.buf().swap(buf);
-                I.resize(shape);
-            });
-            if(!dwi_volume_buf.empty())
-                dwi_volume_buf = std::move(std::vector<std::vector<unsigned char> >(dwi_volume_buf.size()));
+                std::vector<unsigned char> buf,empty_buf;
+                size_t pixelbit[4] = {1,2,4,4};
+                buf.resize(shape.size()*pixelbit[new_type]);
+                apply([&](auto& I)
+                {
+                    switch(new_type)
+                    {
+                        case uint8:     tipl::copy_mt(I.begin(),I.end(),reinterpret_cast<unsigned char*>(&buf[0]));break;
+                        case uint16:    tipl::copy_mt(I.begin(),I.end(),reinterpret_cast<unsigned short*>(&buf[0]));break;
+                        case uint32:    tipl::copy_mt(I.begin(),I.end(),reinterpret_cast<unsigned int*>(&buf[0]));break;
+                        case float32:   tipl::copy_mt(I.begin(),I.end(),reinterpret_cast<float*>(&buf[0]));break;
+                    }
+                    I.buf().swap(empty_buf);
+                });
+
+                data_type = new_type;
+                apply([&](auto& I)
+                {
+                    I.buf().swap(buf);
+                    I.resize(shape);
+                });
+                if(!dwi_volume_buf.empty())
+                    dwi_volume_buf = std::move(std::vector<std::vector<unsigned char> >(dwi_volume_buf.size()));
+            }
+        }
+        else
+        if(cmd == "set_transformation")
+        {
+            std::istringstream in(param1);
+            for(int i = 0;i < 16;++i)
+                in >> T[i];
+        }
+        else
+        if(cmd == "set_shift")
+        {
+            std::istringstream in(param1);
+            in >> T[3] >> T[7] >> T[11];
+        }
+        else
+        apply([&](auto& I)
+        {
+            result = tipl::command<gz_nifti>(I,vs,T,is_mni,cmd,param1,error_msg);
+            shape = I.shape();
+        });
+        show_progress() << "result: " << (result ? "succeeded":"failed") << std::endl;
+        if(!result)
+        {
+            show_progress() << "ERROR:" << error_msg << std::endl;
+            return false;
         }
     }
-    else
-    apply([&](auto& I)
-    {
-        tipl::time t("elapsed time: ");
-        show_progress() << "run command: " << cmd << " " << param1 << std::endl;
-        result = tipl::command<gz_nifti>(I,vs,T,is_mni,cmd,param1,error_msg);
-        show_progress() << "result: " << (result ? "succeeded":"failed") << std::endl;
-        shape = I.shape();
-    });
 
-    if(!result)
-    {
-        show_progress() << "ERROR:" << error_msg << std::endl;
-        return false;
-    }
     init_image();
 
     command_list.push_back(cmd);
@@ -968,8 +981,7 @@ void view_image::on_actionSet_Translocation_triggered()
 
     if(!ok)
         return;
-    std::istringstream in(result.toStdString());
-    in >> T[3] >> T[7] >> T[11];
+    command("set_shift",result.toStdString());
     init_image();
 }
 
@@ -984,9 +996,7 @@ void view_image::on_actionSet_Transformation_triggered()
 
     if(!ok)
         return;
-    std::istringstream in(result.toStdString());
-    for(int i = 0;i < 16;++i)
-        in >> T[i];
+    command("set_transformation",result.toStdString());
     init_image();
 }
 
@@ -1020,22 +1030,28 @@ void view_image::on_max_valueChanged(double)
 
 void view_image::on_AxiView_clicked()
 {
+    no_update = true;
     cur_dim = 2;
     ui->slice_pos->setRange(0,shape.depth()-1);
+    no_update = false;
     ui->slice_pos->setValue(slice_pos[cur_dim]);
 }
 
 void view_image::on_CorView_clicked()
 {
+    no_update = true;
     cur_dim = 1;
     ui->slice_pos->setRange(0,shape.height()-1);
+    no_update = false;
     ui->slice_pos->setValue(slice_pos[cur_dim]);
 }
 
 void view_image::on_SagView_clicked()
 {
+    no_update = true;
     cur_dim = 0;
     ui->slice_pos->setRange(0,shape.width()-1);
+    no_update = false;
     ui->slice_pos->setValue(slice_pos[cur_dim]);
 }
 
