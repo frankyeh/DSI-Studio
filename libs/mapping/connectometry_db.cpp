@@ -405,10 +405,10 @@ void connectometry_db::sample_from_image(tipl::const_pointer_image<3,float> I,
 
     data.clear();
     data.resize(subject_qa_length);
-    tipl::par_for(si2vi.size(),[&](unsigned int si)
+    tipl::par_for(si2vi.size(),[&](size_t si)
     {
         size_t vi = si2vi[si];
-        for(unsigned int i = 0;i < handle->dir.num_fiber;++i,si += uint32_t(si2vi.size()))
+        for(unsigned int i = 0;i < handle->dir.num_fiber;++i,si += si2vi.size())
         {
             if(handle->dir.fa[i][vi] == 0.0f)
                 break;
@@ -466,9 +466,9 @@ bool connectometry_db::add_subject_file(const std::string& file_name,
             progress::show("loading");
             data.clear();
             data.resize(subject_qa_length);
-            tipl::par_for(si2vi.size(),[&](unsigned int si)
+            tipl::par_for(si2vi.size(),[&](size_t si)
             {
-                unsigned int vi = si2vi[si];
+                size_t vi = si2vi[si];
                 if(handle->dir.fa[0][vi] == 0.0f)
                     return;
 
@@ -482,7 +482,7 @@ bool connectometry_db::add_subject_file(const std::string& file_name,
                 if(odf == nullptr)
                     return;
                 float min_value = tipl::min_value(odf, odf + handle->dir.half_odf_size);
-                for(unsigned int i = 0;i < handle->dir.num_fiber;++i,si += uint32_t(si2vi.size()))
+                for(unsigned int i = 0;i < handle->dir.num_fiber;++i,si += si2vi.size())
                 {
                     if(handle->dir.fa[i][vi] == 0.0f)
                         break;
@@ -811,7 +811,7 @@ bool connectometry_db::get_demo_matched_volume(const std::string& matched_demo,t
     mr.set_variables(X.begin(),uint32_t(feature_size),uint32_t(subject_qa.size()));
 
     tipl::image<3> I(handle->dim);
-    tipl::par_for(I.size(),[&](unsigned int index)
+    tipl::par_for(I.size(),[&](size_t index)
     {
         if(vi2si[index])
         {
