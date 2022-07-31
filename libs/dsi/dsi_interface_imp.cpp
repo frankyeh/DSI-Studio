@@ -284,7 +284,7 @@ bool output_odfs(const tipl::image<3,unsigned char>& mni_mask,
     if (!image_model.reconstruct2<ODFLoader,
             DetermineFiberDirections,
             SaveMetrics,
-            SaveDirIndex>("template reconstruction"))
+            SaveDirIndex>("template"))
     {
         error_msg = image_model.error_msg;
         swap_data();
