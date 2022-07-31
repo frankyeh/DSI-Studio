@@ -82,7 +82,7 @@ public:
 
     std::string report,steps;
     std::ostringstream recon_report, step_report;
-    unsigned int thread_count = 1;
+    unsigned int thread_count = std::thread::hardware_concurrency();
     void load_from_src(ImageModel& image_model);
 public:
     unsigned char method_id;
