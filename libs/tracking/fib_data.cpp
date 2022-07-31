@@ -102,7 +102,7 @@ bool odf_data::read(gz_mat_read& mat_reader)
 }
 
 
-const float* odf_data::get_odf_data(unsigned int index)
+const float* odf_data::get_odf_data(size_t index)
 {
     if (!odf_blocks.empty())
     {

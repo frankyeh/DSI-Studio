@@ -18,7 +18,7 @@ public:
     std::string error_msg;
     bool read(gz_mat_read& mat_reader);
     bool has_odfs(void) const {return !odf_blocks.empty();}
-    const float* get_odf_data(unsigned int index);
+    const float* get_odf_data(size_t index);
 };
 
 class fiber_directions
