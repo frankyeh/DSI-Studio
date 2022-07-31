@@ -42,9 +42,9 @@ bool odf_data::read(gz_mat_read& mat_reader)
 
     show_progress() << "odf count: " << odf_count << std::endl;
 
+    size_t mask_count = 0;
     {
         progress prog("checking odf count");
-        size_t mask_count = 0;
         for(size_t i = 0;i < dim.size();++i)
             if(fa0[i] != 0.0f)
                 ++mask_count;
@@ -57,6 +57,7 @@ bool odf_data::read(gz_mat_read& mat_reader)
     }
 
     size_t voxel_index = 0;
+    odf_count = 0; // count ODF again and now ignoring 0 odf to see if it matches.
     for(size_t i = 0;prog(i,odf_block_count);++i)
     {
         if(!mat_reader.read((std::string("odf")+std::to_string(i)).c_str(),row,col,odf_blocks[i]))
@@ -78,16 +79,24 @@ bool odf_data::read(gz_mat_read& mat_reader)
                     is_odf_zero = false;
                     break;
                 }
-            if(!is_odf_zero)
-                for(;voxel_index < odf_block_map1.size();++voxel_index)
-                    if(fa0[voxel_index] != 0.0f)
-                        break;
+            if(is_odf_zero)
+                continue;
+            ++odf_count;
+            for(;voxel_index < odf_block_map1.size();++voxel_index)
+                if(fa0[voxel_index] != 0.0f)
+                    break;
             if(voxel_index >= odf_block_map1.size())
                 break;
             odf_block_map1[voxel_index] = i;
             odf_block_map2[voxel_index] = j;
             ++voxel_index;
         }
+    }
+    show_progress() << "odf count (excluding 0): " << odf_count << std::endl;
+    if(odf_count != mask_count)
+    {
+        error_msg = "ODF count does not match the mask";
+        return false;
     }
     return !progress::aborted();
 }
