@@ -157,7 +157,7 @@ struct OutputODF : public BaseProcess
 {
 protected:
     std::vector<std::vector<float> > odf_data;
-    std::vector<unsigned int> odf_index_map;
+    std::vector<size_t> odf_index_map;
 public:
     virtual void init(Voxel& voxel)
     {
@@ -165,9 +165,9 @@ public:
         if (voxel.output_odf)
         {
             voxel.step_report << "[Step T2b(2)][ODFs]=checked" << std::endl;
-            unsigned int total_count = 0;
+            size_t total_count = 0;
             odf_index_map.resize(voxel.mask.size());
-            for (unsigned int index = 0;index < voxel.mask.size();++index)
+            for (size_t index = 0;index < voxel.mask.size();++index)
                 if (voxel.mask[index])
                 {
                     odf_index_map[index] = total_count;
@@ -207,7 +207,7 @@ public:
 
         if (voxel.output_odf && data.fa[0] != 0.0f)
         {
-            unsigned int odf_index = odf_index_map[data.voxel_index];
+            size_t odf_index = odf_index_map[data.voxel_index];
             std::copy(data.odf.begin(),data.odf.end(),
                       odf_data[odf_index/odf_block_size].begin() + (odf_index%odf_block_size)*(voxel.ti.half_vertices_count));
         }
@@ -219,11 +219,13 @@ public:
         if (!voxel.output_odf)
             return;
         {
-            for (unsigned int index = 0;index < odf_data.size();++index)
+            tipl::par_for (odf_data.size(),[&](unsigned int index)
             {
                 tipl::divide_constant(odf_data[index],voxel.z0);
+            });
+
+            for (unsigned int index = 0;index < odf_data.size();++index)
                 mat_writer.write((std::string("odf")+std::to_string(index)).c_str(),odf_data[index],voxel.ti.half_vertices_count);
-            }
             odf_data.clear();
         }
 
