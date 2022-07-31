@@ -374,7 +374,7 @@ const char* odf_average(const char* out_name,std::vector<std::string>& file_name
             odf_data odf;
             if(!odf.read(fib.mat_reader))
                 throw std::runtime_error(odf.error_msg);
-            tipl::par_for(dim.size(),[&](unsigned int i){
+            tipl::par_for(dim.size(),[&](size_t i){
                 if(fib.dir.fa[0][i] == 0.0f)
                     return;
                 const float* odf_data = odf.get_odf_data(i);
@@ -420,7 +420,7 @@ const char* odf_average(const char* out_name,std::vector<std::string>& file_name
     });
 
     progress::at(0,3);
-    tipl::par_for(dim.size(),[&](unsigned int i){
+    tipl::par_for(dim.size(),[&](size_t i){
         if(odf_count[i] > 1)
             tipl::divide_constant(odfs[i],float(odf_count[i]));
     });
