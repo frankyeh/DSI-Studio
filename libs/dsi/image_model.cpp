@@ -759,7 +759,7 @@ void ImageModel::rotate(const tipl::shape<3>& new_geo,
                         const tipl::transformation_matrix<double>& T,
                         const tipl::image<3,tipl::vector<3> >& cdm_dis)
 {
-    std::vector<tipl::image<3,unsigned short> > dwi(src_dwi_data.size());
+    std::vector<tipl::image<3,unsigned short> > rotated_dwi(src_dwi_data.size());
     progress prog_("rotating");
     size_t prog = 0;
     tipl::par_for(src_dwi_data.size(),[&](unsigned int index)
@@ -767,17 +767,17 @@ void ImageModel::rotate(const tipl::shape<3>& new_geo,
         if(progress::aborted())
             return;
         progress::at(prog++,src_dwi_data.size());
-        dwi[index].resize(new_geo);
+        rotated_dwi[index].resize(new_geo);
         auto I = dwi_at(index);
         if(cdm_dis.empty())
-            tipl::resample<tipl::interpolation::cubic>(I,dwi[index],T);
+            tipl::resample<tipl::interpolation::cubic>(I,rotated_dwi[index],T);
         else
-            tipl::resample_dis<tipl::interpolation::cubic>(I,dwi[index],T,cdm_dis);
-        src_dwi_data[index] = &(dwi[index][0]);
+            tipl::resample_dis<tipl::interpolation::cubic>(I,rotated_dwi[index],T,cdm_dis);
+        src_dwi_data[index] = &(rotated_dwi[index][0]);
     });
     if(progress::aborted())
         return;
-    dwi.swap(new_dwi);
+    rotated_dwi.swap(new_dwi);
     // rotate b-table
     tipl::affine_transform<double> arg;
     T.to_affine_transform(arg,new_geo,new_vs,voxel.dim,voxel.vs);
@@ -792,7 +792,12 @@ void ImageModel::rotate(const tipl::shape<3>& new_geo,
 
     voxel.dim = new_geo;
     voxel.vs = new_vs;
-    calculate_dwi_sum(true);
+    calculate_dwi_sum(false);
+
+    // rotate the mask
+    tipl::image<3,unsigned char> mask(voxel.dim);
+    tipl::resample<tipl::interpolation::nearest>(voxel.mask,mask,T);
+    mask.swap(voxel.mask);
 }
 void ImageModel::resample(float nv)
 {
@@ -821,7 +826,7 @@ void ImageModel::smoothing(void)
         auto I = dwi_at(index);
         tipl::filter::gaussian(I);
     });
-    calculate_dwi_sum(true);
+    calculate_dwi_sum(false);
 }
 extern std::vector<std::string> fa_template_list,iso_template_list;
 bool ImageModel::align_acpc(void)
