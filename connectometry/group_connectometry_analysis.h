@@ -20,7 +20,7 @@ public:
     std::shared_ptr<fib_data> handle;
     std::string report;
     mutable std::string error_msg;
-    group_connectometry_analysis();
+
     ~group_connectometry_analysis(){clear();}
 
     void clear(void);
@@ -30,11 +30,10 @@ public:
     bool load_database(const char* database_name);
 public:// database information
     float fiber_threshold;
-    bool normalize_qa;
 public:
-    void calculate_spm(connectometry_result& data,stat_model& info,bool nqa)
+    void calculate_spm(connectometry_result& data,stat_model& info)
     {
-        ::calculate_spm(handle,data,info,fiber_threshold,nqa,terminated);
+        ::calculate_spm(handle,data,info,fiber_threshold,terminated);
     }
 private: // single subject analysis result
     int run_track(std::shared_ptr<tracking_data> fib,std::vector<std::vector<float> >& track,
