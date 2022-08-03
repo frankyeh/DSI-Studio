@@ -116,14 +116,6 @@ group_connectometry::group_connectometry(QWidget *parent,std::shared_ptr<group_c
             check_quality += out.str();
         }
     }
-    // setup normalize QA
-    if(db.index_name == "qa")
-        ui->normalize_qa->setChecked(true);
-    else
-    {
-        ui->normalize_qa->setChecked(false);
-        ui->normalize_qa->setVisible(false);
-    }
 
     if(!check_quality.empty())
     {
@@ -403,7 +395,6 @@ void group_connectometry::on_run_clicked()
 
     // setup parameters
     {
-        vbc->normalize_qa = ui->normalize_qa->isChecked();
         vbc->no_tractogram = ui->no_tractogram->isChecked();
         vbc->foi_str = ui->foi->currentText().toStdString();
         vbc->length_threshold_voxels = uint32_t(ui->length_threshold->value());
@@ -474,7 +465,7 @@ void group_connectometry::on_show_result_clicked()
         result_fib.reset(new connectometry_result);
         stat_model info;
         info.resample(*(vbc->model.get()),false,false,0);
-        vbc->calculate_spm(*result_fib.get(),info,vbc->normalize_qa);
+        vbc->calculate_spm(*result_fib.get(),info);
         new_data->view_item.push_back(item("dec_t",result_fib->neg_corr_ptr[0],new_data->dim));
         new_data->view_item.push_back(item("inc_t",result_fib->pos_corr_ptr[0],new_data->dim));
     }
