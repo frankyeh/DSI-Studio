@@ -194,7 +194,7 @@ if(CUDA_ARCH)
     set(CMAKE_CUDA_RUNTIME_LIBRARY "Static")
     target_compile_definitions(dsi_studio PUBLIC TIPL_USE_CUDA)
     target_compile_definitions(dsi_studio PUBLIC CUDA_ARCH=${CUDA_ARCH})
-    set_property(TARGET dsi_studio PROPERTY CUDA_ARCHITECTURES ${CUDA_ARCH}-real)
+    set_property(TARGET dsi_studio PROPERTY CUDA_ARCHITECTURES ${CUDA_ARCH})
 endif(CUDA_ARCH)
 
 target_include_directories(dsi_studio PUBLIC
