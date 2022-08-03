@@ -366,7 +366,7 @@
              </size>
             </property>
             <property name="currentIndex">
-             <number>0</number>
+             <number>3</number>
             </property>
             <widget class="QWidget" name="tab_6">
              <attribute name="title">
@@ -989,16 +989,6 @@
                  <widget class="QCheckBox" name="no_tractogram">
                   <property name="text">
                    <string>No Tractogram</string>
-                  </property>
-                 </widget>
-                </item>
-                <item>
-                 <widget class="QCheckBox" name="normalize_qa">
-                  <property name="text">
-                   <string>Normalize QA</string>
-                  </property>
-                  <property name="checked">
-                   <bool>true</bool>
                   </property>
                  </widget>
                 </item>
