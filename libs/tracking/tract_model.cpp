@@ -2916,21 +2916,17 @@ void TractModel::get_quantitative_info(std::shared_ptr<fib_data> handle,std::str
     if(handle->db.has_db()) // connectometry database
     {
         std::vector<const float*> old_index_data(handle->dir.index_data[0]);
-        for(unsigned char normalize_qa = 0;normalize_qa <= 1;++normalize_qa)
         {
-            // only applied normalized value to qa
-            if(handle->db.index_name != "qa" && normalize_qa)
-                break;
             for(unsigned int i = 0;i < handle->db.num_subjects;++i)
             {
                 std::vector<std::vector<float> > fa_data;
-                handle->db.get_subject_fa(i,fa_data,normalize_qa);
+                handle->db.get_subject_fa(i,fa_data);
                 for(unsigned int j = 0;j < fa_data.size();++j)
                     handle->dir.index_data[0][j] = &fa_data[j][0];
                 float mean = 0.0f;
                 get_tracts_data(handle,0,mean);
                 out << handle->db.subject_names[i] << " mean_" <<
-                       handle->db.index_name << (normalize_qa ? "_post_norm\t": "\t") << mean << std::endl;
+                       handle->db.index_name << "\t" << mean << std::endl;
             }
         }
         handle->dir.index_data[0] = old_index_data;
