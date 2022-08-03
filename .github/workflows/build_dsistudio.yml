@@ -339,17 +339,8 @@ jobs:
         move build\release\dsi_studio.exe dsi_studio_win
         windeployqt --no-angle --no-quick-import --no-translations --no-system-d3d-compiler --compiler-runtime --no-opengl-sw dsi_studio_win\dsi_studio.exe
         move DSI-Studio-atlas dsi_studio_win\atlas  
-
-    - name: Download the SSL files
-      uses: suisei-cn/actions-download-file@v1
-      with:
-        url: "https://indy.fulgan.com/SSL/openssl-1.0.2u-x64_86-win64.zip"
-    - name: Download TinyFSL
-      uses: suisei-cn/actions-download-file@v1
-      with:
-        url: "https://github.com/frankyeh/TinyFSL/releases/download/2021.12.03/tiny_fsl_win64.zip"
-    - name: Extract zip files
-      run: |
+        curl -sSLO "https://indy.fulgan.com/SSL/openssl-1.0.2u-x64_86-win64.zip"
+        curl -sSLO "https://github.com/frankyeh/TinyFSL/releases/download/2021.12.03/tiny_fsl_win64.zip"
         7z e openssl-1.0.2u-x64_86-win64.zip
         move *.dll dsi_studio_win
         7z e tiny_fsl_win64.zip -odsi_studio_win\plugin
@@ -405,10 +396,6 @@ jobs:
 
   windows_build_cuda:
     needs: windows_build
-    strategy:
-      matrix:
-        arch: [35,37,50,52,53,60,61,62,70,72,75,80,86]
-      fail-fast: false
     runs-on: windows-2019
     steps:
     - uses: actions/checkout@v1
@@ -444,7 +431,7 @@ jobs:
       run: |
         for /f "usebackq delims=#" %%a in (`"%programfiles(x86)%\Microsoft Visual Studio\Installer\vswhere" -latest -property installationPath`) do call "%%a\Common7\Tools\VsDevCmd.bat" -arch=x64
         mkdir -p build
-        cmake -S . -B build -GNinja "-DCMAKE_BUILD_TYPE:STRING=Release" "-DCMAKE_C_COMPILER:STRING=cl" "-DCMAKE_CXX_COMPILER:STRING=cl" -DCUDA_ARCH=${{ matrix.arch }} -DTIPL_DIR=.
+        cmake -S . -B build -GNinja "-DCMAKE_BUILD_TYPE:STRING=Release" "-DCMAKE_C_COMPILER:STRING=cl" "-DCMAKE_CXX_COMPILER:STRING=cl" -DCUDA_ARCH=all -DTIPL_DIR=.
         cmake --build ./build --parallel --config Release
       shell: cmd
 
@@ -457,20 +444,15 @@ jobs:
         move build\dsi_studio.exe dsi_studio_win
         windeployqt --no-translations --no-system-d3d-compiler --compiler-runtime --no-opengl-sw dsi_studio_win\dsi_studio.exe
         move DSI-Studio-atlas dsi_studio_win\atlas  
-    - name: Download TinyFSL
-      uses: suisei-cn/actions-download-file@v1
-      with:
-        url: "https://github.com/frankyeh/TinyFSL/releases/download/2021.12.03/tiny_fsl_win64_cuda_sm${{ matrix.arch }}.zip"
-    - name: Extract zip files
-      run: |
-        7z e tiny_fsl_win64_cuda_sm${{ matrix.arch }}.zip -odsi_studio_win\plugin
+        curl -sSLO "https://github.com/frankyeh/TinyFSL/releases/download/2022.08.03/tiny_fsl_win64_cuda.zip"
+        7z e tiny_fsl_win64_cuda.zip -odsi_studio_win\plugin
         rm dsi_studio_win\plugin\cublas*
         rd dsi_studio_win\plugin\tiny_fsl
         del *.zip
     - name: Zip Release
       uses: TheDoctor0/zip-release@0.6.0
       with:
-        filename: dsi_studio_win_cuda_sm${{ matrix.arch }}.zip
+        filename: dsi_studio_win_cuda.zip
         exclusions: .git
         path: dsi_studio_win
     - name: Create Release
