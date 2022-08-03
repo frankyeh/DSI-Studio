@@ -38,13 +38,6 @@ bool check_cuda(std::string& error_msg)
         std::cout << "  Memory Bus Width (bits): " << prop.memoryBusWidth << std::endl;
         std::cout << "  Peak Memory Bandwidth (GB/s): " << 2.0*prop.memoryClockRate*(prop.memoryBusWidth/8)/1.0e6 << std::endl;
 
-        if(i == 0 && arch != CUDA_ARCH)
-        {
-            error_msg = "Incorrect CUDA Architecture. Please use DSI Studio (CUDA SM";
-            error_msg += std::to_string(arch);
-            error_msg += ").";
-            return false;
-        }
     }
 
     std::cout << "Driver Version: " << Ver << " DSI Studio CUDA Version: " << CUDART_VERSION << std::endl;
