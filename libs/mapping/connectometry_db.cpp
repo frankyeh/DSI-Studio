@@ -28,7 +28,6 @@ bool connectometry_db::read_db(fib_data* handle_)
 {
     handle = handle_;
     subject_qa.clear();
-    subject_qa_sd.clear();
     unsigned int row,col;
     for(unsigned int index = 0;1;++index)
     {
@@ -47,20 +46,7 @@ bool connectometry_db::read_db(fib_data* handle_)
                 }
         }
         subject_qa.push_back(buf);
-        subject_qa_sd.push_back(1.0);
     }
-
-    if(!is_longitudinal)
-    tipl::par_for(subject_qa.size(),[&](unsigned int i){
-
-        subject_qa_sd[i] = float(tipl::standard_deviation(subject_qa[i],subject_qa[i]+subject_qa_length));
-        if(subject_qa_sd[i] == 0.0f)
-            subject_qa_sd[i] = 1.0f;
-        else
-            subject_qa_sd[i] = 1.0f/subject_qa_sd[i];
-
-    });
-
     num_subjects = uint32_t(subject_qa.size());
     subject_names.resize(num_subjects);
     R2.resize(num_subjects);
@@ -81,6 +67,27 @@ bool connectometry_db::read_db(fib_data* handle_)
     handle->mat_reader.read("report",report);
     handle->mat_reader.read("subject_report",subject_report);
     handle->mat_reader.read("index_name",index_name);
+    // update index name
+    if(index_name == "sdf")
+        index_name = "qa";
+
+    // make sure qa is normalized
+    if(!is_longitudinal && (index_name == "qa" || index_name.empty()))
+    {
+        auto max_qa = tipl::max_value(subject_qa[0],subject_qa[0]+subject_qa_length);
+        if(max_qa != 1.0f)
+        {
+            show_progress() << "converting raw QA to normalized QA" << std::endl;
+            tipl::par_for(subject_qa.size(),[&](unsigned int i)
+            {
+                auto max_qa = tipl::max_value(subject_qa[i],subject_qa[i]+subject_qa_length);
+                if(max_qa != 0.0f)
+                    tipl::multiply_constant(const_cast<float*>(subject_qa[i]),
+                                            const_cast<float*>(subject_qa[i])+subject_qa_length,1.0f/max_qa);
+            });
+        }
+    }
+
 
     // update report
     if(report.find(" sdf ") != std::string::npos)
@@ -94,9 +101,7 @@ bool connectometry_db::read_db(fib_data* handle_)
         for(unsigned int index = 0;in && index < num_subjects;++index)
             std::getline(in,subject_names[index]);
     }
-    // update index name
-    if(index_name == "sdf")
-        index_name = "qa";
+
 
     if(handle->mat_reader.read("demo",demo))
     {
@@ -318,7 +323,6 @@ void connectometry_db::remove_subject(unsigned int index)
     if(index >= subject_qa.size())
         return;
     subject_qa.erase(subject_qa.begin()+index);
-    subject_qa_sd.erase(subject_qa_sd.begin()+index);
     subject_names.erase(subject_names.begin()+index);
     R2.erase(R2.begin()+index);
     --num_subjects;
@@ -490,13 +494,6 @@ bool connectometry_db::add_subject_file(const std::string& file_name,
                     data[si] = odf[handle->dir.findex[i][vi]]-min_value;
                 }
             });
-            if(index_name == "nqa")
-            {
-                float m = tipl::max_value(data);
-                if(m != 0.0f)
-                    m = 1.0f/m;
-                tipl::multiply_constant(data,m);
-            }
         }
         else
         {
@@ -524,6 +521,14 @@ bool connectometry_db::add_subject_file(const std::string& file_name,
         }
     }
 
+    // normalize QA
+    if(index_name == "qa" || index_name == "nqa" || index_name.empty())
+    {
+        float m = tipl::max_value(data);
+        if(m != 1.0f && m != 0.0f)
+            tipl::multiply_constant(data,1.0f/m);
+    }
+
     if(data.empty())
     {
         error_msg = "failed to sample ";
@@ -537,14 +542,7 @@ bool connectometry_db::add_subject_file(const std::string& file_name,
 
     subject_qa_buf.push_back(std::move(data));
     subject_qa.push_back(&(subject_qa_buf.back()[0]));
-
     subject_names.push_back(subject_name);
-    subject_qa_sd.push_back(float(tipl::standard_deviation(subject_qa.back(),
-                                                      subject_qa.back()+subject_qa_length)));
-    if(subject_qa_sd.back() == 0.0f)
-        subject_qa_sd.back() = 1.0f;
-    else
-        subject_qa_sd.back() = 1.0f/subject_qa_sd.back();
     num_subjects++;
     modified = true;
     return true;
@@ -851,7 +849,7 @@ void connectometry_db::get_subject_volume(unsigned int subject_index,tipl::image
             I[index] = subject_qa[subject_index][vi2si[index]];
     volume.swap(I);
 }
-void connectometry_db::get_subject_fa(unsigned int subject_index,std::vector<std::vector<float> >& fa_data,bool normalize_qa) const
+void connectometry_db::get_subject_fa(unsigned int subject_index,std::vector<std::vector<float> >& fa_data) const
 {
     fa_data.resize(handle->dir.num_fiber);
     for(unsigned int index = 0;index < handle->dir.num_fiber;++index)
@@ -863,8 +861,6 @@ void connectometry_db::get_subject_fa(unsigned int subject_index,std::vector<std
         {
             unsigned int pos = s_index + fib_offset;
             fa_data[i][cur_index] = subject_qa[subject_index][pos];
-            if(normalize_qa)
-                fa_data[i][cur_index] *= subject_qa_sd[subject_index];
         }
     }
 }
@@ -936,7 +932,6 @@ bool connectometry_db::add_db(const connectometry_db& rhs)
     if(!is_db_compatible(rhs))
         return false;
     R2.insert(R2.end(),rhs.R2.begin(),rhs.R2.end());
-    subject_qa_sd.insert(subject_qa_sd.end(),rhs.subject_qa_sd.begin(),rhs.subject_qa_sd.end());
     subject_names.insert(subject_names.end(),rhs.subject_names.begin(),rhs.subject_names.end());
     // copy the qa memeory
     for(unsigned int index = 0;index < rhs.num_subjects;++index)
@@ -957,7 +952,6 @@ void connectometry_db::move_up(int id)
     std::swap(subject_names[uint32_t(id)],subject_names[uint32_t(id-1)]);
     std::swap(R2[uint32_t(id)],R2[uint32_t(id-1)]);
     std::swap(subject_qa[uint32_t(id)],subject_qa[uint32_t(id-1)]);
-    std::swap(subject_qa_sd[uint32_t(id)],subject_qa_sd[uint32_t(id-1)]);
 }
 
 void connectometry_db::move_down(int id)
@@ -967,7 +961,6 @@ void connectometry_db::move_down(int id)
     std::swap(subject_names[uint32_t(id)],subject_names[uint32_t(id+1)]);
     std::swap(R2[uint32_t(id)],R2[uint32_t(id+1)]);
     std::swap(subject_qa[uint32_t(id)],subject_qa[uint32_t(id+1)]);
-    std::swap(subject_qa_sd[uint32_t(id)],subject_qa_sd[uint32_t(id+1)]);
 }
 
 void connectometry_db::auto_match(const tipl::image<3,int>& fp_mask,float fiber_threshold,bool normalize_fp)
@@ -1007,7 +1000,6 @@ void connectometry_db::calculate_change(unsigned char dif_type,bool norm)
 
     std::vector<std::string> new_subject_names(match.size());
     std::vector<float> new_R2(match.size());
-    std::vector<float> new_subject_qa_sd(match.size());
 
 
     std::list<std::vector<float> > new_subject_qa_buf;
@@ -1024,24 +1016,20 @@ void connectometry_db::calculate_change(unsigned char dif_type,bool norm)
         std::vector<float> change(subject_qa_length);
         if(norm)
         {
-            float ratio = subject_qa_sd[first] == 0.0f ?
-                            0:subject_qa_sd[second]/subject_qa_sd[first];
             if(dif_type == 0)
             {
                 if(!index)
                     out << " The difference between longitudinal scans were calculated";
-                new_subject_qa_sd[index] = subject_qa_sd[first];
                 for(unsigned int i = 0;i < subject_qa_length;++i)
-                    change[i] = study[i]*ratio-baseline[i];
+                    change[i] = study[i]-baseline[i];
             }
             else
             {
                 if(!index)
                     out << " The percentage difference between longitudinal scans were calculated";
-                new_subject_qa_sd[index] = 1.0;
                 for(unsigned int i = 0;i < subject_qa_length;++i)
                 {
-                    float new_s = study[i]*ratio;
+                    float new_s = study[i];
                     float s = new_s+baseline[i];
                     change[i] = (s == 0.0f ? 0 : (new_s-baseline[i])/s);
                 }
@@ -1055,7 +1043,6 @@ void connectometry_db::calculate_change(unsigned char dif_type,bool norm)
             {
                 if(!index)
                     out << " The difference between longitudinal scans were calculated";
-                new_subject_qa_sd[index] = subject_qa_sd[first];
                 for(unsigned int i = 0;i < subject_qa_length;++i)
                     change[i] = study[i]-baseline[i];
             }
@@ -1063,7 +1050,6 @@ void connectometry_db::calculate_change(unsigned char dif_type,bool norm)
             {
                 if(!index)
                     out << " The percentage difference between longitudinal scans were calculated";
-                new_subject_qa_sd[index] = 1.0;
                 for(unsigned int i = 0;i < subject_qa_length;++i)
                 {
                     float s = study[i]+baseline[i];
@@ -1077,7 +1063,6 @@ void connectometry_db::calculate_change(unsigned char dif_type,bool norm)
     out << " (n=" << match.size() << ").";
     R2.swap(new_R2);
     subject_names.swap(new_subject_names);
-    subject_qa_sd.swap(new_subject_qa_sd);
     subject_qa_buf.swap(new_subject_qa_buf);
     subject_qa.swap(new_subject_qa);
     index_name += "_dif";
@@ -1089,7 +1074,7 @@ void connectometry_db::calculate_change(unsigned char dif_type,bool norm)
 }
 
 void calculate_spm(std::shared_ptr<fib_data> handle,connectometry_result& data,stat_model& info,
-                   float fiber_threshold,bool normalize_qa,bool& terminated)
+                   float fiber_threshold,bool& terminated)
 {
     data.clear_result(handle->dir.num_fiber,handle->dim.size());
     std::vector<double> population(handle->db.subject_qa.size());
@@ -1100,12 +1085,8 @@ void calculate_spm(std::shared_ptr<fib_data> handle,connectometry_result& data,s
                 ++fib,fib_offset+=handle->db.si2vi.size())
         {
             unsigned int pos = s_index + fib_offset;
-            if(normalize_qa)
-                for(unsigned int index = 0;index < population.size();++index)
-                    population[index] = double(handle->db.subject_qa[index][pos]*handle->db.subject_qa_sd[index]);
-            else
-                for(unsigned int index = 0;index < population.size();++index)
-                    population[index] = double(handle->db.subject_qa[index][pos]);
+            for(unsigned int index = 0;index < population.size();++index)
+                population[index] = double(handle->db.subject_qa[index][pos]);
 
             if(std::find(population.begin(),population.end(),0.0) != population.end())
                 continue;
