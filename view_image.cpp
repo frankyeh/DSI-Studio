@@ -147,7 +147,9 @@ bool match_files(const std::string& file_path1,const std::string& file_path2,
     if(!match_strings(name1,name2,name1_others,name2_others) ||
        !match_strings(path1,path2,path1_others,path2_others))
         return false;
-    file_path2_gen = path2_others + "/" + name2_others;
+    if(!path2_others.empty())
+        path2_others += "/";
+    file_path2_gen = path2_others + name2_others;
     return true;
 }
 
