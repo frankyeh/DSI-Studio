@@ -382,47 +382,4 @@ public:
 
 };
 
-class EstimateZ0_MNI : public BaseProcess
-{
-    std::vector<float> samples;
-    std::mutex mutex;
-public:
-    void init(Voxel& voxel)
-    {
-        voxel.z0 = 0.0;
-        samples.reserve(20);
-    }
-    void run(Voxel& voxel, VoxelData& data)
-    {
-        // perform csf cross-subject normalization
-        if(voxel.csf_pos1 != tipl::vector<3,int>(0,0,0))
-        {
-            tipl::vector<3,int> cur_pos(tipl::pixel_index<3>(data.voxel_index,voxel.dim));
-            if((cur_pos-voxel.csf_pos1).length() <= 1.0 || (cur_pos-voxel.csf_pos2).length() <= 1.0 ||
-               (cur_pos-voxel.csf_pos3).length() <= 1.0 || (cur_pos-voxel.csf_pos4).length() <= 1.0)
-            {
-                std::lock_guard<std::mutex> lock(mutex);
-                if(voxel.r2_weighted) // multishell GQI2 gives negative ODF, use b0 as the scaling reference
-                    samples.push_back(data.space[0]);
-                else
-                    samples.push_back(tipl::min_value(data.odf));
-                //std::fill(data.odf.begin(),data.odf.end(),0.0f);
-            }
-        }
-        else
-        // if other template is used
-        {
-            voxel.z0 = std::max<float>(voxel.z0,tipl::min_value(data.odf));
-        }
-    }
-    void end(Voxel& voxel,gz_mat_write&)
-    {
-        if(!samples.empty())
-            voxel.z0 = tipl::median(samples.begin(),samples.end());
-        if(voxel.z0 == 0.0f)
-            voxel.z0 = 1.0f;
-    }
-
-};
-
 #endif//MNI_RECONSTRUCTION_HPP
