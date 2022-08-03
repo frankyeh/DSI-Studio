@@ -9,11 +9,6 @@
 
 #include <filesystem>
 
-group_connectometry_analysis::group_connectometry_analysis():handle(nullptr),normalize_qa(true)
-{
-
-}
-
 bool group_connectometry_analysis::create_database(const char* template_name)
 {
     handle.reset(new fib_data);
@@ -102,7 +97,7 @@ void group_connectometry_analysis::run_permutation_multithread(unsigned int id,u
     {
         stat_model info;
         info.resample(*model.get(),false,false,0);
-        calculate_spm(*spm_map.get(),info,normalize_qa);
+        calculate_spm(*spm_map.get(),info);
         preproces = 0;
     }
 
@@ -116,7 +111,7 @@ void group_connectometry_analysis::run_permutation_multithread(unsigned int id,u
         stat_model info;
 
         info.resample(*model.get(),null,true,i);
-        calculate_spm(data,info,normalize_qa);
+        calculate_spm(data,info);
         fib->fa = data.neg_corr_ptr;
 
         run_track(fib,neg_tracks,seed_count);
@@ -124,7 +119,7 @@ void group_connectometry_analysis::run_permutation_multithread(unsigned int id,u
 
 
         info.resample(*model.get(),null,true,i);
-        calculate_spm(data,info,normalize_qa);
+        calculate_spm(data,info);
         fib->fa = data.pos_corr_ptr;
 
         run_track(fib,pos_tracks,seed_count);
@@ -346,9 +341,6 @@ std::string group_connectometry_analysis::get_file_post_fix(void)
         postfix += std::to_string((int)tracking_threshold);
     }
 
-    if(normalize_qa)
-        postfix += ".nqa";
-
     if(fdr_threshold == 0.0f)
     {
         postfix += ".length";
@@ -406,8 +398,6 @@ void group_connectometry_analysis::run_permutation(unsigned int thread_count,uns
         out << " A T-score threshold of " << tracking_threshold;
         out << " was assigned and tracked using a deterministic fiber tracking algorithm (Yeh et al. PLoS ONE 8(11): e80713, 2013) to obtain correlational tractography.";
 
-        if(normalize_qa)
-            out << " The QA values were normalized.";
         if(!roi_mgr->report.empty())
             out << roi_mgr->report << std::endl;
         if(tip)
