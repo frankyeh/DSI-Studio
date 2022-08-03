@@ -140,7 +140,7 @@ public: // for fib evaluation
     tipl::image<3> fib_fa;
     std::vector<tipl::vector<3> > fib_dir;
 public:
-    float z0 = 0.0;
+    float z0 = 1.0f;
     // other information for second pass processing
     std::vector<float> response_function,free_water_diffusion;
     tipl::image<3> qa_map,iso_map;
