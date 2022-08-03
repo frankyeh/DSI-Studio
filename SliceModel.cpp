@@ -394,12 +394,14 @@ bool CustomSliceModel::initialize(const std::vector<std::string>& files,bool is_
     if(source_images.empty())
     {
         tipl::io::dicom_volume volume;
-        if(volume.load_from_files(files))
+        if(!volume.load_from_files(files))
         {
-            volume.get_voxel_size(vs);
-            volume >> source_images;
-            initial_LPS_nifti_srow(trans,source_images.shape(),vs);
+            error_msg = volume.error_msg;
+            return false;
         }
+        volume.get_voxel_size(vs);
+        volume.save_to_image(source_images);
+        initial_LPS_nifti_srow(trans,source_images.shape(),vs);
     }
 
     if(source_images.empty())
