@@ -209,7 +209,6 @@ bool ImageModel::reconstruction(void)
                         BalanceScheme,
                         GQI_Recon,
                         RDI_Recon,
-                        EstimateZ0_MNI,
                         DetermineFiberDirections,
                         SaveMetrics,
                         SaveDirIndex,
