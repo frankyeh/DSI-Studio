@@ -28,7 +28,6 @@ public:// subject specific data
     std::vector<std::string> subject_names;
     std::vector<float> R2;
     std::vector<const float*> subject_qa;
-    std::vector<float> subject_qa_sd;
     bool is_longitudinal = false;
 public:
     std::list<std::vector<float> > subject_qa_buf;// merged from other db
@@ -69,7 +68,7 @@ public:
     bool get_demo_matched_volume(const std::string& matched_demo,tipl::image<3>& volume) const;
     bool save_demo_matched_image(const std::string& matched_demo,const std::string& filename) const;
     void get_subject_volume(unsigned int subject_index,tipl::image<3>& volume) const;
-    void get_subject_fa(unsigned int subject_index,std::vector<std::vector<float> >& fa_data,bool normalize_qa) const;
+    void get_subject_fa(unsigned int subject_index,std::vector<std::vector<float> >& fa_data) const;
     bool get_qa_profile(const char* file_name,std::vector<std::vector<float> >& data);
     bool is_db_compatible(const connectometry_db& rhs);
     void read_subject_qa(std::vector<std::vector<float> >&data) const;
@@ -156,7 +155,7 @@ struct connectometry_result{
 };
 
 void calculate_spm(std::shared_ptr<fib_data> handle,connectometry_result& data,stat_model& info,
-                   float fiber_threshold,bool normalize_qa,bool& terminated);
+                   float fiber_threshold,bool& terminated);
 
 
 #endif // CONNECTOMETRY_DB_H
