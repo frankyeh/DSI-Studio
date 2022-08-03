@@ -221,7 +221,7 @@ public:
         {
             tipl::par_for (odf_data.size(),[&](unsigned int index)
             {
-                tipl::divide_constant(odf_data[index],voxel.z0);
+                tipl::multiply_constant(odf_data[index],voxel.z0);
             });
 
             for (unsigned int index = 0;index < odf_data.size();++index)
@@ -241,7 +241,6 @@ public:
     virtual void init(Voxel& voxel)
     {
         //voxel.qa_scaling must be 1
-        voxel.z0 = 0.0;
         index_mapping1.resize(voxel.mask.size());
         index_mapping2.resize(voxel.mask.size());
         size_t voxel_index = 0;
@@ -338,12 +337,10 @@ protected:
             mat_writer.write(str.c_str(),metrics[index],uint32_t(dim.plane_size()));
         }
     }
-
-protected:
-    float z0;
 public:
     virtual void init(Voxel& voxel)
     {
+        voxel.z0 = 1.0f;
         dim = voxel.dim;
         fa = std::vector<std::vector<float> >(voxel.max_fiber_number,std::vector<float>(dim.size()));
         if(voxel.needs("gfa"))
@@ -355,7 +352,6 @@ public:
             for(float L = 0.2f;L <= sigma;L+= 0.2f)
                 rdi.push_back(std::vector<float>(dim.size()));
         }
-        voxel.z0 = 0.0;
     }
     virtual void run(Voxel& voxel, VoxelData& data)
     {
@@ -370,46 +366,32 @@ public:
         if(!rdi.empty())
             for (unsigned int index = 0;index < data.rdi.size();++index)
                 rdi[index][data.voxel_index] = data.rdi[index];
-
-        if(data.min_odf > voxel.z0)
-            voxel.z0 = data.min_odf;
     }
     virtual void end(Voxel& voxel,gz_mat_write& mat_writer)
     {
         mat_writer.write("gfa",gfa,uint32_t(voxel.dim.plane_size()));
-        if(voxel.z0 + 1.0f == 1.0f)
-            voxel.z0 = 1.0f;
-        if(voxel.needs("z0"))
-            mat_writer.write("z0",&voxel.z0,1,1);
-
-        for (unsigned int index = 0;index < voxel.max_fiber_number;++index)
-            tipl::divide_constant(fa[index],voxel.z0);
-
-        output_anisotropy(mat_writer,"fa",fa);
-
-        tipl::divide_constant(iso,voxel.z0);
-        mat_writer.write("iso",iso,uint32_t(voxel.dim.plane_size()));
-
 
         // output normalized qa
-        if(voxel.needs("nqa"))
         {
             float max_qa = 0.0;
             for (unsigned int i = 0;i < voxel.max_fiber_number;++i)
                 max_qa = std::max<float>(tipl::max_value(fa[i]),max_qa);
-
-            if(max_qa != 0.0f)
-            {
-                for (unsigned int index = 0;index < voxel.max_fiber_number;++index)
-                    tipl::divide_constant(fa[index],max_qa);
-                output_anisotropy(mat_writer,"nqa",fa);
-            }
+            if(max_qa == 0.0f)
+                max_qa = 1.0f;
+            voxel.z0 = float(1.0/double(max_qa));
         }
+
+        for (unsigned int index = 0;index < voxel.max_fiber_number;++index)
+            tipl::multiply_constant(fa[index],voxel.z0);
+        output_anisotropy(mat_writer,"fa",fa);
+
+        tipl::multiply_constant(iso,voxel.z0);
+        mat_writer.write("iso",iso,uint32_t(voxel.dim.plane_size()));
 
         if(!rdi.empty())
         {
             for(unsigned int i = 0;i < rdi.size();++i)
-                tipl::divide_constant(rdi[i],voxel.z0);
+                tipl::multiply_constant(rdi[i],voxel.z0);
             float L = 0.2f;
             mat_writer.write("rdi",rdi[0],uint32_t(voxel.dim.plane_size()));
 
