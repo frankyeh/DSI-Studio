@@ -100,7 +100,6 @@ int cnt(program_option& po)
     {
         progress prog("connectometry parameters:");
         vbc->no_tractogram = (po.get("no_tractogram",1) == 1);
-        vbc->normalize_qa = po.get("normalize_qa",(db.index_name == "sdf" || db.index_name == "qa") ? 1:0);
         vbc->foi_str = foi_str;
         vbc->length_threshold_voxels = po.get("length_threshold",uint32_t(20));
         vbc->tip = po.get("tip",uint32_t(4));
