@@ -163,7 +163,7 @@ QString version_string(void)
     QString base = "DSI Studio version: ";
     #ifdef CUDA_ARCH
     if constexpr(tipl::use_cuda)
-        base = QString("DSI Studio (CUDA SM%1) version: ").arg(CUDA_ARCH);
+        base = QString("DSI Studio CUDA version: ");
     #endif
 
     base += DSISTUDIO_RELEASE_NAME;
