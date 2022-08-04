@@ -3,21 +3,25 @@ FROM ubuntu:22.04 as builder-stage
 ENV DEBIAN_FRONTEND noninteractive
 
 # Prepare environment
-RUN apt update && apt full-upgrade -y && \
-  apt install -y --no-install-recommends \
+RUN apt update && apt upgrade -y && \
+  apt install -y \
   unzip \
   curl \
-  make \
+  cmake \
+  ninja-build \
   git \
   zlib1g-dev \
-  ca-certificates \
-  qt5-qmake \
-  qt5-default \
-  libqt5charts5-dev \
-  libqt5opengl5-dev \
+  qt6-base-dev \
+  libqt6charts6-dev \
+  libqt6opengl6-dev \
+  qt6-image-formats-plugins \
+  qt6-tools-dev \
+  nvidia-cuda-toolkit \
+  nvidia-cuda-dev \
+  nvidia-cuda-toolkit-gcc \
   gcc \
   g++ && \
-  apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+  apt-get -y autoremove --purge && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 ADD "https://api.github.com/repos/frankyeh/DSI-Studio/commits?per_page=1" latest_commit
 ADD "https://api.github.com/repos/frankyeh/TIPL/commits?per_page=1" latest_commit
