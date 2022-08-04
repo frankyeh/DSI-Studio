@@ -12,10 +12,6 @@ on:
         default: '2022.08.03 "Chen" Release'
 jobs:
   build_prerelease:
-    strategy:
-      matrix:
-        os: [ubuntu_2004]
-      fail-fast: false
     runs-on: ubuntu-latest    
     steps:
     - name: Checkout
@@ -33,7 +29,7 @@ jobs:
         outputs: dsi-studio
     - name: Packaging
       run: |
-        zip -r dsi_studio_ubuntu_2004_pre_release.zip dsi-studio
+        zip -r dsi_studio_ubuntu_2004.zip dsi-studio
     - name: Create Release
       uses: ncipollo/release-action@v1.8.9
       with:
@@ -49,7 +45,7 @@ jobs:
     steps:
     - name: Setup Environment
       run: |
-        curl -sL "https://github.com/frankyeh/DSI-Studio/releases/download/2021.12.03/dsi_studio_ubuntu_2004_pre_release.zip" | jar x
+        curl -sL "https://github.com/frankyeh/DSI-Studio/releases/download/2021.12.03/dsi_studio_ubuntu_2004.zip" | jar x
         curl -sL https://zenodo.org/record/6321169/files/mountsinai-S-sub-032156_dwi.src.gz?download=1 -o Rhesus.src.gz
         chmod 777 ./dsi-studio/dsi_studio
     - name: Test DTI/GQI Recon
@@ -67,7 +63,7 @@ jobs:
     steps:
     - name: Setup Environment
       run: |
-        curl -sL "https://github.com/frankyeh/DSI-Studio/releases/download/2021.12.03/dsi_studio_ubuntu_2004_pre_release.zip" | jar x
+        curl -sL "https://github.com/frankyeh/DSI-Studio/releases/download/2021.12.03/dsi_studio_ubuntu_2004.zip" | jar x
         curl -sL https://zenodo.org/record/6320992/files/20081006_M025Y_DSI_203.src.gz?download=1 -o DSI.src.gz
         curl -sL https://zenodo.org/record/6320992/files/20081006_M025Y_DTI64.src.gz?download=1 -o DTI.src.gz
         curl -sL https://zenodo.org/record/6320992/files/20081006_M025Y_HARDI.src.gz?download=1 -o HARDI.src.gz
@@ -93,7 +89,7 @@ jobs:
     steps:
     - name: Setup Environment
       run: |
-        curl -sL "https://github.com/frankyeh/DSI-Studio/releases/download/2021.12.03/dsi_studio_ubuntu_2004_pre_release.zip" | jar x
+        curl -sL "https://github.com/frankyeh/DSI-Studio/releases/download/2021.12.03/dsi_studio_ubuntu_2004.zip" | jar x
         curl -sL https://github.com/frankyeh/DSI-Studio-atlas/blob/main/ICBM152_adult/ICBM152_adult.fib.gz?raw=true -o ICBM152_adult.fib.gz
         chmod 777 ./dsi-studio/dsi_studio
     - name: Tracking
@@ -123,7 +119,7 @@ jobs:
     steps:
     - name: Setup Environment
       run: |
-        curl -sL "https://github.com/frankyeh/DSI-Studio/releases/download/2021.12.03/dsi_studio_ubuntu_2004_pre_release.zip" | jar x
+        curl -sL "https://github.com/frankyeh/DSI-Studio/releases/download/2021.12.03/dsi_studio_ubuntu_2004.zip" | jar x
         curl -sL https://zenodo.org/record/6307812/files/100206.src.gz.gqi.1.7.fib.gz?download=1 -o 100206.fib.gz
         curl -sL https://github.com/frankyeh/DSI-Studio-atlas/blob/main/ICBM152_adult/ICBM152_adult.QA.nii.gz?raw=true -o template_qa.nii.gz
         chmod 777 ./dsi-studio/dsi_studio
@@ -156,7 +152,7 @@ jobs:
     steps:
     - name: Setup Environment
       run: |
-        curl -sL "https://github.com/frankyeh/DSI-Studio/releases/download/2021.12.03/dsi_studio_ubuntu_2004_pre_release.zip" | jar x
+        curl -sL "https://github.com/frankyeh/DSI-Studio/releases/download/2021.12.03/dsi_studio_ubuntu_2004.zip" | jar x
         curl -sL https://zenodo.org/record/6307812/files/100206.src.gz.gqi.1.7.fib.gz?download=1 -o 100206.fib.gz
         chmod 777 ./dsi-studio/dsi_studio
     - name: Export
@@ -180,7 +176,7 @@ jobs:
     steps:
     - name: Setup Environment
       run: |
-        curl -sL "https://github.com/frankyeh/DSI-Studio/releases/download/2021.12.03/dsi_studio_ubuntu_2004_pre_release.zip" | jar x
+        curl -sL "https://github.com/frankyeh/DSI-Studio/releases/download/2021.12.03/dsi_studio_ubuntu_2004.zip" | jar x
         curl -sL https://zenodo.org/record/6324701/files/CMU60.db.fib.gz?download=1 -o CMU60.db.fib.gz
         curl -sL https://zenodo.org/record/6324701/files/CMU60.demo.csv?download=1 -o CMU60.demo.csv
         chmod 777 ./dsi-studio/dsi_studio
@@ -196,7 +192,7 @@ jobs:
     steps:
     - name: Setup Environment
       run: |
-        curl -sL "https://github.com/frankyeh/DSI-Studio/releases/download/2021.12.03/dsi_studio_ubuntu_2004_pre_release.zip" | jar x
+        curl -sL "https://github.com/frankyeh/DSI-Studio/releases/download/2021.12.03/dsi_studio_ubuntu_2004.zip" | jar x
         curl -sL https://zenodo.org/record/6307812/files/100206.src.gz.gqi.1.7.fib.gz?download=1 -o 100206.fib.gz
         curl -sL https://zenodo.org/record/6307812/files/100307.src.gz.gqi.1.7.fib.gz?download=1 -o 100307.fib.gz
         chmod 777 ./dsi-studio/dsi_studio
@@ -211,7 +207,7 @@ jobs:
     steps:
     - name: Setup Environment
       run: |
-        curl -sL "https://github.com/frankyeh/DSI-Studio/releases/download/2021.12.03/dsi_studio_ubuntu_2004_pre_release.zip" | jar x
+        curl -sL "https://github.com/frankyeh/DSI-Studio/releases/download/2021.12.03/dsi_studio_ubuntu_2004.zip" | jar x
         chmod 777 ./dsi-studio/dsi_studio
     - name: Test GQI Recon
       run: |
@@ -222,7 +218,7 @@ jobs:
     needs: [test_animal_recon, test_human_tracking_qsdr, test_human_tracking_gqi, test_connectometry]
     strategy:
       matrix:
-        os: [ubuntu_2004,ubuntu_1804,ubuntu_1604,centos7]
+        os: [ubuntu_1804,ubuntu_1604,centos7]
       fail-fast: false
     runs-on: ubuntu-latest
     steps:
@@ -339,17 +335,8 @@ jobs:
         move build\release\dsi_studio.exe dsi_studio_win
         windeployqt --no-angle --no-quick-import --no-translations --no-system-d3d-compiler --compiler-runtime --no-opengl-sw dsi_studio_win\dsi_studio.exe
         move DSI-Studio-atlas dsi_studio_win\atlas  
-
-    - name: Download the SSL files
-      uses: suisei-cn/actions-download-file@v1
-      with:
-        url: "https://indy.fulgan.com/SSL/openssl-1.0.2u-x64_86-win64.zip"
-    - name: Download TinyFSL
-      uses: suisei-cn/actions-download-file@v1
-      with:
-        url: "https://github.com/frankyeh/TinyFSL/releases/download/2021.12.03/tiny_fsl_win64.zip"
-    - name: Extract zip files
-      run: |
+        curl -sSLO "https://indy.fulgan.com/SSL/openssl-1.0.2u-x64_86-win64.zip"
+        curl -sSLO "https://github.com/frankyeh/TinyFSL/releases/download/2021.12.03/tiny_fsl_win64.zip"
         7z e openssl-1.0.2u-x64_86-win64.zip
         move *.dll dsi_studio_win
         7z e tiny_fsl_win64.zip -odsi_studio_win\plugin
@@ -371,7 +358,7 @@ jobs:
         prerelease: false  
 
   docker_build:
-    needs: linux-build
+    needs: [test_animal_recon, test_human_tracking_qsdr, test_human_tracking_gqi, test_connectometry]
     runs-on: ubuntu-latest
     steps:
     - name: Checkout
@@ -405,10 +392,6 @@ jobs:
 
   windows_build_cuda:
     needs: windows_build
-    strategy:
-      matrix:
-        arch: [35,37,50,52,53,60,61,62,70,72,75,80,86]
-      fail-fast: false
     runs-on: windows-2019
     steps:
     - uses: actions/checkout@v1
@@ -444,7 +427,7 @@ jobs:
       run: |
         for /f "usebackq delims=#" %%a in (`"%programfiles(x86)%\Microsoft Visual Studio\Installer\vswhere" -latest -property installationPath`) do call "%%a\Common7\Tools\VsDevCmd.bat" -arch=x64
         mkdir -p build
-        cmake -S . -B build -GNinja "-DCMAKE_BUILD_TYPE:STRING=Release" "-DCMAKE_C_COMPILER:STRING=cl" "-DCMAKE_CXX_COMPILER:STRING=cl" -DCUDA_ARCH=${{ matrix.arch }} -DTIPL_DIR=.
+        cmake -S . -B build -GNinja "-DCMAKE_BUILD_TYPE:STRING=Release" "-DCMAKE_C_COMPILER:STRING=cl" "-DCMAKE_CXX_COMPILER:STRING=cl" -DCUDA_ARCH=all -DTIPL_DIR=.
         cmake --build ./build --parallel --config Release
       shell: cmd
 
@@ -457,20 +440,15 @@ jobs:
         move build\dsi_studio.exe dsi_studio_win
         windeployqt --no-translations --no-system-d3d-compiler --compiler-runtime --no-opengl-sw dsi_studio_win\dsi_studio.exe
         move DSI-Studio-atlas dsi_studio_win\atlas  
-    - name: Download TinyFSL
-      uses: suisei-cn/actions-download-file@v1
-      with:
-        url: "https://github.com/frankyeh/TinyFSL/releases/download/2021.12.03/tiny_fsl_win64_cuda_sm${{ matrix.arch }}.zip"
-    - name: Extract zip files
-      run: |
-        7z e tiny_fsl_win64_cuda_sm${{ matrix.arch }}.zip -odsi_studio_win\plugin
+        curl -sSLO "https://github.com/frankyeh/TinyFSL/releases/download/2022.08.03/tiny_fsl_win64_cuda.zip"
+        7z e tiny_fsl_win64_cuda.zip -odsi_studio_win\plugin
         rm dsi_studio_win\plugin\cublas*
         rd dsi_studio_win\plugin\tiny_fsl
         del *.zip
     - name: Zip Release
       uses: TheDoctor0/zip-release@0.6.0
       with:
-        filename: dsi_studio_win_cuda_sm${{ matrix.arch }}.zip
+        filename: dsi_studio_win_cuda.zip
         exclusions: .git
         path: dsi_studio_win
     - name: Create Release
