@@ -42,8 +42,8 @@ RUN mkdir -p /opt/dsi-studio \
   && mv /opt/src/build/dsi_studio . \
   && chmod 755 dsi_studio \
   && cp -R /opt/src/other/* . \
-  && rm -fr DSI-Studio-atlas/.git \
   && git clone https://github.com/frankyeh/DSI-Studio-atlas.git \
+  && rm -fr DSI-Studio-atlas/.git \
   && mv DSI-Studio-atlas atlas
 
 ENV PATH="$PATH:/opt/dsi-studio" 
