@@ -97,11 +97,10 @@ void CreateDBDialog::update_list(void)
                 return;
             }
             ui->index_of_interest->clear();
-            ui->index_of_interest->addItem("qa");
             std::vector<std::string> item_list;
             fib.get_index_list(item_list);
-            for(unsigned int i = fib.dir.index_name.size();i < item_list.size();++i)
-                ui->index_of_interest->addItem(item_list[i].c_str());
+            for(auto& name : item_list)
+                ui->index_of_interest->addItem(name.c_str());
         }
     }
     if(ui->output_file_name->text().isEmpty())
