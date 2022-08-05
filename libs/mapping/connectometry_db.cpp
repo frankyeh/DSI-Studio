@@ -498,7 +498,15 @@ bool connectometry_db::add_subject_file(const std::string& file_name,
         else
         {
             auto index = fib.get_name_index(index_name);
-            if(index < fib.view_item.size())
+            if(index == fib.view_item.size())
+            {
+                error_msg = "cannot export ";
+                error_msg += index_name;
+                error_msg += " from ";
+                error_msg += file_name;
+                return false;
+            }
+
             {
                 if(fib.is_qsdr)
                     sample_from_image(fib.view_item[index].get_image(),fib.trans_to_mni,data);
