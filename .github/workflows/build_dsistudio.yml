@@ -351,7 +351,7 @@ jobs:
     - name: Zip Release
       uses: TheDoctor0/zip-release@0.6.0
       with:
-        filename: dsi_studio_win_cuda.zip
+        filename: dsi_studio_win.zip
         exclusions: .git
         path: dsi_studio_win
     - name: Create Release
