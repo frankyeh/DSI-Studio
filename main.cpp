@@ -253,9 +253,8 @@ void init_cuda(void)
         std::string cuda_msg;
         has_cuda = check_cuda(cuda_msg);
         if(!has_cuda)
-            show_progress() << "cannot use GPU computation: " << cuda_msg << std::endl;
+            show_progress() << cuda_msg << std::endl;
     }
-    has_cuda = false;
     show_progress() << version_string().toStdString() << ((has_cuda) ? " CPU/GPU computation enabled " : "") << std::endl;
 }
 int run_cmd(int ac, char *av[])
