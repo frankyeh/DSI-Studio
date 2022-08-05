@@ -218,7 +218,7 @@ jobs:
     needs: [test_animal_recon, test_human_tracking_qsdr, test_human_tracking_gqi, test_connectometry]
     strategy:
       matrix:
-        os: [ubuntu_1804,ubuntu_1604,centos7]
+        os: [ubuntu_2204,ubuntu_1804,ubuntu_1604,centos7]
       fail-fast: false
     runs-on: ubuntu-latest
     steps:
@@ -251,7 +251,7 @@ jobs:
     needs: [test_animal_recon, test_human_tracking_qsdr, test_human_tracking_gqi, test_connectometry]
     strategy:
       matrix:
-        os: [macos-11,macos-10.15]
+        os: [macos-12,macos-11,macos-10.15]
       fail-fast: false
     runs-on: ${{ matrix.os }}
     env:
