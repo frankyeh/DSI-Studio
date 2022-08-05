@@ -1700,7 +1700,7 @@ bool eddy_check_shell(const std::vector<float>& bvalues)
     }
     return true;
 }
-
+extern bool has_cuda;
 bool ImageModel::run_eddy(std::string exec)
 {
     if(voxel.report.find("rotated") != std::string::npos)
@@ -1802,7 +1802,7 @@ bool ImageModel::run_eddy(std::string exec)
     if(has_topup)
         param.push_back(QString("--topup=%1").arg(topup_result.c_str()).toStdString().c_str());
 
-    if(!run_plugin("eddy","model",16,param,QFileInfo(file_name.c_str()).absolutePath().toStdString(),exec))
+    if(!run_plugin(has_cuda ? "eddy_cuda" : "eddy","model",16,param,QFileInfo(file_name.c_str()).absolutePath().toStdString(),exec))
     {
         show_progress() << "eddy cannot process this data:" << error_msg << std::endl;
         if(!has_topup)
