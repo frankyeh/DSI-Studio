@@ -16,14 +16,25 @@ bool check_cuda(std::string& error_msg)
     if(cudaGetDeviceCount(&nDevices) != cudaSuccess ||
        cudaDriverGetVersion(&Ver) != cudaSuccess)
     {
-        error_msg = "Cannot obtain GPU driver and device information (CUDA ERROR:";
+        error_msg = "cannot obtain GPU driver and device information (CUDA ERROR:";
         error_msg += std::to_string(int(cudaGetDeviceCount(&nDevices)));
         error_msg += "). Please update the Nvidia driver and install CUDA Toolkit.";
         return false;
     }
+    std::cout << " Checking CUDA Driver" << std::endl;
+    std::cout << " CUDA Driver Version: " << Ver << " CUDA Run Time Version: " << CUDART_VERSION << std::endl;
+    cuda_test<<<1,1>>>();
+    if(cudaPeekAtLastError() != cudaSuccess)
+    {
+        error_msg = "Failed to lauch cuda kernel:";
+        error_msg += cudaGetErrorName(cudaGetLastError());
+        error_msg += ". Please update Nvidia driver.";
+        return false;
+    }
 
     std::cout << "Device Count:" << nDevices << std::endl;
-    for (int i = 0; i < nDevices; i++) {
+    for (int i = 0; i < nDevices; i++)
+    {
         cudaDeviceProp prop;
         if(cudaGetDeviceProperties(&prop, i) != cudaSuccess)
         {
@@ -39,17 +50,6 @@ bool check_cuda(std::string& error_msg)
         std::cout << "  Peak Memory Bandwidth (GB/s): " << 2.0*prop.memoryClockRate*(prop.memoryBusWidth/8)/1.0e6 << std::endl;
 
     }
-
-    std::cout << "Driver Version: " << Ver << " DSI Studio CUDA Version: " << CUDART_VERSION << std::endl;
-    cuda_test<<<1,1>>>();
-    if(cudaPeekAtLastError() != cudaSuccess)
-    {
-        error_msg = "Failed to lauch cuda kernel:";
-        error_msg += cudaGetErrorName(cudaGetLastError());
-        error_msg += ". Please update Nvidia driver.";
-        return false;
-    }
-
     return true;
 }
 

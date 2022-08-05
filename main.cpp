@@ -161,13 +161,8 @@ bool load_file_name(void)
 QString version_string(void)
 {
     QString base = "DSI Studio version: ";
-    #ifdef CUDA_ARCH
-    if constexpr(tipl::use_cuda)
-        base = QString("DSI Studio CUDA version: ");
-    #endif
 
     base += DSISTUDIO_RELEASE_NAME;
-
     base += "\"";
     unsigned int code = DSISTUDIO_RELEASE_CODE;
     #ifdef QT6_PATCH
@@ -249,23 +244,27 @@ void get_filenames_from(const std::string param,std::vector<std::string>& filena
 bool check_cuda(std::string& error_msg);
 bool match_files(const std::string& file_path1,const std::string& file_path2,
                  const std::string& file_path1_others,std::string& file_path2_gen);
+bool has_cuda = false;
+
+void init_cuda(void)
+{
+    if constexpr(tipl::use_cuda)
+    {
+        std::string cuda_msg;
+        has_cuda = check_cuda(cuda_msg);
+        if(!has_cuda)
+            show_progress() << "cannot use GPU computation: " << cuda_msg << std::endl;
+    }
+    has_cuda = false;
+    show_progress() << version_string().toStdString() << ((has_cuda) ? " CPU/GPU computation enabled " : "") << std::endl;
+}
 int run_cmd(int ac, char *av[])
 {
     program_option po;
     try
     {
-        if constexpr(tipl::use_cuda)
-        {
-            std::string msg;
-            if(!check_cuda(msg))
-            {
-                show_progress() << "ERROR:" << msg <<std::endl;
-                return 1;
-            }
-        }
-
         progress prog("DSI Studio command line");
-        show_progress() << "DSI Studio \"" << DSISTUDIO_RELEASE_NAME << "\" " << __DATE__ << std::endl;
+        init_cuda();
 
         if(!po.parse(ac,av))
         {
@@ -362,8 +361,10 @@ int run_cmd(int ac, char *av[])
 
 extern console_stream console;
 
+
 int main(int ac, char *av[])
 {
+
     if(ac > 2 || QString(av[1]).endsWith(".txt") || QString(av[1]).endsWith(".log"))
         return run_cmd(ac,av);
 
@@ -371,25 +372,12 @@ int main(int ac, char *av[])
 
     // replace default std::cout buffer
     console.attach();
-
+    init_cuda();
     QApplication a(ac,av);
     init_application();
     MainWindow w;
     w.setWindowTitle(version_string() + " " + __DATE__);
     has_gui = true;
-
-    {
-        if constexpr(tipl::use_cuda)
-        {
-            std::string msg;
-            if(!check_cuda(msg))
-            {
-                QMessageBox::critical(&w,"ERROR",msg.c_str());
-                return 1;
-            }
-        }
-    }
-
     // presentation mode
     QStringList fib_list = QDir(QCoreApplication::applicationDirPath()+ "/presentation").
                             entryList(QStringList("*fib.gz") << QString("*_qa.nii.gz"),QDir::Files|QDir::NoSymLinks);

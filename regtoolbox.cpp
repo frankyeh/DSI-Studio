@@ -6,6 +6,7 @@
 #include "ui_regtoolbox.h"
 #include "libs/gzip_interface.hpp"
 #include "basic_voxel.hpp"
+extern bool has_cuda;
 void show_view(QGraphicsScene& scene,QImage I);
 RegToolBox::RegToolBox(QWidget *parent) :
     QMainWindow(parent),
@@ -37,7 +38,7 @@ RegToolBox::RegToolBox(QWidget *parent) :
     ui->running_label->setMovie(movie);
     ui->stop->hide();
 
-    if constexpr (!tipl::use_cuda)
+    if(!has_cuda)
         ui->use_cuda->hide();
 
     v2c_I.two_color(tipl::rgb(0,0,0),tipl::rgb(255,255,255));

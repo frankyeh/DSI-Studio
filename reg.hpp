@@ -3,6 +3,7 @@
 #include <iostream>
 #include "prog_interface_static_link.h"
 #include "TIPL/tipl.hpp"
+extern bool has_cuda;
 void cdm2_cuda(const tipl::image<3>& It,
                const tipl::image<3>& It2,
                const tipl::image<3>& Is,
@@ -22,7 +23,7 @@ inline void cdm_common(const tipl::image<3>& It,
                tipl::reg::cdm_param param = tipl::reg::cdm_param(),
                bool use_cuda = true)
 {
-    if(use_cuda)
+    if(use_cuda && has_cuda)
     {
         if constexpr (tipl::use_cuda)
         {
@@ -86,18 +87,15 @@ inline size_t linear_with_mi(const tipl::image<3,float>& from,
 {
     if(reg_type == tipl::reg::affine && adjust_vs(from,from_vs,to,to_vs))
         bound = tipl::reg::large_bound;
-    size_t result = 0;
-    if constexpr (tipl::use_cuda)
+    if(has_cuda)
     {
-        result = linear_cuda(from,from_vs,to,to_vs,arg,tipl::reg::reg_type(reg_type),terminated,bound);
+        if constexpr (tipl::use_cuda)
+            return linear_cuda(from,from_vs,to,to_vs,arg,tipl::reg::reg_type(reg_type),terminated,bound);
+
     }
-    else
-    {
-        result = tipl::reg::linear_mr<tipl::reg::mutual_information>
+    return tipl::reg::linear_mr<tipl::reg::mutual_information>
                 (from,from_vs,to,to_vs,arg,tipl::reg::reg_type(reg_type),[&](void){return terminated;},
                     0.01,bound != tipl::reg::narrow_bound,bound);
-    }
-    return result;
 }
 
 inline size_t linear_with_mi_refine(const tipl::image<3,float>& from,
@@ -109,12 +107,13 @@ inline size_t linear_with_mi_refine(const tipl::image<3,float>& from,
                               bool& terminated,
                               double precision = 0.01)
 {
-    size_t result = 0;
-    if constexpr (tipl::use_cuda)
-        result = linear_cuda_refine(from,from_vs,to,to_vs,arg,tipl::reg::reg_type(reg_type),terminated,precision);
+    if(has_cuda)
+    {
+        if constexpr (tipl::use_cuda)
+            return linear_cuda_refine(from,from_vs,to,to_vs,arg,tipl::reg::reg_type(reg_type),terminated,precision);
+    }
     else
-        result = tipl::reg::linear<tipl::reg::mutual_information>(from,from_vs,to,to_vs,arg,tipl::reg::reg_type(reg_type),[&](void){return terminated;},precision,false,tipl::reg::narrow_bound,10);
-    return result;
+        return tipl::reg::linear<tipl::reg::mutual_information>(from,from_vs,to,to_vs,arg,tipl::reg::reg_type(reg_type),[&](void){return terminated;},precision,false,tipl::reg::narrow_bound,10);
 }
 
 
