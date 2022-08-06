@@ -68,12 +68,12 @@ private:
     size_t cur_input_shift = 0; // used when seek
 private:
     // read all buffer
-    std::shared_ptr<std::future<void> > readfile_thread;
+    std::shared_ptr<std::thread> readfile_thread;
     bool terminated = false;
     bool reading_buf = false;
     bool read_each_buf(size_t begin_index,size_t n);
 private:
-    std::vector<std::shared_ptr<std::future<void> > > inflate_thread;
+    std::vector<std::thread> inflate_threads;
 private:
     std::vector<std::vector<unsigned char> > file_buf;
     std::vector<bool> file_buf_ready;

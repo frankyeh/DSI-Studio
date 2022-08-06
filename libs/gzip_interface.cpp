@@ -120,7 +120,7 @@ void gz_istream::terminate_readfile_thread(void)
     if(readfile_thread.get())
     {
         terminated = true;
-        readfile_thread->wait();
+        readfile_thread->join();
         readfile_thread.reset();
         terminated = false;
     }
@@ -191,7 +191,7 @@ bool gz_istream::load_file_buf(size_t num)
     if(remain_num)
     {
         // read reamining data at another thread
-        readfile_thread = std::make_shared<std::future<void> >(std::async(std::launch::async,[&,remain_num,read_index]()
+        readfile_thread.reset(new std::thread([&,remain_num,read_index]()
         {
             reading_buf = true;
             read_each_buf(read_index,remain_num);
@@ -241,9 +241,9 @@ bool gz_istream::fetch(void)
 }
 void gz_istream::flush(void)
 {
-    for(auto thread: inflate_thread)
-        thread->wait();
-    inflate_thread.clear();
+    for(auto& thread: inflate_threads)
+        thread.join();
+    inflate_threads.clear();
 }
 
 bool gz_istream::read(void* buf,size_t len)
@@ -298,7 +298,7 @@ bool gz_istream::read(void* buf,size_t len)
                 size_t index = cur_input_index;
 
                 // start a new thread to inflate data
-                inflate_thread.push_back(std::make_shared<std::future<void> >(std::async(std::launch::async,[this,back_upstrm,index] () mutable
+                inflate_threads.push_back(std::thread([this,back_upstrm,index] () mutable
                 {
                     do{
                         if(back_upstrm->empty())
@@ -313,7 +313,7 @@ bool gz_istream::read(void* buf,size_t len)
                         }
                     }while(back_upstrm->process() == Z_OK && back_upstrm->size_to_extract());
                     back_upstrm.reset(); // if not reset, the memory will stay with inflate_thread
-                })));
+                }));
 
                 // now we can jump to the next access point and read it from there
                 if(!jump_to(point))
