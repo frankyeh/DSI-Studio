@@ -455,8 +455,8 @@ bool CustomSliceModel::initialize(const std::vector<std::string>& files,bool is_
         if(!has_transform)
         {
             progress::show("running slice registration...");
-            thread.reset(new std::future<void>(
-                        std::async(std::launch::async,[this](){argmin(tipl::reg::rigid_body);})));
+            thread.reset(new std::thread([this](){argmin(tipl::reg::rigid_body);}));
+            std::this_thread::sleep_for(std::chrono::seconds(1));
         }
         else
         {
@@ -566,7 +566,7 @@ void CustomSliceModel::terminate(void)
     terminated = true;
     running = false;
     if(thread.get())
-        thread->wait();
+        thread->join();
 
 }
 // ---------------------------------------------------------------------------

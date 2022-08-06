@@ -119,7 +119,7 @@ class CustomSliceModel : public SliceModel {
 public:
     std::string source_file_name,name,error_msg = "unknown error";
 public:
-    std::shared_ptr<std::future<void> > thread;
+    std::shared_ptr<std::thread> thread;
     tipl::affine_transform<float> arg_min;
     bool terminated = true;
     bool running = false;
