@@ -272,7 +272,6 @@ void reconstruction_window::Reconstruction(unsigned char method_id,bool prompt)
     }
 
     handle->voxel.method_id = method_id;
-    handle->voxel.ti.init(8);
     handle->voxel.odf_resolving = ui->odf_resolving->isChecked();
     handle->voxel.output_odf = ui->RecordODF->isChecked();
     handle->voxel.dti_no_high_b = ui->dti_no_high_b->isChecked();
