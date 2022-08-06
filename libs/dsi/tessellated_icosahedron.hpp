@@ -399,7 +399,6 @@ public:
 		std::sort(faces.begin(),faces.end());
 	}
 public:
-    tessellated_icosahedron(void){}
     void init(unsigned short vertices_count_,const float* odf_buffer,
               unsigned short faces_count_,const short* face_buffer)
     {
@@ -416,12 +415,10 @@ public:
             faces[index] = face_buffer;
     }
 
-    void init(unsigned short fold_)
+    tessellated_icosahedron(unsigned short fold_ = 8):fold(fold_)
     {
-        fold = fold_;
         vertices_count = fold*fold*10+2;
         half_vertices_count = vertices_count >> 1;
-        cur_vertex = 0;
         vertices.resize(vertices_count);
         faces.clear();
         icosa_cos.clear();
