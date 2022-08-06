@@ -93,7 +93,7 @@ public:
                 size_t i = 0;
                 while(!ended)
                 {
-                    std::this_thread::sleep_for(std::chrono::milliseconds(200));
+                    std::this_thread::yield();
                     progress::at(i,i+1);
                     if(progress::aborted())
                     {
