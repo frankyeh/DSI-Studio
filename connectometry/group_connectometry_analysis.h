@@ -24,7 +24,6 @@ public:
     ~group_connectometry_analysis(){clear();}
 
     void clear(void);
-    void wait(void);
 public:
     bool create_database(const char* templat_name);
     bool load_database(const char* database_name);
@@ -39,7 +38,7 @@ private: // single subject analysis result
     int run_track(std::shared_ptr<tracking_data> fib,std::vector<std::vector<float> >& track,
                   int seed_count,unsigned int thread_count = 1);
 public:// for FDR analysis
-    std::vector<std::shared_ptr<std::future<void> > > threads;
+    std::vector<std::thread> threads;
     std::vector<unsigned int> subject_pos_corr_null;
     std::vector<unsigned int> subject_neg_corr_null;
     std::vector<unsigned int> subject_pos_corr;

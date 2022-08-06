@@ -154,7 +154,7 @@ void group_connectometry_analysis::run_permutation_multithread(unsigned int id,u
                     // stop other threads
                     terminated = true;
                     for(size_t index = 1;index < threads.size();++index)
-                        threads[index]->wait();
+                        threads[index].join();
                     terminated = false;
                     // clear all records
                     neg_corr_track->clear();
@@ -168,8 +168,8 @@ void group_connectometry_analysis::run_permutation_multithread(unsigned int id,u
                     show_progress() << "now running seed count=" << seed_count << std::endl;
                     threads.resize(1);
                     for(unsigned int index = 1;index < thread_count;++index)
-                        threads.push_back(std::make_shared<std::future<void> >(std::async(std::launch::async,
-                            [this,index,thread_count,permutation_count](){run_permutation_multithread(index,thread_count,permutation_count);})));
+                        threads.push_back(std::thread(
+                            [this,index,thread_count,permutation_count](){run_permutation_multithread(index,thread_count,permutation_count);}));
 
                     preproces = 0;
                     i = 0;
@@ -182,9 +182,8 @@ void group_connectometry_analysis::run_permutation_multithread(unsigned int id,u
     if(id == 0 && !terminated)
     {
         for(size_t index = 1;index < threads.size();++index)
-            threads[index]->wait();
+            threads[index].join();
         prog = 100;
-
     }
 }
 void group_connectometry_analysis::save_result(void)
@@ -295,19 +294,14 @@ void group_connectometry_analysis::clear(void)
     if(!threads.empty())
     {
         while(terminated)
-            std::this_thread::sleep_for(std::chrono::milliseconds(200));
+            std::this_thread::yield();
         terminated = true;
-        wait();
+        for(auto& thread : threads)
+            thread.join();
         threads.clear();
         terminated = false;
     }
 }
-void group_connectometry_analysis::wait(void)
-{
-    for(size_t i = 0;i < threads.size();++i)
-        threads[i]->wait();
-}
-
 
 std::string iterate_items(const std::vector<std::string>& item)
 {
@@ -445,8 +439,7 @@ void group_connectometry_analysis::run_permutation(unsigned int thread_count,uns
     seed_count = 10000;
 
     for(unsigned int index = 0;index < thread_count;++index)
-        threads.push_back(std::make_shared<std::future<void> >(std::async(std::launch::async,
-            [this,index,thread_count,permutation_count](){run_permutation_multithread(index,thread_count,permutation_count);})));
+        threads.push_back(std::thread([this,index,thread_count,permutation_count](){run_permutation_multithread(index,thread_count,permutation_count);}));
 }
 
 void group_connectometry_analysis::calculate_FDR(void)
