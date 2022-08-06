@@ -32,13 +32,11 @@ int rec(program_option& po)
     {
         progress prog("reconstruction parameters:");
         src.voxel.method_id = uint8_t(po.get("method",4));
-        src.voxel.ti.init(uint16_t(po.get("odf_order",int(8))));
         src.voxel.odf_resolving = po.get("odf_resolving",int(0));
         src.voxel.output_odf = po.get("record_odf",int(0));
         src.voxel.dti_no_high_b = po.get("dti_no_high_b",src.is_human_data());
         src.voxel.check_btable = po.get("check_btable",0);
         src.voxel.other_output = po.get("other_output","fa,ad,rd,md,nqa,iso,rdi,nrdi");
-        src.voxel.max_fiber_number = uint32_t(po.get("num_fiber",int(5)));
         src.voxel.r2_weighted = po.get("r2_weighted",int(0));
         src.voxel.thread_count = po.get("thread_count",uint32_t(std::thread::hardware_concurrency()));
         src.voxel.half_sphere = po.get("half_sphere",src.is_dsi_half_sphere());
