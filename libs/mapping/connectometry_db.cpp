@@ -515,7 +515,7 @@ bool connectometry_db::add_subject_file(const std::string& file_name,
                     fib.set_template_id(handle->template_id);
                     fib.map_to_mni();
                     while(!progress::aborted() && fib.prog != 6)
-                        std::this_thread::sleep_for(std::chrono::seconds(2));
+                        std::this_thread::yield();
                     if(progress::aborted())
                     {
                         error_msg = "aborted";
