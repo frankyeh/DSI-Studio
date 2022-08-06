@@ -1406,7 +1406,6 @@ void GLWidget::add_odf(const std::vector<tipl::pixel_index<3> >& odf_pos_)
     unsigned int odf_shape = get_param("odf_shape");
     ODFShaping shaping;
     tessellated_icosahedron ti;
-    ti.init(8);
     shaping.init(ti);
 
     tipl::par_for(odf_pos.size(),[&](size_t i)
