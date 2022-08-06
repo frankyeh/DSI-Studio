@@ -37,8 +37,7 @@ public:
         unsigned int b_count = uint32_t(voxel.bvalues.size());
         unsigned int total_signals = 0;
 
-        tessellated_icosahedron new_dir;
-        new_dir.init(6);
+        tessellated_icosahedron new_dir(6);
 
         std::vector<tipl::vector<3,float> > new_bvectors;
         std::vector<float> new_bvalues;
