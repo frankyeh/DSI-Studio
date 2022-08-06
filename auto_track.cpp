@@ -190,14 +190,12 @@ std::string run_auto_track(program_option& po,const std::vector<std::string>& fi
             ImageModel src;
             src.voxel.method_id = 4; // GQI
             src.voxel.param[0] = length_ratio;
-            src.voxel.ti.init(8); // odf order of 8
             src.voxel.thread_count = thread_count;
             src.voxel.half_sphere = po.get("half_sphere",src.is_dsi_half_sphere() ? 1:0);
             src.voxel.scheme_balance = po.get("scheme_balance",src.need_scheme_balance() ? 1:0);
             src.voxel.check_btable = po.get("check_btable",1);
             src.voxel.dti_no_high_b = po.get("dti_no_high_b",1);
             src.voxel.other_output = po.get("other_output","fa,ad,rd,md,nqa,iso,rdi,nrdi");
-            src.voxel.max_fiber_number = uint32_t(po.get("num_fiber",int(5)));
             src.voxel.r2_weighted = po.get("r2_weighted",int(0));
             // has fib file?
             fib_file_name = file_list[i]+src.get_file_ext();
