@@ -185,8 +185,6 @@ public:
                     ++total_voxel_count;
                     if(VFFF[index] > 0.0f)
                         ++subject_voxel_count;
-                    else
-                        VG[index] = 0.0f; // write to VG for mask generation
                 }
             }
             partial_reconstruction = float(subject_voxel_count)/float(total_voxel_count) < 0.25f;
