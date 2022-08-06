@@ -640,7 +640,7 @@ void slice_view_scene::paint_image(void)
             complete_view_ready = true;
         }
         while(!need_complete_view && !free_thread)
-            std::this_thread::sleep_for(std::chrono::milliseconds(50));
+            std::this_thread::yield();
     }
 }
 
