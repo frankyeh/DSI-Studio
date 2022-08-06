@@ -1720,7 +1720,7 @@ bool fib_data::map_to_mni(bool background)
         std::thread t(lambda);
         while(progress::at(prog,6))
         {
-            std::this_thread::sleep_for(std::chrono::milliseconds(200));
+            std::this_thread::yield();
             if(progress::aborted())
             {
                 error_msg = "aborted.";
