@@ -120,7 +120,7 @@ void manual_alignment::warp_image(void)
             image_need_update = false;
             warp_image_ready = true;
         }
-        std::this_thread::sleep_for(std::chrono::milliseconds(250));
+        std::this_thread::yield();
     }
 }
 
