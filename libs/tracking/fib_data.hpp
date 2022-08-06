@@ -10,15 +10,12 @@
 
 struct odf_data{
 private:
-    std::vector<const float*> odf_blocks;
-private:
-    tipl::image<3,unsigned int> odf_block_map1;
-    tipl::image<3,unsigned int> odf_block_map2;
+    tipl::image<3,const float*> odf_map;
 public:
     std::string error_msg;
     bool read(gz_mat_read& mat_reader);
-    bool has_odfs(void) const {return !odf_blocks.empty();}
-    const float* get_odf_data(size_t index);
+    bool has_odfs(void) const {return !odf_map.empty();}
+    const float* get_odf_data(size_t index){return odf_map[index];}
 };
 
 class fiber_directions

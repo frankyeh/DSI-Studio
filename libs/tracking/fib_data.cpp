@@ -12,7 +12,7 @@
 extern std::vector<std::string> fa_template_list;
 bool odf_data::read(gz_mat_read& mat_reader)
 {
-    if(!odf_blocks.empty())
+    if(!odf_map.empty())
         return true;
     progress prog("reading odf data");
     unsigned int row,col;
@@ -23,22 +23,33 @@ bool odf_data::read(gz_mat_read& mat_reader)
         error_msg = "invalid FIB file format";
         return false;
     }
-    size_t odf_block_count = 0;
+    std::vector<const float*> odf_buf;
+    std::vector<size_t> odf_buf_count;
     size_t odf_count = 0;
-    while(mat_reader.get_col_row((std::string("odf")+std::to_string(odf_block_count)).c_str(),row,col))
     {
-        ++odf_block_count;
-        odf_count += col;
+        while(mat_reader.get_col_row((std::string("odf")+std::to_string(odf_buf_count.size())).c_str(),row,col))
+        {
+            odf_buf_count.push_back(col);
+            odf_count += col;
+        }
+
+        odf_buf.resize(odf_buf_count.size());
+        for(size_t i = 0;prog(i,odf_buf_count.size());++i)
+        {
+            if(!mat_reader.read((std::string("odf")+std::to_string(i)).c_str(),row,col,odf_buf[i]))
+            {
+                error_msg = "failed to read ODF data";
+                return false;
+            }
+        }
+        if(progress::aborted())
+            return false;
     }
-    if (!odf_block_count)
+    if (odf_buf.empty())
     {
         error_msg = "no ODF data found";
         return false;
     }
-
-    odf_blocks.resize(odf_block_count);
-    odf_block_map1.resize(dim);
-    odf_block_map2.resize(dim);
 
     show_progress() << "odf count: " << odf_count << std::endl;
 
@@ -58,23 +69,16 @@ bool odf_data::read(gz_mat_read& mat_reader)
 
     size_t voxel_index = 0;
     odf_count = 0; // count ODF again and now ignoring 0 odf to see if it matches.
-    for(size_t i = 0;prog(i,odf_block_count);++i)
+    odf_map.resize(dim);
+    for(size_t i = 0;prog(i,odf_buf.size());++i)
     {
-        if(!mat_reader.read((std::string("odf")+std::to_string(i)).c_str(),row,col,odf_blocks[i]))
-        {
-            error_msg = "failed to read ODF data";
-            odf_blocks.clear();
-            return false;
-        }
         // row: half_odf_size
-        // col: odf count
-        size_t block_size = row*col;
-        for(size_t j = 0;j < block_size;j += row)
+        auto odf_ptr = odf_buf[i];
+        for(size_t j = 0;j < odf_buf_count[i];++j,odf_ptr += row)
         {
-            size_t k_end = j + row;
             bool is_odf_zero = true;
-            for(size_t k = j;k < k_end;++k)
-                if(odf_blocks[i][k] != 0.0f)
+            for(size_t k = 0;k < row;++k)
+                if(odf_ptr[k] != 0.0f)
                 {
                     is_odf_zero = false;
                     break;
@@ -82,13 +86,12 @@ bool odf_data::read(gz_mat_read& mat_reader)
             if(is_odf_zero)
                 continue;
             ++odf_count;
-            for(;voxel_index < odf_block_map1.size();++voxel_index)
+            for(;voxel_index < odf_map.size();++voxel_index)
                 if(fa0[voxel_index] != 0.0f)
                     break;
-            if(voxel_index >= odf_block_map1.size())
+            if(voxel_index >= odf_map.size())
                 break;
-            odf_block_map1[voxel_index] = i;
-            odf_block_map2[voxel_index] = j;
+            odf_map[voxel_index] = odf_ptr;
             ++voxel_index;
         }
     }
@@ -99,18 +102,6 @@ bool odf_data::read(gz_mat_read& mat_reader)
         return false;
     }
     return !progress::aborted();
-}
-
-
-const float* odf_data::get_odf_data(size_t index)
-{
-    if (!odf_blocks.empty())
-    {
-        if (index >= odf_block_map2.size())
-            return nullptr;
-        return odf_blocks[odf_block_map1[index]] + odf_block_map2[index];
-    }
-    return nullptr;
 }
 
 tipl::const_pointer_image<3,float> item::get_image(void)
