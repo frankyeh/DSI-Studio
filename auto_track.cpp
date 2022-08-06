@@ -338,16 +338,15 @@ std::string run_auto_track(program_option& po,const std::vector<std::string>& fi
                         progress prog_("tracking");
                         while(!thread.is_ended() && !progress::aborted())
                         {
+                            std::this_thread::yield();
                             progress::at(thread.get_total_tract_count(),
                                        thread.param.termination_count);
-                            std::this_thread::sleep_for(std::chrono::seconds(2));
-                            thread.fetchTracks(&tract_model);
-                            std::this_thread::sleep_for(std::chrono::seconds(2));
                             thread.fetchTracks(&tract_model);
                             // terminate if yield rate is very low, likely quality problem
-                            if(thread.get_total_seed_count() > low_yield_threshold &&
+                            if(thread.get_total_seed_count() > low_yield_threshold*10 &&
                                thread.get_total_tract_count() < thread.get_total_seed_count()/low_yield_threshold)
                             {
+                                show_progress() << "low yield rate, terminating" << std::endl;
                                 no_result = true;
                                 thread.end_thread();
                                 break;
