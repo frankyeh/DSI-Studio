@@ -36,7 +36,7 @@ public:
     }
 public:
     bool joinning = false;
-    std::vector<std::shared_ptr<std::future<void> > > threads;
+    std::vector<std::thread> threads;
     std::vector<unsigned int> seed_count;
     std::vector<unsigned int> tract_count;
     std::vector<unsigned int> end_count;

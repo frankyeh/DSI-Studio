@@ -14,8 +14,8 @@ void ThreadData::end_thread(void)
     if (!threads.empty())
     {
         joinning = true;
-        for(size_t i = 0;i < threads.size();++i)
-            threads[i]->wait();
+        for(auto& thread : threads)
+            thread.join();
         threads.clear();
     }
 }
@@ -245,18 +245,16 @@ void ThreadData::run(std::shared_ptr<tracking_data> trk_,unsigned int thread_cou
     track_buffer_back.resize(thread_count);
     track_buffer_front.resize(thread_count);
     for (unsigned int index = 0;index < thread_count-1;++index)
-        threads.push_back(std::make_shared<std::future<void> >(std::async(std::launch::async,
-                [&,index](){run_thread(index);})));
+        threads.push_back(std::thread([&,index](){run_thread(index);}));
 
     if(wait)
     {
         run_thread(thread_count-1);
-        for(size_t i = 0;i < threads.size();++i)
-            threads[i]->wait();
+        for(auto& thread : threads)
+            thread.join();
         // make sure fetch tract get all data.
         buffer_switch = !buffer_switch;
     }
     else
-        threads.push_back(std::make_shared<std::future<void> >(std::async(std::launch::async,
-                [&,thread_count](){run_thread(thread_count-1);})));
+        threads.push_back(std::thread([&,thread_count](){run_thread(thread_count-1);}));
 }
