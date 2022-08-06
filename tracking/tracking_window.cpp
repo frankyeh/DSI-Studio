@@ -853,7 +853,7 @@ bool tracking_window::command(QString cmd,QString param,QString param2)
         show_progress() << "register image to the DWI space" << std::endl;
         CustomSliceModel* cur_slice = (CustomSliceModel*)slices.back().get();
         if(cur_slice->thread.get())
-            cur_slice->thread->wait();
+            cur_slice->thread->join();
         cur_slice->update_transform();
 
         return true;
