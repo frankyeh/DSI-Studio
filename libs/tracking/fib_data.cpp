@@ -539,7 +539,6 @@ bool fib_data::load_from_file(const char* file_name)
             dir.index_name.push_back("fiber");
             dir.index_data.push_back(dir.fa);
             tessellated_icosahedron ti;
-            ti.init(8);
             dir.odf_faces = ti.faces;
             dir.odf_table = ti.vertices;
             dir.half_odf_size = ti.half_vertices_count;
@@ -585,7 +584,6 @@ bool fib_data::load_from_file(const char* file_name)
                 dir.fa[i] = &*(dir.fa_buf[i].begin());
 
                 tessellated_icosahedron ti;
-                ti.init(8);
                 dir.odf_faces = ti.faces;
                 dir.odf_table = ti.vertices;
                 dir.half_odf_size = ti.half_vertices_count;
