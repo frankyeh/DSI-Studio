@@ -45,7 +45,7 @@ bool check_other_slices(const std::string& other_slices_name,std::shared_ptr<fib
             return false;
         }
         if(new_slice->thread.get())
-            new_slice->thread->wait();
+            new_slice->thread->join();
         other_slices.push_back(new_slice);
     }
     return true;
@@ -67,7 +67,7 @@ bool get_t1t2_nifti(const std::string& t1t2,
         handle->view_item.pop_back(); // remove the new item added by initialize
         if(t1t2_slices->thread.get())
         {
-            t1t2_slices->thread->wait();
+            t1t2_slices->thread->join();
             show_progress() << "registeration complete" << std::endl;
             show_progress() << convert[0] << " " << convert[1] << " " << convert[2] << " " << convert[3] << std::endl;
             show_progress() << convert[4] << " " << convert[5] << " " << convert[6] << " " << convert[7] << std::endl;
@@ -487,7 +487,7 @@ int trk_post(program_option& po,
                 show_progress() << "ERROR: reading ref image file" << std::endl;
                 return 1;
             }
-            new_slice.thread->wait();
+            new_slice.thread->join();
             new_slice.update_transform();
             show_progress() << "applying linear registration." << std::endl;
             show_progress() << new_slice.T[0] << " " << new_slice.T[1] << " " << new_slice.T[2] << " " << new_slice.T[3] << std::endl;
