@@ -15,7 +15,6 @@
 #include <filesystem>
 
 extern std::vector<std::string> fa_template_list,iso_template_list;
-bool need_scheme_balance(const std::vector<unsigned int>& shell);
 bool get_src(std::string filename,ImageModel& src2,std::string& error_msg);
 /**
  perform reconstruction
@@ -39,8 +38,6 @@ int rec(program_option& po)
         src.voxel.other_output = po.get("other_output","fa,ad,rd,md,nqa,iso,rdi,nrdi");
         src.voxel.r2_weighted = po.get("r2_weighted",int(0));
         src.voxel.thread_count = po.get("thread_count",uint32_t(std::thread::hardware_concurrency()));
-        src.voxel.half_sphere = po.get("half_sphere",src.is_dsi_half_sphere());
-        src.voxel.scheme_balance = po.get("scheme_balance",src.need_scheme_balance());
         src.voxel.qsdr_reso = po.get("qsdr_reso",src.voxel.vs[0]);
         src.voxel.param[0] = po.get("param0",src.voxel.param[0]);
         src.voxel.param[1] = po.get("param1",src.voxel.param[1]);
