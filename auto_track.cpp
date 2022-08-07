@@ -58,7 +58,7 @@ void auto_track::on_open_clicked()
                                      this,
                                      "Open FIB files",
                                      "",
-                                     "FIB files (*fib.gz);;SRC files (*src.gz);;4D NIFTI files (*nii.gz);;All files (*)" );
+                                     "FIB files (*fib.gz);;All files (*)" );
     if (filenames.isEmpty())
         return;
     file_list << filenames;
@@ -99,13 +99,11 @@ void auto_track::on_open_dir_clicked()
                                 "");
     if(dir.isEmpty())
         return;
-    file_list << search_files(dir,"*.src.gz");
+    file_list << search_files(dir,"*fib.gz");
     update_list();
 }
 extern std::string auto_track_report;
 std::string auto_track_report;
-bool correct_phase_distortion(ImageModel& src);
-
 
 struct file_holder{
     std::string file_name;
@@ -183,42 +181,16 @@ std::string run_auto_track(program_option& po,const std::vector<std::string>& fi
         if(!std::filesystem::exists(file_list[i]))
             return std::string("cannot find file:")+file_list[i];
 
-        // DWI reconstruction
-        if(QString(file_list[i].c_str()).endsWith(".src.gz") ||
-           QString(file_list[i].c_str()).endsWith(".nii.gz"))
-        {
-            ImageModel src;
-            src.voxel.method_id = 4; // GQI
-            src.voxel.param[0] = length_ratio;
-            src.voxel.thread_count = thread_count;
-            src.voxel.half_sphere = po.get("half_sphere",src.is_dsi_half_sphere() ? 1:0);
-            src.voxel.scheme_balance = po.get("scheme_balance",src.need_scheme_balance() ? 1:0);
-            src.voxel.check_btable = po.get("check_btable",1);
-            src.voxel.dti_no_high_b = po.get("dti_no_high_b",1);
-            src.voxel.other_output = po.get("other_output","fa,ad,rd,md,nqa,iso,rdi,nrdi");
-            src.voxel.r2_weighted = po.get("r2_weighted",int(0));
-            // has fib file?
-            fib_file_name = file_list[i]+src.get_file_ext();
-            if(!std::filesystem::exists(fib_file_name) || overwrite)
-            {
-                if(!src.load_from_file(file_list[i].c_str()) ||
-                   (po.has("rev_pe") && !src.run_topup_eddy(po.get("rev_pe"))))
-                    return src.error_msg + " at " + cur_file_base_name;
-                if(!default_mask)
-                    src.command("[Step T2a][Threshold]","0");
-                progress prog_("reconstruct DWI");
-                if (!src.reconstruction())
-                    return src.error_msg + (" at ") + cur_file_base_name;
-            }
-        }
+        if(QString(file_list[i].c_str()).endsWith("fib.gz"))
+            fib_file_name = file_list[i];
         else
         {
-            if(QString(file_list[i].c_str()).endsWith("fib.gz"))
-                fib_file_name = file_list[i];
+            if(QString(file_list[i].c_str()).endsWith(".src.gz") ||
+               QString(file_list[i].c_str()).endsWith(".nii.gz"))
+                return std::string("SRC and NIFTI files are not supported in autotrack pipeline. Please reconstruct data into FIB files");
             else
                 return std::string("unsupported file format :") + file_list[i];
         }
-
         // fiber tracking on fib file
         std::shared_ptr<fib_data> handle(new fib_data);
         bool fib_loaded = false;
@@ -306,7 +278,7 @@ std::string run_auto_track(program_option& po,const std::vector<std::string>& fi
                         thread.roi_mgr->report += QString::number(double(track_voxel_ratio),'g',1).toStdString();
                         thread.roi_mgr->report += ".";
                     }
-
+                    progress prog_("tracking ",track_name.c_str(),true);
                     // run tracking
                     thread.run(thread_count,false);
                     std::string report = tract_model.report + thread.report.str();
@@ -333,7 +305,6 @@ std::string run_auto_track(program_option& po,const std::vector<std::string>& fi
                     bool no_result = false;
                     const unsigned int low_yield_threshold = 100000;
                     {
-                        progress prog_("tracking");
                         while(!thread.is_ended() && !progress::aborted())
                         {
                             std::this_thread::yield();
@@ -537,7 +508,7 @@ void auto_track::on_run_clicked()
     }
     if(file_list2.empty())
     {
-        QMessageBox::information(this,"DSI Studio","Please assign SRC files");
+        QMessageBox::information(this,"DSI Studio","Please assign FIB files");
         return;
     }
     ui->run->setEnabled(false);
