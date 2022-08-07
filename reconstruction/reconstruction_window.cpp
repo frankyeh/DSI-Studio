@@ -141,13 +141,6 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
 
     on_b_table_itemSelectionChanged();
 
-
-    {
-        ui->scheme_balance->setChecked(handle->need_scheme_balance());
-        if(handle->is_dsi())
-            ui->scheme_balance->setEnabled(false);
-    }
-
     ui->mask_edit->setVisible(false);
 
 }
@@ -287,11 +280,6 @@ void reconstruction_window::Reconstruction(unsigned char method_id,bool prompt)
         handle->voxel.hist_raw_smoothing = uint32_t(ui->hist_raw_smoothing->value());
         handle->voxel.hist_tensor_smoothing = uint32_t(ui->hist_tensor_smoothing->value());
     }
-
-    if(method_id == 7 || method_id == 4)
-        handle->voxel.scheme_balance = ui->scheme_balance->isChecked() ? 1:0;
-    else
-        handle->voxel.scheme_balance = false;
 
     if(method_id == 7)
     {
