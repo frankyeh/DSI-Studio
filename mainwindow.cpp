@@ -284,7 +284,7 @@ void MainWindow::loadFib(QString filename,bool presentation_mode)
         if(result == QMessageBox::No)
             new_handle = new_handle->high_reso;
     }
-    progress prog_("start fiber tracking GUI");
+    progress p("initialize GUI for fiber tracking");
     tracking_windows.push_back(new tracking_window(this,new_handle));
     tracking_windows.back()->setAttribute(Qt::WA_DeleteOnClose);
     tracking_windows.back()->setWindowTitle(filename);
@@ -358,6 +358,7 @@ void MainWindow::on_OpenDICOM_clicked()
                                 "Image files (*.dcm *.hdr *.nii *nii.gz *.fdf *.nhdr 2dseq subject);;All files (*)" );
     if ( filenames.isEmpty() )
         return;
+    progress p("[Setp T1 Open Source Images]");
     add_work_dir(QFileInfo(filenames[0]).absolutePath());
     if(QFileInfo(filenames[0]).completeBaseName() == "subject")
     {
