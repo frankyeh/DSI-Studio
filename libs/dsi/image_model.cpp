@@ -2193,14 +2193,14 @@ bool ImageModel::load_from_file(const char* dwi_file_name)
     }
 
     file_name = dwi_file_name;
-    if(!QFileInfo(dwi_file_name).exists())
+    if(!std::filesystem::exists(dwi_file_name))
     {
         error_msg = "file does not exist:";
         error_msg += dwi_file_name;
         return false;
     }
-    if(QString(dwi_file_name).toLower().endsWith(".jpg") ||
-       QString(dwi_file_name).toLower().endsWith(".tif"))
+    if(std::filesystem::path(dwi_file_name).extension() == ".jpg" ||
+       std::filesystem::path(dwi_file_name).extension() == ".tif")
     {
         tipl::image<2,unsigned char> raw;
         {
