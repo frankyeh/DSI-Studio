@@ -2184,7 +2184,7 @@ void save_idx(const char* file_name,std::shared_ptr<gz_istream> in)
 size_t match_volume(float volume);
 bool ImageModel::load_from_file(const char* dwi_file_name)
 {
-    progress p("open ",std::filesystem::path(dwi_file_name).filename().string().c_str());
+    progress p("[Step T2][Reconstruction]");
     if(voxel.steps.empty())
     {
         voxel.steps = "[Step T2][Reconstruction] open ";
