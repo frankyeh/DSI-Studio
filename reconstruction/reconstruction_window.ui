@@ -954,7 +954,7 @@
                  <item>
                   <widget class="QCheckBox" name="preprocessing">
                    <property name="text">
-                    <string>Preprocessing (topup/eddy/motioin correction) </string>
+                    <string>Preprocessing</string>
                    </property>
                   </widget>
                  </item>
@@ -1016,13 +1016,6 @@
                     <property name="bottomMargin">
                      <number>0</number>
                     </property>
-                    <item>
-                     <widget class="QCheckBox" name="scheme_balance">
-                      <property name="text">
-                       <string>Scheme balance (for shell data)</string>
-                      </property>
-                     </widget>
-                    </item>
                     <item>
                      <widget class="QCheckBox" name="dti_no_high_b">
                       <property name="toolTip">
