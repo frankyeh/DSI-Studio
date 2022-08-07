@@ -97,25 +97,16 @@ bool ImageModel::reconstruction(void)
     voxel.step_report.clear();
     voxel.step_report.str("");
 
+    voxel.scheme_balance = need_scheme_balance() && (voxel.method_id == 7 || voxel.method_id == 4);
+    voxel.half_sphere = is_dsi_half_sphere();
+    voxel.max_fiber_number = (voxel.method_id == 1) ? 1 : 5;
+
     if(voxel.is_histology)
         return reconstruction_hist();
     try
     {
-        if(voxel.method_id == 1) // DTI
-        {
-            voxel.output_odf = 0;
-            voxel.scheme_balance = 0;
-            voxel.half_sphere = 0;
-            voxel.odf_resolving = 0;
-            voxel.max_fiber_number = 1;
-        }
-        else
-        {
-            voxel.max_fiber_number = 5;
-            if (voxel.output_odf)
-                voxel.step_report << "[Step T2b(2)][ODFs]=1" << std::endl;
-        }
-
+        if (voxel.output_odf && (voxel.method_id == 7 || voxel.method_id == 4))
+            voxel.step_report << "[Step T2b(2)][ODFs]=1" << std::endl;
         // correct for b-table orientation
         if(voxel.check_btable)
         {
@@ -272,7 +263,6 @@ bool output_odfs(const tipl::image<3,unsigned char>& mni_mask,
         image_model.voxel.report = report.c_str();
     image_model.voxel.dim = mni_mask.shape();
     image_model.voxel.ti = ti;
-    image_model.voxel.max_fiber_number = 5;
     image_model.voxel.output_odf = record_odf;
     image_model.file_name = out_name;
     image_model.voxel.mask = mni_mask;
