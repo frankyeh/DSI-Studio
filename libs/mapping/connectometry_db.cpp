@@ -111,7 +111,7 @@ bool connectometry_db::read_db(fib_data* handle_)
     else
     {
         // try to get demo from subject bame
-        demo += "Age,Sex\n";
+        demo += "age,sex\n";
         for(size_t i = 0;i < subject_names.size();++i)
         {
             std::string age,sex;
@@ -783,16 +783,6 @@ bool connectometry_db::get_demo_matched_volume(const std::string& matched_demo,t
         return false;
     }
     std::vector<double> v;
-    std::string age,sex;
-
-    if(feature_location.size() == 2 && parse_age_sex(matched_demo,age,sex))
-    {
-        v.push_back(std::stoi(age));
-        v.push_back(std::stoi(sex));
-        show_progress() << "matching " << feature_titles[0] << ":" << age << " " <<
-                                    feature_titles[1] << ":" << sex << std::endl;
-    }
-    else
     {
         std::istringstream in(matched_demo);
         std::string str;
