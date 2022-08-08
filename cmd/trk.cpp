@@ -632,11 +632,15 @@ int trk(program_option& po,std::shared_ptr<fib_data> handle)
                 show_progress() << "ERROR: cannot find the dt index" << dt_index << std::endl;
                 return 1;
             }
-            show_progress() << "adding " << dt_index << " as a new metrics" << std::endl;
+
+            if(po.has("subject_demo"))
+                handle->demo = po.get("subject_demo");
+
             // allow adding other slices for creating new metrics
             if(po.has("other_slices") && !check_other_slices(po.get("other_slices"),handle))
                 return 1;
 
+            show_progress() << "adding " << dt_index << " as a new metrics" << std::endl;
             if(!handle->add_dT_index(po.get("dt_threshold_index")))
             {
                 show_progress() << "ERROR:" << handle->error_msg << std::endl;
