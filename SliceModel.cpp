@@ -131,6 +131,7 @@ void CustomSliceModel::get_slice(tipl::color_image& image,
 void initial_LPS_nifti_srow(tipl::matrix<4,4>& T,const tipl::shape<3>& geo,const tipl::vector<3>& vs);
 void prepare_idx(const char* file_name,std::shared_ptr<gz_istream> in);
 void save_idx(const char* file_name,std::shared_ptr<gz_istream> in);
+bool parse_age_sex(const std::string& file_name,std::string& age,std::string& sex);
 bool CustomSliceModel::initialize(const std::vector<std::string>& files,bool is_mni_image)
 {
     if(files.empty())
@@ -307,11 +308,19 @@ bool CustomSliceModel::initialize(const std::vector<std::string>& files,bool is_
             error_msg = db_handle->error_msg;
             return false;
         }
-        if(!db_handle->db.get_demo_matched_volume(fib_file_name,source_images))
+
         {
-            error_msg = db_handle->db.error_msg;
-            return false;
+            std::string file_base_name(QFileInfo(handle->fib_file_name.c_str()).baseName().toStdString()),age,sex;
+            if(parse_age_sex(file_base_name,age,sex))
+            {
+                if(!db_handle->db.get_demo_matched_volume(age+" "+sex,source_images))
+                {
+                    error_msg = db_handle->db.error_msg;
+                    return false;
+                }
+            }
         }
+
         vs = db_handle->vs;
         trans = db_handle->trans_to_mni;
         if(!handle->mni2sub(source_images,trans))
