@@ -149,7 +149,7 @@ void db_window::on_subject_list_itemSelectionChanged()
     vbc->handle->db.get_subject_slice(ui->subject_list->currentRow(),
                                    ui->view_x->isChecked() ? 0:(ui->view_y->isChecked() ? 1:2),
                                    ui->slice_pos->value(),slice);
-    tipl::normalize(slice);
+    tipl::normalize(slice,255.0f);
     tipl::color_image color_slice(slice.shape());
     std::copy(slice.begin(),slice.end(),color_slice.begin());
     if(ui->show_mask->isChecked())
