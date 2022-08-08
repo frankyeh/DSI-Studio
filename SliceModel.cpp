@@ -310,14 +310,15 @@ bool CustomSliceModel::initialize(const std::vector<std::string>& files,bool is_
         }
 
         {
-            std::string file_base_name(QFileInfo(handle->fib_file_name.c_str()).baseName().toStdString()),age,sex;
-            if(parse_age_sex(file_base_name,age,sex))
+            std::string age,sex,demo;
+            if(parse_age_sex(QFileInfo(handle->fib_file_name.c_str()).baseName().toStdString(),age,sex))
+                demo = age+" "+sex;
+            if(!handle->demo.empty())
+                demo = handle->demo;
+            if(!db_handle->db.get_demo_matched_volume(demo,source_images))
             {
-                if(!db_handle->db.get_demo_matched_volume(age+" "+sex,source_images))
-                {
-                    error_msg = db_handle->db.error_msg;
-                    return false;
-                }
+                error_msg = db_handle->db.error_msg;
+                return false;
             }
         }
 
