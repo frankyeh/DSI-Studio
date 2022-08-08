@@ -784,8 +784,9 @@ bool connectometry_db::get_demo_matched_volume(const std::string& matched_demo,t
     }
     std::vector<double> v;
     {
-        std::istringstream in(matched_demo);
-        std::string str;
+        std::string s(matched_demo);
+        std::replace(s.begin(),s.end(),',',' ');
+        std::istringstream in(s);
         std::copy(std::istream_iterator<double>(in),
                   std::istream_iterator<double>(),
                   std::back_inserter(v));
