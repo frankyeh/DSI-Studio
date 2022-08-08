@@ -92,9 +92,7 @@ int atl(program_option& po)
             }
             std::vector<std::string> item_list;
             fib.get_index_list(item_list);
-            index_name.push_back("qa");
-            index_name.push_back("nqa");
-            for(size_t i = fib.dir.index_name.size();i < item_list.size();++i)
+            for(size_t i = 0;i < item_list.size();++i)
                 index_name.push_back(item_list[i]);
         }
         else
