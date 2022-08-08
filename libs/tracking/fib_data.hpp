@@ -165,7 +165,7 @@ class fib_data
 {
 public:
     mutable std::string error_msg;
-    std::string report,steps,fib_file_name;
+    std::string report,steps,fib_file_name,demo;
     gz_mat_read mat_reader;
 public:
     tipl::shape<3> dim;
