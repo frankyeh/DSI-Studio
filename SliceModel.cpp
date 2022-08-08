@@ -321,7 +321,7 @@ bool CustomSliceModel::initialize(const std::vector<std::string>& files,bool is_
                 return false;
             }
         }
-
+        name = QFileInfo(files[0].c_str()).baseName();
         vs = db_handle->vs;
         trans = db_handle->trans_to_mni;
         if(!handle->mni2sub(source_images,trans))
@@ -413,6 +413,7 @@ bool CustomSliceModel::initialize(const std::vector<std::string>& files,bool is_
     // add image to the view item lists
     {
         update_image();
+        show_progress() << "add new slices: " << name << std::endl;
         handle->view_item.push_back(item(name,&*source_images.begin(),source_images.shape()));
         view_id = uint32_t(handle->view_item.size()-1);
     }
