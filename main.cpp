@@ -241,9 +241,64 @@ int run_action(program_option& po)
     return 1;
 }
 void get_filenames_from(const std::string param,std::vector<std::string>& filenames);
-bool check_cuda(std::string& error_msg);
 bool match_files(const std::string& file_path1,const std::string& file_path2,
                  const std::string& file_path1_others,std::string& file_path2_gen);
+
+int run_action_with_wildcard(program_option& po)
+{
+    std::string source = po.get("source");
+    std::string action = po.get("action");
+
+    if(action == "atk" || action == "atl" || source.find('*') == std::string::npos) // atk, atl handle * by itself
+    {
+        if(run_action(po))
+            return 1;
+    }
+    else
+    {
+        // handle source having wildcard
+        std::vector<std::string> source_files;
+        get_filenames_from(source,source_files);
+
+        std::vector<std::pair<std::string,std::string> > wildcard_list;
+        po.get_wildcard_list(wildcard_list);
+
+        for (size_t i = 0;i < source_files.size();++i)
+        {
+            progress prog("process file: ",source_files[i].c_str());
+            // clear --t1t2 and --other_slices
+            t1t2_slices.reset();
+            other_slices.clear();
+
+            po.set("source",source_files[i]);
+            // apply '*' to other arguments
+            for(const auto& wildcard : wildcard_list)
+            {
+                if(wildcard.first == "source")
+                    continue;
+                std::string apply_wildcard;
+                if(!match_files(source,source_files[i],wildcard.second,apply_wildcard))
+                {
+                    show_progress() << "ERROR: cannot translate " << wildcard.second <<
+                                 " at --" << wildcard.first << std::endl;
+                    return 1;
+                }
+                show_progress() << wildcard.second << "->" << apply_wildcard << std::endl;
+                po.set(wildcard.first.c_str(),apply_wildcard);
+            }
+            po.set_used(0);
+            if(po.has("output") && std::filesystem::exists(po.get("output")))
+            {
+                show_progress() << "output " << po.get("output") << " exists. Skipping..." << std::endl;
+                continue;
+            }
+            if(run_action(po))
+                return 1;
+        }
+    }
+    return 0;
+}
+bool check_cuda(std::string& error_msg);
 bool has_cuda = false;
 
 void init_cuda(void)
@@ -273,13 +328,10 @@ int run_cmd(int ac, char *av[])
         if (!po.check("action"))
             return 1;
 
-        std::string source = po.get("source");
-        std::string action = po.get("action");
-
-
         std::shared_ptr<QApplication> gui;
         std::shared_ptr<QCoreApplication> cmd;
 
+        std::string action = po.get("action");
         if ((action == "cnt" && po.get("no_tractogram",1) == 0) || action == "vis")
         {
             show_progress() << "Starting GUI-based command line interface." << std::endl;
@@ -297,54 +349,9 @@ int run_cmd(int ac, char *av[])
                 return 1;
             }
         }
-        if(action == "atk" || action == "atl" || source.find('*') == std::string::npos) // atk, atl handle * by itself
-        {
-            if(run_action(po))
-                return 1;
-        }
-        else
-        {
-            // handle source having wildcard
-            std::vector<std::string> source_files;
-            get_filenames_from(source,source_files);
 
-            std::vector<std::pair<std::string,std::string> > wildcard_list;
-            po.get_wildcard_list(wildcard_list);
-
-            for (size_t i = 0;i < source_files.size();++i)
-            {
-                progress prog("process file: ",source_files[i].c_str());
-                // clear --t1t2 and --other_slices
-                t1t2_slices.reset();
-                other_slices.clear();
-
-                po.set("source",source_files[i]);
-                // apply '*' to other arguments
-                for(const auto& wildcard : wildcard_list)
-                {
-                    if(wildcard.first == "source")
-                        continue;
-                    std::string apply_wildcard;
-                    if(!match_files(source,source_files[i],wildcard.second,apply_wildcard))
-                    {
-                        show_progress() << "ERROR: cannot translate " << wildcard.second <<
-                                     " at --" << wildcard.first << std::endl;
-                        return 1;
-                    }
-                    show_progress() << wildcard.second << "->" << apply_wildcard << std::endl;
-                    po.set(wildcard.first.c_str(),apply_wildcard);
-                }
-                po.set_used(0);
-                if(po.has("output") && std::filesystem::exists(po.get("output")))
-                {
-                    show_progress() << "output " << po.get("output") << " exists. Skipping..." << std::endl;
-                    continue;
-                }
-                if(run_action(po))
-                    return 1;
-            }
-        }
-
+        if(run_action_with_wildcard(po))
+            return 1;
         if(gui.get() && po.get("stay_open",0))
             gui->exec();
     }
