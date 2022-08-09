@@ -2304,13 +2304,15 @@ bool ImageModel::load_from_file(const char* dwi_file_name)
         }
 
         prepare_idx(dwi_file_name,mat_reader.in);
-        if(!mat_reader.load_from_file(dwi_file_name) || progress::aborted())
+        if(!mat_reader.load_from_file(dwi_file_name))
         {
-            if(!progress::aborted())
+            if(progress::aborted())
             {
-                error_msg = dwi_file_name;
-                error_msg += " is an invalid SRC file";
+                error_msg = "aborted";
+                return false;
             }
+            error_msg = dwi_file_name;
+            error_msg += " is an invalid SRC file";
             return false;
         }
         save_idx(dwi_file_name,mat_reader.in);
