@@ -511,7 +511,7 @@ bool read_fib_mat_with_idx(const char* file_name,gz_mat_read& mat_reader)
 }
 bool fib_data::load_from_file(const char* file_name)
 {
-    progress p("[Step T3][Fiber Tracking]");
+    progress p("open FIB file");
     tipl::image<3> I;
     gz_nifti header;
     fib_file_name = file_name;
