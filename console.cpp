@@ -76,7 +76,7 @@ int atk(program_option& po);
 int reg(program_option& po);
 int xnat(program_option& po);
 
-int run_action(program_option& po);
+int run_action_with_wildcard(program_option& po);
 void Console::on_run_cmd_clicked()
 {
     program_option po;
@@ -90,7 +90,7 @@ void Console::on_run_cmd_clicked()
         std::cout << "ERROR: invalid command, use --help for more detail" << std::endl;
         return;
     }
-    run_action(po);
+    run_action_with_wildcard(po);
 }
 
 
