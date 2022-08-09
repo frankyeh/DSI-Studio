@@ -153,7 +153,6 @@ bool connectometry_db::parse_demo(const std::string& filename)
 
 bool connectometry_db::parse_demo(void)
 {
-    std::istringstream in(demo);
     std::string saved_demo(std::move(demo));
     titles.clear();
     items.clear();
@@ -162,6 +161,7 @@ bool connectometry_db::parse_demo(void)
         size_t row_count = 0,last_item_size = 0;
         std::string line;
         bool is_csv = true;
+        std::istringstream in(saved_demo);
         while(std::getline(in,line))
         {
             if(row_count == 0)
@@ -214,7 +214,8 @@ bool connectometry_db::parse_demo(void)
                 bool find = false;
                 // find first column for subject name
                 for(size_t j = col_count;j+col_count <= items.size();j += col_count)
-                    if(items[j] == subject_names[i])
+                    if(subject_names[i].find(items[j]) != std::string::npos ||
+                       items[j].find(subject_names[i]) != std::string::npos)
                     {
                         find = true;
                         std::copy(items.begin()+int(j),items.begin()+int(j+col_count),std::back_inserter(new_items));
