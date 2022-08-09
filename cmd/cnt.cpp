@@ -16,16 +16,28 @@ int cnt(program_option& po)
         return 1;
     }
 
-    if(!po.check("demo") || !po.has("voi") || !po.has("variable_list"))
+    auto& db = vbc->handle->db;
+
+    if(db.demo.empty())
+    {
+        // read demographic file
+        if(!po.check("demo"))
+            return 1;
+        if(!db.parse_demo(po.get("demo")))
+        {
+            show_progress() << "ERROR: " << db.error_msg << std::endl;
+            return 1;
+        }
+        if(po.has("save_db"))
+        {
+            db.save_db(po.get("save_db").c_str());
+            return 0;
+        }
+    }
+
+    if(!po.check("voi") || !po.check("variable_list"))
         return 1;
 
-    // read demographic file
-    auto& db = vbc->handle->db;
-    if(!db.parse_demo(po.get("demo")))
-    {
-        show_progress() << "ERROR: " << db.error_msg << std::endl;
-        return 1;
-    }
 
     {
         show_progress pout;
