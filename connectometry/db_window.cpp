@@ -601,7 +601,7 @@ void db_window::on_actionOpen_Demographics_triggered()
     if(filename.isEmpty())
         return;
     if(vbc->handle->db.parse_demo(filename.toStdString()))
-        QMessageBox::information(this,"File Saved",filename);
+        QMessageBox::information(this,"DSI Studio","Demographics Loaded");
     else
         QMessageBox::critical(this,"ERROR",vbc->handle->db.error_msg.c_str());
 }
