@@ -267,6 +267,7 @@ void MainWindow::addSrc(QString filename)
 void shift_track_for_tck(std::vector<std::vector<float> >& loaded_tract_data,tipl::shape<3>& geo);
 void MainWindow::loadFib(QString filename,bool presentation_mode)
 {
+    progress p("[Step T3][Fiber Tracking]");
     std::string file_name = filename.toStdString();
     std::shared_ptr<fib_data> new_handle(new fib_data);
     if (!new_handle->load_from_file(&*file_name.begin()))
@@ -284,7 +285,6 @@ void MainWindow::loadFib(QString filename,bool presentation_mode)
         if(result == QMessageBox::No)
             new_handle = new_handle->high_reso;
     }
-    progress p("initialize GUI for fiber tracking");
     tracking_windows.push_back(new tracking_window(this,new_handle));
     tracking_windows.back()->setAttribute(Qt::WA_DeleteOnClose);
     tracking_windows.back()->setWindowTitle(filename);
@@ -321,6 +321,7 @@ void MainWindow::loadSrc(QStringList filenames)
     }
     try
     {
+        progress p("[Step T2][Reconstruction]");
         reconstruction_window* new_mdi = new reconstruction_window(filenames,this);
         new_mdi->setAttribute(Qt::WA_DeleteOnClose);
         new_mdi->show();
@@ -358,7 +359,7 @@ void MainWindow::on_OpenDICOM_clicked()
                                 "Image files (*.dcm *.hdr *.nii *nii.gz *.fdf *.nhdr 2dseq subject);;All files (*)" );
     if ( filenames.isEmpty() )
         return;
-    progress p("[Setp T1 Open Source Images]");
+    progress p("[Step T1][Open Source Images]");
     add_work_dir(QFileInfo(filenames[0]).absolutePath());
     if(QFileInfo(filenames[0]).completeBaseName() == "subject")
     {
