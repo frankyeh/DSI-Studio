@@ -331,9 +331,9 @@ void MainWindow::loadSrc(QStringList filenames)
             add_work_dir(QFileInfo(filenames[0]).absolutePath());
         }
     }
-    catch(...)
+    catch(const std::runtime_error& error)
     {
-
+        QMessageBox::critical(this,"ERROR",error.what());
     }
 
 }
