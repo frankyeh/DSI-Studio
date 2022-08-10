@@ -18,7 +18,8 @@ public:
     ~slice_view_scene(void)
     {
         free_thread = true;
-        paint_image_thread.join();
+        if(paint_image_thread.joinable())
+            paint_image_thread.join();
     }
     unsigned char sel_mode = 0;
     QStatusBar* statusbar = nullptr;
