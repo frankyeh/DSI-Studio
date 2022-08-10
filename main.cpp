@@ -379,9 +379,11 @@ int main(int ac, char *av[])
     has_gui = true;
     console.attach();
 
-    progress prog(version_string().toStdString().c_str()," graphic user interface");
-    init_cuda();
-    init_application();
+    {
+        progress prog(version_string().toStdString().c_str()," graphic user interface");
+        init_cuda();
+        init_application();
+    }
     MainWindow w;
     w.setWindowTitle(version_string() + " " + __DATE__);
     // presentation mode
