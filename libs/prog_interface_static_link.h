@@ -27,7 +27,7 @@ private:
             if(head_node)
                 head += "+ ";
             if(tail_node)
-                head += "- ";
+                head += "|_";
             if(!has_gui) // enable color output in command line
             {
                 if(head_node)
