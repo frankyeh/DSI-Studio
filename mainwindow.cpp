@@ -491,7 +491,7 @@ bool RenameDICOMToDir(QString FileName, QString ToDir,QString& NewName)
     ToDir += Person;
     if (!QDir(ToDir).exists())
     {
-        if(!QDir(ToDir).mkdir(ToDir))
+        if(std::filesystem::create_directory(std::filesystem::path(ToDir.toStdString())))
         {
             show_progress() << "cannot create dir " << ToDir.toStdString() << std::endl;
             return false;
@@ -501,7 +501,7 @@ bool RenameDICOMToDir(QString FileName, QString ToDir,QString& NewName)
     ToDir += Sequence;
     if (!QDir(ToDir).exists())
     {
-        if(!QDir(ToDir).mkdir(ToDir))
+        if(std::filesystem::create_directory(std::filesystem::path(ToDir.toStdString())))
         {
             show_progress() << "cannot create dir " << ToDir.toStdString() << std::endl;
             return false;
@@ -574,6 +574,23 @@ QStringList GetSubDir(QString Dir,bool recursive = true)
     }
     return sub_dirs;
 }
+
+void rename_dicom_at_dir(QString path,QString output)
+{
+    progress prog_("Renaming DICOM");
+    QStringList dirs = GetSubDir(path);
+    for(int index = 0;progress::at(index,dirs.size());++index)
+    {
+        QStringList files = QDir(dirs[index]).entryList(QStringList("*"),
+                                    QDir::Files | QDir::NoSymLinks);
+        for(int j = 0;j < files.size() && index < dirs.size();++j)
+        {
+            progress::show(files[j].toStdString().c_str());
+            if(!RenameDICOMToDir(dirs[index] + "/" + files[j],output))
+                show_progress() << "cannot rename the file." << std::endl;
+        }
+    }
+}
 void MainWindow::on_RenameDICOMDir_clicked()
 {
     QString path =
@@ -582,18 +599,7 @@ void MainWindow::on_RenameDICOMDir_clicked()
     if ( path.isEmpty() )
         return;
     add_work_dir(path);
-    QStringList dirs = GetSubDir(path);
-    progress prog_("Renaming DICOM");
-    for(int index = 0;progress::at(index,dirs.size());++index)
-    {
-        QStringList files = QDir(dirs[index]).entryList(QStringList("*"),
-                                    QDir::Files | QDir::NoSymLinks);
-        for(int j = 0;j < files.size() && index < dirs.size();++j)
-        {
-            progress::show(files[j].toLocal8Bit().begin());
-            RenameDICOMToDir(dirs[index] + "/" + files[j],path);
-        }
-    }
+    rename_dicom_at_dir(path,path);
 }
 
 void MainWindow::on_vbc_clicked()
@@ -992,7 +998,7 @@ bool nii2src_bids(QString dir,QString output_dir,std::string& error_msg)
         error_msg = "No subject folder (sub-*) found.";
         return false;
     }
-    if(!QDir(output_dir).exists() && !QDir().mkdir(output_dir))
+    if(!QDir(output_dir).exists() && !std::filesystem::create_directory(std::filesystem::path(output_dir.toStdString())))
     {
         error_msg = "Cannot create the output folder. Please check write privileges";
         return false;
