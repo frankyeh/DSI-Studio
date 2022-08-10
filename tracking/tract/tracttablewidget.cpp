@@ -1258,7 +1258,7 @@ void TractTableWidget::move_down(void)
 
 void TractTableWidget::delete_tract(void)
 {
-    if(progress::running())
+    if(progress::level())
     {
         QMessageBox::critical(this,"ERROR","Please wait for the termination of data processing");
         return;
@@ -1269,7 +1269,7 @@ void TractTableWidget::delete_tract(void)
 
 void TractTableWidget::delete_all_tract(void)
 {
-    if(progress::running())
+    if(progress::level())
     {
         QMessageBox::critical(this,"ERROR","Please wait for the termination of data processing");
         return;
