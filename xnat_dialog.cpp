@@ -375,7 +375,6 @@ void xnat_dialog::on_download_clicked()
     }
 
 }
-void dicom2src(std::string dir_,std::ostream& out);
 bool RenameDICOMToDir(QString FileName, QString ToDir,QString& NewName);
 bool RenameDICOMToDir(QString FileName, QString ToDir);
 void xnat_dialog::download_status()
