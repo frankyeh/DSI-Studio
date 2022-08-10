@@ -317,7 +317,7 @@ int run_cmd(int ac, char *av[])
     program_option po;
     try
     {
-        progress prog("DSI Studio command line");
+        progress prog(version_string().toStdString().c_str()," command line");
         init_cuda();
 
         if(!po.parse(ac,av))
@@ -378,6 +378,7 @@ int main(int ac, char *av[])
 
     // replace default std::cout buffer
     console.attach();
+    progress prog(version_string().toStdString().c_str()," graphic user interface");
     init_cuda();
     QApplication a(ac,av);
     init_application();
