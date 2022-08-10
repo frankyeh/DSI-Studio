@@ -332,7 +332,7 @@ void slice_view_scene::show_fiber(QPainter& painter,std::shared_ptr<SliceModel> 
                             painter.setPen(pen);
                         }
                         float dx,dy;
-                        dx = dy = dir.fa[fiber][pos.index()] * r;
+                        dx = dy = (dir.fa[fiber][pos.index()]-threshold) * r;
                         dx *= dir_ptr[dir_x[cur_dim]];
                         dy *= dir_ptr[dir_y[cur_dim]];
                         painter.drawLine(
