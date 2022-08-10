@@ -61,7 +61,7 @@ public:
     }
     static void show(const char* status,bool show_now = false);
     static void show(const std::string& str,bool show_now = false){return show(str.c_str(),show_now);}
-    static bool running(void) {return status_list.size() > 1;}
+    static size_t level(void) {return status_list.size();}
     static bool aborted(void);
     template<typename value_type1,typename value_type2>
     static bool at(value_type1 now,value_type2 total)
