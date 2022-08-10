@@ -491,14 +491,14 @@ bool RenameDICOMToDir(QString FileName, QString ToDir,QString& NewName)
     ToDir += Person;
     if (!QDir(ToDir).exists() && !std::filesystem::create_directory(std::filesystem::path(ToDir.toStdString())))
     {
-        show_progress() << "cannot create dir " << ToDir.toStdString() << std::endl;
+        show_progress() << "ERROR: cannot create dir " << ToDir.toStdString() << std::endl;
         return false;
     }
     ToDir += "/";
     ToDir += Sequence;
     if (!QDir(ToDir).exists() && !std::filesystem::create_directory(std::filesystem::path(ToDir.toStdString())))
     {
-        show_progress() << "cannot create dir " << ToDir.toStdString() << std::endl;
+        show_progress() << "ERROR: cannot create dir " << ToDir.toStdString() << std::endl;
         return false;
     }
     ToDir += "/";
