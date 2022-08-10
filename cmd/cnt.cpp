@@ -149,7 +149,8 @@ int cnt(program_option& po)
         vbc->output_file_name = po.get("output",po.get("demo")+"."+vbc->get_file_post_fix());
         vbc->run_permutation(std::thread::hardware_concurrency(),po.get("permutation",uint32_t(2000)));
         for(auto& thread: vbc->threads)
-            thread.join();
+            if(thread.joinable())
+                thread.join();
     }
     vbc->save_result();
     vbc->calculate_FDR();
