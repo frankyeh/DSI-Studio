@@ -153,8 +153,7 @@ void group_connectometry_analysis::run_permutation_multithread(unsigned int id,u
                         return;
                     // stop other threads
                     terminated = true;
-                    for(size_t index = 1;index < threads.size();++index)
-                        threads[index].join();
+                    wait(1); // current thread occupies 0, wait from 1
                     terminated = false;
                     // clear all records
                     neg_corr_track->clear();
@@ -181,8 +180,7 @@ void group_connectometry_analysis::run_permutation_multithread(unsigned int id,u
     }
     if(id == 0 && !terminated)
     {
-        for(size_t index = 1;index < threads.size();++index)
-            threads[index].join();
+        wait(1); // current thread occupies 0, wait from 1
         prog = 100;
     }
 }
@@ -289,6 +287,13 @@ void group_connectometry_analysis::save_result(void)
         }
     }
 }
+void group_connectometry_analysis::wait(size_t index)
+{
+    for(;index < threads.size();++index)
+        if(threads[index].joinable())
+            threads[index].join();
+}
+
 void group_connectometry_analysis::clear(void)
 {
     if(!threads.empty())
@@ -296,8 +301,7 @@ void group_connectometry_analysis::clear(void)
         while(terminated)
             std::this_thread::yield();
         terminated = true;
-        for(auto& thread : threads)
-            thread.join();
+        wait();
         threads.clear();
         terminated = false;
     }
