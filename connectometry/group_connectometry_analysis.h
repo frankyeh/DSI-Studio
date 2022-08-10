@@ -22,7 +22,7 @@ public:
     mutable std::string error_msg;
 
     ~group_connectometry_analysis(){clear();}
-
+    void wait(size_t index = 0);
     void clear(void);
 public:
     bool create_database(const char* templat_name);
