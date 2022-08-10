@@ -375,16 +375,15 @@ int main(int ac, char *av[])
         return run_cmd(ac,av);
 
     try{
-
-    // replace default std::cout buffer
+    QApplication a(ac,av);
+    has_gui = true;
     console.attach();
+
     progress prog(version_string().toStdString().c_str()," graphic user interface");
     init_cuda();
-    QApplication a(ac,av);
     init_application();
     MainWindow w;
     w.setWindowTitle(version_string() + " " + __DATE__);
-    has_gui = true;
     // presentation mode
     QStringList fib_list = QDir(QCoreApplication::applicationDirPath()+ "/presentation").
                             entryList(QStringList("*fib.gz") << QString("*_qa.nii.gz"),QDir::Files|QDir::NoSymLinks);
