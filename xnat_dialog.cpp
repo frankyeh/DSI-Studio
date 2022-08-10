@@ -375,8 +375,6 @@ void xnat_dialog::on_download_clicked()
     }
 
 }
-bool RenameDICOMToDir(QString FileName, QString ToDir,QString& NewName);
-bool RenameDICOMToDir(QString FileName, QString ToDir);
 void xnat_dialog::download_status()
 {
     if(xnat_connection.has_error())
