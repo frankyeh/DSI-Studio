@@ -73,7 +73,7 @@ void progress::begin_prog(const char* status,bool show_now)
 
 void progress::show(const char* status,bool show_now)
 {
-    print_status(status,false);
+    print_status(status,false,false);
 }
 progress::~progress(void)
 {
@@ -100,10 +100,10 @@ progress::~progress(void)
                 }
             }
         }
-        out << "└elapsed time: " << count << " " << unit;
+        out << "elapsed time: " << count << " " << unit;
     }
     status_list.pop_back();
-    print_status(out.str().c_str(),false);
+    print_status(out.str().c_str(),false,true);
 
     process_time.pop_back();
     t_last.pop_back();

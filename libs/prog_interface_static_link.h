@@ -13,7 +13,7 @@ private:
     static std::string get_status(void);
     static bool check_prog(unsigned int now,unsigned int total);
     static std::vector<std::string> status_list,at_list;
-    static void print_status(const char* status,bool node = true)
+    static void print_status(const char* status,bool head_node, bool tail_node)
     {
         std::istringstream in(status);
         std::string line;
@@ -21,38 +21,53 @@ private:
         {
             if(line.empty())
                 continue;
+            bool has_escape = false;
+            std::string head;
             for(size_t i = 0;i < status_list.size();++i)
-                std::cout << "│";
-            if(node)
-                std::cout << "┌";
+                head += "| ";
+            if(head_node || tail_node)
+            {
+                if(!has_gui)
+                {
+                    if(head_node)
+                        head += "\033[53m"; // add overline
+                    else
+                        head += "\033[4m"; // add underline
+                    has_escape = true;
+                }
+                head += "| ";
+            }
 
             std::string highlight;
             if(!has_gui) // enable color output in command line
             {
-                if(node)
-                    highlight = "\033[1;34m"; // blue
+                if(head_node)
+                {
+                    head += "\033[1;24;55;34m"; // blue
+                    has_escape = true;
+                }
                 if(line[0] == 'E') // Error
-                    highlight = "\033[1;31m"; // red
+                {
+                    head += "\033[1;24;55;31m"; // red
+                    has_escape = true;
+                }
             }
-            if(!highlight.empty())
-                std::cout << highlight << line << "\033[0m" << std::endl;
-            else
-                std::cout << line << std::endl;
-            node = false;
+            std::cout << (head + line + (has_escape ? "\033[0m" : "") )  << std::endl;
+            head_node = false;
         }
     }
 public:
     progress(void){}
     progress(const char* status,bool show_now = false)
     {
-        print_status(status);
+        print_status(status,true,false);
         begin_prog(status,show_now);
     }
     progress(const char* status1,const char* status2,bool show_now = false)
     {
         std::string s(status1);
         s += status2;
-        print_status(s.c_str());
+        print_status(s.c_str(),true,false);
         begin_prog(s.c_str(),show_now);
     }
     static void show(const char* status,bool show_now = false);
