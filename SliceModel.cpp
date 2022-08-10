@@ -563,12 +563,16 @@ bool CustomSliceModel::load_mapping(const char* file_name)
 }
 
 // ---------------------------------------------------------------------------
+void CustomSliceModel::wait(void)
+{
+    if(thread.get() && thread->joinable())
+        thread->join();
+}
+// ---------------------------------------------------------------------------
 void CustomSliceModel::terminate(void)
 {
     terminated = true;
     running = false;
-    if(thread.get())
-        thread->join();
-
+    wait();
 }
 // ---------------------------------------------------------------------------
