@@ -21,38 +21,27 @@ private:
         {
             if(line.empty())
                 continue;
-            bool has_escape = false;
             std::string head;
             for(size_t i = 0;i < status_list.size();++i)
                 head += "| ";
-            if(head_node || tail_node)
-            {
-                if(!has_gui)
-                {
-                    if(head_node)
-                        head += "\033[53m"; // add overline
-                    else
-                        head += "\033[4m"; // add underline
-                    has_escape = true;
-                }
-                head += "| ";
-            }
-
-            std::string highlight;
+            if(head_node)
+                head += "+ ";
+            if(tail_node)
+                head += "- ";
             if(!has_gui) // enable color output in command line
             {
                 if(head_node)
                 {
-                    head += "\033[1;24;55;34m"; // blue
-                    has_escape = true;
+                    head += "\033[1;34m"; // blue
+                    line += "\033[0m";
                 }
                 if(line[0] == 'E') // Error
                 {
-                    head += "\033[1;24;55;31m"; // red
-                    has_escape = true;
+                    head += "\033[1;31m"; // red
+                    line += "\033[0m";
                 }
             }
-            std::cout << (head + line + (has_escape ? "\033[0m" : "") )  << std::endl;
+            std::cout << head + line  << std::endl;
             head_node = false;
         }
     }
