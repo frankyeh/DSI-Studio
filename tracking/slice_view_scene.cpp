@@ -331,8 +331,10 @@ void slice_view_scene::show_fiber(QPainter& painter,std::shared_ptr<SliceModel> 
                             pen.setWidthF(double(pen_w));
                             painter.setPen(pen);
                         }
-                        float dx = r * dir_ptr[dir_x[cur_dim]] + 0.5f;
-                        float dy = r * dir_ptr[dir_y[cur_dim]] + 0.5f;
+                        float dx,dy;
+                        dx = dy = dir.fa[fiber][pos.index()] * r;
+                        dx *= dir_ptr[dir_x[cur_dim]];
+                        dy *= dir_ptr[dir_y[cur_dim]];
                         painter.drawLine(
                             int(display_ratio*(float(x) + 0.5f) - dx),
                             int(display_ratio*(float(y) + 0.5f) - dy),
