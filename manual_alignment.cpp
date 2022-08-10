@@ -170,7 +170,8 @@ void manual_alignment::disconnect_arg_update()
 manual_alignment::~manual_alignment()
 {
     free_thread = true;
-    warp_image_thread.join();
+    if(warp_image_thread.joinable())
+        warp_image_thread.join();
     if(timer)
         timer->stop();
     delete ui;
