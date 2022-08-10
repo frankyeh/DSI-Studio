@@ -469,48 +469,40 @@ void check_name(std::string& name)
             name[index] = '_';
 }
 
-bool RenameDICOMToDir(QString FileName, QString ToDir,QString& NewName)
-{
-    std::string person, sequence, imagename;
-    {
-        tipl::io::dicom header;
-        if (!header.load_from_file(FileName.toLocal8Bit().begin()))
-            return false;
-
-        header.get_patient(person);
-        header.get_sequence(sequence);
-        header.get_image_name(imagename);
-    }
-    check_name(person);
-    check_name(sequence);
-    check_name(imagename);
-
-    QString Person(person.c_str()), Sequence(sequence.c_str()),
-    ImageName(imagename.c_str());
-    ToDir += "/";
-    ToDir += Person;
-    if (!QDir(ToDir).exists() && !std::filesystem::create_directory(std::filesystem::path(ToDir.toStdString())))
-    {
-        show_progress() << "ERROR: cannot create dir " << ToDir.toStdString() << std::endl;
-        return false;
-    }
-    ToDir += "/";
-    ToDir += Sequence;
-    if (!QDir(ToDir).exists() && !std::filesystem::create_directory(std::filesystem::path(ToDir.toStdString())))
-    {
-        show_progress() << "ERROR: cannot create dir " << ToDir.toStdString() << std::endl;
-        return false;
-    }
-    ToDir += "/";
-    ToDir += ImageName;
-    NewName = ToDir;
-    return true;
-}
 bool RenameDICOMToDir(QString FileName, QString ToDir)
 {
     QString NewName;
-    if(!RenameDICOMToDir(FileName,ToDir,NewName))
-        return false;
+    {
+        std::string person, sequence, imagename;
+        {
+            tipl::io::dicom header;
+            if (!header.load_from_file(FileName.toLocal8Bit().begin()))
+            {
+                show_progress() << "not a DICOM file. Skipping" << std::endl;
+                return true;
+            }
+            header.get_patient(person);
+            header.get_sequence(sequence);
+            header.get_image_name(imagename);
+        }
+        check_name(person);
+        check_name(sequence);
+        check_name(imagename);
+
+        QString Person(person.c_str()), Sequence(sequence.c_str()),
+        ImageName(imagename.c_str());
+        ToDir += "/";
+        ToDir += Person;
+        if (!QDir(ToDir).exists() && !std::filesystem::create_directory(std::filesystem::path(ToDir.toStdString())))
+            show_progress() << "ERROR: cannot create dir " << ToDir.toStdString() << std::endl;
+        ToDir += "/";
+        ToDir += Sequence;
+        if (!QDir(ToDir).exists() && !std::filesystem::create_directory(std::filesystem::path(ToDir.toStdString())))
+            show_progress() << "ERROR: cannot create dir " << ToDir.toStdString() << std::endl;
+        ToDir += "/";
+        ToDir += ImageName;
+        NewName = ToDir;
+    }
     if(FileName == NewName)
         return true;
     show_progress() << FileName.toStdString() << "->" << NewName.toStdString() << std::endl;
@@ -529,7 +521,8 @@ void MainWindow::on_RenameDICOM_clicked()
     add_work_dir(QFileInfo(filenames[0]).absolutePath());
     progress prog_("Rename DICOM Files");
     for (unsigned int index = 0;progress::at(index,filenames.size());++index)
-        RenameDICOMToDir(filenames[index],QFileInfo(filenames[index]).absolutePath());
+        if(!RenameDICOMToDir(filenames[index],QFileInfo(filenames[index]).absolutePath()))
+            show_progress() << "ERROR: cannot rename the file." << std::endl;
 }
 
 
@@ -586,7 +579,7 @@ void rename_dicom_at_dir(QString path,QString output)
         {
             progress::show(files[j].toStdString().c_str());
             if(!RenameDICOMToDir(dirs[index] + "/" + files[j],output))
-                show_progress() << "cannot rename the file." << std::endl;
+                show_progress() << "ERROR: cannot rename the file." << std::endl;
         }
     }
 }
