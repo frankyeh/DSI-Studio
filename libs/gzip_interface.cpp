@@ -242,7 +242,8 @@ bool gz_istream::fetch(void)
 void gz_istream::flush(void)
 {
     for(auto& thread: inflate_threads)
-        thread.join();
+        if(thread.joinable())
+            thread.join();
     inflate_threads.clear();
 }
 
