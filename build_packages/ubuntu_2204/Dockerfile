@@ -16,9 +16,9 @@ RUN apt update && apt upgrade -y && \
   libqt6charts6-dev \
   libqt6opengl6-dev \
   qt6-image-formats-plugins \
-  nvidia-cuda-toolkit \
-  nvidia-cuda-dev \
-  nvidia-cuda-toolkit-gcc \
+#  nvidia-cuda-toolkit \
+#  nvidia-cuda-dev \
+#  nvidia-cuda-toolkit-gcc \
   gcc \
   g++ && \
   apt-get -y autoremove --purge && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
