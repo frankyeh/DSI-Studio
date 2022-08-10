@@ -489,23 +489,17 @@ bool RenameDICOMToDir(QString FileName, QString ToDir,QString& NewName)
     ImageName(imagename.c_str());
     ToDir += "/";
     ToDir += Person;
-    if (!QDir(ToDir).exists())
+    if (!QDir(ToDir).exists() && !std::filesystem::create_directory(std::filesystem::path(ToDir.toStdString())))
     {
-        if(std::filesystem::create_directory(std::filesystem::path(ToDir.toStdString())))
-        {
-            show_progress() << "cannot create dir " << ToDir.toStdString() << std::endl;
-            return false;
-        }
+        show_progress() << "cannot create dir " << ToDir.toStdString() << std::endl;
+        return false;
     }
     ToDir += "/";
     ToDir += Sequence;
-    if (!QDir(ToDir).exists())
+    if (!QDir(ToDir).exists() && !std::filesystem::create_directory(std::filesystem::path(ToDir.toStdString())))
     {
-        if(std::filesystem::create_directory(std::filesystem::path(ToDir.toStdString())))
-        {
-            show_progress() << "cannot create dir " << ToDir.toStdString() << std::endl;
-            return false;
-        }
+        show_progress() << "cannot create dir " << ToDir.toStdString() << std::endl;
+        return false;
     }
     ToDir += "/";
     ToDir += ImageName;
@@ -1117,7 +1111,7 @@ void MainWindow::on_nii2src_sf_clicked()
     }
 }
 
-bool dcm2src(QStringList files,std::ostream& out)
+bool dcm2src(QStringList files)
 {
     if(files.empty())
         return false;
@@ -1125,7 +1119,7 @@ bool dcm2src(QStringList files,std::ostream& out)
     std::vector<std::shared_ptr<DwiHeader> > dicom_files;
     if(!parse_dwi(files,dicom_files) || progress::aborted())
     {
-        out << "Not DICOM. Skip." << std::endl;
+        show_progress() << "Not DICOM. Skip." << std::endl;
         return false;
     }
 
@@ -1135,7 +1129,7 @@ bool dcm2src(QStringList files,std::ostream& out)
         tipl::io::dicom header;
         if(!header.load_from_file(files[0].toStdString().c_str()))
         {
-            out << "ERROR: cannot read image volume. Skip" << std::endl;
+            show_progress() << "ERROR: cannot read image volume. Skip" << std::endl;
             return false;
         }
         header.get_sequence_id(sequence);
@@ -1162,21 +1156,21 @@ bool dcm2src(QStringList files,std::ostream& out)
             }
             if(dicom_files[index]->image.shape() != dicom_files[index]->image.shape())
             {
-                out << "Inconsistent image dimension." << std::endl;
+                show_progress() << "Inconsistent image dimension." << std::endl;
                 return false;
             }
         }
         if(DwiHeader::has_b_table(dicom_files))
         {
             QString src_name = get_dicom_output_name(files[0],(std::string("_")+sequence+".src.gz").c_str(),true);
-            out << "Create SRC file: " << std::filesystem::path(src_name.toStdString()).filename().string() << std::endl;
+            show_progress() << "Create SRC file: " << std::filesystem::path(src_name.toStdString()).filename().string() << std::endl;
             if(!DwiHeader::output_src(src_name.toStdString().c_str(),dicom_files,0,false))
-                out << "ERROR: " << src_error_msg << std::endl;
+                show_progress() << "ERROR: " << src_error_msg << std::endl;
         }
         else
         {
             if(!DwiHeader::consistent_dimension(dicom_files))
-                out << "[SKIPPED] Cannot save as 4D nifti due to different image dimension" << std::endl;
+                show_progress() << "[SKIPPED] Cannot save as 4D nifti due to different image dimension" << std::endl;
             else
             {
                 auto dicom = dicom_files[0];
@@ -1196,7 +1190,7 @@ bool dcm2src(QStringList files,std::ostream& out)
                               buffer.begin() + long(index*dicom_files[index]->image.size()));
                 }
                 QString nii_name = get_dicom_output_name(files[0],(std::string("_")+sequence+".nii.gz").c_str(),true);
-                out << "Create 4D NII file: " << nii_name.toStdString() << std::endl;
+                show_progress() << "Create 4D NII file: " << nii_name.toStdString() << std::endl;
                 return gz_nifti::save_to_file(nii_name.toStdString().c_str(),buffer,dicom->voxel_size,trans,false,report.c_str());
             }
         }
@@ -1205,7 +1199,7 @@ bool dcm2src(QStringList files,std::ostream& out)
 
     if(files.size() < 5)
     {
-        out << "Skip." << std::endl;
+        show_progress() << "Skip." << std::endl;
         return false;
     }
     // Now handle T1W or T2FLAIR
@@ -1217,7 +1211,7 @@ bool dcm2src(QStringList files,std::ostream& out)
             file_list.push_back(files[index].toStdString().c_str());
         if(!v.load_from_files(file_list))
         {
-            out << v.error_msg.c_str() << std::endl;
+            show_progress() << v.error_msg.c_str() << std::endl;
             return false;
         }
 
@@ -1255,19 +1249,20 @@ bool dcm2src(QStringList files,std::ostream& out)
         suffix += sequence;
         suffix += ".nii.gz";
         QString output = get_dicom_output_name(files[0],suffix.c_str(),true);
-        out << "converted to NIFTI:" << std::filesystem::path(output.toStdString()).filename().string() << std::endl;
+        show_progress() << "converted to NIFTI:" << std::filesystem::path(output.toStdString()).filename().string() << std::endl;
         nii_out.save_to_file(output.toStdString().c_str());
     }
     return true;
 }
 
-void dicom2src(std::string dir_,std::ostream& out)
+void dicom2src(std::string dir_)
 {
+    progress p("convert DICOM to NIFTI/SRC");
     QString dir = dir_.c_str();
     QStringList sub_dir = QDir(dir).entryList(QStringList("*"),QDir::Dirs | QDir::NoSymLinks | QDir::NoDotAndDotDot);
     for(int j = 0;progress::at(j,sub_dir.size()) && !progress::aborted();++j)
     {
-        progress prog1("process ",sub_dir[j].toStdString().c_str());
+        progress prog1(sub_dir[j].toStdString().c_str());
         QStringList dir_list = GetSubDir(dir + "/" + sub_dir[j],true);
         dir_list << dir;
         for(int i = 0;i < dir_list.size();++i)
@@ -1276,10 +1271,10 @@ void dicom2src(std::string dir_,std::ostream& out)
             QStringList dicom_file_list = cur_dir.entryList(QStringList("*.dcm"),QDir::Files|QDir::NoSymLinks);
             if(dicom_file_list.empty())
                 continue;
-            out << QFileInfo(dir_list[i]).baseName().toStdString() << "->";
+            show_progress() << QFileInfo(dir_list[i]).baseName().toStdString() << "->";
             for (int index = 0;index < dicom_file_list.size();++index)
                 dicom_file_list[index] = dir_list[i] + "/" + dicom_file_list[index];
-            dcm2src(dicom_file_list,out);
+            dcm2src(dicom_file_list);
         }
     }
 }
@@ -1293,10 +1288,7 @@ void MainWindow::on_dicom2nii_clicked()
     if(dir.isEmpty())
         return;
     add_work_dir(dir);
-    progress prog("DICOM to SRC/NIFTI",true);
-    std::ofstream out((dir+"/log.txt").toStdString().c_str());
-    out << "directory:" << dir.toStdString() << std::endl;
-    dicom2src(dir.toStdString(),out);
+    dicom2src(dir.toStdString());
 }
 
 void MainWindow::on_clear_src_history_clicked()
