@@ -4,7 +4,7 @@
 #include <iostream>
 #include <cuda.h>
 #include <cuda_runtime.h>
-
+#include "prog_interface_static_link.h"
 __global__ void cuda_test(){
     ;
 }
@@ -12,6 +12,7 @@ __global__ void cuda_test(){
 
 bool check_cuda(std::string& error_msg)
 {
+    progress p("checking CUDA drivers");
     int nDevices,Ver;
     if(cudaGetDeviceCount(&nDevices) != cudaSuccess ||
        cudaDriverGetVersion(&Ver) != cudaSuccess)
@@ -21,8 +22,7 @@ bool check_cuda(std::string& error_msg)
         error_msg += "). Please update the Nvidia driver and install CUDA Toolkit.";
         return false;
     }
-    std::cout << " Checking CUDA Driver" << std::endl;
-    std::cout << " CUDA Driver Version: " << Ver << " CUDA Run Time Version: " << CUDART_VERSION << std::endl;
+    show_progress() << "CUDA Driver Version: " << Ver << " CUDA Run Time Version: " << CUDART_VERSION << std::endl;
     cuda_test<<<1,1>>>();
     if(cudaPeekAtLastError() != cudaSuccess)
     {
@@ -32,9 +32,10 @@ bool check_cuda(std::string& error_msg)
         return false;
     }
 
-    std::cout << "Device Count:" << nDevices << std::endl;
+    show_progress() << "Device Count:" << nDevices << std::endl;
     for (int i = 0; i < nDevices; i++)
     {
+        progress p2("Device Number:",std::to_string(i).c_str());
         cudaDeviceProp prop;
         if(cudaGetDeviceProperties(&prop, i) != cudaSuccess)
         {
@@ -42,12 +43,11 @@ bool check_cuda(std::string& error_msg)
             return false;
         }
         auto arch = prop.major*10+prop.minor;
-        std::cout << "Device Number: " << i << std::endl;
-        std::cout << "  Arch: " << arch << std::endl;
-        std::cout << "  Device name: " << prop.name << std::endl;
-        std::cout << "  Memory Clock Rate (KHz): " << prop.memoryClockRate << std::endl;
-        std::cout << "  Memory Bus Width (bits): " << prop.memoryBusWidth << std::endl;
-        std::cout << "  Peak Memory Bandwidth (GB/s): " << 2.0*prop.memoryClockRate*(prop.memoryBusWidth/8)/1.0e6 << std::endl;
+        show_progress() << "Arch: " << arch << std::endl;
+        show_progress() << "Device name: " << prop.name << std::endl;
+        show_progress() << "Memory Clock Rate (KHz): " << prop.memoryClockRate << std::endl;
+        show_progress() << "Memory Bus Width (bits): " << prop.memoryBusWidth << std::endl;
+        show_progress() << "Peak Memory Bandwidth (GB/s): " << 2.0*prop.memoryClockRate*(prop.memoryBusWidth/8)/1.0e6 << std::endl;
 
     }
     return true;
