@@ -18,7 +18,7 @@ int cnt(program_option& po)
 
     auto& db = vbc->handle->db;
 
-    if(db.demo.empty())
+    if(db.demo.empty() || po.has("demo"))
     {
         // read demographic file
         if(!po.check("demo"))
@@ -61,7 +61,7 @@ int cnt(program_option& po)
         for(auto v : variable_list)
             if(v >= db.feature_titles.size())
             {
-                show_progress() << "invalid variable value: " << v << std::endl;
+                show_progress() << "ERROR: invalid variable value: " << v << std::endl;
                 return 1;
             }
 
@@ -70,7 +70,7 @@ int cnt(program_option& po)
         {
             if(!db.is_longitudinal)
             {
-                show_progress() << "[ERROR] Intercept can only be studied in a longitudinal database." << std::endl;
+                show_progress() << "ERROR: Intercept can only be studied in a longitudinal database." << std::endl;
                 return 1;
             }
             foi_str = "Intercept";
