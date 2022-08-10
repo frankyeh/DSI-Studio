@@ -517,6 +517,8 @@ bool RenameDICOMToDir(QString FileName, QString ToDir)
     QString NewName;
     if(!RenameDICOMToDir(FileName,ToDir,NewName))
         return false;
+    if(FileName == NewName)
+        return true;
     show_progress() << FileName.toStdString() << "->" << NewName.toStdString() << std::endl;
     return QFile::rename(FileName,NewName);
 }
@@ -578,6 +580,9 @@ QStringList GetSubDir(QString Dir,bool recursive = true)
 void rename_dicom_at_dir(QString path,QString output)
 {
     progress prog_("Renaming DICOM");
+    show_progress() << "current directory is " << std::filesystem::current_path() << std::endl
+                    << "source directory is " << path.toStdString() << std::endl
+                    << "output directory is " << output.toStdString() << std::endl;
     QStringList dirs = GetSubDir(path);
     for(int index = 0;progress::at(index,dirs.size());++index)
     {
