@@ -15,7 +15,8 @@ void ThreadData::end_thread(void)
     {
         joinning = true;
         for(auto& thread : threads)
-            thread.join();
+            if(thread.joinable())
+                thread.join();
         threads.clear();
     }
 }
@@ -251,7 +252,8 @@ void ThreadData::run(std::shared_ptr<tracking_data> trk_,unsigned int thread_cou
     {
         run_thread(thread_count-1);
         for(auto& thread : threads)
-            thread.join();
+            if(thread.joinable())
+                thread.join();
         // make sure fetch tract get all data.
         buffer_switch = !buffer_switch;
     }
