@@ -75,7 +75,7 @@ int atk(program_option& po)
         return 1;
     }
     std::vector<unsigned int> track_id;
-    if(!get_track_id(po.get("track_id","Fasciculus,Cingulum,Aslant,Corticos,Thalamic_R,Reticular,Optic,Fornix,Corpus"),
+    if(!get_track_id(po.get("track_id","Fasciculus,Cingulum,Aslant,Corticos,Thalamic_R,Optic,Fornix,Corpus"),
                      track_id))
         return 1;
     int progress;
