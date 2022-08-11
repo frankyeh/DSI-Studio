@@ -243,12 +243,10 @@ public:
             return false;
         }
         {
-            auto& s2t = handle->get_sub2temp_mapping();
-            if(s2t.empty())
-                return false;
             float tolerance_dis_in_icbm_voxels = tolerance_dis_in_icbm152_mm/handle->template_vs[0];
+            tolerance_dis_in_subject_voxels = tolerance_dis_in_icbm_voxels/handle->tract_atlas_jacobian;
             show_progress() << "convert tolerance distance of " << tolerance_dis_in_icbm152_mm << " from ICBM mm to " <<
-                    (tolerance_dis_in_subject_voxels = tolerance_dis_in_icbm_voxels/float((s2t[0]-s2t[1]).length())) << " subject voxels" << std::endl;
+                                    tolerance_dis_in_subject_voxels << " subject voxels" << std::endl;
         }
         track_id = track_id_;
         report += " The anatomy prior of a tractography atlas (Yeh et al., Neuroimage 178, 57-68, 2018) was used to map ";
