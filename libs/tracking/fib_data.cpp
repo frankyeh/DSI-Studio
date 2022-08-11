@@ -1060,6 +1060,92 @@ bool fib_data::load_from_mat(void)
     match_template();
     return true;
 }
+bool fib_data::resample_to(float resolution)
+{
+    progress p("resample FIB file");
+    tipl::transformation_matrix<double> T;
+    T.sr[0] = resolution/vs[2];
+    T.sr[4] = resolution/vs[1];
+    T.sr[8] = resolution/vs[0];
+    tipl::vector<3> new_vs(resolution,resolution,resolution);
+    tipl::shape<3> new_dim(dim[0]*vs[0]/resolution,dim[1]*vs[0]/resolution,dim[2]*vs[0]/resolution);
+    if(new_dim.size() > dim.size())
+    {
+        error_msg = "cannot resample to higher resolution";
+        return false;
+    }
+    auto new_trans(trans_to_mni);
+    new_trans[0]  = new_trans[0]  > 0 ? resolution : -resolution;
+    new_trans[5]  = new_trans[5]  > 0 ? resolution : -resolution;
+    new_trans[10] = new_trans[10] > 0 ? resolution : -resolution;
+
+    {
+        progress p("reading data");
+        for(size_t i = 0;progress::at(i,mat_reader.size());++i)
+        {
+            auto& mat = mat_reader[i];
+            if(mat.has_delay_read() && !mat.read(*(mat_reader.in.get())))
+            {
+                error_msg = "failed to read matrix";
+                return false;
+            }
+        }
+        if(progress::aborted())
+        {
+            error_msg = "aborted";
+            return false;
+        }
+    }
+
+    progress p2("resampling");
+    size_t total = 0;
+    tipl::par_for(mat_reader.size(),[&](unsigned int i)
+    {
+        progress::at(total,mat_reader.size());
+        auto& mat = mat_reader[i];
+        if(mat.get_name() == "dimension")
+            std::copy(new_dim.begin(),new_dim.end(),mat.get_data<unsigned int>());
+        if(mat.get_name() == "voxel_size")
+            std::copy(new_vs.begin(),new_vs.end(),mat.get_data<float>());
+        if(mat.get_name() == "trans")
+            std::copy(new_trans.begin(),new_trans.end(),mat.get_data<float>());
+        if(mat.get_name() == "dir0")
+        {
+            auto ptr = mat.get_data<float>();
+            tipl::image<3,tipl::vector<3> > dir0(dim),new_dir0(new_dim);
+            for(size_t j = 0;j < dir0.size();++j,ptr += 3)
+                dir0[j] = tipl::vector<3>(ptr);
+            tipl::resample(dir0,new_dir0,T);
+            ptr = mat.get_data<float>();
+            for(size_t j = 0;j < new_dir0.size();++j,ptr += 3)
+            {
+                *ptr = new_dir0[j][0];
+                *(ptr+1) = new_dir0[j][1];
+                *(ptr+2) = new_dir0[j][2];
+            }
+        }
+        if(size_t(mat.get_cols())*size_t(mat.get_rows()) == dim.size()) // image volumes, including fa, and fiber index
+        {
+            if(mat.is_type<float>()) // qa, fa...etc.
+            {
+                tipl::image<3> new_image(new_dim);
+                tipl::resample(tipl::make_image(mat.get_data<float>(),dim),new_image,T);
+                std::copy(new_image.begin(),new_image.end(),mat.get_data<float>());
+            }
+            if(mat.is_type<short>()) // index0,index1
+            {
+                tipl::image<3> new_image(new_dim);
+                tipl::resample<tipl::nearest>(tipl::make_image(mat.get_data<float>(),dim),new_image,T);
+                std::copy(new_image.begin(),new_image.end(),mat.get_data<float>());
+            }
+        }
+        ++total;
+    });
+    dim = new_dim;
+    vs = new_vs;
+    trans_to_mni = new_trans;
+    return true;
+}
 size_t match_volume(float volume);
 void fib_data::match_template(void)
 {
@@ -1452,22 +1538,49 @@ bool fib_data::load_track_atlas()
 
         if(!map_to_mni())
             return false;
+
+        // get distance scaling
+        auto& s2t = get_sub2temp_mapping();
+        if(s2t.empty())
+            return false;
+        tract_atlas_jacobian = float((s2t[0]-s2t[1]).length());
+
+
         // warp tractography atlas to subject space
         progress prog_("warping atlas tracks to subject space");
         auto& tract_data = track_atlas->get_tracts();
+        std::vector<float> min_length(tractography_name_list.size()),max_length(tractography_name_list.size());
         auto T = tipl::from_space(track_atlas->trans_to_mni).to(template_to_mni);
         tipl::par_for(tract_data.size(),[&](size_t i)
         {
-            for(size_t j = 0;j < tract_data[i].size();j += 3)
+            if(tract_data.size() <= 6)
+                return;
+            double sum = 0.0;
+            auto beg = tract_data[i].begin();
+            auto end = tract_data[i].end();
+            tipl::vector<3> last_p(beg);
+            for(;beg != end;beg += 3)
             {
-                tipl::vector<3> p(&tract_data[i][j]);
+                tipl::vector<3> p(beg);
                 apply_trans(p,T); // from tract atlas space to current template space
                 temp2sub(p);
-                tract_data[i][j] = p[0];
-                tract_data[i][j+1] = p[1];
-                tract_data[i][j+2] = p[2];
+                beg[0] = p[0];
+                beg[1] = p[1];
+                beg[2] = p[2];
+                sum += (last_p-p).length();
+                last_p = p;
+            }
+            auto c = cluster[i];
+            if(c < tractography_name_list.size())
+            {
+                if(min_length[c] == 0)
+                    min_length[c] = float(sum);
+                min_length[c] = std::min(min_length[c],float(sum));
+                max_length[c] = std::max(max_length[c],float(sum));
             }
         });
+        tract_atlas_min_length.swap(min_length);
+        tract_atlas_max_length.swap(max_length);
         return true;
     }
     return true;
