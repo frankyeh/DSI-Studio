@@ -207,8 +207,10 @@ public:
     std::string t1w_template_file_name,wm_template_file_name,mask_template_file_name;
 public:
     std::shared_ptr<TractModel> track_atlas;
+    std::vector<float> tract_atlas_min_length,tract_atlas_max_length;
     std::string tractography_atlas_file_name;
     std::vector<std::string> tractography_name_list;
+    float tract_atlas_jacobian = 0.0f;
     bool recognize(std::shared_ptr<TractModel>& trk,std::vector<unsigned int>& result);
     bool recognize(std::shared_ptr<TractModel>& trk,std::map<float,std::string,std::greater<float> >& result);
     void recognize_report(std::shared_ptr<TractModel>& trk,std::string& report);
@@ -277,6 +279,7 @@ public:
     bool load_from_file(const char* file_name);
     bool load_from_mat(void);
     bool save_mapping(const std::string& index_name,const std::string& file_name);
+    bool resample_to(float vs);
 public:
     bool has_odfs(void) const{return mat_reader.has("odf0");}
 public:
