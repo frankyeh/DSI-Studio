@@ -831,9 +831,13 @@ void ImageModel::smoothing(void)
 extern std::vector<std::string> fa_template_list,iso_template_list;
 bool ImageModel::align_acpc(void)
 {
+    progress prog_("align acpc",true);
     std::string msg = " The diffusion MRI data were rotated to align with the AC-PC line.";
     if(voxel.report.find(msg) != std::string::npos)
+    {
+        show_progress() << "image already aligned, skipping" << std::endl;
         return true;
+    }
 
     tipl::shape<3> new_geo;
     tipl::vector<3> new_vs(voxel.vs[0],voxel.vs[0],voxel.vs[0]); // new volume size will be isotropic
@@ -859,7 +863,6 @@ bool ImageModel::align_acpc(void)
         }
 
         bool terminated = false;
-        progress prog_("aligning with ac-pc at ",true);
         progress::at(0,3);
         tipl::filter::gaussian(J);
         linear_with_mi(I,vs,J,voxel.vs,T,tipl::reg::rigid_body,terminated,tipl::reg::narrow_bound);
