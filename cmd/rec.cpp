@@ -112,6 +112,51 @@ int rec(program_option& po)
 
     {
         progress prog("additional processing steps");
+        if (po.has("remove"))
+        {
+            std::vector<int> remove_index;
+            QStringList remove_list = QString(po.get("remove").c_str()).split(",");
+            for(auto str : remove_list)
+            {
+                if(str.contains(":"))
+                {
+                    QStringList range = str.split(":");
+                    if(range.size() != 2)
+                    {
+                        show_progress() << "ERROR: invalid index specified at --remove: " << str.toStdString() << std::endl;
+                        return 1;
+                    }
+                    int from = range[0].toInt();
+                    int to = src.src_bvalues.size()-1;
+                    if(range[1] != "end")
+                        to = range[1].toInt();
+                    for(int i = from;i <= to;++i)
+                        remove_index.push_back(i);
+                }
+                else
+                    remove_index.push_back(str.toInt());
+            }
+
+            if(remove_index.empty())
+            {
+                show_progress() << "ERROR: invalid index specified at --remove " << std::endl;
+                return 1;
+            }
+            std::sort(remove_index.begin(),remove_index.end(),std::greater<int>());
+            std::string removed_index("DWI removed at ");
+            for(auto i : remove_index)
+            {
+                if(i < src.src_bvalues.size())
+                    src.remove(i);
+                removed_index += std::to_string(i);
+                removed_index += " ";
+            }
+            show_progress() << removed_index << std::endl;
+            show_progress() << "current DWI count: " << src.src_bvalues.size() << std::endl;
+            std::ostringstream bvalue_list;
+            std::copy(src.src_bvalues.begin(),src.src_bvalues.end(),std::ostream_iterator<float>(bvalue_list," "));
+            show_progress() << "current DWI b values: " << bvalue_list.str() << std::endl;
+        }
         if (po.has("cmd"))
         {
             QStringList cmd_list = QString(po.get("cmd").c_str()).split("+");
