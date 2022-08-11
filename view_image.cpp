@@ -718,10 +718,8 @@ bool view_image::open(QStringList file_names_)
                 {
                     std::string data;
                     mat[index].get_info(data);
-                    info += QString("%1 [%2x%3]=%4\n").arg(mat[index].get_name().c_str()).
-                            arg(mat[index].get_rows()).
-                            arg(mat[index].get_cols()).
-                            arg(data.c_str());
+                    info += data.c_str();
+                    info += "\n";
                 }
             }
             else
