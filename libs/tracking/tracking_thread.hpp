@@ -42,6 +42,7 @@ public:
     std::vector<unsigned int> end_count;
     std::vector<unsigned char> running;
     std::mutex lock_seed_function;
+    std::chrono::high_resolution_clock::time_point begin_time,end_time;
     unsigned int get_total_seed_count(void)const
     {
         return seed_count.empty() ? 0 : std::accumulate(seed_count.begin(),seed_count.end(),uint32_t(0));
