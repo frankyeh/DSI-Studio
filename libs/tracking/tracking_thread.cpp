@@ -123,6 +123,7 @@ void ThreadData::run_thread(unsigned int thread_id)
 
     }
     running[thread_id] = 0;
+    end_time = std::chrono::high_resolution_clock::now();
 }
 
 bool ThreadData::fetchTracks(TractModel* handle)
@@ -242,6 +243,8 @@ void ThreadData::run(std::shared_ptr<tracking_data> trk_,unsigned int thread_cou
 
     joinning = false;
     seed = std::mt19937(0);
+
+    begin_time = std::chrono::high_resolution_clock::now();
 
     track_buffer_back.resize(thread_count);
     track_buffer_front.resize(thread_count);
