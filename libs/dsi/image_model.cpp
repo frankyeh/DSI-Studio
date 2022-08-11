@@ -870,10 +870,13 @@ bool ImageModel::align_acpc(void)
         bool terminated = false;
         progress::at(0,3);
         tipl::filter::gaussian(J);
-        linear_with_mi(I,vs,J,voxel.vs,T,tipl::reg::rigid_body,terminated,tipl::reg::narrow_bound);
+        tipl::affine_transform<float> arg;
+        linear_with_mi(I,vs,J,voxel.vs,arg,tipl::reg::rigid_scaling,terminated);
+        show_progress() << arg << std::endl;
         progress::at(1,3);
         tipl::image<3> I2(I.shape());
-        tipl::resample_mt<tipl::interpolation::cubic>(J,I2,T);
+        tipl::resample_mt<tipl::interpolation::cubic>(J,I2,
+                tipl::transformation_matrix<float>(arg,I.shape(),vs,J.shape(),voxel.vs));
         float r = float(tipl::correlation(I.begin(),I.end(),I2.begin()));
         show_progress() << "R2 for ac-pc alignment:" << r*r << std::endl;
         progress::at(2,3);
@@ -882,7 +885,8 @@ bool ImageModel::align_acpc(void)
             error_msg = "Failed to align subject data to template.";
             return false;
         }
-
+        arg.scaling[0] = arg.scaling[1] = arg.scaling[2] = 1.0f;
+        T = tipl::transformation_matrix<float>(arg,I.shape(),vs,J.shape(),voxel.vs);
     }
 
     rotate(new_geo,new_vs,T);
