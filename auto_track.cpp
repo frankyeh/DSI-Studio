@@ -268,11 +268,16 @@ std::string run_auto_track(program_option& po,const std::vector<std::string>& fi
                     float cur_tolerance = tolerance[tracking_iteration];
                     ThreadData thread(handle);
                     {
+                        if(!thread.roi_mgr->setAtlas(track_id[j],cur_tolerance))
+                            return handle->error_msg + " at " + fib_file_name;
+                        thread.param.min_length = handle->vs[0]*std::max<float>(thread.roi_mgr->tolerance_dis_in_subject_voxels,
+                                                                  (handle->tract_atlas_min_length[track_id[j]]-2.0f*thread.roi_mgr->tolerance_dis_in_subject_voxels));
+                        thread.param.max_length = handle->vs[0]*(handle->tract_atlas_max_length[track_id[j]]+2.0f*thread.roi_mgr->tolerance_dis_in_subject_voxels);
+                        show_progress() << "min_length(mm): " << thread.param.min_length << std::endl;
+                        show_progress() << "max_length(mm): " << thread.param.max_length << std::endl;
                         thread.param.tip_iteration = uint8_t(tip);
                         thread.param.check_ending = check_ending && !QString(track_name.c_str()).contains("Cingulum");
                         thread.param.stop_by_tract = 1;
-                        if(!thread.roi_mgr->setAtlas(track_id[j],cur_tolerance))
-                            return handle->error_msg + " at " + fib_file_name;
                         thread.param.termination_count = uint32_t(track_voxel_ratio*thread.roi_mgr->seeds.size());
                         thread.param.max_seed_count = thread.param.termination_count*5000; //yield rate easy:1/100 hard:1/5000
                         // report
@@ -322,6 +327,16 @@ std::string run_auto_track(program_option& po,const std::vector<std::string>& fi
                                 break;
                             }
                         }
+
+                        float sec = float(std::chrono::duration_cast<std::chrono::milliseconds>(
+                                    thread.end_time-thread.begin_time).count())*0.001f;
+                        show_progress() << "yield rate (tract generated per seed): " <<
+                                float(thread.get_total_tract_count())/float(thread.get_total_seed_count()) << std::endl;
+                        show_progress() << "tract yield rate (tracts per second): " <<
+                                                   float(thread.get_total_tract_count())/sec << std::endl;
+                        show_progress() << "seed yield rate (seeds per second): " <<
+                                                   float(thread.get_total_seed_count())/sec << std::endl;
+
                     }
                     if(progress::aborted())
                         return std::string();
