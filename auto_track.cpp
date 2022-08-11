@@ -126,6 +126,8 @@ std::string run_auto_track(program_option& po,const std::vector<std::string>& fi
     float length_ratio = po.get("length_ratio",1.25f);
     std::string tolerance_string = po.get("tolerance","16,18,20");
     float track_voxel_ratio = po.get("track_voxel_ratio",2.0f);
+    float yield_rate = po.get("yield_rate",0.001f);
+    size_t yield_check_count = 20.0f/yield_rate;
     int tip = po.get("tip",32);
     bool export_stat = po.get("export_stat",1);
     bool export_trk = po.get("export_trk",1);
@@ -303,7 +305,6 @@ std::string run_auto_track(program_option& po,const std::vector<std::string>& fi
                         auto_track_report = temp_report;
                     }
                     bool no_result = false;
-                    const unsigned int low_yield_threshold = 100000;
                     {
                         while(!thread.is_ended() && !progress::aborted())
                         {
@@ -312,8 +313,8 @@ std::string run_auto_track(program_option& po,const std::vector<std::string>& fi
                                        thread.param.termination_count);
                             thread.fetchTracks(&tract_model);
                             // terminate if yield rate is very low, likely quality problem
-                            if(thread.get_total_seed_count() > low_yield_threshold*10 &&
-                               thread.get_total_tract_count() < thread.get_total_seed_count()/low_yield_threshold)
+                            if(thread.get_total_seed_count() > yield_check_count &&
+                               thread.get_total_tract_count() < float(thread.get_total_seed_count())*yield_rate)
                             {
                                 show_progress() << "low yield rate, terminating" << std::endl;
                                 no_result = true;
@@ -563,7 +564,6 @@ void auto_track::select_tracts()
         if(ui->cb_projection->isChecked())
         {
             select_list.push_back("Corticos");
-            select_list.push_back("Corticob");
             select_list.push_back("Thalamic");
             select_list.push_back("Optic");
             select_list.push_back("Fornix");
