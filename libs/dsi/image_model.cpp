@@ -89,9 +89,14 @@ void ImageModel::calculate_dwi_sum(bool update_mask)
 
 void ImageModel::remove(unsigned int index)
 {
+    if(index >= src_dwi_data.size())
+        return;
     src_dwi_data.erase(src_dwi_data.begin()+index);
     src_bvalues.erase(src_bvalues.begin()+index);
     src_bvectors.erase(src_bvectors.begin()+index);
+    std::string remove_text(" Reconstruction was conducted on a subset of DWI.");
+    if(voxel.report.find(remove_text) == std::string::npos)
+        voxel.report += remove_text;
 }
 
 void flip_fib_dir(std::vector<tipl::vector<3> >& fib_dir,const unsigned char* order)
