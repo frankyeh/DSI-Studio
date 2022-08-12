@@ -1068,7 +1068,7 @@
                     <item>
                      <widget class="QLineEdit" name="other_output">
                       <property name="text">
-                       <string>fa,ad,rd,md,nqa,iso,rdi,nrdi</string>
+                       <string>fa,ad,rd,md,iso,rdi,nrdi</string>
                       </property>
                      </widget>
                     </item>
