@@ -3444,11 +3444,6 @@ Tracking</string>
     <string>Load Color Map</string>
    </property>
   </action>
-  <action name="actionImprove_Quality">
-   <property name="text">
-    <string>FIB Autocorrect</string>
-   </property>
-  </action>
   <action name="actionRestore_Tracking_Settings">
    <property name="text">
     <string>Restore Tracking Settings</string>
@@ -4002,11 +3997,6 @@ Tracking</string>
    </property>
    <property name="text">
     <string>Save Endpoints in MNI Coordinates...</string>
-   </property>
-  </action>
-  <action name="actionAdjust_Atlas_Mapping">
-   <property name="text">
-    <string>Adjust Atlas Mapping...</string>
    </property>
   </action>
   <action name="actionDetect_Electrodes">
