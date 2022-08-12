@@ -169,27 +169,8 @@ public:
                  const tipl::vector<3,float>& ref_dir,
                  tipl::vector<3,float>& result)
     {
-        tipl::interpolator::linear<3> tri_interpo;
-        if (!tri_interpo.get_location(trk->dim,position))
-            return false;
-        tipl::vector<3,float> new_dir,main_dir;
-        float total_weighting = 0.0f;
-        for (unsigned int index = 0;index < 8;++index)
-        {
-            size_t odf_space_index = tri_interpo.dindex[index];
-            if (!trk->get_dir_under_termination_criteria(odf_space_index,ref_dir,main_dir,
-                                                         current_fa_threshold,current_tracking_angle,current_dt_threshold))
-                continue;
-            float w = tri_interpo.ratio[index];
-            main_dir *= w;
-            new_dir += main_dir;
-            total_weighting += w;
-        }
-        if (total_weighting < 0.5f)
-            return false;
-        new_dir.normalize();
-        result = new_dir;
-        return true;
+        return trk->get_dir_under_termination_criteria(position,ref_dir,result,
+                    current_fa_threshold,current_tracking_angle,current_dt_threshold);
     }
 public:
     unsigned int get_buffer_size(void) const

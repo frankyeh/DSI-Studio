@@ -704,7 +704,7 @@ bool connectometry_db::save_subject_vector(const char* output_name,
                     mni_location.push_back(p2[1]);
                     mni_location.push_back(p2[2]);
 
-                    const float* dir = handle->dir.get_fib(cur_index,j);
+                    auto dir = handle->dir.get_fib(cur_index,j);
                     fiber_direction.push_back(dir[0]);
                     fiber_direction.push_back(dir[1]);
                     fiber_direction.push_back(dir[2]);

@@ -322,7 +322,7 @@ void slice_view_scene::show_fiber(QPainter& painter,std::shared_ptr<SliceModel> 
                         if((roi_fiber == 2 && fiber != 0) ||
                            (roi_fiber == 3 && fiber != 1))
                             continue;
-                        const float* dir_ptr = dir.get_fib(pos.index(),uint8_t(fiber));
+                        auto dir_ptr = dir.get_fib(pos.index(),uint8_t(fiber));
                         if(!fiber_color)
                         {
                             QPen pen(QColor(int(std::abs(dir_ptr[0]) * 255.0f),

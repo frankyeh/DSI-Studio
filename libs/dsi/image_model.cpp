@@ -237,7 +237,7 @@ std::string ImageModel::check_b_table(void)
             const float* ptr = nullptr;
             for(tipl::pixel_index<3> index(template_geo);index < template_geo.size();++index)
             {
-                if(template_fib->dir.fa[0][index.index()] < 0.2f || !(ptr = template_fib->dir.get_fib(index.index(),0)))
+                if(template_fib->dir.fa[0][index.index()] < 0.2f)
                     continue;
                 tipl::vector<3> pos(index);
                 T(pos);
@@ -246,7 +246,7 @@ std::string ImageModel::check_b_table(void)
                 {
                     auto sub_dir = new_dir[0][tipl::pixel_index<3>(pos.begin(),subject_geo).index()];
                     sub_dir.rotate(r);
-                    sum_cos += std::abs(double(sub_dir*tipl::vector<3>(ptr)));
+                    sum_cos += std::abs(double(sub_dir*template_fib->dir.get_fib(index.index(),0)));
                     ++ncount;
                 }
             }

@@ -1517,7 +1517,7 @@ void tracking_window::on_actionQuality_Assessment_triggered()
                 tipl::segmentation::otsu_threshold(tipl::make_image(handle->dir.fa[0],handle->dim));
     std::pair<float,float> result = evaluate_fib(handle->dim,threshold,handle->dir.fa,
                                                  [&](int pos,char fib)
-                                                 {return tipl::vector<3>(handle->dir.get_fib(pos,fib));});
+                                                 {return handle->dir.get_fib(pos,fib);});
     std::ostringstream out;
     out << "Fiber coherence index: " << result.first << std::endl;
     out << "Fiber incoherent index: " << result.second << std::endl;

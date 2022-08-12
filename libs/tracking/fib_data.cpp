@@ -321,13 +321,13 @@ void fiber_directions::add_dt_index(const std::string& name,tipl::image<3>&& I)
     dt_index_name.push_back(name);
 }
 
-const float* fiber_directions::get_fib(size_t space_index,unsigned int order) const
+tipl::vector<3> fiber_directions::get_fib(size_t space_index,unsigned int order) const
 {
     if(!dir.empty())
-        return dir[order] + space_index + space_index + space_index;
+        return tipl::vector<3>(dir[order] + space_index + space_index + space_index);
     if(order >= findex.size())
-        return &*(odf_table[0].begin());
-    return &*(odf_table[findex[order][space_index]].begin());
+        return odf_table[0];
+    return odf_table[findex[order][space_index]];
 }
 
 float fiber_directions::cos_angle(const tipl::vector<3>& cur_dir,size_t space_index,unsigned char fib_order) const
@@ -379,7 +379,6 @@ void tracking_data::read(std::shared_ptr<fib_data> fib)
     dt_fa = fib->dir.dt_fa;
     findex = fib->dir.findex;
     dir = fib->dir.dir;
-    other_index = fib->dir.index_data;
     if(!fib->dir.index_name.empty())
         threshold_name = fib->dir.get_threshold_name();
     if(!dt_fa.empty())
@@ -1194,7 +1193,7 @@ void fib_data::get_slice(unsigned int view_index,
         tipl::volume2slice(view_item[view_index].color_map_buf, buf, d_index, pos);
         for (unsigned int index = 0;index < buf.size();++index)
         {
-            const float* d = dir.get_fib(buf[index],0);
+            auto d = dir.get_fib(buf[index],0);
             show_image[index].r = std::abs((float)show_image[index].r*d[0]);
             show_image[index].g = std::abs((float)show_image[index].g*d[1]);
             show_image[index].b = std::abs((float)show_image[index].b*d[2]);
@@ -1225,7 +1224,7 @@ void fib_data::get_voxel_info2(int x,int y,int z,std::vector<float>& buf) const
         }
         else
         {
-            const float* d = dir.get_fib(space_index,i);
+            auto d = dir.get_fib(space_index,i);
             buf.push_back(d[0]);
             buf.push_back(d[1]);
             buf.push_back(d[2]);
