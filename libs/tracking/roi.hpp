@@ -233,41 +233,44 @@ public:
                                 tolerance_dis_in_subject_voxels) == track_id;
         return true;
     }
+    std::vector<tipl::vector<3,short> > atlas_seed,atlas_roa;
     bool setAtlas(unsigned int track_id_,float tolerance_dis_in_icbm152_mm)
     {
+        progress p("loading tractography atlas");
         if(!handle->load_track_atlas())
             return false;
-        if(track_id >= handle->tractography_name_list.size())
+        if(track_id_ >= handle->tractography_name_list.size())
         {
             handle->error_msg = "invalid track_id";
             return false;
         }
+        track_id = track_id_;
+        const auto& tract_name = handle->tractography_name_list[size_t(track_id)];
         {
             float tolerance_dis_in_icbm_voxels = tolerance_dis_in_icbm152_mm/handle->template_vs[0];
             tolerance_dis_in_subject_voxels = tolerance_dis_in_icbm_voxels/handle->tract_atlas_jacobian;
             show_progress() << "convert tolerance distance of " << tolerance_dis_in_icbm152_mm << " from ICBM mm to " <<
                                     tolerance_dis_in_subject_voxels << " subject voxels" << std::endl;
         }
-        track_id = track_id_;
         report += " The anatomy prior of a tractography atlas (Yeh et al., Neuroimage 178, 57-68, 2018) was used to map ";
-        report += handle->tractography_name_list[size_t(track_id)];
+        report += tract_name;
         report += "  with a distance tolerance of ";
         report += std::to_string(tolerance_dis_in_icbm152_mm);
         report += " (mm) in the ICBM152 space.";
         // place seed at the atlas track region
         if(seeds.empty())
         {
-            std::vector<tipl::vector<3,short> > seed;
-            handle->track_atlas->to_voxel(seed,tipl::identity_matrix(),int(track_id));
+            show_progress() << "creating seed region from tractography atlas" << std::endl;
+            handle->track_atlas->to_voxel(atlas_seed,tipl::identity_matrix(),int(track_id));
             ROIRegion region(handle);
-            region.add_points(std::move(seed));
+            region.add_points(std::move(atlas_seed));
             region.perform("dilation");
             region.perform("dilation");
             region.perform("dilation");
             region.perform("smoothing");
             region.perform("smoothing");
-            setRegions(region.region,3/*seed i*/,
-            handle->tractography_name_list[size_t(track_id)].c_str());
+            setRegions(region.region,seed_id,tract_name.c_str());
+            atlas_seed.swap(region.region);
         }
         // add tolerance roa to speed up tracking
         {
@@ -275,31 +278,53 @@ public:
             handle->track_atlas->to_voxel(seed,tipl::identity_matrix(),int(track_id));
             std::vector<tipl::vector<3,short> > track_roa;
             tipl::image<3,char> roa_mask(handle->dim);
-            const float *fa0 = handle->dir.fa[0];
-            for(size_t index = 0;index < roa_mask.size();++index)
-                if(fa0[index] > 0.0f)
-                    roa_mask[index] = 1;
 
-            // build a shift vector
-            tipl::neighbor_index_shift<3> shift(handle->dim,int(std::round(tolerance_dis_in_subject_voxels))+1);
-            for(size_t i = 0;i < seed.size();++i)
+            show_progress() << "creating ROA region to limit tracking results" << std::endl;
+
+            // outer = 1
             {
-                int index = int(tipl::pixel_index<3>(seed[i][0],
-                                                     seed[i][1],
-                                                     seed[i][2],handle->dim).index());
-                for(size_t j = 0;j < shift.index_shift.size();++j)
+                const float *fa0 = handle->dir.fa[0];
+                tipl::par_for(seed.size(),[&](unsigned int i)
                 {
-                    int pos = index+shift.index_shift[j];
-                    if(pos >=0 && pos < int(roa_mask.size()))
-                        roa_mask[pos] = 0;
-                }
+                    std::vector<tipl::pixel_index<3> > list;
+                    tipl::get_neighbors(tipl::pixel_index<3>(seed[i][0],seed[i][1],seed[i][2],handle->dim),
+                                        handle->dim,int(std::ceil(tolerance_dis_in_subject_voxels))+2,list);
+                    for(const auto& pos : list)
+                        if(fa0[pos.index()] > 0.0f)
+                            roa_mask[pos.index()] = 1;
+                });
             }
 
-            std::vector<tipl::vector<3,short> > roa_points;
+            // inner = 0
+            {
+                bool is_left = (tract_name.substr(tract_name.length()-2,2) == "_L");
+                bool is_right = (tract_name.substr(tract_name.length()-2,2) == "_R");
+                auto& s2t = handle->get_sub2temp_mapping();
+                if(is_left)
+                    show_progress() << "apply left mask for " << tract_name << std::endl;
+                if(is_right)
+                    show_progress() << "apply right mask for " << tract_name << std::endl;
+                auto mid_x = handle->template_I.width() >> 1;
+                tipl::par_for(seed.size(),[&](unsigned int i)
+                {
+                    std::vector<tipl::pixel_index<3> > list;
+                    tipl::get_neighbors(tipl::pixel_index<3>(seed[i][0],seed[i][1],seed[i][2],handle->dim),
+                                        handle->dim,int(std::ceil(tolerance_dis_in_subject_voxels)),list);
+                    for(const auto& pos : list)
+                    {
+                        if(is_left && s2t[pos.index()][0] < mid_x)
+                            continue;
+                        if(is_right && s2t[pos.index()][0] > mid_x)
+                            continue;
+                        roa_mask[pos.index()] = 0;
+                    }
+                });
+            }
+            atlas_roa.clear();
             for(tipl::pixel_index<3> index(handle->dim);index < handle->dim.size();++index)
                 if(roa_mask[index.index()])
-                    roa_points.push_back(tipl::vector<3,short>(short(index.x()),short(index.y()),short(index.z())));
-            setRegions(roa_points,1,"track tolerance region");
+                    atlas_roa.push_back(tipl::vector<3,short>(short(index.x()),short(index.y()),short(index.z())));
+            setRegions(atlas_roa,roa_id,"track tolerance region");
         }
         return true;
     }
