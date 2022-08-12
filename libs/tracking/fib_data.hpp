@@ -98,10 +98,8 @@ public:
             float max_value = cull_cos_angle;
             unsigned char fib_order = 0;
             unsigned char reverse = 0;
-            for (unsigned char index = 0;index < fib_num;++index)
+            for (unsigned char index = 0;index < fib_num && fa[index][space_index] > threshold;++index)
             {
-                if (fa[index][space_index] <= threshold)
-                    continue;
                 if (!dt_fa.empty() && dt_fa[index][space_index] <= dt_threshold) // for differential tractography
                     continue;
                 float value = cos_angle(ref_dir,space_index,index);
