@@ -37,18 +37,17 @@ bool group_connectometry_analysis::load_database(const char* database_name)
 
 int group_connectometry_analysis::run_track(std::shared_ptr<tracking_data> fib,
                                             std::vector<std::vector<float> >& tracks,
-                                            int seed_count,
+                                            unsigned int seed_count,
+                                            unsigned int random_seed,
                                             unsigned int thread_count)
 {
-    ThreadData tracking_thread(handle);
+    ThreadData tracking_thread(handle,random_seed);
     tracking_thread.param.threshold = tracking_threshold;
     tracking_thread.param.cull_cos_angle = 1.0f;
     tracking_thread.param.step_size = handle->vs[0];
-    tracking_thread.param.smooth_fraction = 0;
     tracking_thread.param.min_length = float(length_threshold_voxels)*handle->vs[0];
     tracking_thread.param.max_length = 2.0f*float(std::max<unsigned int>(handle->dim[0],std::max<unsigned int>(handle->dim[1],handle->dim[2])))*handle->vs[0];
     tracking_thread.param.tracking_method = 0;// streamline fiber tracking
-    tracking_thread.param.initial_direction = 0;// main directions
     tracking_thread.param.stop_by_tract = 0;// stop by seed
     tracking_thread.param.termination_count = uint32_t(seed_count);
     tracking_thread.roi_mgr = roi_mgr;
@@ -92,15 +91,6 @@ void group_connectometry_analysis::run_permutation_multithread(unsigned int id,u
     connectometry_result data;
     std::shared_ptr<tracking_data> fib(new tracking_data);
     fib->read(handle);
-
-    if(id == 0)
-    {
-        stat_model info;
-        info.resample(*model.get(),false,false,0);
-        calculate_spm(*spm_map.get(),info);
-        preproces = 0;
-    }
-
     bool null = true;
     auto total_track = [&](void){return neg_corr_track->get_visible_track_count()+
                                         pos_corr_track->get_visible_track_count();};
@@ -114,7 +104,7 @@ void group_connectometry_analysis::run_permutation_multithread(unsigned int id,u
         calculate_spm(data,info);
         fib->fa = data.neg_corr_ptr;
 
-        run_track(fib,neg_tracks,seed_count);
+        run_track(fib,neg_tracks,seed_count,i);
         cal_hist(neg_tracks,(null) ? subject_neg_corr_null : subject_neg_corr);
 
 
@@ -122,7 +112,7 @@ void group_connectometry_analysis::run_permutation_multithread(unsigned int id,u
         calculate_spm(data,info);
         fib->fa = data.pos_corr_ptr;
 
-        run_track(fib,pos_tracks,seed_count);
+        run_track(fib,pos_tracks,seed_count,i);
         cal_hist(pos_tracks,(null) ? subject_pos_corr_null : subject_pos_corr);
 
         {
@@ -143,38 +133,8 @@ void group_connectometry_analysis::run_permutation_multithread(unsigned int id,u
         {
             ++preproces;
             i += thread_count;
-            if(id == 0)
-            {
-                if(preproces > 100 && total_track() < 100 &&
-                   (seed_count < 640000))
-                {
-                    show_progress() << "total track=" << total_track() << " analysis restarted with higher seed count..." << std::endl;
-                    if(terminated)
-                        return;
-                    // stop other threads
-                    terminated = true;
-                    wait(1); // current thread occupies 0, wait from 1
-                    terminated = false;
-                    // clear all records
-                    neg_corr_track->clear();
-                    pos_corr_track->clear();
-                    std::fill(subject_neg_corr_null.begin(),subject_neg_corr_null.end(),0);
-                    std::fill(subject_pos_corr_null.begin(),subject_pos_corr_null.end(),0);
-                    std::fill(subject_neg_corr.begin(),subject_neg_corr.end(),0);
-                    std::fill(subject_pos_corr.begin(),subject_pos_corr.end(),0);
-                    // adjust parameters
-                    seed_count*= 2;
-                    show_progress() << "now running seed count=" << seed_count << std::endl;
-                    threads.resize(1);
-                    for(unsigned int index = 1;index < thread_count;++index)
-                        threads.push_back(std::thread(
-                            [this,index,thread_count,permutation_count](){run_permutation_multithread(index,thread_count,permutation_count);}));
-
-                    preproces = 0;
-                    i = 0;
-                }
+            if(id == 0)    
                 prog = uint32_t(i*95/permutation_count);
-            }
         }
         null = !null;
     }
@@ -440,7 +400,30 @@ void group_connectometry_analysis::run_permutation(unsigned int thread_count,uns
     terminated = false;
     prog = 0;
     // need to be initialized
-    seed_count = 10000;
+
+    // preliminary run
+    {
+        std::shared_ptr<tracking_data> fib(new tracking_data);
+        fib->read(handle);
+        stat_model info;
+        info.resample(*model.get(),false,false,0);
+        calculate_spm(*spm_map.get(),info);
+        preproces = 0;
+        seed_count = 1000;
+        show_progress() << "preliminary run to determine seed count" << std::endl;
+        while(seed_count < 128000)
+        {
+            std::vector<std::vector<float> > tracks;
+            fib->fa = spm_map->neg_corr_ptr;
+            run_track(fib,tracks,seed_count,0,std::thread::hardware_concurrency());
+            fib->fa = spm_map->pos_corr_ptr;
+            run_track(fib,tracks,seed_count,0,std::thread::hardware_concurrency());
+            if(tracks.size() > 10)
+                break;
+            seed_count *= 1.5f;
+        }
+        show_progress() << "seed count: " << seed_count << std::endl;
+    }
 
     for(unsigned int index = 0;index < thread_count;++index)
         threads.push_back(std::thread([this,index,thread_count,permutation_count](){run_permutation_multithread(index,thread_count,permutation_count);}));

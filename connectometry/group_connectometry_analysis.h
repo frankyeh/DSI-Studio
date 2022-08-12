@@ -36,7 +36,7 @@ public:
     }
 private: // single subject analysis result
     int run_track(std::shared_ptr<tracking_data> fib,std::vector<std::vector<float> >& track,
-                  int seed_count,unsigned int thread_count = 1);
+                  unsigned int seed_count,unsigned int random_seed,unsigned int thread_count = 1);
 public:// for FDR analysis
     std::vector<std::thread> threads;
     std::vector<unsigned int> subject_pos_corr_null;
