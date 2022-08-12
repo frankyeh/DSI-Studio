@@ -404,7 +404,7 @@ void group_connectometry::on_run_clicked()
         else
             vbc->fdr_threshold = 0.0f;
 
-        vbc->tracking_threshold = float(ui->threshold->value());
+        vbc->t_threshold = float(ui->threshold->value());
         vbc->output_file_name = ui->output_name->text().toStdString();
     }
 
