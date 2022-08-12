@@ -675,7 +675,6 @@ int trk(program_option& po,std::shared_ptr<fib_data> handle)
         tracking_thread.param.max_length = std::max<float>(tracking_thread.param.min_length,po.get("max_length",300.0f));
 
         tracking_thread.param.tracking_method = uint8_t(po.get("method",int(0)));
-        tracking_thread.param.initial_direction  = uint8_t(po.get("initial_dir",int(0)));
         tracking_thread.param.check_ending = uint8_t(po.get("check_ending",int(0))) && !(po.has("dt_threshold_index"));
         tracking_thread.param.tip_iteration = uint8_t(po.get("tip_iteration",
                                                   (po.has("track_id") | po.has("dt_threshold_index") ) ? 16 : 0));
