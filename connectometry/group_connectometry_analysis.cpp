@@ -42,7 +42,8 @@ int group_connectometry_analysis::run_track(std::shared_ptr<tracking_data> fib,
                                             unsigned int thread_count)
 {
     ThreadData tracking_thread(handle,random_seed);
-    tracking_thread.param.threshold = tracking_threshold;
+    tracking_thread.param.threshold = fiber_threshold;
+    tracking_thread.param.dt_threshold = t_threshold;
     tracking_thread.param.cull_cos_angle = 1.0f;
     tracking_thread.param.step_size = handle->vs[0];
     tracking_thread.param.min_length = float(length_threshold_voxels)*handle->vs[0];
@@ -102,7 +103,7 @@ void group_connectometry_analysis::run_permutation_multithread(unsigned int id,u
 
         info.resample(*model.get(),null,true,i);
         calculate_spm(data,info);
-        fib->fa = data.neg_corr_ptr;
+        fib->dt_fa = data.neg_corr_ptr;
 
         run_track(fib,neg_tracks,seed_count,i);
         cal_hist(neg_tracks,(null) ? subject_neg_corr_null : subject_neg_corr);
@@ -110,7 +111,7 @@ void group_connectometry_analysis::run_permutation_multithread(unsigned int id,u
 
         info.resample(*model.get(),null,true,i);
         calculate_spm(data,info);
-        fib->fa = data.pos_corr_ptr;
+        fib->dt_fa = data.pos_corr_ptr;
 
         run_track(fib,pos_tracks,seed_count,i);
         cal_hist(pos_tracks,(null) ? subject_pos_corr_null : subject_pos_corr);
@@ -291,12 +292,12 @@ std::string group_connectometry_analysis::get_file_post_fix(void)
     {
         postfix += foi_str;
         postfix += ".t";
-        postfix += std::to_string((int)tracking_threshold);
+        postfix += std::to_string((int)(t_threshold*10));
     }
     if(model->type == 3) // longitudinal change
     {
         postfix += ".sd";
-        postfix += std::to_string((int)tracking_threshold);
+        postfix += std::to_string((int)(t_threshold*10));
     }
 
     if(fdr_threshold == 0.0f)
@@ -353,7 +354,7 @@ void group_connectometry_analysis::run_permutation(unsigned int thread_count,uns
         out << " A total of " << model->subject_index.size() << " subjects were included in the analysis.";
 
         // report other parameters
-        out << " A T-score threshold of " << tracking_threshold;
+        out << " A T-score threshold of " << t_threshold;
         out << " was assigned and tracked using a deterministic fiber tracking algorithm (Yeh et al. PLoS ONE 8(11): e80713, 2013) to obtain correlational tractography.";
 
         if(!roi_mgr->report.empty())
@@ -414,9 +415,9 @@ void group_connectometry_analysis::run_permutation(unsigned int thread_count,uns
         while(seed_count < 128000)
         {
             std::vector<std::vector<float> > tracks;
-            fib->fa = spm_map->neg_corr_ptr;
+            fib->dt_fa = spm_map->neg_corr_ptr;
             run_track(fib,tracks,seed_count,0,std::thread::hardware_concurrency());
-            fib->fa = spm_map->pos_corr_ptr;
+            fib->dt_fa = spm_map->pos_corr_ptr;
             run_track(fib,tracks,seed_count,0,std::thread::hardware_concurrency());
             if(tracks.size() > 10)
                 break;
