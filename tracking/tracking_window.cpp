@@ -967,7 +967,6 @@ void tracking_window::set_tracking_param(ThreadData& tracking_thread)
     tracking_thread.param.max_length = std::max<float>(tracking_thread.param.min_length,renderWidget->getData("max_length").toDouble());
 
     tracking_thread.param.tracking_method = renderWidget->getData("tracking_method").toInt();
-    tracking_thread.param.initial_direction = renderWidget->getData("initial_direction").toInt();
     tracking_thread.param.stop_by_tract = renderWidget->getData("tracking_plan").toInt();
     tracking_thread.param.check_ending = renderWidget->getData("check_ending").toInt();
     tracking_thread.param.termination_count = renderWidget->getData("track_count").toInt();
@@ -2544,7 +2543,6 @@ void tracking_window::on_actionLoad_Parameter_ID_triggered()
     set_data("max_length",float(param.max_length));
 
     set_data("tracking_method",int(param.tracking_method));
-    set_data("initial_direction",int(param.initial_direction));
     set_data("tracking_plan",int(param.stop_by_tract));
     set_data("check_ending",int(param.check_ending));
     set_data("track_count",int(param.termination_count));
