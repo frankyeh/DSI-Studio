@@ -45,8 +45,6 @@ void ThreadData::run_thread(unsigned int thread_id)
               !(param.max_seed_count > 0 && seed_count[thread_id] >= param.max_seed_count))
         {
             ++seed_count[thread_id];
-            tipl::vector<3,float> pos;
-            uint32_t seed_id;
             {
                 // this ensure consistency
                 std::lock_guard<std::mutex> lock(lock_seed_function);
@@ -71,17 +69,17 @@ void ThreadData::run_thread(unsigned int thread_id)
                     method->current_min_steps3 = 3*uint32_t(std::round(param.min_length/step_size_in_mm));
                 }
 
-                seed_id = std::min<uint32_t>(uint32_t(roi_mgr->seeds.size()-1),uint32_t(rand_gen(seed)*float(roi_mgr->seeds.size())));
-                pos = roi_mgr->seeds[seed_id];
+                uint32_t seed_index = std::min<uint32_t>(uint32_t(roi_mgr->seeds.size()-1),uint32_t(rand_gen(seed)*float(roi_mgr->seeds.size())));
+                auto pos = roi_mgr->seeds[seed_index];
                 pos[0] += subvoxel_gen(seed);
                 pos[1] += subvoxel_gen(seed);
                 pos[2] += subvoxel_gen(seed);
-                if(roi_mgr->need_trans[roi_mgr->seed_space[seed_id]])
-                    pos.to(roi_mgr->to_diffusion_space[roi_mgr->seed_space[seed_id]]);
-
+                if(roi_mgr->need_trans[roi_mgr->seed_space[seed_index]])
+                    pos.to(roi_mgr->to_diffusion_space[roi_mgr->seed_space[seed_index]]);
+                method->position = pos;
             }
 
-            if(!method->init(param.initial_direction,pos,seed))
+            if(!method->initialize_direction())
                 continue;
 
             unsigned int point_count;
@@ -211,10 +209,6 @@ void ThreadData::run(std::shared_ptr<tracking_data> trk_,unsigned int thread_cou
     }
     report << roi_mgr->report;
     report << param.get_report();
-    // to ensure consistency, seed initialization with all orientation only fits with single thread
-    if(param.initial_direction == 2)
-        thread_count = 1;
-
     end_thread();
 
 

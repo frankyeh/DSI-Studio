@@ -27,7 +27,7 @@ struct TrackingParam
     unsigned char reserved5 = 0; // interpolation_strategy DEPRECATED
 
     unsigned char tracking_method = 0;
-    unsigned char initial_direction = 0;
+    unsigned char reserved7 = 0; // initial_direction DEPRECATED
     unsigned char reserved6 = 0; // random_seed DEPRECATED
     unsigned char tip_iteration = 0;
 
@@ -167,7 +167,7 @@ private:
 public:
     bool get_dir(const tipl::vector<3,float>& position,
                  const tipl::vector<3,float>& ref_dir,
-                 tipl::vector<3,float>& result)
+                 tipl::vector<3,float>& result) const
     {
         return trk->get_dir_under_termination_criteria(position,ref_dir,result,
                     current_fa_threshold,current_tracking_angle,current_dt_threshold);
@@ -181,15 +181,7 @@ public:
 	{
 		return (buffer_back_pos-buffer_front_pos)/3;
 	}
-    bool get_starting_dir(tipl::vector<3,float> pos,float fa_threshold,unsigned char fib_order,tipl::vector<3>& dir) const
-    {
-        pos.round();
-        size_t space_index = tipl::pixel_index<3>(pos[0],pos[1],pos[2],trk->dim).index();
-        if(trk->fa[fib_order][space_index] < fa_threshold)
-            return false;
-        dir = trk->get_fib(space_index,fib_order);
-        return true;
-    }
+
 public:
     TrackingMethod(std::shared_ptr<tracking_data> trk_,
                    std::shared_ptr<RoiMgr> roi_mgr_):
@@ -202,7 +194,14 @@ private:
                get_buffer_size() < current_max_steps3;
     }
 public:
-
+    bool initialize_direction(void)
+    {
+        auto round_pos = position;
+        round_pos.round();
+        if(!trk->dim.is_valid(round_pos))
+            return false;
+        return get_dir(position,trk->get_fib(tipl::pixel_index<3>(round_pos[0],round_pos[1],round_pos[2],trk->dim).index(),0),dir);
+    }
     template<typename tracking_algo>
     bool start_tracking(tracking_algo track)
     {
@@ -252,45 +251,6 @@ public:
 
 
 	}
-        bool init(unsigned char initial_direction,
-                  const tipl::vector<3,float>& position_,
-                  std::mt19937& seed)
-        {
-            position = position_;
-            if (!trk->dim.is_valid(position))
-                return false;
-            switch (initial_direction)
-            {
-            case 0:// main direction
-                return get_starting_dir(position,current_fa_threshold,0,dir);
-            case 1:// random direction
-            {
-                std::uniform_real_distribution<float> gen(0,1);
-                for (unsigned int index = 0;index < 10;++index)
-                {
-                    float txy = gen(seed);
-                    float tz = gen(seed)/2.0f;
-                    float x = std::sin(txy)*std::sin(tz);
-                    float y = std::cos(txy)*std::sin(tz);
-                    float z = std::cos(tz);
-                    if (get_dir(position,tipl::vector<3,float>(x,y,z),dir))
-                        return true;
-                }
-                return false;
-            }
-            case 2:// all direction
-                if (init_fib_index >= trk->fib_num ||
-                    !get_starting_dir(position,current_fa_threshold,init_fib_index,dir))
-                {
-                    init_fib_index = 0;
-                    return false;
-                }
-                ++init_fib_index;
-                return true;
-            }
-            return false;
-        }
-
         const float* tracking(unsigned char tracking_method,unsigned int& point_count)
         {
             point_count = 0;
