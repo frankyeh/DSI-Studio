@@ -31,7 +31,6 @@ Tracking_dT/Threshold/dt_threshold/float:0.0:1.0:0.05:2/0.2/0.05 means tracking 
 Tracking/Advanced Options/Tracking_adv
 Tracking_adv/Tracking Algorithm/tracking_method/Stremline(Euler):RK4:Voxel tracking/0
 Tracking_adv/Smoothing (1=random)/smoothing/float:-1.5:1:0.1:2/0
-Tracking_adv/Seed Orientation/initial_direction/Primary:Random:All/0
 Tracking_adv/Check Ending/check_ending/Off:On/0
 Tracking_adv/Default Otsu/otsu_threshold/float:0.1:1:0.1:2/0.6
 Tracking_adv/Output Format/track_format/tt.gz:trk.gz:txt/0
