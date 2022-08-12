@@ -35,7 +35,7 @@ int rec(program_option& po)
         src.voxel.output_odf = po.get("record_odf",int(0));
         src.voxel.dti_no_high_b = po.get("dti_no_high_b",src.is_human_data());
         src.voxel.check_btable = po.get("check_btable",0);
-        src.voxel.other_output = po.get("other_output","fa,ad,rd,md,nqa,iso,rdi,nrdi");
+        src.voxel.other_output = po.get("other_output","fa,ad,rd,md,iso,rdi,nrdi");
         src.voxel.r2_weighted = po.get("r2_weighted",int(0));
         src.voxel.thread_count = po.get("thread_count",uint32_t(std::thread::hardware_concurrency()));
         src.voxel.qsdr_reso = po.get("qsdr_reso",src.voxel.vs[0]);
