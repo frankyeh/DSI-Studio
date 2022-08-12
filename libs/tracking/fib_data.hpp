@@ -78,22 +78,69 @@ public:
 private:
     const tracking_data& operator=(const tracking_data& rhs);
 public:
-    bool get_dir(size_t space_index,
-                 const tipl::vector<3,float>& ref_dir, // reference direction, should be unit vector
-                 unsigned char& fib_order_,
-                 unsigned char& reverse_,
-                 float threshold,
-                 float cull_cos_angle,
-                 float dt_threshold) const;
     void read(std::shared_ptr<fib_data> fib);
-    bool get_dir(size_t space_index,
-                 const tipl::vector<3,float>& dir, // reference direction, should be unit vector
+    inline bool get_dir_under_termination_criteria(size_t space_index,
+                 const tipl::vector<3,float>& ref_dir, // reference direction, should be unit vector
                  tipl::vector<3,float>& main_dir,
                  float threshold,
                  float cull_cos_angle,
-                 float dt_threshold) const;
-    const float* get_fib(size_t space_index,unsigned char fib_order) const;
-    float cos_angle(const tipl::vector<3>& cur_dir,size_t space_index,unsigned char fib_order) const;
+                 float dt_threshold) const
+    {
+        if(space_index >= dim.size())
+            return false;
+        float max_value = cull_cos_angle;
+        unsigned char fib_order = 0;
+        unsigned char reverse = 0;
+        for (unsigned char index = 0;index < fib_num;++index)
+        {
+            if (fa[index][space_index] <= threshold)
+                continue;
+            if (!dt_fa.empty() && dt_fa[index][space_index] <= dt_threshold) // for differential tractography
+                continue;
+            float value = cos_angle(ref_dir,space_index,index);
+            if (-value > max_value)
+            {
+                max_value = -value;
+                fib_order = index;
+                reverse = 1;
+            }
+            else
+                if (value > max_value)
+                {
+                    max_value = value;
+                    fib_order = index;
+                    reverse = 0;
+                }
+        }
+        if (max_value <= cull_cos_angle)
+            return false;
+        if(!dir.empty())
+            main_dir = dir[fib_order] + space_index + (space_index << 1);
+        else
+            main_dir = odf_table[findex[fib_order][space_index]];
+        if(reverse)
+        {
+            main_dir[0] = -main_dir[0];
+            main_dir[1] = -main_dir[1];
+            main_dir[2] = -main_dir[2];
+        }
+        return true;
+    }
+    inline const float* get_fib(size_t space_index,unsigned char fib_order) const
+    {
+        if(!dir.empty())
+            return dir[fib_order] + space_index + (space_index << 1);
+        return &odf_table[findex[fib_order][space_index]][0];
+    }
+    inline float cos_angle(const tipl::vector<3>& cur_dir,size_t space_index,unsigned char fib_order) const
+    {
+        if(!dir.empty())
+        {
+            const float* dir_at = dir[fib_order] + space_index + (space_index << 1);
+            return cur_dir[0]*dir_at[0] + cur_dir[1]*dir_at[1] + cur_dir[2]*dir_at[2];
+        }
+        return cur_dir*odf_table[findex[fib_order][space_index]];
+    }
     bool is_white_matter(const tipl::vector<3,float>& pos,float t) const;
 
 };

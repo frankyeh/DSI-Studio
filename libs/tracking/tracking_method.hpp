@@ -177,7 +177,8 @@ public:
         for (unsigned int index = 0;index < 8;++index)
         {
             size_t odf_space_index = tri_interpo.dindex[index];
-            if (!trk->get_dir(odf_space_index,ref_dir,main_dir,current_fa_threshold,current_tracking_angle,current_dt_threshold))
+            if (!trk->get_dir_under_termination_criteria(odf_space_index,ref_dir,main_dir,
+                                                         current_fa_threshold,current_tracking_angle,current_dt_threshold))
                 continue;
             float w = tri_interpo.ratio[index];
             main_dir *= w;
