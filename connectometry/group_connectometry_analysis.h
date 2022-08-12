@@ -59,7 +59,7 @@ public:
     std::shared_ptr<connectometry_result> spm_map;
 public:// Multiple regression
     std::shared_ptr<stat_model> model;
-    float tracking_threshold;
+    float t_threshold;
     unsigned int length_threshold_voxels;
     float fdr_threshold;
     unsigned int tip;
