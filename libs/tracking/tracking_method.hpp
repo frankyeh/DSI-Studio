@@ -32,8 +32,7 @@ struct TrackingParam
     unsigned char tip_iteration = 0;
 
     float dt_threshold = 0;
-    unsigned char reserved1 = 0;
-    unsigned char reserved2 = 0;
+    unsigned short random_seed = 0; // used in connectometry to generate different seed sequence for each permutation
     unsigned char reserved3 = 0;
     unsigned char reserved4 = 0;
 
