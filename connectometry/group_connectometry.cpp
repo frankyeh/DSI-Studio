@@ -231,7 +231,7 @@ void group_connectometry::on_open_mr_files_clicked()
                 this,
                 "Open demographics",
                 work_dir,
-                "Text or CSV file (*.txt *.csv);;All files (*)");
+                "Comma- or Tab-Separated Values(*.csv *.tsv);;Text File(*.txt);;All files (*)");
     if(filename.isEmpty())
         return;
     if(!db.parse_demo(filename.toStdString()))
