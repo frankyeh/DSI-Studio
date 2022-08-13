@@ -41,7 +41,8 @@ int group_connectometry_analysis::run_track(std::shared_ptr<tracking_data> fib,
                                             unsigned int random_seed,
                                             unsigned int thread_count)
 {
-    ThreadData tracking_thread(handle,random_seed);
+    ThreadData tracking_thread(handle);
+    tracking_thread.param.random_seed = random_seed;
     tracking_thread.param.threshold = fiber_threshold;
     tracking_thread.param.dt_threshold = t_threshold;
     tracking_thread.param.cull_cos_angle = 1.0f;
