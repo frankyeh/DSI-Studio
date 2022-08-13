@@ -74,21 +74,61 @@ public:
     }
 };
 
+
+__INLINE__ float get_distance_one_way(const float* trk1,unsigned int length1,
+                              const float* trk2,unsigned int length2,
+                              float max_dis,
+                              float max_dis_limit)
+{
+    struct update_min_dis_imp{
+        __INLINE__ void operator()(float& min_dis,const float* v1,const float* v2)
+        {
+            float d1 = std::fabs(v1[0]-v2[0]);
+            if(d1 > min_dis)
+                return;
+            d1 += std::fabs(v1[1]-v2[1]);
+            if(d1 > min_dis)
+                return;
+            d1 += std::fabs(v1[2]-v2[2]);
+            if(d1 < min_dis)
+                min_dis = d1;
+        }
+    }update_min_dis;
+    auto trk1_end = trk1+length1;
+    auto trk2_end = trk2+length2;
+
+    for(auto trk2_n = trk2;trk2_n < trk2_end;trk2_n += 3)
+    {
+        float min_dis = max_dis_limit;
+        for(auto trk1_n = trk1;trk1_n < trk1_end && min_dis > max_dis;trk1_n += 3)
+            update_min_dis(min_dis,trk2_n,trk1_n);
+        if(min_dis >= max_dis_limit)
+            return max_dis_limit;
+        if(min_dis > max_dis)
+            max_dis = min_dis;
+    }
+    return max_dis;
+}
+
+__INLINE__ float get_distance(const float* trk1,unsigned int length1,
+                              const float* trk2,unsigned int length2,
+                              float max_dis_limit)
+{
+    float max_dis = 0;
+    max_dis = get_distance_one_way(trk1,length1,trk2,length2,max_dis,max_dis_limit);
+    if(max_dis == max_dis_limit)
+        return max_dis_limit;
+    return get_distance_one_way(trk2,length2,trk1,length1,max_dis,max_dis_limit);
+}
+
 template<typename T,typename U>
 __DEVICE_HOST__ unsigned int find_nearest(const float* trk,unsigned int length,
                           const T& tract_data,// = track_atlas->get_tracts();
                           const U& tract_cluster,// = track_atlas->get_cluster_info();
                           float tolerance_dis_in_subject_voxels)
 {
-    struct norm1_imp{
-        inline float operator()(const float* v1,const float* v2)
-        {
-            return std::fabs(v1[0]-v2[0])+std::fabs(v1[1]-v2[1])+std::fabs(v1[2]-v2[2]);
-        }
-    } norm1;
-
     struct min_min_imp{
-        inline float operator()(float min_dis,const float* v1,const float* v2)
+        __INLINE__ float operator()(float min_dis,const float* v1,const float* v2)
         {
             float d1 = std::fabs(v1[0]-v2[0]);
             if(d1 > min_dis)                    return min_dis;
@@ -103,53 +143,18 @@ __DEVICE_HOST__ unsigned int find_nearest(const float* trk,unsigned int length,
         return 9999;
     float best_distance = tolerance_dis_in_subject_voxels;
     size_t best_index = tract_data.size();
+    for(size_t i = 0;i < tract_data.size();++i)
     {
-        for(size_t i = 0;i < tract_data.size();++i)
-        {
-            if(min_min(best_distance,&tract_data[i][0],trk) >= best_distance ||
-                min_min(best_distance,&tract_data[i][tract_data[i].size()-3],trk+length-3) >= best_distance ||
-                min_min(best_distance,&tract_data[i][tract_data[i].size()/3/2*3],trk+(length/3/2*3)) >= best_distance)
-                continue;
+        if(min_min(best_distance,&tract_data[i][0],trk) >= best_distance ||
+            min_min(best_distance,&tract_data[i][tract_data[i].size()-3],trk+length-3) >= best_distance ||
+            min_min(best_distance,&tract_data[i][tract_data[i].size()/3/2*3],trk+(length/3/2*3)) >= best_distance)
+            continue;
 
-            bool skip = false;
-            float max_dis = 0.0f;
-            for(size_t m = 0;m < tract_data[i].size();m += 3)
-            {
-                const float* tim = &tract_data[i][m];
-                const float* trk_length = trk+length;
-                float min_dis = norm1(tim,trk);
-                for(const float* trk_n = trk;trk_n < trk_length && min_dis > max_dis;trk_n += 3)
-                    min_dis = min_min(min_dis,tim,trk_n);
-                if(min_dis > max_dis)
-                    max_dis = max_dis;
-                if(max_dis > best_distance)
-                {
-                    skip = true;
-                    break;
-                }
-            }
-            if(!skip)
-            for(size_t n = 0;n < length;n += 3)
-            {
-                const float* ti0 = &tract_data[i][0];
-                const float* ti_end = ti0+tract_data[i].size();
-                const float* trk_n = trk+n;
-                float min_dis = norm1(ti0,trk_n);
-                for(const float* tim = ti0;tim < ti_end && min_dis > max_dis;tim += 3)
-                    min_dis = min_min(min_dis,tim,trk_n);
-                if(min_dis > max_dis)
-                    max_dis = max_dis;
-                if(max_dis > best_distance)
-                {
-                    skip = true;
-                    break;
-                }
-            }
-            if(!skip)
-            {
-                best_distance = max_dis;
-                best_index = i;
-            }
+        float min_max_dis = get_distance(trk,length,&tract_data[i][0],tract_data[i].size(),best_distance);
+        if(min_max_dis < best_distance)
+        {
+            best_distance = min_max_dis;
+            best_index = i;
         }
     }
     if(best_index == tract_data.size())
@@ -233,6 +238,7 @@ public:
                                 tolerance_dis_in_subject_voxels) == track_id;
         return true;
     }
+public:
     std::vector<tipl::vector<3,short> > atlas_seed,atlas_roa;
     bool setAtlas(unsigned int track_id_,float tolerance_dis_in_icbm152_mm)
     {
@@ -326,6 +332,8 @@ public:
                     atlas_roa.push_back(tipl::vector<3,short>(short(index.x()),short(index.y()),short(index.z())));
             setRegions(atlas_roa,roa_id,"track tolerance region");
         }
+
+
         return true;
     }
 
