@@ -110,7 +110,7 @@ __INLINE__ float get_distance(const float* trk1,unsigned int length1,
 {
     float max_dis = 0;
     max_dis = get_distance_one_way(trk1,length1,trk2,length2,max_dis,max_dis_limit);
-    if(max_dis == max_dis_limit)
+    if(max_dis >= max_dis_limit)
         return max_dis_limit;
     return get_distance_one_way(trk2,length2,trk1,length1,max_dis,max_dis_limit);
 }
