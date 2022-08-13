@@ -236,7 +236,8 @@ void ThreadData::run(std::shared_ptr<tracking_data> trk_,unsigned int thread_cou
 
 
     joinning = false;
-    seed = std::mt19937(0);
+
+    seed = std::mt19937(param.random_seed);  // always 0, except in connectometry for changing seed sequence
 
     begin_time = std::chrono::high_resolution_clock::now();
 
