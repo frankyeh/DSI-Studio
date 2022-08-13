@@ -2783,6 +2783,7 @@ bool GLWidget::command(QString cmd,QString param,QString param2)
             {
                 tipl::matrix<4,4,float> trans;
                 nifti.toLPS(crop_image);
+                tipl::normalize(crop_image);
                 nifti.get_image_transformation(trans);
                 if(cur_tracking_window.handle->mni2sub(crop_image,trans))
                     is_wm = true;
