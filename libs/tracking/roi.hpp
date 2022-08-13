@@ -83,15 +83,9 @@ __INLINE__ float get_distance_one_way(const float* trk1,unsigned int length1,
     struct update_min_dis_imp{
         __INLINE__ void operator()(float& min_dis,const float* v1,const float* v2)
         {
-            float d1 = std::fabs(v1[0]-v2[0]);
-            if(d1 > min_dis)
-                return;
-            d1 += std::fabs(v1[1]-v2[1]);
-            if(d1 > min_dis)
-                return;
-            d1 += std::fabs(v1[2]-v2[2]);
-            if(d1 < min_dis)
-                min_dis = d1;
+            float d1 = std::fabs(v1[0]-v2[0]);if(d1 > min_dis)return;
+            d1 += std::fabs(v1[1]-v2[1]);if(d1 > min_dis)return;
+            d1 += std::fabs(v1[2]-v2[2]);if(d1 < min_dis)min_dis = d1;
         }
     }update_min_dis;
     auto trk1_end = trk1+length1;
