@@ -115,11 +115,9 @@ __INLINE__ float get_distance(const float* trk1,unsigned int length1,
     return get_distance_one_way(trk2,length2,trk1,length1,max_dis,max_dis_limit);
 }
 
-template<typename T,typename U>
-__DEVICE_HOST__ unsigned int find_nearest(const float* trk,unsigned int length,
-                          const T& tract_data,// = track_atlas->get_tracts();
-                          const U& tract_cluster,// = track_atlas->get_cluster_info();
-                          float tolerance_dis_in_subject_voxels)
+__INLINE__ bool distance_over_limit(const float* trk1,unsigned int length1,
+                              const float* trk2,unsigned int length2,
+                              float max_dis_limit)
 {
     struct min_min_imp{
         __INLINE__ float operator()(float min_dis,const float* v1,const float* v2)
@@ -133,27 +131,36 @@ __DEVICE_HOST__ unsigned int find_nearest(const float* trk,unsigned int length,
             return d1;
         }
     }min_min;
+
+    return  min_min(max_dis_limit,trk1,trk2) >= max_dis_limit ||
+            min_min(max_dis_limit,trk1+length1-3,trk2+length2-3) >= max_dis_limit ||
+            min_min(max_dis_limit,trk1+length1/3/2*3,trk2+length2/3/2*3) >= max_dis_limit;
+}
+
+template<typename T,typename U>
+__DEVICE_HOST__ unsigned int find_nearest(const float* trk,unsigned int length,
+                          const T& tract_data,// = track_atlas->get_tracts();
+                          const U& tract_cluster,// = track_atlas->get_cluster_info();
+                          float tolerance_dis_in_subject_voxels)
+{
     if(length <= 6)
         return 9999;
     float best_distance = tolerance_dis_in_subject_voxels;
-    size_t best_index = tract_data.size();
+    unsigned int best_cluster = 9999;
     for(size_t i = 0;i < tract_data.size();++i)
     {
-        if(min_min(best_distance,&tract_data[i][0],trk) >= best_distance ||
-            min_min(best_distance,&tract_data[i][tract_data[i].size()-3],trk+length-3) >= best_distance ||
-            min_min(best_distance,&tract_data[i][tract_data[i].size()/3/2*3],trk+(length/3/2*3)) >= best_distance)
+        if(tract_data[i].size() <= 6)
             continue;
-
-        float min_max_dis = get_distance(trk,length,&tract_data[i][0],tract_data[i].size(),best_distance);
-        if(min_max_dis < best_distance)
+        if(distance_over_limit(&tract_data[i][0],tract_data[i].size(),trk,length,best_distance))
+            continue;
+        float min_dis = get_distance(&tract_data[i][0],tract_data[i].size(),trk,length,tolerance_dis_in_subject_voxels);
+        if(min_dis < best_distance)
         {
-            best_distance = min_max_dis;
-            best_index = i;
+            best_distance = min_dis;
+            best_cluster = tract_cluster[i];
         }
     }
-    if(best_index == tract_data.size())
-        return 9999;
-    return tract_cluster[best_index];
+    return best_cluster;
 }
 
 class RoiMgr {
@@ -226,14 +233,18 @@ public:
         for(unsigned int index = 0; index < inclusive.size(); ++index)
             if(!inclusive[index]->included(track,buffer_size))
                 return false;
-        if(tolerance_dis_in_subject_voxels != 0.0f)
+        if(!selected_atlas_tracts.empty())
             return find_nearest(track,buffer_size,
-                                handle->track_atlas->get_tracts(),handle->track_atlas->get_cluster_info(),
+                                selected_atlas_tracts,
+                                selected_atlas_cluster,
                                 tolerance_dis_in_subject_voxels) == track_id;
         return true;
     }
 public:
     std::vector<tipl::vector<3,short> > atlas_seed,atlas_roa;
+    std::vector<std::vector<float> > selected_atlas_tracts;
+    std::vector<unsigned int> selected_atlas_cluster;
+
     bool setAtlas(unsigned int track_id_,float tolerance_dis_in_icbm152_mm)
     {
         progress p("loading tractography atlas");
@@ -327,7 +338,35 @@ public:
             setRegions(atlas_roa,roa_id,"track tolerance region");
         }
 
-
+        {
+            std::vector<std::vector<std::vector<float> > > selected_atlas_tracts_threads(std::thread::hardware_concurrency());
+            std::vector<std::vector<unsigned int> > selected_atlas_cluster_threads(std::thread::hardware_concurrency());
+            const auto& atlas_tract = handle->track_atlas->get_tracts();
+            const auto& atlas_cluster = handle->track_atlas->get_cluster_info();
+            auto tolerance_dis_in_subject_voxels2 = tolerance_dis_in_subject_voxels*2;
+            tipl::par_for(atlas_tract.size(),[&](unsigned int i,unsigned int id)
+            {
+                bool selected = true;
+                if(atlas_cluster[i] != track_id)
+                    for(size_t j = 0;j < atlas_tract.size();++j)
+                        if(atlas_cluster[i] == track_id)
+                        {
+                            if(distance_over_limit(&atlas_tract[i][0],atlas_tract[i].size(),
+                                                   &atlas_tract[j][0],atlas_tract[j].size(),
+                                                   tolerance_dis_in_subject_voxels2))
+                                continue;
+                            selected = true;
+                            break;
+                        }
+                if(selected)
+                {
+                    selected_atlas_tracts_threads[id].push_back(atlas_tract[i]);
+                    selected_atlas_cluster_threads[id].push_back(atlas_cluster[i]);
+                }
+            });
+            tipl::aggregate_results(std::move(selected_atlas_tracts_threads),selected_atlas_tracts);
+            tipl::aggregate_results(std::move(selected_atlas_cluster_threads),selected_atlas_cluster);
+        }
         return true;
     }
 
