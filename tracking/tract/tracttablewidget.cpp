@@ -80,7 +80,7 @@ void TractTableWidget::draw_tracts(unsigned char dim,int pos,
 {
     std::vector<std::shared_ptr<TractModel> > selected_tracts;
     for(unsigned int index = 0;index < tract_models.size();++index)
-        if(item(int(index),0)->checkState() == Qt::Checked && thread_data[index]->is_ended())
+        if(item(int(index),0)->checkState() == Qt::Checked && !thread_data[index].get())
             selected_tracts.push_back(tract_models[index]);
     if(selected_tracts.empty())
         return;
