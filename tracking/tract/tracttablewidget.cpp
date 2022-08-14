@@ -160,7 +160,7 @@ void TractTableWidget::draw_tracts(unsigned char dim,int pos,
 }
 void TractTableWidget::addNewTracts(QString tract_name,bool checked)
 {
-    thread_data.push_back(std::make_shared<ThreadData>(cur_tracking_window.handle));
+    thread_data.push_back(nullptr);
     tract_models.push_back(std::make_shared<TractModel>(cur_tracking_window.handle));
     insertRow(tract_models.size()-1);
     QTableWidgetItem *item0 = new QTableWidgetItem(tract_name);
@@ -223,6 +223,7 @@ void TractTableWidget::start_tracking(void)
         else
             addNewTracts(cur_tracking_window.regionWidget->getROIname());
     }
+    thread_data.back() = std::make_shared<ThreadData>(cur_tracking_window.handle);
     cur_tracking_window.set_tracking_param(*thread_data.back());
     cur_tracking_window.regionWidget->setROIs(thread_data.back().get());
     thread_data.back()->run(cur_tracking_window.ui->thread_count->value(),false);
