@@ -45,7 +45,7 @@ std::string progress::get_status(void)
     {
         if(status_list[i].empty())
             continue;
-        if(i && result.back() != '\n')
+        if(i && (result.empty() || result.back() != '\n'))
             result += "\n";
         result += QStringList(status_list[i].c_str())[0].toStdString();
         if(i < at_list.size())
@@ -54,7 +54,7 @@ std::string progress::get_status(void)
             result += at_list[i];
         }
     }
-    if(result.back() == '\n')
+    if(!result.empty() && result.back() == '\n')
         result.pop_back();
     return result;
 }
