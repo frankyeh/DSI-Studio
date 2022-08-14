@@ -654,14 +654,14 @@ void slice_view_scene::paint_image(QImage& out,bool simple)
     float display_ratio = cur_tracking_window.get_scene_zoom(current_slice);
 
     if(cur_tracking_window["roi_layout"].toInt() == 0)// single slice
-        get_view_image(I,current_slice,cur_dim,display_ratio,simple);
+        get_view_image(I,current_slice,cur_dim,display_ratio,simple | cur_tracking_window.slice_need_update);
     else
     if(cur_tracking_window["roi_layout"].toInt() == 1)// 3 slices
     {
         QImage view1,view2,view3;
-        get_view_image(view1,current_slice,0,display_ratio,simple);
-        get_view_image(view2,current_slice,1,display_ratio,simple);
-        get_view_image(view3,current_slice,2,display_ratio,simple);
+        get_view_image(view1,current_slice,0,display_ratio,simple | cur_tracking_window.slice_need_update);
+        get_view_image(view2,current_slice,1,display_ratio,simple | cur_tracking_window.slice_need_update);
+        get_view_image(view3,current_slice,2,display_ratio,simple | cur_tracking_window.slice_need_update);
         I = QImage(QSize(view1.width()+view2.width(),view1.height()+view3.height()),QImage::Format_RGB32);
         view1_h = view1.height();
         view1_w = view1.width();
@@ -721,7 +721,7 @@ void slice_view_scene::paint_image(QImage& out,bool simple)
                     continue;
                 QImage view;
                 current_slice->slice_pos[cur_dim] = int(slice_pos);
-                get_view_image(view,current_slice,cur_dim,scale,simple);
+                get_view_image(view,current_slice,cur_dim,scale,simple | cur_tracking_window.slice_need_update);
                 if(z == skip_slices)
                     painter.fillRect(0,0,I.width(),I.height(),view.pixel(0,0));
                 int x = int(dim[dim_order[uint8_t(cur_dim)][0]]*((z-skip_slices)%mosaic_column_count));
