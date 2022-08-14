@@ -78,7 +78,10 @@ void TractTableWidget::check_check_status(int row, int col)
 void TractTableWidget::draw_tracts(unsigned char dim,int pos,
                                    QImage& scaled_image,float display_ratio)
 {
-    auto selected_tracts = get_checked_tracks();
+    std::vector<std::shared_ptr<TractModel> > selected_tracts;
+    for(unsigned int index = 0;index < tract_models.size();++index)
+        if(item(int(index),0)->checkState() == Qt::Checked && thread_data[index]->is_ended())
+            selected_tracts.push_back(tract_models[index]);
     if(selected_tracts.empty())
         return;
     uint32_t max_count = uint32_t(cur_tracking_window["roi_track_count"].toInt());
