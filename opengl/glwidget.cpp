@@ -813,8 +813,6 @@ void GLWidget::renderLR()
            check_change("tract_color_brightness",tract_color_brightness) ||
            check_change("tube_diameter",tube_diameter) ||
            check_change("tract_tube_detail",tract_tube_detail) ||
-           check_change("tract_variant_size",tract_variant_size) ||
-           check_change("tract_variant_color",tract_variant_color) ||
            check_change("tract_shader",tract_shader) ||     
            check_change("end_point_shift",end_point_shift))
             changed = true;
@@ -854,6 +852,7 @@ void GLWidget::renderLR()
 
         glPushMatrix();
         glMultMatrixf(transformation_matrix.begin());
+
 
         std::vector<tipl::vector<3,float> > points(4);
 
@@ -932,6 +931,7 @@ void GLWidget::renderLR()
                 keep_slice = false;
             }
         }
+
         glPopMatrix();
         glDisable(GL_BLEND);
         glDisable(GL_TEXTURE_2D);
@@ -1525,6 +1525,12 @@ void GLWidget::makeTracts(void)
     makeCurrent();
     glDeleteLists(tracts, 1);
     glNewList(tracts, GL_COMPILE);
+    auto trackWidget = cur_tracking_window.tractWidget;
+
+
+    trackWidget->update_rendering(tract_shader,get_param("tract_visible_tract"),tract_color_style);
+
+
     float alpha = (tract_alpha_style == 0)? tract_alpha/2.0f:tract_alpha;
     float tract_color_saturation_base = tract_color_brightness*(1.0f-tract_color_saturation);
     const float detail_option[] = {1.0f,0.5f,0.25f,0.0f,0.0f};
@@ -1533,105 +1539,9 @@ void GLWidget::makeTracts(void)
     bool show_end_points = tract_style >= 2;
     float tube_detail = tube_diameter*detail_option[tract_tube_detail]*4.0f;
     float tract_shaderf = 0.01f*float(tract_shader);
-    std::vector<float> mean_fa;
-    unsigned int mean_fa_index = 0;
+
     unsigned int track_num_index = cur_tracking_window.handle->get_name_index(cur_tracking_window.color_bar->get_tract_color_name().toStdString());
-    // show tract by index value
-    auto trackWidget = cur_tracking_window.tractWidget;
 
-    float skip_rate = 1.0;
-    {
-        unsigned int total_tracts = 0;
-        for (int i = 0;i < trackWidget->rowCount();++i)
-            if(trackWidget->item(i,0)->checkState() == Qt::Checked &&
-               trackWidget->tract_models[size_t(i)]->get_visible_track_count())
-                    total_tracts += trackWidget->tract_models[size_t(i)]->get_visible_track_count();
-        if(total_tracts != 0)
-            skip_rate = float(get_param("tract_visible_tract"))/float(total_tracts);
-    }
-
-
-    if (tract_color_style > 1)
-    {
-        if(tract_color_style == 3 || tract_color_style == 5)// mean value
-        {
-            trackWidget->for_each_track([&](std::shared_ptr<TractModel>& active_tract_model,unsigned int data_index)
-            {
-                unsigned int vertex_count = active_tract_model->get_tract_length(data_index)/3;
-                if (vertex_count <= 1)
-                    return;
-                std::vector<float> fa_values;
-                active_tract_model->get_tract_data(cur_tracking_window.handle,
-                                                   data_index,track_num_index,fa_values);
-                if(tract_color_style == 3)
-                {
-                    float sum = std::accumulate(fa_values.begin(),fa_values.end(),0.0f);
-                    sum /= (float)fa_values.size();
-                    mean_fa.push_back(sum);
-                }
-                if(tract_color_style == 5)
-                    mean_fa.push_back(tipl::max_value(fa_values));
-            });
-
-        }
-    }
-
-    tipl::shape<2> map_shape(64,64);
-    auto dim = cur_tracking_window.handle->dim;
-    tipl::image<2,float> max_z_map(map_shape), min_z_map(map_shape), max_x_map(map_shape),
-                         min_x_map(map_shape), min_y_map(map_shape), max_y_map(map_shape);
-
-    if(tract_shader)
-    {
-
-        std::fill(min_x_map.begin(),min_x_map.end(),cur_tracking_window.handle->dim.width());
-        std::fill(min_y_map.begin(),min_y_map.end(),cur_tracking_window.handle->dim.height());
-        std::fill(min_z_map.begin(),min_z_map.end(),cur_tracking_window.handle->dim.depth());
-        tipl::uniform_dist<float> uniform_gen(0.0f,1.0f);
-        trackWidget->for_each_track([&](std::shared_ptr<TractModel>& active_tract_model,unsigned int data_index)
-        {
-            if(skip_rate < 1.0f && uniform_gen() > skip_rate)
-                return;
-            unsigned int vertex_count =
-                    active_tract_model->get_tract_length(data_index)/3;
-            if (vertex_count <= 1)
-                return;
-            const float* data_iter = &*(active_tract_model->get_tract(data_index).begin());
-            for (unsigned int index = 0; index < vertex_count;data_iter += 3, ++index)
-            {
-                int x = (int(data_iter[0]) << 6)/int(dim[0]);
-                int y = (int(data_iter[1]) << 6)/int(dim[1]);
-                int z = (int(data_iter[2]) << 6)/int(dim[2]);
-                if(max_x_map.shape().is_valid(y,z))
-                {
-                    size_t pos = size_t(y + (z << 6));
-                    max_x_map[pos] = std::max<float>(max_x_map[pos],data_iter[0]);
-                    min_x_map[pos] = std::min<float>(min_x_map[pos],data_iter[0]);
-                }
-                if(max_y_map.shape().is_valid(x,z))
-                {
-                    size_t pos = size_t(x + (z << 6));
-                    max_y_map[pos] = std::max<float>(max_y_map[pos],data_iter[1]);
-                    min_y_map[pos] = std::min<float>(min_y_map[pos],data_iter[1]);
-                }
-                if(max_z_map.shape().is_valid(x,y))
-                {
-                    size_t pos = size_t(x + (y << 6));
-                    max_z_map[pos] = std::max<float>(max_z_map[pos],data_iter[2]);
-                    min_z_map[pos] = std::min<float>(min_z_map[pos],data_iter[2]);
-                }
-            }
-        });
-        for(int i = 0;i < 3; ++i)
-        {
-            tipl::filter::mean(max_x_map);
-            tipl::filter::mean(min_x_map);
-            tipl::filter::mean(max_y_map);
-            tipl::filter::mean(min_y_map);
-            tipl::filter::mean(max_z_map);
-            tipl::filter::mean(min_z_map);
-        }
-    }
 
     std::vector<tipl::vector<3,float> > points(8),previous_points(8),
                                       normals(8),previous_normals(8);
@@ -1644,14 +1554,14 @@ void GLWidget::makeTracts(void)
 
 
 
+    auto skip_rate = trackWidget->skip_rate;
+    unsigned int tract_metrics_index = 0;
+
     tipl::uniform_dist<float> uniform_gen(0.0f,1.0f),random_size(-0.5f,0.5f),random_color(-0.05f,0.05f);
     trackWidget->for_each_track([&](std::shared_ptr<TractModel>& active_tract_model,unsigned int data_index)
     {
         if(skip_rate < 1.0f && uniform_gen() > skip_rate)
-        {
-            mean_fa_index++;
             return;
-        }
         unsigned int vertex_count =
                 active_tract_model->get_tract_length(data_index)/3;
         if (vertex_count <= 1)
@@ -1661,6 +1571,13 @@ void GLWidget::makeTracts(void)
 
         switch(tract_color_style)
         {
+        case 3:// mean
+        case 5:// max
+            if(tract_metrics_index < trackWidget->tract_metrics.size())
+            {
+                paint_color_f = cur_tracking_window.color_bar->get_color(trackWidget->tract_metrics[tract_metrics_index++]);
+                break;
+            }
         case 1:
             paint_color = active_tract_model->get_tract_color(data_index);
             paint_color_f = tipl::vector<3,float>(paint_color.r,paint_color.g,paint_color.b);
@@ -1668,10 +1585,6 @@ void GLWidget::makeTracts(void)
             break;
         case 2:// local
             active_tract_model->get_tract_data(cur_tracking_window.handle,data_index,track_num_index,color);
-            break;
-        case 3:// mean
-        case 5:// max
-            paint_color_f = cur_tracking_window.color_bar->get_color(mean_fa[mean_fa_index++]);
             break;
         }
         tipl::vector<3,float> last_pos(data_iter),pos,
@@ -1690,11 +1603,6 @@ void GLWidget::makeTracts(void)
                 if (displacement.length() < tube_detail)
                     continue;
             }
-
-
-            int variant_factor = 0; // range=1~3
-            if((tract_variant_size || tract_variant_color) && (index < 4 || index + 3 >= vertex_count))
-                variant_factor = std::min(std::abs(4-int(index)),std::abs(int(index)-int(vertex_count-4)));
 
             pos[0] = data_iter[0];
             pos[1] = data_iter[1];
@@ -1718,16 +1626,12 @@ void GLWidget::makeTracts(void)
                     cur_color *= tract_color_saturation;
                     cur_color += tract_color_saturation_base;
                 }
-                if(variant_factor && tract_variant_color)
-                    cur_color += 0.02f*float(variant_factor);
                 break;
             case 1://manual assigned
             case 3://mean anisotropy
             case 4://mean directional
             case 5://max anisotropy
                 cur_color = paint_color_f;
-                if(variant_factor && tract_variant_color)
-                    cur_color += tract_color_brightness*0.1f*float(variant_factor);
                 break;
             case 2://local anisotropy
                 if(index < color.size())
@@ -1737,32 +1641,7 @@ void GLWidget::makeTracts(void)
 
             if(tract_shader)
             {
-                int x = (int(data_iter[0]) << 6)/int(dim[0]);
-                int y = (int(data_iter[1]) << 6)/int(dim[1]);
-                int z = (int(data_iter[2]) << 6)/int(dim[2]);
-                float d = 1.0f;
-                if(max_x_map.shape().is_valid(y,z))
-                {
-                    size_t pos = size_t(y + z*max_x_map.width());
-                    d += std::min<float>(4.0f,
-                                         std::min<float>(std::max<float>(0.0f,max_x_map[pos]-data_iter[0]),
-                                                    std::max<float>(0.0f,data_iter[0]-min_x_map[pos])));
-                }
-                if(max_y_map.shape().is_valid(x,z))
-                {
-                    size_t pos = size_t(x + z*max_y_map.width());
-                    d += std::min<float>(4.0f,
-                                         std::min<float>(std::max<float>(0.0f,max_y_map[pos]-data_iter[1]),
-                                                    std::max<float>(0.0f,data_iter[1]-min_y_map[pos])));
-                }
-                if(max_z_map.shape().is_valid(x,y))
-                {
-                    size_t pos = size_t(x + y*max_z_map.width());
-                    d += std::min<float>(4.0f,
-                                         std::min<float>(std::max<float>(0.0f,max_z_map[pos]-data_iter[2]),
-                                                    std::max<float>(0.0f,data_iter[2]-min_z_map[pos])));
-                }
-                cur_color *= 1.0f-std::min<float>(d*tract_shaderf,0.95f);
+                cur_color *= 1.0f-std::min<float>(trackWidget->get_shade(pos)*tract_shaderf,0.95f);
                 cur_color += 0.05f;
             }
             if(tract_style)
@@ -1791,23 +1670,10 @@ void GLWidget::makeTracts(void)
                 normals[6] = -vec_b;
                 normals[7] = vec_ba;
             }
-            if(variant_factor && tract_variant_size)
-            {
-                float size = variant_factor;
-                size *= 0.2f;
-                size += 1.0f;
-                size *= tube_diameter;
-                vec_ab *= size;
-                vec_ba *= size;
-                vec_a *= size;
-                vec_b *= size;
-            }
-            else {
-                vec_ab *= tube_diameter;
-                vec_ba *= tube_diameter;
-                vec_a *= tube_diameter;
-                vec_b *= tube_diameter;
-            }
+            vec_ab *= tube_diameter;
+            vec_ba *= tube_diameter;
+            vec_a *= tube_diameter;
+            vec_b *= tube_diameter;
 
             // add point
             {

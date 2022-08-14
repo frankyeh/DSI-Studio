@@ -181,8 +181,6 @@ public:
      float tube_diameter = 0.0f;
      unsigned char tract_color_contrast = 0;
      unsigned char tract_tube_detail = 0;
-     unsigned char tract_variant_size = 0;
-     unsigned char tract_variant_color = 0;
      unsigned char tract_shader = 0;
      unsigned char end_point_shift = 0;
      unsigned char odf_position = 255;
@@ -195,6 +193,7 @@ public:
      std::vector<tipl::vector<3,float> > keep_slice_points;
 public:
      GLuint tracts = 0;
+public:
      std::vector<std::shared_ptr<QOpenGLTexture> > slice_texture;
 
      int slice_pos[3] = {-1,-1,-1};

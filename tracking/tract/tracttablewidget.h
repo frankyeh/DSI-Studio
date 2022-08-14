@@ -41,8 +41,15 @@ public:
     void cut_by_slice(unsigned char dim,bool greater);
     void draw_tracts(unsigned char dim,int pos,
                      QImage& scaledimage,float display_ratio);
-
     QString output_format(void);
+public: // for rendering
+    // for shader
+    float skip_rate = 1.0;
+    tipl::image<2,float> max_z_map,min_z_map,max_x_map,min_x_map,min_y_map,max_y_map;
+    std::vector<float> tract_metrics;
+    void update_rendering(bool has_shader,unsigned int tract_visible_tract,unsigned char tract_color_style);
+    float get_shade(const tipl::vector<3>& pos);
+public:
     bool command(QString cmd,QString param = "",QString param2 = "");
     template<typename fun_type>
     void for_each_track(fun_type&& fun)

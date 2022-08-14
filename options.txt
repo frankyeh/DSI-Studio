@@ -57,8 +57,6 @@ Tract/Color/tract_color_style/Directional:Assigned:Local Index:Averaged Index:Av
 Tract/Color Saturation/tract_color_saturation/float:0:1:0.1:2/0.7
 Tract/Color Brightness/tract_color_brightness/float:0:1:0.1:2/0.3
 Tract/Visible Tracts/tract_visible_tract/int:5000:1000000:5000/25000
-Tract/Variant Color/tract_variant_color/Off:On/1
-Tract/Variant Size/tract_variant_size/Off:On/1
 Tract/Shade/tract_shader/int:0:20:1/7
 Tract/Tube Detail/tract_tube_detail/Coarse:Fine:Finer:Finest/1
 Tract/Tube Diameter (voxel)/tube_diameter/float:0.01:5:0.1:2/0.15

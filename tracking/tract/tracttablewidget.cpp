@@ -20,7 +20,13 @@
 void show_info_dialog(const std::string& title,const std::string& result);
 
 TractTableWidget::TractTableWidget(tracking_window& cur_tracking_window_,QWidget *parent) :
-    QTableWidget(parent),cur_tracking_window(cur_tracking_window_)
+    QTableWidget(parent),cur_tracking_window(cur_tracking_window_),
+    max_z_map(tipl::shape<2>(64,64)),
+    min_z_map(tipl::shape<2>(64,64)),
+    max_x_map(tipl::shape<2>(64,64)),
+    min_x_map(tipl::shape<2>(64,64)),
+    min_y_map(tipl::shape<2>(64,64)),
+    max_y_map(tipl::shape<2>(64,64))
 {
     setColumnCount(4);
     setColumnWidth(0,200);
@@ -157,6 +163,135 @@ void TractTableWidget::draw_tracts(unsigned char dim,int pos,
             }
         }
     });
+}
+void TractTableWidget::update_rendering(bool has_shader,
+                                        unsigned int tract_visible_tract,
+                                        unsigned char tract_color_style)
+{
+    skip_rate = 1.0;
+    {
+        unsigned int total_tracts = 0;
+        for (int i = 0;i < rowCount();++i)
+            if(item(i,0)->checkState() == Qt::Checked &&
+               tract_models[size_t(i)]->get_visible_track_count())
+                    total_tracts += tract_models[size_t(i)]->get_visible_track_count();
+        if(total_tracts != 0)
+            skip_rate = float(tract_visible_tract)/float(total_tracts);
+    }
+
+    if (tract_color_style > 1)
+    {
+        unsigned int track_num_index = cur_tracking_window.handle->get_name_index(cur_tracking_window.color_bar->get_tract_color_name().toStdString());
+        tract_metrics.clear();
+        if(tract_color_style == 3 || tract_color_style == 5)// mean value
+        {
+            tipl::uniform_dist<float> uniform_gen(0.0f,1.0f);
+            for_each_track([&](std::shared_ptr<TractModel>& active_tract_model,unsigned int data_index)
+            {
+                if(skip_rate < 1.0f && uniform_gen() > skip_rate)
+                    return;
+                unsigned int vertex_count = active_tract_model->get_tract_length(data_index)/3;
+                if (vertex_count <= 1)
+                    return;
+                std::vector<float> metrics;
+                active_tract_model->get_tract_data(cur_tracking_window.handle,
+                                                   data_index,track_num_index,metrics);
+                if(tract_color_style == 3) // mean values
+                {
+                    float sum = std::accumulate(metrics.begin(),metrics.end(),0.0f);
+                    sum /= (float)metrics.size();
+                    tract_metrics.push_back(sum);
+                }
+                if(tract_color_style == 5) // max values
+                    tract_metrics.push_back(tipl::max_value(metrics));
+            });
+
+        }
+    }
+    if(has_shader)
+    {
+        auto dim = cur_tracking_window.handle->dim;
+        std::fill(min_x_map.begin(),min_x_map.end(),dim.width());
+        std::fill(min_y_map.begin(),min_y_map.end(),dim.height());
+        std::fill(min_z_map.begin(),min_z_map.end(),dim.depth());
+        std::fill(max_x_map.begin(),max_x_map.end(),0);
+        std::fill(max_y_map.begin(),max_y_map.end(),0);
+        std::fill(max_z_map.begin(),max_z_map.end(),0);
+        tipl::uniform_dist<float> uniform_gen(0.0f,1.0f);
+        for_each_track([&](std::shared_ptr<TractModel>& active_tract_model,unsigned int data_index)
+        {
+            if(skip_rate < 1.0f && uniform_gen() > skip_rate)
+                return;
+            unsigned int vertex_count = active_tract_model->get_tract_length(data_index)/3;
+            if (vertex_count <= 1)
+                return;
+            const float* data_iter = &*(active_tract_model->get_tract(data_index).begin());
+            for (unsigned int index = 0; index < vertex_count;data_iter += 3, ++index)
+            {
+                int x = (int(data_iter[0]) << 6)/int(dim[0]);
+                int y = (int(data_iter[1]) << 6)/int(dim[1]);
+                int z = (int(data_iter[2]) << 6)/int(dim[2]);
+                if(max_x_map.shape().is_valid(y,z))
+                {
+                    size_t pos = size_t(y + (z << 6));
+                    max_x_map[pos] = std::max<float>(max_x_map[pos],data_iter[0]);
+                    min_x_map[pos] = std::min<float>(min_x_map[pos],data_iter[0]);
+                }
+                if(max_y_map.shape().is_valid(x,z))
+                {
+                    size_t pos = size_t(x + (z << 6));
+                    max_y_map[pos] = std::max<float>(max_y_map[pos],data_iter[1]);
+                    min_y_map[pos] = std::min<float>(min_y_map[pos],data_iter[1]);
+                }
+                if(max_z_map.shape().is_valid(x,y))
+                {
+                    size_t pos = size_t(x + (y << 6));
+                    max_z_map[pos] = std::max<float>(max_z_map[pos],data_iter[2]);
+                    min_z_map[pos] = std::min<float>(min_z_map[pos],data_iter[2]);
+                }
+            }
+        });
+
+        {
+            std::thread t1([&](){for(int i = 0;i < 3; ++i)tipl::filter::mean(max_x_map);});
+            std::thread t2([&](){for(int i = 0;i < 3; ++i)tipl::filter::mean(min_x_map);});
+            std::thread t3([&](){for(int i = 0;i < 3; ++i)tipl::filter::mean(max_y_map);});
+            std::thread t4([&](){for(int i = 0;i < 3; ++i)tipl::filter::mean(min_y_map);});
+            std::thread t5([&](){for(int i = 0;i < 3; ++i)tipl::filter::mean(max_z_map);});
+            std::thread t6([&](){for(int i = 0;i < 3; ++i)tipl::filter::mean(min_z_map);});
+            t1.join();t2.join();t3.join();t4.join();t5.join();t6.join();
+        }
+    }
+}
+float TractTableWidget::get_shade(const tipl::vector<3>& pos)
+{
+    auto dim = cur_tracking_window.handle->dim;
+    int x = (int(pos[0]) << 6)/int(dim[0]);
+    int y = (int(pos[1]) << 6)/int(dim[1]);
+    int z = (int(pos[2]) << 6)/int(dim[2]);
+    float d = 1.0f;
+    if(max_x_map.shape().is_valid(y,z))
+    {
+        size_t p = size_t(y + z*max_x_map.width());
+        d += std::min<float>(4.0f,
+                             std::min<float>(std::max<float>(0.0f,max_x_map[p]-pos[0]),
+                                        std::max<float>(0.0f,pos[0]-min_x_map[p])));
+    }
+    if(max_y_map.shape().is_valid(x,z))
+    {
+        size_t p = size_t(x + z*max_y_map.width());
+        d += std::min<float>(4.0f,
+                             std::min<float>(std::max<float>(0.0f,max_y_map[p]-pos[1]),
+                                        std::max<float>(0.0f,pos[1]-min_y_map[p])));
+    }
+    if(max_z_map.shape().is_valid(x,y))
+    {
+        size_t p = size_t(x + y*max_z_map.width());
+        d += std::min<float>(4.0f,
+                             std::min<float>(std::max<float>(0.0f,max_z_map[p]-pos[2]),
+                                        std::max<float>(0.0f,pos[2]-min_z_map[p])));
+    }
+    return d;
 }
 void TractTableWidget::addNewTracts(QString tract_name,bool checked)
 {
