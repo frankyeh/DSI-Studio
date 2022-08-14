@@ -49,23 +49,20 @@ public: // for rendering
     std::vector<float> tract_metrics;
     void update_rendering(bool has_shader,unsigned int tract_visible_tract,unsigned char tract_color_style);
     float get_shade(const tipl::vector<3>& pos);
-public:
-    bool command(QString cmd,QString param = "",QString param2 = "");
     template<typename fun_type>
     void for_each_track(fun_type&& fun)
     {
-        for (int i = 0;i < rowCount();++i)
+        auto selected = get_checked_tracks();
+        for (auto active_tract_model : selected)
         {
-            if(item(i,0)->checkState() != Qt::Checked)
-                continue;
-            auto active_tract_model = tract_models[size_t(i)];
-            if (active_tract_model->get_visible_track_count() == 0)
-                continue;
             auto tracks_count = active_tract_model->get_visible_track_count();
             for (unsigned int data_index = 0; data_index < tracks_count; ++data_index)
                 fun(active_tract_model,data_index);
         }
     }
+public:
+    bool command(QString cmd,QString param = "",QString param2 = "");
+
 signals:
     void need_update(void);
 private:
