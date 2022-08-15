@@ -44,11 +44,11 @@ public:
                     const std::vector<tipl::vector<3,float> >& dirs,
                     const tipl::vector<3,float>& from_pos,std::vector<unsigned int>& selected);
         // selection
-        void delete_tracts(const std::vector<unsigned int>& tracts_to_delete);
-        void select_tracts(const std::vector<unsigned int>& tracts_to_select);
-        void delete_repeated(float d);
-        void delete_branch(void);
-        void delete_by_length(float length);
+        bool delete_tracts(const std::vector<unsigned int>& tracts_to_delete);
+        bool select_tracts(const std::vector<unsigned int>& tracts_to_select);
+        bool delete_repeated(float d);
+        bool delete_branch(void);
+        bool delete_by_length(float length);
 public:
         TractModel(std::shared_ptr<fib_data> handle):geo(handle->dim),vs(handle->vs),trans_to_mni(handle->trans_to_mni),is_mni(handle->is_qsdr){}
         TractModel(tipl::shape<3> dim_,tipl::vector<3> vs_):geo(dim_),vs(vs_)
@@ -103,24 +103,24 @@ public:
         void add_tracts(std::vector<std::vector<float> >& new_tracks);
         void add_tracts(std::vector<std::vector<float> >& new_tracks,tipl::rgb color);
         void add_tracts(std::vector<std::vector<float> >& new_tracks,unsigned int length_threshold,tipl::rgb color);
-        void filter_by_roi(std::shared_ptr<RoiMgr> roi_mgr);
-        void reconnect_track(float distance,float angular_threshold);
-        void cull(float select_angle,
+        bool filter_by_roi(std::shared_ptr<RoiMgr> roi_mgr);
+        bool reconnect_track(float distance,float angular_threshold);
+        bool cull(float select_angle,
                   const std::vector<tipl::vector<3,float> > & dirs,
                   const tipl::vector<3,float>& from_pos,
                   bool delete_track);
-        void cut(float select_angle,const std::vector<tipl::vector<3,float> > & dirs,
+        bool cut(float select_angle,const std::vector<tipl::vector<3,float> > & dirs,
                   const tipl::vector<3,float>& from_pos);
-        void cut_by_slice(unsigned int dim, unsigned int pos,bool greater,const tipl::matrix<4,4>* T = nullptr);
-        void paint(float select_angle,const std::vector<tipl::vector<3,float> > & dirs,
+        bool cut_by_slice(unsigned int dim, unsigned int pos,bool greater,const tipl::matrix<4,4>* T = nullptr);
+        bool paint(float select_angle,const std::vector<tipl::vector<3,float> > & dirs,
                   const tipl::vector<3,float>& from_pos,
                   unsigned int color);
         void set_color(unsigned int color){std::fill(tract_color.begin(),tract_color.end(),color);color_changed = true;}
         void set_tract_color(std::vector<unsigned int>& new_color){tract_color = new_color;color_changed = true;}
         void cut_by_mask(const char* file_name);
         void clear_deleted(void);
-        void undo(void);
-        void redo(void);
+        bool undo(void);
+        bool redo(void);
         bool trim(void);
         void resample(float new_step);
         void get_tract_points(std::vector<tipl::vector<3,float> >& points);

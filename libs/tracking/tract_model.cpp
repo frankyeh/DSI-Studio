@@ -1632,10 +1632,10 @@ void TractModel::erase_empty(void)
                         [&](const std::vector<float>& data){return data.empty();}), tract_data.end() );
 }
 //---------------------------------------------------------------------------
-void TractModel::delete_tracts(const std::vector<unsigned int>& tracts_to_delete)
+bool TractModel::delete_tracts(const std::vector<unsigned int>& tracts_to_delete)
 {
     if (tracts_to_delete.empty())
-        return;
+        return false;
     for (unsigned int index = 0;index < tracts_to_delete.size();++index)
     {
         deleted_tract_data.push_back(std::move(tract_data[tracts_to_delete[index]]));
@@ -1648,9 +1648,10 @@ void TractModel::delete_tracts(const std::vector<unsigned int>& tracts_to_delete
     // no redo once track deleted
     redo_size.clear();
     saved = tract_data.empty();
+    return true;
 }
 //---------------------------------------------------------------------------
-void TractModel::select_tracts(const std::vector<unsigned int>& tracts_to_select)
+bool TractModel::select_tracts(const std::vector<unsigned int>& tracts_to_select)
 {
     std::vector<unsigned int> selected(tract_data.size());
     for (unsigned int index = 0;index < tracts_to_select.size();++index)
@@ -1662,10 +1663,10 @@ void TractModel::select_tracts(const std::vector<unsigned int>& tracts_to_select
     for (unsigned int index = 0;index < selected.size();++index)
         if (!selected[index])
             not_selected.push_back(index);
-    delete_tracts(not_selected);
+    return delete_tracts(not_selected);
 }
 //---------------------------------------------------------------------------
-void TractModel::delete_repeated(float d)
+bool TractModel::delete_repeated(float d)
 {   
     std::vector<std::vector<size_t> > x_reg;
     std::vector<size_t> track_reg;
@@ -1749,9 +1750,9 @@ void TractModel::delete_repeated(float d)
     for(size_t i = 0;i < tract_data.size();++i)
         if(repeated[i])
             track_to_delete.push_back(uint32_t(i));
-    delete_tracts(track_to_delete);
+    return delete_tracts(track_to_delete);
 }
-void TractModel::delete_branch(void)
+bool TractModel::delete_branch(void)
 {
     std::vector<tipl::vector<3,short> > p1,p2;
     to_end_point_voxels(p1,p2);
@@ -1772,10 +1773,10 @@ void TractModel::delete_branch(void)
     std::shared_ptr<RoiMgr> roi_mgr(new RoiMgr(handle));
     roi_mgr->setRegions(r1.region,end_id,"end1");
     roi_mgr->setRegions(r2.region,end_id,"end2");
-    filter_by_roi(roi_mgr);
+    return filter_by_roi(roi_mgr);
 }
 //---------------------------------------------------------------------------
-void TractModel::delete_by_length(float length)
+bool TractModel::delete_by_length(float length)
 {
     std::vector<unsigned int> track_to_delete;
     for(unsigned int i = 0;i < tract_data.size();++i)
@@ -1790,10 +1791,10 @@ void TractModel::delete_by_length(float length)
         if((((tract_data[i].size()/3)-1)*v1.length()) < length)
             track_to_delete.push_back(i);
     }
-    delete_tracts(track_to_delete);
+    return delete_tracts(track_to_delete);
 }
 //---------------------------------------------------------------------------
-void TractModel::cut(float select_angle,const std::vector<tipl::vector<3,float> >& dirs,
+bool TractModel::cut(float select_angle,const std::vector<tipl::vector<3,float> >& dirs,
                      const tipl::vector<3,float>& from_pos)
 {
     std::vector<unsigned int> selected;
@@ -1813,7 +1814,7 @@ void TractModel::cut(float select_angle,const std::vector<tipl::vector<3,float> 
             tract_to_delete.push_back(index);
         }
     if(tract_to_delete.empty())
-        return;
+        return false;
     delete_tracts(tract_to_delete);
     is_cut.back() = cur_cut_id;
     for (unsigned int index = 0;index < new_tract.size();++index)
@@ -1824,6 +1825,7 @@ void TractModel::cut(float select_angle,const std::vector<tipl::vector<3,float> 
     }
     ++cur_cut_id;
     redo_size.clear();
+    return true;
 
 }
 
@@ -1863,7 +1865,7 @@ void get_cut_points(const std::vector<std::vector<float> >& tract_data,
     });
 }
 
-void TractModel::cut_by_slice(unsigned int dim, unsigned int pos,bool greater,const tipl::matrix<4,4>* T)
+bool TractModel::cut_by_slice(unsigned int dim, unsigned int pos,bool greater,const tipl::matrix<4,4>* T)
 {
     std::vector<std::vector<bool> > has_cut;
     if(T == nullptr)
@@ -1873,6 +1875,7 @@ void TractModel::cut_by_slice(unsigned int dim, unsigned int pos,bool greater,co
     std::vector<std::vector<float> > new_tract;
     std::vector<unsigned int> new_tract_color;
     std::vector<unsigned int> tract_to_delete;
+    bool modified = false;
     for(unsigned int i = 0;i < tract_data.size();++i)
     {
         bool adding = false;
@@ -1880,6 +1883,7 @@ void TractModel::cut_by_slice(unsigned int dim, unsigned int pos,bool greater,co
         {
             if(has_cut[i][t])
             {
+                modified = true;
                 if(!adding)
                     continue;
                 adding = false;
@@ -1907,9 +1911,10 @@ void TractModel::cut_by_slice(unsigned int dim, unsigned int pos,bool greater,co
         }
     ++cur_cut_id;
     redo_size.clear();
+    return modified;
 }
 //---------------------------------------------------------------------------
-void TractModel::filter_by_roi(std::shared_ptr<RoiMgr> roi_mgr)
+bool TractModel::filter_by_roi(std::shared_ptr<RoiMgr> roi_mgr)
 {
     std::vector<unsigned int> tracts_to_delete;
     for (unsigned int index = 0;index < tract_data.size();++index)
@@ -1938,13 +1943,14 @@ void TractModel::filter_by_roi(std::shared_ptr<RoiMgr> roi_mgr)
                 }
         }
     }
-    delete_tracts(tracts_to_delete);
+    return delete_tracts(tracts_to_delete);
 }
 //---------------------------------------------------------------------------
-void TractModel::reconnect_track(float distance,float angular_threshold)
+bool TractModel::reconnect_track(float distance,float angular_threshold)
 {
     if(distance >= 2.0f)
-        reconnect_track(distance*0.5f,angular_threshold);
+        return reconnect_track(distance*0.5f,angular_threshold);
+    bool has_merged = false;
     std::vector<std::vector<uint32_t> > endpoint_map(geo.size());
     for (unsigned int index = 0;index < tract_data.size();++index)
         if(tract_data[index].size() > 6)
@@ -2039,6 +2045,7 @@ void TractModel::reconnect_track(float distance,float angular_threshold)
                 {
                     tract_data[t2].insert(tract_data[t2].end(),tract_data[t1].begin(),tract_data[t1].end());
                     tract_data[t1].clear();
+                    has_merged = true;
                     continue;
                 }
 
@@ -2061,12 +2068,14 @@ void TractModel::reconnect_track(float distance,float angular_threshold)
                 // k = 3: track1 end connects tract2 end (track2 reversed)
                 tract_data[t1].insert(tract_data[t1].end(),tract_data[t2].begin(),tract_data[t2].end());
                 tract_data[t2].clear();
+                has_merged = true;
             }
         }
     erase_empty();
+    return has_merged;
 }
 //---------------------------------------------------------------------------
-void TractModel::cull(float select_angle,
+bool TractModel::cull(float select_angle,
                       const std::vector<tipl::vector<3,float> >& dirs,
                       const tipl::vector<3,float>& from_pos,
                       bool delete_track)
@@ -2078,20 +2087,23 @@ void TractModel::cull(float select_angle,
     for (unsigned int index = 0;index < selected.size();++index)
         if (!((selected[index] > 0) ^ delete_track))
             tracts_to_delete.push_back(index);
-    delete_tracts(tracts_to_delete);
+    return delete_tracts(tracts_to_delete);
 }
 //---------------------------------------------------------------------------
-void TractModel::paint(float select_angle,
+bool TractModel::paint(float select_angle,
                        const std::vector<tipl::vector<3,float> >& dirs,
                        const tipl::vector<3,float>& from_pos,
                        unsigned int color)
 {
     std::vector<unsigned int> selected;
     select(select_angle,dirs,from_pos,selected);
+    if(selected.empty())
+        return false;
     for (unsigned int index = 0;index < selected.size();++index)
         if (selected[index] > 0)
             tract_color[index] = color;
     color_changed = true;
+    return true;
 }
 
 //---------------------------------------------------------------------------
@@ -2273,10 +2285,7 @@ bool TractModel::trim(void)
     for (unsigned int index = 0;index < label.size();++index)
         if (label[index] < total_track_number)
             tracts_to_delete.insert(label[index]);
-    if(tracts_to_delete.empty())
-        return false;
-    delete_tracts(std::vector<unsigned int>(tracts_to_delete.begin(),tracts_to_delete.end()));
-    return true;
+    return delete_tracts(std::vector<unsigned int>(tracts_to_delete.begin(),tracts_to_delete.end()));
 }
 //---------------------------------------------------------------------------
 void TractModel::clear_deleted(void)
@@ -2288,10 +2297,10 @@ void TractModel::clear_deleted(void)
     redo_size.clear();
 }
 
-void TractModel::undo(void)
+bool TractModel::undo(void)
 {
     if (deleted_count.empty())
-        return;
+        return false;
     redo_size.push_back(std::make_pair((unsigned int)tract_data.size(),deleted_count.back()));
     for (unsigned int index = 0;index < deleted_count.back();++index)
     {
@@ -2313,14 +2322,15 @@ void TractModel::undo(void)
     is_cut.pop_back();
     deleted_count.pop_back();
     saved = false;
+    return true;
 }
 
 
 //---------------------------------------------------------------------------
-void TractModel::redo(void)
+bool TractModel::redo(void)
 {
     if(redo_size.empty())
-        return;
+        return false;
     std::vector<unsigned int> redo_tracts(redo_size.back().second);
     for (unsigned int index = 0;index < redo_tracts.size();++index)
         redo_tracts[index] = redo_size.back().first + index;
@@ -2330,6 +2340,7 @@ void TractModel::redo(void)
     keep_redo.swap(redo_size);
     delete_tracts(redo_tracts);
     keep_redo.swap(redo_size);
+    return true;
 }
 //---------------------------------------------------------------------------
 void TractModel::add_tracts(std::vector<std::vector<float> >& new_tracks)
