@@ -16,7 +16,7 @@ color_bar_dialog::color_bar_dialog(QWidget *parent) :
 
     if(cur_tracking_window)
     {
-        connect(ui->update_rendering,SIGNAL(clicked()),cur_tracking_window->glWidget,SLOT(makeTracts()));
+        connect(ui->update_rendering,SIGNAL(clicked()),cur_tracking_window->tractWidget,SLOT(need_update_all()));
         connect(ui->update_rendering,SIGNAL(clicked()),cur_tracking_window->glWidget,SLOT(update()));
     }
     else

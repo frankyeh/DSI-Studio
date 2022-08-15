@@ -8,7 +8,15 @@
 #include "tract_model.hpp"
 class tracking_window;
 struct ThreadData;
+class GLWidget;
 
+struct TractRenderData{
+    unsigned int tracts = 0;
+    bool need_update = true;
+    TractRenderData(void);
+    ~TractRenderData(void);
+    void makeTract(std::shared_ptr<TractModel>& tract_data,GLWidget* glwidget,tracking_window& cur_tracking_window);
+};
 
 class TractTableWidget : public QTableWidget
 {
@@ -27,6 +35,7 @@ private:
 public:
     std::vector<std::shared_ptr<ThreadData> > thread_data;
     std::vector<std::shared_ptr<TractModel> > tract_models;
+    std::vector<std::shared_ptr<TractRenderData> > tract_rendering;
 public:
     std::vector<std::shared_ptr<TractModel> > get_checked_tracks(void);
     std::vector<std::string> get_checked_tracks_name(void) const;
@@ -42,13 +51,6 @@ public:
     void draw_tracts(unsigned char dim,int pos,
                      QImage& scaledimage,float display_ratio);
     QString output_format(void);
-public: // for rendering
-    // for shader
-    float skip_rate = 1.0;
-    tipl::image<2,float> max_z_map,min_z_map,max_x_map,min_x_map,min_y_map,max_y_map;
-    std::vector<float> tract_metrics;
-    void update_rendering(bool has_shader,unsigned int tract_visible_tract,unsigned char tract_color_style);
-    float get_shade(const tipl::vector<3>& pos);
     template<typename fun_type>
     void for_each_track(fun_type&& fun)
     {
@@ -60,11 +62,41 @@ public: // for rendering
                 fun(active_tract_model,data_index);
         }
     }
+    template<typename fun_type>
+    void for_each_bundle(const char* prog_name,fun_type&& fun)
+    {
+        progress p(prog_name);
+        std::vector<unsigned int> checked_index;
+        for(unsigned int index = 0;index < tract_models.size();++index)
+            if(item(int(index),0)->checkState() == Qt::Checked)
+                checked_index.push_back(index);
+        bool has_changed = false;
+        size_t prog = 0;
+        tipl::par_for(checked_index.size(),[&](unsigned int i)
+        {
+            progress::at(prog++,checked_index.size());
+            if(progress::aborted())
+                return;
+            if(fun(checked_index[i]))
+            {
+                has_changed = true;
+                tract_rendering[checked_index[i]]->need_update = true;
+            }
+        });
+        for(auto i : checked_index)
+        {
+            item(int(i),1)->setText(QString::number(tract_models[i]->get_visible_track_count()));
+            item(int(i),2)->setText(QString::number(tract_models[i]->get_deleted_track_count()));
+        }
+        if(has_changed)
+            emit show_tracts();
+    }
 public:
+    void render_tracts(GLWidget* glwidget);
     bool command(QString cmd,QString param = "",QString param2 = "");
 
 signals:
-    void need_update(void);
+    void show_tracts(void);
 private:
     void delete_row(int row);
     void clustering(int method_id);
@@ -118,12 +150,12 @@ public slots:
     void delete_all_tract(void);
     void delete_repeated(void);
     void delete_by_length(void);
-    void delete_branches(void);
     void resample_step_size(void);
     void edit_tracts(void);
-    void undo_tracts(void);
-    void redo_tracts(void);
-    void trim_tracts(void);
+    void delete_branches(void)      {for_each_bundle("delete branches", [&](unsigned int index){return tract_models[index]->delete_branch();});}
+    void undo_tracts(void)          {for_each_bundle("undo tracts",     [&](unsigned int index){return tract_models[index]->undo();});}
+    void redo_tracts(void)          {for_each_bundle("redo tracts",     [&](unsigned int index){return tract_models[index]->redo();});}
+    void trim_tracts(void)          {for_each_bundle("trim tracts",     [&](unsigned int index){return tract_models[index]->trim();});}
     void assign_colors(void);
     void stop_tracking(void);
     void move_up(void);
@@ -132,6 +164,7 @@ public slots:
     void recog_tracks(void);
     void show_report(void);
 
+    void need_update_all(void);
 
 };
 

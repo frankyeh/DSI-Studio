@@ -105,7 +105,6 @@ public:
      void rotate_angle(float angle,float x,float y,float z);
      void copyToClipboardEach(QTableWidget* widget,unsigned int col_size);
  public slots:
-     void makeTracts(void);
      void addSurface(void);
      void catchScreen(void);
      void catchScreen2(void);
@@ -169,7 +168,7 @@ public:
      std::vector<QString> text_str;
      void renderText(float x,float y, const QString &str, const QFont & font = QFont());
      void renderText(float x, float y, float z, const QString &str, const QFont & font = QFont());
- private:
+ public:
      float tract_alpha = -1.0f; // ensure that make_track is called
      float tract_color_saturation = 0.0f;
      float tract_color_brightness = 0.0f;
@@ -191,8 +190,7 @@ public:
 public:
      bool keep_slice = false;
      std::vector<tipl::vector<3,float> > keep_slice_points;
-public:
-     GLuint tracts = 0;
+
 public:
      std::vector<std::shared_ptr<QOpenGLTexture> > slice_texture;
 

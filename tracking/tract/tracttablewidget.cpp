@@ -17,16 +17,11 @@
 #include "../color_bar_dialog.hpp"
 #include "gzip_interface.hpp"
 
+
 void show_info_dialog(const std::string& title,const std::string& result);
 
 TractTableWidget::TractTableWidget(tracking_window& cur_tracking_window_,QWidget *parent) :
-    QTableWidget(parent),cur_tracking_window(cur_tracking_window_),
-    max_z_map(tipl::shape<2>(64,64)),
-    min_z_map(tipl::shape<2>(64,64)),
-    max_x_map(tipl::shape<2>(64,64)),
-    min_x_map(tipl::shape<2>(64,64)),
-    min_y_map(tipl::shape<2>(64,64)),
-    max_y_map(tipl::shape<2>(64,64))
+    QTableWidget(parent),cur_tracking_window(cur_tracking_window_)
 {
     setColumnCount(4);
     setColumnWidth(0,200);
@@ -68,7 +63,7 @@ void TractTableWidget::check_check_status(int row, int col)
         if (item(row,0)->data(Qt::ForegroundRole) == QBrush(Qt::gray))
         {
             item(row,0)->setData(Qt::ForegroundRole,QBrush(Qt::black));
-            emit need_update();
+            emit show_tracts();
         }
     }
     else
@@ -76,7 +71,7 @@ void TractTableWidget::check_check_status(int row, int col)
         if (item(row,0)->data(Qt::ForegroundRole) != QBrush(Qt::gray))
         {
             item(row,0)->setData(Qt::ForegroundRole,QBrush(Qt::gray));
-            emit need_update();
+            emit show_tracts();
         }
     }
 }
@@ -164,138 +159,11 @@ void TractTableWidget::draw_tracts(unsigned char dim,int pos,
         }
     });
 }
-void TractTableWidget::update_rendering(bool has_shader,
-                                        unsigned int tract_visible_tract,
-                                        unsigned char tract_color_style)
-{
-    skip_rate = 1.0;
-    {
-        unsigned int total_tracts = 0;
-        for (int i = 0;i < rowCount();++i)
-            if(item(i,0)->checkState() == Qt::Checked &&
-               tract_models[size_t(i)]->get_visible_track_count())
-                    total_tracts += tract_models[size_t(i)]->get_visible_track_count();
-        if(total_tracts != 0)
-            skip_rate = float(tract_visible_tract)/float(total_tracts);
-    }
 
-    if (tract_color_style > 1)
-    {
-        unsigned int track_num_index = cur_tracking_window.handle->get_name_index(cur_tracking_window.color_bar->get_tract_color_name().toStdString());
-        tract_metrics.clear();
-        if(tract_color_style == 3 || tract_color_style == 5)// mean value
-        {
-            tipl::uniform_dist<float> uniform_gen(0.0f,1.0f);
-            for_each_track([&](std::shared_ptr<TractModel>& active_tract_model,unsigned int data_index)
-            {
-                if(skip_rate < 1.0f && uniform_gen() > skip_rate)
-                    return;
-                unsigned int vertex_count = active_tract_model->get_tract_length(data_index)/3;
-                if (vertex_count <= 1)
-                    return;
-                std::vector<float> metrics;
-                active_tract_model->get_tract_data(cur_tracking_window.handle,
-                                                   data_index,track_num_index,metrics);
-                if(tract_color_style == 3) // mean values
-                {
-                    float sum = std::accumulate(metrics.begin(),metrics.end(),0.0f);
-                    sum /= (float)metrics.size();
-                    tract_metrics.push_back(sum);
-                }
-                if(tract_color_style == 5) // max values
-                    tract_metrics.push_back(tipl::max_value(metrics));
-            });
-
-        }
-    }
-    if(has_shader)
-    {
-        auto dim = cur_tracking_window.handle->dim;
-        std::fill(min_x_map.begin(),min_x_map.end(),dim.width());
-        std::fill(min_y_map.begin(),min_y_map.end(),dim.height());
-        std::fill(min_z_map.begin(),min_z_map.end(),dim.depth());
-        std::fill(max_x_map.begin(),max_x_map.end(),0);
-        std::fill(max_y_map.begin(),max_y_map.end(),0);
-        std::fill(max_z_map.begin(),max_z_map.end(),0);
-        tipl::uniform_dist<float> uniform_gen(0.0f,1.0f);
-        for_each_track([&](std::shared_ptr<TractModel>& active_tract_model,unsigned int data_index)
-        {
-            if(skip_rate < 1.0f && uniform_gen() > skip_rate)
-                return;
-            unsigned int vertex_count = active_tract_model->get_tract_length(data_index)/3;
-            if (vertex_count <= 1)
-                return;
-            const float* data_iter = &*(active_tract_model->get_tract(data_index).begin());
-            for (unsigned int index = 0; index < vertex_count;data_iter += 3, ++index)
-            {
-                int x = (int(data_iter[0]) << 6)/int(dim[0]);
-                int y = (int(data_iter[1]) << 6)/int(dim[1]);
-                int z = (int(data_iter[2]) << 6)/int(dim[2]);
-                if(max_x_map.shape().is_valid(y,z))
-                {
-                    size_t pos = size_t(y + (z << 6));
-                    max_x_map[pos] = std::max<float>(max_x_map[pos],data_iter[0]);
-                    min_x_map[pos] = std::min<float>(min_x_map[pos],data_iter[0]);
-                }
-                if(max_y_map.shape().is_valid(x,z))
-                {
-                    size_t pos = size_t(x + (z << 6));
-                    max_y_map[pos] = std::max<float>(max_y_map[pos],data_iter[1]);
-                    min_y_map[pos] = std::min<float>(min_y_map[pos],data_iter[1]);
-                }
-                if(max_z_map.shape().is_valid(x,y))
-                {
-                    size_t pos = size_t(x + (y << 6));
-                    max_z_map[pos] = std::max<float>(max_z_map[pos],data_iter[2]);
-                    min_z_map[pos] = std::min<float>(min_z_map[pos],data_iter[2]);
-                }
-            }
-        });
-
-        {
-            std::thread t1([&](){for(int i = 0;i < 3; ++i)tipl::filter::mean(max_x_map);});
-            std::thread t2([&](){for(int i = 0;i < 3; ++i)tipl::filter::mean(min_x_map);});
-            std::thread t3([&](){for(int i = 0;i < 3; ++i)tipl::filter::mean(max_y_map);});
-            std::thread t4([&](){for(int i = 0;i < 3; ++i)tipl::filter::mean(min_y_map);});
-            std::thread t5([&](){for(int i = 0;i < 3; ++i)tipl::filter::mean(max_z_map);});
-            std::thread t6([&](){for(int i = 0;i < 3; ++i)tipl::filter::mean(min_z_map);});
-            t1.join();t2.join();t3.join();t4.join();t5.join();t6.join();
-        }
-    }
-}
-float TractTableWidget::get_shade(const tipl::vector<3>& pos)
-{
-    auto dim = cur_tracking_window.handle->dim;
-    int x = (int(pos[0]) << 6)/int(dim[0]);
-    int y = (int(pos[1]) << 6)/int(dim[1]);
-    int z = (int(pos[2]) << 6)/int(dim[2]);
-    float d = 1.0f;
-    if(max_x_map.shape().is_valid(y,z))
-    {
-        size_t p = size_t(y + z*max_x_map.width());
-        d += std::min<float>(4.0f,
-                             std::min<float>(std::max<float>(0.0f,max_x_map[p]-pos[0]),
-                                        std::max<float>(0.0f,pos[0]-min_x_map[p])));
-    }
-    if(max_y_map.shape().is_valid(x,z))
-    {
-        size_t p = size_t(x + z*max_y_map.width());
-        d += std::min<float>(4.0f,
-                             std::min<float>(std::max<float>(0.0f,max_y_map[p]-pos[1]),
-                                        std::max<float>(0.0f,pos[1]-min_y_map[p])));
-    }
-    if(max_z_map.shape().is_valid(x,y))
-    {
-        size_t p = size_t(x + y*max_z_map.width());
-        d += std::min<float>(4.0f,
-                             std::min<float>(std::max<float>(0.0f,max_z_map[p]-pos[2]),
-                                        std::max<float>(0.0f,pos[2]-min_z_map[p])));
-    }
-    return d;
-}
 void TractTableWidget::addNewTracts(QString tract_name,bool checked)
 {
     thread_data.push_back(nullptr);
+    tract_rendering.push_back(std::make_shared<TractRenderData>());
     tract_models.push_back(std::make_shared<TractModel>(cur_tracking_window.handle));
     insertRow(tract_models.size()-1);
     QTableWidgetItem *item0 = new QTableWidgetItem(tract_name);
@@ -323,6 +191,7 @@ void TractTableWidget::addConnectometryResults(std::vector<std::vector<std::vect
         addNewTracts(QString("Lesser_") + QString::number((index+1)*10),false);
         tract_models.back()->add_tracts(lesser[index],tipl::rgb(255,255-color,255-color));
         item(tract_models.size()-1,1)->setText(QString::number(tract_models.back()->get_visible_track_count()));
+        tract_rendering.back()->need_update = true;
     }
     for(unsigned int index = 0;index < greater.size();++index)
     {
@@ -332,9 +201,10 @@ void TractTableWidget::addConnectometryResults(std::vector<std::vector<std::vect
         addNewTracts(QString("Greater_") + QString::number((index+1)*10),false);
         tract_models.back()->add_tracts(greater[index],tipl::rgb(255-color,255-color,255));
         item(tract_models.size()-1,1)->setText(QString::number(tract_models.back()->get_visible_track_count()));
+        tract_rendering.back()->need_update = true;
     }
     cur_tracking_window.set_data("tract_color_style",1);//manual assigned
-    emit need_update();
+    emit show_tracts();
 }
 
 void TractTableWidget::start_tracking(void)
@@ -379,14 +249,10 @@ void TractTableWidget::filter_by_roi(void)
     ThreadData track_thread(cur_tracking_window.handle);
     cur_tracking_window.set_tracking_param(track_thread);
     cur_tracking_window.regionWidget->setROIs(&track_thread);
-    for(int index = 0;index < tract_models.size();++index)
-    if(item(int(index),0)->checkState() == Qt::Checked)
+    for_each_bundle("filter by roi",[&](unsigned int index)
     {
-        tract_models[index]->filter_by_roi(track_thread.roi_mgr);
-        item(int(index),1)->setText(QString::number(tract_models[index]->get_visible_track_count()));
-        item(int(index),2)->setText(QString::number(tract_models[index]->get_deleted_track_count()));
-    }
-    emit need_update();
+        return tract_models[index]->filter_by_roi(track_thread.roi_mgr);
+    });
 }
 
 void TractTableWidget::fetch_tracts(void)
@@ -416,9 +282,10 @@ void TractTableWidget::fetch_tracts(void)
                 item(int(index),2)->setText(QString::number(tract_models[index]->get_deleted_track_count()));
                 thread_data[index].reset();
             }
+            tract_rendering[index]->need_update = true;
         }
     if(has_tracts)
-        emit need_update();
+        emit show_tracts();
     if(!has_thread)
         timer->stop();
 }
@@ -467,7 +334,7 @@ void TractTableWidget::load_tracts(QStringList filenames)
                 load_tract_label(filename+".txt");
         }
     }
-    emit need_update();
+    emit show_tracts();
 }
 
 void TractTableWidget::load_tracts(void)
@@ -501,7 +368,7 @@ void TractTableWidget::check_all(void)
         item(row,0)->setCheckState(Qt::Checked);
         item(row,0)->setData(Qt::ForegroundRole,QBrush(Qt::black));
     }
-    emit need_update();
+    emit show_tracts();
 }
 
 void TractTableWidget::uncheck_all(void)
@@ -511,7 +378,7 @@ void TractTableWidget::uncheck_all(void)
         item(row,0)->setCheckState(Qt::Unchecked);
         item(row,0)->setData(Qt::ForegroundRole,QBrush(Qt::gray));
     }
-    emit need_update();
+    emit show_tracts();
 }
 QString TractTableWidget::output_format(void)
 {
@@ -560,8 +427,9 @@ void TractTableWidget::set_color(void)
     if(!color.isValid())
         return;
     tract_models[uint32_t(currentRow())]->set_color(color.rgb());
+    tract_rendering[uint32_t(currentRow())]->need_update = true;
     cur_tracking_window.set_data("tract_color_style",1);//manual assigned
-    emit need_update();
+    emit show_tracts();
 }
 void TractTableWidget::assign_colors(void)
 {
@@ -571,15 +439,17 @@ void TractTableWidget::assign_colors(void)
         c.from_hsl((color_gen*1.1-std::floor(color_gen*1.1/6)*6)*3.14159265358979323846/3.0,0.85,0.7);
         color_gen++;
         tract_models[index]->set_color(c.color);
+        tract_rendering[index]->need_update = true;
     }
     cur_tracking_window.set_data("tract_color_style",1);//manual assigned
-    emit need_update();
+    emit show_tracts();
 }
 void TractTableWidget::load_cluster_label(const std::vector<unsigned int>& labels,QStringList Names)
 {
     std::string report = tract_models[uint32_t(currentRow())]->report;
     std::vector<std::vector<float> > tracts;
     tract_models[uint32_t(currentRow())]->release_tracts(tracts);
+    tract_rendering[uint32_t(currentRow())]->need_update = true;
     delete_row(currentRow());
     unsigned int cluster_count = uint32_t(Names.empty() ? int(1+tipl::max_value(labels)):int(Names.count()));
     for(unsigned int cluster_index = 0;cluster_index < cluster_count;++cluster_index)
@@ -602,7 +472,7 @@ void TractTableWidget::load_cluster_label(const std::vector<unsigned int>& label
         tract_models.back()->report = report;
         item(int(tract_models.size())-1,1)->setText(QString::number(tract_models.back()->get_visible_track_count()));
     }
-    emit need_update();
+    emit show_tracts();
 }
 
 void TractTableWidget::open_cluster_label(void)
@@ -1075,8 +945,9 @@ void TractTableWidget::load_tracts_value(void)
     for(int i = 0;i < values.size();++i)
         colors[i] = (unsigned int)dialog.get_rgb(values[i]);
     tract_models[uint32_t(currentRow())]->set_tract_color(colors);
+    tract_rendering[uint32_t(currentRow())]->need_update = true;
     cur_tracking_window.set_data("tract_color_style",1);//manual assigned
-    emit need_update();
+    emit show_tracts();
 }
 
 void TractTableWidget::save_tracts_color_as(void)
@@ -1155,7 +1026,11 @@ void TractTableWidget::show_tracts_statistics(void)
         show_info_dialog("Tract Statistics",result);
 
 }
-
+void TractTableWidget::need_update_all(void)
+{
+    for(auto& t:tract_rendering)
+        t->need_update = true;
+}
 bool TractTableWidget::command(QString cmd,QString param,QString param2)
 {
     if(cmd == "save_all_tracts_to_dir")
@@ -1179,7 +1054,9 @@ bool TractTableWidget::command(QString cmd,QString param,QString param2)
             item(int(index),1)->setText(QString::number(tract_models[index]->get_visible_track_count()));
             item(int(index),2)->setText(QString::number(tract_models[index]->get_deleted_track_count()));
         }
-        emit need_update();
+        for(auto& t:tract_rendering)
+            t->need_update = true;
+        emit show_tracts();
         return true;
     }
     if(cmd == "run_tracking")
@@ -1187,7 +1064,6 @@ bool TractTableWidget::command(QString cmd,QString param,QString param2)
         start_tracking();
         while(timer->isActive())
             fetch_tracts();
-        emit need_update();
         return true;
     }
     if(cmd == "cut_by_slice")
@@ -1200,7 +1076,8 @@ bool TractTableWidget::command(QString cmd,QString param,QString param2)
         setRowCount(0);
         thread_data.clear();
         tract_models.clear();
-        emit need_update();
+        tract_rendering.clear();
+        emit show_tracts();
         return true;
     }
     if(cmd == "save_tracks")
@@ -1226,8 +1103,9 @@ bool TractTableWidget::command(QString cmd,QString param,QString param2)
             std::cout << "cannot find or open " << sfilename << std::endl;
             return false;
         }
+        tract_rendering[index]->need_update = true;
         cur_tracking_window.set_data("tract_color_style",1);//manual assigned
-        emit need_update();
+        emit show_tracts();
         return true;
     }
     return false;
@@ -1271,8 +1149,10 @@ void TractTableWidget::merge_all(void)
         tract_models[merge_list[0]]->add(*tract_models[merge_list[index]]);
         delete_row(merge_list[index]);
     }
+    tract_rendering[merge_list[0]]->need_update = true;
     item(merge_list[0],1)->setText(QString::number(tract_models[merge_list[0]]->get_visible_track_count()));
     item(merge_list[0],2)->setText(QString::number(tract_models[merge_list[0]]->get_deleted_track_count()));
+    emit show_tracts();
 }
 
 void TractTableWidget::delete_row(int row)
@@ -1281,7 +1161,9 @@ void TractTableWidget::delete_row(int row)
         return;
     thread_data.erase(thread_data.begin()+row);
     tract_models.erase(tract_models.begin()+row);
+    tract_rendering.erase(tract_rendering.begin()+row);
     removeRow(row);
+    emit show_tracts();
 }
 
 void TractTableWidget::copy_track(void)
@@ -1292,7 +1174,7 @@ void TractTableWidget::copy_track(void)
     addNewTracts(item(currentRow(),0)->text() + "_copy");
     *(tract_models.back()) = *(tract_models[old_row]);
     item(currentRow(),1)->setText(QString::number(tract_models.back()->get_visible_track_count()));
-    emit need_update();
+    emit show_tracts();
 }
 
 void TractTableWidget::separate_deleted_track(void)
@@ -1313,7 +1195,7 @@ void TractTableWidget::separate_deleted_track(void)
     tract_models.back()->report = tract_models[uint32_t(currentRow())]->report;
     item(rowCount()-1,1)->setText(QString::number(tract_models.back()->get_visible_track_count()));
     item(rowCount()-1,2)->setText(QString::number(tract_models.back()->get_deleted_track_count()));
-    emit need_update();
+    emit show_tracts();
 }
 void TractTableWidget::sort_track_by_name(void)
 {
@@ -1337,7 +1219,9 @@ void TractTableWidget::sort_track_by_name(void)
         item(j,0)->setCheckState(checked);
         std::swap(thread_data[i],thread_data[j]);
         std::swap(tract_models[i],tract_models[j]);
+        std::swap(tract_rendering[i],tract_rendering[j]);
     }
+    emit show_tracts();
 }
 void TractTableWidget::merge_track_by_name(void)
 {
@@ -1346,6 +1230,7 @@ void TractTableWidget::merge_track_by_name(void)
         if(item(i,0)->text() == item(j,0)->text())
         {
             tract_models[i]->add(*tract_models[j]);
+            tract_rendering[i]->need_update = true;
             delete_row(j);
             item(i,1)->setText(QString::number(tract_models[i]->get_visible_track_count()));
             item(i,2)->setText(QString::number(tract_models[i]->get_deleted_track_count()));
@@ -1369,9 +1254,10 @@ void TractTableWidget::move_up(void)
         item(currentRow()-1,0)->setCheckState(checked);
         std::swap(thread_data[uint32_t(currentRow())],thread_data[currentRow()-1]);
         std::swap(tract_models[uint32_t(currentRow())],tract_models[currentRow()-1]);
+        std::swap(tract_rendering[uint32_t(currentRow())],tract_rendering[currentRow()-1]);
         setCurrentCell(currentRow()-1,0);
     }
-    emit need_update();
+    emit show_tracts();
 }
 
 void TractTableWidget::move_down(void)
@@ -1389,9 +1275,10 @@ void TractTableWidget::move_down(void)
         item(currentRow()+1,0)->setCheckState(checked);
         std::swap(thread_data[uint32_t(currentRow())],thread_data[currentRow()+1]);
         std::swap(tract_models[uint32_t(currentRow())],tract_models[currentRow()+1]);
+        std::swap(tract_rendering[uint32_t(currentRow())],tract_rendering[currentRow()+1]);
         setCurrentCell(currentRow()+1,0);
     }
-    emit need_update();
+    emit show_tracts();
 }
 
 
@@ -1403,7 +1290,7 @@ void TractTableWidget::delete_tract(void)
         return;
     }
     delete_row(currentRow());
-    emit need_update();
+    emit show_tracts();
 }
 
 void TractTableWidget::delete_all_tract(void)
@@ -1424,29 +1311,10 @@ void TractTableWidget::delete_repeated(void)
         "DSI Studio","Distance threshold (voxels)", distance,0,500,1,&ok);
     if (!ok)
         return;
-    progress prog_("deleting tracks");
-    for(int i = 0;progress::at(i,tract_models.size());++i)
+    for_each_bundle("delete repeated",[&](unsigned int index)
     {
-        if(item(i,0)->checkState() == Qt::Checked)
-            tract_models[i]->delete_repeated(distance);
-        item(i,1)->setText(QString::number(tract_models[i]->get_visible_track_count()));
-        item(i,2)->setText(QString::number(tract_models[i]->get_deleted_track_count()));
-    }
-    emit need_update();
-}
-
-
-void TractTableWidget::delete_branches(void)
-{
-    progress prog_("deleting branches");
-    for(int i = 0;progress::at(i,tract_models.size());++i)
-    {
-        if(item(i,0)->checkState() == Qt::Checked)
-            tract_models[i]->delete_branch();
-        item(i,1)->setText(QString::number(tract_models[i]->get_visible_track_count()));
-        item(i,2)->setText(QString::number(tract_models[i]->get_deleted_track_count()));
-    }
-    emit need_update();
+        return tract_models[index]->delete_repeated(distance);
+    });
 }
 
 void TractTableWidget::resample_step_size(void)
@@ -1459,12 +1327,11 @@ void TractTableWidget::resample_step_size(void)
         "DSI Studio","New step size (voxels)",double(new_step),0.0,5.0,1,&ok));
     if (!ok)
         return;
-
-    progress prog_("resample tracks");
-    auto selected_tracts = get_checked_tracks();
-    for(size_t i = 0;progress::at(i,selected_tracts.size());++i)
-        selected_tracts[i]->resample(new_step);
-    emit need_update();
+    for_each_bundle("resample tracks",[&](unsigned int index)
+    {
+        tract_models[index]->resample(new_step);
+        return true;
+    });
 }
 
 void TractTableWidget::delete_by_length(void)
@@ -1477,15 +1344,10 @@ void TractTableWidget::delete_by_length(void)
         "DSI Studio","Length threshold in mm:", threshold,0,500,1,&ok);
     if (!ok)
         return;
-
-    for(int i = 0;progress::at(i,tract_models.size());++i)
+    for_each_bundle("delete by length",[&](unsigned int index)
     {
-        if(item(i,0)->checkState() == Qt::Checked)
-            tract_models[i]->delete_by_length(threshold);
-        item(i,1)->setText(QString::number(tract_models[i]->get_visible_track_count()));
-        item(i,2)->setText(QString::number(tract_models[i]->get_deleted_track_count()));
-    }
-    emit need_update();
+        return tract_models[index]->delete_by_length(threshold);
+    });
 }
 void TractTableWidget::reconnect_track(void)
 {
@@ -1504,107 +1366,54 @@ void TractTableWidget::reconnect_track(void)
     if(dis <= 2.0f || angle <= 0.0f)
         return;
     tract_models[uint32_t(cur_row)]->reconnect_track(dis,std::cos(angle*3.14159265358979323846f/180.0f));
+    tract_rendering[uint32_t(cur_row)]->need_update = true;
     item(cur_row,1)->setText(QString::number(tract_models[uint32_t(cur_row)]->get_visible_track_count()));
-    emit need_update();
+    emit show_tracts();
 }
 void TractTableWidget::edit_tracts(void)
 {
     QRgb color = 0;
     if(edit_option == paint)
         color = QColorDialog::getColor(Qt::red,this,"Select color",QColorDialog::ShowAlphaChannel).rgb();
-    for(unsigned int index = 0;index < tract_models.size();++index)
+    auto angle = cur_tracking_window.glWidget->angular_selection ? cur_tracking_window["tract_sel_angle"].toFloat():0.0;
+    for_each_bundle("editing tracts",[&](unsigned int index)
     {
-        if(item(int(index),0)->checkState() != Qt::Checked)
-            continue;
         switch(edit_option)
         {
         case select:
         case del:
-            tract_models[index]->cull(
-                             cur_tracking_window.glWidget->angular_selection ?
-                             cur_tracking_window["tract_sel_angle"].toFloat():0.0,
+            return tract_models[index]->cull(angle,
                              cur_tracking_window.glWidget->dirs,
                              cur_tracking_window.glWidget->pos,edit_option == del);
             break;
         case cut:
-            tract_models[index]->cut(
-                        cur_tracking_window.glWidget->angular_selection ?
-                        cur_tracking_window["tract_sel_angle"].toFloat():0.0,
+            return tract_models[index]->cut(angle,
                              cur_tracking_window.glWidget->dirs,
                              cur_tracking_window.glWidget->pos);
             break;
         case paint:
-            tract_models[index]->paint(
-                        cur_tracking_window.glWidget->angular_selection ?
-                        cur_tracking_window["tract_sel_angle"].toFloat():0.0,
+            return tract_models[index]->paint(angle,
                              cur_tracking_window.glWidget->dirs,
                              cur_tracking_window.glWidget->pos,color);
-            cur_tracking_window.set_data("tract_color_style",1);//manual assigned
             break;
         default:
-            break;
+            ;
         }
-        item(int(index),1)->setText(QString::number(tract_models[index]->get_visible_track_count()));
-        item(int(index),2)->setText(QString::number(tract_models[index]->get_deleted_track_count()));
-    }
-    emit need_update();
+        return false;
+    });
+    if(edit_option == paint)
+        cur_tracking_window.set_data("tract_color_style",1);//manual assigned
+
 }
 
-void TractTableWidget::undo_tracts(void)
-{
-    for(unsigned int index = 0;index < tract_models.size();++index)
-    {
-        if(item(int(index),0)->checkState() != Qt::Checked)
-            continue;
-        tract_models[index]->undo();
-        item(int(index),1)->setText(QString::number(tract_models[index]->get_visible_track_count()));
-        item(int(index),2)->setText(QString::number(tract_models[index]->get_deleted_track_count()));
-    }
-    emit need_update();
-}
 void TractTableWidget::cut_by_slice(unsigned char dim,bool greater)
 {
-    for(unsigned int index = 0;index < tract_models.size();++index)
+    for_each_bundle("cut by slice",[&](unsigned int index)
     {
-        if(item(int(index),0)->checkState() != Qt::Checked)
-            continue;
-        if(cur_tracking_window.current_slice->is_diffusion_space)
-            tract_models[index]->cut_by_slice(dim,cur_tracking_window.current_slice->slice_pos[dim],greater);
-        else
-        {
-            tract_models[index]->cut_by_slice(dim,cur_tracking_window.current_slice->slice_pos[dim],greater,
-                                                  &cur_tracking_window.current_slice->invT);
-        }
-        item(int(index),1)->setText(QString::number(tract_models[index]->get_visible_track_count()));
-        item(int(index),2)->setText(QString::number(tract_models[index]->get_deleted_track_count()));
-    }
-    emit need_update();
-}
-
-void TractTableWidget::redo_tracts(void)
-{
-    for(unsigned int index = 0;index < tract_models.size();++index)
-    {
-        if(item(int(index),0)->checkState() != Qt::Checked)
-            continue;
-        tract_models[index]->redo();
-        item(int(index),1)->setText(QString::number(tract_models[index]->get_visible_track_count()));
-        item(int(index),2)->setText(QString::number(tract_models[index]->get_deleted_track_count()));
-    }
-    emit need_update();
-}
-
-void TractTableWidget::trim_tracts(void)
-{
-    for(unsigned int index = 0;index < tract_models.size();++index)
-    {
-        if(item(int(index),0)->checkState() != Qt::Checked)
-            continue;
-        tract_models[index]->trim();
-        item(int(index),1)->setText(QString::number(tract_models[index]->get_visible_track_count()));
-        item(int(index),2)->setText(QString::number(tract_models[index]->get_deleted_track_count()));
-    }
-    emit need_update();
+        tract_models[index]->cut_by_slice(dim,cur_tracking_window.current_slice->slice_pos[dim],greater,
+            (cur_tracking_window.current_slice->is_diffusion_space ? nullptr:&cur_tracking_window.current_slice->invT));
+        return true;
+    });
 }
 
 void TractTableWidget::export_tract_density(tipl::shape<3> dim,

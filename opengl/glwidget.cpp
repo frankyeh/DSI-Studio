@@ -96,9 +96,6 @@ void GLWidget::clean_up(void)
 {
     makeCurrent();
     slice_texture.clear();
-    if(tracts)
-        glDeleteLists(tracts, 1);
-    tracts = 0;
     doneCurrent();
     //show_progress() << __FUNCTION__ << " " << __FILE__ << std::endl;
 }
@@ -456,7 +453,6 @@ void GLWidget::initializeGL()
     glEnable(GL_NORMALIZE);
     glColorMaterial(GL_FRONT_AND_BACK, GL_DIFFUSE);
     glBlendFunc (GL_DST_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    tracts = glGenLists(1);
     scale_by(0.5);
 }
 void GLWidget::paintGL()
@@ -613,7 +609,6 @@ void GLWidget::paintGL()
         if(video_frames > 10000)
             record_video();
     }
-
 }
 
 void CylinderGL(GLUquadricObj* ptr,const tipl::vector<3>& p1,const tipl::vector<3>& p2,double r)
@@ -751,7 +746,7 @@ void GLWidget::renderLR()
 
     }
 
-    if (tracts && get_param("show_tract"))
+    if (cur_tracking_window.tractWidget->tract_rendering.size() && get_param("show_tract"))
     {
         glLineWidth (1.0F);
         glEnable(GL_COLOR_MATERIAL);
@@ -803,21 +798,23 @@ void GLWidget::renderLR()
         }
 
 
-        bool changed = false;
-        while(
-           check_change("tract_alpha",tract_alpha) ||
-           check_change("tract_alpha_style",tract_alpha_style) ||
-           check_change("tract_style",tract_style) ||
-           check_change("tract_color_style",tract_color_style) ||
-           check_change("tract_color_saturation",tract_color_saturation) ||
-           check_change("tract_color_brightness",tract_color_brightness) ||
-           check_change("tube_diameter",tube_diameter) ||
-           check_change("tract_tube_detail",tract_tube_detail) ||
-           check_change("tract_shader",tract_shader) ||     
-           check_change("end_point_shift",end_point_shift))
-            changed = true;
-        if(changed)
-            makeTracts();
+        {
+            bool changed = false;
+            while(
+               check_change("tract_alpha",tract_alpha) ||
+               check_change("tract_alpha_style",tract_alpha_style) ||
+               check_change("tract_style",tract_style) ||
+               check_change("tract_color_style",tract_color_style) ||
+               check_change("tract_color_saturation",tract_color_saturation) ||
+               check_change("tract_color_brightness",tract_color_brightness) ||
+               check_change("tube_diameter",tube_diameter) ||
+               check_change("tract_tube_detail",tract_tube_detail) ||
+               check_change("tract_shader",tract_shader) ||
+               check_change("end_point_shift",end_point_shift))
+                changed = true;
+            if(changed)
+                cur_tracking_window.tractWidget->need_update_all();
+        }
 
         if(get_param_float("tract_alpha") != 1.0)
         {
@@ -831,7 +828,9 @@ void GLWidget::renderLR()
             glDisable(GL_BLEND);
             glDepthMask(true);
         }
-        glCallList(tracts);
+
+        cur_tracking_window.tractWidget->render_tracts(this);
+
         glPopMatrix();
         glDisable(GL_COLOR_MATERIAL);
         glDisable(GL_BLEND);
@@ -1514,22 +1513,52 @@ void myglColor(const tipl::vector<3,float>& color,float alpha)
         glColor4f(color[0],color[1],color[2],alpha);
 }
 
+TractRenderData::TractRenderData(void):tracts(glGenLists(1))
+{
+}
 
+TractRenderData::~TractRenderData(void)
+{
+    if(tracts)
+        glDeleteLists(tracts, 1);
+    tracts = 0;
+}
 
-void GLWidget::makeTracts(void)
+void TractTableWidget::render_tracts(GLWidget* glwidget)
+{
+    for(unsigned int index = 0;index < tract_rendering.size();++index)
+        if(item(int(index),0)->checkState() == Qt::Checked &&
+           tract_models[index]->get_visible_track_count())
+        {
+            if(tract_rendering[index]->need_update)
+            {
+                tract_rendering[index]->makeTract(tract_models[index],glwidget,cur_tracking_window);
+                tract_rendering[index]->need_update = false;
+            }
+            glCallList(tract_rendering[index]->tracts);
+        }
+}
+
+void TractRenderData::makeTract(std::shared_ptr<TractModel>& active_tract_model,GLWidget* glwidget,tracking_window& cur_tracking_window)
 {
     if(!tracts)
         return;
     if(cur_tracking_window["roi_track"].toInt())
         cur_tracking_window.slice_need_update = true;
-    makeCurrent();
     glDeleteLists(tracts, 1);
     glNewList(tracts, GL_COMPILE);
-    auto trackWidget = cur_tracking_window.tractWidget;
 
-
-    trackWidget->update_rendering(tract_shader,get_param("tract_visible_tract"),tract_color_style);
-
+    auto tract_color_style = glwidget->tract_color_style;
+    auto tract_alpha_style = glwidget->tract_alpha_style;
+    auto tract_alpha = glwidget->tract_alpha;
+    auto tract_color_brightness = glwidget->tract_color_brightness;
+    auto tract_color_saturation = glwidget->tract_color_saturation;
+    auto tract_style = glwidget->tract_style;
+    auto end_point_shift = glwidget->end_point_shift;
+    auto tube_diameter = glwidget->tube_diameter;
+    auto tract_shader = glwidget->tract_shader;
+    auto tract_tube_detail = glwidget->tract_tube_detail;
+    auto tract_visible_tract = cur_tracking_window["tract_visible_tract"].toInt();
 
     float alpha = (tract_alpha_style == 0)? tract_alpha/2.0f:tract_alpha;
     float tract_color_saturation_base = tract_color_brightness*(1.0f-tract_color_saturation);
@@ -1540,8 +1569,101 @@ void GLWidget::makeTracts(void)
     float tube_detail = tube_diameter*detail_option[tract_tube_detail]*4.0f;
     float tract_shaderf = 0.01f*float(tract_shader);
 
-    unsigned int track_num_index = cur_tracking_window.handle->get_name_index(cur_tracking_window.color_bar->get_tract_color_name().toStdString());
+    unsigned int track_num_index = cur_tracking_window.handle->get_name_index(
+                                   cur_tracking_window.color_bar->get_tract_color_name().toStdString());
+    auto dim = cur_tracking_window.handle->dim;
 
+
+    float skip_rate = float(tract_visible_tract)/float(active_tract_model->get_visible_track_count());
+
+    std::vector<float> tract_metrics;
+    if (tract_color_style > 1)
+    {
+        tract_metrics.clear();
+        if(tract_color_style == 3 || tract_color_style == 5)// mean value
+        {
+            tipl::uniform_dist<float> uniform_gen(0.0f,1.0f);
+            auto tracks_count = active_tract_model->get_visible_track_count();
+            for (unsigned int data_index = 0; data_index < tracks_count; ++data_index)
+            {
+                if(skip_rate < 1.0f && uniform_gen() > skip_rate)
+                    continue;
+                unsigned int vertex_count = active_tract_model->get_tract_length(data_index)/3;
+                if (vertex_count <= 1)
+                    continue;
+                std::vector<float> metrics;
+                active_tract_model->get_tract_data(cur_tracking_window.handle,
+                                                   data_index,track_num_index,metrics);
+                if(tract_color_style == 3) // mean values
+                {
+                    float sum = std::accumulate(metrics.begin(),metrics.end(),0.0f);
+                    sum /= (float)metrics.size();
+                    tract_metrics.push_back(sum);
+                }
+                if(tract_color_style == 5) // max values
+                    tract_metrics.push_back(tipl::max_value(metrics));
+            };
+        }
+    }
+
+
+    tipl::image<2,float> max_z_map,min_z_map,max_x_map,min_x_map,min_y_map,max_y_map;
+    {
+        if(tract_shader)
+        {
+            min_x_map = tipl::image<2,float>(tipl::shape<2>(64,64),float(dim.width()));
+            min_y_map = tipl::image<2,float>(tipl::shape<2>(64,64),float(dim.height()));
+            min_z_map = tipl::image<2,float>(tipl::shape<2>(64,64),float(dim.depth()));
+            max_x_map = tipl::image<2,float>(tipl::shape<2>(64,64));
+            max_y_map = tipl::image<2,float>(tipl::shape<2>(64,64));
+            max_z_map = tipl::image<2,float>(tipl::shape<2>(64,64));
+            tipl::uniform_dist<float> uniform_gen(0.0f,1.0f);
+            auto tracks_count = active_tract_model->get_visible_track_count();
+            for (unsigned int data_index = 0; data_index < tracks_count; ++data_index)
+            {
+                if(skip_rate < 1.0f && uniform_gen() > skip_rate)
+                    continue;
+                unsigned int vertex_count = active_tract_model->get_tract_length(data_index)/3;
+                if (vertex_count <= 1)
+                    continue;
+                const float* data_iter = &*(active_tract_model->get_tract(data_index).begin());
+                for (unsigned int index = 0; index < vertex_count;data_iter += 3, ++index)
+                {
+                    int x = (int(data_iter[0]) << 6)/int(dim[0]);
+                    int y = (int(data_iter[1]) << 6)/int(dim[1]);
+                    int z = (int(data_iter[2]) << 6)/int(dim[2]);
+                    if(max_x_map.shape().is_valid(y,z))
+                    {
+                        size_t pos = size_t(y + (z << 6));
+                        max_x_map[pos] = std::max<float>(max_x_map[pos],data_iter[0]);
+                        min_x_map[pos] = std::min<float>(min_x_map[pos],data_iter[0]);
+                    }
+                    if(max_y_map.shape().is_valid(x,z))
+                    {
+                        size_t pos = size_t(x + (z << 6));
+                        max_y_map[pos] = std::max<float>(max_y_map[pos],data_iter[1]);
+                        min_y_map[pos] = std::min<float>(min_y_map[pos],data_iter[1]);
+                    }
+                    if(max_z_map.shape().is_valid(x,y))
+                    {
+                        size_t pos = size_t(x + (y << 6));
+                        max_z_map[pos] = std::max<float>(max_z_map[pos],data_iter[2]);
+                        min_z_map[pos] = std::min<float>(min_z_map[pos],data_iter[2]);
+                    }
+                }
+            }
+
+            {
+                std::thread t1([&](){for(int i = 0;i < 3; ++i)tipl::filter::mean(max_x_map);});
+                std::thread t2([&](){for(int i = 0;i < 3; ++i)tipl::filter::mean(min_x_map);});
+                std::thread t3([&](){for(int i = 0;i < 3; ++i)tipl::filter::mean(max_y_map);});
+                std::thread t4([&](){for(int i = 0;i < 3; ++i)tipl::filter::mean(min_y_map);});
+                std::thread t5([&](){for(int i = 0;i < 3; ++i)tipl::filter::mean(max_z_map);});
+                std::thread t6([&](){for(int i = 0;i < 3; ++i)tipl::filter::mean(min_z_map);});
+                t1.join();t2.join();t3.join();t4.join();t5.join();t6.join();
+            }
+        }
+    }
 
     std::vector<tipl::vector<3,float> > points(8),previous_points(8),
                                       normals(8),previous_normals(8);
@@ -1549,23 +1671,16 @@ void GLWidget::makeTracts(void)
     tipl::vector<3,float> paint_color_f;
     std::vector<float> color;
 
-
-
-
-
-
-    auto skip_rate = trackWidget->skip_rate;
-    unsigned int tract_metrics_index = 0;
-
     tipl::uniform_dist<float> uniform_gen(0.0f,1.0f),random_size(-0.5f,0.5f),random_color(-0.05f,0.05f);
-    trackWidget->for_each_track([&](std::shared_ptr<TractModel>& active_tract_model,unsigned int data_index)
+    auto tracks_count = active_tract_model->get_visible_track_count();
+    for (unsigned int data_index = 0,tract_metrics_index = 0; data_index < tracks_count; ++data_index)
     {
         if(skip_rate < 1.0f && uniform_gen() > skip_rate)
-            return;
+            continue;
         unsigned int vertex_count =
                 active_tract_model->get_tract_length(data_index)/3;
         if (vertex_count <= 1)
-            return;
+            continue;
 
         const float* data_iter = &*(active_tract_model->get_tract(data_index).begin());
 
@@ -1573,9 +1688,9 @@ void GLWidget::makeTracts(void)
         {
         case 3:// mean
         case 5:// max
-            if(tract_metrics_index < trackWidget->tract_metrics.size())
+            if(tract_metrics_index < tract_metrics.size())
             {
-                paint_color_f = cur_tracking_window.color_bar->get_color(trackWidget->tract_metrics[tract_metrics_index++]);
+                paint_color_f = cur_tracking_window.color_bar->get_color(tract_metrics[tract_metrics_index++]);
                 break;
             }
         case 1:
@@ -1641,7 +1756,36 @@ void GLWidget::makeTracts(void)
 
             if(tract_shader)
             {
-                cur_color *= 1.0f-std::min<float>(trackWidget->get_shade(pos)*tract_shaderf,0.95f);
+                float d = 1.0f;
+
+                {
+                    int x = (int(pos[0]) << 6)/int(dim[0]);
+                    int y = (int(pos[1]) << 6)/int(dim[1]);
+                    int z = (int(pos[2]) << 6)/int(dim[2]);
+                    if(max_x_map.shape().is_valid(y,z))
+                    {
+                        size_t p = size_t(y + z*max_x_map.width());
+                        d += std::min<float>(4.0f,
+                                             std::min<float>(std::max<float>(0.0f,max_x_map[p]-pos[0]),
+                                                        std::max<float>(0.0f,pos[0]-min_x_map[p])));
+                    }
+                    if(max_y_map.shape().is_valid(x,z))
+                    {
+                        size_t p = size_t(x + z*max_y_map.width());
+                        d += std::min<float>(4.0f,
+                                             std::min<float>(std::max<float>(0.0f,max_y_map[p]-pos[1]),
+                                                        std::max<float>(0.0f,pos[1]-min_y_map[p])));
+                    }
+                    if(max_z_map.shape().is_valid(x,y))
+                    {
+                        size_t p = size_t(x + y*max_z_map.width());
+                        d += std::min<float>(4.0f,
+                                             std::min<float>(std::max<float>(0.0f,max_z_map[p]-pos[2]),
+                                                        std::max<float>(0.0f,pos[2]-min_z_map[p])));
+                    }
+                };
+
+                cur_color *= 1.0f-std::min<float>(d*tract_shaderf,0.95f);
                 cur_color += 0.05f;
             }
             if(tract_style)
@@ -1793,10 +1937,7 @@ void GLWidget::makeTracts(void)
         }
         glEnd();
     }
-    );
-
     glEndList();
-
     check_error(__FUNCTION__);
 }
 void GLWidget::resizeGL(int width_, int height_)
@@ -2405,7 +2546,6 @@ void GLWidget::copyToClipboardEach(QTableWidget* widget,unsigned int col_size)
         if(is_checked[uint32_t(i)])
         {
             widget->item(i,0)->setCheckState(Qt::Checked);
-            makeTracts();
             QImage I = grab_image();
             get_bounding_box(I);
             if(I.width() == 0)
@@ -2435,6 +2575,8 @@ void GLWidget::copyToClipboardEach(QTableWidget* widget,unsigned int col_size)
     for (int i = 0;i < widget->rowCount();++i)
         if(is_checked[uint32_t(i)])
             widget->item(i,0)->setCheckState(Qt::Checked);
+    QMessageBox::information(this,"DSI Studio","Images captured to clipboard");
+
 }
 
 void GLWidget::copyToClipboardEachTract(void)
