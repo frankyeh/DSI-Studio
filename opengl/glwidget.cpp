@@ -1543,8 +1543,6 @@ void TractRenderData::makeTract(std::shared_ptr<TractModel>& active_tract_model,
 {
     if(!tracts)
         return;
-    if(cur_tracking_window["roi_track"].toInt())
-        cur_tracking_window.slice_need_update = true;
     glDeleteLists(tracts, 1);
     glNewList(tracts, GL_COMPILE);
 
