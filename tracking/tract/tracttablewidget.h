@@ -11,6 +11,7 @@ struct ThreadData;
 class GLWidget;
 
 struct TractRenderData{
+public:
     unsigned int tracts = 0;
     bool need_update = true;
     bool about_to_write = false;
@@ -18,6 +19,44 @@ struct TractRenderData{
     bool writing = false;
     std::mutex writing_lock;
     std::mutex reading_lock;
+public:
+    std::vector<float> tube_vertices;
+    std::vector<float> tube_normals;
+    std::vector<float> tube_colors;
+    std::vector<unsigned int> tube_strip_pos;
+    std::vector<float> line_vertices;
+    std::vector<float> line_colors;
+    std::vector<unsigned int> line_strip_pos;
+    inline void add_tube(const tipl::vector<3>& v,const tipl::vector<3>& c,const tipl::vector<3>& n)
+    {
+        tube_vertices.push_back(v[0]);
+        tube_vertices.push_back(v[1]);
+        tube_vertices.push_back(v[2]);
+        tube_normals.push_back(n[0]);
+        tube_normals.push_back(n[1]);
+        tube_normals.push_back(n[2]);
+        tube_colors.push_back(c[0]);
+        tube_colors.push_back(c[1]);
+        tube_colors.push_back(c[2]);
+    }
+    inline void add_line(const tipl::vector<3>& v,const tipl::vector<3>& c)
+    {
+        line_vertices.push_back(v[0]);
+        line_vertices.push_back(v[1]);
+        line_vertices.push_back(v[2]);
+        line_colors.push_back(c[0]);
+        line_colors.push_back(c[1]);
+        line_colors.push_back(c[2]);
+    }
+    void end_tube_strip(void)
+    {
+        tube_strip_pos.push_back(tube_vertices.size());
+    }
+    void end_line_strip(void)
+    {
+        line_strip_pos.push_back(line_vertices.size());
+    }
+
 public:
     struct end_reading
     {
