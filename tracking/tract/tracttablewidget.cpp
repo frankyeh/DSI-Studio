@@ -90,31 +90,21 @@ void TractTableWidget::draw_tracts(unsigned char dim,int pos,
     unsigned int thread_count = std::thread::hardware_concurrency();
     std::vector<std::vector<std::vector<tipl::vector<2,float> > > > lines_threaded(thread_count);
     std::vector<std::vector<std::vector<unsigned int> > > colors_threaded(thread_count);
-    auto iT = cur_tracking_window.current_slice->invT;
+    tipl::matrix<4,4>* pt = (cur_tracking_window.current_slice->is_diffusion_space ? nullptr : &(cur_tracking_window.current_slice->invT));
     max_count /= selected_tracts.size();
-
     tipl::par_for(selected_tracts.size(),[&](unsigned int index,unsigned int thread)
     {
         if(cur_tracking_window.slice_need_update)
             return;
-        if(cur_tracking_window.current_slice->is_diffusion_space)
-            selected_tracts[index]->get_in_slice_tracts(dim,pos,nullptr,lines_threaded[thread],colors_threaded[thread],max_count,tract_color_style,
-                            cur_tracking_window.slice_need_update);
-        else
-            selected_tracts[index]->get_in_slice_tracts(dim,pos,&iT,lines_threaded[thread],colors_threaded[thread],max_count,tract_color_style,
+        selected_tracts[index]->get_in_slice_tracts(dim,pos,pt,lines_threaded[thread],colors_threaded[thread],max_count,tract_color_style,
                             cur_tracking_window.slice_need_update);
     });
     if(cur_tracking_window.slice_need_update)
         return;
-
-    std::vector<std::vector<tipl::vector<2,float> > > lines(std::move(lines_threaded[0]));
-    std::vector<std::vector<unsigned int> > colors(std::move(colors_threaded[0]));
-    for(unsigned int i = 1;i < thread_count;++i)
-    {
-        lines.insert(lines.end(),std::make_move_iterator(lines_threaded[i].begin()),std::make_move_iterator(lines_threaded[i].end()));
-        colors.insert(colors.end(),std::make_move_iterator(colors_threaded[i].begin()),std::make_move_iterator(colors_threaded[i].end()));
-    }
-
+    std::vector<std::vector<tipl::vector<2,float> > > lines;
+    std::vector<std::vector<unsigned int> > colors;
+    tipl::aggregate_results(std::move(lines_threaded),lines);
+    tipl::aggregate_results(std::move(colors_threaded),colors);
     struct draw_point_class{
         int height;
         int width;
@@ -153,8 +143,7 @@ void TractTableWidget::draw_tracts(unsigned char dim,int pos,
         {
             for(size_t j = 1;j < line.size();++j)
             {
-                if(!tract_color_style)
-                    draw_line(int(line[j-1][0]),int(line[j-1][1]),int(line[j][0]),int(line[j][1]),color[j]);
+                draw_line(int(line[j-1][0]),int(line[j-1][1]),int(line[j][0]),int(line[j][1]),color[j]);
             }
         }
     });
