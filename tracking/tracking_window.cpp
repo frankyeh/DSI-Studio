@@ -387,12 +387,12 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         connect(ui->perform_tracking,SIGNAL(clicked()),tractWidget,SLOT(start_tracking()));
         connect(ui->stop_tracking,SIGNAL(clicked()),tractWidget,SLOT(stop_tracking()));
         connect(tractWidget,SIGNAL(show_tracts()),glWidget,SLOT(update()));
+        connect(tractWidget,SIGNAL(show_tracts()),this,SLOT(update_scene_slice()));
         connect(tractWidget,SIGNAL(cellChanged(int,int)),glWidget,SLOT(update())); //update label
         connect(tractWidget,SIGNAL(itemSelectionChanged()),tractWidget,SLOT(show_report()));
         connect(glWidget,SIGNAL(edited()),tractWidget,SLOT(edit_tracts()));
         connect(glWidget,SIGNAL(region_edited()),glWidget,SLOT(update()));
         connect(glWidget,SIGNAL(region_edited()),this,SLOT(update_scene_slice()));
-
 
         connect(ui->actionFilter_by_ROI,SIGNAL(triggered()),tractWidget,SLOT(filter_by_roi()));
 
@@ -1699,9 +1699,9 @@ void tracking_window::on_show_edge_toggled(bool checked)
 }
 void tracking_window::on_show_track_toggled(bool checked)
 {
-    ui->show_edge->setChecked(checked);
-    if(ui->show_edge->isChecked() ^ (*this)["roi_track"].toBool())
-        set_data("roi_track",ui->show_edge->isChecked());
+    ui->show_track->setChecked(checked);
+    if(ui->show_track->isChecked() ^ (*this)["roi_track"].toBool())
+        set_data("roi_track",ui->show_track->isChecked());
     slice_need_update = true;
 }
 void tracking_window::on_show_r_toggled(bool checked)
