@@ -1505,13 +1505,6 @@ void GLWidget::add_odf(const std::vector<tipl::pixel_index<3> >& odf_pos_)
             iter2->normalize();
     });
 }
-void myglColor(const tipl::vector<3,float>& color,float alpha)
-{
-    if(alpha == 1.0)
-        glColor3fv(color.begin());
-    else
-        glColor4f(color[0],color[1],color[2],alpha);
-}
 
 TractRenderData::TractRenderData(void):tracts(glGenLists(1))
 {
@@ -1549,8 +1542,6 @@ void TractRenderData::makeTract(std::shared_ptr<TractModel>& active_tract_model,
     if(!tracts)
         return;
 
-    glDeleteLists(tracts, 1);
-    glNewList(tracts, GL_COMPILE);
 
     auto tract_color_style = glwidget->tract_color_style;
     auto tract_alpha_style = glwidget->tract_alpha_style;
@@ -1569,7 +1560,7 @@ void TractRenderData::makeTract(std::shared_ptr<TractModel>& active_tract_model,
     const float detail_option[] = {1.0f,0.5f,0.25f,0.0f,0.0f};
     const unsigned char end_sequence[8] = {4,3,5,2,6,1,7,0};
     const unsigned char end_sequence2[8] = {7,0,6,1,5,2,4,3};
-    bool show_end_points = tract_style >= 2;
+    bool show_end_only = tract_style >= 2;
     float tube_detail = tube_diameter*detail_option[tract_tube_detail]*4.0f;
     float tract_shaderf = 0.01f*float(tract_shader);
 
@@ -1580,21 +1571,30 @@ void TractRenderData::makeTract(std::shared_ptr<TractModel>& active_tract_model,
 
     float skip_rate = float(tract_visible_tract)/float(active_tract_model->get_visible_track_count());
 
+    std::vector<unsigned int> visible;
+    {
+        visible.reserve(tract_visible_tract*1.5f);
+        tipl::uniform_dist<float> uniform_gen(0.0f,1.0f);
+        auto tracks_count = active_tract_model->get_visible_track_count();
+        for (unsigned int data_index = 0; data_index < tracks_count && !about_to_write; ++data_index)
+        {
+            if(skip_rate < 1.0f && uniform_gen() > skip_rate)
+                continue;
+            unsigned int vertex_count = active_tract_model->get_tract_length(data_index)/3;
+            if (vertex_count <= 1)
+                continue;
+            visible.push_back(data_index);
+        }
+    }
+
     std::vector<float> tract_metrics;
     if (tract_color_style > 1)
     {
         tract_metrics.clear();
         if(tract_color_style == 3 || tract_color_style == 5)// mean value
         {
-            tipl::uniform_dist<float> uniform_gen(0.0f,1.0f);
-            auto tracks_count = active_tract_model->get_visible_track_count();
-            for (unsigned int data_index = 0; data_index < tracks_count; ++data_index)
+            for (unsigned int data_index : visible)
             {
-                if(skip_rate < 1.0f && uniform_gen() > skip_rate)
-                    continue;
-                unsigned int vertex_count = active_tract_model->get_tract_length(data_index)/3;
-                if (vertex_count <= 1)
-                    continue;
                 std::vector<float> metrics;
                 active_tract_model->get_tract_data(cur_tracking_window.handle,
                                                    data_index,track_num_index,metrics);
@@ -1621,15 +1621,9 @@ void TractRenderData::makeTract(std::shared_ptr<TractModel>& active_tract_model,
             max_x_map = tipl::image<2,float>(tipl::shape<2>(64,64));
             max_y_map = tipl::image<2,float>(tipl::shape<2>(64,64));
             max_z_map = tipl::image<2,float>(tipl::shape<2>(64,64));
-            tipl::uniform_dist<float> uniform_gen(0.0f,1.0f);
-            auto tracks_count = active_tract_model->get_visible_track_count();
-            for (unsigned int data_index = 0; data_index < tracks_count; ++data_index)
+            for (unsigned int data_index : visible)
             {
-                if(skip_rate < 1.0f && uniform_gen() > skip_rate)
-                    continue;
                 unsigned int vertex_count = active_tract_model->get_tract_length(data_index)/3;
-                if (vertex_count <= 1)
-                    continue;
                 const float* data_iter = &*(active_tract_model->get_tract(data_index).begin());
                 for (unsigned int index = 0; index < vertex_count;data_iter += 3, ++index)
                 {
@@ -1669,23 +1663,29 @@ void TractRenderData::makeTract(std::shared_ptr<TractModel>& active_tract_model,
         }
     }
 
+
+    tube_vertices.clear();
+    tube_normals.clear();
+    tube_colors.clear();
+    line_vertices.clear();
+    line_colors.clear();
+    tube_strip_pos.clear();
+    line_strip_pos.clear();
+    tube_strip_pos.push_back(0);
+    line_strip_pos.push_back(0);
+
     std::vector<tipl::vector<3,float> > points(8),previous_points(8),
                                       normals(8),previous_normals(8);
     tipl::rgb paint_color;
     tipl::vector<3,float> paint_color_f;
     std::vector<float> color;
 
-    tipl::uniform_dist<float> uniform_gen(0.0f,1.0f),random_size(-0.5f,0.5f),random_color(-0.05f,0.05f);
-    auto tracks_count = active_tract_model->get_visible_track_count();
-    for (unsigned int data_index = 0,tract_metrics_index = 0; data_index < tracks_count && !about_to_write; ++data_index)
+    unsigned int tract_metrics_index = 0;
+    for (unsigned int data_index : visible)
     {
-        if(skip_rate < 1.0f && uniform_gen() > skip_rate)
-            continue;
-        unsigned int vertex_count =
-                active_tract_model->get_tract_length(data_index)/3;
-        if (vertex_count <= 1)
-            continue;
-
+        if(about_to_write)
+            break;
+        unsigned int vertex_count = active_tract_model->get_tract_length(data_index)/3;
         const float* data_iter = &*(active_tract_model->get_tract(data_index).begin());
 
         switch(tract_color_style)
@@ -1710,7 +1710,6 @@ void TractRenderData::makeTract(std::shared_ptr<TractModel>& active_tract_model,
             vec_a(1,0,0),vec_b(0,1,0),
             vec_n,prev_vec_n,vec_ab,vec_ba,cur_color,previous_color;
 
-        glBegin((tract_style) ? GL_TRIANGLE_STRIP : GL_LINE_STRIP);
         for (unsigned int j = 0, index = 0; index < vertex_count;j += 3, data_iter += 3, ++index)
         {
             // skip straight line!
@@ -1835,98 +1834,66 @@ void TractRenderData::makeTract(std::shared_ptr<TractModel>& active_tract_model,
                 points[6] -= vec_b;
                 points[7] += vec_ba;
             }
-            // add end
-            if (index == 0)
+            if(show_end_only)
             {
-                /*
-                glColor3fv(cur_color.begin());
-                glNormal3f(-vec_n[0],-vec_n[1],-vec_n[2]);
-                for (unsigned int k = 0;k < 8;++k)
-                    glVertex3fv(points[end_sequence[k]].begin());
-                if(show_end_points)
-                    glEnd();*/
-                if(show_end_points)
+                // add end
+                if (index == 0)
                 {
                     if(tract_style != 3)
                     {
-                        myglColor(cur_color,alpha);
-                        glNormal3f(-vec_n[0],-vec_n[1],-vec_n[2]);
                         tipl::vector<3,float> shift(vec_n);
                         shift *= -(int)end_point_shift;
                         for (unsigned int k = 0;k < 8;++k)
                         {
                             tipl::vector<3,float> cur_point = points[end_sequence[k]];
                             cur_point += shift;
-                            glVertex3fv(cur_point.begin());
+                            add_tube(cur_point,cur_color,-vec_n);
                         }
+                        if(tract_style == 2)
+                            end_tube_strip();
                     }
-                    glEnd();
+
                 }
                 else
-                {
-                    myglColor(cur_color,alpha);
-                    for (unsigned int k = 0;k < 8;++k)
+                    if(index + 1 == vertex_count)
                     {
-                        glNormal3fv(normals[end_sequence[k]].begin());
-                        glVertex3fv(points[end_sequence[k]].begin());
-                    }
-                }
-            }
-            else
-            // add tube
-            {
-
-                if(!show_end_points)
-                {
-                    myglColor(cur_color,alpha);
-                    glNormal3fv(normals[0].begin());
-                    glVertex3fv(points[0].begin());
-                    for (unsigned int k = 1;k < 8;++k)
-                    {
-                       myglColor(previous_color,alpha);
-                       glNormal3fv(previous_normals[k].begin());
-                       glVertex3fv(previous_points[k].begin());
-
-                       myglColor(cur_color,alpha);
-                       glNormal3fv(normals[k].begin());
-                       glVertex3fv(points[k].begin());
-                    }
-                    myglColor(cur_color,alpha);
-                    glNormal3fv(normals[0].begin());
-                    glVertex3fv(points[0].begin());
-                }
-                if(index +1 == vertex_count)
-                {
-                    if(show_end_points)
-                    {
-                        glBegin((tract_style) ? GL_TRIANGLE_STRIP : GL_LINE_STRIP);
                         if(tract_style != 4)
                         {
-                            myglColor(cur_color,alpha);
-                            glNormal3fv(vec_n.begin());
                             tipl::vector<3,float> shift(vec_n);
                             shift *= (int)end_point_shift;
                             for (unsigned int k = 0;k < 8;++k)
                             {
                                 tipl::vector<3,float> cur_point = points[end_sequence2[k]];
                                 cur_point += shift;
-                                glVertex3fv(cur_point.begin());
+                                add_tube(cur_point,cur_color,vec_n);
                             }
                         }
                     }
-                    else
+            }
+            else
+            {
+                if (index == 0)
+                {
+                    for (unsigned int k = 0;k < 8;++k)
+                        add_tube(points[end_sequence[k]],cur_color,normals[end_sequence[k]]);
+                }
+                else
+                {
+                    add_tube(points[0],cur_color,normals[0]);
+                    for (unsigned int k = 1;k < 8;++k)
                     {
-                        myglColor(cur_color,alpha);
+                       add_tube(previous_points[k],previous_color,previous_normals[k]);
+                       add_tube(points[k],cur_color,normals[k]);
+                    }
+                    add_tube(points[0],cur_color,normals[0]);
+
+                    if(index +1 == vertex_count)
+                    {
                         for (unsigned int k = 2;k < 8;++k) // skip 0 and 1 because the tubes have them
-                        {
-                            glNormal3fv(normals[end_sequence2[k]].begin());
-                            glVertex3fv(points[end_sequence2[k]].begin());
-                        }
+                            add_tube(points[end_sequence2[k]],cur_color,normals[end_sequence2[k]]);
                     }
                 }
-
             }
-
             previous_points.swap(points);
             previous_normals.swap(normals);
             previous_color = cur_color;
@@ -1935,11 +1902,49 @@ void TractRenderData::makeTract(std::shared_ptr<TractModel>& active_tract_model,
             }
             else
             {
-                myglColor(cur_color,alpha);
-                glVertex3fv(pos.begin());
+                add_line(pos,cur_color);
             }
         }
-        glEnd();
+        if(tract_style)
+            end_tube_strip();
+        else
+            end_line_strip();
+
+    }
+
+    glDeleteLists(tracts, 1);
+    glNewList(tracts, GL_COMPILE);
+    if(tract_style) // Tube
+    {
+        for(size_t i = 1;i < tube_strip_pos.size();++i)
+        {
+            glBegin(GL_TRIANGLE_STRIP);
+            size_t from = tube_strip_pos[i-1];
+            size_t to = tube_strip_pos[i];
+            for(;from != to;from += 3)
+            {
+                glColor3fv(&tube_colors[from]);
+                glNormal3fv(&tube_normals[from]);
+                glVertex3fv(&tube_vertices[from]);
+            }
+            glEnd();
+        }
+    }
+    else
+        //Line
+    {
+        for(size_t i = 1;i < line_strip_pos.size();++i)
+        {
+            glBegin(GL_LINE_STRIP);
+            size_t from = line_strip_pos[i-1];
+            size_t to = line_strip_pos[i];
+            for(;from != to;from += 3)
+            {
+                glColor3fv(&line_colors[from]);
+                glVertex3fv(&line_vertices[from]);
+            }
+            glEnd();
+        }
     }
     glEndList();
     check_error(__FUNCTION__);
