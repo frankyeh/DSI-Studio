@@ -38,6 +38,8 @@ set(DSI_STUDIO_HEADERS mainwindow.h
     reconstruction/reconstruction_window.h
     tracking/slice_view_scene.h
     opengl/glwidget.h
+    opengl/renderingtablewidget.h
+    opengl/tract_render.hpp
     libs/tracking/tracking_method.hpp
     libs/tracking/roi.hpp
     libs/tracking/fib_data.hpp
@@ -48,7 +50,6 @@ set(DSI_STUDIO_HEADERS mainwindow.h
     tracking/region/RegionModel.h
     libs/tracking/tract_model.hpp
     tracking/tract/tracttablewidget.h
-    opengl/renderingtablewidget.h
     qcolorcombobox.h
     libs/tracking/tracking_thread.hpp
     libs/prog_interface_static_link.h
@@ -114,12 +115,13 @@ set(DSI_STUDIO_SOURCES
     reconstruction/reconstruction_window.cpp
     tracking/slice_view_scene.cpp
     opengl/glwidget.cpp
+    opengl/tract_render.cpp
+    opengl/renderingtablewidget.cpp
     tracking/region/regiontablewidget.cpp
     tracking/region/Regions.cpp
     tracking/region/RegionModel.cpp
     libs/tracking/tract_model.cpp
     tracking/tract/tracttablewidget.cpp
-    opengl/renderingtablewidget.cpp
     qcolorcombobox.cpp
     cmd/trk.cpp
     cmd/rec.cpp
@@ -206,14 +208,8 @@ target_include_directories(dsi_studio PUBLIC
   ${CMAKE_SOURCE_DIR}/libs/mapping
   ${CMAKE_SOURCE_DIR}/dicom
   ${CMAKE_SOURCE_DIR}
-  ${CMAKE_BINARY_DIR})
-
-if(EXISTS "${TIPL_DIR}")
-  include_directories(dsi_studio ${TIPL_DIR})
-else()
-  find_package(TIPL REQUIRED)
-  target_link_libraries(dsi_studio TIPL::tipl)
-endif()
+  ${CMAKE_BINARY_DIR}
+  ${TIPL_DIR})
 
 target_link_libraries(dsi_studio Qt6::Core Qt6::Gui Qt6::OpenGL Qt6::Charts Qt6::Network Qt6::Widgets ZLIB::ZLIB OpenGL::GL OpenGL::GLU)
 if(CUDA_FOUND)

@@ -1084,6 +1084,14 @@ void TractTableWidget::need_update_all(void)
     for(auto& t:tract_rendering)
         t->need_update = true;
 }
+void TractTableWidget::render_tracts(GLWidget* glwidget)
+{
+    for(unsigned int index = 0;index < tract_rendering.size();++index)
+        if(item(int(index),0)->checkState() == Qt::Checked &&
+           tract_models[index]->get_visible_track_count())
+        tract_rendering[index]->render_tracts(tract_models[index],glwidget,cur_tracking_window,thread_data[index].get() != nullptr);
+}
+
 bool TractTableWidget::command(QString cmd,QString param,QString param2)
 {
     if(cmd == "save_all_tracts_to_dir")

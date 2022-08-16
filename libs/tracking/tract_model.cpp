@@ -1027,7 +1027,7 @@ void TractModel::save_vrml(const std::string& file_name,
     std::ofstream out(file_name.c_str());
     std::vector<tipl::vector<3,float> > points(8),previous_points(8);
     tipl::rgb paint_color;
-    tipl::vector<3,float> paint_color_f;
+    tipl::vector<3,float> assign_color;
 
     const float detail_option[] = {1.0,0.5,0.25,0.0,0.0};
     const unsigned char end_sequence[8] = {4,3,5,2,6,1,7,0};
@@ -1085,8 +1085,8 @@ void TractModel::save_vrml(const std::string& file_name,
         {
         case 1:
             paint_color = get_tract_color(data_index);
-            paint_color_f = tipl::vector<3,float>(paint_color.r,paint_color.g,paint_color.b);
-            paint_color_f /= 255.0;
+            assign_color = tipl::vector<3,float>(paint_color.r,paint_color.g,paint_color.b);
+            assign_color /= 255.0;
             break;
         }
         unsigned int prev_coordinate_count = coordinate_count;
@@ -1113,7 +1113,7 @@ void TractModel::save_vrml(const std::string& file_name,
                 cur_color[2] = std::fabs(vec_n[2]);
                 break;
             case 1://manual assigned
-                cur_color = paint_color_f;
+                cur_color = assign_color;
                 break;
             }
 
