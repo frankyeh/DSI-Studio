@@ -108,7 +108,7 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
             ui->graphicsView->setCursor(Qt::CrossCursor);
             ui->DeviceDockWidget->hide();
 
-            color_bar.reset(new color_bar_dialog(this)); // need to initiate after glwidget for connect makeTract
+            color_bar.reset(new color_bar_dialog(this)); // need to initiate after glwidget for tract rendering
         }
         {
             show_progress() << "recall previous settings" << std::endl;
