@@ -155,7 +155,7 @@ void TractTableWidget::draw_tracts(unsigned char dim,int pos,
 void TractTableWidget::addNewTracts(QString tract_name,bool checked)
 {
     thread_data.push_back(nullptr);
-    tract_rendering.push_back(std::make_shared<TractRenderData>());
+    tract_rendering.push_back(std::make_shared<TractRender>());
     tract_models.push_back(std::make_shared<TractModel>(cur_tracking_window.handle));
     insertRow(tract_models.size()-1);
     QTableWidgetItem *item0 = new QTableWidgetItem(tract_name);
@@ -1036,26 +1036,26 @@ std::vector<std::shared_ptr<TractModel> > TractTableWidget::get_checked_tracks(v
             active_tracks.push_back(tract_models[index]);
     return active_tracks;
 }
-std::vector<std::shared_ptr<TractRenderData> > TractTableWidget::get_checked_tracks_rendering(void)
+std::vector<std::shared_ptr<TractRender> > TractTableWidget::get_checked_tracks_rendering(void)
 {
-    std::vector<std::shared_ptr<TractRenderData> > active_tracks_rendering;
+    std::vector<std::shared_ptr<TractRender> > active_tracks_rendering;
     for(unsigned int index = 0;index < tract_rendering.size();++index)
         if(item(int(index),0)->checkState() == Qt::Checked)
             active_tracks_rendering.push_back(tract_rendering[index]);
     return active_tracks_rendering;
 }
 
-std::vector<std::shared_ptr<TractRenderData::end_reading> > TractTableWidget::start_reading_checked_tracks(void)
+std::vector<std::shared_ptr<TractRender::end_reading> > TractTableWidget::start_reading_checked_tracks(void)
 {
-    std::vector<std::shared_ptr<TractRenderData::end_reading> > locks;
+    std::vector<std::shared_ptr<TractRender::end_reading> > locks;
     for(unsigned int index = 0;index < tract_rendering.size();++index)
         if(item(int(index),0)->checkState() == Qt::Checked)
             locks.push_back(tract_rendering[index]->start_reading());
     return locks;
 }
-std::vector<std::shared_ptr<TractRenderData::end_writing> > TractTableWidget::start_writing_checked_tracks(void)
+std::vector<std::shared_ptr<TractRender::end_writing> > TractTableWidget::start_writing_checked_tracks(void)
 {
-    std::vector<std::shared_ptr<TractRenderData::end_writing> > locks;
+    std::vector<std::shared_ptr<TractRender::end_writing> > locks;
     for(unsigned int index = 0;index < tract_rendering.size();++index)
         if(item(int(index),0)->checkState() == Qt::Checked)
             locks.push_back(tract_rendering[index]->start_writing());

@@ -10,7 +10,7 @@ class tracking_window;
 struct ThreadData;
 class GLWidget;
 
-struct TractRenderData{
+struct TractRender{
 public:
     unsigned int tracts = 0;
     bool need_update = true;
@@ -60,8 +60,8 @@ public:
 public:
     struct end_reading
     {
-        TractRenderData& host;
-        end_reading(TractRenderData& host_):host(host_){}
+        TractRender& host;
+        end_reading(TractRender& host_):host(host_){}
         ~end_reading(void)
         {
             std::lock_guard<std::mutex> lock(host.reading_lock);
@@ -82,8 +82,8 @@ public:
     }
     struct end_writing
     {
-        TractRenderData& host;
-        end_writing(TractRenderData& host_):host(host_){}
+        TractRender& host;
+        end_writing(TractRender& host_):host(host_){}
         ~end_writing(void)
         {
             std::lock_guard<std::mutex> lock(host.writing_lock);
@@ -102,8 +102,8 @@ public:
         about_to_write = false;
         return std::make_shared<end_writing>(*this);
     }
-    TractRenderData(void);
-    ~TractRenderData(void);
+    TractRender(void);
+    ~TractRender(void);
     void makeTract(std::shared_ptr<TractModel>& tract_data,GLWidget* glwidget,tracking_window& cur_tracking_window,bool simple);
 };
 
@@ -124,12 +124,12 @@ private:
 public:
     std::vector<std::shared_ptr<ThreadData> > thread_data;
     std::vector<std::shared_ptr<TractModel> > tract_models;
-    std::vector<std::shared_ptr<TractRenderData> > tract_rendering;
+    std::vector<std::shared_ptr<TractRender> > tract_rendering;
 public:
     std::vector<std::shared_ptr<TractModel> > get_checked_tracks(void);
-    std::vector<std::shared_ptr<TractRenderData> > get_checked_tracks_rendering(void);
-    std::vector<std::shared_ptr<TractRenderData::end_reading> > start_reading_checked_tracks(void);
-    std::vector<std::shared_ptr<TractRenderData::end_writing> > start_writing_checked_tracks(void);
+    std::vector<std::shared_ptr<TractRender> > get_checked_tracks_rendering(void);
+    std::vector<std::shared_ptr<TractRender::end_reading> > start_reading_checked_tracks(void);
+    std::vector<std::shared_ptr<TractRender::end_writing> > start_writing_checked_tracks(void);
     std::vector<std::string> get_checked_tracks_name(void) const;
     enum {none = 0,select = 1,del = 2,cut = 3,paint = 4,move = 5}edit_option;
     void addNewTracts(QString tract_name,bool checked = true);

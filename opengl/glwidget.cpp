@@ -1506,11 +1506,11 @@ void GLWidget::add_odf(const std::vector<tipl::pixel_index<3> >& odf_pos_)
     });
 }
 
-TractRenderData::TractRenderData(void):tracts(glGenLists(1))
+TractRender::TractRender(void):tracts(glGenLists(1))
 {
 }
 
-TractRenderData::~TractRenderData(void)
+TractRender::~TractRender(void)
 {
     auto lock = start_writing();
     if(tracts)
@@ -1535,7 +1535,7 @@ void TractTableWidget::render_tracts(GLWidget* glwidget)
         }
 }
 
-void TractRenderData::makeTract(std::shared_ptr<TractModel>& active_tract_model,GLWidget* glwidget,
+void TractRender::makeTract(std::shared_ptr<TractModel>& active_tract_model,GLWidget* glwidget,
                                 tracking_window& cur_tracking_window,bool simple)
 {
     need_update = false;
