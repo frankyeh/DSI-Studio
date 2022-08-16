@@ -40,7 +40,9 @@ TractTableWidget::TractTableWidget(tracking_window& cur_tracking_window_,QWidget
     QObject::connect(this,SIGNAL(cellClicked(int,int)),this,SLOT(check_check_status(int,int)));
 
     timer = new QTimer(this);
+    timer_update = new QTimer(this);
     connect(timer, SIGNAL(timeout()), this, SLOT(fetch_tracts()));
+    connect(timer_update, SIGNAL(timeout()), this, SLOT(show_tracking_progress()));
 }
 
 TractTableWidget::~TractTableWidget(void)
@@ -79,11 +81,9 @@ void TractTableWidget::check_check_status(int row, int col)
 void TractTableWidget::draw_tracts(unsigned char dim,int pos,
                                    QImage& scaled_image,float display_ratio)
 {
-    std::vector<std::shared_ptr<TractModel> > selected_tracts;
-    for(unsigned int index = 0;index < tract_models.size();++index)
-        if(item(int(index),0)->checkState() == Qt::Checked && !thread_data[index].get())
-            selected_tracts.push_back(tract_models[index]);
-    if(selected_tracts.empty())
+    auto selected_tracts = get_checked_tracks();
+    auto selected_tracts_rendering = get_checked_tracks_rendering();
+    if(selected_tracts.empty() || selected_tracts.size() != selected_tracts_rendering.size())
         return;
     uint32_t max_count = uint32_t(cur_tracking_window["roi_track_count"].toInt());
     auto tract_color_style = cur_tracking_window["tract_color_style"].toInt();
@@ -96,8 +96,11 @@ void TractTableWidget::draw_tracts(unsigned char dim,int pos,
     {
         if(cur_tracking_window.slice_need_update)
             return;
+        auto lock = selected_tracts_rendering[index]->start_reading(false/* no wait*/);
+        if(!lock.get())
+            return;
         selected_tracts[index]->get_in_slice_tracts(dim,pos,pt,lines_threaded[thread],colors_threaded[thread],max_count,tract_color_style,
-                            cur_tracking_window.slice_need_update);
+                            selected_tracts_rendering[index]->about_to_write);
     });
     if(cur_tracking_window.slice_need_update)
         return;
@@ -224,6 +227,7 @@ void TractTableWidget::start_tracking(void)
     tract_models.back()->report = cur_tracking_window.handle->report + thread_data.back()->report.str();
     show_report();
     timer->start(1000);
+    timer_update->start(100);
 }
 
 void TractTableWidget::show_report(void)
@@ -243,6 +247,19 @@ void TractTableWidget::filter_by_roi(void)
         return tract_models[index]->filter_by_roi(track_thread.roi_mgr);
     });
 }
+void TractTableWidget::show_tracking_progress(void)
+{
+    bool has_thread = false;
+    for(unsigned int index = 0;index < thread_data.size();++index)
+        if(thread_data[index].get())
+        {
+            item(int(index),1)->setText(QString::number(thread_data[index]->get_total_tract_count()));
+            item(int(index),3)->setText(QString::number(thread_data[index]->get_total_seed_count()));
+            has_thread = true;
+        }
+    if(!has_thread)
+        timer_update->stop();
+}
 
 void TractTableWidget::fetch_tracts(void)
 {
@@ -250,29 +267,23 @@ void TractTableWidget::fetch_tracts(void)
     bool has_thread = false;
     for(unsigned int index = 0;index < thread_data.size();++index)
         if(thread_data[index].get())
-        {
-            has_thread = true;
-            // 2 for seed number
-            if(thread_data[index]->fetchTracks(tract_models[index].get()))
-            {
-                // 1 for tract number
-                item(int(index),1)->setText(
-                        QString::number(tract_models[index]->get_visible_track_count()));
-                has_tracts = true;
-            }
-            item(int(index),3)->setText(
-                QString::number(thread_data[index]->get_total_seed_count()));
+        {    
+            tract_rendering[index]->need_update = true;
+            auto lock = tract_rendering[index]->start_writing();
+            has_tracts = thread_data[index]->fetchTracks(tract_models[index].get());
             if(thread_data[index]->is_ended())
             {
-                has_tracts = thread_data[index]->fetchTracks(tract_models[index].get()) ||
-                             thread_data[index]->fetchTracks(tract_models[index].get()); // clear both front and back buffer
-                thread_data[index]->apply_tip(tract_models[index].get());
+                has_tracts |= thread_data[index]->fetchTracks(tract_models[index].get()); // clear both front and back buffer
+                thread_data[index]->apply_tip(tract_models[index].get()); 
                 item(int(index),1)->setText(QString::number(tract_models[index]->get_visible_track_count()));
                 item(int(index),2)->setText(QString::number(tract_models[index]->get_deleted_track_count()));
+                item(int(index),3)->setText(QString::number(thread_data[index]->get_total_seed_count()));
                 thread_data[index].reset();
             }
-            tract_rendering[index]->need_update = true;
+            else
+                has_thread = true;
         }
+
     if(has_tracts)
         emit show_tracts();
     if(!has_thread)
@@ -281,9 +292,9 @@ void TractTableWidget::fetch_tracts(void)
 
 void TractTableWidget::stop_tracking(void)
 {
-    timer->stop();
     for(unsigned int index = 0;index < thread_data.size();++index)
-        thread_data[index].reset();
+        if(thread_data[index].get())
+            thread_data[index]->end_thread();
 }
 void TractTableWidget::load_tracts(QStringList filenames)
 {
@@ -493,10 +504,13 @@ void TractTableWidget::recog_tracks(void)
         return;
     }
     std::map<float,std::string,std::greater<float> > sorted_list;
-    if(!cur_tracking_window.handle->recognize(tract_models[uint32_t(currentRow())],sorted_list))
     {
-        QMessageBox::critical(this,"ERROR","Cannot recognize tracks.");
-        return;
+        auto lock = tract_rendering[uint32_t(currentRow())]->start_reading();
+        if(!cur_tracking_window.handle->recognize(tract_models[uint32_t(currentRow())],sorted_list))
+        {
+            QMessageBox::critical(this,"ERROR","Cannot recognize tracks.");
+            return;
+        }
     }
     std::ostringstream out;
     auto beg = sorted_list.begin();
@@ -515,7 +529,10 @@ void TractTableWidget::auto_recognition(void)
         return;
     }
     std::vector<unsigned int> c,new_c;
-    cur_tracking_window.handle->recognize(tract_models[uint32_t(currentRow())],c);
+    {
+        auto lock = tract_rendering[uint32_t(currentRow())]->start_reading();
+        cur_tracking_window.handle->recognize(tract_models[uint32_t(currentRow())],c);
+    }
     std::vector<unsigned int> count(cur_tracking_window.handle->tractography_name_list.size());
     for(auto l : c)
         if(l < count.size())
@@ -551,6 +568,7 @@ void TractTableWidget::recognize_rename(void)
         if(item(int(index),0)->checkState() == Qt::Checked)
         {
             std::map<float,std::string,std::greater<float> > sorted_list;
+            auto lock = tract_rendering[index]->start_reading();
             if(!cur_tracking_window.handle->recognize(tract_models[index],sorted_list))
                 return;
             item(int(index),0)->setText(sorted_list.begin()->second.c_str());
@@ -572,8 +590,12 @@ void TractTableWidget::clustering(int method_id)
             "DSI Studio","Clustering detail (mm):",cur_tracking_window.handle->vs[0],0.2,50.0,2,&ok);
     if(!ok)
         return;
-    tract_models[uint32_t(currentRow())]->run_clustering(method_id,n,detail);
-    std::vector<unsigned int> c = tract_models[uint32_t(currentRow())]->get_cluster_info();
+    std::vector<unsigned int> c;
+    {
+        auto lock = tract_rendering[uint32_t(currentRow())]->start_reading();
+        tract_models[uint32_t(currentRow())]->run_clustering(method_id,n,detail);
+        c = tract_models[uint32_t(currentRow())]->get_cluster_info();
+    }
     load_cluster_label(c);
     assign_colors();
 }
@@ -589,6 +611,7 @@ void TractTableWidget::save_tracts_as(void)
     if(filename.isEmpty())
         return;
     std::string sfilename = filename.toLocal8Bit().begin();
+    auto lock = tract_rendering[uint32_t(currentRow())]->start_reading();
     if(tract_models[uint32_t(currentRow())]->save_tracts_to_file(&*sfilename.begin()))
         QMessageBox::information(this,"DSI Studio","file saved");
     else
@@ -616,6 +639,7 @@ void TractTableWidget::save_tracts_in_native(void)
                  "Tract files (*.tt.gz *tt.gz *trk.gz *.trk);;Text File (*.txt);;MAT files (*.mat);;All files (*)");
     if(filename.isEmpty())
         return;
+    auto lock = tract_rendering[uint32_t(currentRow())]->start_reading();
     if(tract_models[uint32_t(currentRow())]->save_tracts_in_native_space(cur_tracking_window.handle,filename.toStdString().c_str()))
         QMessageBox::information(this,"DSI Studio","file saved");
     else
@@ -648,7 +672,7 @@ void TractTableWidget::save_vrml_as(void)
     }
     */
     std::string sfilename = filename.toLocal8Bit().begin();
-
+    auto lock = tract_rendering[uint32_t(currentRow())]->start_reading();
     tract_models[uint32_t(currentRow())]->save_vrml(&*sfilename.begin(),
                                                 cur_tracking_window["tract_style"].toInt(),
                                                 cur_tracking_window["tract_color_style"].toInt(),
@@ -672,6 +696,8 @@ void TractTableWidget::save_all_tracts_end_point_as(void)
         "DSI Studio","Assign end segment length in voxel distance:",3.0,0.0,10.0,1,&ok));
     if (!ok)
         return;
+
+    auto locks = start_reading_checked_tracks();
     TractModel::export_end_pdi(filename.toStdString().c_str(),selected_tracts,dis);
 }
 void TractTableWidget::save_end_point_as(void)
@@ -685,6 +711,7 @@ void TractTableWidget::save_end_point_as(void)
                 "Tract files (*.txt);;MAT files (*.mat);;All files (*)");
     if(filename.isEmpty())
         return;
+    auto lock = tract_rendering[uint32_t(currentRow())]->start_reading();
     tract_models[uint32_t(currentRow())]->save_end_points(filename.toStdString().c_str());
 }
 
@@ -701,7 +728,10 @@ void TractTableWidget::save_end_point_in_mni(void)
         return;
 
     std::vector<tipl::vector<3,short> > points1,points2;
-    tract_models[size_t(currentRow())]->to_end_point_voxels(points1,points2);
+    {
+        auto lock = tract_rendering[uint32_t(currentRow())]->start_reading();
+        tract_models[size_t(currentRow())]->to_end_point_voxels(points1,points2);
+    }
     points1.insert(points1.end(),points2.begin(),points2.end());
 
     std::vector<tipl::vector<3> > points(points1.begin(),points1.end());
@@ -751,6 +781,7 @@ void TractTableWidget::save_transformed_tracts(void)
     }
 
     slice->update_transform();
+    auto lock = tract_rendering[uint32_t(currentRow())]->start_reading();
     if(tract_models[uint32_t(currentRow())]->save_transformed_tracts_to_file(filename.toStdString().c_str(),slice->dim,slice->vs,slice->invT,false))
         QMessageBox::information(this,"DSI Studio","File saved");
     else
@@ -777,6 +808,7 @@ void TractTableWidget::save_transformed_endpoints(void)
         QMessageBox::critical(this,"Error","Current slice is in the DWI space. Please use regular tract saving function");
         return;
     }
+    auto lock = tract_rendering[uint32_t(currentRow())]->start_reading();
     if(tract_models[uint32_t(currentRow())]->save_transformed_tracts_to_file(filename.toStdString().c_str(),slice->dim,slice->vs,slice->invT,true))
         QMessageBox::information(this,"DSI Studio","File saved");
     else
@@ -796,6 +828,7 @@ void TractTableWidget::save_tracts_in_template(void)
                  "Tract files (*.tt.gz *tt.gz *trk.gz *.trk);;Text File (*.txt);;MAT files (*.mat);;NIFTI files (*.nii *nii.gz);;All files (*)");
     if(filename.isEmpty())
         return;
+    auto lock = tract_rendering[uint32_t(currentRow())]->start_reading();
     if(tract_models[uint32_t(currentRow())]->save_tracts_in_template_space(cur_tracking_window.handle,filename.toStdString().c_str()))
         QMessageBox::information(this,"DSI Studio","File saved");
     else
@@ -813,6 +846,7 @@ void TractTableWidget::save_tracts_in_mni(void)
                  "NIFTI files (*.nii *nii.gz);;All files (*)");
     if(filename.isEmpty())
         return;
+    auto lock = tract_rendering[uint32_t(currentRow())]->start_reading();
     if(tract_models[uint32_t(currentRow())]->save_tracts_in_template_space(cur_tracking_window.handle,filename.toStdString().c_str()))
         QMessageBox::information(this,"DSI Studio","File saved");
     else
@@ -861,8 +895,11 @@ void TractTableWidget::deep_learning_train(void)
         for(unsigned int index = 0;progress::at(index,rowCount());++index)
         {
             tipl::image<3,unsigned char> track_map(cur_tracking_window.handle->dim);
-            for(unsigned int i = 0;i < tract_models[index]->get_tracts().size();++i)
-                paint_track_on_volume(track_map,tract_models[index]->get_tracts()[i]);
+            {
+                auto lock = tract_rendering[index]->start_reading();
+                for(unsigned int i = 0;i < tract_models[index]->get_tracts().size();++i)
+                    paint_track_on_volume(track_map,tract_models[index]->get_tracts()[i]);
+            }
             while(tipl::morphology::smoothing_fill(track_map))
                 ;
             tipl::morphology::defragment(track_map);
@@ -919,6 +956,7 @@ void TractTableWidget::load_tracts_value(void)
     std::copy(std::istream_iterator<float>(in),
               std::istream_iterator<float>(),
               std::back_inserter(values));
+    auto lock = tract_rendering[uint32_t(currentRow())]->start_reading();
     if(tract_models[uint32_t(currentRow())]->get_visible_track_count() != values.size())
     {
         QMessageBox::information(this,"Inconsistent track number",
@@ -951,6 +989,7 @@ void TractTableWidget::save_tracts_color_as(void)
         return;
 
     std::string sfilename = filename.toLocal8Bit().begin();
+    auto lock = tract_rendering[uint32_t(currentRow())]->start_reading();
     tract_models[uint32_t(currentRow())]->save_tracts_color_to_file(&*sfilename.begin());
 }
 
@@ -997,6 +1036,31 @@ std::vector<std::shared_ptr<TractModel> > TractTableWidget::get_checked_tracks(v
             active_tracks.push_back(tract_models[index]);
     return active_tracks;
 }
+std::vector<std::shared_ptr<TractRenderData> > TractTableWidget::get_checked_tracks_rendering(void)
+{
+    std::vector<std::shared_ptr<TractRenderData> > active_tracks_rendering;
+    for(unsigned int index = 0;index < tract_rendering.size();++index)
+        if(item(int(index),0)->checkState() == Qt::Checked)
+            active_tracks_rendering.push_back(tract_rendering[index]);
+    return active_tracks_rendering;
+}
+
+std::vector<std::shared_ptr<TractRenderData::end_reading> > TractTableWidget::start_reading_checked_tracks(void)
+{
+    std::vector<std::shared_ptr<TractRenderData::end_reading> > locks;
+    for(unsigned int index = 0;index < tract_rendering.size();++index)
+        if(item(int(index),0)->checkState() == Qt::Checked)
+            locks.push_back(tract_rendering[index]->start_reading());
+    return locks;
+}
+std::vector<std::shared_ptr<TractRenderData::end_writing> > TractTableWidget::start_writing_checked_tracks(void)
+{
+    std::vector<std::shared_ptr<TractRenderData::end_writing> > locks;
+    for(unsigned int index = 0;index < tract_rendering.size();++index)
+        if(item(int(index),0)->checkState() == Qt::Checked)
+            locks.push_back(tract_rendering[index]->start_writing());
+    return locks;
+}
 std::vector<std::string> TractTableWidget::get_checked_tracks_name(void) const
 {
     std::vector<std::string> track_name;
@@ -1026,12 +1090,14 @@ bool TractTableWidget::command(QString cmd,QString param,QString param2)
     {
         progress prog_("save files");
         auto selected_tracts = get_checked_tracks();
+        auto selected_tracts_rendering = get_checked_tracks_rendering();
         for(size_t index = 0;index < selected_tracts.size();++index)
         {
             std::string filename = param.toStdString();
             filename += "/";
             filename += item(int(index),0)->text().toStdString();
             filename += output_format().toStdString();
+            auto lock = selected_tracts_rendering[index]->start_reading();
             selected_tracts[index]->save_tracts_to_file(filename.c_str());
         }
         return true;
@@ -1063,14 +1129,18 @@ bool TractTableWidget::command(QString cmd,QString param,QString param2)
     if(cmd == "delete_all_tract")
     {
         setRowCount(0);
-        thread_data.clear();
-        tract_models.clear();
-        tract_rendering.clear();
+        while(!tract_rendering.empty())
+        {
+            tract_rendering.pop_back();
+            thread_data.pop_back();
+            tract_models.pop_back();
+        }
         emit show_tracts();
         return true;
     }
     if(cmd == "save_tracks")
     {
+        auto locks = start_reading_checked_tracks();
         return TractModel::save_all(param.toStdString().c_str(),
                              get_checked_tracks(),get_checked_tracks_name());
     }
@@ -1086,6 +1156,7 @@ bool TractTableWidget::command(QString cmd,QString param,QString param2)
                 return false;
             }
         }
+        auto lock = tract_rendering[index]->start_reading();
         std::string sfilename = param.toStdString().c_str();
         if(!tract_models[index]->load_tracts_color_from_file(&*sfilename.begin()))
         {
@@ -1112,7 +1183,7 @@ void TractTableWidget::save_tracts_data_as(void)
                 "Text files (*.txt);;MATLAB file (*.mat);;TRK file (*.trk *.trk.gz);;All files (*)");
     if(filename.isEmpty())
         return;
-
+    auto lock = tract_rendering[uint32_t(currentRow())]->start_reading();
     if(!tract_models[uint32_t(currentRow())]->save_data_to_file(
                     cur_tracking_window.handle,filename.toLocal8Bit().begin(),
                     action->data().toString().toLocal8Bit().begin()))
@@ -1132,13 +1203,18 @@ void TractTableWidget::merge_all(void)
             merge_list.push_back(index);
     if(merge_list.size() <= 1)
         return;
-
-    for(int index = merge_list.size()-1;index >= 1;--index)
     {
-        tract_models[merge_list[0]]->add(*tract_models[merge_list[index]]);
-        delete_row(merge_list[index]);
+        auto lock1 = tract_rendering[merge_list[0]]->start_writing();
+        for(int index = merge_list.size()-1;index >= 1;--index)
+        {
+            {
+                auto lock2 = tract_rendering[merge_list[index]]->start_reading();
+                tract_models[merge_list[0]]->add(*tract_models[merge_list[index]]);
+            }
+            delete_row(merge_list[index]);
+        }
+        tract_rendering[merge_list[0]]->need_update = true;
     }
-    tract_rendering[merge_list[0]]->need_update = true;
     item(merge_list[0],1)->setText(QString::number(tract_models[merge_list[0]]->get_visible_track_count()));
     item(merge_list[0],2)->setText(QString::number(tract_models[merge_list[0]]->get_deleted_track_count()));
     emit show_tracts();
@@ -1148,9 +1224,9 @@ void TractTableWidget::delete_row(int row)
 {
     if(row >= tract_models.size())
         return;
+    tract_rendering.erase(tract_rendering.begin()+row);
     thread_data.erase(thread_data.begin()+row);
     tract_models.erase(tract_models.begin()+row);
-    tract_rendering.erase(tract_rendering.begin()+row);
     removeRow(row);
     emit show_tracts();
 }
@@ -1215,17 +1291,23 @@ void TractTableWidget::sort_track_by_name(void)
 void TractTableWidget::merge_track_by_name(void)
 {
     for(int i= 0;i < rowCount()-1;++i)
+    {
+        auto lock1 = tract_rendering[i]->start_writing();
         for(int j= i+1;j < rowCount()-1;)
-        if(item(i,0)->text() == item(j,0)->text())
-        {
-            tract_models[i]->add(*tract_models[j]);
-            tract_rendering[i]->need_update = true;
-            delete_row(j);
-            item(i,1)->setText(QString::number(tract_models[i]->get_visible_track_count()));
-            item(i,2)->setText(QString::number(tract_models[i]->get_deleted_track_count()));
-        }
-    else
-        ++j;
+            if(item(i,0)->text() == item(j,0)->text())
+            {
+                {
+                    auto lock2 = tract_rendering[j]->start_reading();
+                    tract_models[i]->add(*tract_models[j]);
+                }
+                tract_rendering[i]->need_update = true;
+                delete_row(j);
+                item(i,1)->setText(QString::number(tract_models[i]->get_visible_track_count()));
+                item(i,2)->setText(QString::number(tract_models[i]->get_deleted_track_count()));
+            }
+        else
+            ++j;
+    }
 }
 
 void TractTableWidget::move_up(void)
@@ -1354,8 +1436,11 @@ void TractTableWidget::reconnect_track(void)
     in >> dis >> angle;
     if(dis <= 2.0f || angle <= 0.0f)
         return;
-    tract_models[uint32_t(cur_row)]->reconnect_track(dis,std::cos(angle*3.14159265358979323846f/180.0f));
-    tract_rendering[uint32_t(cur_row)]->need_update = true;
+    {
+        auto lock = tract_rendering[uint32_t(currentRow())]->start_writing();
+        tract_models[uint32_t(cur_row)]->reconnect_track(dis,std::cos(angle*3.14159265358979323846f/180.0f));
+        tract_rendering[uint32_t(cur_row)]->need_update = true;
+    }
     item(cur_row,1)->setText(QString::number(tract_models[uint32_t(cur_row)]->get_visible_track_count()));
     emit show_tracts();
 }

@@ -13,9 +13,59 @@ class GLWidget;
 struct TractRenderData{
     unsigned int tracts = 0;
     bool need_update = true;
+    bool about_to_write = false;
+    unsigned int reading_threads = 0;
+    bool writing = false;
+    std::mutex writing_lock;
+    std::mutex reading_lock;
+public:
+    struct end_reading
+    {
+        TractRenderData& host;
+        end_reading(TractRenderData& host_):host(host_){}
+        ~end_reading(void)
+        {
+            std::lock_guard<std::mutex> lock(host.reading_lock);
+            --host.reading_threads;
+        }
+    };
+    auto start_reading(bool wait = true)
+    {
+        while(writing || about_to_write)
+        {
+            if(!wait)
+                return std::shared_ptr<end_reading>();
+            std::this_thread::yield();
+        }
+        std::lock_guard<std::mutex> lock(reading_lock);
+        ++reading_threads;
+        return std::make_shared<end_reading>(*this);
+    }
+    struct end_writing
+    {
+        TractRenderData& host;
+        end_writing(TractRenderData& host_):host(host_){}
+        ~end_writing(void)
+        {
+            std::lock_guard<std::mutex> lock(host.writing_lock);
+            host.writing = false;
+        }
+    };
+    auto start_writing(void)
+    {
+        std::lock_guard<std::mutex> lock(writing_lock);
+        while(reading_threads)
+        {
+            about_to_write = true;
+            std::this_thread::yield();
+        }
+        writing = true;
+        about_to_write = false;
+        return std::make_shared<end_writing>(*this);
+    }
     TractRenderData(void);
     ~TractRenderData(void);
-    void makeTract(std::shared_ptr<TractModel>& tract_data,GLWidget* glwidget,tracking_window& cur_tracking_window);
+    void makeTract(std::shared_ptr<TractModel>& tract_data,GLWidget* glwidget,tracking_window& cur_tracking_window,bool simple);
 };
 
 class TractTableWidget : public QTableWidget
@@ -29,7 +79,7 @@ public:
 
 private:
     tracking_window& cur_tracking_window;
-    QTimer *timer;
+    QTimer *timer,*timer_update;
 private:
     int color_gen = 10;
 public:
@@ -38,6 +88,9 @@ public:
     std::vector<std::shared_ptr<TractRenderData> > tract_rendering;
 public:
     std::vector<std::shared_ptr<TractModel> > get_checked_tracks(void);
+    std::vector<std::shared_ptr<TractRenderData> > get_checked_tracks_rendering(void);
+    std::vector<std::shared_ptr<TractRenderData::end_reading> > start_reading_checked_tracks(void);
+    std::vector<std::shared_ptr<TractRenderData::end_writing> > start_writing_checked_tracks(void);
     std::vector<std::string> get_checked_tracks_name(void) const;
     enum {none = 0,select = 1,del = 2,cut = 3,paint = 4,move = 5}edit_option;
     void addNewTracts(QString tract_name,bool checked = true);
@@ -51,17 +104,6 @@ public:
     void draw_tracts(unsigned char dim,int pos,
                      QImage& scaledimage,float display_ratio);
     QString output_format(void);
-    template<typename fun_type>
-    void for_each_track(fun_type&& fun)
-    {
-        auto selected = get_checked_tracks();
-        for (auto active_tract_model : selected)
-        {
-            auto tracks_count = active_tract_model->get_visible_track_count();
-            for (unsigned int data_index = 0; data_index < tracks_count; ++data_index)
-                fun(active_tract_model,data_index);
-        }
-    }
     template<typename fun_type>
     void for_each_bundle(const char* prog_name,fun_type&& fun)
     {
@@ -77,6 +119,7 @@ public:
             progress::at(prog++,checked_index.size());
             if(progress::aborted())
                 return;
+            auto lock = tract_rendering[checked_index[i]]->start_writing();
             if(fun(checked_index[i]))
             {
                 has_changed = true;
@@ -116,6 +159,7 @@ public slots:
     void start_tracking(void);
     void filter_by_roi(void);
     void fetch_tracts(void);
+    void show_tracking_progress(void);
 
     void load_tracts(void);
     void load_tract_label(void);

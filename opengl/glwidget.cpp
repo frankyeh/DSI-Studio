@@ -1519,6 +1519,7 @@ TractRenderData::TractRenderData(void):tracts(glGenLists(1))
 
 TractRenderData::~TractRenderData(void)
 {
+    auto lock = start_writing();
     if(tracts)
         glDeleteLists(tracts, 1);
     tracts = 0;
@@ -1532,17 +1533,22 @@ void TractTableWidget::render_tracts(GLWidget* glwidget)
         {
             if(tract_rendering[index]->need_update)
             {
-                tract_rendering[index]->makeTract(tract_models[index],glwidget,cur_tracking_window);
-                tract_rendering[index]->need_update = false;
+                auto lock = tract_rendering[index]->start_reading(false);
+                if(!lock.get())
+                    continue;
+                tract_rendering[index]->makeTract(tract_models[index],glwidget,cur_tracking_window,thread_data[index].get() != nullptr);
             }
             glCallList(tract_rendering[index]->tracts);
         }
 }
 
-void TractRenderData::makeTract(std::shared_ptr<TractModel>& active_tract_model,GLWidget* glwidget,tracking_window& cur_tracking_window)
+void TractRenderData::makeTract(std::shared_ptr<TractModel>& active_tract_model,GLWidget* glwidget,
+                                tracking_window& cur_tracking_window,bool simple)
 {
+    need_update = false;
     if(!tracts)
         return;
+
     glDeleteLists(tracts, 1);
     glNewList(tracts, GL_COMPILE);
 
@@ -1551,10 +1557,10 @@ void TractRenderData::makeTract(std::shared_ptr<TractModel>& active_tract_model,
     auto tract_alpha = glwidget->tract_alpha;
     auto tract_color_brightness = glwidget->tract_color_brightness;
     auto tract_color_saturation = glwidget->tract_color_saturation;
-    auto tract_style = glwidget->tract_style;
+    auto tract_style = simple ? 0 : glwidget->tract_style;
     auto end_point_shift = glwidget->end_point_shift;
     auto tube_diameter = glwidget->tube_diameter;
-    auto tract_shader = glwidget->tract_shader;
+    auto tract_shader = simple ? 0 : glwidget->tract_shader;
     auto tract_tube_detail = glwidget->tract_tube_detail;
     auto tract_visible_tract = cur_tracking_window["tract_visible_tract"].toInt();
 
@@ -1671,7 +1677,7 @@ void TractRenderData::makeTract(std::shared_ptr<TractModel>& active_tract_model,
 
     tipl::uniform_dist<float> uniform_gen(0.0f,1.0f),random_size(-0.5f,0.5f),random_color(-0.05f,0.05f);
     auto tracks_count = active_tract_model->get_visible_track_count();
-    for (unsigned int data_index = 0,tract_metrics_index = 0; data_index < tracks_count; ++data_index)
+    for (unsigned int data_index = 0,tract_metrics_index = 0; data_index < tracks_count && !about_to_write; ++data_index)
     {
         if(skip_rate < 1.0f && uniform_gen() > skip_rate)
             continue;
