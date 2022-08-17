@@ -8,6 +8,7 @@
 #include <memory>
 #include <QOpenGLWidget>
 #include <QOpenGLFunctions>
+#include <QOpenGLFunctions_3_3_Core>
 #ifdef __APPLE__
 #include <OpenGL/glu.h>
 #else
@@ -31,7 +32,7 @@ public:
     GLUquadricObj* get(void) {return ptr;}
 };
 
-class GLWidget :  public QOpenGLWidget, protected QOpenGLFunctions
+class GLWidget :  public QOpenGLWidget, protected QOpenGLFunctions, protected QOpenGLFunctions_3_3_Core
 {
 Q_OBJECT
 
