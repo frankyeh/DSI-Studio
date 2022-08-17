@@ -1,6 +1,7 @@
 #ifndef TRACTTABLEWIDGET_H
 #define TRACTTABLEWIDGET_H
 #include <vector>
+#include <QApplication>
 #include <QItemDelegate>
 #include <QTableWidget>
 #include <QTimer>
@@ -46,34 +47,44 @@ public:
                      QImage& scaledimage,float display_ratio);
     QString output_format(void);
     template<typename fun_type>
-    void for_each_bundle(const char* prog_name,fun_type&& fun)
+    void for_each_bundle(const char* prog_name,fun_type&& fun,bool silence = false)
     {
-        progress p(prog_name);
         std::vector<unsigned int> checked_index;
+        std::vector<bool> changed;
         for(unsigned int index = 0;index < tract_models.size();++index)
             if(item(int(index),0)->checkState() == Qt::Checked)
-                checked_index.push_back(index);
-        bool has_changed = false;
-        size_t prog = 0;
-        tipl::par_for(checked_index.size(),[&](unsigned int i)
-        {
-            progress::at(prog++,checked_index.size());
-            if(progress::aborted())
-                return;
-            auto lock = tract_rendering[checked_index[i]]->start_writing();
-            if(fun(checked_index[i]))
             {
-                has_changed = true;
-                tract_rendering[checked_index[i]]->need_update = true;
+                checked_index.push_back(index);
+                changed.push_back(false);
             }
-        });
-        for(auto i : checked_index)
+
         {
-            item(int(i),1)->setText(QString::number(tract_models[i]->get_visible_track_count()));
-            item(int(i),2)->setText(QString::number(tract_models[i]->get_deleted_track_count()));
+            progress p(prog_name,!silence);
+            size_t prog = 0;
+            tipl::par_for(checked_index.size(),[&](unsigned int i)
+            {
+                progress::at(prog++,checked_index.size());
+                if(progress::aborted())
+                    return;
+                auto lock = tract_rendering[checked_index[i]]->start_writing();
+                if(fun(checked_index[i]))
+                {
+                    changed[i] = true;
+                    tract_rendering[checked_index[i]]->need_update = true;
+                }
+            });
         }
-        if(has_changed)
-            emit show_tracts();
+        progress p2(prog_name,!silence);
+        for(unsigned int i = 0;progress::at(i,checked_index.size());++i)
+            if(changed[i])
+            {
+                QApplication::processEvents();
+                item(int(checked_index[i]),1)->setText(QString::number(tract_models[checked_index[i]]->get_visible_track_count()));
+                item(int(checked_index[i]),2)->setText(QString::number(tract_models[checked_index[i]]->get_deleted_track_count()));
+                tract_rendering[checked_index[i]]->need_update = true;
+                emit show_tracts();
+                QApplication::processEvents();
+            }
     }
 public:
     void render_tracts(GLWidget* glwidget);
@@ -138,9 +149,9 @@ public slots:
     void resample_step_size(void);
     void edit_tracts(void);
     void delete_branches(void)      {for_each_bundle("delete branches", [&](unsigned int index){return tract_models[index]->delete_branch();});}
-    void undo_tracts(void)          {for_each_bundle("undo tracts",     [&](unsigned int index){return tract_models[index]->undo();});}
-    void redo_tracts(void)          {for_each_bundle("redo tracts",     [&](unsigned int index){return tract_models[index]->redo();});}
-    void trim_tracts(void)          {for_each_bundle("trim tracts",     [&](unsigned int index){return tract_models[index]->trim();});}
+    void undo_tracts(void)          {for_each_bundle("undo tracts",     [&](unsigned int index){return tract_models[index]->undo();},true);}
+    void redo_tracts(void)          {for_each_bundle("redo tracts",     [&](unsigned int index){return tract_models[index]->redo();},true);}
+    void trim_tracts(void)          {for_each_bundle("trim tracts",     [&](unsigned int index){return tract_models[index]->trim();},true);}
     void assign_colors(void);
     void stop_tracking(void);
     void move_up(void);
