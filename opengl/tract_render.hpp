@@ -1,5 +1,6 @@
 #ifndef TRACT_RENDER_HPP
 #define TRACT_RENDER_HPP
+#include <QtOpenGL>
 #include "TIPL/tipl.hpp"
 #include "tract_model.hpp"
 class tracking_window;
@@ -31,9 +32,7 @@ struct TractRenderParam{
     {
         return color_map[uint32_t(std::floor(std::min(1.0,(std::max<double>(value-color_min,0.0))/color_r)*255.0+0.49))];
     }
-    void init(GLWidget* glwidget,
-              tracking_window& cur_tracking_window,
-              bool simple);
+    void init(GLWidget* glwidget,tracking_window& cur_tracking_window,bool simple);
 };
 
 struct TractRenderShader{
@@ -55,23 +54,24 @@ struct TractRenderData{
     std::vector<float> tube_vertices;
     std::vector<float> tube_normals;
     std::vector<float> tube_colors;
-    std::vector<unsigned int> tube_strip_pos;
     std::vector<float> line_vertices;
     std::vector<float> line_colors;
-    std::vector<unsigned int> line_strip_pos;
-    void clear(void)
-    {
-        tube_vertices.clear();
-        tube_normals.clear();
-        tube_colors.clear();
-        line_vertices.clear();
-        line_colors.clear();
-        tube_strip_pos.clear();
-        line_strip_pos.clear();
-        tube_strip_pos.push_back(0);
-        line_strip_pos.push_back(0);
-    }
-    inline void add_tube(const tipl::vector<3>& v,const tipl::vector<3>& c,const tipl::vector<3>& n)
+public:
+    GLWidget* glwidget = nullptr;
+    GLuint tube = 0,line = 0;
+    size_t tube_buffer_size = 0;
+    size_t line_buffer_size = 0;
+    std::vector<GLint> tube_strip_pos;
+    std::vector<GLint> line_strip_pos;
+    std::vector<GLsizei> tube_strip_size;
+    std::vector<GLsizei> line_strip_size;
+    ~TractRenderData(void);
+    void create_buffer(GLWidget* glwidget);
+    void draw(void);
+
+public:
+    void clear(void);
+    void add_tube(const tipl::vector<3>& v,const tipl::vector<3>& c,const tipl::vector<3>& n)
     {
         tube_vertices.push_back(v[0]);
         tube_vertices.push_back(v[1]);
@@ -83,7 +83,7 @@ struct TractRenderData{
         tube_colors.push_back(c[1]);
         tube_colors.push_back(c[2]);
     }
-    inline void add_line(const tipl::vector<3>& v,const tipl::vector<3>& c)
+    void add_line(const tipl::vector<3>& v,const tipl::vector<3>& c)
     {
         line_vertices.push_back(v[0]);
         line_vertices.push_back(v[1]);
@@ -92,26 +92,22 @@ struct TractRenderData{
         line_colors.push_back(c[1]);
         line_colors.push_back(c[2]);
     }
-    void end_tube_strip(void)
-    {
-        tube_strip_pos.push_back(tube_vertices.size());
-    }
-    void end_line_strip(void)
-    {
-        line_strip_pos.push_back(line_vertices.size());
-    }
+    inline void end_tube_strip(void) {tube_strip_pos.push_back(tube_vertices.size());}
+    inline void end_line_strip(void) {line_strip_pos.push_back(line_vertices.size());}
     void add_tract(const TractRenderParam& param,
                    const std::vector<float>& tract,bool simple,
                    const TractRenderShader& shader,
                    const tipl::vector<3>& assign_color,
                    const std::vector<float>& metrics);
-    void create_list(bool tube);
 };
 
 struct TractRender{
 public:
     TractRenderParam param;
-    unsigned int tracts = 0;
+    std::vector<TractRenderData> data;
+public:
+    bool terminated = false;
+    std::shared_ptr<std::thread> calculation_thread;
 public:
     bool need_update = true;
     bool about_to_write = false;

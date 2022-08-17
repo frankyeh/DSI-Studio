@@ -1,8 +1,12 @@
-#define NOMINMAX
-#include <QtOpenGL>
-#include "tract_render.hpp"
 #include "glwidget.h"
+#include "tract_render.hpp"
 #include "tracking/color_bar_dialog.hpp"
+#define NOMINMAX
+#ifdef __APPLE__
+#include <OpenGL/glu.h>
+#else
+#include <GL/glu.h>
+#endif
 
 void TractRenderParam::init(GLWidget* glwidget,
                             tracking_window& cur_tracking_window,
@@ -37,91 +41,17 @@ void TractRenderParam::init(GLWidget* glwidget,
         color_min = cur_tracking_window.color_bar->color_min;
     }
 }
-TractRender::TractRender(void):tracts(glGenLists(1))
+void TractRenderData::clear(void)
 {
-}
-
-TractRender::~TractRender(void)
-{
-    auto lock = start_writing();
-    if(tracts)
-        glDeleteLists(tracts, 1);
-    tracts = 0;
-}
-
-float TractRenderShader::get_shade(const tipl::vector<3>& pos) const
-{
-    float d = 1.0f;
-    {
-        int x = (int(pos[0]) << 6)/int(dim[0]);
-        int y = (int(pos[1]) << 6)/int(dim[1]);
-        int z = (int(pos[2]) << 6)/int(dim[2]);
-        if(max_x_map.shape().is_valid(y,z))
-        {
-            size_t p = size_t(y + z*max_x_map.width());
-            d += std::min<float>(4.0f,
-                                 std::min<float>(std::max<float>(0.0f,max_x_map[p]-pos[0]),
-                                            std::max<float>(0.0f,pos[0]-min_x_map[p])));
-        }
-        if(max_y_map.shape().is_valid(x,z))
-        {
-            size_t p = size_t(x + z*max_y_map.width());
-            d += std::min<float>(4.0f,
-                                 std::min<float>(std::max<float>(0.0f,max_y_map[p]-pos[1]),
-                                            std::max<float>(0.0f,pos[1]-min_y_map[p])));
-        }
-        if(max_z_map.shape().is_valid(x,y))
-        {
-            size_t p = size_t(x + y*max_z_map.width());
-            d += std::min<float>(4.0f,
-                                 std::min<float>(std::max<float>(0.0f,max_z_map[p]-pos[2]),
-                                            std::max<float>(0.0f,pos[2]-min_z_map[p])));
-        }
-    }
-    return d;
-}
-void TractRenderShader::add_shade(std::shared_ptr<TractModel>& active_tract_model,
-                            const std::vector<unsigned int>& visible)
-{
-    for (unsigned int data_index : visible)
-    {
-        unsigned int vertex_count = active_tract_model->get_tract_length(data_index)/3;
-        const float* data_iter = &*(active_tract_model->get_tract(data_index).begin());
-        for (unsigned int index = 0; index < vertex_count;data_iter += 3, ++index)
-        {
-            int x = (int(data_iter[0]) << 6)/int(dim[0]);
-            int y = (int(data_iter[1]) << 6)/int(dim[1]);
-            int z = (int(data_iter[2]) << 6)/int(dim[2]);
-            if(max_x_map.shape().is_valid(y,z))
-            {
-                size_t pos = size_t(y + (z << 6));
-                max_x_map[pos] = std::max<float>(max_x_map[pos],data_iter[0]);
-                min_x_map[pos] = std::min<float>(min_x_map[pos],data_iter[0]);
-            }
-            if(max_y_map.shape().is_valid(x,z))
-            {
-                size_t pos = size_t(x + (z << 6));
-                max_y_map[pos] = std::max<float>(max_y_map[pos],data_iter[1]);
-                min_y_map[pos] = std::min<float>(min_y_map[pos],data_iter[1]);
-            }
-            if(max_z_map.shape().is_valid(x,y))
-            {
-                size_t pos = size_t(x + (y << 6));
-                max_z_map[pos] = std::max<float>(max_z_map[pos],data_iter[2]);
-                min_z_map[pos] = std::min<float>(min_z_map[pos],data_iter[2]);
-            }
-        }
-    }
-
-    {
-        std::thread t1([&](){for(int i = 0;i < 3; ++i)tipl::filter::mean(max_x_map);});
-        std::thread t2([&](){for(int i = 0;i < 3; ++i)tipl::filter::mean(min_x_map);});
-        std::thread t3([&](){for(int i = 0;i < 3; ++i)tipl::filter::mean(max_y_map);});
-        std::thread t4([&](){for(int i = 0;i < 3; ++i)tipl::filter::mean(min_y_map);});
-        std::thread t5([&](){for(int i = 0;i < 3; ++i)tipl::filter::mean(max_z_map);});
-        std::thread t6([&](){for(int i = 0;i < 3; ++i)tipl::filter::mean(min_z_map);});
-        t1.join();t2.join();t3.join();t4.join();t5.join();t6.join();
-    }
+    tube_vertices.clear();
+    tube_normals.clear();
+    tube_colors.clear();
+    line_vertices.clear();
+    line_colors.clear();
+    tube_strip_pos.clear();
+    line_strip_pos.clear();
+    tube_strip_pos.push_back(0);
+    line_strip_pos.push_back(0);
 }
 
 void TractRenderData::add_tract(const TractRenderParam& param,
@@ -310,20 +240,194 @@ void TractRenderData::add_tract(const TractRenderParam& param,
     else
         end_line_strip();
 }
+TractRenderData::~TractRenderData(void)
+{
+    if(glwidget)
+    {
+        if(tube)
+            glwidget->glDeleteBuffers(1,&tube);
+        if(line)
+            glwidget->glDeleteBuffers(1,&line);
+    }
+}
+void TractRenderData::create_buffer(GLWidget* glwidget_)
+{
+    glwidget = glwidget_;
+    if(!tube_vertices.empty())
+    {
+        tube_buffer_size = tube_vertices.size()*sizeof(float);
+        glwidget->glGenBuffers(1,&tube);
+        glwidget->glBindBuffer(GL_ARRAY_BUFFER, tube);
+        glwidget->glBufferData(GL_ARRAY_BUFFER, tube_buffer_size*3,0,GL_STATIC_DRAW);
+        glwidget->glBufferSubData(GL_ARRAY_BUFFER, 0, tube_buffer_size, &tube_vertices[0]);
+        tube_vertices.clear();
+        glwidget->glBufferSubData(GL_ARRAY_BUFFER, tube_buffer_size, tube_buffer_size, &tube_normals[0]);                // copy normals after vertices
+        tube_normals.clear();
+        glwidget->glBufferSubData(GL_ARRAY_BUFFER, tube_buffer_size*2, tube_buffer_size, &tube_colors[0]);  // copy colours after normals
+        tube_colors.clear();
+        glwidget->glBindBuffer(GL_ARRAY_BUFFER, 0);
+        tipl::divide_constant(tube_strip_pos,3);
+        tube_strip_size.resize(tube_strip_pos.size()-1);
+        for(unsigned int i = 0;i < tube_strip_size.size();++i)
+            tube_strip_size[i] = tube_strip_pos[i+1]-tube_strip_pos[i];
+        tube_strip_pos.pop_back();
+    }
+
+    if(!line_vertices.empty())
+    {
+        line_buffer_size = line_vertices.size()*sizeof(float);
+        glwidget->glGenBuffers(1,&line);
+        glwidget->glBindBuffer(GL_ARRAY_BUFFER, line);
+        glwidget->glBufferData(GL_ARRAY_BUFFER, line_buffer_size*2,0,GL_STATIC_DRAW);
+        glwidget->glBufferSubData(GL_ARRAY_BUFFER, 0, line_buffer_size, &line_vertices[0]);                             // copy vertices starting from 0 offest
+        line_vertices.clear();
+        glwidget->glBufferSubData(GL_ARRAY_BUFFER, line_buffer_size, line_buffer_size, &line_colors[0]);  // copy colours after normals
+        line_colors.clear();
+        glwidget->glBindBuffer(GL_ARRAY_BUFFER, 0);
+        tipl::divide_constant(line_strip_pos,3);
+        line_strip_size.resize(line_strip_pos.size()-1);
+        for(unsigned int i = 0;i < line_strip_size.size();++i)
+            line_strip_size[i] = line_strip_pos[i+1]-line_strip_pos[i];
+        line_strip_pos.pop_back();
+    }
+}
+
+void TractRenderData::draw(void)
+{
+    if(tube)
+    {
+        glwidget->glBindBuffer(GL_ARRAY_BUFFER, tube);
+        glEnableClientState(GL_VERTEX_ARRAY);
+        glEnableClientState(GL_NORMAL_ARRAY);
+        glEnableClientState(GL_COLOR_ARRAY);
+        glVertexPointer(3, GL_FLOAT, 0, 0);
+        glNormalPointer(GL_FLOAT, 0, (void*)tube_buffer_size);
+        glColorPointer(3, GL_FLOAT, 0, (void*)(tube_buffer_size+tube_buffer_size));
+        glwidget->glMultiDrawArrays(GL_TRIANGLE_STRIP,
+                            &tube_strip_pos[0],
+                            &tube_strip_size[0],
+                            tube_strip_size.size());
+        glDisableClientState(GL_VERTEX_ARRAY);  // disable vertex arrays
+        glDisableClientState(GL_COLOR_ARRAY);
+        glDisableClientState(GL_NORMAL_ARRAY);
+        glwidget->glBindBuffer(GL_ARRAY_BUFFER, 0);
+    }
+
+    if(line)
+    {
+        glwidget->glBindBuffer(GL_ARRAY_BUFFER, line);
+        glEnableClientState(GL_VERTEX_ARRAY);
+        glEnableClientState(GL_COLOR_ARRAY);
+        glVertexPointer(3, GL_FLOAT, 0, 0);
+        glColorPointer(3, GL_FLOAT, 0, (void*)(line_buffer_size));
+        glwidget->glMultiDrawArrays(GL_LINE_STRIP,
+                            &line_strip_pos[0],
+                            &line_strip_size[0],
+                            line_strip_size.size());
+        glDisableClientState(GL_VERTEX_ARRAY);  // disable vertex arrays
+        glDisableClientState(GL_COLOR_ARRAY);
+        glwidget->glBindBuffer(GL_ARRAY_BUFFER, 0);
+    }
+
+}
+
+TractRender::TractRender(void)
+{
+}
+
+TractRender::~TractRender(void)
+{
+    auto lock = start_writing();
+}
+
+float TractRenderShader::get_shade(const tipl::vector<3>& pos) const
+{
+    float d = 1.0f;
+    {
+        int x = (int(pos[0]) << 6)/int(dim[0]);
+        int y = (int(pos[1]) << 6)/int(dim[1]);
+        int z = (int(pos[2]) << 6)/int(dim[2]);
+        if(max_x_map.shape().is_valid(y,z))
+        {
+            size_t p = size_t(y + z*max_x_map.width());
+            d += std::min<float>(4.0f,
+                                 std::min<float>(std::max<float>(0.0f,max_x_map[p]-pos[0]),
+                                            std::max<float>(0.0f,pos[0]-min_x_map[p])));
+        }
+        if(max_y_map.shape().is_valid(x,z))
+        {
+            size_t p = size_t(x + z*max_y_map.width());
+            d += std::min<float>(4.0f,
+                                 std::min<float>(std::max<float>(0.0f,max_y_map[p]-pos[1]),
+                                            std::max<float>(0.0f,pos[1]-min_y_map[p])));
+        }
+        if(max_z_map.shape().is_valid(x,y))
+        {
+            size_t p = size_t(x + y*max_z_map.width());
+            d += std::min<float>(4.0f,
+                                 std::min<float>(std::max<float>(0.0f,max_z_map[p]-pos[2]),
+                                            std::max<float>(0.0f,pos[2]-min_z_map[p])));
+        }
+    }
+    return d;
+}
+void TractRenderShader::add_shade(std::shared_ptr<TractModel>& active_tract_model,
+                            const std::vector<unsigned int>& visible)
+{
+    for (unsigned int data_index : visible)
+    {
+        unsigned int vertex_count = active_tract_model->get_tract_length(data_index)/3;
+        const float* data_iter = &*(active_tract_model->get_tract(data_index).begin());
+        for (unsigned int index = 0; index < vertex_count;data_iter += 3, ++index)
+        {
+            int x = (int(data_iter[0]) << 6)/int(dim[0]);
+            int y = (int(data_iter[1]) << 6)/int(dim[1]);
+            int z = (int(data_iter[2]) << 6)/int(dim[2]);
+            if(max_x_map.shape().is_valid(y,z))
+            {
+                size_t pos = size_t(y + (z << 6));
+                max_x_map[pos] = std::max<float>(max_x_map[pos],data_iter[0]);
+                min_x_map[pos] = std::min<float>(min_x_map[pos],data_iter[0]);
+            }
+            if(max_y_map.shape().is_valid(x,z))
+            {
+                size_t pos = size_t(x + (z << 6));
+                max_y_map[pos] = std::max<float>(max_y_map[pos],data_iter[1]);
+                min_y_map[pos] = std::min<float>(min_y_map[pos],data_iter[1]);
+            }
+            if(max_z_map.shape().is_valid(x,y))
+            {
+                size_t pos = size_t(x + (y << 6));
+                max_z_map[pos] = std::max<float>(max_z_map[pos],data_iter[2]);
+                min_z_map[pos] = std::min<float>(min_z_map[pos],data_iter[2]);
+            }
+        }
+    }
+
+    {
+        std::thread t1([&](){for(int i = 0;i < 3; ++i)tipl::filter::mean(max_x_map);});
+        std::thread t2([&](){for(int i = 0;i < 3; ++i)tipl::filter::mean(min_x_map);});
+        std::thread t3([&](){for(int i = 0;i < 3; ++i)tipl::filter::mean(max_y_map);});
+        std::thread t4([&](){for(int i = 0;i < 3; ++i)tipl::filter::mean(min_y_map);});
+        std::thread t5([&](){for(int i = 0;i < 3; ++i)tipl::filter::mean(max_z_map);});
+        std::thread t6([&](){for(int i = 0;i < 3; ++i)tipl::filter::mean(min_z_map);});
+        t1.join();t2.join();t3.join();t4.join();t5.join();t6.join();
+    }
+}
 
 void TractRender::render_tracts(std::shared_ptr<TractModel>& active_tract_model,GLWidget* glwidget,
                             tracking_window& cur_tracking_window,bool simple)
 {
-    if(!tracts)
-        return;
     if(!need_update)
     {
-        glCallList(tracts);
+        for(auto& d: data)
+            d.draw();
         return;
     }
     auto lock = start_reading(false);
     if(!lock.get())
         return;
+
     param.init(glwidget,cur_tracking_window,simple);
 
     need_update = false;
@@ -384,9 +488,11 @@ void TractRender::render_tracts(std::shared_ptr<TractModel>& active_tract_model,
         shader.add_shade(active_tract_model,visible);
 
     auto thread_count = std::thread::hardware_concurrency();
-    std::vector<TractRenderData> data(thread_count);
+    data.clear();
+    data.resize(thread_count);
     tipl::par_for (thread_count,[&](unsigned int thread)
     {
+        data[thread].clear();
         for(unsigned int i = thread;i < visible.size();i += thread_count)
         {
             if(about_to_write)
@@ -398,47 +504,12 @@ void TractRender::render_tracts(std::shared_ptr<TractModel>& active_tract_model,
                            assigned_colors.empty() ? tipl::vector<3>() : assigned_colors[i],metrics);
         }
     });
-    glDeleteLists(tracts, 1);
-    glNewList(tracts, GL_COMPILE);
+
+
     for(auto& d: data)
-        d.create_list(simple ? false : (glwidget->tract_style > 0));
-    glEndList();
-    glCallList(tracts);
+        d.create_buffer(glwidget);
 
-}
+    for(auto& d: data)
+        d.draw();
 
-void TractRenderData::create_list(bool tube)
-{
-    if(tube) // Tube
-    {
-        for(size_t i = 1;i < tube_strip_pos.size();++i)
-        {
-            glBegin(GL_TRIANGLE_STRIP);
-            size_t from = tube_strip_pos[i-1];
-            size_t to = tube_strip_pos[i];
-            for(;from != to;from += 3)
-            {
-                glColor3fv(&tube_colors[from]);
-                glNormal3fv(&tube_normals[from]);
-                glVertex3fv(&tube_vertices[from]);
-            }
-            glEnd();
-        }
-    }
-    else
-        //Line
-    {
-        for(size_t i = 1;i < line_strip_pos.size();++i)
-        {
-            glBegin(GL_LINE_STRIP);
-            size_t from = line_strip_pos[i-1];
-            size_t to = line_strip_pos[i];
-            for(;from != to;from += 3)
-            {
-                glColor3fv(&line_colors[from]);
-                glVertex3fv(&line_vertices[from]);
-            }
-            glEnd();
-        }
-    }
 }
