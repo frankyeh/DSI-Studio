@@ -160,11 +160,13 @@ public:
             host.writing = false;
         }
     };
-    auto start_writing(void)
+    auto start_writing(bool wait = true)
     {
         std::lock_guard<std::mutex> lock(writing_lock);
         while(reading_threads)
         {
+            if(!wait)
+                return std::shared_ptr<end_writing>();
             about_to_write = true;
             std::this_thread::yield();
         }
