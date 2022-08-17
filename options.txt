@@ -63,8 +63,8 @@ Tract/Tube Diameter (voxel)/tube_diameter/float:0.01:5:0.1:2/0.15
 Tract/Endpoint Shift (voxel)/end_point_shift/int:0:10:1/0
 Tract/Light/tract_light_option/One source:Two sources:Off/1
 Tract/Light Direction/tract_light_dir/int/2
-Tract/Light Shading/tract_light_shading/int/3
-Tract/Light Diffuse/tract_light_diffuse/int/6
+Tract/Light Shading/tract_light_shading/int/7
+Tract/Light Diffuse/tract_light_diffuse/int/7
 Tract/Light Ambient/tract_light_ambient/int/0
 Tract/Light Specular/tract_light_specular/int/0
 Tract/Material Specular/tract_specular/int/0
