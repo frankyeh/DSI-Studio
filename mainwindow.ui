@@ -70,7 +70,7 @@
        </size>
       </property>
       <property name="currentIndex">
-       <number>0</number>
+       <number>2</number>
       </property>
       <property name="tabSpacing">
        <number>0</number>
@@ -541,7 +541,7 @@
         <item>
          <widget class="QCommandLinkButton" name="averagefib">
           <property name="text">
-           <string>P1: Create Template/Skeleton</string>
+           <string>P1: Create Population-Averaged Template</string>
           </property>
           <property name="description">
            <string>Average the ODFs to create a template</string>
