@@ -7,11 +7,20 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
-
 find_package(Qt6 COMPONENTS Core Gui OpenGL Charts Network Widgets REQUIRED)
 find_package(ZLIB REQUIRED)
 find_package(OpenGL REQUIRED)
 find_package(CUDA)
+
+
+if (CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
+    if (MSVC)
+      add_compile_options(/bigobj)
+    else ()
+      add_compile_options(-Wa,-mbig-obj)
+    endif ()
+endif()
+
 
 if(CUDA_FOUND)
     project(DSI_Studio VERSION "2022.01.17" LANGUAGES CUDA CXX;C)
