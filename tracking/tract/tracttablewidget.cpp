@@ -226,7 +226,7 @@ void TractTableWidget::start_tracking(void)
     thread_data.back()->run(cur_tracking_window.ui->thread_count->value(),false);
     tract_models.back()->report = cur_tracking_window.handle->report + thread_data.back()->report.str();
     show_report();
-    timer->start(1000);
+    timer->start(500);
     timer_update->start(100);
 }
 
@@ -268,13 +268,21 @@ void TractTableWidget::fetch_tracts(void)
     for(unsigned int index = 0;index < thread_data.size();++index)
         if(thread_data[index].get())
         {    
-            tract_rendering[index]->need_update = true;
-            auto lock = tract_rendering[index]->start_writing();
-            has_tracts = thread_data[index]->fetchTracks(tract_models[index].get());
+            {
+                auto lock = tract_rendering[index]->start_writing(false);
+                if(lock.get())
+                {
+                    has_tracts = thread_data[index]->fetchTracks(tract_models[index].get());
+                    tract_rendering[index]->need_update = true;
+                }
+            }
             if(thread_data[index]->is_ended())
             {
+                tract_rendering[index]->need_update = true;
+                auto lock = tract_rendering[index]->start_writing();
                 has_tracts |= thread_data[index]->fetchTracks(tract_models[index].get()); // clear both front and back buffer
-                thread_data[index]->apply_tip(tract_models[index].get()); 
+                has_tracts |= thread_data[index]->fetchTracks(tract_models[index].get()); // clear both front and back buffer
+                thread_data[index]->apply_tip(tract_models[index].get());
                 item(int(index),1)->setText(QString::number(tract_models[index]->get_visible_track_count()));
                 item(int(index),2)->setText(QString::number(tract_models[index]->get_deleted_track_count()));
                 item(int(index),3)->setText(QString::number(thread_data[index]->get_total_seed_count()));
@@ -300,7 +308,8 @@ void TractTableWidget::load_tracts(QStringList filenames)
 {
     if(filenames.empty())
         return;
-    for(unsigned int index = 0;index < filenames.size();++index)
+    progress p("load tracts");
+    for(unsigned int index = 0;progress::at(index,filenames.size());++index)
     {
         QString filename = filenames[index];
         if(!filename.size())
@@ -313,12 +322,10 @@ void TractTableWidget::load_tracts(QStringList filenames)
         if(pos != -1)
             label = label.right(label.length()-pos-8);
         std::string sfilename = filename.toStdString();
-        addNewTracts(label);
+        addNewTracts(label,filenames.size() == 1);
         if(!tract_models.back()->load_from_file(&*sfilename.begin(),false))
         {
-            QMessageBox::critical(this,"ERROR",
-                                     QString("Fail to load tracks from %1. \
-                                Please check file access privelige or move file to other location.").arg(QFileInfo(filename).baseName()));
+            QMessageBox::critical(this,"ERROR",QString("Cannot load tracks from %1").arg(QFileInfo(filename).baseName()));
             continue;
         }
         if(tract_models.back()->get_cluster_info().empty()) // not multiple cluster file
@@ -334,7 +341,6 @@ void TractTableWidget::load_tracts(QStringList filenames)
                 load_tract_label(filename+".txt");
         }
     }
-    emit show_tracts();
 }
 
 void TractTableWidget::load_tracts(void)
