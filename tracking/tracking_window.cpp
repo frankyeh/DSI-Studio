@@ -2014,16 +2014,6 @@ void tracking_window::on_track_style_currentIndexChanged(int index)
             set_data("tract_bend2",5);
             set_data("tract_shader",7);
             break;
-        case 3:
-            set_data("tract_style",0);
-            set_data("tract_line_width",1.0f);
-            set_data("bkg_color",0);
-            set_data("tract_alpha",0.2);
-            set_data("tract_alpha_style",0);
-            set_data("tract_bend1",4);
-            set_data("tract_bend2",1);
-            set_data("tract_shader",0);
-            break;
     }
     glWidget->update();
 }
