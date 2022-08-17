@@ -52,15 +52,12 @@ struct TractRenderShader{
 
 struct TractRenderData{
     std::vector<float> tube_vertices;
-    std::vector<float> tube_normals;
-    std::vector<float> tube_colors;
+    size_t tube_vertices_count = 0;
     std::vector<float> line_vertices;
-    std::vector<float> line_colors;
+    size_t line_vertices_count = 0;
 public:
     GLWidget* glwidget = nullptr;
     GLuint tube = 0,line = 0;
-    size_t tube_buffer_size = 0;
-    size_t line_buffer_size = 0;
     std::vector<GLint> tube_strip_pos;
     std::vector<GLint> line_strip_pos;
     std::vector<GLsizei> tube_strip_size;
@@ -68,7 +65,12 @@ public:
     ~TractRenderData(void);
     void create_buffer(GLWidget* glwidget);
     void draw(void);
-
+public:
+    TractRenderData(void)
+    {
+        tube_strip_pos.push_back(0);
+        line_strip_pos.push_back(0);
+    }
 public:
     void clear(void);
     void add_tube(const tipl::vector<3>& v,const tipl::vector<3>& c,const tipl::vector<3>& n)
@@ -76,24 +78,34 @@ public:
         tube_vertices.push_back(v[0]);
         tube_vertices.push_back(v[1]);
         tube_vertices.push_back(v[2]);
-        tube_normals.push_back(n[0]);
-        tube_normals.push_back(n[1]);
-        tube_normals.push_back(n[2]);
-        tube_colors.push_back(c[0]);
-        tube_colors.push_back(c[1]);
-        tube_colors.push_back(c[2]);
+        tube_vertices.push_back(n[0]);
+        tube_vertices.push_back(n[1]);
+        tube_vertices.push_back(n[2]);
+        tube_vertices.push_back(c[0]);
+        tube_vertices.push_back(c[1]);
+        tube_vertices.push_back(c[2]);
+        ++tube_vertices_count;
     }
     void add_line(const tipl::vector<3>& v,const tipl::vector<3>& c)
     {
         line_vertices.push_back(v[0]);
         line_vertices.push_back(v[1]);
         line_vertices.push_back(v[2]);
-        line_colors.push_back(c[0]);
-        line_colors.push_back(c[1]);
-        line_colors.push_back(c[2]);
+        line_vertices.push_back(c[0]);
+        line_vertices.push_back(c[1]);
+        line_vertices.push_back(c[2]);
+        ++line_vertices_count;
     }
-    inline void end_tube_strip(void) {tube_strip_pos.push_back(tube_vertices.size());}
-    inline void end_line_strip(void) {line_strip_pos.push_back(line_vertices.size());}
+    inline void end_tube_strip(void)
+    {
+        tube_strip_size.push_back(tube_vertices_count-tube_strip_pos.back());
+        tube_strip_pos.push_back(tube_vertices_count);
+    }
+    inline void end_line_strip(void)
+    {
+        line_strip_size.push_back(line_vertices_count-line_strip_pos.back());
+        line_strip_pos.push_back(line_vertices_count);
+    }
     void add_tract(const TractRenderParam& param,
                    const std::vector<float>& tract,bool simple,
                    const TractRenderShader& shader,

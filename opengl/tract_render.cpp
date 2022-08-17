@@ -41,18 +41,7 @@ void TractRenderParam::init(GLWidget* glwidget,
         color_min = cur_tracking_window.color_bar->color_min;
     }
 }
-void TractRenderData::clear(void)
-{
-    tube_vertices.clear();
-    tube_normals.clear();
-    tube_colors.clear();
-    line_vertices.clear();
-    line_colors.clear();
-    tube_strip_pos.clear();
-    line_strip_pos.clear();
-    tube_strip_pos.push_back(0);
-    line_strip_pos.push_back(0);
-}
+
 
 void TractRenderData::add_tract(const TractRenderParam& param,
                                 const std::vector<float>& tract,bool simple,
@@ -72,7 +61,7 @@ void TractRenderData::add_tract(const TractRenderParam& param,
         vec_a(1,0,0),vec_b(0,1,0),
         vec_n,prev_vec_n,vec_ab,vec_ba,cur_color(assigned_color),previous_color;
 
-    for (unsigned int j = 0, index = 0; index < vertex_count;j += 3, data_iter += 3, ++index)
+    for (unsigned int index = 0; index < vertex_count;data_iter += 3, ++index)
     {
         // skip straight line!
         if (param.tract_style && index != 0 && index+1 != vertex_count)
@@ -242,12 +231,30 @@ void TractRenderData::add_tract(const TractRenderParam& param,
 }
 TractRenderData::~TractRenderData(void)
 {
+    clear();
+}
+void TractRenderData::clear(void)
+{
+    tube_vertices.clear();
+    line_vertices.clear();
+    tube_vertices_count = 0;
+    line_vertices_count = 0;
+    tube_strip_pos.clear();
+    line_strip_pos.clear();
+    tube_strip_pos.push_back(0);
+    line_strip_pos.push_back(0);
     if(glwidget)
     {
         if(tube)
+        {
             glwidget->glDeleteBuffers(1,&tube);
+            tube = 0;
+        }
         if(line)
+        {
             glwidget->glDeleteBuffers(1,&line);
+            line = 0;
+        }
     }
 }
 void TractRenderData::create_buffer(GLWidget* glwidget_)
@@ -255,41 +262,23 @@ void TractRenderData::create_buffer(GLWidget* glwidget_)
     glwidget = glwidget_;
     if(!tube_vertices.empty())
     {
-        tube_buffer_size = tube_vertices.size()*sizeof(float);
         glwidget->glGenBuffers(1,&tube);
         glwidget->glBindBuffer(GL_ARRAY_BUFFER, tube);
-        glwidget->glBufferData(GL_ARRAY_BUFFER, tube_buffer_size*3,0,GL_STATIC_DRAW);
-        glwidget->glBufferSubData(GL_ARRAY_BUFFER, 0, tube_buffer_size, &tube_vertices[0]);
+        glwidget->glBufferData(GL_ARRAY_BUFFER, tube_vertices.size()*sizeof(float),&tube_vertices[0],GL_STATIC_DRAW);
         tube_vertices.clear();
-        glwidget->glBufferSubData(GL_ARRAY_BUFFER, tube_buffer_size, tube_buffer_size, &tube_normals[0]);                // copy normals after vertices
-        tube_normals.clear();
-        glwidget->glBufferSubData(GL_ARRAY_BUFFER, tube_buffer_size*2, tube_buffer_size, &tube_colors[0]);  // copy colours after normals
-        tube_colors.clear();
-        glwidget->glBindBuffer(GL_ARRAY_BUFFER, 0);
-        tipl::divide_constant(tube_strip_pos,3);
-        tube_strip_size.resize(tube_strip_pos.size()-1);
-        for(unsigned int i = 0;i < tube_strip_size.size();++i)
-            tube_strip_size[i] = tube_strip_pos[i+1]-tube_strip_pos[i];
         tube_strip_pos.pop_back();
     }
 
     if(!line_vertices.empty())
     {
-        line_buffer_size = line_vertices.size()*sizeof(float);
         glwidget->glGenBuffers(1,&line);
         glwidget->glBindBuffer(GL_ARRAY_BUFFER, line);
-        glwidget->glBufferData(GL_ARRAY_BUFFER, line_buffer_size*2,0,GL_STATIC_DRAW);
-        glwidget->glBufferSubData(GL_ARRAY_BUFFER, 0, line_buffer_size, &line_vertices[0]);                             // copy vertices starting from 0 offest
+        glwidget->glBufferData(GL_ARRAY_BUFFER, line_vertices.size()*sizeof(float),&line_vertices[0],GL_STATIC_DRAW);
         line_vertices.clear();
-        glwidget->glBufferSubData(GL_ARRAY_BUFFER, line_buffer_size, line_buffer_size, &line_colors[0]);  // copy colours after normals
-        line_colors.clear();
-        glwidget->glBindBuffer(GL_ARRAY_BUFFER, 0);
-        tipl::divide_constant(line_strip_pos,3);
-        line_strip_size.resize(line_strip_pos.size()-1);
-        for(unsigned int i = 0;i < line_strip_size.size();++i)
-            line_strip_size[i] = line_strip_pos[i+1]-line_strip_pos[i];
         line_strip_pos.pop_back();
     }
+    glwidget->glBindBuffer(GL_ARRAY_BUFFER, 0);
+
 }
 
 void TractRenderData::draw(void)
@@ -300,9 +289,10 @@ void TractRenderData::draw(void)
         glEnableClientState(GL_VERTEX_ARRAY);
         glEnableClientState(GL_NORMAL_ARRAY);
         glEnableClientState(GL_COLOR_ARRAY);
-        glVertexPointer(3, GL_FLOAT, 0, 0);
-        glNormalPointer(GL_FLOAT, 0, (void*)tube_buffer_size);
-        glColorPointer(3, GL_FLOAT, 0, (void*)(tube_buffer_size+tube_buffer_size));
+        GLsizei stride = 9*sizeof(float);
+        glVertexPointer(3, GL_FLOAT, stride, 0);
+        glNormalPointer(GL_FLOAT, stride, (void*)(3*sizeof(float)));
+        glColorPointer(3, GL_FLOAT, stride, (void*)(6*sizeof(float)));
         glwidget->glMultiDrawArrays(GL_TRIANGLE_STRIP,
                             &tube_strip_pos[0],
                             &tube_strip_size[0],
@@ -318,8 +308,9 @@ void TractRenderData::draw(void)
         glwidget->glBindBuffer(GL_ARRAY_BUFFER, line);
         glEnableClientState(GL_VERTEX_ARRAY);
         glEnableClientState(GL_COLOR_ARRAY);
-        glVertexPointer(3, GL_FLOAT, 0, 0);
-        glColorPointer(3, GL_FLOAT, 0, (void*)(line_buffer_size));
+        GLsizei stride = 6*sizeof(float);
+        glVertexPointer(3, GL_FLOAT, stride, 0);
+        glColorPointer(3, GL_FLOAT, stride, (void*)(3*sizeof(float)));
         glwidget->glMultiDrawArrays(GL_LINE_STRIP,
                             &line_strip_pos[0],
                             &line_strip_size[0],
@@ -487,12 +478,11 @@ void TractRender::render_tracts(std::shared_ptr<TractModel>& active_tract_model,
     if(param.tract_shader)
         shader.add_shade(active_tract_model,visible);
 
-    auto thread_count = std::thread::hardware_concurrency();
+    auto thread_count = std::min<int>(6,std::thread::hardware_concurrency());
     data.clear();
     data.resize(thread_count);
     tipl::par_for (thread_count,[&](unsigned int thread)
     {
-        data[thread].clear();
         for(unsigned int i = thread;i < visible.size();i += thread_count)
         {
             if(about_to_write)
@@ -505,11 +495,12 @@ void TractRender::render_tracts(std::shared_ptr<TractModel>& active_tract_model,
         }
     });
 
-
     for(auto& d: data)
         d.create_buffer(glwidget);
 
+
     for(auto& d: data)
         d.draw();
+
 
 }
