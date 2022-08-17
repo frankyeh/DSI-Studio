@@ -1488,7 +1488,7 @@ void TractTableWidget::edit_tracts(void)
             ;
         }
         return false;
-    });
+    },true);
     if(edit_option == paint)
         cur_tracking_window.set_data("tract_color_style",1);//manual assigned
 
