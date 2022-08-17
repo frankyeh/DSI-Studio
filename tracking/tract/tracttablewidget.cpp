@@ -369,12 +369,13 @@ void TractTableWidget::load_tract_label(QString filename)
 
 void TractTableWidget::check_all(void)
 {
-    for(int row = 0;row < rowCount();++row)
+    progress p("rendering tracts",true);
+    for(int row = 0;progress::at(row,rowCount());++row)
     {
         item(row,0)->setCheckState(Qt::Checked);
         item(row,0)->setData(Qt::ForegroundRole,QBrush(Qt::black));
+        QApplication::processEvents();
     }
-    emit show_tracts();
 }
 
 void TractTableWidget::uncheck_all(void)
@@ -384,7 +385,6 @@ void TractTableWidget::uncheck_all(void)
         item(row,0)->setCheckState(Qt::Unchecked);
         item(row,0)->setData(Qt::ForegroundRole,QBrush(Qt::gray));
     }
-    emit show_tracts();
 }
 QString TractTableWidget::output_format(void)
 {
