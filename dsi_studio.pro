@@ -57,6 +57,8 @@ HEADERS += mainwindow.h \
     reconstruction/reconstruction_window.h \
     tracking/slice_view_scene.h \
     opengl/glwidget.h \
+    opengl/renderingtablewidget.h \
+    opengl/tract_render.hpp \
     libs/tracking/tracking_method.hpp \
     libs/tracking/roi.hpp \
     libs/tracking/fib_data.hpp \
@@ -67,7 +69,6 @@ HEADERS += mainwindow.h \
     tracking/region/RegionModel.h \
     libs/tracking/tract_model.hpp \
     tracking/tract/tracttablewidget.h \
-    opengl/renderingtablewidget.h \
     qcolorcombobox.h \
     libs/tracking/tracking_thread.hpp \
     libs/prog_interface_static_link.h \
@@ -131,12 +132,13 @@ SOURCES += main.cpp \
     reconstruction/reconstruction_window.cpp \
     tracking/slice_view_scene.cpp \
     opengl/glwidget.cpp \
+    opengl/tract_render.cpp \
+    opengl/renderingtablewidget.cpp \
     tracking/region/regiontablewidget.cpp \
     tracking/region/Regions.cpp \
     tracking/region/RegionModel.cpp \
     libs/tracking/tract_model.cpp \
     tracking/tract/tracttablewidget.cpp \
-    opengl/renderingtablewidget.cpp \
     qcolorcombobox.cpp \
     cmd/trk.cpp \
     cmd/rec.cpp \
