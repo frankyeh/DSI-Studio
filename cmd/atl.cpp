@@ -92,7 +92,7 @@ int atl(program_option& po)
             show_progress() << "ERROR: invalid template value" << std::endl;
             return 1;
         }
-        if(!fib_template_list[template_id].empty())
+        if(fib_template_list[template_id].empty())
         {
             show_progress() << "ERROR: no FIB template for " <<  std::filesystem::path(fa_template_list[template_id]).stem() << std::endl;
             return 1;
