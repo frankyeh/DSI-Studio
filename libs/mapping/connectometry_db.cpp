@@ -32,7 +32,7 @@ bool connectometry_db::read_db(fib_data* handle_)
     for(unsigned int index = 0;1;++index)
     {
         const float* buf = nullptr;
-        if (!handle->mat_reader.read((std::string("sub")+std::to_string(index)).c_str(),row,col,buf) ||
+        if (!handle->mat_reader.read((std::string("sub")+std::to_string(index)).c_str(),row,col,buf) &&
             !handle->mat_reader.read((std::string("subject")+std::to_string(index)).c_str(),row,col,buf))
             break;
         if(!index)
@@ -719,6 +719,7 @@ bool connectometry_db::save_db(const char* output_name)
     }
     for(unsigned int index = 0;index < handle->mat_reader.size();++index)
         if(handle->mat_reader[index].get_name() != "report" &&
+           handle->mat_reader[index].get_name() != "steps" &&
            handle->mat_reader[index].get_name().find("subject") != 0)
             matfile.write(handle->mat_reader[index]);
     for(unsigned int index = 0;progress::at(index,subject_qa.size());++index)
