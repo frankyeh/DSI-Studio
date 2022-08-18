@@ -268,7 +268,7 @@ bool output_odfs(const tipl::image<3,unsigned char>& mni_mask,
     image_model.voxel.mask = mni_mask;
     image_model.voxel.trans_to_mni = mni;
     image_model.voxel.vs = vs;
-    image_model.voxel.other_output="all";
+    image_model.voxel.other_output = "gfa";
     swap_data();
     if (!image_model.reconstruct2<ODFLoader,
             DetermineFiberDirections,
@@ -326,16 +326,11 @@ const char* odf_average(const char* out_name,std::vector<std::string>& file_name
                 ti.fold = uint16_t(std::floor(std::sqrt((ti.vertices_count-2)/10.0)+0.5));
                 mni = fib.trans_to_mni;
                 fib.get_index_list(other_metrics_name);
-                // remove odf measures: qa, nqa, iso
-                for(unsigned int i = 0;i < other_metrics_name.size();)
-                {
-                    if(other_metrics_name[i] == "iso" ||
-                       other_metrics_name[i] == "qa" ||
-                       other_metrics_name[i] == "nqa")
-                        other_metrics_name.erase(other_metrics_name.begin()+i);
-                    else
-                        ++i;
-                }
+                // remove odf metrics generated from averaged ODFs
+                other_metrics_name.erase(std::find(other_metrics_name.begin(),other_metrics_name.end(),std::string("iso")));
+                other_metrics_name.erase(std::find(other_metrics_name.begin(),other_metrics_name.end(),std::string("qa")));
+                other_metrics_name.erase(std::find(other_metrics_name.begin(),other_metrics_name.end(),std::string("gfa")));
+                other_metrics_name.erase(std::find(other_metrics_name.begin(),other_metrics_name.end(),std::string("nqa")));
                 other_metrics_images.resize(other_metrics_name.size());
                 other_metrics_count.resize(other_metrics_name.size());
             }
