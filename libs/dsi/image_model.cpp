@@ -145,7 +145,7 @@ void ImageModel::flip_b_table(const unsigned char* order)
     }
 }
 
-extern std::string fib_template_file_name_2mm;
+extern std::vector<std::string> fib_template_list;
 std::string ImageModel::check_b_table(void)
 {
     // reconstruct DTI using original data and b-table
@@ -189,13 +189,16 @@ std::string ImageModel::check_b_table(void)
     tipl::transformation_matrix<float> T;
     tipl::matrix<3,3,float> r;
 
-    if(is_human_data())
+    //if(is_human_data())
     {
         template_fib = std::make_shared<fib_data>();
-        if(!template_fib->load_from_file(fib_template_file_name_2mm.c_str()))
-            template_fib.reset();
-        else
+        if(!fib_template_list.empty() &&
+           !fib_template_list[voxel.template_id].empty() &&
+           template_fib->load_from_file(fib_template_list[voxel.template_id].c_str()))
         {
+            progress p("check b-table using ",fib_template_list[voxel.template_id].c_str());
+            if(template_fib->vs[0] < voxel.vs[0])
+                template_fib->resample_to(voxel.vs[0]);
             tipl::image<3> iso_fa;
             template_fib->get_iso_fa(iso_fa);
             tipl::normalize(iso_fa,255.9f);
