@@ -60,6 +60,7 @@ void show_info_dialog(const std::string& title,const std::string& result)
 
 void populate_templates(QComboBox* combo,size_t index)
 {
+    combo->clear();
     if(!fa_template_list.empty())
     {
         for(size_t i = 0;i < fa_template_list.size();++i)
