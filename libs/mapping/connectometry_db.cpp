@@ -32,7 +32,7 @@ bool connectometry_db::read_db(fib_data* handle_)
     for(unsigned int index = 0;1;++index)
     {
         const float* buf = nullptr;
-        if (!handle->mat_reader.read((std::string("sub")+std::to_string(index)).c_str(),row,col,buf) &&
+        if (!handle->mat_reader.read((std::string("subjects")+std::to_string(index)).c_str(),row,col,buf) &&
             !handle->mat_reader.read((std::string("subject")+std::to_string(index)).c_str(),row,col,buf))
             break;
         if(!index)
@@ -319,6 +319,15 @@ bool connectometry_db::parse_demo(void)
     return true;
 }
 
+void connectometry_db::clear(void)
+{
+    subject_names.clear();
+    R2.clear();
+    subject_qa.clear();
+    subject_qa_buf.clear();
+    num_subjects = 0;
+    modified = true;
+}
 
 void connectometry_db::remove_subject(unsigned int index)
 {
@@ -333,6 +342,7 @@ void connectometry_db::remove_subject(unsigned int index)
 void connectometry_db::calculate_si2vi(void)
 {
     vi2si.resize(handle->dim);
+    si2vi.clear();
     for(size_t index = 0;index < handle->dim.size();++index)
         if(handle->dir.fa[0][index] != 0.0f)
         {
@@ -723,7 +733,7 @@ bool connectometry_db::save_db(const char* output_name)
            handle->mat_reader[index].get_name().find("subject") != 0)
             matfile.write(handle->mat_reader[index]);
     for(unsigned int index = 0;progress::at(index,subject_qa.size());++index)
-        matfile.write((std::string("sub")+std::to_string(index)).c_str(),subject_qa[index],1,subject_qa_length);
+        matfile.write((std::string("subjects")+std::to_string(index)).c_str(),subject_qa[index],1,subject_qa_length);
     std::string name_string;
     for(unsigned int index = 0;index < num_subjects;++index)
     {
