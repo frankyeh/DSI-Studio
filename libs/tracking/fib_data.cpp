@@ -980,42 +980,30 @@ bool fib_data::load_from_mat(void)
     match_template();
     return true;
 }
-bool fib_data::resample_to(float resolution)
-{
-    progress p("resample FIB file");
-    tipl::transformation_matrix<double> T;
-    T.sr[0] = resolution/vs[2];
-    T.sr[4] = resolution/vs[1];
-    T.sr[8] = resolution/vs[0];
-    tipl::vector<3> new_vs(resolution,resolution,resolution);
-    tipl::shape<3> new_dim(dim[0]*vs[0]/resolution,dim[1]*vs[0]/resolution,dim[2]*vs[0]/resolution);
-    if(new_dim.size() > dim.size())
-    {
-        error_msg = "cannot resample to higher resolution";
-        return false;
-    }
-    auto new_trans(trans_to_mni);
-    new_trans[0]  = new_trans[0]  > 0 ? resolution : -resolution;
-    new_trans[5]  = new_trans[5]  > 0 ? resolution : -resolution;
-    new_trans[10] = new_trans[10] > 0 ? resolution : -resolution;
 
+
+bool resample_mat(gz_mat_read& mat_reader,float resolution)
+{
+    // get all data in delayed read comdition
     {
         progress p("reading data");
         for(size_t i = 0;progress::at(i,mat_reader.size());++i)
         {
             auto& mat = mat_reader[i];
             if(mat.has_delay_read() && !mat.read(*(mat_reader.in.get())))
-            {
-                error_msg = "failed to read matrix";
                 return false;
-            }
-        }
-        if(progress::aborted())
-        {
-            error_msg = "aborted";
-            return false;
         }
     }
+    tipl::shape<3> dim;
+    tipl::vector<3> vs;
+    tipl::transformation_matrix<double> T;
+    mat_reader.read("dimension",dim);
+    mat_reader.read("voxel_size",vs);
+    tipl::vector<3> new_vs(resolution,resolution,resolution);
+    tipl::shape<3> new_dim(dim[0]*vs[0]/resolution,dim[1]*vs[0]/resolution,dim[2]*vs[0]/resolution);
+    T.sr[0] = resolution/vs[2];
+    T.sr[4] = resolution/vs[1];
+    T.sr[8] = resolution/vs[0];
 
     progress p2("resampling");
     size_t total = 0;
@@ -1027,9 +1015,14 @@ bool fib_data::resample_to(float resolution)
             std::copy(new_dim.begin(),new_dim.end(),mat.get_data<unsigned int>());
         if(mat.get_name() == "voxel_size")
             std::copy(new_vs.begin(),new_vs.end(),mat.get_data<float>());
-        if(mat.get_name() == "trans")
-            std::copy(new_trans.begin(),new_trans.end(),mat.get_data<float>());
-        if(mat.get_name() == "dir0")
+        if(mat.get_cols() == 4 && mat.get_rows() == 4)
+        {
+            auto ptr = mat.get_data<float>();
+            ptr[0]  = ptr[0]  > 0 ? resolution : -resolution;
+            ptr[5]  = ptr[5]  > 0 ? resolution : -resolution;
+            ptr[10] = ptr[10] > 0 ? resolution : -resolution;
+        }
+        if(size_t(mat.get_cols())*size_t(mat.get_rows()) == 3*dim.size())
         {
             auto ptr = mat.get_data<float>();
             tipl::image<3,tipl::vector<3> > dir0(dim),new_dir0(new_dim);
@@ -1063,9 +1056,23 @@ bool fib_data::resample_to(float resolution)
         }
         ++total;
     });
-    dim = new_dim;
-    vs = new_vs;
-    trans_to_mni = new_trans;
+    return !progress::aborted();
+}
+
+bool fib_data::resample_to(float resolution)
+{
+    progress p("resample FIB file");
+    if(!resample_mat(mat_reader,resolution))
+    {
+        if(progress::aborted())
+            error_msg = "aborted";
+        else
+            error_msg = "failed to ready data";
+        return false;
+    }
+    mat_reader.read("dimension",dim);
+    mat_reader.read("voxel_size",vs);
+    mat_reader.read("trans",trans_to_mni);
     return true;
 }
 size_t match_volume(float volume);
