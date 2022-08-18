@@ -119,7 +119,7 @@ int atl(program_option& po)
                 show_progress() << "ERROR loading subject fib files:" << name_list[0] << std::endl;
                 return 1;
             }
-            reso = po.get("resolution",std::max<float>((fib.vs[0] + fib.vs[2])*0.5f,template_fib->vs[0]));
+            reso = po.get("resolution",std::floor((fib.vs[0] + fib.vs[2])*0.5f*100.0f)/100.0f);
             fib.get_index_list(item_list);
             show_progress() << "available metrics: ";
             for(size_t i = 0;i < item_list.size();++i)
@@ -140,7 +140,7 @@ int atl(program_option& po)
                 index_name.push_back(line);
         }
 
-        if(reso != template_fib->vs[0] && !template_fib->resample_to(reso))
+        if(reso > template_fib->vs[0] && !template_fib->resample_to(reso))
         {
             show_progress() << "ERROR: " << template_fib->error_msg << std::endl;
             return 1;
