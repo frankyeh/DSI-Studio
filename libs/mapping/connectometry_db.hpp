@@ -43,6 +43,7 @@ public:
     connectometry_db(){}
     bool has_db(void)const{return num_subjects > 0;}
     bool read_db(fib_data* handle);
+    void clear(void);
     void remove_subject(unsigned int index);
     void calculate_si2vi(void);
     bool is_odf_consistent(gz_mat_read& m);
