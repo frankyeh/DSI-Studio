@@ -10,8 +10,8 @@
 
 #include <filesystem>
 
-extern std::string fib_template_file_name_2mm;
 extern std::vector<std::vector<std::string> > template_atlas_list;
+extern std::vector<std::string> fa_template_list,fib_template_list;
 const char* odf_average(const char* out_name,std::vector<std::string>& file_names);
 bool atl_load_atlas(std::shared_ptr<fib_data> handle,std::string atlas_name,std::vector<std::shared_ptr<atlas> >& atlas_list)
 {
@@ -74,15 +74,44 @@ int atl(program_option& po)
         show_progress() << "constructing a group average template" << std::endl;
         const char* msg = odf_average(po.get("output",(QFileInfo(name_list[0].c_str()).absolutePath()+"/template").toStdString()).c_str(),name_list);
         if(msg)
+        {
             show_progress() << "ERROR:" << msg << std::endl;
+            return 1;
+        }
         return 0;
     }
     if(cmd=="db")
-    {
-        std::string tm = po.get("template",fib_template_file_name_2mm.c_str());
+    {        
+        for(size_t id = 0;id < fib_template_list.size();++id)
+            if(!fib_template_list[id].empty())
+                show_progress() << "template " << id << ":" << std::filesystem::path(fib_template_list[id]).stem() << std::endl;
+
+        auto template_id = po.get("template",0);
+        if(template_id >= fib_template_list.size())
+        {
+            show_progress() << "ERROR: invalid template value" << std::endl;
+            return 1;
+        }
+        if(!fib_template_list[template_id].empty())
+        {
+            show_progress() << "ERROR: no FIB template for " <<  std::filesystem::path(fa_template_list[template_id]).stem() << std::endl;
+            return 1;
+        }
+
+        std::shared_ptr<fib_data> template_fib(new fib_data);
+        if(!template_fib->load_from_file(fib_template_list[template_id].c_str()))
+        {
+            show_progress() << "ERROR: " <<  template_fib->error_msg << std::endl;
+            return 1;
+        }
+
+
         show_progress() << "constructing a connectometry db" << std::endl;
         std::vector<std::string> index_name;
-        if(po.get("index_name","qa") == std::string("*"))
+        float reso = template_fib->vs[0];
+
+        // get the name of all metrics from the first file
+        std::vector<std::string> item_list;
         {
             fib_data fib;
             if(!fib.load_from_file(name_list[0].c_str()))
@@ -90,8 +119,16 @@ int atl(program_option& po)
                 show_progress() << "ERROR loading subject fib files:" << name_list[0] << std::endl;
                 return 1;
             }
-            std::vector<std::string> item_list;
+            reso = po.get("resolution",std::max<float>((fib.vs[0] + fib.vs[2])*0.5f,template_fib->vs[0]));
             fib.get_index_list(item_list);
+            show_progress() << "available metrics: ";
+            for(size_t i = 0;i < item_list.size();++i)
+                show_progress() << item_list[i] << " ";
+            show_progress() << std::endl;
+        }
+
+        if(po.get("index_name","qa") == std::string("*"))
+        {
             for(size_t i = 0;i < item_list.size();++i)
                 index_name.push_back(item_list[i]);
         }
@@ -103,10 +140,16 @@ int atl(program_option& po)
                 index_name.push_back(line);
         }
 
+        if(reso != template_fib->vs[0] && !template_fib->resample_to(reso))
+        {
+            show_progress() << "ERROR: " << template_fib->error_msg << std::endl;
+            return 1;
+        }
+
         for(size_t i = 0; i < index_name.size();++i)
         {
             std::shared_ptr<group_connectometry_analysis> data(new group_connectometry_analysis);
-            if(!data->create_database(tm.c_str()))
+            if(!data->create_database(template_fib))
             {
                 show_progress() << "ERROR: " << data->error_msg << std::endl;
                 return 1;
@@ -115,8 +158,7 @@ int atl(program_option& po)
             data->handle->db.index_name = index_name[i];
             for (unsigned int index = 0;index < name_list.size();++index)
             {
-                if(name_list[index].find(".db.fib.gz") != std::string::npos ||
-                   name_list[index].find(tm) != std::string::npos)
+                if(name_list[index].find(".db.fib.gz") != std::string::npos)
                     continue;
                 show_progress() << "reading " << name_list[index] << std::endl;
                 if(!data->handle->db.add_subject_file(name_list[index],
