@@ -9,16 +9,12 @@
 
 #include <filesystem>
 
-bool group_connectometry_analysis::create_database(const char* template_name)
+bool group_connectometry_analysis::create_database(std::shared_ptr<fib_data> handle_)
 {
-    handle.reset(new fib_data);
-    if(!handle->load_from_file(template_name))
-    {
-        error_msg = handle->error_msg;
-        return false;
-    }
+    handle = handle_;
     fiber_threshold = 0.6f*tipl::segmentation::otsu_threshold(tipl::make_image(handle->dir.fa[0],handle->dim));
     handle->db.calculate_si2vi();
+    handle->db.subject_qa_length = handle->db.si2vi.size()*size_t(handle->dir.num_fiber);
     return true;
 }
 bool group_connectometry_analysis::load_database(const char* database_name)

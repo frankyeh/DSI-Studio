@@ -32,7 +32,8 @@ bool connectometry_db::read_db(fib_data* handle_)
     for(unsigned int index = 0;1;++index)
     {
         const float* buf = nullptr;
-        if (!handle->mat_reader.read((std::string("subject")+std::to_string(index)).c_str(),row,col,buf))
+        if (!handle->mat_reader.read((std::string("sub")+std::to_string(index)).c_str(),row,col,buf) ||
+            !handle->mat_reader.read((std::string("subject")+std::to_string(index)).c_str(),row,col,buf))
             break;
         if(!index)
         {
@@ -78,7 +79,7 @@ bool connectometry_db::read_db(fib_data* handle_)
         if(max_qa != 1.0f)
         {
             show_progress() << "converting raw QA to normalized QA" << std::endl;
-            tipl::par_for(subject_qa.size(),[&](unsigned int i)
+            tipl::par_for(subject_qa.size(),[&](size_t i)
             {
                 auto max_qa = tipl::max_value(subject_qa[i],subject_qa[i]+subject_qa_length);
                 if(max_qa != 0.0f)
@@ -332,15 +333,12 @@ void connectometry_db::remove_subject(unsigned int index)
 void connectometry_db::calculate_si2vi(void)
 {
     vi2si.resize(handle->dim);
-    for(unsigned int index = 0;index < size_t(handle->dim.size());++index)
-    {
+    for(size_t index = 0;index < handle->dim.size();++index)
         if(handle->dir.fa[0][index] != 0.0f)
         {
-            vi2si[index] = uint32_t(si2vi.size());
+            vi2si[index] = si2vi.size();
             si2vi.push_back(index);
         }
-    }
-    subject_qa_length = handle->dir.num_fiber*uint32_t(si2vi.size());
 }
 
 size_t convert_index(size_t old_index,
@@ -409,16 +407,10 @@ void connectometry_db::sample_from_image(tipl::const_pointer_image<3,float> I,
             tipl::transformation_matrix<float>(tipl::from_space(handle->trans_to_mni).to(trans)));
 
     data.clear();
-    data.resize(subject_qa_length);
+    data.resize(si2vi.size());
     tipl::par_for(si2vi.size(),[&](size_t si)
     {
-        size_t vi = si2vi[si];
-        for(unsigned int i = 0;i < handle->dir.num_fiber;++i,si += si2vi.size())
-        {
-            if(handle->dir.fa[i][vi] == 0.0f)
-                break;
-            data[si] = J[vi];
-        }
+        data[si] = J[si2vi[si]];
     });
 }
 bool connectometry_db::add_subject_file(const std::string& file_name,
@@ -470,7 +462,7 @@ bool connectometry_db::add_subject_file(const std::string& file_name,
 
             progress::show("loading");
             data.clear();
-            data.resize(subject_qa_length);
+            data.resize(si2vi.size()*size_t(handle->dir.num_fiber));
             tipl::par_for(si2vi.size(),[&](size_t si)
             {
                 size_t vi = si2vi[si];
@@ -487,7 +479,7 @@ bool connectometry_db::add_subject_file(const std::string& file_name,
                 if(odf == nullptr)
                     return;
                 float min_value = tipl::min_value(odf, odf + handle->dir.half_odf_size);
-                for(unsigned int i = 0;i < handle->dir.num_fiber;++i,si += si2vi.size())
+                for(char i = 0;i < handle->dir.num_fiber;++i,si += si2vi.size())
                 {
                     if(handle->dir.fa[i][vi] == 0.0f)
                         break;
@@ -548,11 +540,11 @@ bool connectometry_db::add_subject_file(const std::string& file_name,
     }
 
     R2.push_back(subject_R2);
-
     subject_qa_buf.push_back(std::move(data));
     subject_qa.push_back(&(subject_qa_buf.back()[0]));
     subject_names.push_back(subject_name);
     num_subjects++;
+    subject_qa_length = std::min<size_t>(subject_qa_length,data.size());
     modified = true;
     return true;
 }
@@ -566,15 +558,21 @@ void connectometry_db::get_subject_vector(unsigned int from,unsigned int to,
     subject_vector.resize(total_count);
     tipl::par_for(total_count,[&](unsigned int index)
     {
-        unsigned int subject_index = index + from;
-        for(unsigned int s_index = 0;s_index < si2vi.size();++s_index)
+        size_t subject_index = index + from;
+        for(size_t s_index = 0;s_index < si2vi.size();++s_index)
         {
-            unsigned int cur_index = si2vi[s_index];
+            size_t cur_index = si2vi[s_index];
             if(!fp_mask[cur_index])
                 continue;
-            for(unsigned int j = 0,fib_offset = 0;j < handle->dir.num_fiber && handle->dir.fa[j][cur_index] > fiber_threshold;
+            size_t fib_offset = 0;
+            for(char j = 0;j < handle->dir.num_fiber && handle->dir.fa[j][cur_index] > fiber_threshold;
                     ++j,fib_offset+=si2vi.size())
-                subject_vector[index].push_back(subject_qa[subject_index][s_index + fib_offset]);
+            {
+                size_t pos = s_index + fib_offset;
+                if(pos >= subject_qa_length)
+                    break;
+                subject_vector[index].push_back(subject_qa[subject_index][pos]);
+            }
         }
     });
     if(normalize_fp)
@@ -585,32 +583,24 @@ void connectometry_db::get_subject_vector(unsigned int from,unsigned int to,
             tipl::multiply_constant(subject_vector[index].begin(),subject_vector[index].end(),1.0f/sd);
     });
 }
-void connectometry_db::get_subject_vector_pos(std::vector<int>& subject_vector_pos,
-                            const tipl::image<3,int>& fp_mask,float fiber_threshold) const
-{
-    subject_vector_pos.clear();
-    for(unsigned int s_index = 0;s_index < si2vi.size();++s_index)
-    {
-        unsigned int cur_index = si2vi[s_index];
-        if(!fp_mask[cur_index])
-            continue;
-        for(unsigned int j = 0;j < handle->dir.num_fiber && handle->dir.fa[j][cur_index] > fiber_threshold;++j)
-            subject_vector_pos.push_back(int(cur_index));
-    }
-}
 
 void connectometry_db::get_subject_vector(unsigned int subject_index,std::vector<float>& subject_vector,
                         const tipl::image<3,int>& fp_mask,float fiber_threshold,bool normalize_fp) const
 {
     subject_vector.clear();
-    for(unsigned int s_index = 0;s_index < si2vi.size();++s_index)
+    for(size_t s_index = 0;s_index < si2vi.size();++s_index)
     {
-        unsigned int cur_index = si2vi[s_index];
+        size_t cur_index = si2vi[s_index];
         if(!fp_mask[cur_index])
             continue;
-        for(unsigned int j = 0,fib_offset = 0;j < handle->dir.num_fiber && handle->dir.fa[j][cur_index] > fiber_threshold;
-                ++j,fib_offset+=si2vi.size())
-            subject_vector.push_back(subject_qa[subject_index][s_index + fib_offset]);
+        size_t fib_offset = 0;
+        for(char j = 0;j < handle->dir.num_fiber && handle->dir.fa[j][cur_index] > fiber_threshold;++j,fib_offset+=si2vi.size())
+        {
+            size_t pos = s_index + fib_offset;
+            if(pos >= subject_qa_length)
+                break;
+            subject_vector.push_back(subject_qa[subject_index][pos]);
+        }
     }
     if(normalize_fp)
     {
@@ -694,7 +684,7 @@ bool connectometry_db::save_subject_vector(const char* output_name,
                 unsigned int cur_index = si2vi[s_index];
                 if(!fp_mask[cur_index])
                     continue;
-                for(unsigned int j = 0;j < handle->dir.num_fiber && handle->dir.fa[j][cur_index] > fiber_threshold;++j)
+                for(char j = 0;j < handle->dir.num_fiber && handle->dir.fa[j][cur_index] > fiber_threshold;++j)
                 {
                     voxel_location.push_back(int(cur_index));
                     tipl::pixel_index<3> p(cur_index,handle->dim);
@@ -732,11 +722,7 @@ bool connectometry_db::save_db(const char* output_name)
            handle->mat_reader[index].get_name().find("subject") != 0)
             matfile.write(handle->mat_reader[index]);
     for(unsigned int index = 0;progress::at(index,subject_qa.size());++index)
-    {
-        std::ostringstream out;
-        out << "subject" << index;
-        matfile.write(out.str().c_str(),subject_qa[index],handle->dir.num_fiber,si2vi.size());
-    }
+        matfile.write((std::string("sub")+std::to_string(index)).c_str(),subject_qa[index],1,subject_qa_length);
     std::string name_string;
     for(unsigned int index = 0;index < num_subjects;++index)
     {
@@ -852,17 +838,18 @@ void connectometry_db::get_subject_volume(unsigned int subject_index,tipl::image
 void connectometry_db::get_subject_fa(unsigned int subject_index,std::vector<std::vector<float> >& fa_data) const
 {
     fa_data.resize(handle->dir.num_fiber);
-    for(unsigned int index = 0;index < handle->dir.num_fiber;++index)
+    for(char index = 0;index < handle->dir.num_fiber;++index)
         fa_data[index].resize(handle->dim.size());
-    for(unsigned int s_index = 0;s_index < si2vi.size();++s_index)
+    tipl::par_for(si2vi.size(),[&](unsigned int s_index)
     {
-        unsigned int cur_index = si2vi[s_index];
-        for(unsigned int i = 0,fib_offset = 0;i < handle->dir.num_fiber && handle->dir.fa[i][cur_index] > 0;++i,fib_offset+=si2vi.size())
+        size_t cur_index = si2vi[s_index];
+        size_t fib_offset = 0;
+        for(char i = 0;i < handle->dir.num_fiber && handle->dir.fa[i][cur_index] > 0;++i,fib_offset+=si2vi.size())
         {
-            unsigned int pos = s_index + fib_offset;
-            fa_data[i][cur_index] = subject_qa[subject_index][pos];
+            size_t pos = s_index + fib_offset;
+            fa_data[i][cur_index] = (pos < subject_qa_length ? subject_qa[subject_index][pos] : fa_data[0][cur_index]);
         }
-    }
+    });
 }
 bool connectometry_db::get_qa_profile(const char* file_name,std::vector<std::vector<float> >& data)
 {
@@ -892,7 +879,7 @@ bool connectometry_db::get_qa_profile(const char* file_name,std::vector<std::vec
             if(!odf)
                 continue;
             float min_value = tipl::min_value(odf, odf + handle->dir.half_odf_size);
-            for(unsigned int i = 0;i < handle->dir.num_fiber;++i)
+            for(char i = 0;i < handle->dir.num_fiber;++i)
             {
                 if(handle->dir.fa[i][index] == 0.0f)
                     break;
@@ -909,7 +896,7 @@ bool connectometry_db::is_db_compatible(const connectometry_db& rhs)
         error_msg = "Image dimension does not match";
         return false;
     }
-    for(unsigned int index = 0;index < handle->dim.size();++index)
+    for(size_t index = 0;index < handle->dim.size();++index)
         if(handle->dir.fa[0][index] != rhs.handle->dir.fa[0][index])
         {
             error_msg = "The connectometry db was created using a different template.";
@@ -1081,17 +1068,21 @@ void calculate_spm(std::shared_ptr<fib_data> handle,connectometry_result& data,s
     for(unsigned int s_index = 0;s_index < handle->db.si2vi.size() && !terminated;++s_index)
     {
         unsigned int cur_index = handle->db.si2vi[s_index];
-        for(unsigned int fib = 0,fib_offset = 0;fib < handle->dir.num_fiber && handle->dir.fa[fib][cur_index] > fiber_threshold;
+        double result(0.0);
+        size_t fib_offset = 0;
+        for(char fib = 0;fib < handle->dir.num_fiber && handle->dir.fa[fib][cur_index] > fiber_threshold;
                 ++fib,fib_offset+=handle->db.si2vi.size())
         {
             unsigned int pos = s_index + fib_offset;
-            for(unsigned int index = 0;index < population.size();++index)
-                population[index] = double(handle->db.subject_qa[index][pos]);
+            if(pos < handle->db.subject_qa_length)
+            {
+                for(unsigned int index = 0;index < population.size();++index)
+                    population[index] = double(handle->db.subject_qa[index][pos]);
 
-            if(std::find(population.begin(),population.end(),0.0) != population.end())
-                continue;
-            double result = info(population,pos);
-
+                if(std::find(population.begin(),population.end(),0.0) != population.end())
+                    continue;
+                result = info(population,pos);
+            }
             if(result > 0.0) // group 0 > group 1
                 data.pos_corr[fib][cur_index] = result;
             if(result < 0.0) // group 0 < group 1
@@ -1102,13 +1093,13 @@ void calculate_spm(std::shared_ptr<fib_data> handle,connectometry_result& data,s
 }
 
 
-void connectometry_result::clear_result(size_t num_fiber,size_t image_size)
+void connectometry_result::clear_result(char num_fiber,size_t image_size)
 {
     pos_corr.resize(num_fiber);
     neg_corr.resize(num_fiber);
     pos_corr_ptr.resize(num_fiber);
     neg_corr_ptr.resize(num_fiber);
-    for(size_t fib = 0;fib < num_fiber;++fib)
+    for(char fib = 0;fib < num_fiber;++fib)
     {
         pos_corr[fib].resize(image_size);
         neg_corr[fib].resize(image_size);
@@ -1116,7 +1107,6 @@ void connectometry_result::clear_result(size_t num_fiber,size_t image_size)
         std::fill(neg_corr[fib].begin(),neg_corr[fib].end(),0.0);
         pos_corr_ptr[fib] = &pos_corr[fib][0];
         neg_corr_ptr[fib] = &neg_corr[fib][0];
-
     }
 }
 

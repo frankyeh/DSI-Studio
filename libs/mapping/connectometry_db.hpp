@@ -31,9 +31,9 @@ public:// subject specific data
     bool is_longitudinal = false;
 public:
     std::list<std::vector<float> > subject_qa_buf;// merged from other db
-    unsigned int subject_qa_length;
-    tipl::image<3,unsigned int> vi2si;
-    std::vector<unsigned int> si2vi;
+    unsigned int subject_qa_length = 0;
+    tipl::image<3,size_t> vi2si;
+    std::vector<size_t> si2vi;
     std::string index_name = "qa";
 public://longitudinal studies
     std::vector<std::pair<int,int> > match;
@@ -50,8 +50,6 @@ public:
                            const tipl::matrix<4,4>& trans,std::vector<float>& data);
     bool add_subject_file(const std::string& file_name,
                             const std::string& subject_name);
-    void get_subject_vector_pos(std::vector<int>& subject_vector_pos,
-                                const tipl::image<3,int>& fp_mask,float fiber_threshold) const;
     void get_subject_vector(unsigned int from,unsigned int to,
                             std::vector<std::vector<float> >& subject_vector,
                             const tipl::image<3,int>& fp_mask,float fiber_threshold,bool normalize_fp) const;
@@ -151,7 +149,7 @@ public:
 struct connectometry_result{
     std::vector<std::vector<float> > pos_corr,neg_corr;
     std::vector<const float*> pos_corr_ptr,neg_corr_ptr;
-    void clear_result(size_t num_fiber,size_t image_size);
+    void clear_result(char num_fiber,size_t image_size);
 };
 
 void calculate_spm(std::shared_ptr<fib_data> handle,connectometry_result& data,stat_model& info,
