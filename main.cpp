@@ -19,12 +19,11 @@
 #include <QTextCodec>
 #endif
 
-std::string
-        fib_template_file_name_2mm,
-        device_content_file;
+std::string device_content_file;
 std::vector<std::string> fa_template_list,
                          iso_template_list,
-                         track_atlas_file_list;
+                         track_atlas_file_list,
+                         fib_template_list;
 std::vector<std::vector<std::string> > template_atlas_list;
 
 class CustomSliceModel;
@@ -101,7 +100,6 @@ std::string find_full_path(QString name)
 
 bool load_file_name(void)
 {
-    fib_template_file_name_2mm = find_full_path("/atlas/ICBM152_adult/ICBM152_adult.fib.gz");
     device_content_file = find_full_path("/device.txt");
 
     {
@@ -127,14 +125,20 @@ bool load_file_name(void)
             QString qa_file_path = template_dir.absolutePath() + "/" + name_list[i] + ".QA.nii.gz";
             QString iso_file_path = template_dir.absolutePath() + "/" + name_list[i] + ".ISO.nii.gz";
             QString tt_file_path = template_dir.absolutePath() + "/" + name_list[i] + ".tt.gz";
+            QString fib_file_path = template_dir.absolutePath() + "/" + name_list[i] + ".fib.gz";
             if(!QFileInfo(qa_file_path).exists())
                 continue;
-            // setup QA and ISO template
+            // setup QA and ISO template        
             fa_template_list.push_back(qa_file_path.toStdString());
             if(QFileInfo(iso_file_path).exists())
                 iso_template_list.push_back(iso_file_path.toStdString());
             else
                 iso_template_list.push_back(std::string());
+            // not all have FIB template
+            if(QFileInfo(fib_file_path).exists())
+                fib_template_list.push_back(fib_file_path.toStdString());
+            else
+                fib_template_list.push_back(std::string());
 
             if(QFileInfo(iso_file_path).exists())
                 track_atlas_file_list.push_back(tt_file_path.toStdString());
