@@ -84,7 +84,7 @@ int atl(program_option& po)
     {        
         for(size_t id = 0;id < fib_template_list.size();++id)
             if(!fib_template_list[id].empty())
-                show_progress() << "template " << id << ":" << std::filesystem::path(fib_template_list[id]).stem() << std::endl;
+                show_progress() << "template " << id << ": " << std::filesystem::path(fib_template_list[id]).stem() << std::endl;
 
         auto template_id = po.get("template",0);
         if(template_id >= fib_template_list.size())
