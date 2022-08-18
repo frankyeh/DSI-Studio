@@ -215,7 +215,7 @@
     </widget>
    </item>
    <item>
-    <widget class="QWidget" name="skeleton_widget" native="true">
+    <widget class="QWidget" name="template_widget" native="true">
      <layout class="QHBoxLayout" name="horizontalLayout">
       <property name="spacing">
        <number>0</number>
@@ -233,6 +233,29 @@
        <number>0</number>
       </property>
       <item>
+       <widget class="QLabel" name="label_2">
+        <property name="text">
+         <string>Resolution(mm)</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QDoubleSpinBox" name="reso">
+        <property name="minimum">
+         <double>0.010000000000000</double>
+        </property>
+        <property name="maximum">
+         <double>5.000000000000000</double>
+        </property>
+        <property name="singleStep">
+         <double>0.500000000000000</double>
+        </property>
+        <property name="value">
+         <double>1.000000000000000</double>
+        </property>
+       </widget>
+      </item>
+      <item>
        <widget class="QLabel" name="label">
         <property name="text">
          <string>Template:</string>
@@ -240,10 +263,14 @@
        </widget>
       </item>
       <item>
-       <widget class="QLineEdit" name="skeleton"/>
+       <widget class="QLineEdit" name="temp">
+        <property name="readOnly">
+         <bool>true</bool>
+        </property>
+       </widget>
       </item>
       <item>
-       <widget class="QPushButton" name="open_skeleton">
+       <widget class="QPushButton" name="open_template">
         <property name="text">
          <string/>
         </property>
