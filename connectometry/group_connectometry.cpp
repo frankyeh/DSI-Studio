@@ -97,6 +97,8 @@ group_connectometry::group_connectometry(QWidget *parent,std::shared_ptr<group_c
                                                << "positive pdf" << "negative pdf");
 
 
+    ui->length_threshold->setMaximum(vbc->handle->dim[0]);
+    ui->length_threshold->setValue((vbc->handle->dim[0]/4)/5*5);
 
 
     // dist report
