@@ -10,7 +10,7 @@
 #include "prog_interface_static_link.h"
 #include "image_model.hpp"
 
-extern std::string fib_template_file_name_2mm;
+extern std::vector<std::string> fib_template_list;
 CreateDBDialog::CreateDBDialog(QWidget *parent,bool create_db_) :
     QDialog(parent),
     create_db(create_db_),
@@ -20,11 +20,10 @@ CreateDBDialog::CreateDBDialog(QWidget *parent,bool create_db_) :
     ui->setupUi(this);
     ui->group_list->setModel(new QStringListModel);
     ui->group_list->setSelectionModel(new QItemSelectionModel(ui->group_list->model()));
-    ui->skeleton->setText(fib_template_file_name_2mm.c_str());
     if(!create_db)
     {
         ui->index_of_interest->hide();
-        ui->skeleton_widget->hide();
+        ui->template_widget->hide();
         ui->movedown->hide();
         ui->moveup->hide();
         ui->create_data_base->setText("Create template");
@@ -92,15 +91,18 @@ void CreateDBDialog::update_list(void)
             fib_data fib;
             if(!fib.load_from_file(sample_fib.toLocal8Bit().begin()))
             {
-                QMessageBox::critical(this,"ERROR","Invalid FIB file format");
+                QMessageBox::critical(this,"ERROR","The first file is not a valid FIB file.");
                 raise(); // for Mac
                 return;
             }
+            ui->reso->setValue((fib.vs[0] + fib.vs[2])*0.5f);
             ui->index_of_interest->clear();
             std::vector<std::string> item_list;
             fib.get_index_list(item_list);
             for(auto& name : item_list)
                 ui->index_of_interest->addItem(name.c_str());
+            if(ui->temp->text().isEmpty() && !fib_template_list[fib.template_id].empty())
+                set_template(fib_template_list[fib.template_id].c_str());
         }
     }
     if(ui->output_file_name->text().isEmpty())
@@ -253,7 +255,20 @@ void CreateDBDialog::on_select_output_file_clicked()
 #endif
     ui->output_file_name->setText(filename);
 }
-void CreateDBDialog::on_open_skeleton_clicked()
+void CreateDBDialog::set_template(std::string file_name)
+{
+    template_fib.reset(new fib_data);
+    if(!template_fib->load_from_file(file_name.c_str()))
+    {
+        QMessageBox::critical(this,"ERROR",template_fib->error_msg.c_str());
+        template_fib.reset();
+        return;
+    }
+    template_reso = template_fib->vs[0];
+    ui->temp->setText(file_name.c_str());
+    ui->reso->setMinimum(template_fib->vs[0]);
+}
+void CreateDBDialog::on_open_template_clicked()
 {
     QString filename = QFileDialog::getOpenFileName(
                                  this,
@@ -262,7 +277,7 @@ void CreateDBDialog::on_open_skeleton_clicked()
                                  "FIB file (*fib.gz);;All files (*)");
     if(filename.isEmpty())
         return;
-    ui->skeleton->setText(filename);
+    set_template(filename.toStdString());
 }
 
 void CreateDBDialog::on_create_data_base_clicked()
@@ -280,16 +295,34 @@ void CreateDBDialog::on_create_data_base_clicked()
 
     if(create_db)
     {
-        if(ui->skeleton->text().isEmpty())
+        if(ui->temp->text().isEmpty())
         {
             QMessageBox::critical(this,"ERROR","Please assign template FIB file");
             return;
         }
-
+        if(ui->reso->value() != template_fib->vs[0])
+        {
+            // if template has been resampled, reload it
+            if(template_fib->vs[0] != template_reso)
+            {
+                template_fib.reset(new fib_data);
+                if(!template_fib->load_from_file(ui->temp->text().toStdString().c_str()))
+                {
+                    QMessageBox::critical(this,"ERROR",template_fib->error_msg.c_str());
+                    template_fib.reset();
+                    return;
+                }
+            }
+            if(!template_fib->resample_to(ui->reso->value()))
+            {
+                QMessageBox::critical(this,"ERROR",template_fib->error_msg.c_str());
+                return;
+            }
+        }
         progress prog_("creating database");
         std::shared_ptr<group_connectometry_analysis> data(new group_connectometry_analysis);
 
-        if(!data->create_database(ui->skeleton->text().toStdString().c_str()))
+        if(!data->create_database(template_fib))
         {
             QMessageBox::critical(this,"ERROR",data->error_msg.c_str());
             return;
