@@ -1043,6 +1043,7 @@ bool fib_data::resample_to(float resolution)
                 *(ptr+1) = new_dir0[j][1];
                 *(ptr+2) = new_dir0[j][2];
             }
+            mat.resize(tipl::vector<2,unsigned int>(3*new_dim[0]*new_dim[1],new_dim[2]));
         }
         if(size_t(mat.get_cols())*size_t(mat.get_rows()) == dim.size()) // image volumes, including fa, and fiber index
         {
@@ -1055,9 +1056,10 @@ bool fib_data::resample_to(float resolution)
             if(mat.is_type<short>()) // index0,index1
             {
                 tipl::image<3> new_image(new_dim);
-                tipl::resample<tipl::nearest>(tipl::make_image(mat.get_data<float>(),dim),new_image,T);
-                std::copy(new_image.begin(),new_image.end(),mat.get_data<float>());
+                tipl::resample<tipl::nearest>(tipl::make_image(mat.get_data<short>(),dim),new_image,T);
+                std::copy(new_image.begin(),new_image.end(),mat.get_data<short>());
             }
+            mat.resize(tipl::vector<2,unsigned int>(new_dim[0]*new_dim[1],new_dim[2]));
         }
         ++total;
     });
