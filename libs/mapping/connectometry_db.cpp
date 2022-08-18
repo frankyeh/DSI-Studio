@@ -540,11 +540,11 @@ bool connectometry_db::add_subject_file(const std::string& file_name,
     }
 
     R2.push_back(subject_R2);
+    subject_qa_length = std::min<size_t>(subject_qa_length,data.size());
     subject_qa_buf.push_back(std::move(data));
     subject_qa.push_back(&(subject_qa_buf.back()[0]));
     subject_names.push_back(subject_name);
     num_subjects++;
-    subject_qa_length = std::min<size_t>(subject_qa_length,data.size());
     modified = true;
     return true;
 }
