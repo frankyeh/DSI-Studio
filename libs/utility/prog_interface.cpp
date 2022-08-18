@@ -92,15 +92,15 @@ progress::~progress(void)
             if(count > 60.0f)
             {
                 count /= 60.0;
-                unit = "min";
+                unit = "m";
                 if(count > 60.0f)
                 {
                     count /= 60.0f;
-                    unit = "hr";
+                    unit = "h";
                 }
             }
         }
-        out << "elapsed time: " << count << " " << unit;
+        out << count << " " << unit;
     }
     status_list.pop_back();
     print_status(out.str().c_str(),false,true);
