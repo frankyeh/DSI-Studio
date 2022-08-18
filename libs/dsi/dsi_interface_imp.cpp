@@ -426,7 +426,7 @@ const char* odf_average(const char* out_name,std::vector<std::string>& file_name
     odfs.resize(odf_size);
     progress::at(3,3);
     std::ostringstream out;
-    out << "A group average template was constructed from a total of " << file_names.size() << " subjects." << report.c_str();
+    out << "A group-average template was constructed from a total of " << file_names.size() << " scans." << report.c_str();
     report = out.str();
     if(!output_odfs(mask,out_name,".mean.fib.gz",odfs,other_metrics_images,other_metrics_name,ti,vs.begin(),mni.begin(),report,error_msg,false) ||
        !output_odfs(mask,out_name,".mean.odf.fib.gz",odfs,other_metrics_images,other_metrics_name,ti,vs.begin(),mni.begin(),report,error_msg))
