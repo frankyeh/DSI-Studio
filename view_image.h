@@ -8,11 +8,23 @@
 namespace Ui {
 class view_image;
 }
+class QTableWidget;
+class TableKeyEventWatcher : public QObject {
+    Q_OBJECT
+    using QObject::QObject;
+private:
+    QTableWidget* table;
+    bool eventFilter(QObject * receiver, QEvent * event) override;
+public:
+    TableKeyEventWatcher(QTableWidget* table);
+    Q_SIGNAL void DeleteRowPressed(int row);
+};
+
 
 class view_image : public QMainWindow
 {
     Q_OBJECT
-    
+    std::shared_ptr<TableKeyEventWatcher> table_event;
 public:
     QString file_name,original_file_name;
     QStringList file_names;
@@ -30,6 +42,8 @@ private:
     bool has_flip_x(void);
     bool has_flip_y(void);
 private slots:
+    void DeleteRowPressed(int row);
+    void show_info(QString info);
     void show_image(bool update_others);
     void init_image(void);
     void update_overlay_menu(void);
@@ -71,6 +85,10 @@ private slots:
 
     void on_zoom_valueChanged(double arg1);
 
+    void on_info_cellChanged(int row, int column);
+
+    void on_info_cellDoubleClicked(int row, int column);
+
 private:
     Ui::view_image *ui;
 private:
@@ -94,6 +112,10 @@ private:
             case float32:fun(I_float32);return;
         }
     }
+private:
+    gz_mat_read mat;
+    void read_mat_info(void);
+    bool read_mat(void);
 private: //overlay
     std::vector<size_t> overlay_images;
     std::vector<bool> overlay_images_visible;

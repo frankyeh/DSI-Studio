@@ -155,12 +155,28 @@ bool match_files(const std::string& file_path1,const std::string& file_path2,
 
 
 
+bool resample_mat(gz_mat_read& mat_reader,float resolution);
 bool view_image::command(std::string cmd,std::string param1)
 {
     if(!shape.size())
         return true;
     error_msg.clear();
     bool result = true;
+
+    if(mat.size())
+    {
+        if(cmd == "regrid")
+        {
+            float reso = std::stof(param1);
+            if(reso <= 0.0f)
+                return false;
+            resample_mat(mat,reso);
+            read_mat();
+            init_image();
+            return true;
+        }
+    }
+
 
     {
         progress prog(cmd.c_str());
@@ -342,12 +358,39 @@ bool load_image_from_files(QStringList filenames,tipl::image<3>& ref,tipl::vecto
         return true;
     }
 }
+TableKeyEventWatcher::TableKeyEventWatcher(QTableWidget* table_):table(table_)
+{
+    table_->installEventFilter(this);
+}
+bool TableKeyEventWatcher::eventFilter(QObject * receiver, QEvent * event)
+{
+    auto table = qobject_cast<QTableWidget*>(receiver);
+    if (table && event->type() == QEvent::KeyPress)
+    {
+        auto keyEvent = static_cast<QKeyEvent*>(event);
+        if (keyEvent->key() == Qt::Key_Delete && keyEvent->modifiers() & Qt::ControlModifier)
+            emit DeleteRowPressed(table->currentRow());
+    }
+    return false;
+}
+void view_image::DeleteRowPressed(int row)
+{
+    if(ui->info->currentRow() == -1)
+        return;
+    if(ui->info->currentRow() < mat.size())
+        mat.remove(ui->info->currentRow());
+    ui->info->removeRow(ui->info->currentRow());
+}
 
 view_image::view_image(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::view_image)
 {
     ui->setupUi(this);
+
+    table_event.reset(new TableKeyEventWatcher(ui->info));
+    connect(table_event.get(),SIGNAL(DeleteRowPressed(int)),this,SLOT(DeleteRowPressed(int)));
+
     ui->info->setColumnWidth(0,120);
     ui->info->setColumnWidth(1,200);
     ui->info->setHorizontalHeaderLabels(QStringList() << "Header" << "Value");
@@ -481,6 +524,37 @@ bool get_compressed_image(tipl::io::dicom& dicom,tipl::image<2,short>& I)
     const uchar* ptr = buf.bits();
     for(int j = 0;j < I.size();++j,ptr += 4)
         I[j] = *ptr;
+    return true;
+}
+void view_image::read_mat_info(void)
+{
+    QString info;
+    for(unsigned int index = 0;index < mat.size();++index)
+    {
+        std::string data;
+        mat[index].get_info(data);
+        info += data.c_str();
+        info += "\n";
+    }
+    show_info(info);
+}
+bool view_image::read_mat(void)
+{
+    if(!mat.read("dimension",shape))
+    {
+        error_msg = "cannot find dimension matrix";
+        return false;
+    }
+    I_float32.resize(shape);
+    if((mat.has("fa0") || mat.has("image0")))
+        mat.read(mat.has("fa0") ? "fa0":"image0",I_float32);
+    else
+        mat >> I_float32;
+
+    if(mat.has("trans"))
+        mat.read("trans",T);
+    mat.get_voxel_size(vs);
+    read_mat_info();
     return true;
 }
 void prepare_idx(const char* file_name,std::shared_ptr<gz_istream> in);
@@ -693,34 +767,15 @@ bool view_image::open(QStringList file_names_)
         else
             if(QString(file_name).endsWith(".mat") || QString(file_name).endsWith("fib.gz") || QString(file_name).endsWith("src.gz"))
             {
-                gz_mat_read mat;
                 if(!mat.load_from_file(file_name.toStdString().c_str()))
                 {
                     error_msg = "invalid format";
                     return false;
                 }
                 data_type = float32;
-                if(!mat.read("dimension",shape))
-                {
-                    error_msg = "cannot find dimension matrix";
+                if(!read_mat())
                     return false;
-                }
-                I_float32.resize(shape);
-                if((mat.has("fa0") || mat.has("image0")))
-                    mat.read(mat.has("fa0") ? "fa0":"image0",I_float32);
-                else
-                    mat >> I_float32;
 
-                if(mat.has("trans"))
-                    mat.read("trans",T);
-                mat.get_voxel_size(vs);
-                for(unsigned int index = 0;index < mat.size();++index)
-                {
-                    std::string data;
-                    mat[index].get_info(data);
-                    info += data.c_str();
-                    info += "\n";
-                }
             }
             else
             if(QString(file_name).endsWith("2dseq"))
@@ -741,21 +796,8 @@ bool view_image::open(QStringList file_names_)
                 error_msg = "unsupported file format";
                 return false;
             }
-
-
-    QStringList list = info.split("\n");
-    ui->info->clear();
-    ui->info->setRowCount(list.size());
-    for(int row = 0;row < list.size();++row)
-    {
-        QString line = list[row];
-        QStringList value_list = line.split("=");
-        ui->info->setItem(row,0, new QTableWidgetItem(value_list[0]));
-        if(value_list.size() > 1)
-            ui->info->setItem(row,1, new QTableWidgetItem(value_list[1]));
-    }
-    ui->info->selectRow(0);
-
+    if(!info.isEmpty())
+        show_info(info);
     no_update = true;
     ui->type->setCurrentIndex(data_type);
     ui->zoom->setValue(0.9f*width()/shape.width());
@@ -886,7 +928,21 @@ bool view_image::has_flip_y(void)
     }
     return flip_y;
 }
-
+void view_image::show_info(QString info)
+{
+    QStringList list = info.split("\n");
+    ui->info->clear();
+    ui->info->setRowCount(list.size());
+    for(int row = 0;row < list.size();++row)
+    {
+        QString line = list[row];
+        QStringList value_list = line.split("=");
+        ui->info->setItem(row,0, new QTableWidgetItem(value_list[0]));
+        if(value_list.size() > 1)
+            ui->info->setItem(row,1, new QTableWidgetItem(value_list[1]));
+    }
+    ui->info->selectRow(0);
+}
 void draw_ruler(QPainter& paint,
                 const tipl::shape<3>& shape,
                 const tipl::matrix<4,4>& trans,
@@ -954,6 +1010,20 @@ void view_image::change_contrast()
 
 void view_image::on_actionSave_triggered()
 {
+    if(mat.size())
+    {
+        gz_mat_write matfile(file_name.toStdString().c_str());
+        if(!matfile)
+        {
+            QMessageBox::critical(this,"ERROR","Cannot save file");
+            return;
+        }
+        progress p("saving");
+        for(unsigned int index = 0;progress::at(index,mat.size());++index)
+            matfile.write(mat[index]);
+        QMessageBox::information(this,"DSI Studio","File Save");
+        return;
+    }
     if(command("save",file_name.toStdString()))
         QMessageBox::information(this,"DSI Studio","Saved");
     else
@@ -963,7 +1033,10 @@ void view_image::on_actionSave_triggered()
 void view_image::on_action_Save_as_triggered()
 {
     QString filename = QFileDialog::getSaveFileName(
-                           this,"Save image",file_name,"NIFTI file(*nii.gz *.nii)" );
+                           this,"Save",file_name,
+                            mat.size() ?
+                            "FIB/SRC file(*fib.gz *src.gz);;All Files (*)":
+                            "NIFTI file(*nii.gz *.nii)" );
     if (filename.isEmpty())
         return;
     file_name = filename;
@@ -1158,5 +1231,28 @@ void view_image::on_type_currentIndexChanged(int index)
 void view_image::on_zoom_valueChanged(double arg1)
 {
     show_image(false);
+}
+
+void view_image::on_info_cellChanged(int row, int column)
+{
+    if(column == 0 && row < mat.size())
+        mat[row].set_name(ui->info->item(row,column)->text().toStdString());
+
+
+}
+
+void view_image::on_info_cellDoubleClicked(int row, int column)
+{
+    if(column == 1 && row < mat.size() && mat[row].is_type<char>())
+    {
+        bool okay = false;
+        auto text = QInputDialog::getMultiLineText(this,"DSI Studio","Input Content",
+                                                   mat[row].get_data<char>(),&okay);
+        if(!okay)
+            return;
+        mat[row].set_text(text.toStdString());
+        read_mat_info();
+        ui->info->selectRow(row);
+    }
 }
 
