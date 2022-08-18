@@ -11,6 +11,7 @@
 #include "image_model.hpp"
 
 extern std::vector<std::string> fib_template_list;
+void populate_templates(QComboBox* combo,size_t index);
 CreateDBDialog::CreateDBDialog(QWidget *parent,bool create_db_) :
     QDialog(parent),
     create_db(create_db_),
@@ -85,6 +86,8 @@ void CreateDBDialog::update_list(void)
             ui->index_of_interest->clear();
             ui->index_of_interest->addItem(metrics);
             ui->index_of_interest->setCurrentIndex(0);
+            populate_templates(ui->template_list,0);
+            ui->template_list->setEnabled(true);
         }
         else
         {
@@ -95,14 +98,15 @@ void CreateDBDialog::update_list(void)
                 raise(); // for Mac
                 return;
             }
-            ui->reso->setValue((fib.vs[0] + fib.vs[2])*0.5f);
+            fib_reso = std::floor((fib.vs[0] + fib.vs[2])*0.5f*100.0f)/100.0f;
             ui->index_of_interest->clear();
             std::vector<std::string> item_list;
             fib.get_index_list(item_list);
             for(auto& name : item_list)
                 ui->index_of_interest->addItem(name.c_str());
-            if(ui->temp->text().isEmpty() && !fib_template_list[fib.template_id].empty())
-                set_template(fib_template_list[fib.template_id].c_str());
+            populate_templates(ui->template_list,fib.template_id);
+            ui->template_list->setEnabled(!fib.is_qsdr);
+
         }
     }
     if(ui->output_file_name->text().isEmpty())
@@ -255,30 +259,6 @@ void CreateDBDialog::on_select_output_file_clicked()
 #endif
     ui->output_file_name->setText(filename);
 }
-void CreateDBDialog::set_template(std::string file_name)
-{
-    template_fib.reset(new fib_data);
-    if(!template_fib->load_from_file(file_name.c_str()))
-    {
-        QMessageBox::critical(this,"ERROR",template_fib->error_msg.c_str());
-        template_fib.reset();
-        return;
-    }
-    template_reso = template_fib->vs[0];
-    ui->temp->setText(file_name.c_str());
-    ui->reso->setMinimum(template_fib->vs[0]);
-}
-void CreateDBDialog::on_open_template_clicked()
-{
-    QString filename = QFileDialog::getOpenFileName(
-                                 this,
-                                 "Template file",
-                                 "",
-                                 "FIB file (*fib.gz);;All files (*)");
-    if(filename.isEmpty())
-        return;
-    set_template(filename.toStdString());
-}
 
 void CreateDBDialog::on_create_data_base_clicked()
 {
@@ -295,30 +275,22 @@ void CreateDBDialog::on_create_data_base_clicked()
 
     if(create_db)
     {
-        if(ui->temp->text().isEmpty())
+        auto template_id = ui->template_list->currentIndex();
+        if(template_id == -1 || template_id >= fib_template_list.size() || fib_template_list[template_id].empty())
         {
-            QMessageBox::critical(this,"ERROR","Please assign template FIB file");
+            QMessageBox::critical(this,"ERROR","Cannot find the template for creating database");
             return;
         }
-        if(ui->reso->value() != template_fib->vs[0])
-        {
-            // if template has been resampled, reload it
-            if(template_fib->vs[0] != template_reso)
-            {
-                template_fib.reset(new fib_data);
-                if(!template_fib->load_from_file(ui->temp->text().toStdString().c_str()))
-                {
-                    QMessageBox::critical(this,"ERROR",template_fib->error_msg.c_str());
-                    template_fib.reset();
-                    return;
-                }
-            }
-            if(!template_fib->resample_to(ui->reso->value()))
+
+        std::shared_ptr<fib_data> template_fib;
+        template_fib.reset(new fib_data);
+        if(!template_fib->load_from_file(fib_template_list[template_id].c_str()) ||
+           (fib_reso > template_fib->vs[0] && !template_fib->resample_to(fib_reso)))
             {
                 QMessageBox::critical(this,"ERROR",template_fib->error_msg.c_str());
                 return;
             }
-        }
+
         progress prog_("creating database");
         std::shared_ptr<group_connectometry_analysis> data(new group_connectometry_analysis);
 

@@ -15,10 +15,9 @@ private:
     bool create_db;
     QString sample_fib;
 public:
-    std::shared_ptr<fib_data> template_fib;
-    float template_reso = 1.0;
     QStringList group;
     unsigned int dir_length;
+    float fib_reso = 0.0f;
     explicit CreateDBDialog(QWidget *parent,bool create_db_);
     ~CreateDBDialog();
 private:
@@ -26,7 +25,6 @@ private:
     QString get_file_name(QString);
     void update_list(void);
     void load_data(void);
-    void set_template(std::string file_name);
 private slots:
     void on_save_list1_clicked();
     void on_open_list1_clicked();
@@ -38,7 +36,6 @@ private slots:
     void on_open_dir1_clicked();
     void on_select_output_file_clicked();
     void on_create_data_base_clicked();
-    void on_open_template_clicked();
     void on_sort_clicked();
     void on_index_of_interest_currentTextChanged(const QString &arg1);
 };
