@@ -1,7 +1,7 @@
 // ---------------------------------------------------------------------------
 
-#ifndef RegionModelH
-#define RegionModelH
+#ifndef RegionRenderH
+#define RegionRenderH
 #include <QtOpenGL>
 #include <vector>
 #include <map>
@@ -10,9 +10,12 @@
 namespace tipl{
     class march_cube;
 }
-
+class GLWidget;
 // ---------------------------------------------------------------------------
-class RegionModel {
+class RegionRender {
+private:
+        GLWidget* glwidget = nullptr;
+        GLuint surface = 0;
 public:
         std::shared_ptr<tipl::march_cube> object;
         std::vector<std::vector<unsigned int> > sorted_index;
@@ -21,15 +24,18 @@ public:
 public:
         float alpha = 0.6f;
         tipl::rgb color = uint32_t(0x00FFFFFF);
+
 public:
-        void swap(RegionModel& rhs) {
+        ~RegionRender(void);
+        void swap(RegionRender& rhs) {
+            std::swap(surface,rhs.surface);
             std::swap(object,rhs.object);
             sorted_index.swap(rhs.sorted_index);
             std::swap(center,rhs.center);
             std::swap(alpha,rhs.alpha);
             std::swap(color,rhs.color);
         }
-        const RegionModel& operator = (const RegionModel & rhs) = delete;
+        const RegionRender& operator = (const RegionRender & rhs) = delete;
         // bool load_from_file(const char* file_name);
         bool load(const tipl::image<3>& image_, float threshold_);
         bool load(const std::vector<tipl::vector<3,short> >& region, tipl::matrix<4,4>& trans,unsigned char smooth);

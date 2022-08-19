@@ -32,7 +32,7 @@ public:
         bool is_diffusion_space = true;
         tipl::matrix<4,4> to_diffusion_space = tipl::identity_matrix();
 public: // rendering options
-        RegionModel show_region;
+        RegionRender region_render;
         unsigned char regions_feature = default_id;
         bool modified = true;
 public: // rendering options
@@ -61,8 +61,8 @@ public: // rendering options
             undo_backup = rhs.undo_backup;
             redo_backup = rhs.redo_backup;
             regions_feature = rhs.regions_feature;
-            show_region.color = rhs.show_region.color;
-            show_region.alpha = rhs.show_region.alpha;
+            region_render.color = rhs.region_render.color;
+            region_render.alpha = rhs.region_render.alpha;
             modified = true;
             is_diffusion_space = rhs.is_diffusion_space;
             to_diffusion_space = rhs.to_diffusion_space;
@@ -77,7 +77,7 @@ public: // rendering options
             undo_backup.swap(rhs.undo_backup);
             redo_backup.swap(rhs.redo_backup);
             std::swap(regions_feature,rhs.regions_feature);
-            show_region.swap(rhs.show_region);
+            region_render.swap(rhs.region_render);
             std::swap(modified,rhs.modified);
             std::swap(is_diffusion_space,rhs.is_diffusion_space);
             std::swap(to_diffusion_space,rhs.to_diffusion_space);

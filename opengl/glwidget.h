@@ -81,7 +81,7 @@ Q_OBJECT
      bool no_update = true;
 
  public://surface
-     std::shared_ptr<RegionModel> surface;
+     std::shared_ptr<RegionRender> surface;
      std::shared_ptr<QTimer> video_timer,rotate_timer;
  private:
      std::shared_ptr<tipl::io::avi> video_handle;

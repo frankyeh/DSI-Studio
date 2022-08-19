@@ -130,14 +130,14 @@ void RegionTableWidget::updateRegions(QTableWidgetItem* item)
     else
         if (item->column() == 2)
         {
-            regions[uint32_t(item->row())]->show_region.color = uint32_t(item->data(Qt::UserRole).toInt());
+            regions[uint32_t(item->row())]->region_render.color = uint32_t(item->data(Qt::UserRole).toInt());
             emit need_update();
         }
 }
 
 QColor RegionTableWidget::currentRowColor(void)
 {
-    return uint32_t(regions[uint32_t(currentRow())]->show_region.color);
+    return uint32_t(regions[uint32_t(currentRow())]->region_render.color);
 }
 void RegionTableWidget::add_region_from_atlas(std::shared_ptr<atlas> at,unsigned int label)
 {
@@ -184,13 +184,13 @@ void RegionTableWidget::end_update(void)
 void RegionTableWidget::add_row(int row,QString name)
 {
     {
-        uint32_t color = uint32_t(regions[row]->show_region.color);
+        uint32_t color = uint32_t(regions[row]->region_render.color);
         if(color == 0x00FFFFFF || !color)
         {
             tipl::rgb c;
             ++color_gen;
             c.from_hsl(((color_gen)*1.1-std::floor((color_gen)*1.1/6)*6)*3.14159265358979323846/3.0,0.85,0.7);
-            regions[row]->show_region.color = c.color;
+            regions[row]->region_render.color = c.color;
         }
     }
     auto handle = cur_tracking_window.handle;
@@ -208,7 +208,7 @@ void RegionTableWidget::add_row(int row,QString name)
 
     item1->setData(Qt::ForegroundRole,QBrush(Qt::white));
     item2->setData(Qt::ForegroundRole,QBrush(Qt::white));
-    item2->setData(Qt::UserRole,0xFF000000 | uint32_t(regions[row]->show_region.color));
+    item2->setData(Qt::UserRole,0xFF000000 | uint32_t(regions[row]->region_render.color));
 
 
     setItem(row, 0, item0);
@@ -232,7 +232,7 @@ void RegionTableWidget::add_row(int row,QString name)
 void RegionTableWidget::add_region(QString name,unsigned char feature,unsigned int color)
 {
     regions.push_back(std::make_shared<ROIRegion>(cur_tracking_window.handle));
-    regions.back()->show_region.color = color;
+    regions.back()->region_render.color = color;
     regions.back()->regions_feature = feature;
     regions.back()->dim = cur_tracking_window.current_slice->dim;
     regions.back()->vs = cur_tracking_window.current_slice->vs;
@@ -348,7 +348,7 @@ void RegionTableWidget::draw_region(std::shared_ptr<SliceModel> current_slice,
         tipl::par_for(checked_regions.size(),[&](uint32_t roi_index)
         {
             tipl::image<2,uint8_t> detect_edge(slice_image.shape());
-            auto color = checked_regions[roi_index]->show_region.color;
+            auto color = checked_regions[roi_index]->region_render.color;
             bool draw_roi = (draw_edges == 0 && color.a >= 128);
 
             if(current_slice->T != checked_regions[roi_index]->to_diffusion_space)
@@ -447,7 +447,7 @@ void RegionTableWidget::draw_region(std::shared_ptr<SliceModel> current_slice,
     {
         unsigned int cur_color = foreground_color;
         if(draw_edges == 1 && (int(roi_index) != cur_roi_index))
-            cur_color = checked_regions[roi_index]->show_region.color;
+            cur_color = checked_regions[roi_index]->region_render.color;
         paint.setBrush(Qt::NoBrush);
         QPen pen(QColor(cur_color),line_width, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
         paint.setPen(pen);
@@ -468,10 +468,10 @@ void RegionTableWidget::copy_region(void)
     if(currentRow() < 0)
         return;
     unsigned int cur_row = uint32_t(currentRow());
-    unsigned int color = regions[cur_row]->show_region.color.color;
+    unsigned int color = regions[cur_row]->region_render.color.color;
     regions.insert(regions.begin() + cur_row + 1,std::make_shared<ROIRegion>(cur_tracking_window.handle));
     *regions[cur_row + 1] = *regions[cur_row];
-    regions[cur_row + 1]->show_region.color.color = color;
+    regions[cur_row + 1]->region_render.color.color = color;
     add_row(int(cur_row+1),item(currentRow(),0)->text());
 }
 void load_nii_label(const char* filename,std::map<int,std::string>& label_map)
@@ -748,7 +748,7 @@ bool load_nii(std::shared_ptr<fib_data> handle,
                     std::istringstream(name_value[1]) >> type;
             }
         }catch(...){}
-        regions.back()->show_region.color = color;
+        regions.back()->region_render.color = color;
         regions.back()->regions_feature = uint8_t(type);
         return true;
     }
@@ -786,7 +786,7 @@ bool load_nii(std::shared_ptr<fib_data> handle,
                 regions.back()->is_diffusion_space = false;
                 regions.back()->to_diffusion_space = to_diffusion_space;
             }
-            regions.back()->show_region.color = label_color.empty() ? 0x00FFFFFF : label_color[value].color;
+            regions.back()->region_render.color = label_color.empty() ? 0x00FFFFFF : label_color[value].color;
             if(!region_points[i].empty())
                 regions.back()->add_points(std::move(region_points[i]));
         }
@@ -896,7 +896,7 @@ void RegionTableWidget::load_region_color(void)
                         std::min<int>(colors[pos+1],255),
                         std::min<int>(colors[pos+2],255),
                         std::min<int>(colors[pos+3],255));
-            regions[index]->show_region.color = c;
+            regions[index]->region_render.color = c;
             regions[index]->modified = true;
             item(int(index),2)->setData(Qt::UserRole,uint32_t(c));
         }
@@ -909,7 +909,7 @@ void RegionTableWidget::load_region_color(void)
             tipl::rgb c(std::min<int>(colors[pos],255),
                         std::min<int>(colors[pos+1],255),
                         std::min<int>(colors[pos+2],255),255);
-            regions[index]->show_region.color = c;
+            regions[index]->region_render.color = c;
             regions[index]->modified = true;
             item(int(index),2)->setData(Qt::UserRole,uint32_t(c));
         }
@@ -929,7 +929,7 @@ void RegionTableWidget::save_region_color(void)
         return;
     for(size_t index = 0;index < regions.size();++index)
     {
-        tipl::rgb c(regions[index]->show_region.color);
+        tipl::rgb c(regions[index]->region_render.color);
         out << int(c[2]) << " " << int(c[1]) << " " << int(c[0]) << " " << int(c[3]) << std::endl;
     }
     QMessageBox::information(this,"DSI Studio","File saved");
@@ -1784,7 +1784,7 @@ void RegionTableWidget::do_action(QString action)
         closePersistentEditor(item(i,1));
         closePersistentEditor(item(i,2));
         item(i,1)->setData(Qt::DisplayRole,regions[uint32_t(i)]->regions_feature);
-        item(i,2)->setData(Qt::UserRole,regions[uint32_t(i)]->show_region.color.color);
+        item(i,2)->setData(Qt::UserRole,regions[uint32_t(i)]->region_render.color.color);
         item(i,3)->setText(QString("(%1,%2,%3)x(%4,%5,%6)")
                            .arg(regions[i]->dim[0])
                            .arg(regions[i]->dim[1])

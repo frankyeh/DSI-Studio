@@ -5,9 +5,18 @@
 #include <iterator>
 #include "RegionModel.h"
 #include "SliceModel.h"
+#include "opengl/glwidget.h"
 
+RegionRender::~RegionRender(void)
+{
+    if(surface)
+    {
+        glwidget->glDeleteBuffers(1,&surface);
+        surface = 0;
+    }
+}
 //---------------------------------------------------------------------------
-void RegionModel::sortIndices(void)
+void RegionRender::sortIndices(void)
         //const unsigned int* meshes,unsigned int mesh_count,const float* vertices)
 {
     sorted_index.resize(6);
@@ -42,7 +51,7 @@ void RegionModel::sortIndices(void)
 
 
 
-bool RegionModel::load(const std::vector<tipl::vector<3,short> >& seeds, tipl::matrix<4,4>& trans,unsigned char smooth)
+bool RegionRender::load(const std::vector<tipl::vector<3,short> >& seeds, tipl::matrix<4,4>& trans,unsigned char smooth)
 {
     if(seeds.empty())
     {
@@ -106,7 +115,7 @@ bool RegionModel::load(const std::vector<tipl::vector<3,short> >& seeds, tipl::m
     return object.get();
 }
 
-bool RegionModel::load(const tipl::image<3>& image_,
+bool RegionRender::load(const tipl::image<3>& image_,
                        float threshold)
 {
     tipl::image<3> image_buffer(image_);
@@ -144,7 +153,7 @@ bool RegionModel::load(const tipl::image<3>& image_,
 }
 // ---------------------------------------------------------------------------
 
-bool RegionModel::load(unsigned int* buffer, tipl::shape<3>geo,
+bool RegionRender::load(unsigned int* buffer, tipl::shape<3>geo,
                        unsigned int threshold)
 {
     tipl::image<3,unsigned char>re_buffer(geo);
@@ -160,7 +169,7 @@ bool RegionModel::load(unsigned int* buffer, tipl::shape<3>geo,
     return object.get();
 }
 
-void RegionModel::move_object(const tipl::vector<3,float>& shift)
+void RegionRender::move_object(const tipl::vector<3,float>& shift)
 {
     if(!object.get())
         return;
@@ -168,20 +177,20 @@ void RegionModel::move_object(const tipl::vector<3,float>& shift)
 
 }
 
-const std::vector<tipl::vector<3> >& RegionModel::point_list(void) const
+const std::vector<tipl::vector<3> >& RegionRender::point_list(void) const
 {
     return object->point_list;
 }
-const std::vector<tipl::vector<3> >& RegionModel::normal_list(void) const
+const std::vector<tipl::vector<3> >& RegionRender::normal_list(void) const
 {
     return object->normal_list;
 }
-const std::vector<tipl::vector<3,unsigned int> >& RegionModel::tri_list(void) const
+const std::vector<tipl::vector<3,unsigned int> >& RegionRender::tri_list(void) const
 {
     return object->tri_list;
 }
 
-void RegionModel::trasnform_point_list(const tipl::matrix<4,4>& T)
+void RegionRender::trasnform_point_list(const tipl::matrix<4,4>& T)
 {
     if(!object.get())
         return;

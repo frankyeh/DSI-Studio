@@ -129,7 +129,7 @@ void ROIRegion::SaveToFile(const char* FileName)
     }
     else if (ext == std::string(".nii") || ext == std::string("i.gz"))
     {
-        unsigned int color = show_region.color.color & 0x00FFFFFF;
+        unsigned int color = region_render.color.color & 0x00FFFFFF;
         tipl::image<3,unsigned char> mask;
         SaveToBuffer(mask);
         tipl::matrix<4,4> T(trans_to_mni);
@@ -216,7 +216,7 @@ void ROIRegion::makeMeshes(unsigned char smooth)
     modified = false;
     if(is_diffusion_space)
         to_diffusion_space.identity();
-    show_region.load(region,to_diffusion_space,smooth);
+    region_render.load(region,to_diffusion_space,smooth);
 }
 // ---------------------------------------------------------------------------
 void ROIRegion::LoadFromBuffer(tipl::image<3,unsigned char>& mask)
@@ -346,10 +346,10 @@ bool ROIRegion::shift(tipl::vector<3,float> dx) // shift in region's voxel space
         auto dx_in_dwi_space = dx;
         tipl::transformation_matrix<float> T(to_diffusion_space);
         dx_in_dwi_space.rotate(T.sr);
-        show_region.move_object(dx_in_dwi_space);
+        region_render.move_object(dx_in_dwi_space);
     }
     else
-        show_region.move_object(dx);
+        region_render.move_object(dx);
     tipl::par_for(region.size(),[&](unsigned int index)
     {
         region[index] += dx;

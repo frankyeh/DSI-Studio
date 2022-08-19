@@ -838,7 +838,7 @@ bool tracking_window::command(QString cmd,QString param,QString param2)
     {
         if(regionWidget->regions.empty())
             return true;
-        regionWidget->regions.back()->show_region.color = param.toInt();
+        regionWidget->regions.back()->region_render.color = param.toInt();
         glWidget->update();
         slice_need_update = true;
         return true;
