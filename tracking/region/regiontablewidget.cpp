@@ -150,6 +150,7 @@ void RegionTableWidget::add_region_from_atlas(std::shared_ptr<atlas> at,unsigned
 }
 void RegionTableWidget::add_all_regions_from_atlas(std::shared_ptr<atlas> at)
 {
+    progress p("add_all_regions_from_atlas");
     std::vector<std::vector<tipl::vector<3,short> > > points;
     std::vector<std::string> labels;
     if(!cur_tracking_window.handle->get_atlas_all_roi(at,
@@ -158,14 +159,13 @@ void RegionTableWidget::add_all_regions_from_atlas(std::shared_ptr<atlas> at)
     {
         QMessageBox::critical(this,"ERROR",cur_tracking_window.handle->error_msg.c_str());
         return;
-    }
-    for(unsigned int i = 0;i < labels.size();++i)
-        add_region(labels[i].c_str());
-
-    tipl::par_for(points.size(),[&](unsigned int i)
+    }   
+    for(size_t i = 0;progress::at(i,points.size());++i)
     {
-        regions[regions.size()-points.size()+i]->add_points(std::move(points[i]));
-    });
+        add_region(labels[i].c_str());
+        regions.back()->add_points(std::move(points[i]));
+    }
+
 }
 void RegionTableWidget::begin_update(void)
 {
