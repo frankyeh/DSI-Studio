@@ -61,7 +61,8 @@ public: // rendering options
             undo_backup = rhs.undo_backup;
             redo_backup = rhs.redo_backup;
             regions_feature = rhs.regions_feature;
-            show_region = rhs.show_region;
+            show_region.color = rhs.show_region.color;
+            show_region.alpha = rhs.show_region.alpha;
             modified = true;
             is_diffusion_space = rhs.is_diffusion_space;
             to_diffusion_space = rhs.to_diffusion_space;
