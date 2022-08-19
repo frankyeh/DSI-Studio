@@ -6,17 +6,6 @@
 #include "RegionModel.h"
 #include "SliceModel.h"
 
-// ---------------------------------------------------------------------------
-const RegionModel& RegionModel:: operator = (const RegionModel & rhs)
-{
-    if (rhs.object.get())
-        object.reset(new tipl::march_cube(*rhs.object.get()));
-    sorted_index = rhs.sorted_index;
-    alpha = rhs.alpha;
-    color = rhs.color;
-    return *this;
-}
-
 //---------------------------------------------------------------------------
 void RegionModel::sortIndices(void)
         //const unsigned int* meshes,unsigned int mesh_count,const float* vertices)
