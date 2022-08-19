@@ -2,6 +2,7 @@
 
 #ifndef RegionModelH
 #define RegionModelH
+#include <QtOpenGL>
 #include <vector>
 #include <map>
 #include "TIPL/tipl.hpp"
@@ -20,13 +21,15 @@ public:
 public:
         float alpha = 0.6f;
         tipl::rgb color = uint32_t(0x00FFFFFF);
+public:
         void swap(RegionModel& rhs) {
-                std::swap(alpha,rhs.alpha);
-                std::swap(color,rhs.color);
-                std::swap(object,rhs.object);
-                sorted_index.swap(rhs.sorted_index);
+            std::swap(object,rhs.object);
+            sorted_index.swap(rhs.sorted_index);
+            std::swap(center,rhs.center);
+            std::swap(alpha,rhs.alpha);
+            std::swap(color,rhs.color);
         }
-	const RegionModel& operator = (const RegionModel & rhs);
+        const RegionModel& operator = (const RegionModel & rhs) = delete;
         // bool load_from_file(const char* file_name);
         bool load(const tipl::image<3>& image_, float threshold_);
         bool load(const std::vector<tipl::vector<3,short> >& region, tipl::matrix<4,4>& trans,unsigned char smooth);
