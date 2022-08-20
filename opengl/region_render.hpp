@@ -15,10 +15,12 @@ class GLWidget;
 class RegionRender {
 private:
         GLWidget* glwidget = nullptr;
-        GLuint surface = 0;
+        GLuint surface = 0,surface_index = 0;
 public:
         std::shared_ptr<tipl::march_cube> object;
-        std::vector<std::vector<unsigned int> > sorted_index;
+        size_t mesh_count = 0;
+        size_t indices_count = 0;
+        std::vector<unsigned int> sorted_index;
         tipl::vector<3,float> center;
         void sortIndices(void);
 public:
@@ -41,15 +43,10 @@ public:
         bool load(const std::vector<tipl::vector<3,short> >& region, tipl::matrix<4,4>& trans,unsigned char smooth);
         //bool load(const tipl::image<3,unsigned char>& mask,unsigned char threshold);
         bool load(unsigned int* buffer, tipl::shape<3>geo, unsigned int threshold);
-        tipl::march_cube* get(void) {return object.get();}
-        const std::vector<unsigned int>& getSortedIndex(unsigned char view) const
-        {return sorted_index[view];}
-
         void move_object(const tipl::vector<3,float>& shift);
-        const std::vector<tipl::vector<3> >& point_list(void) const;
-        const std::vector<tipl::vector<3> >& normal_list(void) const;
-        const std::vector<tipl::vector<3,unsigned int> >& tri_list(void) const;
         void trasnform_point_list(const tipl::matrix<4,4>& T);
+public:
+        void draw(unsigned char cur_view,float alpha,int blend1,int blend2);
 };
 
 #endif

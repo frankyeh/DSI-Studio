@@ -326,23 +326,6 @@ void handleAlpha(tipl::rgb color,
     glMaterialfv(GL_FRONT_AND_BACK,GL_DIFFUSE,material2);
 }
 
-void drawRegion(RegionRender& cur_region,unsigned char cur_view,
-                float alpha,int blend1,int blend2)
-{
-    if(!cur_region.get() || cur_region.tri_list().empty())
-        return;
-    handleAlpha(cur_region.color,alpha,blend1,blend2);
-    glEnableClientState(GL_VERTEX_ARRAY);
-    glEnableClientState(GL_NORMAL_ARRAY);
-    glVertexPointer(3, GL_FLOAT, 0, cur_region.point_list().front().begin());
-    glNormalPointer(GL_FLOAT, 0, cur_region.normal_list().front().begin());
-    glDrawElements(GL_TRIANGLES, int(cur_region.getSortedIndex(cur_view).size()),
-                   GL_UNSIGNED_INT,&*cur_region.getSortedIndex(cur_view).begin());
-    glDisableClientState(GL_VERTEX_ARRAY);
-    glDisableClientState(GL_NORMAL_ARRAY);
-    check_error(__FUNCTION__);
-}
-
 void my_gluLookAt(GLfloat eyex, GLfloat eyey, GLfloat eyez, GLfloat centerx,
           GLfloat centery, GLfloat centerz, GLfloat upx, GLfloat upy,
           GLfloat upz)
@@ -1141,26 +1124,25 @@ void GLWidget::renderLR()
         {
             float alpha = get_param_float("region_alpha");
             unsigned char cur_view = (alpha == 1.0f ? 0 : getCurView(transformation_matrix));
-
+            auto& regionWidget = cur_tracking_window.regionWidget;
+            auto& regions = regionWidget->regions;
             std::vector<unsigned int> region_need_update;
-            for(unsigned int index = 0;index < cur_tracking_window.regionWidget->regions.size();++index)
-                if(cur_tracking_window.regionWidget->item(int(index),0)->checkState() == Qt::Checked &&
-                        cur_tracking_window.regionWidget->regions[index]->modified)
+            for(unsigned int index = 0;index < regions.size();++index)
+                if(regionWidget->item(int(index),0)->checkState() == Qt::Checked &&
+                        regions[index]->modified)
                     region_need_update.push_back(index);
 
             unsigned char smoothed = get_param("region_mesh_smoothed");
             tipl::par_for(region_need_update.size(),[&](unsigned int index){
-                cur_tracking_window.regionWidget->regions[region_need_update[index]]->makeMeshes(smoothed);
+                regions[region_need_update[index]]->makeMeshes(smoothed);
             });
 
-            for(unsigned int index = 0;index < cur_tracking_window.regionWidget->regions.size();++index)
-                if(cur_tracking_window.regionWidget->item(int(index),0)->checkState() == Qt::Checked &&
-                   !cur_tracking_window.regionWidget->regions[index]->region.empty())
+            for(unsigned int index = 0;index < regions.size();++index)
+                if(regionWidget->item(int(index),0)->checkState() == Qt::Checked &&
+                   !regions[index]->region.empty())
                 {
-                    drawRegion(cur_tracking_window.regionWidget->regions[index]->region_render,
-                               cur_view,
-                               alpha,
-                               get_param("region_bend1"),get_param("region_bend2"));
+                    regions[index]->region_render.draw(
+                               cur_view,alpha,get_param("region_bend1"),get_param("region_bend2"));
                     region_visualized[index] = true;
                 }
         }
@@ -1189,10 +1171,8 @@ void GLWidget::renderLR()
         float alpha = get_param_float("surface_alpha");
         surface->color = (unsigned int)get_param("surface_color");
         surface->color.a = 255;
-        unsigned char cur_view = (alpha == 1.0 ? 0 : getCurView(transformation_matrix));
-        drawRegion(*surface.get(),cur_view,alpha,
-                   get_param("surface_bend1"),
-                   get_param("surface_bend2"));
+        surface->draw((alpha == 1.0 ? 0 : getCurView(transformation_matrix)),
+                      alpha,get_param("surface_bend1"),get_param("surface_bend2"));
         glDisable(GL_BLEND);
         glPopMatrix();
         check_error("show_surface");

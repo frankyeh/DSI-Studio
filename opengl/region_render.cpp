@@ -13,39 +13,36 @@ RegionRender::~RegionRender(void)
     {
         glwidget->glDeleteBuffers(1,&surface);
         surface = 0;
+        glwidget->glDeleteBuffers(1,&surface_index);
+        surface_index = 0;
     }
 }
 //---------------------------------------------------------------------------
 void RegionRender::sortIndices(void)
         //const unsigned int* meshes,unsigned int mesh_count,const float* vertices)
 {
-    sorted_index.resize(6);
-    auto mesh_count = object->tri_list.size();
-    for (unsigned int view_index = 0;view_index < 3;++view_index)
+    mesh_count = object->tri_list.size();
+    indices_count = mesh_count*3;
+    sorted_index.resize(6*(indices_count));// 6 directions
+    tipl::par_for(3,[&](size_t view_index)
     {
         std::vector<std::pair<float,unsigned int> > index_weighting(mesh_count);
-        for (unsigned int index = 0;index < mesh_count;++index)
+        for (size_t index = 0;index < mesh_count;++index)
             index_weighting[index] =
             std::make_pair(object->point_list[object->tri_list[index][0]][view_index],index);
 
         std::sort(index_weighting.begin(),index_weighting.end());
 
-        sorted_index[view_index].resize(mesh_count*3);
-        std::vector<unsigned int>::iterator index_iter1 = sorted_index[view_index].begin();
-        for (unsigned int index = 0;index < mesh_count;++index)
+        auto indices = sorted_index.begin() + view_index*indices_count;
+        auto rindices = sorted_index.begin() + (view_index+4)*indices_count-3;
+        for (size_t index = 0;index < mesh_count;++index,indices += 3,rindices -= 3)
         {
-            unsigned int new_index = index_weighting[index].second;
-            *index_iter1 = object->tri_list[new_index][0];
-            ++index_iter1;
-            *index_iter1 = object->tri_list[new_index][1];
-            ++index_iter1;
-            *index_iter1 = object->tri_list[new_index][2];
-            ++index_iter1;
-        }
-        sorted_index[view_index+3].resize(mesh_count*3);
-        std::copy(sorted_index[view_index].begin(),sorted_index[view_index].end(),
-                    sorted_index[view_index+3].rbegin());
-    }
+            auto new_index = index_weighting[index].second;
+            rindices[0] = indices[0] = object->tri_list[new_index][0];
+            rindices[1] = indices[1] = object->tri_list[new_index][1];
+            rindices[2] = indices[2] = object->tri_list[new_index][2];
+        }        
+    });
 }
 
 
@@ -177,19 +174,6 @@ void RegionRender::move_object(const tipl::vector<3,float>& shift)
 
 }
 
-const std::vector<tipl::vector<3> >& RegionRender::point_list(void) const
-{
-    return object->point_list;
-}
-const std::vector<tipl::vector<3> >& RegionRender::normal_list(void) const
-{
-    return object->normal_list;
-}
-const std::vector<tipl::vector<3,unsigned int> >& RegionRender::tri_list(void) const
-{
-    return object->tri_list;
-}
-
 void RegionRender::trasnform_point_list(const tipl::matrix<4,4>& T)
 {
     if(!object.get())
@@ -198,4 +182,19 @@ void RegionRender::trasnform_point_list(const tipl::matrix<4,4>& T)
     tipl::par_for(point_list.size(),[&](unsigned int i){
         point_list[i].to(T);
     });
+}
+void handleAlpha(tipl::rgb color,float alpha,int blend1,int blend2);
+void RegionRender::draw(unsigned char cur_view,float alpha,int blend1,int blend2)
+{
+    if(!object.get() || object->tri_list.empty())
+        return;
+    handleAlpha(color,alpha,blend1,blend2);
+    glEnableClientState(GL_VERTEX_ARRAY);
+    glEnableClientState(GL_NORMAL_ARRAY);
+    glVertexPointer(3, GL_FLOAT, 0, &object->point_list[0][0]);
+    glNormalPointer(GL_FLOAT, 0, &object->normal_list[0][0]);
+    glDrawElements(GL_TRIANGLES, int(indices_count),
+                   GL_UNSIGNED_INT,&sorted_index[0]+cur_view*indices_count);
+    glDisableClientState(GL_VERTEX_ARRAY);
+    glDisableClientState(GL_NORMAL_ARRAY);
 }
