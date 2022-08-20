@@ -1510,7 +1510,6 @@ bool fib_data::load_track_atlas()
         });
         tract_atlas_min_length.swap(min_length);
         tract_atlas_max_length.swap(max_length);
-        return true;
     }
     return true;
 }
