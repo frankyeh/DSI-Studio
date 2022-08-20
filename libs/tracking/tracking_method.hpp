@@ -125,7 +125,8 @@ struct TrackingParam
         }
 
         report << " Tracks with length shorter than " << min_length << " or longer than " << max_length  << " mm were discarded.";
-        report << " A total of " << termination_count << (stop_by_tract ? " tracts were calculated.":" seeds were placed.");
+        if(termination_count)
+            report << " A total of " << termination_count << (stop_by_tract ? " tracts were calculated.":" seeds were placed.");
         if(tip_iteration)
             report << " Topology-informed pruning (Yeh et al. Neurotherapeutics, 16(1), 52-58, 2019) was applied to the tractography with " << int(tip_iteration) <<
                       " iteration(s) to remove false connections.";
