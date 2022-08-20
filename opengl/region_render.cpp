@@ -152,13 +152,37 @@ void RegionRender::draw(GLWidget* glwidget_,unsigned char cur_view,float alpha,i
     if(!object.get())
         return;
     glwidget = glwidget_;
-    handleAlpha(color,alpha,blend1,blend2);
-    glEnableClientState(GL_VERTEX_ARRAY);
-    glEnableClientState(GL_NORMAL_ARRAY);
-    glVertexPointer(3, GL_FLOAT, 0, &object->point_list[0][0]);
-    glNormalPointer(GL_FLOAT, 0, &object->normal_list[0][0]);
-    glDrawElements(GL_TRIANGLES, int(object->indices_count),
-                   GL_UNSIGNED_INT,&object->sorted_index[0]+cur_view*object->indices_count);
-    glDisableClientState(GL_VERTEX_ARRAY);
-    glDisableClientState(GL_NORMAL_ARRAY);
+    if(!surface)
+    {
+        surface_block_size = object->point_list.size()*3*sizeof(float);
+        glwidget->glGenBuffers(1,&surface);
+        glwidget->glBindBuffer(GL_ARRAY_BUFFER, surface);
+        glwidget->glBufferData(GL_ARRAY_BUFFER, surface_block_size/*vertices*/ + surface_block_size /*normal*/,0,GL_STATIC_DRAW);
+        glwidget->glBufferSubData(GL_ARRAY_BUFFER, 0, surface_block_size,&object->point_list[0][0]);
+        glwidget->glBufferSubData(GL_ARRAY_BUFFER, surface_block_size,surface_block_size,&object->normal_list[0][0]);
+        glwidget->glGenBuffers(1,&surface_index);
+        glwidget->glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, surface_index);
+        glwidget->glBufferData(GL_ELEMENT_ARRAY_BUFFER, object->sorted_index.size()*sizeof(unsigned int),&object->sorted_index[0],GL_STATIC_DRAW);
+        object->point_list.clear();
+        object->tri_list.clear();
+        object->normal_list.clear();
+        object->sorted_index.clear();
+    }
+
+    if(surface)
+    {
+        handleAlpha(color,alpha,blend1,blend2);
+        glwidget->glBindBuffer(GL_ARRAY_BUFFER, surface);
+        glwidget->glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, surface_index);
+        glEnableClientState(GL_VERTEX_ARRAY);
+        glEnableClientState(GL_NORMAL_ARRAY);
+        glVertexPointer(3, GL_FLOAT, 0, 0);
+        glNormalPointer(GL_FLOAT, 0, (void*)surface_block_size);
+        glDrawElements(GL_TRIANGLES, int(object->indices_count),
+                       GL_UNSIGNED_INT,(void*)(cur_view*object->indices_count*sizeof(float)));
+        glDisableClientState(GL_VERTEX_ARRAY);
+        glDisableClientState(GL_NORMAL_ARRAY);
+        glwidget->glBindBuffer(GL_ARRAY_BUFFER, 0);
+        glwidget->glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+    }
 }
