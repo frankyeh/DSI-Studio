@@ -16,6 +16,7 @@ class RegionRender {
 private:
         GLWidget* glwidget = nullptr;
         GLuint surface = 0,surface_index = 0;
+        size_t surface_block_size = 0;
 public:
         std::shared_ptr<tipl::march_cube> object;
         tipl::vector<3,float> center;
