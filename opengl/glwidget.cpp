@@ -1141,7 +1141,7 @@ void GLWidget::renderLR()
                 if(regionWidget->item(int(index),0)->checkState() == Qt::Checked &&
                    !regions[index]->region.empty())
                 {
-                    regions[index]->region_render.draw(
+                    regions[index]->region_render.draw(this,
                                cur_view,alpha,get_param("region_bend1"),get_param("region_bend2"));
                     region_visualized[index] = true;
                 }
@@ -1171,7 +1171,7 @@ void GLWidget::renderLR()
         float alpha = get_param_float("surface_alpha");
         surface->color = (unsigned int)get_param("surface_color");
         surface->color.a = 255;
-        surface->draw((alpha == 1.0 ? 0 : getCurView(transformation_matrix)),
+        surface->draw(this,(alpha == 1.0 ? 0 : getCurView(transformation_matrix)),
                       alpha,get_param("surface_bend1"),get_param("surface_bend2"));
         glDisable(GL_BLEND);
         glPopMatrix();

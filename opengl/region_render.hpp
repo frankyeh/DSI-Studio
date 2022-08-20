@@ -18,9 +18,6 @@ private:
         GLuint surface = 0,surface_index = 0;
 public:
         std::shared_ptr<tipl::march_cube> object;
-        size_t mesh_count = 0;
-        size_t indices_count = 0;
-        std::vector<unsigned int> sorted_index;
         tipl::vector<3,float> center;
         void sortIndices(void);
 public:
@@ -32,7 +29,6 @@ public:
         void swap(RegionRender& rhs) {
             std::swap(surface,rhs.surface);
             std::swap(object,rhs.object);
-            sorted_index.swap(rhs.sorted_index);
             std::swap(center,rhs.center);
             std::swap(alpha,rhs.alpha);
             std::swap(color,rhs.color);
@@ -46,7 +42,7 @@ public:
         void move_object(const tipl::vector<3,float>& shift);
         void trasnform_point_list(const tipl::matrix<4,4>& T);
 public:
-        void draw(unsigned char cur_view,float alpha,int blend1,int blend2);
+        void draw(GLWidget* glwidget,unsigned char cur_view,float alpha,int blend1,int blend2);
 };
 
 #endif

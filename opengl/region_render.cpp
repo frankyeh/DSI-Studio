@@ -17,37 +17,6 @@ RegionRender::~RegionRender(void)
         surface_index = 0;
     }
 }
-//---------------------------------------------------------------------------
-void RegionRender::sortIndices(void)
-        //const unsigned int* meshes,unsigned int mesh_count,const float* vertices)
-{
-    mesh_count = object->tri_list.size();
-    indices_count = mesh_count*3;
-    sorted_index.resize(6*(indices_count));// 6 directions
-    tipl::par_for(3,[&](size_t view_index)
-    {
-        std::vector<std::pair<float,unsigned int> > index_weighting(mesh_count);
-        for (size_t index = 0;index < mesh_count;++index)
-            index_weighting[index] =
-            std::make_pair(object->point_list[object->tri_list[index][0]][view_index],index);
-
-        std::sort(index_weighting.begin(),index_weighting.end());
-
-        auto indices = sorted_index.begin() + view_index*indices_count;
-        auto rindices = sorted_index.begin() + (view_index+4)*indices_count-3;
-        for (size_t index = 0;index < mesh_count;++index,indices += 3,rindices -= 3)
-        {
-            auto new_index = index_weighting[index].second;
-            rindices[0] = indices[0] = object->tri_list[new_index][0];
-            rindices[1] = indices[1] = object->tri_list[new_index][1];
-            rindices[2] = indices[2] = object->tri_list[new_index][2];
-        }        
-    });
-}
-
-
-
-
 bool RegionRender::load(const std::vector<tipl::vector<3,short> >& seeds, tipl::matrix<4,4>& trans,unsigned char smooth)
 {
     if(seeds.empty())
@@ -94,11 +63,6 @@ bool RegionRender::load(const std::vector<tipl::vector<3,short> >& seeds, tipl::
         --smooth;
     }
     object.reset(new tipl::march_cube(buffer, uint8_t(20)));
-    if (object->point_list.empty())
-    {
-        object.reset();
-        return false;
-    }
     tipl::vector<3,float> shift(min_value);
     tipl::par_for(object->point_list.size(),[&](unsigned int index)
     {
@@ -108,7 +72,8 @@ bool RegionRender::load(const std::vector<tipl::vector<3,short> >& seeds, tipl::
         if(need_trans)
             object->point_list[index].to(trans);
     });
-    sortIndices();
+    if (object->point_list.empty())
+        object.reset();
     return object.get();
 }
 
@@ -143,10 +108,10 @@ bool RegionRender::load(const tipl::image<3>& image_,
     }
     object.reset(new tipl::march_cube(image_buffer,threshold));
     if (scale != 1.0f)
-        for (unsigned int index = 0; index < object->point_list.size(); ++index)
-            object->point_list[index] *= scale;
-    sortIndices();
-    return object->point_list.size();
+        tipl::multiply_constant(object->point_list,scale);
+    if(object->point_list.empty())
+        object.reset();
+    return object.get();
 }
 // ---------------------------------------------------------------------------
 
@@ -161,8 +126,6 @@ bool RegionRender::load(unsigned int* buffer, tipl::shape<3>geo,
     object.reset(new tipl::march_cube(re_buffer, 50));
     if (object->point_list.empty())
         object.reset();
-    else
-        sortIndices();
     return object.get();
 }
 
@@ -184,17 +147,18 @@ void RegionRender::trasnform_point_list(const tipl::matrix<4,4>& T)
     });
 }
 void handleAlpha(tipl::rgb color,float alpha,int blend1,int blend2);
-void RegionRender::draw(unsigned char cur_view,float alpha,int blend1,int blend2)
+void RegionRender::draw(GLWidget* glwidget_,unsigned char cur_view,float alpha,int blend1,int blend2)
 {
-    if(!object.get() || object->tri_list.empty())
+    if(!object.get())
         return;
+    glwidget = glwidget_;
     handleAlpha(color,alpha,blend1,blend2);
     glEnableClientState(GL_VERTEX_ARRAY);
     glEnableClientState(GL_NORMAL_ARRAY);
     glVertexPointer(3, GL_FLOAT, 0, &object->point_list[0][0]);
     glNormalPointer(GL_FLOAT, 0, &object->normal_list[0][0]);
-    glDrawElements(GL_TRIANGLES, int(indices_count),
-                   GL_UNSIGNED_INT,&sorted_index[0]+cur_view*indices_count);
+    glDrawElements(GL_TRIANGLES, int(object->indices_count),
+                   GL_UNSIGNED_INT,&object->sorted_index[0]+cur_view*object->indices_count);
     glDisableClientState(GL_VERTEX_ARRAY);
     glDisableClientState(GL_NORMAL_ARRAY);
 }
