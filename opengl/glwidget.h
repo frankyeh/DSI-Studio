@@ -14,7 +14,7 @@
 #else
 #include <GL/glu.h>
 #endif
-#include "tracking/region/RegionModel.h"
+#include "region_render.hpp"
 #include "tracking/tracking_window.h"
 
 class RenderingTableWidget;

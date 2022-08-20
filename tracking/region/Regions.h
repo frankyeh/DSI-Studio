@@ -5,7 +5,7 @@
 #include <map>
 
 #include "TIPL/tipl.hpp"
-#include "RegionModel.h"
+#include "opengl/region_render.hpp"
 #include "fib_data.hpp"
 // ---------------------------------------------------------------------------
 class SliceModel;
