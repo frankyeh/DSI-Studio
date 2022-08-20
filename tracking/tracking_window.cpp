@@ -531,6 +531,7 @@ tracking_window::~tracking_window()
         }
     tractWidget->stop_tracking();
     tractWidget->delete_all_tract();
+    regionWidget->delete_all_region();
     qApp->removeEventFilter(this);
     QSettings settings;
     settings.setValue("rendering_quality",ui->rendering_efficiency->currentIndex());
