@@ -22,7 +22,7 @@ void TractRenderParam::init(GLWidget* glwidget,
     tract_style = simple ? 0 : glwidget->tract_style;
     tract_color_style = glwidget->tract_color_style;
     tract_tube_detail = glwidget->tract_tube_detail;
-    tract_shader = glwidget->tract_shader;
+    tract_shader = simple ? 0 : glwidget->tract_shader;
     end_point_shift = glwidget->end_point_shift;
 
     alpha = (tract_alpha_style == 0)? tract_alpha/2.0f:tract_alpha;
