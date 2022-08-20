@@ -9,8 +9,7 @@
 #endif
 
 void TractRenderParam::init(GLWidget* glwidget,
-                            tracking_window& cur_tracking_window,
-                            bool simple)
+                            tracking_window& cur_tracking_window)
 {
     const float detail_option[5] = {1.0f,0.5f,0.25f,0.0f,0.0f};
     tract_alpha = glwidget->tract_alpha;
@@ -19,10 +18,10 @@ void TractRenderParam::init(GLWidget* glwidget,
     tube_diameter = glwidget->tube_diameter;
 
     tract_alpha_style = glwidget->tract_alpha_style;
-    tract_style = simple ? 0 : glwidget->tract_style;
+    tract_style = glwidget->tract_style;
     tract_color_style = glwidget->tract_color_style;
     tract_tube_detail = glwidget->tract_tube_detail;
-    tract_shader = simple ? 0 : glwidget->tract_shader;
+    tract_shader = glwidget->tract_shader;
     end_point_shift = glwidget->end_point_shift;
 
     alpha = (tract_alpha_style == 0)? tract_alpha/2.0f:tract_alpha;
@@ -44,7 +43,7 @@ void TractRenderParam::init(GLWidget* glwidget,
 
 
 void TractRenderData::add_tract(const TractRenderParam& param,
-                                const std::vector<float>& tract,bool simple,
+                                const std::vector<float>& tract,
                                 const TractRenderShader& shader,
                                 const tipl::vector<3>& assigned_color,
                                 const std::vector<float>& metrics)
@@ -407,7 +406,7 @@ void TractRenderShader::add_shade(std::shared_ptr<TractModel>& active_tract_mode
 }
 
 void TractRender::render_tracts(std::shared_ptr<TractModel>& active_tract_model,GLWidget* glwidget,
-                            tracking_window& cur_tracking_window,bool simple)
+                            tracking_window& cur_tracking_window)
 {
     if(!need_update)
     {
@@ -419,7 +418,7 @@ void TractRender::render_tracts(std::shared_ptr<TractModel>& active_tract_model,
     if(!lock.get())
         return;
 
-    param.init(glwidget,cur_tracking_window,simple);
+    param.init(glwidget,cur_tracking_window);
 
     need_update = false;
     auto tract_visible_tract = cur_tracking_window["tract_visible_tract"].toInt();
@@ -490,7 +489,7 @@ void TractRender::render_tracts(std::shared_ptr<TractModel>& active_tract_model,
             std::vector<float> metrics;
             if(param.tract_color_style == 2)
                 active_tract_model->get_tract_data(cur_tracking_window.handle,visible[i],track_num_index,metrics);
-            data[thread].add_tract(param,active_tract_model->get_tract(visible[i]),simple,shader,
+            data[thread].add_tract(param,active_tract_model->get_tract(visible[i]),shader,
                            assigned_colors.empty() ? tipl::vector<3>() : assigned_colors[i],metrics);
         }
     });

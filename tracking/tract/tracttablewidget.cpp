@@ -278,6 +278,17 @@ void TractTableWidget::fetch_tracts(void)
             }
             if(thread_data[index]->is_ended())
             {
+                // used in debugging autotrack
+                {
+                    auto regions = cur_tracking_window.regionWidget->regions;
+                    if(regions.size() >= 2 && cur_tracking_window.regionWidget->item(int(0),0)->text() == "debug")
+                        {
+                            regions[0]->region = thread_data[index]->roi_mgr->atlas_seed;
+                            regions[0]->modified = true;
+                            regions[1]->region = thread_data[index]->roi_mgr->atlas_roa;
+                            regions[1]->modified = true;
+                        }
+                }
                 tract_rendering[index]->need_update = true;
                 auto lock = tract_rendering[index]->start_writing();
                 has_tracts |= thread_data[index]->fetchTracks(tract_models[index].get()); // clear both front and back buffer
@@ -1081,7 +1092,7 @@ void TractTableWidget::render_tracts(GLWidget* glwidget)
     for(unsigned int index = 0;index < tract_rendering.size();++index)
         if(item(int(index),0)->checkState() == Qt::Checked &&
            tract_models[index]->get_visible_track_count())
-        tract_rendering[index]->render_tracts(tract_models[index],glwidget,cur_tracking_window,thread_data[index].get() != nullptr);
+        tract_rendering[index]->render_tracts(tract_models[index],glwidget,cur_tracking_window);
 }
 
 bool TractTableWidget::command(QString cmd,QString param,QString param2)

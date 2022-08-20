@@ -32,7 +32,7 @@ struct TractRenderParam{
     {
         return color_map[uint32_t(std::floor(std::min(1.0,(std::max<double>(value-color_min,0.0))/color_r)*255.0+0.49))];
     }
-    void init(GLWidget* glwidget,tracking_window& cur_tracking_window,bool simple);
+    void init(GLWidget* glwidget,tracking_window& cur_tracking_window);
 };
 
 struct TractRenderShader{
@@ -107,7 +107,7 @@ public:
         line_strip_pos.push_back(line_vertices_count);
     }
     void add_tract(const TractRenderParam& param,
-                   const std::vector<float>& tract,bool simple,
+                   const std::vector<float>& tract,
                    const TractRenderShader& shader,
                    const tipl::vector<3>& assign_color,
                    const std::vector<float>& metrics);
@@ -176,6 +176,6 @@ public:
     }
     TractRender(void);
     ~TractRender(void);
-    void render_tracts(std::shared_ptr<TractModel>& tract_data,GLWidget* glwidget,tracking_window& cur_tracking_window,bool simple);
+    void render_tracts(std::shared_ptr<TractModel>& tract_data,GLWidget* glwidget,tracking_window& cur_tracking_window);
 };
 #endif // TRACT_RENDER_HPP
