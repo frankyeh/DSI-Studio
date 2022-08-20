@@ -663,20 +663,6 @@ void TractTableWidget::save_vrml_as(void)
     if(filename.isEmpty())
         return;
     std::string surface_text;
-    /*
-    if(cur_tracking_window.glWidget->surface.get() && cur_tracking_window["show_surface"].toInt())
-    {
-        std::ostringstream out;
-        QString Coordinate, CoordinateIndex;
-        const auto& point_list = cur_tracking_window.glWidget->surface->get()->point_list;
-        for(unsigned int index = 0;index < point_list.size();++index)
-            Coordinate += QString("%1 %2 %3 ").arg(point_list[index][0]).arg(point_list[index][1]).arg(point_list[index][2]);
-        const auto& tri_list = cur_tracking_window.glWidget->surface->get()->tri_list;
-        for (unsigned int j = 0;j < tri_list.size();++j)
-            CoordinateIndex += QString("%1 %2 %3 -1 ").arg(tri_list[j][0]).arg(tri_list[j][1]).arg(tri_list[j][2]);
-        surface_text = out.str();
-    }
-    */
     std::string sfilename = filename.toLocal8Bit().begin();
     auto lock = tract_rendering[uint32_t(currentRow())]->start_reading();
     tract_models[uint32_t(currentRow())]->save_vrml(&*sfilename.begin(),
