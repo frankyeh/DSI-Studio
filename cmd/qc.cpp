@@ -117,8 +117,7 @@ int qc(program_option& po)
             std::shared_ptr<fib_data> handle = cmd_load_fib(po.get("source"));
             if(!handle.get())
                 return 1;
-            float threshold = 0.6f*tipl::segmentation::otsu_threshold(tipl::make_image(handle->dir.fa[0],handle->dim));
-            std::pair<float,float> result = evaluate_fib(handle->dim,threshold,handle->dir.fa,
+            std::pair<float,float> result = evaluate_fib(handle->dim,handle->dir.fa_otsu*0.6f,handle->dir.fa,
                                                          [&](int pos,char fib)
                                                          {return handle->dir.get_fib(size_t(pos),uint32_t(fib));});
             std::ofstream out(report_file_name.c_str());
