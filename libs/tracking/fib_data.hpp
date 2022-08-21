@@ -31,7 +31,9 @@ public:
     std::vector<std::vector<const float*> > index_data;
     int cur_index = 0;
 public:
+    tipl::shape<3> dim;
     std::vector<const float*> fa;
+    float fa_otsu;
     std::vector<tipl::vector<3,float> > odf_table;
     std::vector<tipl::vector<3,unsigned short> > odf_faces;
     unsigned int num_fiber;
@@ -68,6 +70,7 @@ public:
     tipl::shape<3> dim;
     tipl::vector<3> vs;
     unsigned char fib_num;
+    float fa_otsu;
     std::string threshold_name,dt_threshold_name;
     std::vector<const float*> dir;
     std::vector<const float*> fa;
@@ -75,8 +78,7 @@ public:
     std::vector<const short*> findex;
     std::vector<tipl::vector<3,float> > odf_table;
 
-private:
-    const tracking_data& operator=(const tracking_data& rhs);
+    const tracking_data& operator=(const tracking_data& rhs) = delete;
 public:
     void read(std::shared_ptr<fib_data> fib);
     inline bool get_dir_under_termination_criteria(
