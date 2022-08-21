@@ -169,7 +169,7 @@ void db_window::on_subject_list_itemSelectionChanged()
     //if(ui->subject_view->currentIndex() == 1)
     {
         std::vector<float> fp;
-        float threshold = ui->fp_coverage->value()*tipl::segmentation::otsu_threshold(tipl::make_image(vbc->handle->dir.fa[0],vbc->handle->dim));
+        float threshold = ui->fp_coverage->value()*vbc->handle->dir.fa_otsu;
         vbc->handle->db.get_subject_vector(ui->subject_list->currentRow(),fp,fp_mask,threshold,ui->normalize_fp->isChecked());
         fp_image_buf.clear();
         fp_image_buf.resize(tipl::shape<2>(ui->fp_zoom->value()*25,ui->fp_zoom->value()*100));// rotated
@@ -268,9 +268,8 @@ void db_window::on_actionSave_fingerprints_triggered()
     if(filename.isEmpty())
         return;
 
-    float threshold = ui->fp_coverage->value()*tipl::segmentation::otsu_threshold(
-                tipl::make_image(vbc->handle->dir.fa[0],vbc->handle->dim));
-    if(vbc->handle->db.save_subject_vector(filename.toLocal8Bit().begin(),fp_mask,threshold,ui->normalize_fp->isChecked()))
+    if(vbc->handle->db.save_subject_vector(filename.toLocal8Bit().begin(),fp_mask,
+                                           ui->fp_coverage->value()*vbc->handle->dir.fa_otsu,ui->normalize_fp->isChecked()))
         QMessageBox::information(this,"File saved",filename);
     else
         QMessageBox::critical(this,"ERROR",vbc->handle->db.error_msg.c_str());
@@ -355,8 +354,7 @@ void db_window::on_actionSave_mask_triggered()
                                 "Report file (*.nii *nii.gz);;Text files (*.txt);;All files (*)");
     if(FileName.isEmpty())
         return;
-    float fiber_threshold = ui->fp_coverage->value()*tipl::segmentation::otsu_threshold(
-                tipl::make_image(vbc->handle->dir.fa[0],vbc->handle->dim));
+    float fiber_threshold = ui->fp_coverage->value()*vbc->handle->dir.fa_otsu;
     tipl::image<3> mask(fp_mask);
     for(unsigned int index = 0;index < mask.size();++index)
         if(vbc->handle->dir.fa[0][index] < fiber_threshold)
@@ -375,8 +373,7 @@ void db_window::update_db(void)
 
 void db_window::on_calculate_dif_clicked()
 {
-    float threshold = ui->fp_coverage->value()*tipl::segmentation::otsu_threshold(
-                    tipl::make_image(vbc->handle->dir.fa[0],vbc->handle->dim));
+    float threshold = ui->fp_coverage->value()*vbc->handle->dir.fa_otsu;
     vbc->handle->db.get_dif_matrix(fp_matrix,fp_mask,threshold,ui->normalize_fp->isChecked());
     fp_max_value = tipl::max_value(fp_matrix);
     fp_dif_map.resize(tipl::shape<2>(vbc->handle->db.num_subjects,vbc->handle->db.num_subjects));
@@ -414,8 +411,7 @@ void db_window::on_delete_subject_clicked()
 
 void db_window::on_actionCalculate_change_triggered()
 {
-    float threshold = ui->fp_coverage->value()*tipl::segmentation::otsu_threshold(
-    tipl::make_image(vbc->handle->dir.fa[0],vbc->handle->dim));
+    float threshold = ui->fp_coverage->value()*vbc->handle->dir.fa_otsu;
     vbc->handle->db.auto_match(fp_mask,threshold,ui->normalize_fp->isChecked());
 
     std::unique_ptr<match_db> mdb(new match_db(this,vbc));
