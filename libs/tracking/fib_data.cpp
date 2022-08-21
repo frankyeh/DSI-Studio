@@ -187,7 +187,6 @@ bool fiber_directions::add_data(gz_mat_read& mat_reader)
             }
         }
     }
-    tipl::shape<3> dim;
     mat_reader.read("dimension",dim);
     for (unsigned int index = 0;prog(index,mat_reader.size());++index)
     {
@@ -224,6 +223,7 @@ bool fiber_directions::add_data(gz_mat_read& mat_reader)
         {
             check_index(store_index);
             mat_reader.read(index,row,col,fa[store_index]);
+            fa_otsu = tipl::segmentation::otsu_threshold(tipl::make_image(fa[0],dim));
             continue;
         }
         if (prefix_name == "dir")
@@ -289,6 +289,7 @@ bool fiber_directions::set_tracking_index(int new_index)
     if(new_index >= index_data.size() || new_index < 0)
         return false;
     fa = index_data[new_index];
+    fa_otsu = tipl::segmentation::otsu_threshold(tipl::make_image(fa[0],dim));
     cur_index = new_index;
     return true;
 }
@@ -376,6 +377,7 @@ void tracking_data::read(std::shared_ptr<fib_data> fib)
     odf_table = fib->dir.odf_table;
     fib_num = uint8_t(fib->dir.num_fiber);
     fa = fib->dir.fa;
+    fa_otsu = fib->dir.fa_otsu;
     dt_fa = fib->dir.dt_fa;
     findex = fib->dir.findex;
     dir = fib->dir.dir;
