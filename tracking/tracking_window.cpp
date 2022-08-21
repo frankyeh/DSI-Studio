@@ -1274,8 +1274,7 @@ void tracking_window::on_tracking_index_currentIndexChanged(int index)
     renderWidget->setMinMax("fa_threshold",0.0,max_value*1.1f,max_value/50.0f);
     if(renderWidget->getData("fa_threshold").toFloat() != 0.0f)
         set_data("fa_threshold",
-                 renderWidget->getData("otsu_threshold").toFloat()*
-                 tipl::segmentation::otsu_threshold(tipl::make_image(handle->dir.fa[0],handle->dim)));
+                 renderWidget->getData("otsu_threshold").toFloat()*handle->dir.fa_otsu);
     slice_need_update = true;
 }
 
@@ -1513,8 +1512,7 @@ void tracking_window::set_roi_zoom(float zoom)
 
 void tracking_window::on_actionQuality_Assessment_triggered()
 {
-    float threshold = renderWidget->getData("otsu_threshold").toFloat()*
-                tipl::segmentation::otsu_threshold(tipl::make_image(handle->dir.fa[0],handle->dim));
+    float threshold = renderWidget->getData("otsu_threshold").toFloat()*handle->dir.fa_otsu;
     std::pair<float,float> result = evaluate_fib(handle->dim,threshold,handle->dir.fa,
                                                  [&](int pos,char fib)
                                                  {return handle->dir.get_fib(pos,fib);});
@@ -2236,8 +2234,7 @@ float tracking_window::get_fa_threshold(void)
 {
     float threshold = renderWidget->getData("fa_threshold").toFloat();
     if(threshold == 0.0f)
-        threshold = renderWidget->getData("otsu_threshold").toFloat()
-                        *tipl::segmentation::otsu_threshold(tipl::make_image(handle->dir.fa[0],handle->dim));
+        threshold = renderWidget->getData("otsu_threshold").toFloat()*handle->dir.fa_otsu;
     return threshold;
 }
 
