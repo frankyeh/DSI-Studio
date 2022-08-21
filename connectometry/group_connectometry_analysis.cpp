@@ -12,7 +12,7 @@
 bool group_connectometry_analysis::create_database(std::shared_ptr<fib_data> handle_)
 {
     handle = handle_;
-    fiber_threshold = 0.6f*tipl::segmentation::otsu_threshold(tipl::make_image(handle->dir.fa[0],handle->dim));
+    fiber_threshold = 0.6f*handle->dir.fa_otsu;
     handle->db.calculate_si2vi();
     handle->db.subject_qa_length = handle->db.si2vi.size()*size_t(handle->dir.num_fiber);
     handle->db.clear();
@@ -27,7 +27,7 @@ bool group_connectometry_analysis::load_database(const char* database_name)
         error_msg += handle->error_msg;
         return false;
     }
-    fiber_threshold = 0.6f*tipl::segmentation::otsu_threshold(tipl::make_image(handle->dir.fa[0],handle->dim));
+    fiber_threshold = 0.6f*handle->dir.fa_otsu;
     return handle->db.has_db();
 }
 
