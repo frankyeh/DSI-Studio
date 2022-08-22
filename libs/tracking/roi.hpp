@@ -178,6 +178,9 @@ public:
     std::vector<bool> need_trans;
     std::vector<tipl::matrix<4,4> > to_diffusion_space;
 public:
+    bool use_auto_track = false;
+    float track_voxel_ratio = 1.0f;
+    float tolerance_dis_in_icbm152_mm = 0.0f;
     float tolerance_dis_in_subject_voxels = 0.0f;
     unsigned int track_id = 0;
 public:
@@ -244,30 +247,38 @@ public:
     std::vector<tipl::vector<3,short> > atlas_seed,atlas_roa;
     std::vector<std::vector<float> > selected_atlas_tracts;
     std::vector<unsigned int> selected_atlas_cluster;
-
-    bool setAtlas(unsigned int track_id_,float tolerance_dis_in_icbm152_mm)
+public:
+    bool setAtlas(bool& terminated)
     {
         progress p("loading tractography atlas");
         if(!handle->load_track_atlas())
             return false;
-        if(track_id_ >= handle->tractography_name_list.size())
+        if(track_id >= handle->tractography_name_list.size())
         {
             handle->error_msg = "invalid track_id";
             return false;
         }
-        track_id = track_id_;
+        if(terminated)
+            return false;
         const auto& tract_name = handle->tractography_name_list[size_t(track_id)];
+
+        {
+            report += " A tractography atlas (Yeh et al., Neuroimage 178, 57-68, 2018) was used to automatically identify ";
+            report += tract_name;
+            report += "  with a distance tolerance of ";
+            report += std::to_string(tolerance_dis_in_icbm152_mm);
+            report += " (mm) in the ICBM152 space.";
+            report += " The track-to-voxel ratio was set to ";
+            report += QString::number(double(track_voxel_ratio),'g',1).toStdString();
+            report += ".";
+        }
         {
             float tolerance_dis_in_icbm_voxels = tolerance_dis_in_icbm152_mm/handle->template_vs[0];
             tolerance_dis_in_subject_voxels = tolerance_dis_in_icbm_voxels/handle->tract_atlas_jacobian;
             show_progress() << "convert tolerance distance of " << tolerance_dis_in_icbm152_mm << " from ICBM mm to " <<
                                     tolerance_dis_in_subject_voxels << " subject voxels" << std::endl;
         }
-        report += " The anatomy prior of a tractography atlas (Yeh et al., Neuroimage 178, 57-68, 2018) was used to map ";
-        report += tract_name;
-        report += "  with a distance tolerance of ";
-        report += std::to_string(tolerance_dis_in_icbm152_mm);
-        report += " (mm) in the ICBM152 space.";
+
         // place seed at the atlas track region
         if(seeds.empty())
         {
@@ -305,6 +316,8 @@ public:
                             roa_mask[pos.index()] = 1;
                 });
             }
+            if(terminated)
+                return false;
 
             // inner = 0
             {
@@ -331,10 +344,20 @@ public:
                     }
                 });
             }
-            atlas_roa.clear();
-            for(tipl::pixel_index<3> index(handle->dim);index < handle->dim.size();++index)
+            if(terminated)
+                return false;
+
+            std::vector<std::vector<tipl::vector<3,short> > > atlas_roa_thread(std::thread::hardware_concurrency());
+            tipl::par_for(tipl::begin_index(handle->dim),
+                          tipl::end_index(handle->dim),
+                          [&](const tipl::pixel_index<3>& index,unsigned int thread)
+            {
                 if(roa_mask[index.index()])
-                    atlas_roa.push_back(tipl::vector<3,short>(short(index.x()),short(index.y()),short(index.z())));
+                    atlas_roa_thread[thread].push_back(tipl::vector<3,short>(short(index.x()),short(index.y()),short(index.z())));
+            });
+            atlas_roa.clear();
+            tipl::aggregate_results(std::move(atlas_roa_thread),atlas_roa);
+
             setRegions(atlas_roa,roa_id,"track tolerance region");
         }
 
@@ -374,9 +397,15 @@ public:
     {
         std::vector<tipl::vector<3,short> > seed;
         const float *fa0 = handle->dir.fa[0];
-        for(tipl::pixel_index<3> index(handle->dim);index < handle->dim.size();++index)
+        std::vector<std::vector<tipl::vector<3,short> > > seed_threads(std::thread::hardware_concurrency());
+        tipl::par_for(tipl::begin_index(handle->dim),
+                      tipl::end_index(handle->dim),
+                      [&](const tipl::pixel_index<3>& index,unsigned int thread_id)
+        {
             if(fa0[index.index()] > threashold)
-                seed.push_back(tipl::vector<3,short>(short(index.x()),short(index.y()),short(index.z())));
+                seed_threads[thread_id].push_back(tipl::vector<3,short>(short(index.x()),short(index.y()),short(index.z())));
+        });
+        tipl::aggregate_results(std::move(seed_threads),seed);
         setRegions(seed,3/*seed i*/,"whole brain");
     }
 
