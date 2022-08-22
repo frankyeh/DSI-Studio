@@ -215,7 +215,7 @@ std::string ImageModel::check_b_table(void)
     if(template_fib.get())
     {
         voxel.recon_report <<
-        " The accuracy of b-table orientation was examined by comparing fiber orientations with those of a population-averaged template (Yeh et al. Neuroimage, 2018).";
+        " The accuracy of b-table orientation was examined by comparing fiber orientations with those of a population-averaged template (Yeh et al., Neuroimage 178, 57-68, 2018).";
     }
     else
     {
