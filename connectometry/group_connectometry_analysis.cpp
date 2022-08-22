@@ -424,7 +424,7 @@ void group_connectometry_analysis::run_permutation(unsigned int thread_count,uns
     }
 
     for(unsigned int index = 0;index < thread_count;++index)
-        threads.push_back(std::thread([this,index,thread_count,permutation_count](){run_permutation_multithread(index,thread_count,permutation_count);}));
+        threads.push_back(std::thread([=](){run_permutation_multithread(index,thread_count,permutation_count);}));
 }
 
 void group_connectometry_analysis::calculate_FDR(void)
