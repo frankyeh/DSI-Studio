@@ -24,7 +24,7 @@ public:
     std::ostringstream report;
     TrackingParam param;
     float fa_threshold1,fa_threshold2;// use only if fa_threshold=0
-
+    bool ready_to_track = false;
 public:
     ThreadData(std::shared_ptr<fib_data> handle):seed(0),
         rand_gen(0,1),subvoxel_gen(-0.5f,0.5f),angle_gen(float(15.0*M_PI/180.0),float(90.0*M_PI/180.0)),
@@ -37,9 +37,7 @@ public:
 public:
     bool joinning = false;
     std::vector<std::thread> threads;
-    std::vector<unsigned int> seed_count;
-    std::vector<unsigned int> tract_count;
-    std::vector<unsigned int> end_count;
+    std::vector<unsigned int> seed_count,tract_count;
     std::vector<unsigned char> running;
     std::mutex lock_seed_function;
     std::chrono::high_resolution_clock::time_point begin_time,end_time;
@@ -61,7 +59,7 @@ public:
     void end_thread(void);
 
 public:
-    void run_thread(unsigned int thread_id);
+    void run_thread(unsigned int thread_id,unsigned int thread_count);
     bool fetchTracks(TractModel* handle);
     void apply_tip(TractModel* handle);
     void run(std::shared_ptr<tracking_data> trk,unsigned int thread_count,bool wait);

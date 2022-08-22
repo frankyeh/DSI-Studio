@@ -122,8 +122,6 @@ struct file_holder{
 
 std::string run_auto_track(program_option& po,const std::vector<std::string>& file_list,const std::vector<unsigned int>& track_id,int& prog)
 {
-
-    float length_ratio = po.get("length_ratio",1.25f);
     std::string tolerance_string = po.get("tolerance","16,18,20");
     float track_voxel_ratio = po.get("track_voxel_ratio",2.0f);
     float yield_rate = po.get("yield_rate",0.0001f);
@@ -265,11 +263,10 @@ std::string run_auto_track(program_option& po,const std::vector<std::string>& fi
                 for(size_t tracking_iteration = 0;tracking_iteration < tolerance.size() &&
                                                   !tract_model.get_visible_track_count();++tracking_iteration)
                 {
-                    float cur_tolerance = tolerance[tracking_iteration];
                     ThreadData thread(handle);
                     {
-                        if(!thread.roi_mgr->setAtlas(track_id[j],cur_tolerance))
-                            return handle->error_msg + " at " + fib_file_name;
+                        if(!handle->load_track_atlas())
+                            return std::string("cannot load tract atlas for ") + fib_file_name;
                         thread.param.min_length = handle->vs[0]*std::max<float>(thread.roi_mgr->tolerance_dis_in_subject_voxels,
                                                                   (handle->tract_atlas_min_length[track_id[j]]-2.0f*thread.roi_mgr->tolerance_dis_in_subject_voxels));
                         thread.param.max_length = handle->vs[0]*(handle->tract_atlas_max_length[track_id[j]]+2.0f*thread.roi_mgr->tolerance_dis_in_subject_voxels);
@@ -278,44 +275,32 @@ std::string run_auto_track(program_option& po,const std::vector<std::string>& fi
                         thread.param.tip_iteration = uint8_t(tip);
                         thread.param.check_ending = check_ending && !QString(track_name.c_str()).contains("Cingulum");
                         thread.param.stop_by_tract = 1;
-                        thread.param.termination_count = uint32_t(track_voxel_ratio*thread.roi_mgr->seeds.size());
-                        thread.param.max_seed_count = thread.param.termination_count*5000; //yield rate easy:1/100 hard:1/5000
-                        // report
-                        thread.roi_mgr->report += " The track-to-voxel ratio was set to ";
-                        thread.roi_mgr->report += QString::number(double(track_voxel_ratio),'g',1).toStdString();
-                        thread.roi_mgr->report += ".";
+                        thread.param.termination_count = 0;
+                    }
+                    {
+                        thread.roi_mgr->use_auto_track = true;
+                        thread.roi_mgr->track_voxel_ratio = track_voxel_ratio;
+                        thread.roi_mgr->track_id = track_id[j];
+                        thread.roi_mgr->tolerance_dis_in_icbm152_mm = tolerance[tracking_iteration];
                     }
                     progress prog_("tracking ",track_name.c_str(),true);
-                    // run tracking
                     thread.run(thread_count,false);
                     std::string report = tract_model.report + thread.report.str();
                     report += " Shape analysis (Yeh, Neuroimage, 2020 Dec;223:117329) was conducted to derive shape metrics for tractography.";
                     if(reports[j].empty())
                         reports[j] = report;
-
-                    {
-                        std::string temp_report = report;
-                        auto iter = temp_report.find(track_name);
-                        temp_report.replace(iter,track_name.length(),targets);
-                        // remove "A seeding region was placed at xxxxx"
-                        iter = temp_report.find("A seeding region was placed at ");
-                        temp_report.replace(iter+31,track_name.length(),
-                                "the track region indicates by tractography atlas");
-
-
-                        // remove "A total of xxxxx tracts were calculated."
-                        iter = temp_report.find("tracts were calculated.");
-                        auto iter2 = temp_report.find_first_of("A total of ",iter-20);
-                        temp_report.replace(iter2,iter-iter2+23,"");
-                        auto_track_report = temp_report;
-                    }
+                    auto_track_report = report;
                     bool no_result = false;
                     {
                         while(!thread.is_ended() && !progress::aborted())
                         {
                             std::this_thread::yield();
-                            progress::at(thread.get_total_tract_count(),
-                                       thread.param.termination_count);
+                            if(!thread.param.termination_count)
+                            {
+                                progress::at(0,1);
+                                continue;
+                            }
+                            progress::at(thread.get_total_tract_count(),thread.param.termination_count);
                             thread.fetchTracks(&tract_model);
                             // terminate if yield rate is very low, likely quality problem
                             if(thread.get_total_seed_count() > yield_check_count &&
@@ -330,12 +315,15 @@ std::string run_auto_track(program_option& po,const std::vector<std::string>& fi
 
                         float sec = float(std::chrono::duration_cast<std::chrono::milliseconds>(
                                     thread.end_time-thread.begin_time).count())*0.001f;
-                        show_progress() << "yield rate (tract generated per seed): " <<
-                                float(thread.get_total_tract_count())/float(thread.get_total_seed_count()) << std::endl;
-                        show_progress() << "tract yield rate (tracts per second): " <<
-                                                   float(thread.get_total_tract_count())/sec << std::endl;
-                        show_progress() << "seed yield rate (seeds per second): " <<
-                                                   float(thread.get_total_seed_count())/sec << std::endl;
+                        if(thread.get_total_seed_count())
+                        {
+                            show_progress() << "yield rate (tract generated per seed): " <<
+                                    float(thread.get_total_tract_count())/float(thread.get_total_seed_count()) << std::endl;
+                            show_progress() << "tract yield rate (tracts per second): " <<
+                                                       float(thread.get_total_tract_count())/sec << std::endl;
+                            show_progress() << "seed yield rate (seeds per second): " <<
+                                                       float(thread.get_total_seed_count())/sec << std::endl;
+                        }
 
                     }
                     if(progress::aborted())
@@ -536,7 +524,6 @@ void auto_track::on_run_clicked()
     progress prog_("");
 
     program_option po;
-    po["length_ratio"] = float(ui->gqi_l->value());
     po["tolerance"] = ui->tolerance->text().toStdString();
     po["track_voxel_ratio"] = float(ui->track_voxel_ratio->value());
     po["tip"] = ui->pruning->value();

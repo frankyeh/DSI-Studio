@@ -21,8 +21,35 @@ void ThreadData::end_thread(void)
     }
 }
 
-void ThreadData::run_thread(unsigned int thread_id)
+void ThreadData::run_thread(unsigned int thread_id,unsigned int thread_count)
 {
+    while(!ready_to_track)
+    {
+        if(thread_id)
+        {
+            std::this_thread::yield();
+            continue;
+        }
+        // configure seedings
+        {
+            seed = std::mt19937(param.random_seed);  // always 0, except in connectometry for changing seed sequence
+            if(roi_mgr->use_auto_track)
+            {
+                if(!roi_mgr->setAtlas(joinning))
+                    joinning = true;
+            }
+            if(roi_mgr->seeds.empty())
+                roi_mgr->setWholeBrainSeed(param.threshold == 0.0f ?
+                        roi_mgr->handle->dir.fa_otsu*param.default_otsu : param.threshold);
+
+            if(param.termination_count == 0)
+            {
+                param.termination_count = std::max<uint32_t>(1,roi_mgr->track_voxel_ratio*roi_mgr->seeds.size());
+                param.max_seed_count = param.termination_count*5000; //yield rate easy:1/100 hard:1/5000
+            }
+        }
+        ready_to_track = true;
+    }
     std::shared_ptr<TrackingMethod> method(new TrackingMethod(trk,roi_mgr));
     method->current_fa_threshold = param.threshold;
     method->current_dt_threshold = param.dt_threshold;
@@ -37,12 +64,16 @@ void ThreadData::run_thread(unsigned int thread_id)
         method->current_min_steps3 = 3*uint32_t(std::round(param.min_length/param.step_size));
     }
     float white_matter_t = param.threshold*1.2f;
+    unsigned int termination_count = (thread_id == 0 ?
+        param.termination_count-(param.termination_count/thread_count)*(thread_count-1):
+        param.termination_count/thread_count);
+    unsigned int max_seed_per_thread = param.max_seed_count/thread_count;
     if(!roi_mgr->seeds.empty())
     try{
         while(!joinning &&
-              !(param.stop_by_tract == 1 && tract_count[thread_id] >= end_count[thread_id]) &&
-              !(param.stop_by_tract == 0 && seed_count[thread_id] >= end_count[thread_id]) &&
-              !(param.max_seed_count > 0 && seed_count[thread_id] >= param.max_seed_count))
+              !(param.stop_by_tract == 1 && tract_count[thread_id] >= termination_count) &&
+              !(param.stop_by_tract == 0 && seed_count[thread_id] >= termination_count) &&
+              !(param.max_seed_count > 0 && seed_count[thread_id] >= max_seed_per_thread))
         {
             ++seed_count[thread_id];
             {
@@ -165,13 +196,10 @@ void ThreadData::run(unsigned int thread_count,
 void ThreadData::run(std::shared_ptr<tracking_data> trk_,unsigned int thread_count,bool wait)
 {
     trk = trk_;
-    if(!param.termination_count)
-        return;
     if(param.threshold == 0.0f)
     {
-        float otsu = tipl::segmentation::otsu_threshold(tipl::make_image(trk->fa[0],trk->dim));
-        fa_threshold1 = (param.default_otsu-0.1f)*otsu;
-        fa_threshold2 = (param.default_otsu+0.1f)*otsu;
+        fa_threshold1 = (param.default_otsu-0.1f)*trk->fa_otsu;
+        fa_threshold2 = (param.default_otsu+0.1f)*trk->fa_otsu;
     }
     else
         fa_threshold1 = fa_threshold2 = 0.0;
@@ -200,7 +228,8 @@ void ThreadData::run(std::shared_ptr<tracking_data> trk_,unsigned int thread_cou
         }
         report << ", and only the differences greater than " << int(param.dt_threshold * 100) << "% were tracked.";
     }
-    else {
+    else
+    {
         report << " A deterministic fiber tracking algorithm (Yeh et al., PLoS ONE 8(11): e80713, 2013) was used";
         if(param.threshold == 0.0f && param.cull_cos_angle == 1.0f && param.step_size == 0.0f) // parameter saturation, pruning
             report << " with augmented tracking strategies (Yeh, Neuroimage, 2020 Dec;223:117329) to improve reproducibility.";
@@ -209,46 +238,32 @@ void ThreadData::run(std::shared_ptr<tracking_data> trk_,unsigned int thread_cou
     }
     report << roi_mgr->report;
     report << param.get_report();
+
     end_thread();
-
-
-    if(thread_count > param.termination_count)
-        thread_count = param.termination_count;
     if(thread_count < 1)
         thread_count = 1;
 
-    // initialize multi-thread for tracking
-    {
-        seed_count.clear();
-        tract_count.clear();
-        end_count.clear();
-
-        seed_count.resize(thread_count);
-        tract_count.resize(thread_count);
-        end_count.resize(thread_count);
-        running.resize(thread_count);
-
-        std::fill(running.begin(),running.end(),1);
-
-        std::fill(end_count.begin(),end_count.end(),param.termination_count/thread_count);
-        end_count.back() = param.termination_count-end_count.front()*(thread_count-1);
-    }
-
-
     joinning = false;
-
-    seed = std::mt19937(param.random_seed);  // always 0, except in connectometry for changing seed sequence
-
+    ready_to_track = false;
     begin_time = std::chrono::high_resolution_clock::now();
 
-    track_buffer_back.resize(thread_count);
-    track_buffer_front.resize(thread_count);
+    //  multi-thread controls
+    {
+        seed_count  = std::move(std::vector<unsigned int>(thread_count));
+        tract_count = std::move(std::vector<unsigned int>(thread_count));
+        running     = std::move(std::vector<unsigned char>(thread_count,1));
+    }
+    // setting up output buffers
+    {
+        track_buffer_back.resize(thread_count);
+        track_buffer_front.resize(thread_count);
+    }
     for (unsigned int index = 0;index < thread_count-1;++index)
-        threads.push_back(std::thread([&,index](){run_thread(index);}));
+        threads.push_back(std::thread([=](){run_thread(index,thread_count);}));
 
     if(wait)
     {
-        run_thread(thread_count-1);
+        run_thread(thread_count-1,thread_count);
         for(auto& thread : threads)
             if(thread.joinable())
                 thread.join();
@@ -256,5 +271,5 @@ void ThreadData::run(std::shared_ptr<tracking_data> trk_,unsigned int thread_cou
         buffer_switch = !buffer_switch;
     }
     else
-        threads.push_back(std::thread([&,thread_count](){run_thread(thread_count-1);}));
+        threads.push_back(std::thread([=](){run_thread(thread_count-1,thread_count);}));
 }
