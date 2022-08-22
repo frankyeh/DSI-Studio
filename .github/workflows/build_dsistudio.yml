@@ -199,7 +199,7 @@ jobs:
     - name: Tracking
       run: |
         ./dsi-studio/dsi_studio --source=*.fib.gz --action=atk --track_id=Arcuate_Fasciculus_L
-        ls Arcuate_Fasciculus_L.stat.txt
+        ls ./Arcuate_Fasciculus_L/*Arcuate_Fasciculus_L.tt.gz
         
   test_src_construction:
     needs: build_prerelease
