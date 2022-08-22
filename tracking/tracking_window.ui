@@ -909,6 +909,7 @@
     </property>
     <addaction name="actionNewRegion"/>
     <addaction name="actionOpenRegion"/>
+    <addaction name="actionOpen_MNI_Region"/>
     <addaction name="separator"/>
     <addaction name="actionSaveRegionAs"/>
     <addaction name="actionSave_All_Regions_As"/>
@@ -1247,17 +1248,15 @@
     <addaction name="actionThreshold"/>
     <addaction name="separator"/>
     <addaction name="actionLoad_Region_Color"/>
-    <addaction name="actionOpen_MNI_Region"/>
-    <addaction name="actionManual_Atlas_Alignment"/>
-    <addaction name="separator"/>
     <addaction name="actionSave_Region_Color"/>
-    <addaction name="actionSave_Voxel_Data_As"/>
-    <addaction name="separator"/>
-    <addaction name="actionWhole_brain_seeding"/>
     <addaction name="separator"/>
     <addaction name="menuMove_Current_Region"/>
     <addaction name="menuModify"/>
     <addaction name="menuSort_Regions"/>
+    <addaction name="separator"/>
+    <addaction name="actionWhole_brain_seeding"/>
+    <addaction name="actionManual_Atlas_Alignment"/>
+    <addaction name="actionSave_Voxel_Data_As"/>
    </widget>
    <widget class="QMenu" name="menuTracts_Misc">
     <property name="title">
