@@ -578,11 +578,10 @@ bool load_roi(program_option& po,std::shared_ptr<fib_data> handle,std::shared_pt
             show_progress() << "cannot find " << name << " in " << handle->tractography_atlas_file_name << std::endl;
             return false;
         }
-        if(!roi_mgr->setAtlas(uint32_t(track_id),po.get("tolerance",16.0f)))
-        {
-            show_progress() << handle->error_msg << std::endl;
-            return false;
-        }
+        roi_mgr->use_auto_track = true;
+        roi_mgr->track_id = po.get("track_id",0);
+        roi_mgr->tolerance_dis_in_icbm152_mm = po.get("tolerance",16.0f);
+
         show_progress() << "set target track: " << handle->tractography_name_list[track_id] << std::endl;
     }
     return true;
@@ -658,7 +657,7 @@ int trk(program_option& po,std::shared_ptr<fib_data> handle)
 
     tipl::shape<3> shape = handle->dim;
     const float *fa0 = handle->dir.fa[0];
-    float otsu = tipl::segmentation::otsu_threshold(tipl::make_image(fa0,shape));
+    float otsu = handle->dir.fa_otsu;
 
 
     ThreadData tracking_thread(handle);
@@ -700,13 +699,6 @@ int trk(program_option& po,std::shared_ptr<fib_data> handle)
         progress prog("setting up regions");
         if(!load_roi(po,handle,tracking_thread.roi_mgr))
             return 1;
-
-        if (tracking_thread.roi_mgr->seeds.empty())
-        {
-            tracking_thread.roi_mgr->setWholeBrainSeed(
-                        tracking_thread.param.threshold == 0.0f ?
-                            otsu*tracking_thread.param.default_otsu:tracking_thread.param.threshold);
-        }
     }
 
     std::shared_ptr<TractModel> tract_model(new TractModel(handle));
