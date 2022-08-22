@@ -228,10 +228,6 @@ void TractRenderData::add_tract(const TractRenderParam& param,
     else
         end_line_strip();
 }
-TractRenderData::~TractRenderData(void)
-{
-    clear();
-}
 void TractRenderData::clear(void)
 {
     tube_vertices.clear();
@@ -242,56 +238,19 @@ void TractRenderData::clear(void)
     line_strip_pos.clear();
     tube_strip_pos.push_back(0);
     line_strip_pos.push_back(0);
-    if(glwidget)
-    {
-        if(tube)
-        {
-            glwidget->glDeleteBuffers(1,&tube);
-            tube = 0;
-        }
-        if(line)
-        {
-            glwidget->glDeleteBuffers(1,&line);
-            line = 0;
-        }
-    }
-}
-void TractRenderData::create_buffer(GLWidget* glwidget_)
-{
-    glwidget = glwidget_;
-    if(!tube_vertices.empty())
-    {
-        glwidget->glGenBuffers(1,&tube);
-        glwidget->glBindBuffer(GL_ARRAY_BUFFER, tube);
-        glwidget->glBufferData(GL_ARRAY_BUFFER, tube_vertices.size()*sizeof(float),&tube_vertices[0],GL_STATIC_DRAW);
-        tube_vertices.clear();
-        tube_strip_pos.pop_back();
-    }
-
-    if(!line_vertices.empty())
-    {
-        glwidget->glGenBuffers(1,&line);
-        glwidget->glBindBuffer(GL_ARRAY_BUFFER, line);
-        glwidget->glBufferData(GL_ARRAY_BUFFER, line_vertices.size()*sizeof(float),&line_vertices[0],GL_STATIC_DRAW);
-        line_vertices.clear();
-        line_strip_pos.pop_back();
-    }
-    glwidget->glBindBuffer(GL_ARRAY_BUFFER, 0);
 
 }
-
-void TractRenderData::draw(void)
+void TractRenderData::draw(GLWidget* glwidget)
 {
-    if(tube)
+    if(!tube_strip_size.empty())
     {
-        glwidget->glBindBuffer(GL_ARRAY_BUFFER, tube);
         glEnableClientState(GL_VERTEX_ARRAY);
         glEnableClientState(GL_NORMAL_ARRAY);
         glEnableClientState(GL_COLOR_ARRAY);
         GLsizei stride = 9*sizeof(float);
-        glVertexPointer(3, GL_FLOAT, stride, 0);
-        glNormalPointer(GL_FLOAT, stride, (void*)(3*sizeof(float)));
-        glColorPointer(3, GL_FLOAT, stride, (void*)(6*sizeof(float)));
+        glVertexPointer(3, GL_FLOAT, stride, &tube_vertices[0]);
+        glNormalPointer(GL_FLOAT, stride, &tube_vertices[0]+3);
+        glColorPointer(3, GL_FLOAT, stride, &tube_vertices[0]+6);
         glwidget->glMultiDrawArrays(GL_TRIANGLE_STRIP,
                             &tube_strip_pos[0],
                             &tube_strip_size[0],
@@ -299,24 +258,21 @@ void TractRenderData::draw(void)
         glDisableClientState(GL_VERTEX_ARRAY);  // disable vertex arrays
         glDisableClientState(GL_COLOR_ARRAY);
         glDisableClientState(GL_NORMAL_ARRAY);
-        glwidget->glBindBuffer(GL_ARRAY_BUFFER, 0);
     }
 
-    if(line)
+    if(!line_strip_size.empty())
     {
-        glwidget->glBindBuffer(GL_ARRAY_BUFFER, line);
         glEnableClientState(GL_VERTEX_ARRAY);
         glEnableClientState(GL_COLOR_ARRAY);
         GLsizei stride = 6*sizeof(float);
-        glVertexPointer(3, GL_FLOAT, stride, 0);
-        glColorPointer(3, GL_FLOAT, stride, (void*)(3*sizeof(float)));
+        glVertexPointer(3, GL_FLOAT, stride, &line_vertices[0]);
+        glColorPointer(3, GL_FLOAT, stride, &line_vertices[0]+3);
         glwidget->glMultiDrawArrays(GL_LINE_STRIP,
                             &line_strip_pos[0],
                             &line_strip_size[0],
                             line_strip_size.size());
         glDisableClientState(GL_VERTEX_ARRAY);  // disable vertex arrays
         glDisableClientState(GL_COLOR_ARRAY);
-        glwidget->glBindBuffer(GL_ARRAY_BUFFER, 0);
     }
 
 }
@@ -411,7 +367,7 @@ void TractRender::render_tracts(std::shared_ptr<TractModel>& active_tract_model,
     if(!need_update)
     {
         for(auto& d: data)
-            d.draw();
+            d.draw(glwidget);
         return;
     }
     auto lock = start_reading(false);
@@ -496,8 +452,7 @@ void TractRender::render_tracts(std::shared_ptr<TractModel>& active_tract_model,
 
     for(auto& d: data)
     {
-        d.create_buffer(glwidget);
-        d.draw();
+        d.draw(glwidget);
     }
 
 }

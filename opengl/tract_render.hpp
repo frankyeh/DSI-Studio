@@ -50,21 +50,17 @@ struct TractRenderShader{
     float get_shade(const tipl::vector<3>& pos) const;
 };
 
-struct TractRenderData{
+class TractRenderData{
     std::vector<float> tube_vertices;
     size_t tube_vertices_count = 0;
     std::vector<float> line_vertices;
     size_t line_vertices_count = 0;
-public:
-    GLWidget* glwidget = nullptr;
-    GLuint tube = 0,line = 0;
     std::vector<GLint> tube_strip_pos;
     std::vector<GLint> line_strip_pos;
     std::vector<GLsizei> tube_strip_size;
     std::vector<GLsizei> line_strip_size;
-    ~TractRenderData(void);
-    void create_buffer(GLWidget* glwidget);
-    void draw(void);
+public:
+    void draw(GLWidget* glwidget);
 public:
     TractRenderData(void)
     {
