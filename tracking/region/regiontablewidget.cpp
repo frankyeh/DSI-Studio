@@ -1398,7 +1398,7 @@ void RegionTableWidget::setROIs(ThreadData* data)
 {
     for (unsigned int index = 0;index < regions.size();++index)
         if (!regions[index]->region.empty() && item(int(index),0)->checkState() == Qt::Checked
-                && !(regions[index]->regions_feature == roi_id) && regions[index]->regions_feature != default_id)
+                && regions[index]->regions_feature != default_id)
             data->roi_mgr->setRegions(regions[index]->region,
                                       regions[index]->dim,
                                       regions[index]->to_diffusion_space,
