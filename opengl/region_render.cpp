@@ -9,13 +9,6 @@
 
 RegionRender::~RegionRender(void)
 {
-    if(surface)
-    {
-        glwidget->glDeleteBuffers(1,&surface);
-        surface = 0;
-        glwidget->glDeleteBuffers(1,&surface_index);
-        surface_index = 0;
-    }
 }
 bool RegionRender::load(const std::vector<tipl::vector<3,short> >& seeds, tipl::matrix<4,4>& trans,unsigned char smooth)
 {
@@ -72,8 +65,6 @@ bool RegionRender::load(const std::vector<tipl::vector<3,short> >& seeds, tipl::
         if(need_trans)
             object->point_list[index].to(trans);
     });
-    if (object->point_list.empty())
-        object.reset();
     return object.get();
 }
 
@@ -81,7 +72,6 @@ bool RegionRender::load(const tipl::image<3>& image_,
                        float threshold)
 {
     tipl::image<3> image_buffer(image_);
-
     float scale = 1.0f;
     while(image_buffer.width() > 256 || image_buffer.height() > 256 || image_buffer.depth() > 256)
     {
@@ -109,8 +99,6 @@ bool RegionRender::load(const tipl::image<3>& image_,
     object.reset(new tipl::march_cube(image_buffer,threshold));
     if (scale != 1.0f)
         tipl::multiply_constant(object->point_list,scale);
-    if(object->point_list.empty())
-        object.reset();
     return object.get();
 }
 // ---------------------------------------------------------------------------
@@ -124,17 +112,13 @@ bool RegionRender::load(unsigned int* buffer, tipl::shape<3>geo,
 
     tipl::filter::mean(re_buffer);
     object.reset(new tipl::march_cube(re_buffer, 50));
-    if (object->point_list.empty())
-        object.reset();
     return object.get();
 }
 
 void RegionRender::move_object(const tipl::vector<3,float>& shift)
 {
-    if(!object.get())
-        return;
-    tipl::add_constant(object->point_list,shift);
-
+    if(object.get())
+        tipl::add_constant(object->point_list,shift);
 }
 
 void RegionRender::trasnform_point_list(const tipl::matrix<4,4>& T)
@@ -147,42 +131,17 @@ void RegionRender::trasnform_point_list(const tipl::matrix<4,4>& T)
     });
 }
 void handleAlpha(tipl::rgb color,float alpha,int blend1,int blend2);
-void RegionRender::draw(GLWidget* glwidget_,unsigned char cur_view,float alpha,int blend1,int blend2)
+void RegionRender::draw(unsigned char cur_view,float alpha,int blend1,int blend2)
 {
-    if(!object.get())
+    if(!object.get() || object->tri_list.empty())
         return;
-    glwidget = glwidget_;
-    if(!surface)
-    {
-        surface_block_size = object->point_list.size()*3*sizeof(float);
-        glwidget->glGenBuffers(1,&surface);
-        glwidget->glBindBuffer(GL_ARRAY_BUFFER, surface);
-        glwidget->glBufferData(GL_ARRAY_BUFFER, surface_block_size/*vertices*/ + surface_block_size /*normal*/,0,GL_STATIC_DRAW);
-        glwidget->glBufferSubData(GL_ARRAY_BUFFER, 0, surface_block_size,&object->point_list[0][0]);
-        glwidget->glBufferSubData(GL_ARRAY_BUFFER, surface_block_size,surface_block_size,&object->normal_list[0][0]);
-        glwidget->glGenBuffers(1,&surface_index);
-        glwidget->glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, surface_index);
-        glwidget->glBufferData(GL_ELEMENT_ARRAY_BUFFER, object->sorted_index.size()*sizeof(unsigned int),&object->sorted_index[0],GL_STATIC_DRAW);
-        object->point_list.clear();
-        object->tri_list.clear();
-        object->normal_list.clear();
-        object->sorted_index.clear();
-    }
-
-    if(surface)
-    {
-        handleAlpha(color,alpha,blend1,blend2);
-        glwidget->glBindBuffer(GL_ARRAY_BUFFER, surface);
-        glwidget->glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, surface_index);
-        glEnableClientState(GL_VERTEX_ARRAY);
-        glEnableClientState(GL_NORMAL_ARRAY);
-        glVertexPointer(3, GL_FLOAT, 0, 0);
-        glNormalPointer(GL_FLOAT, 0, (void*)surface_block_size);
-        glDrawElements(GL_TRIANGLES, int(object->indices_count),
-                       GL_UNSIGNED_INT,(void*)(cur_view*object->indices_count*sizeof(float)));
-        glDisableClientState(GL_VERTEX_ARRAY);
-        glDisableClientState(GL_NORMAL_ARRAY);
-        glwidget->glBindBuffer(GL_ARRAY_BUFFER, 0);
-        glwidget->glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-    }
+    handleAlpha(color,alpha,blend1,blend2);
+    glEnableClientState(GL_VERTEX_ARRAY);
+    glEnableClientState(GL_NORMAL_ARRAY);
+    glVertexPointer(3, GL_FLOAT, 0, &object->point_list[0]);
+    glNormalPointer(GL_FLOAT, 0, &object->normal_list[0]);
+    glDrawElements(GL_TRIANGLES, object->sorted_index[cur_view].size(),
+                       GL_UNSIGNED_INT,&object->sorted_index[cur_view][0]);
+    glDisableClientState(GL_VERTEX_ARRAY);
+    glDisableClientState(GL_NORMAL_ARRAY);
 }

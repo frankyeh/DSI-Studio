@@ -13,14 +13,9 @@ namespace tipl{
 class GLWidget;
 // ---------------------------------------------------------------------------
 class RegionRender {
-private:
-        GLWidget* glwidget = nullptr;
-        GLuint surface = 0,surface_index = 0;
-        size_t surface_block_size = 0;
 public:
         std::shared_ptr<tipl::march_cube> object;
         tipl::vector<3,float> center;
-        void sortIndices(void);
 public:
         float alpha = 0.6f;
         tipl::rgb color = uint32_t(0x00FFFFFF);
@@ -28,7 +23,6 @@ public:
 public:
         ~RegionRender(void);
         void swap(RegionRender& rhs) {
-            std::swap(surface,rhs.surface);
             std::swap(object,rhs.object);
             std::swap(center,rhs.center);
             std::swap(alpha,rhs.alpha);
@@ -43,7 +37,7 @@ public:
         void move_object(const tipl::vector<3,float>& shift);
         void trasnform_point_list(const tipl::matrix<4,4>& T);
 public:
-        void draw(GLWidget* glwidget,unsigned char cur_view,float alpha,int blend1,int blend2);
+        void draw(unsigned char cur_view,float alpha,int blend1,int blend2);
 };
 
 #endif
