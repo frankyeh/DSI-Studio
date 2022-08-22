@@ -1396,38 +1396,20 @@ void RegionTableWidget::whole_brain(void)
 
 void RegionTableWidget::setROIs(ThreadData* data)
 {
-    int roi_count = 0;
     for (unsigned int index = 0;index < regions.size();++index)
         if (!regions[index]->region.empty() && item(int(index),0)->checkState() == Qt::Checked
-                && regions[index]->regions_feature == roi_id)
-            ++roi_count;
-    for (unsigned int index = 0;index < regions.size();++index)
-        if (!regions[index]->region.empty() && item(int(index),0)->checkState() == Qt::Checked
-                && !(regions[index]->regions_feature == roi_id && roi_count > 5) &&
-                regions[index]->regions_feature != default_id)
+                && !(regions[index]->regions_feature == roi_id) && regions[index]->regions_feature != default_id)
             data->roi_mgr->setRegions(regions[index]->region,
                                       regions[index]->dim,
                                       regions[index]->to_diffusion_space,
                                       regions[index]->regions_feature,item(int(index),0)->text().toLocal8Bit().begin());
     // auto track
-    if(cur_tracking_window.ui->target->currentIndex() > 0 &&
-       cur_tracking_window.handle->track_atlas.get())
-        data->roi_mgr->setAtlas(uint32_t(cur_tracking_window.ui->target->currentIndex()-1),
-                                cur_tracking_window["autotrack_tolerance"].toFloat());
-    if(data->roi_mgr->seeds.empty())
-        data->roi_mgr->setWholeBrainSeed(cur_tracking_window.get_fa_threshold());
-
-    if(regions.size() >= 2)
+    if(cur_tracking_window.ui->target->currentIndex() > 0)
     {
-        if(item(int(0),0)->text() == "debug")
-        {
-            regions[0]->region = data->roi_mgr->atlas_seed;
-            regions[0]->modified = true;
-            regions[1]->region = data->roi_mgr->atlas_roa;
-            regions[1]->modified = true;
-        }
+        data->roi_mgr->use_auto_track = true;
+        data->roi_mgr->track_id = cur_tracking_window.ui->target->currentIndex()-1;
+        data->roi_mgr->tolerance_dis_in_icbm152_mm = cur_tracking_window["autotrack_tolerance"].toFloat();
     }
-
 }
 
 QString RegionTableWidget::getROIname(void)
