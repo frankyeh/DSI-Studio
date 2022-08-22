@@ -266,10 +266,10 @@ std::string run_auto_track(program_option& po,const std::vector<std::string>& fi
                     ThreadData thread(handle);
                     {
                         if(!handle->load_track_atlas())
-                            return std::string("cannot load tract atlas for ") + fib_file_name;
-                        thread.param.min_length = handle->vs[0]*std::max<float>(thread.roi_mgr->tolerance_dis_in_subject_voxels,
-                                                                  (handle->tract_atlas_min_length[track_id[j]]-2.0f*thread.roi_mgr->tolerance_dis_in_subject_voxels));
-                        thread.param.max_length = handle->vs[0]*(handle->tract_atlas_max_length[track_id[j]]+2.0f*thread.roi_mgr->tolerance_dis_in_subject_voxels);
+                            return handle->error_msg + " at " + fib_file_name;
+                        thread.param.min_length = handle->vs[0]*std::max<float>(tolerance[tracking_iteration],
+                                                                   handle->tract_atlas_min_length[track_id[j]]-2.0f*tolerance[tracking_iteration])/handle->tract_atlas_jacobian;
+                        thread.param.max_length = handle->vs[0]*(handle->tract_atlas_max_length[track_id[j]]+2.0f*tolerance[tracking_iteration])/handle->tract_atlas_jacobian;
                         show_progress() << "min_length(mm): " << thread.param.min_length << std::endl;
                         show_progress() << "max_length(mm): " << thread.param.max_length << std::endl;
                         thread.param.tip_iteration = uint8_t(tip);
@@ -301,12 +301,12 @@ std::string run_auto_track(program_option& po,const std::vector<std::string>& fi
                                 continue;
                             }
                             progress::at(thread.get_total_tract_count(),thread.param.termination_count);
-                            thread.fetchTracks(&tract_model);
                             // terminate if yield rate is very low, likely quality problem
                             if(thread.get_total_seed_count() > yield_check_count &&
                                thread.get_total_tract_count() < float(thread.get_total_seed_count())*yield_rate)
                             {
-                                show_progress() << "low yield rate, terminating" << std::endl;
+                                show_progress() << "low yield rate (" << thread.get_total_tract_count() << "/" <<
+                                                    thread.get_total_seed_count() << "), terminating" << std::endl;
                                 no_result = true;
                                 thread.end_thread();
                                 break;
