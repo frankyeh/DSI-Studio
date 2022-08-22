@@ -31,7 +31,7 @@
 #include "xnat_dialog.h"
 #include "console.h"
 
-
+extern std::vector<std::string> fib_template_list;
 std::vector<tracking_window*> tracking_windows;
 MainWindow::MainWindow(QWidget *parent) :
         QMainWindow(parent),
@@ -63,6 +63,8 @@ MainWindow::MainWindow(QWidget *parent) :
 
     ui->toolBox->setCurrentIndex(0);
 
+    for(auto& temp : fib_template_list)
+        ui->fib_action->addItem(QString("Open ") + QFileInfo(temp.c_str()).baseName() + " template");
 }
 
 
@@ -294,6 +296,7 @@ void MainWindow::loadFib(QString filename,bool presentation_mode)
         tracking_windows.back()->command("presentation_mode");
     }
     else
+    if(ui->fib_action->currentIndex() == 0)
     {
         addFib(filename);
         add_work_dir(QFileInfo(filename).absolutePath());
@@ -448,6 +451,12 @@ void MainWindow::on_Reconstruction_clicked()
 
 void MainWindow::on_FiberTracking_clicked()
 {
+    if(ui->fib_action->currentIndex() > 0)
+    {
+        loadFib(fib_template_list[ui->fib_action->currentIndex()-1].c_str());
+        return;
+    }
+
     QString filename = QFileDialog::getOpenFileName(
                            this,
                            "Open Fib files",
