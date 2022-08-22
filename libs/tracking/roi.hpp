@@ -263,7 +263,7 @@ public:
         const auto& tract_name = handle->tractography_name_list[size_t(track_id)];
 
         {
-            report += " A tractography atlas (Yeh et al., Neuroimage 178, 57-68, 2018) was used to automatically identify ";
+            report += " A tractography atlas (Yeh, Nat Commun 13, 4933, 2022) was used to automatically identify ";
             report += tract_name;
             report += "  with a distance tolerance of ";
             report += std::to_string(tolerance_dis_in_icbm152_mm);
