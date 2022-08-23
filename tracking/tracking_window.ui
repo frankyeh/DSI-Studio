@@ -1147,8 +1147,6 @@
     <property name="title">
      <string>Analysis</string>
     </property>
-    <addaction name="actionAdd_Tracking_Metrics"/>
-    <addaction name="separator"/>
     <addaction name="actionQuality_Assessment"/>
     <addaction name="actionFIB_protocol"/>
     <addaction name="separator"/>
