@@ -427,6 +427,11 @@ void GLWidget::initializeGL()
         QMessageBox::critical(this,"ERROR","System has no OpenGL support. 3D visualization is disabled. Please update or install graphic card driver.");
         return;
     }
+    show_progress() << "openGL information" << std::endl;
+    show_progress() << "version:" << glGetString(GL_VERSION) << std::endl;
+    show_progress() << "vender:" << glGetString(GL_VENDOR) << std::endl;
+    show_progress() << "renderer:" << glGetString(GL_RENDERER) << std::endl;
+
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_NORMALIZE);
     glColorMaterial(GL_FRONT_AND_BACK, GL_DIFFUSE);
@@ -619,7 +624,7 @@ void GLWidget::renderLR()
         {
             odf_dim = cur_tracking_window.cur_dim;
             odf_slide_pos = current_slice->slice_pos[cur_tracking_window.cur_dim];
-            odf_points.clear();            
+            odf_points.clear();
         }
 
         std::shared_ptr<fib_data> handle = cur_tracking_window.handle;
