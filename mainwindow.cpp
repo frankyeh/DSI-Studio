@@ -278,15 +278,6 @@ void MainWindow::loadFib(QString filename,bool presentation_mode)
             QMessageBox::information(this,"ERROR",new_handle->error_msg.c_str());
         return;
     }
-    if(new_handle->has_high_reso)
-    {
-        int result = QMessageBox::information(this,"DSI Studio","The FIB has large image data. Use surrogate interface to speed up?",
-                                 QMessageBox::Yes|QMessageBox::No|QMessageBox::Cancel);
-        if(result == QMessageBox::Cancel)
-            return;
-        if(result == QMessageBox::No)
-            new_handle = new_handle->high_reso;
-    }
     tracking_windows.push_back(new tracking_window(this,new_handle));
     tracking_windows.back()->setAttribute(Qt::WA_DeleteOnClose);
     tracking_windows.back()->setWindowTitle(filename);
