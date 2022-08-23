@@ -139,7 +139,7 @@ bool CustomSliceModel::initialize(const std::vector<std::string>& files,bool is_
     // QSDR loaded, use MNI transformation instead
     bool has_transform = false;
     source_file_name = files[0].c_str();
-    name = QFileInfo(files[0].c_str()).completeBaseName().remove(".nii").toStdString();
+    name = QFileInfo(files[0].c_str()).baseName().toStdString();
 
     // picture as slice
     if(QFileInfo(files[0].c_str()).suffix() == "bmp" ||
