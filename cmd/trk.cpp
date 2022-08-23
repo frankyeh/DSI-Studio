@@ -619,34 +619,39 @@ int trk(program_option& po,std::shared_ptr<fib_data> handle)
     }
     if (po.has("dt_threshold_index"))
     {
-        std::string dt_index = po.get("dt_threshold_index");
-        if(!handle->dir.set_dt_index(dt_index))
+        // allow adding other slices for creating new metrics
         {
-            if(dt_index.find('-') == std::string::npos)
-            {
-                show_progress() << "ERROR: cannot find the dt index" << dt_index << std::endl;
-                return 1;
-            }
-
             if(po.has("subject_demo"))
                 handle->demo = po.get("subject_demo");
-
-            // allow adding other slices for creating new metrics
             if(po.has("other_slices") && !check_other_slices(po.get("other_slices"),handle))
                 return 1;
-
-            show_progress() << "adding " << dt_index << " as a new metrics" << std::endl;
-            if(!handle->add_dT_index(po.get("dt_threshold_index")))
-            {
-                show_progress() << "ERROR:" << handle->error_msg << std::endl;
-                return 1;
-            }
-            if(!handle->dir.set_dt_index(dt_index))
-            {
-                show_progress() << "ERROR: failed to add new dt metrics" << std::endl;
-                return 1;
-            }
         }
+
+        std::string dt_threshold_index = po.get("dt_threshold_index");
+        auto sep = dt_threshold_index.find('-');
+        if(sep == std::string::npos)
+        {
+            show_progress() << "ERROR: invalid dt_threshold_index " << std::endl;
+            return 1;
+        }
+        auto metric1 = dt_threshold_index.substr(0,sep);
+        auto metric2 = dt_threshold_index.substr(sep+1);
+        show_progress() << "metric 1:" << metric1 << std::endl;
+        show_progress() << "metric 2:" << metric2 << std::endl;
+
+        int metric_i = (metric1 == "0" ? -1 : int(handle->get_name_index(metric1)));
+        if(metric_i == handle->view_item.size())
+        {
+            show_progress() << "ERROR: invalid dt_threshold_index metric1 " << metric1 << std::endl;
+            return 1;
+        }
+        int metric_j = (metric2 == "0" ? -1 : int(handle->get_name_index(metric2)));
+        if(metric_j == handle->view_item.size())
+        {
+            show_progress() << "ERROR: invalid dt_threshold_index metric2 " << metric2 << std::endl;
+            return 1;
+        }
+        handle->set_dt_index(std::make_pair(metric_i,metric_j),po.get("dt_threshold_type",0));
     }
     if(po.has("template"))
     {
@@ -670,8 +675,8 @@ int trk(program_option& po,std::shared_ptr<fib_data> handle)
         tracking_thread.param.cull_cos_angle = float(std::cos(po.get("turning_angle",0.0)*3.14159265358979323846/180.0));
         tracking_thread.param.step_size = po.get("step_size",0.0f);
         tracking_thread.param.smooth_fraction = po.get("smoothing",0.0f);
-        tracking_thread.param.min_length = po.get("min_length",30.0f);
-        tracking_thread.param.max_length = std::max<float>(tracking_thread.param.min_length,po.get("max_length",300.0f));
+        tracking_thread.param.min_length = po.get("min_length",handle->min_length());
+        tracking_thread.param.max_length = std::max<float>(tracking_thread.param.min_length,po.get("max_length",handle->max_length()));
 
         tracking_thread.param.tracking_method = uint8_t(po.get("method",int(0)));
         tracking_thread.param.check_ending = uint8_t(po.get("check_ending",int(0))) && !(po.has("dt_threshold_index"));

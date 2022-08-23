@@ -271,6 +271,10 @@ void slice_view_scene::show_ruler(QPainter& paint,std::shared_ptr<SliceModel> cu
 }
 void slice_view_scene::show_fiber(QPainter& painter,std::shared_ptr<SliceModel> current_slice,const tipl::color_image& slice_image,unsigned char cur_dim)
 {
+    if((cur_tracking_window["dt_index1"].toInt() != 0 || cur_tracking_window["dt_index2"].toInt() != 0 )
+            && cur_tracking_window.handle->dir.dt_fa.empty())
+            return;
+
     float display_ratio = cur_tracking_window.get_scene_zoom(current_slice);
     float r = display_ratio * cur_tracking_window["roi_fiber_length"].toFloat();
     float pen_w = display_ratio * cur_tracking_window["roi_fiber_width"].toFloat();
@@ -289,7 +293,9 @@ void slice_view_scene::show_fiber(QPainter& painter,std::shared_ptr<SliceModel> 
 
     int roi_fiber = cur_tracking_window["roi_fiber"].toInt();
     float threshold = cur_tracking_window.get_fa_threshold();
-    float threshold2 = cur_tracking_window["dt_index"].toInt() ? cur_tracking_window["dt_threshold"].toFloat() : 0.0f;
+    float threshold2 = cur_tracking_window.handle->dir.dt_fa.empty() ?
+                        0.0f:cur_tracking_window["dt_threshold"].toFloat();
+
     if (threshold == 0.0f)
         threshold = 0.00000001f;
     int X(0),Y(0),Z(0);

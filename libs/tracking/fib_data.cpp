@@ -136,6 +136,14 @@ tipl::const_pointer_image<3,float> item::get_image(void)
     return image_data;
 }
 
+void item::get_image_in_dwi(tipl::image<3>& I)
+{
+    if(iT != tipl::identity_matrix())
+        tipl::resample_mt(get_image(),I,tipl::transformation_matrix<float>(iT));
+    else
+        I = get_image();
+}
+
 void fiber_directions::check_index(unsigned int index)
 {
     if (fa.size() <= index)
@@ -272,14 +280,6 @@ bool fiber_directions::add_data(gz_mat_read& mat_reader)
                 --index;
                 break;
             }
-
-        // identify dt indices
-        if(index_name[index].find("inc_") == 0 ||
-           index_name[index].find("dec_") == 0)
-        {
-            dt_index_name.push_back(index_name[index]);
-            dt_index_data.push_back(index_data[index]);
-        }
     }
     return num_fiber;
 }
@@ -297,30 +297,7 @@ bool fiber_directions::set_tracking_index(const std::string& name)
 {
     return set_tracking_index(std::find(index_name.begin(),index_name.end(),name)-index_name.begin());
 }
-bool fiber_directions::set_dt_index(int new_index)
-{
-    if(new_index >= dt_index_data.size() || new_index < 0)
-    {
-        dt_fa.clear();
-        return false;
-    }
-    dt_fa = dt_index_data[new_index];
-    dt_cur_index = new_index;
-    return true;
-}
-bool fiber_directions::set_dt_index(const std::string& name)
-{
-    return set_dt_index(std::find(dt_index_name.begin(),dt_index_name.end(),name)-dt_index_name.begin());
-}
-void fiber_directions::add_dt_index(const std::string& name,tipl::image<3>&& I)
-{
-    new_dT.push_back(std::make_shared<tipl::image<3> >());
-    new_dT.back()->swap(I);
-    std::vector<const float*> new_ptr(num_fiber);
-    std::fill(new_ptr.begin(),new_ptr.end(),&*new_dT.back()->begin());
-    dt_index_data.push_back(new_ptr);
-    dt_index_name.push_back(name);
-}
+
 
 tipl::vector<3> fiber_directions::get_fib(size_t space_index,unsigned int order) const
 {
@@ -384,9 +361,11 @@ void tracking_data::read(std::shared_ptr<fib_data> fib)
     if(!fib->dir.index_name.empty())
         threshold_name = fib->dir.get_threshold_name();
     if(!dt_fa.empty())
-        dt_threshold_name = fib->dir.get_dt_threshold_name();
+    {
+        dt_fa_data = fib->dir.dt_fa_data;
+        dt_threshold_name = fib->dir.dt_threshold_name;
+    }
 }
-
 
 bool tracking_data::is_white_matter(const tipl::vector<3,float>& pos,float t) const
 {
@@ -959,9 +938,7 @@ bool fib_data::load_from_mat(void)
     }
 
     {
-        tipl::matrix<4,4,float> ind;
-        ind.identity();
-        if(trans_to_mni == ind)
+        if(trans_to_mni == tipl::identity_matrix())
             initial_LPS_nifti_srow(trans_to_mni,dim,vs);
     }
 
@@ -1115,60 +1092,61 @@ void fib_data::get_index_list(std::vector<std::string>& index_list) const
             index_list.push_back(view_item[index].name);
 }
 
-bool fib_data::add_dT_index(const std::string& index_name)
+bool fib_data::set_dt_index(const std::pair<int,int>& pair,size_t type)
 {
-    std::string metrics;
-    tipl::matrix<4,4> ind;
-    ind.identity();
-    for(size_t i = 0;i < view_item.size();++i)
+    tipl::image<3> I(dim),J(dim);
+    std::string name;
+    int i = pair.first;
+    int j = pair.second;
+    if(i >= 0 && i < view_item.size())
     {
-        if(i)
-            metrics += ",";
-        metrics += view_item[i].name;
-        // find if the prefix of index_name matches the name of the index
-        if(index_name.length() <= view_item[i].name.length() ||
-           index_name.find(view_item[i].name) != 0 ||
-           index_name[view_item[i].name.length()] != '-')
-            continue;
-        std::string post_fix = index_name.substr(view_item[i].name.length()+1);
-        for(size_t j = 0;j < view_item.size();++j)
-            if(post_fix == view_item[j].name)
-            {
-                if(view_item[i].registering || view_item[j].registering)
-                {
-                    error_msg = "Registration undergoing. Please wait until registration complete.";
-                    return false;
-                }
-                tipl::image<3> I(dim),J(dim);
-                if(J.shape() != dim || view_item[j].iT != ind)
-                    tipl::resample_mt(view_item[j].get_image(),J,tipl::transformation_matrix<float>(view_item[j].iT));
-                else
-                    J = view_item[j].get_image();
-
-                if(I.shape() != dim || view_item[i].iT != ind)
-                    tipl::resample_mt(view_item[i].get_image(),I,tipl::transformation_matrix<float>(view_item[i].iT));
-                else
-                    I = view_item[i].get_image();
-
-                tipl::image<3> new_metrics(dim);
-                show_progress() << "new metric: (" << view_item[i].name << " - " << view_item[j].name << ")/" << view_item[i].name << " x 100%" << std::endl;
-                {
-                    for(size_t k = 0;k < I.size();++k)
-                        if(dir.fa[0][k] > 0.0f && I[k] > 0.0f && J[k] > 0.0f)
-                            new_metrics[k] = 1.0f-J[k]/I[k];
-                }
-                dir.add_dt_index(index_name,std::move(new_metrics));
-                return true;
-            }
-        error_msg = "cannot find ";
-        error_msg += post_fix;
-        error_msg += " among ";
-        error_msg += metrics;
-        return false;
+        if(view_item[i].registering)
+        {
+            error_msg = "Registration undergoing. Please wait until registration complete.";
+            return false;
+        }
+        name += view_item[i].name;
+        view_item[i].get_image_in_dwi(I);
     }
-    error_msg = "cannot find matched metrics among ";
-    error_msg += metrics;
-    return false;
+
+    if(j >= 0 && j < view_item.size())
+    {
+        if(view_item[j].registering)
+        {
+            error_msg = "Registration undergoing. Please wait until registration complete.";
+            return false;
+        }
+        name += "-";
+        name += view_item[j].name;
+        view_item[j].get_image_in_dwi(J);
+    }
+    if(name.empty())
+    {
+        dir.dt_fa.clear();
+        dir.dt_threshold_name.clear();
+        return true;
+    }
+
+    std::shared_ptr<tipl::image<3> > new_metrics(new tipl::image<3>(dim));
+    auto& K = (*new_metrics);
+    switch(type)
+    {
+        case 0:
+            for(size_t k = 0;k < I.size();++k)
+                if(dir.fa[0][k] > 0.0f && I[k] > 0.0f && J[k] > 0.0f)
+                    K[k] = 1.0f-J[k]/I[k];
+        break;
+        case 1: // m1-m2
+            for(size_t k = 0;k < I.size();++k)
+                if(dir.fa[0][k] > 0.0f && I[k] > 0.0f && J[k] > 0.0f)
+                    K[k] = I[k]-J[k];
+        break;
+    }
+
+    dir.dt_fa_data = new_metrics;
+    dir.dt_fa = std::vector<const float*>(size_t(dir.num_fiber),(const float*)&K[0]);
+    dir.dt_threshold_name = name;
+    return true;
 }
 
 

@@ -72,6 +72,7 @@ public:
     connectometry_result cnt_result;
 public:
     std::shared_ptr<QTimer> timer2;
+    std::pair<int,int> get_dt_index_pair(void);
     void set_tracking_param(ThreadData& tracking_thread);
 public:
     std::shared_ptr<tract_report> tact_report_imp;
@@ -90,9 +91,7 @@ public:
     QVariant operator[](QString name)const;
     void set_data(QString name, QVariant value);
     void on_tracking_index_currentIndexChanged(int index);
-    void on_dt_index_currentIndexChanged(int index);
     QString get_save_file_name(QString title,QString file_name,QString file_type);
-    void initialize_tracking_index(int index);
     void report(QString string);
     void move_slice_to(tipl::vector<3,float> pos);
     bool map_to_mni(void);
@@ -204,7 +203,6 @@ private slots:
     void on_show_track_toggled(bool checked);
     void on_actionInsert_Sagittal_Picture_triggered();
     void on_template_box_currentIndexChanged(int index);
-    void on_actionAdd_Tracking_Metrics_triggered();
     void on_actionManual_Atlas_Alignment_triggered();
 };
 

@@ -506,9 +506,40 @@ void RenderingTableWidget::dataChanged(const QModelIndex &, const QModelIndex &b
         cur_tracking_window.on_tracking_index_currentIndexChanged(cur_node->value.toInt());
         return;
     }
-    if(cur_node->id == "dt_index")
+    if(cur_node->id == "dt_index1" || cur_node->id == "dt_index2")
     {
-        cur_tracking_window.on_dt_index_currentIndexChanged(cur_node->value.toInt());
+        if(cur_node->id == "dt_index1" && getData("dt_index1").toInt() > 0)
+        {
+            auto& view_item = cur_tracking_window.handle->view_item;
+            auto dt_name1 = view_item[getData("dt_index1").toInt()-1].name;
+            // search comparing metrics by inclusion
+            for(size_t i = 0;i < view_item.size();++i)
+            {
+                auto name = view_item[i].name;
+                if(name != dt_name1 && (dt_name1.find(name) != std::string::npos ||
+                                        name.find(dt_name1) != std::string::npos))
+                {
+                    setData("dt_index2",i+1);
+                    break;
+                }
+            }
+            // search comparing metrics by common prefix
+            for(size_t i = 0;i < view_item.size();++i)
+            {
+                auto name = view_item[i].name;
+                if(name != dt_name1 && dt_name1.substr(0,2) == name.substr(0,2))
+                {
+                    setData("dt_index2",i+1);
+                    break;
+                }
+            }
+
+        }
+        setData("tracking_plan",0); // use seed instead of tracks for dT
+        setData("track_count",1000000);
+        setData("check_ending",0); // no check ending
+        cur_tracking_window.handle->dir.dt_fa.clear(); // avoid slice showing previous dt
+        cur_tracking_window.slice_need_update = true;
         return;
     }
     if(cur_node->id == "roi_zoom")

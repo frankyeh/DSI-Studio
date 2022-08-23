@@ -40,17 +40,9 @@ public:
     unsigned int half_odf_size;
     std::string error_msg;
 public: // for differential tractography
-    std::vector<std::shared_ptr<tipl::image<3> > > new_dT;
+    std::shared_ptr<tipl::image<3> > dt_fa_data;
     std::vector<const float*> dt_fa;
-    std::vector<std::string> dt_index_name;
-    std::vector<std::vector<const float*> > dt_index_data;
-    int dt_cur_index = 0;
-
-    bool is_dt(void)const{return !dt_fa.empty();}
-    bool set_dt_index(int new_index);
-    bool set_dt_index(const std::string& name);
-    std::string get_dt_threshold_name(void) const{return dt_fa.empty() ? std::string() : dt_index_name[uint32_t(dt_cur_index)];}
-    void add_dt_index(const std::string& name,tipl::image<3>&& I);
+    std::string dt_threshold_name;
 public:
     void check_index(unsigned int index);
     bool add_data(gz_mat_read& mat_reader);
@@ -77,6 +69,7 @@ public:
     std::vector<const float*> dt_fa;
     std::vector<const short*> findex;
     std::vector<tipl::vector<3,float> > odf_table;
+    std::shared_ptr<tipl::image<3> > dt_fa_data;
 
     const tracking_data& operator=(const tracking_data& rhs) = delete;
 public:
@@ -186,6 +179,7 @@ public:
         image_ready = false;
     }
     tipl::const_pointer_image<3> get_image(void);
+    void get_image_in_dwi(tipl::image<3>& I);
     void set_image(tipl::const_pointer_image<3> new_image){image_data = new_image;}
 public:
     std::string name;
@@ -242,6 +236,19 @@ public:
     bool is_mni_image = false;
     bool is_template_space = false;
     bool trackable = true;
+    float min_length(void) const
+    {
+        float min_length = dim[0]*vs[0]/4;
+        float min_length_digit = float(std::pow(10.0f,std::floor(std::log10(double(min_length)))));
+        return int(min_length/min_length_digit)*min_length_digit;
+
+    }
+    float max_length(void) const
+    {
+        float max_length = dim[1]*vs[1]*1.5;
+        float max_length_digit = float(std::pow(10.0f,std::floor(std::log10(double(max_length)))));
+        return int(max_length/max_length_digit)*max_length_digit;
+    }
 public:
     fiber_directions dir;
     connectometry_db db;
@@ -350,7 +357,7 @@ public:
     size_t get_name_index(const std::string& index_name) const;
     void get_index_list(std::vector<std::string>& index_list) const;
 public:
-    bool add_dT_index(const std::string& index_name);
+    bool set_dt_index(const std::pair<int,int>& pair,size_t type);
 public:
     std::pair<float,float> get_value_range(const std::string& view_name) const;
     void get_slice(unsigned int view_index,

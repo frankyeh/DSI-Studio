@@ -151,7 +151,6 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
             ui->SliceModality->clear();
             for (unsigned int index = 0;index < fib.view_item.size(); ++index)
                 ui->SliceModality->addItem(fib.view_item[index].name.c_str());
-            ui->SliceModality->setCurrentIndex(-1);
             updateSlicesMenu();
         }
         show_progress() << "prepare template and atlases" << std::endl;
@@ -165,35 +164,32 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
                     addSlices(QStringList() << QString(handle->wm_template_file_name.c_str()),"wm",true);
             }
             // setup fa threshold
-            initialize_tracking_index(0);
+            {
+                QStringList tracking_index_list;
+                for(size_t index = 0;index < handle->dir.index_name.size();++index)
+                    if(handle->dir.index_name[index].find("dec_") != 0 &&
+                       handle->dir.index_name[index].find("inc_") != 0)
+                        tracking_index_list.push_back(handle->dir.index_name[index].c_str());
+                renderWidget->setList("tracking_index",tracking_index_list);
+            }
 
             if(handle->is_histology || handle->dim[0] > 1024)
             {
                 set_data("fa_threshold",0.1f);
                 set_data("step_size",handle->vs[0]*2.0f);
-
                 set_data("turning_angle",15);
                 set_data("tube_diameter",1.0f);
-
                 set_data("track_count",50000);
-                set_data("min_length",handle->vs[0]*10.0f);
-                set_data("max_length",handle->vs[0]*handle->dim[0]*2.0f);
-
             }
             else
             {
                 set_data("fa_threshold",0.0f);
                 set_data("step_size",0.0f);
                 set_data("turning_angle",0.0f);
-                set_data("tube_diameter",0.15f);
-                float largest_span = std::max(std::max(handle->dim[0]*handle->vs[0],handle->dim[1]*handle->vs[1]),handle->dim[2]*handle->vs[2]);
-                float min_length = largest_span/10.0f;
-                float min_length_digit = float(std::pow(10.0f,std::floor(std::log10(double(min_length)))));
-                float max_length = largest_span*1.5f;
-                float max_length_digit = float(std::pow(10.0f,std::floor(std::log10(double(max_length)))));
-                set_data("min_length",int(min_length/min_length_digit)*min_length_digit);
-                set_data("max_length",int(max_length/max_length_digit)*max_length_digit);
+                set_data("tube_diameter",0.15f);                
             }
+            set_data("min_length",handle->min_length());
+            set_data("max_length",handle->max_length());
         }
 
 
@@ -861,24 +857,6 @@ bool tracking_window::command(QString cmd,QString param,QString param2)
     return false;
 }
 
-void tracking_window::initialize_tracking_index(int p)
-{
-    QStringList tracking_index_list,dt_list;
-    dt_list << "none";
-    for(size_t index = 0;index < handle->dir.index_name.size();++index)
-        if(handle->dir.index_name[index].find("dec_") != 0 &&
-           handle->dir.index_name[index].find("inc_") != 0)
-            tracking_index_list.push_back(handle->dir.index_name[index].c_str());
-    for(size_t index = 0;index < handle->dir.dt_index_name.size();++index)
-        dt_list.push_back(handle->dir.dt_index_name[index].c_str());
-
-    renderWidget->setList("tracking_index",tracking_index_list);
-    renderWidget->setList("dt_index",dt_list);
-    set_data("tracking_index",p);
-    set_data("dt_index",0);
-    on_tracking_index_currentIndexChanged(p);
-    scene.center();
-}
 void tracking_window::update_scene_slice(void)
 {
     slice_need_update = true;
@@ -956,7 +934,12 @@ bool tracking_window::eventFilter(QObject *obj, QEvent *event)
     ui->statusbar->showMessage(status);
     return false;
 }
-
+std::pair<int,int> tracking_window::get_dt_index_pair(void)
+{
+    int metric_i = renderWidget->getData("dt_index1").toInt(); //0: none
+    int metric_j = renderWidget->getData("dt_index2").toInt(); //0: none
+    return std::make_pair(metric_i-1,metric_j-1);
+}
 void tracking_window::set_tracking_param(ThreadData& tracking_thread)
 {
     tracking_thread.param.threshold = renderWidget->getData("fa_threshold").toFloat();
@@ -976,8 +959,9 @@ void tracking_window::set_tracking_param(ThreadData& tracking_thread)
             // only used in automatic fiber tracking
             (ui->target->currentIndex() > 0 ||
             // or differential tractography
-            renderWidget->getData("dt_index").toInt() > 0)
+            renderWidget->getData("dt_index1").toInt() > 0)
             ? renderWidget->getData("auto_tip").toInt() : 0;
+
 }
 float tracking_window::get_scene_zoom(std::shared_ptr<SliceModel> slice)
 {
@@ -1277,18 +1261,6 @@ void tracking_window::on_tracking_index_currentIndexChanged(int index)
                  renderWidget->getData("otsu_threshold").toFloat()*handle->dir.fa_otsu);
     slice_need_update = true;
 }
-
-void tracking_window::on_dt_index_currentIndexChanged(int index)
-{
-    handle->dir.set_dt_index(index-1); // skip the first "none" item
-    set_data("min_length",30);
-    set_data("tracking_plan",0); // use seed instead of tracks for dT
-    set_data("track_count",1000000);
-    set_data("check_ending",0); // no check ending
-    slice_need_update = true;
-}
-
-
 
 void tracking_window::on_deleteSlice_clicked()
 {
@@ -1860,6 +1832,14 @@ void tracking_window::updateSlicesMenu(void)
 
     // update along track color dialog
     color_bar->update_slice_indices();
+
+    // update dt metric menu
+    QStringList dt_list;
+    dt_list << "zero";
+    for (auto& item : handle->view_item)
+        dt_list << item.name.c_str();
+    renderWidget->setList("dt_index1",dt_list);
+    renderWidget->setList("dt_index2",dt_list);
 }
 
 void tracking_window::on_actionInsert_MNI_images_triggered()
@@ -1879,6 +1859,7 @@ void tracking_window::on_actionInsert_MNI_images_triggered()
     }
     slices.push_back(new_slice);
     ui->SliceModality->addItem(reg_slice_ptr->name.c_str());
+    updateSlicesMenu();
     ui->SliceModality->setCurrentIndex(int(handle->view_item.size())-1);
     set_data("show_slice",Qt::Checked);
     ui->glSagCheck->setChecked(true);
@@ -1903,7 +1884,7 @@ bool tracking_window::addSlices(QStringList filenames,QString name,bool cmd)
     }
     slices.push_back(new_slice);
     ui->SliceModality->addItem(name);
-
+    updateSlicesMenu();
     if(!timer2.get() && reg_slice_ptr->running)
     {
         timer2.reset(new QTimer());
@@ -1913,7 +1894,6 @@ bool tracking_window::addSlices(QStringList filenames,QString name,bool cmd)
         check_reg();
     }
     ui->SliceModality->setCurrentIndex(int(handle->view_item.size())-1);
-    updateSlicesMenu();
     if(!cmd)
     {
         set_data("show_slice",Qt::Checked);
@@ -2673,31 +2653,6 @@ void tracking_window::on_template_box_currentIndexChanged(int index)
     ui->target->setVisible(false);
     ui->target_label->setVisible(false);
 }
-
-
-void tracking_window::on_actionAdd_Tracking_Metrics_triggered()
-{
-    QString text = QInputDialog::getText(this,"Specify metrics name",
-                                         "metrics for differential tracking (e.g., qa_post-qa)",
-                                         QLineEdit::Normal,ui->SliceModality->currentText());
-    if(text.isEmpty())
-        return;
-    if(!handle->add_dT_index(text.toStdString()))
-    {
-        QMessageBox::critical(this,"ERROR",handle->error_msg.c_str());
-        return;
-    }
-    QStringList dt_list;
-    dt_list << "none";
-    for(size_t index = 0;index < handle->dir.dt_index_name.size();++index)
-        dt_list.push_back(handle->dir.dt_index_name[index].c_str());
-    renderWidget->setList("dt_index",dt_list);
-    set_data("dt_index",int(handle->dir.dt_index_name.size())-1);
-    scene.center();
-    QMessageBox::information(this,"DSI Studio","New metric added");
-}
-
-
 
 void tracking_window::on_actionManual_Atlas_Alignment_triggered()
 {

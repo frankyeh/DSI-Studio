@@ -201,25 +201,28 @@ void TractTableWidget::addConnectometryResults(std::vector<std::vector<std::vect
 
 void TractTableWidget::start_tracking(void)
 {
-    bool auto_track = cur_tracking_window.ui->target->currentIndex() > 0;
-    bool dT = cur_tracking_window.handle->dir.is_dt();
-    if(auto_track)
+    if(!cur_tracking_window.handle->set_dt_index(
+            cur_tracking_window.get_dt_index_pair(),
+            cur_tracking_window.renderWidget->getData("dt_threshold_type").toInt()))
     {
-        if(dT)
-        {
-            QMessageBox::critical(this,"Error","Differential tractography cannot be comabined with automated tractography. Use regions instead");
-            return;
-        }
-        addNewTracts(cur_tracking_window.ui->target->currentText());
+        QMessageBox::critical(this,"ERROR",cur_tracking_window.handle->error_msg.c_str());
+        return;
     }
-    else
+
+    QString tract_name = cur_tracking_window.regionWidget->getROIname();
+
+    // if running differential tracking
+    if(!cur_tracking_window.handle->dir.dt_fa.empty())
     {
-        if(dT)
-            addNewTracts(QString(cur_tracking_window.handle->dir.get_dt_threshold_name().c_str())+"_"+
-                         QString::number(cur_tracking_window["dt_threshold"].toDouble()));
-        else
-            addNewTracts(cur_tracking_window.regionWidget->getROIname());
+        cur_tracking_window.ui->target->setCurrentIndex(0);
+        tract_name = QString(cur_tracking_window.handle->dir.dt_threshold_name.c_str())+"_"+
+                     QString::number(cur_tracking_window["dt_threshold"].toDouble());
     }
+    // if running autotrack
+    if(cur_tracking_window.ui->target->currentIndex() > 0) // auto track
+        tract_name = cur_tracking_window.ui->target->currentText();
+
+    addNewTracts(tract_name);
     thread_data.back() = std::make_shared<ThreadData>(cur_tracking_window.handle);
     cur_tracking_window.set_tracking_param(*thread_data.back());
     cur_tracking_window.regionWidget->setROIs(thread_data.back().get());
