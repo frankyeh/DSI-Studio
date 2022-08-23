@@ -32,7 +32,7 @@ public:
     GLUquadricObj* get(void) {return ptr;}
 };
 
-class GLWidget :  public QOpenGLWidget, public QOpenGLFunctions_3_3_Core
+class GLWidget :  public QOpenGLWidget, public QOpenGLFunctions   // MAC crash on QOpenGLFunctions_3_3_Core
 {
 Q_OBJECT
 
