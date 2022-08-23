@@ -251,10 +251,16 @@ void TractRenderData::draw(GLWidget* glwidget)
         glVertexPointer(3, GL_FLOAT, stride, &tube_vertices[0]);
         glNormalPointer(GL_FLOAT, stride, &tube_vertices[0]+3);
         glColorPointer(3, GL_FLOAT, stride, &tube_vertices[0]+6);
+
+        for(size_t i = 0;i < tube_strip_size.size();++i)
+            glDrawArrays(GL_TRIANGLE_STRIP,tube_strip_pos[i],tube_strip_size[i]);
+
+        /*
         glwidget->glMultiDrawArrays(GL_TRIANGLE_STRIP,
                             &tube_strip_pos[0],
                             &tube_strip_size[0],
                             tube_strip_size.size());
+                            */
         glDisableClientState(GL_VERTEX_ARRAY);  // disable vertex arrays
         glDisableClientState(GL_COLOR_ARRAY);
         glDisableClientState(GL_NORMAL_ARRAY);
@@ -267,10 +273,14 @@ void TractRenderData::draw(GLWidget* glwidget)
         GLsizei stride = 6*sizeof(float);
         glVertexPointer(3, GL_FLOAT, stride, &line_vertices[0]);
         glColorPointer(3, GL_FLOAT, stride, &line_vertices[0]+3);
-        glwidget->glMultiDrawArrays(GL_LINE_STRIP,
+        for(size_t i = 0;i < line_strip_size.size();++i)
+            glDrawArrays(GL_LINE_STRIP,line_strip_pos[i],line_strip_size[i]);
+
+        /*glwidget->glMultiDrawArrays(GL_LINE_STRIP,
                             &line_strip_pos[0],
                             &line_strip_size[0],
-                            line_strip_size.size());
+                            line_strip_size.size());*/
+
         glDisableClientState(GL_VERTEX_ARRAY);  // disable vertex arrays
         glDisableClientState(GL_COLOR_ARRAY);
     }
