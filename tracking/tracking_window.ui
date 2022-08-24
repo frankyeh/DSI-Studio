@@ -1270,8 +1270,11 @@
     <addaction name="actionReconnect_Tracts"/>
     <addaction name="actionResample_Step_Size"/>
     <addaction name="separator"/>
+    <addaction name="actionOpen_Cluster_Colors"/>
+    <addaction name="actionSave_Cluster_Colors"/>
     <addaction name="actionSet_Color"/>
     <addaction name="actionAssign_Colors_For_Each"/>
+    <addaction name="separator"/>
     <addaction name="actionOpen_Colors"/>
     <addaction name="actionOpen_Tract_Property"/>
     <addaction name="actionSave_Tracts_Colors_As"/>
@@ -3023,7 +3026,7 @@ Tracking</string>
   </action>
   <action name="actionSet_Color">
    <property name="text">
-    <string>Set Tract Color...</string>
+    <string>Aissgn Color to Current Cluster...</string>
    </property>
   </action>
   <action name="actionSave_Tracts_Colors_As">
@@ -3858,7 +3861,7 @@ Tracking</string>
   </action>
   <action name="actionAssign_Colors_For_Each">
    <property name="text">
-    <string>Assign Colors</string>
+    <string>Assign Colors to All Clusters</string>
    </property>
   </action>
   <action name="actionUncheck_All_Devices">
@@ -4073,6 +4076,24 @@ Tracking</string>
   <action name="actionManual_Atlas_Alignment">
    <property name="text">
     <string>Manual Atlas Alignment...</string>
+   </property>
+  </action>
+  <action name="actionOpen_Cluster_Colors">
+   <property name="icon">
+    <iconset resource="../icons.qrc">
+     <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+   </property>
+   <property name="text">
+    <string>Open Cluster Colors...</string>
+   </property>
+  </action>
+  <action name="actionSave_Cluster_Colors">
+   <property name="icon">
+    <iconset resource="../icons.qrc">
+     <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
+   </property>
+   <property name="text">
+    <string>Save Cluster Colors...</string>
    </property>
   </action>
  </widget>
