@@ -1052,6 +1052,8 @@ bool fib_data::resample_to(float resolution)
     mat_reader.read("dimension",dim);
     mat_reader.read("voxel_size",vs);
     mat_reader.read("trans",trans_to_mni);
+    for(auto& item : view_item)
+        item.set_image(tipl::make_image(item.get_image().begin(),dim));
     return true;
 }
 size_t match_volume(float volume);
