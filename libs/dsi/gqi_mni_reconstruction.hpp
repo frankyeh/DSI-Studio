@@ -199,7 +199,7 @@ public:
         {
             show_progress() << "partial reconstruction" << std::endl;
             tipl::vector<3,int> bmin,bmax;
-            tipl::bounding_box(VG,bmin,bmax,0.0f);
+            tipl::bounding_box(VG,bmin,bmax);
             for(unsigned char dim = 0;dim < 3;++dim)
             {
                 bmin[dim] = std::max<int>(0,bmin[dim]-5);
