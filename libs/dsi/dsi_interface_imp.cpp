@@ -110,6 +110,7 @@ bool ImageModel::reconstruction(void)
         // correct for b-table orientation
         if(voxel.check_btable)
         {
+            voxel.step_report << "[Step T2b][Check b-table]=1" << std::endl;
             std::string result = check_b_table();
             if(progress::aborted())
                 return false;
