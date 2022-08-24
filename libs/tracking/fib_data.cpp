@@ -1249,10 +1249,20 @@ void fib_data::get_iso_fa(tipl::image<3>& iso_fa_) const
     if(view_item.size() == index)
         index = 0;
     tipl::image<3> fa_(view_item[0].get_image()),iso_(view_item[index].get_image());
-    tipl::normalize(fa_,2.0f);
+    tipl::normalize(fa_);
     tipl::normalize(iso_);
     fa_ += iso_;
     iso_fa_.swap(fa_);
+}
+
+void fib_data::get_iso(tipl::image<3>& iso_) const
+{
+    size_t index = get_name_index("iso");
+    if(view_item.size() == index)
+        index = get_name_index("md");
+    if(view_item.size() == index)
+        index = 0;
+    iso_ = view_item[index].get_image();
 }
 
 extern std::vector<std::string> fa_template_list,iso_template_list,track_atlas_file_list;

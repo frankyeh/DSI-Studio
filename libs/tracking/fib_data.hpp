@@ -366,6 +366,7 @@ public:
     void get_voxel_info2(int x,int y,int z,std::vector<float>& buf) const;
     void get_voxel_information(int x,int y,int z,std::vector<float>& buf) const;
     void get_iso_fa(tipl::image<3>& iso_fa_) const;
+    void get_iso(tipl::image<3>& iso_fa_) const;
 };
 
 
