@@ -104,6 +104,8 @@ public slots:
     void auto_recognition(void);
     void recognize_rename(void);
     void open_cluster_label(void);
+    void open_cluster_color(void);
+    void save_cluster_color(void);
     void set_color(void);
     void check_check_status(int,int);
     void check_all(void);
