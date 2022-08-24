@@ -458,6 +458,7 @@ void TractTableWidget::assign_colors(void)
         tipl::rgb c;
         c.from_hsl((color_gen*1.1-std::floor(color_gen*1.1/6)*6)*3.14159265358979323846/3.0,0.85,0.7);
         color_gen++;
+        auto lock = tract_rendering[index]->start_writing();
         tract_models[index]->set_color(c.color);
         tract_rendering[index]->need_update = true;
     }
@@ -512,6 +513,64 @@ void TractTableWidget::open_cluster_label(void)
     load_cluster_label(labels);
     assign_colors();
 }
+void TractTableWidget::open_cluster_color(void)
+{
+    if(tract_models.empty())
+        return;
+    QString filename = QFileDialog::getOpenFileName(
+            this,"Load cluster color",QFileInfo(cur_tracking_window.windowTitle()).absolutePath(),
+            "RGB Value Text(*.txt);;All files (*)");
+    if(!filename.size())
+        return;
+    std::ifstream in(filename.toStdString());
+    if(!in)
+    {
+        QMessageBox::critical(this,"ERROR","Cannot open file");
+        return;
+    }
+    progress p("rendering tracts");
+    for(unsigned int index = 0;progress::at(index,tract_models.size()) && in;++index)
+        if(item(int(index),0)->checkState() == Qt::Checked)
+        {
+            int r(0),g(0),b(0);
+            in >> r >> g >> b;
+            auto lock = tract_rendering[index]->start_writing();
+            tract_models[index]->set_color(tipl::rgb(r,g,b));
+            tract_rendering[index]->need_update = true;
+        }
+    cur_tracking_window.set_data("tract_color_style",1);//manual assigned
+    emit show_tracts();
+}
+void TractTableWidget::save_cluster_color(void)
+{
+    if(tract_models.empty())
+        return;
+    QString filename = QFileDialog::getSaveFileName(
+            this,"Save cluster color",QFileInfo(cur_tracking_window.windowTitle()).absolutePath(),
+            "RGB Value Text(*.txt);;All files (*)");
+    if(!filename.size())
+        return;
+    std::ofstream out(filename.toStdString());
+    if(!out)
+    {
+        QMessageBox::critical(this,"ERROR","Cannot save file");
+        return;
+    }
+    for(unsigned int index = 0;index < tract_models.size();++index)
+        if(item(int(index),0)->checkState() == Qt::Checked)
+        {
+            auto lock = tract_rendering[index]->start_reading(true);
+            if(tract_models[index]->get_visible_track_count())
+            {
+                tipl::rgb color = tract_models[index]->get_tract_color(0);
+                out << int(color.r) << " " << int(color.g) << " " << int(color.b) << std::endl;
+            }
+            else
+                out << "0 0 0" << std::endl;
+        }
+    QMessageBox::information(this,"DSI Studio","saved");
+}
+
 
 
 void TractTableWidget::recog_tracks(void)
