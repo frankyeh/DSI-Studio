@@ -6,20 +6,26 @@
 #include "tracking/tracking_window.h"
 
 void show_view(QGraphicsScene& scene,QImage I);
-bool adjust_vs(const tipl::image<3,float>& from,
+tipl::vector<3> adjust_to_vs(const tipl::image<3,float>& from,
                const tipl::vector<3>& from_vs,
                const tipl::image<3,float>& to,
-               tipl::vector<3>& to_vs)
+               const tipl::vector<3>& to_vs)
 {
-    show_progress() << "FOV width:" << float(from.width())*from_vs[0] << " to " << float(to.width())*to_vs[0] << std::endl;
-    if(float(from.width())*from_vs[0]*0.75f > float(to.width())*to_vs[0])
-    {
-        show_progress() << "adjust voxel size due to match FOV" << std::endl;
-        to_vs *= std::sqrt((float(from.plane_size())*from_vs[0]*from_vs[1])/
-                           (float(to.plane_size())*to_vs[0]*to_vs[1]));
-        return true;
-    }
-    return false;
+    auto from_otsu = tipl::segmentation::otsu_threshold(from)*0.6f;
+    auto to_otsu = tipl::segmentation::otsu_threshold(to)*0.6f;
+    tipl::vector<3> from_min,from_max,to_min,to_max;
+    tipl::bounding_box(from,from_min,from_max,from_otsu);
+    tipl::bounding_box(to,to_min,to_max,to_otsu);
+    from_max -= from_min;
+    to_max -= to_min;
+    tipl::vector<3> new_vs(to_vs);
+    float rx = (to_max[0] > 0.0f) ? from_max[0]*from_vs[0]/(to_max[0]*to_vs[0]) : 1.0f;
+    float ry = (to_max[1] > 0.0f) ? from_max[1]*from_vs[1]/(to_max[1]*to_vs[1]) : 1.0f;
+
+    new_vs[0] *= rx;
+    new_vs[1] *= ry;
+    new_vs[2] *= (rx+ry)*0.5f; // z direction bounding box is largely affected by slice number, thus use rx and ry
+    return new_vs;
 }
 
 manual_alignment::manual_alignment(QWidget *parent,
@@ -34,8 +40,6 @@ manual_alignment::manual_alignment(QWidget *parent,
     from_original = from_;
     from.swap(from_);
     to.swap(to_);
-    if(reg_type == tipl::reg::affine)
-        adjust_vs(to,to_vs,from,from_vs);
 
     while(from.size() < to.size()/8)
     {
