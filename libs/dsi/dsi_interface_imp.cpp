@@ -111,6 +111,8 @@ bool ImageModel::reconstruction(void)
         if(voxel.check_btable)
         {
             std::string result = check_b_table();
+            if(progress::aborted())
+                return false;
             if(!result.empty())
                 voxel.recon_report << " The b-table was flipped by " << result << ".";
         }
