@@ -519,7 +519,7 @@ void RenderingTableWidget::dataChanged(const QModelIndex &, const QModelIndex &b
                 if(name != dt_name1 && (dt_name1.find(name) != std::string::npos ||
                                         name.find(dt_name1) != std::string::npos))
                 {
-                    setData("dt_index2",i+1);
+                    setData("dt_index2",int(i+1));
                     break;
                 }
             }
@@ -529,7 +529,7 @@ void RenderingTableWidget::dataChanged(const QModelIndex &, const QModelIndex &b
                 auto name = view_item[i].name;
                 if(name != dt_name1 && dt_name1.substr(0,2) == name.substr(0,2))
                 {
-                    setData("dt_index2",i+1);
+                    setData("dt_index2",int(i+1));
                     break;
                 }
             }
