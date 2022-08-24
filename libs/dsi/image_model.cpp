@@ -145,6 +145,8 @@ void ImageModel::flip_b_table(const unsigned char* order)
     }
 }
 
+
+
 extern std::vector<std::string> fib_template_list;
 std::string ImageModel::check_b_table(void)
 {
@@ -199,18 +201,30 @@ std::string ImageModel::check_b_table(void)
             progress p("check b-table using ",fib_template_list[voxel.template_id].c_str());
             if(template_fib->vs[0] < voxel.vs[0])
                 template_fib->resample_to(voxel.vs[0]);
-            tipl::image<3> iso_fa;
-            template_fib->get_iso_fa(iso_fa);
-            tipl::normalize(iso_fa,255.9f);
-            tipl::image<3,unsigned char> I;
-            I = iso_fa;
+            tipl::image<3> iso,dwi_f(dwi);
+            template_fib->get_iso(iso);
+
             tipl::affine_transform<float> arg;
-            tipl::reg::linear_mr<tipl::reg::mutual_information>(I,template_fib->vs,dwi,voxel.vs,
-                        arg,tipl::reg::affine,[&](void){return !progress::aborted();});
+            bool terminated = false;
+
+            linear_with_mi(iso,template_fib->vs,dwi_f,voxel.vs,arg,tipl::reg::affine,terminated);
+            show_progress() << arg << std::endl;
+            if(progress::aborted())
+                return std::string();
+
             tipl::rotation_matrix(arg.rotation,r.begin(),tipl::vdim<3>());
             r.inv();
             T = tipl::transformation_matrix<float>(arg,template_fib->dim,template_fib->vs,voxel.dim,voxel.vs);
+
+            tipl::image<3> VFF(iso.shape());
+            tipl::resample_mt<tipl::interpolation::linear>(dwi_f,VFF,T);
+            float r = tipl::correlation(VFF.begin(),VFF.end(),iso.begin());
+            show_progress() << "goodness-of-fit R2:" << r*r << std::endl;
+            if(r*r < 0.3f)
+                template_fib.reset();
         }
+        else
+            template_fib.reset();
     }
     if(template_fib.get())
     {
@@ -883,7 +897,7 @@ bool ImageModel::align_acpc(void)
         float r = float(tipl::correlation(I.begin(),I.end(),I2.begin()));
         show_progress() << "R2 for ac-pc alignment:" << r*r << std::endl;
         progress::at(2,3);
-        if(r*r < 0.4f)
+        if(r*r < 0.3f)
         {
             error_msg = "Failed to align subject data to template.";
             return false;
@@ -1026,7 +1040,7 @@ void ImageModel::crop(tipl::shape<3> range_min,tipl::shape<3> range_max)
 void ImageModel::trim(void)
 {
     tipl::shape<3> range_min,range_max;
-    tipl::bounding_box(voxel.mask,range_min,range_max,0);
+    tipl::bounding_box(voxel.mask,range_min,range_max);
     crop(range_min,range_max);
 }
 
@@ -1409,7 +1423,7 @@ void ImageModel::get_volume_range(size_t dim,int extra_space)
     if(rev_pe_src.get())
         temp_mask += rev_pe_src->voxel.mask;
     tipl::morphology::dilation2_mt(temp_mask,std::max<int>(voxel.dim[0]/20,2));
-    tipl::bounding_box(temp_mask,topup_from,topup_to,0);
+    tipl::bounding_box(temp_mask,topup_from,topup_to);
 
     if(extra_space)
     {
@@ -1448,8 +1462,8 @@ bool ImageModel::generate_topup_b0_acq_files(tipl::image<3>& b0,
         tipl::image<3,unsigned char> mb0,rev_mb0;
         tipl::threshold(b0,mb0,tipl::max_value(b0)*0.8f,1,0);
         tipl::threshold(rev_b0,rev_mb0,tipl::max_value(rev_b0)*0.8f,1,0);
-        c1 = tipl::center_of_mass(mb0);
-        c2 = tipl::center_of_mass(rev_mb0);
+        c1 = tipl::center_of_mass_weighted(mb0);
+        c2 = tipl::center_of_mass_weighted(rev_mb0);
     }
     show_progress() << "source com:" << c1 << std::endl;
     show_progress() << "rev pe com:" << c2 << std::endl;
