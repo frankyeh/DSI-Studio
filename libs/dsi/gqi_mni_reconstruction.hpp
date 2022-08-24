@@ -57,8 +57,6 @@ public:
         if(fa_template_list[voxel.template_id].empty())
             throw std::runtime_error("Invalid external template");
         {
-            voxel.step_report << "[Step T2b(1)][Template]=" <<
-                                 QFileInfo(fa_template_list[voxel.template_id].c_str()).baseName().toStdString() << std::endl;
             gz_nifti read;
             if(!read.load_from_file(fa_template_list[voxel.template_id].c_str()))
                 throw std::runtime_error("Cannot load template");
