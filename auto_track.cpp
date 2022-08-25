@@ -124,7 +124,7 @@ std::string run_auto_track(program_option& po,const std::vector<std::string>& fi
 {
     std::string tolerance_string = po.get("tolerance","16,18,20");
     float track_voxel_ratio = po.get("track_voxel_ratio",2.0f);
-    float yield_rate = po.get("yield_rate",0.0001f);
+    float yield_rate = po.get("yield_rate",0.00001f);
     size_t yield_check_count = 20.0f/yield_rate;
     int tip = po.get("tip",32);
     bool export_stat = po.get("export_stat",1);
@@ -273,7 +273,6 @@ std::string run_auto_track(program_option& po,const std::vector<std::string>& fi
                         show_progress() << "min_length(mm): " << thread.param.min_length << std::endl;
                         show_progress() << "max_length(mm): " << thread.param.max_length << std::endl;
                         thread.param.tip_iteration = uint8_t(tip);
-                        thread.param.check_ending = check_ending && !QString(track_name.c_str()).contains("Cingulum");
                         thread.param.stop_by_tract = 1;
                         thread.param.termination_count = 0;
                     }
