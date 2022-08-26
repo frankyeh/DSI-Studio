@@ -122,11 +122,11 @@ struct file_holder{
 
 std::string run_auto_track(program_option& po,const std::vector<std::string>& file_list,const std::vector<unsigned int>& track_id,int& prog)
 {
-    std::string tolerance_string = po.get("tolerance","24");
+    std::string tolerance_string = po.get("tolerance","22,26,30");
     float track_voxel_ratio = po.get("track_voxel_ratio",2.0f);
     float yield_rate = po.get("yield_rate",0.00001f);
-    size_t yield_check_count = 20.0f/yield_rate;
-    int tip = po.get("tip_iteration",32);
+    size_t yield_check_count = 10.0f/yield_rate;
+    int tip = po.get("tip_iteration",48);
     bool export_stat = po.get("export_stat",1);
     bool export_trk = po.get("export_trk",1);
     bool overwrite = po.get("overwrite",0);
