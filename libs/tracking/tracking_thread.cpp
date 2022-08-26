@@ -176,13 +176,8 @@ void ThreadData::apply_tip(TractModel* handle)
 {
     if (param.tip_iteration == 0 || handle->get_visible_track_count() == 0)
         return;
-    float max_length = 0.0f;
-    for(size_t i = 0;i < 20 && i < handle->get_tracts().size();++i)
-        max_length = std::max(max_length,float(handle->get_tracts()[i].size()));
-    float t_index = float(handle->get_visible_track_count())*max_length/3.0f;
-    if(t_index/float(roi_mgr->seeds.size()) > 20.0f || !trk->dt_threshold_name.empty())
-        for(size_t i = 0;i < param.tip_iteration;++i)
-            handle->trim();
+    for(size_t i = 0;i < param.tip_iteration && handle->trim();++i)
+        ;
 }
 
 void ThreadData::run(unsigned int thread_count,
