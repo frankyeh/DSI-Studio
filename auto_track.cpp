@@ -130,7 +130,6 @@ std::string run_auto_track(program_option& po,const std::vector<std::string>& fi
     bool export_stat = po.get("export_stat",1);
     bool export_trk = po.get("export_trk",1);
     bool overwrite = po.get("overwrite",0);
-    bool default_mask = po.get("default_mask",0);
     bool export_template_trk = po.get("export_template_trk",0);
     bool check_ending = po.get("check_ending",1);
     uint32_t thread_count = uint32_t(po.get("thread_count",std::thread::hardware_concurrency()));
@@ -530,7 +529,6 @@ void auto_track::on_run_clicked()
     po["export_stat"] = ui->export_stat->isChecked() ? 1 : 0;
     po["export_trk"] = ui->export_trk->isChecked()? 1 : 0;
     po["overwrite"] = ui->overwrite->isChecked()? 1 : 0;
-    po["default_mask"] = ui->default_mask->isChecked()? 1 : 0;
     po["export_template_trk"] = ui->output_template_trk->isChecked()? 1 : 0;
     po["thread_count"] = ui->thread_count->value();
 
