@@ -126,7 +126,7 @@ std::string run_auto_track(program_option& po,const std::vector<std::string>& fi
     float track_voxel_ratio = po.get("track_voxel_ratio",2.0f);
     float yield_rate = po.get("yield_rate",0.00001f);
     size_t yield_check_count = 20.0f/yield_rate;
-    int tip = po.get("tip",32);
+    int tip = po.get("tip_iteration",32);
     bool export_stat = po.get("export_stat",1);
     bool export_trk = po.get("export_trk",1);
     bool overwrite = po.get("overwrite",0);
@@ -526,7 +526,7 @@ void auto_track::on_run_clicked()
     program_option po;
     po["tolerance"] = ui->tolerance->text().toStdString();
     po["track_voxel_ratio"] = float(ui->track_voxel_ratio->value());
-    po["tip"] = ui->pruning->value();
+    po["tip_iteration"] = ui->pruning->value();
     po["export_stat"] = ui->export_stat->isChecked() ? 1 : 0;
     po["export_trk"] = ui->export_trk->isChecked()? 1 : 0;
     po["overwrite"] = ui->overwrite->isChecked()? 1 : 0;
