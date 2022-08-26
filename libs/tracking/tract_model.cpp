@@ -2239,7 +2239,7 @@ bool TractModel::trim(void)
         delete_tracts(tracts_to_delete);
     */
 
-    tipl::image<3,unsigned int> label(geo);
+    tipl::image<3,unsigned int> label(geo),label2(geo),label3(geo);
     int total_track_number = tract_data.size();
     int no_fiber_label = total_track_number;
     int have_multiple_fiber_label = total_track_number+1;
@@ -2248,7 +2248,11 @@ bool TractModel::trim(void)
     int height = label.height();
     int depth = label.depth();
     int wh = width*height;
+
     std::fill(label.begin(),label.end(),no_fiber_label);
+    std::fill(label2.begin(),label2.end(),no_fiber_label);
+    std::fill(label3.begin(),label3.end(),no_fiber_label);
+
     int shift[8] = {0,1,width,wh,1+width,1+wh,width+wh,1+width+wh};
     tipl::par_for(total_track_number,[&](int index)
     {
@@ -2274,17 +2278,48 @@ bool TractModel::trim(void)
                 if (cur_label == have_multiple_fiber_label || cur_label == index)
                     continue;
                 if (cur_label == no_fiber_label)
+                {
                     label[pixel_index] = index;
-                else
-                    label[pixel_index] = have_multiple_fiber_label;
+                    continue;
+                }
+
+                unsigned int cur_label2 = label2[pixel_index];
+                if (cur_label2 == index)
+                    continue;
+                if (cur_label2 == no_fiber_label)
+                {
+                    label2[pixel_index] = index;
+                    continue;
+                }
+
+                unsigned int cur_label3 = label3[pixel_index];
+                if (cur_label3 == index)
+                    continue;
+                if (cur_label3 == no_fiber_label)
+                {
+                    label3[pixel_index] = index;
+                    continue;
+                }
+
+
+                label[pixel_index] = have_multiple_fiber_label;
+                label2[pixel_index] = have_multiple_fiber_label;
+                label3[pixel_index] = have_multiple_fiber_label;
             }
         }
     });
 
     std::set<unsigned int> tracts_to_delete;
     for (unsigned int index = 0;index < label.size();++index)
+    {
         if (label[index] < total_track_number)
             tracts_to_delete.insert(label[index]);
+        if (label2[index] < total_track_number)
+            tracts_to_delete.insert(label2[index]);
+        if (label3[index] < total_track_number)
+            tracts_to_delete.insert(label3[index]);
+    }
+
     return delete_tracts(std::vector<unsigned int>(tracts_to_delete.begin(),tracts_to_delete.end()));
 }
 //---------------------------------------------------------------------------
