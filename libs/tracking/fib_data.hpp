@@ -238,6 +238,8 @@ public:
     bool trackable = true;
     float min_length(void) const
     {
+        if(template_id == 0) // human
+            return 30.0f;
         float min_length = dim[0]*vs[0]/4;
         float min_length_digit = float(std::pow(10.0f,std::floor(std::log10(double(min_length)))));
         return int(min_length/min_length_digit)*min_length_digit;
@@ -245,6 +247,8 @@ public:
     }
     float max_length(void) const
     {
+        if(template_id == 0) // human
+            return 200.0f;
         float max_length = dim[1]*vs[1]*1.5;
         float max_length_digit = float(std::pow(10.0f,std::floor(std::log10(double(max_length)))));
         return int(max_length/max_length_digit)*max_length_digit;
