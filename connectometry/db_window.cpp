@@ -663,7 +663,7 @@ void db_window::on_actionSave_DemoMatched_Image_as_triggered()
     if (filename.isEmpty())
         return;
     if(vbc->handle->db.save_demo_matched_image(param.toStdString(),filename.toStdString()))
-        QMessageBox::information(this,"File Saved",param);
+        QMessageBox::information(this,"DSI Studio","File Saved");
     else
         QMessageBox::critical(this,"ERROR",vbc->handle->db.error_msg.c_str());
 
