@@ -962,7 +962,7 @@ void tracking_window::set_tracking_param(ThreadData& tracking_thread)
             (ui->target->currentIndex() > 0 ||
             // or differential tractography
             renderWidget->getData("dt_index1").toInt() > 0)
-            ? renderWidget->getData("auto_tip").toInt() : 0;
+            ? renderWidget->getData("tip_iteration").toInt() : 0;
 
 }
 float tracking_window::get_scene_zoom(std::shared_ptr<SliceModel> slice)
@@ -2518,7 +2518,7 @@ void tracking_window::on_actionLoad_Parameter_ID_triggered()
     set_data("track_count",int(param.termination_count));
 
     set_data("otsu_threshold",float(param.default_otsu));
-    set_data("auto_tip",int(param.tip_iteration));
+    set_data("tip_iteration",int(param.tip_iteration));
 
 }
 
