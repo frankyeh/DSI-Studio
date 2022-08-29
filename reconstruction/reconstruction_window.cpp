@@ -118,7 +118,7 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
     ui->param_group->setVisible(!handle->voxel.is_histology);
     ui->hist_param_group->setVisible(handle->voxel.is_histology);
 
-    ui->qsdr_reso->setValue(handle->voxel.vs[0]);
+    ui->qsdr_reso->setValue(handle->voxel.vs[2]);
 
     if(handle->voxel.is_histology)
     {
