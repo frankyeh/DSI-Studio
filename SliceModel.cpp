@@ -300,7 +300,7 @@ bool CustomSliceModel::initialize(const std::vector<std::string>& files,bool is_
         }
     }
     // load and match demographics DB file
-    if(source_images.empty() && files[0].find(".db.fib.gz") != std::string::npos)
+    if(source_images.empty() && QString(files[0].c_str()).endsWith(".db.fib.gz"))
     {
         std::shared_ptr<fib_data> db_handle(new fib_data);
         if(!db_handle->load_from_file(files[0].c_str()) || !db_handle->db.has_db())
@@ -337,37 +337,40 @@ bool CustomSliceModel::initialize(const std::vector<std::string>& files,bool is_
 
 
     // load nifti file
-    if(source_images.empty() && files[0].find(".nii") != std::string::npos)
+    if(source_images.empty() &&
+       (QString(files[0].c_str()).endsWith("nii.gz") || QString(files[0].c_str()).endsWith("nii")))
     {
         gz_nifti nifti;
         //  prepare idx file
         prepare_idx(files[0].c_str(),nifti.input_stream);
-        if(nifti.load_from_file(files[0]))
+        if(!nifti.load_from_file(files[0]))
         {
-            nifti.toLPS(source_images);
-            save_idx(files[0].c_str(),nifti.input_stream);
-            nifti.get_voxel_size(vs);
-            nifti.get_image_transformation(trans);
-            is_mni = nifti.is_mni() || is_mni_image;
-            if(handle->is_qsdr)
+            error_msg = nifti.error_msg;
+            return false;
+        }
+        nifti.toLPS(source_images);
+        save_idx(files[0].c_str(),nifti.input_stream);
+        nifti.get_voxel_size(vs);
+        nifti.get_image_transformation(trans);
+        is_mni = nifti.is_mni() || is_mni_image;
+        if(handle->is_qsdr)
+        {
+            nifti.get_image_transformation(T);
+            invT = tipl::inverse(T = tipl::from_space(T).to(handle->trans_to_mni));
+            has_transform = true;
+        }
+        else
+        if(is_mni)
+        {
+            if(!handle->mni2sub(source_images,trans))
             {
-                nifti.get_image_transformation(T);
-                invT = tipl::inverse(T = tipl::from_space(T).to(handle->trans_to_mni));
-                has_transform = true;
+                error_msg = handle->error_msg;
+                return false;
             }
-            else
-            if(is_mni)
-            {
-                if(!handle->mni2sub(source_images,trans))
-                {
-                    error_msg = handle->error_msg;
-                    return false;
-                }
-                T.identity();
-                invT.identity();
-                is_diffusion_space = true;
-                has_transform = true;
-            }
+            T.identity();
+            invT.identity();
+            is_diffusion_space = true;
+            has_transform = true;
         }
     }
 
