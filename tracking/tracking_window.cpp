@@ -1856,7 +1856,7 @@ void tracking_window::on_actionInsert_MNI_images_triggered()
     std::shared_ptr<SliceModel> new_slice(reg_slice_ptr = new CustomSliceModel(handle.get()));
     if(!reg_slice_ptr->initialize(filename.toStdString(),true/* mni-space image*/))
     {
-        QMessageBox::information(this,"DSI Studio",reg_slice_ptr->error_msg.c_str());
+        QMessageBox::critical(this,"DSI Studio",reg_slice_ptr->error_msg.c_str());
         return;
     }
     slices.push_back(new_slice);
