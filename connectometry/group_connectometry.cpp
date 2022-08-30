@@ -67,6 +67,7 @@ group_connectometry::group_connectometry(QWidget *parent,std::shared_ptr<group_c
 {
 
     ui->setupUi(this);
+    ui->thread_count->setValue(std::thread::hardware_concurrency());
     ui->chart_widget_layout->addWidget(null_pos_chart_view);
     ui->chart_widget_layout->addWidget(null_neg_chart_view);
     ui->chart_widget_layout->addWidget(fdr_chart_view);
@@ -447,7 +448,7 @@ void group_connectometry::on_run_clicked()
             vbc->roi_mgr->setWholeBrainSeed(vbc->fiber_threshold);
     }
 
-    vbc->run_permutation(std::thread::hardware_concurrency(),uint32_t(ui->permutation_count->value()));
+    vbc->run_permutation(uint32_t(ui->thread_count->value()),uint32_t(ui->permutation_count->value()));
 
 
     ui->run->setText("Stop");

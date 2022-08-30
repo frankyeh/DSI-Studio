@@ -1074,6 +1074,23 @@
           </widget>
          </item>
          <item>
+          <widget class="QSpinBox" name="thread_count">
+           <property name="minimum">
+            <number>1</number>
+           </property>
+           <property name="maximum">
+            <number>64</number>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLabel" name="label_4">
+           <property name="text">
+            <string>threads</string>
+           </property>
+          </widget>
+         </item>
+         <item>
           <widget class="QPushButton" name="run">
            <property name="enabled">
             <bool>true</bool>
