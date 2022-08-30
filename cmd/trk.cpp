@@ -566,23 +566,26 @@ bool load_roi(program_option& po,std::shared_ptr<fib_data> handle,std::shared_pt
             return false;
         }
         std::string name = po.get("track_id");
-        size_t track_id = handle->tractography_name_list.size();
-        for(size_t i = 0;i < handle->tractography_name_list.size();++i)
-            if(name == handle->tractography_name_list[i])
-            {
-                track_id = i;
-                break;
-            }
-        if(track_id == handle->tractography_name_list.size())
+        if(name[0] >= '0' && name[0] <= '9')
+            roi_mgr->track_id = std::stoi(name);
+        else
+        {
+            roi_mgr->track_id = handle->tractography_name_list.size();
+            for(size_t i = 0;i < handle->tractography_name_list.size();++i)
+                if(name == handle->tractography_name_list[i])
+                {
+                    roi_mgr->track_id = i;
+                    break;
+                }
+        }
+        if(roi_mgr->track_id >= handle->tractography_name_list.size())
         {
             show_progress() << "cannot find " << name << " in " << handle->tractography_atlas_file_name << std::endl;
             return false;
         }
         roi_mgr->use_auto_track = true;
-        roi_mgr->track_id = po.get("track_id",0);
         roi_mgr->tolerance_dis_in_icbm152_mm = po.get("tolerance",16.0f);
-
-        show_progress() << "set target track: " << handle->tractography_name_list[track_id] << std::endl;
+        show_progress() << "set target track: " << handle->tractography_name_list[roi_mgr->track_id] << std::endl;
     }
     return true;
 }
