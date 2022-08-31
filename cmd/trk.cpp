@@ -520,6 +520,10 @@ int trk_post(program_option& po,
         std::copy(tract_model->get_cluster_info().begin(),tract_model->get_cluster_info().end(),std::ostream_iterator<int>(out," "));
     }
 
+    if(po.has(("native_track")) && !tract_model->save_tracts_in_native_space(handle,po.get("native_track").c_str()))
+        return 1;
+    if(po.has(("template_track")) && !tract_model->save_tracts_in_template_space(handle,po.get("template_track").c_str()))
+        return 1;
     if(po.has(("end_point")) && !tract_model->save_end_points(po.get("end_point").c_str()))
         return 1;
     // allow adding other slices for connectivity and statistics
