@@ -412,24 +412,8 @@ bool load_region(program_option& po,std::shared_ptr<fib_data> handle,
         show_progress() << " region:" << region_name;
     show_progress() << std::endl;
 
-    if(!std::filesystem::exists(file_name))
-    {
-        if(QString(file_name.c_str()).endsWith(".nii.gz") || QString(file_name.c_str()).endsWith(".nii"))
-        {
-            show_progress() << "ERROR: " << file_name << " does not exist" << std::endl;
-            return false;
-        }
-        show_progress() << "loading " << region_name << " from " << file_name << std::endl;
-        std::vector<tipl::vector<3,short> > points;
-        if(!handle->get_atlas_roi(file_name,region_name,points))
-        {
-            show_progress() << "ERROR: " << handle->error_msg << std::endl;
-            return false;
-        }
-        roi.add_points(std::move(points));
-        return true;
-    }
-    else
+    if(QString(file_name.c_str()).endsWith(".nii.gz") ||
+       QString(file_name.c_str()).endsWith(".nii"))
     {
         std::vector<std::shared_ptr<ROIRegion> > regions;
         std::vector<std::string> names;
@@ -455,6 +439,26 @@ bool load_region(program_option& po,std::shared_ptr<fib_data> handle,
             }
         }
     }
+    else
+    {
+        if(!region_name.empty())
+        {
+            show_progress() << "loading " << region_name << " from atlas " << file_name << std::endl;
+            std::vector<tipl::vector<3,short> > points;
+            if(!handle->get_atlas_roi(file_name,region_name,points))
+            {
+                show_progress() << "ERROR: " << handle->error_msg << std::endl;
+                return false;
+            }
+            roi.add_points(std::move(points));
+        }
+        else
+        {
+            show_progress() << "ERROR: invalid region assignment " << file_name << std::endl;
+            return false;
+        }
+    }
+
     // now perform actions
     for(int i = 1;i < str_list.size();++i)
     {
