@@ -414,6 +414,11 @@ bool load_region(program_option& po,std::shared_ptr<fib_data> handle,
 
     if(!std::filesystem::exists(file_name))
     {
+        if(QString(file_name.c_str()).endsWith(".nii.gz") || QString(file_name.c_str()).endsWith(".nii"))
+        {
+            show_progress() << "ERROR: " << file_name << " does not exist" << std::endl;
+            return false;
+        }
         show_progress() << "loading " << region_name << " from " << file_name << std::endl;
         std::vector<tipl::vector<3,short> > points;
         if(!handle->get_atlas_roi(file_name,region_name,points))
