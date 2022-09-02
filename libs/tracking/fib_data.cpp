@@ -1814,7 +1814,7 @@ bool fib_data::get_atlas_roi(const std::string& atlas_name,const std::string& re
 {
     if(region_name.empty())
     {
-        error_msg = "please assign region name of an atlas.";
+        error_msg = "not a valid region assignment";
         return false;
     }
     auto at = get_atlas(atlas_name);
