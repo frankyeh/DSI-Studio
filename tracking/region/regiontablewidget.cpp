@@ -576,7 +576,7 @@ bool load_nii(std::shared_ptr<fib_data> handle,
     gz_nifti header;
     if (!header.load_from_file(file_name.c_str()))
     {
-        error_msg = "cannot load the file. Please check access permision.";
+        error_msg = "cannot load the file. Please specify correct file path or check access permission.";
         return false;
     }
     bool is_4d = header.dim(4) > 1;
