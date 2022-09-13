@@ -125,7 +125,6 @@ void RegToolBox::on_OpenSubject_clicked()
     }
     nifti.toLPS(I);
     nifti.get_image_transformation(IR);
-    ui->edge->setChecked(tipl::is_label_image(I));
     tipl::normalize(I);
     nifti.get_voxel_size(Ivs);
     clear();
@@ -499,7 +498,10 @@ void RegToolBox::on_run_reg_clicked()
     ui->stop->show();
     ui->run_reg->hide();
 }
-
+bool load_nifti_file(std::string file_name_cmd,
+                     tipl::image<3>& data,
+                     tipl::vector<3>& vs,
+                     tipl::matrix<4,4>& trans);
 bool apply_warping(const char* from,
                    const char* to,
                    const tipl::shape<3>& I_shape,
@@ -509,16 +511,11 @@ bool apply_warping(const char* from,
                    const tipl::matrix<4,4>& ItR,
                    std::string& error)
 {
-    gz_nifti nii;
-    if(!nii.load_from_file(from))
-    {
-        error = nii.error_msg;
-        return false;
-    }
     tipl::image<3> I3;
     tipl::matrix<4,4> T;
-    nii.toLPS(I3);
-    nii.get_image_transformation(T);
+    tipl::vector<3> vs;
+    if(!load_nifti_file(from,I3,vs,T))
+        return false;
 
     bool is_label = tipl::is_label_image(I3);
 
