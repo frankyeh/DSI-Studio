@@ -300,9 +300,9 @@ float TractRenderShader::get_shade(const tipl::vector<3>& pos) const
 {
     float d = 1.0f;
     {
-        int x = (int(pos[0]) << 6)/int(dim[0]);
-        int y = (int(pos[1]) << 6)/int(dim[1]);
-        int z = (int(pos[2]) << 6)/int(dim[2]);
+        int x = std::round(pos[0]*to64[0]);
+        int y = std::round(pos[1]*to64[1]);
+        int z = std::round(pos[2]*to64[2]);
         if(max_x_map.shape().is_valid(y,z))
         {
             size_t p = size_t(y + z*max_x_map.width());
@@ -336,9 +336,9 @@ void TractRenderShader::add_shade(std::shared_ptr<TractModel>& active_tract_mode
         const float* data_iter = &*(active_tract_model->get_tract(data_index).begin());
         for (unsigned int index = 0; index < vertex_count;data_iter += 3, ++index)
         {
-            int x = (int(data_iter[0]) << 6)/int(dim[0]);
-            int y = (int(data_iter[1]) << 6)/int(dim[1]);
-            int z = (int(data_iter[2]) << 6)/int(dim[2]);
+            int x = std::round(data_iter[0]*to64[0]);
+            int y = std::round(data_iter[1]*to64[1]);
+            int z = std::round(data_iter[2]*to64[2]);
             if(max_x_map.shape().is_valid(y,z))
             {
                 size_t pos = size_t(y + (z << 6));

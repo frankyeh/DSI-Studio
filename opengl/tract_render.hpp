@@ -37,6 +37,7 @@ struct TractRenderParam{
 
 struct TractRenderShader{
     tipl::shape<3> dim;
+    tipl::vector<3> to64;
     tipl::image<2,float> max_z_map,min_z_map,max_x_map,min_x_map,min_y_map,max_y_map;
     TractRenderShader(tipl::shape<3> dim_):dim(dim_),
         min_x_map(tipl::shape<2>(64,64),float(dim.width())),
@@ -44,7 +45,12 @@ struct TractRenderShader{
         min_z_map(tipl::shape<2>(64,64),float(dim.depth())),
         max_x_map(tipl::shape<2>(64,64)),
         max_y_map(tipl::shape<2>(64,64)),
-        max_z_map(tipl::shape<2>(64,64)){}
+        max_z_map(tipl::shape<2>(64,64))
+    {
+        to64[0] = 64.0f/float(dim[0]);
+        to64[1] = 64.0f/float(dim[1]);
+        to64[2] = 64.0f/float(dim[2]);
+    }
     void add_shade(std::shared_ptr<TractModel>& active_tract_model,
                    const std::vector<unsigned int>& visible);
     float get_shade(const tipl::vector<3>& pos) const;
