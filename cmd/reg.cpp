@@ -29,26 +29,17 @@ int after_warp(const std::string& warp_name,
                const tipl::matrix<4,4>& to_trans)
 {
     std::string error;
-    std::vector<std::string> filenames;
-    get_filenames_from(warp_name,filenames);
-    for(auto& filename: filenames)
+    std::vector<std::string> filename_cmds;
+    get_filenames_from(warp_name,filename_cmds);
+    for(auto& filename_cmd: filename_cmds)
     {
-        if(QString(filename.c_str()).toLower().endsWith(".nii.gz"))
-        {
-            std::string filename_warp = filename+".wp.nii.gz";
-            show_progress() << "apply warping to " << filename << std::endl;
-            if(!apply_warping(filename.c_str(),filename_warp.c_str(),from2to.shape(),from_trans,
-                              to2from,to_vs,to_trans,error))
-            {
-                show_progress() << "ERROR: " << error <<std::endl;
-                return 1;
-            }
-        }
-        else
+        std::istringstream in(filename_cmd);
+        std::string filename;
+        std::getline(in,filename,'+');
         if(QString(filename.c_str()).toLower().endsWith(".tt.gz"))
         {
             std::string filename_warp = filename+".wp.tt.gz";
-            show_progress() << "apply warping to " << filename << std::endl;
+            show_progress() << "apply warping to tractography file: " << filename << std::endl;
             if(!apply_unwarping_tt(filename.c_str(),filename_warp.c_str(),from2to,
                                    to2from.shape(),to_vs,to_trans,error))
             {
@@ -58,8 +49,14 @@ int after_warp(const std::string& warp_name,
         }
         else
         {
-            show_progress() << "ERROR: unsupported format " << std::endl;
-            return 1;
+            std::string filename_warp = filename+".wp.nii.gz";
+            show_progress() << "apply warping to NIFTI file: " << filename << std::endl;
+            if(!apply_warping(filename_cmd.c_str(),filename_warp.c_str(),from2to.shape(),from_trans,
+                              to2from,to_vs,to_trans,error))
+            {
+                show_progress() << "ERROR: " << error <<std::endl;
+                return 1;
+            }
         }
     }
     return 0;
@@ -73,13 +70,13 @@ bool load_nifti_file(std::string file_name_cmd,
 {
     std::istringstream in(file_name_cmd);
     std::string file_name,cmd;
-    std::getline(in,file_name,',');
+    std::getline(in,file_name,'+');
     if(!gz_nifti::load_from_file(file_name.c_str(),data,vs,trans))
     {
         show_progress() << "ERROR: cannot load file " << file_name << std::endl;
         return false;
     }
-    while(std::getline(in,cmd,','))
+    while(std::getline(in,cmd,'+'))
     {
         show_progress() << "apply " << cmd << std::endl;
         if(cmd == "gaussian")
@@ -88,6 +85,9 @@ bool load_nifti_file(std::string file_name_cmd,
         if(cmd == "sobel")
             tipl::filter::sobel(data);
         else
+        if(cmd == "mean")
+            tipl::filter::mean(data);
+        else
         {
             show_progress() << "ERROR: unknown command " << cmd << std::endl;
             return false;
@@ -95,9 +95,7 @@ bool load_nifti_file(std::string file_name_cmd,
     }
     return true;
 }
-inline bool load_nifti_file(std::string file_name_cmd,
-                     tipl::image<3>& data,
-                     tipl::vector<3>& vs)
+bool load_nifti_file(std::string file_name_cmd,tipl::image<3>& data,tipl::vector<3>& vs)
 {
     tipl::matrix<4,4> trans;
     return load_nifti_file(file_name_cmd,data,vs,trans);
@@ -219,14 +217,22 @@ int reg(program_option& po)
 
     {
         show_progress() << "compose output images" << std::endl;
-        tipl::image<3> from_wp;
+        tipl::image<3> output;
         if(tipl::is_label_image(from))
-            tipl::compose_mapping<tipl::interpolation::nearest>(from,to2from,from_wp);
+            tipl::compose_mapping<tipl::interpolation::nearest>(from,to2from,output);
         else
-            tipl::compose_mapping<tipl::interpolation::cubic>(from,to2from,from_wp);
+            tipl::compose_mapping<tipl::interpolation::cubic>(from,to2from,output);
 
-        float r = float(tipl::correlation(to.begin(),to.end(),from_wp.begin()));
+        float r = float(tipl::correlation(to.begin(),to.end(),output.begin()));
         show_progress() << "R2: " << r*r << std::endl;
+        if(po.has("output"))
+        {
+            if(!gz_nifti::save_to_file(po.get("output").c_str(),output,to_vs,to_trans))
+            {
+                show_progress() << "ERROR: cannot write to " << po.get("output") << std::endl;
+                return 1;
+            }
+        }
     }
 
     if(po.has("output_warp"))
