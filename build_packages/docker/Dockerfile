@@ -19,7 +19,7 @@ RUN apt update && apt full-upgrade -y && \
   ca-certificates \
   qt5-qmake \
   qt5-default \
-  qt5-wayland \
+  qtwayland5 \
   libqt5charts5-dev \
   libqt5opengl5-dev \
   gcc \
