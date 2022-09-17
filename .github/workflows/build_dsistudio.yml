@@ -278,6 +278,9 @@ jobs:
         
     - name: Packaging
       run: |
+        curl -sSLO "https://github.com/frankyeh/TinyFSL/releases/download/2022.08.03/tinyfsl_${{ matrix.os }}.zip"
+        7z e tinyfsl_${{ matrix.os }}.zip -obuild/dsi_studio.app/Contents/MacOS/plugin
+        rd build/dsi_studio.app/Contents/MacOS/plugin/tinyfsl
         mv other/* build/dsi_studio.app/Contents/MacOS/
         mv dsi_studio.icns build/dsi_studio.app/Contents/Resources/
         mv DSI-Studio-atlas build/dsi_studio.app/Contents/MacOS/atlas
@@ -343,10 +346,10 @@ jobs:
         move build\dsi_studio.exe dsi_studio_win
         windeployqt --no-translations --no-system-d3d-compiler --compiler-runtime --no-opengl-sw dsi_studio_win\dsi_studio.exe
         move DSI-Studio-atlas dsi_studio_win\atlas  
-        curl -sSLO "https://github.com/frankyeh/TinyFSL/releases/download/2022.08.03/tiny_fsl_win64.zip"
-        7z e tiny_fsl_win64.zip -odsi_studio_win\plugin
+        curl -sSLO "https://github.com/frankyeh/TinyFSL/releases/download/2022.08.03/tinyfsl_win.zip"
+        7z e tinyfsl_win.zip -odsi_studio_win\plugin
         rm dsi_studio_win\plugin\cublas*
-        rd dsi_studio_win\plugin\tiny_fsl
+        rd dsi_studio_win\plugin\tinyfsl
         del *.zip
     - name: Zip Release
       uses: TheDoctor0/zip-release@0.6.0
