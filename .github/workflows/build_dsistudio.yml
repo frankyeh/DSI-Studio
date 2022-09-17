@@ -278,7 +278,7 @@ jobs:
         
     - name: Packaging
       run: |
-        curl -sSLO "https://github.com/frankyeh/tiny_fsl/releases/download/2022.08.03/tiny_fsl_${{ matrix.os }}.zip"
+        curl -sSLO "https://github.com/frankyeh/TinyFSL/releases/download/2022.08.03/tiny_fsl_${{ matrix.os }}.zip"
         7z e tiny_fsl_${{ matrix.os }}.zip -obuild/dsi_studio.app/Contents/MacOS/plugin
         rd build/dsi_studio.app/Contents/MacOS/plugin/tiny_fsl
         mv other/* build/dsi_studio.app/Contents/MacOS/
@@ -346,7 +346,7 @@ jobs:
         move build\dsi_studio.exe dsi_studio_win
         windeployqt --no-translations --no-system-d3d-compiler --compiler-runtime --no-opengl-sw dsi_studio_win\dsi_studio.exe
         move DSI-Studio-atlas dsi_studio_win\atlas  
-        curl -sSLO "https://github.com/frankyeh/tiny_fsl/releases/download/2022.08.03/tiny_fsl_win.zip"
+        curl -sSLO "https://github.com/frankyeh/TinyFSL/releases/download/2022.08.03/tiny_fsl_win.zip"
         7z e tiny_fsl_win.zip -odsi_studio_win\plugin
         rm dsi_studio_win\plugin\cublas*
         rd dsi_studio_win\plugin\tiny_fsl
