@@ -280,7 +280,7 @@ jobs:
       run: |
         curl -sSLO "https://github.com/frankyeh/TinyFSL/releases/download/2022.08.03/tiny_fsl_${{ matrix.os }}.zip"
         7z e tiny_fsl_${{ matrix.os }}.zip -obuild/dsi_studio.app/Contents/MacOS/plugin
-        rd build/dsi_studio.app/Contents/MacOS/plugin/tiny_fsl
+        rm -fr build/dsi_studio.app/Contents/MacOS/plugin/tiny_fsl
         mv other/* build/dsi_studio.app/Contents/MacOS/
         mv dsi_studio.icns build/dsi_studio.app/Contents/Resources/
         mv DSI-Studio-atlas build/dsi_studio.app/Contents/MacOS/atlas
