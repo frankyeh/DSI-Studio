@@ -320,8 +320,6 @@ jobs:
         del install_zlib.bat
         del "C:/Program Files/zlib/lib/zlib.lib"
         del "C:/Program Files/zlib/bin/zlib.dll"
-    - name: Install Cuda
-      uses: Jimver/cuda-toolkit@v0.2.5
     - name: Install Ninja and CMake
       run: |    
         choco install ninja cmake
@@ -329,21 +327,22 @@ jobs:
       run: |
         git clone https://github.com/frankyeh/TIPL.git
         git clone https://github.com/frankyeh/DSI-Studio-atlas.git
-    - name: Build DSI Studio
-      run: |
-        for /f "usebackq delims=#" %%a in (`"%programfiles(x86)%\Microsoft Visual Studio\Installer\vswhere" -latest -property installationPath`) do call "%%a\Common7\Tools\VsDevCmd.bat" -arch=x64
-        mkdir -p build
-        cmake -S . -B build -GNinja "-DCMAKE_BUILD_TYPE:STRING=Release" "-DCMAKE_C_COMPILER:STRING=cl" "-DCMAKE_CXX_COMPILER:STRING=cl" -DCUDA_ARCH=all -DTIPL_DIR=.
-        cmake --build ./build --parallel --config Release
-      shell: cmd
     - name: Build DSI Studio CPU
       run: |
         for /f "usebackq delims=#" %%a in (`"%programfiles(x86)%\Microsoft Visual Studio\Installer\vswhere" -latest -property installationPath`) do call "%%a\Common7\Tools\VsDevCmd.bat" -arch=x64
         mkdir -p build_cpu
         cmake -S . -B build_cpu -GNinja "-DCMAKE_BUILD_TYPE:STRING=Release" "-DCMAKE_C_COMPILER:STRING=cl" "-DCMAKE_CXX_COMPILER:STRING=cl" -DTIPL_DIR=.
         cmake --build ./build_cpu --parallel --config Release
-      shell: cmd
-      
+      shell: cmd        
+    - name: Install Cuda
+      uses: Jimver/cuda-toolkit@v0.2.5
+    - name: Build DSI Studio
+      run: |
+        for /f "usebackq delims=#" %%a in (`"%programfiles(x86)%\Microsoft Visual Studio\Installer\vswhere" -latest -property installationPath`) do call "%%a\Common7\Tools\VsDevCmd.bat" -arch=x64
+        mkdir -p build
+        cmake -S . -B build -GNinja "-DCMAKE_BUILD_TYPE:STRING=Release" "-DCMAKE_C_COMPILER:STRING=cl" "-DCMAKE_CXX_COMPILER:STRING=cl" -DCUDA_ARCH=all -DTIPL_DIR=.
+        cmake --build ./build --parallel --config Release
+      shell: cmd      
     - name: Packaging
       run: |
         mkdir dsi_studio_win
