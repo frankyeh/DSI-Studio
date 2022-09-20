@@ -370,7 +370,7 @@ jobs:
         rename dsi_studio_win dsi_studio_win_cpu
         move build_cpu\dsi_studio.exe dsi_studio_win_cpu
         windeployqt --no-translations --no-system-d3d-compiler --compiler-runtime --no-opengl-sw dsi_studio_win_cpu\dsi_studio.exe
-        
+        shell: cmd  
     - name: Zip Release
       uses: TheDoctor0/zip-release@0.6.0
       with:
