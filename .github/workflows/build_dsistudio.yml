@@ -358,19 +358,19 @@ jobs:
         rd dsi_studio_win\plugin\tiny_fsl
         del *.zip
         
-    - name: Packaging
-      run: |
-        copy dsi_studio_win dsi_studio_win_cpu
-        move build_cpu\dsi_studio.exe dsi_studio_win_cpu
-        windeployqt --no-translations --no-system-d3d-compiler --compiler-runtime --no-opengl-sw dsi_studio_win_cpu\dsi_studio.exe
-        
     - name: Zip Release
       uses: TheDoctor0/zip-release@0.6.0
       with:
         filename: dsi_studio_win.zip
         exclusions: .git
         path: dsi_studio_win
-
+    
+    - name: Packaging
+      run: |
+        rename dsi_studio_win dsi_studio_win_cpu
+        move build_cpu\dsi_studio.exe dsi_studio_win_cpu
+        windeployqt --no-translations --no-system-d3d-compiler --compiler-runtime --no-opengl-sw dsi_studio_win_cpu\dsi_studio.exe
+        
     - name: Zip Release
       uses: TheDoctor0/zip-release@0.6.0
       with:
