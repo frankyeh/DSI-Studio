@@ -347,35 +347,34 @@ bool get_connectivity_matrix(program_option& po,
                 continue;
             }
 
-
             std::string file_name_stat(output_name);
             file_name_stat += ".";
             file_name_stat += (std::filesystem::exists(connectivity_roi)) ? QFileInfo(connectivity_roi.c_str()).baseName().toStdString():connectivity_roi;
             file_name_stat += ".";
             file_name_stat += connectivity_value;
             file_name_stat += use_end_only ? ".end":".pass";
-            file_name_stat += ".connectivity.mat";
 
             if(connectivity_output.find("matrix") != std::string::npos)
             {
-                show_progress() << "export connectivity matrix to " << file_name_stat << std::endl;
-                data.save_to_file(file_name_stat.c_str());
+                std::string matrix = file_name_stat + ".connectivity.mat";
+                show_progress() << "export connectivity matrix to " << matrix << std::endl;
+                data.save_to_file(matrix.c_str());
             }
 
             if(connectivity_output.find("connectogram") != std::string::npos)
             {
-                std::string connectogram = file_name_stat += ".connectogram.txt";
+                std::string connectogram = file_name_stat + ".connectogram.txt";
                 show_progress() << "export connectogram to " << connectogram << std::endl;
                 data.save_to_connectogram(connectogram.c_str());
             }
 
             if(connectivity_output.find("measure") != std::string::npos)
             {
-                std::string network_measures = file_name_stat + ".network_measures.txt";
-                show_progress() << "export network measures to " << network_measures << std::endl;
+                std::string measure = file_name_stat + ".network_measures.txt";
+                show_progress() << "export network measures to " << measure << std::endl;
                 std::string report;
                 data.network_property(report);
-                std::ofstream out(network_measures.c_str());
+                std::ofstream out(measure.c_str());
                 out << report;
             }
         }
