@@ -406,11 +406,7 @@ bool load_region(program_option& po,std::shared_ptr<fib_data> handle,
             file_name = file_name.substr(0,pos);
         }
     }
-
-    show_progress() << "read region from file:" << file_name;
-    if(!region_name.empty())
-        show_progress() << " region:" << region_name;
-    show_progress() << std::endl;
+    show_progress() << "load " << (region_name.empty() ? std::string("volume"):region_name) << " from " << file_name << std::endl;
 
     if(QString(file_name.c_str()).endsWith(".nii.gz") ||
        QString(file_name.c_str()).endsWith(".nii"))
