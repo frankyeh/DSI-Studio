@@ -1812,6 +1812,7 @@ std::shared_ptr<atlas> fib_data::get_atlas(const std::string atlas_name)
 
 bool fib_data::get_atlas_roi(const std::string& atlas_name,const std::string& region_name,std::vector<tipl::vector<3,short> >& points)
 {
+    show_progress() << "loading " << region_name << " from " << atlas_name << std::endl;
     if(region_name.empty())
     {
         error_msg = "not a valid region assignment";
