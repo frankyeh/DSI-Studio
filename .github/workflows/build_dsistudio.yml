@@ -280,7 +280,7 @@ jobs:
       run: |
         curl -sSLO "https://github.com/frankyeh/TinyFSL/releases/download/2022.08.03/tiny_fsl_${{ matrix.os }}.zip"
         7z e tiny_fsl_${{ matrix.os }}.zip -obuild/dsi_studio.app/Contents/MacOS/plugin
-        rd build/dsi_studio.app/Contents/MacOS/plugin/tiny_fsl
+        rm -fr build/dsi_studio.app/Contents/MacOS/plugin/tiny_fsl
         mv other/* build/dsi_studio.app/Contents/MacOS/
         mv dsi_studio.icns build/dsi_studio.app/Contents/Resources/
         mv DSI-Studio-atlas build/dsi_studio.app/Contents/MacOS/atlas
@@ -320,8 +320,6 @@ jobs:
         del install_zlib.bat
         del "C:/Program Files/zlib/lib/zlib.lib"
         del "C:/Program Files/zlib/bin/zlib.dll"
-    - name: Install Cuda
-      uses: Jimver/cuda-toolkit@v0.2.5
     - name: Install Ninja and CMake
       run: |    
         choco install ninja cmake
@@ -329,14 +327,22 @@ jobs:
       run: |
         git clone https://github.com/frankyeh/TIPL.git
         git clone https://github.com/frankyeh/DSI-Studio-atlas.git
+    - name: Build DSI Studio CPU
+      run: |
+        for /f "usebackq delims=#" %%a in (`"%programfiles(x86)%\Microsoft Visual Studio\Installer\vswhere" -latest -property installationPath`) do call "%%a\Common7\Tools\VsDevCmd.bat" -arch=x64
+        mkdir -p build_cpu
+        cmake -S . -B build_cpu -GNinja "-DCMAKE_BUILD_TYPE:STRING=Release" "-DCMAKE_C_COMPILER:STRING=cl" "-DCMAKE_CXX_COMPILER:STRING=cl" -DTIPL_DIR=.
+        cmake --build ./build_cpu --parallel --config Release
+      shell: cmd        
+    - name: Install Cuda
+      uses: Jimver/cuda-toolkit@v0.2.5
     - name: Build DSI Studio
       run: |
         for /f "usebackq delims=#" %%a in (`"%programfiles(x86)%\Microsoft Visual Studio\Installer\vswhere" -latest -property installationPath`) do call "%%a\Common7\Tools\VsDevCmd.bat" -arch=x64
         mkdir -p build
-        cmake -S . -B build -GNinja "-DCMAKE_BUILD_TYPE:STRING=Release" "-DCMAKE_C_COMPILER:STRING=cl" "-DCMAKE_CXX_COMPILER:STRING=cl" -DCUDA_ARCH=all -DTIPL_DIR=.
+        cmake -S . -B build -GNinja "-DCMAKE_BUILD_TYPE:STRING=Release" "-DCMAKE_C_COMPILER:STRING=cl" "-DCMAKE_CXX_COMPILER:STRING=cl" -DTIPL_DIR=.
         cmake --build ./build --parallel --config Release
-      shell: cmd
-
+      shell: cmd      
     - name: Packaging
       run: |
         mkdir dsi_studio_win
@@ -351,12 +357,27 @@ jobs:
         rm dsi_studio_win\plugin\cublas*
         rd dsi_studio_win\plugin\tiny_fsl
         del *.zip
+        
     - name: Zip Release
       uses: TheDoctor0/zip-release@0.6.0
       with:
         filename: dsi_studio_win.zip
         exclusions: .git
         path: dsi_studio_win
+    
+    - name: Packaging
+      run: |
+        rename dsi_studio_win dsi_studio_win_cpu
+        move build_cpu\dsi_studio.exe dsi_studio_win_cpu
+        windeployqt --no-translations --no-system-d3d-compiler --compiler-runtime --no-opengl-sw dsi_studio_win_cpu\dsi_studio.exe
+      shell: cmd  
+    - name: Zip Release
+      uses: TheDoctor0/zip-release@0.6.0
+      with:
+        filename: dsi_studio_win_cpu.zip
+        exclusions: .git
+        path: dsi_studio_win_cpu
+        
     - name: Create Release
       uses: ncipollo/release-action@v1.8.9
       with:
