@@ -101,7 +101,9 @@ void ROIRegion::add_points(std::vector<tipl::vector<3,short> >&& points, bool de
     tipl::aggregate_results(std::move(region_at_thread),region);
 
 
-
+    show_progress() << "region dimension: " << dim << std::endl;
+    show_progress() << "region voxel size: " << vs << std::endl;
+    show_progress() << "region voxel count: " << region.size() << std::endl;
 }
 
 // ---------------------------------------------------------------------------
