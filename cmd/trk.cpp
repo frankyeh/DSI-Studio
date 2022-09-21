@@ -443,7 +443,6 @@ bool load_region(program_option& po,std::shared_ptr<fib_data> handle,
     {
         if(!region_name.empty())
         {
-            show_progress() << "loading " << region_name << " from atlas " << file_name << std::endl;
             std::vector<tipl::vector<3,short> > points;
             if(!handle->get_atlas_roi(file_name,region_name,points))
             {
@@ -467,6 +466,7 @@ bool load_region(program_option& po,std::shared_ptr<fib_data> handle,
     }
     if(roi.region.empty())
         show_progress() << "WARNING: " << file_name << " is an empty region file" << std::endl;
+
     return true;
 }
 
