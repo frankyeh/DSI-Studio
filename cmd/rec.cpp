@@ -88,28 +88,6 @@ int rec(program_option& po)
         }
     }
 
-    if(po.has("other_image"))
-    {
-        QStringList file_list = QString(po.get("other_image").c_str()).split(",");
-        for(int i = 0;i < file_list.size();++i)
-        {
-            QStringList name_value = file_list[i].split(":");
-            if(name_value.size() == 1)
-            {
-                show_progress() << "invalid parameter: " << file_list[i].toStdString() << std::endl;
-                return 1;
-            }
-            if(name_value.size() == 3) // handle windows directory with drive letter
-            {
-                name_value[1] += ":";
-                name_value[1] += name_value[2];
-            }
-            show_progress() << name_value[0].toStdString() << ":" << name_value[1].toStdString() << std::endl;
-            if(!add_other_image(&src,name_value[0],name_value[1]))
-                return 1;
-        }
-    }
-
     {
         progress prog("additional processing steps");
         if (po.has("remove"))
@@ -219,6 +197,28 @@ int rec(program_option& po)
             return -1;
         }
         return 0;
+    }
+
+    if(po.has("other_image"))
+    {
+        QStringList file_list = QString(po.get("other_image").c_str()).split(",");
+        for(int i = 0;i < file_list.size();++i)
+        {
+            QStringList name_value = file_list[i].split(":");
+            if(name_value.size() == 1)
+            {
+                show_progress() << "invalid parameter: " << file_list[i].toStdString() << std::endl;
+                return 1;
+            }
+            if(name_value.size() == 3) // handle windows directory with drive letter
+            {
+                name_value[1] += ":";
+                name_value[1] += name_value[2];
+            }
+            show_progress() << name_value[0].toStdString() << ":" << name_value[1].toStdString() << std::endl;
+            if(!add_other_image(&src,name_value[0],name_value[1]))
+                return 1;
+        }
     }
 
     if(po.has("output"))
