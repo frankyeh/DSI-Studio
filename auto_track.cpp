@@ -155,7 +155,7 @@ std::string run_auto_track(program_option& po,const std::vector<std::string>& fi
 
     std::vector<std::string> reports(track_id.size());
     std::vector<std::vector<std::string> > stat_files(track_id.size());
-    std::string dir = QFileInfo(file_list.front().c_str()).absolutePath().toStdString();
+    std::string dir = po.get("output",QFileInfo(file_list.front().c_str()).absolutePath().toStdString());
 
     fib_data fib;
     fib.set_template_id(0);
