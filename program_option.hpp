@@ -85,6 +85,22 @@ public:
         {
             std::string str;
             in >> str;
+            if(str.find('"') != std::string::npos)
+            {
+                str.erase(str.find('"'),1);
+                while(in)
+                {
+                    std::string other_str;
+                    in >> other_str;
+                    str += " ";
+                    str += other_str;
+                    if(other_str.find('"') != std::string::npos)
+                    {
+                        str.erase(str.find('"'),1);
+                        break;
+                    }
+                }
+            }
             if(!str.empty() && !add_option(str))
             {
                 error_msg = "cannot parse: ";
