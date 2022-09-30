@@ -329,11 +329,11 @@ const char* odf_average(const char* out_name,std::vector<std::string>& file_name
                 ti.fold = uint16_t(std::floor(std::sqrt((ti.vertices_count-2)/10.0)+0.5));
                 mni = fib.trans_to_mni;
                 fib.get_index_list(other_metrics_name);
-                // remove odf metrics generated from averaged ODFs
-                other_metrics_name.erase(std::find(other_metrics_name.begin(),other_metrics_name.end(),std::string("iso")));
-                other_metrics_name.erase(std::find(other_metrics_name.begin(),other_metrics_name.end(),std::string("qa")));
-                other_metrics_name.erase(std::find(other_metrics_name.begin(),other_metrics_name.end(),std::string("gfa")));
-                other_metrics_name.erase(std::find(other_metrics_name.begin(),other_metrics_name.end(),std::string("nqa")));
+                 // remove odf metrics generated from averaged ODFs
+                other_metrics_name.erase(std::remove(other_metrics_name.begin(),other_metrics_name.end(),std::string("iso")),other_metrics_name.end());
+                other_metrics_name.erase(std::remove(other_metrics_name.begin(),other_metrics_name.end(),std::string("qa")),other_metrics_name.end());
+                other_metrics_name.erase(std::remove(other_metrics_name.begin(),other_metrics_name.end(),std::string("gfa")),other_metrics_name.end());
+                other_metrics_name.erase(std::remove(other_metrics_name.begin(),other_metrics_name.end(),std::string("nqa")),other_metrics_name.end());
                 other_metrics_images.resize(other_metrics_name.size());
                 other_metrics_count.resize(other_metrics_name.size());
             }
