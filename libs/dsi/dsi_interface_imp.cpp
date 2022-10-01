@@ -190,6 +190,7 @@ bool ImageModel::reconstruction(void)
             // obtain QA map for normalization
             {
                 auto mask = voxel.mask;
+                voxel.mask = 1;
                 // clear mask to create whole volume QA map
                 if (!reconstruct2<
                         ReadDWIData,
