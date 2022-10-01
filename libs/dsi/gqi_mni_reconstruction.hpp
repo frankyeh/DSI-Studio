@@ -255,8 +255,6 @@ public:
             voxel.mask.resize(VG.shape());
             for(size_t index = 0;index < VG.size();++index)
                 voxel.mask[index] = VG[index] > 0.0f ? 1:0;
-            for(int i = 0;i < 5;++i)
-                tipl::morphology::smoothing_fill(voxel.mask);
         }
 
         // compute mappings
