@@ -1356,7 +1356,7 @@ bool fib_data::load_template(void)
         return false;
     }
 
-    if(template_id == matched_template_id)
+    if(is_mni && template_id == matched_template_id)
     {
         // set template space to current space
         template_I.resize(dim);
@@ -1619,7 +1619,7 @@ bool fib_data::map_to_mni(bool background)
 {
     if(!load_template())
         return false;
-    if(template_id == matched_template_id)
+    if(is_mni && template_id == matched_template_id)
         return true;
     if(!s2t.empty() && !t2s.empty())
         return true;
@@ -1761,7 +1761,7 @@ bool fib_data::map_to_mni(bool background)
 
 void fib_data::temp2sub(tipl::vector<3>& pos)
 {
-    if(template_id == matched_template_id)
+    if(is_mni && template_id == matched_template_id)
         return;
     if(!t2s.empty())
     {
@@ -1775,7 +1775,7 @@ void fib_data::temp2sub(tipl::vector<3>& pos)
 
 void fib_data::sub2temp(tipl::vector<3>& pos)
 {
-    if(template_id == matched_template_id)
+    if(is_mni && template_id == matched_template_id)
         return;
     if(!s2t.empty())
     {
@@ -1961,7 +1961,7 @@ const tipl::image<3,tipl::vector<3,float> >& fib_data::get_sub2temp_mapping(void
         return s2t;
     if(!map_to_mni(false))
         return s2t;
-    if(template_id == matched_template_id && s2t.empty())
+    if(is_mni && template_id == matched_template_id && s2t.empty())
     {
         s2t.resize(dim);
         tipl::par_for(tipl::begin_index(s2t.shape()),tipl::end_index(s2t.shape()),
