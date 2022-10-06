@@ -224,7 +224,7 @@ int atl(program_option& po)
                     if(multiple)
                     {
                         show_progress() << "save " << output << std::endl;
-                        if(!gz_nifti::save_to_file(output.c_str(),roi,handle->vs,handle->trans_to_mni,handle->is_qsdr))
+                        if(!gz_nifti::save_to_file(output.c_str(),roi,handle->vs,handle->trans_to_mni,handle->is_mni))
                             show_progress() << "cannot write output to file:" << output << std::endl;
                     }
                 }
@@ -240,7 +240,7 @@ int atl(program_option& po)
         }
         if(cmd=="trk")
         {
-            if(!handle->is_qsdr)
+            if(!handle->is_mni)
             {
                 show_progress() << "ERROR: only QSDR reconstructed FIB file is supported." << std::endl;
                 return 1;

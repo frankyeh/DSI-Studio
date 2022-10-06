@@ -512,7 +512,7 @@ bool fib_data::load_from_file(const char* file_name)
             header.toLPS(I);
             header.get_voxel_size(vs);
             header.get_image_transformation(trans_to_mni);
-            is_mni_image = header.is_mni();
+            is_mni = header.is_mni();
         }
     }
     else
@@ -752,7 +752,7 @@ bool fib_data::save_mapping(const std::string& index_name,const std::string& fil
         for(size_t i = 0;i < dim.size();++i,++index)
             buf[index] = dir.get_fib(i,j)[k];
 
-        return gz_nifti::save_to_file(file_name.c_str(),buf,vs,trans_to_mni,is_qsdr);
+        return gz_nifti::save_to_file(file_name.c_str(),buf,vs,trans_to_mni,is_mni);
     }
     if(index_name.length() == 4 && index_name.substr(0,3) == "dir" && index_name[3]-'0' >= 0 && index_name[3]-'0' < int(dir.num_fiber))
     {
@@ -762,7 +762,7 @@ bool fib_data::save_mapping(const std::string& index_name,const std::string& fil
         for(size_t index = 0;index < dim.size();++index,++ptr)
             if(dir.fa[dir_index][index] > 0.0f)
                 buf[ptr] = dir.get_fib(index,dir_index)[j];
-        return gz_nifti::save_to_file(file_name.c_str(),buf,vs,trans_to_mni,is_qsdr);
+        return gz_nifti::save_to_file(file_name.c_str(),buf,vs,trans_to_mni,is_mni);
     }
     if(index_name == "odfs")
     {
@@ -784,7 +784,7 @@ bool fib_data::save_mapping(const std::string& index_name,const std::string& fil
                 std::copy(ptr,ptr+dir.half_odf_size,buf.begin()+int64_t(pos)*dir.half_odf_size);
 
         }
-        return gz_nifti::save_to_file(file_name.c_str(),buf,vs,trans_to_mni,is_qsdr);
+        return gz_nifti::save_to_file(file_name.c_str(),buf,vs,trans_to_mni,is_mni);
     }
     size_t index = get_name_index(index_name);
     if(index >= view_item.size())
@@ -799,7 +799,7 @@ bool fib_data::save_mapping(const std::string& index_name,const std::string& fil
             get_slice(uint32_t(index),uint8_t(2),uint32_t(z),I);
             std::copy(I.begin(),I.end(),buf.begin()+size_t(z)*buf.plane_size());
         }
-        return gz_nifti::save_to_file(file_name.c_str(),buf,vs,trans_to_mni,is_qsdr);
+        return gz_nifti::save_to_file(file_name.c_str(),buf,vs,trans_to_mni,is_mni);
     }
 
 
@@ -818,7 +818,7 @@ bool fib_data::save_mapping(const std::string& index_name,const std::string& fil
             tipl::resample_mt<tipl::interpolation::cubic>(buf,new_buf,tipl::transformation_matrix<float>(view_item[index].iT));
             new_buf.swap(buf);
         }
-        return gz_nifti::save_to_file(file_name.c_str(),buf,vs,trans_to_mni,is_qsdr);
+        return gz_nifti::save_to_file(file_name.c_str(),buf,vs,trans_to_mni,is_mni);
     }
 }
 bool is_human_size(tipl::shape<3> dim,tipl::vector<3> vs)
@@ -846,7 +846,7 @@ bool fib_data::load_from_mat(void)
         return false;
     }
     if (mat_reader.read("trans",trans_to_mni))
-        is_qsdr = true;
+        is_mni = true;
     if(!dir.add_data(mat_reader))
     {
         error_msg = dir.error_msg;
@@ -898,7 +898,7 @@ bool fib_data::load_from_mat(void)
         return false;
     }
 
-    if(is_qsdr)
+    if(is_mni)
     {
         mat_reader.read("native_dimension",native_geo);
         mat_reader.read("native_voxel_size",native_vs);
@@ -911,13 +911,14 @@ bool fib_data::load_from_mat(void)
         }
 
         // matching templates
+        matched_template_id = 0;
         for(size_t index = 0;index < fa_template_list.size();++index)
         {
             if(QString(fib_file_name.c_str()).contains(QFileInfo(fa_template_list[index].c_str()).baseName(),Qt::CaseInsensitive) ||
                QString(fa_template_list[index].c_str()).contains(QFileInfo(fib_file_name.c_str()).baseName(),Qt::CaseInsensitive))
             {
-                set_template_id(index);
-                return true;
+                matched_template_id = index;
+                break;
             }
             gz_nifti read;
             if(!read.load_from_file(fa_template_list[index]))
@@ -926,14 +927,14 @@ bool fib_data::load_from_mat(void)
             tipl::image<3> dummy;
             read.toLPS(dummy,true,false);
             read.get_voxel_size(Itvs);
-            if(std::abs(dim[0]-read.nif_header.dim[1]*Itvs[0]/vs[0]) < 2.0f)
+            if(std::abs(dim[0]-read.nif_header.dim[1]*Itvs[0]/vs[0]) < 4.0f)
             {
-                set_template_id(index);
-                return true;
+                matched_template_id = index;
+                break;
             }
         }
-        // older version of QSDR
-        set_template_id(0);
+        show_progress() << "matched template: " << fa_template_list[matched_template_id] << std::endl;
+        set_template_id(matched_template_id);
         return true;
     }
 
@@ -1355,9 +1356,7 @@ bool fib_data::load_template(void)
         return false;
     }
 
-    is_template_space = is_mni_image || (is_qsdr && std::abs(float(dim[0])-I.width()*I_vs[0]/vs[0]) < 2);
-
-    if(is_template_space)
+    if(template_id == matched_template_id)
     {
         // set template space to current space
         template_I.resize(dim);
@@ -1620,7 +1619,7 @@ bool fib_data::map_to_mni(bool background)
 {
     if(!load_template())
         return false;
-    if(is_template_space)
+    if(template_id == matched_template_id)
         return true;
     if(!s2t.empty() && !t2s.empty())
         return true;
@@ -1762,7 +1761,7 @@ bool fib_data::map_to_mni(bool background)
 
 void fib_data::temp2sub(tipl::vector<3>& pos)
 {
-    if(is_template_space)
+    if(template_id == matched_template_id)
         return;
     if(!t2s.empty())
     {
@@ -1776,7 +1775,7 @@ void fib_data::temp2sub(tipl::vector<3>& pos)
 
 void fib_data::sub2temp(tipl::vector<3>& pos)
 {
-    if(is_template_space)
+    if(template_id == matched_template_id)
         return;
     if(!s2t.empty())
     {
@@ -1962,7 +1961,7 @@ const tipl::image<3,tipl::vector<3,float> >& fib_data::get_sub2temp_mapping(void
         return s2t;
     if(!map_to_mni(false))
         return s2t;
-    if(is_template_space && s2t.empty())
+    if(template_id == matched_template_id && s2t.empty())
     {
         s2t.resize(dim);
         tipl::par_for(tipl::begin_index(s2t.shape()),tipl::end_index(s2t.shape()),

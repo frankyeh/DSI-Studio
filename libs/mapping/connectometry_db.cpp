@@ -457,7 +457,7 @@ bool connectometry_db::add_subject_file(const std::string& file_name,
             subject_report = fib.report;
         fib.mat_reader.read("R2",subject_R2);
 
-        if(fib.is_qsdr && fib.has_odfs() &&
+        if(fib.is_mni && fib.has_odfs() &&
            (index_name == "qa" || index_name == "nqa" || index_name.empty()))
         {
             odf_data subject_odf;
@@ -511,7 +511,7 @@ bool connectometry_db::add_subject_file(const std::string& file_name,
             }
 
             {
-                if(fib.is_qsdr)
+                if(fib.is_mni)
                     sample_from_image(fib.view_item[index].get_image(),fib.trans_to_mni,data);
                 else
                 {

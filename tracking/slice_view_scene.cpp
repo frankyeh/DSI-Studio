@@ -251,7 +251,7 @@ void draw_ruler(QPainter& paint,
 void slice_view_scene::show_ruler(QPainter& paint,std::shared_ptr<SliceModel> current_slice,unsigned char cur_dim)
 {
     auto trans = cur_tracking_window.handle->trans_to_mni;
-    if(cur_tracking_window.handle->is_qsdr)
+    if(cur_tracking_window.handle->is_mni)
     {
         if(!current_slice->is_diffusion_space)
             trans *= current_slice->T;

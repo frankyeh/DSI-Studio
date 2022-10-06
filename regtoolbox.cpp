@@ -569,14 +569,20 @@ void RegToolBox::on_actionApply_Warpping_triggered()
     }
     else
     {
-        std::string error;
-        tipl::par_for(from.size(),[&](unsigned int i)
+        progress p("save files");
+        for(int i = 0;progress::at(i,from.size());++i)
         {
-            apply_warping(from[i].toStdString().c_str(),
+            std::string error;
+            if(!apply_warping(from[i].toStdString().c_str(),
                           (from[i]+".wp.nii.gz").toStdString().c_str(),
-                          I.shape(),IR,to2from,Itvs,ItR,error);
+                          I.shape(),IR,to2from,Itvs,ItR,error))
 
-        });
+            {
+                QMessageBox::critical(this,"ERROR",error.c_str());
+                return;
+            }
+        }
+        QMessageBox::information(this,"DSI Studio","Saved");
     }
 }
 

@@ -148,12 +148,12 @@ public:
                            unsigned char,
                            const std::vector<std::shared_ptr<SliceModel> >& overlay_slices) const;
 public:
-    bool initialize(const std::vector<std::string>& files,bool is_mni_image = false);
-    bool initialize(const std::string& file,bool is_mni_image = false)
+    bool initialize(const std::vector<std::string>& files,bool is_mni = false);
+    bool initialize(const std::string& file,bool is_mni = false)
     {
         std::vector<std::string> files;
         files.push_back(file);
-        return initialize(files,is_mni_image);
+        return initialize(files,is_mni);
     }
 };
 

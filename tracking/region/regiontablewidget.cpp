@@ -570,7 +570,7 @@ bool load_nii(std::shared_ptr<fib_data> handle,
               std::vector<std::shared_ptr<ROIRegion> >& regions,
               std::vector<std::string>& names,
               std::string& error_msg,
-              bool is_mni_image)
+              bool is_mni)
 {
     progress prog("load NIFTI file");
     gz_nifti header;
@@ -655,7 +655,7 @@ bool load_nii(std::shared_ptr<fib_data> handle,
     {
         show_progress() <<"NIFTI file has a different dimension from DWI." << std::endl;
 
-        if(handle->is_qsdr)
+        if(handle->is_mni)
         {
             for(unsigned int index = 0;index < handle->view_item.size();++index)
                 if(handle->view_item[index].native_geo == from.shape())
@@ -688,7 +688,7 @@ bool load_nii(std::shared_ptr<fib_data> handle,
                 goto end;
             }
 
-        if(handle->is_qsdr || handle->is_mni_image)
+        if(handle->is_mni || handle->is_mni)
         {
             show_progress() <<"loaded NIFTI file used as MNI space image." << std::endl;
             to_diffusion_space = tipl::from_space(T).to(handle->trans_to_mni);
@@ -696,7 +696,7 @@ bool load_nii(std::shared_ptr<fib_data> handle,
             goto end;
         }
 
-        if(header.is_mni() || is_mni_image)
+        if(header.is_mni() || is_mni)
         {
             show_progress() <<"warpping the NIFTI file from MNI space to the native space." << std::endl;
             if(!handle->mni2sub<tipl::interpolation::nearest>(from,T))
@@ -799,7 +799,7 @@ bool load_nii(std::shared_ptr<fib_data> handle,
     return true;
 }
 
-bool RegionTableWidget::load_multiple_roi_nii(QString file_name,bool is_mni_image)
+bool RegionTableWidget::load_multiple_roi_nii(QString file_name,bool is_mni)
 {
     QStringList files = file_name.split(",");
     std::vector<std::pair<tipl::shape<3>,tipl::matrix<4,4> > > transform_lookup;
@@ -831,7 +831,7 @@ bool RegionTableWidget::load_multiple_roi_nii(QString file_name,bool is_mni_imag
                          transform_lookup,
                          loaded_regions[i],
                          names[i],
-                         error_msg,is_mni_image))
+                         error_msg,is_mni))
                 {
                     failed = true;
                     return;
@@ -1175,7 +1175,7 @@ void RegionTableWidget::save_all_regions_to_4dnifti(void)
     if(gz_nifti::save_to_file(filename.toStdString().c_str(),multiple_I,
                               checked_regions[0]->vs,
                               checked_regions[0]->trans_to_mni,
-                              cur_tracking_window.handle->is_qsdr))
+                              cur_tracking_window.handle->is_mni))
     {
         save_checked_region_label_file(filename,0);  // 4d nifti index starts from 0
         QMessageBox::information(this,"DSI Studio","saved");
@@ -1220,14 +1220,14 @@ void RegionTableWidget::save_all_regions(void)
         result = gz_nifti::save_to_file(filename.toStdString().c_str(),i8mask,
                            cur_tracking_window.current_slice->vs,
                            cur_tracking_window.handle->trans_to_mni,
-                           cur_tracking_window.handle->is_qsdr || cur_tracking_window.handle->is_mni_image);
+                           cur_tracking_window.handle->is_mni || cur_tracking_window.handle->is_mni);
     }
     else
     {
         result = gz_nifti::save_to_file(filename.toStdString().c_str(),mask,
                            cur_tracking_window.current_slice->vs,
                            cur_tracking_window.handle->trans_to_mni,
-                           cur_tracking_window.handle->is_qsdr || cur_tracking_window.handle->is_mni_image);
+                           cur_tracking_window.handle->is_mni || cur_tracking_window.handle->is_mni);
     }
     if(result)
     {
@@ -1474,7 +1474,7 @@ void RegionTableWidget::do_action(QString action)
                 region->is_diffusion_space = true;
                 region->to_diffusion_space = tipl::identity_matrix();
                 region->trans_to_mni = handle->trans_to_mni;
-                region->is_mni = handle->is_qsdr;
+                region->is_mni = handle->is_mni;
                 region->region.clear();
                 region->undo_backup.clear();
                 region->redo_backup.clear();

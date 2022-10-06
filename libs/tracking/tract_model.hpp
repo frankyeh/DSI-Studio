@@ -50,7 +50,7 @@ public:
         bool delete_branch(void);
         bool delete_by_length(float length);
 public:
-        TractModel(std::shared_ptr<fib_data> handle):geo(handle->dim),vs(handle->vs),trans_to_mni(handle->trans_to_mni),is_mni(handle->is_qsdr){}
+        TractModel(std::shared_ptr<fib_data> handle):geo(handle->dim),vs(handle->vs),trans_to_mni(handle->trans_to_mni),is_mni(handle->is_mni){}
         TractModel(tipl::shape<3> dim_,tipl::vector<3> vs_):geo(dim_),vs(vs_)
         {
             initial_LPS_nifti_srow(trans_to_mni,geo,vs);

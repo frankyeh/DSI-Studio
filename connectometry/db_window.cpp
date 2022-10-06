@@ -359,7 +359,7 @@ void db_window::on_actionSave_mask_triggered()
     for(unsigned int index = 0;index < mask.size();++index)
         if(vbc->handle->dir.fa[0][index] < fiber_threshold)
             mask[index] = 0;
-    gz_nifti::save_to_file(FileName.toStdString().c_str(),mask,vbc->handle->vs,vbc->handle->trans_to_mni,vbc->handle->is_qsdr);
+    gz_nifti::save_to_file(FileName.toStdString().c_str(),mask,vbc->handle->vs,vbc->handle->trans_to_mni,vbc->handle->is_mni);
 }
 void db_window::update_db(void)
 {
@@ -488,7 +488,7 @@ void db_window::on_actionAdd_DB_triggered()
             QMessageBox::critical(this,"ERROR",handle->error_msg.c_str());
             return;
         }
-        if(!handle->is_qsdr)
+        if(!handle->is_mni)
         {
             QMessageBox::critical(this,"ERROR",filenames[i] + " is not from the QSDR reconstruction.");
             break;

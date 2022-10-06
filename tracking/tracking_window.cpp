@@ -156,7 +156,7 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         show_progress() << "prepare template and atlases" << std::endl;
         {
             populate_templates(ui->template_box,handle->template_id);
-            if(handle->is_qsdr)
+            if(handle->is_mni)
             {
                 if(std::filesystem::exists(handle->t1w_template_file_name.c_str()))
                     addSlices(QStringList() << QString(handle->t1w_template_file_name.c_str()),"t1w",true);
@@ -904,7 +904,7 @@ bool tracking_window::eventFilter(QObject *obj, QEvent *event)
             .arg(std::round(pos[1]*10.0)/10.0)
             .arg(std::round(pos[2]*10.0)/10.0);
 
-    if(handle->is_template_space || !handle->s2t.empty())
+    if(handle->template_id == handle->matched_template_id || !handle->s2t.empty())
     {
         tipl::vector<3,float> mni(pos);
         handle->sub2mni(mni);
@@ -1609,7 +1609,7 @@ void tracking_window::on_actionCut_Z_2_triggered()
 
 void tracking_window::stripSkull()
 {
-    if(!ui->SliceModality->currentIndex() || !handle->is_human_data || handle->is_qsdr)
+    if(!ui->SliceModality->currentIndex() || !handle->is_human_data || handle->is_mni)
         return;
     CustomSliceModel* reg_slice = dynamic_cast<CustomSliceModel*>(current_slice.get());
     if(!reg_slice || !reg_slice->skull_removed_images.empty())

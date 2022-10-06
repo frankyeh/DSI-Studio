@@ -37,7 +37,7 @@ public: // rendering options
         bool modified = true;
 public: // rendering options
         ROIRegion(std::shared_ptr<fib_data> handle):
-            dim(handle->dim),vs(handle->vs),trans_to_mni(handle->trans_to_mni),is_mni(handle->is_qsdr){}
+            dim(handle->dim),vs(handle->vs),trans_to_mni(handle->trans_to_mni),is_mni(handle->is_mni){}
         ROIRegion(tipl::shape<3> dim_,tipl::vector<3> vs_):dim(dim_),vs(vs_)
         {
             initial_LPS_nifti_srow(trans_to_mni,dim,vs);

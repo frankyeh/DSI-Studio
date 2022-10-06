@@ -232,9 +232,8 @@ public:
     tipl::matrix<4,4> trans_to_mni;
     bool is_human_data = true;
     bool is_histology = true;
-    bool is_qsdr = false;
-    bool is_mni_image = false;
-    bool is_template_space = false;
+    bool is_mni = false;
+    size_t matched_template_id = 0;
     bool trackable = true;
     float min_length(void) const
     {

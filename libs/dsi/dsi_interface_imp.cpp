@@ -187,6 +187,10 @@ bool ImageModel::reconstruction(void)
             << float(voxel.param[0]) << " was used.";
             // run gqi to get the spin quantity
 
+
+            if(voxel.qsdr_reso < voxel.vs[0])
+                resample(voxel.qsdr_reso);
+
             // obtain QA map for normalization
             {
                 auto mask = voxel.mask;
@@ -313,7 +317,7 @@ const char* odf_average(const char* out_name,std::vector<std::string>& file_name
             progress::show("reading file");
             if(!fib.load_from_file(file_name.c_str()))
                 throw std::runtime_error(fib.error_msg);
-            if(!fib.is_qsdr)
+            if(!fib.is_mni)
                 throw std::runtime_error("not QSDR fib file");
             if(!fib.has_odfs())
                 throw std::runtime_error("cannot find ODF data in fib file");

@@ -132,7 +132,7 @@ void initial_LPS_nifti_srow(tipl::matrix<4,4>& T,const tipl::shape<3>& geo,const
 void prepare_idx(const char* file_name,std::shared_ptr<gz_istream> in);
 void save_idx(const char* file_name,std::shared_ptr<gz_istream> in);
 bool parse_age_sex(const std::string& file_name,std::string& age,std::string& sex);
-bool CustomSliceModel::initialize(const std::vector<std::string>& files,bool is_mni_image)
+bool CustomSliceModel::initialize(const std::vector<std::string>& files,bool is_mni)
 {
     if(files.empty())
         return false;
@@ -352,8 +352,8 @@ bool CustomSliceModel::initialize(const std::vector<std::string>& files,bool is_
         save_idx(files[0].c_str(),nifti.input_stream);
         nifti.get_voxel_size(vs);
         nifti.get_image_transformation(trans);
-        is_mni = nifti.is_mni() || is_mni_image;
-        if(handle->is_qsdr)
+        is_mni = nifti.is_mni() || is_mni;
+        if(handle->is_mni)
         {
             nifti.get_image_transformation(T);
             invT = tipl::inverse(T = tipl::from_space(T).to(handle->trans_to_mni));

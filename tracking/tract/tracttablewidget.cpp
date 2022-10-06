@@ -701,7 +701,7 @@ void TractTableWidget::save_tracts_in_native(void)
 {
     if(currentRow() >= int(tract_models.size()) || currentRow() < 0)
         return;
-    if(!cur_tracking_window.handle->is_qsdr)
+    if(!cur_tracking_window.handle->is_mni)
     {
         QMessageBox::information(this,"DSI Studio","This function only works with QSDR reconstructed FIB files.");
         return;
@@ -949,7 +949,7 @@ void TractTableWidget::deep_learning_train(void)
     if(filename.isEmpty())
         return;
     // save atlas as a nifti file
-    if(cur_tracking_window.handle->is_qsdr) //QSDR condition
+    if(cur_tracking_window.handle->is_mni) //QSDR condition
     {
         tipl::image<4,int> atlas(tipl::shape<4>(
                 cur_tracking_window.handle->dim[0],

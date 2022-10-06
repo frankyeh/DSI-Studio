@@ -105,7 +105,7 @@ void CreateDBDialog::update_list(void)
             for(auto& name : item_list)
                 ui->index_of_interest->addItem(name.c_str());
             populate_templates(ui->template_list,fib.template_id);
-            ui->template_list->setEnabled(!fib.is_qsdr);
+            ui->template_list->setEnabled(!fib.is_mni);
 
         }
     }
@@ -299,7 +299,7 @@ void CreateDBDialog::on_create_data_base_clicked()
             QMessageBox::critical(this,"ERROR",data->error_msg.c_str());
             return;
         }
-        if(!data->handle->is_qsdr)
+        if(!data->handle->is_mni)
         {
             QMessageBox::critical(this,"ERROR","the template has to be QSDR reconstructed FIB file");
             return;

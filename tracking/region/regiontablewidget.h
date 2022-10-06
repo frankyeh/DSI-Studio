@@ -38,7 +38,7 @@ private:
     tracking_window& cur_tracking_window;
     void do_action(QString action);
     void do_action(QString action,size_t roi_index);
-    bool load_multiple_roi_nii(QString file_name,bool is_mni_image);
+    bool load_multiple_roi_nii(QString file_name,bool is_mni);
 private:
     template<typename func>
     void for_each_checked_region(func fun)

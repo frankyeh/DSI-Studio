@@ -39,7 +39,7 @@ bool load_nii(std::shared_ptr<fib_data> handle,
               std::vector<std::shared_ptr<ROIRegion> >& regions,
               std::vector<std::string>& names,
               std::string& error_msg,
-              bool is_mni_image);
+              bool is_mni);
 
 
 bool load_nii(program_option& po,
@@ -281,7 +281,7 @@ int ana_tract(program_option& po)
         }
         tipl::image<3> pdi(accumulate_map);
         pdi *= 1.0f/float(tract_files.size());
-        if(!gz_nifti::save_to_file(output.c_str(),pdi,handle->vs,handle->trans_to_mni,handle->is_qsdr))
+        if(!gz_nifti::save_to_file(output.c_str(),pdi,handle->vs,handle->trans_to_mni,handle->is_mni))
         {
             show_progress() << "ERROR: cannot write to " << output << std::endl;
             return 1;
