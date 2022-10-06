@@ -298,7 +298,6 @@ public:
         {
             std::vector<tipl::vector<3,short> > seed;
             handle->track_atlas->to_voxel(seed,tipl::identity_matrix(),int(track_id));
-            std::vector<tipl::vector<3,short> > track_roa;
             tipl::image<3,char> roa_mask(handle->dim);
 
             show_progress() << "creating ROA region to limit tracking results" << std::endl;
