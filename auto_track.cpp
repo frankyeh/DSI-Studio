@@ -209,7 +209,7 @@ std::string run_auto_track(program_option& po,const std::vector<std::string>& fi
             }
             std::string fib_base = QFileInfo(fib_file_name.c_str()).baseName().toStdString();
             std::string no_result_file_name = output_path + "/" + fib_base+"."+track_name+".no_result.txt";
-            std::string trk_file_name = output_path + "/" + fib_base+"."+track_name+".tt.gz";
+            std::string trk_file_name = output_path + "/" + fib_base+"."+track_name+ "." + trk_format;
             std::string template_trk_file_name = output_path + "/T_" + fib_base+"."+track_name + "." + trk_format;
             std::string stat_file_name = output_path + "/" + fib_base+"."+track_name+".stat.txt";
             std::string report_file_name = dir+"/"+track_name+".report.txt";
