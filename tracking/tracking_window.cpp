@@ -2081,7 +2081,7 @@ void tracking_window::on_actionOpen_Connectivity_Matrix_triggered()
         tipl::io::mat_read in;
         if(!in.load_from_file(filename.toStdString().c_str()))
         {
-            QMessageBox::critical(this,"ERROR","Please save the MAT file using -v4 option");
+            QMessageBox::critical(this,"ERROR",in.error_msg.c_str());
             return;
         }
         unsigned int row,col;
