@@ -374,9 +374,13 @@ extern console_stream console;
 
 int main(int ac, char *av[])
 {
-
-    if(ac > 2 || QString(av[1]).endsWith(".txt") || QString(av[1]).endsWith(".log"))
+    if(ac > 2)
         return run_cmd(ac,av);
+    if(ac == 2 && std::string(av[1]) == "--version")
+    {
+        std::cout << version_string().toStdString() << " " <<  __DATE__ << std::endl;
+        return 1;
+    }
 
     try{
     QApplication a(ac,av);
