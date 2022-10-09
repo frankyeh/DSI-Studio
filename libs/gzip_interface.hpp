@@ -119,7 +119,7 @@ public:
     }
     bool eof(void) const
     {
-        return in.eof();
+        return (is_gz ? cur_compressed+8 >= file_size : in.eof());
     }
     operator bool() const	{return good();}
     bool operator!() const	{return !good();}
