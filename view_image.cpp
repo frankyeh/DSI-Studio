@@ -538,6 +538,7 @@ void view_image::read_mat_info(void)
     }
     show_info(info);
 }
+void initial_LPS_nifti_srow(tipl::matrix<4,4>& T,const tipl::shape<3>& geo,const tipl::vector<3>& vs);
 bool view_image::read_mat(void)
 {
     if(!mat.read("dimension",shape))
@@ -551,9 +552,13 @@ bool view_image::read_mat(void)
     else
         mat >> I_float32;
 
+    mat.get_voxel_size(vs);
+
     if(mat.has("trans"))
         mat.read("trans",T);
-    mat.get_voxel_size(vs);
+    else
+        initial_LPS_nifti_srow(T,shape,vs);
+
     read_mat_info();
     return true;
 }
