@@ -621,7 +621,26 @@ void db_window::on_actionSave_Demographics_triggered()
     out << vbc->handle->db.demo;
 }
 
+QString get_matched_demo(QWidget *parent,std::shared_ptr<fib_data> handle)
+{
+    std::string demo_cap, demo_sample;
+    for(auto str: handle->db.feature_titles)
+    {
+        demo_cap += str;
+        demo_cap += " ";
+    }
+    std::ostringstream out;
+    // X +1 to skip intercept
+    for(size_t i = 0;i < handle->db.feature_location.size() && i+1 < handle->db.X.size();++i)
+        out << handle->db.X[i+1] << " ";
+    demo_sample = out.str();
+    demo_sample.pop_back();
 
+    bool ok;
+    return QInputDialog::getText(parent,"Specify demographics",
+        QString("Input demographic values for %1 separated by space").arg(demo_cap.c_str()),
+                                          QLineEdit::Normal,demo_sample.c_str(),&ok);
+}
 void db_window::on_actionSave_DemoMatched_Image_as_triggered()
 {
     if(vbc->handle->db.demo.empty())
@@ -630,28 +649,9 @@ void db_window::on_actionSave_DemoMatched_Image_as_triggered()
         return;
     }
 
-    QString param;
-    {
-        std::string demo_cap, demo_sample;
-        for(auto str: vbc->handle->db.feature_titles)
-        {
-            demo_cap += str;
-            demo_cap += " ";
-        }
-        std::ostringstream out;
-        // X +1 to skip intercept
-        for(size_t i = 0;i < vbc->handle->db.feature_location.size() && i+1 < vbc->handle->db.X.size();++i)
-            out << vbc->handle->db.X[i+1] << " ";
-        demo_sample = out.str();
-        demo_sample.pop_back();
-
-        bool ok;
-        param = QInputDialog::getText(this,"Specify demographics",
-            QString("Input demographic values for %1separated by space").arg(demo_cap.c_str()),
-                                              QLineEdit::Normal,demo_sample.c_str(),&ok);
-        if(!ok)
-            return;
-    }
+    QString param = get_matched_demo(this,vbc->handle);
+    if (param.isEmpty())
+                return;
 
     QString filename = QFileDialog::getSaveFileName(
                            this,
