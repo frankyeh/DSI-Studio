@@ -646,7 +646,30 @@ int trk(program_option& po,std::shared_ptr<fib_data> handle)
         // allow adding other slices for creating new metrics
         {
             if(po.has("subject_demo"))
-                handle->demo = po.get("subject_demo");
+            {
+                auto subject_demo = po.get("subject_demo");
+                bool found = false;
+                if(std::filesystem::exists(subject_demo))
+                {
+                    std::ifstream in(subject_demo);
+                    std::string line;
+                    while(std::getline(in,line))
+                    {
+                        std::replace(line.begin(),line.end(),',','\t');
+                        std::istringstream in2(line);
+                        std::string name;
+                        in2 >> name;
+                        if(po.get("source").find(name) != std::string::npos)
+                        {
+                            show_progress() << "found subject's demographics: " << line << std::endl;
+                            found = true;
+                            handle->demo = line.substr(name.length()+1);
+                        }
+                    }
+                }
+                else
+                    handle->demo = subject_demo;
+            }
             if(po.has("other_slices") && !check_other_slices(po.get("other_slices"),handle))
                 return 1;
         }
