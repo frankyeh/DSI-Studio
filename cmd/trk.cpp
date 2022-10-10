@@ -641,7 +641,7 @@ int trk(program_option& po,std::shared_ptr<fib_data> handle)
             return 1;
         }
     }
-    if (po.has("dt_threshold_index"))
+    if (po.has("dt_metric1") && po.has("dt_metric2"))
     {
         // allow adding other slices for creating new metrics
         {
@@ -650,29 +650,14 @@ int trk(program_option& po,std::shared_ptr<fib_data> handle)
             if(po.has("other_slices") && !check_other_slices(po.get("other_slices"),handle))
                 return 1;
         }
-
-        std::string dt_threshold_index = po.get("dt_threshold_index");
-        auto sep = dt_threshold_index.find('-');
-        if(sep == std::string::npos)
+        auto metric_i = handle->get_name_index(po.get("dt_metric1"));
+        auto metric_j = handle->get_name_index(po.get("dt_metric2"));
+        if(metric_i == handle->view_item.size() || metric_j == handle->view_item.size())
         {
-            show_progress() << "ERROR: invalid dt_threshold_index " << std::endl;
-            return 1;
-        }
-        auto metric1 = dt_threshold_index.substr(0,sep);
-        auto metric2 = dt_threshold_index.substr(sep+1);
-        show_progress() << "metric 1:" << metric1 << std::endl;
-        show_progress() << "metric 2:" << metric2 << std::endl;
-
-        int metric_i = (metric1 == "0" ? -1 : int(handle->get_name_index(metric1)));
-        if(metric_i == handle->view_item.size())
-        {
-            show_progress() << "ERROR: invalid dt_threshold_index metric1 " << metric1 << std::endl;
-            return 1;
-        }
-        int metric_j = (metric2 == "0" ? -1 : int(handle->get_name_index(metric2)));
-        if(metric_j == handle->view_item.size())
-        {
-            show_progress() << "ERROR: invalid dt_threshold_index metric2 " << metric2 << std::endl;
+            show_progress() << "ERROR: invalid dt_metric" << std::endl;
+            show_progress() << "Available metrics are the following:" << std::endl;
+            for(size_t i = 0;i < handle->view_item.size();++i)
+                show_progress() << handle->view_item[i].name << std::endl;
             return 1;
         }
         handle->set_dt_index(std::make_pair(metric_i,metric_j),po.get("dt_threshold_type",0));
