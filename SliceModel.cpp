@@ -132,6 +132,7 @@ void initial_LPS_nifti_srow(tipl::matrix<4,4>& T,const tipl::shape<3>& geo,const
 void prepare_idx(const char* file_name,std::shared_ptr<gz_istream> in);
 void save_idx(const char* file_name,std::shared_ptr<gz_istream> in);
 bool parse_age_sex(const std::string& file_name,std::string& age,std::string& sex);
+QString get_matched_demo(QWidget *parent,std::shared_ptr<fib_data>);
 bool CustomSliceModel::initialize(const std::vector<std::string>& files,bool is_mni)
 {
     if(files.empty())
@@ -315,6 +316,8 @@ bool CustomSliceModel::initialize(const std::vector<std::string>& files,bool is_
                 demo = age+" "+sex;
             if(!handle->demo.empty())
                 demo = handle->demo;
+            if(demo.empty() && has_gui)
+                demo = get_matched_demo(nullptr,db_handle).toStdString();
             if(!db_handle->db.get_demo_matched_volume(demo,source_images))
             {
                 error_msg = db_handle->db.error_msg;
