@@ -154,6 +154,7 @@ bool connectometry_db::parse_demo(const std::string& filename)
 
 bool connectometry_db::parse_demo(void)
 {
+    show_progress() << "parsing demographics" << std::endl;
     std::string saved_demo(std::move(demo));
     titles.clear();
     items.clear();
@@ -780,6 +781,12 @@ bool connectometry_db::get_demo_matched_volume(const std::string& matched_demo,t
         error_msg = "no demographic data found in the database";
         return false;
     }
+    if(matched_demo.empty())
+    {
+        error_msg = "no demographics provided for the study subject";
+        return false;
+    }
+
     std::vector<double> v;
     {
         std::string s(matched_demo);
