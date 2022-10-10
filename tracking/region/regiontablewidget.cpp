@@ -581,6 +581,8 @@ bool load_nii(std::shared_ptr<fib_data> handle,
     }
     bool is_4d = header.dim(4) > 1;
     tipl::image<3,unsigned int> from;
+    std::string nifti_name = std::filesystem::path(file_name).stem().string();
+    nifti_name = nifti_name.substr(0,nifti_name.find('.'));
 
     if(is_4d)
         from.resize(tipl::shape<3>(header.dim(1),header.dim(2),header.dim(3)));
@@ -603,10 +605,6 @@ bool load_nii(std::shared_ptr<fib_data> handle,
     header.get_image_transformation(T);
     header.get_voxel_size(vs);
 
-    {
-        show_progress() <<"DWI : " << handle->dim << " at " << handle->vs << std::endl;
-        show_progress() <<"NIFTI : " << from.shape() << " at " << vs << std::endl;
-    }
     std::vector<unsigned short> value_list;
     std::vector<unsigned short> value_map(std::numeric_limits<unsigned short>::max()+1);
 
@@ -639,7 +637,8 @@ bool load_nii(std::shared_ptr<fib_data> handle,
 
     bool multiple_roi = value_list.size() > 1;
 
-    show_progress() <<(multiple_roi ? "nifti loaded as multiple ROI file":"nifti loaded as single ROI file") << std::endl;
+
+    show_progress() << nifti_name << (multiple_roi ? " loaded as multiple ROI file":" loaded as single ROI file") << std::endl;
 
     std::map<int,std::string> label_map;
     std::map<int,tipl::rgb> label_color;
@@ -653,16 +652,31 @@ bool load_nii(std::shared_ptr<fib_data> handle,
 
     if(from.shape() != handle->dim)
     {
-        show_progress() <<"NIFTI file has a different dimension from DWI." << std::endl;
-
+        show_progress() << "FIB file dimension: " << handle->dim << " voxel size: " << handle->vs << std::endl;
         if(handle->is_mni)
         {
             for(unsigned int index = 0;index < handle->view_item.size();++index)
+                if(handle->view_item[index].native_geo.size())
+                {
+                    if(index && handle->view_item[index].native_geo == handle->view_item[index-1].native_geo)
+                        continue;
+                    show_progress() << "FIB file native-space dimension: " << handle->view_item[index].native_geo << std::endl;
+                }
+        }
+        show_progress() << nifti_name << " dimension: " << from.shape() << " voxel size: " << vs << std::endl;
+        show_progress() << nifti_name << " has a different dimension from the FIB file. need transformation or warpping." << std::endl;
+        if(handle->is_mni)
+        {
+            if(!is_mni)
+            for(unsigned int index = 0;index < handle->view_item.size();++index)
                 if(handle->view_item[index].native_geo == from.shape())
                 {
+                    show_progress() << nifti_name << " has a dimension of " << from.shape() << ", matching the native space dimension of "
+                                    << handle->view_item[index].name << std::endl;
+                    show_progress() << "warpping " << nifti_name << " from the native space to the template space." << std::endl;
                     if(handle->get_native_position().empty())
                     {
-                        error_msg = "NIFTI is from the native space, and current FIB file is obsolete. Please reconstruct FIB file again to enable warpping.";
+                        error_msg = "FIB file is obsolete. Please reconstruct FIB file again to enable native-to-template warpping.";
                         return false;
                     }
                     auto T = handle->view_item[index].native_trans;
@@ -673,52 +687,57 @@ bool load_nii(std::shared_ptr<fib_data> handle,
                         T(pos);
                         tipl::estimate<tipl::interpolation::nearest>(from,pos,new_from[i]);
                     });
-                    show_progress() <<"applying QSDR warpping to the native space NIFTI file" << std::endl;
                     new_from.swap(from);
                     goto end;
                 }
-        }
+            if(is_mni)
+                show_progress() << nifti_name << " is in the template space" << std::endl;
+            else
+                show_progress() << "assuming " << nifti_name << " is in the template space (please check)" << std::endl;
 
-        for(unsigned int index = 0;index < transform_lookup.size();++index)
-            if(from.shape() == transform_lookup[index].first)
-            {
-                show_progress() <<"applying loaded t1wt2w transformation." << std::endl;
-                to_diffusion_space = transform_lookup[index].second;
-                need_trans = true;
-                goto end;
-            }
-
-        if(handle->is_mni || handle->is_mni)
-        {
-            show_progress() <<"loaded NIFTI file used as MNI space image." << std::endl;
+            show_progress() <<"applying " << nifti_name << "'s header srow matrix to align." << std::endl;
             to_diffusion_space = tipl::from_space(T).to(handle->trans_to_mni);
             need_trans = true;
             goto end;
         }
-
-        if(header.is_mni() || is_mni)
-        {
-            show_progress() <<"warpping the NIFTI file from MNI space to the native space." << std::endl;
-            if(!handle->mni2sub<tipl::interpolation::nearest>(from,T))
-            {
-                error_msg = handle->error_msg;
-                return false;
-            }
-            goto end;
-        }
-
-        error_msg = "Cannot align ROI file with DWI.";
-        if(has_gui)
-            error_msg += "Please insert its reference T1W/T2W using [Slices][Insert T1WT2W] to guide the registration.";
         else
-            error_msg += "use --t1t2 to load the reference T1W/T2W to guide the registration.";
+        {
+            if(is_mni)
+            {
+                show_progress() << "warpping " << nifti_name << " from the template space to the native space." << std::endl;
+                if(!handle->mni2sub<tipl::interpolation::nearest>(from,T))
+                {
+                    error_msg = handle->error_msg;
+                    return false;
+                }
+                goto end;
+            }
+            else
+            for(unsigned int index = 0;index < transform_lookup.size();++index)
+                if(from.shape() == transform_lookup[index].first)
+                {
+                    show_progress() << "applying previous transformation." << std::endl;
+                    to_diffusion_space = transform_lookup[index].second;
+                    need_trans = true;
+                    goto end;
+                }
+        }
+        error_msg = "No strategy to align ";
+        error_msg += nifti_name;
+        error_msg += " with FIB. If ";
+        error_msg += nifti_name;
+        error_msg += " is in the MNI space, ";
+        if(has_gui)
+            error_msg += "open it using [Region][Open MNI Region]. If not, insert its reference T1W/T2W using [Slices][Insert T1WT2W] to guide the registration.";
+        else
+            error_msg += "specify mni in the file name (e.g. region_mni.nii.gz). If not, use --other_slices to load the reference T1W/T2W to guide the registration.";
         return false;
     }
     end:
     // single region ROI
     if(!multiple_roi)
     {
-        names.push_back(QFileInfo(file_name.c_str()).baseName().toStdString());
+        names.push_back(nifti_name);
         regions.push_back(std::make_shared<ROIRegion>(handle));
         if(need_trans)
         {
@@ -775,10 +794,10 @@ bool load_nii(std::shared_ptr<fib_data> handle,
     for(uint32_t i = 0;i < region_points.size();++i)
         {
             unsigned short value = value_list[i];
-            QString name = (label_map.find(value) == label_map.end() ?
-                 QFileInfo(file_name.c_str()).baseName() + "_" + QString::number(value):QString(label_map[value].c_str()));
+            std::string name = (label_map.find(value) == label_map.end() ?
+                 nifti_name + "_" + std::to_string(int(value)): label_map[value]);
             regions.push_back(std::make_shared<ROIRegion>(handle));
-            names.push_back(name.toStdString());
+            names.push_back(name);
             if(need_trans)
             {
                 regions.back()->dim = from.shape();
