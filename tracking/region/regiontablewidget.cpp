@@ -660,7 +660,8 @@ bool load_nii(std::shared_ptr<fib_data> handle,
                 {
                     if(index && handle->view_item[index].native_geo == handle->view_item[index-1].native_geo)
                         continue;
-                    show_progress() << "FIB file native-space dimension: " << handle->view_item[index].native_geo << std::endl;
+                    show_progress() << "FIB file native-space dimension: " << handle->view_item[index].native_geo
+                                    << " (" << handle->view_item[index].name << ")" <<  std::endl;
                 }
         }
         show_progress() << nifti_name << " dimension: " << from.shape() << " voxel size: " << vs << std::endl;
