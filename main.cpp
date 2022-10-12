@@ -252,50 +252,53 @@ int run_action_with_wildcard(program_option& po)
 {
     std::string source = po.get("source");
     std::string action = po.get("action");
+    std::string loop = po.get("loop",source);
 
-    if(action == "atk" || action == "atl" || source.find('*') == std::string::npos) // atk, atl handle * by itself
+    if(action == "atk" || action == "atl" || loop.find('*') == std::string::npos) // atk, atl handle * by itself
     {
         if(run_action(po))
             return 1;
     }
     else
+    // loop
     {
-        // handle source having wildcard
-        std::vector<std::string> source_files;
-        get_filenames_from(source,source_files);
+        progress prog("processing loop");
+        std::vector<std::string> loop_files;
+        get_filenames_from(loop,loop_files);
 
         std::vector<std::pair<std::string,std::string> > wildcard_list;
         po.get_wildcard_list(wildcard_list);
 
-        for (size_t i = 0;i < source_files.size();++i)
+        for (size_t i = 0;i < loop_files.size();++i)
         {
-            progress prog("process file: ",source_files[i].c_str());
             // clear --t1t2 and --other_slices
             t1t2_slices.reset();
             other_slices.clear();
 
-            po.set("source",source_files[i]);
             // apply '*' to other arguments
             for(const auto& wildcard : wildcard_list)
             {
-                if(wildcard.first == "source")
-                    continue;
+                std::istringstream in2(wildcard.second);
                 std::string apply_wildcard;
-                if(!match_files(source,source_files[i],wildcard.second,apply_wildcard))
+                std::string each;
+                while(std::getline(in2,each,','))
                 {
-                    show_progress() << "ERROR: cannot translate " << wildcard.second <<
-                                 " at --" << wildcard.first << std::endl;
-                    return 1;
+                    std::string apply_wildcard_each;
+                    if(!match_files(loop,loop_files[i],each,apply_wildcard_each))
+                    {
+                        show_progress() << "ERROR: cannot translate " << wildcard.second <<
+                                     " at --" << wildcard.first << std::endl;
+                        return 1;
+                    }
+                    if(!apply_wildcard.empty())
+                        apply_wildcard += ",";
+                    apply_wildcard += apply_wildcard_each;
                 }
                 show_progress() << wildcard.second << "->" << apply_wildcard << std::endl;
                 po.set(wildcard.first.c_str(),apply_wildcard);
             }
             po.set_used(0);
-            if(po.has("output") && std::filesystem::exists(po.get("output")))
-            {
-                show_progress() << "output " << po.get("output") << " exists. Skipping..." << std::endl;
-                continue;
-            }
+            po.get("loop");
             if(run_action(po))
                 return 1;
         }
