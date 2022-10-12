@@ -638,7 +638,7 @@ int trk(program_option& po,std::shared_ptr<fib_data> handle)
     {
         if(!handle->dir.set_tracking_index(po.get("threshold_index")))
         {
-            show_progress() << "failed...cannot find the index" << std::endl;
+            show_progress() << "ERROR: cannot find the index" << std::endl;
             return 1;
         }
     }
@@ -660,12 +660,18 @@ int trk(program_option& po,std::shared_ptr<fib_data> handle)
                         std::istringstream in2(line);
                         std::string name;
                         in2 >> name;
-                        if(po.get("source").find(name) != std::string::npos)
+                        if(po.get("source").find(name) != std::string::npos ||
+                           po.get("other_slices").find(name) != std::string::npos)
                         {
                             show_progress() << "found subject's demographics: " << line << std::endl;
                             found = true;
                             handle->demo = line.substr(name.length()+1);
                         }
+                    }
+                    if(!found)
+                    {
+                        show_progress() << "ERROR: cannot find subject in " << subject_demo << ". Please make sure that the FIB or NIFTI file name includs subject's id." << std::endl;
+                        return 1;
                     }
                 }
                 else
