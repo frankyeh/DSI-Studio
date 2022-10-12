@@ -2061,7 +2061,7 @@ void GLWidget::loadCamera(void)
 {
     QString filename = QFileDialog::getOpenFileName(
             this,
-            "Open Translocation Matrix",QFileInfo(cur_tracking_window.windowTitle()).absolutePath(),"Text files (*.txt);;All files (*)");
+            "Open Translocation Matrix",QFileInfo(cur_tracking_window.work_path).absolutePath(),"Text files (*.txt);;All files (*)");
     if(filename.isEmpty())
         return;
     command("load_camera",filename);

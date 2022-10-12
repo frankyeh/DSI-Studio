@@ -360,14 +360,14 @@ void TractTableWidget::load_tracts(QStringList filenames)
 void TractTableWidget::load_tracts(void)
 {
     load_tracts(QFileDialog::getOpenFileNames(
-            this,"Load tracts as",QFileInfo(cur_tracking_window.windowTitle()).absolutePath(),
+            this,"Load tracts as",QFileInfo(cur_tracking_window.work_path).absolutePath(),
             "Tract files (*tt.gz *.trk *trk.gz *.tck);;Text files (*.txt);;All files (*)"));
     show_report();
 }
 void TractTableWidget::load_tract_label(void)
 {
     QString filename = QFileDialog::getOpenFileName(
-                this,"Load tracts as",QFileInfo(cur_tracking_window.windowTitle()).absolutePath(),
+                this,"Load tracts as",QFileInfo(cur_tracking_window.work_path).absolutePath(),
                 "Tract files (*.txt);;All files (*)");
     if(filename.isEmpty())
         return;
@@ -501,7 +501,7 @@ void TractTableWidget::open_cluster_label(void)
     if(tract_models.empty())
         return;
     QString filename = QFileDialog::getOpenFileName(
-            this,"Load cluster label",QFileInfo(cur_tracking_window.windowTitle()).absolutePath(),
+            this,"Load cluster label",QFileInfo(cur_tracking_window.work_path).absolutePath(),
             "Cluster label files (*.txt);;All files (*)");
     if(!filename.size())
         return;
@@ -518,7 +518,7 @@ void TractTableWidget::open_cluster_color(void)
     if(tract_models.empty())
         return;
     QString filename = QFileDialog::getOpenFileName(
-            this,"Load cluster color",QFileInfo(cur_tracking_window.windowTitle()).absolutePath(),
+            this,"Load cluster color",QFileInfo(cur_tracking_window.work_path).absolutePath(),
             "RGB Value Text(*.txt);;All files (*)");
     if(!filename.size())
         return;
@@ -546,7 +546,7 @@ void TractTableWidget::save_cluster_color(void)
     if(tract_models.empty())
         return;
     QString filename = QFileDialog::getSaveFileName(
-            this,"Save cluster color",QFileInfo(cur_tracking_window.windowTitle()).absolutePath(),
+            this,"Save cluster color",QFileInfo(cur_tracking_window.work_path).absolutePath(),
             "RGB Value Text(*.txt);;All files (*)");
     if(!filename.size())
         return;
@@ -998,7 +998,7 @@ void TractTableWidget::load_tracts_color(void)
     if(currentRow() >= int(tract_models.size()) || currentRow() == -1)
         return;
     QString filename = QFileDialog::getOpenFileName(
-            this,"Load tracts color",QFileInfo(cur_tracking_window.windowTitle()).absolutePath(),
+            this,"Load tracts color",QFileInfo(cur_tracking_window.work_path).absolutePath(),
             "Color files (*.txt);;All files (*)");
     if(filename.isEmpty())
         return;
@@ -1010,7 +1010,7 @@ void TractTableWidget::load_tracts_value(void)
     if(currentRow() >= int(tract_models.size()) || currentRow() == -1)
         return;
     QString filename = QFileDialog::getOpenFileName(
-            this,"Load tracts color",QFileInfo(cur_tracking_window.windowTitle()).absolutePath(),
+            this,"Load tracts color",QFileInfo(cur_tracking_window.work_path).absolutePath(),
             "Color files (*.txt);;All files (*)");
     if(filename.isEmpty())
         return;

@@ -898,7 +898,7 @@ bool RegionTableWidget::load_multiple_roi_nii(QString file_name,bool is_mni)
 void RegionTableWidget::load_region_color(void)
 {
     QString filename = QFileDialog::getOpenFileName(
-                this,"Load region color",QFileInfo(cur_tracking_window.windowTitle()).absolutePath()+"/region_color.txt",
+                this,"Load region color",QFileInfo(cur_tracking_window.work_path).absolutePath()+"/region_color.txt",
                 "Color files (*.txt);;All files (*)");
     if(filename.isEmpty())
         return;
@@ -939,7 +939,7 @@ void RegionTableWidget::load_region_color(void)
 void RegionTableWidget::save_region_color(void)
 {
     QString filename = QFileDialog::getSaveFileName(
-                this,"Save region color",QFileInfo(cur_tracking_window.windowTitle()).absolutePath()+"/region_color.txt",
+                this,"Save region color",QFileInfo(cur_tracking_window.work_path).absolutePath()+"/region_color.txt",
                 "Color files (*.txt);;All files (*)");
     if(filename.isEmpty())
         return;
@@ -958,7 +958,7 @@ void RegionTableWidget::save_region_color(void)
 void RegionTableWidget::load_region(void)
 {
     QStringList filenames = QFileDialog::getOpenFileNames(
-                                this,"Open region",QFileInfo(cur_tracking_window.windowTitle()).absolutePath(),"Region files (*.nii *.hdr *nii.gz *.mat);;Text files (*.txt);;All files (*)" );
+                                this,"Open region",QFileInfo(cur_tracking_window.work_path).absolutePath(),"Region files (*.nii *.hdr *nii.gz *.mat);;Text files (*.txt);;All files (*)" );
     if (filenames.isEmpty())
         return;
     if(!command("load_region",filenames.join(",")))
@@ -969,7 +969,7 @@ void RegionTableWidget::load_region(void)
 void RegionTableWidget::load_mni_region(void)
 {
     QStringList filenames = QFileDialog::getOpenFileNames(
-                                this,"Open region",QFileInfo(cur_tracking_window.windowTitle()).absolutePath(),"NIFTI files (*.nii *nii.gz);;All files (*)" );
+                                this,"Open region",QFileInfo(cur_tracking_window.work_path).absolutePath(),"NIFTI files (*.nii *nii.gz);;All files (*)" );
     if (filenames.isEmpty() || !cur_tracking_window.map_to_mni())
         return;
 

@@ -1424,7 +1424,7 @@ void tracking_window::on_actionSave_tracking_parameters_triggered()
 void tracking_window::on_actionLoad_tracking_parameters_triggered()
 {
     QString filename = QFileDialog::getOpenFileName(
-                           this,"Open INI files",QFileInfo(windowTitle()).absolutePath(),"Setting file (*.ini);;All files (*)");
+                           this,"Open INI files",QFileInfo(work_path).absolutePath(),"Setting file (*.ini);;All files (*)");
     if (filename.isEmpty())
         return;
     command("load_tracking_setting",filename);
@@ -1443,7 +1443,7 @@ void tracking_window::on_actionSave_Rendering_Parameters_triggered()
 void tracking_window::on_actionLoad_Rendering_Parameters_triggered()
 {
     QString filename = QFileDialog::getOpenFileName(
-                           this,"Open INI files",QFileInfo(windowTitle()).absolutePath(),"Setting file (*.ini);;All files (*)");
+                           this,"Open INI files",QFileInfo(work_path).absolutePath(),"Setting file (*.ini);;All files (*)");
     if (filename.isEmpty())
         return;
     command("load_rendering_setting",filename);
@@ -1847,7 +1847,7 @@ void tracking_window::updateSlicesMenu(void)
 void tracking_window::on_actionInsert_MNI_images_triggered()
 {
     QString filename = QFileDialog::getOpenFileName(
-        this,"Open MNI Image",QFileInfo(windowTitle()).absolutePath(),
+        this,"Open MNI Image",QFileInfo(work_path).absolutePath(),
                 "Image files (*.hdr *.nii *nii.gz);;All files (*)" );
     if( filename.isEmpty() || !map_to_mni())
         return;
@@ -2003,7 +2003,7 @@ void tracking_window::on_track_style_currentIndexChanged(int index)
 void tracking_window::on_addSlices_clicked()
 {
     QStringList filenames = QFileDialog::getOpenFileNames(
-        this,"Open Images files",QFileInfo(windowTitle()).absolutePath(),
+        this,"Open Images files",QFileInfo(work_path).absolutePath(),
                 "Image files (*.dcm *.hdr *.nii *nii.gz *db.fib.gz 2dseq);;Histology (*.jpg *.tif);;All files (*)" );
     if( filenames.isEmpty())
         return;
@@ -2072,7 +2072,7 @@ void tracking_window::on_is_overlay_clicked()
 void tracking_window::on_actionOpen_Connectivity_Matrix_triggered()
 {
     QString filename = QFileDialog::getOpenFileName(
-        this,"Open Connectivity Matrices files",QFileInfo(windowTitle()).absolutePath(),
+        this,"Open Connectivity Matrices files",QFileInfo(work_path).absolutePath(),
                 "Connectivity file (*.mat *.txt);;All files (*)" );
     if(filename.isEmpty())
         return;
@@ -2296,7 +2296,7 @@ void tracking_window::on_actionSave_T1W_T2W_images_triggered()
     if(!slice)
         return;
     QString filename = QFileDialog::getSaveFileName(
-        this,"Save T1W/T2W Image",QFileInfo(windowTitle()).absolutePath()+"//"+slice->name.c_str()+"_modified.nii.gz","Image files (*nii.gz);;All files (*)" );
+        this,"Save T1W/T2W Image",QFileInfo(work_path).absolutePath()+"//"+slice->name.c_str()+"_modified.nii.gz","Image files (*nii.gz);;All files (*)" );
     if( filename.isEmpty())
         return;
     auto I = slice->source_images;
@@ -2378,7 +2378,7 @@ void tracking_window::on_actionSave_Slices_to_DICOM_triggered()
 
     QMessageBox::information(this,"DSI Studio","Please assign the original DICOM files");
     QStringList files = QFileDialog::getOpenFileNames(this,"Assign DICOM files",
-                                                      QFileInfo(windowTitle()).absolutePath(),"DICOM files (*.dcm);;All files (*)");
+                                                      QFileInfo(work_path).absolutePath(),"DICOM files (*.dcm);;All files (*)");
     if(files.isEmpty())
         return;
 
@@ -2581,7 +2581,7 @@ void tracking_window::on_max_slider_sliderMoved(int)
 void tracking_window::on_actionInsert_Axial_Pictures_triggered()
 {
     QString filename = QFileDialog::getOpenFileName(
-        this,"Open Picture",QFileInfo(windowTitle()).absolutePath(),"Pictures (*.jpg *.bmp *.png);;All files (*)" );
+        this,"Open Picture",QFileInfo(work_path).absolutePath(),"Pictures (*.jpg *.bmp *.png);;All files (*)" );
     if(filename.isEmpty())
         return;
     QStringList filenames;

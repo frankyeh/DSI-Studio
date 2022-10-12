@@ -463,7 +463,7 @@ bool slice_view_scene::command(QString cmd,QString param,QString param2)
     {
         show_slice();
         if(param.isEmpty())
-            param = QFileInfo(cur_tracking_window.windowTitle()).absolutePath() + "/" +
+            param = QFileInfo(cur_tracking_window.work_path).absolutePath() + "/" +
                     QFileInfo(cur_tracking_window.windowTitle()).baseName()+"_"+
                     QString(cur_tracking_window.handle->view_item[cur_tracking_window.ui->SliceModality->currentIndex()].name.c_str())+"_"+
                     QString(cur_tracking_window["roi_layout"].toString())+
