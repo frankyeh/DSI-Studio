@@ -80,6 +80,8 @@ int run_action_with_wildcard(program_option& po);
 void Console::on_run_cmd_clicked()
 {
     program_option po;
+    if(ui->cmd_line->text().startsWith("dsi_studio "))
+        ui->cmd_line->setText(ui->cmd_line->text().remove("dsi_studio "));
     if(!po.parse(ui->cmd_line->text().toStdString()))
     {
         QMessageBox::critical(this,"ERROR",po.error_msg.c_str());
