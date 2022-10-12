@@ -445,6 +445,7 @@ void MainWindow::on_FiberTracking_clicked()
     if(ui->fib_action->currentIndex() > 0)
     {
         loadFib(fib_template_list[ui->fib_action->currentIndex()-1].c_str());
+        tracking_windows.back()->work_path = ui->workDir->currentText();
         return;
     }
 
