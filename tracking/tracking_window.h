@@ -79,6 +79,7 @@ public:
     std::shared_ptr<color_bar_dialog> color_bar;
     std::shared_ptr<connectivity_matrix_dialog> connectivity_matrix;
 public:
+    QString work_path;
     std::shared_ptr<fib_data> handle;
     std::vector<std::shared_ptr<SliceModel> > slices;
     std::shared_ptr<SliceModel> current_slice;
