@@ -51,11 +51,7 @@ public:
                            const tipl::matrix<4,4>& trans,std::vector<float>& data);
     bool add_subject_file(const std::string& file_name,
                             const std::string& subject_name);
-    void get_subject_vector(unsigned int from,unsigned int to,
-                            std::vector<std::vector<float> >& subject_vector,float fiber_threshold) const;
-    void get_subject_vector(unsigned int subject_index,std::vector<float>& subject_vector,float fiber_threshold) const;
     void get_dif_matrix(std::vector<float>& matrix,float fiber_threshold);
-    bool save_subject_vector(const char* output_name,float fiber_threshold) const;
     bool save_db(const char* output_name);
     void get_subject_slice(unsigned int subject_index,unsigned char dim,unsigned int pos,
                             tipl::image<2,float>& slice) const;

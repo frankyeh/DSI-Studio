@@ -560,53 +560,33 @@ bool connectometry_db::add_subject_file(const std::string& file_name,
     return true;
 }
 
-void connectometry_db::get_subject_vector(unsigned int from,unsigned int to,
-                                          std::vector<std::vector<float> >& subject_vector,float fiber_threshold) const
-{
-    unsigned int total_count = to-from;
-    subject_vector.clear();
-    subject_vector.resize(total_count);
-    tipl::par_for(total_count,[&](unsigned int index)
-    {
-        size_t subject_index = index + from;
-        for(size_t s_index = 0;s_index < si2vi.size();++s_index)
-        {
-            size_t cur_index = si2vi[s_index];
-            size_t fib_offset = 0;
-            for(char j = 0;j < handle->dir.num_fiber && handle->dir.fa[j][cur_index] > fiber_threshold;
-                    ++j,fib_offset+=si2vi.size())
-            {
-                size_t pos = s_index + fib_offset;
-                if(pos >= subject_qa_length)
-                    break;
-                subject_vector[index].push_back(subject_qa[subject_index][pos]);
-            }
-        }
-    });
-}
-
-void connectometry_db::get_subject_vector(unsigned int subject_index,std::vector<float>& subject_vector,float fiber_threshold) const
-{
-    subject_vector.clear();
-    for(size_t s_index = 0;s_index < si2vi.size();++s_index)
-    {
-        size_t cur_index = si2vi[s_index];
-        size_t fib_offset = 0;
-        for(char j = 0;j < handle->dir.num_fiber && handle->dir.fa[j][cur_index] > fiber_threshold;++j,fib_offset+=si2vi.size())
-        {
-            size_t pos = s_index + fib_offset;
-            if(pos >= subject_qa_length)
-                break;
-            subject_vector.push_back(subject_qa[subject_index][pos]);
-        }
-    }
-}
 void connectometry_db::get_dif_matrix(std::vector<float>& matrix,float fiber_threshold)
 {
     matrix.clear();
     matrix.resize(size_t(num_subjects)*size_t(num_subjects));
     std::vector<std::vector<float> > subject_vector;
-    get_subject_vector(0,num_subjects,subject_vector,fiber_threshold);
+    {
+        unsigned int total_count = num_subjects;
+        subject_vector.clear();
+        subject_vector.resize(total_count);
+        tipl::par_for(total_count,[&](unsigned int index)
+        {
+            size_t subject_index = index;
+            for(size_t s_index = 0;s_index < si2vi.size();++s_index)
+            {
+                size_t cur_index = si2vi[s_index];
+                size_t fib_offset = 0;
+                for(char j = 0;j < handle->dir.num_fiber && handle->dir.fa[j][cur_index] > fiber_threshold;
+                        ++j,fib_offset+=si2vi.size())
+                {
+                    size_t pos = s_index + fib_offset;
+                    if(pos >= subject_qa_length)
+                        break;
+                    subject_vector[index].push_back(subject_qa[subject_index][pos]);
+                }
+            }
+        });
+    }
     progress prog_("calculating");
     size_t prog = 0;
     tipl::par_for(num_subjects,[&](unsigned int i){
@@ -620,79 +600,6 @@ void connectometry_db::get_dif_matrix(std::vector<float>& matrix,float fiber_thr
             matrix[j*num_subjects+i] = result;
         }
     });
-}
-
-bool connectometry_db::save_subject_vector(const char* output_name,float fiber_threshold) const
-{
-    const unsigned int block_size = 400;
-    std::string file_name = output_name;
-    file_name = file_name.substr(0,file_name.length()-4); // remove .mat
-    progress prog_("saving ","output_name");
-    for(unsigned int from = 0,iter = 0;from < num_subjects;from += block_size,++iter)
-    {
-        unsigned int to = std::min<unsigned int>(from+block_size,num_subjects);
-        std::ostringstream out;
-        out << file_name << iter << ".mat";
-        std::string out_name = out.str();
-        gz_mat_write matfile(out_name.c_str());
-        if(!matfile)
-        {
-            error_msg = "Cannot save file ";
-            error_msg += out_name;
-            return false;
-        }
-        std::string name_string;
-        for(unsigned int index = from;index < to;++index)
-        {
-            name_string += subject_names[index];
-            name_string += "\n";
-        }
-        matfile.write("subject_names",name_string);
-        for(unsigned int index = from,i = 0;index < to;++index,++i)
-        {
-            progress::at(from,num_subjects);
-            std::vector<float> subject_vector;
-            get_subject_vector(index,subject_vector,fiber_threshold);
-
-            std::ostringstream out;
-            out << "subject" << index;
-            matfile.write(out.str().c_str(),subject_vector);
-        }
-
-        if(iter == 0)
-        {
-            matfile.write("dimension",&*handle->dim.begin(),1,3);
-
-
-            std::vector<int> voxel_location;
-            std::vector<float> mni_location;
-            std::vector<float> fiber_direction;
-
-            for(unsigned int s_index = 0;s_index < si2vi.size();++s_index)
-            {
-                unsigned int cur_index = si2vi[s_index];
-                for(char j = 0;j < handle->dir.num_fiber && handle->dir.fa[j][cur_index] > fiber_threshold;++j)
-                {
-                    voxel_location.push_back(int(cur_index));
-                    tipl::pixel_index<3> p(cur_index,handle->dim);
-                    tipl::vector<3> p2(p);
-                    handle->sub2mni(p2);
-                    mni_location.push_back(p2[0]);
-                    mni_location.push_back(p2[1]);
-                    mni_location.push_back(p2[2]);
-
-                    auto dir = handle->dir.get_fib(cur_index,j);
-                    fiber_direction.push_back(dir[0]);
-                    fiber_direction.push_back(dir[1]);
-                    fiber_direction.push_back(dir[2]);
-                }
-            }
-            matfile.write("voxel_location",voxel_location);
-            matfile.write("mni_location",mni_location,3);
-            matfile.write("fiber_direction",fiber_direction,3);
-        }
-    }
-    return true;
 }
 bool connectometry_db::save_db(const char* output_name)
 {
