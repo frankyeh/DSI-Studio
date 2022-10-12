@@ -686,7 +686,7 @@ bool connectometry_db::get_demo_matched_volume(const std::string& matched_demo,t
             return false;
         }
         show_progress out;
-        out << "matching ";
+        out << "creating subject-matching image by regressing against ";
         for(size_t i = 0;i < feature_titles.size();++i)
             out << feature_titles[i] << ":" << v[i] << " ";
         out << std::endl;
