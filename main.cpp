@@ -284,6 +284,9 @@ int run_action_with_wildcard(program_option& po)
                 while(std::getline(in2,each,','))
                 {
                     std::string apply_wildcard_each;
+                    if(each.find('*') == std::string::npos)
+                        apply_wildcard_each = each;
+                    else
                     if(!match_files(loop,loop_files[i],each,apply_wildcard_each))
                     {
                         show_progress() << "ERROR: cannot translate " << wildcard.second <<
