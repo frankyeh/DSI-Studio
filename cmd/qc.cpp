@@ -98,7 +98,7 @@ std::string quality_check_src_files(QString dir)
 /**
  perform reconstruction
  */
-std::shared_ptr<fib_data> cmd_load_fib(const std::string file_name);
+std::shared_ptr<fib_data> cmd_load_fib(std::string file_name);
 int qc(program_option& po)
 {
     std::string file_name = po.get("source");

@@ -11,7 +11,7 @@
 #include "libs/gzip_interface.hpp"
 #include "program_option.hpp"
 
-std::shared_ptr<fib_data> cmd_load_fib(const std::string file_name);
+std::shared_ptr<fib_data> cmd_load_fib(std::string file_name);
 bool trk2tt(const char* trk_file,const char* tt_file);
 bool tt2trk(const char* tt_file,const char* trk_file);
 int exp(program_option& po)

@@ -5,7 +5,7 @@
 #include "opengl/glwidget.h"
 #include "program_option.hpp"
 
-std::shared_ptr<fib_data> cmd_load_fib(const std::string file_name);
+std::shared_ptr<fib_data> cmd_load_fib(std::string file_name);
 
 int vis(program_option& po)
 {

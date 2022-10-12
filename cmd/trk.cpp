@@ -17,7 +17,6 @@
 #include <filesystem>
 extern std::shared_ptr<CustomSliceModel> t1t2_slices;
 extern std::vector<std::shared_ptr<CustomSliceModel> > other_slices;
-
 void get_filenames_from(const std::string param,std::vector<std::string>& filenames);
 bool check_other_slices(const std::string& other_slices_name,std::shared_ptr<fib_data> handle)
 {
@@ -384,11 +383,13 @@ bool get_connectivity_matrix(program_option& po,
 
 // test example
 // --action=trk --source=./test/20100129_F026Y_WANFANGYUN.src.gz.odf8.f3rec.de0.dti.fib.gz --method=0 --fiber_count=5000
-
-std::shared_ptr<fib_data> cmd_load_fib(const std::string file_name)
+extern std::vector<std::string> fib_template_list;
+std::shared_ptr<fib_data> cmd_load_fib(std::string file_name)
 {
     std::shared_ptr<fib_data> handle(new fib_data);
     show_progress() << "loading " << file_name << "..." <<std::endl;
+    if(file_name.length() == 1 && file_name[0] >= '0' && file_name[0] <= '5')
+        file_name = fib_template_list[file_name[0]-'0'];
     if(!std::filesystem::exists(file_name))
     {
         show_progress() << file_name << " does not exist. terminating..." << std::endl;

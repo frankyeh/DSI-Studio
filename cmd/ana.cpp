@@ -125,7 +125,7 @@ void get_filenames_from(const std::string name,std::vector<std::string>& filenam
 }
 
 int trk_post(program_option& po,std::shared_ptr<fib_data> handle,std::shared_ptr<TractModel> tract_model,std::string tract_file_name,bool output_track);
-std::shared_ptr<fib_data> cmd_load_fib(const std::string file_name);
+std::shared_ptr<fib_data> cmd_load_fib(std::string file_name);
 
 bool load_tracts(const char* file_name,std::shared_ptr<TractModel> tract_model,std::shared_ptr<RoiMgr> roi_mgr)
 {

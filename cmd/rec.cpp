@@ -14,7 +14,7 @@
 #include "reg.hpp"
 #include <filesystem>
 
-extern std::vector<std::string> fa_template_list,iso_template_list;
+extern std::vector<std::string> fa_template_list;
 bool get_src(std::string filename,ImageModel& src2,std::string& error_msg);
 /**
  perform reconstruction

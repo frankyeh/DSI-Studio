@@ -29,7 +29,7 @@ bool atl_load_atlas(std::shared_ptr<fib_data> handle,std::string atlas_name,std:
     return true;
 }
 
-std::shared_ptr<fib_data> cmd_load_fib(const std::string file_name);
+std::shared_ptr<fib_data> cmd_load_fib(std::string file_name);
 
 void get_files_in_folder(std::string dir,std::string file,std::vector<std::string>& files)
 {
@@ -169,6 +169,12 @@ int atl(program_option& po)
                 }
             }
             // Output
+
+            if(po.has("demo") && !data->handle->db.parse_demo(po.get("demo")))
+            {
+                show_progress() << "ERROR " << data->handle->db.error_msg <<std::endl;
+                return 1;
+            }
             std::string output = std::string(name_list.front().begin(),
                                              std::mismatch(name_list.front().begin(),name_list.front().begin()+
                                              int64_t(std::min(name_list.front().length(),name_list.back().length())),
