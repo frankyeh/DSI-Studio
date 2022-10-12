@@ -37,7 +37,7 @@ public:
     std::string index_name = "qa";
 public://longitudinal studies
     std::vector<std::pair<int,int> > match;
-    void auto_match(const tipl::image<3,int>& fp_mask,float fiber_threshold,bool normalize_fp);
+    void auto_match(float fiber_threshold);
     void calculate_change(unsigned char dif_type,bool norm);
 public:
     connectometry_db(){}
@@ -52,15 +52,10 @@ public:
     bool add_subject_file(const std::string& file_name,
                             const std::string& subject_name);
     void get_subject_vector(unsigned int from,unsigned int to,
-                            std::vector<std::vector<float> >& subject_vector,
-                            const tipl::image<3,int>& fp_mask,float fiber_threshold,bool normalize_fp) const;
-    void get_subject_vector(unsigned int subject_index,std::vector<float>& subject_vector,
-                            const tipl::image<3,int>& fp_mask,float fiber_threshold,bool normalize_fp) const;
-    void get_dif_matrix(std::vector<float>& matrix,const tipl::image<3,int>& fp_mask,float fiber_threshold,bool normalize_fp);
-    bool save_subject_vector(const char* output_name,
-                             const tipl::image<3,int>& fp_mask,
-                             float fiber_threshold,
-                             bool normalize_fp) const;
+                            std::vector<std::vector<float> >& subject_vector,float fiber_threshold) const;
+    void get_subject_vector(unsigned int subject_index,std::vector<float>& subject_vector,float fiber_threshold) const;
+    void get_dif_matrix(std::vector<float>& matrix,float fiber_threshold);
+    bool save_subject_vector(const char* output_name,float fiber_threshold) const;
     bool save_db(const char* output_name);
     void get_subject_slice(unsigned int subject_index,unsigned char dim,unsigned int pos,
                             tipl::image<2,float>& slice) const;
