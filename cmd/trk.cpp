@@ -577,7 +577,7 @@ bool load_roi(program_option& po,std::shared_ptr<fib_data> handle,std::shared_pt
             }
             region_name += roi_list[0].toStdString();
         }
-        roi_mgr->setRegions(roi.region,type[index],region_name.c_str());
+        roi_mgr->setRegions(roi.region,roi.dim,roi.to_diffusion_space,type[index],region_name.c_str());
     }
     if(po.has("track_id"))
     {
