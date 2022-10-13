@@ -214,7 +214,8 @@ bool fiber_directions::add_data(gz_mat_read& mat_reader)
             odf_faces.clear();
             continue;
         }
-
+        if(matrix_name.find("subjects") == 0) // database
+            continue;
         // read fiber wise index (e.g. my_fa0,my_fa1,my_fa2)
         std::string prefix_name(matrix_name.begin(),matrix_name.end()-1); // the "my_fa" part
         auto last_ch = matrix_name[matrix_name.length()-1]; // the index value part
@@ -871,7 +872,7 @@ bool fib_data::load_from_mat(void)
     for (unsigned int index = 0;index < mat_reader.size();++index)
     {
         std::string matrix_name = mat_reader.name(index);
-        if (matrix_name == "image")
+        if (matrix_name == "image" || matrix_name.find("subjects") == 0)
             continue;
         std::string prefix_name(matrix_name.begin(),matrix_name.end()-1);
         char post_fix = matrix_name[matrix_name.length()-1];
