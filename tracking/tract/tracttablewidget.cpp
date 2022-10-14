@@ -421,8 +421,9 @@ void TractTableWidget::save_all_tracts_to_dir(void)
     QString dir = QFileDialog::getExistingDirectory(this,"Open directory","");
     if(dir.isEmpty())
         return;
-    command("save_all_tracts_to_dir",dir);
-    if(!progress::aborted())
+    if(!command("save_all_tracts_to_dir",dir))
+        QMessageBox::critical(this,"ERROR",error_msg.c_str());
+    else
         QMessageBox::information(this,"DSI Studio","file saved");
 }
 void TractTableWidget::save_all_tracts_as(void)
@@ -435,7 +436,9 @@ void TractTableWidget::save_all_tracts_as(void)
                 "Tract files (*.tt.gz *tt.gz *trk.gz *.trk);;NIFTI File (*nii.gz);;Text File (*.txt);;MAT files (*.mat);;All files (*)");
     if(filename.isEmpty())
         return;
-    if(command("save_tracks",filename))
+    if(!command("save_tracks",filename))
+        QMessageBox::critical(this,"ERROR",error_msg.c_str());
+    else
         QMessageBox::information(this,"DSI Studio","file saved");
 }
 
@@ -520,26 +523,10 @@ void TractTableWidget::open_cluster_color(void)
     QString filename = QFileDialog::getOpenFileName(
             this,"Load cluster color",QFileInfo(cur_tracking_window.work_path).absolutePath(),
             "RGB Value Text(*.txt);;All files (*)");
-    if(!filename.size())
+    if(filename.isEmpty())
         return;
-    std::ifstream in(filename.toStdString());
-    if(!in)
-    {
-        QMessageBox::critical(this,"ERROR","Cannot open file");
-        return;
-    }
-    progress p("rendering tracts");
-    for(unsigned int index = 0;progress::at(index,tract_models.size()) && in;++index)
-        if(item(int(index),0)->checkState() == Qt::Checked)
-        {
-            int r(0),g(0),b(0);
-            in >> r >> g >> b;
-            auto lock = tract_rendering[index]->start_writing();
-            tract_models[index]->set_color(tipl::rgb(r,g,b));
-            tract_rendering[index]->need_update = true;
-        }
-    cur_tracking_window.set_data("tract_color_style",1);//manual assigned
-    emit show_tracts();
+    if(!command("load_cluster_color",filename,""))
+        QMessageBox::critical(this,"ERROR",error_msg.c_str());
 }
 void TractTableWidget::save_cluster_color(void)
 {
@@ -703,12 +690,12 @@ void TractTableWidget::save_tracts_in_native(void)
         return;
     if(!cur_tracking_window.handle->is_mni)
     {
-        QMessageBox::information(this,"DSI Studio","This function only works with QSDR reconstructed FIB files.");
+        QMessageBox::critical(this,"ERROR","This function only works with QSDR reconstructed FIB files.");
         return;
     }
     if(cur_tracking_window.handle->get_native_position().empty())
     {
-        QMessageBox::information(this,"DSI Studio","No mapping information included. Please reconstruct QSDR with 'mapping' included in the output.",0);
+        QMessageBox::critical(this,"ERROR","No mapping information included. Please reconstruct QSDR with 'mapping' included in the output.",0);
         return;
     }
 
@@ -1002,7 +989,9 @@ void TractTableWidget::load_tracts_color(void)
             "Color files (*.txt);;All files (*)");
     if(filename.isEmpty())
         return;
-    command("load_track_color",filename,"");
+    if(!command("load_track_color",filename,""))
+        QMessageBox::critical(this,"ERROR",error_msg.c_str());
+
 }
 
 void TractTableWidget::load_tracts_value(void)
@@ -1171,7 +1160,12 @@ bool TractTableWidget::command(QString cmd,QString param,QString param2)
             filename += item(int(index),0)->text().toStdString();
             filename += output_format().toStdString();
             auto lock = selected_tracts_rendering[index]->start_reading();
-            selected_tracts[index]->save_tracts_to_file(filename.c_str());
+            if(!selected_tracts[index]->save_tracts_to_file(filename.c_str()))
+            {
+                error_msg = "cannot save file to ";
+                error_msg = filename;
+                return false;
+            }
         }
         return true;
     }
@@ -1214,8 +1208,14 @@ bool TractTableWidget::command(QString cmd,QString param,QString param2)
     if(cmd == "save_tracks")
     {
         auto locks = start_reading_checked_tracks();
-        return TractModel::save_all(param.toStdString().c_str(),
-                             get_checked_tracks(),get_checked_tracks_name());
+        if(!TractModel::save_all(param.toStdString().c_str(),
+                             get_checked_tracks(),get_checked_tracks_name()))
+        {
+            error_msg = "cannot save file to ";
+            error_msg = param.toStdString();
+            return false;
+        }
+        return true;
     }
     if(cmd == "load_track_color")
     {
@@ -1225,21 +1225,45 @@ bool TractTableWidget::command(QString cmd,QString param,QString param2)
             index = param2.toInt();
             if(index < 0 || index >= tract_models.size())
             {
-                std::cout << "Invalid track index:" << param2.toStdString() << std::endl;
+                error_msg = "invalid track index: ";
+                error_msg += param2.toStdString();
                 return false;
             }
         }
         auto lock = tract_rendering[index]->start_reading();
-        std::string sfilename = param.toStdString().c_str();
-        if(!tract_models[index]->load_tracts_color_from_file(&*sfilename.begin()))
+        if(!tract_models[index]->load_tracts_color_from_file(param.toStdString().c_str()))
         {
-            std::cout << "cannot find or open " << sfilename << std::endl;
+            error_msg = "cannot find or open ";
+            error_msg += param.toStdString();
             return false;
         }
         tract_rendering[index]->need_update = true;
         cur_tracking_window.set_data("tract_color_style",1);//manual assigned
         emit show_tracts();
         return true;
+    }
+    if(cmd == "load_cluster_color")
+    {
+        std::ifstream in(param.toStdString());
+        if(!in)
+        {
+            error_msg = "cannot find or open ";
+            error_msg += param.toStdString();
+
+            return false;
+        }
+        progress p("rendering tracts");
+        for(unsigned int index = 0;progress::at(index,tract_models.size()) && in;++index)
+            if(item(int(index),0)->checkState() == Qt::Checked)
+            {
+                int r(0),g(0),b(0);
+                in >> r >> g >> b;
+                auto lock = tract_rendering[index]->start_writing();
+                tract_models[index]->set_color(tipl::rgb(r,g,b));
+                tract_rendering[index]->need_update = true;
+            }
+        cur_tracking_window.set_data("tract_color_style",1);//manual assigned
+        emit show_tracts();
     }
     return false;
 }
