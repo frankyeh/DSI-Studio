@@ -549,6 +549,11 @@ bool tracking_window::command(QString cmd,QString param,QString param2)
        tractWidget->command(cmd,param,param2) ||
        regionWidget->command(cmd,param,param2))
         return true;
+    if(!tractWidget->error_msg.empty())
+    {
+        error_msg = tractWidget->error_msg;
+        return false;
+    }
     if(cmd == "presentation_mode")
     {
         ui->ROIdockWidget->hide();
@@ -582,7 +587,11 @@ bool tracking_window::command(QString cmd,QString param,QString param2)
         if(reg_slice)
         {
             if(!QDir(param+"/slices").exists() && !QDir().mkdir(param+"/slices"))
-                return true;
+            {
+                error_msg = "cannot create slices directory at ";
+                error_msg += (param+"/slices").toStdString();
+                return false;
+            }
             auto I = reg_slice->source_images;
             tipl::normalize_upper_lower(I);
             tipl::image<3,unsigned char> II(I.shape());
@@ -687,7 +696,12 @@ bool tracking_window::command(QString cmd,QString param,QString param2)
     if(cmd == "load_setting")
     {
         QString filename = param;
-        if(QFileInfo(filename).exists())
+        if(!QFileInfo(filename).exists())
+        {
+            error_msg = "cannot open file ";
+            error_msg += param.toStdString();
+            return false;
+        }
         {
             QSettings s(filename, QSettings::IniFormat);
             QStringList param_list = renderWidget->treemodel->getParamList();
@@ -801,7 +815,8 @@ bool tracking_window::command(QString cmd,QString param,QString param2)
         index = ui->SliceModality->findText(param);
         if(index == -1)
         {
-            show_progress() << "cannot find index:" << param.toStdString() << std::endl;
+            error_msg = "cannot find index: ";
+            error_msg += param.toStdString();
             return false;
         }
         ui->SliceModality->setCurrentIndex(index);
@@ -846,16 +861,18 @@ bool tracking_window::command(QString cmd,QString param,QString param2)
     {
         if(!addSlices(QStringList() << param,param,true))
         {
-            show_progress() << "cannot add slice " << param.toStdString() << std::endl;
+            error_msg = "cannot add slice ";
+            error_msg += param.toStdString();
             return false;
         }
         show_progress() << "register image to the DWI space" << std::endl;
         CustomSliceModel* cur_slice = (CustomSliceModel*)slices.back().get();
         cur_slice->wait();
         cur_slice->update_transform();
-
         return true;
     }
+    error_msg = "unknown command: ";
+    error_msg += cmd.toStdString();
     return false;
 }
 
