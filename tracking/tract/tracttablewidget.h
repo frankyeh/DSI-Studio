@@ -88,6 +88,7 @@ public:
     }
 public:
     void render_tracts(GLWidget* glwidget);
+    std::string error_msg;
     bool command(QString cmd,QString param = "",QString param2 = "");
 
 signals:
