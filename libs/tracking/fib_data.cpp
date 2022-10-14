@@ -965,7 +965,7 @@ bool fib_data::load_from_mat(void)
 
 bool resample_mat(gz_mat_read& mat_reader,float resolution)
 {
-    // get all data in delayed read comdition
+    // get all data in delayed read condition
     {
         progress p("reading data");
         for(size_t i = 0;progress::at(i,mat_reader.size());++i)
