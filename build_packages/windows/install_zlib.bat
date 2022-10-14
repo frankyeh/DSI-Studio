@@ -4,9 +4,9 @@ setlocal EnableDelayedExpansion
 set ORIGIN=%cd%
 
 :: Configuration
-set VERSION=1.2.11
+set VERSION=1.2.13
 set VER=%VERSION:.=%
-set URL=https://ftp.osuosl.org/pub/libpng/src/zlib/zlib1211.zip
+set URL=https://github.com/madler/zlib/archive/refs/tags/v1.2.13.zip
 set CMAKE_VS_PLATFORM_NAME=x64
 set TMPDIR=%HOMEDRIVE%%HOMEPATH%\zlib_tmp
 set SRC_DIR=%TMPDIR%\zlib-%VERSION%
