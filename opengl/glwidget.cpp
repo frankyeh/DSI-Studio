@@ -2366,10 +2366,10 @@ bool GLWidget::command(QString cmd,QString param,QString param2)
 
         {
             surface = std::make_shared<RegionRender>();
-            if(param != "Full")
+            if(!param.isEmpty() && !param.toLower().contains("full"))
             {
                 tipl::image<3,unsigned char> remain_part(crop_image.shape());
-                if(param.contains("Left"))
+                if(param.toLower().contains("left"))
                 {
                     for(unsigned int index = 0;index < remain_part.size();index += remain_part.width())
                     {
@@ -2377,7 +2377,7 @@ bool GLWidget::command(QString cmd,QString param,QString param2)
                                   remain_part.begin()+index+remain_part.width(),1);
                     }
                 }
-                if(param.contains("Right"))
+                if(param.toLower().contains("right"))
                 {
                     for(unsigned int index = 0;index < remain_part.size();index += remain_part.width())
                     {
@@ -2385,17 +2385,17 @@ bool GLWidget::command(QString cmd,QString param,QString param2)
                                   remain_part.begin()+index+cur_tracking_window.current_slice->slice_pos[0],1);
                     }
                 }
-                if(param.contains("Upper"))
+                if(param.toLower().contains("upper"))
                 {
                     std::fill(remain_part.begin()+cur_tracking_window.current_slice->slice_pos[2]*remain_part.plane_size(),
                               remain_part.end(),1);
                 }
-                if(param.contains("Lower"))
+                if(param.toLower().contains("lower"))
                 {
                     std::fill(remain_part.begin(),
                               remain_part.begin()+cur_tracking_window.current_slice->slice_pos[2]*remain_part.plane_size(),1);
                 }
-                if(param.contains("Posterior"))
+                if(param.toLower().contains("posterior"))
                 {
                     for(unsigned int index = 0;index < remain_part.size();index += remain_part.plane_size())
                     {
@@ -2403,7 +2403,7 @@ bool GLWidget::command(QString cmd,QString param,QString param2)
                                   remain_part.begin()+index+int64_t(remain_part.plane_size()),1);
                     }
                 }
-                if(param.contains("Anterior"))
+                if(param.toLower().contains("anterior"))
                 {
                     for(unsigned int index = 0;index < remain_part.size();index += remain_part.plane_size())
                     {
