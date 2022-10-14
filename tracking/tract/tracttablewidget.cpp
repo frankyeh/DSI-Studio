@@ -695,7 +695,7 @@ void TractTableWidget::save_tracts_in_native(void)
     }
     if(cur_tracking_window.handle->get_native_position().empty())
     {
-        QMessageBox::critical(this,"ERROR","No mapping information included. Please reconstruct QSDR with 'mapping' included in the output.",0);
+        QMessageBox::critical(this,"ERROR","No mapping information included. Please reconstruct QSDR with 'mapping' included in the output.");
         return;
     }
 
