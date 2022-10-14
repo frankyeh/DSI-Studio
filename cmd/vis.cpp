@@ -6,12 +6,14 @@
 #include "program_option.hpp"
 
 std::shared_ptr<fib_data> cmd_load_fib(std::string file_name);
-
+void get_filenames_from(const std::string param,std::vector<std::string>& filenames);
+extern bool has_gui;
 int vis(program_option& po)
 {
     std::shared_ptr<fib_data> new_handle = cmd_load_fib(po.get("source"));
     if(!new_handle.get())
         return 1;
+    has_gui = false;
     show_progress() << "starting gui" << std::endl;
     tracking_window* new_mdi = new tracking_window(nullptr,new_handle);
     new_mdi->setAttribute(Qt::WA_DeleteOnClose);
@@ -19,14 +21,15 @@ int vis(program_option& po)
     new_mdi->show();
     new_mdi->resize(1980,1000);
 
-    if(po.has("track"))
+    if(po.has("tract"))
     {
-        if(!std::filesystem::exists(po.get("track")))
-        {
-            show_progress() << "ERROR:" << po.get("track") << " does not exist" << std::endl;
-            return 1;
-        }
-        new_mdi->tractWidget->load_tracts(QString(po.get("track").c_str()).split(","));
+        std::vector<std::string> filenames;
+        get_filenames_from(po.get("tract").c_str(),filenames);
+        QStringList tracts;
+        for(auto file : filenames)
+            tracts << file.c_str();
+        new_mdi->tractWidget->load_tracts(tracts);
+        new_mdi->tractWidget->check_all();
     }
     QStringList cmd = QString(po.get("cmd").c_str()).split('+');
     for(unsigned int index = 0;index < cmd.size();++index)
@@ -34,16 +37,15 @@ int vis(program_option& po)
         QStringList param = cmd[index].split(',');
         if(!new_mdi->command(param[0],param.size() > 1 ? param[1]:QString(),param.size() > 2 ? param[2]:QString()))
         {
-            show_progress() << "unknown command:" << param[0].toStdString() << std::endl;
+            show_progress() << "ERROR: " << new_mdi->error_msg << std::endl;
             break;
         }
-
     }
-
     if(!po.has("stay_open"))
     {
         new_mdi->close();
         delete new_mdi;
     }
+    has_gui = true;
     return 0;
 }
