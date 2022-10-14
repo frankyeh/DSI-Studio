@@ -65,15 +65,15 @@ bool get_t1t2_nifti(const std::string& t1t2,
         handle->view_item.pop_back(); // remove the new item added by initialize
         t1t2_slices->wait();
         show_progress() << "registeration complete" << std::endl;
-        show_progress() << convert[0] << " " << convert[1] << " " << convert[2] << " " << convert[3] << std::endl;
-        show_progress() << convert[4] << " " << convert[5] << " " << convert[6] << " " << convert[7] << std::endl;
-        show_progress() << convert[8] << " " << convert[9] << " " << convert[10] << " " << convert[11] << std::endl;
     }
     nifti_geo = t1t2_slices->source_images.shape();
     nifti_vs = t1t2_slices->vs;
     convert = t1t2_slices->invT;
     show_progress() << "T1T2 dimension: " << nifti_geo << std::endl;
     show_progress() << "T1T2 voxel size: " << nifti_vs << std::endl;
+    show_progress() << convert[0] << " " << convert[1] << " " << convert[2] << " " << convert[3] << std::endl;
+    show_progress() << convert[4] << " " << convert[5] << " " << convert[6] << " " << convert[7] << std::endl;
+    show_progress() << convert[8] << " " << convert[9] << " " << convert[10] << " " << convert[11] << std::endl;
     return true;
 }
 bool export_track_info(program_option& po,std::shared_ptr<fib_data> handle,
