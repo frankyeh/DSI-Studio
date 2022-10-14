@@ -175,6 +175,20 @@ bool view_image::command(std::string cmd,std::string param1)
             init_image();
             return true;
         }
+        if(cmd == "save")
+        {
+            gz_mat_write matfile(file_name.toStdString().c_str());
+            if(!matfile)
+            {
+                QMessageBox::critical(this,"ERROR","Cannot save file");
+                return false;
+            }
+            progress p("saving");
+            for(unsigned int index = 0;progress::at(index,mat.size());++index)
+                matfile.write(mat[index]);
+            QMessageBox::information(this,"DSI Studio","File Save");
+            return true;
+        }
     }
 
 
@@ -238,6 +252,9 @@ bool view_image::command(std::string cmd,std::string param1)
             show_progress() << "ERROR:" << error_msg << std::endl;
             return false;
         }
+
+        if(mat.size())
+            write_mat_image();
     }
 
     init_image();
@@ -378,7 +395,12 @@ void view_image::DeleteRowPressed(int row)
     if(ui->info->currentRow() == -1)
         return;
     if(ui->info->currentRow() < mat.size())
+    {
+        auto index = ui->mat_images->findText(mat.name(ui->info->currentRow()));
+        if(index != -1)
+            ui->mat_images->removeItem(index);
         mat.remove(ui->info->currentRow());
+    }
     ui->info->removeRow(ui->info->currentRow());
 }
 
@@ -391,6 +413,7 @@ view_image::view_image(QWidget *parent) :
     table_event.reset(new TableKeyEventWatcher(ui->info));
     connect(table_event.get(),SIGNAL(DeleteRowPressed(int)),this,SLOT(DeleteRowPressed(int)));
 
+    ui->mat_images->hide();
     ui->info->setColumnWidth(0,120);
     ui->info->setColumnWidth(1,200);
     ui->info->setHorizontalHeaderLabels(QStringList() << "Header" << "Value");
@@ -538,6 +561,76 @@ void view_image::read_mat_info(void)
     }
     show_info(info);
 }
+bool view_image::read_mat_image(void)
+{
+    auto cur_metric = ui->mat_images->currentText().toStdString();
+    unsigned int row(0), col(0);
+    if(!mat.get_col_row(cur_metric.c_str(),row,col) || row*col != shape.size())
+        return false;
+    if(mat.type_compatible<float>(cur_metric.c_str()))
+    {
+        I_float32.resize(shape);
+        mat.read(cur_metric.c_str(),I_float32.begin(),I_float32.end());
+        data_type = float32;
+        ui->type->setCurrentIndex(data_type);
+        return true;
+    }
+    if(mat.type_compatible<unsigned int>(cur_metric.c_str()))
+    {
+        I_uint32.resize(shape);
+        mat.read(cur_metric.c_str(),I_uint32.begin(),I_uint32.end());
+        data_type = uint32;
+        ui->type->setCurrentIndex(data_type);
+        return true;
+    }
+    if(mat.type_compatible<unsigned short>(cur_metric.c_str()))
+    {
+        I_uint16.resize(shape);
+        mat.read(cur_metric.c_str(),I_uint16.begin(),I_uint16.end());
+        data_type = uint16;
+        ui->type->setCurrentIndex(data_type);
+        return true;
+    }
+    if(mat.type_compatible<unsigned char>(cur_metric.c_str()))
+    {
+        I_uint8.resize(shape);
+        mat.read(cur_metric.c_str(),I_uint8.begin(),I_uint8.end());
+        data_type = uint8;
+        ui->type->setCurrentIndex(data_type);
+        return true;
+    }
+    if(mat.type_compatible<double>(cur_metric.c_str()))
+    {
+        I_float32.resize(shape);
+        mat.read(cur_metric.c_str(),I_float32.begin(),I_float32.end());
+        data_type = float32;
+        ui->type->setCurrentIndex(data_type);
+        return true;
+    }
+    return false;
+}
+void view_image::write_mat_image(void)
+{
+    auto cur_metric = ui->mat_images->currentText().toStdString();
+    unsigned int row(0), col(0);
+    if(!mat.get_col_row(cur_metric.c_str(),row,col) || row*col != shape.size())
+        return;
+    switch(data_type)
+    {
+        case float32:
+            std::copy(I_float32.begin(),I_float32.end(),const_cast<float*>(mat.read_as_type<float>(cur_metric.c_str(),row,col)));
+            break;
+        case uint32:
+            std::copy(I_uint32.begin(),I_uint32.end(),const_cast<unsigned int*>(mat.read_as_type<unsigned int>(cur_metric.c_str(),row,col)));
+            break;
+        case uint16:
+            std::copy(I_uint16.begin(),I_uint16.end(),const_cast<unsigned short*>(mat.read_as_type<unsigned short>(cur_metric.c_str(),row,col)));
+            break;
+        case uint8:
+            std::copy(I_uint8.begin(),I_uint8.end(),const_cast<unsigned char*>(mat.read_as_type<unsigned char>(cur_metric.c_str(),row,col)));
+            break;
+    }
+}
 void initial_LPS_nifti_srow(tipl::matrix<4,4>& T,const tipl::shape<3>& geo,const tipl::vector<3>& vs);
 bool view_image::read_mat(void)
 {
@@ -546,20 +639,25 @@ bool view_image::read_mat(void)
         error_msg = "cannot find dimension matrix";
         return false;
     }
-    I_float32.resize(shape);
-    if((mat.has("fa0") || mat.has("image0")))
-        mat.read(mat.has("fa0") ? "fa0":"image0",I_float32);
-    else
-        mat >> I_float32;
+    bool has_data = true;
+    ui->mat_images->clear();
+    for(size_t i = 0;i < mat.size();++i)
+        if(mat[i].get_cols()*mat[i].get_rows() == shape.size())
+            ui->mat_images->addItem(mat[i].get_name().c_str());
+    if(!ui->mat_images->count())
+    {
+        error_msg = "cannot find images";
+        return false;
+    }
+    ui->mat_images->setCurrentIndex(0);
 
     mat.get_voxel_size(vs);
-
     if(mat.has("trans"))
         mat.read("trans",T);
     else
         initial_LPS_nifti_srow(T,shape,vs);
-
     read_mat_info();
+    ui->mat_images->show();
     return true;
 }
 void prepare_idx(const char* file_name,std::shared_ptr<gz_istream> in);
@@ -1015,20 +1113,6 @@ void view_image::change_contrast()
 
 void view_image::on_actionSave_triggered()
 {
-    if(mat.size())
-    {
-        gz_mat_write matfile(file_name.toStdString().c_str());
-        if(!matfile)
-        {
-            QMessageBox::critical(this,"ERROR","Cannot save file");
-            return;
-        }
-        progress p("saving");
-        for(unsigned int index = 0;progress::at(index,mat.size());++index)
-            matfile.write(mat[index]);
-        QMessageBox::information(this,"DSI Studio","File Save");
-        return;
-    }
     if(command("save",file_name.toStdString()))
         QMessageBox::information(this,"DSI Studio","Saved");
     else
@@ -1242,8 +1326,6 @@ void view_image::on_info_cellChanged(int row, int column)
 {
     if(column == 0 && row < mat.size())
         mat[row].set_name(ui->info->item(row,column)->text().toStdString());
-
-
 }
 
 void view_image::on_info_cellDoubleClicked(int row, int column)
@@ -1259,5 +1341,12 @@ void view_image::on_info_cellDoubleClicked(int row, int column)
         read_mat_info();
         ui->info->selectRow(row);
     }
+}
+
+
+void view_image::on_mat_images_currentIndexChanged(int index)
+{
+    if(read_mat_image())
+        init_image();
 }
 
