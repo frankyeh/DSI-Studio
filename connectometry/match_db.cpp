@@ -9,7 +9,7 @@ match_db::match_db(QWidget *parent,std::shared_ptr<group_connectometry_analysis>
     ui(new Ui::match_db)
 {
     ui->setupUi(this);
-    show_match_table();
+    on_match_consecutive_clicked();
 }
 
 match_db::~match_db()
@@ -27,8 +27,7 @@ void match_db::show_match_table(void)
     ui->match_table->setColumnCount(2);
     ui->match_table->setColumnWidth(0,150);
     ui->match_table->setColumnWidth(1,150);
-    ui->match_table->setHorizontalHeaderLabels(
-                QStringList() << "Baseline(b)" << "Study scan (a)");
+    ui->match_table->setHorizontalHeaderLabels(QStringList() << "Scan 1" << "Scan 2");
     for(int i = 0;i < vbc->handle->db.match.size();++i)
     {
         ui->match_table->setItem(i,0,
@@ -47,11 +46,15 @@ void match_db::on_buttonBox_accepted()
         accept();
     }
     unsigned char dif_type = 0;
-    if(ui->change_dif->isChecked())
+    if(ui->dif_type1->isChecked())
         dif_type = 0;
-    if(ui->change_dif_percentage->isChecked())
+    if(ui->dif_type2->isChecked())
         dif_type = 1;
-    vbc->handle->db.calculate_change(dif_type,ui->match_normalize->isChecked());
+    if(ui->dif_type3->isChecked())
+        dif_type = 2;
+    if(ui->dif_type4->isChecked())
+        dif_type = 3;
+    vbc->handle->db.calculate_change(dif_type);
     QMessageBox::information(this,"DSI Studio","Connectometry DB updated");
     accept();
 }

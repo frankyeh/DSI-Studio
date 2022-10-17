@@ -54,9 +54,9 @@
            </property>
            <layout class="QVBoxLayout" name="verticalLayout_28">
             <item>
-             <widget class="QRadioButton" name="change_dif">
+             <widget class="QRadioButton" name="dif_type1">
               <property name="text">
-               <string>a-b</string>
+               <string>scan1 - scan2</string>
               </property>
               <property name="checked">
                <bool>true</bool>
@@ -64,20 +64,27 @@
              </widget>
             </item>
             <item>
-             <widget class="QRadioButton" name="change_dif_percentage">
+             <widget class="QRadioButton" name="dif_type2">
               <property name="text">
-               <string>(a-b)/(a+b)</string>
+               <string>scan2 - scan1</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QRadioButton" name="dif_type3">
+              <property name="text">
+               <string>(scan1 - scan2)/(scan1 + scan2)</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QRadioButton" name="dif_type4">
+              <property name="text">
+               <string>(scan2 - scan1)(scan1 + scan2)</string>
               </property>
              </widget>
             </item>
            </layout>
-          </widget>
-         </item>
-         <item>
-          <widget class="QCheckBox" name="match_normalize">
-           <property name="text">
-            <string>Normalize SDF</string>
-           </property>
           </widget>
          </item>
         </layout>
@@ -99,12 +106,12 @@
         </property>
         <column>
          <property name="text">
-          <string>Baseline scan (b)</string>
+          <string>scan 1</string>
          </property>
         </column>
         <column>
          <property name="text">
-          <string>Study scan (a)</string>
+          <string>scan 2</string>
          </property>
         </column>
        </widget>
