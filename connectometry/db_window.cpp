@@ -214,7 +214,6 @@ void db_window::on_delete_subject_clicked()
 
 void db_window::on_actionCalculate_change_triggered()
 {
-    vbc->handle->db.auto_match(vbc->handle->dir.fa_otsu*0.6f);
     std::unique_ptr<match_db> mdb(new match_db(this,vbc));
     if(mdb->exec() == QDialog::Accepted)
         update_db();
