@@ -95,19 +95,9 @@ int cnt(program_option& po)
         }
 
         std::fill(db.feature_selected.begin(),db.feature_selected.end(),false);
-        show_progress pout;
-        pout << "variable(s) to be considered in regression: ";
         for(auto index : variable_list)
-        {
-            pout << "\t(" << index << ")" << db.feature_titles[index];
             db.feature_selected[index] = true;
-        }
-        pout << std::endl;
-        pout << "variable to study: " << foi_str << std::endl;
-
     }
-
-
 
     {
         progress prog("connectometry parameters:");
