@@ -285,15 +285,9 @@ std::string iterate_items(const std::vector<std::string>& item)
 std::string group_connectometry_analysis::get_file_post_fix(void)
 {
     std::string postfix;
-    if(model->type == 1) // run regression model
     {
         postfix += foi_str;
         postfix += ".t";
-        postfix += std::to_string((int)(t_threshold*10));
-    }
-    if(model->type == 3) // longitudinal change
-    {
-        postfix += ".sd";
         postfix += std::to_string((int)(t_threshold*10));
     }
 
@@ -320,7 +314,7 @@ void group_connectometry_analysis::run_permutation(unsigned int thread_count,uns
 
         out << "\nDiffusion MRI connectometry (Yeh et al. NeuroImage 125 (2016): 162-171) was used to derive the correlational tractography that has ";
         if(handle->db.is_longitudinal)
-            out << "a longitudinal change of ";
+            out << "a change of ";
         out << handle->db.index_name;
 
         if(foi_str == "Intercept")
@@ -328,7 +322,6 @@ void group_connectometry_analysis::run_permutation(unsigned int thread_count,uns
         else
             out << " correlated with " << foi_str << ".";
 
-        if(model->type == 1) // regression model
         {
             auto items = model->variables;
             items.erase(items.begin()); // remove intercept
@@ -343,6 +336,7 @@ void group_connectometry_analysis::run_permutation(unsigned int thread_count,uns
                     out << ", and the effect of " << iterate_items(items) << " was removed using a multiple regression model.";
             }
             else
+            if(!items.empty())
                 out << " A multiple regression model was used to consider the effect of " << iterate_items(items) << ".";
         }
 
@@ -491,9 +485,9 @@ void group_connectometry_analysis::generate_report(std::string& output)
 
     std::string index_name = QString(handle->db.index_name.c_str()).toUpper().toStdString();
     std::string track_hypothesis_pos =
-        (model->type == 1 ? index_name+" positively correlated with "+foi_str : std::string("increased ")+index_name);
+        (!model->study_feature ? index_name+" positively correlated with "+foi_str : std::string("increased ")+index_name);
     std::string track_hypothesis_neg =
-        (model->type == 1 ? index_name+" negatively correlated with "+foi_str : std::string("decreased ")+index_name);
+        (!model->study_feature ? index_name+" negatively correlated with "+foi_str : std::string("decreased ")+index_name);
     std::string fdr_result_pos,fdr_result_neg;
     auto output_fdr = [](float fdr)
     {
