@@ -279,7 +279,7 @@ bool RegionTableWidget::command(QString cmd,QString param,QString)
             }
         return true;
     }
-    if(cmd == "detele_all_region")
+    if(cmd == "delete_all_region")
     {
         delete_all_region();
         return true;
@@ -320,10 +320,10 @@ void RegionTableWidget::move_slice_to_current_region(void)
 }
 
 
-void RegionTableWidget::draw_region(std::shared_ptr<SliceModel> current_slice,
-                                    unsigned char dim,int line_width,unsigned char draw_edges,
-                                    const tipl::color_image& slice_image,float display_ratio,QImage& scaled_image)
+void RegionTableWidget::draw_region(std::shared_ptr<SliceModel> current_slice,unsigned char dim,const tipl::color_image& slice_image,float display_ratio,QImage& scaled_image)
 {
+    int fill_region = cur_tracking_window["roi_fill_region"].toInt();
+
     // during region removal, there will be a call with invalid currentRow
     auto checked_regions = get_checked_regions();
     if(checked_regions.empty() || currentRow() >= int(regions.size()) || currentRow() == -1)
@@ -349,7 +349,7 @@ void RegionTableWidget::draw_region(std::shared_ptr<SliceModel> current_slice,
         {
             tipl::image<2,uint8_t> detect_edge(slice_image.shape());
             auto color = checked_regions[roi_index]->region_render.color;
-            bool draw_roi = (draw_edges == 0 && color.a >= 128);
+            bool draw_roi = (fill_region && color.a >= 128);
 
             if(current_slice->T != checked_regions[roi_index]->to_diffusion_space)
             {
@@ -440,21 +440,25 @@ void RegionTableWidget::draw_region(std::shared_ptr<SliceModel> current_slice,
             break;
         }
 
-    unsigned int foreground_color = ((scaled_image.pixel(0,0) & 0x000000FF) < 128 ? 0xFFFFFFFF:0xFF000000);
-    int length = int(display_ratio);
-    QPainter paint(&scaled_image);
-    for (uint32_t roi_index = 0;roi_index < checked_regions.size();++roi_index)
+    if(cur_tracking_window["roi_draw_edge"].toInt())
     {
-        unsigned int cur_color = foreground_color;
-        if(draw_edges == 1 && (int(roi_index) != cur_roi_index))
-            cur_color = checked_regions[roi_index]->region_render.color;
-        paint.setBrush(Qt::NoBrush);
-        QPen pen(QColor(cur_color),line_width, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
-        paint.setPen(pen);
-        for(const auto& pos : edge_x[roi_index])
-            paint.drawLine(pos[0],pos[1],pos[0]+length,pos[1]);
-        for(const auto& pos : edge_y[roi_index])
-            paint.drawLine(pos[0],pos[1],pos[0],pos[1]+length);
+        int line_width = cur_tracking_window["roi_edge_width"].toInt();
+        unsigned int foreground_color = ((scaled_image.pixel(0,0) & 0x000000FF) < 128 ? 0xFFFFFFFF:0xFF000000);
+        int length = int(display_ratio);
+        QPainter paint(&scaled_image);
+        for (uint32_t roi_index = 0;roi_index < checked_regions.size();++roi_index)
+        {
+            unsigned int cur_color = foreground_color;
+            if(int(roi_index) != cur_roi_index)
+                cur_color = checked_regions[roi_index]->region_render.color;
+            paint.setBrush(Qt::NoBrush);
+            QPen pen(QColor(cur_color),line_width, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
+            paint.setPen(pen);
+            for(const auto& pos : edge_x[roi_index])
+                paint.drawLine(pos[0],pos[1],pos[0]+length,pos[1]);
+            for(const auto& pos : edge_y[roi_index])
+                paint.drawLine(pos[0],pos[1],pos[0],pos[1]+length);
+        }
     }
 }
 

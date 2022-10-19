@@ -397,11 +397,7 @@ void slice_view_scene::get_view_image(QImage& new_view_image,std::shared_ptr<Sli
     if(!simple)
     {
         QImage region_image;
-        cur_tracking_window.regionWidget->draw_region(current_slice,
-                                                  cur_dim,
-                                                  cur_tracking_window["roi_edge_width"].toInt(),
-                                                  cur_tracking_window["roi_edge"].toInt(),
-                                                  slice_image,display_ratio,region_image);
+        cur_tracking_window.regionWidget->draw_region(current_slice,cur_dim,slice_image,display_ratio,region_image);
         if(!region_image.isNull())
         {
             QPainter painter(&scaled_image);
@@ -461,7 +457,8 @@ bool slice_view_scene::command(QString cmd,QString param,QString param2)
 {
     if(cmd == "save_roi_image")
     {
-        show_slice();
+        cur_tracking_window.slice_need_update = false; // turn off simple drawing
+        paint_image(view_image,false);
         if(param.isEmpty())
             param = QFileInfo(cur_tracking_window.work_path).absolutePath() + "/" +
                     QFileInfo(cur_tracking_window.windowTitle()).baseName()+"_"+
