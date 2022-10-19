@@ -6,7 +6,7 @@
 #include "libs/tracking/tracking_thread.hpp"
 #include "tracking/tracking_window.h"
 #include "program_option.hpp"
-
+#include "tracking/region/regiontablewidget.h"
 #include <filesystem>
 
 bool group_connectometry_analysis::create_database(std::shared_ptr<fib_data> handle_)
@@ -633,13 +633,19 @@ void group_connectometry_analysis::generate_report(std::string& output)
         new_mdi->command("set_roi_view_index","t1w");
         new_mdi->command("set_roi_view_contrast","0.0","400.0");
 
-        auto show_track_result = [&](std::shared_ptr<TractModel> track,std::string name,unsigned int){
+        auto show_track_result = [&](std::shared_ptr<TractModel> track,std::string name,unsigned int color){
             if(track->get_visible_track_count())
             {
                 new_mdi->tractWidget->addNewTracts(name.c_str());
                 new_mdi->tractWidget->tract_models[0]->add(*track.get());
                 new_mdi->command("set_param","tract_color_style","0");
                 new_mdi->command("update_track");
+
+                std::vector<tipl::vector<3,short> > points;
+                new_mdi->tractWidget->tract_models[0]->to_voxel(points,new_mdi->current_slice->invT);
+                new_mdi->regionWidget->add_region(name.c_str(),0,color);
+                new_mdi->regionWidget->regions.back()->add_points(std::move(points));
+
             }
             new_mdi->command("save_h3view_image",(output_file_name+"." + name + ".jpg").c_str());
             // do it twice to eliminate 3D artifact
@@ -647,11 +653,15 @@ void group_connectometry_analysis::generate_report(std::string& output)
 
             new_mdi->command("set_param","roi_zoom","8");
             new_mdi->command("set_param","roi_layout","5");
+            new_mdi->command("set_param","roi_track","0");
+            new_mdi->command("set_param","roi_fill_region","1");
+            new_mdi->command("set_param","roi_draw_edge","0");
             new_mdi->command("save_roi_image",(output_file_name+"." + name + "_map.jpg").c_str(),"0");
             new_mdi->command("set_roi_view","1");
             new_mdi->command("save_roi_image",(output_file_name+"." + name + "_map2.jpg").c_str(),"0");
             new_mdi->command("set_roi_view","2");
             new_mdi->command("delete_all_tract");
+            new_mdi->command("delete_all_region");
         };
         show_track_result(pos_corr_track,"pos_corr",0x00F01010);
         show_track_result(neg_corr_track,"neg_corr",0x001080F0);
