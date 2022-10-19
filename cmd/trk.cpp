@@ -720,7 +720,7 @@ int trk(program_option& po,std::shared_ptr<fib_data> handle)
         tracking_thread.param.tracking_method = uint8_t(po.get("method",int(0)));
         tracking_thread.param.check_ending = uint8_t(po.get("check_ending",int(0))) && !(po.has("dt_threshold_index"));
         tracking_thread.param.tip_iteration = uint8_t(po.get("tip_iteration",
-                                                  (po.has("track_id") | po.has("dt_metric1") ) ? 2 : 0));
+                                                  (po.has("track_id") | po.has("dt_metric1") ) ? 16 : 0));
 
         if (po.has("fiber_count"))
         {
@@ -730,8 +730,8 @@ int trk(program_option& po,std::shared_ptr<fib_data> handle)
         }
         else
         {
-            if (po.has("seed_count"))
-                tracking_thread.param.termination_count = po.get("seed_count",uint32_t(tracking_thread.param.termination_count));
+            tracking_thread.param.termination_count = po.get("seed_count",po.has("dt_metric1") ? 10000000 :
+                                                            uint32_t(tracking_thread.param.termination_count));
             tracking_thread.param.stop_by_tract = 0;
         }
 
