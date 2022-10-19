@@ -476,7 +476,6 @@ void group_connectometry::on_show_result_clicked()
     current_tracking_window->setAttribute(Qt::WA_DeleteOnClose);
     current_tracking_window->setWindowTitle(vbc->output_file_name.c_str());
     current_tracking_window->showNormal();
-    current_tracking_window->tractWidget->delete_all_tract();
     current_tracking_window->tractWidget->addNewTracts("Positive Correlation");
     current_tracking_window->tractWidget->addNewTracts("Negative Correlation");
 
