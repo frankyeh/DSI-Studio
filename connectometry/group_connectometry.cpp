@@ -479,8 +479,8 @@ void group_connectometry::on_show_result_clicked()
     current_tracking_window->setAttribute(Qt::WA_DeleteOnClose);
     current_tracking_window->setWindowTitle(vbc->output_file_name.c_str());
     current_tracking_window->showNormal();
-    current_tracking_window->tractWidget->addNewTracts("Positive Correlation");
-    current_tracking_window->tractWidget->addNewTracts("Negative Correlation");
+    current_tracking_window->tractWidget->addNewTracts(vbc->track_hypothesis_pos.c_str());
+    current_tracking_window->tractWidget->addNewTracts(vbc->track_hypothesis_neg.c_str());
 
     current_tracking_window->tractWidget->tract_models[0]->add(*(vbc->pos_corr_track.get()));
     current_tracking_window->tractWidget->tract_models[1]->add(*(vbc->neg_corr_track.get()));
@@ -581,14 +581,14 @@ void group_connectometry::on_load_roi_from_file_clicked()
 
 void group_connectometry::on_variable_list_clicked(const QModelIndex &)
 {
+    auto foi_str = ui->foi->currentText();
     ui->foi->clear();
     for(int i =0;i < ui->variable_list->count();++i)
         if((db.feature_selected[uint32_t(i)] = (ui->variable_list->item(i)->checkState() == Qt::Checked)))
             ui->foi->addItem(ui->variable_list->item(i)->text());
     if(db.is_longitudinal)
         ui->foi->addItem(QString("longitudinal change"));
-    if(ui->foi->count() != 0)
-        ui->foi->setCurrentIndex(ui->foi->count()-1);
+    ui->foi->setCurrentText(foi_str);
 }
 
 void group_connectometry::on_show_cohort_clicked()
