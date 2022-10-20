@@ -2636,7 +2636,7 @@ tipl::vector<3> get_tract_dir(const std::vector<std::vector<float> >& tract_data
         else
             total_dis += dis;
     }
-    // categlorize endpoints using the mid point direction
+    // categorize endpoints using the mid point direction
     total_dis.normalize();
     dir.resize(tract_data.size());
     for(size_t i = 0;i < tract_data.size();++i)
@@ -2694,7 +2694,7 @@ void TractModel::to_end_point_voxels(std::vector<tipl::vector<3,short> >& points
     std::vector<char> dir;
     get_tract_dir(tract_data,dir);
 
-    // categlorize endpoints using the mid point direction
+    // categorize endpoints using the mid point direction
     std::vector<tipl::vector<3,short> > s1,s2;
     for(size_t i = 0;i < tract_data.size();++i)
     {
@@ -2730,7 +2730,7 @@ void TractModel::to_end_point_voxels(std::vector<tipl::vector<3,short> >& points
     std::vector<char> dir;
     get_tract_dir(tract_data,dir);
 
-    // categlorize endpoints using the mid point direction
+    // categorize endpoints using the mid point direction
     std::vector<tipl::vector<3,short> > s1,s2;
     for(size_t i = 0;i < tract_data.size();++i)
     {
