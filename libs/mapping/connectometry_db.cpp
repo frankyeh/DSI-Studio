@@ -257,9 +257,10 @@ bool connectometry_db::parse_demo(void)
     // find which column can be used as features
     feature_location.clear();
     feature_titles.clear();
+    feature_is_float.clear();
 
     {
-        std::vector<char> not_number(titles.size());
+        std::vector<char> not_number(titles.size()),not_categorical(titles.size());
         for(size_t i = 0;i < items.size();++i)
         {
             if(not_number[i%titles.size()])
@@ -269,7 +270,9 @@ bool connectometry_db::parse_demo(void)
             if(items[i].empty())
                 continue;
             try{
-                std::stof(items[i]);
+                float value = std::stof(items[i]);
+                if(std::floor(value) != value)
+                    not_categorical[i%titles.size()] = 1;
             }
             catch (...)
             {
@@ -282,6 +285,8 @@ bool connectometry_db::parse_demo(void)
             feature_location.push_back(i);
             feature_titles.push_back(titles[i]);
             feature_selected.push_back(true);
+            feature_is_float.push_back(not_categorical[i]); // 0: categorical 1: floating
+
         }
     }
 
@@ -560,47 +565,6 @@ bool connectometry_db::add_subject_file(const std::string& file_name,
     return true;
 }
 
-void connectometry_db::get_dif_matrix(std::vector<float>& matrix,float fiber_threshold)
-{
-    matrix.clear();
-    matrix.resize(size_t(num_subjects)*size_t(num_subjects));
-    std::vector<std::vector<float> > subject_vector;
-    {
-        unsigned int total_count = num_subjects;
-        subject_vector.clear();
-        subject_vector.resize(total_count);
-        tipl::par_for(total_count,[&](unsigned int index)
-        {
-            size_t subject_index = index;
-            for(size_t s_index = 0;s_index < si2vi.size();++s_index)
-            {
-                size_t cur_index = si2vi[s_index];
-                size_t fib_offset = 0;
-                for(char j = 0;j < handle->dir.num_fiber && handle->dir.fa[j][cur_index] > fiber_threshold;
-                        ++j,fib_offset+=si2vi.size())
-                {
-                    size_t pos = s_index + fib_offset;
-                    if(pos >= subject_qa_length)
-                        break;
-                    subject_vector[index].push_back(subject_qa[subject_index][pos]);
-                }
-            }
-        });
-    }
-    progress prog_("calculating");
-    size_t prog = 0;
-    tipl::par_for(num_subjects,[&](unsigned int i){
-        progress::at(prog++,num_subjects);
-        for(unsigned int j = i+1; j < num_subjects;++j)
-        {
-            float result = float(tipl::root_mean_suqare_error(
-                        subject_vector[i].begin(),subject_vector[i].end(),
-                        subject_vector[j].begin()));
-            matrix[i*num_subjects+j] = result;
-            matrix[j*num_subjects+i] = result;
-        }
-    });
-}
 bool connectometry_db::save_db(const char* output_name)
 {
     // store results
@@ -700,7 +664,7 @@ bool connectometry_db::get_demo_matched_volume(const std::string& matched_demo,t
     {
         if(vi2si[index])
         {
-            //I[index] = subject_qa[subject_index][vi2si[index]];
+            //I[index] = subject_qa[selected_subject][vi2si[index]];
             std::vector<double> y(subject_qa.size());
             for(size_t s = 0;s < subject_qa.size();++s)
                 y[s] = double(subject_qa[s][vi2si[index]]);
@@ -851,37 +815,7 @@ void connectometry_db::move_down(int id)
     std::swap(subject_qa[uint32_t(id)],subject_qa[uint32_t(id+1)]);
 }
 
-void connectometry_db::auto_match(float fiber_threshold)
-{
-    std::vector<float> dif;
-    get_dif_matrix(dif,fiber_threshold);
-
-    std::vector<float> half_dif;
-    for(unsigned int i = 0;i < handle->db.num_subjects;++i)
-        for(unsigned int j = i+1;j < handle->db.num_subjects;++j)
-            half_dif.push_back(dif[i*handle->db.num_subjects+j]);
-
-    // find the largest gap
-    std::vector<float> v(half_dif);
-    std::sort(v.begin(),v.end());
-    float max_dif = 0,t = 0;
-    for(unsigned int i = 1;i < v.size()/2;++i)
-    {
-        float dif = v[i]-v[i-1];
-        if(dif > max_dif)
-        {
-            max_dif = dif;
-            t = v[i]+v[i-1];
-            t *= 0.5f;
-        }
-    }
-    match.clear();
-    for(unsigned int i = 0,index = 0;i < handle->db.num_subjects;++i)
-        for(unsigned int j = i+1;j < handle->db.num_subjects;++j,++index)
-            if(half_dif[index] < t)
-                match.push_back(std::make_pair(i,j));
-}
-void connectometry_db::calculate_change(unsigned char dif_type,bool norm)
+void connectometry_db::calculate_change(unsigned char dif_type)
 {
     std::ostringstream out;
 
@@ -897,53 +831,33 @@ void connectometry_db::calculate_change(unsigned char dif_type,bool norm)
     {
         auto first = uint32_t(match[index].first);
         auto second = uint32_t(match[index].second);
-        const float* baseline = subject_qa[first];
-        const float* study = subject_qa[second];
+        const float* scan1 = subject_qa[first];
+        const float* scan2 = subject_qa[second];
         new_R2[index] = std::min<float>(R2[first],R2[second]);
-        new_subject_names[index] = subject_names[second] + " - " + subject_names[first];
         std::vector<float> change(subject_qa_length);
-        if(norm)
+        switch(dif_type)
         {
-            if(dif_type == 0)
+        case 0:
             {
                 if(!index)
-                    out << " The difference between longitudinal scans were calculated";
+                    out << " The difference between longitudinal scans were calculated by scan2-scan1.";
                 for(unsigned int i = 0;i < subject_qa_length;++i)
-                    change[i] = study[i]-baseline[i];
+                    change[i] = scan2[i]-scan1[i];
+                new_subject_names[index] = subject_names[second] + "-" + subject_names[first];
             }
-            else
+            break;
+        case 1:
             {
                 if(!index)
-                    out << " The percentage difference between longitudinal scans were calculated";
+                    out << " The percentage difference between longitudinal scans were calculated by (scan2-scan1)/scan1.";
                 for(unsigned int i = 0;i < subject_qa_length;++i)
                 {
-                    float new_s = study[i];
-                    float s = new_s+baseline[i];
-                    change[i] = (s == 0.0f ? 0 : (new_s-baseline[i])/s);
+                    float s = scan1[i];
+                    change[i] = (s == 0.0f? 0 : (scan2[i]-scan1[i])/s);
                 }
+                new_subject_names[index] = subject_names[second] + "-" + subject_names[first];
             }
-            if(!index)
-                out << " after the data variance in each individual was normalized to one";
-        }
-        else
-        {
-            if(dif_type == 0)
-            {
-                if(!index)
-                    out << " The difference between longitudinal scans were calculated";
-                for(unsigned int i = 0;i < subject_qa_length;++i)
-                    change[i] = study[i]-baseline[i];
-            }
-            else
-            {
-                if(!index)
-                    out << " The percentage difference between longitudinal scans were calculated";
-                for(unsigned int i = 0;i < subject_qa_length;++i)
-                {
-                    float s = study[i]+baseline[i];
-                    change[i] = (s == 0.0f? 0 : (study[i]-baseline[i])/s);
-                }
-            }
+            break;
         }
         new_subject_qa_buf.push_back(change);
         new_subject_qa.push_back(&(new_subject_qa_buf.back()[0]));
@@ -953,7 +867,6 @@ void connectometry_db::calculate_change(unsigned char dif_type,bool norm)
     subject_names.swap(new_subject_names);
     subject_qa_buf.swap(new_subject_qa_buf);
     subject_qa.swap(new_subject_qa);
-    index_name += "_dif";
     num_subjects = uint32_t(match.size());
     match.clear();
     report += out.str();
@@ -961,37 +874,8 @@ void connectometry_db::calculate_change(unsigned char dif_type,bool norm)
 
 }
 
-void calculate_spm(std::shared_ptr<fib_data> handle,connectometry_result& data,stat_model& info,
-                   float fiber_threshold,bool& terminated)
-{
-    data.clear_result(handle->dir.num_fiber,handle->dim.size());
-    std::vector<double> population(handle->db.subject_qa.size());
-    for(unsigned int s_index = 0;s_index < handle->db.si2vi.size() && !terminated;++s_index)
-    {
-        unsigned int cur_index = handle->db.si2vi[s_index];
-        double result(0.0);
-        size_t fib_offset = 0;
-        for(char fib = 0;fib < handle->dir.num_fiber && handle->dir.fa[fib][cur_index] > fiber_threshold;
-                ++fib,fib_offset+=handle->db.si2vi.size())
-        {
-            unsigned int pos = s_index + fib_offset;
-            if(pos < handle->db.subject_qa_length)
-            {
-                for(unsigned int index = 0;index < population.size();++index)
-                    population[index] = double(handle->db.subject_qa[index][pos]);
 
-                if(std::find(population.begin(),population.end(),0.0) != population.end())
-                    continue;
-                result = info(population,pos);
-            }
-            if(result > 0.0) // group 0 > group 1
-                data.pos_corr[fib][cur_index] = result;
-            if(result < 0.0) // group 0 < group 1
-                data.neg_corr[fib][cur_index] = -result;
 
-        }
-    }
-}
 
 
 void connectometry_result::clear_result(char num_fiber,size_t image_size)
@@ -1026,85 +910,63 @@ inline void calculate_dif(float& pos_corr,
 
 void stat_model::read_demo(const connectometry_db& db)
 {
-    subject_index.resize(db.num_subjects);
-    std::iota(subject_index.begin(),subject_index.end(),0);
+    selected_subject.resize(db.num_subjects);
+    std::iota(selected_subject.begin(),selected_subject.end(),0);
 
     X = db.X;
-    feature_count = db.feature_location.size()+1; // additional one for intercept
+    x_col_count = db.feature_location.size()+1; // additional one for longitudinal change
 
 }
 
 void stat_model::select_variables(const std::vector<char>& sel)
 {
-    auto subject_count = X.size()/feature_count;
-    unsigned int new_feature_count = 0;
+    auto row_count = X.size()/x_col_count;
+    unsigned int new_col_count = 0;
     std::vector<size_t> feature_map;
     for(size_t i = 0;i < sel.size();++i)
         if(sel[i])
         {
-            ++new_feature_count;
+            ++new_col_count;
             feature_map.push_back(i);
         }
-    std::vector<double> new_X(size_t(subject_count)*size_t(new_feature_count));
-    for(size_t i = 0,index = 0;i < subject_count;++i)
-        for(size_t j = 0;j < new_feature_count;++j,++index)
-            new_X[index] = X[i*feature_count+feature_map[j]];
-    feature_count = new_feature_count;
+    if(new_col_count == 1) // only testing longitudinal change
+    {
+        X.clear();
+        return;
+    }
+    std::vector<double> new_X(size_t(row_count)*size_t(new_col_count));
+    for(size_t i = 0,index = 0;i < row_count;++i)
+        for(size_t j = 0;j < new_col_count;++j,++index)
+            new_X[index] = X[i*x_col_count+feature_map[j]];
+    x_col_count = new_col_count;
     X.swap(new_X);
+
 }
 
 bool stat_model::pre_process(void)
 {
-
-    switch(type)
-    {
-    case 0: // group
-        if(X.empty())
-            return false;
-        group2_count = 0;
-        for(unsigned int index = 0;index < label.size();++index)
-            if(label[index])
-                ++group2_count;
-        group1_count = label.size()-group2_count;
-        return group2_count > 3 && group1_count > 3;
-    case 1: // multiple regression
-        {
-            if(X.empty())
-                return false;
-            X_min = X_max = std::vector<double>(X.begin(),X.begin()+feature_count);
-            unsigned int subject_count = X.size()/feature_count;
-            if(subject_count <= feature_count)
-                return false;
-            for(unsigned int i = 1,index = feature_count;i < subject_count;++i)
-                for(unsigned int j = 0;j < feature_count;++j,++index)
-                {
-                    if(X[index] < X_min[j])
-                        X_min[j] = X[index];
-                    if(X[index] > X_max[j])
-                        X_max[j] = X[index];
-                }
-            X_range.resize(feature_count);
-            for(unsigned int j = 0;j < feature_count;++j)
-                X_range[j] = X_max[j]-X_min[j];
-        }
-        return mr.set_variables(&*X.begin(),feature_count,uint32_t(X.size()/feature_count));
-    case 2:
-    case 3: //longitudinal change
+    if(X.empty())
         return true;
+    X_min = X_max = std::vector<double>(X.begin(),X.begin()+x_col_count);
+    unsigned int subject_count = X.size()/x_col_count;
+    if(subject_count <= x_col_count)
+    {
+        error_msg = "not enough subject samples for regression analysis";
+        return false;
     }
-    return false;
+    for(unsigned int i = 1,index = x_col_count;i < subject_count;++i)
+        for(unsigned int j = 0;j < x_col_count;++j,++index)
+        {
+            if(X[index] < X_min[j])
+                X_min[j] = X[index];
+            if(X[index] > X_max[j])
+                X_max[j] = X[index];
+        }
+    X_range.resize(x_col_count);
+    for(unsigned int j = 0;j < x_col_count;++j)
+        X_range[j] = X_max[j]-X_min[j];
+    return mr.set_variables(&*X.begin(),x_col_count,uint32_t(X.size()/x_col_count));
 }
-void stat_model::remove_subject(unsigned int index)
-{
-    if(index >= subject_index.size())
-        throw std::runtime_error("remove subject out of bound");
-    if(!label.empty())
-        label.erase(label.begin()+index);
-    if(!X.empty())
-        X.erase(X.begin()+int64_t(index)*feature_count,X.begin()+int64_t(index+1)*feature_count);
-    subject_index.erase(subject_index.begin()+index);
-}
-
 
 bool stat_model::select_cohort(connectometry_db& db,
                                std::string select_text)
@@ -1112,22 +974,32 @@ bool stat_model::select_cohort(connectometry_db& db,
     error_msg.clear();
     cohort_report.clear();
     remove_list.clear();
-    remove_list.resize(X.size()/feature_count);
+    remove_list.resize(X.size()/x_col_count);
     // handle missing value
-    for(size_t k = 0;k < db.feature_titles.size();++k)
-        if(db.feature_selected[k])
-        {
-            for(size_t i = 0,pos = 0;pos < X.size();++i,pos += feature_count)
-                if(std::isnan(X[pos+size_t(k)+1]))
-                    remove_list[i] = 1;
-        }
-    // select cohort
+    std::ostringstream out;
+    for(size_t i = 0,pos = 0;pos < X.size();++i,pos += x_col_count)
+    {
+        for(size_t k = 0;k < db.feature_titles.size();++k)
+            if(db.feature_selected[k] && std::isnan(X[pos+size_t(k)+1]))
+            {
+                out << i << " ";
+                remove_list[i] = 1;
+                break;
+            }
+    }
+    {
+        auto excluded_list = out.str();
+        if(!excluded_list.empty())
+           show_progress() << "excluding subjects with missing values: " << excluded_list << std::endl;
+    }
+
     if(!select_text.empty())
     {
         std::istringstream ss(select_text);
         std::string text;
         while(std::getline(ss,text,','))
         {
+            show_progress() << "selecting subjects with " << text << std::endl;
             bool parsed = false;
             auto select = [](char sel,float value,float threshold)
             {
@@ -1160,7 +1032,7 @@ bool stat_model::select_cohort(connectometry_db& db,
                         for(size_t k = 0;k < db.feature_titles.size();++k)
                             if(db.feature_selected[k])
                             {
-                                for(size_t i = 0,pos = 0;pos < X.size();++i,pos += feature_count)
+                                for(size_t i = 0,pos = 0;pos < X.size();++i,pos += x_col_count)
                                     if(!select(text[j],float(X[pos+size_t(k)+1]),threshold))
                                         remove_list[i] = 1;
                             }
@@ -1179,9 +1051,14 @@ bool stat_model::select_cohort(connectometry_db& db,
                     if(!okay)
                         break;
 
-                    for(size_t i = 0,pos = 0;pos < X.size();++i,pos += feature_count)
+                    std::ostringstream out1;
+                    for(size_t i = 0,pos = 0;pos < X.size();++i,pos += x_col_count)
                         if(!select(text[j],float(X[pos+fov_index+1]),threshold))
+                        {
+                            out1 << i << " ";
                             remove_list[i] = 1;
+                        }
+                    show_progress() << "subjects excluded: " << out1.str() << std::endl;
 
                     std::ostringstream out;
                     if(text[j] == '/')
@@ -1211,17 +1088,23 @@ bool stat_model::select_feature(connectometry_db& db,std::string foi_text)
     error_msg.clear();
 
     std::vector<char> sel(uint32_t(db.feature_titles.size()+1));
-    sel[0] = 1; // intercept
-    type = 1;
+    sel[0] = 1; // intercept is always selected
 
     variables.clear();
-    variables.push_back("Intercept");
+    variables.push_back("longitudinal change");
+    variables_is_categorical.clear();
+    variables_is_categorical.push_back(0);
+    variables_max.clear();
+    variables_max.push_back(0);
+
+
     bool has_variable = false;
+    std::ostringstream out;
     for(size_t i = 1;i < sel.size();++i)
         if(db.feature_selected[i-1])
         {
             std::set<double> unique_values;
-            for(size_t j = 0,pos = 0;pos < X.size();++j,pos += feature_count)
+            for(size_t j = 0,pos = 0;pos < X.size();++j,pos += x_col_count)
                 if(!remove_list[j])
                 {
                     unique_values.insert(X[pos+i]);
@@ -1229,32 +1112,36 @@ bool stat_model::select_feature(connectometry_db& db,std::string foi_text)
                     {
                         sel[i] = 1;
                         variables.push_back(db.feature_titles[i-1]);
+                        out << variables.back();
                         has_variable = true;
+
+                        int max_group(0);
+                        if(unique_values.size() == 2 && std::floor(*unique_values.begin()) == *unique_values.begin())
+                        {
+                            max_group = int(*(++unique_values.begin()));
+                            out << "(categorical)";
+                            variables_is_categorical.push_back(true);
+                        }
+                        else
+                            variables_is_categorical.push_back(false);
+                        variables_max.push_back(max_group);
+                        out << " ";
                         break;
                     }
                 }
         }
-    if(!has_variable)
+    show_progress() << "variables to be considered: "<< out.str() << std::endl;
+
+    if(!has_variable && !db.is_longitudinal)
     {
-        // look at longitudinal change without considering any demographics
-        if(db.is_longitudinal)
-        {
-            type = 3;
-            read_demo(db);
-            X.clear();
-            return true;
-        }
-        else
-        {
-            error_msg = "No variables selected for regression. Please check selected variables.";
-            return false;
-        }
+        error_msg = "No variables selected for regression. Please check selected variables.";
+        return false;
     }
 
     // select feature of interest
     {
         bool find_study_feature = false;
-        // variables[0] = "intercept"
+        // variables[0] = "longitudinal change"
         for(unsigned int i = 0;i < variables.size();++i)
             if(variables[i] == foi_text)
             {
@@ -1264,22 +1151,22 @@ bool stat_model::select_feature(connectometry_db& db,std::string foi_text)
             }
         if(!find_study_feature)
         {
-            error_msg = "Please select the targeted study feature.";
+            error_msg = "Invalid study variable: ";
+            error_msg += foi_text;
+            error_msg += " does not have variations";
             return false;
         }
+        show_progress() << "study variable: " << foi_text << std::endl;
     }
     select_variables(sel);
-
 
     // remove subjects according to the cohort selection
     for(int index = int(remove_list.size())-1;index >= 0;--index)
         if(remove_list[uint32_t(index)])
         {
-            if(!label.empty())
-                label.erase(label.begin()+index);
             if(!X.empty())
-                X.erase(X.begin()+int64_t(index)*feature_count,X.begin()+(int64_t(index)+1)*feature_count);
-            subject_index.erase(subject_index.begin()+index);
+                X.erase(X.begin()+int64_t(index)*x_col_count,X.begin()+(int64_t(index)+1)*x_col_count);
+            selected_subject.erase(selected_subject.begin()+index);
         }
 
     if(!pre_process())
@@ -1294,171 +1181,122 @@ bool stat_model::resample(stat_model& rhs,bool null,bool bootstrap,unsigned int 
 {
     tipl::uniform_dist<int> rand_gen(0,1,seed);
     *this = rhs;
-    unsigned int trial = 0;
-    do
     {
-        if(trial > 100)
-            throw std::runtime_error("Invalid subject demographics for multiple regression");
-        ++trial;
-
-
-        switch(type)
+        // resampling
+        resample_order.clear();
+        if(bootstrap)
         {
-        case 0: // group
-        {
-            std::vector<unsigned int> group0,group1;
-            for(unsigned int index = 0;index < rhs.subject_index.size();++index)
-                if(rhs.label[index])
-                    group1.push_back(index);
-                else
-                    group0.push_back(index);
-            label.resize(rhs.subject_index.size());
-            for(unsigned int index = 0;index < rhs.subject_index.size();++index)
+            resample_order.resize(rhs.selected_subject.size());
+            for(unsigned int index = 0,pos = 0;index < rhs.selected_subject.size();++index,pos += x_col_count)
             {
-                unsigned int new_index = index;
-                if(bootstrap)
-                    new_index = rhs.label[index] ? group1[rand_gen(group1.size())]:group0[rand_gen(group0.size())];
-                subject_index[index] = rhs.subject_index[new_index];
-                label[index] = rhs.label[new_index];
+                unsigned int new_index = resample_order[index] = uint32_t(rand_gen(uint32_t(rhs.selected_subject.size())));
+                if(!X.empty())
+                    std::copy(rhs.X.begin()+int64_t(new_index)*x_col_count,
+                              rhs.X.begin()+int64_t(new_index)*x_col_count+x_col_count,X.begin()+pos);
             }
         }
-            break;
-        case 1: // multiple regression
-            X.resize(rhs.X.size());
-            for(unsigned int index = 0,pos = 0;index < rhs.subject_index.size();++index,pos += feature_count)
-            {
-                unsigned int new_index = bootstrap ?
-                            uint32_t(rand_gen(uint32_t(rhs.subject_index.size()))) : index;
-                subject_index[index] = rhs.subject_index[new_index];
-                std::copy(rhs.X.begin()+int64_t(new_index)*feature_count,
-                          rhs.X.begin()+int64_t(new_index)*feature_count+feature_count,X.begin()+pos);
-            }
-            if(nonparametric)
-            {
-                std::vector<double> x_study_feature;
-                for(size_t index = study_feature;index< X.size();index += feature_count)
-                    x_study_feature.push_back(X[index]);
-                x_study_feature_rank = tipl::rank(x_study_feature,std::less<double>());
 
-                unsigned int n = uint32_t(X.size()/feature_count);
-                rank_c = 6.0/double(n)/double(n*n-1);
-            }
-            break;
-        case 3: // longitudinal
-            for(unsigned int index = 0;index < rhs.subject_index.size();++index)
-            {
-                unsigned int new_index = bootstrap ? rand_gen(rhs.subject_index.size()) : index;
-                subject_index[index] = rhs.subject_index[new_index];
-            }
+        if(!X.empty())
+        {
+            std::vector<double> x_study_feature;
+            for(size_t index = study_feature;index< X.size();index += x_col_count)
+                x_study_feature.push_back(X[index]);
+            x_study_feature_rank = tipl::rank(x_study_feature,std::less<double>());
+            unsigned int n = uint32_t(X.size()/x_col_count);
+            rank_c = 6.0/double(n)/double(n*n-1);
+        }
+
+        // compute permutation
+        permutation_order.clear();
+        if(study_feature)
+        {
             if(null)
             {
-                label.resize(subject_index.size());
-                for(int i = 0;i < label.size();++i)
-                    label[i] = rand_gen(2);
+                permutation_order.resize(selected_subject.size());
+                for(int i = 0;i < permutation_order.size();++i)
+                    permutation_order[i] = i;
+                std::shuffle(permutation_order.begin(),permutation_order.end(),rand_gen.gen);
             }
-            else
-            {
-                label.resize(subject_index.size());
-                for(int i = 0;i < label.size();++i)
-                    label[i] = 1;
-            }
-            break;
-        case 2: // individual
-            for(unsigned int index = 0;index < rhs.subject_index.size();++index)
-            {
-                unsigned int new_index = bootstrap ? rand_gen(rhs.subject_index.size()) : index;
-                subject_index[index] = rhs.subject_index[new_index];
-            }
-            break;
         }
-        if(null)
-            std::shuffle(subject_index.begin(),subject_index.end(),rand_gen.gen);
-    }while(!pre_process());
+        else
+        //if study longitudinal change, then permute the intercept sign
+        {
+            if(null)
+            {
+                permutation_order.resize(selected_subject.size());
+                for(int i = 0;i < permutation_order.size();++i)
+                    permutation_order[i] = rand_gen(2);
+            }
+        }
+    }
 
     return true;
 }
-
-double stat_model::operator()(const std::vector<double>& original_population,unsigned int pos) const
+void stat_model::partial_correlation(std::vector<float>& population) const
 {
-    std::vector<double> population(subject_index.size());
-    for(unsigned int index = 0;index < subject_index.size();++index)
-        population[index] = original_population[subject_index[index]];
-
-    switch(type)
+    if(!X.empty())
     {
-    case 0: // group
-    {
-        std::vector<double> g0(group1_count),g1(group2_count);
-        for(unsigned int index = 0,i0 = 0,i1 = 0;index < label.size();++index)
-            if(label[index])
+        std::vector<double> b(x_col_count);
+        mr.regress(&*population.begin(),&*b.begin());
+        for(size_t i = 1;i < x_col_count;++i) // skip intercept at i = 0
+            if(i != study_feature)
             {
-                g1[i1] = population[index];
-                ++i1;
+                auto cur_b = b[i];
+                for(size_t j = 0,p = i;j < population.size();++j,p += x_col_count)
+                    population[j] -= mr.X[p]*cur_b;
             }
+    }
+}
+double stat_model::operator()(const std::vector<float>& original_population) const
+{
+    std::vector<float> population(selected_subject.size());
+    // apply resampling
+    if(!resample_order.empty())
+    {
+        for(unsigned int index = 0;index < resample_order.size();++index)
+            population[index] = original_population[resample_order[index]];
+    }
+    else
+        population = original_population;
+
+    // apply permutation
+    if(!permutation_order.empty())
+    {
+        std::vector<float> permuted_population(population.size());
+        if(study_feature)
+        {
+            for(unsigned int index = 0;index < permutation_order.size();++index)
+                permuted_population[index] = population[permutation_order[index]];
+        }
         else
-            {
-                g0[i0] = population[index];
-                ++i0;
-            }
-        return tipl::t_statistics(g0.begin(),g0.end(),g1.begin(),g1.end());
-    }
-    case 1: // multiple regression
         {
-            if(nonparametric)
-            {
-                // partial correlation
-                std::vector<double> b(feature_count);
-                mr.regress(&*population.begin(),&*b.begin());
-                for(size_t i = 1;i < feature_count;++i) // skip intercept at i = 0
-                    if(i != study_feature)
-                    {
-                        auto cur_b = b[i];
-                        for(size_t j = 0,p = i;j < population.size();++j,p += feature_count)
-                            population[j] -= mr.X[p]*cur_b;
-                    }
-
-                auto rank = tipl::rank(population,std::less<double>());
-                int sum_d2 = 0;
-                for(size_t i = 0;i < rank.size();++i)
-                {
-                    int d = int(rank[i])-int(x_study_feature_rank[i]);
-                    sum_d2 += d*d;
-                }
-                double r = 1.0-double(sum_d2)*rank_c;
-                double result = r*std::sqrt(double(population.size()-2.0)/(1.0-r*r));
-                return std::isnormal(result) ? result : 0.0;
-            }
-            else
-            {
-                std::vector<double> b(feature_count),t(feature_count);
-                mr.regress(&*population.begin(),&*b.begin(),&*t.begin());
-                return t[study_feature];
-            }
-
+            for(unsigned int index = 0;index < permutation_order.size();++index)
+                if(permutation_order[index])
+                    permuted_population[index] = -population[index];
         }
-    case 2: // individual
-        {
-        float value = (individual_data_sd == 1.0) ? individual_data[pos]:individual_data[pos]*individual_data_sd;
-        if(value == 0.0)
-            return 0.0;
-        int rank = 0;
-        for(unsigned int index = 0;index < population.size();++index)
-            if(value > population[index])
-                ++rank;
-        return (rank > (population.size() >> 1)) ?
-                            (double)rank/(double)population.size():
-                            (double)(rank-(int)population.size())/(double)population.size();
-        }
-    case 3: // longitudinal change
-        {
-            for(int i = 0;i < population.size();++i)
-                if(label[i] == 0.0)
-                    population[i] = -population[i];
-            double mean = tipl::mean(population);
-            double sd = tipl::standard_deviation(population.begin(),population.end(),mean);
-            return sd == 0.0? 0.0 : mean/sd;
-        }
+        permuted_population.swap(population);
     }
 
+    // calculate t-statistics
+    if(study_feature)
+    {
+        auto rank = tipl::rank(population,std::less<float>());
+        int sum_d2 = 0;
+        for(size_t i = 0;i < rank.size();++i)
+        {
+            int d = int(rank[i])-int(x_study_feature_rank[i]);
+            sum_d2 += d*d;
+        }
+        double r = 1.0-double(sum_d2)*rank_c;
+        double result = r*std::sqrt(double(population.size()-2.0)/(1.0-r*r));
+        return std::isnormal(result) ? result : 0.0;
+    }
+    else
+    // if study longitudinal change
+    {
+        double mean = tipl::mean(population);
+        double se = tipl::standard_deviation(population.begin(),population.end(),mean)/std::sqrt(population.size());
+        return se == 0.0 ? 0.0 : mean/se;
+    }
     return 0.0;
 }

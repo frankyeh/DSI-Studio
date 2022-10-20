@@ -19,7 +19,7 @@ public: // demographi infomation
     std::vector<std::string> items;
     std::vector<size_t> feature_location;
     std::vector<std::string> feature_titles;
-    std::vector<bool> feature_selected;
+    std::vector<bool> feature_selected,feature_is_float;
     std::vector<double> X;
     std::string demo;
     bool parse_demo(const std::string& filename);
@@ -37,8 +37,7 @@ public:
     std::string index_name = "qa";
 public://longitudinal studies
     std::vector<std::pair<int,int> > match;
-    void auto_match(float fiber_threshold);
-    void calculate_change(unsigned char dif_type,bool norm);
+    void calculate_change(unsigned char dif_type);
 public:
     connectometry_db(){}
     bool has_db(void)const{return num_subjects > 0;}
@@ -51,7 +50,6 @@ public:
                            const tipl::matrix<4,4>& trans,std::vector<float>& data);
     bool add_subject_file(const std::string& file_name,
                             const std::string& subject_name);
-    void get_dif_matrix(std::vector<float>& matrix,float fiber_threshold);
     bool save_db(const char* output_name);
     void get_subject_slice(unsigned int subject_index,unsigned char dim,unsigned int pos,
                             tipl::image<2,float>& slice) const;
@@ -72,20 +70,20 @@ public:
 
 class stat_model{
 public:
-    std::vector<unsigned int> subject_index;
-public:
-    unsigned int type;
-public: // group
-    std::vector<int> label;
-    unsigned int group1_count,group2_count;
+    std::vector<unsigned int> selected_subject;
+    std::vector<unsigned int> resample_order;
+    std::vector<unsigned int> permutation_order;
 public: // multiple regression
     std::vector<double> X,X_min,X_max,X_range;
-    unsigned int feature_count = 0;
+    unsigned int x_col_count = 0;
     unsigned int study_feature = 0;
+public:
     std::vector<std::string> variables;
+    std::vector<bool> variables_is_categorical;
+    std::vector<int> variables_max;
+public:
     tipl::multiple_regression<double> mr;
     // for nonlinear correlation
-    bool nonparametric = true;
     std::vector<unsigned int> x_study_feature_rank;
     double rank_c = 0;
     void select_variables(const std::vector<char>& sel);
@@ -104,32 +102,25 @@ public:
     bool select_feature(connectometry_db& db,std::string foi_text);
 public:
     void read_demo(const connectometry_db& db);
-    void remove_subject(unsigned int index);    
     bool resample(stat_model& rhs,bool null,bool bootstrap,unsigned int seed);
     bool pre_process(void);
-    double operator()(const std::vector<double>& population,unsigned int pos) const;
+    void partial_correlation(std::vector<float>& population) const;
+    double operator()(const std::vector<float>& population) const;
     void clear(void)
     {
-        label.clear();
         X.clear();
     }
     const stat_model& operator=(const stat_model& rhs)
     {
-        subject_index = rhs.subject_index;
-        type = rhs.type;
-        label = rhs.label;
-        group1_count = rhs.group1_count;
-        group2_count = rhs.group2_count;
+        selected_subject = rhs.selected_subject;
         X = rhs.X;
         X_min = rhs.X_min;
         X_max = rhs.X_max;
         X_range = rhs.X_range;
-        feature_count = rhs.feature_count;
+        x_col_count = rhs.x_col_count;
         study_feature = rhs.study_feature;
         mr = rhs.mr;
         individual_data = rhs.individual_data;
-        nonparametric = rhs.nonparametric;
-
         remove_list = rhs.remove_list;
         cohort_report = rhs.cohort_report;
         return *this;
@@ -144,8 +135,6 @@ struct connectometry_result{
     void clear_result(char num_fiber,size_t image_size);
 };
 
-void calculate_spm(std::shared_ptr<fib_data> handle,connectometry_result& data,stat_model& info,
-                   float fiber_threshold,bool& terminated);
 
 
 #endif // CONNECTOMETRY_DB_H
