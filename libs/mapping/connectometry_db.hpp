@@ -130,8 +130,8 @@ public:
 
 
 struct connectometry_result{
-    std::vector<std::vector<float> > pos_corr,neg_corr;
-    std::vector<const float*> pos_corr_ptr,neg_corr_ptr;
+    std::vector<std::vector<float> > inc,dec;
+    std::vector<const float*> inc_ptr,dec_ptr;
     void clear_result(char num_fiber,size_t image_size);
 };
 

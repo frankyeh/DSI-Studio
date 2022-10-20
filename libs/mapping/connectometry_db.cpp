@@ -880,32 +880,19 @@ void connectometry_db::calculate_change(unsigned char dif_type)
 
 void connectometry_result::clear_result(char num_fiber,size_t image_size)
 {
-    pos_corr.resize(num_fiber);
-    neg_corr.resize(num_fiber);
-    pos_corr_ptr.resize(num_fiber);
-    neg_corr_ptr.resize(num_fiber);
+    inc.resize(num_fiber);
+    dec.resize(num_fiber);
+    inc_ptr.resize(num_fiber);
+    dec_ptr.resize(num_fiber);
     for(char fib = 0;fib < num_fiber;++fib)
     {
-        pos_corr[fib].resize(image_size);
-        neg_corr[fib].resize(image_size);
-        std::fill(pos_corr[fib].begin(),pos_corr[fib].end(),0.0);
-        std::fill(neg_corr[fib].begin(),neg_corr[fib].end(),0.0);
-        pos_corr_ptr[fib] = &pos_corr[fib][0];
-        neg_corr_ptr[fib] = &neg_corr[fib][0];
+        inc[fib].resize(image_size);
+        dec[fib].resize(image_size);
+        std::fill(inc[fib].begin(),inc[fib].end(),0.0);
+        std::fill(dec[fib].begin(),dec[fib].end(),0.0);
+        inc_ptr[fib] = &inc[fib][0];
+        dec_ptr[fib] = &dec[fib][0];
     }
-}
-
-inline void calculate_dif(float& pos_corr,
-                          float& neg_corr,
-                          float f1,float f2)
-{
-    float mean = 0.5f*(f1+f2);
-    if(mean == 0.0f)
-        return;
-    if(f1 > f2)
-        neg_corr = (f1-f2)/mean;  // subject decreased study index
-    else
-        pos_corr = (f2-f1)/mean; // subject increased study index
 }
 
 void stat_model::read_demo(const connectometry_db& db)

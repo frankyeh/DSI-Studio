@@ -683,9 +683,9 @@ bool TractModel::load_from_file(const char* file_name_,bool append)
     std::vector<std::vector<float> > loaded_tract_data;
     std::vector<unsigned int> loaded_tract_cluster;
     unsigned int color = default_tract_color;
-    if(file_name.find(".neg_corr") != std::string::npos)
+    if(file_name.find(".dec") != std::string::npos)
         color = 0x004040F0;
-    if(file_name.find(".pos_corr") != std::string::npos)
+    if(file_name.find(".inc") != std::string::npos)
         color = 0x00F04040;
 
     if(QString(file_name_).endsWith("tt.gz"))
