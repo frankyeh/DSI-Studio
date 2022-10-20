@@ -57,7 +57,7 @@ int group_connectometry_analysis::run_track(std::shared_ptr<tracking_data> fib,
     return int(tracks.size());
 }
 
-void cal_hist(const std::vector<std::vector<float> >& track,std::vector<int64_t>& dist)
+void cal_hist(const std::vector<std::vector<float> >& track,std::vector<unsigned int>& dist)
 {
     for(unsigned int j = 0; j < track.size();++j)
     {
@@ -144,7 +144,7 @@ void group_connectometry_analysis::run_permutation_multithread(unsigned int id,u
 }
 void group_connectometry_analysis::save_result(void)
 {
-    progress p("save connectomet results");
+    progress p("save correlational tractography results");
     for(size_t index = 0;index < tip;++index)
     {
         neg_null_corr_track->trim();
@@ -205,19 +205,23 @@ void group_connectometry_analysis::save_result(void)
             neg_corr_track->clear();
     }
 
-    pos_corr_track->delete_repeated(1.0);
-    neg_corr_track->delete_repeated(1.0);
+    {
+        progress p("deleting repeated tracts");
+        pos_corr_track->delete_repeated(1.0);
+        neg_corr_track->delete_repeated(1.0);
+    }
+    {
+        progress p("saving correlational tractography");
+        if(pos_corr_track->get_visible_track_count())
+            pos_corr_track->save_tracts_to_file((output_file_name+".pos_corr.tt.gz").c_str());
+        else
+            std::ofstream((output_file_name+".pos_corr.no_tract.txt").c_str());
 
-    if(pos_corr_track->get_visible_track_count())
-        pos_corr_track->save_tracts_to_file((output_file_name+".pos_corr.tt.gz").c_str());
-    else
-        std::ofstream((output_file_name+".pos_corr.no_tract.txt").c_str());
-
-    if(neg_corr_track->get_visible_track_count())
-        neg_corr_track->save_tracts_to_file((output_file_name+".neg_corr.tt.gz").c_str());
-    else
-        std::ofstream((output_file_name+".neg_corr.no_tract.txt").c_str());
-
+        if(neg_corr_track->get_visible_track_count())
+            neg_corr_track->save_tracts_to_file((output_file_name+".neg_corr.tt.gz").c_str());
+        else
+            std::ofstream((output_file_name+".neg_corr.no_tract.txt").c_str());
+    }
 
     {
         progress p2("save statistics.fib.gz");
@@ -305,26 +309,118 @@ std::string group_connectometry_analysis::get_file_post_fix(void)
     }
     return postfix;
 }
+
+void group_connectometry_analysis::calculate_adjusted_qa(stat_model& info)
+{
+    if(!info.X.empty())
+    {
+        bool has_partial_correlation = false;
+        std::ostringstream out;
+        for(size_t i = 1;i < info.variables.size();++i) // skip intercept at i = 0
+            if(i != info.study_feature)
+            {
+                has_partial_correlation = true;
+                out << info.variables[i] << " ";
+            }
+        if(has_partial_correlation)
+            show_progress() << "adjusting " << handle->db.index_name << " using partial correlation of " << out.str() << std::endl;
+    }
+
+    // population_value_adjusted is a transpose of handle->db.subject_qa
+    population_value_adjusted.clear();
+    population_value_adjusted.resize(handle->db.subject_qa_length);
+    tipl::par_for(handle->db.si2vi.size(),[&](size_t s_index)
+    {
+        size_t pos = handle->db.si2vi[s_index];
+        for(size_t fib = 0;s_index < handle->db.subject_qa_length &&
+                           handle->dir.fa[fib][pos] > fiber_threshold;++fib,s_index += handle->db.si2vi.size())
+        {
+            std::vector<float> population(info.selected_subject.size());
+            for(unsigned int index = 0;index < info.selected_subject.size();++index)
+                // if any missing value, zero the values
+                if((population[index] = handle->db.subject_qa[info.selected_subject[index]][s_index]) == 0.0f)
+                {
+                    population_value_adjusted[s_index].resize(info.selected_subject.size());
+                    population.clear();
+                    break;
+                }
+
+            if(!population.empty())
+            {
+                info.partial_correlation(population);
+                population_value_adjusted[s_index] = std::move(population);
+            }
+        }
+    });
+}
+
+void group_connectometry_analysis::calculate_spm(connectometry_result& data,stat_model& info)
+{
+    data.clear_result(handle->dir.num_fiber,handle->dim.size());
+    for(size_t s_index = 0;s_index < handle->db.si2vi.size() && !terminated;++s_index)
+    {
+        size_t pos = handle->db.si2vi[s_index];
+        double T_stat(0.0); // declare here so that the T-stat of the 1st fiber can be applied to others if there is only one metric per voxel
+        for(size_t fib = 0,cur_s_index = s_index;
+            fib < handle->dir.num_fiber && handle->dir.fa[fib][pos] > fiber_threshold;
+            ++fib,cur_s_index += handle->db.si2vi.size())
+        {
+            // some connectometry database only have 1 metrics per voxel
+            // and thus the computed statistics will be applied to all fibers
+            if(cur_s_index < population_value_adjusted.size())
+            {
+                if(population_value_adjusted[cur_s_index][0] == 0.0f)
+                    continue;
+                T_stat = info(population_value_adjusted[cur_s_index]);
+            }
+
+            if(T_stat > 0.0)
+                data.pos_corr[fib][pos] = T_stat;
+            if(T_stat < 0.0)
+                data.neg_corr[fib][pos] = -T_stat;
+        }
+    }
+}
+
 void group_connectometry_analysis::run_permutation(unsigned int thread_count,unsigned int permutation_count)
 {
+    progress p("run permutation test");
     clear();
+
+    {
+        index_name = QString(handle->db.index_name.c_str()).toUpper().toStdString();
+
+        track_hypothesis_pos = std::string("increased ")+index_name;
+        track_hypothesis_neg = std::string("decreased ")+index_name;
+        if(model->study_feature) // not longitudinal change
+        {
+            if(model->variables_is_categorical[model->study_feature])
+            {
+                track_hypothesis_pos += std::string(" in ")+foi_str+"="+std::to_string(model->variables_max[model->study_feature]);
+                track_hypothesis_neg += std::string(" in ")+foi_str+"="+std::to_string(model->variables_max[model->study_feature]);
+            }
+            else
+            {
+                track_hypothesis_pos += std::string(" associated with increased ")+foi_str;
+                track_hypothesis_neg += std::string(" associated with increased ")+foi_str;
+            }
+        }
+    }
     // output report
     {
         std::ostringstream out;
 
         out << "\nDiffusion MRI connectometry (Yeh et al. NeuroImage 125 (2016): 162-171) was used to derive the correlational tractography that has ";
         if(handle->db.is_longitudinal)
-            out << "a change of ";
-        out << handle->db.index_name;
-
-        if(foi_str == "Intercept")
-            out << ".";
-        else
-            out << " correlated with " << foi_str << ".";
+            out << "a longitudinal change of ";
+        out << index_name;
+        if(model->study_feature)
+            out << " correlated with " << foi_str;
+        out << ".";
 
         {
             auto items = model->variables;
-            items.erase(items.begin()); // remove intercept
+            items.erase(items.begin()); // remove longitudinal change
             {
                 if(model->study_feature)
                     items.erase(items.begin() + model->study_feature-1);
@@ -338,7 +434,7 @@ void group_connectometry_analysis::run_permutation(unsigned int thread_count,uns
 
         // report subject cohort
         out << model->cohort_report;
-        out << " A total of " << model->subject_index.size() << " subjects were included in the analysis.";
+        out << " A total of " << model->selected_subject.size() << " subjects were included in the analysis.";
 
         // report other parameters
         out << " A T-score threshold of " << t_threshold;
@@ -364,7 +460,7 @@ void group_connectometry_analysis::run_permutation(unsigned int thread_count,uns
     if(output_file_name.empty())
         output_file_name = get_file_post_fix();
 
-    size_t max_dimension = tipl::max_value(handle->dim);
+    size_t max_dimension = tipl::max_value(handle->dim)*2;
 
     subject_pos_corr_null.clear();
     subject_pos_corr_null.resize(max_dimension);
@@ -387,18 +483,22 @@ void group_connectometry_analysis::run_permutation(unsigned int thread_count,uns
 
     terminated = false;
     prog = 0;
-    // need to be initialized
-
     // preliminary run
     {
         std::shared_ptr<tracking_data> fib(new tracking_data);
         fib->read(handle);
+
+        calculate_adjusted_qa(*model.get());
+
         stat_model info;
         info.resample(*model.get(),false,false,0);
+        show_progress() << "preliminary run to determine seed count" << std::endl;
         calculate_spm(*spm_map.get(),info);
         preproces = 0;
         seed_count = 1000;
-        show_progress() << "preliminary run to determine seed count" << std::endl;
+
+        const size_t expected_tract_count = 50000;
+        auto expected_tract_per_permutation = expected_tract_count/permutation_count;
         while(seed_count < 128000)
         {
             std::vector<std::vector<float> > tracks;
@@ -406,9 +506,9 @@ void group_connectometry_analysis::run_permutation(unsigned int thread_count,uns
             run_track(fib,tracks,seed_count,0,std::thread::hardware_concurrency());
             fib->dt_fa = spm_map->pos_corr_ptr;
             run_track(fib,tracks,seed_count,0,std::thread::hardware_concurrency());
-            if(tracks.size() > 10)
+            if(tracks.size() > expected_tract_per_permutation)
                 break;
-            seed_count *= 1.5f;
+            seed_count *= 2;
         }
         show_progress() << "seed count: " << seed_count << std::endl;
     }
@@ -462,7 +562,6 @@ void group_connectometry_analysis::calculate_FDR(void)
 
 void group_connectometry_analysis::generate_report(std::string& output)
 {
-    std::string pos_corr_tracks_result("tracks"),neg_corr_tracks_result("tracks");
     std::ostringstream html_report((output_file_name+".report.html").c_str());
     html_report << "<!DOCTYPE html>" << std::endl;
     html_report << "<html><head><title>Connectometry Report</title></head>" << std::endl;
@@ -476,25 +575,6 @@ void group_connectometry_analysis::generate_report(std::string& output)
     {
         html_report << "<h2>Connectometry analysis</h2>" << std::endl;
         html_report << "<p>" << report.c_str() << "</p>" << std::endl;
-    }
-
-
-    std::string index_name = QString(handle->db.index_name.c_str()).toUpper().toStdString();
-
-    std::string track_hypothesis_pos = std::string("increased ")+index_name;
-    std::string track_hypothesis_neg = std::string("decreased ")+index_name;
-    if(model->study_feature) // not intercept
-    {
-        if(model->variables_is_categlorical[model->study_feature])
-        {
-            track_hypothesis_pos += std::string(" in ")+foi_str+"="+std::to_string(model->variables_max[model->study_feature]);
-            track_hypothesis_neg += std::string(" in ")+foi_str+"="+std::to_string(model->variables_max[model->study_feature]);
-        }
-        else
-        {
-            track_hypothesis_pos += std::string(" associated with increased ")+foi_str;
-            track_hypothesis_neg += std::string(" associated with increased ")+foi_str;
-        }
     }
 
     std::string fdr_result_pos,fdr_result_neg;
@@ -519,11 +599,6 @@ void group_connectometry_analysis::generate_report(std::string& output)
     }
 
 
-    html_report << "<h2>Results</h2>" << std::endl;
-
-    // Positive correlation results
-    html_report << "<h3>Tracks with " << track_hypothesis_pos << "</h3>" << std::endl;
-
     auto output_track_image = [&](std::string name,std::string hypo,std::string fdr)
     {
         if(fdr.empty())
@@ -533,21 +608,13 @@ void group_connectometry_analysis::generate_report(std::string& output)
         html_report << "<p></p><img src = \""<< std::filesystem::path(output_file_name+"."+name+".jpg").filename().string() << "\" width=\"1200\"/>" << std::endl;
         html_report << "<p><b>Fig.</b> Tracks with " << hypo << " " << fdr << "</p>" << std::endl;
     };
-    auto get_track_name = [&](std::shared_ptr<TractModel> track)
-    {
-        std::string name;
-        handle->recognize_report(track,name);
-        if(name.empty())
-            name = "tracks";
-        return name;
-    };
-    auto report_fdr = [&](bool sig,std::string hypo,std::string result,std::string result2){
+    auto report_fdr = [&](bool sig,std::string hypo,std::string result){
         html_report << "<p>";
         if(sig)
-            html_report << " The connectometry analysis found " << result << " showing ";
+            html_report << " The connectometry analysis found tracts showing ";
         else
-            html_report << " The connectometry analysis found no significant result in tracks with ";
-        html_report << hypo << " " << result2 << ".</p>" << std::endl;
+            html_report << " The connectometry analysis did not find tracts showing significant ";
+        html_report << hypo << " " << result << ".</p>" << std::endl;
     };
     auto has_pos_corr_finding = [&](void){
         if(!pos_corr_track->get_visible_track_count())
@@ -570,22 +637,21 @@ void group_connectometry_analysis::generate_report(std::string& output)
         return false;
     };
 
+    html_report << "<h2>Results</h2>" << std::endl;
+    // Positive correlation results
+    html_report << "<h3>Tracks with " << track_hypothesis_pos << "</h3>" << std::endl;
+
+
     if(prog == 100)
-    {
         output_track_image("pos_corr",track_hypothesis_pos,fdr_result_pos);
-        pos_corr_tracks_result = get_track_name(pos_corr_track);
-    }
-    report_fdr(has_pos_corr_finding(),track_hypothesis_pos,pos_corr_tracks_result,fdr_result_pos);
+    report_fdr(has_pos_corr_finding(),track_hypothesis_pos,fdr_result_pos);
 
     // Negative correlation results
     html_report << "<h3>Tracks with " << track_hypothesis_neg << "</h3>" << std::endl;
 
     if(prog == 100)
-    {
         output_track_image("neg_corr",track_hypothesis_neg,fdr_result_neg);
-        neg_corr_tracks_result = get_track_name(neg_corr_track);
-    }
-    report_fdr(has_neg_corr_finding(),track_hypothesis_neg,neg_corr_tracks_result,fdr_result_neg);
+    report_fdr(has_neg_corr_finding(),track_hypothesis_neg,fdr_result_neg);
 
     if(prog == 100)
     {

@@ -30,19 +30,17 @@ public:
 public:// database information
     float fiber_threshold;
 public:
-    void calculate_spm(connectometry_result& data,stat_model& info)
-    {
-        ::calculate_spm(handle,data,info,fiber_threshold,terminated);
-    }
+    void calculate_adjusted_qa(stat_model& info);
+    void calculate_spm(connectometry_result& data,stat_model& info);
 private: // single subject analysis result
     int run_track(std::shared_ptr<tracking_data> fib,std::vector<std::vector<float> >& track,
                   unsigned int seed_count,unsigned int random_seed,unsigned int thread_count = 1);
 public:// for FDR analysis
     std::vector<std::thread> threads;
-    std::vector<int64_t> subject_pos_corr_null;
-    std::vector<int64_t> subject_neg_corr_null;
-    std::vector<int64_t> subject_pos_corr;
-    std::vector<int64_t> subject_neg_corr;
+    std::vector<unsigned int> subject_pos_corr_null;
+    std::vector<unsigned int> subject_neg_corr_null;
+    std::vector<unsigned int> subject_pos_corr;
+    std::vector<unsigned int> subject_neg_corr;
     std::vector<float> fdr_pos_corr,fdr_neg_corr;
     unsigned int prog;// 0~100
     bool terminated = false;
@@ -54,11 +52,13 @@ public:
 public:
     std::string output_file_name;
     int seed_count;
-    std::mutex  lock_add_tracks,lock_add_null_track;
+    std::mutex lock_add_tracks,lock_add_null_track;
     std::shared_ptr<TractModel> pos_corr_track,neg_corr_track,pos_null_corr_track,neg_null_corr_track;
-    std::shared_ptr<connectometry_result> spm_map;
 public:// Multiple regression
     std::shared_ptr<stat_model> model;
+    std::shared_ptr<connectometry_result> spm_map;
+    std::vector<std::vector<float> > population_value_adjusted;
+    std::string index_name,track_hypothesis_pos,track_hypothesis_neg;
     float t_threshold;
     unsigned int length_threshold_voxels;
     float fdr_threshold;

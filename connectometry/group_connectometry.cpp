@@ -154,8 +154,8 @@ QLineSeries* get_line_series(const data_type& data, const char* name,QColor colo
     pen.setWidth(2);
     pen.setStyle(s);
     series->setPen(pen);
-    auto max_size = data.size();
-    while(max_size > 0 && (data[max_size-1] == 0.0f || data[max_size-1] == 1.0f))
+    auto max_size = data.size()-1;
+    while(max_size > 0 && (data[max_size] == 0.0f || data[max_size] == 1.0f))
         --max_size;
     ++max_size;
     for(size_t i = 0;i < max_size;++i)
@@ -167,8 +167,8 @@ void group_connectometry::show_fdr_report()
     if(vbc->fdr_pos_corr.empty())
         return;
     fdr_chart->removeAllSeries();
-    fdr_chart->addSeries(get_line_series(vbc->fdr_pos_corr,"positive correlation",0x00F01010));
-    fdr_chart->addSeries(get_line_series(vbc->fdr_neg_corr,"negative correlation",0x001010F0));
+    fdr_chart->addSeries(get_line_series(vbc->fdr_pos_corr,vbc->track_hypothesis_pos.c_str(),0x00F01010));
+    fdr_chart->addSeries(get_line_series(vbc->fdr_neg_corr,vbc->track_hypothesis_neg.c_str(),0x001010F0));
     fdr_chart->createDefaultAxes();
     fdr_chart->axes(Qt::Horizontal).back()->setMin(vbc->length_threshold_voxels);
     fdr_chart->axes(Qt::Horizontal).back()->setTitleText("Length (voxel distance)");
@@ -191,24 +191,25 @@ void group_connectometry::show_report()
 
     null_pos_chart->removeAllSeries();
     null_neg_chart->removeAllSeries();
-    null_pos_chart->addSeries(get_line_series(vbc->subject_pos_corr_null,"permuted positive correlation",0x00F0A0A0,Qt::DashLine));
-    null_pos_chart->addSeries(get_line_series(vbc->subject_pos_corr,"nonpermuted positive correlation",0x00F01010));
-    null_neg_chart->addSeries(get_line_series(vbc->subject_neg_corr_null,"permuted negative correlation",0x00A0A0F0,Qt::DashLine));
-    null_neg_chart->addSeries(get_line_series(vbc->subject_neg_corr,"nonpermuted negative correlation",0x001010F0));
+    null_pos_chart->addSeries(get_line_series(vbc->subject_pos_corr_null,"permuted",0x00F0A0A0,Qt::DashLine));
+    null_pos_chart->addSeries(get_line_series(vbc->subject_pos_corr,"nonpermuted",0x00F01010));
+    null_neg_chart->addSeries(get_line_series(vbc->subject_neg_corr_null,"permuted",0x00A0A0F0,Qt::DashLine));
+    null_neg_chart->addSeries(get_line_series(vbc->subject_neg_corr,"nonpermuted",0x001010F0));
+    show_progress() << vbc->subject_neg_corr.back() << std::endl;
     null_pos_chart->createDefaultAxes();
     null_pos_chart->axes(Qt::Horizontal).back()->setTitleText("Length (voxel distance)");
     null_pos_chart->axes(Qt::Horizontal).back()->setMin(vbc->length_threshold_voxels);
     null_pos_chart->axes(Qt::Vertical).back()->setTitleText("Count");
     null_pos_chart->axes(Qt::Horizontal).back()->setGridLineVisible(false);
     null_pos_chart->axes(Qt::Vertical).back()->setGridLineVisible(false);
-    null_pos_chart->setTitle("Track count versus length (positive correlation)");
+    null_pos_chart->setTitle(vbc->track_hypothesis_pos.c_str());
     null_neg_chart->createDefaultAxes();
     null_neg_chart->axes(Qt::Horizontal).back()->setTitleText("Length (voxel distance)");
     null_neg_chart->axes(Qt::Horizontal).back()->setMin(vbc->length_threshold_voxels);
     null_neg_chart->axes(Qt::Vertical).back()->setTitleText("Count");
     null_neg_chart->axes(Qt::Horizontal).back()->setGridLineVisible(false);
     null_neg_chart->axes(Qt::Vertical).back()->setGridLineVisible(false);
-    null_neg_chart->setTitle("Track count versus length (negative correlation)");
+    null_neg_chart->setTitle(vbc->track_hypothesis_neg.c_str());
     ((QValueAxis*)null_pos_chart->axes(Qt::Horizontal).back())->setTickType(QValueAxis::TicksDynamic);
     ((QValueAxis*)null_pos_chart->axes(Qt::Horizontal).back())->setTickInterval(10);
     ((QValueAxis*)null_neg_chart->axes(Qt::Horizontal).back())->setTickType(QValueAxis::TicksDynamic);
@@ -327,8 +328,7 @@ void group_connectometry::calculate_FDR(void)
 
     // progress = 100
     {
-
-        // output distribution image
+        progress p("output distribution image");
         delete null_pos_chart_view;
         delete null_neg_chart_view;
         delete fdr_chart_view;
@@ -586,7 +586,7 @@ void group_connectometry::on_variable_list_clicked(const QModelIndex &)
         if((db.feature_selected[uint32_t(i)] = (ui->variable_list->item(i)->checkState() == Qt::Checked)))
             ui->foi->addItem(ui->variable_list->item(i)->text());
     if(db.is_longitudinal)
-        ui->foi->addItem(QString("Intercept"));
+        ui->foi->addItem(QString("longitudinal change"));
     if(ui->foi->count() != 0)
         ui->foi->setCurrentIndex(ui->foi->count()-1);
 }
@@ -611,7 +611,6 @@ void group_connectometry::on_show_cohort_clicked()
     }
     ui->subject_demo->setUpdatesEnabled(true);
     ui->cohort_report->setText(QString("n=%1").arg(selected_count));
-
 }
 
 void group_connectometry::on_fdr_control_toggled(bool checked)
