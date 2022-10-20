@@ -56,7 +56,7 @@
             <item>
              <widget class="QRadioButton" name="dif_type1">
               <property name="text">
-               <string>scan1 - scan2</string>
+               <string>scan2 - scan1</string>
               </property>
               <property name="checked">
                <bool>true</bool>
@@ -66,21 +66,7 @@
             <item>
              <widget class="QRadioButton" name="dif_type2">
               <property name="text">
-               <string>scan2 - scan1</string>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QRadioButton" name="dif_type3">
-              <property name="text">
-               <string>(scan1 - scan2)/(scan1 + scan2)</string>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QRadioButton" name="dif_type4">
-              <property name="text">
-               <string>(scan2 - scan1)(scan1 + scan2)</string>
+               <string>(scan2 - scan1)/scan1</string>
               </property>
              </widget>
             </item>
