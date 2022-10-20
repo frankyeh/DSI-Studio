@@ -638,7 +638,6 @@ void group_connectometry_analysis::generate_report(std::string& output)
     };
 
     html_report << "<h2>Results</h2>" << std::endl;
-    // Positive correlation results
     html_report << "<h3>Tracks with " << track_hypothesis_pos << "</h3>" << std::endl;
 
 
@@ -646,7 +645,6 @@ void group_connectometry_analysis::generate_report(std::string& output)
         output_track_image("pos_corr",track_hypothesis_pos,fdr_result_pos);
     report_fdr(has_pos_corr_finding(),track_hypothesis_pos,fdr_result_pos);
 
-    // Negative correlation results
     html_report << "<h3>Tracks with " << track_hypothesis_neg << "</h3>" << std::endl;
 
     if(prog == 100)
@@ -658,8 +656,8 @@ void group_connectometry_analysis::generate_report(std::string& output)
         if(fdr_pos_corr[length_threshold_voxels] < 0.2f || fdr_neg_corr[length_threshold_voxels] < 0.2f)
         {
             html_report << "<p></p><img src = \""<< std::filesystem::path(output_file_name+".pos_neg.jpg").filename().string() << "\" width=\"1200\"/>" << std::endl;
-            html_report << "<p><b>Fig.</b> Correlational tractography with positive correlation (red)" << fdr_result_pos
-                    << " and negative correlation (blue)" << fdr_result_neg << ".</p>" << std::endl;
+            html_report << "<p><b>Fig.</b> Correlational tractography showing " << track_hypothesis_pos << " (red)" << fdr_result_pos
+                    << " and " << track_hypothesis_neg << " (blue)" << fdr_result_neg << ".</p>" << std::endl;
         }
 
         std::string permutation_explained =
