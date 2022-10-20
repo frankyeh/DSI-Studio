@@ -111,7 +111,6 @@ int cnt(program_option& po)
         // select cohort and feature
         vbc->model.reset(new stat_model);
         vbc->model->read_demo(db);
-        vbc->model->nonparametric = po.get("nonparametric",1);
         if(!vbc->model->select_cohort(db,po.get("select")) || !vbc->model->select_feature(db,vbc->foi_str))
         {
             show_progress() << "ERROR:" << vbc->model->error_msg.c_str() << std::endl;
