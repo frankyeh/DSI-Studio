@@ -39,10 +39,10 @@ private: // single subject analysis result
                   unsigned int seed_count,unsigned int random_seed,unsigned int thread_count = 1);
 public:// for FDR analysis
     std::vector<std::thread> threads;
-    std::vector<unsigned int> subject_pos_corr_null;
-    std::vector<unsigned int> subject_neg_corr_null;
-    std::vector<unsigned int> subject_pos_corr;
-    std::vector<unsigned int> subject_neg_corr;
+    std::vector<int64_t> subject_pos_corr_null;
+    std::vector<int64_t> subject_neg_corr_null;
+    std::vector<int64_t> subject_pos_corr;
+    std::vector<int64_t> subject_neg_corr;
     std::vector<float> fdr_pos_corr,fdr_neg_corr;
     unsigned int prog;// 0~100
     bool terminated = false;

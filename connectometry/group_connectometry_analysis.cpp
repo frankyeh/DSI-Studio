@@ -57,7 +57,7 @@ int group_connectometry_analysis::run_track(std::shared_ptr<tracking_data> fib,
     return int(tracks.size());
 }
 
-void cal_hist(const std::vector<std::vector<float> >& track,std::vector<unsigned int>& dist)
+void cal_hist(const std::vector<std::vector<float> >& track,std::vector<int64_t>& dist)
 {
     for(unsigned int j = 0; j < track.size();++j)
     {
@@ -325,7 +325,6 @@ void group_connectometry_analysis::run_permutation(unsigned int thread_count,uns
         {
             auto items = model->variables;
             items.erase(items.begin()); // remove intercept
-            if(model->nonparametric)
             {
                 if(model->study_feature)
                     items.erase(items.begin() + model->study_feature-1);
@@ -335,9 +334,6 @@ void group_connectometry_analysis::run_permutation(unsigned int thread_count,uns
                 else
                     out << ", and the effect of " << iterate_items(items) << " was removed using a multiple regression model.";
             }
-            else
-            if(!items.empty())
-                out << " A multiple regression model was used to consider the effect of " << iterate_items(items) << ".";
         }
 
         // report subject cohort
@@ -484,10 +480,23 @@ void group_connectometry_analysis::generate_report(std::string& output)
 
 
     std::string index_name = QString(handle->db.index_name.c_str()).toUpper().toStdString();
-    std::string track_hypothesis_pos =
-        (!model->study_feature ? index_name+" positively correlated with "+foi_str : std::string("increased ")+index_name);
-    std::string track_hypothesis_neg =
-        (!model->study_feature ? index_name+" negatively correlated with "+foi_str : std::string("decreased ")+index_name);
+
+    std::string track_hypothesis_pos = std::string("increased ")+index_name;
+    std::string track_hypothesis_neg = std::string("decreased ")+index_name;
+    if(model->study_feature) // not intercept
+    {
+        if(model->variables_is_categlorical[model->study_feature])
+        {
+            track_hypothesis_pos += std::string(" in ")+foi_str+"="+std::to_string(model->variables_max[model->study_feature]);
+            track_hypothesis_neg += std::string(" in ")+foi_str+"="+std::to_string(model->variables_max[model->study_feature]);
+        }
+        else
+        {
+            track_hypothesis_pos += std::string(" associated with increased ")+foi_str;
+            track_hypothesis_neg += std::string(" associated with increased ")+foi_str;
+        }
+    }
+
     std::string fdr_result_pos,fdr_result_neg;
     auto output_fdr = [](float fdr)
     {
@@ -664,7 +673,7 @@ void group_connectometry_analysis::generate_report(std::string& output)
             new_mdi->command("delete_all_region");
         };
         show_track_result(pos_corr_track,"pos_corr",0x00F01010);
-        show_track_result(neg_corr_track,"neg_corr",0x001080F0);
+        show_track_result(neg_corr_track,"neg_corr",0x001010F0);
 
         if(has_pos_corr_finding() || has_neg_corr_finding())
         {
