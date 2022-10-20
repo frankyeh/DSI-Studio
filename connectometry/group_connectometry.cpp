@@ -99,7 +99,7 @@ group_connectometry::group_connectometry(QWidget *parent,std::shared_ptr<group_c
                 << QString("#Tracts(%1)(permuted)").arg(vbc->track_hypothesis_inc.c_str())
                 << QString("#Tracts(%1)(permuted)").arg(vbc->track_hypothesis_dec.c_str())
                 << QString("#Tracts(%1)(nonpermuted)").arg(vbc->track_hypothesis_inc.c_str())
-                << QString("#Tracts(%1)(nonpermuted)").arg(vbc->track_hypothesis_dec.c_str());
+                << QString("#Tracts(%1)(nonpermuted)").arg(vbc->track_hypothesis_dec.c_str()));
 
     ui->length_threshold->setMaximum(vbc->handle->dim[0]);
     ui->length_threshold->setValue((vbc->handle->dim[0]/4)/5*5);
