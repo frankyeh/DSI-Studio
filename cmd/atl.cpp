@@ -121,10 +121,10 @@ int atl(program_option& po)
             }
             reso = po.get("resolution",std::floor((fib.vs[0] + fib.vs[2])*0.5f*100.0f)/100.0f);
             fib.get_index_list(item_list);
-            show_progress() << "available metrics: ";
+            std::ostringstream out;
             for(size_t i = 0;i < item_list.size();++i)
-                show_progress() << item_list[i] << " ";
-            show_progress() << std::endl;
+                out << item_list[i] << " ";
+            show_progress() << "available metrics: " << out.str() << std::endl;
         }
 
         if(po.get("index_name","qa") == std::string("*"))
