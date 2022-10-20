@@ -146,10 +146,14 @@ group_connectometry::~group_connectometry()
 }
 
 template<typename data_type>
-QLineSeries* get_line_series(const data_type& data, const char* name)
+QLineSeries* get_line_series(const data_type& data, const char* name,QColor color,Qt::PenStyle s = Qt::SolidLine)
 {
     QLineSeries* series = new QLineSeries;
     series->setName(name);
+    QPen pen(color);
+    pen.setWidth(2);
+    pen.setStyle(s);
+    series->setPen(pen);
     auto max_size = data.size();
     while(max_size > 0 && (data[max_size-1] == 0.0f || data[max_size-1] == 1.0f))
         --max_size;
@@ -163,8 +167,8 @@ void group_connectometry::show_fdr_report()
     if(vbc->fdr_pos_corr.empty())
         return;
     fdr_chart->removeAllSeries();
-    fdr_chart->addSeries(get_line_series(vbc->fdr_pos_corr,"positive correlation"));
-    fdr_chart->addSeries(get_line_series(vbc->fdr_neg_corr,"negative correlation"));
+    fdr_chart->addSeries(get_line_series(vbc->fdr_pos_corr,"positive correlation",0x00F01010));
+    fdr_chart->addSeries(get_line_series(vbc->fdr_neg_corr,"negative correlation",0x001010F0));
     fdr_chart->createDefaultAxes();
     fdr_chart->axes(Qt::Horizontal).back()->setMin(vbc->length_threshold_voxels);
     fdr_chart->axes(Qt::Horizontal).back()->setTitleText("Length (voxel distance)");
@@ -187,10 +191,10 @@ void group_connectometry::show_report()
 
     null_pos_chart->removeAllSeries();
     null_neg_chart->removeAllSeries();
-    null_pos_chart->addSeries(get_line_series(vbc->subject_pos_corr_null,"permuted positive correlation"));
-    null_pos_chart->addSeries(get_line_series(vbc->subject_pos_corr,"nonpermuted positive correlation"));
-    null_neg_chart->addSeries(get_line_series(vbc->subject_neg_corr_null,"permuted negative correlation"));
-    null_neg_chart->addSeries(get_line_series(vbc->subject_neg_corr,"nonpermuted negative correlation"));
+    null_pos_chart->addSeries(get_line_series(vbc->subject_pos_corr_null,"permuted positive correlation",0x00F0A0A0,Qt::DashLine));
+    null_pos_chart->addSeries(get_line_series(vbc->subject_pos_corr,"nonpermuted positive correlation",0x00F01010));
+    null_neg_chart->addSeries(get_line_series(vbc->subject_neg_corr_null,"permuted negative correlation",0x00A0A0F0,Qt::DashLine));
+    null_neg_chart->addSeries(get_line_series(vbc->subject_neg_corr,"nonpermuted negative correlation",0x001010F0));
     null_pos_chart->createDefaultAxes();
     null_pos_chart->axes(Qt::Horizontal).back()->setTitleText("Length (voxel distance)");
     null_pos_chart->axes(Qt::Horizontal).back()->setMin(vbc->length_threshold_voxels);
@@ -415,7 +419,6 @@ void group_connectometry::on_run_clicked()
     {
         vbc->model.reset(new stat_model);
         *(vbc->model.get()) = *(model.get());
-        vbc->model->nonparametric = ui->nonparametric->isChecked();
         if(!vbc->model->select_feature(db,ui->foi->currentText().toStdString()))
         {
             QMessageBox::critical(this,"Error",vbc->model->error_msg.c_str());

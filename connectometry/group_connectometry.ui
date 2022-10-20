@@ -260,16 +260,6 @@
             <item>
              <widget class="QComboBox" name="foi"/>
             </item>
-            <item>
-             <widget class="QCheckBox" name="nonparametric">
-              <property name="text">
-               <string>Nonparametric</string>
-              </property>
-              <property name="checked">
-               <bool>true</bool>
-              </property>
-             </widget>
-            </item>
            </layout>
           </item>
           <item>
