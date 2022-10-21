@@ -135,7 +135,8 @@ int cnt(program_option& po)
 
     {
         progress prog("running connectometry");
-        vbc->output_file_name = po.get("output",po.get("demo")+"."+vbc->get_file_post_fix());
+        if(po.has("output"))
+            vbc->output_file_name = po.get("output",std::string());
         vbc->run_permutation(po.get("thread_count",std::thread::hardware_concurrency()),po.get("permutation",uint32_t(2000)));
         for(auto& thread: vbc->threads)
             if(thread.joinable())
