@@ -103,7 +103,7 @@ void group_connectometry_analysis::run_permutation_multithread(unsigned int id,u
         fib->dt_fa = data.dec_ptr;
 
         run_track(fib,neg_tracks,seed_count,i);
-        cal_hist(neg_tracks,(null) ? subject_dec_null : subject_dec);
+        cal_hist(neg_tracks,(null) ? tract_count_dec_null : tract_count_dec);
 
 
         info.resample(*model.get(),null,true,i);
@@ -111,7 +111,7 @@ void group_connectometry_analysis::run_permutation_multithread(unsigned int id,u
         fib->dt_fa = data.inc_ptr;
 
         run_track(fib,pos_tracks,seed_count,i);
-        cal_hist(pos_tracks,(null) ? subject_inc_null : subject_inc);
+        cal_hist(pos_tracks,(null) ? tract_count_inc_null : tract_count_inc);
 
         {
             std::lock_guard<std::mutex> lock(lock_add_tracks);
@@ -153,29 +153,29 @@ void group_connectometry_analysis::save_result(void)
         inc_track->trim();
     }
     // update fdr table
-    std::fill(subject_dec_null.begin(),subject_dec_null.end(),0);
-    std::fill(subject_inc_null.begin(),subject_inc_null.end(),0);
-    std::fill(subject_dec.begin(),subject_dec.end(),0);
-    std::fill(subject_inc.begin(),subject_inc.end(),0);
-    cal_hist(dec_track->get_tracts(),subject_dec);
-    cal_hist(neg_null_corr_track->get_tracts(),subject_dec_null);
-    cal_hist(inc_track->get_tracts(),subject_inc);
-    cal_hist(pos_null_corr_track->get_tracts(),subject_inc_null);
+    std::fill(tract_count_dec_null.begin(),tract_count_dec_null.end(),0);
+    std::fill(tract_count_inc_null.begin(),tract_count_inc_null.end(),0);
+    std::fill(tract_count_dec.begin(),tract_count_dec.end(),0);
+    std::fill(tract_count_inc.begin(),tract_count_inc.end(),0);
+    cal_hist(dec_track->get_tracts(),tract_count_dec);
+    cal_hist(neg_null_corr_track->get_tracts(),tract_count_dec_null);
+    cal_hist(inc_track->get_tracts(),tract_count_inc);
+    cal_hist(pos_null_corr_track->get_tracts(),tract_count_inc_null);
     calculate_FDR();
 
     // output distribution values
     {
         std::ofstream out((output_file_name+".fdr_dist.values.txt").c_str());
-        out << "voxel_dis\tfdr_pos_cor\tfdr_dec\t#track_inc_null\t#track_dec_null\t#track_inc\t#track_dec" << std::endl;
+        out << "voxel_dis\tfdr_inc\tfdr_dec\t#track_inc_null\t#track_dec_null\t#track_inc\t#track_dec" << std::endl;
         for(size_t index = length_threshold_voxels;index < fdr_inc.size()-1;++index)
         {
             out << index
                 << "\t" << fdr_inc[index]
                 << "\t" << fdr_dec[index]
-                << "\t" << subject_inc_null[index]
-                << "\t" << subject_dec_null[index]
-                << "\t" << subject_inc[index]
-                << "\t" << subject_dec[index] << std::endl;
+                << "\t" << tract_count_inc_null[index]
+                << "\t" << tract_count_dec_null[index]
+                << "\t" << tract_count_inc[index]
+                << "\t" << tract_count_dec[index] << std::endl;
         }
     }
 
@@ -390,19 +390,19 @@ void group_connectometry_analysis::run_permutation(unsigned int thread_count,uns
     {
         index_name = QString(handle->db.index_name.c_str()).toUpper().toStdString();
 
-        track_hypothesis_inc = std::string("increased ")+index_name;
-        track_hypothesis_dec = std::string("decreased ")+index_name;
+        hypothesis_inc = std::string("increased ")+index_name;
+        hypothesis_dec = std::string("decreased ")+index_name;
         if(model->study_feature) // not longitudinal change
         {
             if(model->variables_is_categorical[model->study_feature])
             {
-                track_hypothesis_inc += std::string(" in ")+foi_str+"="+std::to_string(model->variables_max[model->study_feature]);
-                track_hypothesis_dec += std::string(" in ")+foi_str+"="+std::to_string(model->variables_max[model->study_feature]);
+                hypothesis_inc += std::string(" in ")+foi_str+"="+std::to_string(model->variables_max[model->study_feature]);
+                hypothesis_dec += std::string(" in ")+foi_str+"="+std::to_string(model->variables_max[model->study_feature]);
             }
             else
             {
-                track_hypothesis_inc += std::string(" associated with increased ")+foi_str;
-                track_hypothesis_dec += std::string(" associated with increased ")+foi_str;
+                hypothesis_inc += std::string(" associated with increased ")+foi_str;
+                hypothesis_dec += std::string(" associated with increased ")+foi_str;
             }
         }
     }
@@ -462,14 +462,14 @@ void group_connectometry_analysis::run_permutation(unsigned int thread_count,uns
 
     size_t max_dimension = tipl::max_value(handle->dim)*2;
 
-    subject_inc_null.clear();
-    subject_inc_null.resize(max_dimension);
-    subject_dec_null.clear();
-    subject_dec_null.resize(max_dimension);
-    subject_inc.clear();
-    subject_inc.resize(max_dimension);
-    subject_dec.clear();
-    subject_dec.resize(max_dimension);
+    tract_count_inc_null.clear();
+    tract_count_inc_null.resize(max_dimension);
+    tract_count_dec_null.clear();
+    tract_count_dec_null.resize(max_dimension);
+    tract_count_inc.clear();
+    tract_count_inc.resize(max_dimension);
+    tract_count_dec.clear();
+    tract_count_dec.resize(max_dimension);
     fdr_inc.clear();
     fdr_inc.resize(max_dimension);
     fdr_dec.clear();
@@ -523,34 +523,34 @@ void group_connectometry_analysis::calculate_FDR(void)
     double sum_dec_null = 0.0;
     double sum_inc = 0.0;
     double sum_dec = 0.0;
-    for(int index = int(subject_inc_null.size())-1;index >= 0;--index)
+    for(int index = int(tract_count_inc_null.size())-1;index >= 0;--index)
     {
-        if(sum_inc_null == 0.0 && (subject_inc_null[size_t(index)] != 0 || index == 0) && sum_inc > 0.0)
+        if(sum_inc_null == 0.0 && (tract_count_inc_null[size_t(index)] != 0 || index == 0) && sum_inc > 0.0)
         {
             float tail_fdr = 1.0f/float(sum_inc);
-            for(int j = int(subject_inc.size())-1;j >= index;--j)
-                if(subject_inc[size_t(j)])
+            for(int j = int(tract_count_inc.size())-1;j >= index;--j)
+                if(tract_count_inc[size_t(j)])
                 {
                     for(int k = index;k <= j;++k)
                         fdr_inc[size_t(k)] = tail_fdr;
                     break;
                 }
         }
-        if(sum_dec_null == 0.0 && (subject_dec_null[size_t(index)] != 0 || index == 0) && sum_dec > 0.0)
+        if(sum_dec_null == 0.0 && (tract_count_dec_null[size_t(index)] != 0 || index == 0) && sum_dec > 0.0)
         {
             float tail_fdr = 1.0f/float(sum_dec);
-            for(int j = int(subject_dec.size())-1;j >= index;--j)
-                if(subject_dec[size_t(j)])
+            for(int j = int(tract_count_dec.size())-1;j >= index;--j)
+                if(tract_count_dec[size_t(j)])
                 {
                     for(int k = index;k <= j;++k)
                         fdr_dec[size_t(k)] = tail_fdr;
                     break;
                 }
         }
-        sum_inc_null += subject_inc_null[size_t(index)];
-        sum_dec_null += subject_dec_null[size_t(index)];
-        sum_inc += subject_inc[size_t(index)];
-        sum_dec += subject_dec[size_t(index)];
+        sum_inc_null += tract_count_inc_null[size_t(index)];
+        sum_dec_null += tract_count_dec_null[size_t(index)];
+        sum_inc += tract_count_inc[size_t(index)];
+        sum_dec += tract_count_dec[size_t(index)];
         fdr_inc[size_t(index)] = float((sum_inc > 0.0) ? std::min<double>(1.0,sum_inc_null/sum_inc): 1.0);
         fdr_dec[size_t(index)] = float((sum_dec > 0.0) ? std::min<double>(1.0,sum_dec_null/sum_dec): 1.0);
     }
@@ -638,26 +638,26 @@ void group_connectometry_analysis::generate_report(std::string& output)
     };
 
     html_report << "<h2>Results</h2>" << std::endl;
-    html_report << "<h3>Tracks with " << track_hypothesis_inc << "</h3>" << std::endl;
+    html_report << "<h3>Tracks with " << hypothesis_inc << "</h3>" << std::endl;
 
 
     if(prog == 100)
-        output_track_image("inc",track_hypothesis_inc,fdr_result_pos);
-    report_fdr(has_inc_finding(),track_hypothesis_inc,fdr_result_pos);
+        output_track_image("inc",hypothesis_inc,fdr_result_pos);
+    report_fdr(has_inc_finding(),hypothesis_inc,fdr_result_pos);
 
-    html_report << "<h3>Tracks with " << track_hypothesis_dec << "</h3>" << std::endl;
+    html_report << "<h3>Tracks with " << hypothesis_dec << "</h3>" << std::endl;
 
     if(prog == 100)
-        output_track_image("dec",track_hypothesis_dec,fdr_result_neg);
-    report_fdr(has_dec_finding(),track_hypothesis_dec,fdr_result_neg);
+        output_track_image("dec",hypothesis_dec,fdr_result_neg);
+    report_fdr(has_dec_finding(),hypothesis_dec,fdr_result_neg);
 
     if(prog == 100)
     {
         if(fdr_inc[length_threshold_voxels] < 0.2f || fdr_dec[length_threshold_voxels] < 0.2f)
         {
             html_report << "<p></p><img src = \""<< std::filesystem::path(output_file_name+".pos_neg.jpg").filename().string() << "\" width=\"1200\"/>" << std::endl;
-            html_report << "<p><b>Fig.</b> Correlational tractography showing " << track_hypothesis_inc << " (red)" << fdr_result_pos
-                    << " and " << track_hypothesis_dec << " (blue)" << fdr_result_neg << ".</p>" << std::endl;
+            html_report << "<p><b>Fig.</b> Correlational tractography showing " << hypothesis_inc << " (red)" << fdr_result_pos
+                    << " and " << hypothesis_dec << " (blue)" << fdr_result_neg << ".</p>" << std::endl;
         }
 
         std::string permutation_explained =
@@ -670,11 +670,11 @@ void group_connectometry_analysis::generate_report(std::string& output)
         html_report << "<h3>False discovery rate analysis</h3>" << std::endl;
 
         html_report << "<p></p><img src = \""<< std::filesystem::path(output_file_name+".inc.dist.jpg").filename().string() << "\" width=\"320\"/>" << std::endl;
-        html_report << "<p><b>Fig.</b> Permutation test showing the histograms of track counts with "<< track_hypothesis_inc << ".</p>";
+        html_report << "<p><b>Fig.</b> Permutation test showing the histograms of track counts with "<< hypothesis_inc << ".</p>";
 
 
         html_report << "<p></p><img src = \""<< std::filesystem::path(output_file_name+".dec.dist.jpg").filename().string() << "\" width=\"320\"/>" << std::endl;
-        html_report << "<p><b>Fig.</b> Permutation test showing the histograms of track counts with "<< track_hypothesis_dec << ".</p>";
+        html_report << "<p><b>Fig.</b> Permutation test showing the histograms of track counts with "<< hypothesis_dec << ".</p>";
 
         html_report << permutation_explained << std::endl;
         html_report << "<p></p><img src = \""<< std::filesystem::path(output_file_name+".fdr.jpg").filename().string() << "\" width=\"320\"/>" << std::endl;

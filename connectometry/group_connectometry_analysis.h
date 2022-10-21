@@ -37,10 +37,10 @@ private: // single subject analysis result
                   unsigned int seed_count,unsigned int random_seed,unsigned int thread_count = 1);
 public:// for FDR analysis
     std::vector<std::thread> threads;
-    std::vector<unsigned int> subject_inc_null;
-    std::vector<unsigned int> subject_dec_null;
-    std::vector<unsigned int> subject_inc;
-    std::vector<unsigned int> subject_dec;
+    std::vector<unsigned int> tract_count_inc_null;
+    std::vector<unsigned int> tract_count_dec_null;
+    std::vector<unsigned int> tract_count_inc;
+    std::vector<unsigned int> tract_count_dec;
     std::vector<float> fdr_inc,fdr_dec;
     unsigned int prog;// 0~100
     bool terminated = false;
@@ -58,7 +58,7 @@ public:// Multiple regression
     std::shared_ptr<stat_model> model;
     std::shared_ptr<connectometry_result> spm_map;
     std::vector<std::vector<float> > population_value_adjusted;
-    std::string index_name,track_hypothesis_inc,track_hypothesis_dec;
+    std::string index_name,hypothesis_inc,hypothesis_dec;
     float t_threshold;
     unsigned int length_threshold_voxels;
     float fdr_threshold;

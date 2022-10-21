@@ -92,15 +92,6 @@ group_connectometry::group_connectometry(QWidget *parent,std::shared_ptr<group_c
     ui->dist_table->setColumnWidth(5,100);
     ui->dist_table->setColumnWidth(6,100);
 
-    ui->dist_table->setHorizontalHeaderLabels(
-                QStringList() << "length (mm)"
-                << QString("FDR (%1)").arg(vbc->track_hypothesis_inc.c_str())
-                << QString("FDR (%1)").arg(vbc->track_hypothesis_dec.c_str())
-                << QString("#Tracts(%1)(permuted)").arg(vbc->track_hypothesis_inc.c_str())
-                << QString("#Tracts(%1)(permuted)").arg(vbc->track_hypothesis_dec.c_str())
-                << QString("#Tracts(%1)(nonpermuted)").arg(vbc->track_hypothesis_inc.c_str())
-                << QString("#Tracts(%1)(nonpermuted)").arg(vbc->track_hypothesis_dec.c_str()));
-
     ui->length_threshold->setMaximum(vbc->handle->dim[0]);
     ui->length_threshold->setValue((vbc->handle->dim[0]/4)/5*5);
 
@@ -170,8 +161,8 @@ void group_connectometry::show_fdr_report()
     if(vbc->fdr_inc.empty())
         return;
     fdr_chart->removeAllSeries();
-    fdr_chart->addSeries(get_line_series(vbc->fdr_inc,vbc->track_hypothesis_inc.c_str(),0x00F01010));
-    fdr_chart->addSeries(get_line_series(vbc->fdr_dec,vbc->track_hypothesis_dec.c_str(),0x001010F0));
+    fdr_chart->addSeries(get_line_series(vbc->fdr_inc,vbc->hypothesis_inc.c_str(),0x00F01010));
+    fdr_chart->addSeries(get_line_series(vbc->fdr_dec,vbc->hypothesis_dec.c_str(),0x001010F0));
     fdr_chart->createDefaultAxes();
     fdr_chart->axes(Qt::Horizontal).back()->setMin(vbc->length_threshold_voxels);
     fdr_chart->axes(Qt::Horizontal).back()->setTitleText("Length (voxel distance)");
@@ -189,30 +180,29 @@ void group_connectometry::show_fdr_report()
 
 void group_connectometry::show_report()
 {
-    if(vbc->subject_inc_null.empty())
+    if(vbc->tract_count_inc_null.empty())
         return;
 
     null_pos_chart->removeAllSeries();
     null_neg_chart->removeAllSeries();
-    null_pos_chart->addSeries(get_line_series(vbc->subject_inc_null,"permuted",0x00F0A0A0,Qt::DashLine));
-    null_pos_chart->addSeries(get_line_series(vbc->subject_inc,"nonpermuted",0x00F01010));
-    null_neg_chart->addSeries(get_line_series(vbc->subject_dec_null,"permuted",0x00A0A0F0,Qt::DashLine));
-    null_neg_chart->addSeries(get_line_series(vbc->subject_dec,"nonpermuted",0x001010F0));
-    show_progress() << vbc->subject_dec.back() << std::endl;
+    null_pos_chart->addSeries(get_line_series(vbc->tract_count_inc_null,"permuted",0x00F0A0A0,Qt::DashLine));
+    null_pos_chart->addSeries(get_line_series(vbc->tract_count_inc,"nonpermuted",0x00F01010));
+    null_neg_chart->addSeries(get_line_series(vbc->tract_count_dec_null,"permuted",0x00A0A0F0,Qt::DashLine));
+    null_neg_chart->addSeries(get_line_series(vbc->tract_count_dec,"nonpermuted",0x001010F0));
     null_pos_chart->createDefaultAxes();
     null_pos_chart->axes(Qt::Horizontal).back()->setTitleText("Length (voxel distance)");
     null_pos_chart->axes(Qt::Horizontal).back()->setMin(vbc->length_threshold_voxels);
     null_pos_chart->axes(Qt::Vertical).back()->setTitleText("Count");
     null_pos_chart->axes(Qt::Horizontal).back()->setGridLineVisible(false);
     null_pos_chart->axes(Qt::Vertical).back()->setGridLineVisible(false);
-    null_pos_chart->setTitle(vbc->track_hypothesis_inc.c_str());
+    null_pos_chart->setTitle(vbc->hypothesis_inc.c_str());
     null_neg_chart->createDefaultAxes();
     null_neg_chart->axes(Qt::Horizontal).back()->setTitleText("Length (voxel distance)");
     null_neg_chart->axes(Qt::Horizontal).back()->setMin(vbc->length_threshold_voxels);
     null_neg_chart->axes(Qt::Vertical).back()->setTitleText("Count");
     null_neg_chart->axes(Qt::Horizontal).back()->setGridLineVisible(false);
     null_neg_chart->axes(Qt::Vertical).back()->setGridLineVisible(false);
-    null_neg_chart->setTitle(vbc->track_hypothesis_dec.c_str());
+    null_neg_chart->setTitle(vbc->hypothesis_dec.c_str());
     ((QValueAxis*)null_pos_chart->axes(Qt::Horizontal).back())->setTickType(QValueAxis::TicksDynamic);
     ((QValueAxis*)null_pos_chart->axes(Qt::Horizontal).back())->setTickInterval(10);
     ((QValueAxis*)null_neg_chart->axes(Qt::Horizontal).back())->setTickType(QValueAxis::TicksDynamic);
@@ -222,16 +212,24 @@ void group_connectometry::show_report()
 void group_connectometry::show_dis_table(void)
 {
     ui->dist_table->setRowCount(100);
+    ui->dist_table->setHorizontalHeaderLabels(
+                QStringList() << "length (mm)"
+                << QString("FDR (%1)").arg(vbc->hypothesis_inc.c_str())
+                << QString("FDR (%1)").arg(vbc->hypothesis_dec.c_str())
+                << QString("#Tracts(%1)(permuted)").arg(vbc->hypothesis_inc.c_str())
+                << QString("#Tracts(%1)(permuted)").arg(vbc->hypothesis_dec.c_str())
+                << QString("#Tracts(%1)(nonpermuted)").arg(vbc->hypothesis_inc.c_str())
+                << QString("#Tracts(%1)(nonpermuted)").arg(vbc->hypothesis_dec.c_str()));
     for(unsigned int index = vbc->length_threshold_voxels;index < vbc->fdr_inc.size()-1;++index)
     {
         int row = int(index-vbc->length_threshold_voxels);
         ui->dist_table->setItem(row,0,new QTableWidgetItem(QString::number(index)));
         ui->dist_table->setItem(row,1, new QTableWidgetItem(QString::number(double(vbc->fdr_inc[index]))));
         ui->dist_table->setItem(row,2, new QTableWidgetItem(QString::number(double(vbc->fdr_dec[index]))));
-        ui->dist_table->setItem(row,3, new QTableWidgetItem(QString::number(vbc->subject_inc_null[index])));
-        ui->dist_table->setItem(row,4, new QTableWidgetItem(QString::number(vbc->subject_dec_null[index])));
-        ui->dist_table->setItem(row,5, new QTableWidgetItem(QString::number(vbc->subject_inc[index])));
-        ui->dist_table->setItem(row,6, new QTableWidgetItem(QString::number(vbc->subject_dec[index])));
+        ui->dist_table->setItem(row,3, new QTableWidgetItem(QString::number(vbc->tract_count_inc_null[index])));
+        ui->dist_table->setItem(row,4, new QTableWidgetItem(QString::number(vbc->tract_count_dec_null[index])));
+        ui->dist_table->setItem(row,5, new QTableWidgetItem(QString::number(vbc->tract_count_inc[index])));
+        ui->dist_table->setItem(row,6, new QTableWidgetItem(QString::number(vbc->tract_count_dec[index])));
     }
     ui->dist_table->selectRow(0);
 }
@@ -482,8 +480,8 @@ void group_connectometry::on_show_result_clicked()
     current_tracking_window->setAttribute(Qt::WA_DeleteOnClose);
     current_tracking_window->setWindowTitle(vbc->output_file_name.c_str());
     current_tracking_window->showNormal();
-    current_tracking_window->tractWidget->addNewTracts(vbc->track_hypothesis_inc.c_str());
-    current_tracking_window->tractWidget->addNewTracts(vbc->track_hypothesis_dec.c_str());
+    current_tracking_window->tractWidget->addNewTracts(vbc->hypothesis_inc.c_str());
+    current_tracking_window->tractWidget->addNewTracts(vbc->hypothesis_dec.c_str());
 
     current_tracking_window->tractWidget->tract_models[0]->add(*(vbc->inc_track.get()));
     current_tracking_window->tractWidget->tract_models[1]->add(*(vbc->dec_track.get()));
