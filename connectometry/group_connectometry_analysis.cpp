@@ -459,6 +459,7 @@ void group_connectometry_analysis::run_permutation(unsigned int thread_count,uns
     // setup output file name
     if(output_file_name.empty())
         output_file_name = get_file_post_fix();
+    show_progress() << "output file prefix: " << output_file_name << std::endl;
 
     size_t max_dimension = tipl::max_value(handle->dim)*2;
 
