@@ -99,7 +99,7 @@ jobs:
         ls icbm152.tt.gz.tdi.nii.gz
         ls icbm152.tt.gz.stat.txt
         echo --------------------------------------------------------------------------------------------------
-        ./dsi-studio/dsi_studio --source=ICBM152_adult.fib.gz --action=trk --track_id=Arcuate_Fasciculus_L --output=AF_L.tt.gz
+        ./dsi-studio/dsi_studio --source=ICBM152_adult.fib.gz --action=trk --track_id=Arcuate_Fasciculus_L --tip_iteration=4 --output=AF_L.tt.gz
         ls AF_L.tt.gz
         echo --------------------------------------------------------------------------------------------------
         ./dsi-studio/dsi_studio --source=ICBM152_adult.fib.gz --action=trk --roi=FreeSurferDKT_Cortical:left_precentral,dilate,dilate,smoothing --roi2=FreeSurferDKT_Cortical:right_precentral,dilate,dilate,smoothing --output=LR.tt.gz
@@ -130,7 +130,7 @@ jobs:
         ls 100206.tt.gz.tdi.nii.gz
         ls 100206.tt.gz.stat.txt
         echo --------------------------------------------------------------------------------------------------
-        ./dsi-studio/dsi_studio --source=100206.fib.gz --action=trk --track_id=Arcuate_Fasciculus_L --output=AF_L.tt.gz
+        ./dsi-studio/dsi_studio --source=100206.fib.gz --action=trk --track_id=Arcuate_Fasciculus_L --tip_iteration=4 --output=AF_L.tt.gz
         ls AF_L.tt.gz
         echo --------------------------------------------------------------------------------------------------
         ./dsi-studio/dsi_studio --source=100206.fib.gz --action=trk --roi=FreeSurferDKT_Cortical:left_precentral,dilate,dilate,smoothing --roi2=FreeSurferDKT_Cortical:right_precentral,dilate,dilate,smoothing --output=LR.tt.gz
