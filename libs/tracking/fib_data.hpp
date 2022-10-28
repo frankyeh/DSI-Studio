@@ -204,9 +204,17 @@ public:
     template<class input_iterator>
     void set_scale(input_iterator from,input_iterator to)
     {
-        auto result = tipl::minmax_value_mt(from,to);
-        contrast_min = min_value = result.first;
-        contrast_max = max_value = result.second;
+        if(name.back() == 'a') // e.g., fa, qa
+        {
+            contrast_min = min_value = 0.0f;
+            contrast_max = max_value = 1.0f;
+        }
+        else
+        {
+            auto result = tipl::minmax_value_mt(from,to);
+            contrast_min = min_value = result.first;
+            contrast_max = max_value = result.second;
+        }
         if(max_value <= min_value)
         {
             min_value = 0.0f;
