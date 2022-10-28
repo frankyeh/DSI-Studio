@@ -676,6 +676,11 @@ bool connectometry_db::get_demo_matched_volume(const std::string& matched_demo,t
             I[index] = std::max<float>(0.0f,float(predict));
         }
     });
+    if(index_name == "qa")
+    {
+        show_progress() << "normalizing qa map" << std::endl;
+        tipl::normalize(I);
+    }
     volume.swap(I);
     return true;
 }
