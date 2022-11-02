@@ -911,6 +911,8 @@ bool ImageModel::align_acpc(void)
     return true;
 }
 
+extern bool has_cuda;
+extern int gpu_count;
 bool ImageModel::correct_motion(void)
 {
     std::string msg = " Motion correction was conducted with b-table rotated.";
@@ -931,10 +933,13 @@ bool ImageModel::correct_motion(void)
         tipl::image<3> from(dwi_at(0));
         preproc(from);
         progress prog("apply motion correction...");
-        for(size_t i = 1;progress::at(i,src_bvalues.size());++i)
+        unsigned int cur_prog = 0;
+        tipl::par_for(src_bvalues.size(),[&](int i)
         {
-            if(i)
-                args[i] = args[i-1];
+            progress::at(++cur_prog,src_bvalues.size());
+            if(progress::aborted() || !i)
+                return;
+            args[i] = args[i-1];
             tipl::image<3> to(dwi_at(i));
             preproc(to);
             bool terminated = false;
@@ -942,7 +947,8 @@ bool ImageModel::correct_motion(void)
             show_progress() << "dwi (" << i+1 << "/" << src_bvalues.size() << ")" <<
                          " shift=" << tipl::vector<3>(args[i].translocation) <<
                          " rotation=" << tipl::vector<3>(args[i].rotation) << std::endl;
-        }
+        },has_cuda ? gpu_count*4 : 1);
+
         if(progress::aborted())
         {
             error_msg = "aborted";
@@ -956,8 +962,12 @@ bool ImageModel::correct_motion(void)
 
     {
         progress prog("estimate and registering...");
-        for(size_t i = 1;progress::at(i,src_bvalues.size());++i)
+        unsigned int cur_prog = 0;
+        tipl::par_for(src_bvalues.size(),[&](int i)
         {
+            progress::at(++cur_prog,src_bvalues.size());
+            if(progress::aborted() || !i)
+                return;
             // get the minimum q space distance
             float min_dis = std::numeric_limits<float>::max();
             std::vector<float> dis_list(src_bvalues.size());
@@ -998,7 +1008,8 @@ bool ImageModel::correct_motion(void)
                       << " shift=" << tipl::vector<3>(new_args[i].translocation)
                       << " rotation=" << tipl::vector<3>(new_args[i].rotation) << std::endl;
 
-        }
+        },has_cuda ? gpu_count*4 : 1);
+
         if(progress::aborted())
         {
             error_msg = "aborted";
