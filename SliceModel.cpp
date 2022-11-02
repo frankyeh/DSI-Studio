@@ -535,23 +535,24 @@ bool CustomSliceModel::save_mapping(const char* file_name)
     return save_transform(file_name,T,arg_min);
 }
 // ---------------------------------------------------------------------------
-bool load_transform(const char* file_name,tipl::affine_transform<float>& arg_min)
+bool load_transform(const char* file_name,tipl::matrix<4,4>& T,tipl::affine_transform<float>& arg_min)
 {
     std::ifstream in(file_name);
     if(!in)
         return false;
-    std::vector<float> data,arg;
+    std::vector<float> data;
     std::copy(std::istream_iterator<float>(in),
               std::istream_iterator<float>(),std::back_inserter(data));
     if(data.size() != 28)
         return false;
+    std::copy(data.begin(),data.begin()+16,T.begin());
     std::copy(data.begin()+16,data.begin()+16+12,arg_min.data);
     return true;
 }
 // ---------------------------------------------------------------------------
 bool CustomSliceModel::load_mapping(const char* file_name)
 {
-    if(!load_transform(file_name,arg_min))
+    if(!load_transform(file_name,T,arg_min))
         return false;
     update_transform();
     return true;

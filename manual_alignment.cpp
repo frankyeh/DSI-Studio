@@ -495,7 +495,7 @@ void manual_alignment::on_actionSave_Transformation_triggered()
         QMessageBox::critical(this,"ERROR","Cannot save mapping file.");
 }
 
-bool load_transform(const char* file_name,tipl::affine_transform<float>& arg_min);
+bool load_transform(const char* file_name,tipl::matrix<4,4>& T,tipl::affine_transform<float>& arg_min);
 void manual_alignment::on_actionLoad_Transformation_triggered()
 {
     QString filename = QFileDialog::getOpenFileName(
@@ -505,7 +505,8 @@ void manual_alignment::on_actionLoad_Transformation_triggered()
         return;
     thread.terminated = true;
     thread.wait();
-    if(!load_transform(filename.toStdString().c_str(),arg))
+    tipl::matrix<4,4> T;
+    if(!load_transform(filename.toStdString().c_str(),T,arg))
     {
         QMessageBox::critical(this,"ERROR","Invalid mapping file.");
         return;
