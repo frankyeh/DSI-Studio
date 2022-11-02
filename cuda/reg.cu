@@ -9,18 +9,33 @@ __global__ void cuda_test(){
     ;
 }
 
+extern bool has_cuda;
+extern int gpu_count;
+void distribute_gpu(void)
+{
+    static int cur_gpu = 0;
+    static std::mutex m;
+    std::lock_guard<std::mutex> lock(m);
+    if(gpu_count <= 1)
+        return;
+    if(cudaSetDevice(cur_gpu) != cudaSuccess)
+        show_progress() << "cudaSetDevice error:" << cudaSetDevice(cur_gpu) << std::endl;
+    ++cur_gpu;
+    if(cur_gpu >= gpu_count)
+        cur_gpu = 0;
+}
 
-bool check_cuda(std::string& error_msg)
+void check_cuda(std::string& error_msg)
 {
     progress p("checking CUDA drivers");
-    int nDevices,Ver;
-    if(cudaGetDeviceCount(&nDevices) != cudaSuccess ||
+    int Ver;
+    if(cudaGetDeviceCount(&gpu_count) != cudaSuccess ||
        cudaDriverGetVersion(&Ver) != cudaSuccess)
     {
         error_msg = "cannot obtain GPU driver and device information (CUDA ERROR:";
-        error_msg += std::to_string(int(cudaGetDeviceCount(&nDevices)));
+        error_msg += std::to_string(int(cudaGetDeviceCount(&gpu_count)));
         error_msg += "). Please update the Nvidia driver and install CUDA Toolkit.";
-        return false;
+        return;
     }
     show_progress() << "CUDA Driver Version: " << Ver << " CUDA Run Time Version: " << CUDART_VERSION << std::endl;
     cuda_test<<<1,1>>>();
@@ -29,18 +44,18 @@ bool check_cuda(std::string& error_msg)
         error_msg = "Failed to lauch cuda kernel:";
         error_msg += cudaGetErrorName(cudaGetLastError());
         error_msg += ". Please update Nvidia driver.";
-        return false;
+        return;
     }
 
-    show_progress() << "Device Count:" << nDevices << std::endl;
-    for (int i = 0; i < nDevices; i++)
+    show_progress() << "Device Count:" << gpu_count << std::endl;
+    for (int i = 0; i < gpu_count; i++)
     {
         progress p2("Device Number:",std::to_string(i).c_str());
         cudaDeviceProp prop;
         if(cudaGetDeviceProperties(&prop, i) != cudaSuccess)
         {
             error_msg = "Cannot obtain device information. Please update Nvidia driver";
-            return false;
+            return;
         }
         auto arch = prop.major*10+prop.minor;
         show_progress() << "Arch: " << arch << std::endl;
@@ -50,7 +65,7 @@ bool check_cuda(std::string& error_msg)
         show_progress() << "Peak Memory Bandwidth (GB/s): " << 2.0*prop.memoryClockRate*(prop.memoryBusWidth/8)/1.0e6 << std::endl;
 
     }
-    return true;
+    has_cuda = true;
 }
 
 void cdm2_cuda(const tipl::image<3>& It,
@@ -92,6 +107,7 @@ size_t linear_cuda(const tipl::image<3,float>& from,
                               bool& terminated,
                               const float* bound)
 {
+    distribute_gpu();
     return tipl::reg::linear_mr<tipl::reg::mutual_information_cuda>
             (from,from_vs,to,to_vs,arg,reg_type,[&](void){return terminated;},
                 0.01,bound != tipl::reg::narrow_bound,bound);
@@ -106,6 +122,7 @@ size_t linear_cuda_refine(const tipl::image<3,float>& from,
                               bool& terminated,
                               double precision)
 {
+    distribute_gpu();
     return tipl::reg::linear<tipl::reg::mutual_information_cuda>(
                 from,from_vs,to,to_vs,arg,reg_type,[&](void){return terminated;},
                 precision,false,tipl::reg::narrow_bound,10);
