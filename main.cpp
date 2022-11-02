@@ -308,15 +308,15 @@ int run_action_with_wildcard(program_option& po)
     }
     return 0;
 }
-bool check_cuda(std::string& error_msg);
+void check_cuda(std::string& error_msg);
 bool has_cuda = false;
-
+int gpu_count = 0;
 void init_cuda(void)
 {
     if constexpr(tipl::use_cuda)
     {
         std::string cuda_msg;
-        has_cuda = check_cuda(cuda_msg);
+        check_cuda(cuda_msg);
         if(!has_cuda)
             show_progress() << cuda_msg << std::endl;
     }
