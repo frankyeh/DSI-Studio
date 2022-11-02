@@ -41,7 +41,9 @@ private:
                     line += "\033[0m";
                 }
             }
-            std::cout << head + line  << std::endl;
+            if(!tipl::is_main_thread<0>())
+                head += "[thread]";
+            std::cout << head + line << std::endl;
             head_node = false;
         }
     }
