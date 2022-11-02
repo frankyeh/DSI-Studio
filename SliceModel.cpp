@@ -375,6 +375,16 @@ bool CustomSliceModel::initialize(const std::vector<std::string>& files,bool is_
             is_diffusion_space = true;
             has_transform = true;
         }
+        if(!has_transform && std::filesystem::exists(files[0]+".mapping.txt"))
+        {
+            show_progress() << "slice mapping file found." << std::endl;
+            if(!load_mapping((files[0]+".mapping.txt").c_str()))
+            {
+                show_progress() << "ERROR: invalid slice mapping file format" << std::endl;
+                return false;
+            }
+            has_transform = true;
+        }
     }
 
     // bruker images
@@ -554,6 +564,9 @@ bool CustomSliceModel::load_mapping(const char* file_name)
 {
     if(!load_transform(file_name,T,arg_min))
         return false;
+    show_progress() << "read slice registration matrix from " << file_name << std::endl;
+    show_progress() << "T:" << T << std::endl;
+    show_progress() << "arg_min:" << arg_min << std::endl;
     update_transform();
     return true;
 }
