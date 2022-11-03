@@ -530,13 +530,10 @@ bool save_transform(const char* file_name,const tipl::matrix<4,4>& T,
         }
         out << std::endl;
     }
-    for(uint32_t i = 0;i < 12;++i)
-    {
-        if(i)
-            out << " ";
-        out << argmin.data[i];
-    }
+    std::copy(argmin.begin(),argmin.end(),std::ostream_iterator<float>(out," "));
     out << std::endl;
+    show_progress() << "save transformation matrix" << std::endl;
+    show_progress() << argmin << std::endl;
     return true;
 }
 // ---------------------------------------------------------------------------
@@ -545,7 +542,7 @@ bool CustomSliceModel::save_mapping(const char* file_name)
     return save_transform(file_name,T,arg_min);
 }
 // ---------------------------------------------------------------------------
-bool load_transform(const char* file_name,tipl::matrix<4,4>& T,tipl::affine_transform<float>& arg_min)
+bool load_transform(const char* file_name,tipl::matrix<4,4>& T,tipl::affine_transform<float>& argmin)
 {
     std::ifstream in(file_name);
     if(!in)
@@ -556,7 +553,9 @@ bool load_transform(const char* file_name,tipl::matrix<4,4>& T,tipl::affine_tran
     if(data.size() != 28)
         return false;
     std::copy(data.begin(),data.begin()+16,T.begin());
-    std::copy(data.begin()+16,data.begin()+16+12,arg_min.data);
+    std::copy(data.begin()+16,data.begin()+16+12,argmin.data);
+    show_progress() << "load transformation matrix" << std::endl;
+    show_progress() << argmin << std::endl;
     return true;
 }
 // ---------------------------------------------------------------------------
