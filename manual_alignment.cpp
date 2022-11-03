@@ -478,28 +478,23 @@ void manual_alignment::on_files_clicked()
     ui->menu_File->popup(QCursor::pos());
 }
 
-bool save_transform(const char* file_name,const tipl::matrix<4,4>& T,
-                    const tipl::affine_transform<float>& argmin);
-
+bool save_transform(const char* file_name,const tipl::affine_transform<float>& argmin);
 void manual_alignment::on_actionSave_Transformation_triggered()
 {
     QString filename = QFileDialog::getSaveFileName(
             this,
-            "Save Mapping Matrix","mapping.txt",
+            "Save Linear Registration","linear_reg.txt",
             "Text files (*.txt);;All files (*)");
     if(filename.isEmpty())
         return;
-    tipl::matrix<4,4> T_;
-    T.save_to_transform(T_.begin());
-    if(!save_transform(filename.toStdString().c_str(),T_,arg))
-        QMessageBox::critical(this,"ERROR","Cannot save mapping file.");
+    if(!(std::ofstream(filename.toStdString().c_str()) << arg))
+        QMessageBox::critical(this,"ERROR","Cannot save file.");
 }
 
-bool load_transform(const char* file_name,tipl::matrix<4,4>& T,tipl::affine_transform<float>& arg_min);
 void manual_alignment::on_actionLoad_Transformation_triggered()
 {
     QString filename = QFileDialog::getOpenFileName(
-            this,"Open Mapping Matrix","mapping.txt",
+            this,"Open Linear Registration","linear_reg.txt",
                 "Text files (*.txt);;All files (*)");
     if(filename.isEmpty())
         return;
@@ -508,10 +503,9 @@ void manual_alignment::on_actionLoad_Transformation_triggered()
         thread.terminated = true;
         thread.wait();
     }
-    tipl::matrix<4,4> T;
-    if(!load_transform(filename.toStdString().c_str(),T,arg))
+    if(!(std::ifstream(filename.toStdString().c_str()) >> arg))
     {
-        QMessageBox::critical(this,"ERROR","Invalid mapping file.");
+        QMessageBox::critical(this,"ERROR","Invalid linear registration file.");
         return;
     }
     update_image();
