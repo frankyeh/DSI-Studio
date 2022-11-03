@@ -1770,7 +1770,7 @@ void tracking_window::on_actionSave_mapping_triggered()
         return;
     QString filename = QFileDialog::getSaveFileName(
             this,
-            "Save Mapping Matrix",QString(reg_slice->source_file_name.c_str())+".mapping.txt",
+            "Save Linear Registration",QString(reg_slice->source_file_name.c_str())+".linear_reg.txt",
             "Text files (*.txt);;All files (*)");
     if(filename.isEmpty())
         return;
@@ -1786,14 +1786,14 @@ void tracking_window::on_actionLoad_mapping_triggered()
     if(!reg_slice)
         return;
     QString filename = QFileDialog::getOpenFileName(
-            this,"Open Mapping Matrix",QString(reg_slice->source_file_name.c_str())+".mapping.txt",
+            this,"Open Linear Registration",QString(reg_slice->source_file_name.c_str())+".linear_reg.txt",
                 "Text files (*.txt);;All files (*)");
     if(filename.isEmpty())
         return;
     reg_slice->terminate();
     if(!reg_slice->load_mapping(filename.toLocal8Bit().begin()))
     {
-        QMessageBox::critical(this,"ERROR","Invalid mapping file.");
+        QMessageBox::critical(this,"ERROR","Invalid linear registration file.");
         return;
     }
     glWidget->update();
@@ -1898,7 +1898,7 @@ bool tracking_window::addSlices(QStringList filenames,QString name,bool cmd)
         if(!cmd)
             QMessageBox::critical(this,"ERROR",reg_slice_ptr->error_msg.c_str());
         else
-            show_progress() << reg_slice_ptr->error_msg << std::endl;
+            show_progress() << "ERROR:" << reg_slice_ptr->error_msg << std::endl;
         return false;
     }
     slices.push_back(new_slice);
