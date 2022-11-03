@@ -499,12 +499,15 @@ bool load_transform(const char* file_name,tipl::matrix<4,4>& T,tipl::affine_tran
 void manual_alignment::on_actionLoad_Transformation_triggered()
 {
     QString filename = QFileDialog::getOpenFileName(
-            this,"Open Mapping Matrix",".mapping.txt",
+            this,"Open Mapping Matrix","mapping.txt",
                 "Text files (*.txt);;All files (*)");
     if(filename.isEmpty())
         return;
-    thread.terminated = true;
-    thread.wait();
+    if(thread.running)
+    {
+        thread.terminated = true;
+        thread.wait();
+    }
     tipl::matrix<4,4> T;
     if(!load_transform(filename.toStdString().c_str(),T,arg))
     {
