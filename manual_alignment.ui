@@ -33,10 +33,10 @@
        <string>&amp;File</string>
       </property>
       <addaction name="actionLoad_Transformation"/>
-      <addaction name="actionApply_Transformation"/>
+      <addaction name="actionSave_Transformation"/>
       <addaction name="separator"/>
       <addaction name="actionSave_Warpped_Image"/>
-      <addaction name="actionSave_Transformation"/>
+      <addaction name="actionApply_Transformation"/>
      </widget>
      <widget class="QMenu" name="menu_Edit">
       <property name="title">
@@ -856,7 +856,7 @@
      <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
    </property>
    <property name="text">
-    <string>Save Transformation Matrix...</string>
+    <string>Save Registration...</string>
    </property>
   </action>
   <action name="actionLoad_Transformation">
@@ -865,7 +865,7 @@
      <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
    </property>
    <property name="text">
-    <string>Load Transformation...</string>
+    <string>Load Registration...</string>
    </property>
   </action>
   <action name="actionApply_Transformation">
@@ -874,7 +874,7 @@
      <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
    </property>
    <property name="text">
-    <string>Apply Transformation...</string>
+    <string>Apply Registration to Other Image...</string>
    </property>
   </action>
   <action name="actionSmooth_Signals">
