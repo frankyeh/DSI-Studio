@@ -141,6 +141,9 @@ bool CustomSliceModel::initialize(const std::vector<std::string>& files,bool is_
     bool has_transform = false;
     source_file_name = files[0].c_str();
     name = QFileInfo(files[0].c_str()).baseName().toStdString();
+    T.identity();
+    invT.identity();
+
 
     // picture as slice
     if(QFileInfo(files[0].c_str()).suffix() == "bmp" ||
@@ -180,7 +183,6 @@ bool CustomSliceModel::initialize(const std::vector<std::string>& files,bool is_
             vs = handle->vs*(handle->dim.width())/(source_images.width());
 
             tipl::transformation_matrix<float> M(arg_min,handle->dim,handle->vs,source_images.shape(),vs);
-            invT.identity();
             M.save_to_transform(invT.begin());
             T = tipl::inverse(invT);
             has_transform = true;
@@ -332,8 +334,6 @@ bool CustomSliceModel::initialize(const std::vector<std::string>& files,bool is_
             error_msg = handle->error_msg;
             return false;
         }
-        T.identity();
-        invT.identity();
         is_diffusion_space = true;
         has_transform = true;
     }
@@ -370,19 +370,7 @@ bool CustomSliceModel::initialize(const std::vector<std::string>& files,bool is_
                 error_msg = handle->error_msg;
                 return false;
             }
-            T.identity();
-            invT.identity();
             is_diffusion_space = true;
-            has_transform = true;
-        }
-        if(!has_transform && std::filesystem::exists(files[0]+".mapping.txt"))
-        {
-            show_progress() << "slice mapping file found." << std::endl;
-            if(!load_mapping((files[0]+".mapping.txt").c_str()))
-            {
-                show_progress() << "ERROR: invalid slice mapping file format" << std::endl;
-                return false;
-            }
             has_transform = true;
         }
     }
@@ -435,20 +423,15 @@ bool CustomSliceModel::initialize(const std::vector<std::string>& files,bool is_
     }
 
 
-
     if(source_images.shape() == handle->dim && !has_transform && handle->is_mni)
     {
-        show_progress() << "same dimension, no registration required." << std::endl;
-        T.identity();
-        invT.identity();
+        show_progress() << "same dimension as DWI, no registration required." << std::endl;
         is_diffusion_space = true;
         has_transform = true;
     }
 
     if(!has_transform && handle->dim.depth() < 10) // 2d assume FOV is the same
     {
-        T.identity();
-        invT.identity();
         invT[0] = float(source_images.width())/float(handle->dim.width());
         invT[5] = float(source_images.height())/float(handle->dim.height());
         invT[10] = float(source_images.depth())/float(handle->dim.depth());
@@ -457,19 +440,28 @@ bool CustomSliceModel::initialize(const std::vector<std::string>& files,bool is_
         has_transform = true;
     }
 
-    // handle registration
+    if(!has_transform && std::filesystem::exists(files[0]+".linear_reg.txt"))
     {
-        if(!has_transform)
+        show_progress() << "loading existing linear registration." << std::endl;
+        if(!(load_mapping((files[0]+".linear_reg.txt").c_str())))
         {
-            progress::show("running slice registration...");
-            thread.reset(new std::thread([this](){argmin(tipl::reg::rigid_body);}));
-            std::this_thread::sleep_for(std::chrono::seconds(1));
+            show_progress() << "ERROR: invalid slice mapping file format" << std::endl;
+            return false;
         }
-        else
-        {
-            handle->view_item.back().T = T;
-            handle->view_item.back().iT = invT;
-        }
+        has_transform = true;
+    }
+
+    // handle registration
+    if(!has_transform)
+    {
+        show_progress() << "running slice registration..." << std::endl;
+        thread.reset(new std::thread([this](){argmin(tipl::reg::rigid_body);}));
+        std::this_thread::sleep_for(std::chrono::seconds(1));
+    }
+    else
+    {
+        handle->view_item.back().T = T;
+        handle->view_item.back().iT = invT;
     }
     return true;
 }
@@ -487,8 +479,11 @@ void CustomSliceModel::update_transform(void)
     T.identity();
     M.save_to_transform(T.begin());
     invT = tipl::inverse(T);
-    handle->view_item[view_id].T = T;
-    handle->view_item[view_id].iT = invT;
+    if(view_id)
+    {
+        handle->view_item[view_id].T = T;
+        handle->view_item[view_id].iT = invT;
+    }
 }
 // ---------------------------------------------------------------------------
 void CustomSliceModel::argmin(tipl::reg::reg_type reg_type)
@@ -514,59 +509,19 @@ void CustomSliceModel::argmin(tipl::reg::reg_type reg_type)
     running = false;
 }
 // ---------------------------------------------------------------------------
-bool save_transform(const char* file_name,const tipl::matrix<4,4>& T,
-                    const tipl::affine_transform<float>& argmin)
-{
-    std::ofstream out(file_name);
-    if(!out)
-        return false;
-    for(uint32_t row = 0,index = 0;row < 4;++row)
-    {
-        for(uint32_t col = 0;col < 4;++col,++index)
-        {
-            if(col)
-                out << " ";
-            out << T[index];
-        }
-        out << std::endl;
-    }
-    std::copy(argmin.begin(),argmin.end(),std::ostream_iterator<float>(out," "));
-    out << std::endl;
-    show_progress() << "save transformation matrix" << std::endl;
-    show_progress() << argmin << std::endl;
-    return true;
-}
-// ---------------------------------------------------------------------------
 bool CustomSliceModel::save_mapping(const char* file_name)
 {
-    return save_transform(file_name,T,arg_min);
-}
-// ---------------------------------------------------------------------------
-bool load_transform(const char* file_name,tipl::matrix<4,4>& T,tipl::affine_transform<float>& argmin)
-{
-    std::ifstream in(file_name);
-    if(!in)
-        return false;
-    std::vector<float> data;
-    std::copy(std::istream_iterator<float>(in),
-              std::istream_iterator<float>(),std::back_inserter(data));
-    if(data.size() != 28)
-        return false;
-    std::copy(data.begin(),data.begin()+16,T.begin());
-    std::copy(data.begin()+16,data.begin()+16+12,argmin.data);
-    show_progress() << "load transformation matrix" << std::endl;
-    show_progress() << argmin << std::endl;
-    return true;
+    return !!(std::ofstream(file_name) << arg_min);
 }
 // ---------------------------------------------------------------------------
 bool CustomSliceModel::load_mapping(const char* file_name)
 {
-    if(!load_transform(file_name,T,arg_min))
+    if(!(std::ifstream(file_name) >> arg_min))
         return false;
-    show_progress() << "read slice registration matrix from " << file_name << std::endl;
-    show_progress() << "T:" << T << std::endl;
-    show_progress() << "arg_min:" << arg_min << std::endl;
     update_transform();
+    is_diffusion_space = false;
+    show_progress() << arg_min << std::endl;
+    show_progress() << "T:" << T << std::endl;
     return true;
 }
 
