@@ -41,13 +41,12 @@ int rec(program_option& po)
         src.voxel.param[0] = po.get("param0",src.voxel.param[0]);
         src.voxel.param[1] = po.get("param1",src.voxel.param[1]);
         src.voxel.param[2] = po.get("param2",src.voxel.param[2]);
-
+        src.voxel.template_id = size_t(po.get("template",src.voxel.template_id));
         if(src.voxel.method_id == 7) // is qsdr
         {
             for(size_t id = 0;id < fa_template_list.size();++id)
                 show_progress() << "template " << id << ":" << std::filesystem::path(fa_template_list[id]).stem() << std::endl;
             src.voxel.qsdr_reso = po.get("qsdr_reso",src.voxel.vs[2]);
-            src.voxel.template_id = size_t(po.get("template",src.voxel.template_id));
         }
     }
     {
