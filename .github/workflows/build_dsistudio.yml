@@ -12,7 +12,7 @@ on:
         default: '2022.08.03 "Chen" Release'
 jobs:
   build_prerelease:
-    runs-on: ubuntu-2004    
+    runs-on: ubuntu-20.04    
     steps:
     - name: Checkout
       uses: actions/checkout@v2.5.0
@@ -40,7 +40,7 @@ jobs:
         
   test_animal_recon:
     needs: build_prerelease
-    runs-on: ubuntu-2004
+    runs-on: ubuntu-20.04
     steps:
     - name: Setup Environment
       run: |
@@ -58,7 +58,7 @@ jobs:
     
   test_human_recon:
     needs: build_prerelease
-    runs-on: ubuntu-2004
+    runs-on: ubuntu-20.04
     steps:
     - name: Setup Environment
       run: |
@@ -84,7 +84,7 @@ jobs:
         
   test_human_tracking_qsdr:
     needs: build_prerelease
-    runs-on: ubuntu-2004
+    runs-on: ubuntu-20.04
     steps:
     - name: Setup Environment
       run: |
@@ -114,7 +114,7 @@ jobs:
 
   test_human_tracking_gqi:
     needs: build_prerelease
-    runs-on: ubuntu-2004
+    runs-on: ubuntu-20.04
     steps:
     - name: Setup Environment
       run: |
@@ -147,7 +147,7 @@ jobs:
         ls dt.tt.gz
   test_export_registration:
     needs: build_prerelease
-    runs-on: ubuntu-2004
+    runs-on: ubuntu-20.04
     steps:
     - name: Setup Environment
       run: |
@@ -171,7 +171,7 @@ jobs:
 
   test_connectometry:
     needs: build_prerelease
-    runs-on: ubuntu-2004
+    runs-on: ubuntu-20.04
     steps:
     - name: Setup Environment
       run: |
@@ -187,7 +187,7 @@ jobs:
         
   test_automatic_tracking:
     needs: build_prerelease
-    runs-on: ubuntu-2004
+    runs-on: ubuntu-20.04
     steps:
     - name: Setup Environment
       run: |
@@ -202,7 +202,7 @@ jobs:
         
   test_src_construction:
     needs: build_prerelease
-    runs-on: ubuntu-2004
+    runs-on: ubuntu-20.04
     steps:
     - name: Setup Environment
       run: |
@@ -219,7 +219,7 @@ jobs:
       matrix:
         os: [ubuntu_2204,ubuntu_1804,ubuntu_1604,centos7]
       fail-fast: false
-    runs-on: ubuntu-2004
+    runs-on: ubuntu-20.04
     steps:
     - name: Checkout
       uses: actions/checkout@v2.5.0
@@ -388,7 +388,7 @@ jobs:
 
   docker_build:
     needs: [test_animal_recon, test_human_tracking_qsdr, test_human_tracking_gqi, test_connectometry]
-    runs-on: ubuntu-2004
+    runs-on: ubuntu-20.04
     steps:
     - name: Checkout
       uses: actions/checkout@v2.5.0
