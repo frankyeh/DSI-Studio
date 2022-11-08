@@ -12,7 +12,7 @@ on:
         default: '2022.08.03 "Chen" Release'
 jobs:
   build_prerelease:
-    runs-on: ubuntu-2204    
+    runs-on: ubuntu-2004    
     steps:
     - name: Checkout
       uses: actions/checkout@v2.5.0
@@ -28,7 +28,7 @@ jobs:
         outputs: dsi-studio
     - name: Packaging
       run: |
-        zip -r dsi_studio_ubuntu_2204.zip dsi-studio
+        zip -r dsi_studio_ubuntu_2004.zip dsi-studio
     - name: Create Release
       uses: ncipollo/release-action@v1.8.9
       with:
@@ -40,11 +40,11 @@ jobs:
         
   test_animal_recon:
     needs: build_prerelease
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-2004
     steps:
     - name: Setup Environment
       run: |
-        curl -sL "https://github.com/frankyeh/DSI-Studio/releases/download/2022.08.03/dsi_studio_ubuntu_2204.zip" | jar x
+        curl -sL "https://github.com/frankyeh/DSI-Studio/releases/download/2022.08.03/dsi_studio_ubuntu_2004.zip" | jar x
         curl -sL https://zenodo.org/record/6321169/files/mountsinai-S-sub-032156_dwi.src.gz?download=1 -o Rhesus.src.gz
         chmod 777 ./dsi-studio/dsi_studio
     - name: Test DTI/GQI Recon
@@ -58,11 +58,11 @@ jobs:
     
   test_human_recon:
     needs: build_prerelease
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-2004
     steps:
     - name: Setup Environment
       run: |
-        curl -sL "https://github.com/frankyeh/DSI-Studio/releases/download/2022.08.03/dsi_studio_ubuntu_2204.zip" | jar x
+        curl -sL "https://github.com/frankyeh/DSI-Studio/releases/download/2022.08.03/dsi_studio_ubuntu_2004.zip" | jar x
         curl -sL https://zenodo.org/record/6320992/files/20081006_M025Y_DSI_203.src.gz?download=1 -o DSI.src.gz
         curl -sL https://zenodo.org/record/6320992/files/20081006_M025Y_DTI64.src.gz?download=1 -o DTI.src.gz
         curl -sL https://zenodo.org/record/6320992/files/20081006_M025Y_HARDI.src.gz?download=1 -o HARDI.src.gz
@@ -84,11 +84,11 @@ jobs:
         
   test_human_tracking_qsdr:
     needs: build_prerelease
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-2004
     steps:
     - name: Setup Environment
       run: |
-        curl -sL "https://github.com/frankyeh/DSI-Studio/releases/download/2022.08.03/dsi_studio_ubuntu_2204.zip" | jar x
+        curl -sL "https://github.com/frankyeh/DSI-Studio/releases/download/2022.08.03/dsi_studio_ubuntu_2004.zip" | jar x
         curl -sL https://github.com/frankyeh/DSI-Studio-atlas/blob/main/ICBM152_adult/ICBM152_adult.fib.gz?raw=true -o ICBM152_adult.fib.gz
         chmod 777 ./dsi-studio/dsi_studio
     - name: Tracking
@@ -114,11 +114,11 @@ jobs:
 
   test_human_tracking_gqi:
     needs: build_prerelease
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-2004
     steps:
     - name: Setup Environment
       run: |
-        curl -sL "https://github.com/frankyeh/DSI-Studio/releases/download/2022.08.03/dsi_studio_ubuntu_2204.zip" | jar x
+        curl -sL "https://github.com/frankyeh/DSI-Studio/releases/download/2022.08.03/dsi_studio_ubuntu_2004.zip" | jar x
         curl -sL https://zenodo.org/record/6307812/files/100206.src.gz.gqi.1.7.fib.gz?download=1 -o 100206.fib.gz
         curl -sL https://github.com/frankyeh/DSI-Studio-atlas/blob/main/ICBM152_adult/ICBM152_adult.QA.nii.gz?raw=true -o template_qa.nii.gz
         chmod 777 ./dsi-studio/dsi_studio
@@ -147,11 +147,11 @@ jobs:
         ls dt.tt.gz
   test_export_registration:
     needs: build_prerelease
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-2004
     steps:
     - name: Setup Environment
       run: |
-        curl -sL "https://github.com/frankyeh/DSI-Studio/releases/download/2022.08.03/dsi_studio_ubuntu_2204.zip" | jar x
+        curl -sL "https://github.com/frankyeh/DSI-Studio/releases/download/2022.08.03/dsi_studio_ubuntu_2004.zip" | jar x
         curl -sL https://zenodo.org/record/6307812/files/100206.src.gz.gqi.1.7.fib.gz?download=1 -o 100206.fib.gz
         chmod 777 ./dsi-studio/dsi_studio
     - name: Export
@@ -171,11 +171,11 @@ jobs:
 
   test_connectometry:
     needs: build_prerelease
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-2004
     steps:
     - name: Setup Environment
       run: |
-        curl -sL "https://github.com/frankyeh/DSI-Studio/releases/download/2022.08.03/dsi_studio_ubuntu_2204.zip" | jar x
+        curl -sL "https://github.com/frankyeh/DSI-Studio/releases/download/2022.08.03/dsi_studio_ubuntu_2004.zip" | jar x
         curl -sL https://zenodo.org/record/6324701/files/CMU60.db.fib.gz?download=1 -o CMU60.db.fib.gz
         curl -sL https://zenodo.org/record/6324701/files/CMU60.demo.csv?download=1 -o CMU60.demo.csv
         chmod 777 ./dsi-studio/dsi_studio
@@ -187,11 +187,11 @@ jobs:
         
   test_automatic_tracking:
     needs: build_prerelease
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-2004
     steps:
     - name: Setup Environment
       run: |
-        curl -sL "https://github.com/frankyeh/DSI-Studio/releases/download/2022.08.03/dsi_studio_ubuntu_2204.zip" | jar x
+        curl -sL "https://github.com/frankyeh/DSI-Studio/releases/download/2022.08.03/dsi_studio_ubuntu_2004.zip" | jar x
         curl -sL https://zenodo.org/record/6307812/files/100206.src.gz.gqi.1.7.fib.gz?download=1 -o 100206.fib.gz
         curl -sL https://zenodo.org/record/6307812/files/100307.src.gz.gqi.1.7.fib.gz?download=1 -o 100307.fib.gz
         chmod 777 ./dsi-studio/dsi_studio
@@ -202,11 +202,11 @@ jobs:
         
   test_src_construction:
     needs: build_prerelease
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-2004
     steps:
     - name: Setup Environment
       run: |
-        curl -sL "https://github.com/frankyeh/DSI-Studio/releases/download/2022.08.03/dsi_studio_ubuntu_2204.zip" | jar x
+        curl -sL "https://github.com/frankyeh/DSI-Studio/releases/download/2022.08.03/dsi_studio_ubuntu_2004.zip" | jar x
         chmod 777 ./dsi-studio/dsi_studio
     - name: Test GQI Recon
       run: |
@@ -217,9 +217,9 @@ jobs:
     needs: [test_animal_recon, test_human_tracking_qsdr, test_human_tracking_gqi, test_connectometry]
     strategy:
       matrix:
-        os: [ubuntu_2004,ubuntu_1804,ubuntu_1604,centos7]
+        os: [ubuntu_2204,ubuntu_1804,ubuntu_1604,centos7]
       fail-fast: false
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-2004
     steps:
     - name: Checkout
       uses: actions/checkout@v2.5.0
@@ -388,7 +388,7 @@ jobs:
 
   docker_build:
     needs: [test_animal_recon, test_human_tracking_qsdr, test_human_tracking_gqi, test_connectometry]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-2004
     steps:
     - name: Checkout
       uses: actions/checkout@v2.5.0
