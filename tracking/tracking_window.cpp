@@ -424,8 +424,6 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         connect(ui->actionOpen_Cluster_Colors,SIGNAL(triggered()),tractWidget,SLOT(open_cluster_color()));
         connect(ui->actionSave_Cluster_Colors,SIGNAL(triggered()),tractWidget,SLOT(save_cluster_color()));
 
-
-
         connect(ui->actionUndo,SIGNAL(triggered()),tractWidget,SLOT(undo_tracts()));
         connect(ui->actionRedo,SIGNAL(triggered()),tractWidget,SLOT(redo_tracts()));
         connect(ui->actionTrim,SIGNAL(triggered()),tractWidget,SLOT(trim_tracts()));
@@ -457,14 +455,11 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         connect(ui->actionSave_Tract_in_MNI_Coordinates,SIGNAL(triggered()),tractWidget,SLOT(save_tracts_in_mni()));
         connect(ui->actionSave_Endpoints_in_MNI_Coordinates,SIGNAL(triggered()),tractWidget,SLOT(save_end_point_in_mni()));
 
-
-        connect(ui->actionDeep_Learning_Train,SIGNAL(triggered()),tractWidget,SLOT(deep_learning_train()));
         connect(ui->actionStatistics,SIGNAL(triggered()),tractWidget,SLOT(show_tracts_statistics()));
         connect(ui->actionRecognize_Current_Tract,SIGNAL(triggered()),tractWidget,SLOT(recog_tracks()));
 
         connect(ui->track_up,SIGNAL(clicked()),tractWidget,SLOT(move_up()));
         connect(ui->track_down,SIGNAL(clicked()),tractWidget,SLOT(move_down()));
-
 
 
 
@@ -2349,13 +2344,43 @@ void tracking_window::on_actionMark_Region_on_T1W_T2W_triggered()
     glWidget->update();
 }
 
-void paint_track_on_volume(tipl::image<3,unsigned char>& track_map,const std::vector<float>& tracks);
+void paint_track_on_volume(tipl::image<3,unsigned char>& track_map,const std::vector<std::vector<float> >& all_tracts,SliceModel* slice)
+{
+    tipl::par_for(all_tracts.size(),[&](unsigned int i)
+    {
+        auto tracks = all_tracts[i];
+        for(size_t k = 0;k < tracks.size();k +=3)
+        {
+            tipl::vector<3> p(&tracks[0] + k);
+            p.to(slice->invT);
+            tracks[k] = p[0];
+            tracks[k+1] = p[1];
+            tracks[k+2] = p[2];
+        }
+        for(size_t j = 0;j < tracks.size();j += 3)
+        {
+            tipl::pixel_index<3> p(std::round(tracks[j]),std::round(tracks[j+1]),std::round(tracks[j+2]),track_map.shape());
+            if(track_map.shape().is_valid(p))
+                track_map[p.index()] = 1;
+            if(j)
+            {
+                for(float r = 0.2f;r < 1.0f;r += 0.2f)
+                {
+                    tipl::pixel_index<3> p2(std::round(tracks[j]*r+tracks[j-3]*(1-r)),
+                                             std::round(tracks[j+1]*r+tracks[j-2]*(1-r)),
+                                             std::round(tracks[j+2]*r+tracks[j-1]*(1-r)),track_map.shape());
+                    if(track_map.shape().is_valid(p2))
+                        track_map[p2.index()] = 1;
+                }
+            }
+        }
+    });
+}
+
 void tracking_window::on_actionMark_Tracts_on_T1W_T2W_triggered()
 {
     CustomSliceModel* slice = dynamic_cast<CustomSliceModel*>(current_slice.get());
-    if(!slice || slice->source_images.empty())
-        return;
-    if(tractWidget->tract_models.empty())
+    if(!slice || slice->source_images.empty() || tractWidget->tract_models.empty())
         return;
     bool ok = true;
     double ratio = QInputDialog::getDouble(this,"DSI Studio",
@@ -2363,22 +2388,8 @@ void tracking_window::on_actionMark_Tracts_on_T1W_T2W_triggered()
     if(!ok)
         return;
     tipl::image<3,unsigned char> t_mask(slice->source_images.shape());
-    auto checked_tracks = tractWidget->get_checked_tracks();
-    tipl::par_for(checked_tracks.size(),[&](size_t i){
-        for(size_t j = 0;j < checked_tracks[i]->get_visible_track_count();++j)
-        {
-            std::vector<float> tracks = checked_tracks[i]->get_tract(j);
-            for(size_t k = 0;k < tracks.size();k +=3)
-            {
-                tipl::vector<3> p(&tracks[0] + k);
-                p.to(slice->invT);
-                tracks[k] = p[0];
-                tracks[k+1] = p[1];
-                tracks[k+2] = p[2];
-            }
-            paint_track_on_volume(t_mask,tracks);
-        }
-    });
+    for(auto checked_tracks : tractWidget->get_checked_tracks())
+        paint_track_on_volume(t_mask,checked_tracks->get_tracts(),slice);
     float mark_value = slice->get_value_range().second*float(ratio);
     for(size_t i = 0;i < t_mask.size();++i)
         if(t_mask[i])
