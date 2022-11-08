@@ -138,7 +138,6 @@ public slots:
     void save_transformed_endpoints(void);
 
 
-    void deep_learning_train(void);
     void merge_all(void);
     void copy_track(void);
     void separate_deleted_track(void);
