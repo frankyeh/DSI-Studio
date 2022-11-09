@@ -1,10 +1,4 @@
-FROM juangburgos/jenkins-centos7-qt5.13.2 as builder-stage
-
-RUN yum -y install centos-release-scl \
-  && yum -y install devtoolset-9-gcc*
-
-RUN yum -y install zlib-devel
-RUN yum -y install freeglut-devel
+FROM dsistudio/centos7_qt5 as builder-stage
 
 SHELL [ "/usr/bin/scl", "enable", "devtoolset-9"]
 RUN gcc --version
