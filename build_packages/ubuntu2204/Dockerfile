@@ -1,27 +1,6 @@
-FROM ubuntu:22.04 as builder-stage
+FROM dsistudio/ubuntu2204_qt6:latest as builder-stage
 
 ENV DEBIAN_FRONTEND noninteractive
-
-# Prepare environment
-RUN apt update && apt upgrade -y && \
-  apt install -y \
-  unzip \
-  curl \
-  cmake \
-  ninja-build \
-  git \
-  zlib1g-dev \
-  libglu1-mesa-dev \
-  qt6-base-dev \
-  libqt6charts6-dev \
-  libqt6opengl6-dev \
-  qt6-image-formats-plugins \
-#  nvidia-cuda-toolkit \
-#  nvidia-cuda-dev \
-#  nvidia-cuda-toolkit-gcc \
-  gcc \
-  g++ && \
-  apt-get -y autoremove --purge && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 ADD "https://api.github.com/repos/frankyeh/DSI-Studio/commits?per_page=1" latest_commit
 ADD "https://api.github.com/repos/frankyeh/TIPL/commits?per_page=1" latest_commit
