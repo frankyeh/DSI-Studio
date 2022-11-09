@@ -24,7 +24,7 @@ jobs:
       uses: docker/build-push-action@v3.2.0
       with:
         context: .
-        file: build_packages/ubuntu_2004/Dockerfile
+        file: build_packages/ubuntu2004/Dockerfile
         outputs: dsi-studio
     - name: Packaging
       run: |
