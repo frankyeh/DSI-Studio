@@ -29,6 +29,6 @@ jobs:
         file: build_packages/centos7/Dockerfile_centos7_qt5
         push: true
         tags: |
-          dsistudio/dsistudio:centos7_qt5
+          dsistudio/centos7_qt5:latest
 
 
