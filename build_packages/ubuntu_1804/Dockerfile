@@ -3,9 +3,10 @@ FROM ubuntu:18.04 as builder-stage
 ENV DEBIAN_FRONTEND noninteractive
 
 # Prepare environment
-# We use a ppa for the qt because 18.04 is tool old for DSI
+# We use a ppa for the qt because 18.04 is too old for DSI
 RUN apt update && apt full-upgrade -y && \
   apt install --no-install-recommends -y software-properties-common && \
+  add-apt-repository -y ppa:beineri/opt-qt-5.12.8-bionic && \
   add-apt-repository -y ppa:ubuntu-toolchain-r/test && \
   apt install -y --no-install-recommends \
   unzip \
@@ -14,10 +15,8 @@ RUN apt update && apt full-upgrade -y && \
   git \
   zlib1g-dev \
   ca-certificates \
-  qt5-qmake \
-  qt5-default \
-  libqt5charts5-dev \
-  libqt5opengl5-dev \
+  qt512base \
+  qt512charts-no-lgpl \
   mesa-common-dev \
   libglu1-mesa-dev \
   gcc-9 \
