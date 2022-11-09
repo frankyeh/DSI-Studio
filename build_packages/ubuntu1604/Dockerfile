@@ -1,4 +1,5 @@
-FROM ubuntu:16.04 as builder-stage
+FROM dsistudio/ubuntu1604_qt5:latest as builder-stage
+
 ENV DEBIAN_FRONTEND noninteractive
 
 # Install DSI Studio
