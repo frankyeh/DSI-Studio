@@ -1,8 +1,7 @@
 FROM ubuntu:16.04 as builder-stage
 ENV DEBIAN_FRONTEND noninteractive
 # Prepare environment
-RUN add-apt-repository ppa:beineri/opt-qt-5.12.2-xenial && \
-    apt-get update && \
+RUN apt-get update && \
     apt-get install -y --no-install-recommends \
                     curl \
                     ca-certificates \
@@ -40,6 +39,7 @@ RUN add-apt-repository ppa:beineri/opt-qt-5.12.2-xenial && \
 # update to g++9
 
 RUN add-apt-repository ppa:ubuntu-toolchain-r/test  \
+    && add-apt-repository ppa:beineri/opt-qt-5.12.2-xenial \
     && apt-get update \
     && apt install -y --no-install-recommends \
 		g++-9 \
