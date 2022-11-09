@@ -217,7 +217,7 @@ jobs:
     needs: [test_animal_recon, test_human_tracking_qsdr, test_human_tracking_gqi, test_connectometry]
     strategy:
       matrix:
-        os: [ubuntu_2204,ubuntu_1804,ubuntu_1604,centos7]
+        os: [ubuntu2204,ubuntu1804,ubuntu1604,centos7]
       fail-fast: false
     runs-on: ubuntu-20.04
     steps:
