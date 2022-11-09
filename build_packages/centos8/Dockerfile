@@ -1,6 +1,6 @@
 FROM roboxes/centos8 as builder-stage
 
-RUN yum -y install qt*
+RUN yum -y install qt
 
 RUN yum -y install centos-release-scl 
 RUN yum -y install devtoolset-9-gcc*
