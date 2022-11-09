@@ -1,7 +1,8 @@
 FROM ubuntu:16.04 as builder-stage
 ENV DEBIAN_FRONTEND noninteractive
 # Prepare environment
-RUN apt-get update && \
+RUN add-apt-repository ppa:beineri/opt-qt-5.12.2-xenial && \
+    apt-get update && \
     apt-get install -y --no-install-recommends \
                     curl \
                     ca-certificates \
@@ -56,11 +57,10 @@ RUN g++ --version
 RUN apt-get update \
     && apt install -y --no-install-recommends \
     freetds-common libclang1-5.0 libllvm5.0 libodbc1 libsdl2-2.0-0 libsndio6.1 \
-    libsybdb5 libxcb-xinerama0 \
-    qt5-qmake \
-    qt5-default \
-    libqt5charts5-dev \
-    libqt5opengl5-dev \
+    libsybdb5 libxcb-xinerama0 qt5123d qt512base qt512canvas3d \
+    qt512connectivity qt512declarative qt512graphicaleffects \
+    qt512imageformats qt512location qt512multimedia qt512scxml qt512svg \
+    qt512wayland qt512x11extras qt512xmlpatterns qt512charts-no-lgpl \
     && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 # Install DSI Studio
@@ -82,7 +82,7 @@ RUN mkdir /opt/dsi-studio \
   && git clone https://github.com/frankyeh/TIPL.git \
   && mv TIPL src/TIPL \
   && mkdir build && cd build \
-  && qmake ../src && make 
+  && /opt/qt512/bin/qmake ../src && make 
 
 RUN cd /opt/dsi-studio \
   && mv build/dsi_studio . \
