@@ -20,7 +20,6 @@ int src(program_option& po)
     if(std::filesystem::is_directory(source))
     {
         std::string error_msg;
-        show_progress() << "look for BIDS structure at " << source.c_str() << std::endl;
         if(nii2src_bids(source.c_str(),po.get("output",source).c_str(),error_msg))
             return 0;
         show_progress() << "load files in directory " << source.c_str() << std::endl;
