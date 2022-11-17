@@ -12,15 +12,12 @@ struct TractRenderParam{
     float tract_color_brightness = 0.0f;
     float tube_diameter = 0.0f;
 
-    unsigned char tract_alpha_style = 0;
     unsigned char tract_style = 0;
     unsigned char tract_color_style = 0;
     unsigned char tract_tube_detail = 0;
     unsigned char tract_shader = 0;
     unsigned char end_point_shift = 0;
 
-
-    float alpha;
     float tract_color_saturation_base;
     bool show_end_only;
     float tube_detail;
@@ -75,7 +72,7 @@ public:
     }
 public:
     void clear(void);
-    void add_tube(const tipl::vector<3>& v,const tipl::vector<3>& c,const tipl::vector<3>& n)
+    void add_tube(const tipl::vector<3>& v,const tipl::vector<3>& c,const tipl::vector<3>& n,float alpha)
     {
         tube_vertices.push_back(v[0]);
         tube_vertices.push_back(v[1]);
@@ -86,9 +83,10 @@ public:
         tube_vertices.push_back(c[0]);
         tube_vertices.push_back(c[1]);
         tube_vertices.push_back(c[2]);
+        tube_vertices.push_back(alpha);
         ++tube_vertices_count;
     }
-    void add_line(const tipl::vector<3>& v,const tipl::vector<3>& c)
+    void add_line(const tipl::vector<3>& v,const tipl::vector<3>& c,float alpha)
     {
         line_vertices.push_back(v[0]);
         line_vertices.push_back(v[1]);
@@ -96,6 +94,7 @@ public:
         line_vertices.push_back(c[0]);
         line_vertices.push_back(c[1]);
         line_vertices.push_back(c[2]);
+        line_vertices.push_back(alpha);
         ++line_vertices_count;
     }
     inline void end_tube_strip(void)
