@@ -175,7 +175,6 @@ public:
      float tract_color_brightness = 0.0f;
      float tube_diameter = 0.0f;
 
-     unsigned char tract_alpha_style = 0;
      unsigned char tract_style = 0;
      unsigned char tract_color_style = 0;
      unsigned char tract_tube_detail = 0;
