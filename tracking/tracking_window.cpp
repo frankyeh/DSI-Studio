@@ -523,7 +523,7 @@ tracking_window::~tracking_window()
             break;
         }
     tractWidget->stop_tracking();
-    tractWidget->delete_all_tract();
+    tractWidget->command("delete_all_tract");
     regionWidget->delete_all_region();
     qApp->removeEventFilter(this);
     QSettings settings;
