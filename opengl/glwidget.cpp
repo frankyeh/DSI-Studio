@@ -785,7 +785,6 @@ void GLWidget::renderLR()
             bool changed = false;
             while(
                check_change("tract_alpha",tract_alpha) ||
-               check_change("tract_alpha_style",tract_alpha_style) ||
                check_change("tract_style",tract_style) ||
                check_change("tract_color_style",tract_color_style) ||
                check_change("tract_color_saturation",tract_color_saturation) ||
@@ -799,18 +798,15 @@ void GLWidget::renderLR()
                 cur_tracking_window.tractWidget->need_update_all();
         }
 
+        glDepthMask(true);
         if(get_param_float("tract_alpha") != 1.0)
         {
             glEnable(GL_BLEND);
             glBlendFunc (BlendFunc1[get_param("tract_bend1")],
                          BlendFunc2[get_param("tract_bend2")]);
-            glDepthMask(tract_alpha_style);
         }
         else
-        {
             glDisable(GL_BLEND);
-            glDepthMask(true);
-        }
 
         cur_tracking_window.tractWidget->render_tracts(this);
 
