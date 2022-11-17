@@ -17,14 +17,12 @@ void TractRenderParam::init(GLWidget* glwidget,
     tract_color_brightness = glwidget->tract_color_brightness;
     tube_diameter = glwidget->tube_diameter;
 
-    tract_alpha_style = glwidget->tract_alpha_style;
     tract_style = glwidget->tract_style;
     tract_color_style = glwidget->tract_color_style;
     tract_tube_detail = glwidget->tract_tube_detail;
     tract_shader = glwidget->tract_shader;
     end_point_shift = glwidget->end_point_shift;
 
-    alpha = (tract_alpha_style == 0)? tract_alpha/2.0f:tract_alpha;
     tract_color_saturation_base = tract_color_brightness*(1.0f-tract_color_saturation);
     show_end_only = tract_style >= 2;
     tube_detail = tube_diameter*detail_option[tract_tube_detail]*4.0f;
@@ -165,7 +163,7 @@ void TractRenderData::add_tract(const TractRenderParam& param,
                     {
                         tipl::vector<3,float> cur_point = points[end_sequence[k]];
                         cur_point += shift;
-                        add_tube(cur_point,cur_color,-vec_n);
+                        add_tube(cur_point,cur_color,-vec_n,param.tract_alpha);
                     }
                     if(param.tract_style == 2)
                         end_tube_strip();
@@ -183,7 +181,7 @@ void TractRenderData::add_tract(const TractRenderParam& param,
                         {
                             tipl::vector<3,float> cur_point = points[end_sequence2[k]];
                             cur_point += shift;
-                            add_tube(cur_point,cur_color,vec_n);
+                            add_tube(cur_point,cur_color,vec_n,param.tract_alpha);
                         }
                     }
                 }
@@ -193,22 +191,22 @@ void TractRenderData::add_tract(const TractRenderParam& param,
             if (index == 0)
             {
                 for (unsigned int k = 0;k < 8;++k)
-                    add_tube(points[end_sequence[k]],cur_color,normals[end_sequence[k]]);
+                    add_tube(points[end_sequence[k]],cur_color,normals[end_sequence[k]],param.tract_alpha);
             }
             else
             {
-                add_tube(points[0],cur_color,normals[0]);
+                add_tube(points[0],cur_color,normals[0],param.tract_alpha);
                 for (unsigned int k = 1;k < 8;++k)
                 {
-                   add_tube(previous_points[k],previous_color,previous_normals[k]);
-                   add_tube(points[k],cur_color,normals[k]);
+                   add_tube(previous_points[k],previous_color,previous_normals[k],param.tract_alpha);
+                   add_tube(points[k],cur_color,normals[k],param.tract_alpha);
                 }
-                add_tube(points[0],cur_color,normals[0]);
+                add_tube(points[0],cur_color,normals[0],param.tract_alpha);
 
                 if(index +1 == vertex_count)
                 {
                     for (unsigned int k = 2;k < 8;++k) // skip 0 and 1 because the tubes have them
-                        add_tube(points[end_sequence2[k]],cur_color,normals[end_sequence2[k]]);
+                        add_tube(points[end_sequence2[k]],cur_color,normals[end_sequence2[k]],param.tract_alpha);
                 }
             }
         }
@@ -220,7 +218,7 @@ void TractRenderData::add_tract(const TractRenderParam& param,
         }
         else
         {
-            add_line(pos,cur_color);
+            add_line(pos,cur_color,param.tract_alpha);
         }
     }
     if(param.tract_style)
@@ -247,7 +245,7 @@ void TractRenderData::draw(GLWidget* glwidget)
         glEnableClientState(GL_VERTEX_ARRAY);
         glEnableClientState(GL_NORMAL_ARRAY);
         glEnableClientState(GL_COLOR_ARRAY);
-        GLsizei stride = 9*sizeof(float);
+        GLsizei stride = 10*sizeof(float); // 3 vectirces + 3 normal + 4 color
         glVertexPointer(3, GL_FLOAT, stride, &tube_vertices[0]);
         glNormalPointer(GL_FLOAT, stride, &tube_vertices[0]+3);
         glColorPointer(3, GL_FLOAT, stride, &tube_vertices[0]+6);
@@ -270,7 +268,7 @@ void TractRenderData::draw(GLWidget* glwidget)
     {
         glEnableClientState(GL_VERTEX_ARRAY);
         glEnableClientState(GL_COLOR_ARRAY);
-        GLsizei stride = 6*sizeof(float);
+        GLsizei stride = 7*sizeof(float); // 3 vectirces + 4 color
         glVertexPointer(3, GL_FLOAT, stride, &line_vertices[0]);
         glColorPointer(3, GL_FLOAT, stride, &line_vertices[0]+3);
         for(size_t i = 0;i < line_strip_size.size();++i)
