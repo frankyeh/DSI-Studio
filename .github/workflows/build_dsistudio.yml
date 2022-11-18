@@ -433,4 +433,7 @@ jobs:
     - name: Tracking
       run: |
         ./dsi_studio_win/dsi_studio --source=*.fib.gz --action=atk --track_id=Arcuate_Fasciculus_L
+    - name: Checking output
+      run: |
+        dir *
         dir ./Arcuate_Fasciculus_L/*Arcuate_Fasciculus_L.tt.gz
