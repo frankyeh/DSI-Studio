@@ -914,27 +914,35 @@ bool fib_data::load_from_mat(void)
         // matching templates
         matched_template_id = 0;
         for(size_t index = 0;index < fa_template_list.size();++index)
-        {
-            if(QString(fib_file_name.c_str()).contains(QFileInfo(fa_template_list[index].c_str()).baseName(),Qt::CaseInsensitive) ||
-               QString(fa_template_list[index].c_str()).contains(QFileInfo(fib_file_name.c_str()).baseName(),Qt::CaseInsensitive))
+            if(QString(fib_file_name.c_str()).contains(QFileInfo(fa_template_list[index].c_str()).baseName(),Qt::CaseInsensitive))
             {
                 matched_template_id = index;
-                break;
+                show_progress() << "matched template (by file name): " <<
+                                   QFileInfo(fa_template_list[index].c_str()).baseName().toStdString() << std::endl;
+                set_template_id(matched_template_id);
+                return true;
             }
+
+        for(size_t index = 0;index < fa_template_list.size();++index)
+        {
             gz_nifti read;
             if(!read.load_from_file(fa_template_list[index]))
                 continue;
             tipl::vector<3> Itvs;
-            tipl::image<3> dummy;
-            read.toLPS(dummy,true,false);
+            tipl::shape<3> Itdim;
+            read.get_image_dimension(Itdim);
             read.get_voxel_size(Itvs);
-            if(std::abs(dim[0]-read.nif_header.dim[1]*Itvs[0]/vs[0]) < 4.0f)
+            if(std::abs(dim[0]-Itdim[0]*Itvs[0]/vs[0]) < 4.0f)
             {
                 matched_template_id = index;
-                break;
+                show_progress() << "matched template (by image size): " <<
+                                   QFileInfo(fa_template_list[index].c_str()).baseName().toStdString() << std::endl;
+                set_template_id(matched_template_id);
+                return true;
             }
         }
-        show_progress() << "matched template: " << fa_template_list[matched_template_id] << std::endl;
+
+        show_progress() << "No matched template, use default:" << QFileInfo(fa_template_list[matched_template_id].c_str()).baseName().toStdString() << std::endl;
         set_template_id(matched_template_id);
         return true;
     }
