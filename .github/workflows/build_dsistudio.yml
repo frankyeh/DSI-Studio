@@ -319,6 +319,7 @@ jobs:
         del install_zlib.bat
         del "C:/Program Files/zlib/lib/zlib.lib"
         del "C:/Program Files/zlib/bin/zlib.dll"
+        del "C:/Strawberry/c/lib/libz.a"
     - name: Install Ninja and CMake
       run: |    
         choco install ninja cmake
