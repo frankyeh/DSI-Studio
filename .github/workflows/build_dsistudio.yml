@@ -319,6 +319,7 @@ jobs:
         del install_zlib.bat
         del "C:/Program Files/zlib/lib/zlib.lib"
         del "C:/Program Files/zlib/bin/zlib.dll"
+        del "C:/Strawberry/c/lib/libz.a"
     - name: Install Ninja and CMake
       run: |    
         choco install ninja cmake
@@ -330,7 +331,7 @@ jobs:
       run: |
         for /f "usebackq delims=#" %%a in (`"%programfiles(x86)%\Microsoft Visual Studio\Installer\vswhere" -latest -property installationPath`) do call "%%a\Common7\Tools\VsDevCmd.bat" -arch=x64
         mkdir -p build_cpu
-        cmake -S . -B build_cpu -GNinja "-DCMAKE_BUILD_TYPE:STRING=Release" "-DCMAKE_C_COMPILER:STRING=cl" "-DCMAKE_CXX_COMPILER:STRING=cl" -DTIPL_DIR=.
+        cmake -S . -B build_cpu -GNinja "-DZLIB_LIBRARY=C:/Program Files/zlib/lib/zlibstatic.lib" "-DCMAKE_BUILD_TYPE:STRING=Release" "-DCMAKE_C_COMPILER:STRING=cl" "-DCMAKE_CXX_COMPILER:STRING=cl" -DTIPL_DIR=.
         cmake --build ./build_cpu --parallel --config Release
       shell: cmd        
     - name: Install Cuda
@@ -419,3 +420,20 @@ jobs:
           "dsistudio/dsistudio:chen-${{ env.DATE_TAG }}"
           dsistudio/dsistudio:latest
 
+  test_automatic_tracking_win:
+    needs: windows_build
+    runs-on: windows-2019
+    steps:
+    - name: Setup Environment
+      run: |
+        curl -sL "https://github.com/frankyeh/DSI-Studio/releases/download/2022.08.03/dsi_studio_win.zip" -o dsi_studio_win.zip
+        powershell -command "Expand-Archive dsi_studio_win.zip ."
+        curl -sL https://zenodo.org/record/6307812/files/100206.src.gz.gqi.1.7.fib.gz?download=1 -o 100206.fib.gz
+        curl -sL https://zenodo.org/record/6307812/files/100307.src.gz.gqi.1.7.fib.gz?download=1 -o 100307.fib.gz
+    - name: Tracking
+      run: |
+        ./dsi_studio_win/dsi_studio --source=*.fib.gz --action=atk --track_id=Arcuate_Fasciculus_L
+    - name: Checking output
+      run: |
+        dir *
+        dir ./Arcuate_Fasciculus_L/*Arcuate_Fasciculus_L.tt.gz
