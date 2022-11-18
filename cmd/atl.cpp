@@ -104,6 +104,7 @@ int atl(program_option& po)
             show_progress() << "ERROR: " <<  template_fib->error_msg << std::endl;
             return 1;
         }
+        template_fib->set_template_id(template_id);
 
 
         show_progress() << "constructing a connectometry db" << std::endl;
