@@ -1,30 +1,6 @@
-FROM ubuntu:20.04
+FROM dsistudio/ubuntu2004_qt5:latest
 
 ENV DEBIAN_FRONTEND noninteractive
-
-# Prepare environment 
-RUN apt update && apt full-upgrade -y && \
-  apt install -y --no-install-recommends \
-  libopenblas-dev \
-  file \
-  libquadmath0 \
-  tclsh \
-  wish \ 
-  unzip \
-  curl \
-  make \
-  git \
-  zlib1g-dev \
-  libboost-all-dev \
-  ca-certificates \
-  qt5-qmake \
-  qt5-default \
-  qtwayland5 \
-  libqt5charts5-dev \
-  libqt5opengl5-dev \
-  gcc \
-  g++ && \
-  apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 ADD "https://api.github.com/repos/frankyeh/DSI-Studio/commits?per_page=1" latest_commit
 ADD "https://api.github.com/repos/frankyeh/TIPL/commits?per_page=1" latest_commit
@@ -33,7 +9,6 @@ ADD "https://api.github.com/repos/frankyeh/TIPL/commits?per_page=1" latest_commi
 RUN strip --remove-section=.note.ABI-tag /usr/lib/x86_64-linux-gnu/libQt5Core.so.5
 RUN ldconfig
 ENV PATH="$PATH:/opt/dsi-studio" 
-
 
 RUN mkdir /opt/dsi-studio \
   && cd /opt/dsi-studio \
