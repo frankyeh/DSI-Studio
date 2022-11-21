@@ -431,7 +431,7 @@ jobs:
         curl -sL https://zenodo.org/record/6307812/files/100307.src.gz.gqi.1.7.fib.gz?download=1 -o 100307.fib.gz
     - name: Tracking
       run: |
-        START /WAIT ./dsi_studio_win/dsi_studio --source=*.fib.gz --action=atk --track_id=Arcuate_Fasciculus_L
+        START /B /WAIT "" "./dsi_studio_win/dsi_studio" "--source=*.fib.gz --action=atk --track_id=Arcuate_Fasciculus_L"
     - name: Checking output
       run: |
         dir *
