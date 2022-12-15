@@ -1469,18 +1469,9 @@ void RegionTableWidget::do_action(QString action)
         return;
     std::vector<int> rows_to_be_updated;
     size_t roi_index = currentRow();
+    auto checked_regions = get_checked_regions();
 
     {
-        ROIRegion& cur_region = *regions[size_t(roi_index)];
-        if(cur_tracking_window.ui->actionModify_All->isChecked())
-        {
-            auto checked_regions = get_checked_regions();
-            tipl::par_for(checked_regions.size(),[&](unsigned int i){checked_regions[i]->perform(action.toStdString());});
-        }
-        else
-            cur_region.perform(action.toStdString());
-
-
         if(action == "A-B" || action == "B-A" || action == "A*B" || action == "A<<B")
         {
             auto handle = cur_tracking_window.handle;
@@ -1503,7 +1494,6 @@ void RegionTableWidget::do_action(QString action)
                 region->undo_backup.clear();
                 region->redo_backup.clear();
             };
-            auto checked_regions = get_checked_regions();
             if(checked_regions.size() < 2)
                 return;
             tipl::image<3,unsigned char> A;
@@ -1623,107 +1613,7 @@ void RegionTableWidget::do_action(QString action)
                 });
             }
         }
-        if(action == "dilation_by_voxel")
-        {
-            bool ok;
-            int threshold = float(QInputDialog::getInt(this,"DSI Studio","Voxel distance",10,1,100,1,&ok));
-            if(!ok)
-                return;
-            tipl::image<3,unsigned char> mask;
-            cur_region.SaveToBuffer(mask);
-            tipl::morphology::dilation2_mt(mask,threshold);
-            cur_region.LoadFromBuffer(mask);
-        }
-        if(action == "threshold" || action == "threshold_current")
-        {
-            tipl::const_pointer_image<3,float> I = cur_tracking_window.current_slice->get_source();
-            if(I.empty())
-                return;
-            double m = tipl::max_value(I);
-            bool ok;
-            bool flip = false;
-            float threshold = float(QInputDialog::getDouble(this,
-                "DSI Studio","Threshold (assign negative value to get low pass):",
-                double(tipl::segmentation::otsu_threshold(I)),-m,m,4, &ok));
-            if(!ok)
-                return;
-            if(threshold < 0)
-            {
-                flip = true;
-                threshold = -threshold;
-            }
 
-            tipl::image<3,unsigned char> mask(I.shape());
-
-            if(action == "threshold_current")
-            {
-                bool need_trans = false;
-                tipl::matrix<4,4> trans = tipl::identity_matrix();
-                if(cur_tracking_window.current_slice->dim != cur_region.dim ||
-                   cur_tracking_window.current_slice->T != cur_region.to_diffusion_space)
-                {
-                    need_trans = true;
-                    trans = cur_tracking_window.current_slice->invT*cur_region.to_diffusion_space;
-                }
-
-                cur_region.SaveToBuffer(mask);
-
-                tipl::par_for(tipl::begin_index(mask.shape()),tipl::end_index(mask.shape()),
-                              [&](const tipl::pixel_index<3>& pos)
-                {
-                    if(!mask[pos.index()])
-                        return;
-                    float value = 0.0f;
-                    size_t i = pos.index();
-                    if(need_trans)
-                    {
-                        tipl::vector<3> p(pos);
-                        p.to(trans);
-                        if(!tipl::estimate(I,p,value))
-                            return;
-                    }
-                    else
-                        value = I[i];
-                    mask[i]  = ((value > threshold) ^ flip) ? 1:0;
-                });
-            }
-            else
-            {
-                tipl::par_for(mask.size(),[&](size_t i)
-                {
-                    mask[i]  = ((I[i] > threshold) ^ flip) ? 1:0;
-                });
-            }
-            cur_region.LoadFromBuffer(mask);
-
-        }
-        if(action == "separate")
-        {
-            tipl::image<3,unsigned char>mask;
-            cur_region.SaveToBuffer(mask);
-            QString name = item(roi_index,0)->text();
-            tipl::image<3,unsigned int> labels;
-            std::vector<std::vector<size_t> > r;
-            tipl::morphology::connected_component_labeling(mask,labels,r);
-            begin_update();
-            for(unsigned int j = 0,total_count = 0;j < r.size() && total_count < 256;++j)
-                if(!r[j].empty())
-                {
-                    mask = 0;
-                    for(unsigned int i = 0;i < r[j].size();++i)
-                        mask[r[j][i]] = 1;
-                    regions.push_back(std::make_shared<ROIRegion>(cur_tracking_window.handle));
-                    regions.back()->dim = cur_region.dim;
-                    regions.back()->vs = cur_region.vs;
-                    regions.back()->is_diffusion_space = cur_region.is_diffusion_space;
-                    regions.back()->to_diffusion_space = cur_region.to_diffusion_space;
-                    regions.back()->is_mni = cur_region.is_mni;
-                    regions.back()->LoadFromBuffer(mask);
-                    add_row(int(regions.size()-1),(name + "_"+QString::number(total_count+1)));
-                    ++total_count;
-                }
-            end_update();
-        }
         if(action.contains("sort_"))
         {
             // reverse when repeated
@@ -1782,6 +1672,131 @@ void RegionTableWidget::do_action(QString action)
                 item(i,0)->setText(new_region_names[uint32_t(i)].c_str());
                 rows_to_be_updated.push_back(i);
             }
+        }
+
+
+        std::vector<std::shared_ptr<ROIRegion> > region_to_be_processed;
+        {
+            if(cur_tracking_window.ui->actionModify_All->isChecked())
+                region_to_be_processed = checked_regions;
+            else
+                region_to_be_processed.push_back(regions[size_t(roi_index)]);
+        }
+
+        tipl::par_for(region_to_be_processed.size(),[&](unsigned int i){region_to_be_processed[i]->perform(action.toStdString());});
+
+
+        if(action == "dilation_by_voxel")
+        {
+            bool ok;
+            int threshold = float(QInputDialog::getInt(this,"DSI Studio","Voxel distance",10,1,100,1,&ok));
+            if(!ok)
+                return;
+            size_t proc = 0;
+            for(auto& region : region_to_be_processed)
+            {
+                if(!progress::at(proc++,region_to_be_processed.size()))
+                    break;
+                tipl::image<3,unsigned char> mask;
+                region->SaveToBuffer(mask);
+                tipl::morphology::dilation2_mt(mask,threshold);
+                region->LoadFromBuffer(mask);
+            }
+        }
+        if(action == "threshold" || action == "threshold_current")
+        {
+            tipl::const_pointer_image<3,float> I = cur_tracking_window.current_slice->get_source();
+            if(I.empty())
+                return;
+            double m = tipl::max_value(I);
+            bool ok;
+            bool flip = false;
+            float threshold = float(QInputDialog::getDouble(this,
+                "DSI Studio","Threshold (assign negative value to get low pass):",
+                double(tipl::segmentation::otsu_threshold(I)),-m,m,4, &ok));
+            if(!ok)
+                return;
+            if(threshold < 0)
+            {
+                flip = true;
+                threshold = -threshold;
+            }
+            size_t proc = 0;
+            for(auto& region : region_to_be_processed)
+            {
+                if(!progress::at(proc++,region_to_be_processed.size()))
+                    break;
+                tipl::image<3,unsigned char> mask(I.shape());
+                if(action == "threshold_current")
+                {
+                    bool need_trans = false;
+                    tipl::matrix<4,4> trans = tipl::identity_matrix();
+                    if(cur_tracking_window.current_slice->dim != region->dim ||
+                       cur_tracking_window.current_slice->T != region->to_diffusion_space)
+                    {
+                        need_trans = true;
+                        trans = cur_tracking_window.current_slice->invT*region->to_diffusion_space;
+                    }
+
+                    region->SaveToBuffer(mask);
+
+                    tipl::par_for(tipl::begin_index(mask.shape()),tipl::end_index(mask.shape()),
+                                  [&](const tipl::pixel_index<3>& pos)
+                    {
+                        if(!mask[pos.index()])
+                            return;
+                        float value = 0.0f;
+                        size_t i = pos.index();
+                        if(need_trans)
+                        {
+                            tipl::vector<3> p(pos);
+                            p.to(trans);
+                            if(!tipl::estimate(I,p,value))
+                                return;
+                        }
+                        else
+                            value = I[i];
+                        mask[i]  = ((value > threshold) ^ flip) ? 1:0;
+                    });
+                }
+                else
+                {
+                    tipl::par_for(mask.size(),[&](size_t i)
+                    {
+                        mask[i]  = ((I[i] > threshold) ^ flip) ? 1:0;
+                    });
+                }
+                region->LoadFromBuffer(mask);
+            }
+
+        }
+        if(action == "separate")
+        {
+            ROIRegion& cur_region = *regions[size_t(roi_index)];
+            tipl::image<3,unsigned char>mask;
+            cur_region.SaveToBuffer(mask);
+            QString name = item(roi_index,0)->text();
+            tipl::image<3,unsigned int> labels;
+            std::vector<std::vector<size_t> > r;
+            tipl::morphology::connected_component_labeling(mask,labels,r);
+            begin_update();
+            for(unsigned int j = 0,total_count = 0;j < r.size() && total_count < 256;++j)
+                if(!r[j].empty())
+                {
+                    mask = 0;
+                    for(unsigned int i = 0;i < r[j].size();++i)
+                        mask[r[j][i]] = 1;
+                    regions.push_back(std::make_shared<ROIRegion>(cur_tracking_window.handle));
+                    regions.back()->dim = cur_region.dim;
+                    regions.back()->vs = cur_region.vs;
+                    regions.back()->is_diffusion_space = cur_region.is_diffusion_space;
+                    regions.back()->to_diffusion_space = cur_region.to_diffusion_space;
+                    regions.back()->is_mni = cur_region.is_mni;
+                    regions.back()->LoadFromBuffer(mask);
+                    add_row(int(regions.size()-1),(name + "_"+QString::number(total_count+1)));
+                    ++total_count;
+                }
+            end_update();
         }
     }
 
