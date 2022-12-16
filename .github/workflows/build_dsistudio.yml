@@ -432,6 +432,7 @@ jobs:
     - name: Tracking
       run: |
         START /B /WAIT "" "./dsi_studio_win/dsi_studio" "--source=*.fib.gz --action=atk --track_id=Arcuate_Fasciculus_L"
+      shell: cmd    
     - name: Checking output
       run: |
         dir *
