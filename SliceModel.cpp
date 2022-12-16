@@ -145,9 +145,9 @@ bool CustomSliceModel::load_slices(const std::vector<std::string>& files,bool is
     invT.identity();
 
 
-    if(QFileInfo(files[0].c_str()).baseName().toLower().contains("mni"))
+    if(QFileInfo(files[0].c_str()).fileName().toLower().contains("mni"))
     {
-        show_progress() << QFileInfo(files[0].c_str()).baseName().toStdString() <<
+        show_progress() << QFileInfo(files[0].c_str()).fileName().toStdString() <<
                      " has mni in the file name. It will be loaded as an MNI space image" << std::endl;
         is_mni = true;
     }
@@ -438,7 +438,7 @@ bool CustomSliceModel::load_slices(const std::vector<std::string>& files,bool is
 
     if(source_images.shape() == handle->dim && !has_transform)
     {
-        if(handle->is_mni || QFileInfo(files[0].c_str()).baseName().toLower().contains("native"))
+        if(handle->is_mni || QFileInfo(files[0].c_str()).fileName().toLower().contains("native"))
         {
             show_progress() << "No registration required." << std::endl;
             is_diffusion_space = true;
