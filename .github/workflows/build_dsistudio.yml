@@ -418,22 +418,3 @@ jobs:
         tags: |
           "dsistudio/dsistudio:chen-${{ env.DATE_TAG }}"
           dsistudio/dsistudio:latest
-
-  test_automatic_tracking_win:
-    needs: windows_build
-    runs-on: windows-2019
-    steps:
-    - name: Setup Environment
-      run: |
-        curl -sL "https://github.com/frankyeh/DSI-Studio/releases/download/2022.08.03/dsi_studio_win.zip" -o dsi_studio_win.zip
-        powershell -command "Expand-Archive dsi_studio_win.zip ."
-        curl -sL https://zenodo.org/record/6307812/files/100206.src.gz.gqi.1.7.fib.gz?download=1 -o 100206.fib.gz
-        curl -sL https://zenodo.org/record/6307812/files/100307.src.gz.gqi.1.7.fib.gz?download=1 -o 100307.fib.gz
-    - name: Tracking
-      run: |
-        START /B /WAIT "" "./dsi_studio_win/dsi_studio" "--source=*.fib.gz --action=atk --track_id=Arcuate_Fasciculus_L"
-      shell: cmd    
-    - name: Checking output
-      run: |
-        dir *
-        dir ./Arcuate_Fasciculus_L/*Arcuate_Fasciculus_L.tt.gz
