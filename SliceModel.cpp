@@ -133,7 +133,7 @@ void prepare_idx(const char* file_name,std::shared_ptr<gz_istream> in);
 void save_idx(const char* file_name,std::shared_ptr<gz_istream> in);
 bool parse_age_sex(const std::string& file_name,std::string& age,std::string& sex);
 QString get_matched_demo(QWidget *parent,std::shared_ptr<fib_data>);
-bool CustomSliceModel::initialize(const std::vector<std::string>& files,bool is_mni)
+bool CustomSliceModel::load_slices(const std::vector<std::string>& files,bool is_mni)
 {
     if(files.empty())
         return false;
@@ -145,6 +145,12 @@ bool CustomSliceModel::initialize(const std::vector<std::string>& files,bool is_
     invT.identity();
 
 
+    if(QFileInfo(files[0].c_str()).baseName().toLower().contains("mni"))
+    {
+        show_progress() << QFileInfo(files[0].c_str()).baseName().toStdString() <<
+                     " has mni in the file name. It will be loaded as an MNI space image" << std::endl;
+        is_mni = true;
+    }
     // picture as slice
     if(QFileInfo(files[0].c_str()).suffix() == "bmp" ||
        QFileInfo(files[0].c_str()).suffix() == "jpg" ||
@@ -355,7 +361,11 @@ bool CustomSliceModel::initialize(const std::vector<std::string>& files,bool is_
         save_idx(files[0].c_str(),nifti.input_stream);
         nifti.get_voxel_size(vs);
         nifti.get_image_transformation(trans);
-        is_mni = nifti.is_mni() || is_mni;
+        if(nifti.is_mni())
+        {
+            show_progress() << "The slices are MNI-space images" << std::endl;
+            is_mni = true;
+        }
         if(handle->is_mni)
         {
             nifti.get_image_transformation(T);
@@ -418,16 +428,24 @@ bool CustomSliceModel::initialize(const std::vector<std::string>& files,bool is_
     {
         update_image();
         show_progress() << "add new slices: " << name << std::endl;
+        show_progress() << "dimension: " << source_images.shape() << std::endl;
+        if(source_images.shape() == handle->dim)
+            show_progress() << "The slices have the same dimension as DWI." << std::endl;
         handle->view_item.push_back(item(name,&*source_images.begin(),source_images.shape()));
         view_id = uint32_t(handle->view_item.size()-1);
     }
 
 
-    if(source_images.shape() == handle->dim && !has_transform && handle->is_mni)
+    if(source_images.shape() == handle->dim && !has_transform)
     {
-        show_progress() << "same dimension as DWI, no registration required." << std::endl;
-        is_diffusion_space = true;
-        has_transform = true;
+        if(handle->is_mni || QFileInfo(files[0].c_str()).baseName().toLower().contains("native"))
+        {
+            show_progress() << "No registration required." << std::endl;
+            is_diffusion_space = true;
+            has_transform = true;
+        }
+        else
+            show_progress() << "Registration will be applied. To disable registration, add 'native' to the file name." << std::endl;
     }
 
     if(!has_transform && handle->dim.depth() < 10) // 2d assume FOV is the same
@@ -455,8 +473,13 @@ bool CustomSliceModel::initialize(const std::vector<std::string>& files,bool is_
     if(!has_transform)
     {
         show_progress() << "running slice registration..." << std::endl;
-        thread.reset(new std::thread([this](){argmin(tipl::reg::rigid_body);}));
-        std::this_thread::sleep_for(std::chrono::seconds(1));
+        if(has_gui)
+        {
+            thread.reset(new std::thread([this](){argmin(tipl::reg::rigid_body);}));
+            std::this_thread::sleep_for(std::chrono::seconds(1));
+        }
+        else
+            argmin(tipl::reg::rigid_body);
     }
     else
     {

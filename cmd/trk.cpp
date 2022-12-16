@@ -33,12 +33,7 @@ bool check_other_slices(const std::string& other_slices_name,std::shared_ptr<fib
             return false;
         }
         auto new_slice = std::make_shared<CustomSliceModel>(handle.get());
-        if(QFileInfo(filenames[i].c_str()).baseName().toLower().contains("mni"))
-        {
-            show_progress() << QFileInfo(filenames[i].c_str()).baseName().toStdString() <<
-                         " has mni in the file name. It will be loaded as an MNI space image" << std::endl;
-        }
-        if(!new_slice->initialize(filenames[i],QFileInfo(filenames[i].c_str()).baseName().toLower().contains("mni")))
+        if(!new_slice->load_slices(filenames[i]))
         {
             show_progress() << "ERROR: fail to load " << filenames[i] << ":" << new_slice->error_msg << std::endl;
             return false;
@@ -57,7 +52,7 @@ bool get_t1t2_nifti(const std::string& t1t2,
     if(!t1t2_slices.get())
     {
         t1t2_slices = std::make_shared<CustomSliceModel>(handle.get());
-        if(!t1t2_slices->initialize(t1t2))
+        if(!t1t2_slices->load_slices(t1t2))
         {
             show_progress() << "ERROR: fail to load " << t1t2 << std::endl;
             return false;
@@ -496,7 +491,7 @@ int trk_post(program_option& po,
         if(po.has("ref")) // save track in T1W/T2W space
         {
             CustomSliceModel new_slice(handle.get());
-            if(!new_slice.initialize(po.get("ref")))
+            if(!new_slice.load_slices(po.get("ref")))
             {
                 show_progress() << "ERROR: reading ref image file" << std::endl;
                 return 1;
