@@ -449,6 +449,7 @@ view_image::view_image(QWidget *parent) :
     connect(ui->actionNormalize_Intensity, SIGNAL(triggered()),this, SLOT(run_action()));
     connect(ui->actionMean_Filter, SIGNAL(triggered()),this, SLOT(run_action()));
     connect(ui->actionGaussian_Filter, SIGNAL(triggered()),this, SLOT(run_action()));
+    connect(ui->actionSmoothing_Filter, SIGNAL(triggered()),this, SLOT(run_action()));
     connect(ui->actionSobel_Filter, SIGNAL(triggered()),this, SLOT(run_action()));
 
     // ask for a value and run action
