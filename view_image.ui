@@ -432,6 +432,7 @@
     <addaction name="separator"/>
     <addaction name="actionMean_Filter"/>
     <addaction name="actionGaussian_Filter"/>
+    <addaction name="actionSmoothing_Filter"/>
     <addaction name="actionSobel_Filter"/>
     <addaction name="separator"/>
     <addaction name="actionAddImage"/>
@@ -790,6 +791,14 @@
    </property>
    <property name="toolTip">
     <string>Calculate the image gradient using a Sobel filter</string>
+   </property>
+  </action>
+  <action name="actionSmoothing_Filter">
+   <property name="text">
+    <string>Smoothing Filter</string>
+   </property>
+   <property name="statusTip">
+    <string>Smooth the image while preserving the edges</string>
    </property>
   </action>
  </widget>
