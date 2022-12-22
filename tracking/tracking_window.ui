@@ -3375,6 +3375,9 @@ Tracking</string>
    <property name="text">
     <string>Separate</string>
    </property>
+   <property name="shortcut">
+    <string>Ctrl+Shift+P</string>
+   </property>
   </action>
   <action name="actionFilter_by_ROI">
    <property name="text">
@@ -3636,15 +3639,24 @@ Tracking</string>
    <property name="text">
     <string>First Excludes All</string>
    </property>
+   <property name="shortcut">
+    <string>Ctrl+Shift+4</string>
+   </property>
   </action>
   <action name="actionB_A">
    <property name="text">
     <string>All Exclude First</string>
    </property>
+   <property name="shortcut">
+    <string>Ctrl+Shift+2</string>
+   </property>
   </action>
   <action name="actionAB">
    <property name="text">
     <string>All Intersect First</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Shift+1</string>
    </property>
   </action>
   <action name="actionBy_Size">
@@ -3737,6 +3749,9 @@ Tracking</string>
    </property>
    <property name="text">
     <string>Modify All Checked</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Shift+A</string>
    </property>
   </action>
   <action name="actionOpening">
@@ -4071,6 +4086,9 @@ Tracking</string>
   <action name="actionAll_To_First">
    <property name="text">
     <string>All To First</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Shift+3</string>
    </property>
   </action>
   <action name="actionManual_Atlas_Alignment">
