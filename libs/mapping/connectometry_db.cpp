@@ -199,11 +199,6 @@ bool connectometry_db::parse_demo(void)
                 }
             last_item_size = items.size();
         }
-        if(items.size() < 2*col_count)
-        {
-            error_msg = "Invalid demographic format";
-            return false;
-        }
         // select demographics by matching subject name
         if(items.size() > (num_subjects+1)*col_count)
         {
