@@ -260,6 +260,7 @@ jobs:
     - name: Install Qt
       run: |
         brew update
+        brew install python@3.11
         brew install qt5
     - name: Download TIPL and Atlases
       run: |
