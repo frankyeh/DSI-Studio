@@ -638,8 +638,7 @@ bool load_multiple_slice_dicom(QStringList file_list,std::vector<std::shared_ptr
             iterate_slice_first = true;
         }
     }
-
-    for (unsigned int index = 0,b_index = 0,slice_index = 0;progress::at(index,file_list.size());++index)
+    for (unsigned int index = 0,b_index = dwi_files.size(),slice_index = 0;progress::at(index,file_list.size());++index)
     {
         std::shared_ptr<DwiHeader> dwi(new DwiHeader);
         if(!dwi->open(file_list[index].toLocal8Bit().begin()))
@@ -932,7 +931,25 @@ bool load_3d_series(QStringList file_list,std::vector<std::shared_ptr<DwiHeader>
 bool parse_dwi(QStringList file_list,
                     std::vector<std::shared_ptr<DwiHeader> >& dwi_files)
 {
-    progress prog_("reading ",QFileInfo(file_list[0]).fileName().toStdString().c_str());
+    if(QFileInfo(file_list.front()).absolutePath() != QFileInfo(file_list.back()).absolutePath())
+    {
+        QStringList dwi_list;
+        dwi_list << file_list[0];
+        progress prog_("reading ",file_list[0].toStdString().c_str());
+        for(int i = 1;progress::at(i,file_list.size());++i)
+            if(QFileInfo(dwi_list.front()).absolutePath() == QFileInfo(file_list[i]).absolutePath())
+                dwi_list << file_list[i];
+            else
+            {
+                show_progress() << dwi_list.size() << " files in " << QFileInfo(dwi_list[0]).absolutePath().toStdString() << std::endl;
+                if(!parse_dwi(dwi_list,dwi_files))
+                    return false;
+                dwi_list.clear();
+                dwi_list << file_list[i];
+            }
+        return true;
+    }
+    progress prog_("reading ",file_list[0].toStdString().c_str());
     src_error_msg.clear();
     if(QFileInfo(file_list[0]).fileName() == "2dseq")
     {
