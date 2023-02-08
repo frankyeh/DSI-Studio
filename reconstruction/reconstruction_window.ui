@@ -1195,6 +1195,9 @@ Reconstruction</string>
     <addaction name="actionFlip_bx"/>
     <addaction name="actionFlip_by"/>
     <addaction name="actionFlip_bz"/>
+    <addaction name="actionswap_bxby"/>
+    <addaction name="actionswap_bybz"/>
+    <addaction name="actionswap_bxbz"/>
    </widget>
    <widget class="QMenu" name="menuCorrections">
     <property name="title">
@@ -1415,6 +1418,21 @@ Reconstruction</string>
   <action name="actionSmooth_Signals">
    <property name="text">
     <string>Smooth Signals</string>
+   </property>
+  </action>
+  <action name="actionswap_bxby">
+   <property name="text">
+    <string>swap bxby</string>
+   </property>
+  </action>
+  <action name="actionswap_bybz">
+   <property name="text">
+    <string>swap bybz</string>
+   </property>
+  </action>
+  <action name="actionswap_bxbz">
+   <property name="text">
+    <string>swap bxbz</string>
    </property>
   </action>
  </widget>
