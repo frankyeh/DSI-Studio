@@ -272,7 +272,7 @@ bool DwiHeader::open(const char* filename)
         }
         gvalue = (const double*)header.get_data(0x0065,0x1009,gvalue_length);//B-Value
         if(gvalue && gvalue_length == 8)
-            bvalue = gvalue[0];;
+            bvalue = gvalue[0];
     }
         break;
     }
