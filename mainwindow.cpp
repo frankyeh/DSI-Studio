@@ -1240,24 +1240,25 @@ bool dcm2src(QStringList files)
 void dicom2src(std::string dir_)
 {
     progress p("convert DICOM to NIFTI/SRC");
-    QString dir = dir_.c_str();
-    QStringList sub_dir = QDir(dir).entryList(QStringList("*"),QDir::Dirs | QDir::NoSymLinks | QDir::NoDotAndDotDot);
-    for(int j = 0;progress::at(j,sub_dir.size()) && !progress::aborted();++j)
+    QStringList dir_list = GetSubDir(dir_.c_str(),false);
+    for(int i = 0;progress::at(i,dir_list.size()) && !progress::aborted();++i)
     {
-        progress prog1(sub_dir[j].toStdString().c_str());
-        QStringList dir_list = GetSubDir(dir + "/" + sub_dir[j],true);
-        dir_list << dir;
-        for(int i = 0;i < dir_list.size();++i)
+        QDir cur_dir = dir_list[i];
+        QStringList dicom_file_list = cur_dir.entryList(QStringList("*.dcm"),QDir::Files|QDir::NoSymLinks);
+        if(dicom_file_list.empty())
+            continue;
+        show_progress() << "processing " << std::endl;
+        // aggregate DWI with identical names from consecutive folders
+        QStringList aggregated_file_list;
+        for(;progress::at(i,dir_list.size());++i)
         {
-            QDir cur_dir = dir_list[i];
-            QStringList dicom_file_list = cur_dir.entryList(QStringList("*.dcm"),QDir::Files|QDir::NoSymLinks);
-            if(dicom_file_list.empty())
-                continue;
-            show_progress() << QFileInfo(dir_list[i]).baseName().toStdString() << "->";
             for (int index = 0;index < dicom_file_list.size();++index)
-                dicom_file_list[index] = dir_list[i] + "/" + dicom_file_list[index];
-            dcm2src(dicom_file_list);
+                aggregated_file_list << dir_list[i] + "/" + dicom_file_list[index];
+            if(i+1 < dir_list.size() && !QFileInfo(dir_list[i+1] + "/" + dicom_file_list[0]).exists())
+                break;
         }
+        output:
+        dcm2src(aggregated_file_list);
     }
 }
 
