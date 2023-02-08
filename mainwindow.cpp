@@ -1257,7 +1257,6 @@ void dicom2src(std::string dir_)
             if(i+1 < dir_list.size() && !QFileInfo(dir_list[i+1] + "/" + dicom_file_list[0]).exists())
                 break;
         }
-        output:
         dcm2src(aggregated_file_list);
     }
 }
