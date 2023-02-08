@@ -1057,3 +1057,27 @@ void reconstruction_window::on_actionSmooth_Signals_triggered()
     command("[Step T2][Edit][Smooth Signals]");
 }
 
+
+void reconstruction_window::on_actionswap_bxby_triggered()
+{
+    command("[Step T2][B-table][swap bxby]");
+    ui->check_btable->setChecked(false);
+    QMessageBox::information(this,"DSI Studio","bxby swapped");
+}
+
+
+void reconstruction_window::on_actionswap_bybz_triggered()
+{
+    command("[Step T2][B-table][swap bybz]");
+    ui->check_btable->setChecked(false);
+    QMessageBox::information(this,"DSI Studio","bybz swapped");
+}
+
+
+void reconstruction_window::on_actionswap_bxbz_triggered()
+{
+    command("[Step T2][B-table][swap bxbz]");
+    ui->check_btable->setChecked(false);
+    QMessageBox::information(this,"DSI Studio","bxbz swapped");
+}
+

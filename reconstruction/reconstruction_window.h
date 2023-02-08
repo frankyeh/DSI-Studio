@@ -109,6 +109,9 @@ private slots:
     void on_actionRun_FSL_Topup_triggered();
     void on_actionEDDY_triggered();
     void on_actionSmooth_Signals_triggered();
+    void on_actionswap_bxby_triggered();
+    void on_actionswap_bybz_triggered();
+    void on_actionswap_bxbz_triggered();
 };
 
 #endif // RECONSTRUCTION_WINDOW_H
