@@ -705,6 +705,7 @@ bool tracking_window::command(QString cmd,QString param,QString param2)
                     set_data(param_list[index],s.value(param_list[index]));
             glWidget->update();
         }
+        return true;
     }
     if(cmd == "save_setting")
     {
@@ -713,6 +714,7 @@ bool tracking_window::command(QString cmd,QString param,QString param2)
         QStringList param_list = renderWidget->treemodel->getParamList();
         for(int index = 0;index < param_list.size();++index)
             s.setValue(param_list[index],renderWidget->getData(param_list[index]));
+        return true;
     }
     if(cmd == "save_rendering_setting")
     {
@@ -729,6 +731,7 @@ bool tracking_window::command(QString cmd,QString param,QString param2)
         param_list += renderWidget->treemodel->get_param_list("ODF");
         for(int index = 0;index < param_list.size();++index)
             s.setValue(param_list[index],renderWidget->getData(param_list[index]));
+        return true;
     }
     if(cmd == "load_rendering_setting")
     {
@@ -749,6 +752,7 @@ bool tracking_window::command(QString cmd,QString param,QString param2)
                 if(s.contains(param_list[index]))
                     set_data(param_list[index],s.value(param_list[index]));
         }
+        return true;
     }
     if(cmd == "save_tracking_setting")
     {
@@ -759,6 +763,7 @@ bool tracking_window::command(QString cmd,QString param,QString param2)
         param_list += renderWidget->treemodel->get_param_list("Tracking_adv");
         for(int index = 0;index < param_list.size();++index)
             s.setValue(param_list[index],renderWidget->getData(param_list[index]));
+        return true;
     }
     if(cmd == "load_tracking_setting")
     {
@@ -773,6 +778,7 @@ bool tracking_window::command(QString cmd,QString param,QString param2)
                 if(s.contains(param_list[index]))
                     set_data(param_list[index],s.value(param_list[index]));
         }
+        return true;
     }
     if(cmd == "restore_rendering")
     {
