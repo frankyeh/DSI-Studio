@@ -692,6 +692,27 @@ bool ImageModel::command(std::string cmd,std::string param)
         voxel.steps += cmd+"\n";
         return true;
     }
+    if(cmd == "[Step T2][B-table][swap bxby]")
+    {
+        for(size_t i = 0;i < src_bvectors.size();++i)
+            std::swap(src_bvectors[i][0],src_bvectors[i][1]);
+        voxel.steps += cmd+"\n";
+        return true;
+    }
+    if(cmd == "[Step T2][B-table][swap bybz]")
+    {
+        for(size_t i = 0;i < src_bvectors.size();++i)
+            std::swap(src_bvectors[i][1],src_bvectors[i][2]);
+        voxel.steps += cmd+"\n";
+        return true;
+    }
+    if(cmd == "[Step T2][B-table][swap bxbz]")
+    {
+        for(size_t i = 0;i < src_bvectors.size();++i)
+            std::swap(src_bvectors[i][0],src_bvectors[i][2]);
+        voxel.steps += cmd+"\n";
+        return true;
+    }
     if(cmd == "[Step T2][Corrections][TOPUP EDDY]")
     {
         auto step = param.empty() ? (cmd+"\n") : (cmd+"="+param+"\n");
