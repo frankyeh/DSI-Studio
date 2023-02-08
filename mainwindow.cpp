@@ -1247,7 +1247,7 @@ void dicom2src(std::string dir_)
         QStringList dicom_file_list = cur_dir.entryList(QStringList("*.dcm"),QDir::Files|QDir::NoSymLinks);
         if(dicom_file_list.empty())
             continue;
-        show_progress() << "processing " << std::endl;
+        show_progress() << "processing " << dir_list[i].toStdString() << std::endl;
         // aggregate DWI with identical names from consecutive folders
         QStringList aggregated_file_list;
         for(;progress::at(i,dir_list.size());++i)
