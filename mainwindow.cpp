@@ -470,7 +470,7 @@ void check_name(std::string& name)
             name[index] = '_';
 }
 
-bool RenameDICOMToDir(QString FileName, QString ToDir)
+QString RenameDICOMToDir(QString FileName, QString ToDir)
 {
     QString NewName;
     {
@@ -480,7 +480,7 @@ bool RenameDICOMToDir(QString FileName, QString ToDir)
             if (!header.load_from_file(FileName.toLocal8Bit().begin()))
             {
                 show_progress() << "not a DICOM file. Skipping" << std::endl;
-                return true;
+                return QString();
             }
             header.get_patient(person);
             header.get_sequence(sequence);
@@ -504,10 +504,13 @@ bool RenameDICOMToDir(QString FileName, QString ToDir)
         ToDir += ImageName;
         NewName = ToDir;
     }
-    if(FileName == NewName)
-        return true;
-    show_progress() << FileName.toStdString() << "->" << NewName.toStdString() << std::endl;
-    return QFile::rename(FileName,NewName);
+    if(FileName != NewName)
+    {
+        show_progress() << FileName.toStdString() << "->" << NewName.toStdString() << std::endl;
+        if(!QFile::rename(FileName,NewName))
+            show_progress() << "ERROR: cannot rename the file." << std::endl;
+    }
+    return NewName;
 }
 
 void MainWindow::on_RenameDICOM_clicked()
@@ -522,8 +525,7 @@ void MainWindow::on_RenameDICOM_clicked()
     add_work_dir(QFileInfo(filenames[0]).absolutePath());
     progress prog_("Rename DICOM Files");
     for (unsigned int index = 0;progress::at(index,filenames.size());++index)
-        if(!RenameDICOMToDir(filenames[index],QFileInfo(filenames[index]).absolutePath()))
-            show_progress() << "ERROR: cannot rename the file." << std::endl;
+        RenameDICOMToDir(filenames[index],QFileInfo(filenames[index]).absolutePath());
 }
 
 
@@ -565,24 +567,27 @@ QStringList GetSubDir(QString Dir,bool recursive = true)
     return sub_dirs;
 }
 
-void rename_dicom_at_dir(QString path,QString output)
+QStringList rename_dicom_at_dir(QString path,QString output)
 {
     progress prog_("Renaming DICOM");
     show_progress() << "current directory is " << std::filesystem::current_path() << std::endl
                     << "source directory is " << path.toStdString() << std::endl
                     << "output directory is " << output.toStdString() << std::endl;
     QStringList dirs = GetSubDir(path);
+    QStringList subject_dirs;
     for(int index = 0;progress::at(index,dirs.size());++index)
     {
         QStringList files = QDir(dirs[index]).entryList(QStringList("*"),
                                     QDir::Files | QDir::NoSymLinks);
         for(int j = 0;j < files.size() && index < dirs.size();++j)
         {
-            progress::show(files[j].toStdString().c_str());
-            if(!RenameDICOMToDir(dirs[index] + "/" + files[j],output))
-                show_progress() << "ERROR: cannot rename the file." << std::endl;
+            auto dir = QFileInfo(RenameDICOMToDir(dirs[index] + "/" + files[j],output)).absoluteDir();
+            dir.cdUp();
+            subject_dirs << dir.absolutePath();
         }
     }
+    subject_dirs.removeDuplicates();
+    return subject_dirs;
 }
 void MainWindow::on_RenameDICOMDir_clicked()
 {
