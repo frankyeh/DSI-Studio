@@ -1143,12 +1143,17 @@ bool fib_data::set_dt_index(const std::pair<int,int>& pair,size_t type)
     auto& K = (*new_metrics);
     switch(type)
     {
-        case 0:
+        case 0: // (m1-m2)÷m1
             for(size_t k = 0;k < I.size();++k)
                 if(dir.fa[0][k] > 0.0f && I[k] > 0.0f && J[k] > 0.0f)
                     K[k] = 1.0f-J[k]/I[k];
         break;
-        case 1: // m1-m2
+        case 1: // (m1-m2)÷m2
+            for(size_t k = 0;k < I.size();++k)
+                if(dir.fa[0][k] > 0.0f && I[k] > 0.0f && J[k] > 0.0f)
+                    K[k] = I[k]/J[k]-1.0f;
+        break;
+        case 2: // m1-m2
             for(size_t k = 0;k < I.size();++k)
                 if(dir.fa[0][k] > 0.0f && I[k] > 0.0f && J[k] > 0.0f)
                     K[k] = I[k]-J[k];
