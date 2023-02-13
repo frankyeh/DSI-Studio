@@ -250,7 +250,7 @@ jobs:
     needs: [test_animal_recon, test_human_tracking_qsdr, test_human_tracking_gqi, test_connectometry]
     strategy:
       matrix:
-        os: [macos-12,macos-11,macos-10.15]
+        os: [macos-12,macos-11,macos-10.5]
       fail-fast: false
     runs-on: ${{ matrix.os }}
     env:
@@ -260,7 +260,6 @@ jobs:
     - name: Install Qt
       run: |
         brew update
-        brew install python@3.11
         brew install qt5
     - name: Download TIPL and Atlases
       run: |
