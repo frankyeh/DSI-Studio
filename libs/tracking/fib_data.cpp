@@ -1428,6 +1428,12 @@ bool fib_data::load_track_atlas()
     }
     if(!track_atlas.get())
     {
+        if(!map_to_mni())
+        {
+            error_msg = "failed to warp subject space to template space";
+            return false;
+        }
+
         track_atlas = std::make_shared<TractModel>(dim,vs,trans_to_mni);
         if(!track_atlas->load_from_file(tractography_atlas_file_name.c_str()))
         {
@@ -1470,16 +1476,12 @@ bool fib_data::load_track_atlas()
         track_atlas->add_tracts(new_tracts);
         cluster.insert(cluster.end(),new_cluster.begin(),new_cluster.end());
 
-        if(!map_to_mni())
-            return false;
 
         // get distance scaling
         auto& s2t = get_sub2temp_mapping();
         if(s2t.empty())
             return false;
         tract_atlas_jacobian = float((s2t[0]-s2t[1]).length());
-
-
         // warp tractography atlas to subject space
         progress prog_("warping atlas tracks to subject space");
         auto& tract_data = track_atlas->get_tracts();
