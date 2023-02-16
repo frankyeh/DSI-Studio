@@ -250,7 +250,7 @@ jobs:
     needs: [test_animal_recon, test_human_tracking_qsdr, test_human_tracking_gqi, test_connectometry]
     strategy:
       matrix:
-        os: [macos-12,macos-11,macos-10.5]
+        os: [macos-12,macos-11]
       fail-fast: false
     runs-on: ${{ matrix.os }}
     env:
