@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1082</width>
+    <width>1147</width>
     <height>585</height>
    </rect>
   </property>
@@ -642,7 +642,7 @@
             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Edge-based registration for cross modalities mapping&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
            </property>
            <property name="text">
-            <string>Edge Matching</string>
+            <string>Use Edge</string>
            </property>
           </widget>
          </item>
@@ -923,7 +923,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1082</width>
+     <width>1147</width>
      <height>22</height>
     </rect>
    </property>
