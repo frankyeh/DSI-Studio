@@ -147,5 +147,21 @@ inline size_t linear_with_mi(const tipl::image<3,float>& from,
     return result;
 }
 
+inline size_t linear_with_cc(const tipl::image<3,float>& from,
+                            const tipl::vector<3>& from_vs,
+                            const tipl::image<3,float>& to,
+                            const tipl::vector<3>& to_vs,
+                              tipl::transformation_matrix<float>& T,
+                              tipl::reg::reg_type reg_type,
+                              bool& terminated,
+                              const float* bound = tipl::reg::reg_bound)
+{
+    tipl::affine_transform<float> arg;
+    size_t result = linear_with_cc(from,from_vs,to,to_vs,arg,reg_type,terminated,bound);
+    T = tipl::transformation_matrix<float>(arg,from.shape(),from_vs,to.shape(),to_vs);
+    show_progress() << T << std::endl;
+    return result;
+}
+
 
 #endif//REG_HPP
