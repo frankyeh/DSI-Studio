@@ -418,6 +418,26 @@ void RegToolBox::linear_reg(tipl::reg::reg_type reg_type,int cost_type)
     J.swap(J_);
 }
 
+void edge_for_cdm(tipl::image<3>& sIt,
+                  tipl::image<3>& sJ,
+                  tipl::image<3>& sIt2,
+                  tipl::image<3>& sJ2)
+{
+    tipl::filter::sobel(sIt);
+    tipl::filter::sobel(sJ);
+    tipl::filter::mean(sIt);
+    tipl::filter::mean(sJ);
+    if(!sIt2.empty())
+    {
+        tipl::filter::sobel(sIt2);
+        tipl::filter::mean(sIt2);
+    }
+    if(!sJ2.empty())
+    {
+        tipl::filter::sobel(sJ2);
+        tipl::filter::mean(sJ2);
+    }
+}
 
 void RegToolBox::nonlinear_reg(void)
 {
@@ -432,20 +452,7 @@ void RegToolBox::nonlinear_reg(void)
         if(ui->edge->isChecked())
         {
             tipl::image<3> sIt(It),sJ(J),sIt2(It2),sJ2(J2);
-            tipl::filter::sobel(sIt);
-            tipl::filter::sobel(sJ);
-            tipl::filter::mean(sIt);
-            tipl::filter::mean(sJ);
-            if(!sIt2.empty())
-            {
-                tipl::filter::sobel(sIt2);
-                tipl::filter::mean(sIt2);
-            }
-            if(!sJ2.empty())
-            {
-                tipl::filter::sobel(sJ2);
-                tipl::filter::mean(sJ2);
-            }
+            edge_for_cdm(sIt,sJ,sIt2,sJ2);
             cdm_common(sIt,sIt2,sJ,sJ2,t2f_dis,f2t_dis,thread.terminated,param,ui->use_cuda->isChecked());
         }
         else
