@@ -342,6 +342,31 @@ void TractTableWidget::load_tracts(QStringList filenames)
             QMessageBox::critical(this,"ERROR",QString("Cannot load tracks from %1").arg(QFileInfo(filename).baseName()));
             continue;
         }
+        if(tract_models.back()->trans_to_mni != cur_tracking_window.handle->trans_to_mni)
+        {
+            show_progress() << "tractography is from a different space" << std::endl;
+            show_progress() << "host space=" << std::endl;
+            show_progress() << cur_tracking_window.handle->trans_to_mni << std::endl;
+            show_progress() << "tractography space= " << std::endl;
+            show_progress() << tract_models.back()->trans_to_mni << std::endl;
+            show_progress() << "apply transformation to tracts" << std::endl;
+            tipl::matrix<4,4> T = tipl::from_space(tract_models.back()->trans_to_mni).
+                                    to(cur_tracking_window.handle->trans_to_mni);
+            auto& loaded_tract_data = tract_models.back()->get_tracts();
+            tipl::par_for(loaded_tract_data.size(),[&](size_t index)
+            {
+                auto& tract = loaded_tract_data[index];
+                for(size_t i = 0;i < tract.size();i += 3)
+                {
+                    tipl::vector<3> p(&tract[i]);
+                    p.to(T);
+                    tract[i] = p[0];
+                    tract[i+1] = p[1];
+                    tract[i+2] = p[2];
+                }
+            });
+        }
+
         if(tract_models.back()->get_cluster_info().empty()) // not multiple cluster file
         {
             item(tract_models.size()-1,1)->setText(QString::number(tract_models.back()->get_visible_track_count()));
