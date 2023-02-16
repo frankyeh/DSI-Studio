@@ -170,10 +170,21 @@ int reg(program_option& po)
     show_progress() << "running linear registration." << std::endl;
 
     tipl::transformation_matrix<float> T;
-    linear_with_mi(to,to_vs,from,from_vs,T,
+    auto cost_function = po.get("cost_function","mi");
+    if(cost_function == std::string("mi"))
+        linear_with_mi(to,to_vs,from,from_vs,T,
                   po.get("reg_type",1) == 0 ? tipl::reg::rigid_body : tipl::reg::affine,terminated,
                   po.get("large_deform",0) == 1 ? tipl::reg::large_bound : tipl::reg::reg_bound);
-
+    else
+    if(cost_function == std::string("cc"))
+        linear_with_cc(to,to_vs,from,from_vs,T,
+                  po.get("reg_type",1) == 0 ? tipl::reg::rigid_body : tipl::reg::affine,terminated,
+                  po.get("large_deform",0) == 1 ? tipl::reg::large_bound : tipl::reg::reg_bound);
+    else
+    {
+        show_progress() << "ERROR: unknown cost_function " << cost_function << std::endl;
+        return 1;
+    }
 
     tipl::image<3> from_(to.shape()),from2_;
 
@@ -210,6 +221,7 @@ int reg(program_option& po)
     tipl::reg::cdm_param param;
     param.resolution = po.get("resolution",param.resolution);
     param.speed = po.get("speed",param.speed);
+    param.smoothing = po.get("smoothing",param.smoothing);
     param.iterations = po.get("iteration",param.iterations);
     param.min_dimension = po.get("min_dimension",param.min_dimension);
 
