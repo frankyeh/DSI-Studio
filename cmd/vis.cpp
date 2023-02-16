@@ -13,6 +13,7 @@ int vis(program_option& po)
     std::shared_ptr<fib_data> new_handle = cmd_load_fib(po.get("source"));
     if(!new_handle.get())
         return 1;
+    bool has_gui_ = has_gui;
     has_gui = false;
     show_progress() << "starting gui" << std::endl;
     tracking_window* new_mdi = new tracking_window(nullptr,new_handle);
@@ -46,6 +47,6 @@ int vis(program_option& po)
         new_mdi->close();
         delete new_mdi;
     }
-    has_gui = true;
+    has_gui = has_gui_;
     return 0;
 }
