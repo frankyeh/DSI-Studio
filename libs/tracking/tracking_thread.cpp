@@ -101,7 +101,7 @@ void ThreadData::run_thread(unsigned int thread_id,unsigned int thread_count)
                 }
 
                 uint32_t seed_index = std::min<uint32_t>(uint32_t(roi_mgr->seeds.size()-1),uint32_t(rand_gen(seed)*float(roi_mgr->seeds.size())));
-                auto pos = roi_mgr->seeds[seed_index];
+                tipl::vector<3> pos = roi_mgr->seeds[seed_index];
                 pos[0] += subvoxel_gen(seed);
                 pos[1] += subvoxel_gen(seed);
                 pos[2] += subvoxel_gen(seed);
