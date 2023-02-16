@@ -692,8 +692,31 @@ bool TractModel::load_from_file(const char* file_name_,bool append)
     {
         unsigned int old_color = color;
         std::vector<uint16_t> cluster;
+        auto host_trans = trans_to_mni;
         if(!TinyTrack::load_from_file(file_name_,loaded_tract_data,cluster,geo,vs,trans_to_mni,report,parameter_id,color))
             return false;
+        if(host_trans != trans_to_mni)
+        {
+            show_progress() << "tractography is from a different space" << std::endl;
+            show_progress() << "host space=" << std::endl;
+            show_progress() << host_trans << std::endl;
+            show_progress() << "tractography space= " << std::endl;
+            show_progress() << trans_to_mni << std::endl;
+            show_progress() << "apply transformation to tracts" << std::endl;
+            tipl::matrix<4,4> T = tipl::from_space(trans_to_mni).to(host_trans);
+            tipl::par_for(loaded_tract_data.size(),[&](size_t index)
+            {
+                auto& tract = loaded_tract_data[index];
+                for(size_t i = 0;i < tract.size();i += 3)
+                {
+                    tipl::vector<3> p(&tract[i]);
+                    p.to(T);
+                    tract[i] = p[0];
+                    tract[i+1] = p[1];
+                    tract[i+2] = p[2];
+                }
+            });
+        }
         std::copy(cluster.begin(),cluster.end(),std::back_inserter(loaded_tract_cluster));
         if(color != old_color)
             color_changed = true;
