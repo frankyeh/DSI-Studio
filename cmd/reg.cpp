@@ -100,7 +100,10 @@ bool load_nifti_file(std::string file_name_cmd,tipl::image<3>& data,tipl::vector
     tipl::matrix<4,4> trans;
     return load_nifti_file(file_name_cmd,data,vs,trans);
 }
-
+void edge_for_cdm(tipl::image<3>& sIt,
+                  tipl::image<3>& sJ,
+                  tipl::image<3>& sIt2,
+                  tipl::image<3>& sJ2);
 int reg(program_option& po)
 {
     tipl::image<3> from,to,from2,to2;
@@ -168,7 +171,8 @@ int reg(program_option& po)
 
     tipl::transformation_matrix<float> T;
     linear_with_mi(to,to_vs,from,from_vs,T,
-                  po.get("reg_type",1) == 0 ? tipl::reg::rigid_body : tipl::reg::affine,terminated);
+                  po.get("reg_type",1) == 0 ? tipl::reg::rigid_body : tipl::reg::affine,terminated,
+                  po.get("large_deform",0) == 1 ? tipl::reg::large_bound : tipl::reg::reg_bound);
 
 
     tipl::image<3> from_(to.shape()),from2_;
@@ -209,7 +213,14 @@ int reg(program_option& po)
     param.iterations = po.get("iteration",param.iterations);
     param.min_dimension = po.get("min_dimension",param.min_dimension);
 
-    cdm_common(to,to2,from_,from2_,t2f_dis,f2t_dis,terminated,param);
+    if(po.get("use_edge",0))
+    {
+        tipl::image<3> to_edge(to),from_edge(from_),to2_edge(to2),from2_edge(from2_);
+        edge_for_cdm(to_edge,from_edge,to2_edge,from2_edge);
+        cdm_common(to_edge,to2_edge,from_edge,from2_edge,t2f_dis,f2t_dis,terminated,param);
+    }
+    else
+        cdm_common(to,to2,from_,from2_,t2f_dis,f2t_dis,terminated,param);
 
     tipl::displacement_to_mapping(t2f_dis,to2from,T);
     from2to.resize(from.shape());
