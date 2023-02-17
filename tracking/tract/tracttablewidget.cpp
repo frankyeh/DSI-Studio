@@ -342,7 +342,8 @@ void TractTableWidget::load_tracts(QStringList filenames)
             QMessageBox::critical(this,"ERROR",QString("Cannot load tracks from %1").arg(QFileInfo(filename).baseName()));
             continue;
         }
-        if(tract_models.back()->trans_to_mni != cur_tracking_window.handle->trans_to_mni)
+        if(tract_models.back()->trans_to_mni[0] != 0.0f &&
+           tract_models.back()->trans_to_mni != cur_tracking_window.handle->trans_to_mni)
         {
             show_progress() << "tractography is from a different space" << std::endl;
             show_progress() << "host space=" << std::endl;
