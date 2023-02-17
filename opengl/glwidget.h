@@ -101,7 +101,6 @@ private: //glu
 public:
      tipl::image<2,float> connectivity;
      float max_connectivity = 0.0f;
-     bool two_color_connectivity = false;
  private:
      void rotate_angle(float angle,float x,float y,float z);
      void copyToClipboardEach(QTableWidget* widget,unsigned int col_size);
