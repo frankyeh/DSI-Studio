@@ -1053,7 +1053,11 @@ void GLWidget::renderLR()
 
         if(get_param("region_graph") && !connectivity.empty())
         {
-
+            tipl::value_to_color<float> v2c;
+            v2c.two_color((unsigned int)get_param("region_edge_color2"),
+                          (unsigned int)get_param("region_edge_color1"));
+            v2c.set_range(get_param_float("region_edge_value2"),
+                          get_param_float("region_edge_value1"));
             if (cur_tracking_window.regionWidget->regions.size())
             {
                 glEnable(GL_COLOR_MATERIAL);
@@ -1079,15 +1083,10 @@ void GLWidget::renderLR()
                             region_visualized[j] = true;
                             auto centeri = cur_tracking_window.regionWidget->regions[i]->get_center();
                             auto centerj = cur_tracking_window.regionWidget->regions[j]->get_center();
-                            if(two_color_connectivity)
-                            {
-                                if(connectivity.at(i,j)>0.0f)
-                                    glColor4f(1.0f,0.2f,0.2f,1.0f);
-                                else
-                                    glColor4f(0.2f,0.2f,1.0f,1.0f);
-                            }
-                            else
-                                glColor4f(1.0f,1.0f,1.0f,1.0f);
+                            auto color = v2c[connectivity.at(i,j)/max_connectivity];
+                            glColor4f(((float)color.r)/255.0f,
+                                      ((float)color.g)/255.0f,
+                                      ((float)color.b)/255.0f,1.0f);
                             CylinderGL(RegionSpheres->get(),centeri,centerj,
                                        double((get_param("region_constant_edge_size") ? 0.5f:c/max_connectivity)*(get_param("region_edge_size")+5)/5.0f));
                         }
