@@ -83,7 +83,11 @@ Region_graph/Constant Node Size/region_constant_node_size/Off:On/0
 Region_graph/Hide Unconnected Node/region_hide_unconnected_node/Off:On/1
 Region_graph/Edge Size/region_edge_size/int/4
 Region_graph/Constant Edge Size/region_constant_edge_size/Off:On/0
-Region_graph/Binary Graph Threshold (0: No threshold)/region_edge_threshold/float:0.00:1:0.1:2/0.0
+Region_graph/Edge Color1/region_edge_color1/color/255
+Region_graph/Edge Value1 (1=max)/region_edge_value1/float:0.0:1:0.1:2/1.0
+Region_graph/Edge Color2/region_edge_color2/color/-1
+Region_graph/Edge Value2 (1=max)/region_edge_value2/float:0.0:1:0.1:2/0.0
+Region_graph/Binary Graph Threshold/region_edge_threshold/float:0.00:1:0.1:2/0.1
 Region/Mesh Rendering/region_mesh_smoothed/Original:Smoothed:Smoothed2/1
 Region/Light/region_light_option/One source:Two sources:Three sources/0
 Region/Light Direction/region_light_dir/int/2
