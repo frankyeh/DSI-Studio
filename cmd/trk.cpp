@@ -485,6 +485,22 @@ int trk_post(program_option& po,
         show_progress() << "No tract generated for further processing" << std::endl;
         return 0;
     }
+
+    if (po.has("delete_repeat"))
+    {
+        show_progress() << "deleting repeat tracks..." << std::endl;
+        float distance = po.get("delete_repeat",float(1));
+        tract_model->delete_repeated(distance);
+        show_progress() << "repeat tracks with distance smaller than " << distance <<" voxel distance are deleted" << std::endl;
+    }
+    if(po.has("trim"))
+    {
+        show_progress() << "trimming tracks..." << std::endl;
+        int trim = po.get("trim",int(1));
+        for(int i = 0;i < trim;++i)
+            tract_model->trim();
+    }
+
     if(output_track)
     {
         bool failed = false;
@@ -756,62 +772,37 @@ int trk(program_option& po,std::shared_ptr<fib_data> handle)
     }
 
 
+    if(tract_model->get_visible_track_count() && po.has("refine") && (po.get("refine",1) >= 1))
     {
-        progress prog("post-tracking processing");
+        for(int i = 0;i < po.get("refine",1);++i)
+            tract_model->trim();
+        show_progress() << "refine tracking result..." << std::endl;
+        show_progress() << "convert tracks to seed regions" << std::endl;
+        tracking_thread.roi_mgr->seeds.clear();
+        std::vector<tipl::vector<3,short> > points;
+        tract_model->to_voxel(points);
+        tract_model->clear();
+        tracking_thread.roi_mgr->setRegions(points,3/*seed*/,"refine seeding region");
 
-        if(tract_model->get_visible_track_count() && po.has("refine") && (po.get("refine",1) >= 1))
-        {
-            for(int i = 0;i < po.get("refine",1);++i)
-                tract_model->trim();
-            show_progress() << "refine tracking result..." << std::endl;
-            show_progress() << "convert tracks to seed regions" << std::endl;
-            tracking_thread.roi_mgr->seeds.clear();
-            std::vector<tipl::vector<3,short> > points;
-            tract_model->to_voxel(points);
-            tract_model->clear();
-            tracking_thread.roi_mgr->setRegions(points,3/*seed*/,"refine seeding region");
-
-
-            show_progress() << "restart tracking..." << std::endl;
-            tracking_thread.run(po.get("thread_count",uint32_t(std::thread::hardware_concurrency())),true);
-            tracking_thread.fetchTracks(tract_model.get());
-            show_progress() << "finished tracking." << std::endl;
-
-            if(tract_model->get_visible_track_count() == 0)
-            {
-                show_progress() << "no tract generated. Terminating..." << std::endl;
-                return 0;
-            }
-        }
-        show_progress() << tract_model->get_visible_track_count() << " tracts are generated using " << tracking_thread.get_total_seed_count() << " seeds."<< std::endl;
-        tracking_thread.apply_tip(tract_model.get());
-        show_progress() << tract_model->get_deleted_track_count() << " tracts are removed by pruning." << std::endl;
-
+        show_progress() << "restart tracking..." << std::endl;
+        tracking_thread.run(po.get("thread_count",uint32_t(std::thread::hardware_concurrency())),true);
+        tracking_thread.fetchTracks(tract_model.get());
+        show_progress() << "finished tracking." << std::endl;
 
         if(tract_model->get_visible_track_count() == 0)
         {
-            show_progress() << "no tract to process. Terminating..." << std::endl;
+            show_progress() << "no tract generated. Terminating..." << std::endl;
             return 0;
         }
-        show_progress() << "Total tract count after post-tracking processing is " << tract_model->get_visible_track_count() << " tracts." << std::endl;
-
-
-        if (po.has("delete_repeat"))
-        {
-            show_progress() << "deleting repeat tracks..." << std::endl;
-            float distance = po.get("delete_repeat",float(1));
-            tract_model->delete_repeated(distance);
-            show_progress() << "repeat tracks with distance smaller than " << distance <<" voxel distance are deleted" << std::endl;
-        }
-        if(po.has("trim"))
-        {
-            show_progress() << "trimming tracks..." << std::endl;
-            int trim = po.get("trim",int(1));
-            for(int i = 0;i < trim;++i)
-                tract_model->trim();
-        }
     }
+    show_progress() << tract_model->get_visible_track_count() << " tracts are generated using " << tracking_thread.get_total_seed_count() << " seeds."<< std::endl;
 
+    if(tracking_thread.param.tip_iteration)
+    {
+        tracking_thread.apply_tip(tract_model.get());
+        show_progress() << tract_model->get_deleted_track_count() << " tracts are removed by pruning." << std::endl;
+        show_progress() << "Total tract count after pruning is " << tract_model->get_visible_track_count() << " tracts." << std::endl;
+    }
 
     std::string tract_file_name = po.get("source")+".tt.gz";
     bool output_track = true;
