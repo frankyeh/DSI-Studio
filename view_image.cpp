@@ -696,7 +696,7 @@ bool view_image::open(QStringList file_names_)
             }
             unsigned int pos = i*I.size();
             for(unsigned int j = 0;j < I.size();++j)
-                I_uint8[pos+j] = ((float)I[j].r+(float)I[j].r+(float)I[j].r)/3.0;
+                I_uint8[pos+j] = (float(I[j].r)+float(I[j].r)+float(I[j].r))/3.0f;
         }
         file_names.clear();
     }

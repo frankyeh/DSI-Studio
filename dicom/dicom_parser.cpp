@@ -621,7 +621,7 @@ bool load_multiple_slice_dicom(QStringList file_list,std::vector<std::shared_ptr
                 if(dicom_header2.get_slice_location() != s1)
                     break;
             }
-            geo[2] = std::ceil((float)file_list.size()/(float)b_num);
+            geo[2] = std::ceil(float(file_list.size())/float(b_num));
             iterate_slice_first = false;
         }
         else

@@ -53,8 +53,8 @@ bool connectivity_matrix_dialog::is_graphic_view(QObject *object) const
 void connectivity_matrix_dialog::mouse_move(QMouseEvent *mouseEvent)
 {
     QPointF point = ui->graphicsView->mapToScene(mouseEvent->pos().x(),mouseEvent->pos().y());
-    int x = std::floor(((float)point.x()) / ui->zoom->value() - 0.5);
-    int y = std::floor(((float)point.y()) / ui->zoom->value() - 0.5);
+    int x = std::floor(float(point.x()) / ui->zoom->value() - 0.5f);
+    int y = std::floor(float(point.y()) / ui->zoom->value() - 0.5f);
     if(x >= 0 && y >= 0 && x < data.region_name.size() && y < data.region_name.size())
     {
         data.save_to_image(cm);

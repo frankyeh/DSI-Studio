@@ -92,9 +92,9 @@ bool db_window::eventFilter(QObject *obj, QEvent *event)
         return false;
     QMouseEvent *mouseEvent = static_cast<QMouseEvent*>(event);
     QPointF point = ui->vbc_view->mapToScene(mouseEvent->pos().x(),mouseEvent->pos().y());
-    tipl::vector<3,float> pos;
-    pos[0] =  ((float)point.x()) / ui->zoom->value() - 0.5;
-    pos[1] =  ((float)point.y()) / ui->zoom->value() - 0.5;
+    tipl::vector<3> pos;
+    pos[0] =  float(point.x()) / ui->zoom->value() - 0.5f;
+    pos[1] =  float(point.y()) / ui->zoom->value() - 0.5f;
     pos[2] = ui->slice_pos->value();
     if(!vbc->handle->dim.is_valid(pos))
         return true;

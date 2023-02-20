@@ -688,14 +688,14 @@ void GLWidget::renderLR()
                 break;
         }
         glEnable(GL_COLOR_MATERIAL);
-        setupLight((float)(get_param("odf_light_ambient"))/10.0,
-                   (float)(get_param("odf_light_diffuse"))/10.0,
-                   (float)(get_param("odf_light_specular"))/10.0,
-                   (float)(get_param("odf_light_dir"))*3.1415926*2.0/10.0,
-                   (float)(get_param("odf_light_shading"))*3.1415926/20.0,
+        setupLight(float(get_param("odf_light_ambient"))/10.0f,
+                   float(get_param("odf_light_diffuse"))/10.0f,
+                   float(get_param("odf_light_specular"))/10.0f,
+                   float(get_param("odf_light_dir"))*3.1415926f*2.0f/10.0f,
+                   float(get_param("odf_light_shading"))*3.1415926f/20.0f,
                    get_param("odf_light_option"));
-        setupMaterial((float)(get_param("odf_emission"))/10.0,
-                      (float)(get_param("odf_specular"))/10.0,
+        setupMaterial(float(get_param("odf_emission"))/10.0f,
+                      float(get_param("odf_specular"))/10.0f,
                       get_param("odf_shininess")*10);
 
         glPushMatrix();
@@ -740,11 +740,11 @@ void GLWidget::renderLR()
             glLineWidth(get_param("tract_line_width"));
         }
         else
-            setupLight((float)(get_param("tract_light_ambient"))/10.0,
-                   (float)(get_param("tract_light_diffuse"))/10.0,
-                   (float)(get_param("tract_light_specular"))/10.0,
-                   (float)(get_param("tract_light_dir"))*3.1415926*2.0/10.0,
-                   (float)(get_param("tract_light_shading"))*3.1415926/20.0,
+            setupLight(float(get_param("tract_light_ambient"))/10.0f,
+                   float(get_param("tract_light_diffuse"))/10.0f,
+                   float(get_param("tract_light_specular"))/10.0f,
+                   float(get_param("tract_light_dir"))*3.1415926f*2.0f/10.0f,
+                   float(get_param("tract_light_shading"))*3.1415926f/20.0f,
                    get_param("tract_light_option"));
 
 
@@ -752,7 +752,7 @@ void GLWidget::renderLR()
         {
             glEnable(GL_LIGHT2);
             GLfloat light[4];
-            std::fill(light,light+3, (float)(get_param("tract_light_diffuse"))/10.0);
+            std::fill(light,light+3, float(get_param("tract_light_diffuse"))/10.0f);
             light[3] = 1.0f;
             glLightfv(GL_LIGHT2, GL_DIFFUSE, light);
             std::fill(light,light+3,0.0f);
@@ -1150,17 +1150,17 @@ void GLWidget::renderLR()
     if (surface.get() && get_param("show_surface"))
     {
         glDisable(GL_COLOR_MATERIAL);
-        setupLight((float)(get_param("surface_light_ambient"))/10.0,
-                   (float)(get_param("surface_light_diffuse"))/10.0,
-                   (float)(get_param("surface_light_specular"))/10.0,
-                   (float)(get_param("surface_light_dir"))*3.1415926*2.0/10.0,
-                   (float)(get_param("surface_light_shading"))*3.1415926/20.0,
+        setupLight(float(get_param("surface_light_ambient"))/10.0f,
+                   float(get_param("surface_light_diffuse"))/10.0f,
+                   float(get_param("surface_light_specular"))/10.0f,
+                   float(get_param("surface_light_dir"))*3.1415926f*2.0f/10.0f,
+                   float(get_param("surface_light_shading"))*3.1415926f/20.0f,
                    get_param("surface_light_option"));
 
         glPushMatrix();
         glMultMatrixf(transformation_matrix.begin());
-        setupMaterial((float)(get_param("surface_emission"))/10.0,
-                      (float)(get_param("surface_specular"))/10.0,
+        setupMaterial(float(get_param("surface_emission"))/10.0f,
+                      float(get_param("surface_specular"))/10.0f,
                       get_param("surface_shininess")*10);
 
         float alpha = get_param_float("surface_alpha");
@@ -1535,8 +1535,8 @@ void GLWidget::get_view_dir(QPoint p,tipl::vector<3,float>& dir)
     float v[3];
     glGetFloatv(GL_PROJECTION_MATRIX,m.begin());
     // Compute the vector of the pick ray in screen space
-    v[0] = (( 2.0f * ((float)p.x() * devicePixelRatio())/float(view_mode == view_mode_type::two ? cur_width/2:cur_width)) - 1 ) / m[0];
-    v[1] = -(( 2.0f * ((float)p.y() * devicePixelRatio())/((float)cur_height)) - 1 ) / m[5];
+    v[0] = (( 2.0f * (float(p.x()) * devicePixelRatio())/float(view_mode == view_mode_type::two ? cur_width/2:cur_width)) - 1 ) / m[0];
+    v[1] = -(( 2.0f * (float(p.y()) * devicePixelRatio())/float(cur_height)) - 1 ) / m[5];
     v[2] = -1.0f;
     // Transform the screen space pick ray into 3D space
     dir[0] = v[0]*mat[0] + v[1]*mat[4] + v[2]*mat[8];

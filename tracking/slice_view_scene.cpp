@@ -1284,7 +1284,7 @@ void slice_view_scene::mouseReleaseEvent ( QGraphicsSceneMouseEvent * mouseEvent
             {
                 tipl::vector<3,float> pos;
                 if (QColor(bitmap.pixel(index.x(),index.y())).red() < 64
-                    || !to_3d_space_single_slice((float)index.x()/display_ratio,(float)index.y()/display_ratio,pos))
+                    || !to_3d_space_single_slice(float(index.x())/display_ratio,float(index.y())/display_ratio,pos))
                     continue;
                 points.push_back(pos);
             }

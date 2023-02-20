@@ -1171,7 +1171,7 @@ std::pair<float,float> fib_data::get_value_range(const std::string& view_name) c
 {
     unsigned int view_index = get_name_index(view_name);
     if(view_index == view_item.size())
-        return std::make_pair((float)0.0,(float)0.0);
+        return std::make_pair(0.0f,0.0f);
     if(view_item[view_index].name == "color")
         return std::make_pair(view_item[0].min_value,view_item[0].max_value);
     return std::make_pair(view_item[view_index].min_value,view_item[view_index].max_value);
@@ -1200,9 +1200,9 @@ void fib_data::get_slice(unsigned int view_index,
         for (unsigned int index = 0;index < buf.size();++index)
         {
             auto d = dir.get_fib(buf[index],0);
-            show_image[index].r = std::abs((float)show_image[index].r*d[0]);
-            show_image[index].g = std::abs((float)show_image[index].g*d[1]);
-            show_image[index].b = std::abs((float)show_image[index].b*d[2]);
+            show_image[index].r = std::abs(float(show_image[index].r)*d[0]);
+            show_image[index].g = std::abs(float(show_image[index].g)*d[1]);
+            show_image[index].b = std::abs(float(show_image[index].b)*d[2]);
         }
     }
     else
