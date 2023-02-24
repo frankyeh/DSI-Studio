@@ -1576,45 +1576,48 @@ unsigned int find_nearest_contain(const float* trk,unsigned int length,
 
 //---------------------------------------------------------------------------
 
-bool fib_data::recognize(std::shared_ptr<TractModel>& trk,std::vector<unsigned int>& label)
+bool fib_data::recognize(std::shared_ptr<TractModel>& trk,
+                         std::vector<unsigned int>& labels,
+                         std::vector<unsigned int>& label_count)
 {
     if(!load_track_atlas())
         return false;
-    label.resize(trk->get_tracts().size());
+    labels.resize(trk->get_tracts().size());
     tipl::par_for(trk->get_tracts().size(),[&](size_t i)
     {
         if(trk->get_tracts()[i].empty())
             return;
-        label[i] = find_nearest_contain(&(trk->get_tracts()[i][0]),uint32_t(trk->get_tracts()[i].size()),track_atlas->get_tracts(),track_atlas->get_cluster_info());
+        labels[i] = find_nearest_contain(&(trk->get_tracts()[i][0]),uint32_t(trk->get_tracts()[i].size()),track_atlas->get_tracts(),track_atlas->get_cluster_info());
     });
-    return true;
-}
-
-bool fib_data::recognize(std::shared_ptr<TractModel>& trk,std::map<float,std::string,std::greater<float> >& result)
-{
-    if(!load_track_atlas())
-        return false;
-    std::vector<unsigned int> label;
-    if(!recognize(trk,label))
-        return false;
 
     std::vector<unsigned int> count(tractography_name_list.size());
-    for(auto l : label)
+    for(auto l : labels)
     {
         if(l < count.size())
             ++count[l];
     }
+    label_count.swap(count);
+    return true;
+}
+
+bool fib_data::recognize_and_sort(std::shared_ptr<TractModel>& trk,std::multimap<float,std::string,std::greater<float> >& result)
+{
+    if(!load_track_atlas())
+        return false;
+    std::vector<unsigned int> labels,count;
+    if(!recognize(trk,labels,count))
+        return false;
     auto sum = std::accumulate(count.begin(),count.end(),0);
     result.clear();
     for(size_t i = 0;i < count.size();++i)
         if(count[i])
-            result[float(count[i])/float(sum)] = tractography_name_list[i];
+            result.insert(std::make_pair(float(count[i])/float(sum),tractography_name_list[i]));
     return true;
 }
 void fib_data::recognize_report(std::shared_ptr<TractModel>& trk,std::string& report)
 {
-    std::map<float,std::string,std::greater<float> > result;
-    if(!recognize(trk,result)) // true: connectometry may only show part of pathways. enable containing condition
+    std::multimap<float,std::string,std::greater<float> > result;
+    if(!recognize_and_sort(trk,result)) // true: connectometry may only show part of pathways. enable containing condition
         return;
     size_t n = 0;
     std::ostringstream out;

@@ -293,8 +293,10 @@ public:
     std::string tractography_atlas_file_name;
     std::vector<std::string> tractography_name_list;
     float tract_atlas_jacobian = 0.0f;
-    bool recognize(std::shared_ptr<TractModel>& trk,std::vector<unsigned int>& result);
-    bool recognize(std::shared_ptr<TractModel>& trk,std::map<float,std::string,std::greater<float> >& result);
+    bool recognize(std::shared_ptr<TractModel>& trk,
+                   std::vector<unsigned int>& labels,
+                   std::vector<unsigned int>& label_count);
+    bool recognize_and_sort(std::shared_ptr<TractModel>& trk,std::multimap<float,std::string,std::greater<float> >& result);
     void recognize_report(std::shared_ptr<TractModel>& trk,std::string& report);
 public:
     void match_template(void);

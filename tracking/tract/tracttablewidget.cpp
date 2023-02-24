@@ -595,10 +595,10 @@ void TractTableWidget::recog_tracks(void)
         QMessageBox::critical(this,"ERROR",cur_tracking_window.handle->error_msg.c_str());
         return;
     }
-    std::map<float,std::string,std::greater<float> > sorted_list;
+    std::multimap<float,std::string,std::greater<float> > sorted_list;
     {
         auto lock = tract_rendering[uint32_t(currentRow())]->start_reading();
-        if(!cur_tracking_window.handle->recognize(tract_models[uint32_t(currentRow())],sorted_list))
+        if(!cur_tracking_window.handle->recognize_and_sort(tract_models[uint32_t(currentRow())],sorted_list))
         {
             QMessageBox::critical(this,"ERROR","Cannot recognize tracks.");
             return;
@@ -620,15 +620,11 @@ void TractTableWidget::auto_recognition(void)
         QMessageBox::critical(this,"ERROR",cur_tracking_window.handle->error_msg.c_str());
         return;
     }
-    std::vector<unsigned int> c,new_c;
+    std::vector<unsigned int> c,new_c,count;
     {
         auto lock = tract_rendering[uint32_t(currentRow())]->start_reading();
-        cur_tracking_window.handle->recognize(tract_models[uint32_t(currentRow())],c);
+        cur_tracking_window.handle->recognize(tract_models[uint32_t(currentRow())],c,count);
     }
-    std::vector<unsigned int> count(cur_tracking_window.handle->tractography_name_list.size());
-    for(auto l : c)
-        if(l < count.size())
-            ++count[l];
     std::multimap<unsigned int,unsigned int,std::greater<unsigned int> > tract_list;
     for(unsigned int i = 0;i < count.size();++i)
         if(count[i])
@@ -659,9 +655,9 @@ void TractTableWidget::recognize_rename(void)
     for(unsigned int index = 0;progress::at(index,tract_models.size());++index)
         if(item(int(index),0)->checkState() == Qt::Checked)
         {
-            std::map<float,std::string,std::greater<float> > sorted_list;
+            std::multimap<float,std::string,std::greater<float> > sorted_list;
             auto lock = tract_rendering[index]->start_reading();
-            if(!cur_tracking_window.handle->recognize(tract_models[index],sorted_list))
+            if(!cur_tracking_window.handle->recognize_and_sort(tract_models[index],sorted_list))
                 return;
             item(int(index),0)->setText(sorted_list.begin()->second.c_str());
         }
