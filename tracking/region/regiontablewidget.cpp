@@ -275,7 +275,7 @@ bool RegionTableWidget::command(QString cmd,QString param,QString)
                 filename  += "/";
                 filename  += item(index,0)->text().toStdString();
                 filename  += output_format().toStdString();
-                regions[size_t(index)]->SaveToFile(filename.c_str());
+                regions[size_t(index)]->save_to_file(filename.c_str());
             }
         return true;
     }
@@ -1116,7 +1116,7 @@ void RegionTableWidget::save_region(void)
         return;
     if(QFileInfo(filename.toLower()).completeSuffix() != "mat" && QFileInfo(filename.toLower()).completeSuffix() != "txt")
         filename = QFileInfo(filename).absolutePath() + "/" + QFileInfo(filename).baseName() + ".nii.gz";
-    regions[currentRow()]->SaveToFile(filename.toLocal8Bit().begin());
+    regions[currentRow()]->save_to_file(filename.toLocal8Bit().begin());
     item(currentRow(),0)->setText(QFileInfo(filename).baseName());
 }
 QString RegionTableWidget::output_format(void)

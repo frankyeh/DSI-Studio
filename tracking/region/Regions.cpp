@@ -105,7 +105,7 @@ void ROIRegion::add_points(std::vector<tipl::vector<3,short> >&& points, bool de
 }
 
 // ---------------------------------------------------------------------------
-void ROIRegion::SaveToFile(const char* FileName)
+bool ROIRegion::save_to_file(const char* FileName)
 {
     std::string file_name(FileName);
     std::string ext;
@@ -114,7 +114,10 @@ void ROIRegion::SaveToFile(const char* FileName)
 
     if (ext == std::string(".txt")) {
         std::ofstream out(FileName);
+        if(!out)
+            return false;
         std::copy(region.begin(), region.end(),std::ostream_iterator<tipl::vector<3,short> >(out, "\n"));
+        return true;
     }
     else if (ext == std::string(".mat")) {
         tipl::image<3,unsigned char> mask(dim);
@@ -125,7 +128,10 @@ void ROIRegion::SaveToFile(const char* FileName)
                                            region[index][2], dim).index()] = 255;
         }
         tipl::io::mat_write header(FileName);
+        if(!header)
+            return false;
         header << mask;
+        return true;
     }
     else if (ext == std::string(".nii") || ext == std::string("i.gz"))
     {
@@ -138,9 +144,9 @@ void ROIRegion::SaveToFile(const char* FileName)
         std::string tmp = out.str();
         if(tmp.size() < 80)
             tmp.resize(80);
-        gz_nifti::save_to_file(FileName,mask,vs,tipl::matrix<4,4>(trans_to_mni*to_diffusion_space),is_mni,tmp.c_str());
-
+        return gz_nifti::save_to_file(FileName,mask,vs,tipl::matrix<4,4>(trans_to_mni*to_diffusion_space),is_mni,tmp.c_str());
     }
+    return false;
 }
 
 // ---------------------------------------------------------------------------

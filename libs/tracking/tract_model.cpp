@@ -1012,7 +1012,7 @@ bool TractModel::save_tracts_to_file(const char* file_name_)
         get_tract_points(points);
         ROIRegion region(geo,vs,trans_to_mni);
         region.add_points(std::move(points));
-        region.SaveToFile(file_name_);
+        region.save_to_file(file_name_);
         return true;
     }
     return save_tracts_to_file((std::string(file_name_) + ".tt.gz").c_str());

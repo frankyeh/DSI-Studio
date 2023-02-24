@@ -555,6 +555,19 @@ int trk_post(program_option& po,
         return 1;
     if(po.has(("end_point")) && !tract_model->save_end_points(po.get("end_point").c_str()))
         return 1;
+    if(po.has(("end_point1")) || po.has(("end_point2")))
+    {
+        std::vector<tipl::vector<3,short> > points1,points2;
+        tract_model->to_end_point_voxels(points1,points2);
+        ROIRegion end1(handle),end2(handle);
+        end1.add_points(std::move(points1));
+        end2.add_points(std::move(points2));
+        if(po.has(("end_point1")) && !end1.save_to_file(po.get("end_point1").c_str()))
+            return 1;
+        if(po.has(("end_point2")) && !end2.save_to_file(po.get("end_point2").c_str()))
+            return 1;
+    }
+
     // allow adding other slices for connectivity and statistics
     if(po.has("other_slices") && !check_other_slices(po.get("other_slices"),handle))
         return 1;

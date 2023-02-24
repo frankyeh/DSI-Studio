@@ -342,7 +342,7 @@ void reconstruction_window::on_save_mask_clicked()
         filename = QFileInfo(filename).absolutePath() + "/" + QFileInfo(filename).baseName() + ".nii.gz";
     ROIRegion region(handle->dwi.shape(),handle->voxel.vs);
     region.LoadFromBuffer(handle->voxel.mask);
-    region.SaveToFile(filename.toLocal8Bit().begin());
+    region.save_to_file(filename.toLocal8Bit().begin());
 }
 void reconstruction_window::on_actionFlip_bx_triggered()
 {

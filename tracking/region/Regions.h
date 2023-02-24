@@ -126,7 +126,7 @@ public:
             modified = true;
             return true;
         }
-        void SaveToFile(const char* FileName);
+        bool save_to_file(const char* FileName);
         bool LoadFromFile(const char* FileName);
         void Flip(unsigned int dimension);
         bool shift(tipl::vector<3,float> dx);
