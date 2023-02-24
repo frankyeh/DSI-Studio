@@ -326,7 +326,7 @@ bool get_connectivity_matrix(program_option& po,
                 QDir::setCurrent(QFileInfo(output_name.c_str()).absolutePath());
             if(!data.calculate(handle,*(tract_model.get()),connectivity_value,use_end_only,t))
             {
-                show_progress() << "connectivity calculation error:" << data.error_msg << std::endl;
+                show_progress() << "ERROR: " << data.error_msg << std::endl;
                 return false;
             }
             if(data.overlap_ratio > 0.5f)
@@ -550,11 +550,20 @@ int trk_post(program_option& po,
     }
 
     if(po.has(("native_track")) && !tract_model->save_tracts_in_native_space(handle,po.get("native_track").c_str()))
+    {
+        show_progress() << "ERROR: failed to save file to " << po.get("native_track") << std::endl;
         return 1;
+    }
     if(po.has(("template_track")) && !tract_model->save_tracts_in_template_space(handle,po.get("template_track").c_str()))
+    {
+        show_progress() << "ERROR: failed to save file to " << po.get("template_track") << std::endl;
         return 1;
+    }
     if(po.has(("end_point")) && !tract_model->save_end_points(po.get("end_point").c_str()))
+    {
+        show_progress() << "ERROR: failed to save file to " << po.get("end_point") << std::endl;
         return 1;
+    }
     if(po.has(("end_point1")) || po.has(("end_point2")))
     {
         std::vector<tipl::vector<3,short> > points1,points2;
@@ -563,9 +572,15 @@ int trk_post(program_option& po,
         end1.add_points(std::move(points1));
         end2.add_points(std::move(points2));
         if(po.has(("end_point1")) && !end1.save_to_file(po.get("end_point1").c_str()))
+        {
+            show_progress() << "ERROR: failed to save file to " << po.get("end_point1") << std::endl;
             return 1;
+        }
         if(po.has(("end_point2")) && !end2.save_to_file(po.get("end_point2").c_str()))
+        {
+            show_progress() << "ERROR: failed to save file to " << po.get("end_point2") << std::endl;
             return 1;
+        }
     }
 
     // allow adding other slices for connectivity and statistics
