@@ -670,6 +670,40 @@ int trk(program_option& po)
     }
     return 0;
 }
+
+void setup_trk_param(std::shared_ptr<fib_data> handle,ThreadData& tracking_thread,program_option& po)
+{
+    progress prog("tracking parameters:");
+    tracking_thread.param.default_otsu = po.get("otsu_threshold",tracking_thread.param.default_otsu);
+    tracking_thread.param.threshold = po.get("fa_threshold",tracking_thread.param.threshold);
+    tracking_thread.param.dt_threshold = po.get("dt_threshold",po.has("dt_threshold_index") ? 0.2f : tracking_thread.param.dt_threshold);
+    tracking_thread.param.cull_cos_angle = float(std::cos(po.get("turning_angle",0.0)*3.14159265358979323846/180.0));
+    tracking_thread.param.step_size = po.get("step_size",tracking_thread.param.step_size);
+    tracking_thread.param.smooth_fraction = po.get("smoothing",tracking_thread.param.smooth_fraction);
+    tracking_thread.param.min_length = po.get("min_length",handle->min_length());
+    tracking_thread.param.max_length = std::max<float>(tracking_thread.param.min_length,po.get("max_length",handle->max_length()));
+
+    tracking_thread.param.random_seed = uint8_t(po.get("random_seed",int(tracking_thread.param.random_seed)));
+    tracking_thread.param.tracking_method = uint8_t(po.get("method",int(tracking_thread.param.tracking_method)));
+    tracking_thread.param.check_ending = uint8_t(po.get("check_ending",int(0))) && !(po.has("dt_threshold_index"));
+    tracking_thread.param.tip_iteration = uint8_t(po.get("tip_iteration", (po.has("track_id") | po.has("dt_metric1") ) ? 16 : 0));
+
+    if (po.has("fiber_count"))
+    {
+        tracking_thread.param.termination_count = po.get("fiber_count",uint32_t(tracking_thread.param.termination_count));
+        tracking_thread.param.stop_by_tract = 1;
+        tracking_thread.param.max_seed_count = po.get("seed_count",uint32_t(tracking_thread.param.max_seed_count));
+    }
+    else
+    {
+        tracking_thread.param.termination_count = po.get("seed_count",po.has("dt_metric1") ? 10000000 :
+                                                        uint32_t(tracking_thread.param.termination_count));
+        tracking_thread.param.stop_by_tract = 0;
+    }
+
+    if(po.has("parameter_id"))
+        tracking_thread.param.set_code(po.get("parameter_id"));
+}
 extern std::vector<std::string> fa_template_list;
 int trk(program_option& po,std::shared_ptr<fib_data> handle)
 {
@@ -738,45 +772,8 @@ int trk(program_option& po,std::shared_ptr<fib_data> handle)
         handle->set_template_id(po.get("template",size_t(0)));
     }
 
-    tipl::shape<3> shape = handle->dim;
-    const float *fa0 = handle->dir.fa[0];
-    float otsu = handle->dir.fa_otsu;
-
-
     ThreadData tracking_thread(handle);
-
-    {
-        progress prog("tracking parameters:");
-        tracking_thread.param.default_otsu = po.get("otsu_threshold",tracking_thread.param.default_otsu);
-        tracking_thread.param.threshold = po.get("fa_threshold",tracking_thread.param.threshold);
-        tracking_thread.param.dt_threshold = po.get("dt_threshold",po.has("dt_threshold_index") ? 0.2f : tracking_thread.param.dt_threshold);
-        tracking_thread.param.cull_cos_angle = float(std::cos(po.get("turning_angle",0.0)*3.14159265358979323846/180.0));
-        tracking_thread.param.step_size = po.get("step_size",tracking_thread.param.step_size);
-        tracking_thread.param.smooth_fraction = po.get("smoothing",tracking_thread.param.smooth_fraction);
-        tracking_thread.param.min_length = po.get("min_length",handle->min_length());
-        tracking_thread.param.max_length = std::max<float>(tracking_thread.param.min_length,po.get("max_length",handle->max_length()));
-
-        tracking_thread.param.random_seed = uint8_t(po.get("random_seed",int(tracking_thread.param.random_seed)));
-        tracking_thread.param.tracking_method = uint8_t(po.get("method",int(tracking_thread.param.tracking_method)));
-        tracking_thread.param.check_ending = uint8_t(po.get("check_ending",int(0))) && !(po.has("dt_threshold_index"));
-        tracking_thread.param.tip_iteration = uint8_t(po.get("tip_iteration", (po.has("track_id") | po.has("dt_metric1") ) ? 16 : 0));
-
-        if (po.has("fiber_count"))
-        {
-            tracking_thread.param.termination_count = po.get("fiber_count",uint32_t(tracking_thread.param.termination_count));
-            tracking_thread.param.stop_by_tract = 1;
-            tracking_thread.param.max_seed_count = po.get("seed_count",uint32_t(tracking_thread.param.max_seed_count));
-        }
-        else
-        {
-            tracking_thread.param.termination_count = po.get("seed_count",po.has("dt_metric1") ? 10000000 :
-                                                            uint32_t(tracking_thread.param.termination_count));
-            tracking_thread.param.stop_by_tract = 0;
-        }
-
-        if(po.has("parameter_id"))
-            tracking_thread.param.set_code(po.get("parameter_id"));
-    }
+    setup_trk_param(handle,tracking_thread,po);
 
     {
         progress prog("setting up regions");
