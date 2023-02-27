@@ -126,7 +126,6 @@ std::string run_auto_track(program_option& po,const std::vector<std::string>& fi
     float track_voxel_ratio = po.get("track_voxel_ratio",2.0f);
     float yield_rate = po.get("yield_rate",0.00001f);
     size_t yield_check_count = 10.0f/yield_rate;
-    int tip = po.get("tip_iteration",48);
     bool export_stat = po.get("export_stat",1);
     bool export_trk = po.get("export_trk",1);
     bool overwrite = po.get("overwrite",0);
@@ -267,12 +266,19 @@ std::string run_auto_track(program_option& po,const std::vector<std::string>& fi
                     {
                         if(!handle->load_track_atlas())
                             return handle->error_msg + " at " + fib_file_name;
+
+                        thread.param.default_otsu = po.get("otsu_threshold",thread.param.default_otsu);
+                        thread.param.threshold = po.get("fa_threshold",thread.param.threshold);
+                        thread.param.cull_cos_angle = float(std::cos(po.get("turning_angle",0.0)*3.14159265358979323846/180.0));
+                        thread.param.step_size = po.get("step_size",thread.param.step_size);
+                        thread.param.smooth_fraction = po.get("smoothing",thread.param.smooth_fraction);
+
                         thread.param.min_length = handle->vs[0]*std::max<float>(tolerance[tracking_iteration],
                                                                    handle->tract_atlas_min_length[track_id[j]]-2.0f*tolerance[tracking_iteration])/handle->tract_atlas_jacobian;
                         thread.param.max_length = handle->vs[0]*(handle->tract_atlas_max_length[track_id[j]]+2.0f*tolerance[tracking_iteration])/handle->tract_atlas_jacobian;
                         show_progress() << "min_length(mm): " << thread.param.min_length << std::endl;
                         show_progress() << "max_length(mm): " << thread.param.max_length << std::endl;
-                        thread.param.tip_iteration = uint8_t(tip);
+                        thread.param.tip_iteration = po.get("tip_iteration",48);
                         thread.param.check_ending = check_ending && !QString(track_name.c_str()).contains("Cingulum");
                         thread.param.stop_by_tract = 1;
                         thread.param.termination_count = 0;
