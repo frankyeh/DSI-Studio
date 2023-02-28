@@ -1,4 +1,3 @@
-#define NOMINMAX
 #include <QtOpenGL>
 #include <QtGui>
 #include <QMessageBox>
