@@ -1,7 +1,6 @@
 #include "glwidget.h"
 #include "tract_render.hpp"
 #include "tracking/color_bar_dialog.hpp"
-#define NOMINMAX
 #ifdef __APPLE__
 #include <OpenGL/glu.h>
 #else
