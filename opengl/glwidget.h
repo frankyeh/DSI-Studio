@@ -4,7 +4,9 @@
 #include <QTime>
 #include <QOpenGLTexture>
 //#include <QOpenGLShaderProgram>
+#ifndef NOMINMAX
 #define NOMINMAX
+#endif
 #include <memory>
 #include <QOpenGLWidget>
 #include <QOpenGLFunctions>
