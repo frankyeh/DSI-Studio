@@ -1211,6 +1211,7 @@ bool TractTableWidget::command(QString cmd,QString param,QString param2)
             }
         cur_tracking_window.set_data("tract_color_style",1);//manual assigned
         emit show_tracts();
+        return true;
     }
     return false;
 }
