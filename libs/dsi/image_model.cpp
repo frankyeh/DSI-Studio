@@ -857,7 +857,7 @@ void ImageModel::resample(float nv)
     T.sr[8] = double(new_vs[2]/voxel.vs[2]);
     rotate(new_geo,new_vs,T);
     voxel.report += " The images were resampled to ";
-    voxel.report += std::to_string(int(new_vs[0]));
+    voxel.report += std::to_string(nv);
     voxel.report += " mm isotropic resolution.";
 }
 void ImageModel::smoothing(void)
