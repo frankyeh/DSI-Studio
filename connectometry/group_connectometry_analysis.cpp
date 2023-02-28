@@ -90,8 +90,6 @@ void group_connectometry_analysis::run_permutation_multithread(unsigned int id,u
     std::shared_ptr<tracking_data> fib(new tracking_data);
     fib->read(handle);
     bool null = true;
-    auto total_track = [&](void){return dec_track->get_visible_track_count()+
-                                        inc_track->get_visible_track_count();};
     for(unsigned int i = id;i < permutation_count && !terminated;)
     {
         std::vector<std::vector<float> > pos_tracks,neg_tracks;
