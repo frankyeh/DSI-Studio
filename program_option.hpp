@@ -4,11 +4,13 @@
 #include <fstream>
 #include <vector>
 #include <iostream>
+#include <set>
 #include "prog_interface_static_link.h"
 class program_option{
     std::vector<std::string> names;
     std::vector<std::string> values;
     std::vector<char> used;
+    std::set<std::string> not_found_names;
     std::string no_value;
     bool add_option(const std::string& str)
     {
@@ -42,7 +44,31 @@ public:
     {
         for(size_t i = 0;i < used.size();++i)
             if(!used[i])
-                show_progress() << "Warning: --" << names[i] << " is not used. Please check command line syntax." << std::endl;
+            {
+                const std::string& str1 = names[i];
+                std::map<int,std::string,std::greater<int> > candidate_list;
+                for(const auto& str2 : not_found_names)
+                {
+                    int c = -std::abs(int(str1.length())-int(str2.length()));
+                    size_t common_length = std::min(str1.length(),str2.length());
+                    for(size_t j = 0;j < common_length;++j)
+                    {
+                        if(str1[j] == str2[j])
+                            ++c;
+                        if(str1[str1.length()-1-j] == str2[str2.length()-1-j])
+                            ++c;
+                    }
+                    candidate_list[c] = str2;
+                }
+                std::string prompt_msg;
+                if(!candidate_list.empty() && candidate_list.begin()->first > 0)
+                {
+                    prompt_msg = "Did you mean --";
+                    prompt_msg += candidate_list.begin()->second;
+                    prompt_msg += " ?";
+                }
+                show_progress() << "Warning: --" << str1 << " is not used/recognized. " << prompt_msg << std::endl;
+            }
     }
     void clear(void)
     {
@@ -127,6 +153,7 @@ public:
         for(size_t i = 0;i < names.size();++i)
             if(names[i] == str_name)
                 return true;
+        not_found_names.insert(name);
         return false;
     }
 
@@ -169,6 +196,7 @@ public:
                 }
                 return values[i];
             }
+        not_found_names.insert(name);
         return no_value;
     }
 
@@ -186,6 +214,7 @@ public:
                 }
                 return values[i];
             }
+        not_found_names.insert(name);
         show_progress() << name << "=" << df_value << std::endl;
         return df_value;
     }
@@ -205,6 +234,7 @@ public:
                 std::istringstream(values[i]) >> df;
                 return df;
             }
+        not_found_names.insert(name);
         show_progress() << name << "=" << df << std::endl;
         return df;
     }
