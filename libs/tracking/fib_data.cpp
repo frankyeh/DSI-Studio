@@ -511,6 +511,7 @@ bool fib_data::load_from_file(const char* file_name)
         else
         {
             header.toLPS(I);
+            tipl::normalize(I);
             header.get_voxel_size(vs);
             header.get_image_transformation(trans_to_mni);
             is_mni = header.is_mni();
