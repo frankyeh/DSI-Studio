@@ -368,6 +368,7 @@ bool CustomSliceModel::load_slices(const std::vector<std::string>& files,bool is
         }
         if(handle->is_mni)
         {
+            show_progress() << "Assuming the the slices are already in the template space." << std::endl;
             nifti.get_image_transformation(T);
             invT = tipl::inverse(T = tipl::from_space(T).to(handle->trans_to_mni));
             has_transform = true;
@@ -375,11 +376,20 @@ bool CustomSliceModel::load_slices(const std::vector<std::string>& files,bool is
         else
         if(is_mni)
         {
+            show_progress() << "Warpping slices to the subject space." << std::endl;
             if(!handle->mni2sub(source_images,trans))
             {
                 error_msg = handle->error_msg;
                 return false;
             }
+            is_diffusion_space = true;
+            has_transform = true;
+        }
+        else
+        if(source_images.shape() == handle->dim && QFileInfo(files[0].c_str()).fileName().contains("reg"))
+        {
+            show_progress() << "The slices have the same dimension, and there is reg in the file name." << std::endl;
+            show_progress() << "no registration needed" << std::endl;
             is_diffusion_space = true;
             has_transform = true;
         }
