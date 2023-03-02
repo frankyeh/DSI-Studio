@@ -116,27 +116,27 @@ public:
 
 class show_progress{
     std::ostringstream s;
-public:
-    ~show_progress()
-    {
-        auto str = s.str();
-        if(str.empty())
-            return;
-        if(str.back() == '\n')
-            str.pop_back();
-        progress::show(str.c_str());
-    }
-    show_progress& operator<<(std::ostream& (*var)(std::ostream&))
-    {
-        s << var;
-        return *this;
-    }
-    template<typename type>
-    show_progress& operator<<(const type& v)
-    {
-        s << v;
-        return *this;
-    }
+    public:
+        ~show_progress()
+        {
+            auto str = s.str();
+            if(str.empty())
+                return;
+            if(str.back() == '\n')
+                str.pop_back();
+            progress::show(str.c_str());
+        }
+        show_progress& operator<<(std::ostream& (*var)(std::ostream&))
+        {
+            s << var;
+            return *this;
+        }
+        template<typename type>
+        show_progress& operator<<(const type& v)
+        {
+            s << v;
+            return *this;
+        }
 };
 
 #endif

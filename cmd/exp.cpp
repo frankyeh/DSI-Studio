@@ -9,12 +9,11 @@
 #include "libs/tracking/tracking_thread.hpp"
 #include "fib_data.hpp"
 #include "libs/gzip_interface.hpp"
-#include "program_option.hpp"
 
 std::shared_ptr<fib_data> cmd_load_fib(std::string file_name);
 bool trk2tt(const char* trk_file,const char* tt_file);
 bool tt2trk(const char* tt_file,const char* trk_file);
-int exp(program_option& po)
+int exp(tipl::io::program_option<show_progress>& po)
 {
     std::string file_name = po.get("source");
     if(QString(file_name.c_str()).endsWith(".trk.gz"))

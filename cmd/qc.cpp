@@ -1,7 +1,7 @@
 #include <QString>
 #include <QStringList>
 #include <QFileInfo>
-#include "program_option.hpp"
+#include "TIPL/tipl.hpp""
 #include "libs/dsi/image_model.hpp"
 #include "fib_data.hpp"
 
@@ -99,7 +99,7 @@ std::string quality_check_src_files(QString dir)
  perform reconstruction
  */
 std::shared_ptr<fib_data> cmd_load_fib(std::string file_name);
-int qc(program_option& po)
+int qc(tipl::io::program_option<show_progress>& po)
 {
     std::string file_name = po.get("source");
     if(QFileInfo(file_name.c_str()).isDir())

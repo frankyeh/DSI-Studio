@@ -6,7 +6,6 @@
 #include "libs/dsi/image_model.hpp"
 #include "fib_data.hpp"
 #include "libs/tracking/tracking_thread.hpp"
-#include "program_option.hpp"
 #include <filesystem>
 extern std::vector<std::string> fa_template_list;
 auto_track::auto_track(QWidget *parent) :
@@ -120,7 +119,7 @@ struct file_holder{
     }
 };
 
-std::string run_auto_track(program_option& po,const std::vector<std::string>& file_list,const std::vector<unsigned int>& track_id,int& prog)
+std::string run_auto_track(tipl::io::program_option<show_progress>& po,const std::vector<std::string>& file_list,const std::vector<unsigned int>& track_id,int& prog)
 {
     std::string tolerance_string = po.get("tolerance","22,26,30");
     float track_voxel_ratio = po.get("track_voxel_ratio",2.0f);
@@ -529,7 +528,7 @@ void auto_track::on_run_clicked()
     timer->start(5000);
     progress prog_("");
 
-    program_option po;
+    tipl::io::program_option<show_progress> po;
     po["tolerance"] = ui->tolerance->text().toStdString();
     po["track_voxel_ratio"] = float(ui->track_voxel_ratio->value());
     po["tip_iteration"] = ui->pruning->value();

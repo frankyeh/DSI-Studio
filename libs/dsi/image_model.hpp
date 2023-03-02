@@ -249,7 +249,7 @@ public:
     bool is_multishell(void);
     void get_report(std::string& report);
 public:
-    std::vector<std::pair<int,int> > get_bad_slices(void);
+    std::vector<std::pair<size_t,size_t> > get_bad_slices(void);
     float quality_control_neighboring_dwi_corr(void);
     bool is_human_data(void) const;
     std::vector<size_t> get_sorted_dwi_index(void);

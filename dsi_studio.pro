@@ -81,7 +81,6 @@ HEADERS += mainwindow.h \
     tracking/connectivity_matrix_dialog.h \
     tracking/atlasdialog.h \
     filebrowser.h \
-    program_option.hpp \
     qcompletelineedit.h \
     libs/mapping/connectometry_db.hpp \
     connectometry/createdbdialog.h \

@@ -1,10 +1,11 @@
 #include <iostream>
 #include <QDir>
-#include "program_option.hpp"
+#include "prog_interface_static_link.h"
+#include "TIPL/tipl.hpp"
 QStringList rename_dicom_at_dir(QString path,QString output);
 QStringList GetSubDir(QString Dir,bool recursive = true);
 void dicom2src(std::string dir_);
-int ren(program_option& po)
+int ren(tipl::io::program_option<show_progress>& po)
 {
     progress p("run ren");
     auto source = std::filesystem::path(po.get("source")).string();

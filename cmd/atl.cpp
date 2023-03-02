@@ -4,7 +4,6 @@
 #include "TIPL/tipl.hpp"
 #include "libs/gzip_interface.hpp"
 #include "mapping/atlas.hpp"
-#include "program_option.hpp"
 #include "fib_data.hpp"
 #include "connectometry/group_connectometry_analysis.h"
 
@@ -48,7 +47,7 @@ void get_files_in_folder(std::string dir,std::string file,std::vector<std::strin
     files = std::move(name_list);
 }
 void get_filenames_from(const std::string param,std::vector<std::string>& filenames);
-int atl(program_option& po)
+int atl(tipl::io::program_option<show_progress>& po)
 {
     // construct an atlas
     std::string cmd = po.get("cmd");

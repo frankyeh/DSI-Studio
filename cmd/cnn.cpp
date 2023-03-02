@@ -1,6 +1,5 @@
 #include <QApplication>
 #include <QFileInfo>
-#include "program_option.hpp"
 #include "TIPL/tipl.hpp"
 #include "gzip_interface.hpp"
 #include "connectometry/group_connectometry_analysis.h"
@@ -38,7 +37,7 @@ bool train_cnn(tipl::ml::trainer& t,
 }
 
 
-int cnn(program_option& po)
+int cnn(tipl::io::program_option<show_progress>& po)
 {
     std::shared_ptr<group_connectometry_analysis> gca(new group_connectometry_analysis);
     if(!gca->load_database(po.get("source").c_str()))

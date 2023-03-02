@@ -10,7 +10,6 @@
 #include "libs/dsi/image_model.hpp"
 #include "libs/gzip_interface.hpp"
 #include "reconstruction/reconstruction_window.h"
-#include "program_option.hpp"
 #include "reg.hpp"
 #include <filesystem>
 
@@ -19,7 +18,7 @@ bool get_src(std::string filename,ImageModel& src2,std::string& error_msg);
 /**
  perform reconstruction
  */
-int rec(program_option& po)
+int rec(tipl::io::program_option<show_progress>& po)
 {
     std::string file_name = po.get("source");
     ImageModel src;

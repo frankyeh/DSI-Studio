@@ -3,12 +3,11 @@
 #include "libs/tracking/tract_model.hpp"
 #include "tracking/tracking_window.h"
 #include "opengl/glwidget.h"
-#include "program_option.hpp"
 
 std::shared_ptr<fib_data> cmd_load_fib(std::string file_name);
 void get_filenames_from(const std::string param,std::vector<std::string>& filenames);
 extern bool has_gui;
-int vis(program_option& po)
+int vis(tipl::io::program_option<show_progress>& po)
 {
     std::shared_ptr<fib_data> new_handle = cmd_load_fib(po.get("source"));
     if(!new_handle.get())

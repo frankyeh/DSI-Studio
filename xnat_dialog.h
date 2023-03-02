@@ -2,7 +2,6 @@
 #define XNAT_DIALOG_H
 #include <QtNetwork>
 #include <iostream>
-#include "program_option.hpp"
 #include "prog_interface_static_link.h"
 #include <QApplication>
 #include "TIPL/tipl.hpp"

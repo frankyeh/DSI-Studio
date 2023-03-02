@@ -5,7 +5,6 @@
 #include "libs/tracking/tract_model.hpp"
 #include "libs/tracking/tracking_thread.hpp"
 #include "tracking/tracking_window.h"
-#include "program_option.hpp"
 #include "tracking/region/regiontablewidget.h"
 #include <filesystem>
 

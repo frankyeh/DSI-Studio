@@ -5,9 +5,8 @@
 #include "tracking/roi.hpp"
 #include "connectometry/group_connectometry.hpp"
 #include "ui_group_connectometry.h"
-#include "program_option.hpp"
-bool load_roi(program_option& po,std::shared_ptr<fib_data> handle,std::shared_ptr<RoiMgr> roi_mgr);
-int cnt(program_option& po)
+bool load_roi(tipl::io::program_option<show_progress>& po,std::shared_ptr<fib_data> handle,std::shared_ptr<RoiMgr> roi_mgr);
+int cnt(tipl::io::program_option<show_progress>& po)
 {
     std::shared_ptr<group_connectometry_analysis> vbc(new group_connectometry_analysis);
     if(!vbc->load_database(po.get("source").c_str()))

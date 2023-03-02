@@ -3,7 +3,6 @@
 #include <QMessageBox>
 #include "console.h"
 #include "ui_console.h"
-#include "program_option.hpp"
 #include "TIPL/tipl.hpp"
 #include "prog_interface_static_link.h"
 
@@ -63,23 +62,23 @@ Console::~Console()
     delete ui;
 }
 
-int rec(program_option& po);
-int trk(program_option& po);
-int src(program_option& po);
-int ana(program_option& po);
-int exp(program_option& po);
-int atl(program_option& po);
-int cnt(program_option& po);
-int vis(program_option& po);
-int ren(program_option& po);
-int atk(program_option& po);
-int reg(program_option& po);
-int xnat(program_option& po);
+int rec(tipl::io::program_option<show_progress>& po);
+int trk(tipl::io::program_option<show_progress>& po);
+int src(tipl::io::program_option<show_progress>& po);
+int ana(tipl::io::program_option<show_progress>& po);
+int exp(tipl::io::program_option<show_progress>& po);
+int atl(tipl::io::program_option<show_progress>& po);
+int cnt(tipl::io::program_option<show_progress>& po);
+int vis(tipl::io::program_option<show_progress>& po);
+int ren(tipl::io::program_option<show_progress>& po);
+int atk(tipl::io::program_option<show_progress>& po);
+int reg(tipl::io::program_option<show_progress>& po);
+int xnat(tipl::io::program_option<show_progress>& po);
 
-int run_action_with_wildcard(program_option& po);
+int run_action_with_wildcard(tipl::io::program_option<show_progress>& po);
 void Console::on_run_cmd_clicked()
 {
-    program_option po;
+    tipl::io::program_option<show_progress> po;
     if(ui->cmd_line->text().startsWith("dsi_studio "))
         ui->cmd_line->setText(ui->cmd_line->text().remove("dsi_studio "));
     if(!po.parse(ui->cmd_line->text().toStdString()))

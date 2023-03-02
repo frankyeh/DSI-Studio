@@ -4,8 +4,8 @@
 #include <iterator>
 #include <string>
 #include "TIPL/tipl.hpp"
+#include "prog_interface_static_link.h"
 #include "dicom/dwi_header.hpp"
-#include "program_option.hpp"
 extern std::string src_error_msg;
 QStringList search_files(QString dir,QString filter);
 bool load_bval(const char* file_name,std::vector<double>& bval);
@@ -13,7 +13,7 @@ bool load_bvec(const char* file_name,std::vector<double>& b_table,bool flip_by =
 bool parse_dwi(QStringList file_list,std::vector<std::shared_ptr<DwiHeader> >& dwi_files);
 void dicom2src(std::string dir_);
 bool nii2src_bids(QString dir,QString output_dir,std::string& error_msg);
-int src(program_option& po)
+int src(tipl::io::program_option<show_progress>& po)
 {
     std::string source = po.get("source");
     QStringList file_list;

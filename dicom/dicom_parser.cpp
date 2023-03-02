@@ -8,7 +8,6 @@
 #include "mainwindow.h"
 #include "prog_interface_static_link.h"
 #include "libs/gzip_interface.hpp"
-#include "program_option.hpp"
 
 std::string src_error_msg;
 

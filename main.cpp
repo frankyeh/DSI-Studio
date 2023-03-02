@@ -11,7 +11,6 @@
 #include "gzip_interface.hpp"
 #include "prog_interface_static_link.h"
 #include "mapping/atlas.hpp"
-#include "program_option.hpp"
 #include "mainwindow.h"
 #include "console.h"
 
@@ -32,21 +31,21 @@ std::shared_ptr<CustomSliceModel> t1t2_slices;
 extern std::vector<std::shared_ptr<CustomSliceModel> > other_slices;
 std::vector<std::shared_ptr<CustomSliceModel> > other_slices;
 
-int rec(program_option& po);
-int trk(program_option& po);
-int src(program_option& po);
-int ana(program_option& po);
-int exp(program_option& po);
-int atl(program_option& po);
-int cnt(program_option& po);
-int cnt_ind(program_option& po);
-int vis(program_option& po);
-int ren(program_option& po);
-int cnn(program_option& po);
-int qc(program_option& po);
-int reg(program_option& po);
-int atk(program_option& po);
-int xnat(program_option& po);
+int rec(tipl::io::program_option<show_progress>& po);
+int trk(tipl::io::program_option<show_progress>& po);
+int src(tipl::io::program_option<show_progress>& po);
+int ana(tipl::io::program_option<show_progress>& po);
+int exp(tipl::io::program_option<show_progress>& po);
+int atl(tipl::io::program_option<show_progress>& po);
+int cnt(tipl::io::program_option<show_progress>& po);
+int cnt_ind(tipl::io::program_option<show_progress>& po);
+int vis(tipl::io::program_option<show_progress>& po);
+int ren(tipl::io::program_option<show_progress>& po);
+int cnn(tipl::io::program_option<show_progress>& po);
+int qc(tipl::io::program_option<show_progress>& po);
+int reg(tipl::io::program_option<show_progress>& po);
+int atk(tipl::io::program_option<show_progress>& po);
+int xnat(tipl::io::program_option<show_progress>& po);
 
 
 size_t match_volume(float volume)
@@ -209,7 +208,7 @@ void move_current_dir_to(const std::string& file_name)
     std::filesystem::current_path(dir);
 }
 
-int run_action(program_option& po)
+int run_action(tipl::io::program_option<show_progress>& po)
 {
     std::string action = po.get("action");
     progress prog("run ",action.c_str());
@@ -248,7 +247,7 @@ void get_filenames_from(const std::string param,std::vector<std::string>& filena
 bool match_files(const std::string& file_path1,const std::string& file_path2,
                  const std::string& file_path1_others,std::string& file_path2_gen);
 
-int run_action_with_wildcard(program_option& po)
+int run_action_with_wildcard(tipl::io::program_option<show_progress>& po)
 {
     std::string source = po.get("source");
     std::string action = po.get("action");
@@ -324,7 +323,7 @@ void init_cuda(void)
 }
 int run_cmd(int ac, char *av[])
 {
-    program_option po;
+    tipl::io::program_option<show_progress> po;
     try
     {
         progress prog(version_string().toStdString().c_str()," command line");

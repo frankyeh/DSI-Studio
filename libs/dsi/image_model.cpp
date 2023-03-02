@@ -299,7 +299,7 @@ std::string ImageModel::check_b_table(void)
 
     return std::string();
 }
-std::vector<std::pair<int,int> > ImageModel::get_bad_slices(void)
+std::vector<std::pair<size_t,size_t> > ImageModel::get_bad_slices(void)
 {
     voxel.load_from_src(*this);
     std::vector<size_t> sorted_index(get_sorted_dwi_index()),index_mapping;
@@ -373,7 +373,7 @@ std::vector<std::pair<int,int> > ImageModel::get_bad_slices(void)
         }
     }
 
-    std::vector<std::pair<int,int> > result;
+    std::vector<std::pair<size_t,size_t> > result;
 
     auto arg = tipl::arg_sort(sum,std::less<float>());
     //tipl::image<3> bad_I(tipl::shape<3>(voxel.dim[0],voxel.dim[1],bad_i.size()));

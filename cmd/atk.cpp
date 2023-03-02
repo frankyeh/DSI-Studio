@@ -6,7 +6,7 @@
 #include <QDir>
 #include <QFileInfo>
 #include "fib_data.hpp"
-#include "program_option.hpp"
+#include "TIPL/tipl.hpp"
 
 bool find_string_case_insensitive(const std::string & str1, const std::string & str2)
 {
@@ -19,7 +19,7 @@ bool find_string_case_insensitive(const std::string & str1, const std::string & 
 }
 
 std::string run_auto_track(
-                    program_option& po,
+                    tipl::io::program_option<show_progress>& po,
                     const std::vector<std::string>& file_list,
                     const std::vector<unsigned int>& track_id,int& progress);
 
@@ -65,7 +65,7 @@ bool get_track_id(std::string track_id_text,std::vector<unsigned int>& track_id)
     pout << std::endl;
     return true;
 }
-int atk(program_option& po)
+int atk(tipl::io::program_option<show_progress>& po)
 {
     std::vector<std::string> file_list;
     get_filenames_from(po.get("source"),file_list);

@@ -12,7 +12,6 @@
 #include "libs/tracking/tracking_thread.hpp"
 #include "fib_data.hpp"
 #include "libs/gzip_interface.hpp"
-#include "program_option.hpp"
 #include "atlas.hpp"
 
 #include <filesystem>
@@ -20,13 +19,13 @@
 // test example
 // --action=ana --source=20100129_F026Y_WANFANGYUN.src.gz.odf8.f3rec.de0.dti.fib.gz --method=0 --fiber_count=5000
 bool atl_load_atlas(std::shared_ptr<fib_data> handle,std::string atlas_name,std::vector<std::shared_ptr<atlas> >& atlas_list);
-bool load_roi(program_option& po,std::shared_ptr<fib_data> handle,std::shared_ptr<RoiMgr> roi_mgr);
+bool load_roi(tipl::io::program_option<show_progress>& po,std::shared_ptr<fib_data> handle,std::shared_ptr<RoiMgr> roi_mgr);
 
 void get_regions_statistics(std::shared_ptr<fib_data> handle,
                             const std::vector<std::shared_ptr<ROIRegion> >& regions,
                             const std::vector<std::string>& region_name,
                             std::string& result);
-bool load_region(program_option& po,std::shared_ptr<fib_data> handle,
+bool load_region(tipl::io::program_option<show_progress>& po,std::shared_ptr<fib_data> handle,
                  ROIRegion& roi,const std::string& region_text);
 bool get_t1t2_nifti(const std::string& t1t2,
                     std::shared_ptr<fib_data> handle,
@@ -42,7 +41,7 @@ bool load_nii(std::shared_ptr<fib_data> handle,
               bool is_mni);
 
 
-bool load_nii(program_option& po,
+bool load_nii(tipl::io::program_option<show_progress>& po,
               std::shared_ptr<fib_data> handle,
               const std::string& region_text,
               std::vector<std::shared_ptr<ROIRegion> >& regions,
@@ -124,7 +123,7 @@ void get_filenames_from(const std::string name,std::vector<std::string>& filenam
         show_progress() << "a total of " << filenames.size() << "files matching the search" << std::endl;
 }
 
-int trk_post(program_option& po,std::shared_ptr<fib_data> handle,std::shared_ptr<TractModel> tract_model,std::string tract_file_name,bool output_track);
+int trk_post(tipl::io::program_option<show_progress>& po,std::shared_ptr<fib_data> handle,std::shared_ptr<TractModel> tract_model,std::string tract_file_name,bool output_track);
 std::shared_ptr<fib_data> cmd_load_fib(std::string file_name);
 
 bool load_tracts(const char* file_name,std::shared_ptr<TractModel> tract_model,std::shared_ptr<RoiMgr> roi_mgr)
@@ -149,7 +148,7 @@ bool load_tracts(const char* file_name,std::shared_ptr<TractModel> tract_model,s
     return true;
 }
 bool check_other_slices(const std::string& other_slices,std::shared_ptr<fib_data> handle);
-int ana_region(program_option& po)
+int ana_region(tipl::io::program_option<show_progress>& po)
 {
     std::shared_ptr<fib_data> handle = cmd_load_fib(po.get("source"));
     if(!handle.get())
@@ -235,7 +234,7 @@ int ana_region(program_option& po)
     out << result <<std::endl;
     return 0;
 }
-int ana_tract(program_option& po)
+int ana_tract(tipl::io::program_option<show_progress>& po)
 {
     std::shared_ptr<fib_data> handle = cmd_load_fib(po.get("source"));
     std::shared_ptr<RoiMgr> roi_mgr(new RoiMgr(handle));
@@ -329,7 +328,7 @@ int ana_tract(program_option& po)
     return trk_post(po,handle,tract_model,tract_files[0],false);
 
 }
-int ana(program_option& po)
+int ana(tipl::io::program_option<show_progress>& po)
 {
     if(po.has("atlas") || po.has("region") || po.has("regions"))
         return ana_region(po);

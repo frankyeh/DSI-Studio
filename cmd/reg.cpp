@@ -3,7 +3,6 @@
 #include "reg.hpp"
 #include "libs/gzip_interface.hpp"
 #include "tract_model.hpp"
-#include "program_option.hpp"
 bool apply_warping(const char* from,
                    const char* to,
                    const tipl::shape<3>& I_shape,
@@ -104,7 +103,7 @@ void edge_for_cdm(tipl::image<3>& sIt,
                   tipl::image<3>& sJ,
                   tipl::image<3>& sIt2,
                   tipl::image<3>& sJ2);
-int reg(program_option& po)
+int reg(tipl::io::program_option<show_progress>& po)
 {
     tipl::image<3> from,to,from2,to2;
     tipl::vector<3> from_vs,to_vs;

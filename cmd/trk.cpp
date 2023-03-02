@@ -4,6 +4,7 @@
 #include <iostream>
 #include <iterator>
 #include <string>
+#include <filesystem>
 #include "TIPL/tipl.hpp"
 #include "tracking/region/Regions.h"
 #include "libs/tracking/tract_model.hpp"
@@ -13,8 +14,7 @@
 #include "mapping/atlas.hpp"
 #include "SliceModel.h"
 #include "connectometry/group_connectometry_analysis.h"
-#include "program_option.hpp"
-#include <filesystem>
+
 extern std::shared_ptr<CustomSliceModel> t1t2_slices;
 extern std::vector<std::shared_ptr<CustomSliceModel> > other_slices;
 void get_filenames_from(const std::string param,std::vector<std::string>& filenames);
@@ -71,7 +71,7 @@ bool get_t1t2_nifti(const std::string& t1t2,
     show_progress() << convert[8] << " " << convert[9] << " " << convert[10] << " " << convert[11] << std::endl;
     return true;
 }
-bool export_track_info(program_option& po,std::shared_ptr<fib_data> handle,
+bool export_track_info(tipl::io::program_option<show_progress>& po,std::shared_ptr<fib_data> handle,
                        std::string file_name,
                        std::shared_ptr<TractModel> tract_model)
 {
@@ -232,13 +232,13 @@ bool export_track_info(program_option& po,std::shared_ptr<fib_data> handle,
     return true;
 }
 
-bool load_nii(program_option& po,
+bool load_nii(tipl::io::program_option<show_progress>& po,
               std::shared_ptr<fib_data> handle,
               const std::string& file_name,
               std::vector<std::shared_ptr<ROIRegion> >& regions,
               std::vector<std::string>& names);
 
-bool get_connectivity_matrix(program_option& po,
+bool get_connectivity_matrix(tipl::io::program_option<show_progress>& po,
                              std::shared_ptr<fib_data> handle,
                              std::string output_name,
                              std::shared_ptr<TractModel> tract_model)
@@ -398,7 +398,7 @@ std::shared_ptr<fib_data> cmd_load_fib(std::string file_name)
     return handle;
 }
 
-bool load_region(program_option& po,std::shared_ptr<fib_data> handle,
+bool load_region(tipl::io::program_option<show_progress>& po,std::shared_ptr<fib_data> handle,
                  ROIRegion& roi,const std::string& region_text)
 {
     QStringList str_list = QString(region_text.c_str()).split(",");// splitting actions
@@ -474,7 +474,7 @@ bool load_region(program_option& po,std::shared_ptr<fib_data> handle,
     return true;
 }
 
-int trk_post(program_option& po,
+int trk_post(tipl::io::program_option<show_progress>& po,
              std::shared_ptr<fib_data> handle,
              std::shared_ptr<TractModel> tract_model,
              std::string tract_file_name,bool output_track)
@@ -593,7 +593,7 @@ int trk_post(program_option& po,
     return 0;
 }
 
-bool load_roi(program_option& po,std::shared_ptr<fib_data> handle,std::shared_ptr<RoiMgr> roi_mgr)
+bool load_roi(tipl::io::program_option<show_progress>& po,std::shared_ptr<fib_data> handle,std::shared_ptr<RoiMgr> roi_mgr)
 {
     const int total_count = 18;
     char roi_names[total_count][5] = {"roi","roi2","roi3","roi4","roi5","roa","roa2","roa3","roa4","roa5","end","end2","seed","ter","ter2","ter3","ter4","ter5"};
@@ -651,8 +651,8 @@ bool load_roi(program_option& po,std::shared_ptr<fib_data> handle,std::shared_pt
     return true;
 }
 
-int trk(program_option& po,std::shared_ptr<fib_data> handle);
-int trk(program_option& po)
+int trk(tipl::io::program_option<show_progress>& po,std::shared_ptr<fib_data> handle);
+int trk(tipl::io::program_option<show_progress>& po)
 {
     try{
         std::shared_ptr<fib_data> handle = cmd_load_fib(po.get("source"));
@@ -671,7 +671,7 @@ int trk(program_option& po)
     return 0;
 }
 
-void setup_trk_param(std::shared_ptr<fib_data> handle,ThreadData& tracking_thread,program_option& po)
+void setup_trk_param(std::shared_ptr<fib_data> handle,ThreadData& tracking_thread,tipl::io::program_option<show_progress>& po)
 {
     progress prog("tracking parameters:");
     tracking_thread.param.default_otsu = po.get("otsu_threshold",tracking_thread.param.default_otsu);
@@ -705,7 +705,7 @@ void setup_trk_param(std::shared_ptr<fib_data> handle,ThreadData& tracking_threa
         tracking_thread.param.set_code(po.get("parameter_id"));
 }
 extern std::vector<std::string> fa_template_list;
-int trk(program_option& po,std::shared_ptr<fib_data> handle)
+int trk(tipl::io::program_option<show_progress>& po,std::shared_ptr<fib_data> handle)
 {
     if (po.has("threshold_index"))
     {
