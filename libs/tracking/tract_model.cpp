@@ -308,7 +308,7 @@ struct TrackVis
                 tipl::vector<3> vs)
     {
         progress prog_("loading ",std::filesystem::path(file_name).filename().string().c_str());
-        gz_istream in;
+        tipl::io::gz_istream in;
         if (!in.open(file_name))
             return false;
         in.read((char*)this,1000);
@@ -360,7 +360,7 @@ struct TrackVis
                              unsigned int color)
     {
         progress prog_("saving ",std::filesystem::path(file_name).filename().string().c_str());
-        gz_ostream out;
+        tipl::io::gz_ostream out;
         if (!out.open(file_name))
             return false;
         TrackVis trk;
@@ -1292,7 +1292,7 @@ bool TractModel::save_all(const char* file_name_,
 
     if (ext == std::string(".trk") || ext == std::string("k.gz")) // trk.gz
     {
-        gz_ostream out;
+        tipl::io::gz_ostream out;
         if (!out.open(file_name_))
             return false;
         progress prog_("saving ",std::filesystem::path(file_name_).filename().string().c_str());
