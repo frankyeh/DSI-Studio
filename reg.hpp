@@ -112,7 +112,7 @@ inline size_t linear_with_mi(const tipl::image<3,float>& from,
     return result;
 }
 
-inline size_t linear_with_mi_refine(const tipl::image<3,float>& from,
+size_t linear_with_mi_refine(const tipl::image<3,float>& from,
                             const tipl::vector<3>& from_vs,
                             const tipl::image<3,float>& to,
                             const tipl::vector<3>& to_vs,
@@ -128,6 +128,7 @@ inline size_t linear_with_mi_refine(const tipl::image<3,float>& from,
     }
     else
         return tipl::reg::linear<tipl::reg::mutual_information>(from,from_vs,to,to_vs,arg,tipl::reg::reg_type(reg_type),[&](void){return terminated;},precision,false,tipl::reg::narrow_bound,10);
+    return 0;
 }
 
 
