@@ -169,7 +169,6 @@ set(DSI_STUDIO_SOURCES
     cmd/atk.cpp
     tracking/device.cpp
     tracking/devicetablewidget.cpp
-    libs/gzip_interface.cpp
     cmd/xnat.cpp
     xnat_dialog.cpp
     console.cpp)
