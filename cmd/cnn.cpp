@@ -59,7 +59,7 @@ int cnn(program_option& po)
 
     std::string train_file_name = po.get("train");
     tipl::ml::network_data<unsigned char> nn_data,nn_test;
-    if(!nn_data.load_from_file<gz_istream>(train_file_name.c_str()))
+    if(!nn_data.load_from_file<tipl::io::gz_istream>(train_file_name.c_str()))
     {
         show_progress() << "cannot load training data at " << train_file_name << std::endl;
         return 1;
@@ -68,7 +68,7 @@ int cnn(program_option& po)
     if(po.has("test"))
     {
         std::string test_file_name = po.get("test");
-        if(!nn_test.load_from_file<gz_istream>(test_file_name.c_str()))
+        if(!nn_test.load_from_file<tipl::io::gz_istream>(test_file_name.c_str()))
         {
             show_progress() << "cannot load testing data at " << test_file_name << std::endl;
             return 1;

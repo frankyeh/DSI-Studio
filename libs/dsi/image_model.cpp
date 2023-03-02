@@ -2198,7 +2198,7 @@ bool ImageModel::save_to_file(const char* dwi_file_name)
     return false;
 }
 
-void prepare_idx(const char* file_name,std::shared_ptr<gz_istream> in)
+void prepare_idx(const char* file_name,std::shared_ptr<tipl::io::gz_istream> in)
 {
     if(!QString(file_name).endsWith(".gz"))
         return;
@@ -2223,7 +2223,7 @@ void prepare_idx(const char* file_name,std::shared_ptr<gz_istream> in)
         }
     }
 }
-void save_idx(const char* file_name,std::shared_ptr<gz_istream> in)
+void save_idx(const char* file_name,std::shared_ptr<tipl::io::gz_istream> in)
 {
     if(!QString(file_name).endsWith(".gz"))
         return;

@@ -396,8 +396,8 @@ bool load_fib_from_tracks(const char* file_name,
                           tipl::image<3>& I,
                           tipl::vector<3>& vs,
                           tipl::matrix<4,4>& trans_to_mni);
-void prepare_idx(const char* file_name,std::shared_ptr<gz_istream> in);
-void save_idx(const char* file_name,std::shared_ptr<gz_istream> in);
+void prepare_idx(const char* file_name,std::shared_ptr<tipl::io::gz_istream> in);
+void save_idx(const char* file_name,std::shared_ptr<tipl::io::gz_istream> in);
 bool read_fib_mat_with_idx(const char* file_name,gz_mat_read& mat_reader)
 {
     prepare_idx(file_name,mat_reader.in);

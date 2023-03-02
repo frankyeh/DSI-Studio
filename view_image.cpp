@@ -475,7 +475,7 @@ view_image::view_image(QWidget *parent) :
     opened_images.push_back(this);
 }
 
-void save_idx(const char* file_name,std::shared_ptr<gz_istream> in);
+void save_idx(const char* file_name,std::shared_ptr<tipl::io::gz_istream> in);
 view_image::~view_image()
 {
     opened_images[this_index] = nullptr;
@@ -661,7 +661,7 @@ bool view_image::read_mat(void)
     ui->mat_images->show();
     return true;
 }
-void prepare_idx(const char* file_name,std::shared_ptr<gz_istream> in);
+void prepare_idx(const char* file_name,std::shared_ptr<tipl::io::gz_istream> in);
 bool view_image::open(QStringList file_names_)
 {
     if(file_names_.empty())

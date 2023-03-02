@@ -129,8 +129,8 @@ void CustomSliceModel::get_slice(tipl::color_image& image,
 }
 // ---------------------------------------------------------------------------
 void initial_LPS_nifti_srow(tipl::matrix<4,4>& T,const tipl::shape<3>& geo,const tipl::vector<3>& vs);
-void prepare_idx(const char* file_name,std::shared_ptr<gz_istream> in);
-void save_idx(const char* file_name,std::shared_ptr<gz_istream> in);
+void prepare_idx(const char* file_name,std::shared_ptr<tipl::io::gz_istream> in);
+void save_idx(const char* file_name,std::shared_ptr<tipl::io::gz_istream> in);
 bool parse_age_sex(const std::string& file_name,std::string& age,std::string& sex);
 QString get_matched_demo(QWidget *parent,std::shared_ptr<fib_data>);
 bool CustomSliceModel::load_slices(const std::vector<std::string>& files,bool is_mni)
