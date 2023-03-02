@@ -140,7 +140,7 @@ int cnn(program_option& po)
     show_progress() << test_error << "," << train_error << "," << network_list[0] << std::endl;
 
     if(po.has("output_nn"))
-        nn.save_to_file<gz_ostream>(po.get("output_nn").c_str());
+        nn.save_to_file<tipl::io::gz_ostream>(po.get("output_nn").c_str());
 
     return 0;
 }
