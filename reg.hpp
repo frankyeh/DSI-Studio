@@ -112,7 +112,7 @@ inline size_t linear_with_mi(const tipl::image<3,float>& from,
     return result;
 }
 
-size_t linear_with_mi_refine(const tipl::image<3,float>& from,
+inline size_t linear_with_mi_refine(const tipl::image<3,float>& from,
                             const tipl::vector<3>& from_vs,
                             const tipl::image<3,float>& to,
                             const tipl::vector<3>& to_vs,
