@@ -11,7 +11,6 @@
 bool has_gui = false;
 std::shared_ptr<QProgressDialog> progressDialog;
 static std::vector<std::chrono::high_resolution_clock::time_point> process_time,t_last;
-bool prog_aborted_ = false;
 std::vector<std::string> progress::status_list;
 std::vector<std::string> progress::at_list;
 
@@ -67,7 +66,6 @@ void progress::begin_prog(const char* status,bool show_now)
     process_time.back() = std::chrono::high_resolution_clock::now();
     t_last.resize(status_list.size());
     t_last.back() = std::chrono::high_resolution_clock::now()+std::chrono::milliseconds(200);
-    prog_aborted_ = false;
     update_prog(show_now);
 }
 

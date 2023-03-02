@@ -698,6 +698,8 @@ bool view_image::open(QStringList file_names_)
             for(unsigned int j = 0;j < I.size();++j)
                 I_uint8[pos+j] = (float(I[j].r)+float(I[j].r)+float(I[j].r))/3.0f;
         }
+        if(prog.aborted())
+            return false;
         file_names.clear();
     }
     if(QString(file_name).endsWith(".nhdr"))
@@ -722,9 +724,6 @@ bool view_image::open(QStringList file_names_)
         {
             nrrd >> data;
         });
-
-        if(progress::aborted())
-            return false;
 
         if(!nrrd.error_msg.empty())
         {

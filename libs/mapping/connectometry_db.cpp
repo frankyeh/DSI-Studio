@@ -427,6 +427,7 @@ void connectometry_db::sample_from_image(tipl::const_pointer_image<3,float> I,
 bool connectometry_db::add_subject_file(const std::string& file_name,
                                          const std::string& subject_name)
 {
+    progress prog(file_name.c_str());
     std::vector<float> data;
     float subject_R2 = 1.0f;
     std::string ext;
@@ -518,9 +519,9 @@ bool connectometry_db::add_subject_file(const std::string& file_name,
                 {
                     fib.set_template_id(handle->template_id);
                     fib.map_to_mni();
-                    while(!progress::aborted() && fib.prog != 6)
+                    while(!prog.aborted() && fib.prog != 6)
                         std::this_thread::yield();
-                    if(progress::aborted())
+                    if(prog.aborted())
                     {
                         error_msg = "aborted";
                         return false;
@@ -557,6 +558,11 @@ bool connectometry_db::add_subject_file(const std::string& file_name,
     subject_names.push_back(subject_name);
     num_subjects++;
     modified = true;
+    if(prog.aborted())
+    {
+        error_msg = "aborted";
+        return false;
+    }
     return true;
 }
 

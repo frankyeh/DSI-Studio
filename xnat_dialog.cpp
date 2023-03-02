@@ -116,7 +116,7 @@ void xnat_facade::get_data(std::string site,std::string auth,
         }
         if (!good())
             break;
-        if(progress::aborted())
+        if(p.aborted())
         {
             error_msg = "download aborted";
             break;
@@ -131,7 +131,7 @@ void xnat_facade::get_data(std::string site,std::string auth,
             break;
         }
     }
-    if(progress::aborted())
+    if(p.aborted())
         error_msg = "download aborted";
     cur_response = nullptr;
 }

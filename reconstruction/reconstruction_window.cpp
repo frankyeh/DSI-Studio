@@ -404,15 +404,15 @@ void reconstruction_window::on_doDTI_clicked()
     std::string ref_file_name = handle->file_name;
     std::string ref_steps(handle->voxel.steps.begin()+existing_steps.length(),handle->voxel.steps.end());
     std::shared_ptr<ImageModel> ref_handle = handle;
-    progress prog_("process SRC files");
-    for(int index = 0;progress::at(index,filenames.size());++index)
+    progress prog("process SRC files");
+    for(int index = 0;prog.at(index,filenames.size());++index)
     {
-        progress prog2("processing ",filenames[index].toStdString().c_str());
+        show_progress() << "processing " << filenames[index].toStdString() << std::endl;
         if(index)
         {
             if(!load_src(index) || !handle->run_steps(ref_file_name,ref_steps))
             {
-                if(!progress::aborted())
+                if(!prog.aborted())
                     QMessageBox::critical(this,"ERROR",QFileInfo(filenames[index]).fileName() + " : " + handle->error_msg.c_str());
                 break;
             }

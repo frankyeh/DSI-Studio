@@ -163,11 +163,13 @@ public:
         }
     }
     template<typename ...Ts>
-    void init_process(void)
+    bool init_process(void)
     {
+        progress prog("initializing");
         process_list.clear();
         add_process<Ts...>();
         init();
+        return !prog.aborted();
     }
 public:
     void init(void);

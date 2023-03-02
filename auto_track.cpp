@@ -288,7 +288,7 @@ std::string run_auto_track(tipl::io::program_option<show_progress>& po,const std
                         thread.roi_mgr->track_id = track_id[j];
                         thread.roi_mgr->tolerance_dis_in_icbm152_mm = tolerance[tracking_iteration];
                     }
-                    progress prog_("tracking ",track_name.c_str(),true);
+                    progress prog("tracking ",track_name.c_str(),true);
                     thread.run(thread_count,false);
                     std::string report = tract_model.report + thread.report.str();
                     report += " Shape analysis (Yeh, Neuroimage, 2020 Dec;223:117329) was conducted to derive shape metrics for tractography.";
@@ -297,7 +297,7 @@ std::string run_auto_track(tipl::io::program_option<show_progress>& po,const std
                     auto_track_report = report;
                     bool no_result = false;
                     {
-                        while(!thread.is_ended() && !progress::aborted())
+                        while(!thread.is_ended() && !prog.aborted())
                         {
                             std::this_thread::yield();
                             if(!thread.param.termination_count)
@@ -305,7 +305,7 @@ std::string run_auto_track(tipl::io::program_option<show_progress>& po,const std
                                 progress::at(0,1);
                                 continue;
                             }
-                            progress::at(thread.get_total_tract_count(),thread.param.termination_count);
+                            prog.at(thread.get_total_tract_count(),thread.param.termination_count);
                             // terminate if yield rate is very low, likely quality problem
                             if(thread.get_total_seed_count() > yield_check_count &&
                                thread.get_total_tract_count() < float(thread.get_total_seed_count())*yield_rate)
@@ -331,8 +331,8 @@ std::string run_auto_track(tipl::io::program_option<show_progress>& po,const std
                         }
 
                     }
-                    if(progress::aborted())
-                        return std::string();
+                    if(prog.aborted())
+                        return std::string("aborted.");
                     // fetch both front and back buffer
                     thread.fetchTracks(&tract_model);
                     thread.fetchTracks(&tract_model);
@@ -377,8 +377,8 @@ std::string run_auto_track(tipl::io::program_option<show_progress>& po,const std
             }
         }
     }
-    if(progress::aborted())
-        return std::string();
+    if(prog0.aborted())
+        return std::string("aborted");
     {
         progress prog("check if there is any incomplete task");
         bool has_incomplete = false;
@@ -543,13 +543,10 @@ void auto_track::on_run_clicked()
     ui->run->setEnabled(true);
     progress_bar->setVisible(false);
 
-    if(!progress::aborted())
-    {
-        if(error.empty())
-            QMessageBox::information(this,"AutoTrack","Completed");
-        else
-            QMessageBox::critical(this,"ERROR",error.c_str());
-    }
+    if(error.empty())
+        QMessageBox::information(this,"AutoTrack","Completed");
+    else
+        QMessageBox::critical(this,"ERROR",error.c_str());
     raise(); //  for mac
 }
 

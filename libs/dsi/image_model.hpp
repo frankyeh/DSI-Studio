@@ -312,18 +312,19 @@ public:
     {
         // initialization
         voxel.load_from_src(*this);
-        voxel.init_process<ProcessList...>();
-        if(progress::aborted())
+        if(!voxel.init_process<ProcessList...>())
         {
             error_msg = "reconstruction canceled";
             return false;
         }
         // reconstruction
-        progress prog("reconstructing ",prog_title);
+
         try
         {
             if(voxel.run())
                 return true;
+            error_msg = "reconstruction canceled";
+            return false;
         }
         catch(std::exception& error)
         {
@@ -333,8 +334,6 @@ public:
         {
             error_msg = "unknown error";
         }
-        if(progress::aborted())
-            error_msg = "reconstruction canceled";
         show_progress() << error_msg << std::endl;
         return false;
     }

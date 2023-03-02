@@ -838,14 +838,14 @@ bool RegionTableWidget::load_multiple_roi_nii(QString file_name,bool is_mni)
     std::vector<std::vector<std::string> > names(files.size());
 
     {
-        progress prog_("reading");
-        size_t prog = 0;
+        progress prog("reading");
+        size_t p = 0;
         bool failed = false;
         tipl::par_for(files.size(),[&](unsigned int i)
         {
-            if(progress::aborted() || failed)
+            if(prog.aborted() || failed)
                 return;
-            progress::at(prog++,files.size());
+            progress::at(p++,files.size());
             if(QFileInfo(files[i]).suffix() == "gz" ||
                 QFileInfo(files[i]).suffix() == "nii" ||
                 QFileInfo(files[i]).suffix() == "hdr")
@@ -876,7 +876,7 @@ bool RegionTableWidget::load_multiple_roi_nii(QString file_name,bool is_mni)
             }
         });
 
-        if(progress::aborted())
+        if(prog.aborted())
             return true;
         if(failed)
             return false;
@@ -1001,13 +1001,13 @@ void RegionTableWidget::merge_all(void)
         return;
 
     tipl::image<3,unsigned char> mask(regions[merge_list[0]]->dim);
-    progress prog_("merging regions",true);
-    size_t prog = 0;
+    progress prog("merging regions",true);
+    size_t p = 0;
     tipl::par_for(merge_list.size(),[&](size_t index,unsigned int id)
     {
-        if(progress::aborted())
+        if(prog.aborted())
             return;
-        progress::at(prog++,merge_list.size());
+        progress::at(p++,merge_list.size());
         if(regions[merge_list[0]]->to_diffusion_space != regions[merge_list[index]]->to_diffusion_space)
                 convert_region(regions[merge_list[index]]->region,
                                regions[merge_list[index]]->dim,
@@ -1020,7 +1020,7 @@ void RegionTableWidget::merge_all(void)
                 mask.at(p) = 1;
         }
     });
-    if(progress::aborted())
+    if(prog.aborted())
         return;
     regions[merge_list[0]]->LoadFromBuffer(mask);
     begin_update();
@@ -1172,13 +1172,13 @@ void RegionTableWidget::save_all_regions_to_4dnifti(void)
 
     tipl::shape<3> dim = checked_regions[0]->dim;
     tipl::image<4,unsigned char> multiple_I(tipl::shape<4>(dim[0],dim[1],dim[2],uint32_t(checked_regions.size())));
-    progress prog_("aggregating regions");
-    size_t prog = 0;
+    progress prog("aggregating regions");
+    size_t p = 0;
     tipl::par_for (checked_regions.size(),[&](unsigned int region_index)
     {
-        if(progress::aborted())
+        if(prog.aborted())
             return;
-        progress::at(prog++,checked_regions.size());
+        progress::at(p++,checked_regions.size());
         size_t offset = region_index*dim.size();
         auto points = checked_regions[region_index]->region;
         convert_region(points,
@@ -1193,7 +1193,7 @@ void RegionTableWidget::save_all_regions_to_4dnifti(void)
         }
     });
 
-    if(progress::aborted())
+    if(prog.aborted())
         return;
 
     if(gz_nifti::save_to_file(filename.toStdString().c_str(),multiple_I,

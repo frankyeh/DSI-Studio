@@ -316,11 +316,6 @@ bool load_4d_nii(const char* file_name,std::vector<std::shared_ptr<DwiHeader> >&
             std::replace_if(data.begin(),data.end(),[](float v){return std::isnan(v) || std::isinf(v) || v < 0.0f;},0.0f);
             dwi_data[index].swap(data);
         }
-        if(progress::aborted())
-        {
-            src_error_msg = "Aborted by user.";
-            return false;
-        }
     }
 
 
@@ -1038,12 +1033,7 @@ void dicom_parser::load_files(QStringList file_list)
         if(!src_error_msg.empty())
             QMessageBox::critical(this,"ERROR",src_error_msg.c_str());
         else
-            QMessageBox::critical(this,"ERROR","invalid file format");
-        close();
-        return;
-    }
-    if(progress::aborted())
-    {
+            QMessageBox::critical(this,"ERROR","loading aborted");
         close();
         return;
     }

@@ -50,6 +50,7 @@ void Voxel::load_from_src(ImageModel& image_model)
 }
 bool Voxel::run_hist(void)
 {
+    progress prog("reconstructing histology");
     margin = 16;
     auto ceil = hist_tensor_smoothing << hist_downsampling;
     while(margin < ceil)
@@ -77,11 +78,11 @@ bool Voxel::run_hist(void)
             to_list.push_back(to);
         }
 
-    size_t prog = 0;
+    size_t p = 0;
     tipl::par_for(from_list.size(),[&](size_t i,size_t thread_id)
     {
-        progress::at(prog++,from_list.size());
-        if(progress::aborted())
+        progress::at(p++,from_list.size());
+        if(prog.aborted())
             return;
         hist_data[thread_id].init();
         hist_data[thread_id].from = from_list[i];
@@ -89,11 +90,12 @@ bool Voxel::run_hist(void)
         for (unsigned int j = 0; j < process_list.size(); ++j)
             process_list[j]->run_hist(*this,hist_data[thread_id]);
     });
-    return !progress::aborted();
+    return !prog.aborted();
 }
 bool Voxel::run(void)
 {
     bool terminated = false;
+    progress prog("reconstructing");
     tipl::par_for(thread_count,[&](size_t thread_id)
     {
         for(size_t voxel_index = thread_id;
@@ -103,8 +105,8 @@ bool Voxel::run(void)
             if(!mask[voxel_index])
                 continue;
             if(thread_id == thread_count-1 &&
-               progress::at(voxel_index,mask.size()) &&
-               progress::aborted())
+               !prog.at(voxel_index,mask.size()) &&
+               prog.aborted())
                 terminated = true;
             voxel_data[thread_id].init();
             voxel_data[thread_id].voxel_index = voxel_index;
@@ -112,7 +114,7 @@ bool Voxel::run(void)
                 process_list[index]->run(*this,voxel_data[thread_id]);
         }
     },thread_count);
-    return !progress::aborted();
+    return !prog.aborted();
 }
 
 

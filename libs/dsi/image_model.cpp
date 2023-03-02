@@ -150,6 +150,8 @@ void ImageModel::flip_b_table(const unsigned char* order)
 extern std::vector<std::string> fib_template_list;
 std::string ImageModel::check_b_table(void)
 {
+    progress prog("checking b_table");
+
     // reconstruct DTI using original data and b-table
     {
         tipl::image<3,unsigned char> mask(voxel.mask.shape());
@@ -159,8 +161,9 @@ std::string ImageModel::check_b_table(void)
         auto other_output = voxel.other_output;
         voxel.other_output = std::string();
 
-        reconstruct2<ReadDWIData,
-                Dwi2Tensor>("checking b-table");
+        if(!reconstruct2<ReadDWIData,
+                Dwi2Tensor>("checking b-table"))
+            throw std::runtime_error("aborted");
 
         voxel.other_output = other_output;
 
@@ -198,29 +201,32 @@ std::string ImageModel::check_b_table(void)
            !fib_template_list[voxel.template_id].empty() &&
            template_fib->load_from_file(fib_template_list[voxel.template_id].c_str()))
         {
-            progress p("check b-table using ",fib_template_list[voxel.template_id].c_str());
             if(template_fib->vs[0] < voxel.vs[0])
                 template_fib->resample_to(voxel.vs[0]);
-            tipl::image<3> iso,dwi_f(dwi);
-            template_fib->get_iso(iso);
 
             tipl::affine_transform<float> arg;
             bool terminated = false;
+            float R = 0;
+            if(!progress::run("comparing subject fibers to template fibers",[&](void)
+                {
+                    tipl::image<3> iso,dwi_f(dwi);
+                    template_fib->get_iso(iso);
 
-            linear_with_mi(iso,template_fib->vs,dwi_f,voxel.vs,arg,tipl::reg::affine,terminated);
+                    linear_with_mi(iso,template_fib->vs,dwi_f,voxel.vs,arg,tipl::reg::affine,terminated);
+                    tipl::rotation_matrix(arg.rotation,r.begin(),tipl::vdim<3>());
+                    r.inv();
+                    T = tipl::transformation_matrix<float>(arg,template_fib->dim,template_fib->vs,voxel.dim,voxel.vs);
+
+                    tipl::image<3> VFF(iso.shape());
+                    tipl::resample_mt<tipl::interpolation::linear>(dwi_f,VFF,T);
+                    R = tipl::correlation(VFF.begin(),VFF.end(),iso.begin());
+
+                },terminated))
+                throw std::runtime_error("aborted");
+
             show_progress() << arg << std::endl;
-            if(progress::aborted())
-                return std::string();
-
-            tipl::rotation_matrix(arg.rotation,r.begin(),tipl::vdim<3>());
-            r.inv();
-            T = tipl::transformation_matrix<float>(arg,template_fib->dim,template_fib->vs,voxel.dim,voxel.vs);
-
-            tipl::image<3> VFF(iso.shape());
-            tipl::resample_mt<tipl::interpolation::linear>(dwi_f,VFF,T);
-            float r = tipl::correlation(VFF.begin(),VFF.end(),iso.begin());
-            show_progress() << "goodness-of-fit R2:" << r*r << std::endl;
-            if(r*r < 0.3f)
+            show_progress() << "goodness-of-fit R2:" << R*R << std::endl;
+            if(R*R < 0.3f)
                 template_fib.reset();
         }
         else
@@ -803,13 +809,13 @@ void ImageModel::rotate(const tipl::shape<3>& new_geo,
                         const tipl::image<3,tipl::vector<3> >& cdm_dis)
 {
     std::vector<tipl::image<3,unsigned short> > rotated_dwi(src_dwi_data.size());
-    progress prog_("rotating");
-    size_t prog = 0;
+    progress prog("rotating");
+    size_t p = 0;
     tipl::par_for(src_dwi_data.size(),[&](unsigned int index)
     {
-        if(progress::aborted())
+        if(prog.aborted())
             return;
-        progress::at(prog++,src_dwi_data.size());
+        progress::at(p++,src_dwi_data.size());
         rotated_dwi[index].resize(new_geo);
         auto I = dwi_at(index);
         if(cdm_dis.empty())
@@ -818,7 +824,7 @@ void ImageModel::rotate(const tipl::shape<3>& new_geo,
             tipl::resample_dis<tipl::interpolation::cubic>(I,rotated_dwi[index],T,cdm_dis);
         src_dwi_data[index] = &(rotated_dwi[index][0]);
     });
-    if(progress::aborted())
+    if(prog.aborted())
         return;
     rotated_dwi.swap(new_dwi);
     // rotate b-table
@@ -954,11 +960,11 @@ bool ImageModel::correct_motion(void)
         tipl::image<3> from(dwi_at(0));
         preproc(from);
         progress prog("apply motion correction...");
-        unsigned int cur_prog = 0;
+        unsigned int p = 0;
         tipl::par_for(src_bvalues.size(),[&](int i)
         {
-            progress::at(++cur_prog,src_bvalues.size());
-            if(progress::aborted() || !i)
+            progress::at(++p,src_bvalues.size());
+            if(prog.aborted() || !i)
                 return;
             args[i] = args[i-1];
             tipl::image<3> to(dwi_at(i));
@@ -970,7 +976,7 @@ bool ImageModel::correct_motion(void)
                          " rotation=" << tipl::vector<3>(args[i].rotation) << std::endl;
         },has_cuda ? gpu_count*4 : 1);
 
-        if(progress::aborted())
+        if(prog.aborted())
         {
             error_msg = "aborted";
             return false;
@@ -983,11 +989,11 @@ bool ImageModel::correct_motion(void)
 
     {
         progress prog("estimate and registering...");
-        unsigned int cur_prog = 0;
+        unsigned int p = 0;
         tipl::par_for(src_bvalues.size(),[&](int i)
         {
-            progress::at(++cur_prog,src_bvalues.size());
-            if(progress::aborted() || !i)
+            progress::at(++p,src_bvalues.size());
+            if(prog.aborted() || !i)
                 return;
             // get the minimum q space distance
             float min_dis = std::numeric_limits<float>::max();
@@ -1031,7 +1037,7 @@ bool ImageModel::correct_motion(void)
 
         },has_cuda ? gpu_count*4 : 1);
 
-        if(progress::aborted())
+        if(prog.aborted())
         {
             error_msg = "aborted";
             return false;
@@ -1421,9 +1427,10 @@ bool ImageModel::run_plugin(std::string exec_name,
         return false;
     }
     unsigned int keyword_seen = 0;
-    while(!program.waitForFinished(1000) && !progress::aborted())
+    progress prog("calling external program");
+    while(!program.waitForFinished(1000) && !prog.aborted())
     {
-        progress::at(keyword_seen,total_keyword_count);
+        prog.at(keyword_seen,total_keyword_count);
         QString output = QString::fromLocal8Bit(program.readAllStandardOutput());
         if(output.isEmpty())
             continue;
@@ -1437,7 +1444,7 @@ bool ImageModel::run_plugin(std::string exec_name,
         if(keyword_seen >= total_keyword_count)
             ++total_keyword_count;
     }
-    if(progress::aborted())
+    if(prog.aborted())
     {
         program.kill();
         error_msg = "process aborted";
@@ -2238,7 +2245,7 @@ void save_idx(const char* file_name,std::shared_ptr<tipl::io::gz_istream> in)
 size_t match_volume(float volume);
 bool ImageModel::load_from_file(const char* dwi_file_name)
 {
-    progress p("open SRC file");
+    progress prog("open SRC file");
     if(voxel.steps.empty())
     {
         voxel.steps = "[Step T2][Reconstruction] open ";
@@ -2360,7 +2367,7 @@ bool ImageModel::load_from_file(const char* dwi_file_name)
         prepare_idx(dwi_file_name,mat_reader.in);
         if(!mat_reader.load_from_file(dwi_file_name))
         {
-            if(progress::aborted())
+            if(prog.aborted())
             {
                 error_msg = "aborted";
                 return false;
@@ -2466,6 +2473,11 @@ bool ImageModel::load_from_file(const char* dwi_file_name)
         }
     }
 
+    if(prog.aborted())
+    {
+        error_msg = "aborted";
+        return false;
+    }
 
 
     // create mask if not loaded from SRC file

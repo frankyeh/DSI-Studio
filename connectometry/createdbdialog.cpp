@@ -317,7 +317,7 @@ void CreateDBDialog::on_create_data_base_clicked()
                 return;
             }
         }
-        if(progress::aborted())
+        if(prog.aborted())
             return;
         if(!data->handle->db.save_db(ui->output_file_name->text().toStdString().c_str()))
             QMessageBox::critical(this,"ERROR",data->handle->db.error_msg.c_str());

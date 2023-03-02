@@ -4,9 +4,8 @@
 #include <string>
 extern bool has_gui;
 
-bool is_main_thread(void);
-
 class progress{
+    bool prog_aborted_ = false;
 private:
     static void update_prog(bool show_now = false);
     static void begin_prog(const char* status,bool show_now = false);
@@ -64,7 +63,7 @@ public:
     static void show(const char* status,bool show_now = false);
     static void show(const std::string& str,bool show_now = false){return show(str.c_str(),show_now);}
     static size_t level(void) {return status_list.size();}
-    static bool aborted(void);
+    bool aborted(void);
     template<typename value_type1,typename value_type2>
     static bool at(value_type1 now,value_type2 total)
     {
@@ -101,7 +100,7 @@ public:
                 {
                     std::this_thread::yield();
                     progress::at(i,i+1);
-                    if(progress::aborted())
+                    if(prog.aborted())
                     {
                         terminated = true;
                         ended = true;
@@ -110,7 +109,7 @@ public:
                 }
             }
         });
-        return !progress::aborted();
+        return !prog.aborted();
     }
 };
 

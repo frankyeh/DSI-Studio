@@ -94,11 +94,11 @@ class TinyTrack{
         std::vector<size_t> buf_size(track32.size());
 
         {
-            progress p("compressing trajectories");
-            size_t count = 0;
+            progress prog("compressing trajectories");
+            size_t p = 0;
             tipl::par_for(track32.size(),[&](size_t i)
             {
-                progress::at(count++,tract_data.size());
+                progress::at(p++,tract_data.size());
                 auto& t32 = track32[i];
                 t32.resize(tract_data[i].size());
                 // all coordinates multiply by 32 and convert to integer
@@ -149,12 +149,12 @@ class TinyTrack{
                 }
                 buf_size[i] = sizeof(tract_header)+t32.size()-3;
             });
+            if(prog.aborted())
+                return false;
         }
-        if(progress::aborted())
-            return false;
         {
-            progress p("saving file");
-            for(size_t block = 0,cur_track_block = 0;progress::at(cur_track_block,track32.size());++block)
+            progress prog("saving file");
+            for(size_t block = 0,cur_track_block = 0;prog.at(cur_track_block,track32.size());++block)
             {
                 // record write position for each track
                 size_t total_size = 0;
@@ -189,9 +189,9 @@ class TinyTrack{
                     out.write((std::string("track")+std::to_string(block)).c_str(),&out_buf[0],total_size,1);
                 cur_track_block += pos.size();
             }
+            if(prog.aborted())
+                return false;
         }
-        if(progress::aborted())
-            return false;
         return true;
     }
     static bool load_from_file(const char* file_name,
@@ -359,7 +359,7 @@ struct TrackVis
                              const std::string& info,
                              unsigned int color)
     {
-        progress prog_("saving ",std::filesystem::path(file_name).filename().string().c_str());
+        progress prog("saving ",std::filesystem::path(file_name).filename().string().c_str());
         tipl::io::gz_ostream out;
         if (!out.open(file_name))
             return false;
@@ -395,7 +395,7 @@ struct TrackVis
             out.write((const char*)&n_point,sizeof(int));
             out.write((const char*)&*buffer.begin(),sizeof(float)*buffer.size());
         }
-        if(progress::aborted())
+        if(prog.aborted())
             return false;
         return true;
     }
@@ -1232,9 +1232,10 @@ void TractModel::save_vrml(const std::string& file_name,
 bool TractModel::save_all(const char* file_name_,
                           const std::vector<std::shared_ptr<TractModel> >& all,
                           const std::vector<std::string>& name_list)
-{
+{    
     if(all.empty())
         return false;
+    progress prog("saving ",std::filesystem::path(file_name_).filename().string().c_str());
     for(unsigned int index = 0;index < all.size();++index)
         all[index]->saved = true;
     std::string file_name(file_name_);
@@ -1295,7 +1296,6 @@ bool TractModel::save_all(const char* file_name_,
         tipl::io::gz_ostream out;
         if (!out.open(file_name_))
             return false;
-        progress prog_("saving ",std::filesystem::path(file_name_).filename().string().c_str());
         {
             TrackVis trk;
             trk.init(all[0]->geo,all[0]->vs,all[0]->trans_to_mni);
@@ -1352,7 +1352,7 @@ bool TractModel::save_all(const char* file_name_,
         out.write("cluster",cluster);
         return true;
     }
-    if(progress::aborted())
+    if(prog.aborted())
         return false;
     // output label file
     std::ofstream out((file_name+".txt").c_str());

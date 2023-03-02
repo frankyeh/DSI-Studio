@@ -59,12 +59,12 @@ public:
             }
 
         {
-            progress p(prog_name,!silence);
-            size_t prog = 0;
+            progress prog(prog_name,!silence);
+            size_t p = 0;
             tipl::par_for(checked_index.size(),[&](unsigned int i)
             {
-                progress::at(prog++,checked_index.size());
-                if(progress::aborted())
+                progress::at(p++,checked_index.size());
+                if(prog.aborted())
                     return;
                 auto lock = tract_rendering[checked_index[i]]->start_writing();
                 if(fun(checked_index[i]))
@@ -73,9 +73,11 @@ public:
                     tract_rendering[checked_index[i]]->need_update = true;
                 }
             });
+            if(prog.aborted())
+                return;
         }
-        progress p2(prog_name,!silence);
-        for(unsigned int i = 0;progress::at(i,checked_index.size());++i)
+        progress prog(prog_name,!silence);
+        for(unsigned int i = 0;prog.at(i,checked_index.size());++i)
             if(changed[i])
             {
                 QApplication::processEvents();

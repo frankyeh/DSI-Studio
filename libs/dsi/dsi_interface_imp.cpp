@@ -53,21 +53,16 @@ std::string ImageModel::get_file_ext(void)
 bool is_human_size(tipl::shape<3> dim,tipl::vector<3> vs);
 bool ImageModel::reconstruction_hist(void)
 {
-    voxel.init_process<
+    if(!voxel.init_process<
             ReadImages,
             CalculateGradient,
             CalculateStructuralTensor,
-            EigenAnalysis>();
-    if(progress::aborted())
+            EigenAnalysis>() ||
+       !voxel.run_hist())
     {
         error_msg = "reconstruction canceled";
         return false;
     }
-
-    if(!voxel.run_hist())
-        return false;
-    if(progress::aborted())
-        error_msg = "reconstruction canceled";
 
     voxel.recon_report << " The parallel procesing of histology image were done by tessellation whole slide image into smaller image block with overlapping margin to eliminate boundary effects (Yeh, et al. J Pathol Inform 2014,  5:1).";
     voxel.recon_report << " A total of " << voxel.hist_raw_smoothing << " smoothing iterations were applied to raw image.";
@@ -112,8 +107,6 @@ bool ImageModel::reconstruction(void)
         {
             voxel.step_report << "[Step T2b][Check b-table]=1" << std::endl;
             std::string result = check_b_table();
-            if(progress::aborted())
-                return false;
             if(!result.empty())
                 voxel.recon_report << " The b-table was flipped by " << result << ".";
         }
@@ -307,7 +300,7 @@ const char* odf_average(const char* out_name,std::vector<std::string>& file_name
     std::vector<std::string> other_metrics_name;
     std::vector<tipl::image<3> > other_metrics_images;
     std::vector<size_t> other_metrics_count;
-    progress prog_("loading data");
+    progress prog("loading data");
 
     try {
         for (unsigned int index = 0;progress::at(index,file_names.size());++index)
@@ -394,14 +387,15 @@ const char* odf_average(const char* out_name,std::vector<std::string>& file_name
                 }
             }
         }
-        if (progress::aborted())
-            return nullptr;
     } catch (const std::exception& e) {
         error_msg = e.what();
         error_msg += " at ";
         error_msg += file_name;
         return error_msg.c_str();
     }
+
+    if (prog.aborted())
+        return nullptr;
 
     progress::show("averaging other metrics");
     progress::at(1,3);
@@ -436,6 +430,8 @@ const char* odf_average(const char* out_name,std::vector<std::string>& file_name
     std::ostringstream out;
     out << "A group-average template was constructed from a total of " << file_names.size() << " scans." << report.c_str();
     report = out.str();
+    if (prog.aborted())
+        return nullptr;
     if(!output_odfs(mask,out_name,".mean.fib.gz",odfs,other_metrics_images,other_metrics_name,ti,vs.begin(),mni.begin(),report,error_msg,false) ||
        !output_odfs(mask,out_name,".mean.odf.fib.gz",odfs,other_metrics_images,other_metrics_name,ti,vs.begin(),mni.begin(),report,error_msg))
     {

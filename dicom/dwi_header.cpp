@@ -495,7 +495,7 @@ extern std::string src_error_msg;
 bool DwiHeader::output_src(const char* di_file,std::vector<std::shared_ptr<DwiHeader> >& dwi_files,
                            int upsampling,bool sort_btable)
 {
-    progress prog_("save ",QFileInfo(di_file).fileName().toStdString().c_str());
+    progress prog("save ",QFileInfo(di_file).fileName().toStdString().c_str());
     if(!has_b_table(dwi_files))
     {
         src_error_msg = "invalid b-table";
@@ -580,7 +580,7 @@ bool DwiHeader::output_src(const char* di_file,std::vector<std::shared_ptr<DwiHe
         write_mat.write("mask",dwi_files[0]->mask,dwi_files[0]->mask.plane_size());
 
     //store images
-    for (unsigned int index = 0;progress::at(index,(unsigned int)(dwi_files.size()));++index)
+    for (unsigned int index = 0;prog.at(index,(unsigned int)(dwi_files.size()));++index)
     {
         std::ostringstream name;
         tipl::image<3,unsigned short> buffer;
@@ -610,7 +610,7 @@ bool DwiHeader::output_src(const char* di_file,std::vector<std::shared_ptr<DwiHe
         write_mat.write(name.str().c_str(),ptr,output_dim.plane_size(),output_dim.depth());
     }
 
-    if(progress::aborted())
+    if(prog.aborted())
     {
         src_error_msg = "output aborted";
         return false;

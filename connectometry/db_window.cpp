@@ -298,14 +298,11 @@ void db_window::on_actionAdd_DB_triggered()
         }
         if(handle->has_odfs())
         {
-            progress prog_(QFileInfo(filenames[i]).baseName().toStdString().c_str());
             if(!vbc->handle->db.add_subject_file(filenames[i].toStdString(),QFileInfo(filenames[i]).baseName().toStdString()))
             {
                 QMessageBox::information(this,"ERROR",vbc->handle->db.error_msg.c_str());
                 break;
             }
-            if(progress::aborted())
-                break;
         }
     }
     update_db();

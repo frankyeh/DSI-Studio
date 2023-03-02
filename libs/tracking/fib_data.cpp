@@ -34,7 +34,7 @@ bool odf_data::read(gz_mat_read& mat_reader)
         }
 
         odf_buf.resize(odf_buf_count.size());
-        for(size_t i = 0;prog(i,odf_buf_count.size());++i)
+        for(size_t i = 0;prog.at(i,odf_buf_count.size());++i)
         {
             if(!mat_reader.read((std::string("odf")+std::to_string(i)).c_str(),row,col,odf_buf[i]))
             {
@@ -42,7 +42,7 @@ bool odf_data::read(gz_mat_read& mat_reader)
                 return false;
             }
         }
-        if(progress::aborted())
+        if(prog.aborted())
             return false;
     }
     if (odf_buf.empty())
@@ -55,7 +55,6 @@ bool odf_data::read(gz_mat_read& mat_reader)
 
     size_t mask_count = 0;
     {
-        progress prog("checking odf count");
         for(size_t i = 0;i < dim.size();++i)
             if(fa0[i] != 0.0f)
                 ++mask_count;
@@ -95,13 +94,15 @@ bool odf_data::read(gz_mat_read& mat_reader)
             ++voxel_index;
         }
     }
+    if(prog.aborted())
+        return false;
     show_progress() << "odf count (excluding 0): " << odf_count << std::endl;
     if(odf_count != mask_count)
     {
         error_msg = "ODF count does not match the mask";
         return false;
     }
-    return !progress::aborted();
+    return true;
 }
 
 tipl::const_pointer_image<3,float> item::get_image(void)
@@ -257,7 +258,7 @@ bool fiber_directions::add_data(gz_mat_read& mat_reader)
         mat_reader.read(index,row,col,index_data[prefix_name_index][store_index]);
 
     }
-    if(progress::aborted())
+    if(prog.aborted())
         return 0;
     if(num_fiber == 0)
     {
@@ -406,14 +407,14 @@ bool read_fib_mat_with_idx(const char* file_name,gz_mat_read& mat_reader)
         mat_reader.delay_read = true;
         mat_reader.in->buffer_all = false;
     }
-    if (!mat_reader.load_from_file(file_name) || progress::aborted())
+    if (!mat_reader.load_from_file(file_name))
         return false;
     save_idx(file_name,mat_reader.in);
     return true;
 }
 bool fib_data::load_from_file(const char* file_name)
 {
-    progress p("open FIB file");
+    progress prog("open FIB file");
     tipl::image<3> I;
     gz_nifti header;
     fib_file_name = file_name;
@@ -564,7 +565,7 @@ bool fib_data::load_from_file(const char* file_name)
     }
     if(!read_fib_mat_with_idx(file_name,mat_reader))
     {
-        error_msg = progress::aborted() ? "process aborted" : "invalid FIB file";
+        error_msg = mat_reader.error_msg;
         return false;
     }
 
@@ -829,7 +830,7 @@ bool is_human_size(tipl::shape<3> dim,tipl::vector<3> vs)
 }
 bool fib_data::load_from_mat(void)
 {
-    progress prog("loading fiber and image data");
+    show_progress() << "loading fiber and image data" << std::endl;
     mat_reader.read("report",report);
     mat_reader.read("steps",steps);
     if (!mat_reader.read("dimension",dim))
@@ -854,7 +855,7 @@ bool fib_data::load_from_mat(void)
         error_msg = dir.error_msg;
         return false;
     }
-    progress p2("initiating data");
+    show_progress() << "initiating data" << std::endl;
     if(has_high_reso)
     {
         show_progress() << "reading original mat file" << std::endl;
@@ -976,13 +977,15 @@ bool resample_mat(gz_mat_read& mat_reader,float resolution)
 {
     // get all data in delayed read condition
     {
-        progress p("reading data");
-        for(size_t i = 0;progress::at(i,mat_reader.size());++i)
+        progress prog("reading data");
+        for(size_t i = 0;prog.at(i,mat_reader.size());++i)
         {
             auto& mat = mat_reader[i];
             if(mat.has_delay_read() && !mat.read(*(mat_reader.in.get())))
                 return false;
         }
+        if(prog.aborted())
+            return false;
     }
     tipl::shape<3> dim;
     tipl::vector<3> vs;
@@ -995,11 +998,14 @@ bool resample_mat(gz_mat_read& mat_reader,float resolution)
     T.sr[4] = resolution/vs[1];
     T.sr[8] = resolution/vs[0];
 
-    progress p2("resampling");
-    size_t total = 0;
+    progress prog("resampling");
+    size_t p = 0;
     tipl::par_for(mat_reader.size(),[&](unsigned int i)
     {
-        progress::at(total,mat_reader.size());
+        if(tipl::is_main_thread<0>())
+            progress::at(p,mat_reader.size());
+        if(prog.aborted())
+            return;
         auto& mat = mat_reader[i];
         if(mat.get_name() == "dimension")
             std::copy(new_dim.begin(),new_dim.end(),mat.get_data<unsigned int>());
@@ -1044,20 +1050,16 @@ bool resample_mat(gz_mat_read& mat_reader,float resolution)
             }
             mat.resize(tipl::vector<2,unsigned int>(new_dim[0]*new_dim[1],new_dim[2]));
         }
-        ++total;
+        ++p;
     });
-    return !progress::aborted();
+    return !prog.aborted();
 }
 
 bool fib_data::resample_to(float resolution)
 {
-    progress p("resample FIB file");
     if(!resample_mat(mat_reader,resolution))
     {
-        if(progress::aborted())
-            error_msg = "aborted";
-        else
-            error_msg = "failed to ready data";
+        error_msg = mat_reader.error_msg;
         return false;
     }
     mat_reader.read("dimension",dim);
@@ -1762,14 +1764,14 @@ bool fib_data::map_to_mni(bool background)
         while(progress::at(prog,6))
         {
             std::this_thread::yield();
-            if(progress::aborted())
+            if(prog_.aborted())
             {
                 error_msg = "aborted.";
                 terminated = true;
             }
         }
         t.join();
-        return !progress::aborted();
+        return !prog_.aborted();
     }
     else
     {

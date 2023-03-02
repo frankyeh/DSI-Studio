@@ -269,12 +269,11 @@ void MainWindow::addSrc(QString filename)
 void shift_track_for_tck(std::vector<std::vector<float> >& loaded_tract_data,tipl::shape<3>& geo);
 void MainWindow::loadFib(QString filename,bool presentation_mode)
 {
-    progress p("[Step T3][Fiber Tracking]");
     std::string file_name = filename.toStdString();
     std::shared_ptr<fib_data> new_handle(new fib_data);
     if (!new_handle->load_from_file(&*file_name.begin()))
     {
-        if(!progress::aborted())
+        if(!new_handle->error_msg.empty())
             QMessageBox::information(this,"ERROR",new_handle->error_msg.c_str());
         return;
     }
@@ -985,7 +984,7 @@ void nii2src(QStringList nifti_file_list,QString output_dir)
 bool find_bval_bvec(const char* file_name,QString& bval,QString& bvec);
 bool nii2src_bids(QString dir,QString output_dir,std::string& error_msg)
 {
-    progress p((std::string("parsing BIDS directory:") + dir.toStdString()).c_str());
+    progress prog((std::string("parsing BIDS directory:") + dir.toStdString()).c_str());
 
     QStringList sub_dir = QDir(dir).entryList(QStringList("sub-*"),
                                                 QDir::Dirs | QDir::NoSymLinks | QDir::NoDotAndDotDot);
@@ -1010,9 +1009,9 @@ bool nii2src_bids(QString dir,QString output_dir,std::string& error_msg)
     };
 
     auto subject_num = sub_dir.size();
-    for(int j = 0;progress::at(j,sub_dir.size()) && !progress::aborted();++j)
+    for(int j = 0;prog.at(j,sub_dir.size());++j)
     {
-        progress p((std::string("processing ")+ sub_dir[j].toStdString()).c_str());
+        progress prog2((std::string("processing ")+ sub_dir[j].toStdString()).c_str());
         QString cur_dir = dir + "/" + sub_dir[j];
         QString dwi_folder = cur_dir + "/dwi";
         if(!QDir(dwi_folder).exists())
@@ -1047,8 +1046,10 @@ bool nii2src_bids(QString dir,QString output_dir,std::string& error_msg)
             for(auto s: ses_dir)
                 sub_dir.push_back(sub_dir[j] + "/" + s);
         }
+        if(prog2.aborted())
+            return false;
     }
-    return true;
+    return !prog.aborted();
 }
 void MainWindow::on_nii2src_bids_clicked()
 {
@@ -1087,9 +1088,9 @@ void MainWindow::on_nii2src_sf_clicked()
 
     progress prog("batch creating src");
     show_progress() << "directory:" << dir.toStdString() << std::endl;
-    for(int j = 0;progress::at(j,nifti_file_list.size()) && !progress::aborted();++j)
+    for(int j = 0;prog.at(j,nifti_file_list.size());++j)
     {
-        progress prog2(nifti_file_list[j].toStdString().c_str());
+        show_progress() << nifti_file_list[j].toStdString() << std::endl;
         std::vector<std::shared_ptr<DwiHeader> > dwi_files;
         std::string nii_name = dir.toStdString() + "/" + nifti_file_list[j].toStdString();
         std::string src_name = dir.toStdString() + "/" +
@@ -1104,7 +1105,7 @@ bool dcm2src(QStringList files)
         return false;
     files.sort();
     std::vector<std::shared_ptr<DwiHeader> > dicom_files;
-    if(!parse_dwi(files,dicom_files) || progress::aborted())
+    if(!parse_dwi(files,dicom_files))
     {
         show_progress() << "Not DICOM. Skip." << std::endl;
         return false;
@@ -1244,9 +1245,9 @@ bool dcm2src(QStringList files)
 
 void dicom2src(std::string dir_)
 {
-    progress p("convert DICOM to NIFTI/SRC");
+    progress prog("convert DICOM to NIFTI/SRC");
     QStringList dir_list = GetSubDir(dir_.c_str(),false);
-    for(int i = 0;progress::at(i,dir_list.size()) && !progress::aborted();++i)
+    for(int i = 0;prog.at(i,dir_list.size());++i)
     {
         QDir cur_dir = dir_list[i];
         QStringList dicom_file_list = cur_dir.entryList(QStringList("*.dcm"),QDir::Files|QDir::NoSymLinks);
@@ -1255,7 +1256,7 @@ void dicom2src(std::string dir_)
         show_progress() << "processing " << dir_list[i].toStdString() << std::endl;
         // aggregate DWI with identical names from consecutive folders
         QStringList aggregated_file_list;
-        for(;progress::at(i,dir_list.size());++i)
+        for(;prog.at(i,dir_list.size());++i)
         {
             for (int index = 0;index < dicom_file_list.size();++index)
                 aggregated_file_list << dir_list[i] + "/" + dicom_file_list[index];
