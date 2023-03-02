@@ -34,7 +34,7 @@ private:
                     head += "\033[1;34m"; // blue
                     line += "\033[0m";
                 }
-                if(line[0] == 'E') // Error
+                if(line[0] == 'E' || line[0] == 'W' ) // Error
                 {
                     head += "\033[1;31m"; // red
                     line += "\033[0m";
