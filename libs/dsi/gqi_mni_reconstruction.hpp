@@ -247,7 +247,7 @@ public:
             VGvs[0] = VGvs[1] = VGvs[2] = voxel.qsdr_reso;
         }
 
-        show_progress() << "output dimension: " << VG << std::endl;
+        show_progress() << "output dimension: " << VG.shape() << std::endl;
 
 
         // assign mask
