@@ -216,18 +216,17 @@ public:
             voxel.trans_to_mni[7] -= bmin[1]*VGvs[1];
             voxel.trans_to_mni[11] += bmin[2]*VGvs[2];
 
-        }
+        }        
 
         // output resolution = acquisition resoloution
         float VG_ratio = voxel.qsdr_reso/VGvs[0];
 
         // update registration results;
-        if(VG_ratio != 1.0f)
+        if(voxel.qsdr_reso != VGvs[0])
         {
-            tipl::shape<3> new_geo(uint32_t(float(VG.width())/VG_ratio),
-                                   uint32_t(float(VG.height())/VG_ratio),
-                                   uint32_t(float(VG.depth())/VG_ratio));
-
+            tipl::shape<3> new_geo(uint32_t(float(VG.width())*VGvs[0]/voxel.qsdr_reso),
+                                   uint32_t(float(VG.height())*VGvs[0]/voxel.qsdr_reso),
+                                   uint32_t(float(VG.depth())*VGvs[0]/voxel.qsdr_reso));
             // update VG,VFFF (for mask) and cdm_dis (for mapping)
             tipl::image<3> new_VG(new_geo);
             tipl::image<3,tipl::vector<3> > new_cdm_dis(new_geo);
@@ -248,6 +247,7 @@ public:
             VGvs[0] = VGvs[1] = VGvs[2] = voxel.qsdr_reso;
         }
 
+        show_progress() << "output dimension: " << VG << std::endl;
 
 
         // assign mask
