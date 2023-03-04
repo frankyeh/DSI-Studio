@@ -27,7 +27,7 @@ void distribute_gpu(void)
 
 void check_cuda(std::string& error_msg)
 {
-    progress p("checking CUDA drivers");
+    progress prog("checking CUDA drivers");
     int Ver;
     if(cudaGetDeviceCount(&gpu_count) != cudaSuccess ||
        cudaDriverGetVersion(&Ver) != cudaSuccess)

@@ -322,8 +322,8 @@ void TractTableWidget::load_tracts(QStringList filenames)
 {
     if(filenames.empty())
         return;
-    progress p("load tracts");
-    for(unsigned int index = 0;progress::at(index,filenames.size());++index)
+    progress prog("load tracts");
+    for(unsigned int index = 0;prog(index,filenames.size());++index)
     {
         QString filename = filenames[index];
         if(!filename.size())
@@ -409,8 +409,8 @@ void TractTableWidget::load_tract_label(QString filename)
 
 void TractTableWidget::check_all(void)
 {
-    progress p("rendering tracts",true);
-    for(int row = 0;progress::at(row,rowCount());++row)
+    progress prog("rendering tracts",true);
+    for(int row = 0;prog(row,rowCount());++row)
     {
         item(row,0)->setCheckState(Qt::Checked);
         item(row,0)->setData(Qt::ForegroundRole,QBrush(Qt::black));
@@ -651,8 +651,8 @@ void TractTableWidget::recognize_rename(void)
         QMessageBox::critical(this,"ERROR",cur_tracking_window.handle->error_msg.c_str());
         return;
     }
-    progress prog_("Recognize and rename");
-    for(unsigned int index = 0;progress::at(index,tract_models.size());++index)
+    progress prog("Recognize and rename");
+    for(unsigned int index = 0;prog(index,tract_models.size());++index)
         if(item(int(index),0)->checkState() == Qt::Checked)
         {
             std::multimap<float,std::string,std::greater<float> > sorted_list;
@@ -1199,8 +1199,8 @@ bool TractTableWidget::command(QString cmd,QString param,QString param2)
 
             return false;
         }
-        progress p("rendering tracts");
-        for(unsigned int index = 0;progress::at(index,tract_models.size()) && in;++index)
+        progress prog("rendering tracts");
+        for(unsigned int index = 0;prog(index,tract_models.size()) && in;++index)
             if(item(int(index),0)->checkState() == Qt::Checked)
             {
                 int r(0),g(0),b(0);
@@ -1400,7 +1400,7 @@ void TractTableWidget::move_down(void)
 
 void TractTableWidget::delete_tract(void)
 {
-    if(progress::level())
+    if(progress::is_running())
     {
         QMessageBox::critical(this,"ERROR","Please wait for the termination of data processing");
         return;
@@ -1411,7 +1411,7 @@ void TractTableWidget::delete_tract(void)
 
 void TractTableWidget::delete_all_tract(void)
 {
-    if(progress::level())
+    if(progress::is_running())
     {
         QMessageBox::critical(this,"ERROR","Please wait for the termination of data processing");
         return;

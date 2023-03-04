@@ -478,8 +478,8 @@ bool ImageModel::run_steps(const std::string& reg_file_name,const std::string& r
 
     if(!cmds.empty())
     {
-        progress prog_("apply operations");
-        for(size_t index = 0;progress::at(index,cmds.size());++index)
+        progress prog("apply operations");
+        for(size_t index = 0;prog(index,cmds.size());++index)
             if(!command(cmds[index],params[index]))
             {
                 error_msg +=  "at ";
@@ -770,15 +770,15 @@ void ImageModel::flip_dwi(unsigned char type)
         swap_b_table(type-3);
     tipl::flip(dwi,type);
     tipl::flip(voxel.mask,type);
-    progress prog_("flip image");
+    progress prog("flip image");
     if(voxel.is_histology)
         tipl::flip(voxel.hist_image,type);
     else
     {
-        size_t prog = 0;
+        size_t p = 0;
         tipl::par_for(src_dwi_data.size(),[&](unsigned int index)
         {
-            progress::at(prog++,src_dwi_data.size());
+            prog(p++,src_dwi_data.size());
             auto I = dwi_at(index);
             tipl::flip(I,type);
         });
@@ -815,7 +815,7 @@ void ImageModel::rotate(const tipl::shape<3>& new_geo,
     {
         if(prog.aborted())
             return;
-        progress::at(p++,src_dwi_data.size());
+        prog(p++,src_dwi_data.size());
         rotated_dwi[index].resize(new_geo);
         auto I = dwi_at(index);
         if(cdm_dis.empty())
@@ -868,10 +868,11 @@ void ImageModel::resample(float nv)
 }
 void ImageModel::smoothing(void)
 {
-    size_t prog = 0;
+    size_t p = 0;
+    progress prog("smoothing");
     tipl::par_for(src_dwi_data.size(),[&](unsigned int index)
     {
-        progress::at(prog++,src_dwi_data.size());
+        prog(p++,src_dwi_data.size());
         auto I = dwi_at(index);
         tipl::filter::gaussian(I);
     });
@@ -880,7 +881,7 @@ void ImageModel::smoothing(void)
 extern std::vector<std::string> fa_template_list,iso_template_list;
 bool ImageModel::align_acpc(void)
 {
-    progress prog_("align acpc",true);
+    progress prog("align acpc",true);
     std::string msg = " The diffusion MRI data were rotated to align with the AC-PC line.";
     if(voxel.report.find(msg) != std::string::npos)
     {
@@ -912,18 +913,18 @@ bool ImageModel::align_acpc(void)
         }
 
         bool terminated = false;
-        progress::at(0,3);
+        prog(0,3);
         tipl::filter::gaussian(J);
         tipl::affine_transform<float> arg;
         linear_with_mi(I,vs,J,voxel.vs,arg,tipl::reg::rigid_scaling,terminated);
         show_progress() << arg << std::endl;
-        progress::at(1,3);
+        prog(1,3);
         tipl::image<3> I2(I.shape());
         tipl::resample_mt<tipl::interpolation::cubic>(J,I2,
                 tipl::transformation_matrix<float>(arg,I.shape(),vs,J.shape(),voxel.vs));
         float r = float(tipl::correlation(I.begin(),I.end(),I2.begin()));
         show_progress() << "R2 for ac-pc alignment:" << r*r << std::endl;
-        progress::at(2,3);
+        prog(2,3);
         if(r*r < 0.3f)
         {
             error_msg = "Failed to align subject data to template.";
@@ -963,7 +964,7 @@ bool ImageModel::correct_motion(void)
         unsigned int p = 0;
         tipl::par_for(src_bvalues.size(),[&](int i)
         {
-            progress::at(++p,src_bvalues.size());
+            prog(++p,src_bvalues.size());
             if(prog.aborted() || !i)
                 return;
             args[i] = args[i-1];
@@ -992,7 +993,7 @@ bool ImageModel::correct_motion(void)
         unsigned int p = 0;
         tipl::par_for(src_bvalues.size(),[&](int i)
         {
-            progress::at(++p,src_bvalues.size());
+            prog(++p,src_bvalues.size());
             if(prog.aborted() || !i)
                 return;
             // get the minimum q space distance
@@ -1050,7 +1051,7 @@ bool ImageModel::correct_motion(void)
         tipl::par_for(src_bvalues.size(),[&](size_t i,size_t id)
         {
             if(!id)
-                progress::at(i,src_bvalues.size());
+                prog(i,src_bvalues.size());
             rotate_one_dwi(i,tipl::transformation_matrix<double>(new_args[i],voxel.dim,voxel.vs,voxel.dim,voxel.vs));
         });
     }
@@ -1059,12 +1060,12 @@ bool ImageModel::correct_motion(void)
 }
 void ImageModel::crop(tipl::shape<3> range_min,tipl::shape<3> range_max)
 {
-    progress prog_("Removing background region");
-    size_t prog = 0;
+    progress prog("Removing background region");
+    size_t p = 0;
     show_progress() << "from:" << range_min << " to:" << range_max << std::endl;
     tipl::par_for(src_dwi_data.size(),[&](unsigned int index)
     {
-        progress::at(prog++,src_dwi_data.size());
+        prog(p++,src_dwi_data.size());
         auto I = dwi_at(index);
         tipl::image<3,unsigned short> I0;
         tipl::crop(I,I0,range_min,range_max);
@@ -1430,7 +1431,7 @@ bool ImageModel::run_plugin(std::string exec_name,
     progress prog("calling external program");
     while(!program.waitForFinished(1000) && !prog.aborted())
     {
-        prog.at(keyword_seen,total_keyword_count);
+        prog(keyword_seen,total_keyword_count);
         QString output = QString::fromLocal8Bit(program.readAllStandardOutput());
         if(output.isEmpty())
             continue;
@@ -1440,7 +1441,7 @@ bool ImageModel::run_plugin(std::string exec_name,
         output_lines.removeAll("");
         for(int i = 0;i+1 < output_lines.size();++i)
             show_progress() << output_lines[i].toStdString() << std::endl;
-        progress::show(output_lines.back().toStdString().c_str());
+        show_progress() << output_lines.back().toStdString();
         if(keyword_seen >= total_keyword_count)
             ++total_keyword_count;
     }
@@ -1655,7 +1656,7 @@ bool ImageModel::load_topup_eddy_result(void)
 
 bool ImageModel::run_applytopup(std::string exec)
 {
-    progress::show("run applytopup");
+    show_progress() << "run applytopup";
     std::string topup_result = QFileInfo(file_name.c_str()).baseName().replace('.','_').toStdString();
     std::string acqparam_file = QFileInfo(file_name.c_str()).baseName().toStdString() + ".topup.acqparams.txt";
     std::string temp_nifti = file_name+".nii.gz";
@@ -1769,7 +1770,7 @@ bool ImageModel::run_eddy(std::string exec)
         error_msg = "TOPUP/EDDY cannot be applied to motion corrected or rotated images";
         return false;
     }
-    progress::show("run eddy");
+    show_progress() << "run eddy";
     if(std::filesystem::exists(file_name+".corrected.nii.gz"))
     {
         show_progress() << "load previous results from " << file_name << ".corrected.nii.gz" <<std::endl;
@@ -1894,7 +1895,7 @@ std::string ImageModel::find_topup_reverse_pe(void)
         tipl::image<3> b0;
         read_b0(b0);
         QStringList nii_files = QFileInfo(file_name.c_str()).dir().entryList(QStringList("*nii.gz"),QDir::Files|QDir::NoSymLinks);
-        progress p("searching for reversed phase encoding b0");
+        progress prog("searching for reversed phase encoding b0");
         for(QString file : nii_files)
         {
             std::string path = (QFileInfo(file_name.c_str()).absolutePath() + "/" + file).toStdString();
@@ -2188,8 +2189,9 @@ bool ImageModel::save_to_file(const char* dwi_file_name)
             }
             mat_writer.write("b_table",b_table,4);
         }
-        for (unsigned int index = 0;progress::at(index,src_bvalues.size());++index)
+        for (unsigned int index = 0;index < src_bvalues.size();++index)
         {
+            prog_(index,src_bvalues.size());
             std::ostringstream out;
             out << "image" << index;
             mat_writer.write(out.str().c_str(),src_dwi_data[index],
@@ -2266,13 +2268,13 @@ bool ImageModel::load_from_file(const char* dwi_file_name)
         tipl::image<2,unsigned char> raw;
         {
             QImage fig;
-            progress::show("load picture");
+            show_progress() << "load picture";
             if(!fig.load(dwi_file_name))
             {
                 error_msg = "Unsupported image format";
                 return false;
             }
-            progress::show("converting to grascale");
+            show_progress() << "converting to grascale";
             int pixel_bytes = fig.bytesPerLine()/fig.width();
             raw.resize(tipl::shape<2>(uint32_t(fig.width()),uint32_t(fig.height())));
             tipl::par_for(raw.height(),[&](int y){
@@ -2282,7 +2284,7 @@ bool ImageModel::load_from_file(const char* dwi_file_name)
                     out[x] = uint8_t(*line);
             });
         }
-        progress::show("generating mask");
+        show_progress() << "generating mask";
         auto raw_ = tipl::make_image(&*raw.begin(),tipl::shape<3>(raw.width(),raw.height(),1));
         if(raw.width() > 2048)
         {
@@ -2308,7 +2310,7 @@ bool ImageModel::load_from_file(const char* dwi_file_name)
         voxel.report += std::to_string(voxel.hist_image.height());
         voxel.report += " pixels.";
 
-        progress::show("generating mask");
+        show_progress() << "generating mask";
         tipl::segmentation::otsu(dwi,voxel.mask);
         tipl::negate(voxel.mask);
         for(int i = 0;i < int(dwi.width()/200);++i)
@@ -2438,7 +2440,7 @@ bool ImageModel::load_from_file(const char* dwi_file_name)
                mat_reader.read("grad_dev",row,col,grad_dev_ptr) &&
                size_t(row)*size_t(col) == voxel.dim.size()*9)
             {
-                progress::show("apply gradient deviation correction");
+                show_progress() << "apply gradient deviation correction";
 
                 for(unsigned int index = 0;index < 9;index++)
                     grad_dev.push_back(tipl::make_image(const_cast<float*>(grad_dev_ptr+index*voxel.dim.size()),voxel.dim));
@@ -2521,6 +2523,7 @@ bool ImageModel::save_fib(const std::string& output_name)
 void initial_LPS_nifti_srow(tipl::matrix<4,4>& T,const tipl::shape<3>& geo,const tipl::vector<3>& vs);
 bool ImageModel::save_nii_for_applytopup_or_eddy(bool include_rev) const
 {
+    progress prog("saving results");
     show_progress() << "trim " << std::filesystem::path(file_name).filename() << " for " << (include_rev ? "eddy":"applytopup") << std::endl;
     show_progress() << "range: " << topup_from << " to " << topup_to << std::endl;
     tipl::image<4,unsigned short> buffer(tipl::shape<4>(topup_to[0]-topup_from[0],topup_to[1]-topup_from[1],topup_to[2]-topup_from[2],
@@ -2530,19 +2533,19 @@ bool ImageModel::save_nii_for_applytopup_or_eddy(bool include_rev) const
         error_msg = "cannot create trimmed volume for applytopup or eddy";
         return false;
     }
-    size_t prog = 0;
+    size_t p = 0;
     tipl::par_for(src_bvalues.size(),[&](unsigned int index)
     {
-        progress::at(prog++,src_bvalues.size());
+        prog(p++,src_bvalues.size());
         auto I = buffer.slice_at(index);
         tipl::crop(dwi_at(index),I,topup_from,topup_to);
     });
 
-    prog = 0;
+    p = 0;
     if(rev_pe_src.get() && include_rev)
         tipl::par_for(rev_pe_src->src_bvalues.size(),[&](unsigned int index)
         {
-            progress::at(prog++,rev_pe_src->src_bvalues.size());
+            prog(p++,rev_pe_src->src_bvalues.size());
             auto I = buffer.slice_at(index+uint32_t(src_bvalues.size()));
             tipl::crop(rev_pe_src->dwi_at(index),I,topup_from,topup_to);
         });

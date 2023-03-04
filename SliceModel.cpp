@@ -255,7 +255,7 @@ bool CustomSliceModel::load_slices(const std::vector<std::string>& files,bool is
             }
 
             progress prog("loading images");
-            for(unsigned int i = 0;prog.at(i,geo[2]);++i)
+            for(unsigned int i = 0;prog(i,geo[2]);++i)
             {
                 tipl::image<2,short> I;
                 QImage in;

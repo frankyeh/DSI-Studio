@@ -183,8 +183,8 @@ bool view_image::command(std::string cmd,std::string param1)
                 QMessageBox::critical(this,"ERROR","Cannot save file");
                 return false;
             }
-            progress p("saving");
-            for(unsigned int index = 0;progress::at(index,mat.size());++index)
+            progress prog("saving");
+            for(unsigned int index = 0;prog(index,mat.size());++index)
                 matfile.write(mat[index]);
             QMessageBox::information(this,"DSI Studio","File Save");
             return true;
@@ -195,7 +195,7 @@ bool view_image::command(std::string cmd,std::string param1)
     {
         progress prog(cmd.c_str());
         if(!param1.empty())
-            progress::show((std::string("param: ")+param1).c_str());
+            show_progress() << "param: " << param1;
 
         if(cmd =="change_type")
         {
@@ -272,12 +272,12 @@ bool view_image::command(std::string cmd,std::string param1)
             return true;
         }
 
-        progress p1("apply to other images");
+        progress prog("apply to other images");
         int file_index = 0;
-        for(;progress::at(file_index,file_names.size());++file_index)
+        for(;prog(file_index,file_names.size());++file_index)
         {
             auto file_name2 = file_names[file_index];
-            progress p2("processing ",file_name2.toStdString().c_str());
+            show_progress() << "processing " << file_name2.toStdString();
 
             std::shared_ptr<view_image> dialog(new view_image(parentWidget()));
             dialog->setAttribute(Qt::WA_DeleteOnClose);
@@ -310,6 +310,8 @@ bool view_image::command(std::string cmd,std::string param1)
                 }
             }
         }
+        if(prog.aborted())
+            return false;
         end:
         if(file_index < file_names.size() && // The processed is aborted, or there is an error happened
            file_index && // Some files were processed without a problem. file_index=0 is current image, file_index = 1 is the first to-be processed image.
@@ -681,7 +683,7 @@ bool view_image::open(QStringList file_names_)
     progress prog("open image file ",std::filesystem::path(file_name.toStdString()).filename().string().c_str());
     if(file_names_.size() > 1 && QString(file_name).endsWith(".bmp"))
     {
-        for(unsigned int i = 0;progress::at(i,file_names_.size());++i)
+        for(unsigned int i = 0;prog(i,file_names_.size());++i)
         {
             tipl::color_image I;
             tipl::io::bitmap bmp;

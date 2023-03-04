@@ -53,7 +53,7 @@ bool xnat_facade::good(void)
             error_msg = "XNAT Server not found";
         if(cur_response->error() == 6)
             error_msg = "SSL Failed. Please update SSL library";
-        progress::show(error_msg.c_str());
+        show_progress() << error_msg;
         cur_response = nullptr;
     }
     return cur_response != nullptr;
@@ -92,9 +92,9 @@ void xnat_facade::get_data(std::string site,std::string auth,
         output_dir.pop_back();
 
     total = urls.size();
-    progress p("download data from ",site.c_str());
+    progress prog_("download data from ",site.c_str());
     show_progress() << "a total of " << urls.size() << " files" << std::endl;
-    for(prog = 0;progress::at(prog,total);++prog)
+    for(prog = 0;prog_(prog,total);++prog)
     {
         std::string download_name = (output_dir+"/"+
                                      urls[prog].substr(urls[prog].find_last_of('/')+1)).c_str();
@@ -116,22 +116,22 @@ void xnat_facade::get_data(std::string site,std::string auth,
         }
         if (!good())
             break;
-        if(p.aborted())
+        if(prog_.aborted())
         {
             error_msg = "download aborted";
             break;
         }
 
-        progress p3("save to ",download_name.c_str());
+        show_progress() << "save to " << download_name;
         QByteArray buf = cur_response->readAll();
         std::ofstream out(download_name.c_str(),std::ios::binary);
-        if(!tipl::io::save_stream_with_prog(p,out,buf.begin(),buf.size(),error_msg))
+        if(!tipl::io::save_stream_with_prog(prog_,out,buf.begin(),buf.size(),error_msg))
         {
             std::remove(download_name.c_str());
             break;
         }
     }
-    if(p.aborted())
+    if(prog_.aborted())
         error_msg = "download aborted";
     cur_response = nullptr;
 }
@@ -395,18 +395,20 @@ void xnat_dialog::download_status()
             if(QMessageBox::information(this,"DSI Studio","Rename DICOM files?",QMessageBox::Yes|QMessageBox::No) == QMessageBox::Yes)
             {
                 QStringList subject_dirs;
-                for(size_t i = 0;progress::at(i,output_dirs.size());++i)
                 {
-                    progress p("Renaming DICOM ",output_dirs[i].c_str());
-                    subject_dirs << rename_dicom_at_dir(output_dirs[i].c_str(),output_dirs[i].c_str());
+                    progress prog("Renaming DICOM");
+                    for(size_t i = 0;prog(i,output_dirs.size());++i)
+                        subject_dirs << rename_dicom_at_dir(output_dirs[i].c_str(),output_dirs[i].c_str());
+                    if(prog.aborted())
+                        return;
                 }
                 if(QMessageBox::information(this,"DSI Studio","Convert DICOM to SRC/NII?",QMessageBox::Yes|QMessageBox::No) == QMessageBox::Yes)
                 {
-                    for(size_t i = 0;progress::at(i,subject_dirs.size());++i)
-                    {
-                        progress p("Converting DICOM to SRC/NII ",subject_dirs[i].toStdString().c_str());
+                    progress prog("Converting DICOM to SRC/NII?");
+                    for(size_t i = 0;prog(i,subject_dirs.size());++i)
                         dicom2src(subject_dirs[i].toStdString());
-                    }
+                    if(prog.aborted())
+                        return;
                 }
             }
             return;

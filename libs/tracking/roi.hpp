@@ -250,7 +250,7 @@ public:
 public:
     bool setAtlas(bool& terminated)
     {
-        progress p("loading tractography atlas");
+        progress prog("loading tractography atlas");
         if(!handle->load_track_atlas())
             return false;
         if(track_id >= handle->tractography_name_list.size())

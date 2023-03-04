@@ -314,7 +314,7 @@ void MainWindow::loadSrc(QStringList filenames)
     }
     try
     {
-        progress p("[Step T2][Reconstruction]");
+        progress prog("[Step T2][Reconstruction]");
         reconstruction_window* new_mdi = new reconstruction_window(filenames,this);
         new_mdi->setAttribute(Qt::WA_DeleteOnClose);
         new_mdi->show();
@@ -352,7 +352,7 @@ void MainWindow::on_OpenDICOM_clicked()
                                 "Image files (*.dcm *.hdr *.nii *nii.gz *.fdf *.nhdr 2dseq subject);;All files (*)" );
     if ( filenames.isEmpty() )
         return;
-    progress p("[Step T1][Open Source Images]");
+    progress prog("[Step T1][Open Source Images]");
     add_work_dir(QFileInfo(filenames[0]).absolutePath());
     if(QFileInfo(filenames[0]).completeBaseName() == "subject")
     {
@@ -522,8 +522,8 @@ void MainWindow::on_RenameDICOM_clicked()
     if ( filenames.isEmpty() )
         return;
     add_work_dir(QFileInfo(filenames[0]).absolutePath());
-    progress prog_("Rename DICOM Files");
-    for (unsigned int index = 0;progress::at(index,filenames.size());++index)
+    progress prog("Rename DICOM Files");
+    for (unsigned int index = 0;prog(index,filenames.size());++index)
         RenameDICOMToDir(filenames[index],QFileInfo(filenames[index]).absolutePath());
 }
 
@@ -568,13 +568,13 @@ QStringList GetSubDir(QString Dir,bool recursive = true)
 
 QStringList rename_dicom_at_dir(QString path,QString output)
 {
-    progress prog_("Renaming DICOM");
+    progress prog("Renaming DICOM");
     show_progress() << "current directory is " << std::filesystem::current_path() << std::endl
                     << "source directory is " << path.toStdString() << std::endl
                     << "output directory is " << output.toStdString() << std::endl;
     QStringList dirs = GetSubDir(path);
     QStringList subject_dirs;
-    for(int index = 0;progress::at(index,dirs.size());++index)
+    for(int index = 0;prog(index,dirs.size());++index)
     {
         QStringList files = QDir(dirs[index]).entryList(QStringList("*"),
                                     QDir::Files | QDir::NoSymLinks);
@@ -922,7 +922,7 @@ void nii2src(QStringList nifti_file_list,QString output_dir)
 {
     if(nifti_file_list.empty())
         return;
-    progress p((std::string("creating SRC file from ")+nifti_file_list[0].toStdString()+
+    progress prog((std::string("creating SRC file from ")+nifti_file_list[0].toStdString()+
             (nifti_file_list.size() == 1 ? "" : " and other NIFTI files")).c_str());
     std::string output_file_base_name = output_dir.toStdString() + "/" + QFileInfo(nifti_file_list[0]).baseName().toStdString();
     if(nifti_file_list.size() == 1)
@@ -1009,7 +1009,7 @@ bool nii2src_bids(QString dir,QString output_dir,std::string& error_msg)
     };
 
     auto subject_num = sub_dir.size();
-    for(int j = 0;prog.at(j,sub_dir.size());++j)
+    for(int j = 0;prog(j,sub_dir.size());++j)
     {
         progress prog2((std::string("processing ")+ sub_dir[j].toStdString()).c_str());
         QString cur_dir = dir + "/" + sub_dir[j];
@@ -1088,7 +1088,7 @@ void MainWindow::on_nii2src_sf_clicked()
 
     progress prog("batch creating src");
     show_progress() << "directory:" << dir.toStdString() << std::endl;
-    for(int j = 0;prog.at(j,nifti_file_list.size());++j)
+    for(int j = 0;prog(j,nifti_file_list.size());++j)
     {
         show_progress() << nifti_file_list[j].toStdString() << std::endl;
         std::vector<std::shared_ptr<DwiHeader> > dwi_files;
@@ -1247,7 +1247,7 @@ void dicom2src(std::string dir_)
 {
     progress prog("convert DICOM to NIFTI/SRC");
     QStringList dir_list = GetSubDir(dir_.c_str(),false);
-    for(int i = 0;prog.at(i,dir_list.size());++i)
+    for(int i = 0;prog(i,dir_list.size());++i)
     {
         QDir cur_dir = dir_list[i];
         QStringList dicom_file_list = cur_dir.entryList(QStringList("*.dcm"),QDir::Files|QDir::NoSymLinks);
@@ -1256,7 +1256,7 @@ void dicom2src(std::string dir_)
         show_progress() << "processing " << dir_list[i].toStdString() << std::endl;
         // aggregate DWI with identical names from consecutive folders
         QStringList aggregated_file_list;
-        for(;prog.at(i,dir_list.size());++i)
+        for(;prog(i,dir_list.size());++i)
         {
             for (int index = 0;index < dicom_file_list.size();++index)
                 aggregated_file_list << dir_list[i] + "/" + dicom_file_list[index];

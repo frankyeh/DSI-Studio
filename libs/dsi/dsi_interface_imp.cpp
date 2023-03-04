@@ -303,11 +303,11 @@ const char* odf_average(const char* out_name,std::vector<std::string>& file_name
     progress prog("loading data");
 
     try {
-        for (unsigned int index = 0;progress::at(index,file_names.size());++index)
+        for (unsigned int index = 0;prog(index,file_names.size());++index)
         {
             file_name = file_names[index];
             fib_data fib;
-            progress::show("reading file");
+            show_progress() << "reading file";
             if(!fib.load_from_file(file_name.c_str()))
                 throw std::runtime_error(fib.error_msg);
             if(!fib.is_mni)
@@ -350,7 +350,7 @@ const char* odf_average(const char* out_name,std::vector<std::string>& file_name
                 }
             }
 
-            progress::show("accumulating ODFs");
+            show_progress() << "accumulating ODFs";
             if(index == 0)
             {
                 odfs.resize(dim.size());
@@ -373,8 +373,8 @@ const char* odf_average(const char* out_name,std::vector<std::string>& file_name
             });
 
 
-            progress::show("accumulating other metrics");
-            for(size_t i = 0;progress::at(i,other_metrics_name.size());++i)
+            show_progress() << "accumulating other metrics";
+            for(size_t i = 0;prog(i,other_metrics_name.size());++i)
             {
                 auto metric_index = fib.get_name_index(other_metrics_name[i]);
                 if(metric_index < fib.view_item.size())
@@ -397,23 +397,23 @@ const char* odf_average(const char* out_name,std::vector<std::string>& file_name
     if (prog.aborted())
         return nullptr;
 
-    progress::show("averaging other metrics");
-    progress::at(1,3);
+    show_progress() << "averaging other metrics";
+    prog(1,3);
     tipl::par_for(other_metrics_name.size(),[&](unsigned int i)
     {
         if(other_metrics_count[i])
             other_metrics_images[i] *= 1.0f/other_metrics_count[i];
     });
 
-    progress::at(0,3);
+    prog(0,3);
     tipl::par_for(dim.size(),[&](size_t i){
         if(odf_count[i] > 1)
             tipl::divide_constant(odfs[i],float(odf_count[i]));
     });
 
     // eliminate ODF if missing more than half of the population
-    progress::show("preparing ODFs");
-    progress::at(2,3);
+    show_progress() << "preparing ODFs";
+    prog(2,3);
     tipl::image<3,unsigned char> mask(dim);
     size_t odf_size = 0;
     for(size_t i = 0;i < mask.size();++i)
@@ -426,7 +426,7 @@ const char* odf_average(const char* out_name,std::vector<std::string>& file_name
         }
     }
     odfs.resize(odf_size);
-    progress::at(3,3);
+    prog(3,3);
     std::ostringstream out;
     out << "A group-average template was constructed from a total of " << file_names.size() << " scans." << report.c_str();
     report = out.str();
@@ -435,7 +435,7 @@ const char* odf_average(const char* out_name,std::vector<std::string>& file_name
     if(!output_odfs(mask,out_name,".mean.fib.gz",odfs,other_metrics_images,other_metrics_name,ti,vs.begin(),mni.begin(),report,error_msg,false) ||
        !output_odfs(mask,out_name,".mean.odf.fib.gz",odfs,other_metrics_images,other_metrics_name,ti,vs.begin(),mni.begin(),report,error_msg))
     {
-        progress::show(error_msg.c_str());
+        show_progress() << error_msg;
         return nullptr;
     }
     return nullptr;

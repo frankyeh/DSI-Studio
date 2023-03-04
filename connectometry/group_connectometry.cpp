@@ -329,7 +329,7 @@ void group_connectometry::calculate_FDR(void)
 
     // progress = 100
     {
-        progress p("output distribution image");
+        progress prog("output distribution image");
         delete null_pos_chart_view;
         delete null_neg_chart_view;
         delete fdr_chart_view;

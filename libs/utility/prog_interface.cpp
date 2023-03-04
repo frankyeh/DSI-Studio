@@ -69,10 +69,7 @@ void progress::begin_prog(const char* status,bool show_now)
     update_prog(show_now);
 }
 
-void progress::show(const char* status,bool show_now)
-{
-    print_status(status,false,false);
-}
+
 progress::~progress(void)
 {
     if(!tipl::is_main_thread<0>())
@@ -101,7 +98,7 @@ progress::~progress(void)
         out << count << " " << unit;
     }
     status_list.pop_back();
-    print_status(out.str().c_str(),false,true);
+    print(out.str().c_str(),false,true);
 
     process_time.pop_back();
     t_last.pop_back();

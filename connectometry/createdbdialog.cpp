@@ -307,9 +307,9 @@ void CreateDBDialog::on_create_data_base_clicked()
         data->handle->db.index_name = ui->index_of_interest->currentText().toStdString();
 
         progress prog("reading data");
-        for (unsigned int index = 0;progress::at(index,group.count());++index)
+        for (unsigned int index = 0;prog(index,group.count());++index)
         {
-            progress::show(QFileInfo(group[index]).baseName().toStdString().c_str());
+            show_progress() << QFileInfo(group[index]).baseName().toStdString() << std::endl;
             if(!data->handle->db.add_subject_file(group[index].toStdString(),get_file_name(group[index]).toStdString()))
             {
                 QMessageBox::critical(this,"ERROR",data->handle->db.error_msg.c_str());

@@ -356,8 +356,8 @@ void db_window::on_actionAll_Subjects_triggered()
                                 "");
     if(dir.isEmpty())
         return;
-    progress prog_("exporting ",dir.toStdString().c_str());
-    for(size_t i = 0;progress::at(i,vbc->handle->db.subject_names.size());++i)
+    progress prog("exporting ",dir.toStdString().c_str());
+    for(size_t i = 0;prog(i,vbc->handle->db.subject_names.size());++i)
     {
         QString file_name = dir + "\\"+
                 vbc->handle->db.subject_names[i].c_str()+"."+

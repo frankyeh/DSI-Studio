@@ -34,7 +34,7 @@ bool odf_data::read(gz_mat_read& mat_reader)
         }
 
         odf_buf.resize(odf_buf_count.size());
-        for(size_t i = 0;prog.at(i,odf_buf_count.size());++i)
+        for(size_t i = 0;prog(i,odf_buf_count.size());++i)
         {
             if(!mat_reader.read((std::string("odf")+std::to_string(i)).c_str(),row,col,odf_buf[i]))
             {
@@ -569,173 +569,6 @@ bool fib_data::load_from_file(const char* file_name)
         return false;
     }
 
-
-    // check if initiate surrogate analysis for large data
-    /*
-    if(has_gui &&
-       !mat_reader.has("odfs") && !mat_reader.has("odf0") && // not ODF FIB files
-       !mat_reader.has("subject_names") &&                        // not connectometry DB
-       !mat_reader.has("dirs") &&                        // 4D dirs matrix requires more implementation in surrogate mat_reader
-        mat_reader.read("dimension",dim) &&
-        mat_reader.read("voxel_size",vs) &&
-        (dim[0] > 256 || dim[1] > 256 || dim[2] > 256))
-    {
-        high_reso.reset(new fib_data);
-        show_progress() << "initiate surrogate analysis" << std::endl;
-        std::string surrogate_file_name = file_name;
-        surrogate_file_name.resize(surrogate_file_name.size()-7);
-        surrogate_file_name += ".fibs.gz";
-        // if no surrogate FIB or surrogate FIB is older, then generate one
-        if(!std::filesystem::exists(surrogate_file_name) || QFileInfo(surrogate_file_name.c_str()).lastModified() < QFileInfo(file_name).lastModified())
-        {
-            progress prog_("create surrogate FIB file");
-            size_t largest_dim = tipl::max_value(dim);
-            size_t downsampling = 0;
-            tipl::vector<3> low_reso_vs(vs);
-            tipl::shape<3> low_reso_dim(dim);
-            while(largest_dim > 256)
-            {
-                ++downsampling;
-                largest_dim >>= 1;
-                low_reso_vs *= 2.0f;
-                low_reso_dim[0] = (low_reso_dim[0]+1) >> 1;
-                low_reso_dim[1] = (low_reso_dim[1]+1) >> 1;
-                low_reso_dim[2] = (low_reso_dim[2]+1) >> 1;
-            }
-            show_progress() << "preparing surrogate FIB file" << std::endl;
-            gz_mat_write out(surrogate_file_name.c_str());
-            out.write("dimension",low_reso_dim);
-            out.write("voxel_size",low_reso_vs);
-            // output odf vertices and faces
-            {
-                tessellated_icosahedron ti;
-                ti.init(8);
-                std::vector<float> float_data;
-                std::vector<short> short_data;
-                ti.save_to_buffer(float_data,short_data);
-                out.write("odf_vertices",float_data,3);
-                out.write("odf_faces",short_data,3);
-            }
-            // QSDR
-            if(mat_reader.read("trans",trans_to_mni))
-            {
-                // downsample mapping matrix
-                if(!get_native_position().empty())
-                {
-                    tipl::image<3,tipl::vector<3,float> > new_mapping;
-                    for(size_t j = 0;j < downsampling;++j)
-                        if(j == 0)
-                            tipl::downsample_with_padding(native_position,new_mapping);
-                        else
-                            tipl::downsample_with_padding(new_mapping);
-                    out.write("mapping",&new_mapping[0][0],3,new_mapping.size());
-                }
-                // convert trans_to_mni
-                for(size_t j = 0;j < downsampling;++j)
-                {
-                    trans_to_mni[0] *= 2.0f;
-                    trans_to_mni[5] *= 2.0f;
-                    trans_to_mni[10] *= 2.0f;
-                }
-                out.write("trans",trans_to_mni.begin(),4,4);
-
-                tipl::shape<3> native_shape;
-                tipl::vector<3> native_vs;
-                if(mat_reader.read("native_dimension",native_shape) &&
-                   mat_reader.read("native_voxel_size",native_vs))
-                {
-                    out.write("native_dimension",native_shape);
-                    out.write("native_voxel_size",native_vs);
-                }
-            }
-
-            for(size_t index = 0;progress::at(index,mat_reader.size());++index)
-            {
-                tipl::io::mat_matrix& matrix = mat_reader[index];
-                progress::show(std::string("loading ") + matrix.get_name());
-                if(matrix.is_type<char>()) // report, steps, ...etc
-                {
-                    std::string content;
-                    mat_reader.read(matrix.get_name().c_str(),content);
-                    out.write(matrix.get_name().c_str(),content);
-                    show_progress() << "write " << matrix.get_name() << ":" << content << std::endl;
-                }
-
-                if(matrix.get_name() == "dir0")
-                {
-                    if(matrix.has_delay_read() && !matrix.read(*(mat_reader.in.get())))
-                    {
-                        error_msg = "failed to create surrogate FIB file";
-                        return false;
-                    }
-                    progress::show("write dir0 in downsampled volume");
-                    auto ptr = reinterpret_cast<const float*>(matrix.get_data(tipl::io::mat_type_info<float>::type));
-                    tipl::image<3,tipl::vector<3> > new_image,J(dim);
-                    for(size_t j = 0;j < J.size();++j)
-                    {
-                        J[j] = tipl::vector<3>(*ptr,*(ptr+1),*(ptr+2));
-                        ptr += 3;
-                    }
-                    for(size_t j = 0;j < downsampling;++j)
-                        if(j == 0)
-                            tipl::downsample_no_average(J,new_image);
-                        else
-                            tipl::downsample_no_average(new_image,new_image);
-                    out.write(matrix.get_name().c_str(),&new_image[0][0],uint32_t(3*dim.plane_size()),uint32_t(dim.depth()));
-                }
-
-                if(size_t(matrix.get_cols())*size_t(matrix.get_rows()) == dim.size()) // image volumes, including fa, and fiber index
-                {
-                    progress::show(std::string("write ") + matrix.get_name() + " in downsampled volume");
-                    if(matrix.has_delay_read() && !matrix.read(*(mat_reader.in.get())))
-                    {
-                        error_msg = "failed to create surrogate FIB file";
-                        return false;
-                    }
-                    if(matrix.is_type<float>()) // qa, fa...etc.
-                    {
-                        auto J = tipl::make_image(reinterpret_cast<const float*>(matrix.get_data(tipl::io::mat_type_info<float>::type)),dim);
-                        tipl::image<3> new_image;
-                        for(size_t j = 0;j < downsampling;++j)
-                            if(j == 0)
-                                tipl::downsample_with_padding(J,new_image);
-                            else
-                                tipl::downsample_with_padding(new_image);
-                        out.write(matrix.get_name().c_str(),new_image);
-                    }
-                    if(matrix.is_type<short>()) // index0,index1
-                    {
-                        auto J = tipl::make_image(reinterpret_cast<const unsigned short*>(matrix.get_data(tipl::io::mat_type_info<unsigned short>::type)),dim);
-                        tipl::image<3,unsigned short> new_index;
-                        for(size_t j = 0;j < downsampling;++j)
-                            if(j == 0)
-                                tipl::downsample_no_average(J,new_index);
-                            else
-                                tipl::downsample_no_average(new_index,new_index);
-                        out.write(matrix.get_name().c_str(),new_index);
-                    }
-                }
-            }
-
-            if(progress::aborted())
-            {
-                error_msg = "failed to load surrogate FIB file";
-                return false;
-            }
-        }
-        progress::show("reading surrogate FIB file");
-        high_reso->mat_reader.swap(mat_reader);
-        high_reso->fib_file_name = fib_file_name;
-        if(!read_fib_mat_with_idx(surrogate_file_name.c_str(),mat_reader))
-        {
-            error_msg = "failed to load surrogate FIB file";
-            return false;
-        }
-        fib_file_name = surrogate_file_name;
-        has_high_reso = true;
-    }
-    */
-
     if(!load_from_mat())
         return false;
     show_progress() << "FIB file loaded" << std::endl;
@@ -978,7 +811,7 @@ bool resample_mat(gz_mat_read& mat_reader,float resolution)
     // get all data in delayed read condition
     {
         progress prog("reading data");
-        for(size_t i = 0;prog.at(i,mat_reader.size());++i)
+        for(size_t i = 0;prog(i,mat_reader.size());++i)
         {
             auto& mat = mat_reader[i];
             if(mat.has_delay_read() && !mat.read(*(mat_reader.in.get())))
@@ -1003,7 +836,7 @@ bool resample_mat(gz_mat_read& mat_reader,float resolution)
     tipl::par_for(mat_reader.size(),[&](unsigned int i)
     {
         if(tipl::is_main_thread<0>())
-            progress::at(p,mat_reader.size());
+            prog(p,mat_reader.size());
         if(prog.aborted())
             return;
         auto& mat = mat_reader[i];
@@ -1748,10 +1581,10 @@ bool fib_data::map_to_mni(bool background)
             out.write("from_vs",vs);
             out.write("steps",steps);
             prog = 4;
-            progress::show("calculating template to subject warp field");
+            show_progress() << "calculating template to subject warp field";
             out.write("to2from",&t2s[0][0],3,t2s.size());
             prog = 5;
-            progress::show("calculating subject to template warp field");
+            show_progress() << "calculating subject to template warp field";
             out.write("from2to",&s2t[0][0],3,s2t.size());
         }
 
@@ -1761,7 +1594,7 @@ bool fib_data::map_to_mni(bool background)
     if(background)
     {
         std::thread t(lambda);
-        while(progress::at(prog,6))
+        while(prog_(prog,6))
         {
             std::this_thread::yield();
             if(prog_.aborted())

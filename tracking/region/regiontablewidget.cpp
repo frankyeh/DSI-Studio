@@ -150,7 +150,7 @@ void RegionTableWidget::add_region_from_atlas(std::shared_ptr<atlas> at,unsigned
 }
 void RegionTableWidget::add_all_regions_from_atlas(std::shared_ptr<atlas> at)
 {
-    progress p("add_all_regions_from_atlas");
+    progress prog("add_all_regions_from_atlas");
     std::vector<std::vector<tipl::vector<3,short> > > points;
     std::vector<std::string> labels;
     if(!cur_tracking_window.handle->get_atlas_all_roi(at,
@@ -160,7 +160,7 @@ void RegionTableWidget::add_all_regions_from_atlas(std::shared_ptr<atlas> at)
         QMessageBox::critical(this,"ERROR",cur_tracking_window.handle->error_msg.c_str());
         return;
     }   
-    for(size_t i = 0;progress::at(i,points.size());++i)
+    for(size_t i = 0;prog(i,points.size());++i)
     {
         add_region(labels[i].c_str());
         regions.back()->add_points(std::move(points[i]));
@@ -267,8 +267,8 @@ bool RegionTableWidget::command(QString cmd,QString param,QString)
 {
     if(cmd == "save_all_regions_to_dir")
     {
-        progress prog_("save files...");
-        for(int index = 0;progress::at(index,rowCount());++index)
+        progress prog("save files...");
+        for(int index = 0;prog(index,rowCount());++index)
             if (item(index,0)->checkState() == Qt::Checked) // either roi roa end or seed
             {
                 std::string filename = param.toStdString();
@@ -277,7 +277,7 @@ bool RegionTableWidget::command(QString cmd,QString param,QString)
                 filename  += output_format().toStdString();
                 regions[size_t(index)]->save_to_file(filename.c_str());
             }
-        return true;
+        return !prog.aborted();
     }
     if(cmd == "delete_all_region")
     {
@@ -781,7 +781,7 @@ bool load_nii(std::shared_ptr<fib_data> handle,
     if(is_4d)
     {
         progress prog_("loading");
-        for(size_t region_index = 0;progress::at(region_index,region_points.size());++region_index)
+        for(size_t region_index = 0;prog(region_index,region_points.size());++region_index)
         {
             header.toLPS(from);
             for (tipl::pixel_index<3> index(from.shape());index < from.size();++index)
@@ -845,7 +845,7 @@ bool RegionTableWidget::load_multiple_roi_nii(QString file_name,bool is_mni)
         {
             if(prog.aborted() || failed)
                 return;
-            progress::at(p++,files.size());
+            prog(p++,files.size());
             if(QFileInfo(files[i]).suffix() == "gz" ||
                 QFileInfo(files[i]).suffix() == "nii" ||
                 QFileInfo(files[i]).suffix() == "hdr")
@@ -886,9 +886,9 @@ bool RegionTableWidget::load_multiple_roi_nii(QString file_name,bool is_mni)
     tipl::aggregate_results(std::move(names),names[0]);
 
     {
-        progress prog_("loading ROIs");
+        progress prog("loading ROIs");
         begin_update();
-        for(uint32_t i = 0;progress::at(i,loaded_regions[0].size());++i)
+        for(uint32_t i = 0;prog(i,loaded_regions[0].size());++i)
             {
                 regions.push_back(loaded_regions[0][i]);
                 add_row(int(regions.size()-1),names[0][i].c_str());
@@ -1007,7 +1007,7 @@ void RegionTableWidget::merge_all(void)
     {
         if(prog.aborted())
             return;
-        progress::at(p++,merge_list.size());
+        prog(p++,merge_list.size());
         if(regions[merge_list[0]]->to_diffusion_space != regions[merge_list[index]]->to_diffusion_space)
                 convert_region(regions[merge_list[index]]->region,
                                regions[merge_list[index]]->dim,
@@ -1178,7 +1178,7 @@ void RegionTableWidget::save_all_regions_to_4dnifti(void)
     {
         if(prog.aborted())
             return;
-        progress::at(p++,checked_regions.size());
+        prog(p++,checked_regions.size());
         size_t offset = region_index*dim.size();
         auto points = checked_regions[region_index]->region;
         convert_region(points,
@@ -1467,6 +1467,7 @@ void RegionTableWidget::do_action(QString action)
 {
     if(regions.empty() || currentRow() < 0)
         return;
+    progress prog(action.toStdString().c_str(),true);
     std::vector<int> rows_to_be_updated;
     size_t roi_index = currentRow();
     auto checked_regions = get_checked_regions();
@@ -1503,11 +1504,11 @@ void RegionTableWidget::do_action(QString action)
                 A_labels.resize(handle->dim);
 
             {
-                progress prog("processing regions");
+                show_progress() << "processing regions";
                 size_t prog_count = 0;
                 tipl::par_for(checked_regions.size(),[&](size_t r)
                 {
-                    progress::at(prog_count++,checked_regions.size());
+                    prog(prog_count++,checked_regions.size());
                     if(r == 0)
                         return;
                     tipl::image<3,unsigned char> B;
@@ -1563,11 +1564,11 @@ void RegionTableWidget::do_action(QString action)
                     tipl::aggregate_results(std::move(need_fill_ups),need_fill_up);
                 }
                 {
-                    progress prog("assign labels",true);
+                    show_progress() << "assign labels";
                     size_t prog_count = 0;
                     tipl::par_for(need_fill_up.size(),[&](size_t i)
                     {
-                        progress::at(prog_count++,need_fill_up.size());
+                        prog(prog_count++,need_fill_up.size());
                         tipl::pixel_index<3> index(need_fill_up[i],A.shape());
                         float min_dis = std::numeric_limits<float>::max();
                         size_t min_r = 1;
@@ -1600,7 +1601,7 @@ void RegionTableWidget::do_action(QString action)
                 size_t prog_count = 0;
                 tipl::par_for(checked_regions.size(),[&](size_t r)
                 {
-                    progress::at(prog_count++,checked_regions.size());
+                    prog(prog_count++,checked_regions.size());
                     if(r == 0)
                         return;
                     tipl::image<3,unsigned char> B(A_labels.shape());
@@ -1692,11 +1693,10 @@ void RegionTableWidget::do_action(QString action)
             int threshold = float(QInputDialog::getInt(this,"DSI Studio","Voxel distance",10,1,100,1,&ok));
             if(!ok)
                 return;
-            size_t proc = 0;
+            size_t p = 0;
             for(auto& region : region_to_be_processed)
             {
-                if(!progress::at(proc++,region_to_be_processed.size()))
-                    break;
+                prog(p++,region_to_be_processed.size());
                 tipl::image<3,unsigned char> mask;
                 region->SaveToBuffer(mask);
                 tipl::morphology::dilation2_mt(mask,threshold);
@@ -1721,10 +1721,10 @@ void RegionTableWidget::do_action(QString action)
                 flip = true;
                 threshold = -threshold;
             }
-            size_t proc = 0;
+            size_t p = 0;
             for(auto& region : region_to_be_processed)
             {
-                if(!progress::at(proc++,region_to_be_processed.size()))
+                if(!prog(p++,region_to_be_processed.size()))
                     break;
                 tipl::image<3,unsigned char> mask(I.shape());
                 if(action == "threshold_current")

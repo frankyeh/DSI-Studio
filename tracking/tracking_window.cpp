@@ -618,7 +618,7 @@ bool tracking_window::command(QString cmd,QString param,QString param2)
     }
     if(cmd == "load_workspace")
     {
-        progress prog_("loading data");
+        progress prog("loading data");
         if(QDir(param+"/tracts").exists())
         {
             if(tractWidget->rowCount())
@@ -629,7 +629,7 @@ bool tracking_window::command(QString cmd,QString param,QString param2)
                 tractWidget->load_tracts(tract_list);
         }
 
-        progress::at(1,5);
+        prog(1,5);
 
         if(QDir(param+"/regions").exists())
         {
@@ -641,7 +641,7 @@ bool tracking_window::command(QString cmd,QString param,QString param2)
                 regionWidget->command("load_region",region_list[i]);
         }
 
-        progress::at(2,5);
+        prog(2,5);
 
         if(QDir(param+"/devices").exists())
         {
@@ -653,7 +653,7 @@ bool tracking_window::command(QString cmd,QString param,QString param2)
                 deviceWidget->load_device(device_list);
         }
 
-        progress::at(3,5);
+        prog(3,5);
 
         if(QDir(param+"/slices").exists())
         {
@@ -663,7 +663,7 @@ bool tracking_window::command(QString cmd,QString param,QString param2)
                 addSlices(QStringList(slice_list[i]),QFileInfo(slice_list[0]).baseName(),true);
         }
 
-        progress::at(4,5);
+        prog(4,5);
 
         QDir::setCurrent(param);
         command("load_setting",param + "/setting.ini");
@@ -2451,8 +2451,8 @@ void tracking_window::on_actionSave_Slices_to_DICOM_triggered()
     bool is_axial = row_orientation[0] > row_orientation[1];
     size_t read_size = is_axial ? I.plane_size():size_t(I.height()*I.depth());
 
-    progress prog_("Writing data");
-    for(int i = 0,pos = 0;progress::at(i,files.size());++i,pos += read_size)
+    progress prog("Writing data");
+    for(int i = 0,pos = 0;prog(i,files.size());++i,pos += read_size)
     {
         std::vector<char> buf;
         {

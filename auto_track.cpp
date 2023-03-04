@@ -168,10 +168,9 @@ std::string run_auto_track(tipl::io::program_option<show_progress>& po,const std
 
     std::vector<std::string> names;
     progress prog0("automatic fiber tracking");
-    for(size_t i = 0;progress::at(i,file_list.size());++i)
+    for(size_t i = 0;prog0(i,file_list.size());++i)
     {
         std::string cur_file_base_name = QFileInfo(file_list[i].c_str()).baseName().toStdString();
-        progress prog1(cur_file_base_name.c_str());
         names.push_back(cur_file_base_name);
         prog = int(i);
         show_progress() << "processing " << cur_file_base_name << std::endl;
@@ -192,12 +191,12 @@ std::string run_auto_track(tipl::io::program_option<show_progress>& po,const std
         // fiber tracking on fib file
         std::shared_ptr<fib_data> handle(new fib_data);
         bool fib_loaded = false;
-        progress prog2("tracking pathways");
-        for(size_t j = 0;progress::at(j,track_id.size());++j)
+        progress prog1("tracking pathways");
+        for(size_t j = 0;prog1(j,track_id.size());++j)
         {
             std::string track_name = fib.tractography_name_list[track_id[j]];
             std::string output_path = dir + "/" + track_name;
-            progress prog3(track_name.c_str());
+            show_progress() << track_name;
 
             // create storing directory
             {
@@ -288,7 +287,7 @@ std::string run_auto_track(tipl::io::program_option<show_progress>& po,const std
                         thread.roi_mgr->track_id = track_id[j];
                         thread.roi_mgr->tolerance_dis_in_icbm152_mm = tolerance[tracking_iteration];
                     }
-                    progress prog("tracking ",track_name.c_str(),true);
+                    progress prog2("tracking ",track_name.c_str(),true);
                     thread.run(thread_count,false);
                     std::string report = tract_model.report + thread.report.str();
                     report += " Shape analysis (Yeh, Neuroimage, 2020 Dec;223:117329) was conducted to derive shape metrics for tractography.";
@@ -297,15 +296,15 @@ std::string run_auto_track(tipl::io::program_option<show_progress>& po,const std
                     auto_track_report = report;
                     bool no_result = false;
                     {
-                        while(!thread.is_ended() && !prog.aborted())
+                        while(!thread.is_ended() && !prog2.aborted())
                         {
                             std::this_thread::yield();
                             if(!thread.param.termination_count)
                             {
-                                progress::at(0,1);
+                                prog2(0,1);
                                 continue;
                             }
-                            prog.at(thread.get_total_tract_count(),thread.param.termination_count);
+                            prog2(thread.get_total_tract_count(),thread.param.termination_count);
                             // terminate if yield rate is very low, likely quality problem
                             if(thread.get_total_seed_count() > yield_check_count &&
                                thread.get_total_tract_count() < float(thread.get_total_seed_count())*yield_rate)
@@ -331,7 +330,7 @@ std::string run_auto_track(tipl::io::program_option<show_progress>& po,const std
                         }
 
                     }
-                    if(prog.aborted())
+                    if(prog2.aborted())
                         return std::string("aborted.");
                     // fetch both front and back buffer
                     thread.fetchTracks(&tract_model);
@@ -367,7 +366,7 @@ std::string run_auto_track(tipl::io::program_option<show_progress>& po,const std
                 if(export_stat &&
                    (overwrite || !std::filesystem::exists(stat_file_name) || !std::filesystem::file_size(stat_file_name)))
                 {
-                    progress prog("export tracts statistics");
+                    progress prog2("export tracts statistics");
                     show_progress() << "saving " << stat_file_name << std::endl;
                     std::ofstream out_stat(stat_file_name.c_str());
                     std::string result;
@@ -380,7 +379,7 @@ std::string run_auto_track(tipl::io::program_option<show_progress>& po,const std
     if(prog0.aborted())
         return std::string("aborted");
     {
-        progress prog("check if there is any incomplete task");
+        show_progress() << "check if there is any incomplete task";
         bool has_incomplete = false;
         for(size_t i = 0;i < stat_files.size();++i)
         {
@@ -402,7 +401,7 @@ std::string run_auto_track(tipl::io::program_option<show_progress>& po,const std
 
     if(file_list.size() != 1)
     {
-        progress prog("aggregating results from multiple subjects");
+        show_progress() << "aggregating results from multiple subjects";
         std::string column_title("Subjects");
         for(size_t s = 0;s < names.size();++s) // for each scan
         {

@@ -62,13 +62,13 @@ void AtlasDialog::on_add_atlas_clicked()
         QMessageBox::critical(this,"ERROR",handle->atlas_list[atlas_index]->error_msg.c_str());
         return;
     }
-    progress prog_("adding regions");
+    progress prog("adding regions");
     w->regionWidget->begin_update();
     if(indexes.count() == ui->region_list->model()->rowCount()) // select all
         w->regionWidget->add_all_regions_from_atlas(handle->atlas_list[atlas_index]);
     else
     {
-        for(unsigned int index = 0;progress::at(index,indexes.size()); ++index)
+        for(unsigned int index = 0;prog(index,indexes.size()); ++index)
             w->regionWidget->add_region_from_atlas(handle->atlas_list[atlas_index],uint32_t(indexes[int(index)].row()));
     }
     w->regionWidget->end_update();

@@ -141,7 +141,7 @@ void group_connectometry_analysis::run_permutation_multithread(unsigned int id,u
 }
 void group_connectometry_analysis::save_result(void)
 {
-    progress p("save correlational tractography results");
+    progress prog("save correlational tractography results");
     for(size_t index = 0;index < tip;++index)
     {
         neg_null_corr_track->trim();
@@ -203,12 +203,12 @@ void group_connectometry_analysis::save_result(void)
     }
 
     {
-        progress p("deleting repeated tracts");
+        progress prog("deleting repeated tracts");
         inc_track->delete_repeated(1.0);
         dec_track->delete_repeated(1.0);
     }
     {
-        progress p("saving correlational tractography");
+        progress prog("saving correlational tractography");
         if(inc_track->get_visible_track_count())
             inc_track->save_tracts_to_file((output_file_name+".inc.tt.gz").c_str());
         else
@@ -381,7 +381,7 @@ void group_connectometry_analysis::calculate_spm(connectometry_result& data,stat
 
 void group_connectometry_analysis::run_permutation(unsigned int thread_count,unsigned int permutation_count)
 {
-    progress p("run permutation test");
+    progress prog("run permutation test");
     clear();
 
     {

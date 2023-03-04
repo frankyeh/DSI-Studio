@@ -368,7 +368,7 @@ void reconstruction_window::batch_command(std::string cmd,std::string param)
     if(filenames.size() > 1 && QMessageBox::information(this,"DSI Studio","Apply to other SRC files?",
                                     QMessageBox::Yes|QMessageBox::No|QMessageBox::Cancel) == QMessageBox::Yes)
     {
-        progress prog_("apply to other SRC files");
+        progress prog("apply to other SRC files");
         std::string steps(handle->voxel.steps.begin()+existing_steps.length(),handle->voxel.steps.end());
         steps += cmd;
         if(!param.empty())
@@ -377,7 +377,7 @@ void reconstruction_window::batch_command(std::string cmd,std::string param)
             steps += param;
             steps += "\n";
         }
-        for(int index = 1;progress::at(index,filenames.size());++index)
+        for(int index = 1;prog(index,filenames.size());++index)
         {
             ImageModel model;
             if (!model.load_from_file(filenames[index].toStdString().c_str()) ||
@@ -405,7 +405,7 @@ void reconstruction_window::on_doDTI_clicked()
     std::string ref_steps(handle->voxel.steps.begin()+existing_steps.length(),handle->voxel.steps.end());
     std::shared_ptr<ImageModel> ref_handle = handle;
     progress prog("process SRC files");
-    for(int index = 0;prog.at(index,filenames.size());++index)
+    for(int index = 0;prog(index,filenames.size());++index)
     {
         show_progress() << "processing " << filenames[index].toStdString() << std::endl;
         if(index)

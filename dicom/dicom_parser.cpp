@@ -165,7 +165,8 @@ bool load_dicom_multi_frame(const char* file_name,std::vector<std::shared_ptr<Dw
 
     size_t plane_size = size_t(buf_image.width()*buf_image.height());
     b_table.resize(num_gradient*4);
-    for(size_t index = 0;progress::at(index,num_gradient);++index)
+    progress prog("reading DWI");
+    for(size_t index = 0;prog(index,num_gradient);++index)
     {
         std::shared_ptr<DwiHeader> new_file(new DwiHeader);
         if(index == 0)
@@ -187,7 +188,7 @@ bool load_dicom_multi_frame(const char* file_name,std::vector<std::shared_ptr<Dw
         new_file->bvec.rotate(T);
         dwi_files.push_back(new_file);
     }
-    return true;
+    return !prog.aborted();
 }
 
 
@@ -632,7 +633,8 @@ bool load_multiple_slice_dicom(QStringList file_list,std::vector<std::shared_ptr
             iterate_slice_first = true;
         }
     }
-    for (unsigned int index = 0,b_index = dwi_files.size(),slice_index = 0;progress::at(index,file_list.size());++index)
+    progress prog("reading DWI");
+    for (unsigned int index = 0,b_index = dwi_files.size(),slice_index = 0;prog(index,file_list.size());++index)
     {
         std::shared_ptr<DwiHeader> dwi(new DwiHeader);
         if(!dwi->open(file_list[index].toLocal8Bit().begin()))
@@ -670,7 +672,7 @@ bool load_multiple_slice_dicom(QStringList file_list,std::vector<std::shared_ptr
             }
         }
     }
-    return true;
+    return !prog.aborted();
 }
 void scale_image_buf_to_uint16(std::vector<tipl::image<3> >& image_buf)
 {
@@ -689,8 +691,8 @@ bool load_nhdr(QStringList file_list,std::vector<std::shared_ptr<DwiHeader> >& d
     tipl::shape<3> dim;
     tipl::vector<3> vs;
     image_buf.resize(file_list.size());
-    progress prog_("Reading raw data");
-    for (size_t i = 0;progress::at(i,file_list.size());++i)
+    progress prog("Reading raw data");
+    for (size_t i = 0;prog(i,file_list.size());++i)
     {
         std::map<std::string,std::string> value_list;
         {
@@ -747,12 +749,14 @@ bool load_nhdr(QStringList file_list,std::vector<std::shared_ptr<DwiHeader> >& d
             return false;
         }
     }
+    if(prog.aborted())
+        return false;
 
     scale_image_buf_to_uint16(image_buf);
 
     {
-        progress prog_("Converting data");
-        for(size_t i = 0;progress::at(i,image_buf.size());++i)
+        progress prog2("Converting data");
+        for(size_t i = 0;prog2(i,image_buf.size());++i)
         {
             dwi_files.push_back(std::make_shared<DwiHeader>());
             dwi_files.back()->voxel_size = vs;
@@ -761,6 +765,8 @@ bool load_nhdr(QStringList file_list,std::vector<std::shared_ptr<DwiHeader> >& d
             dwi_files.back()->image = image_buf[i];
             image_buf[i] = tipl::image<3>();
         }
+        if(prog2.aborted())
+            return false;
     }
     return true;
 }
@@ -768,7 +774,8 @@ bool load_4d_fdf(QStringList file_list,std::vector<std::shared_ptr<DwiHeader> >&
 {
     std::vector<tipl::image<3> > image_buf;
     bool scan_2d = true;
-    for (int index = 0;progress::at(index,file_list.size());++index)
+    progress prog("reading DWI");
+    for (int index = 0;prog(index,file_list.size());++index)
     {
         std::map<std::string,std::string> value_list;
         {
@@ -901,7 +908,8 @@ bool load_4d_fdf(QStringList file_list,std::vector<std::shared_ptr<DwiHeader> >&
         }
 
     }
-
+    if(prog.aborted())
+        return false;
 
     scale_image_buf_to_uint16(image_buf);
     for(size_t i = 0;i < image_buf.size();++i)
@@ -911,7 +919,7 @@ bool load_4d_fdf(QStringList file_list,std::vector<std::shared_ptr<DwiHeader> >&
 
 bool load_3d_series(QStringList file_list,std::vector<std::shared_ptr<DwiHeader> >& dwi_files)
 {
-    for (unsigned int index = 0;progress::at(index,file_list.size());++index)
+    for (unsigned int index = 0;index < file_list.size();++index)
     {
         std::shared_ptr<DwiHeader> new_file(new DwiHeader);
         if (!new_file->open(file_list[index].toLocal8Bit().begin()))
@@ -929,8 +937,8 @@ bool parse_dwi(QStringList file_list,
     {
         QStringList dwi_list;
         dwi_list << file_list[0];
-        progress prog_("reading ",file_list[0].toStdString().c_str());
-        for(int i = 1;progress::at(i,file_list.size());++i)
+        progress prog("reading ",file_list[0].toStdString().c_str());
+        for(int i = 1;prog(i,file_list.size());++i)
             if(QFileInfo(dwi_list.front()).absolutePath() == QFileInfo(file_list[i]).absolutePath())
                 dwi_list << file_list[i];
             else
@@ -943,7 +951,7 @@ bool parse_dwi(QStringList file_list,
             }
         return true;
     }
-    progress prog_("reading ",file_list[0].toStdString().c_str());
+    show_progress()  << "reading " << file_list[0].toStdString();
     src_error_msg.clear();
     if(QFileInfo(file_list[0]).fileName() == "2dseq")
     {

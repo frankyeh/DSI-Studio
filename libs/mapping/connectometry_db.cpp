@@ -472,7 +472,7 @@ bool connectometry_db::add_subject_file(const std::string& file_name,
             }
             tipl::transformation_matrix<float> template2subject(tipl::from_space(handle->trans_to_mni).to(fib.trans_to_mni));
 
-            progress::show("loading");
+            show_progress() << "loading";
             data.clear();
             data.resize(si2vi.size()*size_t(handle->dir.num_fiber));
             tipl::par_for(si2vi.size(),[&](size_t si)
@@ -581,8 +581,14 @@ bool connectometry_db::save_db(const char* output_name)
            handle->mat_reader[index].get_name() != "steps" &&
            handle->mat_reader[index].get_name().find("subject") != 0)
             matfile.write(handle->mat_reader[index]);
-    for(unsigned int index = 0;progress::at(index,subject_qa.size());++index)
+    progress prog("save db");
+    for(unsigned int index = 0;prog(index,subject_qa.size());++index)
         matfile.write((std::string("subjects")+std::to_string(index)).c_str(),subject_qa[index],1,subject_qa_length);
+    if(prog.aborted())
+    {
+        error_msg = "aborted";
+        return false;
+    }
     std::string name_string;
     for(unsigned int index = 0;index < num_subjects;++index)
     {
@@ -832,8 +838,8 @@ void connectometry_db::calculate_change(unsigned char dif_type)
 
     std::list<std::vector<float> > new_subject_qa_buf;
     std::vector<const float*> new_subject_qa;
-    progress prog_("calculating");
-    for(unsigned int index = 0;progress::at(index,match.size());++index)
+    progress prog("calculating");
+    for(unsigned int index = 0;prog(index,match.size());++index)
     {
         auto first = uint32_t(match[index].first);
         auto second = uint32_t(match[index].second);

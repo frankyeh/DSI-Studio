@@ -63,7 +63,7 @@ public:
             size_t p = 0;
             tipl::par_for(checked_index.size(),[&](unsigned int i)
             {
-                progress::at(p++,checked_index.size());
+                prog(p++,checked_index.size());
                 if(prog.aborted())
                     return;
                 auto lock = tract_rendering[checked_index[i]]->start_writing();
@@ -77,7 +77,7 @@ public:
                 return;
         }
         progress prog(prog_name,!silence);
-        for(unsigned int i = 0;prog.at(i,checked_index.size());++i)
+        for(unsigned int i = 0;prog(i,checked_index.size());++i)
             if(changed[i])
             {
                 QApplication::processEvents();

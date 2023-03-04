@@ -12,7 +12,8 @@ private:
     static std::string get_status(void);
     static bool check_prog(unsigned int now,unsigned int total);
     static std::vector<std::string> status_list,at_list;
-    static void print_status(const char* status,bool head_node, bool tail_node)
+public:
+    static void print(const char* status,bool head_node, bool tail_node)
     {
         std::istringstream in(status);
         std::string line;
@@ -50,25 +51,18 @@ public:
     progress(void){}
     progress(const char* status,bool show_now = false)
     {
-        print_status(status,true,false);
+        print(status,true,false);
         begin_prog(status,show_now);
     }
     progress(const char* status1,const char* status2,bool show_now = false)
     {
         std::string s(status1);
         s += status2;
-        print_status(s.c_str(),true,false);
+        print(s.c_str(),true,false);
         begin_prog(s.c_str(),show_now);
     }
-    static void show(const char* status,bool show_now = false);
-    static void show(const std::string& str,bool show_now = false){return show(str.c_str(),show_now);}
-    static size_t level(void) {return status_list.size();}
+    static bool is_running(void) {return !status_list.empty();}
     bool aborted(void);
-    template<typename value_type1,typename value_type2>
-    static bool at(value_type1 now,value_type2 total)
-    {
-        return check_prog(uint32_t(now),uint32_t(total));
-    }
     template<typename value_type1,typename value_type2>
     bool operator()(value_type1 now,value_type2 total) const
     {
@@ -99,7 +93,7 @@ public:
                 while(!ended)
                 {
                     std::this_thread::yield();
-                    progress::at(i,i+1);
+                    prog(i,i+1);
                     if(prog.aborted())
                     {
                         terminated = true;
@@ -123,7 +117,7 @@ class show_progress{
                 return;
             if(str.back() == '\n')
                 str.pop_back();
-            progress::show(str.c_str());
+            progress::print(str.c_str(),false,false);
         }
         show_progress& operator<<(std::ostream& (*var)(std::ostream&))
         {

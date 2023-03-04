@@ -576,8 +576,8 @@ void RegToolBox::on_actionApply_Warpping_triggered()
     }
     else
     {
-        progress p("save files");
-        for(int i = 0;progress::at(i,from.size());++i)
+        progress prog("save files");
+        for(int i = 0;prog(i,from.size());++i)
         {
             std::string error;
             if(!apply_warping(from[i].toStdString().c_str(),

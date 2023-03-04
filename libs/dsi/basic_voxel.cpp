@@ -81,7 +81,7 @@ bool Voxel::run_hist(void)
     size_t p = 0;
     tipl::par_for(from_list.size(),[&](size_t i,size_t thread_id)
     {
-        progress::at(p++,from_list.size());
+        prog(p++,from_list.size());
         if(prog.aborted())
             return;
         hist_data[thread_id].init();
@@ -105,7 +105,7 @@ bool Voxel::run(void)
             if(!mask[voxel_index])
                 continue;
             if(thread_id == thread_count-1 &&
-               !prog.at(voxel_index,mask.size()) &&
+               !prog(voxel_index,mask.size()) &&
                prog.aborted())
                 terminated = true;
             voxel_data[thread_id].init();
@@ -120,7 +120,8 @@ bool Voxel::run(void)
 
 void Voxel::end(gz_mat_write& writer)
 {
-    for (size_t index = 0;progress::at(uint32_t(index),uint32_t(process_list.size())); ++index)
+    progress prog("saving results");
+    for (size_t index = 0;prog(uint32_t(index),uint32_t(process_list.size())); ++index)
         process_list[index]->end(*this,writer);
 }
 

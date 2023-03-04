@@ -302,7 +302,7 @@ if (sort_and_merge)
 
     // merge files of the same bvec
     progress prog_("Merge bvalue Files");
-    for (unsigned int i = 0;progress::at(i,dwi_files.size());++i)
+    for (unsigned int i = 0;prog(i,dwi_files.size());++i)
     {
         unsigned int j = i + 1;
         for (;j < dwi_files.size() && dwi_files[i] == dwi_files[j];++j)
@@ -580,7 +580,7 @@ bool DwiHeader::output_src(const char* di_file,std::vector<std::shared_ptr<DwiHe
         write_mat.write("mask",dwi_files[0]->mask,dwi_files[0]->mask.plane_size());
 
     //store images
-    for (unsigned int index = 0;prog.at(index,(unsigned int)(dwi_files.size()));++index)
+    for (unsigned int index = 0;prog(index,(unsigned int)(dwi_files.size()));++index)
     {
         std::ostringstream name;
         tipl::image<3,unsigned short> buffer;
