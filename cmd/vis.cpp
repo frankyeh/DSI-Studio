@@ -13,8 +13,7 @@ int vis(tipl::io::program_option<tipl::out>& po)
     if(!new_handle.get())
         return 1;
     bool has_gui_ = has_gui;
-    has_gui = false;
-    tipl::show_prog = false;
+    tipl::show_prog = has_gui = false;
     tipl::out() << "starting gui" << std::endl;
     tracking_window* new_mdi = new tracking_window(nullptr,new_handle);
     new_mdi->setAttribute(Qt::WA_DeleteOnClose);
