@@ -166,7 +166,7 @@ void db_window::on_actionSave_Subject_Name_as_triggered()
                 "Report file (*.txt);;All files (*)");
     if(filename.isEmpty())
         return;
-    std::ofstream out(filename.toLocal8Bit().begin());
+    std::ofstream out(filename.toStdString().c_str());
     for(unsigned int index = 0;index < vbc->handle->db.num_subjects;++index)
         out << vbc->handle->db.subject_names[index] << std::endl;
 }
@@ -180,7 +180,7 @@ void db_window::on_action_Save_R2_values_as_triggered()
                 "Report file (*.txt);;All files (*)");
     if(filename.isEmpty())
         return;
-    std::ofstream out(filename.toLocal8Bit().begin());
+    std::ofstream out(filename.toStdString().c_str());
     std::copy(vbc->handle->db.R2.begin(),vbc->handle->db.R2.end(),std::ostream_iterator<float>(out,"\n"));
 }
 
@@ -368,7 +368,7 @@ void db_window::on_actionAll_Subjects_triggered()
         out.set_voxel_size(vbc->handle->vs);
         out.set_image_transformation(vbc->handle->trans_to_mni);
         out << I;
-        if(!out.save_to_file(file_name.toLocal8Bit().begin()))
+        if(!out.save_to_file(file_name.toStdString().c_str()))
         {
             QMessageBox::critical(this,"ERROR","Cannot save file.");
             return;

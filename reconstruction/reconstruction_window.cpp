@@ -24,7 +24,7 @@ void move_current_dir_to(const std::string& file_name);
 bool reconstruction_window::load_src(int index)
 {
     handle = std::make_shared<ImageModel>();
-    if (!handle->load_from_file(filenames[index].toLocal8Bit().begin()))
+    if (!handle->load_from_file(filenames[index].toStdString().c_str()))
         return false;
     move_current_dir_to(filenames[index].toStdString());
     tipl::progress prog("initiate interface");
@@ -341,7 +341,7 @@ void reconstruction_window::on_save_mask_clicked()
         filename = QFileInfo(filename).absolutePath() + "/" + QFileInfo(filename).baseName() + ".nii.gz";
     ROIRegion region(handle->dwi.shape(),handle->voxel.vs);
     region.LoadFromBuffer(handle->voxel.mask);
-    region.save_to_file(filename.toLocal8Bit().begin());
+    region.save_to_file(filename.toStdString().c_str());
 }
 void reconstruction_window::on_actionFlip_bx_triggered()
 {
@@ -529,7 +529,7 @@ void reconstruction_window::on_actionSave_b0_triggered()
                                 "All files (*)" );
     if ( filename.isEmpty() )
         return;
-    handle->save_b0_to_nii(filename.toLocal8Bit().begin());
+    handle->save_b0_to_nii(filename.toStdString().c_str());
 }
 
 void reconstruction_window::on_actionSave_DWI_sum_triggered()
@@ -541,7 +541,7 @@ void reconstruction_window::on_actionSave_DWI_sum_triggered()
                                 "All files (*)" );
     if ( filename.isEmpty() )
         return;
-    handle->save_dwi_sum_to_nii(filename.toLocal8Bit().begin());
+    handle->save_dwi_sum_to_nii(filename.toStdString().c_str());
 }
 
 void reconstruction_window::on_actionSave_b_table_triggered()
@@ -553,7 +553,7 @@ void reconstruction_window::on_actionSave_b_table_triggered()
                                 "Text files (*.txt)" );
     if ( filename.isEmpty() )
         return;
-    handle->save_b_table(filename.toLocal8Bit().begin());
+    handle->save_b_table(filename.toStdString().c_str());
 }
 
 void reconstruction_window::on_actionSave_bvals_triggered()
@@ -565,7 +565,7 @@ void reconstruction_window::on_actionSave_bvals_triggered()
                                 "Text files (*)" );
     if ( filename.isEmpty() )
         return;
-    handle->save_bval(filename.toLocal8Bit().begin());
+    handle->save_bval(filename.toStdString().c_str());
 }
 
 void reconstruction_window::on_actionSave_bvecs_triggered()
@@ -577,7 +577,7 @@ void reconstruction_window::on_actionSave_bvecs_triggered()
                                 "Text files (*)" );
     if ( filename.isEmpty() )
         return;
-    handle->save_bvec(filename.toLocal8Bit().begin());
+    handle->save_bvec(filename.toStdString().c_str());
 }
 
 
@@ -664,7 +664,7 @@ bool add_other_image(ImageModel* handle,QString name,QString filename)
     tipl::image<3> ref;
     tipl::vector<3> vs;
     gz_nifti in;
-    if(!in.load_from_file(filename.toLocal8Bit().begin()) || !in.toLPS(ref))
+    if(!in.load_from_file(filename.toStdString().c_str()) || !in.toLPS(ref))
     {
         std::cout << "ERROR: not a valid nifti file:" << filename.toStdString() << std::endl;
         return false;

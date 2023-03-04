@@ -115,7 +115,7 @@ void tract_report::on_save_report_clicked()
     if(filename.isEmpty())
         return;
 
-    std::ofstream out(filename.toLocal8Bit().begin());
+    std::ofstream out(filename.toStdString().c_str());
     if(!out)
     {
         QMessageBox::critical(this,"ERROR","Cannot write to file");
@@ -132,7 +132,7 @@ void tract_report::on_save_report_clicked()
                     cur_tracking_window->handle,
                     ui->profile_dir->currentIndex(),
                     ui->report_bandwidth->value(),
-                    ui->report_index->currentText().toLocal8Bit().begin(),
+                    ui->report_index->currentText().toStdString().c_str(),
                     values,data_profile,data_ci1,data_ci2);
         if(data_profile.empty())
             continue;

@@ -91,7 +91,7 @@ void CreateDBDialog::update_list(void)
         else
         {
             fib_data fib;
-            if(!fib.load_from_file(sample_fib.toLocal8Bit().begin()))
+            if(!fib.load_from_file(sample_fib.toStdString().c_str()))
             {
                 QMessageBox::critical(this,"ERROR","The first file is not a valid FIB file.");
                 raise(); // for Mac
@@ -208,7 +208,7 @@ void CreateDBDialog::on_open_list1_clicked()
         return;
     group.clear();
     std::string line;
-    std::ifstream in(filename.toLocal8Bit().begin());
+    std::ifstream in(filename.toStdString().c_str());
     while(std::getline(in,line))
         group << line.c_str();
     update_list();
@@ -224,9 +224,9 @@ void CreateDBDialog::on_save_list1_clicked()
     if(filename.isEmpty())
         return;
 
-    std::ofstream out(filename.toLocal8Bit().begin());
+    std::ofstream out(filename.toStdString().c_str());
     for(int index = 0;index < group.size();++index)
-        out << group[index].toLocal8Bit().begin() <<  std::endl;
+        out << group[index].toStdString().c_str() <<  std::endl;
 }
 
 QStringList search_files(QString dir,QString filter);
@@ -327,8 +327,8 @@ void CreateDBDialog::on_create_data_base_clicked()
     {
         std::vector<std::string> name_list(group.count());
         for (unsigned int index = 0;index < group.count();++index)
-            name_list[index] = group[index].toLocal8Bit().begin();
-        const char* error_msg = odf_average(ui->output_file_name->text().toLocal8Bit().begin(),name_list);
+            name_list[index] = group[index].toStdString().c_str();
+        const char* error_msg = odf_average(ui->output_file_name->text().toStdString().c_str(),name_list);
         if(error_msg)
             QMessageBox::critical(this,"ERROR",error_msg);
         else

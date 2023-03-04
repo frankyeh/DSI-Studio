@@ -51,7 +51,7 @@ void show_info_dialog(const std::string& title,const std::string& result)
         filename = QFileDialog::getSaveFileName(0,"Save as","report.txt","Text files (*.txt);;All files|(*)");
         if(filename.isEmpty())
             return;
-        std::ofstream out(filename.toLocal8Bit().begin());
+        std::ofstream out(filename.toStdString().c_str());
         out << result.c_str();
     }
     if (msgBox.clickedButton() == copyButton)
@@ -1352,7 +1352,7 @@ void tracking_window::keyPressEvent ( QKeyEvent * event )
             QString value = settings.value(key_str,"").toString();
             if(value == "")
                 return;
-            std::istringstream in(value.toLocal8Bit().begin());
+            std::istringstream in(value.toStdString().c_str());
             int sag,cor,axi;
             in >> sag >> cor >> axi;
             std::vector<float> tran((std::istream_iterator<float>(in)),(std::istream_iterator<float>()));
@@ -1775,7 +1775,7 @@ void tracking_window::on_actionSave_mapping_triggered()
             "Text files (*.txt);;All files (*)");
     if(filename.isEmpty())
         return;
-    if(!reg_slice->save_mapping(filename.toLocal8Bit().begin()))
+    if(!reg_slice->save_mapping(filename.toStdString().c_str()))
         QMessageBox::critical(this,"ERROR","Cannot save mapping file.");
 }
 
@@ -1792,7 +1792,7 @@ void tracking_window::on_actionLoad_mapping_triggered()
     if(filename.isEmpty())
         return;
     reg_slice->terminate();
-    if(!reg_slice->load_mapping(filename.toLocal8Bit().begin()))
+    if(!reg_slice->load_mapping(filename.toStdString().c_str()))
     {
         QMessageBox::critical(this,"ERROR","Invalid linear registration file.");
         return;

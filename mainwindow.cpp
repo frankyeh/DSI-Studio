@@ -356,7 +356,7 @@ void MainWindow::on_OpenDICOM_clicked()
     if(QFileInfo(filenames[0]).completeBaseName() == "subject")
     {
         tipl::io::bruker_info subject_file;
-        if(!subject_file.load_from_file(filenames[0].toLocal8Bit().begin()))
+        if(!subject_file.load_from_file(filenames[0].toStdString().c_str()))
             return;
         QString dir = QFileInfo(filenames[0]).absolutePath();
         filenames.clear();
@@ -368,7 +368,7 @@ void MainWindow::on_OpenDICOM_clicked()
             {
                 tipl::io::bruker_info method_file;
                 QString method_name = dir + "/" +QString::number(i)+"/method";
-                if(method_file.load_from_file(method_name.toLocal8Bit().begin()) &&
+                if(method_file.load_from_file(method_name.toStdString().c_str()) &&
                    method_file["PVM_DwEffBval"].length())
                     is_dwi = true;
             }
@@ -376,7 +376,7 @@ void MainWindow::on_OpenDICOM_clicked()
             {
                 tipl::io::bruker_info imnd_file;
                 QString imnd_name = dir + "/" +QString::number(i)+"/imnd";
-                if(imnd_file.load_from_file(imnd_name.toLocal8Bit().begin()) &&
+                if(imnd_file.load_from_file(imnd_name.toStdString().c_str()) &&
                    imnd_file["IMND_diff_b_value"].length())
                     is_dwi = true;
             }
@@ -475,7 +475,7 @@ QString RenameDICOMToDir(QString FileName, QString ToDir)
         std::string person, sequence, imagename;
         {
             tipl::io::dicom header;
-            if (!header.load_from_file(FileName.toLocal8Bit().begin()))
+            if (!header.load_from_file(FileName.toStdString().c_str()))
             {
                 tipl::out() << "not a DICOM file. Skipping" << std::endl;
                 return QString();
@@ -670,7 +670,7 @@ bool MainWindow::load_db(std::shared_ptr<group_connectometry_analysis>& database
     add_work_dir(QFileInfo(filename).absolutePath());
     database = std::make_shared<group_connectometry_analysis>();
     tipl::progress prog_("reading connectometry db");
-    if(!database->load_database(filename.toLocal8Bit().begin()))
+    if(!database->load_database(filename.toStdString().c_str()))
     {
         QMessageBox::critical(this,"ERROR",database->error_msg.c_str());
         return false;

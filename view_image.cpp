@@ -342,7 +342,7 @@ bool load_image_from_files(QStringList filenames,tipl::image<3>& ref,tipl::vecto
     if(filenames.size() == 1 && filenames[0].toLower().contains("nii"))
     {
         gz_nifti in;
-        if(!in.load_from_file(filenames[0].toLocal8Bit().begin()) || !in.toLPS(ref))
+        if(!in.load_from_file(filenames[0].toStdString().c_str()) || !in.toLPS(ref))
         {
             QMessageBox::information(nullptr,"Error","Not a valid nifti file");
             return false;
@@ -355,7 +355,7 @@ bool load_image_from_files(QStringList filenames,tipl::image<3>& ref,tipl::vecto
         if(filenames.size() == 1 && filenames[0].contains("2dseq"))
         {
             tipl::io::bruker_2dseq seq;
-            if(!seq.load_from_file(filenames[0].toLocal8Bit().begin()))
+            if(!seq.load_from_file(filenames[0].toStdString().c_str()))
             {
                 QMessageBox::information(nullptr,"Error","Not a valid 2dseq file");
                 return false;
@@ -885,7 +885,7 @@ bool view_image::open(QStringList file_names_)
             if(QString(file_name).endsWith("2dseq"))
             {
                 tipl::io::bruker_2dseq seq;
-                if(seq.load_from_file(file_name.toLocal8Bit().begin()))
+                if(seq.load_from_file(file_name.toStdString().c_str()))
                 {
                     error_msg = "cannot parse file";
                     return false;

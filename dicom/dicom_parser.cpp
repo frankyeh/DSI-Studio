@@ -17,7 +17,7 @@ void get_report_from_bruker2(const tipl::io::bruker_info& header,std::string& re
 QString get_dicom_output_name(QString file_name,QString file_extension, bool add_path)
 {
     tipl::io::dicom header;
-    if (header.load_from_file(file_name.toLocal8Bit().begin()))
+    if (header.load_from_file(file_name.toStdString().c_str()))
     {
         std::string Person;
         header.get_patient(Person);
@@ -52,7 +52,7 @@ dicom_parser::dicom_parser(QStringList file_list,QWidget *parent) :
     {
         ui->SrcName->setText(get_dicom_output_name(file_list[0],".src.gz",true));
         tipl::io::dicom header;
-        if (header.load_from_file(file_list[0].toLocal8Bit().begin()))
+        if (header.load_from_file(file_list[0].toStdString().c_str()))
         {
             slice_orientation.resize(9);
             header.get_image_orientation(slice_orientation.begin());
@@ -350,7 +350,7 @@ bool load_4d_nii(const char* file_name,std::vector<std::shared_ptr<DwiHeader> >&
     if(QFileInfo(QFileInfo(file_name).absolutePath() + "/grad_dev.nii.gz").exists())
     {
         gz_nifti grad_header;
-        if(grad_header.load_from_file(QString(QFileInfo(file_name).absolutePath() + "/grad_dev.nii.gz").toLocal8Bit().begin()))
+        if(grad_header.load_from_file(QString(QFileInfo(file_name).absolutePath() + "/grad_dev.nii.gz").toStdString().c_str()))
         {
             grad_header.toLPS(grad_dev);
             tipl::out() << "grad_dev used" << std::endl;
@@ -361,7 +361,7 @@ bool load_4d_nii(const char* file_name,std::vector<std::shared_ptr<DwiHeader> >&
     if(QFileInfo(QFileInfo(file_name).absolutePath() + "/nodif_brain_mask.nii.gz").exists())
     {
         gz_nifti mask_header;
-        if(mask_header.load_from_file(QString(QFileInfo(file_name).absolutePath() + "/nodif_brain_mask.nii.gz").toLocal8Bit().begin()))
+        if(mask_header.load_from_file(QString(QFileInfo(file_name).absolutePath() + "/nodif_brain_mask.nii.gz").toStdString().c_str()))
         {
             mask_header.toLPS(mask);
             tipl::out() << "mask used" << std::endl;
@@ -373,12 +373,12 @@ bool load_4d_nii(const char* file_name,std::vector<std::shared_ptr<DwiHeader> >&
         QString bval_name,bvec_name;
         if(find_bval_bvec(file_name,bval_name,bvec_name))
         {
-            if(!load_bval(bval_name.toLocal8Bit().begin(),bvals))
+            if(!load_bval(bval_name.toStdString().c_str(),bvals))
             {
                 src_error_msg = "cannot find bval at ";
                 src_error_msg += bval_name.toStdString();
             }
-            if(!load_bvec(bvec_name.toLocal8Bit().begin(),bvecs))
+            if(!load_bvec(bvec_name.toStdString().c_str(),bvecs))
             {
                 src_error_msg = "cannot find bvec at ";
                 src_error_msg += bvec_name.toStdString();
@@ -461,7 +461,7 @@ bool load_4d_2dseq(const char* file_name,std::vector<std::shared_ptr<DwiHeader> 
     {
         tipl::io::bruker_info method_file;
         QString method_name = system_path+"/method";
-        if(!method_file.load_from_file(method_name.toLocal8Bit().begin()))
+        if(!method_file.load_from_file(method_name.toStdString().c_str()))
         {
             src_error_msg = "cannot find method file at ";
             src_error_msg += method_name.toStdString();
@@ -501,7 +501,7 @@ bool load_4d_2dseq(const char* file_name,std::vector<std::shared_ptr<DwiHeader> 
             tipl::io::bruker_info imnd_file;
             QString imnd_name = QFileInfo(QFileInfo(QFileInfo(file_name).
                     absolutePath()).absolutePath()).absolutePath()+"/imnd";
-            if(!imnd_file.load_from_file(imnd_name.toLocal8Bit().begin()))
+            if(!imnd_file.load_from_file(imnd_name.toStdString().c_str()))
             {
                 src_error_msg = "cannot find method or imnd file at ";
                 src_error_msg += imnd_name.toStdString();
@@ -558,14 +558,14 @@ bool load_multiple_slice_dicom(QStringList file_list,std::vector<std::shared_ptr
 {
     tipl::io::dicom dicom_header;// multiple frame image
     tipl::shape<3> geo;
-    if(!dicom_header.load_from_file(file_list[0].toLocal8Bit().begin()))
+    if(!dicom_header.load_from_file(file_list[0].toStdString().c_str()))
         return false;
     dicom_header.get_image_dimension(geo);
     // philips or GE single slice images
     if(geo[2] != 1 || dicom_header.is_mosaic)
         return false;
     tipl::io::dicom dicom_header2;
-    if(file_list.size() < 2 || !dicom_header2.load_from_file(file_list[1].toLocal8Bit().begin()))
+    if(file_list.size() < 2 || !dicom_header2.load_from_file(file_list[1].toStdString().c_str()))
         return false;
     float s1 = dicom_header.get_slice_location();
     bool iterate_slice_first = true;
@@ -574,14 +574,14 @@ bool load_multiple_slice_dicom(QStringList file_list,std::vector<std::shared_ptr
     if(s1 == 0.0) // no slice locaton information
     {
         DwiHeader dwi1,dwi2;
-        dwi1.open(file_list[0].toLocal8Bit().begin());
-        dwi2.open(file_list[1].toLocal8Bit().begin());
+        dwi1.open(file_list[0].toStdString().c_str());
+        dwi2.open(file_list[1].toStdString().c_str());
         if(dwi1.bvec == dwi2.bvec && dwi1.bvalue == dwi2.bvalue) // iterater slice first
         {
             for (;slice_num < file_list.size();++slice_num)
             {
                 DwiHeader dwi;
-                if(!dwi.open(file_list[slice_num].toLocal8Bit().begin()))
+                if(!dwi.open(file_list[slice_num].toStdString().c_str()))
                     return false;
                 if(dwi1.bvec != dwi.bvec || dwi1.bvalue != dwi.bvalue)
                     break;
@@ -595,7 +595,7 @@ bool load_multiple_slice_dicom(QStringList file_list,std::vector<std::shared_ptr
             for (;b_num < file_list.size();++b_num)
             {
                 DwiHeader dwi;
-                if(!dwi.open(file_list[b_num].toLocal8Bit().begin()))
+                if(!dwi.open(file_list[b_num].toStdString().c_str()))
                     return false;
                 if(dwi1.bvec == dwi.bvec && dwi1.bvalue == dwi.bvalue)
                     break;
@@ -610,7 +610,7 @@ bool load_multiple_slice_dicom(QStringList file_list,std::vector<std::shared_ptr
         {
             for (;b_num < file_list.size();++b_num)
             {
-                if(!dicom_header2.load_from_file(file_list[b_num].toLocal8Bit().begin()))
+                if(!dicom_header2.load_from_file(file_list[b_num].toStdString().c_str()))
                     return false;
                 if(dicom_header2.get_slice_location() != s1)
                     break;
@@ -623,7 +623,7 @@ bool load_multiple_slice_dicom(QStringList file_list,std::vector<std::shared_ptr
         {
             for (;slice_num < file_list.size();++slice_num)
             {
-                if(!dicom_header2.load_from_file(file_list[slice_num].toLocal8Bit().begin()))
+                if(!dicom_header2.load_from_file(file_list[slice_num].toStdString().c_str()))
                     return false;
                 if(dicom_header2.get_slice_location() == s1)
                     break;
@@ -636,12 +636,12 @@ bool load_multiple_slice_dicom(QStringList file_list,std::vector<std::shared_ptr
     for (unsigned int index = 0,b_index = dwi_files.size(),slice_index = 0;prog(index,file_list.size());++index)
     {
         std::shared_ptr<DwiHeader> dwi(new DwiHeader);
-        if(!dwi->open(file_list[index].toLocal8Bit().begin()))
+        if(!dwi->open(file_list[index].toStdString().c_str()))
             return false;
         if(slice_index == 0)
         {
             dwi_files.push_back(dwi);
-            dwi_files.back()->file_name = file_list[index].toLocal8Bit().begin();
+            dwi_files.back()->file_name = file_list[index].toStdString().c_str();
             dwi_files.back()->image.resize(geo);
             dicom_header.get_voxel_size(dwi_files.back()->voxel_size);
         }
@@ -778,7 +778,7 @@ bool load_4d_fdf(QStringList file_list,std::vector<std::shared_ptr<DwiHeader> >&
     {
         std::map<std::string,std::string> value_list;
         {
-            std::ifstream in(file_list[index].toLocal8Bit().begin());
+            std::ifstream in(file_list[index].toStdString().c_str());
             std::string line;
             while(std::getline(in,line))
             {
@@ -921,9 +921,9 @@ bool load_3d_series(QStringList file_list,std::vector<std::shared_ptr<DwiHeader>
     for (unsigned int index = 0;index < file_list.size();++index)
     {
         std::shared_ptr<DwiHeader> new_file(new DwiHeader);
-        if (!new_file->open(file_list[index].toLocal8Bit().begin()))
+        if (!new_file->open(file_list[index].toStdString().c_str()))
             continue;
-        new_file->file_name = file_list[index].toLocal8Bit().begin();
+        new_file->file_name = file_list[index].toStdString().c_str();
         dwi_files.push_back(new_file);
     }
     return !dwi_files.empty();
@@ -955,7 +955,7 @@ bool parse_dwi(QStringList file_list,
     if(QFileInfo(file_list[0]).fileName() == "2dseq")
     {
         for(int index = 0;index < file_list.size();++index)
-            load_4d_2dseq(file_list[index].toLocal8Bit().begin(),dwi_files);
+            load_4d_2dseq(file_list[index].toStdString().c_str(),dwi_files);
         return !dwi_files.empty();
     }
     if(QFileInfo(file_list[0]).suffix() == "fdf")
@@ -970,7 +970,7 @@ bool parse_dwi(QStringList file_list,
             QFileInfo(file_list[0]).fileName().endsWith(".nii.gz"))
     {
         for(int i = 0;i < file_list.size();++i)
-            if(!load_4d_nii(file_list[i].toLocal8Bit().begin(),dwi_files,false))
+            if(!load_4d_nii(file_list[i].toStdString().c_str(),dwi_files,false))
                 return false;
         return !dwi_files.empty();
     }
@@ -997,7 +997,7 @@ bool parse_dwi(QStringList file_list,
     std::sort(file_list.begin(),file_list.end(),compare_qstring());
     tipl::io::dicom dicom_header;// multiple frame image
     tipl::shape<3> geo;
-    if(!dicom_header.load_from_file(file_list[0].toLocal8Bit().begin()))
+    if(!dicom_header.load_from_file(file_list[0].toStdString().c_str()))
     {
         src_error_msg = "unsupported file format";
         return false;
@@ -1009,7 +1009,7 @@ bool parse_dwi(QStringList file_list,
         return load_multiple_slice_dicom(file_list,dwi_files);
     // multiframe Phillips DICOM
     for(int index = 0;index < file_list.size();++index)
-        if(!load_dicom_multi_frame(file_list[index].toLocal8Bit().begin(),dwi_files))
+        if(!load_dicom_multi_frame(file_list[index].toStdString().c_str(),dwi_files))
             return false;
     return !dwi_files.empty();
 }
@@ -1067,7 +1067,7 @@ void dicom_parser::on_buttonBox_accepted()
                     ui->tableWidget->item(index,4)->text().toFloat());
     }
 
-    if(!DwiHeader::output_src(ui->SrcName->text().toLocal8Bit().begin(),
+    if(!DwiHeader::output_src(ui->SrcName->text().toStdString().c_str(),
                           dwi_files,
                           ui->upsampling->currentIndex(),
                           ui->sort_btable->isChecked()))
@@ -1136,7 +1136,7 @@ void dicom_parser::on_actionOpen_b_table_triggered()
             QFileInfo(ui->SrcName->text()).absolutePath(),
             "Text files (*.txt);;All files (*)" );
 
-    std::ifstream in(filename.toLocal8Bit().begin());
+    std::ifstream in(filename.toStdString().c_str());
     if(!in)
         return;
     std::string line;
@@ -1210,7 +1210,7 @@ void dicom_parser::on_actionOpen_bval_triggered()
     if(filename.isEmpty())
         return;
     std::vector<double> bval;
-    load_bval(filename.toLocal8Bit().begin(),bval);
+    load_bval(filename.toStdString().c_str(),bval);
     if(bval.empty())
         return;
     for (int index = ui->tableWidget->rowCount()-1,
@@ -1228,7 +1228,7 @@ void dicom_parser::on_actionOpen_bvec_triggered()
     if(filename.isEmpty())
         return;
     std::vector<double> b_table;
-    load_bvec(filename.toLocal8Bit().begin(),b_table);
+    load_bvec(filename.toStdString().c_str(),b_table);
     if(b_table.empty())
         return;
     for (int index = ui->tableWidget->rowCount()-1,
@@ -1247,7 +1247,7 @@ void dicom_parser::on_actionSave_b_table_triggered()
             QFileInfo(ui->SrcName->text()).absolutePath() + "/b_table.txt",
             "Text files (*.txt);;All files (*)");
 
-    std::ofstream btable(filename.toLocal8Bit().begin());
+    std::ofstream btable(filename.toStdString().c_str());
     if(!btable)
         return;
     for (unsigned int index = 0;index < ui->tableWidget->rowCount();++index)

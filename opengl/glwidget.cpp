@@ -2452,7 +2452,7 @@ bool GLWidget::command(QString cmd,QString param,QString param2)
             param = QFileInfo(cur_tracking_window.windowTitle()).fileName()+".image.jpg";
         if(!param2.isEmpty())
         {
-            std::istringstream in(param2.toLocal8Bit().begin());
+            std::istringstream in(param2.toStdString().c_str());
             int w = 0;
             int h = 0;
             int ow = width(),oh = height();
@@ -2515,7 +2515,7 @@ bool GLWidget::command(QString cmd,QString param,QString param2)
                 QImage I = grab_image();
                 writer.write(I);
                 if(index == 0.0f)
-                    avi.open(param.toLocal8Bit().begin(),I.width(),I.height(), "MJPG", 30/*fps*/);
+                    avi.open(param.toStdString().c_str(),I.width(),I.height(), "MJPG", 30/*fps*/);
                 QByteArray data = buffer.data();
                 avi.add_frame(data.begin(),uint32_t(data.size()),true);
             }

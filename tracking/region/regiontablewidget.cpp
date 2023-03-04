@@ -533,14 +533,14 @@ void get_roi_label(QString file_name,std::map<int,std::string>& label_map,std::m
     QString label_file = QFileInfo(file_name).absolutePath()+"/"+base_name+".txt";
     if(QFileInfo(label_file).exists())
     {
-        load_nii_label(label_file.toLocal8Bit().begin(),label_map);
+        load_nii_label(label_file.toStdString().c_str(),label_map);
         tipl::out() <<"label file loaded:" << label_file.toStdString() << std::endl;
         return;
     }
     label_file = QFileInfo(file_name).absolutePath()+"/"+base_name+".json";
     if(QFileInfo(label_file).exists())
     {
-        load_jason_label(label_file.toLocal8Bit().begin(),label_map);
+        load_jason_label(label_file.toStdString().c_str(),label_map);
         tipl::out() <<"jason file loaded:" << label_file.toStdString() << std::endl;
         return;
     }
@@ -1117,7 +1117,7 @@ void RegionTableWidget::save_region(void)
         return;
     if(QFileInfo(filename.toLower()).completeSuffix() != "mat" && QFileInfo(filename.toLower()).completeSuffix() != "txt")
         filename = QFileInfo(filename).absolutePath() + "/" + QFileInfo(filename).baseName() + ".nii.gz";
-    regions[currentRow()]->save_to_file(filename.toLocal8Bit().begin());
+    regions[currentRow()]->save_to_file(filename.toStdString().c_str());
     item(currentRow(),0)->setText(QFileInfo(filename).baseName());
 }
 QString RegionTableWidget::output_format(void)
@@ -1279,7 +1279,7 @@ void RegionTableWidget::save_region_info(void)
     if (filename.isEmpty())
         return;
 
-    std::ofstream out(filename.toLocal8Bit().begin());
+    std::ofstream out(filename.toStdString().c_str());
     out << "x\ty\tz";
     for(unsigned int index = 0;index < cur_tracking_window.handle->dir.num_fiber;++index)
             out << "\tdx" << index << "\tdy" << index << "\tdz" << index;
@@ -1384,7 +1384,7 @@ void RegionTableWidget::show_statistics(void)
                     "Text files (*.txt);;All files|(*)");
         if(filename.isEmpty())
             return;
-        std::ofstream out(filename.toLocal8Bit().begin());
+        std::ofstream out(filename.toStdString().c_str());
         out << result.c_str();
     }
     if (msgBox.clickedButton() == copyButton)
@@ -1427,7 +1427,7 @@ void RegionTableWidget::setROIs(ThreadData* data)
             data->roi_mgr->setRegions(regions[index]->region,
                                       regions[index]->dim,
                                       regions[index]->to_diffusion_space,
-                                      regions[index]->regions_feature,item(int(index),0)->text().toLocal8Bit().begin());
+                                      regions[index]->regions_feature,item(int(index),0)->text().toStdString().c_str());
     // auto track
     if(cur_tracking_window.ui->target->currentIndex() > 0)
     {

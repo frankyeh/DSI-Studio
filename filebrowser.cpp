@@ -102,15 +102,15 @@ void FileBrowser::on_subject_list_currentCellChanged(int currentRow, int , int p
             QString method_dir = directory.absolutePath() + "/" + QString::number(seq_list[index]);
             QString method_file_name =  method_dir+ "/method";
             QString acq_file_name =  method_dir+ "/acqp";
-            if(!method.load_from_file(method_file_name.toLocal8Bit().begin()))
+            if(!method.load_from_file(method_file_name.toStdString().c_str()))
             {
                 method_file_name =  method_dir+ "/imnd";
-                if(!method.load_from_file(method_file_name.toLocal8Bit().begin()))
+                if(!method.load_from_file(method_file_name.toStdString().c_str()))
                     continue;
                 method_file = false;
             }
 
-            acq.load_from_file(acq_file_name.toLocal8Bit().begin());
+            acq.load_from_file(acq_file_name.toStdString().c_str());
             // search for all reco
             QStringList params = method_file ? params1:params2;
             for(int reco = 1;;++reco)
@@ -122,14 +122,14 @@ void FileBrowser::on_subject_list_currentCellChanged(int currentRow, int , int p
                 QString cur_d3proc_name = reco_dir + "/d3proc";
                 QString cur_reco_name = reco_dir + "/reco";
                 if(!QFileInfo(cur_file_name).exists() ||
-                   !reco_file.load_from_file(cur_reco_name.toLocal8Bit().begin()))
+                   !reco_file.load_from_file(cur_reco_name.toStdString().c_str()))
                     continue;
                 int row = ui->tableWidget->rowCount();
                 ui->tableWidget->setRowCount(row+1);
 
                 QStringList item_list;
-                item_list << QString::number(seq_list[index])+":"+QString::number(reco) + ":" + method[params[0].toLocal8Bit().begin()].c_str(); // sequence
-                if(d3proc_file.load_from_file(cur_d3proc_name.toLocal8Bit().begin()))
+                item_list << QString::number(seq_list[index])+":"+QString::number(reco) + ":" + method[params[0].toStdString().c_str()].c_str(); // sequence
+                if(d3proc_file.load_from_file(cur_d3proc_name.toStdString().c_str()))
                     item_list << (d3proc_file["IM_SIX"] + " / " + d3proc_file["IM_SIY"] + " / "+ d3proc_file["IM_SIZ"]).c_str();
                 else
                     item_list << reco_file["RECO_size"].c_str();
@@ -143,13 +143,13 @@ void FileBrowser::on_subject_list_currentCellChanged(int currentRow, int , int p
                     std::ostringstream out;
                     for(int index = 0;index < data1.size() && index < data2.size();++index)
                         out << data2[index]*10.0/data1[index] << " / ";
-                    out << method[params[3].toLocal8Bit().begin()].c_str(); // slice thickness
+                    out << method[params[3].toStdString().c_str()].c_str(); // slice thickness
                     item_list << out.str().c_str();
                 }
                 item_list << reco_file["RECO_fov"].c_str(); // FOV
                 item_list << QString("%1/%2").
-                             arg(method[params[1].toLocal8Bit().begin()].c_str()).
-                             arg(method[params[2].toLocal8Bit().begin()].c_str()); // TE/TR
+                             arg(method[params[1].toStdString().c_str()].c_str()).
+                             arg(method[params[2].toStdString().c_str()].c_str()); // TE/TR
                 item_list << acq["ACQ_flip_angle"].c_str(); //FA
 
                 std::vector<float> b_value,b_vec;
@@ -178,7 +178,7 @@ void FileBrowser::on_subject_list_currentCellChanged(int currentRow, int , int p
             {
                 std::vector<std::string> dcm_file_list_full;
                 for(unsigned int j = 0;j < dcm_file_list.size();++j)
-                    dcm_file_list_full.push_back((sub_dir.absolutePath() + "/" + dcm_file_list[j]).toLocal8Bit().begin());
+                    dcm_file_list_full.push_back((sub_dir.absolutePath() + "/" + dcm_file_list[j]).toStdString().c_str());
                 tipl::io::dicom_volume dcm;
                 if(!dcm.load_from_files(dcm_file_list_full))
                     continue;
@@ -280,7 +280,7 @@ void FileBrowser::populateDirs(void)
 
         QString subject_file_name = ui->WorkDir->text()+"/" + script_list[index] + "/subject";
         tipl::io::bruker_info subject_file;
-        if(subject_file.load_from_file(subject_file_name.toLocal8Bit().begin()))
+        if(subject_file.load_from_file(subject_file_name.toStdString().c_str()))
         {
             std::istringstream in(subject_file["SUBJECT_date"]);
             std::string year,mon,date,time;
@@ -352,7 +352,7 @@ void FileBrowser::preview_image(QString file_name)
     if(QFileInfo(file_name).fileName() == "2dseq")
     {
         tipl::io::bruker_2dseq header;
-        if(header.load_from_file(file_name.toLocal8Bit().begin()))
+        if(header.load_from_file(file_name.toStdString().c_str()))
         {
             header.get_image().swap(preview_data);
         }
@@ -365,7 +365,7 @@ void FileBrowser::preview_image(QString file_name)
         QStringList dcm_file_list = dir.entryList(QStringList("*.dcm"),QDir::Files | QDir::NoSymLinks);
         std::vector<std::string> dcm_file_list_full;
         for(unsigned int j = 0;j < dcm_file_list.size();++j)
-            dcm_file_list_full.push_back((dir.absolutePath() + "/" + dcm_file_list[j]).toLocal8Bit().begin());
+            dcm_file_list_full.push_back((dir.absolutePath() + "/" + dcm_file_list[j]).toStdString().c_str());
         tipl::io::dicom_volume dcm;
         if(!dcm.load_from_files(dcm_file_list_full))
             return;

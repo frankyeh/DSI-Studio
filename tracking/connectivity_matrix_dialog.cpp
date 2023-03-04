@@ -103,7 +103,7 @@ void connectivity_matrix_dialog::on_recalculate_clicked()
             if(cur_tracking_window->regionWidget->item(index,0)->checkState() == Qt::Checked)
             {
                 regions.push_back(cur_tracking_window->regionWidget->regions[index]);
-                data.region_name.push_back(std::string(cur_tracking_window->regionWidget->item(index,0)->text().toLocal8Bit().begin()));
+                data.region_name.push_back(std::string(cur_tracking_window->regionWidget->item(index,0)->text().toStdString().c_str()));
             }
             if(regions.empty())
             {
@@ -118,7 +118,7 @@ void connectivity_matrix_dialog::on_recalculate_clicked()
     for(int index = 0;index < cur_tracking_window->tractWidget->tract_models.size();++index)
         if(cur_tracking_window->tractWidget->item(index,0)->checkState() == Qt::Checked)
             tracks.add(*cur_tracking_window->tractWidget->tract_models[index]);
-    if(!data.calculate(cur_tracking_window->handle,tracks,ui->matrix_value->currentText().toLocal8Bit().begin(),
+    if(!data.calculate(cur_tracking_window->handle,tracks,ui->matrix_value->currentText().toStdString().c_str(),
                        ui->end_only->currentIndex(),
                        ui->apply_threshold->isChecked() ? ui->network_threshold->value() : 0.0))
     {
@@ -158,7 +158,7 @@ void connectivity_matrix_dialog::on_save_matrix_clicked()
         return;
     if(QFileInfo(filename).suffix().toLower() == "mat")
     {
-        data.save_to_file(filename.toLocal8Bit().begin());
+        data.save_to_file(filename.toStdString().c_str());
     }
     else
     {

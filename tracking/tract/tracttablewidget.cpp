@@ -227,7 +227,8 @@ void TractTableWidget::start_tracking(void)
     cur_tracking_window.set_tracking_param(*thread_data.back());
     cur_tracking_window.regionWidget->setROIs(thread_data.back().get());
     thread_data.back()->run(cur_tracking_window.ui->thread_count->value(),false);
-    tract_models.back()->report = cur_tracking_window.handle->report + thread_data.back()->report.str();
+    tract_models.back()->report = cur_tracking_window.handle->report;
+    tract_models.back()->report += thread_data.back()->report.str();
     show_report();
     timer->start(500);
     timer_update->start(100);
@@ -535,7 +536,7 @@ void TractTableWidget::open_cluster_label(void)
     if(!filename.size())
         return;
 
-    std::ifstream in(filename.toLocal8Bit().begin());
+    std::ifstream in(filename.toStdString().c_str());
     std::vector<unsigned int> labels(tract_models[uint32_t(currentRow())]->get_visible_track_count());
     std::copy(std::istream_iterator<unsigned int>(in),
               std::istream_iterator<unsigned int>(),labels.begin());
@@ -698,7 +699,7 @@ void TractTableWidget::save_tracts_as(void)
                  "Tract files (*.tt.gz *tt.gz *trk.gz *.trk);;Text File (*.txt);;MAT files (*.mat);;TCK file (*.tck);;ROI files (*.nii *nii.gz);;All files (*)");
     if(filename.isEmpty())
         return;
-    std::string sfilename = filename.toLocal8Bit().begin();
+    std::string sfilename = filename.toStdString().c_str();
     auto lock = tract_rendering[uint32_t(currentRow())]->start_reading();
     if(tract_models[uint32_t(currentRow())]->save_tracts_to_file(&*sfilename.begin()))
         QMessageBox::information(this,"DSI Studio","file saved");
@@ -745,7 +746,7 @@ void TractTableWidget::save_vrml_as(void)
     if(filename.isEmpty())
         return;
     std::string surface_text;
-    std::string sfilename = filename.toLocal8Bit().begin();
+    std::string sfilename = filename.toStdString().c_str();
     auto lock = tract_rendering[uint32_t(currentRow())]->start_reading();
     tract_models[uint32_t(currentRow())]->save_vrml(&*sfilename.begin(),
                                                 cur_tracking_window["tract_style"].toInt(),
@@ -820,14 +821,14 @@ void TractTableWidget::save_end_point_in_mni(void)
 
     if (QFileInfo(filename).suffix().toLower() == "txt")
     {
-        std::ofstream out(filename.toLocal8Bit().begin(),std::ios::out);
+        std::ofstream out(filename.toStdString().c_str(),std::ios::out);
         if (!out)
             return;
         std::copy(buffer.begin(),buffer.end(),std::ostream_iterator<float>(out," "));
     }
     if (QFileInfo(filename).suffix().toLower() == "mat")
     {
-        tipl::io::mat_write out(filename.toLocal8Bit().begin());
+        tipl::io::mat_write out(filename.toStdString().c_str());
         if(!out)
             return;
         out.write("end_points",buffer,3);
@@ -989,7 +990,7 @@ void TractTableWidget::save_tracts_color_as(void)
     if(filename.isEmpty())
         return;
 
-    std::string sfilename = filename.toLocal8Bit().begin();
+    std::string sfilename = filename.toStdString().c_str();
     auto lock = tract_rendering[uint32_t(currentRow())]->start_reading();
     tract_models[uint32_t(currentRow())]->save_tracts_color_to_file(&*sfilename.begin());
 }
@@ -1230,8 +1231,8 @@ void TractTableWidget::save_tracts_data_as(void)
         return;
     auto lock = tract_rendering[uint32_t(currentRow())]->start_reading();
     if(!tract_models[uint32_t(currentRow())]->save_data_to_file(
-                    cur_tracking_window.handle,filename.toLocal8Bit().begin(),
-                    action->data().toString().toLocal8Bit().begin()))
+                    cur_tracking_window.handle,filename.toStdString().c_str(),
+                    action->data().toString().toStdString().c_str()))
     {
         QMessageBox::information(this,"error","fail to save information");
     }
