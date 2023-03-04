@@ -289,8 +289,8 @@ std::string run_auto_track(tipl::program_option<tipl::out>& po,const std::vector
                     }
                     tipl::progress prog2("tracking ",track_name.c_str(),true);
                     thread.run(thread_count,false);
-                    std::string report = tract_model.report + thread.report.str();
-                    report += " Shape analysis (Yeh, Neuroimage, 2020 Dec;223:117329) was conducted to derive shape metrics for tractography.";
+                    std::string report = handle->report;
+                    report += thread.report.str();
                     if(reports[j].empty())
                         reports[j] = report;
                     auto_track_report = report;
