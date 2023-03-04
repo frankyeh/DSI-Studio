@@ -233,7 +233,7 @@ void ThreadData::run(std::shared_ptr<tracking_data> trk_,unsigned int thread_cou
     }
     report << roi_mgr->report;
     report << param.get_report();
-
+    report << " Shape analysis (Yeh, Neuroimage, 2020 Dec;223:117329) was conducted to derive shape metrics for tractography.";
     end_thread();
     if(thread_count < 1)
         thread_count = 1;
