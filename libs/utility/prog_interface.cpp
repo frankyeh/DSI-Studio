@@ -10,7 +10,8 @@
 #include "prog_interface_static_link.h"
 bool has_gui = false;
 std::shared_ptr<QProgressDialog> progressDialog;
-static std::vector<std::chrono::high_resolution_clock::time_point> process_time,t_last;
+std::vector<std::chrono::high_resolution_clock::time_point> process_time,t_last;
+
 std::vector<std::string> progress::status_list;
 std::vector<std::string> progress::at_list;
 
@@ -19,19 +20,19 @@ inline bool processing_time_less_than(int time)
     return std::chrono::duration_cast<std::chrono::milliseconds>(
            std::chrono::high_resolution_clock::now() - process_time.back()).count() < time;
 }
-void progress::update_prog(bool show_now)
+void update_prog(std::string status,bool show_now = false)
 {
     if(!has_gui || !tipl::is_main_thread<0>() ||
         (!show_now && processing_time_less_than(250)))
         return;
     if(!progressDialog.get())
     {
-        progressDialog.reset(new QProgressDialog(get_status().c_str(),"Cancel",0,100));
+        progressDialog.reset(new QProgressDialog(status.c_str(),"Cancel",0,100));
         progressDialog->setAttribute(Qt::WA_ShowWithoutActivating);
         progressDialog->activateWindow();
     }
     else
-        progressDialog->setLabelText(get_status().c_str());
+        progressDialog->setLabelText(status.c_str());
 
     progressDialog->show();
     progressDialog->raise();
@@ -66,7 +67,7 @@ void progress::begin_prog(const char* status,bool show_now)
     process_time.back() = std::chrono::high_resolution_clock::now();
     t_last.resize(status_list.size());
     t_last.back() = std::chrono::high_resolution_clock::now()+std::chrono::milliseconds(200);
-    update_prog(show_now);
+    update_prog(get_status(),show_now);
 }
 
 
@@ -106,7 +107,7 @@ progress::~progress(void)
         return;
     if(!status_list.empty())
     {
-        update_prog();
+        update_prog(get_status());
         return;
     }
     at_list.clear();
@@ -138,7 +139,7 @@ bool progress::check_prog(unsigned int now,unsigned int total)
         at_list.back() = QString("(%1/%2)").arg(now).arg(total).toStdString();
         if(expected_sec)
             at_list.back() += QString(" %1 min").arg(expected_sec).toStdString();
-        update_prog();
+        update_prog(get_status());
         if(progressDialog.get())
         {
             progressDialog->setRange(0, int(total));

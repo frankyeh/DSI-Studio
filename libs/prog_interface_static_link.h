@@ -7,7 +7,6 @@ extern bool has_gui;
 class progress{
     bool prog_aborted_ = false;
 private:
-    static void update_prog(bool show_now = false);
     static void begin_prog(const char* status,bool show_now = false);
     static std::string get_status(void);
     static bool check_prog(unsigned int now,unsigned int total);
