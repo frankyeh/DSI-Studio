@@ -4,7 +4,7 @@
 QStringList rename_dicom_at_dir(QString path,QString output);
 QStringList GetSubDir(QString Dir,bool recursive = true);
 void dicom2src(std::string dir_);
-int ren(tipl::io::program_option<tipl::out>& po)
+int ren(tipl::program_option<tipl::out>& po)
 {
     tipl::progress prog("run ren");
     auto source = std::filesystem::path(po.get("source")).string();

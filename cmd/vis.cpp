@@ -7,7 +7,7 @@
 std::shared_ptr<fib_data> cmd_load_fib(std::string file_name);
 void get_filenames_from(const std::string param,std::vector<std::string>& filenames);
 extern bool has_gui;
-int vis(tipl::io::program_option<tipl::out>& po)
+int vis(tipl::program_option<tipl::out>& po)
 {
     std::shared_ptr<fib_data> new_handle = cmd_load_fib(po.get("source"));
     if(!new_handle.get())

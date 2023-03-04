@@ -19,7 +19,7 @@ bool find_string_case_insensitive(const std::string & str1, const std::string & 
 }
 
 std::string run_auto_track(
-                    tipl::io::program_option<tipl::out>& po,
+                    tipl::program_option<tipl::out>& po,
                     const std::vector<std::string>& file_list,
                     const std::vector<unsigned int>& track_id,int& progress);
 
@@ -65,7 +65,7 @@ bool get_track_id(std::string track_id_text,std::vector<unsigned int>& track_id)
     pout << std::endl;
     return true;
 }
-int atk(tipl::io::program_option<tipl::out>& po)
+int atk(tipl::program_option<tipl::out>& po)
 {
     std::vector<std::string> file_list;
     get_filenames_from(po.get("source"),file_list);

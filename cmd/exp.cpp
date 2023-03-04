@@ -13,7 +13,7 @@
 std::shared_ptr<fib_data> cmd_load_fib(std::string file_name);
 bool trk2tt(const char* trk_file,const char* tt_file);
 bool tt2trk(const char* tt_file,const char* trk_file);
-int exp(tipl::io::program_option<tipl::out>& po)
+int exp(tipl::program_option<tipl::out>& po)
 {
     std::string file_name = po.get("source");
     if(QString(file_name.c_str()).endsWith(".trk.gz"))

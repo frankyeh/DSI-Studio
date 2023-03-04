@@ -18,7 +18,7 @@ bool get_src(std::string filename,ImageModel& src2,std::string& error_msg);
 /**
  perform reconstruction
  */
-int rec(tipl::io::program_option<tipl::out>& po)
+int rec(tipl::program_option<tipl::out>& po)
 {
     std::string file_name = po.get("source");
     ImageModel src;

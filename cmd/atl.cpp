@@ -47,7 +47,7 @@ void get_files_in_folder(std::string dir,std::string file,std::vector<std::strin
     files = std::move(name_list);
 }
 void get_filenames_from(const std::string param,std::vector<std::string>& filenames);
-int atl(tipl::io::program_option<tipl::out>& po)
+int atl(tipl::program_option<tipl::out>& po)
 {
     // construct an atlas
     std::string cmd = po.get("cmd");

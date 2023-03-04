@@ -37,7 +37,7 @@ bool train_cnn(tipl::ml::trainer& t,
 }
 
 
-int cnn(tipl::io::program_option<tipl::out>& po)
+int cnn(tipl::program_option<tipl::out>& po)
 {
     std::shared_ptr<group_connectometry_analysis> gca(new group_connectometry_analysis);
     if(!gca->load_database(po.get("source").c_str()))

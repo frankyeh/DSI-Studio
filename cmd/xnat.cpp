@@ -2,7 +2,7 @@
 #include <xnat_dialog.h>
 
 
-int xnat(tipl::io::program_option<tipl::out>& po)
+int xnat(tipl::program_option<tipl::out>& po)
 {
     std::string output = po.get("output");
     if(QFileInfo(output.c_str()).isDir() && output.back() != '\\' && output.back() != '/')

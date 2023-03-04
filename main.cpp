@@ -30,21 +30,21 @@ std::shared_ptr<CustomSliceModel> t1t2_slices;
 extern std::vector<std::shared_ptr<CustomSliceModel> > other_slices;
 std::vector<std::shared_ptr<CustomSliceModel> > other_slices;
 
-int rec(tipl::io::program_option<tipl::out>& po);
-int trk(tipl::io::program_option<tipl::out>& po);
-int src(tipl::io::program_option<tipl::out>& po);
-int ana(tipl::io::program_option<tipl::out>& po);
-int exp(tipl::io::program_option<tipl::out>& po);
-int atl(tipl::io::program_option<tipl::out>& po);
-int cnt(tipl::io::program_option<tipl::out>& po);
-int cnt_ind(tipl::io::program_option<tipl::out>& po);
-int vis(tipl::io::program_option<tipl::out>& po);
-int ren(tipl::io::program_option<tipl::out>& po);
-int cnn(tipl::io::program_option<tipl::out>& po);
-int qc(tipl::io::program_option<tipl::out>& po);
-int reg(tipl::io::program_option<tipl::out>& po);
-int atk(tipl::io::program_option<tipl::out>& po);
-int xnat(tipl::io::program_option<tipl::out>& po);
+int rec(tipl::program_option<tipl::out>& po);
+int trk(tipl::program_option<tipl::out>& po);
+int src(tipl::program_option<tipl::out>& po);
+int ana(tipl::program_option<tipl::out>& po);
+int exp(tipl::program_option<tipl::out>& po);
+int atl(tipl::program_option<tipl::out>& po);
+int cnt(tipl::program_option<tipl::out>& po);
+int cnt_ind(tipl::program_option<tipl::out>& po);
+int vis(tipl::program_option<tipl::out>& po);
+int ren(tipl::program_option<tipl::out>& po);
+int cnn(tipl::program_option<tipl::out>& po);
+int qc(tipl::program_option<tipl::out>& po);
+int reg(tipl::program_option<tipl::out>& po);
+int atk(tipl::program_option<tipl::out>& po);
+int xnat(tipl::program_option<tipl::out>& po);
 
 
 size_t match_volume(float volume)
@@ -207,7 +207,7 @@ void move_current_dir_to(const std::string& file_name)
     std::filesystem::current_path(dir);
 }
 
-int run_action(tipl::io::program_option<tipl::out>& po)
+int run_action(tipl::program_option<tipl::out>& po)
 {
     std::string action = po.get("action");
     tipl::progress prog("run ",action.c_str());
@@ -246,7 +246,7 @@ void get_filenames_from(const std::string param,std::vector<std::string>& filena
 bool match_files(const std::string& file_path1,const std::string& file_path2,
                  const std::string& file_path1_others,std::string& file_path2_gen);
 
-int run_action_with_wildcard(tipl::io::program_option<tipl::out>& po)
+int run_action_with_wildcard(tipl::program_option<tipl::out>& po)
 {
     std::string source = po.get("source");
     std::string action = po.get("action");
@@ -322,7 +322,7 @@ void init_cuda(void)
 }
 int run_cmd(int ac, char *av[])
 {
-    tipl::io::program_option<tipl::out> po;
+    tipl::program_option<tipl::out> po;
     try
     {
         tipl::progress prog(version_string().toStdString().c_str()," command line");

@@ -4,8 +4,8 @@
 #include "tracking/atlasdialog.h"
 #include "tracking/roi.hpp"
 #include "connectometry/group_connectometry_analysis.h"
-bool load_roi(tipl::io::program_option<tipl::out>& po,std::shared_ptr<fib_data> handle,std::shared_ptr<RoiMgr> roi_mgr);
-int cnt(tipl::io::program_option<tipl::out>& po)
+bool load_roi(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> handle,std::shared_ptr<RoiMgr> roi_mgr);
+int cnt(tipl::program_option<tipl::out>& po)
 {
     std::shared_ptr<group_connectometry_analysis> vbc(new group_connectometry_analysis);
     if(!vbc->load_database(po.get("source").c_str()))

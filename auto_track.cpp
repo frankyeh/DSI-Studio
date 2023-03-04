@@ -119,7 +119,7 @@ struct file_holder{
     }
 };
 
-std::string run_auto_track(tipl::io::program_option<tipl::out>& po,const std::vector<std::string>& file_list,const std::vector<unsigned int>& track_id,int& prog)
+std::string run_auto_track(tipl::program_option<tipl::out>& po,const std::vector<std::string>& file_list,const std::vector<unsigned int>& track_id,int& prog)
 {
     std::string tolerance_string = po.get("tolerance","22,26,30");
     float track_voxel_ratio = po.get("track_voxel_ratio",2.0f);
@@ -527,7 +527,7 @@ void auto_track::on_run_clicked()
     timer->start(5000);
     tipl::progress prog_("");
 
-    tipl::io::program_option<tipl::out> po;
+    tipl::program_option<tipl::out> po;
     po["tolerance"] = ui->tolerance->text().toStdString();
     po["track_voxel_ratio"] = float(ui->track_voxel_ratio->value());
     po["tip_iteration"] = ui->pruning->value();

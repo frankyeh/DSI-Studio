@@ -103,7 +103,7 @@ void edge_for_cdm(tipl::image<3>& sIt,
                   tipl::image<3>& sJ,
                   tipl::image<3>& sIt2,
                   tipl::image<3>& sJ2);
-int reg(tipl::io::program_option<tipl::out>& po)
+int reg(tipl::program_option<tipl::out>& po)
 {
     tipl::image<3> from,to,from2,to2;
     tipl::vector<3> from_vs,to_vs;

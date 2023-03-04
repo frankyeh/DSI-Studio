@@ -12,7 +12,7 @@ bool load_bvec(const char* file_name,std::vector<double>& b_table,bool flip_by =
 bool parse_dwi(QStringList file_list,std::vector<std::shared_ptr<DwiHeader> >& dwi_files);
 void dicom2src(std::string dir_);
 bool nii2src_bids(QString dir,QString output_dir,std::string& error_msg);
-int src(tipl::io::program_option<tipl::out>& po)
+int src(tipl::program_option<tipl::out>& po)
 {
     std::string source = po.get("source");
     QStringList file_list;

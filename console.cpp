@@ -61,23 +61,23 @@ Console::~Console()
     delete ui;
 }
 
-int rec(tipl::io::program_option<tipl::out>& po);
-int trk(tipl::io::program_option<tipl::out>& po);
-int src(tipl::io::program_option<tipl::out>& po);
-int ana(tipl::io::program_option<tipl::out>& po);
-int exp(tipl::io::program_option<tipl::out>& po);
-int atl(tipl::io::program_option<tipl::out>& po);
-int cnt(tipl::io::program_option<tipl::out>& po);
-int vis(tipl::io::program_option<tipl::out>& po);
-int ren(tipl::io::program_option<tipl::out>& po);
-int atk(tipl::io::program_option<tipl::out>& po);
-int reg(tipl::io::program_option<tipl::out>& po);
-int xnat(tipl::io::program_option<tipl::out>& po);
+int rec(tipl::program_option<tipl::out>& po);
+int trk(tipl::program_option<tipl::out>& po);
+int src(tipl::program_option<tipl::out>& po);
+int ana(tipl::program_option<tipl::out>& po);
+int exp(tipl::program_option<tipl::out>& po);
+int atl(tipl::program_option<tipl::out>& po);
+int cnt(tipl::program_option<tipl::out>& po);
+int vis(tipl::program_option<tipl::out>& po);
+int ren(tipl::program_option<tipl::out>& po);
+int atk(tipl::program_option<tipl::out>& po);
+int reg(tipl::program_option<tipl::out>& po);
+int xnat(tipl::program_option<tipl::out>& po);
 
-int run_action_with_wildcard(tipl::io::program_option<tipl::out>& po);
+int run_action_with_wildcard(tipl::program_option<tipl::out>& po);
 void Console::on_run_cmd_clicked()
 {
-    tipl::io::program_option<tipl::out> po;
+    tipl::program_option<tipl::out> po;
     if(ui->cmd_line->text().startsWith("dsi_studio "))
         ui->cmd_line->setText(ui->cmd_line->text().remove("dsi_studio "));
     if(!po.parse(ui->cmd_line->text().toStdString()))
