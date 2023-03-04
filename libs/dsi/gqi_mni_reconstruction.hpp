@@ -104,10 +104,10 @@ public:
             else
             {
                 bool terminated = false;
-                if(!progress::run("linear registration",[&]()
+                if(!tipl::run<progress>("linear registration",[&]()
                 {
                     linear_with_mi(VG,VGvs,VF,VFvs,affine,tipl::reg::affine,terminated);
-                },terminated))
+                },terminated,has_gui))
                     throw std::runtime_error("reconstruction canceled");
             }
 
@@ -132,7 +132,7 @@ public:
 
             bool terminated = false;
 
-            if(!progress::run("normalization",[&]()
+            if(!tipl::run<progress>("normalization",[&]()
                 {
                     tipl::reg::cdm_param param;
                     tipl::image<3,tipl::vector<3> > cdm_dis_inv;
@@ -158,7 +158,7 @@ public:
                         });
                         gz_nifti::save_to_file("Subject_displacement.nii.gz",buffer,voxel.vs,voxel.trans_to_mni);
                     }
-                },terminated))
+                },terminated,has_gui))
                 throw std::runtime_error("reconstruction canceled");
 
             tipl::image<3> VFFF;
