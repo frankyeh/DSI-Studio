@@ -207,7 +207,7 @@ std::string ImageModel::check_b_table(void)
             tipl::affine_transform<float> arg;
             bool terminated = false;
             float R = 0;
-            if(!progress::run("comparing subject fibers to template fibers",[&](void)
+            if(!tipl::run<progress>("comparing subject fibers to template fibers",[&](void)
                 {
                     tipl::image<3> iso,dwi_f(dwi);
                     template_fib->get_iso(iso);
@@ -221,7 +221,7 @@ std::string ImageModel::check_b_table(void)
                     tipl::resample_mt<tipl::interpolation::linear>(dwi_f,VFF,T);
                     R = tipl::correlation(VFF.begin(),VFF.end(),iso.begin());
 
-                },terminated))
+                },terminated,has_gui))
                 throw std::runtime_error("aborted");
 
             show_progress() << arg << std::endl;
