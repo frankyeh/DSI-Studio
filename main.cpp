@@ -389,8 +389,7 @@ int main(int ac, char *av[])
     try{
     QApplication a(ac,av);
 
-    has_gui = true;
-    tipl::show_prog = true;
+    has_gui = tipl::show_prog = true;
 
     console.attach();
 
