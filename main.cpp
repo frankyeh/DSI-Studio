@@ -9,7 +9,6 @@
 #include <QDir>
 #include "TIPL/tipl.hpp"
 #include "gzip_interface.hpp"
-#include "prog_interface_static_link.h"
 #include "mapping/atlas.hpp"
 #include "mainwindow.h"
 #include "console.h"
@@ -31,21 +30,21 @@ std::shared_ptr<CustomSliceModel> t1t2_slices;
 extern std::vector<std::shared_ptr<CustomSliceModel> > other_slices;
 std::vector<std::shared_ptr<CustomSliceModel> > other_slices;
 
-int rec(tipl::io::program_option<show_progress>& po);
-int trk(tipl::io::program_option<show_progress>& po);
-int src(tipl::io::program_option<show_progress>& po);
-int ana(tipl::io::program_option<show_progress>& po);
-int exp(tipl::io::program_option<show_progress>& po);
-int atl(tipl::io::program_option<show_progress>& po);
-int cnt(tipl::io::program_option<show_progress>& po);
-int cnt_ind(tipl::io::program_option<show_progress>& po);
-int vis(tipl::io::program_option<show_progress>& po);
-int ren(tipl::io::program_option<show_progress>& po);
-int cnn(tipl::io::program_option<show_progress>& po);
-int qc(tipl::io::program_option<show_progress>& po);
-int reg(tipl::io::program_option<show_progress>& po);
-int atk(tipl::io::program_option<show_progress>& po);
-int xnat(tipl::io::program_option<show_progress>& po);
+int rec(tipl::io::program_option<tipl::out>& po);
+int trk(tipl::io::program_option<tipl::out>& po);
+int src(tipl::io::program_option<tipl::out>& po);
+int ana(tipl::io::program_option<tipl::out>& po);
+int exp(tipl::io::program_option<tipl::out>& po);
+int atl(tipl::io::program_option<tipl::out>& po);
+int cnt(tipl::io::program_option<tipl::out>& po);
+int cnt_ind(tipl::io::program_option<tipl::out>& po);
+int vis(tipl::io::program_option<tipl::out>& po);
+int ren(tipl::io::program_option<tipl::out>& po);
+int cnn(tipl::io::program_option<tipl::out>& po);
+int qc(tipl::io::program_option<tipl::out>& po);
+int reg(tipl::io::program_option<tipl::out>& po);
+int atk(tipl::io::program_option<tipl::out>& po);
+int xnat(tipl::io::program_option<tipl::out>& po);
 
 
 size_t match_volume(float volume)
@@ -201,17 +200,17 @@ void move_current_dir_to(const std::string& file_name)
     auto dir = std::filesystem::path(file_name).parent_path();
     if(dir.empty())
     {
-        show_progress() << "current directory is " << std::filesystem::current_path() << std::endl;
+        tipl::out() << "current directory is " << std::filesystem::current_path() << std::endl;
         return;
     }
-    show_progress() << "change current directory to " << dir << std::endl;
+    tipl::out() << "change current directory to " << dir << std::endl;
     std::filesystem::current_path(dir);
 }
 
-int run_action(tipl::io::program_option<show_progress>& po)
+int run_action(tipl::io::program_option<tipl::out>& po)
 {
     std::string action = po.get("action");
-    progress prog("run ",action.c_str());
+    tipl::progress prog("run ",action.c_str());
     if(action == std::string("rec"))
         return rec(po);
     if(action == std::string("trk"))
@@ -240,14 +239,14 @@ int run_action(tipl::io::program_option<show_progress>& po)
         return xnat(po);
     if(action == std::string("vis"))
         return vis(po);
-    show_progress() << "ERROR: unknown action: " << action << std::endl;
+    tipl::out() << "ERROR: unknown action: " << action << std::endl;
     return 1;
 }
 void get_filenames_from(const std::string param,std::vector<std::string>& filenames);
 bool match_files(const std::string& file_path1,const std::string& file_path2,
                  const std::string& file_path1_others,std::string& file_path2_gen);
 
-int run_action_with_wildcard(tipl::io::program_option<show_progress>& po)
+int run_action_with_wildcard(tipl::io::program_option<tipl::out>& po)
 {
     std::string source = po.get("source");
     std::string action = po.get("action");
@@ -261,7 +260,7 @@ int run_action_with_wildcard(tipl::io::program_option<show_progress>& po)
     else
     // loop
     {
-        progress prog("processing loop");
+        tipl::progress prog("processing loop");
         std::vector<std::string> loop_files;
         get_filenames_from(loop,loop_files);
 
@@ -288,7 +287,7 @@ int run_action_with_wildcard(tipl::io::program_option<show_progress>& po)
                     else
                     if(!match_files(loop,loop_files[i],each,apply_wildcard_each))
                     {
-                        show_progress() << "ERROR: cannot translate " << wildcard.second <<
+                        tipl::out() << "ERROR: cannot translate " << wildcard.second <<
                                      " at --" << wildcard.first << std::endl;
                         return 1;
                     }
@@ -296,7 +295,7 @@ int run_action_with_wildcard(tipl::io::program_option<show_progress>& po)
                         apply_wildcard += ",";
                     apply_wildcard += apply_wildcard_each;
                 }
-                show_progress() << wildcard.second << "->" << apply_wildcard << std::endl;
+                tipl::out() << wildcard.second << "->" << apply_wildcard << std::endl;
                 po.set(wildcard.first.c_str(),apply_wildcard);
             }
             po.set_used(0);
@@ -317,21 +316,21 @@ void init_cuda(void)
         std::string cuda_msg;
         check_cuda(cuda_msg);
         if(!has_cuda)
-            show_progress() << cuda_msg << std::endl;
+            tipl::out() << cuda_msg << std::endl;
     }
-    show_progress() << version_string().toStdString() << ((has_cuda) ? " CPU/GPU computation enabled " : "") << std::endl;
+    tipl::out() << version_string().toStdString() << ((has_cuda) ? " CPU/GPU computation enabled " : "") << std::endl;
 }
 int run_cmd(int ac, char *av[])
 {
-    tipl::io::program_option<show_progress> po;
+    tipl::io::program_option<tipl::out> po;
     try
     {
-        progress prog(version_string().toStdString().c_str()," command line");
+        tipl::progress prog(version_string().toStdString().c_str()," command line");
         init_cuda();
 
         if(!po.parse(ac,av))
         {
-            show_progress() << po.error_msg << std::endl;
+            tipl::out() << po.error_msg << std::endl;
             return 1;
         }
         if (!po.check("action"))
@@ -343,7 +342,7 @@ int run_cmd(int ac, char *av[])
         std::string action = po.get("action");
         if ((action == "cnt" && po.get("no_tractogram",1) == 0) || action == "vis")
         {
-            show_progress() << "Starting GUI-based command line interface." << std::endl;
+            tipl::out() << "Starting GUI-based command line interface." << std::endl;
             gui.reset(new QApplication(ac, av));
             init_application();
         }
@@ -354,7 +353,7 @@ int run_cmd(int ac, char *av[])
             cmd->setApplicationName(version_string());
             if(!load_file_name())
             {
-                show_progress() << "ERROR: Cannot find template data." << std::endl;
+                tipl::out() << "ERROR: Cannot find template data." << std::endl;
                 return 1;
             }
         }
@@ -376,7 +375,7 @@ int run_cmd(int ac, char *av[])
 
 extern console_stream console;
 
-
+bool has_gui = false;
 int main(int ac, char *av[])
 {
     if(ac > 2)
@@ -389,11 +388,14 @@ int main(int ac, char *av[])
 
     try{
     QApplication a(ac,av);
+
     has_gui = true;
+    tipl::show_prog = true;
+
     console.attach();
 
     {
-        progress prog(version_string().toStdString().c_str()," graphic user interface");
+        tipl::progress prog(version_string().toStdString().c_str()," graphic user interface");
         init_cuda();
         init_application();
     }

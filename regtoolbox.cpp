@@ -576,7 +576,7 @@ void RegToolBox::on_actionApply_Warpping_triggered()
     }
     else
     {
-        progress prog("save files");
+        tipl::progress prog("save files");
         for(int i = 0;prog(i,from.size());++i)
         {
             std::string error;

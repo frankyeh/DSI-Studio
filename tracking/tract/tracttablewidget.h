@@ -59,7 +59,7 @@ public:
             }
 
         {
-            progress prog(prog_name,!silence);
+            tipl::progress prog(prog_name,!silence);
             size_t p = 0;
             tipl::par_for(checked_index.size(),[&](unsigned int i)
             {
@@ -76,7 +76,7 @@ public:
             if(prog.aborted())
                 return;
         }
-        progress prog(prog_name,!silence);
+        tipl::progress prog(prog_name,!silence);
         for(unsigned int i = 0;prog(i,checked_index.size());++i)
             if(changed[i])
             {

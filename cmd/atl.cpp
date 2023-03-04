@@ -20,7 +20,7 @@ bool atl_load_atlas(std::shared_ptr<fib_data> handle,std::string atlas_name,std:
         auto at = handle->get_atlas(name_list[index].toStdString());
         if(!at.get())
         {
-            show_progress() << "ERROR: " << handle->error_msg << std::endl;
+            tipl::out() << "ERROR: " << handle->error_msg << std::endl;
             return false;
         }
         atlas_list.push_back(at);
@@ -47,7 +47,7 @@ void get_files_in_folder(std::string dir,std::string file,std::vector<std::strin
     files = std::move(name_list);
 }
 void get_filenames_from(const std::string param,std::vector<std::string>& filenames);
-int atl(tipl::io::program_option<show_progress>& po)
+int atl(tipl::io::program_option<tipl::out>& po)
 {
     // construct an atlas
     std::string cmd = po.get("cmd");
@@ -56,7 +56,7 @@ int atl(tipl::io::program_option<show_progress>& po)
     std::vector<std::string> name_list;
     if(QFileInfo(source.c_str()).isDir())
     {
-        show_progress() << "Searching all fib files in directory " << source << std::endl;
+        tipl::out() << "Searching all fib files in directory " << source << std::endl;
         get_files_in_folder(source,"*.fib.gz",name_list);
     }
     else
@@ -64,17 +64,17 @@ int atl(tipl::io::program_option<show_progress>& po)
 
     if(name_list.empty())
     {
-        show_progress() << "ERROR: no file found in " << source << std::endl;
+        tipl::out() << "ERROR: no file found in " << source << std::endl;
         return 1;
     }
 
     if(cmd=="template")
     {
-        show_progress() << "constructing a group average template" << std::endl;
+        tipl::out() << "constructing a group average template" << std::endl;
         const char* msg = odf_average(po.get("output",(QFileInfo(name_list[0].c_str()).absolutePath()+"/template").toStdString()).c_str(),name_list);
         if(msg)
         {
-            show_progress() << "ERROR:" << msg << std::endl;
+            tipl::out() << "ERROR:" << msg << std::endl;
             return 1;
         }
         return 0;
@@ -83,30 +83,30 @@ int atl(tipl::io::program_option<show_progress>& po)
     {        
         for(size_t id = 0;id < fib_template_list.size();++id)
             if(!fib_template_list[id].empty())
-                show_progress() << "template " << id << ": " << std::filesystem::path(fib_template_list[id]).stem() << std::endl;
+                tipl::out() << "template " << id << ": " << std::filesystem::path(fib_template_list[id]).stem() << std::endl;
 
         auto template_id = po.get("template",0);
         if(template_id >= fib_template_list.size())
         {
-            show_progress() << "ERROR: invalid template value" << std::endl;
+            tipl::out() << "ERROR: invalid template value" << std::endl;
             return 1;
         }
         if(fib_template_list[template_id].empty())
         {
-            show_progress() << "ERROR: no FIB template for " <<  std::filesystem::path(fa_template_list[template_id]).stem() << std::endl;
+            tipl::out() << "ERROR: no FIB template for " <<  std::filesystem::path(fa_template_list[template_id]).stem() << std::endl;
             return 1;
         }
 
         std::shared_ptr<fib_data> template_fib(new fib_data);
         if(!template_fib->load_from_file(fib_template_list[template_id].c_str()))
         {
-            show_progress() << "ERROR: " <<  template_fib->error_msg << std::endl;
+            tipl::out() << "ERROR: " <<  template_fib->error_msg << std::endl;
             return 1;
         }
         template_fib->set_template_id(template_id);
 
 
-        show_progress() << "constructing a connectometry db" << std::endl;
+        tipl::out() << "constructing a connectometry db" << std::endl;
         std::vector<std::string> index_name;
         float reso = template_fib->vs[0];
 
@@ -116,7 +116,7 @@ int atl(tipl::io::program_option<show_progress>& po)
             fib_data fib;
             if(!fib.load_from_file(name_list[0].c_str()))
             {
-                show_progress() << "ERROR loading subject fib files:" << name_list[0] << std::endl;
+                tipl::out() << "ERROR loading subject fib files:" << name_list[0] << std::endl;
                 return 1;
             }
             reso = po.get("resolution",std::floor((fib.vs[0] + fib.vs[2])*0.5f*100.0f)/100.0f);
@@ -124,7 +124,7 @@ int atl(tipl::io::program_option<show_progress>& po)
             std::ostringstream out;
             for(size_t i = 0;i < item_list.size();++i)
                 out << item_list[i] << " ";
-            show_progress() << "available metrics: " << out.str() << std::endl;
+            tipl::out() << "available metrics: " << out.str() << std::endl;
         }
 
         if(po.get("index_name","qa") == std::string("*"))
@@ -142,7 +142,7 @@ int atl(tipl::io::program_option<show_progress>& po)
 
         if(reso > template_fib->vs[0] && !template_fib->resample_to(reso))
         {
-            show_progress() << "ERROR: " << template_fib->error_msg << std::endl;
+            tipl::out() << "ERROR: " << template_fib->error_msg << std::endl;
             return 1;
         }
 
@@ -151,20 +151,20 @@ int atl(tipl::io::program_option<show_progress>& po)
             std::shared_ptr<group_connectometry_analysis> data(new group_connectometry_analysis);
             if(!data->create_database(template_fib))
             {
-                show_progress() << "ERROR: " << data->error_msg << std::endl;
+                tipl::out() << "ERROR: " << data->error_msg << std::endl;
                 return 1;
             }
-            show_progress() << "extracting index:" << index_name[i] << std::endl;
+            tipl::out() << "extracting index:" << index_name[i] << std::endl;
             data->handle->db.index_name = index_name[i];
             for (unsigned int index = 0;index < name_list.size();++index)
             {
                 if(name_list[index].find(".db.fib.gz") != std::string::npos)
                     continue;
-                show_progress() << "reading " << name_list[index] << std::endl;
+                tipl::out() << "reading " << name_list[index] << std::endl;
                 if(!data->handle->db.add_subject_file(name_list[index],
                     QFileInfo(name_list[index].c_str()).baseName().toStdString()))
                 {
-                    show_progress() << "ERROR loading subject fib files:" << data->handle->db.error_msg << std::endl;
+                    tipl::out() << "ERROR loading subject fib files:" << data->handle->db.error_msg << std::endl;
                     return 1;
                 }
             }
@@ -172,7 +172,7 @@ int atl(tipl::io::program_option<show_progress>& po)
 
             if(po.has("demo") && !data->handle->db.parse_demo(po.get("demo")))
             {
-                show_progress() << "ERROR " << data->handle->db.error_msg <<std::endl;
+                tipl::out() << "ERROR " << data->handle->db.error_msg <<std::endl;
                 return 1;
             }
             std::string output = std::string(name_list.front().begin(),
@@ -181,10 +181,10 @@ int atl(tipl::io::program_option<show_progress>& po)
                                                name_list.back().begin()).first) + "." + index_name[i] + ".db.fib.gz";
             if(!data->handle->db.save_db(po.get("output",output).c_str()))
             {
-                show_progress() << "ERROR saving the db file:" << data->handle->db.error_msg << std::endl;
+                tipl::out() << "ERROR saving the db file:" << data->handle->db.error_msg << std::endl;
                 return 1;
             }
-            show_progress() << "connectometry db created:" << output << std::endl;
+            tipl::out() << "connectometry db created:" << output << std::endl;
         }
         return 0;
     }
@@ -194,7 +194,7 @@ int atl(tipl::io::program_option<show_progress>& po)
         std::shared_ptr<fib_data> handle = cmd_load_fib(source);
         if(!handle.get())
         {
-            show_progress() << "ERROR:" << handle->error_msg << std::endl;
+            tipl::out() << "ERROR:" << handle->error_msg << std::endl;
             return 1;
         }
         if(cmd=="roi")
@@ -205,7 +205,7 @@ int atl(tipl::io::program_option<show_progress>& po)
                 return 1;
             if(handle->get_sub2temp_mapping().empty())
             {
-                show_progress() << "ERROR: cannot output connectivity: no mni mapping" << std::endl;
+                tipl::out() << "ERROR: cannot output connectivity: no mni mapping" << std::endl;
                 return 1;
             }
             std::string file_name = po.get("source");
@@ -229,9 +229,9 @@ int atl(tipl::io::program_option<show_progress>& po)
                             roi[k] = 1;
                     if(multiple)
                     {
-                        show_progress() << "save " << output << std::endl;
+                        tipl::out() << "save " << output << std::endl;
                         if(!gz_nifti::save_to_file(output.c_str(),roi,handle->vs,handle->trans_to_mni,handle->is_mni))
-                            show_progress() << "cannot write output to file:" << output << std::endl;
+                            tipl::out() << "cannot write output to file:" << output << std::endl;
                     }
                 }
                 {
@@ -248,31 +248,31 @@ int atl(tipl::io::program_option<show_progress>& po)
         {
             if(!handle->is_mni)
             {
-                show_progress() << "ERROR: only QSDR reconstructed FIB file is supported." << std::endl;
+                tipl::out() << "ERROR: only QSDR reconstructed FIB file is supported." << std::endl;
                 return 1;
             }
             if(handle->get_native_position().empty())
             {
-                show_progress() << "ERROR: no mapping information found. Please reconstruct QSDR with 'mapping' included in the output." << std::endl;
+                tipl::out() << "ERROR: no mapping information found. Please reconstruct QSDR with 'mapping' included in the output." << std::endl;
                 return 1;
             }
             TractModel tract_model(handle);
             std::string file_name = po.get("tract");
             {
-                show_progress() << "loading " << file_name << "..." <<std::endl;
+                tipl::out() << "loading " << file_name << "..." <<std::endl;
                 if (!tract_model.load_from_file(file_name.c_str()))
                 {
-                    show_progress() << "ERROR: cannot open file " << file_name << std::endl;
+                    tipl::out() << "ERROR: cannot open file " << file_name << std::endl;
                     return 1;
                 }
-                show_progress() << file_name << " loaded" << std::endl;
+                tipl::out() << file_name << " loaded" << std::endl;
             }
             file_name += "native.tt.gz";
             tract_model.save_tracts_in_native_space(handle,file_name.c_str());
-            show_progress() << "native tracks saved to " << file_name << " loaded" << std::endl;
+            tipl::out() << "native tracks saved to " << file_name << " loaded" << std::endl;
             return 0;
         }
     }
-    show_progress() << "ERROR: unknown command:" << cmd << std::endl;
+    tipl::out() << "ERROR: unknown command:" << cmd << std::endl;
     return 1;
 }

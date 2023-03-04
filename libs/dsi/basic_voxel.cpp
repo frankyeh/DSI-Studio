@@ -50,7 +50,7 @@ void Voxel::load_from_src(ImageModel& image_model)
 }
 bool Voxel::run_hist(void)
 {
-    progress prog("reconstructing histology");
+    tipl::progress prog("reconstructing histology");
     margin = 16;
     auto ceil = hist_tensor_smoothing << hist_downsampling;
     while(margin < ceil)
@@ -95,7 +95,7 @@ bool Voxel::run_hist(void)
 bool Voxel::run(void)
 {
     bool terminated = false;
-    progress prog("reconstructing");
+    tipl::progress prog("reconstructing");
     tipl::par_for(thread_count,[&](size_t thread_id)
     {
         for(size_t voxel_index = thread_id;
@@ -120,7 +120,7 @@ bool Voxel::run(void)
 
 void Voxel::end(gz_mat_write& writer)
 {
-    progress prog("saving results");
+    tipl::progress prog("saving results");
     for (size_t index = 0;prog(uint32_t(index),uint32_t(process_list.size())); ++index)
         process_list[index]->end(*this,writer);
 }

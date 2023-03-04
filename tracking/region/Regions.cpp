@@ -57,9 +57,9 @@ void ROIRegion::add_points(std::vector<tipl::vector<3,short> >&& points, bool de
     if(region.empty())
     {
         region.swap(points);
-        show_progress() << "region dimension: " << dim << std::endl;
-        show_progress() << "region voxel size: " << vs << std::endl;
-        show_progress() << "region voxel count: " << region.size() << std::endl;
+        tipl::out() << "region dimension: " << dim << std::endl;
+        tipl::out() << "region voxel size: " << vs << std::endl;
+        tipl::out() << "region voxel count: " << region.size() << std::endl;
         return;
     }
 

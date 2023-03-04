@@ -10,6 +10,7 @@ CONFIG += c++17
 TARGET = dsi_studio
 TEMPLATE = app
 INCLUDEPATH += ./plot
+DEFINES += TIPL_USE_QT
 DEFINES += DSISTUDIO_RELEASE_NAME=\\\"Chen\\\"
 DEFINES += DSISTUDIO_RELEASE_CODE=11770345
 win32* {
@@ -71,7 +72,6 @@ HEADERS += mainwindow.h \
     tracking/tract/tracttablewidget.h \
     qcolorcombobox.h \
     libs/tracking/tracking_thread.hpp \
-    libs/prog_interface_static_link.h \
     libs/mapping/atlas.hpp \
     view_image.h \
     libs/gzip_interface.hpp \
@@ -122,7 +122,6 @@ SOURCES += main.cpp \
     mainwindow.cpp \
     dicom/dicom_parser.cpp \
     dicom/dwi_header.cpp \
-    libs/utility/prog_interface.cpp \
     libs/dsi/dsi_interface_imp.cpp \
     libs/dsi/gqi_process.cpp \
     libs/tracking/tract_cluster.cpp \

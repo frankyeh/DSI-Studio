@@ -250,7 +250,7 @@ public:
 public:
     bool setAtlas(bool& terminated)
     {
-        progress prog("loading tractography atlas");
+        tipl::progress prog("loading tractography atlas");
         if(!handle->load_track_atlas())
             return false;
         if(track_id >= handle->tractography_name_list.size())
@@ -275,14 +275,14 @@ public:
         {
             float tolerance_dis_in_icbm_voxels = tolerance_dis_in_icbm152_mm/handle->template_vs[0];
             tolerance_dis_in_subject_voxels = tolerance_dis_in_icbm_voxels/handle->tract_atlas_jacobian;
-            show_progress() << "convert tolerance distance of " << tolerance_dis_in_icbm152_mm << " from ICBM mm to " <<
+            tipl::out() << "convert tolerance distance of " << tolerance_dis_in_icbm152_mm << " from ICBM mm to " <<
                                     tolerance_dis_in_subject_voxels << " subject voxels" << std::endl;
         }
 
         // place seed at the atlas track region
         if(seeds.empty())
         {
-            show_progress() << "creating seed region from tractography atlas" << std::endl;
+            tipl::out() << "creating seed region from tractography atlas" << std::endl;
             handle->track_atlas->to_voxel(atlas_seed,tipl::identity_matrix(),int(track_id));
             ROIRegion region(handle);
             region.add_points(std::move(atlas_seed));
@@ -300,7 +300,7 @@ public:
             handle->track_atlas->to_voxel(seed,tipl::identity_matrix(),int(track_id));
             tipl::image<3,char> roa_mask(handle->dim);
 
-            show_progress() << "creating ROA region to limit tracking results" << std::endl;
+            tipl::out() << "creating ROA region to limit tracking results" << std::endl;
 
             // outer = 1
             {
@@ -324,9 +324,9 @@ public:
                 bool is_right = (tract_name.substr(tract_name.length()-2,2) == "_R");
                 auto& s2t = handle->get_sub2temp_mapping();
                 if(is_left)
-                    show_progress() << "apply left mask for " << tract_name << std::endl;
+                    tipl::out() << "apply left mask for " << tract_name << std::endl;
                 if(is_right)
-                    show_progress() << "apply right mask for " << tract_name << std::endl;
+                    tipl::out() << "apply right mask for " << tract_name << std::endl;
                 auto mid_x = handle->template_I.width() >> 1;
                 tipl::par_for(seed.size(),[&](unsigned int i)
                 {

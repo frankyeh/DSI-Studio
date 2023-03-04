@@ -104,16 +104,16 @@ public:
             else
             {
                 bool terminated = false;
-                if(!tipl::run<progress>("linear registration",[&]()
+                if(!tipl::run("linear registration",[&]()
                 {
                     linear_with_mi(VG,VGvs,VF,VFvs,affine,tipl::reg::affine,terminated);
-                },terminated,has_gui))
+                },terminated))
                     throw std::runtime_error("reconstruction canceled");
             }
 
             tipl::image<3> VFF(VG.shape()),VFF2;
             tipl::resample_mt<tipl::interpolation::cubic>(VF,VFF,affine);
-            show_progress() << "linear r:" << tipl::correlation(VFF.begin(),VFF.end(),VG.begin()) << std::endl;
+            tipl::out() << "linear r:" << tipl::correlation(VFF.begin(),VFF.end(),VG.begin()) << std::endl;
 
             if(dual_modality)
             {
@@ -132,7 +132,7 @@ public:
 
             bool terminated = false;
 
-            if(!tipl::run<progress>("normalization",[&]()
+            if(!tipl::run("normalization",[&]()
                 {
                     tipl::reg::cdm_param param;
                     tipl::image<3,tipl::vector<3> > cdm_dis_inv;
@@ -158,7 +158,7 @@ public:
                         });
                         gz_nifti::save_to_file("Subject_displacement.nii.gz",buffer,voxel.vs,voxel.trans_to_mni);
                     }
-                },terminated,has_gui))
+                },terminated))
                 throw std::runtime_error("reconstruction canceled");
 
             tipl::image<3> VFFF;
@@ -166,7 +166,7 @@ public:
 
             float r = float(tipl::correlation(VG.begin(),VG.end(),VFFF.begin()));
             voxel.R2 = r*r;
-            show_progress() << "R2:" << voxel.R2 << std::endl;
+            tipl::out() << "R2:" << voxel.R2 << std::endl;
             if(!manual_alignment && voxel.R2 < 0.3f)
                 throw std::runtime_error("ERROR: Poor R2 found. Please check image orientation or use manual alignment.");
 
@@ -195,7 +195,7 @@ public:
         // if subject data is only a fragment of FOV, crop images
         if(partial_reconstruction)
         {
-            show_progress() << "partial reconstruction" << std::endl;
+            tipl::out() << "partial reconstruction" << std::endl;
             tipl::vector<3,int> bmin,bmax;
             tipl::bounding_box(VG,bmin,bmax);
             for(unsigned char dim = 0;dim < 3;++dim)
@@ -247,7 +247,7 @@ public:
             VGvs[0] = VGvs[1] = VGvs[2] = voxel.qsdr_reso;
         }
 
-        show_progress() << "output dimension: " << VG.shape() << std::endl;
+        tipl::out() << "output dimension: " << VG.shape() << std::endl;
 
 
         // assign mask
@@ -281,8 +281,8 @@ public:
             voxel.trans_to_mni[0] = -VGvs[0];
             voxel.trans_to_mni[5] = -VGvs[1];
             voxel.trans_to_mni[10] = VGvs[2];
-            show_progress() << "output resolution:" << VGvs[0] << std::endl;
-            show_progress() << "output dimension:" << VG.shape() << std::endl;
+            tipl::out() << "output resolution:" << VGvs[0] << std::endl;
+            tipl::out() << "output dimension:" << VG.shape() << std::endl;
 
 
             if(is_human_template && !partial_reconstruction) // if default template is used

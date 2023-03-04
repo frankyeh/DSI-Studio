@@ -3,15 +3,14 @@
 #include "tracking/region/Regions.h"
 #include "tracking/atlasdialog.h"
 #include "tracking/roi.hpp"
-#include "connectometry/group_connectometry.hpp"
-#include "ui_group_connectometry.h"
-bool load_roi(tipl::io::program_option<show_progress>& po,std::shared_ptr<fib_data> handle,std::shared_ptr<RoiMgr> roi_mgr);
-int cnt(tipl::io::program_option<show_progress>& po)
+#include "connectometry/group_connectometry_analysis.h"
+bool load_roi(tipl::io::program_option<tipl::out>& po,std::shared_ptr<fib_data> handle,std::shared_ptr<RoiMgr> roi_mgr);
+int cnt(tipl::io::program_option<tipl::out>& po)
 {
     std::shared_ptr<group_connectometry_analysis> vbc(new group_connectometry_analysis);
     if(!vbc->load_database(po.get("source").c_str()))
     {
-        show_progress() << "ERROR:" << vbc->error_msg << std::endl;
+        tipl::out() << "ERROR:" << vbc->error_msg << std::endl;
         return 1;
     }
 
@@ -24,7 +23,7 @@ int cnt(tipl::io::program_option<show_progress>& po)
             return 1;
         if(!db.parse_demo(po.get("demo")))
         {
-            show_progress() << "ERROR: " << db.error_msg << std::endl;
+            tipl::out() << "ERROR: " << db.error_msg << std::endl;
             return 1;
         }
         if(po.has("save_db"))
@@ -39,7 +38,7 @@ int cnt(tipl::io::program_option<show_progress>& po)
 
 
     {
-        show_progress pout;
+        tipl::out pout;
         pout << "selectable variables include ";
         // show features readed
         for(size_t i = 0;i < db.feature_titles.size();++i)
@@ -60,7 +59,7 @@ int cnt(tipl::io::program_option<show_progress>& po)
         for(auto v : variable_list)
             if(v >= db.feature_titles.size())
             {
-                show_progress() << "ERROR: invalid variable value: " << v << std::endl;
+                tipl::out() << "ERROR: invalid variable value: " << v << std::endl;
                 return 1;
             }
 
@@ -69,7 +68,7 @@ int cnt(tipl::io::program_option<show_progress>& po)
         {
             if(!db.is_longitudinal)
             {
-                show_progress() << "ERROR: The longitudinal change can only be studied in a longitudinal database." << std::endl;
+                tipl::out() << "ERROR: The longitudinal change can only be studied in a longitudinal database." << std::endl;
                 return 1;
             }
             foi_str = "longitudinal change";
@@ -79,7 +78,7 @@ int cnt(tipl::io::program_option<show_progress>& po)
             unsigned int voi_index = po.get("voi",uint32_t(0));
             if(voi_index >= db.feature_titles.size())
             {
-                show_progress() << "invalid variable of interest: " << voi_index << std::endl;
+                tipl::out() << "invalid variable of interest: " << voi_index << std::endl;
                 return 1;
             }
             // the variable to study needs to be included in the model
@@ -99,7 +98,7 @@ int cnt(tipl::io::program_option<show_progress>& po)
     }
 
     {
-        progress prog("connectometry parameters:");
+        tipl::progress prog("connectometry parameters:");
         vbc->no_tractogram = (po.get("no_tractogram",1) == 1);
         vbc->foi_str = foi_str;
         vbc->length_threshold_voxels = po.get("length_threshold",(vbc->handle->dim[0]/4)/5*5);
@@ -112,7 +111,7 @@ int cnt(tipl::io::program_option<show_progress>& po)
         vbc->model->read_demo(db);
         if(!vbc->model->select_cohort(db,po.get("select")) || !vbc->model->select_feature(db,vbc->foi_str))
         {
-            show_progress() << "ERROR:" << vbc->model->error_msg.c_str() << std::endl;
+            tipl::out() << "ERROR:" << vbc->model->error_msg.c_str() << std::endl;
             return 1;
         }
 
@@ -133,7 +132,7 @@ int cnt(tipl::io::program_option<show_progress>& po)
 
 
     {
-        progress prog("running connectometry");
+        tipl::progress prog("running connectometry");
         if(po.has("output"))
             vbc->output_file_name = po.get("output",std::string());
         vbc->run_permutation(po.get("thread_count",std::thread::hardware_concurrency()),po.get("permutation",uint32_t(2000)));
@@ -149,11 +148,11 @@ int cnt(tipl::io::program_option<show_progress>& po)
         std::string report_file_name = vbc->output_file_name+".report.html";
         std::ofstream out(report_file_name.c_str());
         if(!out)
-            show_progress() << "cannot output file to " << report_file_name << std::endl;
+            tipl::out() << "cannot output file to " << report_file_name << std::endl;
         else
         {
             out << output << std::endl;
-            show_progress() << "report saved to " << report_file_name << std::endl;
+            tipl::out() << "report saved to " << report_file_name << std::endl;
         }
     }
     return 0;

@@ -4,7 +4,6 @@
 #include <QFileDialog>
 #include "view_image.h"
 #include "ui_view_image.h"
-#include "prog_interface_static_link.h"
 #include <QPlainTextEdit>
 #include <QFileInfo>
 #include <QMessageBox>
@@ -183,7 +182,7 @@ bool view_image::command(std::string cmd,std::string param1)
                 QMessageBox::critical(this,"ERROR","Cannot save file");
                 return false;
             }
-            progress prog("saving");
+            tipl::progress prog("saving");
             for(unsigned int index = 0;prog(index,mat.size());++index)
                 matfile.write(mat[index]);
             QMessageBox::information(this,"DSI Studio","File Save");
@@ -193,9 +192,9 @@ bool view_image::command(std::string cmd,std::string param1)
 
 
     {
-        progress prog(cmd.c_str());
+        tipl::progress prog(cmd.c_str());
         if(!param1.empty())
-            show_progress() << "param: " << param1;
+            tipl::out() << "param: " << param1;
 
         if(cmd =="change_type")
         {
@@ -246,10 +245,10 @@ bool view_image::command(std::string cmd,std::string param1)
             result = tipl::command<gz_nifti>(I,vs,T,is_mni,cmd,param1,error_msg);
             shape = I.shape();
         });
-        show_progress() << "result: " << (result ? "succeeded":"failed") << std::endl;
+        tipl::out() << "result: " << (result ? "succeeded":"failed") << std::endl;
         if(!result)
         {
-            show_progress() << "ERROR:" << error_msg << std::endl;
+            tipl::out() << "ERROR:" << error_msg << std::endl;
             return false;
         }
 
@@ -272,12 +271,12 @@ bool view_image::command(std::string cmd,std::string param1)
             return true;
         }
 
-        progress prog("apply to other images");
+        tipl::progress prog("apply to other images");
         int file_index = 0;
         for(;prog(file_index,file_names.size());++file_index)
         {
             auto file_name2 = file_names[file_index];
-            show_progress() << "processing " << file_name2.toStdString();
+            tipl::out() << "processing " << file_name2.toStdString();
 
             std::shared_ptr<view_image> dialog(new view_image(parentWidget()));
             dialog->setAttribute(Qt::WA_DeleteOnClose);
@@ -297,8 +296,8 @@ bool view_image::command(std::string cmd,std::string param1)
                     if(match_files(original_file_name.toStdString(),param_list[i],
                                 file_name2.toStdString(),param2))
                     {
-                        show_progress() << "matched path: " << std::filesystem::path(param2).parent_path().string() << std::endl;
-                        show_progress() << "matched file name: " << std::filesystem::path(param2).filename().string() << std::endl;
+                        tipl::out() << "matched path: " << std::filesystem::path(param2).parent_path().string() << std::endl;
+                        tipl::out() << "matched file name: " << std::filesystem::path(param2).filename().string() << std::endl;
                     }
                 }
                 if(!dialog->command(command_list[i],param2))
@@ -680,7 +679,7 @@ bool view_image::open(QStringList file_names_)
     QString info;
 
     setWindowTitle(QFileInfo(file_name).fileName());
-    progress prog("open image file ",std::filesystem::path(file_name.toStdString()).filename().string().c_str());
+    tipl::progress prog("open image file ",std::filesystem::path(file_name.toStdString()).filename().string().c_str());
     if(file_names_.size() > 1 && QString(file_name).endsWith(".bmp"))
     {
         for(unsigned int i = 0;prog(i,file_names_.size());++i)
@@ -706,7 +705,7 @@ bool view_image::open(QStringList file_names_)
     }
     if(QString(file_name).endsWith(".nhdr"))
     {
-        tipl::io::nrrd<progress> nrrd;
+        tipl::io::nrrd<tipl::progress> nrrd;
         if(!nrrd.load_from_file(file_name.toStdString().c_str()))
         {
             QMessageBox::critical(this,"ERROR",nrrd.error_msg.c_str());
@@ -1236,10 +1235,10 @@ void view_image::on_dwi_volume_valueChanged(int value)
         cur_dwi_volume = size_t(value);
         if(dwi_volume_buf[cur_dwi_volume].empty())
         {
-            has_gui = false;
+            tipl::show_prog = false;
             nifti.select_volume(cur_dwi_volume);
             nifti.get_untouched_image(I);
-            has_gui = true;
+            tipl::show_prog = true;
         }
         else
             I.buf().swap(dwi_volume_buf[cur_dwi_volume]);

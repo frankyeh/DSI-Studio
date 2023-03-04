@@ -6,7 +6,6 @@
 #include "ui_dicom_parser.h"
 #include "TIPL/tipl.hpp"
 #include "mainwindow.h"
-#include "prog_interface_static_link.h"
 #include "libs/gzip_interface.hpp"
 
 std::string src_error_msg;
@@ -165,7 +164,7 @@ bool load_dicom_multi_frame(const char* file_name,std::vector<std::shared_ptr<Dw
 
     size_t plane_size = size_t(buf_image.width()*buf_image.height());
     b_table.resize(num_gradient*4);
-    progress prog("reading DWI");
+    tipl::progress prog("reading DWI");
     for(size_t index = 0;prog(index,num_gradient);++index)
     {
         std::shared_ptr<DwiHeader> new_file(new DwiHeader);
@@ -334,13 +333,13 @@ bool load_4d_nii(const char* file_name,std::vector<std::shared_ptr<DwiHeader> >&
         }
         if(max_value < 256.0f)
         {
-            show_progress() << "The maximum singal is only " << max_value << std::endl;
+            tipl::out() << "The maximum singal is only " << max_value << std::endl;
             float scale = 1.0f;
             while(max_value*scale*32.0f < std::numeric_limits<unsigned short>::max())
                 scale *= 32.0f;
             if(scale != 1.0f)
             {
-                show_progress() << "scaling the image by " << scale << std::endl;
+                tipl::out() << "scaling the image by " << scale << std::endl;
                 tipl::par_for(dwi_data.size(),[&](unsigned int index){
                     dwi_data[index] *= scale;
                 });
@@ -354,7 +353,7 @@ bool load_4d_nii(const char* file_name,std::vector<std::shared_ptr<DwiHeader> >&
         if(grad_header.load_from_file(QString(QFileInfo(file_name).absolutePath() + "/grad_dev.nii.gz").toLocal8Bit().begin()))
         {
             grad_header.toLPS(grad_dev);
-            show_progress() << "grad_dev used" << std::endl;
+            tipl::out() << "grad_dev used" << std::endl;
         }
     }
 
@@ -365,7 +364,7 @@ bool load_4d_nii(const char* file_name,std::vector<std::shared_ptr<DwiHeader> >&
         if(mask_header.load_from_file(QString(QFileInfo(file_name).absolutePath() + "/nodif_brain_mask.nii.gz").toLocal8Bit().begin()))
         {
             mask_header.toLPS(mask);
-            show_progress() << "mask used" << std::endl;
+            tipl::out() << "mask used" << std::endl;
         }
     }
 
@@ -633,7 +632,7 @@ bool load_multiple_slice_dicom(QStringList file_list,std::vector<std::shared_ptr
             iterate_slice_first = true;
         }
     }
-    progress prog("reading DWI");
+    tipl::progress prog("reading DWI");
     for (unsigned int index = 0,b_index = dwi_files.size(),slice_index = 0;prog(index,file_list.size());++index)
     {
         std::shared_ptr<DwiHeader> dwi(new DwiHeader);
@@ -691,7 +690,7 @@ bool load_nhdr(QStringList file_list,std::vector<std::shared_ptr<DwiHeader> >& d
     tipl::shape<3> dim;
     tipl::vector<3> vs;
     image_buf.resize(file_list.size());
-    progress prog("Reading raw data");
+    tipl::progress prog("Reading raw data");
     for (size_t i = 0;prog(i,file_list.size());++i)
     {
         std::map<std::string,std::string> value_list;
@@ -742,7 +741,7 @@ bool load_nhdr(QStringList file_list,std::vector<std::shared_ptr<DwiHeader> >& d
         raw_file_name = raw_file_name.substr(0,raw_file_name.length()-4);
         raw_file_name += "raw";
         std::ifstream in(raw_file_name,std::ifstream::binary);
-        show_progress() << "reading" << raw_file_name << std::endl;
+        tipl::out() << "reading" << raw_file_name << std::endl;
         if(!in.read((char*)&image_buf[i][0],image_buf[i].size()*sizeof(float)))
         {
             src_error_msg = "failed to read image file";
@@ -755,7 +754,7 @@ bool load_nhdr(QStringList file_list,std::vector<std::shared_ptr<DwiHeader> >& d
     scale_image_buf_to_uint16(image_buf);
 
     {
-        progress prog2("Converting data");
+        tipl::progress prog2("Converting data");
         for(size_t i = 0;prog2(i,image_buf.size());++i)
         {
             dwi_files.push_back(std::make_shared<DwiHeader>());
@@ -774,7 +773,7 @@ bool load_4d_fdf(QStringList file_list,std::vector<std::shared_ptr<DwiHeader> >&
 {
     std::vector<tipl::image<3> > image_buf;
     bool scan_2d = true;
-    progress prog("reading DWI");
+    tipl::progress prog("reading DWI");
     for (int index = 0;prog(index,file_list.size());++index)
     {
         std::map<std::string,std::string> value_list;
@@ -937,13 +936,13 @@ bool parse_dwi(QStringList file_list,
     {
         QStringList dwi_list;
         dwi_list << file_list[0];
-        progress prog("reading ",file_list[0].toStdString().c_str());
+        tipl::progress prog("reading ",file_list[0].toStdString().c_str());
         for(int i = 1;prog(i,file_list.size());++i)
             if(QFileInfo(dwi_list.front()).absolutePath() == QFileInfo(file_list[i]).absolutePath())
                 dwi_list << file_list[i];
             else
             {
-                show_progress() << dwi_list.size() << " files in " << QFileInfo(dwi_list[0]).absolutePath().toStdString() << std::endl;
+                tipl::out() << dwi_list.size() << " files in " << QFileInfo(dwi_list[0]).absolutePath().toStdString() << std::endl;
                 if(!parse_dwi(dwi_list,dwi_files))
                     return false;
                 dwi_list.clear();
@@ -951,7 +950,7 @@ bool parse_dwi(QStringList file_list,
             }
         return true;
     }
-    show_progress()  << "reading " << file_list[0].toStdString();
+    tipl::out()  << "reading " << file_list[0].toStdString();
     src_error_msg.clear();
     if(QFileInfo(file_list[0]).fileName() == "2dseq")
     {

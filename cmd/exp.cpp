@@ -13,7 +13,7 @@
 std::shared_ptr<fib_data> cmd_load_fib(std::string file_name);
 bool trk2tt(const char* trk_file,const char* tt_file);
 bool tt2trk(const char* tt_file,const char* trk_file);
-int exp(tipl::io::program_option<show_progress>& po)
+int exp(tipl::io::program_option<tipl::out>& po)
 {
     std::string file_name = po.get("source");
     if(QString(file_name.c_str()).endsWith(".trk.gz"))
@@ -23,16 +23,16 @@ int exp(tipl::io::program_option<show_progress>& po)
         {
             if(trk2tt(file_name.c_str(),output_name.c_str()))
             {
-                show_progress() << "file converted." << std::endl;
+                tipl::out() << "file converted." << std::endl;
                 return 0;
             }
             else
             {
-                show_progress() << "Cannot write to file:" << output_name << std::endl;
+                tipl::out() << "Cannot write to file:" << output_name << std::endl;
                 return 1;
             }
         }
-        show_progress() << "unsupported file format" << std::endl;
+        tipl::out() << "unsupported file format" << std::endl;
         return 1;
     }
     if(QString(file_name.c_str()).endsWith(".tt.gz"))
@@ -42,16 +42,16 @@ int exp(tipl::io::program_option<show_progress>& po)
         {
             if(tt2trk(file_name.c_str(),output_name.c_str()))
             {
-                show_progress() << "file converted." << std::endl;
+                tipl::out() << "file converted." << std::endl;
                 return 0;
             }
             else
             {
-                show_progress() << "Cannot write to file:" << output_name << std::endl;
+                tipl::out() << "Cannot write to file:" << output_name << std::endl;
                 return 1;
             }
         }
-        show_progress() << "unsupported file format" << std::endl;
+        tipl::out() << "unsupported file format" << std::endl;
         return 1;
     }
     if(QString(file_name.c_str()).endsWith(".fib.gz"))
@@ -60,24 +60,24 @@ int exp(tipl::io::program_option<show_progress>& po)
         handle = cmd_load_fib(po.get("source"));
         if(!handle.get())
         {
-            show_progress() << "ERROR: " << handle->error_msg << std::endl;
+            tipl::out() << "ERROR: " << handle->error_msg << std::endl;
             return 1;
         }
         if(po.has("match"))
         {
             if(!handle->db.has_db())
             {
-                show_progress() << "ERROR: the FIB file is not a connectometry database" << std::endl;
+                tipl::out() << "ERROR: the FIB file is not a connectometry database" << std::endl;
                 return 1;
             }
             if(handle->db.demo.empty())
             {
-                show_progress() << "ERROR: the connectometry database does not include demographics for matching." << std::endl;
+                tipl::out() << "ERROR: the connectometry database does not include demographics for matching." << std::endl;
                 return 1;
             }
             if(!handle->db.save_demo_matched_image(po.get("match"),po.get("output",po.get("source")+".matched.nii.gz")))
             {
-                show_progress() << "ERROR:" << handle->db.error_msg << std::endl;
+                tipl::out() << "ERROR:" << handle->db.error_msg << std::endl;
                 return 1;
             }
             return 0;
@@ -89,14 +89,14 @@ int exp(tipl::io::program_option<show_progress>& po)
         {
             if(!handle->save_mapping(cmd,file_name + "." + cmd + ".nii.gz"))
             {
-                show_progress() << "ERROR: cannot find "<< cmd.c_str() <<" in " << file_name.c_str() <<std::endl;
+                tipl::out() << "ERROR: cannot find "<< cmd.c_str() <<" in " << file_name.c_str() <<std::endl;
                 return 1;
             }
-            show_progress() << cmd << ".nii.gz saved " << std::endl;
+            tipl::out() << cmd << ".nii.gz saved " << std::endl;
         }
         return 0;
     }
 
-    show_progress() << "unsupported file format" << std::endl;
+    tipl::out() << "unsupported file format" << std::endl;
     return 1;
 }

@@ -1,5 +1,4 @@
 #include "tessellated_icosahedron.hpp"
-#include "prog_interface_static_link.h"
 #include "basic_voxel.hpp"
 #include "odf_process.hpp"
 #include "dti_process.hpp"
@@ -251,7 +250,7 @@ bool output_odfs(const tipl::image<3,unsigned char>& mni_mask,
                  std::string& error_msg,
                  bool record_odf = true)
 {
-    progress prog_("generating template");
+    tipl::progress prog_("generating template");
     ImageModel image_model;
     auto swap_data = [&](void)
     {
@@ -300,14 +299,14 @@ const char* odf_average(const char* out_name,std::vector<std::string>& file_name
     std::vector<std::string> other_metrics_name;
     std::vector<tipl::image<3> > other_metrics_images;
     std::vector<size_t> other_metrics_count;
-    progress prog("loading data");
+    tipl::progress prog("loading data");
 
     try {
         for (unsigned int index = 0;prog(index,file_names.size());++index)
         {
             file_name = file_names[index];
             fib_data fib;
-            show_progress() << "reading file";
+            tipl::out() << "reading file";
             if(!fib.load_from_file(file_name.c_str()))
                 throw std::runtime_error(fib.error_msg);
             if(!fib.is_mni)
@@ -350,7 +349,7 @@ const char* odf_average(const char* out_name,std::vector<std::string>& file_name
                 }
             }
 
-            show_progress() << "accumulating ODFs";
+            tipl::out() << "accumulating ODFs";
             if(index == 0)
             {
                 odfs.resize(dim.size());
@@ -373,7 +372,7 @@ const char* odf_average(const char* out_name,std::vector<std::string>& file_name
             });
 
 
-            show_progress() << "accumulating other metrics";
+            tipl::out() << "accumulating other metrics";
             for(size_t i = 0;prog(i,other_metrics_name.size());++i)
             {
                 auto metric_index = fib.get_name_index(other_metrics_name[i]);
@@ -397,7 +396,7 @@ const char* odf_average(const char* out_name,std::vector<std::string>& file_name
     if (prog.aborted())
         return nullptr;
 
-    show_progress() << "averaging other metrics";
+    tipl::out() << "averaging other metrics";
     prog(1,3);
     tipl::par_for(other_metrics_name.size(),[&](unsigned int i)
     {
@@ -412,7 +411,7 @@ const char* odf_average(const char* out_name,std::vector<std::string>& file_name
     });
 
     // eliminate ODF if missing more than half of the population
-    show_progress() << "preparing ODFs";
+    tipl::out() << "preparing ODFs";
     prog(2,3);
     tipl::image<3,unsigned char> mask(dim);
     size_t odf_size = 0;
@@ -435,7 +434,7 @@ const char* odf_average(const char* out_name,std::vector<std::string>& file_name
     if(!output_odfs(mask,out_name,".mean.fib.gz",odfs,other_metrics_images,other_metrics_name,ti,vs.begin(),mni.begin(),report,error_msg,false) ||
        !output_odfs(mask,out_name,".mean.odf.fib.gz",odfs,other_metrics_images,other_metrics_name,ti,vs.begin(),mni.begin(),report,error_msg))
     {
-        show_progress() << error_msg;
+        tipl::out() << error_msg;
         return nullptr;
     }
     return nullptr;

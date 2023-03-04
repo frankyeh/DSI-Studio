@@ -26,16 +26,16 @@ bool check_other_slices(const std::string& other_slices_name,std::shared_ptr<fib
     get_filenames_from(other_slices_name,filenames);
     for(size_t i = 0;i < filenames.size();++i)
     {
-        show_progress() << "add slice: " << QFileInfo(filenames[i].c_str()).baseName().toStdString() << std::endl;
+        tipl::out() << "add slice: " << QFileInfo(filenames[i].c_str()).baseName().toStdString() << std::endl;
         if(!std::filesystem::exists(filenames[i]))
         {
-            show_progress() << "ERROR: file not exist " << filenames[i] << std::endl;
+            tipl::out() << "ERROR: file not exist " << filenames[i] << std::endl;
             return false;
         }
         auto new_slice = std::make_shared<CustomSliceModel>(handle.get());
         if(!new_slice->load_slices(filenames[i]))
         {
-            show_progress() << "ERROR: fail to load " << filenames[i] << ":" << new_slice->error_msg << std::endl;
+            tipl::out() << "ERROR: fail to load " << filenames[i] << ":" << new_slice->error_msg << std::endl;
             return false;
         }
         new_slice->wait();
@@ -54,24 +54,24 @@ bool get_t1t2_nifti(const std::string& t1t2,
         t1t2_slices = std::make_shared<CustomSliceModel>(handle.get());
         if(!t1t2_slices->load_slices(t1t2))
         {
-            show_progress() << "ERROR: fail to load " << t1t2 << std::endl;
+            tipl::out() << "ERROR: fail to load " << t1t2 << std::endl;
             return false;
         }
         handle->view_item.pop_back(); // remove the new item added by initialize
         t1t2_slices->wait();
-        show_progress() << "registeration complete" << std::endl;
+        tipl::out() << "registeration complete" << std::endl;
     }
     nifti_geo = t1t2_slices->source_images.shape();
     nifti_vs = t1t2_slices->vs;
     convert = t1t2_slices->invT;
-    show_progress() << "T1T2 dimension: " << nifti_geo << std::endl;
-    show_progress() << "T1T2 voxel size: " << nifti_vs << std::endl;
-    show_progress() << convert[0] << " " << convert[1] << " " << convert[2] << " " << convert[3] << std::endl;
-    show_progress() << convert[4] << " " << convert[5] << " " << convert[6] << " " << convert[7] << std::endl;
-    show_progress() << convert[8] << " " << convert[9] << " " << convert[10] << " " << convert[11] << std::endl;
+    tipl::out() << "T1T2 dimension: " << nifti_geo << std::endl;
+    tipl::out() << "T1T2 voxel size: " << nifti_vs << std::endl;
+    tipl::out() << convert[0] << " " << convert[1] << " " << convert[2] << " " << convert[3] << std::endl;
+    tipl::out() << convert[4] << " " << convert[5] << " " << convert[6] << " " << convert[7] << std::endl;
+    tipl::out() << convert[8] << " " << convert[9] << " " << convert[10] << " " << convert[11] << std::endl;
     return true;
 }
-bool export_track_info(tipl::io::program_option<show_progress>& po,std::shared_ptr<fib_data> handle,
+bool export_track_info(tipl::io::program_option<tipl::out>& po,std::shared_ptr<fib_data> handle,
                        std::string file_name,
                        std::shared_ptr<TractModel> tract_model)
 {
@@ -82,7 +82,7 @@ bool export_track_info(tipl::io::program_option<show_progress>& po,std::shared_p
         // track analysis report
         if(cmd.find("report") == 0)
         {
-            show_progress() << "export track analysis report..." << std::endl;
+            tipl::out() << "export track analysis report..." << std::endl;
             std::replace(cmd.begin(),cmd.end(),':',' ');
             std::istringstream in(cmd);
             std::string report_tag,index_name;
@@ -92,23 +92,23 @@ bool export_track_info(tipl::io::program_option<show_progress>& po,std::shared_p
             // check index
             if(index_name != "qa" && index_name != "fa" &&  handle->get_name_index(index_name) == handle->view_item.size())
             {
-                show_progress() << "cannot find index name:" << index_name << std::endl;
+                tipl::out() << "cannot find index name:" << index_name << std::endl;
                 return false;
             }
             if(bandwidth == 0)
             {
-                show_progress() << "please specify bandwidth value" << std::endl;
+                tipl::out() << "please specify bandwidth value" << std::endl;
                 return false;
             }
             if(profile_dir > 4)
             {
-                show_progress() << "please specify a valid profile type" << std::endl;
+                tipl::out() << "please specify a valid profile type" << std::endl;
                 return false;
             }
-            show_progress() << "calculating report" << std::endl;
-            show_progress() << "profile_dir:" << profile_dir << std::endl;
-            show_progress() << "bandwidth:" << bandwidth << std::endl;
-            show_progress() << "index_name:" << index_name << std::endl;
+            tipl::out() << "calculating report" << std::endl;
+            tipl::out() << "profile_dir:" << profile_dir << std::endl;
+            tipl::out() << "bandwidth:" << bandwidth << std::endl;
+            tipl::out() << "index_name:" << index_name << std::endl;
             tract_model->get_report(
                                 handle,
                                 profile_dir,
@@ -118,7 +118,7 @@ bool export_track_info(tipl::io::program_option<show_progress>& po,std::shared_p
 
             std::replace(cmd.begin(),cmd.end(),' ','.');
             std::string file_name_stat = file_name + "." + cmd + ".txt";
-            show_progress() << "output report:" << file_name_stat << std::endl;
+            tipl::out() << "output report:" << file_name_stat << std::endl;
             std::ofstream report(file_name_stat.c_str());
             report << "position\t";
             std::copy(values.begin(),values.end(),std::ostream_iterator<float>(report,"\t"));
@@ -151,7 +151,7 @@ bool export_track_info(tipl::io::program_option<show_progress>& po,std::shared_p
                 digit.erase(std::remove_if(digit.begin(),digit.end(),[](char ch){return (ch < '0' || ch > '9') && ch != '.';}),digit.end());
                 if(!digit.empty())
                     (std::istringstream(digit)) >> ratio;
-                show_progress() << "export tdi at x" << ratio << " resolution" << std::endl;
+                tipl::out() << "export tdi at x" << ratio << " resolution" << std::endl;
             }
 
             bool output_color = QString(cmd.c_str()).contains("color");
@@ -181,18 +181,18 @@ bool export_track_info(tipl::io::program_option<show_progress>& po,std::shared_p
             }
             std::vector<std::shared_ptr<TractModel> > tract;
             tract.push_back(tract_model);
-            show_progress() << "export TDI to " << file_name_stat;
+            tipl::out() << "export TDI to " << file_name_stat;
             if(output_color)
-                show_progress() << " in RGB color";
+                tipl::out() << " in RGB color";
             if(output_end)
-                show_progress() << " end point only";
-            show_progress() << std::endl;
-            show_progress() << "TDI dimension: " << dim << std::endl;
-            show_progress() << "TDI voxel size: " << vs << std::endl;
-            show_progress() << std::endl;
+                tipl::out() << " end point only";
+            tipl::out() << std::endl;
+            tipl::out() << "TDI dimension: " << dim << std::endl;
+            tipl::out() << "TDI voxel size: " << vs << std::endl;
+            tipl::out() << std::endl;
             if(!TractModel::export_tdi(file_name_stat.c_str(),tract,dim,vs,tr,output_color,output_end))
             {
-                show_progress() << "ERROR: failed to save file. Please check write permission." << std::endl;
+                tipl::out() << "ERROR: failed to save file. Please check write permission." << std::endl;
                 return false;
             }
             continue;
@@ -202,11 +202,11 @@ bool export_track_info(tipl::io::program_option<show_progress>& po,std::shared_p
         if(cmd == "stat")
         {
             file_name_stat += ".txt";
-            show_progress() << "export statistics to " << file_name_stat << std::endl;
+            tipl::out() << "export statistics to " << file_name_stat << std::endl;
             std::ofstream out_stat(file_name_stat.c_str());
             if(!out_stat)
             {
-                show_progress() << "Output statistics to file_name_stat failed. Please check write permission" << std::endl;
+                tipl::out() << "Output statistics to file_name_stat failed. Please check write permission" << std::endl;
                 return false;
             }
             std::string result;
@@ -226,19 +226,19 @@ bool export_track_info(tipl::io::program_option<show_progress>& po,std::shared_p
                 continue;
             }
         }
-        show_progress() << "invalid export option:" << cmd << std::endl;
+        tipl::out() << "invalid export option:" << cmd << std::endl;
         return false;
     }
     return true;
 }
 
-bool load_nii(tipl::io::program_option<show_progress>& po,
+bool load_nii(tipl::io::program_option<tipl::out>& po,
               std::shared_ptr<fib_data> handle,
               const std::string& file_name,
               std::vector<std::shared_ptr<ROIRegion> >& regions,
               std::vector<std::string>& names);
 
-bool get_connectivity_matrix(tipl::io::program_option<show_progress>& po,
+bool get_connectivity_matrix(tipl::io::program_option<tipl::out>& po,
                              std::shared_ptr<fib_data> handle,
                              std::string output_name,
                              std::shared_ptr<TractModel> tract_model)
@@ -250,7 +250,7 @@ bool get_connectivity_matrix(tipl::io::program_option<show_progress>& po,
     for(int i = 0;i < connectivity_list.size();++i)
     {
         std::string roi_file_name = connectivity_list[i].toStdString();
-        show_progress() << "loading " << roi_file_name << std::endl;
+        tipl::out() << "loading " << roi_file_name << std::endl;
         ConnectivityMatrix data;
 
         // specify atlas name (e.g. --connectivity=AAL2)
@@ -259,7 +259,7 @@ bool get_connectivity_matrix(tipl::io::program_option<show_progress>& po,
             auto at = handle->get_atlas(roi_file_name);
             if(!at.get())
             {
-                show_progress() << "ERROR: " << handle->error_msg << std::endl;
+                tipl::out() << "ERROR: " << handle->error_msg << std::endl;
                 return false;
             }
             data.set_atlas(at,handle);
@@ -269,13 +269,13 @@ bool get_connectivity_matrix(tipl::io::program_option<show_progress>& po,
         {
             if(!std::filesystem::exists(roi_file_name))
             {
-                show_progress() << "ERROR: cannot open file " << roi_file_name << std::endl;
+                tipl::out() << "ERROR: cannot open file " << roi_file_name << std::endl;
                 return false;
             }
 
             if(QString(roi_file_name.c_str()).toLower().endsWith("txt")) // a roi list
             {
-                show_progress() << "reading " << roi_file_name << " as an ROI list" << std::endl;
+                tipl::out() << "reading " << roi_file_name << " as an ROI list" << std::endl;
                 std::string dir = QFileInfo(roi_file_name.c_str()).absolutePath().toStdString();
                 dir += "/";
                 std::ifstream in(roi_file_name.c_str());
@@ -291,18 +291,18 @@ bool get_connectivity_matrix(tipl::io::program_option<show_progress>& po,
                         fn = dir + line;
                     if(!region->LoadFromFile(fn.c_str()))
                     {
-                        show_progress() << "ERROR: failed to open file as a region:" << fn << std::endl;
+                        tipl::out() << "ERROR: failed to open file as a region:" << fn << std::endl;
                         return false;
                     }
                     regions.push_back(region);
                     data.region_name.push_back(QFileInfo(line.c_str()).baseName().toStdString());
                 }
                 data.set_regions(handle->dim,regions);
-                show_progress() << "a total of " << data.region_count << " regions are loaded." << std::endl;
+                tipl::out() << "a total of " << data.region_count << " regions are loaded." << std::endl;
             }
             else
             {
-                show_progress() << "reading " << roi_file_name << " as a NIFTI regioin file" << std::endl;
+                tipl::out() << "reading " << roi_file_name << " as a NIFTI regioin file" << std::endl;
                 std::vector<std::shared_ptr<ROIRegion> > regions;
                 std::vector<std::string> names;
                 if(!load_nii(po,handle,roi_file_name,regions,names))
@@ -319,19 +319,19 @@ bool get_connectivity_matrix(tipl::io::program_option<show_progress>& po,
             std::string connectivity_roi = roi_file_name;
             std::string connectivity_value = connectivity_value_list[k].toStdString();
             bool use_end_only = connectivity_type_list[j].toLower() == QString("end");
-            show_progress() << "count tracks by " << (use_end_only ? "ending":"passing") << std::endl;
-            show_progress() << "calculate matrix using " << connectivity_value << std::endl;
+            tipl::out() << "count tracks by " << (use_end_only ? "ending":"passing") << std::endl;
+            tipl::out() << "calculate matrix using " << connectivity_value << std::endl;
             QDir pwd = QDir::current();
             if(connectivity_value == "trk")
                 QDir::setCurrent(QFileInfo(output_name.c_str()).absolutePath());
             if(!data.calculate(handle,*(tract_model.get()),connectivity_value,use_end_only,t))
             {
-                show_progress() << "ERROR: " << data.error_msg << std::endl;
+                tipl::out() << "ERROR: " << data.error_msg << std::endl;
                 return false;
             }
             if(data.overlap_ratio > 0.5f)
             {
-                show_progress() << "the ROIs have a large overlapping area (ratio: "
+                tipl::out() << "the ROIs have a large overlapping area (ratio: "
                           << data.overlap_ratio << "). The network measure calculated may not be reliable" << std::endl;
             }
             if(connectivity_value == "trk")
@@ -351,21 +351,21 @@ bool get_connectivity_matrix(tipl::io::program_option<show_progress>& po,
             if(connectivity_output.find("matrix") != std::string::npos)
             {
                 std::string matrix = file_name_stat + ".connectivity.mat";
-                show_progress() << "export connectivity matrix to " << matrix << std::endl;
+                tipl::out() << "export connectivity matrix to " << matrix << std::endl;
                 data.save_to_file(matrix.c_str());
             }
 
             if(connectivity_output.find("connectogram") != std::string::npos)
             {
                 std::string connectogram = file_name_stat + ".connectogram.txt";
-                show_progress() << "export connectogram to " << connectogram << std::endl;
+                tipl::out() << "export connectogram to " << connectogram << std::endl;
                 data.save_to_connectogram(connectogram.c_str());
             }
 
             if(connectivity_output.find("measure") != std::string::npos)
             {
                 std::string measure = file_name_stat + ".network_measures.txt";
-                show_progress() << "export network measures to " << measure << std::endl;
+                tipl::out() << "export network measures to " << measure << std::endl;
                 std::string report;
                 data.network_property(report);
                 std::ofstream out(measure.c_str());
@@ -382,23 +382,23 @@ extern std::vector<std::string> fib_template_list;
 std::shared_ptr<fib_data> cmd_load_fib(std::string file_name)
 {
     std::shared_ptr<fib_data> handle(new fib_data);
-    show_progress() << "loading " << file_name << "..." <<std::endl;
+    tipl::out() << "loading " << file_name << "..." <<std::endl;
     if(file_name.length() == 1 && file_name[0] >= '0' && file_name[0] <= '5')
         file_name = fib_template_list[file_name[0]-'0'];
     if(!std::filesystem::exists(file_name))
     {
-        show_progress() << file_name << " does not exist. terminating..." << std::endl;
+        tipl::out() << file_name << " does not exist. terminating..." << std::endl;
         return std::shared_ptr<fib_data>();
     }
     if (!handle->load_from_file(file_name.c_str()))
     {
-        show_progress() << "ERROR:" << handle->error_msg << std::endl;
+        tipl::out() << "ERROR:" << handle->error_msg << std::endl;
         return std::shared_ptr<fib_data>();
     }
     return handle;
 }
 
-bool load_region(tipl::io::program_option<show_progress>& po,std::shared_ptr<fib_data> handle,
+bool load_region(tipl::io::program_option<tipl::out>& po,std::shared_ptr<fib_data> handle,
                  ROIRegion& roi,const std::string& region_text)
 {
     QStringList str_list = QString(region_text.c_str()).split(",");// splitting actions
@@ -414,7 +414,7 @@ bool load_region(tipl::io::program_option<show_progress>& po,std::shared_ptr<fib
             file_name = file_name.substr(0,pos);
         }
     }
-    show_progress() << "load " << (region_name.empty() ? std::string("volume"):region_name) << " from " << file_name << std::endl;
+    tipl::out() << "load " << (region_name.empty() ? std::string("volume"):region_name) << " from " << file_name << std::endl;
 
     if(QString(file_name.c_str()).endsWith(".nii.gz") ||
        QString(file_name.c_str()).endsWith(".nii"))
@@ -438,7 +438,7 @@ bool load_region(tipl::io::program_option<show_progress>& po,std::shared_ptr<fib
                 }
             if(!found)
             {
-                show_progress() << "ERROR: cannot find " << region_name << " in the NIFTI file." << std::endl;
+                tipl::out() << "ERROR: cannot find " << region_name << " in the NIFTI file." << std::endl;
                 return false;
             }
         }
@@ -450,14 +450,14 @@ bool load_region(tipl::io::program_option<show_progress>& po,std::shared_ptr<fib
             std::vector<tipl::vector<3,short> > points;
             if(!handle->get_atlas_roi(file_name,region_name,points))
             {
-                show_progress() << "ERROR: " << handle->error_msg << std::endl;
+                tipl::out() << "ERROR: " << handle->error_msg << std::endl;
                 return false;
             }
             roi.add_points(std::move(points));
         }
         else
         {
-            show_progress() << "ERROR: invalid region assignment " << file_name << std::endl;
+            tipl::out() << "ERROR: invalid region assignment " << file_name << std::endl;
             return false;
         }
     }
@@ -465,37 +465,37 @@ bool load_region(tipl::io::program_option<show_progress>& po,std::shared_ptr<fib
     // now perform actions
     for(int i = 1;i < str_list.size();++i)
     {
-        show_progress() << str_list[i].toStdString() << " applied." << std::endl;
+        tipl::out() << str_list[i].toStdString() << " applied." << std::endl;
         roi.perform(str_list[i].toStdString());
     }
     if(roi.region.empty())
-        show_progress() << "WARNING: " << file_name << " is an empty region file" << std::endl;
+        tipl::out() << "WARNING: " << file_name << " is an empty region file" << std::endl;
 
     return true;
 }
 
-int trk_post(tipl::io::program_option<show_progress>& po,
+int trk_post(tipl::io::program_option<tipl::out>& po,
              std::shared_ptr<fib_data> handle,
              std::shared_ptr<TractModel> tract_model,
              std::string tract_file_name,bool output_track)
 {
-    progress prog("post-tracking analysis");
+    tipl::progress prog("post-tracking analysis");
     if(tract_model->get_visible_track_count() == 0)
     {
-        show_progress() << "No tract generated for further processing" << std::endl;
+        tipl::out() << "No tract generated for further processing" << std::endl;
         return 0;
     }
 
     if (po.has("delete_repeat"))
     {
-        show_progress() << "deleting repeat tracks..." << std::endl;
+        tipl::out() << "deleting repeat tracks..." << std::endl;
         float distance = po.get("delete_repeat",float(1));
         tract_model->delete_repeated(distance);
-        show_progress() << "repeat tracks with distance smaller than " << distance <<" voxel distance are deleted" << std::endl;
+        tipl::out() << "repeat tracks with distance smaller than " << distance <<" voxel distance are deleted" << std::endl;
     }
     if(po.has("trim"))
     {
-        show_progress() << "trimming tracks..." << std::endl;
+        tipl::out() << "trimming tracks..." << std::endl;
         int trim = po.get("trim",int(1));
         for(int i = 0;i < trim;++i)
             tract_model->trim();
@@ -509,15 +509,15 @@ int trk_post(tipl::io::program_option<show_progress>& po,
             CustomSliceModel new_slice(handle.get());
             if(!new_slice.load_slices(po.get("ref")))
             {
-                show_progress() << "ERROR: reading ref image file" << std::endl;
+                tipl::out() << "ERROR: reading ref image file" << std::endl;
                 return 1;
             }
             new_slice.wait();
             new_slice.update_transform();
-            show_progress() << "applying linear registration." << std::endl;
-            show_progress() << new_slice.T[0] << " " << new_slice.T[1] << " " << new_slice.T[2] << " " << new_slice.T[3] << std::endl;
-            show_progress() << new_slice.T[4] << " " << new_slice.T[5] << " " << new_slice.T[6] << " " << new_slice.T[7] << std::endl;
-            show_progress() << new_slice.T[8] << " " << new_slice.T[9] << " " << new_slice.T[10] << " " << new_slice.T[11] << std::endl;
+            tipl::out() << "applying linear registration." << std::endl;
+            tipl::out() << new_slice.T[0] << " " << new_slice.T[1] << " " << new_slice.T[2] << " " << new_slice.T[3] << std::endl;
+            tipl::out() << new_slice.T[4] << " " << new_slice.T[5] << " " << new_slice.T[6] << " " << new_slice.T[7] << std::endl;
+            tipl::out() << new_slice.T[8] << " " << new_slice.T[9] << " " << new_slice.T[10] << " " << new_slice.T[11] << std::endl;
             if(!tract_model->save_transformed_tracts_to_file(tract_file_name.c_str(),new_slice.dim,new_slice.vs,new_slice.invT,false))
                 failed = true;
         }
@@ -527,7 +527,7 @@ int trk_post(tipl::io::program_option<show_progress>& po,
 
         if(failed)
         {
-            show_progress() << "ERROR: cannot save tracks as " << tract_file_name << ". Please check write permission, directory, and disk space." << std::endl;
+            tipl::out() << "ERROR: cannot save tracks as " << tract_file_name << ". Please check write permission, directory, and disk space." << std::endl;
             return 1;
         }
     }
@@ -539,29 +539,29 @@ int trk_post(tipl::io::program_option<show_progress>& po,
         int method = 0,count = 0,detail = 0;
         std::string name;
         in >> method >> count >> detail >> name;
-        show_progress() << "cluster method: " << method << std::endl;
-        show_progress() << "cluster count: " << count << std::endl;
-        show_progress() << "cluster resolution (if method is 0) : " << detail << " mm" << std::endl;
-        show_progress() << "run clustering." << std::endl;
+        tipl::out() << "cluster method: " << method << std::endl;
+        tipl::out() << "cluster count: " << count << std::endl;
+        tipl::out() << "cluster resolution (if method is 0) : " << detail << " mm" << std::endl;
+        tipl::out() << "run clustering." << std::endl;
         tract_model->run_clustering(uint8_t(method),uint32_t(count),detail);
         std::ofstream out(tract_file_name + "." + name);
-        show_progress() << "cluster label saved to " << name << std::endl;
+        tipl::out() << "cluster label saved to " << name << std::endl;
         std::copy(tract_model->get_cluster_info().begin(),tract_model->get_cluster_info().end(),std::ostream_iterator<int>(out," "));
     }
 
     if(po.has(("native_track")) && !tract_model->save_tracts_in_native_space(handle,po.get("native_track").c_str()))
     {
-        show_progress() << "ERROR: failed to save file to " << po.get("native_track") << std::endl;
+        tipl::out() << "ERROR: failed to save file to " << po.get("native_track") << std::endl;
         return 1;
     }
     if(po.has(("template_track")) && !tract_model->save_tracts_in_template_space(handle,po.get("template_track").c_str()))
     {
-        show_progress() << "ERROR: failed to save file to " << po.get("template_track") << std::endl;
+        tipl::out() << "ERROR: failed to save file to " << po.get("template_track") << std::endl;
         return 1;
     }
     if(po.has(("end_point")) && !tract_model->save_end_points(po.get("end_point").c_str()))
     {
-        show_progress() << "ERROR: failed to save file to " << po.get("end_point") << std::endl;
+        tipl::out() << "ERROR: failed to save file to " << po.get("end_point") << std::endl;
         return 1;
     }
     if(po.has(("end_point1")) || po.has(("end_point2")))
@@ -573,12 +573,12 @@ int trk_post(tipl::io::program_option<show_progress>& po,
         end2.add_points(std::move(points2));
         if(po.has(("end_point1")) && !end1.save_to_file(po.get("end_point1").c_str()))
         {
-            show_progress() << "ERROR: failed to save file to " << po.get("end_point1") << std::endl;
+            tipl::out() << "ERROR: failed to save file to " << po.get("end_point1") << std::endl;
             return 1;
         }
         if(po.has(("end_point2")) && !end2.save_to_file(po.get("end_point2").c_str()))
         {
-            show_progress() << "ERROR: failed to save file to " << po.get("end_point2") << std::endl;
+            tipl::out() << "ERROR: failed to save file to " << po.get("end_point2") << std::endl;
             return 1;
         }
     }
@@ -593,7 +593,7 @@ int trk_post(tipl::io::program_option<show_progress>& po,
     return 0;
 }
 
-bool load_roi(tipl::io::program_option<show_progress>& po,std::shared_ptr<fib_data> handle,std::shared_ptr<RoiMgr> roi_mgr)
+bool load_roi(tipl::io::program_option<tipl::out>& po,std::shared_ptr<fib_data> handle,std::shared_ptr<RoiMgr> roi_mgr)
 {
     const int total_count = 18;
     char roi_names[total_count][5] = {"roi","roi2","roi3","roi4","roi5","roa","roa2","roa3","roa4","roa5","end","end2","seed","ter","ter2","ter3","ter4","ter5"};
@@ -620,10 +620,10 @@ bool load_roi(tipl::io::program_option<show_progress>& po,std::shared_ptr<fib_da
     }
     if(po.has("track_id"))
     {
-        show_progress() << "Consider using action atk for automatic fiber tracking" << std::endl;
+        tipl::out() << "Consider using action atk for automatic fiber tracking" << std::endl;
         if(!handle->load_track_atlas())
         {
-            show_progress() << handle->error_msg << std::endl;
+            tipl::out() << handle->error_msg << std::endl;
             return false;
         }
         std::string name = po.get("track_id");
@@ -641,18 +641,18 @@ bool load_roi(tipl::io::program_option<show_progress>& po,std::shared_ptr<fib_da
         }
         if(roi_mgr->track_id >= handle->tractography_name_list.size())
         {
-            show_progress() << "cannot find " << name << " in " << handle->tractography_atlas_file_name << std::endl;
+            tipl::out() << "cannot find " << name << " in " << handle->tractography_atlas_file_name << std::endl;
             return false;
         }
         roi_mgr->use_auto_track = true;
         roi_mgr->tolerance_dis_in_icbm152_mm = po.get("tolerance",16.0f);
-        show_progress() << "set target track: " << handle->tractography_name_list[roi_mgr->track_id] << std::endl;
+        tipl::out() << "set target track: " << handle->tractography_name_list[roi_mgr->track_id] << std::endl;
     }
     return true;
 }
 
-int trk(tipl::io::program_option<show_progress>& po,std::shared_ptr<fib_data> handle);
-int trk(tipl::io::program_option<show_progress>& po)
+int trk(tipl::io::program_option<tipl::out>& po,std::shared_ptr<fib_data> handle);
+int trk(tipl::io::program_option<tipl::out>& po)
 {
     try{
         std::shared_ptr<fib_data> handle = cmd_load_fib(po.get("source"));
@@ -662,18 +662,18 @@ int trk(tipl::io::program_option<show_progress>& po)
     }
     catch(std::exception const&  ex)
     {
-        show_progress() << "program terminated due to exception:" << ex.what() << std::endl;
+        tipl::out() << "program terminated due to exception:" << ex.what() << std::endl;
     }
     catch(...)
     {
-        show_progress() << "program terminated due to unkown exception" << std::endl;
+        tipl::out() << "program terminated due to unkown exception" << std::endl;
     }
     return 0;
 }
 
-void setup_trk_param(std::shared_ptr<fib_data> handle,ThreadData& tracking_thread,tipl::io::program_option<show_progress>& po)
+void setup_trk_param(std::shared_ptr<fib_data> handle,ThreadData& tracking_thread,tipl::io::program_option<tipl::out>& po)
 {
-    progress prog("tracking parameters:");
+    tipl::progress prog("tracking parameters:");
     tracking_thread.param.default_otsu = po.get("otsu_threshold",tracking_thread.param.default_otsu);
     tracking_thread.param.threshold = po.get("fa_threshold",tracking_thread.param.threshold);
     tracking_thread.param.dt_threshold = po.get("dt_threshold",po.has("dt_threshold_index") ? 0.2f : tracking_thread.param.dt_threshold);
@@ -705,13 +705,13 @@ void setup_trk_param(std::shared_ptr<fib_data> handle,ThreadData& tracking_threa
         tracking_thread.param.set_code(po.get("parameter_id"));
 }
 extern std::vector<std::string> fa_template_list;
-int trk(tipl::io::program_option<show_progress>& po,std::shared_ptr<fib_data> handle)
+int trk(tipl::io::program_option<tipl::out>& po,std::shared_ptr<fib_data> handle)
 {
     if (po.has("threshold_index"))
     {
         if(!handle->dir.set_tracking_index(po.get("threshold_index")))
         {
-            show_progress() << "ERROR: cannot find the index" << std::endl;
+            tipl::out() << "ERROR: cannot find the index" << std::endl;
             return 1;
         }
     }
@@ -736,14 +736,14 @@ int trk(tipl::io::program_option<show_progress>& po,std::shared_ptr<fib_data> ha
                         if(po.get("source").find(name) != std::string::npos ||
                            po.get("other_slices").find(name) != std::string::npos)
                         {
-                            show_progress() << "found subject's demographics: " << line << std::endl;
+                            tipl::out() << "found subject's demographics: " << line << std::endl;
                             found = true;
                             handle->demo = line.substr(name.length()+1);
                         }
                     }
                     if(!found)
                     {
-                        show_progress() << "ERROR: cannot find subject in " << subject_demo << ". Please make sure that the FIB or NIFTI file name includs subject's id." << std::endl;
+                        tipl::out() << "ERROR: cannot find subject in " << subject_demo << ". Please make sure that the FIB or NIFTI file name includs subject's id." << std::endl;
                         return 1;
                     }
                 }
@@ -757,10 +757,10 @@ int trk(tipl::io::program_option<show_progress>& po,std::shared_ptr<fib_data> ha
         auto metric_j = handle->get_name_index(po.get("dt_metric2"));
         if(metric_i == handle->view_item.size() || metric_j == handle->view_item.size())
         {
-            show_progress() << "ERROR: invalid dt_metric" << std::endl;
-            show_progress() << "Available metrics are the following:" << std::endl;
+            tipl::out() << "ERROR: invalid dt_metric" << std::endl;
+            tipl::out() << "Available metrics are the following:" << std::endl;
             for(size_t i = 0;i < handle->view_item.size();++i)
-                show_progress() << handle->view_item[i].name << std::endl;
+                tipl::out() << handle->view_item[i].name << std::endl;
             return 1;
         }
         handle->set_dt_index(std::make_pair(metric_i,metric_j),po.get("dt_threshold_type",0));
@@ -768,7 +768,7 @@ int trk(tipl::io::program_option<show_progress>& po,std::shared_ptr<fib_data> ha
     if(po.has("template"))
     {
         for(size_t id = 0;id < fa_template_list.size();++id)
-            show_progress() << "template " << id << ":" << std::filesystem::path(fa_template_list[id]).stem() << std::endl;
+            tipl::out() << "template " << id << ":" << std::filesystem::path(fa_template_list[id]).stem() << std::endl;
         handle->set_template_id(po.get("template",size_t(0)));
     }
 
@@ -776,14 +776,14 @@ int trk(tipl::io::program_option<show_progress>& po,std::shared_ptr<fib_data> ha
     setup_trk_param(handle,tracking_thread,po);
 
     {
-        progress prog("setting up regions");
+        tipl::progress prog("setting up regions");
         if(!load_roi(po,handle,tracking_thread.roi_mgr))
             return 1;
     }
 
     std::shared_ptr<TractModel> tract_model(new TractModel(handle));
     {
-        progress prog("start fiber tracking");
+        tipl::progress prog("start fiber tracking");
         tracking_thread.run(uint32_t(po.get("thread_count",int(std::thread::hardware_concurrency()))),true);
         tract_model->report += tracking_thread.report.str();
         if(po.has("report"))
@@ -800,32 +800,32 @@ int trk(tipl::io::program_option<show_progress>& po,std::shared_ptr<fib_data> ha
     {
         for(int i = 0;i < po.get("refine",1);++i)
             tract_model->trim();
-        show_progress() << "refine tracking result..." << std::endl;
-        show_progress() << "convert tracks to seed regions" << std::endl;
+        tipl::out() << "refine tracking result..." << std::endl;
+        tipl::out() << "convert tracks to seed regions" << std::endl;
         tracking_thread.roi_mgr->seeds.clear();
         std::vector<tipl::vector<3,short> > points;
         tract_model->to_voxel(points);
         tract_model->clear();
         tracking_thread.roi_mgr->setRegions(points,3/*seed*/,"refine seeding region");
 
-        show_progress() << "restart tracking..." << std::endl;
+        tipl::out() << "restart tracking..." << std::endl;
         tracking_thread.run(po.get("thread_count",uint32_t(std::thread::hardware_concurrency())),true);
         tracking_thread.fetchTracks(tract_model.get());
-        show_progress() << "finished tracking." << std::endl;
+        tipl::out() << "finished tracking." << std::endl;
 
         if(tract_model->get_visible_track_count() == 0)
         {
-            show_progress() << "no tract generated. Terminating..." << std::endl;
+            tipl::out() << "no tract generated. Terminating..." << std::endl;
             return 0;
         }
     }
-    show_progress() << tract_model->get_visible_track_count() << " tracts are generated using " << tracking_thread.get_total_seed_count() << " seeds."<< std::endl;
+    tipl::out() << tract_model->get_visible_track_count() << " tracts are generated using " << tracking_thread.get_total_seed_count() << " seeds."<< std::endl;
 
     if(tracking_thread.param.tip_iteration)
     {
         tracking_thread.apply_tip(tract_model.get());
-        show_progress() << tract_model->get_deleted_track_count() << " tracts are removed by pruning." << std::endl;
-        show_progress() << "Total tract count after pruning is " << tract_model->get_visible_track_count() << " tracts." << std::endl;
+        tipl::out() << tract_model->get_deleted_track_count() << " tracts are removed by pruning." << std::endl;
+        tipl::out() << "Total tract count after pruning is " << tract_model->get_visible_track_count() << " tracts." << std::endl;
     }
 
     std::string tract_file_name = po.get("source")+".tt.gz";

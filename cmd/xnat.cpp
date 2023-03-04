@@ -2,7 +2,7 @@
 #include <xnat_dialog.h>
 
 
-int xnat(tipl::io::program_option<show_progress>& po)
+int xnat(tipl::io::program_option<tipl::out>& po)
 {
     std::string output = po.get("output");
     if(QFileInfo(output.c_str()).isDir() && output.back() != '\\' && output.back() != '/')
@@ -14,7 +14,7 @@ int xnat(tipl::io::program_option<show_progress>& po)
             output = "data.txt";
         if(!QString(output.c_str()).endsWith(".txt"))
             output += ".txt";
-        show_progress() << "writing output to " << output << std::endl;
+        tipl::out() << "writing output to " << output << std::endl;
         xnat_connection.get_experiments_info(po.get("source","https://central.xnat.org/"),po.get("auth"));
     }
     else
@@ -23,10 +23,10 @@ int xnat(tipl::io::program_option<show_progress>& po)
             output = QDir::current().path().toStdString();
         if(!QFileInfo(output.c_str()).isDir())
         {
-            show_progress() << "ERROR: please specify output directory using --output" << std::endl;
+            tipl::out() << "ERROR: please specify output directory using --output" << std::endl;
             return 1;
         }
-        show_progress() << "writing output to " << output << std::endl;
+        tipl::out() << "writing output to " << output << std::endl;
         xnat_connection.get_scans_data(po.get("source","https://central.xnat.org/"),po.get("auth"),po.get("id"),output);
     }
 
@@ -35,18 +35,18 @@ int xnat(tipl::io::program_option<show_progress>& po)
 
     if (xnat_connection.has_error())
     {
-        show_progress() << "ERROR: " << xnat_connection.error_msg << std::endl;
+        tipl::out() << "ERROR: " << xnat_connection.error_msg << std::endl;
         return 1;
     }
 
     if(!po.has("id"))
     {
-        show_progress() << "write experiment info to " << output << std::endl;
+        tipl::out() << "write experiment info to " << output << std::endl;
         std::ofstream(output) << xnat_connection.result;
     }
     else
     {
-        show_progress() << "data saved to " << output << std::endl;
+        tipl::out() << "data saved to " << output << std::endl;
     }
     return 0;
 }

@@ -3,7 +3,6 @@
 #include <QFileInfo>
 #include <QDateTime>
 #include "reg.hpp"
-#include "prog_interface_static_link.h"
 #include "fib_data.hpp"
 #include "tessellated_icosahedron.hpp"
 #include "tract_model.hpp"
@@ -14,7 +13,7 @@ bool odf_data::read(gz_mat_read& mat_reader)
 {
     if(!odf_map.empty())
         return true;
-    progress prog("reading odf data");
+    tipl::progress prog("reading odf data");
     unsigned int row,col;
     const float* fa0 = nullptr;
     tipl::shape<3> dim;
@@ -51,14 +50,14 @@ bool odf_data::read(gz_mat_read& mat_reader)
         return false;
     }
 
-    show_progress() << "odf count: " << odf_count << std::endl;
+    tipl::out() << "odf count: " << odf_count << std::endl;
 
     size_t mask_count = 0;
     {
         for(size_t i = 0;i < dim.size();++i)
             if(fa0[i] != 0.0f)
                 ++mask_count;
-        show_progress() << "mask count: " << mask_count << std::endl;
+        tipl::out() << "mask count: " << mask_count << std::endl;
         if(odf_count < mask_count)
         {
             error_msg = "incomplete ODF data";
@@ -96,7 +95,7 @@ bool odf_data::read(gz_mat_read& mat_reader)
     }
     if(prog.aborted())
         return false;
-    show_progress() << "odf count (excluding 0): " << odf_count << std::endl;
+    tipl::out() << "odf count (excluding 0): " << odf_count << std::endl;
     if(odf_count != mask_count)
     {
         error_msg = "ODF count does not match the mask";
@@ -105,6 +104,7 @@ bool odf_data::read(gz_mat_read& mat_reader)
     return true;
 }
 
+extern bool has_gui;
 tipl::const_pointer_image<3,float> item::get_image(void)
 {
     if(!image_ready)
@@ -116,21 +116,20 @@ tipl::const_pointer_image<3,float> item::get_image(void)
         // delay read routine
         unsigned int row,col;
         const float* buf = nullptr;
-        bool has_gui_ = has_gui;
-        has_gui = false;
+        tipl::show_prog = false;
         if (!mat_reader->read(image_index,row,col,buf))
         {
-            show_progress() << "ERROR: reading " << name << std::endl;
+            tipl::out() << "ERROR: reading " << name << std::endl;
             dummy.resize(image_data.shape());
             image_data = tipl::make_image(&*dummy.begin(),dummy.shape());
         }
         else
         {
-            show_progress() << name << " loaded" << std::endl;
+            tipl::out() << name << " loaded" << std::endl;
             mat_reader->in->flush();
             image_data = tipl::make_image(buf,image_data.shape());
         }
-        has_gui = has_gui_;
+        tipl::show_prog = has_gui;
         image_ready = true;
         set_scale(image_data.begin(),image_data.end());
     }
@@ -158,7 +157,7 @@ void fiber_directions::check_index(unsigned int index)
 
 bool fiber_directions::add_data(gz_mat_read& mat_reader)
 {
-    progress prog("loading image volumes");
+    tipl::progress prog("loading image volumes");
     unsigned int row,col;
 
     // odf_vertices
@@ -414,7 +413,7 @@ bool read_fib_mat_with_idx(const char* file_name,gz_mat_read& mat_reader)
 }
 bool fib_data::load_from_file(const char* file_name)
 {
-    progress prog("open FIB file");
+    tipl::progress prog("open FIB file");
     tipl::image<3> I;
     gz_nifti header;
     fib_file_name = file_name;
@@ -458,7 +457,7 @@ bool fib_data::load_from_file(const char* file_name)
 
             view_item.push_back(item("fiber",dir.fa[0],dim));
             match_template();
-            show_progress() << "NIFTI file loaded" << std::endl;
+            tipl::out() << "NIFTI file loaded" << std::endl;
             return true;
         }
         else
@@ -506,7 +505,7 @@ bool fib_data::load_from_file(const char* file_name)
             dir.index_data.push_back(dir.fa);
             view_item.push_back(item("fiber",dir.fa[0],dim));
             match_template();
-            show_progress() << "NIFTI file loaded" << std::endl;
+            tipl::out() << "NIFTI file loaded" << std::endl;
             return true;
         }
         else
@@ -555,7 +554,7 @@ bool fib_data::load_from_file(const char* file_name)
         dir.index_name[0] = "image";
         view_item[0].name = "image";
         trackable = false;
-        show_progress() << "image file loaded" << std::endl;
+        tipl::out() << "image file loaded" << std::endl;
         return true;
     }
     if(!QFileInfo(file_name).exists())
@@ -571,7 +570,7 @@ bool fib_data::load_from_file(const char* file_name)
 
     if(!load_from_mat())
         return false;
-    show_progress() << "FIB file loaded" << std::endl;
+    tipl::out() << "FIB file loaded" << std::endl;
     return true;
 }
 bool fib_data::save_mapping(const std::string& index_name,const std::string& file_name)
@@ -663,7 +662,7 @@ bool is_human_size(tipl::shape<3> dim,tipl::vector<3> vs)
 }
 bool fib_data::load_from_mat(void)
 {
-    show_progress() << "loading fiber and image data" << std::endl;
+    tipl::out() << "loading fiber and image data" << std::endl;
     mat_reader.read("report",report);
     mat_reader.read("steps",steps);
     if (!mat_reader.read("dimension",dim))
@@ -688,10 +687,10 @@ bool fib_data::load_from_mat(void)
         error_msg = dir.error_msg;
         return false;
     }
-    show_progress() << "initiating data" << std::endl;
+    tipl::out() << "initiating data" << std::endl;
     if(has_high_reso)
     {
-        show_progress() << "reading original mat file" << std::endl;
+        tipl::out() << "reading original mat file" << std::endl;
         if(!high_reso->load_from_mat())
         {
             error_msg = high_reso->error_msg;
@@ -752,7 +751,7 @@ bool fib_data::load_from_mat(void)
             if(QString(fib_file_name.c_str()).contains(QFileInfo(fa_template_list[index].c_str()).baseName(),Qt::CaseInsensitive))
             {
                 matched_template_id = index;
-                show_progress() << "matched template (by file name): " <<
+                tipl::out() << "matched template (by file name): " <<
                                    QFileInfo(fa_template_list[index].c_str()).baseName().toStdString() << std::endl;
                 set_template_id(matched_template_id);
                 return true;
@@ -770,14 +769,14 @@ bool fib_data::load_from_mat(void)
             if(std::abs(dim[0]-Itdim[0]*Itvs[0]/vs[0]) < 4.0f)
             {
                 matched_template_id = index;
-                show_progress() << "matched template (by image size): " <<
+                tipl::out() << "matched template (by image size): " <<
                                    QFileInfo(fa_template_list[index].c_str()).baseName().toStdString() << std::endl;
                 set_template_id(matched_template_id);
                 return true;
             }
         }
 
-        show_progress() << "No matched template, use default:" << QFileInfo(fa_template_list[matched_template_id].c_str()).baseName().toStdString() << std::endl;
+        tipl::out() << "No matched template, use default:" << QFileInfo(fa_template_list[matched_template_id].c_str()).baseName().toStdString() << std::endl;
         set_template_id(matched_template_id);
         return true;
     }
@@ -810,7 +809,7 @@ bool resample_mat(gz_mat_read& mat_reader,float resolution)
 {
     // get all data in delayed read condition
     {
-        progress prog("reading data");
+        tipl::progress prog("reading data");
         for(size_t i = 0;prog(i,mat_reader.size());++i)
         {
             auto& mat = mat_reader[i];
@@ -831,7 +830,7 @@ bool resample_mat(gz_mat_read& mat_reader,float resolution)
     T.sr[4] = resolution/vs[1];
     T.sr[8] = resolution/vs[0];
 
-    progress prog("resampling");
+    tipl::progress prog("resampling");
     size_t p = 0;
     tipl::par_for(mat_reader.size(),[&](unsigned int i)
     {
@@ -1222,7 +1221,7 @@ bool fib_data::load_template(void)
     while((!is_human_data && template_I.width()/3 > int(dim[0])) ||
           (is_human_data && template_vs[0]*2.0f <= int(vs[0])))
     {
-        show_progress() << "downsampling template by 2x to match subject resolution" << std::endl;
+        tipl::out() << "downsampling template by 2x to match subject resolution" << std::endl;
         template_vs *= 2.0f;
         template_to_mni[0] *= 2.0f;
         template_to_mni[5] *= 2.0f;
@@ -1319,7 +1318,7 @@ bool fib_data::load_track_atlas()
             return false;
         tract_atlas_jacobian = float((s2t[0]-s2t[1]).length());
         // warp tractography atlas to subject space
-        progress prog_("warping atlas tracks to subject space");
+        tipl::progress prog_("warping atlas tracks to subject space");
         auto& tract_data = track_atlas->get_tracts();
         std::vector<float> min_length(tractography_name_list.size()),max_length(tractography_name_list.size());
         auto T = tipl::from_space(track_atlas->trans_to_mni).to(template_to_mni);
@@ -1502,7 +1501,7 @@ bool fib_data::map_to_mni(bool background)
             if(size_t(t2s_col)*size_t(t2s_row) == template_I.size()*3 &&
                size_t(s2t_col)*size_t(s2t_row) == dim.size()*3)
             {
-                show_progress() << "loading mapping fields from " << output_file_name << std::endl;
+                tipl::out() << "loading mapping fields from " << output_file_name << std::endl;
                 t2s.clear();
                 t2s.resize(template_I.shape());
                 s2t.clear();
@@ -1514,7 +1513,7 @@ bool fib_data::map_to_mni(bool background)
             }
         }
     }
-    progress prog_("running normalization");
+    tipl::progress prog_("running normalization");
     prog = 0;
     bool terminated = false;
     auto lambda = [this,output_file_name,&terminated]()
@@ -1565,7 +1564,7 @@ bool fib_data::map_to_mni(bool background)
 
         tipl::displacement_to_mapping(dis,t2s,T);
         tipl::compose_mapping(Is,t2s,Iss);
-        show_progress() << "R2:" << tipl::correlation(Iss.begin(),Iss.end(),It.begin()) << std::endl;
+        tipl::out() << "R2:" << tipl::correlation(Iss.begin(),Iss.end(),It.begin()) << std::endl;
 
         s2t.resize(dim);
         tipl::inv_displacement_to_mapping(inv_dis,s2t,T);
@@ -1581,10 +1580,10 @@ bool fib_data::map_to_mni(bool background)
             out.write("from_vs",vs);
             out.write("steps",steps);
             prog = 4;
-            show_progress() << "calculating template to subject warp field";
+            tipl::out() << "calculating template to subject warp field";
             out.write("to2from",&t2s[0][0],3,t2s.size());
             prog = 5;
-            show_progress() << "calculating subject to template warp field";
+            tipl::out() << "calculating subject to template warp field";
             out.write("from2to",&s2t[0][0],3,s2t.size());
         }
 
@@ -1595,20 +1594,18 @@ bool fib_data::map_to_mni(bool background)
     {
         std::thread t(lambda);
         while(prog_(prog,6))
-        {
             std::this_thread::yield();
-            if(prog_.aborted())
-            {
-                error_msg = "aborted.";
-                terminated = true;
-            }
+        if(prog_.aborted())
+        {
+            error_msg = "aborted.";
+            terminated = true;
         }
         t.join();
         return !prog_.aborted();
     }
     else
     {
-        show_progress() << "Subject normalization to MNI space." << std::endl;
+        tipl::out() << "Subject normalization to MNI space." << std::endl;
         lambda();
     }
     return true;
@@ -1666,7 +1663,7 @@ std::shared_ptr<atlas> fib_data::get_atlas(const std::string atlas_name)
 
 bool fib_data::get_atlas_roi(const std::string& atlas_name,const std::string& region_name,std::vector<tipl::vector<3,short> >& points)
 {
-    show_progress() << "loading " << region_name << " from " << atlas_name << std::endl;
+    tipl::out() << "loading " << region_name << " from " << atlas_name << std::endl;
     if(region_name.empty())
     {
         error_msg = "not a valid region assignment";

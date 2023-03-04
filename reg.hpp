@@ -1,7 +1,6 @@
 #ifndef REG_HPP
 #define REG_HPP
 #include <iostream>
-#include "prog_interface_static_link.h"
 #include "TIPL/tipl.hpp"
 extern bool has_cuda;
 void cdm2_cuda(const tipl::image<3>& It,
@@ -59,8 +58,8 @@ inline float linear_with_cc(const tipl::image<3,float>& from,
     float result = tipl::reg::linear_mr<tipl::reg::correlation>(from,from_vs,to,new_to_vs,arg,tipl::reg::reg_type(reg_type),[&](void){return terminated;},0.01,bound);
     if(new_to_vs != to_vs)
         tipl::transformation_matrix<float>(arg,from,from_vs,to,new_to_vs).to_affine_transform(arg,from,from_vs,to,to_vs);
-    show_progress() << "R:" << -result << std::endl;
-    show_progress() << "T:" << std::endl;
+    tipl::out() << "R:" << -result << std::endl;
+    tipl::out() << "T:" << std::endl;
     return -result;
 }
 
@@ -142,7 +141,7 @@ inline size_t linear_with_mi(const tipl::image<3,float>& from,
     tipl::affine_transform<float> arg;
     size_t result = linear_with_mi(from,from_vs,to,to_vs,arg,reg_type,terminated,bound);
     T = tipl::transformation_matrix<float>(arg,from.shape(),from_vs,to.shape(),to_vs);
-    show_progress() << T << std::endl;
+    tipl::out() << T << std::endl;
     return result;
 }
 
@@ -158,7 +157,7 @@ inline size_t linear_with_cc(const tipl::image<3,float>& from,
     tipl::affine_transform<float> arg;
     size_t result = linear_with_cc(from,from_vs,to,to_vs,arg,reg_type,terminated,bound);
     T = tipl::transformation_matrix<float>(arg,from.shape(),from_vs,to.shape(),to_vs);
-    show_progress() << T << std::endl;
+    tipl::out() << T << std::endl;
     return result;
 }
 

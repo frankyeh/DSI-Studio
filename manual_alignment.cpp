@@ -48,7 +48,7 @@ manual_alignment::manual_alignment(QWidget *parent,
         to.swap(new_to);
         to_vs *= 2.0f;
         to_downsample *= 0.5f;
-        show_progress() << "downsampling template image by 2 dim=" << to.shape() << std::endl;
+        tipl::out() << "downsampling template image by 2 dim=" << to.shape() << std::endl;
     }
     while(to.size() < from.size()/8)
     {
@@ -57,7 +57,7 @@ manual_alignment::manual_alignment(QWidget *parent,
         from.swap(new_from);
         from_vs *= 2.0f;
         from_downsample *= 2.0f;
-        show_progress() << "downsampling subject image by 2 dim=" << from.shape() << std::endl;
+        tipl::out() << "downsampling subject image by 2 dim=" << from.shape() << std::endl;
     }
 
     warped_from.resize(to.shape());
@@ -248,8 +248,8 @@ tipl::transformation_matrix<float> manual_alignment::get_iT(void)
         tipl::multiply_constant(result.sr,result.sr+9,to_downsample);
     if(from_downsample != 1.0f)
         tipl::multiply_constant(result.data,result.data+12,from_downsample);
-    show_progress() << "iT:" << std::endl;
-    show_progress() << result << std::endl;
+    tipl::out() << "iT:" << std::endl;
+    tipl::out() << result << std::endl;
     return result;
 }
 void manual_alignment::param_changed()

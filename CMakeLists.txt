@@ -61,7 +61,6 @@ set(DSI_STUDIO_HEADERS mainwindow.h
     tracking/tract/tracttablewidget.h
     qcolorcombobox.h
     libs/tracking/tracking_thread.hpp
-    libs/prog_interface_static_link.h
     libs/mapping/atlas.hpp
     view_image.h
     libs/gzip_interface.hpp
@@ -114,7 +113,6 @@ set(DSI_STUDIO_SOURCES
     mainwindow.cpp
     dicom/dicom_parser.cpp
     dicom/dwi_header.cpp
-    libs/utility/prog_interface.cpp
     libs/dsi/dsi_interface_imp.cpp
     libs/dsi/gqi_process.cpp
     libs/tracking/tract_cluster.cpp
@@ -201,6 +199,7 @@ if(CUDA_FOUND)
     set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -allow-unsupported-compiler --extended-lambda")
     set(CMAKE_CUDA_RUNTIME_LIBRARY "Static")
     target_compile_definitions(dsi_studio PUBLIC TIPL_USE_CUDA)
+    target_compile_definitions(dsi_studio PUBLIC TIPL_USE_QT)
     if(${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.23.0")
         set_property(TARGET dsi_studio PROPERTY CUDA_ARCHITECTURES all)
     else()

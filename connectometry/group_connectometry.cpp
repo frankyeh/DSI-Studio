@@ -116,10 +116,8 @@ group_connectometry::group_connectometry(QWidget *parent,std::shared_ptr<group_c
 
     if(!check_quality.empty())
     {
-        if(has_gui)
-            QMessageBox::information(this,"Warning",check_quality.c_str());
-        else
-            show_progress() << check_quality << std::endl;
+        QMessageBox::information(this,"Warning",check_quality.c_str());
+        tipl::out() << check_quality << std::endl;
     }
     ui->subject_demo->clear();
     ui->subject_demo->setColumnCount(1);
@@ -327,9 +325,9 @@ void group_connectometry::calculate_FDR(void)
     if(vbc->prog < 100)
         return;
 
-    // progress = 100
+    // tipl::progress = 100
     {
-        progress prog("output distribution image");
+        tipl::progress prog("output distribution image");
         delete null_pos_chart_view;
         delete null_neg_chart_view;
         delete fdr_chart_view;

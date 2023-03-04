@@ -11,7 +11,6 @@
 #include <cmath>
 #include "roi.hpp"
 #include "tract_model.hpp"
-#include "prog_interface_static_link.h"
 #include "fib_data.hpp"
 #include "gzip_interface.hpp"
 #include "mapping/atlas.hpp"
@@ -77,7 +76,7 @@ class TinyTrack{
         gz_mat_write out(file_name);
         if (!out)
             return false;
-        progress prog("save trajectories to ",std::filesystem::path(file_name).filename().string().c_str());
+        tipl::progress prog("save trajectories to ",std::filesystem::path(file_name).filename().string().c_str());
 
         out.write("dimension",geo);
         out.write("voxel_size",vs);
@@ -94,7 +93,7 @@ class TinyTrack{
         std::vector<size_t> buf_size(track32.size());
 
         {
-            progress prog("compressing trajectories");
+            tipl::progress prog("compressing trajectories");
             size_t p = 0;
             tipl::par_for(track32.size(),[&](size_t i)
             {
@@ -153,7 +152,7 @@ class TinyTrack{
                 return false;
         }
         {
-            progress prog("saving file");
+            tipl::progress prog("saving file");
             for(size_t block = 0,cur_track_block = 0;prog(cur_track_block,track32.size());++block)
             {
                 // record write position for each track
@@ -201,7 +200,7 @@ class TinyTrack{
                                tipl::matrix<4,4>& trans_to_mni,
                                std::string& report,std::string& parameter_id,unsigned int& color)
     {
-        progress prog_("loading ",std::filesystem::path(file_name).filename().c_str());
+        tipl::progress prog_("loading ",std::filesystem::path(file_name).filename().c_str());
         gz_mat_read in;
         prepare_idx(file_name,in.in);
         if (!in.load_from_file(file_name))
@@ -307,7 +306,7 @@ struct TrackVis
                 std::string& info,
                 tipl::vector<3> vs)
     {
-        progress prog("loading ",std::filesystem::path(file_name).filename().string().c_str());
+        tipl::progress prog("loading ",std::filesystem::path(file_name).filename().string().c_str());
         tipl::io::gz_istream in;
         if (!in.open(file_name))
             return false;
@@ -359,7 +358,7 @@ struct TrackVis
                              const std::string& info,
                              unsigned int color)
     {
-        progress prog("saving ",std::filesystem::path(file_name).filename().string().c_str());
+        tipl::progress prog("saving ",std::filesystem::path(file_name).filename().string().c_str());
         tipl::io::gz_ostream out;
         if (!out.open(file_name))
             return false;
@@ -1235,7 +1234,7 @@ bool TractModel::save_all(const char* file_name_,
 {    
     if(all.empty())
         return false;
-    progress prog("saving ",std::filesystem::path(file_name_).filename().string().c_str());
+    tipl::progress prog("saving ",std::filesystem::path(file_name_).filename().string().c_str());
     for(unsigned int index = 0;index < all.size();++index)
         all[index]->saved = true;
     std::string file_name(file_name_);
@@ -1401,7 +1400,7 @@ bool TractModel::save_data_to_mat(const char* file_name,int index,const char* da
     MatWriter mat_writer(file_name);
     if(!mat_writer.opened())
         return false;
-    progress prog_("saving");
+    tipl::progress prog_("saving");
         for (unsigned int i = 0;prog(i,tract_data.size());++i)
     {
         unsigned int count;

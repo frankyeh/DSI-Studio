@@ -62,7 +62,7 @@ void AtlasDialog::on_add_atlas_clicked()
         QMessageBox::critical(this,"ERROR",handle->atlas_list[atlas_index]->error_msg.c_str());
         return;
     }
-    progress prog("adding regions");
+    tipl::progress prog("adding regions");
     w->regionWidget->begin_update();
     if(indexes.count() == ui->region_list->model()->rowCount()) // select all
         w->regionWidget->add_all_regions_from_atlas(handle->atlas_list[atlas_index]);

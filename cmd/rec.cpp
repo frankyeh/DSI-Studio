@@ -18,17 +18,17 @@ bool get_src(std::string filename,ImageModel& src2,std::string& error_msg);
 /**
  perform reconstruction
  */
-int rec(tipl::io::program_option<show_progress>& po)
+int rec(tipl::io::program_option<tipl::out>& po)
 {
     std::string file_name = po.get("source");
     ImageModel src;
     if (!src.load_from_file(file_name.c_str()))
     {
-        show_progress() << "ERROR: " << src.error_msg << std::endl;
+        tipl::out() << "ERROR: " << src.error_msg << std::endl;
         return 1;
     }
     {
-        progress prog("reconstruction parameters:");
+        tipl::progress prog("reconstruction parameters:");
         src.voxel.method_id = uint8_t(po.get("method",4));
         src.voxel.odf_resolving = po.get("odf_resolving",int(0));
         src.voxel.output_odf = po.get("record_odf",int(0));
@@ -41,7 +41,7 @@ int rec(tipl::io::program_option<show_progress>& po)
         src.voxel.param[1] = po.get("param1",src.voxel.param[1]);
         src.voxel.param[2] = po.get("param2",src.voxel.param[2]);
         for(size_t id = 0;id < fa_template_list.size();++id)
-            show_progress() << "template " << id << ":" << std::filesystem::path(fa_template_list[id]).stem() << std::endl;
+            tipl::out() << "template " << id << ":" << std::filesystem::path(fa_template_list[id]).stem() << std::endl;
         src.voxel.template_id = size_t(po.get("template",src.voxel.template_id));
 
         if(src.voxel.method_id == 7) // is qsdr
@@ -49,36 +49,36 @@ int rec(tipl::io::program_option<show_progress>& po)
 
     }
     {
-        progress prog("specify mask");
+        tipl::progress prog("specify mask");
         std::string mask_file = po.get("mask","1");
 
         if(mask_file == "1")
             src.voxel.mask = 1;
         else
         {
-            show_progress() << "reading mask file: " << mask_file << std::endl;
+            tipl::out() << "reading mask file: " << mask_file << std::endl;
             gz_nifti nii;
             if(!nii.load_from_file(mask_file) || !nii.toLPS(src.voxel.mask))
             {
-                show_progress() << "ERROR:" << nii.error_msg << std::endl;
+                tipl::out() << "ERROR:" << nii.error_msg << std::endl;
                 return 1;
             }
             if(src.voxel.mask.shape() != src.voxel.dim)
             {
-                show_progress() << "ERROR: The mask dimension is different. terminating..." << std::endl;
+                tipl::out() << "ERROR: The mask dimension is different. terminating..." << std::endl;
                 return 1;
             }
         }
     }
     {
-        progress prog("preprocessing");
+        tipl::progress prog("preprocessing");
         if(po.get("preprocessing",0))
             src.preprocessing();
         else
         {
             if(po.has("rev_pe") && !src.run_topup_eddy(po.get("rev_pe")))
             {
-                show_progress() << "ERROR:" << src.error_msg << std::endl;
+                tipl::out() << "ERROR:" << src.error_msg << std::endl;
                 return 1;
             }
             if(po.get("motion_correction",0))
@@ -87,7 +87,7 @@ int rec(tipl::io::program_option<show_progress>& po)
     }
 
     {
-        progress prog("additional processing steps");
+        tipl::progress prog("additional processing steps");
         if (po.has("remove"))
         {
             std::vector<int> remove_index;
@@ -99,7 +99,7 @@ int rec(tipl::io::program_option<show_progress>& po)
                     QStringList range = str.split(":");
                     if(range.size() != 2)
                     {
-                        show_progress() << "ERROR: invalid index specified at --remove: " << str.toStdString() << std::endl;
+                        tipl::out() << "ERROR: invalid index specified at --remove: " << str.toStdString() << std::endl;
                         return 1;
                     }
                     int from = range[0].toInt();
@@ -115,7 +115,7 @@ int rec(tipl::io::program_option<show_progress>& po)
 
             if(remove_index.empty())
             {
-                show_progress() << "ERROR: invalid index specified at --remove " << std::endl;
+                tipl::out() << "ERROR: invalid index specified at --remove " << std::endl;
                 return 1;
             }
             std::sort(remove_index.begin(),remove_index.end(),std::greater<int>());
@@ -127,11 +127,11 @@ int rec(tipl::io::program_option<show_progress>& po)
                 removed_index += std::to_string(i);
                 removed_index += " ";
             }
-            show_progress() << removed_index << std::endl;
-            show_progress() << "current DWI count: " << src.src_bvalues.size() << std::endl;
+            tipl::out() << removed_index << std::endl;
+            tipl::out() << "current DWI count: " << src.src_bvalues.size() << std::endl;
             std::ostringstream bvalue_list;
             std::copy(src.src_bvalues.begin(),src.src_bvalues.end(),std::ostream_iterator<float>(bvalue_list," "));
-            show_progress() << "current DWI b values: " << bvalue_list.str() << std::endl;
+            tipl::out() << "current DWI b values: " << bvalue_list.str() << std::endl;
         }
         if (po.has("cmd"))
         {
@@ -142,7 +142,7 @@ int rec(tipl::io::program_option<show_progress>& po)
                 if(!src.command(run_list[0].toStdString(),
                                     run_list.count() > 1 ? run_list[1].toStdString():std::string()))
                 {
-                    show_progress() << "ERROR:" << src.error_msg << std::endl;
+                    tipl::out() << "ERROR:" << src.error_msg << std::endl;
                     return 1;
                 }
             }
@@ -156,7 +156,7 @@ int rec(tipl::io::program_option<show_progress>& po)
                 gz_nifti in;
                 if(!in.load_from_file(file_name.c_str()))
                 {
-                    show_progress() << "failed to read " << file_name << std::endl;
+                    tipl::out() << "failed to read " << file_name << std::endl;
                     return 1;
                 }
                 tipl::image<3,unsigned char> I;
@@ -164,9 +164,9 @@ int rec(tipl::io::program_option<show_progress>& po)
                 in.get_voxel_size(vs);
                 in >> I;
                 if(po.has("rotate_to"))
-                    show_progress() << "running rigid body transformation" << std::endl;
+                    tipl::out() << "running rigid body transformation" << std::endl;
                 else
-                    show_progress() << "running affine transformation" << std::endl;
+                    tipl::out() << "running affine transformation" << std::endl;
 
                 tipl::transformation_matrix<float> T;
                 bool terminated = false;
@@ -176,7 +176,7 @@ int rec(tipl::io::program_option<show_progress>& po)
 
                 linear_with_mi(I,vs,src.dwi,src.voxel.vs,T,po.has("rotate_to") ? tipl::reg::rigid_body : tipl::reg::affine,terminated);
 
-                show_progress() << "DWI rotated." << std::endl;
+                tipl::out() << "DWI rotated." << std::endl;
                 src.rotate(I.shape(),vs,T);
             }
             else
@@ -191,7 +191,7 @@ int rec(tipl::io::program_option<show_progress>& po)
         std::string new_src_file = po.has("save_src") ? po.get("save_src") : po.get("save_nii");
         if(!src.save_to_file(new_src_file.c_str()))
         {
-            show_progress() << "ERROR:" << src.error_msg << std::endl;
+            tipl::out() << "ERROR:" << src.error_msg << std::endl;
             return -1;
         }
         return 0;
@@ -205,7 +205,7 @@ int rec(tipl::io::program_option<show_progress>& po)
             QStringList name_value = file_list[i].split(":");
             if(name_value.size() == 1)
             {
-                show_progress() << "invalid parameter: " << file_list[i].toStdString() << std::endl;
+                tipl::out() << "invalid parameter: " << file_list[i].toStdString() << std::endl;
                 return 1;
             }
             if(name_value.size() == 3) // handle windows directory with drive letter
@@ -213,7 +213,7 @@ int rec(tipl::io::program_option<show_progress>& po)
                 name_value[1] += ":";
                 name_value[1] += name_value[2];
             }
-            show_progress() << name_value[0].toStdString() << ":" << name_value[1].toStdString() << std::endl;
+            tipl::out() << name_value[0].toStdString() << ":" << name_value[1].toStdString() << std::endl;
             if(!add_other_image(&src,name_value[0],name_value[1]))
                 return 1;
         }
@@ -229,7 +229,7 @@ int rec(tipl::io::program_option<show_progress>& po)
     }
     if (!src.reconstruction())
     {
-        show_progress() << "ERROR:" << src.error_msg << std::endl;
+        tipl::out() << "ERROR:" << src.error_msg << std::endl;
         return 1;
     }
     return 0;

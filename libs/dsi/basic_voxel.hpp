@@ -4,7 +4,7 @@
 #include "TIPL/tipl.hpp"
 #include "tessellated_icosahedron.hpp"
 #include "gzip_interface.hpp"
-#include "prog_interface_static_link.h"
+
 
 struct ImageModel;
 struct VoxelParam;
@@ -165,7 +165,7 @@ public:
     template<typename ...Ts>
     bool init_process(void)
     {
-        progress prog("initializing");
+        tipl::progress prog("initializing");
         process_list.clear();
         add_process<Ts...>();
         init();

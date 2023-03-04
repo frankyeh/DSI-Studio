@@ -9,7 +9,7 @@
 #include "ui_filebrowser.h"
 #include "dicom/dicom_parser.h"
 #include "gzip_interface.hpp"
-#include "prog_interface_static_link.h"
+
 void show_view(QGraphicsScene& scene,QImage I);
 FileBrowser::FileBrowser(QWidget *parent) :
     QMainWindow(parent),

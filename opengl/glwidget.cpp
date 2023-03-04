@@ -96,7 +96,7 @@ void GLWidget::clean_up(void)
     makeCurrent();
     slice_texture.clear();
     doneCurrent();
-    //show_progress() << __FUNCTION__ << " " << __FILE__ << std::endl;
+    //tipl::out() << __FUNCTION__ << " " << __FILE__ << std::endl;
 }
 
 
@@ -142,22 +142,22 @@ bool check_error(const char* line)
         switch(code)
         {
         case GL_INVALID_ENUM:
-            show_progress() << "GL_INVALID_ENUM at " << line << std::endl;
+            tipl::out() << "GL_INVALID_ENUM at " << line << std::endl;
             break;
         case GL_INVALID_VALUE:
-            show_progress() << "GL_INVALID_VALUE at " << line << std::endl;
+            tipl::out() << "GL_INVALID_VALUE at " << line << std::endl;
             break;
         case GL_INVALID_OPERATION:
-            show_progress() << "GL_INVALID_OPERATION at " << line << std::endl;
+            tipl::out() << "GL_INVALID_OPERATION at " << line << std::endl;
             break;
         case GL_STACK_OVERFLOW:
-            show_progress() << "GL_STACK_OVERFLOW at " << line << std::endl;
+            tipl::out() << "GL_STACK_OVERFLOW at " << line << std::endl;
             break;
         case GL_STACK_UNDERFLOW:
-            show_progress() << "GL_STACK_UNDERFLOW at " << line << std::endl;
+            tipl::out() << "GL_STACK_UNDERFLOW at " << line << std::endl;
             break;
         case GL_OUT_OF_MEMORY:
-            show_progress() << "GL_OUT_OF_MEMORY at " << line << std::endl;
+            tipl::out() << "GL_OUT_OF_MEMORY at " << line << std::endl;
             break;
         }
     }
@@ -426,10 +426,10 @@ void GLWidget::initializeGL()
         QMessageBox::critical(this,"ERROR","System has no OpenGL support. 3D visualization is disabled. Please update or install graphic card driver.");
         return;
     }
-    show_progress() << "openGL information" << std::endl;
-    show_progress() << "version:" << glGetString(GL_VERSION) << std::endl;
-    show_progress() << "vender:" << glGetString(GL_VENDOR) << std::endl;
-    show_progress() << "renderer:" << glGetString(GL_RENDERER) << std::endl;
+    tipl::out() << "openGL information" << std::endl;
+    tipl::out() << "version:" << glGetString(GL_VERSION) << std::endl;
+    tipl::out() << "vender:" << glGetString(GL_VENDOR) << std::endl;
+    tipl::out() << "renderer:" << glGetString(GL_RENDERER) << std::endl;
 
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_NORMALIZE);
@@ -2193,7 +2193,7 @@ void GLWidget::get3View(QImage& I,unsigned int type)
         I = all;
     }
 }
-
+extern bool has_gui;
 bool GLWidget::command(QString cmd,QString param,QString param2)
 {
     if(cmd == "save_camera")
@@ -2500,7 +2500,7 @@ bool GLWidget::command(QString cmd,QString param,QString param2)
             param = QFileInfo(cur_tracking_window.windowTitle()).completeBaseName()+".rotation_movie.avi";
         if(QFileInfo(param).suffix() == "avi")
         {
-            progress prog("save video");
+            tipl::progress prog("save video");
             int ow = width(),oh = height();
             tipl::io::avi avi;
             #ifndef __APPLE__
@@ -2524,14 +2524,14 @@ bool GLWidget::command(QString cmd,QString param,QString param2)
         }
         else
         {
-            progress prog_("save image");
+            tipl::progress prog_("save image");
             float angle = (param2.isEmpty()) ? 1 : param2.toFloat();
             for(float index = 0;prog_(index,360);index += angle)
             {
                 QString file_name = QFileInfo(param).absolutePath()+"//"+
                         QFileInfo(param).completeBaseName()+"_"+QString::number(index)+"."+
                         QFileInfo(param).suffix();
-                show_progress() << file_name.toStdString() << std::endl;
+                tipl::out() << file_name.toStdString() << std::endl;
                 rotate_angle(angle,0,1.0,0.0);
                 QImage I = grab_image();
                 I.save(file_name);

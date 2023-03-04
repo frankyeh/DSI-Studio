@@ -322,7 +322,7 @@ void TractTableWidget::load_tracts(QStringList filenames)
 {
     if(filenames.empty())
         return;
-    progress prog("load tracts");
+    tipl::progress prog("load tracts");
     for(unsigned int index = 0;prog(index,filenames.size());++index)
     {
         QString filename = filenames[index];
@@ -345,12 +345,12 @@ void TractTableWidget::load_tracts(QStringList filenames)
         if(tract_models.back()->trans_to_mni[0] != 0.0f &&
            tract_models.back()->trans_to_mni != cur_tracking_window.handle->trans_to_mni)
         {
-            show_progress() << "tractography is from a different space" << std::endl;
-            show_progress() << "host space=" << std::endl;
-            show_progress() << cur_tracking_window.handle->trans_to_mni << std::endl;
-            show_progress() << "tractography space= " << std::endl;
-            show_progress() << tract_models.back()->trans_to_mni << std::endl;
-            show_progress() << "apply transformation to tracts" << std::endl;
+            tipl::out() << "tractography is from a different space" << std::endl;
+            tipl::out() << "host space=" << std::endl;
+            tipl::out() << cur_tracking_window.handle->trans_to_mni << std::endl;
+            tipl::out() << "tractography space= " << std::endl;
+            tipl::out() << tract_models.back()->trans_to_mni << std::endl;
+            tipl::out() << "apply transformation to tracts" << std::endl;
             tipl::matrix<4,4> T = tipl::from_space(tract_models.back()->trans_to_mni).
                                     to(cur_tracking_window.handle->trans_to_mni);
             auto& loaded_tract_data = tract_models.back()->get_tracts();
@@ -409,7 +409,7 @@ void TractTableWidget::load_tract_label(QString filename)
 
 void TractTableWidget::check_all(void)
 {
-    progress prog("rendering tracts",true);
+    tipl::progress prog("rendering tracts",true);
     for(int row = 0;prog(row,rowCount());++row)
     {
         item(row,0)->setCheckState(Qt::Checked);
@@ -651,7 +651,7 @@ void TractTableWidget::recognize_rename(void)
         QMessageBox::critical(this,"ERROR",cur_tracking_window.handle->error_msg.c_str());
         return;
     }
-    progress prog("Recognize and rename");
+    tipl::progress prog("Recognize and rename");
     for(unsigned int index = 0;prog(index,tract_models.size());++index)
         if(item(int(index),0)->checkState() == Qt::Checked)
         {
@@ -1097,7 +1097,7 @@ bool TractTableWidget::command(QString cmd,QString param,QString param2)
 {
     if(cmd == "save_all_tracts_to_dir")
     {
-        progress prog_("save files");
+        tipl::progress prog_("save files");
         auto selected_tracts = get_checked_tracks();
         auto selected_tracts_rendering = get_checked_tracks_rendering();
         for(size_t index = 0;index < selected_tracts.size();++index)
@@ -1199,7 +1199,7 @@ bool TractTableWidget::command(QString cmd,QString param,QString param2)
 
             return false;
         }
-        progress prog("rendering tracts");
+        tipl::progress prog("rendering tracts");
         for(unsigned int index = 0;prog(index,tract_models.size()) && in;++index)
             if(item(int(index),0)->checkState() == Qt::Checked)
             {
@@ -1400,7 +1400,7 @@ void TractTableWidget::move_down(void)
 
 void TractTableWidget::delete_tract(void)
 {
-    if(progress::is_running())
+    if(tipl::progress::is_running())
     {
         QMessageBox::critical(this,"ERROR","Please wait for the termination of data processing");
         return;
@@ -1411,7 +1411,7 @@ void TractTableWidget::delete_tract(void)
 
 void TractTableWidget::delete_all_tract(void)
 {
-    if(progress::is_running())
+    if(tipl::progress::is_running())
     {
         QMessageBox::critical(this,"ERROR","Please wait for the termination of data processing");
         return;
@@ -1452,7 +1452,7 @@ void TractTableWidget::resample_step_size(void)
 
 void TractTableWidget::delete_by_length(void)
 {
-    progress prog_("filtering tracks");
+    tipl::progress prog_("filtering tracks");
 
     float threshold = 60;
     bool ok;

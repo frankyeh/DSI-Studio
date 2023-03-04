@@ -141,7 +141,7 @@ void group_connectometry_analysis::run_permutation_multithread(unsigned int id,u
 }
 void group_connectometry_analysis::save_result(void)
 {
-    progress prog("save correlational tractography results");
+    tipl::progress prog("save correlational tractography results");
     for(size_t index = 0;index < tip;++index)
     {
         neg_null_corr_track->trim();
@@ -203,12 +203,12 @@ void group_connectometry_analysis::save_result(void)
     }
 
     {
-        progress prog("deleting repeated tracts");
+        tipl::progress prog("deleting repeated tracts");
         inc_track->delete_repeated(1.0);
         dec_track->delete_repeated(1.0);
     }
     {
-        progress prog("saving correlational tractography");
+        tipl::progress prog("saving correlational tractography");
         if(inc_track->get_visible_track_count())
             inc_track->save_tracts_to_file((output_file_name+".inc.tt.gz").c_str());
         else
@@ -221,7 +221,7 @@ void group_connectometry_analysis::save_result(void)
     }
 
     {
-        progress p2("save statistics.fib.gz");
+        tipl::progress p2("save statistics.fib.gz");
         gz_mat_write mat_write((output_file_name+".t_statistics.fib.gz").c_str());
         for(unsigned int i = 0;i < handle->mat_reader.size();++i)
         {
@@ -320,7 +320,7 @@ void group_connectometry_analysis::calculate_adjusted_qa(stat_model& info)
                 out << info.variables[i] << " ";
             }
         if(has_partial_correlation)
-            show_progress() << "adjusting " << handle->db.index_name << " using partial correlation of " << out.str() << std::endl;
+            tipl::out() << "adjusting " << handle->db.index_name << " using partial correlation of " << out.str() << std::endl;
     }
 
     // population_value_adjusted is a transpose of handle->db.subject_qa
@@ -381,7 +381,7 @@ void group_connectometry_analysis::calculate_spm(connectometry_result& data,stat
 
 void group_connectometry_analysis::run_permutation(unsigned int thread_count,unsigned int permutation_count)
 {
-    progress prog("run permutation test");
+    tipl::progress prog("run permutation test");
     clear();
 
     {
@@ -456,7 +456,7 @@ void group_connectometry_analysis::run_permutation(unsigned int thread_count,uns
     // setup output file name
     if(output_file_name.empty())
         output_file_name = get_file_post_fix();
-    show_progress() << "output file prefix: " << output_file_name << std::endl;
+    tipl::out() << "output file prefix: " << output_file_name << std::endl;
 
     size_t max_dimension = tipl::max_value(handle->dim)*2;
 
@@ -490,7 +490,7 @@ void group_connectometry_analysis::run_permutation(unsigned int thread_count,uns
 
         stat_model info;
         info.resample(*model.get(),false,false,0);
-        show_progress() << "preliminary run to determine seed count" << std::endl;
+        tipl::out() << "preliminary run to determine seed count" << std::endl;
         calculate_spm(*spm_map.get(),info);
         preproces = 0;
         seed_count = 1000;
@@ -508,7 +508,7 @@ void group_connectometry_analysis::run_permutation(unsigned int thread_count,uns
                 break;
             seed_count *= 2;
         }
-        show_progress() << "seed count: " << seed_count << std::endl;
+        tipl::out() << "seed count: " << seed_count << std::endl;
     }
 
     for(unsigned int index = 0;index < thread_count;++index)
@@ -685,7 +685,7 @@ void group_connectometry_analysis::generate_report(std::string& output)
 
     if(prog == 100 && !no_tractogram)
     {
-        progress p3("create tract figures");
+        tipl::progress p3("create tract figures");
         std::shared_ptr<fib_data> new_data(new fib_data);
         *(new_data.get()) = *(handle);
         tracking_window* new_mdi = new tracking_window(nullptr,new_data);

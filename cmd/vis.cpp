@@ -7,14 +7,15 @@
 std::shared_ptr<fib_data> cmd_load_fib(std::string file_name);
 void get_filenames_from(const std::string param,std::vector<std::string>& filenames);
 extern bool has_gui;
-int vis(tipl::io::program_option<show_progress>& po)
+int vis(tipl::io::program_option<tipl::out>& po)
 {
     std::shared_ptr<fib_data> new_handle = cmd_load_fib(po.get("source"));
     if(!new_handle.get())
         return 1;
     bool has_gui_ = has_gui;
     has_gui = false;
-    show_progress() << "starting gui" << std::endl;
+    tipl::show_prog = false;
+    tipl::out() << "starting gui" << std::endl;
     tracking_window* new_mdi = new tracking_window(nullptr,new_handle);
     new_mdi->setAttribute(Qt::WA_DeleteOnClose);
     new_mdi->setWindowTitle(po.get("source").c_str());
@@ -37,7 +38,7 @@ int vis(tipl::io::program_option<show_progress>& po)
         QStringList param = cmd[index].split(',');
         if(!new_mdi->command(param[0],param.size() > 1 ? param[1]:QString(),param.size() > 2 ? param[2]:QString()))
         {
-            show_progress() << "ERROR: " << new_mdi->error_msg << std::endl;
+            tipl::out() << "ERROR: " << new_mdi->error_msg << std::endl;
             break;
         }
     }
@@ -46,6 +47,6 @@ int vis(tipl::io::program_option<show_progress>& po)
         new_mdi->close();
         delete new_mdi;
     }
-    has_gui = has_gui_;
+    tipl::show_prog = has_gui = has_gui_;
     return 0;
 }

@@ -228,7 +228,7 @@ void db_window::on_actionSave_DB_as_triggered()
                            "Database files (*db?fib.gz *fib.gz);;All files (*)");
     if (filename.isEmpty())
         return;
-    progress prog_("saving ",std::filesystem::path(filename.toStdString()).filename().string().c_str());
+    tipl::progress prog_("saving ",std::filesystem::path(filename.toStdString()).filename().string().c_str());
     if(!vbc->handle->db.demo.empty() && !vbc->handle->db.parse_demo())
         QMessageBox::information(this,"DSI Studio",
         QString("demographics not saved due to mismatch: ") + vbc->handle->db.error_msg.c_str());
@@ -275,7 +275,7 @@ void db_window::on_actionAdd_DB_triggered()
     for(int i =0;i < filenames.count();++i)
     {
         std::shared_ptr<fib_data> handle(new fib_data);
-        progress prog_("adding data");
+        tipl::progress prog_("adding data");
         if(!handle->load_from_file(filenames[i].toStdString().c_str()))
         {
             QMessageBox::critical(this,"ERROR",handle->error_msg.c_str());
@@ -356,7 +356,7 @@ void db_window::on_actionAll_Subjects_triggered()
                                 "");
     if(dir.isEmpty())
         return;
-    progress prog("exporting ",dir.toStdString().c_str());
+    tipl::progress prog("exporting ",dir.toStdString().c_str());
     for(size_t i = 0;prog(i,vbc->handle->db.subject_names.size());++i)
     {
         QString file_name = dir + "\\"+

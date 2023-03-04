@@ -4,7 +4,6 @@
 #include "TIPL/tipl.hpp"
 #include "dwi_header.hpp"
 #include "gzip_interface.hpp"
-#include "prog_interface_static_link.h"
 #include "image_model.hpp"
 void get_report_from_dicom(const tipl::io::dicom& header,std::string& report)
 {
@@ -69,7 +68,7 @@ bool DwiHeader::open(const char* filename)
         tipl::image<2,short> I;
         if(!get_compressed_image(header,I))
         {
-            show_progress() << "Unsupported transfer syntax:" << header.encoding << std::endl;
+            tipl::out() << "Unsupported transfer syntax:" << header.encoding << std::endl;
             return false;
         }
         if(I.size() == image.size())
@@ -301,7 +300,7 @@ if (sort_and_merge)
 {
 
     // merge files of the same bvec
-    progress prog_("Merge bvalue Files");
+    tipl::progress prog_("Merge bvalue Files");
     for (unsigned int i = 0;prog(i,dwi_files.size());++i)
     {
         unsigned int j = i + 1;
@@ -369,7 +368,7 @@ void correct_t2(std::vector<std::shared_ptr<DwiHeader> >& dwi_files)
     {
         std::vector<double> neg_inv_T2(geo.size());//-1/T2
         {
-            //progress prog_("Eliminating T2 effect");
+            //tipl::progress prog_("Eliminating T2 effect");
             for (tipl::pixel_index<3> index(geo);index < geo.size();++index)
             {
                 std::vector<float> te_samples;
@@ -495,7 +494,7 @@ extern std::string src_error_msg;
 bool DwiHeader::output_src(const char* di_file,std::vector<std::shared_ptr<DwiHeader> >& dwi_files,
                            int upsampling,bool sort_btable)
 {
-    progress prog("save ",QFileInfo(di_file).fileName().toStdString().c_str());
+    tipl::progress prog("save ",QFileInfo(di_file).fileName().toStdString().c_str());
     if(!has_b_table(dwi_files))
     {
         src_error_msg = "invalid b-table";

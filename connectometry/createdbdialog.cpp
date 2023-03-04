@@ -7,7 +7,6 @@
 #include "ui_createdbdialog.h"
 #include "fib_data.hpp"
 #include "connectometry/group_connectometry_analysis.h"
-#include "prog_interface_static_link.h"
 #include "image_model.hpp"
 
 extern std::vector<std::string> fib_template_list;
@@ -291,7 +290,7 @@ void CreateDBDialog::on_create_data_base_clicked()
                 return;
             }
 
-        progress prog_("creating database");
+        tipl::progress prog_("creating database");
         std::shared_ptr<group_connectometry_analysis> data(new group_connectometry_analysis);
 
         if(!data->create_database(template_fib))
@@ -306,10 +305,10 @@ void CreateDBDialog::on_create_data_base_clicked()
         }
         data->handle->db.index_name = ui->index_of_interest->currentText().toStdString();
 
-        progress prog("reading data");
+        tipl::progress prog("reading data");
         for (unsigned int index = 0;prog(index,group.count());++index)
         {
-            show_progress() << QFileInfo(group[index]).baseName().toStdString() << std::endl;
+            tipl::out() << QFileInfo(group[index]).baseName().toStdString() << std::endl;
             if(!data->handle->db.add_subject_file(group[index].toStdString(),get_file_name(group[index]).toStdString()))
             {
                 QMessageBox::critical(this,"ERROR",data->handle->db.error_msg.c_str());

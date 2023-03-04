@@ -150,7 +150,7 @@ void RegionTableWidget::add_region_from_atlas(std::shared_ptr<atlas> at,unsigned
 }
 void RegionTableWidget::add_all_regions_from_atlas(std::shared_ptr<atlas> at)
 {
-    progress prog("add_all_regions_from_atlas");
+    tipl::progress prog("add_all_regions_from_atlas");
     std::vector<std::vector<tipl::vector<3,short> > > points;
     std::vector<std::string> labels;
     if(!cur_tracking_window.handle->get_atlas_all_roi(at,
@@ -267,7 +267,7 @@ bool RegionTableWidget::command(QString cmd,QString param,QString)
 {
     if(cmd == "save_all_regions_to_dir")
     {
-        progress prog("save files...");
+        tipl::progress prog("save files...");
         for(int index = 0;prog(index,rowCount());++index)
             if (item(index,0)->checkState() == Qt::Checked) // either roi roa end or seed
             {
@@ -528,25 +528,25 @@ void get_roi_label(QString file_name,std::map<int,std::string>& label_map,std::m
     label_map.clear();
     label_color.clear();
     QString base_name = QFileInfo(file_name).baseName();
-    show_progress() <<"looking for region label file" << std::endl;
+    tipl::out() <<"looking for region label file" << std::endl;
 
     QString label_file = QFileInfo(file_name).absolutePath()+"/"+base_name+".txt";
     if(QFileInfo(label_file).exists())
     {
         load_nii_label(label_file.toLocal8Bit().begin(),label_map);
-        show_progress() <<"label file loaded:" << label_file.toStdString() << std::endl;
+        tipl::out() <<"label file loaded:" << label_file.toStdString() << std::endl;
         return;
     }
     label_file = QFileInfo(file_name).absolutePath()+"/"+base_name+".json";
     if(QFileInfo(label_file).exists())
     {
         load_jason_label(label_file.toLocal8Bit().begin(),label_map);
-        show_progress() <<"jason file loaded:" << label_file.toStdString() << std::endl;
+        tipl::out() <<"jason file loaded:" << label_file.toStdString() << std::endl;
         return;
     }
     if(base_name.contains("aparc") || base_name.contains("aseg")) // FreeSurfer
     {
-        show_progress() <<"using freesurfer labels." << std::endl;
+        tipl::out() <<"using freesurfer labels." << std::endl;
         QFile data(":/data/FreeSurferColorLUT.txt");
         if (data.open(QIODevice::ReadOnly | QIODevice::Text))
         {
@@ -566,8 +566,9 @@ void get_roi_label(QString file_name,std::map<int,std::string>& label_map,std::m
             return;
         }
     }
-    show_progress() <<"no label file found. Use default ROI numbering." << std::endl;
+    tipl::out() <<"no label file found. Use default ROI numbering." << std::endl;
 }
+extern bool has_gui;
 bool load_nii(std::shared_ptr<fib_data> handle,
               const std::string& file_name,
               std::vector<std::pair<tipl::shape<3>,tipl::matrix<4,4> > >& transform_lookup,
@@ -576,7 +577,7 @@ bool load_nii(std::shared_ptr<fib_data> handle,
               std::string& error_msg,
               bool is_mni)
 {
-    progress prog("load NIFTI file");
+    tipl::progress prog("load NIFTI file");
     gz_nifti header;
     if (!header.load_from_file(file_name.c_str()))
     {
@@ -642,7 +643,7 @@ bool load_nii(std::shared_ptr<fib_data> handle,
     bool multiple_roi = value_list.size() > 1;
 
 
-    show_progress() << nifti_name << (multiple_roi ? " loaded as multiple ROI file":" loaded as single ROI file") << std::endl;
+    tipl::out() << nifti_name << (multiple_roi ? " loaded as multiple ROI file":" loaded as single ROI file") << std::endl;
 
     std::map<int,std::string> label_map;
     std::map<int,tipl::rgb> label_color;
@@ -656,7 +657,7 @@ bool load_nii(std::shared_ptr<fib_data> handle,
 
     if(from.shape() != handle->dim)
     {
-        show_progress() << "FIB file dimension: " << handle->dim << " voxel size: " << handle->vs << std::endl;
+        tipl::out() << "FIB file dimension: " << handle->dim << " voxel size: " << handle->vs << std::endl;
         if(handle->is_mni)
         {
             for(unsigned int index = 0;index < handle->view_item.size();++index)
@@ -664,21 +665,21 @@ bool load_nii(std::shared_ptr<fib_data> handle,
                 {
                     if(index && handle->view_item[index].native_geo == handle->view_item[index-1].native_geo)
                         continue;
-                    show_progress() << "FIB file native-space dimension: " << handle->view_item[index].native_geo
+                    tipl::out() << "FIB file native-space dimension: " << handle->view_item[index].native_geo
                                     << " (" << handle->view_item[index].name << ")" <<  std::endl;
                 }
         }
-        show_progress() << nifti_name << " dimension: " << from.shape() << " voxel size: " << vs << std::endl;
-        show_progress() << nifti_name << " has a different dimension from the FIB file. need transformation or warpping." << std::endl;
+        tipl::out() << nifti_name << " dimension: " << from.shape() << " voxel size: " << vs << std::endl;
+        tipl::out() << nifti_name << " has a different dimension from the FIB file. need transformation or warpping." << std::endl;
         if(handle->is_mni)
         {
             if(!is_mni)
             for(unsigned int index = 0;index < handle->view_item.size();++index)
                 if(handle->view_item[index].native_geo == from.shape())
                 {
-                    show_progress() << nifti_name << " has a dimension of " << from.shape() << ", matching the native space dimension of "
+                    tipl::out() << nifti_name << " has a dimension of " << from.shape() << ", matching the native space dimension of "
                                     << handle->view_item[index].name << std::endl;
-                    show_progress() << "warpping " << nifti_name << " from the native space to the template space." << std::endl;
+                    tipl::out() << "warpping " << nifti_name << " from the native space to the template space." << std::endl;
                     if(handle->get_native_position().empty())
                     {
                         error_msg = "FIB file is obsolete. Please reconstruct FIB file again to enable native-to-template warpping.";
@@ -696,11 +697,11 @@ bool load_nii(std::shared_ptr<fib_data> handle,
                     goto end;
                 }
             if(is_mni)
-                show_progress() << nifti_name << " is in the template space" << std::endl;
+                tipl::out() << nifti_name << " is in the template space" << std::endl;
             else
-                show_progress() << "assuming " << nifti_name << " is in the template space (please check)" << std::endl;
+                tipl::out() << "assuming " << nifti_name << " is in the template space (please check)" << std::endl;
 
-            show_progress() <<"applying " << nifti_name << "'s header srow matrix to align." << std::endl;
+            tipl::out() <<"applying " << nifti_name << "'s header srow matrix to align." << std::endl;
             to_diffusion_space = tipl::from_space(T).to(handle->trans_to_mni);
             need_trans = true;
             goto end;
@@ -709,7 +710,7 @@ bool load_nii(std::shared_ptr<fib_data> handle,
         {
             if(is_mni)
             {
-                show_progress() << "warpping " << nifti_name << " from the template space to the native space." << std::endl;
+                tipl::out() << "warpping " << nifti_name << " from the template space to the native space." << std::endl;
                 if(!handle->mni2sub<tipl::interpolation::nearest>(from,T))
                 {
                     error_msg = handle->error_msg;
@@ -721,7 +722,7 @@ bool load_nii(std::shared_ptr<fib_data> handle,
             for(unsigned int index = 0;index < transform_lookup.size();++index)
                 if(from.shape() == transform_lookup[index].first)
                 {
-                    show_progress() << "applying previous transformation." << std::endl;
+                    tipl::out() << "applying previous transformation." << std::endl;
                     to_diffusion_space = transform_lookup[index].second;
                     need_trans = true;
                     goto end;
@@ -780,7 +781,7 @@ bool load_nii(std::shared_ptr<fib_data> handle,
     std::vector<std::vector<tipl::vector<3,short> > > region_points(value_list.size());
     if(is_4d)
     {
-        progress prog_("loading");
+        tipl::progress prog_("loading");
         for(size_t region_index = 0;prog(region_index,region_points.size());++region_index)
         {
             header.toLPS(from);
@@ -814,7 +815,7 @@ bool load_nii(std::shared_ptr<fib_data> handle,
             if(!region_points[i].empty())
                 regions.back()->add_points(std::move(region_points[i]));
         }
-    show_progress() <<"a total of " << regions.size() << " regions are loaded." << std::endl;
+    tipl::out() <<"a total of " << regions.size() << " regions are loaded." << std::endl;
     if(regions.empty())
     {
         error_msg = "empty region file";
@@ -838,7 +839,7 @@ bool RegionTableWidget::load_multiple_roi_nii(QString file_name,bool is_mni)
     std::vector<std::vector<std::string> > names(files.size());
 
     {
-        progress prog("reading");
+        tipl::progress prog("reading");
         size_t p = 0;
         bool failed = false;
         tipl::par_for(files.size(),[&](unsigned int i)
@@ -886,7 +887,7 @@ bool RegionTableWidget::load_multiple_roi_nii(QString file_name,bool is_mni)
     tipl::aggregate_results(std::move(names),names[0]);
 
     {
-        progress prog("loading ROIs");
+        tipl::progress prog("loading ROIs");
         begin_update();
         for(uint32_t i = 0;prog(i,loaded_regions[0].size());++i)
             {
@@ -1001,7 +1002,7 @@ void RegionTableWidget::merge_all(void)
         return;
 
     tipl::image<3,unsigned char> mask(regions[merge_list[0]]->dim);
-    progress prog("merging regions",true);
+    tipl::progress prog("merging regions",true);
     size_t p = 0;
     tipl::par_for(merge_list.size(),[&](size_t index,unsigned int id)
     {
@@ -1172,7 +1173,7 @@ void RegionTableWidget::save_all_regions_to_4dnifti(void)
 
     tipl::shape<3> dim = checked_regions[0]->dim;
     tipl::image<4,unsigned char> multiple_I(tipl::shape<4>(dim[0],dim[1],dim[2],uint32_t(checked_regions.size())));
-    progress prog("aggregating regions");
+    tipl::progress prog("aggregating regions");
     size_t p = 0;
     tipl::par_for (checked_regions.size(),[&](unsigned int region_index)
     {
@@ -1467,7 +1468,7 @@ void RegionTableWidget::do_action(QString action)
 {
     if(regions.empty() || currentRow() < 0)
         return;
-    progress prog(action.toStdString().c_str(),true);
+    tipl::progress prog(action.toStdString().c_str(),true);
     std::vector<int> rows_to_be_updated;
     size_t roi_index = currentRow();
     auto checked_regions = get_checked_regions();
@@ -1504,7 +1505,7 @@ void RegionTableWidget::do_action(QString action)
                 A_labels.resize(handle->dim);
 
             {
-                show_progress() << "processing regions";
+                tipl::out() << "processing regions";
                 size_t prog_count = 0;
                 tipl::par_for(checked_regions.size(),[&](size_t r)
                 {
@@ -1564,7 +1565,7 @@ void RegionTableWidget::do_action(QString action)
                     tipl::aggregate_results(std::move(need_fill_ups),need_fill_up);
                 }
                 {
-                    show_progress() << "assign labels";
+                    tipl::out() << "assign labels";
                     size_t prog_count = 0;
                     tipl::par_for(need_fill_up.size(),[&](size_t i)
                     {
@@ -1597,7 +1598,7 @@ void RegionTableWidget::do_action(QString action)
                         A_labels[index.index()] = min_r;
                     });
                 }
-                progress prog("loading regions",true);
+                tipl::progress prog("loading regions",true);
                 size_t prog_count = 0;
                 tipl::par_for(checked_regions.size(),[&](size_t r)
                 {

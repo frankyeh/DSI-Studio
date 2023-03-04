@@ -4,7 +4,6 @@
 #include <iterator>
 #include <string>
 #include "TIPL/tipl.hpp"
-#include "prog_interface_static_link.h"
 #include "dicom/dwi_header.hpp"
 extern std::string src_error_msg;
 QStringList search_files(QString dir,QString filter);
@@ -13,7 +12,7 @@ bool load_bvec(const char* file_name,std::vector<double>& b_table,bool flip_by =
 bool parse_dwi(QStringList file_list,std::vector<std::shared_ptr<DwiHeader> >& dwi_files);
 void dicom2src(std::string dir_);
 bool nii2src_bids(QString dir,QString output_dir,std::string& error_msg);
-int src(tipl::io::program_option<show_progress>& po)
+int src(tipl::io::program_option<tipl::out>& po)
 {
     std::string source = po.get("source");
     QStringList file_list;
@@ -22,10 +21,10 @@ int src(tipl::io::program_option<show_progress>& po)
         std::string error_msg;
         if(nii2src_bids(source.c_str(),po.get("output",source).c_str(),error_msg))
             return 0;
-        show_progress() << "load files in directory " << source.c_str() << std::endl;
+        tipl::out() << "load files in directory " << source.c_str() << std::endl;
         if(po.get("recursive",0))
         {
-            show_progress() << "search recursively in the subdir" << std::endl;
+            tipl::out() << "search recursively in the subdir" << std::endl;
             dicom2src(source);
             return 0;
         }
@@ -38,7 +37,7 @@ int src(tipl::io::program_option<show_progress>& po)
             for (int index = 0;index < file_list.size();++index)
                 file_list[index] = QString(source.c_str()) + "/" + file_list[index];
         }
-        show_progress() << "a total of " << file_list.size() << " files found in the directory" << std::endl;
+        tipl::out() << "a total of " << file_list.size() << " files found in the directory" << std::endl;
     }
     else
         file_list << source.c_str();
@@ -48,14 +47,14 @@ int src(tipl::io::program_option<show_progress>& po)
 
     if(file_list.empty())
     {
-        show_progress() << "no file found for creating src" << std::endl;
+        tipl::out() << "no file found for creating src" << std::endl;
         return 1;
     }
 
     std::vector<std::shared_ptr<DwiHeader> > dwi_files;
     if(!parse_dwi(file_list,dwi_files))
     {
-        show_progress() << "ERROR loading dwi file:" << src_error_msg << std::endl;
+        tipl::out() << "ERROR loading dwi file:" << src_error_msg << std::endl;
         return 1;
     }
     if(po.has("b_table"))
@@ -64,7 +63,7 @@ int src(tipl::io::program_option<show_progress>& po)
         std::ifstream in(table_file_name.c_str());
         if(!in)
         {
-            show_progress() << "failed to open b-table" <<std::endl;
+            tipl::out() << "failed to open b-table" <<std::endl;
             return 1;
         }
         std::string line;
@@ -78,7 +77,7 @@ int src(tipl::io::program_option<show_progress>& po)
         }
         if(b_table.size() != dwi_files.size()*4)
         {
-            show_progress() << "mismatch between b-table and the loaded images" << std::endl;
+            tipl::out() << "mismatch between b-table and the loaded images" << std::endl;
             return 1;
         }
         for(unsigned int index = 0,b_index = 0;index < dwi_files.size();++index,b_index += 4)
@@ -86,7 +85,7 @@ int src(tipl::io::program_option<show_progress>& po)
             dwi_files[index]->bvalue = float(b_table[b_index]);
             dwi_files[index]->bvec = tipl::vector<3>(b_table[b_index+1],b_table[b_index+2],b_table[b_index+3]);
         }
-        show_progress() << "b-table " << table_file_name << " loaded" << std::endl;
+        tipl::out() << "b-table " << table_file_name << " loaded" << std::endl;
     }
     if(po.has("bval") && po.has("bvec"))
     {
@@ -97,28 +96,28 @@ int src(tipl::io::program_option<show_progress>& po)
         for(auto path : bval_files)
             if(!load_bval(path.toStdString().c_str(),bval))
             {
-                show_progress() << "cannot find bval at " << path.toStdString() << std::endl;
+                tipl::out() << "cannot find bval at " << path.toStdString() << std::endl;
                 return 1;
             }
         for(auto path : bvec_files)
             if(!load_bvec(path.toStdString().c_str(),bvec,po.get("flip_by",1)))
             {
-                show_progress() << "cannot find bvec at " << path.toStdString() << std::endl;
+                tipl::out() << "cannot find bvec at " << path.toStdString() << std::endl;
                 return 1;
             }
 
         if(bval.size() != dwi_files.size())
         {
-            show_progress() << "mismatch between bval file and the loaded images" << std::endl;
-            show_progress() << "dwi number:" << dwi_files.size() << std::endl;
-            show_progress() << "bval number:" << bval.size() << std::endl;
+            tipl::out() << "mismatch between bval file and the loaded images" << std::endl;
+            tipl::out() << "dwi number:" << dwi_files.size() << std::endl;
+            tipl::out() << "bval number:" << bval.size() << std::endl;
             return 1;
         }
         if(bvec.size() != dwi_files.size()*3)
         {
-            show_progress() << "mismatch between bvec file and the loaded images" << std::endl;
-            show_progress() << "dwi number:" << dwi_files.size() << std::endl;
-            show_progress() << "bvec number:" << bvec.size() << std::endl;
+            tipl::out() << "mismatch between bvec file and the loaded images" << std::endl;
+            tipl::out() << "dwi number:" << dwi_files.size() << std::endl;
+            tipl::out() << "bvec number:" << bvec.size() << std::endl;
             return 1;
         }
         for(unsigned int index = 0;index < dwi_files.size();++index)
@@ -129,7 +128,7 @@ int src(tipl::io::program_option<show_progress>& po)
     }
     if(dwi_files.empty())
     {
-        show_progress() << "no file readed. Abort." << std::endl;
+        tipl::out() << "no file readed. Abort." << std::endl;
         return 1;
     }
 
@@ -142,7 +141,7 @@ int src(tipl::io::program_option<show_progress>& po)
     }
     if(max_b == 0.0)
     {
-        show_progress() << "cannot find b-table from the header. You may need to load an external b-table using--b_table or --bval and --bvec." << std::endl;
+        tipl::out() << "cannot find b-table from the header. You may need to load an external b-table using--b_table or --bval and --bvec." << std::endl;
         return 1;
     }
 
@@ -163,12 +162,12 @@ int src(tipl::io::program_option<show_progress>& po)
         else
             output = file_list.front().toStdString() + ".src.gz";
     }
-    show_progress() << "output src to " << output << std::endl;
+    tipl::out() << "output src to " << output << std::endl;
     if(!DwiHeader::output_src(output.c_str(),dwi_files,
                           po.get<int>("up_sampling",0),
                           po.get<int>("sort_b_table",0)))
     {
-        show_progress() << "ERROR: " << src_error_msg << std::endl;
+        tipl::out() << "ERROR: " << src_error_msg << std::endl;
         return 1;
     }
     return 0;

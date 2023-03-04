@@ -8,12 +8,12 @@
 QStringList search_files(QString dir,QString filter);
 bool check_src(std::string file_name,std::vector<std::string>& output,float& ndc)
 {
-    show_progress() << "checking " << file_name << std::endl;
+    tipl::out() << "checking " << file_name << std::endl;
     output.push_back(QFileInfo(file_name.c_str()).baseName().toStdString());
     ImageModel handle;
     if (!handle.load_from_file(file_name.c_str()))
     {
-        show_progress() << "cannot read SRC file" << std::endl;
+        tipl::out() << "cannot read SRC file" << std::endl;
         return false;
     }
     // output image dimension
@@ -48,28 +48,24 @@ std::string quality_check_src_files(QString dir)
     out << "Directory:" << dir.toStdString() << std::endl;
     if(filenames.empty())
     {
-        show_progress() << "no SRC file found in the directory" << std::endl;
+        tipl::out() << "no SRC file found in the directory" << std::endl;
         return "no SRC file found in the directory";
     }
     out << "FileName\tImage dimension\tResolution\tDWI count\tMax b-value\tNeighboring DWI correlation\t# Bad Slices" << std::endl;
-    show_progress() << "a total of " << filenames.size() << " SRC file(s) were found."<< std::endl;
+    tipl::out() << "a total of " << filenames.size() << " SRC file(s) were found."<< std::endl;
 
     std::vector<std::vector<std::string> > output;
     std::vector<float> ndc;
-    progress prog("checking SRC files");
+    tipl::progress prog("checking SRC files");
     for(int i = 0;prog(i,filenames.size());++i)
     {
-        bool has_gui_ = has_gui;
-        has_gui = false;
         std::vector<std::string> output_each;
         float ndc_each;
         if(!check_src(filenames[i].toStdString(),output_each,ndc_each))
         {
             out << "cannot load SRC file " << filenames[i].toStdString() << std::endl;
-            has_gui = has_gui_;
             continue;
         }
-        has_gui = has_gui_;
         output.push_back(std::move(output_each));
         ndc.push_back(ndc_each);
     }
@@ -100,16 +96,16 @@ std::string quality_check_src_files(QString dir)
  perform reconstruction
  */
 std::shared_ptr<fib_data> cmd_load_fib(std::string file_name);
-int qc(tipl::io::program_option<show_progress>& po)
+int qc(tipl::io::program_option<tipl::out>& po)
 {
     std::string file_name = po.get("source");
     if(QFileInfo(file_name.c_str()).isDir())
     {
         std::string report_file_name = po.get("output",file_name + "/qc.txt");
-        show_progress() << "quality control checking src files in " << file_name << std::endl;
+        tipl::out() << "quality control checking src files in " << file_name << std::endl;
         std::ofstream out(report_file_name.c_str());
         out << quality_check_src_files(file_name.c_str());
-        show_progress() << "report saved to " << report_file_name << std::endl;
+        tipl::out() << "report saved to " << report_file_name << std::endl;
     }
     else {
         std::string report_file_name = po.get("output",file_name.substr(0,file_name.size()-7) + ".qc.txt");
@@ -134,7 +130,7 @@ int qc(tipl::io::program_option<show_progress>& po)
             float ndc_each;
             if(!check_src(file_name,output_each,ndc_each))
             {
-                show_progress() << "cannot load file " << file_name << std::endl;
+                tipl::out() << "cannot load file " << file_name << std::endl;
                 return 1;
             }
             for(size_t j = 0 ;j < output_each.size();++j)

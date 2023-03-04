@@ -38,22 +38,22 @@ int after_warp(const std::string& warp_name,
         if(QString(filename.c_str()).toLower().endsWith(".tt.gz"))
         {
             std::string filename_warp = filename+".wp.tt.gz";
-            show_progress() << "apply warping to tractography file: " << filename << std::endl;
+            tipl::out() << "apply warping to tractography file: " << filename << std::endl;
             if(!apply_unwarping_tt(filename.c_str(),filename_warp.c_str(),from2to,
                                    to2from.shape(),to_vs,to_trans,error))
             {
-                show_progress() << "ERROR: " << error <<std::endl;
+                tipl::out() << "ERROR: " << error <<std::endl;
                 return 1;
             }
         }
         else
         {
             std::string filename_warp = filename+".wp.nii.gz";
-            show_progress() << "apply warping to NIFTI file: " << filename << std::endl;
+            tipl::out() << "apply warping to NIFTI file: " << filename << std::endl;
             if(!apply_warping(filename_cmd.c_str(),filename_warp.c_str(),from2to.shape(),from_trans,
                               to2from,to_vs,to_trans,error))
             {
-                show_progress() << "ERROR: " << error <<std::endl;
+                tipl::out() << "ERROR: " << error <<std::endl;
                 return 1;
             }
         }
@@ -72,12 +72,12 @@ bool load_nifti_file(std::string file_name_cmd,
     std::getline(in,file_name,'+');
     if(!gz_nifti::load_from_file(file_name.c_str(),data,vs,trans))
     {
-        show_progress() << "ERROR: cannot load file " << file_name << std::endl;
+        tipl::out() << "ERROR: cannot load file " << file_name << std::endl;
         return false;
     }
     while(std::getline(in,cmd,'+'))
     {
-        show_progress() << "apply " << cmd << std::endl;
+        tipl::out() << "apply " << cmd << std::endl;
         if(cmd == "gaussian")
             tipl::filter::gaussian(data);
         else
@@ -88,7 +88,7 @@ bool load_nifti_file(std::string file_name_cmd,
             tipl::filter::mean(data);
         else
         {
-            show_progress() << "ERROR: unknown command " << cmd << std::endl;
+            tipl::out() << "ERROR: unknown command " << cmd << std::endl;
             return false;
         }
     }
@@ -103,7 +103,7 @@ void edge_for_cdm(tipl::image<3>& sIt,
                   tipl::image<3>& sJ,
                   tipl::image<3>& sIt2,
                   tipl::image<3>& sJ2);
-int reg(tipl::io::program_option<show_progress>& po)
+int reg(tipl::io::program_option<tipl::out>& po)
 {
     tipl::image<3> from,to,from2,to2;
     tipl::vector<3> from_vs,to_vs;
@@ -115,7 +115,7 @@ int reg(tipl::io::program_option<show_progress>& po)
         gz_mat_read in;
         if(!in.load_from_file(po.get("warp").c_str()))
         {
-            show_progress() << "ERROR: cannot open or parse warp file " << po.get("warp") << std::endl;
+            tipl::out() << "ERROR: cannot open or parse warp file " << po.get("warp") << std::endl;
             return 1;
         }
         tipl::shape<3> to_dim,from_dim;
@@ -131,7 +131,7 @@ int reg(tipl::io::program_option<show_progress>& po)
             !in.read("to2from",row,col,to2from_ptr) ||
             !in.read("from2to",row,col,from2to_ptr))
         {
-            show_progress() << "ERROR: invalid warp file " << po.get("warp") << std::endl;
+            tipl::out() << "ERROR: invalid warp file " << po.get("warp") << std::endl;
             return 1;
         }
         to2from.resize(to_dim);
@@ -155,18 +155,18 @@ int reg(tipl::io::program_option<show_progress>& po)
 
     if(!from2.empty() && from.shape() != from2.shape())
     {
-        show_progress() << "--from2 and --from images have different dimension" << std::endl;
+        tipl::out() << "--from2 and --from images have different dimension" << std::endl;
         return 1;
     }
     if(!to2.empty() && to.shape() != to2.shape())
     {
-        show_progress() << "--to2 and --to images have different dimension" << std::endl;
+        tipl::out() << "--to2 and --to images have different dimension" << std::endl;
         return 1;
     }
 
     std::string output_wp_image = po.get("output",po.get("from")+".wp.nii.gz");
     bool terminated = false;
-    show_progress() << "running linear registration." << std::endl;
+    tipl::out() << "running linear registration." << std::endl;
 
     tipl::transformation_matrix<float> T;
     auto cost_function = po.get("cost_function","mi");
@@ -181,7 +181,7 @@ int reg(tipl::io::program_option<show_progress>& po)
                   po.get("large_deform",0) == 1 ? tipl::reg::large_bound : tipl::reg::reg_bound);
     else
     {
-        show_progress() << "ERROR: unknown cost_function " << cost_function << std::endl;
+        tipl::out() << "ERROR: unknown cost_function " << cost_function << std::endl;
         return 1;
     }
 
@@ -203,17 +203,17 @@ int reg(tipl::io::program_option<show_progress>& po)
             tipl::resample_mt<tipl::interpolation::cubic>(from2,from2_,T);
     }
     auto r2 = tipl::correlation(from_.begin(),from_.end(),to.begin());
-    show_progress() << "correlation cofficient: " << r2 << std::endl;
+    tipl::out() << "correlation cofficient: " << r2 << std::endl;
     if(po.get("reg_type",1) == 0) // just rigidbody
     {
-        show_progress() << "output warpped image:" << output_wp_image << std::endl;
+        tipl::out() << "output warpped image:" << output_wp_image << std::endl;
         gz_nifti::save_to_file(output_wp_image.c_str(),from_,to_vs,to_trans);
         return 0;
     }
 
     if(po.get("normalize_signal",1))
     {
-        show_progress() << "normalizing signals" << std::endl;
+        tipl::out() << "normalizing signals" << std::endl;
         tipl::reg::cdm_pre(from_,from2_,to,to2);
     }
 
@@ -238,7 +238,7 @@ int reg(tipl::io::program_option<show_progress>& po)
     tipl::inv_displacement_to_mapping(f2t_dis,from2to,T);
 
     {
-        show_progress() << "compose output images" << std::endl;
+        tipl::out() << "compose output images" << std::endl;
         tipl::image<3> output;
         if(tipl::is_label_image(from))
             tipl::compose_mapping<tipl::interpolation::nearest>(from,to2from,output);
@@ -246,12 +246,12 @@ int reg(tipl::io::program_option<show_progress>& po)
             tipl::compose_mapping<tipl::interpolation::cubic>(from,to2from,output);
 
         float r = float(tipl::correlation(to.begin(),to.end(),output.begin()));
-        show_progress() << "R2: " << r*r << std::endl;
+        tipl::out() << "R2: " << r*r << std::endl;
         if(po.has("output"))
         {
             if(!gz_nifti::save_to_file(po.get("output").c_str(),output,to_vs,to_trans))
             {
-                show_progress() << "ERROR: cannot write to " << po.get("output") << std::endl;
+                tipl::out() << "ERROR: cannot write to " << po.get("output") << std::endl;
                 return 1;
             }
         }
@@ -265,7 +265,7 @@ int reg(tipl::io::program_option<show_progress>& po)
         gz_mat_write out(filename.c_str());
         if(!out)
         {
-            show_progress() << "ERROR: cannot write to " << filename << std::endl;
+            tipl::out() << "ERROR: cannot write to " << filename << std::endl;
             return 1;
         }
         out.write("to2from",&to2from[0][0],3,to2from.size());
@@ -277,7 +277,7 @@ int reg(tipl::io::program_option<show_progress>& po)
         out.write("from_dim",from.shape());
         out.write("from_vs",from_vs);
         out.write("from_trans",from_trans);
-        show_progress() << "save mapping to " << filename << std::endl;
+        tipl::out() << "save mapping to " << filename << std::endl;
     }
 
     if(po.has("apply_warp"))

@@ -7,7 +7,6 @@
 #include <QMessageBox>
 #include <QDir>
 #include "SliceModel.h"
-#include "prog_interface_static_link.h"
 #include "fib_data.hpp"
 #include "reg.hpp"
 SliceModel::SliceModel(fib_data* handle_,uint32_t view_id_):handle(handle_),view_id(view_id_)
@@ -133,6 +132,7 @@ void prepare_idx(const char* file_name,std::shared_ptr<tipl::io::gz_istream> in)
 void save_idx(const char* file_name,std::shared_ptr<tipl::io::gz_istream> in);
 bool parse_age_sex(const std::string& file_name,std::string& age,std::string& sex);
 QString get_matched_demo(QWidget *parent,std::shared_ptr<fib_data>);
+extern bool has_gui;
 bool CustomSliceModel::load_slices(const std::vector<std::string>& files,bool is_mni)
 {
     if(files.empty())
@@ -147,7 +147,7 @@ bool CustomSliceModel::load_slices(const std::vector<std::string>& files,bool is
 
     if(QFileInfo(files[0].c_str()).fileName().toLower().contains("mni"))
     {
-        show_progress() << QFileInfo(files[0].c_str()).fileName().toStdString() <<
+        tipl::out() << QFileInfo(files[0].c_str()).fileName().toStdString() <<
                      " has mni in the file name. It will be loaded as an MNI space image" << std::endl;
         is_mni = true;
     }
@@ -254,7 +254,7 @@ bool CustomSliceModel::load_slices(const std::vector<std::string>& files,bool is
                 return false;
             }
 
-            progress prog("loading images");
+            tipl::progress prog("loading images");
             for(unsigned int i = 0;prog(i,geo[2]);++i)
             {
                 tipl::image<2,short> I;
@@ -363,12 +363,12 @@ bool CustomSliceModel::load_slices(const std::vector<std::string>& files,bool is
         nifti.get_image_transformation(trans);
         if(nifti.is_mni())
         {
-            show_progress() << "The slices are MNI-space images" << std::endl;
+            tipl::out() << "The slices are MNI-space images" << std::endl;
             is_mni = true;
         }
         if(handle->is_mni)
         {
-            show_progress() << "Assuming the the slices are already in the template space." << std::endl;
+            tipl::out() << "Assuming the the slices are already in the template space." << std::endl;
             nifti.get_image_transformation(T);
             invT = tipl::inverse(T = tipl::from_space(T).to(handle->trans_to_mni));
             has_transform = true;
@@ -376,7 +376,7 @@ bool CustomSliceModel::load_slices(const std::vector<std::string>& files,bool is
         else
         if(is_mni)
         {
-            show_progress() << "Warpping slices to the subject space." << std::endl;
+            tipl::out() << "Warpping slices to the subject space." << std::endl;
             if(!handle->mni2sub(source_images,trans))
             {
                 error_msg = handle->error_msg;
@@ -388,8 +388,8 @@ bool CustomSliceModel::load_slices(const std::vector<std::string>& files,bool is
         else
         if(source_images.shape() == handle->dim && QFileInfo(files[0].c_str()).fileName().contains("reg"))
         {
-            show_progress() << "The slices have the same dimension, and there is reg in the file name." << std::endl;
-            show_progress() << "no registration needed" << std::endl;
+            tipl::out() << "The slices have the same dimension, and there is reg in the file name." << std::endl;
+            tipl::out() << "no registration needed" << std::endl;
             is_diffusion_space = true;
             has_transform = true;
         }
@@ -437,10 +437,10 @@ bool CustomSliceModel::load_slices(const std::vector<std::string>& files,bool is
     // add image to the view item lists
     {
         update_image();
-        show_progress() << "add new slices: " << name << std::endl;
-        show_progress() << "dimension: " << source_images.shape() << std::endl;
+        tipl::out() << "add new slices: " << name << std::endl;
+        tipl::out() << "dimension: " << source_images.shape() << std::endl;
         if(source_images.shape() == handle->dim)
-            show_progress() << "The slices have the same dimension as DWI." << std::endl;
+            tipl::out() << "The slices have the same dimension as DWI." << std::endl;
         handle->view_item.push_back(item(name,&*source_images.begin(),source_images.shape()));
         view_id = uint32_t(handle->view_item.size()-1);
     }
@@ -450,12 +450,12 @@ bool CustomSliceModel::load_slices(const std::vector<std::string>& files,bool is
     {
         if(handle->is_mni || QFileInfo(files[0].c_str()).fileName().toLower().contains("native"))
         {
-            show_progress() << "No registration required." << std::endl;
+            tipl::out() << "No registration required." << std::endl;
             is_diffusion_space = true;
             has_transform = true;
         }
         else
-            show_progress() << "Registration will be applied. To disable registration, add 'native' to the file name." << std::endl;
+            tipl::out() << "Registration will be applied. To disable registration, add 'native' to the file name." << std::endl;
     }
 
     if(!has_transform && handle->dim.depth() < 10) // 2d assume FOV is the same
@@ -470,10 +470,10 @@ bool CustomSliceModel::load_slices(const std::vector<std::string>& files,bool is
 
     if(!has_transform && std::filesystem::exists(files[0]+".linear_reg.txt"))
     {
-        show_progress() << "loading existing linear registration." << std::endl;
+        tipl::out() << "loading existing linear registration." << std::endl;
         if(!(load_mapping((files[0]+".linear_reg.txt").c_str())))
         {
-            show_progress() << "ERROR: invalid slice mapping file format" << std::endl;
+            tipl::out() << "ERROR: invalid slice mapping file format" << std::endl;
             return false;
         }
         has_transform = true;
@@ -482,7 +482,7 @@ bool CustomSliceModel::load_slices(const std::vector<std::string>& files,bool is
     // handle registration
     if(!has_transform)
     {
-        show_progress() << "running slice registration..." << std::endl;
+        tipl::out() << "running slice registration..." << std::endl;
         if(has_gui)
         {
             thread.reset(new std::thread([this](){argmin(tipl::reg::rigid_body);}));
@@ -553,8 +553,8 @@ bool CustomSliceModel::load_mapping(const char* file_name)
         return false;
     update_transform();
     is_diffusion_space = false;
-    show_progress() << arg_min << std::endl;
-    show_progress() << "T:" << T << std::endl;
+    tipl::out() << arg_min << std::endl;
+    tipl::out() << "T:" << T << std::endl;
     return true;
 }
 

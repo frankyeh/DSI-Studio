@@ -10,7 +10,6 @@
 #include <QInputDialog>
 #include <QFileDialog>
 #include <QSettings>
-#include "prog_interface_static_link.h"
 #include "tracking/region/Regions.h"
 #include "libs/dsi/image_model.hpp"
 #include "gzip_interface.hpp"
@@ -28,7 +27,7 @@ bool reconstruction_window::load_src(int index)
     if (!handle->load_from_file(filenames[index].toLocal8Bit().begin()))
         return false;
     move_current_dir_to(filenames[index].toStdString());
-    progress prog("initiate interface");
+    tipl::progress prog("initiate interface");
     existing_steps = handle->voxel.steps;
     if(handle->voxel.is_histology)
         return true;
@@ -237,7 +236,7 @@ reconstruction_window::~reconstruction_window()
 
 void reconstruction_window::Reconstruction(unsigned char method_id,bool prompt)
 {
-    progress prog_("reconstruction");
+    tipl::progress prog_("reconstruction");
     if(!handle.get())
         return;
 
@@ -368,7 +367,7 @@ void reconstruction_window::batch_command(std::string cmd,std::string param)
     if(filenames.size() > 1 && QMessageBox::information(this,"DSI Studio","Apply to other SRC files?",
                                     QMessageBox::Yes|QMessageBox::No|QMessageBox::Cancel) == QMessageBox::Yes)
     {
-        progress prog("apply to other SRC files");
+        tipl::progress prog("apply to other SRC files");
         std::string steps(handle->voxel.steps.begin()+existing_steps.length(),handle->voxel.steps.end());
         steps += cmd;
         if(!param.empty())
@@ -404,10 +403,10 @@ void reconstruction_window::on_doDTI_clicked()
     std::string ref_file_name = handle->file_name;
     std::string ref_steps(handle->voxel.steps.begin()+existing_steps.length(),handle->voxel.steps.end());
     std::shared_ptr<ImageModel> ref_handle = handle;
-    progress prog("process SRC files");
+    tipl::progress prog("process SRC files");
     for(int index = 0;prog(index,filenames.size());++index)
     {
-        show_progress() << "processing " << filenames[index].toStdString() << std::endl;
+        tipl::out() << "processing " << filenames[index].toStdString() << std::endl;
         if(index)
         {
             if(!load_src(index) || !handle->run_steps(ref_file_name,ref_steps))
@@ -604,7 +603,7 @@ void reconstruction_window::on_actionRotate_triggered()
     if(manual->exec() != QDialog::Accepted)
         return;
 
-    progress prog_("rotating");
+    tipl::progress prog_("rotating");
     tipl::image<3> ref2(ref);
     float m = tipl::median(ref2.begin(),ref2.end());
     tipl::multiply_constant_mt(ref,0.5f/m);
@@ -726,7 +725,7 @@ void reconstruction_window::on_actionManual_Rotation_triggered()
                 new manual_alignment(this,handle->dwi,handle->voxel.vs,handle->dwi,handle->voxel.vs,tipl::reg::rigid_body,tipl::reg::cost_type::mutual_info));
     if(manual->exec() != QDialog::Accepted)
         return;
-    progress prog_("rotating");
+    tipl::progress prog_("rotating");
     handle->rotate(handle->dwi.shape(),handle->voxel.vs,manual->get_iT());
     handle->voxel.report += " The diffusion images were manually rotated.";
     load_b_table();
@@ -737,7 +736,7 @@ void reconstruction_window::on_actionManual_Rotation_triggered()
 
 bool get_src(std::string filename,ImageModel& src2,std::string& error_msg)
 {
-    progress prog_("load ",filename.c_str());
+    tipl::progress prog_("load ",filename.c_str());
     tipl::image<3,unsigned short> I;
     if(QString(filename.c_str()).endsWith(".dcm"))
     {
@@ -824,7 +823,7 @@ void reconstruction_window::on_actionImage_upsample_to_T1W_TESTING_triggered()
     manual->on_rerun_clicked();
     if(manual->exec() != QDialog::Accepted)
         return;
-    progress prog_("rotating");
+    tipl::progress prog_("rotating");
     handle->rotate(ref.shape(),vs,manual->get_iT(),tipl::image<3,tipl::vector<3> >());
     handle->voxel.report += " The diffusion images were rotated and scaled to the space of ";
     handle->voxel.report += QFileInfo(filenames[0]).baseName().toStdString();
@@ -973,7 +972,7 @@ void match_template_resolution(tipl::image<3>& VG,
                                tipl::vector<3>& VFvs)
 {
     float ratio = float(VF.width())/float(VG.width());
-    show_progress() << "width ratio (subject/template):(" << VF.width() << "/" << VG.width() << ") " << ratio << std::endl;
+    tipl::out() << "width ratio (subject/template):(" << VF.width() << "/" << VG.width() << ") " << ratio << std::endl;
     while(ratio < 0.5f)   // if subject resolution is substantially lower, downsample template
     {
         tipl::downsampling(VG);
@@ -981,7 +980,7 @@ void match_template_resolution(tipl::image<3>& VG,
             tipl::downsampling(VG2);
         VGvs *= 2.0f;
         ratio *= 2.0f;
-        show_progress() << "ratio lower than 0.5, downsampling template to " << VGvs[0] << " mm resolution" << std::endl;
+        tipl::out() << "ratio lower than 0.5, downsampling template to " << VGvs[0] << " mm resolution" << std::endl;
     }
     while(ratio > 2.5f)  // if subject resolution is higher, downsample it for registration
     {
@@ -990,7 +989,7 @@ void match_template_resolution(tipl::image<3>& VG,
             tipl::downsampling(VF2);
         VFvs *= 2.0f;
         ratio /= 2.0f;
-        show_progress() << "ratio larger than 2.5, register using subject resolution of " << VFvs[0] << " mm resolution" << std::endl;
+        tipl::out() << "ratio larger than 2.5, register using subject resolution of " << VFvs[0] << " mm resolution" << std::endl;
     }
 }
 
@@ -1039,7 +1038,7 @@ void reconstruction_window::on_actionRun_FSL_Topup_triggered()
         if(other_src.isEmpty())
             return;
     }
-    progress prog_("topup/eddy",true);
+    tipl::progress prog_("topup/eddy",true);
     if(command("[Step T2][Corrections][TOPUP EDDY]",other_src.toStdString()))
         QMessageBox::information(this,"DSI Studio","Correction result loaded");
 }
@@ -1047,7 +1046,7 @@ void reconstruction_window::on_actionRun_FSL_Topup_triggered()
 
 void reconstruction_window::on_actionEDDY_triggered()
 {
-    progress prog_("eddy",true);
+    tipl::progress prog_("eddy",true);
     if(command("[Step T2][Corrections][EDDY]"))
         QMessageBox::information(this,"DSI Studio","Correction result loaded");
 }

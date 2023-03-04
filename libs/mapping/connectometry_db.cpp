@@ -1,5 +1,4 @@
 #include <filesystem>
-#include "prog_interface_static_link.h"
 #include "connectometry_db.hpp"
 #include "fib_data.hpp"
 
@@ -54,7 +53,7 @@ bool connectometry_db::read_db(fib_data* handle_)
     if(!num_subjects)
         return true;
 
-    progress prog("loading databse");
+    tipl::progress prog("loading databse");
     std::string subject_names_str;
     if(!handle->mat_reader.read("subject_names",subject_names_str) ||
        !handle->mat_reader.read("R2",R2))
@@ -78,7 +77,7 @@ bool connectometry_db::read_db(fib_data* handle_)
         auto max_qa = tipl::max_value(subject_qa[0],subject_qa[0]+subject_qa_length);
         if(max_qa != 1.0f)
         {
-            show_progress() << "converting raw QA to normalized QA" << std::endl;
+            tipl::out() << "converting raw QA to normalized QA" << std::endl;
             tipl::par_for(subject_qa.size(),[&](size_t i)
             {
                 auto max_qa = tipl::max_value(subject_qa[i],subject_qa[i]+subject_qa_length);
@@ -154,7 +153,7 @@ bool connectometry_db::parse_demo(const std::string& filename)
 
 bool connectometry_db::parse_demo(void)
 {
-    show_progress() << "parsing demographics" << std::endl;
+    tipl::out() << "parsing demographics" << std::endl;
     std::string saved_demo(std::move(demo));
     titles.clear();
     items.clear();
@@ -238,7 +237,7 @@ bool connectometry_db::parse_demo(void)
     items.erase(items.begin(),items.begin()+int(col_count));
 
     // convert special characters
-    show_progress pout;
+    tipl::out pout;
     pout << "demographic columns:";
     for(size_t i = 0;i < titles.size();++i)
     {
@@ -427,7 +426,7 @@ void connectometry_db::sample_from_image(tipl::const_pointer_image<3,float> I,
 bool connectometry_db::add_subject_file(const std::string& file_name,
                                          const std::string& subject_name)
 {
-    progress prog(file_name.c_str());
+    tipl::progress prog(file_name.c_str());
     std::vector<float> data;
     float subject_R2 = 1.0f;
     std::string ext;
@@ -472,7 +471,7 @@ bool connectometry_db::add_subject_file(const std::string& file_name,
             }
             tipl::transformation_matrix<float> template2subject(tipl::from_space(handle->trans_to_mni).to(fib.trans_to_mni));
 
-            show_progress() << "loading";
+            tipl::out() << "loading";
             data.clear();
             data.resize(si2vi.size()*size_t(handle->dir.num_fiber));
             tipl::par_for(si2vi.size(),[&](size_t si)
@@ -581,7 +580,7 @@ bool connectometry_db::save_db(const char* output_name)
            handle->mat_reader[index].get_name() != "steps" &&
            handle->mat_reader[index].get_name().find("subject") != 0)
             matfile.write(handle->mat_reader[index]);
-    progress prog("save db");
+    tipl::progress prog("save db");
     for(unsigned int index = 0;prog(index,subject_qa.size());++index)
         matfile.write((std::string("subjects")+std::to_string(index)).c_str(),subject_qa[index],1,subject_qa_length);
     if(prog.aborted())
@@ -656,7 +655,7 @@ bool connectometry_db::get_demo_matched_volume(const std::string& matched_demo,t
             error_msg += matched_demo;
             return false;
         }
-        show_progress out;
+        tipl::out out;
         out << "creating subject-matching image by regressing against ";
         for(size_t i = 0;i < feature_titles.size();++i)
             out << feature_titles[i] << ":" << v[i] << " ";
@@ -685,7 +684,7 @@ bool connectometry_db::get_demo_matched_volume(const std::string& matched_demo,t
     });
     if(index_name == "qa")
     {
-        show_progress() << "normalizing qa map" << std::endl;
+        tipl::out() << "normalizing qa map" << std::endl;
         tipl::normalize(I);
     }
     volume.swap(I);
@@ -838,7 +837,7 @@ void connectometry_db::calculate_change(unsigned char dif_type)
 
     std::list<std::vector<float> > new_subject_qa_buf;
     std::vector<const float*> new_subject_qa;
-    progress prog("calculating");
+    tipl::progress prog("calculating");
     for(unsigned int index = 0;prog(index,match.size());++index)
     {
         auto first = uint32_t(match[index].first);
@@ -989,7 +988,7 @@ bool stat_model::select_cohort(connectometry_db& db,
     {
         auto excluded_list = out.str();
         if(!excluded_list.empty())
-           show_progress() << "excluding subjects with missing values: " << excluded_list << std::endl;
+           tipl::out() << "excluding subjects with missing values: " << excluded_list << std::endl;
     }
 
     if(!select_text.empty())
@@ -998,7 +997,7 @@ bool stat_model::select_cohort(connectometry_db& db,
         std::string text;
         while(std::getline(ss,text,','))
         {
-            show_progress() << "selecting subjects with " << text << std::endl;
+            tipl::out() << "selecting subjects with " << text << std::endl;
             bool parsed = false;
             auto select = [](char sel,float value,float threshold)
             {
@@ -1057,7 +1056,7 @@ bool stat_model::select_cohort(connectometry_db& db,
                             out1 << i << " ";
                             remove_list[i] = 1;
                         }
-                    show_progress() << "subjects excluded: " << out1.str() << std::endl;
+                    tipl::out() << "subjects excluded: " << out1.str() << std::endl;
 
                     std::ostringstream out;
                     if(text[j] == '/')
@@ -1129,7 +1128,7 @@ bool stat_model::select_feature(connectometry_db& db,std::string foi_text)
                     }
                 }
         }
-    show_progress() << "variables to be considered: "<< out.str() << std::endl;
+    tipl::out() << "variables to be considered: "<< out.str() << std::endl;
 
     if(!has_variable && !db.is_longitudinal)
     {
@@ -1155,7 +1154,7 @@ bool stat_model::select_feature(connectometry_db& db,std::string foi_text)
             error_msg += " does not have variations";
             return false;
         }
-        show_progress() << "study variable: " << foi_text << std::endl;
+        tipl::out() << "study variable: " << foi_text << std::endl;
     }
     select_variables(sel);
 

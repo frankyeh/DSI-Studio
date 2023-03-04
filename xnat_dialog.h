@@ -2,7 +2,6 @@
 #define XNAT_DIALOG_H
 #include <QtNetwork>
 #include <iostream>
-#include "prog_interface_static_link.h"
 #include <QApplication>
 #include "TIPL/tipl.hpp"
 #include <QMainWindow>
@@ -12,7 +11,7 @@ class xnat_facade{
 public:
     QNetworkAccessManager xnat_manager;
     QNetworkReply* cur_response = nullptr;
-    std::shared_ptr<progress> download_prog;
+    std::shared_ptr<tipl::progress> download_prog;
     size_t prog = 0;
     size_t total = 0;
     std::string result,error_msg;

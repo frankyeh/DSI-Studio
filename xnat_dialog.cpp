@@ -4,7 +4,6 @@
 #include <QMessageBox>
 #include <QSettings>
 #include <QFileDialog>
-#include "prog_interface_static_link.h"
 xnat_facade xnat_connection;
 
 std::string jsonarray2tsv(QJsonArray data)
@@ -53,7 +52,7 @@ bool xnat_facade::good(void)
             error_msg = "XNAT Server not found";
         if(cur_response->error() == 6)
             error_msg = "SSL Failed. Please update SSL library";
-        show_progress() << error_msg;
+        tipl::out() << error_msg;
         cur_response = nullptr;
     }
     return cur_response != nullptr;
@@ -75,7 +74,7 @@ void xnat_facade::get_html(std::string url,std::string auth)
 {
     if(cur_response && cur_response->isRunning())
         cur_response->abort();
-    download_prog = std::make_shared<progress>("downloading ",url.c_str());
+    download_prog = std::make_shared<tipl::progress>("downloading ",url.c_str());
     QNetworkRequest xnat_request(QUrl(url.c_str()));
     xnat_request.setRawHeader("Authorization", QString("Basic " + QString(auth.c_str()).toLocal8Bit().toBase64()).toLocal8Bit());
     error_msg.clear();
@@ -92,15 +91,15 @@ void xnat_facade::get_data(std::string site,std::string auth,
         output_dir.pop_back();
 
     total = urls.size();
-    progress prog_("download data from ",site.c_str());
-    show_progress() << "a total of " << urls.size() << " files" << std::endl;
+    tipl::progress prog_("download data from ",site.c_str());
+    tipl::out() << "a total of " << urls.size() << " files" << std::endl;
     for(prog = 0;prog_(prog,total);++prog)
     {
         std::string download_name = (output_dir+"/"+
                                      urls[prog].substr(urls[prog].find_last_of('/')+1)).c_str();
         if(std::filesystem::exists(download_name))
         {
-            show_progress() << "file exists, skipping: " << download_name.c_str() << std::endl;
+            tipl::out() << "file exists, skipping: " << download_name.c_str() << std::endl;
             continue;
         }
         get_html(site + urls[prog],auth);
@@ -122,7 +121,7 @@ void xnat_facade::get_data(std::string site,std::string auth,
             break;
         }
 
-        show_progress() << "save to " << download_name;
+        tipl::out() << "save to " << download_name;
         QByteArray buf = cur_response->readAll();
         std::ofstream out(download_name.c_str(),std::ios::binary);
         if(!tipl::io::save_stream_with_prog(prog_,out,buf.begin(),buf.size(),error_msg))
@@ -149,7 +148,7 @@ void xnat_facade::get_scans_data(std::string site,std::string auth,std::string e
             auto data = QJsonDocument::fromJson(cur_response->readAll()).object()["ResultSet"].toObject()["Result"].toArray();
             for(int i = 0;i < data.size();++i)
                 urls.push_back(data[i].toObject().value("URI").toString().toStdString());
-            show_progress() << "a total of " << urls.size() << " files identified " << std::endl;
+            tipl::out() << "a total of " << urls.size() << " files identified " << std::endl;
         }
         download_prog.reset();
         if(!urls.empty())
@@ -165,7 +164,7 @@ void xnat_facade::get_info(std::string site,std::string auth,std::string path)
     [this]{
        if (good())
        {
-           show_progress() << "receive content type: " << cur_response->header(QNetworkRequest::ContentTypeHeader).toString().toStdString() << std::endl;
+           tipl::out() << "receive content type: " << cur_response->header(QNetworkRequest::ContentTypeHeader).toString().toStdString() << std::endl;
            result = jsonarray2tsv(QJsonDocument::fromJson(cur_response->readAll()).object()["ResultSet"].toObject()["Result"].toArray());
        }
        cur_response = nullptr;
@@ -396,7 +395,7 @@ void xnat_dialog::download_status()
             {
                 QStringList subject_dirs;
                 {
-                    progress prog("Renaming DICOM");
+                    tipl::progress prog("Renaming DICOM");
                     for(size_t i = 0;prog(i,output_dirs.size());++i)
                         subject_dirs << rename_dicom_at_dir(output_dirs[i].c_str(),output_dirs[i].c_str());
                     if(prog.aborted())
@@ -404,7 +403,7 @@ void xnat_dialog::download_status()
                 }
                 if(QMessageBox::information(this,"DSI Studio","Convert DICOM to SRC/NII?",QMessageBox::Yes|QMessageBox::No) == QMessageBox::Yes)
                 {
-                    progress prog("Converting DICOM to SRC/NII?");
+                    tipl::progress prog("Converting DICOM to SRC/NII?");
                     for(size_t i = 0;prog(i,subject_dirs.size());++i)
                         dicom2src(subject_dirs[i].toStdString());
                     if(prog.aborted())

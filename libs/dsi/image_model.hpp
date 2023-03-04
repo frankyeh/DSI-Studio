@@ -334,7 +334,7 @@ public:
         {
             error_msg = "unknown error";
         }
-        show_progress() << error_msg << std::endl;
+        tipl::out() << error_msg << std::endl;
         return false;
     }
     std::string get_file_ext(void);
