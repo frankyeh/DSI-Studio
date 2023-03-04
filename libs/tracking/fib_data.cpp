@@ -1254,6 +1254,7 @@ bool fib_data::load_template(void)
 
 bool fib_data::load_track_atlas()
 {
+    tipl::progress prog("loading tractography atlas");
     if(tractography_atlas_file_name.empty() || tractography_name_list.empty())
     {
         error_msg = "no tractography atlas in ";
@@ -1318,7 +1319,6 @@ bool fib_data::load_track_atlas()
             return false;
         tract_atlas_jacobian = float((s2t[0]-s2t[1]).length());
         // warp tractography atlas to subject space
-        tipl::progress prog_("warping atlas tracks to subject space");
         auto& tract_data = track_atlas->get_tracts();
         std::vector<float> min_length(tractography_name_list.size()),max_length(tractography_name_list.size());
         auto T = tipl::from_space(track_atlas->trans_to_mni).to(template_to_mni);
