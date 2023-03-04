@@ -35,7 +35,7 @@ QString get_dicom_output_name(QString file_name,QString file_extension, bool add
         }
     }
     else
-        return file_name+".src.gz";
+        return file_name+file_extension;
 }
 
 
