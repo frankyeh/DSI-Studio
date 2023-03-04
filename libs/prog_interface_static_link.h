@@ -48,7 +48,6 @@ public:
         }
     }
 public:
-    progress(void){}
     progress(const char* status,bool show_now = false)
     {
         print(status,true,false);
@@ -69,42 +68,6 @@ public:
         return check_prog(uint32_t(now),uint32_t(total));
     }
     ~progress(void);
-public:
-    template<typename fun_type,typename terminated_class>
-    static bool run(const char* msg,fun_type fun,terminated_class& terminated)
-    {
-        progress prog(msg);
-        if(!has_gui)
-        {
-            fun();
-            return true;
-        }
-        bool ended = false;
-        tipl::par_for(2,[&](int i)
-        {
-            if(!i)
-            {
-                fun();
-                ended = true;
-            }
-            else
-            {
-                size_t i = 0;
-                while(!ended)
-                {
-                    std::this_thread::yield();
-                    prog(i,i+1);
-                    if(prog.aborted())
-                    {
-                        terminated = true;
-                        ended = true;
-                    }
-                    ++i;
-                }
-            }
-        });
-        return !prog.aborted();
-    }
 };
 
 class show_progress{
