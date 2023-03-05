@@ -325,7 +325,7 @@ int run_cmd(int ac, char *av[])
     tipl::program_option<tipl::out> po;
     try
     {
-        tipl::progress prog(version_string().toStdString().c_str()," command line");
+        tipl::progress prog((version_string().toStdString()+" ").c_str(),__DATE__);
         init_cuda();
 
         if(!po.parse(ac,av))
@@ -394,7 +394,7 @@ int main(int ac, char *av[])
     console.attach();
 
     {
-        tipl::progress prog(version_string().toStdString().c_str()," graphic user interface");
+        tipl::progress prog((version_string().toStdString()+" ").c_str(),__DATE__);
         init_cuda();
         init_application();
     }
