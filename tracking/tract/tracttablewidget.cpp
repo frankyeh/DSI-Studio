@@ -164,7 +164,7 @@ void TractTableWidget::addNewTracts(QString tract_name,bool checked)
     setItem(tract_models.size()-1, 0, item0);
     for(unsigned int index = 1;index <= 3;++index)
     {
-        QTableWidgetItem *item1 = new QTableWidgetItem(QString::number(0));
+        QTableWidgetItem *item1 = new QTableWidgetItem(QString());
         item1->setFlags(item1->flags() & ~Qt::ItemIsEditable);
         setItem(tract_models.size()-1, index, item1);
     }
@@ -258,7 +258,10 @@ void TractTableWidget::show_tracking_progress(void)
         if(thread_data[index].get())
         {
             item(int(index),1)->setText(QString::number(thread_data[index]->get_total_tract_count()));
-            item(int(index),3)->setText(QString::number(thread_data[index]->get_total_seed_count()));
+            if(thread_data[index]->get_total_seed_count())
+                item(int(index),3)->setText(QString::number(thread_data[index]->get_total_seed_count()));
+            else
+                item(int(index),3)->setText("initiating");
             has_thread = true;
         }
     if(!has_thread)
