@@ -267,7 +267,7 @@ bool RegionTableWidget::command(QString cmd,QString param,QString)
 {
     if(cmd == "save_all_regions_to_dir")
     {
-        tipl::progress prog("save files...");
+        tipl::progress prog("saving files");
         for(int index = 0;prog(index,rowCount());++index)
             if (item(index,0)->checkState() == Qt::Checked) // either roi roa end or seed
             {
