@@ -143,11 +143,11 @@ bool CustomSliceModel::load_slices(const std::vector<std::string>& files,bool is
     name = QFileInfo(files[0].c_str()).baseName().toStdString();
     T.identity();
     invT.identity();
-    tipl::progress prog("load slices ",QFileInfo(files[0].c_str()).fileName().toStdString().c_str());
+    tipl::progress prog("load slices ",std::filesystem::path(files[0]).filename().string().c_str());
 
     if(QFileInfo(files[0].c_str()).fileName().toLower().contains("mni"))
     {
-        tipl::out() << QFileInfo(files[0].c_str()).fileName().toStdString() <<
+        tipl::out() << std::filesystem::path(files[0]).filename().string() <<
                      " has mni in the file name. It will be loaded as an MNI space image" << std::endl;
         is_mni = true;
     }
