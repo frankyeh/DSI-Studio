@@ -494,7 +494,7 @@ extern std::string src_error_msg;
 bool DwiHeader::output_src(const char* di_file,std::vector<std::shared_ptr<DwiHeader> >& dwi_files,
                            int upsampling,bool sort_btable)
 {
-    tipl::progress prog("save ",QFileInfo(di_file).fileName().toStdString().c_str());
+    tipl::progress prog("save ",std::filesystem::path(di_file).filename().string());
     if(!has_b_table(dwi_files))
     {
         src_error_msg = "invalid b-table";
