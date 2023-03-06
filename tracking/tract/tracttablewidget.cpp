@@ -1101,7 +1101,7 @@ bool TractTableWidget::command(QString cmd,QString param,QString param2)
 {
     if(cmd == "save_all_tracts_to_dir")
     {
-        tipl::progress prog_("save files");
+        tipl::progress prog_("saving files");
         auto selected_tracts = get_checked_tracks();
         auto selected_tracts_rendering = get_checked_tracks_rendering();
         for(size_t index = 0;index < selected_tracts.size();++index)
