@@ -381,7 +381,7 @@ void group_connectometry_analysis::calculate_spm(connectometry_result& data,stat
 
 void group_connectometry_analysis::run_permutation(unsigned int thread_count,unsigned int permutation_count)
 {
-    tipl::progress prog("run permutation test");
+    tipl::out() << "run permutation test";
     clear();
 
     {
