@@ -1850,15 +1850,14 @@ bool ImageModel::run_eddy(std::string exec)
         }
     }
 
-
     std::vector<std::string> param = {
-            QString("--imain=%1").arg(QFileInfo(temp_nifti.c_str()).fileName()).toStdString().c_str(),
-            QString("--mask=%1").arg(QFileInfo(mask_nifti.c_str()).fileName()).toStdString().c_str(),
-            QString("--acqp=%1").arg(acqparam_file.c_str()).toStdString().c_str(),
-            QString("--index=%1").arg(QFileInfo(index_file.c_str()).fileName()).toStdString().c_str(),
-            QString("--bvecs=%1").arg(QFileInfo(bvec_file.c_str()).fileName()).toStdString().c_str(),
-            QString("--bvals=%1").arg(QFileInfo(bval_file.c_str()).fileName()).toStdString().c_str(),
-            QString("--out=%1").arg(QFileInfo(corrected_file.c_str()).fileName()).toStdString().c_str(),
+            std::string("--imain=") + std::filesystem::path(temp_nifti).filename().string(),
+            std::string("--mask=") + std::filesystem::path(mask_nifti).filename().string(),
+            std::string("--acqp=") + acqparam_file,
+            std::string("--index=") + std::filesystem::path(index_file.c_str()).filename().string(),
+            std::string("--bvecs=") + std::filesystem::path(bvec_file.c_str()).filename().string(),
+            std::string("--bvals=") + std::filesystem::path(bval_file.c_str()).filename().string(),
+            std::string("--out=") + std::filesystem::path(corrected_file.c_str()).filename().string(),
             "--verbose=1"
             };
     if(has_topup)
@@ -2247,7 +2246,7 @@ void save_idx(const char* file_name,std::shared_ptr<tipl::io::gz_istream> in)
 size_t match_volume(float volume);
 bool ImageModel::load_from_file(const char* dwi_file_name)
 {
-    tipl::progress prog("open SRC file");
+    tipl::progress prog("open SRC file ",std::filesystem::path(dwi_file_name).filename().string().c_str());
     if(voxel.steps.empty())
     {
         voxel.steps = "[Step T2][Reconstruction] open ";
