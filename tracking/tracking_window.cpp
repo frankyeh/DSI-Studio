@@ -83,6 +83,7 @@ void tracking_window::set_data(QString name, QVariant value)
 tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_handle) :
         QMainWindow(parent),ui(new Ui::tracking_window),scene(*this),handle(new_handle),work_path(QFileInfo(new_handle->fib_file_name.c_str()).absolutePath()+"/")
 {
+    tipl::progress prog("initializing tracking GUI");
     tipl::out() << "initiate image/slices" << std::endl;
     fib_data& fib = *new_handle;
     for (unsigned int index = 0;index < fib.view_item.size(); ++index)

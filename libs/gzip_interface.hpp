@@ -8,8 +8,8 @@
 #include "TIPL/tipl.hpp"
 #endif
 
-typedef tipl::io::nifti_base<tipl::io::gz_istream,tipl::io::gz_ostream,tipl::progress> gz_nifti;
+typedef tipl::io::nifti_base<tipl::io::gz_istream,tipl::io::gz_ostream> gz_nifti;
 typedef tipl::io::mat_write_base<tipl::io::gz_ostream> gz_mat_write;
-typedef tipl::io::mat_read_base<tipl::io::gz_istream,tipl::progress> gz_mat_read;
+typedef tipl::io::mat_read_base<tipl::io::gz_istream> gz_mat_read;
 
 #endif // GZIP_INTERFACE_HPP

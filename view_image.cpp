@@ -788,7 +788,7 @@ bool view_image::open(QStringList file_names_)
         bool succeed = true;
         apply([&](auto& data)
         {
-            succeed = nifti.get_untouched_image(data);
+            succeed = nifti.get_untouched_image(data,prog);
         });
         if(!succeed)
         {

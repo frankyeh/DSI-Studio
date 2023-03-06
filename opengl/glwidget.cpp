@@ -420,6 +420,7 @@ void GLWidget::renderText(float x, float y, float z, const QString &str, const Q
 
 void GLWidget::initializeGL()
 {
+    tipl::progress prog("initializing OpenGL");
     initializeOpenGLFunctions();
     if(!isValid() || !glGetString(GL_VERSION))
     {

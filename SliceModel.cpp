@@ -143,7 +143,7 @@ bool CustomSliceModel::load_slices(const std::vector<std::string>& files,bool is
     name = QFileInfo(files[0].c_str()).baseName().toStdString();
     T.identity();
     invT.identity();
-
+    tipl::progress prog("load slices ",QFileInfo(files[0].c_str()).fileName().toStdString().c_str());
 
     if(QFileInfo(files[0].c_str()).fileName().toLower().contains("mni"))
     {
@@ -254,7 +254,6 @@ bool CustomSliceModel::load_slices(const std::vector<std::string>& files,bool is
                 return false;
             }
 
-            tipl::progress prog("loading images");
             for(unsigned int i = 0;prog(i,geo[2]);++i)
             {
                 tipl::image<2,short> I;
@@ -357,7 +356,7 @@ bool CustomSliceModel::load_slices(const std::vector<std::string>& files,bool is
             error_msg = nifti.error_msg;
             return false;
         }
-        nifti.toLPS(source_images);
+        nifti.toLPS(source_images,true,true,prog);
         save_idx(files[0].c_str(),nifti.input_stream);
         nifti.get_voxel_size(vs);
         nifti.get_image_transformation(trans);

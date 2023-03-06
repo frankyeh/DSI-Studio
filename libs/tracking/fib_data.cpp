@@ -398,19 +398,6 @@ bool load_fib_from_tracks(const char* file_name,
                           tipl::matrix<4,4>& trans_to_mni);
 void prepare_idx(const char* file_name,std::shared_ptr<tipl::io::gz_istream> in);
 void save_idx(const char* file_name,std::shared_ptr<tipl::io::gz_istream> in);
-bool read_fib_mat_with_idx(const char* file_name,gz_mat_read& mat_reader)
-{
-    prepare_idx(file_name,mat_reader.in);
-    if(mat_reader.in->has_access_points())
-    {
-        mat_reader.delay_read = true;
-        mat_reader.in->buffer_all = false;
-    }
-    if (!mat_reader.load_from_file(file_name))
-        return false;
-    save_idx(file_name,mat_reader.in);
-    return true;
-}
 bool fib_data::load_from_file(const char* file_name)
 {
     tipl::progress prog("open FIB file");
@@ -562,11 +549,20 @@ bool fib_data::load_from_file(const char* file_name)
         error_msg = "file does not exist";
         return false;
     }
-    if(!read_fib_mat_with_idx(file_name,mat_reader))
+
+    prepare_idx(file_name,mat_reader.in);
+    if(mat_reader.in->has_access_points())
+    {
+        mat_reader.delay_read = true;
+        mat_reader.in->buffer_all = false;
+    }
+    if (!mat_reader.load_from_file(file_name,prog))
     {
         error_msg = mat_reader.error_msg;
         return false;
     }
+    save_idx(file_name,mat_reader.in);
+
 
     if(!load_from_mat())
         return false;

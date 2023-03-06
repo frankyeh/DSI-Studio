@@ -2367,7 +2367,7 @@ bool ImageModel::load_from_file(const char* dwi_file_name)
         }
 
         prepare_idx(dwi_file_name,mat_reader.in);
-        if(!mat_reader.load_from_file(dwi_file_name))
+        if(!mat_reader.load_from_file(dwi_file_name,prog))
         {
             if(prog.aborted())
             {
