@@ -2,7 +2,6 @@
 #define DTI_PROCESS_HPP
 #include <cmath>
 #include "basic_voxel.hpp"
-#include "TIPL/tipl.hpp"
 
 class Dwi2Tensor : public BaseProcess
 {
@@ -185,7 +184,7 @@ public:
         }
 
     }
-    virtual void end(Voxel& voxel,gz_mat_write& mat_writer)
+    virtual void end(Voxel& voxel,tipl::io::gz_mat_write& mat_writer)
     {
         if(voxel.fib_fa.empty())
             return;

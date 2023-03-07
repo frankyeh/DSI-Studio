@@ -3,7 +3,6 @@
 #include <filesystem>
 #include <iterator>
 #include <string>
-#include "TIPL/tipl.hpp"
 #include "dicom/dwi_header.hpp"
 extern std::string src_error_msg;
 QStringList search_files(QString dir,QString filter);

@@ -2327,7 +2327,7 @@ bool GLWidget::command(QString cmd,QString param,QString param2)
         else
         {
             // use ICBM152 wm as the surface
-            gz_nifti nifti;
+            tipl::io::gz_nifti nifti;
             if(nifti.load_from_file(cur_tracking_window.handle->wm_template_file_name.c_str()))
             {
                 tipl::matrix<4,4,float> trans;

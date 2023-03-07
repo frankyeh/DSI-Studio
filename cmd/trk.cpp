@@ -5,12 +5,10 @@
 #include <iterator>
 #include <string>
 #include <filesystem>
-#include "TIPL/tipl.hpp"
 #include "tracking/region/Regions.h"
 #include "libs/tracking/tract_model.hpp"
 #include "libs/tracking/tracking_thread.hpp"
 #include "fib_data.hpp"
-#include "libs/gzip_interface.hpp"
 #include "mapping/atlas.hpp"
 #include "SliceModel.h"
 #include "connectometry/group_connectometry_analysis.h"

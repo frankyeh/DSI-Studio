@@ -4,6 +4,7 @@
 #include <QMainWindow>
 #include <QGraphicsScene>
 #include <QSettings>
+#include "zlib.h"
 #include "TIPL/tipl.hpp"
 
 

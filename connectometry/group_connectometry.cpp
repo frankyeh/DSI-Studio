@@ -551,7 +551,7 @@ void group_connectometry::on_load_roi_from_file_clicked()
         return;
     tipl::image<3> I;
     tipl::matrix<4,4> transform;
-    gz_nifti nii;
+    tipl::io::gz_nifti nii;
     if(!nii.load_from_file(file.toStdString().c_str()) || !nii.toLPS(I))
     {
         QMessageBox::critical(this,"ERROR",nii.error_msg.c_str());

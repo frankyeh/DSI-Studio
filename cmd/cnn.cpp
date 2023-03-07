@@ -1,7 +1,5 @@
 #include <QApplication>
 #include <QFileInfo>
-#include "TIPL/tipl.hpp"
-#include "gzip_interface.hpp"
 #include "connectometry/group_connectometry_analysis.h"
 bool train_cnn(tipl::ml::trainer& t,
                std::string network,

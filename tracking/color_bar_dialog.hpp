@@ -1,8 +1,9 @@
 #ifndef COLOR_BAR_DIALOG_HPP
 #define COLOR_BAR_DIALOG_HPP
-#include "TIPL/tipl.hpp"
 #include <QDialog>
 #include <QGraphicsScene>
+#include "zlib.h"
+#include "TIPL/tipl.hpp"
 
 namespace Ui {
 class color_bar_dialog;

@@ -7,8 +7,8 @@
 
 #include "roi.hpp"
 #include "tracking_method.hpp"
-#include "fib_data.hpp"
 #include "tract_model.hpp"
+
 #ifndef M_PI
 #define M_PI        3.14159265358979323846
 #endif

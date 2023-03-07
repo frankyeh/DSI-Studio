@@ -222,7 +222,7 @@ void group_connectometry_analysis::save_result(void)
 
     {
         tipl::progress p2("save statistics.fib.gz");
-        gz_mat_write mat_write((output_file_name+".t_statistics.fib.gz").c_str());
+        tipl::io::gz_mat_write mat_write((output_file_name+".t_statistics.fib.gz").c_str());
         for(unsigned int i = 0;i < handle->mat_reader.size();++i)
         {
             std::string name = handle->mat_reader.name(i);

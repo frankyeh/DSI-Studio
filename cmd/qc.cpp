@@ -1,7 +1,6 @@
 #include <QString>
 #include <QStringList>
 #include <QFileInfo>
-#include "TIPL/tipl.hpp""
 #include "libs/dsi/image_model.hpp"
 #include "fib_data.hpp"
 

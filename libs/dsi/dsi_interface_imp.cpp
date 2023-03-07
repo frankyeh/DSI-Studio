@@ -73,7 +73,7 @@ bool ImageModel::reconstruction_hist(void)
 
     // create layers
     std::string output_name = (file_name.find(".fib.gz") == std::string::npos ? file_name + get_file_ext():file_name);
-    gz_mat_write mat_writer(output_name.c_str());
+    tipl::io::gz_mat_write mat_writer(output_name.c_str());
     if(!mat_writer)
     {
         error_msg = "Cannot save fib file";

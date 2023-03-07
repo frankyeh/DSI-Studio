@@ -1,7 +1,6 @@
 #ifndef ROI_HPP
 #include <functional>
 #include <set>
-#include "TIPL/tipl.hpp"
 #include "tract_model.hpp"
 #include "tracking/region/Regions.h"
 class Roi {

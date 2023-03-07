@@ -4,7 +4,6 @@
 #include <random>
 #include <deque>
 #include <vector>
-#include "TIPL/tipl.hpp"
 #include "basic_process.hpp"
 #include "roi.hpp"
 #include "fib_data.hpp"

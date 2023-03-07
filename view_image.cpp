@@ -154,7 +154,7 @@ bool match_files(const std::string& file_path1,const std::string& file_path2,
 
 
 
-bool resample_mat(gz_mat_read& mat_reader,float resolution);
+bool resample_mat(tipl::io::gz_mat_read& mat_reader,float resolution);
 bool view_image::command(std::string cmd,std::string param1)
 {
     if(!shape.size())
@@ -176,7 +176,7 @@ bool view_image::command(std::string cmd,std::string param1)
         }
         if(cmd == "save")
         {
-            gz_mat_write matfile(file_name.toStdString().c_str());
+            tipl::io::gz_mat_write matfile(file_name.toStdString().c_str());
             if(!matfile)
             {
                 QMessageBox::critical(this,"ERROR","Cannot save file");
@@ -242,7 +242,7 @@ bool view_image::command(std::string cmd,std::string param1)
         else
         apply([&](auto& I)
         {
-            result = tipl::command<gz_nifti>(I,vs,T,is_mni,cmd,param1,error_msg);
+            result = tipl::command<tipl::io::gz_nifti>(I,vs,T,is_mni,cmd,param1,error_msg);
             shape = I.shape();
         });
         tipl::out() << "result: " << (result ? "succeeded":"failed") << std::endl;
@@ -341,7 +341,7 @@ bool load_image_from_files(QStringList filenames,tipl::image<3>& ref,tipl::vecto
 {
     if(filenames.size() == 1 && filenames[0].toLower().contains("nii"))
     {
-        gz_nifti in;
+        tipl::io::gz_nifti in;
         if(!in.load_from_file(filenames[0].toStdString().c_str()) || !in.toLPS(ref))
         {
             QMessageBox::information(nullptr,"Error","Not a valid nifti file");

@@ -578,7 +578,7 @@ bool load_nii(std::shared_ptr<fib_data> handle,
               bool is_mni)
 {
     tipl::progress prog("load NIFTI file");
-    gz_nifti header;
+    tipl::io::gz_nifti header;
     if (!header.load_from_file(file_name.c_str()))
     {
         error_msg = header.error_msg;
@@ -1197,7 +1197,7 @@ void RegionTableWidget::save_all_regions_to_4dnifti(void)
     if(prog.aborted())
         return;
 
-    if(gz_nifti::save_to_file(filename.toStdString().c_str(),multiple_I,
+    if(tipl::io::gz_nifti::save_to_file(filename.toStdString().c_str(),multiple_I,
                               checked_regions[0]->vs,
                               checked_regions[0]->trans_to_mni,
                               cur_tracking_window.handle->is_mni))
@@ -1242,14 +1242,14 @@ void RegionTableWidget::save_all_regions(void)
     if(checked_regions.size() <= 255)
     {
         tipl::image<3,uint8_t> i8mask(mask);
-        result = gz_nifti::save_to_file(filename.toStdString().c_str(),i8mask,
+        result = tipl::io::gz_nifti::save_to_file(filename.toStdString().c_str(),i8mask,
                            cur_tracking_window.current_slice->vs,
                            cur_tracking_window.handle->trans_to_mni,
                            cur_tracking_window.handle->is_mni || cur_tracking_window.handle->is_mni);
     }
     else
     {
-        result = gz_nifti::save_to_file(filename.toStdString().c_str(),mask,
+        result = tipl::io::gz_nifti::save_to_file(filename.toStdString().c_str(),mask,
                            cur_tracking_window.current_slice->vs,
                            cur_tracking_window.handle->trans_to_mni,
                            cur_tracking_window.handle->is_mni || cur_tracking_window.handle->is_mni);

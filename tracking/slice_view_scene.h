@@ -2,9 +2,11 @@
 #define SLICE_VIEW_SCENE_H
 #include <QGraphicsScene>
 #include <vector>
-#include "TIPL/tipl.hpp"
 #include <QStatusBar>
 #include <QEvent>
+#include "zlib.h"
+#include "TIPL/tipl.hpp"
+
 class fib_data;
 class tracking_window;
 class SliceModel;

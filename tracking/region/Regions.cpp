@@ -4,7 +4,6 @@
 #include <iterator>
 #include "Regions.h"
 #include "SliceModel.h"
-#include "libs/gzip_interface.hpp"
 
 void ROIRegion::add_points(std::vector<tipl::vector<3,float> >&& points,bool del)
 {
@@ -144,7 +143,7 @@ bool ROIRegion::save_to_file(const char* FileName)
         std::string tmp = out.str();
         if(tmp.size() < 80)
             tmp.resize(80);
-        return gz_nifti::save_to_file(FileName,mask,vs,tipl::matrix<4,4>(trans_to_mni*to_diffusion_space),is_mni,tmp.c_str());
+        return tipl::io::gz_nifti::save_to_file(FileName,mask,vs,tipl::matrix<4,4>(trans_to_mni*to_diffusion_space),is_mni,tmp.c_str());
     }
     return false;
 }
@@ -195,7 +194,7 @@ bool ROIRegion::LoadFromFile(const char* FileName) {
 
     if (ext == std::string(".nii") || ext == std::string(".hdr") || ext == std::string("i.gz"))
     {
-        gz_nifti header;
+        tipl::io::gz_nifti header;
         tipl::image<3> I;
         if (!header.load_from_file(FileName) || !header.toLPS(I))
         {

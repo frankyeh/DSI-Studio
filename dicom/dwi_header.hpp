@@ -2,6 +2,7 @@
 #define DWI_HEADER_HPP
 #include <vector>
 #include <string>
+#include "zlib.h"
 #include "TIPL/tipl.hpp"
 
 

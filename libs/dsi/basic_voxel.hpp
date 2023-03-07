@@ -1,9 +1,9 @@
 #ifndef BASIC_VOXEL_HPP
 #define BASIC_VOXEL_HPP
 #include <string>
+#include "zlib.h"
 #include "TIPL/tipl.hpp"
 #include "tessellated_icosahedron.hpp"
-#include "gzip_interface.hpp"
 
 
 struct ImageModel;
@@ -18,7 +18,7 @@ public:
     virtual void init(Voxel&) {}
     virtual void run(Voxel&, VoxelData&) {}
     virtual void run_hist(Voxel&,HistData&) {}
-    virtual void end(Voxel&,gz_mat_write&) {}
+    virtual void end(Voxel&,tipl::io::gz_mat_write&) {}
     virtual ~BaseProcess(void) {}
 };
 
@@ -175,7 +175,7 @@ public:
     void init(void);
     bool run(void);
     bool run_hist(void);
-    void end(gz_mat_write& writer);
+    void end(tipl::io::gz_mat_write& writer);
     BaseProcess* get(unsigned int index);
 };
 

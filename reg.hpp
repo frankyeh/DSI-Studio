@@ -1,6 +1,7 @@
 #ifndef REG_HPP
 #define REG_HPP
 #include <iostream>
+#include "zlib.h"
 #include "TIPL/tipl.hpp"
 extern bool has_cuda;
 void cdm2_cuda(const tipl::image<3>& It,

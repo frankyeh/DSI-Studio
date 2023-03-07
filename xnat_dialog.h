@@ -1,11 +1,12 @@
 #ifndef XNAT_DIALOG_H
 #define XNAT_DIALOG_H
-#include <QtNetwork>
 #include <iostream>
+#include <QtNetwork>
 #include <QApplication>
-#include "TIPL/tipl.hpp"
 #include <QMainWindow>
 #include <QTimer>
+#include "zlib.h"
+#include "TIPL/tipl.hpp"
 
 class xnat_facade{
 public:

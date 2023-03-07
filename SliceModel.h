@@ -1,8 +1,8 @@
 #ifndef SliceModelH
 #define SliceModelH
 #include <future>
+#include "zlib.h"
 #include "TIPL/tipl.hpp"
-#include "libs/gzip_interface.hpp"
 
 // ---------------------------------------------------------------------------
 class fib_data;

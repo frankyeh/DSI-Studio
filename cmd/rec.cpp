@@ -4,14 +4,12 @@
 #include <iostream>
 #include <iterator>
 #include <string>
+#include <filesystem>
 #include "fib_data.hpp"
 #include "tracking/region/Regions.h"
-#include "TIPL/tipl.hpp"
 #include "libs/dsi/image_model.hpp"
-#include "libs/gzip_interface.hpp"
 #include "reconstruction/reconstruction_window.h"
 #include "reg.hpp"
-#include <filesystem>
 
 extern std::vector<std::string> fa_template_list;
 bool get_src(std::string filename,ImageModel& src2,std::string& error_msg);
@@ -57,7 +55,7 @@ int rec(tipl::program_option<tipl::out>& po)
         else
         {
             tipl::out() << "reading mask file: " << mask_file << std::endl;
-            gz_nifti nii;
+            tipl::io::gz_nifti nii;
             if(!nii.load_from_file(mask_file) || !nii.toLPS(src.voxel.mask))
             {
                 tipl::out() << "ERROR:" << nii.error_msg << std::endl;
@@ -153,7 +151,7 @@ int rec(tipl::program_option<tipl::out>& po)
             if(po.has("rotate_to") || po.has("align_to"))
             {
                 std::string file_name = po.has("rotate_to") ? po.get("rotate_to"):po.get("align_to");
-                gz_nifti in;
+                tipl::io::gz_nifti in;
                 if(!in.load_from_file(file_name.c_str()))
                 {
                     tipl::out() << "failed to read " << file_name << std::endl;

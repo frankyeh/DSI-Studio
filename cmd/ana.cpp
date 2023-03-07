@@ -5,13 +5,12 @@
 #include <iostream>
 #include <iterator>
 #include <string>
-
+#include "zlib.h"
 #include "TIPL/tipl.hpp"
 #include "tracking/region/Regions.h"
 #include "libs/tracking/tract_model.hpp"
 #include "libs/tracking/tracking_thread.hpp"
 #include "fib_data.hpp"
-#include "libs/gzip_interface.hpp"
 #include "atlas.hpp"
 
 #include <filesystem>
@@ -280,7 +279,7 @@ int ana_tract(tipl::program_option<tipl::out>& po)
         }
         tipl::image<3> pdi(accumulate_map);
         pdi *= 1.0f/float(tract_files.size());
-        if(!gz_nifti::save_to_file(output.c_str(),pdi,handle->vs,handle->trans_to_mni,handle->is_mni))
+        if(!tipl::io::gz_nifti::save_to_file(output.c_str(),pdi,handle->vs,handle->trans_to_mni,handle->is_mni))
         {
             tipl::out() << "ERROR: cannot write to " << output << std::endl;
             return 1;

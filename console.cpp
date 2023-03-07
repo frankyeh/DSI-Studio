@@ -3,6 +3,7 @@
 #include <QMessageBox>
 #include "console.h"
 #include "ui_console.h"
+#include "zlib.h"
 #include "TIPL/tipl.hpp"
 
 console_stream console;

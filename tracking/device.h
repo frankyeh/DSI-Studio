@@ -1,6 +1,7 @@
 #ifndef DEVICE_H
 #define DEVICE_H
 #include <string>
+#include "zlib.h"
 #include "TIPL/tipl.hpp"
 class Device
 {

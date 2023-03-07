@@ -4,9 +4,7 @@
 #include <QSettings>
 #include "dicom_parser.h"
 #include "ui_dicom_parser.h"
-#include "TIPL/tipl.hpp"
 #include "mainwindow.h"
-#include "libs/gzip_interface.hpp"
 
 std::string src_error_msg;
 
@@ -286,7 +284,7 @@ bool load_4d_nii(const char* file_name,std::vector<std::shared_ptr<DwiHeader> >&
     tipl::vector<3,float> vs;
     std::vector<tipl::image<3> > dwi_data;
     {
-        gz_nifti nii;
+        tipl::io::gz_nifti nii;
         nii.input_stream->buffer_all = true;
         if(!nii.load_from_file(file_name))
         {
@@ -349,7 +347,7 @@ bool load_4d_nii(const char* file_name,std::vector<std::shared_ptr<DwiHeader> >&
     tipl::image<4,float> grad_dev;
     if(QFileInfo(QFileInfo(file_name).absolutePath() + "/grad_dev.nii.gz").exists())
     {
-        gz_nifti grad_header;
+        tipl::io::gz_nifti grad_header;
         if(grad_header.load_from_file(QString(QFileInfo(file_name).absolutePath() + "/grad_dev.nii.gz").toStdString().c_str()))
         {
             grad_header.toLPS(grad_dev);
@@ -360,7 +358,7 @@ bool load_4d_nii(const char* file_name,std::vector<std::shared_ptr<DwiHeader> >&
     tipl::image<3,unsigned char> mask;
     if(QFileInfo(QFileInfo(file_name).absolutePath() + "/nodif_brain_mask.nii.gz").exists())
     {
-        gz_nifti mask_header;
+        tipl::io::gz_nifti mask_header;
         if(mask_header.load_from_file(QString(QFileInfo(file_name).absolutePath() + "/nodif_brain_mask.nii.gz").toStdString().c_str()))
         {
             mask_header.toLPS(mask);

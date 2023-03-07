@@ -3,8 +3,6 @@
 #include <fstream>
 #include <sstream>
 #include <string>
-#include "TIPL/tipl.hpp"
-#include "gzip_interface.hpp"
 #include "connectometry_db.hpp"
 #include "atlas.hpp"
 
@@ -13,7 +11,7 @@ private:
     tipl::image<3,const float*> odf_map;
 public:
     std::string error_msg;
-    bool read(gz_mat_read& mat_reader);
+    bool read(tipl::io::gz_mat_read& mat_reader);
     bool has_odfs(void) const {return !odf_map.empty();}
     const float* get_odf_data(size_t index){return odf_map[index];}
 };
@@ -45,7 +43,7 @@ public: // for differential tractography
     std::string dt_threshold_name;
 public:
     void check_index(unsigned int index);
-    bool add_data(gz_mat_read& mat_reader);
+    bool add_data(tipl::io::gz_mat_read& mat_reader);
     bool set_tracking_index(int new_index);
     bool set_tracking_index(const std::string& name);
     std::string get_threshold_name(void) const{return index_name[uint32_t(cur_index)];}
@@ -162,7 +160,7 @@ struct item
 private:
     tipl::const_pointer_image<3> image_data;
     tipl::image<3> dummy;
-    gz_mat_read* mat_reader = nullptr;
+    tipl::io::gz_mat_read* mat_reader = nullptr;
     unsigned int image_index = 0;
 public:
     template<typename value_type>
@@ -172,7 +170,7 @@ public:
         T.identity();iT.identity();
         set_scale(image_data.begin(),image_data.end());
     }
-    item(const std::string& name_,const tipl::shape<3>& dim_,gz_mat_read* mat_reader_,unsigned int index_):
+    item(const std::string& name_,const tipl::shape<3>& dim_,tipl::io::gz_mat_read* mat_reader_,unsigned int index_):
         image_data(tipl::make_image((const float*)nullptr,dim_)),mat_reader(mat_reader_),image_index(index_),name(name_)
     {
         T.identity();iT.identity();
@@ -233,7 +231,7 @@ public:
     mutable std::string error_msg;
     std::string report,steps,fib_file_name;
     std::string demo; // used in cli for dT analysis
-    gz_mat_read mat_reader;
+    tipl::io::gz_mat_read mat_reader;
 public:
     tipl::shape<3> dim;
     tipl::vector<3> vs;

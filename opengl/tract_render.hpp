@@ -1,7 +1,6 @@
 #ifndef TRACT_RENDER_HPP
 #define TRACT_RENDER_HPP
 #include <QtOpenGL>
-#include "TIPL/tipl.hpp"
 #include "tract_model.hpp"
 class tracking_window;
 class GLWidget;

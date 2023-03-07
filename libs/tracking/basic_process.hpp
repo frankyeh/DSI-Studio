@@ -1,5 +1,6 @@
 #ifndef BASIC_PROCESS_HPP
 #define BASIC_PROCESS_HPP
+#include "zlib.h"
 #include "TIPL/tipl.hpp"
 
 extern char fib_dx[80];

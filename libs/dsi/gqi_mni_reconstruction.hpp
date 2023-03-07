@@ -57,7 +57,7 @@ public:
         if(fa_template_list[voxel.template_id].empty())
             throw std::runtime_error("Invalid external template");
         {
-            gz_nifti read;
+            tipl::io::gz_nifti read;
             if(!read.load_from_file(fa_template_list[voxel.template_id].c_str()))
                 throw std::runtime_error("Cannot load template");
 
@@ -68,7 +68,7 @@ public:
         }
         if(!iso_template_list[voxel.template_id].empty())
         {
-            gz_nifti read2;
+            tipl::io::gz_nifti read2;
             if(read2.load_from_file(iso_template_list[voxel.template_id].c_str()))
             {
                 read2.toLPS(VG2);
@@ -87,12 +87,12 @@ public:
                 tipl::normalize(VF2);
             if(export_intermediate)
             {
-                VG.save_to_file<gz_nifti>("Template_QA.nii.gz");
+                VG.save_to_file<tipl::io::gz_nifti>("Template_QA.nii.gz");
                 if(!VG2.empty())
-                    VG2.save_to_file<gz_nifti>("Template_ISO.nii.gz");
-                VF.save_to_file<gz_nifti>("Subject_QA.nii.gz");
+                    VG2.save_to_file<tipl::io::gz_nifti>("Template_ISO.nii.gz");
+                VF.save_to_file<tipl::io::gz_nifti>("Subject_QA.nii.gz");
                 if(!VF2.empty())
-                    VF2.save_to_file<gz_nifti>("Subject_ISO.nii.gz");
+                    VF2.save_to_file<tipl::io::gz_nifti>("Subject_ISO.nii.gz");
             }
 
             tipl::filter::gaussian(VF);
@@ -123,9 +123,9 @@ public:
 
             if(export_intermediate)
             {
-                VFF.save_to_file<gz_nifti>("Subject_QA_linear_reg.nii.gz");
+                VFF.save_to_file<tipl::io::gz_nifti>("Subject_QA_linear_reg.nii.gz");
                 if(dual_modality)
-                    VFF2.save_to_file<gz_nifti>("Subject_ISO_linear_reg.nii.gz");
+                    VFF2.save_to_file<tipl::io::gz_nifti>("Subject_ISO_linear_reg.nii.gz");
             }
 
             tipl::reg::cdm_pre(VG,VG2,VFF,VFF2);
@@ -156,7 +156,7 @@ public:
                                     buffer[i+shift] = cdm_dis[i][d];
                             }
                         });
-                        gz_nifti::save_to_file("Subject_displacement.nii.gz",buffer,voxel.vs,voxel.trans_to_mni);
+                        tipl::io::gz_nifti::save_to_file("Subject_displacement.nii.gz",buffer,voxel.vs,voxel.trans_to_mni);
                     }
                 },terminated))
                 throw std::runtime_error("reconstruction canceled");
@@ -171,7 +171,7 @@ public:
                 throw std::runtime_error("ERROR: Poor R2 found. Please check image orientation or use manual alignment.");
 
             if(export_intermediate)
-                VFFF.save_to_file<gz_nifti>("Subject_QA_nonlinear_reg.nii.gz");
+                VFFF.save_to_file<tipl::io::gz_nifti>("Subject_QA_nonlinear_reg.nii.gz");
 
             // check if partial reconstruction
             size_t total_voxel_count = 0;
@@ -355,7 +355,7 @@ public:
         if(!jdet.empty())
             jdet[data.voxel_index] = std::abs(data.jacobian.det());
     }
-    virtual void end(Voxel& voxel,gz_mat_write& mat_writer)
+    virtual void end(Voxel& voxel,tipl::io::gz_mat_write& mat_writer)
     {
         voxel.qsdr = false;
         mat_writer.write("jdet",jdet,uint32_t(voxel.dim.plane_size()));

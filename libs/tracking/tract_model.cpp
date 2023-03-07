@@ -12,9 +12,7 @@
 #include "roi.hpp"
 #include "tract_model.hpp"
 #include "fib_data.hpp"
-#include "gzip_interface.hpp"
 #include "mapping/atlas.hpp"
-#include "gzip_interface.hpp"
 #include "tract_cluster.hpp"
 #include "../../tracking/region/Regions.h"
 #include "tracking_method.hpp"
@@ -73,7 +71,7 @@ class TinyTrack{
                              const std::string& parameter_id,
                              unsigned int color = 0)
     {
-        gz_mat_write out(file_name);
+        tipl::io::gz_mat_write out(file_name);
         if (!out)
             return false;
         tipl::progress prog("save trajectories to ",std::filesystem::path(file_name).filename().string().c_str());
@@ -201,7 +199,7 @@ class TinyTrack{
                                std::string& report,std::string& parameter_id,unsigned int& color)
     {
         tipl::progress prog_("loading ",std::filesystem::path(file_name).filename().c_str());
-        gz_mat_read in;
+        tipl::io::gz_mat_read in;
         prepare_idx(file_name,in.in);
         if (!in.load_from_file(file_name))
             return false;
@@ -736,7 +734,7 @@ bool TractModel::load_from_file(const char* file_name_,bool append)
 
     if (QString(file_name_).endsWith(".mat"))
     {
-        gz_mat_read in;
+        tipl::io::gz_mat_read in;
         if(!in.load_from_file(file_name_))
             return false;
         const float* buf = nullptr;
@@ -2516,8 +2514,8 @@ bool TractModel::export_end_pdi(
     }
     QString f1 = QFileInfo(file_name).absolutePath() + "/"+ QFileInfo(file_name).baseName() + "_1.nii.gz";
     QString f2 = QFileInfo(file_name).absolutePath() + "/"+ QFileInfo(file_name).baseName() + "_2.nii.gz";
-    return gz_nifti::save_to_file(f1.toStdString().c_str(),pdi1,vs,trans_to_mni,is_mni) &&
-           gz_nifti::save_to_file(f2.toStdString().c_str(),pdi2,vs,trans_to_mni,is_mni);
+    return tipl::io::gz_nifti::save_to_file(f1.toStdString().c_str(),pdi1,vs,trans_to_mni,is_mni) &&
+           tipl::io::gz_nifti::save_to_file(f2.toStdString().c_str(),pdi2,vs,trans_to_mni,is_mni);
 }
 bool TractModel::export_pdi(const char* file_name,
                             const std::vector<std::shared_ptr<TractModel> >& tract_models)
@@ -2543,7 +2541,7 @@ bool TractModel::export_pdi(const char* file_name,
     tipl::image<3> pdi(accumulate_map);
     if(tract_models.size() > 1)
         tipl::multiply_constant(pdi,1.0f/float(tract_models.size()));
-    return gz_nifti::save_to_file(file_name,pdi,vs,trans_to_mni,is_mni);
+    return tipl::io::gz_nifti::save_to_file(file_name,pdi,vs,trans_to_mni,is_mni);
 }
 bool TractModel::export_tdi(const char* filename,
                   std::vector<std::shared_ptr<TractModel> > tract_models,
@@ -2559,14 +2557,14 @@ bool TractModel::export_tdi(const char* filename,
         tipl::image<3,tipl::rgb> tdi(dim);
         for(unsigned int index = 0;index < tract_models.size();++index)
             tract_models[index]->get_density_map(tdi,transformation,end_point);
-        return gz_nifti::save_to_file(filename,tdi,vs,tipl::matrix<4,4>(tract_models[0]->trans_to_mni*transformation),tract_models[0]->is_mni);
+        return tipl::io::gz_nifti::save_to_file(filename,tdi,vs,tipl::matrix<4,4>(tract_models[0]->trans_to_mni*transformation),tract_models[0]->is_mni);
     }
     else
     {
         tipl::image<3,unsigned int> tdi(dim);
         for(unsigned int index = 0;index < tract_models.size();++index)
             tract_models[index]->get_density_map(tdi,transformation,end_point);
-        return gz_nifti::save_to_file(filename,tdi,vs,tipl::matrix<4,4>(tract_models[0]->trans_to_mni*transformation),tract_models[0]->is_mni);
+        return tipl::io::gz_nifti::save_to_file(filename,tdi,vs,tipl::matrix<4,4>(tract_models[0]->trans_to_mni*transformation),tract_models[0]->is_mni);
     }
 }
 void TractModel::to_voxel(std::vector<tipl::vector<3,short> >& points,const tipl::matrix<4,4>& trans,int id)

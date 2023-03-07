@@ -348,7 +348,7 @@ bool CustomSliceModel::load_slices(const std::vector<std::string>& files,bool is
     if(source_images.empty() &&
        (QString(files[0].c_str()).endsWith("nii.gz") || QString(files[0].c_str()).endsWith("nii")))
     {
-        gz_nifti nifti;
+        tipl::io::gz_nifti nifti;
         //  prepare idx file
         prepare_idx(files[0].c_str(),nifti.input_stream);
         if(!nifti.load_from_file(files[0]))

@@ -5,6 +5,7 @@
 #include <QtOpenGL>
 #include <vector>
 #include <map>
+#include "zlib.h"
 #include "TIPL/tipl.hpp"
 
 namespace tipl{

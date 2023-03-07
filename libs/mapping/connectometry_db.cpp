@@ -367,7 +367,7 @@ size_t convert_index(size_t old_index,
     return new_pos.index();
 }
 
-bool connectometry_db::is_odf_consistent(gz_mat_read& m)
+bool connectometry_db::is_odf_consistent(tipl::io::gz_mat_read& m)
 {
     unsigned int row,col;
     const float* odf_buffer = nullptr;
@@ -438,7 +438,7 @@ bool connectometry_db::add_subject_file(const std::string& file_name,
         tipl::vector<3> vs;
         tipl::image<3> I;
         tipl::matrix<4,4> trans;
-        if(!gz_nifti::load_from_file(file_name.c_str(),I,vs,trans))
+        if(!tipl::io::gz_nifti::load_from_file(file_name.c_str(),I,vs,trans))
         {
             error_msg = "Cannot read file ";
             error_msg += file_name;
@@ -568,7 +568,7 @@ bool connectometry_db::add_subject_file(const std::string& file_name,
 bool connectometry_db::save_db(const char* output_name)
 {
     // store results
-    gz_mat_write matfile(output_name);
+    tipl::io::gz_mat_write matfile(output_name);
     if(!matfile)
     {
         error_msg = "Cannot save file ";
@@ -618,7 +618,7 @@ bool connectometry_db::save_db(const char* output_name)
 void connectometry_db::get_subject_slice(unsigned int subject_index,unsigned char dim,unsigned int pos,
                         tipl::image<2,float>& slice) const
 {
-    tipl::image<2,unsigned int> tmp;
+    tipl::image<2,size_t> tmp;
     tipl::volume2slice(vi2si, tmp, dim, pos);
     slice.clear();
     slice.resize(tmp.shape());
@@ -695,7 +695,7 @@ bool connectometry_db::save_demo_matched_image(const std::string& matched_demo,c
     tipl::image<3> I;
     if(!get_demo_matched_volume(matched_demo,I))
         return false;
-    if(!gz_nifti::save_to_file(filename.c_str(),I,handle->vs,handle->trans_to_mni,true,matched_demo.c_str()))
+    if(!tipl::io::gz_nifti::save_to_file(filename.c_str(),I,handle->vs,handle->trans_to_mni,true,matched_demo.c_str()))
     {
         error_msg = "Cannot save file to ";
         error_msg += filename;
@@ -729,7 +729,7 @@ void connectometry_db::get_subject_fa(unsigned int subject_index,std::vector<std
 }
 bool connectometry_db::get_qa_profile(const char* file_name,std::vector<std::vector<float> >& data)
 {
-    gz_mat_read single_subject;
+    tipl::io::gz_mat_read single_subject;
     if(!single_subject.load_from_file(file_name))
     {
         error_msg = "fail to load the fib file";

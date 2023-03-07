@@ -1,11 +1,11 @@
 #ifndef FILEBROWSER_H
 #define FILEBROWSER_H
-
+#include <memory>
 #include <QMainWindow>
 #include <QGraphicsScene>
-#include <memory>
-#include "TIPL/tipl.hpp"
 #include <QTableWidget>
+#include "zlib.h"
+#include "TIPL/tipl.hpp"
 
 
 namespace Ui {

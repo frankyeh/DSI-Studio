@@ -3,8 +3,8 @@
 
 #include <QMainWindow>
 #include <QGraphicsScene>
+#include "zlib.h"
 #include "TIPL/tipl.hpp"
-#include "libs/gzip_interface.hpp"
 namespace Ui {
 class view_image;
 }
@@ -28,7 +28,7 @@ class view_image : public QMainWindow
 public:
     QString file_name,original_file_name;
     QStringList file_names;
-    gz_nifti nifti;
+    tipl::io::gz_nifti nifti;
     explicit view_image(QWidget *parent = nullptr);
     ~view_image();
     bool open(QStringList file_name);
@@ -115,7 +115,7 @@ private:
         }
     }
 private:
-    gz_mat_read mat;
+    tipl::io::gz_mat_read mat;
     void read_mat_info(void);
     bool read_mat_image(void);
     void write_mat_image(void);

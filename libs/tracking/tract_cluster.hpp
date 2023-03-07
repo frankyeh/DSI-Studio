@@ -1,8 +1,9 @@
 #ifndef TRACT_CLUSTER_HPP
 #define TRACT_CLUSTER_HPP
 #include <vector>
-#include "TIPL/tipl.hpp"
 #include <map>
+#include "zlib.h"
+#include "TIPL/tipl.hpp"
 
 struct Cluster
 {

@@ -8,7 +8,6 @@
 #include <QAction>
 #include <QStyleFactory>
 #include <filesystem>
-#include "TIPL/tipl.hpp"
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 #include "regtoolbox.h"
@@ -18,8 +17,7 @@
 #include "dicom/dicom_parser.h"
 #include "view_image.h"
 #include "mapping/atlas.hpp"
-#include "libs/gzip_interface.hpp"
-#include "libs/tracking/fib_data.hpp"
+#include "fib_data.hpp"
 #include "connectometry/group_connectometry_analysis.h"
 #include "connectometry/createdbdialog.h"
 #include "connectometry/db_window.h"
@@ -1000,7 +998,7 @@ bool nii2src_bids(QString dir,QString output_dir,std::string& error_msg)
 
     auto get_nifti_dim = [&](QString file_name)
     {
-        gz_nifti nii;
+        tipl::io::gz_nifti nii;
         tipl::shape<3> dim;
         if(nii.load_from_file(file_name.toStdString().c_str()))
             nii.get_image_dimension(dim);
@@ -1178,7 +1176,7 @@ bool dcm2src(QStringList files)
                 }
                 QString nii_name = get_dicom_output_name(files[0],(std::string("_")+sequence+".nii.gz").c_str(),true);
                 tipl::out() << "Create 4D NII file: " << nii_name.toStdString() << std::endl;
-                return gz_nifti::save_to_file(nii_name.toStdString().c_str(),buffer,dicom->voxel_size,trans,false,report.c_str());
+                return tipl::io::gz_nifti::save_to_file(nii_name.toStdString().c_str(),buffer,dicom->voxel_size,trans,false,report.c_str());
             }
         }
         return true;
@@ -1227,7 +1225,7 @@ bool dcm2src(QStringList files)
             I.swap(J);
         }
 
-        gz_nifti nii_out;
+        tipl::io::gz_nifti nii_out;
         tipl::flip_xy(I);
         nii_out << I;
         nii_out.set_voxel_size(vs);

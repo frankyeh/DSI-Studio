@@ -5,7 +5,6 @@
 #include <QItemDelegate>
 #include <QTableWidget>
 #include <QTimer>
-#include "TIPL/tipl.hpp"
 #include "tract_model.hpp"
 #include "opengl/tract_render.hpp"
 class tracking_window;

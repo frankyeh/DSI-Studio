@@ -2,13 +2,11 @@
 #include <iostream>
 #include <iterator>
 #include <string>
-#include "TIPL/tipl.hpp"
 #include "tracking/region/Regions.h"
 #include "libs/tracking/tract_model.hpp"
 #include "libs/dsi/image_model.hpp"
 #include "libs/tracking/tracking_thread.hpp"
 #include "fib_data.hpp"
-#include "libs/gzip_interface.hpp"
 
 std::shared_ptr<fib_data> cmd_load_fib(std::string file_name);
 bool trk2tt(const char* trk_file,const char* tt_file);

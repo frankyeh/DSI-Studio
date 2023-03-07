@@ -153,7 +153,7 @@ public:
         tipl::draw(hist_fa_sub,hist_fa,draw_location);
         tipl::draw(hist_dir_sub,hist_dir,draw_location);
     }
-    virtual void end(Voxel&,gz_mat_write& mat_writer)
+    virtual void end(Voxel&,tipl::io::gz_mat_write& mat_writer)
     {
         tipl::normalize(hist_fa);
 

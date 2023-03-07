@@ -1,9 +1,7 @@
 #include <QFileInfo>
 #include <sstream>
 #include <string>
-#include "TIPL/tipl.hpp"
 #include "dwi_header.hpp"
-#include "gzip_interface.hpp"
 #include "image_model.hpp"
 void get_report_from_dicom(const tipl::io::dicom& header,std::string& report)
 {
@@ -510,7 +508,7 @@ bool DwiHeader::output_src(const char* di_file,std::vector<std::shared_ptr<DwiHe
         sort_dwi(dwi_files);
         correct_t2(dwi_files);
     }
-    gz_mat_write write_mat(di_file);
+    tipl::io::gz_mat_write write_mat(di_file);
     if(!write_mat)
     {
         src_error_msg = "cannot output file to ";

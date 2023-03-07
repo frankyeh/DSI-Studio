@@ -389,7 +389,7 @@ std::vector<std::pair<size_t,size_t> > ImageModel::get_bad_slices(void)
         //int pos = bad_z[arg[i]]*voxel.dim.plane_size();
     //    std::copy(voxel.dwi_data[bad_i[arg[i]]]+pos,voxel.dwi_data[bad_i[arg[i]]]+pos+voxel.dim.plane_size(),bad_I.begin()+out_pos);
     }
-    //bad_I.save_to_file<gz_nifti>("D:/bad.nii.gz");
+    //bad_I.save_to_file<tipl::io::gz_nifti>("D:/bad.nii.gz");
     return result;
 }
 
@@ -900,8 +900,8 @@ bool ImageModel::align_acpc(void)
         {
             tipl::out() << "align ap-pc" << std::endl;
             tipl::image<3> I_;
-            if(!gz_nifti::load_from_file(iso_template_list[voxel.template_id].c_str(),I_,vs) && !
-                    gz_nifti::load_from_file(fa_template_list[voxel.template_id].c_str(),I_,vs))
+            if(!tipl::io::gz_nifti::load_from_file(iso_template_list[voxel.template_id].c_str(),I_,vs) && !
+                    tipl::io::gz_nifti::load_from_file(fa_template_list[voxel.template_id].c_str(),I_,vs))
             {
                 error_msg = "Failed to load/find MNI template.";
                 return false;
@@ -1220,7 +1220,7 @@ bool ImageModel::read_rev_b0(const char* filename,tipl::image<3>& rev_b0)
 {
     if(QString(filename).endsWith(".nii.gz") || QString(filename).endsWith(".nii"))
     {
-        gz_nifti nii;
+        tipl::io::gz_nifti nii;
         if(!nii.load_from_file(filename))
         {
             error_msg = "cannot read the reverse b0: ";
@@ -1580,7 +1580,7 @@ bool ImageModel::generate_topup_b0_acq_files(tipl::image<3>& b0,
         std::copy(rev_b0.begin(),rev_b0.end(),buffer.begin()+int64_t(b0.size()));
 
         b0_appa_file = QFileInfo(file_name.c_str()).baseName().toStdString() + ".topup." + pe_id + ".nii.gz";
-        if(!gz_nifti::save_to_file(b0_appa_file.c_str(),buffer,voxel.vs,trans))
+        if(!tipl::io::gz_nifti::save_to_file(b0_appa_file.c_str(),buffer,voxel.vs,trans))
         {
             tipl::out() << "Cannot wrtie a temporary b0_appa image volume to " << b0_appa_file << std::endl;
             return false;
@@ -1813,7 +1813,7 @@ bool ImageModel::run_eddy(std::string exec)
         tipl::crop(voxel.mask,I,topup_from,topup_to);
         tipl::matrix<4,4> trans;
         initial_LPS_nifti_srow(trans,voxel.dim,voxel.vs);
-        if(!gz_nifti::save_to_file(mask_nifti.c_str(),I,voxel.vs,trans))
+        if(!tipl::io::gz_nifti::save_to_file(mask_nifti.c_str(),I,voxel.vs,trans))
         {
             error_msg = "cannot save mask file to ";
             error_msg += mask_nifti;
@@ -1898,7 +1898,7 @@ std::string ImageModel::find_topup_reverse_pe(void)
         for(QString file : nii_files)
         {
             std::string path = (QFileInfo(file_name.c_str()).absolutePath() + "/" + file).toStdString();
-            gz_nifti nii;
+            tipl::io::gz_nifti nii;
             if(!nii.load_from_file(path.c_str()))
                 continue;
             if(nii.width()*nii.height()*nii.depth() != dwi.size())
@@ -2012,7 +2012,7 @@ bool ImageModel::preprocessing(void)
     {
         tipl::out() << "found previous corrected result at " << new_file_name << " loading..." << std::endl;
         tipl::progress prog_("read SRC file");
-        gz_mat_read new_reader;
+        tipl::io::gz_mat_read new_reader;
         mat_reader.swap(new_reader);
         return load_from_file(new_file_name.c_str());
     }   
@@ -2154,7 +2154,7 @@ bool ImageModel::save_to_file(const char* dwi_file_name)
                       src_dwi_data[index]+voxel.dim.size(),
                       buffer.begin() + long(index*voxel.dim.size()));
         });
-        if(!gz_nifti::save_to_file(dwi_file_name,buffer,voxel.vs,trans))
+        if(!tipl::io::gz_nifti::save_to_file(dwi_file_name,buffer,voxel.vs,trans))
         {
             error_msg = "Cannot save file to ";
             error_msg += dwi_file_name;
@@ -2166,7 +2166,7 @@ bool ImageModel::save_to_file(const char* dwi_file_name)
     }
     if(ext == ".src.gz")
     {
-        gz_mat_write mat_writer(dwi_file_name);
+        tipl::io::gz_mat_write mat_writer(dwi_file_name);
         if(!mat_writer)
             return false;
         {
@@ -2494,7 +2494,7 @@ bool ImageModel::load_from_file(const char* dwi_file_name)
 bool ImageModel::save_fib(const std::string& output_name)
 {
     tipl::progress prog_("saving ",std::filesystem::path(output_name).filename().string().c_str());
-    gz_mat_write mat_writer(output_name.c_str());
+    tipl::io::gz_mat_write mat_writer(output_name.c_str());
     if(!mat_writer)
     {
         error_msg = "Cannot save fib file";
@@ -2552,7 +2552,7 @@ bool ImageModel::save_nii_for_applytopup_or_eddy(bool include_rev) const
     std::string temp_nifti = file_name+".nii.gz";
     tipl::matrix<4,4> trans;
     initial_LPS_nifti_srow(trans,tipl::shape<3>(buffer.shape().begin()),voxel.vs);
-    if(!gz_nifti::save_to_file(temp_nifti.c_str(),buffer,voxel.vs,trans))
+    if(!tipl::io::gz_nifti::save_to_file(temp_nifti.c_str(),buffer,voxel.vs,trans))
     {
         error_msg = "failed to write a temporary nifti file: ";
         error_msg += temp_nifti;
@@ -2567,13 +2567,13 @@ bool ImageModel::save_b0_to_nii(const char* nifti_file_name) const
     initial_LPS_nifti_srow(trans,voxel.dim,voxel.vs);
     tipl::image<3> buffer(voxel.dim);
     std::copy(src_dwi_data[0],src_dwi_data[0]+buffer.size(),buffer.begin());
-    return gz_nifti::save_to_file(nifti_file_name,buffer,voxel.vs,trans);
+    return tipl::io::gz_nifti::save_to_file(nifti_file_name,buffer,voxel.vs,trans);
 }
 bool ImageModel::save_mask_nii(const char* nifti_file_name) const
 {
     tipl::matrix<4,4> trans;
     initial_LPS_nifti_srow(trans,voxel.dim,voxel.vs);
-    return gz_nifti::save_to_file(nifti_file_name,voxel.mask,voxel.vs,trans);
+    return tipl::io::gz_nifti::save_to_file(nifti_file_name,voxel.mask,voxel.vs,trans);
 }
 
 bool ImageModel::save_dwi_sum_to_nii(const char* nifti_file_name) const
@@ -2581,7 +2581,7 @@ bool ImageModel::save_dwi_sum_to_nii(const char* nifti_file_name) const
     tipl::matrix<4,4> trans;
     initial_LPS_nifti_srow(trans,voxel.dim,voxel.vs);
     tipl::image<3,unsigned char> buffer(dwi);
-    return gz_nifti::save_to_file(nifti_file_name,buffer,voxel.vs,trans);
+    return tipl::io::gz_nifti::save_to_file(nifti_file_name,buffer,voxel.vs,trans);
 }
 
 bool ImageModel::save_b_table(const char* file_name) const

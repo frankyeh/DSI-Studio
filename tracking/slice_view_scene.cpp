@@ -1,4 +1,3 @@
-#include "TIPL/tipl.hpp"
 #include "slice_view_scene.h"
 #include <QGraphicsSceneMouseEvent>
 #include <QPainter>
@@ -10,8 +9,7 @@
 #include "tracking_window.h"
 #include "ui_tracking_window.h"
 #include "region/regiontablewidget.h"
-#include "libs/gzip_interface.hpp"
-#include "libs/tracking/fib_data.hpp"
+#include "fib_data.hpp"
 #include "opengl/glwidget.h"
 #include <QScrollBar>
 

@@ -3,10 +3,8 @@
 #define RegionsH
 #include <vector>
 #include <map>
-
-#include "TIPL/tipl.hpp"
-#include "opengl/region_render.hpp"
 #include "fib_data.hpp"
+#include "opengl/region_render.hpp"
 // ---------------------------------------------------------------------------
 class SliceModel;
 // region_feature

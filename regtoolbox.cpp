@@ -4,7 +4,6 @@
 #include "reg.hpp"
 #include "regtoolbox.h"
 #include "ui_regtoolbox.h"
-#include "libs/gzip_interface.hpp"
 #include "basic_voxel.hpp"
 extern bool has_cuda;
 void show_view(QGraphicsScene& scene,QImage I);
@@ -90,7 +89,7 @@ void RegToolBox::on_OpenTemplate_clicked()
     if(filename.isEmpty())
         return;
 
-    gz_nifti nifti;
+    tipl::io::gz_nifti nifti;
     if(!nifti.load_from_file(filename.toStdString()))
     {
         QMessageBox::critical(this,"ERROR","Invalid file format");
@@ -117,7 +116,7 @@ void RegToolBox::on_OpenSubject_clicked()
     if(filename.isEmpty())
         return;
 
-    gz_nifti nifti;
+    tipl::io::gz_nifti nifti;
     if(!nifti.load_from_file(filename.toStdString()))
     {
         QMessageBox::critical(this,"ERROR","Invalid file format");
@@ -142,7 +141,7 @@ void RegToolBox::on_OpenSubject2_clicked()
     if(filename.isEmpty())
         return;
 
-    gz_nifti nifti;
+    tipl::io::gz_nifti nifti;
     if(!nifti.load_from_file(filename.toStdString()))
     {
         QMessageBox::critical(this,"ERROR","Invalid file format");
@@ -160,7 +159,7 @@ void RegToolBox::on_OpenTemplate2_clicked()
     if(filename.isEmpty())
         return;
 
-    gz_nifti nifti;
+    tipl::io::gz_nifti nifti;
     if(!nifti.load_from_file(filename.toStdString()))
     {
         QMessageBox::critical(this,"ERROR","Invalid file format");
@@ -544,7 +543,7 @@ bool apply_warping(const char* from,
         tipl::compose_mapping<tipl::interpolation::nearest>(I3,to2from,J3);
     else
         tipl::compose_mapping<tipl::interpolation::cubic>(I3,to2from,J3);
-    if(!gz_nifti::save_to_file(to,J3,Itvs,ItR))
+    if(!tipl::io::gz_nifti::save_to_file(to,J3,Itvs,ItR))
     {
         error = "cannot write to file ";
         error += to;
@@ -635,7 +634,7 @@ void RegToolBox::on_actionSave_Warpping_triggered()
             "Images (*map.gz);;All files (*)" );
     if(filename.isEmpty())
         return;
-    gz_mat_write out(filename.toStdString().c_str());
+    tipl::io::gz_mat_write out(filename.toStdString().c_str());
     if(!out)
     {
         QMessageBox::critical(this,"ERROR","Cannot write to file");
@@ -707,7 +706,7 @@ void RegToolBox::on_actionSave_Transformed_Image_triggered()
             "Images (*.nii *nii.gz);;All files (*)" );
     if(to.isEmpty())
         return;
-    gz_nifti::save_to_file(to.toStdString().c_str(),JJ,Itvs,ItR);
+    tipl::io::gz_nifti::save_to_file(to.toStdString().c_str(),JJ,Itvs,ItR);
 
 }
 

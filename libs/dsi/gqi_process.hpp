@@ -111,7 +111,7 @@ public:
 
         gr.run(voxel,data);
     }
-    virtual void end(Voxel& voxel,gz_mat_write& mat_writer) override
+    virtual void end(Voxel& voxel,tipl::io::gz_mat_write& mat_writer) override
     {
         if(hgqi)
             mat_writer.write("hraw",&hraw[0],voxel.dim.plane_size(),voxel.dim.depth());
@@ -207,7 +207,7 @@ public:
             ++total_value;
         }
     }
-    virtual void end(Voxel& voxel,gz_mat_write& mat_writer)
+    virtual void end(Voxel& voxel,tipl::io::gz_mat_write& mat_writer)
     {
         voxel.recon_report
                 << " The percentage of the negative signals was " << float(100.0f)*total_negative_value/float(total_value) << "%.";

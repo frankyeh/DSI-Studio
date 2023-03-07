@@ -1,6 +1,5 @@
 #ifndef IMAGE_MODEL_HPP
 #define IMAGE_MODEL_HPP
-#include "TIPL/tipl.hpp"
 #include "basic_voxel.hpp"
 struct distortion_map{
     const float pi_2 = 3.14159265358979323846f/2.0f;
@@ -228,7 +227,7 @@ public:
     Voxel voxel;
     std::string file_name;
     mutable std::string error_msg;
-    gz_mat_read mat_reader;
+    tipl::io::gz_mat_read mat_reader;
 public:
     std::vector<tipl::vector<3,float> > src_bvectors;
 public:

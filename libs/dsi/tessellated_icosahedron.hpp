@@ -1,5 +1,6 @@
 #ifndef TESSELLATED_ICOSAHEDRON_HPP
 #define TESSELLATED_ICOSAHEDRON_HPP
+#include "zlib.h"
 #include "TIPL/tipl.hpp"
 #include <cmath>
 #include <vector>

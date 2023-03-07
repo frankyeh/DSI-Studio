@@ -6,7 +6,6 @@
 #include <QDir>
 #include <QFileInfo>
 #include "fib_data.hpp"
-#include "TIPL/tipl.hpp"
 
 bool find_string_case_insensitive(const std::string & str1, const std::string & str2)
 {

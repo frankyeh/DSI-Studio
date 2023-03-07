@@ -342,7 +342,7 @@ void db_window::on_actionCurrent_Subject_triggered()
         return;
     tipl::image<3> I;
     vbc->handle->db.get_subject_volume(uint32_t(ui->subject_list->currentRow()),I);
-    if(gz_nifti::save_to_file(filename.toStdString().c_str(),I,vbc->handle->vs,vbc->handle->trans_to_mni,true))
+    if(tipl::io::gz_nifti::save_to_file(filename.toStdString().c_str(),I,vbc->handle->vs,vbc->handle->trans_to_mni,true))
         QMessageBox::information(this,"File saved",filename);
     else
         QMessageBox::critical(this,"ERROR","Cannot save file.");
@@ -364,7 +364,7 @@ void db_window::on_actionAll_Subjects_triggered()
                 vbc->handle->db.index_name.c_str()+".nii.gz";
         tipl::image<3> I;
         vbc->handle->db.get_subject_volume(uint32_t(i),I);
-        gz_nifti out;
+        tipl::io::gz_nifti out;
         out.set_voxel_size(vbc->handle->vs);
         out.set_image_transformation(vbc->handle->trans_to_mni);
         out << I;

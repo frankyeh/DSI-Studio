@@ -5,7 +5,6 @@
 #include <QComboBox>
 #include <vector>
 #include "Regions.h"
-#include "TIPL/tipl.hpp"
 struct ThreadData;
 class tracking_window;
 

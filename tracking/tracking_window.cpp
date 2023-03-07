@@ -592,7 +592,7 @@ bool tracking_window::command(QString cmd,QString param,QString param2)
             tipl::normalize_upper_lower(I);
             tipl::image<3,unsigned char> II(I.shape());
             std::copy(I.begin(),I.end(),II.begin());
-            gz_nifti::save_to_file((param+"/slices/" + ui->SliceModality->currentText() + ".nii.gz").toStdString().c_str(),
+            tipl::io::gz_nifti::save_to_file((param+"/slices/" + ui->SliceModality->currentText() + ".nii.gz").toStdString().c_str(),
                                    II,reg_slice->vs,reg_slice->trans,reg_slice->is_mni);
         }
 
@@ -1634,7 +1634,7 @@ void tracking_window::stripSkull()
     if(!reg_slice || !reg_slice->skull_removed_images.empty())
         return;
 
-    gz_nifti in1,in2;
+    tipl::io::gz_nifti in1,in2;
     tipl::image<3> It,Iw,J(reg_slice->get_source());
     if(!in1.load_from_file(handle->t1w_template_file_name.c_str()) || !in1.toLPS(It))
         return;
@@ -2312,7 +2312,7 @@ void tracking_window::on_actionSave_T1W_T2W_images_triggered()
     if( filename.isEmpty())
         return;
     auto I = slice->source_images;
-    gz_nifti::save_to_file(filename.toStdString().c_str(),I,slice->vs,slice->trans,slice->is_mni);
+    tipl::io::gz_nifti::save_to_file(filename.toStdString().c_str(),I,slice->vs,slice->trans,slice->is_mni);
 }
 
 void tracking_window::on_actionMark_Region_on_T1W_T2W_triggered()

@@ -1,10 +1,8 @@
-#include "atlas.hpp"
 #include <fstream>
 #include <sstream>
-#include "libs/gzip_interface.hpp"
 #include <QCoreApplication>
 #include <QDir>
-
+#include "atlas.hpp"
 
 
 void apply_trans(tipl::vector<3>& pos,const tipl::matrix<4,4>& trans);
@@ -47,7 +45,7 @@ bool atlas::load_from_file(void)
 {
     if(!I.empty())
         return true;
-    gz_nifti nii;
+    tipl::io::gz_nifti nii;
     if(!nii.load_from_file(filename.c_str()))
     {
         error_msg = nii.error_msg;

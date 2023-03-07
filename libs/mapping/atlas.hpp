@@ -1,5 +1,6 @@
 #ifndef ATLAS_HPP
 #define ATLAS_HPP
+#include "zlib.h"
 #include "TIPL/tipl.hpp"
 #include <vector>
 #include <string>

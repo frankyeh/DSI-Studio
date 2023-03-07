@@ -5,6 +5,7 @@
 #include <QTimer>
 #include <QGraphicsScene>
 #include <QProgressBar>
+#include "zlib.h"
 #include "TIPL/tipl.hpp"
 namespace Ui {
 class RegToolBox;

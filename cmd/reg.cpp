@@ -1,7 +1,5 @@
 #include <QString>
-#include "TIPL/tipl.hpp"
 #include "reg.hpp"
-#include "libs/gzip_interface.hpp"
 #include "tract_model.hpp"
 bool apply_warping(const char* from,
                    const char* to,
@@ -70,7 +68,7 @@ bool load_nifti_file(std::string file_name_cmd,
     std::istringstream in(file_name_cmd);
     std::string file_name,cmd;
     std::getline(in,file_name,'+');
-    if(!gz_nifti::load_from_file(file_name.c_str(),data,vs,trans))
+    if(!tipl::io::gz_nifti::load_from_file(file_name.c_str(),data,vs,trans))
     {
         tipl::out() << "ERROR: cannot load file " << file_name << std::endl;
         return false;
@@ -112,7 +110,7 @@ int reg(tipl::program_option<tipl::out>& po)
 
     if(po.has("warp"))
     {
-        gz_mat_read in;
+        tipl::io::gz_mat_read in;
         if(!in.load_from_file(po.get("warp").c_str()))
         {
             tipl::out() << "ERROR: cannot open or parse warp file " << po.get("warp") << std::endl;
@@ -207,7 +205,7 @@ int reg(tipl::program_option<tipl::out>& po)
     if(po.get("reg_type",1) == 0) // just rigidbody
     {
         tipl::out() << "output warpped image:" << output_wp_image << std::endl;
-        gz_nifti::save_to_file(output_wp_image.c_str(),from_,to_vs,to_trans);
+        tipl::io::gz_nifti::save_to_file(output_wp_image.c_str(),from_,to_vs,to_trans);
         return 0;
     }
 
@@ -249,7 +247,7 @@ int reg(tipl::program_option<tipl::out>& po)
         tipl::out() << "R2: " << r*r << std::endl;
         if(po.has("output"))
         {
-            if(!gz_nifti::save_to_file(po.get("output").c_str(),output,to_vs,to_trans))
+            if(!tipl::io::gz_nifti::save_to_file(po.get("output").c_str(),output,to_vs,to_trans))
             {
                 tipl::out() << "ERROR: cannot write to " << po.get("output") << std::endl;
                 return 1;
@@ -262,7 +260,7 @@ int reg(tipl::program_option<tipl::out>& po)
         std::string filename = po.get("output_warp");
         if(!QString(filename.c_str()).endsWith(".wp.gz"))
             filename += ".map.gz";
-        gz_mat_write out(filename.c_str());
+        tipl::io::gz_mat_write out(filename.c_str());
         if(!out)
         {
             tipl::out() << "ERROR: cannot write to " << filename << std::endl;

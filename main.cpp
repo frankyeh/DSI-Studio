@@ -7,8 +7,6 @@
 #include <QStyleFactory>
 #include <QFileInfo>
 #include <QDir>
-#include "TIPL/tipl.hpp"
-#include "gzip_interface.hpp"
 #include "mapping/atlas.hpp"
 #include "mainwindow.h"
 #include "console.h"
@@ -53,7 +51,7 @@ size_t match_volume(float volume)
     size_t matched_index = 0;
     for(size_t i = 0;i < fa_template_list.size();++i)
     {
-        gz_nifti read;
+        tipl::io::gz_nifti read;
         if(!read.load_from_file(fa_template_list[i].c_str()))
             continue;
         float v = float(read.nif_header.dim[1]*read.nif_header.dim[2]*read.nif_header.dim[3])*

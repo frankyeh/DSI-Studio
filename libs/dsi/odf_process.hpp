@@ -12,7 +12,7 @@ public:
         for (unsigned int index = 0; index < data.space.size(); ++index)
             data.space[index] = voxel.dwi_data[index][data.voxel_index];
     }
-    virtual void end(Voxel&,gz_mat_write&) {}
+    virtual void end(Voxel&,tipl::io::gz_mat_write&) {}
 };
 
 void calculate_shell(std::vector<float> sorted_bvalues,
@@ -212,7 +212,7 @@ public:
         }
 
     }
-    virtual void end(Voxel& voxel,gz_mat_write& mat_writer)
+    virtual void end(Voxel& voxel,tipl::io::gz_mat_write& mat_writer)
     {
 
         if (!voxel.output_odf)
@@ -277,7 +277,7 @@ public:
                   data.odf.begin());
 
     }
-    virtual void end(Voxel& voxel,gz_mat_write& mat_writer)
+    virtual void end(Voxel& voxel,tipl::io::gz_mat_write& mat_writer)
     {
         if (voxel.output_odf)
         {
@@ -310,7 +310,7 @@ public:
         voxel.qa_map[data.voxel_index] = data.fa[0];
         voxel.iso_map[data.voxel_index] = data.min_odf;
     }
-    virtual void end(Voxel&,gz_mat_write&)
+    virtual void end(Voxel&,tipl::io::gz_mat_write&)
     {
 
     }
@@ -324,7 +324,7 @@ protected:
     std::vector<std::vector<float> > fa,rdi;
     tipl::shape<3> dim;
 
-    void output_anisotropy(gz_mat_write& mat_writer,
+    void output_anisotropy(tipl::io::gz_mat_write& mat_writer,
                            const char* name,const std::vector<std::vector<float> >& metrics)
     {
         for (unsigned int index = 0;index < metrics.size();++index)
@@ -366,7 +366,7 @@ public:
             for (unsigned int index = 0;index < data.rdi.size();++index)
                 rdi[index][data.voxel_index] = data.rdi[index];
     }
-    virtual void end(Voxel& voxel,gz_mat_write& mat_writer)
+    virtual void end(Voxel& voxel,tipl::io::gz_mat_write& mat_writer)
     {
         mat_writer.write("gfa",gfa,uint32_t(voxel.dim.plane_size()));
 
@@ -432,7 +432,7 @@ public:
         for (unsigned int index = 0;index < voxel.max_fiber_number;++index)
             findex[index][data.voxel_index] = short(data.dir_index[index]);
     }
-    virtual void end(Voxel& voxel,gz_mat_write& mat_writer)
+    virtual void end(Voxel& voxel,tipl::io::gz_mat_write& mat_writer)
     {
         for (unsigned int index = 0;index < voxel.max_fiber_number;++index)
         {
@@ -466,7 +466,7 @@ public:
             std::copy(data.dir[index].begin(),data.dir[index].end(),dir[index].begin() +
                       dir_index + dir_index + dir_index);
     }
-    virtual void end(Voxel& voxel,gz_mat_write& mat_writer)
+    virtual void end(Voxel& voxel,tipl::io::gz_mat_write& mat_writer)
     {
         for (unsigned int index = 0;index < voxel.max_fiber_number;++index)
         {

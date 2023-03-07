@@ -1,21 +1,19 @@
+#include <filesystem>
 #include <QSplitter>
 #include <QThread>
-#include "reconstruction_window.h"
-#include "ui_reconstruction_window.h"
-#include "TIPL/tipl.hpp"
-#include "reg.hpp"
-#include "mainwindow.h"
 #include <QImage>
 #include <QMessageBox>
 #include <QInputDialog>
 #include <QFileDialog>
 #include <QSettings>
+#include "reconstruction_window.h"
+#include "ui_reconstruction_window.h"
+#include "reg.hpp"
+#include "mainwindow.h"
 #include "tracking/region/Regions.h"
 #include "libs/dsi/image_model.hpp"
-#include "gzip_interface.hpp"
 #include "manual_alignment.h"
 
-#include <filesystem>
 
 
 void show_view(QGraphicsScene& scene,QImage I);
@@ -663,7 +661,7 @@ bool add_other_image(ImageModel* handle,QString name,QString filename)
 {
     tipl::image<3> ref;
     tipl::vector<3> vs;
-    gz_nifti in;
+    tipl::io::gz_nifti in;
     if(!in.load_from_file(filename.toStdString().c_str()) || !in.toLPS(ref))
     {
         std::cout << "ERROR: not a valid nifti file:" << filename.toStdString() << std::endl;
@@ -754,7 +752,7 @@ bool get_src(std::string filename,ImageModel& src2,std::string& error_msg)
     if(QString(filename.c_str()).endsWith(".nii.gz") ||
        QString(filename.c_str()).endsWith(".nii"))
     {
-        gz_nifti in;
+        tipl::io::gz_nifti in;
         if(!in.load_from_file(filename.c_str()))
         {
             error_msg = "invalid NIFTI format";
@@ -998,7 +996,7 @@ void reconstruction_window::on_qsdr_manual_clicked()
     tipl::image<3> VG,VG2,dummy,VF(handle->dwi);
     tipl::vector<3> VGvs,VFvs(handle->voxel.vs);
     {
-        gz_nifti read,read2;
+        tipl::io::gz_nifti read,read2;
         if(!read.load_from_file(fa_template_list[handle->voxel.template_id]))
         {
             QMessageBox::critical(this,"Error",QString("Cannot load template:"));

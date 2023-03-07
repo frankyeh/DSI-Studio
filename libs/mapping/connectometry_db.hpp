@@ -2,7 +2,7 @@
 #define CONNECTOMETRY_DB_H
 #include <vector>
 #include <string>
-#include "gzip_interface.hpp"
+#include "zlib.h"
 #include "TIPL/tipl.hpp"
 class fib_data;
 class connectometry_db
@@ -45,7 +45,7 @@ public:
     void clear(void);
     void remove_subject(unsigned int index);
     void calculate_si2vi(void);
-    bool is_odf_consistent(gz_mat_read& m);
+    bool is_odf_consistent(tipl::io::gz_mat_read& m);
     void sample_from_image(tipl::const_pointer_image<3,float> I,
                            const tipl::matrix<4,4>& trans,std::vector<float>& data);
     bool add_subject_file(const std::string& file_name,

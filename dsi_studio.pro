@@ -74,7 +74,6 @@ HEADERS += mainwindow.h \
     libs/tracking/tracking_thread.hpp \
     libs/mapping/atlas.hpp \
     view_image.h \
-    libs/gzip_interface.hpp \
     manual_alignment.h \
     tracking/tract_report.hpp \
     tracking/color_bar_dialog.hpp \

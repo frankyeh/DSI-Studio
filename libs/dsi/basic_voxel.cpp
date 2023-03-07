@@ -118,7 +118,7 @@ bool Voxel::run(void)
 }
 
 
-void Voxel::end(gz_mat_write& writer)
+void Voxel::end(tipl::io::gz_mat_write& writer)
 {
     tipl::progress prog("saving results");
     for (size_t index = 0;prog(uint32_t(index),uint32_t(process_list.size())); ++index)

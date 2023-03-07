@@ -1,4 +1,3 @@
-#include "libs/gzip_interface.hpp"
 #include "device.h"
 extern std::vector<std::vector<float> > device_seg_length;
 extern std::vector<std::vector<char> > device_seg_type;

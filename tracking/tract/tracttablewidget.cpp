@@ -12,10 +12,8 @@
 #include "../region/regiontablewidget.h"
 #include "ui_tracking_window.h"
 #include "opengl/renderingtablewidget.h"
-#include "libs/gzip_interface.hpp"
 #include "atlas.hpp"
 #include "../color_bar_dialog.hpp"
-#include "gzip_interface.hpp"
 
 
 void show_info_dialog(const std::string& title,const std::string& result);

@@ -9,7 +9,7 @@
 #include "roi.hpp"
 
 extern std::vector<std::string> fa_template_list;
-bool odf_data::read(gz_mat_read& mat_reader)
+bool odf_data::read(tipl::io::gz_mat_read& mat_reader)
 {
     if(!odf_map.empty())
         return true;
@@ -155,7 +155,7 @@ void fiber_directions::check_index(unsigned int index)
     }
 }
 
-bool fiber_directions::add_data(gz_mat_read& mat_reader)
+bool fiber_directions::add_data(tipl::io::gz_mat_read& mat_reader)
 {
     tipl::progress prog("loading image volumes");
     unsigned int row,col;
@@ -402,7 +402,7 @@ bool fib_data::load_from_file(const char* file_name)
 {
     tipl::progress prog("open FIB file ",std::filesystem::path(file_name).filename().string().c_str());
     tipl::image<3> I;
-    gz_nifti header;
+    tipl::io::gz_nifti header;
     fib_file_name = file_name;
     if((QFileInfo(file_name).fileName().endsWith(".nii") ||
         QFileInfo(file_name).fileName().endsWith(".nii.gz")) &&
@@ -583,7 +583,7 @@ bool fib_data::save_mapping(const std::string& index_name,const std::string& fil
         for(size_t i = 0;i < dim.size();++i,++index)
             buf[index] = dir.get_fib(i,j)[k];
 
-        return gz_nifti::save_to_file(file_name.c_str(),buf,vs,trans_to_mni,is_mni);
+        return tipl::io::gz_nifti::save_to_file(file_name.c_str(),buf,vs,trans_to_mni,is_mni);
     }
     if(index_name.length() == 4 && index_name.substr(0,3) == "dir" && index_name[3]-'0' >= 0 && index_name[3]-'0' < int(dir.num_fiber))
     {
@@ -593,7 +593,7 @@ bool fib_data::save_mapping(const std::string& index_name,const std::string& fil
         for(size_t index = 0;index < dim.size();++index,++ptr)
             if(dir.fa[dir_index][index] > 0.0f)
                 buf[ptr] = dir.get_fib(index,dir_index)[j];
-        return gz_nifti::save_to_file(file_name.c_str(),buf,vs,trans_to_mni,is_mni);
+        return tipl::io::gz_nifti::save_to_file(file_name.c_str(),buf,vs,trans_to_mni,is_mni);
     }
     if(index_name == "odfs")
     {
@@ -615,7 +615,7 @@ bool fib_data::save_mapping(const std::string& index_name,const std::string& fil
                 std::copy(ptr,ptr+dir.half_odf_size,buf.begin()+int64_t(pos)*dir.half_odf_size);
 
         }
-        return gz_nifti::save_to_file(file_name.c_str(),buf,vs,trans_to_mni,is_mni);
+        return tipl::io::gz_nifti::save_to_file(file_name.c_str(),buf,vs,trans_to_mni,is_mni);
     }
     size_t index = get_name_index(index_name);
     if(index >= view_item.size())
@@ -630,7 +630,7 @@ bool fib_data::save_mapping(const std::string& index_name,const std::string& fil
             get_slice(uint32_t(index),uint8_t(2),uint32_t(z),I);
             std::copy(I.begin(),I.end(),buf.begin()+size_t(z)*buf.plane_size());
         }
-        return gz_nifti::save_to_file(file_name.c_str(),buf,vs,trans_to_mni,is_mni);
+        return tipl::io::gz_nifti::save_to_file(file_name.c_str(),buf,vs,trans_to_mni,is_mni);
     }
 
 
@@ -649,7 +649,7 @@ bool fib_data::save_mapping(const std::string& index_name,const std::string& fil
             tipl::resample_mt<tipl::interpolation::cubic>(buf,new_buf,tipl::transformation_matrix<float>(view_item[index].iT));
             new_buf.swap(buf);
         }
-        return gz_nifti::save_to_file(file_name.c_str(),buf,vs,trans_to_mni,is_mni);
+        return tipl::io::gz_nifti::save_to_file(file_name.c_str(),buf,vs,trans_to_mni,is_mni);
     }
 }
 bool is_human_size(tipl::shape<3> dim,tipl::vector<3> vs)
@@ -755,7 +755,7 @@ bool fib_data::load_from_mat(void)
 
         for(size_t index = 0;index < fa_template_list.size();++index)
         {
-            gz_nifti read;
+            tipl::io::gz_nifti read;
             if(!read.load_from_file(fa_template_list[index]))
                 continue;
             tipl::vector<3> Itvs;
@@ -801,7 +801,7 @@ bool fib_data::load_from_mat(void)
 }
 
 
-bool resample_mat(gz_mat_read& mat_reader,float resolution)
+bool resample_mat(tipl::io::gz_mat_read& mat_reader,float resolution)
 {
     // get all data in delayed read condition
     {
@@ -1181,7 +1181,7 @@ bool fib_data::load_template(void)
 {
     if(!template_I.empty())
         return true;
-    gz_nifti read;
+    tipl::io::gz_nifti read;
     tipl::image<3> I;
     tipl::vector<3> I_vs;
     if(!read.load_from_file(fa_template_list[template_id].c_str()))
@@ -1231,7 +1231,7 @@ bool fib_data::load_template(void)
 
     // load iso template if exists
     {
-        gz_nifti read2;
+        tipl::io::gz_nifti read2;
         if(!iso_template_list[template_id].empty() &&
            read2.load_from_file(iso_template_list[template_id].c_str()))
         {
@@ -1478,7 +1478,7 @@ bool fib_data::map_to_mni(bool background)
     output_file_name += QFileInfo(fa_template_list[template_id].c_str()).baseName().toLower().toStdString();
     output_file_name += ".map.gz";
 
-    gz_mat_read in;
+    tipl::io::gz_mat_read in;
 
     // check 1. mapping files was created later than the FIB file
     //       2. the recon steps are the same
@@ -1567,7 +1567,7 @@ bool fib_data::map_to_mni(bool background)
 
         if(terminated)
             return;
-        gz_mat_write out(output_file_name.c_str());
+        tipl::io::gz_mat_write out(output_file_name.c_str());
         if(out)
         {
             out.write("to_dim",dis.shape());

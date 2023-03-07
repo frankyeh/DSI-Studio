@@ -462,7 +462,7 @@ void manual_alignment::on_actionSave_Warpped_Image_triggered()
         tipl::resample_mt<tipl::interpolation::nearest>(from_original,I,iT);
     else
         tipl::resample_mt<tipl::interpolation::cubic>(from_original,I,iT);
-    gz_nifti::save_to_file(filename.toStdString().c_str(),I,to_vs,nifti_srow);
+    tipl::io::gz_nifti::save_to_file(filename.toStdString().c_str(),I,to_vs,nifti_srow);
 }
 
 void manual_alignment::on_advance_options_clicked()
@@ -526,7 +526,7 @@ void manual_alignment::on_actionApply_Transformation_triggered()
 
     tipl::image<3> from;
     tipl::vector<3> vs;
-    if(!gz_nifti::load_from_file(filename.toStdString().c_str(),from,vs))
+    if(!tipl::io::gz_nifti::load_from_file(filename.toStdString().c_str(),from,vs))
     {
         QMessageBox::critical(this,"ERROR","Cannot read the file");
         return;
@@ -542,7 +542,7 @@ void manual_alignment::on_actionApply_Transformation_triggered()
         tipl::resample_mt<tipl::interpolation::nearest>(from,I,iT);
     else
         tipl::resample_mt<tipl::interpolation::cubic>(from,I,iT);
-    gz_nifti::save_to_file(to_filename.toStdString().c_str(),I,to_vs,nifti_srow);
+    tipl::io::gz_nifti::save_to_file(to_filename.toStdString().c_str(),I,to_vs,nifti_srow);
 
 
 

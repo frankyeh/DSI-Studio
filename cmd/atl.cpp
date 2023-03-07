@@ -1,10 +1,8 @@
 #include <QFileInfo>
 #include <QApplication>
 #include <QDir>
-#include "TIPL/tipl.hpp"
-#include "libs/gzip_interface.hpp"
-#include "mapping/atlas.hpp"
 #include "fib_data.hpp"
+#include "mapping/atlas.hpp"
 #include "connectometry/group_connectometry_analysis.h"
 
 #include <filesystem>
@@ -230,7 +228,7 @@ int atl(tipl::program_option<tipl::out>& po)
                     if(multiple)
                     {
                         tipl::out() << "save " << output << std::endl;
-                        if(!gz_nifti::save_to_file(output.c_str(),roi,handle->vs,handle->trans_to_mni,handle->is_mni))
+                        if(!tipl::io::gz_nifti::save_to_file(output.c_str(),roi,handle->vs,handle->trans_to_mni,handle->is_mni))
                             tipl::out() << "cannot write output to file:" << output << std::endl;
                     }
                 }

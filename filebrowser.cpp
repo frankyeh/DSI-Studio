@@ -4,11 +4,9 @@
 #include <QSettings>
 #include <QFileDialog>
 #include <QInputDialog>
-#include "TIPL/tipl.hpp"
 #include "filebrowser.h"
 #include "ui_filebrowser.h"
 #include "dicom/dicom_parser.h"
-#include "gzip_interface.hpp"
 
 void show_view(QGraphicsScene& scene,QImage I);
 FileBrowser::FileBrowser(QWidget *parent) :
@@ -201,7 +199,7 @@ void FileBrowser::on_subject_list_currentCellChanged(int currentRow, int , int p
         for(unsigned int i = 0;i < nii_file_list.size();++i)
         {
             QString file_name = directory.absolutePath() + "/" + nii_file_list[i];
-            gz_nifti nii;
+            tipl::io::gz_nifti nii;
             if(!nii.load_from_file(file_name.toStdString()))
                 continue;
             int row = ui->tableWidget->rowCount();
@@ -222,7 +220,7 @@ void FileBrowser::on_subject_list_currentCellChanged(int currentRow, int , int p
         for(unsigned int i = 0;i < mat_file_list.size();++i)
         {
             QString file_name = directory.absolutePath() + "/" + mat_file_list[i];
-            gz_mat_read mat;
+            tipl::io::gz_mat_read mat;
             if(!mat.load_from_file(file_name.toStdString().c_str()))
                 continue;
             int row = ui->tableWidget->rowCount();
@@ -375,7 +373,7 @@ void FileBrowser::preview_image(QString file_name)
     }
     if(QFileInfo(file_name).suffix() == "gz")
     {
-        gz_mat_read mat;
+        tipl::io::gz_mat_read mat;
         if(mat.load_from_file(file_name.toStdString().c_str()))
         {
             tipl::shape<3> dim;
@@ -389,7 +387,7 @@ void FileBrowser::preview_image(QString file_name)
         preview_loaded = true;
         return;
     }
-    gz_nifti nii;
+    tipl::io::gz_nifti nii;
     if(nii.load_from_file(file_name.toStdString()))
         nii.get_untouched_image(preview_data);
     preview_loaded = true;
