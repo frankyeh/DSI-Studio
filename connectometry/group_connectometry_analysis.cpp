@@ -320,7 +320,7 @@ void group_connectometry_analysis::calculate_adjusted_qa(stat_model& info)
                 out << info.variables[i] << " ";
             }
         if(has_partial_correlation)
-            tipl::out() << "adjusting " << handle->db.index_name << " using partial correlation of " << out.str() << std::endl;
+            tipl::out() << "adjusting " << handle->db.index_name << " using partial correlation of " << out.str();
     }
 
     // population_value_adjusted is a transpose of handle->db.subject_qa
