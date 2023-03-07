@@ -1014,11 +1014,7 @@ void fib_data::get_slice(unsigned int view_index,
 {
     if(view_item[view_index].name == "color")
     {
-        {
-            tipl::image<2,float> buf;
-            tipl::volume2slice(view_item[0].get_image(), buf, d_index, pos);
-            view_item[view_index].v2c.convert(buf,show_image);
-        }
+        view_item[view_index].v2c.convert(tipl::volume2slice(view_item[0].get_image(),d_index,pos),show_image);
 
         if(view_item[view_index].color_map_buf.empty())
         {
@@ -1038,9 +1034,7 @@ void fib_data::get_slice(unsigned int view_index,
     }
     else
     {
-        tipl::image<2,float> buf;
-        tipl::volume2slice(view_item[view_index].get_image(), buf, d_index, pos);
-        view_item[view_index].v2c.convert(buf,show_image);
+        view_item[view_index].v2c.convert(tipl::volume2slice(view_item[view_index].get_image(),d_index,pos),show_image);
     }
 
 }

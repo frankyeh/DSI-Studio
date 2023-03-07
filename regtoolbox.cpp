@@ -287,10 +287,7 @@ void RegToolBox::show_image(void)
     {
         const auto& I_to_show = (J.empty() ? I:J);
         int pos = std::min(I_to_show.depth()-1,I_to_show.depth()*ui->slice_pos->value()/ui->slice_pos->maximum());
-        tipl::image<2,float> tmp;
-        tipl::volume2slice_scaled(I_to_show,tmp,cur_view,pos,ratio);
-        tipl::color_image cJ;
-        v2c_I.convert(tmp,cJ);
+        tipl::color_image cJ(v2c_I[tipl::volume2slice_scaled(I_to_show,cur_view,pos,ratio)]);
         QImage warp_image;
         warp_image << cJ;
 

@@ -1060,9 +1060,7 @@ void view_image::show_image(bool update_others)
     tipl::color_image buffer;
     apply([&](auto& data)
     {
-        tipl::image<2,float> buf;
-        tipl::volume2slice_scaled(data, buf, cur_dim, size_t(slice_pos[cur_dim]),ui->zoom->value());
-        v2c.convert(buf,buffer);
+        v2c.convert(tipl::volume2slice_scaled(data,cur_dim, size_t(slice_pos[cur_dim]),ui->zoom->value()),buffer);
     });
 
     // draw overlay
@@ -1070,10 +1068,8 @@ void view_image::show_image(bool update_others)
     if(overlay_images_visible[i] && opened_images[overlay_images[i]])
         opened_images[overlay_images[i]]->apply([&](auto& data)
         {
-            tipl::color_image buffer2;
-            tipl::image<2,float> buf2;
-            tipl::volume2slice_scaled(data, buf2, cur_dim, size_t(slice_pos[cur_dim]),ui->zoom->value());
-            opened_images[overlay_images[i]]->v2c.convert(buf2,buffer2);
+            tipl::color_image buffer2(
+                opened_images[overlay_images[i]]->v2c[tipl::volume2slice_scaled(data,cur_dim, size_t(slice_pos[cur_dim]),ui->zoom->value())]);
             for(size_t j = 0;j < buffer.size();++j)
                 buffer[j] |= buffer2[j];
         });
