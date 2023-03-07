@@ -8,7 +8,6 @@
 #include "ui_filebrowser.h"
 #include "dicom/dicom_parser.h"
 
-void show_view(QGraphicsScene& scene,QImage I);
 FileBrowser::FileBrowser(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::FileBrowser)
@@ -340,8 +339,8 @@ void FileBrowser::show_image(void)
         tipl::volume2slice(data,data_buffer,2,cur_z);
         tipl::normalize_upper_lower(data_buffer,slice_image,255);
     }
-    view_image = QImage((unsigned char*)&*slice_image.begin(),slice_image.width(),slice_image.height(),QImage::Format_RGB32).copy();
-    show_view(scene,view_image);
+    view_image << slice_image;
+    scene << view_image;
 
 }
 void FileBrowser::preview_image(QString file_name)

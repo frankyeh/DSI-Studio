@@ -14,9 +14,6 @@
 #include "libs/dsi/image_model.hpp"
 #include "manual_alignment.h"
 
-
-
-void show_view(QGraphicsScene& scene,QImage I);
 void populate_templates(QComboBox* combo,size_t index);
 void move_current_dir_to(const std::string& file_name);
 bool reconstruction_window::load_src(int index)
@@ -177,15 +174,13 @@ void reconstruction_window::on_b_table_itemSelectionChanged()
     if(handle->src_bvalues.empty())
         return;
     v2c.set_range(ui->min_value->value(),ui->max_value->value());
-    tipl::image<2,float> tmp;
-    tipl::volume2slice_scaled(tipl::make_image(handle->src_dwi_data[ui->b_table->currentRow()],handle->voxel.dim),
-                              tmp,view_orientation,ui->z_pos->value(),source_ratio);
-    tipl::color_image buffer_source(tmp.shape());
-    for(int i = 0;i < tmp.size();++i)
-        buffer_source[i] = v2c[tmp[i]];
 
-
-    auto source_image = QImage((unsigned char*)&*buffer_source.begin(),buffer_source.width(),buffer_source.height(),QImage::Format_RGB32).copy();
+    QImage source_image;
+    source_image << v2c[
+                    tipl::volume2slice_scaled(
+                       tipl::make_image(handle->src_dwi_data[ui->b_table->currentRow()],handle->voxel.dim),
+                       view_orientation,ui->z_pos->value(),
+                       source_ratio)];
 
     if(view_orientation != 2)
     {
@@ -206,7 +201,7 @@ void reconstruction_window::on_b_table_itemSelectionChanged()
         }
         source_image = source_image.mirrored();
     }
-    show_view(source,source_image);
+    source << source_image;
 }
 
 
@@ -653,8 +648,10 @@ void reconstruction_window::on_SlicePos_valueChanged(int position)
     double ratio =
         std::min(double(ui->graphicsView->width()-5)/double(buffer.width()),
                  double(ui->graphicsView->height()-5)/double(buffer.height()));
-    show_view(scene,QImage(reinterpret_cast<unsigned char*>(&*buffer.begin()),
-                           buffer.width(),buffer.height(),QImage::Format_RGB32).scaled(int(buffer.width()*ratio),int(buffer.height()*ratio)));
+    QImage view;
+    view << buffer;
+    view = view.scaled(int(buffer.width()*ratio),int(buffer.height()*ratio));
+    scene << view;
 }
 
 bool add_other_image(ImageModel* handle,QString name,QString filename)

@@ -9,10 +9,9 @@
 #include "db_window.h"
 #include "ui_db_window.h"
 #include "match_db.h"
+#include "TIPL/tipl.hpp"
 
 #include <filesystem>
-
-void show_view(QGraphicsScene& scene,QImage I);
 
 db_window::db_window(QWidget *parent,std::shared_ptr<group_connectometry_analysis> vbc_) :
     QMainWindow(parent),vbc(vbc_),
@@ -148,11 +147,13 @@ void db_window::on_subject_list_itemSelectionChanged()
     tipl::color_image color_slice(slice.shape());
     std::copy(slice.begin(),slice.end(),color_slice.begin());
 
-    QImage qimage((unsigned char*)&*color_slice.begin(),color_slice.width(),color_slice.height(),QImage::Format_RGB32);
-    vbc_slice_image = qimage.scaled(color_slice.width()*ui->zoom->value(),color_slice.height()*ui->zoom->value());
+    vbc_slice_image << color_slice;
+    vbc_slice_image = vbc_slice_image.scaled(color_slice.width()*ui->zoom->value(),color_slice.height()*ui->zoom->value());
     if(!ui->view_z->isChecked())
         vbc_slice_image = vbc_slice_image.mirrored();
-    show_view(vbc_scene,vbc_slice_image);
+
+    vbc_scene << vbc_slice_image;
+
     vbc_slice_pos = ui->slice_pos->value();
 
 }

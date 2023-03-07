@@ -6,7 +6,6 @@
 #include "ui_regtoolbox.h"
 #include "basic_voxel.hpp"
 extern bool has_cuda;
-void show_view(QGraphicsScene& scene,QImage I);
 RegToolBox::RegToolBox(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::RegToolBox)
@@ -172,7 +171,7 @@ void RegToolBox::on_OpenTemplate2_clicked()
 
 
 struct image_fascade{
-
+    typedef float value_type;
     const tipl::image<3>& I;
     const tipl::image<3>& It;
     const tipl::image<3,tipl::vector<3> >& t2f_dis;
@@ -210,11 +209,7 @@ void show_slice_at(QGraphicsScene& scene,const T& source,
                    const tipl::value_to_color<float>& v2c,
                    int slice_pos,float ratio,uint8_t cur_view)
 {
-    tipl::image<2,float> tmp;
-    tipl::volume2slice_scaled(source,tmp,cur_view,slice_pos,ratio);
-    tipl::color_image buf;
-    v2c.convert(tmp,buf);
-    show_view(scene,QImage(reinterpret_cast<unsigned char*>(&*buf.begin()),buf.width(),buf.height(),QImage::Format_RGB32).copy().mirrored(false,(cur_view != 2)));
+    scene << (QImage() << v2c[tipl::volume2slice_scaled(source,cur_view,slice_pos,ratio)]).mirrored(false,(cur_view != 2));
 }
 
 template<typename T,typename U>
@@ -227,13 +222,10 @@ void show_mosaic_slice_at(QGraphicsScene& scene,
 {
     if(source1.empty() || source2.empty())
         return;
-    tipl::image<2,float> tmp1,tmp2;
-    tipl::volume2slice_scaled(source1,tmp1,cur_view,slice_pos,ratio);
-    tipl::volume2slice_scaled(source2,tmp2,cur_view,slice_pos,ratio);
-    tipl::color_image buf1,buf2,buf(tmp1.shape());
-    v2c1.convert(tmp1,buf1);
-    v2c2.convert(tmp2,buf2);
-
+    tipl::color_image buf1(v2c1[tipl::volume2slice_scaled(source1,cur_view,slice_pos,ratio)]),
+                      buf2(v2c2[tipl::volume2slice_scaled(source2,cur_view,slice_pos,ratio)]),
+                      buf;
+    buf.resize(buf1.shape());
     tipl::par_for(tipl::begin_index(buf1.shape()),tipl::end_index(buf1.shape()),
         [&](const tipl::pixel_index<2>& index)
         {
@@ -241,7 +233,7 @@ void show_mosaic_slice_at(QGraphicsScene& scene,
             int y = index[1] >> mosaic_size;
             buf[index.index()] = ((x&1) ^ (y&1)) ? buf1[index.index()] : buf2[index.index()];
         });
-    show_view(scene,QImage(reinterpret_cast<unsigned char*>(&*buf.begin()),buf.width(),buf.height(),QImage::Format_RGB32).copy().mirrored(false,(cur_view != 2)));
+    scene << (QImage() << buf).mirrored(false,(cur_view != 2));
 }
 
 template<typename T,typename U>
@@ -254,19 +246,15 @@ void show_blend_slice_at(QGraphicsScene& scene,
 {
     if(source1.empty() || source2.empty())
         return;
-    tipl::image<2,float> tmp1,tmp2;
-    tipl::volume2slice_scaled(source1,tmp1,cur_view,slice_pos,ratio);
-    tipl::volume2slice_scaled(source2,tmp2,cur_view,slice_pos,ratio);
-    tipl::color_image buf2,buf;
-    v2c1.convert(tmp1,buf);
-    v2c2.convert(tmp2,buf2);
+    tipl::color_image buf(v2c1[tipl::volume2slice_scaled(source1,cur_view,slice_pos,ratio)]),
+                      buf2(v2c2[tipl::volume2slice_scaled(source2,cur_view,slice_pos,ratio)]);
     for(size_t i = 0;i < buf.size();++i)
     {
         buf[i][0] |= buf2[i][0];
         buf[i][1] |= buf2[i][1];
         buf[i][2] |= buf2[i][2];
     }
-    show_view(scene,QImage(reinterpret_cast<unsigned char*>(&*buf.begin()),buf.width(),buf.height(),QImage::Format_RGB32).copy().mirrored(false,(cur_view != 2)));
+    scene << (QImage() << buf).mirrored(false,(cur_view != 2));
 }
 void RegToolBox::show_image(void)
 {
@@ -303,7 +291,8 @@ void RegToolBox::show_image(void)
         tipl::volume2slice_scaled(I_to_show,tmp,cur_view,pos,ratio);
         tipl::color_image cJ;
         v2c_I.convert(tmp,cJ);
-        QImage warp_image = QImage((unsigned char*)&*cJ.begin(),cJ.width(),cJ.height(),QImage::Format_RGB32).copy();
+        QImage warp_image;
+        warp_image << cJ;
 
         if(ui->show_warp->isChecked() && ui->dis_spacing->currentIndex() && !t2f_dis.empty())
         {
@@ -347,7 +336,7 @@ void RegToolBox::show_image(void)
         }
         if(cur_view != 2)
             warp_image = warp_image.mirrored(false,true);
-        show_view(I_scene,warp_image);
+        I_scene << warp_image;
     }
 }
 

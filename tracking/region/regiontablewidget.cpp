@@ -425,9 +425,8 @@ void RegionTableWidget::draw_region(std::shared_ptr<SliceModel> current_slice,un
         });
     }
     // now apply image scaling to the slice image
-    scaled_image =  QImage(reinterpret_cast<unsigned char*>(&*slice_image_with_region.begin()),
-                              slice_image_with_region.width(),slice_image_with_region.height(),QImage::Format_RGB32).
-                        scaled(int(slice_image.width()*display_ratio),int(slice_image.height()*display_ratio));
+    scaled_image << slice_image_with_region;
+    scaled_image = scaled_image.scaled(int(slice_image.width()*display_ratio),int(slice_image.height()*display_ratio));
 
 
     // the following draw the edge of the regions

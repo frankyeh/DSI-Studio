@@ -869,9 +869,7 @@ void GLWidget::renderLR()
                     texture[index].data[3] = value;
                 }
 
-                slice_texture[dim] = std::make_shared<QOpenGLTexture>(
-                                        QImage((unsigned char*)&*texture.begin(),
-                                            texture.width(),texture.height(),QImage::Format_RGB32).mirrored());
+                slice_texture[dim] = std::make_shared<QOpenGLTexture>((QImage() << texture).mirrored());
                 slice_pos[dim] = current_slice->slice_pos[dim];
             }
 

@@ -11,51 +11,7 @@
 #include "region/regiontablewidget.h"
 #include "fib_data.hpp"
 #include "opengl/glwidget.h"
-#include <QScrollBar>
 
-QPixmap fromImage(const QImage &I)
-{
-    #ifdef WIN32
-        return QPixmap::fromImage(I);
-    #else
-        //For Mac, the endian system is BGRA and all QImage needs to be converted.
-        return QPixmap::fromImage(I.convertToFormat(QImage::Format_ARGB32));
-    #endif
-}
-
-void show_plain_view(QGraphicsScene& scene,QImage I)
-{
-    scene.setSceneRect(0, 0, I.width(),I.height());
-    scene.clear();
-    scene.addPixmap(fromImage(I));
-}
-
-// show image on scene and keep the original scroll bar position if zoom in/out
-void show_view(QGraphicsScene& scene,QImage I)
-{       
-    if(!scene.views().size())
-    {
-        show_plain_view(scene,I);
-        return;
-    }
-    auto* vb = scene.views()[0]->verticalScrollBar();
-    auto* hb = scene.views()[0]->horizontalScrollBar();
-    float vb_ratio = 0.0f;
-    float hb_ratio = 0.0f;
-    if(int(float(scene.sceneRect().width())/float(scene.sceneRect().height())*100.0f) ==
-       int(float(I.width())/float(I.height())*100.0f))
-    {
-        if(vb->isVisible())
-            vb_ratio = float((vb->value()+vb->pageStep()/2))/float(vb->maximum()+vb->pageStep());
-        if(hb->isVisible())
-            hb_ratio = float((hb->value()+hb->pageStep()/2))/float(hb->maximum()+hb->pageStep());
-    }
-    show_plain_view(scene,I);
-    if(vb_ratio != 0.0f)
-        vb->setValue(int(vb_ratio*(vb->maximum()+vb->pageStep())-vb->pageStep()/2));
-    if(hb_ratio != 0.0f)
-        hb->setValue(int(hb_ratio*(hb->maximum()+hb->pageStep())-hb->pageStep()/2));
-}
 void slice_view_scene::show_ruler2(QPainter& paint)
 {
     float zoom = cur_tracking_window.get_scene_zoom();
@@ -380,13 +336,11 @@ void slice_view_scene::get_view_image(QImage& new_view_image,std::shared_ptr<Sli
         if(!simple && current_slice->handle && current_slice->handle->has_high_reso)
         {
             current_slice->get_high_reso_slice(high_reso_slice_image,cur_dim);
-            slice_qimage = QImage(reinterpret_cast<const unsigned char*>(&*high_reso_slice_image.begin()),
-                                  high_reso_slice_image.width(),high_reso_slice_image.height(),QImage::Format_RGB32);
+            slice_qimage << high_reso_slice_image;
 
         }
         else
-            slice_qimage = QImage(reinterpret_cast<const unsigned char*>(&*slice_image.begin()),
-                          slice_image.width(),slice_image.height(),QImage::Format_RGB32);
+            slice_qimage << slice_image;
 
         scaled_image = slice_qimage.scaled(int(slice_image.width()*display_ratio),
                                         int(slice_image.height()*display_ratio));
@@ -601,7 +555,7 @@ void slice_view_scene::update_3d(QImage captured)
         painter.drawRect(0,view1_h,view4.width(),view4.height()); // this avoid alpha corrupts the output
         painter.drawImage(0,view1_h,view4);
     }
-    show_view(*this,view_image);
+    *this << view_image;
 }
 
 void slice_view_scene::show_slice(void)
@@ -614,7 +568,7 @@ void slice_view_scene::show_slice(void)
     if(complete_view_ready)
         show_complete_slice();
     else
-        show_view(*this,view_image);
+        *this << view_image;
 }
 
 void slice_view_scene::show_complete_slice(void)
@@ -623,7 +577,7 @@ void slice_view_scene::show_complete_slice(void)
     if(no_show || need_complete_view)
         return;
     view_image = complete_view_image;
-    show_view(*this,view_image);
+    *this << view_image;
 }
 
 
@@ -1190,10 +1144,10 @@ void slice_view_scene::mouseMoveEvent ( QGraphicsSceneMouseEvent * mouseEvent )
                         (cur_tracking_window.cur_dim != 0 ? 0:geo[0]*display_ratio):
                         (cur_tracking_window.cur_dim == 0 ? 0:geo[1]*display_ratio),
                         cur_tracking_window.cur_dim != 2 ? 0:geo[2]*display_ratio,annotated_image);
-        addPixmap(fromImage(temp));
+        addPixmap(tipl::qt::image2pixelmap(temp));
     }
     else
-        addPixmap(fromImage(annotated_image));
+        addPixmap(tipl::qt::image2pixelmap(annotated_image));
 
 }
 
@@ -1357,10 +1311,10 @@ void slice_view_scene::mouseReleaseEvent ( QGraphicsSceneMouseEvent * mouseEvent
                                 (cur_tracking_window.cur_dim == 0 ? 0:geo[1]*display_ratio),
                             cur_tracking_window.cur_dim != 2 ? 0:geo[2]*display_ratio,annotated_image);
 
-            addPixmap(fromImage(temp));
+            addPixmap(tipl::qt::image2pixelmap(temp));
         }
         else
-            addPixmap(fromImage(annotated_image));
+            addPixmap(tipl::qt::image2pixelmap(annotated_image));
         return;
     }
     case 6:

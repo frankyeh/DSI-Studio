@@ -335,8 +335,6 @@ bool view_image::command(std::string cmd,std::string param1)
     return true;
 }
 
-
-void show_view(QGraphicsScene& scene,QImage I);
 bool load_image_from_files(QStringList filenames,tipl::image<3>& ref,tipl::vector<3>& vs,tipl::matrix<4,4>& trans)
 {
     if(filenames.size() == 1 && filenames[0].toLower().contains("nii"))
@@ -1079,8 +1077,8 @@ void view_image::show_image(bool update_others)
             for(size_t j = 0;j < buffer.size();++j)
                 buffer[j] |= buffer2[j];
         });
-    source_image = QImage(reinterpret_cast<unsigned char*>(&*buffer.begin()),buffer.width(),buffer.height(),QImage::Format_RGB32).copy().mirrored(has_flip_x(),has_flip_y());
-
+    source_image << buffer;
+    source_image = source_image.mirrored(has_flip_x(),has_flip_y());
     {
         QPainter paint(&source_image);
 
@@ -1092,7 +1090,7 @@ void view_image::show_image(bool update_others)
         draw_ruler(paint,shape,(ui->orientation->currentIndex()) ? T : tipl::matrix<4,4>(tipl::identity_matrix()),cur_dim,
                         has_flip_x(),has_flip_y(),ui->zoom->value(),ui->axis_grid->currentIndex());
     }
-    show_view(source,source_image);
+    source << source_image;
     if(update_others)
         update_other_images();
 }

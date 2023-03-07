@@ -5,7 +5,6 @@
 #include "ui_manual_alignment.h"
 #include "tracking/tracking_window.h"
 
-void show_view(QGraphicsScene& scene,QImage I);
 tipl::vector<3> adjust_to_vs(const tipl::image<3,float>& from,
                const tipl::vector<3>& from_vs,
                const tipl::image<3,float>& to,
@@ -311,11 +310,13 @@ void manual_alignment::slice_pos_moved()
             value = std::min<float>(255,value);
             buffer[index] = tipl::rgb(value,value,value);
         }
-        auto slice_image = QImage((unsigned char*)&*buffer.begin(),buffer.width(),buffer.height(),QImage::Format_RGB32).copy().mirrored(false,dim != 2);
+        QImage slice_image;
+        slice_image << buffer;
+        slice_image = slice_image.mirrored(false,dim != 2);
         QPainter painter(&slice_image);
         draw_ruler(painter,to.shape(),nifti_srow,
                         dim,dim,dim != 2,ratio,true);
-        show_view(scene[dim],slice_image);
+        scene[dim] << slice_image;
     }
 }
 
