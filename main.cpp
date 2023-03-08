@@ -241,9 +241,6 @@ int run_action(tipl::program_option<tipl::out>& po)
     return 1;
 }
 void get_filenames_from(const std::string param,std::vector<std::string>& filenames);
-bool match_files(const std::string& file_path1,const std::string& file_path2,
-                 const std::string& file_path1_others,std::string& file_path2_gen);
-
 int run_action_with_wildcard(tipl::program_option<tipl::out>& po)
 {
     std::string source = po.get("source");
@@ -283,7 +280,7 @@ int run_action_with_wildcard(tipl::program_option<tipl::out>& po)
                     if(each.find('*') == std::string::npos)
                         apply_wildcard_each = each;
                     else
-                    if(!match_files(loop,loop_files[i],each,apply_wildcard_each))
+                    if(!tipl::match_files(loop,loop_files[i],each,apply_wildcard_each))
                     {
                         tipl::out() << "ERROR: cannot translate " << wildcard.second <<
                                      " at --" << wildcard.first << std::endl;

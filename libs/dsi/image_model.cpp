@@ -443,8 +443,6 @@ bool ImageModel::is_human_data(void) const
 {
     return is_human_size(voxel.dim,voxel.vs);
 }
-bool match_files(const std::string& file_path1,const std::string& file_path2,
-                 const std::string& file_path1_others,std::string& file_path2_gen);
 bool ImageModel::run_steps(const std::string& reg_file_name,const std::string& ref_steps)
 {
     std::istringstream in(ref_steps);
@@ -465,7 +463,7 @@ bool ImageModel::run_steps(const std::string& reg_file_name,const std::string& r
             cmd = step.substr(0,pos);
             param = step.substr(pos+1,step.size()-pos-1);
         }
-        if(param.find(".gz") != std::string::npos && !match_files(reg_file_name,param,file_name,param))
+        if(param.find(".gz") != std::string::npos && !tipl::match_files(reg_file_name,param,file_name,param))
         {
             error_msg = step;
             error_msg += " cannot find a matched file for ";
