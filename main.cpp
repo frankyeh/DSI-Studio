@@ -262,12 +262,11 @@ int run_action_with_wildcard(tipl::program_option<tipl::out>& po)
         std::vector<std::pair<std::string,std::string> > wildcard_list;
         po.get_wildcard_list(wildcard_list);
 
-        for (size_t i = 0;i < loop_files.size();++i)
+        tipl::par_for(loop_files.size(),[&](size_t i)
         {
             // clear --t1t2 and --other_slices
             t1t2_slices.reset();
             other_slices.clear();
-
             // apply '*' to other arguments
             for(const auto& wildcard : wildcard_list)
             {
@@ -297,7 +296,7 @@ int run_action_with_wildcard(tipl::program_option<tipl::out>& po)
             po.get("loop");
             if(run_action(po))
                 return 1;
-        }
+        },po.get("loop_thread",1));
     }
     return 0;
 }
