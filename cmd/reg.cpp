@@ -153,12 +153,12 @@ int reg(tipl::program_option<tipl::out>& po)
 
     if(!from2.empty() && from.shape() != from2.shape())
     {
-        tipl::out() << "--from2 and --from images have different dimension" << std::endl;
+        tipl::out() << "ERROR: --from2 and --from images have different dimension" << std::endl;
         return 1;
     }
     if(!to2.empty() && to.shape() != to2.shape())
     {
-        tipl::out() << "--to2 and --to images have different dimension" << std::endl;
+        tipl::out() << "ERROR: --to2 and --to images have different dimension" << std::endl;
         return 1;
     }
 
@@ -202,10 +202,26 @@ int reg(tipl::program_option<tipl::out>& po)
     }
     auto r2 = tipl::correlation(from_.begin(),from_.end(),to.begin());
     tipl::out() << "correlation cofficient: " << r2 << std::endl;
-    if(po.get("reg_type",1) == 0) // just rigidbody
+    if(po.get("reg_type",1) == 0 || po.get("linear_only",0)) // just rigidbody
     {
         tipl::out() << "output warpped image:" << output_wp_image << std::endl;
         tipl::io::gz_nifti::save_to_file(output_wp_image.c_str(),from_,to_vs,to_trans);
+        if(po.has("apply_warp"))
+        {
+            if(!load_nifti_file(po.get("apply_warp").c_str(),from2,from_vs))
+                return 1;
+            if(from2.shape() != from.shape())
+            {
+                tipl::out() << "ERROR: --from and --apply_warp image has different dimension" << std::endl;
+                return 1;
+            }
+            from2_.resize(to.shape());;
+            if(tipl::is_label_image(from2))
+                tipl::resample_mt<tipl::interpolation::nearest>(from2,from2_,T);
+            else
+                tipl::resample_mt<tipl::interpolation::cubic>(from2,from2_,T);
+            tipl::io::gz_nifti::save_to_file((po.get("apply_warp")+".wp.nii.gz").c_str(),from2_,to_vs,to_trans);
+        }
         return 0;
     }
 
