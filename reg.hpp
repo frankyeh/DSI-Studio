@@ -141,6 +141,7 @@ inline size_t linear_with_mi(const tipl::image<3,float>& from,
 {
     tipl::affine_transform<float> arg;
     size_t result = linear_with_mi(from,from_vs,to,to_vs,arg,reg_type,terminated,bound);
+    tipl::out() << arg << std::endl;
     T = tipl::transformation_matrix<float>(arg,from.shape(),from_vs,to.shape(),to_vs);
     tipl::out() << T << std::endl;
     return result;
@@ -157,6 +158,7 @@ inline size_t linear_with_cc(const tipl::image<3,float>& from,
 {
     tipl::affine_transform<float> arg;
     size_t result = linear_with_cc(from,from_vs,to,to_vs,arg,reg_type,terminated,bound);
+    tipl::out() << arg << std::endl;
     T = tipl::transformation_matrix<float>(arg,from.shape(),from_vs,to.shape(),to_vs);
     tipl::out() << T << std::endl;
     return result;
