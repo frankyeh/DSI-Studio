@@ -1244,12 +1244,14 @@ void dicom2src(std::string dir_)
 {
     tipl::progress prog("convert DICOM to NIFTI/SRC");
     QStringList dir_list = GetSubDir(dir_.c_str(),false);
+    bool has_dicom = false;
     for(int i = 0;prog(i,dir_list.size());++i)
     {
         QDir cur_dir = dir_list[i];
         QStringList dicom_file_list = cur_dir.entryList(QStringList("*.dcm"),QDir::Files|QDir::NoSymLinks);
         if(dicom_file_list.empty())
             continue;
+        has_dicom = true;
         tipl::out() << "processing " << dir_list[i].toStdString() << std::endl;
         // aggregate DWI with identical names from consecutive folders
         QStringList aggregated_file_list;
@@ -1262,6 +1264,9 @@ void dicom2src(std::string dir_)
         }
         dcm2src(aggregated_file_list);
     }
+    if(!has_dicom)
+        for(auto dir : dir_list)
+            dicom2src(dir.toStdString());
 }
 
 void MainWindow::on_dicom2nii_clicked()
