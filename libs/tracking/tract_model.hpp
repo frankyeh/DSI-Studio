@@ -139,6 +139,7 @@ public:
         size_t get_deleted_track_count(void) const{return deleted_tract_data.size();}
         size_t get_visible_track_count(void) const{return tract_data.size();}
         
+        auto get_tract_point(unsigned int index,unsigned int pos) const{return tipl::vector<3>(&tract_data[index][pos + (pos << 1)]);}
         const std::vector<float>& get_tract(unsigned int index) const{return tract_data[index];}
         const std::vector<std::vector<float> >& get_tracts(void) const{return tract_data;}
         std::vector<std::vector<float> >& get_deleted_tracts(void) {return deleted_tract_data;}
