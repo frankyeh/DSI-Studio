@@ -1783,9 +1783,7 @@ bool TractModel::delete_by_length(float length)
             track_to_delete.push_back(i);
             continue;
         }
-        tipl::vector<3> v1(&tract_data[i][0]),v2(&tract_data[i][3]);
-        v1 -= v2;
-        if((((tract_data[i].size()/3)-1)*v1.length()) < length)
+        if((((tract_data[i].size()/3)-1)*(get_tract_point(i,0)-get_tract_point(i,1)).length()) < length)
             track_to_delete.push_back(i);
     }
     return delete_tracts(track_to_delete);
@@ -3604,14 +3602,22 @@ bool ConnectivityMatrix::calculate(std::shared_ptr<fib_data> handle,
 
     if(matrix_value_type == "mean_length")
     {
-        std::vector<std::vector<unsigned int> > sum_length,sum_n;
+        std::vector<std::vector<float> > sum_length;
+        std::vector<std::vector<unsigned int> > sum_n;
         init_matrix(sum_length,uint32_t(region_count));
         init_matrix(sum_n,uint32_t(region_count));
 
         for_each_connectivity(end_list1,end_list2,
                               [&](unsigned int index,unsigned int i,unsigned int j){
-            sum_length[i][j] += tract_model.get_tract_length(index);
-            ++sum_n[i][j];
+            auto num_steps = tract_model.get_tract_length(index);
+            if(num_steps >= 6)
+            {
+                auto dis = tract_model.get_tract_point(index,0)-tract_model.get_tract_point(index,1);
+                tipl::multiply(dis,handle->vs);
+                sum_length[i][j] += dis.length()*num_steps;
+                ++sum_n[i][j];
+            }
+
         });
 
         for(unsigned int i = 0,index = 0;i < count.size();++i)
