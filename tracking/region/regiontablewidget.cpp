@@ -543,7 +543,7 @@ void get_roi_label(QString file_name,std::map<int,std::string>& label_map,std::m
         tipl::out() <<"jason file loaded:" << label_file.toStdString() << std::endl;
         return;
     }
-    if(base_name.contains("aparc") || base_name.contains("aseg")) // FreeSurfer
+    if(QFileInfo(file_name).fileName().contains("aparc") || QFileInfo(file_name).fileName().contains("aseg")) // FreeSurfer
     {
         tipl::out() <<"using freesurfer labels." << std::endl;
         QFile data(":/data/FreeSurferColorLUT.txt");
