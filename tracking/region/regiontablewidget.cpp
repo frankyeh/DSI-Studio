@@ -526,14 +526,15 @@ void get_roi_label(QString file_name,std::map<int,std::string>& label_map,std::m
 {
     label_map.clear();
     label_color.clear();
-    QString base_name = QFileInfo(file_name).baseName();
-    tipl::out() <<"looking for region label file" << std::endl;
-
+    QString base_name = QFileInfo(file_name).completeBaseName();
+    if(base_name.endsWith(".nii"))
+        base_name.chop(4);
     QString label_file = QFileInfo(file_name).absolutePath()+"/"+base_name+".txt";
+    tipl::out() <<"looking for region label file:" << label_file.toStdString() << std::endl;
     if(QFileInfo(label_file).exists())
     {
         load_nii_label(label_file.toStdString().c_str(),label_map);
-        tipl::out() <<"label file loaded:" << label_file.toStdString() << std::endl;
+        tipl::out() <<"label file loaded" << std::endl;
         return;
     }
     label_file = QFileInfo(file_name).absolutePath()+"/"+base_name+".json";
@@ -1114,10 +1115,13 @@ void RegionTableWidget::save_region(void)
                            "Save region",item(currentRow(),0)->text() + output_format(),"NIFTI file(*nii.gz *.nii);;Text file(*.txt);;MAT file (*.mat);;All files(*)" );
     if (filename.isEmpty())
         return;
-    if(QFileInfo(filename.toLower()).completeSuffix() != "mat" && QFileInfo(filename.toLower()).completeSuffix() != "txt")
-        filename = QFileInfo(filename).absolutePath() + "/" + QFileInfo(filename).baseName() + ".nii.gz";
+    if(!filename.endsWith(".mat") &&
+       !filename.endsWith(".txt") &&
+       !filename.endsWith(".nii") &&
+       !filename.endsWith(".nii.gz"))
+        filename += ".nii.gz";
     regions[currentRow()]->save_to_file(filename.toStdString().c_str());
-    item(currentRow(),0)->setText(QFileInfo(filename).baseName());
+    item(currentRow(),0)->setText(QFileInfo(filename).completeBaseName());
 }
 QString RegionTableWidget::output_format(void)
 {
@@ -1146,8 +1150,8 @@ void RegionTableWidget::save_all_regions_to_dir(void)
 void RegionTableWidget::save_checked_region_label_file(QString filename,int first_index)
 {
     QString base_name = QFileInfo(filename).completeBaseName();
-    if(QFileInfo(base_name).suffix().toLower() == "nii")
-        base_name = QFileInfo(base_name).completeBaseName();
+    if(base_name.endsWith(".nii"))
+        base_name.chop(4);
     QString label_file = QFileInfo(filename).absolutePath()+"/"+base_name+".txt";
     std::ofstream out(label_file.toStdString().c_str());
     for (unsigned int roi_index = 0;roi_index < regions.size();++roi_index)
