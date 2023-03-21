@@ -254,6 +254,9 @@
                  </item>
                  <item>
                   <widget class="QDoubleSpinBox" name="tx">
+                   <property name="decimals">
+                    <number>4</number>
+                   </property>
                    <property name="singleStep">
                     <double>1.000000000000000</double>
                    </property>
@@ -271,6 +274,9 @@
                  </item>
                  <item>
                   <widget class="QDoubleSpinBox" name="ty">
+                   <property name="decimals">
+                    <number>4</number>
+                   </property>
                    <property name="singleStep">
                     <double>1.000000000000000</double>
                    </property>
@@ -288,6 +294,9 @@
                  </item>
                  <item>
                   <widget class="QDoubleSpinBox" name="tz">
+                   <property name="decimals">
+                    <number>4</number>
+                   </property>
                    <property name="singleStep">
                     <double>1.000000000000000</double>
                    </property>
@@ -329,6 +338,9 @@
                  </item>
                  <item>
                   <widget class="QDoubleSpinBox" name="sx">
+                   <property name="decimals">
+                    <number>4</number>
+                   </property>
                    <property name="singleStep">
                     <double>0.050000000000000</double>
                    </property>
@@ -346,6 +358,9 @@
                  </item>
                  <item>
                   <widget class="QDoubleSpinBox" name="sy">
+                   <property name="decimals">
+                    <number>4</number>
+                   </property>
                    <property name="singleStep">
                     <double>0.050000000000000</double>
                    </property>
@@ -363,6 +378,9 @@
                  </item>
                  <item>
                   <widget class="QDoubleSpinBox" name="sz">
+                   <property name="decimals">
+                    <number>4</number>
+                   </property>
                    <property name="singleStep">
                     <double>0.050000000000000</double>
                    </property>
@@ -404,6 +422,9 @@
                  </item>
                  <item>
                   <widget class="QDoubleSpinBox" name="xy">
+                   <property name="decimals">
+                    <number>4</number>
+                   </property>
                    <property name="singleStep">
                     <double>0.050000000000000</double>
                    </property>
@@ -421,6 +442,9 @@
                  </item>
                  <item>
                   <widget class="QDoubleSpinBox" name="xz">
+                   <property name="decimals">
+                    <number>4</number>
+                   </property>
                    <property name="singleStep">
                     <double>0.050000000000000</double>
                    </property>
@@ -438,6 +462,9 @@
                  </item>
                  <item>
                   <widget class="QDoubleSpinBox" name="yz">
+                   <property name="decimals">
+                    <number>4</number>
+                   </property>
                    <property name="singleStep">
                     <double>0.050000000000000</double>
                    </property>
@@ -479,6 +506,9 @@
                  </item>
                  <item>
                   <widget class="QDoubleSpinBox" name="rx">
+                   <property name="decimals">
+                    <number>4</number>
+                   </property>
                    <property name="singleStep">
                     <double>0.050000000000000</double>
                    </property>
@@ -496,6 +526,9 @@
                  </item>
                  <item>
                   <widget class="QDoubleSpinBox" name="ry">
+                   <property name="decimals">
+                    <number>4</number>
+                   </property>
                    <property name="singleStep">
                     <double>0.050000000000000</double>
                    </property>
@@ -513,6 +546,9 @@
                  </item>
                  <item>
                   <widget class="QDoubleSpinBox" name="rz">
+                   <property name="decimals">
+                    <number>4</number>
+                   </property>
                    <property name="singleStep">
                     <double>0.050000000000000</double>
                    </property>
