@@ -534,7 +534,7 @@
   </action>
   <action name="actionSet_Translocation">
    <property name="text">
-    <string>Set Translocation...</string>
+    <string>Set Translocation</string>
    </property>
    <property name="toolTip">
     <string>Assign the translocation values for the transformation matrix</string>
@@ -553,7 +553,7 @@
   </action>
   <action name="actionSet_Transformation">
    <property name="text">
-    <string>Set Transformation...</string>
+    <string>Set Transformation</string>
    </property>
    <property name="toolTip">
     <string>Assign the transformation matrix</string>
