@@ -849,6 +849,7 @@ bool modify_fib(tipl::io::gz_mat_read& mat_reader,
             for(size_t j = 0;j < dir0.size();++j,ptr += 3)
                 dir0[j] = tipl::vector<3>(ptr);
             fun(dir0,new_dir0);
+            mat.resize(tipl::vector<2,unsigned int>(3*new_dim[0]*new_dim[1],new_dim[2]));
             ptr = mat.get_data<float>();
             for(size_t j = 0;j < new_dir0.size();++j,ptr += 3)
             {
@@ -856,10 +857,10 @@ bool modify_fib(tipl::io::gz_mat_read& mat_reader,
                 *(ptr+1) = new_dir0[j][1];
                 *(ptr+2) = new_dir0[j][2];
             }
-            mat.resize(tipl::vector<2,unsigned int>(3*new_dim[0]*new_dim[1],new_dim[2]));
         }
         if(size_t(mat.get_cols())*size_t(mat.get_rows()) == dim.size()) // image volumes, including fa, and fiber index
         {
+            mat.resize(tipl::vector<2,unsigned int>(new_dim[0]*new_dim[1],new_dim[2]));
             if(mat.is_type<float>()) // qa, fa...etc.
             {
                 tipl::image<3> new_image(new_dim);
@@ -872,7 +873,6 @@ bool modify_fib(tipl::io::gz_mat_read& mat_reader,
                 fun(tipl::make_image(mat.get_data<short>(),dim),new_image);
                 std::copy(new_image.begin(),new_image.end(),mat.get_data<short>());
             }
-            mat.resize(tipl::vector<2,unsigned int>(new_dim[0]*new_dim[1],new_dim[2]));
         }
         ++p;
     });
