@@ -873,7 +873,7 @@ bool RegionTableWidget::load_multiple_roi_nii(QString file_name,bool is_mni)
                     return;
                 }
                 loaded_regions[i].push_back(region);
-                names[i].push_back(QFileInfo(files[i]).baseName().toStdString());
+                names[i].push_back(QFileInfo(files[i]).completeBaseName().toStdString());
             }
         });
 
@@ -1246,16 +1246,16 @@ void RegionTableWidget::save_all_regions(void)
     {
         tipl::image<3,uint8_t> i8mask(mask);
         result = tipl::io::gz_nifti::save_to_file(filename.toStdString().c_str(),i8mask,
-                           cur_tracking_window.current_slice->vs,
-                           cur_tracking_window.handle->trans_to_mni,
-                           cur_tracking_window.handle->is_mni || cur_tracking_window.handle->is_mni);
+                           checked_regions[0]->vs,
+                           checked_regions[0]->trans_to_mni,
+                           cur_tracking_window.handle->is_mni);
     }
     else
     {
         result = tipl::io::gz_nifti::save_to_file(filename.toStdString().c_str(),mask,
-                           cur_tracking_window.current_slice->vs,
-                           cur_tracking_window.handle->trans_to_mni,
-                           cur_tracking_window.handle->is_mni || cur_tracking_window.handle->is_mni);
+                           checked_regions[0]->vs,
+                           checked_regions[0]->trans_to_mni,
+                           cur_tracking_window.handle->is_mni);
     }
     if(result)
     {
