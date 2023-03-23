@@ -910,7 +910,6 @@ bool resize_mat(tipl::io::gz_mat_read& mat_reader,const tipl::shape<3>& new_dim)
     tipl::matrix<4,4,float> trans;
     mat_reader.read("voxel_size",vs);
     mat_reader.read("trans",trans);
-    std::cout << trans << std::endl;
     return modify_fib(mat_reader,new_dim,vs,trans,[&](const auto& I,auto& J)
     {
         tipl::draw(I,J,tipl::vector<3,int>(0,0,0));
