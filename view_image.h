@@ -51,10 +51,6 @@ private slots:
 
     void on_action_Save_as_triggered();
 
-    void on_actionSet_Translocation_triggered();
-
-    void on_actionSet_Transformation_triggered();
-
     void change_contrast();
 
     void on_min_slider_sliderMoved(int position);

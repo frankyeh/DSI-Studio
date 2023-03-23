@@ -393,6 +393,7 @@
     <addaction name="actionResize"/>
     <addaction name="actionCropToFit"/>
     <addaction name="actionTranslocate"/>
+    <addaction name="actionTransform"/>
     <addaction name="separator"/>
     <addaction name="actionDownsample_by_2"/>
     <addaction name="actionUpsample_by_2"/>
@@ -511,7 +512,7 @@
   </action>
   <action name="actionTranslocate">
    <property name="text">
-    <string>Translocation</string>
+    <string>Translocate</string>
    </property>
    <property name="toolTip">
     <string>Move the image</string>
@@ -799,6 +800,14 @@
    </property>
    <property name="statusTip">
     <string>Smooth the image while preserving the edges</string>
+   </property>
+  </action>
+  <action name="actionTransform">
+   <property name="text">
+    <string>Transform</string>
+   </property>
+   <property name="toolTip">
+    <string>Transform the image to new coordinates</string>
    </property>
   </action>
  </widget>

@@ -15,8 +15,8 @@ std::vector<view_image*> opened_images;
 
 
 
-
-
+bool resize_mat(tipl::io::gz_mat_read& mat_reader,const tipl::shape<3>& new_dim);
+bool translocate_mat(tipl::io::gz_mat_read& mat_reader,const tipl::vector<3,int>& shift);
 bool resample_mat(tipl::io::gz_mat_read& mat_reader,float resolution);
 bool view_image::command(std::string cmd,std::string param1)
 {
@@ -27,6 +27,28 @@ bool view_image::command(std::string cmd,std::string param1)
 
     if(mat.size())
     {
+        if(cmd == "resize")
+        {
+            std::istringstream in(param1);
+            int w(0),h(0),d(0);
+            in >> w >> h >> d;
+            if(!resize_mat(mat,tipl::shape<3>(w,h,d)))
+                return false;
+            read_mat();
+            init_image();
+            return true;
+        }
+        if(cmd == "translocate")
+        {
+            std::istringstream in(param1);
+            int dx,dy,dz;
+            in >> dx >> dy >> dz;
+            if(!translocate_mat(mat,tipl::vector<3,int>(dx,dy,dz)))
+                return false;
+            read_mat();
+            init_image();
+            return true;
+        }
         if(cmd == "regrid")
         {
             float reso = std::stof(param1);
@@ -88,19 +110,6 @@ bool view_image::command(std::string cmd,std::string param1)
                 if(!dwi_volume_buf.empty())
                     dwi_volume_buf = std::move(std::vector<std::vector<unsigned char> >(dwi_volume_buf.size()));
             }
-        }
-        else
-        if(cmd == "set_transformation")
-        {
-            std::istringstream in(param1);
-            for(int i = 0;i < 16;++i)
-                in >> T[i];
-        }
-        else
-        if(cmd == "set_shift")
-        {
-            std::istringstream in(param1);
-            in >> T[3] >> T[7] >> T[11];
         }
         else
         apply([&](auto& I)
@@ -323,10 +332,15 @@ view_image::view_image(QWidget *parent) :
     connect(ui->actionThreshold, SIGNAL(triggered()),this, SLOT(run_action2()));
     connect(ui->actionTranslocate, SIGNAL(triggered()),this, SLOT(run_action2()));
     connect(ui->actionResize, SIGNAL(triggered()),this, SLOT(run_action2()));
+    connect(ui->actionTransform, SIGNAL(triggered()),this, SLOT(run_action2()));
     connect(ui->actionMultiplyImage, SIGNAL(triggered()),this, SLOT(run_action2()));
     connect(ui->actionAddImage, SIGNAL(triggered()),this, SLOT(run_action2()));
     connect(ui->actionMinusImage, SIGNAL(triggered()),this, SLOT(run_action2()));
     connect(ui->actionCropToFit, SIGNAL(triggered()),this, SLOT(run_action2()));
+
+    connect(ui->actionSet_Transformation, SIGNAL(triggered()),this, SLOT(run_action2()));
+    connect(ui->actionSet_Translocation, SIGNAL(triggered()),this, SLOT(run_action2()));
+
 
 
     ui->tabWidget->setCurrentIndex(0);
@@ -803,7 +817,6 @@ void view_image::init_image(void)
         ui->min->setValue(double(min_value));
         ui->max->setValue(double(max_value));
     }
-
     if(ui->slice_pos->maximum() != int(shape[cur_dim]-1))
     {
         ui->slice_pos->setRange(0,shape[cur_dim]-1);
@@ -811,8 +824,22 @@ void view_image::init_image(void)
         slice_pos[1] = shape.height()/2;
         slice_pos[2] = shape.depth()/2;
         ui->slice_pos->setValue(slice_pos[cur_dim]);
-        ui->actionResize->setStatusTip(QString("%1 %2 %3").arg(shape.width()).arg(shape.height()).arg(shape.depth()));
     }
+
+    ui->actionResize->setStatusTip(QString("%1 %2 %3").arg(shape.width()).arg(shape.height()).arg(shape.depth()));
+    ui->actionSet_Translocation->setStatusTip(QString("%1 %2 %3").arg(T[3]).arg(T[7]).arg(T[11]));
+
+    std::string t_string;
+    {
+        std::ostringstream out;
+        for(int i = 0;i < 16;++i)
+            out << T[i] << " ";
+        t_string = out.str();
+    }
+    ui->actionSet_Transformation->setStatusTip(t_string.c_str());
+    ui->actionTransform->setStatusTip(t_string.c_str());
+
+
     no_update = false;
     show_image(true);
 }
@@ -990,37 +1017,6 @@ void view_image::on_action_Save_as_triggered()
     setWindowTitle(QFileInfo(file_name).fileName());
     on_actionSave_triggered();
 }
-
-void view_image::on_actionSet_Translocation_triggered()
-{
-    std::ostringstream out;
-    out << T[3] << " " << T[7] << " " << T[11];
-    bool ok;
-    QString result = QInputDialog::getText(this,"DSI Studio","Assign the translocation vector translocation (x y z)",QLineEdit::Normal,
-                                           out.str().c_str(),&ok);
-
-    if(!ok)
-        return;
-    command("set_shift",result.toStdString());
-    init_image();
-}
-
-void view_image::on_actionSet_Transformation_triggered()
-{
-    std::ostringstream out;
-    for(int i = 0;i < 16;++i)
-        out << T[i] << " ";
-    bool ok;
-    QString result = QInputDialog::getText(this,"DSI Studio","Assign the transformation matrix",QLineEdit::Normal,
-                                           out.str().c_str(),&ok);
-
-    if(!ok)
-        return;
-    command("set_transformation",result.toStdString());
-    init_image();
-}
-
-
 
 void view_image::on_min_slider_sliderMoved(int)
 {
