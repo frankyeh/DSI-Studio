@@ -454,10 +454,11 @@ bool load_region(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> h
             roi.add_points(std::move(points));
         }
         else
-        {
-            tipl::out() << "ERROR: invalid region assignment " << file_name << std::endl;
-            return false;
-        }
+            if(!roi.LoadFromFile(file_name.c_str()))
+            {
+                tipl::out() << "ERROR: cannot open file as a region" << file_name << std::endl;
+                return false;
+            }
     }
 
     // now perform actions
