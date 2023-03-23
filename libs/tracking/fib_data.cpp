@@ -800,31 +800,31 @@ bool fib_data::load_from_mat(void)
     return true;
 }
 
-
-bool resample_mat(tipl::io::gz_mat_read& mat_reader,float resolution)
+bool read_fib_data(tipl::io::gz_mat_read& mat_reader)
 {
     // get all data in delayed read condition
+    tipl::progress prog("reading data");
+    for(size_t i = 0;prog(i,mat_reader.size());++i)
     {
-        tipl::progress prog("reading data");
-        for(size_t i = 0;prog(i,mat_reader.size());++i)
-        {
-            auto& mat = mat_reader[i];
-            if(mat.has_delay_read() && !mat.read(*(mat_reader.in.get())))
-                return false;
-        }
-        if(prog.aborted())
+        auto& mat = mat_reader[i];
+        if(mat.has_delay_read() && !mat.read(*(mat_reader.in.get())))
             return false;
     }
+    if(prog.aborted())
+        return false;
+    return true;
+}
+template<typename T>
+bool modify_fib(tipl::io::gz_mat_read& mat_reader,
+                const tipl::shape<3>& new_dim,
+                const tipl::vector<3>& new_vs,
+                const tipl::matrix<4,4,float>& new_trans,
+                T&& fun)
+{
+    if(!read_fib_data(mat_reader))
+        return false;
     tipl::shape<3> dim;
-    tipl::vector<3> vs;
-    tipl::transformation_matrix<double> T;
     mat_reader.read("dimension",dim);
-    mat_reader.read("voxel_size",vs);
-    tipl::vector<3> new_vs(resolution,resolution,resolution);
-    tipl::shape<3> new_dim(dim[0]*vs[0]/resolution,dim[1]*vs[0]/resolution,dim[2]*vs[0]/resolution);
-    T.sr[0] = resolution/vs[2];
-    T.sr[4] = resolution/vs[1];
-    T.sr[8] = resolution/vs[0];
 
     tipl::progress prog("resampling");
     size_t p = 0;
@@ -839,20 +839,16 @@ bool resample_mat(tipl::io::gz_mat_read& mat_reader,float resolution)
             std::copy(new_dim.begin(),new_dim.end(),mat.get_data<unsigned int>());
         if(mat.get_name() == "voxel_size")
             std::copy(new_vs.begin(),new_vs.end(),mat.get_data<float>());
-        if(mat.get_cols() == 4 && mat.get_rows() == 4)
-        {
-            auto ptr = mat.get_data<float>();
-            ptr[0]  = ptr[0]  > 0 ? resolution : -resolution;
-            ptr[5]  = ptr[5]  > 0 ? resolution : -resolution;
-            ptr[10] = ptr[10] > 0 ? resolution : -resolution;
-        }
+        if(mat.get_name() == "trans")
+            std::copy(new_trans.begin(),new_trans.end(),mat.get_data<float>());
+
         if(size_t(mat.get_cols())*size_t(mat.get_rows()) == 3*dim.size())
         {
             auto ptr = mat.get_data<float>();
             tipl::image<3,tipl::vector<3> > dir0(dim),new_dir0(new_dim);
             for(size_t j = 0;j < dir0.size();++j,ptr += 3)
                 dir0[j] = tipl::vector<3>(ptr);
-            tipl::resample(dir0,new_dir0,T);
+            fun(dir0,new_dir0);
             ptr = mat.get_data<float>();
             for(size_t j = 0;j < new_dir0.size();++j,ptr += 3)
             {
@@ -867,13 +863,13 @@ bool resample_mat(tipl::io::gz_mat_read& mat_reader,float resolution)
             if(mat.is_type<float>()) // qa, fa...etc.
             {
                 tipl::image<3> new_image(new_dim);
-                tipl::resample(tipl::make_image(mat.get_data<float>(),dim),new_image,T);
+                fun(tipl::make_image(mat.get_data<float>(),dim),new_image);
                 std::copy(new_image.begin(),new_image.end(),mat.get_data<float>());
             }
             if(mat.is_type<short>()) // index0,index1
             {
                 tipl::image<3> new_image(new_dim);
-                tipl::resample<tipl::nearest>(tipl::make_image(mat.get_data<short>(),dim),new_image,T);
+                fun(tipl::make_image(mat.get_data<short>(),dim),new_image);
                 std::copy(new_image.begin(),new_image.end(),mat.get_data<short>());
             }
             mat.resize(tipl::vector<2,unsigned int>(new_dim[0]*new_dim[1],new_dim[2]));
@@ -881,6 +877,60 @@ bool resample_mat(tipl::io::gz_mat_read& mat_reader,float resolution)
         ++p;
     });
     return !prog.aborted();
+}
+bool resample_mat(tipl::io::gz_mat_read& mat_reader,float resolution)
+{
+    tipl::shape<3> dim;
+    tipl::vector<3> vs;
+    tipl::matrix<4,4,float> new_trans;
+    mat_reader.read("dimension",dim);
+    mat_reader.read("voxel_size",vs);
+    mat_reader.read("trans",new_trans);
+    tipl::vector<3> new_vs(resolution,resolution,resolution);
+    tipl::shape<3> new_dim(dim[0]*vs[0]/resolution,dim[1]*vs[0]/resolution,dim[2]*vs[0]/resolution);
+    new_trans[0]  = new_trans[0]  > 0 ? resolution : -resolution;
+    new_trans[5]  = new_trans[5]  > 0 ? resolution : -resolution;
+    new_trans[10] = new_trans[10] > 0 ? resolution : -resolution;
+
+    tipl::transformation_matrix<double> T;
+    T.sr[0] = resolution/vs[2];
+    T.sr[4] = resolution/vs[1];
+    T.sr[8] = resolution/vs[0];
+    return modify_fib(mat_reader,new_dim,new_vs,new_trans,[&](const auto& I,auto& J)
+    {
+        if constexpr(std::is_integral<typename std::remove_reference<decltype(*I.begin())>::type>::value)
+            tipl::resample<tipl::nearest>(I,J,T);
+        else
+            tipl::resample(I,J,T);
+    });
+}
+bool resize_mat(tipl::io::gz_mat_read& mat_reader,const tipl::shape<3>& new_dim)
+{
+    tipl::vector<3> vs;
+    tipl::matrix<4,4,float> trans;
+    mat_reader.read("voxel_size",vs);
+    mat_reader.read("trans",trans);
+    std::cout << trans << std::endl;
+    return modify_fib(mat_reader,new_dim,vs,trans,[&](const auto& I,auto& J)
+    {
+        tipl::draw(I,J,tipl::vector<3,int>(0,0,0));
+    });
+}
+bool translocate_mat(tipl::io::gz_mat_read& mat_reader,const tipl::vector<3,int>& shift)
+{
+    tipl::shape<3> dim;
+    tipl::vector<3> vs;
+    tipl::matrix<4,4,float> new_trans;
+    mat_reader.read("dimension",dim);
+    mat_reader.read("voxel_size",vs);
+    mat_reader.read("trans",new_trans);
+    new_trans[3] -= new_trans[0]*float(shift[0]);
+    new_trans[7] -= new_trans[5]*float(shift[1]);
+    new_trans[11] -= new_trans[10]*float(shift[2]);
+    return modify_fib(mat_reader,dim,vs,new_trans,[&](const auto& I,auto& J)
+    {
+        tipl::draw(I,J,shift);
+    });
 }
 
 bool fib_data::resample_to(float resolution)
