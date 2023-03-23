@@ -1075,7 +1075,7 @@ void RegionTableWidget::move_up(void)
     {
         regions[uint32_t(currentRow())].swap(regions[uint32_t(currentRow())-1]);
         begin_update();
-        for(int i = 0;i < 3;++i)
+        for(int i = 0;i < 4;++i)
         {
             QTableWidgetItem* item0 = takeItem(currentRow()-1,i);
             QTableWidgetItem* item1 = takeItem(currentRow(),i);
@@ -1094,7 +1094,7 @@ void RegionTableWidget::move_down(void)
     {
         regions[uint32_t(currentRow())].swap(regions[uint32_t(currentRow())+1]);
         begin_update();
-        for(int i = 0;i < 3;++i)
+        for(int i = 0;i < 4;++i)
         {
             QTableWidgetItem* item0 = takeItem(currentRow()+1,i);
             QTableWidgetItem* item1 = takeItem(currentRow(),i);
