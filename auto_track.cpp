@@ -132,6 +132,7 @@ std::string run_auto_track(tipl::program_option<tipl::out>& po,const std::vector
     bool check_ending = po.get("check_ending",1);
     uint32_t thread_count = uint32_t(po.get("thread_count",std::thread::hardware_concurrency()));
     std::string trk_format = po.get("trk_format","tt.gz");
+    std::string stat_format = po.get("stat_format","stat.txt");
 
 
     std::vector<float> tolerance;
@@ -208,7 +209,7 @@ std::string run_auto_track(tipl::program_option<tipl::out>& po,const std::vector
             std::string no_result_file_name = output_path + "/" + fib_base+"."+track_name+".no_result.txt";
             std::string trk_file_name = output_path + "/" + fib_base+"."+track_name+ "." + trk_format;
             std::string template_trk_file_name = output_path + "/T_" + fib_base+"."+track_name + "." + trk_format;
-            std::string stat_file_name = output_path + "/" + fib_base+"."+track_name+".stat.txt";
+            std::string stat_file_name = output_path + "/" + fib_base+"."+track_name+"." + stat_format;
             std::string report_file_name = dir+"/"+track_name+".report.txt";
 
             stat_files[j].push_back(stat_file_name);
