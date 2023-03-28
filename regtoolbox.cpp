@@ -518,9 +518,9 @@ bool apply_warping(const char* from,
             return false;
         T *= IR;
         if(is_label)
-            tipl::resample_mt<tipl::interpolation::nearest>(I3,I3_,tipl::transformation_matrix<float>(T));
+            tipl::resample_mt<tipl::interpolation::nearest>(I3,I3_,T);
         else
-            tipl::resample_mt<tipl::interpolation::cubic>(I3,I3_,tipl::transformation_matrix<float>(T));
+            tipl::resample_mt<tipl::interpolation::cubic>(I3,I3_,T);
         I3_.swap(I3);
     }
 
