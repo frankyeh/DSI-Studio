@@ -137,8 +137,8 @@ group_connectometry::~group_connectometry()
     delete ui;
 }
 
-template<typename data_type>
-QLineSeries* get_line_series(const data_type& data, const char* name,QColor color,Qt::PenStyle s = Qt::SolidLine)
+template<typename T>
+QLineSeries* get_line_series(const T& data, const char* name,QColor color,Qt::PenStyle s = Qt::SolidLine)
 {
     QLineSeries* series = new QLineSeries;
     series->setName(name);
