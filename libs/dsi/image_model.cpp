@@ -2282,7 +2282,7 @@ bool ImageModel::load_from_file(const char* dwi_file_name)
             });
         }
         tipl::out() << "generating mask";
-        auto raw_ = tipl::make_image(&*raw.begin(),tipl::shape<3>(raw.width(),raw.height(),1));
+        auto raw_ = raw.sub_image(0,tipl::shape<3>(raw.width(),raw.height(),1));
         if(raw.width() > 2048)
         {
             tipl::downsample_with_padding(raw_,dwi);
