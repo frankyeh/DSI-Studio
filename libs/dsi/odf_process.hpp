@@ -379,7 +379,7 @@ public:
                 max_qa = 1.0f;
             voxel.z0 = float(1.0/double(max_qa));
         }
-
+        mat_writer.write("z0",{voxel.z0});
         for (unsigned int index = 0;index < voxel.max_fiber_number;++index)
             tipl::multiply_constant(fa[index],voxel.z0);
         output_anisotropy(mat_writer,"fa",fa);
