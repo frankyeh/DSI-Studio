@@ -121,7 +121,7 @@ tipl::const_pointer_image<3,float> item::get_image(void)
         {
             tipl::out() << "ERROR: reading " << name << std::endl;
             dummy.resize(image_data.shape());
-            image_data = tipl::make_image(&*dummy.begin(),dummy.shape());
+            image_data = dummy.alias();
         }
         else
         {
@@ -139,7 +139,7 @@ tipl::const_pointer_image<3,float> item::get_image(void)
 void item::get_image_in_dwi(tipl::image<3>& I)
 {
     if(iT != tipl::identity_matrix())
-        tipl::resample_mt(get_image(),I,tipl::transformation_matrix<float>(iT));
+        tipl::resample_mt(get_image(),I,iT);
     else
         I = get_image();
 }
@@ -646,7 +646,7 @@ bool fib_data::save_mapping(const std::string& index_name,const std::string& fil
         if(view_item[index].get_image().shape() != dim)
         {
             tipl::image<3> new_buf(dim);
-            tipl::resample_mt<tipl::interpolation::cubic>(buf,new_buf,tipl::transformation_matrix<float>(view_item[index].iT));
+            tipl::resample_mt<tipl::interpolation::cubic>(buf,new_buf,view_item[index].iT);
             new_buf.swap(buf);
         }
         return tipl::io::gz_nifti::save_to_file(file_name.c_str(),buf,vs,trans_to_mni,is_mni);
