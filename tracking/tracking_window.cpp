@@ -2640,7 +2640,7 @@ void tracking_window::on_actionInsert_Coronal_Pictures_triggered()
     tipl::flip_y(reg_slice_ptr->source_images);
     tipl::swap_yz(reg_slice_ptr->source_images);
     std::swap(reg_slice_ptr->vs[1],reg_slice_ptr->vs[2]);
-    handle->view_item.back().set_image(tipl::make_image(&*reg_slice_ptr->source_images.begin(),reg_slice_ptr->source_images.shape()));
+    handle->view_item.back().set_image(reg_slice_ptr->source_images.alias());
     reg_slice_ptr->update_image();
     ui->SliceModality->setCurrentIndex(0);
     ui->SliceModality->setCurrentIndex(int(handle->view_item.size())-1);
@@ -2665,7 +2665,7 @@ void tracking_window::on_actionInsert_Sagittal_Picture_triggered()
     tipl::swap_xy(reg_slice_ptr->source_images);
     tipl::swap_xz(reg_slice_ptr->source_images);
     std::swap(reg_slice_ptr->vs[0],reg_slice_ptr->vs[2]);
-    handle->view_item.back().set_image(tipl::make_image(&*reg_slice_ptr->source_images.begin(),reg_slice_ptr->source_images.shape()));
+    handle->view_item.back().set_image(reg_slice_ptr->source_images.alias());
     reg_slice_ptr->update_image();
     ui->SliceModality->setCurrentIndex(0);
     ui->SliceModality->setCurrentIndex(int(handle->view_item.size())-1);
