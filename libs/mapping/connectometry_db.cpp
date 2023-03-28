@@ -444,7 +444,7 @@ bool connectometry_db::add_subject_file(const std::string& file_name,
             error_msg += file_name;
             return false;
         }
-        sample_from_image(tipl::make_image(&I[0],I.shape()),trans,data);
+        sample_from_image(I.alias(),trans,data);
     }
     else
     {
@@ -527,7 +527,7 @@ bool connectometry_db::add_subject_file(const std::string& file_name,
                     }
                     tipl::image<3> Iss(fib.t2s.shape());
                     tipl::compose_mapping(fib.view_item[index].get_image(),fib.t2s,Iss);
-                    sample_from_image(tipl::make_image(&Iss[0],Iss.shape()),fib.template_to_mni,data);
+                    sample_from_image(Iss.alias(),fib.template_to_mni,data);
                 }
             }
         }
