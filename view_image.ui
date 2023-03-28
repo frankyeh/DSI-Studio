@@ -381,6 +381,7 @@
     </property>
     <addaction name="actionSave"/>
     <addaction name="action_Save_as"/>
+    <addaction name="actionLoad_Image_to_4D"/>
    </widget>
    <widget class="QMenu" name="menuResize">
     <property name="title">
@@ -473,7 +474,7 @@
      <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
    </property>
    <property name="text">
-    <string>Save as...</string>
+    <string>Save As...</string>
    </property>
   </action>
   <action name="actionRegrid">
@@ -808,6 +809,15 @@
    </property>
    <property name="toolTip">
     <string>Transform the image to new coordinates</string>
+   </property>
+  </action>
+  <action name="actionLoad_Image_to_4D">
+   <property name="icon">
+    <iconset resource="icons.qrc">
+     <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+   </property>
+   <property name="text">
+    <string>Load Image to 4D...</string>
    </property>
   </action>
  </widget>

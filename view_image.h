@@ -87,6 +87,8 @@ private slots:
 
     void on_mat_images_currentIndexChanged(int index);
 
+    void on_actionLoad_Image_to_4D_triggered();
+
 private:
     Ui::view_image *ui;
 private:
@@ -94,7 +96,7 @@ private:
     tipl::image<3,unsigned short,tipl::buffer_container> I_uint16;
     tipl::image<3,unsigned int,tipl::buffer_container> I_uint32;
     tipl::image<3,float,tipl::buffer_container> I_float32;
-    enum {uint8 = 0,uint16 = 1,uint32 = 2,float32 = 3} data_type = uint8;
+    enum {uint8 = 0,uint16 = 1,uint32 = 2,float32 = 3} pixel_type = uint8;
     tipl::shape<3> shape;
     bool is_mni = false;
     tipl::vector<3,float> vs;
@@ -102,7 +104,7 @@ private:
     template <typename T>
     void apply(T&& fun)
     {
-        switch(data_type)
+        switch(pixel_type)
         {
             case uint8:fun(I_uint8);return;
             case uint16:fun(I_uint16);return;
@@ -110,6 +112,8 @@ private:
             case float32:fun(I_float32);return;
         }
     }
+    void change_type(decltype(pixel_type));
+
 private:
     tipl::io::gz_mat_read mat;
     void read_mat_info(void);
@@ -121,8 +125,9 @@ private: //overlay
     std::vector<bool> overlay_images_visible;
     size_t this_index = 0;
 private:
-    std::vector<std::vector<unsigned char> > dwi_volume_buf;
-    size_t cur_dwi_volume = 0;
+    std::vector<std::vector<unsigned char> > buf4d;
+    size_t cur_4d_index = 0;
+    void read_4d_at(size_t index);
 private:// batch processing
     /*
     std::vector<tipl::image<3> > other_data;
