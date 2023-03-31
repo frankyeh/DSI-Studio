@@ -2135,6 +2135,8 @@ bool ImageModel::save_to_file(const char* dwi_file_name)
 {
     tipl::progress prog_("saving ",std::filesystem::path(dwi_file_name).filename().string().c_str());
     std::string filename(dwi_file_name);
+    if(!QString(filename.c_str()).endsWith(".gz"))
+        filename += ".gz";
     std::string ext = filename.substr(std::max<int>(0,int(filename.length())-7));
     if(ext == ".nii.gz")
     {
