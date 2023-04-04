@@ -492,14 +492,6 @@ int trk_post(tipl::program_option<tipl::out>& po,
         tract_model->delete_repeated(distance);
         tipl::out() << "repeat tracks with distance smaller than " << distance <<" voxel distance are deleted" << std::endl;
     }
-    if(po.has("trim"))
-    {
-        tipl::out() << "trimming tracks..." << std::endl;
-        int trim = po.get("trim",int(1));
-        for(int i = 0;i < trim;++i)
-            tract_model->trim();
-    }
-
     if(output_track)
     {
         bool failed = false;
@@ -546,6 +538,20 @@ int trk_post(tipl::program_option<tipl::out>& po,
         std::ofstream out(tract_file_name + "." + name);
         tipl::out() << "cluster label saved to " << name << std::endl;
         std::copy(tract_model->get_cluster_info().begin(),tract_model->get_cluster_info().end(),std::ostream_iterator<int>(out," "));
+    }
+    if(po.has("recognize"))
+    {
+        std::vector<unsigned int> labels;
+        std::vector<std::string> names;
+        handle->recognize(tract_model,labels,names);
+        tipl::out() << "recognized labels saved to " << (po.get("cluster") + ".label.txt") << std::endl;
+        std::ofstream out1(po.get("cluster") + ".label.txt");
+        std::copy(labels.begin(),labels.end(),std::ostream_iterator<int>(out1," "));
+
+        tipl::out() << "recognized names saved to " << (po.get("cluster") + ".name.txt") << std::endl;
+        std::ofstream out2(po.get("cluster") + ".name.txt");
+        std::copy(names.begin(),names.end(),std::ostream_iterator<int>(out2," "));
+
     }
 
     if(po.has(("native_track")) && !tract_model->save_tracts_in_native_space(handle,po.get("native_track").c_str()))
