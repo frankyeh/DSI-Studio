@@ -154,10 +154,12 @@ void TractCluster::add_tracts(const std::vector<std::vector<float> >& tracks)
     for(unsigned int tract_index = 0;tract_index < tracks.size();++tract_index)
     {
         voxel_connection[tract_mid_voxels[tract_index]].push_back(tract_index);
-        std::vector<tipl::pixel_index<3> > iterations;
-        tipl::get_connected_neighbors(tipl::pixel_index<3>(tract_mid_voxels[tract_index],dim),dim,iterations);
-        for(unsigned int i = 0;i < iterations.size();++i)
-            voxel_connection[iterations[i].index()].push_back(tract_index);
+        tipl::for_each_connected_neighbors(
+                    tipl::pixel_index<3>(tract_mid_voxels[tract_index],dim),dim,
+                    [&](const auto& pos)
+            {
+                voxel_connection[pos.index()].push_back(tract_index);
+            });
     }
     tipl::par_for(voxel_connection.size(),[&](unsigned int pos)
     {
