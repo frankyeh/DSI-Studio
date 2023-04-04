@@ -305,12 +305,13 @@ public:
                 const float *fa0 = handle->dir.fa[0];
                 tipl::par_for(seed.size(),[&](unsigned int i)
                 {
-                    std::vector<tipl::pixel_index<3> > list;
-                    tipl::get_neighbors(tipl::pixel_index<3>(seed[i][0],seed[i][1],seed[i][2],handle->dim),
-                                        handle->dim,int(std::ceil(tolerance_dis_in_subject_voxels))+2,list);
-                    for(const auto& pos : list)
+                    tipl::for_each_neighbors(tipl::pixel_index<3>(seed[i][0],seed[i][1],seed[i][2],handle->dim),
+                                        handle->dim,int(std::ceil(tolerance_dis_in_subject_voxels))+2,
+                            [&](const auto& pos)
+                    {
                         if(fa0[pos.index()] > 0.0f)
                             roa_mask[pos.index()] = 1;
+                    });
                 });
             }
             if(terminated)
@@ -328,17 +329,15 @@ public:
                 auto mid_x = handle->template_I.width() >> 1;
                 tipl::par_for(seed.size(),[&](unsigned int i)
                 {
-                    std::vector<tipl::pixel_index<3> > list;
-                    tipl::get_neighbors(tipl::pixel_index<3>(seed[i][0],seed[i][1],seed[i][2],handle->dim),
-                                        handle->dim,int(std::ceil(tolerance_dis_in_subject_voxels)),list);
-                    for(const auto& pos : list)
+                    tipl::for_each_neighbors(tipl::pixel_index<3>(seed[i][0],seed[i][1],seed[i][2],handle->dim),
+                                        handle->dim,int(std::ceil(tolerance_dis_in_subject_voxels)),                            [&](const auto& pos)
                     {
                         if(is_left && s2t[pos.index()][0] < mid_x)
-                            continue;
+                            return;
                         if(is_right && s2t[pos.index()][0] > mid_x)
-                            continue;
+                            return;
                         roa_mask[pos.index()] = 0;
-                    }
+                    });
                 });
             }
             if(terminated)
