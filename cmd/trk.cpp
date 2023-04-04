@@ -550,7 +550,7 @@ int trk_post(tipl::program_option<tipl::out>& po,
 
         tipl::out() << "recognized names saved to " << (po.get("cluster") + ".name.txt") << std::endl;
         std::ofstream out2(po.get("cluster") + ".name.txt");
-        std::copy(names.begin(),names.end(),std::ostream_iterator<int>(out2," "));
+        std::copy(names.begin(),names.end(),std::ostream_iterator<std::string>(out2," "));
 
     }
 
