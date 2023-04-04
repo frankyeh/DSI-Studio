@@ -617,32 +617,19 @@ void TractTableWidget::recog_tracks(void)
 
 void TractTableWidget::auto_recognition(void)
 {
-    if(!cur_tracking_window.handle->load_track_atlas())
-    {
-        QMessageBox::critical(this,"ERROR",cur_tracking_window.handle->error_msg.c_str());
-        return;
-    }
-    std::vector<unsigned int> c,new_c,count;
+    std::vector<std::string> labels;
+    std::vector<unsigned int> new_c;
     {
         auto lock = tract_rendering[uint32_t(currentRow())]->start_reading();
-        cur_tracking_window.handle->recognize(tract_models[uint32_t(currentRow())],c,count);
+        if(!cur_tracking_window.handle->recognize(tract_models[uint32_t(currentRow())],new_c,labels))
+        {
+            QMessageBox::critical(this,"ERROR",cur_tracking_window.handle->error_msg.c_str());
+            return;
+        }
     }
-    std::multimap<unsigned int,unsigned int,std::greater<unsigned int> > tract_list;
-    for(unsigned int i = 0;i < count.size();++i)
-        if(count[i])
-            tract_list.insert(std::make_pair(count[i],i));
-
     QStringList Names;
-    unsigned int index = 0;
-    new_c.resize(c.size());
-    for(auto p : tract_list)
-    {
-        for(size_t j = 0;j < c.size();++j)
-            if(c[j] == p.second)
-                new_c[j] = index;
-        Names << cur_tracking_window.handle->tractography_name_list[p.second].c_str();
-        ++index;
-    }
+    for(const auto& str : labels)
+        Names << str.c_str();
     load_cluster_label(new_c,Names);
 }
 
