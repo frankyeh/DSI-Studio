@@ -90,21 +90,63 @@ std::string quality_check_src_files(QString dir)
     out << "total outliers:" << outlier_count << std::endl;
     return out.str();
 }
+std::shared_ptr<fib_data> cmd_load_fib(std::string file_name);
+std::string quality_check_fib_files(QString dir)
+{
+    std::ostringstream out;
+    QStringList filenames = search_files(dir,"*fib.gz");
+    out << "Directory:" << dir.toStdString() << std::endl;
+    if(filenames.empty())
+    {
+        tipl::out() << "no SRC file found in the directory" << std::endl;
+        return "no SRC file found in the directory";
+    }
+    out << "FileName\tImage dimension\tResolution\tCoherence Index" << std::endl;
+    tipl::out() << "a total of " << filenames.size() << " FIB file(s) were found."<< std::endl;
+
+    std::vector<std::vector<std::string> > output;
+    std::vector<float> ndc;
+    tipl::progress prog("checking FIB files");
+    for(int i = 0;prog(i,filenames.size());++i)
+    {
+        std::shared_ptr<fib_data> handle = cmd_load_fib(filenames[i].toStdString());
+        if(!handle.get())
+            return QString("Failed to open ").toStdString() + filenames[i].toStdString();
+        std::pair<float,float> result = evaluate_fib(handle->dim,handle->dir.fa_otsu*0.6f,handle->dir.fa,
+                                                     [&](int pos,char fib)
+                                                     {return handle->dir.get_fib(size_t(pos),uint32_t(fib));});
+        out << QFileInfo(filenames[i]).baseName().toStdString() << "\t";
+        out << handle->dim << "\t";
+        out << handle->vs << "\t";
+        out << result.first << std::endl;
+
+    }
+    out << "total scans:" << output.size() << std::endl;
+    return out.str();
+}
 
 /**
  perform reconstruction
  */
-std::shared_ptr<fib_data> cmd_load_fib(std::string file_name);
 int qc(tipl::program_option<tipl::out>& po)
 {
     std::string file_name = po.get("source");
     if(QFileInfo(file_name.c_str()).isDir())
     {
-        std::string report_file_name = po.get("output",file_name + "/qc.txt");
-        tipl::out() << "quality control checking src files in " << file_name << std::endl;
-        std::ofstream out(report_file_name.c_str());
-        out << quality_check_src_files(file_name.c_str());
-        tipl::out() << "report saved to " << report_file_name << std::endl;
+        {
+            std::string report_file_name = po.get("output",file_name + "/qc_src.txt");
+            tipl::out() << "quality control checking src files in " << file_name << std::endl;
+            std::ofstream out(report_file_name.c_str());
+            out << quality_check_src_files(file_name.c_str());
+            tipl::out() << "report saved to " << report_file_name << std::endl;
+        }
+        {
+            std::string report_file_name = po.get("output",file_name + "/qc_fib.txt");
+            tipl::out() << "quality control checking fib files in " << file_name << std::endl;
+            std::ofstream out(report_file_name.c_str());
+            out << quality_check_fib_files(file_name.c_str());
+            tipl::out() << "report saved to " << report_file_name << std::endl;
+        }
     }
     else {
         std::string report_file_name = po.get("output",file_name.substr(0,file_name.size()-7) + ".qc.txt");
