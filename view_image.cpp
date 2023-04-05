@@ -118,14 +118,32 @@ bool view_image::command(std::string cmd,std::string param1)
                     // load all to buffer
                     for(size_t i = 0;i < buf4d.size() && result;++i)
                         read_4d_at(i);
+
+                    // return image buffer to the 4d buffer
+                    apply([&](auto& I)
+                    {
+                        I.buf().swap(buf4d[cur_4d_index]);
+                    });
+
+                    // change type for each 4d image
                     auto old_type = pixel_type;
                     for(size_t i = 0;i < buf4d.size() && result;++i)
                     {
                         pixel_type = old_type;
-                        read_4d_at(i);
+                        apply([&](auto& I)
+                        {
+                            I.buf().swap(buf4d[i]);
+                        });
                         change_type(new_type);
+                        apply([&](auto& I)
+                        {
+                            I.buf().swap(buf4d[i]);
+                        });
                     }
-                    read_4d_at(old_4d_index);
+                    apply([&](auto& I)
+                    {
+                        I.buf().swap(buf4d[old_4d_index]);
+                    });
                 }
                 else
                     change_type(new_type);
@@ -168,7 +186,7 @@ bool view_image::command(std::string cmd,std::string param1)
                     result = tipl::command<tipl::io::gz_nifti>(I,vs,T,is_mni,cmd,param1,error_msg);
                     shape = I.shape();
                 });
-                if(!buf4d.empty() && (old_shape != shape || old_T != T))
+                if(!buf4d.empty())
                 {
                     auto old_4d_index = cur_4d_index;
                     vs = old_vs;
@@ -1240,21 +1258,6 @@ void view_image::run_action2()
     }
     if(value.isEmpty())
         return;
-    if(action->text().contains("Morphology") && pixel_type == float32)
-    {
-        auto result = QMessageBox::information(this,"DSI Studio",
-                "Morphology operation only applies to label image. Convert pixel type to integer?",
-                                    QMessageBox::Yes|QMessageBox::No|QMessageBox::Cancel);
-        if(result == QMessageBox::Cancel)
-            return;
-        if(result == QMessageBox::Yes)
-        {
-            if(ui->min->maximum() <= 255.0)
-                ui->type->setCurrentIndex(uint8);
-            else
-                ui->type->setCurrentIndex(uint16);
-        }
-    }
     if(value.contains(".") && pixel_type != float32 &&
             action->statusTip() != "file" &&
             action->text() != "Regrid")
