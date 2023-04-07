@@ -1874,11 +1874,9 @@ bool fib_data::get_atlas_all_roi(std::shared_ptr<atlas> at,
 
 const tipl::image<3,tipl::vector<3,float> >& fib_data::get_sub2temp_mapping(void)
 {
-    if(!s2t.empty())
-        return s2t;
-    if(!map_to_mni(false))
-        return s2t;
-    if(is_mni && template_id == matched_template_id && s2t.empty())
+    if(s2t.empty() &&
+       map_to_mni(false) &&
+       is_mni && template_id == matched_template_id)
     {
         s2t.resize(dim);
         tipl::par_for(tipl::begin_index(s2t.shape()),tipl::end_index(s2t.shape()),
