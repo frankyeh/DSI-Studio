@@ -1480,7 +1480,7 @@ bool fib_data::recognize(std::shared_ptr<TractModel>& trk,
 {
     if(!load_track_atlas())
         return false;
-    std::vector<unsigned int> c,new_c,count;
+    std::vector<unsigned int> c,count;
     recognize(trk,c,count);
     std::multimap<unsigned int,unsigned int,std::greater<unsigned int> > tract_list;
     for(unsigned int i = 0;i < count.size();++i)
@@ -1488,12 +1488,12 @@ bool fib_data::recognize(std::shared_ptr<TractModel>& trk,
             tract_list.insert(std::make_pair(count[i],i));
 
     unsigned int index = 0;
-    new_c.resize(c.size());
+    labels.resize(c.size());
     for(auto p : tract_list)
     {
         for(size_t j = 0;j < c.size();++j)
             if(c[j] == p.second)
-                new_c[j] = index;
+                labels[j] = index;
         label_names.push_back(tractography_name_list[p.second]);
         ++index;
     }
