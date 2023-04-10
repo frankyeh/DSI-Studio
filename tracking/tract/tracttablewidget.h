@@ -103,7 +103,7 @@ public slots:
     void clustering_EM(void){clustering(2);}
     void clustering_kmeans(void){clustering(1);}
     void clustering_hie(void){clustering(0);}
-    void auto_recognition(void);
+    void recognize_and_cluster(void);
     void recognize_rename(void);
     void open_cluster_label(void);
     void open_cluster_color(void);

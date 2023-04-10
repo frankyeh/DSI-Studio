@@ -615,7 +615,7 @@ void TractTableWidget::recog_tracks(void)
 }
 
 
-void TractTableWidget::auto_recognition(void)
+void TractTableWidget::recognize_and_cluster(void)
 {
     std::vector<std::string> labels;
     std::vector<unsigned int> new_c;
