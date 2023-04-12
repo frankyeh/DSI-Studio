@@ -545,13 +545,12 @@ int trk_post(tipl::program_option<tipl::out>& po,
         std::vector<std::string> names;
         handle->recognize(tract_model,labels,names);
         tipl::out() << "recognized labels saved to " << (po.get("recognize") + ".label.txt") << std::endl;
-        std::ofstream out1(po.get("cluster") + ".label.txt");
+        std::ofstream out1(po.get("recognize") + ".label.txt");
         std::copy(labels.begin(),labels.end(),std::ostream_iterator<int>(out1," "));
 
         tipl::out() << "recognized names saved to " << (po.get("recognize") + ".name.txt") << std::endl;
-        std::ofstream out2(po.get("cluster") + ".name.txt");
+        std::ofstream out2(po.get("recognize") + ".name.txt");
         std::copy(names.begin(),names.end(),std::ostream_iterator<std::string>(out2," "));
-
     }
 
     if(po.has(("native_track")) && !tract_model->save_tracts_in_native_space(handle,po.get("native_track").c_str()))
