@@ -454,7 +454,7 @@ void RegionTableWidget::draw_region(std::shared_ptr<SliceModel> current_slice,un
     }
 
     int cur_roi_index = -1;
-        if(currentRow() >= 0)
+    if(currentRow() >= 0)
         for(unsigned int i = 0;i < checked_regions.size();++i)
             if(checked_regions[i] == regions[uint32_t(currentRow())])
             {
