@@ -96,7 +96,7 @@ public:
         points.resize(4);
         tipl::get_slice_positions(cur_dim, slice_pos[cur_dim],dim,points);
         if(!is_diffusion_space)
-            for(auto p : points)
+            for(auto& p : points)
                 p.to(T);
     }
     void apply_overlay(tipl::color_image& show_image,
