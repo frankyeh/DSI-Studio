@@ -415,33 +415,27 @@ void RegionTableWidget::draw_region(std::shared_ptr<SliceModel> current_slice,un
             {
                 auto iT = tipl::from_space(checked_regions[roi_index]->to_diffusion_space).to(current_slice->T);
                 tipl::transformation_matrix<float> m = iT;
-                uint32_t x_range = 0;
-                uint32_t y_range = 0;
-                uint32_t z_range = 0;
-                tipl::vector<3,float> p;
-                tipl::slice2space(dim,1.0f,0.0f,0.0f,p);
-                p.rotate(m);
-                x_range = uint32_t(std::ceil(p.length()));
-                tipl::slice2space(dim,0.0f,1.0f,0.0f,p);
-                p.rotate(m);
-                y_range = uint32_t(std::ceil(p.length()));
-                tipl::slice2space(dim,0.0f,0.0f,1.0f,p);
-                p.rotate(m);
-                z_range = uint32_t(std::ceil(p.length()));
+                tipl::vector<3,uint32_t> range;
+                for(int d = 0;d < 3;++d)
+                {
+                    auto p = tipl::slice2space<tipl::vector<3,float> >(dim,char(d == 0),char(d == 1),char(d == 2));
+                    p.rotate(m);
+                    range[d] = uint32_t(std::ceil(p.length()));
+                }
 
                 for(const auto& index : checked_regions[roi_index]->region)
                 {
-                    tipl::vector<3,float> p(index),p2;
+                    tipl::vector<3,float> p(index);
                     p.to(iT);
-                    tipl::space2slice(dim,p,p2[0],p2[1],p2[2]);
-                    if (std::fabs(float(slice_pos)-p2[2]) >= z_range)
+                    auto p2 = tipl::space2slice<tipl::vector<3,float> >(dim,p);
+                    if (std::fabs(float(slice_pos)-p2[2]) >= range[2])
                         continue;
                     p2.round();
                     if(!slice_image_shape.is_valid(p2))
                         continue;
                     uint32_t pos = yw[uint32_t(p2[1])]+uint32_t(p2[0]);
-                    for(uint32_t dy = 0;dy < y_range;++dy,pos += uint32_t(w))
-                        for(uint32_t dx = 0,pos2 = pos;dx < x_range;++dx,++pos2)
+                    for(uint32_t dy = 0;dy < range[1];++dy,pos += uint32_t(w))
+                        for(uint32_t dx = 0,pos2 = pos;dx < range[0];++dx,++pos2)
                             region_mask[pos2] = 1;
                 }
             }
@@ -449,11 +443,10 @@ void RegionTableWidget::draw_region(std::shared_ptr<SliceModel> current_slice,un
             {
                 for(const auto& p : checked_regions[roi_index]->region)
                 {
-                    int X, Y, Z;
-                    tipl::space2slice(dim,p,X,Y,Z);
-                    if (slice_pos != Z || !slice_image_shape.is_valid(X,Y))
+                    auto pos = tipl::space2slice<tipl::vector<3,int> > (dim,p);
+                    if (slice_pos != pos[2] || !slice_image_shape.is_valid(pos))
                         continue;
-                    region_mask[uint32_t(yw[uint32_t(Y)]+uint32_t(X))] = 1;
+                    region_mask[uint32_t(yw[uint32_t(pos[1])]+uint32_t(pos[0]))] = 1;
                 }
             }
             region_masks[roi_index].swap(region_mask);

@@ -650,8 +650,8 @@ void GLWidget::renderLR()
                     {
                         if((index[0] & mask) | (index[1] & mask))
                             continue;
-                        tipl::vector<3,int> xyz;
-                        if (!slice->to3DSpace(cur_tracking_window.cur_dim,index[0],index[1],xyz))
+                        auto xyz = slice->to3DSpace<tipl::vector<3,int> >(cur_tracking_window.cur_dim,index[0],index[1]);
+                        if (!slice->dim.is_valid(xyz))
                             continue;
                         tipl::pixel_index<3> pos(xyz.begin(),geo);
                         if (handle->dir.fa[0][pos.index()] <= fa_threshold)

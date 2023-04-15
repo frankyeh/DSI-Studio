@@ -35,8 +35,7 @@ void SliceModel::apply_overlay(tipl::color_image& show_image,
     for(int y = 0,pos = 0;y < show_image.height();++y)
         for(int x = 0;x < show_image.width();++x,++pos)
         {
-            tipl::vector<3,float> v;
-            toOtherSlice(other_slice,cur_dim,x,y,v);
+            auto v = toOtherSlice(other_slice,cur_dim,x,y);
             float value = 0;
             if(!tipl::estimate(other_slice->get_source(),v,value))
                 continue;

@@ -467,7 +467,6 @@ bool view_image::eventFilter(QObject *obj, QEvent *event)
 
     QMouseEvent *mouseEvent = static_cast<QMouseEvent*>(event);
     QPointF point = ui->view->mapToScene(mouseEvent->pos().x(),mouseEvent->pos().y());
-    tipl::vector<3,float> pos,mni;
     auto x = point.x();
     auto y = point.y();
     if(has_flip_x())
@@ -475,12 +474,12 @@ bool view_image::eventFilter(QObject *obj, QEvent *event)
     if(has_flip_y())
         y = source.height() - y;
 
-    tipl::slice2space(cur_dim,
+    auto pos = tipl::slice2space<tipl::vector<3,float> > (cur_dim,
                       std::round(float(x) / ui->zoom->value()),
-                      std::round(float(y) / ui->zoom->value()),ui->slice_pos->value(),pos);
+                      std::round(float(y) / ui->zoom->value()),ui->slice_pos->value());
     if(!shape.is_valid(pos))
         return true;
-    mni = pos;
+    auto mni = pos;
     mni.to(T);
 
     apply([&](auto& data)

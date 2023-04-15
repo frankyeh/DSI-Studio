@@ -131,8 +131,7 @@ void slice_view_scene::show_fiber(QPainter& painter,std::shared_ptr<SliceModel> 
     for (int y = 0; y < slice_image.height(); y += steps)
         for (int x = 0; x < slice_image.width(); x += steps)
             {
-                tipl::vector<3> v;
-                current_slice->toDiffusionSpace(cur_dim,x, y, v);
+                auto v = current_slice->toDiffusionSpace(cur_dim,x, y);
                 if(!dim.is_valid(v))
                     continue;
                 tipl::pixel_index<3> pos(v[0],v[1],v[2],dim);
@@ -307,7 +306,8 @@ bool slice_view_scene::to_3d_space_single_slice(float x,float y,tipl::vector<3,f
         x = (cur_tracking_window.cur_dim ? geo[0]:geo[1])-x;
     if(cur_tracking_window.slice_view_flip_y(cur_tracking_window.cur_dim))
         y = geo[2] - y;
-    return cur_tracking_window.current_slice->to3DSpace(cur_tracking_window.cur_dim,x - 0.5f,y - 0.5f,pos);
+    pos = cur_tracking_window.current_slice->to3DSpace<tipl::vector<3,float> >(cur_tracking_window.cur_dim,x - 0.5f,y - 0.5f);
+    return cur_tracking_window.current_slice->dim.is_valid(pos);
 }
 
 bool slice_view_scene::to_3d_space(float x,float y,tipl::vector<3,float>& pos)

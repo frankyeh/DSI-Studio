@@ -36,34 +36,31 @@ public:
     tipl::const_pointer_image<3> get_source(void) const;
     std::string get_name(void) const;
 public:
-    template<typename U,typename V>
-    void toDiffusionSpace(unsigned char cur_dim,U x, U y,V& v) const
+    auto toDiffusionSpace(unsigned char cur_dim,int x,int y) const
     {
-        tipl::slice2space(cur_dim, x, y, slice_pos[cur_dim], v);
+        auto v = tipl::slice2space<tipl::vector<3> >(cur_dim, x, y, slice_pos[cur_dim]);
         if(!is_diffusion_space)
         {
             v.to(T);
             v.round();           
         }
+        return v;
     }
-    void toOtherSlice(std::shared_ptr<SliceModel> other_slice,
-                      unsigned char cur_dim,float x,float y,
-                      tipl::vector<3,float>& v) const
+    auto toOtherSlice(std::shared_ptr<SliceModel> other_slice,
+                      unsigned char cur_dim,int x,int y) const
     {
-        tipl::slice2space(cur_dim, x, y, slice_pos[cur_dim], v);
+        auto v = tipl::slice2space<tipl::vector<3> >(cur_dim, x, y, slice_pos[cur_dim]);
         if(!is_diffusion_space)
             v.to(T);
         if(!other_slice->is_diffusion_space)
             v.to(other_slice->invT);
+        return v;
     }
     template<typename U,typename V>
-    bool to3DSpace(unsigned char cur_dim,U x, U y,V& p) const
+    auto to3DSpace(unsigned char cur_dim,V x, V y) const
     {
-        tipl::slice2space(cur_dim, x, y, slice_pos[cur_dim], p);
-        return dim.is_valid(p);
+        return tipl::slice2space<U>(cur_dim, x, y, slice_pos[cur_dim]);
     }
-
-
 public:
 
     void get_other_slice_pos(unsigned char cur_dim,int& x, int& y) const {
@@ -99,8 +96,8 @@ public:
         points.resize(4);
         tipl::get_slice_positions(cur_dim, slice_pos[cur_dim],dim,points);
         if(!is_diffusion_space)
-        for(unsigned int index = 0;index < points.size();++index)
-            points[index].to(T);
+            for(auto p : points)
+                p.to(T);
     }
     void apply_overlay(tipl::color_image& show_image,
                        unsigned char dim,
