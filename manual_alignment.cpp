@@ -274,14 +274,6 @@ void manual_alignment::param_changed()
 }
 
 
-void draw_ruler(QPainter& paint,
-                const tipl::shape<3>& shape,
-                const tipl::matrix<4,4>& trans,
-                unsigned char cur_dim,
-                bool flip_x,bool flip_y,
-                float zoom,
-                bool grid = false);
-
 void manual_alignment::slice_pos_moved()
 {
     if(warped_from.empty() || to.empty())
@@ -314,7 +306,7 @@ void manual_alignment::slice_pos_moved()
         slice_image << buffer;
         slice_image = slice_image.mirrored(false,dim != 2);
         QPainter painter(&slice_image);
-        draw_ruler(painter,to.shape(),nifti_srow,
+        tipl::qt::draw_ruler(painter,to.shape(),nifti_srow,
                         dim,dim,dim != 2,ratio,true);
         scene[dim] << slice_image;
     }

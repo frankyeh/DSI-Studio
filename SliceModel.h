@@ -36,39 +36,31 @@ public:
     tipl::const_pointer_image<3> get_source(void) const;
     std::string get_name(void) const;
 public:
-    template<typename value_type1,typename value_type2>
-    void toDiffusionSpace(unsigned char cur_dim,value_type1 x, value_type1 y,
-                          value_type2& px, value_type2& py, value_type2& pz) const
+    template<typename U,typename V>
+    void toDiffusionSpace(unsigned char cur_dim,U x, U y,V& v) const
     {
+        tipl::slice2space(cur_dim, x, y, slice_pos[cur_dim], v);
         if(!is_diffusion_space)
         {
-            tipl::vector<3,float> v;
-            tipl::slice2space(cur_dim, x, y, slice_pos[cur_dim], v[0],v[1],v[2]);
             v.to(T);
-            v.round();
-            px = v[0];
-            py = v[1];
-            pz = v[2];
+            v.round();           
         }
-        else
-            tipl::slice2space(cur_dim, x, y, slice_pos[cur_dim], px, py, pz);
     }
     void toOtherSlice(std::shared_ptr<SliceModel> other_slice,
                       unsigned char cur_dim,float x,float y,
                       tipl::vector<3,float>& v) const
     {
-        tipl::slice2space(cur_dim, x, y, slice_pos[cur_dim], v[0],v[1],v[2]);
+        tipl::slice2space(cur_dim, x, y, slice_pos[cur_dim], v);
         if(!is_diffusion_space)
             v.to(T);
         if(!other_slice->is_diffusion_space)
             v.to(other_slice->invT);
     }
-    template<typename value_type>
-    bool to3DSpace(unsigned char cur_dim,value_type x, value_type y,
-                   value_type& px, value_type& py, value_type& pz) const
+    template<typename U,typename V>
+    bool to3DSpace(unsigned char cur_dim,U x, U y,V& p) const
     {
-        tipl::slice2space(cur_dim, x, y, slice_pos[cur_dim], px, py, pz);
-        return dim.is_valid(px, py, pz);
+        tipl::slice2space(cur_dim, x, y, slice_pos[cur_dim], p);
+        return dim.is_valid(p);
     }
 
 

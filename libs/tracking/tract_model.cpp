@@ -1538,7 +1538,7 @@ void TractModel::get_in_slice_tracts(unsigned char dim,int pos,
             if(int(std::round(t[dim])) == pos)
             {
                 tipl::vector<2,float> p;
-                tipl::space2slice(dim,t[0],t[1],t[2],p[0],p[1]);
+                tipl::space2slice(dim,t,p);
                 line.push_back(p);
                 if(track_color_style)
                     color.push_back(tract_color[index]);

@@ -477,7 +477,7 @@ bool view_image::eventFilter(QObject *obj, QEvent *event)
 
     tipl::slice2space(cur_dim,
                       std::round(float(x) / ui->zoom->value()),
-                      std::round(float(y) / ui->zoom->value()),ui->slice_pos->value(),pos[0],pos[1],pos[2]);
+                      std::round(float(y) / ui->zoom->value()),ui->slice_pos->value(),pos);
     if(!shape.is_valid(pos))
         return true;
     mni = pos;
@@ -1054,13 +1054,6 @@ void view_image::show_info(QString info)
     }
     ui->info->selectRow(0);
 }
-void draw_ruler(QPainter& paint,
-                const tipl::shape<3>& shape,
-                const tipl::matrix<4,4>& trans,
-                unsigned char cur_dim,
-                bool flip_x,bool flip_y,
-                float zoom,
-                bool grid = false);
 void view_image::show_image(bool update_others)
 {
     if(!shape.size() || no_update)
@@ -1092,7 +1085,7 @@ void view_image::show_image(bool update_others)
         paint.setPen(pen);
         paint.setFont(font());
 
-        draw_ruler(paint,shape,(ui->orientation->currentIndex()) ? T : tipl::matrix<4,4>(tipl::identity_matrix()),cur_dim,
+        tipl::qt::draw_ruler(paint,shape,(ui->orientation->currentIndex()) ? T : tipl::matrix<4,4>(tipl::identity_matrix()),cur_dim,
                         has_flip_x(),has_flip_y(),ui->zoom->value(),ui->axis_grid->currentIndex());
     }
     source << source_image;
