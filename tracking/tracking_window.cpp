@@ -2311,8 +2311,7 @@ void tracking_window::on_actionSave_T1W_T2W_images_triggered()
         this,"Save T1W/T2W Image",QFileInfo(work_path).absolutePath()+"//"+slice->name.c_str()+"_modified.nii.gz","Image files (*nii.gz);;All files (*)" );
     if( filename.isEmpty())
         return;
-    auto I = slice->source_images;
-    tipl::io::gz_nifti::save_to_file(filename.toStdString().c_str(),I,slice->vs,slice->trans,slice->is_mni);
+    tipl::io::gz_nifti::save_to_file(filename.toStdString().c_str(),slice->source_images,slice->vs,slice->trans,slice->is_mni);
 }
 
 void tracking_window::on_actionMark_Region_on_T1W_T2W_triggered()
