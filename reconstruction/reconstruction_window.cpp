@@ -27,8 +27,7 @@ bool reconstruction_window::load_src(int index)
     if(handle->voxel.is_histology)
         return true;
     update_dimension();
-    auto I = tipl::make_image(handle->src_dwi_data[0],handle->voxel.dim);
-    double m = double(tipl::max_value_mt(I));
+    double m = double(tipl::max_value_mt(tipl::make_image(handle->src_dwi_data[0],handle->voxel.dim)));
     ui->max_value->setMaximum(m*1.5);
     ui->max_value->setMinimum(0.0);
     ui->max_value->setSingleStep(m*0.05);
