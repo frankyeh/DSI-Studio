@@ -234,8 +234,8 @@ public:
     std::vector<float> src_bvalues;
     std::vector<const unsigned short*> src_dwi_data;
     tipl::image<3,unsigned char>dwi;
-    tipl::pointer_image<3,unsigned short> dwi_at(size_t index) {return tipl::make_image(const_cast<unsigned short*>(src_dwi_data[index]),voxel.dim);}
-    tipl::const_pointer_image<3,unsigned short> dwi_at(size_t index) const {return tipl::make_image(src_dwi_data[index],voxel.dim);}
+    auto dwi_at(size_t index) {return tipl::make_image(const_cast<unsigned short*>(src_dwi_data[index]),voxel.dim);}
+    auto dwi_at(size_t index) const {return tipl::make_image(src_dwi_data[index],voxel.dim);}
 public:
     void draw_mask(tipl::color_image& buffer,int position);
     void calculate_dwi_sum(bool update_mask);
