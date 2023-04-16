@@ -533,10 +533,7 @@ bool ImageModel::command(std::string cmd,std::string param)
     if(cmd == "[Step T2a][Dilation]")
     {
         if(voxel.mask.depth() == 1)
-        {
-            auto slice = voxel.mask.slice_at(0);
-            tipl::morphology::dilation_mt(slice);
-        }
+            tipl::morphology::dilation_mt(voxel.mask.slice_at(0));
         else
             tipl::morphology::dilation_mt(voxel.mask);
         voxel.steps += cmd+"\n";
@@ -777,8 +774,7 @@ void ImageModel::flip_dwi(unsigned char type)
         tipl::par_for(src_dwi_data.size(),[&](unsigned int index)
         {
             prog(p++,src_dwi_data.size());
-            auto I = dwi_at(index);
-            tipl::flip(I,type);
+            tipl::flip(dwi_at(index),type);
         });
     }
     voxel.dim = voxel.mask.shape();
@@ -787,10 +783,9 @@ void ImageModel::flip_dwi(unsigned char type)
 void ImageModel::rotate_one_dwi(unsigned int dwi_index,const tipl::transformation_matrix<double>& T)
 {
     tipl::image<3> tmp(voxel.dim);
-    auto I = dwi_at(dwi_index);
-    tipl::resample_mt<tipl::interpolation::cubic>(I,tmp,T);
-    tipl::lower_threshold(tmp,0);
-    std::copy(tmp.begin(),tmp.end(),I.begin());
+    tipl::resample_mt<tipl::interpolation::cubic>(dwi_at(dwi_index),tmp,T);
+    tipl::lower_threshold(tmp,0.0f);
+    std::copy(tmp.begin(),tmp.end(),dwi_at(dwi_index).begin());
     // rotate b-table
     tipl::affine_transform<double> arg;
     T.to_affine_transform(arg,voxel.dim,voxel.vs,voxel.dim,voxel.vs);
@@ -815,11 +810,10 @@ void ImageModel::rotate(const tipl::shape<3>& new_geo,
             return;
         prog(p++,src_dwi_data.size());
         rotated_dwi[index].resize(new_geo);
-        auto I = dwi_at(index);
         if(cdm_dis.empty())
-            tipl::resample<tipl::interpolation::cubic>(I,rotated_dwi[index],T);
+            tipl::resample<tipl::interpolation::cubic>(dwi_at(index),rotated_dwi[index],T);
         else
-            tipl::resample_dis<tipl::interpolation::cubic>(I,rotated_dwi[index],T,cdm_dis);
+            tipl::resample_dis<tipl::interpolation::cubic>(dwi_at(index),rotated_dwi[index],T,cdm_dis);
         src_dwi_data[index] = &(rotated_dwi[index][0]);
     });
     if(prog.aborted())
@@ -871,8 +865,7 @@ void ImageModel::smoothing(void)
     tipl::par_for(src_dwi_data.size(),[&](unsigned int index)
     {
         prog(p++,src_dwi_data.size());
-        auto I = dwi_at(index);
-        tipl::filter::gaussian(I);
+        tipl::filter::gaussian(dwi_at(index));
     });
     calculate_dwi_sum(false);
 }
@@ -931,7 +924,6 @@ bool ImageModel::align_acpc(void)
         arg.scaling[0] = arg.scaling[1] = arg.scaling[2] = 1.0f;
         T = tipl::transformation_matrix<float>(arg,I.shape(),vs,J.shape(),voxel.vs);
     }
-
     rotate(new_geo,new_vs,T);
     voxel.report += msg;
     return true;
@@ -1064,11 +1056,9 @@ void ImageModel::crop(tipl::shape<3> range_min,tipl::shape<3> range_max)
     tipl::par_for(src_dwi_data.size(),[&](unsigned int index)
     {
         prog(p++,src_dwi_data.size());
-        auto I = dwi_at(index);
         tipl::image<3,unsigned short> I0;
-        tipl::crop(I,I0,range_min,range_max);
-        I = 0;
-        std::copy(I0.begin(),I0.end(),I.begin());
+        tipl::crop(dwi_at(index),I0,range_min,range_max);
+        std::copy(I0.begin(),I0.end(),dwi_at(index).begin());
     });
     tipl::crop(voxel.mask,range_min,range_max);
     tipl::crop(dwi,range_min,range_max);
@@ -2536,8 +2526,7 @@ bool ImageModel::save_nii_for_applytopup_or_eddy(bool include_rev) const
     tipl::par_for(src_bvalues.size(),[&](unsigned int index)
     {
         prog(p++,src_bvalues.size());
-        auto I = buffer.slice_at(index);
-        tipl::crop(dwi_at(index),I,topup_from,topup_to);
+        tipl::crop(dwi_at(index),buffer.slice_at(index),topup_from,topup_to);
     });
 
     p = 0;
@@ -2545,8 +2534,7 @@ bool ImageModel::save_nii_for_applytopup_or_eddy(bool include_rev) const
         tipl::par_for(rev_pe_src->src_bvalues.size(),[&](unsigned int index)
         {
             prog(p++,rev_pe_src->src_bvalues.size());
-            auto I = buffer.slice_at(index+uint32_t(src_bvalues.size()));
-            tipl::crop(rev_pe_src->dwi_at(index),I,topup_from,topup_to);
+            tipl::crop(rev_pe_src->dwi_at(index),buffer.slice_at(index+uint32_t(src_bvalues.size())),topup_from,topup_to);
         });
 
     std::string temp_nifti = file_name+".nii.gz";
