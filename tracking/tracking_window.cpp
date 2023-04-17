@@ -402,6 +402,10 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         connect(ui->actionSort_Tracts_By_Names,SIGNAL(triggered()),tractWidget,SLOT(sort_track_by_name()));
 
 
+        connect(ui->actionFlip_X_2,SIGNAL(triggered()),tractWidget,SLOT(flipx()));
+        connect(ui->actionFlip_Y_2,SIGNAL(triggered()),tractWidget,SLOT(flipy()));
+        connect(ui->actionFlip_Z_2,SIGNAL(triggered()),tractWidget,SLOT(flipz()));
+
 
         connect(ui->actionCheck_all_tracts,SIGNAL(triggered()),tractWidget,SLOT(check_all()));
         connect(ui->actionUncheck_all_tracts,SIGNAL(triggered()),tractWidget,SLOT(uncheck_all()));
