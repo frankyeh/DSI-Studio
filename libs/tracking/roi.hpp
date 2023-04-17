@@ -166,11 +166,7 @@ class RoiMgr {
 public:
     std::shared_ptr<fib_data> handle;
     std::string report;
-    std::vector<std::shared_ptr<Roi> > inclusive;
-    std::vector<std::shared_ptr<Roi> > end;
-    std::vector<std::shared_ptr<Roi> > exclusive;
-    std::vector<std::shared_ptr<Roi> > terminate;
-    std::vector<std::shared_ptr<Roi> > no_end;
+    std::vector<std::shared_ptr<Roi> > roi,end,roa,term,no_end,limiting;
 public:
     std::vector<tipl::vector<3,short> > seeds;
     std::vector<uint16_t> seed_space;
@@ -185,17 +181,26 @@ public:
 public:
     RoiMgr(std::shared_ptr<fib_data> handle_):handle(handle_){}
 public:
-    bool is_excluded_point(const tipl::vector<3,float>& point) const
+    bool within_roa(const tipl::vector<3,float>& point) const
     {
-        for(unsigned int index = 0; index < exclusive.size(); ++index)
-            if(exclusive[index]->havePoint(point))
+        for(unsigned int index = 0; index < roa.size(); ++index)
+            if(roa[index]->havePoint(point))
                 return true;
         return false;
     }
-    bool is_terminate_point(const tipl::vector<3,float>& point) const
+    bool within_limiting(const tipl::vector<3,float>& point) const
     {
-        for(unsigned int index = 0; index < terminate.size(); ++index)
-            if(terminate[index]->havePoint(point))
+        if(limiting.empty())
+            return true;
+        for(unsigned int index = 0; index < limiting.size(); ++index)
+            if(limiting[index]->havePoint(point))
+                return true;
+        return false;
+    }
+    bool within_terminative(const tipl::vector<3,float>& point) const
+    {
+        for(unsigned int index = 0; index < term.size(); ++index)
+            if(term[index]->havePoint(point))
                 return true;
         return false;
     }
@@ -230,10 +235,10 @@ public:
         }
         return false;
     }
-    bool have_include(const float* track,unsigned int buffer_size) const
+    bool within_roi(const float* track,unsigned int buffer_size) const
     {
-        for(unsigned int index = 0; index < inclusive.size(); ++index)
-            if(!inclusive[index]->included(track,buffer_size))
+        for(unsigned int index = 0; index < roi.size(); ++index)
+            if(!roi[index]->included(track,buffer_size))
                 return false;
         if(!selected_atlas_tracts.empty())
             return find_nearest(track,buffer_size,
@@ -243,7 +248,7 @@ public:
         return true;
     }
 public:
-    std::vector<tipl::vector<3,short> > atlas_seed,atlas_roa;
+    std::vector<tipl::vector<3,short> > atlas_seed,atlas_limiting;
     std::vector<std::vector<float> > selected_atlas_tracts;
     std::vector<unsigned int> selected_atlas_cluster;
 public:
@@ -277,84 +282,60 @@ public:
                                     tolerance_dis_in_subject_voxels << " subject voxels" << std::endl;
         }
 
-        // place seed at the atlas track region
+        std::vector<tipl::vector<3,short> > tract_coverage;
+        handle->track_atlas->to_voxel(tract_coverage,tipl::identity_matrix(),int(track_id));
+
+
+
+        {
+            // add limiting region to speed up tracking
+            tipl::image<3,char> limiting_mask(handle->dim);
+            tipl::out() << "creating limiting region to limit tracking results" << std::endl;
+
+            bool is_left = (tract_name.substr(tract_name.length()-2,2) == "_L");
+            bool is_right = (tract_name.substr(tract_name.length()-2,2) == "_R");
+            auto mid_x = handle->template_I.width() >> 1;
+            auto& s2t = handle->get_sub2temp_mapping();
+            if(is_left)
+                tipl::out() << "apply left limiting mask for " << tract_name << std::endl;
+            if(is_right)
+                tipl::out() << "apply right limiting mask for " << tract_name << std::endl;
+
+            const float *fa0 = handle->dir.fa[0];
+            tipl::par_for(tract_coverage.size(),[&](unsigned int i)
+            {
+                tipl::for_each_neighbors(tipl::pixel_index<3>(tract_coverage[i].begin(),handle->dim),
+                                    handle->dim,int(std::ceil(tolerance_dis_in_subject_voxels)),
+                        [&](const auto& pos)
+                {
+                    if(fa0[pos.index()] <= 0.0f)
+                        return;
+                    if(is_left && s2t[pos.index()][0] < mid_x)
+                        return;
+                    if(is_right && s2t[pos.index()][0] > mid_x)
+                        return;
+                    limiting_mask[pos.index()] = 1;
+                });
+            });
+
+            if(terminated)
+                return false;
+
+            setRegions(atlas_limiting = tipl::volume2points(limiting_mask),limiting_id,"track tolerance region");
+        }
+
         if(seeds.empty())
         {
             tipl::out() << "creating seed region from tractography atlas" << std::endl;
-            handle->track_atlas->to_voxel(atlas_seed,tipl::identity_matrix(),int(track_id));
             ROIRegion region(handle);
-            region.add_points(std::move(atlas_seed));
+            region.add_points(std::move(tract_coverage));
             region.perform("dilation");
             region.perform("dilation");
             region.perform("dilation");
             region.perform("smoothing");
             region.perform("smoothing");
-            setRegions(region.region,seed_id,tract_name.c_str());
             atlas_seed.swap(region.region);
-        }
-        // add tolerance roa to speed up tracking
-        {
-            std::vector<tipl::vector<3,short> > seed;
-            handle->track_atlas->to_voxel(seed,tipl::identity_matrix(),int(track_id));
-            tipl::image<3,char> roa_mask(handle->dim);
-
-            tipl::out() << "creating ROA region to limit tracking results" << std::endl;
-
-            // outer = 1
-            {
-                const float *fa0 = handle->dir.fa[0];
-                tipl::par_for(seed.size(),[&](unsigned int i)
-                {
-                    tipl::for_each_neighbors(tipl::pixel_index<3>(seed[i][0],seed[i][1],seed[i][2],handle->dim),
-                                        handle->dim,int(std::ceil(tolerance_dis_in_subject_voxels))+2,
-                            [&](const auto& pos)
-                    {
-                        if(fa0[pos.index()] > 0.0f)
-                            roa_mask[pos.index()] = 1;
-                    });
-                });
-            }
-            if(terminated)
-                return false;
-
-            // inner = 0
-            {
-                bool is_left = (tract_name.substr(tract_name.length()-2,2) == "_L");
-                bool is_right = (tract_name.substr(tract_name.length()-2,2) == "_R");
-                auto& s2t = handle->get_sub2temp_mapping();
-                if(is_left)
-                    tipl::out() << "apply left mask for " << tract_name << std::endl;
-                if(is_right)
-                    tipl::out() << "apply right mask for " << tract_name << std::endl;
-                auto mid_x = handle->template_I.width() >> 1;
-                tipl::par_for(seed.size(),[&](unsigned int i)
-                {
-                    tipl::for_each_neighbors(tipl::pixel_index<3>(seed[i][0],seed[i][1],seed[i][2],handle->dim),
-                                        handle->dim,int(std::ceil(tolerance_dis_in_subject_voxels)),                            [&](const auto& pos)
-                    {
-                        if(is_left && s2t[pos.index()][0] < mid_x)
-                            return;
-                        if(is_right && s2t[pos.index()][0] > mid_x)
-                            return;
-                        roa_mask[pos.index()] = 0;
-                    });
-                });
-            }
-            if(terminated)
-                return false;
-
-            std::vector<std::vector<tipl::vector<3,short> > > atlas_roa_thread(std::thread::hardware_concurrency());
-            tipl::par_for(tipl::begin_index(handle->dim),
-                          tipl::end_index(handle->dim),
-                          [&](const tipl::pixel_index<3>& index,unsigned int thread)
-            {
-                if(roa_mask[index.index()])
-                    atlas_roa_thread[thread].push_back(tipl::vector<3,short>(short(index.x()),short(index.y()),short(index.z())));
-            });
-            atlas_roa.clear();
-            tipl::aggregate_results(std::move(atlas_roa_thread),atlas_roa);
-
-            setRegions(atlas_roa,roa_id,"track tolerance region");
+            setRegions(atlas_seed,seed_id,tract_name.c_str());
         }
 
         {
@@ -391,18 +372,8 @@ public:
 
     void setWholeBrainSeed(float threashold)
     {
-        std::vector<tipl::vector<3,short> > seed;
         const float *fa0 = handle->dir.fa[0];
-        std::vector<std::vector<tipl::vector<3,short> > > seed_threads(std::thread::hardware_concurrency());
-        tipl::par_for(tipl::begin_index(handle->dim),
-                      tipl::end_index(handle->dim),
-                      [&](const tipl::pixel_index<3>& index,unsigned int thread_id)
-        {
-            if(fa0[index.index()] > threashold)
-                seed_threads[thread_id].push_back(tipl::vector<3,short>(short(index.x()),short(index.y()),short(index.z())));
-        });
-        tipl::aggregate_results(std::move(seed_threads),seed);
-        setRegions(seed,3/*seed i*/,"whole brain");
+        setRegions(volume2points(handle->dim,[&](auto& index){return fa0[index.index()] > threashold;}),3/*seed i*/,"whole brain");
     }
 
     auto createRegion(const std::vector<tipl::vector<3,short> >& points,
@@ -445,23 +416,27 @@ public:
             switch(type)
             {
             case roi_id:
-                inclusive.push_back(region);
+                roi.push_back(region);
                 report += " An ROI was placed at ";
                 break;
             case roa_id:
-                exclusive.push_back(region);
+                roa.push_back(region);
                 report += " An ROA was placed at ";
                 break;
             case end_id:
                 end.push_back(region);
                 report += " An ending region was placed at ";
                 break;
-            case terminate_id:
-                terminate.push_back(region);
+            case term_id:
+                term.push_back(region);
                 report += " A terminative region was placed at ";
                 break;
             case not_end_id:
                 no_end.push_back(region);
+                report += " A no ending region was placed at ";
+                break;
+            case limiting_id:
+                limiting.push_back(region);
                 report += " A no ending region was placed at ";
                 break;
             default:

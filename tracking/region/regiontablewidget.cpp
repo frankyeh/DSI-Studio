@@ -39,6 +39,7 @@ QWidget *ImageDelegate::createEditor(QWidget *parent,
         comboBox->addItem("Seed");
         comboBox->addItem("Terminative");
         comboBox->addItem("NotEnd");
+        comboBox->addItem("Limiting");
         comboBox->addItem("...");
         connect(comboBox, SIGNAL(activated(int)), this, SLOT(emitCommitData()));
         return comboBox;

@@ -90,17 +90,8 @@ void ROIRegion::add_points(std::vector<tipl::vector<3,short> >&& points, bool de
         if (mask.shape().is_valid(p))
             mask.at(p) = 0;
     });
-
-    std::vector<std::vector<tipl::vector<3,short> > > region_at_thread(std::thread::hardware_concurrency());
-    tipl::par_for(tipl::begin_index(mask.shape()),tipl::end_index(mask.shape()),
-    [&](const tipl::pixel_index<3>& index,unsigned int id)
-    {
-        if(mask[index.index()])
-            region_at_thread[id].push_back(tipl::vector<3,short>(index[0]+min_value[0],
-                                                                 index[1]+min_value[1],
-                                                                 index[2]+min_value[2]));
-    });
-    tipl::aggregate_results(std::move(region_at_thread),region);
+    region = tipl::volume2points(mask);
+    tipl::add_constant_mt(region,min_value);
 }
 
 // ---------------------------------------------------------------------------
@@ -229,14 +220,7 @@ void ROIRegion::LoadFromBuffer(tipl::image<3,unsigned char>& mask)
     modified = true;
     if(!region.empty())
         undo_backup.push_back(std::move(region));
-    std::vector<std::vector<tipl::vector<3,short> > > points(std::thread::hardware_concurrency());
-    tipl::par_for(tipl::begin_index(mask.shape()),tipl::end_index(mask.shape()),
-                   [&](const tipl::pixel_index<3>& index,unsigned int thread_id)
-    {
-        if (mask[index.index()])
-            points[thread_id].push_back(tipl::vector<3,short>(index.x(), index.y(),index.z()));
-    });
-    tipl::aggregate_results(std::move(points),region);
+    region = tipl::volume2points(mask);
 }
 // ---------------------------------------------------------------------------
 void ROIRegion::SaveToBuffer(tipl::image<3,unsigned char>& mask)

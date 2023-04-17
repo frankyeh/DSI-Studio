@@ -290,7 +290,7 @@ void TractTableWidget::fetch_tracts(void)
                         {
                             regions[0]->region = thread_data[index]->roi_mgr->atlas_seed;
                             regions[0]->modified = true;
-                            regions[1]->region = thread_data[index]->roi_mgr->atlas_roa;
+                            regions[1]->region = thread_data[index]->roi_mgr->atlas_limiting;
                             regions[1]->modified = true;
                         }
                 }

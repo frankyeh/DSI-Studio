@@ -211,7 +211,7 @@ public:
 private:
     inline bool tracking_continue(void) const
     {
-        return !roi_mgr->is_terminate_point(position) &&
+        return !roi_mgr->within_terminative(position) &&
                get_buffer_size() < current_max_steps3;
     }
 public:
@@ -236,7 +236,8 @@ public:
 
         while(tracking_continue())
         {
-            if(roi_mgr->is_excluded_point(position))
+            if(roi_mgr->within_roa(position) ||
+              !roi_mgr->within_limiting(position))
 				return false;
             track_buffer[buffer_back_pos] = position[0];
             track_buffer[buffer_back_pos+1] = position[1];
@@ -253,7 +254,8 @@ public:
         {
             while(tracking_continue())
             {
-                if(roi_mgr->is_excluded_point(position))
+                if(roi_mgr->within_roa(position) ||
+                  !roi_mgr->within_limiting(position))
                     return false;
                 buffer_front_pos -= 3;
                 track_buffer[buffer_front_pos] = position[0];
@@ -267,7 +269,7 @@ public:
 
 
         return get_buffer_size() >= current_min_steps3 &&
-               roi_mgr->have_include(get_result(),get_buffer_size()) &&
+               roi_mgr->within_roi(get_result(),get_buffer_size()) &&
                roi_mgr->fulfill_end_point(position,end_point1);
 
 

@@ -12,9 +12,10 @@ const unsigned char roi_id = 0;
 const unsigned char roa_id = 1;
 const unsigned char end_id = 2;
 const unsigned char seed_id = 3;
-const unsigned char terminate_id = 4;
+const unsigned char term_id = 4;
 const unsigned char not_end_id = 5;
-const unsigned char default_id = 6;
+const unsigned char limiting_id = 6;
+const unsigned char default_id = 7;
 void initial_LPS_nifti_srow(tipl::matrix<4,4>& T,const tipl::shape<3>& geo,const tipl::vector<3>& vs);
 class ROIRegion {
 public:

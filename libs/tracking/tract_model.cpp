@@ -1914,7 +1914,7 @@ bool TractModel::filter_by_roi(std::shared_ptr<RoiMgr> roi_mgr)
     for (unsigned int index = 0;index < tract_data.size();++index)
     if(tract_data[index].size() >= 6)
     {
-        if(!roi_mgr->have_include(&(tract_data[index][0]),tract_data[index].size()) ||
+        if(!roi_mgr->within_roi(&(tract_data[index][0]),tract_data[index].size()) ||
            !roi_mgr->fulfill_end_point(tipl::vector<3,float>(tract_data[index][0],
                                                              tract_data[index][1],
                                                              tract_data[index][2]),
@@ -1925,16 +1925,17 @@ bool TractModel::filter_by_roi(std::shared_ptr<RoiMgr> roi_mgr)
             tracts_to_delete.push_back(index);
             continue;
         }
-        if(!roi_mgr->exclusive.empty())
+        if(!roi_mgr->roa.empty() || !roi_mgr->limiting.empty())
         {
             for(unsigned int i = 0;i < tract_data[index].size();i+=3)
-                if(roi_mgr->is_excluded_point(tipl::vector<3,float>(tract_data[index][i],
-                                                                    tract_data[index][i+1],
-                                                                    tract_data[index][i+2])))
+            {
+                auto v = tipl::v(tract_data[index][i],tract_data[index][i+1],tract_data[index][i+2]);
+                if(roi_mgr->within_roa(v) || !roi_mgr->within_limiting(v))
                 {
                     tracts_to_delete.push_back(index);
                     break;
                 }
+            }
         }
     }
     return delete_tracts(tracts_to_delete);
