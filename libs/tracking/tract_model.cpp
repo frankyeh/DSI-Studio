@@ -2146,7 +2146,16 @@ void TractModel::cut_by_mask(const char*)
     tract_data.swap(new_data);*/
 }
 //---------------------------------------------------------------------------
-
+void TractModel::flip(char dim)
+{
+    auto w = geo[dim];
+    tipl::par_for (tract_data.size(),[&](size_t index)
+    {
+        auto& tract = tract_data[index];
+        for(size_t j = dim;j < tract.size();j+=3)
+            tract[j] = w-tract[j];
+    });
+}
 
 bool TractModel::trim(void)
 {
