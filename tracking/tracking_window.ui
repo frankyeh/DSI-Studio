@@ -1260,8 +1260,14 @@
     <property name="title">
      <string>Tracts Misc</string>
     </property>
-    <addaction name="actionOpen_Tracts_Label"/>
-    <addaction name="actionSort_Tracts_By_Names"/>
+    <widget class="QMenu" name="menuMove_Tracts">
+     <property name="title">
+      <string>Move Tracts</string>
+     </property>
+     <addaction name="actionFlip_X_2"/>
+     <addaction name="actionFlip_Y_2"/>
+     <addaction name="actionFlip_Z_2"/>
+    </widget>
     <addaction name="separator"/>
     <addaction name="actionMerge_Tracts_by_Name"/>
     <addaction name="actionRemove_Repeated_Tracks"/>
@@ -1270,10 +1276,7 @@
     <addaction name="actionReconnect_Tracts"/>
     <addaction name="actionResample_Step_Size"/>
     <addaction name="separator"/>
-    <addaction name="actionOpen_Cluster_Colors"/>
-    <addaction name="actionSave_Cluster_Colors"/>
-    <addaction name="actionSet_Color"/>
-    <addaction name="actionAssign_Colors_For_Each"/>
+    <addaction name="menuMove_Tracts"/>
     <addaction name="separator"/>
     <addaction name="actionOpen_Colors"/>
     <addaction name="actionOpen_Tract_Property"/>
@@ -1282,6 +1285,18 @@
     <addaction name="actionRecognize_Current_Tract"/>
     <addaction name="actionRecognize_and_Rename"/>
     <addaction name="actionRecognize_Clustering"/>
+   </widget>
+   <widget class="QMenu" name="menuTracts_Cluster">
+    <property name="title">
+     <string>Tracts Cluster</string>
+    </property>
+    <addaction name="actionOpen_Tracts_Label"/>
+    <addaction name="actionSort_Tracts_By_Names"/>
+    <addaction name="separator"/>
+    <addaction name="actionOpen_Cluster_Colors"/>
+    <addaction name="actionSave_Cluster_Colors"/>
+    <addaction name="actionSet_Color"/>
+    <addaction name="actionAssign_Colors_For_Each"/>
     <addaction name="separator"/>
     <addaction name="actionOpen_Cluster_Labels"/>
     <addaction name="actionHierarchical"/>
@@ -1293,6 +1308,7 @@
    <addaction name="menuRegions"/>
    <addaction name="menuRegions_Misc"/>
    <addaction name="menuTracts"/>
+   <addaction name="menuTracts_Cluster"/>
    <addaction name="menuTracts_Misc"/>
    <addaction name="menuDevices"/>
    <addaction name="menu_Slices"/>
@@ -4112,6 +4128,21 @@ Tracking</string>
    </property>
    <property name="text">
     <string>Save Cluster Colors...</string>
+   </property>
+  </action>
+  <action name="actionFlip_X_2">
+   <property name="text">
+    <string>Flip X</string>
+   </property>
+  </action>
+  <action name="actionFlip_Y_2">
+   <property name="text">
+    <string>Flip Y</string>
+   </property>
+  </action>
+  <action name="actionFlip_Z_2">
+   <property name="text">
+    <string>Flip Z</string>
    </property>
   </action>
  </widget>
