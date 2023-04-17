@@ -46,6 +46,20 @@ public:
                      QImage& scaledimage,float display_ratio);
     QString output_format(void);
     template<typename fun_type>
+    void for_current_bundle(fun_type&& fun)
+    {
+        int cur_row = currentRow();
+        if(cur_row < 0 || item(cur_row,0)->checkState() != Qt::Checked)
+            return;
+        {
+            auto lock = tract_rendering[uint32_t(cur_row)]->start_writing();
+            fun();
+            tract_rendering[uint32_t(cur_row)]->need_update = true;
+        }
+        item(cur_row,1)->setText(QString::number(tract_models[uint32_t(cur_row)]->get_visible_track_count()));
+        emit show_tracts();
+    }
+    template<typename fun_type>
     void for_each_bundle(const char* prog_name,fun_type&& fun,bool silence = false)
     {
         std::vector<unsigned int> checked_index;
@@ -155,6 +169,9 @@ public slots:
     void undo_tracts(void)          {for_each_bundle("undo tracts",     [&](unsigned int index){return tract_models[index]->undo();},true);}
     void redo_tracts(void)          {for_each_bundle("redo tracts",     [&](unsigned int index){return tract_models[index]->redo();},true);}
     void trim_tracts(void)          {for_each_bundle("trim tracts",     [&](unsigned int index){return tract_models[index]->trim();},true);}
+    void flipx(void)                {for_current_bundle([&](void){tract_models[currentRow()]->flip(0);});}
+    void flipy(void)                {for_current_bundle([&](void){tract_models[currentRow()]->flip(1);});}
+    void flipz(void)                {for_current_bundle([&](void){tract_models[currentRow()]->flip(2);});}
     void assign_colors(void);
     void stop_tracking(void);
     void move_up(void);
@@ -164,6 +181,7 @@ public slots:
     void show_report(void);
 
     void need_update_all(void);
+
 
 };
 
