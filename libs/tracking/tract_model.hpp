@@ -121,6 +121,7 @@ public:
         bool undo(void);
         bool redo(void);
         bool trim(void);
+        void flip(char dim);
         void resample(float new_step);
         void get_tract_points(std::vector<tipl::vector<3,float> >& points);
         void get_in_slice_tracts(unsigned char dim,int pos,
