@@ -429,11 +429,7 @@ bool connectometry_db::add_subject_file(const std::string& file_name,
     tipl::progress prog(file_name.c_str());
     std::vector<float> data;
     float subject_R2 = 1.0f;
-    std::string ext;
-    if(file_name.length() > 4)
-        ext = std::string(file_name.end()-4,file_name.end());
-
-    if(ext == ".nii" || ext == "i.gz")
+    if(tipl::ends_with(file_name,".nii") || tipl::ends_with(file_name,".nii.gz"))
     {
         tipl::vector<3> vs;
         tipl::image<3> I;
