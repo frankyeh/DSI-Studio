@@ -803,23 +803,18 @@ bool TractModel::save_data_to_file(std::shared_ptr<fib_data> handle,const char* 
         return false;
 
     std::string file_name_s(file_name);
-    std::string ext;
-    if(file_name_s.length() > 4)
-        ext = std::string(file_name_s.end()-4,file_name_s.end());
-    if(ext == std::string("t.gz"))
+    if(tipl::ends_with(file_name_s,"tt.gz"))
     {
         std::vector<uint16_t> cluster;
-        bool result = TinyTrack::save_to_file(file_name_s.c_str(),geo,vs,trans_to_mni,tract_data,cluster,report,parameter_id,
+        bool result = TinyTrack::save_to_file(file_name,geo,vs,trans_to_mni,tract_data,cluster,report,parameter_id,
                                             color_changed ? tract_color.front():0);
         return result;
     }
-    if(ext == std::string(".trk") || ext == std::string("k.gz"))
-    {
-        if(ext == std::string(".trk"))
-            file_name_s += ".gz";
+    if(tipl::ends_with(file_name_s,".trk"))
+        file_name_s += ".gz";
+    if(tipl::ends_with(file_name_s,".trk.gz"))
         return TrackVis::save_to_file(file_name_s.c_str(),geo,vs,trans_to_mni,tract_data,data,parameter_id,tract_color.front());
-    }
-    if (ext == std::string(".txt"))
+    if(tipl::ends_with(file_name_s,".txt"))
     {
         std::ofstream out(file_name,std::ios::binary);
         if (!out)
@@ -831,7 +826,7 @@ bool TractModel::save_data_to_file(std::shared_ptr<fib_data> handle,const char* 
         }
         return true;
     }
-    if (ext == std::string(".mat"))
+    if (tipl::ends_with(file_name_s,".mat"))
     {
         tipl::io::mat_write out(file_name);
         if(!out)
@@ -920,25 +915,21 @@ bool TractModel::save_transformed_tracts_to_file(const char* file_name,tipl::sha
 bool TractModel::save_tracts_to_file(const char* file_name_)
 {
     std::string file_name(file_name_);
-    std::string ext;
     saved = true;
     if(get_visible_track_count() == 0)
         return false;
-    if(file_name.length() > 4)
-        ext = std::string(file_name.end()-4,file_name.end());
-    if(ext == std::string("t.gz"))
+    if(tipl::ends_with(file_name,"tt.gz"))
     {
-        bool result = TinyTrack::save_to_file(file_name.c_str(),geo,vs,trans_to_mni,
+        return TinyTrack::save_to_file(file_name.c_str(),geo,vs,trans_to_mni,
                                             tract_data,std::vector<uint16_t>(),report,parameter_id,
                                             color_changed ? tract_color.front():0);
-        return result;
     }
-    if (ext == std::string(".trk") || ext == std::string("k.gz"))
+    if(tipl::ends_with(file_name,".trk") || tipl::ends_with(file_name,".trk.gz"))
     {
         return TrackVis::save_to_file(file_name.c_str(),geo,vs,trans_to_mni,
                 tract_data,std::vector<std::vector<float> >(),parameter_id,tract_color.front());
     }
-    if(ext == std::string(".tck"))
+    if(tipl::ends_with(file_name,".tck"))
     {
         char header[200] = {0};
         {
@@ -956,24 +947,24 @@ bool TractModel::save_tracts_to_file(const char* file_name_)
         }
         std::ofstream out(file_name.c_str(),std::ios::binary);
         out.write(header,sizeof(header));
-        unsigned int NaN = 0x7FC00000;
+        const float nan = std::numeric_limits<float>::quiet_NaN();
+        const float inf = std::numeric_limits<float>::infinity();
         for(size_t i = 0;i < tract_data.size();++i)
         {
             std::vector<float> buf(tract_data[i]);
             tipl::multiply_constant(buf,vs[0]);
-            out.write((char*)&buf[0],buf.size()*sizeof(float));
-            out.write((char*)&NaN,sizeof(NaN));
-            out.write((char*)&NaN,sizeof(NaN));
-            out.write((char*)&NaN,sizeof(NaN));
+            out.write(reinterpret_cast<const char*>(&buf[0]),buf.size()*sizeof(float));
+            out.write(reinterpret_cast<const char*>(&nan),sizeof(nan));
+            out.write(reinterpret_cast<const char*>(&nan),sizeof(nan));
+            out.write(reinterpret_cast<const char*>(&nan),sizeof(nan));
         }
-        unsigned int INF = 0x7FB00000;
-        out.write((char*)&INF,sizeof(INF));
-        out.write((char*)&INF,sizeof(INF));
-        out.write((char*)&INF,sizeof(INF));
+        out.write(reinterpret_cast<const char*>(&inf),sizeof(inf));
+        out.write(reinterpret_cast<const char*>(&inf),sizeof(inf));
+        out.write(reinterpret_cast<const char*>(&inf),sizeof(inf));
         return true;
     }
 
-    if (ext == std::string(".txt"))
+    if (tipl::ends_with(file_name,".txt"))
     {
         std::ofstream out(file_name_,std::ios::binary);
         if (!out)
@@ -987,7 +978,7 @@ bool TractModel::save_tracts_to_file(const char* file_name_)
         }
         return true;
     }
-    if (ext == std::string(".mat"))
+    if (tipl::ends_with(file_name,".mat"))
     {
         tipl::io::mat_write out(file_name.c_str());
         if(!out)
@@ -1003,7 +994,7 @@ bool TractModel::save_tracts_to_file(const char* file_name_)
         out.write("length",length);
         return true;
     }
-    if (ext == std::string(".nii") || ext == std::string("i.gz"))
+    if (tipl::ends_with(file_name,".nii") || tipl::ends_with(file_name,".nii.gz"))
     {
         std::vector<tipl::vector<3,float> >points;
         get_tract_points(points);
