@@ -877,9 +877,10 @@ bool TractModel::save_tracts_in_template_space(std::shared_ptr<fib_data> handle,
         return false;
     std::shared_ptr<TractModel> tract_in_template(
                 new TractModel(handle->template_I.shape(),handle->template_vs,handle->template_to_mni));
-    std::vector<std::vector<float> > new_tract_data(tract_data);
+    std::vector<std::vector<float> > new_tract_data(tract_data.size());
     tipl::par_for(tract_data.size(),[&](unsigned int i)
     {
+        new_tract_data[i].resize(tract_data[i].size());
         for(unsigned int j = 0;j < tract_data[i].size();j += 3)
         {
             tipl::vector<3> v(&(tract_data[i][j]));
@@ -931,29 +932,20 @@ bool TractModel::save_tracts_to_file(const char* file_name_)
     }
     if(tipl::ends_with(file_name,".tck"))
     {
-        char header[200] = {0};
-        {
-            std::ostringstream out;
-            out << "mrtrix tracks" << std::endl;
-            out << "datatype: Float32LE" << std::endl;
-            out << "dim: " << geo[0] << "," << geo[1] << "," << geo[2] << std::endl;
-            out << "vox: " << vs[0] << "," << vs[1] << "," << vs[2] << std::endl;
-            out << "datatype: Float32LE" << std::endl;
-            out << "file: . 200\ncount: " << tract_data.size() << "\nEND\n";
-            std::string t = out.str();
-            if(t.length() > 200)
-                return false;
-            std::copy(t.begin(),t.end(),header);
-        }
-        std::ofstream out(file_name.c_str(),std::ios::binary);
-        out.write(header,sizeof(header));
+        std::ofstream out(file_name.c_str(), std::ios::binary);
+        if(!out)
+            return false;
+        std::array<char, 200> header;
+        std::sprintf(header.data(), "mrtrix tracks\ndatatype: Float32LE\ndim: %d,%d,%d\nvox: %f,%f,%f\ndatatype: Float32LE\nfile: . 200\ncount: %d\nEND\n",
+                     geo[0], geo[1], geo[2], vs[0], vs[1], vs[2], static_cast<int>(tract_data.size()));
+        out.write(header.data(), header.size());
+
         const float nan = std::numeric_limits<float>::quiet_NaN();
         const float inf = std::numeric_limits<float>::infinity();
-        for(size_t i = 0;i < tract_data.size();++i)
-        {
-            std::vector<float> buf(tract_data[i]);
-            tipl::multiply_constant(buf,vs[0]);
-            out.write(reinterpret_cast<const char*>(&buf[0]),buf.size()*sizeof(float));
+        for (const auto& t : tract_data) {
+            std::vector<float> buf(t);
+            tipl::multiply_constant(buf, vs[0]);
+            out.write(reinterpret_cast<const char*>(buf.data()), buf.size() * sizeof(float));
             out.write(reinterpret_cast<const char*>(&nan),sizeof(nan));
             out.write(reinterpret_cast<const char*>(&nan),sizeof(nan));
             out.write(reinterpret_cast<const char*>(&nan),sizeof(nan));
