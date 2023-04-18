@@ -2125,10 +2125,9 @@ bool ImageModel::save_to_file(const char* dwi_file_name)
 {
     tipl::progress prog_("saving ",std::filesystem::path(dwi_file_name).filename().string().c_str());
     std::string filename(dwi_file_name);
-    if(!QString(filename.c_str()).endsWith(".gz"))
+    if(!tipl::ends_with(filename,".gz"))
         filename += ".gz";
-    std::string ext = filename.substr(std::max<int>(0,int(filename.length())-7));
-    if(ext == ".nii.gz")
+    if(tipl::ends_with(filename,".nii.gz"))
     {
         tipl::matrix<4,4> trans;
         initial_LPS_nifti_srow(trans,voxel.dim,voxel.vs);
@@ -2154,7 +2153,7 @@ bool ImageModel::save_to_file(const char* dwi_file_name)
         filename = filename.substr(0,filename.size()-7);
         return save_bval((filename+".bval").c_str()) && save_bvec((filename+".bvec").c_str());
     }
-    if(ext == ".src.gz")
+    if(tipl::ends_with(filename,".src.gz"))
     {
         tipl::io::gz_mat_write mat_writer(dwi_file_name);
         if(!mat_writer)
@@ -2191,8 +2190,7 @@ bool ImageModel::save_to_file(const char* dwi_file_name)
         mat_writer.write("steps",voxel.steps);
         return true;
     }
-    error_msg = "unsupported file extension:";
-    error_msg += ext;
+    error_msg = "unsupported file extension";
     return false;
 }
 
