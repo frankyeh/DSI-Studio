@@ -191,6 +191,8 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
             }
             set_data("min_length",handle->min_length());
             set_data("max_length",handle->max_length());
+            set_data("autotrack_tolerance",float(handle->min_length())*0.8f);
+
         }
 
 
