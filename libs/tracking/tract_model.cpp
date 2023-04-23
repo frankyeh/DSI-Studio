@@ -3549,9 +3549,9 @@ bool ConnectivityMatrix::calculate(std::shared_ptr<fib_data> handle,
 
     // determine the threshold for counting the connectivity
     unsigned int threshold_count = 0;
-    for(unsigned int i = 0,index = 0;i < count.size();++i)
-        for(unsigned int j = 0;j < count[i].size();++j,++index)
-            threshold_count = std::max<unsigned int>(threshold_count,count[i][j]);
+    for (const auto& inner : count)
+        for (const auto& val : inner)
+            threshold_count = std::max(threshold_count, val);
     threshold_count *= threshold;
 
     if(matrix_value_type == "count")
@@ -3573,7 +3573,7 @@ bool ConnectivityMatrix::calculate(std::shared_ptr<fib_data> handle,
 
         for(unsigned int i = 0,index = 0;i < count.size();++i)
             for(unsigned int j = 0;j < count[i].size();++j,++index)
-                if(!length_matrix[i][j].empty() && count[i][j] >= threshold_count)
+                if(!length_matrix[i][j].empty() && count[i][j] > threshold_count)
                 {
                     float length = 0.0;
                     if(matrix_value_type == "ncount")
