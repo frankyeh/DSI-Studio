@@ -4,6 +4,7 @@
 #include <QImage>
 #include <fstream>
 #include <sstream>
+#include <array>
 #include <iterator>
 #include <tuple>
 #include <set>
@@ -324,7 +325,7 @@ struct TrackVis
             if(!in.read((char*)&*tract.begin(),sizeof(float)*tract.size()))
                 break;
 
-            loaded_tract_data.push_back(std::move(std::vector<float>(n_point*3)));
+            loaded_tract_data.push_back(std::vector<float>(n_point*3));
             const float *from = &*tract.begin();
             float *to = &*loaded_tract_data.back().begin();
             for (unsigned int i = 0;i < n_point;++i,from += index_shift,to += 3)
