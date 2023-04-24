@@ -412,9 +412,9 @@ bool fib_data::load_from_file(const char* file_name)
         {
             tipl::image<3> x,y,z;
             header.get_voxel_size(vs);
-            header.toLPS(x,false);
-            header.toLPS(y,false);
-            header.toLPS(z,false);
+            header >> x;
+            header >> y;
+            header >> z;
             dim = x.shape();
             dir.check_index(0);
             dir.num_fiber = 1;
@@ -455,9 +455,9 @@ bool fib_data::load_from_file(const char* file_name)
             {
                 tipl::image<3> x,y,z;
                 header.get_voxel_size(vs);
-                header.toLPS(x,false);
-                header.toLPS(y,false);
-                header.toLPS(z,false);
+                header >> x;
+                header >> y;
+                header >> z;
                 if(i == 0)
                 {
                     dim = x.shape();
