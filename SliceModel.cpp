@@ -355,7 +355,7 @@ bool CustomSliceModel::load_slices(const std::vector<std::string>& files,bool is
             error_msg = nifti.error_msg;
             return false;
         }
-        nifti.toLPS(source_images,true,true,prog);
+        nifti.toLPS(source_images,prog);
         save_idx(files[0].c_str(),nifti.input_stream);
         nifti.get_voxel_size(vs);
         nifti.get_image_transformation(trans);
