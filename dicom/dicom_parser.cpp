@@ -302,7 +302,7 @@ bool load_4d_nii(const char* file_name,std::vector<std::shared_ptr<DwiHeader> >&
         for(unsigned int index = 0;index < nii.dim(4);++index)
         {
             tipl::image<3> data;
-            if(!nii.toLPS(data,false))
+            if(!nii.toLPS(data))
             {
                 src_error_msg = "Incomplete file. Only ";
                 src_error_msg += std::to_string(index+1);
