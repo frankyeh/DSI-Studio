@@ -146,7 +146,6 @@ int rec(tipl::program_option<tipl::out>& po)
             }
         }
 
-        if(src.voxel.method_id != 7)
         {
             if(po.has("rotate_to") || po.has("align_to"))
             {
