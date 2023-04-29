@@ -792,7 +792,7 @@ bool connectometry_db::add_db(const connectometry_db& rhs)
         return false;
     R2.insert(R2.end(),rhs.R2.begin(),rhs.R2.end());
     subject_names.insert(subject_names.end(),rhs.subject_names.begin(),rhs.subject_names.end());
-    // copy the qa memeory
+    // copy the qa memory
     for(unsigned int index = 0;index < rhs.num_subjects;++index)
     {
         subject_qa_buf.push_back(std::vector<float>(subject_qa_length));

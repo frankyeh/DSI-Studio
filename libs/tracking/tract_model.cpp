@@ -3858,7 +3858,7 @@ void ConnectivityMatrix::network_property(std::string& report)
     }
 
     std::vector<float> local_efficiency_bin(n);
-    //claculate local efficiency
+    //calculate local efficiency
     {
         for(unsigned int i = 0,ipos = 0;i < n;++i,ipos += n)
         {

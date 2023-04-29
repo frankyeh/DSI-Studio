@@ -348,7 +348,7 @@ std::vector<std::pair<size_t,size_t> > ImageModel::get_bad_slices(void)
             cor_values[value_index+z] = cor;
         }
     });
-    // check the difference with neighborings
+    // check the difference with neighbors
     std::vector<size_t> bad_i,bad_z;
     std::vector<float> sum;
     for(size_t i = 0,pos = 0;i < voxel.dwi_data.size();++i)
@@ -1475,7 +1475,7 @@ bool ImageModel::generate_topup_b0_acq_files(tipl::image<3>& b0,
                                              tipl::image<3>& rev_b0,
                                              std::string& b0_appa_file)
 {
-    // DSI Studio use LPS ecoding wjereas and FSL use LAS
+    // DSI Studio uses LPS orientation whereas and FSL uses LAS
     // The y direction is flipped
     auto c = phase_direction_at_AP_PA(b0,rev_b0);
     if(c[0] == c[1])

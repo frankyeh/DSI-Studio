@@ -53,7 +53,7 @@ int TractCluster::get_index(short x,short y,short z)
     return index;
 }
 /**
-prerequite:
+prerequisite:
     tract_index1 > tract_index2
 */
 void TractCluster::merge_tract(unsigned int tract_index1,unsigned int tract_index2)

@@ -616,7 +616,7 @@ void slice_view_scene::wheelEvent(QGraphicsSceneWheelEvent *wheelEvent)
             return; //let default wheel event handle it by change the vertical scroll
     }
     tipl::vector<3,float> pos;
-    // 3 view condition, tranfer event to 3D window
+    // 3 view condition, transfer event to 3D window
     if(click_on_3D(float(wheelEvent->scenePos().x()),float(wheelEvent->scenePos().y())))
     {
         QWheelEvent we(wheelEvent->pos(),wheelEvent->screenPos(),QPoint(),QPoint(0,wheelEvent->delta()),

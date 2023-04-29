@@ -37,7 +37,7 @@ public:
            voxel.vs[2] == 0.0f)
             throw std::runtime_error("No spatial information found in src file. Recreate src file or contact developer for assistance");
 
-        // bookkepping for restoration
+        // bookkeeping for restoration
         src_geo = voxel.dim;
 
 
@@ -218,7 +218,7 @@ public:
 
         }        
 
-        // output resolution = acquisition resoloution
+        // output resolution = acquisition resolution
         float VG_ratio = voxel.qsdr_reso/VGvs[0];
 
         // update registration results;

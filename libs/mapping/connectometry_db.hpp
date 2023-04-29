@@ -14,7 +14,7 @@ public:
     unsigned int num_subjects = 0;
     bool modified = false;
 
-public: // demographi infomation
+public: // demographic information
     std::vector<std::string> titles;
     std::vector<std::string> items;
     std::vector<size_t> feature_location;

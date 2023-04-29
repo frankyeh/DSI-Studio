@@ -244,7 +244,7 @@ void TractRenderData::draw(GLWidget* glwidget)
         glEnableClientState(GL_VERTEX_ARRAY);
         glEnableClientState(GL_NORMAL_ARRAY);
         glEnableClientState(GL_COLOR_ARRAY);
-        GLsizei stride = 10*sizeof(float); // 3 vectirces + 3 normal + 4 color
+        GLsizei stride = 10*sizeof(float); // 3 vertices + 3 normal + 4 color
         glVertexPointer(3, GL_FLOAT, stride, &tube_vertices[0]);
         glNormalPointer(GL_FLOAT, stride, &tube_vertices[0]+3);
         glColorPointer(3, GL_FLOAT, stride, &tube_vertices[0]+6);
@@ -267,7 +267,7 @@ void TractRenderData::draw(GLWidget* glwidget)
     {
         glEnableClientState(GL_VERTEX_ARRAY);
         glEnableClientState(GL_COLOR_ARRAY);
-        GLsizei stride = 7*sizeof(float); // 3 vectirces + 4 color
+        GLsizei stride = 7*sizeof(float); // 3 vertices + 4 color
         glVertexPointer(3, GL_FLOAT, stride, &line_vertices[0]);
         glColorPointer(3, GL_FLOAT, stride, &line_vertices[0]+3);
         for(size_t i = 0;i < line_strip_size.size();++i)

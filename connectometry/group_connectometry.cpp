@@ -381,7 +381,7 @@ void group_connectometry::on_run_clicked()
         ui->run->setText("Run");
         return;
     }
-    // longitudinal data wihtout loading demographics
+    // longitudinal data without loading demographics
     if(db.is_longitudinal && !model.get())
     {
         model.reset(new stat_model);

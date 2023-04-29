@@ -473,7 +473,7 @@ void GLWidget::paintGL()
             glEnable(GL_MULTISAMPLE);
         else
             glDisable(GL_MULTISAMPLE);
-        glGetError(); //slience the multisample error
+        glGetError(); //silence the multisample error
 
         if(get_param("line_smooth"))
         {
@@ -533,7 +533,7 @@ void GLWidget::paintGL()
             glViewport(0,0, cur_width/2, cur_height);
             renderLR();
             tipl::matrix<4,4> T(transformation_matrix);
-            // add a rotation to the transofrmation matrix
+            // add a rotation to the transformation matrix
             glPushMatrix();
             glLoadIdentity();
             glRotated(get_param_float("stereoscopy_angle"),0,1,0);

@@ -15,7 +15,7 @@ public:
 public: // for electrode
     float length = 30.0f;
 private:
-    float rendering_radius = 0.0; // for internnal use only to select device
+    float rendering_radius = 0.0; // for internal use only to select device
 public:
     Device();
     bool selected(const tipl::vector<3>& p,float vs,float& device_selected_length,float& distance_in_voxel);
