@@ -379,7 +379,7 @@ void GLWidget::setFrustum(void)
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
     double p[11] = {0.35,0.4,0.45,0.5,0.6,0.8,1.0,1.5,2.0,12.0,50.0};
-    GLdouble perspective = p[get_param("pespective")];
+    GLdouble perspective = p[get_param("perspective")];
     GLdouble zNear = 1.0;
     GLdouble zFar = 1000.0;
     GLdouble aspect = double(view_mode == view_mode_type::two ? cur_width/2:cur_width)/double(cur_height);
@@ -1261,7 +1261,7 @@ void GLWidget::renderLR()
         glPushMatrix();
         glLoadIdentity();
         float p[11] = {0.35f,0.4f,0.45f,0.5f,0.6f,0.8f,1.0f,1.5f,2.0f,12.0f,50.0f};
-        GLfloat perspective = p[get_param("pespective")];
+        GLfloat perspective = p[get_param("perspective")];
         GLfloat zNear = 1.0f;
         GLfloat zFar = 1000.0f;
         GLfloat aspect = float(view_mode == view_mode_type::two ? cur_width/2:cur_width)/float(cur_height);
