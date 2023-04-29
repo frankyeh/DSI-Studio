@@ -537,7 +537,7 @@ bool apply_warping(const char* from,
     }
     return true;
 }
-void RegToolBox::on_actionApply_Warpping_triggered()
+void RegToolBox::on_actionApply_Warping_triggered()
 {
     QStringList from = QFileDialog::getOpenFileNames(
             this,"Open Subject Image","",
@@ -611,7 +611,7 @@ void RegToolBox::on_actionRemove_Background_triggered()
 
 
 
-void RegToolBox::on_actionSave_Warpping_triggered()
+void RegToolBox::on_actionSave_Warping_triggered()
 {
     if(to2from.empty())
         return;

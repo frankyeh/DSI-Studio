@@ -65,7 +65,7 @@ private slots:
 
     void on_switch_view_clicked();
 
-    void on_actionSave_Warpped_Image_triggered();
+    void on_actionSave_Warped_Image_triggered();
 
     void on_advance_options_clicked();
 

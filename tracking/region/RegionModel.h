@@ -49,7 +49,7 @@ public:
         const std::vector<tipl::vector<3> >& point_list(void) const;
         const std::vector<tipl::vector<3> >& normal_list(void) const;
         const std::vector<tipl::vector<3,unsigned int> >& tri_list(void) const;
-        void trasnform_point_list(const tipl::matrix<4,4>& T);
+        void transform_point_list(const tipl::matrix<4,4>& T);
 };
 
 #endif

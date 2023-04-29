@@ -892,21 +892,21 @@ bool get_pe_dir(const std::string& nii_name,size_t& pe_dir,bool& is_neg)
     const char pe_coding[3][2][5] = { { "\"i\"","\"i-\"" },
                                        { "\"j\"","\"j-\"" },
                                        { "\"k\"","\"k-\"" }};
-    std::string jason_name = nii_name.substr(0,nii_name.find_last_of(".nii")-4) + ".json";
-    if(!std::filesystem::exists(jason_name))
+    std::string json_name = nii_name.substr(0,nii_name.find_last_of(".nii")-4) + ".json";
+    if(!std::filesystem::exists(json_name))
         return false;
 
     std::stringstream buffer;
-    buffer << std::ifstream(jason_name).rdbuf();
-    std::string jason_content(buffer.str());
+    buffer << std::ifstream(json_name).rdbuf();
+    std::string json_content(buffer.str());
     for(pe_dir = 0;pe_dir < 3;++pe_dir)
     {
-        if(jason_content.find(pe_coding[pe_dir][0]) != std::string::npos)
+        if(json_content.find(pe_coding[pe_dir][0]) != std::string::npos)
         {
             is_neg = false;
             return true;
         }
-        if(jason_content.find(pe_coding[pe_dir][1]) != std::string::npos)
+        if(json_content.find(pe_coding[pe_dir][1]) != std::string::npos)
         {
             is_neg = true;
             return true;

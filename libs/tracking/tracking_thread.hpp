@@ -35,7 +35,7 @@ public:
         end_thread();
     }
 public:
-    bool joinning = false;
+    bool joining = false;
     std::vector<std::thread> threads;
     std::vector<unsigned int> seed_count,tract_count;
     std::vector<unsigned char> running;

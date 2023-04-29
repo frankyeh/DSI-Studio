@@ -301,7 +301,7 @@ public:
     bool save_bvec(const char* file_name) const;
 public:
     template<class CheckType>
-    bool avaliable(void) const
+    bool available(void) const
     {
         return CheckType::check(voxel);
     }

@@ -126,7 +126,7 @@ void group_connectometry_analysis::run_permutation_multithread(unsigned int id,u
 
         if(!null)
         {
-            ++preproces;
+            ++preprocess;
             i += thread_count;
             if(id == 0)    
                 prog = uint32_t(i*95/permutation_count);
@@ -492,7 +492,7 @@ void group_connectometry_analysis::run_permutation(unsigned int thread_count,uns
         info.resample(*model.get(),false,false,0);
         tipl::out() << "preliminary run to determine seed count" << std::endl;
         calculate_spm(*spm_map.get(),info);
-        preproces = 0;
+        preprocess = 0;
         seed_count = 1000;
 
         const size_t expected_tract_count = 50000;

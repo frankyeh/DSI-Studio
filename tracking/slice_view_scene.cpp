@@ -1059,22 +1059,22 @@ void slice_view_scene::mouseReleaseEvent ( QGraphicsSceneMouseEvent * mouseEvent
     {
         if (sel_coord.size() < 2)
             return;
-        tipl::vector<3,float> min_cood, max_cood;
+        tipl::vector<3,float> min_coord, max_coord;
         for (unsigned int i = 0; i < 3; ++i)
             if (sel_coord[0][i] > sel_coord[1][i])
             {
-                max_cood[i] = sel_coord[0][i];
-                min_cood[i] = sel_coord[1][i];
+                max_coord[i] = sel_coord[0][i];
+                min_coord[i] = sel_coord[1][i];
             }
             else
             {
-                max_cood[i] = sel_coord[1][i];
-                min_cood[i] = sel_coord[0][i];
+                max_coord[i] = sel_coord[1][i];
+                min_coord[i] = sel_coord[0][i];
             }
         float dis = 1.0f/display_ratio;
-        for (float z = min_cood[2]; z <= max_cood[2]; z += dis)
-            for (float y = min_cood[1]; y <= max_cood[1]; y += dis)
-                for (float x = min_cood[0]; x <= max_cood[0]; x += dis)
+        for (float z = min_coord[2]; z <= max_coord[2]; z += dis)
+            for (float y = min_coord[1]; y <= max_coord[1]; y += dis)
+                for (float x = min_coord[0]; x <= max_coord[0]; x += dis)
                     if (cur_tracking_window.current_slice->dim.is_valid(x, y, z))
                         points.push_back(tipl::vector<3,float>(x, y, z));
     }

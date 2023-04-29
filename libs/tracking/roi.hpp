@@ -370,10 +370,10 @@ public:
         return true;
     }
 
-    void setWholeBrainSeed(float threashold)
+    void setWholeBrainSeed(float threshold)
     {
         const float *fa0 = handle->dir.fa[0];
-        setRegions(volume2points(handle->dim,[&](auto& index){return fa0[index.index()] > threashold;}),3/*seed i*/,"whole brain");
+        setRegions(volume2points(handle->dim,[&](auto& index){return fa0[index.index()] > threshold;}),3/*seed i*/,"whole brain");
     }
 
     auto createRegion(const std::vector<tipl::vector<3,short> >& points,

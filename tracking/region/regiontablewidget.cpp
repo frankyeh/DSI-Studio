@@ -430,7 +430,7 @@ void load_nii_label(const char* filename,std::map<int,std::string>& label_map)
         }
     }
 }
-void load_jason_label(const char* filename,std::map<int,std::string>& label_map)
+void load_json_label(const char* filename,std::map<int,std::string>& label_map)
 {
     std::ifstream in(filename);
     if(!in)
@@ -476,7 +476,7 @@ void get_roi_label(QString file_name,std::map<int,std::string>& label_map,std::m
     label_file = QFileInfo(file_name).absolutePath()+"/"+base_name+".json";
     if(QFileInfo(label_file).exists())
     {
-        load_jason_label(label_file.toStdString().c_str(),label_map);
+        load_json_label(label_file.toStdString().c_str(),label_map);
         tipl::out() <<"json file loaded:" << label_file.toStdString() << std::endl;
         return;
     }

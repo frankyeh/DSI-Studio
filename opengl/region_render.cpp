@@ -121,7 +121,7 @@ void RegionRender::move_object(const tipl::vector<3,float>& shift)
         tipl::add_constant(object->point_list,shift);
 }
 
-void RegionRender::trasnform_point_list(const tipl::matrix<4,4>& T)
+void RegionRender::transform_point_list(const tipl::matrix<4,4>& T)
 {
     if(!object.get())
         return;
