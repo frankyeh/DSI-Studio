@@ -1328,7 +1328,7 @@ bool ImageModel::distortion_correction(const char* filename)
         src_dwi_data[i] = &(new_dwi[i][0]);
 
     calculate_dwi_sum(false);
-    voxel.report += " The phase distortion was correlated using data from an opposiate phase encoding direction.";
+    voxel.report += " The phase distortion was correlated using data from an opposite phase encoding direction.";
     return true;
 }
 
@@ -1632,7 +1632,7 @@ bool ImageModel::load_topup_eddy_result(void)
     voxel.vs = dwi_files[0]->voxel_size;
     voxel.dim = nifti_dwi[0].shape();
     if(has_topup)
-        voxel.report += " The susceptibility artifact was estimated using reversed phase-encoding b0 by TOPUP from the Tiny FSL package (http://github.com/frankyeh/TinyFSL), a re-compilied version of FSL TOPUP (FMRIB, Oxford) with multi-thread support.";
+        voxel.report += " The susceptibility artifact was estimated using reversed phase-encoding b0 by TOPUP from the Tiny FSL package (http://github.com/frankyeh/TinyFSL), a re-compiled version of FSL TOPUP (FMRIB, Oxford) with multi-thread support.";
     if(is_eddy)
         voxel.report += " FSL eddy was used to correct for eddy current distortion.";
     voxel.report += " The correction was conducted through the integrated interface in DSI Studio (\"";
@@ -2261,7 +2261,7 @@ bool ImageModel::load_from_file(const char* dwi_file_name)
                 error_msg = "Unsupported image format";
                 return false;
             }
-            tipl::out() << "converting to grascale";
+            tipl::out() << "converting to grayscale";
             int pixel_bytes = fig.bytesPerLine()/fig.width();
             raw.resize(tipl::shape<2>(uint32_t(fig.width()),uint32_t(fig.height())));
             tipl::par_for(raw.height(),[&](int y){

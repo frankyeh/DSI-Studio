@@ -363,7 +363,7 @@ int run_cmd(int ac, char *av[])
     }
     catch(...)
     {
-        std::cout << "unknown error occured" << std::endl;
+        std::cout << "unknown error occurred" << std::endl;
     }
     return 0;
 }

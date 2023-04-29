@@ -3042,7 +3042,7 @@ Tracking</string>
   </action>
   <action name="actionSet_Color">
    <property name="text">
-    <string>Aissgn Color to Current Cluster...</string>
+    <string>Assign Color to Current Cluster...</string>
    </property>
   </action>
   <action name="actionSave_Tracts_Colors_As">

@@ -660,8 +660,8 @@ void group_connectometry_analysis::generate_report(std::string& output)
 
         std::string permutation_explained =
     " The permutation was applied to subject labels to test results against permuted condition.\
-     The histogram under permutated condition represents the result under the null hypothesis.\
-     This null result is then used to test the histogram under nonpermutated condition to compute the FDR.\
+     The histogram under permuted condition represents the result under the null hypothesis.\
+     This null result is then used to test the histogram under nonpermuted condition to compute the FDR.\
      A smaller difference between histograms suggests that the study finding is similar to null finding and having a lower significance,\
      whereas a larger difference suggests greater significance of the study finding.";
 

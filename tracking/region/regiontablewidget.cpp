@@ -477,7 +477,7 @@ void get_roi_label(QString file_name,std::map<int,std::string>& label_map,std::m
     if(QFileInfo(label_file).exists())
     {
         load_jason_label(label_file.toStdString().c_str(),label_map);
-        tipl::out() <<"jason file loaded:" << label_file.toStdString() << std::endl;
+        tipl::out() <<"json file loaded:" << label_file.toStdString() << std::endl;
         return;
     }
     if(QFileInfo(file_name).fileName().contains("aparc") || QFileInfo(file_name).fileName().contains("aseg")) // FreeSurfer
@@ -606,7 +606,7 @@ bool load_nii(std::shared_ptr<fib_data> handle,
                 }
         }
         tipl::out() << nifti_name << " dimension: " << from.shape() << " voxel size: " << vs << std::endl;
-        tipl::out() << nifti_name << " has a different dimension from the FIB file. need transformation or warpping." << std::endl;
+        tipl::out() << nifti_name << " has a different dimension from the FIB file. need transformation or warping." << std::endl;
         if(handle->is_mni)
         {
             if(!is_mni)
@@ -615,10 +615,10 @@ bool load_nii(std::shared_ptr<fib_data> handle,
                 {
                     tipl::out() << nifti_name << " has a dimension of " << from.shape() << ", matching the native space dimension of "
                                     << handle->view_item[index].name << std::endl;
-                    tipl::out() << "warpping " << nifti_name << " from the native space to the template space." << std::endl;
+                    tipl::out() << "warping " << nifti_name << " from the native space to the template space." << std::endl;
                     if(handle->get_native_position().empty())
                     {
-                        error_msg = "FIB file is obsolete. Please reconstruct FIB file again to enable native-to-template warpping.";
+                        error_msg = "FIB file is obsolete. Please reconstruct FIB file again to enable native-to-template warping.";
                         return false;
                     }
                     auto T = handle->view_item[index].native_trans;
@@ -646,7 +646,7 @@ bool load_nii(std::shared_ptr<fib_data> handle,
         {
             if(is_mni)
             {
-                tipl::out() << "warpping " << nifti_name << " from the template space to the native space." << std::endl;
+                tipl::out() << "warping " << nifti_name << " from the template space to the native space." << std::endl;
                 if(!handle->mni2sub<tipl::interpolation::nearest>(from,T))
                 {
                     error_msg = handle->error_msg;
@@ -1319,7 +1319,7 @@ void RegionTableWidget::show_statistics(void)
     {
         QString filename;
         filename = QFileDialog::getSaveFileName(
-                    this,"Save satistics as",item(currentRow(),0)->text() + "_stat.txt",
+                    this,"Save statistics as",item(currentRow(),0)->text() + "_stat.txt",
                     "Text files (*.txt);;All files|(*)");
         if(filename.isEmpty())
             return;

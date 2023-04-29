@@ -429,7 +429,7 @@ void GLWidget::initializeGL()
     }
     tipl::out() << "openGL information" << std::endl;
     tipl::out() << "version:" << glGetString(GL_VERSION) << std::endl;
-    tipl::out() << "vender:" << glGetString(GL_VENDOR) << std::endl;
+    tipl::out() << "vendor:" << glGetString(GL_VENDOR) << std::endl;
     tipl::out() << "renderer:" << glGetString(GL_RENDERER) << std::endl;
 
     glEnable(GL_DEPTH_TEST);
@@ -2647,7 +2647,7 @@ void GLWidget::record_video(void)
                                     "Report file (*.avi);;All files (*)");
         if(file.isEmpty())
             return;
-        QMessageBox::information(this,"DSI Studio","Press Ctrl+Shift+R again to stop recoding.");
+        QMessageBox::information(this,"DSI Studio","Press Ctrl+Shift+R again to stop recording.");
         QImage I = grabFramebuffer();
         video_handle = std::make_shared<tipl::io::avi>();
         video_handle->open(file.toStdString().c_str(),I.width(),I.height(), "MJPG", 10/*fps*/);

@@ -53,7 +53,7 @@ bool connectometry_db::read_db(fib_data* handle_)
     if(!num_subjects)
         return true;
 
-    tipl::progress prog("loading databse");
+    tipl::progress prog("loading database");
     std::string subject_names_str;
     if(!handle->mat_reader.read("subject_names",subject_names_str) ||
        !handle->mat_reader.read("R2",R2))
