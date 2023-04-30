@@ -569,12 +569,12 @@ bool load_multiple_slice_dicom(QStringList file_list,std::vector<std::shared_ptr
     bool iterate_slice_first = true;
     unsigned int slice_num = 2;
     unsigned int b_num = 2;
-    if(s1 == 0.0) // no slice locaton information
+    if(s1 == 0.0) // no slice location information
     {
         DwiHeader dwi1,dwi2;
         dwi1.open(file_list[0].toStdString().c_str());
         dwi2.open(file_list[1].toStdString().c_str());
-        if(dwi1.bvec == dwi2.bvec && dwi1.bvalue == dwi2.bvalue) // iterater slice first
+        if(dwi1.bvec == dwi2.bvec && dwi1.bvalue == dwi2.bvalue) // iterate slice first
         {
             for (;slice_num < file_list.size();++slice_num)
             {
@@ -604,7 +604,7 @@ bool load_multiple_slice_dicom(QStringList file_list,std::vector<std::shared_ptr
     }
     else
     {
-        if(s1 == dicom_header2.get_slice_location()) // iterater b-value first
+        if(s1 == dicom_header2.get_slice_location()) // iterate b-value first
         {
             for (;b_num < file_list.size();++b_num)
             {
@@ -617,7 +617,7 @@ bool load_multiple_slice_dicom(QStringList file_list,std::vector<std::shared_ptr
             iterate_slice_first = false;
         }
         else
-        // iterater slice first
+        // iterate slice first
         {
             for (;slice_num < file_list.size();++slice_num)
             {

@@ -144,7 +144,7 @@ public:
     // other information for second pass processing
     std::vector<float> response_function,free_water_diffusion;
     tipl::image<3> qa_map,iso_map;
-    float reponse_function_scaling;
+    float response_function_scaling;
 public:// for template creation
     std::vector<std::vector<float> > template_odfs;
     std::vector<tipl::image<3> > template_metrics;

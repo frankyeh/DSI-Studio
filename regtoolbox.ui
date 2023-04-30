@@ -932,9 +932,9 @@
      <string>&amp;File</string>
     </property>
     <addaction name="actionSave_Transformed_Image"/>
-    <addaction name="actionApply_Warpping"/>
+    <addaction name="actionApply_Warping"/>
     <addaction name="separator"/>
-    <addaction name="actionSave_Warpping"/>
+    <addaction name="actionSave_Warping"/>
    </widget>
    <widget class="QMenu" name="menuEdit">
     <property name="title">
@@ -968,12 +968,12 @@
     <string>TOPUP</string>
    </property>
   </action>
-  <action name="actionApply_Warpping">
+  <action name="actionApply_Warping">
    <property name="text">
     <string>Apply Mapping to Other Image...</string>
    </property>
   </action>
-  <action name="actionSave_Warpping">
+  <action name="actionSave_Warping">
    <property name="text">
     <string>Save Mapping...</string>
    </property>

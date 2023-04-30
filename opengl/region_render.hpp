@@ -36,7 +36,7 @@ public:
         //bool load(const tipl::image<3,unsigned char>& mask,unsigned char threshold);
         bool load(unsigned int* buffer, tipl::shape<3>geo, unsigned int threshold);
         void move_object(const tipl::vector<3,float>& shift);
-        void trasnform_point_list(const tipl::matrix<4,4>& T);
+        void transform_point_list(const tipl::matrix<4,4>& T);
 public:
         void draw(unsigned char cur_view,float alpha,int blend1,int blend2);
 };

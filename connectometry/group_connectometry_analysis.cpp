@@ -126,7 +126,7 @@ void group_connectometry_analysis::run_permutation_multithread(unsigned int id,u
 
         if(!null)
         {
-            ++preproces;
+            ++preprocess;
             i += thread_count;
             if(id == 0)    
                 prog = uint32_t(i*95/permutation_count);
@@ -492,7 +492,7 @@ void group_connectometry_analysis::run_permutation(unsigned int thread_count,uns
         info.resample(*model.get(),false,false,0);
         tipl::out() << "preliminary run to determine seed count" << std::endl;
         calculate_spm(*spm_map.get(),info);
-        preproces = 0;
+        preprocess = 0;
         seed_count = 1000;
 
         const size_t expected_tract_count = 50000;
@@ -660,8 +660,8 @@ void group_connectometry_analysis::generate_report(std::string& output)
 
         std::string permutation_explained =
     " The permutation was applied to subject labels to test results against permuted condition.\
-     The histogram under permutated condition represents the result under the null hypothesis.\
-     This null result is then used to test the histogram under nonpermutated condition to compute the FDR.\
+     The histogram under permuted condition represents the result under the null hypothesis.\
+     This null result is then used to test the histogram under nonpermuted condition to compute the FDR.\
      A smaller difference between histograms suggests that the study finding is similar to null finding and having a lower significance,\
      whereas a larger difference suggests greater significance of the study finding.";
 

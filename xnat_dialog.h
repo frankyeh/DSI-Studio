@@ -54,7 +54,7 @@ private:
     std::vector<std::string> output_dirs;
 private slots:
     void on_connect_clicked();
-    void exeriment_view_updated();
+    void experiment_view_updated();
     void download_status();
 
     void on_open_dir_clicked();

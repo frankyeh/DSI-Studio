@@ -35,7 +35,7 @@
       <addaction name="actionLoad_Transformation"/>
       <addaction name="actionSave_Transformation"/>
       <addaction name="separator"/>
-      <addaction name="actionSave_Warpped_Image"/>
+      <addaction name="actionSave_Warped_Image"/>
       <addaction name="actionApply_Transformation"/>
      </widget>
      <widget class="QMenu" name="menu_Edit">
@@ -877,7 +877,7 @@
     </layout>
    </item>
   </layout>
-  <action name="actionSave_Warpped_Image">
+  <action name="actionSave_Warped_Image">
    <property name="icon">
     <iconset resource="icons.qrc">
      <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>

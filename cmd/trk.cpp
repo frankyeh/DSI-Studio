@@ -57,7 +57,7 @@ bool get_t1t2_nifti(const std::string& t1t2,
         }
         handle->view_item.pop_back(); // remove the new item added by initialize
         t1t2_slices->wait();
-        tipl::out() << "registeration complete" << std::endl;
+        tipl::out() << "registration complete" << std::endl;
     }
     nifti_geo = t1t2_slices->source_images.shape();
     nifti_vs = t1t2_slices->vs;
@@ -670,7 +670,7 @@ int trk(tipl::program_option<tipl::out>& po)
     }
     catch(...)
     {
-        tipl::out() << "program terminated due to unkown exception" << std::endl;
+        tipl::out() << "program terminated due to unknown exception" << std::endl;
     }
     return 0;
 }
@@ -747,7 +747,7 @@ int trk(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> handle)
                     }
                     if(!found)
                     {
-                        tipl::out() << "ERROR: cannot find subject in " << subject_demo << ". Please make sure that the FIB or NIFTI file name includs subject's id." << std::endl;
+                        tipl::out() << "ERROR: cannot find subject in " << subject_demo << ". Please make sure that the FIB or NIFTI file name includes subject's id." << std::endl;
                         return 1;
                     }
                 }

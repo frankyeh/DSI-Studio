@@ -443,10 +443,10 @@ void manual_alignment::on_switch_view_clicked()
     ui->blend_pos->setValue(ui->blend_pos->value() > ui->blend_pos->maximum()/2 ? 0:ui->blend_pos->maximum());
 }
 
-void manual_alignment::on_actionSave_Warpped_Image_triggered()
+void manual_alignment::on_actionSave_Warped_Image_triggered()
 {
     QString filename = QFileDialog::getSaveFileName(
-            this,"Save Warpping Image","","Images (*.nii *nii.gz);;All files (*)" );
+            this,"Save Warping Image","","Images (*.nii *nii.gz);;All files (*)" );
     if(filename.isEmpty())
         return;
 
@@ -513,7 +513,7 @@ void manual_alignment::on_actionApply_Transformation_triggered()
 
 
     QString to_filename = QFileDialog::getSaveFileName(
-            this,"Save Warpping Image",filename+".wp.nii.gz","Images (*.nii *nii.gz);;All files (*)" );
+            this,"Save Warping Image",filename+".wp.nii.gz","Images (*.nii *nii.gz);;All files (*)" );
     if(to_filename.isEmpty())
         return;
 

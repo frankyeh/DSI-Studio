@@ -69,9 +69,9 @@ private slots:
 
     void on_OpenTemplate2_clicked();
 
-    void on_actionApply_Warpping_triggered();
+    void on_actionApply_Warping_triggered();
 
-    void on_actionSave_Warpping_triggered();
+    void on_actionSave_Warping_triggered();
 
     void on_show_option_clicked();
 

@@ -329,7 +329,7 @@ public:
         const auto& s2t = get_sub2temp_mapping();
         if(s2t.empty())
         {
-            error_msg = "No spatial mapping found for warpping MNI images";
+            error_msg = "No spatial mapping found for warping MNI images";
             return false;
         }
         image_type J(s2t.shape()*ratio); // subject space image

@@ -184,7 +184,7 @@ void reconstruction_window::on_b_table_itemSelectionChanged()
     if(view_orientation != 2)
     {
         // show bad_slices
-        if(bad_slice_analzed)
+        if(bad_slice_analyzed)
         {
             std::vector<size_t> mark_slices;
             for(size_t index = 0;index < bad_slices.size();++index)
@@ -618,7 +618,7 @@ void reconstruction_window::on_delete_2_clicked()
     int index = ui->b_table->currentRow();
     if(index < 0)
         return;
-    bad_slice_analzed = false;
+    bad_slice_analyzed = false;
     ui->b_table->removeRow(index);
     handle->remove(uint32_t(index));
 
@@ -631,7 +631,7 @@ void reconstruction_window::on_remove_below_clicked()
     int index = ui->b_table->currentRow();
     if(index <= 0)
         return;
-    bad_slice_analzed = false;
+    bad_slice_analyzed = false;
     while(ui->b_table->rowCount() > index)
     {
         ui->b_table->removeRow(index);
@@ -886,10 +886,10 @@ void reconstruction_window::on_actionEddy_Motion_Correction_triggered()
 
 void reconstruction_window::on_show_bad_slice_clicked()
 {
-    if(!bad_slice_analzed)
+    if(!bad_slice_analyzed)
     {
         bad_slices = handle->get_bad_slices();
-        bad_slice_analzed = true;
+        bad_slice_analyzed = true;
         std::vector<char> is_bad(ui->b_table->rowCount());
         for(int i = 0;i < bad_slices.size();++i)
             if(bad_slices[i].first < is_bad.size())

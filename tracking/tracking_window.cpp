@@ -2172,7 +2172,7 @@ void tracking_window::on_actionOpen_Connectivity_Matrix_triggered()
     if(int(regionWidget->regions.size()) != glWidget->connectivity.width())
     {
         QMessageBox::information(this,"error",
-            QString("The connectiviti matrix is %1-by-%2, but there are %3 regions. Please make sure the sizes are matched.").
+            QString("The connectivity matrix is %1-by-%2, but there are %3 regions. Please make sure the sizes are matched.").
                 arg(glWidget->connectivity.width()).
                 arg(glWidget->connectivity.height()).
                 arg(regionWidget->regions.size()));
@@ -2327,7 +2327,7 @@ void tracking_window::on_actionMark_Region_on_T1W_T2W_triggered()
         return;
     bool ok = true;
     double ratio = QInputDialog::getDouble(this,"DSI Studio",
-            "Aissgn intensity (ratio to the maximum, e.g., 1.2 = 1.2*max)",1.0,0.0,10.0,1,&ok);
+            "Assign intensity (ratio to the maximum, e.g., 1.2 = 1.2*max)",1.0,0.0,10.0,1,&ok);
     if(!ok)
         return;
     auto current_region = regionWidget->regions[uint32_t(regionWidget->currentRow())];
@@ -2389,7 +2389,7 @@ void tracking_window::on_actionMark_Tracts_on_T1W_T2W_triggered()
         return;
     bool ok = true;
     double ratio = QInputDialog::getDouble(this,"DSI Studio",
-            "Aissgn intensity (ratio to the maximum, e.g., 1.2 = 1.2*max)",1.0,0.0,10.0,1,&ok);
+            "Assign intensity (ratio to the maximum, e.g., 1.2 = 1.2*max)",1.0,0.0,10.0,1,&ok);
     if(!ok)
         return;
     tipl::image<3,unsigned char> t_mask(slice->source_images.shape());

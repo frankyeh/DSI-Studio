@@ -379,7 +379,7 @@ void GLWidget::setFrustum(void)
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
     double p[11] = {0.35,0.4,0.45,0.5,0.6,0.8,1.0,1.5,2.0,12.0,50.0};
-    GLdouble perspective = p[get_param("pespective")];
+    GLdouble perspective = p[get_param("perspective")];
     GLdouble zNear = 1.0;
     GLdouble zFar = 1000.0;
     GLdouble aspect = double(view_mode == view_mode_type::two ? cur_width/2:cur_width)/double(cur_height);
@@ -429,7 +429,7 @@ void GLWidget::initializeGL()
     }
     tipl::out() << "openGL information" << std::endl;
     tipl::out() << "version:" << glGetString(GL_VERSION) << std::endl;
-    tipl::out() << "vender:" << glGetString(GL_VENDOR) << std::endl;
+    tipl::out() << "vendor:" << glGetString(GL_VENDOR) << std::endl;
     tipl::out() << "renderer:" << glGetString(GL_RENDERER) << std::endl;
 
     glEnable(GL_DEPTH_TEST);
@@ -473,7 +473,7 @@ void GLWidget::paintGL()
             glEnable(GL_MULTISAMPLE);
         else
             glDisable(GL_MULTISAMPLE);
-        glGetError(); //slience the multisample error
+        glGetError(); //silence the multisample error
 
         if(get_param("line_smooth"))
         {
@@ -533,7 +533,7 @@ void GLWidget::paintGL()
             glViewport(0,0, cur_width/2, cur_height);
             renderLR();
             tipl::matrix<4,4> T(transformation_matrix);
-            // add a rotation to the transofrmation matrix
+            // add a rotation to the transformation matrix
             glPushMatrix();
             glLoadIdentity();
             glRotated(get_param_float("stereoscopy_angle"),0,1,0);
@@ -1261,7 +1261,7 @@ void GLWidget::renderLR()
         glPushMatrix();
         glLoadIdentity();
         float p[11] = {0.35f,0.4f,0.45f,0.5f,0.6f,0.8f,1.0f,1.5f,2.0f,12.0f,50.0f};
-        GLfloat perspective = p[get_param("pespective")];
+        GLfloat perspective = p[get_param("perspective")];
         GLfloat zNear = 1.0f;
         GLfloat zFar = 1000.0f;
         GLfloat aspect = float(view_mode == view_mode_type::two ? cur_width/2:cur_width)/float(cur_height);
@@ -2440,7 +2440,7 @@ bool GLWidget::command(QString cmd,QString param,QString param2)
         }
 
         if(!cur_tracking_window.current_slice->is_diffusion_space)
-            surface->trasnform_point_list(cur_tracking_window.current_slice->T);
+            surface->transform_point_list(cur_tracking_window.current_slice->T);
 
         update();
         return true;
@@ -2647,7 +2647,7 @@ void GLWidget::record_video(void)
                                     "Report file (*.avi);;All files (*)");
         if(file.isEmpty())
             return;
-        QMessageBox::information(this,"DSI Studio","Press Ctrl+Shift+R again to stop recoding.");
+        QMessageBox::information(this,"DSI Studio","Press Ctrl+Shift+R again to stop recording.");
         QImage I = grabFramebuffer();
         video_handle = std::make_shared<tipl::io::avi>();
         video_handle->open(file.toStdString().c_str(),I.width(),I.height(), "MJPG", 10/*fps*/);

@@ -13,7 +13,7 @@ void ThreadData::end_thread(void)
 {
     if (!threads.empty())
     {
-        joinning = true;
+        joining = true;
         for(auto& thread : threads)
             if(thread.joinable())
                 thread.join();
@@ -35,8 +35,8 @@ void ThreadData::run_thread(unsigned int thread_id,unsigned int thread_count)
             seed = std::mt19937(param.random_seed);  // always 0, except in connectometry for changing seed sequence
             if(roi_mgr->use_auto_track)
             {
-                if(!roi_mgr->setAtlas(joinning))
-                    joinning = true;
+                if(!roi_mgr->setAtlas(joining))
+                    joining = true;
             }
             if(roi_mgr->seeds.empty())
                 roi_mgr->setWholeBrainSeed(param.threshold == 0.0f ?
@@ -70,7 +70,7 @@ void ThreadData::run_thread(unsigned int thread_id,unsigned int thread_count)
     unsigned int max_seed_per_thread = param.max_seed_count/thread_count;
     if(!roi_mgr->seeds.empty())
     try{
-        while(!joinning &&
+        while(!joining &&
               !(param.stop_by_tract == 1 && tract_count[thread_id] >= termination_count) &&
               !(param.stop_by_tract == 0 && seed_count[thread_id] >= termination_count) &&
               !(param.max_seed_count > 0 && seed_count[thread_id] >= max_seed_per_thread))
@@ -238,7 +238,7 @@ void ThreadData::run(std::shared_ptr<tracking_data> trk_,unsigned int thread_cou
     if(thread_count < 1)
         thread_count = 1;
 
-    joinning = false;
+    joining = false;
     ready_to_track = false;
     begin_time = std::chrono::high_resolution_clock::now();
 

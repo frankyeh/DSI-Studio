@@ -166,7 +166,7 @@ public:
 		add_faces_in_line(mid_line,edge0,folding);
         cur_vertex = old_cur_vertex;
 	}
-	// This function obtain the tessellated points and faces from a icosaheron triangle
+	// This function obtain the tessellated points and faces from a icosahedron triangle
     template<class input_type1,class input_type2,class input_type3>
         void build_faces(input_type1 edge0,input_type2 edge1,input_type3 edge2)
     {

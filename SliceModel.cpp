@@ -374,7 +374,7 @@ bool CustomSliceModel::load_slices(const std::vector<std::string>& files,bool is
         else
         if(is_mni)
         {
-            tipl::out() << "Warpping slices to the subject space." << std::endl;
+            tipl::out() << "Warping slices to the subject space." << std::endl;
             if(!handle->mni2sub(source_images,trans))
             {
                 error_msg = handle->error_msg;

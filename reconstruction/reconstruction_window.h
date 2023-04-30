@@ -38,7 +38,7 @@ private:
     tipl::value_to_color<float> v2c;
     unsigned char view_orientation = 2;
 private: //bad slices
-    bool bad_slice_analzed = false;
+    bool bad_slice_analyzed = false;
     std::vector<std::pair<size_t,size_t> > bad_slices;
 private:
     Ui::reconstruction_window *ui;

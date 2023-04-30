@@ -196,7 +196,7 @@ xnat_dialog::~xnat_dialog()
 {
     delete ui;
 }
-void xnat_dialog::exeriment_view_updated()
+void xnat_dialog::experiment_view_updated()
 {
     if(xnat_connection.is_running())
     {
@@ -311,7 +311,7 @@ void xnat_dialog::on_connect_clicked()
     QString auth = ui->username->text() + ":" + ui->password->text();
     xnat_connection.get_experiments_info(ui->url->text().toStdString(),auth == ":" ? std::string():auth.toStdString());
     experiment_view_timer = std::make_shared<QTimer>();
-    connect(experiment_view_timer.get(), SIGNAL(timeout()), this, SLOT(exeriment_view_updated()));
+    connect(experiment_view_timer.get(), SIGNAL(timeout()), this, SLOT(experiment_view_updated()));
     experiment_view_timer->setInterval(1000);
     experiment_view_timer->start();
 
