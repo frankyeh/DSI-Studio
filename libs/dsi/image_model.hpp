@@ -300,12 +300,6 @@ public:
     bool save_bval(const char* file_name) const;
     bool save_bvec(const char* file_name) const;
 public:
-    template<class CheckType>
-    bool available(void) const
-    {
-        return CheckType::check(voxel);
-    }
-
     template<typename ...ProcessList>
     bool reconstruct2(const char* prog_title)
     {
