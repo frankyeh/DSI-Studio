@@ -91,8 +91,7 @@ bool DwiHeader::open(const char* filename)
 
     unsigned char man_id = 0;
     {
-        std::string manu;
-        header.get_text(0x0008,0x0070,manu);//Manufacturer
+        std::string manu = header.get_text(0x0008,0x0070);//Manufacturer
         if (manu.size() > 2)
         {
             std::string name(manu.begin(),manu.begin()+2);
