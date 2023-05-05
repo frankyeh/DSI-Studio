@@ -162,7 +162,7 @@ bool load_dicom_multi_frame(const char* file_name,std::vector<std::shared_ptr<Dw
 
     size_t plane_size = size_t(buf_image.width()*buf_image.height());
     b_table.resize(num_gradient*4);
-    tipl::progress prog("reading DWI");
+    tipl::progress prog("reading multi-frame DWI");
     for(size_t index = 0;prog(index,num_gradient);++index)
     {
         std::shared_ptr<DwiHeader> new_file(new DwiHeader);
@@ -630,7 +630,7 @@ bool load_multiple_slice_dicom(QStringList file_list,std::vector<std::shared_ptr
             iterate_slice_first = true;
         }
     }
-    tipl::progress prog("reading DWI");
+    tipl::progress prog("reading multiple slices DWI");
     for (unsigned int index = 0,b_index = dwi_files.size(),slice_index = 0;prog(index,file_list.size());++index)
     {
         std::shared_ptr<DwiHeader> dwi(new DwiHeader);
@@ -771,7 +771,7 @@ bool load_4d_fdf(QStringList file_list,std::vector<std::shared_ptr<DwiHeader> >&
 {
     std::vector<tipl::image<3> > image_buf;
     bool scan_2d = true;
-    tipl::progress prog("reading DWI");
+    tipl::progress prog("reading 4d fdf DWI");
     for (int index = 0;prog(index,file_list.size());++index)
     {
         std::map<std::string,std::string> value_list;
@@ -1005,6 +1005,17 @@ bool parse_dwi(QStringList file_list,
         return load_3d_series(file_list,dwi_files);
     if(geo[2] == 1)
         return load_multiple_slice_dicom(file_list,dwi_files);
+
+    std::string manu;
+    dicom_header.get_text(0x0008,0x0070,manu);//Manufacturer
+    if (manu.size() > 2)
+    {
+        std::string name(manu.begin(),manu.begin()+2);
+        name[0] = ::toupper(name[0]);
+        name[1] = ::toupper(name[1]);
+        if (name == std::string("SI"))
+            return load_3d_series(file_list,dwi_files);
+    }
     // multiframe Phillips DICOM
     for(int index = 0;index < file_list.size();++index)
         if(!load_dicom_multi_frame(file_list[index].toStdString().c_str(),dwi_files))
