@@ -1001,22 +1001,12 @@ bool parse_dwi(QStringList file_list,
         return false;
     }
     dicom_header.get_image_dimension(geo);
-    if(dicom_header.is_mosaic)// Siemens Mosaic
-        return load_3d_series(file_list,dwi_files);
     if(geo[2] == 1)
         return load_multiple_slice_dicom(file_list,dwi_files);
-
-    std::string manu;
-    dicom_header.get_text(0x0008,0x0070,manu);//Manufacturer
-    if (manu.size() > 2)
-    {
-        std::string name(manu.begin(),manu.begin()+2);
-        name[0] = ::toupper(name[0]);
-        name[1] = ::toupper(name[1]);
-        if (name == std::string("SI"))
-            return load_3d_series(file_list,dwi_files);
-    }
-    // multiframe Phillips DICOM
+    // Siemens Mosaic or multiframe
+    if(dicom_header.is_mosaic || ::toupper(dicom_header.get_text(0x0008,0x0070)[0]) == 'S')
+        return load_3d_series(file_list,dwi_files);
+    // Phillips multiframe
     for(int index = 0;index < file_list.size();++index)
         if(!load_dicom_multi_frame(file_list[index].toStdString().c_str(),dwi_files))
             return false;
