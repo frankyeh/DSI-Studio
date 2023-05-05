@@ -1238,8 +1238,10 @@
      <addaction name="separator"/>
      <addaction name="actionAB"/>
      <addaction name="actionB_A"/>
-     <addaction name="actionAll_To_First"/>
      <addaction name="actionA_B"/>
+     <addaction name="separator"/>
+     <addaction name="actionAll_To_First"/>
+     <addaction name="actionAll_To_First2"/>
      <addaction name="separator"/>
      <addaction name="actionDilation_by_voxel"/>
     </widget>
@@ -3656,7 +3658,7 @@ Tracking</string>
     <string>First Excludes All</string>
    </property>
    <property name="shortcut">
-    <string>Ctrl+Shift+4</string>
+    <string>Ctrl+Shift+3</string>
    </property>
   </action>
   <action name="actionB_A">
@@ -4104,7 +4106,7 @@ Tracking</string>
     <string>All To First</string>
    </property>
    <property name="shortcut">
-    <string>Ctrl+Shift+3</string>
+    <string>Ctrl+Shift+4</string>
    </property>
   </action>
   <action name="actionManual_Atlas_Alignment">
@@ -4143,6 +4145,14 @@ Tracking</string>
   <action name="actionFlip_Z_2">
    <property name="text">
     <string>Flip Z</string>
+   </property>
+  </action>
+  <action name="actionAll_To_First2">
+   <property name="text">
+    <string>All To First2</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Shift+5</string>
    </property>
   </action>
  </widget>

@@ -135,6 +135,7 @@ public slots:
     void action_B_A(void){do_action("B-A");}
     void action_AB(void){do_action("A*B");}
     void action_B2A(void){do_action("A<<B");}
+    void action_B2A2(void){do_action("A>>B");}
     void action_sort_name(void){do_action("sort_name");}
     void action_sort_size(void){do_action("sort_size");}
     void action_sort_x(void){do_action("sort_x");}
