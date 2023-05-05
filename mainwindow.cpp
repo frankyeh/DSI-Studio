@@ -1130,7 +1130,7 @@ bool dcm2src(QStringList files)
             report.resize(80);
     }
 
-    if(dicom_files.size() > 1) //4D NIFTI
+    if(!dicom_files.empty()) //4D NIFTI
     {
         for(unsigned int index = 0;index < dicom_files.size();++index)
         {
@@ -1181,7 +1181,6 @@ bool dcm2src(QStringList files)
         }
         return true;
     }
-
     if(files.size() < 5)
     {
         tipl::out() << "Skip." << std::endl;
