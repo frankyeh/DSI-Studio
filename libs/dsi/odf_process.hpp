@@ -117,7 +117,7 @@ public:
 
         if(!voxel.scheme_balance)
             return;
-        if(stored_voxel)// restored btalbe here in case user terminate the recon
+        if(stored_voxel)// restored btable here in case the user terminates the recon
         {
             stored_voxel = nullptr;
             voxel.bvalues = old_bvalues;
