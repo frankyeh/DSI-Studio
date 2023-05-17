@@ -1190,8 +1190,31 @@ void slice_view_scene::mouseReleaseEvent ( QGraphicsSceneMouseEvent * mouseEvent
 
 
     std::vector<tipl::vector<3,short> > points_int16(points.size());
-
     std::copy(points.begin(),points.end(),points_int16.begin());
+
+
+    // apply thresholded edits
+    if(cur_tracking_window.ui->draw_threshold->value() != 0.0f)
+    {
+        float threshold = cur_tracking_window.ui->draw_threshold->value();
+        bool upper = cur_tracking_window.ui->draw_threshold_direction->currentIndex() == 0;
+        tipl::const_pointer_image<3,float> I = cur_tracking_window.current_slice->get_source();
+        for(size_t i = 0;i < points_int16.size();)
+        {
+            if(I.shape().is_valid(points_int16[i]))
+            {
+                auto cur_value = I.at(points_int16[i]);
+                if ((upper ^ (cur_value >= threshold)))
+                {
+                    points_int16[i] = points_int16.back();
+                    points_int16.pop_back();
+                    continue;
+                }
+            }
+            ++i;
+        }
+    }
+
     regionWidget->regions[regionWidget->currentRow()]->add_points(std::move(points_int16),
                 cur_tracking_window.current_slice->dim,
                 cur_tracking_window.current_slice->T,mouseEvent->button() == Qt::RightButton);
