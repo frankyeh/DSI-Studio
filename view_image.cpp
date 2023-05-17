@@ -381,54 +381,23 @@ view_image::view_image(QWidget *parent) :
     ui->min_color->setColor(0XFF000000);
     ui->dwi_volume->hide();
     ui->dwi_label->hide();
+
+    foreach (QAction* action, findChildren<QAction*>())
+    {
+        if(action->text().contains("&") || action->text().isEmpty())
+            continue;
+        if(action->text().contains("..."))
+            connect(action, SIGNAL(triggered()),this, SLOT(run_action2()));
+        else
+            connect(action, SIGNAL(triggered()),this, SLOT(run_action()));
+    }
+
+
     connect(ui->max_color,SIGNAL(clicked()),this,SLOT(change_contrast()));
     connect(ui->min_color,SIGNAL(clicked()),this,SLOT(change_contrast()));
     connect(ui->orientation,SIGNAL(currentIndexChanged(int)),this,SLOT(change_contrast()));
     connect(ui->axis_grid,SIGNAL(currentIndexChanged(int)),this,SLOT(change_contrast()));
     connect(ui->menuOverlay, SIGNAL(aboutToShow()),this, SLOT(update_overlay_menu()));
-
-    connect(ui->actionMorphology_Smoothing, SIGNAL(triggered()),this, SLOT(run_action()));
-    connect(ui->actionMorphology_Defragment, SIGNAL(triggered()),this, SLOT(run_action()));
-    connect(ui->actionMorphology_Dilation, SIGNAL(triggered()),this, SLOT(run_action()));
-    connect(ui->actionMorphology_Erosion, SIGNAL(triggered()),this, SLOT(run_action()));
-    connect(ui->actionMorphology_Edge, SIGNAL(triggered()),this, SLOT(run_action()));
-    connect(ui->actionMorphology_XY, SIGNAL(triggered()),this, SLOT(run_action()));
-    connect(ui->actionMorphology_XZ, SIGNAL(triggered()),this, SLOT(run_action()));
-
-
-    connect(ui->actionFlip_X, SIGNAL(triggered()),this, SLOT(run_action()));
-    connect(ui->actionFlip_Y, SIGNAL(triggered()),this, SLOT(run_action()));
-    connect(ui->actionFlip_Z, SIGNAL(triggered()),this, SLOT(run_action()));
-    connect(ui->actionSwap_XY, SIGNAL(triggered()),this, SLOT(run_action()));
-    connect(ui->actionSwap_XZ, SIGNAL(triggered()),this, SLOT(run_action()));
-    connect(ui->actionSwap_YZ, SIGNAL(triggered()),this, SLOT(run_action()));
-    connect(ui->actionDownsample_by_2, SIGNAL(triggered()),this, SLOT(run_action()));
-    connect(ui->actionUpsample_by_2, SIGNAL(triggered()),this, SLOT(run_action()));
-
-    connect(ui->actionNormalize_Intensity, SIGNAL(triggered()),this, SLOT(run_action()));
-    connect(ui->actionMean_Filter, SIGNAL(triggered()),this, SLOT(run_action()));
-    connect(ui->actionGaussian_Filter, SIGNAL(triggered()),this, SLOT(run_action()));
-    connect(ui->actionSmoothing_Filter, SIGNAL(triggered()),this, SLOT(run_action()));
-    connect(ui->actionSobel_Filter, SIGNAL(triggered()),this, SLOT(run_action()));
-
-    // ask for a value and run action
-    connect(ui->actionIntensity_shift, SIGNAL(triggered()),this, SLOT(run_action2()));
-    connect(ui->actionIntensity_scale, SIGNAL(triggered()),this, SLOT(run_action2()));
-    connect(ui->actionLower_threshold, SIGNAL(triggered()),this, SLOT(run_action2()));
-    connect(ui->actionUpper_Threshold, SIGNAL(triggered()),this, SLOT(run_action2()));
-    connect(ui->actionRegrid, SIGNAL(triggered()),this, SLOT(run_action2()));
-    connect(ui->actionThreshold, SIGNAL(triggered()),this, SLOT(run_action2()));
-    connect(ui->actionTranslocate, SIGNAL(triggered()),this, SLOT(run_action2()));
-    connect(ui->actionResize, SIGNAL(triggered()),this, SLOT(run_action2()));
-    connect(ui->actionTransform, SIGNAL(triggered()),this, SLOT(run_action2()));
-    connect(ui->actionMultiplyImage, SIGNAL(triggered()),this, SLOT(run_action2()));
-    connect(ui->actionAddImage, SIGNAL(triggered()),this, SLOT(run_action2()));
-    connect(ui->actionMinusImage, SIGNAL(triggered()),this, SLOT(run_action2()));
-    connect(ui->actionCropToFit, SIGNAL(triggered()),this, SLOT(run_action2()));
-
-    connect(ui->actionSet_Transformation, SIGNAL(triggered()),this, SLOT(run_action2()));
-    connect(ui->actionSet_Translocation, SIGNAL(triggered()),this, SLOT(run_action2()));
-
 
 
     ui->tabWidget->setCurrentIndex(0);
@@ -782,6 +751,14 @@ bool view_image::open(QStringList file_names_)
         apply([&](auto& data)
         {
             succeed = nifti.get_untouched_image(data,prog);
+            if constexpr(!std::is_integral<typename std::remove_reference<decltype(*data.begin())>::type>::value)
+            {
+                tipl::par_for(data.size(),[&](size_t pos)
+                {
+                   if(std::isnan(data[pos]))
+                       data[pos] = 0;
+                });
+            }
         });
         if(!succeed)
         {
@@ -1262,7 +1239,7 @@ void view_image::run_action2()
         if(result == QMessageBox::Yes)
             ui->type->setCurrentIndex(float32);
     }
-    if(!command(action->text().toLower().replace(' ','_').toStdString(),value.toStdString()))
+    if(!command(action->text().remove("...").toLower().replace(' ','_').toStdString(),value.toStdString()))
         QMessageBox::critical(this,"ERROR",error_msg.c_str());
 }
 

@@ -416,6 +416,14 @@
     </property>
     <addaction name="actionSet_Transformation"/>
     <addaction name="actionSet_Translocation"/>
+    <addaction name="separator"/>
+    <addaction name="actionHeader_Flip_X"/>
+    <addaction name="actionHeader_Flip_Y"/>
+    <addaction name="actionHeader_Flip_Z"/>
+    <addaction name="separator"/>
+    <addaction name="actionHeader_Swap_XY"/>
+    <addaction name="actionHeader_Swap_XZ"/>
+    <addaction name="actionHeader_Swap_YZ"/>
    </widget>
    <widget class="QMenu" name="menu_Intensity">
     <property name="title">
@@ -443,7 +451,7 @@
    </widget>
    <widget class="QMenu" name="menuOverlay">
     <property name="title">
-     <string>Overlay</string>
+     <string>&amp;Overlay</string>
     </property>
    </widget>
    <widget class="QMenu" name="menuMorphology">
@@ -474,12 +482,12 @@
      <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
    </property>
    <property name="text">
-    <string>Save As...</string>
+    <string>Save &amp;As...</string>
    </property>
   </action>
   <action name="actionRegrid">
    <property name="text">
-    <string>Regrid</string>
+    <string>Regrid...</string>
    </property>
    <property name="toolTip">
     <string>Resample image to isotropic resolution</string>
@@ -494,7 +502,7 @@
      <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
    </property>
    <property name="text">
-    <string>Multiply Image</string>
+    <string>Multiply Image...</string>
    </property>
    <property name="toolTip">
     <string>Multiply another image to current image</string>
@@ -505,7 +513,7 @@
   </action>
   <action name="actionResize">
    <property name="text">
-    <string>Resize</string>
+    <string>Resize...</string>
    </property>
    <property name="toolTip">
     <string>Change the image size </string>
@@ -513,7 +521,7 @@
   </action>
   <action name="actionTranslocate">
    <property name="text">
-    <string>Translocate</string>
+    <string>Translocate...</string>
    </property>
    <property name="toolTip">
     <string>Move the image</string>
@@ -524,7 +532,7 @@
   </action>
   <action name="actionCropToFit">
    <property name="text">
-    <string>Crop To Fit</string>
+    <string>Crop To Fit...</string>
    </property>
    <property name="toolTip">
     <string>Reduce image size by cropping the image</string>
@@ -535,7 +543,7 @@
   </action>
   <action name="actionSet_Translocation">
    <property name="text">
-    <string>Set Translocation</string>
+    <string>Set Translocation...</string>
    </property>
    <property name="toolTip">
     <string>Assign the translocation values for the transformation matrix</string>
@@ -543,7 +551,7 @@
   </action>
   <action name="actionLower_threshold">
    <property name="text">
-    <string>Lower Threshold</string>
+    <string>Lower Threshold...</string>
    </property>
    <property name="toolTip">
     <string>Apply a lower limit to the image intensity</string>
@@ -554,7 +562,7 @@
   </action>
   <action name="actionSet_Transformation">
    <property name="text">
-    <string>Set Transformation</string>
+    <string>Set Transformation...</string>
    </property>
    <property name="toolTip">
     <string>Assign the transformation matrix</string>
@@ -562,7 +570,7 @@
   </action>
   <action name="actionIntensity_shift">
    <property name="text">
-    <string>Add Value</string>
+    <string>Add Value...</string>
    </property>
    <property name="toolTip">
     <string>Add a value to the image intensity (can be negative).</string>
@@ -573,7 +581,7 @@
   </action>
   <action name="actionIntensity_scale">
    <property name="text">
-    <string>Multiply Value</string>
+    <string>Multiply Value...</string>
    </property>
    <property name="toolTip">
     <string>Multiply the image intensity with a value</string>
@@ -584,7 +592,7 @@
   </action>
   <action name="actionUpper_Threshold">
    <property name="text">
-    <string>Upper Threshold</string>
+    <string>Upper Threshold...</string>
    </property>
    <property name="toolTip">
     <string>Apply a upper limit to the image intensity</string>
@@ -643,7 +651,7 @@
      <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
    </property>
    <property name="text">
-    <string>Add Image</string>
+    <string>Add Image...</string>
    </property>
    <property name="toolTip">
     <string>Add another image to current image</string>
@@ -730,7 +738,7 @@
      <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
    </property>
    <property name="text">
-    <string>Minus Image</string>
+    <string>Minus Image...</string>
    </property>
    <property name="toolTip">
     <string>Minus another image to current image</string>
@@ -749,7 +757,7 @@
   </action>
   <action name="actionThreshold">
    <property name="text">
-    <string>Threshold</string>
+    <string>Threshold...</string>
    </property>
    <property name="toolTip">
     <string>Binarize the image using a threshold value</string>
@@ -805,7 +813,7 @@
   </action>
   <action name="actionTransform">
    <property name="text">
-    <string>Transform</string>
+    <string>Transform...</string>
    </property>
    <property name="toolTip">
     <string>Transform the image to new coordinates</string>
@@ -817,7 +825,37 @@
      <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
    </property>
    <property name="text">
-    <string>Load Image to 4D...</string>
+    <string>&amp;Load Image to 4D...</string>
+   </property>
+  </action>
+  <action name="actionHeader_Flip_X">
+   <property name="text">
+    <string>Header Flip X</string>
+   </property>
+  </action>
+  <action name="actionHeader_Flip_Y">
+   <property name="text">
+    <string>Header Flip Y</string>
+   </property>
+  </action>
+  <action name="actionHeader_Flip_Z">
+   <property name="text">
+    <string>Header Flip Z</string>
+   </property>
+  </action>
+  <action name="actionHeader_Swap_XY">
+   <property name="text">
+    <string>Header Swap XY</string>
+   </property>
+  </action>
+  <action name="actionHeader_Swap_XZ">
+   <property name="text">
+    <string>Header Swap XZ</string>
+   </property>
+  </action>
+  <action name="actionHeader_Swap_YZ">
+   <property name="text">
+    <string>Header Swap YZ</string>
    </property>
   </action>
  </widget>
