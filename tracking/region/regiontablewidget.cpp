@@ -1491,6 +1491,23 @@ void RegionTableWidget::do_action(QString action)
                 checked_regions[0]->LoadFromBuffer(A);
                 rows_to_be_updated.push_back(checked_row[0]);
             }
+
+
+            tipl::const_pointer_image<3,float> I = cur_tracking_window.current_slice->get_source();
+            if(I.empty())
+                return;
+            bool need_trans = !cur_tracking_window.current_slice->is_diffusion_space;
+            tipl::matrix<4,4> trans = tipl::identity_matrix();
+            if(need_trans)
+               trans = cur_tracking_window.current_slice->invT;
+
+            auto value_at = [&](tipl::vector<3> pos)
+            {
+                if(need_trans)
+                    pos.to(trans);
+                return tipl::estimate(I,pos);
+            };
+
             if(action == "A>>B")
             {
                 tipl::image<3,unsigned char> edges(handle->dim);
@@ -1506,15 +1523,6 @@ void RegionTableWidget::do_action(QString action)
                             edges[pos] += 1;
                 });
 
-                tipl::const_pointer_image<3,float> I = cur_tracking_window.current_slice->get_source();
-                if(I.empty())
-                    return;
-                double m = tipl::max_value(I);
-                bool need_trans = !cur_tracking_window.current_slice->is_diffusion_space;
-                tipl::matrix<4,4> trans = tipl::identity_matrix();
-                if(need_trans)
-                   trans = cur_tracking_window.current_slice->invT;
-
                 tipl::par_for(tipl::begin_index(handle->dim),
                               tipl::end_index(handle->dim),
                               [&](const tipl::pixel_index<3>& pos)
@@ -1522,10 +1530,6 @@ void RegionTableWidget::do_action(QString action)
                     if(edges[pos.index()] <= 1)
                         return;
 
-                    tipl::vector<3> p(pos);
-                    if(need_trans)
-                        p.to(trans);
-                    float pos_value = tipl::estimate(I,p);
 
                     std::vector<float> votes(checked_regions.size());
                     votes[A_labels[pos.index()]] += 4.0f;
@@ -1543,6 +1547,7 @@ void RegionTableWidget::do_action(QString action)
 
                     // value voting, total vote: 16
                     {
+                        float pos_value = value_at(pos);
                         std::vector<float> dif_values(16,std::numeric_limits<float>::max());
                         std::vector<size_t> regions(16);
                         tipl::for_each_neighbors(pos,handle->dim,4,[&](const auto& rhs_pos)
@@ -1590,8 +1595,10 @@ void RegionTableWidget::do_action(QString action)
                         prog(prog_count++,need_fill_up.size());
                         tipl::pixel_index<3> index(need_fill_up[i],A.shape());
                         float min_dis = std::numeric_limits<float>::max();
+                        float min_value_dif = std::numeric_limits<float>::max();
                         size_t min_r = 1;
                         tipl::vector<3> pos(index);
+                        float pos_value = value_at(pos);
                         for(size_t r = 1;r < checked_regions.size();++r)
                         {
                             for(auto pos2 : checked_regions[r]->region)
@@ -1604,11 +1611,14 @@ void RegionTableWidget::do_action(QString action)
                                        std::abs(pos2[2]-pos[2]) > min_dis)
                                            continue;
                                 }
+                                float pos2_value = value_at(pos2);
                                 pos2 -= pos;
                                 float L = float(pos2.length());
-                                if(L < min_dis)
+                                float L2 = std::fabs(pos2_value-pos_value);
+                                if(L < min_dis || (L == min_dis && L2 < min_value_dif))
                                 {
                                     min_dis = L;
+                                    min_value_dif = L2;
                                     min_r = r;
                                 }
                             }
