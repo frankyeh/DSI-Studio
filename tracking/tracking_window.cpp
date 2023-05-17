@@ -2299,6 +2299,10 @@ void tracking_window::on_SliceModality_currentIndexChanged(int index)
     ui->min_value_gl->setValue(double(contrast_range.first));
     ui->max_value_gl->setValue(double(contrast_range.second));
 
+    ui->draw_threshold->setValue(0.0);
+    ui->draw_threshold->setMaximum(range.second);
+    ui->draw_threshold->setSingleStep(range.second/50.0);
+
     if(!current_slice->is_diffusion_space)
         slice_position.to(current_slice->invT);
     move_slice_to(slice_position);
