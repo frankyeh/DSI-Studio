@@ -19,36 +19,7 @@
 #include "libs/tracking/tract_model.hpp"
 #include "odf_process.hpp"
 
-void get_bounding_box(QImage& p,int margin = 5)
-{
-    int l =p.width(), r = 0, t = p.height(), b = 0;
-    QRgb first_pixel = p.pixel(0,0);
-    for (int y = 0; y < p.height(); ++y) {
-        QRgb *row = reinterpret_cast<QRgb*>(p.scanLine(y));
-        bool rowFilled = false;
-        for (int x = 0; x < p.width(); ++x)
-        {
-            if (row[x] != first_pixel)
-            {
-                rowFilled = true;
-                r = std::max(r, x);
-                if (l > x) {
-                    l = x;
-                    x = r; // shortcut to only search for new right bound from here
-                }
-            }
-        }
-        if (rowFilled) {
-            t = std::min(t, y);
-            b = y;
-        }
-    }
-    l = std::max(0,l-margin);
-    r = std::min(p.width()-1,r+margin);
-    t = std::max(0,t-margin);
-    b = std::min(p.height()-1,b+margin);
-    p = p.copy(QRect(l,t,r-l,b-t));
-}
+
 extern GLenum BlendFunc1[8],BlendFunc2[8];
 
 GLenum BlendFunc1[8] = {GL_ZERO,GL_ONE,GL_DST_COLOR,
@@ -2066,9 +2037,7 @@ void GLWidget::addSurface(void)
 
 void GLWidget::copyToClipboard(void)
 {
-    QImage I = grab_image();
-    get_bounding_box(I);
-    QApplication::clipboard()->setImage(I);
+    QApplication::clipboard()->setImage(tipl::qt::get_bounding_box(grab_image()));
 }
 
 void GLWidget::copyToClipboardEach(QTableWidget* widget,unsigned int col_size)
@@ -2080,18 +2049,13 @@ void GLWidget::copyToClipboardEach(QTableWidget* widget,unsigned int col_size)
         widget->item(i,0)->setCheckState(Qt::Unchecked);
     }
     std::vector<QImage> images;
-    int height = 0,width = 0;
     for (int i = 0;i < widget->rowCount();++i)
         if(is_checked[uint32_t(i)])
         {
             widget->item(i,0)->setCheckState(Qt::Checked);
-            QImage I = grab_image();
-            get_bounding_box(I);
-            if(I.width() == 0)
-                continue;
-            images.push_back(I);
-            height = std::max<int>(I.height(),height);
-            width = std::max<int>(I.width(),width);
+            images.push_back(tipl::qt::get_bounding_box(grab_image()));
+            if(images.back().width() == 0)
+                images.pop_back();
             widget->item(i,0)->setCheckState(Qt::Unchecked);
         }
     if(images.empty())
@@ -2099,18 +2063,7 @@ void GLWidget::copyToClipboardEach(QTableWidget* widget,unsigned int col_size)
         QMessageBox::critical(this,"ERROR","No visible output captured. Did you check any region or tract?");
         return;
     }
-    width += 5;
-    height += 5;
-    QImage I(images.size() >= col_size ? width*int(col_size): width*int(images.size()),
-             height*int(1+images.size()/col_size),QImage::Format_RGB32);
-    I.fill(images[0].pixel(0,0));
-    QPainter painter(&I);
-    painter.setCompositionMode(QPainter::CompositionMode_Source);
-    for (size_t i = 0,j = 0;i < images.size();++i,++j)
-        painter.drawImage(int(j%col_size)*width+(width-images[i].width())/2,
-                          int(i/col_size)*height+(height-images[i].height())/2,images[i]);
-    QApplication::clipboard()->setImage(I);
-
+    QApplication::clipboard()->setImage(tipl::qt::create_mosaic(images,col_size));
     for (int i = 0;i < widget->rowCount();++i)
         if(is_checked[uint32_t(i)])
             widget->item(i,0)->setCheckState(Qt::Checked);
@@ -2166,10 +2119,10 @@ void GLWidget::get3View(QImage& I,unsigned int type)
     }
     if(type == 1) // horizontal
     {
-        get_bounding_box(image0);
-        get_bounding_box(image00);
-        get_bounding_box(image1);
-        get_bounding_box(image2);
+        image0 = tipl::qt::get_bounding_box(image0);
+        image00 = tipl::qt::get_bounding_box(image00);
+        image1 = tipl::qt::get_bounding_box(image1);
+        image2 = tipl::qt::get_bounding_box(image2);
         int height_shift = (image2.height()-image0.height())/2;
         QImage all(image0.width()+image00.width()+image1.width()+image2.width(),image2.height(),QImage::Format_RGB32);
         all.fill(image0.pixel(0,0));
