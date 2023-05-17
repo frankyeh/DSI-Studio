@@ -1748,7 +1748,7 @@ Tracking</string>
    </property>
    <property name="minimumSize">
     <size>
-     <width>275</width>
+     <width>442</width>
      <height>149</height>
     </size>
    </property>
@@ -2069,6 +2069,23 @@ Tracking</string>
           <bool>true</bool>
          </property>
         </widget>
+       </item>
+       <item>
+        <widget class="QComboBox" name="draw_threshold_direction">
+         <item>
+          <property name="text">
+           <string>value &gt;</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>value &lt;</string>
+          </property>
+         </item>
+        </widget>
+       </item>
+       <item>
+        <widget class="QDoubleSpinBox" name="draw_threshold"/>
        </item>
        <item>
         <spacer name="horizontalSpacer">
