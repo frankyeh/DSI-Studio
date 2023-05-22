@@ -64,7 +64,7 @@ public:
     void show_ruler(QPainter& painter,std::shared_ptr<SliceModel> current_slice,unsigned char cur_dim);
     void show_pos(QPainter& painter,std::shared_ptr<SliceModel> current_slice,const tipl::color_image& slice_image,unsigned char cur_dim);
     void show_fiber(QPainter& painter,std::shared_ptr<SliceModel> current_slice,const tipl::color_image& slice_image,unsigned char cur_dim);
-    void get_view_image(QImage& new_view_image,std::shared_ptr<SliceModel> current_slice,unsigned char cur_dim,float display_ratio,bool simple);
+    QImage get_view_image(std::shared_ptr<SliceModel> current_slice,unsigned char cur_dim,int pos,float display_ratio,bool simple);
     void add_R_label(QPainter& painter,std::shared_ptr<SliceModel> current_slice,unsigned char cur_dim);
     void manage_slice_orientation(QImage& slice,QImage& new_slice,unsigned char cur_dim);
     bool command(QString cmd,QString param = "",QString param2 = "");

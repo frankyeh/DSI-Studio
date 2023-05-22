@@ -30,9 +30,9 @@ public:
     void set_contrast_range(float min_v,float max_v);
     void set_contrast_color(unsigned int min_c,unsigned int max_c);
     virtual void get_slice(tipl::color_image& image,
-                           unsigned char,
+                           unsigned char cur_dim,int pos,
                            const std::vector<std::shared_ptr<SliceModel> >& overlay_slices) const;
-    void get_high_reso_slice(tipl::color_image& image,unsigned char) const;
+    void get_high_reso_slice(tipl::color_image& image,unsigned char cur_dim,int pos) const;
     tipl::const_pointer_image<3> get_source(void) const;
     std::string get_name(void) const;
 public:
@@ -134,7 +134,7 @@ public:
     tipl::color_image picture;
     void update_image(void);
     virtual void get_slice(tipl::color_image& image,
-                           unsigned char,
+                           unsigned char,int,
                            const std::vector<std::shared_ptr<SliceModel> >& overlay_slices) const;
 public:
     bool load_slices(const std::vector<std::string>& files,bool is_mni = false);

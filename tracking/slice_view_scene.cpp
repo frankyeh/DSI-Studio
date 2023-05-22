@@ -120,6 +120,8 @@ void slice_view_scene::show_fiber(QPainter& painter,std::shared_ptr<SliceModel> 
     unsigned char dir_x[3] = {1,0,0};
     unsigned char dir_y[3] = {2,2,1};
 
+    if(cur_tracking_window["roi_fiber_antialiasing"].toInt())
+        painter.setRenderHint(QPainter::Antialiasing, true);
     int fiber_color = cur_tracking_window["roi_fiber_color"].toInt();
     if(fiber_color)
     {
@@ -186,12 +188,13 @@ void slice_view_scene::manage_slice_orientation(QImage& slice,QImage& new_slice,
 {
     new_slice = slice.mirrored(cur_tracking_window.slice_view_flip_x(cur_dim),cur_tracking_window.slice_view_flip_y(cur_dim));
 }
-void slice_view_scene::get_view_image(QImage& new_view_image,std::shared_ptr<SliceModel> current_slice,unsigned char cur_dim,float display_ratio,bool simple)
+QImage slice_view_scene::get_view_image(std::shared_ptr<SliceModel> current_slice,unsigned char cur_dim,int pos,float display_ratio,bool simple)
 {
+    QImage new_view_image;
     tipl::color_image slice_image;
-    current_slice->get_slice(slice_image,cur_dim,cur_tracking_window.overlay_slices);
+    current_slice->get_slice(slice_image,cur_dim,pos,cur_tracking_window.overlay_slices);
     if(slice_image.empty())
-        return;
+        return new_view_image;
 
     QImage scaled_image;
     {
@@ -199,7 +202,7 @@ void slice_view_scene::get_view_image(QImage& new_view_image,std::shared_ptr<Sli
         tipl::color_image high_reso_slice_image;
         if(!simple && current_slice->handle && current_slice->handle->has_high_reso)
         {
-            current_slice->get_high_reso_slice(high_reso_slice_image,cur_dim);
+            current_slice->get_high_reso_slice(high_reso_slice_image,cur_dim,pos);
             slice_qimage << high_reso_slice_image;
 
         }
@@ -213,7 +216,7 @@ void slice_view_scene::get_view_image(QImage& new_view_image,std::shared_ptr<Sli
     if(!simple)
     {
         QImage region_image;
-        cur_tracking_window.regionWidget->draw_region(current_slice,cur_dim,slice_image.shape(),display_ratio,region_image);
+        cur_tracking_window.regionWidget->draw_region(current_slice->T,cur_dim,pos,slice_image.shape(),display_ratio,region_image);
         if(!region_image.isNull())
         {
             QPainter painter(&scaled_image);
@@ -222,9 +225,7 @@ void slice_view_scene::get_view_image(QImage& new_view_image,std::shared_ptr<Sli
         }
 
         if(cur_tracking_window["roi_track"].toInt())
-            cur_tracking_window.tractWidget->draw_tracts(cur_dim,
-                                                     current_slice->slice_pos[cur_dim],
-                                                     scaled_image,display_ratio);
+            cur_tracking_window.tractWidget->draw_tracts(cur_dim,pos,scaled_image,display_ratio);
     }
 
 
@@ -255,6 +256,7 @@ void slice_view_scene::get_view_image(QImage& new_view_image,std::shared_ptr<Sli
         if(cur_tracking_window["roi_label"].toInt())
             add_R_label(painter2,current_slice,cur_dim);
     }
+    return new_view_image;
 }
 
 void slice_view_scene::add_R_label(QPainter& painter,std::shared_ptr<SliceModel> current_slice,unsigned char cur_dim)
@@ -472,16 +474,15 @@ void slice_view_scene::paint_image(QImage& out,bool simple)
     auto current_slice = cur_tracking_window.current_slice;
     unsigned char cur_dim = cur_tracking_window.cur_dim;
     float display_ratio = cur_tracking_window.get_scene_zoom(current_slice);
-
+    simple |= cur_tracking_window.slice_need_update;
     if(cur_tracking_window["roi_layout"].toInt() == 0)// single slice
-        get_view_image(I,current_slice,cur_dim,display_ratio,simple | cur_tracking_window.slice_need_update);
+        I = get_view_image(current_slice,cur_dim,current_slice->slice_pos[cur_dim],display_ratio,simple);
     else
     if(cur_tracking_window["roi_layout"].toInt() == 1)// 3 slices
     {
-        QImage view1,view2,view3;
-        get_view_image(view1,current_slice,0,display_ratio,simple | cur_tracking_window.slice_need_update);
-        get_view_image(view2,current_slice,1,display_ratio,simple | cur_tracking_window.slice_need_update);
-        get_view_image(view3,current_slice,2,display_ratio,simple | cur_tracking_window.slice_need_update);
+        auto view1 = get_view_image(current_slice,0,current_slice->slice_pos[0],display_ratio,simple);
+        auto view2 = get_view_image(current_slice,1,current_slice->slice_pos[1],display_ratio,simple);
+        auto view3 = get_view_image(current_slice,2,current_slice->slice_pos[2],display_ratio,simple);
         I = QImage(QSize(view1.width()+view2.width(),view1.height()+view3.height()),QImage::Format_RGB32);
         view1_h = view1.height();
         view1_w = view1.width();
@@ -533,24 +534,17 @@ void slice_view_scene::paint_image(QImage& out,bool simple)
         QPainter painter(&I);
         tipl::shape<2> mosaic_tile_geo;
         {
-            int old_z = current_slice->slice_pos[cur_dim];
             unsigned int skip_slices = skip_row*mosaic_column_count;
             for(unsigned int z = 0,slice_pos = skip-1;slice_pos < dim[cur_dim]-skip_slices;++z,slice_pos += skip)
             {
                 if(z < skip_slices)
                     continue;
-                QImage view;
-                current_slice->slice_pos[cur_dim] = int(slice_pos);
-                get_view_image(view,current_slice,cur_dim,scale,simple | cur_tracking_window.slice_need_update);
+                auto view = get_view_image(current_slice,cur_dim,slice_pos,scale,simple);
                 if(z == skip_slices)
                     painter.fillRect(0,0,I.width(),I.height(),view.pixel(0,0));
-                int x = int(dim[dim_order[uint8_t(cur_dim)][0]]*((z-skip_slices)%mosaic_column_count));
-                int y = int(dim[dim_order[uint8_t(cur_dim)][1]]*((z-skip_slices)/mosaic_column_count));
-                x *= scale;
-                y *= scale;
-                painter.drawImage(QPoint(x,y), view);
+                painter.drawImage(QPoint(scale*int(dim[dim_order[uint8_t(cur_dim)][0]]*((z-skip_slices)%mosaic_column_count)),
+                                         scale*int(dim[dim_order[uint8_t(cur_dim)][1]]*((z-skip_slices)/mosaic_column_count))), view);
             }
-            current_slice->slice_pos[cur_dim] = old_z;
         }
 
         if(cur_tracking_window["roi_label"].toInt()) // not sagittal view

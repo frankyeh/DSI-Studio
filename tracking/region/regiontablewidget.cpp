@@ -316,7 +316,8 @@ void RegionTableWidget::move_slice_to_current_region(void)
 }
 
 
-void RegionTableWidget::draw_region(std::shared_ptr<SliceModel> current_slice,unsigned char dim,const tipl::shape<2>& slice_image_shape,float display_ratio,QImage& scaled_image)
+void RegionTableWidget::draw_region(const tipl::matrix<4,4>& current_slice_T,unsigned char dim,int slice_pos,
+                                    const tipl::shape<2>& slice_image_shape,float display_ratio,QImage& scaled_image)
 {
 
     // during region removal, there will be a call with invalid currentRow
@@ -326,7 +327,6 @@ void RegionTableWidget::draw_region(std::shared_ptr<SliceModel> current_slice,un
 
     std::vector<tipl::image<2,uint8_t> > region_masks(checked_regions.size());
     {
-        int slice_pos = current_slice->slice_pos[dim];
         int w = slice_image_shape.width();
         int h = slice_image_shape.height();
         std::vector<uint32_t> yw((size_t(h)));
@@ -335,9 +335,9 @@ void RegionTableWidget::draw_region(std::shared_ptr<SliceModel> current_slice,un
         tipl::par_for(region_masks.size(),[&](uint32_t roi_index)
         {
             tipl::image<2,uint8_t> region_mask(slice_image_shape);
-            if(current_slice->T != checked_regions[roi_index]->to_diffusion_space)
+            if(current_slice_T != checked_regions[roi_index]->to_diffusion_space)
             {
-                auto iT = tipl::from_space(checked_regions[roi_index]->to_diffusion_space).to(current_slice->T);
+                auto iT = tipl::from_space(checked_regions[roi_index]->to_diffusion_space).to(current_slice_T);
                 tipl::transformation_matrix<float> m = iT;
                 tipl::vector<3,uint32_t> range;
                 for(int d = 0;d < 3;++d)
@@ -390,7 +390,6 @@ void RegionTableWidget::draw_region(std::shared_ptr<SliceModel> current_slice,un
     for(auto& region : checked_regions)
         colors.push_back(region->region_render.color);
     scaled_image = tipl::qt::draw_regions(region_masks,colors,
-                    cur_tracking_window["roi_fill_region"].toInt(),
                     cur_tracking_window["roi_draw_edge"].toInt(),
                     cur_tracking_window["roi_edge_width"].toInt(),
                     cur_roi_index,display_ratio);

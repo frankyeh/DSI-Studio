@@ -82,21 +82,21 @@ void SliceModel::set_contrast_color(unsigned int min_c,unsigned int max_c)
     handle->view_item[view_id].v2c.two_color(min_c,max_c);
 }
 // ---------------------------------------------------------------------------
-void SliceModel::get_slice(tipl::color_image& show_image,unsigned char cur_dim,
+void SliceModel::get_slice(tipl::color_image& show_image,unsigned char cur_dim,int pos,
                            const std::vector<std::shared_ptr<SliceModel> >& overlay_slices) const
 {
-    handle->get_slice(view_id,cur_dim, slice_pos[cur_dim],show_image);
+    handle->get_slice(view_id,cur_dim, pos,show_image);
     for(auto overlay_slice : overlay_slices)
         if(this != overlay_slice.get())
             apply_overlay(show_image,cur_dim,overlay_slice);
 }
 // ---------------------------------------------------------------------------
-void SliceModel::get_high_reso_slice(tipl::color_image& show_image,unsigned char cur_dim) const
+void SliceModel::get_high_reso_slice(tipl::color_image& show_image,unsigned char cur_dim,int pos) const
 {
     if(handle && handle->has_high_reso)
     {
         handle->high_reso->view_item[view_id].v2c = handle->view_item[view_id].v2c;
-        handle->high_reso->get_slice(view_id,cur_dim, slice_pos[cur_dim]*int(handle->high_reso->dim[cur_dim])/int(handle->dim[cur_dim]),show_image);
+        handle->high_reso->get_slice(view_id,cur_dim, pos*int(handle->high_reso->dim[cur_dim])/int(handle->dim[cur_dim]),show_image);
     }
 }
 // ---------------------------------------------------------------------------
@@ -117,13 +117,13 @@ CustomSliceModel::CustomSliceModel(fib_data* new_handle):
 }
 // ---------------------------------------------------------------------------
 void CustomSliceModel::get_slice(tipl::color_image& image,
-                           unsigned char cur_dim,
+                           unsigned char cur_dim,int pos,
                            const std::vector<std::shared_ptr<SliceModel> >& overlay_slices) const
 {
     if(!picture.empty() && (dim[cur_dim] != picture.width() && dim[cur_dim] != picture.height()))
         image = picture;
     else
-        return SliceModel::get_slice(image,cur_dim,overlay_slices);
+        return SliceModel::get_slice(image,cur_dim,pos,overlay_slices);
 }
 // ---------------------------------------------------------------------------
 void initial_LPS_nifti_srow(tipl::matrix<4,4>& T,const tipl::shape<3>& geo,const tipl::vector<3>& vs);

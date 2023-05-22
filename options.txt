@@ -1,7 +1,6 @@
 ROI/Orientation Convention/orientation_convention/Radiology:Neurology/0/Radiology views from foot, whereas Neurology views from top
 ROI/Zoom/roi_zoom/float:0.2:40:0.5:1/5.0/Zoom in or zoom out
 ROI/Draw Edge/roi_draw_edge/Off:On/0/Draw edge of the region
-ROI/Fill Region/roi_fill_region/Off:On/1/Fill region
 ROI/Edge Width/roi_edge_width/int:1:5:1/1/Line width for edge
 ROI/Show Tracts/roi_track/Off:On/1/Show tracts
 ROI/Visible Tracts Count/roi_track_count/int:1000:500000:1000/5000/Visible track count
@@ -9,6 +8,7 @@ ROI/Fiber Direction/roi_fiber/Off:On:1st:2nd/1
 ROI/Fiber Color/roi_fiber_color/RGB:red:green:blue/0
 ROI/Fiber Width/roi_fiber_width/float:0.1:1:0.1:2/0.2
 ROI/Fiber Length/roi_fiber_length/float:0.1:4:0.1:2/2.0
+ROI/Fiber Antialiasing/roi_fiber_antialiasing/Off:On/0/Antialiasing
 ROI/"R" label/roi_label/Off:On/1
 ROI/Position Line/roi_position/Off:On/1
 ROI/Ruler/roi_ruler/Off:On/1
