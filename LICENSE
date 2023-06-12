@@ -1,4 +1,6 @@
-Copyright 2022 Fang-Cheng Yeh
+Copyright 2023 Fang-Cheng Yeh
 
-Unless required by applicable law or agreed to in writing, DSI Studio is distributed under Attribution-NonCommercial-ShareAlike 4.0 International License (CC BY-NC-SA 4.0) https://creativecommons.org/licenses/by-nc-sa/4.0/legalcode
+Unless required by applicable law or agreed to in writing, DSI Studio is distributed under Attribution-NonCommercial-ShareAlike 4.0 International License (CC BY-NC-SA 4.0) https://creativecommons.org/licenses/by-nc-sa/4.0/legalcode Commercial use requires a paid software license.
+
+This application utilizes the Qt framework distributed under the GNU Lesser General Public License (LGPL). The source code of the Qt libraries used in this application is open and freely available at https://www.qt.io/
 
