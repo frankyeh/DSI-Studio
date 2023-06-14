@@ -70,6 +70,25 @@
               </property>
              </widget>
             </item>
+            <item>
+             <widget class="QComboBox" name="inc_dec_filter">
+              <item>
+               <property name="text">
+                <string>Increase and decrease</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>Increase only (scan2 &gt; scan1)</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>decrease only (scan1 &gt; scan2)</string>
+               </property>
+              </item>
+             </widget>
+            </item>
            </layout>
           </widget>
          </item>
