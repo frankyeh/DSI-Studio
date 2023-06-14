@@ -1221,7 +1221,10 @@ void view_image::run_action2()
     else
     {
         bool ok;
-        value = QInputDialog::getText(this,"DSI Studio",action->toolTip(),QLineEdit::Normal,action->statusTip(),&ok);
+        auto default_value = action->statusTip();
+        if(action->text() == "Regrid...")
+            default_value = QString("%1 %2 %3").arg(vs[0]).arg(vs[1]).arg(vs[2]);
+        value = QInputDialog::getText(this,"DSI Studio",action->toolTip(),QLineEdit::Normal,default_value,&ok);
         if(!ok || value.isEmpty())
             return;
     }
@@ -1229,7 +1232,7 @@ void view_image::run_action2()
         return;
     if(value.contains(".") && pixel_type != float32 &&
             action->statusTip() != "file" &&
-            action->text() != "Regrid")
+            action->text() != "Regrid...")
     {
         auto result = QMessageBox::information(this,"DSI Studio",
                 "Current integer pixels cannot achieve floating point precision. Switch to float32 type?",
