@@ -855,7 +855,7 @@ bool view_image::open(QStringList file_names_)
             if(QString(file_name).endsWith("2dseq"))
             {
                 tipl::io::bruker_2dseq seq;
-                if(seq.load_from_file(file_name.toStdString().c_str()))
+                if(!seq.load_from_file(file_name.toStdString().c_str()))
                 {
                     error_msg = "cannot parse file";
                     return false;
