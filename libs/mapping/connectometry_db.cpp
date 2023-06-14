@@ -37,6 +37,7 @@ bool connectometry_db::read_db(fib_data* handle_)
         if(!index)
         {
             subject_qa_length = row*col;
+            // check if the db is longitudinal, for older db, the only way to check is by the negative values.
             is_longitudinal = false;
             for(size_t i = 0;i < subject_qa_length;++i)
                 if(buf[i] < 0.0f)
@@ -45,6 +46,7 @@ bool connectometry_db::read_db(fib_data* handle_)
                     break;
                 }
         }
+
         subject_qa.push_back(buf);
     }
     num_subjects = uint32_t(subject_qa.size());
@@ -70,6 +72,10 @@ bool connectometry_db::read_db(fib_data* handle_)
     // update index name
     if(index_name == "sdf")
         index_name = "qa";
+
+    // new db can be all positive, the checking the report text can confirm longitudinal setting
+    if(report.find("longitudinal scans were calculated") != std::string::npos)
+        is_longitudinal = true;
 
     // make sure qa is normalized
     if(!is_longitudinal && (index_name == "qa" || index_name.empty()))
@@ -591,9 +597,13 @@ bool connectometry_db::save_db(const char* output_name)
         name_string += "\n";
     }
     matfile.write("subject_names",name_string);
+    matfile.write("subject_report",subject_report);
     matfile.write("index_name",index_name);
     matfile.write("R2",R2);
 
+    if(is_longitudinal)
+        matfile.write("report",report);
+    else
     {
         std::ostringstream out;
         out << "A total of " << num_subjects << " diffusion MRI scans were included in the connectometry database." << subject_report.c_str();
@@ -601,9 +611,7 @@ bool connectometry_db::save_db(const char* output_name)
             out << " The quantitative anisotropy was extracted as the local connectome fingerprint (LCF, Yeh et al. PLoS Comput Biol 12(11): e1005203) and used in the connectometry analysis.";
         else
             out << " The " << index_name << " values were used in the connectometry analysis.";
-        std::string report = out.str();
-        matfile.write("subject_report",subject_report);
-        matfile.write("report",report);
+        matfile.write("report",out.str());
     }
     if(!demo.empty())
         matfile.write("demo",demo);
@@ -822,7 +830,7 @@ void connectometry_db::move_down(int id)
     std::swap(subject_qa[uint32_t(id)],subject_qa[uint32_t(id+1)]);
 }
 
-void connectometry_db::calculate_change(unsigned char dif_type)
+void connectometry_db::calculate_change(unsigned char dif_type,unsigned char filter_type)
 {
     std::ostringstream out;
 
@@ -866,10 +874,28 @@ void connectometry_db::calculate_change(unsigned char dif_type)
             }
             break;
         }
+
+        switch(filter_type)
+        {
+        case 1: // increase only
+            if(!index)
+                out << " Only increased values were used in the analysis.";
+            for(auto& v : change)
+                if(v <= 0.0f)
+                    v = 0.0;
+            break;
+        case 2: // decrease only
+            if(!index)
+                out << " Only decreased values were used in the analysis.";
+            for(auto& v : change)
+                if(v >= 0.0f)
+                    v = 0.0;
+            break;
+        }
         new_subject_qa_buf.push_back(change);
         new_subject_qa.push_back(&(new_subject_qa_buf.back()[0]));
     }
-    out << " (n=" << match.size() << ").";
+    out << " The total number of longitudinal subjects was " << match.size() << ".";
     R2.swap(new_R2);
     subject_names.swap(new_subject_names);
     subject_qa_buf.swap(new_subject_qa_buf);
@@ -878,6 +904,7 @@ void connectometry_db::calculate_change(unsigned char dif_type)
     match.clear();
     report += out.str();
     modified = true;
+    is_longitudinal = true;
 
 }
 
@@ -1099,30 +1126,35 @@ bool stat_model::select_feature(connectometry_db& db,std::string foi_text)
         {
             std::set<double> unique_values;
             for(size_t j = 0,pos = 0;pos < X.size();++j,pos += x_col_count)
-                if(!remove_list[j])
-                {
+                if(!remove_list[j] && X[pos+i] != NAN)
                     unique_values.insert(X[pos+i]);
-                    if(unique_values.size() > 1)
-                    {
-                        sel[i] = 1;
-                        variables.push_back(db.feature_titles[i-1]);
-                        out << variables.back();
-                        has_variable = true;
 
-                        int max_group(0);
-                        if(unique_values.size() == 2 && std::floor(*unique_values.begin()) == *unique_values.begin())
+            // if unique_values.size() = 1, then there is no variation to regress
+
+            if(unique_values.size() > 1)
+            {
+                sel[i] = 1;
+                variables.push_back(db.feature_titles[i-1]);
+                out << variables.back();
+                has_variable = true;
+
+                bool is_categorical = (unique_values.size() <= 2);
+                if(is_categorical)
+                {
+                    for(auto v : unique_values)
+                        if(std::floor(v) != v)
                         {
-                            max_group = int(*(++unique_values.begin()));
-                            out << "(categorical)";
-                            variables_is_categorical.push_back(true);
+                            is_categorical = false;
+                            break;
                         }
-                        else
-                            variables_is_categorical.push_back(false);
-                        variables_max.push_back(max_group);
-                        out << " ";
-                        break;
-                    }
                 }
+
+                variables_max.push_back(int(*(++unique_values.begin())));
+                variables_is_categorical.push_back(is_categorical);
+                if(is_categorical)
+                    out << "(categorical)";
+                out << " ";
+            }
         }
     tipl::out() << "variables to be considered: "<< out.str() << std::endl;
 

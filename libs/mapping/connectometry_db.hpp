@@ -37,7 +37,7 @@ public:
     std::string index_name = "qa";
 public://longitudinal studies
     std::vector<std::pair<int,int> > match;
-    void calculate_change(unsigned char dif_type);
+    void calculate_change(unsigned char dif_type,unsigned char filter_type);
 public:
     connectometry_db(){}
     bool has_db(void)const{return num_subjects > 0;}
