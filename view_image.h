@@ -143,6 +143,7 @@ private: // visualization
     int slice_pos[3];
     QGraphicsScene source;
     QImage source_image;
+public:
     std::string error_msg;
 };
 
