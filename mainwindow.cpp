@@ -644,6 +644,7 @@ void MainWindow::on_view_image_clicked()
     dialog->setAttribute(Qt::WA_DeleteOnClose);
     if(!dialog->open(filename))
     {
+        QMessageBox::critical(this,"ERROR",dialog->error_msg.c_str());
         delete dialog;
         return;
     }
