@@ -1082,12 +1082,20 @@ bool stat_model::select_cohort(connectometry_db& db,
                         }
                     tipl::out() << "subjects excluded: " << out1.str() << std::endl;
 
-                    std::ostringstream out;
-                    if(text[j] == '/')
-                        out << " Subjects with " << fov_name << "≠" << value_text << " were selected.";
-                    else
-                        out << " Subjects with " << text << " were selected.";
-                    cohort_report += out.str();
+                    {
+                        std::ostringstream out;
+                        std::string op_text;
+                        if(text[j] == '=')
+                            op_text = " is ";
+                        if(text[j] == '<')
+                            op_text = " less than ";
+                        if(text[j] == '>')
+                            op_text = " greater than ";
+                        if(text[j] == '/')
+                            op_text = " is not ";
+                        out << " Subjects with " << text.substr(0,j) << op_text << text.substr(j+1,std::string::npos) << " were selected.";
+                        cohort_report += out.str();
+                    }
                     parsed = true;
                     break;
                 }
