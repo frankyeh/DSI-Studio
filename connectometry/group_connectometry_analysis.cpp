@@ -379,47 +379,46 @@ void group_connectometry_analysis::run_permutation(unsigned int thread_count,uns
     clear();
 
     {
-
         index_name = QString(handle->db.index_name.c_str()).toUpper().toStdString();
-
-
-        hypothesis_inc = index_name;
-        hypothesis_dec = index_name;
-        if(model->study_feature) // not studying longitudinal change
+        // if study intercept (changes)
+        if(model->study_feature == 0)
         {
+            // if db has filtered longitudinal changes to study decreased values
+            if(handle->db.longitudinal_filter_type == 2)
+            {
+                hypothesis_inc = std::string("decreased ") + index_name;
+                hypothesis_dec = std::string("increased ") + index_name;
+            }
+            else
+            // default
+            {
+                hypothesis_inc = std::string("increased ") + index_name;
+                hypothesis_dec = std::string("decreased ") + index_name;
+            }
+        }
+        else
+        {
+            hypothesis_inc = index_name;
+            hypothesis_dec = index_name;
             if(model->variables_is_categorical[model->study_feature])
             {
-                hypothesis_inc += std::string(" when ")+foi_str+" is "+std::to_string(model->variables_max[model->study_feature]);
-                hypothesis_dec += std::string(" when ")+foi_str+" is "+std::to_string(model->variables_min[model->study_feature]);
+                hypothesis_inc += std::string(" in ")+foi_str+" "+std::to_string(model->variables_max[model->study_feature]);
+                hypothesis_dec += std::string(" in ")+foi_str+" "+std::to_string(model->variables_min[model->study_feature]);
             }
             else
             {
                 hypothesis_inc += std::string(" associated with higher ")+ foi_str;
                 hypothesis_dec += std::string(" associated with lower ")+ foi_str;
             }
-        }
 
-        // db has filtered longitudinal changes
-        if(handle->db.longitudinal_filter_type)
-        {
-            // db filter to only positive values
-            if(handle->db.longitudinal_filter_type == 1)
-            {
-                hypothesis_inc = std::string("increased ") + hypothesis_inc;
-                hypothesis_dec = std::string("increased ") + hypothesis_dec;
-            }
-            else
-            // db filter to only negative values (saved as positive values)
-            {
-                hypothesis_inc = std::string("decreased ") + hypothesis_inc;
-                hypothesis_dec = std::string("decreased ") + hypothesis_dec;
-            }
-        }
-        else
-        // default
-        {
-            hypothesis_inc = std::string("higher ") + hypothesis_inc;
-            hypothesis_dec = std::string("higher ") + hypothesis_dec;
+            std::string prefix = "higher ";
+            if(handle->db.longitudinal_filter_type == 1) // db filter to only positive values
+                prefix = "increased ";
+            if(handle->db.longitudinal_filter_type == 2) // db filter to only negative values
+                prefix = "decreased ";
+
+            hypothesis_inc = prefix + hypothesis_inc;
+            hypothesis_dec = prefix + hypothesis_dec;
         }
     }
     // output report
