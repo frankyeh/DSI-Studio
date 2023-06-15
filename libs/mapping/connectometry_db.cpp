@@ -75,7 +75,13 @@ bool connectometry_db::read_db(fib_data* handle_)
 
     // new db can be all positive, the checking the report text can confirm longitudinal setting
     if(report.find("longitudinal scans were calculated") != std::string::npos)
+    {
         is_longitudinal = true;
+        if(report.find("Only increased longitudinal changes") != std::string::npos)
+            longitudinal_filter_type = 1;
+        if(report.find("Only decreased longitudinal changes") != std::string::npos)
+            longitudinal_filter_type = 2;
+    }
 
     // make sure qa is normalized
     if(!is_longitudinal && (index_name == "qa" || index_name.empty()))
@@ -784,15 +790,6 @@ bool connectometry_db::is_db_compatible(const connectometry_db& rhs)
         }
     return true;
 }
-void connectometry_db::read_subject_qa(std::vector<std::vector<float> >&data) const
-{
-    data.resize(num_subjects);
-    for(unsigned int i = 0;i < num_subjects;++i)
-    {
-        std::vector<float> buf(subject_qa[i],subject_qa[i]+subject_qa_length);
-        data[i].swap(buf);
-    }
-}
 
 bool connectometry_db::add_db(const connectometry_db& rhs)
 {
@@ -879,17 +876,20 @@ void connectometry_db::calculate_change(unsigned char dif_type,unsigned char fil
         {
         case 1: // increase only
             if(!index)
-                out << " Only increased values were used in the analysis.";
+                out << " Only increased longitudinal changes were used in the analysis.";
             for(auto& v : change)
                 if(v <= 0.0f)
                     v = 0.0;
             break;
         case 2: // decrease only
             if(!index)
-                out << " Only decreased values were used in the analysis.";
+                out << " Only decreased longitudinal changes were used in the analysis.";
             for(auto& v : change)
+            {
                 if(v >= 0.0f)
                     v = 0.0;
+                v = -v;
+            }
             break;
         }
         new_subject_qa_buf.push_back(change);
@@ -905,6 +905,7 @@ void connectometry_db::calculate_change(unsigned char dif_type,unsigned char fil
     report += out.str();
     modified = true;
     is_longitudinal = true;
+    longitudinal_filter_type = filter_type;
 
 }
 
@@ -1117,6 +1118,8 @@ bool stat_model::select_feature(connectometry_db& db,std::string foi_text)
     variables_is_categorical.push_back(0);
     variables_max.clear();
     variables_max.push_back(0);
+    variables_min.clear();
+    variables_min.push_back(0);
 
 
     bool has_variable = false;
@@ -1149,6 +1152,7 @@ bool stat_model::select_feature(connectometry_db& db,std::string foi_text)
                         }
                 }
 
+                variables_min.push_back(int(*(unique_values.begin())));
                 variables_max.push_back(int(*(++unique_values.begin())));
                 variables_is_categorical.push_back(is_categorical);
                 if(is_categorical)

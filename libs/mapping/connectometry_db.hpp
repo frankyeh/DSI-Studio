@@ -29,6 +29,7 @@ public:// subject specific data
     std::vector<float> R2;
     std::vector<const float*> subject_qa;
     bool is_longitudinal = false;
+    unsigned char longitudinal_filter_type = 0; // 0: no filter 1: only increased value 2:only decreased values
 public:
     std::list<std::vector<float> > subject_qa_buf;// merged from other db
     unsigned int subject_qa_length = 0;
@@ -59,7 +60,6 @@ public:
     void get_subject_fa(unsigned int subject_index,std::vector<std::vector<float> >& fa_data) const;
     bool get_qa_profile(const char* file_name,std::vector<std::vector<float> >& data);
     bool is_db_compatible(const connectometry_db& rhs);
-    void read_subject_qa(std::vector<std::vector<float> >&data) const;
     bool add_db(const connectometry_db& rhs);
     void move_up(int id);
     void move_down(int id);
@@ -80,7 +80,7 @@ public: // multiple regression
 public:
     std::vector<std::string> variables;
     std::vector<bool> variables_is_categorical;
-    std::vector<int> variables_max;
+    std::vector<int> variables_min,variables_max;
 public:
     tipl::multiple_regression<double> mr;
     // for nonlinear correlation

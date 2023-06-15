@@ -334,13 +334,7 @@ void group_connectometry_analysis::calculate_adjusted_qa(stat_model& info)
         {
             std::vector<float> population(info.selected_subject.size());
             for(unsigned int index = 0;index < info.selected_subject.size();++index)
-                // if any missing value, zero the values
-                if((population[index] = handle->db.subject_qa[info.selected_subject[index]][s_index]) == 0.0f)
-                {
-                    population_value_adjusted[s_index].resize(info.selected_subject.size());
-                    population.clear();
-                    break;
-                }
+                population[index] = handle->db.subject_qa[info.selected_subject[index]][s_index];
 
             if(!population.empty())
             {
@@ -385,22 +379,47 @@ void group_connectometry_analysis::run_permutation(unsigned int thread_count,uns
     clear();
 
     {
+
         index_name = QString(handle->db.index_name.c_str()).toUpper().toStdString();
 
-        hypothesis_inc = std::string("increased ")+index_name;
-        hypothesis_dec = std::string("decreased ")+index_name;
-        if(model->study_feature) // not longitudinal change
+
+        hypothesis_inc = index_name;
+        hypothesis_dec = index_name;
+        if(model->study_feature) // not studying longitudinal change
         {
             if(model->variables_is_categorical[model->study_feature])
             {
-                hypothesis_inc += std::string(" in ")+foi_str+"="+std::to_string(model->variables_max[model->study_feature]);
-                hypothesis_dec += std::string(" in ")+foi_str+"="+std::to_string(model->variables_max[model->study_feature]);
+                hypothesis_inc += std::string(" when ")+foi_str+" is "+std::to_string(model->variables_max[model->study_feature]);
+                hypothesis_dec += std::string(" when ")+foi_str+" is "+std::to_string(model->variables_min[model->study_feature]);
             }
             else
             {
-                hypothesis_inc += std::string(" associated with increased ")+foi_str;
-                hypothesis_dec += std::string(" associated with increased ")+foi_str;
+                hypothesis_inc += std::string(" associated with higher ")+ foi_str;
+                hypothesis_dec += std::string(" associated with lower ")+ foi_str;
             }
+        }
+
+        // db has filtered longitudinal changes
+        if(handle->db.longitudinal_filter_type)
+        {
+            // db filter to only positive values
+            if(handle->db.longitudinal_filter_type == 1)
+            {
+                hypothesis_inc = std::string("increased ") + hypothesis_inc;
+                hypothesis_dec = std::string("increased ") + hypothesis_dec;
+            }
+            else
+            // db filter to only negative values (saved as positive values)
+            {
+                hypothesis_inc = std::string("decreased ") + hypothesis_inc;
+                hypothesis_dec = std::string("decreased ") + hypothesis_dec;
+            }
+        }
+        else
+        // default
+        {
+            hypothesis_inc = std::string("higher ") + hypothesis_inc;
+            hypothesis_dec = std::string("higher ") + hypothesis_dec;
         }
     }
     // output report

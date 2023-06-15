@@ -143,10 +143,18 @@ void db_window::on_subject_list_itemSelectionChanged()
     vbc->handle->db.get_subject_slice(ui->subject_list->currentRow(),
                                    ui->view_x->isChecked() ? 0:(ui->view_y->isChecked() ? 1:2),
                                    ui->slice_pos->value(),slice);
-    tipl::normalize(slice,255.0f);
-    tipl::color_image color_slice(slice.shape());
-    std::copy(slice.begin(),slice.end(),color_slice.begin());
 
+    float m = tipl::max_abs_value(slice);
+    if(m != 0.0f)
+        m = 255.99f/m;
+    tipl::color_image color_slice(slice.shape());
+    for(size_t i = 0;i < color_slice.size();++i)
+    {
+        if(slice[i] < 0)
+            color_slice[i].r = uint8_t(-slice[i]*m);
+        else
+            color_slice[i] = uint8_t(slice[i]*m);
+    }
     vbc_slice_image << color_slice;
     vbc_slice_image = vbc_slice_image.scaled(color_slice.width()*ui->zoom->value(),color_slice.height()*ui->zoom->value());
     if(!ui->view_z->isChecked())
@@ -227,10 +235,20 @@ void db_window::on_actionCalculate_change_triggered()
 
 void db_window::on_actionSave_DB_as_triggered()
 {
+    QString default_ext = ".mod.db.fib.gz";
+    if(vbc->handle->db.is_longitudinal)
+    {
+        default_ext = ".dif.db.fib.gz";
+        if(vbc->handle->db.longitudinal_filter_type == 1)
+            default_ext = ".pos_dif.db.fib.gz";
+        if(vbc->handle->db.longitudinal_filter_type == 2)
+            default_ext = ".neg_dif.db.fib.gz";
+
+    }
     QString filename = QFileDialog::getSaveFileName(
                            this,
                            "Save Database",
-                           windowTitle()+".modified.db.fib.gz",
+                           windowTitle()+default_ext,
                            "Database files (*db?fib.gz *fib.gz);;All files (*)");
     if (filename.isEmpty())
         return;
