@@ -161,6 +161,8 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
             {
                 if(std::filesystem::exists(handle->t1w_template_file_name.c_str()))
                     addSlices(QStringList() << QString(handle->t1w_template_file_name.c_str()),"t1w",true);
+                if(std::filesystem::exists(handle->t2w_template_file_name.c_str()))
+                    addSlices(QStringList() << QString(handle->t1w_template_file_name.c_str()),"t2w",true);
                 if(std::filesystem::exists(handle->wm_template_file_name.c_str()))
                     addSlices(QStringList() << QString(handle->wm_template_file_name.c_str()),"wm",true);
             }
