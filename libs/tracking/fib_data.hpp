@@ -284,7 +284,7 @@ public:
     tipl::transformation_matrix<float> manual_template_T;
 
 public:
-    std::string t1w_template_file_name,wm_template_file_name,mask_template_file_name;
+    std::string t1w_template_file_name,t2w_template_file_name,wm_template_file_name,mask_template_file_name;
 public:
     std::shared_ptr<TractModel> track_atlas;
     std::vector<float> tract_atlas_min_length,tract_atlas_max_length;
