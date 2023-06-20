@@ -1215,6 +1215,7 @@ void fib_data::set_template_id(size_t new_id)
         }
         // populate other modality name
         t1w_template_file_name = QString(fa_template_list[template_id].c_str()).replace(".QA.nii.gz",".T1W.nii.gz").toStdString();
+        t2w_template_file_name = QString(fa_template_list[template_id].c_str()).replace(".QA.nii.gz",".T2W.nii.gz").toStdString();
         wm_template_file_name = QString(fa_template_list[template_id].c_str()).replace(".QA.nii.gz",".WM.nii.gz").toStdString();
         mask_template_file_name = QString(fa_template_list[template_id].c_str()).replace(".QA.nii.gz",".mask.nii.gz").toStdString();
     }
@@ -1585,8 +1586,18 @@ bool fib_data::map_to_mni(bool background)
     {
         tipl::transformation_matrix<float> T;
 
+
         auto It = template_I;
         auto It2 = template_I2;
+
+        if(dir.index_name[0] == "image" && // not FIB file
+           tipl::io::gz_nifti::load_to_space(t1w_template_file_name.c_str(),It,template_to_mni)) // not FIB file, use t1w as template
+        {
+            tipl::out() << "using structure image for normalization" << std::endl;
+            It2.clear();
+        }
+
+
         tipl::image<3> Is(dir.fa[0],dim);
         tipl::image<3> Is2;
 
@@ -1622,6 +1633,41 @@ bool fib_data::map_to_mni(bool background)
         if(!no_iso)
             tipl::resample_mt(Is2,Iss2,T);
         prog = 3;
+
+        if(dir.index_name[0] == "image")
+        {
+            tipl::out() << "matching t1w t2w contrast" << std::endl;
+            tipl::image<3> t2w(It.shape());
+            if(tipl::io::gz_nifti::load_to_space(t2w_template_file_name.c_str(),t2w,template_to_mni))
+            {
+                std::vector<float> X(It.size()*3);
+                tipl::par_for(It.size(),[&](size_t pos)
+                {
+                    if(Iss[pos] == 0.0f)
+                        return;
+                    size_t i = pos;
+                    pos = pos+pos+pos;
+                    X[pos] = 1;
+                    X[pos+1] = It[i];
+                    X[pos+2] = t2w[i];
+                });
+                tipl::multiple_regression<float> m;
+                if(m.set_variables(X.begin(),3,It.size()))
+                {
+                    float b[3] = {0.0f,0.0f,0.0f};
+                    m.regress(Iss.begin(),b);
+                    tipl::out() << "image=" << b[0] << " + " << b[1] << " × t1w + " << b[2] << " × t2w ";
+                    tipl::par_for(It.size(),[&](size_t pos)
+                    {
+                        if(Iss[pos] == 0.0f)
+                            return;
+                        It[pos] = b[0] + b[1]*It[pos] + b[2]*t2w[pos];
+                        if(It[pos] < 0.0f)
+                            It[pos] = 0.0f;
+                    });
+                }
+            }
+        }
         tipl::image<3,tipl::vector<3> > dis,inv_dis;
         tipl::reg::cdm_pre(It,It2,Iss,Iss2);
 
