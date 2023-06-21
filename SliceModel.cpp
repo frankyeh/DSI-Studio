@@ -359,9 +359,9 @@ bool CustomSliceModel::load_slices(const std::vector<std::string>& files,bool is
         save_idx(files[0].c_str(),nifti.input_stream);
         nifti.get_voxel_size(vs);
         nifti.get_image_transformation(trans);
-        if(nifti.is_mni())
+        if(QFileInfo(files[0].c_str()).fileName().contains("mni"))
         {
-            tipl::out() << "The slices are MNI-space images" << std::endl;
+            tipl::out() << " The file name contains 'mni' and will be used as MNI-space images" << std::endl;
             is_mni = true;
         }
         if(handle->is_mni)
