@@ -743,7 +743,7 @@ bool view_image::open(QStringList file_names_)
             QMessageBox::critical(this,"ERROR","Unsupported pixel format");
             return false;
         }
-        if(std::floor(nifti.nif_header.scl_inter) != nifti.nif_header.scl_inter ||
+        if(std::floor(nifti.nif_header.scl_inter) != nifti.nif_header.scl_inter || nifti.nif_header.scl_inter < 0.0f ||
            std::floor(nifti.nif_header.scl_slope) != nifti.nif_header.scl_slope)
             pixel_type = float32;
 
