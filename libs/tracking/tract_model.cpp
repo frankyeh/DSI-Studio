@@ -302,14 +302,19 @@ struct TrackVis
     bool load_from_file(const char* file_name,
                 std::vector<std::vector<float> >& loaded_tract_data,
                 std::vector<unsigned int>& loaded_tract_cluster,
-                std::string& info,
-                tipl::vector<3> vs)
+                tipl::shape<3>& geo,
+                tipl::vector<3>& vs,
+                tipl::matrix<4,4>& trans_to_mni,
+                std::string& info)
     {
         tipl::progress prog("loading ",std::filesystem::path(file_name).filename().string().c_str());
         tipl::io::gz_istream in;
         if (!in.open(file_name))
             return false;
         in.read((char*)this,1000);
+        std::copy(dim,dim+3,geo.begin());
+        std::copy(voxel_size,voxel_size+3,vs.begin());
+        std::copy(&vox_to_ras[0][0],&vox_to_ras[0][0]+16,trans_to_mni.begin());
         unsigned int track_number = n_count;
         info = reserved;
         if(info.find(' ') != std::string::npos)
@@ -330,9 +335,9 @@ struct TrackVis
             float *to = &*loaded_tract_data.back().begin();
             for (unsigned int i = 0;i < n_point;++i,from += index_shift,to += 3)
             {
-                float x = from[0]/vs[0];
-                float y = from[1]/vs[1];
-                float z = from[2]/vs[2];
+                float x = from[0]/voxel_size[0];
+                float y = from[1]/voxel_size[1];
+                float z = from[2]/voxel_size[2];
                 if(voxel_order[1] == 'R')
                     to[0] = dim[0]-x-1;
                 else
@@ -490,9 +495,10 @@ bool trk2tt(const char* trk_file,const char* tt_file)
     std::vector<std::vector<float> > loaded_tract_data;
     std::vector<unsigned int> loaded_tract_cluster;
     std::string info;
-    tipl::vector<3> vs(1.0f,1.0f,1.0f);
+    tipl::vector<3> vs;
     tipl::shape<3> geo;
-    if(!vis.load_from_file(trk_file,loaded_tract_data,loaded_tract_cluster,info,vs))
+    tipl::matrix<4,4> trans_to_mni;
+    if(!vis.load_from_file(trk_file,loaded_tract_data,loaded_tract_cluster,geo,vs,trans_to_mni,info))
     {
         std::cout << "cannot read file:" << trk_file << std::endl;
         return false;
@@ -502,8 +508,6 @@ bool trk2tt(const char* trk_file,const char* tt_file)
     if(new_color)
         color = new_color;
 
-    std::copy(vis.voxel_size,vis.voxel_size+3,vs.begin());
-    std::copy(vis.dim,vis.dim+3,geo.begin());
     for(size_t index = 0;index < loaded_tract_data.size();++index)
         for(size_t i = 0;i < loaded_tract_data[index].size();i += 3)
         {
@@ -513,8 +517,6 @@ bool trk2tt(const char* trk_file,const char* tt_file)
         }
     std::string p_id;
     std::vector<uint16_t> cluster(loaded_tract_cluster.begin(),loaded_tract_cluster.end());
-    tipl::matrix<4,4> trans_to_mni;
-    initial_LPS_nifti_srow(trans_to_mni,geo,vs);
     return TinyTrack::save_to_file(tt_file,geo,vs,trans_to_mni,loaded_tract_data,cluster,info,p_id,color);
 }
 //---------------------------------------------------------------------------
@@ -570,7 +572,7 @@ bool load_fib_from_tracks(const char* file_name,
         TrackVis vis;
         std::vector<unsigned int> loaded_tract_cluster;
         std::string info;
-        if(!vis.load_from_file(file_name,loaded_tract_data,loaded_tract_cluster,info,vs))
+        if(!vis.load_from_file(file_name,loaded_tract_data,loaded_tract_cluster,geo,vs,trans_to_mni,info))
         {
             std::cout << "cannot read file:" << file_name << std::endl;
             return false;
@@ -690,6 +692,7 @@ bool TractModel::load_from_file(const char* file_name_,bool append)
     {
         unsigned int old_color = color;
         std::vector<uint16_t> cluster;
+
         if(!TinyTrack::load_from_file(file_name_,loaded_tract_data,cluster,geo,vs,trans_to_mni,report,parameter_id,color))
             return false;
         std::copy(cluster.begin(),cluster.end(),std::back_inserter(loaded_tract_cluster));
@@ -699,7 +702,7 @@ bool TractModel::load_from_file(const char* file_name_,bool append)
     if(QString(file_name_).endsWith("trk.gz") || QString(file_name_).endsWith("trk"))
     {
         TrackVis trk;
-        if(!trk.load_from_file(file_name_,loaded_tract_data,loaded_tract_cluster,parameter_id,vs))
+        if(!trk.load_from_file(file_name_,loaded_tract_data,loaded_tract_cluster,geo,vs,trans_to_mni,parameter_id))
             return false;
         unsigned int new_color = *(uint32_t*)(trk.reserved+440);
         if(new_color)
@@ -1056,7 +1059,7 @@ void TractModel::save_vrml(const std::string& file_name,
     };
     for (unsigned int data_index = 0; data_index < tract_data.size(); ++data_index)
     {
-        unsigned int vertex_count = uint32_t(get_tract_length(data_index))/3;
+        unsigned int vertex_count = uint32_t(tract_data[data_index].size()/3);
         if (vertex_count <= 1)
             continue;
 
@@ -2775,7 +2778,19 @@ void TractModel::to_end_point_voxels(std::vector<tipl::vector<3,short> >& points
     std::unique_copy(s2.begin(),s2.end(),std::back_inserter(points2));
 }
 
+float TractModel::get_tract_length_in_mm(unsigned int index) const
+{
+    double length = 0.0;
+    for (unsigned int j = 3;j < tract_data[index].size();j += 3)
+    {
+        length += tipl::vector<3,float>(
+            vs[0]*(tract_data[index][j]-tract_data[index][j-3]),
+            vs[1]*(tract_data[index][j+1]-tract_data[index][j-2]),
+            vs[2]*(tract_data[index][j+2]-tract_data[index][j-1])).length();
 
+    }
+    return float(length);
+}
 void TractModel::get_quantitative_info(std::shared_ptr<fib_data> handle,std::string& result)
 {
     if(tract_data.empty())
@@ -2798,23 +2813,17 @@ void TractModel::get_quantitative_info(std::shared_ptr<fib_data> handle,std::str
 
         // mean length
         {
-            float sum_length = 0.0f;
-            float sum_end_dis = 0.0f;
-            for (unsigned int i = 0;i < tract_data.size();++i)
+            std::vector<float> length_each(tract_data.size());
+            std::vector<float> end_dis_each(tract_data.size());
+            tipl::par_for (tract_data.size(),[&](unsigned int i)
             {
-                float length = 0.0;
-                for (unsigned int j = 3;j < tract_data[i].size();j += 3)
-                {
-                    length += float(tipl::vector<3,float>(
-                        vs[0]*(tract_data[i][j]-tract_data[i][j-3]),
-                        vs[1]*(tract_data[i][j+1]-tract_data[i][j-2]),
-                        vs[2]*(tract_data[i][j+2]-tract_data[i][j-1])).length());
-
-                }
-                sum_length += length;
-                sum_end_dis += float((tipl::vector<3,float>(&tract_data[i][0])-
+                length_each[i] = get_tract_length_in_mm(i);
+                end_dis_each[i] = float((tipl::vector<3,float>(&tract_data[i][0])-
                                     tipl::vector<3,float>(&tract_data[i][tract_data[i].size()-3])).length());
-            }
+            });
+            float sum_length = tipl::sum(length_each);
+            float sum_end_dis = tipl::sum(end_dis_each);
+
             tract_length = sum_length/float(tract_data.size());
             span = sum_end_dis/float(tract_data.size());
             curl = sum_length/sum_end_dis;
@@ -3569,7 +3578,7 @@ bool ConnectivityMatrix::calculate(std::shared_ptr<fib_data> handle,
 
         for_each_connectivity(end_list1,end_list2,
                               [&](unsigned int index,unsigned int i,unsigned int j){
-            length_matrix[i][j].push_back(uint32_t(tract_model.get_tract_length(index)));
+            length_matrix[i][j].push_back(uint32_t(tract_model.get_tract(index).size()));
         });
 
         for(unsigned int i = 0,index = 0;i < count.size();++i)
@@ -3602,7 +3611,7 @@ bool ConnectivityMatrix::calculate(std::shared_ptr<fib_data> handle,
 
         for_each_connectivity(end_list1,end_list2,
                               [&](unsigned int index,unsigned int i,unsigned int j){
-            auto num_steps = tract_model.get_tract_length(index);
+            auto num_steps = tract_model.get_tract(index).size();
             if(num_steps >= 6)
             {
                 auto dis = tract_model.get_tract_point(index,0)-tract_model.get_tract_point(index,1);

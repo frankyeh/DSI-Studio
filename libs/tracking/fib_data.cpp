@@ -501,7 +501,15 @@ bool fib_data::load_from_file(const char* file_name)
             tipl::normalize(I);
             header.get_voxel_size(vs);
             header.get_image_transformation(trans_to_mni);
-            is_mni = header.is_mni();
+            is_mni = true;
+            if(!header.is_mni() || std::floor(trans_to_mni[0]) != trans_to_mni[0])
+            {
+                is_mni = false;
+                tipl::out() << "The image is used as subject-space image" << std::endl;
+                initial_LPS_nifti_srow(trans_to_mni,I.shape(),vs);
+            }
+            else
+                tipl::out() << "The image is used as MNI-space image" << std::endl;
         }
     }
     else
@@ -1291,7 +1299,30 @@ bool fib_data::load_template(void)
 
     return true;
 }
+void fib_data::temp2sub(std::shared_ptr<TractModel> track_atlas)
+{
+    auto& tract_data = track_atlas->get_tracts();
+    auto T = tipl::from_space(track_atlas->trans_to_mni).to(template_to_mni);
+    tipl::out() << "convert template tracts:" << std::endl;
+    tipl::out() << T << std::endl;
 
+    tipl::par_for(tract_data.size(),[&](size_t i)
+    {
+        if(tract_data.size() < 6)
+            return;
+        auto beg = tract_data[i].begin();
+        auto end = tract_data[i].end();
+        for(;beg != end;beg += 3)
+        {
+            tipl::vector<3> p(beg);
+            apply_trans(p,T); // from tract atlas space to current template space
+            temp2sub(p);
+            beg[0] = p[0];
+            beg[1] = p[1];
+            beg[2] = p[2];
+        }
+    });
+}
 bool fib_data::load_track_atlas()
 {
     tipl::progress prog("loading tractography atlas");
@@ -1359,35 +1390,23 @@ bool fib_data::load_track_atlas()
             return false;
         tract_atlas_jacobian = float((s2t[0]-s2t[1]).length());
         // warp tractography atlas to subject space
+        temp2sub(track_atlas);
+
         auto& tract_data = track_atlas->get_tracts();
+        // get min max length
         std::vector<float> min_length(tractography_name_list.size()),max_length(tractography_name_list.size());
-        auto T = tipl::from_space(track_atlas->trans_to_mni).to(template_to_mni);
         tipl::par_for(tract_data.size(),[&](size_t i)
         {
             if(tract_data.size() <= 6)
                 return;
-            double sum = 0.0;
-            auto beg = tract_data[i].begin();
-            auto end = tract_data[i].end();
-            tipl::vector<3> last_p(beg);
-            for(;beg != end;beg += 3)
-            {
-                tipl::vector<3> p(beg);
-                apply_trans(p,T); // from tract atlas space to current template space
-                temp2sub(p);
-                beg[0] = p[0];
-                beg[1] = p[1];
-                beg[2] = p[2];
-                sum += (last_p-p).length();
-                last_p = p;
-            }
             auto c = cluster[i];
             if(c < tractography_name_list.size())
             {
+                double length = track_atlas->get_tract_length_in_mm(i);
                 if(min_length[c] == 0)
-                    min_length[c] = float(sum);
-                min_length[c] = std::min(min_length[c],float(sum));
-                max_length[c] = std::max(max_length[c],float(sum));
+                    min_length[c] = float(length);
+                min_length[c] = std::min(min_length[c],float(length));
+                max_length[c] = std::max(max_length[c],float(length));
             }
         });
         tract_atlas_min_length.swap(min_length);

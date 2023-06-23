@@ -320,9 +320,11 @@ void TractTableWidget::stop_tracking(void)
         if(thread_data[index].get())
             thread_data[index]->end_thread();
 }
-void TractTableWidget::load_tracts(QStringList filenames)
+void TractTableWidget::load_tracts(QStringList filenames,bool tract_is_mni)
 {
     if(filenames.empty())
+        return;
+    if(tract_is_mni && !cur_tracking_window.map_to_mni())
         return;
     tipl::progress prog("load tracts");
     for(unsigned int index = 0;prog(index,filenames.size());++index)
@@ -339,35 +341,46 @@ void TractTableWidget::load_tracts(QStringList filenames)
             label = label.right(label.length()-pos-8);
         std::string sfilename = filename.toStdString();
         addNewTracts(label,filenames.size() == 1);
-        if(!tract_models.back()->load_from_file(&*sfilename.begin(),false))
+        if(!tract_models.back()->load_from_file(sfilename.c_str(),false))
         {
             QMessageBox::critical(this,"ERROR",QString("Cannot load tracks from %1").arg(QFileInfo(filename).baseName()));
             continue;
         }
-        if(tract_models.back()->trans_to_mni[0] != 0.0f &&
-           tract_models.back()->trans_to_mni != cur_tracking_window.handle->trans_to_mni)
+        tipl::out() << "host space=" << std::endl;
+        tipl::out() << cur_tracking_window.handle->trans_to_mni << std::endl;
+        tipl::out() << "tractography space= " << std::endl;
+        tipl::out() << tract_models.back()->trans_to_mni << std::endl;
+
+
+        if(tract_is_mni)
         {
-            tipl::out() << "tractography is from a different space" << std::endl;
-            tipl::out() << "host space=" << std::endl;
-            tipl::out() << cur_tracking_window.handle->trans_to_mni << std::endl;
-            tipl::out() << "tractography space= " << std::endl;
-            tipl::out() << tract_models.back()->trans_to_mni << std::endl;
-            tipl::out() << "apply transformation to tracts" << std::endl;
-            tipl::matrix<4,4> T = tipl::from_space(tract_models.back()->trans_to_mni).
-                                    to(cur_tracking_window.handle->trans_to_mni);
-            auto& loaded_tract_data = tract_models.back()->get_tracts();
-            tipl::par_for(loaded_tract_data.size(),[&](size_t index)
+            tipl::out() << "warping tract to subject space" << std::endl;
+            cur_tracking_window.handle->temp2sub(tract_models.back());
+        }
+        else
+        {
+            if(cur_tracking_window.handle->is_mni &&
+               tract_models.back()->trans_to_mni != cur_tracking_window.handle->trans_to_mni)
             {
-                auto& tract = loaded_tract_data[index];
-                for(size_t i = 0;i < tract.size();i += 3)
+                tipl::out() << "apply srow to tracts" << std::endl;
+                tipl::matrix<4,4> T = tipl::from_space(tract_models.back()->trans_to_mni).
+                                        to(cur_tracking_window.handle->trans_to_mni);
+                tipl::out() << T << std::endl;
+                auto& loaded_tract_data = tract_models.back()->get_tracts();
+                tipl::par_for(loaded_tract_data.size(),[&](size_t index)
                 {
-                    tipl::vector<3> p(&tract[i]);
-                    p.to(T);
-                    tract[i] = p[0];
-                    tract[i+1] = p[1];
-                    tract[i+2] = p[2];
-                }
-            });
+                    auto& tract = loaded_tract_data[index];
+                    for(size_t i = 0;i < tract.size();i += 3)
+                    {
+                        tipl::vector<3> p(&tract[i]);
+                        p.to(T);
+                        tract[i] = p[0];
+                        tract[i+1] = p[1];
+                        tract[i+2] = p[2];
+                    }
+                });
+            }
+
         }
 
         if(tract_models.back()->get_cluster_info().empty()) // not multiple cluster file
@@ -388,14 +401,21 @@ void TractTableWidget::load_tracts(QStringList filenames)
 void TractTableWidget::load_tracts(void)
 {
     load_tracts(QFileDialog::getOpenFileNames(
-            this,"Load tracts as",QFileInfo(cur_tracking_window.work_path).absolutePath(),
+            this,"Load Tracts",QFileInfo(cur_tracking_window.work_path).absolutePath(),
             "Tract files (*tt.gz *.trk *trk.gz *.tck);;Text files (*.txt);;All files (*)"));
+    show_report();
+}
+void TractTableWidget::load_mni_tracts(void)
+{
+    load_tracts(QFileDialog::getOpenFileNames(
+            this,"Load MNI-space Tracts",QFileInfo(cur_tracking_window.work_path).absolutePath(),
+            "Tract files (*tt.gz *.trk *trk.gz *.tck);;Text files (*.txt);;All files (*)"),true);
     show_report();
 }
 void TractTableWidget::load_tract_label(void)
 {
     QString filename = QFileDialog::getOpenFileName(
-                this,"Load tracts as",QFileInfo(cur_tracking_window.work_path).absolutePath(),
+                this,"Load Tracts Label",QFileInfo(cur_tracking_window.work_path).absolutePath(),
                 "Tract files (*.txt);;All files (*)");
     if(filename.isEmpty())
         return;
@@ -498,10 +518,10 @@ void TractTableWidget::assign_colors(void)
 }
 void TractTableWidget::load_cluster_label(const std::vector<unsigned int>& labels,QStringList Names)
 {
-    std::string report = tract_models[uint32_t(currentRow())]->report;
+    auto cur_row = uint32_t(currentRow());
     std::vector<std::vector<float> > tracts;
-    tract_models[uint32_t(currentRow())]->release_tracts(tracts);
-    tract_rendering[uint32_t(currentRow())]->need_update = true;
+    tract_models[cur_row]->release_tracts(tracts);
+    tract_rendering[cur_row]->need_update = true;
     delete_row(currentRow());
     unsigned int cluster_count = uint32_t(Names.empty() ? int(1+tipl::max_value(labels)):int(Names.count()));
     for(unsigned int cluster_index = 0;cluster_index < cluster_count;++cluster_index)
@@ -521,7 +541,10 @@ void TractTableWidget::load_cluster_label(const std::vector<unsigned int>& label
         else
             addNewTracts(QString("cluster")+QString::number(cluster_index),false);
         tract_models.back()->add_tracts(add_tracts);
-        tract_models.back()->report = report;
+        tract_models.back()->report = tract_models[cur_row]->report;
+        tract_models.back()->geo = tract_models[cur_row]->geo;
+        tract_models.back()->vs = tract_models[cur_row]->vs;
+        tract_models.back()->trans_to_mni = tract_models[cur_row]->trans_to_mni;
         item(int(tract_models.size())-1,1)->setText(QString::number(tract_models.back()->get_visible_track_count()));
     }
     emit show_tracts();
