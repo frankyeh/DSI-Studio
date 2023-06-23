@@ -981,6 +981,7 @@
      <addaction name="actionSave_VMRL"/>
     </widget>
     <addaction name="actionOpenTract"/>
+    <addaction name="actionOpen_MNI_space_Tracts"/>
     <addaction name="separator"/>
     <addaction name="menuSave_Tracts"/>
     <addaction name="menuSave"/>
@@ -4170,6 +4171,15 @@ Tracking</string>
    </property>
    <property name="shortcut">
     <string>Ctrl+Shift+5</string>
+   </property>
+  </action>
+  <action name="actionOpen_MNI_space_Tracts">
+   <property name="icon">
+    <iconset resource="../icons.qrc">
+     <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+   </property>
+   <property name="text">
+    <string>Open MNI-space Tracts...</string>
    </property>
   </action>
  </widget>
