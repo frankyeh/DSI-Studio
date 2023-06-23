@@ -329,8 +329,11 @@ void TractRenderShader::add_shade(std::shared_ptr<TractModel>& active_tract_mode
 {
     for (unsigned int data_index : visible)
     {
-        unsigned int vertex_count = active_tract_model->get_tract_length(data_index)/3;
-        const float* data_iter = &*(active_tract_model->get_tract(data_index).begin());
+        auto& cur_tract = active_tract_model->get_tract(data_index);
+        if(cur_tract.size() < 6)
+            continue;
+        unsigned int vertex_count = cur_tract.size()/3;
+        const float* data_iter = &cur_tract[0];
         for (unsigned int index = 0; index < vertex_count;data_iter += 3, ++index)
         {
             int x = std::round(data_iter[0]*to64[0]);
@@ -404,8 +407,7 @@ void TractRender::render_tracts(std::shared_ptr<TractModel>& active_tract_model,
         {
             if(skip_rate < 1.0f && uniform_gen() > skip_rate)
                 continue;
-            unsigned int vertex_count = active_tract_model->get_tract_length(data_index)/3;
-            if (vertex_count <= 1)
+            if (active_tract_model->get_tract(data_index).size() <= 3)
                 continue;
             visible.push_back(data_index);
         }
