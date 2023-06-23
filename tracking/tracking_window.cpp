@@ -400,6 +400,7 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         connect(ui->actionFilter_by_ROI,SIGNAL(triggered()),tractWidget,SLOT(filter_by_roi()));
 
         connect(ui->actionOpenTract,SIGNAL(triggered()),tractWidget,SLOT(load_tracts()));
+        connect(ui->actionOpen_MNI_space_Tracts,SIGNAL(triggered()),tractWidget,SLOT(load_mni_tracts()));
         connect(ui->actionOpen_Tracts_Label,SIGNAL(triggered()),tractWidget,SLOT(load_tract_label()));
         connect(ui->actionMerge_All,SIGNAL(triggered()),tractWidget,SLOT(merge_all()));
         connect(ui->actionMerge_Tracts_by_Name,SIGNAL(triggered()),tractWidget,SLOT(merge_track_by_name()));
@@ -2690,7 +2691,7 @@ void tracking_window::on_template_box_currentIndexChanged(int index)
         return;
     handle->set_template_id(size_t(index));
     ui->addRegionFromAtlas->setVisible(!handle->atlas_list.empty());
-    ui->enable_auto_track->setVisible(std::filesystem::exists(track_atlas_file_list[uint32_t(index)]));
+    ui->enable_auto_track->setVisible(handle->trackable && std::filesystem::exists(track_atlas_file_list[uint32_t(index)]));
     ui->target->setCurrentIndex(0);
     ui->target->setVisible(false);
     ui->target_label->setVisible(false);
