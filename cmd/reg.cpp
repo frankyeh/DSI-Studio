@@ -14,7 +14,8 @@ bool apply_unwarping_tt(const char* from,
                         const tipl::image<3,tipl::vector<3> >& from2to,
                         tipl::shape<3> new_geo,
                         tipl::vector<3> new_vs,
-                        const tipl::matrix<4,4>& new_trans_to_mni,
+                        const tipl::matrix<4,4>& from_trans_to_mni,
+                        const tipl::matrix<4,4>& to_trans_to_mni,
                         std::string& error);
 void get_filenames_from(const std::string param,std::vector<std::string>& filenames);
 
@@ -38,7 +39,7 @@ int after_warp(const std::string& warp_name,
             std::string filename_warp = filename+".wp.tt.gz";
             tipl::out() << "apply warping to tractography file: " << filename << std::endl;
             if(!apply_unwarping_tt(filename.c_str(),filename_warp.c_str(),from2to,
-                                   to2from.shape(),to_vs,to_trans,error))
+                                   to2from.shape(),to_vs,from_trans,to_trans,error))
             {
                 tipl::out() << "ERROR: " << error <<std::endl;
                 return 1;

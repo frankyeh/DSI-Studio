@@ -638,7 +638,8 @@ bool apply_unwarping_tt(const char* from,
                         const tipl::image<3,tipl::vector<3> >& from2to,
                         tipl::shape<3> new_geo,
                         tipl::vector<3> new_vs,
-                        const tipl::matrix<4,4>& new_trans_to_mni,
+                        const tipl::matrix<4,4>& from_trans_to_mni,
+                        const tipl::matrix<4,4>& to_trans_to_mni,
                         std::string& error)
 {
     std::vector<std::vector<float> > loaded_tract_data;
@@ -653,13 +654,15 @@ bool apply_unwarping_tt(const char* from,
         error = "Failed to read file";
         return false;
     }
-    tipl::vector<3> max_pos(geo);
+    tipl::vector<3> max_pos(from2to.shape());
     max_pos -= 1.0f;
+    auto T = tipl::from_space(trans_to_mni).to(from_trans_to_mni);
     tipl::par_for(loaded_tract_data.size(),[&](size_t i)
     {
         for(size_t j = 0;j < loaded_tract_data[i].size();j += 3)
         {
             tipl::vector<3> pos(&loaded_tract_data[i][j]);
+            pos.to(T);
             pos[0] = std::min<float>(std::max<float>(pos[0],0.0f),max_pos[0]);
             pos[1] = std::min<float>(std::max<float>(pos[1],0.0f),max_pos[1]);
             pos[2] = std::min<float>(std::max<float>(pos[2],0.0f),max_pos[2]);
@@ -670,7 +673,7 @@ bool apply_unwarping_tt(const char* from,
             loaded_tract_data[i][j+2] = new_pos[2];
         }
     });
-    if(!TinyTrack::save_to_file(to,new_geo,new_vs,new_trans_to_mni,loaded_tract_data,cluster,report,parameter_id,color))
+    if(!TinyTrack::save_to_file(to,new_geo,new_vs,to_trans_to_mni,loaded_tract_data,cluster,report,parameter_id,color))
     {
         error = "Failed to save file";
         return false;
