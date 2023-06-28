@@ -58,7 +58,7 @@ void ThreadData::run_thread(unsigned int thread_id,unsigned int thread_count)
     method->current_step_size_in_voxel[0] = param.step_size/method->trk->vs[0];
     method->current_step_size_in_voxel[1] = param.step_size/method->trk->vs[1];
     method->current_step_size_in_voxel[2] = param.step_size/method->trk->vs[2];
-    if(param.step_size != 0.0f)
+    if(param.step_size > 0.0f)
     {
         method->current_max_steps3 = 3*uint32_t(std::round(param.max_length/param.step_size));
         method->current_min_steps3 = 3*uint32_t(std::round(param.min_length/param.step_size));
@@ -89,9 +89,9 @@ void ThreadData::run_thread(unsigned int thread_id,unsigned int thread_count)
                     method->current_tracking_angle = std::cos(angle_gen(seed));
                 if(param.smooth_fraction == 1.0f)
                     method->current_tracking_smoothing = smoothing_gen(seed);
-                if(param.step_size == 0.0f)
+                if(param.step_size <= 0.0f) // 0: voxel_size*[1 3]   -1: previous version voxel_size* [0.5 1.5]
                 {
-                    float step_size_in_voxel = step_gen(seed);
+                    float step_size_in_voxel = param.step_size == 0 ? step_gen2(seed) : step_gen(seed);
                     float step_size_in_mm = step_size_in_voxel*method->trk->vs[0];
                     method->current_step_size_in_voxel[0] = step_size_in_voxel;
                     method->current_step_size_in_voxel[1] = step_size_in_voxel;
@@ -226,7 +226,7 @@ void ThreadData::run(std::shared_ptr<tracking_data> trk_,unsigned int thread_cou
     else
     {
         report << " A deterministic fiber tracking algorithm (Yeh et al., PLoS ONE 8(11): e80713, 2013) was used";
-        if(param.threshold == 0.0f && param.cull_cos_angle == 1.0f && param.step_size == 0.0f) // parameter saturation, pruning
+        if(param.threshold == 0.0f && param.cull_cos_angle == 1.0f && param.step_size <= 0.0f) // parameter saturation, pruning
             report << " with augmented tracking strategies (Yeh, Neuroimage, 2020 Dec;223:117329) to improve reproducibility.";
         else
             report << ".";
