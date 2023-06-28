@@ -336,6 +336,7 @@ std::string run_auto_track(tipl::program_option<tipl::out>& po,const std::vector
                     // fetch both front and back buffer
                     thread.fetchTracks(&tract_model);
                     thread.fetchTracks(&tract_model);
+
                     thread.apply_tip(&tract_model);
 
                     if(no_result || tract_model.get_visible_track_count() == 0)
@@ -344,6 +345,7 @@ std::string run_auto_track(tipl::program_option<tipl::out>& po,const std::vector
                         continue;
                     }
 
+                    tract_model.resample(1.0f);
                     tract_model.delete_repeated(1.0f);
 
                     if(export_trk)
