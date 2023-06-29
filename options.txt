@@ -24,7 +24,7 @@ Tracking/Min Length(mm)/min_length/float:0:800:10:1/30/Remove tracks with length
 Tracking/Max Length(mm)/max_length/float:0:10000:10:1/300/Remove tracks with length longer than this threshold
 Tracking/Terminate if/track_count/int:1:100000000:1000/5000/Specify the number of seeds or tracks to generate
 Tracking/ /tracking_plan/Seeds:Tracts/1
-Tracking/Topology-Informed Pruning (iteration)/tip_iteration/int:0:100:2/2/The number of pruning iterations used to remove noisy tracks
+Tracking/Topology-Informed Pruning (iteration)/tip_iteration/int:0:100:2/4/The number of pruning iterations used to remove noisy tracks
 Tracking/Autotrack tolerance (mm)/autotrack_tolerance/float:0:100:10:1/24/The inclusion distance for automated fiber tracking
 Tracking/Differential Tracking/Tracking_dT
 Tracking_dT/Metrics1/dt_index1/none:adc/0/The baseline metrics
