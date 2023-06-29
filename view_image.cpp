@@ -43,6 +43,34 @@ void view_image::change_type(decltype(pixel_type) new_type)
         I.resize(shape);
     });
 }
+void view_image::swap(std::shared_ptr<view_image_record> data)
+{
+    I_float32.swap(data->I_float32);
+    I_uint32.swap(data->I_uint32);
+    I_uint16.swap(data->I_uint16);
+    I_uint8.swap(data->I_uint8);
+
+    auto temp = pixel_type;
+    pixel_type = decltype(pixel_type)(data->pixel_type);
+    data->pixel_type = temp;
+
+    shape.swap(data->shape);
+    std::swap(is_mni,data->is_mni);
+    std::swap(vs,data->vs);
+    T.swap(data->T);
+}
+void view_image::assign(std::shared_ptr<view_image_record> data)
+{
+    I_float32 = data->I_float32;
+    I_uint32 = data->I_uint32;
+    I_uint16 = data->I_uint16;
+    I_uint8 = data->I_uint8;
+    pixel_type = decltype(pixel_type)(data->pixel_type);
+    shape = data->shape;
+    is_mni = data->is_mni;
+    vs = data->vs;
+    T = data->T;
+}
 
 bool view_image::command(std::string cmd,std::string param1)
 {
@@ -50,6 +78,15 @@ bool view_image::command(std::string cmd,std::string param1)
         return true;
     error_msg.clear();
     bool result = true;
+
+    // add undo
+
+    if(!mat.size() && buf4d.empty())
+    {
+        undo_list.push_back(std::make_shared<view_image_record>());
+        swap(undo_list.back());
+        assign(undo_list.back());
+    }
 
     if(mat.size())
     {
@@ -209,6 +246,11 @@ bool view_image::command(std::string cmd,std::string param1)
         if(!result)
         {
             tipl::out() << "ERROR:" << error_msg << std::endl;
+            if(!undo_list.empty())
+            {
+                swap(undo_list.back());
+                undo_list.pop_back();
+            }
             return false;
         }
 
@@ -221,6 +263,9 @@ bool view_image::command(std::string cmd,std::string param1)
     command_list.push_back(cmd);
     param_list.push_back(param1);
 
+    redo_list.clear();
+    redo_command_list.clear();
+    redo_param_list.clear();
 
     if(cmd == "save" && !file_names.empty())
     {
@@ -1288,4 +1333,62 @@ void view_image::on_mat_images_currentIndexChanged(int index)
 }
 
 
+void view_image::on_actionUndo_triggered()
+{
+    if(mat.size() || !buf4d.empty())
+    {
+        QMessageBox::critical(this,"ERROR","Undo not supported for 4D images");
+        return;
+    }
+
+    if(undo_list.empty())
+        return;
+
+    // prepare redo data
+    {
+        auto redo_data = std::make_shared<view_image_record>();
+        swap(redo_data);
+        redo_list.push_back(redo_data);
+    }
+
+    // restore data from undo_list
+    {
+        swap(undo_list.back());
+        undo_list.pop_back();
+    }
+
+    // handle commands
+    redo_command_list.push_back(command_list.back());
+    redo_param_list.push_back(param_list.back());
+    command_list.pop_back();
+    param_list.pop_back();
+    init_image();
+
+}
+
+
+void view_image::on_actionRedo_triggered()
+{
+    if(redo_list.empty())
+        return;
+    // set current data to undo list
+    {
+        auto undo_data = std::make_shared<view_image_record>();
+        swap(undo_data);
+        undo_list.push_back(undo_data);
+    }
+
+    // restore data from redo_list
+    {
+        swap(redo_list.back());
+        redo_list.pop_back();
+    }
+
+    // handle commands
+    command_list.push_back(redo_command_list.back());
+    param_list.push_back(redo_param_list.back());
+    redo_command_list.pop_back();
+    redo_param_list.pop_back();
+    init_image();
+}
 
