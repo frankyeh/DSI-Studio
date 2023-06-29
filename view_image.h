@@ -21,6 +21,18 @@ public:
 };
 
 
+struct view_image_record{
+    tipl::image<3,unsigned char,tipl::buffer_container> I_uint8;
+    tipl::image<3,unsigned short,tipl::buffer_container> I_uint16;
+    tipl::image<3,unsigned int,tipl::buffer_container> I_uint32;
+    tipl::image<3,float,tipl::buffer_container> I_float32;
+    int pixel_type = 0;
+    tipl::shape<3> shape;
+    bool is_mni = false;
+    tipl::vector<3,float> vs;
+    tipl::matrix<4,4> T;
+};
+
 class view_image : public QMainWindow
 {
     Q_OBJECT
@@ -89,8 +101,19 @@ private slots:
 
     void on_actionLoad_Image_to_4D_triggered();
 
+    void on_actionUndo_triggered();
+
+    void on_actionRedo_triggered();
+
 private:
     Ui::view_image *ui;
+private:
+    std::vector<std::shared_ptr<view_image_record> > undo_list;
+    std::vector<std::shared_ptr<view_image_record> > redo_list;
+    std::vector<std::string> redo_command_list;
+    std::vector<std::string> redo_param_list;
+    void swap(std::shared_ptr<view_image_record> data);
+    void assign(std::shared_ptr<view_image_record> data);
 private:
     tipl::image<3,unsigned char,tipl::buffer_container> I_uint8;
     tipl::image<3,unsigned short,tipl::buffer_container> I_uint16;
