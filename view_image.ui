@@ -469,7 +469,15 @@
     <addaction name="actionMorphology_XY"/>
     <addaction name="actionMorphology_XZ"/>
    </widget>
+   <widget class="QMenu" name="menu_Edit">
+    <property name="title">
+     <string>&amp;Edit</string>
+    </property>
+    <addaction name="actionUndo"/>
+    <addaction name="actionRedo"/>
+   </widget>
    <addaction name="menu_File"/>
+   <addaction name="menu_Edit"/>
    <addaction name="menuResize"/>
    <addaction name="menu_Intensity"/>
    <addaction name="menuMorphology"/>
@@ -856,6 +864,22 @@
   <action name="actionHeader_Swap_YZ">
    <property name="text">
     <string>Header Swap YZ</string>
+   </property>
+  </action>
+  <action name="actionUndo">
+   <property name="text">
+    <string>&amp;Undo</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Z</string>
+   </property>
+  </action>
+  <action name="actionRedo">
+   <property name="text">
+    <string>&amp;Redo</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Y</string>
    </property>
   </action>
  </widget>
