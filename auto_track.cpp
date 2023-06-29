@@ -277,7 +277,7 @@ std::string run_auto_track(tipl::program_option<tipl::out>& po,const std::vector
                         thread.param.max_length = handle->vs[0]*(handle->tract_atlas_max_length[track_id[j]]+2.0f*tolerance[tracking_iteration])/handle->tract_atlas_jacobian;
                         tipl::out() << "min_length(mm): " << thread.param.min_length << std::endl;
                         tipl::out() << "max_length(mm): " << thread.param.max_length << std::endl;
-                        thread.param.tip_iteration = po.get("tip_iteration",48);
+                        thread.param.tip_iteration = po.get("tip_iteration",4);
                         thread.param.check_ending = check_ending && !QString(track_name.c_str()).contains("Cingulum");
                         thread.param.stop_by_tract = 1;
                         thread.param.termination_count = 0;
