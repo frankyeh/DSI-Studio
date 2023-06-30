@@ -407,7 +407,7 @@ int main(int ac, char *av[])
         w.show();
 
     if(ac == 2)
-        w.openFile(av[1]);
+        w.openFile(QStringList() << av[1]);
 
     return a.exec();
 

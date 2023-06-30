@@ -24,7 +24,7 @@ public:
     void addSrc(QString Filename);
     void dragEnterEvent(QDragEnterEvent *event);
     void dropEvent(QDropEvent *event);
-    void openFile(QString file_name);
+    void openFile(QStringList file_name);
 public:
     void loadFib(QString Filename,bool presentation_mode = false);
     void loadSrc(QStringList filenames);

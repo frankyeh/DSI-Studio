@@ -65,8 +65,9 @@ MainWindow::MainWindow(QWidget *parent) :
 }
 
 
-void MainWindow::openFile(QString file_name)
+void MainWindow::openFile(QStringList file_names)
 {
+    QString file_name = file_names[0];
     if(QFileInfo(file_name).isDir())
     {
         QStringList fib_list = QDir(file_name).entryList(QStringList("*fib.gz"),QDir::Files|QDir::NoSymLinks);
@@ -107,7 +108,7 @@ void MainWindow::openFile(QString file_name)
             if(file_list.size() == 1)
             {
                 loadFib(QFileInfo(file_name).absolutePath() + "/" + file_list[0]);
-                tracking_windows.back()->tractWidget->load_tracts(QStringList() << file_name);
+                tracking_windows.back()->tractWidget->load_tracts(file_names);
             }
             else
                 loadFib(file_name);
@@ -121,7 +122,7 @@ void MainWindow::openFile(QString file_name)
         else
         if(QString(file_name).endsWith("src.gz"))
         {
-            loadSrc(QStringList() << file_name);
+            loadSrc(file_names);
         }
         else
         if(QString(file_name).endsWith(".nhdr") ||
@@ -131,7 +132,7 @@ void MainWindow::openFile(QString file_name)
         {
             view_image* dialog = new view_image(this);
             dialog->setAttribute(Qt::WA_DeleteOnClose);
-            if(!dialog->open(QStringList() << file_name))
+            if(!dialog->open(file_names))
             {
                 delete dialog;
                 return;
@@ -159,9 +160,7 @@ void MainWindow::dropEvent(QDropEvent *event)
     QStringList files;
     for(int i = 0; i < droppedUrlCnt; i++)
         files << droppedUrls[i].toLocalFile();
-
-    if(files.size() == 1)
-        openFile(files[0]);
+    openFile(files);
 }
 
 void MainWindow::open_fib_at(int row,int)
