@@ -2490,6 +2490,12 @@ void tracking_window::on_actionSave_Slices_to_DICOM_triggered()
 
         QFileInfo info(files[i]);
         QString output_name = info.path() + "/mod_" + info.completeBaseName() + ".dcm";
+
+        if(i == 0 && QFileInfo(output_name).exists() &&
+           QMessageBox::information(this,"","Previous modifications found. Overwrite?",
+           QMessageBox::Yes|QMessageBox::Cancel) == QMessageBox::Cancel)
+                return;
+
         std::ofstream out(output_name.toStdString().c_str(),std::ios::binary);
         if(!out)
         {
