@@ -332,8 +332,8 @@ void reconstruction_window::on_save_mask_clicked()
     if(QFileInfo(filename.toLower()).completeSuffix() != "txt")
         filename = QFileInfo(filename).absolutePath() + "/" + QFileInfo(filename).baseName() + ".nii.gz";
     ROIRegion region(handle->dwi.shape(),handle->voxel.vs);
-    region.LoadFromBuffer(handle->voxel.mask);
-    region.save_to_file(filename.toStdString().c_str());
+    region.load_region_from_buffer(handle->voxel.mask);
+    region.save_region_to_file(filename.toStdString().c_str());
 }
 void reconstruction_window::on_actionFlip_bx_triggered()
 {

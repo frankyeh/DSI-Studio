@@ -999,7 +999,7 @@ bool TractModel::save_tracts_to_file(const char* file_name_)
         get_tract_points(points);
         ROIRegion region(geo,vs,trans_to_mni);
         region.add_points(std::move(points));
-        region.save_to_file(file_name_);
+        region.save_region_to_file(file_name_);
         return true;
     }
     return save_tracts_to_file((std::string(file_name_) + ".tt.gz").c_str());
@@ -1216,20 +1216,16 @@ void TractModel::save_vrml(const std::string& file_name,
 }
 
 //---------------------------------------------------------------------------
-bool TractModel::save_all(const char* file_name_,
+bool TractModel::save_all(const char* file_name,
                           const std::vector<std::shared_ptr<TractModel> >& all,
                           const std::vector<std::string>& name_list)
 {    
     if(all.empty())
         return false;
-    tipl::progress prog("saving ",std::filesystem::path(file_name_).filename().string().c_str());
+    tipl::progress prog("saving ",std::filesystem::path(file_name).filename().string().c_str());
     for(unsigned int index = 0;index < all.size();++index)
         all[index]->saved = true;
-    std::string file_name(file_name_);
-    std::string ext;
-    if(file_name.length() > 4)
-        ext = std::string(file_name.end()-4,file_name.end());
-    if (ext == std::string("t.gz")) // tt.gz
+    if (tipl::ends_with(file_name,".tt.gz"))
     {
         std::vector<size_t> tract_size(all.size());
         for(size_t i = 0;i < all.size();++i)
@@ -1249,7 +1245,7 @@ bool TractModel::save_all(const char* file_name_,
             }
         }
         // save file
-        bool result = TinyTrack::save_to_file(file_name_,all[0]->geo,all[0]->vs,all[0]->trans_to_mni,
+        bool result = TinyTrack::save_to_file(file_name,all[0]->geo,all[0]->vs,all[0]->trans_to_mni,
                     all_tract,cluster,all[0]->report,all[0]->parameter_id);
         // restore tracts
         for(size_t i = 0,pos = 0;i < all.size();++i)
@@ -1261,9 +1257,9 @@ bool TractModel::save_all(const char* file_name_,
         if(!result)
             return false;
     }
-    if (ext == std::string(".txt"))
+    if (tipl::ends_with(file_name,".txt"))
     {
-        std::ofstream out(file_name_,std::ios::binary);
+        std::ofstream out(file_name,std::ios::binary);
         if (!out)
             return false;
         for(unsigned int index = 0;index < all.size();++index)
@@ -1277,11 +1273,10 @@ bool TractModel::save_all(const char* file_name_,
         }
         return true;
     }
-
-    if (ext == std::string(".trk") || ext == std::string("k.gz")) // trk.gz
+    if (tipl::ends_with(file_name,".trk") || tipl::ends_with(file_name,".trk.gz"))
     {
         tipl::io::gz_ostream out;
-        if (!out.open(file_name_))
+        if (!out.open(file_name))
             return false;
         {
             TrackVis trk;
@@ -1315,13 +1310,13 @@ bool TractModel::save_all(const char* file_name_,
             out.write((const char*)&*buffer.begin(),sizeof(float)*buffer.size());
         }
     }
-    if (ext == std::string("i.gz")) // nii.gz
+    if (tipl::ends_with(file_name,".nii.gz"))
     {
-        return TractModel::export_pdi(file_name.c_str(),all);
+        return TractModel::export_pdi(file_name,all);
     }
-    if (ext == std::string(".mat"))
+    if (tipl::ends_with(file_name,".mat"))
     {
-        tipl::io::mat_write out(file_name.c_str());
+        tipl::io::mat_write out(file_name);
         if(!out)
             return false;
         std::vector<float> buf;
@@ -1342,7 +1337,7 @@ bool TractModel::save_all(const char* file_name_,
     if(prog.aborted())
         return false;
     // output label file
-    std::ofstream out((file_name+".txt").c_str());
+    std::ofstream out(std::string(file_name)+".txt");
     for(int i = 0;i < name_list.size();++i)
         out << name_list[i] << std::endl;
     return true;
@@ -1747,13 +1742,13 @@ bool TractModel::delete_branch(void)
     r1.add_points(std::move(p1));
     r2.add_points(std::move(p2));
 
-    r1.SaveToBuffer(mask);
+    r1.save_region_to_buffer(mask);
     tipl::morphology::defragment(mask);
-    r1.LoadFromBuffer(mask);
+    r1.load_region_from_buffer(mask);
 
-    r2.SaveToBuffer(mask);
+    r2.save_region_to_buffer(mask);
     tipl::morphology::defragment(mask);
-    r2.LoadFromBuffer(mask);
+    r2.load_region_from_buffer(mask);
 
     std::shared_ptr<fib_data> handle(new fib_data(geo,vs,trans_to_mni));
     std::shared_ptr<RoiMgr> roi_mgr(new RoiMgr(handle));

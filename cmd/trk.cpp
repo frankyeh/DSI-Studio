@@ -287,7 +287,7 @@ bool get_connectivity_matrix(tipl::program_option<tipl::out>& po,
                         fn = line;
                     else
                         fn = dir + line;
-                    if(!region->LoadFromFile(fn.c_str()))
+                    if(!region->load_region_from_file(fn.c_str()))
                     {
                         tipl::out() << "ERROR: failed to open file as a region:" << fn << std::endl;
                         return false;
@@ -454,7 +454,7 @@ bool load_region(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> h
             roi.add_points(std::move(points));
         }
         else
-            if(!roi.LoadFromFile(file_name.c_str()))
+            if(!roi.load_region_from_file(file_name.c_str()))
             {
                 tipl::out() << "ERROR: cannot open file as a region" << file_name << std::endl;
                 return false;
@@ -575,12 +575,12 @@ int trk_post(tipl::program_option<tipl::out>& po,
         ROIRegion end1(handle),end2(handle);
         end1.add_points(std::move(points1));
         end2.add_points(std::move(points2));
-        if(po.has(("end_point1")) && !end1.save_to_file(po.get("end_point1").c_str()))
+        if(po.has(("end_point1")) && !end1.save_region_to_file(po.get("end_point1").c_str()))
         {
             tipl::out() << "ERROR: failed to save file to " << po.get("end_point1") << std::endl;
             return 1;
         }
-        if(po.has(("end_point2")) && !end2.save_to_file(po.get("end_point2").c_str()))
+        if(po.has(("end_point2")) && !end2.save_region_to_file(po.get("end_point2").c_str()))
         {
             tipl::out() << "ERROR: failed to save file to " << po.get("end_point2") << std::endl;
             return 1;

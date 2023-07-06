@@ -271,7 +271,7 @@ bool RegionTableWidget::command(QString cmd,QString param,QString)
                 filename  += "/";
                 filename  += item(index,0)->text().toStdString();
                 filename  += output_format().toStdString();
-                regions[size_t(index)]->save_to_file(filename.c_str());
+                regions[size_t(index)]->save_region_to_file(filename.c_str());
             }
         return !prog.aborted();
     }
@@ -688,7 +688,7 @@ bool load_nii(std::shared_ptr<fib_data> handle,
             regions.back()->to_diffusion_space = to_diffusion_space;
         }
         tipl::image<3,unsigned char> mask(from);
-        regions.back()->LoadFromBuffer(mask);
+        regions.back()->load_region_from_buffer(mask);
 
         unsigned int color = 0x00FFFFFF;
         unsigned int type = default_id;
@@ -800,7 +800,7 @@ bool RegionTableWidget::load_multiple_roi_nii(QString file_name,bool is_mni)
             else
             {
                 std::shared_ptr<ROIRegion> region(new ROIRegion(cur_tracking_window.handle));
-                if(!region->LoadFromFile(files[i].toStdString().c_str()))
+                if(!region->load_region_from_file(files[i].toStdString().c_str()))
                 {
                     error_msg = "Cannot read file:";
                     error_msg += files[i].toStdString();
@@ -958,7 +958,7 @@ void RegionTableWidget::merge_all(void)
     });
     if(prog.aborted())
         return;
-    regions[merge_list[0]]->LoadFromBuffer(mask);
+    regions[merge_list[0]]->load_region_from_buffer(mask);
     begin_update();
     for(int index = merge_list.size()-1;index >= 1;--index)
     {
@@ -1055,7 +1055,7 @@ void RegionTableWidget::save_region(void)
        !filename.endsWith(".nii") &&
        !filename.endsWith(".nii.gz"))
         filename += ".nii.gz";
-    regions[currentRow()]->save_to_file(filename.toStdString().c_str());
+    regions[currentRow()]->save_region_to_file(filename.toStdString().c_str());
     item(currentRow(),0)->setText(QFileInfo(filename).completeBaseName());
 }
 QString RegionTableWidget::output_format(void)
@@ -1353,7 +1353,7 @@ void RegionTableWidget::whole_brain(void)
                 mask[index.index()] = 1;
         });
     add_region("whole brain",seed_id);
-    regions.back()->LoadFromBuffer(mask);
+    regions.back()->load_region_from_buffer(mask);
     emit need_update();
 }
 
@@ -1438,7 +1438,7 @@ void RegionTableWidget::do_action(QString action)
                 return;
             tipl::image<3,unsigned char> A;
             tipl::image<3,uint16_t> A_labels;
-            checked_regions[0]->SaveToBuffer(A,handle->dim,tipl::identity_matrix());
+            checked_regions[0]->save_region_to_buffer(A,handle->dim,tipl::identity_matrix());
             if(action == "A<<B" || action == "A>>B")
                 A_labels.resize(handle->dim);
 
@@ -1451,7 +1451,7 @@ void RegionTableWidget::do_action(QString action)
                     if(r == 0)
                         return;
                     tipl::image<3,unsigned char> B;
-                    checked_regions[r]->SaveToBuffer(B,handle->dim,tipl::identity_matrix());
+                    checked_regions[r]->save_region_to_buffer(B,handle->dim,tipl::identity_matrix());
                     if(action == "A-B")
                     {
                         for(size_t i = 0;i < A.size();++i)
@@ -1465,7 +1465,7 @@ void RegionTableWidget::do_action(QString action)
                             if(A[i])
                                 B[i] = 0;
                         to_dwi_space(checked_regions[r]);
-                        checked_regions[r]->LoadFromBuffer(B);
+                        checked_regions[r]->load_region_from_buffer(B);
                         rows_to_be_updated.push_back(checked_row[r]);
                     }
                     if(action == "A*B")
@@ -1473,7 +1473,7 @@ void RegionTableWidget::do_action(QString action)
                         for(size_t i = 0;i < B.size();++i)
                             B[i] = (A[i] & B[i]);
                         to_dwi_space(checked_regions[r]);
-                        checked_regions[r]->LoadFromBuffer(B);
+                        checked_regions[r]->load_region_from_buffer(B);
                         rows_to_be_updated.push_back(checked_row[r]);
                     }
                     if(action == "A<<B" || action == "A>>B")
@@ -1487,7 +1487,7 @@ void RegionTableWidget::do_action(QString action)
             if(action == "A-B")
             {
                 to_dwi_space(checked_regions[0]);
-                checked_regions[0]->LoadFromBuffer(A);
+                checked_regions[0]->load_region_from_buffer(A);
                 rows_to_be_updated.push_back(checked_row[0]);
             }
 
@@ -1515,7 +1515,7 @@ void RegionTableWidget::do_action(QString action)
                     if(r == 0)
                         return;
                     tipl::image<3,unsigned char> B;
-                    checked_regions[r]->SaveToBuffer(B,handle->dim,tipl::identity_matrix());
+                    checked_regions[r]->save_region_to_buffer(B,handle->dim,tipl::identity_matrix());
                     tipl::morphology::edge(B);
                     for(size_t pos = 0;pos < B.size();++pos)
                         if(A[pos] && B[pos])
@@ -1641,7 +1641,7 @@ void RegionTableWidget::do_action(QString action)
                         if(A_labels[i] == r)
                             B[i] = 1;
                     to_dwi_space(checked_regions[r]);
-                    checked_regions[r]->LoadFromBuffer(B);
+                    checked_regions[r]->load_region_from_buffer(B);
                     rows_to_be_updated.push_back(checked_row[r]);
                 });
             }
@@ -1730,9 +1730,9 @@ void RegionTableWidget::do_action(QString action)
             {
                 prog(p++,region_to_be_processed.size());
                 tipl::image<3,unsigned char> mask;
-                region->SaveToBuffer(mask);
+                region->save_region_to_buffer(mask);
                 tipl::morphology::dilation2_mt(mask,threshold);
-                region->LoadFromBuffer(mask);
+                region->load_region_from_buffer(mask);
             }
         }
         if(action == "threshold" || action == "threshold_current")
@@ -1770,7 +1770,7 @@ void RegionTableWidget::do_action(QString action)
                         trans = cur_tracking_window.current_slice->invT*region->to_diffusion_space;
                     }
 
-                    region->SaveToBuffer(mask);
+                    region->save_region_to_buffer(mask);
 
                     tipl::par_for(tipl::begin_index(mask.shape()),tipl::end_index(mask.shape()),
                                   [&](const tipl::pixel_index<3>& pos)
@@ -1798,7 +1798,7 @@ void RegionTableWidget::do_action(QString action)
                         mask[i]  = ((I[i] > threshold) ^ flip) ? 1:0;
                     });
                 }
-                region->LoadFromBuffer(mask);
+                region->load_region_from_buffer(mask);
             }
 
         }
@@ -1806,7 +1806,7 @@ void RegionTableWidget::do_action(QString action)
         {
             ROIRegion& cur_region = *regions[size_t(roi_index)];
             tipl::image<3,unsigned char>mask;
-            cur_region.SaveToBuffer(mask);
+            cur_region.save_region_to_buffer(mask);
             QString name = item(roi_index,0)->text();
             tipl::image<3,unsigned int> labels;
             std::vector<std::vector<size_t> > r;
@@ -1824,7 +1824,7 @@ void RegionTableWidget::do_action(QString action)
                     regions.back()->is_diffusion_space = cur_region.is_diffusion_space;
                     regions.back()->to_diffusion_space = cur_region.to_diffusion_space;
                     regions.back()->is_mni = cur_region.is_mni;
-                    regions.back()->LoadFromBuffer(mask);
+                    regions.back()->load_region_from_buffer(mask);
                     add_row(int(regions.size()-1),(name + "_"+QString::number(total_count+1)));
                     ++total_count;
                 }

@@ -125,14 +125,14 @@ public:
             modified = true;
             return true;
         }
-        bool save_to_file(const char* FileName);
-        bool LoadFromFile(const char* FileName);
-        void Flip(unsigned int dimension);
+        bool save_region_to_file(const char* FileName);
+        bool load_region_from_file(const char* FileName);
+        void flip_region(unsigned int dimension);
         bool shift(tipl::vector<3,float> dx);
 
-        void LoadFromBuffer(tipl::image<3,unsigned char>& mask);
-        void SaveToBuffer(tipl::image<3,unsigned char>& mask);
-        void SaveToBuffer(tipl::image<3,unsigned char>& mask,const tipl::shape<3>& dim_to,const tipl::matrix<4,4>& trans_to);
+        void load_region_from_buffer(tipl::image<3,unsigned char>& mask);
+        void save_region_to_buffer(tipl::image<3,unsigned char>& mask);
+        void save_region_to_buffer(tipl::image<3,unsigned char>& mask,const tipl::shape<3>& dim_to,const tipl::matrix<4,4>& trans_to);
         void perform(const std::string& action);
         void makeMeshes(unsigned char smooth);
         template<typename value_type>

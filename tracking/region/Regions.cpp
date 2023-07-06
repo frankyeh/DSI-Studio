@@ -30,8 +30,8 @@ void convert_region(std::vector<tipl::vector<3,short> >& points,
     region_from.region.swap(points);
     region_from.to_diffusion_space = trans_from;
     tipl::image<3,unsigned char> mask;
-    region_from.SaveToBuffer(mask,dim_to,trans_to);
-    region_to.LoadFromBuffer(mask);
+    region_from.save_region_to_buffer(mask,dim_to,trans_to);
+    region_to.load_region_from_buffer(mask);
     region_to.region.swap(points);
 }
 void ROIRegion::add_points(std::vector<tipl::vector<3,short> >&& points,
@@ -95,66 +95,58 @@ void ROIRegion::add_points(std::vector<tipl::vector<3,short> >&& points, bool de
 }
 
 // ---------------------------------------------------------------------------
-bool ROIRegion::save_to_file(const char* FileName)
+bool ROIRegion::save_region_to_file(const char* file_name)
 {
-    std::string file_name(FileName);
-    std::string ext;
-    if(file_name.length() > 4)
-        ext = std::string(file_name.end()-4,file_name.end());
-
-    if (ext == std::string(".txt")) {
-        std::ofstream out(FileName);
+    if (tipl::ends_with(file_name,".txt"))
+    {
+        std::ofstream out(file_name);
         if(!out)
             return false;
         std::copy(region.begin(), region.end(),std::ostream_iterator<tipl::vector<3,short> >(out, "\n"));
         return true;
     }
-    else if (ext == std::string(".mat")) {
+    if (tipl::ends_with(file_name,".mat"))
+    {
         tipl::image<3,unsigned char> mask(dim);
-        for (unsigned int index = 0; index < region.size(); ++index) {
+        for (unsigned int index = 0; index < region.size(); ++index)
+        {
             if (dim.is_valid(region[index][0], region[index][1],
                              region[index][2]))
                 mask[tipl::pixel_index<3>(region[index][0], region[index][1],
                                            region[index][2], dim).index()] = 255;
         }
-        tipl::io::mat_write header(FileName);
+        tipl::io::mat_write header(file_name);
         if(!header)
             return false;
         header << mask;
         return true;
     }
-    else if (ext == std::string(".nii") || ext == std::string("i.gz"))
+    if (tipl::ends_with(file_name,".nii.gz") || tipl::ends_with(file_name,".nii"))
     {
         unsigned int color = region_render.color.color & 0x00FFFFFF;
         tipl::image<3,unsigned char> mask;
-        SaveToBuffer(mask);
+        save_region_to_buffer(mask);
         tipl::matrix<4,4> T(trans_to_mni);
         std::ostringstream out;
         out << "color=" << int(color) << ";roi=" << int(regions_feature);
         std::string tmp = out.str();
         if(tmp.size() < 80)
             tmp.resize(80);
-        return tipl::io::gz_nifti::save_to_file(FileName,mask,vs,tipl::matrix<4,4>(trans_to_mni*to_diffusion_space),is_mni,tmp.c_str());
+        return tipl::io::gz_nifti::save_to_file(file_name,mask,vs,tipl::matrix<4,4>(trans_to_mni*to_diffusion_space),is_mni,tmp.c_str());
     }
     return false;
 }
 
 // ---------------------------------------------------------------------------
 
-bool ROIRegion::LoadFromFile(const char* FileName) {
-    std::string file_name(FileName);
-    std::string ext;
-    if(file_name.length() > 4)
-        ext = std::string(file_name.end()-4,file_name.end());
-
+bool ROIRegion::load_region_from_file(const char* file_name) {
     modified = true;
     region.clear();
     is_diffusion_space = false;
     to_diffusion_space.identity();
-
-    if (ext == std::string(".txt"))
+    if (tipl::ends_with(file_name,".txt"))
     {
-        std::ifstream in(FileName,std::ios::binary);
+        std::ifstream in(file_name,std::ios::binary);
         std::vector<tipl::vector<3,short> > points;
         std::copy(std::istream_iterator<tipl::vector<3,short> >(in),
                   std::istream_iterator<tipl::vector<3,short> >(),
@@ -168,10 +160,10 @@ bool ROIRegion::LoadFromFile(const char* FileName) {
         region.swap(points);
         return true;
     }
-
-    if (ext == std::string(".mat")) {
+    if (tipl::ends_with(file_name,".mat"))
+    {
         tipl::io::mat_read header;
-        if(!header.load_from_file(FileName))
+        if(!header.load_from_file(file_name))
             return false;
         tipl::image<3,short>from;
         header >> from;
@@ -182,12 +174,11 @@ bool ROIRegion::LoadFromFile(const char* FileName) {
         add_points(std::move(points));
         return true;
     }
-
-    if (ext == std::string(".nii") || ext == std::string(".hdr") || ext == std::string("i.gz"))
+    if (tipl::ends_with(file_name,".nii") || tipl::ends_with(file_name,".nii.gz"))
     {
         tipl::io::gz_nifti header;
         tipl::image<3> I;
-        if (!header.load_from_file(FileName) || !header.toLPS(I))
+        if (!header.load_from_file(file_name) || !header.toLPS(I))
         {
             std::cout << header.error_msg << std::endl;
             return false;
@@ -198,7 +189,7 @@ bool ROIRegion::LoadFromFile(const char* FileName) {
         header.get_voxel_size(vs);
         header.get_image_transformation(trans_to_mni);
         tipl::image<3,unsigned char> mask = I;
-        LoadFromBuffer(mask);
+        load_region_from_buffer(mask);
         return true;
     }
     return false;
@@ -215,7 +206,7 @@ void ROIRegion::makeMeshes(unsigned char smooth)
     region_render.load(region,to_diffusion_space,smooth);
 }
 // ---------------------------------------------------------------------------
-void ROIRegion::LoadFromBuffer(tipl::image<3,unsigned char>& mask)
+void ROIRegion::load_region_from_buffer(tipl::image<3,unsigned char>& mask)
 {
     modified = true;
     if(!region.empty())
@@ -223,7 +214,7 @@ void ROIRegion::LoadFromBuffer(tipl::image<3,unsigned char>& mask)
     region = tipl::volume2points(mask);
 }
 // ---------------------------------------------------------------------------
-void ROIRegion::SaveToBuffer(tipl::image<3,unsigned char>& mask)
+void ROIRegion::save_region_to_buffer(tipl::image<3,unsigned char>& mask)
 {
     mask.resize(dim);
     mask = 0;
@@ -234,10 +225,10 @@ void ROIRegion::SaveToBuffer(tipl::image<3,unsigned char>& mask)
     });
 }
 // ---------------------------------------------------------------------------
-void ROIRegion::SaveToBuffer(tipl::image<3,unsigned char>& mask,const tipl::shape<3>& dim_to,const tipl::matrix<4,4>& trans_to)
+void ROIRegion::save_region_to_buffer(tipl::image<3,unsigned char>& mask,const tipl::shape<3>& dim_to,const tipl::matrix<4,4>& trans_to)
 {
     tipl::image<3,unsigned char> m;
-    SaveToBuffer(m);
+    save_region_to_buffer(m);
     if(dim == dim_to && to_diffusion_space == trans_to)
     {
         m.swap(mask);
@@ -251,11 +242,11 @@ void ROIRegion::SaveToBuffer(tipl::image<3,unsigned char>& mask,const tipl::shap
 void ROIRegion::perform(const std::string& action)
 {
     if(action == "flipx")
-        Flip(0);
+        flip_region(0);
     if(action == "flipy")
-        Flip(1);
+        flip_region(1);
     if(action == "flipz")
-        Flip(2);
+        flip_region(2);
     if(action == "shiftx")
         shift(tipl::vector<3,float>(1.0, 0.0, 0.0));
     if(action == "shiftnx")
@@ -272,51 +263,51 @@ void ROIRegion::perform(const std::string& action)
     tipl::image<3,unsigned char>mask;
     if(action == "smoothing")
     {
-        SaveToBuffer(mask);
+        save_region_to_buffer(mask);
         tipl::morphology::smoothing(mask);
-        LoadFromBuffer(mask);
+        load_region_from_buffer(mask);
     }
     if(action == "erosion")
     {
-        SaveToBuffer(mask);
+        save_region_to_buffer(mask);
         tipl::morphology::erosion(mask);
-        LoadFromBuffer(mask);
+        load_region_from_buffer(mask);
     }
     if(action == "dilation")
     {
-        SaveToBuffer(mask);
+        save_region_to_buffer(mask);
         tipl::morphology::dilation(mask);
-        LoadFromBuffer(mask);
+        load_region_from_buffer(mask);
     }
     if(action == "opening")
     {
-        SaveToBuffer(mask);
+        save_region_to_buffer(mask);
         tipl::morphology::opening(mask);
-        LoadFromBuffer(mask);
+        load_region_from_buffer(mask);
     }
     if(action == "closing")
     {
-        SaveToBuffer(mask);
+        save_region_to_buffer(mask);
         tipl::morphology::closing(mask);
-        LoadFromBuffer(mask);
+        load_region_from_buffer(mask);
     }
     if(action == "defragment")
     {
-        SaveToBuffer(mask);
+        save_region_to_buffer(mask);
         tipl::morphology::defragment(mask);
-        LoadFromBuffer(mask);
+        load_region_from_buffer(mask);
     }
     if(action == "negate")
     {
-        SaveToBuffer(mask);
+        save_region_to_buffer(mask);
         tipl::morphology::negate(mask);
-        LoadFromBuffer(mask);
+        load_region_from_buffer(mask);
     }
 
 }
 
 // ---------------------------------------------------------------------------
-void ROIRegion::Flip(unsigned int dimension) {
+void ROIRegion::flip_region(unsigned int dimension) {
     modified = true;
     if(!region.empty())
         undo_backup.push_back(region);
