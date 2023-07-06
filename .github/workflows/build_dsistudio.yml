@@ -304,13 +304,13 @@ jobs:
       uses: jurplel/install-qt-action@v3
       with:
         version: 6.2.0
-        modules: addons.qtcharts qtopengl
+        modules: addons.qtcharts
     - name: Step to run when failed
       if: ${{ failure() }}
       uses: jurplel/install-qt-action@v3
       with:
         version: 6.2.0
-        modules: addons.qtcharts qtopengl       
+        modules: addons.qtcharts       
     - name: Install Zlib
       run: |
         powershell -Command "(Invoke-WebRequest -Uri https://git.io/JnHTY -OutFile install_zlib.bat)"; 
