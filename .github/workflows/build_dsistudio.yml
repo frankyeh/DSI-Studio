@@ -301,13 +301,13 @@ jobs:
     steps:
     - uses: actions/checkout@v2.5.0
     - name: Install Qt
-      uses: jurplel/install-qt-action@v2
+      uses: jurplel/install-qt-action@v3
       with:
         version: 6.2.0
         modules: addons.qtcharts qtopengl
     - name: Step to run when failed
       if: ${{ failure() }}
-      uses: jurplel/install-qt-action@v2
+      uses: jurplel/install-qt-action@v3
       with:
         version: 6.2.0
         modules: addons.qtcharts qtopengl       
