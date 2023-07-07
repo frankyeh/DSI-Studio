@@ -501,15 +501,8 @@ bool fib_data::load_from_file(const char* file_name)
             tipl::normalize(I);
             header.get_voxel_size(vs);
             header.get_image_transformation(trans_to_mni);
-            is_mni = true;
-            if(!header.is_mni() || std::floor(trans_to_mni[0]) != trans_to_mni[0])
-            {
-                is_mni = false;
-                tipl::out() << "The image is used as subject-space image" << std::endl;
-                initial_LPS_nifti_srow(trans_to_mni,I.shape(),vs);
-            }
-            else
-                tipl::out() << "The image is used as MNI-space image" << std::endl;
+            is_mni = false;
+            initial_LPS_nifti_srow(trans_to_mni,I.shape(),vs);
         }
     }
     else
