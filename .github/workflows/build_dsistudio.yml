@@ -296,18 +296,17 @@ jobs:
         prerelease: false
 
   windows_build:
-    needs: [test_animal_recon, test_human_tracking_qsdr, test_human_tracking_gqi, test_connectometry]
     runs-on: windows-2019
     steps:
     - uses: actions/checkout@v2.5.0
     - name: Install Qt
-      uses: jurplel/install-qt-action@v3
+      uses: jurplel/install-qt-action@v3.2.1
       with:
         version: 6.2.0
         modules: addons.qtcharts
     - name: Step to run when failed
       if: ${{ failure() }}
-      uses: jurplel/install-qt-action@v3
+      uses: jurplel/install-qt-action@v3.2.1
       with:
         version: 6.2.0
         modules: addons.qtcharts       
