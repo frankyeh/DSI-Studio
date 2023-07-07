@@ -214,7 +214,7 @@ jobs:
         ./dsi-studio/dsi_studio --action=src --source=ds002087
 
   linux-build:
-    needs: [test_animal_recon, test_human_tracking_qsdr, test_human_tracking_gqi, test_connectometry]
+    needs: build_prerelease
     strategy:
       matrix:
         os: [ubuntu2204,ubuntu1804,ubuntu1604,centos7]
@@ -247,7 +247,6 @@ jobs:
         prerelease: false
         
   macos-build:
-    needs: [test_animal_recon, test_human_tracking_qsdr, test_human_tracking_gqi, test_connectometry]
     strategy:
       matrix:
         os: [macos-12,macos-11]
@@ -386,7 +385,6 @@ jobs:
         prerelease: false  
 
   docker_build:
-    needs: [test_animal_recon, test_human_tracking_qsdr, test_human_tracking_gqi, test_connectometry]
     runs-on: ubuntu-20.04
     steps:
     - name: Checkout
