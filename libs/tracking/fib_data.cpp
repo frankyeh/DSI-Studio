@@ -501,8 +501,14 @@ bool fib_data::load_from_file(const char* file_name)
             tipl::normalize(I);
             header.get_voxel_size(vs);
             header.get_image_transformation(trans_to_mni);
-            is_mni = false;
-            initial_LPS_nifti_srow(trans_to_mni,I.shape(),vs);
+            is_mni = QFileInfo(file_name).fileName().toLower().contains("mni");
+            if(is_mni)
+                tipl::out() << "The file name contains 'mni'. The image is used as MNI-space image." << std::endl;
+            else
+            {
+                tipl::out() << "The image is used as subject-space image" << std::endl;
+                initial_LPS_nifti_srow(trans_to_mni,I.shape(),vs);
+            }
         }
     }
     else
