@@ -982,6 +982,7 @@
     </widget>
     <addaction name="actionOpenTract"/>
     <addaction name="actionOpen_MNI_space_Tracts"/>
+    <addaction name="actionLoad_Built_In_Atlas"/>
     <addaction name="separator"/>
     <addaction name="menuSave_Tracts"/>
     <addaction name="menuSave"/>
@@ -1584,17 +1585,7 @@
               </widget>
              </item>
              <item>
-              <widget class="QLabel" name="target_label">
-               <property name="sizePolicy">
-                <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
-                 <horstretch>0</horstretch>
-                 <verstretch>0</verstretch>
-                </sizepolicy>
-               </property>
-               <property name="text">
-                <string>Target</string>
-               </property>
-              </widget>
+              <widget class="QComboBox" name="tractography_atlas"/>
              </item>
              <item>
               <widget class="QComboBox" name="target">
@@ -1728,6 +1719,9 @@ Tracking</string>
                <horstretch>0</horstretch>
                <verstretch>0</verstretch>
               </sizepolicy>
+             </property>
+             <property name="readOnly">
+              <bool>false</bool>
              </property>
             </widget>
            </widget>
@@ -4180,6 +4174,11 @@ Tracking</string>
    </property>
    <property name="text">
     <string>Open MNI-space Tracts...</string>
+   </property>
+  </action>
+  <action name="actionLoad_Built_In_Atlas">
+   <property name="text">
+    <string>Load Built-In Atlas...</string>
    </property>
   </action>
  </widget>

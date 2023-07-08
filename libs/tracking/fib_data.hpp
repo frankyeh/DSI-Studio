@@ -282,14 +282,18 @@ public:
     tipl::matrix<4,4> template_to_mni;
     bool has_manual_atlas = false;
     tipl::transformation_matrix<float> manual_template_T;
+public:
+    size_t tractography_atlas_id = 0;
+    std::string tractography_atlas_file_name;
+    std::vector<std::string> tractography_name_list;
+    std::vector<std::string> tractography_atlas_list;
+    void set_tractography_id(size_t new_id);
 
 public:
     std::string t1w_template_file_name,t2w_template_file_name,wm_template_file_name,mask_template_file_name;
 public:
     std::shared_ptr<TractModel> track_atlas;
     std::vector<float> tract_atlas_min_length,tract_atlas_max_length;
-    std::string tractography_atlas_file_name;
-    std::vector<std::string> tractography_name_list;
     float tract_atlas_jacobian = 0.0f;
     bool recognize(std::shared_ptr<TractModel>& trk,
                    std::vector<unsigned int>& labels,

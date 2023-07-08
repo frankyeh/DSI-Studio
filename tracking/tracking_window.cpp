@@ -30,7 +30,7 @@
 
 #include <filesystem>
 
-extern std::vector<std::string> fa_template_list,track_atlas_file_list;
+extern std::vector<std::string> fa_template_list;
 extern std::vector<tracking_window*> tracking_windows;
 extern size_t auto_track_pos[7];
 extern unsigned char auto_track_rgb[6][3];               // projection
@@ -68,8 +68,6 @@ void populate_templates(QComboBox* combo,size_t index)
         combo->setCurrentIndex(int(index));
     }
 }
-
-
 
 QVariant tracking_window::operator[](QString name) const
 {
@@ -142,9 +140,6 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
             {
                 ui->perform_tracking->hide();
                 ui->stop_tracking->hide();
-                ui->show_fiber->setChecked(false);
-                ui->show_fiber->hide();
-                ui->enable_auto_track->hide();
             }            
         }
         tipl::out() << "initialize slices" << std::endl;
@@ -157,6 +152,7 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         tipl::out() << "prepare template and atlases" << std::endl;
         {
             populate_templates(ui->template_box,handle->template_id);
+
             if(handle->is_mni)
             {
                 if(std::filesystem::exists(handle->t1w_template_file_name.c_str()))
@@ -203,7 +199,7 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         // provide automatic tractography
         {
             ui->target->setVisible(false);
-            ui->target_label->setVisible(false);
+            ui->tractography_atlas->setVisible(false);
         }
 
     }
@@ -401,6 +397,7 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
 
         connect(ui->actionOpenTract,SIGNAL(triggered()),tractWidget,SLOT(load_tracts()));
         connect(ui->actionOpen_MNI_space_Tracts,SIGNAL(triggered()),tractWidget,SLOT(load_mni_tracts()));
+        connect(ui->actionLoad_Built_In_Atlas,SIGNAL(triggered()),tractWidget,SLOT(load_built_in_atlas()));
         connect(ui->actionOpen_Tracts_Label,SIGNAL(triggered()),tractWidget,SLOT(load_tract_label()));
         connect(ui->actionMerge_All,SIGNAL(triggered()),tractWidget,SLOT(merge_all()));
         connect(ui->actionMerge_Tracts_by_Name,SIGNAL(triggered()),tractWidget,SLOT(merge_track_by_name()));
@@ -2222,16 +2219,10 @@ void tracking_window::on_enable_auto_track_clicked()
     }
     ui->enable_auto_track->setVisible(false);
     ui->target->setVisible(true);
-    ui->target_label->setVisible(true);
-    if(ui->target->count() == 0)
-    {
-        ui->target->clear();
-        ui->target->addItem("All");
-        for(size_t i = 0;i < handle->tractography_name_list.size();++i)
-            ui->target->addItem(handle->tractography_name_list[i].c_str());
-        ui->target->setCurrentIndex(0);
-    }
+    ui->tractography_atlas->setVisible(true);
     raise();
+    // for adding atlas tract in t1w as fib
+    ui->perform_tracking->show();
 }
 
 float tracking_window::get_fa_threshold(void)
@@ -2696,12 +2687,33 @@ void tracking_window::on_template_box_currentIndexChanged(int index)
     if(index < 0 || index >= int(fa_template_list.size()))
         return;
     handle->set_template_id(size_t(index));
+
+    ui->tractography_atlas->clear();
+    if(!handle->tractography_atlas_list.empty())
+    {
+        for(const auto& each: handle->tractography_atlas_list)
+            ui->tractography_atlas->addItem(QFileInfo(each.c_str()).baseName());
+        ui->tractography_atlas->setCurrentIndex(0);
+    }
+
     ui->addRegionFromAtlas->setVisible(!handle->atlas_list.empty());
-    ui->enable_auto_track->setVisible(handle->trackable && std::filesystem::exists(track_atlas_file_list[uint32_t(index)]));
+    ui->enable_auto_track->setVisible(!handle->tractography_name_list.empty());
     ui->target->setCurrentIndex(0);
     ui->target->setVisible(false);
-    ui->target_label->setVisible(false);
 }
+
+void tracking_window::on_tractography_atlas_currentIndexChanged(int index)
+{
+    if(index < 0 || index >= int(handle->tractography_atlas_list.size()))
+        return;
+    handle->set_tractography_id(index);
+    ui->target->clear();
+    ui->target->addItem("All");
+    for(size_t i = 0;i < handle->tractography_name_list.size();++i)
+        ui->target->addItem(handle->tractography_name_list[i].c_str());
+    ui->target->setCurrentIndex(0);
+}
+
 
 void tracking_window::on_actionManual_Atlas_Alignment_triggered()
 {

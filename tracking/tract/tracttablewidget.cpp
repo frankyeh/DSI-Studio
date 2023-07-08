@@ -196,9 +196,54 @@ void TractTableWidget::addConnectometryResults(std::vector<std::vector<std::vect
     cur_tracking_window.set_data("tract_color_style",1);//manual assigned
     emit show_tracts();
 }
+void TractTableWidget::load_built_in_atlas(int track_id)
+{
+    if(cur_tracking_window.handle->tractography_atlas_file_name.empty() || cur_tracking_window.handle->tractography_name_list.empty())
+    {
+        QMessageBox::critical(this,"ERROR","No tractography atlas found in current template space");
+        return;
+    }
+    if(track_id < 0) // load all
+    {
+        for(size_t i = 0;i < cur_tracking_window.handle->tractography_name_list.size();++i)
+            load_built_in_atlas(i);
+        return;
+    }
+    std::shared_ptr<TractModel> tract_model(new TractModel(cur_tracking_window.handle));
+    if(!tract_model->load_tracts_from_file(cur_tracking_window.handle->tractography_atlas_file_name.c_str(),
+                                           cur_tracking_window.handle.get(),true))
+    {
+        QMessageBox::critical(this,"ERROR","Cannot load tractography atlas");
+        return;
+    }
 
+    addNewTracts(cur_tracking_window.handle->tractography_name_list[track_id].c_str());
+    tract_rendering.back()->need_update = true;
+    const auto& atlas_tract = tract_model->get_tracts();
+    const auto& atlas_cluster = tract_model->get_cluster_info();
+    std::vector<std::vector<float> > new_tracts;
+    for(size_t i = 0;i < atlas_cluster.size();++i)
+        if(atlas_cluster[i] == track_id)
+            new_tracts.push_back(atlas_tract[i]);
+
+    auto lock = tract_rendering.back()->start_writing();
+    tract_models.back()->add_tracts(new_tracts);
+    item(int(tract_models.size()-1),1)->setText(QString::number(tract_models.back()->get_visible_track_count()));
+    item(int(tract_models.size()-1),2)->setText(QString::number(tract_models.back()->get_deleted_track_count()));
+
+}
+void TractTableWidget::load_built_in_atlas(void)
+{
+    load_built_in_atlas(cur_tracking_window.ui->target->currentIndex()-1);
+}
 void TractTableWidget::start_tracking(void)
 {
+    if(!cur_tracking_window.handle->trackable)
+    {
+        load_built_in_atlas();
+        return;
+    }
+
     if(!cur_tracking_window.handle->set_dt_index(
             cur_tracking_window.get_dt_index_pair(),
             cur_tracking_window.renderWidget->getData("dt_threshold_type").toInt()))
@@ -221,6 +266,8 @@ void TractTableWidget::start_tracking(void)
         tract_name = cur_tracking_window.ui->target->currentText();
 
     addNewTracts(tract_name);
+
+
     thread_data.back() = std::make_shared<ThreadData>(cur_tracking_window.handle);
     cur_tracking_window.set_tracking_param(*thread_data.back());
     cur_tracking_window.regionWidget->setROIs(thread_data.back().get());

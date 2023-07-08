@@ -44,6 +44,7 @@ public:
     void cut_by_slice(unsigned char dim,bool greater);
     void draw_tracts(unsigned char dim,int pos,
                      QImage& scaledimage,float display_ratio);
+    void load_built_in_atlas(int id);
     QString output_format(void);
     template<typename fun_type>
     void for_current_bundle(fun_type&& fun)
@@ -114,6 +115,8 @@ private:
     void load_cluster_label(const std::vector<unsigned int>& labels,QStringList Names = QStringList());
     void load_tract_label(QString FileName);
 public slots:
+    void load_built_in_atlas(void);
+
     void clustering_EM(void){clustering(2);}
     void clustering_kmeans(void){clustering(1);}
     void clustering_hie(void){clustering(0);}
