@@ -86,11 +86,7 @@ bool load_nii(tipl::program_option<tipl::out>& po,
 
 void get_filenames_from(const std::string name,std::vector<std::string>& filenames)
 {
-    std::istringstream in(name);
-    std::string line;
-    std::vector<std::string> file_list;
-    while(std::getline(in,line,','))
-        file_list.push_back(line);
+    std::vector<std::string> file_list = tipl::split(name,',');
     for(size_t index = 0;index < file_list.size();++index)
     {
         std::string cur_file = file_list[index];
