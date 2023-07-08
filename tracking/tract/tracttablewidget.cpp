@@ -234,7 +234,7 @@ void TractTableWidget::load_built_in_atlas(int track_id)
 }
 void TractTableWidget::load_built_in_atlas(void)
 {
-    load_built_in_atlas(cur_tracking_window.ui->target->currentIndex()-1);
+    load_built_in_atlas(cur_tracking_window.ui->target->currentIndex());
 }
 void TractTableWidget::start_tracking(void)
 {
@@ -257,12 +257,13 @@ void TractTableWidget::start_tracking(void)
     // if running differential tracking
     if(!cur_tracking_window.handle->dir.dt_fa.empty())
     {
-        cur_tracking_window.ui->target->setCurrentIndex(0);
+        // turn off automated tracking
+        cur_tracking_window.ui->tractography_atlas->setCurrentIndex(0);
         tract_name = QString(cur_tracking_window.handle->dir.dt_threshold_name.c_str())+"_"+
                      QString::number(cur_tracking_window["dt_threshold"].toDouble());
     }
     // if running autotrack
-    if(cur_tracking_window.ui->target->currentIndex() > 0) // auto track
+    if(cur_tracking_window.ui->tractography_atlas->currentIndex() > 0) // auto track
         tract_name = cur_tracking_window.ui->target->currentText();
 
     addNewTracts(tract_name);
@@ -434,9 +435,9 @@ void TractTableWidget::load_tract_label(void)
 void TractTableWidget::load_tract_label(QString filename)
 {
     std::ifstream in(filename.toStdString().c_str());
-    std::string line;
-    for(int i = 0;in >> line && i < rowCount();++i)
-        item(i,0)->setText(line.c_str());
+    std::vector<std::string> name((std::istream_iterator<std::string>(in)),(std::istream_iterator<std::string>()));
+    for(int i = 0;i < rowCount() && i < name.size();++i)
+        item(rowCount()-1-i,0)->setText(name[name.size()-1-i].c_str());
 }
 
 void TractTableWidget::check_all(void)

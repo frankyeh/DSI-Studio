@@ -287,7 +287,7 @@ public:
     std::string tractography_atlas_file_name;
     std::vector<std::string> tractography_name_list;
     std::vector<std::string> tractography_atlas_list;
-    void set_tractography_id(size_t new_id);
+    void set_tractography_atlas_id(size_t new_id);
 
 public:
     std::string t1w_template_file_name,t2w_template_file_name,wm_template_file_name,mask_template_file_name;

@@ -1193,7 +1193,7 @@ void mni2temp(tipl::vector<3>& pos,const tipl::matrix<4,4>& trans)
         pos[2] /= trans[10];
 }
 */
-void fib_data::set_tractography_id(size_t new_id)
+void fib_data::set_tractography_atlas_id(size_t new_id)
 {
     tractography_atlas_list = tractography_atlas_file_name_list[template_id];
     tractography_atlas_id = 0;
@@ -1229,7 +1229,7 @@ void fib_data::set_template_id(size_t new_id)
             atlas_list.back()->template_to_mni = trans_to_mni;
         }
 
-        set_tractography_id(0);
+        set_tractography_atlas_id(0);
 
         // populate other modality name
         t1w_template_file_name = QString(fa_template_list[template_id].c_str()).replace(".QA.nii.gz",".T1W.nii.gz").toStdString();

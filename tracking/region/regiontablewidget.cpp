@@ -219,8 +219,8 @@ void RegionTableWidget::add_row(int row,QString name)
     setRowHeight(row,22);
     setCurrentCell(row,0);
 
-    if(cur_tracking_window.ui->target->count())
-        cur_tracking_window.ui->target->setCurrentIndex(0);
+    if(cur_tracking_window.ui->tractography_atlas->count())
+        cur_tracking_window.ui->tractography_atlas->setCurrentIndex(0);
 
     check_row(row,true);
 
@@ -1367,10 +1367,10 @@ void RegionTableWidget::setROIs(ThreadData* data)
                                       regions[index]->to_diffusion_space,
                                       regions[index]->regions_feature,item(int(index),0)->text().toStdString().c_str());
     // auto track
-    if(cur_tracking_window.ui->target->currentIndex() > 0)
+    if(cur_tracking_window.ui->tractography_atlas->currentIndex() > 0)
     {
         data->roi_mgr->use_auto_track = true;
-        data->roi_mgr->track_id = cur_tracking_window.ui->target->currentIndex()-1;
+        data->roi_mgr->track_id = cur_tracking_window.ui->target->currentIndex();
         data->roi_mgr->tolerance_dis_in_icbm152_mm = cur_tracking_window["autotrack_tolerance"].toFloat();
     }
 }

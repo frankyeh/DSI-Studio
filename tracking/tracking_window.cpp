@@ -198,8 +198,8 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
 
         // provide automatic tractography
         {
-            ui->target->setVisible(false);
-            ui->tractography_atlas->setVisible(false);
+            ui->target->hide();
+            ui->tractography_atlas->hide();
         }
 
     }
@@ -985,7 +985,7 @@ void tracking_window::set_tracking_param(ThreadData& tracking_thread)
     tracking_thread.param.default_otsu = renderWidget->getData("otsu_threshold").toFloat();
     tracking_thread.param.tip_iteration =
             // only used in automatic fiber tracking
-            (ui->target->currentIndex() > 0 ||
+            (ui->tractography_atlas->currentIndex() > 0 ||
             // or differential tractography
             renderWidget->getData("dt_index1").toInt() > 0)
             ? renderWidget->getData("tip_iteration").toInt() : 0;
@@ -2218,7 +2218,6 @@ void tracking_window::on_enable_auto_track_clicked()
         return;
     }
     ui->enable_auto_track->setVisible(false);
-    ui->target->setVisible(true);
     ui->tractography_atlas->setVisible(true);
     raise();
     // for adding atlas tract in t1w as fib
@@ -2689,29 +2688,35 @@ void tracking_window::on_template_box_currentIndexChanged(int index)
     handle->set_template_id(size_t(index));
 
     ui->tractography_atlas->clear();
+    ui->tractography_atlas->addItem("All");
     if(!handle->tractography_atlas_list.empty())
     {
         for(const auto& each: handle->tractography_atlas_list)
             ui->tractography_atlas->addItem(QFileInfo(each.c_str()).baseName());
-        ui->tractography_atlas->setCurrentIndex(0);
     }
-
+    ui->tractography_atlas->setCurrentIndex(0);
+    ui->tractography_atlas->hide();
     ui->addRegionFromAtlas->setVisible(!handle->atlas_list.empty());
     ui->enable_auto_track->setVisible(!handle->tractography_name_list.empty());
-    ui->target->setCurrentIndex(0);
-    ui->target->setVisible(false);
 }
 
 void tracking_window::on_tractography_atlas_currentIndexChanged(int index)
 {
     if(index < 0 || index >= int(handle->tractography_atlas_list.size()))
         return;
-    handle->set_tractography_id(index);
+    if(index == 0)
+    {
+        ui->target->hide();
+        return;
+    }
+
+    handle->set_tractography_atlas_id(index-1);
     ui->target->clear();
-    ui->target->addItem("All");
     for(size_t i = 0;i < handle->tractography_name_list.size();++i)
         ui->target->addItem(handle->tractography_name_list[i].c_str());
     ui->target->setCurrentIndex(0);
+    ui->target->show();
+
 }
 
 

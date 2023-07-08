@@ -189,19 +189,12 @@
            </sizepolicy>
           </property>
           <property name="title">
-           <string>Step B4(b): Select Bundles</string>
+           <string>Step B4(b): Select Atlas</string>
           </property>
           <layout class="QVBoxLayout" name="verticalLayout_2">
-           <item>
-            <widget class="QRadioButton" name="recommend_list">
-             <property name="text">
-              <string>Recommended List</string>
-             </property>
-             <property name="checked">
-              <bool>true</bool>
-             </property>
-            </widget>
-           </item>
+           <property name="topMargin">
+            <number>0</number>
+           </property>
            <item>
             <widget class="QWidget" name="recom_panel" native="true">
              <layout class="QVBoxLayout" name="verticalLayout_6">
@@ -220,52 +213,11 @@
               <property name="bottomMargin">
                <number>0</number>
               </property>
-              <item>
-               <widget class="QCheckBox" name="cb_association">
-                <property name="text">
-                 <string>Association Pathways</string>
-                </property>
-                <property name="checked">
-                 <bool>true</bool>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <widget class="QCheckBox" name="cb_projection">
-                <property name="text">
-                 <string>Projection Pathways</string>
-                </property>
-                <property name="checked">
-                 <bool>true</bool>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <widget class="QCheckBox" name="cb_commissural">
-                <property name="text">
-                 <string>Commissural Pathways</string>
-                </property>
-                <property name="checked">
-                 <bool>true</bool>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <widget class="QCheckBox" name="cb_brainstem">
-                <property name="text">
-                 <string>Brainstem/Cerebellum Pathways</string>
-                </property>
-               </widget>
-              </item>
              </layout>
             </widget>
            </item>
            <item>
-            <widget class="QRadioButton" name="custom">
-             <property name="text">
-              <string>Custom</string>
-             </property>
-            </widget>
+            <widget class="QComboBox" name="tractography_atlas"/>
            </item>
            <item>
             <widget class="QListWidget" name="candidate_list_view">
@@ -434,7 +386,7 @@
                   <number>100</number>
                  </property>
                  <property name="value">
-                  <number>48</number>
+                  <number>4</number>
                  </property>
                 </widget>
                </item>

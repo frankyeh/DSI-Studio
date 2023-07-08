@@ -1332,7 +1332,7 @@
    <property name="minimumSize">
     <size>
      <width>343</width>
-     <height>158</height>
+     <height>190</height>
     </size>
    </property>
    <property name="maximumSize">
@@ -1570,6 +1570,9 @@
             </layout>
            </item>
            <item>
+            <widget class="QComboBox" name="tractography_atlas"/>
+           </item>
+           <item>
             <layout class="QHBoxLayout" name="horizontalLayout_6">
              <property name="spacing">
               <number>0</number>
@@ -1583,9 +1586,6 @@
                 <string>Autotrack...</string>
                </property>
               </widget>
-             </item>
-             <item>
-              <widget class="QComboBox" name="tractography_atlas"/>
              </item>
              <item>
               <widget class="QComboBox" name="target">

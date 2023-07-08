@@ -709,6 +709,21 @@ void setup_trk_param(std::shared_ptr<fib_data> handle,ThreadData& tracking_threa
         tracking_thread.param.set_code(po.get("parameter_id"));
 }
 extern std::vector<std::string> fa_template_list;
+void set_template(std::shared_ptr<fib_data> handle,tipl::program_option<tipl::out>& po)
+{
+    if(po.has("template"))
+    {
+        for(size_t id = 0;id < fa_template_list.size();++id)
+            tipl::out() << "template " << id << ":" << std::filesystem::path(fa_template_list[id]).stem() << std::endl;
+        handle->set_template_id(po.get("template",size_t(0)));
+    }
+    if(po.has("tractography_atlas"))
+    {
+        for(size_t id = 0;id < handle->tractography_atlas_list.size();++id)
+            tipl::out() << "tractography atlas " << id << ":" << std::filesystem::path(handle->tractography_atlas_list[id]).stem() << std::endl;
+        handle->set_tractography_atlas_id(po.get("tractography_atlas",size_t(0)));
+    }
+}
 int trk(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> handle)
 {
     if (po.has("threshold_index"))
@@ -769,12 +784,8 @@ int trk(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> handle)
         }
         handle->set_dt_index(std::make_pair(metric_i,metric_j),po.get("dt_threshold_type",0));
     }
-    if(po.has("template"))
-    {
-        for(size_t id = 0;id < fa_template_list.size();++id)
-            tipl::out() << "template " << id << ":" << std::filesystem::path(fa_template_list[id]).stem() << std::endl;
-        handle->set_template_id(po.get("template",size_t(0)));
-    }
+
+    set_template(handle,po);
 
     ThreadData tracking_thread(handle);
     setup_trk_param(handle,tracking_thread,po);

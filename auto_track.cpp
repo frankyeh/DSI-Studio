@@ -19,30 +19,17 @@ auto_track::auto_track(QWidget *parent) :
     progress_bar->setVisible(false);
     ui->statusbar->addPermanentWidget(progress_bar);
 
+    // populate tractography atlas list
     fib_data fib;
     fib.set_template_id(0);
-    if(fib.tractography_name_list.empty())
-    {
-        QMessageBox::critical(this,"ERROR",
-            QString("Cannot find the template track file ")+QFileInfo(fa_template_list[0].c_str()).baseName()+".tt.gz"
-            + " at folder " + QCoreApplication::applicationDirPath()+ "/track Please re-install the DSI Studio package");
-    }
-    QStringList tract_names;
-    for(size_t index = 0;index < fib.tractography_name_list.size();++index)
-        tract_names << fib.tractography_name_list[index].c_str();
-    ui->candidate_list_view->addItems(tract_names);
-    select_tracts();
+    for(const auto& each : fib.tractography_atlas_list)
+        ui->tractography_atlas->addItem(QFileInfo(each.c_str()).baseName());
+    ui->tractography_atlas->setCurrentIndex(0);
 
     timer = std::make_shared<QTimer>(this);
     timer->stop();
     timer->setInterval(1000);
     connect(timer.get(),SIGNAL(timeout()),this,SLOT(check_status()));
-    connect(ui->recommend_list,SIGNAL(clicked()),this,SLOT(select_tracts()));
-    connect(ui->custom,SIGNAL(clicked()),this,SLOT(select_tracts()));
-    connect(ui->cb_projection,SIGNAL(clicked()),this,SLOT(select_tracts()));
-    connect(ui->cb_association,SIGNAL(clicked()),this,SLOT(select_tracts()));
-    connect(ui->cb_commissural,SIGNAL(clicked()),this,SLOT(select_tracts()));
-    connect(ui->cb_brainstem,SIGNAL(clicked()),this,SLOT(select_tracts()));
 
 }
 
@@ -118,8 +105,24 @@ struct file_holder{
             std::filesystem::remove(file_name);
     }
 };
-
-std::string run_auto_track(tipl::program_option<tipl::out>& po,const std::vector<std::string>& file_list,const std::vector<unsigned int>& track_id,int& prog)
+bool find_string_case_insensitive(const std::string & str1, const std::string & str2)
+{
+  auto it = std::search(
+    str1.begin(), str1.end(),
+    str2.begin(),   str2.end(),
+    [](char ch1, char ch2) { return std::toupper(ch1) == std::toupper(ch2); }
+  );
+  return (it != str1.end() );
+}
+bool is_selected(std::vector<std::string>& selected_tracts,const std::string& tract_name)
+{
+    for(const auto& each: selected_tracts)
+        if(find_string_case_insensitive(tract_name,each))
+            return true;
+    return false;
+}
+void set_template(std::shared_ptr<fib_data> handle,tipl::program_option<tipl::out>& po);
+std::string run_auto_track(tipl::program_option<tipl::out>& po,const std::vector<std::string>& file_list,int& prog)
 {
     std::string tolerance_string = po.get("tolerance","22,26,30");
     float track_voxel_ratio = po.get("track_voxel_ratio",2.0f);
@@ -133,8 +136,7 @@ std::string run_auto_track(tipl::program_option<tipl::out>& po,const std::vector
     uint32_t thread_count = uint32_t(po.get("thread_count",std::thread::hardware_concurrency()));
     std::string trk_format = po.get("trk_format","tt.gz");
     std::string stat_format = po.get("stat_format","stat.txt");
-
-
+    auto track_name_list = tipl::split(po.get("track_id"),',');
     std::vector<float> tolerance;
     {
         std::istringstream in(tolerance_string);
@@ -144,35 +146,23 @@ std::string run_auto_track(tipl::program_option<tipl::out>& po,const std::vector
             std::istringstream in2(num);
             float t;
             if(!(in2 >> t))
-            {
                 return std::string("Cannot parse tolerance number: ")+num;
-            }
             tolerance.push_back(t);
         }
         if(tolerance.empty())
             return "Please assign tolerance distance";
     }
 
-    std::vector<std::string> reports(track_id.size());
-    std::vector<std::vector<std::string> > stat_files(track_id.size());
+    std::vector<std::vector<std::string> > stat_files;
+    std::vector<std::string> tractography_name_list;
     std::string dir = po.get("output",QFileInfo(file_list.front().c_str()).absolutePath().toStdString());
 
-    fib_data fib;
-    fib.set_template_id(0);
-    std::string targets;
-    for(unsigned int index = 0;index < track_id.size();++index)
-    {
-        targets += fib.tractography_name_list[track_id[index]];
-        if(index+1 < track_id.size())
-            targets += ", ";
-    }
-
-    std::vector<std::string> names;
+    std::vector<std::string> scan_names;
     tipl::progress prog0("automatic fiber tracking");
     for(size_t i = 0;prog0(i,file_list.size());++i)
     {
         std::string cur_file_base_name = QFileInfo(file_list[i].c_str()).baseName().toStdString();
-        names.push_back(cur_file_base_name);
+        scan_names.push_back(cur_file_base_name);
         prog = int(i);
         tipl::out() << "processing " << cur_file_base_name << std::endl;
         std::string fib_file_name;
@@ -191,11 +181,22 @@ std::string run_auto_track(tipl::program_option<tipl::out>& po,const std::vector
         }
         // fiber tracking on fib file
         std::shared_ptr<fib_data> handle(new fib_data);
+        handle->set_template_id(0);
+        set_template(handle,po);
+        if(tractography_name_list.empty())
+        {
+            tractography_name_list = handle->tractography_name_list;
+            stat_files.resize(tractography_name_list.size());
+        }
+
         bool fib_loaded = false;
         tipl::progress prog1("tracking pathways");
-        for(size_t j = 0;prog1(j,track_id.size());++j)
+        for(size_t track_id = 0;prog1(track_id,tractography_name_list.size());++track_id)
         {
-            std::string track_name = fib.tractography_name_list[track_id[j]];
+            std::string track_name = tractography_name_list[track_id];
+            if(!track_name_list.empty() && !is_selected(track_name_list,track_name))
+                continue;
+
             std::string output_path = dir + "/" + track_name;
             tipl::out() << track_name;
 
@@ -210,10 +211,8 @@ std::string run_auto_track(tipl::program_option<tipl::out>& po,const std::vector
             std::string trk_file_name = output_path + "/" + fib_base+"."+track_name+ "." + trk_format;
             std::string template_trk_file_name = output_path + "/T_" + fib_base+"."+track_name + "." + trk_format;
             std::string stat_file_name = output_path + "/" + fib_base+"."+track_name+"." + stat_format;
-            std::string report_file_name = dir+"/"+track_name+".report.txt";
-
-            stat_files[j].push_back(stat_file_name);
-
+            std::string report_file_name = dir+"/"+track_name+".report.txt";                
+            stat_files[track_id].push_back(stat_file_name);
             if(std::filesystem::exists(no_result_file_name) && !overwrite)
             {
                 tipl::out() << "skip " << track_name << " due to no result" << std::endl;
@@ -247,12 +246,6 @@ std::string run_auto_track(tipl::program_option<tipl::out>& po,const std::vector
                        return fib_file_name + ":" + handle->error_msg;
                     fib_loaded = true;
                 }
-                if(handle->template_id != 0)
-                {
-                    tipl::out() << "Not adult human data. Enforce registration." << std::endl;
-                    handle->set_template_id(0);
-                }
-
                 TractModel tract_model(handle);
                 if(!overwrite && has_trk_file)
                     tract_model.load_tracts_from_file(trk_file_name.c_str(),handle.get());
@@ -273,8 +266,8 @@ std::string run_auto_track(tipl::program_option<tipl::out>& po,const std::vector
                         thread.param.smooth_fraction = po.get("smoothing",thread.param.smooth_fraction);
 
                         thread.param.min_length = handle->vs[0]*std::max<float>(tolerance[tracking_iteration],
-                                                                   handle->tract_atlas_min_length[track_id[j]]-2.0f*tolerance[tracking_iteration])/handle->tract_atlas_jacobian;
-                        thread.param.max_length = handle->vs[0]*(handle->tract_atlas_max_length[track_id[j]]+2.0f*tolerance[tracking_iteration])/handle->tract_atlas_jacobian;
+                                                                   handle->tract_atlas_min_length[track_id]-2.0f*tolerance[tracking_iteration])/handle->tract_atlas_jacobian;
+                        thread.param.max_length = handle->vs[0]*(handle->tract_atlas_max_length[track_id]+2.0f*tolerance[tracking_iteration])/handle->tract_atlas_jacobian;
                         tipl::out() << "min_length(mm): " << thread.param.min_length << std::endl;
                         tipl::out() << "max_length(mm): " << thread.param.max_length << std::endl;
                         thread.param.tip_iteration = po.get("tip_iteration",4);
@@ -285,15 +278,13 @@ std::string run_auto_track(tipl::program_option<tipl::out>& po,const std::vector
                     {
                         thread.roi_mgr->use_auto_track = true;
                         thread.roi_mgr->track_voxel_ratio = track_voxel_ratio;
-                        thread.roi_mgr->track_id = track_id[j];
+                        thread.roi_mgr->track_id = track_id;
                         thread.roi_mgr->tolerance_dis_in_icbm152_mm = tolerance[tracking_iteration];
                     }
                     tipl::progress prog2("tracking ",track_name.c_str(),true);
                     thread.run(thread_count,false);
                     std::string report = handle->report;
                     report += thread.report.str();
-                    if(reports[j].empty())
-                        reports[j] = report;
                     auto_track_report = report;
                     bool no_result = false;
                     {
@@ -405,28 +396,23 @@ std::string run_auto_track(tipl::program_option<tipl::out>& po,const std::vector
     if(file_list.size() != 1)
     {
         tipl::out() << "aggregating results from multiple subjects";
-        std::string column_title("Subjects");
-        for(size_t s = 0;s < names.size();++s) // for each scan
-        {
-            column_title += "\t";
-            column_title += names[s];
-        }
         std::vector<std::string> metrics_names; // row titles are metrics
-        {
-            std::ifstream in(stat_files[0][0].c_str());
-            std::string line;
-            for(size_t m = 0;std::getline(in,line);++m)
-            {
-                auto sep = line.find('\t');
-                metrics_names.push_back(line.substr(0,sep));
-            }
-        }
 
-        std::ofstream all_out((QFileInfo(stat_files[0][0].c_str()).absolutePath()+"/all_results_tract_wise.txt").toStdString().c_str());
-        std::vector<std::string> all_out2_text;
-        for(size_t t = 0;t < track_id.size();++t) // for each track
+        for(size_t t = 0;t < tractography_name_list.size();++t) // for each track
         {
-            std::vector<std::vector<std::string> > output(names.size());
+            if(stat_files[t].empty())
+                continue;
+            // read metric names
+            if(metrics_names.empty())
+            {
+                std::ifstream in(stat_files[t][0].c_str());
+                std::string line;
+                for(size_t m = 0;std::getline(in,line);++m)
+                    metrics_names.push_back(line.substr(0,line.find('\t')));
+            }
+
+            // parse metric values
+            std::vector<std::vector<std::string> > output(scan_names.size());
             for(size_t s = 0;s < output.size();++s) // for each scan
             {
                 tipl::out() << "reading " << stat_files[t][s] << std::endl;
@@ -452,47 +438,27 @@ std::string run_auto_track(tipl::program_option<tipl::out>& po,const std::vector
                 for(size_t m = 0;m < metrics_names.size();++m)
                     output[s].push_back(lines[m].substr(lines[m].find('\t')+1));
             }
-            std::string track_name = fib.tractography_name_list[track_id[t]];
+            std::string track_name = tractography_name_list[t];
             std::ofstream out((dir+"/"+track_name+".stat.txt").c_str());
-            out << column_title << std::endl;
-            if(t == 0)
-                all_out << "Tract\t" << column_title << std::endl;
+
+            // output first row: the name of each scan
+            for(const auto& each: scan_names)
+                out << "\t" << each;
+            out << std::endl;
+
+            // output each metric at each row
             for(size_t m = 0;m < metrics_names.size();++m)
             {
-                std::string metrics_output(metrics_names[m]);
-                for(size_t s = 0;s < names.size();++s)
+                out << metrics_names[m];
+                for(size_t s = 0;s < output.size();++s)
                 {
-                    metrics_output += "\t";
+                    out << "\t";
                     if(m < output[s].size())
-                        metrics_output += output[s][m];
+                        out << output[s][m];
                 }
-                out << metrics_output << std::endl;
-                all_out << track_name << "\t" << metrics_output << std::endl;
+                out << std::endl;
             }
-            if(t == 0)
-                all_out2_text.resize(output.size()*metrics_names.size());
-            for(size_t s = 0,index = 0;s < names.size();++s)
-                for(size_t m = 0;m < metrics_names.size();++m,++index)
-                {
-                    if(t == 0)
-                    {
-                        all_out2_text[index] = names[s];
-                        all_out2_text[index] += "\t";
-                        all_out2_text[index] += metrics_names[m];
-                    }
-                    all_out2_text[index] += "\t";
-                    if(m < output[s].size())
-                        all_out2_text[index] += output[s][m];
-                }
         }
-
-        std::ofstream all_out2((QFileInfo(stat_files[0][0].c_str()).absolutePath()+"/all_results_subject_wise.txt").toStdString().c_str());
-        all_out2 << "Subjects\tMetrics";
-        for(size_t t = 0;t < track_id.size();++t) // for each tract
-            all_out2 << "\t" << fib.tractography_name_list[track_id[t]];
-        all_out2 << std::endl;
-        for(size_t index = 0;index < all_out2_text.size();++index) // for each tract
-            all_out2 << all_out2_text[index] << std::endl;
     }
     return std::string();
 }
@@ -506,12 +472,18 @@ void auto_track::check_status()
 void auto_track::on_run_clicked()
 {
     std::vector<std::string> file_list2;
-    std::vector<unsigned int> track_id;
-    QModelIndexList indexes = ui->candidate_list_view->selectionModel()->selectedRows();
-    for(int i = 0;i < indexes.count();++i)
-        track_id.push_back(uint32_t(indexes[i].row()));
     for(int i = 0;i < file_list.size();++i)
         file_list2.push_back(file_list[i].toStdString());
+
+    std::string track_id;
+    QModelIndexList indexes = ui->candidate_list_view->selectionModel()->selectedRows();
+    for(int i = 0;i < indexes.count();++i)
+    {
+        if(!track_id.empty())
+            track_id += ",";
+        track_id += ui->candidate_list_view->item(indexes[i].row())->text().toStdString();
+    }
+
     if(track_id.empty())
     {
         QMessageBox::information(this,"DSI Studio","Please select target tracks");
@@ -539,8 +511,9 @@ void auto_track::on_run_clicked()
     po["overwrite"] = ui->overwrite->isChecked()? 1 : 0;
     po["export_template_trk"] = ui->output_template_trk->isChecked()? 1 : 0;
     po["thread_count"] = ui->thread_count->value();
-
-    std::string error = run_auto_track(po,file_list2,track_id,prog);
+    po["track_id"] = track_id;
+    po["tractography_atlas"] = ui->tractography_atlas->currentIndex();
+    std::string error = run_auto_track(po,file_list2,prog);
     timer->stop();
     ui->run->setEnabled(true);
     progress_bar->setVisible(false);
@@ -552,49 +525,20 @@ void auto_track::on_run_clicked()
     raise(); //  for mac
 }
 
-
-void auto_track::select_tracts()
+void auto_track::on_tractography_atlas_currentIndexChanged(int index)
 {
-    if(ui->recommend_list->isChecked())
-    {
-        ui->candidate_list_view->setEnabled(false);
-        ui->recom_panel->setEnabled(true);
-        std::vector<std::string> select_list;
-        if(ui->cb_association->isChecked())
-        {
-            select_list.push_back("Fasciculus");
-            select_list.push_back("Cingulum");
-            select_list.push_back("Aslant");
-        }
-        if(ui->cb_projection->isChecked())
-        {
-            select_list.push_back("Corticos");
-            select_list.push_back("Thalamic");
-            select_list.push_back("Optic");
-            select_list.push_back("Fornix");
-        }
-        if(ui->cb_commissural->isChecked())
-        {
-            select_list.push_back("Corpus");
-        }
-        if(ui->cb_brainstem->isChecked())
-        {
-            select_list.push_back("Reticular");
-            select_list.push_back("pontine");
-            select_list.push_back("rubro");
-            select_list.push_back("Cereb");
-        }
-        for(int i = 0;i < ui->candidate_list_view->count();++i)
-            ui->candidate_list_view->item(i)->setSelected(false);
+    if(index < 0)
+        return;
+    fib_data fib;
+    fib.set_template_id(0);
+    fib.set_tractography_atlas_id(index);
 
-        for(size_t j = 0;j < select_list.size();++j)
-        for(int i = 0;i < ui->candidate_list_view->count();++i)
-            if(ui->candidate_list_view->item(i)->text().contains(select_list[j].c_str()))
-                ui->candidate_list_view->item(i)->setSelected(true);
-    }
-    else
+    ui->candidate_list_view->clear();
+    for(size_t index = 0;index < fib.tractography_name_list.size();++index)
     {
-        ui->candidate_list_view->setEnabled(true);
-        ui->recom_panel->setEnabled(false);
+        ui->candidate_list_view->addItem(fib.tractography_name_list[index].c_str());
+        ui->candidate_list_view->item(index)->setSelected(true);
     }
+
 }
+
