@@ -7,7 +7,6 @@
 
 #include <filesystem>
 
-extern std::vector<std::vector<std::string> > template_atlas_list;
 extern std::vector<std::string> fa_template_list,fib_template_list;
 const char* odf_average(const char* out_name,std::vector<std::string>& file_names);
 bool atl_load_atlas(std::shared_ptr<fib_data> handle,std::string atlas_name,std::vector<std::shared_ptr<atlas> >& atlas_list)
