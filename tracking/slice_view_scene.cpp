@@ -233,7 +233,7 @@ QImage slice_view_scene::get_view_image(std::shared_ptr<SliceModel> current_slic
     if(cur_tracking_window["roi_layout"].toInt() <= 1) // not mosaic
     {
         QPainter painter(&scaled_image);
-        if(!simple && cur_tracking_window["roi_fiber"].toInt())
+        if(!simple && cur_tracking_window["roi_fiber"].toInt() && cur_tracking_window.handle->trackable)
             show_fiber(painter,current_slice,slice_image,cur_dim);
         if(cur_tracking_window["roi_position"].toInt())
             show_pos(painter,current_slice,slice_image,cur_dim);
