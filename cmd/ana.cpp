@@ -125,14 +125,14 @@ void get_filenames_from(const std::string name,std::vector<std::string>& filenam
 int trk_post(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> handle,std::shared_ptr<TractModel> tract_model,std::string tract_file_name,bool output_track);
 std::shared_ptr<fib_data> cmd_load_fib(std::string file_name);
 
-bool load_tracts(const char* file_name,std::shared_ptr<TractModel> tract_model,std::shared_ptr<RoiMgr> roi_mgr)
+bool load_tracts(const char* file_name,std::shared_ptr<fib_data> handle,std::shared_ptr<TractModel> tract_model,std::shared_ptr<RoiMgr> roi_mgr)
 {
     if(!std::filesystem::exists(file_name))
     {
         tipl::out() << "ERROR:" << file_name << " does not exist. terminating..." << std::endl;
         return 1;
     }
-    if(!tract_model->load_from_file(file_name))
+    if(!tract_model->load_tracts_from_file(file_name,handle.get(),std::string(file_name).find("mni") != std::string::npos))
     {
         tipl::out() << "ERROR: cannot read or parse the tractography file :" << file_name << std::endl;
         return false;
@@ -264,7 +264,7 @@ int ana_tract(tipl::program_option<tipl::out>& po)
         {
             tipl::out() << "accumulating " << tract_files[i] << "..." <<std::endl;
             std::shared_ptr<TractModel> tract(new TractModel(handle));
-            if(!load_tracts(tract_files[i].c_str(),tract,roi_mgr))
+            if(!load_tracts(tract_files[i].c_str(),handle,tract,roi_mgr))
                 return 1;
             std::vector<tipl::vector<3,short> > points;
             tract->to_voxel(points);
@@ -293,7 +293,7 @@ int ana_tract(tipl::program_option<tipl::out>& po)
     for(size_t i = 0;i < tract_files.size();++i)
     {
         tracts.push_back(std::make_shared<TractModel>(handle));
-        if(!load_tracts(tract_files[i].c_str(),tracts.back(),roi_mgr))
+        if(!load_tracts(tract_files[i].c_str(),handle,tracts.back(),roi_mgr))
             return 1;
     }
 

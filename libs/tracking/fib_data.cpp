@@ -1298,23 +1298,17 @@ bool fib_data::load_template(void)
 
     return true;
 }
-void fib_data::temp2sub(std::shared_ptr<TractModel> track_atlas)
+void fib_data::temp2sub(std::vector<std::vector<float> >&tracts) const
 {
-    auto& tract_data = track_atlas->get_tracts();
-    auto T = tipl::from_space(track_atlas->trans_to_mni).to(template_to_mni);
-    tipl::out() << "convert template tracts:" << std::endl;
-    tipl::out() << T << std::endl;
-
-    tipl::par_for(tract_data.size(),[&](size_t i)
+    tipl::par_for(tracts.size(),[&](size_t i)
     {
-        if(tract_data.size() < 6)
+        if(tracts.size() < 6)
             return;
-        auto beg = tract_data[i].begin();
-        auto end = tract_data[i].end();
+        auto beg = tracts[i].begin();
+        auto end = tracts[i].end();
         for(;beg != end;beg += 3)
         {
             tipl::vector<3> p(beg);
-            apply_trans(p,T); // from tract atlas space to current template space
             temp2sub(p);
             beg[0] = p[0];
             beg[1] = p[1];
@@ -1340,8 +1334,10 @@ bool fib_data::load_track_atlas()
             return false;
         }
 
-        track_atlas = std::make_shared<TractModel>(dim,vs,trans_to_mni);
-        if(!track_atlas->load_from_file(tractography_atlas_file_name.c_str()))
+        // load the tract to the template space
+        track_atlas = std::make_shared<TractModel>(template_I.shape(),template_vs,template_to_mni);
+        track_atlas->is_mni = true;
+        if(!track_atlas->load_tracts_from_file(tractography_atlas_file_name.c_str(),this,true))
         {
             error_msg = "failed to load tractography atlas: ";
             error_msg += tractography_atlas_file_name;
@@ -1389,7 +1385,7 @@ bool fib_data::load_track_atlas()
             return false;
         tract_atlas_jacobian = float((s2t[0]-s2t[1]).length());
         // warp tractography atlas to subject space
-        temp2sub(track_atlas);
+        temp2sub(track_atlas->get_tracts());
 
         auto& tract_data = track_atlas->get_tracts();
         // get min max length
@@ -1740,7 +1736,7 @@ bool fib_data::map_to_mni(bool background)
     return true;
 }
 
-void fib_data::temp2sub(tipl::vector<3>& pos)
+void fib_data::temp2sub(tipl::vector<3>& pos) const
 {
     if(is_mni && template_id == matched_template_id)
         return;

@@ -76,7 +76,7 @@ public:
             return *this;
         }
         void add(const TractModel& rhs);
-        bool load_from_file(const char* file_name,bool append = false);
+        bool load_tracts_from_file(const char* file_name,const fib_data* handle,bool tract_is_mni = false);
 
         bool save_tracts_to_file(const char* file_name);
         bool save_tracts_in_native_space(std::shared_ptr<fib_data> handle,const char* file_name);

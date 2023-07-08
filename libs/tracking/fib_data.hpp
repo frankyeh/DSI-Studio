@@ -306,8 +306,8 @@ public:
     bool load_track_atlas(void);
 public:
     bool map_to_mni(bool background = true);
-    void temp2sub(std::shared_ptr<TractModel> track_atlas);
-    void temp2sub(tipl::vector<3>& pos);
+    void temp2sub(std::vector<std::vector<float> >&tracts) const;
+    void temp2sub(tipl::vector<3>& pos) const;
     void sub2temp(tipl::vector<3>& pos);
     void sub2mni(tipl::vector<3>& pos);
     std::shared_ptr<atlas> get_atlas(const std::string atlas_name);

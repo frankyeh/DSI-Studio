@@ -255,7 +255,7 @@ std::string run_auto_track(tipl::program_option<tipl::out>& po,const std::vector
 
                 TractModel tract_model(handle);
                 if(!overwrite && has_trk_file)
-                    tract_model.load_from_file(trk_file_name.c_str());
+                    tract_model.load_tracts_from_file(trk_file_name.c_str(),handle.get());
 
                 // each iteration increases tolerance
                 for(size_t tracking_iteration = 0;tracking_iteration < tolerance.size() &&

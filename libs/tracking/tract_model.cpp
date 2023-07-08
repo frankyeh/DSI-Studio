@@ -680,7 +680,7 @@ bool apply_unwarping_tt(const char* from,
     }
     return true;
 }
-bool TractModel::load_from_file(const char* file_name_,bool append)
+bool TractModel::load_tracts_from_file(const char* file_name_,const fib_data* handle,bool tract_is_mni)
 {
     std::string file_name(file_name_);
     std::vector<std::vector<float> > loaded_tract_data;
@@ -691,12 +691,14 @@ bool TractModel::load_from_file(const char* file_name_,bool append)
     if(file_name.find(".inc") != std::string::npos)
         color = 0x00F04040;
 
+    tipl::matrix<4,4> source_trans_to_mni(trans_to_mni);
+
     if(QString(file_name_).endsWith("tt.gz"))
     {
         unsigned int old_color = color;
         std::vector<uint16_t> cluster;
 
-        if(!TinyTrack::load_from_file(file_name_,loaded_tract_data,cluster,geo,vs,trans_to_mni,report,parameter_id,color))
+        if(!TinyTrack::load_from_file(file_name_,loaded_tract_data,cluster,geo,vs,source_trans_to_mni,report,parameter_id,color))
             return false;
         std::copy(cluster.begin(),cluster.end(),std::back_inserter(loaded_tract_cluster));
         if(color != old_color)
@@ -705,7 +707,7 @@ bool TractModel::load_from_file(const char* file_name_,bool append)
     if(QString(file_name_).endsWith("trk.gz") || QString(file_name_).endsWith("trk"))
     {
         TrackVis trk;
-        if(!trk.load_from_file(file_name_,loaded_tract_data,loaded_tract_cluster,geo,vs,trans_to_mni,parameter_id))
+        if(!trk.load_from_file(file_name_,loaded_tract_data,loaded_tract_cluster,geo,vs,source_trans_to_mni,parameter_id))
             return false;
         unsigned int new_color = *(uint32_t*)(trk.reserved+440);
         if(new_color)
@@ -762,7 +764,9 @@ bool TractModel::load_from_file(const char* file_name_,bool append)
             std::copy(buf,buf + loaded_tract_data[index].size(),loaded_tract_data[index].begin());
             buf += loaded_tract_data[index].size();
         }
+        in.read("trans",source_trans_to_mni);
     }
+
     if (QString(file_name_).endsWith("tck"))
     {
         Tck tck;
@@ -771,17 +775,63 @@ bool TractModel::load_from_file(const char* file_name_,bool append)
             return false;
     }
 
+
+
+
+
     if (loaded_tract_data.empty())
         return false;
-    if (append)
-    {
-        add_tracts(loaded_tract_data);
-        return true;
-    }
     if(loaded_tract_cluster.size() == loaded_tract_data.size())
         loaded_tract_cluster.swap(tract_cluster);
     else
         tract_cluster.clear();
+
+    // handle trans_to_mni differences
+    {
+        tipl::out() << ((is_mni) ? "host space (mni):" : "host space (native):") << std::endl;
+        tipl::out() << trans_to_mni << std::endl;
+        tipl::out() << ((tract_is_mni) ? "tractography space (mni):" : "tractography space (native):") << std::endl;
+        tipl::out() << source_trans_to_mni << std::endl;
+        tipl::out() << "template space:" << std::endl;
+        tipl::out() << handle->template_to_mni << std::endl;
+
+
+        auto apply_transform = [&](const tipl::matrix<4,4>& T)
+        {
+            tipl::out() << "apply transform to tracts:" << std::endl;
+            tipl::out() << T << std::endl;
+            tipl::par_for(loaded_tract_data.size(),[&](size_t index)
+            {
+                auto& tract = loaded_tract_data[index];
+                for(size_t i = 0;i < tract.size();i += 3)
+                {
+                    tipl::vector<3> p(&tract[i]);
+                    p.to(T);
+                    tract[i] = p[0];
+                    tract[i+1] = p[1];
+                    tract[i+2] = p[2];
+                }
+            });
+        };
+
+        // two conditions to transform tracts
+
+        // 1. QSDR loading MNI space tracts
+        if(is_mni && trans_to_mni != source_trans_to_mni)
+            apply_transform(tipl::from_space(source_trans_to_mni).to(trans_to_mni));
+
+        // 2. subject FIB loading MNI space tracts
+        if(!is_mni && tract_is_mni)
+        {
+            // first transform to template space
+            if(handle->template_to_mni != source_trans_to_mni)
+                apply_transform(tipl::from_space(source_trans_to_mni).to(handle->template_to_mni));
+            // then warp to the native space
+            tipl::out() << "warping tract from mni to native space" << std::endl;
+            handle->temp2sub(loaded_tract_data);
+        }
+    }
+
 
     loaded_tract_data.swap(tract_data);
     tract_color.clear();
@@ -847,6 +897,7 @@ bool TractModel::save_data_to_file(std::shared_ptr<fib_data> handle,const char* 
         }
         out.write("data",buf);
         out.write("length",length);
+        out.write("trans",trans_to_mni.begin(),4,4);
         return true;
     }
 
