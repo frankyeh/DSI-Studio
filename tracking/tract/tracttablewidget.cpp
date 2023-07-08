@@ -219,6 +219,7 @@ void TractTableWidget::load_built_in_atlas(int track_id)
 
     addNewTracts(cur_tracking_window.handle->tractography_name_list[track_id].c_str());
     tract_rendering.back()->need_update = true;
+
     const auto& atlas_tract = tract_model->get_tracts();
     const auto& atlas_cluster = tract_model->get_cluster_info();
     std::vector<std::vector<float> > new_tracts;
@@ -228,9 +229,16 @@ void TractTableWidget::load_built_in_atlas(int track_id)
 
     auto lock = tract_rendering.back()->start_writing();
     tract_models.back()->add_tracts(new_tracts);
+    tract_models.back()->report =
+            cur_tracking_window.handle->tractography_name_list[track_id] +
+            (cur_tracking_window.handle->is_mni ?
+            " was shown from a population-based tractography atlas (Yeh, Nat Commun 13(1), 4933, 2022).":
+            " was mapped by nonlinearly warping a population-based tractography atlas (Yeh, Nat Commun 13(1), 4933, 2022) to the native space.");
+
     item(int(tract_models.size()-1),1)->setText(QString::number(tract_models.back()->get_visible_track_count()));
     item(int(tract_models.size()-1),2)->setText(QString::number(tract_models.back()->get_deleted_track_count()));
 
+    show_report();
 }
 void TractTableWidget::load_built_in_atlas(void)
 {
