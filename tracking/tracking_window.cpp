@@ -2702,7 +2702,7 @@ void tracking_window::on_template_box_currentIndexChanged(int index)
 
 void tracking_window::on_tractography_atlas_currentIndexChanged(int index)
 {
-    if(index < 0 || index >= int(handle->tractography_atlas_list.size()))
+    if(index < 0 || index > int(handle->tractography_atlas_list.size()))
         return;
     if(index == 0)
     {
