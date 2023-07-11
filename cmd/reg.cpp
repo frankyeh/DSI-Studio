@@ -109,12 +109,12 @@ int reg(tipl::program_option<tipl::out>& po)
     tipl::matrix<4,4> from_trans,to_trans;
     tipl::image<3,tipl::vector<3> > t2f_dis,f2t_dis,to2from,from2to;
 
-    if(po.has("warp"))
+    if(po.has("warp") || po.has("inv_warp"))
     {
         tipl::io::gz_mat_read in;
-        if(!in.load_from_file(po.get("warp").c_str()))
+        if(!in.load_from_file(po.has("warp") ? po.get("warp").c_str() : po.get("inv_warp").c_str()))
         {
-            tipl::out() << "ERROR: cannot open or parse warp file " << po.get("warp") << std::endl;
+            tipl::out() << "ERROR: cannot open or parse the warp file " << std::endl;
             return 1;
         }
         tipl::shape<3> to_dim,from_dim;
@@ -137,6 +137,14 @@ int reg(tipl::program_option<tipl::out>& po)
         std::copy(to2from_ptr,to2from_ptr+to2from.size()*3,&to2from[0][0]);
         from2to.resize(from_dim);
         std::copy(from2to_ptr,from2to_ptr+from2to.size()*3,&from2to[0][0]);
+
+        if(!po.has("warp"))
+        {
+            to_dim.swap(from_dim);
+            std::swap(to_vs,from_vs);
+            to_trans.swap(from_trans);
+            to2from.swap(from2to);
+        }
         if(po.has("apply_warp"))
             return after_warp(po.get("apply_warp"),to2from,from2to,to_vs,from_trans,to_trans);
         return 0;
