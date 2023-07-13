@@ -1915,6 +1915,7 @@ std::string ImageModel::find_topup_reverse_pe(void)
     tipl::out() << "reverse phase encoding image selected: " << candidates.begin()->second << std::endl;
     return candidates.begin()->second;
 }
+extern std::string topup_param_file;
 bool ImageModel::run_topup_eddy(const std::string& other_src)
 {
     tipl::progress prog("run topup/eddy");
@@ -1957,20 +1958,31 @@ bool ImageModel::run_topup_eddy(const std::string& other_src)
         if(!read_b0(b0) || !read_rev_b0(other_src.c_str(),rev_b0) || !generate_topup_b0_acq_files(b0,rev_b0,b0_appa_file))
             return false;
 
+
         std::vector<std::string> param = {
-            "--warpres=20,16,14,12,10,6,4,4,4",
-            "--subsamp=2,2,2,2,2,1,1,1,1",  // This causes an error in odd number of slices
-            "--fwhm=8,6,4,3,3,2,1,0,0",
-            "--miter=5,5,5,5,5,10,10,20,20",
-            "--lambda=0.005,0.001,0.0001,0.000015,0.000005,0.0000005,0.00000005,0.0000000005,0.00000000001",
-            "--estmov=1,1,1,1,1,0,0,0,0",
-            "--minmet=0,0,0,0,0,1,1,1,1",
-            "--scale=1",
             QString("--imain=%1").arg(b0_appa_file.c_str()).toStdString().c_str(),
             QString("--datain=%1").arg(acqparam_file.c_str()).toStdString().c_str(),
             QString("--out=%1").arg(topup_result.c_str()).toStdString().c_str(),
             QString("--iout=%1").arg(check_me_file.c_str()).toStdString().c_str(),
             QString("--verbose=1").toStdString().c_str()};
+
+        if(!std::filesystem::exists(topup_param_file))
+        {
+            error_msg = "failed to find topup parameter file at ";
+            error_msg += topup_param_file;
+            return false;
+        }
+
+        {
+            std::ifstream in(topup_param_file);
+            std::string line;
+            while(std::getline(in,line))
+            {
+                if(!line.empty() && line[0] == '-')
+                   param.push_back(line);
+            }
+        }
+
         if(!run_plugin("topup","level",9,param,
             QFileInfo(file_name.c_str()).absolutePath().toStdString(),std::string()))
             return false;
