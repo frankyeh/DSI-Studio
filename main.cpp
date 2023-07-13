@@ -15,7 +15,7 @@
 #include <QTextCodec>
 #endif
 
-std::string device_content_file;
+std::string device_content_file,topup_param_file;
 std::vector<std::string> fa_template_list,
                          iso_template_list,
                          fib_template_list;
@@ -96,6 +96,7 @@ std::string find_full_path(QString name)
 bool load_file_name(void)
 {
     device_content_file = find_full_path("/device.txt");
+    topup_param_file = find_full_path("/topup_param.txt");
 
     {
         QDir dir = QCoreApplication::applicationDirPath()+ "/atlas";
