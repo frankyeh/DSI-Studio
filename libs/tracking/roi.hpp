@@ -437,7 +437,7 @@ public:
                 break;
             case limiting_id:
                 limiting.push_back(region);
-                report += " A no ending region was placed at ";
+                report += " A limiting region was placed at ";
                 break;
             default:
                 return;
