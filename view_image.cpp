@@ -687,29 +687,64 @@ bool view_image::open(QStringList file_names_)
 
     setWindowTitle(QFileInfo(file_name).fileName());
     tipl::progress prog("open image file ",std::filesystem::path(file_name.toStdString()).filename().string().c_str());
-    if(file_names_.size() > 1 && QString(file_name).endsWith(".bmp"))
+    if(file_names_.size() > 1 &&
+       (QString(file_name).endsWith(".bmp") ||
+        QString(file_name).endsWith(".png") ||
+        QString(file_name).endsWith(".tif") ||
+        QString(file_name).endsWith(".tiff")))
     {
-        for(unsigned int i = 0;prog(i,file_names_.size());++i)
+        QImage in;
+        if(!in.load(file_name))
         {
-            tipl::color_image I;
-            tipl::io::bitmap bmp;
-            if(!bmp.load_from_file(file_names_[i].toStdString().c_str()))
-                return false;
-            bmp >> I;
-            pixel_type = uint8;
-            if(i == 0)
+            error_msg = "invalid image format: ";
+            error_msg += file_name.toStdString();
+            return false;
+        }
+        pixel_type = uint8;
+        shape[0] = in.width();
+        shape[1] = in.height();
+        shape[2] = uint32_t(file_names.size());
+        T.identity();
+        vs[0] = vs[1] = vs[2] = 1.0f;
+        I_uint8.resize(shape);
+        buf4d.resize(3);
+        for(size_t i = 1;i < 3;++i)
+            buf4d[i].resize(shape.size());
+
+        for(size_t file_index = 0;prog(file_index,shape[2]);++file_index)
+        {
+            QImage I;
+            if(!I.load(file_names[file_index]))
             {
-                shape = tipl::shape<3>(I.width(),I.height(),file_names_.size());
-                I_uint8.resize(shape);
+                error_msg = "invalid image format: ";
+                error_msg += file_names[file_index].toStdString();
+                return false;
             }
-            unsigned int pos = i*I.size();
-            for(unsigned int j = 0;j < I.size();++j)
-                I_uint8[pos+j] = (float(I[j].r)+float(I[j].r)+float(I[j].r))/3.0f;
+            if(I.width() != shape[0] || I.height() != shape[1])
+            {
+                error_msg = "inconsistent image size : ";
+                error_msg += file_names[file_index].toStdString();
+                return false;
+            }
+            I = I.convertToFormat(QImage::Format_RGB32);
+            auto ptr = reinterpret_cast<uint32_t*>(I.bits());
+            for(size_t i = 0,pos = file_index*shape.plane_size();i < shape.plane_size();++i,++pos)
+            {
+                tipl::rgb rgb(ptr[i]);
+                I_uint8[pos] = rgb.r;
+                buf4d[1][pos] = rgb.g;
+                buf4d[2][pos] = rgb.b;
+            }
         }
         if(prog.aborted())
             return false;
         file_names.clear();
+        cur_4d_index = 0;
+        ui->dwi_volume->setMaximum(2);
+        ui->dwi_volume->show();
+        ui->dwi_label->show();
     }
+    else
     if(QString(file_name).endsWith(".nhdr"))
     {
         tipl::io::nrrd<tipl::progress> nrrd;
