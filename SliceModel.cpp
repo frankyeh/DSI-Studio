@@ -153,18 +153,15 @@ bool CustomSliceModel::load_slices(const std::vector<std::string>& files,bool is
     // picture as slice
     if(QFileInfo(files[0].c_str()).suffix() == "bmp" ||
        QFileInfo(files[0].c_str()).suffix() == "jpg" ||
-       QFileInfo(files[0].c_str()).suffix() == "png")
+       QFileInfo(files[0].c_str()).suffix() == "png" ||
+       QFileInfo(files[0].c_str()).suffix() == "tif" ||
+       QFileInfo(files[0].c_str()).suffix() == "tiff")
 
     {
         QString info_file = QString(files[0].c_str()) + ".info.txt";
-        if(!QFileInfo(info_file).exists())
+        if(files.size() == 1) // single slice
         {
             uint32_t slices_count = 10;
-            if(files.size() != 1)
-            {
-                error_msg = "multiple jpg/bmp/png files are not supported";
-                return false;
-            }
             {
                 QImage in;
                 if(!in.load(files[0].c_str()))
@@ -194,58 +191,22 @@ bool CustomSliceModel::load_slices(const std::vector<std::string>& files,bool is
         }
         else
         {
-            std::ifstream in(info_file.toStdString().c_str());
-            in >> dim[0] >> dim[1] >> dim[2] >> vs[0] >> vs[1] >> vs[2];
-            std::copy(std::istream_iterator<float>(in),
-                      std::istream_iterator<float>(),T.begin());
-            if(dim[2] != uint32_t(files.size()))
+            QImage in;
+            if(!in.load(files[0].c_str()))
             {
-                error_msg = "Invalid BMP info text: file count does not match.";
+                error_msg = "invalid image format: ";
+                error_msg += files[0];
                 return false;
             }
-            unsigned int in_plane_subsample = 1;
-            unsigned int slice_subsample = 1;
 
-            // non isotropic condition
-            while(vs[2]/vs[0] > 1.5f)
-            {
-                ++in_plane_subsample;
-                dim[0] = dim[0] >> 1;
-                dim[1] = dim[1] >> 1;
-                vs[0] *= 2.0f;
-                vs[1] *= 2.0f;
-                T[0] *= 2.0f;
-                T[1] *= 2.0f;
-                T[4] *= 2.0f;
-                T[5] *= 2.0f;
-                T[8] *= 2.0f;
-                T[9] *= 2.0f;
-            }
-            tipl::shape<3> geo(dim);
-
-            bool ok = true;
-            int down_size = (geo[2] > 1 ? QInputDialog::getInt(nullptr,"DSI Studio",
-                    "Downsampling count (0:no downsampling)",1,0,4,1,&ok) : 0);
-            if(!ok)
-            {
-                error_msg = "Slice loading canceled";
-                return false;
-            }
-            for(int i = 0;i < down_size;++i)
-            {
-                geo[0] = geo[0] >> 1;
-                geo[1] = geo[1] >> 1;
-                geo[2] = geo[2] >> 1;
-                vs *= 2.0;
-                tipl::multiply_constant(T.begin(),T.begin()+3,2.0);
-                tipl::multiply_constant(T.begin()+4,T.begin()+7,2.0);
-                tipl::multiply_constant(T.begin()+8,T.begin()+11,2.0);
-                ++in_plane_subsample;
-                ++slice_subsample;
-            }
+            dim[0] = in.width();
+            dim[1] = in.height();
+            dim[2] = uint32_t(files.size());
+            T.identity();
+            vs[0] = vs[1] = vs[2] = 1.0f;
 
             try{
-                source_images.resize(geo);
+                source_images.resize(dim);
             }
             catch(...)
             {
@@ -253,40 +214,28 @@ bool CustomSliceModel::load_slices(const std::vector<std::string>& files,bool is
                 return false;
             }
 
-            for(unsigned int i = 0;prog(i,geo[2]);++i)
+            for(size_t file_index = 0;prog(file_index,dim[2]);++file_index)
             {
-                tipl::image<2,short> I;
                 QImage in;
-                unsigned int file_index = (slice_subsample == 1 ? i : (i << (slice_subsample-1)));
-                if(file_index >= files.size())
-                    break;
-                QString filename(files[file_index].c_str());
-                if(!in.load(filename))
+                if(!in.load(files[file_index].c_str()))
                 {
                     error_msg = "invalid image format: ";
                     error_msg += files[file_index];
                     return false;
                 }
                 QImage buf = in.convertToFormat(QImage::Format_RGB32).mirrored();
-                I.resize(tipl::shape<2>(in.width(),in.height()));
+                tipl::image<2,short> I(tipl::shape<2>(in.width(),in.height()));
                 const uchar* ptr = buf.bits();
                 for(size_t j = 0;j < I.size();++j,ptr += 4)
                     I[j] = *ptr;
 
-                for(size_t j = 1;j < in_plane_subsample;++j)
-                    tipl::downsampling(I);
-                if(I.size() != source_images.plane_size())
-                {
-                    error_msg = "Invalid BMP image size: ";
-                    error_msg += files[file_index];
-                    return false;
-                }
-                std::copy(I.begin(),I.end(),source_images.begin() + long(i*source_images.plane_size()));
+                std::copy(I.begin(),I.end(),source_images.begin() +
+                          long(file_index*source_images.plane_size()));
             }
             if(prog.aborted())
                 return false;
             tipl::io::nifti nii;
-            nii.set_dim(geo);
+            nii.set_dim(dim);
             nii.set_voxel_size(vs);
             nii.set_image_transformation(T);
             nii << source_images;
