@@ -89,9 +89,9 @@ void ThreadData::run_thread(unsigned int thread_id,unsigned int thread_count)
                     method->current_tracking_angle = std::cos(angle_gen(seed));
                 if(param.smooth_fraction == 1.0f)
                     method->current_tracking_smoothing = smoothing_gen(seed);
-                if(param.step_size <= 0.0f) // 0: voxel_size*[1 3]   -1: previous version voxel_size* [0.5 1.5]
+                if(param.step_size <= 0.0f) // 0: same as voxel spacing   -1: previous version voxel_size* [0.5 1.5]
                 {
-                    float step_size_in_voxel = param.step_size == 0 ? step_gen2(seed) : step_gen(seed);
+                    float step_size_in_voxel = param.step_size == 0 ? 1.0f : step_gen(seed);
                     float step_size_in_mm = step_size_in_voxel*method->trk->vs[0];
                     method->current_step_size_in_voxel[0] = step_size_in_voxel;
                     method->current_step_size_in_voxel[1] = step_size_in_voxel;
@@ -224,13 +224,7 @@ void ThreadData::run(std::shared_ptr<tracking_data> trk_,unsigned int thread_cou
         report << ", and only the differences greater than " << int(param.dt_threshold * 100) << "% were tracked.";
     }
     else
-    {
-        report << " A deterministic fiber tracking algorithm (Yeh et al., PLoS ONE 8(11): e80713, 2013) was used";
-        if(param.threshold == 0.0f && param.cull_cos_angle == 1.0f && param.step_size <= 0.0f) // parameter saturation, pruning
-            report << " with augmented tracking strategies (Yeh, Neuroimage, 2020 Dec;223:117329) to improve reproducibility.";
-        else
-            report << ".";
-    }
+        report << " A deterministic fiber tracking algorithm (Yeh et al., PLoS ONE 8(11): e80713, 2013) was used with augmented tracking strategies (Yeh, Neuroimage, 2020 Dec;223:117329) to improve reproducibility.";
     report << roi_mgr->report;
     report << param.get_report();
     report << " Shape analysis (Yeh, Neuroimage, 2020 Dec;223:117329) was conducted to derive shape metrics for tractography.";

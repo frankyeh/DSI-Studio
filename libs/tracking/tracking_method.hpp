@@ -138,7 +138,7 @@ struct TrackingParam
             if(step_size < 0.0f) // older versions before june 2023
                 report << " The step size was randomly selected from 0.5 voxel to 1.5 voxels.";
             else
-                report << " The step size was randomly selected from 1.0 voxel to 3.0 voxels.";
+                report << " The step size was set to voxel spacing.";
         }
 
         if(smooth_fraction != 0.0f)
