@@ -1,0 +1,21 @@
+FROM ubuntu:20.04 as builder-stage
+
+ENV DEBIAN_FRONTEND noninteractive
+
+# Prepare environment
+RUN apt update && apt full-upgrade -y && \
+  apt install -y --no-install-recommends \
+  unzip \
+  curl \
+  make \
+  git \
+  zlib1g-dev \
+  ca-certificates \
+  qt6-qmake \
+  qt6-default \
+  libqt6charts5-dev \
+  libqt6opengl5-dev \
+  gcc \
+  g++ && \
+  apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
