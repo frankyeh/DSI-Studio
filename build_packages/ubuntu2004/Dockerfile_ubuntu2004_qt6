@@ -5,7 +5,7 @@ ENV DEBIAN_FRONTEND noninteractive
 # for CMAKE
 
 RUN apt update && apt full-upgrade -y && \
-  apt install -y --no-install-recommends unzip curl git zlib1g-dev mesa-utils libgl1-mesa-dev ca-certificates gcc g++ python3-pip && \
+  apt install -y --no-install-recommends unzip curl git zlib1g-dev mesa-utils libgl1-mesa-dev freeglut3-dev ca-certificates gcc g++ python3-pip && \
   apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 #install cmake 
