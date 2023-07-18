@@ -10,7 +10,7 @@ RUN apt update && apt full-upgrade -y && \
 
 #install cmake 
 RUN curl -fsSL https://apt.kitware.com/kitware-archive.sh | bash
-RUN apt install -y --no-install-recommends unzip curl cmake ninja-build
+RUN apt install -y --no-install-recommends cmake ninja-build
 
 #install Qt6
 RUN pip install aqtinstall && aqt install-qt linux desktop 6.5.0 -m qtcharts --outputdir /opt/qt6
