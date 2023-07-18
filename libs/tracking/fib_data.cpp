@@ -1229,6 +1229,7 @@ void fib_data::set_template_id(size_t new_id)
             atlas_list.back()->template_to_mni = trans_to_mni;
         }
 
+
         set_tractography_atlas_id(0);
 
         // populate other modality name
@@ -1243,38 +1244,30 @@ bool fib_data::load_template(void)
 {
     if(!template_I.empty())
         return true;
+    if(is_mni && template_id == matched_template_id)
+    {
+        template_I.resize(dim); // this will skip the load_template function
+        template_vs = vs;
+        template_to_mni = trans_to_mni;
+        return true;
+    }
     tipl::io::gz_nifti read;
-    tipl::image<3> I;
-    tipl::vector<3> I_vs;
     if(!read.load_from_file(fa_template_list[template_id].c_str()))
     {
         error_msg = "cannot load ";
         error_msg += fa_template_list[template_id];
         return false;
     }
-    read.toLPS(I);
-    read.get_voxel_size(I_vs);
+    read.toLPS(template_I);
+    read.get_voxel_size(template_vs);
     read.get_image_transformation(template_to_mni);
-    float ratio = float(I.width()*I_vs[0])/float(dim[0]*vs[0]);
+    float ratio = float(template_I.width()*template_vs[0])/float(dim[0]*vs[0]);
     if(ratio < 0.25f || ratio > 8.0f)
     {
         error_msg = "image resolution mismatch: ratio=";
         error_msg += std::to_string(ratio);
         return false;
     }
-
-    if(is_mni && template_id == matched_template_id)
-    {
-        // set template space to current space
-        template_I.resize(dim);
-        template_vs = vs;
-        template_to_mni = trans_to_mni;
-        return true;
-    }
-
-    template_I.swap(I);
-    template_vs = I_vs;
-
     unsigned int downsampling = 0;
     while((!is_human_data && template_I.width()/3 > int(dim[0])) ||
           (is_human_data && template_vs[0]*2.0f <= int(vs[0])))
@@ -1340,11 +1333,7 @@ bool fib_data::load_track_atlas()
     if(!track_atlas.get())
     {
         if(!map_to_mni())
-        {
-            error_msg = "failed to warp subject space to template space";
             return false;
-        }
-
         // load the tract to the template space
         track_atlas = std::make_shared<TractModel>(template_I.shape(),template_vs,template_to_mni);
         track_atlas->is_mni = true;
