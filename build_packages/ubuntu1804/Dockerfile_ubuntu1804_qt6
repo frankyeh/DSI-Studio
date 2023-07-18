@@ -21,9 +21,10 @@ RUN apt update && apt full-upgrade -y && \
   python3-pip && \
   apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-#install cmake 
-RUN curl -fsSL https://apt.kitware.com/kitware-archive.sh | bash
-RUN apt install -y --no-install-recommends cmake ninja-build
+# install cmake
+RUN apt update && apt full-upgrade -y && \
+  add-apt-repository -y ppa:george-edison55/cmake-3.x && \
+  apt install -y --no-install-recommends cmake ninja-build
 
 #install Qt6
 RUN pip install aqtinstall && aqt install-qt linux desktop 6.5.0 -m qtcharts qtopengl --outputdir /opt/qt6
