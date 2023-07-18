@@ -1,4 +1,4 @@
-name: Build Ubuntu1804 Environment
+name: Build Ubuntu1804 QT6 Environment
 on:
   workflow_dispatch:
 jobs:
