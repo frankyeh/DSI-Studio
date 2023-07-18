@@ -4,18 +4,13 @@ ENV DEBIAN_FRONTEND noninteractive
 
 # Prepare environment
 RUN apt update && apt full-upgrade -y && \
-  apt install -y --no-install-recommends \
-  unzip \
-  curl \
-  make \
-  git \
-  zlib1g-dev \
-  ca-certificates \
-  qt6-qmake \
-  qt6-default \
-  libqt6charts5-dev \
-  libqt6opengl5-dev \
-  gcc \
-  g++ && \
+  apt install -y --no-install-recommends unzip curl make git zlib1g-dev ca-certificates gcc g++ && \
   apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
+RUN pip install aqtinstall && aqt install-qt linux desktop 6.5.0 -m qtcharts --outputdir /opt/qt6
+
+	
+ENV QTDIR="/opt/qt6/6.5.0/gcc_64/"
+ENV PATH="$QTDIR/bin:$PATH"
+ENV LD_LIBRARY_PATH="$QTDIR/lib:$LD_LIBRARY_PATH"
 
