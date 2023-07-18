@@ -680,7 +680,7 @@ bool apply_unwarping_tt(const char* from,
     }
     return true;
 }
-bool TractModel::load_tracts_from_file(const char* file_name_,const fib_data* handle,bool tract_is_mni)
+bool TractModel::load_tracts_from_file(const char* file_name_,fib_data* handle,bool tract_is_mni)
 {
     std::string file_name(file_name_);
     std::vector<std::vector<float> > loaded_tract_data;
@@ -792,9 +792,6 @@ bool TractModel::load_tracts_from_file(const char* file_name_,const fib_data* ha
         tipl::out() << trans_to_mni << std::endl;
         tipl::out() << ((tract_is_mni) ? "tractography space (mni):" : "tractography space (native):") << std::endl;
         tipl::out() << source_trans_to_mni << std::endl;
-        tipl::out() << "template space:" << std::endl;
-        tipl::out() << handle->template_to_mni << std::endl;
-
 
         auto apply_transform = [&](const tipl::matrix<4,4>& T)
         {
@@ -823,6 +820,14 @@ bool TractModel::load_tracts_from_file(const char* file_name_,const fib_data* ha
         // 2. subject FIB loading MNI space tracts
         if(!is_mni && tract_is_mni)
         {
+            if(!handle->map_to_mni())
+            {
+                tipl::out() << "cannot run normalization" << std::endl;;
+                return false;
+            }
+            tipl::out() << "template space:" << std::endl;
+            tipl::out() << handle->template_to_mni << std::endl;
+
             // first transform to template space
             if(handle->template_to_mni != source_trans_to_mni)
                 apply_transform(tipl::from_space(source_trans_to_mni).to(handle->template_to_mni));
