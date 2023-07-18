@@ -82,7 +82,7 @@ public:
         bool save_tracts_in_native_space(std::shared_ptr<fib_data> handle,const char* file_name);
         bool save_tracts_in_template_space(std::shared_ptr<fib_data> handle,const char* file_name);
         bool save_transformed_tracts_to_file(const char* file_name,tipl::shape<3> new_dim,
-                                             tipl::vector<3> new_vs,const tipl::matrix<4,4>& T,bool end_point);
+                                             tipl::vector<3> new_vs,const tipl::matrix<4,4>& trans_to_mni,const tipl::matrix<4,4>& T,bool end_point);
 
         void save_vrml(const std::string& file_name,
                        unsigned char tract_style,

@@ -506,10 +506,8 @@ int trk_post(tipl::program_option<tipl::out>& po,
             new_slice.wait();
             new_slice.update_transform();
             tipl::out() << "applying linear registration." << std::endl;
-            tipl::out() << new_slice.T[0] << " " << new_slice.T[1] << " " << new_slice.T[2] << " " << new_slice.T[3] << std::endl;
-            tipl::out() << new_slice.T[4] << " " << new_slice.T[5] << " " << new_slice.T[6] << " " << new_slice.T[7] << std::endl;
-            tipl::out() << new_slice.T[8] << " " << new_slice.T[9] << " " << new_slice.T[10] << " " << new_slice.T[11] << std::endl;
-            if(!tract_model->save_transformed_tracts_to_file(tract_file_name.c_str(),new_slice.dim,new_slice.vs,new_slice.invT,false))
+            tipl::out() << new_slice.T << std::endl;
+            if(!tract_model->save_transformed_tracts_to_file(tract_file_name.c_str(),new_slice.dim,new_slice.vs,new_slice.trans,new_slice.invT,false))
                 failed = true;
         }
         else

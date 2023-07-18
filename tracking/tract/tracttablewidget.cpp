@@ -889,7 +889,7 @@ void TractTableWidget::save_transformed_tracts(void)
 
     slice->update_transform();
     auto lock = tract_rendering[uint32_t(currentRow())]->start_reading();
-    if(tract_models[uint32_t(currentRow())]->save_transformed_tracts_to_file(filename.toStdString().c_str(),slice->dim,slice->vs,slice->invT,false))
+    if(tract_models[uint32_t(currentRow())]->save_transformed_tracts_to_file(filename.toStdString().c_str(),slice->dim,slice->vs,slice->trans,slice->invT,false))
         QMessageBox::information(this,"DSI Studio","File saved");
     else
         QMessageBox::critical(this,"Error","File not saved. Please check write permission");
@@ -916,7 +916,7 @@ void TractTableWidget::save_transformed_endpoints(void)
         return;
     }
     auto lock = tract_rendering[uint32_t(currentRow())]->start_reading();
-    if(tract_models[uint32_t(currentRow())]->save_transformed_tracts_to_file(filename.toStdString().c_str(),slice->dim,slice->vs,slice->invT,true))
+    if(tract_models[uint32_t(currentRow())]->save_transformed_tracts_to_file(filename.toStdString().c_str(),slice->dim,slice->vs,slice->trans,slice->invT,true))
         QMessageBox::information(this,"DSI Studio","File saved");
     else
         QMessageBox::critical(this,"Error","File not saved. Please check write permission");
