@@ -1,0 +1,34 @@
+name: Build Ubuntu2004 QT6 Environment
+on:
+  workflow_dispatch:
+jobs:
+  docker_build:
+    runs-on: ubuntu-20.04
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2.5.0
+    - name: Set up QEMU
+      uses: docker/setup-qemu-action@v2.1.0
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v2.2.1
+    - name: Login to DockerHub
+      uses: docker/login-action@v2.1.0
+      with:
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+    - name: Log in to the Container registry
+      uses: docker/login-action@v1 
+      with:
+        registry: ghcr.io
+        username: ${{ github.repository_owner }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    - name: Build and push
+      uses: docker/build-push-action@v2
+      with:
+        context: .
+        file: build_packages/ubuntu2004/Dockerfile_ubuntu2004_qt6
+        push: true
+        tags: |
+          dsistudio/ubuntu2004_qt6:latest
+
+
