@@ -13,6 +13,7 @@
 
 #ifndef QT6_PATCH
 #include <QTextCodec>
+#include <QStringDecoder>
 #endif
 
 std::string device_content_file,topup_param_file;
