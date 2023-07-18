@@ -13,7 +13,7 @@ RUN curl -fsSL https://apt.kitware.com/kitware-archive.sh | bash
 RUN apt install -y --no-install-recommends cmake ninja-build
 
 #install Qt6
-RUN pip install aqtinstall && aqt install-qt linux desktop 6.5.0 -m qtcharts -outputdir /opt/qt6
+RUN pip install aqtinstall && aqt install-qt linux desktop 6.5.0 -m qtcharts --outputdir /opt/qt6
 
 ENV QTDIR="/opt/qt6/6.5.0/gcc_64"
 ENV PATH="$QTDIR/bin:$PATH"
