@@ -697,9 +697,13 @@ bool TractModel::load_tracts_from_file(const char* file_name_,fib_data* handle,b
     {
         unsigned int old_color = color;
         std::vector<uint16_t> cluster;
-
         if(!TinyTrack::load_from_file(file_name_,loaded_tract_data,cluster,geo,vs,source_trans_to_mni,report,parameter_id,color))
             return false;
+        if(geo == handle->dim && vs == handle->vs && source_trans_to_mni != handle->trans_to_mni)
+        {
+            tipl::out() << "identical dimension: overwriting tractography transformation matrix." << std::endl;
+            source_trans_to_mni = handle->trans_to_mni;
+        }
         std::copy(cluster.begin(),cluster.end(),std::back_inserter(loaded_tract_cluster));
         if(color != old_color)
             color_changed = true;
@@ -709,6 +713,11 @@ bool TractModel::load_tracts_from_file(const char* file_name_,fib_data* handle,b
         TrackVis trk;
         if(!trk.load_from_file(file_name_,loaded_tract_data,loaded_tract_cluster,geo,vs,source_trans_to_mni,parameter_id))
             return false;
+        if(geo == handle->dim && vs == handle->vs && source_trans_to_mni != handle->trans_to_mni)
+        {
+            tipl::out() << "identical dimension: overwriting tractography transformation matrix." << std::endl;
+            source_trans_to_mni = handle->trans_to_mni;
+        }
         unsigned int new_color = *(uint32_t*)(trk.reserved+440);
         if(new_color)
             color = new_color;
