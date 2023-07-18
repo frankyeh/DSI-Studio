@@ -13,7 +13,7 @@ RUN cd /opt \
   && mkdir -p /opt/src/build
 
 RUN cd /opt/src \
-  && cmake -S . -B build -DCMAKE_BUILD_TYPE:STRING=Release -DTIPL_DIR=. \
+  && cmake -S . -B build -GNinja -DCMAKE_BUILD_TYPE:STRING=Release -DTIPL_DIR=. \
   && cmake --build ./build --parallel --config Release
 
 RUN mkdir -p /opt/dsi-studio \
