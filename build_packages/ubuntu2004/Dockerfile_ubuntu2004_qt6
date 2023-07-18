@@ -5,7 +5,7 @@ ENV DEBIAN_FRONTEND noninteractive
 # for CMAKE
 
 RUN apt update && apt full-upgrade -y && \
-  apt install -y --no-install-recommends unzip curl git zlib1g-dev mesa-utils libgl1-mesa-dev freeglut3-dev ca-certificates gcc g++ python3-pip && \
+  apt install -y --no-install-recommends unzip curl git zlib1g-dev mesa-utils libgl1-mesa-dev freeglut3-dev ca-certificates gcc g++ python3-pip libglib2.0-0 && \
   apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 #install cmake 
@@ -14,6 +14,7 @@ RUN apt install -y --no-install-recommends cmake ninja-build
 
 #install Qt6
 RUN pip install aqtinstall && aqt install-qt linux desktop 6.5.0 -m qtcharts --outputdir /opt/qt6
+RUN /opt/qt6/6.5.0/gcc_64/bin/qmake --version
 
 ENV QTDIR="/opt/qt6/6.5.0/gcc_64"
 ENV PATH="$QTDIR/bin:$PATH"
