@@ -198,6 +198,8 @@ void TractTableWidget::addConnectometryResults(std::vector<std::vector<std::vect
 }
 void TractTableWidget::load_built_in_atlas(int track_id)
 {
+    if(!cur_tracking_window.map_to_mni())
+        return;
     if(cur_tracking_window.handle->tractography_atlas_file_name.empty() || cur_tracking_window.handle->tractography_name_list.empty())
     {
         QMessageBox::critical(this,"ERROR","No tractography atlas found in current template space");
