@@ -1,26 +1,26 @@
-FROM dsistudio/ubuntu2004_qt6:latest as builder-stage
+FROM dsistudio/ubuntu2004_qt5:latest as builder-stage
 
 ENV DEBIAN_FRONTEND noninteractive
 
 ADD "https://api.github.com/repos/frankyeh/DSI-Studio/commits?per_page=1" latest_commit
 ADD "https://api.github.com/repos/frankyeh/TIPL/commits?per_page=1" latest_commit
 
-RUN cd /opt \
+RUN mkdir /opt/dsi-studio \
+  && cd /opt/dsi-studio \
   && git clone https://github.com/frankyeh/DSI-Studio.git \
   && mv DSI-Studio src \
-  && cd /opt/src \
   && git clone https://github.com/frankyeh/TIPL.git \
-  && mkdir -p /opt/src/build
+  && mv TIPL src/TIPL \
+  && mkdir -p /opt/dsi-studio/build \
+  && cd /opt/dsi-studio/build \
+  && qmake ../src/dsi_studio.pro \
+  && make
 
-RUN cd /opt/src \
-  && cmake -S . -B build -GNinja -DCMAKE_BUILD_TYPE:STRING=Release -DTIPL_DIR=. \
-  && cmake --build ./build --parallel --config Release
-
-RUN mkdir -p /opt/dsi-studio \
-  && cd /opt/dsi-studio \
-  && mv /opt/src/build/dsi_studio . \
+RUN cd /opt/dsi-studio \
+  && mv build/dsi_studio . \
   && chmod 755 dsi_studio \
-  && cp -R /opt/src/other/* . \
+  && cp -R src/other/* . \
+  && rm -rf src build \
   && git clone https://github.com/frankyeh/DSI-Studio-atlas.git \
   && rm -fr DSI-Studio-atlas/.git \
   && mv DSI-Studio-atlas atlas
