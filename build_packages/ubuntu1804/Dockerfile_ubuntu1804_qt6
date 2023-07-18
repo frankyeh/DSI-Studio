@@ -1,0 +1,33 @@
+FROM ubuntu:18.04 as builder-stage
+
+ENV DEBIAN_FRONTEND noninteractive
+
+# for CMAKE
+
+RUN apt update && apt full-upgrade -y && \
+  apt install --no-install-recommends -y software-properties-common && \
+  apt install -y --no-install-recommends \
+  unzip \
+  curl \
+  make \
+  git \
+  zlib1g-dev \
+  ca-certificates \
+  mesa-common-dev \
+  libglu1-mesa-dev \
+  gcc-9 \
+  g++-9 \
+  python3-pip && \
+  apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
+#install cmake 
+RUN curl -fsSL https://apt.kitware.com/kitware-archive.sh | bash
+RUN apt install -y --no-install-recommends cmake ninja-build
+
+#install Qt6
+RUN pip install aqtinstall && aqt install-qt linux desktop 6.5.0 -m qtcharts qtopengl --outputdir /opt/qt6
+
+ENV QTDIR="/opt/qt6/6.5.0/gcc_64"
+ENV PATH="$QTDIR/bin:$PATH"
+ENV LD_LIBRARY_PATH="$QTDIR/lib:$LD_LIBRARY_PATH"
+
