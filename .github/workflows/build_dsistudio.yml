@@ -69,7 +69,6 @@ jobs:
         mkdir -p build
         cmake -S . -B build -DCMAKE_BUILD_TYPE:STRING=Release -DTIPL_DIR=.
         cmake --build ./build --parallel --config Release
-        cd ..
     - name: Packaging
       run: |
         curl -sSLO "https://github.com/frankyeh/TinyFSL/releases/download/2022.08.03/tiny_fsl_${{ matrix.os }}.zip"
