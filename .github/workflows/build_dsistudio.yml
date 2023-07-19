@@ -259,7 +259,8 @@ jobs:
     - name: Install Qt
       run: |
         brew update
-        brew install qt5
+        brew install qt6
+        brew install cmake
     - name: Download TIPL and Atlases
       run: |
         git clone https://github.com/frankyeh/TIPL.git
@@ -269,11 +270,9 @@ jobs:
       run: |
         mkdir -p build
         cd build
-        export PATH="/usr/local/opt/qt@5/bin:$PATH" && export LDFLAGS="-L/usr/local/opt/qt@5/lib" && export CPPFLAGS="-I/usr/local/opt/qt@5/include" && export PKG_CONFIG_PATH="/usr/local/opt/qt@5/lib/pkgconfig"
-        qmake ../dsi_studio.pro
-        make
+        cmake -S . -B build -DCMAKE_BUILD_TYPE:STRING=Release -DTIPL_DIR=.
+        cmake --build ./build --parallel --config Release
         cd ..
-        
     - name: Packaging
       run: |
         curl -sSLO "https://github.com/frankyeh/TinyFSL/releases/download/2022.08.03/tiny_fsl_${{ matrix.os }}.zip"
