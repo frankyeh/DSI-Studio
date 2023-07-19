@@ -139,7 +139,7 @@ jobs:
       run: |
         mkdir dsi_studio_win
         move other\color_map dsi_studio_win   
-        move other\*.txt dsi_studio_win   
+        move other\* dsi_studio_win   
         move build\dsi_studio.exe dsi_studio_win
         windeployqt --no-translations --no-system-d3d-compiler --compiler-runtime --no-opengl-sw dsi_studio_win\dsi_studio.exe
         move DSI-Studio-atlas dsi_studio_win\atlas  
