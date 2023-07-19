@@ -13,6 +13,7 @@
 
 #ifndef QT6_PATCH
 #include <QTextCodec>
+#else
 #include <QStringDecoder>
 #endif
 
