@@ -1,4 +1,4 @@
-FROM ubuntu:22.04 as builder-stage
+FROM nvidia/cuda:11.8.0-devel-ubuntu22.04 as builder-stage
 
 ENV DEBIAN_FRONTEND noninteractive
 
@@ -14,14 +14,10 @@ RUN apt update && apt upgrade -y && \
   libqt6charts6-dev \
   libqt6opengl6-dev \
   qt6-image-formats-plugins \
-  nvidia-cuda-toolkit \
-  nvidia-cuda-dev \
-  nvidia-cuda-toolkit-gcc \
   gcc-12 \
   g++-12 && \
   apt-get -y autoremove --purge && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-# issue with nvcc: https://github.com/NVlabs/instant-ngp/issues/119
 RUN update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-12 100 && update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-12 100
 
 # install updated cmake 
