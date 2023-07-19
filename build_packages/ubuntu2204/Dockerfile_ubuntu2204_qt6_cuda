@@ -17,12 +17,12 @@ RUN apt update && apt upgrade -y && \
   nvidia-cuda-toolkit \
   nvidia-cuda-dev \
   nvidia-cuda-toolkit-gcc \
-  gcc-10 \
-  g++-10 && \
+  gcc-13 \
+  g++-13 && \
   apt-get -y autoremove --purge && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-# downgrade gcc/g++ to 10 due to issue with nvcc: https://github.com/NVlabs/instant-ngp/issues/119
-RUN update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-10 100 && update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-10 100
+# issue with nvcc: https://github.com/NVlabs/instant-ngp/issues/119
+RUN update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-13 100 && update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-13 100
 
 # install updated cmake 
 RUN curl -fsSL https://apt.kitware.com/kitware-archive.sh | bash
