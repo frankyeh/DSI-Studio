@@ -19,6 +19,6 @@ RUN apt update && apt upgrade -y && \
 #  nvidia-cuda-toolkit \
 #  nvidia-cuda-dev \
 #  nvidia-cuda-toolkit-gcc \
-  gcc-12 \
-  g++-12 && \
+  gcc \
+  g++ && \
   apt-get -y autoremove --purge && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
