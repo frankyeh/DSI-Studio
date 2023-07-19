@@ -72,7 +72,7 @@ jobs:
     - name: Packaging
       run: |
         mv build/dsi_studio.app .
-        /usr/local/opt/qt@5/bin/macdeployqt dsi_studio.app
+        /usr/local/opt/qt@6/bin/macdeployqt dsi_studio.app
         curl -sSLO "https://github.com/frankyeh/TinyFSL/releases/download/2022.08.03/tiny_fsl_${{ matrix.os }}.zip"
         7z e tiny_fsl_${{ matrix.os }}.zip -odsi_studio.app/Contents/MacOS/plugin
         rm -fr dsi_studio.app/Contents/MacOS/plugin/tiny_fsl
