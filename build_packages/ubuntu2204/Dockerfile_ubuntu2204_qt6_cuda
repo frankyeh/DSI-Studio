@@ -7,8 +7,6 @@ RUN apt update && apt upgrade -y && \
   apt install -y \
   unzip \
   curl \
-  cmake \
-  ninja-build \
   git \
   zlib1g-dev \
   libglu1-mesa-dev \
@@ -25,3 +23,8 @@ RUN apt update && apt upgrade -y && \
 
 # downgrade gcc/g++ to 10 due to issue with nvcc: https://github.com/NVlabs/instant-ngp/issues/119
 RUN update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-10 100 && update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-10 100
+
+# install updated cmake 
+RUN curl -fsSL https://apt.kitware.com/kitware-archive.sh | bash
+RUN apt install -y --no-install-recommends cmake ninja-build
+
