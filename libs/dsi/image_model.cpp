@@ -1960,16 +1960,26 @@ bool ImageModel::run_topup_eddy(const std::string& other_src)
 
 
         std::vector<std::string> param = {
-            QString("--imain=%1").arg(b0_appa_file.c_str()).toStdString().c_str(),
-            QString("--datain=%1").arg(acqparam_file.c_str()).toStdString().c_str(),
-            QString("--out=%1").arg(topup_result.c_str()).toStdString().c_str(),
-            QString("--iout=%1").arg(check_me_file.c_str()).toStdString().c_str(),
-            QString("--verbose=1").toStdString().c_str()};
+            (std::string("--imain=")+b0_appa_file).c_str(),
+            (std::string("--datain=")+acqparam_file).c_str(),
+            (std::string("--out=")+topup_result).c_str(),
+            (std::string("--iout=")+check_me_file).c_str(),
+            "--verbose=1"};
 
         if(!std::filesystem::exists(topup_param_file))
         {
-            error_msg = "failed to find topup parameter file at ";
-            error_msg += topup_param_file;
+            tipl::out() << "failed to find topup parameter file at " << topup_param_file;
+            tipl::out() << "apply default parameters";
+            for(auto each : {
+                    "--warpres=20,16,14,12,10,6,4,4,4",
+                    "--subsamp=2,2,2,2,2,1,1,1,1",  // This causes an error in odd number of slices
+                    "--fwhm=8,6,4,3,3,2,1,0,0",
+                    "--miter=5,5,5,5,5,10,10,20,20",
+                    "--lambda=0.005,0.001,0.0001,0.000015,0.000005,0.0000005,0.00000005,0.0000000005,0.00000000001",
+                    "--estmov=1,1,1,1,1,0,0,0,0",
+                    "--minmet=0,0,0,0,0,1,1,1,1",
+                    "--scale=1"})
+                param.push_back(each);
             return false;
         }
 
