@@ -86,19 +86,19 @@ QStringList search_files(QString dir,QString filter)
 
 std::string find_full_path(QString name)
 {
-    QString filename = QCoreApplication::applicationDirPath() + name;
+    QString filename = QCoreApplication::applicationDirPath() + "/" + name;
     if(QFileInfo(filename).exists())
         return filename.toStdString();
-    filename = QDir::currentPath() + name;
+    filename = QDir::currentPath() + "/" + name;
     if(QFileInfo(filename).exists())
         return filename.toStdString();
-    return std::string();
+    return name.toStdString();
 }
 
 bool load_file_name(void)
 {
-    device_content_file = find_full_path("/device.txt");
-    topup_param_file = find_full_path("/topup_param.txt");
+    device_content_file = find_full_path("device.txt");
+    topup_param_file = find_full_path("topup_param.txt");
 
     {
         QDir dir = QCoreApplication::applicationDirPath()+ "/atlas";
