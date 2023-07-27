@@ -131,7 +131,8 @@ tipl::const_pointer_image<3,float> item::get_image(void)
         }
         tipl::show_prog = has_gui;
         image_ready = true;
-        set_scale(image_data.begin(),image_data.end());
+        if(max_value == 0.0f)
+            get_minmax();
     }
     return image_data;
 }
@@ -1053,16 +1054,6 @@ bool fib_data::set_dt_index(const std::pair<int,int>& pair,size_t type)
     return true;
 }
 
-
-std::pair<float,float> fib_data::get_value_range(const std::string& view_name) const
-{
-    unsigned int view_index = get_name_index(view_name);
-    if(view_index == view_item.size())
-        return std::make_pair(0.0f,0.0f);
-    if(view_item[view_index].name == "color")
-        return std::make_pair(view_item[0].min_value,view_item[0].max_value);
-    return std::make_pair(view_item[view_index].min_value,view_item[view_index].max_value);
-}
 
 void fib_data::get_slice(unsigned int view_index,
                unsigned char d_index,unsigned int pos,

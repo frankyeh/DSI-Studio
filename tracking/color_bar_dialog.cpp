@@ -99,9 +99,12 @@ void color_bar_dialog::on_tract_color_index_currentIndexChanged(int index)
     if(index_name.empty())
         return;
     size_t item_index = cur_tracking_window->handle->get_name_index(index_name);
-    double max_value = double(cur_tracking_window->handle->view_item[item_index].max_value);
-    double min_value = double(cur_tracking_window->handle->view_item[item_index].min_value);
-    set_value(min_value,max_value);
+    if(item_index == cur_tracking_window->handle->view_item.size())
+        return;
+    if(cur_tracking_window->handle->view_item[item_index].max_value == 0.0f)
+        cur_tracking_window->handle->view_item[item_index].get_minmax();
+    set_value(double(cur_tracking_window->handle->view_item[item_index].min_value),
+              double(cur_tracking_window->handle->view_item[item_index].max_value));
 }
 
 

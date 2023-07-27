@@ -55,6 +55,8 @@ void SliceModel::apply_overlay(tipl::color_image& show_image,
 // ---------------------------------------------------------------------------
 std::pair<float,float> SliceModel::get_value_range(void) const
 {
+    if(handle->view_item[view_id].max_value == 0.0f)
+        handle->view_item[view_id].get_minmax();
     return std::make_pair(handle->view_item[view_id].min_value,handle->view_item[view_id].max_value);
 }
 // ---------------------------------------------------------------------------

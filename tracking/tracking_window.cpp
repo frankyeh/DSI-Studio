@@ -2266,6 +2266,7 @@ void tracking_window::on_SliceModality_currentIndexChanged(int index)
     if(!handle->view_item[current_slice->view_id].image_ready)
         current_slice->get_source();
 
+
     ui->is_overlay->setChecked(current_slice->is_overlay);
     ui->glSagSlider->setRange(0,int(current_slice->dim[0]-1));
     ui->glCorSlider->setRange(0,int(current_slice->dim[1]-1));

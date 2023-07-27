@@ -168,12 +168,21 @@ public:
         image_data(tipl::make_image(pointer,dim_)),name(name_)
     {
         T.identity();iT.identity();
-        set_scale(image_data.begin(),image_data.end());
+        if(name.back() == 'a') // e.g., fa, qa
+        {
+            contrast_min = min_value = 0.0f;
+            contrast_max = max_value = 1.0f;
+        }
     }
     item(const std::string& name_,const tipl::shape<3>& dim_,tipl::io::gz_mat_read* mat_reader_,unsigned int index_):
         image_data(tipl::make_image((const float*)nullptr,dim_)),mat_reader(mat_reader_),image_index(index_),name(name_)
     {
         T.identity();iT.identity();
+        if(name.back() == 'a') // e.g., fa, qa
+        {
+            contrast_min = min_value = 0.0f;
+            contrast_max = max_value = 1.0f;
+        }
         image_ready = false;
     }
     tipl::const_pointer_image<3> get_image(void);
@@ -187,10 +196,10 @@ public:
 
 public:
     tipl::value_to_color<float> v2c;
-    float max_value;
-    float min_value;
-    float contrast_max;
-    float contrast_min;
+    float max_value = 0.0f;
+    float min_value = 0.0f;
+    float contrast_max = 0.0f;
+    float contrast_min = 0.0f;
     unsigned int max_color = 0x00FFFFFF;
     unsigned int min_color = 0;
     tipl::image<3,unsigned int> color_map_buf;
@@ -199,25 +208,12 @@ public:
     tipl::shape<3> native_geo;
     tipl::transformation_matrix<float> native_trans;
 
-    template<class input_iterator>
-    void set_scale(input_iterator from,input_iterator to)
+    void get_minmax(void)
     {
-        if(name.back() == 'a') // e.g., fa, qa
-        {
-            contrast_min = min_value = 0.0f;
-            contrast_max = max_value = 1.0f;
-        }
-        else
-        {
-            auto result = tipl::minmax_value_mt(from,to);
-            contrast_min = min_value = result.first;
-            contrast_max = max_value = result.second;
-        }
-        if(max_value <= min_value)
-        {
-            min_value = 0.0f;
-            max_value = 1.0f;
-        }
+        auto I = get_image();
+        auto result = tipl::minmax_value_mt(I.begin(),I.end());
+        contrast_min = min_value = result.first;
+        contrast_max = max_value = result.second;
         v2c.set_range(contrast_min,contrast_max);
         v2c.two_color(min_color,max_color);
     }
@@ -378,7 +374,6 @@ public:
 public:
     bool set_dt_index(const std::pair<int,int>& pair,size_t type);
 public:
-    std::pair<float,float> get_value_range(const std::string& view_name) const;
     void get_slice(unsigned int view_index,
                    unsigned char d_index,unsigned int pos,
                    tipl::color_image& show_image);
