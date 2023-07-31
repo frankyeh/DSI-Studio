@@ -141,7 +141,8 @@ bool CustomSliceModel::load_slices(const std::vector<std::string>& files,bool is
     // QSDR loaded, use MNI transformation instead
     bool has_transform = false;
     source_file_name = files[0].c_str();
-    name = QFileInfo(files[0].c_str()).baseName().toStdString();
+    name = QFileInfo(files[0].c_str()).completeBaseName().remove(".nii").toStdString();
+
     T.identity();
     invT.identity();
     tipl::progress prog("load slices ",std::filesystem::path(files[0]).filename().string().c_str());
@@ -281,7 +282,6 @@ bool CustomSliceModel::load_slices(const std::vector<std::string>& files,bool is
                 return false;
             }
         }
-        name = QFileInfo(files[0].c_str()).baseName().toStdString();
         vs = db_handle->vs;
         trans = db_handle->trans_to_mni;
         if(!handle->mni2sub(source_images,trans))
