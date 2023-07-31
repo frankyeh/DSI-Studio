@@ -117,6 +117,7 @@ set(DSI_STUDIO_SOURCES
     libs/tracking/tract_cluster.cpp
     SliceModel.cpp
     tracking/tracking_window.cpp
+    tracking/tracking_window_action.cpp
     reconstruction/reconstruction_window.cpp
     tracking/slice_view_scene.cpp
     opengl/glwidget.cpp
