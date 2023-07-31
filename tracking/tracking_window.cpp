@@ -1474,7 +1474,3 @@ void tracking_window::on_max_slider_sliderMoved(int)
 }
 
 
-
-
-
-
