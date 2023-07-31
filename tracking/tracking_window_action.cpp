@@ -925,7 +925,10 @@ void tracking_window::on_actionStrip_Skull_triggered()
 {
     CustomSliceModel* reg_slice = dynamic_cast<CustomSliceModel*>(current_slice.get());
     if(!reg_slice)
+    {
+        QMessageBox::critical(this,"ERROR","This function only applies to inserted T1W or T2W images");
         return;
+    }
     QMessageBox::information(this,"DSI Studio","Specify the UNet model");
     QString filename = QFileDialog::getOpenFileName(this,
                 "Select model",QCoreApplication::applicationDirPath()+"/network/",
@@ -954,6 +957,7 @@ void tracking_window::on_actionStrip_Skull_triggered()
     auto ptr = un->forward_with_prog(&target_image[0],p);
     if(ptr == nullptr)
         return;
+    p(20,21);
     trans.inverse();
     tipl::par_for(un->out_channels_,[&](int i)
     {
@@ -966,7 +970,7 @@ void tracking_window::on_actionStrip_Skull_triggered()
     reg_slice->source_images *= prob;
     slice_need_update = true;
     glWidget->update_slice();
-    p(4,4);
+    p(21,21);
 }
 
 
