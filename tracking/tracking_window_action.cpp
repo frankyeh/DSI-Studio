@@ -920,6 +920,56 @@ void tracking_window::on_actionAdjust_Mapping_triggered()
 }
 
 
+
+void tracking_window::on_actionStrip_Skull_triggered()
+{
+    CustomSliceModel* reg_slice = dynamic_cast<CustomSliceModel*>(current_slice.get());
+    if(!reg_slice)
+        return;
+    QMessageBox::information(this,"DSI Studio","Specify the UNet model");
+    QString filename = QFileDialog::getOpenFileName(this,
+                "Select model",QCoreApplication::applicationDirPath()+"/network/",
+                "Text files (*.net.gz);;All files|(*)");
+    if(filename.isEmpty())
+        return;
+    tipl::io::gz_mat_read mat_reader;
+    if(!mat_reader.load_from_file(filename.toStdString().c_str()))
+    {
+        QMessageBox::critical(this,"ERROR","Cannot read the model file");
+        return;
+    }
+    auto un = tipl::ml3d::unet3d::load_model(mat_reader);
+    if(!un.get())
+    {
+        QMessageBox::critical(this,"ERROR","Invalid model file");
+        return;
+    }
+    tipl::progress p("processing",true);
+    tipl::transformation_matrix<float> trans(tipl::affine_transform<float>(),
+                                             un->dim,un->vs,reg_slice->dim,reg_slice->vs);
+    tipl::image<3> target_image(un->dim),
+                   output(reg_slice->dim.multiply(tipl::shape<3>::z,un->out_channels_));
+    tipl::resample_mt(reg_slice->source_images,target_image,trans);
+    tipl::normalize(target_image);
+    auto ptr = un->forward_with_prog(&target_image[0],p);
+    if(ptr == nullptr)
+        return;
+    trans.inverse();
+    tipl::par_for(un->out_channels_,[&](int i)
+    {
+        tipl::resample_mt<tipl::nearest>(tipl::make_image(ptr+i*un->dim.size(),un->dim),
+                  output.alias(reg_slice->dim.size()*i,reg_slice->dim),trans);
+    });
+
+    auto I = tipl::make_image(&output[0],reg_slice->dim.expand(un->out_channels_));
+    auto prob = tipl::ml3d::defragment4d(I,0.5f);
+    reg_slice->source_images *= prob;
+    slice_need_update = true;
+    glWidget->update_slice();
+    p(4,4);
+}
+
+
 void tracking_window::on_actionSave_Slices_to_DICOM_triggered()
 {
     CustomSliceModel* slice = dynamic_cast<CustomSliceModel*>(current_slice.get());
@@ -1329,3 +1379,5 @@ void tracking_window::on_actionLoad_Color_Map_triggered()
     slice_need_update = true;
     glWidget->update_slice();
 }
+
+
