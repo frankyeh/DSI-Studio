@@ -1111,11 +1111,19 @@
      <addaction name="actionInsert_Coronal_Pictures"/>
      <addaction name="actionInsert_Axial_Pictures"/>
     </widget>
+    <widget class="QMenu" name="menuProcessing">
+     <property name="title">
+      <string>U-Net Processing</string>
+     </property>
+     <addaction name="actionStrip_Skull"/>
+     <addaction name="actionSegment_Tissue"/>
+    </widget>
     <addaction name="actionInsert_T1_T2"/>
     <addaction name="actionInsert_MNI_images"/>
     <addaction name="menuInsert_Picture"/>
     <addaction name="separator"/>
     <addaction name="menuAdd_Isosurface"/>
+    <addaction name="menuProcessing"/>
     <addaction name="separator"/>
     <addaction name="actionSave_T1W_T2W_images"/>
     <addaction name="actionSave_Slices_to_DICOM"/>
@@ -1314,10 +1322,10 @@
    <addaction name="menuTracts"/>
    <addaction name="menuTracts_Cluster"/>
    <addaction name="menuTracts_Misc"/>
-   <addaction name="menuDevices"/>
    <addaction name="menu_Slices"/>
    <addaction name="menuE_xport"/>
    <addaction name="menu_View"/>
+   <addaction name="menuDevices"/>
    <addaction name="menuAnalysis"/>
    <addaction name="menuLayout"/>
    <addaction name="menuTools"/>
@@ -4179,6 +4187,16 @@ Tracking</string>
   <action name="actionLoad_Built_In_Atlas">
    <property name="text">
     <string>Load Built-In Atlas...</string>
+   </property>
+  </action>
+  <action name="actionStrip_Skull">
+   <property name="text">
+    <string>Strip Skull</string>
+   </property>
+  </action>
+  <action name="actionSegment_Tissue">
+   <property name="text">
+    <string>Segment Tissue </string>
    </property>
   </action>
  </widget>
