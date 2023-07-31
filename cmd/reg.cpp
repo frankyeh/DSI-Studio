@@ -211,7 +211,7 @@ int reg(tipl::program_option<tipl::out>& po)
     }
     auto r2 = tipl::correlation(from_.begin(),from_.end(),to.begin());
     tipl::out() << "correlation cofficient: " << r2 << std::endl;
-    if(po.get("reg_type",1) == 0 || po.get("linear_only",0)) // just rigidbody
+    if(po.get("reg_type",1) == 0) // just rigidbody
     {
         tipl::out() << "output warped image:" << output_wp_image << std::endl;
         tipl::io::gz_nifti::save_to_file(output_wp_image.c_str(),from_,to_vs,to_trans);
@@ -283,7 +283,7 @@ int reg(tipl::program_option<tipl::out>& po)
     if(po.has("output_warp"))
     {
         std::string filename = po.get("output_warp");
-        if(!QString(filename.c_str()).endsWith(".wp.gz"))
+        if(!QString(filename.c_str()).endsWith(".map.gz"))
             filename += ".map.gz";
         tipl::io::gz_mat_write out(filename.c_str());
         if(!out)
