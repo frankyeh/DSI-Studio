@@ -208,6 +208,7 @@ private slots:
     void on_actionManual_Atlas_Alignment_triggered();
     void on_tractography_atlas_currentIndexChanged(int index);
 
+    void on_actionStrip_Skull_triggered();
 };
 
 #endif // TRACKING_WINDOW_H
