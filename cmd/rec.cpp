@@ -34,7 +34,7 @@ int rec(tipl::program_option<tipl::out>& po)
         src.voxel.check_btable = po.get("check_btable",0);
         src.voxel.other_output = po.get("other_output","fa,ad,rd,md,iso,rdi,nrdi");
         src.voxel.r2_weighted = po.get("r2_weighted",int(0));
-        src.voxel.thread_count = po.get("thread_count",uint32_t(std::thread::hardware_concurrency()));
+        src.voxel.thread_count = tipl::available_thread_count<0>() = po.get("thread_count",uint32_t(std::thread::hardware_concurrency()));
         src.voxel.param[0] = po.get("param0",src.voxel.param[0]);
         src.voxel.param[1] = po.get("param1",src.voxel.param[1]);
         src.voxel.param[2] = po.get("param2",src.voxel.param[2]);
