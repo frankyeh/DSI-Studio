@@ -772,7 +772,7 @@ void tracking_window::on_addSlices_clicked()
     if(filenames[0].endsWith(".nii.gz"))
     {
         for(int i = 0;i < filenames.size();++i)
-            addSlices(QStringList() << filenames[i],QFileInfo(filenames[i]).baseName(),false);
+            addSlices(QStringList() << filenames[i],QFileInfo(filenames[i]).fileName().remove(".nii.gz"),false);
     }
     else
         addSlices(filenames,QFileInfo(filenames[0]).baseName(),false);
@@ -919,59 +919,121 @@ void tracking_window::on_actionAdjust_Mapping_triggered()
     glWidget->update();
 }
 
-
-
-void tracking_window::on_actionStrip_Skull_triggered()
+bool tracking_window::run_unet(void)
 {
     CustomSliceModel* reg_slice = dynamic_cast<CustomSliceModel*>(current_slice.get());
     if(!reg_slice)
     {
         QMessageBox::critical(this,"ERROR","This function only applies to inserted T1W or T2W images");
-        return;
+        return false;
     }
     QMessageBox::information(this,"DSI Studio","Specify the UNet model");
     QString filename = QFileDialog::getOpenFileName(this,
                 "Select model",QCoreApplication::applicationDirPath()+"/network/",
                 "Text files (*.net.gz);;All files|(*)");
     if(filename.isEmpty())
-        return;
-    tipl::io::gz_mat_read mat_reader;
-    if(!mat_reader.load_from_file(filename.toStdString().c_str()))
+        return false;
+    tipl::progress p("processing",true);
+    unet = tipl::ml3d::unet3d::load_model<tipl::io::gz_mat_read>(filename.toStdString().c_str());
+    if(!unet.get())
     {
         QMessageBox::critical(this,"ERROR","Cannot read the model file");
-        return;
+        return false;
     }
-    auto un = tipl::ml3d::unet3d::load_model(mat_reader);
-    if(!un.get())
-    {
-        QMessageBox::critical(this,"ERROR","Invalid model file");
-        return;
-    }
-    tipl::progress p("processing",true);
     tipl::transformation_matrix<float> trans(tipl::affine_transform<float>(),
-                                             un->dim,un->vs,reg_slice->dim,reg_slice->vs);
-    tipl::image<3> target_image(un->dim),
-                   output(reg_slice->dim.multiply(tipl::shape<3>::z,un->out_channels_));
+                                             unet->dim,unet->vs,reg_slice->dim,reg_slice->vs);
+    tipl::image<3> target_image(unet->dim);
     tipl::resample_mt(reg_slice->source_images,target_image,trans);
     tipl::normalize(target_image);
-    auto ptr = un->forward_with_prog(&target_image[0],p);
+    auto ptr = unet->forward_with_prog(&target_image[0],p);
     if(ptr == nullptr)
-        return;
-    p(20,21);
+        return false;
     trans.inverse();
-    tipl::par_for(un->out_channels_,[&](int i)
+    unet_output.resize(reg_slice->dim.multiply(tipl::shape<3>::z,unet->out_channels_));
+    tipl::par_for(unet->out_channels_,[&](int i)
     {
-        tipl::resample_mt<tipl::nearest>(tipl::make_image(ptr+i*un->dim.size(),un->dim),
-                  output.alias(reg_slice->dim.size()*i,reg_slice->dim),trans);
+        tipl::resample_mt<tipl::nearest>(tipl::make_image(ptr+i*unet->dim.size(),unet->dim),
+                  unet_output.alias(reg_slice->dim.size()*i,reg_slice->dim),trans);
     });
+    auto I = tipl::make_image(&unet_output[0],reg_slice->dim.expand(unet->out_channels_));
+    sum_prob = tipl::ml3d::defragment4d(I,0.5f);
+    return true;
+}
 
-    auto I = tipl::make_image(&output[0],reg_slice->dim.expand(un->out_channels_));
-    auto prob = tipl::ml3d::defragment4d(I,0.5f);
-    reg_slice->source_images *= prob;
+
+void tracking_window::on_actionStrip_Skull_triggered()
+{
+    CustomSliceModel* reg_slice = dynamic_cast<CustomSliceModel*>(current_slice.get());
+    if(!run_unet())
+        return;
+    if(reg_slice)
+        reg_slice->source_images *= sum_prob;
     slice_need_update = true;
     glWidget->update_slice();
-    p(21,21);
 }
+
+
+
+
+void tracking_window::on_actionSegment_Tissue_triggered()
+{
+    CustomSliceModel* reg_slice = dynamic_cast<CustomSliceModel*>(current_slice.get());
+    if(!run_unet())
+        return;
+
+    // soft_max
+    {
+        tipl::par_for(reg_slice->dim.size(),[&](size_t pos)
+        {
+            float m = 0.0f;
+            for(size_t i = pos;i < unet_output.size();i += reg_slice->dim.size())
+                if(unet_output[i] > m)
+                    m = unet_output[i];
+            if(sum_prob[pos] <= 0.5)
+            {
+                for(size_t i = pos;i < unet_output.size();i += reg_slice->dim.size())
+                    unet_output[i] = 0.0f;
+                return;
+            }
+            for(size_t i = pos;i < unet_output.size();i += reg_slice->dim.size())
+                unet_output[i] = (unet_output[i] >= m ? 1.0f:0.0f);
+        });
+    }
+    {
+        // to 3d label
+        tipl::image<3> I(reg_slice->dim);
+        tipl::par_for(reg_slice->dim.size(),[&](size_t pos)
+        {
+            for(size_t i = pos,label = 1;i < unet_output.size();i += reg_slice->dim.size(),++label)
+                if(unet_output[i])
+                {
+                    I[pos] = label;
+                    return;
+                }
+        });
+        std::vector<std::vector<tipl::vector<3,short> > > regions(unet->out_channels_);
+        tipl::par_for(unet->out_channels_,[&](size_t label)
+        {
+            for(tipl::pixel_index<3> p(reg_slice->dim);p < reg_slice->dim.size();++p)
+            {
+                if(I[p.index()] == label+1)
+                    regions[label].push_back(p);
+            }
+        });
+        regionWidget->begin_update();
+        for(size_t i = 0;i < unet->out_channels_;++i)
+        {
+            regionWidget->add_region((std::string("tissue")+std::to_string(i+1)).c_str());
+            regionWidget->regions.back()->add_points(std::move(regions[i]));
+        }
+        regionWidget->end_update();
+
+    }
+
+    slice_need_update = true;
+    glWidget->update_slice();
+}
+
 
 
 void tracking_window::on_actionSave_Slices_to_DICOM_triggered()
