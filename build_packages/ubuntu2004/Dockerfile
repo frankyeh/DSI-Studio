@@ -21,6 +21,9 @@ RUN mkdir -p /opt/dsi-studio \
   && mv /opt/src/build/dsi_studio . \
   && chmod 755 dsi_studio \
   && cp -R /opt/src/other/* . \
+  && git clone https://github.com/frankyeh/UNet-Studio-Data.git \
+  && mv UNet-Studio-Data/network . \
+  && rm -fr UNet-Studio-Data \
   && git clone https://github.com/frankyeh/DSI-Studio-atlas.git \
   && rm -fr DSI-Studio-atlas/.git \
   && mv DSI-Studio-atlas atlas
