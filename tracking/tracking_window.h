@@ -68,6 +68,10 @@ public:
     bool slice_view_flip_x(unsigned char d) const {return d && (*this)["orientation_convention"].toInt();}
     bool slice_view_flip_y(unsigned char d) const {return d != 2;}
 public:
+    std::shared_ptr<tipl::ml3d::unet3d> unet;
+    tipl::image<3> unet_output,sum_prob;
+    bool run_unet(void);
+public:
     connectometry_result cnt_result;
 public:
     std::shared_ptr<QTimer> timer2;
@@ -209,6 +213,7 @@ private slots:
     void on_tractography_atlas_currentIndexChanged(int index);
 
     void on_actionStrip_Skull_triggered();
+    void on_actionSegment_Tissue_triggered();
 };
 
 #endif // TRACKING_WINDOW_H
