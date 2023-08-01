@@ -37,6 +37,7 @@ void ImageModel::draw_mask(tipl::color_image& buffer,int position)
     tipl::draw(buffer,buffer2,tipl::vector<2,int>(dwi.width(),0));
     buffer2.swap(buffer);
 }
+extern std::vector<std::string> model_list_t2w;
 
 void ImageModel::calculate_dwi_sum(bool update_mask)
 {
@@ -86,7 +87,31 @@ void ImageModel::calculate_dwi_sum(bool update_mask)
         }
     }
 }
-
+void ImageModel::mask_from_unet(void)
+{
+    tipl::image<3> b0;
+    if(std::filesystem::exists(model_list_t2w[voxel.template_id]) && read_b0(b0))
+    {
+        tipl::out() << "create the mask using " << model_list_t2w[voxel.template_id];
+        tipl::progress p("unet");
+        auto unet = tipl::ml3d::unet3d::load_model<tipl::io::gz_mat_read>(model_list_t2w[voxel.template_id].c_str());
+        if(unet.get())
+        {
+            if(unet->forward(b0,voxel.vs,p))
+            {
+                tipl::threshold(unet->sum,voxel.mask,0.5f,1,0);
+                if(!p.aborted())
+                    return;
+            }
+            else
+                tipl::out() << "failed to process the b0 image";
+        }
+        else
+            tipl::out() << "failed to load unet model";
+    }
+    else
+        tipl::out() << "no applicable unet model for generating mask";
+}
 void ImageModel::remove(unsigned int index)
 {
     if(index >= src_dwi_data.size())
@@ -2490,14 +2515,14 @@ bool ImageModel::load_from_file(const char* dwi_file_name)
         return false;
     }
 
-
-    // create mask if not loaded from SRC file
     calculate_dwi_sum(voxel.mask.empty());
+    // create mask if not loaded from SRC file
     if(is_human_size(voxel.dim,voxel.vs))
         voxel.template_id = 0;
     else
         voxel.template_id = match_volume(std::count_if(voxel.mask.begin(),voxel.mask.end(),[](unsigned char v){return v > 0;})*
                                    2.0f*voxel.vs[0]*voxel.vs[1]*voxel.vs[2]);
+    mask_from_unet();
     return true;
 }
 
