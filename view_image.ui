@@ -434,6 +434,7 @@
     </property>
     <addaction name="actionIntensity_shift"/>
     <addaction name="actionIntensity_scale"/>
+    <addaction name="actionSelect_Value"/>
     <addaction name="actionNormalize_Intensity"/>
     <addaction name="separator"/>
     <addaction name="actionThreshold"/>
@@ -880,6 +881,14 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+Y</string>
+   </property>
+  </action>
+  <action name="actionSelect_Value">
+   <property name="text">
+    <string>Select Value...</string>
+   </property>
+   <property name="toolTip">
+    <string>Select a value in the image as an ROI</string>
    </property>
   </action>
  </widget>
