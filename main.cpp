@@ -20,7 +20,8 @@
 std::string device_content_file,topup_param_file;
 std::vector<std::string> fa_template_list,
                          iso_template_list,
-                         fib_template_list;
+                         fib_template_list,
+                         model_list_t2w;
 std::vector<std::vector<std::string> > atlas_file_name_list,tractography_atlas_file_name_list;
 
 class CustomSliceModel;
@@ -160,6 +161,19 @@ bool load_file_name(void)
                     if(QFileInfo(each).baseName() != name_list[i])
                         file_list.push_back((template_dir.absolutePath() + "/" + each).toStdString());
                 tractography_atlas_file_name_list.push_back(std::move(file_list));
+            }
+            // find a matching unet model
+            {
+                model_list_t2w.push_back(std::string());
+                auto name = name_list[i].split('_').back();
+                QDir network_dir = QCoreApplication::applicationDirPath() + "/network";
+                for(auto each_model : network_dir.entryList(QStringList("*.net.gz"),QDir::Files|QDir::NoSymLinks))
+                    if(QFileInfo(each_model).completeBaseName().contains(name) &&
+                       QFileInfo(each_model).completeBaseName().contains("t2w.seg5"))
+                    {
+                        model_list_t2w.back() = each_model.toStdString();
+                        break;
+                    }
             }
         }
         if(fa_template_list.empty())
