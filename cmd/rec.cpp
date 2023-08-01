@@ -54,17 +54,28 @@ int rec(tipl::program_option<tipl::out>& po)
             src.voxel.mask = 1;
         else
         {
-            tipl::out() << "reading mask file: " << mask_file << std::endl;
-            tipl::io::gz_nifti nii;
-            if(!nii.load_from_file(mask_file) || !nii.toLPS(src.voxel.mask))
+            if(mask_file == "unet")
             {
-                tipl::out() << "ERROR:" << nii.error_msg << std::endl;
-                return 1;
+                if(!src.mask_from_unet())
+                {
+                    tipl::out() << "ERROR:" << src.error_msg;
+                    return 1;
+                }
             }
-            if(src.voxel.mask.shape() != src.voxel.dim)
+            else
             {
-                tipl::out() << "ERROR: The mask dimension is different. terminating..." << std::endl;
-                return 1;
+                tipl::out() << "reading mask file: " << mask_file << std::endl;
+                tipl::io::gz_nifti nii;
+                if(!nii.load_from_file(mask_file) || !nii.toLPS(src.voxel.mask))
+                {
+                    tipl::out() << "ERROR:" << nii.error_msg << std::endl;
+                    return 1;
+                }
+                if(src.voxel.mask.shape() != src.voxel.dim)
+                {
+                    tipl::out() << "ERROR: The mask dimension is different. terminating..." << std::endl;
+                    return 1;
+                }
             }
         }
     }
