@@ -940,23 +940,11 @@ bool tracking_window::run_unet(void)
         QMessageBox::critical(this,"ERROR","Cannot read the model file");
         return false;
     }
-    tipl::transformation_matrix<float> trans(tipl::affine_transform<float>(),
-                                             unet->dim,unet->vs,reg_slice->dim,reg_slice->vs);
-    tipl::image<3> target_image(unet->dim);
-    tipl::resample_mt(reg_slice->source_images,target_image,trans);
-    tipl::normalize(target_image);
-    auto ptr = unet->forward_with_prog(&target_image[0],p);
-    if(ptr == nullptr)
-        return false;
-    trans.inverse();
-    unet_output.resize(reg_slice->dim.multiply(tipl::shape<3>::z,unet->out_channels_));
-    tipl::par_for(unet->out_channels_,[&](int i)
+    if(!unet->forward(reg_slice->source_images,reg_slice->vs))
     {
-        tipl::resample_mt<tipl::nearest>(tipl::make_image(ptr+i*unet->dim.size(),unet->dim),
-                  unet_output.alias(reg_slice->dim.size()*i,reg_slice->dim),trans);
-    });
-    auto I = tipl::make_image(&unet_output[0],reg_slice->dim.expand(unet->out_channels_));
-    sum_prob = tipl::ml3d::defragment4d(I,0.5f);
+        QMessageBox::critical(this,"ERROR","Cannot process image");
+        return false;
+    }
     return true;
 }
 
@@ -967,7 +955,7 @@ void tracking_window::on_actionStrip_Skull_triggered()
     if(!run_unet())
         return;
     if(reg_slice)
-        reg_slice->source_images *= sum_prob;
+        reg_slice->source_images *= unet->sum;
     slice_need_update = true;
     glWidget->update_slice();
 }
@@ -986,17 +974,17 @@ void tracking_window::on_actionSegment_Tissue_triggered()
         tipl::par_for(reg_slice->dim.size(),[&](size_t pos)
         {
             float m = 0.0f;
-            for(size_t i = pos;i < unet_output.size();i += reg_slice->dim.size())
-                if(unet_output[i] > m)
-                    m = unet_output[i];
-            if(sum_prob[pos] <= 0.5)
+            for(size_t i = pos;i < unet->out.size();i += reg_slice->dim.size())
+                if(unet->out[i] > m)
+                    m = unet->out[i];
+            if(unet->sum[pos] <= 0.5f)
             {
-                for(size_t i = pos;i < unet_output.size();i += reg_slice->dim.size())
-                    unet_output[i] = 0.0f;
+                for(size_t i = pos;i < unet->out.size();i += reg_slice->dim.size())
+                    unet->out[i] = 0.0f;
                 return;
             }
-            for(size_t i = pos;i < unet_output.size();i += reg_slice->dim.size())
-                unet_output[i] = (unet_output[i] >= m ? 1.0f:0.0f);
+            for(size_t i = pos;i < unet->out.size();i += reg_slice->dim.size())
+                unet->out[i] = (unet->out[i] >= m ? 1.0f:0.0f);
         });
     }
     {
@@ -1004,8 +992,8 @@ void tracking_window::on_actionSegment_Tissue_triggered()
         tipl::image<3> I(reg_slice->dim);
         tipl::par_for(reg_slice->dim.size(),[&](size_t pos)
         {
-            for(size_t i = pos,label = 1;i < unet_output.size();i += reg_slice->dim.size(),++label)
-                if(unet_output[i])
+            for(size_t i = pos,label = 1;i < unet->out.size();i += reg_slice->dim.size(),++label)
+                if(unet->out[i])
                 {
                     I[pos] = label;
                     return;
