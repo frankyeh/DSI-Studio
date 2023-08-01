@@ -166,6 +166,8 @@ bool load_file_name(void)
             {
                 model_list_t2w.push_back(std::string());
                 auto name = name_list[i].split('_').back();
+                if(name == "adult" || name == "neonate")
+                    name = "human";
                 QDir network_dir = QCoreApplication::applicationDirPath() + "/network";
                 for(auto each_model : network_dir.entryList(QStringList("*.net.gz"),QDir::Files|QDir::NoSymLinks))
                     if(QFileInfo(each_model).completeBaseName().contains(name) &&
