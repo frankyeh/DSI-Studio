@@ -1074,3 +1074,12 @@ void reconstruction_window::on_actionswap_bxbz_triggered()
     QMessageBox::information(this,"DSI Studio","bxbz swapped");
 }
 
+
+void reconstruction_window::on_mask_from_unet_clicked()
+{
+    if(!handle->mask_from_unet())
+        QMessageBox::critical(this,"ERROR",handle->error_msg.c_str());
+    on_SlicePos_valueChanged(ui->SlicePos->value());
+    raise();
+}
+

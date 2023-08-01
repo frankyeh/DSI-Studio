@@ -87,30 +87,36 @@ void ImageModel::calculate_dwi_sum(bool update_mask)
         }
     }
 }
-void ImageModel::mask_from_unet(void)
+bool ImageModel::mask_from_unet(void)
 {
     tipl::image<3> b0;
-    if(std::filesystem::exists(model_list_t2w[voxel.template_id]) && read_b0(b0))
+    if(!read_b0(b0))
     {
-        tipl::out() << "create the mask using " << model_list_t2w[voxel.template_id];
-        tipl::progress p("unet");
-        auto unet = tipl::ml3d::unet3d::load_model<tipl::io::gz_mat_read>(model_list_t2w[voxel.template_id].c_str());
+        error_msg = "no b0 for unet to generate a mask";
+        return false;
+    }
+    std::string model_file_name = QCoreApplication::applicationDirPath().toStdString() + "/network/" + model_list_t2w[voxel.template_id];
+    if(std::filesystem::exists(model_file_name))
+    {
+        tipl::progress p("generating a mask using unet",true);
+        tipl::out() << "model: " << model_list_t2w[voxel.template_id];
+        auto unet = tipl::ml3d::unet3d::load_model<tipl::io::gz_mat_read>(model_file_name.c_str());
         if(unet.get())
         {
             if(unet->forward(b0,voxel.vs,p))
             {
                 tipl::threshold(unet->sum,voxel.mask,0.5f,1,0);
-                if(!p.aborted())
-                    return;
+                return true;
             }
             else
-                tipl::out() << "failed to process the b0 image";
+                error_msg =  "failed to process the b0 image";
         }
         else
-            tipl::out() << "failed to load unet model";
+            error_msg =  "failed to load unet model";
     }
     else
-        tipl::out() << "no applicable unet model for generating mask";
+        error_msg =  "no applicable unet model for generating a mask";
+    return false;
 }
 void ImageModel::remove(unsigned int index)
 {
@@ -2522,7 +2528,6 @@ bool ImageModel::load_from_file(const char* dwi_file_name)
     else
         voxel.template_id = match_volume(std::count_if(voxel.mask.begin(),voxel.mask.end(),[](unsigned char v){return v > 0;})*
                                    2.0f*voxel.vs[0]*voxel.vs[1]*voxel.vs[2]);
-    mask_from_unet();
     return true;
 }
 

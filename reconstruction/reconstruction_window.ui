@@ -414,10 +414,13 @@
             <layout class="QVBoxLayout" name="verticalLayout_3">
              <item>
               <layout class="QGridLayout" name="gridLayout">
+               <property name="leftMargin">
+                <number>0</number>
+               </property>
                <property name="spacing">
                 <number>0</number>
                </property>
-               <item row="0" column="0">
+               <item row="0" column="1">
                 <widget class="QWidget" name="mask_edit" native="true">
                  <property name="minimumSize">
                   <size>
@@ -508,14 +511,14 @@
                  </layout>
                 </widget>
                </item>
-               <item row="0" column="9">
+               <item row="0" column="11">
                 <widget class="QPushButton" name="edit_mask">
                  <property name="text">
                   <string>Edit&gt;&gt;</string>
                  </property>
                 </widget>
                </item>
-               <item row="0" column="8">
+               <item row="0" column="9">
                 <spacer name="horizontalSpacer_2">
                  <property name="orientation">
                   <enum>Qt::Horizontal</enum>
@@ -527,6 +530,13 @@
                   </size>
                  </property>
                 </spacer>
+               </item>
+               <item row="0" column="0">
+                <widget class="QPushButton" name="mask_from_unet">
+                 <property name="text">
+                  <string>U-Net Mask...</string>
+                 </property>
+                </widget>
                </item>
               </layout>
              </item>

@@ -239,7 +239,7 @@ public:
 public:
     void draw_mask(tipl::color_image& buffer,int position);
     void calculate_dwi_sum(bool update_mask);
-    void mask_from_unet(void);
+    bool mask_from_unet(void);
     void remove(unsigned int index);
     std::string check_b_table(void);
 public:
