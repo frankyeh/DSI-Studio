@@ -940,10 +940,20 @@ bool tracking_window::run_unet(void)
         QMessageBox::critical(this,"ERROR","Cannot read the model file");
         return false;
     }
-    if(!unet->forward(reg_slice->source_images,reg_slice->vs))
+    if(!unet->forward(reg_slice->source_images,reg_slice->vs,p))
     {
         QMessageBox::critical(this,"ERROR","Cannot process image");
         return false;
+    }
+    filename.chop(6);
+    filename += "txt";
+    if(std::filesystem::exists(filename.toStdString()))
+    {
+        unet_label_name.clear();
+        std::ifstream in(filename.toStdString());
+        std::string line;
+        while(std::getline(in,line))
+            unet_label_name.push_back(line);
     }
     return true;
 }
@@ -1011,7 +1021,7 @@ void tracking_window::on_actionSegment_Tissue_triggered()
         regionWidget->begin_update();
         for(size_t i = 0;i < unet->out_channels_;++i)
         {
-            regionWidget->add_region((std::string("tissue")+std::to_string(i+1)).c_str());
+            regionWidget->add_region(i < unet_label_name.size() ? unet_label_name[i].c_str() : (std::string("tissue")+std::to_string(i+1)).c_str());
             regionWidget->regions.back()->add_points(std::move(regions[i]));
         }
         regionWidget->end_update();
