@@ -28,9 +28,11 @@ QColor QColorToolButton::color() const
  {
     return selected_color;
  }
-void QColorToolButton::setColor(QColor color)
+void QColorToolButton::setColor(QColor color_)
  {
-    selected_color = color;
+    selected_color = color_;
+    QColor color = color_;
+    color.setAlpha(255);
     QPixmap pixmap(22,22);
     QPainter painter(&pixmap);
     painter.setPen(color);
