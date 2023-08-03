@@ -128,6 +128,11 @@ void CustomSliceModel::get_slice(tipl::color_image& image,
         return SliceModel::get_slice(image,cur_dim,pos,overlay_slices);
 }
 // ---------------------------------------------------------------------------
+tipl::const_pointer_image<3> CustomSliceModel::get_source(void) const
+{
+    return tipl::const_pointer_image<3>(source_images.empty() ? (const float*)(0) : &source_images[0],source_images.shape());
+}
+// ---------------------------------------------------------------------------
 void initial_LPS_nifti_srow(tipl::matrix<4,4>& T,const tipl::shape<3>& geo,const tipl::vector<3>& vs);
 void prepare_idx(const char* file_name,std::shared_ptr<tipl::io::gz_istream> in);
 void save_idx(const char* file_name,std::shared_ptr<tipl::io::gz_istream> in);
