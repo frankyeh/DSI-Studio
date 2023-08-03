@@ -974,7 +974,7 @@ void nii2src(QStringList nifti_file_list,QString output_dir)
     }
     else
     {
-        tipl::out() << "reversed phase encoding direction data found. Create SRC and RSRC files.";
+        tipl::out() << "reversed phase encoding direction data found. Create SRC and RSRC/NIFTI files.";
         create_src(nii1,nii2,output_file_base_name);
     }
 }
@@ -1028,8 +1028,12 @@ bool nii2src_bids(QString dir,QString output_dir,std::string& error_msg)
             QString bval_name,bvec_name;
             if(find_bval_bvec(file_name.toStdString().c_str(),bval_name,bvec_name))
             {
-                dwi_nii_list[dim] << file_name;
-                tipl::out() << "4D DWI candidates: " << nifti_all[k].toStdString() << std::endl;
+                std::ifstream bval(bval_name.toStdString());
+                if(tipl::max_value(std::istream_iterator<double>(bval),std::istream_iterator<double>()) != 0.0)
+                {
+                    dwi_nii_list[dim] << file_name;
+                    tipl::out() << "4D DWI candidates: " << nifti_all[k].toStdString() << std::endl;
+                }
             }
         }
         for(auto& dwi_list : dwi_nii_list)
