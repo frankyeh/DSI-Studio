@@ -956,47 +956,47 @@ bool tracking_window::run_unet(void)
 void tracking_window::on_actionStrip_Skull_triggered()
 {
     CustomSliceModel* reg_slice = dynamic_cast<CustomSliceModel*>(current_slice.get());
+    if(!reg_slice)
+    {
+        QMessageBox::critical(this,"ERROR","This funciton only applied to inserted images.");
+        return;
+    }
     if(!run_unet())
         return;
-    if(reg_slice)
-        reg_slice->source_images *= unet->sum;
+    reg_slice->source_images *= unet->sum;
     slice_need_update = true;
     glWidget->update_slice();
 }
 
-
-
-
 void tracking_window::on_actionSegment_Tissue_triggered()
 {
-    CustomSliceModel* reg_slice = dynamic_cast<CustomSliceModel*>(current_slice.get());
     if(!run_unet())
         return;
-
     // soft_max
     {
-        tipl::par_for(reg_slice->dim.size(),[&](size_t pos)
+        tipl::par_for(current_slice->dim.size(),[&](size_t pos)
         {
             float m = 0.0f;
-            for(size_t i = pos;i < unet->out.size();i += reg_slice->dim.size())
+            for(size_t i = pos;i < unet->out.size();i += current_slice->dim.size())
                 if(unet->out[i] > m)
                     m = unet->out[i];
             if(unet->sum[pos] <= 0.5f)
             {
-                for(size_t i = pos;i < unet->out.size();i += reg_slice->dim.size())
+                for(size_t i = pos;i < unet->out.size();i += current_slice->dim.size())
                     unet->out[i] = 0.0f;
                 return;
             }
-            for(size_t i = pos;i < unet->out.size();i += reg_slice->dim.size())
+            for(size_t i = pos;i < unet->out.size();i += current_slice->dim.size())
                 unet->out[i] = (unet->out[i] >= m ? 1.0f:0.0f);
         });
+
     }
     {
         // to 3d label
-        tipl::image<3> I(reg_slice->dim);
-        tipl::par_for(reg_slice->dim.size(),[&](size_t pos)
+        tipl::image<3> I(current_slice->dim);
+        tipl::par_for(current_slice->dim.size(),[&](size_t pos)
         {
-            for(size_t i = pos,label = 1;i < unet->out.size();i += reg_slice->dim.size(),++label)
+            for(size_t i = pos,label = 1;i < unet->out.size();i += current_slice->dim.size(),++label)
                 if(unet->out[i])
                 {
                     I[pos] = label;
@@ -1006,7 +1006,7 @@ void tracking_window::on_actionSegment_Tissue_triggered()
         std::vector<std::vector<tipl::vector<3,short> > > regions(unet->out_channels_);
         tipl::par_for(unet->out_channels_,[&](size_t label)
         {
-            for(tipl::pixel_index<3> p(reg_slice->dim);p < reg_slice->dim.size();++p)
+            for(tipl::pixel_index<3> p(current_slice->dim);p < current_slice->dim.size();++p)
             {
                 if(I[p.index()] == label+1)
                     regions[label].push_back(p);
@@ -1016,7 +1016,8 @@ void tracking_window::on_actionSegment_Tissue_triggered()
         for(size_t i = 0;i < unet->out_channels_;++i)
         {
             regionWidget->add_region(i < unet_label_name.size() ? unet_label_name[i].c_str() : (std::string("tissue")+std::to_string(i+1)).c_str());
-            regionWidget->regions.back()->add_points(std::move(regions[i]));
+            if(!regions[i].empty())
+                regionWidget->regions.back()->add_points(std::move(regions[i]));
         }
         regionWidget->end_update();
 
