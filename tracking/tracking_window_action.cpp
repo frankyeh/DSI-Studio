@@ -921,12 +921,6 @@ void tracking_window::on_actionAdjust_Mapping_triggered()
 
 bool tracking_window::run_unet(void)
 {
-    CustomSliceModel* reg_slice = dynamic_cast<CustomSliceModel*>(current_slice.get());
-    if(!reg_slice)
-    {
-        QMessageBox::critical(this,"ERROR","This function only applies to inserted T1W or T2W images");
-        return false;
-    }
     QMessageBox::information(this,"DSI Studio","Specify the UNet model");
     QString filename = QFileDialog::getOpenFileName(this,
                 "Select model",QCoreApplication::applicationDirPath()+"/network/",
@@ -940,7 +934,7 @@ bool tracking_window::run_unet(void)
         QMessageBox::critical(this,"ERROR","Cannot read the model file");
         return false;
     }
-    if(!unet->forward(reg_slice->source_images,reg_slice->vs,p))
+    if(!unet->forward(current_slice->get_source(),current_slice->vs,p))
     {
         QMessageBox::critical(this,"ERROR","Cannot process image");
         return false;
