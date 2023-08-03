@@ -974,7 +974,7 @@ void nii2src(QStringList nifti_file_list,QString output_dir)
     }
     else
     {
-        tipl::out() << "reversed phase encoding direction data found. Create SRC and RSRC/NIFTI files.";
+        tipl::out() << "reversed phase encoding direction data found. Create SRC and RSRC files.";
         create_src(nii1,nii2,output_file_base_name);
     }
 }
