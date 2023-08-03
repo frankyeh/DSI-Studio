@@ -33,7 +33,7 @@ public:
                            unsigned char cur_dim,int pos,
                            const std::vector<std::shared_ptr<SliceModel> >& overlay_slices) const;
     void get_high_reso_slice(tipl::color_image& image,unsigned char cur_dim,int pos) const;
-    tipl::const_pointer_image<3> get_source(void) const;
+    virtual tipl::const_pointer_image<3> get_source(void) const;
     std::string get_name(void) const;
 public:
     auto toDiffusionSpace(unsigned char cur_dim,int x,int y) const
@@ -136,6 +136,7 @@ public:
     virtual void get_slice(tipl::color_image& image,
                            unsigned char,int,
                            const std::vector<std::shared_ptr<SliceModel> >& overlay_slices) const;
+    virtual tipl::const_pointer_image<3> get_source(void) const;
 public:
     bool load_slices(const std::vector<std::string>& files,bool is_mni = false);
     bool load_slices(const std::string& file,bool is_mni = false)
