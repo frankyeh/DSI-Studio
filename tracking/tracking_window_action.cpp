@@ -1015,7 +1015,26 @@ void tracking_window::on_actionSegment_Tissue_triggered()
         regionWidget->begin_update();
         for(size_t i = 0;i < unet->out_channels_;++i)
         {
-            regionWidget->add_region(i < unet_label_name.size() ? unet_label_name[i].c_str() : (std::string("tissue")+std::to_string(i+1)).c_str());
+            unsigned char type = default_id;
+            tipl::rgb color = tipl::rgb(255,255,255);
+            std::string name = i < unet_label_name.size() ? unet_label_name[i].c_str() : (std::string("tissue")+std::to_string(i+1)).c_str();
+            if(name.find("White") != std::string::npos)
+                color = tipl::rgb(255,255,255,18);
+            if(name.find("Gray") != std::string::npos)
+                color = tipl::rgb(190,190,190,36);
+            if(name.find("Cortex") != std::string::npos)
+                color = tipl::rgb(150,150,150,36);
+            if(name.find("Basal") != std::string::npos)
+                color = tipl::rgb(110,110,110,128);
+            if(name.find("Others") != std::string::npos)
+                color = tipl::rgb(205,233,255,6);
+            if(name.find("Edema") != std::string::npos)
+                color = tipl::rgb(155,162,255,100);
+            if(name.find("Tumor") != std::string::npos)
+                color = tipl::rgb(255,170,127,128);
+            if(name.find("Necrosis") != std::string::npos)
+                color = tipl::rgb(75,75,75,200);
+            regionWidget->add_region(name.c_str(),type,color);
             if(!regions[i].empty())
                 regionWidget->regions.back()->add_points(std::move(regions[i]));
         }
