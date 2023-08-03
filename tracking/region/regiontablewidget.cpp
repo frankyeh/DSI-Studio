@@ -186,9 +186,12 @@ void RegionTableWidget::add_row(int row,QString name)
 {
     {
         uint32_t color = uint32_t(regions[row]->region_render.color);
-        if(color == 0x00FFFFFF || !color)
+        if(color == 0xFFFFFFFF || !color)
             regions[row]->region_render.color = tipl::rgb::generate(++color_gen);
     }
+    if(regions[row]->region_render.color.a == 0)
+        regions[row]->region_render.color.a = 255;
+
     auto handle = cur_tracking_window.handle;
     insertRow(row);
     QTableWidgetItem *item0 = new QTableWidgetItem(name);
@@ -204,7 +207,7 @@ void RegionTableWidget::add_row(int row,QString name)
 
     item1->setData(Qt::ForegroundRole,QBrush(Qt::white));
     item2->setData(Qt::ForegroundRole,QBrush(Qt::white));
-    item2->setData(Qt::UserRole,0xFF000000 | uint32_t(regions[row]->region_render.color));
+    item2->setData(Qt::UserRole,uint32_t(regions[row]->region_render.color));
 
 
     setItem(row, 0, item0);
@@ -388,7 +391,10 @@ void RegionTableWidget::draw_region(const tipl::matrix<4,4>& current_slice_T,uns
 
     std::vector<tipl::rgb> colors;
     for(auto& region : checked_regions)
+    {
         colors.push_back(region->region_render.color);
+        colors.back().a = 255;
+    }
     scaled_image = tipl::qt::draw_regions(region_masks,colors,
                     cur_tracking_window["roi_draw_edge"].toInt(),
                     cur_tracking_window["roi_edge_width"].toInt(),
