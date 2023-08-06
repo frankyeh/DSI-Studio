@@ -308,7 +308,7 @@
           <item>
            <widget class="QLabel" name="dwi_label">
             <property name="text">
-             <string>DWI:</string>
+             <string>dim(4)</string>
             </property>
            </widget>
           </item>
@@ -392,7 +392,9 @@
     </property>
     <addaction name="actionRegrid"/>
     <addaction name="actionResize"/>
+    <addaction name="actionReshape"/>
     <addaction name="actionCropToFit"/>
+    <addaction name="separator"/>
     <addaction name="actionTranslocate"/>
     <addaction name="actionTransform"/>
     <addaction name="separator"/>
@@ -406,6 +408,8 @@
     <addaction name="actionSwap_XY"/>
     <addaction name="actionSwap_XZ"/>
     <addaction name="actionSwap_YZ"/>
+    <addaction name="separator"/>
+    <addaction name="actionConcatenate_Image"/>
    </widget>
    <widget class="QMenu" name="menu_Header">
     <property name="title">
@@ -889,6 +893,23 @@
    </property>
    <property name="toolTip">
     <string>Select a value in the image as an ROI</string>
+   </property>
+  </action>
+  <action name="actionConcatenate_Image">
+   <property name="icon">
+    <iconset resource="icons.qrc">
+     <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+   </property>
+   <property name="text">
+    <string>Concatenate Image...</string>
+   </property>
+   <property name="statusTip">
+    <string>file</string>
+   </property>
+  </action>
+  <action name="actionReshape">
+   <property name="text">
+    <string>Reshape...</string>
    </property>
   </action>
  </widget>

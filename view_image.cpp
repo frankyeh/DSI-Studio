@@ -22,7 +22,6 @@ bool resample_mat(tipl::io::gz_mat_read& mat_reader,float resolution);
 void view_image::change_type(decltype(pixel_type) new_type)
 {
     std::vector<unsigned char> buf,empty_buf;
-    size_t pixelbit[4] = {1,2,4,4};
     buf.resize(shape.size()*pixelbit[new_type]);
     apply([&](auto& I)
     {
@@ -72,6 +71,39 @@ void view_image::assign(std::shared_ptr<view_image_record> data)
     T = data->T;
 }
 
+void view_image::read_4d_at(size_t index)
+{
+    if(index == cur_4d_index)
+        return;
+    apply([&](auto& I)
+    {
+        // give image buffer back
+        I.buf().swap(buf4d[cur_4d_index]);
+        cur_4d_index = size_t(index);
+        if(buf4d[cur_4d_index].empty())
+        {
+            I.resize(shape);
+            if(index && index < nifti.dim(4))
+            {
+                tipl::show_prog = false;
+                nifti.select_volume(cur_4d_index);
+                nifti.get_untouched_image(I);
+                tipl::show_prog = true;
+            }
+        }
+        else
+            I.buf().swap(buf4d[cur_4d_index]);
+    });
+}
+void view_image::get_4d_buf(std::vector<unsigned char>& buf)
+{
+    buf.resize(shape.size()*buf4d.size()*pixelbit[pixel_type]);
+    size_t size_per_image = shape.size()*pixelbit[pixel_type];
+    apply([&](auto& I){I.buf().swap(buf4d[cur_4d_index]);});
+    for(size_t i = 0;i < buf4d.size();++i)
+        std::memcpy(buf.data() + i*size_per_image,buf4d[i].data(),size_per_image);
+    apply([&](auto& I){I.buf().swap(buf4d[cur_4d_index]);});
+}
 bool view_image::command(std::string cmd,std::string param1)
 {
     if(!shape.size())
@@ -144,6 +176,15 @@ bool view_image::command(std::string cmd,std::string param1)
         if(!param1.empty())
             tipl::out() << "param: " << param1;
 
+        // load all buffer for processing
+        if(!buf4d.empty())
+        {
+            auto old_4d_index = cur_4d_index;
+            for(size_t i = 0;i < buf4d.size();++i)
+                read_4d_at(i);
+            read_4d_at(old_4d_index);
+        }
+
         if(cmd =="change_type")
         {
             auto new_type = decltype(pixel_type)(std::stoi(param1));
@@ -151,16 +192,8 @@ bool view_image::command(std::string cmd,std::string param1)
             {
                 if(!buf4d.empty())
                 {
-                    auto old_4d_index = cur_4d_index;
-                    // load all to buffer
-                    for(size_t i = 0;i < buf4d.size() && result;++i)
-                        read_4d_at(i);
-
                     // return image buffer to the 4d buffer
-                    apply([&](auto& I)
-                    {
-                        I.buf().swap(buf4d[cur_4d_index]);
-                    });
+                    apply([&](auto& I){I.buf().swap(buf4d[cur_4d_index]);});
 
                     // change type for each 4d image
                     auto old_type = pixel_type;
@@ -177,32 +210,62 @@ bool view_image::command(std::string cmd,std::string param1)
                             I.buf().swap(buf4d[i]);
                         });
                     }
-                    apply([&](auto& I)
-                    {
-                        I.buf().swap(buf4d[old_4d_index]);
-                    });
+
+                    apply([&](auto& I){I.buf().swap(buf4d[cur_4d_index]);});
                 }
                 else
                     change_type(new_type);
             }
         }
         else
+        if(cmd == "reshape")
+        {
+            std::istringstream in(param1);
+            tipl::shape<3> new_shape;
+            int dim4 = 1;
+            in >> new_shape[0] >> new_shape[1] >> new_shape[2] >> dim4;
+
+            std::vector<unsigned char> buf;
+            if(!buf4d.empty())
+                get_4d_buf(buf);
+            else
+                apply([&](auto& I)
+                {
+                    I.buf().swap(buf);
+                });
+
+            shape = new_shape;
+            buf.resize(new_shape.size()*dim4*pixelbit[pixel_type]);
+
+
+            if(dim4 == 1)
+                buf4d.clear();
+            else
+            {
+                size_t size_per_image = shape.size()*pixelbit[pixel_type];
+                buf4d.resize(dim4);
+                for(size_t i = 0;i < dim4;++i)
+                {
+                    buf4d[i].resize(size_per_image);
+                    std::memcpy(buf4d[i].data(),buf.data()+i*size_per_image,size_per_image);
+                }
+                cur_4d_index = 0;
+                buf.swap(buf4d[0]);
+            }
+
+            apply([&](auto& I)
+            {
+                I.buf().swap(buf);
+                I.resize(shape);
+            });
+
+        }
+        else
         {
             if(!buf4d.empty() && cmd == "save")
             {
-                auto old_4d_index = cur_4d_index;
-                size_t pixelbit[4] = {1,2,4,4};
-                std::vector<char> buf(shape.size()*buf4d.size()*pixelbit[pixel_type]);
-                size_t size_per_image = shape.size()*pixelbit[pixel_type];
-                for(size_t i = 0;i < buf4d.size();++i)
-                {
-                    read_4d_at(i);
-                    apply([&](auto& I)
-                    {
-                        std::memcpy(buf.data() + i*size_per_image,&I[0],size_per_image);
-                    });
-                }
-                read_4d_at(old_4d_index);
+                std::vector<unsigned char> buf;
+                get_4d_buf(buf);
 
                 apply([&](auto& I)
                 {
@@ -294,9 +357,7 @@ bool view_image::command(std::string cmd,std::string param1)
             {
                 std::string param2 = param_list[i];
                 if(command_list[i] == "save" ||
-                   command_list[i] == "multiply_image" ||
-                   command_list[i] == "add_image" ||
-                   command_list[i] == "minus_image")
+                   command_list[i].find("_image") != std::string::npos)
                 {
                     if(tipl::match_files(original_file_name.toStdString(),param_list[i],
                                 file_name2.toStdString(),param2))
@@ -424,8 +485,7 @@ view_image::view_image(QWidget *parent) :
     ui->view->setScene(&source);
     ui->max_color->setColor(0xFFFFFFFF);
     ui->min_color->setColor(0XFF000000);
-    ui->dwi_volume->hide();
-    ui->dwi_label->hide();
+
 
     foreach (QAction* action, findChildren<QAction*>())
     {
@@ -653,21 +713,14 @@ void view_image::on_actionLoad_Image_to_4D_triggered()
         return;
     }
     if(buf4d.empty())
-    {
-        buf4d.resize(2);
-        ui->dwi_volume->show();
-        ui->dwi_label->show();
-    }
-    else
         buf4d.push_back(std::vector<unsigned char>());
-
+    buf4d.push_back(std::vector<unsigned char>());
     read_4d_at(buf4d.size()-1);
     apply([&](auto& I)
     {
         I = new_image;
     });
-    ui->dwi_volume->setMaximum(buf4d.size()-1);
-    ui->dwi_volume->setValue(buf4d.size()-1);
+    init_image();
 }
 void prepare_idx(const char* file_name,std::shared_ptr<tipl::io::gz_istream> in);
 bool view_image::open(QStringList file_names_)
@@ -740,9 +793,6 @@ bool view_image::open(QStringList file_names_)
             return false;
         file_names.clear();
         cur_4d_index = 0;
-        ui->dwi_volume->setMaximum(2);
-        ui->dwi_volume->show();
-        ui->dwi_label->show();
     }
     else
     if(QString(file_name).endsWith(".nhdr"))
@@ -792,11 +842,8 @@ bool view_image::open(QStringList file_names_)
         }
         if(nifti.dim(4) > 1)
         {
-            ui->dwi_volume->setMaximum(nifti.dim(4)-1);
             buf4d.resize(nifti.dim(4));
             nifti.input_stream->sample_access_point = true;
-            ui->dwi_volume->show();
-            ui->dwi_label->show();
         }
         nifti.get_image_dimension(shape);
         switch (nifti.nif_header.datatype)
@@ -1001,7 +1048,10 @@ void view_image::init_image(void)
         ui->slice_pos->setValue(slice_pos[cur_dim]);
     }
 
-    ui->actionResize->setStatusTip(QString("%1 %2 %3").arg(shape.width()).arg(shape.height()).arg(shape.depth()));
+    ui->actionRegrid->setStatusTip(QString("%1 %2 %3").arg(vs[0]).arg(vs[1]).arg(vs[2]));
+    ui->actionResize->setStatusTip(QString("%1 %2 %3").arg(shape[0]).arg(shape[1]).arg(shape[2]));
+    ui->actionReshape->setStatusTip(buf4d.empty() ? QString("%1 %2 %3").arg(shape[0]).arg(shape[1]).arg(shape[2]) :
+                                                    QString("%1 %2 %3 %4").arg(shape[0]).arg(shape[1]).arg(shape[2]).arg(buf4d.size()));
     ui->actionSet_Translocation->setStatusTip(QString("%1 %2 %3").arg(T[3]).arg(T[7]).arg(T[11]));
 
     std::string t_string;
@@ -1015,6 +1065,17 @@ void view_image::init_image(void)
     ui->actionTransform->setStatusTip(t_string.c_str());
 
 
+    if(buf4d.empty())
+    {
+        ui->dwi_volume->hide();
+        ui->dwi_label->hide();
+    }
+    else
+    {
+        ui->dwi_volume->setMaximum(buf4d.size()-1);
+        ui->dwi_volume->show();
+        ui->dwi_label->show();
+    }
     no_update = false;
     show_image(true);
 }
@@ -1247,32 +1308,11 @@ void view_image::on_slice_pos_valueChanged(int value)
     show_image(false);
 }
 
-void view_image::read_4d_at(size_t index)
-{
-    apply([&](auto& I)
-    {
-        // give image buffer back
-        I.buf().swap(buf4d[cur_4d_index]);
-        cur_4d_index = size_t(index);
-        if(buf4d[cur_4d_index].empty())
-        {
-            I.resize(shape);
-            if(index < nifti.dim(4))
-            {
-                tipl::show_prog = false;
-                nifti.select_volume(cur_4d_index);
-                nifti.get_untouched_image(I);
-                tipl::show_prog = true;
-            }
-        }
-        else
-            I.buf().swap(buf4d[cur_4d_index]);
-    });
-}
+
 void view_image::on_dwi_volume_valueChanged(int value)
 {
     read_4d_at(value);
-    ui->dwi_label->setText(QString("(%1/%2)").arg(value+1).arg(ui->dwi_volume->maximum()+1));
+    ui->dwi_label->setText(QString("(%1/%2)").arg(value+1).arg(buf4d.size()));
     show_image(false);
 }
 
@@ -1293,35 +1333,18 @@ void view_image::run_action2()
     if(!action)
         return;
     QString value;
-    if(action->statusTip() == "file")
-    {
+    if(action->text().toLower().contains(" image..."))
         value = QFileDialog::getOpenFileName(
                                this,"Open other another image to apply",QFileInfo(file_name).absolutePath(),"NIFTI file(*nii.gz *.nii)" );
-    }
     else
     {
         bool ok;
-        auto default_value = action->statusTip();
-        if(action->text() == "Regrid...")
-            default_value = QString("%1 %2 %3").arg(vs[0]).arg(vs[1]).arg(vs[2]);
-        value = QInputDialog::getText(this,"DSI Studio",action->toolTip(),QLineEdit::Normal,default_value,&ok);
+        value = QInputDialog::getText(this,"DSI Studio",action->toolTip(),QLineEdit::Normal,action->statusTip(),&ok);
         if(!ok || value.isEmpty())
             return;
     }
     if(value.isEmpty())
         return;
-    if(value.contains(".") && pixel_type != float32 &&
-            action->statusTip() != "file" &&
-            action->text() != "Regrid...")
-    {
-        auto result = QMessageBox::information(this,"DSI Studio",
-                "Current integer pixels cannot achieve floating point precision. Switch to float32 type?",
-                                    QMessageBox::Yes|QMessageBox::No|QMessageBox::Cancel);
-        if(result == QMessageBox::Cancel)
-            return;
-        if(result == QMessageBox::Yes)
-            ui->type->setCurrentIndex(float32);
-    }
     if(!command(action->text().remove("...").toLower().replace(' ','_').toStdString(),value.toStdString()))
         QMessageBox::critical(this,"ERROR",error_msg.c_str());
 }

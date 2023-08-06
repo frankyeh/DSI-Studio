@@ -115,6 +115,7 @@ private:
     void swap(std::shared_ptr<view_image_record> data);
     void assign(std::shared_ptr<view_image_record> data);
 private:
+    size_t pixelbit[4] = {1,2,4,4};
     tipl::image<3,unsigned char,tipl::buffer_container> I_uint8;
     tipl::image<3,unsigned short,tipl::buffer_container> I_uint16;
     tipl::image<3,unsigned int,tipl::buffer_container> I_uint32;
@@ -151,6 +152,7 @@ private:
     std::vector<std::vector<unsigned char> > buf4d;
     size_t cur_4d_index = 0;
     void read_4d_at(size_t index);
+    void get_4d_buf(std::vector<unsigned char>& buf);
 private:// batch processing
     /*
     std::vector<tipl::image<3> > other_data;
