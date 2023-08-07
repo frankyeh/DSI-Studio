@@ -564,12 +564,12 @@ bool tracking_window::eventFilter(QObject *obj, QEvent *event)
     if(!has_info)
         return false;
 
-    QString status = QString("pos=(%1,%2,%3)")
+    QString status = QString("LPS=(%1,%2,%3)")
             .arg(std::round(pos[0]*10.0)/10.0)
             .arg(std::round(pos[1]*10.0)/10.0)
             .arg(std::round(pos[2]*10.0)/10.0);
 
-    if(handle->template_id == handle->matched_template_id || !handle->s2t.empty())
+    if((handle->template_id == handle->matched_template_id && handle->is_mni) || !handle->s2t.empty())
     {
         tipl::vector<3,float> mni(pos);
         handle->sub2mni(mni);
@@ -578,6 +578,8 @@ bool tracking_window::eventFilter(QObject *obj, QEvent *event)
                 .arg(std::round(mni[1]*10.0)/10.0)
                 .arg(std::round(mni[2]*10.0)/10.0);
     }
+    else
+        status += QString(" MNI=(click [atlas]...)");
 
     if(!current_slice->is_diffusion_space)
     {
