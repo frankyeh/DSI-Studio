@@ -407,6 +407,31 @@ void RegionTableWidget::new_region(void)
     add_region("New Region");
 }
 
+void RegionTableWidget::new_region_from_mni_coordinate(void)
+{
+    bool ok;
+    QString param = QInputDialog::getText(this,"DSI Studio",
+            "Please specify the MNI Coordinate and radius of the region, separated by spaces (e.g. 0 -10 21 10)",
+                                                QLineEdit::Normal,"0 0 0 10",&ok);
+    if(!ok)
+        return;
+    QStringList params = param.split(' ');
+    if(params.size() != 4)
+    {
+        QMessageBox::critical(this,"ERROR","Invalid numbers. Please specify four numbers separated by spaces");
+        return;
+    }
+    if(!cur_tracking_window.map_to_mni())
+    {
+        QMessageBox::critical(this,"ERROR","Cannot map to MNI space");
+        return;
+    }
+    new_region();
+    regions.back()->new_from_mni_sphere(cur_tracking_window.handle,
+                                        tipl::vector<3>(params[0].toFloat(),params[1].toFloat(),params[2].toFloat()),params[3].toFloat());
+
+}
+
 void RegionTableWidget::copy_region(void)
 {
     if(currentRow() < 0)
