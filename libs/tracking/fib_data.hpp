@@ -310,6 +310,7 @@ public:
     void temp2sub(tipl::vector<3>& pos) const;
     void sub2temp(tipl::vector<3>& pos);
     void sub2mni(tipl::vector<3>& pos);
+    void mni2sub(tipl::vector<3>& pos);
     std::shared_ptr<atlas> get_atlas(const std::string atlas_name);
     bool get_atlas_roi(const std::string& atlas_name,const std::string& region_name,std::vector<tipl::vector<3,short> >& points);
     bool get_atlas_roi(std::shared_ptr<atlas> at,unsigned int roi_index,
