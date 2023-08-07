@@ -36,7 +36,6 @@ protected:
 private:
     tracking_window& cur_tracking_window;
     void do_action(QString action);
-    void do_action(QString action,size_t roi_index);
     bool load_multiple_roi_nii(QString file_name,bool is_mni);
 private:
     template<typename func>
@@ -86,6 +85,7 @@ public slots:
     void draw_region(const tipl::matrix<4,4>& current_slice_T,unsigned char dim,int slice_pos,
                      const tipl::shape<2>& slice_image_shape,float display_ratio,QImage& scaled_image);
     void new_region(void);
+    void new_region_from_mni_coordinate(void);
     void copy_region(void);
     void save_region(void);
     void save_all_regions(void);
