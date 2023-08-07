@@ -96,6 +96,7 @@ public: // rendering options
             return c;
         }
 public:
+        void new_from_mni_sphere(std::shared_ptr<fib_data> handle,tipl::vector<3> mni,float radius);
         void add_points(std::vector<tipl::vector<3,float> >&& points,bool del = false);
         void add_points(std::vector<tipl::vector<3,short> >&& points,bool del = false);
         void add_points(std::vector<tipl::vector<3,short> >&& points,
