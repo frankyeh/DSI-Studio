@@ -453,6 +453,8 @@
     <addaction name="actionAddImage"/>
     <addaction name="actionMinusImage"/>
     <addaction name="actionMultiplyImage"/>
+    <addaction name="actionMax_Image"/>
+    <addaction name="actionMin_Image"/>
    </widget>
    <widget class="QMenu" name="menuOverlay">
     <property name="title">
@@ -910,6 +912,24 @@
   <action name="actionReshape">
    <property name="text">
     <string>Reshape...</string>
+   </property>
+  </action>
+  <action name="actionMax_Image">
+   <property name="icon">
+    <iconset resource="icons.qrc">
+     <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+   </property>
+   <property name="text">
+    <string>Max Image...</string>
+   </property>
+  </action>
+  <action name="actionMin_Image">
+   <property name="icon">
+    <iconset resource="icons.qrc">
+     <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+   </property>
+   <property name="text">
+    <string>Min Image...</string>
    </property>
   </action>
  </widget>
