@@ -1170,8 +1170,8 @@ void apply_trans(tipl::vector<3>& pos,const tipl::matrix<4,4>& trans)
     pos[1] += trans[7];
     pos[2] += trans[11];
 }
-/*
-void mni2temp(tipl::vector<3>& pos,const tipl::matrix<4,4>& trans)
+
+void apply_inverse_trans(tipl::vector<3>& pos,const tipl::matrix<4,4>& trans)
 {
     pos[0] -= trans[3];
     pos[1] -= trans[7];
@@ -1183,7 +1183,7 @@ void mni2temp(tipl::vector<3>& pos,const tipl::matrix<4,4>& trans)
     if(trans[10] != 1.0f)
         pos[2] /= trans[10];
 }
-*/
+
 void fib_data::set_tractography_atlas_id(size_t new_id)
 {
     tractography_atlas_list = tractography_atlas_file_name_list[template_id];
@@ -1759,7 +1759,11 @@ void fib_data::sub2mni(tipl::vector<3>& pos)
     sub2temp(pos);
     apply_trans(pos,template_to_mni);
 }
-
+void fib_data::mni2sub(tipl::vector<3>& pos)
+{
+    apply_inverse_trans(pos,template_to_mni);
+    temp2sub(pos);
+}
 std::shared_ptr<atlas> fib_data::get_atlas(const std::string atlas_name)
 {
     std::string name_list;
