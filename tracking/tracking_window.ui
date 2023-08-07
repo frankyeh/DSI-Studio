@@ -1256,6 +1256,7 @@
      <addaction name="actionDilation_by_voxel"/>
     </widget>
     <addaction name="actionThreshold"/>
+    <addaction name="actionNew_Region_From_MNI_Coordinate"/>
     <addaction name="separator"/>
     <addaction name="actionLoad_Region_Color"/>
     <addaction name="actionSave_Region_Color"/>
@@ -3136,7 +3137,7 @@ Tracking</string>
      <normaloff>:/icons/icons/new.xpm</normaloff>:/icons/icons/new.xpm</iconset>
    </property>
    <property name="text">
-    <string>New Region From Thresholding</string>
+    <string>New Region From Thresholding...</string>
    </property>
   </action>
   <action name="actionRedo">
@@ -4197,6 +4198,15 @@ Tracking</string>
   <action name="actionSegment_Tissue">
    <property name="text">
     <string>Segment Tissue </string>
+   </property>
+  </action>
+  <action name="actionNew_Region_From_MNI_Coordinate">
+   <property name="icon">
+    <iconset resource="../icons.qrc">
+     <normaloff>:/icons/icons/new.xpm</normaloff>:/icons/icons/new.xpm</iconset>
+   </property>
+   <property name="text">
+    <string>New Region From MNI Coordinate...</string>
    </property>
   </action>
  </widget>
