@@ -13,8 +13,6 @@
 std::map<std::string,std::string> dicom_dictionary;
 std::vector<view_image*> opened_images;
 
-
-
 bool resize_mat(tipl::io::gz_mat_read& mat_reader,const tipl::shape<3>& new_dim);
 bool translocate_mat(tipl::io::gz_mat_read& mat_reader,const tipl::vector<3,int>& shift);
 bool resample_mat(tipl::io::gz_mat_read& mat_reader,float resolution);
@@ -27,9 +25,9 @@ void view_image::change_type(decltype(pixel_type) new_type)
     {
         switch(new_type)
         {
-            case uint8:     tipl::copy_mt(I.begin(),I.end(),reinterpret_cast<unsigned char*>(&buf[0]));break;
-            case uint16:    tipl::copy_mt(I.begin(),I.end(),reinterpret_cast<unsigned short*>(&buf[0]));break;
-            case uint32:    tipl::copy_mt(I.begin(),I.end(),reinterpret_cast<unsigned int*>(&buf[0]));break;
+            case int8:     tipl::copy_mt(I.begin(),I.end(),reinterpret_cast<unsigned char*>(&buf[0]));break;
+            case int16:    tipl::copy_mt(I.begin(),I.end(),reinterpret_cast<unsigned short*>(&buf[0]));break;
+            case int32:    tipl::copy_mt(I.begin(),I.end(),reinterpret_cast<unsigned int*>(&buf[0]));break;
             case float32:   tipl::copy_mt(I.begin(),I.end(),reinterpret_cast<float*>(&buf[0]));break;
         }
         I.buf().swap(empty_buf);
@@ -45,9 +43,9 @@ void view_image::change_type(decltype(pixel_type) new_type)
 void view_image::swap(std::shared_ptr<view_image_record> data)
 {
     I_float32.swap(data->I_float32);
-    I_uint32.swap(data->I_uint32);
-    I_uint16.swap(data->I_uint16);
-    I_uint8.swap(data->I_uint8);
+    I_int32.swap(data->I_int32);
+    I_int16.swap(data->I_int16);
+    I_int8.swap(data->I_int8);
 
     auto temp = pixel_type;
     pixel_type = decltype(pixel_type)(data->pixel_type);
@@ -61,9 +59,9 @@ void view_image::swap(std::shared_ptr<view_image_record> data)
 void view_image::assign(std::shared_ptr<view_image_record> data)
 {
     I_float32 = data->I_float32;
-    I_uint32 = data->I_uint32;
-    I_uint16 = data->I_uint16;
-    I_uint8 = data->I_uint8;
+    I_int32 = data->I_int32;
+    I_int16 = data->I_int16;
+    I_int8 = data->I_int8;
     pixel_type = decltype(pixel_type)(data->pixel_type);
     shape = data->shape;
     is_mni = data->is_mni;
@@ -615,25 +613,25 @@ bool view_image::read_mat_image(void)
     }
     if(mat.type_compatible<unsigned int>(cur_metric.c_str()))
     {
-        I_uint32.resize(shape);
-        mat.read(cur_metric.c_str(),I_uint32.begin(),I_uint32.end());
-        pixel_type = uint32;
+        I_int32.resize(shape);
+        mat.read(cur_metric.c_str(),I_int32.begin(),I_int32.end());
+        pixel_type = int32;
         ui->type->setCurrentIndex(pixel_type);
         return true;
     }
     if(mat.type_compatible<unsigned short>(cur_metric.c_str()))
     {
-        I_uint16.resize(shape);
-        mat.read(cur_metric.c_str(),I_uint16.begin(),I_uint16.end());
-        pixel_type = uint16;
+        I_int16.resize(shape);
+        mat.read(cur_metric.c_str(),I_int16.begin(),I_int16.end());
+        pixel_type = int16;
         ui->type->setCurrentIndex(pixel_type);
         return true;
     }
     if(mat.type_compatible<unsigned char>(cur_metric.c_str()))
     {
-        I_uint8.resize(shape);
-        mat.read(cur_metric.c_str(),I_uint8.begin(),I_uint8.end());
-        pixel_type = uint8;
+        I_int8.resize(shape);
+        mat.read(cur_metric.c_str(),I_int8.begin(),I_int8.end());
+        pixel_type = int8;
         ui->type->setCurrentIndex(pixel_type);
         return true;
     }
@@ -658,14 +656,14 @@ void view_image::write_mat_image(void)
         case float32:
             std::copy(I_float32.begin(),I_float32.end(),const_cast<float*>(mat.read_as_type<float>(cur_metric.c_str(),row,col)));
             break;
-        case uint32:
-            std::copy(I_uint32.begin(),I_uint32.end(),const_cast<unsigned int*>(mat.read_as_type<unsigned int>(cur_metric.c_str(),row,col)));
+        case int32:
+            std::copy(I_int32.begin(),I_int32.end(),const_cast<unsigned int*>(mat.read_as_type<unsigned int>(cur_metric.c_str(),row,col)));
             break;
-        case uint16:
-            std::copy(I_uint16.begin(),I_uint16.end(),const_cast<unsigned short*>(mat.read_as_type<unsigned short>(cur_metric.c_str(),row,col)));
+        case int16:
+            std::copy(I_int16.begin(),I_int16.end(),const_cast<unsigned short*>(mat.read_as_type<unsigned short>(cur_metric.c_str(),row,col)));
             break;
-        case uint8:
-            std::copy(I_uint8.begin(),I_uint8.end(),const_cast<unsigned char*>(mat.read_as_type<unsigned char>(cur_metric.c_str(),row,col)));
+        case int8:
+            std::copy(I_int8.begin(),I_int8.end(),const_cast<unsigned char*>(mat.read_as_type<unsigned char>(cur_metric.c_str(),row,col)));
             break;
     }
 }
@@ -753,13 +751,13 @@ bool view_image::open(QStringList file_names_)
             error_msg += file_name.toStdString();
             return false;
         }
-        pixel_type = uint8;
+        pixel_type = int8;
         shape[0] = in.width();
         shape[1] = in.height();
         shape[2] = uint32_t(file_names.size());
         T.identity();
         vs[0] = vs[1] = vs[2] = 1.0f;
-        I_uint8.resize(shape);
+        I_int8.resize(shape);
         buf4d.resize(3);
         for(size_t i = 1;i < 3;++i)
             buf4d[i].resize(shape.size());
@@ -784,7 +782,7 @@ bool view_image::open(QStringList file_names_)
             for(size_t i = 0,pos = file_index*shape.plane_size();i < shape.plane_size();++i,++pos)
             {
                 tipl::rgb rgb(ptr[i]);
-                I_uint8[pos] = rgb.r;
+                I_int8[pos] = rgb.r;
                 buf4d[1][pos] = rgb.g;
                 buf4d[2][pos] = rgb.b;
             }
@@ -807,11 +805,11 @@ bool view_image::open(QStringList file_names_)
         shape = nrrd.size;
         pixel_type = float32;
         if(nrrd.values["type"] == "int" || nrrd.values["type"] == "unsigned int")
-            pixel_type = uint32;
+            pixel_type = int32;
         if(nrrd.values["type"] == "short" || nrrd.values["type"] == "unsigned short")
-            pixel_type = uint16;
+            pixel_type = int16;
         if(nrrd.values["type"] == "uchar")
-            pixel_type = uint8;
+            pixel_type = int8;
 
         apply([&](auto& data)
         {
@@ -850,17 +848,17 @@ bool view_image::open(QStringList file_names_)
         {
         case 2://DT_UNSIGNED_CHAR 2
         case 256: // DT_INT8
-            pixel_type = uint8;
+            pixel_type = int8;
             break;
         case 4://DT_SIGNED_SHORT 4
         case 512: // DT_UINT16
-            pixel_type = uint16;
+            pixel_type = int16;
             break;
         case 8://DT_SIGNED_INT 8
         case 768: // DT_UINT32
         case 1024: // DT_INT64
         case 1280: // DT_UINT64
-            pixel_type = uint32;
+            pixel_type = int32;
             break;
         case 16://DT_FLOAT 16
         case 64://DT_DOUBLE 64
@@ -904,7 +902,7 @@ bool view_image::open(QStringList file_names_)
     else
         if(dicom.load_from_file(file_name.toStdString()))
         {
-            pixel_type = uint16;
+            pixel_type = int16;
             dicom.get_image_dimension(shape);
             apply([&](auto& data){dicom >> data;});
 
@@ -917,7 +915,7 @@ bool view_image::open(QStringList file_names_)
                     return false;
                 }
                 if(I.size() == shape.size())
-                    std::copy(I.begin(),I.end(),I_uint16.begin());
+                    std::copy(I.begin(),I.end(),I_int16.begin());
             }
             dicom.get_voxel_size(vs);
             std::string info_;

@@ -22,9 +22,9 @@ public:
 
 
 struct view_image_record{
-    tipl::image<3,unsigned char,tipl::buffer_container> I_uint8;
-    tipl::image<3,unsigned short,tipl::buffer_container> I_uint16;
-    tipl::image<3,unsigned int,tipl::buffer_container> I_uint32;
+    tipl::image<3,char,tipl::buffer_container> I_int8;
+    tipl::image<3,short,tipl::buffer_container> I_int16;
+    tipl::image<3,int,tipl::buffer_container> I_int32;
     tipl::image<3,float,tipl::buffer_container> I_float32;
     int pixel_type = 0;
     tipl::shape<3> shape;
@@ -116,11 +116,11 @@ private:
     void assign(std::shared_ptr<view_image_record> data);
 private:
     size_t pixelbit[4] = {1,2,4,4};
-    tipl::image<3,unsigned char,tipl::buffer_container> I_uint8;
-    tipl::image<3,unsigned short,tipl::buffer_container> I_uint16;
-    tipl::image<3,unsigned int,tipl::buffer_container> I_uint32;
+    tipl::image<3,char,tipl::buffer_container> I_int8;
+    tipl::image<3,short,tipl::buffer_container> I_int16;
+    tipl::image<3,int,tipl::buffer_container> I_int32;
     tipl::image<3,float,tipl::buffer_container> I_float32;
-    enum {uint8 = 0,uint16 = 1,uint32 = 2,float32 = 3} pixel_type = uint8;
+    enum {int8 = 0,int16 = 1,int32 = 2,float32 = 3} pixel_type = int8;
     tipl::shape<3> shape;
     bool is_mni = false;
     tipl::vector<3,float> vs;
@@ -130,9 +130,9 @@ private:
     {
         switch(pixel_type)
         {
-            case uint8:fun(I_uint8);return;
-            case uint16:fun(I_uint16);return;
-            case uint32:fun(I_uint32);return;
+            case int8:fun(I_int8);return;
+            case int16:fun(I_int16);return;
+            case int32:fun(I_int32);return;
             case float32:fun(I_float32);return;
         }
     }
