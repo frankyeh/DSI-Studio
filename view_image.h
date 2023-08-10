@@ -22,9 +22,9 @@ public:
 
 
 struct view_image_record{
-    tipl::image<3,char,tipl::buffer_container> I_int8;
-    tipl::image<3,short,tipl::buffer_container> I_int16;
-    tipl::image<3,int,tipl::buffer_container> I_int32;
+    tipl::image<3,unsigned char,tipl::buffer_container> I_int8;
+    tipl::image<3,unsigned short,tipl::buffer_container> I_int16;
+    tipl::image<3,unsigned int,tipl::buffer_container> I_int32;
     tipl::image<3,float,tipl::buffer_container> I_float32;
     int pixel_type = 0;
     tipl::shape<3> shape;
@@ -116,9 +116,9 @@ private:
     void assign(std::shared_ptr<view_image_record> data);
 private:
     size_t pixelbit[4] = {1,2,4,4};
-    tipl::image<3,char,tipl::buffer_container> I_int8;
-    tipl::image<3,short,tipl::buffer_container> I_int16;
-    tipl::image<3,int,tipl::buffer_container> I_int32;
+    tipl::image<3,unsigned char,tipl::buffer_container> I_int8;
+    tipl::image<3,unsigned short,tipl::buffer_container> I_int16;
+    tipl::image<3,unsigned int,tipl::buffer_container> I_int32;
     tipl::image<3,float,tipl::buffer_container> I_float32;
     enum {int8 = 0,int16 = 1,int32 = 2,float32 = 3} pixel_type = int8;
     tipl::shape<3> shape;
