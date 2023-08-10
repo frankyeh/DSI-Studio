@@ -928,7 +928,7 @@ bool tracking_window::run_unet(void)
     if(filename.isEmpty())
         return false;
     tipl::progress p("processing",true);
-    unet = tipl::ml3d::unet3d::load_model<tipl::io::gz_mat_read>(filename.toStdString().c_str());
+    unet = tipl::ml3d::unet3d::load_model<tipl::io::gz_mat_read>(filename.toStdString().c_str(),current_slice->get_source().shape());
     if(!unet.get())
     {
         QMessageBox::critical(this,"ERROR","Cannot read the model file");
