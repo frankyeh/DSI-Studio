@@ -186,7 +186,7 @@ void RegionTableWidget::add_row(int row,QString name)
 {
     {
         uint32_t color = uint32_t(regions[row]->region_render.color);
-        if(color == 0xFFFFFFFF || !color)
+        if(color == 0xFFFFFFFF || color == 0x00FFFFFF || !color)
             regions[row]->region_render.color = tipl::rgb::generate(++color_gen);
     }
     if(regions[row]->region_render.color.a == 0)
