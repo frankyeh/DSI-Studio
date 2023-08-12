@@ -19,7 +19,7 @@ public:
         tipl::vector<3,float> center;
 public:
         float alpha = 0.6f;
-        tipl::rgb color = uint32_t(0x00FFFFFF);
+        tipl::rgb color = uint32_t(0xFFFFFFFF);
 
 public:
         ~RegionRender(void);
