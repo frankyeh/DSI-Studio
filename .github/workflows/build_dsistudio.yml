@@ -43,8 +43,60 @@ jobs:
         tag: ${{ github.event.inputs.tag }}
         name: ${{ github.event.inputs.release_name }}
         prerelease: false
+
+  macos-build-qt5:
+    strategy:
+      matrix:
+        os: [macos-13,macos-12,macos-11]
+      fail-fast: false
+    runs-on: ${{ matrix.os }}
+    env:
+      CFLAGS: -Werror
+    steps:
+    - uses: actions/checkout@v2.5.0
+    - name: Install Qt
+      run: |
+        brew update
+        brew install qt5
+    - name: Download TIPL and Atlases
+      run: |
+        git clone https://github.com/frankyeh/TIPL.git
+        git clone https://github.com/frankyeh/DSI-Studio-atlas.git
+        git clone https://github.com/frankyeh/UNet-Studio-Data.git
+        rm -fr DSI-Studio-atlas/.git
+    - name: Build DSI Studio
+      run: |
+        mkdir -p build
+        cd build
+        export PATH="/usr/local/opt/qt@5/bin:$PATH" && export LDFLAGS="-L/usr/local/opt/qt@5/lib" && export CPPFLAGS="-I/usr/local/opt/qt@5/include" && export PKG_CONFIG_PATH="/usr/local/opt/qt@5/lib/pkgconfig"
+        qmake ../dsi_studio.pro
+        make
+        cd ..
         
-  macos-build:
+    - name: Packaging
+      run: |
+        mv build/dsi_studio.app .
+        /usr/local/opt/qt@5/bin/macdeployqt dsi_studio.app
+        curl -sSLO "https://github.com/frankyeh/TinyFSL/releases/download/2022.08.03/tiny_fsl_${{ matrix.os }}.zip"
+        7z e tiny_fsl_${{ matrix.os }}.zip -odsi_studio.app/Contents/MacOS/plugin
+        rm -fr dsi_studio.app/Contents/MacOS/plugin/tiny_fsl
+        mv other/* dsi_studio.app/Contents/MacOS/
+        mv DSI-Studio-atlas dsi_studio.app/Contents/MacOS/atlas
+        mv UNet-Studio-Data/network dsi_studio.app/Contents/MacOS/
+        mv dsi_studio.icns dsi_studio.app/Contents/Resources/
+        zip -r dsi_studio_${{ matrix.os }}.zip dsi_studio.app
+        
+        zip -r dsi_studio_${{ matrix.os }}.zip dsi_studio.app
+    - name: Create Release
+      uses: ncipollo/release-action@v1.8.9
+      with:
+        allowUpdates: true
+        artifacts: "*.zip"
+        tag: ${{ github.event.inputs.tag }}
+        name: ${{ github.event.inputs.release_name }}
+        prerelease: false
+        
+  macos-build-qt6:
     strategy:
       matrix:
         os: [macos-13,macos-12,macos-11]
@@ -81,7 +133,7 @@ jobs:
         mv DSI-Studio-atlas dsi_studio.app/Contents/MacOS/atlas
         mv UNet-Studio-Data/network dsi_studio.app/Contents/MacOS/
         mv dsi_studio.icns dsi_studio.app/Contents/Resources/
-        zip -r dsi_studio_${{ matrix.os }}.zip dsi_studio.app
+        zip -r dsi_studio_${{ matrix.os }}_qt6.zip dsi_studio.app
     - name: Create Release
       uses: ncipollo/release-action@v1.8.9
       with:
