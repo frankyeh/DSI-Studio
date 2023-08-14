@@ -96,6 +96,7 @@ bool tracking_window::command(QString cmd,QString param,QString param2)
             std::copy(I.begin(),I.end(),II.begin());
             tipl::io::gz_nifti::save_to_file((param+"/slices/" + ui->SliceModality->currentText() + ".nii.gz").toStdString().c_str(),
                                    II,reg_slice->vs,reg_slice->trans,reg_slice->is_mni);
+            reg_slice->save_mapping((param+"/slices/" + ui->SliceModality->currentText() + ".linear_reg.txt").toStdString().c_str());
         }
 
         QDir::setCurrent(param);
@@ -134,14 +135,17 @@ bool tracking_window::command(QString cmd,QString param,QString param2)
 
         prog(1,5);
 
-        if(QDir(param+"/regions").exists())
+        if(QDir(param+"/slices").exists())
         {
-            if(regionWidget->rowCount())
-                regionWidget->delete_all_region();
-            QDir::setCurrent(param+"/regions");
-            QStringList region_list = QDir().entryList(QStringList("*nii.gz"),QDir::Files|QDir::NoSymLinks);
-            for(int i = 0;i < region_list.size();++i)
-                regionWidget->command("load_region",region_list[i]);
+            QDir::setCurrent(param+"/slices");
+            QStringList slice_list = QDir().entryList(QStringList("*nii.gz"),QDir::Files|QDir::NoSymLinks);
+            for(int i = 0;i < slice_list.size();++i)
+            {
+                addSlices(QStringList(slice_list[i]),QFileInfo(slice_list[0]).baseName(),true);
+                CustomSliceModel* reg_slice = dynamic_cast<CustomSliceModel*>(current_slice.get());
+                if(reg_slice)
+                    reg_slice->load_mapping((param+"/slices/" + ui->SliceModality->currentText() + ".linear_reg.txt").toStdString().c_str());
+            }
         }
 
         prog(2,5);
@@ -158,12 +162,14 @@ bool tracking_window::command(QString cmd,QString param,QString param2)
 
         prog(3,5);
 
-        if(QDir(param+"/slices").exists())
+        if(QDir(param+"/regions").exists())
         {
-            QDir::setCurrent(param+"/slices");
-            QStringList slice_list = QDir().entryList(QStringList("*nii.gz"),QDir::Files|QDir::NoSymLinks);
-            for(int i = 0;i < slice_list.size();++i)
-                addSlices(QStringList(slice_list[i]),QFileInfo(slice_list[0]).baseName(),true);
+            if(regionWidget->rowCount())
+                regionWidget->delete_all_region();
+            QDir::setCurrent(param+"/regions");
+            QStringList region_list = QDir().entryList(QStringList("*nii.gz"),QDir::Files|QDir::NoSymLinks);
+            for(int i = 0;i < region_list.size();++i)
+                regionWidget->command("load_region",region_list[i]);
         }
 
         prog(4,5);
