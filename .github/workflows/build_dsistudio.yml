@@ -62,6 +62,7 @@ jobs:
       run: |
         git clone https://github.com/frankyeh/TIPL.git
         git clone https://github.com/frankyeh/DSI-Studio-atlas.git
+        git clone https://github.com/frankyeh/UNet-Studio-Data.git
         rm -fr DSI-Studio-atlas/.git
     - name: Build DSI Studio
       run: |
