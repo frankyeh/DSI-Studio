@@ -300,7 +300,7 @@ bool get_connectivity_matrix(tipl::program_option<tipl::out>& po,
             }
             else
             {
-                tipl::out() << "reading " << roi_file_name << " as a NIFTI regioin file" << std::endl;
+                tipl::out() << "reading " << roi_file_name << " as a NIFTI ROI file" << std::endl;
                 std::vector<std::shared_ptr<ROIRegion> > regions;
                 std::vector<std::string> names;
                 if(!load_nii(po,handle,roi_file_name,regions,names))
