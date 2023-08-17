@@ -94,6 +94,14 @@ void get_filenames_from(const std::string name,std::vector<std::string>& filenam
         {
             QStringList new_list;
             std::string search_path;
+            if(cur_file.find('*') < cur_file.find('/'))
+            {
+                search_path = cur_file.substr(0,cur_file.find_last_of('/'));
+                auto dir_list = QDir::current().entryList(QStringList(search_path.c_str()),QDir::Dirs | QDir::NoDotAndDotDot);
+                for(const auto& each_dir : dir_list)
+                    get_filenames_from(each_dir.toStdString() + cur_file.substr(cur_file.find_last_of('/')),filenames);
+            }
+            else
             if(cur_file.find('/') != std::string::npos)
             {
                 search_path = cur_file.substr(0,cur_file.find_last_of('/'));
@@ -112,10 +120,11 @@ void get_filenames_from(const std::string name,std::vector<std::string>& filenam
                 file_list.push_back(search_path + new_list[i].toStdString());
         }
         else
-            filenames.push_back(file_list[index]);
+            if(std::filesystem::exists(file_list[index]))
+                filenames.push_back(file_list[index]);
     }
     if(filenames.size() > file_list.size())
-        tipl::out() << "a total of " << filenames.size() << "files matching the search" << std::endl;
+        tipl::out() << "a total of " << filenames.size() << " files matching the search" << std::endl;
 }
 
 int trk_post(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> handle,std::shared_ptr<TractModel> tract_model,std::string tract_file_name,bool output_track);
