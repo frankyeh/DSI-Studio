@@ -822,127 +822,122 @@ bool read_fib_data(tipl::io::gz_mat_read& mat_reader)
         return false;
     return true;
 }
-template<typename T>
+
 bool modify_fib(tipl::io::gz_mat_read& mat_reader,
-                const tipl::shape<3>& new_dim,
-                const tipl::vector<3>& new_vs,
-                const tipl::matrix<4,4,float>& new_trans,
-                T&& fun)
+                const std::string& cmd,
+                const std::string& param)
 {
+    if(cmd == "save")
+    {
+        tipl::io::gz_mat_write matfile(param.c_str());
+        if(!matfile)
+        {
+            mat_reader.error_msg = "cannot save file to ";
+            mat_reader.error_msg += param;
+            return false;
+        }
+        tipl::progress prog("saving");
+        for(unsigned int index = 0;prog(index,mat_reader.size());++index)
+            if(!matfile.write(mat_reader[index]))
+            {
+                mat_reader.error_msg = "failed to write buffer to file ";
+                mat_reader.error_msg += param;
+                return false;
+            }
+        return true;
+    }
     if(!read_fib_data(mat_reader))
         return false;
     tipl::shape<3> dim;
-    mat_reader.read("dimension",dim);
+    tipl::vector<3> vs;
+    tipl::matrix<4,4,float> trans((tipl::identity_matrix()));
+    bool is_mni = false;
+    if(!mat_reader.read("dimension",dim) || !mat_reader.read("voxel_size",vs))
+    {
+        mat_reader.error_msg = "not a valid fib file";
+        return false;
+    }
+    if(mat_reader.has("trans"))
+    {
+        mat_reader.read("trans",trans);
+        is_mni = true;
+    }
 
-    tipl::progress prog("resampling");
+    tipl::progress prog(cmd.c_str());
     size_t p = 0;
+    bool failed = false;
     tipl::par_for(mat_reader.size(),[&](unsigned int i)
     {
         if(tipl::is_main_thread<0>())
             prog(p,mat_reader.size());
-        if(prog.aborted())
+        if(prog.aborted() || failed)
             return;
         auto& mat = mat_reader[i];
-        if(mat.get_name() == "dimension")
-            std::copy(new_dim.begin(),new_dim.end(),mat.get_data<unsigned int>());
-        if(mat.get_name() == "voxel_size")
-            std::copy(new_vs.begin(),new_vs.end(),mat.get_data<float>());
-        if(mat.get_name() == "trans")
-            std::copy(new_trans.begin(),new_trans.end(),mat.get_data<float>());
-
+        auto new_vs = vs;
+        auto new_trans = trans;
+        ++p;
         if(size_t(mat.get_cols())*size_t(mat.get_rows()) == 3*dim.size())
         {
-            auto ptr = mat.get_data<float>();
-            tipl::image<3,tipl::vector<3> > dir0(dim),new_dir0(new_dim);
-            for(size_t j = 0;j < dir0.size();++j,ptr += 3)
-                dir0[j] = tipl::vector<3>(ptr);
-            fun(dir0,new_dir0);
-            mat.resize(tipl::vector<2,unsigned int>(3*new_dim[0]*new_dim[1],new_dim[2]));
-            ptr = mat.get_data<float>();
-            for(size_t j = 0;j < new_dir0.size();++j,ptr += 3)
+            for(size_t d = 0;d < 3;++d)
             {
-                *ptr = new_dir0[j][0];
-                *(ptr+1) = new_dir0[j][1];
-                *(ptr+2) = new_dir0[j][2];
+                tipl::image<3> new_image(dim);
+                auto ptr = mat.get_data<float>()+d;
+                for(size_t j = 0;j < dim.size();++j,ptr += 3)
+                    new_image[j] = *ptr;
+                if(!tipl::command<tipl::io::gz_nifti>(new_image,new_vs,new_trans,is_mni,cmd,param,mat_reader.error_msg))
+                {
+                    failed = true;
+                    return;
+                }
+                if(d == 0)
+                    mat.resize(tipl::vector<2,unsigned int>(3*new_image.width()*new_image.height(),new_image.depth()));
+                for(size_t d = 0;d < 3;++d)
+                {
+                    auto ptr = mat.get_data<float>()+d;
+                    for(size_t j = 0;j < dim.size();++j,ptr += 3)
+                        *ptr = new_image[j];
+                }
             }
         }
         if(size_t(mat.get_cols())*size_t(mat.get_rows()) == dim.size()) // image volumes, including fa, and fiber index
         {
-            mat.resize(tipl::vector<2,unsigned int>(new_dim[0]*new_dim[1],new_dim[2]));
-            if(mat.is_type<float>()) // qa, fa...etc.
-            {
-                tipl::image<3> new_image(new_dim);
-                fun(tipl::make_image(mat.get_data<float>(),dim),new_image);
-                std::copy(new_image.begin(),new_image.end(),mat.get_data<float>());
-            }
+            if(mat.is_type<short>() && (cmd == "normalize" || cmd.find("filter") != std::string::npos || cmd.find("_value") != std::string::npos))
+                return;
+            tipl::image<3> new_image;
             if(mat.is_type<short>()) // index0,index1
+                new_image = tipl::make_image(mat.get_data<short>(),dim);
+            else
+                new_image = tipl::make_image(mat.get_data<float>(),dim);
+
+            if(!tipl::command<tipl::io::gz_nifti>(new_image,new_vs,new_trans,is_mni,cmd,param,mat_reader.error_msg))
             {
-                tipl::image<3> new_image(new_dim);
-                fun(tipl::make_image(mat.get_data<short>(),dim),new_image);
+                failed = true;
+                return;
+            }
+            mat.resize(tipl::vector<2,unsigned int>(new_image.width()*new_image.height(),new_image.depth()));
+            if(mat.is_type<short>()) // index0,index1
                 std::copy(new_image.begin(),new_image.end(),mat.get_data<short>());
+            else
+                std::copy(new_image.begin(),new_image.end(),mat.get_data<float>());
+
+            if(mat.get_name() == "fa0")
+            {
+                std::copy(new_image.shape().begin(),new_image.shape().end(),mat_reader.get_data<unsigned int>("dimension"));
+                std::copy(new_vs.begin(),new_vs.end(),mat_reader.get_data<float>("voxel_size"));
+                if(is_mni)
+                    std::copy(new_trans.begin(),new_trans.end(),mat_reader.get_data<float>("trans"));
             }
         }
-        ++p;
-    });
-    return !prog.aborted();
-}
-bool resample_mat(tipl::io::gz_mat_read& mat_reader,float resolution)
-{
-    tipl::shape<3> dim;
-    tipl::vector<3> vs;
-    tipl::matrix<4,4,float> new_trans;
-    mat_reader.read("dimension",dim);
-    mat_reader.read("voxel_size",vs);
-    mat_reader.read("trans",new_trans);
-    tipl::vector<3> new_vs(resolution,resolution,resolution);
-    tipl::shape<3> new_dim(dim[0]*vs[0]/resolution,dim[1]*vs[0]/resolution,dim[2]*vs[0]/resolution);
-    new_trans[0]  = new_trans[0]  > 0 ? resolution : -resolution;
-    new_trans[5]  = new_trans[5]  > 0 ? resolution : -resolution;
-    new_trans[10] = new_trans[10] > 0 ? resolution : -resolution;
 
-    tipl::transformation_matrix<double> T;
-    T.sr[0] = resolution/vs[2];
-    T.sr[4] = resolution/vs[1];
-    T.sr[8] = resolution/vs[0];
-    return modify_fib(mat_reader,new_dim,new_vs,new_trans,[&](const auto& I,auto& J)
-    {
-        if constexpr(std::is_integral<typename std::remove_reference<decltype(*I.begin())>::type>::value)
-            tipl::resample<tipl::nearest>(I,J,T);
-        else
-            tipl::resample(I,J,T);
     });
-}
-bool resize_mat(tipl::io::gz_mat_read& mat_reader,const tipl::shape<3>& new_dim)
-{
-    tipl::vector<3> vs;
-    tipl::matrix<4,4,float> trans;
-    mat_reader.read("voxel_size",vs);
-    mat_reader.read("trans",trans);
-    return modify_fib(mat_reader,new_dim,vs,trans,[&](const auto& I,auto& J)
-    {
-        tipl::draw(I,J,tipl::vector<3,int>(0,0,0));
-    });
-}
-bool translocate_mat(tipl::io::gz_mat_read& mat_reader,const tipl::vector<3,int>& shift)
-{
-    tipl::shape<3> dim;
-    tipl::vector<3> vs;
-    tipl::matrix<4,4,float> new_trans;
-    mat_reader.read("dimension",dim);
-    mat_reader.read("voxel_size",vs);
-    mat_reader.read("trans",new_trans);
-    new_trans[3] -= new_trans[0]*float(shift[0]);
-    new_trans[7] -= new_trans[5]*float(shift[1]);
-    new_trans[11] -= new_trans[10]*float(shift[2]);
-    return modify_fib(mat_reader,dim,vs,new_trans,[&](const auto& I,auto& J)
-    {
-        tipl::draw(I,J,shift);
-    });
+    if(failed)
+        return false;
+    return !prog.aborted();
 }
 
 bool fib_data::resample_to(float resolution)
 {
-    if(!resample_mat(mat_reader,resolution))
+    if(!modify_fib(mat_reader,"regrid",std::to_string(resolution)))
     {
         error_msg = mat_reader.error_msg;
         return false;

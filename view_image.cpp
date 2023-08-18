@@ -102,6 +102,9 @@ void view_image::get_4d_buf(std::vector<unsigned char>& buf)
         std::memcpy(buf.data() + i*size_per_image,buf4d[i].data(),size_per_image);
     apply([&](auto& I){I.buf().swap(buf4d[cur_4d_index]);});
 }
+bool modify_fib(tipl::io::gz_mat_read& mat_reader,
+                const std::string& cmd,
+                const std::string& param);
 bool view_image::command(std::string cmd,std::string param1)
 {
     if(!shape.size())
@@ -118,61 +121,17 @@ bool view_image::command(std::string cmd,std::string param1)
         assign(undo_list.back());
     }
 
-    if(mat.size())
-    {
-        if(cmd == "resize")
-        {
-            std::istringstream in(param1);
-            int w(0),h(0),d(0);
-            in >> w >> h >> d;
-            if(!resize_mat(mat,tipl::shape<3>(w,h,d)))
-                return false;
-            read_mat();
-            init_image();
-            return true;
-        }
-        if(cmd == "translocate")
-        {
-            std::istringstream in(param1);
-            int dx,dy,dz;
-            in >> dx >> dy >> dz;
-            if(!translocate_mat(mat,tipl::vector<3,int>(dx,dy,dz)))
-                return false;
-            read_mat();
-            init_image();
-            return true;
-        }
-        if(cmd == "regrid")
-        {
-            float reso = std::stof(param1);
-            if(reso <= 0.0f)
-                return false;
-            resample_mat(mat,reso);
-            read_mat();
-            init_image();
-            return true;
-        }
-        if(cmd == "save")
-        {
-            tipl::io::gz_mat_write matfile(file_name.toStdString().c_str());
-            if(!matfile)
-            {
-                QMessageBox::critical(this,"ERROR","Cannot save file");
-                return false;
-            }
-            tipl::progress prog("saving");
-            for(unsigned int index = 0;prog(index,mat.size());++index)
-                matfile.write(mat[index]);
-            QMessageBox::information(this,"DSI Studio","File Save");
-            return true;
-        }
-    }
-
 
     {
         tipl::progress prog(cmd.c_str());
         if(!param1.empty())
             tipl::out() << "param: " << param1;
+
+        if(mat.size())
+        {
+            result = modify_fib(mat,cmd,param1);
+            goto end_command;
+        }
 
         // load all buffer for processing
         if(!buf4d.empty())
@@ -214,8 +173,9 @@ bool view_image::command(std::string cmd,std::string param1)
                 else
                     change_type(new_type);
             }
+            goto end_command;
         }
-        else
+
         if(cmd == "reshape")
         {
             std::istringstream in(param1);
@@ -256,69 +216,70 @@ bool view_image::command(std::string cmd,std::string param1)
                 I.buf().swap(buf);
                 I.resize(shape);
             });
-
+            goto end_command;
         }
-        else
+        if(!buf4d.empty() && cmd == "save")
         {
-            if(!buf4d.empty() && cmd == "save")
-            {
-                std::vector<unsigned char> buf;
-                get_4d_buf(buf);
+            std::vector<unsigned char> buf;
+            get_4d_buf(buf);
 
-                apply([&](auto& I)
-                {
-                    tipl::io::gz_nifti nii;
-                    nii.set_image_transformation(T,is_mni);
-                    nii.set_voxel_size(vs);
-                    nii << tipl::make_image(reinterpret_cast<decltype(&I[0])>(buf.data()),tipl::shape<4>(shape[0],shape[1],shape[2],buf4d.size()));
-                    result = nii.save_to_file(param1.c_str());
-                });
-            }
-            else
+            apply([&](auto& I)
             {
-                auto old_shape = shape;
-                auto old_vs = vs;
-                auto old_T = T;
-                apply([&](auto& I)
+                tipl::io::gz_nifti nii;
+                nii.set_image_transformation(T,is_mni);
+                nii.set_voxel_size(vs);
+                nii << tipl::make_image(reinterpret_cast<decltype(&I[0])>(buf.data()),tipl::shape<4>(shape[0],shape[1],shape[2],buf4d.size()));
+                result = nii.save_to_file(param1.c_str());
+            });
+            goto end_command;
+        }
+
+        {
+            auto old_shape = shape;
+            auto old_vs = vs;
+            auto old_T = T;
+            apply([&](auto& I)
+            {
+                result = tipl::command<tipl::io::gz_nifti>(I,vs,T,is_mni,cmd,param1,error_msg);
+                shape = I.shape();
+            });
+            if(!buf4d.empty())
+            {
+                auto old_4d_index = cur_4d_index;
+                vs = old_vs;
+                T = old_T;
+                for(size_t i = 0;i < buf4d.size() && result;++i)
                 {
-                    result = tipl::command<tipl::io::gz_nifti>(I,vs,T,is_mni,cmd,param1,error_msg);
-                    shape = I.shape();
-                });
-                if(!buf4d.empty())
-                {
-                    auto old_4d_index = cur_4d_index;
-                    vs = old_vs;
-                    T = old_T;
-                    for(size_t i = 0;i < buf4d.size() && result;++i)
+                    if(i == old_4d_index)
+                        continue;
+                    read_4d_at(i);
+                    apply([&](auto& I)
                     {
-                        if(i == old_4d_index)
-                            continue;
-                        read_4d_at(i);
-                        apply([&](auto& I)
-                        {
-                            result = tipl::command<tipl::io::gz_nifti>(I,vs,T,is_mni,cmd,param1,error_msg);
-                        });
-                    }
-                    read_4d_at(old_4d_index);
+                        result = tipl::command<tipl::io::gz_nifti>(I,vs,T,is_mni,cmd,param1,error_msg);
+                    });
                 }
+                read_4d_at(old_4d_index);
             }
         }
-        tipl::out() << "result: " << (result ? "succeeded":"failed") << std::endl;
-        if(!result)
-        {
-            tipl::out() << "ERROR:" << error_msg << std::endl;
-            if(!undo_list.empty())
-            {
-                swap(undo_list.back());
-                undo_list.pop_back();
-            }
-            return false;
-        }
-
-        if(mat.size())
-            write_mat_image();
     }
 
+    end_command:
+
+    tipl::out() << "result: " << (result ? "succeeded":"failed") << std::endl;
+    if(!result)
+    {
+        tipl::out() << "ERROR:" << error_msg << std::endl;
+        if(!undo_list.empty())
+        {
+            swap(undo_list.back());
+            undo_list.pop_back();
+        }
+        return false;
+    }
+
+
+    if(mat.size())
+        read_mat();
     init_image();
 
     command_list.push_back(cmd);
@@ -644,28 +605,6 @@ bool view_image::read_mat_image(void)
         return true;
     }
     return false;
-}
-void view_image::write_mat_image(void)
-{
-    auto cur_metric = ui->mat_images->currentText().toStdString();
-    unsigned int row(0), col(0);
-    if(!mat.get_col_row(cur_metric.c_str(),row,col) || row*col != shape.size())
-        return;
-    switch(pixel_type)
-    {
-        case float32:
-            std::copy(I_float32.begin(),I_float32.end(),const_cast<float*>(mat.read_as_type<float>(cur_metric.c_str(),row,col)));
-            break;
-        case int32:
-            std::copy(I_int32.begin(),I_int32.end(),const_cast<unsigned int*>(mat.read_as_type<unsigned int>(cur_metric.c_str(),row,col)));
-            break;
-        case int16:
-            std::copy(I_int16.begin(),I_int16.end(),const_cast<unsigned short*>(mat.read_as_type<unsigned short>(cur_metric.c_str(),row,col)));
-            break;
-        case int8:
-            std::copy(I_int8.begin(),I_int8.end(),const_cast<unsigned char*>(mat.read_as_type<unsigned char>(cur_metric.c_str(),row,col)));
-            break;
-    }
 }
 void initial_LPS_nifti_srow(tipl::matrix<4,4>& T,const tipl::shape<3>& geo,const tipl::vector<3>& vs);
 bool view_image::read_mat(void)
