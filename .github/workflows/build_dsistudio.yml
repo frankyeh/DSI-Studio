@@ -160,7 +160,9 @@ jobs:
         modules: addons.qtcharts       
     - name: Install Zlib
       run: |
-        ./build_packages/windows/install_zlib.bat
+        git clone https://github.com/microsoft/vcpkg
+        ./vcpkg/bootstrap-vcpkg.bat
+        vcpkg install zlib
         del "C:/Program Files/zlib/lib/zlib.lib"
         del "C:/Program Files/zlib/bin/zlib.dll"
     - name: Install Ninja and CMake
