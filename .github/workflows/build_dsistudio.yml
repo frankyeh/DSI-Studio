@@ -163,10 +163,12 @@ jobs:
         choco install ninja cmake
     - name: Install Zlib
       run: |
-        git clone https://github.com/microsoft/vcpkg
-        ./vcpkg/bootstrap-vcpkg.bat
-        vcpkg install zlib
-        ls C:/vcpkg/packages/zlib_x86-windows/share/zlib/
+        powershell -Command "(Invoke-WebRequest -Uri https://git.io/JnHTY -OutFile install_zlib.bat)"; 
+        powershell -Command "(gc install_zlib.bat) -replace '1.2.12', '1.2.13' | Out-File -encoding ASCII install_zlib.bat"
+        ./install_zlib.bat
+        del install_zlib.bat
+        del "C:/Program Files/zlib/lib/zlib.lib"
+        del "C:/Program Files/zlib/bin/zlib.dll"
     - name: get TIPL and DSI Studio atlas
       run: |
         git clone https://github.com/frankyeh/TIPL.git
@@ -176,7 +178,7 @@ jobs:
       run: |
         for /f "usebackq delims=#" %%a in (`"%programfiles(x86)%\Microsoft Visual Studio\Installer\vswhere" -latest -property installationPath`) do call "%%a\Common7\Tools\VsDevCmd.bat" -arch=x64
         mkdir -p build_cpu
-        cmake -S . -B build_cpu -GNinja "-DZLIB_LIBRARY=C:/vcpkg/packages/zlib_x86-windows/share/zlib/lib/zlibstatic.lib" "-DCMAKE_BUILD_TYPE:STRING=Release" "-DCMAKE_C_COMPILER:STRING=cl" "-DCMAKE_CXX_COMPILER:STRING=cl" -DTIPL_DIR=.
+        cmake -S . -B build_cpu -GNinja "-DZLIB_LIBRARY=C:/Program Files/zlib/lib/zlibstatic.lib" "-DCMAKE_BUILD_TYPE:STRING=Release" "-DCMAKE_C_COMPILER:STRING=cl" "-DCMAKE_CXX_COMPILER:STRING=cl" -DTIPL_DIR=.
         cmake --build ./build_cpu --parallel --config Release
       shell: cmd        
     - name: Install Cuda
@@ -185,7 +187,7 @@ jobs:
       run: |
         for /f "usebackq delims=#" %%a in (`"%programfiles(x86)%\Microsoft Visual Studio\Installer\vswhere" -latest -property installationPath`) do call "%%a\Common7\Tools\VsDevCmd.bat" -arch=x64
         mkdir -p build
-        cmake -S . -B build -GNinja "-DZLIB_LIBRARY=C:/vcpkg/packages/zlib_x86-windows/share/zlib/lib/zlibstatic.lib" "-DCMAKE_BUILD_TYPE:STRING=Release" "-DCMAKE_C_COMPILER:STRING=cl" "-DCMAKE_CXX_COMPILER:STRING=cl" -DTIPL_DIR=.
+        cmake -S . -B build -GNinja "-DZLIB_LIBRARY=C:/Program Files/zlib/lib/zlibstatic.lib" "-DCMAKE_BUILD_TYPE:STRING=Release" "-DCMAKE_C_COMPILER:STRING=cl" "-DCMAKE_CXX_COMPILER:STRING=cl" -DTIPL_DIR=.
         cmake --build ./build --parallel --config Release
       shell: cmd      
     - name: Packaging
