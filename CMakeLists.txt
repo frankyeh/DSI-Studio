@@ -9,6 +9,8 @@ set(CMAKE_AUTOUIC ON)
 
 find_package(Qt6 COMPONENTS Core Gui OpenGL Charts Network Widgets REQUIRED)
 find_package(ZLIB REQUIRED)
+set(ZLIB_USE_STATIC_LIBS "ON")
+
 find_package(OpenGL REQUIRED)
 find_package(CUDAToolkit)
 
