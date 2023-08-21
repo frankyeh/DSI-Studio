@@ -163,8 +163,6 @@ jobs:
         git clone https://github.com/microsoft/vcpkg
         ./vcpkg/bootstrap-vcpkg.bat
         vcpkg install zlib
-        del C:/vcpkg/packages/zlib_x86-windows/share/zlib/lib/zlib.lib
-        del C:/vcpkg/packages/zlib_x86-windows/share/zlib/bin/zlib.dll
     - name: Install Ninja and CMake
       run: |    
         choco install ninja cmake
