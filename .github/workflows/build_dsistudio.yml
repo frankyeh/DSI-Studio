@@ -158,14 +158,15 @@ jobs:
       with:
         version: 6.2.0
         modules: addons.qtcharts       
+    - name: Install Ninja and CMake
+      run: |    
+        choco install ninja cmake
     - name: Install Zlib
       run: |
         git clone https://github.com/microsoft/vcpkg
         ./vcpkg/bootstrap-vcpkg.bat
         vcpkg install zlib
-    - name: Install Ninja and CMake
-      run: |    
-        choco install ninja cmake
+        ls C:/vcpkg/packages/zlib_x86-windows/share/zlib/
     - name: get TIPL and DSI Studio atlas
       run: |
         git clone https://github.com/frankyeh/TIPL.git
@@ -175,7 +176,7 @@ jobs:
       run: |
         for /f "usebackq delims=#" %%a in (`"%programfiles(x86)%\Microsoft Visual Studio\Installer\vswhere" -latest -property installationPath`) do call "%%a\Common7\Tools\VsDevCmd.bat" -arch=x64
         mkdir -p build_cpu
-        cmake -S . -B build_cpu -GNinja "-DCMAKE_BUILD_TYPE:STRING=Release" "-DCMAKE_C_COMPILER:STRING=cl" "-DCMAKE_CXX_COMPILER:STRING=cl" -DTIPL_DIR=.
+        cmake -S . -B build_cpu -GNinja "-DZLIB_LIBRARY=C:/vcpkg/packages/zlib_x86-windows/share/zlib/lib/zlibstatic.lib" "-DCMAKE_BUILD_TYPE:STRING=Release" "-DCMAKE_C_COMPILER:STRING=cl" "-DCMAKE_CXX_COMPILER:STRING=cl" -DTIPL_DIR=.
         cmake --build ./build_cpu --parallel --config Release
       shell: cmd        
     - name: Install Cuda
@@ -184,7 +185,7 @@ jobs:
       run: |
         for /f "usebackq delims=#" %%a in (`"%programfiles(x86)%\Microsoft Visual Studio\Installer\vswhere" -latest -property installationPath`) do call "%%a\Common7\Tools\VsDevCmd.bat" -arch=x64
         mkdir -p build
-        cmake -S . -B build -GNinja "-DCMAKE_BUILD_TYPE:STRING=Release" "-DCMAKE_C_COMPILER:STRING=cl" "-DCMAKE_CXX_COMPILER:STRING=cl" -DTIPL_DIR=.
+        cmake -S . -B build -GNinja "-DZLIB_LIBRARY=C:/vcpkg/packages/zlib_x86-windows/share/zlib/lib/zlibstatic.lib" "-DCMAKE_BUILD_TYPE:STRING=Release" "-DCMAKE_C_COMPILER:STRING=cl" "-DCMAKE_CXX_COMPILER:STRING=cl" -DTIPL_DIR=.
         cmake --build ./build --parallel --config Release
       shell: cmd      
     - name: Packaging
