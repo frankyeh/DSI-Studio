@@ -211,37 +211,33 @@ bool connectometry_db::parse_demo(void)
             last_item_size = items.size();
         }
         // select demographics by matching subject name
-        if(items.size() > (num_subjects+1)*col_count)
+        if(items.size() != (num_subjects+1)*col_count)
         {
-            std::vector<std::string> new_items;
+            tipl::out() << "demographic rows different from database subject numbers. trying to match subject name with the first column...";
+            bool found = false;
+            std::vector<std::string> new_items((num_subjects+1)*col_count);
             // copy titles
-            std::copy(items.begin(),items.begin()+int(col_count),std::back_inserter(new_items));
+            std::copy(items.begin(),items.begin()+int(col_count),new_items.begin());
 
             for(size_t i = 0;i < num_subjects;++i)
-            {
-                bool find = false;
-                // find first column for subject name
                 for(size_t j = col_count;j+col_count <= items.size();j += col_count)
+                {
                     if(subject_names[i].find(items[j]) != std::string::npos ||
                        items[j].find(subject_names[i]) != std::string::npos)
                     {
-                        find = true;
-                        std::copy(items.begin()+int(j),items.begin()+int(j+col_count),std::back_inserter(new_items));
+                        found = true;
+                        std::copy(items.begin()+int(j),items.begin()+int(j+col_count),new_items.begin() + (i+1)*col_count);
                         break;
                     }
-                if(!find)
-                    break;
+                }
+            if(!found)
+            {
+                std::ostringstream out;
+                out << "Subject number mismatch. The demographic file has " << row_count-1 << " subject rows, but the database has " << num_subjects << " subjects.";
+                error_msg = out.str();
+                return false;
             }
-            if(new_items.size() == (num_subjects+1)*col_count)
-                items.swap(new_items);
-        }
-
-        if(items.size() != (num_subjects+1)*col_count)
-        {
-            std::ostringstream out;
-            out << "Subject number mismatch. The demographic file has " << row_count-1 << " subject rows, but the database has " << num_subjects << " subjects.";
-            error_msg = out.str();
-            return false;
+            items.swap(new_items);
         }
     }
     // first line moved to title vector
