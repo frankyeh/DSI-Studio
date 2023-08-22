@@ -287,7 +287,10 @@ std::string group_connectometry_analysis::get_file_post_fix(void)
 {
     std::string postfix;
     {
-        postfix += foi_str;
+        if(foi_str.find("increased") == 0 || foi_str.find("decreased") == 0)
+            postfix += foi_str.substr(10);
+        else
+            postfix += foi_str;
         postfix += ".t";
         postfix += std::to_string((int)(t_threshold*10));
     }
@@ -407,8 +410,22 @@ void group_connectometry_analysis::run_permutation(unsigned int thread_count,uns
             }
             else
             {
-                hypothesis_inc += std::string(" associated with higher ")+ foi_str;
-                hypothesis_dec += std::string(" associated with lower ")+ foi_str;
+                if(foi_str.find("increase") == 0)
+                {
+                    hypothesis_inc += std::string(" associated with ")+ foi_str;
+                    hypothesis_dec += std::string(" associated with de")+ foi_str.substr(2);
+                }
+                else
+                if(foi_str.find("decrease") == 0)
+                {
+                    hypothesis_inc += std::string(" associated with in")+ foi_str.substr(2);
+                    hypothesis_dec += std::string(" associated with ")+ foi_str;
+                }
+                else
+                {
+                    hypothesis_inc += std::string(" associated with higher ")+ foi_str;
+                    hypothesis_dec += std::string(" associated with lower ")+ foi_str;
+                }
             }
 
             std::string prefix = "higher ";
