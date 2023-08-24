@@ -100,7 +100,7 @@ bool ImageModel::mask_from_unet(void)
     {
         tipl::progress p("generating a mask using unet",true);
         tipl::out() << "model: " << model_list_t2w[voxel.template_id];
-        auto unet = tipl::ml3d::unet3d::load_model<tipl::io::gz_mat_read>(model_file_name.c_str(),tipl::shape<3>());
+        auto unet = tipl::ml3d::unet3d::load_model<tipl::io::gz_mat_read>(model_file_name.c_str());
         if(unet.get())
         {
             if(unet->forward(b0,voxel.vs,p))
