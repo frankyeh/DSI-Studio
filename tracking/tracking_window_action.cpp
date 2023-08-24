@@ -934,7 +934,7 @@ bool tracking_window::run_unet(void)
     if(filename.isEmpty())
         return false;
     tipl::progress p("processing",true);
-    unet = tipl::ml3d::unet3d::load_model<tipl::io::gz_mat_read>(filename.toStdString().c_str(),current_slice->get_source().shape());
+    unet = tipl::ml3d::unet3d::load_model<tipl::io::gz_mat_read>(filename.toStdString().c_str());
     if(!unet.get())
     {
         QMessageBox::critical(this,"ERROR","Cannot read the model file");
@@ -1021,7 +1021,6 @@ void tracking_window::on_actionSegment_Tissue_triggered()
         regionWidget->begin_update();
         for(size_t i = 0;i < unet->out_channels_;++i)
         {
-            unsigned char type = default_id;
             tipl::rgb color = tipl::rgb(255,255,255);
             std::string name = i < unet_label_name.size() ? unet_label_name[i].c_str() : (std::string("tissue")+std::to_string(i+1)).c_str();
             if(name.find("White") != std::string::npos)
@@ -1040,12 +1039,11 @@ void tracking_window::on_actionSegment_Tissue_triggered()
                 color = tipl::rgb(255,170,127,128);
             if(name.find("Necrosis") != std::string::npos)
                 color = tipl::rgb(75,75,75,200);
-            regionWidget->add_region(name.c_str(),type,color);
+            regionWidget->add_region(name.c_str(),default_id,color);
             if(!regions[i].empty())
                 regionWidget->regions.back()->add_points(std::move(regions[i]));
         }
         regionWidget->end_update();
-
     }
 
     slice_need_update = true;
