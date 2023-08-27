@@ -293,12 +293,15 @@ void RegToolBox::show_image(void)
 
         if(ui->show_warp->isChecked() && ui->dis_spacing->currentIndex() && !t2f_dis.empty())
         {
+            float sub_ratio = float(t2f_dis.width())/float(I_to_show.width());
             QPainter paint(&warp_image);
             paint.setBrush(Qt::NoBrush);
             paint.setPen(Qt::red);
             tipl::image<2,tipl::vector<3> > dis_slice;
-            tipl::volume2slice_scaled(t2f_dis,dis_slice,cur_view,pos,ratio);
+            tipl::volume2slice(t2f_dis,dis_slice,cur_view,pos*sub_ratio);
+
             int cur_dis = 1 << (ui->dis_spacing->currentIndex()-1);
+            sub_ratio = ratio/sub_ratio;
             for(int x = 0;x < dis_slice.width();x += cur_dis)
             {
                 for(int y = 1,index = x;
@@ -310,8 +313,8 @@ void RegToolBox::show_image(void)
                     vfrom[1] += y-1;
                     vto[0] += x;
                     vto[1] += y;
-                    paint.drawLine(vfrom[0]*ratio,vfrom[1]*ratio,
-                                   vto[0]*ratio,vto[1]*ratio);
+                    paint.drawLine(vfrom[0]*sub_ratio,vfrom[1]*sub_ratio,
+                                   vto[0]*sub_ratio,vto[1]*sub_ratio);
                 }
             }
 
@@ -326,8 +329,8 @@ void RegToolBox::show_image(void)
                     vfrom[1] += y;
                     vto[0] += x;
                     vto[1] += y;
-                    paint.drawLine(vfrom[0]*ratio,vfrom[1]*ratio,
-                                   vto[0]*ratio,vto[1]*ratio);
+                    paint.drawLine(vfrom[0]*sub_ratio,vfrom[1]*sub_ratio,
+                                   vto[0]*sub_ratio,vto[1]*sub_ratio);
                 }
             }
         }
@@ -347,6 +350,7 @@ void RegToolBox::on_timer()
     }
     if(reg_done)
     {
+        tipl::out() << "registration completed";
         timer->stop();
         ui->running_label->movie()->stop();
         ui->running_label->hide();
@@ -386,7 +390,7 @@ void RegToolBox::linear_reg(tipl::reg::reg_type reg_type,int cost_type)
         else
         if(cost_type == 1)// correlation
             linear_with_cc(It,Itvs,I,Ivs,arg,reg_type,thread.terminated,ui->large_deform->isChecked() ? tipl::reg::large_bound : tipl::reg::reg_bound);
-        std::cout << "linear registration completed" << std::endl;
+        tipl::out() << "linear registration completed" << std::endl;
         T = tipl::transformation_matrix<float>(arg,It.shape(),Itvs,I.shape(),Ivs);
         tipl::resample_mt<tipl::interpolation::cubic>(I,J_,T);
         if(I2.shape() == I.shape())
@@ -399,7 +403,7 @@ void RegToolBox::linear_reg(tipl::reg::reg_type reg_type,int cost_type)
 
     }
     auto r = tipl::correlation_mt(J_.begin(),J_.end(),It.begin());
-    std::cout << "linear:" << r << std::endl;
+    tipl::out() << "linear:" << r << std::endl;
     J.swap(J_);
 }
 
@@ -427,7 +431,7 @@ void edge_for_cdm(tipl::image<3>& sIt,
 void RegToolBox::nonlinear_reg(void)
 {
     status = "nonlinear registration";
-    std::cout << "begin nonlinear registration" << std::endl;
+    tipl::out() << "begin nonlinear registration" << std::endl;
     {
         tipl::reg::cdm_param param;
         param.resolution = ui->resolution->value();
@@ -443,7 +447,7 @@ void RegToolBox::nonlinear_reg(void)
         else
             cdm_common(It,It2,J,J2,t2f_dis,f2t_dis,thread.terminated,param,ui->use_cuda->isChecked());
     }
-    std::cout << "nonlinear registration completed." << std::endl;
+    tipl::out() << "nonlinear registration completed.";
     // calculate inverted to2from
     {
         from2to.resize(I.shape());
@@ -452,7 +456,7 @@ void RegToolBox::nonlinear_reg(void)
     }
     tipl::compose_mapping(I,to2from,JJ);
     auto r = tipl::correlation_mt(JJ.begin(),JJ.end(),It.begin());
-    std::cout << "nonlinear:" << r << std::endl;
+    tipl::out() << "nonlinear:" << r;
 }
 
 void RegToolBox::on_run_reg_clicked()
