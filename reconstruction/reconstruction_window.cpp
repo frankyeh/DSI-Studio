@@ -1016,6 +1016,7 @@ void reconstruction_window::on_qsdr_manual_clicked()
     if(manual->exec() != QDialog::Accepted)
         return;
     handle->voxel.qsdr_trans = manual->get_iT();
+    handle->voxel.manual_alignment = true;
 }
 
 
