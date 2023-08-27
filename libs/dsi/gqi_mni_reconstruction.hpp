@@ -49,7 +49,6 @@ public:
 
 
         bool is_human_template = QFileInfo(fa_template_list[voxel.template_id].c_str()).baseName().contains("ICBM");
-        bool manual_alignment = voxel.qsdr_trans.data[0] != 0.0f;
         bool export_intermediate = voxel.needs("debug");
         bool partial_reconstruction = false;
         bool dual_modality = false;
@@ -85,22 +84,30 @@ public:
             tipl::normalize(VF);
             if(dual_modality)
                 tipl::normalize(VF2);
-            if(export_intermediate)
-            {
-                VG.save_to_file<tipl::io::gz_nifti>("Template_QA.nii.gz");
-                if(!VG2.empty())
-                    VG2.save_to_file<tipl::io::gz_nifti>("Template_ISO.nii.gz");
-                VF.save_to_file<tipl::io::gz_nifti>("Subject_QA.nii.gz");
-                if(!VF2.empty())
-                    VF2.save_to_file<tipl::io::gz_nifti>("Subject_ISO.nii.gz");
-            }
 
             tipl::filter::gaussian(VF);
             if(dual_modality)
                 tipl::filter::gaussian(VF2);
 
-            if(manual_alignment)
-                affine = voxel.qsdr_trans;
+            if(export_intermediate)
+            {
+                tipl::io::gz_nifti::save_to_file("Template_QA.nii.gz",VG,VGvs,voxel.trans_to_mni);
+                if(!VG2.empty())
+                    tipl::io::gz_nifti::save_to_file("Template_ISO.nii.gz",VG2,VGvs,voxel.trans_to_mni);
+                tipl::matrix<4,4> trans = {-VFvs[0],0.0f,0.0f,0.0f,
+                                           0.0f,-VFvs[1],0.0f,0.0f,
+                                           0.0f,0.0f,VFvs[2],0.0f,
+                                           0.0f,0.0f,0.0f,1.0f};
+                tipl::io::gz_nifti::save_to_file("Subject_QA.nii.gz",VF,VFvs,trans);
+                if(!VF2.empty())
+                    tipl::io::gz_nifti::save_to_file("Subject_ISO.nii.gz",VF2,VFvs,trans);
+            }
+
+            if(voxel.manual_alignment)
+            {
+                tipl::out() << "manual alignment";
+                tipl::out() << (affine = voxel.qsdr_trans);
+            }
             else
             {
                 bool terminated = false;
@@ -113,7 +120,11 @@ public:
 
             tipl::image<3> VFF(VG.shape()),VFF2;
             tipl::resample_mt<tipl::interpolation::cubic>(VF,VFF,affine);
-            tipl::out() << "linear r:" << tipl::correlation(VFF.begin(),VFF.end(),VG.begin()) << std::endl;
+            float linear_r = tipl::correlation(VFF.begin(),VFF.end(),VG.begin());
+            linear_r = linear_r*linear_r;
+            tipl::out() << "linear R2:" << linear_r << std::endl;
+            if(linear_r < 0.3f)
+                throw std::runtime_error("ERROR: Poor R2 found in linear registration. Please check image orientation or use manual alignment.");
 
             if(dual_modality)
             {
@@ -123,9 +134,9 @@ public:
 
             if(export_intermediate)
             {
-                VFF.save_to_file<tipl::io::gz_nifti>("Subject_QA_linear_reg.nii.gz");
+                tipl::io::gz_nifti::save_to_file("Subject_QA_linear_reg.nii.gz",VFF,VGvs,voxel.trans_to_mni);
                 if(dual_modality)
-                    VFF2.save_to_file<tipl::io::gz_nifti>("Subject_ISO_linear_reg.nii.gz");
+                    tipl::io::gz_nifti::save_to_file("Subject_ISO_linear_reg.nii.gz",VFF2,VGvs,voxel.trans_to_mni);
             }
 
             tipl::reg::cdm_pre(VG,VG2,VFF,VFF2);
@@ -166,8 +177,8 @@ public:
 
             float r = float(tipl::correlation(VG.begin(),VG.end(),VFFF.begin()));
             voxel.R2 = r*r;
-            tipl::out() << "R2:" << voxel.R2 << std::endl;
-            if(!manual_alignment && voxel.R2 < 0.3f)
+            tipl::out() << "linear+nonlinear R2:" << voxel.R2 << std::endl;
+            if(voxel.R2 < 0.3f)
                 throw std::runtime_error("ERROR: Poor R2 found. Please check image orientation or use manual alignment.");
 
             if(export_intermediate)
