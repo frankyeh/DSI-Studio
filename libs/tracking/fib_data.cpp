@@ -1552,10 +1552,13 @@ bool fib_data::map_to_mni(bool background)
 
     // check 1. mapping files was created later than the FIB file
     //       2. the recon steps are the same
-    //       3. has inv_mapping matrix (new format after Sep 2021
+    //       3. has inv_mapping matrix (new format after Sep 2021)
+    //       4. check method version (new after Aug 2023)
+    constexpr int method_ver = 202308;
 
     if(QFileInfo(output_file_name.c_str()).lastModified() > QFileInfo(fib_file_name.c_str()).lastModified() &&
-       in.load_from_file(output_file_name.c_str()) && in.has("from2to") && in.has("to2from")
+       in.load_from_file(output_file_name.c_str()) && in.has("from2to") && in.has("to2from") && in.has("method_ver")
+       && std::stoi(in.read<std::string>("method_ver")) >= method_ver
        && in.read<std::string>("steps") == steps)
     {
         const float* t2s_ptr = nullptr;
@@ -1690,6 +1693,7 @@ bool fib_data::map_to_mni(bool background)
             out.write("from_dim",dim);
             out.write("from_vs",vs);
             out.write("steps",steps);
+            out.write("method_ver",std::to_string(method_ver));
             prog = 4;
             tipl::out() << "calculating template to subject warp field";
             out.write("to2from",&t2s[0][0],3,t2s.size());
