@@ -147,13 +147,12 @@ bool ROIRegion::save_region_to_file(const char* file_name)
         unsigned int color = region_render.color.color & 0x00FFFFFF;
         tipl::image<3,unsigned char> mask;
         save_region_to_buffer(mask);
-        tipl::matrix<4,4> T(trans_to_mni);
         std::ostringstream out;
         out << "color=" << int(color) << ";roi=" << int(regions_feature);
         std::string tmp = out.str();
         if(tmp.size() < 80)
             tmp.resize(80);
-        return tipl::io::gz_nifti::save_to_file(file_name,mask,vs,tipl::matrix<4,4>(trans_to_mni*to_diffusion_space),is_mni,tmp.c_str());
+        return tipl::io::gz_nifti::save_to_file(file_name,mask,vs,trans_to_mni,is_mni,tmp.c_str());
     }
     return false;
 }
