@@ -506,10 +506,7 @@ bool fib_data::load_from_file(const char* file_name)
             if(is_mni)
                 tipl::out() << "The file name contains 'mni'. The image is used as MNI-space image." << std::endl;
             else
-            {
                 tipl::out() << "The image is used as subject-space image" << std::endl;
-                initial_LPS_nifti_srow(trans_to_mni,I.shape(),vs);
-            }
         }
     }
     else
