@@ -105,8 +105,8 @@ void CreateDBDialog::update_list(void)
                 ui->index_of_interest->addItem(name.c_str());
             populate_templates(ui->template_list,fib.template_id);
             ui->template_list->setEnabled(!fib.is_mni);
-
         }
+        ui->template_list->addItem("Open...");
     }
     if(ui->output_file_name->text().isEmpty())
         on_index_of_interest_currentTextChanged(QString());
@@ -274,16 +274,29 @@ void CreateDBDialog::on_create_data_base_clicked()
 
     if(create_db)
     {
+        std::string template_file_name;
         auto template_id = ui->template_list->currentIndex();
-        if(template_id == -1 || template_id >= fib_template_list.size() || fib_template_list[template_id].empty())
+        if(template_id >= fib_template_list.size())
         {
-            QMessageBox::critical(this,"ERROR","Cannot find the template for creating database");
-            return;
+            template_file_name = QFileDialog::getOpenFileName(
+                                             this,
+                                             "Open Template FIB File",
+                                             "","Fib Files (*fib.gz);;All Files (*)").toStdString();
+            if(template_file_name.empty())
+                return;
         }
-
+        else
+        {
+            if(template_id == -1 || fib_template_list[template_id].empty())
+            {
+                QMessageBox::critical(this,"ERROR","Cannot find the template for creating database");
+                return;
+            }
+            template_file_name = fib_template_list[template_id];
+        }
         std::shared_ptr<fib_data> template_fib;
         template_fib.reset(new fib_data);
-        if(!template_fib->load_from_file(fib_template_list[template_id].c_str()) ||
+        if(!template_fib->load_from_file(template_file_name.c_str()) ||
            (fib_reso > template_fib->vs[0] && !template_fib->resample_to(fib_reso)))
             {
                 QMessageBox::critical(this,"ERROR",template_fib->error_msg.c_str());
