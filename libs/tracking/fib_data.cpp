@@ -1582,7 +1582,7 @@ bool fib_data::map_to_mni(bool background)
     tipl::progress prog_("running normalization");
     prog = 0;
     bool terminated = false;
-    auto lambda = [this,output_file_name,&terminated]()
+    auto lambda = [this,output_file_name,method_ver,&terminated]()
     {
         tipl::transformation_matrix<float> T;
 
