@@ -45,7 +45,8 @@ bool get_t1t2_nifti(const std::string& t1t2,
                     std::shared_ptr<fib_data> handle,
                     tipl::shape<3>& nifti_geo,
                     tipl::vector<3>& nifti_vs,
-                    tipl::matrix<4,4>& convert)
+                    tipl::matrix<4,4>& trans_to_mni,
+                    tipl::matrix<4,4>& to_t1t2)
 {
     if(!t1t2_slices.get())
     {
@@ -61,12 +62,11 @@ bool get_t1t2_nifti(const std::string& t1t2,
     }
     nifti_geo = t1t2_slices->source_images.shape();
     nifti_vs = t1t2_slices->vs;
-    convert = t1t2_slices->invT;
+    to_t1t2 = t1t2_slices->to_slice;
+    trans_to_mni = t1t2_slices->trans_to_mni;
     tipl::out() << "T1T2 dimension: " << nifti_geo << std::endl;
     tipl::out() << "T1T2 voxel size: " << nifti_vs << std::endl;
-    tipl::out() << convert[0] << " " << convert[1] << " " << convert[2] << " " << convert[3] << std::endl;
-    tipl::out() << convert[4] << " " << convert[5] << " " << convert[6] << " " << convert[7] << std::endl;
-    tipl::out() << convert[8] << " " << convert[9] << " " << convert[10] << " " << convert[11] << std::endl;
+    tipl::out() << to_t1t2;
     return true;
 }
 bool export_track_info(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> handle,
@@ -155,24 +155,24 @@ bool export_track_info(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_d
             bool output_color = QString(cmd.c_str()).contains("color");
             bool output_end = QString(cmd.c_str()).contains("end");
             file_name_stat += ".nii.gz";
-            tipl::matrix<4,4> tr;
+            tipl::matrix<4,4> to_t1t2,trans_to_mni;
             tipl::shape<3> dim;
             tipl::vector<3,float> vs;
-            tr.identity();
+            to_t1t2.identity();
             dim = handle->dim;
             vs = handle->vs;
 
             // t1t2
             if(QString(cmd.c_str()).contains("t1t2"))
             {
-                if(!get_t1t2_nifti(po.get("t1t2"),handle,dim,vs,tr))
+                if(!get_t1t2_nifti(po.get("t1t2"),handle,dim,vs,trans_to_mni,to_t1t2))
                     return false;
             }
             else
             {
                 if(ratio != 1.0f)
                 {
-                    tr[0] = tr[5] = tr[10] = ratio;
+                    to_t1t2[0] = to_t1t2[5] = to_t1t2[10] = ratio;
                     dim = handle->dim*ratio;
                     vs /= ratio;
                 }
@@ -188,7 +188,7 @@ bool export_track_info(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_d
             tipl::out() << "TDI dimension: " << dim << std::endl;
             tipl::out() << "TDI voxel size: " << vs << std::endl;
             tipl::out() << std::endl;
-            if(!TractModel::export_tdi(file_name_stat.c_str(),tract,dim,vs,tr,output_color,output_end))
+            if(!TractModel::export_tdi(file_name_stat.c_str(),tract,dim,vs,trans_to_mni,to_t1t2,output_color,output_end))
             {
                 tipl::out() << "ERROR: failed to save file. Please check write permission." << std::endl;
                 return false;
@@ -506,8 +506,8 @@ int trk_post(tipl::program_option<tipl::out>& po,
             new_slice.wait();
             new_slice.update_transform();
             tipl::out() << "applying linear registration." << std::endl;
-            tipl::out() << new_slice.T << std::endl;
-            if(!tract_model->save_transformed_tracts_to_file(tract_file_name.c_str(),new_slice.dim,new_slice.vs,new_slice.trans,new_slice.invT,false))
+            tipl::out() << new_slice.to_dif << std::endl;
+            if(!tract_model->save_transformed_tracts_to_file(tract_file_name.c_str(),new_slice.dim,new_slice.vs,new_slice.trans_to_mni,new_slice.to_slice,false))
                 failed = true;
         }
         else

@@ -748,7 +748,7 @@ void group_connectometry_analysis::generate_report(std::string& output)
                 new_mdi->command("update_track");
 
                 std::vector<tipl::vector<3,short> > points;
-                new_mdi->tractWidget->tract_models[0]->to_voxel(points,new_mdi->current_slice->invT);
+                new_mdi->tractWidget->tract_models[0]->to_voxel(points,new_mdi->current_slice->to_slice);
                 new_mdi->regionWidget->add_region(name.c_str(),0,color);
                 new_mdi->regionWidget->regions.back()->add_points(std::move(points));
 

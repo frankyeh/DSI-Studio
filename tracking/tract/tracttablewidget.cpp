@@ -88,7 +88,7 @@ void TractTableWidget::draw_tracts(unsigned char dim,int pos,
     unsigned int thread_count = std::thread::hardware_concurrency();
     std::vector<std::vector<std::vector<tipl::vector<2,float> > > > lines_threaded(thread_count);
     std::vector<std::vector<std::vector<unsigned int> > > colors_threaded(thread_count);
-    tipl::matrix<4,4>* pt = (cur_tracking_window.current_slice->is_diffusion_space ? nullptr : &(cur_tracking_window.current_slice->invT));
+    tipl::matrix<4,4>* pt = (cur_tracking_window.current_slice->is_diffusion_space ? nullptr : &(cur_tracking_window.current_slice->to_slice));
     max_count /= selected_tracts.size();
     tipl::par_for(selected_tracts.size(),[&](unsigned int index,unsigned int thread)
     {
@@ -889,7 +889,7 @@ void TractTableWidget::save_transformed_tracts(void)
 
     slice->update_transform();
     auto lock = tract_rendering[uint32_t(currentRow())]->start_reading();
-    if(tract_models[uint32_t(currentRow())]->save_transformed_tracts_to_file(filename.toStdString().c_str(),slice->dim,slice->vs,slice->trans,slice->invT,false))
+    if(tract_models[uint32_t(currentRow())]->save_transformed_tracts_to_file(filename.toStdString().c_str(),slice->dim,slice->vs,slice->trans_to_mni,slice->to_slice,false))
         QMessageBox::information(this,"DSI Studio","File saved");
     else
         QMessageBox::critical(this,"Error","File not saved. Please check write permission");
@@ -916,7 +916,7 @@ void TractTableWidget::save_transformed_endpoints(void)
         return;
     }
     auto lock = tract_rendering[uint32_t(currentRow())]->start_reading();
-    if(tract_models[uint32_t(currentRow())]->save_transformed_tracts_to_file(filename.toStdString().c_str(),slice->dim,slice->vs,slice->trans,slice->invT,true))
+    if(tract_models[uint32_t(currentRow())]->save_transformed_tracts_to_file(filename.toStdString().c_str(),slice->dim,slice->vs,slice->trans_to_mni,slice->to_slice,true))
         QMessageBox::information(this,"DSI Studio","File saved");
     else
         QMessageBox::critical(this,"Error","File not saved. Please check write permission");
@@ -1557,14 +1557,16 @@ void TractTableWidget::cut_by_slice(unsigned char dim,bool greater)
     for_each_bundle("cut by slice",[&](unsigned int index)
     {
         tract_models[index]->cut_by_slice(dim,cur_tracking_window.current_slice->slice_pos[dim],greater,
-            (cur_tracking_window.current_slice->is_diffusion_space ? nullptr:&cur_tracking_window.current_slice->invT));
+            (cur_tracking_window.current_slice->is_diffusion_space ? nullptr:&cur_tracking_window.current_slice->to_slice));
         return true;
     });
 }
 
 void TractTableWidget::export_tract_density(tipl::shape<3> dim,
                                             tipl::vector<3,float> vs,
-                                            tipl::matrix<4,4> transformation,bool color,bool end_point)
+                                            const tipl::matrix<4,4>& trans_to_mni,
+                                            const tipl::matrix<4,4>& T,
+                                            bool color,bool end_point)
 {
     QString filename;
     if(color)
@@ -1583,7 +1585,7 @@ void TractTableWidget::export_tract_density(tipl::shape<3> dim,
         if(filename.isEmpty())
             return;
     }
-    if(TractModel::export_tdi(filename.toStdString().c_str(),get_checked_tracks(),dim,vs,transformation,color,end_point))
+    if(TractModel::export_tdi(filename.toStdString().c_str(),get_checked_tracks(),dim,vs,trans_to_mni,T,color,end_point))
         QMessageBox::information(this,"DSI Studio","File saved");
     else
         QMessageBox::critical(this,"ERROR","Failed to save file");

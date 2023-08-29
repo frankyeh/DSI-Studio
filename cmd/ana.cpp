@@ -30,10 +30,11 @@ bool get_t1t2_nifti(const std::string& t1t2,
                     std::shared_ptr<fib_data> handle,
                     tipl::shape<3>& nifti_geo,
                     tipl::vector<3>& nifti_vs,
-                    tipl::matrix<4,4>& convert);
+                    tipl::matrix<4,4>& trans_to_mni,
+                    tipl::matrix<4,4>& to_t1t2);
 bool load_nii(std::shared_ptr<fib_data> handle,
               const std::string& file_name,
-              std::vector<std::pair<tipl::shape<3>,tipl::matrix<4,4> > >& transform_lookup,
+              std::vector<std::tuple<tipl::shape<3>,tipl::matrix<4,4>,tipl::matrix<4,4> > >& transform_lookup,
               std::vector<std::shared_ptr<ROIRegion> >& regions,
               std::vector<std::string>& names,
               std::string& error_msg,
@@ -46,17 +47,17 @@ bool load_nii(tipl::program_option<tipl::out>& po,
               std::vector<std::shared_ptr<ROIRegion> >& regions,
               std::vector<std::string>& names)
 {
-    std::vector<std::pair<tipl::shape<3>,tipl::matrix<4,4> > > transform_lookup;
+    std::vector<std::tuple<tipl::shape<3>,tipl::matrix<4,4>,tipl::matrix<4,4> > > transform_lookup;
     // --t1t2 provide registration
     if(po.has("t1t2"))
     {
         tipl::shape<3> t1t2_geo;
         tipl::vector<3> vs;
-        tipl::matrix<4,4> T;
-        if(!get_t1t2_nifti(po.get("t1t2"),handle,t1t2_geo,vs,T))
+        tipl::matrix<4,4> to_t1t2,trans_to_mni;
+        if(!get_t1t2_nifti(po.get("t1t2"),handle,t1t2_geo,vs,trans_to_mni,to_t1t2))
             return false;
-        T.inv();
-        transform_lookup.push_back(std::make_pair(t1t2_geo,T));
+        to_t1t2.inv();
+        transform_lookup.push_back(std::make_tuple(t1t2_geo,trans_to_mni,to_t1t2));
     }
 
     QStringList str_list = QString(region_text.c_str()).split(",");// splitting actions

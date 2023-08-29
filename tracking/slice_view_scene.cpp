@@ -73,7 +73,7 @@ void slice_view_scene::show_ruler(QPainter& paint,std::shared_ptr<SliceModel> cu
     if(cur_tracking_window.handle->is_mni)
     {
         if(!current_slice->is_diffusion_space)
-            trans *= current_slice->T;
+            trans *= current_slice->to_dif;
     }
     else
         trans.identity();
@@ -216,7 +216,7 @@ QImage slice_view_scene::get_view_image(std::shared_ptr<SliceModel> current_slic
     if(!simple)
     {
         QImage region_image;
-        cur_tracking_window.regionWidget->draw_region(current_slice->T,cur_dim,pos,slice_image.shape(),display_ratio,region_image);
+        cur_tracking_window.regionWidget->draw_region(current_slice->to_dif,cur_dim,pos,slice_image.shape(),display_ratio,region_image);
         if(!region_image.isNull())
         {
             QPainter painter(&scaled_image);
@@ -757,7 +757,7 @@ void slice_view_scene::mousePressEvent ( QGraphicsSceneMouseEvent * mouseEvent )
         auto slice = cur_tracking_window.current_slice;
         tipl::vector<3,float> p(pos);
         if(!slice->is_diffusion_space)
-            p.to(slice->T);
+            p.to(slice->to_dif);
         move_viewing_slice = false;
         // select slice focus?
         float display_ratio = cur_tracking_window.get_scene_zoom();
@@ -885,7 +885,7 @@ void slice_view_scene::mouseMoveEvent ( QGraphicsSceneMouseEvent * mouseEvent )
         {
             tipl::vector<3,float> p(pos);
             if(!slice->is_diffusion_space)
-                p.to(slice->T);
+                p.to(slice->to_dif);
             cur_tracking_window.ui->glSagBox->setValue(p[0]);
             cur_tracking_window.ui->glCorBox->setValue(p[1]);
             cur_tracking_window.ui->glAxiBox->setValue(p[2]);
@@ -910,8 +910,8 @@ void slice_view_scene::mouseMoveEvent ( QGraphicsSceneMouseEvent * mouseEvent )
 
                 if(!slice->is_diffusion_space)
                 {
-                    p1.to(slice->T);
-                    p2.to(slice->T);
+                    p1.to(slice->to_dif);
+                    p2.to(slice->to_dif);
                 }
                 p1 -= p2;
                 p1.round();
@@ -927,9 +927,9 @@ void slice_view_scene::mouseMoveEvent ( QGraphicsSceneMouseEvent * mouseEvent )
                     else
                         cur_region->shift(p1);
 
-                    p1.to(slice->invT);
+                    p1.to(slice->to_slice);
                     tipl::vector<3> zero;
-                    zero.to(slice->invT);
+                    zero.to(slice->to_slice);
                     sel_coord.back() += p1-zero;
                     emit need_update();
                 }
@@ -1211,7 +1211,7 @@ void slice_view_scene::mouseReleaseEvent ( QGraphicsSceneMouseEvent * mouseEvent
 
     regionWidget->regions[regionWidget->currentRow()]->add_points(std::move(points_int16),
                 cur_tracking_window.current_slice->dim,
-                cur_tracking_window.current_slice->T,mouseEvent->button() == Qt::RightButton);
+                cur_tracking_window.current_slice->to_dif,mouseEvent->button() == Qt::RightButton);
 
     need_update();
 }

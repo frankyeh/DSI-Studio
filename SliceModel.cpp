@@ -14,10 +14,11 @@ SliceModel::SliceModel(fib_data* handle_,uint32_t view_id_):handle(handle_),view
     slice_visible[0] = false;
     slice_visible[1] = false;
     slice_visible[2] = false;
-    T.identity();
-    invT = T;
+    to_dif.identity();
+    to_slice.identity();
     dim = handle_->dim;
     vs = handle_->vs;
+    trans_to_mni = handle->trans_to_mni;
     slice_pos[0] = dim.width() >> 1;
     slice_pos[1] = dim.height() >> 1;
     slice_pos[2] = dim.depth() >> 1;
@@ -147,9 +148,8 @@ bool CustomSliceModel::load_slices(const std::vector<std::string>& files,bool is
     bool has_transform = false;
     source_file_name = files[0].c_str();
     name = QFileInfo(files[0].c_str()).completeBaseName().remove(".nii").toStdString();
-
-    T.identity();
-    invT.identity();
+    to_dif.identity();
+    to_slice.identity();
     tipl::progress prog("load slices ",std::filesystem::path(files[0]).filename().string().c_str());
 
     if(QFileInfo(files[0].c_str()).fileName().toLower().contains("mni"))
@@ -193,8 +193,9 @@ bool CustomSliceModel::load_slices(const std::vector<std::string>& files,bool is
             vs = handle->vs*(handle->dim.width())/(source_images.width());
 
             tipl::transformation_matrix<float> M(arg_min,handle->dim,handle->vs,source_images.shape(),vs);
-            M.save_to_transform(invT.begin());
-            T = tipl::inverse(invT);
+            M.save_to_transform(to_slice.begin());
+            to_dif = tipl::inverse(to_slice);
+            initial_LPS_nifti_srow(trans_to_mni,source_images.shape(),vs);
             has_transform = true;
         }
         else
@@ -210,7 +211,6 @@ bool CustomSliceModel::load_slices(const std::vector<std::string>& files,bool is
             dim[0] = in.width();
             dim[1] = in.height();
             dim[2] = uint32_t(files.size());
-            T.identity();
             vs[0] = vs[1] = vs[2] = 1.0f;
 
             try{
@@ -242,24 +242,6 @@ bool CustomSliceModel::load_slices(const std::vector<std::string>& files,bool is
             }
             if(prog.aborted())
                 return false;
-            tipl::io::nifti nii;
-            nii.set_dim(dim);
-            nii.set_voxel_size(vs);
-            nii.set_image_transformation(T);
-            nii << source_images;
-            nii.toLPS(source_images);
-            nii.get_voxel_size(vs);
-            nii.get_image_transformation(T);
-            // LPS matrix switched to RAS
-
-            T[0] = -T[0];
-            T[1] = -T[1];
-            T[4] = -T[4];
-            T[5] = -T[5];
-            T[8] = -T[8];
-            T[9] = -T[9];
-            invT = tipl::inverse(T);
-            initial_LPS_nifti_srow(trans,source_images.shape(),vs);
             has_transform = true;
         }
     }
@@ -287,9 +269,7 @@ bool CustomSliceModel::load_slices(const std::vector<std::string>& files,bool is
                 return false;
             }
         }
-        vs = db_handle->vs;
-        trans = db_handle->trans_to_mni;
-        if(!handle->mni2sub(source_images,trans))
+        if(!handle->mni2sub(source_images,db_handle->trans_to_mni))
         {
             error_msg = handle->error_msg;
             return false;
@@ -314,7 +294,7 @@ bool CustomSliceModel::load_slices(const std::vector<std::string>& files,bool is
         nifti.toLPS(source_images,prog);
         save_idx(files[0].c_str(),nifti.input_stream);
         nifti.get_voxel_size(vs);
-        nifti.get_image_transformation(trans);
+        nifti.get_image_transformation(trans_to_mni);
         if(QFileInfo(files[0].c_str()).fileName().contains("mni"))
         {
             tipl::out() << " The file name contains 'mni' and will be used as MNI-space images" << std::endl;
@@ -323,20 +303,20 @@ bool CustomSliceModel::load_slices(const std::vector<std::string>& files,bool is
         if(handle->is_mni)
         {
             tipl::out() << "Assuming the the slices are already in the template space." << std::endl;
-            nifti.get_image_transformation(T);
-            invT = tipl::inverse(T = tipl::from_space(T).to(handle->trans_to_mni));
+            to_slice = tipl::inverse(to_dif = tipl::from_space(trans_to_mni).to(handle->trans_to_mni));
             has_transform = true;
         }
         else
         if(is_mni)
         {
             tipl::out() << "Warping slices to the subject space." << std::endl;
-            if(!handle->mni2sub(source_images,trans))
+            if(!handle->mni2sub(source_images,trans_to_mni))
             {
                 error_msg = handle->error_msg;
                 return false;
             }
             is_diffusion_space = true;
+            trans_to_mni = handle->trans_to_mni;
             has_transform = true;
         }
         else
@@ -345,6 +325,7 @@ bool CustomSliceModel::load_slices(const std::vector<std::string>& files,bool is
             tipl::out() << "The slices have the same dimension, and there is reg in the file name." << std::endl;
             tipl::out() << "no registration needed" << std::endl;
             is_diffusion_space = true;
+            trans_to_mni = handle->trans_to_mni;
             has_transform = true;
         }
     }
@@ -357,7 +338,7 @@ bool CustomSliceModel::load_slices(const std::vector<std::string>& files,bool is
         {
             bruker.get_voxel_size(vs);
             source_images = std::move(bruker.get_image());
-            initial_LPS_nifti_srow(trans,source_images.shape(),vs);
+            initial_LPS_nifti_srow(trans_to_mni,source_images.shape(),vs);
             QDir d = QFileInfo(files[0].c_str()).dir();
             if(d.cdUp() && d.cdUp())
             {
@@ -380,7 +361,7 @@ bool CustomSliceModel::load_slices(const std::vector<std::string>& files,bool is
         }
         volume.get_voxel_size(vs);
         volume.save_to_image(source_images);
-        initial_LPS_nifti_srow(trans,source_images.shape(),vs);
+        initial_LPS_nifti_srow(trans_to_mni,source_images.shape(),vs);
     }
 
     if(source_images.empty())
@@ -406,6 +387,7 @@ bool CustomSliceModel::load_slices(const std::vector<std::string>& files,bool is
         {
             tipl::out() << "No registration required." << std::endl;
             is_diffusion_space = true;
+            trans_to_mni = handle->trans_to_mni;
             has_transform = true;
         }
         else
@@ -414,11 +396,11 @@ bool CustomSliceModel::load_slices(const std::vector<std::string>& files,bool is
 
     if(!has_transform && handle->dim.depth() < 10) // 2d assume FOV is the same
     {
-        invT[0] = float(source_images.width())/float(handle->dim.width());
-        invT[5] = float(source_images.height())/float(handle->dim.height());
-        invT[10] = float(source_images.depth())/float(handle->dim.depth());
-        invT[15] = 1.0;
-        T = tipl::inverse(invT);
+        to_slice[0] = float(source_images.width())/float(handle->dim.width());
+        to_slice[5] = float(source_images.height())/float(handle->dim.height());
+        to_slice[10] = float(source_images.depth())/float(handle->dim.depth());
+        to_slice[15] = 1.0;
+        to_dif = tipl::inverse(to_slice);
         has_transform = true;
     }
 
@@ -447,8 +429,8 @@ bool CustomSliceModel::load_slices(const std::vector<std::string>& files,bool is
     }
     else
     {
-        handle->view_item.back().T = T;
-        handle->view_item.back().iT = invT;
+        handle->view_item.back().T = to_dif;
+        handle->view_item.back().iT = to_slice;
     }
     return true;
 }
@@ -463,13 +445,13 @@ void CustomSliceModel::update_image(void)
 void CustomSliceModel::update_transform(void)
 {
     tipl::transformation_matrix<float> M(arg_min,dim,vs,handle->dim,handle->vs);
-    T.identity();
-    M.save_to_transform(T.begin());
-    invT = tipl::inverse(T);
+    to_dif.identity();
+    M.save_to_transform(to_dif.begin());
+    to_slice = tipl::inverse(to_dif);
     if(view_id)
     {
-        handle->view_item[view_id].T = T;
-        handle->view_item[view_id].iT = invT;
+        handle->view_item[view_id].T = to_dif;
+        handle->view_item[view_id].iT = to_slice;
     }
 }
 // ---------------------------------------------------------------------------
@@ -508,7 +490,7 @@ bool CustomSliceModel::load_mapping(const char* file_name)
     update_transform();
     is_diffusion_space = false;
     tipl::out() << arg_min << std::endl;
-    tipl::out() << "T:" << T << std::endl;
+    tipl::out() << "to_dif:" << to_dif << std::endl;
     return true;
 }
 

@@ -2469,7 +2469,7 @@ void TractModel::add_tracts(std::vector<std::vector<float> >& new_tract, unsigne
 }
 //---------------------------------------------------------------------------
 void TractModel::get_density_map(tipl::image<3,unsigned int>& mapping,
-                                 const tipl::matrix<4,4>& transformation,bool endpoint)
+                                 const tipl::matrix<4,4>& to_t1t2,bool endpoint)
 {
     tipl::shape<3> geo = mapping.shape();
     tipl::par_for(tract_data.size(),[&](unsigned int i)
@@ -2480,7 +2480,7 @@ void TractModel::get_density_map(tipl::image<3,unsigned int>& mapping,
             if(j && endpoint)
                 j = uint32_t(tract_data[i].size())-3;
             tipl::vector<3,float> pos(tract_data[i].begin()+j);
-            pos.to(transformation);
+            pos.to(to_t1t2);
             pos.round();
             tipl::vector<3,int> ipos(pos);
             if (geo.is_valid(ipos))
@@ -2494,7 +2494,7 @@ void TractModel::get_density_map(tipl::image<3,unsigned int>& mapping,
 //---------------------------------------------------------------------------
 void TractModel::get_density_map(
         tipl::image<3,tipl::rgb>& mapping,
-        const tipl::matrix<4,4>& transformation,bool endpoint)
+        const tipl::matrix<4,4>& to_t1t2,bool endpoint)
 {
     tipl::shape<3> geo = mapping.shape();
     tipl::image<3> map_r(geo),map_g(geo),map_b(geo);
@@ -2507,8 +2507,8 @@ void TractModel::get_density_map(
             if(j > 3 && endpoint)
                 j = uint32_t(tract_data[i].size()-3);
             tipl::vector<3,float>  pos(buf+j),dir(buf+j-3);
-            pos.to(transformation);
-            dir.to(transformation);
+            pos.to(to_t1t2);
+            dir.to(to_t1t2);
             dir -= pos;
             dir.normalize();
             pos.round();
@@ -2606,7 +2606,9 @@ bool TractModel::export_tdi(const char* filename,
                   std::vector<std::shared_ptr<TractModel> > tract_models,
                   tipl::shape<3>& dim,
                   tipl::vector<3,float> vs,
-                  tipl::matrix<4,4> transformation,bool color,bool end_point)
+                  const tipl::matrix<4,4>& trans_to_mni,
+                  const tipl::matrix<4,4>& to_t1t2,
+                  bool color,bool end_point)
 {
     if(!QFileInfo(filename).fileName().endsWith(".nii") &&
        !QFileInfo(filename).fileName().endsWith(".nii.gz"))
@@ -2615,15 +2617,15 @@ bool TractModel::export_tdi(const char* filename,
     {
         tipl::image<3,tipl::rgb> tdi(dim);
         for(unsigned int index = 0;index < tract_models.size();++index)
-            tract_models[index]->get_density_map(tdi,transformation,end_point);
-        return tipl::io::gz_nifti::save_to_file(filename,tdi,vs,tipl::matrix<4,4>(tract_models[0]->trans_to_mni*transformation),tract_models[0]->is_mni);
+            tract_models[index]->get_density_map(tdi,to_t1t2,end_point);
+        return tipl::io::gz_nifti::save_to_file(filename,tdi,vs,trans_to_mni,tract_models[0]->is_mni);
     }
     else
     {
         tipl::image<3,unsigned int> tdi(dim);
         for(unsigned int index = 0;index < tract_models.size();++index)
-            tract_models[index]->get_density_map(tdi,transformation,end_point);
-        return tipl::io::gz_nifti::save_to_file(filename,tdi,vs,tipl::matrix<4,4>(tract_models[0]->trans_to_mni*transformation),tract_models[0]->is_mni);
+            tract_models[index]->get_density_map(tdi,to_t1t2,end_point);
+        return tipl::io::gz_nifti::save_to_file(filename,tdi,vs,trans_to_mni,tract_models[0]->is_mni);
     }
 }
 void TractModel::to_voxel(std::vector<tipl::vector<3,short> >& points,const tipl::matrix<4,4>& trans,int id)

@@ -39,7 +39,8 @@ public:
                                  std::vector<std::vector<std::vector<float> > >& lesser);
     void export_tract_density(tipl::shape<3> dim,
                               tipl::vector<3,float> vs,
-                              tipl::matrix<4,4> transformation,bool color,bool endpoint);
+                              const tipl::matrix<4,4>& trans_to_mni,
+                              const tipl::matrix<4,4>& T,bool color,bool endpoint);
     void load_tracts(QStringList filenames,bool is_mni = false);
     void cut_by_slice(unsigned char dim,bool greater);
     void draw_tracts(unsigned char dim,int pos,

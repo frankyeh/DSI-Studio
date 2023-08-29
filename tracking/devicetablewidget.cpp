@@ -624,9 +624,9 @@ void DeviceTableWidget::detect_electrodes(void)
             contact_count++;
         contact_count = uint32_t(std::min(std::max(int(contact_count),8),16));
         auto device_pos = (tip_pos-dir*(1.0f/vs[0]));
-        device_pos.to(slice->T);
-        tip_pos.to(slice->T);
-        tail_pos.to(slice->T);
+        device_pos.to(slice->to_dif);
+        tip_pos.to(slice->to_dif);
+        tail_pos.to(slice->to_dif);
         auto device_dir = tail_pos-tip_pos;
         device_dir.normalize();
 
@@ -689,7 +689,7 @@ void DeviceTableWidget::detect_electrodes(void)
             for(unsigned int j = 0;j < regions[region_id].size();++j)
             {
                 voxels.push_back(tipl::vector<3>(tipl::pixel_index<3>(regions[region_id][j],I.shape())));
-                voxels.back().to(slice->invT);
+                voxels.back().to(slice->to_slice);
             }
         }
         new_regions[i]->add_points(std::move(voxels));

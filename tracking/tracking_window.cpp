@@ -583,7 +583,7 @@ bool tracking_window::eventFilter(QObject *obj, QEvent *event)
 
     if(!current_slice->is_diffusion_space)
     {
-        pos.to(current_slice->T);
+        pos.to(current_slice->to_dif);
         status += QString(" %4=(%5,%6,%7)")
                 .arg(ui->SliceModality->currentText())
                 .arg(std::round(pos[0]*10.0)/10.0)
@@ -1337,7 +1337,7 @@ void tracking_window::on_SliceModality_currentIndexChanged(int index)
 
     tipl::vector<3,float> slice_position(current_slice->slice_pos);
     if(!current_slice->is_diffusion_space)
-        slice_position.to(current_slice->T);
+        slice_position.to(current_slice->to_dif);
     current_slice = slices[size_t(index)];
 
     if(!handle->view_item[current_slice->view_id].image_ready)
@@ -1375,7 +1375,7 @@ void tracking_window::on_SliceModality_currentIndexChanged(int index)
     ui->draw_threshold->setSingleStep(range.second/50.0);
 
     if(!current_slice->is_diffusion_space)
-        slice_position.to(current_slice->invT);
+        slice_position.to(current_slice->to_slice);
     move_slice_to(slice_position);
 
     no_update = false;

@@ -95,7 +95,7 @@ bool tracking_window::command(QString cmd,QString param,QString param2)
             tipl::image<3,unsigned char> II(I.shape());
             std::copy(I.begin(),I.end(),II.begin());
             tipl::io::gz_nifti::save_to_file((param+"/slices/" + ui->SliceModality->currentText() + ".nii.gz").toStdString().c_str(),
-                                   II,reg_slice->vs,reg_slice->trans,reg_slice->is_mni);
+                                   II,reg_slice->vs,reg_slice->trans_to_mni,reg_slice->is_mni);
             reg_slice->save_mapping((param+"/slices/" + ui->SliceModality->currentText() + ".linear_reg.txt").toStdString().c_str());
         }
 
@@ -445,7 +445,7 @@ void tracking_window::on_actionEndpoints_to_seeding_triggered()
 
     tractWidget->tract_models[size_t(tractWidget->currentRow())]->
             to_end_point_voxels(points1,points2,
-                current_slice->is_diffusion_space ? tipl::matrix<4,4>(tipl::identity_matrix()) :current_slice->invT);
+                current_slice->is_diffusion_space ? tipl::matrix<4,4>(tipl::identity_matrix()) :current_slice->to_slice);
 
     regionWidget->begin_update();
     regionWidget->add_region(
@@ -470,7 +470,7 @@ void tracking_window::on_actionTracts_to_seeds_triggered()
         return;
     std::vector<tipl::vector<3,short> > points;
     tractWidget->tract_models[tractWidget->currentRow()]->to_voxel(points,
-        current_slice->is_diffusion_space ? tipl::matrix<4,4>(tipl::identity_matrix()) : current_slice->invT);
+        current_slice->is_diffusion_space ? tipl::matrix<4,4>(tipl::identity_matrix()) : current_slice->to_slice);
     regionWidget->add_region(
             tractWidget->item(tractWidget->currentRow(),0)->text());
     regionWidget->regions.back()->add_points(std::move(points));
@@ -517,7 +517,7 @@ void tracking_window::on_actionTDI_Diffusion_Space_triggered()
     int rec,rec2;
     if(!ask_TDI_options(rec,rec2))
         return;
-    tractWidget->export_tract_density(handle->dim,handle->vs,tr,rec == QMessageBox::Yes,rec2 != QMessageBox::Yes);
+    tractWidget->export_tract_density(handle->dim,handle->vs,handle->trans_to_mni,tr,rec == QMessageBox::Yes,rec2 != QMessageBox::Yes);
 }
 
 
@@ -532,23 +532,24 @@ void tracking_window::on_actionTDI_Subvoxel_Diffusion_Space_triggered()
             "Input super-resolution ratio (e.g. 2, 3, or 4):",2,2,8,1,&ok);
     if(!ok)
         return;
-    tipl::matrix<4,4> tr;
+    tipl::matrix<4,4> tr,inv_tr,trans_to_mni(handle->trans_to_mni);
     tr.identity();
     tr[0] = tr[5] = tr[10] = ratio;
+    inv_tr.identity();
+    inv_tr[0] = inv_tr[5] = inv_tr[10] = 1.0f/ratio;
+    trans_to_mni *= inv_tr;
     tractWidget->export_tract_density(handle->dim*ratio,
                                       handle->vs/float(ratio),
+                                      trans_to_mni,
                                       tr,rec == QMessageBox::Yes,rec2 != QMessageBox::Yes);
 }
 
 void tracking_window::on_actionTDI_Import_Slice_Space_triggered()
 {
-    tipl::matrix<4,4> tr = current_slice->invT;
-    tipl::shape<3> geo = current_slice->dim;
-    tipl::vector<3,float> vs = current_slice->vs;
     int rec,rec2;
     if(!ask_TDI_options(rec,rec2))
         return;
-    tractWidget->export_tract_density(geo,vs,tr,rec == QMessageBox::Yes,rec2 != QMessageBox::Yes);
+    tractWidget->export_tract_density(current_slice->dim,current_slice->vs,current_slice->trans_to_mni,current_slice->to_slice,rec == QMessageBox::Yes,rec2 != QMessageBox::Yes);
 }
 
 
@@ -1313,7 +1314,7 @@ void paint_track_on_volume(tipl::image<3,unsigned char>& track_map,const std::ve
         for(size_t k = 0;k < tracks.size();k +=3)
         {
             tipl::vector<3> p(&tracks[0] + k);
-            p.to(slice->invT);
+            p.to(slice->to_slice);
             tracks[k] = p[0];
             tracks[k+1] = p[1];
             tracks[k+2] = p[2];
@@ -1349,7 +1350,7 @@ void tracking_window::on_actionSave_T1W_T2W_images_triggered()
         this,"Save T1W/T2W Image",QFileInfo(work_path).absolutePath()+"//"+slice->name.c_str()+"_modified.nii.gz","Image files (*nii.gz);;All files (*)" );
     if( filename.isEmpty())
         return;
-    tipl::io::gz_nifti::save_to_file(filename.toStdString().c_str(),slice->source_images,slice->vs,slice->trans,slice->is_mni);
+    tipl::io::gz_nifti::save_to_file(filename.toStdString().c_str(),slice->source_images,slice->vs,slice->trans_to_mni,slice->is_mni);
 }
 
 void tracking_window::on_actionMark_Region_on_T1W_T2W_triggered()
@@ -1366,11 +1367,11 @@ void tracking_window::on_actionMark_Region_on_T1W_T2W_triggered()
     float mark_value = slice->get_value_range().second*float(ratio);
     tipl::image<3,unsigned char> mask;
     current_region->save_region_to_buffer(mask);
-    if(current_region->to_diffusion_space != slice->T)
+    if(current_region->to_diffusion_space != slice->to_dif)
     {
         tipl::image<3,unsigned char> new_mask(slice->dim);
         tipl::resample_mt<tipl::interpolation::nearest>(mask,new_mask,
-            tipl::transformation_matrix<float>(tipl::from_space(slice->T).to(current_region->to_diffusion_space)));
+            tipl::transformation_matrix<float>(tipl::from_space(slice->to_dif).to(current_region->to_diffusion_space)));
         mask.swap(new_mask);
     }
 

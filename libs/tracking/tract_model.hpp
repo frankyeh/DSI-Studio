@@ -149,14 +149,16 @@ public:
         float get_tract_length_in_mm(unsigned int index) const;
 public:
         void get_density_map(tipl::image<3,unsigned int>& mapping,
-             const tipl::matrix<4,4>& transformation,bool endpoint);
+             const tipl::matrix<4,4>& to_t1t2,bool endpoint);
         void get_density_map(tipl::image<3,tipl::rgb>& mapping,
-             const tipl::matrix<4,4>& transformation,bool endpoint);
+             const tipl::matrix<4,4>& to_t1t2,bool endpoint);
         static bool export_tdi(const char* file_name,
                           std::vector<std::shared_ptr<TractModel> > tract_models,
                           tipl::shape<3>& dim,
                           tipl::vector<3,float> vs,
-                          tipl::matrix<4,4> transformation,bool color,bool end_point);
+                          const tipl::matrix<4,4>& trans_to_mni,
+                          const tipl::matrix<4,4>& to_t1t2,
+                               bool color,bool end_point);
         static bool export_pdi(const char* file_name,
                                const std::vector<std::shared_ptr<TractModel> >& tract_models);
         static bool export_end_pdi(const char* file_name,

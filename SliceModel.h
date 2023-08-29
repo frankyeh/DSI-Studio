@@ -11,9 +11,10 @@ public:
     fib_data* handle = nullptr;
     uint32_t view_id = 0;
     bool is_diffusion_space = true;
-    tipl::matrix<4,4> T,invT; // T: image->diffusion iT: diffusion->image
+    tipl::matrix<4,4> to_dif,to_slice;
     tipl::shape<3> dim;
     tipl::vector<3> vs;
+    tipl::matrix<4,4> trans_to_mni;
 public:
     bool is_overlay = false;
 public:
@@ -41,7 +42,7 @@ public:
         auto v = tipl::slice2space<tipl::vector<3> >(cur_dim, x, y, slice_pos[cur_dim]);
         if(!is_diffusion_space)
         {
-            v.to(T);
+            v.to(to_dif);
             v.round();           
         }
         return v;
@@ -51,9 +52,9 @@ public:
     {
         auto v = tipl::slice2space<tipl::vector<3> >(cur_dim, x, y, slice_pos[cur_dim]);
         if(!is_diffusion_space)
-            v.to(T);
+            v.to(to_dif);
         if(!other_slice->is_diffusion_space)
-            v.to(other_slice->invT);
+            v.to(other_slice->to_slice);
         return v;
     }
     template<typename U,typename V>
@@ -97,7 +98,7 @@ public:
         tipl::get_slice_positions(cur_dim, slice_pos[cur_dim],dim,points);
         if(!is_diffusion_space)
             for(auto& p : points)
-                p.to(T);
+                p.to(to_dif);
     }
     void apply_overlay(tipl::color_image& show_image,
                        unsigned char dim,
@@ -127,7 +128,6 @@ public:
     bool save_mapping(const char* file_name);
     bool load_mapping(const char* file_name);
 public:
-    tipl::matrix<4,4> trans;
     bool is_mni = false;
     tipl::image<3> source_images;
     tipl::image<3> skull_removed_images;

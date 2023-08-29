@@ -2394,7 +2394,7 @@ bool GLWidget::command(QString cmd,QString param,QString param2)
         }
 
         if(!cur_tracking_window.current_slice->is_diffusion_space)
-            surface->transform_point_list(cur_tracking_window.current_slice->T);
+            surface->transform_point_list(cur_tracking_window.current_slice->to_dif);
 
         update();
         return true;

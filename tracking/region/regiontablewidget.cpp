@@ -156,7 +156,7 @@ void RegionTableWidget::add_all_regions_from_atlas(std::shared_ptr<atlas> at)
     std::vector<std::string> labels;
     if(!cur_tracking_window.handle->get_atlas_all_roi(at,
             cur_tracking_window.current_slice->dim,
-            cur_tracking_window.current_slice->T,points,labels))
+            cur_tracking_window.current_slice->to_dif,points,labels))
     {
         QMessageBox::critical(this,"ERROR",cur_tracking_window.handle->error_msg.c_str());
         return;
@@ -235,8 +235,9 @@ void RegionTableWidget::add_region(QString name,unsigned char feature,unsigned i
     regions.back()->regions_feature = feature;
     regions.back()->dim = cur_tracking_window.current_slice->dim;
     regions.back()->vs = cur_tracking_window.current_slice->vs;
+    regions.back()->trans_to_mni = cur_tracking_window.current_slice->trans_to_mni;
     regions.back()->is_diffusion_space = cur_tracking_window.current_slice->is_diffusion_space;
-    regions.back()->to_diffusion_space = cur_tracking_window.current_slice->T;
+    regions.back()->to_diffusion_space = cur_tracking_window.current_slice->to_dif;
     add_row(int(regions.size()-1),name);
 }
 void RegionTableWidget::check_check_status(int row, int col)
@@ -314,7 +315,7 @@ void RegionTableWidget::move_slice_to_current_region(void)
         return;
     tipl::vector<3,float> p(current_region->get_center());
     if(!current_slice->is_diffusion_space)
-        p.to(current_slice->invT);
+        p.to(current_slice->to_slice);
     cur_tracking_window.move_slice_to(p);
 }
 
@@ -537,7 +538,7 @@ void get_roi_label(QString file_name,std::map<int,std::string>& label_map,std::m
 extern bool has_gui;
 bool load_nii(std::shared_ptr<fib_data> handle,
               const std::string& file_name,
-              std::vector<std::pair<tipl::shape<3>,tipl::matrix<4,4> > >& transform_lookup,
+              std::vector<std::tuple<tipl::shape<3>,tipl::matrix<4,4>,tipl::matrix<4,4> > >& transform_lookup,
               std::vector<std::shared_ptr<ROIRegion> >& regions,
               std::vector<std::string>& names,
               std::string& error_msg,
@@ -572,8 +573,8 @@ bool load_nii(std::shared_ptr<fib_data> handle,
     }
 
     tipl::vector<3> vs;
-    tipl::matrix<4,4> T;
-    header.get_image_transformation(T);
+    tipl::matrix<4,4> trans_to_mni;
+    header.get_image_transformation(trans_to_mni);
     header.get_voxel_size(vs);
 
     std::vector<unsigned short> value_list;
@@ -660,6 +661,7 @@ bool load_nii(std::shared_ptr<fib_data> handle,
                         tipl::estimate<tipl::interpolation::nearest>(from,pos,new_from[i]);
                     });
                     new_from.swap(from);
+                    trans_to_mni = handle->trans_to_mni;
                     goto end;
                 }
             if(is_mni)
@@ -668,7 +670,7 @@ bool load_nii(std::shared_ptr<fib_data> handle,
                 tipl::out() << "assuming " << nifti_name << " is in the template space (please check)" << std::endl;
 
             tipl::out() <<"applying " << nifti_name << "'s header srow matrix to align." << std::endl;
-            to_diffusion_space = tipl::from_space(T).to(handle->trans_to_mni);
+            to_diffusion_space = tipl::from_space(trans_to_mni).to(handle->trans_to_mni);
             need_trans = true;
             goto end;
         }
@@ -677,19 +679,21 @@ bool load_nii(std::shared_ptr<fib_data> handle,
             if(is_mni)
             {
                 tipl::out() << "warping " << nifti_name << " from the template space to the native space." << std::endl;
-                if(!handle->mni2sub<tipl::interpolation::nearest>(from,T))
+                if(!handle->mni2sub<tipl::interpolation::nearest>(from,trans_to_mni))
                 {
                     error_msg = handle->error_msg;
                     return false;
                 }
+                trans_to_mni = handle->trans_to_mni;
                 goto end;
             }
             else
             for(unsigned int index = 0;index < transform_lookup.size();++index)
-                if(from.shape() == transform_lookup[index].first)
+                if(from.shape() == std::get<0>(transform_lookup[index]))
                 {
                     tipl::out() << "applying previous transformation." << std::endl;
-                    to_diffusion_space = transform_lookup[index].second;
+                    trans_to_mni = std::get<1>(transform_lookup[index]);
+                    to_diffusion_space = std::get<2>(transform_lookup[index]);
                     need_trans = true;
                     goto end;
                 }
@@ -717,6 +721,7 @@ bool load_nii(std::shared_ptr<fib_data> handle,
             regions.back()->vs = vs;
             regions.back()->is_diffusion_space = false;
             regions.back()->to_diffusion_space = to_diffusion_space;
+            regions.back()->trans_to_mni = trans_to_mni;
         }
         tipl::image<3,unsigned char> mask(from);
         regions.back()->load_region_from_buffer(mask);
@@ -776,6 +781,7 @@ bool load_nii(std::shared_ptr<fib_data> handle,
                 regions.back()->vs = vs;
                 regions.back()->is_diffusion_space = false;
                 regions.back()->to_diffusion_space = to_diffusion_space;
+                regions.back()->trans_to_mni = trans_to_mni;
             }
             regions.back()->region_render.color = label_color.empty() ? 0x00FFFFFF : label_color[value].color;
             if(!region_points[i].empty())
@@ -793,13 +799,13 @@ bool load_nii(std::shared_ptr<fib_data> handle,
 bool RegionTableWidget::load_multiple_roi_nii(QString file_name,bool is_mni)
 {
     QStringList files = file_name.split(",");
-    std::vector<std::pair<tipl::shape<3>,tipl::matrix<4,4> > > transform_lookup;
+    std::vector<std::tuple<tipl::shape<3>,tipl::matrix<4,4>,tipl::matrix<4,4> > > transform_lookup;
     // searching for T1/T2 mappings
     for(unsigned int index = 0;index < cur_tracking_window.slices.size();++index)
     {
         auto slice = cur_tracking_window.slices[index];
         if(!slice->is_diffusion_space)
-            transform_lookup.push_back(std::make_pair(slice->dim,slice->T));
+            transform_lookup.push_back(std::make_tuple(slice->dim,slice->trans_to_mni,slice->to_dif));
     }
     std::vector<std::vector<std::shared_ptr<ROIRegion> > > loaded_regions(files.size());
     std::vector<std::vector<std::string> > names(files.size());
@@ -1379,7 +1385,7 @@ void RegionTableWidget::whole_brain(void)
                       [&](const tipl::pixel_index<3>& index)
         {
             tipl::vector<3> pos(index);
-            pos.to(cur_slice->T);
+            pos.to(cur_slice->to_dif);
             if(tipl::estimate(fa_map,pos) > threshold)
                 mask[index.index()] = 1;
         });
@@ -1529,7 +1535,7 @@ void RegionTableWidget::do_action(QString action)
             bool need_trans = !cur_tracking_window.current_slice->is_diffusion_space;
             tipl::matrix<4,4> trans = tipl::identity_matrix();
             if(need_trans)
-               trans = cur_tracking_window.current_slice->invT;
+               trans = cur_tracking_window.current_slice->to_slice;
 
             auto value_at = [&](tipl::vector<3> pos)
             {
@@ -1795,10 +1801,10 @@ void RegionTableWidget::do_action(QString action)
                     bool need_trans = false;
                     tipl::matrix<4,4> trans = tipl::identity_matrix();
                     if(cur_tracking_window.current_slice->dim != region->dim ||
-                       cur_tracking_window.current_slice->T != region->to_diffusion_space)
+                       cur_tracking_window.current_slice->to_dif != region->to_diffusion_space)
                     {
                         need_trans = true;
-                        trans = cur_tracking_window.current_slice->invT*region->to_diffusion_space;
+                        trans = cur_tracking_window.current_slice->to_slice*region->to_diffusion_space;
                     }
 
                     region->save_region_to_buffer(mask);
