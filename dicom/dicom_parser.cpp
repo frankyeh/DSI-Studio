@@ -691,7 +691,7 @@ bool load_nhdr(QStringList file_list,std::vector<std::shared_ptr<DwiHeader> >& d
     tipl::progress prog("Reading raw data");
     for (size_t i = 0;prog(i,file_list.size());++i)
     {
-        std::map<std::string,std::string> value_list;
+        std::unordered_map<std::string,std::string> value_list;
         {
             std::ifstream in(file_list[i].toStdString().c_str());
             std::string line;
@@ -774,7 +774,7 @@ bool load_4d_fdf(QStringList file_list,std::vector<std::shared_ptr<DwiHeader> >&
     tipl::progress prog("reading 4d fdf DWI");
     for (int index = 0;prog(index,file_list.size());++index)
     {
-        std::map<std::string,std::string> value_list;
+        std::unordered_map<std::string,std::string> value_list;
         {
             std::ifstream in(file_list[index].toStdString().c_str());
             std::string line;
