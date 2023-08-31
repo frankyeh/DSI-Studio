@@ -8,6 +8,7 @@ bool apply_warping(const char* from,
                    tipl::image<3,tipl::vector<3> >& to2from,
                    tipl::vector<3> Itvs,
                    const tipl::matrix<4,4>& ItR,
+                   bool It_is_mni,
                    std::string& error);
 bool apply_unwarping_tt(const char* from,
                         const char* to,
@@ -22,7 +23,8 @@ int after_warp(const std::string& warp_name,
                tipl::image<3,tipl::vector<3> >& from2to,
                tipl::vector<3> to_vs,
                const tipl::matrix<4,4>& from_trans,
-               const tipl::matrix<4,4>& to_trans)
+               const tipl::matrix<4,4>& to_trans,
+               bool to_is_mni)
 {
     std::string error;
     std::vector<std::string> filename_cmds;
@@ -53,7 +55,7 @@ int after_warp(const std::string& warp_name,
             std::string filename_warp = filename+".wp.nii.gz";
             tipl::out() << "apply warping to NIFTI file: " << filename << std::endl;
             if(!apply_warping(filename_cmd.c_str(),filename_warp.c_str(),from2to.shape(),from_trans,
-                              to2from,to_vs,to_trans,error))
+                              to2from,to_vs,to_trans,to_is_mni,error))
             {
                 tipl::out() << "ERROR: " << error <<std::endl;
                 return 1;
@@ -67,12 +69,13 @@ int after_warp(const std::string& warp_name,
 bool load_nifti_file(std::string file_name_cmd,
                      tipl::image<3>& data,
                      tipl::vector<3>& vs,
-                     tipl::matrix<4,4>& trans)
+                     tipl::matrix<4,4>& trans,
+                     bool& is_mni)
 {
     std::istringstream in(file_name_cmd);
     std::string file_name,cmd;
     std::getline(in,file_name,'+');
-    if(!tipl::io::gz_nifti::load_from_file(file_name.c_str(),data,vs,trans))
+    if(!tipl::io::gz_nifti::load_from_file(file_name.c_str(),data,vs,trans,is_mni))
     {
         tipl::out() << "ERROR: cannot load file " << file_name << std::endl;
         return false;
@@ -99,7 +102,8 @@ bool load_nifti_file(std::string file_name_cmd,
 bool load_nifti_file(std::string file_name_cmd,tipl::image<3>& data,tipl::vector<3>& vs)
 {
     tipl::matrix<4,4> trans;
-    return load_nifti_file(file_name_cmd,data,vs,trans);
+    bool is_mni;
+    return load_nifti_file(file_name_cmd,data,vs,trans,is_mni);
 }
 void edge_for_cdm(tipl::image<3>& sIt,
                   tipl::image<3>& sJ,
@@ -110,6 +114,7 @@ int reg(tipl::program_option<tipl::out>& po)
     tipl::image<3> from,to,from2,to2;
     tipl::vector<3> from_vs,to_vs;
     tipl::matrix<4,4> from_trans,to_trans;
+    bool from_is_mni = false,to_is_mni = false;
     tipl::image<3,tipl::vector<3> > t2f_dis,f2t_dis,to2from,from2to;
 
     if(po.has("warp") || po.has("inv_warp"))
@@ -149,11 +154,12 @@ int reg(tipl::program_option<tipl::out>& po)
             to2from.swap(from2to);
         }
         if(po.has("apply_warp"))
-            return after_warp(po.get("apply_warp"),to2from,from2to,to_vs,from_trans,to_trans);
+            return after_warp(po.get("apply_warp"),to2from,from2to,to_vs,from_trans,to_trans,to_is_mni);
         return 0;
     }
-    if(!load_nifti_file(po.get("from").c_str(),from,from_vs,from_trans) ||
-       !load_nifti_file(po.get("to").c_str(),to,to_vs,to_trans))
+
+    if(!load_nifti_file(po.get("from").c_str(),from,from_vs,from_trans,from_is_mni) ||
+       !load_nifti_file(po.get("to").c_str(),to,to_vs,to_trans,to_is_mni))
         return 1;
 
     if(po.has("from2") && po.has("to2"))
@@ -232,7 +238,7 @@ int reg(tipl::program_option<tipl::out>& po)
                 tipl::resample_mt<tipl::interpolation::nearest>(from2,from2_,T);
             else
                 tipl::resample_mt<tipl::interpolation::cubic>(from2,from2_,T);
-            tipl::io::gz_nifti::save_to_file((po.get("apply_warp")+".wp.nii.gz").c_str(),from2_,to_vs,to_trans);
+            tipl::io::gz_nifti::save_to_file((po.get("apply_warp")+".wp.nii.gz").c_str(),from2_,to_vs,to_trans,to_is_mni);
         }
         return 0;
     }
@@ -307,6 +313,6 @@ int reg(tipl::program_option<tipl::out>& po)
     }
 
     if(po.has("apply_warp"))
-        return after_warp(po.get("apply_warp"),to2from,from2to,to_vs,from_trans,to_trans);
+        return after_warp(po.get("apply_warp"),to2from,from2to,to_vs,from_trans,to_trans,to_is_mni);
     return 0;
 }
