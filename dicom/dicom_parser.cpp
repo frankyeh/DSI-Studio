@@ -1,3 +1,4 @@
+#include <unordered_map>
 #include <qmessagebox.h>
 #include <QProgressDialog>
 #include <QFileDialog>
