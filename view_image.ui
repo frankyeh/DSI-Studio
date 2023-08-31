@@ -420,6 +420,7 @@
     </property>
     <addaction name="actionSet_Transformation"/>
     <addaction name="actionSet_Translocation"/>
+    <addaction name="actionSet_MNI"/>
     <addaction name="separator"/>
     <addaction name="actionHeader_Flip_X"/>
     <addaction name="actionHeader_Flip_Y"/>
@@ -428,6 +429,7 @@
     <addaction name="actionHeader_Swap_XY"/>
     <addaction name="actionHeader_Swap_XZ"/>
     <addaction name="actionHeader_Swap_YZ"/>
+    <addaction name="separator"/>
    </widget>
    <widget class="QMenu" name="menu_Intensity">
     <property name="title">
@@ -966,6 +968,17 @@
    </property>
    <property name="statusTip">
     <string>(x+1)*(x&gt;0)</string>
+   </property>
+  </action>
+  <action name="actionSet_MNI">
+   <property name="text">
+    <string>Set MNI...</string>
+   </property>
+   <property name="toolTip">
+    <string>Specify wether the image is MNI-space image 1:Yes 0:No</string>
+   </property>
+   <property name="statusTip">
+    <string>0</string>
    </property>
   </action>
  </widget>
