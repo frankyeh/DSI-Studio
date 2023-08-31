@@ -95,21 +95,25 @@ void get_filenames_from(const std::string name,std::vector<std::string>& filenam
         {
             QStringList new_list;
             std::string search_path;
-            if(cur_file.find('*') < cur_file.find('/'))
-            {
-                search_path = cur_file.substr(0,cur_file.find_last_of('/'));
-                auto dir_list = QDir::current().entryList(QStringList(search_path.c_str()),QDir::Dirs | QDir::NoDotAndDotDot);
-                for(const auto& each_dir : dir_list)
-                    get_filenames_from(each_dir.toStdString() + cur_file.substr(cur_file.find_last_of('/')),filenames);
-            }
-            else
             if(cur_file.find('/') != std::string::npos)
             {
-                search_path = cur_file.substr(0,cur_file.find_last_of('/'));
-                std::string filter = cur_file.substr(cur_file.find_last_of('/')+1);
-                tipl::out() << "searching " << filter << " in directory " << search_path << std::endl;
-                new_list = QDir(search_path.c_str()).entryList(QStringList(filter.c_str()),QDir::Files);
-                search_path += "/";
+                // also need to iterate directories
+                if(cur_file.find('*') < cur_file.find('/'))
+                {
+                    search_path = cur_file.substr(0,cur_file.find_last_of('/'));
+                    tipl::out() << "searching directories: " << search_path << std::endl;
+                    auto dir_list = QDir::current().entryList(QStringList(search_path.c_str()),QDir::Dirs | QDir::NoDotAndDotDot);
+                    for(const auto& each_dir : dir_list)
+                        get_filenames_from(each_dir.toStdString() + cur_file.substr(cur_file.find_last_of('/')),filenames);
+                }
+                else
+                {
+                    search_path = cur_file.substr(0,cur_file.find_last_of('/'));
+                    std::string filter = cur_file.substr(cur_file.find_last_of('/')+1);
+                    tipl::out() << "searching " << filter << " in directory " << search_path << std::endl;
+                    new_list = QDir(search_path.c_str()).entryList(QStringList(filter.c_str()),QDir::Files);
+                    search_path += "/";
+                }
             }
             else
             {
