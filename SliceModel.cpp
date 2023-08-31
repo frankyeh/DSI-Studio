@@ -302,7 +302,7 @@ bool CustomSliceModel::load_slices(const std::vector<std::string>& files,bool is
         }
         if(handle->is_mni)
         {
-            tipl::out() << "Assuming the the slices are already in the template space." << std::endl;
+            tipl::out() << "Assuming the slices are already in the template space." << std::endl;
             to_slice = tipl::inverse(to_dif = tipl::from_space(trans_to_mni).to(handle->trans_to_mni));
             has_transform = true;
         }
