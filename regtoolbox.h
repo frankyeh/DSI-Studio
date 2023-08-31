@@ -22,6 +22,7 @@ public:
     tipl::image<3,tipl::vector<3> > t2f_dis,to2from,f2t_dis,from2to;
     tipl::vector<3> Itvs,Ivs;
     tipl::matrix<4,4> ItR,IR;
+    bool It_is_mni;
 public:
     tipl::transformation_matrix<float> T;
     tipl::value_to_color<float> v2c_I,v2c_It;
