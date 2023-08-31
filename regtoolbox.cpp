@@ -95,10 +95,10 @@ void RegToolBox::on_OpenTemplate_clicked()
         return;
     }
     nifti.toLPS(It);
-    //tipl::swap_xy(It);
     nifti.get_image_transformation(ItR);
     tipl::normalize(It);
     nifti.get_voxel_size(Itvs);
+    It_is_mni = nifti.is_mni();
     setup_slice_pos();
     clear();
     show_image();
@@ -497,7 +497,8 @@ void RegToolBox::on_run_reg_clicked()
 bool load_nifti_file(std::string file_name_cmd,
                      tipl::image<3>& data,
                      tipl::vector<3>& vs,
-                     tipl::matrix<4,4>& trans);
+                     tipl::matrix<4,4>& trans,
+                     bool& is_mni);
 bool apply_warping(const char* from,
                    const char* to,
                    const tipl::shape<3>& I_shape,
@@ -505,12 +506,14 @@ bool apply_warping(const char* from,
                    tipl::image<3,tipl::vector<3> >& to2from,
                    tipl::vector<3> Itvs,
                    const tipl::matrix<4,4>& ItR,
+                   bool It_is_mni,
                    std::string& error)
 {
     tipl::image<3> I3;
     tipl::matrix<4,4> T;
     tipl::vector<3> vs;
-    if(!load_nifti_file(from,I3,vs,T))
+    bool is_mni;
+    if(!load_nifti_file(from,I3,vs,T,is_mni))
         return false;
 
     bool is_label = tipl::is_label_image(I3);
@@ -533,7 +536,7 @@ bool apply_warping(const char* from,
         tipl::compose_mapping<tipl::interpolation::nearest>(I3,to2from,J3);
     else
         tipl::compose_mapping<tipl::interpolation::cubic>(I3,to2from,J3);
-    if(!tipl::io::gz_nifti::save_to_file(to,J3,Itvs,ItR))
+    if(!tipl::io::gz_nifti::save_to_file(to,J3,Itvs,ItR,It_is_mni))
     {
         error = "cannot write to file ";
         error += to;
@@ -558,7 +561,7 @@ void RegToolBox::on_actionApply_Warping_triggered()
         std::string error;
         if(!apply_warping(from[0].toStdString().c_str(),
                           to.toStdString().c_str(),
-                          I.shape(),IR,to2from,Itvs,ItR,error))
+                          I.shape(),IR,to2from,Itvs,ItR,It_is_mni,error))
             QMessageBox::critical(this,"ERROR",error.c_str());
         else
             QMessageBox::information(this,"DSI Studio","Saved");
@@ -571,7 +574,7 @@ void RegToolBox::on_actionApply_Warping_triggered()
             std::string error;
             if(!apply_warping(from[i].toStdString().c_str(),
                           (from[i]+".wp.nii.gz").toStdString().c_str(),
-                          I.shape(),IR,to2from,Itvs,ItR,error))
+                          I.shape(),IR,to2from,Itvs,ItR,It_is_mni,error))
 
             {
                 QMessageBox::critical(this,"ERROR",error.c_str());
@@ -696,7 +699,7 @@ void RegToolBox::on_actionSave_Transformed_Image_triggered()
             "Images (*.nii *nii.gz);;All files (*)" );
     if(to.isEmpty())
         return;
-    tipl::io::gz_nifti::save_to_file(to.toStdString().c_str(),JJ,Itvs,ItR);
+    tipl::io::gz_nifti::save_to_file(to.toStdString().c_str(),JJ,Itvs,ItR,It_is_mni);
 
 }
 
