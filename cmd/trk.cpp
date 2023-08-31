@@ -15,13 +15,13 @@
 
 extern std::shared_ptr<CustomSliceModel> t1t2_slices;
 extern std::vector<std::shared_ptr<CustomSliceModel> > other_slices;
-void get_filenames_from(const std::string param,std::vector<std::string>& filenames);
-bool check_other_slices(const std::string& other_slices_name,std::shared_ptr<fib_data> handle)
+bool check_other_slices(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> handle)
 {
     if(!other_slices.empty())
         return true;
     std::vector<std::string> filenames;
-    get_filenames_from(other_slices_name,filenames);
+    if(!po.get_files("other_slices",filenames))
+        return false;
     for(size_t i = 0;i < filenames.size();++i)
     {
         tipl::out() << "add slice: " << QFileInfo(filenames[i].c_str()).baseName().toStdString() << std::endl;
@@ -586,7 +586,7 @@ int trk_post(tipl::program_option<tipl::out>& po,
     }
 
     // allow adding other slices for connectivity and statistics
-    if(po.has("other_slices") && !check_other_slices(po.get("other_slices"),handle))
+    if(po.has("other_slices") && !check_other_slices(po,handle))
         return 1;
     if(po.has("connectivity") && !get_connectivity_matrix(po,handle,tract_file_name,tract_model))
         return 1;
@@ -767,7 +767,7 @@ int trk(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> handle)
                 else
                     handle->demo = subject_demo;
             }
-            if(po.has("other_slices") && !check_other_slices(po.get("other_slices"),handle))
+            if(po.has("other_slices") && !check_other_slices(po,handle))
                 return 1;
         }
         auto metric_i = handle->get_name_index(po.get("dt_metric1"));

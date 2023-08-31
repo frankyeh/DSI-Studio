@@ -85,52 +85,6 @@ bool load_nii(tipl::program_option<tipl::out>& po,
     return true;
 }
 
-void get_filenames_from(const std::string name,std::vector<std::string>& filenames)
-{
-    std::vector<std::string> file_list = tipl::split(name,',');
-    for(size_t index = 0;index < file_list.size();++index)
-    {
-        std::string cur_file = file_list[index];
-        if(cur_file.find('*') != std::string::npos)
-        {
-            QStringList new_list;
-            std::string search_path;
-            if(cur_file.find('/') != std::string::npos)
-            {
-                // also need to iterate directories
-                if(cur_file.find('*') < cur_file.find('/'))
-                {
-                    search_path = cur_file.substr(0,cur_file.find_last_of('/'));
-                    tipl::out() << "searching directories: " << search_path << std::endl;
-                    auto dir_list = QDir::current().entryList(QStringList(search_path.c_str()),QDir::Dirs | QDir::NoDotAndDotDot);
-                    for(const auto& each_dir : dir_list)
-                        get_filenames_from(each_dir.toStdString() + cur_file.substr(cur_file.find_last_of('/')),filenames);
-                }
-                else
-                {
-                    search_path = cur_file.substr(0,cur_file.find_last_of('/'));
-                    std::string filter = cur_file.substr(cur_file.find_last_of('/')+1);
-                    tipl::out() << "searching " << filter << " in directory " << search_path << std::endl;
-                    new_list = QDir(search_path.c_str()).entryList(QStringList(filter.c_str()),QDir::Files);
-                    search_path += "/";
-                }
-            }
-            else
-            {
-                tipl::out() << "searching " << cur_file << std::endl;
-                new_list = QDir().entryList(QStringList(cur_file.c_str()),QDir::Files);
-            }
-            tipl::out() << "found " << new_list.size() << " files." << std::endl;
-            for(int i = 0;i < new_list.size();++i)
-                file_list.push_back(search_path + new_list[i].toStdString());
-        }
-        else
-            if(std::filesystem::exists(file_list[index]))
-                filenames.push_back(file_list[index]);
-    }
-    if(filenames.size() > file_list.size())
-        tipl::out() << "a total of " << filenames.size() << " files matching the search" << std::endl;
-}
 
 int trk_post(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> handle,std::shared_ptr<TractModel> tract_model,std::string tract_file_name,bool output_track);
 std::shared_ptr<fib_data> cmd_load_fib(std::string file_name);
@@ -156,7 +110,7 @@ bool load_tracts(const char* file_name,std::shared_ptr<fib_data> handle,std::sha
     }
     return true;
 }
-bool check_other_slices(const std::string& other_slices,std::shared_ptr<fib_data> handle);
+bool check_other_slices(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> handle);
 int ana_region(tipl::program_option<tipl::out>& po)
 {
     std::shared_ptr<fib_data> handle = cmd_load_fib(po.get("source"));
@@ -219,7 +173,7 @@ int ana_region(tipl::program_option<tipl::out>& po)
     }
 
     // allow adding other slices for connectivity and statistics
-    if(po.has("other_slices") && !check_other_slices(po.get("other_slices"),handle))
+    if(po.has("other_slices") && !check_other_slices(po,handle))
         return 1;
 
     std::string result;
@@ -252,7 +206,9 @@ int ana_tract(tipl::program_option<tipl::out>& po)
     if(!handle.get() || !load_roi(po,handle,roi_mgr))
         return 1;
 
-    get_filenames_from(po.get("tract"),tract_files);
+    if(!po.get_files("tract",tract_files))
+        return 1;
+
     if(tract_files.size() == 0)
     {
         tipl::out() << "No tract file assign to --tract" << std::endl;

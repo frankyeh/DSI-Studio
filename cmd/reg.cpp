@@ -17,8 +17,6 @@ bool apply_unwarping_tt(const char* from,
                         const tipl::matrix<4,4>& from_trans_to_mni,
                         const tipl::matrix<4,4>& to_trans_to_mni,
                         std::string& error);
-void get_filenames_from(const std::string param,std::vector<std::string>& filenames);
-
 int after_warp(const std::string& warp_name,
                tipl::image<3,tipl::vector<3> >& to2from,
                tipl::image<3,tipl::vector<3> >& from2to,
@@ -28,7 +26,12 @@ int after_warp(const std::string& warp_name,
 {
     std::string error;
     std::vector<std::string> filename_cmds;
-    get_filenames_from(warp_name,filename_cmds);
+
+    if(!tipl::search_filesystem(warp_name,filename_cmds))
+    {
+        tipl::out() << "ERROR: invalid path " << warp_name <<std::endl;
+        return 1;
+    }
     for(auto& filename_cmd: filename_cmds)
     {
         std::istringstream in(filename_cmd);

@@ -14,11 +14,12 @@ std::string run_auto_track(
                     const std::vector<std::string>& file_list,int& progress);
 
 extern std::string auto_track_report;
-void get_filenames_from(const std::string param,std::vector<std::string>& filenames);
 int atk(tipl::program_option<tipl::out>& po)
 {
     std::vector<std::string> file_list;
-    get_filenames_from(po.get("source"),file_list);
+    if(!po.get_files("source",file_list))
+        return 1;
+
     if(file_list.empty())
     {
         tipl::out() << "no file listed in --source" << std::endl;

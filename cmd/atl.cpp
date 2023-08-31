@@ -26,24 +26,6 @@ bool atl_load_atlas(std::shared_ptr<fib_data> handle,std::string atlas_name,std:
 }
 
 std::shared_ptr<fib_data> cmd_load_fib(std::string file_name);
-
-void get_files_in_folder(std::string dir,std::string file,std::vector<std::string>& files)
-{
-    QDir directory(QString(dir.c_str()));
-    QStringList file_list = directory.entryList(QStringList(file.c_str()),QDir::Files);
-    if(file_list.empty())
-        return;
-    std::vector<std::string> name_list;
-    for (int index = 0;index < file_list.size();++index)
-    {
-        std::string file_name = dir;
-        file_name += "/";
-        file_name += file_list[index].toStdString();
-        name_list.push_back(file_name);
-    }
-    files = std::move(name_list);
-}
-void get_filenames_from(const std::string param,std::vector<std::string>& filenames);
 int atl(tipl::program_option<tipl::out>& po)
 {
     // construct an atlas
@@ -54,10 +36,14 @@ int atl(tipl::program_option<tipl::out>& po)
     if(QFileInfo(source.c_str()).isDir())
     {
         tipl::out() << "Searching all fib files in directory " << source << std::endl;
-        get_files_in_folder(source,"*.fib.gz",name_list);
+        if(!tipl::search_filesystem(source + "/*.fib.gz",name_list))
+            return 1;
     }
     else
-        get_filenames_from(source,name_list);
+    {
+        if(!po.get_files("source",name_list))
+            return 1;
+    }
 
     if(name_list.empty())
     {

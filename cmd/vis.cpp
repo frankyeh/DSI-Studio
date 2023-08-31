@@ -5,7 +5,6 @@
 #include "opengl/glwidget.h"
 
 std::shared_ptr<fib_data> cmd_load_fib(std::string file_name);
-void get_filenames_from(const std::string param,std::vector<std::string>& filenames);
 extern bool has_gui;
 int vis(tipl::program_option<tipl::out>& po)
 {
@@ -24,7 +23,8 @@ int vis(tipl::program_option<tipl::out>& po)
     if(po.has("tract"))
     {
         std::vector<std::string> filenames;
-        get_filenames_from(po.get("tract").c_str(),filenames);
+        if(!po.get_files("tract",filenames))
+            return 1;
         QStringList tracts;
         for(auto file : filenames)
             tracts << file.c_str();

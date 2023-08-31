@@ -266,7 +266,6 @@ int run_action(tipl::program_option<tipl::out>& po)
     tipl::out() << "ERROR: unknown action: " << action << std::endl;
     return 1;
 }
-void get_filenames_from(const std::string param,std::vector<std::string>& filenames);
 int run_action_with_wildcard(tipl::program_option<tipl::out>& po)
 {
     std::string source = po.get("source");
@@ -283,8 +282,12 @@ int run_action_with_wildcard(tipl::program_option<tipl::out>& po)
     {
         tipl::progress prog("processing loop");
         std::vector<std::string> loop_files;
-        get_filenames_from(loop,loop_files);
-
+        if(!tipl::search_filesystem(loop,loop_files))
+        {
+            tipl::out() << "ERROR: invalid file path " << loop << std::endl;;
+            return false;
+        }
+        tipl::out() << "a total of " << loop_files.size() << " files found" << std::endl;
         std::vector<std::pair<std::string,std::string> > wildcard_list;
         po.get_wildcard_list(wildcard_list);
 
