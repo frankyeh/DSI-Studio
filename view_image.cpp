@@ -959,12 +959,12 @@ void view_image::init_image(void)
     QString dim_text = QString("%1,%2,%3").arg(shape.width()).arg(shape.height()).arg(shape.depth());
     if(!buf4d.empty())
         dim_text += QString(",%1").arg(buf4d.size());
-    ui->image_info->setText(QString("dim=(%1) vs=(%4,%5,%6) srow=[%7 %8 %9 %10][%11 %12 %13 %14][%15 %16 %17 %18]").
+    ui->image_info->setText(QString("dim=(%1) vs=(%4,%5,%6) srow=[%7 %8 %9 %10][%11 %12 %13 %14][%15 %16 %17 %18] %19").
             arg(dim_text).
             arg(double(vs[0])).arg(double(vs[1])).arg(double(vs[2])).
             arg(double(T[0])).arg(double(T[1])).arg(double(T[2])).arg(double(T[3])).
             arg(double(T[4])).arg(double(T[5])).arg(double(T[6])).arg(double(T[7])).
-            arg(double(T[8])).arg(double(T[9])).arg(double(T[10])).arg(double(T[11])));
+            arg(double(T[8])).arg(double(T[9])).arg(double(T[10])).arg(double(T[11])).arg(is_mni?"mni":"native"));
 
     if(ui->min->maximum() != double(max_value) ||
        ui->max->minimum() != double(min_value))
@@ -985,6 +985,7 @@ void view_image::init_image(void)
         ui->slice_pos->setValue(slice_pos[cur_dim]);
     }
 
+    ui->actionSet_MNI->setStatusTip(is_mni ? "1":"0");
     ui->actionRegrid->setStatusTip(QString("%1 %2 %3").arg(vs[0]).arg(vs[1]).arg(vs[2]));
     ui->actionResize->setStatusTip(QString("%1 %2 %3").arg(shape[0]).arg(shape[1]).arg(shape[2]));
     ui->actionReshape->setStatusTip(buf4d.empty() ? QString("%1 %2 %3").arg(shape[0]).arg(shape[1]).arg(shape[2]) :
@@ -1000,7 +1001,6 @@ void view_image::init_image(void)
     }
     ui->actionSet_Transformation->setStatusTip(t_string.c_str());
     ui->actionTransform->setStatusTip(t_string.c_str());
-
 
     if(buf4d.empty())
     {
