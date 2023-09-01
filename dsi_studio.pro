@@ -91,7 +91,6 @@ HEADERS += mainwindow.h \
     auto_track.h \
     tracking/device.h \
     tracking/devicetablewidget.h \
-    mac_filesystem.hpp \
     libs/dsi/hist_process.hpp \
     xnat_dialog.h
 
