@@ -15,7 +15,7 @@
 
 #include "tracking_window.h"
 #include "ui_tracking_window.h"
-
+#include "console.h"
 #include "region/regiontablewidget.h"
 #include "opengl/glwidget.h"
 #include "opengl/renderingtablewidget.h"
@@ -528,8 +528,10 @@ void tracking_window::update_scene_slice(void)
 {
     slice_need_update = true;
 }
+extern console_stream console;
 bool tracking_window::eventFilter(QObject *obj, QEvent *event)
 {
+    console.show_output();
     bool has_info = false;
     tipl::vector<3> pos;
     // update slice here
