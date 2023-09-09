@@ -207,7 +207,10 @@ int ana_tract(tipl::program_option<tipl::out>& po)
         return 1;
 
     if(!po.get_files("tract",tract_files))
+    {
+        tipl::out() << "ERROR: " << po.error_msg << std::endl;
         return 1;
+    }
 
     if(tract_files.size() == 0)
     {

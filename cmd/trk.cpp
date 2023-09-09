@@ -21,7 +21,11 @@ bool check_other_slices(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_
         return true;
     std::vector<std::string> filenames;
     if(!po.get_files("other_slices",filenames))
+    {
+        tipl::out() << "ERROR: " << po.error_msg << std::endl;
         return false;
+    }
+
     for(size_t i = 0;i < filenames.size();++i)
     {
         tipl::out() << "add slice: " << QFileInfo(filenames[i].c_str()).baseName().toStdString() << std::endl;

@@ -24,7 +24,10 @@ int vis(tipl::program_option<tipl::out>& po)
     {
         std::vector<std::string> filenames;
         if(!po.get_files("tract",filenames))
+        {
+            tipl::out() << "ERROR: " << po.error_msg << std::endl;
             return 1;
+        }
         QStringList tracts;
         for(auto file : filenames)
             tracts << file.c_str();

@@ -42,7 +42,11 @@ int atl(tipl::program_option<tipl::out>& po)
     else
     {
         if(!po.get_files("source",name_list))
+        {
+            tipl::out() << "ERROR: " << po.error_msg << std::endl;
             return 1;
+        }
+
     }
 
     if(name_list.empty())

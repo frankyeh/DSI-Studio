@@ -18,7 +18,11 @@ int atk(tipl::program_option<tipl::out>& po)
 {
     std::vector<std::string> file_list;
     if(!po.get_files("source",file_list))
+    {
+        tipl::out() << "ERROR: " << po.error_msg << std::endl;
         return 1;
+    }
+
 
     if(file_list.empty())
     {
