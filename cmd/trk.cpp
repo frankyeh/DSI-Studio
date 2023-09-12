@@ -784,6 +784,10 @@ int trk(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> handle)
                 tipl::out() << handle->view_item[i].name << std::endl;
             return 1;
         }
+        if(handle->view_item[metric_i].name != po.get("dt_metric1"))
+            tipl::out() << "PLEASE CHECK: you specify " << po.get("dt_metric1") << " but not found. The analysis will use " << handle->view_item[metric_i].name;
+        if(handle->view_item[metric_j].name != po.get("dt_metric2"))
+            tipl::out() << "PLEASE CHECK: you specify " << po.get("dt_metric2") << " but not found. The analysis will use " << handle->view_item[metric_j].name;
         handle->set_dt_index(std::make_pair(metric_i,metric_j),po.get("dt_threshold_type",0));
     }
 
