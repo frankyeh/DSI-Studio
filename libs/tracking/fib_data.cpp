@@ -975,6 +975,9 @@ size_t fib_data::get_name_index(const std::string& index_name) const
     for(unsigned int index_num = 0;index_num < view_item.size();++index_num)
         if(view_item[index_num].name == index_name)
             return index_num;
+    for(unsigned int index_num = 0;index_num < view_item.size();++index_num)
+        if(view_item[index_num].name.find(index_name) != std::string::npos)
+            return index_num;
     return view_item.size();
 }
 void fib_data::get_index_list(std::vector<std::string>& index_list) const
