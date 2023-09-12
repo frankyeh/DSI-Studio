@@ -77,7 +77,7 @@ jobs:
       run: |
         mv build/dsi_studio.app .
         /usr/local/opt/qt@5/bin/macdeployqt dsi_studio.app
-        curl -sSLO "https://github.com/frankyeh/TinyFSL/releases/download/2022.08.03/tiny_fsl_${{ matrix.os }}.zip"
+        curl -sSLO "https://github.com/frankyeh/TinyFSL/releases/download/2023.07.08/tiny_fsl_${{ matrix.os }}.zip"
         7z e tiny_fsl_${{ matrix.os }}.zip -odsi_studio.app/Contents/MacOS/plugin
         rm -fr dsi_studio.app/Contents/MacOS/plugin/tiny_fsl
         mv other/* dsi_studio.app/Contents/MacOS/
@@ -127,7 +127,7 @@ jobs:
       run: |
         mv build/dsi_studio.app .
         /usr/local/opt/qt@6/bin/macdeployqt dsi_studio.app
-        curl -sSLO "https://github.com/frankyeh/TinyFSL/releases/download/2022.08.03/tiny_fsl_${{ matrix.os }}.zip"
+        curl -sSLO "https://github.com/frankyeh/TinyFSL/releases/download/2023.07.08/tiny_fsl_${{ matrix.os }}.zip"
         7z e tiny_fsl_${{ matrix.os }}.zip -odsi_studio.app/Contents/MacOS/plugin
         rm -fr dsi_studio.app/Contents/MacOS/plugin/tiny_fsl
         mv other/* dsi_studio.app/Contents/MacOS/
@@ -197,7 +197,7 @@ jobs:
         windeployqt --no-translations --no-system-d3d-compiler --compiler-runtime --no-opengl-sw dsi_studio_win\dsi_studio.exe
         move DSI-Studio-atlas dsi_studio_win\atlas  
         move UNet-Studio-Data\network dsi_studio_win\
-        curl -sSLO "https://github.com/frankyeh/TinyFSL/releases/download/2022.08.03/tiny_fsl_win.zip"
+        curl -sSLO "https://github.com/frankyeh/TinyFSL/releases/download/2023.07.08/tiny_fsl_win.zip"
         7z e tiny_fsl_win.zip -odsi_studio_win\plugin
         rm dsi_studio_win\plugin\cublas*
         rd dsi_studio_win\plugin\tiny_fsl
@@ -270,7 +270,7 @@ jobs:
     steps:
     - name: Setup Environment
       run: |
-        curl -sL "https://github.com/frankyeh/DSI-Studio/releases/download/2022.08.03/dsi_studio_ubuntu2004.zip" | jar x
+        curl -sL "https://github.com/frankyeh/DSI-Studio/releases/download/2023.07.08/dsi_studio_ubuntu2004.zip" | jar x
         curl -sL https://zenodo.org/record/6321169/files/mountsinai-S-sub-032156_dwi.src.gz?download=1 -o Rhesus.src.gz
         chmod 777 ./dsi-studio/dsi_studio
     - name: Test DTI/GQI Recon
@@ -288,7 +288,7 @@ jobs:
     steps:
     - name: Setup Environment
       run: |
-        curl -sL "https://github.com/frankyeh/DSI-Studio/releases/download/2022.08.03/dsi_studio_ubuntu2004.zip" | jar x
+        curl -sL "https://github.com/frankyeh/DSI-Studio/releases/download/2023.07.08/dsi_studio_ubuntu2004.zip" | jar x
         curl -sL https://zenodo.org/record/6320992/files/20081006_M025Y_DSI_203.src.gz?download=1 -o DSI.src.gz
         curl -sL https://zenodo.org/record/6320992/files/20081006_M025Y_DTI64.src.gz?download=1 -o DTI.src.gz
         curl -sL https://zenodo.org/record/6320992/files/20081006_M025Y_HARDI.src.gz?download=1 -o HARDI.src.gz
@@ -314,7 +314,7 @@ jobs:
     steps:
     - name: Setup Environment
       run: |
-        curl -sL "https://github.com/frankyeh/DSI-Studio/releases/download/2022.08.03/dsi_studio_ubuntu2004.zip" | jar x
+        curl -sL "https://github.com/frankyeh/DSI-Studio/releases/download/2023.07.08/dsi_studio_ubuntu2004.zip" | jar x
         curl -sL https://github.com/frankyeh/DSI-Studio-atlas/blob/main/ICBM152_adult/ICBM152_adult.fib.gz?raw=true -o ICBM152_adult.fib.gz
         chmod 777 ./dsi-studio/dsi_studio
     - name: Tracking
@@ -344,7 +344,7 @@ jobs:
     steps:
     - name: Setup Environment
       run: |
-        curl -sL "https://github.com/frankyeh/DSI-Studio/releases/download/2022.08.03/dsi_studio_ubuntu2004.zip" | jar x
+        curl -sL "https://github.com/frankyeh/DSI-Studio/releases/download/2023.07.08/dsi_studio_ubuntu2004.zip" | jar x
         curl -sL https://zenodo.org/record/6307812/files/100206.src.gz.gqi.1.7.fib.gz?download=1 -o 100206.fib.gz
         curl -sL https://github.com/frankyeh/DSI-Studio-atlas/blob/main/ICBM152_adult/ICBM152_adult.QA.nii.gz?raw=true -o template_qa.nii.gz
         chmod 777 ./dsi-studio/dsi_studio
@@ -377,7 +377,7 @@ jobs:
     steps:
     - name: Setup Environment
       run: |
-        curl -sL "https://github.com/frankyeh/DSI-Studio/releases/download/2022.08.03/dsi_studio_ubuntu2004.zip" | jar x
+        curl -sL "https://github.com/frankyeh/DSI-Studio/releases/download/2023.07.08/dsi_studio_ubuntu2004.zip" | jar x
         curl -sL https://zenodo.org/record/6307812/files/100206.src.gz.gqi.1.7.fib.gz?download=1 -o 100206.fib.gz
         chmod 777 ./dsi-studio/dsi_studio
     - name: Export
@@ -401,7 +401,7 @@ jobs:
     steps:
     - name: Setup Environment
       run: |
-        curl -sL "https://github.com/frankyeh/DSI-Studio/releases/download/2022.08.03/dsi_studio_ubuntu2004.zip" | jar x
+        curl -sL "https://github.com/frankyeh/DSI-Studio/releases/download/2023.07.08/dsi_studio_ubuntu2004.zip" | jar x
         curl -sL https://zenodo.org/record/6324701/files/CMU60.db.fib.gz?download=1 -o CMU60.db.fib.gz
         curl -sL https://zenodo.org/record/6324701/files/CMU60.demo.csv?download=1 -o CMU60.demo.csv
         chmod 777 ./dsi-studio/dsi_studio
@@ -417,7 +417,7 @@ jobs:
     steps:
     - name: Setup Environment
       run: |
-        curl -sL "https://github.com/frankyeh/DSI-Studio/releases/download/2022.08.03/dsi_studio_ubuntu2004.zip" | jar x
+        curl -sL "https://github.com/frankyeh/DSI-Studio/releases/download/2023.07.08/dsi_studio_ubuntu2004.zip" | jar x
         curl -sL https://zenodo.org/record/6307812/files/100206.src.gz.gqi.1.7.fib.gz?download=1 -o 100206.fib.gz
         curl -sL https://zenodo.org/record/6307812/files/100307.src.gz.gqi.1.7.fib.gz?download=1 -o 100307.fib.gz
         chmod 777 ./dsi-studio/dsi_studio
@@ -432,7 +432,7 @@ jobs:
     steps:
     - name: Setup Environment
       run: |
-        curl -sL "https://github.com/frankyeh/DSI-Studio/releases/download/2022.08.03/dsi_studio_ubuntu2004.zip" | jar x
+        curl -sL "https://github.com/frankyeh/DSI-Studio/releases/download/2023.07.08/dsi_studio_ubuntu2004.zip" | jar x
         chmod 777 ./dsi-studio/dsi_studio
     - name: Test GQI Recon
       run: |
