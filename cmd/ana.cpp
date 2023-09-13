@@ -70,7 +70,7 @@ bool load_nii(tipl::program_option<tipl::out>& po,
     }
     if(!load_nii(handle,file_name.toStdString(),transform_lookup,regions,names,error_msg,QFileInfo(file_name).baseName().toLower().contains("mni")))
     {
-        tipl::out() << "ERROR:" << error_msg << std::endl;
+        tipl::out() << "ERROR: " << error_msg << std::endl;
         return false;
     }
 
@@ -93,12 +93,12 @@ bool load_tracts(const char* file_name,std::shared_ptr<fib_data> handle,std::sha
 {
     if(!std::filesystem::exists(file_name))
     {
-        tipl::out() << "ERROR:" << file_name << " does not exist. terminating..." << std::endl;
+        tipl::out() << "ERROR: " << file_name << " does not exist. terminating..." << std::endl;
         return 1;
     }
     if(!tract_model->load_tracts_from_file(file_name,handle.get(),std::string(file_name).find("mni") != std::string::npos))
     {
-        tipl::out() << "ERROR: cannot read or parse the tractography file :" << file_name << std::endl;
+        tipl::out() << "ERROR: cannot read or parse " << file_name << std::endl;
         return false;
     }
     tipl::out() << "A total of " << tract_model->get_visible_track_count() << " tracks loaded" << std::endl;
@@ -106,7 +106,7 @@ bool load_tracts(const char* file_name,std::shared_ptr<fib_data> handle,std::sha
     {
         tipl::out() << "filtering tracts using roi/roa/end regions." << std::endl;
         tract_model->filter_by_roi(roi_mgr);
-        tipl::out() << "remaining tract count:" << tract_model->get_visible_track_count() << std::endl;
+        tipl::out() << "remaining tract count: " << tract_model->get_visible_track_count() << std::endl;
     }
     return true;
 }
@@ -133,7 +133,7 @@ int ana_region(tipl::program_option<tipl::out>& po)
                 region_name += atlas_list[i]->get_list()[j];
                 if(!load_region(po,handle,*region.get(),region_name))
                 {
-                    tipl::out() << "fail to load the ROI file:" << region_name << std::endl;
+                    tipl::out() << "fail to load the ROI file " << region_name << std::endl;
                     return 1;
                 }
                 region_list.push_back(atlas_list[i]->get_list()[j]);
@@ -192,7 +192,7 @@ int ana_region(tipl::program_option<tipl::out>& po)
         if(file_name.find(".txt") == std::string::npos)
             file_name += ".txt";
     }
-    tipl::out() << "export ROI statistics to file:" << file_name << std::endl;
+    tipl::out() << "export ROI statistics to " << file_name << std::endl;
     std::ofstream out(file_name.c_str());
     out << result <<std::endl;
     return 0;
@@ -224,7 +224,7 @@ int ana_tract(tipl::program_option<tipl::out>& po)
         tipl::out() << "computing tract probability to " << output << std::endl;
         if(std::filesystem::exists(output))
         {
-            tipl::out() << "output file:" << output << " exists. terminating..." << std::endl;
+            tipl::out() << output << " exists. terminating..." << std::endl;
             return 0;
         }
         auto dim = handle->dim;
