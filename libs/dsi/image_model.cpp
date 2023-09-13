@@ -256,7 +256,7 @@ std::string ImageModel::check_b_table(void)
                 throw std::runtime_error("aborted");
 
             tipl::out() << arg << std::endl;
-            tipl::out() << "goodness-of-fit R2:" << R*R << std::endl;
+            tipl::out() << "goodness-of-fit R2: " << R*R << std::endl;
             if(R*R < 0.3f)
                 template_fib.reset();
         }
@@ -524,7 +524,7 @@ bool ImageModel::command(std::string cmd,std::string param)
         return true;
     tipl::progress prog_(cmd.c_str());
     if(!param.empty())
-        tipl::out() << "param:" << param << std::endl;
+        tipl::out() << "param: " << param << std::endl;
     if(cmd == "[Step T2][File][Save Src File]" || cmd == "[Step T2][File][Save 4D NIFTI]")
     {
         if(param.empty())
@@ -769,7 +769,7 @@ bool ImageModel::command(std::string cmd,std::string param)
         voxel.steps += cmd+"\n";
         return true;
     }
-    error_msg = "Unknown command:";
+    error_msg = "unknown command: ";
     error_msg += cmd;
     return false;
 }
@@ -945,7 +945,7 @@ bool ImageModel::align_acpc(void)
         tipl::resample_mt<tipl::interpolation::cubic>(J,I2,
                 tipl::transformation_matrix<float>(arg,I.shape(),vs,J.shape(),voxel.vs));
         float r = float(tipl::correlation(I.begin(),I.end(),I2.begin()));
-        tipl::out() << "R2 for ac-pc alignment:" << r*r << std::endl;
+        tipl::out() << "R2 for ac-pc alignment: " << r*r << std::endl;
         prog(2,3);
         if(r*r < 0.3f)
         {
@@ -1083,7 +1083,7 @@ void ImageModel::crop(tipl::shape<3> range_min,tipl::shape<3> range_max)
 {
     tipl::progress prog("Removing background region");
     size_t p = 0;
-    tipl::out() << "from:" << range_min << " to:" << range_max << std::endl;
+    tipl::out() << "from: " << range_min << " to: " << range_max << std::endl;
     tipl::par_for(src_dwi_data.size(),[&](unsigned int index)
     {
         prog(p++,src_dwi_data.size());
@@ -1284,7 +1284,7 @@ tipl::vector<3> phase_direction_at_AP_PA(const tipl::image<3>& v1,const tipl::im
     tipl::project_y(v2,py2);
     c[0] = float(tipl::correlation(px1.begin(),px1.end(),px2.begin()));
     c[1] = float(tipl::correlation(py1.begin(),py1.end(),py2.begin()));
-    tipl::out() << "projected correction:" << c << std::endl;
+    tipl::out() << "projected correction: " << c << std::endl;
     return c;
 }
 
@@ -1416,7 +1416,7 @@ bool ImageModel::run_plugin(std::string exec_name,
     program.setEnvironment(program.environment() << "FSLOUTPUTTYPE=NIFTI_GZ");
     program.setWorkingDirectory(working_dir.c_str());
     tipl::out() << "run " << exec << std::endl;
-    tipl::out() << "path:" << working_dir << std::endl;
+    tipl::out() << "path: " << working_dir << std::endl;
     QStringList p;
     for(auto s:param)
     {
@@ -1524,8 +1524,8 @@ bool ImageModel::generate_topup_b0_acq_files(tipl::image<3>& b0,
         c1 = tipl::center_of_mass_weighted(mb0);
         c2 = tipl::center_of_mass_weighted(rev_mb0);
     }
-    tipl::out() << "source com:" << c1 << std::endl;
-    tipl::out() << "rev pe com:" << c2 << std::endl;
+    tipl::out() << "source com: " << c1 << std::endl;
+    tipl::out() << "rev pe com: " << c2 << std::endl;
     bool phase_dir = c1[phase_dim] > c2[phase_dim];
     std::string acqstr,pe_id;
     if(is_appa)
@@ -1884,7 +1884,7 @@ bool ImageModel::run_eddy(std::string exec)
 
     if(!run_plugin(has_cuda ? "eddy_cuda" : "eddy","model",16,param,QFileInfo(file_name.c_str()).absolutePath().toStdString(),exec))
     {
-        tipl::out() << "eddy cannot process this data:" << error_msg << std::endl;
+        tipl::out() << "eddy cannot process this data: " << error_msg << std::endl;
         if(!has_topup)
             return false;
         return run_applytopup();
@@ -2259,7 +2259,7 @@ void prepare_idx(const char* file_name,std::shared_ptr<tipl::io::gz_istream> in)
            std::filesystem::last_write_time(idx_name) >
            std::filesystem::last_write_time(file_name))
         {
-            tipl::out() << "using index file for accelerated loading:" << idx_name << std::endl;
+            tipl::out() << "using index file for accelerated loading: " << idx_name << std::endl;
             in->load_index(idx_name.c_str());
         }
         else
@@ -2298,7 +2298,7 @@ bool ImageModel::load_from_file(const char* dwi_file_name)
     file_name = dwi_file_name;
     if(!std::filesystem::exists(dwi_file_name))
     {
-        error_msg = "file does not exist:";
+        error_msg = "file does not exist ";
         error_msg += dwi_file_name;
         return false;
     }
