@@ -482,7 +482,7 @@ bool tt2trk(const char* tt_file,const char* trk_file)
     unsigned int color = default_tract_color;
     if(!TinyTrack::load_from_file(tt_file,tract_data,cluster,geo,vs,trans_to_mni,report,pid,color))
     {
-        std::cout << "cannot read file:" << tt_file << std::endl;
+        std::cout << "cannot read " << tt_file << std::endl;
         return false;
     }
     std::vector<std::vector<float> > scalar;
@@ -500,7 +500,7 @@ bool trk2tt(const char* trk_file,const char* tt_file)
     tipl::matrix<4,4> trans_to_mni;
     if(!vis.load_from_file(trk_file,loaded_tract_data,loaded_tract_cluster,geo,vs,trans_to_mni,info))
     {
-        std::cout << "cannot read file:" << trk_file << std::endl;
+        std::cout << "cannot read " << trk_file << std::endl;
         return false;
     }
     unsigned int color = default_tract_color;
@@ -561,7 +561,7 @@ bool load_fib_from_tracks(const char* file_name,
         tck.vs = tipl::vector<3>(1.0f,1.0f,1.0f);
         if(!tck.load_from_file(file_name,loaded_tract_data))
         {
-            std::cout << "cannot read file:" << file_name << std::endl;
+            std::cout << "cannot read " << file_name << std::endl;
             return false;
         }
         shift_track_for_tck(loaded_tract_data,geo);
@@ -574,7 +574,7 @@ bool load_fib_from_tracks(const char* file_name,
         std::string info;
         if(!vis.load_from_file(file_name,loaded_tract_data,loaded_tract_cluster,geo,vs,trans_to_mni,info))
         {
-            std::cout << "cannot read file:" << file_name << std::endl;
+            std::cout << "cannot read " << file_name << std::endl;
             return false;
         }
         std::copy(vis.voxel_size,vis.voxel_size+3,vs.begin());
@@ -588,7 +588,7 @@ bool load_fib_from_tracks(const char* file_name,
             unsigned int color;
             if(!TinyTrack::load_from_file(file_name,loaded_tract_data,loaded_tract_cluster,geo,vs,trans_to_mni,report,pid,color))
             {
-                std::cout << "cannot read file:" << file_name << std::endl;
+                std::cout << "cannot read " << file_name << std::endl;
                 return false;
             }
         }
@@ -797,14 +797,14 @@ bool TractModel::load_tracts_from_file(const char* file_name_,fib_data* handle,b
 
     // handle trans_to_mni differences
     {
-        tipl::out() << ((is_mni) ? "host space (mni):" : "host space (native):") << std::endl;
+        tipl::out() << ((is_mni) ? "host space (mni): " : "host space (native): ") << std::endl;
         tipl::out() << trans_to_mni << std::endl;
-        tipl::out() << ((tract_is_mni) ? "tractography space (mni):" : "tractography space (native):") << std::endl;
+        tipl::out() << ((tract_is_mni) ? "tractography space (mni): " : "tractography space (native): ") << std::endl;
         tipl::out() << source_trans_to_mni << std::endl;
 
         auto apply_transform = [&](const tipl::matrix<4,4>& T)
         {
-            tipl::out() << "apply transform to tracts:" << std::endl;
+            tipl::out() << "apply transform to tracts: " << std::endl;
             tipl::out() << T << std::endl;
             tipl::par_for(loaded_tract_data.size(),[&](size_t index)
             {
@@ -834,7 +834,7 @@ bool TractModel::load_tracts_from_file(const char* file_name_,fib_data* handle,b
                 tipl::out() << "cannot run normalization" << std::endl;;
                 return false;
             }
-            tipl::out() << "template space:" << std::endl;
+            tipl::out() << "template space: " << std::endl;
             tipl::out() << handle->template_to_mni << std::endl;
 
             // first transform to template space

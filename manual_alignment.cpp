@@ -247,7 +247,7 @@ tipl::transformation_matrix<float> manual_alignment::get_iT(void)
         tipl::multiply_constant(result.sr,result.sr+9,to_downsample);
     if(from_downsample != 1.0f)
         tipl::multiply_constant(result.data,result.data+12,from_downsample);
-    tipl::out() << "iT:" << std::endl;
+    tipl::out() << "iT: " << std::endl;
     tipl::out() << result << std::endl;
     return result;
 }

@@ -981,7 +981,7 @@ void nii2src(QStringList nifti_file_list,QString output_dir)
 bool find_bval_bvec(const char* file_name,QString& bval,QString& bvec);
 bool nii2src_bids(QString dir,QString output_dir,std::string& error_msg)
 {
-    tipl::progress prog((std::string("parsing BIDS directory:") + dir.toStdString()).c_str());
+    tipl::progress prog((std::string("parsing BIDS directory: ") + dir.toStdString()).c_str());
 
     QStringList sub_dir = QDir(dir).entryList(QStringList("sub-*"),
                                                 QDir::Dirs | QDir::NoSymLinks | QDir::NoDotAndDotDot);
@@ -1088,7 +1088,7 @@ void MainWindow::on_nii2src_sf_clicked()
             entryList(QStringList("*.nii.gz") << "*.nii",QDir::Files|QDir::NoSymLinks);
 
     tipl::progress prog("batch creating src");
-    tipl::out() << "directory:" << dir.toStdString() << std::endl;
+    tipl::out() << "directory: " << dir.toStdString() << std::endl;
     for(int j = 0;prog(j,nifti_file_list.size());++j)
     {
         tipl::out() << nifti_file_list[j].toStdString() << std::endl;
@@ -1237,7 +1237,7 @@ bool dcm2src(QStringList files)
         suffix += sequence;
         suffix += ".nii.gz";
         QString output = get_dicom_output_name(files[0],suffix.c_str(),true);
-        tipl::out() << "converted to NIFTI:" << std::filesystem::path(output.toStdString()).filename().string() << std::endl;
+        tipl::out() << "converted to NIFTI: " << std::filesystem::path(output.toStdString()).filename().string() << std::endl;
         nii_out.save_to_file(output.toStdString().c_str());
     }
     return true;

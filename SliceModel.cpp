@@ -263,7 +263,7 @@ bool CustomSliceModel::load_slices(const std::vector<std::string>& files,bool is
                 demo = handle->demo;
             if(demo.empty() && has_gui)
                 demo = get_matched_demo(nullptr,db_handle).toStdString();
-            tipl::out() << "subject's demo:" << demo;
+            tipl::out() << "subject's demo: " << demo;
             if(!db_handle->db.get_demo_matched_volume(demo,source_images))
             {
                 error_msg = db_handle->db.error_msg;
@@ -491,7 +491,7 @@ bool CustomSliceModel::load_mapping(const char* file_name)
     update_transform();
     is_diffusion_space = false;
     tipl::out() << arg_min << std::endl;
-    tipl::out() << "to_dif:" << to_dif << std::endl;
+    tipl::out() << "to_dif: " << to_dif << std::endl;
     return true;
 }
 

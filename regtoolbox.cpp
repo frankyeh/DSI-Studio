@@ -403,7 +403,7 @@ void RegToolBox::linear_reg(tipl::reg::reg_type reg_type,int cost_type)
 
     }
     auto r = tipl::correlation_mt(J_.begin(),J_.end(),It.begin());
-    tipl::out() << "linear:" << r << std::endl;
+    tipl::out() << "linear: " << r << std::endl;
     J.swap(J_);
 }
 
@@ -456,7 +456,7 @@ void RegToolBox::nonlinear_reg(void)
     }
     tipl::compose_mapping(I,to2from,JJ);
     auto r = tipl::correlation_mt(JJ.begin(),JJ.end(),It.begin());
-    tipl::out() << "nonlinear:" << r;
+    tipl::out() << "nonlinear: " << r;
 }
 
 void RegToolBox::on_run_reg_clicked()

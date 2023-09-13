@@ -399,9 +399,9 @@ void GLWidget::initializeGL()
         return;
     }
     tipl::out() << "openGL information" << std::endl;
-    tipl::out() << "version:" << glGetString(GL_VERSION) << std::endl;
-    tipl::out() << "vendor:" << glGetString(GL_VENDOR) << std::endl;
-    tipl::out() << "renderer:" << glGetString(GL_RENDERER) << std::endl;
+    tipl::out() << "version: " << glGetString(GL_VERSION) << std::endl;
+    tipl::out() << "vendor: " << glGetString(GL_VENDOR) << std::endl;
+    tipl::out() << "renderer: " << glGetString(GL_RENDERER) << std::endl;
 
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_NORMALIZE);

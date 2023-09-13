@@ -268,7 +268,7 @@ bool view_image::command(std::string cmd,std::string param1)
     tipl::out() << "result: " << (result ? "succeeded":"failed") << std::endl;
     if(!result)
     {
-        tipl::out() << "ERROR:" << error_msg << std::endl;
+        tipl::out() << "ERROR: " << error_msg << std::endl;
         if(!undo_list.empty())
         {
             swap(undo_list.back());
@@ -536,7 +536,7 @@ bool get_compressed_image(tipl::io::dicom& dicom,tipl::image<2,short>& I)
     QImage img;
     if(!qimg.read(&img))
     {
-        std::cout << "Unsupported transfer syntax:" << dicom.encoding;
+        std::cout << "ERROR: unsupported transfer syntax " << dicom.encoding;
         return false;
     }
     QImage buf = img.convertToFormat(QImage::Format_RGB32);
@@ -850,7 +850,7 @@ bool view_image::open(QStringList file_names_)
                 tipl::image<2,short> I;
                 if(!get_compressed_image(dicom,I))
                 {
-                    QMessageBox::critical(this,"ERROR",QString("Unsupported transfer syntax:") + QString(dicom.encoding.c_str()));
+                    QMessageBox::critical(this,"ERROR",QString("Unsupported transfer syntax ") + QString(dicom.encoding.c_str()));
                     return false;
                 }
                 if(I.size() == shape.size())

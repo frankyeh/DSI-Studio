@@ -59,8 +59,8 @@ inline float linear_with_cc(const tipl::image<3,float>& from,
     float result = tipl::reg::linear_mr<tipl::reg::correlation>(from,from_vs,to,new_to_vs,arg,tipl::reg::reg_type(reg_type),[&](void){return terminated;},0.01,bound);
     if(new_to_vs != to_vs)
         tipl::transformation_matrix<float>(arg,from,from_vs,to,new_to_vs).to_affine_transform(arg,from,from_vs,to,to_vs);
-    tipl::out() << "R:" << -result << std::endl;
-    tipl::out() << "T:" << std::endl;
+    tipl::out() << "R: " << -result << std::endl;
+    tipl::out() << "T: " << std::endl;
     return -result;
 }
 

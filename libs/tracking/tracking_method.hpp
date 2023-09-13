@@ -94,27 +94,27 @@ struct TrackingParam
         for(size_t i = 0;i < code.size();i += 2,++p)
             *p = index2char(code[i],code[i+1]);
 
-        tipl::out() << "threshold:" << threshold << std::endl;
-        tipl::out() << "default_otsu:" << default_otsu << std::endl;
-        tipl::out() << "cull_cos_angle:" << cull_cos_angle << std::endl;
-        tipl::out() << "step_size:" << step_size << std::endl;
-        tipl::out() << "smooth_fraction:" << smooth_fraction << std::endl;
-        tipl::out() << "min_length:" << min_length << std::endl;
-        tipl::out() << "max_length:" << max_length << std::endl;
-        tipl::out() << "termination_count:" << termination_count << std::endl;
-        tipl::out() << "max_seed_count:" << max_seed_count << std::endl;
-        tipl::out() << "stop_by_tract:" << int(stop_by_tract) << std::endl;
-        tipl::out() << "reserved0(center_seed DEPRECATED):" << int(reserved0) << std::endl;
-        tipl::out() << "check_ending:" << int(check_ending) << std::endl;
-        tipl::out() << "reserved5(interpolation_strategy DEPRECATED):" << int(reserved5) << std::endl;
+        tipl::out() << "threshold: " << threshold << std::endl;
+        tipl::out() << "default_otsu: " << default_otsu << std::endl;
+        tipl::out() << "cull_cos_angle: " << cull_cos_angle << std::endl;
+        tipl::out() << "step_size: " << step_size << std::endl;
+        tipl::out() << "smooth_fraction: " << smooth_fraction << std::endl;
+        tipl::out() << "min_length: " << min_length << std::endl;
+        tipl::out() << "max_length: " << max_length << std::endl;
+        tipl::out() << "termination_count: " << termination_count << std::endl;
+        tipl::out() << "max_seed_count: " << max_seed_count << std::endl;
+        tipl::out() << "stop_by_tract: " << int(stop_by_tract) << std::endl;
+        tipl::out() << "reserved0(center_seed DEPRECATED): " << int(reserved0) << std::endl;
+        tipl::out() << "check_ending: " << int(check_ending) << std::endl;
+        tipl::out() << "reserved5(interpolation_strategy DEPRECATED): " << int(reserved5) << std::endl;
         tipl::out() << "tracking_method:" << int(tracking_method) << std::endl;
-        tipl::out() << "reserved7(initial_direction DEPRECATED):" << int(reserved7) << std::endl;
-        tipl::out() << "reserved6(random_seed DEPRECATED):" << int(reserved6) << std::endl;
-        tipl::out() << "tip_iteration:" << int(tip_iteration) << std::endl;
-        tipl::out() << "dt_threshold:" << dt_threshold << std::endl;
-        tipl::out() << "random_seed:" << random_seed << std::endl;
-        tipl::out() << "reserved3:" << int(reserved3) << std::endl;
-        tipl::out() << "reserved4:" << int(reserved4) << std::endl;
+        tipl::out() << "reserved7(initial_direction DEPRECATED): " << int(reserved7) << std::endl;
+        tipl::out() << "reserved6(random_seed DEPRECATED): " << int(reserved6) << std::endl;
+        tipl::out() << "tip_iteration: " << int(tip_iteration) << std::endl;
+        tipl::out() << "dt_threshold: " << dt_threshold << std::endl;
+        tipl::out() << "random_seed: " << random_seed << std::endl;
+        tipl::out() << "reserved3: " << int(reserved3) << std::endl;
+        tipl::out() << "reserved4: " << int(reserved4) << std::endl;
         return true;
     }
 

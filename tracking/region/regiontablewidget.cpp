@@ -497,7 +497,7 @@ void get_roi_label(QString file_name,std::map<int,std::string>& label_map,std::m
     if(base_name.endsWith(".nii"))
         base_name.chop(4);
     QString label_file = QFileInfo(file_name).absolutePath()+"/"+base_name+".txt";
-    tipl::out() <<"looking for region label file:" << label_file.toStdString() << std::endl;
+    tipl::out() <<"looking for region label file " << label_file.toStdString() << std::endl;
     if(QFileInfo(label_file).exists())
     {
         load_nii_label(label_file.toStdString().c_str(),label_map);
@@ -508,7 +508,7 @@ void get_roi_label(QString file_name,std::map<int,std::string>& label_map,std::m
     if(QFileInfo(label_file).exists())
     {
         load_json_label(label_file.toStdString().c_str(),label_map);
-        tipl::out() <<"json file loaded:" << label_file.toStdString() << std::endl;
+        tipl::out() <<"json file loaded " << label_file.toStdString() << std::endl;
         return;
     }
     if(QFileInfo(file_name).fileName().contains("aparc") || QFileInfo(file_name).fileName().contains("aseg")) // FreeSurfer
@@ -839,7 +839,7 @@ bool RegionTableWidget::load_multiple_roi_nii(QString file_name,bool is_mni)
                 std::shared_ptr<ROIRegion> region(new ROIRegion(cur_tracking_window.handle));
                 if(!region->load_region_from_file(files[i].toStdString().c_str()))
                 {
-                    error_msg = "Cannot read file:";
+                    error_msg = "cannot read ";
                     error_msg += files[i].toStdString();
                     failed = true;
                     return;

@@ -660,7 +660,7 @@ bool add_other_image(ImageModel* handle,QString name,QString filename)
     tipl::io::gz_nifti in;
     if(!in.load_from_file(filename.toStdString().c_str()) || !in.toLPS(ref))
     {
-        std::cout << "ERROR: not a valid nifti file:" << filename.toStdString() << std::endl;
+        std::cout << "ERROR: not a valid nifti file " << filename.toStdString() << std::endl;
         return false;
     }
 

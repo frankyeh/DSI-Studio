@@ -1678,7 +1678,7 @@ bool fib_data::map_to_mni(bool background)
 
         tipl::displacement_to_mapping(dis,t2s,T);
         tipl::compose_mapping(Is,t2s,Iss);
-        tipl::out() << "R2:" << tipl::correlation(Iss.begin(),Iss.end(),It.begin()) << std::endl;
+        tipl::out() << "R2: " << tipl::correlation(Iss.begin(),Iss.end(),It.begin()) << std::endl;
 
         s2t.resize(dim);
         tipl::inv_displacement_to_mapping(inv_dis,s2t,T);
@@ -1775,7 +1775,7 @@ std::shared_ptr<atlas> fib_data::get_atlas(const std::string atlas_name)
             name_list += at->name;
         }
     error_msg = atlas_name;
-    error_msg += " is not one of the following built-in atlases:";
+    error_msg += " is not one of the built-in atlases of ";
     error_msg += name_list;
     return std::shared_ptr<atlas>();
 }

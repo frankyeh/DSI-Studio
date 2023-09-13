@@ -122,7 +122,7 @@ public:
             tipl::resample_mt<tipl::interpolation::cubic>(VF,VFF,affine);
             float linear_r = tipl::correlation(VFF.begin(),VFF.end(),VG.begin());
             linear_r = linear_r*linear_r;
-            tipl::out() << "linear R2:" << linear_r << std::endl;
+            tipl::out() << "linear R2: " << linear_r << std::endl;
             if(linear_r < 0.3f)
                 throw std::runtime_error("ERROR: Poor R2 found in linear registration. Please check image orientation or use manual alignment.");
 
@@ -177,7 +177,7 @@ public:
 
             float r = float(tipl::correlation(VG.begin(),VG.end(),VFFF.begin()));
             voxel.R2 = r*r;
-            tipl::out() << "linear+nonlinear R2:" << voxel.R2 << std::endl;
+            tipl::out() << "linear+nonlinear R2: " << voxel.R2 << std::endl;
             if(voxel.R2 < 0.3f)
                 throw std::runtime_error("ERROR: Poor R2 found. Please check image orientation or use manual alignment.");
 
@@ -292,8 +292,8 @@ public:
             voxel.trans_to_mni[0] = -VGvs[0];
             voxel.trans_to_mni[5] = -VGvs[1];
             voxel.trans_to_mni[10] = VGvs[2];
-            tipl::out() << "output resolution:" << VGvs[0] << std::endl;
-            tipl::out() << "output dimension:" << VG.shape() << std::endl;
+            tipl::out() << "output resolution: " << VGvs[0] << std::endl;
+            tipl::out() << "output dimension: " << VG.shape() << std::endl;
 
 
             if(is_human_template && !partial_reconstruction) // if default template is used

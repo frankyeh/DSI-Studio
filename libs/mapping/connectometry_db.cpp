@@ -246,7 +246,7 @@ bool connectometry_db::parse_demo(void)
 
     // convert special characters
     tipl::out pout;
-    pout << "demographic columns:";
+    pout << "demographic columns: ";
     for(size_t i = 0;i < titles.size();++i)
     {
         std::replace(titles[i].begin(),titles[i].end(),' ','_');
@@ -664,7 +664,7 @@ bool connectometry_db::get_demo_matched_volume(const std::string& matched_demo,t
         tipl::out out;
         out << "creating subject-matching image by regressing against ";
         for(size_t i = 0;i < feature_titles.size();++i)
-            out << feature_titles[i] << ":" << v[i] << " ";
+            out << feature_titles[i] << ": " << v[i] << " ";
         out << std::endl;
     }
     size_t feature_size = 1+feature_location.size(); // +1 for intercept
@@ -1097,7 +1097,7 @@ bool stat_model::select_cohort(connectometry_db& db,
                 }
             if(!parsed)
             {
-                error_msg = "cannot parse selection text:";
+                error_msg = "cannot parse selection text: ";
                 error_msg += text;
                 goto error;
             }
