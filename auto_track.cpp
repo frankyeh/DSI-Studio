@@ -167,7 +167,7 @@ std::string run_auto_track(tipl::program_option<tipl::out>& po,const std::vector
         tipl::out() << "processing " << cur_file_base_name << std::endl;
         std::string fib_file_name;
         if(!std::filesystem::exists(file_list[i]))
-            return std::string("cannot find file:")+file_list[i];
+            return std::string("cannot find ")+file_list[i];
 
         if(QString(file_list[i].c_str()).endsWith("fib.gz"))
             fib_file_name = file_list[i];
@@ -177,7 +177,7 @@ std::string run_auto_track(tipl::program_option<tipl::out>& po,const std::vector
                QString(file_list[i].c_str()).endsWith(".nii.gz"))
                 return std::string("SRC and NIFTI files are not supported in autotrack pipeline. Please reconstruct data into FIB files");
             else
-                return std::string("unsupported file format :") + file_list[i];
+                return std::string("unsupported format in ") + file_list[i];
         }
         // fiber tracking on fib file
         std::shared_ptr<fib_data> handle(new fib_data);
@@ -204,7 +204,7 @@ std::string run_auto_track(tipl::program_option<tipl::out>& po,const std::vector
             {
                 QDir dir(output_path.c_str());
                 if (!dir.exists() && !dir.mkpath("."))
-                    tipl::out() << std::string("cannot create directory:") + output_path << std::endl;
+                    tipl::out() << std::string("cannot create directory: ") + output_path << std::endl;
             }
             std::string fib_base = QFileInfo(fib_file_name.c_str()).baseName().toStdString();
             std::string no_result_file_name = output_path + "/" + fib_base+"."+track_name+".no_result.txt";
@@ -223,9 +223,9 @@ std::string run_auto_track(tipl::program_option<tipl::out>& po,const std::vector
             bool has_trk_file = std::filesystem::exists(trk_file_name) &&
                     (!export_template_trk || std::filesystem::exists(template_trk_file_name));
             if(has_stat_file)
-                tipl::out() << "found stat file:" << stat_file_name << std::endl;
+                tipl::out() << "found stat file: " << stat_file_name << std::endl;
             if(has_trk_file)
-                tipl::out() << "found track file:" << trk_file_name << std::endl;
+                tipl::out() << "found track file: " << trk_file_name << std::endl;
 
             if(!overwrite && (!export_stat || has_stat_file) && (!export_trk || has_trk_file))
             {
@@ -243,7 +243,7 @@ std::string run_auto_track(tipl::program_option<tipl::out>& po,const std::vector
                 if (!fib_loaded)
                 {
                     if(!handle->load_from_file(fib_file_name.c_str()))
-                       return fib_file_name + ":" + handle->error_msg;
+                       return handle->error_msg;
                     fib_loaded = true;
                 }
                 TractModel tract_model(handle);
@@ -343,10 +343,10 @@ std::string run_auto_track(tipl::program_option<tipl::out>& po,const std::vector
                     {
                         tract_model.report = report;
                         if(!tract_model.save_tracts_to_file(trk_file_name.c_str()))
-                            return std::string("fail to save tractography file:")+trk_file_name;
+                            return std::string("fail to save ")+trk_file_name;
                         if(export_template_trk &&
                            !tract_model.save_tracts_in_template_space(handle,template_trk_file_name.c_str()))
-                                return std::string("fail to save template tractography file:")+trk_file_name;
+                                return std::string("fail to save ")+trk_file_name;
                     }
                     break;
                 }
@@ -379,11 +379,11 @@ std::string run_auto_track(tipl::program_option<tipl::out>& po,const std::vector
         {
             for(size_t j = 0;j < stat_files[i].size();++j)
             {
-                tipl::out() << "checking file:" << stat_files[i][j] << std::endl;
+                tipl::out() << "checking " << stat_files[i][j] << std::endl;
                 if(std::filesystem::exists(stat_files[i][j]) &&
                    !std::filesystem::file_size(stat_files[i][j]))
                 {
-                    tipl::out() << "remove empty file:" << stat_files[i][j] << std::endl;
+                    tipl::out() << "removing empty file " << stat_files[i][j] << std::endl;
                     std::filesystem::remove(stat_files[i][j]);
                     has_incomplete = true;
                 }
@@ -427,11 +427,11 @@ std::string run_auto_track(tipl::program_option<tipl::out>& po,const std::vector
                 }
                 if(lines.size() < metrics_names.size())
                 {
-                    std::string error("inconsistent stat file (remove it and rerun):");
+                    std::string error("inconsistent stat file (remove it and rerun): ");
                     error += std::filesystem::path(stat_files[t][s]).filename().string();
-                    error += " metrics count=";
+                    error += " metrics count: ";
                     error += std::to_string(lines.size());
-                    error += " others=";
+                    error += " others: ";
                     error += std::to_string(metrics_names.size());
                     return error;
                 }
