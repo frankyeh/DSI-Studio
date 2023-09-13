@@ -77,7 +77,7 @@ jobs:
       run: |
         mv build/dsi_studio.app .
         /usr/local/opt/qt@5/bin/macdeployqt dsi_studio.app
-        curl -sSLO "https://github.com/frankyeh/TinyFSL/releases/download/2023.07.08/tiny_fsl_${{ matrix.os }}.zip"
+        curl -sSLO "https://github.com/frankyeh/TinyFSL/releases/download/2022.08.03/tiny_fsl_${{ matrix.os }}.zip"
         7z e tiny_fsl_${{ matrix.os }}.zip -odsi_studio.app/Contents/MacOS/plugin
         rm -fr dsi_studio.app/Contents/MacOS/plugin/tiny_fsl
         mv other/* dsi_studio.app/Contents/MacOS/
@@ -127,7 +127,7 @@ jobs:
       run: |
         mv build/dsi_studio.app .
         /usr/local/opt/qt@6/bin/macdeployqt dsi_studio.app
-        curl -sSLO "https://github.com/frankyeh/TinyFSL/releases/download/2023.07.08/tiny_fsl_${{ matrix.os }}.zip"
+        curl -sSLO "https://github.com/frankyeh/TinyFSL/releases/download/2022.08.03/tiny_fsl_${{ matrix.os }}.zip"
         7z e tiny_fsl_${{ matrix.os }}.zip -odsi_studio.app/Contents/MacOS/plugin
         rm -fr dsi_studio.app/Contents/MacOS/plugin/tiny_fsl
         mv other/* dsi_studio.app/Contents/MacOS/
@@ -197,7 +197,7 @@ jobs:
         windeployqt --no-translations --no-system-d3d-compiler --compiler-runtime --no-opengl-sw dsi_studio_win\dsi_studio.exe
         move DSI-Studio-atlas dsi_studio_win\atlas  
         move UNet-Studio-Data\network dsi_studio_win\
-        curl -sSLO "https://github.com/frankyeh/TinyFSL/releases/download/2023.07.08/tiny_fsl_win.zip"
+        curl -sSLO "https://github.com/frankyeh/TinyFSL/releases/download/2022.08.03/tiny_fsl_win.zip"
         7z e tiny_fsl_win.zip -odsi_studio_win\plugin
         rm dsi_studio_win\plugin\cublas*
         rd dsi_studio_win\plugin\tiny_fsl
