@@ -26,7 +26,7 @@ int rec(tipl::program_option<tipl::out>& po)
         return 1;
     }
     {
-        tipl::progress prog("reconstruction parameters:");
+        tipl::progress prog("reconstruction parameters");
         src.voxel.method_id = uint8_t(po.get("method",4));
         src.voxel.odf_resolving = po.get("odf_resolving",int(0));
         src.voxel.output_odf = po.get("record_odf",int(0));
@@ -39,7 +39,7 @@ int rec(tipl::program_option<tipl::out>& po)
         src.voxel.param[1] = po.get("param1",src.voxel.param[1]);
         src.voxel.param[2] = po.get("param2",src.voxel.param[2]);
         for(size_t id = 0;id < fa_template_list.size();++id)
-            tipl::out() << "template " << id << ":" << std::filesystem::path(fa_template_list[id]).stem() << std::endl;
+            tipl::out() << "template " << id << ": " << std::filesystem::path(fa_template_list[id]).stem() << std::endl;
         src.voxel.template_id = size_t(po.get("template",src.voxel.template_id));
 
         if(src.voxel.method_id == 7) // is qsdr
@@ -58,7 +58,7 @@ int rec(tipl::program_option<tipl::out>& po)
             {
                 if(!src.mask_from_unet())
                 {
-                    tipl::out() << "ERROR:" << src.error_msg;
+                    tipl::out() << "ERROR: " << src.error_msg;
                     return 1;
                 }
             }
@@ -68,7 +68,7 @@ int rec(tipl::program_option<tipl::out>& po)
                 tipl::io::gz_nifti nii;
                 if(!nii.load_from_file(mask_file) || !nii.toLPS(src.voxel.mask))
                 {
-                    tipl::out() << "ERROR:" << nii.error_msg << std::endl;
+                    tipl::out() << "ERROR: " << nii.error_msg << std::endl;
                     return 1;
                 }
                 if(src.voxel.mask.shape() != src.voxel.dim)
@@ -87,7 +87,7 @@ int rec(tipl::program_option<tipl::out>& po)
         {
             if(po.has("rev_pe") && !src.run_topup_eddy(po.get("rev_pe")))
             {
-                tipl::out() << "ERROR:" << src.error_msg << std::endl;
+                tipl::out() << "ERROR: " << src.error_msg << std::endl;
                 return 1;
             }
             if(po.get("motion_correction",0))
@@ -151,7 +151,7 @@ int rec(tipl::program_option<tipl::out>& po)
                 if(!src.command(run_list[0].toStdString(),
                                     run_list.count() > 1 ? run_list[1].toStdString():std::string()))
                 {
-                    tipl::out() << "ERROR:" << src.error_msg << std::endl;
+                    tipl::out() << "ERROR: " << src.error_msg << std::endl;
                     return 1;
                 }
             }
@@ -199,7 +199,7 @@ int rec(tipl::program_option<tipl::out>& po)
         std::string new_src_file = po.has("save_src") ? po.get("save_src") : po.get("save_nii");
         if(!src.save_to_file(new_src_file.c_str()))
         {
-            tipl::out() << "ERROR:" << src.error_msg << std::endl;
+            tipl::out() << "ERROR: " << src.error_msg << std::endl;
             return -1;
         }
         return 0;
@@ -237,7 +237,7 @@ int rec(tipl::program_option<tipl::out>& po)
     }
     if (!src.reconstruction())
     {
-        tipl::out() << "ERROR:" << src.error_msg << std::endl;
+        tipl::out() << "ERROR: " << src.error_msg << std::endl;
         return 1;
     }
     return 0;

@@ -41,6 +41,6 @@ int atk(tipl::program_option<tipl::out>& po)
         }
         return 0;
     }
-    tipl::out() << "ERROR:" << error << std::endl;
+    tipl::out() << "ERROR: " << error << std::endl;
     return 1;
 }

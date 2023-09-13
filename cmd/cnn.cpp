@@ -25,7 +25,7 @@ bool train_cnn(tipl::ml::trainer& t,
     tipl::out() << "epoch=" << t.epoch << std::endl;
 
     auto on_enumerate_epoch = [&](){
-        tipl::out() << "training error:" << (train_error = t.get_training_error()) << "%" << std::endl;
+        tipl::out() << "training error: " << (train_error = t.get_training_error()) << "%" << std::endl;
         };
     nn.init_weights();
     bool terminated = false;
@@ -114,7 +114,7 @@ int cnn(tipl::program_option<tipl::out>& po)
             {
                 if(start_count)
                 {
-                    tipl::out() << "skipping network:" << network_list[i] << std::endl;
+                    tipl::out() << "skipping network: " << network_list[i] << std::endl;
                     --start_count;
                     continue;
                 }

@@ -37,7 +37,7 @@ bool check_other_slices(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_
         auto new_slice = std::make_shared<CustomSliceModel>(handle.get());
         if(!new_slice->load_slices(filenames[i]))
         {
-            tipl::out() << "ERROR: fail to load " << filenames[i] << ":" << new_slice->error_msg << std::endl;
+            tipl::out() << "ERROR: fail to load " << filenames[i] << " " << new_slice->error_msg << std::endl;
             return false;
         }
         new_slice->wait();
@@ -94,7 +94,7 @@ bool export_track_info(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_d
             // check index
             if(index_name != "qa" && index_name != "fa" &&  handle->get_name_index(index_name) == handle->view_item.size())
             {
-                tipl::out() << "cannot find index name:" << index_name << std::endl;
+                tipl::out() << "cannot find index name " << index_name << std::endl;
                 return false;
             }
             if(bandwidth == 0)
@@ -108,9 +108,9 @@ bool export_track_info(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_d
                 return false;
             }
             tipl::out() << "calculating report" << std::endl;
-            tipl::out() << "profile_dir:" << profile_dir << std::endl;
-            tipl::out() << "bandwidth:" << bandwidth << std::endl;
-            tipl::out() << "index_name:" << index_name << std::endl;
+            tipl::out() << "profile_dir: " << profile_dir << std::endl;
+            tipl::out() << "bandwidth: " << bandwidth << std::endl;
+            tipl::out() << "index_name: " << index_name << std::endl;
             tract_model->get_report(
                                 handle,
                                 profile_dir,
@@ -228,7 +228,7 @@ bool export_track_info(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_d
                 continue;
             }
         }
-        tipl::out() << "invalid export option:" << cmd << std::endl;
+        tipl::out() << "invalid export option " << cmd << std::endl;
         return false;
     }
     return true;
@@ -293,7 +293,7 @@ bool get_connectivity_matrix(tipl::program_option<tipl::out>& po,
                         fn = dir + line;
                     if(!region->load_region_from_file(fn.c_str()))
                     {
-                        tipl::out() << "ERROR: failed to open file as a region:" << fn << std::endl;
+                        tipl::out() << "ERROR: failed to open file as a region: " << fn << std::endl;
                         return false;
                     }
                     regions.push_back(region);
@@ -394,7 +394,7 @@ std::shared_ptr<fib_data> cmd_load_fib(std::string file_name)
     }
     if (!handle->load_from_file(file_name.c_str()))
     {
-        tipl::out() << "ERROR:" << handle->error_msg << std::endl;
+        tipl::out() << "ERROR: " << handle->error_msg << std::endl;
         return std::shared_ptr<fib_data>();
     }
     return handle;
@@ -668,11 +668,11 @@ int trk(tipl::program_option<tipl::out>& po)
     }
     catch(std::exception const&  ex)
     {
-        tipl::out() << "program terminated due to exception:" << ex.what() << std::endl;
+        tipl::out() << "ERROR: program terminated due to exception: " << ex.what() << std::endl;
     }
     catch(...)
     {
-        tipl::out() << "program terminated due to unknown exception" << std::endl;
+        tipl::out() << "ERROR: program terminated due to unknown exception" << std::endl;
     }
     return 0;
 }
@@ -716,13 +716,13 @@ void set_template(std::shared_ptr<fib_data> handle,tipl::program_option<tipl::ou
     if(po.has("template"))
     {
         for(size_t id = 0;id < fa_template_list.size();++id)
-            tipl::out() << "template " << id << ":" << std::filesystem::path(fa_template_list[id]).stem() << std::endl;
+            tipl::out() << "template " << id << ": " << std::filesystem::path(fa_template_list[id]).stem() << std::endl;
         handle->set_template_id(po.get("template",size_t(0)));
     }
     if(po.has("tractography_atlas"))
     {
         for(size_t id = 0;id < handle->tractography_atlas_list.size();++id)
-            tipl::out() << "tractography atlas " << id << ":" << std::filesystem::path(handle->tractography_atlas_list[id]).stem() << std::endl;
+            tipl::out() << "tractography atlas " << id << ": " << std::filesystem::path(handle->tractography_atlas_list[id]).stem() << std::endl;
         handle->set_tractography_atlas_id(po.get("tractography_atlas",size_t(0)));
     }
 }
@@ -779,15 +779,15 @@ int trk(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> handle)
         if(metric_i == handle->view_item.size() || metric_j == handle->view_item.size())
         {
             tipl::out() << "ERROR: invalid dt_metric" << std::endl;
-            tipl::out() << "Available metrics are the following:" << std::endl;
+            tipl::out() << "available metrics are " << std::endl;
             for(size_t i = 0;i < handle->view_item.size();++i)
                 tipl::out() << handle->view_item[i].name << std::endl;
             return 1;
         }
         if(handle->view_item[metric_i].name != po.get("dt_metric1"))
-            tipl::out() << "PLEASE CHECK: you specify " << po.get("dt_metric1") << " but not found. The analysis will use " << handle->view_item[metric_i].name;
+            tipl::out() << "WARNING: specified " << po.get("dt_metric1") << " but it was not found. The analysis will use " << handle->view_item[metric_i].name;
         if(handle->view_item[metric_j].name != po.get("dt_metric2"))
-            tipl::out() << "PLEASE CHECK: you specify " << po.get("dt_metric2") << " but not found. The analysis will use " << handle->view_item[metric_j].name;
+            tipl::out() << "WARNING: specified " << po.get("dt_metric2") << " but it was not found. The analysis will use " << handle->view_item[metric_j].name;
         handle->set_dt_index(std::make_pair(metric_i,metric_j),po.get("dt_threshold_type",0));
     }
 

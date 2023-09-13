@@ -107,7 +107,7 @@ group_connectometry::group_connectometry(QWidget *parent,std::shared_ptr<group_c
         if(db.R2[index] < 0.5)
         {
             if(check_quality.empty())
-                check_quality = "Poor image quality found found in subject(s):";
+                check_quality = "Poor image quality found found in subject(s): ";
             std::ostringstream out;
             out << " #" << index+1 << " " << db.subject_names[index];
             check_quality += out.str();

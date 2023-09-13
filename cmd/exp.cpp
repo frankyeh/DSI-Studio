@@ -26,11 +26,11 @@ int exp(tipl::program_option<tipl::out>& po)
             }
             else
             {
-                tipl::out() << "Cannot write to file:" << output_name << std::endl;
+                tipl::out() << "ERROR: cannot write to " << output_name << std::endl;
                 return 1;
             }
         }
-        tipl::out() << "unsupported file format" << std::endl;
+        tipl::out() << "ERROR: unsupported file format" << std::endl;
         return 1;
     }
     if(QString(file_name.c_str()).endsWith(".tt.gz"))
@@ -45,11 +45,11 @@ int exp(tipl::program_option<tipl::out>& po)
             }
             else
             {
-                tipl::out() << "Cannot write to file:" << output_name << std::endl;
+                tipl::out() << "ERROR: cannot write to " << output_name << std::endl;
                 return 1;
             }
         }
-        tipl::out() << "unsupported file format" << std::endl;
+        tipl::out() << "ERROR: unsupported file format" << std::endl;
         return 1;
     }
     if(QString(file_name.c_str()).endsWith(".fib.gz"))
@@ -75,7 +75,7 @@ int exp(tipl::program_option<tipl::out>& po)
             }
             if(!handle->db.save_demo_matched_image(po.get("match"),po.get("output",po.get("source")+".matched.nii.gz")))
             {
-                tipl::out() << "ERROR:" << handle->db.error_msg << std::endl;
+                tipl::out() << "ERROR: " << handle->db.error_msg << std::endl;
                 return 1;
             }
             return 0;

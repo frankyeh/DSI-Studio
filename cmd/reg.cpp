@@ -222,7 +222,7 @@ int reg(tipl::program_option<tipl::out>& po)
     tipl::out() << "correlation cofficient: " << r2 << std::endl;
     if(po.get("reg_type",1) == 0) // just rigidbody
     {
-        tipl::out() << "output warped image:" << output_wp_image << std::endl;
+        tipl::out() << "output warped image to " << output_wp_image << std::endl;
         tipl::io::gz_nifti::save_to_file(output_wp_image.c_str(),from_,to_vs,to_trans);
         if(po.has("apply_warp"))
         {

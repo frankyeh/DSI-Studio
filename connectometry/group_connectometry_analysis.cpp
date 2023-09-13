@@ -22,7 +22,7 @@ bool group_connectometry_analysis::load_database(const char* database_name)
     handle.reset(new fib_data);
     if(!handle->load_from_file(database_name))
     {
-        error_msg = "Invalid fib file:";
+        error_msg = "Invalid fib file: ";
         error_msg += handle->error_msg;
         return false;
     }

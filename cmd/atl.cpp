@@ -42,11 +42,7 @@ int atl(tipl::program_option<tipl::out>& po)
     else
     {
         if(!po.get_files("source",name_list))
-        {
-            tipl::out() << "ERROR: " << po.error_msg << std::endl;
             return 1;
-        }
-
     }
 
     if(name_list.empty())
@@ -61,7 +57,7 @@ int atl(tipl::program_option<tipl::out>& po)
         const char* msg = odf_average(po.get("output",(QFileInfo(name_list[0].c_str()).absolutePath()+"/template").toStdString()).c_str(),name_list);
         if(msg)
         {
-            tipl::out() << "ERROR:" << msg << std::endl;
+            tipl::out() << "ERROR: " << msg << std::endl;
             return 1;
         }
         return 0;
@@ -103,7 +99,7 @@ int atl(tipl::program_option<tipl::out>& po)
             fib_data fib;
             if(!fib.load_from_file(name_list[0].c_str()))
             {
-                tipl::out() << "ERROR loading subject fib files:" << name_list[0] << std::endl;
+                tipl::out() << "ERROR: cannot load subject fib " << name_list[0] << std::endl;
                 return 1;
             }
             reso = po.get("resolution",std::floor((fib.vs[0] + fib.vs[2])*0.5f*100.0f)/100.0f);
@@ -141,7 +137,7 @@ int atl(tipl::program_option<tipl::out>& po)
                 tipl::out() << "ERROR: " << data->error_msg << std::endl;
                 return 1;
             }
-            tipl::out() << "extracting index:" << index_name[i] << std::endl;
+            tipl::out() << "extracting " << index_name[i] << std::endl;
             data->handle->db.index_name = index_name[i];
             for (unsigned int index = 0;index < name_list.size();++index)
             {
@@ -151,7 +147,7 @@ int atl(tipl::program_option<tipl::out>& po)
                 if(!data->handle->db.add_subject_file(name_list[index],
                     QFileInfo(name_list[index].c_str()).baseName().toStdString()))
                 {
-                    tipl::out() << "ERROR loading subject fib files:" << data->handle->db.error_msg << std::endl;
+                    tipl::out() << "ERROR: failed to load subject fib file " << data->handle->db.error_msg << std::endl;
                     return 1;
                 }
             }
@@ -159,7 +155,7 @@ int atl(tipl::program_option<tipl::out>& po)
 
             if(po.has("demo") && !data->handle->db.parse_demo(po.get("demo")))
             {
-                tipl::out() << "ERROR " << data->handle->db.error_msg <<std::endl;
+                tipl::out() << "ERROR: " << data->handle->db.error_msg <<std::endl;
                 return 1;
             }
             std::string output = std::string(name_list.front().begin(),
@@ -168,10 +164,10 @@ int atl(tipl::program_option<tipl::out>& po)
                                                name_list.back().begin()).first) + "." + index_name[i] + ".db.fib.gz";
             if(!data->handle->db.save_db(po.get("output",output).c_str()))
             {
-                tipl::out() << "ERROR saving the db file:" << data->handle->db.error_msg << std::endl;
+                tipl::out() << "ERROR: cannot save db file " << data->handle->db.error_msg << std::endl;
                 return 1;
             }
-            tipl::out() << "connectometry db created:" << output << std::endl;
+            tipl::out() << "connectometry db created: " << output << std::endl;
         }
         return 0;
     }
@@ -181,7 +177,7 @@ int atl(tipl::program_option<tipl::out>& po)
         std::shared_ptr<fib_data> handle = cmd_load_fib(source);
         if(!handle.get())
         {
-            tipl::out() << "ERROR:" << handle->error_msg << std::endl;
+            tipl::out() << "ERROR: " << handle->error_msg << std::endl;
             return 1;
         }
         if(cmd=="roi")
@@ -218,7 +214,7 @@ int atl(tipl::program_option<tipl::out>& po)
                     {
                         tipl::out() << "save " << output << std::endl;
                         if(!tipl::io::gz_nifti::save_to_file(output.c_str(),roi,handle->vs,handle->trans_to_mni,handle->is_mni))
-                            tipl::out() << "cannot write output to file:" << output << std::endl;
+                            tipl::out() << "cannot write output to " << output << std::endl;
                     }
                 }
                 {
@@ -260,6 +256,6 @@ int atl(tipl::program_option<tipl::out>& po)
             return 0;
         }
     }
-    tipl::out() << "ERROR: unknown command:" << cmd << std::endl;
+    tipl::out() << "ERROR: unknown command: " << cmd << std::endl;
     return 1;
 }

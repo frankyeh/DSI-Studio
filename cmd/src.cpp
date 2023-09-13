@@ -53,7 +53,7 @@ int src(tipl::program_option<tipl::out>& po)
     std::vector<std::shared_ptr<DwiHeader> > dwi_files;
     if(!parse_dwi(file_list,dwi_files))
     {
-        tipl::out() << "ERROR loading dwi file:" << src_error_msg << std::endl;
+        tipl::out() << "ERROR: cannot read dwi file: " << src_error_msg << std::endl;
         return 1;
     }
     if(po.has("b_table"))
@@ -108,15 +108,15 @@ int src(tipl::program_option<tipl::out>& po)
         if(bval.size() != dwi_files.size())
         {
             tipl::out() << "mismatch between bval file and the loaded images" << std::endl;
-            tipl::out() << "dwi number:" << dwi_files.size() << std::endl;
-            tipl::out() << "bval number:" << bval.size() << std::endl;
+            tipl::out() << "dwi number: " << dwi_files.size() << std::endl;
+            tipl::out() << "bval number: " << bval.size() << std::endl;
             return 1;
         }
         if(bvec.size() != dwi_files.size()*3)
         {
             tipl::out() << "mismatch between bvec file and the loaded images" << std::endl;
-            tipl::out() << "dwi number:" << dwi_files.size() << std::endl;
-            tipl::out() << "bvec number:" << bvec.size() << std::endl;
+            tipl::out() << "dwi number: " << dwi_files.size() << std::endl;
+            tipl::out() << "bvec number: " << bvec.size() << std::endl;
             return 1;
         }
         for(unsigned int index = 0;index < dwi_files.size();++index)

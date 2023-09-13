@@ -10,7 +10,7 @@ int cnt(tipl::program_option<tipl::out>& po)
     std::shared_ptr<group_connectometry_analysis> vbc(new group_connectometry_analysis);
     if(!vbc->load_database(po.get("source").c_str()))
     {
-        tipl::out() << "ERROR:" << vbc->error_msg << std::endl;
+        tipl::out() << "ERROR: " << vbc->error_msg << std::endl;
         return 1;
     }
 
@@ -98,7 +98,7 @@ int cnt(tipl::program_option<tipl::out>& po)
     }
 
     {
-        tipl::progress prog("connectometry parameters:");
+        tipl::progress prog("connectometry parameters");
         vbc->no_tractogram = (po.get("no_tractogram",1) == 1);
         vbc->foi_str = foi_str;
         vbc->length_threshold_voxels = po.get("length_threshold",(vbc->handle->dim[0]/4)/5*5);
@@ -111,7 +111,7 @@ int cnt(tipl::program_option<tipl::out>& po)
         vbc->model->read_demo(db);
         if(!vbc->model->select_cohort(db,po.get("select")) || !vbc->model->select_feature(db,vbc->foi_str))
         {
-            tipl::out() << "ERROR:" << vbc->model->error_msg.c_str() << std::endl;
+            tipl::out() << "ERROR: " << vbc->model->error_msg.c_str() << std::endl;
             return 1;
         }
 

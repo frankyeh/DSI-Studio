@@ -44,7 +44,7 @@ std::string quality_check_src_files(QString dir)
 {
     std::ostringstream out;
     QStringList filenames = search_files(dir,"*src.gz");
-    out << "Directory:" << dir.toStdString() << std::endl;
+    out << "directory: " << dir.toStdString() << std::endl;
     if(filenames.empty())
     {
         tipl::out() << "no SRC file found in the directory" << std::endl;
@@ -86,8 +86,8 @@ std::string quality_check_src_files(QString dir)
         out << "\t";
         out << std::endl;
     }
-    out << "total scans:" << output.size() << std::endl;
-    out << "total outliers:" << outlier_count << std::endl;
+    out << "total scans: " << output.size() << std::endl;
+    out << "total outliers: " << outlier_count << std::endl;
     return out.str();
 }
 std::shared_ptr<fib_data> cmd_load_fib(std::string file_name);
@@ -95,7 +95,7 @@ std::string quality_check_fib_files(QString dir)
 {
     std::ostringstream out;
     QStringList filenames = search_files(dir,"*fib.gz");
-    out << "Directory:" << dir.toStdString() << std::endl;
+    out << "directory: " << dir.toStdString() << std::endl;
     if(filenames.empty())
     {
         tipl::out() << "no SRC file found in the directory" << std::endl;
@@ -121,7 +121,7 @@ std::string quality_check_fib_files(QString dir)
         out << result.first << std::endl;
 
     }
-    out << "total scans:" << output.size() << std::endl;
+    out << "total scans: " << output.size() << std::endl;
     return out.str();
 }
 
