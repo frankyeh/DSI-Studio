@@ -62,7 +62,6 @@ public:
 public:
     static bool output_src(const char* file_name, std::vector<std::shared_ptr<DwiHeader> >& dwi_files, int upsampling,bool sort_btable);
     static bool has_b_table(std::vector<std::shared_ptr<DwiHeader> >& dwi_files);
-    static bool consistent_dimension(std::vector<std::shared_ptr<DwiHeader> >& dwi_files);
 };
 
 #endif//DWI_HEADER_HPP

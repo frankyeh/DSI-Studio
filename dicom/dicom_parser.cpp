@@ -139,6 +139,9 @@ bool load_dicom_multi_frame(const char* file_name,std::vector<std::shared_ptr<Dw
             }
     }
 
+    if(b_table.empty())
+        return false;
+
     // multiframe DICOM
     // The b-table should be multiplied with the image rotation matrix
     tipl::matrix<3,3,float> T;
@@ -915,27 +918,14 @@ bool load_4d_fdf(QStringList file_list,std::vector<std::shared_ptr<DwiHeader> >&
     return true;
 }
 
-bool load_3d_series(QStringList file_list,std::vector<std::shared_ptr<DwiHeader> >& dwi_files)
-{
-    for (unsigned int index = 0;index < file_list.size();++index)
-    {
-        std::shared_ptr<DwiHeader> new_file(new DwiHeader);
-        if (!new_file->open(file_list[index].toStdString().c_str()))
-            continue;
-        new_file->file_name = file_list[index].toStdString().c_str();
-        dwi_files.push_back(new_file);
-    }
-    return !dwi_files.empty();
-}
-
 bool parse_dwi(QStringList file_list,
                     std::vector<std::shared_ptr<DwiHeader> >& dwi_files)
 {
+    tipl::progress prog("reading ",std::filesystem::path(file_list[0].toStdString()).stem().string().c_str());
     if(QFileInfo(file_list.front()).absolutePath() != QFileInfo(file_list.back()).absolutePath())
     {
         QStringList dwi_list;
         dwi_list << file_list[0];
-        tipl::progress prog("reading ",file_list[0].toStdString().c_str());
         for(int i = 1;prog(i,file_list.size());++i)
             if(QFileInfo(dwi_list.front()).absolutePath() == QFileInfo(file_list[i]).absolutePath())
                 dwi_list << file_list[i];
@@ -949,7 +939,6 @@ bool parse_dwi(QStringList file_list,
             }
         return true;
     }
-    tipl::out()  << "reading " << file_list[0].toStdString();
     src_error_msg.clear();
     if(QFileInfo(file_list[0]).fileName() == "2dseq")
     {
@@ -968,13 +957,15 @@ bool parse_dwi(QStringList file_list,
     if(QFileInfo(file_list[0]).fileName().endsWith(".nii") ||
             QFileInfo(file_list[0]).fileName().endsWith(".nii.gz"))
     {
+        tipl::out()  << "convert 4D NIFTI to src";
         for(int i = 0;i < file_list.size();++i)
             if(!load_4d_nii(file_list[i].toStdString().c_str(),dwi_files,false))
                 return false;
         return !dwi_files.empty();
     }
-    if(file_list.size() == 1 && QFileInfo(file_list[0]).isDir()) // single folder with DICOM files
+    if(file_list.size() == 1 && QFileInfo(file_list[0]).isDir())
     {
+        tipl::out()  << "processing a single folder with DICOM files";
         QDir cur_dir = file_list[0];
         QStringList dicom_file_list = cur_dir.entryList(QStringList("*.dcm"),QDir::Files|QDir::NoSymLinks);
         if(dicom_file_list.empty())
@@ -984,17 +975,17 @@ bool parse_dwi(QStringList file_list,
         return parse_dwi(dicom_file_list,dwi_files);
     }
 
-    //Combine 2dseq folders
     if(file_list.size() > 1 && QFileInfo(file_list[0]).isDir() &&
             QFileInfo(file_list[0]+"/pdata/1/2dseq").exists())
     {
+        tipl::out()  << "combine multiple 2dseq folders";
         for(int index = 0;index < file_list.size();++index)
             parse_dwi(QStringList() << (file_list[index]+"/pdata/1/2dseq"),dwi_files);
         return !dwi_files.empty();
     }
 
     std::sort(file_list.begin(),file_list.end(),compare_qstring());
-    tipl::io::dicom dicom_header;// multiple frame image
+    tipl::io::dicom dicom_header;
     tipl::shape<3> geo;
     if(!dicom_header.load_from_file(file_list[0].toStdString().c_str()))
     {
@@ -1002,16 +993,31 @@ bool parse_dwi(QStringList file_list,
         return false;
     }
     dicom_header.get_image_dimension(geo);
+    if(dicom_header.is_mosaic || geo[2] != 1)
+    {
+        tipl::out()  << "handled as Siemens mosaic or multiframe";
+        for (unsigned int index = 0;prog(index,file_list.size());++index)
+        {
+            std::shared_ptr<DwiHeader> new_file(new DwiHeader);
+            if (!new_file->open(file_list[index].toStdString().c_str()))
+                continue;
+            new_file->file_name = file_list[index].toStdString().c_str();
+            dwi_files.push_back(new_file);
+        }
+        return !prog.aborted() && !dwi_files.empty();
+    }
     if(geo[2] == 1)
-        return load_multiple_slice_dicom(file_list,dwi_files);
-    // Siemens Mosaic or multiframe
-    if(dicom_header.is_mosaic || ::toupper(dicom_header.get_text(0x0008,0x0070)[0]) == 'S')
-        return load_3d_series(file_list,dwi_files);
-    // Phillips multiframe
-    for(int index = 0;index < file_list.size();++index)
+    {
+        src_error_msg = "data are structure images";
+        return false;
+    }
+    for(int index = 0;prog(index,file_list.size());++index)
+    {
+        tipl::out()  << "handled as Philips multiframe";
         if(!load_dicom_multi_frame(file_list[index].toStdString().c_str(),dwi_files))
             return false;
-    return !dwi_files.empty();
+    }
+    return !prog.aborted() && !dwi_files.empty();
 }
 void dicom_parser::load_table(void)
 {

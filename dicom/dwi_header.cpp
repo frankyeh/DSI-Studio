@@ -344,16 +344,6 @@ bool DwiHeader::has_b_table(std::vector<std::shared_ptr<DwiHeader> >& dwi_files)
             return true;
     return false;
 }
-bool DwiHeader::consistent_dimension(std::vector<std::shared_ptr<DwiHeader> >& dwi_files)
-{
-    if(dwi_files.empty())
-        return true;
-    for(size_t i = 1;i < dwi_files.size();++i)
-        if(dwi_files[i]->image.shape() != dwi_files[0]->image.shape())
-            return false;
-    return true;
-}
-
 // upsampling 1: upsampling 2: downsampling
 extern std::string src_error_msg;
 bool DwiHeader::output_src(const char* di_file,std::vector<std::shared_ptr<DwiHeader> >& dwi_files,

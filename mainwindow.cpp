@@ -1100,25 +1100,19 @@ void MainWindow::on_nii2src_sf_clicked()
     }
 }
 
-bool dcm2src(QStringList files)
+bool dcm2src_and_nii(QStringList files)
 {
     if(files.empty())
         return false;
     files.sort();
-    std::vector<std::shared_ptr<DwiHeader> > dicom_files;
-    if(!parse_dwi(files,dicom_files))
-    {
-        tipl::out() << "Not DICOM. Skip." << std::endl;
-        return false;
-    }
-
+    tipl::progress p("processing DICOM at ",std::filesystem::path(files[0].toStdString()).parent_path().string().c_str());
     // extract information
     std::string manu,make,report,sequence;
     {
         tipl::io::dicom header;
         if(!header.load_from_file(files[0].toStdString().c_str()))
         {
-            tipl::out() << "ERROR: cannot read image volume. Skip" << std::endl;
+            tipl::out() << "ERROR: cannot read image volume. skip" << std::endl;
             return false;
         }
         header.get_sequence_id(sequence);
@@ -1134,64 +1128,13 @@ bool dcm2src(QStringList files)
             report.resize(80);
     }
 
-    if(!dicom_files.empty()) //4D NIFTI
-    {
-        for(unsigned int index = 0;index < dicom_files.size();++index)
-        {
-            if(dicom_files[index]->bvalue < 100.0f)
-            {
-                dicom_files[index]->bvalue = 0.0f;
-                dicom_files[index]->bvec = tipl::vector<3>(0.0f,0.0f,0.0f);
-            }
-            if(dicom_files[index]->image.shape() != dicom_files[index]->image.shape())
-            {
-                tipl::out() << "Inconsistent image dimension." << std::endl;
-                return false;
-            }
-        }
-        if(DwiHeader::has_b_table(dicom_files))
-        {
-            QString src_name = get_dicom_output_name(files[0],(std::string("_")+sequence+".src.gz").c_str(),true);
-            tipl::out() << "Create SRC file: " << std::filesystem::path(src_name.toStdString()).filename().string() << std::endl;
-            if(!DwiHeader::output_src(src_name.toStdString().c_str(),dicom_files,0,false))
-                tipl::out() << "ERROR: " << src_error_msg << std::endl;
-        }
-        else
-        {
-            if(!DwiHeader::consistent_dimension(dicom_files))
-                tipl::out() << "[SKIPPED] Cannot save as 4D nifti due to different image dimension" << std::endl;
-            else
-            {
-                auto dicom = dicom_files[0];
-                tipl::matrix<4,4> trans;
-                initial_LPS_nifti_srow(trans,dicom->image.shape(),dicom->voxel_size);
 
-                tipl::shape<4> nifti_dim;
-                std::copy(dicom->image.shape().begin(),
-                          dicom->image.shape().end(),nifti_dim.begin());
-                nifti_dim[3] = uint32_t(dicom_files.size());
-
-                tipl::image<4,unsigned short> buffer(nifti_dim);
-                for(unsigned int index = 0;index < dicom_files.size();++index)
-                {
-                    std::copy(dicom_files[index]->image.begin(),
-                              dicom_files[index]->image.end(),
-                              buffer.begin() + long(index*dicom_files[index]->image.size()));
-                }
-                QString nii_name = get_dicom_output_name(files[0],(std::string("_")+sequence+".nii.gz").c_str(),true);
-                tipl::out() << "Create 4D NII file: " << nii_name.toStdString() << std::endl;
-                return tipl::io::gz_nifti::save_to_file(nii_name.toStdString().c_str(),buffer,dicom->voxel_size,trans,false,report.c_str());
-            }
-        }
-        return true;
-    }
-    if(files.size() < 5)
+    std::vector<std::shared_ptr<DwiHeader> > dicom_files;
+    if(!parse_dwi(files,dicom_files))
     {
-        tipl::out() << "Skip." << std::endl;
-        return false;
-    }
-    // Now handle T1W or T2FLAIR
-    {
+        if(src_error_msg.find("structure images") == std::string::npos)
+            return false;
+        tipl::out() << "handled as structure images";
         std::sort(files.begin(),files.end(),compare_qstring());
         tipl::io::dicom_volume v;
         std::vector<std::string> file_list;
@@ -1202,7 +1145,6 @@ bool dcm2src(QStringList files)
             tipl::out() << v.error_msg.c_str() << std::endl;
             return false;
         }
-
         tipl::image<3> I;
         tipl::vector<3> vs;
         v >> I;
@@ -1238,12 +1180,56 @@ bool dcm2src(QStringList files)
         suffix += ".nii.gz";
         QString output = get_dicom_output_name(files[0],suffix.c_str(),true);
         tipl::out() << "converted to NIFTI: " << std::filesystem::path(output.toStdString()).filename().string() << std::endl;
-        nii_out.save_to_file(output.toStdString().c_str());
+        return nii_out.save_to_file(output.toStdString().c_str());
     }
+
+    for(unsigned int index = 0;index < dicom_files.size();++index)
+    {
+        if(dicom_files[index]->bvalue < 100.0f)
+        {
+            dicom_files[index]->bvalue = 0.0f;
+            dicom_files[index]->bvec = tipl::vector<3>(0.0f,0.0f,0.0f);
+        }
+        if(dicom_files[index]->image.shape() != dicom_files[0]->image.shape())
+        {
+            tipl::out() << "ERROR: inconsistent image dimensions among DWI." << std::endl;
+            return false;
+        }
+    }
+
+    if(!DwiHeader::has_b_table(dicom_files))
+    {
+        tipl::out() << "The images do not have b-table. Save as 4D NIFTI" << std::endl;
+        auto dicom = dicom_files[0];
+        tipl::matrix<4,4> trans;
+        initial_LPS_nifti_srow(trans,dicom->image.shape(),dicom->voxel_size);
+
+        tipl::shape<4> nifti_dim;
+        std::copy(dicom->image.shape().begin(),
+                  dicom->image.shape().end(),nifti_dim.begin());
+        nifti_dim[3] = uint32_t(dicom_files.size());
+
+        tipl::image<4,unsigned short> buffer(nifti_dim);
+        for(unsigned int index = 0;index < dicom_files.size();++index)
+        {
+            std::copy(dicom_files[index]->image.begin(),
+                      dicom_files[index]->image.end(),
+                      buffer.begin() + long(index*dicom_files[index]->image.size()));
+        }
+        QString nii_name = get_dicom_output_name(files[0],(std::string("_")+sequence+".nii.gz").c_str(),true);
+        tipl::out() << "Create 4D NII file: " << nii_name.toStdString() << std::endl;
+        return tipl::io::gz_nifti::save_to_file(nii_name.toStdString().c_str(),buffer,dicom->voxel_size,trans,false,report.c_str());
+    }
+
+    QString src_name = get_dicom_output_name(files[0],(std::string("_")+sequence+".src.gz").c_str(),true);
+    tipl::out() << "Create SRC file: " << std::filesystem::path(src_name.toStdString()).filename().string() << std::endl;
+    if(!DwiHeader::output_src(src_name.toStdString().c_str(),dicom_files,0,false))
+        tipl::out() << "ERROR: " << src_error_msg << std::endl;
+
     return true;
 }
 
-void dicom2src(std::string dir_)
+void dicom2src_and_nii(std::string dir_)
 {
     tipl::progress prog("convert DICOM to NIFTI/SRC");
     QStringList dir_list = GetSubDir(dir_.c_str(),false);
@@ -1255,7 +1241,6 @@ void dicom2src(std::string dir_)
         if(dicom_file_list.empty())
             continue;
         has_dicom = true;
-        tipl::out() << "processing " << dir_list[i].toStdString() << std::endl;
         // aggregate DWI with identical names from consecutive folders
         QStringList aggregated_file_list;
         for(;prog(i,dir_list.size());++i)
@@ -1265,11 +1250,11 @@ void dicom2src(std::string dir_)
             if(i+1 < dir_list.size() && !QFileInfo(dir_list[i+1] + "/" + dicom_file_list[0]).exists())
                 break;
         }
-        dcm2src(aggregated_file_list);
+        dcm2src_and_nii(aggregated_file_list);
     }
     if(!has_dicom)
         for(auto dir : dir_list)
-            dicom2src(dir.toStdString());
+            dicom2src_and_nii(dir.toStdString());
 }
 
 void MainWindow::on_dicom2nii_clicked()
@@ -1281,7 +1266,7 @@ void MainWindow::on_dicom2nii_clicked()
     if(dir.isEmpty())
         return;
     add_work_dir(dir);
-    dicom2src(dir.toStdString());
+    dicom2src_and_nii(dir.toStdString());
 }
 
 void MainWindow::on_clear_src_history_clicked()

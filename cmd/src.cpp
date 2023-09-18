@@ -9,7 +9,7 @@ QStringList search_files(QString dir,QString filter);
 bool load_bval(const char* file_name,std::vector<double>& bval);
 bool load_bvec(const char* file_name,std::vector<double>& b_table,bool flip_by = true);
 bool parse_dwi(QStringList file_list,std::vector<std::shared_ptr<DwiHeader> >& dwi_files);
-void dicom2src(std::string dir_);
+void dicom2src_and_nii(std::string dir_);
 bool nii2src_bids(QString dir,QString output_dir,std::string& error_msg);
 int src(tipl::program_option<tipl::out>& po)
 {
@@ -24,7 +24,7 @@ int src(tipl::program_option<tipl::out>& po)
         if(po.get("recursive",0))
         {
             tipl::out() << "search recursively in the subdir" << std::endl;
-            dicom2src(source);
+            dicom2src_and_nii(source);
             return 0;
         }
         else
