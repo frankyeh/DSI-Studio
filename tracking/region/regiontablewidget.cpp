@@ -287,14 +287,20 @@ bool RegionTableWidget::command(QString cmd,QString param,QString)
     if(cmd == "load_region")
     {
         if(!load_multiple_roi_nii(param,false))
+        {
+            tipl::out() << "ERROR: " << error_msg;
             return false;
+        }
         emit need_update();
         return true;
     }
     if(cmd == "load_mni_region")
     {
         if(!load_multiple_roi_nii(param,true))
+        {
+            tipl::out() << "ERROR: " << error_msg;
             return false;
+        }
         emit need_update();
         return true;
     }
@@ -544,7 +550,7 @@ bool load_nii(std::shared_ptr<fib_data> handle,
               std::string& error_msg,
               bool is_mni)
 {
-    tipl::progress prog("load NIFTI file");
+    tipl::progress prog("opening file ",std::filesystem::path(file_name).stem().string().c_str());
     tipl::io::gz_nifti header;
     if (!header.load_from_file(file_name.c_str()))
     {
@@ -592,10 +598,14 @@ bool load_nii(std::shared_ptr<fib_data> handle,
     else
     {
         unsigned short max_value = 0;
-        for (tipl::pixel_index<3>index(from.shape());index < from.size();++index)
+        for (tipl::pixel_index<3> index(from.shape());index < from.size();++index)
         {
             if(from[index.index()] >= value_map.size())
+            {
+                error_msg = "exceedingly large value found in the ROI file: ";
+                error_msg += std::to_string(from[index.index()]);
                 return false;
+            }
             value_map[from[index.index()]] = 1;
             max_value = std::max<unsigned short>(uint16_t(from[index.index()]),max_value);
         }
@@ -811,7 +821,7 @@ bool RegionTableWidget::load_multiple_roi_nii(QString file_name,bool is_mni)
     std::vector<std::vector<std::string> > names(files.size());
 
     {
-        tipl::progress prog("reading");
+        tipl::progress prog("reading region files");
         size_t p = 0;
         bool failed = false;
         tipl::par_for(files.size(),[&](unsigned int i)
@@ -819,9 +829,7 @@ bool RegionTableWidget::load_multiple_roi_nii(QString file_name,bool is_mni)
             if(prog.aborted() || failed)
                 return;
             prog(p++,files.size());
-            if(QFileInfo(files[i]).suffix() == "gz" ||
-                QFileInfo(files[i]).suffix() == "nii" ||
-                QFileInfo(files[i]).suffix() == "hdr")
+            if(files[i].endsWith("nii.gz") || files[i].endsWith("nii") || files[i].endsWith("hdr"))
             {
                 if(!load_nii(cur_tracking_window.handle,
                          files[i].toStdString(),
