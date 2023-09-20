@@ -919,8 +919,8 @@ void nii2src(QStringList nifti_file_list,QString output_dir)
 {
     if(nifti_file_list.empty())
         return;
-    tipl::progress prog((std::string("creating SRC file from ")+nifti_file_list[0].toStdString()+
-            (nifti_file_list.size() == 1 ? "" : " and other NIFTI files")).c_str());
+    tipl::progress prog((std::string("creating SRC file from ")+std::filesystem::path(nifti_file_list[0].toStdString()).stem().string()+
+            (nifti_file_list.size() == 1 ? "" : " and others")).c_str());
     std::string output_file_base_name = output_dir.toStdString() + "/" + QFileInfo(nifti_file_list[0]).baseName().toStdString();
     if(nifti_file_list.size() == 1)
     {
