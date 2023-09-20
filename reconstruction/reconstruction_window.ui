@@ -910,7 +910,7 @@
                      </spacer>
                     </item>
                     <item>
-                     <widget class="QWidget" name="ResolutionBox" native="true">
+                     <widget class="QWidget" name="qsdr_options" native="true">
                       <layout class="QHBoxLayout" name="horizontalLayout_7">
                        <property name="leftMargin">
                         <number>0</number>
@@ -946,6 +946,13 @@
                            </property>
                            <property name="text">
                             <string>Attach Images...</string>
+                           </property>
+                          </widget>
+                         </item>
+                         <item>
+                          <widget class="QPushButton" name="qsdr_partial_fov">
+                           <property name="text">
+                            <string>Partial FOV...</string>
                            </property>
                           </widget>
                          </item>
