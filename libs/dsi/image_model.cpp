@@ -769,6 +769,12 @@ bool ImageModel::command(std::string cmd,std::string param)
         voxel.steps += cmd+"\n";
         return true;
     }
+    if(cmd == "[Step T2b(2)][Partial FOV]")
+    {
+        std::istringstream in(param);
+        in >> voxel.partial_min >> voxel.partial_max;
+        return true;
+    }
     error_msg = "unknown command: ";
     error_msg += cmd;
     return false;
