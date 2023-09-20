@@ -133,6 +133,8 @@ public:// used in QSDR
     tipl::vector<3,int> csf_pos1,csf_pos2,csf_pos3,csf_pos4;
     float R2;
     float qsdr_reso = 1.0f;
+public:
+    tipl::vector<3> partial_min,partial_max;
 public: // for QSDR associated T1WT2W
     std::vector<tipl::image<3> > other_image;
     std::vector<std::string> other_image_name;
