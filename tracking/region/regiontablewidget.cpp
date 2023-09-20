@@ -574,7 +574,7 @@ bool load_nii(std::shared_ptr<fib_data> handle,
         {
             from.resize(tmp.shape());
             for(size_t i = 0;i < from.size();++i)
-                from[i] = (tmp[i] == 0.0f ? 0:1);
+                from[i] = (tmp[i] > 0.0f ? 1 : 0);
         }
     }
 
