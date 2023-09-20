@@ -50,7 +50,6 @@ public:
 
         bool is_human_template = QFileInfo(fa_template_list[voxel.template_id].c_str()).baseName().contains("ICBM");
         bool export_intermediate = voxel.needs("debug");
-        bool partial_reconstruction = false;
         bool dual_modality = false;
 
         if(fa_template_list[voxel.template_id].empty())
@@ -63,7 +62,6 @@ public:
             read.toLPS(VG);
             read.get_voxel_size(VGvs);
             read.get_image_transformation(voxel.trans_to_mni);
-
         }
         if(!iso_template_list[voxel.template_id].empty())
         {
@@ -196,7 +194,6 @@ public:
                         ++subject_voxel_count;
                 }
             }
-            partial_reconstruction = float(subject_voxel_count)/float(total_voxel_count) < 0.25f;
 
             float VFratio = VFvs[0]/voxel.vs[0]; // if subject data are downsampled, then VFratio=2, 4, 8, ...etc
             if(VFratio != 1.0f)
@@ -204,16 +201,27 @@ public:
 
         }       
         // if subject data is only a fragment of FOV, crop images
-        if(partial_reconstruction)
+        if(voxel.partial_min != voxel.partial_max)
         {
             tipl::out() << "partial reconstruction" << std::endl;
-            tipl::vector<3,int> bmin,bmax;
-            tipl::bounding_box(VG,bmin,bmax);
-            for(unsigned char dim = 0;dim < 3;++dim)
+            tipl::out() << "partial_min: " << voxel.partial_min << std::endl;
+            tipl::out() << "partial_max: " << voxel.partial_max << std::endl;
+            tipl::vector<3,int> bmin((voxel.partial_min[0]-voxel.trans_to_mni[3])/voxel.trans_to_mni[0],
+                                     (voxel.partial_min[1]-voxel.trans_to_mni[7])/voxel.trans_to_mni[5],
+                                     (voxel.partial_min[2]-voxel.trans_to_mni[11])/voxel.trans_to_mni[10]);
+            tipl::vector<3,int> bmax((voxel.partial_max[0]-voxel.trans_to_mni[3])/voxel.trans_to_mni[0],
+                                     (voxel.partial_max[1]-voxel.trans_to_mni[7])/voxel.trans_to_mni[5],
+                                     (voxel.partial_max[2]-voxel.trans_to_mni[11])/voxel.trans_to_mni[10]);
+            tipl::out() << "bmin: " << bmin << std::endl;
+            tipl::out() << "bmax: " << bmax << std::endl;
+            for(int i = 0;i < 3;++i)
             {
-                bmin[dim] = std::max<int>(0,bmin[dim]-5);
-                bmax[dim] = std::min<int>(int(VG.shape()[dim])-1,bmax[dim]+5);
+                if(bmin[i] > bmax[i])
+                    std::swap(bmin[i],bmax[i]);
+                if(bmin[i] < 0.0f || bmax[i] > VG.shape()[i])
+                    throw std::runtime_error("out of bounding box in partial reconstruction.");
             }
+
             // update cdm_dis
             tipl::crop(cdm_dis,bmin,bmax);
 
@@ -296,7 +304,7 @@ public:
             tipl::out() << "output dimension: " << VG.shape() << std::endl;
 
 
-            if(is_human_template && !partial_reconstruction) // if default template is used
+            if(is_human_template && voxel.partial_min == voxel.partial_max) // if default template is used
             {
                 voxel.csf_pos1 = mni_to_voxel_index(voxel,6,0,18);
                 voxel.csf_pos2 = mni_to_voxel_index(voxel,-6,0,18);
