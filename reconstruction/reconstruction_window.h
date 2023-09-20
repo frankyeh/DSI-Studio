@@ -114,6 +114,7 @@ private slots:
     void on_actionswap_bybz_triggered();
     void on_actionswap_bxbz_triggered();
     void on_mask_from_unet_clicked();
+    void on_qsdr_partial_fov_clicked();
 };
 
 #endif // RECONSTRUCTION_WINDOW_H
