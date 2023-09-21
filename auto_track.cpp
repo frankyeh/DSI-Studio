@@ -132,7 +132,6 @@ std::string run_auto_track(tipl::program_option<tipl::out>& po,const std::vector
     bool export_trk = po.get("export_trk",1);
     bool overwrite = po.get("overwrite",0);
     bool export_template_trk = po.get("export_template_trk",0);
-    bool check_ending = po.get("check_ending",1);
     uint32_t thread_count = tipl::available_thread_count<0>() = uint32_t(po.get("thread_count",std::thread::hardware_concurrency()));
     std::string trk_format = po.get("trk_format","tt.gz");
     std::string stat_format = po.get("stat_format","stat.txt");
@@ -270,8 +269,8 @@ std::string run_auto_track(tipl::program_option<tipl::out>& po,const std::vector
                         thread.param.max_length = handle->vs[0]*(handle->tract_atlas_max_length[track_id]+2.0f*tolerance[tracking_iteration])/handle->tract_atlas_jacobian;
                         tipl::out() << "min_length(mm): " << thread.param.min_length << std::endl;
                         tipl::out() << "max_length(mm): " << thread.param.max_length << std::endl;
-                        thread.param.tip_iteration = po.get("tip_iteration",4);
-                        thread.param.check_ending = check_ending && !QString(track_name.c_str()).contains("Cingulum");
+                        thread.param.tip_iteration = po.get("tip_iteration",8);
+                        thread.param.check_ending = po.get("check_ending",1);
                         thread.param.stop_by_tract = 1;
                         thread.param.termination_count = 0;
                     }
@@ -329,6 +328,10 @@ std::string run_auto_track(tipl::program_option<tipl::out>& po,const std::vector
                     thread.fetchTracks(&tract_model);
 
                     thread.apply_tip(&tract_model);
+
+                    // if trim removes too many tract, undo to at least get the smallest possible bundle.
+                    if(thread.param.tip_iteration && tract_model.get_visible_track_count() == 0)
+                        tract_model.undo();
 
                     if(no_result || tract_model.get_visible_track_count() == 0)
                     {
