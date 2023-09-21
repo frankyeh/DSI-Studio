@@ -486,8 +486,21 @@ bool CustomSliceModel::save_mapping(const char* file_name)
 // ---------------------------------------------------------------------------
 bool CustomSliceModel::load_mapping(const char* file_name)
 {
-    if(!(std::ifstream(file_name) >> arg_min))
+    std::ifstream in(file_name);
+    if(!in)
         return false;
+    if(in.peek() == 't')
+    {
+        if(!(std::ifstream(file_name) >> arg_min))
+            return false;
+    }
+    else
+    {
+        tipl::transformation_matrix<float> T;
+        if(!(in >> T))
+            return false;
+        T.to_affine_transform(arg_min,dim,vs,handle->dim,handle->vs);
+    }
     update_transform();
     is_diffusion_space = false;
     tipl::out() << arg_min << std::endl;
