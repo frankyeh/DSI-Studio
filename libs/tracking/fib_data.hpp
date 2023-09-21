@@ -78,7 +78,8 @@ public:
                  tipl::vector<3,float>& result, // reference direction, should be unit vector
                  float threshold,
                  float cull_cos_angle,
-                 float dt_threshold) const
+                 float dt_threshold,
+                 bool check_ending) const
     {
         tipl::interpolator::linear<3> tri_interpo;
         if (!tri_interpo.get_location(dim,position))
@@ -129,7 +130,16 @@ public:
             total_weighting += w;
         }
         if (total_weighting < 0.5f)
-            return false;
+        {
+            if(!check_ending)
+                return false;
+            float estimated_fa = 0.0f;
+            tri_interpo.estimate(fa[0],estimated_fa);
+            if(estimated_fa < threshold)
+                return false;
+            if(total_weighting == 0.0f)
+                new_dir = ref_dir;
+        }
         new_dir.normalize();
         result = new_dir;
         return true;

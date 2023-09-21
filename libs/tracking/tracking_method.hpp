@@ -177,6 +177,7 @@ public:
     float current_step_size_in_voxel[3];
     unsigned int current_min_steps3;
     unsigned int current_max_steps3;
+    bool check_ending = false;
     void scaling_in_voxel(tipl::vector<3,float>& dir) const
     {
         dir[0] *= current_step_size_in_voxel[0];
@@ -196,7 +197,7 @@ public:
                  tipl::vector<3,float>& result) const
     {
         return trk->get_dir_under_termination_criteria(position,ref_dir,result,
-                    current_fa_threshold,current_tracking_angle,current_dt_threshold);
+                    current_fa_threshold,current_tracking_angle,current_dt_threshold,check_ending);
     }
 public:
     unsigned int get_buffer_size(void) const

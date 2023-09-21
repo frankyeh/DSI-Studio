@@ -58,6 +58,7 @@ void ThreadData::run_thread(unsigned int thread_id,unsigned int thread_count)
     method->current_step_size_in_voxel[0] = param.step_size/method->trk->vs[0];
     method->current_step_size_in_voxel[1] = param.step_size/method->trk->vs[1];
     method->current_step_size_in_voxel[2] = param.step_size/method->trk->vs[2];
+    method->check_ending = param.check_ending;
     if(param.step_size > 0.0f)
     {
         method->current_max_steps3 = 3*uint32_t(std::round(param.max_length/param.step_size));
@@ -118,27 +119,6 @@ void ThreadData::run_thread(unsigned int thread_id,unsigned int thread_count)
             if(!result)
                 continue;
             const float* end = result+point_count+point_count+point_count;
-            if(param.check_ending)
-            {
-                if(point_count < 2)
-                    continue;
-                if(result[2] > 0) // not the bottom slice
-                {
-                    tipl::vector<3> p0(result),p1(result+3);
-                    p1 -= p0;
-                    p0 -= p1;
-                    if(method->trk->is_white_matter(p0,white_matter_t))
-                        continue;
-                }
-                tipl::vector<3> p2(end-6),p3(end-3);
-                if(*(end-1) > 0) // not the bottom slice
-                {
-                    p2 -= p3;
-                    p3 -= p2;
-                    if(method->trk->is_white_matter(p3,white_matter_t))
-                        continue;
-                }
-            }
 
             ++tract_count[thread_id];
             if(buffer_switch)
@@ -174,9 +154,7 @@ bool ThreadData::fetchTracks(TractModel* handle)
 
 void ThreadData::apply_tip(TractModel* handle)
 {
-    if (param.tip_iteration == 0 || handle->get_visible_track_count() == 0)
-        return;
-    for(size_t i = 0;i < param.tip_iteration && handle->trim();++i)
+    for(size_t i = 0;i < param.tip_iteration && handle->get_visible_track_count() && handle->trim();++i)
         ;
 }
 
