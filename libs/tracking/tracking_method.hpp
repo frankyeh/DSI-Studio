@@ -129,7 +129,12 @@ struct TrackingParam
         if(cull_cos_angle != 1.0f)
             report << " The angular threshold was " << int(std::round(std::acos(double(cull_cos_angle))*180.0/3.14159265358979323846)) << " degrees.";
         else
-            report << " The angular threshold was randomly selected from 15 degrees to 90 degrees.";
+        {
+            if(check_ending)
+                report << " The angular threshold was randomly selected from 45 degrees to 90 degrees.";
+            else
+                report << " The angular threshold was randomly selected from 15 degrees to 90 degrees.";
+        }
 
         if(step_size > 0.0f)
             report << " The step size was " << step_size << " mm.";
