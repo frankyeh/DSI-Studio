@@ -92,10 +92,10 @@ bool Voxel::run_hist(void)
     });
     return !prog.aborted();
 }
-bool Voxel::run(void)
+bool Voxel::run(const char* title)
 {
     bool terminated = false;
-    tipl::progress prog("reconstructing");
+    tipl::progress prog("reconstructing ",title);
     tipl::par_for(thread_count,[&](size_t thread_id)
     {
         for(size_t voxel_index = thread_id;
@@ -104,9 +104,7 @@ bool Voxel::run(void)
         {
             if(!mask[voxel_index])
                 continue;
-            if(thread_id == thread_count-1 &&
-               !prog(voxel_index,mask.size()) &&
-               prog.aborted())
+            if(thread_id == 0 && !prog(voxel_index,mask.size()) && prog.aborted())
                 terminated = true;
             voxel_data[thread_id].init();
             voxel_data[thread_id].voxel_index = voxel_index;

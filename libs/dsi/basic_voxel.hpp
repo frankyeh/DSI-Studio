@@ -176,7 +176,7 @@ public:
     }
 public:
     void init(void);
-    bool run(void);
+    bool run(const char* title);
     bool run_hist(void);
     void end(tipl::io::gz_mat_write& writer);
     BaseProcess* get(unsigned int index);

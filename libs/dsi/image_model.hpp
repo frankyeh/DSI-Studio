@@ -315,7 +315,7 @@ public:
 
         try
         {
-            if(voxel.run())
+            if(voxel.run(prog_title))
                 return true;
             error_msg = "reconstruction canceled";
             return false;
