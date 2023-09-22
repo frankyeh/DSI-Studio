@@ -92,7 +92,7 @@ void ThreadData::run_thread(unsigned int thread_id,unsigned int thread_count)
                     method->current_tracking_smoothing = smoothing_gen(seed);
                 if(param.step_size <= 0.0f) // 0: same as voxel spacing   -1: previous version voxel_size* [0.5 1.5]
                 {
-                    float step_size_in_voxel = param.step_size == 0 ? 1.0f : step_gen(seed);
+                    float step_size_in_voxel = (param.step_size == 0 ? 1.0f : step_gen(seed));
                     float step_size_in_mm = step_size_in_voxel*method->trk->vs[0];
                     method->current_step_size_in_voxel[0] = step_size_in_voxel;
                     method->current_step_size_in_voxel[1] = step_size_in_voxel;
