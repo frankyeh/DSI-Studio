@@ -16,7 +16,7 @@ struct ThreadData
 {
 private:
     std::mt19937 seed;
-    std::uniform_real_distribution<float> rand_gen,subvoxel_gen,angle_gen,smoothing_gen,step_gen,step_gen2,threshold_gen;
+    std::uniform_real_distribution<float> rand_gen,subvoxel_gen,angle_gen,angle_gen2,smoothing_gen,step_gen,step_gen2,threshold_gen;
 public:
     std::shared_ptr<tracking_data> trk;
     std::shared_ptr<RoiMgr> roi_mgr;
@@ -27,7 +27,9 @@ public:
     bool ready_to_track = false;
 public:
     ThreadData(std::shared_ptr<fib_data> handle):seed(0),
-        rand_gen(0,1),subvoxel_gen(-0.5f,0.5f),angle_gen(float(15.0*M_PI/180.0),float(90.0*M_PI/180.0)),
+        rand_gen(0,1),subvoxel_gen(-0.5f,0.5f),
+        angle_gen(float(45.0*M_PI/180.0),float(90.0*M_PI/180.0)),
+        angle_gen2(float(45.0*M_PI/180.0),float(90.0*M_PI/180.0)),
         smoothing_gen(0.0f,0.95f),step_gen(0.5f,1.5f),threshold_gen(0.0,1.0),
         roi_mgr(new RoiMgr(handle)){}
     ~ThreadData(void)
