@@ -855,18 +855,11 @@ void ImageModel::rotate(const tipl::shape<3>& new_geo,
     if(prog.aborted())
         return;
     rotated_dwi.swap(new_dwi);
-    // rotate b-table
-    tipl::affine_transform<double> arg;
-    T.to_affine_transform(arg,new_geo,new_vs,voxel.dim,voxel.vs);
-    tipl::matrix<3,3,float> r;
-    tipl::rotation_matrix(arg.rotation,r.begin(),tipl::vdim<3>());
-    r.inv();
     for (auto& vec : src_bvectors)
         {
-            vec.rotate(r);
+            vec.rotate(T.sr);
             vec.normalize();
         }
-
     voxel.dim = new_geo;
     voxel.vs = new_vs;
     calculate_dwi_sum(false);
