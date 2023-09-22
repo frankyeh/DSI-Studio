@@ -185,7 +185,7 @@ manual_alignment::~manual_alignment()
 void manual_alignment::load_param(void)
 {
     tipl::affine_transform<float> b_upper,b_lower;
-    tipl::reg::get_bound(from,to,from_vs,to_vs,arg,b_upper,b_lower,tipl::reg::affine,tipl::reg::large_bound);
+    tipl::reg::get_bound(from,from_vs,arg,b_upper,b_lower,tipl::reg::affine,tipl::reg::large_bound);
 
     // translocation
     disconnect_arg_update();
