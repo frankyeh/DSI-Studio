@@ -288,7 +288,6 @@ std::string ImageModel::check_b_table(void)
             double sum_cos = 0.0;
             size_t ncount = 0;
             auto template_geo = template_fib->dim;
-            const float* ptr = nullptr;
             for(tipl::pixel_index<3> index(template_geo);index < template_geo.size();++index)
             {
                 if(template_fib->dir.fa[0][index.index()] < 0.2f)
