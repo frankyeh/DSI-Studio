@@ -289,7 +289,7 @@ public:
 
         {
             // add limiting region to speed up tracking
-            tipl::image<3,char> limiting_mask(handle->dim);
+            tipl::image<3,char> limiting_mask(handle->dim),seed_mask(handle->dim);
             tipl::out() << "creating limiting region to limit tracking results" << std::endl;
 
             bool is_left = (tract_name.substr(tract_name.length()-2,2) == "_L");
@@ -308,13 +308,15 @@ public:
                                     handle->dim,int(std::ceil(tolerance_dis_in_subject_voxels)),
                         [&](const auto& pos)
                 {
-                    if(fa0[pos.index()] < threshold)
+                    if(fa0[pos.index()] <= 0.0f)
                         return;
                     if(is_left && s2t[pos.index()][0] < mid_x)
                         return;
                     if(is_right && s2t[pos.index()][0] > mid_x)
                         return;
                     limiting_mask[pos.index()] = 1;
+                    if(fa0[pos.index()] >= threshold)
+                        seed_mask[pos.index()] = 1;
                 });
             });
 
@@ -323,7 +325,7 @@ public:
 
             setRegions(atlas_limiting = tipl::volume2points(limiting_mask),limiting_id,"track tolerance region");
             if(seeds.empty())
-                setRegions(atlas_seed = atlas_limiting,seed_id,tract_name.c_str());
+                setRegions(atlas_seed = tipl::volume2points(seed_mask),seed_id,tract_name.c_str());
         }
 
         {
