@@ -322,20 +322,8 @@ public:
                 return false;
 
             setRegions(atlas_limiting = tipl::volume2points(limiting_mask),limiting_id,"track tolerance region");
-        }
-
-        if(seeds.empty())
-        {
-            tipl::out() << "creating seed region from tractography atlas" << std::endl;
-            ROIRegion region(handle);
-            region.add_points(std::move(tract_coverage));
-            region.perform("dilation");
-            region.perform("dilation");
-            region.perform("dilation");
-            region.perform("smoothing");
-            region.perform("smoothing");
-            atlas_seed.swap(region.region);
-            setRegions(atlas_seed,seed_id,tract_name.c_str());
+            if(seeds.empty())
+                setRegions(atlas_seed = atlas_limiting,seed_id,tract_name.c_str());
         }
 
         {
