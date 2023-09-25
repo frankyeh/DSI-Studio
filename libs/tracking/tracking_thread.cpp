@@ -35,7 +35,7 @@ void ThreadData::run_thread(unsigned int thread_id,unsigned int thread_count)
             seed = std::mt19937(param.random_seed);  // always 0, except in connectometry for changing seed sequence
             if(roi_mgr->use_auto_track)
             {
-                if(!roi_mgr->setAtlas(joining,fa_threshold1))
+                if(!roi_mgr->setAtlas(joining))
                     joining = true;
             }
             if(roi_mgr->seeds.empty())
@@ -63,7 +63,6 @@ void ThreadData::run_thread(unsigned int thread_id,unsigned int thread_count)
         method->current_max_steps3 = 3*uint32_t(std::round(param.max_length/param.step_size));
         method->current_min_steps3 = 3*uint32_t(std::round(param.min_length/param.step_size));
     }
-    float white_matter_t = param.threshold*1.2f;
     unsigned int termination_count = (thread_id == 0 ?
         param.termination_count-(param.termination_count/thread_count)*(thread_count-1):
         param.termination_count/thread_count);
@@ -83,7 +82,6 @@ void ThreadData::run_thread(unsigned int thread_id,unsigned int thread_count)
                 {
                     float w = threshold_gen(seed);
                     method->current_fa_threshold = w*fa_threshold1 + (1.0f-w)*fa_threshold2;
-                    white_matter_t = method->current_fa_threshold*1.2f;
                 }
                 if(param.cull_cos_angle == 1.0f)
                     method->current_tracking_angle = (method->check_ending? std::cos(angle_gen2(seed)) : std::cos(angle_gen(seed)));
