@@ -35,12 +35,11 @@ void ThreadData::run_thread(unsigned int thread_id,unsigned int thread_count)
             seed = std::mt19937(param.random_seed);  // always 0, except in connectometry for changing seed sequence
             if(roi_mgr->use_auto_track)
             {
-                if(!roi_mgr->setAtlas(joining))
+                if(!roi_mgr->setAtlas(joining,fa_threshold1))
                     joining = true;
             }
             if(roi_mgr->seeds.empty())
-                roi_mgr->setWholeBrainSeed(param.threshold == 0.0f ?
-                        roi_mgr->handle->dir.fa_otsu*param.default_otsu : param.threshold);
+                roi_mgr->setWholeBrainSeed(fa_threshold1);
 
             if(param.termination_count == 0)
             {
@@ -175,7 +174,7 @@ void ThreadData::run(std::shared_ptr<tracking_data> trk_,unsigned int thread_cou
         fa_threshold2 = (param.default_otsu+0.1f)*trk->fa_otsu;
     }
     else
-        fa_threshold1 = fa_threshold2 = 0.0;
+        fa_threshold1 = fa_threshold2 = param.threshold;
 
     report.clear();
     report.str("");

@@ -252,7 +252,7 @@ public:
     std::vector<std::vector<float> > selected_atlas_tracts;
     std::vector<unsigned int> selected_atlas_cluster;
 public:
-    bool setAtlas(bool& terminated)
+    bool setAtlas(bool& terminated,float threshold)
     {
         if(!handle->load_track_atlas())
             return false;
@@ -308,7 +308,7 @@ public:
                                     handle->dim,int(std::ceil(tolerance_dis_in_subject_voxels)),
                         [&](const auto& pos)
                 {
-                    if(fa0[pos.index()] <= 0.0f)
+                    if(fa0[pos.index()] < threshold)
                         return;
                     if(is_left && s2t[pos.index()][0] < mid_x)
                         return;
