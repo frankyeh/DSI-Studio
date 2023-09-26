@@ -125,7 +125,7 @@ void set_template(std::shared_ptr<fib_data> handle,tipl::program_option<tipl::ou
 std::string run_auto_track(tipl::program_option<tipl::out>& po,const std::vector<std::string>& file_list,int& prog)
 {
     std::string tolerance_string = po.get("tolerance","22,26,30");
-    float track_voxel_ratio = po.get("track_voxel_ratio",2.0f);
+    float track_voxel_ratio = po.get("track_voxel_ratio",1.0f);
     float yield_rate = po.get("yield_rate",0.00001f);
     size_t yield_check_count = 10.0f/yield_rate;
     bool export_stat = po.get("export_stat",1);
