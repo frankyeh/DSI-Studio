@@ -1012,7 +1012,7 @@
     </property>
     <widget class="QMenu" name="menuCut_by_slice">
      <property name="title">
-      <string>Cut by slice</string>
+      <string>Cut By Slice</string>
      </property>
      <addaction name="actionCut_X"/>
      <addaction name="actionCut_X_2"/>
@@ -1029,6 +1029,7 @@
     <addaction name="actionTrim"/>
     <addaction name="actionPaint"/>
     <addaction name="actionCut"/>
+    <addaction name="actionCut_end_portion"/>
     <addaction name="menuCut_by_slice"/>
     <addaction name="separator"/>
     <addaction name="actionMove_Objects"/>
@@ -4207,6 +4208,11 @@ Tracking</string>
    </property>
    <property name="text">
     <string>New Region From MNI Coordinate...</string>
+   </property>
+  </action>
+  <action name="actionCut_end_portion">
+   <property name="text">
+    <string>Cut End Portion</string>
    </property>
   </action>
  </widget>
