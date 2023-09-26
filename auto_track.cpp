@@ -339,7 +339,8 @@ std::string run_auto_track(tipl::program_option<tipl::out>& po,const std::vector
                         continue;
                     }
 
-                    tract_model.resample(1.0f);
+                    if(thread.param.step_size != 0.0f)
+                        tract_model.resample(1.0f);
                     tract_model.delete_repeated(1.0f);
 
                     if(export_trk)
