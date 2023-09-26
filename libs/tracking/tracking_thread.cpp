@@ -84,7 +84,7 @@ void ThreadData::run_thread(unsigned int thread_id,unsigned int thread_count)
                     method->current_fa_threshold = w*fa_threshold1 + (1.0f-w)*fa_threshold2;
                 }
                 if(param.cull_cos_angle == 1.0f)
-                    method->current_tracking_angle = (method->check_ending? std::cos(angle_gen2(seed)) : std::cos(angle_gen(seed)));
+                    method->current_tracking_angle = (method->check_ending? 0.0f : std::cos(angle_gen(seed)));
                 if(param.smooth_fraction == 1.0f)
                     method->current_tracking_smoothing = smoothing_gen(seed);
                 if(param.step_size <= 0.0f) // 0: same as voxel spacing   -1: previous version voxel_size* [0.5 1.5]
