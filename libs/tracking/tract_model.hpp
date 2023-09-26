@@ -108,20 +108,25 @@ public:
                   const std::vector<tipl::vector<3,float> > & dirs,
                   const tipl::vector<3,float>& from_pos,
                   bool delete_track);
+        void cut(const std::vector<unsigned int>& tract_to_delete,
+                 const std::vector<std::vector<float> >& new_tract,
+                 const std::vector<unsigned int>& new_tract_color);
         bool cut(float select_angle,const std::vector<tipl::vector<3,float> > & dirs,
                   const tipl::vector<3,float>& from_pos);
+        void cut_end_portion(float from,float to);
         bool cut_by_slice(unsigned int dim, unsigned int pos,bool greater,const tipl::matrix<4,4>* T = nullptr);
+        void cut_by_mask(const char* file_name);
         bool paint(float select_angle,const std::vector<tipl::vector<3,float> > & dirs,
                   const tipl::vector<3,float>& from_pos,
                   unsigned int color);
         void set_color(unsigned int color){std::fill(tract_color.begin(),tract_color.end(),color);color_changed = true;}
         void set_tract_color(std::vector<unsigned int>& new_color){tract_color = new_color;color_changed = true;}
-        void cut_by_mask(const char* file_name);
         void clear_deleted(void);
         bool undo(void);
         bool redo(void);
         bool trim(void);
         void flip(char dim);
+
         void resample(float new_step);
         void get_tract_points(std::vector<tipl::vector<3,float> >& points);
         void get_in_slice_tracts(unsigned char dim,int pos,

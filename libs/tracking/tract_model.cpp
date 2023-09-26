@@ -1840,6 +1840,21 @@ bool TractModel::delete_by_length(float length)
     return delete_tracts(track_to_delete);
 }
 //---------------------------------------------------------------------------
+void TractModel::cut(const std::vector<unsigned int>& tract_to_delete,
+         const std::vector<std::vector<float> >& new_tract,
+         const std::vector<unsigned int>& new_tract_color)
+{
+    delete_tracts(tract_to_delete);
+    is_cut.back() = cur_cut_id;
+    for (unsigned int index = 0;index < new_tract.size();++index)
+    {
+        tract_data.push_back(std::move(new_tract[index]));
+        tract_color.push_back(new_tract_color[index]);
+        tract_tag.push_back(cur_cut_id);
+    }
+    ++cur_cut_id;
+    redo_size.clear();
+}
 bool TractModel::cut(float select_angle,const std::vector<tipl::vector<3,float> >& dirs,
                      const tipl::vector<3,float>& from_pos)
 {
@@ -1861,16 +1876,7 @@ bool TractModel::cut(float select_angle,const std::vector<tipl::vector<3,float> 
         }
     if(tract_to_delete.empty())
         return false;
-    delete_tracts(tract_to_delete);
-    is_cut.back() = cur_cut_id;
-    for (unsigned int index = 0;index < new_tract.size();++index)
-    {
-        tract_data.push_back(std::move(new_tract[index]));
-        tract_color.push_back(new_tract_color[index]);
-        tract_tag.push_back(cur_cut_id);
-    }
-    ++cur_cut_id;
-    redo_size.clear();
+    cut(tract_to_delete,new_tract,new_tract_color);
     return true;
 
 }
@@ -1910,7 +1916,69 @@ void get_cut_points(const std::vector<std::vector<float> >& tract_data,
         }
     });
 }
+tipl::vector<3> get_tract_dir(const std::vector<std::vector<float> >& tract_data,
+                   std::vector<char>& dir);
+void TractModel::cut_end_portion(float from,float to)
+{
+    tipl::vector<3,double> from_point,to_point;
+    std::vector<char> dir;
+    get_tract_dir(tract_data,dir);
+    for(unsigned int i = 0;i < tract_data.size();++i)
+    {
+        if(tract_data[i].size() <= 6)
+            continue;
+        size_t from_length = size_t(from*size_t((tract_data[i].size()-3)/3))*3;
+        size_t to_length = size_t(to*size_t((tract_data[i].size()-3)/3))*3;
+        if(!dir[i])
+            std::swap(from_length,to_length);
+        from_point += tipl::vector<3>(tract_data[i].data()+from_length);
+        to_point += tipl::vector<3>(tract_data[i].data()+to_length);
+    }
+    from_point /= tract_data.size();
+    to_point /= tract_data.size();
 
+    auto find_location = [&](const std::vector<float>& tract,const tipl::vector<3>& point)
+    {
+        float best_dis2 = (tipl::vector<3>(tract.data())-point).length2();
+        float best_dis = std::sqrt(best_dis2);
+        size_t best_pos = 0;
+        for(size_t pos = 3;pos < tract.size();pos += 3)
+        {
+            float dx = std::fabs(tract[pos]-point[0]);
+            if(dx > best_dis)
+                continue;
+            float dy = std::fabs(tract[pos+1]-point[1]);
+            if(dy > best_dis)
+                continue;
+            float dz = std::fabs(tract[pos+2]-point[2]);
+            if(dz > best_dis)
+                continue;
+            auto dis2 = dx*dx + dy*dy + dz*dz;
+            if(dis2 > best_dis2)
+                continue;
+            best_dis2 = dis2;
+            best_dis = std::sqrt(best_dis2);
+            best_pos = pos;
+        }
+        return best_pos;
+    };
+
+    tipl::vector<3> from_point16(from_point),to_point16(to_point);
+    std::vector<std::vector<float> > new_tract(tract_data);
+    std::vector<unsigned int> new_tract_color(tract_color);
+    std::vector<unsigned int> tract_to_delete(tract_data.size());
+
+    tipl::par_for(tract_data.size(),[&](size_t i)
+    {
+        tract_to_delete[i] = i;
+        auto from = tract_data[i].data()+find_location(tract_data[i],dir[i] ? from_point16 : to_point16);
+        auto to = tract_data[i].data()+find_location(tract_data[i],dir[i] ? to_point16 : from_point16);
+        if(from > to)
+            std::swap(from,to);
+        new_tract[i] = std::vector<float>(from,to+3);
+    });
+    cut(tract_to_delete,new_tract,new_tract_color);
+}
 bool TractModel::cut_by_slice(unsigned int dim, unsigned int pos,bool greater,const tipl::matrix<4,4>* T)
 {
     std::vector<std::vector<bool> > has_cut;
@@ -1946,17 +2014,7 @@ bool TractModel::cut_by_slice(unsigned int dim, unsigned int pos,bool greater,co
         }
         tract_to_delete.push_back(i);
     }
-    delete_tracts(tract_to_delete);
-    is_cut.back() = cur_cut_id;
-    for (unsigned int index = 0;index < new_tract.size();++index)
-    if(new_tract[index].size() >= 6)
-        {
-            tract_data.push_back(std::move(new_tract[index]));
-            tract_color.push_back(new_tract_color[index]);
-            tract_tag.push_back(cur_cut_id);
-        }
-    ++cur_cut_id;
-    redo_size.clear();
+    cut(tract_to_delete,new_tract,new_tract_color);
     return modified;
 }
 //---------------------------------------------------------------------------
@@ -2697,10 +2755,10 @@ tipl::vector<3> get_tract_dir(const std::vector<std::vector<float> >& tract_data
     // categorize endpoints using the mid point direction
     total_dis.normalize();
     dir.resize(tract_data.size());
-    for(size_t i = 0;i < tract_data.size();++i)
+    tipl::par_for(tract_data.size(),[&](size_t i)
     {
         if(tract_data[i].size() < 6)
-            continue;
+            return;
         uint32_t mid_pos = uint32_t(tract_data[i].size()/6)*3;
         uint32_t q1_pos = uint32_t(tract_data[i].size()/12)*3;
         uint32_t q3_pos = uint32_t(tract_data[i].size()/4)*3;
@@ -2714,7 +2772,7 @@ tipl::vector<3> get_tract_dir(const std::vector<std::vector<float> >& tract_data
         mid_dis += q3_dis;
         if(total_dis*mid_dis > 0.0f)
             dir[i] = 1;
-    }
+    });
     return total_dis;
 }
 
@@ -2902,7 +2960,7 @@ void TractModel::get_quantitative_info(std::shared_ptr<fib_data> handle,std::str
             std::vector<tipl::vector<3,short> > points;
             to_voxel(points,resolution_trans);
             tract_volume = points.size()*voxel_volume/resolution_ratio/resolution_ratio/resolution_ratio;
-            bundle_diameter = 2.0f*float(std::sqrt(tract_volume/tract_length/PI));
+
 
 
             // now next convert point list to volume
@@ -2923,12 +2981,6 @@ void TractModel::get_quantitative_info(std::shared_ptr<fib_data> handle,std::str
                 point -= min_value;
                 volume[tipl::pixel_index<3>(point[0], point[1], point[2],geo).index()] = 1;
             });
-
-            delete_branch();
-            to_voxel(points,resolution_trans);
-            undo();
-            trunk_volume = points.size()*voxel_volume/resolution_ratio/resolution_ratio/resolution_ratio;
-
         }
         // surface area
         {
@@ -2973,8 +3025,21 @@ void TractModel::get_quantitative_info(std::shared_ptr<fib_data> handle,std::str
             radius1 = 1.5f*mean_dis1/resolution_ratio;
             radius2 = 1.5f*mean_dis2/resolution_ratio;
 
+        }
+        // mid_portion as the trunk
+        {
+            std::vector<tipl::vector<3,short> > points;
+            cut_end_portion(0.25f,0.75f);
+            to_voxel(points,resolution_trans);
+            trunk_volume = points.size()*voxel_volume/resolution_ratio/resolution_ratio/resolution_ratio;
 
-
+            std::vector<float> length_each(tract_data.size());
+            tipl::par_for (tract_data.size(),[&](unsigned int i)
+            {
+                length_each[i] = get_tract_length_in_mm(i);
+            });
+            bundle_diameter = 2.0f*float(std::sqrt(trunk_volume/tipl::mean(length_each)/PI));
+            undo();
         }
         data.push_back(tract_length);   titles.push_back("mean length(mm)");
         data.push_back(span);           titles.push_back("span(mm)");

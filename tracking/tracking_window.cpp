@@ -396,6 +396,7 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         connect(ui->actionDeleteTractAll,SIGNAL(triggered()),tractWidget,SLOT(delete_all_tract()));
         connect(ui->actionDelete_By_Length,SIGNAL(triggered()),tractWidget,SLOT(delete_by_length()));
         connect(ui->actionDelete_Branches,SIGNAL(triggered()),tractWidget,SLOT(delete_branches()));
+        connect(ui->actionCut_end_portion,SIGNAL(triggered()),tractWidget,SLOT(cut_end_portion()));
 
 
         connect(ui->actionRemove_Repeated_Tracks,SIGNAL(triggered()),tractWidget,SLOT(delete_repeated()));
