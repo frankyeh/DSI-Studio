@@ -125,9 +125,12 @@ public:
             }
 
             float w = tri_interpo.ratio[index];
+            total_weighting += w;
+            if(check_ending)
+                w *= max_value;
             main_dir *= w;
             new_dir += main_dir;
-            total_weighting += w;
+
         }
         if (total_weighting < 0.5f)
         {
