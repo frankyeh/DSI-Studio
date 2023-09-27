@@ -168,9 +168,7 @@ struct TrackingParam
 
 class TrackingMethod{
 public:// Parameters
-    tipl::vector<3,float> position;
-    tipl::vector<3,float> dir;
-    tipl::vector<3,float> next_dir;
+    tipl::vector<3> position,dir,next_dir;
 public:
     std::shared_ptr<tracking_data> trk;
     float current_fa_threshold;
@@ -242,7 +240,7 @@ public:
         buffer_front_pos = uint32_t(current_max_steps3);
         buffer_back_pos = uint32_t(current_max_steps3);
         tipl::vector<3,float> end_point1;
-
+        next_dir = dir;
         while(tracking_continue())
         {
             if(roi_mgr->within_roa(position) ||
@@ -258,7 +256,7 @@ public:
 
         end_point1 = position;
         position = seed_pos;
-        dir = -begin_dir;
+        next_dir = dir = -begin_dir;
         if(tracking_continue() && track(*this))
         {
             while(tracking_continue())
