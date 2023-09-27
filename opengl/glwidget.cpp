@@ -1964,7 +1964,7 @@ void GLWidget::mouseMoveEvent(QMouseEvent *event)
     glPushMatrix();
     glLoadIdentity();
     // left button down
-    if (event->buttons() & Qt::LeftButton)
+    if ((event->buttons() & Qt::LeftButton) && !(event->buttons() & Qt::RightButton))
     {
         auto& tran = (edit_right && view_mode == view_mode_type::two) ? transformation_matrix2:transformation_matrix;
         auto& rot = (edit_right && view_mode == view_mode_type::two) ? rotation_matrix2:rotation_matrix;
@@ -1983,14 +1983,15 @@ void GLWidget::mouseMoveEvent(QMouseEvent *event)
         glGetFloatv(GL_MODELVIEW_MATRIX,rot.begin());
     }
     else
-    // right button or middle button down
     {
-        if (event->buttons() & Qt::RightButton)
+        // right button
+        if ((event->buttons() & Qt::RightButton) && !(event->buttons() & Qt::LeftButton))
         {
             double scalefactor = (-dx-dy+100.0)/100.0;
             glScaled(scalefactor,scalefactor,scalefactor);
         }
         else
+        // middle button down or right/left both down
             glTranslated(dx/5.0,dy/5.0,0);
 
         if(edit_right && view_mode == view_mode_type::two)
