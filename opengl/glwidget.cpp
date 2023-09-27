@@ -1964,7 +1964,7 @@ void GLWidget::mouseMoveEvent(QMouseEvent *event)
     glPushMatrix();
     glLoadIdentity();
     // left button down
-    if ((event->buttons() & Qt::LeftButton) && !(event->buttons() & Qt::RightButton))
+    if ((event->buttons() & Qt::LeftButton) && !(event->buttons() & Qt::RightButton) && !(event->modifiers() && Qt::ShiftModifier))
     {
         auto& tran = (edit_right && view_mode == view_mode_type::two) ? transformation_matrix2:transformation_matrix;
         auto& rot = (edit_right && view_mode == view_mode_type::two) ? rotation_matrix2:rotation_matrix;
@@ -1985,7 +1985,7 @@ void GLWidget::mouseMoveEvent(QMouseEvent *event)
     else
     {
         // right button
-        if ((event->buttons() & Qt::RightButton) && !(event->buttons() & Qt::LeftButton))
+        if ((event->buttons() & Qt::RightButton) && !(event->buttons() & Qt::LeftButton) && !(event->modifiers() && Qt::ShiftModifier))
         {
             double scalefactor = (-dx-dy+100.0)/100.0;
             glScaled(scalefactor,scalefactor,scalefactor);
