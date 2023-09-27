@@ -26,7 +26,7 @@ struct TrackingParam
     unsigned char reserved5 = 0; // interpolation_strategy DEPRECATED
 
     unsigned char tracking_method = 0;
-    unsigned char reserved7 = 0; // initial_direction DEPRECATED
+    unsigned char direction_estimation = 0; // initial_direction DEPRECATED
     unsigned char reserved6 = 0; // random_seed DEPRECATED
     unsigned char tip_iteration = 0;
 
@@ -108,7 +108,7 @@ struct TrackingParam
         tipl::out() << "check_ending: " << int(check_ending) << std::endl;
         tipl::out() << "reserved5(interpolation_strategy DEPRECATED): " << int(reserved5) << std::endl;
         tipl::out() << "tracking_method:" << int(tracking_method) << std::endl;
-        tipl::out() << "reserved7(initial_direction DEPRECATED): " << int(reserved7) << std::endl;
+        tipl::out() << "direction_estimation: " << int(direction_estimation) << std::endl;
         tipl::out() << "reserved6(random_seed DEPRECATED): " << int(reserved6) << std::endl;
         tipl::out() << "tip_iteration: " << int(tip_iteration) << std::endl;
         tipl::out() << "dt_threshold: " << dt_threshold << std::endl;
@@ -130,7 +130,9 @@ struct TrackingParam
             report << " The angular threshold was " << int(std::round(std::acos(double(cull_cos_angle))*180.0/3.14159265358979323846)) << " degrees.";
         else
         {
-            if(!check_ending)
+            if(check_ending)
+                report << " The angular threshold was randomly selected from 45 degrees to 90 degrees.";
+            else
                 report << " The angular threshold was randomly selected from 15 degrees to 90 degrees.";
         }
 
@@ -167,8 +169,9 @@ struct TrackingParam
 
 
 class TrackingMethod{
-public:// Parameters
+public:
     tipl::vector<3> position,dir,next_dir;
+
 public:
     std::shared_ptr<tracking_data> trk;
     float current_fa_threshold;
@@ -178,7 +181,8 @@ public:
     float current_step_size_in_voxel[3];
     unsigned int current_min_steps3;
     unsigned int current_max_steps3;
-    bool check_ending = false;
+    bool current_check_ending = false;
+    unsigned char current_direction_estimation = 0;
     void scaling_in_voxel(tipl::vector<3,float>& dir) const
     {
         dir[0] *= current_step_size_in_voxel[0];
@@ -198,7 +202,7 @@ public:
                  tipl::vector<3,float>& result) const
     {
         return trk->get_dir_under_termination_criteria(position,ref_dir,result,
-                    current_fa_threshold,current_tracking_angle,current_dt_threshold,check_ending);
+                    current_fa_threshold,current_tracking_angle,current_dt_threshold,current_check_ending);
     }
 public:
     unsigned int get_buffer_size(void) const

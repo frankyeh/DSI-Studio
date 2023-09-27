@@ -270,6 +270,7 @@ std::string run_auto_track(tipl::program_option<tipl::out>& po,const std::vector
                         tipl::out() << "min_length(mm): " << thread.param.min_length << std::endl;
                         tipl::out() << "max_length(mm): " << thread.param.max_length << std::endl;
                         thread.param.tip_iteration = po.get("tip_iteration",8);
+                        thread.param.direction_estimation = po.get("direction_estimation",0);
                         thread.param.check_ending = po.get("check_ending",1);
                         thread.param.stop_by_tract = 1;
                         thread.param.termination_count = 0;
