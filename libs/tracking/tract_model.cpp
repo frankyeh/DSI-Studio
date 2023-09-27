@@ -2929,7 +2929,7 @@ void TractModel::get_quantitative_info(std::shared_ptr<fib_data> handle,std::str
         resolution_trans[0] = resolution_trans[5] = resolution_trans[10] = 2.0f;
         float voxel_volume = vs[0]*vs[1]*vs[2];
         const float PI = 3.14159265358979323846f;
-        float tract_volume, trunk_volume, tract_area, tract_length, span, curl, bundle_diameter;
+        float tract_volume, branch_volume1, branch_volume2, tract_area, tract_length, span, curl, bundle_diameter;
         tipl::image<3,unsigned char> volume;
 
 
@@ -2960,8 +2960,7 @@ void TractModel::get_quantitative_info(std::shared_ptr<fib_data> handle,std::str
             std::vector<tipl::vector<3,short> > points;
             to_voxel(points,resolution_trans);
             tract_volume = points.size()*voxel_volume/resolution_ratio/resolution_ratio/resolution_ratio;
-
-
+            bundle_diameter = 2.0f*float(std::sqrt(tract_volume/tract_length/PI));
 
             // now next convert point list to volume
             tipl::vector<3,short> max_value(points[0]), min_value(points[0]);
@@ -3028,18 +3027,17 @@ void TractModel::get_quantitative_info(std::shared_ptr<fib_data> handle,std::str
         }
         // mid_portion as the trunk
         {
-            std::vector<tipl::vector<3,short> > points;
-            cut_end_portion(0.25f,0.75f);
-            to_voxel(points,resolution_trans);
-            trunk_volume = points.size()*voxel_volume/resolution_ratio/resolution_ratio/resolution_ratio;
-
-            std::vector<float> length_each(tract_data.size());
-            tipl::par_for (tract_data.size(),[&](unsigned int i)
-            {
-                length_each[i] = get_tract_length_in_mm(i);
-            });
-            bundle_diameter = 2.0f*float(std::sqrt(trunk_volume/tipl::mean(length_each)/PI));
+            std::vector<tipl::vector<3,short> > branch1,branch2;
+            cut_end_portion(0.0f,0.25f);
+            to_voxel(branch1,resolution_trans);
             undo();
+            cut_end_portion(0.75f,1.0f);
+            to_voxel(branch2,resolution_trans);
+            undo();
+
+            branch_volume1 = branch1.size()*voxel_volume/resolution_ratio/resolution_ratio/resolution_ratio;
+            branch_volume2 = branch1.size()*voxel_volume/resolution_ratio/resolution_ratio/resolution_ratio;
+
         }
         data.push_back(tract_length);   titles.push_back("mean length(mm)");
         data.push_back(span);           titles.push_back("span(mm)");
@@ -3048,8 +3046,8 @@ void TractModel::get_quantitative_info(std::shared_ptr<fib_data> handle,std::str
 
         data.push_back(bundle_diameter);titles.push_back("diameter(mm)");
         data.push_back(tract_volume);   titles.push_back("volume(mm^3)");
-        data.push_back(trunk_volume);   titles.push_back("trunk volume(mm^3)");
-        data.push_back(tract_volume-trunk_volume);   titles.push_back("branch volume(mm^3)");
+        data.push_back(tract_volume-branch_volume1-branch_volume2);   titles.push_back("trunk volume(mm^3)");
+        data.push_back(branch_volume1+branch_volume2);   titles.push_back("branch volume(mm^3)");
 
         data.push_back(tract_area);     titles.push_back("total surface area(mm^2)");
         data.push_back(radius1+radius2);titles.push_back("total radius of end regions(mm)");
@@ -3058,11 +3056,11 @@ void TractModel::get_quantitative_info(std::shared_ptr<fib_data> handle,std::str
 
         data.push_back(end_area1);      titles.push_back("area of end region 1(mm^2)");
         data.push_back(radius1);        titles.push_back("radius of end region 1(mm)");
-        data.push_back(PI*radius1*radius1/end_area1);        titles.push_back("irregularity of end region 1");
+        data.push_back(branch_volume1);        titles.push_back("volume of end branches 1");
 
         data.push_back(end_area2);      titles.push_back("area of end region 2(mm^2)");
         data.push_back(radius2);        titles.push_back("radius of end region 2(mm)");
-        data.push_back(PI*radius2*radius2/end_area2);        titles.push_back("irregularity of end region 2");
+        data.push_back(branch_volume2);        titles.push_back("volume of end branches 2");
     }
 
     // output mean and std of each index
