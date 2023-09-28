@@ -401,8 +401,10 @@ std::string run_auto_track(tipl::program_option<tipl::out>& po,const std::vector
     if(file_list.size() != 1)
     {
         tipl::out() << "aggregating results from multiple subjects";
-        std::vector<std::string> metrics_names; // row titles are metrics
 
+
+        std::vector<std::string> metrics_names; // row titles are metrics
+        std::vector<std::string> all_out2_text;
         for(size_t t = 0;t < tractography_name_list.size();++t) // for each track
         {
             if(stat_files[t].empty())
@@ -414,12 +416,23 @@ std::string run_auto_track(tipl::program_option<tipl::out>& po,const std::vector
                 std::string line;
                 for(size_t m = 0;std::getline(in,line);++m)
                     metrics_names.push_back(line.substr(0,line.find('\t')));
+
+                all_out2_text.resize(scan_names.size()*metrics_names.size());
+                for(size_t s = 0,index = 0;s < scan_names.size();++s)
+                    for(size_t m = 0;m < metrics_names.size();++m,++index)
+                        {
+                            all_out2_text[index] = scan_names[s];
+                            all_out2_text[index] += "\t";
+                            all_out2_text[index] += metrics_names[m];
+                        }
+
             }
 
             // parse metric values
             std::vector<std::vector<std::string> > output(scan_names.size());
-            for(size_t s = 0;s < output.size();++s) // for each scan
+            for(size_t s = 0;s < scan_names.size();++s) // for each scan
             {
+                output[s].resize(metrics_names.size());
                 tipl::out() << "reading " << stat_files[t][s] << std::endl;
                 std::ifstream in(stat_files[t][s].c_str());
                 if(!in)
@@ -441,7 +454,7 @@ std::string run_auto_track(tipl::program_option<tipl::out>& po,const std::vector
                     return error;
                 }
                 for(size_t m = 0;m < metrics_names.size();++m)
-                    output[s].push_back(lines[m].substr(lines[m].find('\t')+1));
+                    output[s][m] = lines[m].substr(lines[m].find('\t')+1);
             }
             std::string track_name = tractography_name_list[t];
             std::ofstream out((dir+"/"+track_name+".stat.txt").c_str());
@@ -458,12 +471,31 @@ std::string run_auto_track(tipl::program_option<tipl::out>& po,const std::vector
                 for(size_t s = 0;s < output.size();++s)
                 {
                     out << "\t";
-                    if(m < output[s].size())
-                        out << output[s][m];
+                    out << output[s][m];
                 }
                 out << std::endl;
             }
+
+            // for all outs
+            for(size_t s = 0,index = 0;s < scan_names.size();++s)
+                for(size_t m = 0;m < output[s].size();++m,++index)
+                {
+                    all_out2_text[index] += "\t";
+                    all_out2_text[index] += output[s][m];
+                }
         }
+
+        std::ofstream all_out2((dir+"/all_results_subject_wise.txt").c_str());
+        all_out2 << "Subjects\tMetrics";
+        for(size_t t = 0;t < tractography_name_list.size();++t) // for each track
+        {
+            if(stat_files[t].empty())
+                continue;
+            all_out2 << "\t" << tractography_name_list[t];
+        }
+        all_out2 << std::endl;
+        for(size_t index = 0;index < all_out2_text.size();++index) // for each tract
+            all_out2 << all_out2_text[index] << std::endl;
     }
     return std::string();
 }
