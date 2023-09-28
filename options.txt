@@ -35,7 +35,7 @@ Tracking/Advanced Options/Tracking_adv
 Tracking_adv/Tracking Algorithm/tracking_method/Stremline(Euler):RK4:Voxel tracking/0
 Tracking_adv/Smoothing (1=random)/smoothing/float:-1.5:1:0.1:2/0
 Tracking_adv/Check Ending/check_ending/Off:On/0
-Tracking_adv/Default Otsu/otsu_threshold/float:0.1:1:0.1:2/0.6
+Tracking_adv/Default Otsu/otsu_threshold/float:0.1:1:0.1:2/0.5
 Tracking_adv/Output Format/track_format/tt.gz:trk.gz:txt/0
 Rendering/Scale with voxel size/scale_voxel/Off:On/1
 Rendering/Perspective/perspective/int/5
