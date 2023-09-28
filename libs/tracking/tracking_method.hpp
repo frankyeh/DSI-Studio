@@ -12,7 +12,7 @@
 struct TrackingParam
 {
     float threshold = 0.0f;
-    float default_otsu = 0.6f;
+    float default_otsu = 0.5f;
     float cull_cos_angle = 1.0f;
     float step_size = 0.0f;
     float smooth_fraction = 0.0f;
