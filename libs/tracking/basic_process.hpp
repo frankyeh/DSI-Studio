@@ -126,7 +126,6 @@ public:
     template<class method>
     bool operator()(method& info)
     {
-        /*
         if (!info.get_dir(info.position,info.dir,info.next_dir))
             return false;
 
@@ -142,27 +141,7 @@ public:
         info.position += step;
         info.dir = info.next_dir;
         return true;
-        */
-        tipl::vector<3> new_pos(info.position),move_dir(info.dir);
-        info.dir = info.next_dir;
-        for(unsigned char i = 0;i <= info.current_direction_estimation;++i)
-        {
-            if(!info.get_dir(new_pos,move_dir,info.next_dir))
-                return false;
-            if(i == 0)
-                move_dir = info.next_dir;
-            else
-            {
-                move_dir = info.dir + info.next_dir;
-                move_dir.normalize();
-            }
-            new_pos = move_dir;
-            info.scaling_in_voxel(new_pos);
-            new_pos += info.position;
-        }
-        info.position = new_pos;
-        info.dir = move_dir;
-        return true;
+
     }
 };
 
