@@ -32,10 +32,10 @@ Tracking_dT/Metrics2/dt_index2/none:adc/0/The followup metrics
 Tracking_dT/Metrics1>Metrics2 Threshold/dt_threshold/float:0.0:1.0:0.05:2/0.2/0.05 means tracking differences > 5%
 Tracking_dT/Threshold Type/dt_threshold_type/(m1-m2)÷m1:(m1-m2)÷m2:m1-m2/0
 Tracking/Advanced Options/Tracking_adv
-Tracking_adv/Tracking Algorithm/tracking_method/Stremline(Euler):RK4:Voxel tracking/0
+Tracking_adv/Tracking Algorithm/tracking_method/Euler:RK4:Voxel tracking/0
 Tracking_adv/Smoothing (1=random)/smoothing/float:-1.5:1:0.1:2/0
 Tracking_adv/Check Ending/check_ending/Off:On/0
-Tracking_adv/Default Otsu/otsu_threshold/float:0.1:1:0.1:2/0.5
+Tracking_adv/Default Otsu/otsu_threshold/float:0.1:1:0.1:2/0.6
 Tracking_adv/Output Format/track_format/tt.gz:trk.gz:txt/0
 Rendering/Scale with voxel size/scale_voxel/Off:On/1
 Rendering/Perspective/perspective/int/5
