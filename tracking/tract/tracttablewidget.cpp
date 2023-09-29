@@ -344,12 +344,14 @@ void TractTableWidget::fetch_tracts(void)
                 // used in debugging autotrack
                 {
                     auto regions = cur_tracking_window.regionWidget->regions;
-                    if(regions.size() >= 2 && cur_tracking_window.regionWidget->item(int(0),0)->text() == "debug")
+                    if(regions.size() >= 3 && cur_tracking_window.regionWidget->item(int(0),0)->text() == "debug")
                         {
                             regions[0]->region = thread_data[index]->roi_mgr->atlas_seed;
                             regions[0]->modified = true;
                             regions[1]->region = thread_data[index]->roi_mgr->atlas_limiting;
                             regions[1]->modified = true;
+                            regions[2]->region = thread_data[index]->roi_mgr->atlas_not_end;
+                            regions[2]->modified = true;
                         }
                 }
                 tract_rendering[index]->need_update = true;

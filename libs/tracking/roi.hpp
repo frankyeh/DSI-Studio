@@ -248,11 +248,11 @@ public:
         return true;
     }
 public:
-    std::vector<tipl::vector<3,short> > atlas_seed,atlas_limiting;
+    std::vector<tipl::vector<3,short> > atlas_seed,atlas_limiting,atlas_not_end;
     std::vector<std::vector<float> > selected_atlas_tracts;
     std::vector<unsigned int> selected_atlas_cluster;
 public:
-    bool setAtlas(bool& terminated)
+    bool setAtlas(bool& terminated,float seed_threshold,float not_end_threshold)
     {
         if(!handle->load_track_atlas())
             return false;
@@ -289,7 +289,6 @@ public:
 
         {
             // add limiting region to speed up tracking
-            tipl::image<3,char> limiting_mask(handle->dim);
             tipl::out() << "creating limiting region to limit tracking results" << std::endl;
 
             bool is_left = (tract_name.substr(tract_name.length()-2,2) == "_L");
@@ -301,6 +300,7 @@ public:
             if(is_right)
                 tipl::out() << "apply right limiting mask for " << tract_name << std::endl;
 
+            tipl::image<3,char> limiting_mask(handle->dim);
             const float *fa0 = handle->dir.fa[0];
             tipl::par_for(tract_coverage.size(),[&](unsigned int i)
             {
@@ -317,13 +317,36 @@ public:
                     limiting_mask[pos.index()] = 1;
                 });
             });
-
             if(terminated)
                 return false;
 
-            setRegions(atlas_limiting = tipl::volume2points(limiting_mask),limiting_id,"track tolerance region");
+            unsigned char thread_count = std::min<int>(8,std::thread::hardware_concurrency());
+            std::vector<std::vector<tipl::vector<3,short> > > limiting_points(thread_count),
+                                                              seed_points(thread_count),
+                                                              not_end_points(thread_count);
+            tipl::par_for(tipl::begin_index(limiting_mask),tipl::end_index(limiting_mask),
+                          [&](const tipl::pixel_index<3>& pos,unsigned int thread_id)
+            {
+                if(!limiting_mask[pos.index()])
+                    return;
+                auto point = tipl::vector<3,short>(pos.x(), pos.y(),pos.z());
+                limiting_points[thread_id].push_back(point);
+                if(fa0[pos.index()] >= seed_threshold)
+                    seed_points[thread_id].push_back(point);
+                if(not_end_threshold != 0.0f && fa0[pos.index()] >= not_end_threshold)
+                    not_end_points[thread_id].push_back(point);
+            },thread_count);
+
+            tipl::aggregate_results(std::move(limiting_points),atlas_limiting);
+            tipl::aggregate_results(std::move(seed_points),atlas_seed);
+            tipl::aggregate_results(std::move(not_end_points),atlas_not_end);
+
+            setRegions(atlas_limiting,limiting_id,"track tolerance region");
+            if(!atlas_not_end.empty())
+                setRegions(atlas_not_end,not_end_id,"white matter region");
             if(seeds.empty())
-                setRegions(atlas_seed = atlas_limiting,seed_id,tract_name.c_str());
+                setRegions(atlas_seed,seed_id,tract_name.c_str());
+
         }
 
         {

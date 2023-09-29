@@ -126,7 +126,7 @@ public:
     template<class method>
     bool operator()(method& info)
     {
-        if (!info.get_dir(info.position,info.dir,info.next_dir))
+        if(!info.get_dir(info.position,info.dir,info.next_dir))
             return false;
 
         if(info.current_tracking_smoothing != 0.0f)

@@ -369,10 +369,6 @@ void tracking_data::read(std::shared_ptr<fib_data> fib)
     }
 }
 
-bool tracking_data::is_white_matter(const tipl::vector<3,float>& pos,float t) const
-{
-    return tipl::estimate(tipl::make_image(fa[0],dim),pos) > t && pos[2] > 0.5;
-}
 void initial_LPS_nifti_srow(tipl::matrix<4,4>& T,const tipl::shape<3>& geo,const tipl::vector<3>& vs)
 {
     std::fill(T.begin(),T.end(),0.0f);

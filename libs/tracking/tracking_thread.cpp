@@ -35,7 +35,7 @@ void ThreadData::run_thread(unsigned int thread_id,unsigned int thread_count)
             seed = std::mt19937(param.random_seed);  // always 0, except in connectometry for changing seed sequence
             if(roi_mgr->use_auto_track)
             {
-                if(!roi_mgr->setAtlas(joining))
+                if(!roi_mgr->setAtlas(joining,fa_threshold1,param.check_ending ? fa_threshold2+fa_threshold2-fa_threshold1 : 0.0f))
                     joining = true;
             }
             if(roi_mgr->seeds.empty())
@@ -57,8 +57,6 @@ void ThreadData::run_thread(unsigned int thread_id,unsigned int thread_count)
     method->current_step_size_in_voxel[0] = param.step_size/method->trk->vs[0];
     method->current_step_size_in_voxel[1] = param.step_size/method->trk->vs[1];
     method->current_step_size_in_voxel[2] = param.step_size/method->trk->vs[2];
-    method->current_check_ending = param.check_ending;
-    method->current_direction_estimation = param.direction_estimation;
 
     if(param.step_size > 0.0f)
     {
@@ -86,7 +84,7 @@ void ThreadData::run_thread(unsigned int thread_id,unsigned int thread_count)
                     method->current_fa_threshold = w*fa_threshold1 + (1.0f-w)*fa_threshold2;
                 }
                 if(param.cull_cos_angle == 1.0f)
-                    method->current_tracking_angle = (method->current_check_ending? std::cos(angle_gen2(seed)) : std::cos(angle_gen(seed)));
+                    method->current_tracking_angle = std::cos(angle_gen(seed));
                 if(param.smooth_fraction == 1.0f)
                     method->current_tracking_smoothing = smoothing_gen(seed);
                 if(param.step_size <= 0.0f) // 0: same as voxel spacing   -1: previous version voxel_size* [0.5 1.5]

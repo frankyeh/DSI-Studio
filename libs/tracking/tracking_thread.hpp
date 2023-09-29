@@ -28,8 +28,7 @@ public:
 public:
     ThreadData(std::shared_ptr<fib_data> handle):seed(0),
         rand_gen(0,1),subvoxel_gen(-0.5f,0.5f),
-        angle_gen(float(15.0*M_PI/180.0),float(90.0*M_PI/180.0)),
-        angle_gen2(float(45.0*M_PI/180.0),float(90.0*M_PI/180.0)),
+        angle_gen(float(45.0*M_PI/180.0),float(90.0*M_PI/180.0)),
         smoothing_gen(0.0f,0.95f),step_gen(0.5f,1.5f),threshold_gen(0.0,1.0),
         roi_mgr(new RoiMgr(handle)){}
     ~ThreadData(void)
