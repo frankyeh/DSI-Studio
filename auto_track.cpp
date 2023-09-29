@@ -125,7 +125,7 @@ void set_template(std::shared_ptr<fib_data> handle,tipl::program_option<tipl::ou
 std::string run_auto_track(tipl::program_option<tipl::out>& po,const std::vector<std::string>& file_list,int& prog)
 {
     std::string tolerance_string = po.get("tolerance","22,26,30");
-    float track_voxel_ratio = po.get("track_voxel_ratio",1.0f);
+    float track_voxel_ratio = po.get("track_voxel_ratio",2.0f);
     float yield_rate = po.get("yield_rate",0.00001f);
     size_t yield_check_count = 10.0f/yield_rate;
     bool export_stat = po.get("export_stat",1);
@@ -269,8 +269,7 @@ std::string run_auto_track(tipl::program_option<tipl::out>& po,const std::vector
                         thread.param.max_length = handle->vs[0]*(handle->tract_atlas_max_length[track_id]+2.0f*tolerance[tracking_iteration])/handle->tract_atlas_jacobian;
                         tipl::out() << "min_length(mm): " << thread.param.min_length << std::endl;
                         tipl::out() << "max_length(mm): " << thread.param.max_length << std::endl;
-                        thread.param.tip_iteration = po.get("tip_iteration",8);
-                        thread.param.direction_estimation = po.get("direction_estimation",0);
+                        thread.param.tip_iteration = po.get("tip_iteration",32);
                         thread.param.check_ending = po.get("check_ending",1);
                         thread.param.stop_by_tract = 1;
                         thread.param.termination_count = 0;
