@@ -367,7 +367,7 @@ void GLWidget::renderText(float x,float y, const QString &str, const QFont & fon
 {
     GLdouble glColor[4];
     glGetDoublev(GL_CURRENT_COLOR, glColor);
-    text_pos.push_back(tipl::vector<2>(x,y));
+    text_pos.push_back(tipl::vector<2>(x/devicePixelRatio(),y/devicePixelRatio()));
     text_color.push_back(QColor());
     text_color.back().setRgbF(glColor[0], glColor[1], glColor[2], glColor[3]);
     text_font.push_back(font);
