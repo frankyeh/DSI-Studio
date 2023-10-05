@@ -151,13 +151,6 @@ bool CustomSliceModel::load_slices(const std::vector<std::string>& files,bool is
     to_dif.identity();
     to_slice.identity();
     tipl::progress prog("load slices ",std::filesystem::path(files[0]).filename().string().c_str());
-
-    if(QFileInfo(files[0].c_str()).fileName().toLower().contains("mni"))
-    {
-        tipl::out() << std::filesystem::path(files[0]).filename().string() <<
-                     " has mni in the file name. It will be loaded as an MNI space image" << std::endl;
-        is_mni = true;
-    }
     // picture as slice
     if(QFileInfo(files[0].c_str()).suffix() == "bmp" ||
        QFileInfo(files[0].c_str()).suffix() == "jpg" ||
@@ -296,11 +289,6 @@ bool CustomSliceModel::load_slices(const std::vector<std::string>& files,bool is
         save_idx(files[0].c_str(),nifti.input_stream);
         nifti.get_voxel_size(vs);
         nifti.get_image_transformation(trans_to_mni);
-        if(QFileInfo(files[0].c_str()).fileName().contains("mni"))
-        {
-            tipl::out() << " The file name contains 'mni' and will be used as MNI-space images" << std::endl;
-            is_mni = true;
-        }
         if(handle->is_mni)
         {
             tipl::out() << "Assuming the slices are already in the template space." << std::endl;
@@ -308,26 +296,42 @@ bool CustomSliceModel::load_slices(const std::vector<std::string>& files,bool is
             has_transform = true;
         }
         else
-        if(is_mni)
         {
-            tipl::out() << "Warping slices to the subject space." << std::endl;
-            if(!handle->mni2sub(source_images,trans_to_mni))
+            if(source_images.shape() != handle->dim)
             {
-                error_msg = handle->error_msg;
-                return false;
+                if(QFileInfo(files[0].c_str()).fileName().toLower().contains("mni"))
+                {
+                    tipl::out() << std::filesystem::path(files[0]).filename().string() <<
+                                 " has 'mni' in the file name and has a different image size from DWI. It will be spatially normalized from template space to native space." << std::endl;
+                    is_mni = true;
+                }
+                if(is_mni)
+                {
+                    tipl::out() << "Warping template-space slices to the subject space." << std::endl;
+                    if(!handle->mni2sub(source_images,trans_to_mni))
+                    {
+                        error_msg = handle->error_msg;
+                        return false;
+                    }
+                    is_diffusion_space = true;
+                    trans_to_mni = handle->trans_to_mni;
+                    has_transform = true;
+                }
             }
-            is_diffusion_space = true;
-            trans_to_mni = handle->trans_to_mni;
-            has_transform = true;
-        }
-        else
-        if(source_images.shape() == handle->dim && QFileInfo(files[0].c_str()).fileName().contains("reg"))
-        {
-            tipl::out() << "The slices have the same dimension, and there is reg in the file name." << std::endl;
-            tipl::out() << "no registration needed" << std::endl;
-            is_diffusion_space = true;
-            trans_to_mni = handle->trans_to_mni;
-            has_transform = true;
+            else
+            // slice and DWI have the same image size
+            {
+                if(QFileInfo(files[0].c_str()).fileName().contains("reg"))
+                {
+                    tipl::out() << "The slices have the same dimension, and there is 'reg' in the file name." << std::endl;
+                    tipl::out() << "no registration needed." << std::endl;
+                    is_diffusion_space = true;
+                    trans_to_mni = handle->trans_to_mni;
+                    has_transform = true;
+                }
+                else
+                    tipl::out() << "registration will be applied even though the image size is identical. To disable registration, add 'reg' to the file name. " << std::endl;
+            }
         }
     }
 
