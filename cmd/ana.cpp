@@ -63,11 +63,6 @@ bool load_nii(tipl::program_option<tipl::out>& po,
     QStringList str_list = QString(region_text.c_str()).split(",");// splitting actions
     QString file_name = str_list[0];
     std::string error_msg;
-    if(QFileInfo(file_name).baseName().toLower().contains("mni"))
-    {
-        tipl::out() << QFileInfo(file_name).baseName().toStdString() <<
-                     " has mni in the file name. It will be loaded as an MNI space image" << std::endl;
-    }
     if(!load_nii(handle,file_name.toStdString(),transform_lookup,regions,names,error_msg,QFileInfo(file_name).baseName().toLower().contains("mni")))
     {
         tipl::out() << "ERROR: " << error_msg << std::endl;
@@ -296,6 +291,7 @@ int ana_tract(tipl::program_option<tipl::out>& po)
     return trk_post(po,handle,tract_model,tract_files[0],false);
 
 }
+int exp(tipl::program_option<tipl::out>& po);
 int ana(tipl::program_option<tipl::out>& po)
 {
     if(po.has("atlas") || po.has("region") || po.has("regions"))
@@ -313,6 +309,8 @@ int ana(tipl::program_option<tipl::out>& po)
         out << "fiber coherence index\t" << result.first << std::endl;
         return 0;
     }
+    if(po.has("export"))
+        return exp(po);
     tipl::out() << "no tract file or ROI file assigned." << std::endl;
     return 1;
 }
