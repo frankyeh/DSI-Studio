@@ -551,6 +551,13 @@ bool load_nii(std::shared_ptr<fib_data> handle,
               bool is_mni)
 {
     tipl::progress prog("opening file ",std::filesystem::path(file_name).stem().string().c_str());
+
+    if(QFileInfo(file_name.c_str()).baseName().toLower().contains("mni") && is_mni)
+    {
+        tipl::out() << QFileInfo(file_name.c_str()).baseName().toStdString() <<
+                     " has 'mni' in the file name. If the image has a different image dimension from DWI, it will be spatially normalized from template space to native space." << std::endl;
+    }
+
     tipl::io::gz_nifti header;
     if (!header.load_from_file(file_name.c_str()))
     {
@@ -719,6 +726,13 @@ bool load_nii(std::shared_ptr<fib_data> handle,
             error_msg += "specify mni in the file name (e.g. region_mni.nii.gz). If not, use --other_slices to load the reference T1W/T2W to guide the registration.";
         return false;
     }
+    else
+    {
+        if(is_mni && !handle->is_mni)
+            tipl::out() << "The 'mni' in the filename is ignored, and " << nifti_name << " is treated as DWI regions because of identical image dimension. " << std::endl;
+    }
+
+
     end:
     // single region ROI
     if(!multiple_roi)
