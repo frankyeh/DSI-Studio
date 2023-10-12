@@ -181,6 +181,9 @@ void ImageModel::flip_b_table(const unsigned char* order)
 extern std::vector<std::string> fib_template_list;
 std::string ImageModel::check_b_table(void)
 {
+    if(!new_dwi.empty())
+        throw std::runtime_error("cannot check b-table after aligning ac-pc or rotating image volume. Please make sure the b-table directions are correct before rotating image volume.");
+
     tipl::progress prog("checking b_table");
 
     // reconstruct DTI using original data and b-table
@@ -702,6 +705,11 @@ bool ImageModel::command(std::string cmd,std::string param)
         voxel.steps += cmd+"\n";
         return true;
     }
+    if(cmd.find("[Step T2][B-table]") == 0 && !new_dwi.empty())
+    {
+        error_msg = "Cannot flip or rotate b-table after aligning ac-pc or rotating image volume.";
+        return false;
+    }
     if(cmd == "[Step T2][B-table][flip bx]")
     {
         for(size_t i = 0;i < src_bvectors.size();++i)
@@ -855,11 +863,16 @@ void ImageModel::rotate(const tipl::shape<3>& new_geo,
     if(prog.aborted())
         return;
     rotated_dwi.swap(new_dwi);
-    auto iT = T;
-    iT.inverse();
+
+    tipl::affine_transform<double> arg;
+    T.to_affine_transform(arg,voxel.dim,voxel.vs,voxel.dim,voxel.vs);
+    tipl::matrix<3,3,float> r;
+    tipl::rotation_matrix(arg.rotation,r.begin(),tipl::vdim<3>());
+    r.inv();
+
     for (auto& vec : src_bvectors)
         {
-            vec.rotate(iT.sr);
+            vec.rotate(r);
             vec.normalize();
         }
     voxel.dim = new_geo;
