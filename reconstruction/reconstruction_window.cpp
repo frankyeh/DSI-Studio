@@ -337,19 +337,22 @@ void reconstruction_window::on_save_mask_clicked()
 }
 void reconstruction_window::on_actionFlip_bx_triggered()
 {
-    command("[Step T2][B-table][flip bx]");
+    if(!command("[Step T2][B-table][flip bx]"))
+        return;
     ui->check_btable->setChecked(false);
     QMessageBox::information(this,"DSI Studio","B-table flipped");
 }
 void reconstruction_window::on_actionFlip_by_triggered()
 {
-    command("[Step T2][B-table][flip by]");
+    if(!command("[Step T2][B-table][flip by]"))
+        return;
     ui->check_btable->setChecked(false);
     QMessageBox::information(this,"DSI Studio","B-table flipped");
 }
 void reconstruction_window::on_actionFlip_bz_triggered()
 {
-    command("[Step T2][B-table][flip bz]");
+    if(!command("[Step T2][B-table][flip bz]"))
+        return;
     ui->check_btable->setChecked(false);
     QMessageBox::information(this,"DSI Studio","B-table flipped");
 }
@@ -1090,7 +1093,8 @@ void reconstruction_window::on_actionSmooth_Signals_triggered()
 
 void reconstruction_window::on_actionswap_bxby_triggered()
 {
-    command("[Step T2][B-table][swap bxby]");
+    if(!command("[Step T2][B-table][swap bxby]"))
+        return;
     ui->check_btable->setChecked(false);
     QMessageBox::information(this,"DSI Studio","bxby swapped");
 }
@@ -1098,7 +1102,8 @@ void reconstruction_window::on_actionswap_bxby_triggered()
 
 void reconstruction_window::on_actionswap_bybz_triggered()
 {
-    command("[Step T2][B-table][swap bybz]");
+    if(!command("[Step T2][B-table][swap bybz]"))
+        return;
     ui->check_btable->setChecked(false);
     QMessageBox::information(this,"DSI Studio","bybz swapped");
 }
@@ -1106,7 +1111,8 @@ void reconstruction_window::on_actionswap_bybz_triggered()
 
 void reconstruction_window::on_actionswap_bxbz_triggered()
 {
-    command("[Step T2][B-table][swap bxbz]");
+    if(!command("[Step T2][B-table][swap bxbz]"))
+        return;
     ui->check_btable->setChecked(false);
     QMessageBox::information(this,"DSI Studio","bxbz swapped");
 }
