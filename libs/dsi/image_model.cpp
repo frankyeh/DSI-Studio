@@ -695,7 +695,7 @@ bool ImageModel::command(std::string cmd,std::string param)
         voxel.steps += cmd+"="+param+"\n";
         return true;
     }
-    if(cmd == "[Step T2][Edit][Align APPC]")
+    if(cmd == "[Step T2][Edit][Align ACPC]")
     {
         if(!align_acpc())
             return false;
@@ -855,9 +855,11 @@ void ImageModel::rotate(const tipl::shape<3>& new_geo,
     if(prog.aborted())
         return;
     rotated_dwi.swap(new_dwi);
+    auto iT = T;
+    iT.inverse();
     for (auto& vec : src_bvectors)
         {
-            vec.rotate(T.sr);
+            vec.rotate(iT.sr);
             vec.normalize();
         }
     voxel.dim = new_geo;
