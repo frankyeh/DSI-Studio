@@ -69,7 +69,7 @@ private slots:
     void on_actionFlip_xy_triggered(){command("[Step T2][Edit][Image swap xy]");}
     void on_actionFlip_yz_triggered(){command("[Step T2][Edit][Image swap yz]");}
     void on_actionFlip_xz_triggered(){command("[Step T2][Edit][Image swap xz]");}
-    void on_actionAlign_ACPC_triggered(){command("[Step T2][Edit][Align APPC]");}
+    void on_actionAlign_ACPC_triggered(){command("[Step T2][Edit][Align ACPC]");}
     void on_actionTrim_image_triggered(){command("[Step T2][Edit][Crop Background]");}
     void on_actionFlip_bx_triggered();
     void on_actionFlip_by_triggered();
