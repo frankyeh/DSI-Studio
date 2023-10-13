@@ -1076,7 +1076,19 @@ void reconstruction_window::on_actionRun_FSL_Topup_triggered()
     if(command("[Step T2][Corrections][TOPUP EDDY]",other_src.toStdString()))
         QMessageBox::information(this,"DSI Studio","Correction result loaded");
 }
-
+void reconstruction_window::on_actionTOPUP_only_triggered()
+{
+    QString other_src;
+    QMessageBox::information(this,"DSI Studio","Please specify another NIFTI or SRC.GZ file with reversed phase encoding data");
+    other_src = QFileDialog::getOpenFileName(
+                this,"Open SRC file",absolute_path,
+                "Images (*src.gz *.nii *nii.gz);;DICOM image (*.dcm);;All files (*)" );
+        if(other_src.isEmpty())
+            return;
+    tipl::progress prog_("topup/eddy",true);
+    if(command("[Step T2][Corrections][TOPUP]",other_src.toStdString()))
+        QMessageBox::information(this,"DSI Studio","Correction result loaded");
+}
 
 void reconstruction_window::on_actionEDDY_triggered()
 {
