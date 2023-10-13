@@ -752,6 +752,22 @@ bool ImageModel::command(std::string cmd,std::string param)
         voxel.steps += cmd+"\n";
         return true;
     }
+    if(cmd == "[Step T2][Corrections][TOPUP]")
+    {
+        auto step = param.empty() ? (cmd+"\n") : (cmd+"="+param+"\n");
+        if(param.empty())
+            param = find_topup_reverse_pe();
+        if(param.empty())
+        {
+            tipl::out() << "cannot find reversed phase encoding files." << std::endl;
+            return false;
+        }
+        else
+        if(!run_topup_eddy(param,true))
+            return false;
+        voxel.steps += step;
+        return true;
+    }
     if(cmd == "[Step T2][Corrections][TOPUP EDDY]")
     {
         auto step = param.empty() ? (cmd+"\n") : (cmd+"="+param+"\n");
@@ -1960,7 +1976,7 @@ std::string ImageModel::find_topup_reverse_pe(void)
     return candidates.begin()->second;
 }
 extern std::string topup_param_file;
-bool ImageModel::run_topup_eddy(const std::string& other_src)
+bool ImageModel::run_topup_eddy(const std::string& other_src,bool topup_only)
 {
     tipl::progress prog("run topup/eddy");
     if(voxel.report.find("rotated") != std::string::npos)
@@ -2042,12 +2058,13 @@ bool ImageModel::run_topup_eddy(const std::string& other_src)
             return false;
     }
 
-    if(eddy_check_shell(src_bvalues))
+    if(!topup_only && eddy_check_shell(src_bvalues))
         return run_eddy();
 
     if(has_reversed_pe && !run_applytopup())
         return false;
-
+    if(topup_only)
+        return true;
     tipl::out() << "eddy cannot be applied to this dataset. run motion correction on DSI Studio instead." << std::endl;
     return correct_motion();
 

@@ -1221,9 +1221,11 @@ Reconstruction</string>
      <string>Corrections</string>
     </property>
     <addaction name="actionRun_FSL_Topup"/>
+    <addaction name="actionTOPUP_only"/>
     <addaction name="actionEDDY"/>
     <addaction name="separator"/>
     <addaction name="actionEddy_Motion_Correction"/>
+    <addaction name="separator"/>
    </widget>
    <widget class="QMenu" name="menuEdit">
     <property name="title">
@@ -1429,7 +1431,7 @@ Reconstruction</string>
   </action>
   <action name="actionEDDY">
    <property name="text">
-    <string>EDDY...</string>
+    <string>EDDY only...</string>
    </property>
   </action>
   <action name="actionSmooth_Signals">
@@ -1450,6 +1452,11 @@ Reconstruction</string>
   <action name="actionswap_bxbz">
    <property name="text">
     <string>swap bxbz</string>
+   </property>
+  </action>
+  <action name="actionTOPUP_only">
+   <property name="text">
+    <string>TOPUP only...</string>
    </property>
   </action>
  </widget>
