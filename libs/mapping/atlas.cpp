@@ -7,14 +7,17 @@
 
 void apply_trans(tipl::vector<3>& pos,const tipl::matrix<4,4>& trans);
 
+std::string get_label_file_name(const std::string& file_name)
+{
+    if(tipl::ends_with(file_name,".nii.gz"))
+        return file_name.substr(0,file_name.size()-6) +"txt";
+    if(tipl::ends_with(file_name,".nii"))
+        return file_name.substr(0,file_name.size()-3) +"txt";
+    return file_name + ".txt";
+}
 void atlas::load_label(void)
 {
-    std::string file_name_str(filename);
-    std::string text_file_name;
-    if (QString(filename.c_str()).endsWith(".nii.gz"))
-        text_file_name = std::string(file_name_str.begin(),file_name_str.end()-6)+"txt";
-    if (QString(filename.c_str()).endsWith(".nii"))
-        text_file_name = std::string(file_name_str.begin(),file_name_str.end()-3)+"txt";
+    std::string text_file_name = get_label_file_name(filename);
     std::ifstream in(text_file_name.c_str());
     if(!in)
     {
