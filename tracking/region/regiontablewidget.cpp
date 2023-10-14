@@ -495,6 +495,7 @@ void load_json_label(const char* filename,std::map<int,std::string>& label_map)
     }
 }
 
+std::string get_label_file_name(const std::string& file_name);
 void get_roi_label(QString file_name,std::map<int,std::string>& label_map,std::map<int,tipl::rgb>& label_color)
 {
     label_map.clear();
@@ -502,7 +503,7 @@ void get_roi_label(QString file_name,std::map<int,std::string>& label_map,std::m
     QString base_name = QFileInfo(file_name).completeBaseName();
     if(base_name.endsWith(".nii"))
         base_name.chop(4);
-    QString label_file = QFileInfo(file_name).absolutePath()+"/"+base_name+".txt";
+    QString label_file = get_label_file_name(file_name.toStdString()).c_str();
     tipl::out() <<"looking for region label file " << label_file.toStdString() << std::endl;
     if(QFileInfo(label_file).exists())
     {
@@ -575,10 +576,11 @@ bool load_nii(std::shared_ptr<fib_data> handle,
     {
         tipl::image<3> tmp;
         header.toLPS(tmp);
-        if(header.is_integer() || tipl::is_label_image(tmp))
+        if(std::filesystem::exists(get_label_file_name(file_name)) || tipl::is_label_image(tmp))
             from = tmp;
         else
         {
+            tipl::out() << "The NIFTI file does not have a label text file. Using it as a mask.";
             from.resize(tmp.shape());
             for(size_t i = 0;i < from.size();++i)
                 from[i] = (tmp[i] > 0.0f ? 1 : 0);
