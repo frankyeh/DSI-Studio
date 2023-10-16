@@ -75,7 +75,6 @@ private slots:
     void on_actionAlign_ACPC_triggered(){command("[Step T2][Edit][Align ACPC]");}
     void on_actionTrim_image_triggered(){command("[Step T2][Edit][Crop Background]");}
 
-    void on_actionEddy_Motion_Correction_triggered(){command("[Step T2][File][Motion Correction]");}
 
     void on_actionFlip_bx_triggered(){command("[Step T2][B-table][flip bx]");}
     void on_actionFlip_by_triggered()    {command("[Step T2][B-table][flip by]");}
@@ -84,9 +83,10 @@ private slots:
     void on_actionswap_bybz_triggered()  {command("[Step T2][B-table][swap bybz]");}
     void on_actionswap_bxbz_triggered()  {command("[Step T2][B-table][swap bxbz]");}
 
-    void on_actionEDDY_triggered()          {command("[Step T2][Corrections][EDDY]");}
-    void on_actionRun_FSL_Topup_triggered() {command("[Step T2][Corrections][TOPUP EDDY]");}
-    void on_actionTOPUP_only_triggered()    {command("[Step T2][Corrections][TOPUP]");}
+    void on_actionRun_FSL_Topup_triggered()         {command("[Step T2][Corrections][TOPUP EDDY]");}
+    void on_actionTOPUP_only_triggered()            {command("[Step T2][Corrections][TOPUP]");}
+    void on_actionEDDY_triggered()                  {command("[Step T2][Corrections][EDDY]");}
+    void on_actionEddy_Motion_Correction_triggered(){command("[Step T2][Corrections][Motion Correction]");}
 
     void on_b_table_itemSelectionChanged();
     void on_zoom_in_clicked();
