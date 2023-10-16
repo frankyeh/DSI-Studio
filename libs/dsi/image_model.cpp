@@ -792,6 +792,13 @@ bool ImageModel::command(std::string cmd,std::string param)
         voxel.steps += cmd+"\n";
         return true;
     }
+    if(cmd == "[Step T2][Corrections][Motion Correction]")
+    {
+        if(!correct_motion())
+            return false;
+        voxel.steps += cmd+"\n";
+        return true;
+    }
     if(cmd == "[Step T2b(2)][Partial FOV]")
     {
         std::istringstream in(param);
