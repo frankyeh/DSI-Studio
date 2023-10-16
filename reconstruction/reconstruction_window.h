@@ -23,8 +23,7 @@ public:
     QStringList filenames;
     explicit reconstruction_window(QStringList filenames_,QWidget *parent = nullptr);
     ~reconstruction_window();
-    void batch_command(std::string cmd,std::string param);
-    bool command(std::string cmd,std::string param=std::string());
+    bool command(std::string cmd,std::string param = std::string());
 protected:
     void resizeEvent ( QResizeEvent * event );
     void showEvent ( QShowEvent * event );
@@ -51,9 +50,11 @@ private slots:
     void on_QSDR_toggled(bool checked);
     void on_GQI_toggled(bool checked);
     void on_DTI_toggled(bool checked);
-    void on_load_mask_clicked();
     void on_save_mask_clicked();
     void on_doDTI_clicked();
+
+    void on_actionSave_SRC_file_as_triggered()  {command("[Step T2][File][Save Src File]");}
+    void on_actionSave_4D_nifti_triggered()     {command("[Step T2][File][Save 4D NIFTI]");}
 
     void on_smoothing_clicked(){command("[Step T2a][Smoothing]");}
     void on_defragment_clicked(){command("[Step T2a][Defragment]");}
@@ -63,6 +64,8 @@ private slots:
     void on_actionErase_Background_Signals_triggered(){command("[Step T2a][Remove Background]");}
     void on_thresholding_clicked(){command("[Step T2a][Threshold]");}
 
+    void on_load_mask_clicked() {command("[Step T2a][Open]");}
+    void on_actionSmooth_Signals_triggered(){command("[Step T2][Edit][Smooth Signals]");}
     void on_actionFlip_x_triggered(){command("[Step T2][Edit][Image flip x]");}
     void on_actionFlip_y_triggered(){command("[Step T2][Edit][Image flip y]");}
     void on_actionFlip_z_triggered(){command("[Step T2][Edit][Image flip z]");}
@@ -71,15 +74,24 @@ private slots:
     void on_actionFlip_xz_triggered(){command("[Step T2][Edit][Image swap xz]");}
     void on_actionAlign_ACPC_triggered(){command("[Step T2][Edit][Align ACPC]");}
     void on_actionTrim_image_triggered(){command("[Step T2][Edit][Crop Background]");}
-    void on_actionFlip_bx_triggered();
-    void on_actionFlip_by_triggered();
-    void on_actionFlip_bz_triggered();
+
+    void on_actionEddy_Motion_Correction_triggered(){command("[Step T2][File][Motion Correction]");}
+
+    void on_actionFlip_bx_triggered(){command("[Step T2][B-table][flip bx]");}
+    void on_actionFlip_by_triggered()    {command("[Step T2][B-table][flip by]");}
+    void on_actionFlip_bz_triggered()    {command("[Step T2][B-table][flip bz]");}
+    void on_actionswap_bxby_triggered()  {command("[Step T2][B-table][swap bxby]");}
+    void on_actionswap_bybz_triggered()  {command("[Step T2][B-table][swap bybz]");}
+    void on_actionswap_bxbz_triggered()  {command("[Step T2][B-table][swap bxbz]");}
+
+    void on_actionEDDY_triggered()          {command("[Step T2][Corrections][EDDY]");}
+    void on_actionRun_FSL_Topup_triggered() {command("[Step T2][Corrections][TOPUP EDDY]");}
+    void on_actionTOPUP_only_triggered()    {command("[Step T2][Corrections][TOPUP]");}
 
     void on_b_table_itemSelectionChanged();
     void on_zoom_in_clicked();
     void on_zoom_out_clicked();
     void on_AdvancedOptions_clicked();
-    void on_actionSave_4D_nifti_triggered();
     void on_actionSave_b_table_triggered();
     void on_actionSave_bvals_triggered();
     void on_actionSave_bvecs_triggered();
@@ -99,23 +111,15 @@ private slots:
     void on_actionSave_DWI_sum_triggered();
 
     void on_actionResample_triggered();
-    void on_actionSave_SRC_file_as_triggered();
     void on_remove_below_clicked();
-    void on_actionEddy_Motion_Correction_triggered();
+
     void on_show_bad_slice_clicked();
     void on_align_slices_clicked();
     void on_edit_mask_clicked();
     void on_actionOverwrite_Voxel_Size_triggered();
     void on_qsdr_manual_clicked();
-    void on_actionRun_FSL_Topup_triggered();
-    void on_actionEDDY_triggered();
-    void on_actionSmooth_Signals_triggered();
-    void on_actionswap_bxby_triggered();
-    void on_actionswap_bybz_triggered();
-    void on_actionswap_bxbz_triggered();
     void on_mask_from_unet_clicked();
     void on_qsdr_partial_fov_clicked();
-    void on_actionTOPUP_only_triggered();
 };
 
 #endif // RECONSTRUCTION_WINDOW_H

@@ -306,18 +306,7 @@ void reconstruction_window::Reconstruction(unsigned char method_id,bool prompt)
         ((MainWindow*)parent())->addFib(filename);
 }
 
-void reconstruction_window::on_load_mask_clicked()
-{
-    QString filename = QFileDialog::getOpenFileName(
-            this,
-            "Open region",
-            absolute_path,
-            "Mask files (*.nii *nii.gz *.hdr);;Text files (*.txt);;All files (*)" );
-    if(filename.isEmpty())
-        return;
-    command("[Step T2a][Open]",filename.toStdString());
-    on_SlicePos_valueChanged(ui->SlicePos->value());
-}
+
 
 
 void reconstruction_window::on_save_mask_clicked()
@@ -335,32 +324,70 @@ void reconstruction_window::on_save_mask_clicked()
     region.load_region_from_buffer(handle->voxel.mask);
     region.save_region_to_file(filename.toStdString().c_str());
 }
-void reconstruction_window::on_actionFlip_bx_triggered()
+
+bool reconstruction_window::command(std::string cmd,std::string param)
 {
-    if(!command("[Step T2][B-table][flip bx]"))
-        return;
-    ui->check_btable->setChecked(false);
-    QMessageBox::information(this,"DSI Studio","B-table flipped");
-}
-void reconstruction_window::on_actionFlip_by_triggered()
-{
-    if(!command("[Step T2][B-table][flip by]"))
-        return;
-    ui->check_btable->setChecked(false);
-    QMessageBox::information(this,"DSI Studio","B-table flipped");
-}
-void reconstruction_window::on_actionFlip_bz_triggered()
-{
-    if(!command("[Step T2][B-table][flip bz]"))
-        return;
-    ui->check_btable->setChecked(false);
-    QMessageBox::information(this,"DSI Studio","B-table flipped");
-}
-void reconstruction_window::batch_command(std::string cmd,std::string param)
-{
-    command(cmd,param);
-    if(filenames.size() > 1 && QMessageBox::information(this,"DSI Studio","Apply to other SRC files?",
-                                    QMessageBox::Yes|QMessageBox::No|QMessageBox::Cancel) == QMessageBox::Yes)
+    if(cmd == "[Step T2][File][Save 4D NIFTI]")
+    {
+        QString filename = QFileDialog::getSaveFileName(
+                    this,"Save image as...",filenames[0] + ".nii.gz",
+                                "NIFTI files (*nii.gz);;All files (*)" );
+        if(filename.isEmpty())
+            return false;
+        param = filename.toStdString();
+    }
+    if(cmd == "[Step T2][File][Save Src File]")
+    {
+        QString filename = QFileDialog::getSaveFileName(
+                this,"Save SRC file",filenames[0],
+                        "SRC files (*src.gz);;All files (*)" );
+        if(filename.isEmpty())
+            return false;
+        param = filename.toStdString();
+    }
+    if(tipl::contains_case_insensitive(cmd,"topup") && !std::filesystem::exists(handle->file_name+".corrected.nii.gz"))
+    {
+        QMessageBox::information(this,"DSI Studio","Please specify another NIFTI or SRC.GZ file with reversed phase encoding data");
+        auto other_src = QFileDialog::getOpenFileName(
+                    this,"Open SRC file",absolute_path,
+                    "Images (*src.gz *.nii *nii.gz);;DICOM image (*.dcm);;All files (*)" );
+        if(other_src.isEmpty())
+            return false;
+        param = other_src.toStdString();
+    }
+
+    if(tipl::contains_case_insensitive(cmd,"open"))
+    {
+        QString filename = QFileDialog::getOpenFileName(
+            this,
+            "Open region",
+            absolute_path,
+            "Mask files (*.nii *nii.gz *.hdr);;Text files (*.txt);;All files (*)" );
+        if(filename.isEmpty())
+            return false;
+        param = filename.toStdString();
+    }
+
+
+    tipl::progress prog(cmd.c_str(),true);
+    bool result = handle->command(cmd,param);
+    if(!result)
+        QMessageBox::critical(this,"ERROR",handle->error_msg.c_str());
+    if(cmd.find("Corrections") != std::string::npos)
+        QMessageBox::information(this,"DSI Studio","correction result loaded");
+    if(cmd.find("B-table") != std::string::npos)
+    {
+        ui->check_btable->setChecked(false);
+        QMessageBox::information(this,"DSI Studio","b-table updated");
+    }
+    update_dimension();
+    load_b_table();
+    on_SlicePos_valueChanged(ui->SlicePos->value());
+
+
+    if(filenames.size() > 1 && tipl::contains_case_insensitive(cmd,"save") &&
+        QMessageBox::information(this,"DSI Studio","Apply to other SRC files?",
+        QMessageBox::Yes|QMessageBox::No|QMessageBox::Cancel) == QMessageBox::Yes)
     {
         tipl::progress prog("apply to other SRC files");
         std::string steps(handle->voxel.steps.begin()+existing_steps.length(),handle->voxel.steps.end());
@@ -377,20 +404,13 @@ void reconstruction_window::batch_command(std::string cmd,std::string param)
             if (!model.load_from_file(filenames[index].toStdString().c_str()) ||
                 !model.run_steps(handle->file_name,steps))
             {
-                QMessageBox::critical(this,"ERROR",QFileInfo(filenames[index]).fileName() + " : " + model.error_msg.c_str());
-                return;
+                if(QMessageBox::information(this,"DSI Studio",
+                    QFileInfo(filenames[index]).fileName() + " : " + model.error_msg.c_str() + " Continue?",
+                                QMessageBox::Yes|QMessageBox::No) == QMessageBox::No)
+                    return false;
             }
         }
     }
-}
-bool reconstruction_window::command(std::string cmd,std::string param)
-{
-    bool result = handle->command(cmd,param);
-    if(!result)
-        QMessageBox::critical(this,"ERROR",handle->error_msg.c_str());
-    update_dimension();
-    load_b_table();
-    on_SlicePos_valueChanged(ui->SlicePos->value());
     return result;
 }
 void reconstruction_window::on_doDTI_clicked()
@@ -498,21 +518,6 @@ void reconstruction_window::on_AdvancedOptions_clicked()
         ui->AdvancedWidget->setVisible(false);
         ui->AdvancedOptions->setText("Advanced Options >>");
     }
-}
-
-
-void reconstruction_window::on_actionSave_4D_nifti_triggered()
-{
-    QString filename = QFileDialog::getSaveFileName(
-                                this,
-                                "Save image as...",
-                            filenames[0] + ".nii.gz",
-                                "All files (*)" );
-    if ( filename.isEmpty() )
-        return;
-
-    batch_command("[Step T2][File][Save 4D NIFTI]",filename.toStdString());
-
 }
 
 void reconstruction_window::on_actionSave_b0_triggered()
@@ -902,26 +907,7 @@ void reconstruction_window::on_actionResample_triggered()
     command("[Step T2][Edit][Resample]",QString::number(nv).toStdString());
 }
 
-void reconstruction_window::on_actionSave_SRC_file_as_triggered()
-{
-    QString filename = QFileDialog::getSaveFileName(
-            this,"Save SRC file",filenames[0],
-            "SRC files (*src.gz);;All files (*)" );
-    if(filename.isEmpty())
-        return;
-    batch_command("[Step T2][File][Save Src File]",filename.toStdString());
-}
 
-
-void reconstruction_window::on_actionEddy_Motion_Correction_triggered()
-{
-    if(handle->correct_motion())
-    {
-        handle->calculate_dwi_sum(true);
-        load_b_table();
-        on_SlicePos_valueChanged(ui->SlicePos->value());
-    }
-}
 
 void reconstruction_window::on_show_bad_slice_clicked()
 {
@@ -1057,78 +1043,6 @@ void reconstruction_window::on_qsdr_manual_clicked()
     handle->voxel.qsdr_trans = manual->get_iT();
     handle->voxel.manual_alignment = true;
 }
-
-
-
-void reconstruction_window::on_actionRun_FSL_Topup_triggered()
-{
-    QString other_src;
-    if(!std::filesystem::exists(handle->file_name+".corrected.nii.gz"))
-    {
-        QMessageBox::information(this,"DSI Studio","Please specify another NIFTI or SRC.GZ file with reversed phase encoding data");
-        other_src = QFileDialog::getOpenFileName(
-                this,"Open SRC file",absolute_path,
-                "Images (*src.gz *.nii *nii.gz);;DICOM image (*.dcm);;All files (*)" );
-        if(other_src.isEmpty())
-            return;
-    }
-    tipl::progress prog_("topup/eddy",true);
-    if(command("[Step T2][Corrections][TOPUP EDDY]",other_src.toStdString()))
-        QMessageBox::information(this,"DSI Studio","Correction result loaded");
-}
-void reconstruction_window::on_actionTOPUP_only_triggered()
-{
-    QString other_src;
-    QMessageBox::information(this,"DSI Studio","Please specify another NIFTI or SRC.GZ file with reversed phase encoding data");
-    other_src = QFileDialog::getOpenFileName(
-                this,"Open SRC file",absolute_path,
-                "Images (*src.gz *.nii *nii.gz);;DICOM image (*.dcm);;All files (*)" );
-        if(other_src.isEmpty())
-            return;
-    tipl::progress prog_("topup/eddy",true);
-    if(command("[Step T2][Corrections][TOPUP]",other_src.toStdString()))
-        QMessageBox::information(this,"DSI Studio","Correction result loaded");
-}
-
-void reconstruction_window::on_actionEDDY_triggered()
-{
-    tipl::progress prog_("eddy",true);
-    if(command("[Step T2][Corrections][EDDY]"))
-        QMessageBox::information(this,"DSI Studio","Correction result loaded");
-}
-
-void reconstruction_window::on_actionSmooth_Signals_triggered()
-{
-    command("[Step T2][Edit][Smooth Signals]");
-}
-
-
-void reconstruction_window::on_actionswap_bxby_triggered()
-{
-    if(!command("[Step T2][B-table][swap bxby]"))
-        return;
-    ui->check_btable->setChecked(false);
-    QMessageBox::information(this,"DSI Studio","bxby swapped");
-}
-
-
-void reconstruction_window::on_actionswap_bybz_triggered()
-{
-    if(!command("[Step T2][B-table][swap bybz]"))
-        return;
-    ui->check_btable->setChecked(false);
-    QMessageBox::information(this,"DSI Studio","bybz swapped");
-}
-
-
-void reconstruction_window::on_actionswap_bxbz_triggered()
-{
-    if(!command("[Step T2][B-table][swap bxbz]"))
-        return;
-    ui->check_btable->setChecked(false);
-    QMessageBox::information(this,"DSI Studio","bxbz swapped");
-}
-
 
 void reconstruction_window::on_mask_from_unet_clicked()
 {
