@@ -368,8 +368,6 @@ bool reconstruction_window::command(std::string cmd,std::string param)
         param = filename.toStdString();
     }
 
-
-    tipl::progress prog(cmd.c_str(),true);
     bool result = handle->command(cmd,param);
     if(!result)
         QMessageBox::critical(this,"ERROR",handle->error_msg.c_str());
