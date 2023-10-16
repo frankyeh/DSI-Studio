@@ -1373,17 +1373,17 @@ Reconstruction</string>
   </action>
   <action name="actionFlip_bx">
    <property name="text">
-    <string>flip bx</string>
+    <string>Flip Bx</string>
    </property>
   </action>
   <action name="actionFlip_by">
    <property name="text">
-    <string>flip by</string>
+    <string>Flip By</string>
    </property>
   </action>
   <action name="actionFlip_bz">
    <property name="text">
-    <string>flip bz</string>
+    <string>Flip Bz</string>
    </property>
   </action>
   <action name="actionResample">
@@ -1431,7 +1431,7 @@ Reconstruction</string>
   </action>
   <action name="actionEDDY">
    <property name="text">
-    <string>EDDY only...</string>
+    <string>EDDY...</string>
    </property>
   </action>
   <action name="actionSmooth_Signals">
@@ -1441,22 +1441,22 @@ Reconstruction</string>
   </action>
   <action name="actionswap_bxby">
    <property name="text">
-    <string>swap bxby</string>
+    <string>Swap BxBy</string>
    </property>
   </action>
   <action name="actionswap_bybz">
    <property name="text">
-    <string>swap bybz</string>
+    <string>Swap ByBz</string>
    </property>
   </action>
   <action name="actionswap_bxbz">
    <property name="text">
-    <string>swap bxbz</string>
+    <string>Swap BxBz</string>
    </property>
   </action>
   <action name="actionTOPUP_only">
    <property name="text">
-    <string>TOPUP only...</string>
+    <string>TOPUP...</string>
    </property>
   </action>
  </widget>
