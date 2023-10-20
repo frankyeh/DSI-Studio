@@ -91,7 +91,6 @@ public:
 public:
     std::string file_name;
     bool output_odf = false;
-    bool check_btable = true;
     unsigned int max_fiber_number = 5;
     std::vector<std::string> file_list;
 public:
