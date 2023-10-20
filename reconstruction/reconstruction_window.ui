@@ -969,13 +969,6 @@
                <item>
                 <layout class="QHBoxLayout" name="horizontalLayout_4">
                  <item>
-                  <widget class="QCheckBox" name="preprocessing">
-                   <property name="text">
-                    <string>Preprocessing</string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item>
                   <widget class="QCheckBox" name="check_btable">
                    <property name="statusTip">
                     <string>Check whether b-table is flipped and correct it</string>
@@ -984,7 +977,7 @@
                     <string>Check b-table</string>
                    </property>
                    <property name="checked">
-                    <bool>true</bool>
+                    <bool>false</bool>
                    </property>
                   </widget>
                  </item>
