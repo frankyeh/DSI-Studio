@@ -77,12 +77,13 @@ private slots:
     void on_actionTrim_image_triggered(){command("[Step T2][Edit][Crop Background]");}
 
 
-    void on_actionFlip_bx_triggered(){command("[Step T2][B-table][flip bx]");}
-    void on_actionFlip_by_triggered()    {command("[Step T2][B-table][flip by]");}
-    void on_actionFlip_bz_triggered()    {command("[Step T2][B-table][flip bz]");}
-    void on_actionswap_bxby_triggered()  {command("[Step T2][B-table][swap bxby]");}
-    void on_actionswap_bybz_triggered()  {command("[Step T2][B-table][swap bybz]");}
-    void on_actionswap_bxbz_triggered()  {command("[Step T2][B-table][swap bxbz]");}
+    void on_actionCheck_b_table_triggered() {command("[Step T2][B-table][Check B-table]");}
+    void on_actionFlip_bx_triggered()       {command("[Step T2][B-table][flip bx]");}
+    void on_actionFlip_by_triggered()       {command("[Step T2][B-table][flip by]");}
+    void on_actionFlip_bz_triggered()       {command("[Step T2][B-table][flip bz]");}
+    void on_actionswap_bxby_triggered()     {command("[Step T2][B-table][swap bxby]");}
+    void on_actionswap_bybz_triggered()     {command("[Step T2][B-table][swap bybz]");}
+    void on_actionswap_bxbz_triggered()     {command("[Step T2][B-table][swap bxbz]");}
 
     void on_actionRun_FSL_Topup_triggered()         {command("[Step T2][Corrections][TOPUP EDDY]");}
     void on_actionTOPUP_only_triggered()            {command("[Step T2][Corrections][TOPUP]");}
