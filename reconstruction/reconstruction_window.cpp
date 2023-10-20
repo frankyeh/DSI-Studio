@@ -87,11 +87,6 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
         break;
     }
 
-    if(!handle->is_human_data())
-    {
-        ui->preprocessing->setChecked(false);
-        ui->preprocessing->hide();
-    }
     ui->odf_resolving->setVisible(false);
 
     ui->AdvancedWidget->setVisible(false);
@@ -246,15 +241,6 @@ void reconstruction_window::Reconstruction(unsigned char method_id,bool prompt)
     settings.setValue("other_output",ui->other_output->text());
     settings.setValue("check_btable",ui->check_btable->isChecked() ? 1 : 0);
 
-    if(ui->preprocessing->isChecked())
-    {
-        if(!handle->preprocessing())
-        {
-            QMessageBox::critical(this,"ERROR",handle->error_msg.c_str());
-            return;
-        }
-    }
-
     handle->voxel.method_id = method_id;
     handle->voxel.odf_resolving = ui->odf_resolving->isChecked();
     handle->voxel.output_odf = ui->RecordODF->isChecked();
@@ -327,6 +313,15 @@ void reconstruction_window::on_save_mask_clicked()
 
 bool reconstruction_window::command(std::string cmd,std::string param)
 {
+    if(cmd == "[Step T2][Edit][Resample]" || cmd == "[Step T2][Edit][Align ACPC]")
+    {
+        bool ok;
+        float nv = float(QInputDialog::getDouble(this,
+            "DSI Studio","Assign output resolution in (mm):", double(handle->voxel.vs[0]),0.0,3.0,4, &ok));
+        if (!ok || nv == 0.0f)
+            return false;
+        param = std::to_string(nv);
+    }
     if(cmd == "[Step T2][File][Save 4D NIFTI]")
     {
         QString filename = QFileDialog::getSaveFileName(
@@ -894,18 +889,6 @@ void reconstruction_window::on_AxiView_clicked()
     ui->z_pos->setValue((handle->voxel.dim[view_orientation]-1) >> 1);
     on_b_table_itemSelectionChanged();
 }
-
-void reconstruction_window::on_actionResample_triggered()
-{
-    bool ok;
-    float nv = float(QInputDialog::getDouble(this,
-        "DSI Studio","Assign output resolution in (mm):", double(handle->voxel.vs[0]),0.0,3.0,4, &ok));
-    if (!ok || nv == 0.0f)
-        return;
-    command("[Step T2][Edit][Resample]",QString::number(nv).toStdString());
-}
-
-
 
 void reconstruction_window::on_show_bad_slice_clicked()
 {

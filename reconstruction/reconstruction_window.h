@@ -72,6 +72,7 @@ private slots:
     void on_actionFlip_xy_triggered(){command("[Step T2][Edit][Image swap xy]");}
     void on_actionFlip_yz_triggered(){command("[Step T2][Edit][Image swap yz]");}
     void on_actionFlip_xz_triggered(){command("[Step T2][Edit][Image swap xz]");}
+    void on_actionResample_triggered(){command("[Step T2][Edit][Resample]");}
     void on_actionAlign_ACPC_triggered(){command("[Step T2][Edit][Align ACPC]");}
     void on_actionTrim_image_triggered(){command("[Step T2][Edit][Crop Background]");}
 
@@ -110,7 +111,6 @@ private slots:
     void on_AxiView_clicked();
     void on_actionSave_DWI_sum_triggered();
 
-    void on_actionResample_triggered();
     void on_remove_below_clicked();
 
     void on_show_bad_slice_clicked();
