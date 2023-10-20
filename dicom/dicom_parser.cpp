@@ -1008,7 +1008,7 @@ bool parse_dwi(QStringList file_list,
     }
     if(geo[2] == 1)
     {
-        if(file_list.size() > 512)
+        if(file_list.size() > 256)
         {
             tipl::out()  << "handled as multiple single slice DWI";
             return load_multiple_slice_dicom(file_list,dwi_files);
