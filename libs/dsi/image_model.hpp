@@ -241,7 +241,7 @@ public:
     void calculate_dwi_sum(bool update_mask);
     bool mask_from_unet(void);
     void remove(unsigned int index);
-    std::string check_b_table(void);
+    bool check_b_table(void);
 public:
     bool is_dsi_half_sphere(void);
     bool is_dsi(void);

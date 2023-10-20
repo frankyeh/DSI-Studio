@@ -179,10 +179,13 @@ void ImageModel::flip_b_table(const unsigned char* order)
 
 
 extern std::vector<std::string> fib_template_list;
-std::string ImageModel::check_b_table(void)
+bool ImageModel::check_b_table(void)
 {
     if(!new_dwi.empty())
-        throw std::runtime_error("cannot check b-table after aligning ac-pc or rotating image volume. Please make sure the b-table directions are correct before rotating image volume.");
+    {
+        error_msg = "cannot check b-table after aligning ac-pc or rotating image volume. Please make sure the b-table directions are correct before rotating image volume.";
+        return false;
+    }
 
     tipl::progress prog("checking b_table");
 
@@ -256,7 +259,7 @@ std::string ImageModel::check_b_table(void)
                     R = tipl::correlation(VFF.begin(),VFF.end(),iso.begin());
 
                 },terminated))
-                throw std::runtime_error("aborted");
+                return false;
 
             tipl::out() << arg << std::endl;
             tipl::out() << "goodness-of-fit R2: " << R*R << std::endl;
@@ -331,12 +334,17 @@ std::string ImageModel::check_b_table(void)
         sp << "b-table corrected by " << txt[best] << " for " << file_name << std::endl;
         flip_b_table(order[best]);
         voxel.load_from_src(*this);
-        return txt[best];
+        error_msg = "The b-table was corrected by flipping ";
+        error_msg += txt[best];
+        voxel.recon_report << " " << error_msg << ".";
     }
-    fib_fa[0].swap(voxel.fib_fa);
-    fib_dir[0].swap(voxel.fib_dir);
-
-    return std::string();
+    else
+    {
+        error_msg = "The b-table orientation is correct.";
+        fib_fa[0].swap(voxel.fib_fa);
+        fib_dir[0].swap(voxel.fib_dir);
+    }
+    return true;
 }
 std::vector<std::pair<size_t,size_t> > ImageModel::get_bad_slices(void)
 {
@@ -709,6 +717,14 @@ bool ImageModel::command(std::string cmd,std::string param)
     {
         error_msg = "Cannot flip or rotate b-table after aligning ac-pc or rotating image volume.";
         return false;
+    }
+    // correct for b-table orientation
+    if(cmd == "[Step T2][B-table][Check B-table]")
+    {
+        if(!check_b_table())
+            return false;
+        voxel.steps += cmd+"\n";
+        return true;
     }
     if(cmd == "[Step T2][B-table][flip bx]")
     {
