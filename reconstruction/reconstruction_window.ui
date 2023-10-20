@@ -667,6 +667,58 @@
                  <item>
                   <widget class="QComboBox" name="primary_template"/>
                  </item>
+                 <item>
+                  <widget class="QWidget" name="qsdr_options" native="true">
+                   <layout class="QHBoxLayout" name="horizontalLayout_7">
+                    <property name="leftMargin">
+                     <number>0</number>
+                    </property>
+                    <property name="topMargin">
+                     <number>0</number>
+                    </property>
+                    <property name="rightMargin">
+                     <number>0</number>
+                    </property>
+                    <property name="bottomMargin">
+                     <number>0</number>
+                    </property>
+                    <item>
+                     <layout class="QHBoxLayout" name="horizontalLayout_10">
+                      <property name="spacing">
+                       <number>0</number>
+                      </property>
+                      <item>
+                       <widget class="QPushButton" name="qsdr_manual">
+                        <property name="text">
+                         <string>Manual Align...</string>
+                        </property>
+                       </widget>
+                      </item>
+                      <item>
+                       <widget class="QPushButton" name="add_t1t2">
+                        <property name="sizePolicy">
+                         <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+                          <horstretch>0</horstretch>
+                          <verstretch>0</verstretch>
+                         </sizepolicy>
+                        </property>
+                        <property name="text">
+                         <string>Attach Images...</string>
+                        </property>
+                       </widget>
+                      </item>
+                      <item>
+                       <widget class="QPushButton" name="qsdr_partial_fov">
+                        <property name="text">
+                         <string>Partial FOV...</string>
+                        </property>
+                       </widget>
+                      </item>
+                     </layout>
+                    </item>
+                   </layout>
+                  </widget>
+                 </item>
                 </layout>
                </item>
               </layout>
@@ -910,62 +962,10 @@
                      </spacer>
                     </item>
                     <item>
-                     <layout class="QHBoxLayout" name="horizontalLayout_10">
-                      <property name="spacing">
-                       <number>0</number>
-                      </property>
-                      <item>
-                       <widget class="QPushButton" name="qsdr_manual">
-                        <property name="text">
-                         <string>Manual Align...</string>
-                        </property>
-                       </widget>
-                      </item>
-                      <item>
-                       <widget class="QPushButton" name="add_t1t2">
-                        <property name="sizePolicy">
-                         <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
-                          <horstretch>0</horstretch>
-                          <verstretch>0</verstretch>
-                         </sizepolicy>
-                        </property>
-                        <property name="text">
-                         <string>Attach Images...</string>
-                        </property>
-                       </widget>
-                      </item>
-                      <item>
-                       <widget class="QPushButton" name="qsdr_partial_fov">
-                        <property name="text">
-                         <string>Partial FOV...</string>
-                        </property>
-                       </widget>
-                      </item>
-                     </layout>
-                    </item>
-                    <item>
                      <widget class="QPushButton" name="AdvancedOptions">
                       <property name="text">
                        <string>Advanced Options &gt;&gt;</string>
                       </property>
-                     </widget>
-                    </item>
-                    <item>
-                     <widget class="QWidget" name="qsdr_options" native="true">
-                      <layout class="QHBoxLayout" name="horizontalLayout_7">
-                       <property name="leftMargin">
-                        <number>0</number>
-                       </property>
-                       <property name="topMargin">
-                        <number>0</number>
-                       </property>
-                       <property name="rightMargin">
-                        <number>0</number>
-                       </property>
-                       <property name="bottomMargin">
-                        <number>0</number>
-                       </property>
-                      </layout>
                      </widget>
                     </item>
                    </layout>
