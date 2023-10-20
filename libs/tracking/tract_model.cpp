@@ -3044,10 +3044,10 @@ void TractModel::get_quantitative_info(std::shared_ptr<fib_data> handle,std::str
         data.push_back(curl);           titles.push_back("curl");
         data.push_back(tract_length/bundle_diameter);titles.push_back("elongation");
 
-        data.push_back(bundle_diameter);titles.push_back("diameter(mm)");
-        data.push_back(tract_volume);   titles.push_back("volume(mm^3)");
-        data.push_back(tract_volume-branch_volume1-branch_volume2);   titles.push_back("trunk volume(mm^3)");
-        data.push_back(branch_volume1+branch_volume2);   titles.push_back("branch volume(mm^3)");
+        data.push_back(tract_volume);   titles.push_back("total volume(mm^3)");
+        data.push_back(branch_volume1);   titles.push_back("1st quarter volume(mm^3)");
+        data.push_back(tract_volume-branch_volume1-branch_volume2);   titles.push_back("2nd and 3rd quarter volume(mm^3)");
+        data.push_back(branch_volume2);   titles.push_back("4th quarter volume(mm^3)");
 
         data.push_back(tract_area);     titles.push_back("total surface area(mm^2)");
         data.push_back(radius1+radius2);titles.push_back("total radius of end regions(mm)");
