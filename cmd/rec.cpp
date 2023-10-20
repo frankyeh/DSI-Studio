@@ -188,8 +188,8 @@ int rec(tipl::program_option<tipl::out>& po)
                 src.rotate(I.shape(),vs,T);
             }
             else
-            if(po.get("align_acpc",src.is_human_data() && src.voxel.vs[0] == src.voxel.vs[2]))
-                src.align_acpc();
+            if(po.has("align_acpc"))
+                src.align_acpc(po.get("align_acpc",src.voxel.vs[0]));
         }
     }
 
