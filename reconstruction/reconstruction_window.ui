@@ -910,6 +910,47 @@
                      </spacer>
                     </item>
                     <item>
+                     <layout class="QHBoxLayout" name="horizontalLayout_10">
+                      <property name="spacing">
+                       <number>0</number>
+                      </property>
+                      <item>
+                       <widget class="QPushButton" name="qsdr_manual">
+                        <property name="text">
+                         <string>Manual Align...</string>
+                        </property>
+                       </widget>
+                      </item>
+                      <item>
+                       <widget class="QPushButton" name="add_t1t2">
+                        <property name="sizePolicy">
+                         <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+                          <horstretch>0</horstretch>
+                          <verstretch>0</verstretch>
+                         </sizepolicy>
+                        </property>
+                        <property name="text">
+                         <string>Attach Images...</string>
+                        </property>
+                       </widget>
+                      </item>
+                      <item>
+                       <widget class="QPushButton" name="qsdr_partial_fov">
+                        <property name="text">
+                         <string>Partial FOV...</string>
+                        </property>
+                       </widget>
+                      </item>
+                     </layout>
+                    </item>
+                    <item>
+                     <widget class="QPushButton" name="AdvancedOptions">
+                      <property name="text">
+                       <string>Advanced Options &gt;&gt;</string>
+                      </property>
+                     </widget>
+                    </item>
+                    <item>
                      <widget class="QWidget" name="qsdr_options" native="true">
                       <layout class="QHBoxLayout" name="horizontalLayout_7">
                        <property name="leftMargin">
@@ -924,81 +965,10 @@
                        <property name="bottomMargin">
                         <number>0</number>
                        </property>
-                       <item>
-                        <layout class="QHBoxLayout" name="horizontalLayout_10">
-                         <property name="spacing">
-                          <number>0</number>
-                         </property>
-                         <item>
-                          <widget class="QPushButton" name="qsdr_manual">
-                           <property name="text">
-                            <string>Manual Align...</string>
-                           </property>
-                          </widget>
-                         </item>
-                         <item>
-                          <widget class="QPushButton" name="add_t1t2">
-                           <property name="sizePolicy">
-                            <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
-                             <horstretch>0</horstretch>
-                             <verstretch>0</verstretch>
-                            </sizepolicy>
-                           </property>
-                           <property name="text">
-                            <string>Attach Images...</string>
-                           </property>
-                          </widget>
-                         </item>
-                         <item>
-                          <widget class="QPushButton" name="qsdr_partial_fov">
-                           <property name="text">
-                            <string>Partial FOV...</string>
-                           </property>
-                          </widget>
-                         </item>
-                        </layout>
-                       </item>
                       </layout>
                      </widget>
                     </item>
                    </layout>
-                  </widget>
-                 </item>
-                </layout>
-               </item>
-               <item>
-                <layout class="QHBoxLayout" name="horizontalLayout_4">
-                 <item>
-                  <widget class="QCheckBox" name="check_btable">
-                   <property name="statusTip">
-                    <string>Check whether b-table is flipped and correct it</string>
-                   </property>
-                   <property name="text">
-                    <string>Check b-table</string>
-                   </property>
-                   <property name="checked">
-                    <bool>false</bool>
-                   </property>
-                  </widget>
-                 </item>
-                 <item>
-                  <spacer name="horizontalSpacer_6">
-                   <property name="orientation">
-                    <enum>Qt::Horizontal</enum>
-                   </property>
-                   <property name="sizeHint" stdset="0">
-                    <size>
-                     <width>40</width>
-                     <height>20</height>
-                    </size>
-                   </property>
-                  </spacer>
-                 </item>
-                 <item>
-                  <widget class="QPushButton" name="AdvancedOptions">
-                   <property name="text">
-                    <string>Advanced Options &gt;&gt;</string>
-                   </property>
                   </widget>
                  </item>
                 </layout>
@@ -1202,6 +1172,7 @@ Reconstruction</string>
     <addaction name="actionSave_bvals"/>
     <addaction name="actionSave_bvecs"/>
     <addaction name="separator"/>
+    <addaction name="actionCheck_b_table"/>
     <addaction name="actionFlip_bx"/>
     <addaction name="actionFlip_by"/>
     <addaction name="actionFlip_bz"/>
@@ -1450,6 +1421,11 @@ Reconstruction</string>
   <action name="actionTOPUP_only">
    <property name="text">
     <string>TOPUP...</string>
+   </property>
+  </action>
+  <action name="actionCheck_b_table">
+   <property name="text">
+    <string>Check b-table</string>
    </property>
   </action>
  </widget>
