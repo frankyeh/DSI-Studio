@@ -96,9 +96,6 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
 
     ui->RecordODF->setChecked(settings.value("rec_record_odf",0).toInt());
 
-    ui->check_btable->setChecked(settings.value("check_btable",1).toInt());
-    if(handle->voxel.vs[2] > handle->voxel.vs[0]*2.0f || handle->voxel.vs[0] < 0.5f)
-        ui->check_btable->setChecked(false);
     ui->report->setText(handle->voxel.report.c_str());
     ui->dti_no_high_b->setChecked(handle->is_human_data());
 
@@ -239,13 +236,11 @@ void reconstruction_window::Reconstruction(unsigned char method_id,bool prompt)
     settings.setValue("odf_resolving",ui->odf_resolving->isChecked() ? 1 : 0);
     settings.setValue("rec_record_odf",ui->RecordODF->isChecked() ? 1 : 0);
     settings.setValue("other_output",ui->other_output->text());
-    settings.setValue("check_btable",ui->check_btable->isChecked() ? 1 : 0);
 
     handle->voxel.method_id = method_id;
     handle->voxel.odf_resolving = ui->odf_resolving->isChecked();
     handle->voxel.output_odf = ui->RecordODF->isChecked();
     handle->voxel.dti_no_high_b = ui->dti_no_high_b->isChecked();
-    handle->voxel.check_btable = ui->check_btable->isChecked();
     handle->voxel.other_output = ui->other_output->text().toStdString();
     handle->voxel.thread_count = ui->ThreadCount->value();
     handle->voxel.template_id = ui->primary_template->currentIndex();
@@ -365,13 +360,16 @@ bool reconstruction_window::command(std::string cmd,std::string param)
 
     bool result = handle->command(cmd,param);
     if(!result)
-        QMessageBox::critical(this,"ERROR",handle->error_msg.c_str());
-    if(cmd.find("Corrections") != std::string::npos)
-        QMessageBox::information(this,"DSI Studio","correction result loaded");
-    if(cmd.find("B-table") != std::string::npos)
     {
-        ui->check_btable->setChecked(false);
-        QMessageBox::information(this,"DSI Studio","b-table updated");
+        if(!handle->error_msg.empty())
+            QMessageBox::critical(this,"ERROR",handle->error_msg.c_str());
+    }
+    else
+    {
+        if(tipl::contains(cmd,"Corrections"))
+            QMessageBox::information(this,"DSI Studio","correction result loaded");
+        if(tipl::contains(cmd,"B-table"))
+            QMessageBox::information(this,"DSI Studio",cmd.find("Check") ? handle->error_msg.c_str() : "b-table updated");
     }
     update_dimension();
     load_b_table();
@@ -1033,6 +1031,4 @@ void reconstruction_window::on_mask_from_unet_clicked()
     on_SlicePos_valueChanged(ui->SlicePos->value());
     raise();
 }
-
-
 
