@@ -31,7 +31,6 @@ int rec(tipl::program_option<tipl::out>& po)
         src.voxel.odf_resolving = po.get("odf_resolving",int(0));
         src.voxel.output_odf = po.get("record_odf",int(0));
         src.voxel.dti_no_high_b = po.get("dti_no_high_b",src.is_human_data());
-        src.voxel.check_btable = po.get("check_btable",0);
         src.voxel.other_output = po.get("other_output","fa,ad,rd,md,iso,rdi,nrdi");
         src.voxel.r2_weighted = po.get("r2_weighted",int(0));
         src.voxel.thread_count = tipl::available_thread_count<0>() = po.get("thread_count",uint32_t(std::thread::hardware_concurrency()));
@@ -142,6 +141,14 @@ int rec(tipl::program_option<tipl::out>& po)
             std::copy(src.src_bvalues.begin(),src.src_bvalues.end(),std::ostream_iterator<float>(bvalue_list," "));
             tipl::out() << "current DWI b values: " << bvalue_list.str() << std::endl;
         }
+        if(po.get("check btable",0))
+        {
+            if(!src.check_b_table())
+            {
+                tipl::out() << "ERROR: " << src.error_msg;
+                return 1;
+            }
+        }
         if (po.has("cmd"))
         {
             QStringList cmd_list = QString(po.get("cmd").c_str()).split("+");
@@ -187,7 +194,7 @@ int rec(tipl::program_option<tipl::out>& po)
                 tipl::out() << "DWI rotated." << std::endl;
                 src.rotate(I.shape(),vs,T);
             }
-            else
+
             if(po.has("align_acpc"))
                 src.align_acpc(po.get("align_acpc",src.voxel.vs[0]));
         }
