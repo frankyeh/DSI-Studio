@@ -101,16 +101,6 @@ bool ImageModel::reconstruction(void)
     {
         if (voxel.output_odf && (voxel.method_id == 7 || voxel.method_id == 4))
             voxel.step_report << "[Step T2b(2)][ODFs]=1" << std::endl;
-        // correct for b-table orientation
-        if(voxel.check_btable)
-        {
-            voxel.step_report << "[Step T2b][Check b-table]=1" << std::endl;
-            std::string result = check_b_table();
-            if(!result.empty())
-                voxel.recon_report << " The b-table was flipped by " << result << ".";
-        }
-        else
-            voxel.step_report << "[Step T2b][Check b-table]=0" << std::endl;
 
         switch (voxel.method_id)
         {
