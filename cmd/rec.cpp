@@ -141,7 +141,7 @@ int rec(tipl::program_option<tipl::out>& po)
             std::copy(src.src_bvalues.begin(),src.src_bvalues.end(),std::ostream_iterator<float>(bvalue_list," "));
             tipl::out() << "current DWI b values: " << bvalue_list.str() << std::endl;
         }
-        if(po.get("check btable",0))
+        if(po.get("check_btable",0))
         {
             if(!src.check_b_table())
             {
