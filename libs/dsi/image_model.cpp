@@ -700,7 +700,7 @@ bool ImageModel::command(std::string cmd,std::string param)
     }
     if(cmd == "[Step T2][Edit][Align ACPC]")
     {
-        if(!align_acpc())
+        if(!align_acpc(param.empty() ? voxel.vs[0] : std::stof(param)))
             return false;
         voxel.steps += cmd+"\n";
         return true;
@@ -937,7 +937,7 @@ void ImageModel::smoothing(void)
     calculate_dwi_sum(false);
 }
 extern std::vector<std::string> fa_template_list,iso_template_list;
-bool ImageModel::align_acpc(void)
+bool ImageModel::align_acpc(float reso)
 {
     tipl::progress prog("align acpc",true);
     std::string msg = " The diffusion MRI data were rotated to align with the AC-PC line.";
@@ -948,7 +948,7 @@ bool ImageModel::align_acpc(void)
     }
 
     tipl::shape<3> new_geo;
-    tipl::vector<3> new_vs(voxel.vs[0],voxel.vs[0],voxel.vs[0]); // new volume size will be isotropic
+    tipl::vector<3> new_vs(reso,reso,reso); // new volume size will be isotropic
 
     tipl::transformation_matrix<float> T;
     {

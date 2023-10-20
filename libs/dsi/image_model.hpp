@@ -264,7 +264,7 @@ public:
                 const tipl::image<3,tipl::vector<3> >& cdm_dis = tipl::image<3,tipl::vector<3> >());
     void resample(float nv);
     void smoothing(void);
-    bool align_acpc(void);
+    bool align_acpc(float reso);
     void crop(tipl::shape<3> range_min,tipl::shape<3> range_max);
     void trim(void);
     bool correct_motion(void);
