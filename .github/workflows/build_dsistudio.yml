@@ -109,8 +109,6 @@ jobs:
     - name: Install Qt
       run: |
         brew update
-        brew unlink python@2
-        brew install python
         brew install qt6
         brew install cmake
     - name: Download TIPL and Atlases
