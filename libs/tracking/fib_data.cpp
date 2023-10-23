@@ -655,7 +655,7 @@ bool fib_data::save_mapping(const std::string& index_name,const std::string& fil
 }
 bool is_human_size(tipl::shape<3> dim,tipl::vector<3> vs)
 {
-    return dim[2] > 5 && dim[0]*vs[0] > 130 && dim[1]*vs[1] > 130;
+    return dim[2] > 5 && dim[0]*vs[0] > 100 && dim[1]*vs[1] > 130;
 }
 bool fib_data::load_from_mat(void)
 {
