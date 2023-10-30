@@ -192,6 +192,10 @@ int ana_region(tipl::program_option<tipl::out>& po)
     out << result <<std::endl;
     return 0;
 }
+void get_track_statistics(std::shared_ptr<fib_data> handle,
+                          const std::vector<std::shared_ptr<TractModel> >& tract_models,
+                          const std::vector<std::string>& track_name,
+                          std::string& result);
 int ana_tract(tipl::program_option<tipl::out>& po)
 {
     std::shared_ptr<fib_data> handle = cmd_load_fib(po.get("source"));
@@ -254,11 +258,13 @@ int ana_tract(tipl::program_option<tipl::out>& po)
 
 
     std::vector<std::shared_ptr<TractModel> > tracts;
+    std::vector<std::string> tract_name;
     for(size_t i = 0;i < tract_files.size();++i)
     {
         tracts.push_back(std::make_shared<TractModel>(handle));
         if(!load_tracts(tract_files[i].c_str(),handle,tracts.back(),roi_mgr))
             return 1;
+        tract_name.push_back(std::filesystem::path(tract_files[i]).filename().string());
     }
 
     tipl::out() << "a total of " << tract_files.size() << " tract file(s) loaded" << std::endl;
@@ -277,9 +283,22 @@ int ana_tract(tipl::program_option<tipl::out>& po)
             tipl::out() << "file saved at " << output << std::endl;
             return 0;
         }
+        if(po.get("export") == "stat")
+        {
+            std::string result,file_name_stat("stat.txt");
+            get_track_statistics(handle,tracts,tract_name,result);
+            std::ofstream out_stat(file_name_stat.c_str());
+            if(!out_stat)
+            {
+                tipl::out() << "cannot save statistics. please check write permission" << std::endl;
+                return false;
+            }
+            out_stat << result;
+            return 0;
+        }
     }
 
-    // accumulate all tracts into one
+    tipl::out() << "merging all tracts into one for post-tract analysis";
     std::shared_ptr<TractModel> tract_model = tracts[0];
     for(unsigned int i = 1;i < tracts.size();++i)
         tract_model->add(*tracts[i].get());
