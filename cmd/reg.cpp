@@ -119,6 +119,12 @@ int reg(tipl::program_option<tipl::out>& po)
 
     if(po.has("warp") || po.has("inv_warp"))
     {
+        if(!po.has("apply_warp"))
+        {
+            tipl::out() << "ERROR: please specify the images to be warpped using --apply_warp";
+            return 1;
+        }
+        tipl::out() << "loading warping field";
         tipl::io::gz_mat_read in;
         if(!in.load_from_file(po.has("warp") ? po.get("warp").c_str() : po.get("inv_warp").c_str()))
         {
@@ -153,9 +159,13 @@ int reg(tipl::program_option<tipl::out>& po)
             to_trans.swap(from_trans);
             to2from.swap(from2to);
         }
-        if(po.has("apply_warp"))
-            return after_warp(po.get("apply_warp"),to2from,from2to,to_vs,from_trans,to_trans,to_is_mni);
-        return 0;
+        return after_warp(po.get("apply_warp"),to2from,from2to,to_vs,from_trans,to_trans,to_is_mni);
+    }
+
+    if(!po.has("from") || !po.has("to"))
+    {
+        tipl::out() << "ERROR: please specify the images to normalize using --from and --to";
+        return 1;
     }
 
     if(!load_nifti_file(po.get("from").c_str(),from,from_vs,from_trans,from_is_mni) ||
