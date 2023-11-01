@@ -36,7 +36,10 @@ void ThreadData::run_thread(unsigned int thread_id,unsigned int thread_count)
             if(roi_mgr->use_auto_track)
             {
                 if(!roi_mgr->setAtlas(joining,fa_threshold1,param.check_ending ? fa_threshold2+fa_threshold2-fa_threshold1 : 0.0f))
+                {
+                    tipl::out() << "ERROR:" << roi_mgr->handle->error_msg;
                     joining = true;
+                }
             }
             if(roi_mgr->seeds.empty())
                 roi_mgr->setWholeBrainSeed(fa_threshold1);
