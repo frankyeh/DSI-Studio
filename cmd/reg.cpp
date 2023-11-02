@@ -57,7 +57,8 @@ int after_warp(const std::string& warp_name,
             if(!apply_warping(filename_cmd.c_str(),filename_warp.c_str(),from2to.shape(),from_trans,
                               to2from,to_vs,to_trans,to_is_mni,error))
             {
-                tipl::out() << "ERROR: " << error <<std::endl;
+                if(!error.empty())
+                    tipl::out() << "ERROR: " << error <<std::endl;
                 return 1;
             }
         }
