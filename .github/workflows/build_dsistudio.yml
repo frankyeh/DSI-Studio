@@ -55,9 +55,9 @@ jobs:
     steps:
     - uses: actions/checkout@v2.5.0
     - name: Install Qt
-      run: |
-        brew update
-        brew install qt5
+      run: brew update
+    - name: Install Qt
+      run: brew install qt5
     - name: Download TIPL and Atlases
       run: |
         git clone https://github.com/frankyeh/TIPL.git
@@ -106,11 +106,12 @@ jobs:
       CFLAGS: -Werror
     steps:
     - uses: actions/checkout@v2.5.0
-    - name: Install Qt
+    - name: brew update
       run: |
         brew update
-        brew install qt6
         brew install cmake
+    - name: Install Qt
+      run: brew install qt6
     - name: Download TIPL and Atlases
       run: |
         git clone https://github.com/frankyeh/TIPL.git
@@ -423,7 +424,7 @@ jobs:
     - name: Tracking
       run: |
         ./dsi-studio/dsi_studio --source=*.fib.gz --action=atk --track_id=ArcuateFasciculusL
-        ls ./Arcuate_Fasciculus_L/*Arcuate_Fasciculus_L.tt.gz
+        ls ./Arcuate_Fasciculus_L/*ArcuateFasciculusL.tt.gz
         
   test_src_construction:
     needs: linux-build
