@@ -196,44 +196,41 @@ void TractTableWidget::addConnectometryResults(std::vector<std::vector<std::vect
     cur_tracking_window.set_data("tract_color_style",1);//manual assigned
     emit show_tracts();
 }
-void TractTableWidget::load_built_in_atlas(int track_id)
+void TractTableWidget::load_built_in_atlas(const std::string& tract_name)
 {
-    if(!cur_tracking_window.map_to_mni())
-        return;
-    if(cur_tracking_window.handle->tractography_atlas_file_name.empty() || cur_tracking_window.handle->tractography_name_list.empty())
+    if(!cur_tracking_window.handle->load_track_atlas())
     {
-        QMessageBox::critical(this,"ERROR","No tractography atlas found in current template space");
-        return;
-    }
-    if(track_id < 0) // load all
-    {
-        for(size_t i = 0;i < cur_tracking_window.handle->tractography_name_list.size();++i)
-            load_built_in_atlas(i);
-        return;
-    }
-    std::shared_ptr<TractModel> tract_model(new TractModel(cur_tracking_window.handle));
-    if(!tract_model->load_tracts_from_file(cur_tracking_window.handle->tractography_atlas_file_name.c_str(),
-                                           cur_tracking_window.handle.get(),true))
-    {
-        QMessageBox::critical(this,"ERROR","Cannot load tractography atlas");
+        QMessageBox::critical(this,"ERROR",cur_tracking_window.handle->error_msg.c_str());
         return;
     }
 
-    addNewTracts(cur_tracking_window.handle->tractography_name_list[track_id].c_str());
+    if(tract_name.empty()) // load all
+    {
+        for(const auto& each : cur_tracking_window.handle->tractography_name_list)
+            load_built_in_atlas(each);
+        return;
+    }
+    auto track_ids = cur_tracking_window.handle->get_track_ids(tract_name);
+    if(track_ids.empty())
+    {
+        QMessageBox::critical(this,"ERROR",QString("cannot find a matched tract for ") + tract_name.c_str());
+        return;
+    }
+
+    auto track_atlas = cur_tracking_window.handle->track_atlas;
+    addNewTracts(tract_name.c_str());
+
     tract_rendering.back()->need_update = true;
-
-    const auto& atlas_tract = tract_model->get_tracts();
-    const auto& atlas_cluster = tract_model->get_cluster_info();
+    const auto& atlas_tract = track_atlas->get_tracts();
+    const auto& atlas_cluster = track_atlas->get_cluster_info();
     std::vector<std::vector<float> > new_tracts;
     for(size_t i = 0;i < atlas_cluster.size();++i)
-        if(atlas_cluster[i] == track_id)
+        if(std::find(track_ids.begin(),track_ids.end(),atlas_cluster[i]) != track_ids.end())
             new_tracts.push_back(atlas_tract[i]);
 
     auto lock = tract_rendering.back()->start_writing();
     tract_models.back()->add_tracts(new_tracts);
-    tract_models.back()->report =
-            cur_tracking_window.handle->tractography_name_list[track_id] +
-            (cur_tracking_window.handle->is_mni ?
+    tract_models.back()->report = tract_name + (cur_tracking_window.handle->is_mni ?
             " was shown from a population-based tractography atlas (Yeh, Nat Commun 13(1), 4933, 2022).":
             " was mapped by nonlinearly warping a population-based tractography atlas (Yeh, Nat Commun 13(1), 4933, 2022) to the native space.");
 
@@ -244,10 +241,27 @@ void TractTableWidget::load_built_in_atlas(int track_id)
 }
 void TractTableWidget::load_built_in_atlas(void)
 {
-    load_built_in_atlas(cur_tracking_window.ui->target->currentIndex());
+    load_built_in_atlas("");
 }
 void TractTableWidget::start_tracking(void)
 {
+    QString tract_name = cur_tracking_window.regionWidget->getROIname();
+    // if running autotrack
+    if(cur_tracking_window.ui->tract_target_0->currentText() != "All") // auto track
+    {
+        tract_name = cur_tracking_window.ui->tract_target_1->currentText();
+        if(cur_tracking_window.ui->tract_target_2->isVisible() &&
+           cur_tracking_window.ui->tract_target_2->currentText() != "All")
+        {
+            tract_name += "_";
+            tract_name += cur_tracking_window.ui->tract_target_2->currentText();
+        }
+        if(!cur_tracking_window.handle->trackable)
+        {
+            load_built_in_atlas(tract_name.toStdString());
+            return;
+        }
+    }
     if(!cur_tracking_window.handle->trackable)
     {
         load_built_in_atlas();
@@ -262,19 +276,15 @@ void TractTableWidget::start_tracking(void)
         return;
     }
 
-    QString tract_name = cur_tracking_window.regionWidget->getROIname();
 
     // if running differential tracking
     if(!cur_tracking_window.handle->dir.dt_fa.empty())
     {
         // turn off automated tracking
-        cur_tracking_window.ui->tractography_atlas->setCurrentIndex(0);
+        cur_tracking_window.ui->tract_target_0->setCurrentIndex(0);
         tract_name = QString(cur_tracking_window.handle->dir.dt_threshold_name.c_str())+"_"+
                      QString::number(cur_tracking_window["dt_threshold"].toDouble());
     }
-    // if running autotrack
-    if(cur_tracking_window.ui->tractography_atlas->currentIndex() > 0) // auto track
-        tract_name = cur_tracking_window.ui->target->currentText();
 
     addNewTracts(tract_name);
 
@@ -352,6 +362,11 @@ void TractTableWidget::fetch_tracts(void)
                             regions[1]->modified = true;
                             regions[2]->region = thread_data[index]->roi_mgr->atlas_not_end;
                             regions[2]->modified = true;
+                            if(regions.size() >= 4)
+                            {
+                                regions[3]->region = thread_data[index]->roi_mgr->atlas_roi;
+                                regions[3]->modified = true;
+                            }
                         }
                 }
                 tract_rendering[index]->need_update = true;

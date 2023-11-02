@@ -175,8 +175,9 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
 
         // provide automatic tractography
         {
-            ui->target->hide();
-            ui->tractography_atlas->hide();
+            ui->tract_target_0->hide();
+            ui->tract_target_1->hide();
+            ui->tract_target_2->hide();
         }
 
     }
@@ -1478,5 +1479,6 @@ void tracking_window::on_max_slider_sliderMoved(int)
     ui->max_value_gl->setValue(ui->max_value_gl->minimum()+(ui->max_value_gl->maximum()-ui->max_value_gl->minimum())*
                       double(ui->max_slider->value())/double(ui->max_slider->maximum()));
 }
+
 
 

@@ -403,7 +403,7 @@ void tracking_window::set_tracking_param(ThreadData& tracking_thread)
     tracking_thread.param.default_otsu = renderWidget->getData("otsu_threshold").toFloat();
     tracking_thread.param.tip_iteration =
             // only used in automatic fiber tracking
-            (ui->tractography_atlas->currentIndex() > 0 ||
+            (ui->tract_target_0->currentIndex() > 0 ||
             // or differential tractography
             renderWidget->getData("dt_index1").toInt() > 0)
             ? renderWidget->getData("tip_iteration").toInt() : 0;
@@ -1157,12 +1157,55 @@ void tracking_window::on_enable_auto_track_clicked()
         QMessageBox::critical(this,"ERROR",handle->error_msg.c_str());
         return;
     }
+    auto level0 = handle->get_tractography_level0();
+
     ui->enable_auto_track->setVisible(false);
-    ui->tractography_atlas->setVisible(true);
+    ui->tract_target_0->setVisible(true);
+
+    ui->tract_target_0->clear();
+    ui->tract_target_0->addItem("All");
+    for(const auto& each: level0)
+        ui->tract_target_0->addItem(each.c_str());
+    ui->tract_target_0->setCurrentIndex(0);
     raise();
     // for adding atlas tract in t1w as fib
     ui->perform_tracking->show();
 }
+
+void tracking_window::on_tract_target_0_currentIndexChanged(int index)
+{
+    if(index < 0)
+        return;
+    ui->tract_target_1->setVisible(false);
+    ui->tract_target_2->setVisible(false);
+    ui->tract_target_1->clear();
+    if(index == 0) //track all without atk
+        return;
+    auto level1 = handle->get_tractography_level1(ui->tract_target_0->currentText().toStdString());
+    if(level1.empty())
+        return;
+    for(const auto& each: level1)
+        ui->tract_target_1->addItem(each.c_str());
+    ui->tract_target_1->setCurrentIndex(0);
+    ui->tract_target_1->setVisible(true);}
+
+void tracking_window::on_tract_target_1_currentIndexChanged(int index)
+{
+    if(index < 0)
+        return;
+    ui->tract_target_2->setVisible(false);
+    ui->tract_target_2->clear();
+    auto level2 = handle->get_tractography_level2(ui->tract_target_0->currentText().toStdString(),ui->tract_target_1->currentText().toStdString());
+    if(level2.empty())
+        return;
+    ui->tract_target_2->addItem("All");
+    for(const auto& each: level2)
+        ui->tract_target_2->addItem(each.c_str());
+    ui->tract_target_2->setCurrentIndex(0);
+    ui->tract_target_2->setVisible(true);
+}
+
+
 
 void tracking_window::on_addRegionFromAtlas_clicked()
 {
@@ -1216,45 +1259,21 @@ void tracking_window::on_actionManual_Atlas_Alignment_triggered()
 }
 
 
+
+
 void tracking_window::on_template_box_currentIndexChanged(int index)
 {
     if(index < 0 || index >= int(fa_template_list.size()))
         return;
     handle->set_template_id(size_t(index));
-
-    ui->tractography_atlas->clear();
-    ui->tractography_atlas->addItem("All");
-    if(!handle->tractography_atlas_list.empty())
-    {
-        for(const auto& each: handle->tractography_atlas_list)
-            ui->tractography_atlas->addItem(QFileInfo(each.c_str()).baseName());
-    }
-    ui->tractography_atlas->setCurrentIndex(0);
-    ui->tractography_atlas->hide();
+    ui->tract_target_0->setCurrentIndex(0);
+    ui->tract_target_0->hide();
+    ui->tract_target_1->hide();
+    ui->tract_target_2->hide();
+    ui->enable_auto_track->setVisible(true);
     ui->addRegionFromAtlas->setVisible(!handle->atlas_list.empty());
-    ui->enable_auto_track->setVisible(!handle->tractography_name_list.empty());
-}
-
-void tracking_window::on_tractography_atlas_currentIndexChanged(int index)
-{
-    if(index < 0 || index > int(handle->tractography_atlas_list.size()))
-        return;
-    if(index == 0)
-    {
-        ui->target->hide();
-        return;
-    }
-
-    handle->set_tractography_atlas_id(index-1);
-    ui->target->clear();
-    for(size_t i = 0;i < handle->tractography_name_list.size();++i)
-        ui->target->addItem(handle->tractography_name_list[i].c_str());
-    ui->target->setCurrentIndex(0);
-    ui->target->show();
 
 }
-
-
 
 void tracking_window::stripSkull()
 {

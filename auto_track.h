@@ -36,7 +36,7 @@ private slots:
 
     void on_run_clicked();
 
-    void on_tractography_atlas_currentIndexChanged(int index);
+    void on_template_list_currentIndexChanged(int index);
 
 private:
     Ui::auto_track *ui;

@@ -117,6 +117,7 @@ set(DSI_STUDIO_SOURCES
     libs/dsi/dsi_interface_imp.cpp
     libs/dsi/gqi_process.cpp
     libs/tracking/tract_cluster.cpp
+    libs/tracking/roi.cpp
     SliceModel.cpp
     tracking/tracking_window.cpp
     tracking/tracking_window_action.cpp

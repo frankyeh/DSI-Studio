@@ -45,7 +45,7 @@ public:
     void cut_by_slice(unsigned char dim,bool greater);
     void draw_tracts(unsigned char dim,int pos,
                      QImage& scaledimage,float display_ratio);
-    void load_built_in_atlas(int id);
+    void load_built_in_atlas(const std::string& tract_name);
     QString output_format(void);
     template<typename fun_type>
     void for_current_bundle(fun_type&& fun)

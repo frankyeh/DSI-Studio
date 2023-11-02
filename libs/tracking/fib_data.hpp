@@ -276,15 +276,16 @@ public:
     bool has_manual_atlas = false;
     tipl::transformation_matrix<float> manual_template_T;
 public:
-    size_t tractography_atlas_id = 0;
-    std::string tractography_atlas_file_name;
-    std::vector<std::string> tractography_name_list;
-    std::vector<std::string> tractography_atlas_list;
-    void set_tractography_atlas_id(size_t new_id);
-
-public:
     std::string t1w_template_file_name,t2w_template_file_name,wm_template_file_name,mask_template_file_name;
+    std::string tractography_atlas_file_name;
+    std::shared_ptr<atlas> tractography_atlas_roi;
 public:
+    std::vector<std::string> tractography_name_list;
+    std::vector<std::string> get_tractography_all_levels(void);
+    std::vector<std::string> get_tractography_level0(void);
+    std::vector<std::string> get_tractography_level1(const std::string& group);
+    std::vector<std::string> get_tractography_level2(const std::string& group1,const std::string& group2);
+
     std::shared_ptr<TractModel> track_atlas;
     std::vector<float> tract_atlas_min_length,tract_atlas_max_length;
     float tract_atlas_jacobian = 0.0f;
@@ -301,6 +302,8 @@ public:
     void set_template_id(size_t new_id);
     bool load_template(void);
     bool load_track_atlas(void);
+    std::vector<size_t> get_track_ids(const std::string& tract_name);
+    std::pair<float,float> get_track_minmax_length(const std::string& tract_name);
 public:
     bool map_to_mni(bool background = true);
     void temp2sub(std::vector<std::vector<float> >&tracts) const;
@@ -310,6 +313,7 @@ public:
     void mni2sub(tipl::vector<3>& pos);
     std::shared_ptr<atlas> get_atlas(const std::string atlas_name);
     bool get_atlas_roi(const std::string& atlas_name,const std::string& region_name,std::vector<tipl::vector<3,short> >& points);
+    bool get_atlas_roi(std::shared_ptr<atlas> at,const std::string& region_name,std::vector<tipl::vector<3,short> >& points);
     bool get_atlas_roi(std::shared_ptr<atlas> at,unsigned int roi_index,
                        const tipl::shape<3>& new_geo,const tipl::matrix<4,4>& new_trans,
                        std::vector<tipl::vector<3,short> >& points);

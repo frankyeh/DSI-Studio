@@ -634,25 +634,19 @@ bool load_roi(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> hand
         }
         std::string name = po.get("track_id");
         if(name[0] >= '0' && name[0] <= '9')
-            roi_mgr->track_id = std::stoi(name);
+        {
+            size_t track_id = std::stoi(name);
+            if(track_id >= handle->tractography_name_list.size())
+            {
+                tipl::out() << "ERROR: invalid track_id";
+                return false;
+            }
+            roi_mgr->tract_name = handle->tractography_name_list[track_id];
+        }
         else
-        {
-            roi_mgr->track_id = handle->tractography_name_list.size();
-            for(size_t i = 0;i < handle->tractography_name_list.size();++i)
-                if(name == handle->tractography_name_list[i])
-                {
-                    roi_mgr->track_id = i;
-                    break;
-                }
-        }
-        if(roi_mgr->track_id >= handle->tractography_name_list.size())
-        {
-            tipl::out() << "cannot find " << name << " in " << handle->tractography_atlas_file_name << std::endl;
-            return false;
-        }
+            roi_mgr->tract_name = name;
         roi_mgr->use_auto_track = true;
         roi_mgr->tolerance_dis_in_icbm152_mm = po.get("tolerance",16.0f);
-        tipl::out() << "set target track: " << handle->tractography_name_list[roi_mgr->track_id] << std::endl;
     }
     return true;
 }
@@ -716,14 +710,8 @@ void set_template(std::shared_ptr<fib_data> handle,tipl::program_option<tipl::ou
     if(po.has("template"))
     {
         for(size_t id = 0;id < fa_template_list.size();++id)
-            tipl::out() << "template " << id << ": " << std::filesystem::path(fa_template_list[id]).stem() << std::endl;
+            tipl::out() << "template " << id << ": " << tipl::split(std::filesystem::path(fa_template_list[id]).filename().string(),'.').front() << std::endl;
         handle->set_template_id(po.get("template",size_t(0)));
-    }
-    if(po.has("tractography_atlas"))
-    {
-        for(size_t id = 0;id < handle->tractography_atlas_list.size();++id)
-            tipl::out() << "tractography atlas " << id << ": " << std::filesystem::path(handle->tractography_atlas_list[id]).stem() << std::endl;
-        handle->set_tractography_atlas_id(po.get("tractography_atlas",size_t(0)));
     }
 }
 int trk(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> handle)

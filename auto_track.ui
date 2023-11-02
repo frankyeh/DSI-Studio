@@ -217,7 +217,7 @@
             </widget>
            </item>
            <item>
-            <widget class="QComboBox" name="tractography_atlas"/>
+            <widget class="QComboBox" name="template_list"/>
            </item>
            <item>
             <widget class="QListWidget" name="candidate_list_view">

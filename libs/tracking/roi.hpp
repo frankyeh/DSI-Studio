@@ -132,8 +132,7 @@ __INLINE__ bool distance_over_limit(const float* trk1,unsigned int length1,
     }min_min;
 
     return  min_min(max_dis_limit,trk1,trk2) >= max_dis_limit ||
-            min_min(max_dis_limit,trk1+length1-3,trk2+length2-3) >= max_dis_limit ||
-            min_min(max_dis_limit,trk1+length1/3/2*3,trk2+length2/3/2*3) >= max_dis_limit;
+            min_min(max_dis_limit,trk1+length1-3,trk2+length2-3) >= max_dis_limit;
 }
 
 template<typename T,typename U>
@@ -177,7 +176,8 @@ public:
     float track_voxel_ratio = 1.0f;
     float tolerance_dis_in_icbm152_mm = 0.0f;
     float tolerance_dis_in_subject_voxels = 0.0f;
-    unsigned int track_id = 0;
+    std::vector<size_t> track_ids;
+    std::string tract_name;
 public:
     RoiMgr(std::shared_ptr<fib_data> handle_):handle(handle_){}
 public:
@@ -241,145 +241,21 @@ public:
             if(!roi[index]->included(track,buffer_size))
                 return false;
         if(!selected_atlas_tracts.empty())
-            return find_nearest(track,buffer_size,
+        {
+            auto nearest_id = find_nearest(track,buffer_size,
                                 selected_atlas_tracts,
                                 selected_atlas_cluster,
-                                tolerance_dis_in_subject_voxels) == track_id;
+                                tolerance_dis_in_subject_voxels);
+            return std::find(track_ids.begin(),track_ids.end(),nearest_id) != track_ids.end();
+        }
         return true;
     }
 public:
-    std::vector<tipl::vector<3,short> > atlas_seed,atlas_limiting,atlas_not_end;
+    std::vector<tipl::vector<3,short> > atlas_seed,atlas_limiting,atlas_not_end,atlas_roi;
     std::vector<std::vector<float> > selected_atlas_tracts;
     std::vector<unsigned int> selected_atlas_cluster;
 public:
-    bool setAtlas(bool& terminated,float seed_threshold,float not_end_threshold)
-    {
-        if(!handle->load_track_atlas())
-            return false;
-        if(track_id >= handle->tractography_name_list.size())
-        {
-            handle->error_msg = "invalid track_id";
-            return false;
-        }
-        if(terminated)
-            return false;
-        const auto& tract_name = handle->tractography_name_list[size_t(track_id)];
-
-        {
-            report += " A tractography atlas (Yeh, Nat Commun 13(1), 4933, 2022) was used to automatically identify ";
-            report += tract_name;
-            report += "  with a distance tolerance of ";
-            report += std::to_string(tolerance_dis_in_icbm152_mm);
-            report += " (mm) in the ICBM152 space.";
-            report += " The track-to-voxel ratio was set to ";
-            report += QString::number(double(track_voxel_ratio),'g',1).toStdString();
-            report += ".";
-        }
-        {
-            float tolerance_dis_in_icbm_voxels = tolerance_dis_in_icbm152_mm/handle->template_vs[0];
-            tolerance_dis_in_subject_voxels = tolerance_dis_in_icbm_voxels/handle->tract_atlas_jacobian;
-            tipl::out() << "convert tolerance distance of " << tolerance_dis_in_icbm152_mm << " from ICBM mm to " <<
-                                    tolerance_dis_in_subject_voxels << " subject voxels" << std::endl;
-        }
-
-        std::vector<tipl::vector<3,short> > tract_coverage;
-        handle->track_atlas->to_voxel(tract_coverage,tipl::identity_matrix(),int(track_id));
-
-
-
-        {
-            // add limiting region to speed up tracking
-            tipl::out() << "creating limiting region to limit tracking results" << std::endl;
-
-            bool is_left = (tract_name.substr(tract_name.length()-2,2) == "_L");
-            bool is_right = (tract_name.substr(tract_name.length()-2,2) == "_R");
-            auto mid_x = handle->template_I.width() >> 1;
-            auto& s2t = handle->get_sub2temp_mapping();
-            if(is_left)
-                tipl::out() << "apply left limiting mask for " << tract_name << std::endl;
-            if(is_right)
-                tipl::out() << "apply right limiting mask for " << tract_name << std::endl;
-
-            tipl::image<3,char> limiting_mask(handle->dim);
-            const float *fa0 = handle->dir.fa[0];
-            tipl::par_for(tract_coverage.size(),[&](unsigned int i)
-            {
-                tipl::for_each_neighbors(tipl::pixel_index<3>(tract_coverage[i].begin(),handle->dim),
-                                    handle->dim,int(std::ceil(tolerance_dis_in_subject_voxels)),
-                        [&](const auto& pos)
-                {
-                    if(fa0[pos.index()] <= 0.0f)
-                        return;
-                    if(is_left && s2t[pos.index()][0] < mid_x)
-                        return;
-                    if(is_right && s2t[pos.index()][0] > mid_x)
-                        return;
-                    limiting_mask[pos.index()] = 1;
-                });
-            });
-            if(terminated)
-                return false;
-
-            unsigned char thread_count = std::min<int>(8,std::thread::hardware_concurrency());
-            std::vector<std::vector<tipl::vector<3,short> > > limiting_points(thread_count),
-                                                              seed_points(thread_count),
-                                                              not_end_points(thread_count);
-            tipl::par_for(tipl::begin_index(limiting_mask),tipl::end_index(limiting_mask),
-                          [&](const tipl::pixel_index<3>& pos,unsigned int thread_id)
-            {
-                if(!limiting_mask[pos.index()])
-                    return;
-                auto point = tipl::vector<3,short>(pos.x(), pos.y(),pos.z());
-                limiting_points[thread_id].push_back(point);
-                if(fa0[pos.index()] >= seed_threshold)
-                    seed_points[thread_id].push_back(point);
-                if(not_end_threshold != 0.0f && fa0[pos.index()] >= not_end_threshold)
-                    not_end_points[thread_id].push_back(point);
-            },thread_count);
-
-            tipl::aggregate_results(std::move(limiting_points),atlas_limiting);
-            tipl::aggregate_results(std::move(seed_points),atlas_seed);
-            tipl::aggregate_results(std::move(not_end_points),atlas_not_end);
-
-            setRegions(atlas_limiting,limiting_id,"track tolerance region");
-            if(!atlas_not_end.empty())
-                setRegions(atlas_not_end,not_end_id,"white matter region");
-            if(seeds.empty())
-                setRegions(atlas_seed,seed_id,tract_name.c_str());
-
-        }
-
-        {
-            std::vector<std::vector<std::vector<float> > > selected_atlas_tracts_threads(std::thread::hardware_concurrency());
-            std::vector<std::vector<unsigned int> > selected_atlas_cluster_threads(std::thread::hardware_concurrency());
-            const auto& atlas_tract = handle->track_atlas->get_tracts();
-            const auto& atlas_cluster = handle->track_atlas->get_cluster_info();
-            auto tolerance_dis_in_subject_voxels2 = tolerance_dis_in_subject_voxels*2;
-            tipl::par_for(atlas_tract.size(),[&](unsigned int i,unsigned int id)
-            {
-                bool selected = true;
-                if(atlas_cluster[i] != track_id)
-                    for(size_t j = 0;j < atlas_tract.size();++j)
-                        if(atlas_cluster[i] == track_id)
-                        {
-                            if(distance_over_limit(&atlas_tract[i][0],atlas_tract[i].size(),
-                                                   &atlas_tract[j][0],atlas_tract[j].size(),
-                                                   tolerance_dis_in_subject_voxels2))
-                                continue;
-                            selected = true;
-                            break;
-                        }
-                if(selected)
-                {
-                    selected_atlas_tracts_threads[id].push_back(atlas_tract[i]);
-                    selected_atlas_cluster_threads[id].push_back(atlas_cluster[i]);
-                }
-            });
-            tipl::aggregate_results(std::move(selected_atlas_tracts_threads),selected_atlas_tracts);
-            tipl::aggregate_results(std::move(selected_atlas_cluster_threads),selected_atlas_cluster);
-        }
-        return true;
-    }
+    bool setAtlas(bool& terminated,float seed_threshold,float not_end_threshold);
 
     void setWholeBrainSeed(float threshold)
     {

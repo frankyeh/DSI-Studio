@@ -1,4 +1,5 @@
 #include <filesystem>
+#include <unordered_set>
 #include <QCoreApplication>
 #include <QFileInfo>
 #include <QDateTime>
@@ -1153,7 +1154,7 @@ void fib_data::get_iso(tipl::image<3>& iso_) const
 }
 
 extern std::vector<std::string> fa_template_list,iso_template_list;
-extern std::vector<std::vector<std::string> > atlas_file_name_list,tractography_atlas_file_name_list;
+extern std::vector<std::vector<std::string> > atlas_file_name_list;
 
 
 void apply_trans(tipl::vector<3>& pos,const tipl::matrix<4,4>& trans)
@@ -1182,24 +1183,6 @@ void apply_inverse_trans(tipl::vector<3>& pos,const tipl::matrix<4,4>& trans)
         pos[2] /= trans[10];
 }
 
-void fib_data::set_tractography_atlas_id(size_t new_id)
-{
-    tractography_atlas_list = tractography_atlas_file_name_list[template_id];
-    tractography_atlas_id = 0;
-    tractography_atlas_file_name.clear();
-    tractography_name_list.clear();
-    track_atlas.reset();
-    if(new_id < tractography_atlas_list.size() &&
-       std::filesystem::exists(tractography_atlas_list[new_id]))
-    {
-        tractography_atlas_id = new_id;
-        tractography_atlas_file_name = tractography_atlas_list[tractography_atlas_id];
-        std::ifstream in(tractography_atlas_file_name+".txt");
-        if(in)
-            std::copy(std::istream_iterator<std::string>(in),
-                      std::istream_iterator<std::string>(),std::back_inserter(tractography_name_list));
-    }
-}
 void fib_data::set_template_id(size_t new_id)
 {
     if(new_id != template_id)
@@ -1217,16 +1200,92 @@ void fib_data::set_template_id(size_t new_id)
             atlas_list.back()->filename = atlas_file_name_list[template_id][i];
             atlas_list.back()->template_to_mni = trans_to_mni;
         }
-
-
-        set_tractography_atlas_id(0);
-
         // populate other modality name
         t1w_template_file_name = QString(fa_template_list[template_id].c_str()).replace(".QA.nii.gz",".T1W.nii.gz").toStdString();
         t2w_template_file_name = QString(fa_template_list[template_id].c_str()).replace(".QA.nii.gz",".T2W.nii.gz").toStdString();
         wm_template_file_name = QString(fa_template_list[template_id].c_str()).replace(".QA.nii.gz",".WM.nii.gz").toStdString();
         mask_template_file_name = QString(fa_template_list[template_id].c_str()).replace(".QA.nii.gz",".mask.nii.gz").toStdString();
+
+        // handle tractography atlas
+        tractography_atlas_file_name = QString(fa_template_list[template_id].c_str()).replace(".QA.nii.gz",".tt.gz").toStdString();
+        tractography_name_list.clear();
+        track_atlas.reset();
+        std::ifstream in(tractography_atlas_file_name+".txt");
+        if(std::filesystem::exists(tractography_atlas_file_name) && in)
+        {
+            std::copy(std::istream_iterator<std::string>(in),std::istream_iterator<std::string>(),std::back_inserter(tractography_name_list));
+            auto tractography_atlas_roi_file_name = QString(fa_template_list[template_id].c_str()).replace(".QA.nii.gz",".tt.nii.gz").toStdString();
+            if(std::filesystem::exists(tractography_atlas_roi_file_name))
+            {
+                tractography_atlas_roi = std::make_shared<atlas>();
+                tractography_atlas_roi->name = "tractography atlas";
+                tractography_atlas_roi->filename = tractography_atlas_roi_file_name;
+                tractography_atlas_roi->template_to_mni = trans_to_mni;
+            }
+        }
+
+
+
     }
+}
+std::vector<std::string> fib_data::get_tractography_all_levels(void)
+{
+    std::vector<std::string> list;
+    std::string last_insert;
+    for(size_t index = 0;index < tractography_name_list.size();++index)
+    {
+        auto sep_count = std::count(tractography_name_list[index].begin(),tractography_name_list[index].end(),'_');
+        if(sep_count >= 2) // sub-bundles
+        {
+            // get their parent bundle
+            auto insert = tractography_name_list[index].substr(0,tractography_name_list[index].find_last_of('_'));
+            if(insert != last_insert)
+                list.push_back((last_insert = insert).c_str());
+        }
+        list.push_back(tractography_name_list[index].c_str());
+    }
+    return list;
+}
+std::vector<std::string> fib_data::get_tractography_level0(void)
+{
+    std::vector<std::string> list;
+    for (const auto &each : tractography_name_list)
+    {
+        auto level0 = each.substr(0, each.find("_"));
+        if(list.empty() || level0 != list.back())
+            list.push_back(level0);
+    }
+    return list;
+}
+std::vector<std::string> fib_data::get_tractography_level1(const std::string& group)
+{
+    std::vector<std::string> list;
+    std::string last;
+    for (const auto &each : tractography_name_list)
+    {
+        auto sep = tipl::split(each,'_');
+        if(sep.size() >= 2 && group == sep[0] && last != sep[1])
+        {
+            list.push_back(sep[1]);
+            last = sep[1];
+        }
+    }
+    return list;
+}
+std::vector<std::string> fib_data::get_tractography_level2(const std::string& group1,const std::string& group2)
+{
+    std::vector<std::string> list;
+    std::string last;
+    for (const auto &each : tractography_name_list)
+    {
+        auto sep = tipl::split(each,'_');
+        if(sep.size() >= 3 && group1 == sep[0] && group2 == sep[1] && last != sep[2])
+        {
+            list.push_back(sep[2]);
+            last = sep[2];
+        }
+    }
+    return list;
 }
 
 bool fib_data::load_template(void)
@@ -1272,6 +1331,8 @@ bool fib_data::load_template(void)
 
     for(size_t i = 0;i < atlas_list.size();++i)
         atlas_list[i]->template_to_mni = template_to_mni;
+    if(tractography_atlas_roi.get())
+        tractography_atlas_roi->template_to_mni = template_to_mni;
 
     // load iso template if exists
     {
@@ -1312,11 +1373,16 @@ void fib_data::temp2sub(std::vector<std::vector<float> >&tracts) const
 bool fib_data::load_track_atlas()
 {
     tipl::progress prog("loading tractography atlas");
-    if(tractography_atlas_file_name.empty() || tractography_name_list.empty())
+    if(!std::filesystem::exists(tractography_atlas_file_name))
     {
         error_msg = "no tractography atlas in ";
         error_msg += QFileInfo(fa_template_list[template_id].c_str()).baseName().toStdString();
         error_msg += " template";
+        return false;
+    }
+    if(tractography_name_list.empty())
+    {
+        error_msg = "no label text file for the tractography atlas";
         return false;
     }
     if(!track_atlas.get())
@@ -1397,6 +1463,37 @@ bool fib_data::load_track_atlas()
         tract_atlas_max_length.swap(max_length);
     }
     return true;
+}
+//---------------------------------------------------------------------------
+std::vector<size_t> fib_data::get_track_ids(const std::string& tract_name)
+{
+    std::vector<size_t> track_ids;
+    for(size_t i = 0;i < tractography_name_list.size();++i)
+        if(tipl::contains_case_insensitive(tractography_name_list[i],tract_name))
+        track_ids.push_back(i);
+    return track_ids;
+}
+//---------------------------------------------------------------------------
+std::pair<float,float> fib_data::get_track_minmax_length(const std::string& tract_name)
+{
+    std::pair<float,float> minmax(0.0f,0.0f);
+    auto track_ids = get_track_ids(tract_name);
+    if(track_ids.empty())
+        return std::make_pair(0.0f,0.0f);
+    for(size_t i = 0;i < track_ids.size();++i)
+    {
+        if(i == 0)
+        {
+            minmax.first = tract_atlas_min_length[track_ids[0]];
+            minmax.second= tract_atlas_max_length[track_ids[0]];
+        }
+        else
+        {
+            minmax.first  = std::min<float>(minmax.first,tract_atlas_min_length[track_ids[i]]);
+            minmax.second = std::max<float>(minmax.second,tract_atlas_max_length[track_ids[i]]);
+        }
+    }
+    return minmax;
 }
 
 //---------------------------------------------------------------------------
@@ -1785,13 +1882,17 @@ std::shared_ptr<atlas> fib_data::get_atlas(const std::string atlas_name)
 
 bool fib_data::get_atlas_roi(const std::string& atlas_name,const std::string& region_name,std::vector<tipl::vector<3,short> >& points)
 {
-    tipl::out() << "loading " << region_name << " from " << atlas_name << std::endl;
-    if(region_name.empty())
+    auto at = get_atlas(atlas_name);
+    if(!at.get())
     {
-        error_msg = "not a valid region assignment";
+        error_msg = "cannot find atlas: ";
+        error_msg += atlas_name;
         return false;
     }
-    auto at = get_atlas(atlas_name);
+    return get_atlas_roi(at,region_name,points);
+}
+bool fib_data::get_atlas_roi(std::shared_ptr<atlas> at,const std::string& region_name,std::vector<tipl::vector<3,short> >& points)
+{
     if(!at.get())
         return false;
     auto roi_index = uint32_t(std::find(at->get_list().begin(),at->get_list().end(),region_name)-at->get_list().begin());
@@ -1801,9 +1902,8 @@ bool fib_data::get_atlas_roi(const std::string& atlas_name,const std::string& re
         roi_index = uint32_t(QString(region_name.c_str()).toInt(&ok));
         if(!ok)
         {
-            error_msg = region_name;
-            error_msg += " is not one of the regions in ";
-            error_msg += atlas_name;
+            error_msg = "cannot find region: ";
+            error_msg += region_name;
             return false;
         }
     }
@@ -1818,6 +1918,8 @@ bool fib_data::get_atlas_roi(std::shared_ptr<atlas> at,unsigned int roi_index,
         error_msg = "no mni mapping";
         return false;
     }
+    tipl::out() << "loading " << at->get_list()[roi_index] << " from " << at->name << std::endl;
+
     std::vector<std::vector<tipl::vector<3,short> > > buf(std::thread::hardware_concurrency());
 
     // trigger atlas loading to avoid crash in multi thread

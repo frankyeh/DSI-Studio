@@ -22,7 +22,8 @@ std::vector<std::string> fa_template_list,
                          iso_template_list,
                          fib_template_list,
                          model_list_t2w;
-std::vector<std::vector<std::string> > atlas_file_name_list,tractography_atlas_file_name_list;
+std::vector<std::vector<std::string> > atlas_file_name_list;
+
 
 class CustomSliceModel;
 extern std::shared_ptr<CustomSliceModel> t1t2_slices;
@@ -150,18 +151,7 @@ bool load_file_name(void)
                         file_list.push_back((template_dir.absolutePath() + "/" + each).toStdString());
                 atlas_file_name_list.push_back(std::move(file_list));
             }
-            // find all tractography atlases
-            {
-                QStringList tract_list = template_dir.entryList(QStringList("*.tt.gz"),QDir::Files|QDir::NoSymLinks);
-                tract_list.sort();
-                std::vector<std::string> file_list;
-                if(std::filesystem::exists(tt_file_path.toStdString()))
-                    file_list.push_back(tt_file_path.toStdString());
-                for(auto each : tract_list)
-                    if(QFileInfo(each).baseName() != name_list[i])
-                        file_list.push_back((template_dir.absolutePath() + "/" + each).toStdString());
-                tractography_atlas_file_name_list.push_back(std::move(file_list));
-            }
+
             // find a matching unet model
             {
                 model_list_t2w.push_back(std::string());

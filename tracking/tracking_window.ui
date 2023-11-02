@@ -1341,8 +1341,8 @@
    </property>
    <property name="minimumSize">
     <size>
-     <width>343</width>
-     <height>190</height>
+     <width>355</width>
+     <height>224</height>
     </size>
    </property>
    <property name="maximumSize">
@@ -1580,10 +1580,7 @@
             </layout>
            </item>
            <item>
-            <widget class="QComboBox" name="tractography_atlas"/>
-           </item>
-           <item>
-            <layout class="QHBoxLayout" name="horizontalLayout_6">
+            <layout class="QVBoxLayout" name="verticalLayout_6">
              <property name="spacing">
               <number>0</number>
              </property>
@@ -1598,7 +1595,21 @@
               </widget>
              </item>
              <item>
-              <widget class="QComboBox" name="target">
+              <widget class="QComboBox" name="tract_target_0">
+               <property name="sizeAdjustPolicy">
+                <enum>QComboBox::AdjustToMinimumContentsLengthWithIcon</enum>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QComboBox" name="tract_target_1">
+               <property name="sizeAdjustPolicy">
+                <enum>QComboBox::AdjustToMinimumContentsLengthWithIcon</enum>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QComboBox" name="tract_target_2">
                <property name="sizeAdjustPolicy">
                 <enum>QComboBox::AdjustToMinimumContentsLengthWithIcon</enum>
                </property>
