@@ -122,7 +122,7 @@ int reg(tipl::program_option<tipl::out>& po)
     {
         if(!po.has("apply_warp"))
         {
-            tipl::out() << "ERROR: please specify the images to be warpped using --apply_warp";
+            tipl::out() << "ERROR: please specify the images to be warped using --apply_warp";
             return 1;
         }
         tipl::out() << "loading warping field";
