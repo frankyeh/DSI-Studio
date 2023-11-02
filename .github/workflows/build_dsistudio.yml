@@ -323,7 +323,7 @@ jobs:
         ls icbm152.tt.gz.tdi.nii.gz
         ls icbm152.tt.gz.stat.txt
         echo --------------------------------------------------------------------------------------------------
-        ./dsi-studio/dsi_studio --source=ICBM152_adult.fib.gz --action=trk --track_id=Arcuate_Fasciculus_L --tip_iteration=0 --output=AF_L.tt.gz
+        ./dsi-studio/dsi_studio --source=ICBM152_adult.fib.gz --action=trk --track_id=ArcuateFasciculusL --tip_iteration=0 --output=AF_L.tt.gz
         ls AF_L.tt.gz
         echo --------------------------------------------------------------------------------------------------
         ./dsi-studio/dsi_studio --source=ICBM152_adult.fib.gz --action=trk --roi=FreeSurferDKT_Cortical:left_precentral,dilate,dilate,smoothing --roi2=FreeSurferDKT_Cortical:right_precentral,dilate,dilate,smoothing --output=LR.tt.gz
@@ -354,7 +354,7 @@ jobs:
         ls 100206.tt.gz.tdi.nii.gz
         ls 100206.tt.gz.stat.txt
         echo --------------------------------------------------------------------------------------------------
-        ./dsi-studio/dsi_studio --source=100206.fib.gz --action=trk --track_id=Arcuate_Fasciculus_L --tip_iteration=0 --output=AF_L.tt.gz
+        ./dsi-studio/dsi_studio --source=100206.fib.gz --action=trk --track_id=ArcuateFasciculusL --tip_iteration=0 --output=AF_L.tt.gz
         ls AF_L.tt.gz
         echo --------------------------------------------------------------------------------------------------
         ./dsi-studio/dsi_studio --source=100206.fib.gz --action=trk --roi=FreeSurferDKT_Cortical:left_precentral,dilate,dilate,smoothing --roi2=FreeSurferDKT_Cortical:right_precentral,dilate,dilate,smoothing --output=LR.tt.gz
@@ -422,7 +422,7 @@ jobs:
         chmod 777 ./dsi-studio/dsi_studio
     - name: Tracking
       run: |
-        ./dsi-studio/dsi_studio --source=*.fib.gz --action=atk --track_id=Arcuate_Fasciculus_L
+        ./dsi-studio/dsi_studio --source=*.fib.gz --action=atk --track_id=ArcuateFasciculusL
         ls ./Arcuate_Fasciculus_L/*Arcuate_Fasciculus_L.tt.gz
         
   test_src_construction:
