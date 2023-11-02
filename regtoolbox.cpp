@@ -517,9 +517,17 @@ bool apply_warping(const char* from,
         return false;
 
     bool is_label = tipl::is_label_image(I3);
+    if(is_label)
+        tipl::out() << std::filesystem::path(from).filename() << " is a ROI file. Use nearest neighbor for estimation.";
+    else
+        tipl::out() << std::filesystem::path(from).filename() << " is not a ROI file. Use linear interpolation for estimation.";
 
     if(I_shape != I3.shape() || IR != T)
     {
+        error = std::filesystem::path(from).filename().string();
+        error += " has an image size or srow matrix from that of the original --from image.";
+        return false;
+        /*
         tipl::image<3> I3_(I_shape);
         if(!T.inv())
             return false;
@@ -529,6 +537,7 @@ bool apply_warping(const char* from,
         else
             tipl::resample_mt<tipl::interpolation::cubic>(I3,I3_,T);
         I3_.swap(I3);
+        */
     }
 
     tipl::image<3> J3;
@@ -536,6 +545,7 @@ bool apply_warping(const char* from,
         tipl::compose_mapping<tipl::interpolation::nearest>(I3,to2from,J3);
     else
         tipl::compose_mapping<tipl::interpolation::cubic>(I3,to2from,J3);
+    tipl::out() << "saving warped image to " << std::filesystem::path(to).filename();
     if(!tipl::io::gz_nifti::save_to_file(to,J3,Itvs,ItR,It_is_mni))
     {
         error = "cannot write to file ";
