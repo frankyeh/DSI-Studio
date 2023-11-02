@@ -863,6 +863,17 @@ void ImageModel::flip_dwi(unsigned char type)
     voxel.dim = voxel.mask.shape();
 }
 // used in eddy correction for each dwi
+tipl::matrix<3,3,float> get_inv_rotation(const Voxel& voxel,const tipl::transformation_matrix<double>& T)
+{
+    auto iT = T;
+    iT.inverse();
+    tipl::affine_transform<double> arg;
+    iT.to_affine_transform(arg,voxel.dim,voxel.vs,voxel.dim,voxel.vs);
+    tipl::matrix<3,3,float> r;
+    tipl::rotation_matrix(arg.rotation,r.begin(),tipl::vdim<3>());
+    return r;
+}
+
 void ImageModel::rotate_one_dwi(unsigned int dwi_index,const tipl::transformation_matrix<double>& T)
 {
     tipl::image<3> tmp(voxel.dim);
@@ -870,12 +881,7 @@ void ImageModel::rotate_one_dwi(unsigned int dwi_index,const tipl::transformatio
     tipl::lower_threshold(tmp,0.0f);
     std::copy(tmp.begin(),tmp.end(),dwi_at(dwi_index).begin());
     // rotate b-table
-    tipl::affine_transform<double> arg;
-    T.to_affine_transform(arg,voxel.dim,voxel.vs,voxel.dim,voxel.vs);
-    tipl::matrix<3,3,float> r;
-    tipl::rotation_matrix(arg.rotation,r.begin(),tipl::vdim<3>());
-    r.inv();
-    src_bvectors[dwi_index].rotate(r);
+    src_bvectors[dwi_index].rotate(get_inv_rotation(voxel,T));
     src_bvectors[dwi_index].normalize();
 }
 
@@ -903,12 +909,7 @@ void ImageModel::rotate(const tipl::shape<3>& new_geo,
         return;
     rotated_dwi.swap(new_dwi);
 
-    tipl::affine_transform<double> arg;
-    T.to_affine_transform(arg,voxel.dim,voxel.vs,voxel.dim,voxel.vs);
-    tipl::matrix<3,3,float> r;
-    tipl::rotation_matrix(arg.rotation,r.begin(),tipl::vdim<3>());
-    r.inv();
-
+    tipl::matrix<3,3,float> r = get_inv_rotation(voxel,T);
     for (auto& vec : src_bvectors)
         {
             vec.rotate(r);
