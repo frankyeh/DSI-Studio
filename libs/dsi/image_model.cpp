@@ -862,7 +862,7 @@ void ImageModel::flip_dwi(unsigned char type)
     }
     voxel.dim = voxel.mask.shape();
 }
-// used in eddy correction for each dwi
+
 tipl::matrix<3,3,float> get_inv_rotation(const Voxel& voxel,const tipl::transformation_matrix<double>& T)
 {
     auto iT = T;
@@ -873,7 +873,7 @@ tipl::matrix<3,3,float> get_inv_rotation(const Voxel& voxel,const tipl::transfor
     tipl::rotation_matrix(arg.rotation,r.begin(),tipl::vdim<3>());
     return r;
 }
-
+// used in eddy correction for each dwi
 void ImageModel::rotate_one_dwi(unsigned int dwi_index,const tipl::transformation_matrix<double>& T)
 {
     tipl::image<3> tmp(voxel.dim);
