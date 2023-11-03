@@ -509,6 +509,7 @@ bool apply_warping(const char* from,
                    bool It_is_mni,
                    std::string& error)
 {
+    tipl::out() << "apply warping to " << from << std::endl;
     tipl::image<3> I3;
     tipl::matrix<4,4> T;
     tipl::vector<3> vs;
@@ -545,7 +546,7 @@ bool apply_warping(const char* from,
         tipl::compose_mapping<tipl::interpolation::nearest>(I3,to2from,J3);
     else
         tipl::compose_mapping<tipl::interpolation::cubic>(I3,to2from,J3);
-    tipl::out() << "saving warped image to " << std::filesystem::path(to).filename();
+    tipl::out() << "save as to " << to;
     if(!tipl::io::gz_nifti::save_to_file(to,J3,Itvs,ItR,It_is_mni))
     {
         error = "cannot write to file ";
