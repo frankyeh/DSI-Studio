@@ -642,6 +642,7 @@ bool apply_unwarping_tt(const char* from,
                         const tipl::matrix<4,4>& to_trans_to_mni,
                         std::string& error)
 {
+    tipl::out() << "apply warping to " << from << std::endl;
     std::vector<std::vector<float> > loaded_tract_data;
     std::vector<uint16_t> cluster;
     unsigned int color;
@@ -673,6 +674,7 @@ bool apply_unwarping_tt(const char* from,
             loaded_tract_data[i][j+2] = new_pos[2];
         }
     });
+    tipl::out() << "save as " << to << std::endl;
     if(!TinyTrack::save_to_file(to,new_geo,new_vs,to_trans_to_mni,loaded_tract_data,cluster,report,parameter_id,color))
     {
         error = "Failed to save file";
