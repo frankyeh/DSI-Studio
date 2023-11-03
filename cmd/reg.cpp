@@ -18,7 +18,8 @@ bool apply_unwarping_tt(const char* from,
                         const tipl::matrix<4,4>& from_trans_to_mni,
                         const tipl::matrix<4,4>& to_trans_to_mni,
                         std::string& error);
-int after_warp(const std::string& warp_name,
+
+int after_warp(tipl::program_option<tipl::out>& po,
                tipl::image<3,tipl::vector<3> >& to2from,
                tipl::image<3,tipl::vector<3> >& from2to,
                tipl::vector<3> to_vs,
@@ -26,42 +27,27 @@ int after_warp(const std::string& warp_name,
                const tipl::matrix<4,4>& to_trans,
                bool to_is_mni)
 {
+    if(!po.has("apply_warp"))
+        return 0;
+
     std::string error;
     std::vector<std::string> filename_cmds;
-
-    if(!tipl::search_filesystem(warp_name,filename_cmds))
+    if(!tipl::search_filesystem(po.get("apply_warp"),filename_cmds))
     {
-        tipl::out() << "ERROR: invalid path " << warp_name <<std::endl;
+        tipl::out() << "ERROR: cannot find " << po.get("apply_warp") <<std::endl;
         return 1;
     }
-    for(auto& filename_cmd: filename_cmds)
+    for(const auto& each_file: filename_cmds)
     {
-        std::istringstream in(filename_cmd);
-        std::string filename;
-        std::getline(in,filename,'+');
-        if(QString(filename.c_str()).toLower().endsWith(".tt.gz"))
-        {
-            std::string filename_warp = filename+".wp.tt.gz";
-            tipl::out() << "apply warping to tractography file: " << filename << std::endl;
-            if(!apply_unwarping_tt(filename.c_str(),filename_warp.c_str(),from2to,
-                                   to2from.shape(),to_vs,from_trans,to_trans,error))
-            {
-                tipl::out() << "ERROR: " << error <<std::endl;
-                return 1;
-            }
-        }
+        if(tipl::ends_with(each_file,".tt.gz"))
+            apply_unwarping_tt(each_file.c_str(),(each_file+".wp.tt.gz").c_str(),from2to,to2from.shape(),to_vs,from_trans,to_trans,error);
         else
-        {
-            std::string filename_warp = filename+".wp.nii.gz";
-            tipl::out() << "apply warping to NIFTI file: " << filename << std::endl;
-            if(!apply_warping(filename_cmd.c_str(),filename_warp.c_str(),from2to.shape(),from_trans,
-                              to2from,to_vs,to_trans,to_is_mni,error))
-            {
-                if(!error.empty())
-                    tipl::out() << "ERROR: " << error <<std::endl;
-                return 1;
-            }
-        }
+            apply_warping(each_file.c_str(),(each_file+".wp.nii.gz").c_str(),from2to.shape(),from_trans,to2from,to_vs,to_trans,to_is_mni,error);
+    }
+    if(!error.empty())
+    {
+        tipl::out() << "ERROR: " << error <<std::endl;
+        return 1;
     }
     return 0;
 }
@@ -160,7 +146,7 @@ int reg(tipl::program_option<tipl::out>& po)
             to_trans.swap(from_trans);
             to2from.swap(from2to);
         }
-        return after_warp(po.get("apply_warp"),to2from,from2to,to_vs,from_trans,to_trans,to_is_mni);
+        return after_warp(po,to2from,from2to,to_vs,from_trans,to_trans,to_is_mni);
     }
 
     if(!po.has("from") || !po.has("to"))
@@ -191,7 +177,7 @@ int reg(tipl::program_option<tipl::out>& po)
         return 1;
     }
 
-    std::string output_wp_image = po.get("output",po.get("from")+".wp.nii.gz");
+
     bool terminated = false;
     tipl::out() << "running linear registration." << std::endl;
 
@@ -233,6 +219,7 @@ int reg(tipl::program_option<tipl::out>& po)
     tipl::out() << "correlation cofficient: " << r2 << std::endl;
     if(po.get("reg_type",1) == 0) // just rigidbody
     {
+        std::string output_wp_image = po.get("output",po.get("from")+".wp.nii.gz");
         tipl::out() << "output warped image to " << output_wp_image << std::endl;
         tipl::io::gz_nifti::save_to_file(output_wp_image.c_str(),from_,to_vs,to_trans);
         if(po.has("apply_warp"))
@@ -323,7 +310,5 @@ int reg(tipl::program_option<tipl::out>& po)
         tipl::out() << "save mapping to " << filename << std::endl;
     }
 
-    if(po.has("apply_warp"))
-        return after_warp(po.get("apply_warp"),to2from,from2to,to_vs,from_trans,to_trans,to_is_mni);
-    return 0;
+    return after_warp(po,to2from,from2to,to_vs,from_trans,to_trans,to_is_mni);
 }
