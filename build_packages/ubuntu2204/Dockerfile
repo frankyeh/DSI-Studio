@@ -28,6 +28,13 @@ RUN mkdir -p /opt/dsi-studio \
   && rm -fr DSI-Studio-atlas/.git \
   && mv DSI-Studio-atlas atlas
 
+RUN curl -sL https://github.com/probonopd/linuxdeployqt/releases/download/7/linuxdeployqt-7-x86_64.AppImage > linuxdeployqt \
+  && chmod a+x linuxdeployqt \
+  && ./linuxdeployqt --appimage-extract \
+  && ./squashfs-root/AppRun /opt/dsi-studio/dsi_studio -unsupported-bundle-everything -no-translations -bundle-non-qt-libs \
+  && rm -fr squashfs-root \
+  && rm -fr linuxdeployqt
+
 ENV PATH="$PATH:/opt/dsi-studio" 
 
 #Create an empty container and transfer only the compiled software out
