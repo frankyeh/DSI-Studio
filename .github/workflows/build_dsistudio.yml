@@ -58,7 +58,7 @@ jobs:
       run: brew update
     - name: Install Qt
       run: brew install qt5
-      timeout-minute: 600
+      timeout-minutes: 600
     - name: Download TIPL and Atlases
       run: |
         git clone https://github.com/frankyeh/TIPL.git
@@ -113,7 +113,7 @@ jobs:
         brew install cmake
     - name: Install Qt
       run: brew install qt6
-      timeout-minute: 600
+      timeout-minutes: 600
     - name: Download TIPL and Atlases
       run: |
         git clone https://github.com/frankyeh/TIPL.git
