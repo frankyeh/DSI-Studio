@@ -926,6 +926,10 @@ void ImageModel::rotate(const tipl::shape<3>& new_geo,
 }
 void ImageModel::resample(float nv)
 {
+    if(voxel.vs[0] == nv &&
+       voxel.vs[1] == nv &&
+       voxel.vs[2] == nv)
+        return;
     tipl::vector<3,float> new_vs(nv,nv,nv);
     tipl::shape<3> new_geo(uint32_t(std::ceil(float(voxel.dim.width())*voxel.vs[0]/new_vs[0])),
                               uint32_t(std::ceil(float(voxel.dim.height())*voxel.vs[1]/new_vs[1])),
@@ -954,61 +958,80 @@ void ImageModel::smoothing(void)
     calculate_dwi_sum(false);
 }
 extern std::vector<std::string> fa_template_list,iso_template_list;
+void match_template_resolution(tipl::image<3>& VG,
+                               tipl::image<3>& VG2,
+                               tipl::vector<3>& VGvs,
+                               tipl::image<3>& VF,
+                               tipl::image<3>& VF2,
+                               tipl::vector<3>& VFvs);
 bool ImageModel::align_acpc(float reso)
 {
     tipl::progress prog("align acpc",true);
-    std::string msg = " The diffusion MRI data were rotated to align with the AC-PC line.";
+    std::string msg = " The diffusion MRI data were rotated to align with the AC-PC line";
     if(voxel.report.find(msg) != std::string::npos)
     {
         tipl::out() << "image already aligned, skipping" << std::endl;
         return true;
     }
+    msg += " at an isotropic resolution of ";
+    msg += std::to_string(reso);
+    msg += ".";
+    tipl::out() << "align ap-pc" << std::endl;
+
+    tipl::image<3> I,J,temp;
+    tipl::vector<3> Ivs,Jvs(reso,reso,reso);
+
+    // prepare template images
+    if(!tipl::io::gz_nifti::load_from_file(iso_template_list[voxel.template_id].c_str(),I,Ivs) && !
+        tipl::io::gz_nifti::load_from_file(fa_template_list[voxel.template_id].c_str(),I,Ivs))
+    {
+        error_msg = "Failed to load/find MNI template.";
+        return false;
+    }
+
+
+    // create an isotropic subject image for alignment
+    tipl::scale(dwi,J,tipl::v(voxel.vs[0]/reso,voxel.vs[1]/reso,voxel.vs[2]/reso));
+    tipl::filter::gaussian(J);
+
+
+    match_template_resolution(I,temp,Ivs,J,temp,Jvs);
+
+    bool terminated = false;
+    prog(0,3);
+    tipl::affine_transform<float> arg;
+    linear_with_mi(I,Ivs,J,Jvs,arg,tipl::reg::rigid_scaling,terminated);
+    tipl::out() << arg << std::endl;
+    prog(1,3);
+    tipl::image<3> I2(I.shape());
+    tipl::resample_mt<tipl::interpolation::cubic>(J,I2,
+            tipl::transformation_matrix<float>(arg,I.shape(),Ivs,J.shape(),Jvs));
+    float r = float(tipl::correlation(I.begin(),I.end(),I2.begin()));
+    tipl::out() << "R2 for ac-pc alignment: " << r*r << std::endl;
+    prog(2,3);
+    if(r*r < 0.3f)
+    {
+        error_msg = "Failed to align subject data to template.";
+        return false;
+    }
+    arg.scaling[0] = 1.0f;
+    arg.scaling[1] = 1.0f;
+    arg.scaling[2] = 1.0f;
 
     tipl::shape<3> new_geo;
-    tipl::vector<3> new_vs(reso,reso,reso); // new volume size will be isotropic
+    new_geo[0] = I.width()*Ivs[0]/reso;
+    new_geo[1] = I.height()*Ivs[1]/reso;
+    new_geo[2] = I.depth()*Ivs[2]/reso;
+    auto T = tipl::transformation_matrix<float>(arg,new_geo,tipl::v(reso,reso,reso),J.shape(),Jvs);
 
-    tipl::transformation_matrix<float> T;
-    {
-        tipl::image<3> I,J(dwi);
-        tipl::vector<3> vs;
-        // resample template to resolution of vs[0]
-        {
-            tipl::out() << "align ap-pc" << std::endl;
-            tipl::image<3> I_;
-            if(!tipl::io::gz_nifti::load_from_file(iso_template_list[voxel.template_id].c_str(),I_,vs) && !
-                    tipl::io::gz_nifti::load_from_file(fa_template_list[voxel.template_id].c_str(),I_,vs))
-            {
-                error_msg = "Failed to load/find MNI template.";
-                return false;
-            }
-            auto ratio = vs / voxel.vs[0];
-            tipl::scale(I_,I,ratio);
-            vs = voxel.vs[0];
-            new_geo = I.shape();
-        }
+    tipl::transformation_matrix<double> T2;
+    T2.sr[0] = double(reso/voxel.vs[0]);
+    T2.sr[4] = double(reso/voxel.vs[1]);
+    T2.sr[8] = double(reso/voxel.vs[2]);
 
-        bool terminated = false;
-        prog(0,3);
-        tipl::filter::gaussian(J);
-        tipl::affine_transform<float> arg;
-        linear_with_mi(I,vs,J,voxel.vs,arg,tipl::reg::rigid_scaling,terminated);
-        tipl::out() << arg << std::endl;
-        prog(1,3);
-        tipl::image<3> I2(I.shape());
-        tipl::resample_mt<tipl::interpolation::cubic>(J,I2,
-                tipl::transformation_matrix<float>(arg,I.shape(),vs,J.shape(),voxel.vs));
-        float r = float(tipl::correlation(I.begin(),I.end(),I2.begin()));
-        tipl::out() << "R2 for ac-pc alignment: " << r*r << std::endl;
-        prog(2,3);
-        if(r*r < 0.3f)
-        {
-            error_msg = "Failed to align subject data to template.";
-            return false;
-        }
-        arg.scaling[0] = arg.scaling[1] = arg.scaling[2] = 1.0f;
-        T = tipl::transformation_matrix<float>(arg,I.shape(),vs,J.shape(),voxel.vs);
-    }
-    rotate(new_geo,new_vs,T);
+    T *= T2;
+
+    rotate(new_geo,tipl::v(reso,reso,reso),T);
     voxel.report += msg;
     return true;
 }
