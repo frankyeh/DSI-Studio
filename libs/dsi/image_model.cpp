@@ -1024,13 +1024,15 @@ bool ImageModel::align_acpc(float reso)
     new_geo[2] = I.depth()*Ivs[2]/reso;
     auto T = tipl::transformation_matrix<float>(arg,new_geo,tipl::v(reso,reso,reso),J.shape(),Jvs);
 
-    tipl::transformation_matrix<double> T2;
-    T2.sr[0] = double(reso/voxel.vs[0]);
-    T2.sr[4] = double(reso/voxel.vs[1]);
-    T2.sr[8] = double(reso/voxel.vs[2]);
-
-    T *= T2;
-
+    // handle non isotropic resolution
+    if(reso != voxel.vs[0] || reso != voxel.vs[1] || reso != voxel.vs[2])
+    {
+        tipl::transformation_matrix<double> T2;
+        T2.sr[0] = double(reso/voxel.vs[0]);
+        T2.sr[4] = double(reso/voxel.vs[1]);
+        T2.sr[8] = double(reso/voxel.vs[2]);
+        T *= T2;
+    }
     rotate(new_geo,tipl::v(reso,reso,reso),T);
     voxel.report += msg;
     return true;
