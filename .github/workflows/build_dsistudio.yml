@@ -10,9 +10,25 @@ on:
         description: 'Release Name'
         required: true
         default: '2023.07.08 "Chen" Release'
+      build_windows:
+        description: 'Build Windows'
+        required: false
+        default: 'true'
+      build_linux:
+        description: 'Build Linux'
+        required: false
+        default: 'true'
+      build_mac:
+        description: 'Build Mac'
+        required: false
+        default: 'true'
+      build_docker:
+        description: 'Build Docker'
+        required: false
+        default: 'true'
 jobs:      
-
   linux-build:
+    if: ${{ github.event.inputs.build_linux == 'true' }}
     strategy:
       matrix:
         os: [ubuntu2204,ubuntu2004,ubuntu1804,ubuntu1604,centos7]
@@ -45,6 +61,7 @@ jobs:
         prerelease: false
 
   macos-build-qt5:
+    if: ${{ github.event.inputs.build_mac == 'true' }}
     strategy:
       matrix:
         os: [macos-13,macos-12,macos-11]
@@ -98,6 +115,7 @@ jobs:
         prerelease: false
         
   macos-build-qt6:
+    if: ${{ github.event.inputs.build_mac == 'true' }}
     strategy:
       matrix:
         os: [macos-13,macos-12,macos-11]
@@ -147,6 +165,7 @@ jobs:
         prerelease: false
 
   windows_build:
+    if: ${{ github.event.inputs.build_windows == 'true' }}
     runs-on: windows-2019
     steps:
     - uses: actions/checkout@v2.5.0
@@ -235,6 +254,7 @@ jobs:
         prerelease: false  
 
   docker_build:
+    if: ${{ github.event.inputs.build_docker == 'true' }}
     runs-on: ubuntu-20.04
     steps:
     - name: Checkout
