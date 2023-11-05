@@ -26,7 +26,7 @@ jobs:
       uses: docker/build-push-action@v2
       with:
         context: .
-        file: build_packages/macos12/Dockerfile_macos12_qt6
+        file: build_packages/macos12qt6/Dockerfile_macos12_qt6
         push: true
         tags: |
           dsistudio/macos12_qt6:latest
