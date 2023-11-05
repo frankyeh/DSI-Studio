@@ -11,18 +11,22 @@ on:
         required: true
         default: '2023.07.08 "Chen" Release'
       build_windows:
+        type: boolean
         description: 'Build Windows'
         required: false
         default: 'true'
       build_linux:
+        type: boolean
         description: 'Build Linux'
         required: false
         default: 'true'
       build_mac:
+        type: boolean
         description: 'Build Mac'
         required: false
         default: 'true'
       build_docker:
+        type: boolean
         description: 'Build Docker'
         required: false
         default: 'true'
