@@ -1,7 +1,9 @@
 FROM sickcodes/docker-osx:monterey as builder-stage
 
-# Install Qt5
-RUN /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)" && brew update && brew install qt5
+# Install Brew
+RUN /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)" 
 
+ENV PATH="/home/linuxbrew/.linuxbrew/bin:${PATH}"
 
+RUN brew update && brew install qt5
 
