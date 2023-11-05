@@ -5,5 +5,5 @@ RUN /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/instal
 
 ENV PATH="/home/linuxbrew/.linuxbrew/bin:${PATH}"
 
-RUN brew update && brew install cmake && brew install qt6
+RUN brew update && brew install cmake && brew install qt6 && brew install qit
 
