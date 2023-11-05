@@ -1,0 +1,7 @@
+FROM sickcodes/docker-osx:monterey as builder-stage
+
+# Install Qt5
+RUN brew update && brew install qt5
+
+
+
