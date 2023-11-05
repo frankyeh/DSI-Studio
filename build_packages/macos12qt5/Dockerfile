@@ -1,6 +1,9 @@
 FROM dsistudio/macos12_qt5:latest as builder-stage
 
 RUN cd ~ \ 
+    && git clone https://github.com/frankyeh/DSI-Studio.git \
+    && mv DSI-Studio src \
+    && cd src \
     && git clone https://github.com/frankyeh/TIPL.git \
     && git clone https://github.com/frankyeh/DSI-Studio-atlas.git \
     && git clone https://github.com/frankyeh/UNet-Studio-Data.git \
