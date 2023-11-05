@@ -1,4 +1,4 @@
-FROM dsistudio/macos12-qt5:latest as builder-stage
+FROM dsistudio/macos12_qt5:latest as builder-stage
 
 RUN cd /opt \ 
     && git clone https://github.com/frankyeh/TIPL.git \
