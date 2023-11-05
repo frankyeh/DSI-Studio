@@ -7,3 +7,8 @@ ENV PATH="/home/linuxbrew/.linuxbrew/bin:${PATH}"
 
 RUN brew update && brew install qt5
 
+ENV PATH="/home/linuxbrew/.linuxbrew/opt/qt@5/bin:${PATH}"
+
+ENV LDFLAGS="-L/home/linuxbrew/.linuxbrew/opt/qt@5/lib"
+ENV CPPFLAGS="-I/home/linuxbrew/.linuxbrew/opt/qt@5/include"
+ENV PKG_CONFIG_PATH="/home/linuxbrew/.linuxbrew/opt/qt@5/lib/pkgconfig"
