@@ -15,7 +15,7 @@ RUN cd /opt/src \
     && mv build/dsi_studio.app . \
     && macdeployqt dsi_studio.app \
     && curl -sSLO "https://github.com/frankyeh/TinyFSL/releases/download/2022.08.03/tiny_fsl_macos-12.zip" \
-    && 7z e tiny_fsl_macos-12.zip -odsi_studio.app/Contents/MacOS/plugin \
+    && unzip tiny_fsl_macos-12.zip -d dsi_studio.app/Contents/MacOS/plugin \
     && rm -fr dsi_studio.app/Contents/MacOS/plugin/tiny_fsl \
     && mv other/* dsi_studio.app/Contents/MacOS/ \
     && mv DSI-Studio-atlas dsi_studio.app/Contents/MacOS/atlas \
