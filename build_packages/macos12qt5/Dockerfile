@@ -6,12 +6,12 @@ RUN cd /opt \
     && git clone https://github.com/frankyeh/UNet-Studio-Data.git \
     && rm -fr DSI-Studio-atlas/.git
 
-RUN mkdir -p /opt/src/build \
-    && cd /opt/src/build \
+RUN mkdir -p ~/src/build \
+    && cd ~/src/build \
     && qmake ../dsi_studio.pro \
     && make
 
-RUN cd /opt/src \
+RUN cd ~/src \
     && mv build/dsi_studio.app . \
     && macdeployqt dsi_studio.app \
     && curl -sSLO "https://github.com/frankyeh/TinyFSL/releases/download/2022.08.03/tiny_fsl_macos-12.zip" \
@@ -25,4 +25,4 @@ RUN cd /opt/src \
 
 #Create an empty container and transfer only the compiled software out
 FROM scratch
-COPY --from=builder-stage /opt/dsi_studio.app /
+COPY --from=builder-stage ~/dsi_studio.app /
