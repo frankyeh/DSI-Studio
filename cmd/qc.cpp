@@ -48,7 +48,7 @@ std::string quality_check_src_files(QString dir)
     if(filenames.empty())
     {
         tipl::out() << "no SRC file found in the directory" << std::endl;
-        return "no SRC file found in the directory";
+        return std::string();
     }
     out << "FileName\tImage dimension\tResolution\tDWI count\tMax b-value\tNeighboring DWI correlation\t# Bad Slices" << std::endl;
     tipl::out() << "a total of " << filenames.size() << " SRC file(s) were found."<< std::endl;
@@ -98,8 +98,8 @@ std::string quality_check_fib_files(QString dir)
     out << "directory: " << dir.toStdString() << std::endl;
     if(filenames.empty())
     {
-        tipl::out() << "no SRC file found in the directory" << std::endl;
-        return "no SRC file found in the directory";
+        tipl::out() << "no FIB file found in the directory" << std::endl;
+        return std::string();
     }
     out << "FileName\tImage dimension\tResolution\tCoherence Index" << std::endl;
     tipl::out() << "a total of " << filenames.size() << " FIB file(s) were found."<< std::endl;
@@ -136,16 +136,22 @@ int qc(tipl::program_option<tipl::out>& po)
         {
             std::string report_file_name = po.get("output",file_name + "/qc_src.txt");
             tipl::out() << "quality control checking src files in " << file_name << std::endl;
-            std::ofstream out(report_file_name.c_str());
-            out << quality_check_src_files(file_name.c_str());
-            tipl::out() << "report saved to " << report_file_name << std::endl;
+            auto result = quality_check_src_files(file_name.c_str());
+            if(!result.empty())
+            {
+                std::ofstream(report_file_name.c_str()) << result;
+                tipl::out() << "report saved to " << report_file_name << std::endl;
+            }
         }
         {
             std::string report_file_name = po.get("output",file_name + "/qc_fib.txt");
             tipl::out() << "quality control checking fib files in " << file_name << std::endl;
-            std::ofstream out(report_file_name.c_str());
-            out << quality_check_fib_files(file_name.c_str());
-            tipl::out() << "report saved to " << report_file_name << std::endl;
+            auto result = quality_check_fib_files(file_name.c_str());
+            if(!result.empty())
+            {
+                std::ofstream(report_file_name.c_str()) << result;
+                tipl::out() << "report saved to " << report_file_name << std::endl;
+            }
         }
     }
     else {
