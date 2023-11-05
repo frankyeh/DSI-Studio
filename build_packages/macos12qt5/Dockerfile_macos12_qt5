@@ -5,7 +5,7 @@ RUN /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/instal
 
 ENV PATH="/home/linuxbrew/.linuxbrew/bin:${PATH}"
 
-RUN brew update && brew install qt5 && brew install git
+RUN brew update && brew install qt5 && brew install git && brew install glew
 
 ENV PATH="/home/linuxbrew/.linuxbrew/opt/qt@5/bin:${PATH}"
 
