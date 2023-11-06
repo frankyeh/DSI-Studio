@@ -33,6 +33,7 @@ mac{
 INCLUDEPATH += /Users/admin/include
 ICON = dsi_studio.icns
 LIBS += -lz
+DEFINES += __APPLE__
 }
 
 
