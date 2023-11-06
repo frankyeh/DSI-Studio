@@ -20,6 +20,7 @@ LIBS += -lGLU -lz
 }
 
 mac{
+QMAKE_MACOSX_DEPLOYMENT_TARGET = 10.15
 INCLUDEPATH += /Users/admin/include
 ICON = dsi_studio.icns
 LIBS += -lz
