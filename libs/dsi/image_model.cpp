@@ -2178,16 +2178,9 @@ bool ImageModel::need_scheme_balance(void)
 {
     std::vector<unsigned int> shell;
     calculate_shell(src_bvalues,shell);
-    if(is_dsi() || shell.size() > 6)
+    if(is_dsi() || shell.size() >= 5)
         return false;
-    for(size_t i = 0;i < shell.size();++i)
-    {
-        size_t from = shell[i];
-        size_t to = (i + 1 == shell.size() ? src_bvalues.size():shell[i+1]);
-        if(to-from < 128)
-            return true;
-    }
-    return false;
+    return true;
 }
 
 bool ImageModel::is_multishell(void)
