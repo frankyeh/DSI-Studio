@@ -13,16 +13,6 @@ INCLUDEPATH += ./plot
 DEFINES += TIPL_USE_QT
 DEFINES += DSISTUDIO_RELEASE_NAME=\\\"Chen\\\"
 DEFINES += DSISTUDIO_RELEASE_CODE=11770345
-win32* {
-# GPU computation
-# LIBS += -L"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v8.0\lib\x64" -lcudart_static -lcublas
-# INCLUDEPATH += "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v8.0\include"
-
-INCLUDEPATH += ../include $$[QT_INSTALL_HEADERS]/QtZlib
-QMAKE_CXXFLAGS += -wd4244 -wd4267 -wd4018
-LIBS += -lOpenGL32 -lGlu32
-RC_ICONS = dsi_studio.ico
-}
 
 linux* {
 QMAKE_CXXFLAGS += -fpermissive -Wno-sign-compare
@@ -33,7 +23,6 @@ mac{
 INCLUDEPATH += /Users/admin/include
 ICON = dsi_studio.icns
 LIBS += -lz
-DEFINES += __APPLE__
 }
 
 
