@@ -11,7 +11,7 @@ RUN cd ~ \
 
 RUN mkdir -p ~/src/build \
     && cd ~/src/build \
-    && qmake ../dsi_studio.pro \
+    && qmake -D __APPLE__ ../dsi_studio.pro \
     && make
 
 RUN cd ~/src \
