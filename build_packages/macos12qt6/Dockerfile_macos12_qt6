@@ -1,9 +1,0 @@
-FROM sickcodes/docker-osx:monterey as builder-stage
-
-# Install Brew
-RUN /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)" 
-
-ENV PATH="/home/linuxbrew/.linuxbrew/bin:${PATH}"
-
-RUN brew update && brew install cmake && brew install qt6 && brew install git && brew install mesa && brew install glew
-
