@@ -102,7 +102,7 @@ int cnt(tipl::program_option<tipl::out>& po)
         vbc->no_tractogram = (po.get("no_tractogram",1) == 1);
         vbc->foi_str = foi_str;
         vbc->length_threshold_voxels = po.get("length_threshold",(vbc->handle->dim[0]/4)/5*5);
-        vbc->tip = po.get("tip_iteration",16);
+        vbc->tip_iteration = po.get("tip_iteration",16);
         vbc->fdr_threshold = po.get("fdr_threshold",0.0f);
         vbc->t_threshold = po.get("t_threshold",2.5f);
 

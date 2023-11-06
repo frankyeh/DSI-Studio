@@ -142,7 +142,7 @@ void group_connectometry_analysis::run_permutation_multithread(unsigned int id,u
 void group_connectometry_analysis::save_result(void)
 {
     tipl::progress prog("save correlational tractography results");
-    for(size_t index = 0;index < tip;++index)
+    for(size_t index = 0;index < tip_iteration;++index)
     {
         neg_null_corr_track->trim();
         pos_null_corr_track->trim();
@@ -474,9 +474,9 @@ void group_connectometry_analysis::run_permutation(unsigned int thread_count,uns
 
         if(!roi_mgr->report.empty())
             out << roi_mgr->report << std::endl;
-        if(tip)
+        if(tip_iteration)
             out << " The tracks were filtered by topology-informed pruning (Yeh et al. Neurotherapeutics, 16(1), 52-58, 2019) with "
-                << tip << " iteration(s).";
+                << tip_iteration << " iteration(s).";
         if(fdr_threshold == 0.0f)
             out << " A length threshold of " << length_threshold_voxels << " voxel distance was used to select tracks.";
         else

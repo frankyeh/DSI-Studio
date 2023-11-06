@@ -404,7 +404,7 @@ void group_connectometry::on_run_clicked()
         vbc->no_tractogram = ui->no_tractogram->isChecked();
         vbc->foi_str = ui->foi->currentText().toStdString();
         vbc->length_threshold_voxels = uint32_t(ui->length_threshold->value());
-        vbc->tip = uint32_t(ui->tip->value());
+        vbc->tip_iteration = uint32_t(ui->tip->value());
         if(ui->fdr_control->isChecked())
             vbc->fdr_threshold = float(ui->fdr_threshold->value());
         else
