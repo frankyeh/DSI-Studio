@@ -92,6 +92,8 @@ bool ImageModel::reconstruction(void)
     voxel.step_report.str("");
 
     voxel.scheme_balance = need_scheme_balance() && (voxel.method_id == 7 || voxel.method_id == 4);
+    if(voxel.scheme_balance)
+        tipl::out() << "scheme balance is applied to avoid directional bias";
     voxel.half_sphere = is_dsi_half_sphere();
     voxel.max_fiber_number = (voxel.method_id == 1) ? 1 : 5;
 
