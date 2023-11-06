@@ -28,7 +28,7 @@ RUN mkdir -p /opt/dsi-studio \
   && rm -fr DSI-Studio-atlas/.git \
   && mv DSI-Studio-atlas atlas
 
-RUN curl -sLk https://github.com/probonopd/linuxdeployqt/releases/download/7/linuxdeployqt-7-x86_64.AppImage > linuxdeployqt \
+RUN curl -sLk https://github.com/probonopd/linuxdeployqt/releases/download/continuous/linuxdeployqt-continuous-x86_64.AppImage > linuxdeployqt \
   && chmod a+x linuxdeployqt \
   && ./linuxdeployqt --appimage-extract
 
