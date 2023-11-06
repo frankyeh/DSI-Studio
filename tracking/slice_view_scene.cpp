@@ -1211,7 +1211,7 @@ void slice_view_scene::mouseReleaseEvent ( QGraphicsSceneMouseEvent * mouseEvent
 
     regionWidget->regions[regionWidget->currentRow()]->add_points(std::move(points_int16),
                 cur_tracking_window.current_slice->dim,
-                cur_tracking_window.current_slice->to_dif,mouseEvent->button() == Qt::RightButton);
+                cur_tracking_window.current_slice->to_dif,mouseEvent->button() == Qt::RightButton || mouseEvent->modifiers() & Qt::ShiftModifier);
 
     need_update();
 }
