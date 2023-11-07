@@ -30,15 +30,13 @@ private:
         std::vector<std::pair<unsigned int,unsigned int> > redo_size;
         // offset, size
         void erase_empty(void);
-private:
+public:
         // for loading multiple clusters
         std::vector<unsigned int> tract_cluster;
 public:
         static bool save_all(const char* file_name,
                              const std::vector<std::shared_ptr<TractModel> >& all,
                              const std::vector<std::string>& name_list);
-        const std::vector<unsigned int>& get_cluster_info(void) const{return tract_cluster;}
-        std::vector<unsigned int>& get_cluster_info(void) {return tract_cluster;}
         void select(float select_angle,
                     const std::vector<tipl::vector<3,float> >& dirs,
                     const tipl::vector<3,float>& from_pos,std::vector<unsigned int>& selected);

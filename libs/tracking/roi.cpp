@@ -138,7 +138,7 @@ bool RoiMgr::setAtlas(bool& terminated,float seed_threshold,float not_end_thresh
         std::vector<std::vector<std::vector<float> > > selected_atlas_tracts_threads(std::thread::hardware_concurrency());
         std::vector<std::vector<unsigned int> > selected_atlas_cluster_threads(std::thread::hardware_concurrency());
         const auto& atlas_tract = handle->track_atlas->get_tracts();
-        const auto& atlas_cluster = handle->track_atlas->get_cluster_info();
+        const auto& atlas_cluster = handle->track_atlas->tract_cluster;
         auto tolerance_dis_in_subject_voxels2 = tolerance_dis_in_subject_voxels*2;
 
         std::vector<bool> is_target(atlas_tract.size());

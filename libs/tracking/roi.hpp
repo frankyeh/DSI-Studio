@@ -138,7 +138,7 @@ __INLINE__ bool distance_over_limit(const float* trk1,unsigned int length1,
 template<typename T,typename U>
 __DEVICE_HOST__ unsigned int find_nearest(const float* trk,unsigned int length,
                           const T& tract_data,// = track_atlas->get_tracts();
-                          const U& tract_cluster,// = track_atlas->get_cluster_info();
+                          const U& tract_cluster,// = track_atlas->tract_cluster;
                           float tolerance_dis_in_subject_voxels)
 {
     if(length <= 6)

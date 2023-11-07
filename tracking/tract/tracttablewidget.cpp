@@ -222,7 +222,7 @@ void TractTableWidget::load_built_in_atlas(const std::string& tract_name)
 
     tract_rendering.back()->need_update = true;
     const auto& atlas_tract = track_atlas->get_tracts();
-    const auto& atlas_cluster = track_atlas->get_cluster_info();
+    const auto& atlas_cluster = track_atlas->tract_cluster;
     std::vector<std::vector<float> > new_tracts;
     for(size_t i = 0;i < atlas_cluster.size();++i)
         if(std::find(track_ids.begin(),track_ids.end(),atlas_cluster[i]) != track_ids.end())
@@ -421,14 +421,14 @@ void TractTableWidget::load_tracts(QStringList filenames,bool tract_is_mni)
             QMessageBox::critical(this,"ERROR",QString("Cannot load tracks from %1").arg(QFileInfo(filename).baseName()));
             continue;
         }
-        if(tract_models.back()->get_cluster_info().empty()) // not multiple cluster file
+        if(tract_models.back()->tract_cluster.empty()) // not multiple cluster file
         {
             item(tract_models.size()-1,1)->setText(QString::number(tract_models.back()->get_visible_track_count()));
         }
         else
         {
             std::vector<unsigned int> labels;
-            labels.swap(tract_models.back()->get_cluster_info());
+            labels.swap(tract_models.back()->tract_cluster);
             load_cluster_label(labels);
             if(QFileInfo(filename+".txt").exists())
                 load_tract_label(filename+".txt");
@@ -732,7 +732,7 @@ void TractTableWidget::clustering(int method_id)
     {
         auto lock = tract_rendering[uint32_t(currentRow())]->start_reading();
         tract_models[uint32_t(currentRow())]->run_clustering(method_id,n,detail);
-        c = tract_models[uint32_t(currentRow())]->get_cluster_info();
+        c = tract_models[uint32_t(currentRow())]->tract_cluster;
     }
     load_cluster_label(c);
     assign_colors();

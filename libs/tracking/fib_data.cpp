@@ -1414,7 +1414,7 @@ bool fib_data::load_track_atlas()
 
         // copy tract from one side to another
         const auto& tracts = track_atlas->get_tracts();
-        auto& cluster = track_atlas->get_cluster_info();
+        auto& cluster = track_atlas->tract_cluster;
 
         std::vector<std::vector<float> > new_tracts;
         std::vector<unsigned int> new_cluster;
@@ -1562,7 +1562,7 @@ bool fib_data::recognize(std::shared_ptr<TractModel>& trk,
     {
         if(trk->get_tracts()[i].empty())
             return;
-        labels[i] = find_nearest_contain(&(trk->get_tracts()[i][0]),uint32_t(trk->get_tracts()[i].size()),track_atlas->get_tracts(),track_atlas->get_cluster_info());
+        labels[i] = find_nearest_contain(&(trk->get_tracts()[i][0]),uint32_t(trk->get_tracts()[i].size()),track_atlas->get_tracts(),track_atlas->tract_cluster);
     });
 
     std::vector<unsigned int> count(tractography_name_list.size());
