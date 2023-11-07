@@ -32,9 +32,9 @@ RUN curl -sLk https://github.com/probonopd/linuxdeployqt/releases/download/conti
   && chmod a+x linuxdeployqt \
   && ./linuxdeployqt --appimage-extract
 
-RUN ./squashfs-root/AppRun /opt/dsi-studio/dsi_studio -unsupported-bundle-everything -no-translations -bundle-non-qt-libs \
-  && rm -fr squashfs-root \
-  && rm -fr linuxdeployqt
+# RUN ./squashfs-root/AppRun /opt/dsi-studio/dsi_studio -unsupported-bundle-everything -no-translations -bundle-non-qt-libs \
+#  && rm -fr squashfs-root \
+#  && rm -fr linuxdeployqt
 
 ENV PATH="$PATH:/opt/dsi-studio" 
 
