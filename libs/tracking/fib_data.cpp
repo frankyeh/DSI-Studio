@@ -840,6 +840,35 @@ bool modify_fib(tipl::io::gz_mat_read& mat_reader,
             }
         return true;
     }
+    if(cmd == "remove")
+    {
+        auto row = std::stoi(param);
+        if(row >= mat_reader.size())
+        {
+            mat_reader.error_msg = "invalid row to remove";
+            return false;
+        }
+        mat_reader.remove(row);
+        return true;
+    }
+    if(cmd == "rename")
+    {
+        auto data = tipl::split(param,' ');
+        if(data.size() != 2)
+        {
+            mat_reader.error_msg = "invalid renaming command";
+            return false;
+        }
+
+        auto row = std::stoi(data[0]);
+        if(row >= mat_reader.size())
+        {
+            mat_reader.error_msg = "invalid row to rename";
+            return false;
+        }
+        mat_reader[row].set_name(data[1]);
+        return true;
+    }
     if(!read_fib_data(mat_reader))
         return false;
     tipl::shape<3> dim;
