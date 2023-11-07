@@ -878,8 +878,7 @@ bool TractModel::save_data_to_file(std::shared_ptr<fib_data> handle,const char* 
     std::string file_name_s(file_name);
     if(tipl::ends_with(file_name_s,"tt.gz"))
     {
-        std::vector<uint16_t> cluster;
-        bool result = TinyTrack::save_to_file(file_name,geo,vs,trans_to_mni,tract_data,cluster,report,parameter_id,
+        bool result = TinyTrack::save_to_file(file_name,geo,vs,trans_to_mni,tract_data,std::vector<uint16_t>(tract_cluster.begin(),tract_cluster.end()),report,parameter_id,
                                             color_changed ? tract_color.front():0);
         return result;
     }
@@ -998,7 +997,7 @@ bool TractModel::save_tracts_to_file(const char* file_name_)
     if(tipl::ends_with(file_name,"tt.gz"))
     {
         return TinyTrack::save_to_file(file_name.c_str(),geo,vs,trans_to_mni,
-                                            tract_data,std::vector<uint16_t>(),report,parameter_id,
+                                            tract_data,std::vector<uint16_t>(tract_cluster.begin(),tract_cluster.end()),report,parameter_id,
                                             color_changed ? tract_color.front():0);
     }
     if(tipl::ends_with(file_name,".trk") || tipl::ends_with(file_name,".trk.gz"))
