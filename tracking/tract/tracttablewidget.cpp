@@ -247,7 +247,7 @@ void TractTableWidget::start_tracking(void)
 {
     QString tract_name = cur_tracking_window.regionWidget->getROIname();
     // if running autotrack
-    if(cur_tracking_window.ui->tract_target_0->currentText() != "All") // auto track
+    if(cur_tracking_window.ui->tract_target_0->currentIndex() > 0) // auto track
     {
         tract_name = cur_tracking_window.ui->tract_target_1->currentText();
         if(cur_tracking_window.ui->tract_target_2->isVisible() &&
