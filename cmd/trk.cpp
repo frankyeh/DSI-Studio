@@ -496,6 +496,37 @@ int trk_post(tipl::program_option<tipl::out>& po,
         tract_model->delete_repeated(distance);
         tipl::out() << "repeat tracks with distance smaller than " << distance <<" voxel distance are deleted" << std::endl;
     }
+    if(po.has("cluster"))
+    {
+        std::string cmd = po.get("cluster");
+        std::replace(cmd.begin(),cmd.end(),',',' ');
+        std::istringstream in(cmd);
+        int method = 0,count = 0,detail = 0;
+        std::string name;
+        in >> method >> count >> detail >> name;
+        tipl::out() << "cluster method: " << method << std::endl;
+        tipl::out() << "cluster count: " << count << std::endl;
+        tipl::out() << "cluster resolution (if method is 0) : " << detail << " mm" << std::endl;
+        tipl::out() << "run clustering." << std::endl;
+        tract_model->run_clustering(uint8_t(method),uint32_t(count),detail);
+        std::ofstream out(tract_file_name + "." + name);
+        tipl::out() << "cluster label saved to " << name << std::endl;
+        std::copy(tract_model->tract_cluster.begin(),tract_model->tract_cluster.end(),std::ostream_iterator<int>(out," "));
+    }
+    if(po.has("recognize"))
+    {
+        std::vector<unsigned int> labels;
+        std::vector<std::string> names;
+        handle->recognize(tract_model,labels,names);
+        tipl::out() << "recognized labels saved to " << (po.get("recognize") + ".label.txt") << std::endl;
+        std::ofstream out1(po.get("recognize") + ".label.txt");
+        std::copy(labels.begin(),labels.end(),std::ostream_iterator<int>(out1," "));
+
+        tipl::out() << "recognized names saved to " << (po.get("recognize") + ".name.txt") << std::endl;
+        std::ofstream out2(po.get("recognize") + ".name.txt");
+        std::copy(names.begin(),names.end(),std::ostream_iterator<std::string>(out2," "));
+        tract_model->tract_cluster = labels;
+    }
     if(output_track)
     {
         bool failed = false;
@@ -524,36 +555,7 @@ int trk_post(tipl::program_option<tipl::out>& po,
             return 1;
         }
     }
-    if(po.has("cluster"))
-    {
-        std::string cmd = po.get("cluster");
-        std::replace(cmd.begin(),cmd.end(),',',' ');
-        std::istringstream in(cmd);
-        int method = 0,count = 0,detail = 0;
-        std::string name;
-        in >> method >> count >> detail >> name;
-        tipl::out() << "cluster method: " << method << std::endl;
-        tipl::out() << "cluster count: " << count << std::endl;
-        tipl::out() << "cluster resolution (if method is 0) : " << detail << " mm" << std::endl;
-        tipl::out() << "run clustering." << std::endl;
-        tract_model->run_clustering(uint8_t(method),uint32_t(count),detail);
-        std::ofstream out(tract_file_name + "." + name);
-        tipl::out() << "cluster label saved to " << name << std::endl;
-        std::copy(tract_model->get_cluster_info().begin(),tract_model->get_cluster_info().end(),std::ostream_iterator<int>(out," "));
-    }
-    if(po.has("recognize"))
-    {
-        std::vector<unsigned int> labels;
-        std::vector<std::string> names;
-        handle->recognize(tract_model,labels,names);
-        tipl::out() << "recognized labels saved to " << (po.get("recognize") + ".label.txt") << std::endl;
-        std::ofstream out1(po.get("recognize") + ".label.txt");
-        std::copy(labels.begin(),labels.end(),std::ostream_iterator<int>(out1," "));
 
-        tipl::out() << "recognized names saved to " << (po.get("recognize") + ".name.txt") << std::endl;
-        std::ofstream out2(po.get("recognize") + ".name.txt");
-        std::copy(names.begin(),names.end(),std::ostream_iterator<std::string>(out2," "));
-    }
 
     if(po.has(("native_track")) && !tract_model->save_tracts_in_native_space(handle,po.get("native_track").c_str()))
     {
