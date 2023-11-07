@@ -414,19 +414,7 @@ bool TableKeyEventWatcher::eventFilter(QObject * receiver, QEvent * event)
     }
     return false;
 }
-void view_image::DeleteRowPressed(int row)
-{
-    if(ui->info->currentRow() == -1)
-        return;
-    if(ui->info->currentRow() < mat.size())
-    {
-        auto index = ui->mat_images->findText(mat.name(ui->info->currentRow()));
-        if(index != -1)
-            ui->mat_images->removeItem(index);
-        mat.remove(ui->info->currentRow());
-    }
-    ui->info->removeRow(ui->info->currentRow());
-}
+
 
 view_image::view_image(QWidget *parent) :
     QMainWindow(parent),
@@ -605,6 +593,13 @@ bool view_image::read_mat_image(void)
         return true;
     }
     return false;
+}
+void view_image::DeleteRowPressed(int row)
+{
+    if(ui->info->currentRow() == -1)
+        return;
+    if(mat.size())
+        command("remove",std::to_string(row));
 }
 void initial_LPS_nifti_srow(tipl::matrix<4,4>& T,const tipl::shape<3>& geo,const tipl::vector<3>& vs);
 bool view_image::read_mat(void)
@@ -1299,15 +1294,11 @@ void view_image::on_zoom_valueChanged(double arg1)
     show_image(false);
 }
 
-void view_image::on_info_cellChanged(int row, int column)
-{
-    if(column == 0 && row < mat.size())
-        mat[row].set_name(ui->info->item(row,column)->text().toStdString());
-}
-
 void view_image::on_info_cellDoubleClicked(int row, int column)
 {
-    if(column == 1 && row < mat.size() && mat[row].is_type<char>())
+    if(!mat.size() || row >= mat.size())
+        return;
+    if(column == 1 && mat[row].is_type<char>())
     {
         bool okay = false;
         auto text = QInputDialog::getMultiLineText(this,"DSI Studio","Input Content",
@@ -1317,6 +1308,14 @@ void view_image::on_info_cellDoubleClicked(int row, int column)
         mat[row].set_text(text.toStdString());
         read_mat_info();
         ui->info->selectRow(row);
+    }
+    if(column == 0)
+    {
+        bool okay = false;
+        auto text = QInputDialog::getMultiLineText(this,"DSI Studio","Input New Name",ui->info->item(row,0)->text(),&okay);
+        if(!okay)
+            return;
+        command("rename",std::to_string(row)+" "+text.toStdString());
     }
 }
 
