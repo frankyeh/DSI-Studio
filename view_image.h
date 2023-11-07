@@ -93,8 +93,6 @@ private slots:
 
     void on_zoom_valueChanged(double arg1);
 
-    void on_info_cellChanged(int row, int column);
-
     void on_info_cellDoubleClicked(int row, int column);
 
     void on_mat_images_currentIndexChanged(int index);
