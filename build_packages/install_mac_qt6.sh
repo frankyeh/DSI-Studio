@@ -1,3 +1,7 @@
+#!/bin/bash
+
+# Set the script to exit immediately if any command fails
+set -e
 
 echo "Updating brew and installing dependencies..."
 brew update
