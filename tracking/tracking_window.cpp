@@ -357,6 +357,7 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
 
         connect(ui->actionDetect_Electrodes,SIGNAL(triggered()),deviceWidget,SLOT(detect_electrodes()));
 
+        connect(ui->actionLeads_to_ROI,SIGNAL(triggered()),deviceWidget,SLOT(lead_to_roi()));
 
 
     }
