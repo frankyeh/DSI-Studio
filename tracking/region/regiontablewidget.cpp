@@ -228,6 +228,23 @@ void RegionTableWidget::add_row(int row,QString name)
     check_row(row,true);
 
 }
+void RegionTableWidget::add_high_reso_region(QString name,float reso,unsigned char feature,unsigned int color)
+{
+    regions.push_back(std::make_shared<ROIRegion>(cur_tracking_window.handle));
+    regions.back()->region_render.color = color;
+    regions.back()->regions_feature = feature;
+    regions.back()->vs /= reso;
+    regions.back()->dim = tipl::shape<3>(regions.back()->dim[0]*reso,regions.back()->dim[1]*reso,regions.back()->dim[2]*reso);
+    regions.back()->trans_to_mni[0] /= reso;
+    regions.back()->trans_to_mni[5] /= reso;
+    regions.back()->trans_to_mni[10] /= reso;
+    regions.back()->is_diffusion_space = false;
+    regions.back()->to_diffusion_space[0] /= reso;
+    regions.back()->to_diffusion_space[5] /= reso;
+    regions.back()->to_diffusion_space[10] /= reso;
+
+    add_row(int(regions.size()-1),name);
+}
 void RegionTableWidget::add_region(QString name,unsigned char feature,unsigned int color)
 {
     regions.push_back(std::make_shared<ROIRegion>(cur_tracking_window.handle));
