@@ -56,7 +56,7 @@ public slots:
     void check_all(void);
     void uncheck_all(void);
     void detect_electrodes(void);
-
+    void lead_to_roi(void);
 
 };
 
