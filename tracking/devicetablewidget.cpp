@@ -699,3 +699,38 @@ void DeviceTableWidget::detect_electrodes(void)
 
 }
 
+void DeviceTableWidget::lead_to_roi(void)
+{
+    if (devices.empty() || currentRow() >= int(devices.size()))
+        return;
+    bool okay = true;
+    float resolution = 8.0f;
+    short radius = short(QInputDialog::getDouble(this,"DSI Studio","Input region radius (mm)",2.0,1.0,10.0,1,&okay)*resolution);
+    if (!okay)
+        return;
+    auto& cur_device = devices[uint32_t(currentRow())];
+    auto lead_pos = cur_device->get_lead_positions();
+
+    cur_tracking_window.regionWidget->begin_update();
+
+    std::vector<std::shared_ptr<ROIRegion> > new_regions;
+    for(unsigned int i = 0;i < lead_pos.size();++i)
+    {
+        cur_tracking_window.regionWidget->add_high_reso_region((cur_device->name + "_lead_"+ std::to_string(i)).c_str(),resolution);
+        new_regions.push_back(cur_tracking_window.regionWidget->regions.back());
+    }
+    std::vector<tipl::vector<3,short> > voxels;
+    short distance2 = radius*radius;
+    for (short z = -radius; z <= radius; ++z)
+        for (short y = -radius,zz = z*z; y <= radius; ++y)
+            for (short x = -radius,yy_zz = y*y+zz; x <= radius; ++x)
+                if (x*x + yy_zz <= distance2)
+                    voxels.push_back(tipl::vector<3,short>(x,y,z));
+    tipl::par_for(lead_pos.size(),[&](unsigned int i)
+    {
+        auto points = voxels;
+        tipl::add_constant(points,tipl::vector<3,short>(lead_pos[i]*resolution+0.5f));
+        new_regions[i]->add_points(std::move(points));
+    });
+    cur_tracking_window.regionWidget->end_update();
+}
