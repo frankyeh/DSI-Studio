@@ -15,7 +15,7 @@ public:
 public: // for electrode
     float length = 30.0f;
 private:
-    float rendering_radius = 0.0; // for internal use only to select device
+    mutable float rendering_radius = 0.0; // for internal use only to select device
 public:
     Device();
     bool selected(const tipl::vector<3>& p,float vs,float& device_selected_length,float& distance_in_voxel);
@@ -25,7 +25,8 @@ public:
     bool load_from_file(const char* file_name);
     void get_rendering(std::vector<float>& seg_length,
                        std::vector<char>& seg_type,
-                       float& radius);
+                       float& radius) const;
+    std::vector<tipl::vector<3> > get_lead_positions(void) const;
 };
 
 extern std::vector<std::string> device_types;
