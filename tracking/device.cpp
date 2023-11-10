@@ -48,7 +48,7 @@ bool load_device_content(void)
 
 void Device::get_rendering(std::vector<float>& seg_length,
                    std::vector<char>& seg_type,
-                   float& radius)
+                   float& radius) const
 {
     // DBS Lead
     for(size_t i = 0;i < device_types.size();++i)
@@ -68,6 +68,19 @@ Device::Device()
 {
 }
 
+std::vector<tipl::vector<3> > Device::get_lead_positions(void) const
+{
+    std::vector<tipl::vector<3> > results;
+    std::vector<float> seg_length;
+    std::vector<char> seg_type;
+    float radius;
+    get_rendering(seg_length,seg_type,radius);
+    float cur_length = 0.0f;
+    for(size_t i = 0;i < seg_type.size();cur_length += seg_length[i],++i)
+        if(seg_type[i] == 1) // lead
+            results.push_back(pos + dir*(cur_length + seg_length[i]*0.5f));
+    return results;
+}
 
 bool Device::selected(const tipl::vector<3>& p,float vs,float& device_selected_length,float& distance_in_voxel)
 {
