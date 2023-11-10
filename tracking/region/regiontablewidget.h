@@ -74,6 +74,7 @@ public:
     void add_all_regions_from_atlas(std::shared_ptr<atlas> at);
     void add_row(int row,QString name);
     void add_region(QString name,unsigned char type = default_id,unsigned int color = 0xFFFFFFFF);
+    void add_high_reso_region(QString name,float reso,unsigned char type = default_id,unsigned int color = 0xFFFFFFFF);
     void begin_update(void);
     void end_update(void);
     void setROIs(ThreadData* data);
