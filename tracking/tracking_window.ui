@@ -1201,6 +1201,7 @@
     <addaction name="actionCheck_All_Devices"/>
     <addaction name="separator"/>
     <addaction name="actionAssign_Colors_For_Devices"/>
+    <addaction name="actionLeads_to_ROI"/>
     <addaction name="actionDetect_Electrodes"/>
    </widget>
    <widget class="QMenu" name="menuRegions_Misc">
@@ -4224,6 +4225,11 @@ Tracking</string>
   <action name="actionCut_end_portion">
    <property name="text">
     <string>Cut End Portion</string>
+   </property>
+  </action>
+  <action name="actionLeads_to_ROI">
+   <property name="text">
+    <string>Leads to ROI...</string>
    </property>
   </action>
  </widget>
