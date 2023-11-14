@@ -268,7 +268,6 @@ public:
     tipl::vector<3> native_vs;
     const tipl::image<3,tipl::vector<3,float> >& get_native_position(void) const;
 public:
-    constexpr static int method_ver = 202308; // 999999 is for external loading mapping
     size_t template_id = 256;
     tipl::vector<3> template_vs;
     tipl::image<3> template_I,template_I2;
