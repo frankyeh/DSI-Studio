@@ -12,14 +12,14 @@ void console_stream::show_output(void)
 {
     if(!tipl::is_main_thread<0>() || !log_window || !has_output)
         return;
-    QStringList strSplitted;
+    std::vector<std::string> strSplitted;
     {
         std::lock_guard<std::mutex> lock(edit_buf);
-        strSplitted = buf.split("\n");
+        strSplitted = tipl::split(buf,'\n');
         buf = strSplitted.back();
     }
     for(int i = 0; i+1 < strSplitted.size(); i++)
-        log_window->append(strSplitted.at(i));
+        log_window->append(strSplitted[i].c_str());
     QApplication::processEvents();
     has_output = false;
 }
