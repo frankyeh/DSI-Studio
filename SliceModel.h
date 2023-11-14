@@ -141,6 +141,11 @@ public:
     bool load_slices(const std::vector<std::string>& files,bool is_mni = false);
     bool load_slices(const std::string& file,bool is_mni = false)
     {
+        if(!std::filesystem::exists(file))
+        {
+            error_msg = "file not exist";
+            return false;
+        }
         std::vector<std::string> files;
         files.push_back(file);
         return load_slices(files,is_mni);
