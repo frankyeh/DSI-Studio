@@ -312,8 +312,6 @@ bool get_connectivity_matrix(tipl::program_option<tipl::out>& po,
             std::string connectivity_roi = roi_file_name;
             std::string connectivity_value = connectivity_value_list[k].toStdString();
             bool use_end_only = connectivity_type_list[j].toLower() == QString("end");
-            tipl::out() << "count tracks by " << (use_end_only ? "ending":"passing") << std::endl;
-            tipl::out() << "calculate matrix using " << connectivity_value << std::endl;
             QDir pwd = QDir::current();
             if(connectivity_value == "trk")
                 QDir::setCurrent(QFileInfo(output_name.c_str()).absolutePath());
