@@ -562,7 +562,7 @@ void get_roi_label(QString file_name,std::map<int,std::string>& label_map,std::m
 extern bool has_gui;
 bool load_nii(std::shared_ptr<fib_data> handle,
               const std::string& file_name,
-              std::vector<std::tuple<tipl::shape<3>,tipl::matrix<4,4>,tipl::matrix<4,4> > >& transform_lookup,
+              std::vector<SliceModel*>& transform_lookup,
               std::vector<std::shared_ptr<ROIRegion> >& regions,
               std::vector<std::string>& names,
               std::string& error_msg,
@@ -725,13 +725,12 @@ bool load_nii(std::shared_ptr<fib_data> handle,
             }
             else
             for(unsigned int index = 0;index < transform_lookup.size();++index)
-                if(from.shape() == std::get<0>(transform_lookup[index]))
+                if(from.shape() == transform_lookup[index]->dim)
                 {
                     tipl::out() << "applying previous transformation." << std::endl;
-                    tipl::out() << trans_to_mni << std::endl;
-                    tipl::out() << to_diffusion_space << std::endl;
-                    trans_to_mni = std::get<1>(transform_lookup[index]);
-                    to_diffusion_space = std::get<2>(transform_lookup[index]);
+                    tipl::out() << "tran_to_mni:" << std::endl;
+                    tipl::out() << (trans_to_mni = transform_lookup[index]->trans_to_mni) << std::endl;
+                    tipl::out() << (to_diffusion_space = transform_lookup[index]->to_dif) << std::endl;
                     need_trans = true;
                     goto end;
                 }
@@ -844,13 +843,13 @@ bool load_nii(std::shared_ptr<fib_data> handle,
 bool RegionTableWidget::load_multiple_roi_nii(QString file_name,bool is_mni)
 {
     QStringList files = file_name.split(",");
-    std::vector<std::tuple<tipl::shape<3>,tipl::matrix<4,4>,tipl::matrix<4,4> > > transform_lookup;
+    std::vector<SliceModel*> transform_lookup;
     // searching for T1/T2 mappings
     for(unsigned int index = 0;index < cur_tracking_window.slices.size();++index)
     {
         auto slice = cur_tracking_window.slices[index];
         if(!slice->is_diffusion_space)
-            transform_lookup.push_back(std::make_tuple(slice->dim,slice->trans_to_mni,slice->to_dif));
+            transform_lookup.push_back(slice.get());
     }
     std::vector<std::vector<std::shared_ptr<ROIRegion> > > loaded_regions(files.size());
     std::vector<std::vector<std::string> > names(files.size());

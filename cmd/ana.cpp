@@ -15,6 +15,8 @@
 
 #include <filesystem>
 
+#include "SliceModel.h"
+
 // test example
 // --action=ana --source=20100129_F026Y_WANFANGYUN.src.gz.odf8.f3rec.de0.dti.fib.gz --method=0 --fiber_count=5000
 bool atl_load_atlas(std::shared_ptr<fib_data> handle,std::string atlas_name,std::vector<std::shared_ptr<atlas> >& atlas_list);
@@ -26,37 +28,29 @@ void get_regions_statistics(std::shared_ptr<fib_data> handle,
                             std::string& result);
 bool load_region(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> handle,
                  ROIRegion& roi,const std::string& region_text);
-bool get_t1t2_nifti(const std::string& t1t2,
-                    std::shared_ptr<fib_data> handle,
-                    tipl::shape<3>& nifti_geo,
-                    tipl::vector<3>& nifti_vs,
-                    tipl::matrix<4,4>& trans_to_mni,
-                    tipl::matrix<4,4>& to_t1t2);
 bool load_nii(std::shared_ptr<fib_data> handle,
               const std::string& file_name,
-              std::vector<std::tuple<tipl::shape<3>,tipl::matrix<4,4>,tipl::matrix<4,4> > >& transform_lookup,
+              std::vector<SliceModel*>& transform_lookup,
               std::vector<std::shared_ptr<ROIRegion> >& regions,
               std::vector<std::string>& names,
               std::string& error_msg,
               bool is_mni);
 
-
+extern std::shared_ptr<CustomSliceModel> t1t2_slices;
+bool check_other_slices(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> handle);
 bool load_nii(tipl::program_option<tipl::out>& po,
               std::shared_ptr<fib_data> handle,
               const std::string& region_text,
               std::vector<std::shared_ptr<ROIRegion> >& regions,
               std::vector<std::string>& names)
 {
-    std::vector<std::tuple<tipl::shape<3>,tipl::matrix<4,4>,tipl::matrix<4,4> > > transform_lookup;
+    std::vector<SliceModel*> transform_lookup;
     // --t1t2 provide registration
     if(po.has("t1t2"))
     {
-        tipl::shape<3> t1t2_geo;
-        tipl::vector<3> vs;
-        tipl::matrix<4,4> to_t1t2,trans_to_mni;
-        if(!get_t1t2_nifti(po.get("t1t2"),handle,t1t2_geo,vs,trans_to_mni,to_t1t2))
+        if(!check_other_slices(po,handle))
             return false;
-        transform_lookup.push_back(std::make_tuple(t1t2_geo,trans_to_mni,to_t1t2));
+        transform_lookup.push_back(t1t2_slices.get());
     }
 
     QStringList str_list = QString(region_text.c_str()).split(",");// splitting actions

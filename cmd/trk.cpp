@@ -17,6 +17,24 @@ extern std::shared_ptr<CustomSliceModel> t1t2_slices;
 extern std::vector<std::shared_ptr<CustomSliceModel> > other_slices;
 bool check_other_slices(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> handle)
 {
+    if(!t1t2_slices.get() && po.has("t1t2"))
+    {
+        auto t1t2 = po.get("t1t2");
+        t1t2_slices = std::make_shared<CustomSliceModel>(handle.get());
+        if(!t1t2_slices->load_slices(t1t2))
+        {
+            tipl::out() << "ERROR: fail to load " << t1t2 << " " << t1t2_slices->error_msg << std::endl;
+            return false;
+        }
+        handle->view_item.pop_back(); // remove the new item added by initialize
+        t1t2_slices->wait();
+        tipl::out() << "size: " << t1t2_slices->dim << "resolution: " << t1t2_slices->vs << std::endl;
+        tipl::out() << "srow:";
+        tipl::out() << t1t2_slices->trans_to_mni;
+        tipl::out() << "to_dif:";
+        tipl::out() << t1t2_slices->to_dif;
+    }
+
     if(!other_slices.empty())
         return true;
     std::vector<std::string> filenames;
@@ -25,52 +43,23 @@ bool check_other_slices(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_
         tipl::out() << "ERROR: " << po.error_msg << std::endl;
         return false;
     }
-
-    for(size_t i = 0;i < filenames.size();++i)
+    for(const auto& each : filenames)
     {
-        tipl::out() << "add slice: " << QFileInfo(filenames[i].c_str()).baseName().toStdString() << std::endl;
-        if(!std::filesystem::exists(filenames[i]))
-        {
-            tipl::out() << "ERROR: file not exist " << filenames[i] << std::endl;
-            return false;
-        }
+        tipl::out() << "add slice: " << each << std::endl;
         auto new_slice = std::make_shared<CustomSliceModel>(handle.get());
-        if(!new_slice->load_slices(filenames[i]))
+        if(!new_slice->load_slices(each))
         {
-            tipl::out() << "ERROR: fail to load " << filenames[i] << " " << new_slice->error_msg << std::endl;
+            tipl::out() << "ERROR: fail to load " << each << " " << new_slice->error_msg << std::endl;
             return false;
         }
         new_slice->wait();
+        tipl::out() << "size: " << new_slice->dim << "resolution: " << new_slice->vs << std::endl;
+        tipl::out() << "srow:";
+        tipl::out() << new_slice->trans_to_mni;
+        tipl::out() << "to_dif:";
+        tipl::out() << new_slice->to_dif;
         other_slices.push_back(new_slice);
     }
-    return true;
-}
-bool get_t1t2_nifti(const std::string& t1t2,
-                    std::shared_ptr<fib_data> handle,
-                    tipl::shape<3>& nifti_geo,
-                    tipl::vector<3>& nifti_vs,
-                    tipl::matrix<4,4>& trans_to_mni,
-                    tipl::matrix<4,4>& to_t1t2)
-{
-    if(!t1t2_slices.get())
-    {
-        t1t2_slices = std::make_shared<CustomSliceModel>(handle.get());
-        if(!t1t2_slices->load_slices(t1t2))
-        {
-            tipl::out() << "ERROR: fail to load " << t1t2 << std::endl;
-            return false;
-        }
-        handle->view_item.pop_back(); // remove the new item added by initialize
-        t1t2_slices->wait();
-        tipl::out() << "registration complete" << std::endl;
-    }
-    nifti_geo = t1t2_slices->source_images.shape();
-    nifti_vs = t1t2_slices->vs;
-    to_t1t2 = t1t2_slices->to_slice;
-    trans_to_mni = t1t2_slices->trans_to_mni;
-    tipl::out() << "T1T2 dimension: " << nifti_geo << std::endl;
-    tipl::out() << "T1T2 voxel size: " << nifti_vs << std::endl;
-    tipl::out() << to_t1t2;
     return true;
 }
 bool export_track_info(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> handle,
@@ -167,10 +156,14 @@ bool export_track_info(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_d
             vs = handle->vs;
 
             // t1t2
-            if(QString(cmd.c_str()).contains("t1t2"))
+            if(po.has("t1t2"))
             {
-                if(!get_t1t2_nifti(po.get("t1t2"),handle,dim,vs,trans_to_mni,to_t1t2))
+                if(!check_other_slices(po,handle))
                     return false;
+                dim = t1t2_slices->dim;
+                vs = t1t2_slices->vs;
+                trans_to_mni = t1t2_slices->trans_to_mni;
+                to_t1t2 = t1t2_slices->to_slice;
             }
             else
             {
