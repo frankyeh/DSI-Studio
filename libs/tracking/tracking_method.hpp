@@ -121,7 +121,8 @@ struct TrackingParam
     {
         std::ostringstream report;
         if(threshold == 0.0f)
-            report << " The anisotropy threshold was randomly selected.";
+            report << " The anisotropy threshold was randomly selected between " << std::fixed << std::setprecision(1) <<
+                        default_otsu-0.1 << " and " << default_otsu+0.1 << " otsu threshold.";
         else
             report << " The anisotropy threshold was " << threshold << ".";
 
