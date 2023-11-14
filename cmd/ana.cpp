@@ -56,7 +56,6 @@ bool load_nii(tipl::program_option<tipl::out>& po,
         tipl::matrix<4,4> to_t1t2,trans_to_mni;
         if(!get_t1t2_nifti(po.get("t1t2"),handle,t1t2_geo,vs,trans_to_mni,to_t1t2))
             return false;
-        to_t1t2.inv();
         transform_lookup.push_back(std::make_tuple(t1t2_geo,trans_to_mni,to_t1t2));
     }
 
