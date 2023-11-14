@@ -1284,6 +1284,8 @@ void view_image::run_action2()
 
 void view_image::on_type_currentIndexChanged(int index)
 {
+    if(!shape.size() || no_update)
+        return;
     command("change_type",std::to_string(index));
     init_image();
 }
