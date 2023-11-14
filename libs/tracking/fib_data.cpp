@@ -1677,44 +1677,19 @@ bool fib_data::map_to_mni(bool background)
     output_file_name += QFileInfo(fa_template_list[template_id].c_str()).baseName().toLower().toStdString();
     output_file_name += ".map.gz";
 
-    tipl::io::gz_mat_read in;
-
-    // check 1. mapping files was created later than the FIB file
-    //       2. the recon steps are the same
-    //       3. has inv_mapping matrix (new format after Sep 2021)
-    //       4. check method version (new after Aug 2023)
-    constexpr int method_ver = 202308;
-
-    if(QFileInfo(output_file_name.c_str()).lastModified() > QFileInfo(fib_file_name.c_str()).lastModified() &&
-       in.load_from_file(output_file_name.c_str()) && in.has("from2to") && in.has("to2from") && in.has("method_ver")
-       && std::stoi(in.read<std::string>("method_ver")) >= method_ver
-       && in.read<std::string>("steps") == steps)
+    if(std::filesystem::exists(output_file_name))
     {
-        const float* t2s_ptr = nullptr;
-        unsigned int t2s_row,t2s_col,s2t_row,s2t_col;
-        const float* s2t_ptr = nullptr;
-        if(in.read("to2from",t2s_row,t2s_col,t2s_ptr) &&
-           in.read("from2to",s2t_row,s2t_col,s2t_ptr))
-        {
-            if(size_t(t2s_col)*size_t(t2s_row) == template_I.size()*3 &&
-               size_t(s2t_col)*size_t(s2t_row) == dim.size()*3)
-            {
-                tipl::out() << "loading mapping fields from " << output_file_name << std::endl;
-                t2s.clear();
-                t2s.resize(template_I.shape());
-                s2t.clear();
-                s2t.resize(dim);
-                std::copy(t2s_ptr,t2s_ptr+t2s_col*t2s_row,&t2s[0][0]);
-                std::copy(s2t_ptr,s2t_ptr+s2t_col*s2t_row,&s2t[0][0]);
-                prog = 6;
-                return true;
-            }
-        }
+        tipl::progress prog("checking existing mapping file");
+        if(load_mapping(output_file_name.c_str(),false/* not external*/))
+            return true;
+        tipl::out() << "new mapping file needed: " << error_msg;
+        error_msg.clear();
     }
+
     tipl::progress prog_("running normalization");
     prog = 0;
     bool terminated = false;
-    auto lambda = [this,output_file_name,method_ver,&terminated]()
+    auto lambda = [this,output_file_name,&terminated]()
     {
         tipl::transformation_matrix<float> T;
 
@@ -1804,6 +1779,7 @@ bool fib_data::map_to_mni(bool background)
         tipl::reg::cdm_pre(It,It2,Iss,Iss2);
 
         cdm_common(It,It2,Iss,Iss2,dis,inv_dis,terminated);
+        prog = 4;
 
         tipl::displacement_to_mapping(dis,t2s,T);
         tipl::compose_mapping(Is,t2s,Iss);
@@ -1814,23 +1790,9 @@ bool fib_data::map_to_mni(bool background)
 
         if(terminated)
             return;
-        tipl::io::gz_mat_write out(output_file_name.c_str());
-        if(out)
-        {
-            out.write("to_dim",dis.shape());
-            out.write("to_vs",template_vs);
-            out.write("from_dim",dim);
-            out.write("from_vs",vs);
-            out.write("steps",steps);
-            out.write("method_ver",std::to_string(method_ver));
-            prog = 4;
-            tipl::out() << "calculating template to subject warp field";
-            out.write("to2from",&t2s[0][0],3,t2s.size());
-            prog = 5;
-            tipl::out() << "calculating subject to template warp field";
-            out.write("from2to",&s2t[0][0],3,s2t.size());
-        }
-
+        prog = 5;
+        if(!save_mapping(output_file_name.c_str(),method_ver))
+            tipl::out() << "mapping file not saved: " << error_msg;
         prog = 6;
     };
 
@@ -1852,6 +1814,127 @@ bool fib_data::map_to_mni(bool background)
         tipl::out() << "Subject normalization to MNI space." << std::endl;
         lambda();
     }
+    return true;
+}
+bool fib_data::load_mapping(const char* file_name,bool external)
+{
+    if(tipl::ends_with(file_name,".map.gz"))
+    {
+        tipl::io::gz_mat_read in;
+        if(!in.load_from_file(file_name))
+        {
+            error_msg = in.error_msg;
+            return false;
+        }
+        if(!in.has("from2to") || !in.has("to2from"))
+        {
+            error_msg = "invalid mapping file format";
+            return false;
+        }
+        if(!external) // additional check for internal mapping
+        {
+            // check 1. mapping files was created later than the FIB file
+            if(QFileInfo(file_name).lastModified() < QFileInfo(fib_file_name.c_str()).lastModified())
+                return false;
+            //       2. the recon steps are the same
+            if(in.read<std::string>("steps") != steps)
+                return false;
+            //       3. check method version (new after Aug 2023)
+            if(!in.has("method_ver") || std::stoi(in.read<std::string>("method_ver")) < method_ver)
+                return false;
+        }
+
+        {
+            const float* t2s_ptr = nullptr;
+            unsigned int t2s_row,t2s_col,s2t_row,s2t_col;
+            const float* s2t_ptr = nullptr;
+            if(in.read("to2from",t2s_row,t2s_col,t2s_ptr) &&
+               in.read("from2to",s2t_row,s2t_col,s2t_ptr))
+            {
+                if(size_t(t2s_col)*size_t(t2s_row) == template_I.size()*3 &&
+                   size_t(s2t_col)*size_t(s2t_row) == dim.size()*3)
+                {
+                    tipl::out() << "loading mapping fields from " << file_name << std::endl;
+                    t2s.clear();
+                    t2s.resize(template_I.shape());
+                    s2t.clear();
+                    s2t.resize(dim);
+                    std::copy(t2s_ptr,t2s_ptr+t2s_col*t2s_row,&t2s[0][0]);
+                    std::copy(s2t_ptr,s2t_ptr+s2t_col*s2t_row,&s2t[0][0]);
+                    prog = 6;
+                    return true;
+                }
+                else
+                    error_msg = "image size does not match";
+            }
+            else
+                error_msg = "failed to read mapping matrix";
+        }
+        return false;
+    }
+
+    tipl::io::gz_nifti nii;
+    tipl::out() << "loading " << file_name;
+    if(!nii.load_from_file(file_name))
+    {
+        error_msg = nii.error_msg;
+        return false;
+    }
+    tipl::image<3> shiftx,shifty,shiftz;
+    tipl::matrix<4,4,float> trans;
+    nii >> shiftx;
+    nii >> shifty;
+    nii >> shiftz;
+    nii.get_image_transformation(trans);
+    tipl::out() << "dimension:" << shiftx.shape();
+    tipl::out() << "trans_to_mni:" << trans;
+
+    if(shiftx.shape() != dim || shifty.shape() != dim || shiftz.shape() != dim)
+    {
+        error_msg = "image size does not match";
+        return false;
+    }
+    auto T = template_to_mni;
+    T.inv();
+    s2t.resize(dim);
+    t2s.resize(template_I.shape());
+    tipl::out() << s2t[0];
+    tipl::par_for(tipl::begin_index(s2t.shape()),tipl::end_index(s2t.shape()),
+                  [&](const tipl::pixel_index<3>& index)
+    {
+        s2t[index.index()] = index;
+        apply_trans(s2t[index.index()],trans);
+        s2t[index.index()][0] += shiftx[index.index()];
+        s2t[index.index()][1] += shifty[index.index()];
+        s2t[index.index()][2] += shiftz[index.index()];
+        apply_trans(s2t[index.index()],T);
+
+    });
+    tipl::out() << s2t[0];
+    return true;
+}
+bool fib_data::save_mapping(const char* output_file_name,int method_ver)
+{
+    if(s2t.empty() || t2s.empty())
+    {
+        error_msg = "no mapping matrix to save";
+        return false;
+    }
+    tipl::io::gz_mat_write out(output_file_name);
+    if(!out)
+    {
+        error_msg = "cannot save to ";
+        error_msg = output_file_name;
+        return false;
+    }
+    out.write("to_dim",template_I.shape());
+    out.write("to_vs",template_vs);
+    out.write("from_dim",dim);
+    out.write("from_vs",vs);
+    out.write("steps",steps);
+    out.write("method_ver",std::to_string(method_ver));
+    out.write("to2from",&t2s[0][0],3,t2s.size());
+    out.write("from2to",&s2t[0][0],3,s2t.size());
     return true;
 }
 
@@ -2075,3 +2158,4 @@ const tipl::image<3,tipl::vector<3,float> >& fib_data::get_sub2temp_mapping(void
     }
     return s2t;
 }
+
