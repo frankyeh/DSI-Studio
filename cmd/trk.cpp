@@ -313,8 +313,6 @@ bool get_connectivity_matrix(tipl::program_option<tipl::out>& po,
                 data.set_regions(handle->dim,regions);
             }
         }
-
-        float t = po.get("connectivity_threshold",0.001f);
         for(int j = 0;j < connectivity_type_list.size();++j)
         for(int k = 0;k < connectivity_value_list.size();++k)
         {
@@ -326,7 +324,9 @@ bool get_connectivity_matrix(tipl::program_option<tipl::out>& po,
             QDir pwd = QDir::current();
             if(connectivity_value == "trk")
                 QDir::setCurrent(QFileInfo(output_name.c_str()).absolutePath());
-            if(!data.calculate(handle,*(tract_model.get()),connectivity_value,use_end_only,t))
+            if(!data.calculate(handle,*(tract_model.get()),
+                               connectivity_value,
+                               use_end_only,po.get("connectivity_threshold",0.001f)))
             {
                 tipl::out() << "ERROR: " << data.error_msg << std::endl;
                 return false;
