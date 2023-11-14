@@ -1791,6 +1791,7 @@ bool fib_data::map_to_mni(bool background)
         if(terminated)
             return;
         prog = 5;
+        constexpr int method_ver = 202308; // 999999 is for external loading mapping
         if(!save_mapping(output_file_name.c_str(),method_ver))
             tipl::out() << "mapping file not saved: " << error_msg;
         prog = 6;
@@ -1840,6 +1841,7 @@ bool fib_data::load_mapping(const char* file_name,bool external)
             if(in.read<std::string>("steps") != steps)
                 return false;
             //       3. check method version (new after Aug 2023)
+            constexpr int method_ver = 202308; // 999999 is for external loading mapping
             if(!in.has("method_ver") || std::stoi(in.read<std::string>("method_ver")) < method_ver)
                 return false;
         }
