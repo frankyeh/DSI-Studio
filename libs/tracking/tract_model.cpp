@@ -3639,6 +3639,12 @@ void for_each_connectivity(const T& end_list1,
 bool ConnectivityMatrix::calculate(std::shared_ptr<fib_data> handle,
                                    TractModel& tract_model,std::string matrix_value_type,bool use_end_only,float threshold)
 {
+    tipl::progress p("calculating connectivity matrix");
+    tipl::out() << "tract count:" << tract_model.get_visible_track_count();
+    tipl::out() << "value:" << matrix_value_type;
+    tipl::out() << "use_end_only:" << (use_end_only ? "yes":"no");
+    tipl::out() << "threshold:" << threshold;
+
     if(region_count == 0)
     {
         error_msg = "No region information. Please assign regions";
