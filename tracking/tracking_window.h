@@ -215,6 +215,8 @@ private slots:
     void on_actionSegment_Tissue_triggered();
     void on_tract_target_0_currentIndexChanged(int index);
     void on_tract_target_1_currentIndexChanged(int index);
+    void on_actionLoad_MNI_mapping_triggered();
+    void on_actionSave_MNI_mapping_triggered();
 };
 
 #endif // TRACKING_WINDOW_H
