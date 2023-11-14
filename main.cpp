@@ -393,13 +393,7 @@ bool has_gui = false;
 int main(int ac, char *av[])
 {
     if(ac > 2)
-    {
-        #ifdef QT6_PATCH
-        /* Needed from Qt v6.5.3 handle qt.core.qobject.connect: QObject::connect(QObject, Unknown): invalid nullptr parameter */
-        QCoreApplication app(ac, av);
-        #endif
         return run_cmd(ac,av);
-    }
     if(ac == 2 && std::string(av[1]) == "--version")
     {
         std::cout << version_string().toStdString() << " " <<  __DATE__ << std::endl;
