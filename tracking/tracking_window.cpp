@@ -1481,5 +1481,45 @@ void tracking_window::on_max_slider_sliderMoved(int)
                       double(ui->max_slider->value())/double(ui->max_slider->maximum()));
 }
 
+void tracking_window::on_actionLoad_MNI_mapping_triggered()
+{
+    QString filename = QFileDialog::getOpenFileName(
+                       this,"Open MNI mapping",QFileInfo(work_path).absolutePath(),
+                       "Mapping file(*map.gz);;NIFTI file(*nii.gz *.nii);;All file types (*)" );
+    if (filename.isEmpty())
+        return;
+    {
+        tipl::progress prog("loading mapping",true);
+        if(!handle->load_mapping(filename.toStdString().c_str()))
+        {
+            QMessageBox::critical(this,"ERROR",handle->error_msg.c_str());
+            return;
+        }
+    }
+    QMessageBox::information(this,"DSI Studio","mapping loaded");
+}
 
+
+void tracking_window::on_actionSave_MNI_mapping_triggered()
+{
+    std::string output_file_name(handle->fib_file_name);
+    output_file_name += ".";
+    output_file_name += QFileInfo(fa_template_list[handle->template_id].c_str()).baseName().toLower().toStdString();
+    output_file_name += ".map.gz";
+
+    QString filename = QFileDialog::getSaveFileName(
+                       this,"Save MNI mapping",output_file_name.c_str(),
+                       "Mapping file(*map.gz);;All file types (*)" );
+    if (filename.isEmpty())
+        return;
+    {
+        tipl::progress prog("saving mapping",true);
+        if(!handle->save_mapping(filename.toStdString().c_str()))
+        {
+            QMessageBox::critical(this,"ERROR",handle->error_msg.c_str());
+            return;
+        }
+    }
+    QMessageBox::information(this,"DSI Studio","mapping saved");
+}
 
