@@ -3640,10 +3640,12 @@ bool ConnectivityMatrix::calculate(std::shared_ptr<fib_data> handle,
                                    TractModel& tract_model,std::string matrix_value_type,bool use_end_only,float threshold)
 {
     tipl::progress p("calculating connectivity matrix");
-    tipl::out() << "tract count:" << tract_model.get_visible_track_count();
-    tipl::out() << "value:" << matrix_value_type;
-    tipl::out() << "use_end_only:" << (use_end_only ? "yes":"no");
-    tipl::out() << "threshold:" << threshold;
+    tipl::out() << "tract count: " << tract_model.get_visible_track_count();
+    tipl::out() << "value: " << matrix_value_type;
+    tipl::out() << "use_end_only: " << (use_end_only ? "yes":"no");
+    tipl::out() << "threshold: " << threshold;
+    if(!atlas_name.empty())
+        tipl::out() << "atlas_name: " << atlas_name;
 
     if(region_count == 0)
     {
