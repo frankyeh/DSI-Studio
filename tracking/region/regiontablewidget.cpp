@@ -728,6 +728,8 @@ bool load_nii(std::shared_ptr<fib_data> handle,
                 if(from.shape() == std::get<0>(transform_lookup[index]))
                 {
                     tipl::out() << "applying previous transformation." << std::endl;
+                    tipl::out() << trans_to_mni << std::endl;
+                    tipl::out() << to_diffusion_space << std::endl;
                     trans_to_mni = std::get<1>(transform_lookup[index]);
                     to_diffusion_space = std::get<2>(transform_lookup[index]);
                     need_trans = true;
