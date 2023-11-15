@@ -115,7 +115,7 @@ public:
     bool running = false;
     void terminate(void);
     void wait(void);
-    void argmin(tipl::reg::reg_type reg_type);
+    void argmin(void);
     void update_transform(void);
 public:
     CustomSliceModel(fib_data* new_handle);

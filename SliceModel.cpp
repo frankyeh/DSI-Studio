@@ -426,11 +426,11 @@ bool CustomSliceModel::load_slices(const std::vector<std::string>& files,bool is
         tipl::out() << "running slice registration..." << std::endl;
         if(has_gui)
         {
-            thread.reset(new std::thread([this](){argmin(tipl::reg::rigid_body);}));
+            thread.reset(new std::thread([this](){argmin();}));
             std::this_thread::sleep_for(std::chrono::seconds(1));
         }
         else
-            argmin(tipl::reg::rigid_body);
+            argmin();
     }
     else
     {
@@ -460,7 +460,7 @@ void CustomSliceModel::update_transform(void)
     }
 }
 // ---------------------------------------------------------------------------
-void CustomSliceModel::argmin(tipl::reg::reg_type reg_type)
+void CustomSliceModel::argmin(void)
 {
     terminated = false;
     running = true;
@@ -473,11 +473,8 @@ void CustomSliceModel::argmin(tipl::reg::reg_type reg_type)
     handle->get_iso_fa(from);
 
     tipl::filter::gaussian(to);
-    tipl::filter::gaussian(to);
     tipl::filter::gaussian(from);
-    tipl::filter::gaussian(from);
-    linear_with_mi(to,vs,from,handle->vs,arg_min,reg_type,terminated);
-
+    linear_with_mi(to,vs,from,handle->vs,arg_min,tipl::reg::rigid_body,terminated);
     update_transform();
     handle->view_item[view_id].registering = false;
     running = false;
