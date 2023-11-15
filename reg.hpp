@@ -60,7 +60,7 @@ inline float linear_with_cc(const tipl::image<3,float>& from,
     if(new_to_vs != to_vs)
         tipl::transformation_matrix<float>(arg,from,from_vs,to,new_to_vs).to_affine_transform(arg,from,from_vs,to,to_vs);
     tipl::out() << "R: " << -result << std::endl;
-    tipl::out() << "T: " << std::endl;
+    tipl::out() << arg << std::endl;
     return -result;
 }
 
@@ -126,10 +126,9 @@ inline size_t linear_with_mi(const tipl::image<3,float>& from,
         tipl::transformation_matrix<float>(arg,from,from_vs,to,new_to_vs).to_affine_transform(arg,from,from_vs,to,to_vs);
 
     linear_with_mi_refine(from,from_vs,to,to_vs,arg,reg_type,terminated);
+    tipl::out() << arg << std::endl;
     return result;
 }
-
-
 
 
 inline size_t linear_with_mi(const tipl::image<3,float>& from,
@@ -143,7 +142,6 @@ inline size_t linear_with_mi(const tipl::image<3,float>& from,
 {
     tipl::affine_transform<float> arg;
     size_t result = linear_with_mi(from,from_vs,to,to_vs,arg,reg_type,terminated,bound);
-    tipl::out() << arg << std::endl;
     T = tipl::transformation_matrix<float>(arg,from.shape(),from_vs,to.shape(),to_vs);
     tipl::out() << T << std::endl;
     return result;
