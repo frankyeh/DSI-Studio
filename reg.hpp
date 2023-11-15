@@ -81,7 +81,22 @@ size_t linear_cuda_refine(const tipl::image<3,float>& from,
                           bool& terminated,
                           double precision);
 
-
+inline size_t linear_with_mi_refine(const tipl::image<3,float>& from,
+                            const tipl::vector<3>& from_vs,
+                            const tipl::image<3,float>& to,
+                            const tipl::vector<3>& to_vs,
+                              tipl::affine_transform<float>& arg,
+                              tipl::reg::reg_type reg_type,
+                              bool& terminated,
+                              double precision = 0.01)
+{
+    if(has_cuda)
+    {
+        if constexpr (tipl::use_cuda)
+            return linear_cuda_refine(from,from_vs,to,to_vs,arg,tipl::reg::reg_type(reg_type),terminated,precision);
+    }
+    return tipl::reg::linear<tipl::reg::mutual_information>(from,from_vs,to,to_vs,arg,tipl::reg::reg_type(reg_type),[&](void){return terminated;},precision,false,tipl::reg::narrow_bound,10);
+}
 inline size_t linear_with_mi(const tipl::image<3,float>& from,
                             const tipl::vector<3>& from_vs,
                             const tipl::image<3,float>& to,
@@ -109,25 +124,12 @@ inline size_t linear_with_mi(const tipl::image<3,float>& from,
                     0.01,bound != tipl::reg::narrow_bound,bound);
     if(new_to_vs != to_vs)
         tipl::transformation_matrix<float>(arg,from,from_vs,to,new_to_vs).to_affine_transform(arg,from,from_vs,to,to_vs);
+
+    linear_with_mi_refine(from,from_vs,to,to_vs,arg,reg_type,terminated);
     return result;
 }
 
-inline size_t linear_with_mi_refine(const tipl::image<3,float>& from,
-                            const tipl::vector<3>& from_vs,
-                            const tipl::image<3,float>& to,
-                            const tipl::vector<3>& to_vs,
-                              tipl::affine_transform<float>& arg,
-                              tipl::reg::reg_type reg_type,
-                              bool& terminated,
-                              double precision = 0.01)
-{
-    if(has_cuda)
-    {
-        if constexpr (tipl::use_cuda)
-            return linear_cuda_refine(from,from_vs,to,to_vs,arg,tipl::reg::reg_type(reg_type),terminated,precision);
-    }
-    return tipl::reg::linear<tipl::reg::mutual_information>(from,from_vs,to,to_vs,arg,tipl::reg::reg_type(reg_type),[&](void){return terminated;},precision,false,tipl::reg::narrow_bound,10);
-}
+
 
 
 inline size_t linear_with_mi(const tipl::image<3,float>& from,
