@@ -959,10 +959,8 @@ void ImageModel::smoothing(void)
 }
 extern std::vector<std::string> fa_template_list,iso_template_list;
 void match_template_resolution(tipl::image<3>& VG,
-                               tipl::image<3>& VG2,
                                tipl::vector<3>& VGvs,
                                tipl::image<3>& VF,
-                               tipl::image<3>& VF2,
                                tipl::vector<3>& VFvs);
 bool ImageModel::align_acpc(float reso)
 {
@@ -978,7 +976,7 @@ bool ImageModel::align_acpc(float reso)
     msg += ".";
     tipl::out() << "align ap-pc" << std::endl;
 
-    tipl::image<3> I,J,temp;
+    tipl::image<3> I,J;
     tipl::vector<3> Ivs,Jvs(reso,reso,reso);
 
     // prepare template images
@@ -995,7 +993,7 @@ bool ImageModel::align_acpc(float reso)
     tipl::filter::gaussian(J);
 
 
-    match_template_resolution(I,temp,Ivs,J,temp,Jvs);
+    match_template_resolution(I,Ivs,J,Jvs);
 
     bool terminated = false;
     prog(0,3);
