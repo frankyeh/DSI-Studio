@@ -774,7 +774,7 @@ bool fib_data::load_from_mat(void)
             }
         }
 
-        tipl::out() << "No matched template, use default:" << QFileInfo(fa_template_list[matched_template_id].c_str()).baseName().toStdString() << std::endl;
+        tipl::out() << "No matched template, use default: " << QFileInfo(fa_template_list[matched_template_id].c_str()).baseName().toStdString() << std::endl;
         set_template_id(matched_template_id);
         return true;
     }
@@ -1888,8 +1888,8 @@ bool fib_data::load_mapping(const char* file_name,bool external)
     nii >> shifty;
     nii >> shiftz;
     nii.get_image_transformation(trans);
-    tipl::out() << "dimension:" << shiftx.shape();
-    tipl::out() << "trans_to_mni:" << trans;
+    tipl::out() << "dimension: " << shiftx.shape();
+    tipl::out() << "trans_to_mni: " << trans;
 
     if(shiftx.shape() != dim || shifty.shape() != dim || shiftz.shape() != dim)
     {
