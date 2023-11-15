@@ -460,24 +460,32 @@ void CustomSliceModel::update_transform(void)
     }
 }
 // ---------------------------------------------------------------------------
+void match_template_resolution(tipl::image<3>& VG,
+                               tipl::vector<3>& VGvs,
+                               tipl::image<3>& VF,
+                               tipl::vector<3>& VFvs);
 void CustomSliceModel::argmin(void)
 {
     terminated = false;
     running = true;
     handle->view_item[view_id].registering = true;
-    tipl::image<3,float> to = source_images;
-    tipl::upper_threshold(to,tipl::max_value(to)*0.5f);
-    tipl::transformation_matrix<float> M;
 
+    auto to = source_images;
+    auto to_vs = vs;
     tipl::image<3> from;
     handle->get_iso_fa(from);
+    auto from_vs = handle->vs;
+    match_template_resolution(to,to_vs,from,from_vs);
 
     tipl::filter::gaussian(to);
     tipl::filter::gaussian(from);
-    linear_with_mi(to,vs,from,handle->vs,arg_min,tipl::reg::rigid_body,terminated);
+
+    tipl::out() << "registration started";
+    linear_with_mi(to,to_vs,from,from_vs,arg_min,tipl::reg::rigid_body,terminated);
     update_transform();
     handle->view_item[view_id].registering = false;
     running = false;
+    tipl::out() << "registration completed";
 }
 // ---------------------------------------------------------------------------
 bool CustomSliceModel::save_mapping(const char* file_name)
