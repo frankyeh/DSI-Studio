@@ -107,7 +107,7 @@ struct TrackingParam
         tipl::out() << "reserved0(center_seed DEPRECATED): " << int(reserved0) << std::endl;
         tipl::out() << "check_ending: " << int(check_ending) << std::endl;
         tipl::out() << "reserved5(interpolation_strategy DEPRECATED): " << int(reserved5) << std::endl;
-        tipl::out() << "tracking_method:" << int(tracking_method) << std::endl;
+        tipl::out() << "tracking_method: " << int(tracking_method) << std::endl;
         tipl::out() << "reserved6(random_seed DEPRECATED): " << int(reserved6) << std::endl;
         tipl::out() << "tip_iteration: " << int(tip_iteration) << std::endl;
         tipl::out() << "dt_threshold: " << dt_threshold << std::endl;
