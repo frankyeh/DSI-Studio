@@ -109,7 +109,7 @@ bool export_track_info(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_d
 
             std::replace(cmd.begin(),cmd.end(),' ','.');
             std::string file_name_stat = file_name + "." + cmd + ".txt";
-            tipl::out() << "output report:" << file_name_stat << std::endl;
+            tipl::out() << "output report: " << file_name_stat << std::endl;
             std::ofstream report(file_name_stat.c_str());
             report << "position\t";
             std::copy(values.begin(),values.end(),std::ostream_iterator<float>(report,"\t"));
