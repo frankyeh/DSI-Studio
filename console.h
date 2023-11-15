@@ -17,7 +17,7 @@ protected:
 public:
     void show_output(void);
     std::mutex edit_buf;
-    std::string buf;
+    QString buf;
     QTextEdit* log_window = nullptr;
     bool has_output = false;
     void attach(void)
