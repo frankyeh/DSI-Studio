@@ -968,9 +968,8 @@ void match_template_resolution(tipl::image<3>& VG,
                                tipl::image<3>& VF,
                                tipl::image<3>& VF2,
                                tipl::vector<3>& VFvs)
-{
+{    
     float ratio = float(VF.width())/float(VG.width());
-    tipl::out() << "width ratio (subject/template):(" << VF.width() << "/" << VG.width() << ") " << ratio << std::endl;
     while(ratio < 0.5f)   // if subject resolution is substantially lower, downsample template
     {
         tipl::downsampling(VG);
@@ -990,10 +989,32 @@ void match_template_resolution(tipl::image<3>& VG,
         tipl::out() << "ratio larger than 2.5, register using subject resolution of " << VFvs[0] << " mm resolution" << std::endl;
     }
 }
+void match_template_resolution(tipl::image<3>& VG,
+                               tipl::vector<3>& VGvs,
+                               tipl::image<3>& VF,
+                               tipl::vector<3>& VFvs)
+{
+    float ratio = float(VF.width())/float(VG.width());
+    while(ratio < 0.5f)   // if subject resolution is substantially lower, downsample template
+    {
+        tipl::downsampling(VG);
+        VGvs *= 2.0f;
+        ratio *= 2.0f;
+        tipl::out() << "ratio lower than 0.5, downsampling template to " << VGvs[0] << " mm resolution" << std::endl;
+    }
+    while(ratio > 2.5f)  // if subject resolution is higher, downsample it for registration
+    {
+        tipl::downsampling(VF);
+        VFvs *= 2.0f;
+        ratio /= 2.0f;
+        tipl::out() << "ratio larger than 2.5, register using subject resolution of " << VFvs[0] << " mm resolution" << std::endl;
+    }
+}
+
 
 void reconstruction_window::on_qsdr_manual_clicked()
 {
-    tipl::image<3> VG,VG2,dummy,VF(handle->dwi);
+    tipl::image<3> VG,VG2,VF(handle->dwi);
     tipl::vector<3> VGvs,VFvs(handle->voxel.vs);
     {
         tipl::io::gz_nifti read,read2;
@@ -1011,7 +1032,7 @@ void reconstruction_window::on_qsdr_manual_clicked()
         }
     }
 
-    match_template_resolution(VG,dummy,VGvs,VF,dummy,VFvs);
+    match_template_resolution(VG,VGvs,VF,VFvs);
     std::shared_ptr<manual_alignment> manual(new manual_alignment(this,
                                                                 VF,VFvs,VG,VGvs,
                                                                 tipl::reg::affine,
