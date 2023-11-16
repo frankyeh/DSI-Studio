@@ -477,6 +477,9 @@ void CustomSliceModel::argmin(void)
     auto from_vs = handle->vs;
     match_template_resolution(to,to_vs,from,from_vs);
 
+    tipl::lower_threshold(to,0.0f);
+    tipl::lower_threshold(from,0.0f);
+
     tipl::filter::gaussian(to);
     tipl::filter::gaussian(from);
 
