@@ -74,7 +74,7 @@ public:
     std::vector<unsigned int> resample_order;
     std::vector<unsigned int> permutation_order;
 public: // multiple regression
-    std::vector<double> X,X_min,X_max,X_range;
+    std::vector<double> X,X_min,X_max,X_range,X_mean;
     unsigned int x_col_count = 0;
     unsigned int study_feature = 0;
 public:
