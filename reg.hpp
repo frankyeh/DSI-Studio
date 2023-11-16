@@ -124,8 +124,6 @@ inline size_t linear_with_mi(const tipl::image<3,float>& from,
                     0.01,bound != tipl::reg::narrow_bound,bound);
     if(new_to_vs != to_vs)
         tipl::transformation_matrix<float>(arg,from,from_vs,to,new_to_vs).to_affine_transform(arg,from,from_vs,to,to_vs);
-
-    linear_with_mi_refine(from,from_vs,to,to_vs,arg,reg_type,terminated);
     tipl::out() << arg << std::endl;
     return result;
 }
