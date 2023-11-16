@@ -966,7 +966,7 @@ bool stat_model::pre_process(void)
     if(X.empty())
         return true;
     X_min = X_max = std::vector<double>(X.begin(),X.begin()+x_col_count);
-    unsigned int subject_count = X.size()/x_col_count;
+    auto subject_count = X.size()/x_col_count;
     if(subject_count <= x_col_count)
     {
         error_msg = "not enough subject samples for regression analysis";
@@ -980,10 +980,19 @@ bool stat_model::pre_process(void)
             if(X[index] > X_max[j])
                 X_max[j] = X[index];
         }
-    X_range.resize(x_col_count);
-    for(unsigned int j = 0;j < x_col_count;++j)
-        X_range[j] = X_max[j]-X_min[j];
-    return mr.set_variables(&*X.begin(),x_col_count,uint32_t(X.size()/x_col_count));
+
+    X_range = X_max;
+    tipl::minus(X_range,X_min);
+
+    {
+        std::vector<double> sum(x_col_count);
+        for(unsigned int pos = 0;pos < X.size();pos += x_col_count)
+            tipl::add(sum.begin(),sum.end(),X.begin()+pos);
+        tipl::divide_constant(sum,subject_count);
+        X_mean.swap(sum);
+    }
+
+    return mr.set_variables(&*X.begin(),x_col_count,subject_count);
 }
 
 bool stat_model::select_cohort(connectometry_db& db,
@@ -1275,9 +1284,10 @@ void stat_model::partial_correlation(std::vector<float>& population) const
         for(size_t i = 1;i < x_col_count;++i) // skip intercept at i = 0
             if(i != study_feature)
             {
+                auto mean = X_mean[i];
                 auto cur_b = b[i];
                 for(size_t j = 0,p = i;j < population.size();++j,p += x_col_count)
-                    population[j] -= mr.X[p]*cur_b;
+                    population[j] -= (mr.X[p]-mean)*cur_b;
             }
     }
 }
