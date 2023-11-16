@@ -10,7 +10,100 @@ bool load_bval(const char* file_name,std::vector<double>& bval);
 bool load_bvec(const char* file_name,std::vector<double>& b_table,bool flip_by = true);
 bool parse_dwi(QStringList file_list,std::vector<std::shared_ptr<DwiHeader> >& dwi_files);
 void dicom2src_and_nii(std::string dir_);
-bool nii2src_bids(QString dir,QString output_dir,std::string& error_msg);
+bool load_4d_nii(const char* file_name,std::vector<std::shared_ptr<DwiHeader> >& dwi_files,bool need_bvalbvec);
+
+
+void create_src(const std::vector<std::string>& nii_names,std::string src_name)
+{
+    std::vector<std::shared_ptr<DwiHeader> > dwi_files;
+    for(auto& nii_name : nii_names)
+    {
+        if(!load_4d_nii(nii_name.c_str(),dwi_files,true))
+        {
+            tipl::out() << "skipping " << nii_name << ": " << src_error_msg;
+            return;
+        }
+    }
+    if(!DwiHeader::output_src(src_name.c_str(),dwi_files,0,false))
+        tipl::out() << "ERROR: " << src_name << " : " << src_error_msg;
+}
+void create_src(std::string nii_name,std::string src_name)
+{
+    std::vector<std::string> nii_names;
+    nii_names.push_back(nii_name);
+    create_src(nii_names,src_name);
+}
+
+bool find_bval_bvec(const char* file_name,QString& bval,QString& bvec);
+bool is_dwi_nii(const std::string& nii_name)
+{
+    QString bval_name,bvec_name;
+    return find_bval_bvec(nii_name.c_str(),bval_name,bvec_name);
+}
+void search_dwi_nii(const std::string& dir,std::vector<std::string>& dwi_nii_files)
+{
+    std::vector<std::string> nii_files;
+    tipl::search_files(dir,"*.nii.gz",nii_files);
+    tipl::search_files(dir,"*.nii",nii_files);
+    for(auto& each : nii_files)
+        if(is_dwi_nii(each))
+            dwi_nii_files.push_back(each);
+}
+
+void search_dwi_nii_bids(const std::string& dir,std::vector<std::string>& dwi_nii_files)
+{
+    tipl::progress prog((std::string("parsing BIDS directory: ") + dir).c_str());
+    std::vector<std::string> sub_dir;
+    tipl::search_dirs(dir,"sub-*",sub_dir);
+    auto subject_num = sub_dir.size();
+    for(int j = 0;prog(j,sub_dir.size());++j)
+    {
+        // look for sessions
+        if(j < subject_num)
+            tipl::search_dirs(sub_dir[j],"ses-*",sub_dir);
+        tipl::out() << "searching " << sub_dir[j];
+        search_dwi_nii(sub_dir[j] + "/dwi",dwi_nii_files);
+    }
+}
+bool nii2src_bids(const std::string& dir,const std::string output_dir,bool overwrite,unsigned int thread_count,std::string& error_msg)
+{
+    std::vector<std::string> dwi_nii_files;
+    search_dwi_nii_bids(dir,dwi_nii_files);
+    if(dwi_nii_files.empty())
+    {
+        error_msg = "no dwi nifti files found";
+        return false;
+    }
+    if(!std::filesystem::exists(output_dir))
+    {
+         if(!std::filesystem::create_directory(output_dir))
+         {
+            error_msg = "Cannot create the output folder. Please check write privileges";
+            return false;
+         }
+    }
+    else
+    {
+        if(!std::filesystem::is_directory(output_dir))
+        {
+            error_msg = output_dir;
+            error_msg += " is not a directory";
+            return false;
+        }
+    }
+    tipl::par_for(dwi_nii_files.size(),[&](unsigned int index)
+    {
+        auto src_name = output_dir + "/" + std::filesystem::path(dwi_nii_files[index]).stem().string() + ".src.gz";
+        if(!overwrite && std::filesystem::exists(src_name))
+        {
+            tipl::out() << "skipping " << src_name << ": already exists";
+            return;
+        }
+        create_src(dwi_nii_files[index],src_name);
+    },thread_count);
+    return true;
+}
+
 int src(tipl::program_option<tipl::out>& po)
 {
     std::string source = po.get("source");
@@ -18,7 +111,11 @@ int src(tipl::program_option<tipl::out>& po)
     if(std::filesystem::is_directory(source))
     {
         std::string error_msg;
-        if(nii2src_bids(source.c_str(),po.get("output",source).c_str(),error_msg))
+        if(nii2src_bids(source.c_str(),
+                        po.get("output",source).c_str(),
+                        po.get("overwrite",0),
+                        po.get("thread_count",std::min<size_t>(8,std::thread::hardware_concurrency())),
+                        error_msg))
             return 0;
         tipl::out() << "load files in directory " << source.c_str() << std::endl;
         if(po.get("recursive",0))

@@ -407,7 +407,7 @@ bool load_4d_nii(const char* file_name,std::vector<std::shared_ptr<DwiHeader> >&
         if(need_bvalbvec && (bvals.empty() || tipl::max_value(bvals) == 0.0))
         {
             if(src_error_msg.empty())
-                src_error_msg = bvals.empty() ? "cannot find bval/bvec file" : "incorrect bval file";
+                src_error_msg = bvals.empty() ? "cannot find bval/bvec file" : "only have b0 image(s)";
             return false;
         }
     }

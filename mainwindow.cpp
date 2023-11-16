@@ -834,28 +834,7 @@ void MainWindow::on_auto_track_clicked()
 }
 
 
-extern std::string src_error_msg;
-void create_src(const std::vector<std::string>& nii_names,std::string src_name)
-{
-    std::vector<std::shared_ptr<DwiHeader> > dwi_files;
-    for(auto& nii_name : nii_names)
-    {
-        if(!load_4d_nii(nii_name.c_str(),dwi_files,true))
-        {
-            tipl::out() << "ERROR: " << src_error_msg << std::endl;
-            return;
-        }
-    }
-    if(!DwiHeader::output_src(src_name.c_str(),dwi_files,0,false))
-        tipl::out() << "ERROR: " << src_error_msg << std::endl;
-}
-void create_src(std::string nii_name,std::string src_name)
-{
-    std::vector<std::string> nii_names;
-    nii_names.push_back(nii_name);
-    create_src(nii_names,src_name);
-}
-
+/*
 void create_src(const std::vector<std::string>& nii1,
              const std::vector<std::string>& nii2,
              std::string src_name)
@@ -886,7 +865,7 @@ void create_src(const std::vector<std::string>& nii1,
     if(!DwiHeader::output_src((src_name+".rsrc.gz").c_str(),dwi_files2,0,false))
         tipl::out() << "ERROR: " << src_error_msg << std::endl;
 }
-
+*/
 bool get_pe_dir(const std::string& nii_name,size_t& pe_dir,bool& is_neg)
 {
     const char pe_coding[3][2][5] = { { "\"i\"","\"i-\"" },
@@ -914,17 +893,19 @@ bool get_pe_dir(const std::string& nii_name,size_t& pe_dir,bool& is_neg)
     }
     return false;
 }
-
-void nii2src(QStringList nifti_file_list,QString output_dir)
+/*
+void nii2src(QStringList nifti_file_list,std::string output_dir,bool overwrite)
 {
     if(nifti_file_list.empty())
         return;
     tipl::progress prog((std::string("creating SRC file from ")+std::filesystem::path(nifti_file_list[0].toStdString()).stem().string()+
             (nifti_file_list.size() == 1 ? "" : " and others")).c_str());
-    std::string output_file_base_name = output_dir.toStdString() + "/" + QFileInfo(nifti_file_list[0]).baseName().toStdString();
+    std::string output_file_base_name = output_dir + "/" + std::filesystem::path(nifti_file_list[0].toStdString()).stem().string();
+    std::string output_file_src_gz = output_file_base_name + ".src.gz";
+
     if(nifti_file_list.size() == 1)
     {
-        create_src(nifti_file_list[0].toStdString(),output_file_base_name + ".src.gz");
+        create_src(nifti_file_list[0].toStdString(),output_file_src_gz);
         return;
     }
     std::vector<std::string> nii1,nii2;
@@ -970,7 +951,7 @@ void nii2src(QStringList nifti_file_list,QString output_dir)
         }
 
         tipl::out() << "no reversed phase encoding direction dataset found. Create one SRC file.";
-        create_src(nii1,output_file_base_name + ".src.gz");
+        create_src(nii1,output_file_src_gz);
     }
     else
     {
@@ -978,79 +959,81 @@ void nii2src(QStringList nifti_file_list,QString output_dir)
         create_src(nii1,nii2,output_file_base_name);
     }
 }
-bool find_bval_bvec(const char* file_name,QString& bval,QString& bvec);
-bool nii2src_bids(QString dir,QString output_dir,std::string& error_msg)
+*/
+void search_dwi_nii_bids(const std::string& dir,std::vector<std::string>& dwi_nii_files);
+void create_src(std::string nii_name,std::string src_name);
+void search_dwi_nii(const std::string& dir,std::vector<std::string>& dwi_nii_files);
+void MainWindow::batch_create_src(const std::vector<std::string>& dwi_nii_files,const std::string& output_dir)
 {
-    tipl::progress prog((std::string("parsing BIDS directory: ") + dir.toStdString()).c_str());
-
-    QStringList sub_dir = QDir(dir).entryList(QStringList("sub-*"),
-                                                QDir::Dirs | QDir::NoSymLinks | QDir::NoDotAndDotDot);
-    if(sub_dir.isEmpty())
+    if(dwi_nii_files.empty())
     {
-        error_msg = "No subject folder (sub-*) found.";
-        return false;
+        QMessageBox::critical(this,"ERROR","no dwi nifti files found");
+        return;
     }
-    if(!QDir(output_dir).exists() && !std::filesystem::create_directory(std::filesystem::path(output_dir.toStdString())))
+    bool no_to_all = false;
+    bool yes_to_all = false;
+    tipl::progress prog("batch creating src");
+    std::deque<std::string> nii_list,src_list;
+    size_t nii_count = 0;
+    std::mutex access_list;
+    bool ended = false;
+    tipl::par_for(8,[&](unsigned int index,unsigned int id)
     {
-        error_msg = "Cannot create the output folder. Please check write privileges";
-        return false;
-    }
-
-    auto get_nifti_dim = [&](QString file_name)
-    {
-        tipl::io::gz_nifti nii;
-        tipl::shape<3> dim;
-        if(nii.load_from_file(file_name.toStdString().c_str()))
-            nii.get_image_dimension(dim);
-        return dim;
-    };
-
-    auto subject_num = sub_dir.size();
-    for(int j = 0;prog(j,sub_dir.size());++j)
-    {
-        tipl::progress prog2((std::string("processing ")+ sub_dir[j].toStdString()).c_str());
-        QString cur_dir = dir + "/" + sub_dir[j];
-        QString dwi_folder = cur_dir + "/dwi";
-        if(!QDir(dwi_folder).exists())
-            dwi_folder = cur_dir;
-
-        QStringList nifti_all = QDir(dwi_folder).
-                entryList(QStringList("*.nii.gz") << "*.nii",QDir::Files|QDir::NoSymLinks);
-        std::map<tipl::shape<3>,QStringList> dwi_nii_list;
-        for(int k = 0;k < nifti_all.size();++k)
+        if(id == 0) // main thread
         {
-            if(nifti_all[k].isEmpty())
-                continue;
-            QString file_name = dwi_folder + "/" + nifti_all[k];
-            tipl::shape<3> dim = get_nifti_dim(file_name);
-            if(dim.depth() == 0)
-                continue;
-            QString bval_name,bvec_name;
-            if(find_bval_bvec(file_name.toStdString().c_str(),bval_name,bvec_name))
+            for(int j = 0;j < dwi_nii_files.size();++j)
             {
-                std::ifstream bval(bval_name.toStdString());
-                if(tipl::max_value(std::istream_iterator<double>(bval),std::istream_iterator<double>()) != 0.0)
-                {
-                    dwi_nii_list[dim] << file_name;
-                    tipl::out() << "4D DWI candidates: " << nifti_all[k].toStdString() << std::endl;
-                }
-            }
-        }
-        for(auto& dwi_list : dwi_nii_list)
-            nii2src(dwi_list.second,output_dir);
+                std::string nii_name = dwi_nii_files[j];
+                std::string src_name = output_dir + "/" + std::filesystem::path(nii_name).stem().string() + ".src.gz";
+                std::vector<std::shared_ptr<DwiHeader> > dwi_files;
 
-        // look for sessions
-        if(j < subject_num)
-        {
-            QStringList ses_dir = QDir(cur_dir).entryList(QStringList("ses-*"),
-                                                        QDir::Dirs | QDir::NoSymLinks | QDir::NoDotAndDotDot);
-            for(auto s: ses_dir)
-                sub_dir.push_back(sub_dir[j] + "/" + s);
+                if(std::filesystem::exists(src_name) && !yes_to_all)
+                {
+                    if(no_to_all)
+                        continue;
+                    int result = QMessageBox::information(this,"DSI Studio",
+                                    QString("%1 exists, overwrite?").arg(std::filesystem::path(src_name).filename().c_str()),
+                                    QMessageBox::Yes|QMessageBox::YesToAll|QMessageBox::No|QMessageBox::NoToAll|QMessageBox::Cancel);
+                    if(result == QMessageBox::Cancel)
+                        return;
+                    if(result == QMessageBox::YesToAll)
+                        yes_to_all = true;
+                    if(result == QMessageBox::NoToAll)
+                    {
+                        no_to_all = true;
+                        continue;
+                    }
+                    if(result == QMessageBox::No)
+                        continue;
+                }
+                std::lock_guard<std::mutex> lock(access_list);
+                nii_list.push_back(nii_name);
+                src_list.push_back(src_name);
+                ++nii_count;
+            }
+            ended = true;
         }
-        if(prog2.aborted())
-            return false;
-    }
-    return !prog.aborted();
+        while(!prog.aborted() && !(ended && nii_count == 0))
+        {
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            if(id == 0)
+                prog(dwi_nii_files.size()-nii_list.size(),dwi_nii_files.size());
+
+            std::string nii_name,src_name;
+            {
+                std::lock_guard<std::mutex> lock(access_list);
+                if(!nii_count)
+                    continue;
+                nii_name = nii_list.front();
+                src_name = src_list.front();
+                nii_list.pop_front();
+                src_list.pop_front();
+                --nii_count;
+            }
+            tipl::out() << "processing " << nii_name << std::endl;
+            create_src(nii_name,src_name);
+        }
+    });
 }
 void MainWindow::on_nii2src_bids_clicked()
 {
@@ -1067,14 +1050,10 @@ void MainWindow::on_nii2src_bids_clicked()
     if(output_dir.isEmpty())
         return;
     add_work_dir(dir);
-    std::string error_msg;
-    if(!nii2src_bids(dir,output_dir,error_msg))
-    {
-        QMessageBox::critical(this,"ERROR",error_msg.c_str());
-        return;
-    }
+    std::vector<std::string> dwi_nii_files;
+    search_dwi_nii_bids(dir.toStdString(),dwi_nii_files);
+    batch_create_src(dwi_nii_files,output_dir.toStdString());
 }
-
 void MainWindow::on_nii2src_sf_clicked()
 {
     QString dir = QFileDialog::getExistingDirectory(
@@ -1084,22 +1063,12 @@ void MainWindow::on_nii2src_sf_clicked()
     if(dir.isEmpty())
         return;
     add_work_dir(dir);
-    QStringList nifti_file_list = QDir(dir).
-            entryList(QStringList("*.nii.gz") << "*.nii",QDir::Files|QDir::NoSymLinks);
-
-    tipl::progress prog("batch creating src");
-    tipl::out() << "directory: " << dir.toStdString() << std::endl;
-    for(int j = 0;prog(j,nifti_file_list.size());++j)
-    {
-        tipl::out() << nifti_file_list[j].toStdString() << std::endl;
-        std::vector<std::shared_ptr<DwiHeader> > dwi_files;
-        std::string nii_name = dir.toStdString() + "/" + nifti_file_list[j].toStdString();
-        std::string src_name = dir.toStdString() + "/" +
-                QFileInfo(nifti_file_list[j]).baseName().toStdString() + ".src.gz";
-        create_src(nii_name,src_name);
-    }
+    std::vector<std::string> dwi_nii_files;
+    search_dwi_nii(dir.toStdString(),dwi_nii_files);
+    batch_create_src(dwi_nii_files,dir.toStdString());
 }
 
+extern std::string src_error_msg;
 bool dcm2src_and_nii(QStringList files)
 {
     if(files.empty())
