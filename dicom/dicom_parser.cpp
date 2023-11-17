@@ -282,7 +282,9 @@ bool find_bval_bvec(const char* file_name,QString& bval,QString& bvec)
         }
     return QFileInfo(bval).exists() && QFileInfo(bvec).exists();
 }
-
+bool get_bval_bvec(const std::string& bval_file,const std::string& bvec_file,size_t dwi_count,
+                   std::vector<double>& bvals,std::vector<double>& bvecs,
+                   std::string& error_msg);
 bool load_4d_nii(const char* file_name,std::vector<std::shared_ptr<DwiHeader> >& dwi_files,bool need_bvalbvec)
 {
     tipl::vector<3,float> vs;
@@ -371,46 +373,22 @@ bool load_4d_nii(const char* file_name,std::vector<std::shared_ptr<DwiHeader> >&
     }
 
     std::vector<double> bvals,bvecs;
+    QString bval_name,bvec_name;
+    if(find_bval_bvec(file_name,bval_name,bvec_name))
     {
-        QString bval_name,bvec_name;
-        if(find_bval_bvec(file_name,bval_name,bvec_name))
+        tipl::out() << "found bval and bvec file at " << std::filesystem::path(file_name).parent_path().string();
+        std::string error_msg;
+        if(!get_bval_bvec(bval_name.toStdString(),bvec_name.toStdString(),dwi_data.size(),bvals,bvecs,error_msg))
         {
-            if(!load_bval(bval_name.toStdString().c_str(),bvals))
-            {
-                src_error_msg = "cannot find bval at ";
-                src_error_msg += bval_name.toStdString();
-            }
-            if(!load_bvec(bvec_name.toStdString().c_str(),bvecs))
-            {
-                src_error_msg = "cannot find bvec at ";
-                src_error_msg += bvec_name.toStdString();
-            }
-            if(!bvals.empty() && dwi_data.size() != bvals.size())
-            {
-                std::ostringstream out;
-                out << "bval number does not match DWI: " << dwi_data.size()
-                          << " DWI in the nifti file, but " << bvals.size()
-                          << " in " << bval_name.toStdString() << std::endl;
-                src_error_msg = out.str();
-                bvals.clear();
-                bvecs.clear();
-            }
-            if(bvals.size()*3 != bvecs.size())
-            {
-                std::ostringstream out;
-                out << "b-table " << bval_name.toStdString() << " and " << bvec_name.toStdString() << " do not match " << std::endl;
-                src_error_msg = out.str();
-                bvals.clear();
-                bvecs.clear();
-            }
-        }
-        if(need_bvalbvec && (bvals.empty() || tipl::max_value(bvals) == 0.0))
-        {
-            if(src_error_msg.empty())
-                src_error_msg = bvals.empty() ? "cannot find bval/bvec file" : "only have b0 image(s)";
-            return false;
+            src_error_msg = error_msg;
+            tipl::out() << error_msg;
         }
     }
+    else
+        src_error_msg = "cannot find bval/bvec file";
+
+    if(need_bvalbvec && bvals.empty())
+        return false;
 
     for(unsigned int index = 0;index < dwi_data.size();++index)
     {
@@ -429,7 +407,7 @@ bool load_4d_nii(const char* file_name,std::vector<std::shared_ptr<DwiHeader> >&
             new_file->bvec[1] = float(bvecs[index*3+1]);
             new_file->bvec[2] = float(bvecs[index*3+2]);
             new_file->bvec.normalize();
-            if(new_file->bvalue < 10)
+            if(new_file->bvalue < 100)
             {
                 new_file->bvalue = 0;
                 new_file->bvec = tipl::vector<3>(0,0,0);
@@ -1024,6 +1002,14 @@ bool parse_dwi(QStringList file_list,
     }
     return !prog.aborted() && !dwi_files.empty();
 }
+bool parse_dwi(const std::vector<std::string>& file_list,
+                    std::vector<std::shared_ptr<DwiHeader> >& dwi_files)
+{
+    QStringList qlist;
+    for(const auto& each : file_list)
+        qlist << each.c_str();
+    return parse_dwi(qlist,dwi_files);
+}
 void dicom_parser::load_table(void)
 {
     int last_index = ui->tableWidget->rowCount();
@@ -1041,7 +1027,7 @@ void dicom_parser::load_table(void)
         max_b = std::max(max_b,(double)dwi_files[index]->bvalue);
     }
     if(max_b == 0.0)
-        QMessageBox::critical(this,"DSI Studio","Cannot find bval and bvec from the header. You can load them using the [File] menu");
+        QMessageBox::critical(this,"DSI Studio","Cannot find matching bval and bvec files. You can load them using the [File] menu");
 }
 extern std::string src_error_msg;
 void dicom_parser::load_files(QStringList file_list)

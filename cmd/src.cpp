@@ -8,11 +8,49 @@ extern std::string src_error_msg;
 QStringList search_files(QString dir,QString filter);
 bool load_bval(const char* file_name,std::vector<double>& bval);
 bool load_bvec(const char* file_name,std::vector<double>& b_table,bool flip_by = true);
-bool parse_dwi(QStringList file_list,std::vector<std::shared_ptr<DwiHeader> >& dwi_files);
+bool parse_dwi(const std::vector<std::string>& file_list,
+                    std::vector<std::shared_ptr<DwiHeader> >& dwi_files);
 void dicom2src_and_nii(std::string dir_);
 bool load_4d_nii(const char* file_name,std::vector<std::shared_ptr<DwiHeader> >& dwi_files,bool need_bvalbvec);
 
-
+bool get_bval_bvec(const std::string& bval_file,const std::string& bvec_file,size_t dwi_count,
+                   std::vector<double>& bvals_out,std::vector<double>& bvecs_out,
+                   std::string& error_msg)
+{
+    std::vector<double> bvals,bvecs;
+    if(!load_bval(bval_file.c_str(),bvals))
+    {
+        error_msg = "cannot load bval at ";
+        error_msg += bval_file;
+        return false;
+    }
+    if(!load_bvec(bvec_file.c_str(),bvecs))
+    {
+        error_msg = "cannot load bvec at ";
+        error_msg += bvec_file;
+        return false;
+    }
+    if(!bvals.empty() && dwi_count != bvals.size())
+    {
+        std::ostringstream out;
+        out << "bval number does not match NIFTI file: " << dwi_count << " DWI in nifti file and " << bvals.size() << " in bvals " << std::endl;
+        error_msg = out.str();
+        return false;
+    }
+    if(bvals.size()*3 != bvecs.size())
+    {
+        error_msg = "bval and bvec does not match";
+        return false;
+    }
+    if(tipl::max_value(bvals) == 0.0)
+    {
+        error_msg = "only have b0 image(s)";
+        return false;
+    }
+    bvals_out.swap(bvals);
+    bvecs_out.swap(bvecs);
+    return true;
+}
 void create_src(const std::vector<std::string>& nii_names,std::string src_name)
 {
     std::vector<std::shared_ptr<DwiHeader> > dwi_files;
@@ -107,7 +145,7 @@ bool nii2src_bids(const std::string& dir,const std::string output_dir,bool overw
 int src(tipl::program_option<tipl::out>& po)
 {
     std::string source = po.get("source");
-    QStringList file_list;
+    std::vector<std::string> file_list;
     if(std::filesystem::is_directory(source))
     {
         std::string error_msg;
@@ -126,20 +164,17 @@ int src(tipl::program_option<tipl::out>& po)
         }
         else
         {
-            QDir directory = QString(source.c_str());
-            file_list = directory.entryList(QStringList("*.dcm"),QDir::Files|QDir::NoSymLinks);
+            tipl::search_files(source,"*.dcm",file_list);
             if(file_list.empty())
-                file_list = directory.entryList(QStringList("*.fdf"),QDir::Files|QDir::NoSymLinks);
-            for (int index = 0;index < file_list.size();++index)
-                file_list[index] = QString(source.c_str()) + "/" + file_list[index];
+                tipl::search_files(source,"*.fdf",file_list);
+            tipl::out() << "a total of " << file_list.size() << " files found in the directory" << std::endl;
         }
-        tipl::out() << "a total of " << file_list.size() << " files found in the directory" << std::endl;
     }
     else
-        file_list << source.c_str();
+        file_list.push_back(source);
 
     if(po.has("other_source"))
-        file_list << QString(po.get("other_source").c_str()).split(',');
+        file_list.push_back(po.get("other_source"));
 
     if(file_list.empty())
     {
@@ -186,34 +221,10 @@ int src(tipl::program_option<tipl::out>& po)
     if(po.has("bval") && po.has("bvec"))
     {
         std::vector<double> bval,bvec;
-        QStringList bval_files = QString(po.get("bval").c_str()).split(',');
-        QStringList bvec_files = QString(po.get("bvec").c_str()).split(',');
-
-        for(auto path : bval_files)
-            if(!load_bval(path.toStdString().c_str(),bval))
-            {
-                tipl::out() << "cannot find bval at " << path.toStdString() << std::endl;
-                return 1;
-            }
-        for(auto path : bvec_files)
-            if(!load_bvec(path.toStdString().c_str(),bvec,po.get("flip_by",1)))
-            {
-                tipl::out() << "cannot find bvec at " << path.toStdString() << std::endl;
-                return 1;
-            }
-
-        if(bval.size() != dwi_files.size())
+        std::string error_msg;
+        if(!get_bval_bvec(po.get("bval"),po.get("bvec"),dwi_files.size(),bval,bvec,error_msg))
         {
-            tipl::out() << "mismatch between bval file and the loaded images" << std::endl;
-            tipl::out() << "dwi number: " << dwi_files.size() << std::endl;
-            tipl::out() << "bval number: " << bval.size() << std::endl;
-            return 1;
-        }
-        if(bvec.size() != dwi_files.size()*3)
-        {
-            tipl::out() << "mismatch between bvec file and the loaded images" << std::endl;
-            tipl::out() << "dwi number: " << dwi_files.size() << std::endl;
-            tipl::out() << "bvec number: " << bvec.size() << std::endl;
+            tipl::out() << "ERROR: " << error_msg;
             return 1;
         }
         for(unsigned int index = 0;index < dwi_files.size();++index)
@@ -237,26 +248,24 @@ int src(tipl::program_option<tipl::out>& po)
     }
     if(max_b == 0.0)
     {
-        tipl::out() << "cannot find b-table from the header. You may need to load an external b-table using--b_table or --bval and --bvec." << std::endl;
+        tipl::out() << "cannot create SRC file: " << src_error_msg;
         return 1;
     }
 
-    std::string output;
+    std::string output = file_list.front() + ".src.gz";
     if(po.has("output"))
     {
         output = po.get("output");
-        if(QFileInfo(output.c_str()).isDir())
-            output += std::string("/") + QFileInfo(source.c_str()).baseName().toStdString() + ".src.gz";
+        if(std::filesystem::is_directory(output))
+            output += std::string("/") + std::filesystem::path(file_list[0]).filename().string() + ".src.gz";
         else
-        if(output.find(".src.gz") == std::string::npos)
-            output += ".src.gz";
+            if(output.find(".src.gz") == std::string::npos)
+                output += ".src.gz";
     }
-    else
+    if(!po.get("overwrite",0) && std::filesystem::exists(output))
     {
-        if(QFileInfo(source.c_str()).isDir())
-            output = source + ".src.gz";
-        else
-            output = file_list.front().toStdString() + ".src.gz";
+        tipl::out() << "skipping " << output << ": already exists";
+        return 0;
     }
     tipl::out() << "output src to " << output << std::endl;
     if(!DwiHeader::output_src(output.c_str(),dwi_files,
