@@ -103,31 +103,35 @@ void search_dwi_nii_bids(const std::string& dir,std::vector<std::string>& dwi_ni
         search_dwi_nii(sub_dir[j] + "/dwi",dwi_nii_files);
     }
 }
-bool nii2src_bids(const std::string& dir,const std::string output_dir,bool overwrite,unsigned int thread_count,std::string& error_msg)
+bool nii2src(tipl::program_option<tipl::out>& po)
 {
+    auto source = po.get("source");
+    auto output_dir = po.get("output",source);
+    int overwrite = po.get("overwrite",0);
+    size_t thread_count = po.get("thread_count",std::min<size_t>(8,std::thread::hardware_concurrency()));
+
     std::vector<std::string> dwi_nii_files;
-    search_dwi_nii_bids(dir,dwi_nii_files);
+    tipl::out() << "checking BIDS format";
+    search_dwi_nii_bids(source,dwi_nii_files);
     if(dwi_nii_files.empty())
     {
-        error_msg = "no dwi nifti files found";
-        return false;
-    }
-    if(!std::filesystem::exists(output_dir))
-    {
-         if(!std::filesystem::create_directory(output_dir))
-         {
-            error_msg = "Cannot create the output folder. Please check write privileges";
-            return false;
-         }
-    }
-    else
-    {
-        if(!std::filesystem::is_directory(output_dir))
+        tipl::out() << "no BIDS found. searching for NIFTI files in the folder";
+        search_dwi_nii(source,dwi_nii_files);
+        if(dwi_nii_files.empty())
         {
-            error_msg = output_dir;
-            error_msg += " is not a directory";
+            tipl::out() << "no nifti files found";
             return false;
         }
+    }
+    if(!std::filesystem::exists(output_dir) && !std::filesystem::create_directory(output_dir))
+    {
+        tipl::out() << "ERROR: cannot create the output folder. please check write privileges";
+        return false;
+    }
+    if(!std::filesystem::is_directory(output_dir))
+    {
+        tipl::out() << "ERROR: " << output_dir << " is not a valid output directory.";
+        return false;
     }
     tipl::par_for(dwi_nii_files.size(),[&](unsigned int index)
     {
@@ -143,20 +147,16 @@ bool nii2src_bids(const std::string& dir,const std::string output_dir,bool overw
 }
 
 int src(tipl::program_option<tipl::out>& po)
-{
+{      
     std::string source = po.get("source");
     std::vector<std::string> file_list;
     if(std::filesystem::is_directory(source))
     {
-        std::string error_msg;
-        if(nii2src_bids(source.c_str(),
-                        po.get("output",source).c_str(),
-                        po.get("overwrite",0),
-                        po.get("thread_count",std::min<size_t>(8,std::thread::hardware_concurrency())),
-                        error_msg))
+        if(nii2src(po))
             return 0;
+
         tipl::out() << "load files in directory " << source.c_str() << std::endl;
-        if(po.get("recursive",0))
+        if(po.get("recursive",1))
         {
             tipl::out() << "search recursively in the subdir" << std::endl;
             dicom2src_and_nii(source);
