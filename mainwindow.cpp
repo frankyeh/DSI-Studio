@@ -984,7 +984,7 @@ void MainWindow::batch_create_src(const std::vector<std::string>& dwi_nii_files,
             for(int j = 0;j < dwi_nii_files.size();++j)
             {
                 std::string nii_name = dwi_nii_files[j];
-                std::string src_name = output_dir + "/" + std::filesystem::path(nii_name).stem().string() + ".src.gz";
+                std::string src_name = output_dir + "/" + std::filesystem::path(nii_name).filename().string() + ".src.gz";
                 std::vector<std::shared_ptr<DwiHeader> > dwi_files;
 
                 if(std::filesystem::exists(src_name) && !yes_to_all)
