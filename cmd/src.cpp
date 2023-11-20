@@ -135,7 +135,7 @@ bool nii2src(tipl::program_option<tipl::out>& po)
     }
     tipl::par_for(dwi_nii_files.size(),[&](unsigned int index)
     {
-        auto src_name = output_dir + "/" + std::filesystem::path(dwi_nii_files[index]).stem().string() + ".src.gz";
+        auto src_name = output_dir + "/" + std::filesystem::path(dwi_nii_files[index]).filename().string() + ".src.gz";
         if(!overwrite && std::filesystem::exists(src_name))
         {
             tipl::out() << "skipping " << src_name << ": already exists";
