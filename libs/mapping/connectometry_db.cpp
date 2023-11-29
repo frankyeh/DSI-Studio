@@ -455,7 +455,10 @@ bool connectometry_db::add_subject_file(const std::string& file_name,
         fib_data fib;
         if(!fib.load_from_file(file_name.c_str()))
         {
-            error_msg = fib.error_msg;
+            error_msg = "Cannot read file ";
+            error_msg += file_name;
+            error_msg += " : ";
+            error_msg += fib.error_msg;
             return false;
         }
         if(subject_report.empty())
@@ -467,10 +470,17 @@ bool connectometry_db::add_subject_file(const std::string& file_name,
         {
             odf_data subject_odf;
             if(!is_odf_consistent(fib.mat_reader))
+            {
+                error_msg = "Inconsistent ODF at ";
+                error_msg += file_name;
                 return false;
+            }
             if(!subject_odf.read(fib.mat_reader))
             {
-                error_msg = subject_odf.error_msg;
+                error_msg = "Failed to read ODF at ";
+                error_msg += file_name;
+                error_msg += " : ";
+                error_msg += subject_odf.error_msg;
                 return false;
             }
             tipl::transformation_matrix<float> template2subject(tipl::from_space(handle->trans_to_mni).to(fib.trans_to_mni));
