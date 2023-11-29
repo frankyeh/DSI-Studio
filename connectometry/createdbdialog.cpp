@@ -57,6 +57,11 @@ QString CreateDBDialog::get_file_name(QString file_path)
 void CreateDBDialog::update_list(void)
 {
     dir_length = 0;
+    for(size_t i = 0;i < group.size();)
+        if(group[i].endsWith("db.fib.gz"))
+            group.remove(i);
+        else
+            ++i;
     if(group.size() > 1)
     {
         QDir dir1(QFileInfo(group[0]).dir()),dir2(QFileInfo(group[group.size()-1]).dir());
