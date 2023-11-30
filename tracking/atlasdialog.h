@@ -31,6 +31,10 @@ private slots:
 
     void on_add_all_regions_clicked();
 
+    void on_select_clicked();
+
+    void on_merge_and_add_clicked();
+
 private:
     Ui::AtlasDialog *ui;
 };
