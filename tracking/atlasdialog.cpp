@@ -1,4 +1,5 @@
 #include <QStringListModel>
+#include <QInputDialog>
 #include <QMessageBox>
 #include "atlasdialog.h"
 #include "ui_atlasdialog.h"
@@ -14,7 +15,10 @@ AtlasDialog::AtlasDialog(QWidget *parent,std::shared_ptr<fib_data> handle_) :
     ui->setupUi(this);
     auto* w = dynamic_cast<tracking_window*>(parent);
     if(!w)
+    {
         ui->add_all_regions->setVisible(false);
+        ui->merge_and_add->setVisible(false);
+    }
     ui->region_list->setModel(new QStringListModel);
     ui->region_list->setSelectionModel(new QItemSelectionModel(ui->region_list->model()));
     for(int index = 0; index < handle->atlas_list.size(); ++index)
@@ -36,21 +40,65 @@ AtlasDialog::~AtlasDialog()
     delete ui;
 }
 
-void AtlasDialog::on_add_atlas_clicked()
+
+void AtlasDialog::on_merge_and_add_clicked()
 {
-    atlas_index = uint32_t(ui->atlasListBox->currentIndex());
-    atlas_name = ui->atlasListBox->currentText().toStdString();
     QModelIndexList indexes = ui->region_list->selectionModel()->selectedRows();
     if(!indexes.count())
         return;
+    atlas_index = uint32_t(ui->atlasListBox->currentIndex());
+    atlas_name = ui->atlasListBox->currentText().toStdString();
+    if(!handle->atlas_list[atlas_index]->load_from_file())
+    {
+        QMessageBox::critical(this,"ERROR",handle->atlas_list[atlas_index]->error_msg.c_str());
+        return;
+    }
+    tipl::progress prog("adding regions");
 
+    std::vector<unsigned int> roi_list;
+    for(unsigned int index = 0;index < indexes.size(); ++index)
+        roi_list.push_back(uint32_t(indexes[index].row()));
+
+    auto lcp = [](const QString& str1, const QString& str2){
+        int length = std::min(str1.length(), str2.length());
+        for (int i = 0; i < length; ++i)
+            if (str1[i] != str2[i])
+                return str1.left(i);
+        return str1.left(length);
+    };
+
+    auto name = lcp(handle->atlas_list[atlas_index]->get_list()[roi_list.front()].c_str(),
+                    handle->atlas_list[atlas_index]->get_list()[roi_list.back()].c_str());
+    if(name.isEmpty())
+        name = handle->atlas_list[atlas_index]->get_list()[roi_list.front()].c_str();
+
+    auto* w = dynamic_cast<tracking_window*>(parent());
+    w->regionWidget->add_merged_regions_from_atlas(handle->atlas_list[atlas_index],name,roi_list);
+
+    w->glWidget->update();
+    w->slice_need_update = true;
+    w->raise();
+
+    ui->region_list->clearSelection();
+    ui->search_atlas->setText("");
+    ui->search_atlas->setFocus();
+}
+
+void AtlasDialog::on_add_atlas_clicked()
+{
+    QModelIndexList indexes = ui->region_list->selectionModel()->selectedRows();
+    if(!indexes.count())
+        return;
+    atlas_index = uint32_t(ui->atlasListBox->currentIndex());
+    atlas_name = ui->atlasListBox->currentText().toStdString();
+    auto model = dynamic_cast<QStringListModel*>(ui->region_list->model());
     auto* w = dynamic_cast<tracking_window*>(parent());
     if(!w) // for connectometry atlas
     {
         for(int index = 0; index < indexes.size(); ++index)
         {
             roi_list.push_back(uint32_t(indexes[index].row()));
-            roi_name.push_back(dynamic_cast<QStringListModel*>(ui->region_list->model())->stringList()[indexes[index].row()].toStdString());
+            roi_name.push_back(model->stringList()[indexes[index].row()].toStdString());
         }
         accept();
         return;
@@ -122,3 +170,18 @@ void AtlasDialog::on_add_all_regions_clicked()
     ui->region_list->setFocus();
     ui->region_list->raise();
 }
+
+void AtlasDialog::on_select_clicked()
+{
+    bool ok;
+    QString sel = QInputDialog::getText(this,"DSI Studio","Please specify the select text",QLineEdit::Normal,"",&ok);
+    if(!ok)
+        return;
+    ui->region_list->clearSelection();
+    auto model = dynamic_cast<QStringListModel*>(ui->region_list->model());
+    for (int row = 0; row < model->rowCount(); ++row)
+        if (model->data(model->index(row, 0), Qt::DisplayRole).toString().startsWith(sel))
+            ui->region_list->selectionModel()->select(model->index(row, 0), QItemSelectionModel::Select);
+}
+
+
