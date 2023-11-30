@@ -59,7 +59,7 @@ void CreateDBDialog::update_list(void)
     dir_length = 0;
     for(size_t i = 0;i < group.size();)
         if(group[i].endsWith("db.fib.gz"))
-            group.remove(i);
+            group.removeAt(i);
         else
             ++i;
     if(group.size() > 1)
