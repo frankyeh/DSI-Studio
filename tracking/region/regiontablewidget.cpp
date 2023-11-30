@@ -149,6 +149,20 @@ void RegionTableWidget::add_region_from_atlas(std::shared_ptr<atlas> at,unsigned
         return;
     regions.back()->add_points(std::move(points));
 }
+void RegionTableWidget::add_merged_regions_from_atlas(std::shared_ptr<atlas> at,QString name,const std::vector<unsigned int>& roi_list)
+{
+    add_region(name);
+    std::vector<tipl::vector<3,short> > all_points;
+    for(auto label : roi_list)
+    {
+        std::vector<tipl::vector<3,short> > points;
+        cur_tracking_window.handle->get_atlas_roi(at,label,regions.back()->dim,regions.back()->to_diffusion_space,points);
+        all_points.insert(all_points.end(),points.begin(),points.end());
+    }
+    if(all_points.empty())
+        return;
+    regions.back()->add_points(std::move(all_points));
+}
 void RegionTableWidget::add_all_regions_from_atlas(std::shared_ptr<atlas> at)
 {
     tipl::progress prog("add_all_regions_from_atlas");
