@@ -29,6 +29,19 @@
       <widget class="QComboBox" name="atlasListBox"/>
      </item>
      <item>
+      <widget class="QPushButton" name="select">
+       <property name="maximumSize">
+        <size>
+         <width>64</width>
+         <height>16777215</height>
+        </size>
+       </property>
+       <property name="text">
+        <string>Select...</string>
+       </property>
+      </widget>
+     </item>
+     <item>
       <widget class="QPushButton" name="add_all_regions">
        <property name="maximumSize">
         <size>
@@ -88,6 +101,13 @@
         </size>
        </property>
       </spacer>
+     </item>
+     <item>
+      <widget class="QPushButton" name="merge_and_add">
+       <property name="text">
+        <string>Merge&amp;&amp;Add</string>
+       </property>
+      </widget>
      </item>
      <item>
       <widget class="QPushButton" name="add_atlas">
