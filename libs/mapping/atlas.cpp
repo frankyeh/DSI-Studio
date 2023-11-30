@@ -97,6 +97,8 @@ bool atlas::load_from_file(void)
         }
         else
         {
+            // remove empty regions
+            /*
             bool modified_atlas = false;
             for(size_t i = 0;i < labels.size();)
                 if(region_value[i] >= hist.size() || !hist[region_value[i]])
@@ -110,6 +112,7 @@ bool atlas::load_from_file(void)
             if(modified_atlas)
                 for(size_t i = 0;i < region_value.size();++i)
                     value2index[region_value[i]] = uint16_t(i+1);
+                    */
         }
     }
     return true;
