@@ -714,37 +714,10 @@ void reconstruction_window::on_add_t1t2_clicked()
 
 void reconstruction_window::on_qsdr_partial_fov_clicked()
 {
-    {
-        tipl::io::gz_nifti read;
-        if(!read.load_from_file(fa_template_list[handle->voxel.template_id].c_str()))
-            return;
-        read.get_image_transformation(handle->voxel.trans_to_mni);
-    }
-
-    tipl::vector<3> min_fov,max_fov,partial_min,partial_max;
-    min_fov[0] = handle->voxel.trans_to_mni[3];
-    min_fov[1] = handle->voxel.trans_to_mni[7];
-    min_fov[2] = handle->voxel.trans_to_mni[11];
-    max_fov = min_fov;
-    max_fov[0] += handle->voxel.trans_to_mni[0]*float(handle->voxel.dim[0]);
-    max_fov[1] += handle->voxel.trans_to_mni[5]*float(handle->voxel.dim[1]);
-    max_fov[2] += handle->voxel.trans_to_mni[10]*float(handle->voxel.dim[2]);
     QString values = QInputDialog::getText(this,"DSI Studio","Specify the range of MNI coordinates separated by spaces (minx miny minz maxx maxy maxz)",QLineEdit::Normal,
-                                           QString("%1 %2 %3 %4 %5 %6").arg(min_fov[0]).arg(min_fov[1]).arg(min_fov[2]).arg(max_fov[0]).arg(max_fov[1]).arg(max_fov[2]));
+                                           QString("-36 -30 -20 36 30 24"));
     if(values.isEmpty())
         return;
-
-    std::istringstream in(values.toStdString());
-    in >> partial_min >> partial_max;
-    for(int i = 0;i < 3;++i)
-    {
-        if(partial_min[i] < std::min(min_fov[i],max_fov[i]) ||
-           partial_max[i] > std::max(min_fov[i],max_fov[i]))
-        {
-            QMessageBox::critical(this,"ERROR","out of bounding box in partial reconstruction.");
-            return;
-        }
-    }
     handle->command("[Step T2b(2)][Partial FOV]",values.toStdString());
 }
 
