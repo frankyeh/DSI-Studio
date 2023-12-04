@@ -203,6 +203,9 @@ public:
         // if subject data is only a fragment of FOV, crop images
         if(voxel.partial_min != voxel.partial_max)
         {
+            for(int d = 0;d < 3;++d)
+                if(voxel.partial_min[d] > voxel.partial_max[d])
+                    std::swap(voxel.partial_min[d],voxel.partial_max[d]);
             tipl::out() << "partial reconstruction" << std::endl;
             tipl::out() << "partial_min: " << voxel.partial_min << std::endl;
             tipl::out() << "partial_max: " << voxel.partial_max << std::endl;
