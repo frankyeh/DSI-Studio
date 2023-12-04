@@ -408,44 +408,54 @@ void ROIRegion::get_quantitative_data(std::shared_ptr<fib_data> handle,std::vect
     data.push_back(get_volume()); //volume (mm^3)
     if(region.empty())
         return;
-    tipl::vector<3,float> cm = get_pos();
-    tipl::vector<3,float> max(region[0]),min(region[0]);
-    for (unsigned int index = 0; index < region.size(); ++index)
     {
-        max[0] = std::max<float>(max[0],region[index][0]);
-        max[1] = std::max<float>(max[1],region[index][1]);
-        max[2] = std::max<float>(max[2],region[index][2]);
-        min[0] = std::min<float>(min[0],region[index][0]);
-        min[1] = std::min<float>(min[1],region[index][1]);
-        min[2] = std::min<float>(min[2],region[index][2]);
+        tipl::vector<3,float> cm = get_pos();
+        tipl::vector<3,float> max(region[0]),min(region[0]);
+        for (unsigned int index = 0; index < region.size(); ++index)
+        {
+            max[0] = std::max<float>(max[0],region[index][0]);
+            max[1] = std::max<float>(max[1],region[index][1]);
+            max[2] = std::max<float>(max[2],region[index][2]);
+            min[0] = std::min<float>(min[0],region[index][0]);
+            min[1] = std::min<float>(min[1],region[index][1]);
+            min[2] = std::min<float>(min[2],region[index][2]);
+        }
+
+        titles.push_back("center x");
+        titles.push_back("center y");
+        titles.push_back("center z");
+        titles.push_back("bounding box x");
+        titles.push_back("bounding box y");
+        titles.push_back("bounding box z");
+        titles.push_back("bounding box x");
+        titles.push_back("bounding box y");
+        titles.push_back("bounding box z");
+        std::copy(cm.begin(),cm.end(),std::back_inserter(data)); // center of the mass
+        std::copy(min.begin(),min.end(),std::back_inserter(data)); // bounding box
+        std::copy(max.begin(),max.end(),std::back_inserter(data)); // bounding box
+
+        if(!handle->s2t.empty())
+        {
+            handle->sub2mni(cm);
+            handle->sub2mni(max);
+            handle->sub2mni(min);
+            titles.push_back("center mni x");
+            titles.push_back("center mni y");
+            titles.push_back("center mni z");
+            titles.push_back("bounding box mni x");
+            titles.push_back("bounding box mni y");
+            titles.push_back("bounding box mni z");
+            titles.push_back("bounding box mni x");
+            titles.push_back("bounding box mni y");
+            titles.push_back("bounding box mni z");
+            std::copy(cm.begin(),cm.end(),std::back_inserter(data)); // center of the mass
+            // swap due to RAS to LPS
+            std::swap(min[0],max[0]);
+            std::swap(min[1],max[1]);
+            std::copy(min.begin(),min.end(),std::back_inserter(data)); // bounding box
+            std::copy(max.begin(),max.end(),std::back_inserter(data)); // bounding box
+        }
     }
-
-    titles.push_back("center x");
-    titles.push_back("center y");
-    titles.push_back("center z");
-    std::copy(cm.begin(),cm.end(),std::back_inserter(data)); // center of the mass
-
-    if(!handle->s2t.empty())
-    {
-        tipl::vector<3> mni(cm);
-        handle->sub2mni(mni);
-        titles.push_back("center mni x");
-        titles.push_back("center mni y");
-        titles.push_back("center mni z");
-        std::copy(mni.begin(),mni.end(),std::back_inserter(data)); // center of the mass
-    }
-
-    titles.push_back("bounding box x");
-    titles.push_back("bounding box y");
-    titles.push_back("bounding box z");
-    std::copy(max.begin(),max.end(),std::back_inserter(data)); // bounding box
-
-    titles.push_back("bounding box x");
-    titles.push_back("bounding box y");
-    titles.push_back("bounding box z");
-    std::copy(min.begin(),min.end(),std::back_inserter(data)); // bounding box
-
-
     std::vector<std::string> index_titles;
     handle->get_index_list(index_titles);
     std::vector<tipl::vector<3> > points;
