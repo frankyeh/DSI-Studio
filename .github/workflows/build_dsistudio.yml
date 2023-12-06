@@ -68,7 +68,7 @@ jobs:
     if: ${{ github.event.inputs.build_mac == 'true' }}
     strategy:
       matrix:
-        os: [macos-13,macos-12]
+        os: [macos-13,macos-12,macos-11]
       fail-fast: false
     runs-on: ${{ matrix.os }}
     env:
@@ -76,10 +76,9 @@ jobs:
     steps:
     - uses: actions/checkout@v2.5.0
     - name: Install Qt
-      run: brew update
-    - name: Install Qt
-      run: brew install qt5
-      timeout-minutes: 600
+      uses: jurplel/install-qt-action@v3.3.0
+      with:
+        modules: qtcharts
     - name: Download TIPL and Atlases
       run: |
         git clone https://github.com/frankyeh/TIPL.git
@@ -98,7 +97,7 @@ jobs:
     - name: Packaging
       run: |
         mv build/dsi_studio.app .
-        /usr/local/opt/qt@5/bin/macdeployqt dsi_studio.app
+        macdeployqt dsi_studio.app
         curl -sSLO "https://github.com/frankyeh/TinyFSL/releases/download/2022.08.03/tiny_fsl_${{ matrix.os }}.zip"
         7z e tiny_fsl_${{ matrix.os }}.zip -odsi_studio.app/Contents/MacOS/plugin
         rm -fr dsi_studio.app/Contents/MacOS/plugin/tiny_fsl
@@ -107,8 +106,7 @@ jobs:
         mv UNet-Studio-Data/network dsi_studio.app/Contents/MacOS/
         mv dsi_studio.icns dsi_studio.app/Contents/Resources/
         zip -r dsi_studio_${{ matrix.os }}.zip dsi_studio.app
-        
-        zip -r dsi_studio_${{ matrix.os }}.zip dsi_studio.app
+    
     - name: Create Release
       uses: ncipollo/release-action@v1.8.9
       with:
@@ -122,7 +120,7 @@ jobs:
     if: ${{ github.event.inputs.build_mac == 'true' }}
     strategy:
       matrix:
-        os: [macos-13,macos-12]
+        os: [macos-13,macos-12,macos-11]
       fail-fast: false
     runs-on: ${{ matrix.os }}
     env:
