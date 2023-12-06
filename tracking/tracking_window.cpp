@@ -455,19 +455,19 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
     } 
 
     {
-        auto* ShortcutQ = new QShortcut(QKeySequence(tr("Q", "X+")),this);
-        auto* ShortcutA = new QShortcut(QKeySequence(tr("A", "X+")),this);
-        auto* ShortcutW = new QShortcut(QKeySequence(tr("W", "X+")),this);
-        auto* ShortcutS = new QShortcut(QKeySequence(tr("S", "X+")),this);
-        auto* ShortcutE = new QShortcut(QKeySequence(tr("E", "X+")),this);
-        auto* ShortcutD = new QShortcut(QKeySequence(tr("D", "X+")),this);
-        connect(ShortcutQ,SIGNAL(activated()),this,SLOT(Move_Slice_X()));
-        connect(ShortcutA,SIGNAL(activated()),this,SLOT(Move_Slice_X2()));
-        connect(ShortcutW,SIGNAL(activated()),this,SLOT(Move_Slice_Y()));
-        connect(ShortcutS,SIGNAL(activated()),this,SLOT(Move_Slice_Y2()));
-        connect(ShortcutE,SIGNAL(activated()),this,SLOT(Move_Slice_Z()));
-        connect(ShortcutD,SIGNAL(activated()),this,SLOT(Move_Slice_Z2()));
-
+        connect(new QShortcut(QKeySequence(tr("Q", "X+")),this),SIGNAL(activated()),this,SLOT(Move_Slice_X()));
+        connect(new QShortcut(QKeySequence(tr("A", "X+")),this),SIGNAL(activated()),this,SLOT(Move_Slice_X2()));
+        connect(new QShortcut(QKeySequence(tr("W", "X+")),this),SIGNAL(activated()),this,SLOT(Move_Slice_Y()));
+        connect(new QShortcut(QKeySequence(tr("S", "X+")),this),SIGNAL(activated()),this,SLOT(Move_Slice_Y2()));
+        connect(new QShortcut(QKeySequence(tr("E", "X+")),this),SIGNAL(activated()),this,SLOT(Move_Slice_Z()));
+        connect(new QShortcut(QKeySequence(tr("D", "X+")),this),SIGNAL(activated()),this,SLOT(Move_Slice_Z2()));
+        connect(new QShortcut(QKeySequence(Qt::Key_F1),this),&QShortcut::activated,this,[this](void){on_show_fiber_toggled(!ui->show_fiber->isChecked());});
+        connect(new QShortcut(QKeySequence(Qt::Key_F2),this),&QShortcut::activated,this,[this](void){on_show_track_toggled(!ui->show_track->isChecked());});
+        connect(new QShortcut(QKeySequence(Qt::Key_F3),this),&QShortcut::activated,this,[this](void){on_show_ruler_toggled(!ui->show_ruler->isChecked());});
+        connect(new QShortcut(QKeySequence(Qt::Key_F4),this),&QShortcut::activated,this,[this](void){on_show_position_toggled(!ui->show_position->isChecked());});
+        connect(new QShortcut(QKeySequence(Qt::Key_F5),this),&QShortcut::activated,this,[this](void){on_show_r_toggled(!ui->show_r->isChecked());});
+        connect(new QShortcut(QKeySequence(Qt::Key_F6),this),&QShortcut::activated,this,[this](void){on_show_3view_toggled(!ui->show_3view->isChecked());});
+        connect(new QShortcut(QKeySequence(Qt::Key_F7),this),&QShortcut::activated,this,[this](void){on_show_edge_toggled(!ui->show_edge->isChecked());});
     }
 
     qApp->installEventFilter(this);
