@@ -134,8 +134,10 @@ jobs:
         brew update
         brew install cmake
     - name: Install Qt
-      run: brew install qt6
-      timeout-minutes: 600
+      uses: jurplel/install-qt-action@v3.3.0
+      with:
+        version: '6.2'
+        modules: qtcharts
     - name: Download TIPL and Atlases
       run: |
         git clone https://github.com/frankyeh/TIPL.git
@@ -150,7 +152,7 @@ jobs:
     - name: Packaging
       run: |
         mv build/dsi_studio.app .
-        /usr/local/opt/qt@6/bin/macdeployqt dsi_studio.app
+        macdeployqt dsi_studio.app
         curl -sSLO "https://github.com/frankyeh/TinyFSL/releases/download/2022.08.03/tiny_fsl_${{ matrix.os }}.zip"
         7z e tiny_fsl_${{ matrix.os }}.zip -odsi_studio.app/Contents/MacOS/plugin
         rm -fr dsi_studio.app/Contents/MacOS/plugin/tiny_fsl
