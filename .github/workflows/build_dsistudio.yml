@@ -5,11 +5,11 @@ on:
       tag:
         description: 'Tag'
         required: true
-        default: '2023.07.08'
+        default: '2023.12.06'
       release_name:
         description: 'Release Name'
         required: true
-        default: '2023.07.08 "Chen" Release'
+        default: '2024 "Chen" Release'
       build_windows:
         type: boolean
         description: 'Build Windows'
