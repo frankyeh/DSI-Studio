@@ -1,8 +1,9 @@
 #include "basic_voxel.hpp"
 #include "image_model.hpp"
 
-void Voxel::init(void)
+bool Voxel::init(void)
 {
+    tipl::progress prog("initializing",true);
     if(is_histology)
     {
         hist_data.resize(thread_count);
@@ -21,8 +22,9 @@ void Voxel::init(void)
             voxel_data[index].dir.resize(max_fiber_number);
         }
     }
-    for (unsigned int index = 0; index < process_list.size(); ++index)
+    for (unsigned int index = 0; prog(index,process_list.size()); ++index)
         process_list[index]->init(*this);
+    return !prog.aborted();
 }
 
 void Voxel::load_from_src(ImageModel& image_model)
@@ -94,18 +96,14 @@ bool Voxel::run_hist(void)
 }
 bool Voxel::run(const char* title)
 {
-    bool terminated = false;
-    tipl::progress prog("reconstructing ",title);
+    tipl::progress prog("processing voxel data",true);
+    size_t total_size = 0;
     tipl::par_for(thread_count,[&](size_t thread_id)
     {
-        for(size_t voxel_index = thread_id;
-            voxel_index < mask.size() && !terminated;
-            voxel_index += thread_count)
+        for(size_t voxel_index = thread_id;voxel_index < mask.size() && prog(++total_size,mask.size());voxel_index += thread_count)
         {
             if(!mask[voxel_index])
                 continue;
-            if(thread_id == 0 && !prog(voxel_index,mask.size()) && prog.aborted())
-                terminated = true;
             voxel_data[thread_id].init();
             voxel_data[thread_id].voxel_index = voxel_index;
             for (size_t index = 0; index < process_list.size(); ++index)
@@ -118,7 +116,7 @@ bool Voxel::run(const char* title)
 
 void Voxel::end(tipl::io::gz_mat_write& writer)
 {
-    tipl::progress prog("saving results");
+    tipl::progress prog("saving results",true);
     for (size_t index = 0;prog(uint32_t(index),uint32_t(process_list.size())); ++index)
         process_list[index]->end(*this,writer);
 }

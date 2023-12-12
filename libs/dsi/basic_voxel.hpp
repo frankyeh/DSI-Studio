@@ -167,14 +167,12 @@ public:
     template<typename ...Ts>
     bool init_process(void)
     {
-        tipl::progress prog("initializing");
         process_list.clear();
         add_process<Ts...>();
-        init();
-        return !prog.aborted();
+        return init();
     }
 public:
-    void init(void);
+    bool init(void);
     bool run(const char* title);
     bool run_hist(void);
     void end(tipl::io::gz_mat_write& writer);
