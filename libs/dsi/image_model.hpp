@@ -245,7 +245,6 @@ public:
 public:
     bool is_dsi_half_sphere(void);
     bool is_dsi(void);
-    bool need_scheme_balance(void);
     bool is_multishell(void);
     void get_report(std::string& report);
 public:
