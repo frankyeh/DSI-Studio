@@ -2193,7 +2193,11 @@ Tracking</string>
           <string>Show Tracks</string>
          </property>
          <property name="text">
-          <string>T</string>
+          <string/>
+         </property>
+         <property name="icon">
+          <iconset resource="../icons.qrc">
+           <normaloff>:/icons/icons/tracts.xpm</normaloff>:/icons/icons/tracts.xpm</iconset>
          </property>
          <property name="checkable">
           <bool>true</bool>
@@ -2254,7 +2258,7 @@ Tracking</string>
          </property>
          <property name="icon">
           <iconset resource="../icons.qrc">
-           <normaloff>:/icons/icons/guides.xpm</normaloff>:/icons/icons/guides.xpm</iconset>
+           <normaloff>:/icons/icons/red_cross.xpm</normaloff>:/icons/icons/red_cross.xpm</iconset>
          </property>
          <property name="checkable">
           <bool>true</bool>
@@ -2293,37 +2297,6 @@ Tracking</string>
         </widget>
        </item>
        <item>
-        <widget class="QToolButton" name="show_3view">
-         <property name="sizePolicy">
-          <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-           <horstretch>0</horstretch>
-           <verstretch>0</verstretch>
-          </sizepolicy>
-         </property>
-         <property name="minimumSize">
-          <size>
-           <width>24</width>
-           <height>0</height>
-          </size>
-         </property>
-         <property name="maximumSize">
-          <size>
-           <width>16777215</width>
-           <height>16777215</height>
-          </size>
-         </property>
-         <property name="toolTip">
-          <string>Show 3-slice view</string>
-         </property>
-         <property name="text">
-          <string>3</string>
-         </property>
-         <property name="checkable">
-          <bool>true</bool>
-         </property>
-        </widget>
-       </item>
-       <item>
         <widget class="QToolButton" name="show_edge">
          <property name="sizePolicy">
           <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
@@ -2341,7 +2314,11 @@ Tracking</string>
           <string>Show region edges</string>
          </property>
          <property name="text">
-          <string>E</string>
+          <string/>
+         </property>
+         <property name="icon">
+          <iconset resource="../icons.qrc">
+           <normaloff>:/icons/icons/cubic.xpm</normaloff>:/icons/icons/cubic.xpm</iconset>
          </property>
          <property name="checkable">
           <bool>true</bool>
@@ -2443,6 +2420,41 @@ Tracking</string>
          <property name="icon">
           <iconset resource="../icons.qrc">
            <normaloff>:/icons/icons/axial.xpm</normaloff>:/icons/icons/axial.xpm</iconset>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QToolButton" name="show_3view">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="minimumSize">
+          <size>
+           <width>24</width>
+           <height>0</height>
+          </size>
+         </property>
+         <property name="maximumSize">
+          <size>
+           <width>16777215</width>
+           <height>16777215</height>
+          </size>
+         </property>
+         <property name="toolTip">
+          <string>Show 3-slice view</string>
+         </property>
+         <property name="text">
+          <string/>
+         </property>
+         <property name="icon">
+          <iconset resource="../icons.qrc">
+           <normaloff>:/icons/icons/3view.xpm</normaloff>:/icons/icons/3view.xpm</iconset>
+         </property>
+         <property name="checkable">
+          <bool>true</bool>
          </property>
         </widget>
        </item>
