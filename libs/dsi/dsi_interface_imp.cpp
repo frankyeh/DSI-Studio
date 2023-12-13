@@ -90,11 +90,6 @@ bool ImageModel::reconstruction(void)
     voxel.recon_report.str("");
     voxel.step_report.clear();
     voxel.step_report.str("");
-
-    voxel.scheme_balance = need_scheme_balance() && (voxel.method_id == 7 || voxel.method_id == 4);
-    if(voxel.scheme_balance)
-        tipl::out() << "scheme balance is applied to avoid directional bias";
-    voxel.half_sphere = is_dsi_half_sphere();
     voxel.max_fiber_number = (voxel.method_id == 1) ? 1 : 5;
 
     if(voxel.is_histology)
@@ -116,11 +111,8 @@ bool ImageModel::reconstruction(void)
             voxel.step_report << "[Step T2b(1)]=GQI" << std::endl;
             voxel.step_report << "[Step T2b(1)][Diffusion sampling length ratio]=" << float(voxel.param[0]) << std::endl;
 
-            if(voxel.needs("rdi"))
-                voxel.recon_report <<
+            voxel.recon_report <<
                     " The restricted diffusion was quantified using restricted diffusion imaging (Yeh et al., MRM, 77:603–612 (2017)).";
-
-
             voxel.recon_report <<
                 " The diffusion data were reconstructed using generalized q-sampling imaging (Yeh et al., IEEE TMI, ;29(9):1626-35, 2010) with a diffusion sampling length ratio of "
                 << float(voxel.param[0]) << ".";
