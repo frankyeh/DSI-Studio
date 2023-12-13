@@ -269,7 +269,8 @@ void TractTableWidget::start_tracking(void)
     }
 
     if(!cur_tracking_window.handle->set_dt_index(
-            cur_tracking_window.get_dt_index_pair(),
+            std::make_pair(cur_tracking_window.renderWidget->getData("dt_index1").toInt()-1,
+                           cur_tracking_window.renderWidget->getData("dt_index2").toInt()-1),
             cur_tracking_window.renderWidget->getData("dt_threshold_type").toInt()))
     {
         QMessageBox::critical(this,"ERROR",cur_tracking_window.handle->error_msg.c_str());
