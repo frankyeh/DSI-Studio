@@ -121,6 +121,7 @@ public://used in GQI
     bool r2_weighted = false;// used in GQI only
     bool half_sphere = true;
 public://used in GQI
+    std::vector<unsigned int> shell;
     bool scheme_balance = false;
 public:// manual alignment used in QSDR
     bool manual_alignment = false;
