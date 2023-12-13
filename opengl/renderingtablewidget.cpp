@@ -9,6 +9,7 @@
 #include "qcolorcombobox.h"
 #include "tracking/tracking_window.h"
 #include "glwidget.h"
+#include "ui_tracking_window.h"
 #include <iostream>
 #include <cmath>
 
@@ -550,22 +551,22 @@ void RenderingTableWidget::dataChanged(const QModelIndex &, const QModelIndex &b
     }
     if(cur_node->id == "roi_position")
     {
-        cur_tracking_window.on_show_position_toggled(cur_node->value.toBool());
+        cur_tracking_window.ui->roi_position->setChecked(cur_node->value.toBool());
         return;
     }
     if(cur_node->id == "roi_ruler")
     {
-        cur_tracking_window.on_show_ruler_toggled(cur_node->value.toBool());
+        cur_tracking_window.ui->roi_ruler->setChecked(cur_node->value.toBool());
         return;
     }
     if(cur_node->id == "roi_label")
     {
-        cur_tracking_window.on_show_r_toggled(cur_node->value.toBool());
+        cur_tracking_window.ui->roi_label->setChecked(cur_node->value.toBool());
         return;
     }
     if(cur_node->id == "roi_fiber")
     {
-        cur_tracking_window.on_show_fiber_toggled(cur_node->value.toBool());
+        cur_tracking_window.ui->roi_fiber->setChecked(cur_node->value.toBool());
         return;
     }
 

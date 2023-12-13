@@ -75,7 +75,6 @@ public:
     connectometry_result cnt_result;
 public:
     std::shared_ptr<QTimer> timer2;
-    std::pair<int,int> get_dt_index_pair(void);
     void set_tracking_param(ThreadData& tracking_thread);
 public:
     std::shared_ptr<tract_report> tact_report_imp;
@@ -105,24 +104,10 @@ public:
     bool command(QString cmd,QString param = "",QString param2 = "");
 
 public slots:
-    void restore_3D_window();
-    void on_show_track_toggled(bool checked);
-    void on_show_edge_toggled(bool checked);
-    void on_show_fiber_toggled(bool checked);
-    void on_show_r_toggled(bool checked);
-    void on_show_position_toggled(bool checked);
-    void on_show_ruler_toggled(bool checked);
-
-public slots:
-    void on_show_3view_toggled(bool checked);
-    void on_show_mosaic_toggled(bool checked);
-
     void check_reg(void);
     void change_contrast();
     void on_enable_auto_track_clicked();
-    void update_scene_slice(void);
 private slots:
-    void on_actionRestore_window_layout_triggered();
     void on_actionTDI_Import_Slice_Space_triggered();
     void on_actionTDI_Subvoxel_Diffusion_Space_triggered();
     void on_actionTDI_Diffusion_Space_triggered();
@@ -139,14 +124,9 @@ private slots:
     void on_addRegionFromAtlas_clicked();
     void on_actionQuality_Assessment_triggered();
     void on_actionAuto_Rotate_triggered(bool checked);
-    void on_action3D_Screen_3_Views_triggered();
-    void on_action3D_Screen_3_Views_Horizontal_triggered();
-    void on_action3D_Screen_3_Views_Vertical_triggered();
-    void on_actionROI_triggered();
     void on_rendering_efficiency_currentIndexChanged(int index);
 
     void stripSkull();
-    void on_actionRestore_Tracking_Settings_triggered();
     void on_actionAdjust_Mapping_triggered();
     void on_actionSave_mapping_triggered();
     void on_actionLoad_mapping_triggered();
@@ -172,8 +152,6 @@ private slots:
     void on_actionSave_Slices_to_DICOM_triggered();
 
     void on_actionLoad_Parameter_ID_triggered();
-    void on_actionLoad_Presentation_triggered();
-    void on_actionSave_Presentation_triggered();
 
     void on_actionInsert_Axial_Pictures_triggered();
     void on_actionInsert_Coronal_Pictures_triggered();

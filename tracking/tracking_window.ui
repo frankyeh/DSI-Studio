@@ -2126,7 +2126,7 @@ Tracking</string>
         <number>0</number>
        </property>
        <item>
-        <widget class="QToolButton" name="show_fiber">
+        <widget class="QToolButton" name="roi_fiber">
          <property name="sizePolicy">
           <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
            <horstretch>0</horstretch>
@@ -2161,7 +2161,7 @@ Tracking</string>
         </widget>
        </item>
        <item>
-        <widget class="QToolButton" name="show_track">
+        <widget class="QToolButton" name="roi_track">
          <property name="sizePolicy">
           <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
            <horstretch>0</horstretch>
@@ -2190,7 +2190,7 @@ Tracking</string>
         </widget>
        </item>
        <item>
-        <widget class="QToolButton" name="show_ruler">
+        <widget class="QToolButton" name="roi_ruler">
          <property name="sizePolicy">
           <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
            <horstretch>0</horstretch>
@@ -2222,7 +2222,7 @@ Tracking</string>
         </widget>
        </item>
        <item>
-        <widget class="QToolButton" name="show_position">
+        <widget class="QToolButton" name="roi_position">
          <property name="sizePolicy">
           <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
            <horstretch>0</horstretch>
@@ -2254,7 +2254,7 @@ Tracking</string>
         </widget>
        </item>
        <item>
-        <widget class="QToolButton" name="show_r">
+        <widget class="QToolButton" name="roi_label">
          <property name="sizePolicy">
           <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
            <horstretch>0</horstretch>
@@ -2282,7 +2282,7 @@ Tracking</string>
         </widget>
        </item>
        <item>
-        <widget class="QToolButton" name="show_edge">
+        <widget class="QToolButton" name="roi_draw_edge">
          <property name="sizePolicy">
           <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
            <horstretch>0</horstretch>

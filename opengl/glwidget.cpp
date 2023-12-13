@@ -2037,10 +2037,6 @@ void GLWidget::addSurface(void)
     command("add_surface",qobject_cast<QAction*>(sender())->text());
 }
 
-void GLWidget::copyToClipboard(void)
-{
-    QApplication::clipboard()->setImage(tipl::qt::get_bounding_box(grab_image()));
-}
 
 void GLWidget::copyToClipboardEach(QTableWidget* widget,unsigned int col_size)
 {
@@ -2072,27 +2068,7 @@ void GLWidget::copyToClipboardEach(QTableWidget* widget,unsigned int col_size)
     QMessageBox::information(this,"DSI Studio","Images captured to clipboard");
 
 }
-
-void GLWidget::copyToClipboardEachTract(void)
-{
-    bool ok = true;
-    int col_count = QInputDialog::getInt(this,"DSI Studio","Column Count",5,1,50,1&ok);
-    if(!ok)
-        return;
-    copyToClipboardEach(cur_tracking_window.tractWidget,uint32_t(col_count));
-}
-
-void GLWidget::copyToClipboardEachRegion(void)
-{
-    bool ok = true;
-    int col_count = QInputDialog::getInt(this,"DSI Studio","Column Count",5,1,50,1&ok);
-    if(!ok)
-        return;
-    copyToClipboardEach(cur_tracking_window.regionWidget,uint32_t(col_count));
-}
-
-
-void GLWidget::get3View(QImage& I,unsigned int type)
+QImage GLWidget::get3View(unsigned int type)
 {
     makeCurrent();
     set_view_flip = false;
@@ -2117,7 +2093,7 @@ void GLWidget::get3View(QImage& I,unsigned int type)
         painter.drawImage(image0.width(),0,image1);
         painter.drawImage(image0.width(),image0.height(),image2);
         painter.drawImage(0,image0.height(),image3);
-        I = all;
+        return all;
     }
     if(type == 1) // horizontal
     {
@@ -2134,7 +2110,7 @@ void GLWidget::get3View(QImage& I,unsigned int type)
         painter.drawImage(image0.width(),height_shift,image00);
         painter.drawImage(image0.width()+image00.width(),height_shift,image1);
         painter.drawImage(image0.width()+image00.width()+image1.width(),0,image2);
-        I = all;
+        return all;
     }
     if(type == 2)
     {
@@ -2144,8 +2120,9 @@ void GLWidget::get3View(QImage& I,unsigned int type)
         painter.drawImage(0,image0.height(),image00);
         painter.drawImage(0,image0.height()*2,image1);
         painter.drawImage(0,image0.height()*3,image2);
-        I = all;
+        return all;
     }
+    return QImage();
 }
 extern bool has_gui;
 bool GLWidget::command(QString cmd,QString param,QString param2)
@@ -2425,27 +2402,21 @@ bool GLWidget::command(QString cmd,QString param,QString param2)
     {
         if(param.isEmpty())
             param = QFileInfo(cur_tracking_window.windowTitle()).completeBaseName()+".3view_image.jpg";
-        QImage all;
-        get3View(all,0);
-        all.save(param);
+        get3View(0).save(param);
         return true;
     }
     if(cmd == "save_h3view_image")
     {
         if(param.isEmpty())
             param = QFileInfo(cur_tracking_window.windowTitle()).completeBaseName()+".h3view_image.jpg";
-        QImage all;
-        get3View(all,1);
-        all.save(param);
+        get3View(1).save(param);
         return true;
     }
     if(cmd == "save_v3view_image")
     {
         if(param.isEmpty())
             param = QFileInfo(cur_tracking_window.windowTitle()).completeBaseName()+".v3view_image.jpg";
-        QImage all;
-        get3View(all,2);
-        all.save(param);
+        get3View(2).save(param);
         return true;
     }
     if(cmd == "save_rotation_video")
@@ -2531,6 +2502,8 @@ void GLWidget::save3ViewImage(void)
             "Assign image name",
             QFileInfo(cur_tracking_window.windowTitle()).completeBaseName()+".3view_image.jpg",
             "Image files (*.png *.bmp *.jpg *.tif);;All files (*)");
+    if(filename.isEmpty())
+        return;
     command("save_3view_image",filename);
 
 }

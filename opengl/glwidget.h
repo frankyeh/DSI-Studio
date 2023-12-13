@@ -105,7 +105,6 @@ public:
      float max_connectivity = 0.0f;
  private:
      void rotate_angle(float angle,float x,float y,float z);
-     void copyToClipboardEach(QTableWidget* widget,unsigned int col_size);
  public slots:
      void addSurface(void);
      void catchScreen(void);
@@ -114,9 +113,6 @@ public:
      void loadCamera(void);
      void saveRotationSeries(void);
      void save3ViewImage(void);
-     void copyToClipboard(void);
-     void copyToClipboardEachTract(void);
-     void copyToClipboardEachRegion(void);
      void rotate(void);
      void record_video(void);
      void renderLR(void);
@@ -129,6 +125,7 @@ public:
      void setFrustum(void);
  public:
      bool edit_right;
+     void copyToClipboardEach(QTableWidget* widget,unsigned int col_size);
      QPoint convert_pos(QMouseEvent *event);
      void mousePressEvent(QMouseEvent *event) override;
      void mouseReleaseEvent(QMouseEvent *event) override;
@@ -203,7 +200,7 @@ public:
      enum class view_mode_type { single, two, stereo} view_mode = view_mode_type::single;
 
      bool set_view_flip = false;
-     void get3View(QImage& I,unsigned int type);
+     QImage get3View(unsigned int type);
      QImage grab_image(void){update();return grabFramebuffer();}
      void update_slice(void)
      {
