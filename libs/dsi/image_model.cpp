@@ -971,9 +971,8 @@ bool ImageModel::align_acpc(float reso)
         tipl::out() << "image already aligned, skipping" << std::endl;
         return true;
     }
-    msg += " at an isotropic resolution of ";
-    msg += std::to_string(reso);
-    msg += ".";
+    std::ostringstream out;
+    out << msg << " at an isotropic resolution of " << reso << " (mm).";
     tipl::out() << "align ap-pc" << std::endl;
 
     tipl::image<3> I,J;
@@ -1032,7 +1031,7 @@ bool ImageModel::align_acpc(float reso)
         T *= T2;
     }
     rotate(new_geo,tipl::v(reso,reso,reso),T);
-    voxel.report += msg;
+    voxel.report += out.str();
     return true;
 }
 
