@@ -27,6 +27,24 @@ bool Voxel::init(void)
     return !prog.aborted();
 }
 
+void calculate_shell(std::vector<float> sorted_bvalues,
+                     std::vector<unsigned int>& shell)
+{
+    std::sort(sorted_bvalues.begin(),sorted_bvalues.end());
+    for(uint32_t i = 0;i < sorted_bvalues.size();++i)
+        if(sorted_bvalues[i] > 100.0f)
+            {
+                shell.push_back(i);
+                break;
+            }
+    if(shell.empty())
+        return;
+    for(uint32_t index = shell.back()+1;index < sorted_bvalues.size();++index)
+        if(std::abs(sorted_bvalues[index]-sorted_bvalues[index-1]) > 100.0f)
+            shell.push_back(index);
+}
+
+
 void Voxel::load_from_src(ImageModel& image_model)
 {
     if(image_model.src_bvalues.empty()) // e.g. template recon
@@ -49,6 +67,17 @@ void Voxel::load_from_src(ImageModel& image_model)
             bvectors.push_back(image_model.src_bvectors[sorted_index[i]]);
             dwi_data.push_back(image_model.src_dwi_data[sorted_index[i]]);
         }
+
+    calculate_shell(bvalues,shell);
+
+    auto is_dsi = [this](void){return shell.size() > 4 && shell[1] - shell[0] <= 6;};
+
+    scheme_balance = !is_dsi() && shell.size() < 5 && (method_id == 7 || method_id == 4);
+    if(scheme_balance)
+        tipl::out() << "scheme balance is applied to avoid directional bias";
+
+    if(method_id == 1)
+        max_fiber_number = 1;
 }
 bool Voxel::run_hist(void)
 {
