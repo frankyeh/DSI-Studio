@@ -2164,7 +2164,7 @@ void ImageModel::get_report(std::string& report)
             << " The maximum b-value was " << int(std::round(sorted_bvalues.back())) << " s/mm².";
     }
     else
-    if(shell.size() > 1 && !is_dsi())
+    if(shell.size() > 1)
     {
         out << " A multishell diffusion scheme was used, and the b-values were ";
         for(unsigned int index = 0;index < shell.size();++index)
@@ -2187,7 +2187,6 @@ void ImageModel::get_report(std::string& report)
         out << "and " << sorted_bvalues.size()-shell.back() << ", respectively.";
     }
     else
-        if(shell.size() == 1)
         {
             if(num_dir < 100)
                 out << " A DTI diffusion scheme was used, and a total of ";
