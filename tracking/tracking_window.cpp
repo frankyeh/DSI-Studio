@@ -725,10 +725,10 @@ void tracking_window::on_glSagView_clicked()
     cur_dim = 0;
     ui->SlicePos->setRange(0,current_slice->dim[cur_dim]-1);
     ui->SlicePos->setValue(current_slice->slice_pos[cur_dim]);
+    ui->show_3view->setChecked(false);
     glWidget->set_view(0);
     glWidget->update();
     glWidget->setFocus();
-
     slice_need_update = true;
 }
 
@@ -737,6 +737,7 @@ void tracking_window::on_glCorView_clicked()
     cur_dim = 1;
     ui->SlicePos->setRange(0,current_slice->dim[cur_dim]-1);
     ui->SlicePos->setValue(current_slice->slice_pos[cur_dim]);
+    ui->show_3view->setChecked(false);
     glWidget->set_view(1);
     glWidget->update();
     glWidget->setFocus();
@@ -748,6 +749,7 @@ void tracking_window::on_glAxiView_clicked()
     cur_dim = 2;
     ui->SlicePos->setRange(0,current_slice->dim[cur_dim]-1);
     ui->SlicePos->setValue(current_slice->slice_pos[cur_dim]);
+    ui->show_3view->setChecked(false);
     glWidget->set_view(2);
     glWidget->update();
     glWidget->setFocus();
