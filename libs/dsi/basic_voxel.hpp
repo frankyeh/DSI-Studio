@@ -119,7 +119,6 @@ public:// DTI
 public://used in GQI
     bool odf_resolving = false;
     bool r2_weighted = false;// used in GQI only
-    bool half_sphere = true;
 public://used in GQI
     std::vector<unsigned int> shell;
     bool scheme_balance = false;
