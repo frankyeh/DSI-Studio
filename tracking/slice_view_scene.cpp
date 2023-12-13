@@ -520,7 +520,7 @@ void slice_view_scene::paint_image(QImage& out,bool simple)
                 uint32_t(cur_tracking_window["roi_mosaic_column"].toInt()):
                 std::max<uint32_t>(1,uint32_t(std::ceil(
                                    std::sqrt(float(current_slice->dim[cur_dim]) / skip))));
-        mosaic_row_count = uint32_t(std::ceil(float(dim[cur_dim]/skip)/float(mosaic_column_count)));
+        mosaic_row_count = std::max<uint32_t>(1,uint32_t(std::ceil(float(dim[cur_dim]/skip)/float(mosaic_column_count))));
         if(mosaic_row_count >= skip_row+skip_row+2)
             mosaic_row_count -= skip_row+skip_row;
         else
