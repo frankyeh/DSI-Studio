@@ -1041,9 +1041,6 @@
     <addaction name="actionSagittal_view"/>
     <addaction name="actionCoronal_View"/>
     <addaction name="actionAxial_View"/>
-    <addaction name="actionAuto_Rotate"/>
-    <addaction name="actionZoom_In"/>
-    <addaction name="actionZoom_Out"/>
     <addaction name="separator"/>
     <addaction name="actionLoad_Presentation"/>
     <addaction name="actionSave_Presentation"/>
@@ -1057,6 +1054,7 @@
     <addaction name="actionSave_ROI_Screen"/>
     <addaction name="menuCopy_to_Clipboard"/>
     <addaction name="separator"/>
+    <addaction name="actionAuto_Rotate"/>
     <addaction name="actionRecord_Video"/>
     <addaction name="actionSave_Rotation_Images"/>
     <addaction name="separator"/>
@@ -3248,11 +3246,6 @@ Tracking</string>
     <string>Statistics...</string>
    </property>
   </action>
-  <action name="actionManual_Registration">
-   <property name="text">
-    <string>Adjust MNI Mapping...</string>
-   </property>
-  </action>
   <action name="actionTract_Analysis_Report">
    <property name="text">
     <string>Tract Profile...</string>
@@ -4015,30 +4008,6 @@ Tracking</string>
     <string>&amp;Copy Device</string>
    </property>
   </action>
-  <action name="actionZoom_In">
-   <property name="icon">
-    <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/zoom-in.xpm</normaloff>:/icons/icons/zoom-in.xpm</iconset>
-   </property>
-   <property name="text">
-    <string>Zoom In</string>
-   </property>
-   <property name="shortcut">
-    <string>+</string>
-   </property>
-  </action>
-  <action name="actionZoom_Out">
-   <property name="icon">
-    <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/zoom-out.xpm</normaloff>:/icons/icons/zoom-out.xpm</iconset>
-   </property>
-   <property name="text">
-    <string>Zoom Out</string>
-   </property>
-   <property name="shortcut">
-    <string>-</string>
-   </property>
-  </action>
   <action name="actionSave_Tracts_in_Template_Space">
    <property name="icon">
     <iconset resource="../icons.qrc">
@@ -4126,24 +4095,9 @@ Tracking</string>
     <string>Save Checked Regions to one 4D NIFTI...</string>
    </property>
   </action>
-  <action name="actionAdd_Tracking_Metrics">
-   <property name="text">
-    <string>Add Tracking Metrics...</string>
-   </property>
-  </action>
-  <action name="actionRight_Upper">
-   <property name="text">
-    <string>Right Upper</string>
-   </property>
-  </action>
   <action name="actionRight_Lower">
    <property name="text">
     <string>Right Lower</string>
-   </property>
-  </action>
-  <action name="actionLeft_Upper">
-   <property name="text">
-    <string>Left Upper</string>
    </property>
   </action>
   <action name="actionLeft_Lower">

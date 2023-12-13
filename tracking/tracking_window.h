@@ -114,9 +114,6 @@ public slots:
     void on_show_ruler_toggled(bool checked);
 
 public slots:
-    void on_glAxiView_toggled(bool checked);
-    void on_glCorView_toggled(bool checked);
-    void on_glSagView_toggled(bool checked);
     void on_show_3view_toggled(bool checked);
     void on_show_mosaic_toggled(bool checked);
 

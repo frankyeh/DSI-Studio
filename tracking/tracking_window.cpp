@@ -271,9 +271,28 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         connect(&scene,&slice_view_scene::need_update,this,[this](){slice_need_update = true;});
         connect(&scene,SIGNAL(need_update()),glWidget,SLOT(update()));
 
-        connect(ui->actionAxial_View,&QAction::triggered,this,[this](){on_glAxiView_toggled(true);});
-        connect(ui->actionCoronal_View,&QAction::triggered,this,[this](){on_glCorView_toggled(true);});
-        connect(ui->actionSagittal_view,&QAction::triggered,this,[this](){on_glSagView_toggled(true);});
+        connect(ui->actionAxial_View,&QAction::triggered,this,[this](){ui->glAxiView->setChecked(true);});
+        connect(ui->actionCoronal_View,&QAction::triggered,this,[this](){ui->glCorView->setChecked(true);});
+        connect(ui->actionSagittal_view,&QAction::triggered,this,[this](){ui->glSagView->setChecked(true);});
+
+        connect(ui->glSagView,&QPushButton::toggled,this,[this](bool checked){if(checked)cur_dim = 0;});
+        connect(ui->glCorView,&QPushButton::toggled,this,[this](bool checked){if(checked)cur_dim = 1;});
+        connect(ui->glAxiView,&QPushButton::toggled,this,[this](bool checked){if(checked)cur_dim = 2;});
+
+        auto slice_view_toggled = [this](bool checked){
+        if(checked)
+            {
+                ui->SlicePos->setRange(0,current_slice->dim[cur_dim]-1);
+                ui->SlicePos->setValue(current_slice->slice_pos[cur_dim]);
+                glWidget->set_view(cur_dim);
+                glWidget->update();
+                glWidget->setFocus();
+                slice_need_update = true;
+                set_data("roi_layout",0);}
+        };
+        connect(ui->glSagView,&QPushButton::toggled,this,slice_view_toggled);
+        connect(ui->glCorView,&QPushButton::toggled,this,slice_view_toggled);
+        connect(ui->glAxiView,&QPushButton::toggled,this,slice_view_toggled);
 
 
         connect(ui->actionSave_ROI_Screen,SIGNAL(triggered()),&scene,SLOT(catch_screen()));
@@ -1004,51 +1023,6 @@ void tracking_window::on_show_r_toggled(bool checked)
     slice_need_update = true;
 }
 
-
-void tracking_window::on_glSagView_toggled(bool checked)
-{
-    if(checked)
-    {
-        cur_dim = 0;
-        ui->SlicePos->setRange(0,current_slice->dim[cur_dim]-1);
-        ui->SlicePos->setValue(current_slice->slice_pos[cur_dim]);
-        glWidget->set_view(0);
-        glWidget->update();
-        glWidget->setFocus();
-        slice_need_update = true;
-        set_data("roi_layout",0);
-    }
-}
-
-void tracking_window::on_glCorView_toggled(bool checked)
-{
-    if(checked)
-    {
-        cur_dim = 1;
-        ui->SlicePos->setRange(0,current_slice->dim[cur_dim]-1);
-        ui->SlicePos->setValue(current_slice->slice_pos[cur_dim]);
-        glWidget->set_view(1);
-        glWidget->update();
-        glWidget->setFocus();
-        slice_need_update = true;
-        set_data("roi_layout",0);
-    }
-}
-
-void tracking_window::on_glAxiView_toggled(bool checked)
-{
-    if(checked)
-    {
-        cur_dim = 2;
-        ui->SlicePos->setRange(0,current_slice->dim[cur_dim]-1);
-        ui->SlicePos->setValue(current_slice->slice_pos[cur_dim]);
-        glWidget->set_view(2);
-        glWidget->update();
-        glWidget->setFocus();
-        slice_need_update = true;
-        set_data("roi_layout",0);
-    }
-}
 
 void tracking_window::on_show_3view_toggled(bool checked)
 {
