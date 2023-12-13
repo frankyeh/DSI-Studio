@@ -41,6 +41,7 @@ class GQI_Recon  : public BaseProcess
 public:
     std::vector<tipl::vector<3,float> > q_vectors_time;
     std::vector<float> sinc_ql;
+    bool dsi_half_sphere = false;
 private:
     void calculate_sinc_ql(Voxel& voxel);
     void calculate_q_vec_t(Voxel& voxel);
