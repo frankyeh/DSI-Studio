@@ -243,9 +243,6 @@ public:
     void remove(unsigned int index);
     bool check_b_table(void);
 public:
-    bool is_dsi_half_sphere(void);
-    bool is_dsi(void);
-    bool is_multishell(void);
     void get_report(std::string& report);
 public:
     std::vector<std::pair<size_t,size_t> > get_bad_slices(void);
