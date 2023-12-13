@@ -61,6 +61,12 @@ bool tracking_window::command(QString cmd,QString param,QString param2)
     }
     if(cmd == "save_workspace")
     {
+        if(param.isEmpty())
+        {
+            param = QFileDialog::getExistingDirectory(this,"Save to directory",QFileInfo(windowTitle()).absolutePath());
+            if(param.isEmpty())
+                return false;
+        }
         if(!QDir(param).exists())
             return true;
         if(tractWidget->rowCount())
@@ -122,6 +128,14 @@ bool tracking_window::command(QString cmd,QString param,QString param2)
     }
     if(cmd == "load_workspace")
     {
+        if(param.isEmpty())
+        {
+            param = QFileDialog::getExistingDirectory(this,"Open from directory",QFileInfo(windowTitle()).absolutePath());
+            if(param.isEmpty())
+                return false;
+        }
+        if(!QDir(param).exists())
+            return true;
         tipl::progress prog("loading data");
         if(QDir(param+"/tracts").exists())
         {
