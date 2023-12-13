@@ -510,6 +510,16 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
 
     } 
 
+    {
+        connect(ui->actionSave_tracking_parameters,&QAction::triggered, this,[this](void){command("save_tracking_setting");});
+        connect(ui->actionLoad_tracking_parameters,&QAction::triggered, this,[this](void){command("load_tracking_setting");});
+
+        connect(ui->actionSave_Rendering_Parameters,&QAction::triggered, this,[this](void){command("save_rendering_setting");});
+        connect(ui->actionLoad_Rendering_Parameters,&QAction::triggered, this,[this](void){command("load_rendering_setting");});
+
+        connect(ui->actionRestore_Settings,&QAction::triggered, this,[this](void){command("restore_rendering");});
+
+    }
 
     {
         connect(new QShortcut(QKeySequence(tr("Q", "X+")),this),&QShortcut::activated,this,[this](){ui->glSagSlider->setValue(ui->glSagSlider->value()+1);});
@@ -580,8 +590,6 @@ void tracking_window::report(QString string)
 {
     ui->text_report->setText(string);
 }
-
-
 
 void tracking_window::update_scene_slice(void)
 {
@@ -850,51 +858,6 @@ void tracking_window::on_actionFloat_3D_window_triggered()
         QMessageBox::information(this,"DSI Studio","Float 3D window again to maximize it");
     }
 }
-
-void tracking_window::on_actionSave_tracking_parameters_triggered()
-{
-    QString filename = QFileDialog::getSaveFileName(
-                           this,
-                           "Save INI files",QFileInfo(windowTitle()).baseName()+"_tracking.ini","Setting file (*.ini);;All files (*)");
-    if (filename.isEmpty())
-        return;
-    command("save_tracking_setting",filename);
-}
-
-void tracking_window::on_actionLoad_tracking_parameters_triggered()
-{
-    QString filename = QFileDialog::getOpenFileName(
-                           this,"Open INI files",QFileInfo(work_path).absolutePath(),"Setting file (*.ini);;All files (*)");
-    if (filename.isEmpty())
-        return;
-    command("load_tracking_setting",filename);
-}
-
-void tracking_window::on_actionSave_Rendering_Parameters_triggered()
-{
-    QString filename = QFileDialog::getSaveFileName(
-                           this,
-                           "Save INI files",QFileInfo(windowTitle()).baseName()+"_rendering.ini","Setting file (*.ini);;All files (*)");
-    if (filename.isEmpty())
-        return;
-    command("save_rendering_setting",filename);
-}
-
-void tracking_window::on_actionLoad_Rendering_Parameters_triggered()
-{
-    QString filename = QFileDialog::getOpenFileName(
-                           this,"Open INI files",QFileInfo(work_path).absolutePath(),"Setting file (*.ini);;All files (*)");
-    if (filename.isEmpty())
-        return;
-    command("load_rendering_setting",filename);
-}
-
-
-void tracking_window::on_actionRestore_Settings_triggered()
-{
-    command("restore_rendering");
-}
-
 
 void tracking_window::on_actionRestore_Tracking_Settings_triggered()
 {
