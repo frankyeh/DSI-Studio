@@ -36,11 +36,12 @@ void GQI_Recon::init(Voxel& voxel)
         calculate_q_vec_t(voxel);
     else
         calculate_sinc_ql(voxel);
+    dsi_half_sphere = voxel.shell.size() > 4 && voxel.shell[1] - voxel.shell[0] <= 3;
 }
 
 void GQI_Recon::run(Voxel& voxel, VoxelData& data)
 {
-    if(voxel.half_sphere)
+    if(dsi_half_sphere)
         data.space[0] *= 0.5f;
     // add rotation from QSDR or gradient nonlinearity
     if(voxel.qsdr)
