@@ -1633,7 +1633,7 @@ Tracking</string>
            </property>
            <property name="icon">
             <iconset resource="../icons.qrc">
-             <normaloff>:/icons/dsi_studio.ico</normaloff>:/icons/dsi_studio.ico</iconset>
+             <normaloff>:/icons/icons/tracts.xpm</normaloff>:/icons/icons/tracts.xpm</iconset>
            </property>
            <property name="iconSize">
             <size>
