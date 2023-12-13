@@ -1160,7 +1160,6 @@
      <addaction name="actionStereoscopic"/>
     </widget>
     <addaction name="actionRestore_window_layout"/>
-    <addaction name="actionFloat_3D_window"/>
     <addaction name="menu3D_Views"/>
    </widget>
    <widget class="QMenu" name="menuE_xport">
@@ -3300,15 +3299,6 @@ Tracking</string>
    </property>
    <property name="text">
     <string>Save Checked Regions to one 3D NIFTI...</string>
-   </property>
-  </action>
-  <action name="actionFloat_3D_window">
-   <property name="icon">
-    <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/fullscreen.xpm</normaloff>:/icons/icons/fullscreen.xpm</iconset>
-   </property>
-   <property name="text">
-    <string>Float 3D Window</string>
    </property>
   </action>
   <action name="actionSave_tracking_parameters">

@@ -52,7 +52,6 @@ public:
 
     Ui::tracking_window *ui;
     ::GLWidget *glWidget = nullptr;
-    QGLDockWidget* gLdock = nullptr;
     RegionTableWidget *regionWidget = nullptr;
     TractTableWidget *tractWidget = nullptr;
     RenderingTableWidget *renderWidget = nullptr;
@@ -120,7 +119,6 @@ private slots:
 
     void on_actionTract_Analysis_Report_triggered();
     void on_actionConnectivity_matrix_triggered();
-    void on_actionFloat_3D_window_triggered();
     void on_addRegionFromAtlas_clicked();
     void on_actionQuality_Assessment_triggered();
     void on_actionAuto_Rotate_triggered(bool checked);
@@ -133,9 +131,6 @@ private slots:
     void on_actionLoad_Color_Map_triggered();
     void on_track_style_currentIndexChanged(int index);
     void on_addSlices_clicked();
-    void on_actionSingle_triggered();
-    void on_actionDouble_triggered();
-    void on_actionStereoscopic_triggered();
 
     void on_is_overlay_clicked();
     void on_actionInsert_MNI_images_triggered();

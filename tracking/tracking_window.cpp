@@ -402,6 +402,14 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
     }
     // View
     {
+
+        connect(ui->actionSingle,&QAction::triggered, this,[this](void){glWidget->view_mode = GLWidget::view_mode_type::single;glWidget->update();});
+        connect(ui->actionDouble,&QAction::triggered, this,[this](void){
+            glWidget->view_mode = GLWidget::view_mode_type::two;
+            glWidget->transformation_matrix2 = glWidget->transformation_matrix;
+            glWidget->rotation_matrix2 = glWidget->rotation_matrix;
+            glWidget->update();});
+        connect(ui->actionStereoscopic,&QAction::triggered, this,[this](void){glWidget->view_mode = GLWidget::view_mode_type::stereo;glWidget->update();});
         connect(ui->actionLoad_Presentation,&QAction::triggered, this,[this](void){command("load_workspace");});
         connect(ui->actionSave_Presentation,&QAction::triggered, this,[this](void){if(command("save_workspace"))QMessageBox::information(this,"DSI Studio","File saved");});
 
@@ -872,26 +880,6 @@ void tracking_window::keyPressEvent ( QKeyEvent * event )
 
 }
 
-void tracking_window::on_actionFloat_3D_window_triggered()
-{
-    if(gLdock)
-        gLdock->showMaximized();
-    else
-    {
-        int w = ui->main_widget->width();
-        int h = ui->main_widget->height();
-        gLdock = new QGLDockWidget(this);
-        gLdock->setWindowTitle(windowTitle());
-        gLdock->setAllowedAreas(Qt::NoDockWidgetArea);
-        gLdock->setWidget(ui->main_widget);
-        gLdock->setFloating(true);
-        gLdock->show();
-        gLdock->resize(w,h+44);
-        connect(gLdock,&QGLDockWidget::closedSignal,this,[this](void){ui->centralLayout->addWidget(ui->main_widget);gLdock = nullptr;});
-        QMessageBox::information(this,"DSI Studio","Float 3D window again to maximize it");
-    }
-}
-
 void tracking_window::set_roi_zoom(float zoom)
 {
     ui->zoom->setValue(zoom);
@@ -1070,26 +1058,6 @@ void tracking_window::on_track_style_currentIndexChanged(int index)
             set_data("tract_shader",7);
             break;
     }
-    glWidget->update();
-}
-
-void tracking_window::on_actionSingle_triggered()
-{
-    glWidget->view_mode = GLWidget::view_mode_type::single;
-    glWidget->update();
-}
-
-void tracking_window::on_actionDouble_triggered()
-{
-    glWidget->view_mode = GLWidget::view_mode_type::two;
-    glWidget->transformation_matrix2 = glWidget->transformation_matrix;
-    glWidget->rotation_matrix2 = glWidget->rotation_matrix;
-    glWidget->update();
-}
-
-void tracking_window::on_actionStereoscopic_triggered()
-{
-    glWidget->view_mode = GLWidget::view_mode_type::stereo;
     glWidget->update();
 }
 
