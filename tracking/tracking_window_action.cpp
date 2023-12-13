@@ -227,7 +227,10 @@ bool tracking_window::command(QString cmd,QString param,QString param2)
     }
     if(cmd == "save_rendering_setting")
     {
-        QString filename = param;
+        QString filename = !param.isEmpty() ? param :
+            QFileDialog::getSaveFileName(this,"Save INI files",QFileInfo(windowTitle()).baseName()+"_rendering.ini","Setting file (*.ini);;All files (*)");
+        if (filename.isEmpty())
+            return true;
         QSettings s(filename, QSettings::IniFormat);
         QStringList param_list = renderWidget->treemodel->get_param_list("ROI");
         param_list += renderWidget->treemodel->get_param_list("Rendering");
@@ -244,7 +247,10 @@ bool tracking_window::command(QString cmd,QString param,QString param2)
     }
     if(cmd == "load_rendering_setting")
     {
-        QString filename = param;
+        QString filename = !param.isEmpty() ? param :
+            QFileDialog::getOpenFileName(this,"Open INI files",QFileInfo(work_path).absolutePath(),"Setting file (*.ini);;All files (*)");
+        if (filename.isEmpty())
+            return true;
         if(QFileInfo(filename).exists())
         {
             QSettings s(filename, QSettings::IniFormat);
@@ -265,7 +271,10 @@ bool tracking_window::command(QString cmd,QString param,QString param2)
     }
     if(cmd == "save_tracking_setting")
     {
-        QString filename = param;
+        QString filename = !param.isEmpty() ? param :
+            QFileDialog::getSaveFileName(this,"Save INI files",QFileInfo(windowTitle()).baseName()+"_tracking.ini","Setting file (*.ini);;All files (*)");
+        if (filename.isEmpty())
+            return true;
         QSettings s(filename, QSettings::IniFormat);
         QStringList param_list = renderWidget->treemodel->get_param_list("Tracking");
         param_list += renderWidget->treemodel->get_param_list("Tracking_dT");
@@ -276,7 +285,10 @@ bool tracking_window::command(QString cmd,QString param,QString param2)
     }
     if(cmd == "load_tracking_setting")
     {
-        QString filename = param;
+        QString filename = !param.isEmpty() ? param :
+            QFileDialog::getOpenFileName(this,"Open INI files",QFileInfo(work_path).absolutePath(),"Setting file (*.ini);;All files (*)");
+        if (filename.isEmpty())
+            return true;
         if(QFileInfo(filename).exists())
         {
             QSettings s(filename, QSettings::IniFormat);
