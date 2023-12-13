@@ -220,7 +220,6 @@ reconstruction_window::~reconstruction_window()
 
 void reconstruction_window::Reconstruction(unsigned char method_id,bool prompt)
 {
-    tipl::progress prog_("reconstruction");
     if(!handle.get())
         return;
 
