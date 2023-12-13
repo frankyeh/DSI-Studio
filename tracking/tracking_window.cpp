@@ -462,6 +462,18 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         connect(ui->track_down,SIGNAL(clicked()),tractWidget,SLOT(move_down()));
 
 
+        connect(ui->actionSelect_Tracts,&QAction::triggered,this,[this](void){glWidget->setCursor(Qt::CrossCursor);glWidget->editing_option = GLWidget::selecting;tractWidget->edit_option = TractTableWidget::select;});
+        connect(ui->actionDelete_Tracts,&QAction::triggered,this,[this](void){glWidget->setCursor(Qt::CrossCursor);glWidget->editing_option = GLWidget::selecting;tractWidget->edit_option = TractTableWidget::del;});
+        connect(ui->actionCut_Tracts,&QAction::triggered,   this,[this](void){glWidget->setCursor(Qt::CrossCursor);glWidget->editing_option = GLWidget::selecting;tractWidget->edit_option = TractTableWidget::cut;});
+        connect(ui->actionPaint_Tracts,&QAction::triggered, this,[this](void){glWidget->setCursor(Qt::CrossCursor);glWidget->editing_option = GLWidget::selecting;tractWidget->edit_option = TractTableWidget::paint;});
+        connect(ui->actionMove_Objects,&QAction::triggered, this,[this](void){glWidget->setCursor(Qt::CrossCursor);glWidget->editing_option = GLWidget::moving;});
+
+        connect(ui->actionCut_X,&QAction::triggered, this,[this](void){tractWidget->cut_by_slice(0,true);});
+        connect(ui->actionCut_X_2,&QAction::triggered, this,[this](void){tractWidget->cut_by_slice(0,false);});
+        connect(ui->actionCut_Y,&QAction::triggered, this,[this](void){tractWidget->cut_by_slice(1,true);});
+        connect(ui->actionCut_Y_2,&QAction::triggered, this,[this](void){tractWidget->cut_by_slice(1,false);});
+        connect(ui->actionCut_Z,&QAction::triggered, this,[this](void){tractWidget->cut_by_slice(2,true);});
+        connect(ui->actionCut_Z_2,&QAction::triggered, this,[this](void){tractWidget->cut_by_slice(2,false);});
 
     } 
 
@@ -649,41 +661,6 @@ void tracking_window::SliderValueChanged(void)
     }
 }
 
-void tracking_window::on_actionSelect_Tracts_triggered()
-{
-    glWidget->setCursor(Qt::CrossCursor);
-    glWidget->editing_option = GLWidget::selecting;
-    tractWidget->edit_option = TractTableWidget::select;
-
-}
-
-void tracking_window::on_actionDelete_triggered()
-{
-    glWidget->setCursor(Qt::CrossCursor);
-    glWidget->editing_option = GLWidget::selecting;
-    tractWidget->edit_option = TractTableWidget::del;
-}
-
-void tracking_window::on_actionCut_triggered()
-{
-    glWidget->setCursor(Qt::CrossCursor);
-    glWidget->editing_option = GLWidget::selecting;
-    tractWidget->edit_option = TractTableWidget::cut;
-}
-
-
-void tracking_window::on_actionPaint_triggered()
-{
-    glWidget->setCursor(Qt::CrossCursor);
-    glWidget->editing_option = GLWidget::selecting;
-    tractWidget->edit_option = TractTableWidget::paint;
-}
-
-void tracking_window::on_actionMove_Objects_triggered()
-{
-    glWidget->setCursor(Qt::CrossCursor);
-    glWidget->editing_option = GLWidget::moving;
-}
 
 void tracking_window::move_slice_to(tipl::vector<3,float> slice_position)
 {
@@ -981,35 +958,6 @@ void tracking_window::on_rendering_efficiency_currentIndexChanged(int index)
     glWidget->update();
 }
 
-void tracking_window::on_actionCut_X_triggered()
-{
-    tractWidget->cut_by_slice(0,true);
-}
-
-void tracking_window::on_actionCut_X_2_triggered()
-{
-    tractWidget->cut_by_slice(0,false);
-}
-
-void tracking_window::on_actionCut_Y_triggered()
-{
-    tractWidget->cut_by_slice(1,true);
-}
-
-void tracking_window::on_actionCut_Y_2_triggered()
-{
-    tractWidget->cut_by_slice(1,false);
-}
-
-void tracking_window::on_actionCut_Z_triggered()
-{
-    tractWidget->cut_by_slice(2,true);
-}
-
-void tracking_window::on_actionCut_Z_2_triggered()
-{
-    tractWidget->cut_by_slice(2,false);
-}
 
 
 void tracking_window::on_show_fiber_toggled(bool checked)

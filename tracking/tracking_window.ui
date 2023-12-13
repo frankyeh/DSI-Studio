@@ -1012,10 +1012,10 @@
     <addaction name="actionRedo"/>
     <addaction name="separator"/>
     <addaction name="actionSelect_Tracts"/>
-    <addaction name="actionDelete"/>
+    <addaction name="actionDelete_Tracts"/>
     <addaction name="actionTrim"/>
-    <addaction name="actionPaint"/>
-    <addaction name="actionCut"/>
+    <addaction name="actionPaint_Tracts"/>
+    <addaction name="actionCut_Tracts"/>
     <addaction name="actionCut_end_portion"/>
     <addaction name="menuCut_by_slice"/>
     <addaction name="separator"/>
@@ -2949,7 +2949,7 @@ Tracking</string>
     <string>Ctrl+Z</string>
    </property>
   </action>
-  <action name="actionDelete">
+  <action name="actionDelete_Tracts">
    <property name="text">
     <string>Delete</string>
    </property>
@@ -2965,7 +2965,7 @@ Tracking</string>
     <string>Ctrl+T</string>
    </property>
   </action>
-  <action name="actionCut">
+  <action name="actionCut_Tracts">
    <property name="text">
     <string>Cut</string>
    </property>
@@ -3073,7 +3073,7 @@ Tracking</string>
     <string>Save Rotation Video/Images...</string>
    </property>
   </action>
-  <action name="actionPaint">
+  <action name="actionPaint_Tracts">
    <property name="text">
     <string>Paint</string>
    </property>

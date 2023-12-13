@@ -129,13 +129,8 @@ private slots:
     void on_actionTDI_Import_Slice_Space_triggered();
     void on_actionTDI_Subvoxel_Diffusion_Space_triggered();
     void on_actionTDI_Diffusion_Space_triggered();
-    void on_actionPaint_triggered();
     void on_actionTracts_to_seeds_triggered();
     void on_actionEndpoints_to_seeding_triggered();
-
-    void on_actionCut_triggered();
-    void on_actionDelete_triggered();
-    void on_actionSelect_Tracts_triggered();
 
     void SliderValueChanged(void);
 
@@ -157,12 +152,7 @@ private slots:
     void on_action3D_Screen_3_Views_Vertical_triggered();
     void on_actionROI_triggered();
     void on_rendering_efficiency_currentIndexChanged(int index);
-    void on_actionCut_X_triggered();
-    void on_actionCut_X_2_triggered();
-    void on_actionCut_Y_triggered();
-    void on_actionCut_Y_2_triggered();
-    void on_actionCut_Z_triggered();
-    void on_actionCut_Z_2_triggered();
+
     void stripSkull();
     void on_actionRestore_Tracking_Settings_triggered();
     void on_actionAdjust_Mapping_triggered();
@@ -190,7 +180,6 @@ private slots:
     void on_actionSave_Slices_to_DICOM_triggered();
 
     void on_actionLoad_Parameter_ID_triggered();
-    void on_actionMove_Objects_triggered();
     void on_actionLoad_Presentation_triggered();
     void on_actionSave_Presentation_triggered();
     void on_min_value_gl_valueChanged(double arg1);
