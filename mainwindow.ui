@@ -724,6 +724,10 @@
             <property name="text">
              <string>Console...</string>
             </property>
+            <property name="icon">
+             <iconset resource="icons.qrc">
+              <normaloff>:/icons/icons/console.xpm</normaloff>:/icons/icons/console.xpm</iconset>
+            </property>
            </widget>
           </item>
           <item>
