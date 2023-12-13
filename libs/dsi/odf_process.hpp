@@ -15,8 +15,6 @@ public:
     virtual void end(Voxel&,tipl::io::gz_mat_write&) {}
 };
 
-void calculate_shell(std::vector<float> sorted_bvalues,
-                     std::vector<unsigned int>& shell);
 class BalanceScheme : public BaseProcess{
     std::vector<float> trans;
     unsigned int new_q_count;
@@ -32,8 +30,6 @@ public:
     {
         if(!voxel.scheme_balance)
             return;
-        std::vector<unsigned int> shell;
-        calculate_shell(voxel.bvalues,shell);
         unsigned int b_count = uint32_t(voxel.bvalues.size());
         unsigned int total_signals = 0;
 
@@ -52,10 +48,10 @@ public:
             total_signals += 1;
         }
 
-        for(unsigned int shell_index = 0;shell_index < shell.size();++shell_index)
+        for(unsigned int shell_index = 0;shell_index < voxel.shell.size();++shell_index)
         {
-            unsigned int from = shell[shell_index];
-            unsigned int to = (shell_index + 1 == shell.size() ? b_count:shell[shell_index+1]);
+            unsigned int from = voxel.shell[shell_index];
+            unsigned int to = (shell_index + 1 == voxel.shell.size() ? b_count : voxel.shell[shell_index+1]);
             unsigned int num = to-from;
 
 
@@ -345,7 +341,7 @@ public:
         if(voxel.needs("gfa"))
             gfa = std::vector<float>(dim.size());
         iso = std::vector<float>(dim.size());
-        if(voxel.needs("rdi"))
+        if(voxel.needs("rdi") && voxel.shell.size() > 1)
         {
             float sigma = voxel.param[0]; //optimal 1.24
             for(float L = 0.2f;L <= sigma;L+= 0.2f)
@@ -394,7 +390,6 @@ public:
             float L = 0.2f;
             mat_writer.write("rdi",rdi[0],uint32_t(voxel.dim.plane_size()));
 
-            if(voxel.needs("nrdi"))
             {
                 for(unsigned int i = 0;i < rdi[0].size();++i)
                 for(unsigned int j = 0;j < rdi.size();++j)
