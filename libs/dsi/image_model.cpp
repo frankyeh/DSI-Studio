@@ -2142,52 +2142,9 @@ bool ImageModel::preprocessing(void)
     file_name = new_file_name;
     return true;
 }
+
 void calculate_shell(std::vector<float> sorted_bvalues,
-                     std::vector<unsigned int>& shell)
-{
-    std::sort(sorted_bvalues.begin(),sorted_bvalues.end());
-    for(uint32_t i = 0;i < sorted_bvalues.size();++i)
-        if(sorted_bvalues[i] > 100.0f)
-            {
-                shell.push_back(i);
-                break;
-            }
-    if(shell.empty())
-        return;
-    for(uint32_t index = shell.back()+1;index < sorted_bvalues.size();++index)
-        if(std::abs(sorted_bvalues[index]-sorted_bvalues[index-1]) > 100.0f)
-            shell.push_back(index);
-}
-
-bool ImageModel::is_dsi_half_sphere(void)
-{
-    std::vector<unsigned int> shell;
-    calculate_shell(src_bvalues,shell);
-    return is_dsi() && (!shell.empty() && shell[1] - shell[0] <= 3);
-}
-
-bool ImageModel::is_dsi(void)
-{
-    std::vector<unsigned int> shell;
-    calculate_shell(src_bvalues,shell);
-    return shell.size() > 4 && (!shell.empty() && shell[1] - shell[0] <= 6);
-}
-bool ImageModel::need_scheme_balance(void)
-{
-    std::vector<unsigned int> shell;
-    calculate_shell(src_bvalues,shell);
-    if(is_dsi() || shell.size() >= 5)
-        return false;
-    return true;
-}
-
-bool ImageModel::is_multishell(void)
-{
-    std::vector<unsigned int> shell;
-    calculate_shell(src_bvalues,shell);
-    return (shell.size() > 1) && !is_dsi();
-}
-
+                     std::vector<unsigned int>& shell);
 void ImageModel::get_report(std::string& report)
 {
     std::vector<float> sorted_bvalues(src_bvalues);
@@ -2197,16 +2154,17 @@ void ImageModel::get_report(std::string& report)
         if(src_bvalues[i] > 50)
             ++num_dir;
     std::ostringstream out;
+
     std::vector<unsigned int> shell;
     calculate_shell(src_bvalues,shell);
-    if(is_dsi())
+    if(shell.size() > 4 && shell[1] - shell[0] <= 6)
     {
         out << " A diffusion spectrum imaging scheme was used, and a total of " << num_dir
             << " diffusion sampling were acquired."
             << " The maximum b-value was " << int(std::round(sorted_bvalues.back())) << " s/mm².";
     }
     else
-    if(is_multishell())
+    if(shell.size() > 1 && !is_dsi())
     {
         out << " A multishell diffusion scheme was used, and the b-values were ";
         for(unsigned int index = 0;index < shell.size();++index)
