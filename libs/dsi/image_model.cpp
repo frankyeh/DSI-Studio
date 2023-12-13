@@ -968,8 +968,8 @@ bool ImageModel::align_acpc(float reso)
     std::string msg = " The diffusion MRI data were rotated to align with the AC-PC line";
     if(voxel.report.find(msg) != std::string::npos)
     {
-        tipl::out() << "image already aligned, skipping" << std::endl;
-        return true;
+        tipl::out() << (error_msg = "image already aligned");
+        return false;
     }
     std::ostringstream out;
     out << msg << " at an isotropic resolution of " << reso << " (mm).";
