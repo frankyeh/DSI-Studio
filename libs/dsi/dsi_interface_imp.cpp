@@ -90,7 +90,6 @@ bool ImageModel::reconstruction(void)
     voxel.recon_report.str("");
     voxel.step_report.clear();
     voxel.step_report.str("");
-    voxel.max_fiber_number = (voxel.method_id == 1) ? 1 : 5;
 
     if(voxel.is_histology)
         return reconstruction_hist();
